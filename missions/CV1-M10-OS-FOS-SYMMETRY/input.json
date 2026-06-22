@@ -1,0 +1,65 @@
+{
+  "task_id": "CV1-M10-OS-FOS-SYMMETRY",
+  "mission_id": "M-10",
+  "plan_file": "plans/PLAN_CAISSE_V1_GPT_MASTERPLAY_2026-04-25.md",
+  "primary_model": "codex-extension",
+  "model": "gpt-5.5",
+  "reasoning_effort": "xhigh",
+  "objective": "Formaliser la symetrie OrderService / FrontendOrderService apres M-09 et M-06: matrice methodes, divergences justifiees, tests de contrat golden response sans patch produit sauf gap critique.",
+  "instruction": "Applique uniquement M-10. Ne modifie pas le code produit sauf si un gap critique est prouve; dans ce cas, ne patche pas et marque ESCALATE dans output_codex.json. Produis la matrice OS/FOS et le test contractuel autorise.",
+  "allowlist": [
+    "tests/Feature/Symmetry/OrderServicesContractTest.php",
+    "docs/orchestration/OS_FOS_SYMMETRY_MATRIX_2026-04-25.md"
+  ],
+  "off_limits": [
+    "app/**",
+    "resources/**",
+    "routes/**",
+    "database/**",
+    ".cursor/**",
+    "AGENTS.md"
+  ],
+  "human_gate_decisions": [
+    {
+      "gate": "GATE_FROZEN_ZONES_CAISSE_V1_2026-04-25",
+      "status": "Approved",
+      "decision": "Option C — Partial allowlist by method/surface",
+      "date": "2026-04-25"
+    }
+  ],
+  "dependencies": [
+    "CV1-M06-POS-REVENUE-GUARDS",
+    "CV1-M09-BRANCH-ISOLATION"
+  ],
+  "invariants_at_risk": [
+    "order_status",
+    "branch_id",
+    "dispatch_after_commit",
+    "order_service_symmetry",
+    "frozen_zones"
+  ],
+  "mandatory_tests": [
+    "php artisan test --filter=OrderServicesContractTest",
+    "php artisan test --filter=OrderStatusNoopSideEffectsTest",
+    "php artisan test --filter=PaymentNoopIdempotencyTest",
+    "php artisan test --filter=PaymentConfirmCrossBranchTest"
+  ],
+  "self_audit_checklist": [
+    "matrix documents OS/FOS create/status/payment/cancel paths",
+    "changePaymentStatus absence in FOS is explicitly classified as POS/admin-only or escalated",
+    "cashBack/refundPoints/no-op side effects are covered with contract evidence",
+    "test file does not require product edits and fails only on real contract drift",
+    "output contains SYMMETRY_NOTE"
+  ],
+  "rollback": {
+    "feature_flag": "none-doc-test-only",
+    "max_window_days": 0,
+    "predicates": [
+      "contract test unstable",
+      "matrix contradicts current code"
+    ]
+  },
+  "graphiti_query": "Caisse V1 OrderService FrontendOrderService symmetry contract changeStatus changePaymentStatus cashback refundPoints",
+  "memory_episode_to_write_on_close": "memory/episodes/caisse_v1_os_fos_symmetry_2026-04-25.jsonl",
+  "claude_audit_prompt_id": "disabled-gpt-only"
+}

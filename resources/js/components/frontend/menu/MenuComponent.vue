@@ -33,10 +33,10 @@
                     category.name
                 }}</h2>
                 <div class="flex items-center gap-3">
-                    <button type="button" class="lab lab-row-vertical lab-font-size-20 text-xl"
+                    <button type="button" class="lab lab-row-vertical lab-font-size-20 text-xl" aria-label="Vue liste"
                         v-on:click="itemProps.design = itemDesignEnum.LIST"
                         :class="itemProps.design === itemDesignEnum.LIST ? 'text-primary' : 'text-[#A0A3BD]'"></button>
-                    <button type="button" class="lab lab-element-3 lab-font-size-20 text-xl"
+                    <button type="button" class="lab lab-element-3 lab-font-size-20 text-xl" aria-label="Vue grille"
                         v-on:click="itemProps.design = itemDesignEnum.GRID"
                         :class="itemProps.design === itemDesignEnum.GRID ? 'text-primary' : 'text-[#A0A3BD]'"></button>
                 </div>
@@ -62,7 +62,7 @@ import CategoryComponent from "../components/CategoryComponent";
 import ItemComponent from "../components/ItemComponent";
 import itemDesignEnum from "../../../enums/modules/itemDesignEnum";
 import itemTypeEnum from "../../../enums/modules/itemTypeEnum";
-import LoadingComponent from "../components/LoadingComponent";
+import LoadingComponent from "../components/LoadingComponent.vue";
 
 export default {
     name: "MenuComponent",

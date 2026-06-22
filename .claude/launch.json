@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "kiosk",
+      "runtimeExecutable": "php",
+      "runtimeArgs": ["artisan", "serve", "--port=8000", "--host=127.0.0.1"],
+      "port": 8000
+    },
+    {
+      "name": "mobile",
+      "runtimeExecutable": "php",
+      "runtimeArgs": ["-S", "127.0.0.1:8081", "-t", "mobile/"],
+      "port": 8081
+    },
+    {
+      "name": "web",
+      "runtimeExecutable": "php",
+      "runtimeArgs": ["-S", "127.0.0.1:8083", "-t", "/Users/1millnonstop/Downloads/web"],
+      "port": 8083
+    }
+  ]
+}

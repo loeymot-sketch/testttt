@@ -1,0 +1,59 @@
+{
+  "foodking_conclusion": {
+    "local_repo": "Aucun plafond d’usage côté FoodKing: ce script et agents/codex.runner.mjs ne tronquent pas le corps assistant ; seuls max_completion_tokens (explicite ici) et le prompt comptent.",
+    "cursor_note": "L’indicateur Cursor (session 5–20k) mesure le produit éditeur+contexte ; il n’est pas le même compteur qu’un POST /chat/completions vers ton proxy (mesure A/B ci-dessous)."
+  },
+  "model": "gpt-5.5",
+  "max_completion_tokens_sent": 262144,
+  "tests": [
+    {
+      "label": "A_minimal_1_token_style",
+      "http": 200,
+      "ms": 2125,
+      "request": {
+        "model": "gpt-5.5",
+        "max_completion_tokens": 262144,
+        "user_chars": 49
+      },
+      "usage": {
+        "prompt_tokens": 28,
+        "completion_tokens": 15,
+        "total_tokens": 43
+      },
+      "finish_reason": "stop",
+      "id": "resp_0c9a7a8d6081eca50169ea7ba5d4bc8190aa57f22cecd7c15c",
+      "response_model": "gpt-5.5",
+      "content_chars": 2,
+      "content_non_ws": 2,
+      "error": null
+    },
+    {
+      "label": "B_baseline_prompt_tiny",
+      "http": 200,
+      "ms": 1683,
+      "request": {
+        "model": "gpt-5.5",
+        "max_completion_tokens": 262144,
+        "user_chars": 90
+      },
+      "usage": {
+        "prompt_tokens": 35,
+        "completion_tokens": 36,
+        "total_tokens": 71
+      },
+      "finish_reason": "stop",
+      "id": "resp_073847a717d9cab40169ea7ba7b208819799143e86eae07ded",
+      "response_model": "gpt-5.5",
+      "content_chars": 47,
+      "content_non_ws": 42,
+      "error": null
+    },
+    {
+      "label": "C_stress_long_generation_request",
+      "http": 504,
+      "ms": 60164,
+      "error": "non-json",
+      "text_head": "<!DOCTYPE html>\n<!--[if lt IE 7]> <html class=\"no-js ie6 oldie\" lang=\"en-US\"> <![endif]-->\n<!--[if IE 7]>    <html class=\"no-js ie7 oldie\" lang=\"en-US\"> <![endif]-->\n<!--[if IE 8]>    <html class=\"no-js ie8 oldie\" lang=\"en-US\"> <![endif]-->\n<!--[if gt IE 8]><!--> <html class=\"no-js\" lang=\"en-US\"> <!--<![endif]-->\n<head>\n\n<title>tokenclub.top | 504: Gateway time-out</title>\n<meta charset=\"UTF-8\" />"
+    }
+  ]
+}

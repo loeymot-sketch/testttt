@@ -1,0 +1,319 @@
+{
+    "meta": {
+        "mission": "Z2 Refund NF525 LIVE E2E",
+        "date": "2026-05-28T22:44:23+02:00",
+        "head": "fcfef17fd74caa3a7b8e92ddae285260e34eeee1",
+        "service": "App\\Services\\Order\\RefundWithCounterEntryService",
+        "guard": "App\\Services\\Order\\SealedOrderGuard"
+    },
+    "baseline": {
+        "audit_logs_count": 32,
+        "audit_last_hash": "c404580c651ccbb769a720e30b414a0e0dc8b82290b4b4a073ae79602bf5460e",
+        "audit_last_id": 32,
+        "orders_count": 142,
+        "max_fiscal_seq": 38,
+        "z_reports_count": 4,
+        "orders_with_explicit_payments": 0
+    },
+    "scenarios": {
+        "S3": {
+            "scenario": "S3_Z_WINDOW_ENFORCEMENT",
+            "description": "Refund on unsealed order \u2192 expect 422 rejection",
+            "target_order": {
+                "id": 6,
+                "fiscal_sequence_no": 1,
+                "created_at": "2026-05-28 14:26:01"
+            },
+            "result": "REJECTED_AS_EXPECTED",
+            "exception_message": "Order 6 is not in a CLOSED Z window \u2014 operation \"refund-with-counter-entry\" requires a sealed (post-Z) parent. Use the standard pre-Z path instead.",
+            "exception_code": 422,
+            "pass": true,
+            "post_state": {
+                "audit_logs_count": 32,
+                "orders_count": 142,
+                "z_reports_count": 4
+            },
+            "no_mutation": true
+        },
+        "S1": {
+            "scenario": "S1_FULL_REFUND_CASH",
+            "description": "Refund sealed PAID CASH order; expect mirror + audit chain extend",
+            "target_order": {
+                "id": 226,
+                "fiscal_sequence_no": 38,
+                "total": "11.000000"
+            },
+            "result": "SUCCESS",
+            "mirror": {
+                "id": 227,
+                "parent_order_id": 226,
+                "fiscal_sequence_no": 39,
+                "status": 22,
+                "payment_status": 20,
+                "total": "-11.000000",
+                "subtotal": "-10.000000",
+                "total_tax": "-1.000000",
+                "order_serial_no": "RTN-TEST-S1-1780001051",
+                "items_count": 1,
+                "items": [
+                    {
+                        "qty": -1,
+                        "total_price": "-11.000000",
+                        "tax_amount": "-1.000000"
+                    }
+                ],
+                "payments_count": 1,
+                "payments": [
+                    {
+                        "mode": 1,
+                        "amount": "-11.00",
+                        "reference": null
+                    }
+                ]
+            },
+            "post_state": {
+                "audit_logs_count": 37,
+                "audit_last_hash": "08b73d2976f12f2e132db5aca5b4517ab61948a9dcd21554ac31f95bc4b6b833",
+                "audit_last_id": 37,
+                "orders_count": 143,
+                "max_fiscal_seq": 39
+            },
+            "audit": {
+                "delta": 2,
+                "counter_entry_rows_for_mirror": 1,
+                "counter_entry_payload": {
+                    "reason": "S1 test \u2014 full cash refund NF525 verification",
+                    "mirror_total": -11,
+                    "parent_order_id": 226,
+                    "parent_serial_no": "TEST-S1-1780001051",
+                    "mirror_payments_count": 1,
+                    "mirror_fiscal_sequence_no": 39,
+                    "parent_fiscal_sequence_no": 38
+                }
+            },
+            "chain": {
+                "pre_last_hash": "c6e9aaaef4fd77620266756380766945100745c58dbec9418a2147728d44477f",
+                "new_last_id": 37,
+                "new_last_hash": "08b73d2976f12f2e132db5aca5b4517ab61948a9dcd21554ac31f95bc4b6b833",
+                "new_prev_hash": "7774e996e52faff0b08597d47d1100e2ec4d17b7231c00b98d710bc0150d2fe7",
+                "prev_matches_pre_last": false,
+                "hash_changed": true,
+                "chain_extends_correctly": true,
+                "walk": [
+                    {
+                        "id": 36,
+                        "action": "cash.movement.recorded",
+                        "resource_id": 7,
+                        "prev_hash_short": "c6e9aaaef4fd7762",
+                        "current_hash_short": "7774e996e52faff0",
+                        "expected_prev_short": "c6e9aaaef4fd7762",
+                        "chains_correctly": true
+                    },
+                    {
+                        "id": 37,
+                        "action": "order.refund.counter_entry",
+                        "resource_id": 227,
+                        "prev_hash_short": "7774e996e52faff0",
+                        "current_hash_short": "08b73d2976f12f2e",
+                        "expected_prev_short": "7774e996e52faff0",
+                        "chains_correctly": true
+                    },
+                    {
+                        "id": 38,
+                        "action": "user.login",
+                        "resource_id": 1,
+                        "prev_hash_short": "08b73d2976f12f2e",
+                        "current_hash_short": "13dc1996c6c54731",
+                        "expected_prev_short": "08b73d2976f12f2e",
+                        "chains_correctly": true
+                    },
+                    {
+                        "id": 39,
+                        "action": "user.login",
+                        "resource_id": 3,
+                        "prev_hash_short": "13dc1996c6c54731",
+                        "current_hash_short": "0c8a2a9d45abfdfb",
+                        "expected_prev_short": "13dc1996c6c54731",
+                        "chains_correctly": true
+                    },
+                    {
+                        "id": 40,
+                        "action": "user.login",
+                        "resource_id": 1,
+                        "prev_hash_short": "0c8a2a9d45abfdfb",
+                        "current_hash_short": "b8ed19d716cbea02",
+                        "expected_prev_short": "0c8a2a9d45abfdfb",
+                        "chains_correctly": true
+                    }
+                ],
+                "first_new_row_id": 36,
+                "first_new_row_prev_matches_pre_last": true
+            },
+            "parent_intact": {
+                "parent_status": 13,
+                "parent_payment_status": 5,
+                "parent_total": "11.000000",
+                "parent_status_unchanged": true,
+                "parent_total_unchanged": true,
+                "parent_composition_snapshot_count": 1
+            },
+            "pass": true,
+            "pass_breakdown": {
+                "result_success": true,
+                "order_delta_1": true,
+                "audit_delta_ge_1": true,
+                "counter_entry_exactly_1": true,
+                "parent_id_link": true,
+                "fresh_fiscal_seq": true,
+                "mirror_total_negated": true,
+                "chain_extends_correctly": true,
+                "hash_changed": true,
+                "parent_status_unchanged": true,
+                "parent_total_unchanged": true
+            }
+        },
+        "S2": {
+            "scenario": "S2_PARTIAL_REFUND",
+            "description": "Partial refund (qty -1 on single line)",
+            "result": "NOT_SUPPORTED_BY_SERVICE",
+            "pass": null,
+            "finding": "RefundWithCounterEntryService::execute (lines 132-156) mirrors EVERY parent order_item with full negated quantity. There is NO API parameter for partial item selection or partial quantities. Partial refunds would require a new service method or extending execute() with $itemIds/$qtyMap arguments. Out of scope for this verification \u2014 flagged as service-level capability gap.",
+            "evidence": {
+                "service_file": "app/Services/Order/RefundWithCounterEntryService.php",
+                "mirror_items_loop_lines": "132-156",
+                "execute_signature": "execute(Order $parent, string $reason, ?int $userId = null): Order"
+            }
+        }
+    },
+    "notes": [
+        "Baseline DB had 0 rows in order_payments \u2014 legacy PAID orders rely only on Order.pos_payment_method column. The S1 test order #226 was populated with an explicit OrderPayment row to exercise the 4-bis mirror path (RefundWithCounterEntryService:178-207).",
+        "Audit action name in service code is \"order.refund.counter_entry\" (RefundWithCounterEntryService:304), not \"refund.created\" as the task mission statement says. The RefundCreated event IS dispatched separately for stock/availability release (line 401) but it is NOT an audit_logs row \u2014 it is a domain event.",
+        "S2 Partial refund is a SERVICE-LEVEL CAPABILITY GAP \u2014 not a bug in this run. Documented for V1.0.2 backlog consideration.",
+        "Z reports 1-4 were created during test setup via legitimate ZReportService::open/close API. The NF525 z_reports DELETE trigger correctly prevented cleanup of partial state from script iterations \u2014 confirming the immutability guarantee.",
+        "Order #226 was reused after initial creation in a failed iteration left it with 0 items. Recovery script populated items + payments before refund. Order was sealed by Z #4 (closed via service), making it a legitimate sealed-parent test target for S1."
+    ],
+    "auth": {
+        "admin_id": 1,
+        "admin_email": "admin@lecayenne.fr",
+        "auth_check": true,
+        "auth_id": 1
+    },
+    "fresh_order": {
+        "id": 226,
+        "fiscal_sequence_no": 38,
+        "order_serial_no": "TEST-S1-1780001051",
+        "total": "11.000000",
+        "created_at": "2026-05-28 22:44:11",
+        "sealed_by_z_id": 4,
+        "items_count_post_recovery": 1,
+        "payments_count_post_recovery": 1
+    },
+    "preS1": {
+        "audit_logs_count": 35,
+        "audit_last_hash": "c6e9aaaef4fd77620266756380766945100745c58dbec9418a2147728d44477f",
+        "audit_last_id": 35,
+        "orders_count": 142,
+        "max_fiscal_seq": 38
+    },
+    "fiscal_verify_chain": {
+        "exit_code": 0,
+        "output": "  + branch=1 CHAIN OK\nSWEEP COMPLETE \u2014 CHAIN OK on every active branch (1 total)\n",
+        "pass": true
+    },
+    "verdict_breakdown": {
+        "S3_z_window_enforcement": "PASS",
+        "S1_full_refund_cash": "PASS",
+        "S2_partial_refund": "UNSUPPORTED (service-level capability gap)",
+        "fiscal_verify_chain_all": "PASS"
+    },
+    "verdict": "REFUND_NF525_VERIFIED",
+    "critical_assertions_summary": {
+        "1_mirror_parent_order_id": {
+            "requirement": "Mirror order has parent_order_id = original",
+            "expected": 226,
+            "actual": 226,
+            "verified": true
+        },
+        "2_mirror_fresh_fiscal_sequence_no": {
+            "requirement": "Mirror has FRESH fiscal_sequence_no (not duplicate of original)",
+            "parent_fseq": 38,
+            "mirror_fseq": 39,
+            "verified": true
+        },
+        "3_audit_log_counter_entry_row": {
+            "requirement": "AuditLog refund row added (action = order.refund.counter_entry per service code, NOT refund.created as task statement)",
+            "rows_for_mirror": 1,
+            "verified": true,
+            "payload": {
+                "reason": "S1 test \u2014 full cash refund NF525 verification",
+                "mirror_total": -11,
+                "parent_order_id": 226,
+                "parent_serial_no": "TEST-S1-1780001051",
+                "mirror_payments_count": 1,
+                "mirror_fiscal_sequence_no": 39,
+                "parent_fiscal_sequence_no": 38
+            }
+        },
+        "4_chain_hash_extends_no_break": {
+            "requirement": "Chain hash extends (no break)",
+            "pre_last_hash": "c6e9aaaef4fd77620266756380766945100745c58dbec9418a2147728d44477f",
+            "new_rows_added": 2,
+            "chain_walk": [
+                {
+                    "id": 36,
+                    "action": "cash.movement.recorded",
+                    "resource_id": 7,
+                    "prev_hash_short": "c6e9aaaef4fd7762",
+                    "current_hash_short": "7774e996e52faff0",
+                    "expected_prev_short": "c6e9aaaef4fd7762",
+                    "chains_correctly": true
+                },
+                {
+                    "id": 37,
+                    "action": "order.refund.counter_entry",
+                    "resource_id": 227,
+                    "prev_hash_short": "7774e996e52faff0",
+                    "current_hash_short": "08b73d2976f12f2e",
+                    "expected_prev_short": "7774e996e52faff0",
+                    "chains_correctly": true
+                },
+                {
+                    "id": 38,
+                    "action": "user.login",
+                    "resource_id": 1,
+                    "prev_hash_short": "08b73d2976f12f2e",
+                    "current_hash_short": "13dc1996c6c54731",
+                    "expected_prev_short": "08b73d2976f12f2e",
+                    "chains_correctly": true
+                },
+                {
+                    "id": 39,
+                    "action": "user.login",
+                    "resource_id": 3,
+                    "prev_hash_short": "13dc1996c6c54731",
+                    "current_hash_short": "0c8a2a9d45abfdfb",
+                    "expected_prev_short": "13dc1996c6c54731",
+                    "chains_correctly": true
+                },
+                {
+                    "id": 40,
+                    "action": "user.login",
+                    "resource_id": 1,
+                    "prev_hash_short": "0c8a2a9d45abfdfb",
+                    "current_hash_short": "b8ed19d716cbea02",
+                    "expected_prev_short": "0c8a2a9d45abfdfb",
+                    "chains_correctly": true
+                }
+            ],
+            "fiscal_verify_chain_all_exit": 0,
+            "verified": true
+        },
+        "5_original_order_intact": {
+            "requirement": "Original order remains intact (no UPDATE on its composition_snapshot)",
+            "parent_status_unchanged": true,
+            "parent_total_unchanged": true,
+            "parent_items_count": 1,
+            "verified": true
+        }
+    }
+}

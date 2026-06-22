@@ -1,0 +1,175 @@
+/* =============================================================================
+   FoodKing CV1 Foundations — design tokens
+   -----------------------------------------------------------------------------
+   Mission #1 + #2 — feeds the new admin and kiosk components introduced by
+   plans CV1-CATALOG-CONVERGENCE-001 and CV1-LIFECYCLE-UX-001.
+
+   These tokens deliberately sit OUTSIDE tailwind.config.js — they are
+   semantic-named (purpose) rather than utility-named (style) so that they
+   can be remapped per-tenant or per-surface without breaking utilities.
+
+   Layers (loaded in order):
+     resources/css/app.css                    (Tailwind base + core admin)
+     resources/css/tokens-aaa.css             (Phase 8.9 EAA contrast layer)
+     resources/css/tokens-pmr.css             (Phase 8.9 reduced-mobility layer)
+     resources/css/foundations/cv1-tokens.css (THIS FILE — CV1 additions)
+
+   Audit  : reports/audit/CLAUDE_ULTRA_REVIEW_MISSION_1_CATALOG_SYNC_2026-05-02.md §F
+            reports/audit/CLAUDE_ULTRA_REVIEW_MISSION_2_STOCK_COMPOSITION_2026-05-02.md §F
+   Plan   : plans/PLAN_CV1-CATALOG-CONVERGENCE-001_2026-05-02.md (Vague 1)
+            plans/PLAN_CV1-LIFECYCLE-UX-001_2026-05-02.md (Vague 1 + 2)
+   ============================================================================= */
+
+:root {
+    /* --- Status / severity (warnings on admin) -------------------------- */
+    --cv1-status-info-bg: #f1f5f9;        /* slate-100 */
+    --cv1-status-info-border: #cbd5e1;    /* slate-300 */
+    --cv1-status-info-text: #334155;      /* slate-700 */
+
+    --cv1-status-warning-bg: #fffbeb;     /* amber-50 */
+    --cv1-status-warning-border: #fcd34d; /* amber-300 */
+    --cv1-status-warning-text: #92400e;   /* amber-800 */
+
+    --cv1-status-blocker-bg: #fff1f2;     /* rose-50 */
+    --cv1-status-blocker-border: #fda4af; /* rose-300 */
+    --cv1-status-blocker-text: #9f1239;   /* rose-800 */
+
+    /* --- Surfaces ------------------------------------------------------- */
+    --cv1-surface-default: #ffffff;
+    --cv1-surface-elevated: #ffffff;
+    --cv1-surface-subtle: #f8fafc;        /* slate-50 */
+    --cv1-surface-strong: #0f172a;        /* slate-900 — for admin toasts */
+
+    /* --- Borders -------------------------------------------------------- */
+    --cv1-border-default: #e2e8f0;        /* slate-200 */
+    --cv1-border-strong: #94a3b8;         /* slate-400 */
+    --cv1-border-emphasis: #2563eb;       /* blue-600 — focus / step-active */
+
+    /* --- Typography ----------------------------------------------------- */
+    --cv1-font-size-xs: 0.75rem;
+    --cv1-font-size-sm: 0.875rem;
+    --cv1-font-size-base: 1rem;
+    --cv1-font-size-lg: 1.125rem;
+    --cv1-font-weight-medium: 500;
+    --cv1-font-weight-semibold: 600;
+    --cv1-line-height-tight: 1.25;
+    --cv1-line-height-normal: 1.5;
+
+    /* --- Spacing scale (matches Tailwind 4px grid) ---------------------- */
+    --cv1-space-1: 0.25rem;
+    --cv1-space-2: 0.5rem;
+    --cv1-space-3: 0.75rem;
+    --cv1-space-4: 1rem;
+    --cv1-space-6: 1.5rem;
+
+    /* --- Motion --------------------------------------------------------- */
+    --cv1-motion-fast: 120ms;
+    --cv1-motion-default: 200ms;
+    --cv1-motion-slow: 320ms;
+    --cv1-motion-easing: cubic-bezier(0.2, 0, 0, 1);
+
+    /* --- Wizard stepper ------------------------------------------------ */
+    --cv1-step-active-bg: #2563eb;        /* blue-600 */
+    --cv1-step-active-fg: #ffffff;
+    --cv1-step-completed-bg: #ecfdf5;     /* emerald-50 */
+    --cv1-step-completed-fg: #065f46;     /* emerald-800 */
+    --cv1-step-pending-bg: #f1f5f9;       /* slate-100 */
+    --cv1-step-pending-fg: #475569;       /* slate-600 */
+
+    /* --- Focus ring (WCAG 2.4.7 — 3px minimum, 3:1 contrast) ----------- */
+    --cv1-focus-ring-width: 3px;
+    --cv1-focus-ring-color: #2563eb;
+    --cv1-focus-ring-offset: 2px;
+}
+
+/* WCAG AAA contrast — escalation when [data-kiosk-contrast="aaa"] is set
+   on the <html> root by useKioskA11y composable. Inherited by admin
+   surfaces if the same attr propagates (currently kiosk-only). */
+[data-kiosk-contrast='aaa'] {
+    --cv1-status-info-text: #1e293b;
+    --cv1-status-warning-text: #78350f;
+    --cv1-status-blocker-text: #881337;
+    --cv1-border-default: #94a3b8;
+    --cv1-border-strong: #475569;
+}
+
+/* Reduced motion (WCAG 2.3.3) — neutralize transitions for users who set
+   the accessibility flag. Composable useKioskA11y propagates the
+   data-kiosk-reduced-motion attribute. */
+[data-kiosk-reduced-motion='true'] {
+    --cv1-motion-fast: 1ms;
+    --cv1-motion-default: 1ms;
+    --cv1-motion-slow: 1ms;
+}
+
+/* =============================================================================
+   Component-scoped class hooks
+   -----------------------------------------------------------------------------
+   These classes are intentionally minimal — they only set up CSS-variable
+   surfaces. Tailwind utilities still drive layout and spacing in the
+   components themselves.
+   ============================================================================= */
+
+.cv1-warning-badge {
+    background: var(--cv1-status-warning-bg);
+    color: var(--cv1-status-warning-text);
+    border: 1px solid var(--cv1-status-warning-border);
+    border-radius: 0.375rem;
+    padding: var(--cv1-space-3);
+    font-size: var(--cv1-font-size-sm);
+    line-height: var(--cv1-line-height-normal);
+}
+
+.cv1-warning-badge[data-severity='blocker'] {
+    background: var(--cv1-status-blocker-bg);
+    color: var(--cv1-status-blocker-text);
+    border-color: var(--cv1-status-blocker-border);
+}
+
+.cv1-warning-badge[data-severity='info'] {
+    background: var(--cv1-status-info-bg);
+    color: var(--cv1-status-info-text);
+    border-color: var(--cv1-status-info-border);
+}
+
+.cv1-step-tab {
+    background: var(--cv1-step-pending-bg);
+    color: var(--cv1-step-pending-fg);
+    border-radius: 0.375rem;
+    padding: var(--cv1-space-2) var(--cv1-space-3);
+    transition: background var(--cv1-motion-default) var(--cv1-motion-easing),
+        color var(--cv1-motion-default) var(--cv1-motion-easing);
+}
+
+.cv1-step-tab[aria-current='step'] {
+    background: var(--cv1-step-active-bg);
+    color: var(--cv1-step-active-fg);
+}
+
+.cv1-step-tab[data-completed='true']:not([aria-current='step']) {
+    background: var(--cv1-step-completed-bg);
+    color: var(--cv1-step-completed-fg);
+}
+
+.cv1-step-tab:focus-visible {
+    outline: var(--cv1-focus-ring-width) solid var(--cv1-focus-ring-color);
+    outline-offset: var(--cv1-focus-ring-offset);
+}
+
+/* Toast surfaces shared by admin and kiosk. */
+.cv1-toast {
+    background: var(--cv1-surface-elevated);
+    color: var(--cv1-status-info-text);
+    border: 1px solid var(--cv1-border-default);
+    border-radius: 0.5rem;
+    padding: var(--cv1-space-4);
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+
+.cv1-toast[data-severity='warning'] {
+    border-color: var(--cv1-status-warning-border);
+}
+
+.cv1-toast[data-severity='blocker'] {
+    border-color: var(--cv1-status-blocker-border);
+}

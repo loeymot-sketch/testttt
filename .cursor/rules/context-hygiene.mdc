@@ -15,7 +15,7 @@ Each phase loads only the files listed below. Do not load additional files unles
 |---|---|
 | `.cursor/ACTIVE_CYCLE.md` | Confirm TASK_ID and PHASE |
 | `tasks/[TASK_ID].md` | Task definition |
-| `.cursor/routing.md` | PRIMARY_MODEL assignment |
+| `.cursor/routing.md` | PRIMARY_EXECUTION_MODEL assignment and GPT review/audit checkpoints |
 | `.cursor/context/plan-context.md` | Plan production instructions |
 
 Do not load: previous plans, previous reports, gate files, or any source code file.
@@ -23,7 +23,7 @@ Do not load: previous plans, previous reports, gate files, or any source code fi
 ### EXECUTE phase
 | File | Purpose |
 |---|---|
-| `.cursor/ACTIVE_CYCLE.md` | Confirm PHASE, PLAN_FILE, PRIMARY_MODEL |
+| `.cursor/ACTIVE_CYCLE.md` | Confirm PHASE, PLAN_FILE, PRIMARY_EXECUTION_MODEL |
 | `plans/[PLAN_FILE]` | Active plan — implementation targets |
 
 Do not load: previous plans, validation reports, audit reports, or any file not listed in `SUBSYSTEMS_TOUCHED`.
@@ -73,7 +73,7 @@ Violating this rule wastes tokens and risks loading a stale snapshot.
   TASK_ID:
   PHASE: (none)
   RUNNER_MODE:
-  PRIMARY_MODEL:
+  PRIMARY_EXECUTION_MODEL:
   PLAN_FILE:
   REPORT_FILE:
   GATE_FILE:
@@ -82,12 +82,14 @@ Violating this rule wastes tokens and risks loading a stale snapshot.
 
 ---
 
-## 4. Large-cycle token discipline
+## 4. Large-cycle token discipline (handoff only — not dumbing down)
+
+Summaries below exist **only** to avoid **redundant re-loading** of finished artifacts into context. They **must not** remove facts from the active plan, drop `## PRIOR_CONTEXT`, or replace **Graphiti** retrieval for new work. Intelligence and data density stay maximal; we eliminate **duplicate reads** and **repeated prose**, not substance.
 
 For cycles with more than 3 execution steps or 2+ subagent handoffs, do not re-read completed phase files in full. Instead, produce a 3-line summary of each completed phase before transitioning:
 
 ```
-→ PLAN summary: [subsystems in scope] / [gate conditions] / [PRIMARY_MODEL]
+→ PLAN summary: [subsystems in scope] / [gate conditions] / [PRIMARY_EXECUTION_MODEL + reasoning effort + PLAN_REVIEW status]
 → EXECUTE summary: [files touched] / [delegation evidence] / [escalations]
 → VALIDATE summary: [verdict] / [hook exit] / [subsystem match]
 ```

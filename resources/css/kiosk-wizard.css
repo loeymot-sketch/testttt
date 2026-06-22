@@ -21,7 +21,7 @@
    `resources/js/bootstrap-kiosk.js` importé par `app.js`.
    Historiquement, ce fichier re-déclarait `--kiosk-primary: #E93C3C`
    (mauvais rouge), `--kiosk-success: #43C6AC` (teal), `--kiosk-bg: #F8F9FA`
-   (cool gray)… qui masquaient la vraie palette FoodKing `#E8001C` / warm.
+   (cool gray)… qui masquaient la vraie palette FoodKing Cayenne `#F4501E` / warm.
    Ces redéclarations sont supprimées pour laisser les tokens officiels
    devenir source de vérité et permettre aux atoms DS de fonctionner.
    Seules les variables PROPRES à ce fichier (non-colliding) restent ici.
@@ -73,7 +73,7 @@
 
 .kiosk-touch-btn-primary:disabled {
   background: #ddd;
-  color: #999;
+  color: #555;
   cursor: not-allowed;
 }
 

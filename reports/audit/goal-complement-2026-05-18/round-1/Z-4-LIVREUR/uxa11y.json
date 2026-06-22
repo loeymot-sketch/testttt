@@ -1,0 +1,44 @@
+{
+  "role": "UX-A11y",
+  "zone": "Z-4-LIVREUR",
+  "round": 1,
+  "timestamp": "2026-05-18",
+  "files_audited": [
+    "tests/e2e/_red-e-livreur-round3-2026-05-18.spec.js",
+    "routes/api.php (admin/delivery-boys + admin/online-orders + frontend driver endpoints)",
+    "app/Http/Controllers/Admin/DeliveryBoyController.php"
+  ],
+  "findings": [
+    {
+      "severity": "INFO",
+      "id": "LIVREUR-Z4-UX-01",
+      "file": "tests/e2e/_red-e-livreur-round3-2026-05-18.spec.js",
+      "line": 7,
+      "title": "Admin delivery management is the only V1 visual surface (driver-side is API-only)",
+      "description": "Per the reference spec header: 'Livreur is API-only V1; visual = admin-side mgmt screens.' Driver-facing route /api/frontend/delivery-boy-order/* serves JSON for a future mobile/native client, no web UI. V1 acceptance therefore = admin /admin/delivery-boys + admin /admin/online-orders (where assignment occurs) ONLY.",
+      "evidence": "spec header (lines 1-2), no resources/js/pages/admin/delivery-boys/* Vue components found in routes.",
+      "recommendation": "Visual coverage = admin panels only. Driver UI = V1.0.2 mobile native scope."
+    },
+    {
+      "severity": "P2",
+      "id": "LIVREUR-Z4-UX-02",
+      "file": "tests/e2e/_red-e-livreur-round3-2026-05-18.spec.js",
+      "line": 15,
+      "title": "E2E spec uses fixed 1500ms waitForTimeout — non-deterministic on slow CI",
+      "description": "Each test uses page.waitForTimeout(1500) instead of waitForLoadState('networkidle') or a semantic selector wait. On a slow CI this may flake. Pattern consistent with the rest of the codebase E2E tests, not a heal target.",
+      "evidence": "Lines 15, 21, 27 — fixed 1500ms timeout.",
+      "recommendation": "V1.0.2 backlog: switch to networkidle. Not gating."
+    },
+    {
+      "severity": "INFO",
+      "id": "LIVREUR-Z4-UX-03",
+      "file": "n/a (i18n)",
+      "line": 0,
+      "title": "Error string 'Le montant minimum pour la livraison est de %.2f€' uses €",
+      "description": "OrderRequest.php:281 produces a hardcoded FR string with € symbol. Acceptable V1 (mono-FR), but i18n-roadmap should externalize to lang/fr/all.php. Not gating.",
+      "evidence": "OrderRequest.php:281 — sprintf hardcoded FR.",
+      "recommendation": "V1.0.2 backlog: trans('all.message.delivery_minimum_amount')."
+    }
+  ],
+  "summary": "Driver UI is API-only V1 — visual scope reduces to admin /admin/delivery-boys + /admin/online-orders. No P0/P1 UX heal targets surfaced. 2 P2/INFO deferred items."
+}

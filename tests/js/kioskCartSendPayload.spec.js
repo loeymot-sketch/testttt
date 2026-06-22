@@ -18,8 +18,9 @@ describe('kioskCart submit payload', () => {
                     discount: 5,
                     branch_id: 3,
                     instruction: 'sans oignons',
-                    item_variations: [{ id: 100, variation_name: 'taille', name: 'XL', price: 1.5 }],
+                    item_variations: [{ id: 100, variation_name: 'taille', name: 'XL', price: 1.5, quantity: 2 }],
                     item_extras: [{ id: 200, name: 'cheddar', price: 2 }],
+                    item_addons: [{ id: 300, name: 'Coca', role: 'drink', price: 2.5, quantity: 2 }],
                 },
             ],
         }, {
@@ -31,7 +32,7 @@ describe('kioskCart submit payload', () => {
             order_type: 10,
             loyalty_code: 'LOYAL-42',
             kiosk_promo_code: 'PROMO10',
-            is_advance_order: 0,
+            is_advance_order: 10,
             source: 5,
             payment_method: 4,
             items: expect.any(String),
@@ -48,8 +49,9 @@ describe('kioskCart submit payload', () => {
                 item_id: 12,
                 instruction: 'sans oignons',
                 quantity: 2,
-                item_variations: [{ id: 100, variation_name: 'taille', name: 'XL', price: 1.5 }],
-                item_extras: [{ id: 200, name: 'cheddar', price: 2 }],
+                item_variations: [{ id: 100, variation_name: 'taille', name: 'XL', quantity: 2 }],
+                item_extras: [{ id: 200, name: 'cheddar' }],
+                item_addons: [{ id: 300, name: 'Coca', role: 'drink', quantity: 2 }],
             },
         ]);
 

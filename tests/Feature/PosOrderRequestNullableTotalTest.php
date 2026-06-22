@@ -13,6 +13,9 @@ use App\Models\Tax;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+use Tests\Feature\Concerns\HasPosQuoteBinding;
+use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
 use Tests\TestCase;
 
 /**
@@ -26,6 +29,8 @@ use Tests\TestCase;
 class PosOrderRequestNullableTotalTest extends TestCase
 {
     use RefreshDatabase;
+    use HasPosQuoteBinding;
+    use SeedsOpenCashDrawerSession;
 
     protected Branch $branch;
     protected User $customer;
@@ -35,6 +40,11 @@ class PosOrderRequestNullableTotalTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // [iter15-BUG-NF525] Legacy HT-add fixture (test expects total=11
+        // for subtotal=10 + tax=1). Config default flipped to TTC 2026-05-10.
+        config(['pricing.tax_inclusive_prices' => false]);
+
         $this->seedSpatieRoles();
         $this->seedMinimalSettings();
 
@@ -51,6 +61,8 @@ class PosOrderRequestNullableTotalTest extends TestCase
             'password' => Hash::make('password'),
         ]);
         $this->operator->assignRole('POS Operator');
+        // [Sprint H6 TEST-DEBT-001 2026-05-17] Sprint 1B requires an OPEN cash session for CASH.
+        $this->seedOpenSessionFor($this->operator, $this->branch);
 
         $tax = Tax::factory()->create([
             'name' => 'TVA 10%',
@@ -103,9 +115,12 @@ class PosOrderRequestNullableTotalTest extends TestCase
     public function test_payload_without_total_or_subtotal_is_accepted(): void
     {
         $this->actingAs($this->operator, 'sanctum');
+        $payload = $this->basePayload();
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
-            ->postJson('/api/admin/pos', $this->basePayload());
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload));
 
         $response->assertStatus(201);
         // Persisted order must reflect the SERVER-computed total (10.00 + 10% TVA = 11.00),
@@ -122,11 +137,14 @@ class PosOrderRequestNullableTotalTest extends TestCase
         $this->actingAs($this->operator, 'sanctum');
 
         // Client tries to bill 1€ instead of 11€.
+        $payload = $this->basePayload([
+            'subtotal' => 0.10,
+            'total'    => 1.00,
+        ]);
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
-            ->postJson('/api/admin/pos', $this->basePayload([
-                'subtotal' => 0.10,
-                'total'    => 1.00,
-            ]));
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload));
 
         $response->assertStatus(201);
         // Server-computed total wins.
@@ -141,11 +159,44 @@ class PosOrderRequestNullableTotalTest extends TestCase
         $this->actingAs($this->operator, 'sanctum');
 
         // Client omits total, but only hands over 5€ for an 11€ order — server check must trip.
+        $payload = $this->basePayload([
+            'pos_received_amount' => 5.00,
+        ]);
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload));
+
+        $response->assertStatus(422);
+    }
+
+    public function test_negative_subtotal_rejected_at_validation(): void
+    {
+        $this->actingAs($this->operator, 'sanctum');
+
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+        $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->basePayload([
-                'pos_received_amount' => 5.00,
+                'subtotal' => -5.00,
             ]));
 
         $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['subtotal']);
+    }
+
+    public function test_negative_pos_received_amount_rejected_at_validation(): void
+    {
+        $this->actingAs($this->operator, 'sanctum');
+
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+        $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/admin/pos', $this->basePayload([
+                'pos_received_amount' => -1.00,
+            ]));
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['pos_received_amount']);
     }
 }

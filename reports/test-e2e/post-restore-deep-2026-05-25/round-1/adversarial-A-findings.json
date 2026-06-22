@@ -1,0 +1,113 @@
+{
+  "agent": "adversarial-A",
+  "scope": "S1+S2+S3 (Kiosk + POS + KDS)",
+  "round": 1,
+  "wave": "post-restore-deep-2026-05-25",
+  "mode": "READ-ONLY post-restore independent verification",
+  "timestamp_utc": "2026-05-25T10:34:00Z",
+  "commit_under_test": "904bfb10a",
+  "inputs_received": {
+    "S1_findings_json": "PRESENT — 205 lines, 10 states, 4 findings (S1-001 INFO 401 autofill / S1-002 INFO Vue Router warn / S1-003 INFO emoji fallback / S1-004 P2 IMPROVEMENT 45 vs 59 items)",
+    "S2_findings_json": "MISSING — sub-agent stuck at 2 screenshots (S2-01-pos-mounted.png + S2-02-open-caisse-modal.png); no JSON written before adversarial deadline",
+    "S3_findings_json": "MISSING — sub-agent stuck at 1 screenshot (S3-01-empty-mount.png); no JSON written before adversarial deadline"
+  },
+  "disputed_findings": [
+    {
+      "original_id": "S1-001",
+      "verdict": "KEEP",
+      "severity_calibration": "INFO is correct",
+      "reasoning": "401 on GET /api/login is a recurring browser autofill probe (Saved-Passwords sniff). Confirmed identical signature to wave-final-2026-05-23 S1-001 = pre-existing environmental noise, NOT a restore-induced regression. No DOM toast, no order-flow impact, no V1 actionable source. Owner mandate 'no useless complexity' → do not chase."
+    },
+    {
+      "original_id": "S1-002",
+      "verdict": "KEEP",
+      "severity_calibration": "INFO is correct",
+      "reasoning": "Vue Router 'Discarded invalid param categoryId' warning is a NEW vs wave-final-2026-05-23, but it is a test-harness artifact (spec passes wrong param shape on programmatic router.push). The categories page rendered correctly in S1-04 screenshot. Real-user clicks via tile handlers dispatch the canonical param shape. Persona impact = ZERO (chef/cashier/client never see this). Fix-hint correctly scopes to spec author."
+    },
+    {
+      "original_id": "S1-003",
+      "verdict": "KEEP",
+      "severity_calibration": "INFO is correct",
+      "reasoning": "Cart emoji-fallback (🍽️) on Cheddar+Tacos is a test-injection-path artifact — the spec uses store.dispatch('kioskCart/addItem') without image_full_url. Real wizard adds preserve image_full_url. NOT a regression vs wave-final-2026-05-23 because that round also went via store.dispatch and likely had photo injected manually. S1 reviewer was rigorous and pre-empted the misclassification correctly."
+    },
+    {
+      "original_id": "S1-004",
+      "verdict": "DISCARD",
+      "severity_calibration": "DOWNGRADE P2→P3 INFO",
+      "reasoning": "Independently verified via MySQL: SELECT COUNT(*) FROM items = 59 total, 14 with deleted_at NOT NULL (since 2026-05-20 11:30:08), 45 alive. The 14 soft-deleted items (mainly individual viande/sauce/legacy item rows: 'Sauce supplémentaire', 'Fromage supplémentaire', 'Boursin', 'Œuf', 'Bacon', 'Galette pommes de terre', 'Salade verte', 'Jambon de dinde', 'Fromage à raclette', 'Bol Curry', 'Bol Tandoori', 'Bol Mariné', 'Bol Crousti', 'Bol Gratiné') were SOFT-DELETED ON 2026-05-20 — BEFORE the 2026-05-23 backup. The restore was bit-identical to backup → 45 alive is the EXPECTED and INTENDED state. Brief's '59' was the raw row count including tombstones. ZERO data loss occurred. No owner-gate needed."
+    }
+  ],
+  "new_findings": [
+    {
+      "id": "ADV-A-001",
+      "system": "S2-pos",
+      "source_artifact": "tests/e2e/__screenshots__/deep-S2-pos/S2-01-pos-mounted.snapshot.yml line 27",
+      "category": "data_leak_raw_token_visible",
+      "severity": "P1",
+      "evidence": "POS profile dropdown leaks raw 'PENDING_CREATE_3e69b24b3b84' as customer/admin phone display. The Admin user (id=2, admin@lecayenne.fr) has phone='PENDING_CREATE_3e69b24b3b84' in the DB (verified via mysql). KdsOrderCard.vue:351 has a guard hiding 'PENDING_*' from chef-facing UI, but the admin Profile dropdown component (banner avatar → 'Bonjour Admin' menu) renders this token raw without the same guard. 3 users affected DB-wide (admin id=2, soak-cashier id=8, walkin id=15). Cashier sees this token EVERY time they open the profile menu in POS. The S2 sub-agent failed to flag this — it's plainly visible in their own captured snapshot but the agent ran out of time before writing findings JSON.",
+      "fix_hint": "Apply the same 'PENDING_*' string-prefix guard to the profile-dropdown phone-display component (likely resources/js/components/admin/topbar/* or admin layout). Computed: phone.startsWith('PENDING_') ? '' : phone. Scope-minimal (~3 LOC).",
+      "persona_impact": "Cashier confidence — sees 'PENDING_CREATE_*' on every shift opening, looks like a bug or staged data. Owner equity concern — surfaces internal placeholder language to operator.",
+      "scope_match": "S2 POS surface — P1 because every cashier session displays it; not P0 because no NF525 / sync / financial impact."
+    },
+    {
+      "id": "ADV-A-002",
+      "system": "S2-pos",
+      "source_artifact": "tests/e2e/__screenshots__/deep-S2-pos/S2-01-pos-mounted.png vs .snapshot.yml mismatch",
+      "category": "evidence_quality_capture_race",
+      "severity": "P2",
+      "evidence": "S2-01 capture has a screenshot/snapshot disconnect: the PNG renders the Admin dashboard (Tableau De Bord, 'Bon Après-Midi !', Vue D'ensemble cards with KPIs, Suivi en direct), but the YML snapshot text shows POS DOM ('Caisse Le Cayenne', 'Commande rapide', 'Filiale #1', 'Articles 0', Suivi commandes / Écran client navigation). The screenshot was likely captured during/before the SPA route transition to /admin/pos completed rendering. Same pattern ADV-B caught for S7-03 (mid-load skeleton). This means downstream visual review of S2-01 PNG alone is misleading — viewers would conclude POS did not load, when in fact the spec navigated correctly but captured the in-between frame.",
+      "fix_hint": "S2 spec should add page.waitForSelector('[data-pos-cart], [data-pos-v5-tile], #pos-wizard-root') or waitForLoadState('networkidle') before screenshot. Test-quality fix only, no product code change.",
+      "persona_impact": "Reviewer / owner downstream — false confidence or false alarm depending on which artifact they look at. Not customer/cashier-facing.",
+      "scope_match": "S2 spec quality — P2 because it undermines evidence chain for everything S2 captures."
+    },
+    {
+      "id": "ADV-A-003",
+      "system": "S2-pos + S3-kds",
+      "source_artifact": "absence of findings JSON + populated screenshots",
+      "category": "agent_evidence_chain_gap",
+      "severity": "P1",
+      "evidence": "Sister GStack S2 sub-agent produced only 2 screenshots (S2-01, S2-02) before halting; sister S3 produced only 1 (S3-01-empty-mount.png, fully white/loading skeleton — viewer earlier characterized as 'mid-load with 3 vertical bars'). Neither wrote a findings JSON before adversarial-A deadline. This is a 'verification gap' per advisor warning — KDS-clean two consecutive cycles would itself be unusual, but here we cannot even claim KDS-clean: S3 captured zero meaningful states. Independent Playwright verification by adversarial-A confirms POS renders correctly when navigated DIRECTLY to /admin/pos (Ouvrir la caisse modal with 50,00 € initial cash float + catalog grid behind), and KDS canonical route /admin/kitchen-display-system silently redirects to /admin/order-status-screen (OSS) in some session conditions — but this needs Round-2 re-run for a clean adversarial verdict.",
+      "fix_hint": "Re-dispatch S2 + S3 with stricter spec teardown discipline (write findings JSON even on partial completion + raise wait selectors). Mark S2+S3 verdicts BLOCKED_NO_INPUT for round 1.",
+      "persona_impact": "Owner — cannot ship POS / KDS to V1 production without coverage; round-1 evidence is insufficient.",
+      "scope_match": "Cross-system observation — S2 + S3 both blocked, S1 + S6 + S7 had time to converge."
+    },
+    {
+      "id": "ADV-A-004",
+      "system": "S1-kiosk",
+      "source_artifact": "tests/e2e/__screenshots__/deep-S1-kiosk/S1-07-cart-after-add.png + S1-01-kiosk-idle.png low-contrast subtitle",
+      "category": "a11y_low_contrast_visible",
+      "severity": "P3",
+      "evidence": "S1-01 idle screen subtitle 'Commandez en quelques touches' renders in extremely low-contrast grey on cream gradient — likely below WCAG AA 4.5:1 ratio (visually unreadable against the orange-gradient background). S1-001..S1-004 findings did NOT flag this. Recurs from prior baselines but worth surfacing for V1.0.2.",
+      "fix_hint": "KioskAppComponent idle subtitle color token — bump grey from current value to at minimum #5a5a5a on cream bg. Single CSS variable change scope.",
+      "persona_impact": "Client elderly/low-vision — cannot read subtitle without effort. Persona impact = mild but real on a borne tablet.",
+      "scope_match": "Kiosk a11y — P3 because content is decorative not required to proceed, but flag it for V1.0.2 once color audit happens."
+    }
+  ],
+  "verdict_per_system": {
+    "S1_KIOSK": "GREEN — full 10-state capture, comprehensive findings with honest persona assessment, anchor prices match wave-final-2026-05-23 baseline to the centime, NF525 untouched, frozen-zone diff=0, full happy-path idle→cash-instruction succeeds with POST /api/frontend/order 201. The 1 P2 (S1-004 45-vs-59 items) DISCARDED by adversarial — 14-item delta is soft-deletes from 2026-05-20, EXPECTED state. 3 P3 INFO findings KEPT — all are environmental or test-harness only, zero product impact. Verdict GREEN even tighter than S1's own AMBER.",
+    "S2_POS": "BLOCKED_NO_INPUT — sub-agent stuck at 2 screenshots, no findings JSON. Adversarial independently verified direct-nav /admin/pos renders Ouvrir la caisse modal + catalog grid (POS functional). 1 P1 (ADV-A-001 PENDING_CREATE phone leak in profile dropdown) + 1 P2 (ADV-A-002 capture race) surfaced from existing artifacts. Re-dispatch required.",
+    "S3_KDS": "BLOCKED_NO_INPUT — sub-agent stuck at 1 screenshot (S3-01 fully blank/loading). Adversarial direct-nav /admin/kitchen-display-system silently redirected to /admin/order-status-screen (OSS) — could be SPA-state leak or guard misroute. Cannot verdict KDS clean or broken without round-2 re-run."
+  },
+  "summary": {
+    "disputed_keep_count": 3,
+    "disputed_discard_count": 1,
+    "disputed_escalate_count": 0,
+    "new_findings_total": 4,
+    "new_p0": 0,
+    "new_p1": 2,
+    "new_p2": 1,
+    "new_p3": 1
+  },
+  "top_3_disputes": [
+    "DISCARD S1-004 P2→P3 INFO — the '45 items vs 59' delta is 14 soft-deletes from 2026-05-20 (verified via SELECT deleted_at FROM items), pre-existing in the backup. The brief's '59' counted tombstones. NO data loss. NO owner-gate needed. S1 was honest to surface for verification but the resolution is conclusive.",
+    "KEEP S1-002 INFO Vue Router warning — NEW vs wave-final-2026-05-23 baseline but is a test-harness param-shape artifact only. Real-user navigation works. Spec author can fix harness; no product code change required.",
+    "ADV-A-001 NEW P1 — POS profile dropdown leaks raw 'PENDING_CREATE_3e69b24b3b84' phone token visible in S2-01's snapshot YAML. S2 sub-agent had the evidence in its own capture but ran out of time. Cashier sees this every shift open. Scope-minimal 3-LOC startsWith('PENDING_') guard. NOT a regression — pre-existing across waves but consistently missed."
+  ],
+  "owner_mandate_check": {
+    "no_cloud_until_owner_initiates": "RESPECTED — adversarial review introduces zero cloud actions",
+    "frozen_zones_diff": "RESPECTED — read-only mode, zero file edits outside this report",
+    "no_inflated_severity": "RESPECTED — DISCARDED 1 finding (S1-004 P2→P3) where the dispute proved no real defect; KEPT 3 INFO findings at INFO; ELEVATED 1 new P1 only because cashier-facing every-session token leak is real friction",
+    "honest_evidence": "RESPECTED — refused to fabricate S2/S3 disputes against missing inputs; surfaced 'BLOCKED_NO_INPUT' verdicts so parent re-dispatches"
+  },
+  "next_step_for_parent": "1) Accept S1 verdict GREEN with S1-004 downgrade. 2) Re-dispatch S2+S3 with stricter spec teardown (write findings JSON on partial completion + wait selectors). 3) Owner-gate the ADV-A-001 P1 PENDING_CREATE leak — needs string-prefix guard added to admin Profile dropdown component. 4) Verify KDS canonical URL routes correctly post-Round-2."
+}

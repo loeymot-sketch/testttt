@@ -1,0 +1,87 @@
+{
+  "task_id": "T-NEW04-OBSERVABILITY",
+  "lot": "NEW-04 (Phase 1bis, Vague 3, dernière) — Observability sync. Build the SyncMetricsRecorder service + storage table + admin overview endpoint + frontend MetricsBatcher. Ce lot ferme la Phase 1bis (NEW-01..04) avant Phase 2 (P1 surface UI).",
+  "finding_origin": "MEGA_PLAN_SYNC_HARDENING_v3 §3.4. Risque opérationnel: aucune métrique business ne couvre la sync POS↔Borne↔KDS. Quand un opérateur dit \"le KDS rame\", on n'a pas de chiffres pour décider si c'est WS down, queue saturée, ou polling fallback. Sans métriques: pas de SLO mesurable, pas de pager rule actionnable, pas de capacité de root-cause sans accès SSH live.",
+  "context_already_in_repo": {
+    "correlation_id_infrastructure": "DÉJÀ EN PLACE — `app/Http/Middleware/CorrelationIdMiddleware.php` enregistré dans web+api groups, propage via Log::withContext(correlation_id, user_id, branch_id), expose en réponse via X-Correlation-ID. Tests 5/5 PASS dans `tests/Feature/CorrelationIdMiddlewareTest.php` + `tests/Feature/Observability/CorrelationIdEndToEndTest.php`. Trait `App\\Traits\\HasCorrelationId` utilisé par DispatchDomainEventsJob (NEW-01) pour propager correlation_id depuis HTTP request → queue job. NE PAS recréer ces composants.",
+    "outbox_dispatch_event": "DispatchDomainEventsJob (NEW-01..03) trace dispatched_at, attempts, last_error. Pour la latence: now()->diffInMilliseconds($domainEvent->occurred_at) au moment du broadcast réussi.",
+    "ws_auth_failure_signal": "WebSocketService.js (NEW-02 audit-2 A2) émet `auth_error` event via wsService.onAuthError(handler). Le 4e échec consécutif promeut SESSION_INVALID. Compteur exposé via getAuthFailureCount() (à vérifier — sinon, exposer).",
+    "kds_sync_fallback_signal": "KdsSyncService.js (Lot 1.C) calcule un cadence courant via _baseCadence et passe en mode polling quand WS DEGRADED/DISCONNECTED. Le service émet `state_change` events avec from/to + reason. Reason ∈ {WS_CONNECTED, WS_DEGRADED, WS_DISCONNECTED, HIGH_ACTIVITY}.",
+    "domain_event_table": "`domain_events` (migrations/2026_04_15_200000_create_domain_events_table.php): id, event_type, aggregate_type, aggregate_id, branch_id, payload, channel, broadcast_as, correlation_id, occurred_at, dispatched_at, attempts, last_error, timestamps.",
+    "auth_admin_routes": "Routes admin protégées via auth:sanctum + middleware admin (cf. `Route::group(['middleware' => ['auth:sanctum', ...]], ...)` dans routes/api.php). Reproduire le même groupe pour les nouvelles routes observability.",
+    "sentinel_test_pattern": "tests/Feature/Outbox/OutboxConcurrentWorkerDedupeTest.php (NEW-01) et tests/Feature/Queue/* (NEW-03) utilisent RefreshDatabase + Log::spy / Queue::fake / Mockery. Suivre le même pattern."
+  },
+  "scope_files_to_create": [
+    "database/migrations/2026_04_23_220000_create_sync_metrics_table.php — Table `sync_metrics`: id (bigIncrements), metric_type (string 64, indexed), branch_id (unsignedBigInteger nullable, indexed), value (bigInteger; suit la sémantique du metric: latence ms / count 1 / interval ms), correlation_id (char 36 nullable), labels (json nullable; clés-valeurs supplémentaires {event_type:..., from:..., to:...}), occurred_at (dateTime(3), indexed). Indexes: (metric_type, occurred_at) pour les rollups, (branch_id, occurred_at) pour les vues par branche. Pas d'index unique. Garder léger: pas de FK pour ne pas bloquer les écritures à haut débit.",
+    "app/Services/Observability/SyncMetricsRecorder.php — Service singleton (binding via AppServiceProvider — voir non_negotiable_constraints). Methods: (a) recordEventDispatched(string $eventType, ?int $branchId, int $latencyMs, ?string $correlationId = null): void — insert metric_type='outbox.dispatch_latency_ms', value=$latencyMs, labels={event_type}; (b) recordWebSocketAuthFailure(?int $branchId, ?string $correlationId = null): void — insert metric_type='ws.auth_failure', value=1; (c) recordKdsSyncFallback(?int $branchId, int $intervalMs, ?string $reason = null, ?string $correlationId = null): void — insert metric_type='kds.sync_fallback_interval_ms', value=$intervalMs, labels={reason}; (d) recordClientMetric(string $metricType, ?int $branchId, int $value, array $labels, ?string $correlationId = null): void — generic ingest from frontend batcher; whitelist metricType against ALLOWED_CLIENT_METRICS const (cf. backend_contract). Toutes les insertions utilisent DB::table('sync_metrics')->insert([...]) (pas Eloquent — performance-first, écritures fire-and-forget). occurred_at = now() avec milliseconds. Le service NE doit JAMAIS lever d'exception qui propage: try/catch interne avec Log::warning sur erreur de persistance + return early — la télémétrie ne doit JAMAIS casser un flux métier (invariant_observability_non_blocking).",
+    "app/Http/Controllers/Admin/Observability/SyncOverviewController.php — Controller. Method index(Request $request): JsonResponse — query param `branch_id` (optionnel; null = toutes branches autorisées par le user), `since` (ISO8601 default = -1h). Réponse: { generated_at, since, branch_id, summary: { outbox_dispatch_latency_ms_p50, outbox_dispatch_latency_ms_p95, outbox_dispatch_latency_ms_p99, outbox_events_count, ws_auth_failures_count, kds_fallback_count, kds_fallback_interval_ms_p50 }, by_event_type: [{event_type, count, latency_p95_ms}], recent_failures: [{...top 10 failures from domain_events where last_error is not null + dispatched_at is null}] }. Percentile calculation: sort en mémoire (rolling window <=1h, ~10k rows max → OK). Method clientMetrics(Request $request): JsonResponse — POST body { metrics: [{type, value, labels?, occurred_at}] }, max 200 metrics par batch (HTTP 413 sinon), valide avec FormRequest, récupère branch_id depuis auth()->user(), append correlation_id depuis request header, déclenche SyncMetricsRecorder::recordClientMetric() pour chaque entrée. Retourne 202 Accepted + { received: <count> }.",
+    "app/Http/Requests/Admin/Observability/StoreClientMetricsRequest.php — FormRequest. Rules: 'metrics' => ['required','array','max:200']; 'metrics.*.type' => ['required','string','in:ws.connect_latency_ms,ws.disconnect_event,ws.reconnect_storm,kds.sync_fallback_interval_ms'] (whitelist stricte = ALLOWED_CLIENT_METRICS); 'metrics.*.value' => ['required','integer','min:0','max:600000']; 'metrics.*.labels' => ['sometimes','array']; 'metrics.*.occurred_at' => ['required','date']. authorize() → return $this->user() !== null.",
+    "resources/js/services/MetricsBatcher.js — ES module factory `createMetricsBatcher({ wsService, kdsSyncService, endpoint, fetcher, intervalMs = 60_000, maxBatch = 200 })`. Comportements: (a) maintient un buffer in-memory bornée à 200 entrées; (b) écoute wsService.on('reconnect_storm', payload => buffer.push({type:'ws.reconnect_storm', value: payload.delay_ms, labels:{attempts_in_window}, occurred_at: new Date().toISOString()})); (c) écoute wsService.on('state_change', ({previous,current}) => { if previous==='CONNECTED' && current!=='CONNECTED') buffer.push(disconnect_event)}); (d) écoute kdsSyncService.on('state_change', ({from,to,reason}) => buffer.push(kds.sync_fallback_interval_ms with current cadence)); (e) toutes les intervalMs (60s par défaut), si buffer non vide, POST à endpoint via fetcher (default global fetch) avec body {metrics: buffer.splice(0,maxBatch)} et header X-Correlation-ID lu depuis localStorage ou via window.__correlationId si dispo; (f) graceful degradation: erreur réseau / 4xx / 5xx → log console.warn une seule fois (warned flag), buffer reste, retry au prochain tick; (g) start() / stop() / destroy() pour lifecycle; (h) return public API: { start, stop, destroy, getBufferSize, _flushNow (test helper) }. Pas de mutation globale, pas de import direct de WebSocketService — injecté en factory.",
+    "tests/Feature/Observability/SyncMetricsRecorderTest.php — 6+ tests: (a) test_record_event_dispatched_inserts_outbox_dispatch_latency_metric (asserts row in sync_metrics with metric_type, branch_id, value, labels.event_type, correlation_id), (b) test_record_websocket_auth_failure_inserts_count_one_metric, (c) test_record_kds_sync_fallback_includes_reason_label, (d) test_record_client_metric_whitelist_rejects_unknown_type (assert no insert + Log::warning), (e) test_record_silently_swallows_db_failure_to_protect_business_flow (mock DB::table to throw, assert recorder returns void without bubble + Log::warning fired), (f) test_recorder_is_singleton_in_container.",
+    "tests/Feature/Observability/SyncOverviewControllerTest.php — 7+ tests: (a) test_unauthenticated_user_receives_401, (b) test_admin_user_can_query_sync_overview_for_their_branch, (c) test_overview_returns_p50_p95_p99_for_dispatch_latency_metric (insert 100 metrics with known values, assert percentiles), (d) test_overview_filters_by_since_query_param, (e) test_overview_includes_recent_failures_from_domain_events_table, (f) test_client_metrics_endpoint_accepts_valid_batch_returns_202, (g) test_client_metrics_endpoint_rejects_unknown_metric_type_with_422, (h) test_client_metrics_endpoint_rejects_batch_over_200_with_422.",
+    "tests/Feature/Observability/EnsureCorrelationIdPropagatesToMetricsTest.php — 1 test verifying that a request with X-Correlation-ID set is propagated to SyncMetricsRecorder calls (use Log::spy + capture sync_metrics.correlation_id column).",
+    "tests/js/metricsBatcherFlush.spec.js — 4 tests: (a) batches and flushes after intervalMs, (b) capped at maxBatch entries, (c) graceful 5xx (warns once, keeps buffer), (d) destroy() cleans the timer + unsubscribes from wsService/kdsSyncService.",
+    "tests/js/metricsBatcherEvents.spec.js — 3 tests: (a) records reconnect_storm with delay_ms + attempts_in_window, (b) records state_change disconnect when previous=CONNECTED && current!=CONNECTED, (c) records kds sync fallback only when reason changes."
+  ],
+  "scope_files_to_modify": [
+    "routes/api.php — Add inside the existing admin sanctum-protected group: Route::prefix('observability')->name('observability.')->group(function () { Route::get('/sync-overview', [\\App\\Http\\Controllers\\Admin\\Observability\\SyncOverviewController::class, 'index']); Route::post('/client-metrics', [\\App\\Http\\Controllers\\Admin\\Observability\\SyncOverviewController::class, 'clientMetrics']); }); — both endpoints share auth:sanctum + admin middleware. Reuse the same group as KdsSyncController (cf. routes/api.php:813 area).",
+    "app/Providers/AppServiceProvider.php — Register SyncMetricsRecorder as singleton: $this->app->singleton(SyncMetricsRecorder::class). Do NOT use bind() — observability state should be process-singleton.",
+    "app/Jobs/DispatchDomainEventsJob.php — Inside handle(), in the success branch (after successful broadcast, BEFORE forceFill last_error=null), call: app(SyncMetricsRecorder::class)->recordEventDispatched($domainEvent->event_type, $domainEvent->branch_id, (int) now()->diffInMilliseconds($domainEvent->occurred_at), $domainEvent->correlation_id);. Wrap in a try/catch Throwable so a recorder fault NEVER breaks the broadcast contract (NEW-01 invariant). DO NOT touch the claim transaction or the failure path.",
+    "resources/js/services/WebSocketService.js — Inside handleSubscriptionError() (or wherever auth failures are recorded), add: this._emit('observability_metric', {type:'ws.auth_failure', value: 1}). Frontend MetricsBatcher subscribes to this. NO change to F-12 logic, NO change to NEW-02 storm detection."
+  ],
+  "do_NOT_touch": [
+    "DispatchDomainEventsJob::handle() body OUTSIDE the new singleton metric call (NEW-01 frozen for the claim transaction + broadcast).",
+    "DispatchDomainEventsJob::failed() body (NEW-03 final).",
+    "WebSocketService.js NEW-02 storm-detection logic (frozen).",
+    "WebSocketService.js F-12 auth-failure → SESSION_INVALID promotion logic (frozen).",
+    "KdsSyncService.js polling adaptive logic (Lot 1.C frozen).",
+    "CorrelationIdMiddleware (already correct).",
+    "scripts/check-invariants.sh, AGENTS.md, frozen zones in OrderService etc."
+  ],
+  "backend_contract": {
+    "metric_type_naming_convention": "snake_case + dotted namespace: `outbox.dispatch_latency_ms`, `ws.auth_failure`, `ws.connect_latency_ms`, `ws.disconnect_event`, `ws.reconnect_storm`, `kds.sync_fallback_interval_ms`. Future metrics MUST follow this scheme to keep dashboards filterable.",
+    "ALLOWED_CLIENT_METRICS_whitelist": "Strict whitelist enforced by FormRequest AND by SyncMetricsRecorder::recordClientMetric(). Any unknown type → reject silently with Log::warning. Reasoning: prevent untrusted clients from polluting the metrics table with arbitrary keys.",
+    "value_semantic_per_metric_type": "outbox.dispatch_latency_ms = milliseconds; ws.auth_failure = always 1 (count); ws.connect_latency_ms = milliseconds; ws.disconnect_event = always 1 (count); ws.reconnect_storm = delay_ms (the breaker delay); kds.sync_fallback_interval_ms = current cadence in ms.",
+    "non_blocking_telemetry_invariant": "SyncMetricsRecorder MUST swallow ALL exceptions internally (DB down, table missing, etc.) and only Log::warning. The CALLER MUST be able to fire-and-forget without a try/catch. Test (e) in SyncMetricsRecorderTest enforces this.",
+    "percentile_calculation": "In-memory sort via array_values(sort + index lookup). For N <= 50_000 (1h rolling window cap), this is O(N log N) and runs in <100ms. If N grows, switch to a streaming digest (t-digest) — explicitly OUT OF SCOPE for NEW-04.",
+    "correlation_id_propagation": "Recorder reads correlation_id from arg if provided (jobs path). Otherwise reads from `request()->header('X-Correlation-ID')` if a request is in scope (HTTP path). Otherwise null. Stored in sync_metrics.correlation_id for cross-system tracing.",
+    "client_metrics_endpoint_throttling": "Apply throttle:60,1 (60 requests/min per user) on POST /api/admin/observability/client-metrics. The MetricsBatcher posts every 60s by default → headroom for retries. Document in route declaration."
+  },
+  "tests_required": [
+    "All test cases enumerated under scope_files_to_create.",
+    "Vitest tests use happy-dom env (already configured in vitest.config). Mock fetch via vi.fn(). Fake timers via vi.useFakeTimers() for the 60s flush.",
+    "PHPUnit tests use RefreshDatabase + Log::spy + Sanctum::actingAs($adminUser). Use AdminUser factory or direct User::factory()->create(['user_type'=>'administrator']) per existing patterns."
+  ],
+  "non_negotiable_constraints": [
+    "Telemetry MUST be non-blocking (see invariant). Any caller MUST be able to fire-and-forget.",
+    "ALLOWED_CLIENT_METRICS whitelist enforced both server-side (FormRequest) AND in recorder method (defense-in-depth).",
+    "DispatchDomainEventsJob::handle() success branch ONLY: add the recorder call wrapped in try/catch. NO other change to the claim/broadcast flow.",
+    "Use raw DB::table('sync_metrics')->insert(...) for writes (no Eloquent overhead).",
+    "Migration MUST be reversible (down() drops the table).",
+    "Sanctum auth required on both new endpoints. Throttle on POST.",
+    "All existing tests (NEW-01, NEW-02, NEW-03, Outbox, KdsSync, CorrelationId, EventContract, etc.) MUST still pass.",
+    "scripts/check-invariants.sh MUST remain 6/6.",
+    "No new composer require, no new npm install, no new ServiceProvider beyond binding the singleton in AppServiceProvider."
+  ],
+  "acceptance_criteria_measurable": [
+    "Migration creates sync_metrics table with the documented schema + indexes.",
+    "SyncMetricsRecorder is bound as singleton, exposes 4 methods (recordEventDispatched, recordWebSocketAuthFailure, recordKdsSyncFallback, recordClientMetric), all swallow exceptions.",
+    "GET /api/admin/observability/sync-overview returns 200 with the documented JSON shape; 401 if unauthenticated.",
+    "POST /api/admin/observability/client-metrics accepts whitelisted metric types, returns 202 with received count; rejects unknown types with 422; rejects oversized batches with 422.",
+    "DispatchDomainEventsJob success branch records outbox.dispatch_latency_ms metric with correct branch_id + event_type + correlation_id, AND broadcast still works if recorder throws.",
+    "MetricsBatcher batches events from wsService + kdsSyncService and POSTs every 60s with graceful 5xx handling.",
+    "Full vitest + phpunit + invariants suites green."
+  ],
+  "expected_response_shape": "Strict JSON per agents/codex.prompt.txt schema. op='create' for new files (full bodies), op='replace' for modified files (surgical patches with enough context).",
+  "self_check_before_returning": [
+    "Did you keep the recorder calls non-blocking (try/catch + return) in DispatchDomainEventsJob and at the SyncMetricsRecorder level itself?",
+    "Did you whitelist client metric types in BOTH the FormRequest AND the recorder method?",
+    "Did you use raw DB::table()->insert() (not Eloquent) for sync_metrics writes?",
+    "Did you reuse the existing CorrelationIdMiddleware (NOT recreate)?",
+    "Did you keep DispatchDomainEventsJob::failed() and the claim transaction byte-for-byte?",
+    "Did you bind SyncMetricsRecorder as singleton in AppServiceProvider?",
+    "Are MetricsBatcher tests using fake timers + mocked fetch + injectable fetcher?",
+    "Did you add the throttle:60,1 to POST /api/admin/observability/client-metrics?",
+    "Are all routes inside the same admin sanctum group as KdsSyncController?"
+  ]
+}

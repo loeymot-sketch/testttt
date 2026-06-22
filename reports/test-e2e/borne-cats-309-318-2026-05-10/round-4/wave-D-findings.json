@@ -1,0 +1,70 @@
+{
+  "wave": "D",
+  "round": 4,
+  "states_reviewed": 10,
+  "findings": [
+    {
+      "id": "D-002",
+      "state_artifact": "test-e2e-borne-D/09-d-bottom-sheet-after-mixed-cart.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "ROUND-4 UNCHANGED. State 09 DOM still shows kiosk-cart-bottom-sheet-item-0..4 (5 cart lines, count=5 via `grep -cE 'data-testid=\"kiosk-cart-bottom-sheet-item-' ...`), but the horizontal strip renders only ~3 of 5 cards in the visible viewport. Strip attributes re-checked: `grep -cE 'kiosk-cart-strip-fade|kiosk-cart-strip-chevron|autres' 09-d-bottom-sheet-after-mixed-cart.dom.html` returns 0 — NO fade-mask, NO chevron, NO 'X autres' badge near the title. Round-4 commit b59ce40d8 (auth retry toast) does not address bottom-sheet horizontal-scroll affordance.",
+      "fix_hint": "Unchanged — KsCartBottomSheet.vue line ~12 / ~212: add gradient-fade mask + chevron icon + 'X autres' badge (where X = items.length - 3). Add aria-live='polite' on count badge and aria-label on strip-list announcing horizontal scroll.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 4
+    },
+    {
+      "id": "D-003",
+      "state_artifact": "test-e2e-borne-D/07-d-cat-318-baseline.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "ROUND-4 UNCHANGED (data-side issue, not addressed by round-4 auth retry interceptor commit). State 07 DOM dump: `grep -oE 'item-default\\.svg' 07-d-cat-318-baseline.dom.html | wc -l` = 10 (8 supplément items 415-422 + duplicated default refs for cart strip cards). State 01 (cat 316 desserts) shows item-default.svg 2x (Tarte Daim 405 + Tiramisu 406). Branch KIOSK-LC-001 seed continues to ship products without photo assets for items 405, 406, 415-422.",
+      "fix_hint": "Unchanged — DB seed for branch KIOSK-LC-001: upload product photos for items 405, 406, 415-422. Until photos exist, replace item-default.svg with a category-themed Cayenne tile + name typography fallback in the frontend item resource image fallback chain.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 4
+    },
+    {
+      "id": "D-004",
+      "state_artifact": "test-e2e-borne-D/10-d-cart-totals-mixed.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "ROUND-4 UNCHANGED. md5 hashes of states 08/09/10 dom.html in round-4 capture: all three = 82d8df433b4c5b79b3efc5e52ffd6bbb (single hash for all three states). The audit-waste pattern persists at the DOM level: states 09 and 10 sample identical DOM with no meaningful UI mutation, and state 08 also matches exactly. Spec re-asserts cart total at state 10 over the same DOM as state 09. Not a product defect; an audit-discipline issue. Round-4 changed neither spec nor capture cadence.",
+      "fix_hint": "Unchanged — tests/e2e/test-e2e-borne-2026-05-10-wave-D.spec.js: either (a) merge state 10 totals assertions into state 09 and drop state 10 capture, OR (b) introduce a horizontal scroll on the bottom-sheet strip between snaps so state 10 captures items 0/1 visible (would simultaneously produce D-002 evidence).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 4
+    },
+    {
+      "id": "D-005",
+      "state_artifact": "test-e2e-borne-D/01-d-cat-316-baseline.network.json",
+      "category": "silent_error",
+      "severity": "P1",
+      "evidence": "ROUND-4 CLOSED via path (a) — the cold-start race no longer reproduces in round-4 captures. All 10 wave-D network.json sidecars are empty `[]` (zero 4xx, zero 5xx, zero unallowlisted entries). State 01's 2x 401 (POST /api/frontend/kiosk-event + GET /api/frontend/menu) observed in round-3 are absent in round-4. Per REVIEWER_PROTOCOL Cat 6 disjunction `(4xx==0) OR (4xx>0 AND role=alert>0)`, the first leg is satisfied. CAVEAT: the round-4 fix's intended retry-success role=alert mechanism (commit b59ce40d8 dispatching `kiosk-auth-retried` → KioskToastComponent) was NOT empirically exercised in this capture — `grep -c 'role=\"alert\"' wave-D/*.dom.html` returns 0/10. The toast leg is dormant, untested by these artifacts. Closure rests on absence of trigger (likely warm auth via cluster-S spec hardening 995b71ced or natural token-warming sequence ahead of state 01); if the race resurfaces in a future round, the role=alert leg has not been validated against real captures.",
+      "fix_hint": "Closed by round-4 (path-a). For belt+suspenders confidence on the dormant role=alert leg: add a deterministic regression spec that forces a kiosk-bootstrap 401 (e.g., delay token attach via test fixture) and asserts the KioskToastComponent role=alert appears within 100ms of retry-success — proves the retry-success toast pathway works in practice, not only in code.",
+      "status": "closed",
+      "first_seen_round": 3,
+      "rounds_open": 2
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 1,
+    "P2": 2,
+    "P3": 1,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 2,
+    "open_P3": 1
+  },
+  "round_to_round_closures": {
+    "D-001": "PASS",
+    "D-002": "FAIL",
+    "D-003": "FAIL",
+    "D-004": "FAIL",
+    "D-005": "PASS"
+  },
+  "verdict": "GREEN",
+  "notes": "Round-4 wave-D verdict GREEN (was AMBER in round-3). open_P0=0 AND open_P1=0 — D-005 closed via path (a) (4xx=0 across all 10 D states). D-001 anti-regression VERIFIED: top kiosk-categories-cart-indicator aria-label + inner span + bottom kiosk-cart-bottom-sheet-count match across all 10 states with correct Σ-qty values: 0/0, 1/1, 3/3, 3/3, 4/4, 6/6, 6/6, 7/7, 7/7, 7/7. Cart-total bar progression matches: €0,00 → €3,80 → €11,40 → €11,40 → €12,90 → €15,90 → €15,90 → €16,90 → €16,90 → €16,90 (Σ=7 articles, total €16,90 at states 08-10). Phase A direct-add anti-regression VERIFIED across states 02/05/08: zero rendered DOM elements with `class=\"kiosk-wizard-overlay\"` (the single grep hit per state matches only the scoped CSS rule definition `.kiosk-wizard-overlay[data-v-9a1bc680]` inside <style>, not a rendered overlay div — wizard component CSS is bundled but not mounted, consistent with hasOptions() short-circuit for cats 316/317/318). Pink palette DOM-wide regex (#E8001C / rgba(232,0,28)) returns 0 hits across all 10 DOM dumps. Sidecar audit: all 10 network.json sidecars empty `[]`, all 10 console.json sidecars contain 0 application-level errors (vendor.js + Pusher wss noise allowlisted). The round-3 regression on state 01 (2x 401 on /api/frontend/kiosk-event + /api/frontend/menu) does NOT reproduce in round-4 — captured-against HEAD b59ce40d8 with both the auth retry interceptor `kiosk-auth-retried` event AND likely spec hardening from 995b71ced. The dormant role=alert mechanism remains unverified empirically (no 4xx => no event => no toast => 0/10 role=alert in DOM); recommendation tracked in D-005 fix_hint. NO new defects introduced by round-4 fix on wave-D flows. D-002/D-003 unchanged (P2 design/data, non-blocking). D-004 unchanged (P3 audit-discipline, dom-identical states 08/09/10 confirmed via md5 — single hash 82d8df433b4c5b79b3efc5e52ffd6bbb). Wave D shippable."
+}

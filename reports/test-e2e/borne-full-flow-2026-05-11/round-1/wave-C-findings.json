@@ -1,0 +1,60 @@
+{
+  "wave": "C",
+  "round": 1,
+  "states_reviewed": 14,
+  "findings": [
+    {
+      "id": "C-001",
+      "state_artifact": "test-e2e-borne-C/05-312-wizard-recap-with-cheddar-oignons.png",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "evidence": "SAME-PAGE TOTAL DIVERGENCE between two SSOTs on the wizard recap. State 05 (Salade Royale item_id=393, menu=frites, Cheddar+Oignons extra_id=906) renders BOTH: (a) `<span class=\"kiosk-total-price\" data-testid=\"kiosk-order-summary-total-price\" aria-label=\"Total €11,30\">€11,30</span>` inside the canonical order-summary card (CORRECT: base 7.50 + menu addon 1.80 + Cheddar+Oignons 2.00 = 11.30€, matches payload sidecar `post_addToCart.cartItems[item_id=393].total === 11.3`); AND (b) `<div class=\"kiosk-nav-total\">Total €12,50</div>` in the bottom-bar (WRONG by +1.20€). State 12 (Filets 6 pcs item_id=398, same combo) reproduces IDENTICALLY: summary-aria='Total €11,30' vs nav='Total €12,50' — same +1.20€ overstatement. State 04 + state 11 (frites_style step BEFORE picking the extra) show nav='Total €10,50' while expected is 7.50+1.80=9.30 — confirms the +1.20€ overstatement is introduced as soon as menuChoice='frites' is set, independent of the Cheddar+Oignons extra. Per category 11 numeric_integrity: 'same fact differs across N surfaces' → P0. AJOUTER AU PANIER button uses the canonical 11.30€ (payload sidecar proves cart line.total is correctly 11.30), so the bug is presentation-layer in `.kiosk-nav-total` binding; but a customer staring at two contradictory totals on the same page is a P0 trust defect and a fiscal-perception risk (customer believes they will be charged 12.50 then sees 11.30 elsewhere). Flip-to-none baselines pass (state 08 nav 7,50 = summary 7,50; state 14 nav 6,00 = summary 6,00), proving the bug is gated on menuChoice='frites'.",
+      "fix_hint": "Locate `.kiosk-nav-total` binding (likely `KioskWizardComponent.vue` template ~bottom action-bar, data-v-ccf7fd5e). Currently it reads a stale computed that adds menu addon (+1.80) AND an orphan +1.20€ delta (possibly leftover from an old frites_style upgrade arithmetic before the dedicated step page was split off). Replace the binding with the SAME computed used by `[data-testid=\"kiosk-order-summary-total-price\"]` (call it `summaryTotal` or `cartLineTotal`). Add Vitest assertion: `expect(navTotal).toBe(summaryTotal)` for every (menuChoice × fritesStyleExtraId) permutation. Smoke-test all 4 menu options × 3 frites_style × 2 extras grid to ensure SSOT alignment.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-002",
+      "state_artifact": "test-e2e-borne-C/01-312-wizard-step-garnitures.png",
+      "category": "unexpected_4xx",
+      "severity": "P1",
+      "evidence": "Regression of the round-3 C-001 fix from the prior run (`borne-cats-309-318-2026-05-10/round-2/wave-C-findings.json` documented this as 'STAYS P0 OPEN'). State 01 network.json contains POST http://127.0.0.1:8000/api/frontend/pricing/preview status=401 (ts=1778472560555) and state 01 console.json contains level=error 'Failed to load resource: the server responded with a status of 401 (Unauthorized)'. Protocol §5 explicitly demands 'No /pricing/preview 401s (round-3 C-001 fix verified previously)' — gate violated. MITIGATION PRESENT (downgrade from P0→P1): the DOM at state 01 contains `<div class=\"kiosk-toast warning ...\" role=\"alert\" aria-live=\"assertive\">⚠ Session rafraîchie automatiquement</div>` proving the helper now (i) detects the 401, (ii) auto-refreshes the kiosk Sanctum session, (iii) surfaces a user-visible role=alert toast. So category 6 silent_error does NOT apply. But the underlying 401 still fires once per wizard entry — the auto-recovery is a band-aid, the real fix is to ensure the kiosk:order token is already attached on the FIRST /pricing/preview call (no cold-start window).",
+      "fix_hint": "`resources/js/helpers/kioskPricingPreview.js` — investigate why the first wizard-mount /pricing/preview call ships without a valid Authorization header. Likely root cause: the helper's axios instance is initialized before `kioskAuth.bootstrap()` resolves the Sanctum token. Either (a) await `kioskAuth.ready` promise inside `createKioskPricingPreview` before issuing any request, or (b) initialize the axios instance lazily on first use after the auth bootstrap. Verify by re-capturing state 01 and confirming 0 occurrences of /pricing/preview 401 in `01-312-wizard-step-garnitures.network.json`.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-003",
+      "state_artifact": "test-e2e-borne-C/13-313-j2-step-menu-flip-to-none.png",
+      "category": "unexpected_4xx",
+      "severity": "P2",
+      "evidence": "State 13 network.json contains POST http://127.0.0.1:8000/api/frontend/kiosk-event status=429 Too Many Requests (ts=1778472579393), state 13 console.json contains matching level=error. MITIGATION PRESENT: state 13 DOM contains `<div role=\"alert\" class=\"Vue-Toastification__toast-body\">Trop de requêtes — patientez 30s avant de réessayer.</div>` — user is informed via role=alert toast. Category 6 silent_error does NOT apply. Downgraded to P2 because the 429 is symptomatic of the spec firing wizard analytics events too aggressively during a rapid menu flip; the rate limit is the backend correctly defending itself. Not a production blocker but suggests either the kiosk should debounce kiosk-event POSTs on rapid wizard navigation, or the spec is hitting the rate limiter due to artificial test pacing.",
+      "fix_hint": "Two-pronged: (1) `resources/js/components/frontend/kiosk/KioskWizardComponent.vue` or analytics helper — debounce /api/frontend/kiosk-event POSTs to max 1/sec per (step, item) to avoid rate-limit pressure during normal user navigation. (2) Tune the rate limiter in `app/Http/Controllers/Frontend/KioskEventController.php` (or the route's `throttle:` middleware) to a kiosk-friendly ceiling. (3) Spec pacing: insert `await page.waitForTimeout(200)` between rapid menu-card clicks in `test-e2e-borne-C.spec.ts` to mimic realistic user tempo.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-004",
+      "state_artifact": "test-e2e-borne-C/04-312-wizard-step-frites-style.png",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "On the dedicated frites_style step page, the 'Frites nature' card is missing its price chip while the other two cards display chips: 'Cheddar fondu' shows '+€1,00' and 'Cheddar + Oignons croustillants' shows '+€2,00'. Frites nature has empty whitespace where the chip would render. Confirmed on both state 04 (Salade Royale parent) and state 11 (Filets 6 pcs parent) — identical layout, identical missing chip. Acceptable interpretation: Frites nature is the baseline 0€ option so no delta to display. UX concern: visually inconsistent with the other two cards; user might think the price is loading or unknown. Either render '+€0,00' explicitly, or render an 'Inclus' / 'Sans supplément' badge in the same chip slot to keep the 3-card visual rhythm.",
+      "fix_hint": "Frites_style step component template (search for `frites-style-card` or `kiosk-step-frites-style`): when `option.price_delta === 0`, render `<span class=\"kiosk-price-chip kiosk-price-chip--free\">Sans supplément</span>` instead of returning null. Match the chip dimensions so the 3 cards align visually.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 1, "P1": 1, "P2": 1, "P3": 1,
+    "open_P0": 1, "open_P1": 1, "open_P2": 1, "open_P3": 1
+  },
+  "round_to_round_closures": {
+    "C-001-prev-round-2": "FAIL"
+  },
+  "verdict": "RED",
+  "notes": "P0-1 fritesStyleExtraId clearing — VERIFIED CLEAN at both payload sidecars. State 08 (Salade Tunisienne post menu→none flip): `pre_addToCart.selections.fritesStyleExtraId === null` (exact value), `pre_addToCart.menuChoice === \"none\"`, `post_addToCart.cartItems[item_id=395].item_extras === []`, `item_extra_total === 0`, `total === 7.5`. State 14 (Ailes 6 pcs post menu→none flip): `pre_addToCart.selections.fritesStyleExtraId === null` (exact value), `pre_addToCart.menuChoice === \"none\"`, `post_addToCart.cartItems[item_id=396].item_extras === []`, `item_extra_total === 0`, `total === 6.0`. No regression on P0-1 — the menu→none flip correctly clears fritesStyleExtraId and the dependent extra rows. Forbidden extra IDs (906/951) confirmed absent from the two post-flip cart lines. Menu duplication check: grep across all 14 DOM files returned ZERO matches for `kiosk-upgrade-grid` and `kiosk-frites-upgrade-section` — the round-5 owner-feedback removal of the inline 3-card frites_style picker from the menu step is CONFIRMED ELIMINATED. Frites_style step page visuals (state 04 + state 11): 3 distinct cards, fries-themed visuals (🍟 Nature / 🧀 Cheddar fondu / 🧅 Cheddar + Oignons croustillants), gradient backgrounds, NO parent item image bleed (no salade/tenders image visible behind the cards). Pink residue (#E8001C / rgba 232,0,28): 0 hits across all 14 DOM files. i18n leak scan (regex `^[a-z]+(\\.[a-z_]+){1,4}$` on visible text nodes): 0 hits across all 14 DOM files. Console errors filtered through allowlist (pusher/wss/vendor.js): only the 401 on state 01 and 429 on state 13 — both flagged above. NEW P0 DISCOVERED (C-001 in this report): kiosk-nav-total bottom-bar shows €12,50 while kiosk-order-summary-total-price shows €11,30 on the SAME page (state 05 and state 12). This is a same-page SSOT divergence, not a backend/cart total bug — payload sidecars prove the cart line total is correctly 11.30€ and AJOUTER AU PANIER ships the right amount. But two contradictory totals on the recap screen is a category-11 numeric_integrity defect per protocol and a customer-trust P0 (and the +1.20€ overstatement is present at state 04 and state 11 too, before the user even picks the upgrade — so the nav total has been misleading the user for the entire upsell flow). Verdict RED driven by C-001 P0 open. To declare GREEN: C-001 nav-total must equal summary-total at all 14 states (re-capture and re-verify with the same grep `class=\"kiosk-nav-total\"` vs `data-testid=\"kiosk-order-summary-total-price\"` aria-label comparison)."
+}

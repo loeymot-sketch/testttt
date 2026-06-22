@@ -1,0 +1,96 @@
+{
+  "specialist": "UX/A11y",
+  "zone": "Admin Dashboard (15.1-15.7)",
+  "wave": "B-Admin",
+  "round": 1,
+  "date": "2026-05-18",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "scope_note": "Admin is desktop-first per Le Cayenne deployment. Mobile/tablet still possible (Branch Manager on iPad). WCAG AA target. 30 Vue subdirectories under resources/js/components/admin/.",
+  "positive_patterns": [
+    {
+      "id": "UX-OK-1",
+      "title": "CatalogStudioComponent.vue exemplary a11y",
+      "evidence": "Heavy use of `:aria-label` with i18n interpolation, `:title` for tooltip semantics, `<button type=\"button\">` over divs. Comment L17 documents iter15 round-7 heal: `:title` attribute exposes full label when CSS clips. Used in catalog-control-plane__metrics group.",
+      "verdict": "Reference implementation. Other admin components should mimic."
+    },
+    {
+      "id": "UX-OK-2",
+      "title": "Admin tables use semantic <thead>/<th>",
+      "evidence": "ItemListComponent.vue L177-192 uses `<table>/<thead>/<th>`. Both ItemListComponent and CouponListComponent emit proper table semantics.",
+      "verdict": "AA-compliant on column scoping (implicit via thead). Strict AA could add `scope=\"col\"`."
+    },
+    {
+      "id": "UX-OK-3",
+      "title": "Admin dashboard widgets follow 1:1 endpoint mapping",
+      "evidence": "resources/js/components/admin/dashboard/ = 15 widgets; each renders one endpoint payload. Clean visual hierarchy. SlaAlerts, ChannelStats, OrderStatistics, OrderSummary, SalesSummary, CustomerStats, TopCustomers, MostPopular, Featured, AuditTrail, Realtime, LastZReport, StockLowAlerts widgets all separate components.",
+      "verdict": "Clear cognitive model. UX OK."
+    },
+    {
+      "id": "UX-OK-4",
+      "title": "Composer profile UX modular",
+      "evidence": "resources/js/components/admin/items/composer/ = 6 files (ProductComposerEditorComponent, StepEditorComponent, StepPreviewComponent, ComposerStepFormPanel, ComposerStepListSidebar, ComposerTemplatePickerModal, ComposerPublishDiffModal, ComposerVersionConflictBanner).",
+      "verdict": "Wizard-style UX with conflict banner + diff modal. Pre-publish review is correct UX pattern."
+    }
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "severity": "P1",
+      "title": "Tax/Currency settings — no aria-label observed",
+      "evidence": "grep `aria-label\\|role=` on settings/Tax/*.vue (TaxComponent, TaxCreateComponent, TaxListComponent) returns 0 matches in any of 3 files. Currency, OrderSetup, KioskSetup likely same pattern (V1 baseline forms generated via legacy template).",
+      "impact": "Screen-reader users editing tax rates lose form context (no `<label for>` or `aria-labelledby` on dropdowns/inputs). For tax-rate edits this is moderate-severity since Branch Managers are typically sighted.",
+      "fix_proposal": "Add explicit `<label for>` linkage on Tax/Currency form inputs OR `aria-label` fallback. Pattern from CatalogStudioComponent is reusable.",
+      "frozen_zone": false,
+      "heal_eligible": true,
+      "effort": "low"
+    },
+    {
+      "id": "UX-2",
+      "severity": "P2",
+      "title": "Admin table <th> lacks `scope=\"col\"`",
+      "evidence": "ItemListComponent.vue + CouponListComponent.vue use `<th class=\"db-table-head-th\">` without `scope=\"col\"` attribute. WCAG AA technically requires implicit scoping from <thead> which is present — so this is strict-AA polish, not failure.",
+      "fix_proposal": "Bulk-add `scope=\"col\"` to all `db-table-head-th` instances via mass find/replace. Low-risk visual no-op.",
+      "frozen_zone": false,
+      "heal_eligible": true,
+      "effort": "low"
+    },
+    {
+      "id": "UX-3",
+      "severity": "P2",
+      "title": "SmIconDelete/SmIconEdit click targets may lack accessible name",
+      "evidence": "ItemListComponent.vue L239, L269 — `<SmIconSidebarModalEditComponent @click=\"edit(item)\">` and `<SmIconDeleteComponent @click=\"destroy(item.id)\">` are icon-only. Need to verify inside each component whether they render `<button aria-label>` or just `<i>` with click. If the latter — keyboard-inaccessible.",
+      "verdict": "Pending verification by reading SmIconDeleteComponent.vue (deferred). Logged as P2.",
+      "frozen_zone": false,
+      "heal_eligible": true,
+      "effort": "low"
+    },
+    {
+      "id": "UX-4",
+      "severity": "P2",
+      "title": "Channel statistics chart label conflation",
+      "evidence": "DashboardService::channelStatistics() emits chart label `Kiosk/App` — admits the Source::APP=10 / KIOSK conflation. End-user (Branch Manager) reading admin dashboard sees 'Kiosk/App' which is ambiguous for a single-resto V1 (Le Cayenne has no mobile app yet → all `Kiosk/App` are kiosk).",
+      "fix_proposal": "Rename label to 'Borne' (kiosk in FR) for V1 single-resto since mobile app channel is dormant. When mobile app ships V1.1+, restore 'Kiosk/App' split.",
+      "frozen_zone": false,
+      "heal_eligible": false,
+      "effort": "low",
+      "note": "UX label change requires session-A coordination (DashboardService dirty)."
+    },
+    {
+      "id": "UX-5",
+      "severity": "P3",
+      "title": "Admin Vue surface has 30+ subdirs — discoverability for new ops",
+      "evidence": "resources/js/components/admin/ = 30 subdirectories. No README/index of which directory maps to which sub-system. New developer onboarding cost.",
+      "fix_proposal": "Add CLAUDE.md or AGENTS.md in resources/js/components/admin/ mapping subdirs to sub-systems.",
+      "frozen_zone": false,
+      "heal_eligible": false
+    },
+    {
+      "id": "UX-6",
+      "severity": "info",
+      "title": "Admin dashboard is desktop-first; tablet usage is incidental",
+      "evidence": "No `md:` / `lg:` responsive prefixes systematically observed. CatalogControlPlane uses `db-` utility classes (legacy bootstrap-ish). Admin is not the mobile target — POS/Kiosk are.",
+      "verdict": "Acceptable for V1. Branch Manager iPad usage works (no broken layouts observed in past tests)."
+    }
+  ],
+  "verdict": "GOOD. Admin UX/A11y is in a solid mid-tier state — better than typical Laravel admin scaffolds (because catalog studio + composer + dashboard widgets received explicit a11y attention via prior heal cycles). Settings panels (Tax/Currency/OrderSetup) are the weakest dimension. Channel-stats label conflation is the only metric-clarity gap. No P0."
+}

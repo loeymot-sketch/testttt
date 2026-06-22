@@ -26,6 +26,29 @@
   -webkit-font-smoothing: antialiased;
 }
 
+/* [uiux-deep 2026-06-17] Aliases for glyph classes referenced across the admin but ABSENT from this
+   (incomplete) icon font — they rendered as blank squares (adversarial button audit). Each maps to the
+   closest EXISTING glyph codepoint so the button shows a meaningful icon. Additive — no existing rule changed. */
+.lab-eye:before, .lab-eye-line:before, .lab-eye-off:before, .lab-view-line:before { content: "\e000"; } /* eye → lab-view */
+.lab-cog:before, .lab-setting-line:before { content: "\e00b"; } /* → lab-settings */
+.lab-copy:before, .lab-duplicate:before, .lab-add:before, .lab-add-line:before { content: "\e06c"; } /* → lab-add-circle */
+.lab-delete-line:before { content: "\e02c"; } /* → lab-delete */
+.lab-refresh:before, .lab-refresh-line:before, .lab-redo:before { content: "\e002"; } /* → lab-update */
+.lab-warning:before { content: "\e055"; } /* → lab-information (warning shares the info glyph; severity also carried by color) */
+.lab-error:before { content: "\e05e"; } /* → lab-close-circle-line (distinct X for blocker/error severity) */
+.lab-history:before { content: "\e004"; } /* → lab-time-slots */
+.lab-toggle-on:before, .lab-check:before, .lab-check-circle:before { content: "\e042"; } /* → lab-tick-circle */
+.lab-close-circle:before { content: "\e05e"; } /* → lab-close-circle-line */
+.lab-export:before { content: "\e073"; } /* → lab-file-export */
+.lab-wallet:before { content: "\e09b"; } /* → lab-fill-moneys */
+.lab-cashier:before { content: "\e012"; } /* → lab-pos-bold */
+.lab-stock:before, .lab-box:before, .lab-burger:before, .lab-dish:before, .lab-cookie:before { content: "\e022"; } /* → lab-items */
+.lab-loyalty:before, .lab-discount:before { content: "\e031"; } /* → lab-coupons */
+.lab-category:before { content: "\e024"; } /* → lab-item-categories */
+.lab-monitor:before { content: "\e012"; } /* OSS quick-link → lab-pos-bold */
+.lab-kitchen:before { content: "\e022"; } /* KDS quick-link → lab-items */
+.lab-arrow-left:before { content: "\e069"; display: inline-block; transform: scaleX(-1); } /* mirror lab-arrow-right (font has no left codepoint) */
+
 .lab-view:before {
   content: "\e000";
 }

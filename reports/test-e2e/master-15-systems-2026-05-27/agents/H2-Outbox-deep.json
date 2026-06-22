@@ -1,0 +1,207 @@
+{
+  "agent_id": "H2-Outbox-deep",
+  "system": "Outbox/Queue Redis",
+  "discipline": "DM6 RO + DM3 + DM5 + DM8",
+  "server": "http://127.0.0.1:8000",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "timestamp": "2026-05-27T12:05:00Z",
+  "mode": "READ-ONLY",
+
+  "technical": {
+    "dispatch_job": {
+      "path": "app/Jobs/DispatchDomainEventsJob.php",
+      "queue_lane": "high",
+      "tries": 6,
+      "backoff_curve_seconds": [1, 5, 15, 60, 300],
+      "worst_case_retry_window_seconds": 381,
+      "atomic_claim_pattern": "DB::transaction + lockForUpdate + dispatched_at NULL guard (Phase 1)",
+      "broadcast_outside_tx": true,
+      "ws_heartbeat_stamp": "Cache::put('ws:heartbeat', now()->timestamp, 120) on success — observability SoT for SyncOverviewController:531",
+      "payload_mismatch_short_circuit": "this->fail() on PayloadMismatchException — saves 5×6000 wasted retries per bad event",
+      "failed_callback": "persisted error mirror + Sentry breadcrumb (opt-in) + Log::error category=contract_violation|runtime_failure"
+    },
+    "listeners_inventory": {
+      "expected": 14,
+      "found": 14,
+      "list": [
+        "PersistBranchStatusChangedToOutbox",
+        "PersistCatalogChangedToOutbox",
+        "PersistCouponChangedToOutbox",
+        "PersistItemAvailabilityChangedToOutbox",
+        "PersistItemExtraAvailabilityChangedToOutbox",
+        "PersistItemVariationAvailabilityChangedToOutbox",
+        "PersistKdsOrderRecalledToOutbox",
+        "PersistOrderCreatedToOutbox",
+        "PersistOrderPaidAtCounterToOutbox",
+        "PersistOrderPaymentStatusChangedOnRefundCreated",
+        "PersistOrderPaymentStatusChangedToOutbox",
+        "PersistOrderStatusChangedToOutbox",
+        "PersistOrderTableChangedToOutbox",
+        "PersistSettingsUpdatedToOutbox"
+      ],
+      "heal5_kds_recall_present": true,
+      "note": "Task brief said '13 expected + KdsOrderRecalled HEAL-5' — actual is 14 including KdsOrderRecalled. Tally matches expectation."
+    },
+    "commands": {
+      "outbox_rescue": {
+        "path": "app/Console/Commands/OutboxRescueCommand.php",
+        "signature": "foodking:outbox:rescue",
+        "schedule": "everyMinute() + withoutOverlapping() + onOneServer()",
+        "lanes": {
+          "A_pending": "dispatched_at NULL + created_at < now-2min",
+          "B_crash_claimed": "dispatched_at NOT NULL but older than 10min — releases stuck Phase-1 claim (HEAL B.4 2026-05-19)"
+        },
+        "cap": "attempts < 5 — disjoint from RetryFailed (attempts >= 5)"
+      },
+      "outbox_monitor": {
+        "path": "app/Console/Commands/MonitorOutboxStaleness.php",
+        "signature": "foodking:outbox:monitor",
+        "schedule": "everyMinute()",
+        "default_threshold": 10,
+        "default_stale_after_seconds": 30,
+        "alert_mode": "Log::error + non-zero exit (pager-grade signal — never re-enqueues)",
+        "design_intent": "rescue itself goes nowhere if worker is down; monitor is the only signal that surfaces 'pipeline degraded'"
+      },
+      "outbox_prune": {
+        "path": "app/Console/Commands/PruneOutboxCommand.php",
+        "signature": "foodking:outbox:prune --older-than-days=90",
+        "schedule": "dailyAt 04:00",
+        "safe_set": "(A) dispatched + cutoff OR (B) attempts>=6 + cutoff",
+        "nf525_safety": "audit_logs + z_reports NEVER touched (operational outbox only)"
+      },
+      "retry_failed": {
+        "path": "app/Console/Commands/OutboxRetryFailedCommand.php",
+        "schedule": "hourly() --since=24h"
+      }
+    },
+    "queue_worker": {
+      "process_found": true,
+      "command": "php artisan queue:work redis --queue=high,default --tries=3 --timeout=120 --sleep=1",
+      "pid": 28507,
+      "uptime_days": "since lun.09 (≈2 weeks)",
+      "cpu_time": "2:52.38",
+      "notes": "Worker --tries=3 OVERRIDES the job-level $tries=6 in Laravel <11. Verify whether job-level $tries wins on this Laravel version (Laravel 9+ honours job-level)."
+    },
+    "domain_events_table_state": {
+      "total_rows": 32,
+      "pending": 0,
+      "dispatched": 32,
+      "failed_jobs_table": 0,
+      "events_with_last_error": 0,
+      "last_dispatched_at": "2026-05-27 12:00:01",
+      "oldest_pending": null,
+      "by_event_type": {
+        "order.status_changed": 15,
+        "catalog.changed": 6,
+        "menu.item_availability_changed": 6,
+        "order.payment_confirmed": 3,
+        "order.created": 2
+      }
+    },
+    "redis_state": {
+      "ping": "PONG",
+      "queues:high_length": 0,
+      "queues:default_length": 0,
+      "queues:high:notify_length": 0,
+      "interpretation": "Redis healthy, no backlog, worker idle and ready."
+    },
+    "env_config": {
+      "QUEUE_CONNECTION": "redis",
+      "CACHE_DRIVER": "redis",
+      "BROADCAST_DRIVER": "pusher",
+      "REDIS_HOST": "127.0.0.1"
+    },
+    "queue_config": {
+      "redis_retry_after_seconds": 90,
+      "interpretation": "Lease window = 90s. Job timeout = 120s in worker arg → MISMATCH: a job running 91-120s is still executing in worker but the queue considers it expired and a second worker may pick it up. CRITICAL for outbox safety: Phase 1 lockForUpdate + dispatched_at NULL guard prevents double-broadcast, so the mismatch yields at-worst ONE duplicate claim attempt that returns silent-skip — NOT a duplication risk in practice."
+    }
+  },
+
+  "adversarial": {
+    "q7_worker_dies_mid_job": {
+      "scenario": "Worker process killed between Phase 1 (set dispatched_at=now, ++attempts) and Phase 3b (reset dispatched_at on throw).",
+      "result": "Row sticks at dispatched_at=<crash_ts> forever to the eyes of rescue/monitor/retry-failed (all filter on whereNull('dispatched_at')) — SILENT LOSS without HEAL B.4.",
+      "mitigation_present": "HEAL B.4 2026-05-19 added 'crash_recovery' lane in OutboxRescueCommand:42-47: dispatched_at NOT NULL + older than 10 min triggers release. 10-min threshold > 381s worst-case backoff + 30-60s broadcast hang.",
+      "retry_within_90s_lease": "NO — recovery is on a 10-MINUTE rescue lane, not 90s lease. The 90s redis retry_after only governs in-flight jobs without DB-level claim mutation; the outbox uses DB-level idempotency, not queue-level.",
+      "verdict": "SAFE — but recovery latency is 10 min worst case, not 90s. Documented invariant matches code."
+    },
+    "q8_1000_events_backlog": {
+      "scenario": "1000 pending domain events all older than 30s, worker pipeline stuck.",
+      "monitor_signal": "everyMinute foodking:outbox:monitor → stale_count >> threshold(10) → Log::error('[OUTBOX STALE]...') + non-zero exit propagating to scheduler.",
+      "operator_payload": "stale_count + oldest_id + oldest_event_type + oldest_created_at + oldest_attempts + oldest_last_error",
+      "verdict": "PAGES OPERATOR — adversarial PASS. Scheduler error-exit drives wire-up to pager (cron/Horizon)."
+    },
+    "q9_out_of_order_delivery": {
+      "scenario": "Two events for the same order broadcast out of order (e.g. status_changed=READY arrives BEFORE status_changed=CONFIRMED).",
+      "server_state_as_truth_pattern": "Confirmed via DispatchDomainEventsJob:107-116 — broadcast emits envelope from CURRENT row state, but clients are expected to refetch SoT (POS polls 30s, KDS polls 5-60s, Kiosk polls 15s — config/broadcasting.php per-surface SoT note, heal B.3 2026-05-19).",
+      "verdict": "SAFE — broadcasts are advisory triggers; SoT lives in REST refetch. Out-of-order broadcasts cause at-worst a stale-flash that the next poll corrects."
+    },
+    "q10_redis_down_nf525_break": {
+      "scenario": "Redis dies → Cache::store('redis') ops throw → does FiscalSequenceService::allocate fail?",
+      "primary_defense": "Cache::lock('fiscal_seq_{branch}', 5) — Redis backend, will throw on outage.",
+      "fallback_defense": "DB FOR UPDATE row-level lock (lockForUpdate) inside the same transaction — present in FiscalSequenceService.",
+      "outcome_if_redis_down": "Cache::lock acquisition fails → exception propagates → order creation 5xx → DOES NOT silently allocate gap (fail-safe). NF525 chain remains gap-free.",
+      "audit_chain_lock_path": "AuditLogService Cache::lock('audit_chain_b{n}') has same exposure — Redis down means audit append refuses to proceed → caller 5xx, no silent corruption.",
+      "z_report_lock_path": "ZReportService Cache::lock('z_report_b{n}') same pattern.",
+      "production_boot_guard": "AppServiceProvider:215 FORBIDS CACHE_DRIVER in ['array','null'] for prod boot. NOTE: 'file' + 'database' drivers PASS the guard — V1.0.X cloud-prep backlog UNI-03 (CLAUDE.md §8 verified 2026-05-21). For V1 LOCAL Le Cayenne single-box, Redis IS the cache driver here.",
+      "verdict": "FAIL-SAFE — Redis outage → 5xx on fiscal-critical ops → no gap, no silent allocation. Recovery: restart Redis → retry. CONFIRMED 'server-state-as-truth' + 'partial-better-than-wrong' principle."
+    },
+    "q11_owner_impact_if_outbox_breaks": {
+      "events_lost_risk": "LOW — DB outbox is the SSOT (commit_before_dispatch invariant). Worker death only affects BROADCAST latency, not persistence. Rescue lane B (crash-claimed) closes orphan window.",
+      "sync_broken_risk": "MEDIUM — broadcasts feed reactive UI (POS encaisser flash / KDS new-order chip / OSS status flip). Without broadcasts, surfaces still converge within 15-60s via REST polling — visible UX impact but not data loss.",
+      "fiscal_chain_at_risk": "NONE — fiscal_sequence + audit_logs + z_reports do NOT route through the outbox. They use Cache::lock + DB FOR UPDATE directly. Outbox is for cross-surface UI sync only.",
+      "verdict": "Outbox breakage = degraded UX (POS/KDS/OSS flash, 15-60s catch-up delay) — NOT a fiscal-correctness incident. Owner-impact tier: P1 ops, P3 fiscal."
+    }
+  },
+
+  "outbox_health": {
+    "overall_status": "GREEN",
+    "evidence": {
+      "queue_worker_alive": true,
+      "worker_uptime_days_since_2026-05-09": "~18d",
+      "redis_responsive": "PONG",
+      "queue_lengths_all_zero": true,
+      "pending_events": 0,
+      "failed_jobs": 0,
+      "events_with_last_error": 0,
+      "last_broadcast_lag_seconds": "~5min (12:00:01 last_dispatched vs 12:05 now — pure idle, not stuck)"
+    },
+    "defenses_in_depth": [
+      "Atomic claim under lockForUpdate (Phase 1) — prevents double-broadcast under concurrent workers.",
+      "Broadcast outside DB transaction — honors commit_before_dispatch invariant.",
+      "$tries=6 + [1,5,15,60,300] backoff = 381s retry window — outlasts typical Pusher restart.",
+      "PayloadMismatchException short-circuit via this->fail() — saves 5×6000 wasted retries per bad event.",
+      "outbox:rescue lane B (crash-claimed > 10min) — closes worker-death orphan window.",
+      "outbox:monitor everyMinute → Log::error + non-zero exit if stale_count > 10 — pager signal.",
+      "outbox:retry-failed --since=24h hourly — catches attempts>=5 terminal failures.",
+      "outbox:prune dailyAt 04:00 --older-than-days=90 — bounded table growth (NF525-safe).",
+      "ws:heartbeat Cache::put on every successful broadcast — observability SoT for admin dashboard."
+    ],
+    "known_caveats_v1_0_x_backlog": [
+      "UNI-03 (V1.0.X cloud-prep): AppServiceProvider:215 cache-driver forbidden list = ['array','null'] only. 'file' + 'database' PASS the guard despite block comment saying 'redis or memcached required'. V1 LOCAL single-box uses Redis directly so no current risk; V2 ALB multi-instance needs widening.",
+      "FormRequest authz drift (CLAUDE.md §9): sentinel baseline 69, actual count 66 — V1.0.2 backlog to lower the sentinel to ratchet the ceiling.",
+      "Worker --tries=3 CLI arg vs Job::$tries=6 — Laravel 9+ honours job-level so this is informational; if version older, worker arg wins."
+    ]
+  },
+
+  "verdict": {
+    "ship_v1_outbox_queue": "GO",
+    "rationale": "Outbox pipeline is GREEN end-to-end at this instant: queue worker alive, Redis responsive, 0 pending, 0 failed_jobs, 0 last_error. Defenses-in-depth are layered correctly (atomic claim + crash-recovery lane + monitor pager signal + retry-failed + prune). NF525 chain is decoupled from outbox — Redis outage degrades UX (15-60s flash lag via REST poll fallback) but cannot create fiscal gaps. HEAL B.4 (2026-05-19) crash-claimed lane closes the only remaining silent-loss path identified pre-Wave-L. Owner-impact in worst-case outbox outage = P1 ops, P3 fiscal — acceptable for V1 LOCAL.",
+    "p0_blockers": [],
+    "p1_observations": [
+      "Worker CLI --tries=3 may shadow job $tries=6 on Laravel <9 — verify Laravel version in use and align worker args.",
+      "queue retry_after=90s vs worker --timeout=120 — at-worst yields silent-skip duplicate claim attempt (lockForUpdate + dispatched_at guard handles it), but doctrinally these should be aligned (worker --timeout < queue retry_after)."
+    ],
+    "p2_observations": [
+      "UNI-03 cache-driver guard widening — already in V1.0.X cloud-prep backlog.",
+      "Operator-visible alert path: confirm wire from scheduler non-zero exit → actual pager backend (cron OnFailure / Horizon stop sentinel) — code-level signal exists, downstream delivery is infra-side."
+    ],
+    "manual_verification_recommendations": [
+      "Inject 1000 fake domain_events with old created_at, confirm foodking:outbox:monitor fires Log::error on next minute tick.",
+      "kill -9 the queue worker PID 28507 mid-job (during a payment broadcast), confirm rescue lane B picks up the orphan within 10 minutes and the broadcast completes.",
+      "stop Redis service, attempt /admin/pos cash-payment, confirm 5xx response with no fiscal_sequence_no allocated (sequence stays gap-free)."
+    ]
+  },
+
+  "return_path": "reports/test-e2e/master-15-systems-2026-05-27/agents/H2-Outbox-deep.json"
+}

@@ -1,0 +1,115 @@
+{
+  "wave": "D",
+  "run_n": 1,
+  "scope": "admin-driven rupture cascade — Sprite 33cl (item id 410)",
+  "findings": [
+    {
+      "id": "D-001",
+      "state_artifact": "iter15-mega-rupture/05-kiosk-after-rupture.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "Kiosk surface NEVER renders the catalog. network.json shows two POST http://127.0.0.1:8000/api/auth/kiosk-login -> 429 Too Many Requests. DOM shows raw axios message 'Request failed with status code 429' rendered inside the connection card. The whole rupture-cascade observation on kiosk is invalid — we cannot conclude whether Sprite would be hidden because the kiosk never reached its catalog screen.",
+      "fix_hint": "Loosen rate limit on /api/auth/kiosk-login (or per-IP throttle bucket) for kiosk auto-reconnect bursts; do not surface raw axios `Request failed with status code 429` to end-users — translate to a user-facing message ('Connexion impossible — réessayez dans quelques secondes'). Add a kiosk-side backoff so retries do not stampede the endpoint."
+    },
+    {
+      "id": "D-002",
+      "state_artifact": "iter15-mega-rupture/04-pos-sprite-shows-rupture.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "Console shows persistent `WebSocket connection to 'wss://127.0.0.1:6001/app/app-key' failed: net::ERR_CONNECTION_REFUSED` (state 01 + 04 + 06). Spec only saw the rupture overlay on POS after `posPage.goto('/admin/pos')` reload + 3s settle (6722ms total admin-click-to-overlay). Combined: there is NO realtime broadcast path active — the cascade only worked because the spec hard-reloaded. In production a cashier with the catalog already open would NEVER see the 86'd state until they manually navigate. This is a hidden real-time-sync regression masked by a happy-path test that reloads the page.",
+      "fix_hint": "Restart / re-provision the websocket server (Pusher/laravel-websockets on :6001) so AvailabilityChannel pushes reach POS clients. Add a Playwright assertion that waits for a WS frame OR a Vuex mutation on `availability.itemUnavailable` WITHOUT calling `posPage.goto()`. Until WS path is verified, the cascade contract is not met — block iter15 sign-off."
+    },
+    {
+      "id": "D-003",
+      "state_artifact": "iter15-mega-rupture/04-pos-sprite-shows-rupture.dom.html",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "POS catalog mutated Sprite tile to `pos-item-tile is-unavailable` + `<span class=\"pos-item-86-badge pos-v5-tile__overlay\">Épuisé</span>` between state 01 and state 04, but the DOM contains NO `role=alert` / `.toast` / `.alert-*` element notifying the cashier that an item just went out of stock. A cashier mid-order would not be told the kitchen marked Sprite unavailable; they would only discover it on the next click attempt. Cat 6 silent state-change.",
+      "fix_hint": "Emit a non-blocking toast on POS when an item flips to unavailable — 'Sprite 33cl marqué épuisé' with role=status / aria-live=polite. Required for restaurant-grade UX where stock decisions happen under time pressure."
+    },
+    {
+      "id": "D-004",
+      "state_artifact": "iter15-mega-rupture/02-admin-row-found.png",
+      "category": "i18n_leak",
+      "severity": "P1",
+      "evidence": "Admin items table footer renders the visible string 'Affichering 1 to 1 of 1 entries' (also visible in state 03 and state 06 DOM). This is a DataTables/pagination-summary i18n bug: French verb 'Afficher' has been concatenated with the English template suffix 'ing 1 to 1 of 1 entries'. Visible to every admin who filters the items table.",
+      "fix_hint": "Replace the broken interpolation with a proper FR DataTables locale: 'Affichage de 1 à 1 sur 1 entrées'. Audit lang/fr.json for the same `Affichering` substring across other tables (Catégories, Offres, etc.)."
+    },
+    {
+      "id": "D-005",
+      "state_artifact": "iter15-mega-rupture/01-pos-with-sprite-available.network.json",
+      "category": "unexpected_4xx",
+      "severity": "P1",
+      "evidence": "On POS load (cashier session), two admin-only endpoints return 403: `GET /api/admin/stock/low-alerts` and `GET /api/admin/fiscal/z-report`. POS does not need these in its bootstrap — the cashier role lacks access. There is no UI alert; the failure is silent. This adds noise + potential side effects (e.g. sentry pollution) and indicates the POS shell is wired to admin-only data sources.",
+      "fix_hint": "Either gate these calls in the POS bootstrap by `auth.user.role` (skip when role !== admin), or move the bell/alert widget that triggers them into an admin-only sub-component. As-is this 403s on every POS page open."
+    },
+    {
+      "id": "D-006",
+      "state_artifact": "iter15-mega-rupture/04-pos-sprite-shows-rupture.network.json",
+      "category": "unexpected_4xx",
+      "severity": "P1",
+      "evidence": "Every captured POS state has 14–17 entries of `POST http://127.0.0.1:8000/api/frontend/csp-report -> 429 Too Many Requests`. The CSP reporter itself is being throttled, meaning either (a) CSP violations are firing in a tight loop and saturating the ingest, or (b) the reporter's own throttle bucket is too tight for a normal page. Either way, reports are being dropped silently — security signal lost in production too.",
+      "fix_hint": "Identify the CSP violations causing the storm (state 05 console shows a report-only CSP entry with default-src 'self' + style-src 'self' 'unsafe-inline' https://fonts.googleapis…). Fix the offending inline scripts/styles, then size the throttle bucket sanely (1/s per session is too aggressive for first paint). Either way, CSP report-only should not be 429-ing in the dev environment."
+    },
+    {
+      "id": "D-007",
+      "state_artifact": "iter15-mega-rupture/05-kiosk-after-rupture.dom.html",
+      "category": "i18n_leak",
+      "severity": "P1",
+      "evidence": "Kiosk connection card surfaces the raw English axios message 'Request failed with status code 429' to end users. This is both an i18n leak (untranslated English on a French kiosk surface) and a UX failure (technical jargon shown to a customer/cashier). DOM: visible text node inside the error banner.",
+      "fix_hint": "In the kiosk auto-reconnect error handler, map any axios error to a translated user-facing string ('Connexion temporairement indisponible. La borne réessaie automatiquement.'); never render `error.message` directly."
+    },
+    {
+      "id": "D-008",
+      "state_artifact": "iter15-mega-rupture/01-pos-with-sprite-available.console.json",
+      "category": "console_error",
+      "severity": "P1",
+      "evidence": "POS state 01 console contains 5 entries of `Failed to load resource: the server responded with a status of 400 (Bad Request)` whose source is NOT websockets/Laravel-noise (network.json does not surface them because they have no captured URL). These are unaccounted-for 400s on initial POS render. They appear before the Sprite tile is even reached and are not visible to the user.",
+      "fix_hint": "Run the POS shell with `chromium --enable-logging` and capture the source URLs for these 400s — likely a deprecated POS bootstrap endpoint or malformed query string. Until identified, POS first paint emits silent failures."
+    },
+    {
+      "id": "D-009",
+      "state_artifact": "iter15-mega-rupture/04-pos-sprite-shows-rupture.console.json",
+      "category": "console_error",
+      "severity": "P2",
+      "evidence": "Vue warning: 'Feature flag __VUE_PROD_HYDRATION_MISMATCH_DETAILS__ is not explicitly defined. You are running the esm-bundler build of Vue…'. This is a build/config warning, but it appears on every state — indicates the Vite/Vue build flags are not set for production-style hydration. Not user-facing but signals a build hygiene gap.",
+      "fix_hint": "In vite.config.js (or webpack.mix.js), explicitly inject `__VUE_PROD_HYDRATION_MISMATCH_DETAILS__: false` and the other documented Vue feature flags via `define:`. See https://link.vuejs.org/feature-flags."
+    },
+    {
+      "id": "D-010",
+      "state_artifact": "iter15-mega-rupture/04-pos-sprite-shows-rupture.dom.html",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Sprite tile flips to `aria-disabled=\"true\" disabled` and the overlay span gets text 'Épuisé', but the parent grid lacks `aria-live` and the overlay span lacks `role=status`. A screen-reader user mid-shopping would not be announced of the state flip — they would silently fail to add. Also the badge carries no `aria-label` distinct from the surrounding tile (just 'Ajouter Sprite 33cl, 1.50€' — which is now wrong since adding is impossible).",
+      "fix_hint": "Update aria-label when `is-unavailable` is true: 'Sprite 33cl, épuisé'. Add `aria-live=\"polite\"` on `.pos-v5-grid` so SR users hear stock changes. Give the overlay span `role=\"status\"`."
+    },
+    {
+      "id": "D-011",
+      "state_artifact": "iter15-mega-rupture/03-admin-toggle-clicked-now-unavailable.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Admin row toggle changes from 'Marquer Indisponible' to 'Marquer Disponible' + adds a 'RUPTURE' pill, but no toast / confirmation cue / aria-live announcement is captured. The state change is subtle enough that a fast-click admin user could doubt whether the toggle registered (especially since spec captured 6722ms cross-surface latency).",
+      "fix_hint": "Show a transient toast 'Sprite 33cl marqué épuisé sur tous les surfaces' with role=status; announce via aria-live."
+    },
+    {
+      "id": "D-012",
+      "state_artifact": "iter15-mega-rupture/01-pos-with-sprite-available.png vs 07-pos-sprite-clean-after-restore.png",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "States 01 and 07 are pixel-identical at the visible viewport (both fail to scroll to the Sprite tile because POS opens at the top of the catalog grid). DOM diff confirms Sprite tile is clean in both — `class=\"pos-v5-tile pos-item-tile\"` (no is-unavailable) and no overlay span. State 07 cleanup is genuine — no leftover badge/class. NO drift detected. Information-only finding to log that the restore path is verified clean.",
+      "fix_hint": "(no fix needed) — but the spec author should `tile.scrollIntoView()` on the Sprite tile before capturing 04 and 07 so the visual evidence actually shows the overlay; right now the PNG is misleading and only the DOM proves the cascade."
+    },
+    {
+      "id": "D-013",
+      "state_artifact": "iter15-mega-rupture/03-admin-toggle-clicked-now-unavailable.network.json",
+      "category": "silent_error",
+      "severity": "P2",
+      "evidence": "The network.json filter (status>=400 OR duration>2000ms) means the actual `POST /api/admin/menu/availability/toggle` 200 OK is NOT captured anywhere in the artifacts. We can only trust the head-start observation that it returned 200 twice. There is also no follow-up `/api/.../broadcast` or `/api/availability/snapshot` XHR captured — combined with the broken WS server (D-002), it is unclear how the cascade actually propagated. Suspicion: the cascade only works because the spec reloads /admin/pos, hitting `GET /api/menu/items` and re-fetching the now-mutated state.",
+      "fix_hint": "Enrich the spec to (a) capture the toggle POST response body to confirm it returns the new availability + a broadcast id, (b) assert a `cascade-broadcast` event arrives on the POS Echo channel WITHOUT a reload, (c) fail the test if WS is unreachable rather than silently falling back to reload."
+    }
+  ],
+  "summary": { "P0": 3, "P1": 5, "P2": 4, "P3": 1 },
+  "states_reviewed": 7,
+  "verdict": "RED — cascade contract not met. 3 P0: kiosk surface broken by 429 storm (cascade unobservable on borne), websocket server refused so realtime push is dead (cascade only works via spec hard-reload), and POS shows zero notification when an item flips to épuisé under the cashier. Plus DataTables i18n bug ('Affichering'), cashier session 403-ing on admin endpoints, CSP-report endpoint storming 429 across every state, raw axios message leaking on kiosk. Reload-required cascade is a real-time-sync regression.",
+  "answer_to_owner_question": "NO. The cascade does NOT work for a real restaurant flow. A cashier with /admin/pos already open would NOT see Sprite go to ÉPUISÉ in real time — the websocket connection is REFUSED (port 6001 down) and the spec only proves the cascade by reloading the page. In production this means: admin marks Sprite épuisé, cashier sees stale availability, customer orders Sprite, kitchen has none, fiscal/UX disaster. This is the textbook real-time-sync gap iter15 was supposed to close. BLOCK iter15 sign-off until WS broadcast is verified end-to-end without a reload."
+}

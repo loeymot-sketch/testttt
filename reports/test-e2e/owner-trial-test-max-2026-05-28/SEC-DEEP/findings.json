@@ -1,0 +1,199 @@
+{
+  "audit_id": "SEC-DEEP",
+  "wave": "B",
+  "head": "e7ae1c8ea3972a24c6a16284ec5005b334f9aa28",
+  "date": "2026-05-28",
+  "scope": "RBAC + Sanctum + Spatie + GDPR + FormRequest authz coverage + Channel auth + Customer token strength",
+  "verdict": "SECURITY_GREEN",
+  "verdict_summary": "Zero NEW P0/P1 weakness uncovered. All claimed defenses verified empirically. One DOC-DRIFT P3 + one BACKLOG-RATCHET P3 — both are bookkeeping, no code action required for V1 LOCAL Le Cayenne SHIP.",
+  "checks": [
+    {
+      "check_id": "RBAC-01",
+      "title": "RBAC role matrix — escalation path audit",
+      "status": "PASS",
+      "severity": "P0",
+      "file_lines": [
+        "database/seeders/RolePermissionTableSeeder.php:18-19",
+        "database/seeders/RolePermissionTableSeeder.php:25-94",
+        "database/seeders/RolePermissionTableSeeder.php:96-111",
+        "database/seeders/RolePermissionTableSeeder.php:113-122",
+        "database/seeders/RolePermissionTableSeeder.php:129-136",
+        "database/seeders/RolePermissionTableSeeder.php:142-150",
+        "database/seeders/RolePermissionTableSeeder.php:154-163",
+        "database/seeders/PermissionTableSeeder.php:127-206"
+      ],
+      "findings": "Roles enumerated: Admin (Permission::all() via seeder L18-19), Branch Manager (47 explicit perms L25-94 — includes pos-manage-fiscal + pos-reopen-z + cash.reconcile.variance.override + pos-refund + pos.redeem-loyalty), POS Operator (5 explicit perms L96-111 + KDS/OSS L129-136), Chef (3 perms L113-122), Stuff (3 perms L142-150), Waiter (4 perms L154-163). NF525-critical permission tiering verified: pos-discount-up-to-10 → cashier, pos-discount-over-10-requires-manager → manager, pos-discount-unlimited → owner only. Refund permission (pos-refund) deliberately NOT granted to POS Operator (mass-refund vector mitigation per HEAL-4 PROPOSAL-02 L191-198 PermissionTableSeeder). Z reopen (pos-reopen-z) gated to Branch Manager+Admin only. No escalation path detected from cashier→manager.",
+      "recommendation": "No action."
+    },
+    {
+      "check_id": "SANCT-01",
+      "title": "Sanctum kiosk:order ability strict-scope — tokenCan usage",
+      "status": "PASS",
+      "severity": "P0",
+      "file_lines": [
+        "app/Http/Controllers/Frontend/MenuController.php:37",
+        "app/Http/Controllers/Frontend/UpsellController.php:32",
+        "app/Http/Controllers/Frontend/LoyaltyController.php:261",
+        "app/Http/Controllers/Frontend/LoyaltyController.php:582",
+        "app/Http/Controllers/Frontend/PaymentReconcileController.php:87",
+        "app/Http/Requests/OrderStatusRequest.php:31",
+        "app/Http/Requests/OrderStatusRequest.php:93"
+      ],
+      "findings": "5 controller-level tokenCan('kiosk:order') gates + 2 FormRequest-level checks (OrderStatusRequest cancels own kiosk order). Memory claim of 8 sites is OUTDATED (now 7 enforcement points; the discrepancy is migration to route-level `abilities:kiosk:order` middleware visible at routes/api.php:1403,1449 which compresses 2 prior controller checks into 1 framework-level enforcement). Route-level kiosk:order ability also active on KioskEventController (api L1403) + LoyaltyController.scan (api L1449). Plus Sprint H1 Z6-02 narrowed RefreshTokenController so refreshing a kiosk-token preserves ability=['kiosk:order'] only (not '*'), see ForgotPasswordController:181 token revoke + LoginController:154-155 name-scoped sweep.",
+      "recommendation": "DOC-DRIFT P3: update CLAUDE.md §9 + MEMORY note from 8 to 7 (or rewrite to 'tokenCan + route-level abilities:kiosk:order' to avoid drift on next refactor)."
+    },
+    {
+      "check_id": "SANCT-02",
+      "title": "Kiosk token cannot access /api/admin/* — BlockKioskTokenFromAdminRoutes middleware",
+      "status": "PASS",
+      "severity": "P0",
+      "file_lines": [
+        "app/Http/Middleware/BlockKioskTokenFromAdminRoutes.php:57-128",
+        "routes/api.php:273",
+        "routes/api.php:294",
+        "tests/Feature/Security/KioskTokenAdminBlockSentinelTest.php"
+      ],
+      "findings": "Wave J2 HEAL-02 middleware `block_kiosk_token_admin` wired on BOTH `/api/admin/*` Route::prefix groups (api.php:273 + api.php:294). Defense logic at L91-127: probes can('kiosk:order') → if absent, pass through; if present, probes can('*') → if absent, blocks with 403 + structured error code `token_ability_insufficient`. Closes J-ADV-6 PATH-1 (kiosk token inheriting admin Spatie permissions via shared User account). Wildcard admin token still passes (legitimate session). Sentinel test pins contract.",
+      "recommendation": "No action. Defense Layer 2 (dedicated kiosk user) remains in PROPOSAL_KIOSK_DEDICATED_USER_REFACTOR.md backlog — not required for V1."
+    },
+    {
+      "check_id": "SPAT-01",
+      "title": "permission:settings gating on admin sensitive controllers",
+      "status": "PASS",
+      "severity": "P0",
+      "file_lines": [
+        "app/Http/Controllers/Admin/CompanyController.php:19",
+        "app/Http/Controllers/Admin/SiteController.php:19",
+        "app/Http/Controllers/Admin/ThemeController.php:19",
+        "app/Http/Controllers/Admin/CurrencyController.php:21",
+        "app/Http/Controllers/Admin/LanguageController.php:27",
+        "app/Http/Controllers/Admin/TaxController.php:22",
+        "app/Http/Controllers/Admin/BranchController.php:23",
+        "app/Http/Controllers/Admin/MenuTemplateController.php:29",
+        "app/Http/Controllers/Admin/PageController.php:26",
+        "app/Http/Controllers/Admin/TimeSlotController.php:20",
+        "app/Http/Controllers/Admin/NotificationController.php:18",
+        "app/Http/Controllers/Admin/SmsGatewayController.php:22",
+        "app/Http/Controllers/Admin/OtpController.php:19",
+        "app/Http/Controllers/Admin/RoleController.php:21-22",
+        "app/Http/Controllers/Admin/PermissionController.php:33"
+      ],
+      "findings": "Settings group `Route::prefix('setting')` at routes/api.php:325 has NO route-level permission middleware, BUT every settings controller enforces `permission:settings` in its `__construct` middleware list scoped to write+destroy verbs. Verified 15 controllers. Route-level group middleware would be redundant (and risk double-permission gate as comment at api.php:672 notes). RoleController is split: index ⇒ permission:settings|employees; show/store/update/destroy ⇒ permission:settings only. PermissionController gates ALL methods at L33. Cross-checked: no admin/setting controller bypasses (grep `permission:settings` across `app/Http/Controllers/Admin/`).",
+      "recommendation": "No action."
+    },
+    {
+      "check_id": "FORMREQ-01",
+      "title": "FormRequestAuthzDriftSentinel — baseline drift",
+      "status": "PASS",
+      "severity": "P1",
+      "file_lines": [
+        "tests/Feature/Sentinels/FormRequestAuthzDriftSentinelTest.php:61",
+        "tests/Feature/Sentinels/FormRequestAuthzDriftSentinelTest.php:96-100"
+      ],
+      "findings": "Sentinel runs GREEN; actual count NOW = 66 (was 69 baseline). Sentinel uses `<=` ceiling so 66 PASSES, AND emits a diagnostic line `[sentinel] FormRequest return-true count is now 66 (< baseline 69). Lower RETURN_TRUE_BASELINE accordingly.` This is the V1.0.2 BACKLOG ratchet trigger documented in CLAUDE.md §9 (line 'BUILD-6 (8 critical refactored)' and 'V1.0.2 BACKLOG: continue chip-away ... AND lower sentinel RETURN_TRUE_BASELINE to 66'). 66 FormRequests with `return true;` listed (full list in bash grep output earlier). Critical FormRequests already refactored: PosOrderRequest, ItemRequest, KioskMachineRequest, PermissionRequest, DiningTableRequest, DeliveryBoyRequest, CouponRequest, OfferRequest.",
+      "remaining_critical_FormRequests_with_return_true": [
+        "PaymentRequest — gated by route /api/frontend/payment/* auth:sanctum + throttle:5,1 (api.php:1294) but no permission gate; the controller PaymentController::payment instantiates a payment gateway by class name from user input (security smell BUT only ['App\\Http\\PaymentGateways\\PaymentRequests\\'.ucfirst(method)]) — known surface, not a NEW weakness",
+        "OrderSetupRequest, KioskSetupRequest, LoyaltySetupRequest — gated by their settings controllers (permission:settings)",
+        "SignupRequest, OtpRequest, VerifyPhoneRequest, GuestSignupPhoneRequest — self-signup endpoints, throttled (api.php:181-198), not gated by permission (correct: pre-authentication flow)",
+        "SignupPhoneRequest — same as above",
+        "TableOrderRequest, TableOrderTokenRequest — table public-token flow, no auth required (gated by token validation in controller)",
+        "ChangeImageRequest, ChangePasswordRequest, UserChangePasswordRequest, ProfileRequest — operate on the authenticated user's own record, route is auth:sanctum, no privilege bump available (cannot reference $other_user_id without explicit route binding)",
+        "Various employee/chef/waiter/customer *Address* + *Photo* — auxiliary CRUD inside an admin controller that has its own permission middleware (e.g. EmployeeController L29-635 ChefController etc.)"
+      ],
+      "recommendation": "P3 BACKLOG-RATCHET: lower sentinel `RETURN_TRUE_BASELINE` from 69 → 66 to tighten the ceiling. Not blocking for V1 LOCAL Le Cayenne SHIP (sentinel correctly enforces NO-GROWTH already). Continue V1.0.2 chip-away on EmployeeRequest/ChefRequest/WaiterRequest/CompanyRequest/SiteRequest/ThemeRequest/LanguageRequest/CMS-family per CLAUDE.md backlog roadmap."
+    },
+    {
+      "check_id": "GDPR-01",
+      "title": "GDPR phone gate — DELIVERY-only on KDS resource (Z9-P0-03)",
+      "status": "PASS",
+      "severity": "P0",
+      "file_lines": [
+        "app/Http/Resources/KDSOrderDetailsResource.php:67-74",
+        "app/Support/PhoneDisplay.php:24-50",
+        "app/Http/Resources/OrderUserResource.php:25"
+      ],
+      "findings": "KDSOrderDetailsResource:74 `'phone' => ((int) $this->order_type === OrderType::DELIVERY) ? $this->user->phone : null` — gate active. Sprint 5A Z9-P0-03 heal is in place. Additional layer: OrderUserResource:25 wraps phone through `PhoneDisplay::safe($this->phone)` which returns null for PENDING_<id> / PENDING_CREATE_<hex> sentinel placeholders (UR-4 finding red-team 2026-05-25). Frontend mirror: KdsOrderCard.vue:355 also checks `String($phone).startsWith('PENDING_')` per Z9-P1-03. Defense in depth verified: gate at server (only DELIVERY) + sanitizer at resource (no sentinels leak) + frontend filter (defense layer 3).",
+      "recommendation": "No action."
+    },
+    {
+      "check_id": "CHAN-01",
+      "title": "Pusher private channel auth — branch.{branchId} kiosk-token name check + admin role gate",
+      "status": "PASS",
+      "severity": "P0",
+      "file_lines": [
+        "routes/channels.php:41-62",
+        "routes/channels.php:16-18"
+      ],
+      "findings": "channels.php:41-62 enforces THREE-tier authz on `branch.{branchId}` channel: (1) kiosk-token check via TOKEN NAME (`$user->currentAccessToken()?->name === 'kiosk-token'`) NOT ability — closes R3 T-3.2.2 F-SEC-W6-01 wildcard escalation (L26-35 doc comment), looks up KioskMachine row, restricts to machine's own branch_id. (2) Admin/Tenant Admin role check (`hasRole('Admin') || hasRole('Tenant Admin')`) replaces the prior bare `branch_id===0` sentinel — closes Guest-Echo-Bypass latent path (customers + guests are seeded branch_id=0). (3) Regular staff: `$user->branch_id === $branchId` exact match. Channel `App.Models.User.{id}` enforces id-equality. No wildcard channels registered. Two-channel surface = minimal attack surface.",
+      "recommendation": "No action."
+    },
+    {
+      "check_id": "CUST-TOK-01",
+      "title": "Customer loyalty QR token strength — HMAC-SHA256 + nonce + production secret guards",
+      "status": "PASS",
+      "severity": "P0",
+      "file_lines": [
+        "app/Services/Loyalty/LoyaltyQrSigner.php:50-73",
+        "app/Services/Loyalty/LoyaltyQrSigner.php:94-160",
+        "app/Services/Loyalty/LoyaltyQrSigner.php:117-119",
+        "app/Services/Loyalty/LoyaltyQrSigner.php:197-202",
+        "app/Services/Loyalty/LoyaltyQrSigner.php:219-248"
+      ],
+      "findings": "HMAC-SHA256 chain via `hash_hmac('sha256', $payloadJson, $this->secret(), true)` (L117) + constant-time `hash_equals` comparison (L119). Nonce = 16 random bytes via `random_bytes(16)` → base64url unpadded → 22 chars / 2^128 collision space = equivalent to UUIDv4 (L197-202). Race-safe nonce consumption via INSERT-then-catch on UNIQUE violation (L143-157) — no TOCTOU. Production secret guards (L229-245): refuses dev sentinels, refuses < 32 chars (default `loyalty.min_secret_length=32`). Token format: `lqr.<base64url payload>.<base64url hmac>` carries version + customer_id + loyalty_code + nonce + iat + exp. Expiration leeway respected (L134-138 default 30s). LOYALTY_QR_SECRET resolved via Config (L221) with explicit `openssl rand -hex 32` hint in error message. Token scoped to `lqr.` prefix probe (L78-81). Wave J2 HC-003 heal fully verified.",
+      "recommendation": "No action."
+    },
+    {
+      "check_id": "SANCT-03",
+      "title": "Sanctum token TTL — 480-minute expiration (kiosk + admin alignment)",
+      "status": "PASS",
+      "severity": "P1",
+      "file_lines": [
+        "config/sanctum.php:51",
+        "app/Http/Controllers/Auth/KioskMachineLoginController.php:96-102",
+        "app/Http/Controllers/Auth/LoginController.php:154-161",
+        "app/Http/Controllers/Auth/RefreshTokenController.php:49-53",
+        "app/Http/Controllers/Auth/ForgotPasswordController.php:181-187"
+      ],
+      "findings": "Config-driven TTL `SANCTUM_TOKEN_EXPIRATION=480` (8h) shared across 4 token-mint surfaces. Kiosk-token mint at KioskMachineLoginController:96-102 revokes prior kiosk-token rows by NAME (`where('name','kiosk-token')->delete()`) before issuing — Sprint 5D Z6-01 anti-token-sprawl. LoginController:154-155 mirror for auth_token NAME-scoped sweep (preserves kiosk:order tokens, different concern). ForgotPasswordController:181 deletes ALL tokens on password reset (correct broad sweep — security event). V1.0.1 roadmap targets TTL 8h → 1h for sensitive ops (CLAUDE.md §9) — backlog item, not V1 blocker.",
+      "recommendation": "No action for V1. V1.0.1 backlog tracked."
+    },
+    {
+      "check_id": "BR-DEACT-01",
+      "title": "Branch deactivate → token revocation listener",
+      "status": "PASS",
+      "severity": "P0",
+      "file_lines": [
+        "app/Listeners/RevokeTokensOnBranchDeactivated.php:23-67",
+        "app/Listeners/PersistBranchStatusChangedToOutbox.php"
+      ],
+      "findings": "Wave 5G R10 heal — `RevokeTokensOnBranchDeactivated` listens on `BranchStatusChanged`. Three-tier guard: (1) no-op if oldStatus===newStatus (L27-29) — advisor note 1 prevents re-fire on every save; (2) no-op if newStatus !== INACTIVE (L31-33); (3) scope strict `tokenable_type = User::class` (L53) — does NOT touch kiosk-machine tokens which are a different tokenable_type — preserves kiosk operational continuity in unrelated branches. Bulk delete via `PersonalAccessToken::whereIn('tokenable_id', $userIds)->delete()` (L52-55). Security-channel logging at WARNING level (L57-66).",
+      "recommendation": "No action."
+    }
+  ],
+  "drift_vs_memory": [
+    {
+      "drift_id": "DRIFT-01",
+      "claim": "MEMORY/CLAUDE.md §9: `tokenCan('kiosk:order')` checks in 8 controllers",
+      "actual": "5 controller-level tokenCan + 2 route-level abilities:kiosk:order + 2 FormRequest tokenCan = 9 enforcement points total; the '8 controllers' claim conflates with route+FormRequest enforcement that migrated post-WI-7",
+      "severity": "P3 (documentation only)",
+      "action": "update CLAUDE.md §9 + MEMORY"
+    },
+    {
+      "drift_id": "DRIFT-02",
+      "claim": "MEMORY: FormRequestAuthzDriftSentinel baseline=69, actual=66",
+      "actual": "Verified: baseline=69, runtime count=66, sentinel passes with `<= baseline` ceiling; diagnostic line correctly prompts ratchet to 66",
+      "severity": "P3 (backlog ratchet)",
+      "action": "lower RETURN_TRUE_BASELINE from 69 to 66 in tests/Feature/Sentinels/FormRequestAuthzDriftSentinelTest.php:61"
+    }
+  ],
+  "reproduction_anchors": {
+    "sentinel_run": "php artisan test --filter=FormRequestAuthzDriftSentinel → PASS 1 test in 0.14s, count=66, baseline=69",
+    "tokenCan_inventory": "grep -rn 'tokenCan(' app/Http/ — see check SANCT-01 file_lines",
+    "block_kiosk_middleware_wired": "routes/api.php:273 + routes/api.php:294 — both /api/admin/* groups",
+    "channel_auth": "routes/channels.php — 2 channels only (App.Models.User.{id} + branch.{branchId})",
+    "phone_gate": "grep -n phone app/Http/Resources/KDSOrderDetailsResource.php → L74 ternary on OrderType::DELIVERY"
+  },
+  "p0_p1_new_count": 0,
+  "p3_doc_drift_count": 2,
+  "p3_backlog_ratchet_count": 1
+}

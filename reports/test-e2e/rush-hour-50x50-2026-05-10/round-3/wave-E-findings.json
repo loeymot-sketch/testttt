@@ -1,0 +1,69 @@
+{
+  "wave": "E",
+  "round": 3,
+  "states_reviewed": 21,
+  "findings": [
+    {
+      "id": "E-001",
+      "state_artifact": "test-e2e-rush-hour-50x50-E/04-E-rupture-toggle-item-362-admin-click.png",
+      "category": "unexpected_4xx",
+      "severity": "P0",
+      "evidence": "CLOSED in round 3. Cluster-8 fix (commit 8c3594bf3) wrapped DispatchDomainEventsJob::dispatch in try/catch in PersistCatalogChangedToOutbox.php:97-115 (the 4th listener subscribed to ItemAvailabilityChanged that round-2 cluster-6 missed) + 6 sibling Order/Coupon listeners. Round-3 evidence: reports/test-e2e/rush-hour-50x50-2026-05-10/round-3/wave-E-toggle-responses.json records all 4 toggle endpoints at HTTP 200 — item toggle ts=1778462184412 status=200 (state04, was 500), extra toggle ts=1778462185780 status=200 (state05), item restore ts=1778462269811 status=200 (state18, was 500), extra restore ts=1778462270935 status=200 (state19). Visual confirmation in state04 PNG: admin catalog row Boisson Seule now shows red 'RUPTURE' pill + green 'Marquer Disponible' button + stat card 'INDISPONIBLES'=1 — exactly the opposite of round-2's stale post-500 state. PersistCatalogChangedToOutbox.php:106-116 inline catch logs '[Outbox] DispatchDomainEventsJob inline dispatch failed (non-blocking)' and HTTP returns 200. Reversibility (state18-20) confirms restore path also 200 with successful UI update.",
+      "fix_hint": "N/A — closed by commit 8c3594bf3.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "E-002",
+      "state_artifact": "test-e2e-rush-hour-50x50-E/04-E-rupture-toggle-item-362-admin-click.png",
+      "category": "silent_error",
+      "severity": "P1",
+      "evidence": "CLOSED by side-effect in round 3 — when E-001 closed (toggle now returns 200) the admin UI updates correctly without need for an error toast. State04 PNG empirically shows row Boisson Seule with 'RUPTURE' pill + 'Marquer Disponible' button + stat card 'INDISPONIBLES'=1 (NOT the round-2 stale 'Marquer Indisponible' + 'INDISPONIBLES'=0). state04+state05 console.json contain only WebSocket connection errors (Pusher 6001 unreachable in dev — expected per cluster-8 design); no user-facing error condition remains.",
+      "fix_hint": "N/A — closes by-side-effect of E-001 (commit 8c3594bf3).",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "E-003-extras-no-is-available-render",
+      "state_artifact": "test-e2e-rush-hour-50x50-E/07-E-cascade-pos-wizard-tacos-extra-175-disabled.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Round-3 spec advancement (commit 2d930d31b) successfully drove the wizard past viande -> sauce -> supplement-panel-toggle. State07 instrumentation confirms supplements panel mounted: panel_present=true, suppl_grid_present=true, suppl_options_count=6. Wizard mounted (header 'Tacos M (1 Viande)', viande step shows '1' on Merguez, 'Viande supplementaire (+2.50€/viande)' panel visible). DOM probe at state07 found 'Jambon de dinde' button (text='🥓Jambon de dinde+1.00€...', classes='wizard-options supplement-grid', disabled=false, ariaDisabled=null, pointerEvents='auto', opacity='1', hasUnavailableClass=false, hasUnavailableText=false). pos-wizard.js (FROZEN per CLAUDE.md §7, 296 KB Vanilla JS) has no extra.is_available rendering branch — verified by code search. Spec instrumentation is correct and empirically captures the absence of any disabled signal. Owner-gated per OWNER_GATE_DECISIONS.md#E-003-deeper. By contrast state09 kiosk wizard (KioskWizardComponent.vue, NOT frozen for fix though wizard kiosk wizard frozen per CLAUDE memory) DOES render 'ÉPUISÉ' on supplement 175 with hasUnavailableText=true and opacity 0.93. Product gap surfaced; does NOT block convergence per owner gate.",
+      "fix_hint": "Owner LOCK required on public/js/pos-wizard.js (FROZEN §7, 296 KB Vanilla JS). Concrete patch path (when LOCK granted): in pos-wizard.js supplement render block, read extra.is_available from payload, add 'disabled' class + 'ÉPUISÉ' label + pointer-events:none, mirror KioskWizardComponent.vue pattern. Alternative low-risk path: backend filters ruptured extras from /pos/menu payload (hide-by-policy) — would shift gap to E-003-extras-supplement-hidden which is also owner-gated. Defer until owner signs LOCK_E-003.md.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "E-004",
+      "state_artifact": "test-e2e-rush-hour-50x50-E/17-E-after-20-orders-kds-pile.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Re-verified same behavior round 3: state17 KDS observation card_count_total=20, pos_token_matches=10/10, kiosk_instruction_matches=0/10, rupture_leak_count=0/20. Visual review confirms 20 cards present across 'À emporter' + 'Borne' columns, no ruptured items leak. POS-originated orders carry [POS] sentinel; kiosk-originated orders' special_instructions are not propagated/visible at KDS for this burst. Informational only — does not block convergence; 20/20 KDS cards present, 0 fiscal/payment regression.",
+      "fix_hint": "Investigate kiosk burst order payload — KioskOrderController may strip special_instructions before persistence, or KDS card template may not render the field for orders with origin=kiosk. Defer to a separate kiosk-KDS audit cycle (out of scope for rush-hour P0/P1 closure).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    }
+  ],
+  "summary": {
+    "P0": 1,
+    "P1": 1,
+    "P2": 2,
+    "P3": 0,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 2,
+    "open_P3": 0
+  },
+  "round_to_round_closures": {
+    "E-001": "PASS",
+    "E-002": "PASS",
+    "E-003": "PARTIAL_PASS",
+    "E-004": "PARTIAL_PASS"
+  },
+  "verdict": "GREEN",
+  "notes": "Round-3 spec passed (1 passed, 133s wallclock). Cluster-8 backend fix (commit 8c3594bf3, PersistCatalogChangedToOutbox.php:97-115 + 6 sibling listeners) closed E-001 and E-002 by-side-effect — all 4 toggle endpoints (item toggle/restore + extra toggle/restore) now return HTTP 200 (verified in wave-E-toggle-responses.json). Visual confirmation in state04: admin catalog shows 'RUPTURE' pill + 'Marquer Disponible' button + 'INDISPONIBLES'=1 stat card, opposite of round-2 stale state. Cluster-9 spec fix (commit 2d930d31b) successfully advanced wizard viande->sauce->supplement-panel-toggle and captured Jambon de dinde button DOM state empirically (panel_present=true, suppl_options_count=6, button found with no disabled signal). E-003 downgraded to P2 owner-gated audit_integrity per OWNER_GATE_DECISIONS.md#E-003-deeper — pos-wizard.js (FROZEN §7) has no is_available rendering branch and requires LOCK_E-003.md before patching. Does NOT block convergence per spec rule. All P0 cascades re-verified: E1 pos-item cascade PASS (5ms), E2 kiosk-item cascade PASS (4ms), E4 kiosk wizard supplement disabled PASS (ÉPUISÉ + opacity 0.93), E5a/b/c bypass blocked 422 PASS, E6 cascade-lag p95=5ms PASS, E7 reversibility PASS (2-3ms POS+kiosk), E8 numeric integrity 5/5 PASS, branch isolation 0/5 off-branch PASS. 21/20 PNGs captured. Burst 10 POS + 10 Kiosk orders all 200, KDS shows 20 cards no rupture leak. Verdict GREEN: open_P0=0, open_P1=0 (only owner-gated P2s remain). Recommend Phase 2 GREEN convergence with 1 verification round."
+}

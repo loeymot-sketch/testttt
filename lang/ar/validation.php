@@ -155,6 +155,12 @@ return [
     |
     */
 
+    'multi_variation' => [
+        'min' => 'اختر على الأقل :min :attribute (الحالي: :actual).',
+        'max' => 'اختر على الأكثر :max :attribute (الحالي: :actual).',
+        'no_repeat' => 'السمة :attribute لا تسمح بتكرار نفس التباين.',
+    ],
+
     'custom' => [
         'attribute-name' => [
             'rule-name' => 'custom-message',
@@ -173,5 +179,7 @@ return [
     */
 
     'attributes' => [],
+
+    'items_cap_exceeded' => 'الحد الأقصى 50 صنفًا لكل طلب',
 
 ];

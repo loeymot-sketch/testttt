@@ -215,13 +215,13 @@ Content-Type: application/json
       "item_id": 15,
       "quantity": 2,
       "item_variations": [
-        {"name": "Viande 1", "value": "Poulet"},
-        {"name": "Viande 2", "value": "Kebab"},
-        {"name": "Sauce", "value": "Algérienne"}
+        {"id": 42, "quantity": 2},
+        {"id": 47, "quantity": 1},
+        {"id": 71}
       ],
       "item_extras": [
-        {"name": "Menu (Frites+Boisson)", "price": "3.00"},
-        {"name": "Supplément Cheddar", "price": "1.00"}
+        {"id": 9, "quantity": 1},
+        {"id": 12, "quantity": 2}
       ],
       "instruction": "Sans oignon svp"
     }
@@ -247,8 +247,8 @@ Content-Type: application/json
 | `items` | array | Oui | Liste des articles |
 | `items[].item_id` | integer | Oui | ID de l'article |
 | `items[].quantity` | integer | Oui | Quantité |
-| `items[].item_variations` | array | Non | Variations (viandes, sauces...) |
-| `items[].item_extras` | array | Non | Suppléments |
+| `items[].item_variations` | array | Non | Variations (viandes, sauces...). **Format SSOT v14** : `[{ "id": <variation_id>, "quantity"?: <int ≥1, défaut 1> }]`. Pour le multi-choix (ex: « tacos 4 viandes mix » avec `allow_repeat=true`), répéter la même `id` n'est PAS supporté — utilisez `quantity`. Le serveur applique `min_select` / `max_select` / `allow_repeat` (table `item_attributes`, T01). Violation → 422. |
+| `items[].item_extras` | array | Non | Suppléments. **Format SSOT v14** : `[{ "id": <extra_id>, "quantity"?: <int ≥1, défaut 1> }]`. |
 | `items[].instruction` | string | Non | Instructions spéciales |
 | `coupon_id` | integer | Non | ID coupon (si utilisé) |
 | `payment_method` | tinyint | Oui | 1=Espèces, 2=CB, 3=En ligne |
@@ -256,6 +256,8 @@ Content-Type: application/json
 | `device_token` | string | Non | Token Firebase pour notifs |
 
 **⚠️ IMPORTANT:** Les champs `subtotal`, `discount`, `tax`, `total` sont **recalculés serveur**. Le Kiosk peut envoyer des valeurs mais elles seront ignorées au profit du calcul serveur basé sur les prix en base de données.
+
+**📦 Snapshot NF525 (V14 / T07):** À chaque création de commande via l'API SSOT (chemin par défaut `PRICING_USE_SSOT=true`), un **snapshot immuable** `composition_snapshot` est persisté sur chaque `order_items` avec : `schema_version`, `captured_at`, `lines[]` (variations résolues : `attribute_name`, `variation_name`, `quantity`, `unit_price`, `line_total`) et `extras[]`. Ce snapshot est **lu en priorité** par `OrderItemResource` (les noms / prix au moment de la commande sont garantis stables même si le catalogue change ensuite). **Aucun client ne doit écrire ce champ** — il est généré côté serveur uniquement.
 
 ### 3.4 Réponse Succès (201)
 

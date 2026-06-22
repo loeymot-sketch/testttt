@@ -1,0 +1,106 @@
+{
+  "specialist": "architect",
+  "scope": "SpinBoost SaaS — wheel-game B2B for restaurants. SOURCE-CODE STATE: zero implementation in foodking-web repo. Only 3 spec docs at testttt/ root (DESIGN_BRIEF, ULTRA_PLAN_DECOMPOSED, ULTRA_REVIEW). This audit is a doc-state refresh + V1.x reframe of the 2026-05-16 ultra-review, not a code archaeology pass.",
+  "branch": "v1-0-1-hardening-2026-05-17 (foodking branch; SpinBoost has no repo/branch yet)",
+  "head": "n/a — no SpinBoost commits exist",
+  "method": "read-only review of 3 spec docs + cross-check vs ULTRA_REVIEW P0/P1 findings + reframe for V1.x backlog priorisation; verify nothing was started in foodking-web repo that would create coupling.",
+  "findings": [
+    {
+      "id": "SPIN-ARCH-01",
+      "severity": "INFO",
+      "title": "SpinBoost is doc-only and standalone — no foodking-web code coupling exists",
+      "evidence": "Repo scan: only 3 SPINBOOST_* files at testttt/ root (DESIGN_BRIEF_SPINBOOST_2026-05-16.md, ULTRA_PLAN_SPINBOOST_DECOMPOSED_2026-05-16.md, ULTRA_REVIEW_SPINBOOST_2026-05-16.md). Zero migrations, models, services, controllers, routes, frontend components, or env keys touching wheel/spin/giveaway logic. ULTRA_PLAN §1 (Sprint 0) explicitly schedules pre-coding gates (juridique, statut SAS, 5 warm-leads, domaines INPI). Stack is Next.js 15 + Tailwind + shadcn/ui + Supabase + Stripe + Resend — fully disjoint from foodking-web Laravel/Vue stack.",
+      "recommendation": "Confirmed: SpinBoost is V1.x backlog candidate at best, NOT a V1 LeCayenne blocker. The audit mission's constraint ('SpinBoost is NOT V1 LeCayenne blocker') is verified by absence of any code-level dependency."
+    },
+    {
+      "id": "SPIN-ARCH-02",
+      "severity": "P0",
+      "title": "Stack contradiction P0-4 (Hono + Edge runtime + Prisma) still unresolved in ULTRA_PLAN",
+      "evidence": "ULTRA_REVIEW P0-4 (L118) flags 'Hono + Edge runtime + Prisma = contradiction technique'. ULTRA_PLAN §1 Day 4 ostensibly resolves via 'Mono-app Next.js 15 décidé (kill Hono…)' AND 'Trancher Node runtime SEUL (kill l\\'argument edge + Prisma Accelerate non-budgété)' (lines 40-42). BUT: §2 Sprint 1 still uses generic `pnpm create next-app@latest spinboost --typescript --tailwind --app` without pinning runtime config or `export const runtime = 'nodejs'` checkpoints. Mention of `@vercel/otel` (line 69) suggests Vercel deploy, which defaults to Node now for App Router but Edge per-route is still selectable — silent regression risk.",
+      "recommendation": "Add explicit Sprint 1 task: 'Pin `export const runtime = \"nodejs\"` in all API route handlers AND in root layout; add eslint rule banning `runtime: \"edge\"` in `app/api/**`. Test sentinel: a Prisma query in an API route on a freshly deployed Vercel build returns rows without `prisma-data-proxy` errors.'"
+    },
+    {
+      "id": "SPIN-ARCH-03",
+      "severity": "P0",
+      "title": "Mono-app simplification P0-5 — ULTRA_PLAN does collapse to 1 Next.js app (correct), but route groups discipline must be encoded as a guardrail",
+      "evidence": "ULTRA_REVIEW P0-5 (L119) explicitly recommends route groups: `(player)/r/[slug]`, `(dashboard)/app`, `app/api/v1/*`. ULTRA_PLAN §1 line 40 acks 'Mono-app Next.js 15 décidé (kill Hono, kill Turborepo, kill 3 apps séparées)' but provides no folder skeleton. Risk: founder solo + Claude Code, over 8 weeks, drifts back to multi-app pattern under 'just one more service' temptation. The player surface (very high QPS, fully public, no auth) MUST share bundle and middleware with dashboard (low QPS, full auth, MFA, Stripe) — coupling is intended.",
+      "recommendation": "Lock the route-group skeleton in Sprint 1 day 1 + add a CI lint rule (custom eslint or `arch-unit-js`) that fails the build if `app/api/*` adds a route NOT under `v1/`. Document the intent in a 1-pager `docs/ARCHITECTURE.md` in the new repo."
+    },
+    {
+      "id": "SPIN-ARCH-04",
+      "severity": "P0",
+      "title": "Tirage cryptographique (P0-2) — DesignBrief mentions roue spin animation but NO mention of the audit chain HMAC in the player flow contract",
+      "evidence": "DESIGN_BRIEF §3.A A3 (line 81) describes only the visual spec ('idle, spinning 3-4s, revealed'). ULTRA_PLAN §3 Sprint 2 line 99 lists the HMAC implementation ('Play.drawProof = HMAC-SHA256(prev_play_hash || campaign_slots_snapshot || server_seed || ts)') — good. BUT the design brief is the document the designer reads; if the front-end designer doesn't know the result is server-authoritative and arrives via POST response (not client-decided), they may design a 'client rolls then animates' pattern that contradicts the server-truth invariant. This is the FoodKing 'pricing SSOT' lesson (CLAUDE.md §8 NF525) applied to wheel.",
+      "recommendation": "Add 1 paragraph to DESIGN_BRIEF §3.A A3: 'The spin animation is purely cosmetic. The winning slot is returned by `POST /api/v1/public/plays/spin` BEFORE the animation starts. The animation must land on the slot index returned by the server — never roll client-side first.' Mirror in Sprint 2 with a Playwright sentinel: intercept the POST, mutate `prizeIndex` in the response, verify the rendered result MATCHES the mutated index (not whatever the front-end might have computed locally)."
+    },
+    {
+      "id": "SPIN-ARCH-05",
+      "severity": "P1",
+      "title": "Schema P0-8 (atomic stock + slot probability + WIN→Prize constraint) still depends on Prisma migration discipline — risk of partial implementation",
+      "evidence": "ULTRA_REVIEW P0-8 (L122) lists 3 schema fixes: (a) atomic `UPDATE Prize SET stockUsed=stockUsed+1 WHERE … RETURNING *`; (b) extract slots to `CampaignSlot` with `probabilityBp Int` + DB-level check `sum=10000`; (c) check constraint `WIN/CONSOLATION → prizeId NOT NULL`. ULTRA_PLAN §3 Sprint 2 line 89-91 lists tasks but uses Zod-only for (b) sum-check; says 'Validation Zod : sum(probabilityBp) = 10000 côté app + check SQL côté DB' — the SQL side needs a Postgres CHECK constraint or trigger, NOT just Prisma application-layer. Founder solo may skip the DB-level enforcement.",
+      "recommendation": "Add explicit Sprint 2 sub-task: 'Write raw SQL migration (Prisma `prisma migrate dev --create-only`) with `ALTER TABLE campaign_slots ADD CONSTRAINT slots_sum_10000 CHECK …` — Postgres deferred constraint preferred for transactional updates'. Test sentinel: insert 7 slots summing to 9999, expect DB error (not app error)."
+    },
+    {
+      "id": "SPIN-ARCH-06",
+      "severity": "P1",
+      "title": "Observability (P2-1 / §3 hidden truc) — OTel is in plan Sprint 1 but builders/dispatch sites must propagate traceparent",
+      "evidence": "ULTRA_PLAN §2 Sprint 1 line 69 lists '@vercel/otel + exporter OTLP → Axiom'. Good. BUT no follow-up Sprint 2-4 task explicitly says 'propagate traceparent into Stripe metadata, Resend tags, Sentry tag, Mistral/AI call header'. ULTRA_REVIEW §3 (L161-167) frames this exactly: a solo founder debugging a player 'I didn't get my email' bug at 2am needs the same trace_id across Vercel logs + Sentry + Stripe + Resend.",
+      "recommendation": "Add tasks: Sprint 2 'Resend send: pass `tags: { trace_id }` from active span'. Sprint 4 'Stripe checkout session: pass `metadata: { trace_id }` from active span; reverse-propagate in webhook handler — extract metadata.trace_id and start child span'. Document the contract in `docs/OBSERVABILITY.md` of the new repo."
+    },
+    {
+      "id": "SPIN-ARCH-07",
+      "severity": "P1",
+      "title": "Multi-tenant data model — ULTRA_REVIEW kill list says '1 user = 1 org en V1' but DB tables still need branch-style scope discipline",
+      "evidence": "ULTRA_PLAN §7 kill list line 213: 'Multi-membres OrganizationMember + invitations → V1.1'. So V1 has Organization (1:1 with User) → Venue (1:N) → Campaign (1:N) → Play (1:N). Per-org isolation is implicit via foreign keys. BUT the FoodKing BranchScope lesson (CLAUDE.md §9) is hard-earned: without a global scope or RLS, devs accidentally write `Campaign.where(...).get()` and leak cross-org rows in admin pages. Solo founder under time pressure WILL make this mistake. The Sprint 1 wires up Auth.js — does it set an org context? No mention.",
+      "recommendation": "Add Sprint 1 task: 'Implement Prisma middleware (or `prisma.$extends` in v5+) that auto-injects `where: { orgId: session.user.orgId }` on Campaign/Venue/Prize/Play/Voucher queries when session.user.role !== \"SUPERADMIN\". Test sentinel: 2 orgs seeded, login as org A, expect `prisma.campaign.findMany()` to return only A\\'s rows.'"
+    },
+    {
+      "id": "SPIN-ARCH-08",
+      "severity": "P2",
+      "title": "Webhook idempotency (P0-3) — design correct, but DLQ aspect was raised and is not in plan",
+      "evidence": "ULTRA_REVIEW P0-3 (L117) says 'pas d\\'idempotency ni DLQ'. ULTRA_PLAN §5 Sprint 4 line 159 adds `WebhookEvent UNIQUE(provider, eventId)` (good idempotency). But no DLQ pattern: what happens when the handler throws AFTER signature verif? Stripe will retry up to 3 days. Without a DLQ table + alert, a persistent failure (e.g. DB schema mismatch) burns through 3 days of retries silently.",
+      "recommendation": "P2 Sprint 4 enhancement: add `webhook_events.processing_status ENUM('pending','processed','failed_terminal')` + `last_error TEXT` + Sentry alert when same eventId fails 3× consecutive. Vercel Cron cleanup job 1×/day."
+    },
+    {
+      "id": "SPIN-ARCH-09",
+      "severity": "P1",
+      "title": "Onboarding URL Google Maps writereview manual-paste is brittle UX",
+      "evidence": "DESIGN_BRIEF §3.B B2 (line 100) + ULTRA_PLAN §4 Sprint 3 line 128 spec: 'URL Google Maps writereview collé manuellement (kill OAuth V1)'. The reviewer onboarding kills Google OAuth (correct: -2 sem délai validation Google API per ULTRA_PLAN §7 kill list). But the manual paste UX has a sharp edge: writereview URLs have multiple forms (`g.page/r/<id>`, `search.google.com/local/writereview?placeid=…`, `goo.gl/maps/...`). A patron pasting the wrong URL silently sends customers to a broken page. There is no Sprint 3 validation task on the URL shape.",
+      "recommendation": "Add Sprint 3 task: 'Regex-validate the URL on save: must match `^https?://(g\\.page|search\\.google\\.com|maps\\.google\\.com|goo\\.gl)\\/.+$`. After save, render a `<a target=\"_blank\">Tester le lien</a>` button that opens the URL in a new tab; show a banner asking patron to confirm the destination loaded a writereview page.'"
+    },
+    {
+      "id": "SPIN-ARCH-10",
+      "severity": "P2",
+      "title": "Reward issuance flow (voucher) has NO redemption tracking surface — restaurant cannot mark voucher used",
+      "evidence": "ULTRA_PLAN §3 Sprint 2 line 95-98 generates `voucherCode` and emails it. DESIGN_BRIEF §3.A A4 (line 82) shows voucher card with QR. BUT no Sprint 2-5 task says 'restaurant scans the QR to redeem' or 'voucher state machine ISSUED → REDEEMED → EXPIRED'. Without redemption tracking: (a) patron has no proof a customer actually used the voucher, weakening NPS/CRM value; (b) a customer screenshot of the QR can be replayed across multiple visits (silent fraud).",
+      "recommendation": "P1 V1.x Sprint 6 (post-MVP): add `Voucher.status ENUM('issued','redeemed','expired')` + redemption endpoint `POST /api/v1/voucher/:code/redeem` callable by Venue owner (auth required) — single-use, atomic state transition. UI: voucher card on patron side shows 'En attente' → 'Validé par <resto>' after redemption. Also feeds reconciliation: at month-end, billing tier checks could be on redeemed vouchers not just issued."
+    },
+    {
+      "id": "SPIN-ARCH-11",
+      "severity": "P2",
+      "title": "Flyer/QR generation (Sprint 3) — single template + no versioning means resto cannot tell which printed flyer is live",
+      "evidence": "ULTRA_PLAN §4 Sprint 3 line 130-131: 'React-PDF flyer : 1 seul template paramétrable' + 'QR code généré server-side (qrcode npm) pointant /r/[slug]'. Single template is fine for MVP. But: if patron prints 500 flyers in week 1 with branding A, then changes branding to B in week 3, the printed flyers still point to /r/[slug] which serves branding B. No flyer-version tracking. Worse, if the slug changes (e.g. resto rename), old flyers 404 silently.",
+      "recommendation": "P2 V1.x: lock `Venue.slug` immutable post-creation (DB-level constraint). For branding changes, keep old flyer rendering URL `/f/[flyerId]` that snapshots branding at print-time, redirecting to current `/r/[slug]` — patron can see in dashboard which flyer versions are 'in the wild'. Defer to V1.1."
+    },
+    {
+      "id": "SPIN-ARCH-12",
+      "severity": "P3",
+      "title": "Architecture style discipline — solo founder, 8 weeks, no architecture sentinel docs",
+      "evidence": "ULTRA_PLAN §2 Sprint 1 sets up CI (lint, typecheck, vitest) but no `docs/ARCHITECTURE.md`, no `BRAIN.md` analog, no frozen-zones list. FoodKing has CLAUDE.md + PROJECT_BRAIN.md + frozen zones + invariants doc. SpinBoost will accumulate the same drift risk over 6 months solo work without the same scaffolding.",
+      "recommendation": "Sprint 0 add: copy/adapt FoodKing's CLAUDE.md skeleton + create `docs/ARCHITECTURE.md` (route groups, runtime=node invariant, RLS/Prisma scope rule, atomic stock decrement invariant, drawProof HMAC invariant) + `docs/FROZEN_ZONES.md` (initially: the wheel tirage server endpoint + Stripe webhook handler + Auth.js config). Founder thanks himself in month 3."
+    }
+  ],
+  "verdict": "GO-PIVOT (Option A from ULTRA_REVIEW). Architecture is sound IF the 4 P0 disciplines (runtime pinning, route groups, drawProof HMAC, schema constraints) are encoded as guardrails in Sprint 0-1 rather than treated as optional best practices. Without that codification, a solo founder under 6-week pressure will silently regress to a 'works on my machine' state that loses the 2026-05-16 review's hard-won learnings within 2 sprints. V1.x backlog priority: P0-2/P0-3/P0-4/P0-5/P0-8 from ULTRA_REVIEW remain valid; this audit adds: (a) explicit runtime pinning enforcement (SPIN-ARCH-02), (b) route-group lint rule (SPIN-ARCH-03), (c) front-end designer awareness of server-truth (SPIN-ARCH-04), (d) Prisma middleware for org scope (SPIN-ARCH-07), (e) voucher redemption surface for V1.1 (SPIN-ARCH-10).",
+  "v1x_priorities_added": [
+    "SPIN-ARCH-02 — Sprint 1 day 1: pin runtime=nodejs in all API routes + eslint guard",
+    "SPIN-ARCH-03 — Sprint 1 day 1: route-group skeleton + arch-lint rule on /api/* prefix discipline",
+    "SPIN-ARCH-04 — Designer addendum to DESIGN_BRIEF §3.A A3 (server-truth wheel)",
+    "SPIN-ARCH-05 — Sprint 2 task: raw SQL CHECK constraint for slot probability sum=10000",
+    "SPIN-ARCH-06 — Sprint 2-4 OTel propagation explicit tasks (Resend tags, Stripe metadata)",
+    "SPIN-ARCH-07 — Sprint 1: Prisma middleware for orgId auto-scope",
+    "SPIN-ARCH-10 — V1.1 Sprint 6: voucher redemption state machine + endpoint",
+    "SPIN-ARCH-11 — V1.1: flyer versioning + slug immutability",
+    "SPIN-ARCH-12 — Sprint 0: ARCHITECTURE.md + FROZEN_ZONES.md scaffolding"
+  ],
+  "words": 1450
+}

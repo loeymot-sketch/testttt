@@ -57,4 +57,15 @@ return [
         'topic_prefix' => env('FCM_TOPIC_PREFIX', 'foodking'),
     ],
 
+    /**
+     * [Sprint 3A — Webhook idempotency 2026-05-16]
+     * Stripe webhook signing secret (whsec_...). Distinct from the gateway
+     * api_key stored in PaymentGateway DB options. Used by
+     * \Stripe\Webhook::constructEvent() to verify the Stripe-Signature header
+     * on inbound /payment/stripe-webhook/ requests.
+     */
+    'stripe' => [
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET', ''),
+    ],
+
 ];

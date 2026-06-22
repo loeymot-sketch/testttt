@@ -1,0 +1,9 @@
+{
+  "test_id": "F08",
+  "threshold_px": 80,
+  "measured_px": 24,
+  "viewport_h": 844,
+  "cta_y": 760,
+  "cta_h": 60,
+  "result": "PASS"
+}

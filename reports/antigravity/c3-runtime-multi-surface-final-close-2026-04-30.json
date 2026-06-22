@@ -1,0 +1,23 @@
+{
+  "generated_at": "2026-04-30T15:20:19.928Z",
+  "verdict": "PASS_RUNTIME_LOCAL",
+  "results": [
+    {
+      "scenario": "kiosk_cash_to_kds_pos_oss",
+      "pass": true,
+      "kds_ms": 5888,
+      "oss_preparing_ms": 3889,
+      "queue_number": "A0001",
+      "order_id": 688
+    },
+    {
+      "scenario": "pos_to_kds_oss",
+      "pass": true,
+      "kds_ms": 5885,
+      "oss_preparing_ms": 4880,
+      "token": "PW-C3-POS_CASH-1777562407853",
+      "queue_number": "A0001",
+      "order_id": 689
+    }
+  ]
+}

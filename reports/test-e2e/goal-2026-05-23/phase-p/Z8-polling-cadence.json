@@ -1,0 +1,366 @@
+{
+  "agent": "Z8 Polling cadence",
+  "verification_method": "READ-ONLY grep + file:line citation; N-HEAL-04 commit 385f77288 verified",
+  "n_heal_04_verified": {
+    "commit": "385f77288",
+    "title": "fix(n-heal-04): PosComponent polling self-recursive (M-POS-4 G-003 P2)",
+    "before_pattern": "setInterval(tick, this._kioskPollingInterval())  // cadence captured at startup, frozen for the life of setInterval",
+    "after_pattern": "tick = () => { ... this._kioskPollTimer = setTimeout(tick, this._kioskPollingInterval()); }; tick();  // cadence re-evaluated every iteration",
+    "file_ref": "resources/js/components/admin/pos/PosComponent.vue:2631-2655",
+    "sentinel_ref": "tests/js/sentinels/posKioskPollingCadenceSentinel.spec.js (143 LOC, asserts self-recursive setTimeout + cadence contract)",
+    "cleanup_ref": "resources/js/components/admin/pos/PosComponent.vue:2068-2071 (clearTimeout for self-recursive chain)"
+  },
+  "polling_loops_total": 12,
+  "polling_loops_with_network_fetch": [
+    {
+      "site": "PosComponent _startKioskPolling (kiosk cash + active stats + ready)",
+      "file": "resources/js/components/admin/pos/PosComponent.vue:2631-2655",
+      "cadence_ms": "5000-60000 (adaptive)",
+      "pattern": "self-recursive setTimeout (N-HEAL-04 healed)",
+      "echo_down_adaptive": true,
+      "adaptive_logic": "_kioskPollingInterval() lines 2616-2630: 5000 if readyOrders empty OR (now - lastReadyRefresh) > 30000 OR !wsService.isConnected(); else 60000",
+      "cleanup": "beforeUnmount line 2071 clearTimeout(_kioskPollTimer)",
+      "backpressure": false,
+      "endpoints": [
+        "GET /admin/pos/counter-collect/pending (loadKioskCashOrders line 3024)",
+        "GET via Vuex orderStatusScreenOrder/lists -> /admin/oss-order (loadActiveOrdersStats line 2986, loadReadyOrders line 3107)"
+      ]
+    },
+    {
+      "site": "PosComponent posOfflineFlushTimer",
+      "file": "resources/js/components/admin/pos/PosComponent.vue:2113-2115",
+      "cadence_ms": 30000,
+      "pattern": "setInterval (legacy)",
+      "echo_down_adaptive": false,
+      "purpose": "POS offline replay flush attempt (cash sales sitting in IndexedDB)",
+      "cleanup": "beforeUnmount line 2085 clearInterval(_posOfflineFlushTimer)",
+      "backpressure": "tryFlush() internally guards via composable lock"
+    },
+    {
+      "site": "PosOrdersTrackerComponent _startPolling",
+      "file": "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:688-697",
+      "cadence_ms": "8000-60000 (POLL_NO_WS_MS=8000, POLL_WS_MS=60000)",
+      "pattern": "setInterval (legacy - N-HEAL-04 vulnerable, see adversarial findings)",
+      "echo_down_adaptive": "partial - only via _restartPolling on WS state_change events (lines 645-646); does NOT detect silent Echo failure (channel-auth fail with persistent socket)",
+      "cleanup": "beforeUnmount line 625 _stopPolling -> clearInterval",
+      "backpressure": false,
+      "endpoint": "Vuex posOrder/lists with daily date range (fetchOrders line 717)"
+    },
+    {
+      "site": "KitchenDisplaySystemComponent startAutoRefresh",
+      "file": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1832-1838",
+      "cadence_ms": "5000-60000",
+      "pattern": "setInterval (legacy - N-HEAL-04 vulnerable, see adversarial findings)",
+      "echo_down_adaptive": "partial - only via _restartPolling on WS state_change events (lines 1801-1810); does NOT detect silent Echo failure",
+      "cleanup": "beforeUnmount line 2349 stopAutoRefresh -> clearInterval",
+      "backpressure": false,
+      "endpoint": "Vuex kitchenDisplaySystemOrder/lists (refreshOrderList line 1893)"
+    },
+    {
+      "site": "KdsSyncService _schedule (PRIMARY KDS sync path)",
+      "file": "resources/js/services/KdsSyncService.js:338-362",
+      "cadence_ms": "5000-30000 (adaptive: base from _baseCadence + 5xx backoff doubling capped 30s; Infinity drift mode = 60000 force-sync)",
+      "pattern": "self-recursive setTimeout (re-schedules after each forceSync)",
+      "echo_down_adaptive": true,
+      "adaptive_logic": "_recomputeCadence on WS state change + 5xx backoff doubling",
+      "cleanup": "stop() line 100-117 _clearTimers + abort",
+      "backpressure": "AbortController on each forceSync (lines 109-111, 128-130)",
+      "endpoint": "GET /api/admin/kds-order/sync?since=<iso>&branch_id=<id>&include_deleted=true (KdsSyncController:75)"
+    },
+    {
+      "site": "PosSyncService _scheduleNext (POS catalog fallback)",
+      "file": "resources/js/services/PosSyncService.js:346-358",
+      "cadence_ms": "5000-30000 (intervalMsWhenDisconnected default 30000 + jitter 0-500ms; backoff doubling capped 30s; CADENCE_CEILING_MS=60000 floor=250)",
+      "pattern": "self-recursive setTimeout (_scheduleNext after each _poll)",
+      "echo_down_adaptive": true,
+      "adaptive_logic": "Subscribes to WS state - polls only when DISCONNECTED, Infinity (paused) when CONNECTED",
+      "cleanup": "_cleanup() line 360-372 _clearTimer + _abortInFlight",
+      "backpressure": "AbortController + _abortInFlight (line 381-386)",
+      "endpoint": "GET /api/admin/item?surface=pos&branch_id=<id> dispatched via item/lists Vuex action"
+    },
+    {
+      "site": "OssSyncService _scheduleNext (OSS realtime fallback)",
+      "file": "resources/js/services/OssSyncService.js:349-361",
+      "cadence_ms": "intervalMsWhenConnected vs intervalMsWhenDisconnected + jitter; backoff doubling capped",
+      "pattern": "self-recursive setTimeout (_scheduleNext after each _poll)",
+      "echo_down_adaptive": true,
+      "adaptive_logic": "_scheduleNormalCadence (line 334) reads WS state; visibility burst poll line 218-225 collapses backgrounded-tab lag",
+      "cleanup": "_cleanup() line 363-378 _clearTimer + _abortInFlight + _unbindVisibility",
+      "backpressure": "AbortController + _abortInFlight (line 281-282)",
+      "endpoint": "Vuex orderStatusScreenOrder/lists -> /admin/oss-order"
+    },
+    {
+      "site": "OutboxOverviewComponent _timer",
+      "file": "resources/js/components/admin/observability/OutboxOverviewComponent.vue:345",
+      "cadence_ms": "this.pollIntervalMs (component prop; default site-config)",
+      "pattern": "setInterval (legacy)",
+      "echo_down_adaptive": false,
+      "cleanup": "beforeUnmount line 352 clearInterval",
+      "backpressure": false,
+      "endpoint": "GET /api/admin/observability/outbox (line 362)"
+    },
+    {
+      "site": "StockRuptureDashboardComponent _timer",
+      "file": "resources/js/components/admin/stock/StockRuptureDashboardComponent.vue:422",
+      "cadence_ms": "this.pollIntervalMs",
+      "pattern": "setInterval (legacy)",
+      "echo_down_adaptive": false,
+      "cleanup": "beforeUnmount line 430 clearInterval",
+      "backpressure": false,
+      "echo_alternative": "ItemAvailabilityChanged via Echo (line 478) supplements - _debouncedReload"
+    },
+    {
+      "site": "FloorplanComponent _pollTimer",
+      "file": "resources/js/components/admin/pos/FloorplanComponent.vue:122",
+      "cadence_ms": 15000,
+      "pattern": "setInterval (legacy)",
+      "echo_down_adaptive": false,
+      "cleanup": "beforeUnmount line 124-127 clearInterval",
+      "backpressure": false,
+      "note": "Dine-in surface disabled in V1 per pos.dine_in_enabled=false; route exists but feature-flag gated"
+    },
+    {
+      "site": "PaymentComponent _quoteRefreshTimer (POS multi-payment modal)",
+      "file": "resources/js/components/admin/pos/PaymentComponent.vue:472-480",
+      "cadence_ms": 60000,
+      "pattern": "setInterval (legacy)",
+      "echo_down_adaptive": false,
+      "cleanup": "beforeUnmount line 485-488 clearInterval",
+      "backpressure": "internal `loading.isActive` guard line 475",
+      "purpose": "Refresh order quote signature to keep TTL alive while cashier types"
+    },
+    {
+      "site": "KioskAppComponent offlineCheckTimer + _healthcheckTimer",
+      "file": "resources/js/components/frontend/kiosk/KioskAppComponent.vue:347, 999",
+      "cadence_ms": "15000 (offline) + HEALTHCHECK_INTERVAL_MS=90000 (hardware)",
+      "pattern": "setInterval (legacy)",
+      "echo_down_adaptive": false,
+      "cleanup": "beforeUnmount line 401 + 406 clearInterval",
+      "backpressure": false
+    },
+    {
+      "site": "KioskWaitingComponent pollTimer",
+      "file": "resources/js/components/frontend/kiosk/KioskWaitingComponent.vue:294",
+      "cadence_ms": "POLL_INTERVAL_MS=15000",
+      "pattern": "setInterval (legacy)",
+      "echo_down_adaptive": false,
+      "cleanup": "beforeUnmount via stopAll line 498 clearInterval",
+      "backpressure": "_pollInFlight guard line 300 (BEST PRACTICE - only site with explicit overlap guard)",
+      "endpoint": "fetchOrderStatus(orderId)"
+    },
+    {
+      "site": "KioskPaymentComponent _reconcileInterval",
+      "file": "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue:298-301",
+      "cadence_ms": 60000,
+      "pattern": "setInterval (legacy)",
+      "echo_down_adaptive": false,
+      "cleanup": "beforeUnmount line 310-313 clearInterval",
+      "backpressure": false,
+      "purpose": "AUDIT-F-008: TPE-approved-but-confirm-failed reconcile loop"
+    },
+    {
+      "site": "kioskOfflineQueue _syncTimer",
+      "file": "resources/js/helpers/kioskOfflineQueue.js:627",
+      "cadence_ms": "SYNC_INTERVAL_MS",
+      "pattern": "setInterval (legacy)",
+      "echo_down_adaptive": false,
+      "cleanup": "stopAutoSync() line 630-635 clearInterval (KioskAppComponent line 402)",
+      "backpressure": "_syncInFlight promise guard line 511 (mutex via _acquireLock)"
+    }
+  ],
+  "ui_only_tickers_excluded": [
+    {"site": "KdsV2Grid.tickerId", "ref": "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue:254", "purpose": "1s now-stamp ticker; no network"},
+    {"site": "_shortcutsRefreshTicker", "ref": "PosComponent.vue:2156", "purpose": "5s label re-render; no network"},
+    {"site": "_kdsWaitInterval / _kdsSyncStampTimer", "ref": "KitchenDisplaySystemComponent.vue:1472, 1494", "purpose": "wait-tick + sync-stamp label; no network"},
+    {"site": "ConnectionStatusBanner _bannerInterval", "ref": "ConnectionStatusBanner.vue:148", "purpose": "1s reactive bannerTick; no network"},
+    {"site": "WebSocketService _heartbeatTimer", "ref": "WebSocketService.js:379", "purpose": "WS connection state check; no HTTP fetch"},
+    {"site": "MetricsBatcher.timer", "ref": "MetricsBatcher.js:169", "purpose": "metrics flush batch; one-shot timer-mediated POST"},
+    {"site": "KioskWaitingComponent countdownTimer/elapsedTimer/preparingAutoRedirectTimer", "purpose": "UI countdowns; no network"},
+    {"site": "Dashboard widgets RealtimeReport/AuditTrail/SlaAlerts", "refs": "RealtimeReportComponent.vue:39, AuditTrailComponent.vue:50, SlaAlertsComponent.vue:47", "cadence_ms": "15000-30000", "note": "Vuex-mediated polling on /admin/dashboard surfaces only; setInterval legacy; cleanup OK; no Echo bridge needed (admin meta data)"}
+  ],
+  "loops_self_recursive_setTimeout": 4,
+  "loops_self_recursive_setTimeout_list": [
+    "PosComponent _startKioskPolling (N-HEAL-04 healed)",
+    "KdsSyncService _schedule",
+    "PosSyncService _scheduleNext",
+    "OssSyncService _scheduleNext"
+  ],
+  "loops_setInterval_legacy": [
+    "PosOrdersTrackerComponent._startPolling (resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:690) — N-HEAL-04 PARALLEL VULNERABILITY",
+    "KitchenDisplaySystemComponent.startAutoRefresh (resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1834) — N-HEAL-04 PARALLEL VULNERABILITY",
+    "PosComponent._posOfflineFlushTimer (PosComponent.vue:2113) — fixed-cadence, no Echo coupling, low risk",
+    "OutboxOverviewComponent._timer (OutboxOverviewComponent.vue:345)",
+    "StockRuptureDashboardComponent._timer (StockRuptureDashboardComponent.vue:422)",
+    "FloorplanComponent._pollTimer (FloorplanComponent.vue:122) — dine-in V1 disabled",
+    "PaymentComponent._quoteRefreshTimer (PaymentComponent.vue:472)",
+    "KioskAppComponent.offlineCheckTimer (KioskAppComponent.vue:347)",
+    "KioskAppComponent._healthcheckTimer (KioskAppComponent.vue:999)",
+    "KioskWaitingComponent.pollTimer (KioskWaitingComponent.vue:294)",
+    "KioskPaymentComponent._reconcileInterval (KioskPaymentComponent.vue:298)",
+    "kioskOfflineQueue._syncTimer (kioskOfflineQueue.js:627)"
+  ],
+  "loops_with_cleanup": 15,
+  "loops_without_cleanup": [],
+  "loops_with_echo_down_adaptive": 4,
+  "loops_with_echo_down_adaptive_list": [
+    "PosComponent._kioskPollingInterval (full silent-Echo defense via isStale+isEmpty fallback)",
+    "KdsSyncService (subscribed to WS state - cadence recompute on state change)",
+    "PosSyncService (subscribed to WS state - pauses when CONNECTED)",
+    "OssSyncService (subscribed to WS state - normal cadence path)"
+  ],
+  "loops_with_backpressure_dedupe": [
+    "KioskWaitingComponent._doPoll (resources/js/components/frontend/kiosk/KioskWaitingComponent.vue:300) — explicit _pollInFlight guard",
+    "KdsSyncService.forceSync (KdsSyncService.js:128-132) — AbortController aborts previous request",
+    "PosSyncService._poll (PosSyncService.js:381-386) — AbortController + _abortInFlight",
+    "OssSyncService._poll (OssSyncService.js:281-282) — AbortController + _abortInFlight",
+    "PosComponent.tryFlush (PosOfflineQueue composable — internal mutex)",
+    "kioskOfflineQueue._syncInFlight (kioskOfflineQueue.js:511) — promise+lock mutex"
+  ],
+  "echo_down_detection_pattern": {
+    "primary": "WebSocketService emits 'connected'/'disconnected' events on Pusher state change (resources/js/services/WebSocketService.js)",
+    "consumers": [
+      "KitchenDisplaySystemComponent.vue:1801-1810 _onWsConnected/_onWsDisconnected -> _restartPolling",
+      "PosOrdersTrackerComponent.vue:645-646 _onWsConnected/_onWsDisconnected -> _restartPolling",
+      "PosComponent.vue:2603-2608 _onWsConnected/_onWsDisconnected -> _restartKioskPolling",
+      "KdsSyncService _wsUnsubscribers subscribes to state changes for cadence recompute",
+      "ConnectionStatusBanner.vue:130-137 state_change handler for banner display"
+    ],
+    "silent_echo_failure_mode": "Channel-auth failure on /api/broadcasting/auth (e.g. CSP violation, 401, kicked from channel) can leave wsService.isConnected() == true while OrderCreated/OrderStatusChanged events are silently dropped. Only PosComponent._kioskPollingInterval defends against this with isStale (>30s since lastReadyRefresh) + isEmpty fallback. See sentinel: tests/js/sentinels/posKioskPollingCadenceSentinel.spec.js"
+  },
+  "endpoints_polled": [
+    "/admin/pos/counter-collect/pending (kiosk cash orders)",
+    "/api/admin/kds-order/sync?since=...&branch_id=...&include_deleted=true (KDS primary sync path - KdsSyncController:75)",
+    "/admin/oss-order (OSS realtime fallback + POS active stats + ready orders)",
+    "/api/admin/item?surface=pos&branch_id=... (POS catalog fallback)",
+    "/api/admin/observability/outbox (outbox health)",
+    "Vuex posOrder/lists, kitchenDisplaySystemOrder/lists, dashboard/realtimeReport, dashboard/auditTrail, dashboard/slaAlerts (mediated via store actions)"
+  ],
+  "endpoints_not_existing": [
+    {
+      "task_listed_name": "/api/admin/pos/kiosk-ready-orders",
+      "actual_route": "Polling fetches /admin/pos/counter-collect/pending (kiosk cash) + Vuex orderStatusScreenOrder/lists (ready/active). NO dedicated /kiosk-ready-orders route — the 'Prêt à livrer' panel filters Vuex result via loadReadyOrders client-side (PosComponent.vue:3104)."
+    },
+    {
+      "task_listed_name": "/api/admin/kds/board",
+      "actual_route": "/api/admin/kds-order/sync (Wave 1 sync-since pattern in KdsSyncController). Legacy /admin/kds-order/* CRUD routes exist (routes/api.php:1124-1146) but the board is rebuilt from sync deltas."
+    },
+    {
+      "task_listed_name": "/api/admin/oss/queue",
+      "actual_route": "/admin/oss-order (admin auth) + /oss-order (public unauth, routes/api.php:1235). NO /oss/queue endpoint — both surfaces use the same orderStatusScreenOrder controller."
+    }
+  ],
+  "idempotency_get_bypass": {
+    "verified": true,
+    "location": "app/Http/Middleware/IdempotencyKeyMiddleware.php:45",
+    "code": "if (! in_array($request->method(), ['POST', 'PUT', 'PATCH', 'DELETE'], true)) { return $next($request); }",
+    "result": "All GET-based polling endpoints bypass the idempotency middleware completely. Discipline OK."
+  },
+  "mobile_polling": {
+    "found": true,
+    "site": "mobile/hooks/useLoyaltyQR.js:65-72 — chained setTimeout (NOT setInterval) per Agent-2 §3 pattern. Refreshes loyalty QR signature 60s before expires_at with in-flight ref guard and cancelledRef on cleanup.",
+    "verdict": "GREEN — mobile uses the correct self-recursive setTimeout pattern with explicit in-flight guard. No setInterval polling in mobile.",
+    "static_catalog_note": "Mobile and web (Le Cayenne site) catalog is static; no menu polling expected. Only loyalty QR signature refresh polls."
+  },
+  "network_back_pressure_load_assessment": {
+    "scenario_idle_echo_up": {
+      "active_loops": "PosComponent(60s) + KDS(60s) + PosOrdersTracker(60s) + Outbox(varies) + StockRupture(varies) + dashboard tiles(15-30s)",
+      "req_per_min_baseline": "~6-10 req/min per admin session"
+    },
+    "scenario_echo_down": {
+      "expected_cadence": "5s for POS shortcut polling (defended by isStale/isEmpty fallback) + 5s KDS (only via WS state event) + 8s PosOrdersTracker (only via WS state event)",
+      "req_per_min_degraded": "~36-72 req/min per admin session (kitchen + cashier surfaces)",
+      "risk_silent_echo_failure": "If channel-auth fails silently and WS socket stays UP, KDS and PosOrdersTracker WILL NOT downshift to 5s/8s — cadence stays at 60s. Orders surface with full ΔT lag until WS truly disconnects. PosComponent has the defense, KDS+PosOrdersTracker do not."
+    }
+  },
+  "adversarial_findings": [
+    {
+      "id": "Z8-ADV-01",
+      "severity": "P1",
+      "title": "N-HEAL-04 parallel vulnerability: KDS startAutoRefresh has cadence captured at startup + no isStale fallback",
+      "file": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1832-1838",
+      "evidence": "this.autoRefreshInterval = setInterval(..., this._pollingInterval()); — _pollingInterval() returns wsConnected?60000:5000. Cadence frozen at construction time. Only _restartPolling on WS state_change can update it. Silent Echo failure (channel-auth fail with persistent socket) leaves cadence stuck at 60s.",
+      "n_heal_04_analog": "Same structural bug N-HEAL-04 healed in PosComponent. KDS lacks the isEmpty/isStale fallback that PosComponent._kioskPollingInterval introduced (PosComponent.vue:2616-2630).",
+      "impact": "Kitchen staleness budget (5s target) silently breached when Echo subscription drops without WS disconnect. Orders not surfacing within 5s of payment.",
+      "remediation": "Refactor startAutoRefresh to self-recursive setTimeout + add isStale fallback comparing now() vs last successful refreshOrderList timestamp.",
+      "primary_path_kds_sync_mitigation": "KdsSyncService is the canonical sync path for KDS V2 (uses self-recursive setTimeout with cadence recompute on WS state change + 5xx backoff). Legacy startAutoRefresh is a SECONDARY fallback. Risk is therefore lower than for PosComponent (which is primary path) but still present whenever the legacy KDS path is active."
+    },
+    {
+      "id": "Z8-ADV-02",
+      "severity": "P1",
+      "title": "N-HEAL-04 parallel vulnerability: PosOrdersTrackerComponent _startPolling has cadence captured at startup + no isStale fallback",
+      "file": "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:685-697",
+      "evidence": "this._pollTimer = setInterval(() => this.fetchOrders(), this._pollInterval()); — _pollInterval() returns realtimeConnected?POLL_WS_MS:POLL_NO_WS_MS (60000 vs 8000). Cadence frozen at construction time. Only _restartPolling on WS state_change can update it. Silent Echo failure leaves cadence stuck at 60s.",
+      "n_heal_04_analog": "Same structural bug N-HEAL-04 healed in PosComponent. No isStale fallback.",
+      "impact": "POS tracker dashboard widget (across PaymentComponent + PosOrdersTrackerComponent + ReceiptComponent) shows stale order list if Echo channel-auth silently fails. Cashier sees orders linger after they should be cleared.",
+      "remediation": "Refactor _startPolling to self-recursive setTimeout pattern matching N-HEAL-04; add timestamp-based isStale fallback in _pollInterval()."
+    },
+    {
+      "id": "Z8-ADV-03",
+      "severity": "P2",
+      "title": "Most legacy polling loops lack explicit in-flight back-pressure guard",
+      "evidence": "Only KioskWaitingComponent._doPoll (line 300 _pollInFlight) has explicit overlap guard. PosOrdersTracker, KDS legacy, Outbox, StockRupture, PaymentComponent, KioskPayment all rely on cadence > realistic round-trip — but no enforcement if endpoint slows.",
+      "scenario": "Backend endpoint slows >60s (DB lock, queue saturation) → next setInterval tick fires while previous request still in flight → request pile-up amplifies the load on the slow endpoint.",
+      "mitigation_partial": "Sync services (KdsSync/PosSync/OssSync) all use AbortController. The 4 self-recursive setTimeout patterns implicitly serialize (next tick scheduled only after await completes).",
+      "remediation": "Migrate legacy setInterval loops to self-recursive setTimeout pattern (which inherently serializes), or add explicit _inFlight guard."
+    },
+    {
+      "id": "Z8-ADV-04",
+      "severity": "P3",
+      "title": "Browser-throttled setTimeout when laptop lid closes (offline polling)",
+      "evidence": "Browsers throttle setInterval/setTimeout to ~1s when tab backgrounded, may pause entirely when laptop sleeps. On wake, all timers fire near-simultaneously creating a request burst.",
+      "mitigation": "OssSyncService line 218-225 has explicit visibilitychange burst-poll on visible. PosSyncService line 343 _scheduleNormalCadence has jitter (0-500ms). KdsSyncService has 0-jitter for forceSync.",
+      "gap": "PosComponent _kioskPollingInterval has no visibilitychange burst-poll; relies on Echo reconnect handler (PosComponent.vue:2598-2608) which only fires if WS truly disconnected during sleep.",
+      "remediation": "Add visibilitychange listener in PosComponent.mounted that forces a single loadKioskCashOrders/loadReadyOrders + restartKioskPolling cycle when document becomes visible. Mirror OssSyncService pattern."
+    },
+    {
+      "id": "Z8-ADV-05",
+      "severity": "P2",
+      "title": "Polling endpoint error: no max-retry circuit-breaker for legacy intervals",
+      "evidence": "KioskWaitingComponent line 327-331 counts pollFailCount and surfaces 'networkLost' banner after 3 failures, but continues polling forever. OutboxOverview, StockRupture, PosOrdersTracker, KDS legacy all swallow errors silently and keep polling.",
+      "scenario": "Server returns 500 on every poll for hours → frontend keeps hammering at full cadence. KdsSyncService + PosSyncService + OssSyncService have proper 5xx backoff doubling (cap 30s). Legacy loops do not.",
+      "remediation": "Either: (a) add 5xx backoff doubling to legacy intervals; (b) migrate to sync-service primary paths and deprecate the parallel legacy loops."
+    },
+    {
+      "id": "Z8-ADV-06",
+      "severity": "P3",
+      "title": "Long-session memory growth from accumulated AbortControllers / promise chains",
+      "evidence": "4h+ cashier shifts with 60s polling = 240 ticks. Each Echo handler + each fetchOrders allocates closures. PosComponent._availabilityToastTimers (line 2059) explicit cleanup pattern is best practice but not universal.",
+      "mitigation": "All identified polling loops have beforeUnmount cleanup. Sync services have abort+state-machine teardown.",
+      "remaining_concern": "Long-session Vuex store growth (orderStatusScreenOrder/lists accumulates fetched orders) - out of scope for polling cadence audit."
+    }
+  ],
+  "verdict": "AMBER",
+  "verdict_rationale": "Primary kiosk-ready polling (PosComponent N-HEAL-04) is GREEN — self-recursive setTimeout + isStale/isEmpty fallback + sentinel lock. Sync services (Kds/Pos/Oss) are GREEN — self-recursive setTimeout + WS-state subscriptions + AbortController back-pressure + 5xx backoff. However, two N-HEAL-04 structural twins remain: KitchenDisplaySystemComponent.startAutoRefresh and PosOrdersTrackerComponent._startPolling both use setInterval with cadence captured at startup and lack the isStale fallback. Both are vulnerable to the exact silent-Echo failure mode N-HEAL-04 documents (channel-auth fail with persistent WS socket). KDS risk is lower because KdsSyncService is the primary sync path (V2 KDS); legacy startAutoRefresh is fallback. POS tracker risk is more direct — it is the canonical path for the cashier-facing PosOrdersTrackerComponent surface. RECOMMENDATION: extend N-HEAL-04 refactor to both sites in a follow-up Z8-FOLLOWUP wave (small surgical patch, no frozen-zone, mirror sentinel pattern).",
+  "follow_up_actions": [
+    {
+      "id": "Z8-FU-01",
+      "title": "Apply N-HEAL-04 self-recursive setTimeout pattern to KitchenDisplaySystemComponent.startAutoRefresh + add isStale fallback in _pollingInterval()",
+      "estimated_loc": "~25 lines + sentinel mirror",
+      "frozen_zone_touch": false,
+      "priority": "P1"
+    },
+    {
+      "id": "Z8-FU-02",
+      "title": "Apply N-HEAL-04 self-recursive setTimeout pattern to PosOrdersTrackerComponent._startPolling + add isStale fallback in _pollInterval()",
+      "estimated_loc": "~25 lines + sentinel mirror",
+      "frozen_zone_touch": false,
+      "priority": "P1"
+    },
+    {
+      "id": "Z8-FU-03",
+      "title": "Add visibilitychange burst-poll listener to PosComponent.mounted (mirror OssSyncService pattern)",
+      "estimated_loc": "~15 lines + sentinel",
+      "frozen_zone_touch": false,
+      "priority": "P2"
+    },
+    {
+      "id": "Z8-FU-04",
+      "title": "Audit RealtimeReport/AuditTrail/SlaAlerts dashboard widgets — consider WS-state-aware cadence + 5xx backoff",
+      "estimated_loc": "~30 lines across 3 files",
+      "frozen_zone_touch": false,
+      "priority": "P3"
+    }
+  ],
+  "frozen_zone_diff": 0,
+  "nf525_chain_impact": "NONE — polling is read-only GET; no fiscal state mutation"
+}

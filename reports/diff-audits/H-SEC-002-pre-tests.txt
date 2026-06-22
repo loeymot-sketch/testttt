@@ -1,0 +1,273 @@
+Warning: TTY mode requires /dev/tty to be read/writable.
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\ActionLogBranchIsolationTest[39m
+  [32;1m✓[39;22m[39m [2mcreating log authenticated auto sets branch id[22m[39m
+  [32;1m✓[39;22m[39m [2mcreating log unauthenticated falls back to user branch[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Admin\CashOverviewControllerTest[39m
+  [32;1m✓[39;22m[39m [2mrejects unauthenticated[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Admin\CashSessionReportControllerTest[39m
+  [32;1m✓[39;22m[39m [2mrejects unauthenticated[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Admin\EmployeeRequestAuthorizeTest[39m
+  [32;1m✓[39;22m[39m [2muser without permission is denied[22m[39m
+  [32;1m✓[39;22m[39m [2muser with employees create is allowed[22m[39m
+  [32;1m✓[39;22m[39m [2muser with employees edit is allowed[22m[39m
+  [32;1m✓[39;22m[39m [2manonymous request is denied[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Admin\IngredientControllerAuthzTest[39m
+  [32;1m✓[39;22m[39m [2munauthenticated request is rejected[22m[39m
+  [32;1m✓[39;22m[39m [2muser without permission is rejected 403[22m[39m
+  [32;1m✓[39;22m[39m [2muser with ingredients manage permission can list[22m[39m
+  [32;1m✓[39;22m[39m [2muser without permission cannot toggle availability[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Admin\POS\ReceiptPrintControllerTest[39m
+  [32;1m✓[39;22m[39m [2munauthenticated returns 401[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Admin\PermissionControllerIndexAuthzTest[39m
+  [32;1m✓[39;22m[39m [2mpermission controller gates every method with settings middleware[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Admin\StockCatalogOverviewControllerTest[39m
+  [32;1m✓[39;22m[39m [2munauthenticated request is rejected[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\AntiGravityTest[39m
+  [32;1m✓[39;22m[39m [2mt11 order without auth returns 401[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Auth\BcryptRoundsUpgradeTest[39m
+  [32;1m✓[39;22m[39m [2mpassword is rehashed when cost factor is below config[22m[39m
+  [32;1m✓[39;22m[39m [2muser can still login after silent rehash[22m[39m
+  [32;1m✓[39;22m[39m [2mpassword is not rehashed when already at target cost[22m[39m
+  [32;1m✓[39;22m[39m [2mconfig default rounds is twelve[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Auth\GuestSignupAbilityScopeTest[39m
+  [32;1m✓[39;22m[39m [2mguest signup issues kiosk order ability only[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Auth\KioskThrottleKeysTest[39m
+  [32;1m✓[39;22m[39m [2mlegitimate kiosk orders pass until cap[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk orders recovery after window reset[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk orders isolation two machines same ip[22m[39m
+  [32;1m✓[39;22m[39m [2mlogin lockout email path 429 after max attempts[22m[39m
+  [32;1m✓[39;22m[39m [2mlogin lockout anon fallback when no email no username[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Auth\RefreshTokenAbilityPreserveTest[39m
+  [32;1m✓[39;22m[39m [2mkiosk token refresh preserves kiosk order ability only[22m[39m
+  [32;1m✓[39;22m[39m [2madmin token refresh preserves full abilities[22m[39m
+  [32;1m✓[39;22m[39m [2mtoken with no abilities refresh no wildcard[22m[39m
+  [32;1m✓[39;22m[39m [2minvalid token returns 401[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Auth\UserMassAssignmentTest[39m
+  [32;1m✓[39;22m[39m [2mpublic signup strips branch id is guest status[22m[39m
+  [32;1m✓[39;22m[39m [2msignup request validated strips sensitive fields[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Auth\UserStatusRevalidationTest[39m
+  [32;1m✓[39;22m[39m [2mdisabled user token rejected on next request[22m[39m
+  [32;1m✓[39;22m[39m [2manonymous route not blocked by middleware[22m[39m
+  [32;1m✓[39;22m[39m [2minactive user blocked even with wildcard ability[22m[39m
+  [32;1m✓[39;22m[39m [2mdeactivating one user does not affect another active user[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\AuthComprehensiveTest[39m
+  [32;1m✓[39;22m[39m [2madmin can login with valid credentials[22m[39m
+  [32;1m✓[39;22m[39m [2mlogin with invalid credentials returns 400[22m[39m
+  [32;1m✓[39;22m[39m [2mpos operator receives correct landing permission[22m[39m
+  [32;1m✓[39;22m[39m [2mchef receives correct landing permission[22m[39m
+  [32;1m✓[39;22m[39m [2mcustomer receives home landing[22m[39m
+  [32;1m✓[39;22m[39m [2mlogout invalidates token[22m[39m
+  [32;1m✓[39;22m[39m [2maccess without token returns 401[22m[39m
+  [32;1m✓[39;22m[39m [2madmin can access admin routes[22m[39m
+  [32;1m✓[39;22m[39m [2mcustomer cannot access admin routes[22m[39m
+  [32;1m✓[39;22m[39m [2mtoken is generated with sanctum[22m[39m
+  [32;1m✓[39;22m[39m [2mpos operator can access pos routes[22m[39m
+  [32;1m✓[39;22m[39m [2mchef can access kds routes[22m[39m
+  [32;1m✓[39;22m[39m [2mnonexistent user cannot login[22m[39m
+  [32;1m✓[39;22m[39m [2mlogin with empty credentials returns 422[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Cash\CashDrawerEndpointsTest[39m
+  [32;1m✓[39;22m[39m [2mopen session endpoint rejects unauthenticated[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Catalog\CentralManagementAuthzMatrixTest[39m
+  [32;1m✓[39;22m[39m [2mitems show can read modifiers but cannot mutate them[22m[39m
+  [32;1m✓[39;22m[39m [2mcategory management operations require settings permission[22m[39m
+  [32;1m✓[39;22m[39m [2mcatalog item reads require items show and branch overlay is scoped[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Catalog\ProductPhotoAuthzTest[39m
+  [32;1m✓[39;22m[39m [2mproduct photo mutation is reserved to global catalog roles[22m[39m
+
+  [37;41;1m FAIL [39;49;22m[39m Tests\Feature\Composer\ComposerAuthzMinimalTest[39m
+  [32;1m✓[39;22m[39m [2mbranch admin can compose own branch[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch admin cannot compose other branch[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch admin cannot create or mutate global composer profiles[22m[39m
+  [31;1m⨯[39;22m[39m [2mbranch admin cannot update foreign profile by forging payload scope[22m[39m
+  [31;1m⨯[39;22m[39m [2mshow defaults to actor branch and does not leak foreign latest profile[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch admin can show global item profile when no branch scoped profile exists[22m[39m
+  [32;1m✓[39;22m[39m [2mtenant admin show defaults to global profile not branch latest[22m[39m
+  [32;1m✓[39;22m[39m [2mtenant admin can compose any branch[22m[39m
+  [32;1m✓[39;22m[39m [2mtenant admin can create global composer profile[22m[39m
+  [32;1m✓[39;22m[39m [2mpos operator and delivery boy are forbidden[22m[39m
+  [31;1m⨯[39;22m[39m [2mbranch admin cannot mutate composer steps for other branch[22m[39m
+  [32;1m✓[39;22m[39m [2mno catalog manager role is created[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Composer\ComposerAvailableSourcesTest[39m
+  [32;1m✓[39;22m[39m [2mrequires authentication[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Composer\ComposerTemplateApplyTest[39m
+  [32;1m✓[39;22m[39m [2mrequires authentication[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Frontend\OrderRequestDeliveryFeeAuthorityTest[39m
+  [32;1m✓[39;22m[39m [2mfrontend delivery recomputes forged delivery charge from saved address coordinates[22m[39m
+  [32;1m✓[39;22m[39m [2mfrontend delivery zero distance keeps minimum delivery charge[22m[39m
+  [32;1m✓[39;22m[39m [2mfrontend delivery requires distance instead of silent minimum fallback[22m[39m
+  [32;1m✓[39;22m[39m [2mfrontend takeaway does not require delivery distance[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Frontend\OrderRequestKioskAbilityTest[39m
+  [32;1m✓[39;22m[39m [2mtokenless session user on frontend order route passes authorize[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Http\Admin\MenuProjectionControllerTest[39m
+  [32;1m✓[39;22m[39m [2mendpoint requires authentication[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Kds\KdsHistoryTodayEndpointTest[39m
+  [32;1m✓[39;22m[39m [2munauthenticated request is denied[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Kiosk\KioskAutoLoginGateTest[39m
+  [32;1m✓[39;22m[39m [2munauthenticated public ip receives null payload in non local env[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Kiosk\PaymentReconcileTest[39m
+  [32;1m✓[39;22m[39m [2mreconcile requires authentication[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskAuthTest[39m
+  [32;1m✓[39;22m[39m [2mkiosk login with valid credentials[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk cannot access admin flows[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskEventTest[39m
+  [32;1m✓[39;22m[39m [2mkiosk event requires auth[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskPhase1\KioskEndpointsTest[39m
+  [32;1m✓[39;22m[39m [2mmenu requires auth[22m[39m
+  [32;1m✓[39;22m[39m [2mpreview requires auth[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskPhase1\KioskEventAliasTest[39m
+  [32;1m✓[39;22m[39m [2malias requires auth[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskPhase7\KioskEventBranchIsolationTest[39m
+  [32;1m✓[39;22m[39m [2munauthenticated cannot post any event[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskSecurity\KioskEventAbilityTest[39m
+  [32;1m✓[39;22m[39m [2mroute rejects unauthenticated request with data set "hyphen route"[22m[39m
+  [32;1m✓[39;22m[39m [2mroute rejects unauthenticated request with data set "slash route"[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskSecurity\KioskEventBranchSpoofingTest[39m
+  [32;1m✓[39;22m[39m [2mmatch no security log branch authoritative[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Menu\AvailabilityToggleAuthzMatrixTest[39m
+  [32;1m✓[39;22m[39m [2mtoggle requires items edit permission[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch user can toggle own branch but not foreign branch[22m[39m
+  [32;1m✓[39;22m[39m [2mnull branch fanout is scoped for branch user and global for admin[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Menu\MenuAvailabilityToggleEndpointsTest[39m
+  [32;1m✓[39;22m[39m [2mextra toggle requires authentication[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Menu\SetMaxDailyQtyEndpointTest[39m
+  [32;1m✓[39;22m[39m [2mendpoint requires authentication[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\OSS\OssCustomerScreenFilterTest[39m
+  [32;1m✓[39;22m[39m [2mauthed list also excludes delivery[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Observability\CspReportEndpointTest[39m
+  [32;1m✓[39;22m[39m [2mroute is anonymous no auth required[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Observability\OutboxOverviewControllerTest[39m
+  [32;1m✓[39;22m[39m [2munauthenticated user receives 401[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Observability\SyncMetricsRecorderTest[39m
+  [32;1m✓[39;22m[39m [2mrecord websocket auth failure inserts count one metric[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Observability\SyncOverviewControllerTest[39m
+  [32;1m✓[39;22m[39m [2munauthenticated user receives 401[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\OrderFlowTest[39m
+  [32;1m✓[39;22m[39m [2morder without auth returns 401[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PosWalkInAndDeliveryFeeTest[39m
+  [32;1m✓[39;22m[39m [2mpos quote resolves walk in customer and authoritative delivery fee[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\QuoteDiscountAuthoritativeTest[39m
+  [32;1m✓[39;22m[39m [2mquote discount uses backend subtotal not forged client total[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Security\RateLimitTest[39m
+  [32;1m✓[39;22m[39m [2mlogin lockout limiter respects auth config override[22m[39m
+
+[sentinel] FormRequest return-true count is now 66 (< baseline 69). Lower RETURN_TRUE_BASELINE accordingly.
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Sentinels\FormRequestAuthzDriftSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mform request return true count does not grow past baseline[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Sentinels\LoyaltyQrSigningSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mgenerate qr endpoint requires authentication[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Sentinels\MyOrderDetailsAuthzSentinelTest[39m
+  [32;1m✓[39;22m[39m [2manonymous request is unauthenticated 401[22m[39m
+  [32;1m✓[39;22m[39m [2mcustomer show permission user can access[22m[39m
+  [32;1m✓[39;22m[39m [2mwaiter show permission user can access[22m[39m
+  [32;1m✓[39;22m[39m [2mdelivery boy show permission user can access[22m[39m
+  [32;1m✓[39;22m[39m [2muser without any show permission is forbidden 403[22m[39m
+  [32;1m✓[39;22m[39m [2mcross branch requester cannot see order 404[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Sentinels\PasswordResetRevokesTokensSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mold token returns 401 on authenticated endpoint after reset[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Sync\PusherChannelAuthWildcardSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mchannel auth uses token name not token can[22m[39m
+  [32;1m✓[39;22m[39m [2mchannel auth admin branch requires role check[22m[39m
+
+  [2m---[22m
+
+  [31;1m• Tests\Feature\Composer\ComposerAuthzMinimalTest [39;22m> [31;1mbranch admin cannot update foreign profile by forging payload scope[39;22m
+[39;1m  Expected response status code [403] but received 404.
+  Failed asserting that 403 is identical to 404.[39;22m
+
+  at [32mtests/Feature/Composer/ComposerAuthzMinimalTest.php[39m:[32m114[39m
+    110▕         ]);
+    111▕ 
+    112▕         $this->actingAs($user, 'sanctum')
+    113▕             ->putJson($this->profileUpdateUrl($foreignProfile->id), $this->payload($this->branchA->id))
+  ➜ 114▕             ->assertForbidden();
+    115▕     }
+    116▕ 
+    117▕     public function test_show_defaults_to_actor_branch_and_does_not_leak_foreign_latest_profile(): void
+    118▕     {
+
+  [31;1m• Tests\Feature\Composer\ComposerAuthzMinimalTest [39;22m> [31;1mshow defaults to actor branch and does not leak foreign latest profile[39;22m
+[39;1m  Expected response status code [403] but received 404.
+  Failed asserting that 403 is identical to 404.[39;22m
+
+  at [32mtests/Feature/Composer/ComposerAuthzMinimalTest.php[39m:[32m139[39m
+    135▕             ->assertJsonPath('data.branch_id_scope', $this->branchA->id);
+    136▕ 
+    137▕         $this->actingAs($user, 'sanctum')
+    138▕             ->getJson($this->profileUrl().'?branch_id_scope='.$this->branchB->id)
+  ➜ 139▕             ->assertForbidden();
+    140▕     }
+    141▕ 
+    142▕     public function test_branch_admin_can_show_global_item_profile_when_no_branch_scoped_profile_exists(): void
+    143▕     {
+
+  [31;1m• Tests\Feature\Composer\ComposerAuthzMinimalTest [39;22m> [31;1mbranch admin cannot mutate composer steps for other branch[39;22m
+[39;1m  Expected response status code [403] but received 404.
+  Failed asserting that 403 is identical to 404.[39;22m
+
+  at [32mtests/Feature/Composer/ComposerAuthzMinimalTest.php[39m:[32m237[39m
+    233▕         $ownStep = ItemWizardStep::factory()->create(['profile_id' => $ownProfile->id]);
+    234▕ 
+    235▕         $this->actingAs($user, 'sanctum')
+    236▕             ->postJson($this->stepsUrlForProfile($foreignProfile->id), $this->stepPayload())
+  ➜ 237▕             ->assertForbidden();
+    238▕ 
+    239▕         $this->actingAs($user, 'sanctum')
+    240▕             ->putJson($this->stepUrl($foreignStep->id), $this->stepPayload('Crudités modifié', $foreignStep->step_key))
+    241▕             ->assertForbidden();
+
+
+  [37;1mTests:  [39;22m[31;1m3 failed[39;22m[39m, [39m[32;1m110 passed[39;22m
+  [37;1mTime:   [39;22m[39m18.93s[39m
+
+

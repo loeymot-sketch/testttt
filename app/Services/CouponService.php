@@ -43,6 +43,8 @@ class CouponService
         'minimum_order',
         'maximum_discount',
         'limit_per_user',
+        // [PROMO-DASH-2026-05-06] Filtres avancés Dashboard
+        'status',
     ];
 
     protected $exceptFilter = [
@@ -61,7 +63,10 @@ class CouponService
             $orderColumn = $this->sanitizeOrderColumn((string) ($request->get('order_column') ?? 'id'));
             $orderType   = $this->sanitizeOrderDirection((string) ($request->get('order_by') ?? $request->get('order_type') ?? 'desc'));
 
-            return Coupon::where(function ($query) use ($requests) {
+            // [PROMO-DASH-2026-05-06] Support filtre par surface (canal) — JSON.
+            $surfaceFilter = $request->get('surface');
+
+            return Coupon::where(function ($query) use ($requests, $surfaceFilter) {
                 foreach ($requests as $key => $request) {
                     if (in_array($key, $this->couponFilter)) {
                         if ($key == "start_date") {
@@ -70,6 +75,11 @@ class CouponService
                         } else if ($key == "end_date") {
                             $end_date  = Date('Y-m-d', strtotime($request));
                             $query->whereDate($key, '=', $end_date);
+                        } else if ($key == "status" || $key == "discount_type") {
+                            // exact match for integer enums
+                            if ($request !== null && $request !== '') {
+                                $query->where($key, '=', (int) $request);
+                            }
                         } else {
                             $query->where($key, 'like', '%' . $this->escapeLike((string) $request) . '%');
                         }
@@ -83,6 +93,15 @@ class CouponService
                             }
                         }
                     }
+                }
+
+                // Surface scope filter — JSON containment, portable enough.
+                if (is_string($surfaceFilter) && $surfaceFilter !== '') {
+                    $needle = '"' . trim($surfaceFilter) . '"';
+                    $query->where(function ($q) use ($needle) {
+                        $q->whereNull('surfaces')
+                          ->orWhere('surfaces', 'like', '%' . $needle . '%');
+                    });
                 }
             })->orderBy($orderColumn, $orderType)->$method(
                 $methodValue
@@ -116,24 +135,7 @@ class CouponService
     public function store(CouponRequest $request)
     {
         try {
-            $this->coupon = Coupon::create([
-                'name'             => $request->name,
-                'description'      => $request->description,
-                'code'             => $request->code,
-                'discount'         => $request->discount,
-                'discount_type'    => $request->discount_type,
-                'start_date'       => !blank($request->start_date) ? date(
-                    'Y-m-d H:i:s',
-                    strtotime($request->start_date)
-                ) : null,
-                'end_date'         => !blank($request->end_date) ? date(
-                    'Y-m-d H:i:s',
-                    strtotime($request->end_date)
-                ) : null,
-                'minimum_order'    => $request->minimum_order,
-                'maximum_discount' => $request->maximum_discount,
-                'limit_per_user'   => $request->limit_per_user,
-            ]);
+            $this->coupon = Coupon::create($this->buildPayload($request, true));
             if ($request->image) {
                 $this->coupon->addMedia($request->image)->toMediaCollection('coupon');
             }
@@ -145,29 +147,144 @@ class CouponService
     }
 
     /**
+     * [PROMO-DASH-2026-05-06] Toggle status ACTIVE <-> INACTIVE.
+     * Pas de validation FormRequest — appelé directement par le controller
+     * `toggleStatus`. Idempotent.
+     */
+    public function toggleStatus(Coupon $coupon): Coupon
+    {
+        $current = (int) ($coupon->status ?? \App\Enums\Status::ACTIVE);
+        $coupon->status = $current === \App\Enums\Status::ACTIVE
+            ? \App\Enums\Status::INACTIVE
+            : \App\Enums\Status::ACTIVE;
+        $coupon->save();
+        return $coupon->refresh();
+    }
+
+    /**
+     * Construit le payload (création + update) en supportant les champs avancés.
+     */
+    private function buildPayload(CouponRequest $request, bool $isCreate): array
+    {
+        $payload = [
+            'name'             => $request->name,
+            'description'      => $request->description,
+            'code'             => $request->code,
+            'discount'         => $request->discount,
+            'discount_type'    => $request->discount_type,
+            'start_date'       => !blank($request->start_date) ? date(
+                'Y-m-d H:i:s',
+                strtotime($request->start_date)
+            ) : null,
+            'end_date'         => !blank($request->end_date) ? date(
+                'Y-m-d H:i:s',
+                strtotime($request->end_date)
+            ) : null,
+            'minimum_order'    => $request->minimum_order,
+            'maximum_discount' => $request->maximum_discount,
+            'limit_per_user'   => $request->limit_per_user,
+        ];
+
+        // [PROMO-DASH-2026-05-06] Advanced scoping fields. On utilise has() pour
+        // ne pas écraser de valeurs existantes en update partiel.
+        if ($request->has('valid_days_of_week')) {
+            $payload['valid_days_of_week'] = $this->normalizeArrayField($request->input('valid_days_of_week'));
+        } elseif ($isCreate) {
+            $payload['valid_days_of_week'] = null;
+        }
+
+        if ($request->has('valid_hours_start')) {
+            $val = $request->input('valid_hours_start');
+            $payload['valid_hours_start'] = !blank($val) ? (strlen((string) $val) === 5 ? $val . ':00' : $val) : null;
+        } elseif ($isCreate) {
+            $payload['valid_hours_start'] = null;
+        }
+
+        if ($request->has('valid_hours_end')) {
+            $val = $request->input('valid_hours_end');
+            $payload['valid_hours_end'] = !blank($val) ? (strlen((string) $val) === 5 ? $val . ':00' : $val) : null;
+        } elseif ($isCreate) {
+            $payload['valid_hours_end'] = null;
+        }
+
+        if ($request->has('branch_scope')) {
+            $arr = $this->normalizeArrayField($request->input('branch_scope'));
+            $payload['branch_scope'] = is_array($arr)
+                ? array_values(array_map('intval', $arr))
+                : null;
+        } elseif ($isCreate) {
+            $payload['branch_scope'] = null;
+        }
+
+        if ($request->has('surfaces')) {
+            $arr = $this->normalizeArrayField($request->input('surfaces'));
+            $payload['surfaces'] = is_array($arr)
+                ? array_values(array_map(fn ($s) => strtolower((string) $s), $arr))
+                : null;
+        } elseif ($isCreate) {
+            $payload['surfaces'] = null;
+        }
+
+        if ($request->has('max_uses_global')) {
+            $val = $request->input('max_uses_global');
+            $payload['max_uses_global'] = !blank($val) ? (int) $val : null;
+        } elseif ($isCreate) {
+            $payload['max_uses_global'] = null;
+        }
+
+        if ($isCreate) {
+            $payload['usage_count'] = 0;
+        }
+
+        if ($request->has('status')) {
+            $val = $request->input('status');
+            $payload['status'] = !blank($val) ? (int) $val : \App\Enums\Status::ACTIVE;
+        } elseif ($isCreate) {
+            $payload['status'] = \App\Enums\Status::ACTIVE;
+        }
+
+        return $payload;
+    }
+
+    /**
+     * Convertit une valeur arbitraire (array, string CSV, JSON) en array PHP.
+     */
+    private function normalizeArrayField($value): ?array
+    {
+        if (is_array($value)) {
+            return $value;
+        }
+        if ($value === null || $value === '' || $value === 'null') {
+            return null;
+        }
+        if (is_string($value)) {
+            $trim = trim($value);
+            if ($trim === '') {
+                return null;
+            }
+            // JSON ?
+            if (($trim[0] ?? '') === '[' || ($trim[0] ?? '') === '{') {
+                $decoded = json_decode($trim, true);
+                if (is_array($decoded)) {
+                    return $decoded;
+                }
+            }
+            // CSV
+            return array_filter(array_map('trim', explode(',', $trim)), fn ($v) => $v !== '');
+        }
+        return null;
+    }
+
+    /**
      * @throws Exception
      */
     public function update(CouponRequest $request, Coupon $coupon)
     {
         try {
             DB::transaction(function () use ($request, $coupon) {
-                $this->coupon             = $coupon;
-                $coupon->name             = $request->name;
-                $coupon->description      = $request->description;
-                $coupon->code             = $request->code;
-                $coupon->discount         = $request->discount;
-                $coupon->discount_type    = $request->discount_type;
-                $coupon->start_date       = !blank($request->start_date) ? date(
-                    'Y-m-d H:i:s',
-                    strtotime($request->start_date)
-                ) : null;
-                $coupon->end_date         = !blank($request->end_date) ? date(
-                    'Y-m-d H:i:s',
-                    strtotime($request->end_date)
-                ) : null;
-                $coupon->minimum_order    = $request->minimum_order;
-                $coupon->maximum_discount = $request->maximum_discount;
-                $coupon->limit_per_user   = $request->limit_per_user;
+                $this->coupon = $coupon;
+                $payload = $this->buildPayload($request, false);
+                $coupon->fill($payload);
                 $coupon->save();
                 if ($request->image) {
                     $coupon->media()->delete();
@@ -233,7 +350,19 @@ class CouponService
     public function couponChecking(CouponCheckRequest $request)
     {
         try {
-            return $this->resolveCouponByCode((string) $request->code, (float) $request->total, (int) auth()->id());
+            // [CV6 P0 fix — wire isUsableNow] Read branch_id + surface from request
+            // to enforce the new advanced promo scopes (status, days, hours, branch_scope, surfaces)
+            // on the HTTP path (cf. INTEGRATION_AUDIT_GLOBAL_2026-05-06.md §8 risque P0).
+            $branchId = $request->filled('branch_id') ? (int) $request->input('branch_id') : null;
+            $surface = $request->filled('surface') ? (string) $request->input('surface') : null;
+
+            return $this->resolveCouponByCode(
+                (string) $request->code,
+                (float) $request->total,
+                (int) auth()->id(),
+                $branchId,
+                $surface
+            );
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -245,10 +374,10 @@ class CouponService
      *
      * @throws Exception
      */
-    public function resolveCouponById(int $couponId, float $subtotal, int $userId): Coupon
+    public function resolveCouponById(int $couponId, float $subtotal, int $userId, ?int $branchId = null, ?string $surface = null): Coupon
     {
         $coupon = Coupon::find($couponId);
-        return $this->validateCouponForOrder($coupon, $subtotal, $userId);
+        return $this->validateCouponForOrder($coupon, $subtotal, $userId, $branchId, $surface);
     }
 
     /**
@@ -256,10 +385,10 @@ class CouponService
      *
      * @throws Exception
      */
-    public function resolveCouponByCode(string $code, float $subtotal, int $userId): Coupon
+    public function resolveCouponByCode(string $code, float $subtotal, int $userId, ?int $branchId = null, ?string $surface = null): Coupon
     {
         $coupon = Coupon::where(['code' => trim($code)])->first();
-        return $this->validateCouponForOrder($coupon, $subtotal, $userId);
+        return $this->validateCouponForOrder($coupon, $subtotal, $userId, $branchId, $surface);
     }
 
     /**
@@ -284,7 +413,7 @@ class CouponService
      *
      * @throws Exception
      */
-    private function validateCouponForOrder(?Coupon $coupon, float $subtotal, int $userId): Coupon
+    private function validateCouponForOrder(?Coupon $coupon, float $subtotal, int $userId, ?int $branchId = null, ?string $surface = null): Coupon
     {
         if (!$coupon) {
             throw new Exception(trans('all.message.coupon_not_exist'), 422);
@@ -307,14 +436,49 @@ class CouponService
 
         $limitPerUser = (int) ($coupon->limit_per_user ?? 0);
         if ($limitPerUser > 0) {
+            // [abuse-heal 2026-06-18 engines] lockForUpdate on the per-user redemption
+            // count. The order-create paths run this inside their DB::transaction, so the
+            // lock serializes two concurrent redemptions on the order_coupons rows —
+            // without it both requests read the same stale count and both pass a
+            // limit_per_user=1 coupon (confirmed race). Outside a transaction (the
+            // /coupon-checking read path) the lock is a harmless statement-scoped no-op.
             $orderedCouponCount = OrderCoupon::where([
                 'user_id' => $userId,
                 'coupon_id' => $coupon->id,
-            ])->count();
+            ])->lockForUpdate()->count();
 
             if ($orderedCouponCount >= $limitPerUser) {
                 throw new Exception(trans('all.message.coupon_limit_exceeded'), 422);
             }
+        }
+
+        // [COUPON-CAP-01 heal 2026-06-01] Enforce max_uses_global. The model's isUsableNow()
+        // checked it against `usage_count`, but usage_count is never incremented (dead column),
+        // so the global cap never tripped. Count actual redemptions from order_coupons — same
+        // source-of-truth as limit_per_user above (single-box V1: same non-atomic semantics).
+        $maxUsesGlobal = (int) ($coupon->max_uses_global ?? 0);
+        if ($maxUsesGlobal > 0) {
+            // [abuse-heal 2026-06-18 engines] Same lockForUpdate guard for the global
+            // cap (the model comment above noted the "same non-atomic semantics").
+            // Serializes concurrent redemptions inside the order-create transaction;
+            // statement-scoped no-op on the lock-free read path.
+            $globalUsed = OrderCoupon::where('coupon_id', $coupon->id)->lockForUpdate()->count();
+            if ($globalUsed >= $maxUsesGlobal) {
+                throw new Exception(trans('all.message.coupon_limit_exceeded'), 422);
+            }
+        }
+
+        // [CV6 P0 fix — wire isUsableNow]
+        // The model exposes a richer scoping check (status, day-of-week, hour-of-day,
+        // branch_scope, surfaces, max_uses_global) — this private path-validator
+        // historically ignored it, leaving the new fields unenforced at the HTTP layer
+        // (cf. INTEGRATION_AUDIT_GLOBAL_2026-05-06.md §8 risque P0).
+        // We call it here so /coupon-checking, /apply-coupon, etc. pick up the constraints.
+        // When $branchId / $surface are null (caller didn't provide), the model treats
+        // them as "no branch/surface filter" — backward compatible with legacy callers.
+        if (!$coupon->isUsableNow($branchId, $surface, $now)) {
+            // Use a generic message to avoid leaking which scope failed.
+            throw new Exception(trans('all.message.coupon_not_applicable_now'), 422);
         }
 
         return $coupon;

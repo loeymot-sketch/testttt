@@ -34,23 +34,45 @@ final class EventContract
     public const BROADCAST_MAP = [
         'OrderCreated'              => EventType::ORDER_CREATED,
         'OrderStatusChanged'        => EventType::ORDER_STATUS_CHANGED,
+        'OrderPaidAtCounter'        => EventType::ORDER_PAYMENT_CONFIRMED,
         'OrderItemAdded'            => EventType::ORDER_ITEM_ADDED,
         'OrderCancelled'            => EventType::ORDER_CANCELLED,
+        // [F-02] KDS table reassignment fan-out.
+        'OrderTableChanged'         => EventType::ORDER_TABLE_CHANGED,
         'ItemAvailabilityChanged'   => EventType::MENU_ITEM_AVAILABILITY_CHANGED,
+        'CatalogChanged'            => EventType::CATALOG_CHANGED,
         'StockLow'                  => EventType::STOCK_LOW,
+        // [PROMO-DASH-2026-05-06] Coupon mutations broadcast.
+        'CouponChanged'             => EventType::COUPON_CHANGED,
+        // [P13 — F-VERIFY-09-01 / F-VERIFY-09-10] payment_status transitions.
+        'OrderPaymentStatusChanged' => EventType::ORDER_PAYMENT_STATUS_CHANGED,
     ];
 
     /**
      * Required payload keys for each canonical event type.
      * Enforced by assertPayloadValid() before a row reaches the outbox.
      */
-    private const REQUIRED_PAYLOAD_KEYS = [
-        EventType::ORDER_CREATED                  => ['order_id'],
-        EventType::ORDER_STATUS_CHANGED           => ['order_id', 'old_status', 'new_status'],
+    public const REQUIRED_PAYLOAD_KEYS = [
+        EventType::ORDER_CREATED                  => ['order_id', 'queue_number', '_origin', 'payment_method'],
+        EventType::ORDER_STATUS_CHANGED           => ['order_id', 'queue_number', '_origin', 'payment_method', 'old_status', 'new_status'],
+        EventType::ORDER_PAYMENT_CONFIRMED        => ['order_id', 'queue_number', '_origin', 'payment_method', 'payment_status', 'fiscal_sequence_no'],
         EventType::ORDER_ITEM_ADDED               => ['order_id', 'item_id'],
         EventType::ORDER_CANCELLED                => ['order_id'],
-        EventType::MENU_ITEM_AVAILABILITY_CHANGED => ['item_id', 'status'],
+        // [F-02] OrderTableChanged minimum payload — see PersistOrderTableChangedToOutbox.
+        EventType::ORDER_TABLE_CHANGED            => ['order_id', 'new_table_id'],
+        // [AGENT-CONTRACT C1 hardening 2026-05-08] Élargi des 2 keys minimales aux 7
+        // que tous les producers émettent réellement (PersistItemAvailabilityChangedToOutbox
+        // + Stock86 listener) et que les consumers SPA exigent (KDS in-flight marker
+        // CV1-KDS-INFLIGHT-OOS-MARKER-001 lit is_available + branch_id + reason).
+        // Empêche un futur producer d'émettre un payload tronqué qui passerait
+        // assertPayloadValid silencieusement → KDS silence radio.
+        EventType::MENU_ITEM_AVAILABILITY_CHANGED => ['item_id', 'status', 'is_available', 'branch_id', 'reason', 'price', 'type'],
+        EventType::CATALOG_CHANGED                => ['entity_type', 'entity_id', 'change_type', 'snapshot_version'],
         EventType::STOCK_LOW                      => ['item_id'],
+        // [PROMO-DASH-2026-05-06] Minimum coupon-changed payload — see PersistCouponChangedToOutbox.
+        EventType::COUPON_CHANGED                 => ['coupon_id', 'change_type'],
+        // [P13 — F-VERIFY-09-01 / F-VERIFY-09-10] payment_status transition payload.
+        EventType::ORDER_PAYMENT_STATUS_CHANGED   => ['order_id', 'branch_id', 'old_status', 'new_status', 'total', 'fiscal_sequence_no'],
     ];
 
     /**

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { shallowMount } from '@vue/test-utils';
 
 vi.mock('../../resources/js/components/admin/components/LoadingComponent.vue', () => ({
@@ -78,6 +78,43 @@ const TestPosComponent = {
 };
 
 describe('PosComponent', () => {
+    beforeEach(() => {
+        storeMock.dispatch.mockClear();
+        TestPosComponent.methods.itemList.mockClear();
+    });
+
+    it('category selection clears text search before fetching the category items', async () => {
+        const wrapper = shallowMount(TestPosComponent, {
+            global: {
+                stubs: {
+                    transition: false,
+                },
+                mocks: {
+                    $store: storeMock,
+                    $t: (key) => key,
+                    $route: { query: {}, params: {} },
+                    $router: { push: vi.fn(), replace: vi.fn() },
+                },
+            },
+        });
+
+        await wrapper.setData({
+            props: {
+                search: {
+                    ...wrapper.vm.props.search,
+                    name: 'ancien filtre',
+                    item_category_id: '',
+                },
+            },
+        });
+
+        wrapper.vm.setCategory(123);
+
+        expect(wrapper.vm.props.search.name).toBe('');
+        expect(wrapper.vm.props.search.item_category_id).toBe(123);
+        expect(TestPosComponent.methods.itemList).toHaveBeenCalled();
+    });
+
     it('drawer_expandable_details', async () => {
         const wrapper = shallowMount(TestPosComponent, {
             global: {
@@ -130,5 +167,122 @@ describe('PosComponent', () => {
         expect(details.text()).toContain('Bien cuit');
         expect(details.text()).toContain('Allergenes:');
         expect(details.text()).toContain('gluten');
+    });
+
+    it('uses the authenticated cashier branch when default access is missing', async () => {
+        const wrapper = shallowMount(TestPosComponent, {
+            global: {
+                stubs: {
+                    transition: false,
+                },
+                mocks: {
+                    $store: storeMock,
+                    $t: (key) => key,
+                    $route: { query: {}, params: {} },
+                    $router: { push: vi.fn(), replace: vi.fn() },
+                },
+            },
+        });
+
+        expect(wrapper.vm.resolveDefaultAccessBranchId({ data: { data: { branch_id: null } } })).toBe(1);
+    });
+
+    it('applies POS branch scope to search and cart scope together', async () => {
+        const wrapper = shallowMount(TestPosComponent, {
+            global: {
+                stubs: {
+                    transition: false,
+                },
+                mocks: {
+                    $store: storeMock,
+                    $t: (key) => key,
+                    $route: { query: {}, params: {} },
+                    $router: { push: vi.fn(), replace: vi.fn() },
+                },
+            },
+        });
+
+        expect(wrapper.vm.applyPosBranchScope(7)).toBe(7);
+        expect(wrapper.vm.checkoutProps.form.branch_id).toBe(7);
+        expect(wrapper.vm.props.search.branch_id).toBe(7);
+        expect(storeMock.dispatch).toHaveBeenCalledWith('posCart/setScope', {
+            branchId: 7,
+            userId: null,
+        });
+    });
+
+    // [POS-V4-CASHIER-OPS 2026-05-02] Cancel-last-line dispatches the canonical
+    // posCart/deleteCartItem mutation with the last index, so it stays compatible
+    // with the existing Vuex contract used by per-line trash buttons.
+    it('cancelLastCartLine removes only the last cart line via posCart/deleteCartItem', async () => {
+        const localStore = {
+            ...storeMock,
+            getters: new Proxy({
+                ...getterValues,
+                'posCart/lists': [
+                    { id: 'a', name: 'Tacos M', quantity: 1 },
+                    { id: 'b', name: 'Coca', quantity: 2 },
+                ],
+            }, { get(t, p) { return p in t ? t[p] : []; } }),
+            dispatch: vi.fn(() => Promise.resolve()),
+        };
+
+        const wrapper = shallowMount(TestPosComponent, {
+            global: {
+                stubs: { transition: false },
+                mocks: {
+                    $store: localStore,
+                    $t: (key) => key,
+                    $route: { query: {}, params: {} },
+                    $router: { push: vi.fn(), replace: vi.fn() },
+                },
+            },
+        });
+
+        wrapper.vm.cancelLastCartLine();
+
+        expect(localStore.dispatch).toHaveBeenCalledWith('posCart/deleteCartItem', {
+            id: 1,
+            status: 'decrement',
+        });
+    });
+
+    // [POS-V4-CASHIER-OPS 2026-05-02] Discount-with-reason UI guard.
+    // When a positive discount is set but reason is empty / too short, the
+    // apply button must be disabled (mirrors backend
+    // assertPosManualDiscountAllowed which requires reason length ≥ 3).
+    it('disables the discount apply button when a positive discount has no reason', async () => {
+        const wrapper = shallowMount(TestPosComponent, {
+            global: {
+                stubs: { transition: false },
+                mocks: {
+                    $store: storeMock,
+                    $t: (key) => key,
+                    $route: { query: {}, params: {} },
+                    $router: { push: vi.fn(), replace: vi.fn() },
+                },
+            },
+        });
+
+        await wrapper.setData({
+            discount: '10',
+            discountReason: '',
+        });
+        expect(wrapper.vm.discountReasonRequired).toBe(true);
+        expect(wrapper.vm.discountReasonInvalid).toBe(true);
+        expect(wrapper.vm.isDiscountApplyable).toBe(false);
+
+        await wrapper.setData({ discountReason: 'ab' });
+        expect(wrapper.vm.isDiscountApplyable).toBe(false);
+
+        await wrapper.setData({ discountReason: 'erreur de saisie' });
+        expect(wrapper.vm.discountReasonInvalid).toBe(false);
+        expect(wrapper.vm.isDiscountApplyable).toBe(true);
+
+        // Empty discount stays applyable so the cashier can clear an existing
+        // discount without re-typing a reason.
+        await wrapper.setData({ discount: '0', discountReason: '' });
+        expect(wrapper.vm.discountReasonRequired).toBe(false);
+        expect(wrapper.vm.isDiscountApplyable).toBe(true);
     });
 });

@@ -1,0 +1,75 @@
+{
+  "specialist": "security",
+  "scope": "LIVREUR RBAC per HTTP verb, FormRequest authz, cash session mutations, driver PII surface, BranchScope coverage",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "4ad1adba8",
+  "method": "read-only audit, 5 controllers + 3 FormRequests + state-machine + routes + KDSOrderDetailsResource (cross-cutting PII surface)",
+  "findings": [
+    {
+      "id": "LIV-SEC-01",
+      "severity": "INFO",
+      "title": "RBAC per HTTP verb split now consistent across all 3 admin delivery controllers",
+      "evidence": "DeliveryBoyController.php L29-33 (5 permissions: _show/_create/_edit/_delete + base `delivery-boys` for index/export/password/image). DeliveryBoyAddressController.php L29-32 (just healed Z-4 commit ab04839ec — was previously gated on _show alone for store/update/destroy, privilege escalation risk now closed). DeliveryBoyCashSessionController.php L42-43 (_show for read, base `delivery-boys` for open/close/reconcile). Permission seeder asserts seeded names at database/seeders/PermissionTableSeeder.php L405-432.",
+      "recommendation": "Pattern is correct. Add a tests/Feature/Sentinels/DeliveryBoyRbacPerVerbSentinel covering all 3 controllers in V1.0.2 to lock the contract (currently the DeliveryBoyAddressPermissionSplitTest covers only addresses)."
+    },
+    {
+      "id": "LIV-SEC-02",
+      "severity": "INFO",
+      "title": "Cash session FormRequest authz double-gates (defense-in-depth holds)",
+      "evidence": "All 3 FormRequests assert `$this->user()?->can('delivery-boys') ?? false` at L26-28 (Open) / L19-22 (Close) / L21-25 (Reconcile). Route middleware enforces same gate. FormRequest::authorize returning false yields HTTP 403 BEFORE rules() runs. Open has extra after-validator at L41-65: existence + role assertion via `withoutGlobalScopes` (BranchScope-bypass justified: admin branch_id=0 may target livreur in branch N). Branch presence check L62 prevents opening session for a livreur with branch_id<=0 (orphaned account).",
+      "recommendation": "Test sentinel DeliveryBoyCashSessionControllerTest passes 18/18 (verified runtime) — already covers cross-branch deny, non-livreur reject, branch-manager cross-branch 403. No action."
+    },
+    {
+      "id": "LIV-SEC-03",
+      "severity": "INFO",
+      "title": "Cross-branch open guard in controller is explicit and correct",
+      "evidence": "DeliveryBoyCashSessionController.php L144-149 — if caller branch_id != 0 AND caller branch_id != livreur branch_id → 403 'Cross-branch session open denied'. branch_id sourced from livreur User row (NOT caller), so admin (branch_id=0) can open for any livreur but staff cannot cross-target. service.openSession then re-checks via Cache::lock + DB lockForUpdate + UNIQUE partial index (defense in depth).",
+      "recommendation": "Strong. Existing test 'open 403 when branch manager tries cross branch' validates."
+    },
+    {
+      "id": "LIV-SEC-04",
+      "severity": "P2",
+      "title": "Driver PII (phone, name) is exposed on KDS list to admin+chef per Z9-P0-03 — surface compliant but worth a GDPR audit signature",
+      "evidence": "KDSOrderDetailsResource (referenced by passing tests Feature/KDS/KDSDeliveryEnrichmentTest L84-87 comments: 'GDPR data-minimization: customer.name remains on dine-in, but customer.phone is suppressed for non-delivery orders'). On DELIVERY rows, customer.phone is exposed verbatim (`+33612345678` example). This is the data-minimization design — phone available only when livreur needs callback. The chef-vs-livreur split per role is NOT enforced here (the KDS endpoint returns both name+phone to anyone with `permission:kitchen-display-system`, which includes chefs).",
+      "recommendation": "P2 V1.0.2: split KDS resource by role — chefs see name only, dispatchers/livreurs see phone. Today's surface is acceptable for single-branch Le Cayenne (small team, all-trusted) but is a GDPR finding for SaaS multi-tenant. Track in production-readiness docs."
+    },
+    {
+      "id": "LIV-SEC-05",
+      "severity": "INFO",
+      "title": "Driver order-change-status enforces ownership + branch + state machine",
+      "evidence": "OrderService.php L1494-1655 (deliveryBoyOrderChangeStatus). L1499 ownership check (`order->delivery_boy_id != user->id` → 403). L1503-1506 branch fence (user.branch_id > 0 && order.branch_id != user.branch_id → 403). L1509 ValidStatusTransition guard. L1535 DB::transaction + lockForUpdate. L1565 payment_method enum guard against double-charge (only 5 allowed values). L1572-1583 cash escrow audit anchor (NF525). L1601-1633 audit_log write post-commit. L1637-1646 notifications + OrderStatusChanged broadcast.",
+      "recommendation": "Strong — multiple defense layers verified. Audit chain integration is correct (post-commit so HMAC ordering deterministic, per docblock L1602-1606)."
+    },
+    {
+      "id": "LIV-SEC-06",
+      "severity": "INFO",
+      "title": "selectDeliveryBoy cross-branch assignment guard is explicit",
+      "evidence": "OrderService.php L2109-2181 — L2121-2123 422 if delivery_boy_id missing/invalid. L2127-2130 Spatie role scope + BranchScope bypass to fetch by ID. L2132-2134 403 if not a Delivery Boy. L2136-2138 403 if target.branch_id != order.branch_id. L2143-2144 assignment then save. L2151-2166 audit_log row for assignment. Notification fan-out at L2173-2175.",
+      "recommendation": "Strong. The audit_log on assignment provides full chain-of-custody (who/when/which-driver/which-order)."
+    },
+    {
+      "id": "LIV-SEC-07",
+      "severity": "P3",
+      "title": "DeliveryBoyAddressController owner-of-address fence is implicit, not asserted",
+      "evidence": "DeliveryBoyAddressController.php update/destroy/show take both $deliveryBoy User AND $address Address — but no explicit assertion that `$address->user_id == $deliveryBoy->id`. The UserAddressService is presumed to perform the check, but the controller-layer code does not. If UserAddressService trusts Route Model Binding only, a malicious URL `/api/admin/delivery-boy/address/{boy}/{address}` with boy=A and address=Belonging-to-B might leak/mutate B's address.",
+      "recommendation": "P3 V1.0.2: add `abort_if($address->user_id !== $deliveryBoy->id, 403)` to the 3 mutating methods (update, destroy, show), OR confirm UserAddressService::{update,destroy,show} enforces it. Read-only verification pass; do NOT heal in this run (UserAddressService is shared with customer paths — out of LIVREUR scope)."
+    },
+    {
+      "id": "LIV-SEC-08",
+      "severity": "INFO",
+      "title": "BranchScope coverage is verified on both new models",
+      "evidence": "DeliveryBoyCashSession.php L79 `static::addGlobalScope(new BranchScope())`. DeliveryBoyCashMovement.php L64 same. Both controllers use `withoutGlobalScopes()` only at explicit cross-branch read paths (admin index L75 honors only when branch_id=0) or at internal service writes (DeliveryBoyCashSessionService::openSession L84). Service uses withoutGlobalScopes for service-internal probes (L83, L140, L200) where branch enforcement is performed upstream in the controller.",
+      "recommendation": "Strong. CLAUDE.md §9 BranchScope invariant maintained."
+    },
+    {
+      "id": "LIV-SEC-09",
+      "severity": "P2",
+      "title": "Reconcile path uses `cash.variance_threshold_eur` shared with POS — variance gate is permission-less today",
+      "evidence": "DeliveryBoyCashSessionService.php L181-184 docblock: 'variance gate (manager approval over threshold) reused from POS (`cash.variance_threshold_eur` config). Wave 6b ultérieure : ajouter un permission spécifique `delivery.cash.reconcile.variance.override` si owner souhaite séparer du POS pattern.' The CashVarianceRequiresApprovalException is caught at controller L218-225 returning 422 with code+variance+threshold. But there is no separate role check — any user with `permission:delivery-boys` can override with `variance_reason`. POS pattern requires manager approval; livreur pattern delegates to reason field alone.",
+      "recommendation": "P2 V1.0.2: split permission to `delivery.cash.reconcile.variance.override` per docblock plan. Today's pattern is documented + tested but conflates auditor with override-grantor."
+    }
+  ],
+  "summary": "Security posture is strong: RBAC split per verb consistent (3 controllers), BranchScope coverage on new models, FormRequest authz double-gates, cross-branch defense at write paths, ownership + branch fence on driver status change, audit_log on driver assignment + cash escrow + cash movements. Notable open items are P2-P3 hardening (GDPR phone surface per-role split, variance-override permission, address owner-of fence assertion in controller).",
+  "verdict": "GO V1 — no P0/P1. V1.0.2 hardening: LIV-SEC-04 (GDPR per-role split), LIV-SEC-07 (address owner-of explicit fence), LIV-SEC-09 (variance-override permission split).",
+  "word_count_approx": 1250
+}

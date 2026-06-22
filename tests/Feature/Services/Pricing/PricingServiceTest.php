@@ -46,6 +46,12 @@ class PricingServiceTest extends TestCase
     {
         parent::setUp();
 
+        // [iter15-BUG-NF525 2026-05-10] config default flipped to TTC. These
+        // fixtures assert HT-add semantics (subtotal + tax + delivery - discount).
+        // Opt back into HT mode for legacy assertions until they are rewritten
+        // for TTC math. See config/pricing.php:25-29 + TaxInclusivePricesTest.
+        config(['pricing.tax_inclusive_prices' => false]);
+
         $this->seedSpatieRoles();
         $this->seedMinimalSettings();
 

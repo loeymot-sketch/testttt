@@ -1,0 +1,273 @@
+{
+  "agent": "S7-P4 Admin x Owner-night",
+  "surface": "Admin Dashboard /admin/dashboard (and adjacent reports surfaces: /admin/sales-report, /admin/items-report, /admin/cash-sessions-report, /admin/cash-overview)",
+  "perspective": "Patron / gerant de Le Cayenne le soir, 22h30 apres le service, qui veut (1) cloturer mentalement sa journee en 5 min sur son telephone, (2) preparer demain (commandes ingredients, equipe), (3) detecter ce qui a mal tourne, (4) sortir un PDF/Excel pour le comptable, (5) repondre a un client qui rappele 'ma commande ce midi je trouve pas mon ticket'. Le patron n'a ni le temps ni l'envie de cliquer dans 6 onglets.",
+  "scope": "READ-ONLY audit. Mapping des composants /admin/dashboard + DashboardController + DashboardService + reports controllers (SalesReportController, ItemsReportController, CashSessionReportController, CreditBalanceReportController) + frontend Vue components. Recherche systematique des gaps owner-mentionnes : export PDF/Excel des ventes du jour, comparaison J vs J-1 / S-1, top items du jour avec graphique, prediction demain, detail transaction par recherche, note incident journalier, anomaly detection auto, KPIs synthese (CA, panier moyen, tx/h).",
+  "screens_audited": [
+    {
+      "name": "admin.dashboard (landing /admin)",
+      "path": "resources/js/components/admin/dashboard/DashboardComponent.vue",
+      "components": [
+        "OverviewComponent (3 cards: total_sales lifetime, total_orders lifetime, total_menu_items lifetime — PAS DU JOUR)",
+        "RealtimeReportComponent (3 cards: CA du jour, commandes du jour, ticket moyen — auto-refresh 30s)",
+        "SlaAlertsComponent (commandes PREPARING > 15 min)",
+        "ChannelStatsComponent (% Web/Kiosk/POS du jour)",
+        "AuditTrailComponent (50 derniers ActionLog)",
+        "OrderStatisticsComponent (counts par statut, date range filter)",
+        "SalesSummaryComponent (CA + avg/jour + line chart per-day, date range filter)",
+        "OrderSummaryComponent (% delivered/canceled/returned/rejected, date range filter)",
+        "LastZReportWidget (dernier Z report ferme)",
+        "FeaturedItemsComponent (items featured statique)",
+        "MostPopularItemsComponent (top items lifetime — PAS DU JOUR, PAS DE GRAPHIQUE — liste plate de 8 cards)"
+      ],
+      "owner_relevant_data_displayed": [
+        "CA du jour (RealtimeReport.daily_sales — currency-formatted string)",
+        "Commandes du jour (RealtimeReport.daily_orders — int)",
+        "Ticket moyen du jour (RealtimeReport.average_ticket — currency string)",
+        "Repartition canal Web/Kiosk/POS (ChannelStats — % du jour)",
+        "Alertes SLA (orders PREPARING > 15 min — temps reel)",
+        "Top items lifetime (MostPopular — depuis le debut des temps, pas filtre 'aujourd'hui')"
+      ]
+    },
+    {
+      "name": "admin.sales-report (/admin/sales-report)",
+      "path": "app/Http/Controllers/Admin/SalesReportController.php",
+      "components": [
+        "SalesReportController::index (PaginateRequest)",
+        "SalesReportController::export -> Excel::download(SalesReportExport, 'Sales-Report.xlsx')",
+        "SalesReportController::pdf -> Pdf::loadView('pdf.sales_report')",
+        "SalesReportController::salesReportOverview"
+      ],
+      "owner_relevant_data_displayed": [
+        "Export Excel ventes (existe, mais sur page separee, pas sur le dashboard)",
+        "Export PDF ventes (existe, mais sur page separee)"
+      ],
+      "audit_note": "Le patron qui rentre sur /admin/dashboard ne voit AUCUN bouton 'Telecharger PDF du jour' / 'Exporter Excel du jour'. Pour exporter le CA d'aujourd'hui il doit (1) aller dans menu lateral, (2) cliquer Sales Report, (3) filtrer la date sur today (probablement defaut 30j), (4) cliquer PDF/Excel. 4 clics minimum. Mauvaise affordance — owner-night doit etre 1 clic."
+    },
+    {
+      "name": "admin.items-report (/admin/items-report)",
+      "path": "app/Http/Controllers/Admin/ItemsReportController.php",
+      "components": ["index + export + pdf"],
+      "owner_relevant_data_displayed": [
+        "Export Excel items vendus (existe)",
+        "Export PDF items vendus (existe)"
+      ],
+      "audit_note": "Idem que sales-report — pas de raccourci depuis le dashboard."
+    },
+    {
+      "name": "admin.cash-overview (/admin/cash-overview) [Wave X — X4 2026-05-21]",
+      "path": "app/Http/Controllers/Admin/CashOverviewController.php",
+      "components": ["Vue unifiee toutes transactions POS direct + borne + livreur"],
+      "owner_relevant_data_displayed": [
+        "Bucketing par mode de paiement (cash/card/tr)",
+        "Reconciliation drawer (per branche)"
+      ]
+    }
+  ],
+  "backend_signals_audited": [
+    {
+      "field": "daily_sales (CA du jour)",
+      "produced_at": "app/Services/DashboardService.php:371-405 — realtimeReport() : startParis=Carbon::today / endParisExclusive=Carbon::tomorrow / filter payment_status=PAID / sum(total)",
+      "stored_in_vuex": "store/modules/dashboard.js -> realtimeReport action",
+      "consumed_by_components": "RealtimeReportComponent ligne 8 : <h4 class='font-bold text-4xl'>{{ report.daily_sales }}</h4>",
+      "tz_status": "Paris-bound (Wave T R5 alignment, GOAL-G2-HEAL-04, commit 27d95e066) — verifie ligne 376-378"
+    },
+    {
+      "field": "daily_orders (Nb cmd du jour)",
+      "produced_at": "DashboardService.php:387-390",
+      "consumed_by_components": "RealtimeReportComponent ligne 14",
+      "tz_status": "Paris-bound"
+    },
+    {
+      "field": "average_ticket (Panier moyen du jour)",
+      "produced_at": "DashboardService.php:392-394 — daily_sales / daily_orders if daily_orders>0",
+      "consumed_by_components": "RealtimeReportComponent ligne 20"
+    },
+    {
+      "field": "j_minus_1_sales (CA hier — pour comparaison)",
+      "produced_at": "ZERO — grep 'yesterday|j_minus|previous_day|comparison|delta|trend' sur app/Services/DashboardService.php = 0 hits. Aucune methode realtimeReportCompare / dailyComparison / yesterdayTotals.",
+      "consumed_anywhere": "N/A — feature does not exist"
+    },
+    {
+      "field": "s_minus_1_sales (CA meme jour semaine derniere — pour comparaison)",
+      "produced_at": "ZERO — pareil. Aucune methode subWeek / lastWeekSameDay dans DashboardService.",
+      "consumed_anywhere": "N/A — feature does not exist"
+    },
+    {
+      "field": "top_items_today (Top items du jour — pour graphique)",
+      "produced_at": "PARTIEL — ItemService::mostPopularItems() existe mais retourne lifetime (pas filtre date). DashboardController::mostPopularItems() ligne 142-149 expose. PAS de scoping 'today' ni de chart-friendly payload (label,qty,revenue).",
+      "consumed_by_components": "MostPopularItemsComponent — liste plate 8 cards, AUCUN <chart> ou <BarChart>. Grep 'chart' dans MostPopularItemsComponent.vue = 0.",
+      "evidence_absence": "MostPopularItemsComponent.vue lignes 1-30 : <ul><li>...</li></ul> only. No vue-chartjs / no echarts. No date filter."
+    },
+    {
+      "field": "tomorrow_forecast (Prediction CA / commandes demain)",
+      "produced_at": "ZERO — find app -name '*Forecast*' = 0 files. Grep 'predict|forecast|prevision' app/Services = 0 business hits. Aucun ML, aucun modele de regression simple (moyenne 7 derniers jours du meme weekday).",
+      "consumed_anywhere": "N/A — feature does not exist"
+    },
+    {
+      "field": "transaction_lookup (Recherche transaction par order_serial_no / queue_number / customer_phone)",
+      "produced_at": "PARTIEL — SalesReportController::index avec PaginateRequest accepte ?search=. Mais c'est sur /admin/sales-report, pas sur le dashboard. Aucun input search-bar visible depuis /admin/dashboard.",
+      "consumed_by_components": "ZERO sur dashboard. Le patron qui repond au telephone a un client doit (1) ouvrir menu, (2) Sales Report, (3) tapper le numero, (4) lire. 4 clics + scroll table.",
+      "audit_note": "Le SimpleOrderResource expose order_serial_no, order_datetime, total, user_id, status — c'est exploitable. Manque uniquement un search-bar global accessible du dashboard."
+    },
+    {
+      "field": "daily_incident_note (Note incident — 'fournisseur en retard', 'machine carte HS 14h-16h')",
+      "produced_at": "ZERO — find app/Models -name '*Incident*' = 0 files. Grep 'incident_note|daily_note|owner_note' app/Models = 0. Le seul 'note' dans Order.pos_payment_note est cote payment seulement.",
+      "consumed_anywhere": "N/A — feature does not exist. Le patron qui veut noter 'panne TPE 14h05-14h45' n'a aucun endroit ou l'inscrire dans le systeme. Il l'ecrit sur un papier qui se perd.",
+      "audit_note": "ActionLog (consume via auditTrail()) couvre uniquement les actions automatiques systeme (CRUD). Pas de note manuelle owner."
+    },
+    {
+      "field": "anomaly_detection (CA anormal vs reference, refunds anormaux, tx/h crash)",
+      "produced_at": "ZERO — find app -name '*Anomaly*' = 0 files. SlaAlertsComponent ne couvre qu'un seul cas (PREPARING>15min). Pas de spike-detection sur refunds, pas de drop-detection sur tx/h vs same weekday avg, pas de void-rate anomaly.",
+      "consumed_anywhere": "N/A — feature does not exist. Si caissier traite 30 refunds dans la journee (vs ~2 normal) le patron ne sera notifie nulle part."
+    },
+    {
+      "field": "kpi_transactions_per_hour (tx/h synthese)",
+      "produced_at": "PARTIEL — customerStates() ligne 266-309 produit un tableau heure-par-heure (06h-23h) du nombre de cmd. Mais c'est expose dans CustomerStatesComponent (pas mounted dans DashboardComponent par defaut, verifier).",
+      "consumed_by_components": "CustomerStatsComponent existe mais n'apparait PAS dans DashboardComponent.vue template ligne 31-47. Composant orphelin / archive.",
+      "audit_note": "Le hourly-distribution est calcule mais n'est PAS rendu sur le dashboard owner-facing. Orphan signal pareil que is_rush S1-P1."
+    },
+    {
+      "field": "export_pdf_excel_dashboard (Export PDF/Excel direct depuis le dashboard owner)",
+      "produced_at": "ZERO sur Dashboard. Existe mais sur /admin/sales-report seulement (Maatwebsite/Excel + Barryvdh/DomPDF). Aucune route dashboard-export, aucun bouton 'Cloture du soir PDF' sur DashboardComponent.",
+      "consumed_by_components": "N/A — feature does not exist on dashboard"
+    }
+  ],
+  "gaps_found": [
+    {
+      "id": "GAP-S7-P4-001",
+      "title": "Aucun bouton 'Telecharger cloture du soir' sur le dashboard — owner doit naviguer 4 clics minimum",
+      "user_story": "En tant que patron qui ferme a 22h30, je veux 1 bouton sur la page d'accueil admin 'Cloture du jour (PDF)' qui me sort un recap (CA, nb cmd, ticket moyen, repartition canal, top 5 items, refunds, paniers moyens, breakdown TVA) — pret a envoyer au comptable. Aujourd'hui je dois (1) menu lateral, (2) Sales Report, (3) filter aujourd'hui, (4) PDF — qui me sort une liste de commandes ligne par ligne (PAS un recap synthese). C'est pas la meme chose qu'une cloture comptable.",
+      "evidence_absence": "DashboardComponent.vue lignes 1-48 : aucun bouton export. SalesReportController::pdf charge pdf.sales_report — c'est une liste de transactions, pas un Z-comptable. LastZReportWidget affiche le dernier Z ferme mais ne permet pas de generer un PDF ad-hoc du jour-courant non-cloture.",
+      "impact": "FRICTION-DAILY",
+      "effort": "M",
+      "risk_if_absent": "Le patron perd 5 min/soir x 7 j = 35 min/sem just pour produire le recap comptable. Sur 12 mois = 30 heures de friction owner. Pire : si il oublie de le sortir et part en weekend, lundi matin le comptable n'a rien — le compta lui re-demande, perte de temps des deux cotes.",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Nouveau bouton 'Cloture du soir (PDF)' top-right de RealtimeReportComponent. Endpoint POST /admin/dashboard/export-daily-summary qui produit un PDF synthetique (1 page A4) : header restaurant + date + 6 KPIs en grand + top 5 items + breakdown TVA (5.5/10/20) + nb refunds + CA net. Reutilise Barryvdh\\DomPDF deja installe. Nouveau template pdf.daily_summary.blade.php. ZERO frozen-zone."
+    },
+    {
+      "id": "GAP-S7-P4-002",
+      "title": "Pas de comparaison J vs J-1 ni J vs meme jour semaine derniere — owner ne sait pas si la journee etait bonne ou mauvaise",
+      "user_story": "En tant que patron, '750 EUR de CA aujourd'hui' ne me dit rien dans l'absolu. Je veux voir '750 EUR (+12% vs hier, -5% vs lundi dernier)'. Avec 1 fleche verte/rouge a cote. Si je vois -25% rouge tout de suite je sais qu'il y a eu un probleme (panne TPE ? meteo ? competition ?) et je peux investiguer pendant que les souvenirs sont frais.",
+      "evidence_absence": "DashboardService.php aucune methode dailyComparison / yesterdayTotals / lastWeekSameDay. RealtimeReportComponent.vue lignes 6-22 affiche 3 cards sans aucune reference / sans aucune fleche delta. grep 'previous_day|yesterday|sub.?day|sub.?week|comparison|trend|delta' app/Services/DashboardService.php = 0 hits.",
+      "impact": "FRICTION-DAILY",
+      "effort": "S",
+      "risk_if_absent": "Owner pilote a l'aveugle. Sans reference il prend ses decisions (recommander tel ingredient, garder tel staff) sur intuition seule. -25% vs semaine derniere peut se reveler 2 semaines plus tard avec un cash-flow problem detecte trop tard.",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Etendre DashboardService::realtimeReport() pour retourner 'daily_sales_yesterday', 'daily_sales_last_week_same_day', 'daily_orders_yesterday', etc. + computed deltas '%vs_yesterday', '%vs_last_week_same_day'. Frontend RealtimeReportComponent ajoute petite ligne sous le big number avec icone fleche + couleur."
+    },
+    {
+      "id": "GAP-S7-P4-003",
+      "title": "Top items du jour absent — MostPopularItems est en LIFETIME et sans graphique",
+      "user_story": "En tant que patron, je veux voir 'aujourd'hui mon top 5 = Chicken Wrap (32 vendus), Cayenne Burger (28), Frites (45)...' avec un PETIT GRAPHIQUE EN BARRES. Aujourd'hui le widget MostPopularItems me montre les items les plus vendus DEPUIS LE DEBUT DES TEMPS — totalement inutile en owner-night. Et c'est une liste plate sans visualisation.",
+      "evidence_absence": "ItemService::mostPopularItems() (verifier app/Services/ItemService) retourne lifetime, aucun filter request->date. MostPopularItemsComponent.vue lignes 1-30 : <ul><li><img></li></ul> only, ZERO chart library import (no vue-chartjs / no echarts / no chart-something).",
+      "impact": "FRICTION-DAILY",
+      "effort": "M",
+      "risk_if_absent": "Patron decide ses commandes d'ingredients pour demain SANS savoir ce qui s'est vendu aujourd'hui. Resultat : sur-stock viande hachee (qui s'est mal vendu mais pic du mois passe), sous-stock poulet (qui cartonne ce mois mais 'tellement habitue'). Perte de marge + ruptures evitables.",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Nouveau endpoint /admin/dashboard/top-items-today retournant [{name, qty_sold, revenue}] limit 10. Nouveau composant TopItemsTodayChart.vue avec vue-chartjs BarChart horizontal. Place sous RealtimeReportComponent. Backend: query OrderItem joined Order where DATE(order_datetime)=today and payment_status=PAID, group by item_id, order by sum(qty) desc."
+    },
+    {
+      "id": "GAP-S7-P4-004",
+      "title": "Aucune recherche transaction depuis le dashboard — le patron met 4 clics quand un client rappelle pour son ticket",
+      "user_story": "En tant que patron, un client me rappelle a 22h45 'j'ai mange ce midi vers 13h, je trouve plus mon ticket, vous pouvez verifier ?'. Je veux taper son numero de telephone OU son numero de commande dans un champ direct du dashboard et avoir la commande en 2 sec. Aujourd'hui : (1) menu lateral, (2) Sales Report ou POS Orders, (3) chercher la date, (4) scroller la table, (5) ouvrir le detail. 30+ sec et je perds le client au telephone.",
+      "evidence_absence": "DashboardComponent.vue ligne 31-47 : aucun <input search>. SalesReportController::index existe avec PaginateRequest qui accepte ?search= mais c'est sur autre page. Pas de quick-lookup endpoint global type GET /admin/dashboard/lookup?q=...",
+      "impact": "FRICTION-WEEKLY",
+      "effort": "S",
+      "risk_if_absent": "Owner ne reussit pas la mini-mission service-client au telephone. Client raccroche frustre. Avis Google 1-star evitable.",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Sticky search-bar en haut du DashboardComponent ('Rechercher une commande : numero, telephone, nom...'). Endpoint /admin/orders/lookup?q=... qui match order_serial_no LIKE %q% OR queue_number = q OR user.phone LIKE %q% OR user.name LIKE %q%. Retourne 5 resultats max. Click -> modal detail. ZERO frozen-zone."
+    },
+    {
+      "id": "GAP-S7-P4-005",
+      "title": "Pas de champ 'Note incident du jour' — owner perd toute la memoire operationnelle qui aurait servi en cas de retour client le lendemain",
+      "user_story": "En tant que patron, ce midi a 14h ma machine carte est tombee 40 min. Je veux noter sur le dashboard 'TPE HS 14h05-14h45, pris en cash uniquement' — date+heure horodate. Demain matin si un client appele 'j'ai paye en CB hier midi mais on m'a debite 2x', je consulte la note et je sais. Aujourd'hui je l'ecris sur un post-it qui disparait, ou je me souviens plus la semaine suivante quand le comptable demande pourquoi le ratio cash a explose ce jour-la.",
+      "evidence_absence": "find app/Models -name '*Incident*' = 0. find app/Models -name '*Note*' (autres que payment_note) = 0. Aucune migration daily_notes. Aucun widget DashboardComponent qui prevoit champ texte free-form.",
+      "impact": "FRICTION-WEEKLY",
+      "effort": "S",
+      "risk_if_absent": "Perte de memoire operationnelle. Le patron oublie. Le comptable se pose des questions sans reponses. Les disputes clients restent indecises. Le NF525 prevoit que les anomalies soient tracees — si rien n'est ecrit nulle part, c'est plus dur de justifier.",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Nouvelle migration daily_incident_notes (id, branch_id, user_id_author, occurred_at, note_text varchar(500), created_at, updated_at). Nouveau widget DailyIncidentNoteWidget.vue avec textarea inline-edit + list 10 derniers. ZERO frozen-zone (nouvelle table, nouveau model, nouveau widget). Branch-scoped via BranchScope. Permission 'dashboard' suffisante."
+    },
+    {
+      "id": "GAP-S7-P4-006",
+      "title": "Pas d'anomaly detection — caissier peut faire 30 refunds dans la journee sans que personne ne soit notifie",
+      "user_story": "En tant que patron, je veux qu'un widget me dise en rouge 'ALERTE : 30 remboursements aujourd'hui (vs moyenne 2/jour) — caissier Marc'. Si caissier a un probleme (training, fraude, panne TPE qu'il compense en refundant), je veux le savoir dans la journee, pas le mois prochain quand je releve les comptes.",
+      "evidence_absence": "find app -name '*Anomaly*' = 0. SlaAlertsComponent couvre uniquement PREPARING > 15 min, pas refunds. Aucune route /admin/dashboard/anomalies. Aucun threshold dans DashboardService.",
+      "impact": "FRICTION-WEEKLY",
+      "effort": "M",
+      "risk_if_absent": "Fraude / erreurs operationnelles silencieuses. Pattern classique restaurant : caissier qui 'rembourse' des commandes payees en CB et empoche le cash equivalent. Sans detection en temps reel c'est un trou financier qui s'agrandit.",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Nouvelle methode DashboardService::anomalyAlerts() : threshold-based simple (V1 : refunds_today > 3*avg_refunds_last_7d OR void_rate_today > 10% OR cash_share_today > 2*avg_cash_share). Nouveau widget AnomalyAlertsWidget.vue red banner si > 0. Cron heure-par-heure facultatif, sinon refresh manuel."
+    },
+    {
+      "id": "GAP-S7-P4-007",
+      "title": "Pas de courbe tx/h synthese — CustomerStats existe mais orphelin du dashboard",
+      "user_story": "En tant que patron, je veux voir un graphique 'transactions par heure aujourd'hui' (06h-23h) pour comprendre mon coup de feu. Si 12h-13h est plat mais 13h-14h explose, je sais que mes positions staff doivent decaler. La data existe (DashboardService::customerStates calcule deja le tableau heure-par-heure) mais le composant CustomerStatsComponent n'est PAS mounted dans DashboardComponent !",
+      "evidence_absence": "DashboardComponent.vue lignes 31-47 : ne mentionne pas CustomerStatsComponent. Le composant existe (resources/js/components/admin/dashboard/CustomerStatsComponent.vue) mais n'apparait pas dans le template. ORPHAN COMPONENT.",
+      "impact": "FRICTION-DAILY",
+      "effort": "XS",
+      "risk_if_absent": "Le calcul backend tourne (CPU, DB time) mais le rendu n'arrive jamais a l'ecran. Owner ne pilote pas son staffing horaire.",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "AJOUTER <CustomerStatsComponent /> dans DashboardComponent.vue ligne 47. Verifier que le composant existe et fonctionne. 5 min."
+    },
+    {
+      "id": "GAP-S7-P4-008",
+      "title": "Prediction demain absente — owner commande ingredients a l'aveugle pour le lendemain",
+      "user_story": "En tant que patron, le soir je veux voir 'demain (mardi) prevision : ~45 commandes / ~1100 EUR CA' base sur les 4 derniers mardis (moyenne mobile simple). Avec cette prediction je sais combien commander de pain au boulanger, combien d'heures de staff aligner.",
+      "evidence_absence": "find app -name '*Forecast*' = 0. Grep 'forecast|prevision|predict' app/Services/DashboardService.php = 0. Aucun endpoint /admin/dashboard/tomorrow-forecast.",
+      "impact": "FRICTION-DAILY",
+      "effort": "M",
+      "risk_if_absent": "Owner sur-commande (perte stock perissable) ou sous-commande (ruptures + clients frustres). Sur 30 jours de mauvaises decisions cumulees = ~5% de marge perdue. Sur un chiffre annuel 400k EUR c'est 20k EUR/an evitables.",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Nouvelle methode DashboardService::tomorrowForecast() : moyenne(daily_sales for last_4_weeks_same_weekday) avec confiance% (low si < 4 echantillons). Optionnel V1.1 : ajouter weather-adjust si meteo API integree. Pour V1 le simple moving average suffit. Nouveau widget TomorrowForecastWidget.vue : '~1100 EUR demain (mardi avg)' + petit caveat 'moyenne 4 derniers mardis, marge erreur +/-15%'."
+    },
+    {
+      "id": "GAP-S7-P4-009",
+      "title": "Pas de breakdown TVA / nature dans les KPI synthese — owner doit retraiter manuellement pour le comptable",
+      "user_story": "En tant que patron, je veux dans mon synthese du soir : 'CA TTC 750 EUR | TVA 5.5% (sur place X) | TVA 10% (a emporter Y) | TVA 20% (boissons Z) | net HT W'. Aujourd'hui RealtimeReport ne montre que daily_sales TTC global. Pour le compta je ressors le sales-report Excel et je calcule manuellement (ou il le fait). Le LastZReportWidget montre le DERNIER Z ferme — donc PAS la journee en cours.",
+      "evidence_absence": "DashboardService::realtimeReport ligne 396-400 retourne uniquement daily_sales total + daily_orders + average_ticket. PAS de breakdown vat_rate. ZReportService existe mais ne se declenche qu'a la cloture explicite (LastZReportWidget = dernier ferme, donc J-1 ou plus vieux).",
+      "impact": "FRICTION-DAILY",
+      "effort": "S",
+      "risk_if_absent": "Owner perd 5-10 min/soir a faire le breakdown TVA pour son comptable. Sur 30 jours = 4-5h de retraitement evitable. Si Le Cayenne grandit en SaaS c'est pire (chaque resto a son comptable).",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Etendre DashboardService::realtimeReport() pour calculer pendant la lecture des Orders du jour la repartition VAT (deja stocke dans OrderItems ou via PricingService). Retourner {vat_5_5: X, vat_10: Y, vat_20: Z, total_ht: W, total_ttc: V}. Frontend RealtimeReportComponent : sous le big number 'Detail TVA' togglable. NF525 frozen zone NON-TOUCHEE (lecture seule, aggregation reporting, pas de chain integrity touch)."
+    },
+    {
+      "id": "GAP-S7-P4-010",
+      "title": "Top items widget non-cliquable — owner ne peut pas drill-down pour comprendre 'pourquoi telle item cartonne'",
+      "user_story": "En tant que patron je vois 'Cayenne Burger 28 ventes' mais je veux cliquer pour voir : quels options choisies (sauces preferees ?), quelle marge unitaire moyenne, quelle heure de la journee il se vend. Aujourd'hui les cards sont des <li> sans action.",
+      "evidence_absence": "MostPopularItemsComponent.vue : <li> sans @click handler. Aucune route admin/items/:id/insights.",
+      "impact": "FRICTION-MONTHLY",
+      "effort": "M",
+      "risk_if_absent": "Owner ne peut pas exploiter ses bestsellers pour optimiser la marge (push option premium, supprimer option qui ne se vend pas, ajuster prix). V1 perte d'optimisation marketing-marge.",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Click sur item -> route /admin/items/:id/insights nouvelle vue avec breakdown ventes 30j + options-mix + hourly distribution + marge moyenne. V1.1 si effort V1 deja grand. ZERO frozen-zone."
+    }
+  ],
+  "summary": {
+    "total_gaps": 10,
+    "critical_owner_blockers": ["GAP-S7-P4-001", "GAP-S7-P4-002", "GAP-S7-P4-003", "GAP-S7-P4-005"],
+    "quick_wins_under_1h": ["GAP-S7-P4-007 (XS — mount un composant orphelin)"],
+    "verdict": "RED-PARTIAL — Le dashboard owner-night V1 Le Cayenne est techniquement fonctionnel (CA/cmd/ticket du jour OK + Channel + SLA + Z dernier) mais manque les briques cles d'autonomie operationnelle owner. 4 gaps critiques bloquent une experience patron complete : (1) aucun export PDF/Excel direct cloture du soir, (2) aucune comparaison J vs J-1 / S-1 (pilote a l'aveugle), (3) top items lifetime sans chart sans filter aujourd'hui, (4) aucune memoire incident horodate. 3 gaps importants : transaction lookup absent (friction service-client telephone), anomaly detection absent (fraude / erreurs silencieuses), forecast absent. 2 gaps moyen-terme : tx/h orphelin + drill-down items. 1 fix XS evident : mount CustomerStatsComponent existant dans le template. ZERO frozen-zone touch necessaire pour TOUS ces gaps (NF525 lecture-seule aggregation, BranchScope respect, pas de touch a PaymentComponent / fiscal services / migrations applied). Le travail est de l'ordre 3-5 jours-developpeur total pour V1.0.2 owner-experience hardening, dont 1 jour pour les 3 quick wins (export PDF du soir + J vs J-1 + incident note).",
+    "frozen_zones_status": {
+      "needs_touch": false,
+      "files_affected_if_implemented": [
+        "resources/js/components/admin/dashboard/DashboardComponent.vue (template extension)",
+        "resources/js/components/admin/dashboard/RealtimeReportComponent.vue (ajout deltas/comparaison)",
+        "app/Services/DashboardService.php (nouvelles methodes lecture-seule)",
+        "app/Http/Controllers/Admin/DashboardController.php (nouvelles routes)",
+        "Nouvelles migrations (daily_incident_notes)",
+        "Nouveaux composants Vue (DailyIncidentNoteWidget, TopItemsTodayChart, AnomalyAlertsWidget, TomorrowForecastWidget)",
+        "Nouveau template PDF (resources/views/pdf/daily_summary.blade.php)"
+      ],
+      "nf525_invariants_touched": false,
+      "branch_scope_respect": "all new endpoints scoped via existing dashboardBranchId() helper"
+    },
+    "top_3_gaps_for_owner_attention": [
+      "GAP-S7-P4-001 — Aucun bouton 'Cloture du soir PDF' direct sur le dashboard (4 clics minimum aujourd'hui pour un comptable-ready PDF). Impact DAILY, effort M, frozen=NON.",
+      "GAP-S7-P4-002 — Aucune comparaison J vs J-1 / S-1 sur le dashboard (owner pilote a l'aveugle sans reference). Impact DAILY, effort S, frozen=NON.",
+      "GAP-S7-P4-005 — Aucun champ 'Note incident du jour' (panne TPE, fournisseur en retard, etc.) — perte de memoire operationnelle qui revient sous forme de disputes clients indecidables. Impact WEEKLY, effort S, frozen=NON."
+    ]
+  }
+}

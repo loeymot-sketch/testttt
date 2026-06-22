@@ -1,0 +1,211 @@
+[
+  {
+    "order": "pos-1",
+    "step": 3,
+    "slug": "surface-load",
+    "payload": {
+      "url": "http://localhost:8000/admin/pos",
+      "hasShell": true,
+      "hasGrid": true,
+      "hasCart": true,
+      "bypassMode": {
+        "payment": true,
+        "printing": true,
+        "printingScreenMarker": "🔧 MODE TEST — IMPRESSION BYPASSÉE"
+      }
+    },
+    "ts": "2026-05-07T16:36:09.197Z"
+  },
+  {
+    "order": "pos-1",
+    "step": 4,
+    "slug": "categories",
+    "payload": {
+      "count": 15
+    },
+    "ts": "2026-05-07T16:36:09.282Z"
+  },
+  {
+    "order": "pos-1",
+    "step": 5,
+    "slug": "tile-grid",
+    "payload": {
+      "count": 64
+    },
+    "ts": "2026-05-07T16:36:09.353Z"
+  },
+  {
+    "order": "pos-1",
+    "step": 7,
+    "slug": "cart-after-add",
+    "payload": {
+      "itemCount": 0,
+      "grandTotal": "Total0.00€",
+      "payVisible": false,
+      "payDisabled": false
+    },
+    "ts": "2026-05-07T16:36:10.673Z"
+  },
+  {
+    "order": "pos-2",
+    "step": 1,
+    "slug": "tile-grid",
+    "payload": {
+      "count": 64
+    },
+    "ts": "2026-05-07T16:36:36.264Z"
+  },
+  {
+    "order": "pos-2",
+    "step": 2,
+    "slug": "cart-after-0",
+    "payload": {
+      "items": 7,
+      "total": "Total3.00€"
+    },
+    "ts": "2026-05-07T16:36:37.709Z"
+  },
+  {
+    "order": "pos-2",
+    "step": 3,
+    "slug": "cart-after-1",
+    "payload": {
+      "items": 14,
+      "total": "Total5.00€"
+    },
+    "ts": "2026-05-07T16:36:39.132Z"
+  },
+  {
+    "order": "pos-2",
+    "step": 4,
+    "slug": "cart-after-2",
+    "payload": {
+      "items": 21,
+      "total": "Total7.00€"
+    },
+    "ts": "2026-05-07T16:36:40.552Z"
+  },
+  {
+    "order": "pos-3",
+    "step": 2,
+    "slug": "extras-probe",
+    "payload": {
+      "found": true,
+      "extraCount": 6,
+      "sample": [
+        "3.00€",
+        "Add to Cart · 3.00€",
+        "➕ Suppléments ▼➕E2E_PLAYWRIGHT_EXTRA_TOGGLE+1.00€"
+      ]
+    },
+    "ts": "2026-05-07T16:37:11.390Z"
+  },
+  {
+    "order": "pos-4",
+    "step": 3,
+    "slug": "tile-state-after-oos",
+    "payload": [
+      {
+        "text": "Sold outTacos M (1 Viande)6.50€",
+        "disabled": true,
+        "ariaDisabled": "true",
+        "classes": "pos-v5-tile pos-item-tile is-unavailable",
+        "hasUnavailableClass": true,
+        "has86Badge": true
+      }
+    ],
+    "ts": "2026-05-07T16:37:42.232Z"
+  },
+  {
+    "order": "pos-4",
+    "step": 4,
+    "slug": "wizard-opened-on-oos-click",
+    "payload": {
+      "wizardAfter": true
+    },
+    "ts": "2026-05-07T16:37:42.820Z"
+  },
+  {
+    "order": "pos-5",
+    "step": 3,
+    "slug": "extra-oos-in-wizard",
+    "payload": {
+      "found": true,
+      "totalExtras": 16,
+      "oosMarkedCount": 0,
+      "oosSamples": []
+    },
+    "ts": "2026-05-07T16:37:54.313Z"
+  },
+  {
+    "order": "kiosk-1",
+    "step": 4,
+    "slug": "product-grid",
+    "payload": {
+      "count": 1
+    },
+    "ts": "2026-05-07T16:38:05.272Z"
+  },
+  {
+    "order": "kiosk-1",
+    "step": 7,
+    "slug": "cart-state",
+    "payload": {
+      "count": 7,
+      "empty": false
+    },
+    "ts": "2026-05-07T16:38:08.882Z"
+  },
+  {
+    "order": "kiosk-2",
+    "step": 7,
+    "slug": "ticket-pending-counter",
+    "payload": {
+      "url": "http://localhost:8000/kiosk/cash-instruction?number=A0010&total=21&timeout=45",
+      "bodyText": " ☀1Mon panier€1,00›💶Rendez-vous en caissePrésentez votre numéro à un membre de l'équipeNuméro de commande #A0010Montant à régler21,00 €Paiement en espèces uniquement à la caisse.Retour à l'accueil dans 42 sJ'ai compris window.foodkingConfig = { baseUrl: \"http:\\/\\/localhost:8000\", apiKey: \"b6d68vy2-m7g5-20r0-5275-h103w73453q120\", googleMapKey: \"\", demo: false, // Borne : n'injecter les credentials machine que sur les routes kiosk. kioskAutoLogin: {\"username\":\"kiosk-lecayenne\",\"password\":\"kiosk12",
+      "hasPendingCounterText": true,
+      "hasQueueNumber": false
+    },
+    "ts": "2026-05-07T16:38:49.112Z"
+  },
+  {
+    "order": "kiosk-3",
+    "step": 5,
+    "slug": "multi-add-result",
+    "payload": {
+      "added": 1,
+      "catCount": 15
+    },
+    "ts": "2026-05-07T16:40:49.916Z"
+  },
+  {
+    "order": "kiosk-3",
+    "step": 6,
+    "slug": "cart-multi-state",
+    "payload": {
+      "itemCount": 0,
+      "total": null
+    },
+    "ts": "2026-05-07T16:40:49.917Z"
+  },
+  {
+    "order": "kiosk-4",
+    "step": 2,
+    "slug": "kiosk-tacos-oos-state",
+    "payload": {
+      "totalCards": 1,
+      "tacosMatches": 0,
+      "firstMatch": null
+    },
+    "ts": "2026-05-07T16:41:33.282Z"
+  },
+  {
+    "order": "kiosk-5",
+    "step": 3,
+    "slug": "kiosk-extra-oos-in-wizard",
+    "payload": {
+      "found": false
+    },
+    "ts": "2026-05-07T16:41:45.209Z"
+  }
+]

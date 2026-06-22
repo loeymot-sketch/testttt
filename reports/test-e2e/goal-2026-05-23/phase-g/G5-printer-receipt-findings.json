@@ -1,0 +1,156 @@
+{
+  "agent": "G.5 Printer/receipt edge cases",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "d601fdd34",
+  "scope": "NF525 receipt printing edge cases — disconnect/paper-out/DUPLICATA/long-order/composition snapshot completeness/currency format",
+  "architecture_summary": "Receipt printing in this codebase is BROWSER-DRIVEN, not ESC/POS hardware-driven for receipt CONTENT. ReceiptComponent.vue uses vue3-print-nb (v-print directive) which delegates to window.print() — i.e., the browser's native print dialog renders the modal HTML to whatever printer the OS has selected. EscPosPrinterService is wired ONLY for testPrint (admin diagnostic) and openDrawer (cash drawer kick). Consequence: 'printer disconnected'/'paper out' detection is OS-level, not app-level. The receipt_print_count + audit_logs trail fires BEFORE the browser print dialog returns, so the chain advances regardless of physical-print success.",
+  "scenarios": [
+    {
+      "id": "G.5.1",
+      "title": "Printer disconnected during receipt print",
+      "code_path": "ReceiptComponent.vue handlePrintClientClick L492-543 → POST admin/pos/orders/{id}/print-receipt → PosReceiptPrintController::increment L35-75 (DB UPDATE + AuditLogService::write) → v-print directive → window.print() L538",
+      "observation": "Increment + audit fire BEFORE the browser print dialog returns. The POST succeeds, receipt_print_count goes from 0→1, audit row 'pos.receipt.print' is hash-chained. Then v-print triggers window.print() — if the OS printer is offline/unreachable, the browser shows an error in its OWN print preview UI (outside the app) and the user cancels. App receives NO callback either way. Net result: 'receipt printed' state advances in DB even when no paper came out. Retry: user re-clicks → second POST → counter goes 1→2 → DUPLICATA badge appears on the SECOND print attempt — but customer never received the FIRST ticket. NF525 audit-chain shows '2 prints' for what is effectively 1 customer ticket.",
+      "verdict": "AMBER",
+      "p_level": "P2",
+      "nf525_impact": "Audit-chain over-counts retries as DUPLICATA when the original print never produced paper. The Article 286-I-3 bis evidence trail is preserved (every attempt logged) but the DUPLICATA semantic on paper is misleading to a fiscal auditor — a retry after hardware failure is labelled 'DUPLICATA #1' even though no original exists.",
+      "heal_recommendation": "Document the contract: 'DUPLICATA' on this system = 'this is the N-th /print-receipt API call', not 'this is the N-th paper handed to a customer'. OR introduce a UI-level 'I did not get paper, mark as failed' button that decrements via a NEW endpoint (with its own audit row 'pos.receipt.failed') to keep semantics clean. Either path is V1.0.2 backlog."
+    },
+    {
+      "id": "G.5.2",
+      "title": "Paper out mid-print",
+      "code_path": "Same as G.5.1 — window.print() has no paper-out callback in browser standard",
+      "observation": "Identical to G.5.1. Browsers do not expose paper-status to JavaScript. The cashier sees the OS print spooler error; the FoodKing app sees nothing. After paper is replaced, the cashier clicks the tracker reprint button → modal opens → user clicks print client → receipt_print_count increments to 2 → DUPLICATA marker appears (because Wave Q-3 trail is correctly wired in ReceiptDuplicataMarker.vue L25-27: `printCount >= 2`).",
+      "verdict": "AMBER",
+      "p_level": "P2",
+      "nf525_impact": "Same as G.5.1. The receipt_print_count increments correctly per Wave Q-3, and audit_logs.action='pos.receipt.reprint' is emitted (ReceiptPrintControllerTest::test_reprint_writes_pos_receipt_reprint_audit_row confirms). But semantically the 'reprint' is the cashier's first successful paper output to the customer.",
+      "heal_recommendation": "Operational runbook entry: 'If paper out, expect DUPLICATA stamp on the first paper the customer receives. This is currently a known semantic limitation of browser-driven print. To eliminate: migrate to direct ESC/POS pipeline (EscPosPrinterService exists for openDrawer/testPrint, would need extending with a printReceipt() method that returns success/failure synchronously and only then increments).' V1.0.2 backlog."
+    },
+    {
+      "id": "G.5.3",
+      "title": "DUPLICATA reprint correctness",
+      "code_path": "ReceiptDuplicataMarker.vue L25-27 isDuplicata = printCount >= 2; PosReceiptPrintController::increment L67 emitAudit with action='pos.receipt.reprint' when count>=2; tested at ReceiptPrintControllerTest L137-181",
+      "observation": "DUPLICATA marker correctly displays when receipt_print_count >= 2. Audit log row 'pos.receipt.reprint' is hash-chained per W9.B mandate. Reprint button in PosOrdersTrackerComponent.vue L243-252 (`tracker-reprint-${order.id}`) calls requestReprint() which fetches the full order and opens #receiptModal — modal-open ITSELF does NOT increment the counter, only clicking the 'print client' button does (gated by handlePrintClientClick → POST). Cross-branch is enforced via where('branch_id', $branchId) at L46. 404 on foreign order verified at ReceiptPrintControllerTest::test_cross_branch_order_returns_404.",
+      "verdict": "GREEN",
+      "p_level": "—",
+      "nf525_impact": "Compliant with Article 286-I-3 bis CGI. Every reprint leaves tamper-evident trace. Audit emit failure surfaces as `audit_emitted=false` in response (PosReceiptPrintController::emitAudit L77-104), and the UI shows alertService.warning(`pos.receipt_audit_chain_warning`) — print does NOT block on chain failure (operational continuity preserved, manager warned)."
+    },
+    {
+      "id": "G.5.4",
+      "title": "Receipt content correctness on edge orders",
+      "subcases": {
+        "very_long_order": {
+          "observation": "ReceiptComponent.vue L111 `v-for=\"(item, idx) in orderItems\"` has NO limit/slice. orderItems comes from `$store.getters['posOrder/orderItems']` which is hydrated from OrderDetailsResource (no pagination). Thermal print on continuous paper handles arbitrary length. UI scroll via L62 `max-h-[75vh] overflow-y-auto`.",
+          "verdict": "GREEN"
+        },
+        "order_with_refund_REMBOURSEMENT_marker": {
+          "observation": "CRITICAL P0 — ReceiptRemboursementMarker.vue L44-49 keys visibility on `Number(this.order?.parent_order_id ?? 0) > 0`. BUT OrderDetailsResource::toArray() (verified by full read of file lines 17-93) DOES NOT expose `parent_order_id` NOR `parent_order_serial_no`. Grep across app/Http/Resources/ confirms zero references to `parent_order_*`. The marker shipped by F2-HEAL-03 is DEAD UI — it cannot trigger on any /admin/pos receipt because the API payload is missing the field. The field IS persisted (Order.php L51 fillable, RefundWithCounterEntryService L109/L214 inserts) and IS used backend-side, but is NEVER serialized to the frontend. The parentSerial computed (L50-55) falls through to null because `parent.order_serial_no` is also not exposed via a parent relation.",
+          "verdict": "RED",
+          "p_level": "P0",
+          "nf525_impact": "NF525 visual distinction requirement for refund counter-entry orders (RefundWithCounterEntryService → status=22 / payment_status=20 / order_serial_no='RTN-…') is BREACHED in production. A refund-with-counter-entry receipt looks identical to a normal sale receipt — fiscal auditor cannot tell them apart on paper. The DUPLICATA marker works (independent print counter); the REMBOURSEMENT marker is invisible."
+        },
+        "order_with_loyalty_redeem": {
+          "observation": "Receipt has ONE generic `discount_currency_price` line (L184). No dedicated 'loyalty redeem' line. Loyalty discount is folded into the global discount line. Acceptable for NF525 (CGI requires discount total visibility, not source attribution) but loses customer-facing clarity ('vous avez utilisé 100 points = -5,00 €').",
+          "verdict": "AMBER",
+          "p_level": "P3"
+        },
+        "order_with_multiple_tranches_V5_split": {
+          "observation": "ReceiptComponent.vue L222-233 iterates `paymentLines` from formatPaymentsBreakdown(order). OrderDetailsResource L91 wires `payments_breakdown` from buildPaymentsBreakdown(). When >1 tranches, the template renders a 'Détail des paiements' section with one row per tranche (method label + amount + optional change). Single-tranche fallback at L211-220 (single line + cash/change inline). Split payment correctly itemized.",
+          "verdict": "GREEN"
+        }
+      }
+    },
+    {
+      "id": "G.5.5",
+      "title": "Composition snapshot completeness on receipt",
+      "code_path": "ReceiptComponent.vue L122-137 only iterates receiptVariationsFor(item)+receiptExtrasFor(item); OrderItemResource.php L33-35 exposes item_variations + item_extras + item_addons; CompositionSnapshotBuilder.php L168-174 returns ['lines','extras','addons']",
+      "observation": "P1 GAP — composition_snapshot has three sub-arrays: lines (variations), extras (à la carte add-ons like extra cheese), AND addons (composer-driven items: drink in menu_formule, meat/sauce in bowl 3-step, etc — see CompleteFrenchMenuSeeder + CompositionSnapshotBuilder L105-166). The ReceiptComponent template renders lines + extras but NEVER renders addons. The backend correctly persists meat + sauce + bundled-drink in addons[]. They are exposed in the API (`item_addons` field). PosComponent.vue L810 renders `pos_line_addons` IN THE CART, proving the data flows. But the receipt template ignores them. The NF525 task mandate states 'every entry in composition_snapshot.lines is rendered. No silent truncation.' — `lines` is rendered but `addons` is silently dropped at print time.",
+      "verdict": "RED",
+      "p_level": "P1",
+      "nf525_impact": "When a customer orders a 'Menu Big Burger + frites + Coca' (composer bundle), the printed receipt shows only the burger line and 'frites' if extras-shaped; 'Coca' addon may be invisible. NF525 §V demands the printed ticket reflect the order as billed. Internal evidence (cart UI shows pos_line_addons; OrderItemResource exposes item_addons; PricingService L148 `menuRoleAdjustedAddonPrice` applies ratios) confirms addons are CHARGED items, not free metadata. They MUST appear on the customer ticket.",
+      "heal_recommendation": "Add a third `receiptAddonsFor(item)` computed + template block mirroring extras. Helper `normalizeReceiptAddons` would mirror normalizeReceiptExtras. Estimated <40 LOC. Frozen-zone-adjacent (ReceiptComponent.vue is not in FROZEN_FILES, so direct edit allowed under §11 visual-test mandate)."
+    },
+    {
+      "id": "G.5.6",
+      "title": "Currency format on receipt (NF525 FR canonical)",
+      "code_path": "AppLibrary::currencyAmountFormat L271-277 uses number_format($amount, decimal_point, '.', '') — hardcoded period decimal separator, empty thousands separator. .env CURRENCY_DECIMAL_POINT=2, CURRENCY_POSITION=10 (RIGHT), CURRENCY_SYMBOL=€. Output for total=12.50: `12.50€` (period, no nbsp, no thousands separator).",
+      "observation": "P1 — FR canonical NF525 format mandated by D3 LOCK_PAY for PaymentComponent is `12,50 €` (comma + non-breaking-space + €). ReceiptComponent.vue at L199 renders `{{ order.total_currency_price }}` as raw mustache — no client-side reformat. Same applies to L143 tax_currency_amount, L184 discount_currency_price, L191 delivery_charge_currency_price, L158 subtotal_without_tax_currency_price, L166 total_tax_currency_price. ALL fiscal amounts on the printed POS ticket use period-decimal + no-nbsp format. NOTE: PaymentComponent (D3 LOCK_PAY) DOES use the canonical FR format helper (formatMoneyEuro), so the payment-modal preview is correct, but the PRINTED receipt diverges.",
+      "verdict": "RED",
+      "p_level": "P1",
+      "nf525_impact": "While NF525 itself doesn't legally mandate comma-vs-period (Article 242 nonies A requires legibility, not specific format), the French-government 'Règlement no 2003-02 du Comité de la réglementation comptable' and ISO 4217 norms for EUR FR locale specify comma decimal + thin/non-breaking space before €. A fiscal audit would flag this as inconsistent with FR business document conventions, especially when the same caisse displays `12,50 €` in the payment modal but prints `12.50€` on the ticket.",
+      "heal_recommendation": "Two paths: (A) Modify AppLibrary::currencyAmountFormat to honor a CURRENCY_DECIMAL_SEPARATOR env (default ',') + insert `\\u00A0` before symbol when CURRENCY_POSITION=RIGHT. Affects ALL surfaces consuming *_currency_* fields (POS card totals, OSS, KDS — likely no breakage since they are display-only). (B) Add a client-side `formatMoneyEuro` rewrap in ReceiptComponent template, leaving AppLibrary untouched. (A) is the SSOT-correct fix; (B) is scope-minimal. V1.0.1 priority."
+    }
+  ],
+  "code_paths_audited": [
+    "resources/js/components/admin/pos/ReceiptComponent.vue (full read)",
+    "resources/js/components/admin/pos/ReceiptDuplicataMarker.vue (full read)",
+    "resources/js/components/admin/pos/ReceiptRemboursementMarker.vue (full read)",
+    "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue L220-285 + L760-785",
+    "resources/js/helpers/posReceiptBuilder.js (full read)",
+    "app/Services/Receipt/ReceiptDataService.php (full read)",
+    "app/Http/Resources/OrderDetailsResource.php (full read — parent_order_id absent verified)",
+    "app/Http/Resources/OrderItemResource.php (full read — addons exposed in API)",
+    "app/Http/Controllers/Admin/Pos/PosReceiptPrintController.php (full read)",
+    "tests/Feature/Admin/POS/ReceiptPrintControllerTest.php (full read — confirms audit no-rollback contract)",
+    "app/Services/Hardware/EscPosPrinterService.php (full read — receipt path NOT routed here)",
+    "app/Services/Hardware/PrinterTransport/TcpPrinterTransport.php (full read)",
+    "app/Services/Pricing/CompositionSnapshotBuilder.php L1-180 (addons section confirmed)",
+    "app/Libraries/AppLibrary.php L271-287 (currency format)",
+    ".env L65-67 (CURRENCY_* runtime values)",
+    "routes/api.php L852 (print-receipt route + idempotency middleware)"
+  ],
+  "findings": [
+    {
+      "id": "G5-F-001",
+      "title": "ReceiptRemboursementMarker is dead UI — parent_order_id not exposed by OrderDetailsResource",
+      "severity": "P0",
+      "category": "NF525 / refund traceability",
+      "scenario": "G.5.4 (subcase order_with_refund_REMBOURSEMENT_marker)",
+      "evidence": "OrderDetailsResource::toArray() at app/Http/Resources/OrderDetailsResource.php L17-93 — exhaustive read, no parent_order_id or parent_order_serial_no key. Grep `parent_order` across app/Http/Resources/ returns ZERO matches. Model fillable Order.php L51 includes parent_order_id; RefundWithCounterEntryService.php L109/L214 writes it; ZERO API resources read it. ReceiptRemboursementMarker.vue L44-49 keys visibility on `Number(this.order?.parent_order_id ?? 0) > 0` which always evaluates to 0 → false → marker never renders.",
+      "impact": "Refund counter-entry receipts (status=22, order_serial_no='RTN-…') print identically to normal sale receipts. NF525 visual distinction requirement breached. Shipped feature F2-HEAL-03 cosmetically claims compliance but is non-functional in production.",
+      "heal": "Add `'parent_order_id' => $this->parent_order_id` and `'parent_order_serial_no' => optional($this->parent)->order_serial_no` to OrderDetailsResource::toArray(). Requires also loading the `parent` relation in PosOrderController::show() and FrontendOrderController to avoid N+1. ~10 LOC, no frozen-zone touch (OrderDetailsResource not in FROZEN_FILES).",
+      "verification_recommended": "Vitest mount of ReceiptRemboursementMarker with `order={parent_order_id: 123, parent_order_serial_no: 'ORD-001'}` → assert marker visible. PHPUnit Feature test: refund flow → fetch /admin/pos/orders/{id} → assert JSON has parent_order_id."
+    },
+    {
+      "id": "G5-F-002",
+      "title": "composition_snapshot.addons[] silently dropped from receipt template",
+      "severity": "P1",
+      "category": "NF525 / composition completeness",
+      "scenario": "G.5.5",
+      "evidence": "ReceiptComponent.vue L122-137 iterates only `receiptVariationsFor(item)` (lines→item_variations) + `receiptExtrasFor(item)` (extras→item_extras). No template block for item_addons. CompositionSnapshotBuilder.php L173 ships `'addons' => $addons`. OrderItemResource.php L35 exposes `'item_addons' => $this->resolveAddonsForApi()`. PosComponent.vue L810 proves addons render in CART; receipt path is the gap.",
+      "impact": "Composer-driven items (menu_formule bundled drink, bowl meat/sauce per F.10) are CHARGED (PricingService L148 menuRoleAdjustedAddonPrice) but may be INVISIBLE on the printed ticket. NF525 §V composition immutability is preserved in DB but the customer-facing paper doesn't reflect it.",
+      "heal": "Add (1) `normalizeReceiptAddons` helper in posReceiptBuilder.js mirroring normalizeReceiptExtras, (2) `receiptAddonsFor(item)` computed in ReceiptComponent, (3) template block between extras and tax_rate showing addons. Estimated <50 LOC. Mirror the kitchen-ticket section too. V1.0.1 priority because affects every menu_formule order.",
+      "verification_recommended": "Vitest spec: mount ReceiptComponent with order having `order_items[0].item_addons=[{addon_name:'Coca',quantity:1,line_total:0}]` → assert 'Coca' visible in DOM. Playwright: place a 'Menu Big Burger + Coca' order → print preview → assert 'Coca' line visible on the receipt."
+    },
+    {
+      "id": "G5-F-003",
+      "title": "FR canonical currency format violated on printed receipt (`12.50€` instead of `12,50 €`)",
+      "severity": "P1",
+      "category": "NF525 / FR business document convention",
+      "scenario": "G.5.6",
+      "evidence": "AppLibrary::currencyAmountFormat L274/L276 uses number_format($amount, env('CURRENCY_DECIMAL_POINT'), '.', '') — HARDCODED period decimal separator + empty thousands. CURRENCY_DECIMAL_POINT=2 (digit count, not separator char!) per .env L67. CURRENCY_SYMBOL=€ concatenated directly with no nbsp. Receipt template at ReceiptComponent.vue L199 renders raw `{{ order.total_currency_price }}` — no client-side reformat. PaymentComponent (D3 LOCK_PAY) uses canonical format via formatMoneyEuro → divergence at print time.",
+      "impact": "Same caisse displays `12,50 €` in payment modal and prints `12.50€` on ticket. Fiscal audit may flag inconsistency. ISO 4217 + FR locale convention violated.",
+      "heal": "Path A (SSOT, broader blast radius): Extend AppLibrary::currencyAmountFormat to honor CURRENCY_DECIMAL_SEPARATOR env (default ',') + nbsp before symbol when POSITION=RIGHT. Path B (scope-minimal): client-side formatMoneyEuro rewrap in ReceiptComponent template. V1.0.1 priority.",
+      "verification_recommended": "PHPUnit: assert AppLibrary::currencyAmountFormat(12.5) returns expected canonical. Playwright visual: capture receipt screenshot post-payment → assert '12,50\\u00A0€' in rendered text via browser_evaluate."
+    },
+    {
+      "id": "G5-F-004",
+      "title": "DUPLICATA semantic over-counts when first browser print silently fails",
+      "severity": "P2",
+      "category": "NF525 / audit-chain semantic clarity",
+      "scenario": "G.5.1 + G.5.2",
+      "evidence": "ReceiptComponent.vue handlePrintClientClick L498-541 fires POST /print-receipt (increments DB + writes audit) BEFORE v-print → window.print() at L538. Browser print dialog has no JS callback for paper-out/printer-offline. Cashier retry triggers a second POST → count 1→2 → DUPLICATA badge appears on the first physical paper the customer receives.",
+      "impact": "Audit chain is correct (every API call logged) but semantically misleading on paper. Fiscal auditor seeing 'DUPLICATA #1' on a customer ticket may misinterpret as 'second copy of original' rather than 'first successful print after hardware retry'.",
+      "heal": "Document in operational runbook OR add a 'mark as failed' UI button issuing a separate `pos.receipt.failed` audit row (no decrement, just annotation). V1.0.2 backlog.",
+      "verification_recommended": "Manual ops: disconnect thermal printer → click print client → reconnect → click print again → inspect receipt + audit_logs."
+    }
+  ],
+  "verdict": "RED",
+  "verdict_reasoning": "1 P0 (REMBOURSEMENT marker is dead UI — shipped feature does nothing) + 2 P1 (composer addons silently dropped from receipt, FR canonical currency format violated on print) + 1 P2 (DUPLICATA semantic over-counts on browser-print failures). The P0 alone flips this RED because F2-HEAL-03 claimed NF525 visual distinction compliance for refund counter-entries, but the field powering the visual marker is never serialized to the frontend.",
+  "top_3_concerns": [
+    "G5-F-001 P0: ReceiptRemboursementMarker NEVER renders on production receipts because OrderDetailsResource doesn't expose parent_order_id. F2-HEAL-03 NF525 refund-visibility shipped as dead UI.",
+    "G5-F-002 P1: composition_snapshot.addons[] (composer meat/sauce/bundled drink) is silently dropped from the receipt template. menu_formule bundled drinks may be invisible on customer ticket despite being charged.",
+    "G5-F-003 P1: Receipt prints `12.50€` (period decimal, no nbsp) while PaymentComponent displays canonical `12,50 €`. ISO 4217 + FR locale convention violated. PaymentComponent and Receipt diverge on the same caisse."
+  ],
+  "ship_decision": "BLOCK — G5-F-001 is a P0 NF525 compliance gap (shipped feature is non-functional). Must heal before live operation if any refund flows occur. G5-F-002 + G5-F-003 are P1 V1.0.1 — recommend healing before final ship but not absolute blockers.",
+  "frozen_zone_touch": "NONE required for heals. OrderDetailsResource, ReceiptComponent.vue, posReceiptBuilder.js, AppLibrary.php — none are in FROZEN_FILES per CLAUDE.md §7. Edits are under §11 visual-test mandate."
+}

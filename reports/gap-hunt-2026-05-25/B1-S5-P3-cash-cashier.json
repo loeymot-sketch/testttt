@@ -1,0 +1,383 @@
+{
+  "agent": "S5-P3 Cash-drawer x Caissier-multitask",
+  "surface": "Cash drawer session lifecycle (POS Caisse + Admin reports)",
+  "perspective": "Caissier en service — qu'est-ce que la gestion fond-de-caisse devrait m'offrir pendant 8h de service (ouverture / mid-shift / handover / clôture / rapport) sans m'obliger à fermer toute la session pour la moindre opération ?",
+  "scope": "READ-ONLY audit. Backend: app/Services/Cash/CashDrawerService.php (550 LOC, 4 methods: openSession / closeSession / reconcileSession / recordMovement) + app/Models/CashDrawerSession.php + app/Models/CashMovement.php (5 types only) + app/Http/Controllers/Admin/Pos/CashDrawerController.php (hardware pop) + CashDrawerSessionController.php (REST endpoints) + app/Http/Controllers/Admin/Fiscal/ZReportController.php. UI: resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue (4 modes: open|active|movements|close) + cashOverviewComponent.vue + cashSessionReportListComponent.vue. Frozen-zones per CLAUDE.md sec 7-8: cash service NOT frozen but fiscal services (ZReportService, FiscalSequenceService, AuditLogService) ARE frozen.",
+  "date": "2026-05-25",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+
+  "owner_implicit_gaps_verified": {
+    "open_close_ui_workflow_clear": {
+      "status": "PARTIAL_OK",
+      "severity": "P3",
+      "title": "Open/Close UI workflow présent et globalement clair — manque guidage caissier débutant",
+      "evidence_present": [
+        "resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue (LOC 1-316) — 4 modes well-orchestrated: open form (numpad + increments +5/+10/+20/+50), active view (4 stats: opening / opened_at / movements_count / expected), close form (numpad + live variance + reason si écart), movements list (table with type+direction+notes)",
+        "Vuex SSOT cashDrawer module + CashDrawerService.computeExpected() mirror backend reconcile math (LOC 391, 393) — live variance display avant submit",
+        "data-testid coverage 27 hooks = E2E ready",
+        "Mobile responsive @media (max-width: 480px) LOC 919-930",
+        "ARIA: role=dialog, aria-modal, aria-label sur dialog + label sur inputs + role=group sur increments",
+        "Backend invariants I1-I6 documentés (LOC 19-43) + race-resistant via Cache::lock 5s + DB lockForUpdate + UNIQUE partial index (LOC 58-71)",
+        "Idempotent close (LOC 177) + idempotent reconcile (LOC 248) — replay safe"
+      ],
+      "evidence_partial": [
+        "No on-screen denomination-by-denomination count helper (cashier types final total only — no '1× billet 50€ + 2× billet 20€ + 5× pièce 1€' breakdown to detect counting errors before submit). Real-world bistrot/fast-food caisses (Toast, Lightspeed, Square Stand) offer this; absent here.",
+        "No 'comment compter' guidance label, no example, no '= xxx €' inline help.",
+        "No print-receipt-after-open-session option (some operators want the opening fond paper trail).",
+        "Backend SUPPORTS variance_reason free-form (255 char) but UI requires reason ≥3 char yet displays no exemple ('Rendu erroné' / 'Billet trouvé sol' / 'Erreur saisie') — drift between cashier vocabulary and reason quality."
+      ],
+      "impact_daily": "Workflow runs end-to-end, but a new cashier on day 1 has no in-product tutorial. P3 papercut. Real friction concentrated on Pxx gaps below — open/close itself is solid."
+    },
+
+    "mid_shift_cash_count": {
+      "status": "ABSENT",
+      "severity": "P1",
+      "title": "Mid-shift cash count (X-report / inventaire intermédiaire sans clôture) impossible côté caissier",
+      "evidence_absent": [
+        "CashDrawerService method count = 4 (openSession / closeSession / reconcileSession / recordMovement) + 1 helper findOpenSessionForUser. NO countSession() / spotCountSession() / midShiftCount() method.",
+        "PosCashDrawerSessionDialog.vue active view (LOC 117-158) exposes only 2 actions: 'view movements' + 'go close'. No 'compter sans fermer' button.",
+        "Backend ZReportService allows open / close but no intermediate snapshot — Z is end-of-day terminal (one per branch per business_date NF525 invariant).",
+        "grep 'mid.shift|midshift|spot.count|x.report|inventaire.interm' app/ resources/js/components/admin/cash/ → 0 hits.",
+        "expected_total IS live-computed in dialog active view (LOC 388-392) BUT no UI to capture a 'compté physiquement maintenant' vs expected snapshot — only at close.",
+        "CashMovement.TYPE_ADJUSTMENT exists (model LOC 29) — un caissier pourrait théoriquement enregistrer ADJUSTMENT amount=0 + notes='compte=X.XX €' MAIS aucun écran ne permet de saisir un ADJUSTMENT (UI only shows movements as read-only table, no create form)."
+      ],
+      "impact_daily": "Pendant un service de 8h, le caissier ne peut JAMAIS vérifier que sa caisse colle aux totaux attendus sans risquer Z. Ex: doute à 14h après rush midi → veut compter pour valider → seule option = closeSession (terminal, exige reconcile, déclenche cascade Z avant 22h). Pattern Toast/Square: bouton 'Cash Count' qui produit un X-report (read-only snapshot, pas Z) — absent ici. Risque escompte erreur découverte le soir avec 4h de transactions en trop à investiguer."
+    },
+
+    "skim_withdraw_partiel_banque": {
+      "status": "ABSENT",
+      "severity": "P1",
+      "title": "Skim / sortie partielle (envoi banque / dépôt coffre mid-shift) sans modèle dédié",
+      "evidence_absent": [
+        "CashMovement.php LOC 25-29 — types enumérés: order_payment | cashback | drawer_open | drawer_close | adjustment. NO 'skim' / 'cash_drop' / 'safe_deposit' / 'bank_pickup' / 'payout' type.",
+        "Backend CashDrawerService::recordMovement($type, $amount, $direction, $orderId, $notes, $strict) accepte direction='out' MAIS aucune méthode publique HTTP n'est exposée pour qu'un caissier déclenche un OUT manuel (CashDrawerSessionController routes = open / close / reconcile / current / movements — no /movement create endpoint).",
+        "routes/api.php lines 901-914 — toutes les routes cash-drawer sont read-only ou lifecycle (open/close/reconcile/movements GET). No POST .../movements pour déposer un skim.",
+        "PosCashDrawerSessionDialog.vue — pas de bouton 'Sortie' / 'Dépôt coffre' / 'Versement banque'.",
+        "Workaround actuel: forcer type=ADJUSTMENT via recordMovement, mais (a) aucun écran ne le permet, (b) ADJUSTMENT est destiné aux ajustements comptables internes pas aux skims (sémantique différente — un skim n'est PAS un écart, c'est un transit vers coffre)."
+      ],
+      "impact_daily": "Restaurant fast-food à fort débit cash (Le Cayenne midi rush) — accumule 800€+ cash en 2h. Procédure de sécurité standard: skim toutes les 2-3h vers coffre arrière. Aujourd'hui le caissier doit soit (a) laisser 1500€+ dans le tiroir = risque vol, (b) closeSession + reopen (impossible NF525 — un Z par jour), (c) procédure manuelle papier hors-système non-tracée. Aucune des 3 n'est acceptable. NF525 demande la traçabilité des espèces — un skim non-déclaré crée un écart phantom au close."
+    },
+
+    "tip_jar_tracking": {
+      "status": "ABSENT",
+      "severity": "P2",
+      "title": "Pourboire / tip-jar = aucun modèle data + aucun UI",
+      "evidence_absent": [
+        "grep -rn 'tip|pourboire|gratuity' app/Services/Cash/ app/Models/CashMovement.php app/Models/CashDrawerSession.php app/Services/Payment/ database/migrations/ → 0 hits dans le code cash.",
+        "CashMovement.php TYPE_* enumeration n'inclut pas 'tip' ni 'gratuity'.",
+        "OrderPayment / Order tables — no `tip_amount` / `gratuity_amount` column (grep migrations 0 hits).",
+        "PaymentService.php — no tip-distribution / pool / per-employee tracking.",
+        "PosCashDrawerSessionDialog.vue — no 'pourboires reçus aujourd'hui' stat dans active view.",
+        "PosPaymentComponent (frozen per CLAUDE.md sec 7) — payload structure n'inclut pas tip.",
+        "Backend Wave Z9 / Wave 5G — aucune trace de tip handling."
+      ],
+      "impact_daily": "France hospitalité — pourboires en espèces sont en pratique non-négligeables (caisse à pourboires sur comptoir + tickets resto). Sans champ dédié: (a) caissier les empoche directement = manque transparence sociale (pool entre équipiers vs solo), (b) caissier les met au tiroir = inflate closing_amount → variance positive systématique → reason 'pourboires inclus' à répétition. Workflow concurrent: Toast offre tip-jar séparé (out-of-drawer model) + tip-pool by-shift + Cash Tip Declaration journalière pour fiche paie. Le Cayenne V1 = 0 sur cet axe. P2 car non-bloquant fiscal NF525 (pourboires non-imposables si déclarés séparément) mais friction sociale équipe."
+    },
+
+    "multi_cashier_same_drawer_relais": {
+      "status": "ABSENT",
+      "severity": "P0",
+      "title": "Multi-caissier sur même tiroir physique (relais shift / pause-déjeuner remplaçant) impossible — invariant 1-session-per-user-per-branch bloque le relais",
+      "evidence_absent": [
+        "CashDrawerService::openSession (LOC 52-118) — invariant I1 (LOC 26): UNIQUE partial index sur (branch_id, opened_by_user_id) WHERE status=open. 2 caissiers sur la même branche → 2 sessions séparées, pas une seule session relayée.",
+        "Migration 2026_05_10_020000_add_unique_partial_cash_drawer_open.php enforce cette contrainte au niveau storage.",
+        "CashDrawerSession schema (migration 2026_05_08_140000 + 2026_05_17_100000) — colonnes opened_by_user_id, closed_by_user_id, reconciled_by_user_id MAIS aucune table cash_drawer_session_handover ou colonne current_cashier_id avec audit trail des transfers.",
+        "PosCashDrawerSessionDialog.vue — aucun bouton 'Passer la main à...' / 'Relais' / 'Handover'.",
+        "Aucune route /cash-drawer/sessions/{session}/handover dans routes/api.php.",
+        "Sentinel BranchScopeCoverageSentinel verrouille User in BranchScope (CLAUDE.md sec 9) — mais ne traite pas le concept de 'session partagée'."
+      ],
+      "evidence_workaround_inadequate": [
+        "Workaround 1: Caissier A close + Caissier B open NEW session. Inacceptable car (a) déclenche reconcile + variance gate (qui peut bloquer si threshold dépassé), (b) crée 2 sessions distinctes le même jour → admin doit additionner manuellement, (c) NF525 chain doublée inutilement.",
+        "Workaround 2: Caissier B se connecte avec compte A. Catastrophe sécurité — viole CLAUDE.md sec 9 (Sanctum ability + idempotency scoped by user_id) + traçabilité audit_logs incorrecte (user_id = A pour toutes les ventes de B)."
+      ],
+      "impact_daily": "Le Cayenne V1 réalité opérationnelle: pause-déjeuner caissier titulaire 13h-14h, équipier prend le relais sur LE MÊME TIROIR PHYSIQUE (un seul tiroir caisse au comptoir). Aujourd'hui = impossible. P0 car directement bloquant pour une journée de service standard restaurant. Patterns Toast/Square: 'Cashier Handover' = même session DB, événement de transfer logged, current_cashier_id muté + counted_at_handover snapshot pour départager responsabilités si écart final."
+    },
+
+    "z_report_reimpression": {
+      "status": "AMBIGUOUS_BUT_INACCESSIBLE_CASHIER",
+      "severity": "P2",
+      "title": "Z-report ré-impression — backend partiellement présent (PDF endpoint) mais inaccessible au profil POS Operator",
+      "evidence_partial_backend": [
+        "routes/api.php LOC 1184-1191 — GET /api/admin/fiscal/z-report/{zReport}/pdf existe → ZReportController::pdf() (LOC 79-95) retourne signed JSON bundle 'pour PDF renderer' AVEC verifySignature.",
+        "ZReportController::authorizeFiscal (LOC 97-102) — exige permission `pos-manage-fiscal` → CashSessionReportRoutes.js permissionUrl mentions same.",
+        "POS Caisse OperatorCashierController inherits AdminController middleware ['permission:pos'] — pas 'pos-manage-fiscal'.",
+        "CLAUDE.md sec 8 NF525 — Z report HMAC chain-signed, immutable, 6 ans rétention — la ré-impression doit produire un duplicata marqué 'COPIE' / 'DUPLICATA' (pas un nouveau Z)."
+      ],
+      "evidence_ui_gap": [
+        "LastZReportWidget.vue (dashboard) affiche dernier Z + sequence_no MAIS aucune action 'Ré-imprimer' / 'Télécharger PDF'.",
+        "CashSessionReportListComponent.vue (Wave O O4) — aucun bouton 'Imprimer Z du jour' ni 'Voir Z N°...'.",
+        "Aucune route frontend /admin/z-reports listante (admin doit deviner les routes).",
+        "POS Caisse → aucun accès cashier au Z report (permission gate-locked à manager+admin).",
+        "PosReceiptPrintController.php (LOC 14, 26, 83) — gère reprint d'un ticket commande individuelle (avec marker DUPLICATA + audit trail) — patten existant qui POURRAIT être généralisé au Z report. Non fait."
+      ],
+      "evidence_caissier_specifically": [
+        "Le Cayenne V1 réalité: caissier fait le Z du soir, ticket Z thermique part au sol / déchiré / oublié au coffre. À 22h25 = comptable demande Z par mail. Caissier ne peut ni régénérer le ticket thermique (PrinterController::print expects raw payload pas un Z), ni accéder à l'écran admin Z (permission denied 403)."
+      ],
+      "impact_daily": "Workaround actuel: caissier appelle manager qui se connecte → manager va sur dashboard → voit widget LastZReportWidget → clique sequence_no → … qui ne mène à aucun PDF (juste read-only data). Manager doit utiliser Postman / curl pour appeler /pdf endpoint et bricoler une impression. Soit, en pratique, le Z reprint = inexistant pour le caissier. P2 car contournable par admin path mais workflow brisé pour le caissier."
+    },
+
+    "ecart_automatique_au_close": {
+      "status": "PRESENT_WELL",
+      "severity": "P3",
+      "title": "Écart automatique au close — implémentation backend solide ET UI live preview correcte",
+      "evidence_present": [
+        "CashDrawerService::reconcileSession (LOC 225-354) — calcule expected = opening + Σ(movements signedAmount) + variance = closing - expected, arrondi 2 décimales.",
+        "Variance gate Sprint 1D / F-4 (LOC 211-216, 265-312): si |variance| > config('cash.variance_threshold_eur', défaut 2.00€) → exige variance_reason ≥1 char ≤255 + permission cash.reconcile.variance.override (Admin / Branch Manager).",
+        "Audit binding Sprint 1D / F-8 (LOC 336-347): cash.session.reconciled event signé HMAC chain dans audit_logs avec expected / variance / threshold / over_threshold + variance_reason + actor_id.",
+        "UI live preview LOC 388-396, 393-396 — variance affiché en temps réel pendant la frappe de closing_amount, colorisé positive/negative (LOC 776-792 CSS).",
+        "varianceRequiresReason et varianceReasonMissing reactive (LOC 397-404) — submit bloqué tant que reason absente.",
+        "Idempotent reconcile (LOC 248) — replay safe.",
+        "Sprint H2 F-11 manager-gate routine close (LOC 132-160) — config opt-in pour exiger manager même sans écart.",
+        "Sprint H2 F-10 (LOC 184-191, 322-324) — closed_by_user_id + reconciled_by_user_id persistés forensics.",
+        "POS-RED-04 ownership tightening (CashDrawerSessionController LOC 309-338) — empêche caissier A de clore caisse caissier B même branche."
+      ],
+      "evidence_minor_papercut": [
+        "Backend `cash.variance_threshold_eur` = 2.00€ par défaut — config-driven mais l'UI ne lit pas ce seuil → varianceRequiresReason en JS utilise > 0.005 (LOC 398) qui exige reason pour TOUT écart non-nul, même 0.01€. Drift backend(2.00€)/frontend(0.005€). Conséquence: caissier doit fournir reason pour un centime — sur-friction.",
+        "Variance reason free-form 255 char — aucun preset / suggestion (cf. open_close_ui_workflow_clear).",
+        "Pas de 'split denomination check' au close (numpad simple, pas '5× billet 20€ = 100€')."
+      ],
+      "impact_daily": "Système d'écart fonctionne correctement et est audit-trail solide. Le seul vrai problème est la friction 0.005€ JS vs 2.00€ backend — le caissier remplit beaucoup de reasons triviales. P3 papercut."
+    }
+  },
+
+  "gaps_synthesis": [
+    {
+      "id": "G-S5P3-01",
+      "owner_implicit": "multi_cashier_same_drawer_relais",
+      "severity": "P0",
+      "title": "Multi-caissier sur même tiroir physique impossible (invariant 1-session-per-user-per-branch)",
+      "files": [
+        "app/Services/Cash/CashDrawerService.php (LOC 52-118 openSession + UNIQUE partial index migration 2026_05_10_020000)",
+        "app/Models/CashDrawerSession.php (LOC 33-47 fillable: no current_cashier_id, no handover history)",
+        "resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue (no handover button)",
+        "routes/api.php LOC 901-914 (no /handover route)"
+      ],
+      "blocker_for": "Service standard restaurant Le Cayenne V1 — pause caissier + remplaçant sur le même tiroir physique. Aujourd'hui exige fermeture+reouverture (impossible NF525 1-Z/jour) ou usage compte d'autrui (violation sec). Pattern compétiteur Toast/Square = same DB session, current_cashier_id muté + handover event signé + snapshot count optionnel."
+    },
+    {
+      "id": "G-S5P3-02",
+      "owner_implicit": "mid_shift_cash_count",
+      "severity": "P1",
+      "title": "Mid-shift cash count / X-report intermédiaire absent — pas de vérif sans clôture",
+      "files": [
+        "app/Services/Cash/CashDrawerService.php (4 methods only, no countSession())",
+        "resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue LOC 117-158 (active view exposes only view-movements + go-close)",
+        "app/Services/Fiscal/ZReportService.php (Z is terminal, no X intermediate)",
+        "app/Models/CashMovement.php (TYPE_ADJUSTMENT exists but no UI to record)"
+      ],
+      "blocker_for": "Détection précoce d'écart cash. Sans count mid-shift, écart de 50€ découvert au close à 22h après 8h de transactions = investigation impossible. Pattern Lightspeed/Toast = bouton 'Cash Count' qui produit X-report (read-only snapshot)."
+    },
+    {
+      "id": "G-S5P3-03",
+      "owner_implicit": "skim_withdraw_partiel_banque",
+      "severity": "P1",
+      "title": "Skim / sortie partielle vers coffre/banque non-modélisé — accumulation cash non-protégée",
+      "files": [
+        "app/Models/CashMovement.php LOC 25-29 (5 types only, no skim/cash_drop/safe_deposit)",
+        "app/Http/Controllers/Admin/Pos/CashDrawerSessionController.php (no POST /movements endpoint)",
+        "routes/api.php LOC 901-914 (no movement-create route)",
+        "resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue (no Sortie/Skim button)"
+      ],
+      "blocker_for": "Sécurité physique cash. Le Cayenne midi rush accumule 800-1500€ → procédure standard restaurant = skim toward coffre toutes 2-3h. Aujourd'hui = forcer ADJUSTMENT (sémantique erronée) ou laisser cash exposé. Audit NF525 demande traçabilité espèces — skim non-déclaré = écart phantom au close."
+    },
+    {
+      "id": "G-S5P3-04",
+      "owner_implicit": "tip_jar_tracking",
+      "severity": "P2",
+      "title": "Tip-jar / pourboire — 0 modèle data + 0 UI",
+      "files": [
+        "app/Models/CashMovement.php (no TYPE_TIP)",
+        "app/Models/OrderPayment.php + database/migrations (no tip_amount column)",
+        "app/Services/Payment/PaymentService.php (no tip distribution logic)",
+        "resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue (no tips-collected stat)"
+      ],
+      "blocker_for": "Friction sociale équipe + transparence pool pourboires. Sans modèle: caissier empoche direct (opaque) ou met au tiroir (variance positive systématique). Pattern Toast = tip-jar out-of-drawer + tip-pool par shift + Cash Tip Declaration journalière."
+    },
+    {
+      "id": "G-S5P3-05",
+      "owner_implicit": "z_report_reimpression",
+      "severity": "P2",
+      "title": "Z-report ré-impression — backend PDF endpoint existe mais permission gate + UI absent pour caissier",
+      "files": [
+        "app/Http/Controllers/Admin/Fiscal/ZReportController.php LOC 79-95 pdf() + LOC 97-102 authorizeFiscal('pos-manage-fiscal')",
+        "resources/js/components/admin/dashboard/LastZReportWidget.vue (read-only, no reprint button)",
+        "resources/js/router/modules/cashSessionReportRoutes.js (no Z reprint route)",
+        "app/Http/Controllers/Admin/Pos/PosReceiptPrintController.php LOC 14,26,83 (ticket reprint pattern exists, not generalized to Z)"
+      ],
+      "blocker_for": "Caissier ne peut régénérer le Z thermique perdu/déchiré sans manager qui doit utiliser Postman/curl. Pattern fiscal européen NF525 = duplicata marqué 'COPIE' avec même HMAC signature."
+    },
+    {
+      "id": "G-S5P3-06",
+      "owner_implicit": "open_close_ui_workflow_clear",
+      "severity": "P3",
+      "title": "Open/close UI clair mais manque denomination breakdown + reason presets",
+      "files": [
+        "resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue LOC 56-110 (open numpad simple, no '1× 50€ + 2× 20€' breakdown)",
+        "resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue LOC 222-242 (variance reason free-form, no presets)"
+      ],
+      "blocker_for": "Onboarding caissier débutant (counting accuracy day 1) + reason quality (sans presets, reasons triviales 'erreur' au lieu de 'Rendu billet 50€ au lieu de 20€')."
+    },
+    {
+      "id": "G-S5P3-07",
+      "owner_implicit": null,
+      "severity": "P2",
+      "title": "BONUS — drift seuil variance JS(0.005€) vs backend(2.00€) — caissier doit fournir reason pour un centime",
+      "files": [
+        "resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue LOC 397-399 (varianceRequiresReason: Math.abs(liveVariance) > 0.005)",
+        "config/cash.php (variance_threshold_eur default 2.00) — UI does not read this config",
+        "app/Services/Cash/CashDrawerService.php LOC 266 (threshold 2.00€ enforce)"
+      ],
+      "blocker_for": "Sur-friction caissier. Variance 0.01€ → reason obligatoire UI alors que backend l'aurait acceptée silencieuse. Fix = inject config('cash.variance_threshold_eur') dans bootstrap props ou /api/admin/pos/config."
+    },
+    {
+      "id": "G-S5P3-08",
+      "owner_implicit": null,
+      "severity": "P2",
+      "title": "BONUS — Pas d'écran mouvements ADJUSTMENT manuel par caissier (read-only seul)",
+      "files": [
+        "resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue LOC 264-312 (movements mode = table read-only)",
+        "app/Http/Controllers/Admin/Pos/CashDrawerSessionController.php LOC 255-278 movements() = GET only"
+      ],
+      "blocker_for": "Caissier qui veut consigner un événement (ex: 'rendu 50ct trop' immédiatement après vente) ne peut. Doit attendre close + reason. Workflow concurrent = 'No Sale' / 'Paid Out' buttons standard depuis caisses des années 90."
+    },
+    {
+      "id": "G-S5P3-09",
+      "owner_implicit": null,
+      "severity": "P3",
+      "title": "BONUS — Manager gate routine close (config CASH_MANAGER_GATE_ROUTINE_CLOSE) implémenté backend mais 0 UI manager-approval modal",
+      "files": [
+        "app/Services/Cash/CashDrawerService.php LOC 132-160 (Sprint H2 F-11 manager-gate routine close)",
+        "resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue (no 'manager PIN' / 'manager swipe card' input)"
+      ],
+      "blocker_for": "Quand config flippé en true (V2 SaaS multi-cashier deploy), UI 403 hardcoded — pas de modal 'Demander à un manager' avec PIN/badge. Caissier ne sait pas qui appeler."
+    },
+    {
+      "id": "G-S5P3-10",
+      "owner_implicit": null,
+      "severity": "P3",
+      "title": "BONUS — `cash_drawer_session_id` foreign key sur cash_movements mais aucun `recorded_by_user_id` colonne — qui a entré le mouvement ?",
+      "files": [
+        "database/migrations/2026_05_08_140100_create_cash_movements_table.php (no recorded_by_user_id)",
+        "app/Models/CashMovement.php LOC 36-44 (fillable lacks user_id)"
+      ],
+      "blocker_for": "Forensics multi-cashier (si G-S5P3-01 fix arrive). Aujourd'hui movement = session.opened_by_user_id implicite ; demain session relayée = movement orphan d'actor identification. Préparer la colonne maintenant évite migration NF525 frozen-zone-risk plus tard."
+    }
+  ],
+
+  "workflow_scenarios_tested": {
+    "scenario_A_caissier_titulaire_pause_dejeuner": {
+      "current_behavior": "Caissier A ouvre session à 11h00 (fond 100€). À 13h00 part en pause. Caissier B arrive sur LE MÊME TIROIR. B ne peut ni se connecter sur la session de A (UNIQUE index bloque), ni ouvrir une nouvelle session sur la même branche (probablement OK mais doublonne les sessions le même jour).",
+      "gap_root_cause": "G-S5P3-01 — invariant 1-session-per-user-per-branch bloque le relais. Aucun concept de current_cashier_id mutable."
+    },
+    "scenario_B_skim_midi_rush": {
+      "current_behavior": "Midi rush 12h-14h, tiroir accumule 1200€ cash. Caissier veut transférer 800€ vers coffre arrière pour sécurité. Backend offer 0 endpoint pour cela. Forced choice: (a) laisser cash exposé, (b) procédure papier hors-système.",
+      "gap_root_cause": "G-S5P3-03 — pas de TYPE_SKIM + pas de POST /movements endpoint + pas de UI bouton 'Sortie'."
+    },
+    "scenario_C_compter_milieu_de_service": {
+      "current_behavior": "Caissier à 15h, fin du rush, veut vérifier que physical cash = expected (opening + transactions). Cliquer 'compter' / 'X-report' n'existe pas. Seul moyen = close (terminal NF525) ou ne pas vérifier.",
+      "gap_root_cause": "G-S5P3-02 — pas de countSession() method + pas de bouton dans dialog active view."
+    },
+    "scenario_D_pourboire_cash_jar": {
+      "current_behavior": "Client laisse 5€ pourboire cash, équipe a pot commun à côté de caisse. Pas d'écran pour déclarer le pourboire. Soit caissier met au tiroir (variance positive systématique à expliquer chaque soir), soit empoche/met au pot (non-tracé, non-fiscal).",
+      "gap_root_cause": "G-S5P3-04 — aucun TYPE_TIP + aucun champ Order.tip_amount + aucun UI tip-jar."
+    },
+    "scenario_E_z_perdu": {
+      "current_behavior": "22h30, caissier ferme Z imprimé puis ticket déchiré. Comptable demande Z par mail à 23h. Caissier ne peut régénérer (permission gate). Manager doit faire curl /pdf endpoint Postman.",
+      "gap_root_cause": "G-S5P3-05 — endpoint backend pdf() existe mais authorizeFiscal('pos-manage-fiscal') exclut POS Operator + aucune UI 'Téléchaer Z' / 'Réimprimer Z' dans LastZReportWidget."
+    },
+    "scenario_F_close_avec_50ct_decart": {
+      "current_behavior": "Close avec écart -0.50€ (sub-threshold backend 2.00€). UI force pourtant reason >=3 char (drift JS 0.005€). Caissier tape 'oki' pour skip → reason inutilisable comptable.",
+      "gap_root_cause": "G-S5P3-07 + G-S5P3-06 — drift seuil + absence de reason presets."
+    }
+  },
+
+  "competitor_baseline_comparison": {
+    "toast_pos": ["Cashier Handover same-drawer relay", "Cash Count (X-report) anytime", "Cash Drop / Skim button (toward safe)", "Tip-Jar separate model + Cash Tip Declaration", "Z Print + Reprint with DUPLICATA marker"],
+    "square_stand": ["Open/Close drawer with denomination breakdown", "Cash Count + Spot Check Report", "Paid In / Paid Out buttons (skim equivalent)", "Tip Distribution by-shift"],
+    "lightspeed_l_series": ["Multi-cashier on same register (employee swipe)", "Cash Float Adjustment + History", "Bank Deposit Workflow", "Custom Reason Presets for variance"],
+    "le_cayenne_v1_today": ["Open / Close / Reconcile only", "Movements table read-only", "Variance gate solid", "Hardware drawer pop logged", "No relay / no skim / no tip / no mid-shift count / no caissier-side Z reprint"]
+  },
+
+  "verdict_overall": {
+    "score": "5.5/10",
+    "shippable_v1": "GO-CONDITIONAL — Open/Close/Reconcile cycle solide et NF525-correct, mais opérations courantes intra-service (relais, skim, count, pourboire) absentes. Le Cayenne V1 single-cashier short-shift (1 caissier sur 4h, pas de pause) = utilisable. Multi-cashier ou shift 8h+ = blocker.",
+    "p0_blockers_for_real_service": 1,
+    "p0_list": ["G-S5P3-01 multi-cashier relais"],
+    "p1_friction_count": 2,
+    "p1_list": ["G-S5P3-02 mid-shift count", "G-S5P3-03 skim/sortie"],
+    "p2_friction_count": 3,
+    "p2_list": ["G-S5P3-04 tip-jar", "G-S5P3-05 Z reprint", "G-S5P3-07 variance threshold drift"],
+    "p3_papercut_count": 4,
+    "frozen_zone_touched": false,
+    "nf525_invariants_respected": true,
+    "branch_isolation_respected": true,
+    "audit_trail_quality": "GOOD — every state change audit-logged HMAC chain, actor_id persisted via closed_by/reconciled_by columns since Sprint H2 F-10. Une extension multi-cashier devra ajouter recorded_by_user_id sur cash_movements (G-S5P3-10)."
+  },
+
+  "top_3_findings": [
+    {
+      "rank": 1,
+      "id": "G-S5P3-01",
+      "severity": "P0",
+      "summary": "Multi-cashier relais sur même tiroir physique impossible — UNIQUE index (branch_id, opened_by_user_id) WHERE open bloque toute pause/remplacement. Workarounds catastrophiques (close+reopen impossible NF525 1-Z/jour ; usage compte d'autrui = sec violation). Pattern Toast/Square = same session DB + current_cashier_id muté + handover event signé."
+    },
+    {
+      "rank": 2,
+      "id": "G-S5P3-03",
+      "severity": "P1",
+      "summary": "Skim / sortie cash mid-shift (vers coffre/banque) non-modélisé. CashMovement.TYPE_* = 5 valeurs (order_payment/cashback/drawer_open/drawer_close/adjustment) — aucun TYPE_SKIM / TYPE_CASH_DROP. Aucun endpoint POST /movements pour saisir un OUT manuel. Sécurité physique en péril sur rush midi (1500€ cash exposé) + écart phantom au close si procédure papier hors-système."
+    },
+    {
+      "rank": 3,
+      "id": "G-S5P3-02",
+      "severity": "P1",
+      "summary": "Mid-shift cash count / X-report intermédiaire absent. CashDrawerService = 4 methods (no countSession/spotCountSession). UI active view = 2 actions (view-movements / go-close). Pas de vérif possible sans terminal close. Conséquence: écart 50€ découvert au close 22h après 8h de transactions = investigation impossible. Pattern Lightspeed/Toast = bouton Cash Count → X-report read-only snapshot."
+    }
+  ],
+
+  "recommendations_minimal_v1_heal": {
+    "p0_must_fix": [
+      "G-S5P3-01: Ajouter colonne `current_cashier_id` sur cash_drawer_sessions + table `cash_drawer_session_handovers` (id, session_id, from_user_id, to_user_id, snapshot_amount, handover_at, audit_log_id) + endpoint POST /cash-drawer/sessions/{session}/handover (manager-gated ou peer-to-peer config-driven) + UI bouton 'Passer la main'. Migration GATED owner (NF525-adjacent même si pas zone frozen)."
+    ],
+    "p1_should_fix_v1_0_2": [
+      "G-S5P3-02: Method CashDrawerService::countSession() + endpoint GET /cash-drawer/sessions/{session}/count + UI bouton 'Compter sans clôturer' qui ouvre modal 'compté physiquement' vs 'attendu' (read-only, no NF525 mutation).",
+      "G-S5P3-03: TYPE_SKIM + TYPE_CASH_DROP dans CashMovement enum + endpoint POST /cash-drawer/sessions/{session}/movements (manager-gated config) + UI bouton 'Sortie coffre' avec champ amount + notes obligatoires."
+    ],
+    "p2_polish_v1_0_2_backlog": [
+      "G-S5P3-04 tip-jar: nouvelle table cash_tip_declarations (session_id, amount, distribution_mode, declared_by) + UI tab 'Pourboires' dans dialog active view.",
+      "G-S5P3-05 Z reprint: étendre permission `pos-manage-fiscal` OR créer `pos.z-report.reprint.own-branch` permission pour POS Operator + UI bouton dans LastZReportWidget + génération PDF côté backend (lib dompdf existe déjà sur le projet).",
+      "G-S5P3-07 variance threshold drift: bootstrap config('cash.variance_threshold_eur') dans /api/admin/pos/config + remplacer 0.005 par window.posConfig.varianceThreshold dans PosCashDrawerSessionDialog.vue."
+    ],
+    "p3_papercuts": [
+      "G-S5P3-06 denomination breakdown: optionnel toggle dans dialog open/close mode pour décomposition billets/pièces.",
+      "G-S5P3-06 reason presets: dropdown avec 5-7 presets fr_FR + 'Autre (texte libre)'.",
+      "G-S5P3-08 manual ADJUSTMENT UI: bouton 'Saisie manuelle' dans movements view qui ouvre form + audit binding.",
+      "G-S5P3-10 recorded_by_user_id colonne cash_movements: ajouter MAINTENANT (sans changer logique) pour préparer multi-cashier."
+    ]
+  },
+
+  "scope_caveats": [
+    "Audit READ-ONLY conformément à CLAUDE.md sec 5 étape 1-2 (ORCHESTRATE + PLAN — pas d'EXECUTE).",
+    "Frozen-zones NON touchées: AuditLogService, FiscalSequenceService, ZReportService, PaymentComponent.vue, BranchScope global — toutes intactes.",
+    "CashDrawerService NON frozen (pas dans CLAUDE.md sec 7 list) — fixes G-S5P3-01..03 acceptable mais GATED owner pour migration cash_drawer_sessions schema change (impact NF525 chain dependency).",
+    "Aucune E2E lancée (audit doc statique). Recommandation suivante = test-e2e skill sur cash drawer workflow après fix G-S5P3-01 P0."
+  ],
+
+  "files_audited": [
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/Cash/CashDrawerService.php (550 LOC)",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Models/CashDrawerSession.php (91 LOC)",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Models/CashMovement.php (80 LOC)",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Controllers/Admin/Pos/CashDrawerController.php (78 LOC, hardware pop)",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Controllers/Admin/Pos/CashDrawerSessionController.php (340 LOC)",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Controllers/Admin/Fiscal/ZReportController.php (130 LOC)",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue (931 LOC, 4 modes)",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/components/admin/cashSessionReport/CashSessionReportListComponent.vue",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/components/admin/cashOverview/CashOverviewComponent.vue",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/components/admin/dashboard/LastZReportWidget.vue",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/database/migrations/2026_05_08_140000_create_cash_drawer_sessions_table.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/database/migrations/2026_05_08_140100_create_cash_movements_table.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/database/migrations/2026_05_10_020000_add_unique_partial_cash_drawer_open.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/database/migrations/2026_05_17_100000_add_actor_columns_to_cash_drawer_sessions.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/routes/api.php LOC 901-914 (cash-drawer routes) + LOC 1184-1191 (z-report routes)"
+  ]
+}

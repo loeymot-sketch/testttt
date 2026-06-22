@@ -1,0 +1,8 @@
+{
+  "task_id": "PROD-LIVE-VALIDATION-D1-DESIGN-KIOSK",
+  "date": "2026-04-27",
+  "delegation": "codex-extension",
+  "source_plan": "reports/audit/CLAUDE_ORDERS_TO_CODEX_MEGA_TEST_ORCHESTRATION_2026-04-27.md",
+  "scope": "kiosk design smoke harness",
+  "strict_d1_status": "not_claimed_until_full_5x_stateful_suite"
+}

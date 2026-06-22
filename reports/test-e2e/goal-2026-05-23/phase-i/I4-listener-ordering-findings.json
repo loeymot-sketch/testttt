@@ -1,0 +1,387 @@
+{
+  "agent": "I.4 Domain event listener ordering",
+  "scope": "Hidden listener ordering dependencies — $listen array order, sync vs queued mix, DispatchableAfterCommit, exception isolation",
+  "audited_at": "2026-05-24",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "source_of_truth": "app/Providers/EventServiceProvider.php $listen + app/Listeners/* + app/Events/* + app/Events/Concerns/DispatchableAfterCommit.php",
+
+  "framework_facts": {
+    "dispatcher": "Illuminate\\Events\\Dispatcher (sync, default Laravel) — listeners halt on first Throwable that escapes a handle()",
+    "default_queue_driver": "QUEUE_CONNECTION default=sync (config/queue.php:16) — even ShouldQueue listeners run inline in dev/V1 LOCAL",
+    "after_commit_pattern": {
+      "implementation": "App\\Events\\Concerns\\DispatchableAfterCommit trait — applied to the EVENT class, defers dispatch() to DB::afterCommit, dropped on rollback",
+      "applied_on_events": [
+        "OrderCreated",
+        "OrderStatusChanged",
+        "OrderPaymentStatusChanged",
+        "OrderPaidAtCounter",
+        "OrderCanceled",
+        "OrderTableChanged",
+        "RefundCreated",
+        "BranchStatusChanged",
+        "CatalogChanged",
+        "ItemAvailabilityChanged",
+        "ItemExtraAvailabilityChanged",
+        "ItemVariationAvailabilityChanged"
+      ],
+      "note": "BRAIN mentions '11 listeners ShouldHandleEventsAfterCommit (subagent fan-out missing)'. Verified TODAY: 0 listeners implement that interface (grep across app/). The codebase chose the event-side trait pattern instead — equivalent semantics, single deferral point. BRAIN claim appears stale or referred to a transient state that no longer exists. PersistBranchStatusChangedToOutbox explicitly documents 'NE déclare PAS ShouldHandleEventsAfterCommit interface — double-deferral non nécessaire' confirming the design choice.",
+      "listeners_implementing_should_queue_under_domain_events": "ZERO — all domain-event listeners are synchronous in-process. ShouldQueue is used downstream inside Jobs (SendFcmNotificationJob, DispatchDomainEventsJob)."
+    }
+  },
+
+  "events_audited": [
+    {
+      "event": "OrderCreated",
+      "uses_dispatchable_after_commit": true,
+      "listeners_in_order": [
+        "PersistOrderCreatedToOutbox",
+        "DecrementItemAvailabilityOnOrder",
+        "DecrementStockOnOrderCreated",
+        "SendFcmOnOrderCreated"
+      ],
+      "persist_first_verified": true,
+      "exception_handling_per_listener": [
+        {"listener": "PersistOrderCreatedToOutbox", "catches_throwable": true, "policy": "Catches in DB::afterCommit closure; re-throws nothing; on broadcast failure dispatches OutboxBroadcastSwallowedEvent; failure of THAT event is also caught and logged"},
+        {"listener": "DecrementItemAvailabilityOnOrder", "catches_throwable": true, "policy": "[WG-2 / PK1-ARCH-01] try/catch Throwable, Log::error, dispatch StockDecrementFailedEvent (also try/catch). Never propagates."},
+        {"listener": "DecrementStockOnOrderCreated", "catches_throwable": true, "policy": "Same WG-2 envelope as sibling; explicit comment that pre-WG-2 re-throw was load-bearing-wrong because OrderCreated is DispatchableAfterCommit (outer txn already committed by listener time)."},
+        {"listener": "SendFcmOnOrderCreated", "catches_throwable": true, "policy": "safeDispatch() wraps EACH SendFcmNotificationJob::dispatch call individually (F-002 round-3); broken-glass FCM creds cannot kill sibling listeners."}
+      ],
+      "race_concerns": [
+        "If PersistOrderCreatedToOutbox throws BEFORE its DB::afterCommit closure registers (e.g. DomainEvent insert fails on DB error), the cascade still continues — sibling listeners are protected by their own envelopes, but the outbox row will be missing for this OrderCreated. No alarm path exists for that specific failure mode (Persist listener has no outer try/catch on the firstOrCreate). Severity P2.",
+        "All listeners are synchronous; no sync↔queued mix race."
+      ],
+      "verdict": "GREEN — outbox-first + per-listener isolation correctly implemented"
+    },
+
+    {
+      "event": "OrderStatusChanged",
+      "uses_dispatchable_after_commit": true,
+      "listeners_in_order": [
+        "PersistOrderStatusChangedToOutbox",
+        "AwardLoyaltyPointsOnDelivery",
+        "SendFcmOnOrderStatusChange"
+      ],
+      "persist_first_verified": true,
+      "exception_handling_per_listener": [
+        {"listener": "PersistOrderStatusChangedToOutbox", "catches_throwable": true, "policy": "Same envelope as PersistOrderCreatedToOutbox — afterCommit closure has try/catch + OutboxBroadcastSwallowedEvent fallback. Outer firstOrCreate is NOT wrapped (same gap as Created)."},
+        {"listener": "AwardLoyaltyPointsOnDelivery", "catches_throwable": true, "policy": "try/catch Throwable around DB::transaction + sentinel revert; explicit '[Loyalty] Never block order status change for loyalty failure.'"},
+        {"listener": "SendFcmOnOrderStatusChange", "catches_throwable": true, "policy": "Per-notification try/catch in foreach loop (F-002 round-3 pattern)."}
+      ],
+      "race_concerns": [
+        "AwardLoyaltyPointsOnDelivery uses atomic sentinel (loyalty_points_awarded = -1) — concurrent OrderStatusChanged events for the same order collapse to one award.",
+        "Loyalty surface inference depends on $order->source_surface which may be null on POS orders → fallback to 'web' for non-kiosk. Cosmetic, not ordering-related."
+      ],
+      "verdict": "GREEN"
+    },
+
+    {
+      "event": "OrderCanceled",
+      "uses_dispatchable_after_commit": true,
+      "listeners_in_order": [
+        "ReleaseStockOnOrderCanceled",
+        "ReleaseAvailabilityOnOrderCanceled"
+      ],
+      "persist_first_verified": "N/A (no Persist listener — OrderCanceled is INTERNAL, NOT broadcast; the broadcast happens via OrderStatusChanged::dispatch(.., CANCELED) which fires its own outbox cascade)",
+      "exception_handling_per_listener": [
+        {"listener": "ReleaseStockOnOrderCanceled", "catches_throwable": true, "policy": "PROBLEM: catches Throwable, Log::error, then EXPLICITLY RE-THROWS ($e) at line 29 with comment 'caller (OrderService::changeStatus self-cancel déjà en try/catch ligne 1547) garde la trace + propage au retry queue'. The rationale is partial — it ignores Laravel sync-dispatcher semantics."},
+        {"listener": "ReleaseAvailabilityOnOrderCanceled", "catches_throwable": false, "policy": "NO try/catch. Any Throwable escapes the listener."}
+      ],
+      "race_concerns": [
+        "Sequential dependency violated by listener-1 re-throw — see top-3 below."
+      ],
+      "verdict": "RED — ordering bug confirmed"
+    },
+
+    {
+      "event": "RefundCreated",
+      "uses_dispatchable_after_commit": true,
+      "listeners_in_order": [
+        "PersistOrderPaymentStatusChangedOnRefundCreated",
+        "ReleaseStockOnRefundCreated",
+        "ReleaseAvailabilityOnRefundCreated"
+      ],
+      "persist_first_verified": true,
+      "exception_handling_per_listener": [
+        {"listener": "PersistOrderPaymentStatusChangedOnRefundCreated", "catches_throwable": true, "policy": "Inner DB::transaction wrapped in try/catch (lines 88-122); broadcast dispatch wrapped separately (lines 128-147); listener never propagates. Documented in header comment as the rationale for FIRST-position registration (RED-Z8 P2-2)."},
+        {"listener": "ReleaseStockOnRefundCreated", "catches_throwable": false, "policy": "14-line file. ZERO try/catch around app(StockService::class)->releaseForOrder(...). Any Throwable kills the cascade."},
+        {"listener": "ReleaseAvailabilityOnRefundCreated", "catches_throwable": false, "policy": "ZERO try/catch around AvailabilityService::releaseForOrderItems(...). Any Throwable from line 71 escapes."}
+      ],
+      "race_concerns": [
+        "If ReleaseStockOnRefundCreated throws (e.g. StockService internal SQL fault, FK violation on cancelled stock_movement), ReleaseAvailabilityOnRefundCreated NEVER runs → divergent ledgers (stock partially released, availability counters NOT released). Same defect class as OrderCanceled.",
+        "Persist listener IS hardened, so the realtime refund broadcast still goes out — partial mitigation. But the ledger-drift remains."
+      ],
+      "verdict": "AMBER — asymmetric hardening; persist + broadcast safe, releases fragile"
+    },
+
+    {
+      "event": "OrderPaymentStatusChanged",
+      "uses_dispatchable_after_commit": true,
+      "listeners_in_order": [
+        "PersistOrderPaymentStatusChangedToOutbox"
+      ],
+      "persist_first_verified": true,
+      "exception_handling_per_listener": [
+        {"listener": "PersistOrderPaymentStatusChangedToOutbox", "catches_throwable": true, "policy": "Same envelope as PersistOrderCreatedToOutbox + OutboxBroadcastSwallowedEvent fallback."}
+      ],
+      "race_concerns": [
+        "Single-listener event — no ordering concern."
+      ],
+      "verdict": "GREEN"
+    },
+
+    {
+      "event": "OrderPaidAtCounter (maps to task-spec 'PaymentConfirmed' for this codebase)",
+      "uses_dispatchable_after_commit": true,
+      "listeners_in_order": [
+        "PersistOrderPaidAtCounterToOutbox"
+      ],
+      "persist_first_verified": true,
+      "exception_handling_per_listener": [
+        {"listener": "PersistOrderPaidAtCounterToOutbox", "catches_throwable": true, "policy": "Standard outbox envelope (afterCommit try/catch + Log::warning). No OutboxBroadcastSwallowedEvent escalation here — minor parity drift vs Created/Status/Payment-status."}
+      ],
+      "race_concerns": ["Single-listener, no ordering concern."],
+      "verdict": "GREEN with minor parity gap (no swallow-event escalation)"
+    },
+
+    {
+      "event": "OrderTableChanged",
+      "uses_dispatchable_after_commit": true,
+      "listeners_in_order": ["PersistOrderTableChangedToOutbox"],
+      "persist_first_verified": true,
+      "exception_handling_per_listener": [
+        {"listener": "PersistOrderTableChangedToOutbox", "catches_throwable": true, "policy": "Standard outbox envelope. Defensive dining-table-name lookup wrapped in try/catch (lines 35-42)."}
+      ],
+      "race_concerns": ["Single-listener."],
+      "verdict": "GREEN"
+    },
+
+    {
+      "event": "ItemAvailabilityChanged",
+      "uses_dispatchable_after_commit": true,
+      "listeners_in_order": [
+        "BumpMenuSnapshotOnItemAvailabilityChanged",
+        "InvalidateKioskMenuCacheOnItemAvailabilityChanged",
+        "PersistCatalogChangedToOutbox",
+        "PersistItemAvailabilityChangedToOutbox"
+      ],
+      "persist_first_verified": false,
+      "persist_first_violation_detail": "Two outbox-persister listeners are positions 3 and 4 (LAST). Doctrine codified in OrderCreated comment (EventServiceProvider lines 134-143) is 'Persist*ToOutbox MUST run BEFORE side-effect listeners'. Violated here.",
+      "exception_handling_per_listener": [
+        {"listener": "BumpMenuSnapshotOnItemAvailabilityChanged", "catches_throwable": true, "policy": "Outer try/catch around MenuSnapshot::bump iteration; Log::warning + swallow. Explicit comment 'snapshot bump is best-effort freshness hint'."},
+        {"listener": "InvalidateKioskMenuCacheOnItemAvailabilityChanged", "catches_throwable": true, "policy": "Outer try/catch; Log::warning + swallow on Cache::forget or Branch::query failure."},
+        {"listener": "PersistCatalogChangedToOutbox", "catches_throwable": true, "policy": "Standard outbox envelope inside DB::afterCommit. The outer foreach loop (lines 50-95) is NOT try/wrapped — a Branch::query() failure or a DomainEvent::firstOrCreate fail aborts the cascade."},
+        {"listener": "PersistItemAvailabilityChangedToOutbox", "catches_throwable": true, "policy": "Standard envelope inside DB::afterCommit. Outer DomainEvent::firstOrCreate NOT wrapped."}
+      ],
+      "race_concerns": [
+        "Doctrine breach: outbox should be FIRST. Currently mitigated by Bump/Invalidate having outer try/catch + swallow, but if either listener's swallow body itself fails (Log facade resolution issue, Cache driver mid-flight failure that propagates before the catch wraps it), persistence is skipped — frontend Echo never gets the broadcast.",
+        "Two distinct outbox rows per event (CatalogChanged + ItemAvailabilityChanged) — by design, dual broadcast for generic refresh + targeted handler. Confirmed parity in WAVE5-DATA-004 comments."
+      ],
+      "verdict": "AMBER — doctrine breach, mitigated"
+    },
+
+    {
+      "event": "ItemExtraAvailabilityChanged",
+      "uses_dispatchable_after_commit": true,
+      "listeners_in_order": [
+        "PersistItemExtraAvailabilityChangedToOutbox",
+        "PersistCatalogChangedToOutbox",
+        "InvalidateKioskMenuCacheOnCatalogChange"
+      ],
+      "persist_first_verified": true,
+      "exception_handling_per_listener": [
+        {"listener": "PersistItemExtraAvailabilityChangedToOutbox", "catches_throwable": true, "policy": "Standard outbox envelope."},
+        {"listener": "PersistCatalogChangedToOutbox", "catches_throwable": true, "policy": "Same as above."},
+        {"listener": "InvalidateKioskMenuCacheOnCatalogChange", "catches_throwable": true, "policy": "Outer try/catch around iteration; Log::warning + swallow."}
+      ],
+      "race_concerns": [
+        "Q9-S1 owner Q2 fix (2026-05-21) explicitly added InvalidateKioskMenuCacheOnCatalogChange LAST to ensure the BE cache flush happens after the outbox row is persisted — so frontend re-fetch after Echo notification gets fresh data. Correct ordering."
+      ],
+      "verdict": "GREEN"
+    },
+
+    {
+      "event": "ItemVariationAvailabilityChanged",
+      "uses_dispatchable_after_commit": true,
+      "listeners_in_order": [
+        "PersistItemVariationAvailabilityChangedToOutbox",
+        "PersistCatalogChangedToOutbox",
+        "InvalidateKioskMenuCacheOnCatalogChange"
+      ],
+      "persist_first_verified": true,
+      "exception_handling_per_listener": "same as ItemExtra above",
+      "race_concerns": ["Mirror of ItemExtra."],
+      "verdict": "GREEN"
+    },
+
+    {
+      "event": "CatalogChanged (direct fire)",
+      "uses_dispatchable_after_commit": true,
+      "listeners_in_order": ["PersistCatalogChangedToOutbox"],
+      "persist_first_verified": true,
+      "verdict": "GREEN"
+    },
+
+    {
+      "event": "IngredientAvailabilityChanged",
+      "uses_dispatchable_after_commit": "verify (not read this audit — outside top-10 sample)",
+      "listeners_in_order": ["InvalidateMenuProjectionOnIngredientChange"],
+      "exception_handling_per_listener": [
+        {"listener": "InvalidateMenuProjectionOnIngredientChange", "catches_throwable": true, "policy": "Outer try/catch around iteration + CatalogChanged::dispatch; Log::warning + swallow."}
+      ],
+      "verdict": "GREEN"
+    },
+
+    {
+      "event": "BranchStatusChanged",
+      "uses_dispatchable_after_commit": true,
+      "listeners_in_order": [
+        "RevokeTokensOnBranchDeactivated",
+        "PersistBranchStatusChangedToOutbox"
+      ],
+      "persist_first_verified": false,
+      "persist_first_intentional_inversion": true,
+      "persist_first_inversion_rationale": "RevokeTokens is a destructive sync DB delete that MUST complete before the async broadcast goes out (otherwise clients receive the deactivation event but their tokens are still alive momentarily). Outbox row is SECOND. Documented in EventServiceProvider:274-280 + PersistBranchStatusChangedToOutbox header comment item 5.",
+      "exception_handling_per_listener": [
+        {"listener": "RevokeTokensOnBranchDeactivated", "catches_throwable": false, "policy": "No try/catch. If PersonalAccessToken::query()->delete() throws (FK constraint, DB lock timeout), PersistBranchStatusChangedToOutbox NEVER fires → no broadcast → kiosk/POS clients never learn the branch is deactivated."},
+        {"listener": "PersistBranchStatusChangedToOutbox", "catches_throwable": true, "policy": "afterCommit envelope as standard."}
+      ],
+      "race_concerns": [
+        "If token revocation fails (e.g. concurrent lock on personal_access_tokens), the outbox broadcast NEVER fires. Severity P2 (rare in practice; affected branches are admin-triggered) but the intentional ordering inversion is fragile."
+      ],
+      "verdict": "AMBER — intentional inversion with no isolation envelope on the first listener"
+    },
+
+    {
+      "event": "OutboxBroadcastSwallowedEvent",
+      "uses_dispatchable_after_commit": "no (observability event, fires immediately)",
+      "listeners_in_order": ["EscalateOutboxBroadcastSwallowed"],
+      "exception_handling_per_listener": [
+        {"listener": "EscalateOutboxBroadcastSwallowed", "catches_throwable": false, "policy": "No try/catch; ONE Log::channel('fiscal')->critical call. Failure is absorbed at the DISPATCH site (nested try/catch in PersistOrderCreatedToOutbox lines 88-102 etc.). Verified."}
+      ],
+      "verdict": "GREEN"
+    },
+
+    {
+      "event": "CouponChanged",
+      "listeners_in_order": ["PersistCouponChangedToOutbox"],
+      "persist_first_verified": true,
+      "verdict": "GREEN"
+    },
+
+    {
+      "event": "SettingsUpdated",
+      "listeners_in_order": ["PersistSettingsUpdatedToOutbox"],
+      "persist_first_verified": true,
+      "verdict": "GREEN"
+    },
+
+    {
+      "event": "StockLevelChanged",
+      "listeners_in_order": [
+        "InvalidateKioskMenuCacheOnCatalogChange",
+        "PersistCatalogChangedToOutbox",
+        "NotifyStockLowOnStockLevelChanged"
+      ],
+      "persist_first_verified": false,
+      "persist_first_violation_detail": "InvalidateKioskMenuCacheOnCatalogChange is FIRST. Same doctrine-breach pattern as ItemAvailabilityChanged.",
+      "exception_handling_per_listener": [
+        {"listener": "InvalidateKioskMenuCacheOnCatalogChange", "catches_throwable": true},
+        {"listener": "PersistCatalogChangedToOutbox", "catches_throwable": true},
+        {"listener": "NotifyStockLowOnStockLevelChanged", "catches_throwable": false, "policy": "No try/catch. Disabled by default (config('catalog_v15.stock_low_alert.enabled', false)) so currently no risk; if owner enables it and StockLevel query fails, sibling listeners would have already run, so no cascade impact for THIS listener (it's LAST)."}
+      ],
+      "verdict": "AMBER — doctrine breach"
+    }
+  ],
+
+  "events_in_task_spec_not_present_in_codebase": [
+    {
+      "task_spec_name": "ZReportClosed",
+      "status": "NOT FOUND",
+      "evidence": "grep across app/ for 'ZReportClosed::dispatch' OR 'class ZReportClosed' returns 0 hits. No event of that name is fired or registered in $listen. Fiscal Z close happens via ZReportService — no public domain event is dispatched. If observability/audit consumers need a hook, this is a gap."
+    },
+    {
+      "task_spec_name": "PaymentConfirmed",
+      "maps_to_in_this_codebase": "OrderPaidAtCounter (kiosk paid via POS counter) + OrderPaymentStatusChanged (state-machine transitions). Audited above."
+    }
+  ],
+
+  "silent_swallow_listeners": [
+    {
+      "listener": "BumpMenuSnapshotOnItemAvailabilityChanged",
+      "policy": "Log::warning + return — best-effort freshness hint, intentional swallow with documented rationale.",
+      "severity": "P3 (acceptable)"
+    },
+    {
+      "listener": "InvalidateKioskMenuCacheOnItemAvailabilityChanged",
+      "policy": "Log::warning + return — TTL fallback ≤60s.",
+      "severity": "P3 (acceptable)"
+    },
+    {
+      "listener": "InvalidateKioskMenuCacheOnCatalogChange",
+      "policy": "Log::warning + return.",
+      "severity": "P3 (acceptable)"
+    },
+    {
+      "listener": "InvalidateMenuProjectionOnIngredientChange",
+      "policy": "Log::warning + return — but ALSO swallows the CatalogChanged::dispatch inside the try block — if Branch::query() fails, the catalog broadcast is silently skipped.",
+      "severity": "P2 — single point of failure for ingredient-driven cache fan-out"
+    },
+    {
+      "listener": "SendOrderMailNotification",
+      "policy": "try { ... } catch (\\Exception $e) { Log::info($e->getMessage()); } — Log::info (not warning/error) AND only \\Exception (Errors propagate), partial swallow.",
+      "severity": "P3 (non-critical mail path)"
+    },
+    {
+      "listener": "PersistOrderCreatedToOutbox / PersistOrderStatusChangedToOutbox / PersistOrderPaymentStatusChangedToOutbox",
+      "policy": "Inner afterCommit dispatch fail is logged at error tier + dispatches OutboxBroadcastSwallowedEvent which Log::channel('fiscal')->critical — pager-grade. NOT silent.",
+      "severity": "P3 (correct observability)"
+    },
+    {
+      "listener": "All other Persist*ToOutbox (Coupon, Settings, Branch, TableChanged, PaidAtCounter, Catalog, ItemAvailability, ItemExtra, ItemVariation)",
+      "policy": "afterCommit dispatch fail is Log::warning ONLY — no OutboxBroadcastSwallowedEvent escalation.",
+      "severity": "P2 — parity drift with the 3 escalation-wired listeners. WJ-4 WI-5 only wired the Order* trio. If Pusher is down + outbox-retry cron is down, Coupon/Settings/Branch/Catalog/Item* swallow events silently."
+    }
+  ],
+
+  "top_3_listener_ordering_concerns": [
+    {
+      "rank": 1,
+      "severity": "RED",
+      "id": "I4-CONCERN-01",
+      "title": "OrderCanceled cascade: ReleaseStockOnOrderCanceled re-throws → kills ReleaseAvailabilityOnOrderCanceled",
+      "evidence": "app/Listeners/ReleaseStockOnOrderCanceled.php:29 explicitly `throw $e;`. Comment block (iter13 P1 STOCK 2026-05-09) defends the re-throw via 'caller already in try/catch' rationale, but Laravel sync dispatcher (vendor/laravel/.../Events/Dispatcher.php:233-269) halts on listener throw — the next listener `ReleaseAvailabilityOnOrderCanceled` (registered immediately after in EventServiceProvider:167-170) NEVER runs. ReleaseAvailabilityOnOrderCanceled.php has ZERO try/catch of its own, so even if it ran, it'd propagate too.",
+      "impact": "Stock ledger released but availability counters NOT released → divergent ledgers under failure. Idempotent re-execution from the retry queue helps ONLY if the listener is re-fired in isolation, which Laravel does NOT do — the entire cascade is re-fired and ReleaseStock will fail again, never reaching ReleaseAvailability.",
+      "fix_recommendation": "Either (a) move ReleaseStockOnOrderCanceled to LAST position (avoid blocking the availability release) OR (b) replicate the WG-2 envelope pattern (log + dispatch StockDecrementFailedEvent + no re-throw)."
+    },
+    {
+      "rank": 2,
+      "severity": "AMBER",
+      "id": "I4-CONCERN-02",
+      "title": "RefundCreated cascade: ReleaseStockOnRefundCreated + ReleaseAvailabilityOnRefundCreated have ZERO try/catch",
+      "evidence": "app/Listeners/ReleaseStockOnRefundCreated.php is 14 lines, calls app(StockService::class)->releaseForOrder() with no envelope. ReleaseAvailabilityOnRefundCreated.php same. The PRECEDING listener (PersistOrderPaymentStatusChangedOnRefundCreated) IS hardened — so the refund broadcast goes out. But if stock release throws, availability release never runs → same divergent-ledger class as Concern 01.",
+      "impact": "Refund persists + broadcasts fine; ledgers diverge on stock-release failure. Asymmetric vs OrderCreated cascade which has WG-2 envelopes on both decrement listeners.",
+      "fix_recommendation": "Wrap both release listeners in WG-2-style try/catch + log + structured fail event. Mirror DecrementStockOnOrderCreated / DecrementItemAvailabilityOnOrder pattern."
+    },
+    {
+      "rank": 3,
+      "severity": "AMBER",
+      "id": "I4-CONCERN-03",
+      "title": "Outbox-first doctrine violated on 2 events: ItemAvailabilityChanged + StockLevelChanged",
+      "evidence": "EventServiceProvider:191-199 ItemAvailabilityChanged listener order is [BumpSnapshot, InvalidateCache, PersistCatalog, PersistItemAvailability] — outbox persisters are LAST. EventServiceProvider:256-260 StockLevelChanged is [InvalidateCache, PersistCatalog, NotifyStockLow] — cache invalidate is FIRST. Contradicts the doctrine stated in EventServiceProvider:134-143 for OrderCreated ('Persist*ToOutbox MUST run BEFORE side-effect listeners').",
+      "impact": "Mitigated by outer try/catch envelopes on the side-effect listeners — they swallow on failure. BUT: if a swallow body itself fails (Log facade resolution mid-rebind, Cache driver mid-flight crash before the catch frame catches it, or a Throwable that's actually a fatal Error not normally re-throwable), the outbox row is NEVER persisted and the broadcast NEVER goes out. Frontend never learns of the availability/stock change.",
+      "fix_recommendation": "Reorder both arrays to put Persist*ToOutbox FIRST. The Bump/Invalidate listeners read from the same DB rows the Persist listeners read — no inter-listener data dependency."
+    }
+  ],
+
+  "additional_observations": [
+    "Strong defense-in-depth pattern overall: events use DispatchableAfterCommit, most listeners have outer try/catch with structured logging, the 3 critical Order* outbox listeners escalate via OutboxBroadcastSwallowedEvent → Log::channel('fiscal')->critical (pager-grade).",
+    "PARITY DRIFT: only 3 of ~11 Persist*ToOutbox listeners (Order Created/StatusChanged/PaymentStatusChanged) wire the OutboxBroadcastSwallowedEvent escalation. CouponChanged / SettingsUpdated / BranchStatusChanged / CatalogChanged / TableChanged / PaidAtCounter / ItemAvailability / ItemExtra / ItemVariation outbox listeners use Log::warning only. If broadcaster is down + outbox-retry cron is down, these swallow silently.",
+    "BRAIN claim '11 listeners ShouldHandleEventsAfterCommit (subagent fan-out missing)' is STALE — verified TODAY: 0 listeners implement that interface; codebase uses event-side DispatchableAfterCommit trait instead. Recommend updating BRAIN to reflect actual design choice.",
+    "ZReportClosed event mentioned in this task's spec does NOT exist in this codebase — no fiscal-close domain event is dispatched. If audit consumers need a hook, this is a separate gap (out of scope for I.4).",
+    "All 16 events audited use DispatchableAfterCommit trait correctly. No synchronous dispatch inside an open DB::transaction was found (good — broadcaster cannot observe pre-rollback state).",
+    "DispatchableAfterCommit::dispatchNow() exists as a test-friendly bypass — verified by tests/Feature/Outbox tests calling dispatchNow when forcing immediate behavior."
+  ],
+
+  "verdict": "AMBER",
+  "verdict_rationale": "1 RED ordering bug (Concern 01: OrderCanceled re-throw kills availability release), 2 AMBER concerns (Concern 02 + 03), well-isolated overall but with documented asymmetric hardening and 2 doctrine breaches. Production-safe under normal conditions; degrades to ledger drift or silent broadcast loss under specific failure modes. Recommendation: fix Concern 01 immediately (one-line change), schedule Concern 02 + 03 for next quick-win wave."
+}

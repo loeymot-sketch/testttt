@@ -12,15 +12,20 @@ class ItemExtra extends Model
     use HasFactory, SoftDeletes;
 
     protected $table = "item_extras";
-    protected $fillable = ['item_id', 'name', 'status', 'price', 'visible_on', 'group_label'];
+    // [WIZARD-STUDIO W4 / DATA-01] image_path + description columns exist (nullable) and the projection
+    // READS them, but are intentionally NOT $fillable (no validated writer; the item-update `extras`
+    // blob is not key-whitelisted). A future Studio option-edit endpoint sets them explicitly. Reads unaffected.
+    protected $fillable = ['item_id', 'name', 'status', 'price', 'visible_on', 'group_label', 'is_available', 'unavailable_reason'];
     protected $casts = [
-        'id'          => 'integer',
-        'item_id'     => 'integer',
-        'name'        => 'string',
-        'status'      => 'integer',
-        'price'       => 'decimal:6',
-        'visible_on'  => 'array',   // null = all surfaces; ["kiosk","pos","web"] = restricted
-        'group_label' => 'string',
+        'id'                 => 'integer',
+        'item_id'            => 'integer',
+        'name'               => 'string',
+        'status'             => 'integer',
+        'price'              => 'decimal:6',
+        'visible_on'         => 'array',   // null = all surfaces; ["kiosk","pos","web"] = restricted
+        'group_label'        => 'string',
+        'is_available'       => 'boolean',
+        'unavailable_reason' => 'string',
     ];
 
     /**
@@ -51,15 +56,19 @@ class ItemExtra extends Model
             $sauces = Config::get('menu_images.sauces', []);
             $filename = $sauces[$sauceName] ?? null;
         } else {
+            // Crudités atomiques (MenuSeeder : extras « Salade », « Tomate », « Oignon » — pas le préfixe « Sauce »).
+            $cruditeExtras = Config::get('menu_images.crudite_extras', []);
             $supplements = Config::get('menu_images.supplements', []);
-            $filename = $supplements[$this->name] ?? null;
+            $filename = $cruditeExtras[$this->name] ?? $supplements[$this->name] ?? null;
         }
 
         if ($filename && file_exists(public_path("{$basePath}/{$filename}"))) {
-            return asset("{$basePath}/{$filename}");
+            $hash = @filemtime(public_path("{$basePath}/{$filename}")) ?: 0;
+            return asset("{$basePath}/{$filename}") . "?v={$hash}";
         }
         if (file_exists(public_path("{$basePath}/{$defaultFile}"))) {
-            return asset("{$basePath}/{$defaultFile}");
+            $hash = @filemtime(public_path("{$basePath}/{$defaultFile}")) ?: 0;
+            return asset("{$basePath}/{$defaultFile}") . "?v={$hash}";
         }
         return null;
     }

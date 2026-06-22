@@ -85,7 +85,7 @@
                                     $t("label.phone")
                                 }}</span>
                                 <span class="db-list-item-text w-full sm:w-1/2">{{ administrator.phone ?
-                                    administrator.country_code + '' + administrator.phone : '' }}</span>
+                                    (administrator.country_code || '') + administrator.phone : '' }}</span>
                             </div>
                         </div>
                         <div class="col-12 sm:col-6 !py-1.5">
@@ -126,7 +126,7 @@
                             </div>
 
                             <div class="form-col-12 sm:form-col-6">
-                                <label for="password" class="db-field-title required">{{
+                                <label for="confirm_password" class="db-field-title required">{{
                                     $t("label.confirm_password")
                                 }}</label>
                                 <input v-model="password.props.form.password_confirmation"

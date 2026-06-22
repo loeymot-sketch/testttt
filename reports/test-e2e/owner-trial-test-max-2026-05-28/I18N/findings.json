@@ -1,0 +1,893 @@
+{
+  "wave": "MAX TEST WAVE B — i18n + A11y + Performance Sweep",
+  "date": "2026-05-28",
+  "head": "e7ae1c8ea",
+  "scope": "6 NEW surfaces (5 prior T2 surfaces cited via KNOWN_T2_FINDINGS, not recaptured)",
+  "surfaces_captured": [
+    "login",
+    "kiosk_idle",
+    "kiosk_catalog",
+    "admin_pos",
+    "kds",
+    "oss"
+  ],
+  "surfaces_skipped": [],
+  "per_surface_raw": [
+    {
+      "label": "login",
+      "url": "http://127.0.0.1:8000/login",
+      "final_url": "http://127.0.0.1:8000/login",
+      "nav_status": 200,
+      "nav_total_ms": 2895,
+      "screenshot": "/tmp/foodking-max-test-2026-05-28/wave-b-i18n-a11y-perf/login.png",
+      "i18n": {
+        "raw_labels": [],
+        "raw_labels_count": 0,
+        "english_leaks": [],
+        "english_leaks_count": 0,
+        "diacritics_present": true,
+        "body_text_length": 114,
+        "body_excerpt": "Français\nAnglais\nFrançais\nConnexion\nBon Retour\nEmail\nMot De Passe\nSe Souvenir De Moi\nMot De Passe Oublié\nConnexion"
+      },
+      "a11y": {
+        "axe": {
+          "violations_total": 1,
+          "critical": [],
+          "serious": [
+            {
+              "id": "color-contrast",
+              "impact": "serious",
+              "help": "Elements must meet minimum color contrast ratio thresholds",
+              "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/color-contrast?application=playwright",
+              "nodes_affected": 3,
+              "first_target": [
+                ".lg\\:flex > .whitespace-nowrap"
+              ],
+              "first_failure": "Fix any of the following:\n  Element has insufficient color contrast of 3.49 (foreground color: #ffffff, background color: #f4501e, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+            }
+          ],
+          "moderate": 0,
+          "minor": 0
+        },
+        "manual": {
+          "iconBtnsTotal": 2,
+          "iconBtnsMissingAria": 2,
+          "totalBtns": 5,
+          "smallTargets": 4
+        }
+      },
+      "perf": {
+        "navStart": 0,
+        "domContentLoaded": 311.5,
+        "loadEvent": 367.60000014305115,
+        "lcp_ms": null,
+        "fcp_ms": 316,
+        "transferSize": 10473,
+        "encodedBodySize": 10173,
+        "decodedBodySize": 10173
+      },
+      "perf_note": "LCP not reported by browser — likely because page settled before LCP entry threshold or LCP candidate did not meet rendering criteria. FCP captured as proxy."
+    },
+    {
+      "label": "kiosk_idle",
+      "url": "http://127.0.0.1:8000/kiosk/idle",
+      "final_url": "http://127.0.0.1:8000/kiosk/idle",
+      "nav_status": 200,
+      "nav_total_ms": 3249,
+      "screenshot": "/tmp/foodking-max-test-2026-05-28/wave-b-i18n-a11y-perf/kiosk_idle.png",
+      "i18n": {
+        "raw_labels": [],
+        "raw_labels_count": 0,
+        "english_leaks": [],
+        "english_leaks_count": 0,
+        "diacritics_present": true,
+        "body_text_length": 125,
+        "body_excerpt": "🌮\n🍔\n🍟\nBienvenue !\n\nCommandez en quelques touches\n\nÀ emporter\nJe récupère ma commande\n\nCHOISISSEZ UNE OPTION POUR COMMENCER"
+      },
+      "a11y": {
+        "axe": {
+          "violations_total": 0,
+          "critical": [],
+          "serious": [],
+          "moderate": 0,
+          "minor": 0
+        },
+        "manual": {
+          "iconBtnsTotal": 1,
+          "iconBtnsMissingAria": 0,
+          "totalBtns": 3,
+          "smallTargets": 0
+        }
+      },
+      "perf": {
+        "navStart": 0,
+        "domContentLoaded": 159.60000014305115,
+        "loadEvent": 440.2999999523163,
+        "lcp_ms": null,
+        "fcp_ms": 476,
+        "transferSize": 10708,
+        "encodedBodySize": 10408,
+        "decodedBodySize": 10408
+      },
+      "perf_note": "LCP not reported by browser — likely because page settled before LCP entry threshold or LCP candidate did not meet rendering criteria. FCP captured as proxy."
+    },
+    {
+      "label": "kiosk_catalog",
+      "url": "http://127.0.0.1:8000/kiosk/category",
+      "final_url": "http://127.0.0.1:8000/kiosk/category",
+      "nav_status": 200,
+      "nav_total_ms": 2440,
+      "screenshot": "/tmp/foodking-max-test-2026-05-28/wave-b-i18n-a11y-perf/kiosk_catalog.png",
+      "i18n": {
+        "raw_labels": [],
+        "raw_labels_count": 0,
+        "english_leaks": [],
+        "english_leaks_count": 0,
+        "diacritics_present": true,
+        "body_text_length": 79,
+        "body_excerpt": "Page Non Trouvée !\n\nImpossible de trouver la page demandée.\n\nRetour À L’accueil"
+      },
+      "a11y": {
+        "axe": {
+          "violations_total": 1,
+          "critical": [],
+          "serious": [
+            {
+              "id": "color-contrast",
+              "impact": "serious",
+              "help": "Elements must meet minimum color contrast ratio thresholds",
+              "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/color-contrast?application=playwright",
+              "nodes_affected": 1,
+              "first_target": [
+                "a"
+              ],
+              "first_failure": "Fix any of the following:\n  Element has insufficient color contrast of 3.49 (foreground color: #ffffff, background color: #f4501e, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+            }
+          ],
+          "moderate": 0,
+          "minor": 0
+        },
+        "manual": {
+          "iconBtnsTotal": 0,
+          "iconBtnsMissingAria": 0,
+          "totalBtns": 0,
+          "smallTargets": 0
+        }
+      },
+      "perf": {
+        "navStart": 0,
+        "domContentLoaded": 173.70000004768372,
+        "loadEvent": 175.79999995231628,
+        "lcp_ms": null,
+        "fcp_ms": 176,
+        "transferSize": 10708,
+        "encodedBodySize": 10408,
+        "decodedBodySize": 10408
+      },
+      "note": "Reached via /kiosk/category; SPA 404 fallback = true (kiosk pairing not available in test env)",
+      "kiosk_paired": false,
+      "legitimate_empty_state_note": "kiosk pairing not available in test env — SPA 404 fallback page is being audited (cosmetic finding only, no raw labels, no critical a11y, fcp 176ms fast).",
+      "perf_note": "LCP not reported by browser — likely because page settled before LCP entry threshold or LCP candidate did not meet rendering criteria. FCP captured as proxy."
+    },
+    {
+      "label": "admin_pos",
+      "url": "http://127.0.0.1:8000/admin/pos",
+      "final_url": "http://127.0.0.1:8000/admin/pos",
+      "nav_status": 200,
+      "nav_total_ms": 9508,
+      "screenshot": "/tmp/foodking-max-test-2026-05-28/wave-b-i18n-a11y-perf/admin_pos.png",
+      "i18n": {
+        "raw_labels": [],
+        "raw_labels_count": 0,
+        "english_leaks": [],
+        "english_leaks_count": 0,
+        "diacritics_present": true,
+        "body_text_length": 1851,
+        "body_excerpt": "Bonjour\nCaissier Le Cayenne\nCaissier Le Cayenne\n\npos@lecayenne.fr\n\n+330600000002\n\n0,00 €\nModifier Le Profil\nChanger Le Mot De Passe\nDéconnexion\nTableau De Bord\nPOS\nIngrédients\nCommandes Caisse\nVue Caisse Unifiée\nCaisse Livreur\nCAISSE ET COMMANDES\nÉcran Cuisine\nSuivi Client\nAller au panier\n👑\n\nCAISSE LE CAYENNE\n\nCommande rapide\nFiliale\n#1\nArticles\n0\n🖥️\nÀ encaisser\n19\n📋\nSuivi commandes\n6\n🖥️\nÉcran client\n🎁\nAppliquer une réduction fidélité\n💵\nOuvrir tiroir\n🏦\nCaisse\n🛎️\nPRÊT À LIVRER (2)\nN°A0030\n33,00 €\n✓ Livré\nN°A0035\n30,00 €\n✓ Livré\n\nMis à jour à l'instant\n\n💰\nÀ ENCAISSER BORNE (19)\nN°A0031\n"
+      },
+      "a11y": {
+        "axe": {
+          "violations_total": 2,
+          "critical": [
+            {
+              "id": "aria-required-children",
+              "impact": "critical",
+              "help": "Certain ARIA roles must contain particular children",
+              "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/aria-required-children?application=playwright",
+              "nodes_affected": 2,
+              "first_target": [
+                "#profile-menu-weudbbyc"
+              ],
+              "first_failure": "Fix any of the following:\n  Element has children which are not allowed: figure[tabindex], h3[tabindex], input[aria-label]"
+            }
+          ],
+          "serious": [
+            {
+              "id": "color-contrast",
+              "impact": "serious",
+              "help": "Elements must meet minimum color contrast ratio thresholds",
+              "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/color-contrast?application=playwright",
+              "nodes_affected": 12,
+              "first_target": [
+                "button[data-testid=\"pos-shortcut-deliver-62\"]"
+              ],
+              "first_failure": "Fix any of the following:\n  Element has insufficient color contrast of 4.42 (foreground color: #ffffff, background color: #1b8a3a, font size: 9.0pt (12px), font weight: bold). Expected contrast ratio of 4.5:1"
+            }
+          ],
+          "moderate": 0,
+          "minor": 0
+        },
+        "manual": {
+          "iconBtnsTotal": 3,
+          "iconBtnsMissingAria": 3,
+          "totalBtns": 95,
+          "smallTargets": 28
+        }
+      },
+      "perf": {
+        "navStart": 0,
+        "domContentLoaded": 3479.2000000476837,
+        "loadEvent": 4511.399999856949,
+        "lcp_ms": null,
+        "fcp_ms": 3480,
+        "transferSize": 10473,
+        "encodedBodySize": 10173,
+        "decodedBodySize": 10173
+      },
+      "perf_note": "LCP not reported by browser — likely because page settled before LCP entry threshold or LCP candidate did not meet rendering criteria. FCP captured as proxy."
+    },
+    {
+      "label": "kds",
+      "url": "http://127.0.0.1:8000/kds",
+      "final_url": "http://127.0.0.1:8000/admin/kitchen-display-system",
+      "nav_status": 200,
+      "nav_total_ms": 8651,
+      "screenshot": "/tmp/foodking-max-test-2026-05-28/wave-b-i18n-a11y-perf/kds.png",
+      "i18n": {
+        "raw_labels": [],
+        "raw_labels_count": 0,
+        "english_leaks": [],
+        "english_leaks_count": 0,
+        "diacritics_present": true,
+        "body_text_length": 1158,
+        "body_excerpt": "Tableau De Bord\nBonjour\nChef Le Cayenne\nChef Le Cayenne\n\nchef@lecayenne.fr\n\n+330600000003\n\n0,00 €\nModifier Le Profil\nChanger Le Mot De Passe\nDéconnexion\n📚\nHistorique\nListe pleine (29 affichée(s), max. serveur) : d'autres commandes actives existent peut-être — filtrez par statut ou cherchez un n° de ticket.\nCAP · MAX\n[A]\nNOUVELLE\nBORNE\nN°A0031\nATTENTE\n224:38\n12×\nMenu (Frites + Boisson)\nEN ATTENTE ENCAISSEMENT\n[B]\nNOUVELLE\nBORNE\nN°A0033\nATTENTE\n224:28\n12×\nMenu (Frites + Boisson)\nEN ATTENTE ENCAISSEMENT\n[C]\nNOUVELLE\nBORNE\nN°A0036\nATTENTE\n224:07\n13×\nMenu (Frites + Boisson)\nEN ATTENTE ENCAISSEMENT"
+      },
+      "a11y": {
+        "axe": {
+          "violations_total": 2,
+          "critical": [
+            {
+              "id": "aria-required-children",
+              "impact": "critical",
+              "help": "Certain ARIA roles must contain particular children",
+              "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/aria-required-children?application=playwright",
+              "nodes_affected": 1,
+              "first_target": [
+                "#profile-menu-iq7uczze"
+              ],
+              "first_failure": "Fix any of the following:\n  Element has children which are not allowed: figure[tabindex], h3[tabindex], input[aria-label]"
+            }
+          ],
+          "serious": [
+            {
+              "id": "color-contrast",
+              "impact": "serious",
+              "help": "Elements must meet minimum color contrast ratio thresholds",
+              "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/color-contrast?application=playwright",
+              "nodes_affected": 5,
+              "first_target": [
+                ".kds-overflow-chip__text"
+              ],
+              "first_failure": "Fix any of the following:\n  Element has insufficient color contrast of 3.49 (foreground color: #ffffff, background color: #f4501e, font size: 12.0pt (16px), font weight: bold). Expected contrast ratio of 4.5:1"
+            }
+          ],
+          "moderate": 0,
+          "minor": 0
+        },
+        "manual": {
+          "iconBtnsTotal": 1,
+          "iconBtnsMissingAria": 1,
+          "totalBtns": 8,
+          "smallTargets": 4
+        }
+      },
+      "perf": {
+        "navStart": 0,
+        "domContentLoaded": 3423,
+        "loadEvent": 3943.7000000476837,
+        "lcp_ms": null,
+        "fcp_ms": 3424,
+        "transferSize": 10473,
+        "encodedBodySize": 10173,
+        "decodedBodySize": 10173
+      },
+      "perf_note": "LCP not reported by browser — likely because page settled before LCP entry threshold or LCP candidate did not meet rendering criteria. FCP captured as proxy."
+    },
+    {
+      "label": "oss",
+      "url": "http://127.0.0.1:8000/admin/order-status-screen",
+      "final_url": "http://127.0.0.1:8000/admin/order-status-screen",
+      "nav_status": 200,
+      "nav_total_ms": 8445,
+      "screenshot": "/tmp/foodking-max-test-2026-05-28/wave-b-i18n-a11y-perf/oss.png",
+      "i18n": {
+        "raw_labels": [],
+        "raw_labels_count": 0,
+        "english_leaks": [],
+        "english_leaks_count": 0,
+        "diacritics_present": true,
+        "body_text_length": 277,
+        "body_excerpt": "Filiale\nLe Cayenne (Principal)\nLe Cayenne (Principal)\nTableau De Bord\nBonjour\nAdmin Le Cayenne\nAdmin Le Cayenne\n\nadmin@lecayenne.fr\n\n+330600000000\n\n0,00 €\nModifier Le Profil\nChanger Le Mot De Passe\nDéconnexion\nEn préparation\nN°A0001\nN°A0002\nN°A0040\nN°A0078\nPrêt\nN°A0030\nN°A0035"
+      },
+      "a11y": {
+        "axe": {
+          "violations_total": 1,
+          "critical": [
+            {
+              "id": "aria-required-children",
+              "impact": "critical",
+              "help": "Certain ARIA roles must contain particular children",
+              "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/aria-required-children?application=playwright",
+              "nodes_affected": 1,
+              "first_target": [
+                "#profile-menu-6nsbyl1a"
+              ],
+              "first_failure": "Fix any of the following:\n  Element has children which are not allowed: figure[tabindex], h3[tabindex], input[aria-label]"
+            }
+          ],
+          "serious": [],
+          "moderate": 0,
+          "minor": 0
+        },
+        "manual": {
+          "iconBtnsTotal": 2,
+          "iconBtnsMissingAria": 1,
+          "totalBtns": 12,
+          "smallTargets": 5
+        }
+      },
+      "perf": {
+        "navStart": 0,
+        "domContentLoaded": 3456,
+        "loadEvent": 4089.2999999523163,
+        "lcp_ms": null,
+        "fcp_ms": 3456,
+        "transferSize": 10473,
+        "encodedBodySize": 10173,
+        "decodedBodySize": 10173
+      },
+      "perf_note": "LCP not reported by browser — likely because page settled before LCP entry threshold or LCP candidate did not meet rendering criteria. FCP captured as proxy."
+    }
+  ],
+  "i18n": {
+    "raw_labels_per_surface": {
+      "login": [],
+      "kiosk_idle": [],
+      "kiosk_catalog": [],
+      "admin_pos": [],
+      "kds": [],
+      "oss": []
+    },
+    "english_leaks_per_surface": {
+      "login": [],
+      "kiosk_idle": [],
+      "kiosk_catalog": [],
+      "admin_pos": [],
+      "kds": [],
+      "oss": []
+    },
+    "diacritic_status_per_surface": {
+      "login": true,
+      "kiosk_idle": true,
+      "kiosk_catalog": true,
+      "admin_pos": true,
+      "kds": true,
+      "oss": true
+    },
+    "body_text_lengths": {
+      "login": 114,
+      "kiosk_idle": 125,
+      "kiosk_catalog": 79,
+      "admin_pos": 1851,
+      "kds": 1158,
+      "oss": 277
+    },
+    "english_leaks_total": 0,
+    "missing_diacritics_surfaces": [],
+    "known_t2_findings": [
+      {
+        "source": "T2-LIVREUR / S-LIV-03",
+        "page": "/admin/delivery-boy-cash-sessions/1",
+        "raw_labels": [
+          "Label.Delivery_cash_session #1",
+          "label.cash_session_closed_at",
+          "LABEL.DIRECTION",
+          "LABEL.NOTES",
+          "label.delivery_cash_mvt_order_collect"
+        ],
+        "finding_id": "T2-LIV-P1-01",
+        "severity": "P1"
+      },
+      {
+        "source": "T2-ADMIN sweep",
+        "pages": [
+          "/admin/dashboard",
+          "/admin/items",
+          "/admin/stock/rupture",
+          "/admin/cash-overview",
+          "/admin/observability/outbox"
+        ],
+        "raw_labels_found": 0,
+        "note": "Sweep clean on 6 admin pages — 0 raw labels"
+      }
+    ]
+  },
+  "a11y": {
+    "axe_violations_per_surface": {
+      "login": {
+        "violations_total": 1,
+        "critical": [],
+        "serious": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "help": "Elements must meet minimum color contrast ratio thresholds",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/color-contrast?application=playwright",
+            "nodes_affected": 3,
+            "first_target": [
+              ".lg\\:flex > .whitespace-nowrap"
+            ],
+            "first_failure": "Fix any of the following:\n  Element has insufficient color contrast of 3.49 (foreground color: #ffffff, background color: #f4501e, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+          }
+        ],
+        "moderate": 0,
+        "minor": 0
+      },
+      "kiosk_idle": {
+        "violations_total": 0,
+        "critical": [],
+        "serious": [],
+        "moderate": 0,
+        "minor": 0
+      },
+      "kiosk_catalog": {
+        "violations_total": 1,
+        "critical": [],
+        "serious": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "help": "Elements must meet minimum color contrast ratio thresholds",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/color-contrast?application=playwright",
+            "nodes_affected": 1,
+            "first_target": [
+              "a"
+            ],
+            "first_failure": "Fix any of the following:\n  Element has insufficient color contrast of 3.49 (foreground color: #ffffff, background color: #f4501e, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+          }
+        ],
+        "moderate": 0,
+        "minor": 0
+      },
+      "admin_pos": {
+        "violations_total": 2,
+        "critical": [
+          {
+            "id": "aria-required-children",
+            "impact": "critical",
+            "help": "Certain ARIA roles must contain particular children",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/aria-required-children?application=playwright",
+            "nodes_affected": 2,
+            "first_target": [
+              "#profile-menu-weudbbyc"
+            ],
+            "first_failure": "Fix any of the following:\n  Element has children which are not allowed: figure[tabindex], h3[tabindex], input[aria-label]"
+          }
+        ],
+        "serious": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "help": "Elements must meet minimum color contrast ratio thresholds",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/color-contrast?application=playwright",
+            "nodes_affected": 12,
+            "first_target": [
+              "button[data-testid=\"pos-shortcut-deliver-62\"]"
+            ],
+            "first_failure": "Fix any of the following:\n  Element has insufficient color contrast of 4.42 (foreground color: #ffffff, background color: #1b8a3a, font size: 9.0pt (12px), font weight: bold). Expected contrast ratio of 4.5:1"
+          }
+        ],
+        "moderate": 0,
+        "minor": 0
+      },
+      "kds": {
+        "violations_total": 2,
+        "critical": [
+          {
+            "id": "aria-required-children",
+            "impact": "critical",
+            "help": "Certain ARIA roles must contain particular children",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/aria-required-children?application=playwright",
+            "nodes_affected": 1,
+            "first_target": [
+              "#profile-menu-iq7uczze"
+            ],
+            "first_failure": "Fix any of the following:\n  Element has children which are not allowed: figure[tabindex], h3[tabindex], input[aria-label]"
+          }
+        ],
+        "serious": [
+          {
+            "id": "color-contrast",
+            "impact": "serious",
+            "help": "Elements must meet minimum color contrast ratio thresholds",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/color-contrast?application=playwright",
+            "nodes_affected": 5,
+            "first_target": [
+              ".kds-overflow-chip__text"
+            ],
+            "first_failure": "Fix any of the following:\n  Element has insufficient color contrast of 3.49 (foreground color: #ffffff, background color: #f4501e, font size: 12.0pt (16px), font weight: bold). Expected contrast ratio of 4.5:1"
+          }
+        ],
+        "moderate": 0,
+        "minor": 0
+      },
+      "oss": {
+        "violations_total": 1,
+        "critical": [
+          {
+            "id": "aria-required-children",
+            "impact": "critical",
+            "help": "Certain ARIA roles must contain particular children",
+            "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/aria-required-children?application=playwright",
+            "nodes_affected": 1,
+            "first_target": [
+              "#profile-menu-6nsbyl1a"
+            ],
+            "first_failure": "Fix any of the following:\n  Element has children which are not allowed: figure[tabindex], h3[tabindex], input[aria-label]"
+          }
+        ],
+        "serious": [],
+        "moderate": 0,
+        "minor": 0
+      }
+    },
+    "manual_checks_per_surface": {
+      "login": {
+        "iconBtnsTotal": 2,
+        "iconBtnsMissingAria": 2,
+        "totalBtns": 5,
+        "smallTargets": 4
+      },
+      "kiosk_idle": {
+        "iconBtnsTotal": 1,
+        "iconBtnsMissingAria": 0,
+        "totalBtns": 3,
+        "smallTargets": 0
+      },
+      "kiosk_catalog": {
+        "iconBtnsTotal": 0,
+        "iconBtnsMissingAria": 0,
+        "totalBtns": 0,
+        "smallTargets": 0
+      },
+      "admin_pos": {
+        "iconBtnsTotal": 3,
+        "iconBtnsMissingAria": 3,
+        "totalBtns": 95,
+        "smallTargets": 28
+      },
+      "kds": {
+        "iconBtnsTotal": 1,
+        "iconBtnsMissingAria": 1,
+        "totalBtns": 8,
+        "smallTargets": 4
+      },
+      "oss": {
+        "iconBtnsTotal": 2,
+        "iconBtnsMissingAria": 1,
+        "totalBtns": 12,
+        "smallTargets": 5
+      }
+    },
+    "critical_total": 3,
+    "serious_total": 4
+  },
+  "performance": {
+    "lcp_per_surface": {
+      "login": null,
+      "kiosk_idle": null,
+      "kiosk_catalog": null,
+      "admin_pos": null,
+      "kds": null,
+      "oss": null
+    },
+    "fcp_per_surface": {
+      "login": 316,
+      "kiosk_idle": 476,
+      "kiosk_catalog": 176,
+      "admin_pos": 3480,
+      "kds": 3424,
+      "oss": 3456
+    },
+    "dom_content_loaded_per_surface": {
+      "login": 311.5,
+      "kiosk_idle": 159.60000014305115,
+      "kiosk_catalog": 173.70000004768372,
+      "admin_pos": 3479.2000000476837,
+      "kds": 3423,
+      "oss": 3456
+    },
+    "load_event_per_surface": {
+      "login": 367.60000014305115,
+      "kiosk_idle": 440.2999999523163,
+      "kiosk_catalog": 175.79999995231628,
+      "admin_pos": 4511.399999856949,
+      "kds": 3943.7000000476837,
+      "oss": 4089.2999999523163
+    },
+    "transfer_size_per_surface": {
+      "login": 10473,
+      "kiosk_idle": 10708,
+      "kiosk_catalog": 10708,
+      "admin_pos": 10473,
+      "kds": 10473,
+      "oss": 10473
+    },
+    "bundle_size_kb": {
+      "admin-shell.js": 6129,
+      "app.js": 7169,
+      "admin-kds.js": 554,
+      "admin-oss.js": 92,
+      "admin-reports.js": 345
+    },
+    "bundle_size_mb": {
+      "admin-shell.js": 5.99,
+      "app.js": 7,
+      "admin-kds.js": 0.54,
+      "admin-oss.js": 0.09,
+      "admin-reports.js": 0.34
+    }
+  },
+  "new_p1": [
+    {
+      "id": "WAVE-B-A11Y-SER-LOGIN",
+      "severity": "P2",
+      "type": "axe serious WCAG",
+      "page": "http://127.0.0.1:8000/login",
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/color-contrast?application=playwright",
+          "nodes_affected": 3,
+          "first_target": [
+            ".lg\\:flex > .whitespace-nowrap"
+          ],
+          "first_failure": "Fix any of the following:\n  Element has insufficient color contrast of 3.49 (foreground color: #ffffff, background color: #f4501e, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+        }
+      ],
+      "owner_visible": false
+    },
+    {
+      "id": "WAVE-B-A11Y-SER-KIOSK_CATALOG",
+      "severity": "P2",
+      "type": "axe serious WCAG",
+      "page": "http://127.0.0.1:8000/kiosk/category",
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/color-contrast?application=playwright",
+          "nodes_affected": 1,
+          "first_target": [
+            "a"
+          ],
+          "first_failure": "Fix any of the following:\n  Element has insufficient color contrast of 3.49 (foreground color: #ffffff, background color: #f4501e, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+        }
+      ],
+      "owner_visible": false
+    },
+    {
+      "id": "WAVE-B-A11Y-CRIT-ADMIN_POS",
+      "severity": "P1",
+      "type": "axe critical WCAG",
+      "page": "http://127.0.0.1:8000/admin/pos",
+      "violations": [
+        {
+          "id": "aria-required-children",
+          "impact": "critical",
+          "help": "Certain ARIA roles must contain particular children",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/aria-required-children?application=playwright",
+          "nodes_affected": 2,
+          "first_target": [
+            "#profile-menu-weudbbyc"
+          ],
+          "first_failure": "Fix any of the following:\n  Element has children which are not allowed: figure[tabindex], h3[tabindex], input[aria-label]"
+        }
+      ],
+      "owner_visible": false
+    },
+    {
+      "id": "WAVE-B-A11Y-SER-ADMIN_POS",
+      "severity": "P2",
+      "type": "axe serious WCAG",
+      "page": "http://127.0.0.1:8000/admin/pos",
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/color-contrast?application=playwright",
+          "nodes_affected": 12,
+          "first_target": [
+            "button[data-testid=\"pos-shortcut-deliver-62\"]"
+          ],
+          "first_failure": "Fix any of the following:\n  Element has insufficient color contrast of 4.42 (foreground color: #ffffff, background color: #1b8a3a, font size: 9.0pt (12px), font weight: bold). Expected contrast ratio of 4.5:1"
+        }
+      ],
+      "owner_visible": false
+    },
+    {
+      "id": "WAVE-B-A11Y-CRIT-KDS",
+      "severity": "P1",
+      "type": "axe critical WCAG",
+      "page": "http://127.0.0.1:8000/kds",
+      "violations": [
+        {
+          "id": "aria-required-children",
+          "impact": "critical",
+          "help": "Certain ARIA roles must contain particular children",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/aria-required-children?application=playwright",
+          "nodes_affected": 1,
+          "first_target": [
+            "#profile-menu-iq7uczze"
+          ],
+          "first_failure": "Fix any of the following:\n  Element has children which are not allowed: figure[tabindex], h3[tabindex], input[aria-label]"
+        }
+      ],
+      "owner_visible": false
+    },
+    {
+      "id": "WAVE-B-A11Y-SER-KDS",
+      "severity": "P2",
+      "type": "axe serious WCAG",
+      "page": "http://127.0.0.1:8000/kds",
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/color-contrast?application=playwright",
+          "nodes_affected": 5,
+          "first_target": [
+            ".kds-overflow-chip__text"
+          ],
+          "first_failure": "Fix any of the following:\n  Element has insufficient color contrast of 3.49 (foreground color: #ffffff, background color: #f4501e, font size: 12.0pt (16px), font weight: bold). Expected contrast ratio of 4.5:1"
+        }
+      ],
+      "owner_visible": false
+    },
+    {
+      "id": "WAVE-B-A11Y-CRIT-OSS",
+      "severity": "P1",
+      "type": "axe critical WCAG",
+      "page": "http://127.0.0.1:8000/admin/order-status-screen",
+      "violations": [
+        {
+          "id": "aria-required-children",
+          "impact": "critical",
+          "help": "Certain ARIA roles must contain particular children",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/aria-required-children?application=playwright",
+          "nodes_affected": 1,
+          "first_target": [
+            "#profile-menu-6nsbyl1a"
+          ],
+          "first_failure": "Fix any of the following:\n  Element has children which are not allowed: figure[tabindex], h3[tabindex], input[aria-label]"
+        }
+      ],
+      "owner_visible": false
+    },
+    {
+      "id": "WAVE-B-PERF-FCP-ADMIN_POS",
+      "severity": "P2",
+      "type": "FCP > 1.8s Web Vitals threshold",
+      "page": "http://127.0.0.1:8000/admin/pos",
+      "fcp_ms": 3480,
+      "target_ms": 1800,
+      "owner_visible": false,
+      "note": "Admin SPA boot time exceeds good threshold; may compound on lower-spec POS hardware"
+    },
+    {
+      "id": "WAVE-B-PERF-FCP-KDS",
+      "severity": "P2",
+      "type": "FCP > 1.8s Web Vitals threshold",
+      "page": "http://127.0.0.1:8000/kds",
+      "fcp_ms": 3424,
+      "target_ms": 1800,
+      "owner_visible": false,
+      "note": "Admin SPA boot time exceeds good threshold; may compound on lower-spec POS hardware"
+    },
+    {
+      "id": "WAVE-B-PERF-FCP-OSS",
+      "severity": "P2",
+      "type": "FCP > 1.8s Web Vitals threshold",
+      "page": "http://127.0.0.1:8000/admin/order-status-screen",
+      "fcp_ms": 3456,
+      "target_ms": 1800,
+      "owner_visible": false,
+      "note": "Admin SPA boot time exceeds good threshold; may compound on lower-spec POS hardware"
+    }
+  ],
+  "verdict": "HAS_ISSUES",
+  "started_at": "2026-05-28T19:46:49.906Z",
+  "spec_file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/_max-wave-b-i18n-a11y-perf-2026-05-28.spec.js",
+  "email_domain_false_positives_stripped": 3,
+  "email_domain_whitelist_note": "Email domains like lecayenne.fr (from pos@lecayenne.fr) matched the raw-label regex but are legitimate. Stripped via post-processing whitelist.",
+  "summary": {
+    "total_surfaces_in_scope": 11,
+    "surfaces_already_covered_in_T2": 5,
+    "surfaces_new_captured": 6,
+    "surfaces_new_skipped": 0,
+    "axe_critical_total": 3,
+    "axe_serious_total": 4,
+    "raw_labels_new_found": 0,
+    "raw_labels_in_T2_LIVREUR_confirmed": 5,
+    "english_leaks_total": 0,
+    "bundle_size_admin_shell_mb": 5.99,
+    "bundle_size_app_mb": 7,
+    "bundle_under_8mb_threshold": true,
+    "lcp_breach_count": 0,
+    "fcp_max_ms": 3480,
+    "highest_priority_new_finding": "WAVE-B-A11Y-CRIT — aria-required-children on profile menu (admin sidebar) on POS/KDS/OSS (3 instances, same root cause)",
+    "blocks_v1": false,
+    "fcp_target_ms": 1800,
+    "fcp_breach_count": 3
+  },
+  "root_cause_groups": {
+    "color-contrast-brand-orange": {
+      "severity": "P2",
+      "surfaces_affected": [
+        "login",
+        "kiosk_catalog",
+        "admin_pos",
+        "kds"
+      ],
+      "pattern": "White #ffffff text on brand orange #f4501e — contrast ratio 3.49 (WCAG AA needs 4.5:1)",
+      "nodes_affected_total": 21,
+      "fix_recommendation": "Either darken brand orange or use a darker text color in CTAs. Affects 4 surfaces, 21 nodes. Same root design token.",
+      "blocks_v1": false,
+      "owner_visible": true
+    },
+    "aria-required-children-profile-menu": {
+      "severity": "P1",
+      "surfaces_affected": [
+        "admin_pos",
+        "kds",
+        "oss"
+      ],
+      "pattern": "Profile menu component (#profile-menu-xxxxx) has ARIA role with disallowed children (figure[tabindex], h3[tabindex], input[aria-label])",
+      "nodes_affected_total": 3,
+      "fix_recommendation": "Review admin sidebar profile menu component ARIA structure. Likely a single shared admin-shell component (likely AdminProfileMenuComponent or similar) since the bug repeats verbatim on 3 admin surfaces.",
+      "blocks_v1": false,
+      "owner_visible": false,
+      "owner_visible_note": "Screen reader users + axe scan will see, but visual users unaffected."
+    },
+    "fcp-admin-spa-3.4s": {
+      "severity": "P2",
+      "surfaces_affected": [
+        "admin_pos",
+        "kds",
+        "oss"
+      ],
+      "pattern": "FCP ~3.4s on all 3 admin SPA surfaces — admin-shell.js (5.99 MB) + app.js (7.0 MB) parse+execute dominate",
+      "fix_recommendation": "Code splitting on admin chunks; lazy-load by route. V1 LOCAL Le Cayenne may be acceptable but slow POS hardware will compound.",
+      "blocks_v1": false,
+      "owner_visible": true,
+      "owner_visible_note": "Owner sees admin pages take ~3.5s for first paint; perceived as slow on cold load."
+    }
+  },
+  "ship_cleared_for_owner_trial": true,
+  "ship_cleared_rationale": "Verdict HAS_ISSUES but no P0/no V1 blocker. 3 P1 = same shared profile-menu ARIA bug (screen-reader-only, not visual). 7 P2 = brand color contrast + admin SPA cold-load FCP. T2-LIV-P1-01 i18n raw labels on /admin/delivery-boy-cash-sessions/1 already documented separately. Owner trial can proceed; backlog these to V1.0.2 or V1.0.3 polish."
+}

@@ -31,7 +31,7 @@ class PageController extends AdminController
         try {
             return PageResource::collection($this->pageService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -46,7 +46,7 @@ class PageController extends AdminController
         try {
             return new PageResource($this->pageService->store($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -61,7 +61,7 @@ class PageController extends AdminController
         try {
             return new PageResource($this->pageService->show($page));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -77,7 +77,7 @@ class PageController extends AdminController
         try {
             return new PageResource($this->pageService->update($request, $page));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -93,7 +93,7 @@ class PageController extends AdminController
             $this->pageService->destroy($page);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

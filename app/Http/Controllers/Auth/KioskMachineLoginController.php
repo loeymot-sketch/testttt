@@ -45,9 +45,30 @@ class KioskMachineLoginController extends Controller
             ], 422);
         }
 
-        $kioskMachine = KioskMachine::where('username', $username)->first();
+        // [iter12 P1 KIOSK 2026-05-09] PRE-AUTH lookup: scope explicitly bypassed.
+        //
+        // Username is a public credential; resolution must succeed before the
+        // user is authenticated, so BranchScope (which runs only when
+        // Auth::check()=true) returns no rows here in practice anyway. We mark
+        // the bypass with `withoutGlobalScope` to make the intent explicit and
+        // survive any future BranchScope refactor that activates pre-auth.
+        $kioskMachine = KioskMachine::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+            ->where('username', $username)
+            ->first();
 
         if (!$kioskMachine) {
+            return response()->json([
+                'errors' => ['validation' => trans('all.message.credentials_invalid')],
+            ], 400);
+        }
+
+        // [F3 heal 2026-06-09] Verify the password BEFORE any account-state check.
+        // Returning distinct 'kiosk_machine_inactive' / 'kiosk_user_inactive'
+        // messages ahead of Hash::check let a caller enumerate valid usernames and
+        // probe account state with no credentials. Now those specific messages are
+        // only reachable WITH a valid password (legitimate staff keep the helpful
+        // copy); every other failure returns the generic 'credentials_invalid'.
+        if (! Hash::check((string) $request->post('password'), $kioskMachine->password)) {
             return response()->json([
                 'errors' => ['validation' => trans('all.message.credentials_invalid')],
             ], 400);
@@ -67,15 +88,24 @@ class KioskMachineLoginController extends Controller
             ], 400);
         }
 
-        if (! Hash::check((string) $request->post('password'), $kioskMachine->password)) {
-            return response()->json([
-                'errors' => ['validation' => trans('all.message.credentials_invalid')],
-            ], 400);
-        }
-
         DB::transaction(function () use ($kioskMachine) {
-            $lockedKiosk = KioskMachine::lockForUpdate()->find($kioskMachine->id);
-            $user         = User::find($lockedKiosk->user_id);
+            // [iter12 P1 KIOSK 2026-05-09] In-transaction lookup runs while the
+            // user has not yet been authenticated for this request, so BranchScope
+            // would still skip; we bypass explicitly for intent + parity with the
+            // pre-auth lookup above.
+            $lockedKiosk = KioskMachine::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+                ->lockForUpdate()
+                ->find($kioskMachine->id);
+
+            // [audit-360 W5] Concurrent-delete race: the machine row (or its linked user) can be
+            // hard-deleted between the pre-auth read (above) and this locked re-read inside the txn.
+            // Without this guard, `$lockedKiosk->user_id` (read on null) then `$user->tokens()`
+            // (method on null) is a fatal 500. Abort 409 → txn rolls back; the borne's auto-retry
+            // (with the public-safe message) handles it gracefully.
+            $user = $lockedKiosk ? User::find($lockedKiosk->user_id) : null;
+            if (!$lockedKiosk || !$user) {
+                abort(409, 'Borne indisponible, nouvelle tentative en cours.');
+            }
 
             // Revoke all existing kiosk tokens for this user to allow clean re-login
             $user->tokens()->where('name', 'kiosk-token')->delete();

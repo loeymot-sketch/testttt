@@ -25,7 +25,7 @@ class TimeSlotController extends AdminController
         try {
             return TimeSlotResource::collection($this->timeSlotService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -34,7 +34,7 @@ class TimeSlotController extends AdminController
         try {
             return new TimeSlotResource($this->timeSlotService->store($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -44,7 +44,7 @@ class TimeSlotController extends AdminController
             $this->timeSlotService->destroy($timeSlot);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

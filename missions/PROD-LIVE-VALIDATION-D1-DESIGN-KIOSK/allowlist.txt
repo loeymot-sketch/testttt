@@ -1,0 +1,10 @@
+tests/e2e/design/_shared/design-audit-helpers.js
+tests/e2e/design/kiosk/d1-kiosk-design-audit.spec.js
+tests/e2e/__screenshots__/kiosk/
+docs/design/KIOSK_DESIGN_VALIDATION_2026-04-27.md
+missions/PROD-LIVE-VALIDATION-D1-DESIGN-KIOSK/allowlist.txt
+missions/PROD-LIVE-VALIDATION-D1-DESIGN-KIOSK/execute_brief.md
+missions/PROD-LIVE-VALIDATION-D1-DESIGN-KIOSK/input.json
+reports/audit/GPT_SELF_AUDIT_PROD-LIVE-VALIDATION-D1-DESIGN-KIOSK.md
+reports/post_execute_latest.log
+reports/antigravity/d1-kiosk-design-audit.json

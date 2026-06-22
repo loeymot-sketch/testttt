@@ -1,0 +1,65 @@
+{
+  "task_id": "CV1-M21B-PAYMENT-REFACTOR",
+  "mission_id": "M-21b",
+  "plan_file": "plans/PLAN_CAISSE_V1_GPT_MASTERPLAY_2026-04-25.md",
+  "secondary_plan_file": "plans/PLAN_MASTER_FINITIONS_POS_KDS_AVANT_LANCEMENT_2026-04-26.md",
+  "primary_model": "codex-extension",
+  "model": "gpt-5.5-pro",
+  "reasoning_effort": "xhigh",
+  "objective": "Execute the signed PaymentComponent prop-mutation refactor Option A and one-shot 401 retry, bounded to the POS payment surface.",
+  "instruction": "Applique uniquement CV1-M21B. Gate prop-mutation signee = Option A emit-based refactor. Remplacer les mutations directes des props du PaymentComponent par un contrat events/parent-state clair, ajouter retry 401 une seule fois, et couvrir par Vitest. Ne touche pas au backend, aux services OrderService/FrontendOrderService, aux routes, ni aux built assets. JSON unique.",
+  "allowlist": [
+    "resources/js/components/admin/pos/PaymentComponent.vue",
+    "resources/js/components/admin/pos/PosComponent.vue",
+    "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue",
+    "tests/js/paymentComponentPropMutation.spec.js",
+    "tests/js/paymentComponent401Retry.spec.js",
+    "tests/js/posPaymentComponentContract.spec.js",
+    "memory/episodes/caisse_v1_payment_refactor_2026-04-25.jsonl"
+  ],
+  "off_limits": [
+    "app/**",
+    "database/**",
+    "routes/**",
+    "public/js/**",
+    ".cursor/**",
+    "AGENTS.md"
+  ],
+  "dependencies_closed": [
+    "CV1-M06-POS-REVENUE-GUARDS",
+    "CV1-M10-OS-FOS-SYMMETRY",
+    "CV1-M03-GATES-DRAFT"
+  ],
+  "gate_conditions": [
+    "GATE_PAYMENT_PROP_MUTATION_2026-04-26 Approved - Option A - Refactor complet sous gate"
+  ],
+  "invariants_at_risk": [
+    "pricing_ssot",
+    "dispatch_after_commit",
+    "frozen_zones",
+    "OS_FOS_symmetry"
+  ],
+  "mandatory_tests": [
+    "npm test -- tests/js/paymentComponentPropMutation.spec.js tests/js/paymentComponent401Retry.spec.js tests/js/posPaymentComponentContract.spec.js"
+  ],
+  "self_audit_checklist": [
+    "PaymentComponent has zero direct this.$props.props.form mutations",
+    "parent PosComponent owns form mutation through event/v-model-style handler",
+    "401 retry is one-shot and requires auth refresh before retrying confirmOrder",
+    "no backend or pricing authority was added to the frontend",
+    "KioskPaymentComponent checked for symmetric prop-mutation risk; modify only if same anti-pattern is present",
+    "SYMMETRY_NOTE: N/A - no OrderService or FrontendOrderService change"
+  ],
+  "rollback": {
+    "feature_flag": null,
+    "max_window_days": 1,
+    "predicates": [
+      "payment submit regression",
+      "more than one retry after 401",
+      "direct prop mutation remains"
+    ]
+  },
+  "graphiti_query": "FoodKing PaymentComponent prop mutation emit refactor 401 retry POS payment",
+  "memory_episode_to_write_on_close": "memory/episodes/caisse_v1_payment_refactor_2026-04-25.jsonl",
+  "claude_audit_prompt_id": "disabled-gpt-only"
+}

@@ -1,0 +1,32 @@
+{
+  "task_id": "PRODUCT-COMPOSER-SYNC-00-DEMAND-REGISTRY",
+  "execution_delegation": "codex-extension",
+  "mode": "documentation-orchestration",
+  "objective": "Persist the user's full product composer, catalog, stock, POS/kiosk, KDS, queue, payment, and dashboard demands into audited repository artifacts.",
+  "source_documents": [
+    "reports/audit/PRODUCT_COMPOSER_SYNC_DEEP_AUDIT_ORCHESTRATION_2026-04-27.md",
+    "plans/PLAN_PRODUCT_COMPOSER_SYNC_MASTER_2026-04-27.md"
+  ],
+  "allowlist_file": "missions/PRODUCT-COMPOSER-SYNC-00-DEMAND-REGISTRY/allowlist.txt",
+  "forbidden": [
+    "Do not edit app/",
+    "Do not edit resources/js/",
+    "Do not edit routes/",
+    "Do not add migrations",
+    "Do not self-approve gates"
+  ],
+  "invariants_considered": [
+    "pricing-backend-ssot",
+    "order-status-enum",
+    "branch-isolation",
+    "dispatch-after-commit",
+    "frozen-zone-gates",
+    "order-service-frontend-order-service-symmetry"
+  ],
+  "expected_outputs": [
+    "A consolidated audit report",
+    "A master plan",
+    "Train plans",
+    "Mission briefs"
+  ]
+}

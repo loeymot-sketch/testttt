@@ -1,0 +1,87 @@
+{
+  "specialist": "Security",
+  "zone": "F-5 Pricing SSOT",
+  "scope": "SSOT bypass surfaces — controllers/services that POST orders without invoking PricingService, client-trust patterns, env-flag manipulation. READ-ONLY.",
+  "date": "2026-05-18",
+  "round": 1,
+  "findings": [
+    {
+      "id": "F5-SEC-01",
+      "severity": "P1",
+      "title": "CouponCheckResource trusts client-supplied $request->total for percentage coupon preview",
+      "type": "client-trust-bypass",
+      "evidence": {
+        "resource_arithmetic": "app/Http/Resources/CouponCheckResource.php:39 — `$amount = ($request->total * ($this->discount) / 100);` for DiscountType::PERCENT coupons",
+        "service_consumer": "app/Services/CouponService.php:361 — `(float) $request->total` passed to resolveCouponByCode($code, $subtotal, $userId, $branchId, $surface)",
+        "route_consumer": "app/Http/Controllers/Frontend/CouponController.php:36-39 — couponChecking(CouponCheckRequest $request) returns new CouponCheckResource(...)",
+        "preview_scope": "Endpoint is preview-only (GET /frontend/coupon-checking or equivalent). The eventual order creation path goes through PricingService::calculateOrder which performs its own subtotal computation and re-validates coupons via CouponService::resolveCouponById/Code with `$subtotal = $realSubtotal` (server-recomputed)."
+      },
+      "attack_surface": "An authenticated client can probe coupon eligibility against forged inflated totals: (a) discover which percentage coupons would yield the maximum discount, (b) discover whether a coupon's `minimum_order` gate trips at $request->total (resolveCouponByCode validates minimum_purchase against the supplied subtotal in validateCouponForOrder). The attacker cannot extract money — actual order creation uses server-recomputed subtotal. But the preview leaks (1) coupon existence, (2) maximum_discount caps, (3) minimum_order thresholds.",
+      "actual_fiscal_impact": "ZERO at order creation — PricingService::calculateOrder ignores client-supplied totals entirely. Z-5 attest confirmed this.",
+      "v1_1_recommendation": "Either (a) recompute subtotal server-side from `$request->items` payload (mirrors PricingService.calculateOrder line preload) before discount preview, or (b) accept the preview leakage as documented behavior + add rate-limiting on the endpoint. Option (a) is cleaner — share preload logic with PricingService."
+    },
+    {
+      "id": "F5-SEC-02",
+      "severity": "P2",
+      "title": "Feature flag PRICING_USE_SSOT controls security-critical path — single env-var flip restores legacy duplicate math",
+      "type": "config-attack-surface",
+      "evidence": {
+        "flag_definition": "config/pricing.php:9 — env-driven, default true",
+        "sentinel_protection": "tests/Feature/Sentinels/PricingSsotFlagProductionStableSentinelTest.php pins 5 artefacts to =true (config default + .env.example + .env.testing + 2 GitHub workflows)",
+        "production_protection": "Sentinel ONLY runs in CI. If a sysadmin manually exports `PRICING_USE_SSOT=false` in a production .env, the legacy branch activates with no test re-run — sentinel never catches it.",
+        "legacy_branch_safety": "The legacy branches at OrderService.php:358-493/687-839/1148-1295 + FrontendOrderService.php:296-459 do enforce server-side price recompute from DB (item->price). They also enforce cross-item injection guards added per [P2-1 FIX] and [GAP-21-3]. Per ARCH-02, they re-implement tax-inclusive/HT branching + snapshot building inline."
+      },
+      "attack_surface": "A compromised .env (or operator error) could re-enable ~595 LOC of legacy math that is not exercised by the production code path. While currently equivalent in math (sentinel attests), any future patch to PricingService that does not get mirrored to all 4 legacy sites would silently apply ONLY in the production-pinned path — a flip-the-flag downgrade attack would expose pre-patch math.",
+      "actual_fiscal_impact": "TODAY: ZERO — both paths converge. FUTURE: opens a downgrade vector if SSOT and legacy drift.",
+      "v1_1_recommendation": "Land C.5 cleanup. Until then, consider adding a boot-time invariant check: `app/Providers/AppServiceProvider.php` could throw if `config('pricing.use_ssot_service') === false && app()->environment('production')` — fail-closed rather than fail-silent."
+    },
+    {
+      "id": "F5-SEC-03",
+      "severity": "P2",
+      "title": "composition_snapshot column has NO database-level immutability protection",
+      "type": "defense-in-depth-gap",
+      "evidence": {
+        "column_definition": "database/migrations/2026_04_22_000020_add_composition_snapshot_to_order_items.php:12 — `$table->json('composition_snapshot')->nullable()->after('item_extras');` — plain nullable JSON column",
+        "no_trigger": "No BEFORE UPDATE / AFTER UPDATE trigger on order_items.composition_snapshot found in migrations (vs the audit_logs / z_reports tables which have BEFORE DELETE SIGNAL triggers per CLAUDE.md §8)",
+        "model_cast": "app/Models/OrderItem.php:71 — `'composition_snapshot' => 'array'` (Eloquent auto-encodes on save)",
+        "no_mutator_guard": "OrderItem has no `saving`/`updating` event listener blocking mutation",
+        "fillable_includes_it": "OrderItem.php:31-56 fillable[] includes 'composition_snapshot' on line 44"
+      },
+      "attack_surface": "Immutability of composition_snapshot is enforced ONLY by call-graph convention: the 5 INSERT sites write it, the 1 refund COPY-FORWARD reads it, and no code reassigns it. A future contributor adding `$orderItem->composition_snapshot = $newSnapshot; $orderItem->save();` would silently break NF525 §V immutability with NO compile-time, lint, test, or DB check failing.",
+      "actual_fiscal_impact": "ZERO TODAY — grep confirms no `->composition_snapshot = ` assignment anywhere in app/. Existing 15 references are read-only (Resources, KDS service, StockService::decodeSnapshotAddons).",
+      "v1_1_recommendation": "Add OrderItem boot() listener: `static::updating(function (OrderItem $oi) { if ($oi->isDirty('composition_snapshot') && $oi->getOriginal('composition_snapshot') !== null) { throw new \\LogicException('composition_snapshot is NF525-immutable post-insert'); } });`. Optionally pair with a DB-level BEFORE UPDATE trigger mirroring audit_logs BEFORE DELETE pattern."
+    },
+    {
+      "id": "F5-SEC-04",
+      "severity": "INFO",
+      "title": "Server-side total/subtotal/discount stripping is consistent across all 3 order-creation services",
+      "type": "positive-finding",
+      "evidence": [
+        "app/Services/OrderService.php:319-322 (web) — `unset($validated['total'], $validated['subtotal'], $validated['discount']);`",
+        "app/Services/OrderService.php:617-618 (POS) — same pattern",
+        "app/Services/OrderService.php (table path) — same pattern",
+        "app/Services/FrontendOrderService.php:254-257 (kiosk) — same pattern"
+      ],
+      "consequence": "Order::create / FrontendOrder::create never receives client-supplied financial fields. Audit comment chain [AUDIT-FIX P0] and [GAP-20-3] / [GAP-21-2] cite this as the SSOT enforcement point."
+    },
+    {
+      "id": "F5-SEC-05",
+      "severity": "INFO",
+      "title": "Manual discount POS permission ladder is enforced server-side in OrderQuoteService",
+      "type": "positive-finding",
+      "evidence": "app/Services/Order/OrderQuoteService.php:288-328 — assertManualDiscountAllowed(): 3-tier permission check (`pos-discount-up-to-10`, `pos-discount-over-10-requires-manager`, `pos-discount-unlimited`) gates discount percentages 0-10% / 10-50% / >50%.",
+      "consequence": "Discount caps are policy-enforced before SSOT pricing → cannot be bypassed by client."
+    }
+  ],
+  "ssot_bypass_attempts_searched": [
+    "OrderItem::insert/create outside Pricing/OrderService/FrontendOrderService/RefundWithCounterEntryService → 0 matches",
+    "Order::create / FrontendOrder::create outside the 4 known services → 0 matches",
+    "Client-supplied $request->total trust → 2 matches (CouponCheckResource + CouponService::couponChecking, both preview-only — see F5-SEC-01)",
+    "env() calls inside app/Services/Pricing/ → 0 matches",
+    "Direct json_encode of composition_snapshot outside Pricing/OrderService/FrontendOrderService → 0 matches",
+    "->composition_snapshot = post-insert reassignment → 0 matches"
+  ],
+  "p0_in_frozen_file": 0,
+  "owner_gate_g3_trigger": false,
+  "production_today_verdict": "SSOT is structurally sound. The 3 P1/P2 findings are V1.1 hardening opportunities, not V1 blockers. CouponCheckResource leak is preview-only with zero fiscal impact. SSOT flag downgrade and composition_snapshot immutability are defense-in-depth gaps not exposed by current call graph."
+}

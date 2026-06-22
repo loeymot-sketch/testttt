@@ -19,6 +19,17 @@ on:
     branches: [main, develop]
 
 jobs:
+  # E04 (méga-checklist) : scripts/check-invariants.sh (6 greps) — bloque le merge sur régression.
+  # P11 / KI-001 : Order* utilise DispatchableAfterCommit ; le script filtre les faux positifs
+  # (grep « DB::afterCommit » au-dessus du call site) + jamais event(new Order*) (contourne le trait).
+  invariants-grep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: POS invariants (grep) — E04
+        run: bash scripts/check-invariants.sh
+
   phpunit-mysql:
     runs-on: ubuntu-latest
     services:
@@ -58,6 +69,10 @@ jobs:
       KIOSK_MACHINE_USERNAME: kiosk-lecayenne
       KIOSK_MACHINE_PASSWORD: kiosk123
       PRICING_USE_SSOT: 'true'
+      # Defense in depth (same values as phpunit.xml): some subprocesses or
+      # future bootstrap paths read getenv before PHPUnit injects xml env.
+      FISCAL_AUDIT_SECRET: testing-fiscal-audit-secret-padding-48chars-ok
+      FISCAL_Z_REPORT_SECRET: testing-fiscal-zreport-secret-padding-48chars-ok
 
     steps:
       - uses: actions/checkout@v4
@@ -96,6 +111,33 @@ jobs:
             \$c=preg_replace('/^DB_PASSWORD=.*/m','DB_PASSWORD=root',\$c);
             file_put_contents(\$f,\$c);
           "
+          # Mirror secrets into .env for any bootstrap path that reads the file
+          # before PHPUnit's xml env is applied (defense in depth vs CI flakes).
+          sed -i 's/^FISCAL_AUDIT_SECRET=.*/FISCAL_AUDIT_SECRET=testing-fiscal-audit-secret-padding-48chars-ok/' .env
+          sed -i 's/^FISCAL_Z_REPORT_SECRET=.*/FISCAL_Z_REPORT_SECRET=testing-fiscal-zreport-secret-padding-48chars-ok/' .env
+
+      # [W9-AUDIT PROD-3] Migration drift guard.
+      # If a developer adds a migration in a feature branch but forgets to
+      # commit the corresponding model/test changes (or vice versa), or if a
+      # migration file is malformed and would silently fail RefreshDatabase,
+      # this step catches it BEFORE the test suite runs (which would otherwise
+      # surface as opaque "table X not found" errors deep in a test run).
+      #
+      # `migrate --pretend` parses every migration file without executing it,
+      # which validates syntax + class autoloading. `migrate:status` then
+      # confirms every file maps to a registered batch.
+      - name: Migration drift check
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: foodking_test
+          DB_USERNAME: root
+          DB_PASSWORD: root
+        run: |
+          php artisan migrate --pretend --no-interaction
+          php artisan migrate --no-interaction
+          php artisan migrate:status
 
       - name: Run PHPUnit (MySQL)
         env:
@@ -116,3 +158,15 @@ jobs:
           DB_USERNAME: root
           DB_PASSWORD: root
         run: vendor/bin/phpunit --filter FrontendSurfaceFilteringTest --testdox
+
+      # P3 — bounded-cycle traceability (non-blocking): warn if recent RUN_*.md
+      # lack EXECUTE_DELEGATION (run-cycle.md Step 2/4).
+      - name: Delegation evidence audit (warn only)
+        if: success() || failure()
+        run: bash scripts/check-run-delegation-warn.sh
+
+      # P4 / A05 — JSONL SHA256 = baseline versionnée ; toute modif `memory/episodes/*.jsonl`
+      # exige de régénérer le manifest dans le même commit (bash scripts/memory-jsonl-manifest.sh).
+      - name: Memory JSONL manifest (A05 --check)
+        if: success() || failure()
+        run: bash scripts/memory-jsonl-manifest.sh --check reports/memory/jsonl_manifest.json

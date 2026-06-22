@@ -1,0 +1,195 @@
+{
+  "step-01-login-empty": {
+    "email": {
+      "type": "text",
+      "name": "",
+      "autocomplete": "",
+      "required": false,
+      "ariaLabel": null,
+      "placeholder": "",
+      "label": "Email"
+    },
+    "pass": {
+      "type": "password",
+      "name": "",
+      "autocomplete": "off",
+      "required": false,
+      "ariaLabel": null,
+      "placeholder": "",
+      "label": "Password"
+    },
+    "buttons": [
+      {
+        "text": "",
+        "type": "submit",
+        "name": "",
+        "ariaLabel": null,
+        "disabled": false
+      },
+      {
+        "text": "Login",
+        "type": "submit",
+        "name": "",
+        "ariaLabel": null,
+        "disabled": false
+      }
+    ],
+    "title": "Le Cayenne",
+    "hasRememberMe": false,
+    "lang": "en",
+    "viewportFocusOn": "BODY"
+  },
+  "step-01-login-landed-storage": {
+    "localKeys": [
+      "vuex",
+      "correlation_id"
+    ],
+    "sessionKeys": [],
+    "cookieNames": [
+      "XSRF-TOKEN"
+    ],
+    "tokenInLocal": false,
+    "tokenInSession": false
+  },
+  "step-02-surface-pos-v5": {
+    "shell": true,
+    "shellClass": "pos-v5-shell fk-pos-v4 pos-v4-shell velmld-parent",
+    "tokens": {
+      "bgApp": "#FFFBF5",
+      "brandRed": "#E8001C",
+      "border": "#EEE6D9",
+      "surface": ""
+    },
+    "cart": true,
+    "grid": true,
+    "strip": true,
+    "header": true,
+    "skipLink": true,
+    "lang": "en",
+    "dir": "ltr",
+    "focusable": 150,
+    "allTestids": [
+      "pos-cart-stat-chip",
+      "pos-tracker-open",
+      "pos-no-sale",
+      "pos-grand-total",
+      "pos-payment-confirm",
+      "receipt-print-kitchen",
+      "receipt-print-client",
+      "receipt-hidden-print-button-client",
+      "receipt-hidden-print-button-kitchen"
+    ]
+  },
+  "step-03-category-first": {
+    "role": "tab",
+    "ariaSelected": "true",
+    "ariaPressed": null,
+    "tabIndex": 0,
+    "text": "Toutes les catégories",
+    "hasIcon": true,
+    "classList": "pos-v5-category pos-v4-category-pill is-active"
+  },
+  "step-03-category-after-click": {
+    "isSelected": true,
+    "classes": "pos-v5-category pos-v4-category-pill is-active"
+  },
+  "step-04-tile-0": {
+    "text": "Menu (Frites + Boisson)3.00€",
+    "role": null,
+    "ariaLabel": "Add Menu (Frites + Boisson), 3.00€",
+    "tabIndex": 0,
+    "tagName": "BUTTON",
+    "disabled": false,
+    "classes": "pos-v5-tile pos-item-tile",
+    "hasImage": true,
+    "imageAlt": "Menu (Frites + Boisson)",
+    "hasPriceEl": true
+  },
+  "step-04-wizard-state": {
+    "count": 21,
+    "samples": [
+      {
+        "tag": "DIV",
+        "classes": "modal ff-modal pos-v4-item-wizard-modal pos-v5-item-modal active",
+        "role": null,
+        "ariaModal": null,
+        "ariaLabel": null,
+        "inertElsewhere": false,
+        "focusTrapped": false
+      },
+      {
+        "tag": "DIV",
+        "classes": "modal-dialog pos-v4-item-wizard-dialog max-w-[820px] w-full flex flex-col max-h-[min(100dvh,100vh)] overflow-hidden rounded-xl bg-white shadow-xl",
+        "role": null,
+        "ariaModal": null,
+        "ariaLabel": null,
+        "inertElsewhere": false,
+        "focusTrapped": false
+      },
+      {
+        "tag": "DIV",
+        "classes": "pos-wizard single-page",
+        "role": null,
+        "ariaModal": null,
+        "ariaLabel": null,
+        "inertElsewhere": false,
+        "focusTrapped": false
+      }
+    ],
+    "bodyOverflow": "auto hidden"
+  },
+  "step-05-wizard-inputs": {
+    "found": false
+  },
+  "step-06-cart-state": {
+    "itemCount": 0,
+    "emptyVisible": true,
+    "grandTotalText": "Total0.00€",
+    "payBtn": false
+  },
+  "step-07-cart-edit-controls": {
+    "items": 0
+  },
+  "step-08-customer-selector": {
+    "selectors": [
+      {
+        "tag": "INPUT",
+        "text": "",
+        "ariaLabel": null,
+        "placeholder": "Sélectionner un client"
+      },
+      {
+        "tag": "BUTTON",
+        "text": "+",
+        "ariaLabel": "Add Customer",
+        "placeholder": null
+      },
+      {
+        "tag": "INPUT",
+        "text": "",
+        "ariaLabel": null,
+        "placeholder": "Nom du client"
+      },
+      {
+        "tag": "BUTTON",
+        "text": "Add Customer",
+        "ariaLabel": null,
+        "placeholder": null
+      },
+      {
+        "tag": "BUTTON",
+        "text": "🧾Ticket client",
+        "ariaLabel": null,
+        "placeholder": null
+      }
+    ]
+  },
+  "step-14-receipt": {
+    "receiptVisible": false,
+    "successToast": false
+  },
+  "step-16-offline": {
+    "hasOfflineBanner": false,
+    "navigatorOnLine": false
+  }
+}

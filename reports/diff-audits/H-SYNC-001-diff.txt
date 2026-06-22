@@ -1,0 +1,17 @@
+8a9,20
+>             // [GOAL-HEAL-SYNC-001 2026-05-23] C2 P1 fix: ensure ≤5s cadence
+>             // even when Echo subscribed because Echo subscription can fail
+>             // silently (CSP violation on /api/broadcasting/auth) without
+>             // surfacing a console error. If readyOrders empty OR last refresh
+>             // >30s ago, force 5s cadence regardless of Echo state.
+>             const now = Date.now();
+>             const lastRefresh = this.lastReadyRefresh || 0;
+>             const isStale = (now - lastRefresh) > 30000;
+>             const isEmpty = !this.readyOrders || this.readyOrders.length === 0;
+>             if (isEmpty || isStale) {
+>                 return 5000;
+>             }
+26a39,41
+>             if (this._kioskPollTimer) clearInterval(this._kioskPollTimer);
+>             this._startKioskPolling();
+>         },

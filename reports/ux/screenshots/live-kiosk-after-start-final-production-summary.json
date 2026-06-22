@@ -1,0 +1,8 @@
+{
+  "name": "live-kiosk-after-start-final-production",
+  "url": "http://127.0.0.1:8000/kiosk/idle",
+  "shot": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/ux/screenshots/live-kiosk-after-start-final-production.png",
+  "nonWsErrors": [],
+  "englishProbe": [],
+  "sample": "Reconnexion en cours… × Bienvenue ! Commandez en quelques touches Sur place Je mange ici À emporter Je récupère ma commande Choisissez une option pour commencer"
+}

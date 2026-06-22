@@ -1,0 +1,219 @@
+{
+  "agent": "I.6 Hidden auth/RBAC bypass surfaces",
+  "scope": "FoodKing Le Cayenne V1 — indirect auth bypass via misconfiguration",
+  "executed_at": "2026-05-24",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "method": [
+    "Static analysis of routes/api.php, routes/web.php, routes/channels.php",
+    "Read app/Http/Kernel.php middleware priority + groups",
+    "Grep permission:/role:/tokenCan/abilities: across routes + controllers",
+    "Inspect 9 admin controllers without inline permission middleware → verify gated route-level",
+    "Trace webhook signature verification (Stripe + SenangPay)",
+    "Audit VerifyCsrfToken::$except + production boot guards",
+    "Inspect kiosk auto-login security gate (config/kiosk.php + AppServiceProvider)"
+  ],
+  "routes_total": {
+    "raw_declarations_api_php": 515,
+    "raw_declarations_web_php": 21,
+    "raw_declarations_payment_gateways": 2,
+    "parsed_unique_routes_api_php": 456,
+    "parser_note": "59 Route::match declarations each register 2 HTTP verbs → effective Laravel-routed surface ≈ 574 in api.php. Parser gap is single-declaration deduplication, not a hidden auth gap.",
+    "total_route_files_scanned": 4
+  },
+  "routes_without_auth_middleware": {
+    "truly_public_count": 4,
+    "truly_public_list": [
+      {"line": 139, "method": "GET", "path": "/api/health", "justification": "Health probe, no PII, intentional"},
+      {"line": 140, "method": "GET", "path": "/api/health/live", "justification": "Liveness probe, intentional"},
+      {"line": 141, "method": "GET", "path": "/api/health/ready", "justification": "Readiness probe, intentional"},
+      {"line": 1420, "method": "POST", "path": "/api/frontend/csp-report", "justification": "Browser CSP report endpoint — W3C invariant browser cannot attach apiKey header on CSP report. Throttle:1000,1. Documented at L1412-1419."}
+    ],
+    "api_key_only_count": 49,
+    "api_key_only_classification": {
+      "auth_endpoints_login_otp_reset": 11,
+      "frontend_kiosk_public_catalog": 30,
+      "loyalty_optin_register_public_by_design": 2,
+      "table_qr_anonymous_ordering": 4,
+      "csp_report_legacy_path": 0,
+      "country_code_misc": 2
+    },
+    "api_key_only_note": "apiKey is single-static-shared-secret (X-API-KEY header validated against config('app.api_key')). It ships in every web/kiosk client bundle. Per BRAIN classification, this is defense-in-depth (blocks naive scanners) NOT user-identity gating. All 49 routes are legitimately public — login/OTP/menu-browsing/loyalty-self-enrollment/table-QR ordering."
+  },
+  "routes_with_auth_but_no_rbac": {
+    "count_with_concerns": 0,
+    "note": "Admin route prefix at L262+L276 carries auth:sanctum at group level; RBAC enforced controller-level via permission:* middleware (Spatie). Of 90 admin controllers, 9 lack inline permission middleware: all 9 verified gated at route-level OR are SPA-bootstrap blade controllers (AdminPosV4Controller with documented client-side auth pattern).",
+    "admin_controllers_audited_no_inline_perm": [
+      {"controller": "AddressController", "verdict": "UNUSED in routes (orphan import — V1.0.X cleanup)"},
+      {"controller": "AdminPosV4Controller", "verdict": "ACCEPTABLE — SPA blade bootstrap pattern, client-side auth via pos-app.js, documented at controller L17-20"},
+      {"controller": "ComposerStepController", "verdict": "OK — gated by parent route permission:catalog.compose (api.php L748)"},
+      {"controller": "CountryCodeController", "verdict": "OK — admin auth:sanctum group only (read-only timezone-like data)"},
+      {"controller": "IngredientController", "verdict": "OK — gated by parent route permission:ingredients_manage (api.php L734)"},
+      {"controller": "MenuController (Frontend)", "verdict": "OK — kiosk auth:sanctum + throttle:kiosk-menu + kiosk.locale (api.php L1366)"},
+      {"controller": "MenuSectionController", "verdict": "OK — under admin permission:settings parent group (api.php L392)"},
+      {"controller": "MyOrderDetailsController", "verdict": "OK — explicit route permission alternation IDOR heal (api.php L595)"},
+      {"controller": "TimezoneController", "verdict": "OK — admin auth:sanctum group only (read-only)"}
+    ]
+  },
+  "formrequest_authorize_true_count": {
+    "observed_count_2026_05_24": 67,
+    "sentinel_baseline": 69,
+    "sentinel_status": "PASSES (count<baseline ratchets ceiling without failing)",
+    "sentinel_file": "tests/Feature/Sentinels/FormRequestAuthzDriftSentinelTest.php:61",
+    "brain_history": "77 initial → 74 post Wave 5H → 69 post BUILD-6 → 66 (BRAIN claim 2026-05-21) → 67 (this measurement). Discrepancy of +1 vs BRAIN — likely a NEW FormRequest landed since BRAIN was updated.",
+    "v1_0_2_backlog": "Lower RETURN_TRUE_BASELINE to 67 (or 66 if BRAIN reading verified) to ratchet ceiling tighter."
+  },
+  "wildcard_route_audit": {
+    "Route_any_count": 0,
+    "Route_match_count": 59,
+    "Route_match_unique_paths_audited": [
+      {"path": "/login", "verbs": "GET|POST", "verdict": "OK — returns 401 JSON unauthenticated"},
+      {"path": "/refresh-token", "verbs": "GET|POST", "verdict": "OK — apiKey gated, no auth (token refresh exchange)"},
+      {"path": "/payment/{gateway}/success|fail|cancel", "verbs": "GET|POST", "verdict": "OK — payment redirect return URLs, signature verification per gateway"},
+      {"path": "Various /{resource}", "verbs": "PUT|PATCH", "verdict": "OK — update method polymorphism, parent group auth chain inherited"}
+    ],
+    "verdict": "No wildcard bypass surfaces identified"
+  },
+  "permission_typos_or_missing": {
+    "permissions_used_in_code": 73,
+    "permissions_seeded_total": 79,
+    "permissions_used_but_not_seeded": 0,
+    "potential_typo_finding": "NONE. Initial scan flagged 3 outliers (catalog.compose, catalog.publish, settings.) — verified: first 2 seeded by ComposerPermissionsMinimalSeeder; third is a code comment artifact ending in dot, not a permission name. All permission strings type-checked against database/seeders/PermissionTableSeeder.php + PermissionTableSeederVersionTwo.php + ComposerPermissionsMinimalSeeder.php + IngredientPermissionSeeder.php + E2EPlaywrightPermissionsHealSeeder.php."
+  },
+  "role_middleware_audit": {
+    "route_level_role_middleware_count": 0,
+    "controller_level_role_middleware_count": 1,
+    "controllers_using_role": [
+      {"controller": "App\\Http\\Controllers\\Admin\\Observability\\SyncOverviewController", "line": 52, "role": "Admin|Tenant Admin", "verdict": "OK — outbox endpoints aggregate cross-branch fleet data (Admin/Tenant Admin only)"}
+    ],
+    "channels_php_role_discriminator": "branch.{branchId} channel uses hasRole('Admin') || hasRole('Tenant Admin') for cross-branch broadcast subscription. Token-name discriminator ('kiosk-token') replaces token-can check (closes Sanctum '*' wildcard bypass per S-R3-P0-G heal)."
+  },
+  "kiosk_token_ability_check_count": {
+    "tokenCan_kiosk_order_sites_total": 13,
+    "controllers": 5,
+    "formrequests": 5,
+    "resources": 2,
+    "services": 1,
+    "controller_files": [
+      "app/Http/Controllers/Frontend/MenuController.php:37",
+      "app/Http/Controllers/Frontend/UpsellController.php:32",
+      "app/Http/Controllers/Frontend/PaymentReconcileController.php:87",
+      "app/Http/Controllers/Frontend/LoyaltyController.php:261+582",
+      "app/Http/Controllers/Auth/GuestSignupController.php:143"
+    ],
+    "formrequest_files": [
+      "app/Http/Requests/OrderRequest.php:83",
+      "app/Http/Requests/OrderStatusRequest.php:31+93",
+      "app/Http/Requests/Frontend/PaymentConfirmRequest.php:20",
+      "app/Http/Requests/Kiosk/PromoValidateRequest.php:19",
+      "app/Http/Requests/Kiosk/PricingPreviewRequest.php:30"
+    ],
+    "route_level_abilities_middleware_count": 2,
+    "route_level_abilities_paths": [
+      "POST /api/frontend/kiosk-event (api.php L1353)",
+      "POST /api/frontend/kiosk/event (api.php L1399)"
+    ],
+    "claude_md_reconcile": "BRAIN §9 claimed '8 controllers should tokenCan(kiosk:order)' — actual measurement is 5 controllers + 5 FormRequests + 2 Resources + 1 Service = 13 distinct enforcement sites. BRAIN claim is stale (likely pre-FormRequest-extraction refactor); actual posture is BETTER than claimed."
+  },
+  "csrf_exclusions_audited": [
+    {"path": "/payment/sslcommerz/*", "justification": "Payment gateway callback — no CSRF token from external POST"},
+    {"path": "/payment/paytm/*", "justification": "Payment gateway callback"},
+    {"path": "/payment/cashfree/*", "justification": "Payment gateway callback"},
+    {"path": "/payment/phonepe/*", "justification": "Payment gateway callback"},
+    {"path": "/payment/iyzico/*", "justification": "Payment gateway callback"},
+    {"path": "/payment/pesapal/*", "justification": "Payment gateway callback"},
+    {"path": "/payment/stripe-webhook + /payment/stripe-webhook/*", "justification": "Stripe webhook — auth via Stripe-Signature header (HMAC verified at Stripe.php:222-232, return 400 on invalid)"},
+    {"path": "/payment/senangpay-webhook + /payment/senangpay-webhook/*", "justification": "SenangPay webhook — auth via HMAC-SHA-256 hash_hmac (Senangpay.php:106-108, return 400 on invalid)"}
+  ],
+  "csrf_unnecessary_exclusions": 0,
+  "csrf_audit_verdict": "All 8 exclusions justified (payment gateway integrations with signature-based auth as primary)",
+  "webhook_signature_verification": {
+    "stripe": {
+      "secret_source": "config('services.stripe.webhook_secret')",
+      "signature_header": "Stripe-Signature",
+      "validation_method": "Stripe\\Webhook::constructEvent (official SDK HMAC verify)",
+      "behavior_on_invalid": "HTTP 400 + log fiscal channel + abort handler",
+      "verdict": "OK — blocking, signature verified before handler logic"
+    },
+    "senangpay": {
+      "secret_source": "config('services.senangpay.secret_key')",
+      "signature_method": "HMAC-SHA-256 over canonical status_id|order_id|txn_id|msg",
+      "behavior_on_invalid": "HTTP 400 + log fiscal channel + dead-letter-queue logging",
+      "verdict": "OK — blocking"
+    }
+  },
+  "production_boot_guards_audited": {
+    "POS_SIMULATION_HARDWARE": "Refuses boot if true (AppServiceProvider:85-91)",
+    "PAYMENT_BYPASS_MODE": "Refuses boot if true (L97-103)",
+    "PRINTING_BYPASS_MODE": "Refuses boot if true (L104-110)",
+    "APP_DEBUG": "Refuses boot if true (L122-130)",
+    "IDEMPOTENCY_MIDDLEWARE_ENABLED": "Refuses boot if false (L143-151)",
+    "LOYALTY_QR_SECRET": "Refuses boot if empty (L161-171)",
+    "APP_URL": "Refuses boot if empty (L181-191)",
+    "BROADCAST_DRIVER": "Refuses boot if null (L193-198)",
+    "QUEUE_CONNECTION": "Refuses boot if sync (L199-204)",
+    "CACHE_DRIVER": "Refuses boot if array/null (L214-222) — V1.0.X UNI-03 backlog: widen to forbid file/database for ALB multi-instance"
+  },
+  "default_kiosk_creds_boot_guard": {
+    "present_in_env_example": true,
+    "default_username": "kiosk-lecayenne",
+    "default_password": "kiosk123",
+    "production_fallback_active": "NO — config/kiosk.php:137-144 fallback gated by APP_ENV === 'local'",
+    "production_boot_refuses_default_password": "NO — no explicit boot guard verifying KIOSK_MACHINE_PASSWORD !== 'kiosk123'",
+    "auto_login_security_gate": "Yes — spa_payload exposure gated by APP_ENV=local OR ip in KIOSK_AUTO_LOGIN_TRUSTED_IPS (config/kiosk.php:177-180 + blade-render)",
+    "verdict": "AMBER — owner could deploy production by copy-pasting .env.example values directly. Recommend adding boot guard refusing KIOSK_MACHINE_USERNAME/PASSWORD matching .env.example defaults in production environment. Already tracked as V1.0.X backlog item per BRAIN.",
+    "severity": "low (operator-induced misconfig only; physical kiosk LAN restricted access; loss bounded to single-branch ordering)"
+  },
+  "branch_isolation_route_model_binding_audit": {
+    "FrontendOrder_show_endpoint": {
+      "controller_check": "NONE direct",
+      "service_check": "FrontendOrderService::show:659 — abort(403) if frontendOrder.user_id !== Auth::id()",
+      "verdict": "OK — ownership enforced in service layer"
+    },
+    "FrontendOrder_changeStatus_endpoint": {
+      "controller_check": "NONE direct",
+      "service_check": "FrontendOrderService::changeStatus:690 — same user_id check",
+      "verdict": "OK"
+    },
+    "FrontendOrder_paymentConfirm_endpoint": {
+      "controller_checks": [
+        "Authenticated user resolved (L106-113)",
+        "KioskMachine row exists for user (L115-121)",
+        "Order user_id === authenticated user (L123-125)",
+        "Order branch_id === kioskMachine branch_id (L129-131)",
+        "TPE amount echo verification ±1 cent (L137-152)"
+      ],
+      "verdict": "OK — quadruple-defense"
+    }
+  },
+  "middleware_order_audit": {
+    "kernel_middleware_priority_pinned": true,
+    "kernel_php_lines": "85-97",
+    "critical_order": "AuthenticatesRequests → EnsureUserStatusActive → SubstituteBindings → Authorize",
+    "verdict": "OK — explicit override of Laravel default (Sprint H1 Z6-06 2026-05-17), prevents EnsureUserStatusActive running before auth resolves $request->user()"
+  },
+  "bypass_vectors_identified": [
+    {
+      "id": "H12-default-kiosk-creds",
+      "severity": "AMBER (low impact, V1.0.X backlog)",
+      "description": "If operator deploys production with KIOSK_MACHINE_USERNAME=kiosk-lecayenne / KIOSK_MACHINE_PASSWORD=kiosk123 (the .env.example values), the kiosk machine authenticates with trivially guessable credentials. Production boot guard does not refuse this.",
+      "exploit_path": "External attacker on kiosk LAN → POST /api/auth/kiosk-login with kiosk-lecayenne/kiosk123 → receives Sanctum token with kiosk:order ability → can place orders on behalf of the branch / harvest menu data with kiosk-only price visibility.",
+      "mitigation_layered": [
+        "Throttle:kiosk-login 30/min limit",
+        "LAN-only kiosk network (physical security)",
+        "KioskMachine status field — admin can disable",
+        "branch.* broadcast channel restricted to actual machine's branch (channels.php token-name discriminator)"
+      ],
+      "recommendation": "Add to AppServiceProvider production guard: refuse boot if KIOSK_MACHINE_PASSWORD is in known-default-list ['kiosk123','password','admin','123456']. Defer to V1.0.X cloud cutover prep — local Le Cayenne LAN-bounded V1 risk is acceptable."
+    }
+  ],
+  "verdict": "GREEN",
+  "verdict_rationale": "Auth/RBAC architecture is mature and layered. Production boot guards (9 distinct safety checks) catch the highest-impact misconfigurations at startup. Webhook signature verification is blocking. Branch ownership enforced at multiple layers (BranchScope global + service-level user_id checks + paymentConfirm controller quadruple-defense). Permission middleware (Spatie) properly gates 17 route declarations + 90+ controller methods, with zero typos discovered. Middleware priority explicitly pinned in Kernel.php to prevent order-bypass. The 4 truly-public routes are legitimate (3 health + 1 CSP report); the 49 apiKey-only routes are by-design public catalog/auth/loyalty surfaces. Only 1 AMBER finding — H12 default kiosk creds in .env.example — already tracked V1.0.X backlog and bounded to LAN-physical-access trust model in V1. No new bypass vectors discovered.",
+  "top_5_bypass_risks_ranked": [
+    "H12 (AMBER): Default kiosk creds in .env.example not boot-guarded — V1.0.X recommended addition",
+    "API key shared secret (informational): X-API-KEY ships in client bundle, single static value — defense-in-depth only, NOT user-identity gating; BRAIN treats correctly",
+    "FormRequest 67/69 sentinel ceiling (informational): 67 FormRequests still return true unconditionally, gated by route/controller permission middleware where applicable — V1.0.2 ratchet to baseline=67",
+    "AdminPosV4Controller intentional no-auth blade serve (informational): client-side auth via pos-app.js, attacker could load empty SPA but cannot reach any API without token",
+    "CACHE_DRIVER guard narrower than stated intent (BRAIN UNI-03 backlog): allows file/database in production — single-instance V1 LOCAL is safe, ALB multi-instance V2 cloud requires widening"
+  ],
+  "security_depth_recommendation": "Auth/RBAC has reached production-grade depth for V1 LOCAL Le Cayenne. Recommended next-phase improvements (V1.0.X, non-blocking): (1) Add KIOSK_MACHINE_PASSWORD default-rejection boot guard. (2) Ratchet FormRequestAuthzDrift sentinel baseline from 69 → 67. (3) For V2 SaaS/cloud cutover: widen CACHE_DRIVER forbidden list to ['array','null','file','database'] and rotate apiKey to per-tenant value (or replace entirely with mTLS / oauth-client-credentials grant)."
+}

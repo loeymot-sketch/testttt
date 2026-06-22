@@ -1,0 +1,7 @@
+Sentinel BYPASS-P4 — pas d'appel TPE direct côté kiosk SPA
+----------------------------------------------------------
+Scan dir : resources/js/components/frontend/kiosk
+Offenders: 0
+OK — bridge Electron uniquement.
+
+Pattern attendu confirmé : kioskHardware.tpeCharge( ... ) présent dans KioskPaymentComponent.vue

@@ -10,10 +10,15 @@ use App\Models\Branch;
 use App\Models\Tax;
 use App\Enums\TaxType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
+use Tests\Feature\Concerns\HasPosQuoteBinding;
+use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
 
 class AntiGravityFinalTest extends TestCase
 {
     use RefreshDatabase;
+    use HasPosQuoteBinding;
+    use SeedsOpenCashDrawerSession;
 
     protected function setUp(): void
     {
@@ -27,6 +32,8 @@ class AntiGravityFinalTest extends TestCase
         $branch = Branch::factory()->create();
         $admin = User::factory()->create(['email' => 'admin@test.com', 'branch_id' => $branch->id]);
         $admin->assignRole('Admin');
+        // [Sprint H6 TEST-DEBT-001 2026-05-17] Sprint 1B requires an OPEN cash session for CASH.
+        $this->seedOpenSessionFor($admin, $branch);
         $tax = Tax::factory()->create(['tax_rate' => 0, 'type' => TaxType::FIXED]);
         $item = Item::factory()->create(['name' => 'Tacos L (2 Viandes)', 'price' => 10.00, 'tax_id' => $tax->id]);
 
@@ -62,8 +69,12 @@ class AntiGravityFinalTest extends TestCase
             'token' => 'test_ag_04'
         ];
 
+        $payload = $this->payloadWithPosQuote($admin, $payload);
+
         $orderResponse = $this->actingAs($admin, 'sanctum')
             ->withHeader('x-api-key', config('app.api_key'))
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $payload);
         echo "Order Status: " . $orderResponse->status() . "\n";
 

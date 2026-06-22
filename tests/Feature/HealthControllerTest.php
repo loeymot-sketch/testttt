@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
 
 /**
@@ -92,10 +93,27 @@ class HealthControllerTest extends TestCase
         }
     }
 
+    /**
+     * [OPS-2 2026-06-04] Regression lock: /api/health MUST return HTTP 503
+     * (not 200) when any subsystem is degraded, so a pager doing an HTTP-code
+     * `curl -f` actually fires on an outage. Forcing the null broadcast driver
+     * makes checkBroadcast() report 'warning' (not 'ok') → degraded → 503.
+     * This test FAILS against the old always-200 implementation.
+     */
+    public function test_health_full_returns_503_when_degraded(): void
+    {
+        Config::set('broadcasting.default', 'null');
+
+        $response = $this->getJson('/api/health');
+
+        $response->assertStatus(503);
+        $this->assertSame('degraded', $response->json('status'));
+    }
+
     public function test_health_full_rejects_non_whitelisted_ip_when_whitelist_set(): void
     {
         config()->set('app.env', 'production');
-        putenv('HEALTH_IPS_ALLOWED=10.0.0.1,10.0.0.2');
+        Config::set('app.health_ips_allowed', '10.0.0.1,10.0.0.2');
         try {
             $response = $this->call(
                 'GET',
@@ -115,7 +133,7 @@ class HealthControllerTest extends TestCase
                 'Full /health must 403 non-whitelisted IPs when HEALTH_IPS_ALLOWED is set'
             );
         } finally {
-            putenv('HEALTH_IPS_ALLOWED');
+            Config::set('app.health_ips_allowed', env('HEALTH_IPS_ALLOWED', ''));
         }
     }
 }

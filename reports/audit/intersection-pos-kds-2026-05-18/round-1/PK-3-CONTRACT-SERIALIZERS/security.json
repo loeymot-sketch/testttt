@@ -1,0 +1,99 @@
+{
+  "role": "Security",
+  "zone": "PK-3 — Contract Integrity",
+  "scope": "GDPR/PII on KDS payloads + branch isolation on KDS queries + token/role enforcement on items-board endpoint",
+  "method": "read-only static analysis with adversarial lens",
+  "files_reviewed": [
+    "app/Http/Resources/KDSOrderDetailsResource.php",
+    "app/Http/Resources/KDSOrderItemsResource.php",
+    "app/Http/Controllers/Admin/KitchenDisplaySystemController.php",
+    "app/Services/KitchenDisplaySystemOrderService.php",
+    "app/Services/KdsSyncService.php",
+    "app/Models/Scopes/BranchScope.php (FROZEN read-only)",
+    "app/Models/OrderItem.php"
+  ],
+  "findings": [
+    {
+      "id": "PK-3-SEC-01",
+      "severity": "P2",
+      "title": "GDPR data-minimization gap — customer.name still ships on all KDS payloads (Sprint 5A minimized only phone)",
+      "evidence": {
+        "file": "app/Http/Resources/KDSOrderDetailsResource.php:68-71",
+        "current": "name => $this->user->name shipped unconditionally",
+        "sprint_5a_heal": "phone => isDelivery ? phone : null"
+      },
+      "scope_note": "OWNER-DECISION V1.0.X per task brief — DO NOT HEAL in this round.",
+      "consequence": "Risk model: KDS endpoint requires permission:kitchen-display-system on a Sanctum-authenticated admin/staff user. Cross-tenant exposure is mitigated by Order model's BranchScope (auto-applied on Order::with(['user']) eager load — User is BranchScope-exempt for Sanctum recursion, but Order itself is scoped). So customer.name is only leaked WITHIN one branch's staff payload, which is by-design for non-DELIVERY orders the chef needs to call out (Mme Dupont's coffee). Recommendation when owner gates Yes: redact to first-name-or-initial for dine-in/takeaway/kiosk surfaces; keep full name for DELIVERY only.",
+      "blocks": false
+    },
+    {
+      "id": "PK-3-SEC-02",
+      "severity": "P1",
+      "title": "KDS items-board orderItems() relies on Order::with('orderItems') scope cascade — branch isolation is correct but not defense-in-depth",
+      "evidence": {
+        "file": "app/Services/KitchenDisplaySystemOrderService.php:264-270",
+        "code": "$query = Order::with('orderItems')->whereIn('status', ...); if ($userBranchId > 0) { $query->where('branch_id', $userBranchId); }",
+        "branchscope_on_orderitem": "app/Models/OrderItem.php:27 — addGlobalScope(new BranchScope())"
+      },
+      "consequence": "Defense exists at TWO layers: (a) explicit ->where('branch_id', $userBranchId) on Order query when staff (admin bypasses with branch_id=0); (b) BranchScope auto-applied on Order AND on OrderItem (eager-load Order::with('orderItems') re-runs the OrderItem builder which has BranchScope::apply()). Both layers consistent. For admin (branch_id=0), BranchScope returns early (no filter), and the controller explicit branch filter is also skipped. Result: admin sees all branches, staff sees only theirs — correct and intentional.",
+      "red_lens_attack_attempts": [
+        {
+          "attack": "Manipulate ?branch_id=99 query param to force cross-branch read",
+          "blocked_by": "KitchenDisplaySystemOrderService::orderItems() reads userBranchId from auth()->user(), NOT from request — request filter on branch_id is documented int-coerced in list() but NOT applied in orderItems() path. orderItems() endpoint has no client-supplied branch input — clean.",
+          "result": "BLOCKED"
+        },
+        {
+          "attack": "Staff with branch_id=5 sends ?branch_id=0 hoping to bypass scope (admin trick)",
+          "blocked_by": "userBranchId comes from auth()->user()->branch_id, not request. Request-side branch_id filter has no effect in orderItems().",
+          "result": "BLOCKED"
+        },
+        {
+          "attack": "Soft-deleted order with stale allergens leaks to chef who shouldn't see it post-cancel",
+          "blocked_by": "BranchScope + status filter on KitchenReleaseRule::itemBoardStatuses() (ACCEPT/PREPARING/PREPARED). Canceled/Delivered orders excluded.",
+          "result": "BLOCKED"
+        },
+        {
+          "attack": "Test/dev admin@lecayenne.fr (branch_id=0) tunnels into staff-only items",
+          "blocked_by": "Not an attack — admin bypass is intentional per FIX-54-8 (BranchScope:33).",
+          "result": "BY DESIGN"
+        }
+      ],
+      "blocks": false
+    },
+    {
+      "id": "PK-3-SEC-03",
+      "severity": "P1",
+      "title": "Items-board endpoint does NOT enforce idempotency or rate-limit — chef-bumping a status hits a separate endpoint that DOES, but the read-path is polling-friendly and unthrottled",
+      "evidence": {
+        "file": "app/Http/Controllers/Admin/KitchenDisplaySystemController.php:53-60",
+        "route_protection": "permission:kitchen-display-system middleware only — no per-IP throttle, no per-user rate limit"
+      },
+      "consequence": "Read endpoint, so no idempotency required. Rate-limit absent means a malicious or buggy staff client can poll at high frequency. Mitigation context: TrustProxies $proxies='*' + per-IP throttle commit 79e214542 (Wave 3 P1) likely caps egress at the global rate-limit layer. Not blocking V1, but a per-route 'kds:read' throttle (60/min) would be cheap defense.",
+      "blocks": false
+    },
+    {
+      "id": "PK-3-SEC-04",
+      "severity": "P2",
+      "title": "Allergens_snapshot is user-controlled at order creation — null/[] merge is correct, but malformed JSON in legacy rows could break json_encode in service",
+      "evidence": {
+        "file": "app/Services/KitchenDisplaySystemOrderService.php:344-358 (normalizeAllergensForHash)",
+        "defense": "is_array() guard + array_filter + sort + array_values + strval mapping"
+      },
+      "consequence": "OrderItem casts allergens_snapshot to 'array' (Models/OrderItem.php:76), so Eloquent normalizes at read. Defensive normalize() in service handles null + non-array + non-string elements. Tested by KdsAllergenAggregationSplitTest::test_items_with_NULL_allergens_snapshot_merge_with_items_with_EMPTY_array. Robust.",
+      "blocks": false
+    },
+    {
+      "id": "PK-3-SEC-05",
+      "severity": "INFO",
+      "title": "Item_id leak risk in items-board response — by design, this is needed for kdsAddonDisplayName + item_name resolution",
+      "evidence": "items-board ships item_id + item_name + variations + extras",
+      "consequence": "Not PII, public-menu information. No leak.",
+      "blocks": false
+    }
+  ],
+  "verdict": {
+    "summary": "Branch isolation is sound across both layers (controller + OrderItem global scope). GDPR customer.name gap is owner-decision V1.0.X per task brief. Items-board read-endpoint has no per-route rate limit (global mitigation only). No exploitable cross-tenant leak found.",
+    "blocking_v1": false,
+    "next_v1_0_x": ["customer.name redaction", "per-route kds:read throttle"]
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "zone": "PLOY-3-CROSS-SURFACE",
+  "role": "Architect",
+  "scope": "POS earn ↔ Kiosk redeem ↔ Mobile-app view/redeem ↔ Web account view — cross-surface state coherence, conflict resolution, balance consistency",
+  "surface_inventory": [
+    {
+      "surface": "POS (admin-pos-v4.blade.php + pos-wizard.js + pos-shell.js)",
+      "loyalty_capabilities": [
+        "EARN via PosOrderRequest.loyalty_customer_code → AwardLoyaltyPointsOnDelivery listener on DELIVERED",
+        "REDEEM: NOT IMPLEMENTED at UI layer (see PLOY-2-A-00). Discount field exists in PosOrderRequest line 88 but no UI flow to populate it with loyalty-derived value"
+      ],
+      "source_surface_tag": "'pos' (set in OrderService::posOrderStore line 919)"
+    },
+    {
+      "surface": "Kiosk (KioskAppComponent.vue + KioskWizardComponent.vue + KioskUpsellComponent.vue, served at /kiosk/idle)",
+      "loyalty_capabilities": [
+        "EARN: kiosk Vue calls POST /api/loyalty/check or /scan to identify customer → sets loyalty_code on frontend order → FrontendOrderService.placeOrder persists loyalty_customer_code → AwardLoyaltyPointsOnDelivery on PREPARED or DELIVERED",
+        "REDEEM (pre-order): POST /api/loyalty/redeem with code + points → decrement balance + create ledger row (order_id=NULL)",
+        "REDEEM (post-order attach): FrontendOrderService.placeOrder line 818 attaches pending redeem to order_id (10-min window)",
+        "REDEEM (direct): If pre-order redeem missing, FrontendOrderService.createKioskLoyaltyRedeemLedger deducts at order-create time"
+      ],
+      "source_surface_tag": "'kiosk' (set in FrontendOrderService line 518)"
+    },
+    {
+      "surface": "Mobile-app (tests/mobile-e2e/loyalty-{01..15}.spec.js + loyalty-adv-A{1..5}.spec.js — implementation in mobile/ directory, standalone)",
+      "loyalty_capabilities": [
+        "Display balance (GET /api/loyalty/balance)",
+        "Display history (GET /api/loyalty/history)",
+        "Generate QR for kiosk scan (loyalty_code embedded)",
+        "Apple Wallet / Google Wallet pass (loyalty-07, loyalty-08 specs)",
+        "Redeem via mobile wizard (loyalty-04 — likely calls /api/loyalty/redeem with own session token, ownership check at LoyaltyController line 280 enforces caller.id === user.id)",
+        "Refund reversal preview (loyalty-10 spec)",
+        "Opt-out (loyalty-11 spec)"
+      ],
+      "source_surface_tag": "'mobile' — but I find no place in current PHP code that writes source_surface='mobile' on a redeem. Mobile-app likely uses /api/loyalty/redeem which sets source_surface based on `$isKiosk ? 'kiosk' : 'pos'` at LoyaltyController line 316 → MOBILE redemptions appear as 'pos' in the ledger. POTENTIAL BUG."
+    },
+    {
+      "surface": "Web (standalone /Users/1millnonstop/Downloads/web — public-facing site)",
+      "loyalty_capabilities": [
+        "Per route audit project_route_audit_2026-05-08 + project_goal_longterm: web is standalone V1 with no live loyalty endpoint integration. Customer accounts via mobile only.",
+        "No loyalty UI in current web canonical pages"
+      ],
+      "source_surface_tag": "'web' (not exercised — no current writes)"
+    }
+  ],
+  "findings": [
+    {
+      "id": "PLOY-3-A-01",
+      "severity": "P2",
+      "title": "source_surface mislabels mobile redemptions as 'pos'",
+      "files": ["app/Http/Controllers/Frontend/LoyaltyController.php:316"],
+      "finding": "LoyaltyController::redeem line 316: `'source_surface' => $isKiosk ? 'kiosk' : 'pos'` — binary fork ignores mobile. When mobile-app calls /api/loyalty/redeem with the user's own session (not kiosk:order ability), $isKiosk=false → labeled 'pos'. Analytics 'POS redemption volume' is polluted with mobile redemptions.",
+      "remediation": "Replace the binary with surface-detection: accept a 'source' param in request (validated against whitelist 'kiosk|pos|mobile|web'), or detect via User-Agent header, or pass via mobile-app authenticator. Simplest: add request input ['source' => 'in:kiosk,pos,mobile,web'] and use it (with fallback to current logic). Or: gate source_surface='pos' on caller having 'POS Operator' role specifically."
+    },
+    {
+      "id": "PLOY-3-A-02",
+      "severity": "P2",
+      "title": "Balance display drift between surfaces — no push/refresh after mutation",
+      "finding": "If customer redeems at kiosk while their mobile app is open, the mobile app's balance display remains stale (no websocket/push). Mobile spec loyalty-03-qr-refresh implies the mobile app polls/refreshes the QR but not necessarily the balance. Cross-surface balance is eventually consistent via Read-from-DB on each surface fetch.",
+      "remediation": "V1: document the polling cadence + accept stale read. V2: WebSocket loyalty.{user_id} channel broadcast on every LoyaltyTransaction insert. Pattern available via existing PusherService."
+    },
+    {
+      "id": "PLOY-3-A-03",
+      "severity": "P3",
+      "title": "Web surface has no loyalty integration — owner-decision gap",
+      "finding": "Per project_goal_longterm_executed_2026-05-17 BRAIN entry, web is standalone V1 mirror of mobile (44/44 E2E green). No loyalty endpoints called. If owner expected web account-page loyalty display, it's missing.",
+      "remediation": "Owner gate. Probably V1.0.2 backlog (web account section)."
+    },
+    {
+      "id": "PLOY-3-A-04",
+      "severity": "P3",
+      "title": "Cross-surface earn parity: POS sets source_surface='pos' at order-create, kiosk='kiosk', but listener overrides to 'kiosk' for KIOSK/TAKEAWAY order_type",
+      "files": ["app/Listeners/AwardLoyaltyPointsOnDelivery.php:113"],
+      "finding": "Listener line 113: `$surface = $order->source_surface ?? ($isKiosk ? 'kiosk' : 'web')`. Reads existing source_surface from order (good — preserves what was set at order create). But fallback for KIOSK/TAKEAWAY without source_surface defaults to 'kiosk' — POS-created TAKEAWAY orders (where cashier marks 'à emporter') would inherit 'pos' from line 919 set at OrderService::posOrderStore. Consistency verified by code reading.",
+      "verdict": "OK — no bug, documented."
+    },
+    {
+      "id": "PLOY-3-A-05",
+      "severity": "P2",
+      "title": "FrontendOrder cancellation calls refundPoints with sourceSurface='kiosk' — but kiosk-paid orders might have been created via mobile pre-order",
+      "files": ["app/Services/FrontendOrderService.php:707"],
+      "finding": "FrontendOrderService::changeStatus refund call hard-codes 'kiosk' as sourceSurface. If a FrontendOrder was actually originated from mobile (source_surface='mobile' on the order row), the refund row's source_surface diverges from the original.",
+      "remediation": "Replace hard-coded 'kiosk' with `$frontendOrder->source_surface ?? 'kiosk'`."
+    }
+  ],
+  "verdict": "PASS-WITH-CONCERN",
+  "blocker_for_v1": false,
+  "notes": "Cross-surface architecture is consistent at the persistence layer (single users.loyalty_points + single loyalty_transactions ledger). Concerns are analytics-tag drift (P2s) and UX freshness (P2 balance drift). No corruption risk."
+}

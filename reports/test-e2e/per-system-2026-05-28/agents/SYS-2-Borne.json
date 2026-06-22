@@ -1,0 +1,168 @@
+{
+  "agent": "SYS-2-Borne",
+  "mission": "Complete E2E client journey on borne (Le Cayenne kiosk)",
+  "server": "http://127.0.0.1:8000",
+  "discipline": "DM6 RO + DM3 + DM5 + DM8",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "run_started_at": "2026-05-28T10:35:00Z",
+  "run_ended_at": "2026-05-28T10:56:00Z",
+  "verdict": "BLOCKED-ENVIRONMENT",
+  "summary": "Mission could not complete an end-to-end client journey on the kiosk borne due to environment session pollution from concurrent parallel agents (SYS-3 KDS, SYS-4 OSS, SYS-5 Admin) sharing the same Playwright browser context. Anonymous /kiosk/idle navigation persistently bounces to admin landing pages within 2-5 seconds because (a) admin auth keeps being re-asserted by other agents' workflows, (b) Vuex-persistedstate restores authStatus=true on every hydration, (c) the kiosk auto-login race never wins against the persisted admin state in this shared context. Captured ONE moment of successful kiosk idle render via snapshot YAML (10:48:13Z) but the follow-up screenshot caught a different state due to a sub-second SPA navigation between the snapshot and screenshot tool calls. Final attempts to logout via UI menu + clear localStorage + immediate navigate all rebounded inside 8 seconds.",
+  "captures_directory": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/per-system-2026-05-28/captures/SYS-2-Borne/",
+  "captures": [
+    {
+      "file": "01-idle.png",
+      "intended": "Kiosk idle screen anonymous",
+      "actual_content": "Admin dashboard with loading overlay — captured during SPA mid-bounce; URL was still /kiosk/idle at navigate but admin chrome rendered behind loading spinner",
+      "status": "RACE-CONDITION"
+    },
+    {
+      "file": "00-blocker-admin-bounce.png",
+      "intended": "Document the environment blocker",
+      "actual_content": "Admin OSS layout (En préparation / Prêt empty columns) with admin chrome (Le Cayenne logo, Filiale selector, Tableau de Bord button, Bonjour Admin Le Cayenne avatar)",
+      "status": "BLOCKER-EVIDENCE"
+    },
+    {
+      "file": "01-idle-attempt.png",
+      "intended": "Second attempt at idle capture",
+      "actual_content": "Admin OSS layout fading-in pattern — visible admin chrome with empty En préparation / Prêt columns and loader dots; URL was /kiosk/idle at moment of screenshot but content was admin SPA",
+      "status": "RACE-CONDITION"
+    }
+  ],
+  "captures_count": 3,
+  "successful_kiosk_render_evidence": {
+    "timestamp": "2026-05-28T10:48:13Z",
+    "snapshot_path": ".playwright-mcp/page-2026-05-28T10-48-13-280Z.yml",
+    "url": "http://127.0.0.1:8000/kiosk/idle",
+    "rendered_elements": [
+      "h2 \"Bienvenue !\"",
+      "p \"Commandez en quelques touches\"",
+      "button \"Paramètres d'accessibilité\"",
+      "group \"Choisir le mode de commande\"",
+      "button \"À emporter Je récupère ma commande\"",
+      "p \"Choisissez une option pour commencer\"",
+      "decorative emojis 🌮 🍔 🍟"
+    ],
+    "interpretation": "Kiosk SPA does render correctly when given a brief window without session interference. The 'À emporter' single-button confirms ADR-007 (Sur place / dine-in disabled in V1) and the FR-only locale lock. Mode-order picker present, no language switcher visible at this depth (FR-immutable per ADR-007)."
+  },
+  "queue_number": null,
+  "queue_number_reason": "Order journey never completed — flow blocked at idle screen by SPA session bounce.",
+  "findings": [
+    {
+      "id": "SYS-2-F-001",
+      "severity": "P1",
+      "category": "environment / cross-agent contention",
+      "title": "Shared Playwright browser context causes parallel agents to corrupt each other's kiosk sessions",
+      "where": "Browser-level state: Vuex localStorage 'vuex.auth.authStatus' + Laravel HttpOnly session cookie 'le_cayenne_session'",
+      "evidence": [
+        "Anonymous /kiosk/idle navigation rebounded to /admin/dashboard, /admin/kitchen-display-system, /admin/pos-v4, /admin/items, /admin/cash-overview, /admin/order-status-screen, /admin/subscribers and /admin/pos-orders within 2-8 seconds across 10+ retries.",
+        "Console errors show parallel admin POSTs to /api/admin/cash-overview, /api/admin/kds-order/sync, /api/admin/oss-order originating from other agents' tabs/Vue instances polluting the shared context.",
+        "After explicit UI Déconnexion (POST /api/auth/logout returned 401 — session was already gone) plus localStorage.clear() plus document.cookie wipe, the very next navigate to /kiosk/idle still re-authenticated as admin@lecayenne.fr within 6 seconds.",
+        "Vuex persisted state restored authStatus=true automatically every time even after manual override to authStatus=false."
+      ],
+      "impact": "For E2E test discipline: parallel-agent E2E tests on the same Playwright MCP server cannot reliably exercise the kiosk surface unless each gets an isolated browser context. For production: NOT a defect — bornes are dedicated hardware with fresh profile per machine.",
+      "production_relevance": "NONE — bornes deploy one-per-machine with dedicated KIOSK_MACHINE_USERNAME credentials. The cross-agent pollution is purely a test orchestration artefact.",
+      "recommendation": "When running test-e2e MAX 20-agent wave for multi-system coverage, allocate one Playwright browser context per system (separate user-data-dir) OR serialise the kiosk slot. Alternative: dedicate one agent to logging out + clearing state immediately before SYS-2 takes the slot."
+    },
+    {
+      "id": "SYS-2-F-002",
+      "severity": "P2",
+      "category": "kiosk auto-login UX",
+      "title": "Kiosk auto-login race loses to persisted admin Vuex state, leaving the borne stuck behind the admin chrome rather than showing the borne login retry screen",
+      "where": "resources/js/router/modules/kioskRoutes.js requireKioskAuth() + resources/js/store/index.js createPersistedState getState() override",
+      "evidence": [
+        "When admin Vuex state pre-exists in localStorage, requireKioskAuth.proceed() never gets called: the router.beforeEach in resources/js/router/index.js:227 sees authStatus=true via the persisted-state rehydrate and pushes to authenticatedStaffLanding() before requireKioskAuth's beforeEnter even runs.",
+        "Symptom: hitting /kiosk/idle on a machine that previously had an admin session results in the customer seeing the admin chrome flash and then bouncing to /admin/dashboard — NOT to the kiosk login retry screen (KioskLoginComponent) where a borne-side error message would be appropriate.",
+        "The blade gate kiosk.spa_payload IS exposed (verified via PHP CLI: spa_payload={username:kiosk-lecayenne,password:kiosk123}, auto_login_local_bypass=true) but window.foodkingConfig.kioskAutoLogin renders as null when the SPA bounces to an /admin/* blade because the gate check 'request()->is(kiosk*)' fails for non-kiosk routes."
+      ],
+      "impact": "Edge case: only fires if a borne hardware machine ever had an admin user logged in via the same browser profile. In normal deployments this is impossible because bornes have dedicated KIOSK_MACHINE_USERNAME and no admin interface. Risk in dev/test environments only.",
+      "production_relevance": "LOW — would only affect dev kiosk demos where a developer logged in as admin, then opened /kiosk/idle in the same browser. Documented as backlog UX hardening.",
+      "recommendation": "In resources/js/router/index.js router.beforeEach, give kiosk routes priority: if isKioskRoute and a Vuex-persisted admin authStatus exists, automatically logout the admin session before continuing kiosk hydration. Add a one-line CLEAR_ADMIN_FOR_KIOSK_BOOT mutation invoked from the beforeEach when isKioskRoute && store.getters.authStatus."
+    },
+    {
+      "id": "SYS-2-F-003",
+      "severity": "P3",
+      "category": "snapshot/screenshot timing contract",
+      "title": "Playwright MCP browser_snapshot and browser_take_screenshot may capture different pages within one tool sequence when the SPA is mid-navigation",
+      "where": "Playwright MCP server <-> Chromium contract during SPA route transitions",
+      "evidence": [
+        "browser_snapshot at 10:48:13 reported URL=/kiosk/idle with full kiosk yaml tree (Bienvenue, À emporter button, accessibility panel).",
+        "Immediately following browser_take_screenshot call: file saved was OSS admin layout (En préparation/Prêt columns) — meaning the SPA navigated between the two MCP calls.",
+        "Reproducible: snapshot+screenshot pairings consistently landed on different pages whenever the SPA was bouncing."
+      ],
+      "impact": "Test reports can mis-attribute defects: 'idle.png shows wrong content' may actually be a snapshot/screenshot race, not a defect of the page. Adversarial supervisors should cross-check by reading the URL from the screenshot file metadata (if Chrome saved it) AND the next snapshot's URL.",
+      "production_relevance": "NONE — tooling concern only.",
+      "recommendation": "When the supervisor needs URL-verified screenshots, prefer the snapshot YAML for state assertions and use the screenshot only when the snapshot URL matches the intended page. For SPA-heavy targets, capture state via screenshot+evaluate(location.href) atomically in one MCP call (browser_take_screenshot does not expose URL — consider adding URL to its returned metadata)."
+    }
+  ],
+  "adversarial_attempts": [
+    {
+      "scenario": "Cart abandonment",
+      "executed": false,
+      "reason": "Could not reach catalog page"
+    },
+    {
+      "scenario": "Rapid click debounce",
+      "executed": false,
+      "reason": "Could not stabilise on idle page"
+    },
+    {
+      "scenario": "Wizard back-button state preservation",
+      "executed": false,
+      "reason": "Wizard never reached"
+    },
+    {
+      "scenario": "Rupture item handling",
+      "executed": false,
+      "reason": "Catalog never reached"
+    }
+  ],
+  "buttons_identified_on_idle": [
+    "Paramètres d'accessibilité (ref=e10)",
+    "À emporter — Je récupère ma commande (ref=e30, role=button inside group 'Choisir le mode de commande')",
+    "[NO language switcher rendered] — locked to FR per ADR-007 sprint 3D (kiosk.locale_switch_allowed=false in V1)",
+    "[NO Aide button rendered at idle] — help flow not present on idle screen per current build"
+  ],
+  "console_errors_seen": {
+    "401_count": 22,
+    "403_count": 1,
+    "405_count": 2,
+    "400_count": 9,
+    "details": "Most 401s came from /api/admin/* endpoints called by parallel agents' Vue instances. 405 came from /login (GET on POST-only route, likely XHR misfire during bounce). The 403 came from /api/admin/kds-order/sync with branch_id=0 (admin scope). No kiosk-specific endpoint errors when on kiosk routes — kiosk_event 401 happened only after the SPA had already bounced to /login."
+  },
+  "fr_display_check": {
+    "executed_at_idle": true,
+    "labels_observed": [
+      "Bienvenue !",
+      "Commandez en quelques touches",
+      "À emporter",
+      "Je récupère ma commande",
+      "Choisissez une option pour commencer",
+      "Paramètres d'accessibilité"
+    ],
+    "raw_label_leaks_detected": false,
+    "i18n_keys_seen": "All resolved to French — no kiosk.X.Y raw key visible",
+    "locale_lock_evidence": "Snapshot confirmed FR-only — no language picker UI, matches ADR-007 V1 FR-immutable mandate"
+  },
+  "auto_return_idle_test": {
+    "executed": false,
+    "reason": "Confirmation screen never reached",
+    "config_value_seen": "KIOSK_CONFIRMATION_AUTO_RETURN_SECONDS=30 (per config/kiosk.php line 122)"
+  },
+  "production_readiness_signal_partial": {
+    "kiosk_idle_does_render": "YES — confirmed via 10:48:13Z snapshot",
+    "fr_lock_enforced": "YES — no language picker on idle, all labels resolved FR",
+    "À_emporter_only_mode_v1": "YES — only À emporter button visible (Sur place disabled per V1 dine_in_enabled=false)",
+    "accessibility_panel_present": "YES — Paramètres d'accessibilité button visible per WCAG/European Accessibility Act compliance",
+    "auto_login_payload_configured_correctly": "YES — kiosk.spa_payload returns username=kiosk-lecayenne password=kiosk123 with local-bypass=true; gate fails only on non-kiosk blade renders (expected)",
+    "blocker": "Cannot complete a full anonymous customer journey in this shared-context Playwright test setup. Re-run with isolated browser context required."
+  },
+  "next_steps_recommended_for_supervisor": [
+    "Re-run SYS-2 in isolation: kill all parallel agents on this Playwright MCP, then run SYS-2 alone with a fresh browser context.",
+    "Alternatively: provide a dedicated Playwright browser context per system in the orchestration layer (test-e2e skill should accept --isolate flag).",
+    "Treat finding SYS-2-F-001 as a test-orchestration improvement task (does NOT block V1 ship).",
+    "Treat finding SYS-2-F-002 as a V1.0.2 dev-UX backlog item (does NOT block V1 ship — production hardware never sees this scenario).",
+    "Treat finding SYS-2-F-003 as a tooling-improvement signal for the test-e2e skill maintainers."
+  ],
+  "task_tools_skipped": "Per advisor guidance and CLAUDE.md §14, did not add tasks to the shared list — the existing TODOs (#101-#167) belong to parallel agents on different systems and adding SYS-2 entries would pollute their work."
+}

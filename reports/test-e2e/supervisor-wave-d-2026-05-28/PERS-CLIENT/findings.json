@@ -1,0 +1,202 @@
+{
+  "supervisor_wave": "D",
+  "zone": "PERS-CLIENT",
+  "agent": "T2-Persona-Client-Impatient",
+  "head": "24bdd946a",
+  "branch": "feature/mobile-app-le-cayenne-2026-05-10",
+  "captured_at": "2026-05-29T00:35:00+02:00",
+  "method": "READ+TEST ONLY — code-walkthrough audit (no browser tool available in agent env). Empirical proofs would require Playwright runner. All claims back-cited file:line. ZERO product code touched (frozen-zone safe).",
+  "live_test_blocked": {
+    "reason": "no_browser_tool_in_agent_env",
+    "impact": "S1+S2+S3+S4+S5+S6 cannot be physically driven — verdicts derived from code invariants + existing E2E specs",
+    "mitigation": "Each finding cites file:line so owner can manually verify in-browser at /kiosk/idle in 5 min",
+    "screenshots_dir_status": "/tmp/foodking-wave-d-2026-05-28/pers-client/ created empty; live capture deferred to owner manual walk"
+  },
+  "context": {
+    "kiosk_idle_timeout_truth": {
+      "default_idleMs": 180000,
+      "default_confirmMs": 30000,
+      "default_warning_at_ms": 150000,
+      "source_defaults": "resources/js/store/modules/kioskSettings.js:44-50 (IDLE_DEFAULTS)",
+      "source_fallback": "resources/js/components/frontend/kiosk/KioskAppComponent.vue:190 (IDLE_FALLBACK_MS=180000)",
+      "admin_configurable_bounds": "idleMs {10000..600000}, confirmMs {3000..60000}",
+      "spec_S1_assumption_check": "Spec says 90s → overlay. ACTUAL behavior: warning overlay 'Toujours là ?' fires at 150000ms (idleMs - confirmMs). Spec assumption is OFF BY 60s minimum. Owner: lower idleMs in admin settings if 90s is the validated UX target."
+    },
+    "no_timer_routes": {
+      "list": ["kiosk.idle", "kiosk.waiting", "kiosk.payment", "kiosk.confirmation"],
+      "source": "resources/js/components/frontend/kiosk/KioskAppComponent.vue:881",
+      "rationale": "idle = no order in-flight ; payment = client at TPE (no screen touch) ; confirmation = receipt display ; waiting = order accepted by KDS",
+      "spec_S4_impact": "S4 says 'Cart fill + 5min idle → overlay'. ACTUAL: cart route (kiosk.cart) IS in timer list (NOT excluded), so timer DOES fire at 150s warning + 180s reset (NOT 5min). Spec timing wrong; behavior correct.",
+      "spec_S1_payment_drop": "Reinforces NETDROP findings: kiosk.payment screen has NO inactivity reset to protect mid-TPE transaction → 'walk away' on payment screen leaves kiosk stuck visually until manual reset OR until backend FrontendOrder reconcile cycle. Documented invariant, not bug."
+    },
+    "inactivity_overlay_anatomy": {
+      "component": "resources/js/components/frontend/kiosk/KioskInactivityOverlayComponent.vue:1-260",
+      "data_testids": ["kiosk-inactivity-overlay", "kiosk-inactivity-countdown", "kiosk-inactivity-stay", "kiosk-inactivity-leave"],
+      "ui_labels": {
+        "title": "Toujours là ? (kiosk.inactivity.title)",
+        "desc": "Votre commande sera effacée dans {N} secondes (kiosk.inactivity.desc)",
+        "stay_button": "Je suis là (kiosk.inactivity.stay)",
+        "leave_button": "Abandonner (kiosk.inactivity.leave)"
+      },
+      "spec_says_recommencer": "Spec S1 calls button 'Recommencer'. ACTUAL label = 'Abandonner' (leave) or 'Je suis là' (stay). NO 'Recommencer' button on the overlay — that's the post-reset landing on /kiosk/idle which shows the welcome screen.",
+      "a11y_proof": "aria-live=polite on countdown ; focus-trap implied by dialog ; lang-fr labels validated (resources/lang/fr/kiosk.php contains kiosk.inactivity.* keys)"
+    },
+    "cart_dedup_invariant": {
+      "mutation": "resources/js/store/modules/kioskCart.js:256-289 (ADD_ITEM)",
+      "dedup_key": "item_id + JSON(item_variations) + JSON(item_extras) + (instruction || '')",
+      "behavior_on_match": "MERGE quantity (clamped to MAX_ITEM_QTY)",
+      "behavior_on_no_match": "PUSH new line",
+      "spec_S2_impact": "S2 says 'rapid tap on category tile → no duplicate cart entries'. ACTUAL: cart dedup happens at MUTATION layer — even if 10 dispatches fire, identical-content items MERGE not DUPLICATE. Verdict GREEN by design."
+    },
+    "idle_screen_tap_protection": {
+      "binding": "resources/js/components/frontend/kiosk/KioskIdleScreenComponent.vue:127,145 (@click.stop, @touchstart.stop)",
+      "handler": "selectOrderTypeAndStart() at line 257-262 emits 'start-order' event to KioskAppComponent",
+      "navigation": "KioskAppComponent.startOrder() at line 948-953: resets cart, sets order type, router.push({name:'kiosk.categories'})",
+      "no_explicit_debounce": "true — relies on vue-router idempotency for same-route push",
+      "spec_S2_impact": "S2 says 'tap Commencer 10x in 2s → single navigation'. ACTUAL: NO disabled state, NO debounce, NO inFlight guard. Vue Router push to same named route is idempotent (returns same NavigationDuplicated promise). Functionally GREEN but FRAGILE — first slow dispatch could allow concurrent reset() + setOrderType() races. RECOMMEND: add `data-clicked` flag in KioskIdleScreenComponent (S2-P3-01).",
+      "evidence_existing_e2e": "tests/playwright/kiosk-spa-black-screen-guard.spec.js exists (per router comment line 5) — confirms historical fast-tap regression was caught."
+    },
+    "browser_navigation_guards": {
+      "router_module": "resources/js/router/modules/kioskRoutes.js:1-235",
+      "popstate_handler": "ABSENT — grep for popstate|beforeRouteLeave|beforeRouteEnter on kiosk components returns ZERO matches",
+      "wizard_back_uses": "KioskWizardComponent.vue:17,1643,2119 → this.$router.go(-1) (history back, NOT internal step decrement)",
+      "wizard_step_state": "currentStepIndex (component data, lines 52-91) — NOT URL-bound",
+      "spec_S3_impact": "S3 says 'wizard étape 3 → browser back → graceful'. ACTUAL: wizard step is in-component state, NOT URL. Browser back from kiosk.categories with active wizard exits the route to /kiosk/idle (or previous router stack entry). Vuex cart NOT auto-cleared by router exit — wizard temp state lost, partial cart line discarded. Behavior is graceful BUT inconsistent with wizard 'Précédent' button which decrements currentStepIndex in-place. NEEDS_HEAL P2: document expected behavior OR add beforeRouteLeave dialog 'Quitter le wizard ?' (S3-P2-01)."
+    },
+    "abandoned_pending_counter_cron": {
+      "search": "grep -rn 'PENDING_COUNTER' app/Console/Kernel.php app/Console/Commands/*.php → no scheduled cleanup task",
+      "kernel_path": "app/Console/Kernel.php",
+      "status_enum": "app/Enums/PaymentStatus.php:9 → PENDING_COUNTER = 15",
+      "state_machine": "app/Domain/Order/PaymentStateMachine.php:13",
+      "spec_S6_impact": "Spec S6 says '(V1.0.X cron documented for abandoned PENDING_COUNTER)'. ACTUAL: NO cron exists in HEAD 24bdd946a. PENDING_COUNTER orders persist indefinitely until cashier manually voids OR explicit cancellation. RISK: kiosk PENDING_COUNTER pile-up after weekend / long opening → Z report includes phantom unpaid orders. NEEDS_HEAL P1: PruneAbandonedPendingCounterCommand + Kernel schedule entry (S6-P1-01). Aligned with Plan B introduction (commit 24bdd946a) which created the deferred-encashment pattern WITHOUT the cleanup leg."
+    }
+  },
+  "scenarios": {
+    "S1_wizard_abandonment_mid_flow": {
+      "verdict": "GREEN_WITH_TIMING_DISCREPANCY",
+      "spec_expects": "90s no-interaction → overlay 'Recommencer'",
+      "actual_behavior": "Warning overlay 'Toujours là ?' fires at idleMs-confirmMs = 150000ms (2.5 min). Final reset at 180000ms (3 min). Button on overlay is 'Abandonner' (leave) or 'Je suis là' (stay) — not 'Recommencer'.",
+      "code_evidence": [
+        {"claim": "idle timer 180s default", "file": "resources/js/store/modules/kioskSettings.js", "line": 44},
+        {"claim": "warning at idleMs-confirmMs", "file": "resources/js/components/frontend/kiosk/KioskAppComponent.vue", "line": 890},
+        {"claim": "kioskCart reset on resetKiosk()", "file": "resources/js/components/frontend/kiosk/KioskAppComponent.vue", "line": 964-970},
+        {"claim": "onInactivityLeave clears customer profile", "file": "resources/js/components/frontend/kiosk/KioskAppComponent.vue", "line": 928-933}
+      ],
+      "db_integrity_proof": {
+        "orphan_cart_entry": "NONE — Vuex cart is in-memory only ; resetKiosk dispatches kioskCart/reset (KioskAppComponent.vue:949) which clears state.items + state.orderRef + state.queueNumber",
+        "no_db_write_pre_payment": "true — order POST happens at /api/frontend/order ONLY at payment confirmation (KioskPaymentComponent.vue → kioskCart/submitOrder)",
+        "verdict": "no orphan DB row possible (wizard state is client-only until POST)"
+      },
+      "recommendations": [
+        {"id": "S1-P3-01", "severity": "P3", "issue": "Spec timing 90s ≠ actual 150s warning + 180s reset", "fix": "Either lower admin idleMs to 90000 OR update spec doctrine to '150s warning + 180s reset'"}
+      ]
+    },
+    "S2_fast_multi_tap_abuse": {
+      "verdict": "GREEN_BY_DESIGN_FRAGILE",
+      "spec_expects": "10x tap Commencer in 2s → single nav ; rapid tap category tile → no duplicate cart entries",
+      "actual_behavior": "Commencer button: NO explicit debounce, BUT vue-router same-name push is idempotent. Category tile → wizard: dedup at ADD_ITEM mutation (item_id + variations + extras + instruction match → MERGE qty).",
+      "code_evidence": [
+        {"claim": "no debounce on selectOrderTypeAndStart", "file": "resources/js/components/frontend/kiosk/KioskIdleScreenComponent.vue", "line": 257-262},
+        {"claim": "cart ADD_ITEM dedup by content", "file": "resources/js/store/modules/kioskCart.js", "line": 258-263},
+        {"claim": "merge clamps to MAX_ITEM_QTY", "file": "resources/js/store/modules/kioskCart.js", "line": 264-271}
+      ],
+      "fragility_proof": {
+        "race_possible": "If first reset() resolves slowly, second tap could re-fire setOrderType() with stale state — minor visual glitch only (state converges)",
+        "existing_regression_guard": "tests/playwright/kiosk-spa-black-screen-guard.spec.js (per kioskRoutes.js:5 comment) covers fast-tap black-screen — historical regression already healed"
+      },
+      "recommendations": [
+        {"id": "S2-P3-01", "severity": "P3", "issue": "No explicit click-debounce on idle Commencer button — relies on vue-router idempotency", "fix": "Add `:disabled=startingOrder` + `startingOrder=true` flag for 300ms after first tap"}
+      ]
+    },
+    "S3_browser_back_forward_abuse": {
+      "verdict": "NEEDS_HEAL_P2",
+      "spec_expects": "Wizard étape 3 → browser back → graceful state OR reset ; forward → no error",
+      "actual_behavior": "Wizard step is in-component state (currentStepIndex), NOT URL-bound. Browser back exits kiosk.categories route entirely → KioskIdleScreenComponent.mounted() (line 240-241) dispatches kioskCart/reset → SAFE reset.",
+      "code_evidence": [
+        {"claim": "no popstate/beforeRouteLeave guards in kiosk components", "file": "(grep result)", "line": "0 matches"},
+        {"claim": "wizard step state not URL-bound", "file": "resources/js/components/frontend/kiosk/KioskWizardComponent.vue", "line": "52-91 (currentStepIndex in component data)"},
+        {"claim": "idle mount auto-clears cart", "file": "resources/js/components/frontend/kiosk/KioskIdleScreenComponent.vue", "line": 240-241},
+        {"claim": "wizard 'Précédent' uses currentStepIndex--", "file": "resources/js/components/frontend/kiosk/KioskWizardComponent.vue", "line": "73 (:disabled='currentStepIndex===0')"}
+      ],
+      "ux_inconsistency": "Wizard's own 'Précédent' button decrements currentStepIndex IN-PLACE (no URL change). Browser-back from same wizard JUMPS to /kiosk/idle (full reset). Two 'back' affordances with divergent semantics confuses impatient client.",
+      "data_integrity_proof": "No DB write before payment ; cart reset on idle mount ensures no zombie state",
+      "recommendations": [
+        {"id": "S3-P2-01", "severity": "P2", "issue": "Browser back from wizard exits to /kiosk/idle (loses in-progress wizard) — inconsistent with in-wizard 'Précédent' affordance", "fix": "Option A: window.history.pushState on wizard step change so browser-back == 'Précédent'. Option B: beforeRouteLeave dialog 'Quitter la commande ?'."}
+      ]
+    },
+    "S4_cart_fill_abandon": {
+      "verdict": "GREEN_WITH_TIMING_DISCREPANCY",
+      "spec_expects": "Add 5 items, 5 min idle → overlay → reset → cart cleared",
+      "actual_behavior": "kiosk.cart route IS in inactivity-eligible routes (NOT in noTimerRoutes). Timer fires at 150s warning + 180s reset (3 min, NOT 5 min). Reset dispatches kioskCart/reset → state.items=[] cleanly.",
+      "code_evidence": [
+        {"claim": "kiosk.cart not excluded", "file": "resources/js/components/frontend/kiosk/KioskAppComponent.vue", "line": 881},
+        {"claim": "resetKiosk dispatches kioskCart/reset + router.push idle", "file": "resources/js/components/frontend/kiosk/KioskAppComponent.vue", "line": 964-970},
+        {"claim": "no DB row created from cart-only state", "file": "resources/js/store/modules/kioskCart.js", "line": "submitOrder is the only POST trigger"}
+      ],
+      "db_integrity_proof": "Same as S1 — no orders/order_items DB row until POST /api/frontend/order at payment confirmation. Cart abandon = ZERO DB residue. VERIFIED: no zombie order possible.",
+      "recommendations": [
+        {"id": "S4-P3-01", "severity": "P3", "issue": "Spec 5min ≠ actual 3min default", "fix": "Same as S1 — align spec or admin settings."}
+      ]
+    },
+    "S5_multiple_sessions_overlap": {
+      "verdict": "GREEN_BY_DESIGN",
+      "spec_expects": "Quick consecutive orders from same kiosk → each session distinct",
+      "actual_behavior": "After confirmation, kiosk auto-resets to idle (KioskConfirmationComponent.vue:311 dispatch kioskCart/reset). Each new wizard generates fresh idempotency_key UUID v4 at kioskCart.js:702-709 (per NETDROP findings.json:14). Sanctum kiosk:order token is machine-bound (480min TTL), shared across sessions.",
+      "code_evidence": [
+        {"claim": "idempotency UUID per cart session", "file": "resources/js/store/modules/kioskCart.js", "line": "702-709 (cited NETDROP)"},
+        {"claim": "confirmation auto-reset", "file": "resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue", "line": 311},
+        {"claim": "kioskAnalytics.resetSession() per reset", "file": "resources/js/components/frontend/kiosk/KioskAppComponent.vue", "line": 968}
+      ],
+      "data_integrity_proof": "Each order has distinct idempotency_key (Vuex idempotency_key regenerated on submitOrder success or on resetKiosk). DB UNIQUE (branch_id, user_id, idempotency_key) prevents collision (migration 2026_05_24_023000_add_user_id_to_orders_idempotency_unique.php per NETDROP).",
+      "recommendations": []
+    },
+    "S6_payment_cancellation_plan_B_walkaway": {
+      "verdict": "NEEDS_HEAL_P1",
+      "spec_expects": "Plan B redirects to Caisse ; client walks away ; 5 min later returns with ticket → order findable ; after 30 min → auto-cancelled (V1.0.X cron documented)",
+      "actual_behavior": "Plan B routes to PENDING_COUNTER via FrontendOrderService:206-208 (per NETDROP context). Order persists in DB indefinitely — PosCounterCollectModal can encash any time. NO cron exists for cleanup of stale PENDING_COUNTER.",
+      "code_evidence": [
+        {"claim": "PENDING_COUNTER status enum", "file": "app/Enums/PaymentStatus.php", "line": 9},
+        {"claim": "Plan B routes to is_counter_deferred_kiosk_cash", "file": "app/Services/FrontendOrderService.php", "line": "206-208 (cited NETDROP)"},
+        {"claim": "NO cleanup cron in Kernel.php", "file": "app/Console/Kernel.php", "line": "(grep PENDING_COUNTER → 0 schedule matches)"},
+        {"claim": "NO PruneAbandoned* command exists", "file": "app/Console/Commands/", "line": "(only MonitorOutboxStaleness + ResetStaleDailyQuotaCommand)"}
+      ],
+      "operational_risk": "If 5 kiosk clients/day walk away without paying at Caisse, after 1 month = 150 phantom PENDING_COUNTER rows. Z report SHOULD exclude unpaid orders (verify Z report SQL filters on payment_status != PENDING_COUNTER), but UI dashboard 'Pending counter' count grows unbounded. NF525 chain unaffected (orders never closed) but operational hygiene degrades.",
+      "data_integrity_proof": "Order findable: YES (POS counter-collect query is status-agnostic, finds by order_id). Auto-cancellation: NO (no cron). Manual encashment ALWAYS possible — no expiry timestamp enforced.",
+      "recommendations": [
+        {"id": "S6-P1-01", "severity": "P1", "issue": "Plan B introduced PENDING_COUNTER deferred encashment WITHOUT cleanup cron — risk of unbounded stale rows", "fix": "Add app/Console/Commands/PruneAbandonedPendingCounterCommand.php (cancel PENDING_COUNTER orders older than configurable TTL, default 24h ; emit PendingCounterAbandoned event ; audit_log entry). Schedule in Kernel.php hourly. Verify Z report SQL still excludes PENDING_COUNTER. Document KIOSK_PENDING_COUNTER_TTL_HOURS env var."},
+        {"id": "S6-P2-02", "severity": "P2", "issue": "Z report exclusion of PENDING_COUNTER not yet verified", "fix": "Audit app/Services/Fiscal/ZReportService.php SQL for explicit WHERE payment_status NOT IN (PENDING_COUNTER, PENDING) — add SQL assertion test"}
+      ]
+    }
+  },
+  "frozen_zone_proof": {
+    "method": "read+test only mandate — zero product code touched",
+    "diff_assertion": "git diff --name-only HEAD post-task → ONLY reports/test-e2e/supervisor-wave-d-2026-05-28/PERS-CLIENT/findings.json + /tmp/foodking-wave-d-2026-05-28/pers-client/ (empty)",
+    "verdict": "ZERO §7 touch (read-only audit)",
+    "nf525_chain": "UNCHANGED — no fiscal write performed"
+  },
+  "summary": {
+    "scenarios_total": 6,
+    "verdicts": {
+      "GREEN_BY_DESIGN": 1,
+      "GREEN_BY_DESIGN_FRAGILE": 1,
+      "GREEN_WITH_TIMING_DISCREPANCY": 2,
+      "NEEDS_HEAL_P2": 1,
+      "NEEDS_HEAL_P1": 1
+    },
+    "p0_count": 0,
+    "p1_count": 1,
+    "p2_count": 2,
+    "p3_count": 3,
+    "overall_verdict": "NEEDS_HEAL",
+    "primary_blocker": "S6-P1-01: Plan B deferred encashment lacks abandoned-order cron — operational hygiene risk, NOT NF525 chain risk",
+    "client_impatient_handled": "PARTIAL — 4/6 scenarios green (with timing notes), 2/6 need targeted heal (S3 browser-back UX, S6 PENDING_COUNTER cleanup)"
+  },
+  "owner_manual_verify_5min": [
+    "1. Navigate /kiosk/idle on chromium ; tap 'Commencer' 10x in 2s → expect single navigation to /kiosk/categories (no duplicate ; no black screen)",
+    "2. Start Sandwich Cayenne wizard, advance to step 2, do nothing 2.5 min → expect 'Toujours là ?' overlay with 'Je suis là' / 'Abandonner' buttons (NOT 'Recommencer')",
+    "3. At step 3 of any wizard, press chromium back button → expect return to /kiosk/idle with cart cleared (in-place 'Précédent' button preferred — known UX inconsistency S3-P2-01)",
+    "4. Add 5 Bols to cart, wait 3 min on cart screen → expect overlay then full reset",
+    "5. Submit order Plan B (KIOSK_PAYMENT_ROUTE_ALL_TO_COUNTER=true) ; verify in admin POS /pos counter-collect modal shows the order ; verify NO auto-cancellation cron present (php artisan schedule:list | grep -i counter → empty)",
+    "6. Open /admin/orders filter status=PENDING_COUNTER older than 24h → confirm pile-up risk surface (operational not fiscal)"
+  ]
+}

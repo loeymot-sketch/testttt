@@ -1,0 +1,18 @@
+{
+  "app/Services/ItemService.php": {
+    "imports": true,
+    "dispatches": 2
+  },
+  "app/Services/ItemExtraService.php": {
+    "imports": true,
+    "dispatches": 1
+  },
+  "app/Services/ItemAddonService.php": {
+    "imports": true,
+    "dispatches": 1
+  },
+  "app/Services/ItemVariationService.php": {
+    "imports": true,
+    "dispatches": 1
+  }
+}

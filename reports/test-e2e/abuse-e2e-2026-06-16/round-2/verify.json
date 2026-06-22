@@ -1,0 +1,103 @@
+{
+  "round": 2,
+  "verifier": "adversarial-round-2",
+  "commit_under_test": "44f08f152",
+  "summary": {
+    "caisse_fmt_01": "fix_holds",
+    "a11y_edit_01": "fix_holds",
+    "new_p0": 0,
+    "new_p1": 0,
+    "new_p2": 3,
+    "new_p3": 1
+  },
+  "entries": [
+    {
+      "severity": "INFO",
+      "target": "CAISSE-FMT-01",
+      "file": "resources/js/components/admin/pos/PosComponent.vue:815,835,1145,2099,2107,2115,2123",
+      "title": "All 7 currencyFormat call sites pass a Number/numeric-expression first arg",
+      "reproduction": "Read each of the 7 call sites: 815 = bundledLineUnitTotal()*qty*qty (numeric), 835 = cart.total (numeric), 1145 = (subtotal+delivery)-discount (numeric), 2099/2107/2115/2123 = grandTotal/subtotal/posDiscount/delivery_charge||0 (all Number). None pass an already-formatted string.",
+      "evidence": "formatPrice(NaN)->'0,00 €' (guarded by Number.isFinite); no call site can corrupt display. Vector (a) clean.",
+      "verdict": "fix_holds"
+    },
+    {
+      "severity": "INFO",
+      "target": "CAISSE-FMT-01",
+      "file": "resources/js/components/admin/pos/PosComponent.vue:954,958,965,971,989",
+      "title": "Display computed props are consumed only as template/prop values, never parsed back to a number",
+      "reproduction": "grep grandTotalDisplay/subtotalDisplay/posDiscountDisplay/deliveryChargeDisplay across resources/js: only consumers are :value props of PosV5TotalRow and {{ }} interpolation. No parseFloat/Number() reads the NBSP/comma string for any payment amount.",
+      "evidence": "Payment amount path (counter-collect/confirm) never receives a frontend total; backend reads $order (PricingService SSOT). Vector (b) clean — no mischarge risk.",
+      "verdict": "fix_holds"
+    },
+    {
+      "severity": "INFO",
+      "target": "CAISSE-FMT-01",
+      "file": "resources/js/services/appService.js:71-77 + settings DB",
+      "title": "Dropped decimal/currency/position args are no-ops for this deployment",
+      "reproduction": "DB settings: site_currency_position=10 (=RIGHT/suffix per currencyPositionEnum.js), site_digit_after_decimal_point=2, symbol=€. Old appService produced '5.30€' (suffix/period/glued); formatPrice produces '5,30 €' (suffix/comma/NBSP). Same RIGHT position + 2 decimals — only cosmetic FR-correctness change.",
+      "evidence": "No caller relied on LEFT-prefix or non-2 decimals; FROZEN PaymentComponent.vue keeps its own appService.currencyFormat (git diff empty). Vectors (c)+(d) clean.",
+      "verdict": "fix_holds"
+    },
+    {
+      "severity": "INFO",
+      "target": "A11Y-EDIT-01",
+      "file": "resources/js/components/admin/items/ItemListComponent.vue:87,173,241",
+      "title": "type=button change is a behavioral no-op: edit buttons sit OUTSIDE the search <form>",
+      "reproduction": "Search <form> spans 87-173 (</form> at 173); SmIconSidebarModalEditComponent is at 241 (below the form, in the table). It carries @click='edit(item)'. Even with the prior default type=submit, a button outside any form does not submit. Same structure across all list components.",
+      "evidence": "Action is always driven by @click, never by form submission. Vector (a) clean — no submit behavior was ever relied upon.",
+      "verdict": "fix_holds"
+    },
+    {
+      "severity": "INFO",
+      "target": "A11Y-EDIT-01",
+      "file": "resources/js/app.js:190 + buttons/SmIconDeleteComponent.vue",
+      "title": "$t always available; editLabel collides with nothing; mirrors existing Delete convention byte-for-byte",
+      "reproduction": "app.use(i18n) at app.js:190 installs $t on every admin instance. grep editLabel: only the two edit components define it; no host passes an editLabel prop. The computed is identical in shape to the already-shipped SmIconDeleteComponent.deleteLabel.",
+      "evidence": "Vitest smIconEditA11y 4/4 + posCurrencyFormatFr 3/3 pass. Vector (b) clean.",
+      "verdict": "fix_holds"
+    },
+    {
+      "severity": "P2",
+      "target": "NEW",
+      "file": "resources/js/components/admin/coupons/CouponCreateComponent.vue:412-415",
+      "title": "Coupon create: service-level 422 (no errors key) swallowed with no toast — but realistic user-input failures are FormRequest-validated",
+      "reproduction": "CouponController::store catch returns response(['status'=>false,'message'=>...],422) WITHOUT an 'errors' key; CouponService throws Exception(...,422) on QueryException. Frontend catch sets this.errors = err.response.data.errors (=undefined), spinner clears, global interceptor (app.js:82) only handles 401 -> no toast. HOWEVER the headline repro (duplicate code) is caught at FormRequest CouponRequest.php:44,47 (Rule::unique name+code) which returns a PROPER Laravel 422 WITH errors key -> field error displays correctly. Only a genuine DB QueryException race / infra failure (non-user-triggerable) hits the silent path.",
+      "evidence": "Downgraded from the round-1 agent's P1 claim: the cited reproduction is validation-caught. Real swallow surface is rare/non-user-input -> P2 degraded-feedback, not P1.",
+      "verdict": "new_defect"
+    },
+    {
+      "severity": "P2",
+      "target": "NEW",
+      "file": "resources/js/components/admin/customers/CustomerCreateComponent.vue:231-234",
+      "title": "Customer create: identical swallow twin — duplicate email/phone/username are FormRequest-validated, only service QueryException/permission_denied swallowed",
+      "reproduction": "CustomerController::store -> CustomerService throws Exception(...,422) (incl. permission_denied). Frontend catch sets this.errors = err.response.data.errors (undefined), no toast. BUT email/username/phone uniqueness is enforced at CustomerRequest.php:34,44,54 (Rule::unique) -> proper 422 with errors key -> field errors show. Only the rare service-exception path is silent.",
+      "evidence": "Systemic twin of the coupon swallow; same P2 downgrade rationale (validation shadows the user-triggerable failures).",
+      "verdict": "new_defect"
+    },
+    {
+      "severity": "P2",
+      "target": "NEW",
+      "file": "resources/js/components/admin/itemsReport/ItemsReportListComponent.vue:316-320,122-125",
+      "title": "Items report on-screen 'Total' footer sums only the current paginated page (<=10 rows), disagrees with its own full-set Excel export",
+      "reproduction": "subTotal reducer sums parseInt(ele.order) over the store getter which holds only res.data.data (per_page:10). tfoot labels it {{ $t('label.total') }}. The Excel export (app/Exports/ItemsReportExport.php:26-50) forces paginate=0 and sums over all 46 items. Same report, two 'Total' numbers disagree whenever >10 items exist.",
+      "evidence": "Item::count()=46 in e2e DB. Units-sold count (not money / not NF525) -> P2, internally inconsistent but non-fiscal.",
+      "verdict": "new_defect"
+    },
+    {
+      "severity": "P3",
+      "target": "NEW",
+      "file": "resources/js/components/admin/itemsReport/ItemsReportListComponent.vue:337-339; SalesReportListComponent.vue:483-485; CreditBalanceReportComponent.vue:236-238",
+      "title": "Report list() catches clear spinner with no error toast -> a backend 4xx/5xx renders as the 'no data available' empty-state",
+      "reproduction": "list() .catch((err)=>{ this.loading.isActive=false; }) with no alertService.error (unlike the export .catch which DOES toast). On a 422 the list stays empty and the v-else empty-state shows -> a real error is indistinguishable from genuinely-empty.",
+      "evidence": "Read-only attended surface, operator can re-filter/retry, data not corrupted -> P3.",
+      "verdict": "new_defect"
+    }
+  ],
+  "surfaces_verified_clean": [
+    "POS encaissement / counter-collect/confirm (routes/api.php:848-889): validates only mode/received/note, NO frontend total accepted; amount from confirmCounterPayment($order) = PricingService SSOT; 409 already-collected + generic catch toast; no cart!=receipt!=backend mismatch",
+    "Ingredients (IngredientListComponent.vue): store-state error surfaced via role=alert + Retry; fr.json keys present",
+    "Stock-rupture dashboard: loadAll catch sets errorMessage (role=alert), optimistic toggle rolls back on failure; all admin.stock_mgmt.* keys present",
+    "Sales report overview cards: backend aggregate over full filtered PAID/realized-net set, no double-count / no mirror leak / no internal-category leak",
+    "Frozen PaymentComponent.vue + PosV5TrancheRow.vue + KioskWizardComponent.vue + pos-wizard.js/css: git diff empty for 44f08f152"
+  ]
+}

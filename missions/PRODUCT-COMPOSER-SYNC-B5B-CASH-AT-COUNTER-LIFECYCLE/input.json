@@ -1,0 +1,23 @@
+{
+  "task_id": "PRODUCT-COMPOSER-SYNC-B5B-CASH-AT-COUNTER-LIFECYCLE",
+  "execution_date": "2026-04-27",
+  "delegation": "codex-extension",
+  "source_plan": "reports/audit/CLAUDE_PRODUCT_COMPOSER_FINAL_EXECUTION_PLAN_2026-04-27.md",
+  "mission": "Implement kiosk cash-at-counter lifecycle with NF525 guard, POS collection actions, KDS pending-payment visibility, outbox eventing, and regression tests.",
+  "gates": {
+    "HG_FROZEN_ORDERSERVICE_UNLOCK": "approved in source plan for one strict B5b hunk/service",
+    "fiscal_kiosk_scope": "counter-deferred orders must not allocate fiscal_sequence_no until POS collection"
+  },
+  "business_decisions": {
+    "kiosk_cash": "order is created and sent to KDS as payment pending at counter",
+    "pos_confirm": "allocates fiscal sequence and creates payment transaction",
+    "pos_cancel": "cancels order, releases stock via OrderCanceled, never allocates fiscal sequence"
+  },
+  "invariants": [
+    "backend remains payment/pricing SSOT",
+    "branch isolation is enforced by route model scope and service guard",
+    "domain events dispatch after commit",
+    "OrderService and FrontendOrderService parity was considered",
+    "no frontend price authority was introduced"
+  ]
+}

@@ -1,0 +1,380 @@
+{
+  "audit": "FoodKing FULL AUDIT 2026-05-29 — PERF (DB + Bundle + LCP)",
+  "head": "5032dc158",
+  "branch": "feature/mobile-app-le-cayenne-2026-05-10",
+  "dataset": {
+    "items": 45,
+    "orders": 191,
+    "order_items": 151,
+    "order_payments": 2,
+    "audit_logs": 165,
+    "context": "V1 LOCAL Le Cayenne single-restaurant single-tenant — small dataset; index health visible only at scale"
+  },
+  "env": {
+    "db": "MySQL 9.6.0",
+    "slow_query_log": "OFF",
+    "long_query_time_s": 10,
+    "php": "8.2.30",
+    "method": "Service-layer probe via tinker + Laravel QueryLog; LCP via Playwright PerformanceObserver / paint entries; HTTP curl warm timings against dev server"
+  },
+
+  "endpoints": [
+    {
+      "id": "frontend_menu",
+      "route": "GET /api/frontend/menu",
+      "controller": "Frontend\\MenuController::kiosk -> Services\\Kiosk\\KioskMenuService::build",
+      "queries_cold": 46,
+      "queries_warm": 46,
+      "service_elapsed_ms_cold": 236.25,
+      "service_elapsed_ms_warm": 136.83,
+      "db_time_ms_cold": 116.3,
+      "db_time_ms_warm": 61.84,
+      "curl_warm_total_ms": 21.16,
+      "response_bytes": 167832,
+      "n_plus_1_detected": [
+        {
+          "shape": "select * from `media` where `media`.`model_id` in (?) and `media`.`model_type` = ?",
+          "count": 11,
+          "source": "Spatie MediaLibrary polymorphic eager-load; not strictly N+1 but called 11 times across Item.thumb/cover/preview accessors and addonItem.media chain"
+        },
+        {
+          "shape": "select * from `stock_levels` where `branch_id` = ? and ((`stockable_type` = ? and `stockable_id` in ...) ...)",
+          "count": 8,
+          "source": "ChoiceAvailabilityResolver::snapshotForItem called PER ITEM by ComposerProfileProjection::project (line 26) from inside the per-item map at KioskMenuService.php:376. Each wizard-enabled item triggers 1 stock_levels query"
+        },
+        {
+          "shape": "select * from `item_branch_availability` where `branch_id` = ? and `item_id` in (?)",
+          "count": 8,
+          "source": "Same root as stock_levels — paired snapshotForItem call. 8 wizard items × 2 queries = 16 of the 46 total queries are addressable N+1"
+        }
+      ],
+      "verdict": "NEEDS_OPTIMIZATION",
+      "headroom_estimate": "drop 14 of 46 queries (~30%) by routing ComposerProfileProjection to use the already-batched $choiceAvailability built at KioskMenuService.php:292 instead of re-resolving snapshotForItem per item",
+      "fix_pointers": [
+        "app/Services/Kiosk/KioskMenuService.php:376 — passes only ($composerProfiles->get($item->id), $item, surface, $branchId) — extend signature with $itemChoiceAvailability",
+        "app/Services/Composer/ComposerProfileProjection.php:25-27 — short-circuit snapshotForItem when caller supplies pre-batched snapshot"
+      ]
+    },
+    {
+      "id": "kds_order_sync",
+      "route": "GET /api/admin/kds-order/sync",
+      "controller": "KdsSyncController::sync -> KdsSyncService::sync",
+      "queries": 7,
+      "service_elapsed_ms": 32.58,
+      "db_time_ms": 18.93,
+      "curl_warm_total_ms": 52.84,
+      "response_bytes": 3356,
+      "n_plus_1_detected": [],
+      "verdict": "HEALTHY"
+    },
+    {
+      "id": "kds_order_index",
+      "route": "GET /api/admin/kds-order",
+      "controller": "KitchenDisplaySystemController::index",
+      "queries": 1,
+      "service_elapsed_ms": 1.05,
+      "db_time_ms": 0.82,
+      "curl_warm_total_ms": 40.87,
+      "response_bytes": 11758,
+      "n_plus_1_detected": [],
+      "verdict": "HEALTHY",
+      "note": "Service-layer baseline simulates Order::with([items,customer,branch]) — actual controller likely does same; clean"
+    },
+    {
+      "id": "oss_order_index",
+      "route": "GET /api/admin/oss-order",
+      "controller": "OrderStatusScreenController::index",
+      "queries": 1,
+      "service_elapsed_ms": 0.75,
+      "db_time_ms": 0.57,
+      "curl_warm_total_ms": 23.71,
+      "response_bytes": 127,
+      "n_plus_1_detected": [],
+      "verdict": "HEALTHY"
+    },
+    {
+      "id": "dashboard_total_sales",
+      "route": "GET /api/admin/dashboard/total-sales",
+      "controller": "DashboardController::totalSales",
+      "queries": 1,
+      "service_elapsed_ms": 1.26,
+      "db_time_ms": 1.15,
+      "curl_warm_total_ms": 24.48,
+      "response_bytes": 45,
+      "n_plus_1_detected": [],
+      "verdict": "HEALTHY",
+      "note": "Single SUM(total) aggregate — index orders.idx_orders_status used"
+    },
+    {
+      "id": "dashboard_realtime",
+      "route": "GET /api/admin/dashboard/realtime-report",
+      "controller": "DashboardController::realtimeReport",
+      "queries": 4,
+      "service_elapsed_ms": 4.06,
+      "db_time_ms": 3.56,
+      "curl_warm_total_ms": 25.83,
+      "response_bytes": 97,
+      "n_plus_1_detected": [],
+      "verdict": "HEALTHY"
+    },
+    {
+      "id": "item_index",
+      "route": "GET /api/admin/item",
+      "controller": "ItemController::index",
+      "queries": 1,
+      "service_elapsed_ms": 0.43,
+      "db_time_ms": 0.33,
+      "curl_warm_total_ms": 51.38,
+      "response_bytes": 27534,
+      "n_plus_1_detected": [],
+      "verdict": "HEALTHY"
+    },
+    {
+      "id": "pos_order_index",
+      "route": "GET /api/admin/pos-order",
+      "controller": "PosOrderController::index",
+      "queries": 1,
+      "service_elapsed_ms": 1.2,
+      "db_time_ms": 1.05,
+      "curl_warm_total_ms": 72.16,
+      "response_bytes": 124357,
+      "n_plus_1_detected": [],
+      "verdict": "HEALTHY",
+      "note": "124KB response — largest payload but single batched query; index orders.idx_orders_datetime used"
+    },
+    {
+      "id": "cash_overview",
+      "route": "GET /api/admin/cash-overview",
+      "controller": "CashOverviewController::index",
+      "queries": 2,
+      "service_elapsed_ms": 2.12,
+      "db_time_ms": 1.1,
+      "curl_warm_total_ms": 37.06,
+      "response_bytes": 1565,
+      "n_plus_1_detected": [],
+      "verdict": "HEALTHY"
+    },
+    {
+      "id": "observability_outbox",
+      "route": "GET /api/admin/observability/outbox",
+      "controller": "Observability\\SyncOverviewController::outboxOverview",
+      "queries": 3,
+      "service_elapsed_ms": 11.94,
+      "db_time_ms": 11.49,
+      "curl_warm_total_ms": 48.33,
+      "response_bytes": 13540,
+      "n_plus_1_detected": [],
+      "verdict": "HEALTHY"
+    }
+  ],
+
+  "indexes": {
+    "orders": {
+      "covered": [
+        "PRIMARY(id)",
+        "orders_branch_fiscal_seq_unique(branch_id, fiscal_sequence_no)",
+        "orders_branch_business_date_queue_unique(branch_id, business_date, queue_number)",
+        "orders_branch_user_idempotency_unique(branch_id, user_id, idempotency_key)",
+        "idx_orders_branch_status(branch_id, status)",
+        "idx_orders_user_id(user_id)",
+        "idx_orders_datetime(order_datetime)",
+        "idx_orders_status(status)"
+      ],
+      "verdict": "WELL_COVERED",
+      "note": "Composite (branch_id,status) covers all KDS/POS hot WHERE clauses"
+    },
+    "audit_logs": {
+      "covered": [
+        "PRIMARY(id)",
+        "audit_logs_branch_prev_unique(branch_id, prev_hash) — NF525 chain integrity",
+        "audit_logs_branch_id_created_at_index(branch_id, created_at)",
+        "audit_logs_resource_resource_id_index(resource, resource_id)",
+        "audit_logs_branch_id_index(branch_id)",
+        "audit_logs_user_id_index(user_id)"
+      ],
+      "verdict": "WELL_COVERED"
+    },
+    "items": {
+      "covered": [
+        "PRIMARY(id)",
+        "idx_items_status_category(status, item_category_id)",
+        "idx_items_id_price(id, price)",
+        "items_upsell_status_index(is_upsell, status)",
+        "items_is_chef_pick_idx(is_chef_pick)",
+        "items_kiosk_filters_idx(is_available, is_halal, is_vegetarian)",
+        "items_barcode_idx(barcode)",
+        "items_kds_station_index(kds_station)"
+      ],
+      "verdict": "WELL_COVERED"
+    },
+    "order_items": {
+      "covered": [
+        "PRIMARY(id)",
+        "order_items_branch_id_foreign(branch_id)",
+        "order_items_item_id_foreign(item_id)",
+        "idx_order_items_order_id(order_id)"
+      ],
+      "verdict": "WELL_COVERED"
+    },
+    "order_payments": {
+      "covered": [
+        "PRIMARY(id)",
+        "order_payments_order_id_mode_index(order_id, mode)",
+        "order_payments_branch_id_paid_at_index(branch_id, paid_at)",
+        "order_payments_terminal_id_index(terminal_id)"
+      ],
+      "verdict": "WELL_COVERED"
+    },
+    "missing": []
+  },
+
+  "slow_query_log": {
+    "enabled": false,
+    "long_query_time_s": 10,
+    "verdict": "INFO_NOT_AVAILABLE",
+    "recommendation_v1": "OFF on V1 LOCAL Le Cayenne is acceptable (small dataset, dev box). For V1.0.X cloud-prep backlog: enable slow_query_log with long_query_time=1 in MySQL prod my.cnf, log to /var/log/mysql/slow.log + pt-query-digest cron"
+  },
+
+  "lcp_measurements": [
+    {
+      "surface": "login (/login)",
+      "note": "Auth was sticky during this session — fresh /login was redirected. Document instead: login Blade is the same SPA shell; the login surface lazy-loads ONLY the login form Vue chunk + admin-shell + app.js. Equivalent stack ≈ admin dashboard.",
+      "fcp_ms_estimate": "~3300ms based on stack parity",
+      "lcp_ms": null,
+      "transferred_kb": "~12000-13000"
+    },
+    {
+      "surface": "kiosk-idle (/kiosk/idle)",
+      "fcp_ms": 3380,
+      "lcp_ms_observed": null,
+      "lcp_note": "PerformanceObserver returned no LCP entries — single low-imagery idle splash; FCP ≈ LCP proxy",
+      "transferred_kb": 11423,
+      "top_bundles_kb": [
+        { "name": "app.js", "kb": 7178 },
+        { "name": "vendor.js", "kb": 1890 },
+        { "name": "pos-wizard.js", "kb": 290 }
+      ],
+      "verdict": "OVER_BUDGET"
+    },
+    {
+      "surface": "admin-pos (/admin/pos)",
+      "fcp_ms": 3320,
+      "lcp_ms_observed": null,
+      "transferred_kb": 17881,
+      "top_bundles_kb": [
+        { "name": "app.js", "kb": 7178 },
+        { "name": "admin-shell.js", "kb": 6165 },
+        { "name": "vendor.js", "kb": 1890 },
+        { "name": "pos-wizard.js", "kb": 290 }
+      ],
+      "verdict": "OVER_BUDGET"
+    },
+    {
+      "surface": "kds (/admin/kitchen-display-system)",
+      "fcp_ms": 3324,
+      "lcp_ms_observed": null,
+      "transferred_kb": 12273,
+      "top_bundles_kb": [
+        { "name": "app.js", "kb": 7178 },
+        { "name": "vendor.js", "kb": 1890 },
+        { "name": "admin-kds.js", "kb": 555 },
+        { "name": "pos-wizard.js", "kb": 290 }
+      ],
+      "verdict": "OVER_BUDGET"
+    },
+    {
+      "surface": "oss (/admin/order-status-screen)",
+      "fcp_ms": 3284,
+      "lcp_ms_observed": null,
+      "transferred_kb": 11855,
+      "top_bundles_kb": [
+        { "name": "app.js", "kb": 7178 },
+        { "name": "vendor.js", "kb": 1890 },
+        { "name": "pos-wizard.js", "kb": 290 },
+        { "name": "admin-oss.js", "kb": 93 }
+      ],
+      "verdict": "OVER_BUDGET"
+    },
+    {
+      "surface": "dashboard (/admin/dashboard)",
+      "fcp_ms": 3269,
+      "lcp_ms_observed": 3396,
+      "transferred_kb": 17927,
+      "top_bundles_kb": [
+        { "name": "app.js", "kb": 7178 },
+        { "name": "admin-shell.js", "kb": 6165 },
+        { "name": "vendor.js", "kb": 1890 },
+        { "name": "pos-wizard.js", "kb": 290 }
+      ],
+      "verdict": "OVER_BUDGET"
+    }
+  ],
+
+  "bundle_audit": {
+    "app_js_kb": 7178,
+    "app_js_mb": 7.18,
+    "admin_shell_js_kb": 6165,
+    "admin_shell_js_mb": 6.17,
+    "vendor_js_kb": 1890,
+    "vendor_js_mb": 1.89,
+    "pos_app_js_kb_disk": 6711,
+    "kiosk_shell_js_kb_disk": 675,
+    "admin_kds_js_kb_disk": 555,
+    "admin_oss_js_kb_disk": 93,
+    "admin_reports_js_kb_disk": 345,
+    "total_admin_surface_initial_load_kb": 15523,
+    "total_admin_surface_initial_load_mb": 15.5,
+    "observations": [
+      "app.js (7.18MB) is loaded on EVERY surface including kiosk-idle and OSS. This single bundle dominates parse/eval time on every page load.",
+      "admin-shell.js (6.17MB) is additional admin-only bundle — loaded on POS+dashboard but not on kiosk-idle/OSS surfaces (good).",
+      "pos-wizard.js (290KB transfer / unminified ~296KB on disk) is the Vanilla JS POS wizard — FROZEN ZONE per CLAUDE.md §7. Loaded on every admin surface because served via {{ asset('js/pos-wizard.js') }} in admin-pos-v4.blade.php.",
+      "Parse time NOT directly measured (Chrome devtools required) — but transferSize duration + FCP ≈ 3300ms across ALL surfaces tells the story: app.js+vendor.js are blocking initial paint."
+    ],
+    "verdict": "NEEDS_OPTIMIZATION",
+    "fix_hints": [
+      "Split app.js: surface-specific entry chunks (kiosk-app, pos-app, kds-app, oss-app) instead of monolithic app.js loaded everywhere",
+      "Lazy-import Vue route components — currently FCP=3300ms suggests synchronous full-tree parse",
+      "Defer pos-wizard.js to admin-pos surface only via Blade conditional (currently loaded on every blade extending the admin layout)",
+      "vendor.js (1.89MB) is unlikely splittable without breaking change — accept as baseline",
+      "Owner mandate FROZEN ZONE on pos-wizard.js: do NOT modify content; load conditionally via {{ ... }} guard in admin Blade — design intact, network footprint reduced"
+    ]
+  },
+
+  "budget_summary": {
+    "fcp_target_ms": 1800,
+    "lcp_target_ms": 2500,
+    "fcp_actual_avg_ms": 3315,
+    "fcp_overrun_pct": 84,
+    "verdict_global": "ALL_SURFACES_OVER_FCP_BUDGET",
+    "note_v1_local": "V1 LOCAL Le Cayenne single-box dev server — FCP=3.3s acceptable for in-store kiosk/admin (not customer mobile web). For V1.0.X cloud-prep backlog: bundle split is REQUIRED before cloud + mobile customer surfaces are wired."
+  },
+
+  "final_verdict": "NEEDS_OPTIMIZATION",
+  "summary": [
+    "DB layer: 9 of 10 endpoints HEALTHY (1-7 queries, all <12ms). One real N+1 finding on /api/frontend/menu (46 queries, 16 addressable).",
+    "Index coverage: WELL_COVERED on all 5 hot tables — no missing indexes detected for current query shapes.",
+    "Slow query log: OFF (acceptable V1 LOCAL, V1.0.X cloud-prep backlog item).",
+    "Bundle: ALL surfaces over FCP 1.8s budget (avg 3315ms = 84% overrun). app.js 7.18MB + admin-shell.js 6.17MB are the dominant blockers.",
+    "LCP: PerformanceObserver returned mostly null because Le Cayenne admin UI emits FCP ≈ LCP (single-image splash + DOM tree). Only dashboard surfaced LCP=3396ms — over 2.5s budget by 36%."
+  ],
+  "p0_p1_findings": [
+    {
+      "id": "PERF-P1-01",
+      "severity": "P1",
+      "title": "ComposerProfileProjection re-runs ChoiceAvailabilityResolver::snapshotForItem per wizard item — 16 redundant queries on /api/frontend/menu",
+      "evidence": "Service-level QueryLog probe shows 8x stock_levels + 8x item_branch_availability with whereIn `item_id` of single id ; ComposerProfileProjection.php:26 calls snapshotForItem inside KioskMenuService.php:376 map; KioskMenuService.php:292 already batched the same data into $choiceAvailability",
+      "fix_scope_lines": 8,
+      "frozen_zone": "no",
+      "v1_blocker": "no (current 46 queries / 137ms warm acceptable for V1 LOCAL single kiosk box)"
+    },
+    {
+      "id": "PERF-P1-02",
+      "severity": "P1",
+      "title": "FCP 3315ms avg across 5 surfaces — app.js 7.18MB blocks initial paint",
+      "evidence": "Playwright PerformanceObserver paint entries on /kiosk/idle, /admin/pos, /admin/kitchen-display-system, /admin/order-status-screen, /admin/dashboard — all FCP between 3269ms and 3380ms; app.js dominates transferSize on every page",
+      "fix_scope_lines": "webpack.mix.js + per-blade @push('scripts') conditional load — est. 50-100 lines",
+      "frozen_zone": "partial — pos-wizard.js FROZEN, but blade conditional loading does not modify its content",
+      "v1_blocker": "no for in-store local; YES for V1.0.X cloud + mobile customer wireup"
+    }
+  ]
+}

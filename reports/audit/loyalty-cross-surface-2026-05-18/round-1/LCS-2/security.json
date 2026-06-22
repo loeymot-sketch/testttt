@@ -1,0 +1,145 @@
+{
+  "role": "Security",
+  "zone": "LOYALTY cross-surface anti-fraud",
+  "scope": "QR signature, Wallet token security, replay/OCR/tamper/double-tap/race attacks",
+  "timestamp": "2026-05-18",
+  "threat_model_axes": [
+    "A1: clipboard replay (mobile -> kiosk scanner) — same code reused indefinitely",
+    "A2: screenshot OCR — screenshot of QR on phone, presented at kiosk later or by different person",
+    "A3: localStorage tamper — modify cached balance / loyalty_code in mobile UI",
+    "A4: double-tap redeem — two rapid POST /loyalty/redeem requests with same code, same amount",
+    "A5: browser-back mid-wizard — kiosk wizard rolls back after redeem, points already deducted",
+    "A6: cross-surface race — earn from POS while redeem in progress on kiosk",
+    "A7: QR enumeration — kiosk:order token compromise enables mass loyalty_code scanning"
+  ],
+  "controls_inventory": {
+    "QR_signature": {
+      "claimed": "SHA-256 mock signature client-side (mobile/data/loyalty.js:168 'V0 backend scan() strips FK: prefix and matches loyalty_code — IGNORES signature')",
+      "actual": "ABSENT — LoyaltyController::scan (line 611) does `if (stripos($raw, 'FK:') === 0) $code = substr($raw, 3)` then User::where('loyalty_code', strtoupper($code))->first(). NO signature parsing, NO nonce verification, NO TTL check.",
+      "verdict": "P0 — control absent. QR is non-revocable plaintext credential. Mobile 5min rotation is purely cosmetic UX."
+    },
+    "QR_TTL": {
+      "claimed": "5min refresh in mobile useLoyaltyQR hook (chained setTimeout, refresh 60s before expires_at)",
+      "actual": "Client-side timer only. Server accepts any FK:<code> regardless of mobile-stamped expires_at. expires_at not transmitted to server in scan request.",
+      "verdict": "P0 — TTL is UX only, not security boundary."
+    },
+    "loyalty_code_format": "8 alphanum (uppercase). Generated at register time. UNIQUE on users.loyalty_code. Enumeration space = 36^8 = ~2.8 trillion, but real-world distribution is sparse — actual customer codes likely guessable via username/phone pattern. No rate limit on /loyalty/scan beyond throttle:20,1 per token.",
+    "auth_layer": {
+      "scan_endpoint": "auth:sanctum + throttle:20,1 + inline tokenCan('kiosk:order') check (LoyaltyController:579). Token compromise gates entire scan endpoint.",
+      "redeem_endpoint": "auth:sanctum only (routes/api.php:1278). NO throttle. Inline check: isKiosk = tokenCan('kiosk:order') OR isStaff = hasAnyRole. Customer-self-redeem allowed via caller->id === user->id.",
+      "balance_endpoint": "auth:sanctum, NO throttle, GET method (1279)",
+      "check_endpoint": "auth:sanctum + throttle:10,1 (1271). Strongest control of read endpoints.",
+      "register_endpoint": "PUBLIC (no auth) + throttle:5,1 (1272). Acceptable for new customer self-registration.",
+      "opt_in_endpoint": "PUBLIC + throttle:5,1 (1319). RGPD consent + LoyaltyConsent ledger."
+    },
+    "race_protection": {
+      "redeem": "DB::transaction + lockForUpdate on User row (LoyaltyController:273-323). Multiple-of-rate validation (line 294) prevents micro-transactions.",
+      "earn": "Atomic UPDATE WHERE loyalty_points_awarded IS NULL AND status != CANCELED (AwardLoyaltyPointsOnDelivery:52-56). Sentinel -1 = in-flight; only one concurrent process wins.",
+      "refund": "lockForUpdate on User row (non-sqlite) (LoyaltyService:43)."
+    },
+    "idempotency": {
+      "claimed": "Mobile sends Idempotency-Key header on /loyalty/redeem (mobile/data/loyalty.js:24, B-02)",
+      "actual": "Route /loyalty/redeem at api.php:1278 has middleware ['auth:sanctum'] ONLY — IdempotencyKeyMiddleware NOT applied. DB transaction prevents the visible race but does NOT prevent the same key being used at a different time to produce two ledger rows for legitimate distinct attempts.",
+      "verdict": "P1 — route-level idempotency missing; defensive depth absent."
+    },
+    "wallet_token_security": "N/A — Apple/Google Wallet not implemented. WALLET_PLAN.md spec calls for RS256 JWT (Google) + pkpass signing (Apple). When implemented: use AsymmetricKey signing, never HMAC short-key. CVE-2025-45769 mitigated by RS256.",
+    "consent_audit": "LoyaltyConsent table records ip_hash + ua_hash + privacy_notice_version on opt-in. GDPR-compliant trail.",
+    "ledger_immutability": "loyalty_transactions has no DB trigger preventing DELETE/UPDATE. Migration 2026_03_26_075919 added UNIQUE constraint (verify content). NOT chain-signed like audit_logs."
+  },
+  "findings": [
+    {
+      "id": "LCS-S-001",
+      "severity": "P0",
+      "title": "QR code signature is unverified server-side — payload is non-revocable plaintext credential",
+      "threat_axes": ["A1", "A2"],
+      "exploit": "Attacker captures FK:A1B2C3D4 from a victim's mobile screen (screenshot, OCR, clipboard read on shared device, photo of QR shown to friend, NFC-side-channel on shared phone). Attacker presents same code at any kiosk via the legitimate kiosk scanner. Backend matches loyalty_code directly, returns balance + customer_token, allowing the attacker to redeem the victim's points up to the rate limit. The 5min mobile rotation does NOTHING — server has no notion of rotation.",
+      "evidence": [
+        "app/Http/Controllers/Frontend/LoyaltyController.php:609-635 — code = substr($raw, 3), no signature/nonce/TTL parsing",
+        "mobile/data/loyalty.js:166-168 — 'V0 backend scan() strips FK: prefix and matches loyalty_code — IGNORES signature'",
+        "mobile/WALLET_PLAN.md:51 — Wallet pass barcode.message = 'FK:<loyalty_code>' (saved permanently in Apple/Google Wallet)",
+        "mobile/components/LoyaltyQR.jsx — QR visual rotates but payload is static FK:<loyalty_code> for V0"
+      ],
+      "controls_missing": [
+        "No HMAC-keyed signature verification on scan endpoint",
+        "No nonce/jti in QR payload",
+        "No expires_at parameter accepted by /loyalty/scan",
+        "No once-only flag on (user_id, nonce) pair to prevent replay"
+      ],
+      "recommendation": "P0 FIX: implement /loyalty/qr/sign endpoint returning {payload, signature, expires_at, nonce}. Modify scan() to parse payload as JSON or signed-string, verify HMAC via config('app.key'), reject if expires_at < now() OR nonce already consumed. Wallet pass barcode should embed signed JWT, not raw FK:code. Mobile useLoyaltyQR already wired to consume {payload, signature, expires_at} — only backend implementation missing."
+    },
+    {
+      "id": "LCS-S-002",
+      "severity": "P1",
+      "title": "/loyalty/redeem lacks route-level Idempotency-Key enforcement",
+      "threat_axes": ["A4", "A6"],
+      "exploit": "Network retry on slow mobile connection causes browser to re-POST /loyalty/redeem. Both requests share the same Idempotency-Key from mobile client (B-02 spec). Without middleware enforcement, server processes them as distinct transactions. DB::transaction + lockForUpdate serializes them, but BOTH succeed if balance still >= pointsToRedeem after first decrement (e.g. user had 500 pts, redeems 100 -> 400 -> retry decrements again -> 300 — DOUBLE REDEEM, two ledger rows). Effectively a double-spend on retry.",
+      "evidence": [
+        "routes/api.php:1278 — Route::post('/redeem', ...)->middleware(['auth:sanctum']) — no idempotency middleware",
+        "app/Http/Controllers/Frontend/LoyaltyController.php:273 — DB::transaction wraps single redeem, no key check",
+        "mobile/data/loyalty.js:24 — 'Idempotency-Key header on /loyalty/redeem (B-02)' — client sends but server ignores"
+      ],
+      "controls_missing": "IdempotencyKeyMiddleware applied to /loyalty/redeem route. Middleware exists in app/Http/Middleware/IdempotencyKeyMiddleware.php (FROZEN list per CLAUDE.md §7) — need to ADD it to redeem route group, not modify middleware.",
+      "recommendation": "P1 FIX: change route to ->middleware(['auth:sanctum', 'idempotency']) for /add-points and /redeem. Existing IdempotencyKeyMiddleware uses (branch_id, user_id, hash(key)) scope per CLAUDE.md §9 — no modification needed."
+    },
+    {
+      "id": "LCS-S-003",
+      "severity": "P2",
+      "title": "loyalty_transactions ledger is not append-only enforced",
+      "threat_axes": ["A3"],
+      "exploit": "Compromised DB credential (e.g. via misconfigured ENV) allows DELETE/UPDATE on loyalty_transactions. No DB trigger SIGNAL SQLSTATE '45000' on DELETE (unlike audit_logs per CLAUDE.md §8). Fraud history can be silently erased.",
+      "evidence": [
+        "database/migrations/2026_03_26_075918_create_loyalty_transactions_table.php (no DELETE trigger)",
+        "app/Models/LoyaltyTransaction.php (standard Eloquent Model, no UseDeleteRestricted trait)",
+        "CLAUDE.md §8 — only audit_logs + z_reports have BEFORE DELETE triggers"
+      ],
+      "controls_missing": "DB trigger BEFORE DELETE ON loyalty_transactions; revoke DELETE GRANT from app DB user.",
+      "recommendation": "V1.0.2: add migration creating trigger. NOT NF525-mandatory (loyalty is not fiscal) but increases customer-fraud-investigation trust."
+    },
+    {
+      "id": "LCS-S-004",
+      "severity": "P2",
+      "title": "localStorage account cache enables UX-level balance tampering",
+      "threat_axes": ["A3"],
+      "exploit": "Mobile data layer (mobile/data/loyalty.js:128 DEFAULT_ACCOUNT) caches account state including balance. User opens DevTools, modifies window.LC.loyalty.account.balance = 99999. Re-renders show inflated balance. NOT exploitable for actual redemption (server enforces real balance at /loyalty/redeem) but enables social engineering screenshots (e.g. fake balance shown to scam friends/family) — already mitigated by adv-A2 spec which detects screenshot patterns.",
+      "evidence": [
+        "mobile/data/loyalty.js:128-145 — DEFAULT_ACCOUNT with mutable balance",
+        "tests/mobile-e2e/loyalty-adv-A3-localStorage-tamper.spec.js (already covers this — verify PASS)"
+      ],
+      "recommendation": "Already covered by adv-A3 test. No additional control needed; document as known UX-level limitation."
+    },
+    {
+      "id": "LCS-S-005",
+      "severity": "P2",
+      "title": "Kiosk token compromise = unlimited loyalty enumeration via /loyalty/scan",
+      "threat_axes": ["A7"],
+      "exploit": "Compromised kiosk:order token (e.g. via XSS on kiosk machine, physical access, or token leak in logs) enables attacker to POST /loyalty/scan with arbitrary FK:<code> values. Throttle 20/min per token means 1200/hour, 28800/day — enough to enumerate ~28800 codes per stolen token per day. Combined with LCS-S-001, attacker can drain identified accounts.",
+      "evidence": [
+        "routes/api.php:1325-1327 — throttle:20,1 (20/min per token)",
+        "app/Http/Controllers/Frontend/LoyaltyController.php:579 — token ability check",
+        "tests/Feature/KioskPhase1/LoyaltyOptInEndpointTest.php (covers opt-in but not enumeration)"
+      ],
+      "recommendation": "P2: tighten throttle to 5/min for repeated 'customer_not_found' responses (adaptive throttle). Add Sanctum token IP-binding (refuse token if IP shifts). Audit kiosk token rotation cadence (currently 480min TTL per CLAUDE.md §9)."
+    },
+    {
+      "id": "LCS-S-006",
+      "severity": "P3",
+      "title": "Wallet integration not yet implemented — when added, must use RS256",
+      "threat_axes": ["future A8: Wallet pass forgery"],
+      "evidence": ["mobile/WALLET_PLAN.md:146 — 'CVE-2025-45769 N/A for RS256 (Google Wallet mandate)' — correct design intent"],
+      "recommendation": "Pre-emptive: when implementing GoogleWalletService, use firebase/php-jwt:^7.0 with RS256 only. Apple pkpass: sign with valid Apple Developer cert (never test/self-signed in prod). Document key rotation policy."
+    }
+  ],
+  "cross_surface_test_coverage": {
+    "mobile_e2e_22_specs": "PASS (per task context)",
+    "kiosk_loyalty_double_redeem_refused": "tests/Feature/KioskLoyaltyDoubleRedeemRefusedTest.php (exists — verifies race protection at DB layer)",
+    "kiosk_ledger_atomic": "tests/Feature/KioskLoyaltyLedgerAtomicTest.php (atomic ledger writes)",
+    "order_cancellation_refund": "tests/Feature/OrderCancellationLoyaltyTest.php (refund on cancel)",
+    "missing": [
+      "No cross-surface chain test: 'earn-from-POS -> Mobile-balance-shows -> Kiosk-redeem -> Web-history-includes'",
+      "No QR-replay test: 'mobile generates QR -> snapshot -> 10min later kiosk scans snapshot -> server accepts (BAD) or rejects (GOOD)'",
+      "No screenshot-OCR test simulating image capture + retransmission",
+      "No idempotency test asserting 2x POST /loyalty/redeem with same key produces 1 ledger row"
+    ]
+  },
+  "verdict": "SECURITY: 1 P0 (LCS-S-001 QR signature absent), 1 P1 (LCS-S-002 idempotency route gap). 3 P2 + 1 P3. The P0 is the cornerstone finding — QR replay is the dominant cross-surface fraud vector and currently has zero server-side control. P1 idempotency fix is straightforward (route middleware add). Recommend OWNER GATE before V1 ship: confirm QR signature is V1 mandatory OR accepted V1 risk with mitigation plan."
+}

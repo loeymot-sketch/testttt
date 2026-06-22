@@ -1,0 +1,84 @@
+{
+  "run_name": "wave-t-caisse-to-delivered-2026-05-20",
+  "wave": "A",
+  "round": 1,
+  "captured_at": "2026-05-20T22:06:59.346Z",
+  "order_1_takeaway": {
+    "id": 86,
+    "token": "AUDIT-WAVE-T-001-1779314740588",
+    "mode": "TAKEAWAY",
+    "payment": "CASH",
+    "total_eur": null,
+    "total_cents": 1700,
+    "items_summary": [
+      "Sandwich Cayenne",
+      "Tacos",
+      "Coca-Cola 33cl"
+    ],
+    "cart_modal_total_match": false,
+    "cart_grand_total_eur": 17,
+    "modal_total_eur": 17,
+    "tracker_lane": "🍳 En préparation",
+    "tracker_total_eur": 17
+  },
+  "order_2_livraison": {
+    "id": 87,
+    "token": "AUDIT-WAVE-T-002-1779314740588",
+    "mode": "DELIVERY",
+    "payment": "TPE",
+    "total_eur": null,
+    "total_cents": 1900,
+    "items_summary": [
+      "Sandwich Cayenne",
+      "Big Cayenne",
+      "Petite Frites"
+    ],
+    "customer": {
+      "name": "Wave T E2E 1779314740588",
+      "phone": "0612345678",
+      "address": "12 rue Test, Paris 75001"
+    },
+    "cart_modal_total_match": false,
+    "cart_grand_total_eur": 19,
+    "modal_total_eur": 19,
+    "tracker_lane": "🍳 En préparation",
+    "tracker_total_eur": 24,
+    "tracker_item_names": [
+      "Sandwich Cayenne",
+      "Big Cayenne",
+      "Petite Frites"
+    ],
+    "cash_badge_visible_on_tpe": false
+  },
+  "order_1": {
+    "id": 86,
+    "token": "AUDIT-WAVE-T-001-1779314740588",
+    "mode": "TAKEAWAY",
+    "payment": "CASH",
+    "total_cents": 1700,
+    "items_summary": [
+      "Sandwich Cayenne",
+      "Tacos",
+      "Coca-Cola 33cl"
+    ]
+  },
+  "order_2": {
+    "id": 87,
+    "token": "AUDIT-WAVE-T-002-1779314740588",
+    "mode": "DELIVERY",
+    "payment": "TPE",
+    "total_cents": 1900,
+    "items_summary": [
+      "Sandwich Cayenne",
+      "Big Cayenne",
+      "Petite Frites"
+    ],
+    "customer": {
+      "name": "Wave T E2E 1779314740588",
+      "phone": "0612345678",
+      "address": "12 rue Test, Paris 75001"
+    }
+  },
+  "kds_ready_at_order_1": "2026-05-20T22:07:30.438Z",
+  "kds_ready_at_order_2": "2026-05-20T22:07:30.438Z"
+}

@@ -62,6 +62,37 @@ return [
     // MIX_API_KEY is canonical (Mix + runtime Blade). API_KEY kept for backward compat with old .env copies.
     'api_key' => trim((string) (env('MIX_API_KEY') ?: env('API_KEY', ''))),
 
+    // POST /api/auth/login — fenêtre 10 min (voir RouteServiceProvider::login-lockout). Défaut 10 prod.
+    // Playwright enchaîne plusieurs specs avec le même email → surcharger en CI (LOGIN_LOCKOUT_MAX_ATTEMPTS).
+    'login_lockout_max_attempts' => max(1, (int) env('LOGIN_LOCKOUT_MAX_ATTEMPTS', 10)),
+
+    // throttle:api — global /api/* cap per user id or IP (RouteServiceProvider::api).
+    // Playwright SPA peut dépasser 120 req/min sur une fenêtre glissante; CI augmente via API_THROTTLE_PER_MINUTE.
+    'api_throttle_per_minute' => max(1, (int) env('API_THROTTLE_PER_MINUTE', 120)),
+
+    // throttle:admin-mutation non-GET cap — env-configurable to absorb owner
+    // manual-test bursts (rapid Livré clicks on online-order list, Cancel
+    // chains, etc.). Default 60/min (doubled from prior hardcoded 30/min)
+    // for production; local dev raises to 1000/min for parity with
+    // POS_RATE_LIMIT_* knobs. NF525 fiscal chain UNAFFECTED — chain insert
+    // happens inside controller transactions, not in the throttle bucket.
+    // [Wave Y RATE-LIMIT 2026-05-21]
+    'admin_mutation_rate_limit' => max(1, (int) env('ADMIN_MUTATION_RATE_LIMIT', 60)),
+
+    // [GOAL Phase F.1 2026-05-23] throttle:menu-availability dedicated bucket
+    // for /admin/menu/availability/{toggle,extra/toggle,variation/toggle}
+    // (routes/api.php:256-268). Sibling-group structure preserved so this
+    // bucket doesn't share with admin-mutation — keeps bulk-86 fan-out from
+    // StockRuptureDashboard isolated from cashier admin-CRUD ops. Default
+    // 60/min for backwards compatibility (prior hardcoded ceiling); local
+    // dev raises via MENU_AVAILABILITY_RATE_LIMIT=1000 to absorb manager
+    // bulk-toggle bursts. NF525 chain unaffected — toggle is not a fiscal
+    // write.
+    'menu_availability_rate_limit' => max(1, (int) env('MENU_AVAILABILITY_RATE_LIMIT', 60)),
+
+    // Full /api/health IP gate — read via config() so tests can override and config:cache works in prod.
+    'health_ips_allowed' => env('HEALTH_IPS_ALLOWED', ''),
+
     // Exposé au Blade pour le SPA (évite env() dans les vues + aligne clé API sans rebuild npm)
     'demo_mode' => filter_var(env('DEMO', false), FILTER_VALIDATE_BOOLEAN),
 
@@ -70,16 +101,16 @@ return [
     // Defaults align with database/seeders/UserTableSeeder.php (non-production).
     // Branch manager + chef rows exist only when DEMO=true at seed time; use env overrides if needed.
     'demo_credentials' => [
-        'admin_email'             => env('DEMO_ADMIN_EMAIL',            'admin@lecayenne.fr'),
-        'admin_password'          => env('DEMO_ADMIN_PASSWORD',         '123456'),
-        'customer_email'          => env('DEMO_CUSTOMER_EMAIL',         'walkingcustomer@example.com'),
-        'customer_password'       => env('DEMO_CUSTOMER_PASSWORD',      '123456'),
-        'branch_manager_email'    => env('DEMO_BRANCH_MANAGER_EMAIL',   'branchmanager@example.com'),
-        'branch_manager_password' => env('DEMO_BRANCH_MANAGER_PASSWORD','123456'),
-        'pos_operator_email'      => env('DEMO_POS_OPERATOR_EMAIL',     'pos@lecayenne.fr'),
-        'pos_operator_password'   => env('DEMO_POS_OPERATOR_PASSWORD',  '123456'),
-        'chef_email'              => env('DEMO_CHEF_EMAIL',             'chef@example.com'),
-        'chef_password'           => env('DEMO_CHEF_PASSWORD',          '123456'),
+        'admin_email' => env('DEMO_ADMIN_EMAIL', 'admin@lecayenne.fr'),
+        'admin_password' => env('DEMO_ADMIN_PASSWORD', '123456'),
+        'customer_email' => env('DEMO_CUSTOMER_EMAIL', 'walkingcustomer@example.com'),
+        'customer_password' => env('DEMO_CUSTOMER_PASSWORD', '123456'),
+        'branch_manager_email' => env('DEMO_BRANCH_MANAGER_EMAIL', 'branchmanager@example.com'),
+        'branch_manager_password' => env('DEMO_BRANCH_MANAGER_PASSWORD', '123456'),
+        'pos_operator_email' => env('DEMO_POS_OPERATOR_EMAIL', 'pos@lecayenne.fr'),
+        'pos_operator_password' => env('DEMO_POS_OPERATOR_PASSWORD', '123456'),
+        'chef_email' => env('DEMO_CHEF_EMAIL', 'chef@example.com'),
+        'chef_password' => env('DEMO_CHEF_PASSWORD', '123456'),
     ],
 
     'google_map_key' => env('MIX_GOOGLE_MAP_KEY', ''),
@@ -95,8 +126,18 @@ return [
     |
     */
 
-    // Must match the server timezone — change via TIMEZONE env variable
-    'timezone' => env('TIMEZONE') ?: 'UTC',
+    /*
+     * [W9-AUDIT B3-OPS] NF525 fiscal pipeline (Z reports, fiscal:archive J-1
+     * scheduled at 02:00, audit_logs canonization) MUST run in the merchant's
+     * legal timezone. UTC default would shift the J-1 archive window by 1-2h
+     * and produce evidence with timestamps off by the same amount, which is
+     * acceptable cryptographically (signature canonizes to UTC) but confusing
+     * legally for French operators.
+     *
+     * Default is now Europe/Paris (the merchant base of operations); override
+     * via TIMEZONE env variable for non-FR deployments.
+     */
+    'timezone' => env('TIMEZONE') ?: 'Europe/Paris',
 
     /*
     |--------------------------------------------------------------------------

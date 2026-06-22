@@ -2,7 +2,7 @@
     <LoadingComponent :props="loading" />
 
     <div v-if="logged && activeOrders.length > 0"
-        class="xst:rounded-t-2xl xst:fixed xst:bottom-12 xst:w-full xst:z-10 bg-[#FFEDF4] sm:bg-[#FF3B8E]">
+        class="xst:rounded-t-2xl xst:fixed xst:bottom-12 xst:w-full xst:z-10 bg-[#FFE8DD] sm:bg-[#F4501E]">
         <div class="relative w-full lg:w-[930px] mx-auto flex items-center gap-4 py-2.5 sm:px-10 px-4 xst:pb-16">
             <i class="lab lab-routing font-fill-paragraph-toggle lab-font-size-24"></i>
             <div class="flex-auto">

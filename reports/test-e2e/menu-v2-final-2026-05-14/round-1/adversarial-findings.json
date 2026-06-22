@@ -1,0 +1,182 @@
+{
+  "run": "menu-v2-final-2026-05-14",
+  "round": 1,
+  "reviewer": "adversarial-supervisor",
+  "reviewed_at": "2026-05-14T01:50:00+02:00",
+  "states_reviewed": 60,
+  "findings": [
+    {
+      "id": "WV2-R1-01",
+      "category": "numeric_integrity",
+      "severity": "P1",
+      "wave": "KIOSK",
+      "state": "kiosk/S-NEW-02-03-wizard-open.png + DB items.488 + helpers/kioskTacosSize.js",
+      "evidence_file": "tests/e2e/__screenshots__/menu-v2-final/kiosk/S-NEW-02-03-wizard-open.png",
+      "evidence_snippet": "Wizard renders 'QUELLE VIANDE ? 0/1 / Choisissez 1 viande' for item 488 'Big Cayenne'. DB has attr 307 [Viande 1] AND attr 308 [Viande 2] (4 variations each, both optional). POS V4 wizard for SAME item renders 'Viandes 0/2' correctly (S-POS-NEW-01-02-wizard-popup.png). Item description: '2 viandes au choix'. Root cause: resources/js/helpers/kioskTacosSize.js viandeCountFromName('Big Cayenne') returns null because SIZE_LABEL_REGEX doesn't match 'Big ...' pattern; KioskWizardComponent.detectViandeCount() falls back to 1 (line 975) ignoring attr 308 presence.",
+      "claim": "Kiosk wizard binding bug — Big Cayenne (488) renders 0/1 viande step despite DB attr 308 (Viande 2) + description '2 viandes au choix'; POS reads same DB and renders 0/2 correctly. GStack framed as 'owner decision A/B/C' but evidence shows Option A is mandatory: kiosk fallback must respect DB attr presence.",
+      "fix_hint": "Either (a) extend SIZE_LABEL_REGEX in kioskTacosSize.js to match /\\bbig\\b/i → 2, or (b) modify KioskWizardComponent.detectViandeCount() to consult itemAttributes for attr with name including 'viande 2' before falling back to 1 (mirror POS logic in pos-wizard.js viande detection branch).",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "WV2-R1-02",
+      "category": "numeric_integrity",
+      "severity": "P1",
+      "wave": "KIOSK",
+      "state": "DB items.489 'Big Classique' + same kiosk wizard render logic",
+      "evidence_file": "DB inspection — item 489 attr 307 + attr 308 + attr 311 (Sauce 1ère Gratuite); not exercised by Wave KIOSK scenarios",
+      "evidence_snippet": "Big Classique (id=489, cat=346, price=9.00€) has DB attr 307 [Viande 1] AND attr 308 [Viande 2] — same structure as Big Cayenne. Item name 'Big Classique' does NOT match SIZE_LABEL_REGEX in kioskTacosSize.js (no M/L/XL/MEGA/FAMILLE). viandeCountFromName('Big Classique') returns null → kiosk wizard renders 0/1 same as Big Cayenne. Not captured by Wave KIOSK because spec only tested Big Cayenne in cat 344 Sandwich Cayenne — Big Classique in cat 346 was missed.",
+      "claim": "Second NEW item Big Classique (489) suffers identical kiosk wizard binding bug as Big Cayenne (488) — 0/1 instead of 0/2. Increases blast radius: 2 NEW items broken, not 1.",
+      "fix_hint": "Same fix as WV2-R1-01 will cover both Big variants. Add E2E coverage for Big Classique cat 346 in next wave.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "WV2-R1-03",
+      "category": "numeric_integrity",
+      "severity": "P1",
+      "wave": "KIOSK",
+      "state": "DB items.488 vs description vs item_variations join",
+      "evidence_file": "DB inspection — item 488 itemAttributes join",
+      "evidence_snippet": "Big Cayenne (488) description: 'Sandwich signature XL · 2 viandes au choix · Sauce Cayenne maison incluse'. DB has attr 307 + 308 + nothing else. NO attr 331 [Sauce Cayenne (incluse)] (Sandwich Cayenne 474 has it; Galette Cayenne 476 has it; Big Cayenne 488 doesn't). Wizard misses required 'Sauce Cayenne incluse' step. Confirmed visually: S-NEW-02-03-wizard-open.png shows only 5 step dots (VIANDE / CRUDITÉ / SUPPLÉMENT / MENU / RÉCAP) — no Sauce step.",
+      "claim": "Heal-light V2 command (62959bfc9) failed to attach attr 331 [Sauce Cayenne (incluse)] to Big Cayenne (488). Description claims sauce is INCLUDED but the wizard cannot capture it and composition_snapshot will never contain it. Affects KDS preparation accuracy (cook doesn't see Sauce Cayenne line) and customer trust (promise vs delivery mismatch).",
+      "fix_hint": "menu:heal-light-v2 follow-up: attach attr 331 to item 488 with min=1/max=1 (mirroring item 474 Sandwich Cayenne attr 331 binding).",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "WV2-R1-04",
+      "category": "i18n_leak",
+      "severity": "P1",
+      "wave": "KIOSK",
+      "state": "kiosk sidebar all category captures (e.g. S-NEW-08-02-categories-347.png)",
+      "evidence_file": "tests/e2e/__screenshots__/menu-v2-final/kiosk/S-NEW-08-02-categories-347.png + wave-KIOSK-db-checks.json",
+      "evidence_snippet": "Sidebar visible_pills=11 ids=[344,345,346,349,306,347,**350**,348,318,316,317]. Expected_hidden_ids=[315,350]. Cat 350 'Menu enfant' (sort=11) IS LEAKING into kiosk sidebar with full visibility, aria-label, and clickable state. Per heal-light V2 commit message: 'Menu enfant cat is classified tier 0 by kioskCategoryOrder.js (matches /menu / regex). On kiosk surface it appears with mains (position ≈7) instead of last (sort=11). Owner sign-off required.' Actual position observed: sort=11 (last) but VISIBLE despite expected_hidden.",
+      "claim": "Menu enfant cat 350 leaks on kiosk sidebar (expected hidden, actually visible). User-facing categorisation defect — confuses sandwich shoppers with an isolated child-menu category at the bottom of every shopping flow.",
+      "fix_hint": "Either add cat 350 to kiosk hide-list in config/menu.php, or attach kiosk channel filter excluding cat 350. Confirm with owner whether Menu enfant should be kiosk-visible at all (per spec it appears to be POS-only).",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "WV2-R1-05",
+      "category": "visual_hash_drift",
+      "severity": "P1",
+      "wave": "POS-CROSS",
+      "state": "kds/SUP-kds-01-board.png + wave-POS-CROSS-report.md §Cross-surface coverage",
+      "evidence_file": "tests/e2e/__screenshots__/menu-v2-final/kds/SUP-kds-01-board.png",
+      "evidence_snippet": "Wave POS-CROSS report claims: 'KDS board capture shows the kitchen sidebar listing NEW items in flight: **Chicken Burger**, **Bowl Frites Poulet curry**, Big Cayenne, Galette Cayenne, Sandwich Classique, Tacos M/L. \"Borne\" column shows orders #1405261446 (3 lines : Sandwich Cayenne + Petite Frites + Tiramisu) and #1405261445 (Bowl Frites Poulet curry). KDS UI rendered 59 order-card-like nodes in DOM.' Actual screenshot shows: **Préparations sidebar = 1 item (Sandwich Cayenne)**, Borne column = **1 order card (#1405261465 Confirmées)**. No Chicken Burger, no Bowl Frites, no multi-line order. Also: supplement-tracking.json shows kds_ui.cards_count_via_selectors=22 (not 59).",
+      "claim": "Wave POS-CROSS written claim about KDS multi-item cross-surface visibility is FALSE. The PNG shows a single order #1405261465 (which is Wave KIOSK's S-NEW-01 Sandwich Cayenne). GStack invented a multi-item list not visible in the screenshot. This is exactly the 'hallucinated context' failure mode flagged in user memory feedback_usage_insights_2026-05-11.",
+      "fix_hint": "Re-run KDS capture AFTER orders are present (orders 1444-1446 were swept by orchestrator cleanup — supplement-tracking.json confirms 1444/1445/1446 returned not_found). Recapture KDS with fresh durable orders OR retract the claim and downgrade Wave POS-CROSS verdict.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "WV2-R1-06",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "wave": "KIOSK",
+      "state": "wave-KIOSK-db-checks.json + order_items composition_snapshot inspection",
+      "evidence_file": "reports/test-e2e/menu-v2-final-2026-05-14/round-1/wave-KIOSK-db-checks.json",
+      "evidence_snippet": "GStack claims 'composition_full_coverage: true' for all 9 orders. Manual DB inspection reveals composition_snapshot JSON has empty `lines: []` for orders 1468 (Sandwich Classique), 1469 (Tacos M), 1470 (Tacos L), 1471 (Chicken Burger). Only orders 1465/1466/1467/1472/1473 have non-empty lines. composition_full_coverage assertion checks item_count == items_with_composition_snapshot (JSON envelope exists), NOT lines.length > 0. Real coverage: 5/9 with actual viande/sauce/crudité capture; 4/9 empty.",
+      "claim": "Wave KIOSK 'composition_full_coverage: true' assertion is semantically misleading. 4/9 NEW orders have empty composition lines (API-hybrid placement bypassed wizard selections). This does NOT prove the kiosk wizard end-to-end capture path works for Sandwich Classique / Tacos M / Tacos L / Chicken Burger — orders 1465 (Sandwich Cayenne) and 1472 (Bowl Frites) are the only sandwich/bowl scenarios with proven captured selections.",
+      "fix_hint": "Tighten composition_full_coverage definition to lines.length > 0 (not just non-null JSON). Re-run scenarios S-NEW-04/05/06/07 with actual wizard step interactions (not API-hybrid fast-post) to prove user-facing flow captures composition.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "WV2-R1-07",
+      "category": "unexpected_4xx_5xx",
+      "severity": "P2",
+      "wave": "POS-CROSS",
+      "state": "wave-POS-CROSS-db-tracking.json scenarios[*].pay_response",
+      "evidence_file": "reports/test-e2e/menu-v2-final-2026-05-14/round-1/wave-POS-CROSS-db-tracking.json",
+      "evidence_snippet": "All 3 POS scenarios return HTTP 429 (pay_response.status=429, orderId=null). DB row resolution falls back to a parallel-wave kiosk order (e.g. S-POS-NEW-01 → DB id=1437 which is a kiosk-sourced order from earlier wave with total=13.80€, NOT the expected POS 9.50€ Big Cayenne). The 'visual proof' of POS wizard rendering at 9.50€/8.90€ is valid (screenshots), but ZERO POS-source NEW-menu orders were persisted. GStack acknowledged as F-WPC-01 P2 infra.",
+      "claim": "POS-CROSS Wave has visual evidence only (wizard renders + sidebar layout) but no DB persistence proof for POS-source NEW orders. Treating this as 'GREEN cross-surface validation' overstates the evidence. The 5/5+3/3 PASS verdict is mostly infrastructure-OK + visual smoke, not end-to-end persistence.",
+      "fix_hint": "Re-run POS-CROSS in isolated wave (no parallel kiosk pressure on admin-mutation/pos-order-create buckets) OR pre-warm cache:clear between scenarios. Confirm GStack claim 'production behaviour correct' (rate limits firing under burst) does NOT mask a latent POS bug — current evidence cannot distinguish them.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "WV2-R1-08",
+      "category": "numeric_integrity",
+      "severity": "P3",
+      "wave": "POS-CROSS",
+      "state": "wave-POS-CROSS-report.md vs wave-POS-CROSS-supplement-tracking.json",
+      "evidence_file": "reports/test-e2e/menu-v2-final-2026-05-14/round-1/{wave-POS-CROSS-report.md, wave-POS-CROSS-supplement-tracking.json}",
+      "evidence_snippet": "wave-POS-CROSS-report.md §Cross-surface: 'KDS UI rendered 59 order-card-like nodes in DOM.' supplement-tracking.json: 'kds_ui.cards_count_via_selectors: 22'. Numeric inconsistency between GStack's own primary + supplement artifacts — same KDS page, two different DOM counts ~3 minutes apart. Could be (a) order sweep between captures, (b) different selector strategy, (c) report invented a number.",
+      "claim": "Numeric inconsistency 59 vs 22 cards_count in same KDS surface across GStack's primary and supplement reports. Either KDS has high order-card volatility (orders sweep quickly) or the 59 figure is unverified.",
+      "fix_hint": "Pin the selector used and the timestamp of capture, report both values consistently.",
+      "confidence": "MEDIUM"
+    },
+    {
+      "id": "WV2-R1-09",
+      "category": "numeric_integrity",
+      "severity": "P3",
+      "wave": "POS-CROSS",
+      "state": "wave-POS-CROSS-report.md F-WPC-04 + DB state at review time",
+      "evidence_file": "reports/test-e2e/menu-v2-final-2026-05-14/round-1/wave-POS-CROSS-supplement-tracking.json",
+      "evidence_snippet": "F-WPC-04 P3 claims order 1444 (Chicken Burger) has composition_snapshot=NULL with parallel-wave fast-add explanation. Supplement-tracking.json: orders 1444/1445/1446 all 'reason: not_found' (deleted post-capture). Cannot verify NULL vs empty-lines vs filled retroactively. PNG evidence cannot be reconstructed.",
+      "claim": "F-WPC-04 P3 claim about order 1444 NULL composition_snapshot is unverifiable post-hoc because orders 1444/1445/1446 have been swept from DB. Either GStack failed to capture durable evidence at the time, or the orchestrator cleanup destroyed the only proof.",
+      "fix_hint": "On next wave, snapshot order_items.composition_snapshot to JSON file at capture time, not 'inspect later'.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "WV2-R1-10",
+      "category": "i18n_leak",
+      "severity": "P2",
+      "wave": "KIOSK",
+      "state": "wave-KIOSK-report.md §3 Visual heals + all wizard PNG step 1 captures",
+      "evidence_file": "reports/test-e2e/menu-v2-final-2026-05-14/round-1/wave-KIOSK-report.md",
+      "evidence_snippet": "GStack: 'Menu addon copy overall : +2,50€ present=false, +3,00€ present=false … Verdict : INCONCLUSIVE (no menu copy detected on overview)'. The heal-light V2 commit explicitly migrated 'Menu addon 3.00→2.50' — without visible verification that the new copy renders, the heal is unproven on the user-facing menu step.",
+      "claim": "Menu addon price heal (+3,00→+2,50€) cannot be visually confirmed in this round — no wizard screenshot reached the 'QUEL MENU ?' step (typically step 4-5). The price heal might be in DB but undisplayed, or the kiosk template might still show the old copy.",
+      "fix_hint": "Add a wave that walks one wizard to the 'QUEL MENU ?' step and captures the addon copy explicitly. Block GREEN verdict on visual confirmation, not API-hybrid placement.",
+      "confidence": "MEDIUM"
+    }
+  ],
+  "passing_states": [
+    "kiosk/00-kiosk-categories-overview.png (Burgers cat 349 visible + 2 burger cards Chicken/Big Chicken at correct prices)",
+    "kiosk/S-NEW-01-03-wizard-open.png (Sandwich Cayenne 6 step dots correct, total 7.50€ matches price drift heal)",
+    "kiosk/S-NEW-03-03-wizard-open.png (Galette Cayenne 6 step dots with Sauce step + Sauce icon)",
+    "kiosk/S-NEW-04-03-wizard-open.png (Sandwich Classique 6 step dots, total 7.00€ matches price drift heal)",
+    "kiosk/S-NEW-05-03-wizard-open.png (Tacos M 0/1 correctly, total 6.90€ matches rename+price drift)",
+    "kiosk/S-NEW-06-03-wizard-open.png (Tacos L 0/2 correctly via single-step-repeat, total 7.90€ matches rename+price drift). GStack self-reported as P1 in §5 but ACTUALLY WORKS — viande_step_count=1 counts step containers, the 0/2 counter is INSIDE one step. Tacos L is correctly rendered.",
+    "kiosk/S-NEW-07-03-wizard-open.png (Chicken Burger NEW item 6 step dots correct, total 6.90€ matches NEW item price)",
+    "kiosk/S-NEW-08-03-wizard-open.png (Bowl Frites Poulet curry NEW composer 11 sauces visible + 5 step dots — sauce/supplément/menu/gratiné/récap correctly composed)",
+    "pos/00b-pos-v4-sidebar-12cat-observation.png (12 cats visible via aria_labels JSON tracking)",
+    "pos/S-POS-NEW-01-02-wizard-popup.png (Big Cayenne POS wizard 0/2 viandes correct, viande supplémentaire +€2.50 visible, 4 viandes, total 9.50€)",
+    "pos/S-POS-NEW-02-02-wizard-popup.png (Big Chicken POS wizard 0/1 viande correct, 4 viandes, 1ère sauce gratuite, total 8.90€)",
+    "pos/S-POS-NEW-03-02-wizard-popup.png (Bowl Frites Poulet curry POS wizard 11 sauces, formule Sans/Boisson +2€, total 8.90€)",
+    "pos/S-POS-NEW-*-03-cart-with-item.png (POS sidebar 8 visible pills out of 12 — horizontal scroll, Big Cayenne/Big Chicken/Bowl Frites in cart at correct prices)",
+    "oss/SUP-oss-01-screen.png (Articles à préparer column shows NEW items: Sandwich Cayenne 7.50€, Tacos M 6.90€, Chicken Burger 6.90€ alongside legacy items)",
+    "admin/ZZ-05-admin-categories-list.png (Sandwich Cayenne, Galette, Sandwich Classique, Burgers, Tacos, Bols Gourmands, Frites visible + Active)",
+    "admin/ZZ-01-admin-items-default.png (Bowl Riz Poulet crispy/tandoori/curry/mariné visible at 8.90€ in Bols Gourmands - confirms 4 Bowl Riz items created)",
+    "Frozen-zone integrity: commit 62959bfc9 modified ONLY app/Console/Commands/MenuHealLightV2Command.php + config/menu.php + mobile/data/menu.js + reports/. Zero touch on public/js/pos-wizard.js, public/css/pos-wizard.css, KioskWizardComponent.vue, KioskAppComponent.vue, KioskUpsellComponent.vue, admin-pos-v4.blade.php (verified via git show --stat 62959bfc9)",
+    "Fiscal sequence: 317-325 monotonic gap-free, baseline=316, all 9 orders fiscal_seq_present=true"
+  ],
+  "claims_verified_kiosk": [
+    "9/9 scenarios placed with valid order_id 1465-1473",
+    "fiscal_sequence_no 317-325 monotonic gap-free, no NULL allocations",
+    "All UI total = DB total = Expected total per scenario",
+    "Sandwich Cayenne price drift 7.00€→7.50€ applied + rendered",
+    "Sandwich Classique price drift 6.50€→7.00€ applied + rendered",
+    "Tacos M rename + price drift 8.50€→6.90€ applied + rendered",
+    "Tacos L rename + price drift 11.50€→7.90€ applied + rendered (and IS correctly 2-viande contra GStack §5 P1 claim)",
+    "Sidebar leak of cat 350 Menu enfant confirmed",
+    "11 sidebar pills observed (10 expected + 1 leak)"
+  ],
+  "claims_disputed_kiosk": [
+    "'All composition_snapshot full coverage' — 4/9 orders have empty lines:[] (semantic mismatch with assertion)",
+    "'Tacos L missing Viande 2 step' — FALSE. Wizard correctly shows 0/2 via single-step-repeat. GStack measurement artifact (counted step containers not selection cardinality).",
+    "'Menu addon copy INCONCLUSIVE' — agreed, but heal-light V2 commit message claims 3.00→2.50 migration; lack of visual proof = unverified heal",
+    "'Big Cayenne owner decision A/B/C needed' — FALSE framing. POS V4 reads same DB and renders 0/2 correctly. Issue is kiosk-only binding bug in kioskTacosSize.js + KioskWizardComponent.detectViandeCount(). Option A is mandatory, not optional."
+  ],
+  "claims_verified_pos_cross": [
+    "POS V4 sidebar 12 pills exposed via aria_labels (DOM tracking JSON)",
+    "Burgers cat 349 pill + aria-label + title rendered",
+    "Menu enfant cat 350 pill + aria-label + title rendered",
+    "Wizards visually open for Big Cayenne (0/2), Big Chicken (0/1), Bowl Frites (sauce step) at correct prices",
+    "DB admin search: Chicken Burger + Big Chicken in cat 349; 4 Bowl Frites in cat 347",
+    "Frozen-zone integrity for commit 62959bfc9",
+    "F-WPC-01 HTTP 429 root cause = parallel kiosk wave bucket contention (acknowledged)"
+  ],
+  "claims_disputed_pos_cross": [
+    "'KDS shows Chicken Burger + Bowl Frites + Big Cayenne + Galette + Sandwich Classique + Tacos M/L' — FALSE. PNG shows ONLY 1 order #1405261465 Sandwich Cayenne. Cross-surface KDS sync NOT proven by capture.",
+    "'KDS rendered 59 order-card-like nodes' — inconsistent with supplement-tracking.json kds_ui.cards_count=22",
+    "'composer-bindings ARE intact' (F-WPC-04 analysis) — items table has NO composer_profile column; the 'composer profile' is realized via item_variations/item_attributes rows (correct, but the wording suggests a different DB structure)",
+    "'POS-source order persistence' — NOT verified: 0/3 POS scenarios persisted; HTTP 429 ensured DB lookup fell back to a parallel kiosk order (id=1437 wrong total 13.80€). Visual evidence only, no E2E proof."
+  ],
+  "verdict": "NO-GO"
+}

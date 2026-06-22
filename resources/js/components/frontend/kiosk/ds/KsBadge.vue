@@ -38,6 +38,8 @@ export default {
             validator: (v) => [
                 'red', 'green', 'amber', 'gray', 'info',
                 'veg', 'halal', 'spicy', 'new', 'chef-pick',
+                /* V1.7 Bold Appétissant — semantic badges pour wizard / cart */
+                'promo', 'included', 'quota', 'price-impact',
             ].includes(v),
         },
         size: {
@@ -49,6 +51,20 @@ export default {
         icon: { type: String, default: null },
         iconOnly: { type: Boolean, default: false },
         ariaLabel: { type: String, default: null },
+    },
+    mounted() {
+        this._warnIconOnly();
+    },
+    updated() {
+        this._warnIconOnly();
+    },
+    methods: {
+        _warnIconOnly() {
+            if (process.env.NODE_ENV === 'production' || !this.iconOnly || this.ariaLabel) return;
+            if (typeof console !== 'undefined' && console.warn) {
+                console.warn('[KsBadge] iconOnly=true requires ariaLabel for accessibility');
+            }
+        },
     },
 };
 </script>
@@ -111,5 +127,45 @@ export default {
     display: inline-flex;
     font-size: 1.15em;
     line-height: 1;
+}
+
+/* ---------- V1.7 Bold Appétissant semantic badges ---------- */
+/* promo : doré accent, fond clair (CTA fidélité, mise en avant) */
+.ks-badge--promo {
+    background: var(--kiosk-bold-accent);
+    color: var(--kiosk-bold-text-on-accent);
+}
+.ks-badge--soft.ks-badge--promo {
+    background: var(--kiosk-bold-accent-soft);
+    color: var(--kiosk-bold-accent);
+}
+
+/* included : vert success warm, soft par défaut */
+.ks-badge--included {
+    background: var(--kiosk-bold-success);
+    color: #FFF5E8;
+}
+.ks-badge--soft.ks-badge--included {
+    background: var(--kiosk-bold-success-soft);
+    color: var(--kiosk-bold-success-text);
+}
+
+/* quota : compteur X/Y bold (Inter, mono-tabular) */
+.ks-badge--quota {
+    background: var(--kiosk-bold-accent-soft);
+    color: var(--kiosk-bold-accent);
+    font-family: var(--kiosk-font-mono-bold, var(--kiosk-font-mono));
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+    border: 1px solid var(--kiosk-bold-accent);
+}
+
+/* price-impact : delta tarif (+1,50 €) — rouge soft */
+.ks-badge--price-impact {
+    background: var(--kiosk-bold-primary-soft);
+    color: var(--kiosk-bold-primary);
+    font-variant-numeric: tabular-nums;
+    text-transform: none;
+    letter-spacing: 0;
 }
 </style>

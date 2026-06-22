@@ -1,0 +1,66 @@
+{
+  "system": "Fiscal NF525 + Admin daily-ops (Z-report, cash reconciliation, audit chain)",
+  "key": "fiscal-admin",
+  "head": "962d9d15479a4be3642a2355be63807c538ba34b",
+  "verified_at": "2026-05-29",
+  "lens_reconciliation": "Header claims 3 lenses. Raw input contained exactly TWO lens objects with findings: architect (3 findings) + security (2 findings, the 2nd truncated mid-recommendation at 'V1 Le Cayenne single'). No third lens object (dba/sre/tester) appeared in the input. All 5 findings present in the input were processed and verified. If a 3rd lens existed it returned summary-only or was not transmitted; honest confirmed/dropped counts below reflect ONLY what was received.",
+  "confirmed_count": 5,
+  "dropped_count": 0,
+  "verified_findings": [
+    {
+      "severity": "P1",
+      "file": "phpunit.xml",
+      "line": "12 (suffix=\"Test.php\") + tests/Feature/Fiscal/ZCloseSafetyNetCronSentinel.php:68 + ZOpenSafetyNetCronSentinel.php:74",
+      "title": "16 sentinel tests named *Sentinel.php (not *Test.php) are NEVER collected by CI — silently disabled guardrails incl. NF525 CompositionSnapshot immutability + both Z-cron sentinels (whose assertions have ALSO drifted stale)",
+      "confirmed": true,
+      "is_new": true,
+      "grep_evidence": "find tests -name '*Sentinel.php' ! -name '*Test.php' -> 16 files (incl Fiscal/CompositionSnapshotImmutabilityTriggerSentinel.php, Fiscal/ZCloseSafetyNetCronSentinel.php, Fiscal/ZOpenSafetyNetCronSentinel.php, Refund/RefundCashMovementRecordedSentinel.php, Orders/OrderServiceChangeStatusRaceSentinel.php + 11 Security/Deploy/Migration/Database/Stripe). phpunit.xml:12 = <directory suffix=\"Test.php\">./tests/Feature</directory>. CI = vendor/bin/phpunit --testdox (.github/workflows/phpunit.yml:150). EMPIRICAL (macOS, ran without GNU timeout): vendor/bin/phpunit --list-tests collected 2734 tests; grep -iE 'ZCloseSafetyNet|ZOpenSafetyNet|CompositionSnapshotImmutability' -> EXIT 1 (ABSENT), while 'BranchScopeCoverageSentinelTest' (ends Test.php) IS present (exit 0). Proof-of-harm dispositive: ZCloseSafetyNetCronSentinel.php:67-71 asserts '55 23 * * *' but Kernel.php:362 schedules dailyAt('23:59') (->'59 23 * * *'); ZOpenSafetyNetCronSentinel.php:73-78 asserts '5 0 * * *' but Kernel.php:407 dailyAt('00:01') (->'1 0 * * *'). A would-RED assertion in a GREEN suite proves these files do not execute — also forecloses any 'a hook/canary runs them' objection (they'd be RED). CompositionSnapshotImmutabilityTriggerSentinel.php:42 extends TestCase with 7 test_ methods guarding NF525 composition_snapshot immutability (CLAUDE.md §8).",
+      "recommendation": "Two-step, no frozen-zone touch (tests + Kernel.php schedule lines are NOT §7 — only app/Services/Fiscal/* services are frozen, and they are untouched): (a) fix the two stale cron assertions to Path A SSOT — ZCloseSafetyNetCronSentinel.php:68 -> '59 23 * * *', ZOpenSafetyNetCronSentinel.php:74 -> '1 0 * * *'; (b) triage all 16 for similar drift, THEN flip discovery (rename to *SentinelTest.php OR add <directory suffix=\"Sentinel.php\"> testsuite). Flip discovery BEFORE fixing assertions = CI RED. Add a one-line meta-sentinel asserting `find tests -name '*Sentinel.php' ! -name '*Test.php'` is empty to prevent recurrence (none exists today — verified).",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P3",
+      "file": "app/Console/Kernel.php",
+      "line": "356-362",
+      "title": "Z-loop dead-zone comment is internally contradictory: claims '~10s residual window' (23:59:55/00:00:05) while the code and the comment's own closing sentence use dailyAt('23:59')/dailyAt('00:01') = ~2-min window",
+      "confirmed": true,
+      "is_new": true,
+      "grep_evidence": "Kernel.php:357-360 comment: '...Now 23:59:55 close + 00:00:05 open = ~10s residual window only (orphan risk reduced ~99.97%)...'; but Kernel.php:362 = ->dailyAt('23:59') (Laravel dailyAt is HH:MM only, runs 23:59:00, no seconds), and Kernel.php:404-405 correctly says 'open at 00:01 Paris (was 00:05) ... shrinks ~10 min -> ~2 min residual'. The two halves of the same block disagree (~10s vs ~2min). Real window 23:59:00 -> 00:01:00 = ~2 min, matching commit 860905b78 'compress 10min->2min'. Documentation-only contradiction, zero functional impact.",
+      "recommendation": "Severity downgraded P2->P3 (stale code comment, no functional effect; adjacent to finding #1, fold under its triage). Fix Kernel.php:357-360 to state the true ~2-min window. No frozen-zone touch. The ~2-min orphan window itself is the designed, owner-deferred behavior (Path B business_date SSOT deferred V1.0.X) backed by fiscal_alloc_error_at + retry cron — not a defect for V1 LOCAL single-resto.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P1",
+      "file": "resources/js/components/admin/dashboard/LastZReportWidget.vue",
+      "line": "96",
+      "title": "KNOWN BACKLOG #5 VERIFY: Z-close/Z-open UI button still absent at HEAD — only frontend touchpoint is GET-only; production close/open relies solely on the 23:59/00:01 crons",
+      "confirmed": true,
+      "is_new": false,
+      "grep_evidence": "grep -rn 'z-report/close|z-report/open|closeZ|openZ' resources/js/ -> EXIT 1 (no match, zero frontend mutation wiring). Only LastZReportWidget.vue:96 = `const res = await axios.get('admin/fiscal/z-report');` (read-latest). Server endpoints EXIST but unreferenced by any frontend mutation: routes/api.php:1199 POST z-report/open, :1201 POST z-report/close -> app/Http/Controllers/Admin/Fiscal/ZReportController.php:43 open / :53 close (CORRECTED path: actual file is at app/Http/Controllers/Admin/Fiscal/ZReportController.php, raw finding omitted the /Fiscal/ segment; :43/:53 line numbers verified exact). Kernel.php:362 (23:59 close) / :407 (00:01 open) crons are the sole production trigger.",
+      "recommendation": "STILL MISSING at HEAD 962d9d154 (~6h backlog est). Cron safety-net 23:59/00:01 mitigates the dead-zone, so NOT a hard V1 ship-blocker for single-box Le Cayenne but remains the documented owner-gate UI gap. No frozen-zone touch to add the button (new Vue + existing controller). Re-confirm finding #1 first so the cron guard backstopping this actually executes in CI.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P3",
+      "file": "app/Services/Fiscal/AuditLogService.php",
+      "line": "188 (retry) + 245-253 (lastHashFor) + 112 (transaction)",
+      "title": "Audit-chain retry-on-UNIQUE is ineffective under its own trigger AND wholly untested (test-vs-production gap) — FROZEN ZONE",
+      "confirmed": true,
+      "is_new": true,
+      "grep_evidence": "performInsert() catches UNIQUE QueryException and recursively re-calls itself at AuditLogService.php:188 (`return $this->performInsert($data, $branchId, $attempt + 1);`) while still inside DB::transaction opened at :112. Retry re-reads tail via lastHashFor() :245-253 = plain `AuditLog::query()->orderBy('id','desc')->value('current_hash')` — NO FOR UPDATE/lock. config/database.php: grep -n 'isolation|READ COMMITTED|REPEATABLE' -> EXIT 1 (no override -> MySQL default REPEATABLE READ): in-transaction re-read returns SAME snapshot tail -> same prev_hash -> identical UNIQUE violation. Net: retry cannot resolve the fork it is designed for on V1 MySQL. COVERAGE: tests/Feature/Fiscal/AuditLogConcurrencyTest.php:82 test_retry_after_forced_collision_produces_consistent_chain writes 3 rows SEQUENTIALLY via service->write() (:85/:93/:96) — each acquires the cache lock so NO collision occurs and the :188 retry branch never executes; it asserts the happy path. test_unique_chain_index_rejects_fork:47 uses raw DB::table()->insert() bypassing performInsert. Retry branch = ZERO coverage.",
+      "recommendation": "FROZEN ZONE (CLAUDE.md §7 — AuditLogService.php). Do NOT edit without owner LOCK. V1 impact nil: retry only fires when Cache::lock fails to serialize (cache outage / multi-instance split-brain), impossible on V1 LOCAL single-box (the lock alone guarantees no fork). For V1-FINAL: (1) add a regression test that forces a genuine collision (concurrent processes, or a test-double whose first lastHashFor returns a stale tail) so the retry branch is exercised + its true behavior documented; (2) defer the implementation fix (per-attempt transaction OR re-read under lockForUpdate/READ COMMITTED) to a V2/multi-instance LOCK. Latent, NOT a V1 ship gate.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P3",
+      "file": "app/Http/Controllers/Admin/CashOverviewController.php",
+      "line": "146 (limit MAX_ROWS=500) + 202 (summarize over capped collection)",
+      "title": "Cash-overview summary (by_source/by_mode/total) silently under-counts on >500-transaction days while the reconciliation card stays correct",
+      "confirmed": true,
+      "is_new": true,
+      "grep_evidence": "CashOverviewController.php:70 const MAX_ROWS = 500; :146 query `->limit(self::MAX_ROWS)`; :202 `$summary = $this->summarize($transactions)` aggregates ONLY the capped collection into total/by_source/by_mode. On a busy day >500 payment tx in the window, the ecart-detection summary reflects only the most-recent 500 rows -> under-stated grand total + per-source buckets. :252 meta.capped flag set true but the summary numbers themselves are silently partial. expected_cash is UNAFFECTED — uses drawerCashCollectedUnfiltered() (:222, separate uncapped sum, Fix C-014 documented :214-221), so the primary drawer ecart number stays correct. Asymmetry confirmed by-design for the drawer column but NOT mirrored for the summary.",
+      "recommendation": "Non-frozen (ordinary admin controller). V1 Le Cayenne single-resto unlikely to exceed 500 tx in a default window, so latent P3. For V1-FINAL: compute the summary from an uncapped aggregate query (GROUP BY source/mode) independent of the 500-row display cap — mirror the drawerCashCollectedUnfiltered pattern. Add a test seeding >500 transactions to assert the summary total matches the uncapped sum. No existing test seeds >500, so the under-count is invisible to the suite (tests/Feature/Admin/CashOverviewControllerTest.php + tests/e2e/wave-x4-cash-overview.spec.js).",
+      "drop_reason": ""
+    }
+  ]
+}

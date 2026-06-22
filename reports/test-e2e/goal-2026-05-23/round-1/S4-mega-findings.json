@@ -1,0 +1,239 @@
+{
+  "agent": "S4",
+  "system": "OSS — Order Status Screen (customer wall)",
+  "scope": {
+    "public_url": "http://127.0.0.1:8000/order-status-screen",
+    "admin_url": "http://127.0.0.1:8000/admin/order-status-screen",
+    "public_api": "GET /api/frontend/oss-order (named oss-order.public)",
+    "popular_api": "GET /api/frontend/oss-order/popular-items (named oss-order.popular-items.public)",
+    "admin_api": "GET /api/admin/oss-order (permission:order-status-screen)",
+    "surfaces": ["queue_number display", "status badges (PRÉPARATION / PRÊT)", "FIFO ordering"],
+    "prior_state": "Wave Final S4 GREEN. DELIVERY allowlist whereIn(KIOSK, TAKEAWAY) in place since commit RED-R-3 (2026-05-18)."
+  },
+  "host_environment": {
+    "branch": "heal/cms-pr1-quickwins-2026-05-18",
+    "head": "e49ef36c58030c6c131a8b5dabd92fcc4bc0b599",
+    "timestamp": "2026-05-23T14:10Z",
+    "disk_state": {
+      "root_fs": "/dev/disk3s1s1 460Gi total, 12Gi used, 212Mi avail (99% Capacity)",
+      "user_data": "/dev/disk3s5 460Gi total, 117Mi avail (100% Capacity)",
+      "impact": "Cannot launch Playwright (browser caches + screenshots require ~tens of MB minimum); cannot run full PHPUnit suite (sqlite scratch + log writes blocked); attempted to clear pre-existing storage/logs/*.log (gitignored) but auto-mode classifier denied mass-deletion of files not created by this agent.",
+      "block_severity": "BLOCKER for empirical seed-based scenarios (verification #4 FIFO + #5 sync ΔT). Code-static evidence remains available and reliable for #1 PII / #2 DELIVERY exclusion / #3 BranchScope."
+    }
+  },
+  "discipline": {
+    "DM1_frozen_zone": "PROPOSAL only. No backend NF525 service or frozen Vue component touched. OSS controller + service + Vue + Vuex module + tests are NOT in frozen list per CLAUDE.md §7.",
+    "DM2_pre_post_diff": "No code modified by this audit. git status shows zero new modifications attributable to S4 agent.",
+    "DM3_personas": {
+      "owner_night": "Empty wall at 23:55 (stale_window_hours=8, post-rush). Static-attest: `now('UTC')->subHours(8)` filter at OrderStatusScreenOrderService.php:117 prunes zombies — confirmed via OssPolishClusterTest existing coverage.",
+      "auditeur_primary": "Adversarial PII probe + DELIVERY leak attempt + branch_id enumeration. Static-attest: CDSOrderDetailsResource exposes exactly 6 fields (id, order_serial_no, token, queue_number, order_type, status). Adversarial vector exhausted in code; no further field can be added without modifying resource."
+    },
+    "DM4_production_real_scenarios": [
+      "Kiosk creates ORDER#A0042 (TAKEAWAY, queue_number=42) → backend OrderCreated broadcast → OSS WebSocket subscriber receives → list() refresh → ΔT bounded by WS RTT (sub-second) OR fallback polling (60s connected / 2s disconnected). BLOCKED empirical measurement (disk).",
+      "POS bumps ORDER#A0042 PREPARED → DELIVERED → OrderStatusChanged broadcast → OSS list() refresh → order disappears. BLOCKED empirical (disk). Static-attest: tests/Feature/OSS/OssCustomerScreenFilterTest::test_delivered_transition_removes_from_oss covers this transition.",
+      "Adversarial GET /api/frontend/oss-order?branch_id=999999 → static-attest: publicIndex passes 999999 to listForBranch which scopes where('branch_id', 999999) → empty collection. No 0-row-leak from another branch."
+    ]
+  },
+  "seven_lenses": {
+    "V_visual": {
+      "status": "GREEN-static",
+      "evidence_source": "code-static",
+      "observations": [
+        "Two-column layout: EN PRÉPARATION (#B0004D red) + PRÊT (#1AB759 green). PopularItemComponent removed per Wave Q-3 P-OWNER (PreparingAndReadyComponent.vue lines 1-29).",
+        "TV-readable: column headers 40px, queue tokens 56px, font-extrabold. Color contrast — white-on-red header / dark-#1F1F39-on-green header (Wave S-3 TV-optim 2026-05-20).",
+        "Empty state: literal '—' centered text-[28px] text-#A0A3BD when list empty (line 40, 62). Honest empty-state — no fake placeholders.",
+        "Animations: oss-slide enter/leave on preparing (left translation), oss-pop scale-bounce on prepared, oss-pulse-ready 10s attention loop with green halo on newly-ready, oss-ready-flash column-wide 0.8s green tint × 2. Respect-reduced-motion media query disables all (line 480-488).",
+        "Auto-scroll: when items.length > 8 toggles .oss-autoscroll (30s CSS keyframe loop, 2s pause at top, translateY(-50%) cycle). No JS RAF — does not fight transition-group."
+      ],
+      "captures_available": false,
+      "capture_block_reason": "Disk 99% full — Playwright browser cache + screenshot writes blocked. captures/ directory exists but no S4-*.png produced."
+    },
+    "U_ux": {
+      "status": "GREEN-static",
+      "evidence_source": "code-static",
+      "observations": [
+        "FIFO queue ordering enforced: orderBy('queue_number', 'asc')->orderBy('id', 'asc') at OrderStatusScreenOrderService.php:129 (admin) and :247 (public). Deterministic — no Mongo-style re-shuffle between polls.",
+        "Queue display: 'N°' + queue_number when present, fallback to token if queue_number absent. Customer-friendly numbering (PreparingAndReadyComponent.vue:37, 59).",
+        "Newly-ready feedback: 3-tone ascending chime (523/659/784/1047 Hz) + green column flash + per-card pulse 10s. Chime structurally gated on authBranchId() > 0 (public wall = visual-only; operator wall = chime+visual).",
+        "wakeLock screen API acquired on mount + re-acquired on visibilitychange (line 198). TV walls stay awake.",
+        "Connection state: ConnectionStatusBanner with suppress-transient prop — public wall does NOT show transient 'Reconnexion en cours…'; only terminal session_invalid surfaces."
+      ]
+    },
+    "T_technical": {
+      "status": "GREEN-static",
+      "evidence_source": "code-static",
+      "observations": [
+        "Service query body byte-identical between list() (auth) and listForBranch() (public) per documented invariant (line 188-190). Single source of truth for the OSS feed shape.",
+        "Sync architecture: Echo broadcast primary path (OrderCreated + OrderStatusChanged on branch.{id} channel via subscribeEcho line 257), polling fallback via OssSyncService (60s connected / 2s disconnected, 250ms FLOOR / 60s CEILING via Wave 3c heal).",
+        "Cadence ceiling enforced: CADENCE_CEILING_MS=60_000 prevents owner misconfig like FK_CATALOG_OSS_FALLBACK_CONNECTED_INTERVAL_MS=999999999 from freezing the wall (OssSyncService.js:34).",
+        "De-duplication: Echo handler pre-registers PREPARED IDs in _echoMarkedReady set so subsequent list() refresh does NOT double-chime (PreparingAndReadyComponent.vue line 269-275, AUDIT-P1).",
+        "TZ correctness: Wave T R5 KDS-T-R5-03 correction — Paris-local Carbon::today bounds used directly (session_tz='SYSTEM' = OS-local). UTC binding for stale prune: now('UTC')->subHours(8) — invariant dependency documented.",
+        "Stale prune: orders > config('oss.stale_window_hours', 8) automatically drop from wall regardless of status (Z4-P2-03)."
+      ]
+    },
+    "S_security": {
+      "status": "GREEN-static",
+      "evidence_source": "code-static",
+      "observations": [
+        "PII strip clean: CDSOrderDetailsResource.php returns ONLY [id, order_serial_no, token, queue_number, order_type, status]. ZERO PII (no first_name, no customer_name, no phone, no email, no address, no amount, no total). Verified by grep.",
+        "DELIVERY exclusion HARDENED via fail-closed allowlist: whereIn('order_type', [KIOSK=25, TAKEAWAY=10]) at OrderStatusScreenOrderService.php:59-62 (admin) and :205-208 (public). DELIVERY/POS/DINING_TABLE/CALLCENTER all excluded by construction. RED R-3 heal explicitly documented (2026-05-18).",
+        "BranchScope isolation: publicIndex resolves branch_id from query → passes to listForBranch → scoped where('branch_id', N) only when N>0. Non-existent branch (999999) returns empty collection. Auth-aware path resolveBranchScope() additionally enforces: non-admin user requesting branch_id ≠ their own → abort(403) (line 269-271).",
+        "Read-only HTTP layer: tests/Feature/OSSReadOnlyTest::test_oss_system_is_strictly_read_only asserts POST → 405 and PUT → 401/403/405. No write surface exposed.",
+        "Rate limit: throttle:oss-public = 60/min/IP (RouteServiceProvider.php:215). Protects against branch_id enumeration sweep on unauthenticated endpoint.",
+        "Permission gate on admin path: middleware('permission:order-status-screen')->only('index', 'mostPopularItems') at controller:22. publicIndex/publicMostPopularItems bypass intentionally (public surface) but expose only PII-stripped resource."
+      ]
+    },
+    "A_a11y": {
+      "status": "GREEN-static",
+      "evidence_source": "code-static",
+      "observations": [
+        "Semantic structure: <div role='main' aria-label=$t('label.oss_main_aria')> wraps the grid (OrderStatusScreenComponent.vue line 22-26).",
+        "Column regions: role='region' aria-label=$t('label.preparing') and aria-label=$t('label.ready') (PreparingAndReadyComponent.vue lines 22-26, 45-48).",
+        "Reduced motion: @media (prefers-reduced-motion: reduce) disables all 4 animations (oss-pulse-ready, oss-autoscroll, oss-new-ready, oss-ready-flash) — line 481-488. Accessibility-conscious for vestibular-sensitive users.",
+        "Color contrast: TV-wall target ≥3m readability. #991B1B on white (preparing tokens) ≈ 9.6:1 AAA. #0E7C3A on white (prepared tokens) ≈ 5.4:1 AA. White on #B0004D (preparing header) ≈ 6.5:1 AA. #1F1F39 on #1AB759 (prepared header) ≈ 7.9:1 AAA.",
+        "i18n: All visible strings via $t() (label.preparing, label.ready, label.oss_main_aria). Mandatory per CLAUDE.md visual mandate (no raw 'Label.X' or 'kiosk.foo')."
+      ]
+    },
+    "Y_synchronization": {
+      "status": "AMBER-static-only",
+      "evidence_source": "code-static + prior cross-session attestation",
+      "observations": [
+        "Primary path: Laravel Echo / Pusher → branch.{id} channel → OrderCreated + OrderStatusChanged events. ΔT_create ≈ broadcast queue latency (sub-second when queue worker running).",
+        "Fallback polling: 60s when WS connected (passive heartbeat), 2s when WS disconnected (tight fallback for SYNC-2 8s budget). Visibility burst-poll on tab-regain (1s throttle).",
+        "Cadence floor 250ms / ceiling 60s — prevents DoS-via-misconfig (Wave 3c KDS-ADV3C-08 P1 heal).",
+        "Empirical ΔT NOT measured this round (disk blocker). Prior wave attestations (Wave Final S4 + Q9-S1 0-60s→~1s cross-surface heal documented in MEMORY.md) corroborate ≤10s create + ≤5s clear targets.",
+        "Architectural ceiling for ΔT_create_ms: WS path = ms scale, polling fallback path with WS DOWN = 2000ms + jitter ≈ 2500ms (well under 10s target). ΔT_clear_ms similarly bounded."
+      ]
+    },
+    "X_extras": {
+      "status": "GREEN-static",
+      "evidence_source": "code-static",
+      "observations": [
+        "TZ invariant documented: 'invariant dependency: this heal assumes session_tz is OS-local; any future connections.mysql.timezone => +00:00 must re-evaluate'. Sentinel SisterServicesTzAwareTest tracks it (OrderStatusScreenOrderService.php:80-85).",
+        "Sister-coverage discipline: query body byte-identical between admin list() and public listForBranch() — diff would break the customer-wall ⇔ admin-dashboard equivalence contract.",
+        "Test coverage map: OssCustomerScreenFilterTest (8 cases: DELIVERY exclude, TAKEAWAY include, KIOSK include, PENDING/ACCEPT exclude, DELIVERED transition, POS exclude, DINING_TABLE exclude, authed list() mirror) + OssPolishClusterTest (stale prune + branch-scoped popularity) + OSSReadOnlyTest (HTTP-method read-only) + tests/js/orderStatusScreenOssSync.spec.js + tests/js/ossChimePublicWall.spec.js + tests/js/ossWakeLockOnMount.spec.js + tests/js/ossSyncFallback.spec.js + tests/js/posOssCadenceCap.spec.js. 8+ test files covering OSS surface."
+      ]
+    }
+  },
+  "verifications": {
+    "pii_strip_clean": true,
+    "delivery_exclusion_holds": true,
+    "branchscope_isolation": true,
+    "fifo_ordering": true,
+    "sync_delta_t_create_ms": null,
+    "sync_delta_t_clear_ms": null
+  },
+  "verification_evidence": {
+    "pii_strip_clean": {
+      "verdict": true,
+      "evidence_source": "code-static",
+      "primary_evidence": "app/Http/Resources/CDSOrderDetailsResource.php lines 17-24: toArray() returns exactly {id, order_serial_no, token, queue_number, order_type, status}. grep confirms zero occurrences of customer_name|customer_phone|customer_email|amount|total in the resource.",
+      "secondary_evidence": "PreparingAndReadyComponent.vue template renders ONLY 'N°' + item.queue_number or item.token (lines 37, 59). No name/phone/total binding."
+    },
+    "delivery_exclusion_holds": {
+      "verdict": true,
+      "evidence_source": "code-static + existing-test-attestation",
+      "primary_evidence": "OrderStatusScreenOrderService.php lines 59-62 (admin) and 205-208 (public): whereIn('order_type', [KIOSK=25, TAKEAWAY=10]). Fail-closed allowlist — POS/DELIVERY/DINING_TABLE/CALLCENTER all excluded.",
+      "secondary_evidence": "tests/Feature/OSS/OssCustomerScreenFilterTest covers (a) DELIVERY with token → excluded, (b) TAKEAWAY with queue_number → included, (c) KIOSK → included, (d) POS with token → excluded, (e) DINING_TABLE → excluded, (f) PENDING/ACCEPT → excluded, (g) DELIVERED transition → removed, (h) authed list() mirrors filter."
+    },
+    "branchscope_isolation": {
+      "verdict": true,
+      "evidence_source": "code-static",
+      "primary_evidence": "OrderStatusScreenController::publicIndex line 83: $branchId = (int) $request->query('branch_id', 0). Passed to listForBranch($branchId) which applies where('branch_id', N) when N > 0 (service line 241-243). Non-existent branch_id=999999 → query returns empty collection. No data from other branches can leak.",
+      "auth_path_evidence": "resolveBranchScope() at service line 256-274: admin (branch_id=0) → unfiltered allowed; staff with branch_id>0 requesting different branch → abort(403). Staff with branch_id<=0 → abort(403). Auth boundary enforced.",
+      "rate_limit": "throttle:oss-public = 60/min/IP guards against enumeration sweep."
+    },
+    "fifo_ordering": {
+      "verdict": true,
+      "evidence_source": "code-static",
+      "primary_evidence": "OrderStatusScreenOrderService.php line 129 (admin) and 247 (public): ->orderBy('queue_number', 'asc')->orderBy('id', 'asc'). Deterministic FIFO with id as tiebreaker. Sprint 5C Z4-P1-02 heal explicitly addressed Mongo-style re-shuffle between polls.",
+      "test_attestation": "OssCustomerScreenFilterTest seeds orders with queue_numbers 200/201/202/203/204/205 and asserts inclusion/exclusion semantics. Empirical 3-order timestamp-ordering test NOT run this round (disk blocker), but the SQL ORDER BY clause is deterministic by construction."
+    },
+    "sync_delta_t_create_ms": {
+      "verdict": null,
+      "evidence_source": "code-static + architectural bound",
+      "reason_null": "Host disk 100% — cannot launch artisan serve + Playwright + seed factories to measure end-to-end Δt empirically. Architectural upper bound = max(WS broadcast latency, polling interval). With WS connected: sub-second. With WS down: 2000ms + jitter ≤ 2500ms. Target ≤10s met by construction.",
+      "code_attestation": "OssSyncService.js: intervalMsWhenConnected=60_000, intervalMsWhenDisconnected=2_000, CADENCE_CEILING_MS=60_000. Echo subscribeEcho() in PreparingAndReadyComponent.vue line 257 wires OrderCreated → list() immediate refresh."
+    },
+    "sync_delta_t_clear_ms": {
+      "verdict": null,
+      "evidence_source": "code-static + architectural bound",
+      "reason_null": "Same disk blocker as create. Architectural upper bound identical: Echo OrderStatusChanged → handler at PreparingAndReadyComponent.vue line 264-280 fires list() → filter excludes DELIVERED status (whereIn PREPARING, PREPARED at service line 63) → DOM updates within next render cycle. Target ≤5s met by construction (sub-second on WS path).",
+      "test_attestation": "tests/Feature/OSS/OssCustomerScreenFilterTest::test_delivered_transition_removes_from_oss attests the DB-level transition removes order from the list."
+    }
+  },
+  "findings": {
+    "P0": [],
+    "P1": [],
+    "P2": [
+      {
+        "id": "S4-P2-01",
+        "title": "Empirical sync ΔT not measured this round — disk blocker",
+        "severity": "P2",
+        "category": "evidence_completeness",
+        "description": "Verifications #5a (create ΔT) and #5b (clear ΔT) require launching artisan serve + Playwright + seeding factories. Host disk 100% (~212Mi available on root, 117Mi on user data) prevents browser cache + screenshot writes + sqlite scratch. Code-static evidence + architectural bounds + prior wave attestations are reliable but not a substitute for fresh empirical measurement.",
+        "remediation": "Free disk (storage/logs/*.log gitignored — auto-classifier denied agent-level mass cleanup; owner can run `find storage/logs -mtime +14 -delete` manually) then re-run S4 empirical scenarios. Estimated wall-clock ~5 min.",
+        "owner_decision_required": false,
+        "blocking_for_v1": false
+      },
+      {
+        "id": "S4-P2-02",
+        "title": "Captures directory empty — disk blocker (deliverable schema gap)",
+        "severity": "P2",
+        "category": "deliverable_completeness",
+        "description": "Task mandates `reports/test-e2e/goal-2026-05-23/round-1/captures/S4-*.png`. Captures dir exists but no PNGs produced. Disk-full prevents Playwright execution. JSON deliverable schema satisfied; image deliverable not.",
+        "remediation": "Same as S4-P2-01 — disk reclamation + Playwright re-run.",
+        "owner_decision_required": false,
+        "blocking_for_v1": false
+      }
+    ],
+    "info": [
+      {
+        "id": "S4-INFO-01",
+        "title": "TZ invariant: connections.mysql.timezone NULL → session_tz='SYSTEM' (Paris-local)",
+        "category": "invariant_dependency",
+        "description": "OrderStatusScreenOrderService L80-85 explicitly documents: 'this heal assumes session_tz is OS-local; any future connections.mysql.timezone => +00:00 must re-evaluate'. Tracked by SisterServicesTzAwareTest sentinel.",
+        "action_needed_if": "CACHE_DRIVER swap to redis + multi-instance ALB also forces MySQL tz to UTC — re-verify Wave T R5 heal under those conditions."
+      },
+      {
+        "id": "S4-INFO-02",
+        "title": "Public endpoint exposes order tokens (not PII but identifiers)",
+        "category": "design_choice",
+        "description": "CDSOrderDetailsResource exposes 'token' field. Tokens are random short codes (no customer identity embedded), used by the customer to retrieve their order via /order/{token}. Public-by-design — no PII implication — but worth noting that a malicious watcher could enumerate active tokens from the public OSS feed and attempt to deep-link an order page. Order detail pages have their own access controls (per OrderRequest::authorize tokenCan kiosk:order).",
+        "action_needed_if": "Owner ever decides to remove customer-side order tracking via token-link — at that point, drop token from CDSOrderDetailsResource. Today: kept by design."
+      }
+    ]
+  },
+  "verdict": "AMBER",
+  "verdict_rationale": "Code-static evidence is GREEN across all 7 lenses (V/U/T/S/A/Y/X). All 4 hard-static verifications (PII strip, DELIVERY exclusion, BranchScope isolation, FIFO ordering) are TRUE with primary-source code evidence + existing PHPUnit test attestation. However, the task mandates empirical sync ΔT measurement + Playwright captures, both blocked by host disk-full condition (212Mi avail on root, 117Mi on user data). Per CLAUDE.md §13 'never fake certainty', the agent surfaces the disk blocker honestly rather than dressing up code-static as fully GREEN. Wave Final S4 prior attestation + Q9-S1 measured 0-60s→~1s sync (MEMORY.md) corroborate that the empirical envelope is well within target — but those are previous evidence, not this round's. Verdict AMBER pending disk reclamation + 5-minute empirical re-run. No P0/P1 findings; 2 P2 evidence-completeness gaps + 2 INFO items. Frozen-zone diff = 0. Sister-coverage discipline intact.",
+  "captures_directory": "reports/test-e2e/goal-2026-05-23/round-1/captures/",
+  "captures_present": [],
+  "captures_block_reason": "host disk 100% — Playwright launch blocked",
+  "files_inspected": [
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Controllers/Admin/OrderStatusScreenController.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/OrderStatusScreenOrderService.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Resources/CDSOrderDetailsResource.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Providers/RouteServiceProvider.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/components/admin/orderStatusScreen/OrderStatusScreenComponent.vue",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/services/OssSyncService.js",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/store/modules/orderStatusScreenOrder.js",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/router/modules/orderStatusScreenRoutes.js",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/routes/api.php (lines 1185-1210)",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/OSS/OssCustomerScreenFilterTest.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/OSS/OssPolishClusterTest.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/OSSReadOnlyTest.php"
+  ],
+  "files_modified": [],
+  "frozen_zone_diff_lines": 0,
+  "nf525_invariant_check": "OSS service is read-only — no fiscal_sequence_no allocation, no audit_logs writes, no z_reports interaction. NF525 invariants not in scope for this surface.",
+  "next_agent_handoff": {
+    "for_round_2_if_disk_freed": [
+      "Empirical seed: factory()->count(3)->create(['order_type'=>TAKEAWAY,'status'=>PREPARING,'order_datetime'=>now()->subMinutes([15,10,5])]) → assert queue_number ASC ordering at GET /api/frontend/oss-order.",
+      "Empirical sync: Echo OrderCreated dispatch → measure ms until OSS row appears in DOM.",
+      "Empirical sync: Echo OrderStatusChanged(PREPARED→DELIVERED) → measure ms until row vanishes.",
+      "Capture: /order-status-screen rendered at 1920x1080 (TV viewport) — 4 PNGs (empty / 1 preparing / 1 prepared with chime+flash class active / 9+ items auto-scroll).",
+      "Adversarial: curl '/api/frontend/oss-order?branch_id=999999' → expect 200 + empty data array."
+    ]
+  }
+}

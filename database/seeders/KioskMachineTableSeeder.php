@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Enums\Status;
 use App\Models\KioskMachine;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Dipokhalder\EnvEditor\EnvEditor;
 
@@ -24,48 +25,52 @@ class KioskMachineTableSeeder extends Seeder
 
         $envService = new EnvEditor();
 
-        // [GAP-19-3] Always create the primary kiosk machine for branch 1 (Le Cayenne).
-        // Without this, kiosk login is impossible in production (non-DEMO) environments.
-        // The admin user (id=1) owns the kiosk machine; branch_id=1 is the main branch.
-        KioskMachine::firstOrCreate(
+        // Owner = admin Le Cayenne (E2E / ensure-admin change souvent l’id utilisateur ; user_id=1 cassait l’auto-login borne).
+        $owner = User::query()
+            ->where('email', 'admin@lecayenne.fr')
+            ->where('status', Status::ACTIVE)
+            ->first()
+            ?? User::query()->orderBy('id')->first();
+
+        if (! $owner) {
+            \Illuminate\Support\Facades\Log::warning('[KioskMachineTableSeeder] No user row; skipping kiosk machines.');
+
+            return;
+        }
+
+        $ownerBranch = (int) ($owner->branch_id ?: 1);
+
+        // [GAP-19-3] Borne principale Le Cayenne — updateOrCreate pour réaligner user/branch après re-seed E2E.
+        KioskMachine::updateOrCreate(
             ['username' => 'kiosk-lecayenne'],
             [
-                'user_id'    => 1,
-                'branch_id'  => 1,
+                'user_id' => $owner->id,
+                'branch_id' => $ownerBranch,
                 'machine_id' => 'KIOSK-LC-001',
-                'username'   => 'kiosk-lecayenne',
-                'password'   => bcrypt('kiosk123'),
-                'status'     => Status::ACTIVE,
-                'created_at' => now(),
-                'updated_at' => now(),
+                'password' => bcrypt('kiosk123'),
+                'status' => Status::ACTIVE,
             ]
         );
 
         if ($envService->getValue('DEMO')) {
-            KioskMachine::firstOrCreate(
+            KioskMachine::updateOrCreate(
                 ['username' => 'mirpur1'],
                 [
-                    'user_id'    => 1,
-                    'branch_id'  => 1,
+                    'user_id' => $owner->id,
+                    'branch_id' => $ownerBranch,
                     'machine_id' => '12345',
-                    'username'   => 'mirpur1',
-                    'password'   => bcrypt('123456'),
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now(),
+                    'password' => bcrypt('123456'),
+                    'status' => Status::ACTIVE,
                 ]
             );
-            KioskMachine::firstOrCreate(
+            KioskMachine::updateOrCreate(
                 ['username' => 'gulshan1'],
                 [
-                    'user_id'    => 1,
-                    'branch_id'  => 2,
+                    'user_id' => $owner->id,
+                    'branch_id' => 2,
                     'machine_id' => '67891',
-                    'username'   => 'gulshan1',
-                    'password'   => bcrypt('123456'),
-                    'status'     => Status::ACTIVE,
-                    'created_at' => now(),
-                    'updated_at' => now(),
+                    'password' => bcrypt('123456'),
+                    'status' => Status::ACTIVE,
                 ]
             );
         }

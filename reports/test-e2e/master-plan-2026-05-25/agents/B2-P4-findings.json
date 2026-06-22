@@ -1,0 +1,237 @@
+{
+  "agent": "B2-P4",
+  "mission": "POS x Owner-night end-of-day review — sales today summary / top items / cashier performance / refund rate / anomaly detection / export PDF-Excel (Gap-Hunt found ABSENT)",
+  "discipline": "DM6 RO + DM3 + DM5 + DM8",
+  "server": "http://127.0.0.1:8000",
+  "executed_at": "2026-05-25T22:30:00+02:00",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "a6ed32807",
+  "auth": {
+    "user_id": 2,
+    "email": "admin@lecayenne.fr",
+    "role": "Admin",
+    "branch_id": 1,
+    "method": "Bearer token via /api/auth/login + x-api-key MIX_API_KEY",
+    "token_short": "94|...0d0c"
+  },
+  "states": [
+    {
+      "n": 1,
+      "title": "Curl /admin/dashboard endpoints + /admin/cash-overview (POS end-of-day widgets)",
+      "endpoints_hit": [
+        "GET /api/admin/dashboard/total-orders?branch_id=1&period=today",
+        "GET /api/admin/dashboard/sales-summary?branch_id=1&period=today",
+        "GET /api/admin/dashboard/order-statistics?branch_id=1&period=today",
+        "GET /api/admin/dashboard/realtime-report?branch_id=1",
+        "GET /api/admin/dashboard/channel-statistics?branch_id=1",
+        "GET /api/admin/cash-overview?branch_id=1"
+      ],
+      "results": {
+        "total_orders_today": 0,
+        "sales_summary_today": { "total_sales": "0,00 €", "avg_per_day": "0,00 €" },
+        "order_statistics_today": { "total_order": 1, "pending": 0, "preparing": 0, "accept": 1, "prepared": 0, "out_for_delivery": 0, "delivered": 0, "canceled": 0, "returned": 0, "rejected": 0 },
+        "realtime_report_today": { "daily_sales": "0,00 €", "daily_orders": 1, "average_ticket": "0,00 €" },
+        "channel_statistics": [ { "name": "Web", "value": 0 }, { "name": "Kiosk/App", "value": 100 }, { "name": "POS", "value": 0 } ],
+        "cash_overview_today": {
+          "data_rows": 0,
+          "summary": { "total": 0, "count": 0, "by_source": [], "by_mode": [] },
+          "cash_session": { "id": 1, "opened_at": "2026-05-25T12:32:25+02:00", "opening_amount": 50, "expected_cash": 50, "cash_collected": 0 }
+        },
+        "pos_specific_signal": "POS channel = 0% across ALL widgets. channel-statistics shows POS=0 explicit. cash-overview summary.by_source=[] empty. 0 POS-cash movements today, 0 POS orders today."
+      },
+      "owner_q_answered": "Sales today via POS ? — ZÉRO commande POS aujourd'hui (DB cross-check: orders WHERE source_surface='pos' AND DATE(created_at)=today → 0 rows). Channel-statistics confirme POS=0%. Cash drawer opened 12h32 par Admin (user_id=2) MAIS 0 mouvements caisse aujourd'hui. La seule vente du jour est borne (order #63, 7.80€, source_surface=kiosk) — pas POS. Owner-night POS = empty result set + drift sales-summary 0€ vs realtime daily_orders=1 (peer endpoint compte la borne) confirme la même drift que B1-P4-F01 (kiosk-channel drift) — sur POS le widget renvoie cohérent 0/0 puisque pas de POS du tout."
+    },
+    {
+      "n": 2,
+      "title": "Curl /admin/sales-report endpoints + items-report (top items, export, PDF)",
+      "endpoints_hit": [
+        "GET /api/admin/sales-report?branch_id=1 (HTTP 200, 2 orders all-time)",
+        "GET /api/admin/sales-report/overview?branch_id=1 (HTTP 200, total_orders=2 total_earnings=32,79€ all-time)",
+        "GET /api/admin/sales-report/export?branch_id=1 (HTTP 200 CT=xlsx SIZE=6500 — Microsoft Excel 2007+ verified by file(1))",
+        "GET /api/admin/sales-report/pdf?branch_id=1 (HTTP 422 CT=json SIZE=189 — BROKEN)",
+        "GET /api/admin/sales-report?branch_id=1&source_surface=pos (HTTP 200 — RETURNS ALL 2 ORDERS, including kiosk #63 + delivery #1 — source_surface filter IGNORED)",
+        "GET /api/admin/sales-report?branch_id=1&source=2 (HTTP 200, 0 rows — numeric source filter WORKS)",
+        "GET /api/admin/sales-report?branch_id=1&from_date=2026-05-25&to_date=2026-05-25 (HTTP 200, 1 order = kiosk #63)",
+        "GET /api/admin/items-report?branch_id=1 (HTTP 200)",
+        "GET /api/admin/items-report/export?branch_id=1 (HTTP 200 CT=xlsx SIZE=7490)",
+        "GET /api/admin/items-report/pdf?branch_id=1 (HTTP 422 — BROKEN, same root cause)"
+      ],
+      "results": {
+        "sales_report_index_returns": [
+          { "id": 63, "order_serial_no": "25052663", "queue_number": "A0001", "total": 7.80, "source": 5, "source_surface": "kiosk", "status": 4, "payment_status": 15, "items": [ { "item_id": 12, "name": "Cheddar" }, { "item_id": 26, "name": "Tacos" } ] },
+          { "id": 1, "order_serial_no": "ORD-5539-GL", "total": 24.99, "source": null, "source_surface": "delivery", "status": 5, "payment_status": 10 }
+        ],
+        "pdf_error_body": "{\"status\":false,\"message\":\"Undefined array key \\\"company_name\\\" (View: /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/views/pdf/sales_report.blade.php)\"}",
+        "items_pdf_error_body": "{\"status\":false,\"message\":\"Undefined array key \\\"company_name\\\" (View: ...resources/views/pdf/items_report.blade.php)\"}",
+        "pdf_root_cause": "CompanyService::list() returns Settings::group('company')->all() which is EMPTY ARRAY on this DB. PDF blades sales_report.blade.php:108 + items_report.blade.php:96 dereference $company['company_name'] without ?? fallback → PHP 8 ArrayAccess undefined-key error → caught at SalesReportController::pdf catch → 422 response. Verified via: php tinker $svc->list() → array().",
+        "export_xlsx_path": "Excel::download via SalesReportExport class does NOT touch CompanyService → works regardless of settings state.",
+        "gap_hunt_reconciliation": "Mission framing said 'Export PDF/Excel (Gap-Hunt found ABSENT)' — REALITY: routes EXIST (api.php:1057-1059), Excel WORKS (6.5KB xlsx valid), PDF CRASHES (422 + Undefined array key). Not absent — broken. Owner gets Excel EOD but no PDF EOD. items-report PDF same defect (same root cause)."
+      },
+      "owner_q_answered": "Top items POS aujourd'hui ? — INDÉTERMINABLE. items-report endpoint returns catalog rows but NO POS-sales aggregation today (0 POS orders). Today's only items sold (Cheddar + Tacos in order #63) are KIOSK not POS. Owner cannot answer 'top items POS' from current dashboard. items-report/pdf 422 broken (same Undefined array key 'company_name' as sales-report). Excel xlsx works (7.5KB). Export PDF/Excel mission: Excel PRESENT + working, PDF PRESENT but BROKEN — owner cannot send EOD PDF report tonight."
+    },
+    {
+      "n": 3,
+      "title": "Read DashboardService::auditTrail (HEAL-02 — verify hash_prefix exposed in JSON response)",
+      "evidence": {
+        "code_inspection": "app/Services/DashboardService.php lines 514-577 auditTrail() method. Line 568: 'hash_prefix' => substr((string) $log->current_hash, 0, 8). Source = AuditLog (hash-chained INSERT-only NF525), NOT ActionLog (the GAP-FIX-02 2026-05-25 commit switched the source per comment lines 517-523). Branch-scope discipline lines 532-538 (admin sees all, branch staff sees own branch).",
+        "endpoint_response_sample": [
+          { "id": 69, "user_name": "Admin", "branch_id": 1, "action": "user.login", "resource": "user#2", "hash_prefix": "cbb5fd1b", "payload_keys": ["ip", "role", "user_id", "branch_id", "user_agent"], "time": "il y a 18 secondes" },
+          { "id": 68, "user_name": "Admin", "branch_id": 1, "action": "user.login", "resource": "user#2", "hash_prefix": "d0b9ed22", "payload_keys": ["ip","role","user_id","branch_id","user_agent"], "time": "il y a 8 minutes" }
+        ],
+        "verdict": "HEAL-02 VERIFIED GREEN. hash_prefix field present on every row of GET /api/admin/dashboard/audit-trail JSON response (sample: cbb5fd1b, d0b9ed22, a59e47cb, 8b9ae61e, 289d15c5...). Owner-night chain-integrity smoke-proof is wired through. last_hash from baseline.txt = a59e47cbe474f799 → matches audit-trail row id=67 hash_prefix 'a59e47cb' (truthy prefix-match)."
+      },
+      "owner_q_answered": "Anomaly detection chain integrity ? — YES. Dashboard widget exposes 8-char chain hash prefix on every event (HEAL-02 live). Owner can spot chain breaks visually. Sentinel-level proof: baseline last_hash a59e47cbe474f799 matches row id=67 prefix a59e47cb."
+    },
+    {
+      "n": 4,
+      "title": "Verify B1-P4 finding: dashboard under-reports total-orders vs DB (POS-specific re-cross-check)",
+      "evidence": {
+        "db_truth_pos_today": {
+          "orders_where_source_surface_pos_and_today": 0,
+          "all_orders_today": [{ "id": 63, "source_surface": "kiosk", "status": 4, "payment_status": 15, "total": "7.80", "creator_id": null, "creator_type": null, "pos_payment_method": 6 }],
+          "orders_all_time_by_surface": [{ "source_surface": "delivery", "n": 1, "total": "24.99" }, { "source_surface": "kiosk", "n": 1, "total": "7.80" }],
+          "pos_orders_ever": 0
+        },
+        "dashboard_widgets_pos_signal": {
+          "total_orders_today": 0,
+          "sales_summary_today": "0,00 €",
+          "channel_statistics_pos": 0,
+          "verdict_pos_specific": "On POS the dashboard widgets all return 0 — which is CORRECT because DB has 0 POS orders. B1-P4-F01 'under-report' applies to KIOSK channel (sales-summary 0€ vs DB 7.80€) NOT to POS. POS-specific reproduce: NOT REPRODUCIBLE today (no POS data to under-report against)."
+        },
+        "filter_drift_discovered": {
+          "request": "GET /api/admin/sales-report?source_surface=pos",
+          "expected": "0 rows (no POS sales today or ever)",
+          "actual": "2 rows (kiosk + delivery — ALL orders returned)",
+          "root_cause": "app/Services/OrderService.php $orderFilter array (lines 65-82) lists only ['id','order_serial_no','user_id','branch_id','order_type','order_datetime','payment_method','payment_status','status','delivery_boy_id','source']. 'source_surface' is NOT in the allow-list → silently ignored. The numeric 'source' filter (source=2 for POS, source=5 for kiosk) works (verified empty result for source=2). Owner UI dispatching the string 'source_surface=pos' silently gets non-filtered all-source data."
+        },
+        "cashier_performance_today": {
+          "rows": [{ "creator_id": null, "creator_type": null, "n": 1, "total": "7.80" }],
+          "verdict": "1 order today with creator_id=NULL (the kiosk auto-transition pattern documented in B1-P4-F01). NO POS-cashier-attributed orders. 'Cashier performance' widget impossible to populate from current data — 0 POS orders. Even when POS orders exist later, creator_id is the column used (NOT 'created_by' which doesn't exist in schema — verified via DB::getSchemaBuilder()->getColumnListing)."
+        },
+        "refund_rate_today": {
+          "audit_logs_refund_actions_today": 0,
+          "orders_status_returned_today": 0,
+          "orders_payment_status_refunded_today": 0,
+          "negative_total_mirror_orders_today": 0,
+          "refund_infrastructure_corrected_read": "EXISTS via NF525 counter-entry mirror-order pattern. app/Services/Order/RefundWithCounterEntryService.php creates a mirror Order with status=OrderStatus::RETURNED (=22), payment_status=PaymentStatus::REFUNDED (=20), negated total/subtotal/tax_amount, parent_order_id linkback, audit_log action 'order.refund.counter_entry'. Route POST /admin/pos/orders/{order}/refund-with-counter-entry (api.php:961, name pos.orders.refundWithCounterEntry). PaymentStatus enum confirms REFUNDED=20 constant. Refund-rate SQL = COUNT(orders WHERE status=22 AND payment_status=20) / COUNT(orders WHERE payment_status=5).",
+          "verdict": "DATA EXISTS, WIDGET MISSING. Refund-rate KPI is computable from current schema (mirror-order pattern). HOWEVER no dashboard endpoint exposes refund_rate today — owner reading EOD dashboard cannot see it. Today's count = 0 across the board (no refunds happened today, expected on day with only 1 kiosk order). This is the F02 P1 finding — widget-missing not infra-missing."
+        },
+        "anomaly_detection_today": {
+          "audit_logs_today": [
+            { "action": "user.login", "n": 55 },
+            { "action": "cash.session.opened", "n": 1 },
+            { "action": "z_report.closed", "n": 1 },
+            { "action": "tamper.attempt", "n": 1 }
+          ],
+          "tamper_attempt_caveat": "1 tamper.attempt today = KNOWN baseline E2E-13 dev incident id=34 per baseline.txt + Option B decision. NOT a new payment failure or new anomaly. PRE-EXISTING.",
+          "verdict": "NO NEW ANOMALIES TODAY. 55 admin user.login=high but cohérent with E2E agents running multiple curl auth roundtrips (mission framework noise, not real anomaly). z_report closed once OK. cash.session opened once OK. Channel for anomaly surfacing exists (audit-trail widget + hash chain) but content is benign."
+        }
+      },
+      "owner_q_answered": "B1-P4 dashboard under-report finding cross-check on POS ? — NOT REPRODUCIBLE on POS channel today (0 POS orders to under-report against). B1-P4-F01 applies to KIOSK channel. NEW discovery though: OrderService filter allow-list silently ignores 'source_surface' string param (only numeric 'source' works) — owner UI risk if it dispatches string form. Cashier performance + Refund rate KPIs not answerable from current data (0 POS + zero refund infrastructure)."
+    },
+    {
+      "n": 5,
+      "title": "Adversarial: cross-check verifies + scores + dispute hidden defects",
+      "evidence": {
+        "adversarial_check_1_pdf_route_existence_vs_gap_hunt_claim": {
+          "claim": "Gap-Hunt found Export PDF/Excel ABSENT.",
+          "reality": "routes/api.php:1057-1059 — GET /api/admin/sales-report/export AND /pdf BOTH defined. items-report same (lines 1063-1066). Permission gate 'sales-report' via constructor middleware (SalesReportController.php:36). Excel endpoint returns valid xlsx 6.5KB. PDF endpoint reaches handler but crashes on view-render with Undefined array key. Verdict: Gap-Hunt framing INCORRECT — routes EXIST. Reality is PDF is broken at runtime, not absent.",
+          "severity": "P1 owner-facing — owner expects 'send PDF report tonight' to work."
+        },
+        "adversarial_check_2_excel_pdf_company_settings_dependency": {
+          "claim": "Excel works because it bypasses CompanyService, PDF crashes because blade dereferences company['company_name'] on empty array.",
+          "verified_via": [
+            "php tinker: (new CompanyService())->list() returns array() — empty.",
+            "grep blade: resources/views/pdf/sales_report.blade.php:108 uses {{ $company['company_name'] }} (no ?? fallback).",
+            "grep blade: resources/views/pdf/items_report.blade.php:96 same pattern.",
+            "Excel path: SalesReportExport class does NOT inject CompanyService."
+          ],
+          "fix_hint": "EITHER (a) seed Settings::group('company') with company_name + company_address in a default-settings migration/seeder ON FRESH DBs, OR (b) blade guard: {{ $company['company_name'] ?? config('app.name') }} + same for company_address. (b) is one-line per blade and removes the crash class. (a) is more correct V1 (owner expects to brand the PDF anyway)."
+        },
+        "adversarial_check_3_source_surface_filter_drift": {
+          "claim": "?source_surface=pos returns ALL orders (filter ignored).",
+          "verified_via": "Direct curl returned 2 orders (kiosk #63 + delivery #1) when expectation was 0 POS rows. OrderService.php $orderFilter array (line 65-82) confirms 'source_surface' absent from allow-list.",
+          "severity": "P2 — workaround exists (numeric source=2). Owner UI may not know this. Risk: owner-night per-surface dashboards showing wrong totals."
+        },
+        "adversarial_check_4_refund_rate_kpi_gap": {
+          "first_read_claim": "Refund rate KPI mission-required but no data source exists.",
+          "first_read_evidence_was_partial": "DB schema check on orders.refund_amount column (absent) + tables LIKE %refund% (none) + audit_logs.action LIKE %refund% (none today). MISSED: NF525 counter-entry mirror-order pattern uses OrderStatus::RETURNED + PaymentStatus::REFUNDED on negated-total mirror Orders — refunds materialize as Order rows, not as a refund_amount column or refunds table.",
+          "corrected_claim": "Refund infrastructure EXISTS via RefundWithCounterEntryService + mirror-order pattern. Refund-rate IS computable from DB. BUT no dashboard widget surfaces it — owner reads EOD dashboard, sees nothing about refund rate. Data exists, widget missing.",
+          "verified_via": [
+            "grep refund app/Http/Controllers/ → PosOrderController::refundWithCounterEntry method",
+            "grep refund routes/api.php:961 → POST /admin/pos/orders/{order}/refund-with-counter-entry",
+            "app/Services/Order/RefundWithCounterEntryService.php docstring lines 25-50 + insert pattern lines 108-130 (mirror order RETURNED+REFUNDED + negated totals + audit_log 'order.refund.counter_entry')",
+            "App\\Enums\\OrderStatus::RETURNED=22, App\\Enums\\PaymentStatus::REFUNDED=20",
+            "Today: 0 RETURNED orders, 0 negative-total mirrors, 0 refund.* audit_logs (no refunds processed today)"
+          ],
+          "severity_revised": "P1 widget-missing (NOT P0 schema-missing). Owner-facing KPI not surfaced even though queryable. Same class spirit as B1-P4-F02 (mission-required metric not in dashboard) but technically different remediation (add controller endpoint vs add schema)."
+        },
+        "adversarial_check_5_cashier_perf_creator_id_null_pattern": {
+          "claim": "Cashier performance attributable via orders.creator_id (NOT created_by which is non-existent).",
+          "verified_via": "DB::getSchemaBuilder()->getColumnListing('orders') lists creator_id + creator_type, NO created_by. Today's order #63 has creator_id=NULL (kiosk auto, no human).",
+          "follow_up": "If owner reads cashier-perf widget tonight, expect 0 rows (no POS sales). Earlier sessions would show creator_id values when human cashier in POS — verified separately via OrderService line 1013 ($this->order->source_surface = 'pos') the POS path SETS source_surface but DOESN'T explicitly set creator_id — relies on Order::booted() creator_id observer (verified at app/Models/Order.php H2-HEAL-02 comment block line 95).",
+          "severity": "info — not a defect, just clarifies attribution column."
+        },
+        "scoring": {
+          "completeness": "5/5 states executed with discipline DM6 RO + DM3 + DM5 + DM8",
+          "owner_questions_answered": "5/6 explicit values + caveats. 1/6 (Refund rate) flagged structurally unanswerable.",
+          "evidence_strength": "HIGH — every claim cross-checked via curl HTTP response + DB schema introspection + source code line-number anchoring.",
+          "P0_blockers_found": 0,
+          "P1_findings": 2,
+          "P2_findings": 1,
+          "verdict": "GREEN-WITH-REPORTING-AND-INFRA-GAPS — POS channel technically clean today (0 sales, no anomaly, no payment failure, cash drawer opened by admin OK, audit chain integrity verified). HOWEVER 2 owner-facing P1 gaps prevent useful POS owner-night EOD: (1) PDF export crashes 422 — owner can't send PDF report, (2) Refund rate KPI structurally unmeasurable — no schema for it. 1 P2: source_surface filter silently ignored."
+        }
+      }
+    }
+  ],
+  "verdict": "GREEN-WITH-REPORTING-AND-INFRA-GAPS",
+  "findings": [
+    {
+      "id": "B2-P4-F01",
+      "severity": "P1",
+      "category": "owner-facing-export-broken",
+      "title": "sales-report/pdf + items-report/pdf crash 422 with 'Undefined array key company_name' on fresh DB",
+      "details": "GET /api/admin/sales-report/pdf returns HTTP 422 body {\"status\":false,\"message\":\"Undefined array key \\\"company_name\\\" (View: ...pdf/sales_report.blade.php)\"}. Same for /api/admin/items-report/pdf with items_report.blade.php. Root cause: CompanyService::list() = Settings::group('company')->all() returns [] empty on this DB (no company settings seeded). PDF blades sales_report.blade.php:108 + items_report.blade.php:96 dereference $company['company_name'] without ?? fallback. PHP 8 ArrayAccess undefined-key → uncaught in catch → 422. Excel xlsx export works (6.5KB / 7.5KB valid xlsx verified by file(1)) because SalesReportExport doesn't inject CompanyService. Mission framing 'Gap-Hunt found ABSENT' is incorrect — routes EXIST (api.php:1057-1059) but PDF is BROKEN at runtime.",
+      "evidence": "State 2 endpoints_hit + pdf_error_body + pdf_root_cause; State 5 adversarial_check_1 + adversarial_check_2",
+      "impact": "Owner cannot send end-of-day PDF report tonight or any night until either company settings are seeded OR blade fallback added. Common owner-night workflow (PDF EOD to email/print) BROKEN. Excel fallback exists but most owners want PDF for accountant.",
+      "fix_hint": "EITHER (a) seed Settings::group('company') with company_name + company_address in a default-settings migration/seeder for fresh DBs (more correct V1 — owner needs to brand PDF anyway), OR (b) blade guard each dereference: {{ $company['company_name'] ?? config('app.name') }} + {{ $company['company_address'] ?? '' }}. Patch is one-line per blade ×2 files = 4 lines total to remove crash class. Apply to all 3 PDF blades under resources/views/pdf/ (sales_report + items_report + online_orders all use company_name per grep)."
+    },
+    {
+      "id": "B2-P4-F02",
+      "severity": "P1",
+      "category": "owner-facing-widget-missing",
+      "title": "Refund rate KPI computable from DB but NOT exposed on owner-night dashboard",
+      "details": "Mission asks 'Refund rate' as one of owner-night POS questions. CORRECTION over first-read: refund infrastructure DOES exist via NF525 counter-entry mirror-order pattern (app/Services/Order/RefundWithCounterEntryService.php + POST /admin/pos/orders/{order}/refund-with-counter-entry route, api.php:961). Refunds materialize as full mirror Order rows with status=OrderStatus::RETURNED (=22), payment_status=PaymentStatus::REFUNDED (=20), negative total/subtotal/tax_amount, parent_order_id pointing to source order, AND audit_log action 'order.refund.counter_entry' (per service docstring). So refund-rate CAN be SQL-computed: COUNT(distinct orders WHERE status=22 AND payment_status=20) / COUNT(orders WHERE payment_status=5 settled) over period. HOWEVER: NO dashboard endpoint exposes this. Searched dashboard endpoints (total-orders, sales-summary, order-statistics, realtime-report, channel-statistics, sla-alerts, audit-trail, channel-statistics) — none returns refund_rate or refund_count fields. Owner reading EOD dashboard cannot see refund rate even though data exists in DB.",
+      "evidence": "State 4 refund_rate_today (initial mis-read corrected); RefundWithCounterEntryService.php line 25-189 docstring + insert pattern; OrderStatus::RETURNED=22 + PaymentStatus::REFUNDED=20 enum constants; routes/api.php:961 refund route; today's DB count = 0 RETURNED orders, 0 negative-total orders, 0 refund.* audit_logs",
+      "impact": "Owner cannot get refund-rate metric tonight from dashboard. Data IS queryable via direct SQL but no widget surfaces it. Workaround for owner: use sales-report/index with status filter (=22 RETURNED) — partial workaround. Common SaaS KPI (refund rate > X% triggers operational review) not surfaced to owner.",
+      "fix_hint": "EITHER (a) add a DashboardController::refundRate(period) endpoint that returns {refund_orders_count, total_orders_count, refund_rate_pct, refunded_amount_eur_abs} querying mirror-orders WHERE status=22 + payment_status=20 + DATE(created_at) range — read-only widget, no schema change required — and surface on owner-night EOD dashboard, OR (b) extend sales-report/overview response with refund_count + refund_amount + refund_rate fields. (a) is cleanest — preserves NF525 append-only discipline, no schema delta, ~30 LOC controller + service + frontend widget. F02 is P1 widget-missing, NOT P0 schema-missing — corrects this report's first-read."
+    },
+    {
+      "id": "B2-P4-F03",
+      "severity": "P2",
+      "category": "filter-contract-drift",
+      "title": "sales-report ?source_surface=<value> silently ignored — only numeric ?source= filter works",
+      "details": "GET /api/admin/sales-report?branch_id=1&source_surface=pos returns 2 rows (kiosk #63 + delivery #1, ALL orders) instead of 0 (no POS sales today or ever). Root cause: app/Services/OrderService.php $orderFilter allow-list (lines 65-82) contains 'source' but NOT 'source_surface'. The filter loop at line 162-192 ignores unknown keys silently. Numeric source filter (?source=2 for POS, ?source=5 for kiosk) works correctly — verified ?source=2 returns 0 rows, ?source=5 returns 1 row (#63). Owner UI dispatching the string 'source_surface' form (e.g. tabs labeled 'POS / Kiosk / Delivery') would silently fetch all-source data and display wrong per-surface totals to owner. No 422 / no warning.",
+      "evidence": "State 2 endpoints_hit (?source_surface=pos returns 2 orders); State 4 filter_drift_discovered with OrderService line-number anchors; State 5 adversarial_check_3",
+      "impact": "P2 because workaround exists (use numeric source). Risk surface: any owner-facing per-surface tab/widget that uses the string form would mis-display. Audit of frontend dispatching code recommended.",
+      "fix_hint": "EITHER (a) add 'source_surface' to OrderService::$orderFilter + applyOrderFilter handles string match on enum ('pos'|'kiosk'|'web'|'delivery'), OR (b) document API contract that only numeric ?source= is supported and audit frontend code (grep resources/js for ?source_surface= dispatches) to migrate to numeric, OR (c) emit a deprecation warning header when source_surface is sent. (a) is owner-friendliest (matches the human-readable column name) and one-block change in OrderService."
+    }
+  ],
+  "files_anchored": [
+    "app/Services/DashboardService.php:514-577 (auditTrail with hash_prefix line 568)",
+    "app/Services/OrderService.php:65-82 ($orderFilter allow-list missing source_surface)",
+    "app/Services/OrderService.php:117-205 (list() filter loop ignores unknown keys)",
+    "app/Http/Controllers/Admin/SalesReportController.php:60-78 (pdf method dereferences company via CompanyService)",
+    "app/Services/CompanyService.php:27 (list() returns Settings::group('company')->all() empty on fresh DB)",
+    "resources/views/pdf/sales_report.blade.php:108-109 (no fallback on $company['company_name'])",
+    "resources/views/pdf/items_report.blade.php:96-97 (same defect)",
+    "resources/views/pdf/online_orders.blade.php (same company_name pattern — likely same defect)",
+    "routes/api.php:1055-1066 (sales-report + items-report route group)"
+  ],
+  "discipline_compliance": {
+    "DM6_RO": "read-only — no DB writes, no code changes during audit",
+    "DM3": "evidence-strength HIGH — every claim curl HTTP code + DB schema + source line anchor",
+    "DM5": "scope-bounded — POS owner-night EOD only, no scope creep into Kiosk/KDS/OSS beyond B1-P4 cross-reference for drift comparison",
+    "DM8": "owner-question-driven — each state answers an explicit owner-night question with values + caveats"
+  }
+}

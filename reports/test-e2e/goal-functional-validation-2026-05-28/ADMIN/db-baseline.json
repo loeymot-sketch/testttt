@@ -1,0 +1,12 @@
+{
+  "last_event_id": 299,
+  "last_audit_id": 109,
+  "z_count": 1,
+  "item_count": 11,
+  "branch_active_count": 0,
+  "item_sample": {
+    "id": 1,
+    "name": "Menu (Frites + Boisson)",
+    "is_available": true
+  }
+}

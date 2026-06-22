@@ -32,14 +32,61 @@ export const item = {
         }
     },
     actions: {
-        lists: function (context, payload) {
+        lists: function (context, payload = {}) {
             return new Promise((resolve, reject) => {
+                const requestPayload = payload ? { ...payload } : {};
+                const hasExplicitBranchId = Object.prototype.hasOwnProperty.call(requestPayload, 'branch_id')
+                    || Object.prototype.hasOwnProperty.call(requestPayload, 'branchId');
+                const branchId = context.rootState?.auth?.authBranchId
+                    ?? context.rootGetters?.authBranchId
+                    ?? context.rootState?.auth?.authInfo?.branch_id
+                    ?? context.rootState?.auth?.authUser?.branch_id
+                    ?? context.rootState?.auth?.user?.branch_id
+                    ?? context.rootGetters?.['auth/authUserBranchId']
+                    ?? null;
+
+                if (!hasExplicitBranchId && branchId !== null && branchId !== undefined && branchId !== '' && Number(branchId) !== 0) {
+                    requestPayload.branch_id = branchId;
+                }
+
+                // [Wave T R3 F1 — silent 422 prevention] When the caller declares
+                // `surface=pos`, the backend at app/Http/Controllers/Admin/ItemController:60
+                // refuses the request with 422 if no valid branch_id is in scope
+                // (per CV1-POS-AVAILABILITY-LIVE-001: serving a POS catalog without
+                // a branch would project a global `is_available` and yield clickable
+                // tiles for OOS items + 422 at checkout = revenue loss).
+                // The PosComponent bootstrap fires `itemList()` on mount BEFORE
+                // `defaultAccess/show` resolves the branch for admin users
+                // (branch_id=0 in DB), so the first call would 422 silently and
+                // load tiles via the later branch-aware refetch. Short-circuit
+                // here resolves with an empty payload so no doomed network call
+                // fires, no 422 in the console, and the later branch-aware
+                // refetch (line 1915 of PosComponent.vue) populates the list.
+                const declaredSurface = String(requestPayload.surface || '').toLowerCase();
+                const resolvedBranchId = requestPayload.branch_id;
+                const hasUsableBranchId = resolvedBranchId !== null
+                    && resolvedBranchId !== undefined
+                    && resolvedBranchId !== ''
+                    && Number(resolvedBranchId) > 0;
+                if (declaredSurface === 'pos' && !hasUsableBranchId) {
+                    // Resolve quietly — do NOT commit empty payload over an
+                    // already-populated list (the post-defaultAccess refetch
+                    // will overwrite shortly).
+                    resolve({
+                        data: { data: [], meta: {} },
+                        status: 200,
+                        skipped: true,
+                        reason: 'pos_surface_requires_branch_id',
+                    });
+                    return;
+                }
+
                 let url = 'admin/item';
-                if (payload) {
-                    url = url + appService.requestHandler(payload);
+                if (Object.keys(requestPayload).length > 0) {
+                    url = url + appService.requestHandler(requestPayload);
                 }
                 axios.get(url).then((res) => {
-                    if(typeof payload.vuex === "undefined" || payload.vuex === true) {
+                    if(typeof requestPayload.vuex === "undefined" || requestPayload.vuex === true) {
                         context.commit('lists', res.data.data);
                         context.commit('page', res.data.meta);
                         context.commit('pagination', res.data);
@@ -154,18 +201,44 @@ export const item = {
             return new Promise((resolve, reject) => {
                 let id = payload;
                 let surface = null;
+                let branchId = null;
                 if (payload !== null && typeof payload === 'object') {
                     id = payload.id;
                     if (typeof payload.surface === 'string'
                         && ['pos', 'kiosk', 'web'].indexOf(payload.surface) !== -1) {
                         surface = payload.surface;
                     }
+                    branchId = payload.branch_id || payload.branchId || null;
                 }
                 let url = `admin/item/details/${id}`;
-                const config = surface ? { params: { surface } } : undefined;
+                const params = {};
+                if (surface) {
+                    params.surface = surface;
+                }
+                if (branchId) {
+                    params.branch_id = branchId;
+                }
+                const config = Object.keys(params).length > 0 ? { params } : undefined;
                 axios.get(url, config).then((res) => {
                     resolve(res);
                 }).catch((err) => {
+                    reject(err);
+                });
+            });
+        },
+        lookupByBarcode: function (context, code) {
+            return new Promise((resolve, reject) => {
+                const safe = encodeURIComponent(String(code));
+                axios.get(`admin/item/lookup-barcode/${safe}`).then((res) => {
+                    if (res.data && res.data.meta && res.data.meta.duplicate_barcode) {
+                        console.warn('[POS] Multiple items share this barcode; using first match');
+                    }
+                    resolve(res.data.data);
+                }).catch((err) => {
+                    if (err.response && err.response.status === 404) {
+                        resolve(null);
+                        return;
+                    }
                     reject(err);
                 });
             });

@@ -14,7 +14,10 @@ class BranchRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        // V1.0.1 R7 heal: defense-in-depth — BranchController middleware enforces
+        // `permission:settings` on store/update/destroy/updateZone; FormRequest doubles down
+        // so any future route bypass still authz-checks.
+        return $this->user()?->can('settings') ?? false;
     }
 
     /**

@@ -6,6 +6,7 @@ namespace Database\Seeders;
 use App\Enums\Activity;
 use App\Enums\CurrencyPosition;
 use App\Models\Currency;
+use App\Models\Language;
 use Dipokhalder\EnvEditor\EnvEditor;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Artisan;
@@ -32,7 +33,7 @@ class SiteTableSeeder extends Seeder
             'site_digit_after_decimal_point' => '2',
             'site_email_verification' => Activity::ENABLE,
             'site_phone_verification' => Activity::DISABLE,
-            'site_default_language' => 1,
+            'site_default_language' => Language::query()->where('code', 'fr')->value('id') ?? 2,
             'site_google_map_key' => $envService->getValue(
                 'DEMO'
             ) ? 'Fake-map-key' : '',
@@ -40,7 +41,7 @@ class SiteTableSeeder extends Seeder
             'site_ios_app_link' => $envService->getValue('DEMO') ? 'http://ios.com' : '',
             'site_copyright' => $envService->getValue(
                 'DEMO'
-            ) ? '© FoodKing SaaS 2026, Tous Droits Réservés' : '',
+            ) ? '© Le Cayenne 2026, Tous Droits Réservés' : '',
             'site_language_switch' => Activity::ENABLE,
             'site_app_debug' => Activity::DISABLE,
             'site_auto_update' => Activity::DISABLE,

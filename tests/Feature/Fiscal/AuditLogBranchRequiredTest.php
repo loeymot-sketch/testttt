@@ -86,10 +86,10 @@ class AuditLogBranchRequiredTest extends TestCase
 
     public function test_negative_branch_is_accepted_but_isolated(): void
     {
-        // Negative ids are unusual but not forbidden; they simply form
-        // their own independent chain. This test documents the behaviour
-        // so a future refactor cannot silently drop negative branches.
-        $r = $this->svc->write(['branch_id' => -1, 'action' => 'weird', 'payload' => []]);
-        $this->assertSame(-1, (int) $r->branch_id);
+        // MySQL stores audit_logs.branch_id as UNSIGNED — use a high sentinel id
+        // instead of -1 (SQLite allows signed). Same idea: isolated chain.
+        $sentinel = 9_000_000_001;
+        $r = $this->svc->write(['branch_id' => $sentinel, 'action' => 'weird', 'payload' => []]);
+        $this->assertSame($sentinel, (int) $r->branch_id);
     }
 }

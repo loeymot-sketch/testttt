@@ -53,7 +53,7 @@
                                     </button>
                                 </div>
                                 <input class="pl-2 text-sm w-full h-full" v-model="form.phone"
-                                    v-on:keypress="phoneNumber($event)" type="text" id="phone" />
+                                    v-on:keypress="phoneNumber($event)" type="text" id="phone" placeholder="+33 6 12 34 56 78" />
                             </div>
                             <small class="db-field-alert" v-if="errors.phone">
                                 {{ errors.phone[0] }}
@@ -80,6 +80,8 @@ import BreadcrumbComponent from "../components/BreadcrumbComponent";
 import LoadingComponent from "../components/LoadingComponent";
 import alertService from "../../../services/alertService";
 import appService from "../../../services/appService";
+// [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT — mirrors App\Support\PhoneDisplay::safe
+import { safePhone } from "../../../helpers/phoneDisplay";
 
 export default {
     name: "ProfileEditProfileComponent",
@@ -111,8 +113,9 @@ export default {
                 this.form.first_name = profile.first_name;
                 this.form.last_name = profile.last_name;
                 this.form.email = profile.email;
-                this.form.phone = profile.phone;
-                this.form.country_code = profile.first_name;
+                // [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT
+                this.form.phone = safePhone(profile.phone);
+                this.form.country_code = profile.country_code;
 
                 this.$store.dispatch('frontendCountryCode/show', res.data.data.company_country_code).then(res => {
                     this.flag = res.data.data.flag_emoji;

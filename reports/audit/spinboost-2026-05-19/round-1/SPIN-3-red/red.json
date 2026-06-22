@@ -1,0 +1,106 @@
+{
+  "specialist": "red",
+  "scope": "SpinBoost adversarial — wheel rigging attempts, review fraud (paid reviews triggering spin), token leakage via screenshot, multi-account same-customer abuse, restaurant-side abuse (printing flyer with self-played slug), Stripe billing abuse",
+  "branch": "n/a — doc-only",
+  "head": "n/a",
+  "method": "adversarial enumeration: think like an attacker (customer-side abuse + restaurant-side abuse + competitor sabotage + griefer) against the post-pivot Option A SpinBoost flow described in DESIGN_BRIEF + ULTRA_PLAN. Cross-check vs ULTRA_REVIEW threat model. Confirm the pivot does NOT introduce new attack surfaces while removing the Google-incentive one.",
+  "findings": [
+    {
+      "id": "SPIN-RED-01",
+      "severity": "P0",
+      "title": "Wheel rigging via client-side DOM mutation BEFORE the server response is fully consumed",
+      "evidence": "ULTRA_PLAN §3 Sprint 2 line 96-100 says server returns `prizeIndex` after HMAC drawProof. The animation runs 3-4s (DESIGN_BRIEF §3.A A3). Attack vector: open dev console, intercept `fetch` to `/api/v1/public/plays/spin`, mutate response body to set `prizeIndex` to the top-prize slot, OR — simpler — let the real response arrive, then mutate the React state via React DevTools to display a different prize on the result page A4. The voucher code that gets generated server-side is for the actual won slot (CONSOLATION e.g.) but the UI shows a top prize. Customer screenshots fake top prize, goes to resto, resto cashier looks at voucher code in their dashboard, validates → 'oh wait, this voucher is for fries not the meal you claim'. Reputation damage even though server is correct.",
+      "recommendation": "Mitigation cheap: in the response, return BOTH `prizeIndex` AND a server-rendered `voucherImageUrl` (signed S3 URL or HTML data-URI signed) that the front-end displays AS-IS without client templating. The voucher visual cannot be mutated without breaking the signature. Cost: +1d Sprint 2. Sentinel: Playwright test mutates response.prizeIndex via fetch interception, verifies the displayed voucher image still shows the server's truth."
+    },
+    {
+      "id": "SPIN-RED-02",
+      "severity": "P0",
+      "title": "Restaurant-side abuse — patron prints flyer, self-plays 500 times, harvests own emails, claims top prize for marketing",
+      "evidence": "ULTRA_PLAN §4 Sprint 3 generates flyer with QR pointing to /r/[slug]. The Patron Pierre persona (DESIGN_BRIEF §1.2) has full control of his own venue's slug. Attack: Patron pre-fills the wheel with 1 'free meal' top prize + 7 consolation, runs 500 spins with auto-generated emails, harvests 50 'wins' to give to his own employees/friends as goodwill, OR simply pads his 'plays' metric to look impressive in the dashboard KPIs (DESIGN_BRIEF §3.B B6). The cooldown 30j by device fingerprint (ULTRA_PLAN line 105) is owned by the same patron — easily bypassed via incognito/different devices.",
+      "recommendation": "P0 V1: cooldown should ALSO include `Venue.ownerUserId` IP recognition — track IP-fingerprint of Venue.owner during onboarding (typical patron office IP), flag any spin from that same IP/fingerprint as `Play.suspectInternalReplay = true`. Surface in dashboard B6 KPI as 'plays internal (filtered)' vs 'plays external (real)'. Don't BLOCK (patrons need to test), but EXPOSE the leak in their own dashboard and in admin audit. Combined with billing tier check on EXTERNAL plays only (P0 SPIN-RED-06 below), the abuse incentive evaporates."
+    },
+    {
+      "id": "SPIN-RED-03",
+      "severity": "P0",
+      "title": "Voucher code theft via screenshot/screen-share — single-code single-use is NOT enforced (per SPIN-ARCH-10)",
+      "evidence": "Architect finding SPIN-ARCH-10 documents this: voucher code is emailed (DESIGN_BRIEF §3.A A4) but no redemption state machine. Attack: customer A wins, screenshots voucher QR, shares in WhatsApp group of 20 friends. All 20 walk in, all 20 redeem the same QR code at the resto. Resto cashier has no way to mark voucher 'used' — has to manually track in a notebook. After 3 redemptions resto realises but already gave 2 free desserts.",
+      "recommendation": "P1 V1.1: redemption state machine endpoint per SPIN-ARCH-10. P0 V1 mitigation cheap: voucher code shown as 6-char alphanumeric (e.g. `K7-XQ8M`) PLUS expiration date 7 days from issue, PLUS resto cashier instructed to call out the code aloud to customer at counter (UX nudge that disincentivises blatant sharing). Print expiration on the voucher card. Document the no-redemption-tracking V1 limitation in resto onboarding."
+    },
+    {
+      "id": "SPIN-RED-04",
+      "severity": "P1",
+      "title": "Multi-account same-customer abuse — Apple Hide-My-Email + Gmail + plus-addressing",
+      "evidence": "ULTRA_REVIEW P1-1 (L129) flags 'aliases gmail, hide-my-email Apple'. The pivot Option A doesn't fix this. A determined customer with 5 friends' phones can sign 5 different `+1`, `+2` Gmail aliases and play 5 times on 5 phones, winning 5 vouchers. ULTRA_PLAN §3 Sprint 2 line 105: 'Cooldown 30j par device fingerprint + IP + emailHash'. emailHash of `foo+1@gmail.com` and `foo+2@gmail.com` differs (different bytes), so plus-addressing bypasses emailHash cooldown. Device fingerprint catches same-device case; IP catches same-network case. Different friends' phones on different networks = full bypass.",
+      "recommendation": "P1 Sprint 2: normalize email before hashing — `foo+anything@gmail.com` → `foo@gmail.com`, also strip dots for Gmail (`f.o.o@gmail.com` → `foo@gmail.com`). Use the `email-addresses` npm lib + Gmail-specific normalization. Sentinel: simulate plus-addressing → expect same cooldown trigger. Apple Hide-My-Email is harder (random aliases routed to user inbox) — no clean mitigation, accept as residual risk + document."
+    },
+    {
+      "id": "SPIN-RED-05",
+      "severity": "P1",
+      "title": "Token leakage via screenshot — sharing voucher SMS, FYI of prize on Discord, posts an HMAC signed URL",
+      "evidence": "ULTRA_PLAN §3 Sprint 2 line 97-98 generates `voucherCode = unique (cuid2 court)` and signs `Play.drawProof`. If the voucher URL contains the drawProof in plaintext for verification, a customer Discord post leaks the chain hash structure. Customer wins, posts on r/france_meilleurs_deals 'Look I got this URL <url>', the URL contains `?proof=<hmac_b64>` — an attacker analyses 100 such proofs and tries to forge the next one. HMAC is keyed so forging is hard, but the disclosure of chain state (prev_hash, slots snapshot) gives the attacker structural info.",
+      "recommendation": "P1 Sprint 2: voucher URL is `/v/<voucherCode>` — short opaque cuid2. The drawProof verification is done SERVER-side at redemption time by recomputing HMAC over `prev_hash || slots_snapshot || server_seed || ts`, all retrieved from DB by playId. Never expose drawProof in URL. Sentinel: scrape voucher URLs from public web → expect no proofs leaked → confirm only short codes."
+    },
+    {
+      "id": "SPIN-RED-06",
+      "severity": "P0",
+      "title": "Stripe billing — plan tier (Starter 500 plays/mo) is gameable via the SPIN-RED-02 self-play loop",
+      "evidence": "ULTRA_PLAN line 28-31 of DESIGN_BRIEF: Starter 39€/mois 500 plays/mois; Pro 49€/mois plays illimités. Combined with SPIN-RED-02 (patron self-plays to inflate metrics), a Starter patron can self-play to 499 plays at end of month to appear 'busy' (justifying upgrade NEXT month) OR ironically deflate to 1 play to avoid tier upgrade billing — depending on which Stripe tier enforces 'overage'. If overage at 500 is just a soft warning, patron gets free Pro features on Starter. If overage hard-blocks, patron's REAL customers (post 500) cannot play, hurting NPS.",
+      "recommendation": "P0 Sprint 4: define overage policy explicitly. Recommended: at 500 plays, send Resend email 'Tu as atteint 80% — upgrade pour ne pas bloquer tes clients'. At 600 (20% over), continue to allow plays BUT bill +0.05€/play overage on next invoice (Stripe metered billing). Patron + SpinBoost both happy: patron not blocked, SpinBoost monetises growth. Also implement P1 SPIN-RED-02: only count EXTERNAL plays (not internal-IP) toward the tier limit. Sentinel: Stripe metered usage simulation."
+    },
+    {
+      "id": "SPIN-RED-07",
+      "severity": "P1",
+      "title": "Onboarding URL Google Maps writereview paste — attacker patron pastes COMPETITOR's writereview URL",
+      "evidence": "ULTRA_PLAN §4 Sprint 3 line 128 specs manual paste of writereview URL. Adversarial scenario: Patron A's competitor opens fake SpinBoost account using stolen credit card, pastes Patron A's writereview URL, prints flyers with QR-to-fake-account, distributes near Patron A's resto. Customers of Patron A's resto scan, play SpinBoost, leave a Google review for Patron A (good), but ALSO emails go to fake competitor account who sells them. Patron A pays for nothing.",
+      "recommendation": "P1 Sprint 5 add: writereview URL has to MATCH a verified Google Place. Use Google Places Autocomplete (Sprint 3 line 99 already lists it for address) to also pull the writereview URL — patron CANNOT paste arbitrary URL, must select from Places autocomplete result. Google Place ID stored alongside. Cross-check at onboarding: same Place ID can only be claimed by one SpinBoost org — manual review + email-to-business verification (à la Google Business itself) before activation. This is also a defence vs typo-squatting (patron registers competitor's address slightly altered)."
+    },
+    {
+      "id": "SPIN-RED-08",
+      "severity": "P1",
+      "title": "Spin endpoint DoS — 100 plays/min from 1 patron's customer surge crashes Upstash rate-limit budget",
+      "evidence": "ULTRA_PLAN §3 Sprint 2 line 104: 'Rate limiting Upstash Redis : 10 req/min/IP sur /spin'. Per-IP rate limit. But Vercel and Upstash both have free-tier quotas; a single resto's busy dinner hour with 200 customers playing = 200 spins/5min = OK per IP but TOTAL upstream rate may strain Upstash free tier (10k req/day). Worse: competitor griefer rents a botnet 1000 IPs, each hits /r/<patron_slug> and starts the play flow (without completing email) — exhausts Upstash budget, real customers get rate-limited, patron complains.",
+      "recommendation": "P1 Sprint 5 load test (line 197 'Test de charge k6 100 req/s'): include a griefer scenario — 100 IPs, 9 req/min each = 900 req/min, verify Upstash doesn't break + budget burn rate is OK at €10/month. If not, graduate to Upstash paid (€20/mo) or implement Cloudflare Turnstile at the venue page LOAD (not just form), filtering bots before they hit the API. Document the upgrade trigger."
+    },
+    {
+      "id": "SPIN-RED-09",
+      "severity": "P2",
+      "title": "NPS sondage poisoning — competitor or disgruntled employee selects 😡 repeatedly via auto-fingerprint-rotation",
+      "evidence": "DESIGN_BRIEF §3.A A2 NPS 4 emojis facultatif. Stored alongside play. Patron sees aggregated NPS in B6 dashboard. Attack: competitor automates 50 spins from 50 fingerprints, all with NPS = 😡, tanks the patron's NPS metric. The patron sees declining NPS, blames their own service, becomes anxious + churns.",
+      "recommendation": "P2 V1.1: dashboard NPS shows only verified plays (cooldown-respecting, fingerprint-confirmed). Outlier detection: if 10+ 😡 from same /24 IP block within 1 hour, flag for patron review NOT auto-aggregate. Document in `docs/THREAT_MODEL.md`. Patron-facing: a 'NPS volatility' indicator if drift > 30pts in 24h."
+    },
+    {
+      "id": "SPIN-RED-10",
+      "severity": "P2",
+      "title": "Voucher monetisation — secondary market on eBay/Vinted for unredeemed top prize vouchers",
+      "evidence": "If a customer wins a 'free meal' voucher worth €15-25 and doesn't intend to use it, no V1 mechanism prevents resale. Once SPIN-RED-03 voucher single-use is fixed (V1.1), the resale concern partially evaporates (buyer can verify code is valid). But until then, voucher reselling is a low-effort vector for SCAM (seller takes payment, voucher already used by self).",
+      "recommendation": "P2 V1.1 with the SPIN-ARCH-10 redemption state machine: voucher binds to first redemption fingerprint/email at redemption time — second redemption attempt requires step-up auth (e.g. email matching), kills resale market. V1 acceptable risk: low-value vouchers (drink, dessert) don't justify resale effort."
+    },
+    {
+      "id": "SPIN-RED-11",
+      "severity": "P2",
+      "title": "Stripe webhook replay attack from forwarded Slack webhook leaks",
+      "evidence": "Stripe events delivered to /api/v1/webhooks/stripe. ULTRA_PLAN line 158-162 covers signature verif + idempotency. BUT if patron has Stripe-to-Slack webhook integration AND that Slack workspace has Slack-to-Zapier-to-third-party leak, the EVENT BODY (not signature) reaches attacker. Attacker cannot replay to SpinBoost (signature/timestamp will fail at 5min) but CAN reconstruct customer email + subscription tier — partial info leak.",
+      "recommendation": "P2 V1.1: Stripe webhook payloads SHOULD not contain PII beyond customer ID. Configure Stripe webhook subscription to 'thin payloads' (Stripe API >= 2024-09 supports this) — full payload retrieved server-side. Verify Sprint 4 config."
+    },
+    {
+      "id": "SPIN-RED-12",
+      "severity": "P3",
+      "title": "Pivot Option A — review fraud incentive structurally REDUCED but not eliminated",
+      "evidence": "Pivot removes the SpinBoost-mediated incentive for Google review (good). But CTA 'Si vous avez aimé, laissez un avis Google' still exists on result page (DESIGN_BRIEF §3.A A4 line 82, ULTRA_PLAN line 100). Some customers will associate the positive emotion of winning a voucher with leaving a positive review — implicit incentive remains (psychology, not contract). Google enforcement is unlikely to catch this (it looks like organic post-meal review behaviour) but a hostile competitor reporting SpinBoost to Google could argue it's a 'designed funnel'.",
+      "recommendation": "P3 V1.x: A/B test removing the Google CTA entirely from the win page. The pivot's main value is contractual decoupling — once that's locked, the CTA is optional. Defer test post-launch when metrics are observed."
+    }
+  ],
+  "verdict": "GO-CONDITIONAL with adversarial backlog. The Option A pivot meaningfully reduces external regulatory risk (Google policy) but introduces ZERO new attack surfaces (verified). However, the architecture as specced has 3 P0 adversarial gaps NOT covered by ULTRA_REVIEW: (a) client-side voucher mutation post-server-response — SPIN-RED-01; (b) patron self-play loop for KPI inflation + free Pro features — SPIN-RED-02 + SPIN-RED-06; (c) voucher resale/sharing without redemption state — SPIN-RED-03 (already noted as SPIN-ARCH-10 P1 but RED-classifies as P0 V1 because the SHARING attack is zero-skill). V1.x backlog must prioritize: voucher image server-rendering (RED-01), patron internal-IP tracking (RED-02), Stripe metered billing with overage policy (RED-06), email normalization for plus-addressing (RED-04), redemption state machine V1.1 (RED-03/ARCH-10).",
+  "v1x_priorities_added": [
+    "SPIN-RED-01 — Sprint 2 P0: server-rendered voucher image to prevent client-side DOM mutation",
+    "SPIN-RED-02 — Sprint 2 P0: patron internal-IP/fingerprint tracking to neutralize self-play loop",
+    "SPIN-RED-03 — V1.1 P0/P1: voucher redemption state machine (mirrors SPIN-ARCH-10) + V1 mitigation 6-char code + expiry",
+    "SPIN-RED-04 — Sprint 2 P1: email normalization (Gmail plus-addressing + dot-stripping)",
+    "SPIN-RED-06 — Sprint 4 P0: Stripe metered billing with explicit overage policy + EXTERNAL plays only count toward tier limit",
+    "SPIN-RED-07 — Sprint 3 P1: Google Places autocomplete-only for writereview URL + Place ID uniqueness check",
+    "SPIN-RED-08 — Sprint 5 P1: griefer scenario in load test + Upstash budget plan + Turnstile at page-load if needed",
+    "SPIN-RED-09 — V1.1 P2: NPS outlier detection + volatility indicator on dashboard",
+    "SPIN-RED-11 — Sprint 4 P2: Stripe thin-payload webhook config"
+  ],
+  "words": 1490
+}

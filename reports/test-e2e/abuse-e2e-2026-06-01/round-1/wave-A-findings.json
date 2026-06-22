@@ -1,0 +1,86 @@
+{
+  "wave": "A",
+  "round": 1,
+  "states_reviewed": 15,
+  "reviewer": "adversarial-supervisor",
+  "scope": "Wave A — KIOSK customer journey (borne, light mode, palette Cayenne). Inspected all 4 artifacts (PNG vision + DOM + console + network) for every captured state. Findings preserved + re-verified from a prior round-1 pass.",
+  "states_inventory": [
+    "01-idle", "01b-a11y-panel", "01c-empty-cart", "02-menu-first-category",
+    "02b-composition-category", "03-product-wizard-open", "04-wizard-composition-step",
+    "04b-wizard-option-selected", "05-add-to-cart-wizard", "06-upsell-screen",
+    "07-cart-screen", "07b-cart-qty-incremented", "08-payment-screen",
+    "09-payment-counter-route", "10-cash-instruction"
+  ],
+  "coverage_assessment": "GENUINE. Plan states 01-12 + sub-states all present (15 PNG quartets). No -MISSING / -incomplete / -unknown fallback snaps were emitted (the spec WOULD have written them on a failed path), so every state is a real surface, not a degraded capture. PNG sizes 36KB-333KB (no blank/black captures). Order really written (POST /api/frontend/order -> 201) and a real order number rendered (#A0005 in PNG / #A00013 in a concurrent re-capture of the DOM — see CAPTURE-FRESHNESS note).",
+  "capture_freshness_note": "The __screenshots__/test-e2e-A dir was being actively re-written by the GStack capture during this review (PNG read showed cash order #A0005; a later DOM grep of 10-cash-instruction.dom.html showed #A00013). Both are valid real order numbers; the verdict is unaffected (every captured order# is non-blank, non-undefined, non-null, and the money fact reconciles within each consistent capture). Flag only so a future round pins capture to a frozen snapshot before review.",
+  "findings": [
+    {
+      "id": "A-001",
+      "state_artifact": "test-e2e-A/02-menu-first-category.png + 02-menu-first-category.dom.html",
+      "category": "empty_state_quality",
+      "severity": "P2",
+      "status": "open",
+      "evidence": "All kiosk category sidebar thumbnails on the customer-facing borne resolve to the SAME generic placeholder. DOM proof (02-menu-first-category.dom.html): every [data-testid^=kiosk-categories-sidebar-item-] <img> has src='http://127.0.0.1:8000/images/category/cover.png' — measured 11 <img> nodes parsed, 1 distinct src, DUPLICATE x11. Visually (02 + 02b PNG) Sandwich Cayenne / Galette / Sandwich Classique / Burgers / Tacos / Bols Gourmands all show the identical burger photo, so a customer cannot distinguish categories by thumbnail. Product-CARD photos are distinct/real (verified 02b/03/06) — this is sidebar-thumbnail-only. No measured overlap/contrast/i18n/numeric defect -> P2 disclosure per the P1-objectivity rule; verdict-neutral.",
+      "fix_hint": "Seed/assign per-category cover images (Category model image_url / config menu category image field) instead of falling back to public/images/category/cover.png; the KioskCategories sidebar binds category.image_url and every category is currently unset so the generic cover.png fallback fires for all of them. Not a frozen zone."
+    },
+    {
+      "id": "A-002",
+      "state_artifact": "test-e2e-A/01b-a11y-panel.png + 01b-a11y-panel.dom.html",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "status": "open",
+      "evidence": "Kiosk a11y panel ships a FUNCTIONAL dark/auto theme toggle on a surface mandated LIGHT-MODE only (CLAUDE.md 3bis: 'Light mode 100% on kiosk (owner mandate dark mode desactive)'; AUDIT_PLAN Wave A: 'borne, light mode'). DOM proof (01b-a11y-panel.dom.html): row 'THEME — Bascule entre l affichage clair et sombre' renders [data-testid=kiosk-a11y-theme-toggle] with three WIRED radios kiosk-a11y-theme-toggle-light / -dark / -auto, and <html data-kiosk-theme=\"light\" data-kiosk-visual-theme=\"light\"> is driven by it. Currently light, but a real 'dark' option exists and is selectable. No dark-mode screenshot was captured -> NO measured palette-drift evidence -> cannot be a P1; P2 owner-judgment (may be a deliberate EAA-2025 accessibility exception).",
+      "fix_hint": "Owner gate: either (a) hide the dark/auto radios on the kiosk a11y drawer to honor the light-mode-only mandate (guard the theme radiogroup behind a kiosk config flag), or (b) document an explicit EAA-2025 exception in CLAUDE.md 3bis. Then add a round-2 capture that flips kiosk-a11y-theme-toggle-dark and re-checks Cayenne palette contrast in dark mode."
+    },
+    {
+      "id": "A-003",
+      "state_artifact": "test-e2e-A/10-cash-instruction.png + tests/e2e/test-e2e-abuse-A-kiosk.spec.js lines 443-470",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "status": "open",
+      "evidence": "The plan's hardest cross-surface check (confirmation total DERIVED FROM THE BACKEND QUOTE vs cart total, spec lines 459-461) was NOT exercised this round: the journey took the cash-instruction terminal (10-cash-instruction, cashInsteadOfConfirmation=true), no 10-confirmation.png exists, so the kiosk-confirmation-root assertion never ran. The cash branch (462-470) asserts order# is not 'undefined'/'null' but does NOT machine-assert the cash total — the only asserted equality this run is counter-total==cart (line 423), which the spec's own comment (420-422) admits is client-vs-client formatPrice() of the same cartTotal (near-tautological). NOT vacuous overall: the backend-persisted money fact was confirmed by REVIEWER EYE — cash 'Montant a regler 8,50 EUR' == cart Total 'EUR8,50' (07) == payment 'EUR8,50' (08/09), with a real POST /api/frontend/order -> 201. Coverage gap, not a data defect; verdict-neutral.",
+      "fix_hint": "In the cash branch add: const cashTotal = await page.locator('[data-testid=kiosk-cash-amount]').innerText(); expect(parseMoney(cashTotal)).toBeCloseTo(parseMoney(cartGrandTotalStr), 2); — so the backend-persisted total is machine-asserted on the cash path with the same rigor as the confirmation path. Optionally also drive a round-2 variant that lands on kiosk-confirmation-root to exercise the quote-vs-cart string compare."
+    },
+    {
+      "id": "A-004",
+      "state_artifact": "test-e2e-A/08-payment-screen.png == 09-payment-counter-route.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "status": "open",
+      "evidence": "State 09 is a BYTE-IDENTICAL duplicate of state 08, so no distinct 'counter-route confirm' sub-state was captured. md5(08-payment-screen.png)==md5(09-payment-counter-route.png)=e5c016bcefb80b0a017a36d0210284ec; md5(08.dom.html)==md5(09.dom.html)=c6d45908eb54179c83c15fffce0117ec. The spec snaps both with no UI interaction between them. Coverage is NOT lost: 08-payment-screen.dom.html already contains data-testid=kiosk-payment-counter-route AND kiosk-payment-counter-confirm, and the 08 PNG shows 'PAIEMENT A LA CAISSE / TOTAL A REGLER EUR8,50 / Confirmer ma commande'. This is the EXPECTED Plan-B behavior (the payment screen IS the counter-route card) — cosmetic redundancy only -> P3.",
+      "fix_hint": "Drop the redundant 09 snap or interact (focus/hover the counter-confirm CTA) before re-snapping so 09 is a genuinely distinct state; cosmetic, no product change."
+    },
+    {
+      "id": "A-005",
+      "state_artifact": "test-e2e-A/*.network.json (all 15)",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "status": "open",
+      "evidence": "Defect-category #7 (loading-state-missing: request duration > 2000ms with no spinner) is UNVERIFIABLE across the entire wave because every entry in every *.network.json has 'duration_ms': null. Measured: across all 15 network.json files, 20 response entries, 20x '\"duration_ms\": null', 0 populated. No reviewer in this wave could evaluate the >2s loading rule on measured data; recorded so a future round does not falsely assume #7 was checked.",
+      "fix_hint": "helpers/mega-audit-snap.js: populate duration_ms from response.request().timing() (responseEnd - requestStart) so the >2000ms loading-state rule becomes evaluable. Test-infra only, no product change."
+    }
+  ],
+  "non_findings_explicitly_cleared": [
+    "console.json across all states is clean: only CSP report-only 'info' lines (allowlisted noise) and on 01b a single GET /api/login -> 401 with a 302 on /api/broadcasting/auth. Per AUDIT_PLAN KNOWN SIGNALS the kiosk Echo bootstrap's broadcasting/auth 302 -> /api/login 401 is realtime-degraded (at most P2) and did NOT break any order/status the customer depends on (full idle->menu->wizard->cart->upsell->payment->real order# completed). NOT a finding.",
+    "network.json: only 4xx/3xx are the allowlisted 01b 401 + 302 (broadcasting auth). All else 200/201/204. POST /api/frontend/order -> 201 (real order write). No silent_error candidate (no unhandled 4xx/5xx with absent [role=alert]).",
+    "i18n leak scan: ZERO visible dotted-key leaks across all 15 DOMs (python tag-strip + regex ^[a-z]+(\\.[a-z_]+){1,4}$, file/domain false-positives excluded).",
+    "NUMERIC INTEGRITY (hardest check) PASSES on every visible surface within each consistent capture: cart line EUR8,50 == subtotal EUR8,50 == total EUR8,50 (07); qty x2 -> line EUR17,00 == subtotal EUR17,00 == total EUR17,00 i.e. 2*8,50 exact (07b); payment 'TOTAL A REGLER EUR8,50' (08/09); cash 'Montant a regler 8,50 EUR' (10). No mismatch.",
+    "Empty-state (01c) is strong: cart illustration + 'Votre panier est vide' + copy >=20 chars + primary CTA 'Ajouter des articles'.",
+    "Palette/light-mode mandate honored on rendered surfaces: Cayenne orange #F4501E primary across idle/wizard/payment/cash, light-mode backgrounds throughout, no dark-mode drift in any captured PNG.",
+    "Disabled 'Payer' button (gray) on 0-article menu screens is NOT a contrast finding: disabled UI components are explicitly exempt from WCAG 1.4.3.",
+    "Cash-instruction terminal is the LEGITIMATE Plan-B outcome (KioskCashInstructionComponent.vue, config/kiosk.php payment_route_all_to_counter), NOT a bug masking the confirmation screen."
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 3,
+    "P3": 2,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 3,
+    "open_P3": 2
+  },
+  "round_to_round_closures": {},
+  "verdict": "GREEN",
+  "verdict_rationale": "open_P0==0 && open_P1==0 => GREEN. The five open findings are all P2/P3 (duplicate sidebar thumbnails; dark-mode toggle on a light-mode-mandated surface = owner judgment; cash-branch backend-total not machine-asserted = coverage gap; 08==09 redundant snap; duration_ms null makes #7 unverifiable). None is in the enumerated measured-P1 kinds, so none moves the verdict. No invented subjective P1 (protocol forbids it; preserves two-round convergence). The kiosk customer journey is numerically sound, i18n-clean, console/network-clean, and visually on-brand."
+}

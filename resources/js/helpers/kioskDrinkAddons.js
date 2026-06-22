@@ -11,9 +11,14 @@
 
 const FOOD_LIKE_REGEX = /frite|menu|patate|nugget|tender|onion|oignon|mozzarella|accompagn|snack|dessert|glace|wrap|cornet|potato|boulette|stick|ring|douille|corbeille|panier|barquette|salade/i;
 const DRINK_LIKE_REGEX = /\b(coca|cola|pepsi|fanta|sprite|schweppes|eau|thé|tea|ice\s?tea|jus|boisson|soda|drink|limonade|orangina|oasis|tropico|café|coffee|red\s?bull|vittel|evian|perrier|badoit|heineken|1664|kronenbourg|desperados|kas|san\s?pellegrino|lipton|nestea)/i;
+const GENERIC_DRINK_OPTION_REGEX = /^\s*(?:\+?\s*)?(boisson|drink)(?:\s+(seule?|only))?\s*$/i;
 
 export function kioskIsFoodLikeAddonName(name) {
   return FOOD_LIKE_REGEX.test(String(name || '').toLowerCase());
+}
+
+export function kioskIsGenericDrinkOptionName(name) {
+  return GENERIC_DRINK_OPTION_REGEX.test(String(name || '').toLowerCase());
 }
 
 /**
@@ -35,17 +40,20 @@ function addonGroupLabel(addon) {
 }
 
 export function kioskIsDrinkAddon(addon) {
+  const name = String(addon?.addon_item_name || addon?.name || '').toLowerCase();
+  if (kioskIsGenericDrinkOptionName(name)) return false;
+
   const gl = addonGroupLabel(addon);
   if (gl !== '') {
     if (gl === 'boisson' || gl === 'drink' || gl === 'drinks' || gl === 'beverage') return true;
     if (gl.includes('frite') || gl.includes('menu_') || gl === 'menu' || gl.includes('food')) return false;
   }
-  const name = String(addon?.addon_item_name || addon?.name || '').toLowerCase();
   return kioskIsDrinkAddonName(name);
 }
 
 export function kioskIsDrinkAddonName(name) {
   const n = String(name || '').toLowerCase();
+  if (kioskIsGenericDrinkOptionName(n)) return false;
   if (kioskIsFoodLikeAddonName(n)) return false;
   if (n.includes('frite') || n.includes('menu')) return false;
   return DRINK_LIKE_REGEX.test(n);

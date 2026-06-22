@@ -1,0 +1,92 @@
+{
+  "specialist": "Architect",
+  "zone": "PS-4 POS Client management + Receipts",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "d3dc4c2c6",
+  "scope": ["10.10 Client management (walk-in)", "10.11 Receipts (NF525 ticket + duplicata)"],
+  "verdict": "PASS_WITH_OBSERVATIONS",
+  "summary": "Walk-in resolver is a clean, idempotent SSOT (firstOrCreate by stable email sentinel walkingcustomer@example.com). Receipt path was just successfully refactored to flow through ReceiptDataService (delegated by OrderDetailsResource) so the six NF525 header fields converge on a single producer. The recent typehint widening from `Order` to `BroadcastableOrder` (commit d3dc4c2c6) restores kiosk checkout (FrontendOrder accepted) without breaking POS. Architecture is sound; observations are mainly about scattered duplication of payment-line/PII concerns and one legacy receipt component that does NOT share the NF525 footer/duplicata-marker contract.",
+  "findings": [
+    {
+      "id": "ARCH-PS4-001",
+      "title": "ReceiptDataService SSOT contract is now enforced by sentinel tests",
+      "severity": "INFO",
+      "files": [
+        "app/Services/Receipt/ReceiptDataService.php",
+        "app/Http/Resources/OrderDetailsResource.php",
+        "tests/Feature/Receipt/ReceiptDataServiceWireInTest.php"
+      ],
+      "evidence": "OrderDetailsResource L24 calls `app(ReceiptDataService::class)->buildForOrderModel($this->resource)` and uses the returned array for fiscal_sequence_no, pos_register_id, pos_siret, pos_vat_intra, pos_legal_footer, operator_name (L80-86). The new test `test_order_details_resource_delegates_nf525_fields_to_receipt_data_service` locks this delegation by asserting field-by-field equality with the service output. `test_legacy_buildForOrder_and_new_buildForOrderModel_are_equivalent` keeps the two service signatures aligned. `test_build_for_order_model_accepts_frontend_order_sibling` locks the BroadcastableOrder typehint widening.",
+      "recommendation": "Keep these tests in CI smoke pipeline — they are the only thing preventing a regression where a future patch reads `$this->branch->siret` directly from the resource."
+    },
+    {
+      "id": "ARCH-PS4-002",
+      "title": "PosOrderReceiptComponent (re-print history modal) does NOT use ReceiptDuplicataMarker or NF525 footer",
+      "severity": "P2",
+      "files": [
+        "resources/js/components/admin/posOrders/PosOrderReceiptComponent.vue"
+      ],
+      "evidence": "This component (admin/posOrders surface — re-print from order history) renders a paper-receipt block but neither imports nor mounts <receipt-duplicata-marker>, and never reads order.fiscal_sequence_no, order.pos_siret, order.pos_vat_intra, order.pos_register_id, order.operator_name, order.pos_legal_footer, order.tax_lines, or buildNf525Footer(). Compare with ReceiptComponent.vue L67-73 (header siret/vat/register/operator) + L74 (duplicata marker) + L241-247 (NF525 footer loop). Result: a manager re-printing a ticket from the orders history will produce a receipt missing fiscal_sequence_no + duplicata mark — a NF525 hole on the legally-most-sensitive print path (re-impression). The fiscal increment endpoint is also not invoked from this component, so receipt_print_count never advances from this surface.",
+      "recommendation": "P2 because the day-to-day re-print path (from PosOrdersTrackerComponent → ReceiptComponent) IS correct. But manager-side re-print from /admin/posOrders should either (a) redirect to the ReceiptComponent path or (b) be brought to feature-parity with NF525 header + duplicata + POST print-receipt. Track for V1.0.2 — owner Aurore needs to confirm which path managers actually use."
+    },
+    {
+      "id": "ARCH-PS4-003",
+      "title": "Payment-lines normalisation lives in TWO places",
+      "severity": "INFO",
+      "files": [
+        "resources/js/helpers/posReceiptBuilder.js",
+        "app/Http/Resources/OrderDetailsResource.php"
+      ],
+      "evidence": "Both `formatPaymentsBreakdown` (JS, posReceiptBuilder L34-57) and `buildPaymentsBreakdown` (PHP, OrderDetailsResource L114-158) implement the same fallback ladder: (1) array of payments → enriched lines, (2) single tender from pos_payment_method/pos_received_amount → synthetic 1-line array, (3) empty. They are factual duplicates serving the same UX (the PHP one feeds payments_breakdown into the API response, the JS one normalises that same array for rendering + handles the pre-payment LIVE tranche case). Risk: future change to single-tender semantics has to be made in both layers.",
+      "recommendation": "Not a defect today (PHP is for persisted orders, JS adds the LIVE-tranche helper). Document the contract in a header comment so the next maintainer doesn't drop one of the two layers."
+    },
+    {
+      "id": "ARCH-PS4-004",
+      "title": "WalkInCustomerResolver is firstOrCreate-only — DB-first idempotent",
+      "severity": "INFO",
+      "files": [
+        "app/Services/Pos/WalkInCustomerResolver.php"
+      ],
+      "evidence": "L16-37 use a single firstOrCreate keyed by email=walkingcustomer@example.com. branch_id=0 makes the walk-in user globally visible across BranchScope (admin tenant). The PENDING_WALKIN phone sentinel is documented (L23-31) as both NOT-NULL-satisfier and ValidPhone-failer — meaning any accidental DELIVERY flow that reuses this user would be rejected by the phone validator. ensureCustomerRole (L44-57) lazily assigns the `Customer` role with a Throwable guard so role-seed-absent test contexts don't blow up. Two callers: `walkInCustomer()` HTTP action (PosController L149-162, throttled 120/min on pos-quote limiter) and the implicit normalize in `normalizePosRuntimePayload` (PosController L224-228).",
+      "recommendation": "Clean. Consider documenting the contract that any code creating a User via this email is a bug (only this service may), and add a DB-level UNIQUE assertion to the integration test."
+    },
+    {
+      "id": "ARCH-PS4-005",
+      "title": "Increment endpoint atomic — no race window in concurrent multi-station reprint",
+      "severity": "INFO",
+      "files": [
+        "app/Http/Controllers/Admin/Pos/PosReceiptPrintController.php"
+      ],
+      "evidence": "L43-48 use `Order::query()->whereKey($order)->where('branch_id', $branchId)->update(['receipt_print_count' => DB::raw('COALESCE(receipt_print_count, 0) + 1')])` — a single SQL UPDATE statement makes concurrent prints from two stations safe (each statement is atomic in MySQL row-locking). The subsequent SELECT (L54-58) re-reads with the same tenant filter (defense in depth on top of BranchScope). The audit emission is wrapped in try/catch (L77-104) so a chain failure does NOT block the cashier from delivering the paper ticket — operational continuity is documented (L26-28).",
+      "recommendation": "Strong design. The `audit_emitted=false` signal in the response (L73) is the right escape hatch — SIEM can subscribe. Verify that the frontend surfaces this to the operator (today ReceiptComponent.vue's handlePrintClientClick ignores it — see UX/A11y report)."
+    },
+    {
+      "id": "ARCH-PS4-006",
+      "title": "Receipt rate limit asymmetry — 120/min on the GET walk-in lookup, NO throttle on the POST print-receipt fiscal increment",
+      "severity": "P2",
+      "files": [
+        "routes/api.php",
+        "app/Providers/RouteServiceProvider.php"
+      ],
+      "evidence": "Line 752-758 of routes/api.php: walk-in-customer GET + quote POST both wear `throttle:pos-quote` (120/min). Line 831: `Route::post('/orders/{order}/print-receipt', [PosReceiptPrintController::class, 'increment'])->middleware('idempotency')->name('orders.print-receipt')` — only the idempotency middleware, NO rate-limit. With per-user throttling at 120/min on the broader bucket `api/admin/pos/*` (RouteServiceProvider.php L86-88), the global `api` group bucket would still cap an abusive operator at ~120 RPM, but a misbehaving frontend (re-entrant click loop) could write 120 audit_log rows per minute per operator. Not a security DoS, but a fiscal chain noise risk.",
+      "recommendation": "V1.0.2: add `throttle:pos-quote` to print-receipt route (or a tighter dedicated limiter like 30/min, since human-paced reprint is rare). The Vue component does have a re-entrant guard (isPrinting + 3 rapid-clicks → 1 call in the spec), so the risk is bounded today."
+    },
+    {
+      "id": "ARCH-PS4-007",
+      "title": "effectiveOrder computed prefers max(local, prop) — anti-flicker correct",
+      "severity": "INFO",
+      "files": [
+        "resources/js/components/admin/pos/ReceiptComponent.vue",
+        "tests/js/posReceiptPrintFlow.spec.js"
+      ],
+      "evidence": "ReceiptComponent.vue L421-431 computes `effectiveCount = Math.max(baseCount, localCount)` so a parent prop refetch returning the older count cannot make the DUPLICATA badge disappear after a successful print bump. Tested by spec L129-141 (`effectiveOrder follows parent prop changes after the local bump`).",
+      "recommendation": "Good pattern. Keep."
+    }
+  ],
+  "metrics": {
+    "files_read": 11,
+    "lines_audited": 1320,
+    "tests_validated": 3
+  },
+  "wall_clock_min": 8
+}

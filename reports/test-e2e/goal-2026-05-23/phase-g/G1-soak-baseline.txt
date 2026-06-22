@@ -1,0 +1,26 @@
+=== G.1 baseline 2026-05-23 ===
+sam. 23 mai 2026 23:02:10 CEST
+
+--- audit_logs count ---
+audit_logs_count=67
+
+--- NF525 chain pre ---
+  + branch=1 CHAIN OK
+  + branch=2 CHAIN OK
+SWEEP COMPLETE — CHAIN OK on every active branch (2 total)
+
+--- orders count ---
+orders_count=139
+
+--- outbox depth (dispatched_at IS NULL) ---
+outbox_pending=832
+outbox_stale_30s=832
+
+--- fiscal_sequence_no MAX per branch ---
+branch=1 max=68
+branch=2 max=null
+
+--- PHP serve PID + RSS ---
+  PID    RSS COMM
+53293  57824 /opt/homebrew/Cellar/php@8.2/8.2.30/bin/php
+94392  13104 php

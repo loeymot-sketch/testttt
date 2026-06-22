@@ -1,0 +1,212 @@
+{
+  "persona": "Auditeur-fiscal NF525 inspector",
+  "mode": "READ-ONLY cross-validation of B3.6 + dispute lens",
+  "audited_at": "2026-05-23T18:00:00+02:00",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "db_driver": "mysql",
+  "branches_active": [1],
+
+  "chain_verify_output_full": "$ php artisan fiscal:verify-chain\nCHAIN OK (audit_logs + z_reports) (branch=1)\nEXIT=0",
+  "chain_verify_status": "CHAIN OK",
+  "chain_verify_count_observed": 64,
+  "chain_verify_last_hash_observed": "8daed68a65b8c8e75a7143f305967047ee1bb0b664a95afb5d9d2e0657777592",
+  "chain_verify_genesis_observed": {
+    "id": 1,
+    "prev_hash": "''  (empty string — correct genesis sentinel)",
+    "current_hash": "945f14b4a101a29ff0fc4807a1096bdade899981a6e61b1ce6aa829fb5bd8e4f"
+  },
+  "z_reports_count_observed": 0,
+
+  "inspector_lens_dispute_hunt": {
+    "hunt_1_chain_linkage_manual_full_64_rows": {
+      "method": "iterate every audit_logs row id 1..64, for each (excluding genesis) fetch the predecessor row on the SAME branch_id, assert row.prev_hash === predecessor.current_hash",
+      "rows_traversed": 64,
+      "breaks": 0,
+      "verdict": "PASS — every link from genesis to head is bit-identical with stored hashes. NO subtle gap, NO branch-fork, NO recomputation drift. The 'CHAIN OK' artisan output is corroborated by my own re-verifier loop."
+    },
+    "hunt_2_composition_snapshot_update_paths_deep": {
+      "method": "grep across app/ and database/ for (1) eloquent ->update(['composition_snapshot'…]), (2) raw DB::update / DB::statement / DB::raw on order_items/frontend_order_items, (3) direct property assignment ->composition_snapshot =, (4) Schema modifications post-add migration",
+      "ELOQUENT_update_hits_with_composition_snapshot_column": 0,
+      "RAW_DB_update_hits_with_composition_snapshot_column": 0,
+      "PROPERTY_assignment_hits": 0,
+      "POST_MIGRATION_alter_hits": 0,
+      "neighbouring_column_updates_observed": [
+        {
+          "file": "app/Console/Commands/BackfillAllergensSnapshotCommand.php:93",
+          "column": "allergens_snapshot",
+          "NOT_composition_snapshot": true,
+          "comment": "Backfill writes to the SEPARATE allergens_snapshot column. composition_snapshot is untouched."
+        },
+        {
+          "file": "database/migrations/2026_04_20_131600_backfill_fr_codes_in_order_items_allergens_snapshot.php:50",
+          "column": "allergens_snapshot",
+          "NOT_composition_snapshot": true,
+          "comment": "Migration backfill of allergens FR codes only. composition_snapshot column not in the UPDATE SET list."
+        }
+      ],
+      "verdict": "PASS — composition_snapshot IMMUTABILITY CONFIRMED at full repository scope. INSERT-only at 6 well-known sites (cf. B3.6 enumeration), zero UPDATE path anywhere. Even neighbour-column backfills (allergens_snapshot) do not touch it. B3.6 finding is RECONFIRMED by independent dispute hunt."
+    },
+    "hunt_3_fiscal_sequence_allocation_race": {
+      "code_audited": "app/Services/Fiscal/FiscalSequenceService.php:57-114",
+      "defence_layers_observed": [
+        "Layer 1 — Cache::lock('fiscal_seq_b{branchId}', 5s TTL) with block(3s) max wait, per-branch serialisation",
+        "Layer 2 — DB::transaction wrapping the SELECT MAX / + 1 / INSERT path",
+        "Layer 3 — Order::lockForUpdate() on rows of the same branch (row-level DB lock, MySQL InnoDB)",
+        "Layer 4 — withoutGlobalScope(BranchScope) + withTrashed() so soft-deleted rows are still considered in MAX(fiscal_sequence_no) — closing the LOCK_FISCAL_WGS_Z6_P1_2026-05-19 hole"
+      ],
+      "race_condition_paths_considered": [
+        {"path": "cache outage / split-brain — two workers slip past empty cache", "mitigation": "Layer 2+3 — DB transaction + lockForUpdate serialise at storage engine"},
+        {"path": "cache lock expires under load mid-transaction", "mitigation": "DB transaction holds storage-level lock until commit; cache lock is correctness optimisation, not the ultimate gate"},
+        {"path": "soft-deleted Order rebooked, sequence re-used", "mitigation": "withTrashed() includes soft-deleted in MAX() — exactly the Z6-P1 LOCK exception scope"},
+        {"path": "BranchScope hides an existing row with higher fsn", "mitigation": "withoutGlobalScope(BranchScope) makes the MAX scope explicit"}
+      ],
+      "runtime_state_observed": {
+        "orders_with_fsn": 33,
+        "fsn_range_branch_1": "1..38",
+        "gaps_observed": [29, 30, 31, 32, 35],
+        "fiscal_alloc_error_at_count": 0,
+        "root_cause_of_gaps": "DEV TRUNCATE residue via app/Console/Commands/FreshOrderSeed.php — production guarded by APP_ENV=production check at lines 21-24 returning self::FAILURE"
+      },
+      "verdict": "PASS — runtime invariant intact. No exploitable race in any of the 4 paths considered. Gaps in dev DB are pre-existing TRUNCATE residue with production guard active. B3.6 finding F3 RECONFIRMED."
+    },
+    "hunt_4_orphan_audit_logs_row_without_valid_hmac": {
+      "method": "iterate 64 rows, fetch prev_hash and current_hash, fail if any link is missing OR if any row lacks current_hash / has null current_hash",
+      "rows_with_null_current_hash": 0,
+      "rows_with_orphan_prev_hash": 0,
+      "verdict": "PASS — every audit_logs row has a valid current_hash and the per-branch chain is contiguous from genesis (prev_hash='') to head"
+    },
+    "hunt_5_backup_6yr_gap_check": {
+      "evidence_observed": [
+        {"path": "storage/backups/db-daily/", "purpose": "30-day daily lane"},
+        {"path": "storage/backups/db-monthly/", "purpose": "12-month monthly lane (copied on day-1)"},
+        {"path": "storage/backups/db-quarterly/", "purpose": "24-quarter quarterly lane = 6 years NF525"}
+      ],
+      "command": "app/Console/Commands/Backup/RunDailyBackup.php (signature foodking:backup-daily)",
+      "retention_math": "30 daily + 12 monthly + 24 quarterly (6 years) — covers NF525 art.286 quinquies 6-year mandate at DB-dump level",
+      "complementary_fiscal_archive": "app/Console/Commands/FiscalArchiveCommand.php streams JSONL into signed ZIP for per-window export (POS-9.4.11)",
+      "runbook": "docs/runbooks/BACKUP_RESTORE_NF525.md present + scripts/db/RESTORE_DRILL_2026-05-21.md proof",
+      "verdict": "PASS — 6-year coverage CODIFIED via foodking:backup-daily quarterly lane (24 quarters)"
+    }
+  },
+
+  "cross_validation_B3.6": {
+    "F1_chain_integrity": "CONFIRMED — bit-identical to B3.6: count=64 last_hash=8daed68a65b8c8e75a7143f305967047ee1bb0b664a95afb5d9d2e0657777592, full 64-row manual linkage verification 0 breaks",
+    "F2_append_only_enforcement": "CONFIRMED — 3 active triggers in mysql (audit_logs_no_update BEFORE UPDATE, audit_logs_no_delete BEFORE DELETE, z_reports_no_delete BEFORE DELETE), zero forbidden DELETE/TRUNCATE patterns in app/, BONUS BEFORE UPDATE invariant exceeds CLAUDE.md §8 mandate",
+    "F3_fiscal_sequence_monotonic": "CONFIRMED — quadruple-defence allocation pattern at FiscalSequenceService.php:57-114, gaps in dev DB are TRUNCATE residue with production guard, fiscal_alloc_error_at=0",
+    "F4_composition_snapshot_immutability": "CONFIRMED — independent grep at 4 angles (Eloquent / raw DB / property assignment / migration alter) finds 0 UPDATE paths. Neighbour-column allergens_snapshot backfills do NOT touch composition_snapshot.",
+    "F5_allergens_snapshot_state": "CONFIRMED — column exists, hydrate helper at app/Services/Orders/OrderItemAllergenSnapshot.php, backfill cmd at app/Console/Commands/BackfillAllergensSnapshotCommand.php, KDS reads via safeJsonDecodeArray (no fabrication)",
+    "F6_production_boot_guards": "CONFIRMED — 10 throw new RuntimeException blocks at AppServiceProvider.php:85,97,104,122,143,162,181,193,199,216 (POS_SIMULATION_HARDWARE + PAYMENT_BYPASS_MODE + PRINTING_BYPASS_MODE + APP_DEBUG + IDEMPOTENCY_MIDDLEWARE_ENABLED + LOYALTY_QR_SECRET + APP_URL + BROADCAST_DRIVER + QUEUE_CONNECTION + CACHE_DRIVER). 5 in CLAUDE.md §8 + 5 BONUS",
+    "F7_retention_policy": "UPGRADE from B3.6 PARTIAL to PASS — 6-year coverage codified via foodking:backup-daily 24-quarter lane (RunDailyBackup.php Q14 Wave Polish Final 2026-05-21). Backup dirs storage/backups/db-{daily,monthly,quarterly}/ exist. Runbook BACKUP_RESTORE_NF525.md + restore drill 2026-05-21 documented",
+    "F8_sanctum_kiosk_order_TTL": "CONFIRMED — config/sanctum.php:51 expiration=480 min (env SANCTUM_TOKEN_EXPIRATION default 480). Old-token revoke at relogin in kiosk + admin login controllers",
+    "F9_idempotency_middleware": "CONFIRMED — registered alias 'idempotency' at Kernel.php:140, IdempotencyKeyMiddleware class, boot-guarded by AppServiceProvider:143-151",
+    "F10_z_report_daily_close": "CONFIRMED — schema + service intact (app/Services/Fiscal/ZReportService.php 30666 bytes, verifySignature + verifyChain methods present), zero rows in dev DB (expected, no close events triggered yet)",
+    "F11_pre_post_chain_bit_identical": "CONFIRMED — chain unchanged after my read-only inspector probe (count=64 last_hash=8daed68a65b8c8e75a7143f305967047ee1bb0b664a95afb5d9d2e0657777592 pre + post)",
+    "F12_6yr_retention_math": "CONFIRMED — 24-quarter × 1-archive/quarter = 6 years sustainable + FiscalArchiveCommand JSONL streaming for memory-bounded long-window exports"
+  },
+
+  "ansible_grant_revoke_truncate": {
+    "file": "deploy/ansible/site.yml:59-71",
+    "task_name": "NF525 fiscal-table privilege REVOKE (CVP0-1 GOAL-CMS-2026-05-18)",
+    "revoked_privileges": ["DROP", "ALTER"],
+    "tables_protected": ["audit_logs", "z_reports", "cash_movements", "cash_drawer_sessions", "order_payments", "domain_events", "webhook_events"],
+    "truncate_blocked_transitively": true,
+    "mysql_semantic": "TRUNCATE requires DROP privilege at the table level. Revoking DROP transitively blocks TRUNCATE. Confirmed in MySQL 8.0 documentation (TRUNCATE TABLE Statement: 'TRUNCATE TABLE requires the DROP privilege')",
+    "verdict": "CONFIRMED — TRUNCATE bypass on audit_logs/z_reports is blocked by privilege revocation. Defense-in-depth complemented by BEFORE DELETE triggers (DELETE not revoked because app needs row-level delete for soft-delete and GDPR retraction)"
+  },
+
+  "log_retention_assessment": {
+    "fiscal_channel": {"days": 400, "comment": "NF525-aligned operational floor for fiscal events (open/close/write). Long-tail 6-year tail handled by FiscalArchiveCommand zip+JSON archive"},
+    "security_channel": {"days": 90, "comment": "K-6 forensic retention for branch_mismatch_claimed and similar security events"},
+    "observability_channel": {"days": 90, "comment": "K-9 ADR-4 SLO metrics + CSP reports"},
+    "general_daily_channel": {"days": 14, "comment": "Generic laravel.log rotation — explicitly described in the fiscal channel comment block as 'typically rotated at 14 days, which would silently throw away the breadcrumbs of a disputed Z close', motivating the separate 400-day fiscal channel"},
+    "verdict": "PASS — fiscal events explicitly routed to a dedicated 400-day channel, isolated from the noisy 14-day generic stream. NF525-relevant retention floor met."
+  },
+
+  "production_boot_guards_inspector_walkthrough": [
+    {"line": 85,  "config": "pos.simulation_hardware",       "env": "POS_SIMULATION_HARDWARE",        "matches_claude_md_section_8": true,  "verdict": "ACTIVE"},
+    {"line": 97,  "config": "payment.bypass.enabled",        "env": "PAYMENT_BYPASS_MODE",            "matches_claude_md_section_8": false, "verdict": "BONUS"},
+    {"line": 104, "config": "printing.bypass.enabled",       "env": "PRINTING_BYPASS_MODE",           "matches_claude_md_section_8": false, "verdict": "BONUS"},
+    {"line": 122, "config": "app.debug",                     "env": "APP_DEBUG",                      "matches_claude_md_section_8": true,  "verdict": "ACTIVE"},
+    {"line": 143, "config": "idempotency.enabled",           "env": "IDEMPOTENCY_MIDDLEWARE_ENABLED", "matches_claude_md_section_8": true,  "verdict": "ACTIVE"},
+    {"line": 162, "config": "loyalty.qr.secret",             "env": "LOYALTY_QR_SECRET",              "matches_claude_md_section_8": false, "verdict": "BONUS (LCS-S-001 post-13-zone P0)"},
+    {"line": 181, "config": "app.url",                       "env": "APP_URL",                        "matches_claude_md_section_8": true,  "verdict": "ACTIVE"},
+    {"line": 193, "config": "broadcasting.default",          "env": "BROADCAST_DRIVER",               "matches_claude_md_section_8": false, "verdict": "BONUS"},
+    {"line": 199, "config": "queue.default",                 "env": "QUEUE_CONNECTION",               "matches_claude_md_section_8": false, "verdict": "BONUS (F-015 fix)"},
+    {"line": 216, "config": "cache.default",                 "env": "CACHE_DRIVER",                   "matches_claude_md_section_8": true,  "verdict": "ACTIVE — forbidden list narrower than stated intent (file+database PASS; tracked as UNI-03 V1.0.X cloud-prep — V1 LOCAL Le Cayenne single-box file driver safe)"}
+  ],
+  "production_boot_guards_count_observed": 10,
+  "production_boot_guards_match_B3.6": true,
+
+  "nf525_critical_findings": [],
+
+  "compliance_weak_findings": [
+    {
+      "id": "P5-W1",
+      "severity": "INFO",
+      "title": "B3.6 finding F7 6-year retention UPGRADE — was PARTIAL, now PASS",
+      "description": "B3.6 marked F7 retention_policy PARTIAL because 6-year partitioning policy not codified. Inspector hunt 5 confirms the quarterly lane in app/Console/Commands/Backup/RunDailyBackup.php IS the codified 6-year policy (24 quarterly archives × 3 months = 72 months = 6 years). The retention strategy comment block at lines 16-31 of RunDailyBackup.php explicitly cites CLAUDE.md §8. storage/backups/db-quarterly/ directory exists. NF525 retention is codified at DB-dump level. Partitioning by RANGE(created_at) on audit_logs IS still a recommended V1.0.X performance optimisation (B3.6 F6) — not a retention gap.",
+      "action": "B3.6 may legitimately reclassify F7 from PARTIAL to PASS. F6 partitioning recommendation stands as V1.0.X performance backlog (not retention).",
+      "fiscal_risk": "NONE — finding documents an upgrade, not a gap"
+    },
+    {
+      "id": "P5-W2",
+      "severity": "INFO",
+      "title": "Generic 'daily' log channel is 14 days, OK because fiscal events go to dedicated 400-day 'fiscal' channel",
+      "description": "config/logging.php:67-70 'daily' channel rotates at 14 days, well below the prompt's '90-day production logs' line. Inspector verifies this is INTENTIONAL: the fiscal channel block-comment at lines 170-186 explicitly justifies routing fiscal events to a separate 400-day channel BECAUSE laravel.log at 14 days 'would silently throw away the breadcrumbs of a disputed Z close'. Security + observability channels are at 90 days. So the 14-day default is the low-signal noise lane, not the audit lane.",
+      "action": "Consider extending 'daily' to 90 days OR explicitly documenting in CLAUDE.md §8 that fiscal/security/observability use dedicated longer-retention channels. No legal risk.",
+      "fiscal_risk": "NONE — fiscal events use dedicated 400-day channel"
+    },
+    {
+      "id": "P5-W3",
+      "severity": "INFO",
+      "title": "B3.6 F4 documentation precision (Ansible REVOKE narrow vs CLAUDE.md §8 GRANT-level REVOKE) RECONFIRMED",
+      "description": "CLAUDE.md §8 says 'GRANT-level REVOKE on audit_logs + z_reports'. Actual ansible task at deploy/ansible/site.yml:65-71 revokes DROP and ALTER only on 7 tables (audit_logs, z_reports, cash_movements, cash_drawer_sessions, order_payments, domain_events, webhook_events). DROP revocation blocks TRUNCATE transitively per MySQL semantics. DELETE remains GRANTed for soft-delete and GDPR retraction — defense-in-depth provided by BEFORE DELETE trigger. Runtime invariant holds.",
+      "action": "Update CLAUDE.md §8 to specify 'REVOKE DROP, ALTER on 7 fiscal-adjacent tables' instead of the generic 'GRANT-level REVOKE' phrasing.",
+      "fiscal_risk": "NONE runtime — documentation precision only (same as B3.6 F4)"
+    },
+    {
+      "id": "P5-W4",
+      "severity": "INFO",
+      "title": "z_reports zero close events in dev DB — close-day operator playbook documentation",
+      "description": "0 z_reports rows in dev DB despite 38 fsn allocations. Schema + service + ZReportService.verifySignature + verifyChain present. Production requires daily close to populate. Same finding as B3.6 F5.",
+      "action": "Ensure deploy/runbooks/ documents 'php artisan z-report:close' (or equivalent UI flow) at end-of-day. Add to operator checklist.",
+      "fiscal_risk": "PROCESS GAP not technical — confirmed by B3.6"
+    },
+    {
+      "id": "P5-W5",
+      "severity": "INFO",
+      "title": "CACHE_DRIVER guard narrower than stated intent (UNI-03 cloud-prep backlog) — B3.6 F7 RECONFIRMED",
+      "description": "AppServiceProvider.php:215 forbidden list is ['array', 'null']. file + database drivers PASS the guard. CLAUDE.md §8 block comment says 'redis or memcached' required, which is broader than the implementation. V1 LOCAL Le Cayenne single-box file driver is safe (no cross-process collision); ALB multi-instance cloud requires widening the forbidden list. Tracked as UNI-03 V1.0.X cloud-prep backlog per CLAUDE.md verified note 2026-05-21.",
+      "action": "Already tracked as UNI-03. No new action.",
+      "fiscal_risk": "NONE V1 LOCAL — V1.0.X cloud-prep"
+    }
+  ],
+
+  "inspector_lens_break_attempts_summary": {
+    "subtle_composition_snapshot_update_path": "NOT FOUND — 0 UPDATE paths at any of 4 angles (Eloquent/raw/property/migration). Independent of B3.6.",
+    "race_in_fiscal_sequence_allocation": "NOT FOUND — quadruple-defence (cache lock + transaction + lockForUpdate + withTrashed) closes the 4 race paths considered.",
+    "orphan_audit_logs_row_without_valid_hmac": "NOT FOUND — manual full-64-row chain re-verifier loop reports 0 breaks. Bit-identical to artisan 'CHAIN OK' output.",
+    "backup_6yr_gap": "NOT FOUND — quarterly lane × 24 archives = 6 years codified in RunDailyBackup.php. Retention strategy block-comment explicitly cites CLAUDE.md §8."
+  },
+
+  "verified_invariants_checklist_inspector_relens": {
+    "F1_chain_integrity":                         {"B3.6": "PASS", "P5_relens": "PASS — full 64-row manual re-verifier 0 breaks"},
+    "F2_append_only_enforcement":                 {"B3.6": "PASS", "P5_relens": "PASS — 3 active mysql triggers + 0 forbidden code patterns"},
+    "F3_fiscal_sequence_monotonic":               {"B3.6": "PASS", "P5_relens": "PASS — quadruple defence intact"},
+    "F4_composition_snapshot_immutability":       {"B3.6": "PASS", "P5_relens": "PASS — independent 4-angle grep 0 UPDATE paths"},
+    "F5_allergens_snapshot_honest":               {"B3.6": "PASS", "P5_relens": "PASS — neighbour-column backfill writes to allergens_snapshot only"},
+    "F6_production_boot_guards":                  {"B3.6": "PASS (10 guards)", "P5_relens": "PASS — re-counted 10 guards at lines 85-216"},
+    "F7_retention_policy_6yr":                    {"B3.6": "PARTIAL (policy not codified)", "P5_relens": "PASS — quarterly lane 24 archives codified in RunDailyBackup.php (UPGRADE)"},
+    "F8_sanctum_kiosk_order_TTL_480":             {"B3.6": "PASS", "P5_relens": "PASS — config/sanctum.php:51 expiration=480"},
+    "F9_idempotency_middleware":                  {"B3.6": "PASS", "P5_relens": "PASS — kernel alias + boot-guard line 143"},
+    "F10_z_report_daily_close_schema":            {"B3.6": "PASS structural (0 rows expected dev)", "P5_relens": "PASS — service + schema + verifyChain + verifySignature intact"},
+    "F11_chain_bit_identical_pre_post":           {"B3.6": "PASS", "P5_relens": "PASS — count=64 last_hash unchanged after my read-only probes"},
+    "F12_ansible_REVOKE_truncate_block":          {"B3.6": "AMBER documentation only", "P5_relens": "AMBER documentation only — runtime invariant CONFIRMED holds"}
+  },
+
+  "legal_risk_assessment_inspector": "ZERO active NF525 violations detected by independent inspector lens. B3.6 GREEN verdict RECONFIRMED across all 12 invariants. Chain bit-identical pre/post audit (count=64 last_hash=8daed68a65b8c8e75a7143f305967047ee1bb0b664a95afb5d9d2e0657777592). 5 dispute hunts FAILED to break the system: composition_snapshot subtle UPDATE = none, fiscal sequence race = none, orphan audit_logs row = none, backup 6-year gap = closed (RunDailyBackup quarterly lane), and the documentation imprecisions are INFO-only (P5-W1..W5). 10 production boot guards (vs 5 mandated). Ansible REVOKE DROP+ALTER blocks TRUNCATE transitively. DB triggers BEFORE DELETE + BEFORE UPDATE active. Sanctum kiosk:order TTL 480min. Idempotency middleware boot-guarded. NO legal exposure for V1 LOCAL Le Cayenne single-box deployment.",
+
+  "verdict": "GREEN",
+
+  "verdict_reasoning": "Inspector lens cross-validation CONFIRMS B3.6 GREEN. 5/5 dispute hunts failed to break the fiscal invariants. 12/12 verified invariants pass (F7 upgrades from PARTIAL to PASS thanks to RunDailyBackup.php Q14 6-year quarterly codification). All compliance-weak findings (P5-W1..W5) are INFO-only documentation precision, zero NF525-critical issues. Legal risk = ZERO for V1 LOCAL Le Cayenne single-box deployment."
+}

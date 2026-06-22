@@ -176,6 +176,34 @@ class PermissionTableSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
+            // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] V1 cashier loyalty redeem
+            // permission (Option B per plans/LOCK_POS_LOYALTY_REDEEM_UI_2026-05-18.md).
+            // Enforced in PosLoyaltyRedeemRequest::authorize(). Assigned to
+            // POS Operator + Branch Manager + Admin via RolePermissionTableSeeder.
+            [
+                'title'      => 'POS Redeem Loyalty Points',
+                'name'       => 'pos.redeem-loyalty',
+                'guard_name' => 'sanctum',
+                'url'        => 'pos/redeem-loyalty',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            // [HEAL-4 / PROPOSAL-02 — V101-02 2026-05-26] POS Refund UI permission.
+            // Gates the new PosRefundModal.vue counter-entry refund workflow. The
+            // backend route (refund-with-counter-entry) is permission-guarded via
+            // PosOrderController::refundWithCounterEntry (abort_unless can() check).
+            // Granted ONLY to Admin (auto via Permission::all()) + Branch Manager
+            // (explicit list). POS Operator does NOT get this permission by default
+            // to prevent mass-refund vector (proposal §8 risk register #1).
+            // Owner can grant manually via /admin/role/{id}/edit UI if needed.
+            [
+                'title'      => 'POS Refund (Counter-Entry NF525)',
+                'name'       => 'pos-refund',
+                'guard_name' => 'sanctum',
+                'url'        => 'pos/refund',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
             [
                 'title'      => 'Online Orders',
                 'name'       => 'online-orders',
@@ -634,11 +662,38 @@ class PermissionTableSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
+            // [Wave O — O4 2026-05-20] Admin daily cash sessions read-only report.
+            // Owner request : profil admin doit voir chaque jour début/fin caisse
+            // + transactions. Permission propre (vs pos-manage-fiscal) pour que
+            // le menu sidebar puisse l'auto-afficher / l'auto-cacher.
+            // Granted à Admin (via Permission::all()) et Branch Manager
+            // explicitement dans RolePermissionTableSeeder.
+            [
+                'title'      => 'Cash Sessions Report',
+                'name'       => 'cash-sessions-report',
+                'guard_name' => 'sanctum',
+                'url'        => 'cash-sessions-report',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
             [
                 'title'      => 'Settings',
                 'name'       => 'settings',
                 'guard_name' => 'sanctum',
                 'url'        => 'settings',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            // [Sprint 1D / F-4 — 2026-05-16] Cash variance override permission.
+            // Required to reconcile a session whose |variance| exceeds
+            // config('cash.variance_threshold_eur'). Granted to Admin (via
+            // Permission::all() in RolePermissionTableSeeder) and explicitly
+            // listed for Branch Manager.
+            [
+                'title'      => 'Cash variance override',
+                'name'       => 'cash.reconcile.variance.override',
+                'guard_name' => 'sanctum',
+                'url'        => 'pos/cash-drawer/sessions/reconcile',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],

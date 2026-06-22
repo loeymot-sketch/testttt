@@ -1,0 +1,10 @@
+{
+  "mission": "POS_V4_REAUDIT_EXEC_001",
+  "role": "Re-audit GPT-5.5 du plan d'exécution FINAL POS v4",
+  "instruction": "CREATE only the file reports/audit/REAUDIT_G55_EXEC_FINAL_POS_V4_2026-04-26.md (full French). You re-audit plans/PLAN_POS_V4_IMPL_EXEC_FINAL_2026-04-26.md (Claude-authored) and plans/PLAN_POS_V4_IMPL_MASTER_2026-04-26.md, with a sceptical lens. Sections: ## Verdict ## 7 angles morts (gaps non couverts par Claude) ## Ajustements P0 P1 P2 ## Ordre SFC contre-proposé ou validé (justifier) ## Risques de coordination multi-agent (cursor-claude / cursor-composer / codex-terminal / claude-terminal / human) ## Sign-off API (GO/AMEND/STOP). Forbidden: any other file modification. The output must be the markdown body inside code_blocks[0].excerpt op=create.",
+  "prior_context_paths": [
+    "plans/PLAN_POS_V4_IMPL_EXEC_FINAL_2026-04-26.md",
+    "plans/PLAN_POS_V4_IMPL_MASTER_2026-04-26.md",
+    "reports/audit/REAUDIT_G55PRO_POS_V4_PRECLAUDE_2026-04-26.md"
+  ]
+}

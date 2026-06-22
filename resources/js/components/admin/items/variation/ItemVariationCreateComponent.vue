@@ -6,16 +6,17 @@
         <div class="modal-dialog">
             <div class="modal-header">
                 <h3 class="modal-title">{{ $t("menu.variations") }}</h3>
-                <button class="modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500"
+                <button class="modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500" aria-label="Fermer"
                     @click="reset"></button>
             </div>
             <div class="modal-body">
+                <CatalogConceptHelpComponent concept="variation" />
                 <form @submit.prevent="save">
                     <div class="form-row">
                         <div class="form-col-12 sm:form-col-6">
                             <label for="name" class="db-field-title required">{{ $t("label.name") }}</label>
                             <input v-model="props.form.name" v-bind:class="errors.name ? 'invalid' : ''" type="text"
-                                id="name" class="db-field-control" />
+                                id="name" class="db-field-control" data-testid="admin-variation-form-name" />
                             <small class="db-field-alert" v-if="errors.name">{{ errors.name[0] }}</small>
                         </div>
 
@@ -25,7 +26,7 @@
                                 }}</label>
                             <input v-on:keypress="numberOnly($event)" v-model="props.form.price"
                                 v-bind:class="errors.price ? 'invalid' : ''" type="text" id="price"
-                                class="db-field-control" />
+                                class="db-field-control" data-testid="admin-variation-form-price" />
                             <small class="db-field-alert" v-if="errors.price">{{ errors.price[0] }}</small>
                         </div>
 
@@ -36,7 +37,7 @@
                                 v-bind:class="errors.item_attribute_id ? 'invalid' : ''"
                                 v-model="props.form.item_attribute_id" :options="itemAttributes" label-by="name"
                                 value-by="id" :closeOnSelect="true" :searchable="true" :clearOnClose="true"
-                                placeholder="--" search-placeholder="--" />
+                                placeholder="--" search-placeholder="--" data-testid="admin-variation-form-attribute" />
                             <small class="db-field-alert" v-if="errors.item_attribute_id">{{
                                 errors.item_attribute_id[0]
                                 }}</small>
@@ -101,7 +102,7 @@
 
                         <div class="form-col-12">
                             <div class="modal-btns">
-                                <button type="button" class="modal-btn-outline modal-close" @click="reset">
+                                <button aria-label="Fermer" type="button" class="modal-btn-outline modal-close" @click="reset">
                                     <i class="lab lab-close"></i>
                                     <span>{{ $t("button.close") }}</span>
                                 </button>
@@ -119,6 +120,7 @@
     </div>
 </template>
 <script>
+import CatalogConceptHelpComponent from "../CatalogConceptHelpComponent.vue";
 import SmModalCreateComponent from "../../components/buttons/SmModalCreateComponent";
 import LoadingComponent from "../../components/LoadingComponent";
 import alertService from "../../../../services/alertService";
@@ -127,7 +129,7 @@ import statusEnum from "../../../../enums/modules/statusEnum";
 
 export default {
     name: "ItemVariationCreateComponent",
-    components: { SmModalCreateComponent, LoadingComponent },
+    components: { CatalogConceptHelpComponent, SmModalCreateComponent, LoadingComponent },
     props: ["props"],
     data() {
         return {

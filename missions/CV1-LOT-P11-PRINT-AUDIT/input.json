@@ -1,0 +1,80 @@
+{
+  "task_id": "CV1-LOT-P11-PRINT-AUDIT",
+  "wave": "CAISSE_V1_WAVE_2_OPTION_B",
+  "run_order": 28,
+  "lot": "P-11",
+  "family": "POS",
+  "status": "READY",
+  "primary_model": "codex-extension",
+  "model": "gpt-5.5-pro",
+  "reasoning_effort": "xhigh",
+  "option_b_policy": [
+    "Payment Ledger Option B restricted pilot is active.",
+    "Do not execute CV1-M04A-PAYMENT-LEDGER-FULL.",
+    "Do not implement full ledger, split tender, partial refund ledger, or payment-ledger migrations unless a new human gate explicitly changes the scope.",
+    "One TASK_ID equals one run; never mix allowlists."
+  ],
+  "plan_files": [
+    "reports/audit/CLAUDE_CAISS_V1_FULLSTACK_ORCHESTRATION_PLAN_2026-04-26.md",
+    "reports/audit/CLAUDE_DATA_CENTRAL_SYNC_GLOBAL_MASTER_2026-04-26.md",
+    "reports/audit/CLAUDE_POS_ORDER_FLOW_MASTER_PLAN_2026-04-26.md",
+    "reports/audit/CLAUDE_KIOSK_ORDER_FLOW_MASTER_PLAN_2026-04-26.md",
+    "reports/audit/TRACEABILITY_MATRIX_CAISSE_V1_2026-04-25.md",
+    "plans/masterplay/MASTERPLAY_QUEUE.md",
+    "AGENTS.md"
+  ],
+  "objective": "Audit alert sur échec impression et duplicata explicite.",
+  "instruction": "Execute exactly this one Wave 2 lot. Modify only allowlist files. If a required file is missing or the lot needs a file outside allowlist, stop with SCOPE_PRESSURE in output_codex.json. If a gate condition is unmet, mark BLOCKED and do not edit frozen/schema/payment-ledger scope. Produce output_codex.json and GPT_SELF_AUDIT report through the normal codex-extension wrapper.",
+  "allowlist": [
+    "app/Http/Controllers/Admin/Pos/PosReceiptPrintController.php",
+    "app/Services/Receipt/ReceiptAuditService.php",
+    "app/Services/Receipt/ReceiptDataService.php",
+    "tests/Feature/ReceiptAuditFailureAlertTest.php",
+    "tests/Feature/ReceiptDuplicataIncrementTest.php",
+    "tests/Feature/Admin/POS/ReceiptPrintControllerTest.php"
+  ],
+  "read_only": [],
+  "blocked_until_gate_allowlist": [],
+  "off_limits": [
+    ".cursor/**",
+    "AGENTS.md",
+    "plans/masterplay/MASTERPLAY_QUEUE.md",
+    "missions/W2_LOT_CODEX_RUN_ORDER_OPTION_B_2026-04-26.md",
+    "docs/gates/**",
+    "reports/audit/CLAUDE_*",
+    "database/migrations/**",
+    "resources/js/components/frontend/kiosk/**"
+  ],
+  "depends_on_lots": [],
+  "gate_conditions": [],
+  "migration_policy": "No DB migration authorized in this lot.",
+  "invariants_at_risk": [
+    "branch_id"
+  ],
+  "symmetry_note_required": false,
+  "mandatory_tests": [
+    "php artisan test --filter='ReceiptAuditFailureAlertTest|ReceiptDuplicataIncrementTest|ReceiptPrintControllerTest'"
+  ],
+  "self_audit_checklist": [
+    "Allowlist strictement respectée; aucun fichier hors scope.",
+    "Aucune approbation de gate inventée.",
+    "Pricing backend SSOT conservé; aucun total final imposé depuis le client.",
+    "OrderStatus enum ou OrderStateMachine utilisé pour tout statut.",
+    "branch_id strict et branch-scoped; aucune fuite cross-branch.",
+    "Dispatch / events après commit DB.",
+    "Si OrderService.php ou FrontendOrderService.php est modifié: SYMMETRY_NOTE rempli.",
+    "mandatory_tests exécutés ou impossibilité documentée."
+  ],
+  "rollback": {
+    "feature_flag": null,
+    "max_window_days": 7,
+    "predicates": [
+      "mandatory_tests red",
+      "scope or gate violation",
+      "FoodKing invariant regression"
+    ]
+  },
+  "graphiti_query": "FoodKing Caisse V1 Wave2 P-11 POS Audit alert sur échec impression et duplicata explicite.",
+  "memory_episode_to_write_on_close": "memory/episodes/caisse_v1_wave2_option_b_2026-04-26.jsonl",
+  "claude_audit_prompt_id": "audit-prompt-w2-p-11"
+}

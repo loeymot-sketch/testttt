@@ -9,7 +9,10 @@ use App\Models\Address;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
+use Tests\Feature\Concerns\HasPosQuoteBinding;
+use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
 
 /**
  * Tests prioritaires automatisables côté API (coupon / adresse livraison) — alignés local-validation / E2E.
@@ -19,6 +22,8 @@ use Tests\TestCase;
 class PosPriorityApiTest extends TestCase
 {
     use RefreshDatabase;
+    use HasPosQuoteBinding;
+    use SeedsOpenCashDrawerSession;
 
     private function apiKey(): string
     {
@@ -33,6 +38,8 @@ class PosPriorityApiTest extends TestCase
         $branch = \Database\Factories\BranchFactory::new()->create();
         $admin = \Database\Factories\UserFactory::new()->create(['branch_id' => $branch->id]);
         $admin->assignRole('Admin');
+        // [Sprint H6 TEST-DEBT-001 2026-05-17] Sprint 1B requires an OPEN cash session for CASH.
+        $this->seedOpenSessionFor($admin, $branch);
 
         $customer = \Database\Factories\UserFactory::new()->create(['branch_id' => $branch->id]);
         $customer->assignRole('Customer');
@@ -83,9 +90,9 @@ class PosPriorityApiTest extends TestCase
             'coupon_id' => 999_999,
         ]);
 
-        $response = $this->actingAs($admin)
+        $response = $this->actingAs($admin, 'sanctum')
             ->withHeader('x-api-key', $this->apiKey())
-            ->postJson('/api/admin/pos', $payload);
+            ->postJson('/api/admin/pos/quote', $payload);
 
         $response->assertStatus(422);
         $response->assertJsonFragment(['status' => false]);
@@ -137,8 +144,13 @@ class PosPriorityApiTest extends TestCase
             ]]),
         ];
 
-        $response = $this->actingAs($admin)
+        $payload = $this->payloadWithPosQuote($admin, $payload);
+
+        // [prod-finale 2026-06-17] /api/admin/pos is idempotency-guarded; the foreign-address 422 is raised
+        // inside the controller, so the header is needed to reach it (frozen middleware; live UI sends it).
+        $response = $this->actingAs($admin, 'sanctum')
             ->withHeader('x-api-key', $this->apiKey())
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $payload);
 
         $response->assertStatus(422);

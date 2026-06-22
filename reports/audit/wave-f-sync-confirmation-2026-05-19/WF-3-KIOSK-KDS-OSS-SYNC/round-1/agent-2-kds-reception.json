@@ -1,0 +1,167 @@
+{
+  "wave": "WF-3-KIOSK-KDS-OSS-SYNC",
+  "round": 1,
+  "agent": "agent-2-kds-reception",
+  "role": "KDS Reception + Status Transition Specialist",
+  "scope_steps": [4, 6],
+  "scope_description": "Step 4 (KDS receives kiosk order with source field) + Step 6 (status transitions ACCEPT/PREPARING/PREPARED visible on KDS — kitchen release rule, TZ-aware boundaries, polling fallback parity with broadcast).",
+  "captured_at_utc": "2026-05-19T00:06:43Z",
+  "head_sha": "50bdd5150d784355168abd6d503ab9b3583d55a4",
+  "branch": "v1-0-1-hardening-2026-05-17",
+  "files_audited": [
+    "app/Services/KdsSyncService.php",
+    "app/Http/Controllers/Admin/KdsSyncController.php",
+    "app/Domain/Kds/KitchenReleaseRule.php",
+    "app/Listeners/DispatchKdsTicket.php",
+    "app/Http/Resources/KDSOrderDetailsResource.php",
+    "app/Models/Order.php",
+    "app/Models/FrontendOrder.php",
+    "public/js/admin-kds.js",
+    "routes/channels.php"
+  ],
+  "invariants_verified": [
+    {
+      "id": "INV-A2-01",
+      "title": "Kiosk orders DO appear on KDS — Order vs FrontendOrder model unify on `orders` table",
+      "expectation": "KdsSyncService queries the same physical table where kiosk FrontendOrder rows are written. Two Eloquent models, one table; no kiosk-vs-pos write split.",
+      "evidence": "app/Models/Order.php:19 and app/Models/FrontendOrder.php:19 both declare `protected $table = 'orders'`. KdsSyncService.php:82 queries `Order::with(['orderItems', 'address', 'user'])` — kiosk-written rows are surfaced unconditionally.",
+      "status": "PASS"
+    },
+    {
+      "id": "INV-A2-02",
+      "title": "Active-window filter includes the three statuses KDS displays — ACCEPT / PREPARING / PREPARED",
+      "expectation": "KdsSyncService.php active-status filter must mirror KitchenReleaseRule::visibleStatuses() so the polling fallback parity-matches the broadcast-driven realtime path.",
+      "evidence": "KdsSyncService.php:50 `$activeStatuses = [OrderStatus::ACCEPT, OrderStatus::PREPARING, OrderStatus::PREPARED]`. KitchenReleaseRule.php:16-23 returns identical array.",
+      "status": "PASS"
+    },
+    {
+      "id": "INV-A2-03",
+      "title": "Kiosk cash auto-accept dispatches OrderCreated immediately (kitchen preps while customer queues at counter)",
+      "expectation": "PENDING_COUNTER cash flow auto-accepts at FrontendOrder creation, dispatches OrderCreated, KDS receives Echo broadcast OR polling delta picks it up.",
+      "evidence": "FrontendOrderService.php:577-581 sets status=ACCEPT inside the create transaction when $shouldAutoAcceptAfterCreate=$isCounterDeferredKioskCash. :604-606 dispatches dispatchNewOrderSignals (which fires OrderCreated:1226) when $shouldDispatchNewOrderSignals=true (cash kiosk meets the gate). KDS-side: admin-kds.js:1605-1608 subscribes to broadcastAs='OrderCreated' → _debouncedRefresh.",
+      "status": "PASS"
+    },
+    {
+      "id": "INV-A2-04",
+      "title": "Kiosk card/TR deferred dispatch — OrderCreated fires only after TPE confirmation",
+      "expectation": "Card / TR kiosk orders stay PENDING + UNPAID at creation. OrderCreated dispatches AT finalizePaidKioskOrder (after paymentConfirm flips ps=PAID and seq is allocated).",
+      "evidence": "FrontendOrderService.php:209-235 documents the gate. :1212 calls dispatchNewOrderSignals after successful promotion. KitchenReleaseRule.php:56-72 enforces 'released to kitchen' = status >= ACCEPT AND ps=PAID (or POS cash special-case). No kiosk card order can leak to KDS pre-payment.",
+      "status": "PASS"
+    },
+    {
+      "id": "INV-A2-05",
+      "title": "Status transition rule — only ACCEPT→PREPARING and PREPARING→PREPARED dispatch OrderStatusChanged",
+      "expectation": "Backward / out-of-band transitions blocked; identical-to-identical bumps don't fire spurious broadcasts.",
+      "evidence": "KitchenReleaseRule.php:41-49 canTransition(): explicit (ACCEPT→PREPARING) || (PREPARING→PREPARED). :51-54 shouldDispatchStatusChanged returns false for from===to. DispatchKdsTicket.php:13-17 honours this gate before OrderStatusChanged::dispatch.",
+      "status": "PASS"
+    },
+    {
+      "id": "INV-A2-06",
+      "title": "KDS TZ-aware active window — Paris-local day bounds converted to UTC before binding (kiosk + POS both honored)",
+      "expectation": "Carbon::today/tomorrow in app.timezone (Europe/Paris) must be normalized to UTC before binding to `order_datetime` (TIMESTAMP UTC-stored). Otherwise nightly [00:00-02:00 Paris] orders silently drop off KDS.",
+      "evidence": "KdsSyncService.php:77-94 — $parisTodayStartUtc / $parisTodayEndUtc / $parisTomorrowStartUtc computed via Carbon::today(\\$appTz)->setTimezone('UTC'). Heal documented at :66-76 as Wave 3 KDS Adversarial P0 KDS-ADV3-01, ref commit 148dbebce. Sentinel: tests/Feature/Kds/KdsSyncTzAwareTest.php (referenced).",
+      "status": "PASS"
+    },
+    {
+      "id": "INV-A2-07",
+      "title": "5s cache key salted with branch_id — no cross-tenant cache poisoning",
+      "expectation": "kds.sync.{branch}.{minute}.{hash(since|include_deleted)} — branch A's polling cannot pull branch B's payload.",
+      "evidence": "KdsSyncService.php:42-47 cache key includes $cacheBranchKey (=branchId or 'all'); :49 Cache::remember TTL=5s. KdsSyncController.php:55-66 enforces cross-branch refusal (403) unless admin (branch_id=0).",
+      "status": "PASS"
+    },
+    {
+      "id": "INV-A2-08",
+      "title": "Polling fallback parity — admin-kds.js falls back to GET /admin/kds/sync when Echo subscription fails",
+      "expectation": "Echo subscription failure (Pusher/Soketi outage, auth fail) does not silence KDS — polling picks up via the same sync endpoint with `since` cursor.",
+      "evidence": "admin-kds.js:1636-1638 catches Echo subscription failure and logs warning. Surrounding refreshOrderList logic at :1653 issues this.items() (the polling GET). Resource enrichment with `version` (KdsSyncService.php:105-116) is identical on both polling and event-driven refreshes (KDSOrderDetailsResource emits the same shape).",
+      "status": "PASS"
+    },
+    {
+      "id": "INV-A2-09",
+      "title": "include_deleted=true emits ids that left the active window — KDS removes them locally without flicker",
+      "expectation": "When status transitions out of [ACCEPT/PREPARING/PREPARED] or soft-delete fires, the next sync delta includes the lost id in deleted_ids[] so the frontend prunes its local cache.",
+      "evidence": "KdsSyncService.php:120-138 merges Order::onlyTrashed() with status in inactiveStatuses [DELIVERED, CANCELED, REJECTED], unique-flat-ints. branch_id scoped. KdsSyncController.php:68-73 parses include_deleted with FILTER_VALIDATE_BOOL default true.",
+      "status": "PASS"
+    },
+    {
+      "id": "INV-A2-10",
+      "title": "Per-order `version` stamp drives idempotent client-side reconciliation",
+      "expectation": "Frontend compares per-order version (updated_at_unix); if stale, ignore; if newer, replace.",
+      "evidence": "KdsSyncService.php:151-167 computeOrderVersion = updated_at->getTimestamp(). :112-114 merges version into each KDSOrderDetailsResource. TODO at :154-159 flags Phase 3 dette technique on status_changed_at column (max() with updated_at).",
+      "status": "PASS"
+    },
+    {
+      "id": "INV-A2-11",
+      "title": "Kiosk orders actually present in active KDS window — runtime smoke",
+      "expectation": "At least one kiosk-flagged order currently visible to KDS (status in PREPARING/PREPARED) to confirm the path is live, not just static-valid.",
+      "evidence": "DB query: 22 kiosk-flagged orders (source_surface='kiosk') currently in status PREPARING(7) or PREPARED(8) on branch=1. Full distribution: PENDING=11, ACCEPT=99, CANCELED=18, PREPARING=20, PREPARED=2, DELIVERED=2.",
+      "status": "PASS_RUNTIME"
+    }
+  ],
+  "findings": [
+    {
+      "id": "WF3-A2-P2-01",
+      "severity": "P2",
+      "title": "KdsSyncService limit(50) on active-window — large branches with >50 concurrent open orders may silently truncate",
+      "category": "scale / observability",
+      "evidence": {
+        "code": "KdsSyncService.php:102 `->limit(50)->get()` — applied after status / date / branch filters, ordered by updated_at desc.",
+        "behavior": "If branch_id=1 (mature Le Cayenne) has 55 active orders, the 5 with the oldest updated_at silently drop off the polling delta. Echo broadcast path (debouncedRefresh on every OrderCreated/OrderStatusChanged) still re-fetches via the same /list endpoint with the same limit.",
+        "current_state": "Single-restaurant Le Cayenne has 22 currently active — far below 50. Won't trigger today. Worth flagging for V1.0.2 SaaS rollout (multi-tenant volume).",
+        "kitchen_display_endpoint_parity": "Cross-reference KitchenDisplaySystemOrderService::list (mentioned in code comments) for its own limit / pagination posture — may have a different limit and the two should agree."
+      },
+      "impact": "Currently zero (Le Cayenne 22 < 50). Latent for SaaS V1.0.2 multi-branch tenants with high throughput.",
+      "remediation_options": [
+        "Bump limit to 200 (still cheap given indexed filter set).",
+        "Replace limit with explicit pagination contract (`since` cursor already exists; add `next_since` in response).",
+        "Add log warning if returned count == limit (signals truncation event for ops dashboards)."
+      ],
+      "confidence": "MEDIUM (depends on operational scale; static analysis only)",
+      "wave": "WF-3-A2"
+    },
+    {
+      "id": "WF3-A2-P2-02",
+      "severity": "P2",
+      "title": "version stamp is updated_at-derived — silent updates that don't bump updated_at could leak a stale card",
+      "category": "sync correctness / TODO",
+      "evidence": {
+        "code": "KdsSyncService.php:151-167 — already self-acknowledged TODO referencing Phase 3 dette technique D-03bis. version=updated_at_unix. Order status changes via the standard Eloquent ->save() flow DO bump updated_at, so the common case is fine.",
+        "edge": "DB-level writes (e.g. soft-delete in a different process, raw SQL admin patch, model::update() with timestamps disabled) could change status without bumping updated_at — KDS clients with the stale version would not refresh.",
+        "scope": "Self-acknowledged in code comments at lines 152-158."
+      },
+      "impact": "Self-flagged dette technique. Triggers only on out-of-band writes — uncommon but possible during ops incidents.",
+      "remediation_options": [
+        "Implement the planned status_changed_at column (MEGA_PLAN_SYNC_HARDENING_v3 §5).",
+        "Until then, ensure all status updates go through OrderStateMachine::recordTransition + ->save() (already pattern-enforced)."
+      ],
+      "confidence": "HIGH (self-documented TODO)",
+      "wave": "WF-3-A2"
+    },
+    {
+      "id": "WF3-A2-P3-03",
+      "severity": "P3",
+      "title": "KdsSyncService eager-loads orderItems/address/user — N+1 protected, but no select() projection",
+      "category": "performance hygiene",
+      "evidence": {
+        "code": "KdsSyncService.php:82 — `Order::with(['orderItems', 'address', 'user'])->select(*)` (implicit *). No column projection on the parent Order.",
+        "impact": "Each row hydrates full Order model (~30+ columns). At 22 active orders this is negligible. At 200+ on a busy SaaS tenant the wire payload grows linearly."
+      },
+      "impact": "Negligible at Le Cayenne scale. Latent observability concern for SaaS.",
+      "remediation_options": [
+        "Add explicit select() projection mapping exactly the columns KDSOrderDetailsResource::toArray reads.",
+        "Add an integration test asserting payload byte size < threshold for a fixed dataset."
+      ],
+      "confidence": "LOW (theoretical optimization)",
+      "wave": "WF-3-A2"
+    }
+  ],
+  "verdict": {
+    "summary": "KDS reception of kiosk orders is solid. Polling fallback + Echo broadcast parity verified. TZ-aware boundaries fixed at Wave 3 (148dbebce heal). KitchenReleaseRule enforces release semantics consistently between immediate (cash) and deferred (card/TR) kiosk paths. No P0 blockers. Two P2 items (limit(50) latent scale, version=updated_at self-acknowledged dette) and one P3 (column projection).",
+    "p0": 0,
+    "p1": 0,
+    "p2": 2,
+    "p3": 1,
+    "blockers": [],
+    "production_readiness": "GO at Le Cayenne single-tenant scale. P2 limit(50) item is V1.0.2 SaaS-rollout concern."
+  }
+}

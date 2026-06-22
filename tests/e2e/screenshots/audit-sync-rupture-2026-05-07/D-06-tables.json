@@ -1,0 +1,6 @@
+{
+  "item_branch_availability": true,
+  "stock_levels": true,
+  "item_extras": true,
+  "item_addons": true
+}

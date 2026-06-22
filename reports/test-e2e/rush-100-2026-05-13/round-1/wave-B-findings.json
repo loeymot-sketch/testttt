@@ -1,0 +1,141 @@
+{
+  "run": "rush-100-2026-05-13",
+  "wave": "B",
+  "round": 1,
+  "states_reviewed": 32,
+  "findings": [
+    {
+      "id": "WB-R1-01",
+      "category": "console_error",
+      "severity": "P1",
+      "state": "ALL (37 occurrences across 8 distinct states including 00-pos-v4-ready, S6/S8/S3/S4/S10 -01-pos-empty)",
+      "evidence_file": "tests/e2e/__screenshots__/rush-100/pos/00-pos-v4-ready.console.json",
+      "evidence_snippet": "level=error, text='Error\\n    at J (vendor.js:...)\\n    at Object.resolve (vendor.js:...)\\n    at k (pos-app.js:2:118981)\\n    at get value (pos-app.js:2:131436)', location.url=http://127.0.0.1:8000/js/pos-app.js",
+      "claim": "Application-code (pos-app.js) throws unhandled promise rejection at every POS V4 page load; stack origin is application code (pos-app.js getter), not vendor.js noise.",
+      "fix_hint": "Trace the reactive 'get value' getter in pos-app.js (likely a Vuex/Pinia getter or computed that fails when an upstream selector returns undefined on initial mount). Add nullish-guard and surface the error to telemetry.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "WB-R1-02",
+      "category": "aria_keyboard",
+      "severity": "P1",
+      "state": "ALL category sidebar states (00-pos-v4-ready, all S*-01/03/06)",
+      "evidence_file": "tests/e2e/__screenshots__/rush-100/pos/S6-01-pos-empty.dom.html",
+      "evidence_snippet": "<button type='button' role='tab' aria-selected='false' class='pos-v5-category pos-v4-category-pill'>...<span class='pos-v5-category__label'>Sandwich Cayenne</span></button> — no aria-label, no title. Same pattern for 'Sandwich Classique'. Both render visibly truncated as 'Sandwich...' in the sidebar grid.",
+      "claim": "Two sidebar categories ('Sandwich Cayenne', 'Sandwich Classique') render visually-truncated as 'Sandwich...' with neither aria-label nor title attribute. Sighted operators and screen-reader users cannot distinguish them — blocks primary catalogue-navigation task path.",
+      "fix_hint": "Add :aria-label and :title bound to the full category name on the .pos-v5-category button in the POS V4 sidebar component. Consider also widening the pill or word-breaking to avoid the visual truncation in the first place.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "WB-R1-03",
+      "category": "silent_error",
+      "severity": "P1",
+      "state": "S6-05, S6-06, S8-05, S3-05, S4-05, S10-05",
+      "evidence_file": "tests/e2e/__screenshots__/rush-100/pos/S6-05-receipt.dom.html",
+      "evidence_snippet": "After confirm-pay click: orderpayment modal has class 'modal pos-v4-payment-modal pos-v5-payment-modal active' (still open with keypad), while receiptModal has class 'modal pos-v5-receipt-modal' (no 'active' / open-state class). 'Trop de requêtes' toast (role=alert) is visible.",
+      "claim": "After a successful cash payment (spec captured payRes.status=200, DB order 1324 persisted with fiscal_seq 294), the payment modal does NOT close and the receipt overlay never opens because a subsequent throttled POST surfaces a 429 toast that suppresses the success-handler chain. Operator-visible state shows the cash keypad still open with a 'Trop de requêtes' toast, masking the fact that the order was actually persisted. High risk of duplicate re-confirm clicks (saved by idempotency middleware, but UX is dangerous).",
+      "fix_hint": "Decouple receipt-open logic from any later 429 fallout — once orderpayment.confirm resolves to 2xx, immediately open receipt modal and clear payment modal. Throttle-related toast should not abort the success flow.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "WB-R1-04",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "state": "S4-02-wizard-popup",
+      "evidence_file": "tests/e2e/__screenshots__/rush-100/pos/S4-02-wizard-popup.png",
+      "evidence_snippet": "S4 spec target = Sandwich Classique (id 477) per wave-B-db-checks.json line 60. Wizard popup screenshot shows item title 'Sandwich Cayenne €7.00' instead. Both items have price 7.00€ so the cart total looks correct, but the persisted item_id and composition_snapshot would diverge from intent.",
+      "claim": "Spec selector fallback (data-pos-item-id lookup) silently picks the wrong tile in S4 — wizard launches Sandwich Cayenne (id 474) instead of Sandwich Classique (id 477). The GStack report only flagged this for S10, missing S4. Test-side defect, not production code, but invalidates 1/5 scenarios.",
+      "fix_hint": "Strengthen tile selector in tests/e2e/rush-100-pos-capture.spec.js to require an EXACT data-pos-item-id match before clicking, with an explicit category-pill click first when the target item is not in the 'Toutes les' grid.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "WB-R1-05",
+      "category": "empty_state",
+      "severity": "P2",
+      "state": "ALL pos-grid states (37 product tiles per page)",
+      "evidence_file": "tests/e2e/__screenshots__/rush-100/pos/S6-01-pos-empty.dom.html",
+      "evidence_snippet": "All 37 tile images use src='http://127.0.0.1:8000/images/menu/item-default.svg' — a single generic '+' placeholder. No product photo on any tile (Grande Frites, Petite Frites, Bol Gratiné, Big Tacos, Sandwich Cayenne, etc.).",
+      "claim": "POS V4 product grid renders 100% of tiles with the identical 'item-default.svg' placeholder, eliminating visual product discoverability. Operator must read the small text label below the giant '+' icon for every tile during a busy rush — defeats the purpose of an image-tile grid.",
+      "fix_hint": "Upload product photos to /storage/menu/items/ and bind tile <img> src to item.featured_image_url with item-default.svg as fallback only. The empty src field is currently null in the DB / response, triggering the fallback for 100% of items.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "WB-R1-06",
+      "category": "loading_state",
+      "severity": "P2",
+      "state": "S6-05-receipt, S8-05, S3-05, S4-05, S10-05",
+      "evidence_file": "tests/e2e/__screenshots__/rush-100/pos/S6-05-receipt.dom.html",
+      "evidence_snippet": "Toast text: 'Trop de requêtes — patientez 30s avant de réessayer.' But the Vue-Toastification__progress-bar element has style 'animation-duration: 6000ms', so the toast disappears after ~6s. The user told to wait 30s but the visual indicator vanishes after 6s.",
+      "claim": "Copy-vs-behaviour mismatch in the throttle toast: copy says '30s', progress bar animates over 6s. Confusing under stress; user thinks the timer is the throttle window when it is actually just the toast lifetime.",
+      "fix_hint": "Either extend the toast duration to 30s (Vue-Toastification timeout option) or rewrite the copy to 'Trop de requêtes — réessayez dans quelques secondes' without committing to a specific number.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "WB-R1-07",
+      "category": "visual_hash_drift",
+      "severity": "P2",
+      "state": "00-pos-v4-ready",
+      "evidence_file": "tests/e2e/__screenshots__/rush-100/pos/00-pos-v4-ready.png",
+      "evidence_snippet": "On initial /admin/pos-v4 load, the right-hand drawer 'Commandes borne — à encaisser' is auto-opened over the POS grid, badge '24', listing pending kiosk orders. POS grid is dimmed behind the drawer overlay. Operator must close the drawer before they can ring up a new sale.",
+      "claim": "Pending-kiosk-encaisser drawer auto-opens on POS V4 mount, blocking the primary 'ring up new sale' task path for operators who don't intend to clear kiosk debt first. S6-01-pos-empty.png shows the drawer correctly closed in subsequent loads — so the auto-open is initial-mount only, but still suboptimal for busy rush.",
+      "fix_hint": "Make the auto-open behaviour configurable per branch policy, or default to closed with a prominent badge-only indicator on the 'À encaisser 24' button.",
+      "confidence": "MEDIUM"
+    },
+    {
+      "id": "WB-R1-08",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "state": "S10-03-cart-with-item, S10-05-receipt",
+      "evidence_file": "tests/e2e/__screenshots__/rush-100/pos/S10-03-cart-with-item.dom.html",
+      "evidence_snippet": "S10 was designed as a 'multi-cart 3 items' scenario. Cart DOM contains a SINGLE article (pos-v5-cart-item) for 'Sandwich Cayenne' with input qty='3' and line price 21.00€. There is no second/third distinct line item. Per the GStack report the spec selector fallback misfired and the cart only held Sandwich Cayenne ×3 (same product, qty 3), not three different products.",
+      "claim": "Spec-level: S10 multi-cart scenario was NEVER actually exercised as 3 distinct items — only Sandwich Cayenne added 3 times. Confirms F-W-B-01 in greater depth: the failure is not just 'fallback selector picks Petite Frites' but 'all three additions resolved to the same Sandwich Cayenne tile'.",
+      "fix_hint": "Rewrite S10 to add three distinct tiles by selecting category pills explicitly (Bol Crousti → Sandwich Cayenne → Salade Royale) before each add, and assert getByText(productName).count() === 1 in cart after each add.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "WB-R1-09",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "state": "S10 (DB row 1325)",
+      "evidence_file": "reports/test-e2e/rush-100-2026-05-13/round-1/wave-B-db-checks.json",
+      "evidence_snippet": "S10 db row: id=1325, fiscal_sequence_no=NULL, total=2.5, lines_count=1, composition_snapshot_lines=1, payment_status=15, status=4. Spec target_item=Sandwich Cayenne (id 474, 7.00€), read_grand_total=21 from UI. So persisted total (2.5€) ≠ UI total (21€) ≠ target (7€). Order was created with payment_status=15 (failed/partial) and fiscal_sequence_no=NULL.",
+      "claim": "An order row 1325 was committed to DB with payment_status=15 (failed) and fiscal_sequence_no=NULL — a NF525 RED-FLAG state: persisted but not fiscal-allocated. Whether this was caused by THIS spec run or an orphan from earlier, the row exists. The GStack report classifies S10 as 'PARTIAL persisted' without flagging the NULL fiscal_sequence — that field being NULL after status=4 (completed) is exactly the gap-with-flag scenario CLAUDE.md §8 mandates a fiscal_alloc_error_at retry cron should catch. Need to verify the retry cron picked it up.",
+      "fix_hint": "Query SELECT id, fiscal_sequence_no, fiscal_alloc_error_at, payment_status, status FROM orders WHERE fiscal_sequence_no IS NULL AND status IN (3,4,5) — any rows here are NF525 audit liability and must either be retried or marked void. Add an alert when this count > 0.",
+      "confidence": "MEDIUM"
+    },
+    {
+      "id": "WB-R1-10",
+      "category": "unexpected_4xx_5xx",
+      "severity": "P2",
+      "state": "S6-05, S8-05, S3-05, S4-05, S10-05",
+      "evidence_file": "tests/e2e/__screenshots__/rush-100/pos/S6-05-receipt.network.json",
+      "evidence_snippet": "POST http://127.0.0.1:8000/api/admin/pos → 429 captured in network.json for all 5 receipt states. This is a SECOND post (after the successful 200 that the spec waitForResponse captured), likely triggered by a duplicate click or the tracker-polling cycle.",
+      "claim": "The /api/admin/pos endpoint receives a duplicate POST after each successful payment, triggering 429 throttle. The first POST succeeds (200, order persisted), the second is throttled. Production-correct (throttle works), but indicates a frontend defect: confirm-pay button is not debounced or disabled after first click, allowing a stray second submission.",
+      "fix_hint": "In the cash-payment-confirm handler (PosPaymentComponent / vanilla pos-wizard.js), set the confirm button's disabled=true and aria-busy=true at click start and clear only after 2xx response. Verify the throttle wall is hit by retries not by polling.",
+      "confidence": "MEDIUM"
+    }
+  ],
+  "passing_states": [
+    "00-admin-dashboard",
+    "S6-01-pos-empty",
+    "S6-02-wizard-popup",
+    "S6-04-payment-modal",
+    "S8-01-pos-empty",
+    "S8-02-wizard-popup",
+    "S3-01-pos-empty",
+    "S3-02-wizard-popup",
+    "S4-01-pos-empty"
+  ],
+  "verdict": "NO-GO",
+  "notes": {
+    "frozen_zone_integrity": "git diff HEAD~10 -- public/js/pos-wizard.js = 0 lines. Confirmed clean.",
+    "i18n_leak_scan": "0 distinct leaks detected in DOM text content across 32 states (regex [a-z]+(\\.[a-z_]+){1,4}).",
+    "nf525_unverifiable_claim": "Wave B report asserts 'order 1324 has fiscal_sequence_no=294 gap-free with prior 293 at id 1302'. From file artifacts alone we can only confirm fiscal_seq=294 on row 1324; chain-HMAC integrity and gap-freeness require DB-side audit via FiscalSequenceService verifyChain(). Unverifiable from this audit pass, not refuted.",
+    "pre_flagged_resolution": {
+      "F-W-B-01": "CONFIRMED + EXPANDED — see WB-R1-04 (S4 also affected) and WB-R1-08 (S10 actually added same product 3x).",
+      "F-W-B-02": "CONFIRMED but reframed — see WB-R1-03. Root cause is post-success 429 noise interrupting the receipt-open chain, not modal close logic per se.",
+      "F-W-B-03": "ACCEPTED P3 — 'Toutes les...' default pill behaviour is intentional and visible. No action required."
+    },
+    "a03_1_menu_addon_role_mirror": "GStack says 'not observed' — confirmed. None of the 5 scenarios actually composed a menu+frites+boisson formula; the bug remains unexercised. To verify, write a scenario that adds Big Tacos with Menu (Frites + Boisson), then read the cart DOM for cart-item children with attribute role='menu_frites' / role='menu_boisson'."
+  }
+}

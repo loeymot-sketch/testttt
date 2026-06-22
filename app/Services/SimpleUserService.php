@@ -47,9 +47,18 @@ class SimpleUserService
                         }
                     }
                 }
-            })->orderBy($orderColumn, $orderType)->$method(
-                $methodValue
-            );
+            })
+                // [abuse-heal 2026-06-20 W5 RBAC-USERS-INDEX-01] Hard-restrict this customer-lookup
+                // directory to the CUSTOMER role. Without it, ?role_id=1 enumerated Admin accounts
+                // (admin-email harvesting). The caller-controlled role_id filter above can only
+                // NARROW within customers now — it can never surface staff/Admin rows. Staff are
+                // managed via the dedicated administrator/employee/chef/waiter endpoints.
+                ->whereHas('roles', function ($query) {
+                    $query->where('id', \App\Enums\Role::CUSTOMER);
+                })
+                ->orderBy($orderColumn, $orderType)->$method(
+                    $methodValue
+                );
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);

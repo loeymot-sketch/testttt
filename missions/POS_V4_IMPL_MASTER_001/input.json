@@ -1,0 +1,5 @@
+{
+  "mission": "POS_V4_IMPL_MASTER_001",
+  "instruction": "CREATE file plans/PLAN_POS_V4_IMPL_MASTER_2026-04-26.md (French). This is a re-audit + superseding implementation plan for POS v4 design integration. It must validate and improve PLAN_POS_V4_EXPORT_READINESS_2026-04-25 + RAPPORT_ECARTS_DESIGN_POS_V4_SYSTEMIQUE_2026-04-25. Include: (1) Executive verdict: fit for competitive POS SaaS, (2) Smart breakdown: workstreams A-D parallel, waves W0-W4 with 1-2 day micro-exits, (3) SFC merge order with risk score 1-5 and rationale, (4) 'Edge vs concurrence' — measurable KPIs (time-to-cash, error recovery, training surface, a11y) not marketing fluff, (5) Red-team: 8 failure modes + mitigation, (6) Gates table with owner, (7) Test matrix: PHPUnit + Vitest rows linked to SFC, (8) INVARIANTS_AT_RISK + SUBSYSTEMS from FoodKing rules. No Vue/PHP code — markdown only. Op create full file.",
+  "forbidden": "Modify any file except create the new plan path"
+}

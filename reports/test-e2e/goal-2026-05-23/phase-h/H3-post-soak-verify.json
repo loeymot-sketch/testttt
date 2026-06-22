@@ -1,0 +1,89 @@
+{
+    "baseline_max_order_id": 758,
+    "baseline_audit_count": 69,
+    "baseline_fiscal_seq_b1": 93,
+    "post_soak_orders_per_branch": [
+        {
+            "branch_id": 1,
+            "n": 188
+        }
+    ],
+    "cross_branch_leak": 0,
+    "fiscal_seq_soak_range_count": 129,
+    "fiscal_seq_soak_min": 94,
+    "fiscal_seq_soak_max": 222,
+    "fiscal_seq_soak_contiguous": true,
+    "fiscal_seq_soak_missing": [],
+    "fiscal_seq_soak_duplicates": [],
+    "composition_snapshot_mutations": 0,
+    "nf525_chain_post_soak": "+ branch=1 CHAIN OK\n  + branch=2 CHAIN OK\n  + branch=3 CHAIN OK\n  + branch=4 CHAIN OK\n  + branch=5 CHAIN OK\nSWEEP COMPLETE \u2014 CHAIN OK on every active branch (5 total)",
+    "nf525_chain_ok": true,
+    "audit_count_post": 98,
+    "audit_delta_total": 29,
+    "fiscal_post": 222,
+    "fiscal_delta_total": 129,
+    "queue_number_duplicates": [],
+    "queue_number_duplicates_count": 0,
+    "latency_drift": {
+        "analyzed": true,
+        "baseline_window_minutes": [
+            0,
+            1,
+            2
+        ],
+        "baseline_mean_ms": 208.8,
+        "steady_window_minutes": [
+            12,
+            13,
+            14
+        ],
+        "steady_mean_ms": 504,
+        "drift_ratio": 2.41,
+        "monotonic_drift_signature": "PRESENT",
+        "per_minute_means": [
+            261.2,
+            156.9,
+            208.4,
+            698.2,
+            238.9,
+            523.2,
+            243.2,
+            500.6,
+            264.2,
+            472.3,
+            230.1,
+            493.5,
+            958.8,
+            345.1,
+            208
+        ]
+    },
+    "latency_full_min_ms": 38.2,
+    "latency_full_max_ms": 4845.9,
+    "latency_full_avg_ms": 384.4,
+    "events_count_total": 241,
+    "events_ok_count": 241,
+    "memory_growth": {
+        "analyzed": true,
+        "ticks": 16,
+        "rss_min_kb": 54928,
+        "rss_max_kb": 58368,
+        "rss_first_kb": 58368,
+        "rss_last_kb": 55008,
+        "rss_envelope_kb": 3440,
+        "rss_net_delta_kb": -3360,
+        "memory_bounded": true
+    },
+    "disk_growth": {
+        "first_kb": 373272,
+        "last_kb": 373296,
+        "delta_kb": 24
+    },
+    "nf525_chain_ok_all_ticks": false,
+    "nf525_chain_ticks_total": 17,
+    "nf525_chain_ok_ticks": 16,
+    "soak_order_id_range": {
+        "first_after_baseline": 759,
+        "last_observed": 946
+    }
+}

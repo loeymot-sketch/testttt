@@ -1,0 +1,14 @@
+# Baseline tests — 2026-04-24 (avant P2+ du MEGA_PLAN_ORCHESTRATION_2026-04-24)
+# Généré par orchestration ; à mettre à jour après chaque vague majeure.
+
+npx vitest run
+  Test files: 111 passed
+  Tests: 811 passed (post P1 2.I — 2026-04-24)
+
+php vendor/bin/phpunit
+  Tests: 936 (OK)
+  Skipped: 8 (MySQL-only / environment)
+  Assertions: 2539
+
+bash scripts/check-invariants.sh
+  6/6 OK (vérifier à la date d’exécution)

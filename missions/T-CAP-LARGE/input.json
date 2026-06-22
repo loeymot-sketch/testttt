@@ -1,0 +1,1 @@
+{"task":"Generate a large block of valid JSON containing 800 items, each item is {\"id\":N,\"name\":\"item N description text long enough to take some tokens for measurement purposes\"}. Wrap in {\"items\":[...]}. Output ONLY the JSON, no prose, no markdown fence. Start immediately with {."}

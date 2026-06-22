@@ -34,7 +34,7 @@ export function kioskCategoryDisplayTier(cat) {
   }
 
   if (
-    /sandwich|burger|tacos|kebab|wrap|pizza|panini|grec|hot dog|croque|bagel|burrito|quesadilla|assiette|plat |menu |specialite|spécialité|snacking|nugget|tender|bucket|box /.test(
+    /sandwich|burger|tacos|kebab|wrap|pizza|panini|grec|hot dog|croque|bagel|burrito|quesadilla|assiette|plat |menu |specialite|spécialité|snacking|nugget|tender|bucket|box |galette|bols?/.test(
       s
     )
   ) {

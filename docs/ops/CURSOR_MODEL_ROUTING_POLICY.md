@@ -15,13 +15,15 @@
 
 ## 2. Classes d’exécution et modèles préférés
 
-| Execution class | Rôle | Preferred model |
-|-----------------|------|-----------------|
-| `inspection_readonly_fast` | Lecture statique, classification, rapports sans écriture code | **Composer 2 standard** |
-| `implementation_bounded` | Implémentation cadrée, petit blast radius, fichiers autorisés stricts | **Composer 2 standard** |
-| `implementation_complex` | Refactor ou logique transverse, forte dépendance au contexte | **GPT-5.4** |
-| `critical_review_judge` | Revue finale, arbitrage risque, verdict sur invariants métier / authz | **Claude 4.6 Opus** |
-| `e2e_behavioral_tooluse` | E2E, navigateur, preuves comportementales, enchaînement d’outils | **GPT-5.4** |
+
+| Execution class            | Rôle                                                                  | Preferred model                         |
+| -------------------------- | --------------------------------------------------------------------- | --------------------------------------- |
+| `inspection_readonly_fast` | Lecture statique, classification, rapports sans écriture code         | **Composer 2 standard**                 |
+| `implementation_bounded`   | Implémentation cadrée, petit blast radius, fichiers autorisés stricts | **Composer 2 standard**                 |
+| `implementation_complex`   | Refactor ou logique transverse, forte dépendance au contexte          | **GPT-5.5** (proxy)                     |
+| `critical_review_judge`    | Revue finale, arbitrage risque, verdict sur invariants métier / authz | **Claude 4.6 Opus**                     |
+| `e2e_behavioral_tooluse`   | E2E, navigateur, preuves comportementales, enchaînement d’outils      | **GPT-5.5** (ou procédure + Playwright) |
+
 
 Le plan Claude doit toujours déclarer **une** de ces classes et le **Preferred model** associé (et optionnellement `Fallback model`, `Max mode`), sans ambiguïté.
 
@@ -30,7 +32,7 @@ Le plan Claude doit toujours déclarer **une** de ces classes et le **Preferred 
 ## 3. Règles de secours (fallback)
 
 - **Implémentation à faible risque** (typiquement `implementation_bounded` ou correctifs triviaux) : secours autorisé vers **Composer 2 standard** si le préféré indisponible, **uniquement** si le plan l’autorise explicitement et que le périmètre reste inchangé.
-- Si **GPT-5.4** ou **Claude 4.6 Opus** est indisponible : secours par défaut documenté → **Claude 4.6 Sonnet**, **sous réserve** que le plan ou l’orchestrateur valide ce downgrade pour ce cycle (pas de bascule silencieuse — voir §5).
+- Si **GPT-5.5** (ou complexe proxy) ou **Claude 4.6 Opus** est indisponible : secours par défaut documenté → **Claude 4.6 Sonnet**, **sous réserve** que le plan ou l’orchestrateur valide ce downgrade pour ce cycle (pas de bascule silencieuse — voir §5).
 
 Les fallbacks ne **prolongent** pas un run déjà commencé avec un autre modèle sans nouvelle décision humaine / plan.
 
@@ -58,4 +60,4 @@ Cela préserve l’auditabilité des rapports (`reports/planning/latest.md`, `re
 
 ## 6. Alignement avec le bloc de planification Claude
 
-Les champs **`Execution class`**, **`Preferred model`**, **`Fallback model`**, **`Reason`**, **`Max mode`** du plan doivent **refléter** ce tableau et ces règles. Toute exception (modèle unique autorisé pour un prototype, hors production) doit être **explicitement** marquée dans le plan et ne constitue pas une dérogation implicite à §1.
+Les champs `**Execution class`**, `**Preferred model**`, `**Fallback model**`, `**Reason**`, `**Max mode**` du plan doivent **refléter** ce tableau et ces règles. Toute exception (modèle unique autorisé pour un prototype, hors production) doit être **explicitement** marquée dans le plan et ne constitue pas une dérogation implicite à §1.

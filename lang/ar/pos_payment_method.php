@@ -6,5 +6,6 @@ return [
     PosPaymentMethod::CARD => 'بطاقة',
     PosPaymentMethod::CASH => 'نقداً',
     PosPaymentMethod::OTHER => 'آخر',
-    PosPaymentMethod::MOBILE_BANKING => 'MFS'
+    PosPaymentMethod::MOBILE_BANKING => 'MFS',
+    PosPaymentMethod::TICKET_RESTAURANT => 'قسيمة وجبات',
 ];

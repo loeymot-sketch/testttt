@@ -1,0 +1,155 @@
+{
+  "task": "SUPERVISOR WAVE C — Z1 IMPLEMENTER Payment Plan B",
+  "timestamp": "2026-05-28T22:42:00+02:00",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head_baseline": "fcfef17fd74caa3a7b8e92ddae285260e34eeee1",
+  "status": "IMPLEMENTED_UNCOMMITTED",
+  "scope": "scope-minimal Plan B — route ALL kiosk payments to counter",
+  "owner_mandate": "Tous les paiements de la borne vont passer par la caisse. Plan B: kiosk crée commande PENDING_COUNTER → caisse choisit espèces (tiroir) ou carte (ticket + manuel terminal). Permanent même avec terminals câblés.",
+
+  "files_modified": [
+    {
+      "path": "config/kiosk.php",
+      "loc_added": 25,
+      "loc_removed": 0,
+      "change": "Added KIOSK_PAYMENT_ROUTE_ALL_TO_COUNTER env-driven flag (default true) + payment_route_all_to_counter key returned in both $requireForm=true branch and main return array. Documented with NF525-context block comment."
+    },
+    {
+      "path": "resources/views/master.blade.php",
+      "loc_added": 7,
+      "loc_removed": 0,
+      "change": "Added kiosk: { paymentRouteAllToCounter: @json((bool) config('kiosk.payment_route_all_to_counter', true)) } block inside window.foodkingConfig. Namespaced under 'kiosk' to leave room for future kiosk-runtime flags without polluting root."
+    },
+    {
+      "path": "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue",
+      "loc_added": 153,
+      "loc_removed": 6,
+      "change": "Added paymentRouteAllToCounter computed (reads window.foodkingConfig.kiosk.paymentRouteAllToCounter). When true, the legacy method-selection UI (header / amount-card / methods grid / processing screen / confirm CTA) is gated off via `!paymentRouteAllToCounter` ANDed into each v-if. A dedicated counter-route screen renders instead, with: large SVG counter icon, FR title 'Paiement à la caisse', FR sub-title 'Veuillez payer à la caisse', total card, spinner while submitting, single confirm CTA. confirmCounterRoute() pins this.method='cash' and delegates to confirmPayment() — which already routes cash to processCashPayment → kiosk.cash-instruction (B5b sister spec verified that path never opens drawer at kiosk).",
+      "v1_v7_frozen_zone": "VERIFIED NOT IN §7 (per supervisor mandate verbatim)"
+    },
+    {
+      "path": "resources/js/languages/fr.json",
+      "loc_added": 5,
+      "loc_removed": 1,
+      "change": "Added 4 i18n keys under kiosk.pay_screen: counter_route_title='Paiement à la caisse', counter_route_sub='Veuillez payer à la caisse', counter_route_processing='Enregistrement de votre commande…', counter_route_confirm_btn='Confirmer ma commande'."
+    },
+    {
+      "path": "tests/js/kioskPaymentPlanBRoute.spec.js",
+      "loc_added": 101,
+      "loc_removed": 0,
+      "change": "NEW Vitest spec. 7 tests following the established static-source-grep convention used by sister specs (kioskCounterPaymentFlow.spec.js, KioskPaymentRestyle.spec.js, etc.). Asserts: (1) config flag exists + default true (2) blade injects window.foodkingConfig.kiosk.paymentRouteAllToCounter (3) component reads via window?.foodkingConfig?.kiosk?.paymentRouteAllToCounter (4) method selection UI gated off (5) dedicated counter-route screen with data-testid hooks (6) confirmCounterRoute auto-submits with method='cash' which routes to kiosk.cash-instruction (7) French i18n keys present in fr.json including exact 'Veuillez payer à la caisse'."
+    }
+  ],
+
+  "frozen_zone_diff_proof": {
+    "command": "git diff --stat -- '<§7 list>'",
+    "result_empty": true,
+    "verified_files_unchanged": [
+      "public/js/pos-wizard.js",
+      "public/css/pos-wizard.css",
+      "resources/views/admin-pos-v4.blade.php",
+      "resources/js/components/frontend/kiosk/KioskWizardComponent.vue",
+      "resources/js/components/frontend/kiosk/KioskAppComponent.vue",
+      "resources/js/components/frontend/kiosk/KioskUpsellComponent.vue",
+      "resources/js/components/admin/pos/PaymentComponent.vue",
+      "resources/js/components/admin/pos/v5/PosV5TrancheRow.vue",
+      "app/Services/Fiscal/FiscalSequenceService.php",
+      "app/Services/Fiscal/ZReportService.php",
+      "app/Services/Fiscal/AuditLogService.php",
+      "app/Models/Scopes/BranchScope.php",
+      "app/Http/Middleware/IdempotencyKeyMiddleware.php",
+      "app/Services/Pricing/PricingService.php",
+      "app/Domain/Order/OrderStateMachine.php"
+    ]
+  },
+
+  "nf525_invariants_preserved": {
+    "composition_snapshot_frozen": "Untouched — Plan B does not alter ordering path; backend FrontendOrderService:186-237 still calculates and snapshots composition at create.",
+    "fiscal_sequence_no_monotonic": "Untouched — CASH_ON_DELIVERY orders allocate fiscal_sequence_no at POS encaissement (not kiosk create), which is the documented NF525 cash-trail path.",
+    "audit_chain_intact": "Untouched — no Fiscal/AuditLog service modifications.",
+    "pricing_ssot_backend": "Untouched — Plan B only changes kiosk-side payment UX. Server pricing path identical."
+  },
+
+  "vitest_result": {
+    "spec": "tests/js/kioskPaymentPlanBRoute.spec.js",
+    "command": "npx vitest run tests/js/kioskPaymentPlanBRoute.spec.js",
+    "passed": 7,
+    "failed": 0,
+    "duration_ms": 409,
+    "tests": [
+      "config/kiosk.php exposes the payment_route_all_to_counter flag (default true)",
+      "master.blade.php injects window.foodkingConfig.kiosk.paymentRouteAllToCounter",
+      "KioskPaymentComponent reads paymentRouteAllToCounter from foodkingConfig.kiosk",
+      "KioskPaymentComponent hides the method selection UI when flag is on",
+      "KioskPaymentComponent renders a dedicated counter-route screen when flag is on",
+      "KioskPaymentComponent auto-submits with method=cash (CASH_ON_DELIVERY=1 backend)",
+      "French i18n keys for counter-route are present in resources/js/languages/fr.json"
+    ]
+  },
+
+  "sister_specs_regression_check": {
+    "tested": [
+      "tests/js/kioskCounterPaymentFlow.spec.js",
+      "tests/js/kioskPaymentRetryGate.spec.js",
+      "tests/js/kioskPaymentTpeTimeout.spec.js",
+      "tests/js/KioskPaymentRestyle.spec.js"
+    ],
+    "result_pre_existing_failure": {
+      "spec": "kioskCounterPaymentFlow.spec.js:21",
+      "target_file": "resources/js/components/admin/pos/PosComponent.vue (NOT modified by Z1)",
+      "verification": "git stash + rerun = same failure → confirmed pre-existing, NOT caused by Z1 changes",
+      "passes_pre_existing": "16/17 (only PosComponent.vue-targeted assertion fails; KioskPaymentComponent assertions pass)"
+    },
+    "z1_introduced_regressions": 0
+  },
+
+  "bundle_rebuild_proof": {
+    "command": "npm run development",
+    "compiler": "Laravel Mix v6.0.49 (webpack)",
+    "duration_ms": 8635,
+    "status": "Compiled Successfully",
+    "key_bundles_rebuilt": [
+      "/js/app.js (7 MiB) — includes KioskPaymentComponent.vue compiled",
+      "/js/kiosk-shell.js (675 KiB) — kiosk runtime",
+      "/js/manifest.js (12.9 KiB) — webpack manifest"
+    ]
+  },
+
+  "backend_contract_alignment": {
+    "payment_method_code": "1 (CASH_ON_DELIVERY)",
+    "enum_source": "app/Enums/PaymentGateway.php:6 — const CASH_ON_DELIVERY = 1",
+    "service_handler": "app/Services/FrontendOrderService.php:186-237 — already handles CASH_ON_DELIVERY by setting PENDING_COUNTER status (B5b 2026-05-21 cash-at-counter contract). No backend change required.",
+    "kiosk_router_navigation": "method='cash' → confirmPayment → processCashPayment → $router.push({name:'kiosk.cash-instruction', query:{number:queueNum, total, timeout:45}}). Sister spec kioskCounterPaymentFlow.spec.js asserts no drawer is opened at kiosk."
+  },
+
+  "ux_message_owner_compliance": {
+    "fr_message_required": "Veuillez payer à la caisse",
+    "fr_message_implemented": "Veuillez payer à la caisse (exact match)",
+    "rendered_via_i18n_key": "kiosk.pay_screen.counter_route_sub"
+  },
+
+  "design_choices_documented": [
+    "Chose static-source-grep test pattern over Vue mount because sister specs use the same convention (kioskCounterPaymentFlow.spec.js, KioskPaymentRestyle.spec.js) — mounting KioskPaymentComponent in isolation would require mocking Vuex kioskCart store, vue-router, axios, kioskHardware, useKioskSpeech composable, and 5+ other dependencies, all to assert template/data contract that grep-on-source verifies more cheaply and just as reliably.",
+    "Namespaced new flag under window.foodkingConfig.kiosk (not flat) so future kiosk-runtime flags can be grouped there. Existing kioskAutoLogin/kioskDefaultLocale/kioskMenuPricing remain at the root for backwards compat — only the new flag uses the kiosk namespace.",
+    "Reused existing 'cash' method routing instead of inventing new payment_method code 1 path: confirmCounterRoute pins method='cash' and delegates to confirmPayment which already handles cash via processCashPayment. This means zero duplication of cart-submit, idempotency, quote-refresh, navigation logic — and the existing B5b contract (no drawer at kiosk, navigation to kiosk.cash-instruction) is automatically inherited.",
+    "Gated each legacy UI block via ANDing !paymentRouteAllToCounter into existing v-if — does not require restructuring template into v-if/v-else branches, keeps diff minimal and reviewer-friendly.",
+    "Default flag value = TRUE per owner mandate (Plan B is the V1 baseline). Override via KIOSK_PAYMENT_ROUTE_ALL_TO_COUNTER=false in .env to fall back to legacy method-selection UI for staging/QA scenarios that want to test card/TR flow."
+  ],
+
+  "next_steps_for_owner_approval": [
+    "1. ORCHESTRATOR REVIEW — verify all changes match Plan B intent: kiosk customer sees ONLY counter-route screen, no card/cash/tr selection; clicking 'Confirmer ma commande' creates PENDING_COUNTER order routed to kiosk.cash-instruction.",
+    "2. PLAYWRIGHT VISUAL CAPTURE — recommend orchestrator capture http://127.0.0.1:8000/kiosk/payment after adding a test item to cart, then Read screenshot to confirm: (a) NO card/cash/tr radios visible (b) clear 'Veuillez payer à la caisse' message (c) total displayed (d) single confirm CTA visible.",
+    "3. E2E ROUNDTRIP — run a kiosk wizard flow with default flag=true, confirm order arrives at POS with payment_status=PENDING_COUNTER and KDS card displays 'PAIEMENT COMPTOIR - NON REGLE' (existing B5b contract).",
+    "4. POS COLLECTION VERIFY — at POS counter-collect screen, confirm: espèces choice opens drawer (legacy POS path), carte choice prints ticket + sets manual encaissement (legacy POS path). Both paths already exist per kioskCounterPaymentFlow.spec.js assertions on PosComponent.vue.",
+    "5. NF525 CHAIN VERIFY — after one full kiosk → POS counter collect cycle, run `php artisan fiscal:chain-verify --all` and confirm CHAIN OK + count=N+1 (sequence allocated at POS collect, not at kiosk create — documented in app/Services/FrontendOrderService.php).",
+    "6. PRE-EXISTING TEST DEBT — note that kioskCounterPaymentFlow.spec.js:21 fails on PosComponent.vue (not Z1-introduced). Independently tracked.",
+    "7. COMMIT — if all above green, orchestrator may stage + commit the 5 files with message including SUPERVISOR WAVE C Z1 + frozen-zone diff=0 + NF525 unchanged."
+  ],
+
+  "do_not_list_compliance": {
+    "no_commit_made": true,
+    "no_push_to_remote": true,
+    "no_frozen_zone_files_modified": true,
+    "no_no_verify_used": true
+  }
+}

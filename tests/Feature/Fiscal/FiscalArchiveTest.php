@@ -88,9 +88,13 @@ class FiscalArchiveTest extends TestCase
         $zip->close();
 
         $this->assertSame($this->branch->id, $manifest['branch_id']);
-        $this->assertSame(2,                  $manifest['schema_version']);
+        // [W9.A] schema_version bumped to 3: manifest now records the
+        // pre-archive Z-chain verification result (defense-in-depth).
+        $this->assertSame(3,                  $manifest['schema_version']);
         $this->assertSame(6,                  $manifest['retention_years']);
         $this->assertArrayHasKey('layout', $manifest);
+        $this->assertArrayHasKey('z_chain_verified', $manifest);
+        $this->assertArrayHasKey('z_chain_verify_meta', $manifest);
 
         $this->assertCount(1, $zReports,
             'Archive must contain the Z closed during the window.');
@@ -99,8 +103,19 @@ class FiscalArchiveTest extends TestCase
         $this->assertCount(1, $orders);
         $this->assertSame($order->id, $orders[0]['id']);
 
-        $this->assertCount(1, $auditLog);
-        $this->assertSame('order.create', $auditLog[0]['action']);
+        // [GOAL-K2-HEAL-06 2026-05-24] Phase K.7 K7-FIND-2 P2:
+        // ZReport::updated hook in AppServiceProvider now writes a
+        // 'z_report.closed' audit_logs anchor row on every Z-close so the
+        // audit_logs chain carries a cross-chain anchor to z_reports.
+        // The archive bundle must therefore contain BOTH the test's
+        // explicit 'order.create' write AND the implicit 'z_report.closed'
+        // anchor produced by the close above. Order is insertion-order
+        // (autoincrement id): the close happens AFTER the 'order.create'
+        // write, so the anchor row is the second entry.
+        $this->assertCount(2, $auditLog);
+        $actions = array_column($auditLog, 'action');
+        sort($actions);
+        $this->assertSame(['order.create', 'z_report.closed'], $actions);
     }
 
     public function test_round_trip_deterministic(): void

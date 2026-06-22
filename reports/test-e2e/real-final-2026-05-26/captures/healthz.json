@@ -1,0 +1,11 @@
+{
+    "status": "degraded",
+    "checks": {
+        "db": "ok",
+        "redis": "ok",
+        "websocket": "ok",
+        "fiscal_chain": "fail",
+        "queue_pending": 0
+    },
+    "timestamp": "2026-05-26T18:55:30+02:00"
+}

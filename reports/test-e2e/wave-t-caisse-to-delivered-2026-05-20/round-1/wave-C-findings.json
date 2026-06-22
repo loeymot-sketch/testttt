@@ -1,0 +1,130 @@
+{
+  "wave": "C",
+  "wave_label": "OSS (Order Status Screen) — caisse-to-delivered E2E",
+  "round": 1,
+  "states_reviewed": 6,
+  "reviewer": "adversarial supervisor",
+  "verdict": "AMBER",
+  "verdict_rationale": "P0=0, P1=0, P2=4, P3=1. No production-breaking or user-visible defects on the OSS happy path. Wave S-3 mandates (≥40px header, ≥56px token, brand red #B0004D, brand green #1AB759, pulse animation on new ready) all VERIFIED. Allowlist (order #2 absent) clean — zero leakage in DOM/API/visible text. Pickup transition succeeds (200 OK in 85ms, DOM-gone in 2017ms within 6s budget). NF525 chain bit-identical pre/post (count=11, last_hash=c0a71e64…). Remaining defects are quality-of-experience issues that matter specifically for the 'readable from 3 m' owner mandate.",
+  "summary": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 4,
+    "P3": 1,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 4,
+    "open_P3": 1
+  },
+  "wave_s3_mandate_attestations": {
+    "preparing_header_font_px": 40,
+    "preparing_header_floor_px": 36,
+    "preparing_header_pass": true,
+    "ready_header_font_px": 40,
+    "ready_header_floor_px": 36,
+    "ready_header_pass": true,
+    "order_token_font_px": 56,
+    "order_token_floor_px": 40,
+    "order_token_pass": true,
+    "brand_red_actual": "rgb(176, 0, 77)",
+    "brand_red_expected": "#B0004D",
+    "brand_red_pass": true,
+    "brand_green_actual": "rgb(26, 183, 89)",
+    "brand_green_expected": "#1AB759",
+    "brand_green_pass": true,
+    "pulse_animation_running": true,
+    "pulse_animation_name": "oss-pulse-3aa5d0ca",
+    "pulse_animation_iteration": "infinite",
+    "popular_item_sidebar_present": false,
+    "popular_item_sidebar_comment_proof": "DOM comment '[OWNER 2026-05-20] PopularItemComponent (Articles à préparer sidebar) removed from OSS layout per owner directive' present at /admin/order-status-screen container; no render of any popular-items DOM."
+  },
+  "contrast_audit": {
+    "preparing_header_white_on_B0004D": {"ratio": 7.11, "wcag_aa_pass": true},
+    "ready_header_1F1F39_on_1AB759": {"ratio": 6.06, "wcag_aa_pass": true},
+    "ready_token_0E7C3A_on_white_ish": {"ratio": 5.3, "wcag_aa_pass": true},
+    "em_dash_placeholder_A0A3BD_on_white": {"ratio": 2.48, "wcag_aa_pass": false, "size_px": 28, "weight": "regular"}
+  },
+  "findings": [
+    {
+      "id": "C-001",
+      "state_artifact": "01-oss-landing.png, 02-oss-font-and-bg-probe.png, 04-oss-pre-pickup.png, 05-oss-order1-disappeared.png",
+      "category": "color_contrast",
+      "severity": "P2",
+      "evidence": "Em-dash placeholder rendered as <p class=\"text-center text-[#A0A3BD] text-[28px] mt-12\">—</p> in both columns when empty. Computed WCAG contrast ratio #A0A3BD on white = 2.48:1. WCAG 2.1 AA requires ≥4.5:1 for normal text (28px regular ≠ 'large' per WCAG definition of 18pt regular / 14pt bold). FAILS WCAG AA.",
+      "fix_hint": "Darken placeholder color to at least #6B6F8C (ratio 4.6:1 on white) or use #4F5469 (ratio 7.2:1). File: resources/js/components/admin/customer-screen/OrderStatusScreenComponent.vue or equivalent (locate by class oss-column-header data-v-3aa5d0ca)."
+    },
+    {
+      "id": "C-002",
+      "state_artifact": "01-oss-landing.png, 04-oss-pre-pickup.png, 05-oss-order1-disappeared.png",
+      "category": "empty_state_quality",
+      "severity": "P2",
+      "evidence": "Empty 'En préparation' column (and both columns in state 05) show ONLY a single em-dash '—' as placeholder. No illustration (<img>), no copy ≥20 chars, no primary CTA. This directly contradicts the owner mandate 'readable from 3 m' — a tiny 28px gray dash on a TV screen is invisible from distance. Customer cannot tell whether the screen is empty (no orders), waiting to load, or broken.",
+      "fix_hint": "Replace em-dash with an explicit visible message: 'En attente…' / 'Aucune commande en cours.' rendered at ≥40px in same brand-neutral dark color (text-[#1F1F39]). Consider adding a static SVG illustration (clock or kitchen icon) at 200×200px above the message. Files to look at: OrderStatusScreenComponent.vue empty branch (v-if=\"!orders.length\" inside the <ul> grandchild)."
+    },
+    {
+      "id": "C-003",
+      "state_artifact": "01-oss-landing.png, 02-oss-font-and-bg-probe.png, 03-oss-allowlist-order2-absent.png, 04-oss-pre-pickup.png, 04b-oss-after-pickup-api.png, 05-oss-order1-disappeared.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Both OSS columns are dynamic containers (orders enter via realtime, leave on pickup) yet DOM has zero aria-live / role=status anywhere on the page. role=region + aria-label='En préparation'/'Prêt' are present on the column wrappers (good) but the <ul class='oss-order-list'> children that change live are not announced. A blind operator/customer using a screen reader on the OSS-as-status-display path is not notified when 'N°A0001' transitions from En préparation to Prêt.",
+      "fix_hint": "Add aria-live='polite' aria-atomic='false' role='status' on each <ul class='oss-order-list'>. Also consider aria-relevant='additions removals'. Files: OrderStatusScreenComponent.vue lines containing class='oss-order-list'."
+    },
+    {
+      "id": "C-004",
+      "state_artifact": "01-oss-landing.png, 02-oss-font-and-bg-probe.png, 03-oss-allowlist-order2-absent.png, 04-oss-pre-pickup.png, 04b-oss-after-pickup-api.png, 05-oss-order1-disappeared.png",
+      "category": "empty_state_quality",
+      "severity": "P2",
+      "evidence": "The OSS view shows the full admin top-bar chrome (FoodKing logo, Filiale dropdown 'Le Cayenne (principal)', 'Tableau De Bord' button, 'Bonjour Admin Le Cayenne' personal greeting) above the two columns. The admin sidebar is correctly hidden (db-sidebar hidden) but the top header consumes ~60–80 px at the top of the screen — visible to customers waiting in the restaurant. The greeting 'Bonjour Admin Le Cayenne' is a minor privacy leak (operator identity exposed) and the chrome competes with the brand red/green columns for attention. Note: the body container intentionally compensates with h-[calc(100dvh-117px)], so this is by design, not a layout bug — but it remains a UX smell on a customer-facing TV.",
+      "fix_hint": "Provide a dedicated 'TV mode' route (?tv=1 or /customer-screen?fullscreen) that hides the admin top header. Acceptable alternative: keep the FoodKing branding strip but suppress the personal greeting + Tableau-de-bord button when ?tv=1 is set."
+    },
+    {
+      "id": "C-005",
+      "state_artifact": "01-oss-landing.console.json",
+      "category": "i18n_leak",
+      "severity": "P3",
+      "evidence": "Console emits ~30 'level=warning' entries: '[intlify] Not found menu.communications / menu.users / menu.accounts / menu.reports / menu.setup key in fr locale messages'. These keys ARE present in DOM but the parent <aside class='db-sidebar hidden'> hides them (display:none via Tailwind 'hidden'). They are therefore not user-visible on the OSS surface — reviewer protocol category 1 (i18n leak) is for VISIBLE text only, so this is downgraded to P3 informational. Still: the underlying admin sidebar i18n debt should be flagged for the next admin-i18n sweep — these will leak the moment the sidebar is unhidden.",
+      "fix_hint": "Add missing keys to resources/lang/fr/menu.php (communications, users, accounts, reports, setup) or to the appropriate vue-i18n bundle. Out of scope for OSS Wave C — pre-existing admin debt."
+    }
+  ],
+  "non_findings_verified_clean": [
+    {
+      "check": "Wave Q-3 PopularItemComponent removal",
+      "result": "PASS — only present as removed-by-design HTML comment; zero render."
+    },
+    {
+      "check": "Allowlist enforcement — order #2 (TAKEAWAY/order_type=5) absent",
+      "result": "PASS — 0 occurrences of A0002 / N°A0002 / 20052670 / AUDIT-WAVE-T-002 anywhere in DOM 03. API admin endpoint correctly filters to KIOSK+TAKEAWAY allowlist with whereIn — but in this fixture the only order returned was order #1 (KIOSK, order_type=10). order #2 IS order_type=5 (TAKEAWAY) — per Wave Q-2 doctrine TAKEAWAY is allowlisted; the absence here is because order #2 status=8 (ready) but its branch_id / matching window did not include it. ACCEPTED CLEAN (no leakage), but flag for run-author: verify the allowlist is correctly distinguishing what should and should not appear — order #2's absence might be coincidental rather than by-design."
+    },
+    {
+      "check": "Pulse animation on new-ready",
+      "result": "PASS — keyframe oss-pulse-3aa5d0ca, 1.6s ease-in-out infinite, playState=running, applied via class oss-pulse-ready on the <li> bearing N°A0001. respects prefers-reduced-motion override (CSS @media block found)."
+    },
+    {
+      "check": "Pickup transition timing budget",
+      "result": "PASS — POST /api/admin/pos-order/change-status/69 (bearer) returned 200 in 85ms, DOM disappeared in 2017ms (well within 6 s budget). order_1 DB status post = 13 (Delivered). Cookie probe 401 is documented dual-attempt fallback, allowlisted per protocol category 10."
+    },
+    {
+      "check": "NF525 chain integrity",
+      "result": "PASS — count=11 last_hash=c0a71e64c524d62ed9855f700804a5ed90350a737a3ab3ad937e9d1349114427 BIT-IDENTICAL pre and post pickup. appended_count=0 (status transition to Delivered does not append a fiscal row — correct, since fiscal_sequence_no=1 was already allocated at order creation)."
+    },
+    {
+      "check": "Numeric integrity (token vs queue rendering)",
+      "result": "PASS — queue_number='A0001' rendered as 'N°A0001' in DOM, expected_queue_repr matches. token='1' available in API but not the primary display field; no truncation; no leading zero issues."
+    },
+    {
+      "check": "Pre-pickup vs after-pickup visual diff (state 04 vs 04b)",
+      "result": "PASS but flag: the two screenshots are visually indistinguishable to the human eye — the order still renders identically in both. The 'after-pickup-api' state captures the moment immediately after POST 200 but before client re-poll; DOM removal happens only in state 05. This is a CAPTURE-SPEC observation, not a defect: consider adding a 5xx ms wait between the API call and the 04b screenshot, OR rename 04b to '04b-oss-immediately-after-pickup-api-before-poll' to be explicit about the time semantics."
+    },
+    {
+      "check": "Console error sweep",
+      "result": "PASS — only console.warning entries (intlify miss + wss:// dev-only websocket close), zero level=error entries on the OSS surface. The 401 in 04b console.json is the documented dual-auth fallback (cookie probe), allowlisted."
+    },
+    {
+      "check": "Network error sweep",
+      "result": "PASS — only one entry across all 6 states (the 401 on cookie probe), allowlisted per protocol category 10. Zero 5xx, zero unexpected 4xx."
+    }
+  ],
+  "round_to_round_closures": {},
+  "advisor_note": "Initial draft included 2 over-claims (admin-chrome leak as P1, menu.X i18n as P1). Advisor disputed both — admin chrome is intentional h-[calc(100dvh-117px)] design decision, demoted to P2 UX smell (C-004). menu.X labels live inside <aside class='db-sidebar hidden'>, not user-visible, demoted to P3 console-only (C-005). Final verdict AMBER not RED.",
+  "owner_3m_readability_assessment": "Token N°A0001 at 56px extrabold dark-green on light bg = excellent. Headers 'En préparation' / 'Prêt' at 40px bold on full-width brand bars = excellent. BUT empty state em-dash 28px regular #A0A3BD = INVISIBLE from 3 m. Recommend C-001+C-002 heal before owner sign-off for TV deployment."
+}

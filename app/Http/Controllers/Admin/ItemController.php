@@ -9,12 +9,15 @@ use App\Http\Resources\SimpleItemResource;
 use App\Imports\ItemImport;
 use Exception;
 use App\Models\Item;
+use App\Services\Catalog\CatalogWarningService;
 use App\Services\ItemService;
 use App\Http\Requests\ItemRequest;
 use App\Http\Resources\ItemResource;
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Requests\PaginateRequest;
 use App\Http\Requests\ChangeImageRequest;
+use Illuminate\Support\Facades\DB;
 use Response;
 
 class ItemController extends AdminController
@@ -25,42 +28,116 @@ class ItemController extends AdminController
     {
         parent::__construct();
         $this->itemService = $itemService;
-        $this->middleware(['permission:items'])->only( 'export', 'changeImage');
-        $this->middleware(['permission:items_create'])->only('store', 'import');
-        $this->middleware(['permission:items_edit'])->only('update');
+        $this->middleware(['permission:items'])->only('export');
+        $this->middleware(['permission:items_create'])->only('store', 'import', 'duplicate');
+        $this->middleware(['permission:items_edit'])->only('update', 'changeImage');
         $this->middleware(['permission:items_delete'])->only('destroy');
-        $this->middleware(['permission:items_show'])->only('show');
+        $this->middleware(['permission:items_show'])->only('show', 'downloadSample');
+        $this->middleware(function ($request, $next) {
+            $user = $request->user();
+            abort_unless($user && $user->canAny(['items_show', 'pos']), 403);
+
+            return $next($request);
+        })->only('index', 'itemDetails', 'lookupBarcode');
     }
 
     public function index(PaginateRequest $request) : \Illuminate\Http\Response | \Illuminate\Http\Resources\Json\AnonymousResourceCollection | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
+        $forcedBranchId = $this->forcePosRuntimeBranchScope($request);
+        $branchId = $forcedBranchId ?? ($request->filled('branch_id') ? (int) $request->get('branch_id') : null);
+
+        if ($branchId !== null) {
+            $this->authorizeBranchScope($request, $branchId);
+        }
+
+        // [CV1-POS-AVAILABILITY-LIVE-001] surface=pos sans branch_id ⇒ overlay
+        // availability inopérant ; refuser la requête plutôt que projeter is_available
+        // global (false-positive cliquabilité tile = perte argent + 422 au checkout).
+        // Restreint aux callers ayant la perm `pos` pour éviter de casser tooling admin
+        // (ex : éditeur catalogue filtré "POS-visible") qui appellerait surface=pos sans branch.
+        // Cf docs/audit/CV1-POS-AVAILABILITY-LIVE-001_INVESTIGATION_2026-05-08.md §5.3.
+        $surface = strtolower(trim((string) $request->get('surface', '')));
+        if ($surface === 'pos'
+            && ($branchId === null || $branchId < 1)
+            && $request->user() && $request->user()->can('pos')) {
+            return response(['status' => false, 'message' => 'POS catalog requires branch_id'], 422);
+        }
+
+        // CV1 catalog convergence (audit CLAUDE_ULTRA_REVIEW_REQUEST_MISSION_1 §A.1 #3):
+        // POS-only runtime callers (permission `pos` without catalog `items_show`) must get
+        // `?surface=pos` semantics by default so `/api/admin/item` never leaks kiosk-only SKUs.
+        // Same heuristic as forcePosRuntimeBranchScope(). Client-provided surface wins.
+        $this->applyDefaultPosSurfaceForPosRuntimeUser($request);
+
+        // [MISSION FIX D4 2026-05-21] Admin catalog (no explicit branch_id) must
+        // honour per-branch ItemBranchAvailability so `/admin/items` and
+        // `/admin/stock-rupture-dashboard` show identical state. Without this,
+        // simpleList's applyBranchAvailabilityOverlay() short-circuits (branchId<1)
+        // and the listing reports global is_available only — admin sees "Actif"
+        // while the dashboard correctly flags "RUPTURE". Mirror the
+        // StockRuptureDashboardController::scopedBranches() admin fallback (first
+        // active branch). Staff users already have $user->branch_id>0 piped
+        // through forcePosRuntimeBranchScope or future explicit selection.
+        if ($branchId === null) {
+            $user = $request->user();
+            if ($user && (int) $user->branch_id === 0
+                && ($user->hasRole('Admin') || $user->hasRole('Tenant Admin'))) {
+                $defaultBranchId = (int) \App\Models\Branch::query()
+                    ->whereNull('deleted_at')
+                    ->whereIn('status', [\App\Enums\Status::ACTIVE, 1])
+                    ->orderBy('id')
+                    ->value('id');
+                if ($defaultBranchId > 0) {
+                    $branchId = $defaultBranchId;
+                    $request->merge(['branch_id' => $branchId]);
+                    $request->query->set('branch_id', (string) $branchId);
+                }
+            }
+        }
+
         try {
-            return SimpleItemResource::collection($this->itemService->simpleList($request));
+            $paginator = $this->itemService->simpleList($request);
+            $meta = $this->itemService->availabilityCounts($branchId);
+
+            return SimpleItemResource::collection($paginator)->additional([
+                'meta' => $meta,
+            ]);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
 
     public function show(Item $item) : \Illuminate\Http\Response | ItemResource | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
+        if (request()->filled('branch_id')) {
+            $this->authorizeBranchScope(request(), (int) request()->get('branch_id'));
+        }
+
         try {
-            return new ItemResource($this->itemService->show($item));
+            $loaded   = $this->itemService->show($item);
+            $resource = new ItemResource($loaded);
+
+            if (config('catalog_v15.warnings.expose_to_admin_show', true)) {
+                $branchId = request()->filled('branch_id') ? (int) request()->get('branch_id') : null;
+                $warnings = app(CatalogWarningService::class)->forItem($loaded, $branchId);
+
+                return $resource->additional(['warnings' => $warnings]);
+            }
+
+            return $resource;
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
     public function store(ItemRequest $request) : \Illuminate\Http\Response | ItemResource | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
-            if (env('DEMO')) {
-                return new ItemResource($this->itemService->store($request));
-            } else {
-                    return new ItemResource($this->itemService->store($request));
-            }
+            // [CENTRAL-01] collapsed dead env('DEMO') if/else — both arms were byte-identical (no-op).
+            return new ItemResource($this->itemService->store($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -69,26 +146,49 @@ class ItemController extends AdminController
         try {
             return new ItemResource($this->itemService->update($request, $item));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
-    public function destroy(Item $item) : \Illuminate\Http\Response | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
+    public function duplicate(Item $item) : \Illuminate\Http\Response | ItemResource | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
-            $this->itemService->destroy($item);
+            $copy = $this->itemService->duplicate($item);
+            return new ItemResource($copy);
+        } catch (Exception $exception) {
+            return $this->jsonError($exception, 422);
+        }
+    }
+
+    public function destroy(Item $item) : \Illuminate\Http\Response | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory | \Illuminate\Http\JsonResponse
+    {
+        $forceDelete = request()->boolean('force');
+
+        try {
+            $this->itemService->destroy($item, $forceDelete);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            if ((int) $exception->getCode() === 409) {
+                return response()->json([
+                    'status' => false,
+                    'message' => $exception->getMessage(),
+                    'error' => 'errors.item.cannot_force_delete_with_history',
+                ], 409);
+            }
+
+            return $this->jsonError($exception, 422);
         }
     }
 
     public function changeImage(ChangeImageRequest $request, Item $item) : \Illuminate\Http\Response | ItemResource | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
+        $user = $request->user();
+        abort_if(! $user || (! $user->hasRole('Admin') && ! $user->hasRole('Tenant Admin')), 403);
+
         try {
             return new ItemResource($this->itemService->changeImage($request, $item));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -97,7 +197,7 @@ class ItemController extends AdminController
         try {
             return Excel::download(new ItemExport($this->itemService, $request), 'Item.xlsx');
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -106,7 +206,7 @@ class ItemController extends AdminController
         try {
             return Response::download(public_path('/file/itemImportSample.xlsx'));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -116,16 +216,106 @@ class ItemController extends AdminController
             Excel::import(new ItemImport($request->file('file')), $request->file('file'));
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
     public function itemDetails(Item $item)
     {
+        $forcedBranchId = $this->forcePosRuntimeBranchScope(request());
+        $branchId = $forcedBranchId ?? (request()->filled('branch_id') ? (int) request()->get('branch_id') : null);
+
+        if ($branchId !== null) {
+            $this->authorizeBranchScope(request(), $branchId);
+        }
+
+        $surface = strtolower(trim((string) request()->get('surface', '')));
+        if (in_array($surface, ['pos', 'kiosk', 'web'], true)) {
+            $item->loadMissing('category');
+            abort_unless($item->isVisibleOn($surface), 404);
+            abort_unless(! $item->category || $item->category->isVisibleOn($surface), 404);
+        }
+
         try {
            return new NormalItemResource($this->itemService->itemDetails($item));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
+    }
+
+    /**
+     * POS: resolve an item by exact barcode (available + visible on pos channel).
+     */
+    public function lookupBarcode(string $code)
+    {
+        try {
+            $code = rawurldecode($code);
+            $base = Item::query()
+                ->with('media', 'category', 'offer')
+                ->where('barcode', $code)
+                ->where('is_available', true)
+                ->where(function ($q) {
+                    $q->whereNull('channels');
+                    if (DB::connection()->getDriverName() === 'sqlite') {
+                        $q->orWhere('channels', 'like', '%"pos"%');
+                        return;
+                    }
+                    $q->orWhereJsonContains('channels', 'pos');
+                });
+            $count = (clone $base)->count();
+            $item = (clone $base)->orderBy('id')->first();
+            if (! $item) {
+                return response()->json(['error' => 'not_found'], 404);
+            }
+            if ($count > 1) {
+                Log::warning('POS barcode lookup: multiple available items share barcode', [
+                    'barcode' => $code,
+                    'count' => $count,
+                ]);
+            }
+
+            return (new SimpleItemResource($item))->additional([
+                'meta' => [
+                    'duplicate_barcode' => $count > 1,
+                ],
+            ]);
+        } catch (Exception $exception) {
+            return $this->jsonError($exception, 422);
+        }
+    }
+
+    private function forcePosRuntimeBranchScope($request): ?int
+    {
+        $user = $request->user();
+        if (! $user || $user->can('items_show') || ! $user->can('pos')) {
+            return null;
+        }
+
+        $branchId = (int) $user->branch_id;
+        abort_if($branchId < 1, 403);
+
+        $request->merge(['branch_id' => $branchId]);
+        $request->query->set('branch_id', $branchId);
+
+        return $branchId;
+    }
+
+    /**
+     * DefaultAccessService only tracks saved defaults (branch, etc.). POS vs admin "surface intent"
+     * is inferred here from the same Spatie gates as POS runtime branch forcing: `pos` without
+     * `items_show` means menu-only callers that must not see kiosk-scoped SKUs unless they pass ?surface=kiosk.
+     */
+    private function applyDefaultPosSurfaceForPosRuntimeUser(\Illuminate\Http\Request $request): void
+    {
+        $user = $request->user();
+        if (! $user || $user->can('items_show') || ! $user->can('pos')) {
+            return;
+        }
+        if ($request->filled('surface')) {
+            return;
+        }
+
+        $request->merge(['surface' => 'pos']);
+        $request->query->set('surface', 'pos');
     }
 }

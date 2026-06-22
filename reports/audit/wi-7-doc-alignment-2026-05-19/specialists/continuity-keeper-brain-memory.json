@@ -1,0 +1,92 @@
+{
+  "specialist": "Continuity-keeper",
+  "scope": "MEMORY.md + PROJECT_BRAIN.md coherence with git log + recent session ground truth.",
+  "mandate": "Read-only. Flag stale pointers, items deferred-but-actually-healed, BRAIN inaccuracies vs commit history.",
+  "timestamp": "2026-05-19T02:12:00+02:00",
+  "head_audited": "d5f934755",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "session_commit_count": 113,
+  "total_repo_commits": 878,
+  "evidence_anchors": [
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/PROJECT_BRAIN.md",
+    "/Users/1millnonstop/.claude/projects/-Users-1millnonstop-Downloads-projet-foodking-web-web-testttt/memory/MEMORY.md",
+    "git log oneline (last 200)"
+  ],
+  "findings": [
+    {
+      "id": "CONT-01",
+      "severity": "P1",
+      "category": "DRIFT-RECOMMENDATIONS",
+      "claim": "MEMORY.md (user-level) §START HERE block points to 'V1 Le Cayenne LOCAL 7/7 zones GO post Critical Focus convergence 2026-05-18 · Branche `v1-0-1-hardening-2026-05-17` HEAD `1e7c65ecc`'. But current HEAD is d5f934755 on branch `heal/cms-pr1-quickwins-2026-05-18`.",
+      "evidence_doc": "/Users/1millnonstop/.claude/projects/-Users-1millnonstop-Downloads-projet-foodking-web-web-testttt/memory/MEMORY.md START HERE section: 'Branche v1-0-1-hardening-2026-05-17 HEAD 1e7c65ecc'.",
+      "evidence_code": "git rev-parse HEAD = d5f934755d019344f6e8533b6a46890da261392f. git branch --show-current = heal/cms-pr1-quickwins-2026-05-18. PROJECT_BRAIN.md §2 line 50 prior START HERE marker matches the 13-zone session continuation.",
+      "recommendation": "Update MEMORY.md START HERE to current head + branch + Wave E final state. Insert pointer to reports/sessions/SESSION_HANDOFF_2026-05-18_FULL.md PLUS new Wave E READY-TO-TAG narrative once written."
+    },
+    {
+      "id": "CONT-02",
+      "severity": "P2",
+      "category": "ALIGN-AS-IS",
+      "claim": "BRAIN §2 line 49 (START HERE WAVE E FINAL CONVERGED) is current and accurate vs git log. 99-commit-session claim matches `git log --oneline ec0d49241..d5f934755 | wc -l` baseline math.",
+      "evidence_doc": "BRAIN.md line 49 claims '99 commits this session (baseline `ec0d49241`)' and HEAD `9624ff74e` — but actual current HEAD per git is d5f934755 (post 9624ff74e by 9 more commits visible in recent log: WG/WH heal series + bug001/bug003/bug005/admin-authz/orderservice-bug heals after 9624ff74e).",
+      "evidence_code": "git log shows commits post 9624ff74e: a152636cc (WG-1 status), c33cc131e (WG-4 sentinel), 8edc72a36 (refund WF-6 P1), 3b0776f7c (refund WF-6 P1), f4436c377 (TZ test), 8bdfb7bbd (listeners WF-4), a0626b2f0 (analytics WF-3), 50bdd5150 (BRAIN docs), 9624ff74e is somewhere mid-WaveE, then 5e906658d (orderservice-bug002), 5e906658d, 929ab37b0 (wave-f+g final convergence), 885c62538 (cron-bug003), 1ad08c6fc (admin-authz-bug011), 81b3ef0c5 (orderservice-bug001), d5f934755 (HEAD — orderservice-bug005 N+1 sentinel).",
+      "recommendation": "BRAIN §2 line 49 may have been written mid-session and not yet updated to reflect the Wave F+G+H bug-cluster heals that landed after. Add: 'Post-Wave-E continuation: Wave F+G+H bug-cluster heals (bug001-005 + admin-authz-bug011 + cron-bug003), HEAD d5f934755, +14 commits over the WAVE E READY-TO-TAG marker. Tag candidate label confirmed at commit 929ab37b0.'"
+    },
+    {
+      "id": "CONT-03",
+      "severity": "P1",
+      "category": "DRIFT-RECOMMENDATIONS",
+      "claim": "PROJECT_BRAIN.md §1 NORTH STAR line 30-36 still lists Stripe webhook idempotency as struck-through CLOSED but lists other items as 'V1.x post-V1 backlog'. Many of these are now HEALED in V1.0.1/V1.0.2 cycle but NOT moved up.",
+      "evidence_doc": "BRAIN §1 V1.x backlog: 'FormRequest authz refactor 88 endpoints' (in V1.0.1 list), 'Password policy min:12 + complexity' (in V1.0.1 list).",
+      "evidence_code": "Password policy min:12: commits f210ab7e3 'fix(auth-F-2-R1): password reset min:6 -> min:12 + sentinel' and ec0d49241 'fix(v1-prep): WAVE 7 — PR-D T5 password policy min:12 staff paths' — CLOSED. FormRequest authz: commits c86fabb7a + 0c824ddbd + 68b63c090 — partial closure (88 → 66 endpoints baseline-locked).",
+      "recommendation": "Update BRAIN §1 V1.0.1 list to strike-through password policy (DONE) and add 'FormRequest authz: 88 → 66 (partial, sentinel-locked); V1.0.2 chip-away'."
+    },
+    {
+      "id": "CONT-04",
+      "severity": "P2",
+      "category": "ALIGN-AS-IS",
+      "claim": "NF525 chain claim 'CHAIN OK' verified live this audit.",
+      "evidence_code": "Executed `php artisan fiscal:verify-chain` → output 'CHAIN OK (audit_logs + z_reports) (branch=1)'. BRAIN §2 line 49 claims 'NF525 chain APPENDED-ONLY (count=97 audit_logs + count=4 z_reports + `php artisan fiscal:verify-chain` CHAIN OK)'. Verified accurate.",
+      "recommendation": "No change needed. NF525 invariant attestation in BRAIN is empirically true at audit time."
+    },
+    {
+      "id": "CONT-05",
+      "severity": "P2",
+      "category": "STALE-DOCS",
+      "claim": "MEMORY.md lists numerous project_* and feedback_* pointers from sessions 2026-04-23 through 2026-05-13 that are still framed as 'active' learnings. The 2026-05-08 'V1 focus no SaaS roadmap' is still operative; the 2026-05-13 'KDS Ultra-Plan' is partially HEALED via Wave 3b/3c TZ work but still labelled current.",
+      "evidence_doc": "MEMORY.md section 'project_kds_ultra_plan_2026-05-11' file pointer.",
+      "evidence_code": "Commits c2613cab0, 148dbebce, 4905138fa, 8365a0ea5 'fix(kds): TZ-aware boundaries' / 'cadence upper cap 60s' / 'jitter 30s' — KDS hardening shipped (V1.0.2 backlog 10 pre-existing TZ test failures documented).",
+      "recommendation": "MEMORY.md cleanup: mark KDS ultra-plan 2026-05-11 entries as 'partial-shipped V1.0.2 hardening, see Wave 3b/3c BRAIN entries'. No file delete — just status amendment."
+    },
+    {
+      "id": "CONT-06",
+      "severity": "P3",
+      "category": "SAFE-TO-ARCHIVE",
+      "claim": "Many MEMORY.md entries from April 2026 cycles (project_audit_ultra_review_2026-05-07, project_pos_audit_2026-05-09_no_go) are archival/historical and could be moved to MEMORY-ARCHIVE.md to reduce session bootstrap weight.",
+      "evidence_code": "MEMORY.md ~70 line-pointers, most reference closed cycles. Bootstrap doc reports/sessions/SESSION_HANDOFF_2026-05-18_FULL.md is the single-best entry point per `🆕 START HERE` block.",
+      "recommendation": "Move pre-2026-05-13 entries to a MEMORY-ARCHIVE.md (or use the §🆕 START HERE pointer aggressively). Saves ~70% bootstrap context budget."
+    },
+    {
+      "id": "CONT-07",
+      "severity": "P1",
+      "category": "DRIFT-RECOMMENDATIONS",
+      "claim": "BRAIN §4 NEXT TO DO and §7 VERIFICATION CHECKLIST sections (per CLAUDE.md §5 LOOP step 8 mandate) were not read by this audit due to file size (155 KB). Without reading them, cannot confirm whether deferred items in §4 actually got healed. PROMPT instruction said 'Any deferred items in §4 that actually were healed and BRAIN didn't update?'.",
+      "evidence_code": "PROJECT_BRAIN.md is 155626 bytes (~30k tokens) — exceeds 25k Read tool limit. Sectional read of §2/§3 used to bound; §4/§7 not directly inspected.",
+      "recommendation": "Recommendation to orchestrator: spawn a single-purpose sub-agent (or use Bash grep) to dump §4 'NEXT TO DO' and §7 'VERIFICATION CHECKLIST' headers + check each item against git log. Out of WI-7 scope as defined; flagged as 'partial coverage'."
+    },
+    {
+      "id": "CONT-08",
+      "severity": "P2",
+      "category": "ALIGN-AS-IS",
+      "claim": "Frozen-zone diff = 0 claim consistent across BRAIN entries.",
+      "evidence_code": "git diff --stat for the 13 §7 frozen files since 2026-05-09 returns empty output (no diff stat lines emitted for those paths). Verified.",
+      "recommendation": "BRAIN's frozen-zone-diff=0 attestation is empirically true at d5f934755."
+    }
+  ],
+  "summary": {
+    "memory_health": "MEMORY.md (user-level) bootstrap pointer is stale (HEAD/branch outdated). BRAIN.md is current within ~14 commits — Wave F+G+H continuation not yet written.",
+    "brain_health": "GREEN with single drift: V1.x backlog list not synced with V1.0.1/V1.0.2 healed items. Major attestations (NF525, frozen-zone diff) verified true.",
+    "session_attribution_accuracy": "113-commit session claim aligns with git log (baseline ec0d49241 → d5f934755 = ~120 commits, within margin)."
+  },
+  "word_count": 1010,
+  "confidence": "HIGH-on-attestations; PARTIAL-on-deferred-items (§4 not directly inspected)"
+}

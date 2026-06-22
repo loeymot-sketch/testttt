@@ -8,7 +8,7 @@
       "id": "app-id",
       "key": "app-key",
       "secret": "app-secret",
-      "maxConnections": 100,
+      "maxConnections": 500,
       "enableClientMessages": false,
       "enabled": true,
       "webhooks": []

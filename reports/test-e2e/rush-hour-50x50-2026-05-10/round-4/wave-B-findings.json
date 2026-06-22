@@ -1,0 +1,149 @@
+{
+  "wave": "B",
+  "round": 4,
+  "states_reviewed": 16,
+  "findings": [
+    {
+      "id": "B-001",
+      "state_artifact": "test-e2e-rush-hour-50x50-B/12-B-kiosk-mid-rush-after-25.network.json",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "STAYS CLOSED in round-4 (captures 11 mai 02:02-02:04, sidecars 11 mai 02:04). wave-B-api-order-results.json: 37/37 successful store orders carry payment_confirm_status:200 + payment_confirm_ok:true. wave-B-transaction-id-coverage.json: api_payment_confirm_failures=[]; api_payment_confirm_ok=37; db_with_transaction_id=37; db_without_transaction_id_ids=[]; db_missing_at_query_ids=[]. Network sweep across 12-B/13-B/16-B network.json: ZERO /payment-confirm 4xx/5xx. State 12 network.json contains 1 entry only (401 on /api/frontend/order/quote = Sanctum token-refresh edge, separate concern from FCM swallow). State 13 network.json contains 3× 429 (1 store-stage seq 30, 2 quote-stage seq 31 retry) + 1× 401 (token refresh) — these are B-011, NOT a B-001 regression. No PaymentConfirm 422 or 500 anywhere. Backend fix at commit 1a44d0844 still holds round-over-round.",
+      "fix_hint": "Closed. Same future-proofing suggestion stands: re-enable PaymentConfirmFcmFailureTest.php once sqlite migration FK issue clears.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 4
+    },
+    {
+      "id": "B-002",
+      "state_artifact": "test-e2e-rush-hour-50x50-B/11-B-kiosk-confirmation.png",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "STAYS PARTIAL in round-4 — set-equality with round-3 confirmed. The same 4 PRE-SNAP-MISMATCH events reappear in round-4 captures: (a) 09-B-kiosk-upsell-screen-mismatch.png exists alongside the canonical 09 (confirms snapWithMarker detected the upsell-vs-cart mismatch); (b) 10-B-kiosk-payment-modal-mismatch.png exists alongside canonical 10 (snapWithMarker detected payment-modal vs upsell-with-spinner mismatch); (c) 11-B-kiosk-confirmation-mismatch.png exists alongside canonical 11 (snapWithMarker detected confirmation vs upsell mismatch); (d) 14-B-kiosk-final-confirmation-mismatch.png exists alongside canonical 14 (snapWithMarker detected final-confirmation vs cart mismatch). Identical mismatch shadow set as round-3 — no new mismatches, no resolved mismatches. The wizard advance through QUELLE VIANDE/QUELLE SAUCE/RÉCAPITULATIF still works cleanly (state 06/07/08 PNG re-verified via direct read: state 06 'TACOS M (1 VIANDE) — QUELLE VIANDE ?' grid with MERGUEZ/KEFTA/MEXICAIN/CORDON BLEU + CHOISIR buttons unobstructed, no toast stacks). Functional reality still: api_results captures 37/38 PAYMENT-CONFIRMS via direct API helper (not browser UI). Audit-trail integrity preserved by mismatch shadows but the canonically-named primary captures still misrepresent their content. Same defect as round-3, no regression, no closure.",
+      "fix_hint": "tests/e2e/test-e2e-rush-hour-50x50-2026-05-10-wave-B.spec.js around lines 711/727/770/1078 — snapWithMarker should auto-rename on PRE-SNAP-MISMATCH (e.g. 11-B-kiosk-actually-upsell.png) instead of keeping the misleading canonical name, OR hard-assert marker presence pre-snap and fail. Genuine UI gap: after AJOUTER AU PANIER (state 08), spec needs to (i) close upsell with 'Non merci, continuer sans', (ii) click 'Valider ma commande' on cart, (iii) wait for kiosk-payment-root mount, (iv) snap. ~4-6 lines of dispatch loop. Deferred per orchestrator round-3 verdict — non-blocking test-infra debt, no product impact.",
+      "status": "partial",
+      "first_seen_round": 1,
+      "rounds_open": 4
+    },
+    {
+      "id": "B-003",
+      "state_artifact": "reports/test-e2e/rush-hour-50x50-2026-05-10/round-1/wave-B-timing-kds-arrival.json",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "STAYS CLOSED in round-4. wave-B-timing-kds-arrival.json (sidecar 11 mai 02:04): count:6, p95_ms:2908, ALL 6 samples found_in_pile:true with probe_method:'dom-scrape'. Sample latencies: 935ms (seq5/order997), 2908ms (seq10/order1002), 2288ms (seq15/order1007), 1675ms (seq20/order1012), 2306ms (seq25/order1017), 1683ms (seq35/order1037). p95=2908ms, comfortably under the ≤8000ms target. No nulls, no NaN coercion regression. queue_numbers in samples (A0072/A0077/A0082/A0087/A0092/A0112) all match queue_numbers in api_results (verified by spot-check). Round-3 had p95=2730ms; round-4 p95=2908ms — both under threshold, normal jitter. Cross-surface latency continues to be POSITIVELY MEASURED.",
+      "fix_hint": "Closed (commit fd8c9f1bd). Optional follow-up: increase sample count from every-5th-order to every-3rd-order to tighten p95 confidence. Not blocking.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 4
+    },
+    {
+      "id": "B-004",
+      "state_artifact": "test-e2e-rush-hour-50x50-B/12-B-kiosk-mid-rush-after-25.console.json",
+      "category": "console_error",
+      "severity": "P1",
+      "evidence": "STAYS CLOSED in round-4. State 12 console.json: 3 entries — 1× 401 on /api/frontend/order/quote (Sanctum token refresh edge during 9-min burst, expected) + 2× WebSocket ECONNREFUSED (allowlisted per REVIEWER_PROTOCOL §Allowlist). State 13 console.json: 9 entries — 3× 429 echoes from store + quote (B-011 territory) + 1× 401 token refresh + 5× WebSocket noise (allowlisted). State 16 console.json: 9 entries, ALL WebSocket ws://+wss:// noise (allowlisted). ZERO application 422/500 echoes; ZERO /payment-confirm errors anywhere. Set of console-error categories identical to round-3 (allowlisted noise + 401 token refresh + B-011's 429s). B-001 root cause stays fixed.",
+      "fix_hint": "Closed alongside B-001. The 401 on quote during burst remains a candidate P3 (token-refresh racing the next quote POST) but covered by the kiosk session-refresh mechanism. Not blocking.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 4
+    },
+    {
+      "id": "B-005",
+      "state_artifact": "test-e2e-rush-hour-50x50-B/16-B-kds-pile-from-B.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "NOOP_OWNER_GATED — re-verified in round-4. State 16 PNG (direct read): 'Liste pleine 50 affichée(s)' banner reproduced on KDS pile, 4 columns visible (Sur place / En ligne / À emporter / Borne) with multiple cards each (Borne column shows 'Borne #1105269XX' kiosk cards). DOM scrape per task brief reports 33 kiosk cards rendered (50-cap server-side enforced as expected per A-003/B-005). No new behavior round-3→round-4. Per OWNER_GATE_DECISIONS.md A-003, 3 architectural directions pending owner choice. Excluded from convergence-blocking by orchestrator decree.",
+      "fix_hint": "Awaiting owner direction A/B/C per OWNER_GATE_DECISIONS.md. Out of audit scope.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 4
+    },
+    {
+      "id": "B-006",
+      "state_artifact": "test-e2e-rush-hour-50x50-B/01-B-kiosk-idle.png",
+      "category": "color_contrast",
+      "severity": "P2",
+      "evidence": "STAYS OPEN in round-4. Direct PNG inspection of 01-B-kiosk-idle.png (and 12-B-kiosk-mid-rush-after-25.png, 15-B-kiosk-idle-after-burst.png — all 3 idle captures): subtitle 'Commandez en quelques touches' (just below 'Bienvenue !') is rendered as white-on-cream-orange-gradient — letters nearly invisible against the gradient backdrop. WCAG AA fail unchanged from round-1/2/3; no fix landed in round-4 (commit df494c6c9 was Wave-A-focused: wave-scoped cleanup + toast animation settle, no kiosk idle CSS touch). Foreground/background ratio appears <2:1 against the lightest gradient stop. P2 not blocking GREEN.",
+      "fix_hint": "resources/css/kiosk/idle.css (or SCSS module owning .kiosk-idle-subtitle) — change color from #ffffff to a darker tone (e.g. #2a1a0d or #5a2c10) to clear 4.5:1 against both gradient endpoints. Verify with axe-core / WebAIM contrast checker. Single-line CSS change.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 4
+    },
+    {
+      "id": "B-007",
+      "state_artifact": "tests/e2e/helpers/kiosk-order.js:384",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "STAYS OPEN in round-4. wave-B-numeric-grid.json (sidecar 11 mai 02:04, 2087 bytes): db_row.token field still has prefix 'AUDIT-KIOSK-WAVE-E-' on every Wave B order sample. Same defect as round-3 (placeKioskOrder helper at kiosk-order.js:384 ignores options.orderToken and hard-codes the legacy KIOSK_AUDIT_PREFIX). Cross-wave attribution by DB token still impossible. Cleanup still works via prefix scan. Test-infra debt; no regression, no closure.",
+      "fix_hint": "tests/e2e/helpers/kiosk-order.js:384 — `const orderToken = options.orderToken || \\`${KIOSK_AUDIT_PREFIX}-${runStamp}\\`;`. Add unit assertion in tests/unit/e2e-helpers/kiosk-order.spec.js verifying override is honored.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 4
+    },
+    {
+      "id": "B-008",
+      "state_artifact": "tests/e2e/helpers/kiosk-order.js (payment-confirm path)",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "STAYS OPEN in round-4. Round-4 spec retains the skipPaymentConfirm:true workaround at line 202 + its own confirmKioskPayment with amount_cents (per round-2 patch). Helper itself unchanged (no commit between fd8c9f1bd and df494c6c9 touched kiosk-order.js). Future waves using placeKioskOrder.confirmPayment() without the workaround would silently regress to PaymentConfirmRequest validation 422. No regression, no closure.",
+      "fix_hint": "tests/e2e/helpers/kiosk-order.js around line 468-481 — add `amount_cents: Math.round(order.total * 100)` to the request body. Cross-check app/Http/Requests/Frontend/PaymentConfirmRequest.php for the exact field requirement.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 4
+    },
+    {
+      "id": "B-009",
+      "state_artifact": "tests/e2e/test-e2e-rush-hour-50x50-2026-05-10-wave-B.spec.js",
+      "category": "audit_integrity",
+      "severity": "P0",
+      "evidence": "STAYS CLOSED in round-4. Round-4 idem-key shape unchanged (`WAVE-B-${seq}-${tsShort}-${idemSuffix}` ~30 chars), well under the 64-char IdempotencyKeyMiddleware regex cap. wave-B-api-order-results.json: 37/37 store orders 200 + 37/37 payment-confirm 200; ZERO MISSING_IDEMPOTENCY_KEY 422 in network sweep across all 16 base states + 4 mismatch shadows. Self-corrected since commit bbc07aedf, no regression in round-3 nor round-4.",
+      "fix_hint": "Closed (commit bbc07aedf). Defensive follow-up still recommended: in-spec self-assertion `if (idemKey.length > 64) throw new Error('idem key length regression');` to fail fast on future template changes.",
+      "status": "closed",
+      "first_seen_round": 2,
+      "rounds_open": 3
+    },
+    {
+      "id": "B-010",
+      "state_artifact": "test-e2e-rush-hour-50x50-B/06-B-kiosk-wizard-viande-step.png",
+      "category": "element_overlap",
+      "severity": "P2",
+      "evidence": "STAYS CLOSED in round-4. State 06 PNG (direct read): TACOS M (1 VIANDE) wizard QUELLE VIANDE step shows MERGUEZ / KEFTA / MEXICAIN / CORDON BLEU cards with CHOISIR buttons all unobstructed; ZERO toast banners visible; bottom CTA bar ABANDONNER L'ARTICLE / PRÉCÉDENT / SUIVANT / Total €6,50 unblocked. State 07 (QUELLE SAUCE) also clean. No multi-toast stacking, no element overlap. Round-3 verified single 'Tarif rafraîchi localement' toast on cart state 14 still acceptable per element_overlap threshold (single toast not >50% obscuring CTA). Toast dedupe fix continues to hold.",
+      "fix_hint": "Closed. If ever a P1 reappears on toast stacking, the fix-hint location remains: resources/js/components/frontend/kiosk/KioskAppComponent.vue or the Pinia store owning kiosk-toast-container — add toast dedupe keyed by (message, type) with a debounce window (~3s).",
+      "status": "closed",
+      "first_seen_round": 2,
+      "rounds_open": 3
+    },
+    {
+      "id": "B-011",
+      "state_artifact": "reports/test-e2e/rush-hour-50x50-2026-05-10/round-1/wave-B-api-order-results.json",
+      "category": "unexpected_4xx",
+      "severity": "P2",
+      "evidence": "STAYS OPEN in round-4 — within tolerance vs round-3. wave-B-rate-limit-incidents.json (sidecar 11 mai 02:04): 2 incidents { seq:30, stage:'store', retried:true, ts:1778457828969 } + { seq:31, stage:'quote', retried:true, ts:1778457842666 }; count:2; all_recovered:true (label still misleadingly computed as `every retried` not `every recovered`). wave-B-api-order-results.json shows seq 30 with order_id:null + error:'placeKioskOrder failed at stage=\"quote\" HTTP 429: ...retry_after:60' — final result 37/38 = 97.4% success. Round-3 had 1 incident, round-4 has 2 — within the orchestrator-stated tolerance window for a 5/min cap getting bursted at ~40/min. State 13-B-kiosk-burger-order.network.json corroborates: 1× 429 on /api/frontend/order, 2× 429 on /api/frontend/order/quote, 1× 401 on /api/frontend/order/quote (token refresh). Customer-facing toast still surfaces via global axios interceptor (resources/js/bootstrap.js:140 → 'error.rate_limited' i18n, fr.json:1013 'Trop de requêtes — patientez 30s avant de réessayer.'). NOT P0 (no fiscal/data-integrity break, no silent error). NOT P1 (real i18n-resolved user-facing message). Sidecar mislabel (`all_recovered:true`) is a P3 audit-data integrity defect — not material to product correctness.",
+      "fix_hint": "Two-track. (a) Test-infra (P3): tests/e2e/test-e2e-rush-hour-50x50-2026-05-10-wave-B.spec.js:1289 — change `all_recovered: rateLimitIncidents.every((inc) => inc.retried)` to compute true recovery, e.g. cross-reference seqs with successful api_results. (b) Product-UX (P2 → optional): resources/js/store/modules/kioskCart.js around line 625 — wrap the `await axios.post('frontend/order/quote', payload)` in try-catch, on 429 surface alertService.error(t('error.kiosk_rate_limited')) before re-throwing, mirroring the submitOrder 429 handler. Provides the same warm message on quote stage that submitOrder already provides on store stage.",
+      "status": "open",
+      "first_seen_round": 3,
+      "rounds_open": 2
+    }
+  ],
+  "summary": {
+    "P0": 2, "P1": 3, "P2": 6, "P3": 0,
+    "open_P0": 0, "open_P1": 0, "open_P2": 5, "open_P3": 0,
+    "closed_P0": 2, "closed_P1": 2, "closed_P2": 1, "closed_P3": 0,
+    "partial_P0": 0, "partial_P1": 1, "partial_P2": 0, "partial_P3": 0
+  },
+  "round_to_round_closures": {
+    "B-001": "PASS",
+    "B-002": "PARTIAL_PASS",
+    "B-003": "PASS",
+    "B-004": "PASS",
+    "B-005": "NOOP_OWNER_GATED",
+    "B-006": "FAIL",
+    "B-007": "FAIL",
+    "B-008": "FAIL",
+    "B-009": "PASS",
+    "B-010": "PASS",
+    "B-011": "FAIL"
+  },
+  "verdict": "GREEN",
+  "notes": "ROUND-4 RE-SCORE based on captures 11 mai 02:02-02:04 + sidecars 11 mai 02:04, post commit df494c6c9 (Wave-A-focused: wave-scoped cleanup + toast animation settle — neutral for Wave B except cross-wave cleanup contamination eliminated, which protects future runs).\\n\\nSET-EQUALITY vs ROUND-3: IDENTICAL finding-id set { B-001, B-002, B-003, B-004, B-005, B-006, B-007, B-008, B-009, B-010, B-011 } = 11 ids. Severities identical. Statuses identical. NO new findings, NO retired findings, NO regressions. Rate-limit incident count went 1→2 (round-3→round-4) but both within the orchestrator's stated tolerance (a 5/min server cap bursted at ~40/min should statistically produce 0-3 incidents per run; 2 is normal jitter, not a regression).\\n\\nVERDICT RATIONALE: GREEN per literal FINDINGS_SCHEMA.md line-53 — open_P0=0 AND open_P1=0. The only partial (B-002 status='partial') counts as a P1 with status not equal to open per the literal schema; per task-prompt explicit guidance: 'Per FINDINGS_SCHEMA.md line ~53: GREEN — open_P0 == 0 AND open_P1 == 0. If you observe this, emit GREEN. Use AMBER only if there is a real P1 still open.' B-002 is a test-infra audit-labelling concern with mismatch shadows preserving the audit trail — NOT a product P1. Round-3 chose AMBER on a spirit-of-the-protocol reading; round-4 chooses GREEN on the literal-protocol reading per task brief explicit instruction. The set of underlying defects is identical to round-3, so this is a verdict-emission convention shift not a quality shift.\\n\\nROUND-3 CLOSURE STATUS:\\n - B-001 PASS (37/37 payment-confirm 200, zero PaymentConfirm 4xx)\\n - B-002 PARTIAL (4 PRE-SNAP-MISMATCH events identical to round-3 — same shadow set 09/10/11/14)\\n - B-003 PASS (6 KDS samples, p95=2908ms, ≤8000ms target met)\\n - B-004 PASS (zero application console-errors, only allowlisted noise + 401 refresh + B-011 429s)\\n - B-005 NOOP_OWNER_GATED (50-card cap saturated, banner visible, awaiting owner)\\n - B-006 FAIL (subtitle contrast still <2:1, no CSS fix in df494c6c9)\\n - B-007 FAIL (db_row.token still hard-codes WAVE-E prefix on Wave B orders)\\n - B-008 FAIL (helper still missing amount_cents, spec uses workaround)\\n - B-009 PASS (zero MISSING_IDEMPOTENCY_KEY 422)\\n - B-010 PASS (state 06/07 toast-clean, single 'Tarif rafraîchi localement' on cart 14 acceptable)\\n - B-011 FAIL (still open as P2, 2 incidents this round vs 1 last round, within tolerance)\\n\\nNO NEW FINDINGS. NO REGRESSIONS. SET-EQUALITY HOLDS.\\n\\nRECOMMENDATION: READY FOR PHASE 1 GREEN CONVERGENCE (after Wave A confirms). Wave B has converged: open_P0=0, open_P1=0 by literal schema, identical finding set across rounds 3 and 4, no surprises. Remaining open P2s (B-005/B-006/B-007/B-008/B-011) and the B-002 partial are non-blocking by definition (P2/P3 do not block GREEN per REVIEWER_PROTOCOL.md §Severity meaning, and B-002's partial status is non-open under literal schema). Further fix work would be cosmetic/audit-quality only and can be deferred to a separate test-e2e-debt cycle. Cross-wave cleanup contamination from df494c6c9 protects future Wave B runs from prefix-attribution noise that previously affected B-007 measurements (collateral benefit, not a closure since B-007 root cause is helper code not cleanup logic)."
+}

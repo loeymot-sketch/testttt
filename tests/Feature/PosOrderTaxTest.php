@@ -17,10 +17,15 @@ use App\Enums\PosPaymentMethod;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
+use Tests\Feature\Concerns\HasPosQuoteBinding;
+use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
 
 class PosOrderTaxTest extends TestCase
 {
     use RefreshDatabase;
+    use HasPosQuoteBinding;
+    use SeedsOpenCashDrawerSession;
 
     protected function setUp(): void
     {
@@ -66,24 +71,29 @@ class PosOrderTaxTest extends TestCase
         // Créer un admin
         $admin = \Database\Factories\UserFactory::new()->create(['branch_id' => $branch->id]);
         $admin->assignRole('Admin');
+        // [Sprint H6 TEST-DEBT-001 2026-05-17] Sprint 1B requires an OPEN cash session for CASH.
+        $this->seedOpenSessionFor($admin, $branch);
 
         // Passer une commande POS
+        $payload = [
+            'customer_id' => $admin->id,
+            'branch_id' => $branch->id,
+            'subtotal' => 10.00,
+            'total' => 11.00,
+            'order_type' => OrderType::TAKEAWAY,
+            'is_advance_order' => 0,
+            'source' => Source::POS,
+            'pos_payment_method' => PosPaymentMethod::CASH,
+            'pos_received_amount' => 11.00,
+            'items' => json_encode([
+                ['item_id' => $item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => []]
+            ]),
+        ];
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
-            ->postJson('/api/admin/pos', [
-                'customer_id' => $admin->id,
-                'branch_id' => $branch->id,
-                'subtotal' => 10.00,
-                'total' => 11.00,
-                'order_type' => OrderType::TAKEAWAY,
-                'is_advance_order' => 0,
-                'source' => Source::POS,
-                'pos_payment_method' => PosPaymentMethod::CASH,
-                'pos_received_amount' => 11.00,
-                'items' => json_encode([
-                    ['item_id' => $item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => []]
-                ]),
-            ]);
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($admin, $payload));
 
         $response->assertStatus(201);
         $data = $response->json();
@@ -134,32 +144,41 @@ class PosOrderTaxTest extends TestCase
         // Créer un admin pour créer la commande
         $admin = \Database\Factories\UserFactory::new()->create(['branch_id' => $branch->id]);
         $admin->assignRole('Admin');
+        // [Sprint H6 TEST-DEBT-001 2026-05-17] Sprint 1B requires an OPEN cash session for CASH.
+        $this->seedOpenSessionFor($admin, $branch);
 
         // Créer une commande POS
+        $payload = [
+            'customer_id' => $admin->id,
+            'branch_id' => $branch->id,
+            'subtotal' => 10.00,
+            'total' => 11.00,
+            'order_type' => OrderType::TAKEAWAY,
+            'is_advance_order' => 0,
+            'source' => Source::POS,
+            'pos_payment_method' => PosPaymentMethod::CASH,
+            'pos_received_amount' => 11.00,
+            'items' => json_encode([
+                ['item_id' => $item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => []]
+            ]),
+        ];
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
-            ->postJson('/api/admin/pos', [
-                'customer_id' => $admin->id,
-                'branch_id' => $branch->id,
-                'subtotal' => 10.00,
-                'total' => 11.00,
-                'order_type' => OrderType::TAKEAWAY,
-                'is_advance_order' => 0,
-                'source' => Source::POS,
-                'pos_payment_method' => PosPaymentMethod::CASH,
-                'pos_received_amount' => 11.00,
-                'items' => json_encode([
-                    ['item_id' => $item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => []]
-                ]),
-            ]);
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($admin, $payload));
         $response->assertStatus(201);
         $orderId = $response->json('data.id');
 
         // Maintenant tester avec un utilisateur sans rôle
         $user = \Database\Factories\UserFactory::new()->create(['branch_id' => $branch->id]);
 
+        // [prod-finale 2026-06-17] change-payment-status/* is idempotency-guarded (frozen middleware runs
+        // BEFORE the controller authz); the 403 is raised inside the controller, so the header is required
+        // to reach it — without it the request 422s on the missing key and masks the 403 under test.
         $response2 = $this->actingAs($user)
             ->withHeader('x-api-key', $this->apiKey())
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos-order/change-payment-status/{$orderId}", [
                 'payment_status' => PaymentStatus::UNPAID,
             ]);

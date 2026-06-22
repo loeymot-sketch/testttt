@@ -1,0 +1,106 @@
+{
+  "specialist": "Architect",
+  "zone": "Admin Dashboard (15.1-15.7)",
+  "wave": "B-Admin",
+  "round": 1,
+  "date": "2026-05-18",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "scope_inventory": {
+    "controllers_total": 87,
+    "controllers_extending_AdminController": 90,
+    "controllers_with_permission_middleware": 71,
+    "controllers_without_permission_middleware": 16,
+    "services_total": 111,
+    "form_requests": 96,
+    "feature_tests_admin": 11,
+    "test_to_controller_ratio_pct": 12.6,
+    "vue_subdirs_admin": 30,
+    "routes_lines": 1373,
+    "permission_refs_in_api_php": 4
+  },
+  "sub_systems": {
+    "15.1_catalog": {
+      "primary_controllers": ["ItemController", "ItemCategoryController", "ItemAttributeController", "ItemVariationController", "ItemExtraController", "ItemAddonController", "ItemPhotoController", "IngredientController", "ComposerProfileController", "ComposerStepController", "MenuController", "MenuSectionController", "MenuTemplateController"],
+      "service_layer": "ItemService (686 LOC), Catalog/CatalogWarningService, Ingredients/*, Menu/PosMenuProjection",
+      "vue_complexity": "items/ tree = 12 root files + composer/ + wizard/ + variation/ + addon/ + extra/, total ~3981 LOC for items only",
+      "verdict": "Layered properly (Controller → Service → Resource). ItemController correctly uses `AdminController::authorizeBranchScope()` for branch_id param. CatalogStudioComponent.vue is well-instrumented with aria-labels. Composer module has its own route-group gating (`permission:catalog.compose`, `permission:catalog.publish`)."
+    },
+    "15.2_stock": {
+      "primary_controllers": ["StockRuptureDashboardController", "AvailabilityController"],
+      "service_layer": "StockRuptureScanService, AvailabilityService",
+      "verdict": "Smallest sub-system, cleanest layering. Both routes gated by permission middleware (controller-level + route-level). Z-3 i18n heal landed."
+    },
+    "15.3_reports": {
+      "primary_controllers": ["DashboardController", "SalesReportController", "ItemsReportController", "CreditBalanceReportController", "TransactionController", "AnalyticController", "AnalyticSectionController"],
+      "service_layer": "DashboardService (492 LOC — DIRTY, deferred), OrderService.salesReportOverview, AnalyticService",
+      "verdict": "DashboardService session-A WIP (deferred). DashboardController is thin and well-gated (`permission:dashboard` on all 15 endpoints). SalesReportController is gated `permission:sales-report`. Reports/Analytics inherit from same OrderService used by POS — single-source-of-truth ordering. Wave 3c TZ-aware boundary heal (commit 148dbebce) visible in DashboardService L72-82, L362, L425."
+    },
+    "15.4_settings": {
+      "primary_controllers": ["CompanyController", "SiteController", "OrderSetupController", "KioskSetupController", "LoyaltySetupController", "MailController", "CurrencyController", "TaxController", "BranchController", "PaymentGatewayController", "PaymentTerminalController", "PrinterController", "SmsGatewayController", "LanguageController", "TimeSlotController", "TimezoneController", "ThemeController", "SliderController"],
+      "verdict": "Massive surface (~20 controllers under /admin/setting/*). Each individually gated `permission:settings` at controller level. Route-group inheritance via `throttle:admin-mutation`. KioskSetupController has GAP-19-2 heal documented — both `index` and `update` gated."
+    },
+    "15.5_users_permissions": {
+      "primary_controllers": ["AdministratorController", "RoleController", "PermissionController", "EmployeeController", "ChefController", "WaiterController", "DeliveryBoyController", "CustomerController", "SimpleUserController"],
+      "verdict": "Spatie RBAC matrix model. AdministratorController gates 5 distinct verbs (administrators_*). PermissionController M-R3-P0-A heal landed (commit visible in inline comment L27-33). RoleController index gated `permission:settings|employees` (alternation OK). AdministratorRequest M-R3-P0-E heal blocks non-superadmin from minting branch_id=0 admin (L83-91)."
+    },
+    "15.6_coupons_promos": {
+      "primary_controllers": ["CouponController", "OfferController", "OfferItemController", "LoyaltySetupController"],
+      "verdict": "CouponController is exemplary — 5 verbs, 5 distinct permissions (`coupons`, `coupons_create`, `coupons_edit`, `coupons_delete`, `coupons_show`) + CouponChanged event dispatch via `dispatchCouponChanged()` private helper for create/update/delete/toggle. Branch-scope-aware via Coupon model `branch_scope` cast. OfferController identical pattern."
+    },
+    "15.7_daily_ops": {
+      "primary_controllers": ["PosOrderController (Pos namespace)", "TableOrderController", "DiningTableController", "OnlineOrderController", "MyOrderDetailsController", "OrderStatusScreenController", "KitchenDisplaySystemController", "KdsSyncController", "DeliveryBoyOrderController", "DeliveryBoyCashSessionController"],
+      "verdict": "Mixed quality. MyOrderDetailsController has NO permission middleware (see Security/RED findings). TableOrderController gated `permission:table-orders`. KdsSyncController has its own test (KdsSyncControllerTest). DeliveryBoyCashSessionController exemplary (read vs mutation split via _show suffix). OnlineOrderController not yet reviewed but has tests."
+    }
+  },
+  "cross_cutting_findings": {
+    "AC-1_inheritance_pattern_consistent": {
+      "severity": "info",
+      "title": "AdminController base class universally extended",
+      "evidence": "All 90 controllers under app/Http/Controllers/Admin/ extend `AdminController` (count via grep). Base class exposes `authorizeBranchScope()` and `authorizeWritableBranchScope()` helpers. Pattern is consistent.",
+      "verdict": "OK — but `authorizeBranchScope` is only invoked in 20 controllers (grep -rln). 70 controllers extend the base but never call the helpers, relying on global BranchScope on models instead."
+    },
+    "AC-2_service_layer_separation_OK": {
+      "severity": "info",
+      "title": "Service layer separation respected",
+      "evidence": "Controllers delegate to *Service classes (ItemService, OrderService, DashboardService, CouponService, etc.). Controllers contain `try/catch + Resource wrapping` only. Business logic in services.",
+      "verdict": "Clean. No fat controllers. DashboardController = 186 LOC of pure delegation."
+    },
+    "AC-3_test_coverage_ratio_critical": {
+      "severity": "important",
+      "title": "Admin feature tests cover 12.6% of controllers",
+      "evidence": "tests/Feature/Admin/ = 11 files (counting POS subdir as 1). 87 PHP controllers. Tests target: Availability, DeliveryBoyCashSession, EmployeeRequestAuthorize, IngredientControllerAuthz, ItemRequestBarcodeKdsStation, KdsSyncController, PaymentTerminalController, PermissionControllerIndexAuthz, StockRuptureDashboard×2, POS subdir.",
+      "verdict": "Heavyweight surface (catalog, settings, reports, RBAC) is under-tested. Most heal commits don't ship regression sentinels for admin paths. V1.0.2 P1."
+    },
+    "AC-4_source_enum_kiosk_conflated_with_app": {
+      "severity": "important",
+      "title": "Source enum has no KIOSK constant — KIOSK orders bucket into APP=10",
+      "evidence": "app/Enums/Source.php declares WEB=5, APP=10, POS=15. DashboardService::channelStatistics() L442 comment: `$app = ...; // Utilisé pour le kiosk`. Channel breakdown chart labels: ['Web','Kiosk/App','POS'] — admits the conflation.",
+      "verdict": "Architecture leak between metrics layer and source taxonomy. KIOSK orders cannot be reported distinctly from mobile-app orders. Likely a deliberate V1 simplification (single Le Cayenne resto, no mobile app yet), but documentation-grade gap. V1.0.2 to add KIOSK=20."
+    },
+    "AC-5_vue_admin_dashboard_widget_count": {
+      "severity": "info",
+      "title": "Admin dashboard composed of 15 Vue widgets",
+      "evidence": "resources/js/components/admin/dashboard/ = 15 files (AuditTrailComponent, ChannelStatsComponent, OverviewComponent, RealtimeReportComponent, SlaAlertsComponent, StockLowAlertsWidget, LastZReportWidget, etc.). Each maps 1:1 to a DashboardController endpoint.",
+      "verdict": "Healthy split. No god-components."
+    },
+    "AC-6_dashboardservice_dirty_session_A_deferred": {
+      "severity": "blocked",
+      "title": "DashboardService.php is session-A in-flight — read-only observe per mandate",
+      "evidence": "File is in git status as `app/Services/DashboardService.php M` per master prompt. NOT scoring its internals; only observed call-sites (DashboardController = sole consumer + ActionLog model touches it).",
+      "verdict": "Defer grading until session-A commits. Surface call-site pattern: DashboardController + ActionLog (audit). No other consumers."
+    }
+  },
+  "recommendations": {
+    "must": [],
+    "should": [
+      "Document Source::KIOSK gap in BRAIN or backlog as V1.0.2",
+      "Increase test/Admin coverage ratio target 30% before V1.1 — add sentinels for ItemController, CouponController, SalesReportController, BranchController",
+      "Add a `MenuTemplateRequest` FormRequest + permission gate on MenuTemplateController (currently controller has no middleware; route doesn't gate)"
+    ],
+    "could": [
+      "Consolidate the 70 controllers that don't call authorizeBranchScope into a documented pattern (either always call it or never)",
+      "Add `scope=\"col\"` to admin table `<th>` for WCAG AA strict (current is AA-acceptable since `<thead>` semantically scopes columns)"
+    ]
+  },
+  "verdict": "STRUCTURALLY SOUND. Controller/service layering is consistent. 71/87 (82%) admin controllers have permission gates. Test coverage is the weakest dimension at 12.6%. DashboardService deferred per dirty mandate."
+}

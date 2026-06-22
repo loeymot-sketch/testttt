@@ -1,0 +1,405 @@
+{
+  "summary": "Read-only decomposition of the caisse+borne encaissement (cash/card/TR) + DB/management + cloud-readiness, to ground the pre-cloud ultraplan + go/no-go",
+  "agentCount": 12,
+  "logs": [],
+  "result": [
+    {
+      "facet": "ESPÈCES (Cash) + Rendu de Monnaie (Change)",
+      "summary": "Modal correctly computes/displays change (received - total). Backend persists received via pos_received_amount (19,6 decimal). Change NOT persisted to orders table. Session linkage best-effort (warns, doesn't block). Partial functionality, gaps in persistence and visibility.",
+      "state": "partial",
+      "key_files": [
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/components/admin/pos/PosCounterCollectModal.vue:264-268",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/PaymentService.php:315-329",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/PaymentService.php:327-330",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/PaymentService.php:442-444",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Models/CashDrawerSession.php:81-84",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Resources/OrderDetailsResource.php:313-318"
+      ],
+      "gaps": [
+        {
+          "title": "Change amount not persisted",
+          "severity": "P1",
+          "detail": "Modal displays cashChange. Backend never persists it. OrderDetailsResource retroactively computes change=(received-total). Breaks GL audit trail. order_payments.change_amount never written."
+        },
+        {
+          "title": "Cash session best-effort non-blocking",
+          "severity": "P1",
+          "detail": "recordCashOrderMovement silently returns if no OPEN session. Order PAID but no CashMovement. Violates NF525. Called outside transaction, failure retroactively undetectable."
+        },
+        {
+          "title": "Modal lacks session status indicator",
+          "severity": "P2",
+          "detail": "No API to check session open before confirm. No badge. Cashier discovers closure only after silent warning. Violates visibility mandate."
+        },
+        {
+          "title": "Change rounding edge case",
+          "severity": "P2",
+          "detail": "Frontend rounds change to 2 decimals. Backend stores pos_received_amount unrounded. Receipt re-parse may diverge. Low EUR risk but breaks audit clarity."
+        },
+        {
+          "title": "Insufficient test coverage",
+          "severity": "P2",
+          "detail": "No test for overpayment display, numpad pristine-field bug (8.50+tap 1→8.501), locale decimals. Sentinel verifies structure only."
+        },
+        {
+          "title": "pos_received_amount precision mismatch",
+          "severity": "P2",
+          "detail": "Column decimal(19,6) but EUR needs 2. CashMovement.amount is (10,2). Values diverge on rounding. Migrate to (10,2)."
+        },
+        {
+          "title": "Race condition audit dependency",
+          "severity": "P1",
+          "detail": "409 relies on audit_logs lookup. If audit-write fails post-commit, second cashier gets 409 but audit trail broken."
+        },
+        {
+          "title": "No GL reconciliation split",
+          "severity": "P3",
+          "detail": "Change is cash out, no GL line. Recommend add pos_change_amount or dual CashMovement rows for split."
+        }
+      ],
+      "test_cases": [
+        "Pre-fill 8.50, confirm → PAID, received=8.50, change=0",
+        "Type 20.00 on 8.50 → change=11.50 green, confirm enabled, 200",
+        "Type 5.00 on 8.50 → alert, confirm disabled",
+        "Numpad 1 on pre-fill 8.50 → shows 1 not 8.501",
+        "Decimal 8,50 pre-fill, type . → parsed, works",
+        "Backend: received=5 total=8.50 → 422",
+        "Backend: received=10 total=8.50 → 200, movement in",
+        "Session missing → PAID, no movement",
+        "Session open → PAID, movement recorded"
+      ],
+      "verifier_note": "Works happy-path: exact-change and overpayment correct. Backend stores received properly. P1 gaps: change not persisted, session non-blocking, race relies on audit. For faultless local: add pos_change_amount, pre-modal session check, display badge. NF525 incomplete.",
+      "cloud_notes": [
+        "Migrate pos_received_amount (19,6)→(10,2) EUR consistency",
+        "Add pos_change_amount (10,2) to orders for GL",
+        "Config: cash.counter_payment_strict_session→true production",
+        "API: GET /admin/pos/cash-session/status for badge",
+        "Dual CashMovement: TYPE_ORDER_CHANGE (OUT)",
+        "Test: seedOpenSessionAndOrderPayment helper"
+      ]
+    },
+    {
+      "facet": "CARTE (Card) — Manual TPE Alternative Payment Method",
+      "summary": "CARD mode is simulation: static hint UI, no TPE ref/amount inputs, auto-generated Transaction ID, no OrderPayment creation, \"(simulation)\" toast. Manual workflow needs modal TPE ref + amount fields, backend OrderPayment.create(), route param validation, amount_tendered >= total check. No schema migration needed.",
+      "state": "stub",
+      "key_files": [
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/components/admin/pos/PosCounterCollectModal.vue:146-153",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/PaymentService.php:376-387",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/routes/api.php:841-884",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Models/OrderPayment.php",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/database/migrations/2026_05_06_180000_create_order_payments_table.php"
+      ],
+      "gaps": [
+        {
+          "title": "CARD mode has zero manual TPE confirm UI",
+          "severity": "P1",
+          "detail": "Modal shows dashed-box instruction text; no inputs. Needs TPE Reference field + Amount-tendered input with numpad.",
+          "needs_owner_gate": true
+        },
+        {
+          "title": "Transaction ID is auto-generated, not real TPE reference",
+          "severity": "P1",
+          "detail": "Backend L382 generates COUNTER-{orderId}-{timestamp}. Manual workflow must capture actual TPE terminal ref.",
+          "needs_owner_gate": false
+        },
+        {
+          "title": "OrderPayment row never created for CARD",
+          "severity": "P2",
+          "detail": "confirmCounterPayment creates only Transaction. For audit/Z-report, CARD must populate order_payments table.",
+          "needs_owner_gate": false
+        },
+        {
+          "title": "Amount validation missing for CARD",
+          "severity": "P2",
+          "detail": "CASH enforces received >= total. CARD skips check. Manual path must enforce amount_tendered >= total.",
+          "needs_owner_gate": false
+        },
+        {
+          "title": "Toast label brands CARD as simulation",
+          "severity": "P3",
+          "detail": "i18n tpe_validated_simulation contains '(simulation)'. Remove suffix once ref capture functional.",
+          "needs_owner_gate": true
+        }
+      ],
+      "test_cases": [
+        "CARD single-tap confirms PAID with Transaction.payment_method='counter_card'",
+        "CARD + ref '4242' POSTs tpe_reference stored in OrderPayment.reference",
+        "CARD + amount validates amount_tendered >= total; rejects shortfall 422",
+        "CARD creates OrderPayment within confirmCounterPayment transaction",
+        "Race protection: concurrent CARD collects return 409 Conflict for loser",
+        "OrderDetailsResource includes CARD OrderPayment in receipt",
+        "Z-report aggregates CARD tranches from order_payments table",
+        "Idempotency: same key replays 2xx, no duplicate OrderPayment",
+        "CARD under-amount returns ValidationException",
+        "Audit log includes reference in counter_payment_confirmed payload"
+      ],
+      "cloud_notes": [
+        "OrderPayment columns (reference, tendered) exist; no migration needed",
+        "Manual ref non-sensitive (last-4/TPE ID) — NF525 safe",
+        "Fiscal sequence allocated at collection; no fiscal mutation",
+        "Wave S-1 auto-prepare wired; mode=CARD unchanged",
+        "Manual fallback for acquirer integration future",
+        "Minimum viable: ~80 LOC change"
+      ],
+      "verifier_note": "CARD confirmed pure simulation stub. Modal zero-input static hint; backend auto-generates Transaction never OrderPayment; toast branded simulation. P1 gates require owner approval. All requirements minimal non-breaking additions.</anifier_note>\n</invoke>"
+    },
+    {
+      "facet": "TICKET RESTAURANT (Mode 5 / TR)",
+      "summary": "TR is a stub: modal shows TR button but no ticket count/value inputs. Backend marks PAID, records pos_payment_method=5 + optional pos_payment_note only. Zero French compliance (max 25€/day, denominations, CONECS). Single-tender only; no split. V1.0.2 defers multi-tranche + CONECS. Minimum V1: capture ticket count + per-ticket value.",
+      "state": "stub",
+      "key_files": [
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/components/admin/pos/PosCounterCollectModal.vue:1-795",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/PaymentService.php:193-448",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/routes/api.php:838-879",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Enums/PosPaymentMethod.php:1-21"
+      ],
+      "gaps": [
+        {
+          "title": "No ticket count input field",
+          "severity": "P2",
+          "detail": "Modal lacks form field for number of TR tickets used. CASH has numpad; TR needs count input (1-5 range) for reconciliation."
+        },
+        {
+          "title": "No ticket value/denomination input",
+          "severity": "P2",
+          "detail": "Only pos_payment_note text captured. No structured fields for per-ticket value (5/8/10€). Manual note entry is unstructured and audit-unfriendly."
+        },
+        {
+          "title": "No French TR compliance rules enforced",
+          "severity": "P1",
+          "detail": "Max 25€/day, denominations (5€/8€/10€), CONECS NOT enforced. No split (30€ order→25€ TR+5€ cash). DGFIP/CNIL gate required.",
+          "needs_owner_gate": true
+        },
+        {
+          "title": "Multi-tranche split deferred V1.0.2",
+          "severity": "P2",
+          "detail": "Single mode only. Modal L18-26 defers to V1.0.2—requires new confirmCounterPaymentSplit route + SplitPaymentService extension."
+        },
+        {
+          "title": "No CONECS integration",
+          "severity": "P2",
+          "detail": "Dematerialized voucher system not integrated. Cloud requires CONECS bridge or DGFIP exemption.",
+          "needs_owner_gate": true
+        },
+        {
+          "title": "No TR transaction reference",
+          "severity": "P2",
+          "detail": "Transaction.payment_method='counter_ticket_restaurant' but no ticket_id stored. Complicates reconciliation and dispute resolution."
+        },
+        {
+          "title": "No remainder-mode suggestion",
+          "severity": "P2",
+          "detail": "If cashier enters 15€ tickets on 30€ order, backend marks PAID for 30€. No UI split suggestion for remainder 5€ to CASH."
+        }
+      ],
+      "test_cases": [
+        "TR mode, no count input, confirm clicked, marks PAID with pos_payment_method=5",
+        "Order 15€ TR selected, confirms without validation, marks PAID",
+        "Order 30€ TR selected, backend allows full amount (no max-25€ check or split prompt)",
+        "Cashier manual note 'Ticket 3x8€=24€', order marks PAID, no structured metadata",
+        "TR kiosk order marks PAID + auto-advances to PREPARING (Wave S-1)",
+        "Race: two cashiers TR confirm same order, loser gets 409 payment_already_collected"
+      ],
+      "cloud_notes": [
+        "V1 LOCAL: stub. Manual hand-count audit via pos_payment_note acceptable if owner approves.",
+        "CLOUD: DGFIP requires CONECS or exemption. Check CNIL before production.",
+        "V1.0.2: add pos_ticket_count + pos_ticket_value columns for structured detail.",
+        "Multi-tenant: add POS_TICKET_RESTAURANT_ENABLED flag for non-FR regions.",
+        "Post-go-live: cashier manually reconciles TR daily. No automated audit bridge."
+      ],
+      "verifier_note": "Confirmed STUB: modal L243 TR button, L146-153 single-tap (no inputs), backend L326-330 marks PAID. No count, value, denominations, CONECS, split. Minimum V1: add count+value inputs, validate total≤count*per-value, store structured data. DGFIP compliance gates cloud."
+    },
+    {
+      "facet": "CAISSE ↔ BORNE encaissement liaison/sync",
+      "summary": "Both CAISSE (POS walk-in deferred) and BORNE (kiosk cash) converge on identical sealed path: PENDING_COUNTER+COUNTER_DEFERRED→confirmCounterPayment→fiscal_sequence_no allocated→PAID. Tracker detects ps==15 && ppm==6, renders both in À encaisser. EncaissementComponent subscribes OrderPaidAtCounter for refresh.",
+      "state": "works",
+      "key_files": [
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/PaymentService.php:193-450",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/routes/api.php:800-837",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/components/admin/pos/PosCounterCollectModal.vue",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/components/admin/encaissement/EncaissementComponent.vue",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Domain/Order/AutoPrepareOnPaidPolicy.php",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Exceptions/Payment/PaymentAlreadyCollectedException.php",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/Payment/PosWalkinCounterCollectTest.php",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/Payment/PosCounterCollectRaceProtectionSentinelTest.php"
+      ],
+      "gaps": [
+        {
+          "title": "pos.walkin_route_to_counter not set in .env",
+          "severity": "P1",
+          "detail": "Config pos.php:209 defaults FALSE. CAISSE walks pay inline unless defer_to_counter flag. Set POS_WALKIN_ROUTE_TO_COUNTER=true in .env for Le Cayenne."
+        },
+        {
+          "title": "No single test pairs CAISSE+BORNE",
+          "severity": "P2",
+          "detail": "PosWalkinCounterCollectTest covers POS. Missing: create both sources, collect both, verify fiscal gap-free + both drop from tracker."
+        },
+        {
+          "title": "S-5 CASH exception not paired-tested",
+          "severity": "P3",
+          "detail": "Policy L69 carves CASH from auto-promote. Missing: CAISSE+CASH AND BORNE+CASH both stay ACCEPT."
+        },
+        {
+          "title": "cash_pending_amount formula minimal docs",
+          "severity": "P2",
+          "detail": "SimpleOrderResource L80-82 sets when is_cash_pending=true, equals order.total. Verify modal displays correctly from endpoint response."
+        }
+      ],
+      "test_cases": [
+        "[CAISSE+CASH] walk-in 10,00, modal CASH, confirm→PAID, fiscal, audit, drop",
+        "[BORNE+CASH] kiosk 8,50, PENDING_COUNTER, modal CASH, confirm→PAID, fiscal, drop",
+        "[Cross CASH] CAISSE+CASH + BORNE+CASH: both PAID, fiscal sequential, both drop",
+        "[CARD both] CAISSE CARD + BORNE CARD: single-tap, auto-promote to PREPARING",
+        "[MOBILE+TICKET] both sources: single-tap, PAID, auto-promote",
+        "[S-5 CASH] CAISSE+CASH, status stays ACCEPT (L69 carve-out)",
+        "[S-5 CASH BORNE] BORNE+CASH, stays ACCEPT",
+        "[Idempotency] Cashier same key within 60s→200 cached, no DB mutation",
+        "[Race 409] Cashier B loses lockForUpdate→409 payment_already_collected",
+        "[Tracker render] Both sources ps==15 && ppm==6 in À encaisser"
+      ],
+      "cloud_notes": [
+        "X-Idempotency-Key: pos-counter-collect-{orderId}-{mode}-{minuteBucket} cached 60s per user.",
+        "assertCounterDeferredOrder (L669): source_surface∈['kiosk','pos'] && CASH_ON_DELIVERY && COUNTER_DEFERRED.",
+        "S-5 carve-out L69: isCounterCollect=true && mode=CASH→return false.",
+        "Fiscal_sequence_no allocated inside tx L321-322, deferred orders born null.",
+        "OrderPaidAtCounter post-commit dispatch, EncaissementComponent subscribes L150.",
+        "SimpleOrderResource: is_cash_pending bool L30, cash_pending_amount str L80.",
+        "Queue filter: (kiosk AND order_type IN [KIOSK,TAKEAWAY]) OR (pos AND ppm=COUNTER_DEFERRED).",
+        "Modal: CASH→1, CARD→2, MOBILE→3, TICKET→5."
+      ],
+      "verifier_note": "Code works end-to-end. Both sources sealed identically: PENDING_COUNTER+COUNTER_DEFERRED→confirmCounterPayment→fiscal→PAID. Race-protected, idempotent, S-5 correct. GATE: POS_WALKIN_ROUTE_TO_COUNTER=true in .env. Test CAISSE+BORNE pair locally, then cloud move. No code changes needed."
+    },
+    {
+      "facet": "Database + Management: Encaissement Payment Persistence & Z-Report Aggregation",
+      "summary": "Encaissement persists via orders (pos_payment_method numeric), transactions (payment_method label), and CashMovement (no payment_method column). Z-report stores numeric enum keys (1,2,5) instead of readable labels in total_by_method JSON. CashMovement lacks payment_method column for per-method reconciliation. Only CASH counter payments record CashMovement; CARD/TICKET_RESTAURANT skip entirely.",
+      "state": "partial",
+      "key_files": [
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/PaymentService.php:326,384-387,442-444",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/Fiscal/ZReportService.php:661-668",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Models/CashMovement.php:34-44",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/database/migrations/2026_05_08_140100_create_cash_movements_table.php",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Controllers/Admin/CashOverviewController.php:414-439",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Enums/PosPaymentMethod.php"
+      ],
+      "gaps": [
+        {
+          "title": "Z total_by_method stores numeric keys (1,2,5) instead of readable labels",
+          "severity": "P0",
+          "detail": "ZReportService::applyOrderToTotals line 666 casts pos_payment_method (numeric) to string, storing JSON keys '1','2','5' instead of 'counter_cash'. Z immutable post-close; historical audits see unreadable numerics."
+        },
+        {
+          "title": "CashMovement has no payment_method column for per-method breakdown",
+          "severity": "P1",
+          "detail": "Migration 2026_05_08_140100 defines type/direction only. After 20 CASH + 20 CARD in one session, cannot query to segregate expected_cash from expected_card. Reconciliation impossible."
+        },
+        {
+          "title": "CARD/TICKET counter payments skip CashMovement recording entirely",
+          "severity": "P1",
+          "detail": "confirmCounterPayment line 442 calls recordCashOrderMovement only for CASH mode. CARD/TICKET bypass CashMovement. No audit trail for non-cash tender via cash_movements table."
+        },
+        {
+          "title": "Fallback in applyOrderToTotals line 666 never triggers",
+          "severity": "P2",
+          "detail": "pos_payment_method always truthy (1,2,5), so fallback to payment_method never executes. Dead code for counter payments. Two columns, one correct never used."
+        },
+        {
+          "title": "Admin normalization runtime-only; historical Z-reports opaque",
+          "severity": "P2",
+          "detail": "CashOverviewController normalizes at query time. Z-reports store numeric keys permanently. Auditor viewing Z directly sees unreadable '1','2','5' in total_by_method JSON."
+        },
+        {
+          "title": "No test validates mixed-method counter-payment Z aggregation",
+          "severity": "P1",
+          "detail": "NF525ComplianceE2ETest tests single-method kiosk only. No test seeds 20 CASH + 20 CARD + 20 TICKET in one Z. Impossible to verify total_by_method correctness with all methods."
+        }
+      ],
+      "test_cases": [
+        "After 20 CASH encaissements: verify Z total_by_method has readable key 'counter_cash' not '1'",
+        "After 20 CARD encaissements: verify Z total_by_method has readable key 'counter_card' not '2'",
+        "After 20 TICKET_RESTAURANT: verify Z total_by_method has readable key 'counter_ticket_restaurant' not '5'",
+        "Mixed 20 CASH + 20 CARD + 20 TICKET in one Z: verify total_by_method has all 3 readable keys and correct sums",
+        "Query CashMovement for mixed-method session: verify payment_method column exists or is derivable",
+        "CARD counter payment does NOT skip CashMovement: verify entry exists for card tender",
+        "TICKET_RESTAURANT counter payment records CashMovement: verify entry exists for ticket tender",
+        "Admin cash-overview filters by mode: verify filtered results match Z total_by_method breakdown for post-Z historical data"
+      ],
+      "verifier_note": "All gaps confirmed. pos_payment_method cast to string stores unreadable JSON keys in Z. CashMovement lacks payment_method. recordCashOrderMovement skips CARD/TICKET. Line 666 fallback unreachable. Code produces '1', tests expect 'cash'. Requires fix in applyOrderToTotals."
+    },
+    {
+      "facet": "CLOUD-READINESS: Multi-Instance Pre-Cutover Gate V1 Local → Cloud",
+      "summary": "V1 LOCAL enforces 14 boot guards (AppServiceProvider:158-453). For ALB: shared Redis MANDATORY, fiscal secrets rotate, bypass modes disabled, MySQL triggers preserved. SESSION_DRIVER=file safe locally, needs ALB sticky-session or redis for cloud.",
+      "state": "partial",
+      "key_files": [
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Providers/AppServiceProvider.php:158-453",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/config/cache.php:18",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/config/idempotency.php:34-86",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/config/fiscal.php:31-38",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/config/queue.php:16",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/database/migrations/2026_05_10_010000_secure_fiscal_audit_trail_immutability.php"
+      ],
+      "gaps": [
+        {
+          "title": "Shared Cache Driver for Multi-Pod Lock Serialization",
+          "severity": "P0",
+          "detail": "AppServiceProvider:294-302 forbids array/null in production. Current: redis (PASS). ALB: Cache::lock(audit_chain) serializes across pods. In-process drivers allow UNIQUE collision. Cloud: redis/memcached."
+        },
+        {
+          "title": "Idempotency Middleware Enabled on 23 Routes",
+          "severity": "P0",
+          "detail": "AppServiceProvider:223-231 requires IDEMPOTENCY_MIDDLEWARE_ENABLED=true in production. Current: enabled (PASS). config/idempotency.php:34-86 covers counter-collect, cash-drawer, status-changes. Dual-layer: cache-lock + DB UNIQUE."
+        },
+        {
+          "title": "Fiscal Secrets Must Rotate to Production Grade",
+          "severity": "P0",
+          "detail": "config/fiscal.php:31,38 require FISCAL_AUDIT_SECRET and FISCAL_Z_REPORT_SECRET. Current: local-e2e padding. Cloud: 32+ char random secrets. 6-year NF525 retention legally required."
+        },
+        {
+          "title": "APP_URL Must Match Cloud Domain for CORS",
+          "severity": "P1",
+          "detail": "AppServiceProvider:261-271 refuses boot if APP_URL empty. Current: localhost:8000. config/cors.php:6 derives origins from APP_URL. Cloud: set https://domain. Missing causes /api/broadcasting/auth CORS rejection."
+        },
+        {
+          "title": "BROADCAST_DRIVER Must Not Be null/sync",
+          "severity": "P1",
+          "detail": "AppServiceProvider:273-278 forbids null/sync in production. Current: pusher. Cloud: Pusher/Soketi with PUSHER_APP_ID/KEY/SECRET. Real-time depends on this."
+        },
+        {
+          "title": "Bypass Modes Must Be Disabled in Production",
+          "severity": "P1",
+          "detail": "AppServiceProvider:177-190, 165-171 refuse bypass=true in production. Current: all true (local OK). Stubs (hardware checks only, fiscal unaffected). Cloud: set false."
+        },
+        {
+          "title": "SESSION_DRIVER File Unsafe for Multi-Pod ALB",
+          "severity": "P1",
+          "detail": "config/session.php:21 defaults to file. Local safe. ALB multi-pod: sessions on Pod A invisible to Pod B. Cloud: sticky-session OR redis. Deferred when ALB introduced."
+        },
+        {
+          "title": "MySQL Triggers Enforce NF525 Immutability",
+          "severity": "P1",
+          "detail": "Migration 2026_05_10_010000:107-141 creates BEFORE DELETE triggers (MySQL/MariaDB only). RDS: preserve via mysqldump --triggers. Protects cash_movements, order_payments, cash_drawer_sessions."
+        }
+      ],
+      "test_cases": [
+        "Boot APP_ENV=production: verify all 14 guards pass or fail loudly",
+        "POST counter-collect/{id}/confirm with X-Idempotency-Key twice: expect 425",
+        "Multi-pod counter-collect: verify fiscal_sequence_no unique across pods",
+        "Verify FISCAL_*_SECRET 32+ chars, not dev_sentinels",
+        "Set CACHE_DRIVER=array, APP_ENV=production: boot guard failure",
+        "ALB session swap: log Pod A, request Pod B: survive (sticky/redis)",
+        "Verify MySQL BEFORE DELETE triggers on payment tables",
+        "QUEUE_CONNECTION=sync in production: boot guard rejects"
+      ],
+      "cloud_notes": [
+        "Redis mandatory ALB: Cache::lock serializes across pods. File/array per-process only.",
+        "Idempotency: 23 routes, middleware cache + DB UNIQUE dual-layer. Replay returns cached 2xx.",
+        "Fiscal secrets: rotate before go-live. 6-year retention. Cloud: S3 via FISCAL_ARCHIVE_DISK.",
+        "MySQL triggers: BEFORE DELETE on payments enforces immutability. RDS: mysqldump --triggers.",
+        "Broadcast: Pusher/Soketi + config/broadcasting.php timeouts prevent worker hangs.",
+        "Session: file (local safe) ALB needs sticky-session or redis. docs/PRODUCTION_SETUP.md:22.",
+        "Queue: redis + dedicated worker pod. config/queue.php:75 block_for=5s enables blocking BRPOP.",
+        "Boot guards catch all 14 misconfigs fail-fast. Fix .env and restart; no runtime recovery."
+      ],
+      "verifier_note": "All 14 boot guards verified in source. PAYMENT_BYPASS/PRINTING_BYPASS are hardware-only stubs. SESSION_DRIVER=file safe locally, unsafe ALB. MySQL triggers mandatory NF525; RDS preserve. Cloud checklist: rotate secrets, disable bypasses, set APP_URL, redis, Pusher, preserve triggers."
+    }
+  ]
+}

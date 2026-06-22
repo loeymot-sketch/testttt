@@ -1,0 +1,83 @@
+{
+  "at": "2026-04-24T14:45:23.014Z",
+  "base": "https://api.ctok.ai",
+  "target_output_tokens": 50000,
+  "steps": [
+    {
+      "phase": "ping",
+      "model": "claude-opus-4-1-20250514",
+      "http": 503,
+      "ms": 666,
+      "err": {
+        "message": "No available accounts: no available accounts",
+        "type": "api_error"
+      },
+      "usage": null,
+      "content": ""
+    },
+    {
+      "phase": "ping_bearer",
+      "model": "claude-opus-4-1-20250514",
+      "http": 503,
+      "err": {
+        "error": {
+          "message": "No available accounts: no available accounts",
+          "type": "api_error"
+        },
+        "type": "error"
+      }
+    },
+    {
+      "phase": "ping",
+      "model": "claude-3-opus-20240229",
+      "http": 503,
+      "ms": 195,
+      "err": {
+        "message": "No available accounts: no available accounts",
+        "type": "api_error"
+      },
+      "usage": null,
+      "content": ""
+    },
+    {
+      "phase": "ping_bearer",
+      "model": "claude-3-opus-20240229",
+      "http": 503,
+      "err": {
+        "error": {
+          "message": "No available accounts: no available accounts",
+          "type": "api_error"
+        },
+        "type": "error"
+      }
+    },
+    {
+      "phase": "ping_ok",
+      "model": "claude-sonnet-4-5-20250929",
+      "usage": {
+        "cache_creation_input_tokens": 2056,
+        "cache_read_input_tokens": 0,
+        "input_tokens": 10,
+        "output_tokens": 4
+      }
+    }
+  ],
+  "ping_model": "claude-sonnet-4-5-20250929",
+  "long_max_tokens_used": 50000,
+  "long_usage": {
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 0,
+      "ephemeral_5m_input_tokens": 136
+    },
+    "cache_creation_input_tokens": 136,
+    "cache_read_input_tokens": 286,
+    "input_tokens": 211,
+    "output_tokens": 124
+  },
+  "long_chars": 147,
+  "long_excerpt": "Je vais réaliser un audit complet de votre plateforme FoodKing. Laissez-moi d'abord explorer la structure du projet pour comprendre l'architecture.",
+  "output_tokens": 124,
+  "input_tokens": 211,
+  "severity": "GO_WEAK",
+  "note": "Plafond effectif (sortie) ou budget plan : sortie < 50k *tokens* et total < 50k. Vérifier **dashboard** ctok (plafond `max_tokens`, modèle) ; réessayer `CTOK_MAX_OUTPUT=50000` si autorisé."
+}

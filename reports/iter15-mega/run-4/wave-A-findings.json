@@ -1,0 +1,137 @@
+{
+  "wave": "A",
+  "run_n": 4,
+  "findings": [
+    {
+      "id": "A-001",
+      "state_artifact": "iter15-mega-admin/05-observability-default.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "REGRESSION vs run-2/run-3: /admin/observability is back to rendering the public-facing 404 illustration. 05-observability-default.dom.html now contains 'Page non trouv' (1×) and '404.gif' (1×) at the same position as run-1; 0 occurrences of 'outbox' / 'queue:work' / 'websockets:serve' (vs 9 in run-3 verification). Screenshot confirms: '404' illustration + 'Page Non Trouvée !' h1 + 'Impossible de trouver la page demandée.' + 'Retour à l'accueil' CTA. network.json is empty (server returned 200 HTML for the catchall) — silent failure, no [role=alert]. Run-2/run-3 outbox dashboard is gone.",
+      "fix_hint": "Re-apply the run-2 fix that registered the /admin/observability Vue route + page component. The run-2 reviewer noted real 'Pipeline outbox & événements' dashboard with 278 queued events; that route appears to have been removed/regressed between run-3 and run-4 and now falls back to the public-facing 404 catchall. Confirm router config (routes/web.php SPA route + resources/js/router/admin.js) still maps /admin/observability to the OutboxOverviewDashboard component."
+    },
+    {
+      "id": "A-002",
+      "state_artifact": "iter15-mega-admin/05-observability-default.dom.html",
+      "category": "i18n_leak",
+      "severity": "P0",
+      "evidence": "REGRESSION vs run-2/run-3: 05-observability-default.dom.html again contains <a href=\"/admin/undefined\" class=\"paper-link transition w-full flex items-center gap-3.5 py-2.5 border-b last:border-none border-[#EFF0F6]\"><i class=\"lab-font-size-17\"></i><span class=\"text-sm leading-6 capitalize\">menu.undefined</span></a>. 1 occurrence of '/admin/undefined' and 1 occurrence of 'menu.undefined' in the observability DOM (vs 0 in run-2 / run-3). The other 5 captured states do not show the leak — same viewport-conditional pattern as run-1 A-014, but now back on the observability surface specifically. Clicking the broken sidebar entry would 404 again.",
+      "fix_hint": "Same root cause as run-1 A-002 — guard the menu config so undefined slug/route entries are filtered out at build time rather than rendered as literals. Observability page may be rendering an admin shell variant where the menu builder doesn't have the run-2 guard."
+    },
+    {
+      "id": "A-003",
+      "state_artifact": "iter15-mega-admin/04-order-status-screen-default.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "REGRESSION vs run-2/run-3: customer-facing order-status-screen renders the rendered DOM element <div data-v-7647b9bb=\"\" class=\"ws-reconnect-banner\">Connexion temps réel perdue — actualisation automatique toutes les 5s...</div> at offset ~24400 in 04-order-status-screen-default.dom.html. Run-2/run-3 reviewers confirmed the banner had been removed (only HTML/CSS comments remained). Screenshot confirms a yellow banner spanning the screen between the order list and the queue numbers. PreparingAndReadyComponent.vue line 3 is `<div v-if=\"!wsConnected\" class=\"ws-reconnect-banner\">` — there is NO appEnv='local' gate here. Run-3 fix message claimed all banner gates depending on appEnv would now work; that fix was applied to KitchenDisplaySystemComponent.vue (kdsHideFallbackBannerInLocalDev) but NOT to PreparingAndReadyComponent.vue. Customer screen now shouts 'real-time lost' permanently in local AND production.",
+      "fix_hint": "Apply the same gating used in KitchenDisplaySystemComponent.vue (`!wsConnected && !ossHideFallbackBannerInLocalDev` reading window.foodkingConfig.appEnv === 'local') to PreparingAndReadyComponent.vue, OR re-introduce the run-2 banner-removal hot-fix. Long-term: ensure laravel-websockets is supervised in test env so the banner condition stops firing at all."
+    },
+    {
+      "id": "A-004",
+      "state_artifact": "iter15-mega-admin/05-observability-default.dom.html",
+      "category": "i18n_leak",
+      "severity": "P1",
+      "evidence": "REGRESSION vs run-2/run-3: same root cause as A-002 above. Visible text node 'menu.undefined' rendered inside <span class=\"text-sm leading-6 capitalize\">. Run-3 marked PASS, now FAIL. Console.json for observability does not log an [intlify] warning for menu.undefined this run (only 2 allowlisted Pusher WS errors), so detection is purely DOM-based.",
+      "fix_hint": "Same as A-002 — fix the menu builder to drop entries whose key resolves to undefined."
+    },
+    {
+      "id": "A-006",
+      "state_artifact": "iter15-mega-admin/01-dashboard-default.network.json",
+      "category": "unexpected_4xx",
+      "severity": "P1",
+      "evidence": "REGRESSION vs run-2/run-3: 01-dashboard-default.network.json contains 14 entries, ALL POST http://127.0.0.1:8000/api/frontend/csp-report with status 429. Same pattern recurs on items-list (10× 429) and order-status-screen (9× 429). Run-2/run-3 reported all 6 network.json files empty (PASS). The CSP-report endpoint is rate-limiting browser-emitted CSP reports — real CSP violations (img-src http://localhost:8000/storage/**, see 14 corresponding 'violates Content Security Policy' info entries in 01-dashboard-default.console.json) are NOT being captured in production telemetry. Security posture silently degraded.",
+      "fix_hint": "The run-2 fix moved /api/frontend/csp-report out of apiKey middleware and yielded 204 responses. That fix appears to have been reverted, OR a rate-limit was added that is now too tight for the current CSP-violation burst (10–14 per page load). Confirm Frontend\\CspReportController throttle config; consider raising the rate-limit ceiling to absorb a normal page-load burst without 429s."
+    },
+    {
+      "id": "A-007",
+      "state_artifact": "iter15-mega-admin/02-items-list-default.console.json",
+      "category": "console_error",
+      "severity": "P1",
+      "evidence": "REGRESSION vs run-2/run-3: console.json contains 12 entries with level=error: 10× 'Failed to load resource: the server responded with a status of 429 (Too Many Requests)' for /api/frontend/csp-report (ts 1778381748xxx) + 2× allowlisted Pusher WS errors. Items page console is unusable for triaging real errors — run-2 had only 2 allowlisted entries.",
+      "fix_hint": "Resolves with A-006."
+    },
+    {
+      "id": "A-008",
+      "state_artifact": "iter15-mega-admin/04-order-status-screen-default.console.json",
+      "category": "console_error",
+      "severity": "P1",
+      "evidence": "REGRESSION vs run-2/run-3: console.json contains 11 entries with level=error: 9× 429 on /api/frontend/csp-report + 2× allowlisted Pusher WS errors. Customer-facing screen with WS-reconnect banner rendered (A-003) AND noisy console — doubly bad. Run-2/run-3 had only 2 allowlisted entries.",
+      "fix_hint": "Resolves with A-006."
+    },
+    {
+      "id": "A-009",
+      "state_artifact": "iter15-mega-admin/01-dashboard-default.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "Header dropdown still renders 'Bonjour Admin Le Cayenn..' with literal '..' suffix on every captured admin state. 5/6 DOMs (01-dashboard-default, 01-dashboard-1920, 02-items-list-default, 03-items-toggle-row-visible, 04-order-status-screen-default) contain 'Cayenn..' (1 occurrence each); 05-observability has 0 because that page is back to the public 404 layout (separate finding A-001). Hard-coded JS slice still chops trailing 'e' and appends '..'. No title attribute. Identical to run-1/run-2/run-3 A-009.",
+      "fix_hint": "Same as run-1 — remove the substring slice in the shared AppHeader user-display computed prop or replace with CSS text-overflow: ellipsis + title attribute."
+    },
+    {
+      "id": "A-010",
+      "state_artifact": "iter15-mega-admin/02-items-list-default.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "Catalog control-plane metric tile labelled 'INDISPONIBLES' (DOM contains <small>indisponibles</small> displayed via text-transform: uppercase) still visually clipped to 'INDISPONIB(' in 02-items-list-default.png and 03-items-toggle-row-visible.png. No title attribute on the <small>. Identical to run-1/run-2/run-3 A-010.",
+      "fix_hint": "Same as run-1 — increase metric tile min-width (catalog-control-plane__metric class) or shorten label, plus add title attribute fallback."
+    },
+    {
+      "id": "A-011",
+      "state_artifact": "iter15-mega-admin/04-order-status-screen-default.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "'Prêt' column on customer-facing order-status-screen still renders empty <ul></ul> followed by <p class=\"text-center text-[#A0A3BD] text-base mt-8\">—</p> (literal em-dash). 0 occurrences of 'Aucune commande' empty-state copy across the DOM (em-dash count = 5, including the `Prêt` placeholder). No illustration, no copy ≥20 chars, no primary CTA. 'En préparation' column correctly populated with 9 orders (N°A0020, N°A0026, N°A0019, N°A0023, N°A0024, N°A0032, N°A0004, N°A0030, N°A0022, N°A0015). Identical UX miss as run-1/run-2/run-3 A-011.",
+      "fix_hint": "Replace '—' placeholder with small illustration + copy 'Aucune commande prête pour le moment.'"
+    },
+    {
+      "id": "A-012",
+      "state_artifact": "iter15-mega-admin/04-order-status-screen-default.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "Header dropdown on customer-facing order-status-screen still renders 'Admin Le Cayenn..' with same hard-coded chop as A-009. Truncation propagates to all 5 admin-shell states sharing AppHeader. Identical to run-1/run-2/run-3 A-012.",
+      "fix_hint": "Same fix as A-009."
+    },
+    {
+      "id": "A-013",
+      "state_artifact": "iter15-mega-admin/05-observability-default.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "REGRESSION vs run-2/run-3: now that observability is back to the public 404 layout (A-001), the aria_keyboard issue from run-1 A-013 also reappears. The 404 fallback h3 'Page non trouvée' has no role=alert / aria-live / focused tabindex=-1; screen-reader users land on a generic 404 with no contextual indication that the requested admin feature is missing. Identical to run-1 A-013.",
+      "fix_hint": "Resolves with A-001 (re-register observability route). If the 404 fallback must remain, give it role=\"alert\" + tabindex=\"-1\" and focus it on mount, plus distinguish admin-route-not-found from public 404."
+    },
+    {
+      "id": "A-014",
+      "state_artifact": "iter15-mega-admin/01-dashboard-1920.console.json",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "01-dashboard-1920.console.json is empty ([]) but 01-dashboard-default.console.json has 30 entries at 1280×800 (16 errors, mostly csp-report 429). Same page, same auth, only viewport differs. The CSP violations and 429 retries do not fire at 1920×1080 — likely because at the wider breakpoint fewer category/menu images render, fewer CSP reports get queued, no rate-limiter trip. Not a defect on its own; documents that A-006/A-007 are viewport-conditional.",
+      "fix_hint": "Resolves with A-006 (fix CSP-report rate-limit + payload format)."
+    }
+  ],
+  "summary": { "P0": 3, "P1": 4, "P2": 5, "P3": 1 },
+  "states_reviewed": 6,
+  "run_3_p0_p1_verification": [
+    { "id": "A-001", "category": "silent_error", "severity": "P0", "verdict": "FAIL", "note": "REGRESSION — observability page back to public 404. 'Page non trouv' (1×) + '404.gif' (1×) in DOM; 0 'outbox'/'queue:work'/'websockets:serve'. Run-2/run-3 marked PASS." },
+    { "id": "A-002", "category": "i18n_leak", "severity": "P0", "verdict": "FAIL", "note": "REGRESSION — '/admin/undefined' (1×) and 'menu.undefined' (1×) re-appeared in 05-observability-default.dom.html. 0 in the other 5 DOMs. Run-2/run-3 marked PASS (0 occurrences)." },
+    { "id": "A-003", "category": "silent_error", "severity": "P0", "verdict": "FAIL", "note": "REGRESSION — class='ws-reconnect-banner' rendered as a real DOM element on 04-order-status-screen-default.dom.html (not just a comment). PreparingAndReadyComponent.vue has no appEnv='local' gate, only `v-if=\"!wsConnected\"`. Critical-latent-bug fix injected appEnv: 'local' but the OSS component was not updated to consume it. Run-2/run-3 marked PASS." },
+    { "id": "A-004", "category": "i18n_leak", "severity": "P1", "verdict": "FAIL", "note": "REGRESSION — same root-cause as A-002, FAIL same reason." },
+    { "id": "A-005", "category": "console_error", "severity": "P1", "verdict": "PASS", "note": "F3.1 i18n cluster fix HOLDS. 0 [intlify] warnings across all 6 console.json files. lang/{fr,en,ar}.json all contain button.menu, kiosk.remove_item, kiosk.order_type.dine_in, kiosk.order_type.takeaway, label.kds_toggle_items, label.oss_fallback_banner. Run-3 P1 regression on button.menu is resolved." },
+    { "id": "A-006", "category": "unexpected_4xx", "severity": "P1", "verdict": "FAIL", "note": "REGRESSION — 14× 429 on /api/frontend/csp-report (dashboard), 10× (items-list), 9× (order-status). Run-2/run-3 had all 6 network.json empty arrays []. The CSP-report endpoint fix has been reverted or rate-limit re-tightened." },
+    { "id": "A-007", "category": "console_error", "severity": "P1", "verdict": "FAIL", "note": "REGRESSION — items-list console.json has 10× 429 errors on /api/frontend/csp-report. Run-2/run-3 had only 2 allowlisted Pusher entries." },
+    { "id": "A-008", "category": "console_error", "severity": "P1", "verdict": "FAIL", "note": "REGRESSION — order-status-screen console.json has 9× 429 errors on /api/frontend/csp-report. Run-2/run-3 had only 2 allowlisted Pusher entries." }
+  ],
+  "run_3_fix_verifications": [
+    { "fix": "F3.1 i18n cluster (button.menu, kds_toggle_items, kiosk.remove_item, kiosk.order_type.*)", "verdict": "HOLDS", "note": "All keys present in lang/fr.json + lang/en.json + lang/ar.json. 0 [intlify] Not found warnings across 6 Wave A console.json files. Spot-check on A-005 (run-3 P1 regression) resolved." },
+    { "fix": "Critical latent bug — appEnv injection into window.foodkingConfig", "verdict": "PARTIAL — caused new regressions", "note": "appEnv: 'local' is now correctly injected (verified in inline <script> at offset ~14400 of 04-order-status-screen-default.dom.html). However: (a) PreparingAndReadyComponent.vue does NOT read foodkingConfig.appEnv → ws-reconnect-banner now renders unconditionally on the OSS surface (A-003 regression). (b) The KDS-only fix kdsHideFallbackBannerInLocalDev was applied to KitchenDisplaySystemComponent.vue but the equivalent gate was not added to PreparingAndReadyComponent.vue. Net effect: with appEnv now actually injected, banners that depended on the gate work for KDS but the OSS banner has no gate to be controlled by." },
+    { "fix": "F3.2 KDS Mode secours actif gated to local", "verdict": "NO CROSS-IMPACT IN WAVE A", "note": "0 occurrences of 'kds-sync-mode-banner' or 'Mode secours' in any of the 6 Wave A DOMs. KDS-specific gating did not surface unexpectedly in admin captures." }
+  ],
+  "set_equality_check_vs_run_3": {
+    "run_3_findings": ["A-005", "A-009", "A-010", "A-011", "A-012"],
+    "run_4_findings": ["A-001", "A-002", "A-003", "A-004", "A-006", "A-007", "A-008", "A-009", "A-010", "A-011", "A-012", "A-013", "A-014"],
+    "set_equality": false,
+    "added_in_run_4": ["A-001", "A-002", "A-003", "A-004", "A-006", "A-007", "A-008", "A-013", "A-014"],
+    "removed_in_run_4": ["A-005"],
+    "carried_over_unchanged": ["A-009", "A-010", "A-011", "A-012"],
+    "note": "Set-equality FAILS. 9 findings re-introduced (8 of them are run-1 P0/P1 regressions). 1 finding resolved (A-005 i18n button.menu — F3.1 fix worked). 4 P2 carryovers unchanged."
+  },
+  "convergence_verdict": "RED — NOT CONVERGENT. P0+P1 = 7 (not 0): 3× P0 (A-001 observability 404 regression, A-002 menu.undefined regression, A-003 ws-reconnect-banner regression on OSS) + 4× P1 (A-004 menu.undefined console-equivalent regression, A-006/A-007/A-008 csp-report 429 cluster regression). Set-equality with run-3 FAILS — 9 new findings (all regressions of run-1 P0/P1 that run-2/run-3 had marked PASS). The F3.1 i18n cluster fix held cleanly (A-005 closed). The critical-latent-bug appEnv injection is correct mechanically but exposes that run-2's OSS banner removal was a hot-fix (HTML comment marker '<!-- Local ws-reconnect-banner removed -->' is gone from the DOM in run-4) that has been reverted, and the appEnv gate was never wired into PreparingAndReadyComponent.vue. Recommend: (1) re-register /admin/observability route (A-001/A-002/A-004/A-013), (2) re-apply CSP-report rate-limit fix or move endpoint out of throttled middleware (A-006/A-007/A-008), (3) wire appEnv='local' gate into PreparingAndReadyComponent.vue mirroring KitchenDisplaySystemComponent.vue (A-003)."
+}

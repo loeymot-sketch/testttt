@@ -1,0 +1,3 @@
+[backup-daily] driver=mysql target=daily-2026-05-23.sql.gz
+dump under warn-bytes threshold (166347 < 1048576) — plausible on fresh local DB but verify
+OK — wrote daily-2026-05-23.sql.gz (166347 bytes)

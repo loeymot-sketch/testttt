@@ -54,7 +54,7 @@ class ItemCategoryController extends Controller
             }
             return response(['data' => array_merge($allCategory, $itemCategoryArray)]);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -63,7 +63,7 @@ class ItemCategoryController extends Controller
         try {
             return new ItemCategoryMenuResource($this->itemCategoryService->show($itemCategory));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

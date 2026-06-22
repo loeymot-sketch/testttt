@@ -23,7 +23,7 @@ class CookiesController extends Controller
         try {
             return new CookiesSetResource($this->cookiesService->get($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -32,7 +32,7 @@ class CookiesController extends Controller
         try {
             return new CookiesSetResource($this->cookiesService->set($cookiesSetRequest));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

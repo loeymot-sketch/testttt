@@ -8,6 +8,8 @@ globs:
 
 # FoodKing — continuité (lecture ciblée)
 
+**Avant toute** planification produit (nouvelle session **ou** reprise) : le rappel racine **`BOUCLE.md`** + **`AGENTS.md` § *Parcours obligatoire*** (nouvelle conversation + continuation) et, si reprise, **`.cursor/ACTIVE_CYCLE.md`**. Ne pas attendre qu’un humain dise explicitement « lis AGENTS » — la boucle **`run-cycle`** est la routine par défaut pour le code produit.
+
 **`docs/PROJECT_CONTINUITY_AND_VISION.md`** — à lire surtout lors d’une **planification** dans un **domaine nouveau ou peu familier** (vision, surfaces, correctifs, reste à faire).
 
 **Charger à la demande** uniquement si le **périmètre de la tâche** y touche réellement :
@@ -18,4 +20,10 @@ globs:
 | `docs/ORDER_FLOW.md` | Cycle de vie et états de commande |
 | `docs/DEVICE_FLOW.md` | Parcours par surface (POS, kiosk, KDS, OSS, etc.) |
 
-Le cycle agents local, le routage modèle et les rapports sont décrits dans **`AGENTS.md`** et **`.cursor/routing.md`**. Le scope et les invariants métier sont dans **`.cursor/rules/scope.mdc`** et **`.cursor/rules/foodking-invariants.mdc`**.
+Le cycle agents local, le routage modèle et les rapports sont décrits dans **`AGENTS.md`** et **`.cursor/routing.md`**. Le scope et les invariants métier sont dans **`.cursor/rules/scope.mdc`** et **`.cursor/rules/project-invariants.mdc`**.
+
+**EXECUTE complexe** : chemin **primaire = `codex-extension`** (`npm run codex:complex` → `bash scripts/codex-extension-execute.sh` + CLI `codex` compte Pro, voir **`docs/orchestration/CODEX_API_DELEGATION.md`**) ; le sub-agent `foodking-complex-implementer` est **fallback uniquement** quand `codex exec` n’est pas utilisable.
+
+**Mémoire Graphiti** : protocole obligatoire quand le MCP est chargé — **`.cursor/rules/graphiti-memory.mdc`** ; index des domaines — **`memory/INDEX.md`**.
+
+**Système global (agents + sous-agents + évolution mémoire)** : **`docs/orchestration/GLOBAL_SYSTEM_PRIMER.md`**.

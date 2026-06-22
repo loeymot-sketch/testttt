@@ -24,7 +24,7 @@ class BranchController extends Controller
         try {
             return BranchResource::collection($this->branchService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -33,7 +33,7 @@ class BranchController extends Controller
         try {
             return new BranchResource($this->branchService->show($branch));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -42,7 +42,7 @@ class BranchController extends Controller
         try {
             return new BranchResource($this->branchService->showByLatLong($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

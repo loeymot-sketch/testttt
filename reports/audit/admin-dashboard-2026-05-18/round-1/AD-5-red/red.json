@@ -1,0 +1,118 @@
+{
+  "specialist": "RED-team (adversarial)",
+  "zone": "Admin Dashboard (15.1-15.7)",
+  "wave": "B-Admin",
+  "round": 1,
+  "date": "2026-05-18",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "framing": "Assume attacker has acquired a valid `auth:sanctum` token of a low-privilege role (POS Operator, Chef, Customer, stale staff). Token holds the X-Api-Key shared secret (extracted from admin SPA bundle or env leak). Attacker enumerates /admin/* endpoints.",
+  "attack_surface_size": {
+    "admin_routes_inside_/api/admin/_group": "≈220+ endpoints estimated from routes/api.php scan",
+    "permission_middleware_refs_at_route_level": 4,
+    "controller_level_permission_gates": "71/87 admin controllers",
+    "attack_radius_if_one_gate_missing": "Single endpoint scope unless cross-tenant via BranchScope bypass"
+  },
+  "attack_scenarios": [
+    {
+      "id": "R-1",
+      "severity": "P0",
+      "scenario": "Cross-customer Order details disclosure (IDOR)",
+      "path": "GET /api/admin/my-order/show/{victim_user_id}/{victim_order_id}",
+      "attacker_role": "Any sanctum-authenticated user (POS Operator, Chef, even revoked-but-not-revoked stale token)",
+      "preconditions": "Attacker knows or enumerates {user_id, order_id} pair belonging to a victim",
+      "exploit": "MyOrderDetailsController has zero middleware. OrderService::orderDetails (L1411-1422) checks `$order->user_id == $user->id` — BOTH come from URL params, NOT from auth(). Caller-identity check missing.",
+      "blast_radius": "Same-branch staff: any customer order in their branch. Admin token: cross-branch (BranchScope auto-bypassed for Admin role). Discloses: transaction (payment refs, last4), orderItems, branch, user.",
+      "exploit_template": "curl -H 'X-Api-Key:$KEY' -H 'Authorization: Bearer $ATTACKER_TOKEN' /api/admin/my-order/show/42/1337",
+      "mitigation_existing": "BranchScope on Order limits to same-branch for non-Admin. Attacker still gets any same-branch customer.",
+      "mitigation_proposed_REVISED": "Endpoint is consumed by 3 admin SPA views (Customer/Waiter/DeliveryBoy detail) AND NO frontend account view. Naive `auth()->id() === $user->id` BREAKS the 3 admin flows. Correct fix: `$this->middleware('permission:customers_show|waiters_show|delivery-boys_show')` (Spatie OR) in MyOrderDetailsController constructor. Cleaner V1.0.2: split into 3 dedicated endpoints each with its own perm.",
+      "verdict": "P0 documented — NOT healed in Round 1 (multi-consumer perm-alternation requires sentinel test before commit). V1.0.2 redesign target."
+    },
+    {
+      "id": "R-2",
+      "severity": "P1",
+      "scenario": "Tracking pixel injection / cross-site script via Analytic.body",
+      "path": "POST /api/admin/setting/analytic — gated; GET /api/admin/setting/analytic — UNGATED for index/show",
+      "attacker_role": "POS Operator (no `settings` perm)",
+      "preconditions": "Attacker token + valid API key",
+      "exploit": "AnalyticController::store/update/destroy are gated (S-3 in Security report) but `index` and `show` are NOT. Attacker can ENUMERATE existing analytic integrations (GTM IDs, FB pixel IDs, custom HTML snippets) of any tenant.",
+      "blast_radius": "Disclosure of tracking-pixel config. Possibly contains 3rd-party API keys if devs misuse the body field.",
+      "mitigation_proposed": "Gate all 5 verbs with `permission:settings`",
+      "verdict": "P1 — heal-eligible"
+    },
+    {
+      "id": "R-3",
+      "severity": "P1",
+      "scenario": "Menu template enumeration / overwrite",
+      "path": "GET /api/admin/setting/menu-template + POST/PUT/DELETE",
+      "attacker_role": "Any sanctum user",
+      "preconditions": "Attacker token + key + MenuTemplateController truly ungated",
+      "exploit": "MenuTemplateController has no permission middleware (S-2). Need to verify whether route group wraps it. If ungated → any token holder could create/destroy menu templates, breaking catalog UX for staff using templates.",
+      "blast_radius": "Catalog UX availability for menu builder. Not a tenant-data leak per se, but a denial-of-service / mischief vector.",
+      "mitigation_proposed": "Add `permission:settings` on controller constructor",
+      "verdict": "P1 — heal-eligible after route-level verification"
+    },
+    {
+      "id": "R-4",
+      "severity": "P1-mitigated",
+      "scenario": "Privilege escalation via Administrator creation at branch_id=0",
+      "path": "POST /api/admin/administrator (with branch_id=0 + role=Admin)",
+      "attacker_role": "Branch Manager (has administrators_create perm? — uncertain) or any staff with administrators_create",
+      "preconditions": "M-R3-P0-E heal NOT landed",
+      "verdict": "MITIGATED — AdministratorRequest withValidator after-rule (L74-91) blocks non-Admin/non-Tenant Admin callers from setting branch_id=0. Heal commit visible. Defense verified."
+    },
+    {
+      "id": "R-5",
+      "severity": "P1-mitigated",
+      "scenario": "Role permission matrix enumeration without settings perm",
+      "path": "GET /api/admin/permission/{role}",
+      "attacker_role": "POS Operator or stale Customer token",
+      "preconditions": "M-R3-P0-A heal NOT landed (pre-heal state)",
+      "verdict": "MITIGATED — PermissionController::__construct gates all methods (incl. index) via `$this->middleware(['permission:settings'])` per M-R3-P0-A heal. Sentinel test exists (PermissionControllerIndexAuthzTest)."
+    },
+    {
+      "id": "R-6",
+      "severity": "P2",
+      "scenario": "Shared API key extraction → DoS via throttle bucket exhaustion",
+      "path": "Any /api/admin/* endpoint with `throttle:admin-mutation`",
+      "attacker_role": "Any party with X-Api-Key (extractable from SPA bundle if not env-loaded; extractable from server env if filesystem read)",
+      "exploit": "X-Api-Key is a shared deployment secret. If leaked, attacker can hit endpoints up to throttle limit and exhaust per-IP bucket. Cannot mutate without sanctum token though.",
+      "verdict": "P2 — defense-in-depth. Real fix is OAuth/PKCE not shared-secret-header. V1.0.2 backlog. Per-IP throttle already mitigates blast radius (TrustProxies fix Wave 3 P1)."
+    },
+    {
+      "id": "R-7",
+      "severity": "P2",
+      "scenario": "DefaultAccess privilege bypass via branch_id forgery",
+      "path": "POST /api/admin/default-access {branch_id: 0}",
+      "attacker_role": "Branch staff (branch_id > 0)",
+      "exploit": "If staff submits branch_id=0 hoping to switch their default branch to Admin scope.",
+      "mitigation_existing": "DefaultAccessService::storeOrUpdate L48-51 coerces branch_id back to caller's branch if not Admin. Defense in place.",
+      "verdict": "MITIGATED — verified."
+    },
+    {
+      "id": "R-8",
+      "severity": "P2",
+      "scenario": "PaymentGateway secret read via show endpoint",
+      "path": "GET /api/admin/setting/payment-gateway/{gateway}",
+      "attacker_role": "Branch Manager (settings perm presumed)",
+      "exploit": "PaymentGatewayController is gated `permission:settings`. But Stripe secret_key in response body? Depends on PaymentGatewayResource — need to verify it doesn't leak credentials.",
+      "verdict": "Defer — not deeply audited in 1500-word cap. Logged as V1.0.1 task."
+    },
+    {
+      "id": "R-9",
+      "severity": "P2",
+      "scenario": "Audit trail tampering via direct ActionLog mutation",
+      "path": "No endpoint — but is there a `ActionLog::create()` from user-controlled input?",
+      "exploit": "DashboardService::auditTrail reads ActionLog. Writes happen via observers/events. Need to verify no user-controlled `details` field allows XSS when displayed in admin UI.",
+      "verdict": "Defer — would need Vue rendering check of admin/dashboard/AuditTrailComponent.vue. P2."
+    }
+  ],
+  "summary_attack_surface": {
+    "P0_count": 1,
+    "P1_count": 2,
+    "P1_mitigated_count": 2,
+    "P2_count": 4,
+    "P0_chain_to_total_compromise": "No — R-1 IDOR is bounded by BranchScope for non-Admin. Compromise of Admin token → game over (as expected). No path from low-priv token to Admin escalation observed."
+  },
+  "most_dangerous_path_if_chained": "R-1 + branch-X staff token → enumerate every customer/order in branch X → exfiltrate transaction payment refs, customer PII (name, addresses via .with('user'))",
+  "verdict": "1 NEW P0 (R-1 / S-1 IDOR — same finding). 2 P1 heal-eligible (R-2, R-3). 2 P1 confirmed mitigated by recent heals. 4 P2 deferred to V1.0.1/V1.0.2 backlog. Admin gating posture is generally tight (71/87 = 82% explicit gate) BUT the gaps that exist are not benign — 1 of 16 ungated controllers is the IDOR vector."
+}

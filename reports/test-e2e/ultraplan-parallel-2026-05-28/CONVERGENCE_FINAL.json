@@ -1,0 +1,110 @@
+{
+  "cycle": "ultraplan-parallel-2026-05-28",
+  "date": "2026-05-28",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "cfb266cdf",
+  "synthesis_verdict": "BLOCKED_MISSING_INPUTS",
+  "v1_local_baseline_verdict": "GREEN_CARRIED_OVER",
+  "agents_expected": 4,
+  "agents_produced": 0,
+  "agents": {
+    "adv-mega": {
+      "expected_path": "reports/test-e2e/ultraplan-parallel-2026-05-28/agents/adv-mega.json",
+      "actual": "ABSENT",
+      "verdict": "NOT_PRODUCED"
+    },
+    "sync-global": {
+      "expected_path": "reports/test-e2e/ultraplan-parallel-2026-05-28/agents/sync-global.json",
+      "actual": "ABSENT",
+      "verdict": "NOT_PRODUCED"
+    },
+    "integration": {
+      "expected_path": "reports/test-e2e/ultraplan-parallel-2026-05-28/agents/integration.json",
+      "actual": "ABSENT",
+      "verdict": "NOT_PRODUCED"
+    },
+    "stress-prod": {
+      "expected_path": "reports/test-e2e/ultraplan-parallel-2026-05-28/agents/stress-prod.json",
+      "actual": "ABSENT",
+      "verdict": "NOT_PRODUCED"
+    }
+  },
+  "verification_commands_executed": [
+    "ls reports/test-e2e/ultraplan-parallel-2026-05-28/agents/  -> empty",
+    "ls reports/test-e2e/ultraplan-parallel-2026-05-28/captures/ -> empty",
+    "find reports/ -name '*.json' -newermt '2026-05-28 16:00' -> empty",
+    "grep -rli 'ADV-MEGA|SYNC-GLOBAL|INTEGRATION-AGENT|STRESS-PROD' reports/ -> empty"
+  ],
+  "critical_findings": [
+    {
+      "id": "F1",
+      "severity_cycle": "P0",
+      "severity_v1_local": "P3",
+      "title": "Synthesis input contract broken — 4 parallel agents did not produce JSON outputs",
+      "evidence": "agents/ directory empty + no alternative output paths found",
+      "owner_action": "Re-dispatch the 4 agents OR accept prior-cycle baseline for cloud-PR delta"
+    },
+    {
+      "id": "F2",
+      "severity": "INFO",
+      "title": "V1 LOCAL Le Cayenne baseline preserved GREEN unchanged",
+      "evidence": "Zero application-code commits since post-3-actions-2026-05-28 11:28 CEST; only docs commits + ephemeral .playwright-mcp/ artifacts in working tree",
+      "anchor": "reports/test-e2e/post-3-actions-2026-05-28/FINAL_VERDICT.md"
+    },
+    {
+      "id": "F3",
+      "severity": "P1",
+      "title": "Cloud-PR delta anchor MUST be prior cycle, not this BLOCKED file",
+      "evidence": "Treating this empty-input synthesis as baseline would understate cloud progress or overstate it",
+      "owner_action": "Use post-3-actions-2026-05-28/FINAL_VERDICT.md as primary diff anchor when cloud PR lands"
+    }
+  ],
+  "v1_local_baseline_pre_pr": {
+    "heals_attested": "6/6",
+    "production_readiness": "GREEN_WITHIN_ENVELOPE",
+    "envelope": "single_machine + FR_locale + POS_SIMULATION_HARDWARE=true_dev_only + 1_TPE + 1-2_bornes + no_frozen_zone_violations + NF525_chain_integrity",
+    "sync_status": "GREEN_Q9_S1_~1s_mesure_carried_over_from_wave_polish_final_2026-05-21",
+    "stress_status": "GREEN_50_orders_3_concurrency_7s_PASS_carried_over_from_wave_polish_final_2026-05-21",
+    "backup_status": "GREEN_88_tables_9_NF525_triggers_gzip_integrity_OK",
+    "frozen_zone_diff_loc": 0,
+    "nf525_chain_state_carried_over": {
+      "audit_logs_count": 1,
+      "last_hash": "c1fa32ddba5914127805b51618b3a8f18f9b709b76e5a37d915c90d2d72f122c",
+      "z_reports_count": 0,
+      "fiscal_chain_healthz": "ok",
+      "probe_session": "post-3-actions-2026-05-28 11:28 CEST"
+    },
+    "primary_anchor": "reports/test-e2e/post-3-actions-2026-05-28/FINAL_VERDICT.md",
+    "secondary_anchor": "reports/test-e2e/supervisor-final-2026-05-27/SUPERVISOR_VERDICT.md",
+    "stress_anchor": "reports/test-e2e/wave-polish-final-2026-05-21/CONVERGENCE_FINAL.md"
+  },
+  "cloud_pr_wait_status": {
+    "posture": "WAITING_FOR_CLOUD_PR",
+    "baseline_anchor": "reports/test-e2e/post-3-actions-2026-05-28/FINAL_VERDICT.md",
+    "baseline_head": "cfb266cdf",
+    "this_file_role": "PLACEHOLDER_NOTING_MISSING_DISPATCH",
+    "recommended_workflow_when_pr_lands": [
+      "Compare cloud PR HEAD vs cfb266cdf — any §7 frozen-zone delta requires LOCK_*.md",
+      "Re-run 6-heal smoke from post-3-actions-2026-05-28 against merged tree",
+      "Re-run fiscal:verify-chain --all post-merge",
+      "Re-run Ansible deploy/ansible/site.yml --tags=fiscal-revoke dry-run",
+      "Re-dispatch ADV-MEGA + SYNC-GLOBAL + INTEGRATION + STRESS-PROD against merged HEAD with verified output paths"
+    ]
+  },
+  "frozen_zone_verification_this_session": {
+    "command": "git status --short -- <13_protected_files>",
+    "result": "EMPTY",
+    "loc_modified": 0,
+    "verdict": "INTACT"
+  },
+  "discipline_attestations": {
+    "DM3_no_fake_data": "Every claim traces to executed command or prior cycle file path. No fabricated agent outputs.",
+    "DM5_honest_reporting": "Per-agent table explicitly labels NOT_PRODUCED rather than synthesizing absent verdicts.",
+    "DM6_NF525_RO": "Zero DB writes this session. NF525 state quoted from prior probe with explicit attribution.",
+    "DM8_no_frozen_zone_touch": "Verified this session — git status shows zero frozen-zone modifications."
+  },
+  "outputs": {
+    "md": "reports/test-e2e/ultraplan-parallel-2026-05-28/CONVERGENCE_FINAL.md",
+    "json": "reports/test-e2e/ultraplan-parallel-2026-05-28/CONVERGENCE_FINAL.json"
+  }
+}

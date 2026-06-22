@@ -1,0 +1,238 @@
+{
+  "task": "T2-DB-Performance-Audit",
+  "branch": "feature/mobile-app-le-cayenne-2026-05-10",
+  "audit_date": "2026-05-29",
+  "method": "DB::enableQueryLog via tinker, service-level invocation per hot path with cold cache",
+  "dataset_at_audit": {
+    "items": 45,
+    "orders": 182,
+    "audit_logs": 88,
+    "db": "mysql foodking"
+  },
+  "budget_per_request": 10,
+
+  "per_endpoint": {
+    "/api/frontend/menu": {
+      "controller": "App\\Http\\Controllers\\Frontend\\MenuController::kiosk",
+      "service": "App\\Services\\Kiosk\\KioskMenuService::build",
+      "query_count": 89,
+      "mysql_ms": 114.86,
+      "wall_ms": 238.78,
+      "n_plus_1": true,
+      "budget_status": "EXCEEDS_10x",
+      "cache": "Cache::remember 60s (mitigates warm hits but cold boot pays full cost)",
+      "issues": [
+        {
+          "severity": "P1",
+          "code": "DBPERF-P1-01",
+          "label": "Spatie media lazy-load N+1 on variations/extras/categories",
+          "evidence": "56 distinct queries 'select * from media where model_id=? and model_type=?'",
+          "root_cause": "ItemVariation::getThumbAttribute and ItemExtra::thumb call getFirstMediaUrl()/getMedia() but with('variations','extras') in KioskMenuService.php:79-85 does not chain '.media'. Item itself has media loaded, but variations/extras do not.",
+          "file": "app/Services/Kiosk/KioskMenuService.php:79",
+          "fix_proposal": "Add 'variations.media', 'extras.media', 'addons.addonItem.media' to the with(...) eager-load chain. Visible-cols restriction (select narrow cols) still applies to base rel; media is a morph relation independent of the col list."
+        },
+        {
+          "severity": "P2",
+          "code": "DBPERF-P2-01",
+          "label": "stock_levels per-item lookup (9 queries)",
+          "evidence": "9 distinct queries 'select * from stock_levels where branch_id=? and ((stockable_type=? and stockable_id=?) or ...)'",
+          "root_cause": "AvailabilityService / ChoiceAvailabilityResolver fetches stock levels item-by-item rather than batched whereIn(stockable_id, $ids).",
+          "file": "app/Services/Kiosk/KioskMenuService.php (calls ChoiceAvailabilityResolver)",
+          "fix_proposal": "Pre-batch stock_levels for all stockable_ids in one query, cache by (branch_id, stockable_type) inside the build() scope."
+        },
+        {
+          "severity": "P2",
+          "code": "DBPERF-P2-02",
+          "label": "item_branch_availability per-item lookup (9 queries)",
+          "evidence": "9 queries 'select * from item_branch_availability where branch_id=? and item_id=?'",
+          "root_cause": "Same pattern as stock_levels — likely inside ChoiceAvailabilityResolver per-item loop. Service already does a batched availability fetch at line 92-97 for items, but a per-variation/per-extra additional fetch leaks through.",
+          "fix_proposal": "Consolidate availability lookups behind a single per-build memoized whereIn batch (item_ids + variation_ids + extra_ids)."
+        }
+      ]
+    },
+    "/api/admin/kds-order/sync": {
+      "controller": "App\\Http\\Controllers\\Admin\\KdsSyncController::sync",
+      "service": "App\\Services\\KdsSyncService::sync",
+      "query_count": 9,
+      "mysql_ms": 19.25,
+      "wall_ms": 28.5,
+      "n_plus_1": false,
+      "budget_status": "WITHIN_BUDGET",
+      "cache": "Cache::remember 5s per (branch, minuteBucket, since, includeDeleted)",
+      "issues": []
+    },
+    "/api/admin/oss-order (publicIndex)": {
+      "controller": "App\\Http\\Controllers\\Admin\\OrderStatusScreenController::publicIndex",
+      "service": "App\\Services\\OrderStatusScreenOrderService::listForBranch",
+      "query_count": 1,
+      "mysql_ms": 3.98,
+      "wall_ms": 4.7,
+      "n_plus_1": false,
+      "budget_status": "EXCELLENT",
+      "issues": [],
+      "note": "Resource CDSOrderDetailsResource accesses only scalar order columns (id, order_serial_no, token, queue_number, order_type, status). No relation traversal in toArray. Single SELECT query."
+    },
+    "/api/admin/oss-order/popular-items": {
+      "controller": "App\\Http\\Controllers\\Admin\\OrderStatusScreenController::publicMostPopularItems",
+      "query_count": 4,
+      "mysql_ms": 9.39,
+      "wall_ms": 10.85,
+      "n_plus_1": false,
+      "budget_status": "WITHIN_BUDGET",
+      "issues": []
+    },
+    "/api/admin/dashboard/total-sales": {
+      "query_count": 1,
+      "mysql_ms": 2.43,
+      "wall_ms": 7.47,
+      "n_plus_1": false,
+      "budget_status": "EXCELLENT",
+      "issues": []
+    },
+    "/api/admin/dashboard/total-orders": {
+      "query_count": 1,
+      "mysql_ms": 0.95,
+      "wall_ms": 1.06,
+      "n_plus_1": false,
+      "budget_status": "EXCELLENT",
+      "issues": []
+    },
+    "/api/admin/dashboard/realtime-report": {
+      "query_count": 2,
+      "mysql_ms": 0.58,
+      "wall_ms": 0.9,
+      "n_plus_1": false,
+      "budget_status": "EXCELLENT",
+      "issues": []
+    },
+    "/api/admin/dashboard/sla-alerts": {
+      "query_count": 2,
+      "mysql_ms": 5.31,
+      "wall_ms": 6.15,
+      "n_plus_1": false,
+      "budget_status": "EXCELLENT",
+      "issues": [],
+      "note": "Eager-loads 'user' (single .with() resolves N customers in 1 query)."
+    },
+    "/api/admin/dashboard/channel-statistics": {
+      "query_count": 1,
+      "mysql_ms": 1.01,
+      "wall_ms": 1.5,
+      "n_plus_1": false,
+      "budget_status": "EXCELLENT",
+      "issues": []
+    },
+    "/api/admin/item": {
+      "controller": "App\\Http\\Controllers\\Admin\\ItemController::index",
+      "service": "App\\Services\\ItemService::simpleList",
+      "query_count": 4,
+      "mysql_ms": 8.06,
+      "wall_ms": 9.95,
+      "n_plus_1": false,
+      "budget_status": "WITHIN_BUDGET",
+      "issues": [],
+      "note": "with('media','category','offer') eager-load + availability overlay 1 batched whereIn + counts. Clean."
+    },
+    "/api/admin/pos-order": {
+      "controller": "App\\Http\\Controllers\\Admin\\PosOrderController::index",
+      "service": "App\\Services\\OrderService::list",
+      "query_count": 8,
+      "mysql_ms": 12.32,
+      "wall_ms": 15,
+      "n_plus_1": false,
+      "budget_status": "WITHIN_BUDGET",
+      "issues": [],
+      "note": "with('transaction','orderItems.orderItem.media','orderItems.orderItem.category','branch','user'). 6-level eager chain executes in 6-8 batched queries."
+    },
+    "/api/admin/cash-overview": {
+      "controller": "App\\Http\\Controllers\\Admin\\CashOverviewController::index",
+      "query_count": "5 (estimated, not probed via tinker — requires Request mock with valid auth+permission)",
+      "mysql_ms": "estimated <30",
+      "n_plus_1": false,
+      "budget_status": "WITHIN_BUDGET (code-level review)",
+      "issues": [],
+      "note": "with('order.deliveryBoy') select cols pruned. drawerCashCollectedUnfiltered = 1 extra bounded SELECT. Limit 500. Resource accesses only loaded relations."
+    }
+  },
+
+  "index_coverage": {
+    "orders": [
+      {"name": "PRIMARY", "cols": ["id"]},
+      {"name": "idx_orders_branch_status", "cols": ["branch_id", "status"]},
+      {"name": "idx_orders_user_id", "cols": ["user_id"]},
+      {"name": "idx_orders_datetime", "cols": ["order_datetime"]},
+      {"name": "idx_orders_status", "cols": ["status"]}
+    ],
+    "order_items": [
+      {"name": "PRIMARY", "cols": ["id"]},
+      {"name": "idx_order_items_order_id", "cols": ["order_id"]}
+    ],
+    "items": [
+      {"name": "PRIMARY", "cols": ["id"]},
+      {"name": "idx_items_status_category", "cols": ["status", "item_category_id"]},
+      {"name": "idx_items_id_price", "cols": ["id", "price"]}
+    ],
+    "audit_logs": [
+      {"name": "PRIMARY", "cols": ["id"]},
+      {"name": "audit_logs_branch_prev_unique", "cols": ["branch_id", "prev_hash"], "unique": true},
+      {"name": "audit_logs_branch_id_created_at_index", "cols": ["branch_id", "created_at"]},
+      {"name": "audit_logs_resource_resource_id_index", "cols": ["resource", "resource_id"]},
+      {"name": "audit_logs_branch_id_index", "cols": ["branch_id"]},
+      {"name": "audit_logs_user_id_index", "cols": ["user_id"]}
+    ]
+  },
+
+  "missing_indexes": [
+    {
+      "severity": "P3",
+      "code": "DBPERF-P3-01",
+      "table": "orders",
+      "columns": ["payment_status"],
+      "rationale": "DashboardService::totalSales filters WHERE payment_status=PAID without branch_id. At 182 rows full-scan is negligible (2.4ms). Becomes meaningful at >50k rows / multi-branch V2 SaaS.",
+      "recommendation": "Defer to V1.0.X cloud-prep backlog. Adding single-col index on a hot-write column has insert-cost tradeoff."
+    },
+    {
+      "severity": "P3",
+      "code": "DBPERF-P3-02",
+      "table": "stock_levels",
+      "columns": ["branch_id", "stockable_type", "stockable_id"],
+      "rationale": "If not already present, the per-stockable lookup pattern in KioskMenuService would benefit. Inspection of stock_levels migrations is out of scope (45min budget) — flagged for follow-up.",
+      "recommendation": "Verify via SHOW INDEX FROM stock_levels before adding."
+    }
+  ],
+
+  "slow_query_log_status": {
+    "enabled": false,
+    "file": "/opt/homebrew/var/mysql/MacBook-Pro-de-1MillNonstop-slow.log",
+    "note": "MySQL slow_query_log is OFF on this dev box. Cannot tail historical slow queries. Recommendation: enable with long_query_time=0.1 for V1 staging soak test."
+  },
+
+  "verdict": "PERF_HEALTHY_WITH_ONE_HOTSPOT",
+  "verdict_detail": "10 of 11 probed endpoints under 10 queries / 20ms. Only /api/frontend/menu blows the budget (89 queries / 115ms cold-cache) due to Spatie media lazy-load N+1 on nested variations/extras + per-item availability/stock_levels lookups. Mitigated in production by 60s Cache::remember but still material on cold boot + every cache-invalidation event (ItemAvailabilityChanged broadcast triggers cache flush). V1 Le Cayenne LOCAL is tolerable; V2 SaaS multi-tenant requires the fix. Indexes on orders/items/audit_logs/order_items are correctly placed and cover the hot WHERE/JOIN columns.",
+
+  "top_priority_fixes": [
+    {
+      "priority": 1,
+      "code": "DBPERF-P1-01",
+      "file": "app/Services/Kiosk/KioskMenuService.php:79-85",
+      "change": "Add 'variations.media', 'extras.media', 'addons.addonItem.media' to with(...) chain",
+      "expected_impact": "89 queries → ~10-15 queries, 115ms → ~25ms cold-cache",
+      "risk": "Low. Pure additive eager-load. No behavioral change. Existing kiosk E2E specs cover the payload shape."
+    },
+    {
+      "priority": 2,
+      "code": "DBPERF-P2-01 + DBPERF-P2-02",
+      "file": "Likely app/Services/ChoiceAvailabilityResolver.php (not inspected — out of scope)",
+      "change": "Batch stock_levels and item_branch_availability into single whereIn per build()",
+      "expected_impact": "18 queries removed",
+      "risk": "Medium — requires careful audit of how the resolver computes per-choice availability flags."
+    }
+  ],
+
+  "note_audit_limitations": [
+    "Probes run via tinker service-level — bypasses controller middleware, auth, FormRequest validation. Real HTTP request count may include +1-3 queries (session, user lookup, permission check).",
+    "Cold cache forced for /api/frontend/menu via Cache::forget. Warm cache = 0 queries (Cache::remember hit).",
+    "Dataset is small (45 items, 182 orders, 88 audit_logs). N+1 patterns surface but absolute timings will scale roughly linearly. Cloud-prep V1.0.X soak test with 1000+ items + 10k orders/day will expose hotspots not reproducible here.",
+    "CashOverviewController::index NOT probed via tinker (requires authenticated Request mock). Code-level review only — eager-loads look correct."
+  ]
+}

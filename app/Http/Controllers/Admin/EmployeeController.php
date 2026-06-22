@@ -37,7 +37,7 @@ class EmployeeController extends AdminController
         try {
             return EmployeeResource::collection($this->employeeService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -46,7 +46,7 @@ class EmployeeController extends AdminController
         try {
             return new EmployeeResource($this->employeeService->store($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -55,7 +55,7 @@ class EmployeeController extends AdminController
         try {
             return new EmployeeResource($this->employeeService->update($request, $employee));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -65,7 +65,7 @@ class EmployeeController extends AdminController
             $this->employeeService->destroy($employee);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -74,7 +74,7 @@ class EmployeeController extends AdminController
         try {
             return new EmployeeResource($this->employeeService->show($employee));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -83,7 +83,7 @@ class EmployeeController extends AdminController
         try {
             return Excel::download(new EmployeeExport($this->employeeService, $request), 'Employee.xlsx');
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -92,7 +92,7 @@ class EmployeeController extends AdminController
         try {
             return new EmployeeResource($this->employeeService->changePassword($request, $employee));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -101,7 +101,7 @@ class EmployeeController extends AdminController
         try {
             return new EmployeeResource($this->employeeService->changeImage($request, $employee));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -110,7 +110,7 @@ class EmployeeController extends AdminController
         try {
             return OrderResource::collection($this->orderService->userOrder($request, $employee));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

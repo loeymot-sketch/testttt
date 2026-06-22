@@ -30,7 +30,7 @@ class PushNotificationController extends AdminController
         try {
             return PushNotificationResource::collection($this->pushNotificationService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -39,7 +39,7 @@ class PushNotificationController extends AdminController
         try {
             return new PushNotificationResource($this->pushNotificationService->store($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -48,7 +48,7 @@ class PushNotificationController extends AdminController
         try {
             return new PushNotificationResource($this->pushNotificationService->show($pushNotification));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -58,7 +58,7 @@ class PushNotificationController extends AdminController
             $this->pushNotificationService->destroy($pushNotification);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -67,7 +67,7 @@ class PushNotificationController extends AdminController
         try {
             return Excel::download(new PushNotificationExport($this->pushNotificationService, $request), 'Push-Notification.xlsx');
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

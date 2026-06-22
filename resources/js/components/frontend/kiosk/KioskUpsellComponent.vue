@@ -72,7 +72,7 @@
 
       <!-- Actions -->
       <div class="kiosk-upsell-actions">
-        <button
+        <button type="button"
           v-if="selectedIds.length > 0"
           class="kiosk-btn-primary"
           :disabled="_adding"
@@ -82,7 +82,7 @@
           <span>{{ $t('kiosk.upsell_screen.add_continue', { n: selectedIds.length }) }}</span>
           <span class="kiosk-btn-price" aria-hidden="true">+{{ formatPrice(addedTotal) }}</span>
         </button>
-        <button
+        <button type="button"
           class="kiosk-upsell-skip"
           @click="skip"
           data-testid="kiosk-upsell-skip"
@@ -288,7 +288,7 @@ export default {
 .kiosk-upsell {
   width: 100vw;
   height: 100vh;
-  background: var(--kiosk-surface);
+  background: var(--kiosk-page-bg, var(--kiosk-bg));
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -313,18 +313,21 @@ export default {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .kiosk-upsell-header {
-  padding: 26px 28px 18px;
+  padding: 30px 32px 22px;
   text-align: center;
   flex-shrink: 0;
   border-bottom: 1px solid var(--kiosk-border);
+  background: var(--kiosk-surface);
+  box-shadow: var(--kiosk-shadow-sticky);
 }
 
 .kiosk-upsell-title {
-  font-size: 30px;
-  font-weight: 800;
+  font-size: clamp(34px, 4vw, 48px);
+  font-weight: 900;
   color: var(--kiosk-text);
   margin: 0 0 6px;
-  letter-spacing: -0.03em;
+  letter-spacing: 0;
+  text-transform: uppercase;
 }
 
 .kiosk-upsell-subtitle {
@@ -336,10 +339,10 @@ export default {
 .kiosk-upsell-grid {
   flex: 1;
   overflow-y: auto;
-  padding: 18px 24px 8px;
+  padding: 26px 30px 12px;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
+  gap: 22px;
   align-content: start;
   scrollbar-width: none;
 }
@@ -348,7 +351,7 @@ export default {
 
 .kiosk-upsell-card {
   background: var(--kiosk-surface);
-  border-radius: 18px;
+  border-radius: 28px;
   border: 1.5px solid var(--kiosk-border);
   overflow: hidden;
   cursor: pointer;
@@ -369,9 +372,9 @@ export default {
 }
 
 .kiosk-upsell-img-wrap {
-  height: 150px;
+  height: 176px;
   overflow: hidden;
-  background: var(--kiosk-surface-alt);
+  background: var(--kiosk-product-media-bg, var(--kiosk-surface-alt));
 }
 
 .kiosk-upsell-img {
@@ -394,15 +397,15 @@ export default {
 }
 
 .kiosk-upsell-info {
-  padding: 12px 14px 16px;
+  padding: 16px 18px 20px;
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
 .kiosk-upsell-item-name {
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 900;
   color: var(--kiosk-text);
   margin: 0;
   line-height: 1.25;
@@ -414,8 +417,8 @@ export default {
 }
 
 .kiosk-upsell-item-price {
-  font-size: 16px;
-  font-weight: 800;
+  font-size: 22px;
+  font-weight: 900;
   color: var(--kiosk-primary);
 }
 
@@ -454,7 +457,7 @@ export default {
 .kiosk-upsell-card.selected .kiosk-upsell-add { display: none; }
 
 .kiosk-upsell-actions {
-  padding: 18px 24px 24px;
+  padding: 20px 30px 28px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -465,13 +468,14 @@ export default {
 
 .kiosk-btn-primary {
   width: 100%;
-  height: 64px;
+  min-height: 76px;
+  height: auto;
   background: var(--kiosk-primary);
   color: var(--kiosk-text-on-red);
   border: none;
-  border-radius: 14px;
-  font-size: 18px;
-  font-weight: 700;
+  border-radius: 26px;
+  font-size: 22px;
+  font-weight: 900;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -493,13 +497,14 @@ export default {
 
 .kiosk-upsell-skip {
   width: 100%;
-  height: 52px;
+  min-height: 60px;
+  height: auto;
   background: var(--kiosk-surface);
   color: var(--kiosk-text-muted);
   border: 1.5px solid var(--kiosk-border);
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 600;
+  border-radius: 20px;
+  font-size: 17px;
+  font-weight: 800;
   cursor: pointer;
   transition: all 0.15s ease;
 }

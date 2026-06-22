@@ -5,8 +5,6 @@ namespace Database\Seeders;
 use App\Enums\Role as EnumRole;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
-
 
 class RolePermissionTableSeeder extends Seeder
 {
@@ -17,14 +15,14 @@ class RolePermissionTableSeeder extends Seeder
      */
     public function run()
     {
-        $adminRole = Role::find(EnumRole::ADMIN);
+        $adminRole = SpatieRoleLookup::byLegacyId(EnumRole::ADMIN);
         $adminRole?->givePermissionTo(Permission::all());
 
         // [POS-9-H.1.2] F-A2 fix: whereIn('name', ...) expects a flat list of strings.
         // The previous `['name' => 'x']` shape matched 0 rows silently — Branch Manager,
         // POS Operator, Chef were effectively left with zero permissions by this seeder
         // (only Admin worked via Permission::all() above).
-        $branchManager = Role::find(EnumRole::BRANCH_MANAGER);
+        $branchManager = SpatieRoleLookup::byLegacyId(EnumRole::BRANCH_MANAGER);
         if ($branchManager) {
             $branchManagerPermissionNames = [
                 'dashboard',
@@ -74,13 +72,28 @@ class RolePermissionTableSeeder extends Seeder
                 'chefs_show',
                 'transactions',
                 'sales-report',
+                // [Wave O — O4 2026-05-20] Branch Manager voit le rapport des
+                // caisses quotidiennes (scoped à sa branche via BranchScope).
+                'cash-sessions-report',
+                // [Sprint 1D / F-4] Branch Manager may approve cash variance
+                // beyond the configured threshold (default 2€). Cashiers
+                // (POS Operator) must escalate to a manager.
+                'cash.reconcile.variance.override',
+                // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] Branch Manager can
+                // apply customer loyalty redemption from POS cashier UI.
+                'pos.redeem-loyalty',
+                // [HEAL-4 / PROPOSAL-02 — V101-02 2026-05-26] Branch Manager can
+                // issue NF525 counter-entry refunds via the new PosRefundModal UI.
+                // Admin gets this via Permission::all() above. POS Operator does
+                // NOT get it by default (mass-refund vector mitigation).
+                'pos-refund',
             ];
             $branchManager->givePermissionTo(
                 Permission::whereIn('name', $branchManagerPermissionNames)->get()
             );
         }
 
-        $posOperatorManager = Role::find(EnumRole::POS_OPERATOR);
+        $posOperatorManager = SpatieRoleLookup::byLegacyId(EnumRole::POS_OPERATOR);
         if ($posOperatorManager) {
             $posOperatorManagerPermissionNames = [
                 'dashboard',
@@ -88,13 +101,16 @@ class RolePermissionTableSeeder extends Seeder
                 'pos-orders',
                 // [POS-9.1.1] cashier = up-to-10% discount
                 'pos-discount-up-to-10',
+                // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] Cashier-facing
+                // loyalty redemption gate (LOCK §6.1).
+                'pos.redeem-loyalty',
             ];
             $posOperatorManager->givePermissionTo(
                 Permission::whereIn('name', $posOperatorManagerPermissionNames)->get()
             );
         }
 
-        $chef = Role::find(EnumRole::CHEF);
+        $chef = SpatieRoleLookup::byLegacyId(EnumRole::CHEF);
         if ($chef) {
             $chefPermissionNames = [
                 'dashboard',
@@ -110,7 +126,7 @@ class RolePermissionTableSeeder extends Seeder
         // In a small restaurant (Le Cayenne), the cashier monitors the kitchen
         // and the order status screen directly from the POS station.
         // [GAP-29-1] FIX: whereIn expects scalar strings, not associative arrays
-        $posOperatorManager = Role::find(EnumRole::POS_OPERATOR);
+        $posOperatorManager = SpatieRoleLookup::byLegacyId(EnumRole::POS_OPERATOR);
         if ($posOperatorManager) {
             $extraPermissions = Permission::whereIn('name', [
                 'kitchen-display-system',
@@ -123,7 +139,7 @@ class RolePermissionTableSeeder extends Seeder
         // Stuff = floor staff (runners, helpers). They need KDS read access
         // to see which orders are ready to serve, and the OSS to track status.
         // [GAP-29-1] FIX: whereIn expects scalar strings, not associative arrays
-        $stuff = Role::find(EnumRole::STUFF);
+        $stuff = SpatieRoleLookup::byLegacyId(EnumRole::STUFF);
         if ($stuff) {
             $stuffPermissions = Permission::whereIn('name', [
                 'dashboard',
@@ -135,7 +151,7 @@ class RolePermissionTableSeeder extends Seeder
 
         // [GAP-19-5] Waiter role — needs table orders + KDS + OSS visibility.
         // [GAP-29-1] FIX: whereIn expects scalar strings, not associative arrays
-        $waiter = Role::find(EnumRole::WAITER);
+        $waiter = SpatieRoleLookup::byLegacyId(EnumRole::WAITER);
         if ($waiter) {
             $waiterPermissions = Permission::whereIn('name', [
                 'dashboard',

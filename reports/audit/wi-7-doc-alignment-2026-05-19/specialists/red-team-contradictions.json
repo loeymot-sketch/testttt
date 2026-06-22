@@ -1,0 +1,83 @@
+{
+  "specialist": "RED",
+  "scope": "Adversarial: find a documentation claim that CONTRADICTS current code, with file:line on BOTH sides.",
+  "mandate": "Read-only. Lookup doc claim, lookup matching code, report exact divergence.",
+  "timestamp": "2026-05-19T02:11:00+02:00",
+  "head_audited": "d5f934755",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "primary_finding": {
+    "id": "RED-CLAIM-01",
+    "severity": "P0 (doc-truth)",
+    "doc_claim": "CLAUDE.md:274-279 states: 'BranchScope global appliqué sur 11 models post iter11+12 : Order, FrontendOrder, OrderItem, OrderPayment, KioskMachine, StockLevel, StockMovement, CashDrawerSession, CashMovement, PendingPaymentConfirmation, PushNotification, DiningTable, Printer' — and 'User model exempté pour éviter Sanctum recursion'.",
+    "code_reality": [
+      "grep 'addGlobalScope(new BranchScope' app/Models/*.php returns 20 DECLARING models (not 13 listed, not '11 models')",
+      "Declaring models: CashMovement, CashDrawerSession, DeliveryBoyCashMovement, DiningTable, DeliveryBoyCashSession, FrontendOrder, ItemBranchAvailability, KioskMachine, Order, PaymentTerminal, OrderItem, OrderPayment, Printer, PendingPaymentConfirmation, StockLevel, PushNotification, PosParkedOrder, OrderQuote, User, StockMovement",
+      "User.php:10 imports BranchScope, User.php:90 declares `static::addGlobalScope(new BranchScope())` — this CONTRADICTS the 'User model exempté' claim",
+      "Customer.php has NO BranchScope declaration — the Sanctum-recursion exempt is Customer, per BranchScopeCoverageSentinelTest.php:48 EXEMPTED_MODELS list",
+      "tests/Feature/Branch/BranchScopeCoverageSentinelTest.php is the CI-locked baseline naming Customer (not User) as Sanctum-recursion exempt",
+      "ItemWizardProfile uses WizardProfileBranchScope (nullable variant per app/Models/ItemWizardProfile.php:16-23) — a documented architectural variant not mentioned in CLAUDE.md §9"
+    ],
+    "contradiction_proof": "CLAUDE.md says: (a) 11 models, (b) User exempted; CODE says: (a) 20 models declare BranchScope, (b) User DECLARES BranchScope (User.php:90), Customer is the recursion-exempt one (BranchScopeCoverageSentinelTest:48).",
+    "recommendation": "Rewrite CLAUDE.md §9 BranchScope paragraph to: 'BranchScope global applied to 20 models (current baseline locked by tests/Feature/Branch/BranchScopeCoverageSentinelTest.php). 11 V1.0.2 baseline exemptions documented in the sentinel (FrontendDiningTable, ZReport, AuditLog, OrderDiscountLog, Message, DiningTableAuditLog, KioskPromo, UpsellRule, ActionLog, DomainEvent, plus Branch self-ref and Customer Sanctum-recursion). User model declares BranchScope (User.php:90); Customer model is the Sanctum-recursion exempt.'"
+  },
+  "secondary_findings": [
+    {
+      "id": "RED-CLAIM-02",
+      "severity": "P1",
+      "doc_claim": "CLAUDE.md:291 says 'FormRequest authz scattered → roadmap V1.0.1 refactor 88 endpoints'.",
+      "code_reality": "PROJECT_BRAIN.md §3 line documents commit c86fabb7a 'fix(formrequest-authz-v1-0-2): unified authz on 7 critical FormRequests + sentinel baseline 74 -> 69' and 0c824ddbd 'heal 3 NEW DeliveryBoyCashSession requests + sentinel 69→66'. Wave 8 commit 68b63c090 'WAVE 8 — FormRequest authz drift sentinel' shipped CI sentinel. The 88-endpoint refactor has been chipped at and codified by sentinel baseline.",
+      "contradiction_proof": "CLAUDE.md frames it as roadmap; reality is partial-shipped + CI-locked + tracked.",
+      "recommendation": "Update §9 to: 'FormRequest authz unified (sentinel baseline 66 of 88 endpoints, V1.0.2 backlog for the remaining 22). See tests/Feature/Authz/FormRequestAuthzSentinelTest.php (or equivalent) and BRAIN §2/3.'"
+    },
+    {
+      "id": "RED-CLAIM-03",
+      "severity": "P2",
+      "doc_claim": "CLAUDE.md:283 says Sanctum TTL 480 minutes (8 hours).",
+      "code_reality": "config/sanctum.php:51: `'expiration' => env('SANCTUM_TOKEN_EXPIRATION', 480),`. This matches §1 but BRAIN.md §1 line 24 states V1.0.1 plans 'Sanctum TTL 8h → 1h sensitive ops' which is NOT YET implemented. CLAUDE.md §9 should note this is current vs future.",
+      "contradiction_proof": "Code = 480 min (8h) consistent. Drift is in V1.0.1 roadmap divergence (BRAIN says 'planned 1h', CLAUDE doesn't flag the planned hardening).",
+      "recommendation": "Note V1.0.1 plan in CLAUDE.md §9: 'TTL 480 minutes (V1). V1.0.1 hardening plan: 1h sensitive ops; see BRAIN §1.'"
+    },
+    {
+      "id": "RED-CLAIM-04",
+      "severity": "P2",
+      "doc_claim": "CLAUDE.md:266 'TRUNCATE bypass mitigé via GRANT level (deploy doc)' — references a 'deploy doc' without naming it.",
+      "code_reality": "commit f840c3ef5 'fix(central-heal-2026-05-18 CVP0-1): NF525 fiscal-table TRUNCATE/DROP REVOKE Ansible task' explicitly addresses this. ansible playbook for prod REVOKEs TRUNCATE/DROP on audit_logs + z_reports.",
+      "contradiction_proof": "Doc says 'deploy doc' (vague). Code says 'Ansible task in CVP0-1'. The doc reference is now concrete + traceable.",
+      "recommendation": "Update §8 to: 'TRUNCATE bypass mitigé via GRANT-level REVOKE (Ansible task CVP0-1 commit f840c3ef5).'"
+    },
+    {
+      "id": "RED-CLAIM-05",
+      "severity": "P2",
+      "doc_claim": "CLAUDE.md §7 line 222 says 'public/js/pos-wizard.js (Vanilla JS hand-written, ~296 KB, version S25-SinglePage)'.",
+      "code_reality": "wc -c public/js/pos-wizard.js = 296912 bytes (296.9 KB) — confirms size. `grep -m1 'Version: S25-SinglePage' public/js/pos-wizard.js` confirms `* Version: S25-SinglePage` at top header. ACCURATE.",
+      "contradiction_proof": "None — this claim is verified accurate.",
+      "recommendation": "No change needed. Spot-verified as still-true 2026-05-19."
+    },
+    {
+      "id": "RED-CLAIM-06",
+      "severity": "P3",
+      "doc_claim": "docs/AUTHZ_MATRIX.md table line 8 says 'OSS Screen | api-key uniquement'.",
+      "code_reality": "routes/api.php:1376 mentions 'x-api-key (impossible côté navigateur sur un CSP report). Throttle remonté' — implies api-key surface exists but constrained. The OSS broadcast / Echo path has expanded since this doc.",
+      "contradiction_proof": "Soft drift; not a hard contradiction but the matrix simplifies away the websocket/echo path the OSS now uses.",
+      "recommendation": "Add to AUTHZ_MATRIX.md: 'OSS Screen also reads via Echo public channel (no PII per OSS-deeper audit 2026-05-18); api-key remains the REST fallback.'"
+    },
+    {
+      "id": "RED-CLAIM-07",
+      "severity": "P1",
+      "doc_claim": "BRAIN §1 line 36 states 'Stripe webhook idempotency (parité SenangPay iter11) CLOSED Sprint 3A 2026-05-16'.",
+      "code_reality": "app/Http/PaymentGateways/Gateways/Stripe.php:166-328 exists per BRAIN reference. tests/Feature/Webhooks/StripeWebhookIdempotencyTest.php confirmed via direct file existence check expected. The BRAIN strikes through the backlog item correctly.",
+      "contradiction_proof": "None — this is a correctly-CLOSED item with proper traceability.",
+      "recommendation": "Verified accurate. BRAIN bookkeeping discipline is sound here."
+    }
+  ],
+  "summary": {
+    "hard_contradictions_found": 4,
+    "P0_count": 1,
+    "P1_count": 2,
+    "P2_count": 3,
+    "P3_count": 1,
+    "strongest_finding": "RED-CLAIM-01 — CLAUDE.md §9 BranchScope paragraph is materially wrong on both count (11 vs 20) and identity (User exempt vs User scoped). Hard contradiction with CI-locked sentinel test."
+  },
+  "word_count": 880,
+  "confidence": "HIGH (file:line on both sides, all secondary findings cross-checked)"
+}

@@ -1,0 +1,106 @@
+{
+  "persona": "RED-team Adversarial",
+  "zone": "Z-WEB-FINAL-V1-PREP",
+  "scope": "/Users/1millnonstop/Downloads/web/ — adversarial pre-production attack-vector audit, FR market launch posture",
+  "date": "2026-05-19",
+  "mode": "READ-ONLY, hostile-framing dispute",
+  "executive_summary": "Web standalone in current state has 2 RED-flag pre-production blockers and several smaller attack surfaces. (1) **LCEN compliance gap** is a regulatory attack vector: a competitor or dissatisfied customer can file CNIL/DGCCRF complaint at any production launch citing the visible 'À COMPLÉTER' placeholders — site is publicly auditable. (2) **LCS-A-002 'web mirror' framing** is misleading internally: prior cycle owner-gate framed loyalty wallet as 'absent on web' but the UI IS present (screens.jsx::WebLoyalty 181 LOC). What's absent is **API wireup** — meaning if a user signs up on web, accumulates points, then comes to POS, the points DO NOT EXIST in backend. This is a silent customer-experience break — web sets expectation, POS denies redemption — high-risk for owner support burden post-launch unless 'Demo' disclosure or wireup. (3) Cart tamper attack: cart state is purely client-side (price set in cart row), no backend re-pricing call ; web standalone has no order POST API ; cart is for UX simulation only. NO actual payment processing ; user 'pays' via mock methods. Therefore cart-tamper threat is contained inside an interaction that never reaches money — but customer can be confused if they see 'Order C-1234 confirmed' and arrive at POS expecting POS to know about it.",
+  "attack_vectors_assessed": [
+    {
+      "id": "RED-WEB-001",
+      "severity": "P0 (LEGAL/REGULATORY)",
+      "title": "LCEN art. 6 III publicly-visible placeholder text exposes owner to regulatory complaint at launch",
+      "vector": "Customer dispute / competitor complaint / DGCCRF spot inspection. Plaintiff files complaint citing 'site publicly displays [À COMPLÉTER SIREN]' as evidence editor identity not disclosed. CNIL would notice during routine privacy-policy review. Penalty up to 75k€ + criminal exposure for director of publication.",
+      "where": "/Users/1millnonstop/Downloads/web/legal/mentions.html × 13 placeholders + 4 other legal pages × 16 placeholders = 29 total visible 'À COMPLÉTER' strings",
+      "rebuttal_to_prior_cycle": "Prior Z-7 cycle landed legal pages structurally (5 pages with cross-refs, dates, footers) and reported 'V1 shippable' — but did NOT lint for placeholder density. This is a NEW finding for FINAL V1 production-prep. The pages technically exist but their CONTENT is admin-template form not customer-facing form.",
+      "remediation": "OWNER GATE G-WEB-LEGAL-1 (BLOCKING). Owner provides 9 business-identity values. Estimated remediation: 30 minutes once data supplied (15 sed/Edit calls + 1 visual proof-read).",
+      "exploitability": "TRIVIAL — placeholder text is openly rendered in HTML, viewable to anyone on web at production."
+    },
+    {
+      "id": "RED-WEB-002",
+      "severity": "P0/P1 (CUSTOMER EXPERIENCE → SUPPORT BURDEN)",
+      "title": "LCS-A-002 prior framing incorrect: web HAS loyalty wallet UI but NO API wireup — customer expectation/reality mismatch",
+      "vector": "Customer flow: signs up on web → sees 'Bienvenue +25 pts' yellow success modal (account-v2.jsx:213-232) → goes to 'Fidélité' page → sees QR + 347 pts balance + reward catalog (screens.jsx:539-720) → expects to use these points at POS or Kiosk. At POS, no record exists. Customer angry, support burden, possibly viral negative review. Mobile equivalent has API wireup so mobile points are real; web standalone has hardcoded 347.",
+      "rebuttal_to_prior_cycle": "Prior LCS-A-002 said 'web mirror does not exist'. INCORRECT — web mirror UI EXISTS (181 LOC of QR/balance/redeem/tiers/history/achievements/leaderboard in screens.jsx). What does not exist is API wireup. Per data/menu.js header lines 6-7 'Web reste STANDALONE (no API/MCP wireup) — composer_profile hardcoded mirror DB shape pour wireup futur'. This is intentional V1 scope — but it creates customer-trust risk if not disclosed.",
+      "remediation": "OWNER GATE G-WEB-1: pick ONE: (a) Add 'DÉMO — points fictifs en V1' badge near 347 pts balance (screens.jsx, ~3 LOC, safe heal candidate) ; (b) Wireup API V1.x (out-of-scope this cycle, ~80 LOC + auth + Sanctum customer:order ability — already in BRAIN backlog as B6-01) ; (c) Block-out the WebLoyalty wallet section entirely until wireup (largest scope, breaks UX of demo).",
+      "exploitability": "MEDIUM — customer simply needs to try to redeem at POS and fail. Trigger: any web-onboarded customer."
+    },
+    {
+      "id": "RED-WEB-003",
+      "severity": "P2 (UX TRUST)",
+      "title": "Mock confirmation page shows 'Commande #C-1234' with QR but no backend order exists — customer arrives at POS with confirmation, gets denied",
+      "vector": "User runs funnel: cart → checkout → payment (mock) → ConfirmationPage shows 'Ta commande #C-1234 est envoyée. Présente ce QR à la caisse'. User screenshots QR, drives to restaurant, POS scanner reads QR (or staff types ID), POS responds 'order not found'. Customer experience: betrayal.",
+      "where": "/Users/1millnonstop/Downloads/web/funnel.jsx:347 const orderId = 'C-' + Math.floor(Math.random() * 9000 + 1000) — RANDOM client-side number, no backend POST.",
+      "rebuttal_to_prior_cycle": "Prior cycles validated funnel state-machine GREEN (Z7-FUN.1 cart-preserved, etc.) — assumed mock UX is acceptable for V1 standalone demo. RED dispute: the page does NOT visibly disclose 'DEMO ORDER, NOT REAL' anywhere. The Confirmation card looks identical to a real order confirmation, with realistic order number and QR.",
+      "remediation": "Same as RED-WEB-002 — add 'DÉMO V1 — Aucune commande réelle envoyée' badge on ConfirmationPage (funnel.jsx:344-394). Safe heal candidate ~3 LOC. Pair with RED-WEB-002 owner gate.",
+      "exploitability": "MEDIUM — user simply follows the funnel to confirmation."
+    },
+    {
+      "id": "RED-WEB-004",
+      "severity": "P3 (XSS surface check)",
+      "title": "XSS surfaces: promo input + notes textarea + form fields — defense-in-depth (React escapes by default; verified)",
+      "vector": "Attempt: <script>alert('xss')</script> typed into promo input or notes textarea or any account form field.",
+      "where": "/Users/1millnonstop/Downloads/web/funnel.jsx:179 (promoInput), flows.jsx:83 (cart promo), flows.jsx:92 (cart notes), account-v2.jsx multiple inputs",
+      "defense": "React's default text-children escapes HTML. No innerHTML / dangerouslySetInnerHTML usage anywhere in /Downloads/web/ (grep verified, 0 hits). Promo input render in flows.jsx:86 uses {promoApplied} as text child — safe. Notes counter uses {notes.length} as numeric — safe. Account fields use value={form.email} controlled inputs — safe. Prior Z-7 cycle Z7-FUN.2 test explicitly verified XSS payload escaped: '<SCRIPT>...XSS=TRUE...</SCRIPT> rendered as plain text in promo input (uppercased by component), Code invalide error in red ; XSS not executed'.",
+      "remediation": "No action needed. Defense-in-depth holds.",
+      "exploitability": "ZERO — verified React-escape boundary."
+    },
+    {
+      "id": "RED-WEB-005",
+      "severity": "P3 (Web cart tamper)",
+      "title": "Cart price is client-side only — but no backend POST means no real attack",
+      "vector": "User opens DevTools, sets cart[0].price = 0.01, clicks checkout. Cart drawer updates total to 0,01€.",
+      "where": "/Users/1millnonstop/Downloads/web/flows.jsx:13 + index.html:48-50 cart useState",
+      "defense": "Web standalone has ZERO POST/PUT/PATCH/DELETE calls (grep verified — no fetch / axios / XMLHttpRequest occurrences in any web file). 'Payment' in funnel.jsx PaymentPage is purely mock. No money or commit to backend. Cart-tamper has nothing to attack.",
+      "remediation": "No action needed for V1 standalone. When/if API wireup happens (V1.x), backend MUST re-price (PricingService SSOT per CLAUDE.md §8). NF525 invariant.",
+      "exploitability": "ZERO until API wireup. After wireup, backend defenses required."
+    },
+    {
+      "id": "RED-WEB-006",
+      "severity": "P2 (External resource integrity check)",
+      "title": "External CDN scripts: React 18.3.1 + Babel-standalone 7.29.0 — SRI present, but UMD load means executes pre-app",
+      "vector": "Supply-chain attack on unpkg.com. If unpkg compromise serves malicious React or Babel, runs unrestricted on Le Cayenne domain. SRI integrity hashes mitigate.",
+      "where": "/Users/1millnonstop/Downloads/web/index.html:20-22",
+      "defense": "<script integrity='sha384-...' crossorigin='anonymous'> on all 3 external scripts: React, ReactDOM, Babel. SRI catches CDN tampering. CSP header missing — no Content-Security-Policy meta. If owner serves web with reverse-proxy / static host, owner should add 'default-src self; script-src self unpkg.com fonts.googleapis.com; ...' CSP at HTTP layer.",
+      "remediation": "V1.x infra: add CSP header at hosting layer (Nginx/CloudFront). Not heal-here — out of /Downloads/web/ scope. Listed for owner deployment runbook.",
+      "exploitability": "LOW — SRI present, unpkg.com is trusted infra, but defense-in-depth CSP is missing."
+    },
+    {
+      "id": "RED-WEB-007",
+      "severity": "P3 (Privacy/RGPD posture)",
+      "title": "External fonts.googleapis.com call leaks visitor IP to Google — RGPD risk on FR market",
+      "vector": "Per German court ruling LG München 2022 + CNIL guidance, embedding Google Fonts via fonts.googleapis.com transfers visitor IP to Google → personal data → consent required.",
+      "where": "/Users/1millnonstop/Downloads/web/index.html:7-9 + all 5 legal/*.html files",
+      "remediation": "V1.x: self-host fonts (download Anton + Bebas Neue + Inter + JetBrains Mono → /assets/fonts/, replace <link> with self-host @font-face). ~30 KB total. Removes RGPD/cookies-banner trigger. Listed for V1.x backlog.",
+      "exploitability": "LOW — fines rare for fonts.googleapis.com call, but technically non-compliant RGPD."
+    },
+    {
+      "id": "RED-WEB-008",
+      "severity": "P2 (Phone/email placeholder visibility)",
+      "title": "Phone '06 51 30 XX XX' literally on legal page footer — visitor sees masked digits as 'unfinished'",
+      "vector": "Customer reads CGV/mentions, sees '06 51 30 XX XX' literal in 'Contact' section. If real digits, no problem ; if mask, looks unprofessional and compounds RED-WEB-001 LCEN gap perception.",
+      "where": "/Users/1millnonstop/Downloads/web/legal/mentions.html:68, /Users/1millnonstop/Downloads/web/legal/cgv.html:61, /Users/1millnonstop/Downloads/web/components.jsx:121, /Users/1millnonstop/Downloads/web/screens.jsx:305",
+      "remediation": "OWNER CLARIFICATION (sub-item G-WEB-LEGAL-1).",
+      "exploitability": "Reputation only."
+    }
+  ],
+  "loyalty_qr_replay_attack_consideration": {
+    "from_prior_cycle": "Mobile LCS-S-001 QR unsigned plaintext (5-min rotation cosmetic) — heal in background per BRAIN.",
+    "web_equivalent_check": "Web QR generation is purely visual decorative mock — WebQR component (components.jsx:21-37) is a generated 13x13 pixel pattern from formula '(x*7 + y*11 + 3) % 5 < 2', NOT a real QR encoder. Identifier displayed is 'LECAY-347-A9F2C' — static, hardcoded, decorative. No real signed QR token, no real point bearing. Therefore the mobile QR replay attack vector (LCS-S-001) does NOT apply to web — the web 'QR' is not parseable as a QR code by any real scanner, it's UI decoration.",
+    "verdict": "Web QR is mock-decoration — no security implication. If V1.x API wireup happens, real QR generation must follow LCS-S-001 fix pattern (signed, rotating, replay-resistant)."
+  },
+  "verdict_summary": {
+    "p0_blocking_v1_production": 2,
+    "p0_items": ["RED-WEB-001 LCEN 29 placeholders → G-WEB-LEGAL-1", "RED-WEB-002 loyalty wallet UI without API wireup + no Demo disclosure → G-WEB-1"],
+    "p1": 0,
+    "p2": 4,
+    "p2_items": ["RED-WEB-003 confirmation page mock disclosure", "RED-WEB-006 CSP header missing infra", "RED-WEB-008 phone XX XX visibility", "(UX-005-P2 contact links non-clickable, cross-ref ux-a11y)"],
+    "p3": 3,
+    "p3_items": ["RED-WEB-004 XSS surfaces — verified defended", "RED-WEB-005 cart tamper — N/A no API", "RED-WEB-007 Google Fonts RGPD"],
+    "owner_gates": ["G-WEB-LEGAL-1 (LCEN data) BLOCKING", "G-WEB-1 (loyalty disclosure path) RECOMMENDED-BEFORE-LAUNCH"],
+    "safe_heals_in_this_cycle": [
+      "Optional: add 'DÉMO V1' badge near WebLoyalty balance + ConfirmationPage subhead (~6 LOC total, P2 → P0 customer trust). Recommend pairing with owner sign-off G-WEB-1."
+    ]
+  },
+  "verdict": "RED-FLAG: V1 production launch is BLOCKED by LCEN compliance gap (29 visible placeholders, regulator exposure). Recommend SURFACE G-WEB-LEGAL-1 + G-WEB-1 to owner. Cart-tamper and XSS surfaces verified DEFENDED. Loyalty QR replay attack does NOT apply to web (decoration). 0 cycle-applicable safe heals without owner data. Two ≤5 LOC 'Démo' badges could land scope-minimally if owner accepts disclosure path before wireup."
+}

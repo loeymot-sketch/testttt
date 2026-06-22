@@ -15,7 +15,12 @@ class LicenseController extends AdminController
     {
         parent::__construct();
         $this->licenseService = $licenseService;
-        $this->middleware(['permission:settings'])->only('update');
+        // [abuse-heal 2026-06-20 W5 W5-SET-LICENSE-INDEX-02] Gate index too — GET /admin/setting/license
+        // echoes license_key, which config/app.php maps to MIX_API_KEY == the global x-api-key gating the
+        // whole API. A non-settings staff member could read it back. Mirror the Mail/Notification secret-index
+        // heal. NOTE for owner (G-LICENSE-KEY): LicenseService::update writes license_key into MIX_API_KEY, so
+        // a license edit silently rotates the global API key — consider decoupling them.
+        $this->middleware(['permission:settings'])->only('index', 'update');
     }
 
     public function index(): \Illuminate\Http\Response | LicenseResource | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
@@ -23,7 +28,7 @@ class LicenseController extends AdminController
         try {
             return new LicenseResource($this->licenseService->list());
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -32,7 +37,7 @@ class LicenseController extends AdminController
         try {
             return new LicenseResource($this->licenseService->update($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

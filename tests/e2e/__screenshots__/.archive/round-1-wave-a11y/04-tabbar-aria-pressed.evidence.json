@@ -1,0 +1,35 @@
+{
+  "tabs": [
+    {
+      "tag": "DIV",
+      "role": null,
+      "ariaPressed": null,
+      "ariaLabel": null,
+      "text": "Accueil"
+    },
+    {
+      "tag": "DIV",
+      "role": null,
+      "ariaPressed": null,
+      "ariaLabel": null,
+      "text": "Menu"
+    },
+    {
+      "tag": "DIV",
+      "role": null,
+      "ariaPressed": null,
+      "ariaLabel": null,
+      "text": "Commandes"
+    },
+    {
+      "tag": "DIV",
+      "role": null,
+      "ariaPressed": null,
+      "ariaLabel": null,
+      "text": "Profil"
+    }
+  ],
+  "all_button": false,
+  "all_aria_pressed": false,
+  "crit_serious": 3
+}

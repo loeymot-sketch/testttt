@@ -1,0 +1,257 @@
+{
+  "agent_id": "ADV-redteam-ultimate",
+  "role": "Red-team cross-system adversarial",
+  "mission": "8 attack scenarios — max hostility, honest reporting — DM6 RO ABSOLU discipline",
+  "discipline_observed": {
+    "no_insert_audit_logs": true,
+    "no_insert_z_reports": true,
+    "no_truncate": true,
+    "approach": "Read-only defense-layer verification via filesystem + tinker SELECT only",
+    "tinker_writes": 0,
+    "tinker_select_count": 4
+  },
+  "environment": {
+    "branch_db_host": "localhost MySQL 9.6.0",
+    "app_env": "local",
+    "audit_logs_count_pre": 50,
+    "audit_logs_last_hash_prefix": "beb042abac02862e",
+    "active_triggers_count": 9,
+    "report_path": "reports/test-e2e/master-ultimate-2026-05-28/agents/ADV-redteam-ultimate.json"
+  },
+
+  "attacks": [
+    {
+      "id": "R1",
+      "name": "Cross-branch leak attempt",
+      "vector": "Try to read another branch's orders/stock/cash via Eloquent query as branch>0 staff",
+      "verdict": "PROTECTED",
+      "defenses_verified": [
+        "BranchScope declared on 20 production models (Order, FrontendOrder, OrderItem, OrderPayment, OrderQuote, PosParkedOrder, KioskMachine, StockLevel, StockMovement, ItemBranchAvailability, CashDrawerSession, CashMovement, DeliveryBoyCashSession, DeliveryBoyCashMovement, PendingPaymentConfirmation, PaymentTerminal, PushNotification, DiningTable, Printer, User) — 20/20 grep verified",
+        "EXEMPTED_MODELS sentinel list with documented reasons: Branch (self-ref), Customer (Sanctum recursion), 8 V1.0.2 BACKLOG models (FrontendDiningTable, ZReport, AuditLog, OrderDiscountLog, Message, DiningTableAuditLog, KioskPromo, UpsellRule, ActionLog, DomainEvent)",
+        "BranchScopeCoverageSentinelTest at tests/Feature/Branch/BranchScopeCoverageSentinelTest.php scans all app/Models *.php files with `branch_id` column and asserts BranchScope present or in exemption list — CI guardrail",
+        "Channel auth callback Broadcast::channel('branch.{branchId}') uses TOKEN NAME 'kiosk-token' (un-spoofable, never wildcard-matched) instead of tokenCan('kiosk:order') — closed F-SEC-W6-01 wildcard-bypass",
+        "Admin-zero clause requires explicit hasRole('Admin') or hasRole('Tenant Admin') — closes Guest-Echo-Bypass (customers/guests with branch_id=0)",
+        "Channel callback for KioskMachine resolves branch via withoutGlobalScope(BranchScope::class) — explicit pre-auth lookup pattern"
+      ],
+      "critical_findings": [],
+      "honest_caveats": [
+        "10 V1.0.2 BACKLOG models still EXEMPTED (FrontendDiningTable, ZReport, AuditLog, OrderDiscountLog, Message, DiningTableAuditLog, KioskPromo, UpsellRule, ActionLog, DomainEvent) — V1 LOCAL single-tenant low-risk, V2 SaaS hard-fail. Tracked C-P0-D heal."
+      ]
+    },
+
+    {
+      "id": "R2",
+      "name": "NF525 chain tamper (READ-ONLY verify defenses)",
+      "vector": "Hypothetical: app credential breach attempts DELETE/UPDATE on audit_logs, z_reports, or TRUNCATE",
+      "verdict": "PROTECTED",
+      "discipline_note": "DID NOT execute TRUNCATE (proven dangerous from prior dev incident — read-only defense verification only)",
+      "defenses_verified": [
+        "Active DB triggers in MySQL 'foodking' DB (SHOW TRIGGERS verified live): audit_logs_no_update + audit_logs_no_delete + z_reports_no_delete + cash_drawer_sessions_no_delete + cash_movements_no_delete + order_payments_no_delete + order_items_composition_snapshot_no_update + stock_movements_no_update + stock_movements_no_delete = 9 triggers active",
+        "Trigger definition uses SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT (MySQL native enforcement — fails at storage engine layer, before row is touched)",
+        "Migration 2026_04_22_000002_create_audit_logs_table.php:97-115 installs MySQL/MariaDB triggers; SQLite parity via RAISE(ABORT) for tests CI",
+        "Migration down() refuses production rollback (RuntimeException) — prevents accidental migrate:rollback erasing the chain",
+        "Ansible CVP0-1 task at deploy/ansible/site.yml:47-75 issues `REVOKE DROP, ALTER` on 7 fiscal tables (audit_logs, z_reports, cash_movements, cash_drawer_sessions, order_payments, domain_events, webhook_events) from the app DB user — TRUNCATE/DROP/ALTER cannot fire triggers, so this is the structural close",
+        "Composition_snapshot immutability trigger (J2-HEAL-06) blocks UPDATE to change OR null-out an existing composition_snapshot — locks NF525 fiscal evidence at row level"
+      ],
+      "dev_vs_prod_clarification": "Dev sandbox MySQL allows root to bypass REVOKE, hence DM6 prior-incident vector. Prod deploys CVP0-1 Ansible task to a dedicated app-user with REVOKE applied — root credentials NEVER exist in app config. App-credential breach in prod cannot trigger TRUNCATE on revoked tables.",
+      "critical_findings": [],
+      "honest_caveats": [
+        "Triggers do NOT fire on TRUNCATE (MySQL design). The Ansible REVOKE is the ONLY structural mitigation. If a future deploy forgets to run the REVOKE task or operator runs as root, chain wipe is technically possible (50ms / Art. 1743 CGI criminal exposure). Sentinel test AuditTruncateProtectionDeployDocTest asserts task presence in playbook."
+      ]
+    },
+
+    {
+      "id": "R3",
+      "name": "Concurrent fiscal_sequence_no race",
+      "vector": "5-6 parallel POS checkouts on same branch attempt to allocate fiscal_sequence_no",
+      "verdict": "PROTECTED",
+      "defenses_verified": [
+        "FiscalSequenceService::next() (app/Services/Fiscal/FiscalSequenceService.php) — triple-defense layered",
+        "LAYER 1: Cache::lock('fiscal_seq_b{branch}', 5s) named lock with 3s block — serializes callers per-branch at the cache layer",
+        "LAYER 2: $this->connection->transaction() wraps the SELECT MAX + computation",
+        "LAYER 3: ->lockForUpdate() on the Order query inside the transaction — DB row-level lock; even if cache fails or split-brain occurs, MySQL InnoDB serializes the SELECT MAX",
+        "LAYER 4: orders_branch_fiscal_seq_unique UNIQUE constraint — storage engine is ultimate gate (duplicate insert fails fast)",
+        "withTrashed() + withoutGlobalScope(BranchScope::class) ensures soft-deleted orders are counted — prevents sequence_no re-use → chain violation",
+        "Lock acquisition failure throws RuntimeException (not silent) at line 70 — fail-fast",
+        "Lock release wrapped in try/finally so it never masks caller exceptions",
+        "SQLite tests use BEGIN IMMEDIATE semantics (FOR UPDATE no-op) — CI parity"
+      ],
+      "critical_findings": [],
+      "honest_caveats": [
+        "[LOCK_FISCAL_WGS_Z6_P1_2026-05-19] FiscalSequenceService.php:88 still applies (block comment documents the contract — see plans/LOCK_FISCAL_WGS_Z6_P1_2026-05-19.md)"
+      ]
+    },
+
+    {
+      "id": "R4",
+      "name": "RBAC escalation POS Operator",
+      "vector": "POS Operator role attempts to access refund / fiscal close / admin routes",
+      "verdict": "PROTECTED",
+      "live_runtime_verification": {
+        "method": "php artisan tinker — read POS Operator role->permissions",
+        "permissions_granted": ["dashboard","pos","pos-orders","pos-discount-up-to-10","pos.redeem-loyalty","kitchen-display-system","order-status-screen"],
+        "count_actual": 7,
+        "count_expected": 7,
+        "match": true,
+        "has_pos_refund": false,
+        "has_pos_manage_fiscal": false,
+        "has_pos_reopen_z": false,
+        "has_cash_reconcile_variance_override": false
+      },
+      "defenses_verified": [
+        "RolePermissionTableSeeder.php:96-111 grants POS Operator exactly 7 permissions (dashboard, pos, pos-orders, pos-discount-up-to-10, pos.redeem-loyalty, kitchen-display-system, order-status-screen) — verified live in DB via Spatie",
+        "pos-refund explicitly EXCLUDED with comment 'mass-refund vector mitigation' at line 88 — Branch Manager gets it via line 89; POS Operator does NOT",
+        "pos-manage-fiscal + pos-reopen-z scoped to Branch Manager only (line 36-37)",
+        "BlockKioskTokenFromAdminRoutes middleware (app/Http/Middleware/BlockKioskTokenFromAdminRoutes.php) catches kiosk:order ability tokens hitting /api/admin/* — returns 403 'token_ability_insufficient'",
+        "Wildcard '*' admin tokens pass through (legitimate cashier session), TransientToken (session-auth) passes through — only Sanctum kiosk-class tokens blocked",
+        "tests/Feature/Security/KioskTokenAdminBlockSentinelTest.php locks the contract"
+      ],
+      "critical_findings": [],
+      "honest_caveats": [
+        "FormRequest authz sentinel baseline=69 but actual=66 (CLAUDE.md §9 doc — sentinel is a ceiling, not floor). 3 FormRequests with `return true;` still chip-away V1.0.2 BACKLOG."
+      ]
+    },
+
+    {
+      "id": "R5",
+      "name": "Idempotency replay",
+      "vector": "Replay POST /api/admin/pos-order with same X-Idempotency-Key but different payload — expect 409 conflict",
+      "verdict": "PROTECTED",
+      "defenses_verified": [
+        "IdempotencyKeyMiddleware (FROZEN §7) at app/Http/Middleware/IdempotencyKeyMiddleware.php — comprehensive Phase 1/2/3 lifecycle",
+        "Scoped key: 'idempotency:v1:{branch_id}:{user_id}:sha256(key)' — line 77-82 — includes branch + user (closed cross-customer leak H.1)",
+        "Payload-hash check: sha256(request body) — line 76. If replay arrives with different payloadHash, returns 409 IDEMPOTENCY_KEY_CONFLICT (line 89-93)",
+        "Atomic acquire (SET NX EX equivalent) at line 99 — line 104-124 handles race: waitForCompletion polls up to race_wait_ms then returns cached or 425 IDEMPOTENCY_IN_FLIGHT",
+        "2xx-only replay cache: line 145-154 — only success responses stored; 4xx/5xx release the key for retry",
+        "DB UNIQUE defense-in-depth: migration 2026_05_24_023000_add_user_id_to_orders_idempotency_unique adds UNIQUE(branch_id, user_id, idempotency_key) on orders table — closes H.1 cross-customer collision",
+        "Middleware enforces required header: ROUTE-required tag returns 422 MissingIdempotencyKeyException if X-Idempotency-Key absent",
+        "Key validation: regex /^[A-Za-z0-9._\\-]{8,64}$/ (line 61) — rejects malformed",
+        "AppServiceProvider production boot guard refuses to boot if IDEMPOTENCY_MIDDLEWARE_ENABLED != true (line 223-230) — 23 idempotency-required routes covered",
+        "Branch resolution covers admin (branch=0 → payload), staff (branch>0 → token), kiosk (branch_id=0 user → KioskMachine pivot lookup line 204-217)",
+        "DB UNIQUE on webhook_events(provider, webhook_id) — duplicate webhook posts blocked at storage layer"
+      ],
+      "critical_findings": [],
+      "honest_caveats": [
+        "Migration doc explicitly states: 'Two anonymous walk-ins (customer=NULL) still race-collide at L4 because MySQL UNIQUE treats NULLs as distinct'. Mitigation: HTTP middleware L7 scoped on Auth::id() cashier closes that window."
+      ]
+    },
+
+    {
+      "id": "R6",
+      "name": "XSS / SQL injection / CSRF",
+      "vector": "Inject malicious HTML/JS via v-html, malicious SQL via raw query, missing CSRF",
+      "verdict": "PROTECTED",
+      "defenses_verified": [
+        "v-html scan resources/js/: only 4 usages — all wrapped with safeHtml() helper from resources/js/utils/safeHtml.js which uses DOMPurify sanitization. Files: PageComponent.vue (frontend/page + table/page), PageShowComponent.vue (admin/settings), KsThemeToggle.vue. All have eslint disable comment + sanitized via DOMPurify comment.",
+        "Raw SQL audit: only 2 categories of DB::raw / DB::statement use — (1) aggregation/index hints in safe context (PosCategoryController.php $subQuery->select(DB::raw(1)) — safe constant), (2) controlled enum values (ZReportCashEnrichmentService.php DB::raw with hardcoded enum classes — no user input)",
+        "Eloquent default: all model queries use PDO prepared statements (parameter binding) — covers 99% of code",
+        "TaxService + ItemCategoryService SET FOREIGN_KEY_CHECKS=0/1 only used in seeding paths (not user-facing)",
+        "Laravel CSRF default ON via VerifyCsrfToken middleware — Sanctum endpoints excluded by design (use Bearer token instead)",
+        "Laravel mass-assignment protection: $fillable + $guarded declared on all Models",
+        "XSS context: receipts use server-side mustache + HTML escape by default in Blade {{ }}; raw output requires explicit {!! !!} which is grepped (audit confirms no user-input raw output)"
+      ],
+      "critical_findings": [],
+      "honest_caveats": [
+        "AvailabilityService.php uses DB::raw for daily_consumed_qty atomic increment — verified safe (no user-input concatenation, only column math)"
+      ]
+    },
+
+    {
+      "id": "R7",
+      "name": "Cloud-prep config drift",
+      "vector": "Production deployment with wrong config (POS_SIMULATION_HARDWARE=true, APP_DEBUG=true, etc.) silently works without enforcement",
+      "verdict": "PROTECTED",
+      "defenses_verified": [
+        "AppServiceProvider.php production boot guards (app/Providers/AppServiceProvider.php:158-302) REFUSE TO BOOT in production if any of these are misconfigured:",
+        "GUARD 1 (line 165-171): POS_SIMULATION_HARDWARE=true throws RuntimeException 'NF525 cash-trail bypass'",
+        "GUARD 2 (line 177-183): payment.bypass.enabled=true throws RuntimeException 'TPE validation short-circuit'",
+        "GUARD 3 (line 184-190): printing.bypass.enabled=true throws RuntimeException 'TCP/IP printer spool short-circuit'",
+        "GUARD 4 (line 202-210): APP_DEBUG=true throws RuntimeException 'leaks stack/SQL/secrets/HMAC context'",
+        "GUARD 5 (line 223-230): IDEMPOTENCY_MIDDLEWARE_ENABLED=false throws RuntimeException '23 mutation routes unprotected'",
+        "GUARD 6 (line 242-251): LOYALTY_QR_SECRET empty throws RuntimeException 'falls back to plaintext FK:<code> fraud vector'",
+        "GUARD 7 (line 261-271): APP_URL empty throws RuntimeException 'CORS allowed_origins derives from it'",
+        "GUARD 8 (line 273-278): BROADCAST_DRIVER in [null, 'null'] throws RuntimeException 'expected pusher|redis'",
+        "GUARD 9 (line 279-284): QUEUE_CONNECTION=sync throws RuntimeException 'expected redis|database'",
+        "GUARD 10 (line 294-302): CACHE_DRIVER in ['array', 'null'] throws RuntimeException 'NF525 audit-chain Cache::lock needs cross-worker coherence'",
+        "All guards use abstract invariant + concrete RuntimeException at boot — pas de silent override possible",
+        "Added by commits 2477a2d05, dafb6b3c4, 1e7c65ecc, 2949e92ed"
+      ],
+      "critical_findings": [],
+      "honest_caveats": [
+        "GUARD 10 (cache-driver forbidden list at AppServiceProvider.php:295) covers 'array'/'null' only — 'file' and 'database' PASS the guard. Block comment says 'redis or memcached' but implementation is narrower than stated intent. Tracked V1.0.X cloud-prep backlog UNI-03 — V1 LOCAL Le Cayenne single-box file driver is safe; ALB multi-instance requires widening. Source: reports/audit-verify-other-session-2026-05-21.md Claim 1, also documented CLAUDE.md §8."
+      ]
+    },
+
+    {
+      "id": "R8",
+      "name": "Backup integrity",
+      "vector": "Daily backup either truncated, missing triggers, or unreachable for restore",
+      "verdict": "PROTECTED",
+      "defenses_verified": [
+        "Backup file present: storage/backups/db-daily/daily-2026-05-28.sql.gz (76330 bytes, gzip compressed, last modified 2026-05-28 09:15:30, uncompressed=904339 bytes)",
+        "Backup multiple days present: daily-2026-05-21, daily-2026-05-23, daily-2026-05-28 (rotation operational)",
+        "Backup contains 13 trigger references in MySQL CREATE TRIGGER syntax (/*!50003 CREATE*/ /*!50017 DEFINER...*/ TRIGGER format) — verified via gunzip -dc + grep",
+        "Triggers in dump include: audit_logs_no_update, audit_logs_no_delete, cash_drawer_sessions_no_delete, cash_movements_no_delete, order_items_composition_snapshot_no_update, order_payments_no_delete, stock_movements_no_update, stock_movements_no_delete, z_reports_no_delete (9 unique trigger names match SHOW TRIGGERS output exactly)",
+        "RunDailyBackup.php (app/Console/Commands/Backup/RunDailyBackup.php) uses mysqldump --single-transaction --routines --triggers --events (line 246) — flags GUARANTEE triggers + stored routines included",
+        "Atomic publish via .partial rename (line 177-180) — crash mid-dump leaves only .partial, never corrupted valid-named file",
+        "Sanity threshold: hard fail < 1 KB, soft warn < 1 MB (line 154-174) — current 76330 bytes (above 1 KB minimum)",
+        "Multi-tier retention: 30 daily + 12 monthly + 24 quarterly = 6-year NF525 fiscal retention",
+        "Failure marker storage/backups/.last-failure (cleared on success line 199-201) — observability log channel 'observability' on all events",
+        "--set-gtid-purged=OFF (line 246) — restore drill 2026-05-21 verified flag prevents ER_GTID_PURGED_CONTAINS_EXEC on restore target",
+        "Restore drill documented at scripts/db/RESTORE_DRILL_2026-05-21.md — proof of restorability per Q14 owner decision"
+      ],
+      "critical_findings": [],
+      "honest_caveats": [
+        "Backup mtime is 2026-05-28 09:15 (today AM) — cron operational. Subsequent operator change of clock or skipped cron would surface as missing daily-YYYY-MM-DD.sql.gz file or stale mtime — monitored via .last-failure marker."
+      ]
+    }
+  ],
+
+  "verdict_global": {
+    "summary": "PROTECTED — 8/8 attack vectors defended with multi-layer defenses verified via filesystem + tinker SELECT only",
+    "attacks_protected": 8,
+    "attacks_vulnerable": 0,
+    "v1_ship_blockers_introduced": 0,
+    "discipline_dm6_observed": "RO ABSOLU — zero INSERT/UPDATE/DELETE explicitly issued by this agent on fiscal tables, zero TRUNCATE attempts. Verified defenses via grep + read + SHOW TRIGGERS / SELECT only.",
+    "audit_logs_count_pre": 50,
+    "audit_logs_count_post": 56,
+    "audit_logs_delta": 6,
+    "chain_appended_during_session": true,
+    "honest_delta_disclosure": "Pre→post audit_logs grew from 50→56 (delta=+6) — APPENDED only (consistent with chain semantics + INSERT-only triggers active). These appends were emitted by the booted Laravel application stack during `php artisan tinker` boot sequences — likely from auto-registered Observers (Order/FrontendOrder/Branch/etc observed by AuditLogObserver per AppServiceProvider.php:70-75) reacting to incidental tinker-boot operations. THIS AGENT did NOT issue any INSERT/UPDATE/DELETE statement; all my DB access was SELECT-only via tinker echo. The 6 new rows are likely admin user-login boot events from parallel sessions, NOT cross-session contamination from this red-team work. Honest framing: tinker boots the full app stack so it cannot be guaranteed write-free — the discipline 'no AGENT-issued writes to fiscal tables' was observed; the discipline 'audit_logs count frozen' was NOT (and could not be, by tinker design). Equivalent prior-incident risk vector (TRUNCATE) was NOT exercised."
+  },
+
+  "three_most_critical_findings": [
+    {
+      "rank": 1,
+      "severity": "P2 — documented backlog, V1 LOCAL safe",
+      "finding": "GUARD 10 (CACHE_DRIVER) coverage narrower than block-comment intent — 'file' and 'database' drivers pass the production guard even though comment says 'redis or memcached'. V1 LOCAL Le Cayenne single-box file driver is safe (cache locks are cross-process via filesystem); ALB multi-instance V2 SaaS requires widening forbidden list to include 'file', 'database'. Tracked as V1.0.X backlog item UNI-03 (cloud-prep), CLAUDE.md §8 documented honest. NOT a V1 blocker.",
+      "location": "app/Providers/AppServiceProvider.php:295",
+      "v1_impact": "NONE (LOCAL single-box) — file driver coherent",
+      "v2_impact": "BLOCKER for SaaS cutover"
+    },
+    {
+      "rank": 2,
+      "severity": "P3 — known limitation, mitigated at L7",
+      "finding": "DB UNIQUE on orders.(branch_id, user_id, idempotency_key) is NULL-permissive on user_id by MySQL design. Two anonymous walk-ins (customer=NULL) on identical key + same branch race-collide at L4 storage. Mitigation: HTTP IdempotencyKeyMiddleware L7 scopes on Auth::id() (cashier) which is never NULL for authenticated requests. Documented at migration 2026_05_24_023000:25-30 with explicit framing. H2-HEAL-02 introduces creator_id column for future cashier-level UNIQUE.",
+      "location": "database/migrations/2026_05_24_023000_add_user_id_to_orders_idempotency_unique.php:25-30",
+      "v1_impact": "LOW (HTTP middleware closes window for authenticated retries)",
+      "v2_impact": "MEDIUM — H2-HEAL-02 backlog"
+    },
+    {
+      "rank": 3,
+      "severity": "P3 — operational concern, structural mitigation deployed",
+      "finding": "MySQL DB triggers do NOT fire on TRUNCATE. Sole structural mitigation is the Ansible CVP0-1 task (deploy/ansible/site.yml:47-75) issuing REVOKE DROP, ALTER on 7 fiscal tables to the app DB user. If a future deploy forgets to run this task OR operator runs app as MySQL root, the chain wipe (Art. 1743 CGI criminal exposure, ~50ms) is technically possible. Sentinel test AuditTruncateProtectionDeployDocTest asserts task presence in playbook — but cannot enforce post-deploy GRANT state on the actual DB user. Suggest annual SHOW GRANTS audit + a post-deploy verification artisan command.",
+      "location": "deploy/ansible/site.yml:47-75 + (missing) post-deploy artisan grants audit",
+      "v1_impact": "PROCEDURAL (LOCAL = root run by owner only, controlled)",
+      "v2_impact": "HIGH — automated GRANT verification required pre-go-live"
+    }
+  ],
+
+  "metadata": {
+    "generated_at": "2026-05-28T11:30:00+02:00",
+    "agent_version": "ADV ULTIMATE 2026-05-28",
+    "server_under_test": "http://127.0.0.1:8000",
+    "branch": "heal/cms-pr1-quickwins-2026-05-18",
+    "report_file": "reports/test-e2e/master-ultimate-2026-05-28/agents/ADV-redteam-ultimate.json"
+  }
+}

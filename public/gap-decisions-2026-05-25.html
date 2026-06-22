@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>Decisions Gap-Hunt V1 Le Cayenne — 2026-05-25</title>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --bg-elevated: #161616;
+      --bg-card: #1e1e1e;
+      --bg-card-hover: #262626;
+      --border: #2a2a2a;
+      --border-strong: #3a3a3a;
+      --cayenne: #F4501E;
+      --cayenne-dark: #c93f15;
+      --yellow: #FFCB05;
+      --yellow-dark: #d6a800;
+      --white: #ffffff;
+      --text: #f5f5f5;
+      --text-muted: #a1a1a1;
+      --text-dim: #6b6b6b;
+      --green: #22c55e;
+      --green-dark: #15803d;
+      --red: #ef4444;
+      --red-dark: #b91c1c;
+      --orange: #f97316;
+      --blue: #3b82f6;
+      --purple: #8b5cf6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+    .container { max-width: 1280px; margin: 0 auto; padding: 24px 20px 120px; }
+    /* Header */
+    header {
+      border-bottom: 2px solid var(--cayenne);
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+    }
+    .hdr-row { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 12px; }
+    h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+    h1 .accent { color: var(--cayenne); }
+    h1 .accent-yellow { color: var(--yellow); }
+    .subtitle { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
+    .date-badge {
+      background: var(--bg-elevated);
+      color: var(--yellow);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    /* Stats banner */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+      margin-bottom: 22px;
+    }
+    .stat {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      text-align: center;
+    }
+    .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .stat-value { font-size: 22px; font-weight: 800; }
+    .stat.p0 .stat-value { color: var(--red); }
+    .stat.p1 .stat-value { color: var(--yellow); }
+    .stat.p2 .stat-value { color: var(--text-muted); }
+    .stat.approved .stat-value { color: var(--green); }
+    .stat.rejected .stat-value { color: var(--red); }
+    .stat.deferred .stat-value { color: var(--blue); }
+    /* Controls */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 20px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .search-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .search-row input[type="search"] {
+      flex: 1;
+      min-width: 240px;
+      background: var(--bg);
+      border: 1px solid var(--border-strong);
+      border-radius: 6px;
+      padding: 8px 12px;
+      color: var(--text);
+      font-size: 14px;
+    }
+    .search-row input[type="search"]:focus { outline: none; border-color: var(--cayenne); }
+    .filter-group {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .filter-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-right: 4px;
+    }
+    .chip {
+      background: var(--bg);
+      border: 1px solid var(--border-strong);
+      color: var(--text);
+      padding: 5px 11px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.12s ease;
+    }
+    .chip:hover { background: var(--bg-card-hover); border-color: var(--cayenne); }
+    .chip.active { background: var(--cayenne); border-color: var(--cayenne); color: var(--white); }
+    .reset-btn {
+      background: transparent;
+      border: 1px solid var(--border-strong);
+      color: var(--text-muted);
+      padding: 5px 11px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .reset-btn:hover { color: var(--cayenne); border-color: var(--cayenne); }
+    /* Cards */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      gap: 16px;
+    }
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: border-color 0.15s ease, transform 0.15s ease;
+      position: relative;
+    }
+    .card:hover { border-color: var(--border-strong); }
+    .card.approved { border-color: var(--green); box-shadow: inset 4px 0 0 var(--green); }
+    .card.rejected { border-color: var(--red); box-shadow: inset 4px 0 0 var(--red); opacity: 0.75; }
+    .card.deferred { border-color: var(--blue); box-shadow: inset 4px 0 0 var(--blue); }
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .card-id { font-family: ui-monospace, monospace; font-size: 11px; color: var(--text-dim); }
+    .card-title { font-size: 15px; font-weight: 700; line-height: 1.35; color: var(--white); }
+    .card-score {
+      background: var(--bg);
+      border: 1px solid var(--border-strong);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--yellow);
+      font-family: ui-monospace, monospace;
+      white-space: nowrap;
+    }
+    .badges { display: flex; flex-wrap: wrap; gap: 6px; }
+    .badge {
+      font-size: 10.5px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+      border: 1px solid transparent;
+    }
+    .badge.sev-P0 { background: rgba(239,68,68,0.15); color: #fca5a5; border-color: rgba(239,68,68,0.35); }
+    .badge.sev-P1 { background: rgba(255,203,5,0.12); color: var(--yellow); border-color: rgba(255,203,5,0.3); }
+    .badge.sev-P2 { background: rgba(148,163,184,0.12); color: #cbd5e1; border-color: rgba(148,163,184,0.3); }
+    .badge.sev-P3 { background: rgba(107,114,128,0.12); color: var(--text-muted); border-color: rgba(107,114,128,0.3); }
+    .badge.impact-blocker { background: rgba(239,68,68,0.15); color: #fca5a5; border-color: rgba(239,68,68,0.35); }
+    .badge.impact-friction { background: rgba(249,115,22,0.15); color: #fdba74; border-color: rgba(249,115,22,0.35); }
+    .badge.impact-nice { background: rgba(59,130,246,0.12); color: #93c5fd; border-color: rgba(59,130,246,0.3); }
+    .badge.effort-XS { background: rgba(34,197,94,0.12); color: #86efac; border-color: rgba(34,197,94,0.3); }
+    .badge.effort-S { background: rgba(34,197,94,0.08); color: #86efac; border-color: rgba(34,197,94,0.25); }
+    .badge.effort-M { background: rgba(249,115,22,0.12); color: #fdba74; border-color: rgba(249,115,22,0.3); }
+    .badge.effort-L { background: rgba(239,68,68,0.12); color: #fca5a5; border-color: rgba(239,68,68,0.3); }
+    .badge.effort-XL { background: rgba(239,68,68,0.18); color: #fca5a5; border-color: rgba(239,68,68,0.4); }
+    .badge.system { background: rgba(244,80,30,0.12); color: #fb923c; border-color: rgba(244,80,30,0.3); }
+    .badge.persona {
+      background: rgba(139,92,246,0.12);
+      color: #c4b5fd;
+      border-color: rgba(139,92,246,0.3);
+      font-family: ui-monospace, monospace;
+      text-transform: none;
+    }
+    .badge.frozen {
+      background: rgba(239,68,68,0.18);
+      color: #fca5a5;
+      border-color: rgba(239,68,68,0.4);
+      font-weight: 800;
+    }
+    .badge.shipblocker {
+      background: rgba(244,80,30,0.18);
+      color: var(--cayenne);
+      border-color: rgba(244,80,30,0.45);
+      font-weight: 800;
+    }
+    .star-owner {
+      color: var(--yellow);
+      font-size: 16px;
+      line-height: 1;
+      text-shadow: 0 0 6px rgba(255,203,5,0.45);
+    }
+    .card-section { font-size: 13px; color: var(--text-muted); line-height: 1.55; }
+    .card-section strong { color: var(--text); font-weight: 600; }
+    .card-section .label-inline {
+      display: inline-block;
+      color: var(--text-dim);
+      font-size: 10.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+    .card-hint {
+      background: var(--bg);
+      border-left: 2px solid var(--border-strong);
+      padding: 8px 10px;
+      border-radius: 0 6px 6px 0;
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      line-height: 1.55;
+      max-height: 90px;
+      overflow: hidden;
+      position: relative;
+      cursor: pointer;
+    }
+    .card-hint.expanded { max-height: none; }
+    .card-hint::after {
+      content: "";
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 24px;
+      background: linear-gradient(transparent, var(--bg));
+      pointer-events: none;
+    }
+    .card-hint.expanded::after { display: none; }
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+      margin-top: auto;
+    }
+    .action-btn {
+      border: 1px solid var(--border-strong);
+      background: var(--bg);
+      color: var(--text);
+      padding: 8px 6px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.12s ease;
+    }
+    .action-btn:hover { background: var(--bg-card-hover); }
+    .action-btn.approve.active { background: var(--green-dark); border-color: var(--green); color: var(--white); }
+    .action-btn.reject.active { background: var(--red-dark); border-color: var(--red); color: var(--white); }
+    .action-btn.defer.active { background: #1d4ed8; border-color: var(--blue); color: var(--white); }
+    .action-btn.approve:hover { border-color: var(--green); color: var(--green); }
+    .action-btn.reject:hover { border-color: var(--red); color: var(--red); }
+    .action-btn.defer:hover { border-color: var(--blue); color: var(--blue); }
+    .action-btn.approve.active:hover { color: var(--white); }
+    .action-btn.reject.active:hover { color: var(--white); }
+    .action-btn.defer.active:hover { color: var(--white); }
+    /* Floating button */
+    .floating-cta {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--cayenne);
+      color: var(--white);
+      border: none;
+      padding: 14px 22px;
+      border-radius: 999px;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 10px 30px rgba(244,80,30,0.45), 0 4px 8px rgba(0,0,0,0.4);
+      z-index: 100;
+      letter-spacing: 0.3px;
+    }
+    .floating-cta:hover { background: var(--cayenne-dark); transform: translateY(-1px); }
+    .floating-cta .count {
+      background: var(--white);
+      color: var(--cayenne);
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      margin-left: 8px;
+      font-family: ui-monospace, monospace;
+    }
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      padding: 20px;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: var(--bg-elevated);
+      border: 1px solid var(--cayenne);
+      border-radius: 12px;
+      max-width: 720px;
+      width: 100%;
+      max-height: 90vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-head {
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-head h2 { font-size: 18px; color: var(--cayenne); }
+    .modal-close {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 22px;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .modal-close:hover { color: var(--text); }
+    .modal-body { padding: 18px 22px; overflow-y: auto; }
+    .modal-body textarea {
+      width: 100%;
+      min-height: 360px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+      color: var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      resize: vertical;
+    }
+    .modal-foot {
+      padding: 14px 22px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+    .modal-foot button {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid var(--border-strong);
+      background: var(--bg);
+      color: var(--text);
+    }
+    .modal-foot button.primary { background: var(--cayenne); border-color: var(--cayenne); color: var(--white); }
+    .modal-foot button.primary:hover { background: var(--cayenne-dark); }
+    .modal-foot button:hover { border-color: var(--text); }
+    .modal-foot button.danger { color: var(--red); }
+    .modal-foot button.danger:hover { background: rgba(239,68,68,0.15); border-color: var(--red); }
+    .empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+      grid-column: 1 / -1;
+    }
+    /* Responsive */
+    @media (max-width: 720px) {
+      .stats { grid-template-columns: repeat(3, 1fr); }
+      .cards { grid-template-columns: 1fr; }
+      h1 { font-size: 22px; }
+      .floating-cta { right: 12px; bottom: 12px; padding: 12px 16px; font-size: 13px; }
+    }
+    @media (max-width: 400px) {
+      .stats { grid-template-columns: repeat(2, 1fr); }
+    }
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 90px;
+      right: 20px;
+      background: var(--bg-elevated);
+      color: var(--text);
+      border: 1px solid var(--green);
+      padding: 10px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      z-index: 300;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="hdr-row">
+        <div>
+          <h1><span class="accent">Le Cayenne</span> — Decisions Gap-Hunt <span class="accent-yellow">V1</span></h1>
+          <div class="subtitle">Top 30 gaps (sur 71) — Phase C Owner Validation — branche <code>heal/cms-pr1-quickwins-2026-05-18</code></div>
+        </div>
+        <div class="date-badge">2026-05-25</div>
+      </div>
+    </header>
+
+    <!-- Stats banner -->
+    <div class="stats">
+      <div class="stat p0">
+        <div class="stat-label">P0 Critique</div>
+        <div class="stat-value" id="stat-p0">0</div>
+      </div>
+      <div class="stat p1">
+        <div class="stat-label">P1 Important</div>
+        <div class="stat-value" id="stat-p1">0</div>
+      </div>
+      <div class="stat p2">
+        <div class="stat-label">P2 Mineur</div>
+        <div class="stat-value" id="stat-p2">0</div>
+      </div>
+      <div class="stat approved">
+        <div class="stat-label">Approuvés</div>
+        <div class="stat-value" id="stat-approved">0</div>
+      </div>
+      <div class="stat rejected">
+        <div class="stat-label">Rejetés</div>
+        <div class="stat-value" id="stat-rejected">0</div>
+      </div>
+      <div class="stat deferred">
+        <div class="stat-label">Différés</div>
+        <div class="stat-value" id="stat-deferred">0</div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <div class="search-row">
+        <input type="search" id="search" placeholder="Rechercher (titre / story / système / hint…)" />
+        <button class="reset-btn" id="reset-filters" type="button">Réinitialiser filtres</button>
+        <button class="reset-btn" id="reset-all" type="button" title="Effacer tous les votes">Effacer tous les votes</button>
+      </div>
+      <div class="filter-group" id="filter-system">
+        <span class="filter-label">Système :</span>
+      </div>
+      <div class="filter-group" id="filter-severity">
+        <span class="filter-label">Sévérité :</span>
+      </div>
+      <div class="filter-group" id="filter-effort">
+        <span class="filter-label">Effort :</span>
+      </div>
+      <div class="filter-group" id="filter-persona">
+        <span class="filter-label">Persona :</span>
+      </div>
+      <div class="filter-group" id="filter-flags">
+        <span class="filter-label">Drapeaux :</span>
+      </div>
+    </div>
+
+    <!-- Cards -->
+    <div class="cards" id="cards"></div>
+  </div>
+
+  <!-- Floating CTA -->
+  <button class="floating-cta" id="open-modal" type="button">
+    Envoyer plan validé
+    <span class="count" id="cta-count">0</span>
+  </button>
+
+  <!-- Modal -->
+  <div class="modal-backdrop" id="modal">
+    <div class="modal">
+      <div class="modal-head">
+        <h2>Plan validé — Récapitulatif copy-paste</h2>
+        <button class="modal-close" id="modal-close" type="button">×</button>
+      </div>
+      <div class="modal-body">
+        <textarea id="summary-text" readonly></textarea>
+      </div>
+      <div class="modal-foot">
+        <button id="copy-summary" class="primary" type="button">Copier dans le presse-papier</button>
+        <button id="download-summary" type="button">Télécharger .txt</button>
+        <button id="modal-cancel" type="button">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ============================================================
+    //  DATA — Top 30 gaps embedded inline (from MASTER_GAP_LIST.json)
+    // ============================================================
+    const GAPS = [{"id":"MASTER-GAP-002","title":"KDS recall/undo after wrong bump (owner mandate verbatim)","user_story":"Chef bumps PRET by mistake at rush hour. Wave V removed 3s undo toast. OrderStateMachine forbids reverse. Owner: 'je peux pas y accéder aux archives parce que je peux par exemple avoir fait valider une commande par erreur'.","originating_agents":["S3-P1","S3-P6"],"system":"KDS","severity":"P0","value_to_owner":5,"effort":"M","effort_days":2,"risk_if_absent":"Operational — client gets false 'ready' notification, waste matiere si chef reprep, frustration cuisine + caisse","frozen_zone_touch_needed":true,"v1_ship_blocker":true,"owner_mentioned_explicit":true,"implementation_hint":"Compensating-action pattern (NF525 forward-only preserved): POST /kds-order/{order}/recall-recent with 60s grace window + 'RAPPELE' yellow badge re-injecting card. OR gated reverse transition via LOCK_KDS_RECALL_2026-05-25.md per CLAUDE.md §7. Owner choice.","score":10},{"id":"MASTER-GAP-001","title":"Refund UI button — backend NF525-ready, NO cashier-facing trigger","user_story":"Cashier rings wrong item / customer changes mind post-payment / card-cleared mistake. Today must escalate to manager + curl/Postman.","originating_agents":["S2-P3","S7-P3"],"system":"POS_Caisse","severity":"P0","value_to_owner":5,"effort":"S","effort_days":1,"risk_if_absent":"NF525 — manual DB fallback bypasses audit chain attribution","frozen_zone_touch_needed":false,"v1_ship_blocker":true,"owner_mentioned_explicit":true,"implementation_hint":"Refund button on PosOrderShowComponent + confirmation modal + reason input + POST /api/admin/pos-order/{order}/refund-with-counter-entry. Backend READY (sealed-parent guard, mirror order, audit-chain APPEND, sentinel-tested). Mint pos-refund permission + middleware on api.php:961.","score":9},{"id":"MASTER-GAP-005","title":"Owner export PDF/Excel cloture du soir — 1 click from dashboard","user_story":"Owner 22h30 wants 'Cloture du soir PDF' to send to comptable. Today: 4 clicks (menu lateral → Sales Report → filter today → PDF) AND the PDF is a transaction list, NOT a comptable-ready synthese (KPIs + breakdown TVA + top 5 items + refunds).","originating_agents":["S5-P4","S7-P4"],"system":"Admin_Owner","severity":"P1","value_to_owner":5,"effort":"S","effort_days":1,"risk_if_absent":"Owner ergonomics — 5min/day × 7d = 35min/week × 52 = 30h/year. Library Maatwebsite+DomPDF deja installes + used by 9 other controllers.","frozen_zone_touch_needed":false,"v1_ship_blocker":false,"owner_mentioned_explicit":true,"implementation_hint":"app/Exports/CashOverviewExport.php (FromCollection) + app/Exports/DailySummaryExport + DailySummaryController::exportPdf reusing Transaction::with(...) builder + 1 button on RealtimeReportComponent. NEW template pdf.daily_summary.blade.php (1 page A4 KPIs+breakdown TVA+top 5 items).","score":9},{"id":"MASTER-GAP-022","title":"Chef→cashier shortage signal channel absent (reverse exists POS→KDS)","user_story":"Chef ouvre frigo: 0 cheddar. To block, chef must (a) sortir KDS (b) ouvrir admin stock rupture (c) chercher cheddar dans 100+ extras (d) toggle. Pendant ce temps 3 Cayenne+cheddar peuvent etre encaissees. Workaround = chef CRIE 'plus de cheddar'. Cross-validated by S3-P1 + S6-P1 independent.","originating_agents":["S3-P1","S6-P1"],"system":"Cross_System_C1_to_C8","severity":"P0","value_to_owner":5,"effort":"S","effort_days":1,"risk_if_absent":"Daily 2-5 incidents per rush. 30-60s perdues + risque client servi sans ingredient.","frozen_zone_touch_needed":false,"v1_ship_blocker":false,"owner_mentioned_explicit":true,"implementation_hint":"Button 'Signaler rupture' on KdsOrderCard.vue opening mini-modal listing order composants toggleable. Backend POST /api/admin/kitchen/signal-shortage delegates to AvailabilityService::toggle (existing). Broadcast ItemAvailabilityChanged → POS+Kiosk re-render.","score":9},{"id":"MASTER-GAP-003","title":"Customer SMS notification when order PRET (kiosk hardcoded suppress)","user_story":"Kiosk customer takeaway pays and walks away. Receives ZERO transactional SMS by design (source==10 guard). Cloud-pinned to OSS wall 8-15 min defeats takeaway value. Standard concurrent in McDo/BK/Starbucks 2024-2026.","originating_agents":["S1-P2","S4-P2","B2-cluster-C"],"system":"Kiosk_Borne","severity":"P0","value_to_owner":5,"effort":"M","effort_days":2,"risk_if_absent":"Customer retention — cloue le client devant le wall + breaks takeaway UX. 80%+ Le Cayenne volume = kiosk = zero touchpoint.","frozen_zone_touch_needed":false,"v1_ship_blocker":false,"owner_mentioned_explicit":false,"implementation_hint":"Remove blanket source==10 guard in OrderSmsNotificationBuilder.php:30-33. Per-status feature flags via notification_alerts table (admin choose which status SMS). Opt-in checkbox kiosk loyalty step. Phone deja collecte si loyalty.","score":8},{"id":"MASTER-GAP-009","title":"Phone-number search missing in both cashier surfaces (POS tracker + posOrders list)","user_story":"Customer phones '03-23-XX-XX, j'ai commande hier livraison, ca n'est pas arrive'. Cashier cannot search by phone (haystack is queue_number+serial+name only). Phone column exists on customers but cashier blocked by customers permission.","originating_agents":["S7-P3"],"system":"POS_Caisse","severity":"P1","value_to_owner":4,"effort":"S","effort_days":0.5,"risk_if_absent":"Daily friction — every shift 3-5 phone-call lookups. Currently escalates to manager.","frozen_zone_touch_needed":false,"v1_ship_blocker":false,"owner_mentioned_explicit":false,"implementation_hint":"Add user.phone OR address.phone to PosOrdersTracker.filteredOrders haystack (1 line). Add phone input to PosOrderListComponent search filter. customers.phone already indexed.","score":8},{"id":"MASTER-GAP-046","title":"Stock: 'il reste 3 portions' alert threshold (backend gated/log-only)","user_story":"Owner verbatim 'alerte automatique il reste 3 portions avant rupture'. Backend support EXISTS (stock_levels.threshold_low + NotifyStockLowOnStockLevelChanged listener) BUT (a) flag FK_CATALOG_STOCK_LOW_ALERT_ENABLED=false default (b) StockLevelChanged dispatched ONLY on choice-boundary cross-zero (decrement 5→4→3 never triggers) (c) when fires, Log::warning only, no UI push.","originating_agents":["S6-P1"],"system":"Stock","severity":"P0","value_to_owner":5,"effort":"M","effort_days":2,"risk_if_absent":"Daily rush on 5-12 SKUs tracked. Owner-cited verbatim '3 portions'.","frozen_zone_touch_needed":false,"v1_ship_blocker":false,"owner_mentioned_explicit":true,"implementation_hint":"Path A: activate FK_CATALOG_STOCK_LOW_ALERT_ENABLED=true + replace Log::warning with event broadcast stock-low.{branchId}. Path B: add ChoiceBoundaryProximityEvent fired when on_hand <= threshold_low (not just on_hand=0). KDS subscribe + toast 'Reste 3 portions Frites' + son court.","score":8},{"id":"MASTER-GAP-020","title":"PENDING_COUNTER zombies pollute KDS — CleanupStalePendingKioskOrders filters UNPAID only","user_story":"Kiosk cash counter-deferred order abandoned → KDS shows 'EN ATTENTE ENCAISSEMENT' badge indefiniment. Chef may prep waste or wait forever. Counter-collect list saturates with zombies.","originating_agents":["B2-cluster-A"],"system":"Cross_System_C1_to_C8","severity":"P1","value_to_owner":4,"effort":"XS","effort_days":0.25,"risk_if_absent":"Stock leak + waste kitchen + zombie pollution of counter-collect list.","frozen_zone_touch_needed":false,"v1_ship_blocker":false,"owner_mentioned_explicit":false,"implementation_hint":"Extend Jobs/CleanupStalePendingKioskOrders.php:33 whereIn payment_status [UNPAID, PENDING_COUNTER]. Threshold 30min owner-gate (vs 15 UNPAID). OrderCanceled cascade tested already (sentinel).","score":7.75},{"id":"MASTER-GAP-004","title":"10-min fiscal Z dead-zone (23:55→00:05) admits orders into NO Z aggregate","user_story":"Cashier rings 23:57 sale: order created with business_date=J + fiscal_sequence_no allocated, but created_at > Z(J).closed_at → excluded from Z(J), then excluded from Z(J+1) because created_at < Z(J+1).from. Receipt prints fiscal_seq + customer gets receipt + NO Z contains this transaction = NF525 invariant 'gap-free' broken.","originating_agents":["B2-cluster-C"],"system":"Cross_System_C1_to_C8","severity":"P0","value_to_owner":5,"effort":"M","effort_days":3,"risk_if_absent":"NF525 invariant violation — fiscal_sequence appears in NO Z aggregate. Mathematically breakable today.","frozen_zone_touch_needed":true,"v1_ship_blocker":true,"owner_mentioned_explicit":false,"implementation_hint":"Option A: shrink cron window 23:59:55→00:00:05 + admit guard refusing fiscal_sequence_no allocation when no STATUS_OPEN Z. Option B: switch aggregate window key from created_at to business_date (chain signs aggregates not window key — chain compat). LOCK_FISCAL_DEAD_ZONE plan + owner countersign required (NF525 frozen list).","score":7},{"id":"MASTER-GAP-006","title":"Daily incident note feature absent (panne TPE, fournisseur retard, etc.)","user_story":"Owner 22h wants to log 'panne TPE 14h05-14h45' or 'cassoulet brule rush midi'. Comptable + insurance + owner-memory all depend on context that LIVES NOWHERE today. variance_reason is per-cashier-close, not per-day-owner narrative. Currently paper-notebook.","originating_agents":["S5-P4","S7-P3","S7-P4"],"system":"Admin_Owner","severity":"P1","value_to_owner":4,"effort":"S","effort_days":1,"risk_if_absent":"Audit/insurance + owner cognition — absence cannot be recovered after.","frozen_zone_touch_needed":false,"v1_ship_blocker":false,"owner_mentioned_explicit":true,"implementation_hint":"Migration daily_incident_notes (id, branch_id, user_id, business_date, severity ENUM info/warning/critical, title, body, occurred_at_local). DailyIncidentNoteController + form panel on CashOverviewComponent + dashboard widget. Branch-scoped. NF525 read-only sibling.","score":7},{"id":"MASTER-GAP-007","title":"Compare J vs J-1 / S-1 deltas on owner dashboard","user_story":"Owner '750 EUR today' meaningless absolute. Wants '750 EUR (+12% vs hier, -5% vs lundi dernier)'. Tonight signal-detection impossible without reference.","originating_agents":["S5-P4","S7-P4"],"system":"Admin_Owner","severity":"P1","value_to_owner":4,"effort":"S","effort_days":1,"risk_if_absent":"Owner pilote sans reference — -25% drop detected 2 weeks late = cash-flow problem.","frozen_zone_touch_needed":false,"v1_ship_blocker":false,"owner_mentioned_explicit":true,"implementation_hint":"Extend DashboardService::realtimeReport / CashOverviewController.summary to compute summary_previous_day + summary_previous_week in same response (3 SUMs scoped to branch_filter). Frontend 2 delta cells per source card + green up/red down arrow.","score":7},{"id":"MASTER-GAP-017","title":"NF525 chain verify on-demand UI button","user_story":"Inspector asks 'prove chain is intact NOW'. FiscalVerifyChainCommand CLI exists (audit_logs+z_reports both, distinct exit codes 0/1/2/3). No HTTP endpoint, no admin button, no badge 'last verified at T'.","originating_agents":["S7-P5"],"system":"Admin_Fiscal_Inspector","severity":"P0","value_to_owner":4,"effort":"S","effort_days":1,"risk_if_absent":"NF525 on-the-spot proof — manager cannot answer integrity question without dev shell.","frozen_zone_touch_needed":false,"v1_ship_blocker":false,"owner_mentioned_explicit":false,"implementation_hint":"Endpoint wrapping FiscalVerifyChainCommand::handle (run sync, return structured result). UI badge on dashboard 'Chain verified at T+N min' + Verify Now button.","score":7},{"id":"MASTER-GAP-018","title":"Past-order replay UI shows ZERO fiscal context (audit_fingerprint orphan)","user_story":"Inspector clicks past order on PosOrderShowComponent: shows status badges + items + 'Print invoice' (generic HTML print). NO fiscal_sequence_no, NO audit_fingerprint, NO link to Z-report sealing the order, NO composition_snapshot drill-down, NO duplicata-aware print button. OrderDetailsResource computes audit_fingerprint (12-char) but NO Vue consumer reads it. i18n key label.audit_fingerprint orphan.","originating_agents":["S7-P5"],"system":"Admin_Fiscal_Inspector","severity":"P0","value_to_owner":4,"effort":"S","effort_days":1,"risk_if_absent":"NF525 inspector cannot verify single past transaction without raw SQL.","frozen_zone_touch_needed":false,"v1_ship_blocker":false,"owner_mentioned_explicit":false,"implementation_hint":"PosOrderShowComponent.vue header: render fiscal_sequence_no + audit_fingerprint + Z-report sealing link + duplicata button calling admin/pos/orders/{order}/print-receipt (endpoint exists).","score":7},{"id":"MASTER-GAP-027","title":"POS direct-sale cart line lacks chef-instruction input","user_story":"Client says 'sans oignons / bien cuit'. OrderItem.instruction column EXISTS (DB + KDS displays it for kiosk cash echo). POS direct-sale cart has NO setter UI per line. Kiosk wizard customizeWithText pattern exists but not in POS cart.","originating_agents":["S2-P1"],"system":"POS_Caisse","severity":"P1","value_to_owner":4,"effort":"S","effort_days":1,"risk_if_absent":"Daily chef instruction loss. Schema already in place.","frozen_zone_touch_needed":false,"v1_ship_blocker":false,"owner_mentioned_explicit":false,"implementation_hint":"Per-line note icon-button on .pos-v5-cart-item opening quick textarea modal (max 80 chars, kiosk wizard customizeWithText pattern). Write to cart row instruction field (backend payload at L3628 already reads it).","score":7},{"id":"MASTER-GAP-047","title":"Stock quick-toggle 'rupture du jour' from POS/KDS without admin nav","user_story":"Chef burns toutes cretes Cayenne today. Wants block item ce service uniquement. Today: must admin/stock/rupture → reason out_of_stock_manual → demain re-toggler tous items manuellement. No 'temporary_today' reason, no Kernel.php midnight auto-reset job for manual_unavailable_reason.","originating_agents":["S6-P1"],"system":"Stock","severity":"P1","value_to_owner":4,"effort":"S","effort_days":1,"risk_if_absent":"1-3 per service × 5-12 items = ~10 toggles/service × 2 (off+on) = ~20 micro-actions admin/jour-rush.","frozen_zone_touch_needed":false,"v1_ship_blocker":false,"owner_mentioned_explicit":true,"implementation_hint":"Add reason='temporary_today' to MANUAL_UNAVAILABLE_REASONS whitelist + Kernel.php daily 0h00 job re-toggling rows with this reason. OR add auto_restore_at column. Quick-toggle modal accessible from POS/KDS appbar.","score":7},{"id":"MASTER-GAP-048","title":"Stock quantity remaining visible on KDS card","user_story":"Chef sees order #45 with 1 Cayenne. Doesn't know if 8th of 10 portions or 2nd. KdsOrderCard.vue zero stock indicator. KDSOrderItemsResource no remaining_today field. KDS subscribes ItemAvailabilityChanged (binary) not StockLevelChanged (numeric).","originating_agents":["S6-P1"],"system":"Stock","severity":"P1","value_to_owner":4,"effort":"S","effort_days":1,"risk_if_absent":"Continu sur top-3 items signature. Chef pilote au feeling.","frozen_zone_touch_needed":false,"v1_ship_blocker":false,"owner_mentioned_explicit":true,"implementation_hint":"Extend KDSOrderItemsResource remaining_today = max_daily_qty - daily_consumed_qty OR on_hand. KdsOrderCard render: if remaining<=5 → badge orange 'X portions left'. Add Echo listener StockLevelChanged.","score":7},{"id":"MASTER-GAP-008","title":"Top items du jour avec chart (MostPopular is lifetime, no chart)","user_story":"Owner wants top 5 items vendus ce soir AVEC graphique horizontal bars. Today MostPopularItems is lifetime (depuis le debut des temps) + plain <ul><li> sans chart lib.","originating_agents":["S5-P4","S7-P4"],"system":"Admin_Owner","severity":"P1","value_to_owner":4,"effort":"M","effort_days":2,"risk_if_absent":"Owner sur-/sous-commande ingredients demain. -5% marge cumulee.","frozen_zone_touch_needed":false,"v1_ship_blocker":false,"owner_mentioned_explicit":true,"implementation_hint":"GET /api/admin/cash-overview/top-items?from=&to=&limit=10 reading OrderItem joined Order GROUP BY item_id. TopItemsTodayChart.vue using vue-chartjs BarChart horizontal (chart.js already in vendor.js per CashOverview cluster).","score":6},{"id":"MASTER-GAP-010","title":"Customer history at-the-till (Spatie permission blocks POS Operator)","user_story":"Le Cayenne small merchant. Regular customer walks in. Cashier wants 'Mr Dupont, 12 visits, last week Le Cayenne sans oignons, allergy arachide'. Data EXISTS in CustomerShowComponent.vue:158-200 'My orders' tab. Spatie 'customers' permission denied to POS Operator role.","originating_agents":["S2-P3","S7-P3"],"system":"POS_Caisse","severity":"P1","value_to_owner":4,"effort":"M","effort_days":2,"risk_if_absent":"Repeat-customer intimacy. Le Cayenne mandate small-merchant warmth.","frozen_zone_touch_needed":false,"v1_ship_blocker":false,"owner_mentioned_explicit":false,"implementation_hint":"Mint narrow `customers_orders_read` Spatie permission. Embed past-orders panel + allergen chip + last-visit note in POS checkout drawer when customer_id set. CustomerShow component reusable in partial.","score":6},{"id":"MASTER-GAP-011","title":"Multi-cashier same drawer (relais shift / pause-dejeuner)","user_story":"Cashier A pause-dejeuner 13h, Cashier B prend le relais sur LE MEME tiroir physique. Today: impossible (UNIQUE partial index on branch_id+opened_by_user_id WHERE open). Workarounds catastrophiques: closeSession (NF525 1-Z/jour) ou usage compte autrui (security violation).","originating_agents":["S5-P3"],"system":"Cash_Drawer","severity":"P0","value_to_owner":4,"effort":"M","effort_days":2,"risk_if_absent":"Direct operational blocker pour journee restaurant standard avec pause/remplacement.","frozen_zone_touch_needed":false,"v1_ship_blocker":false,"owner_mentioned_explicit":false,"implementation_hint":"Add current_cashier_id column + cash_drawer_session_handovers table (from_user, to_user, snapshot_amount, handover_at, audit_log_id). POST /cash-drawer/sessions/{session}/handover endpoint (manager-gated optional). UI 'Passer la main' button. Pattern Toast/Square = same session DB.","score":6},{"id":"MASTER-GAP-012","title":"Cash skim / sortie coffre/banque mid-shift not modeled","user_story":"Midi rush 12-14h tiroir 1200€. Cashier veut transferer 800€ vers coffre arriere. Today: CashMovement TYPE enum has 5 values (order_payment/cashback/drawer_open/drawer_close/adjustment), NO skim/cash_drop/safe_deposit. No POST /movements endpoint. Forced: cash exposé OR procedure papier hors-systeme.","originating_agents":["S5-P3"],"system":"Cash_Drawer","severity":"P1","value_to_owner":4,"effort":"M","effort_days":2,"risk_if_absent":"Securite physique + NF525 traçabilite espèces. Phantom variance au close si procedure papier.","frozen_zone_touch_needed":false,"v1_ship_blocker":false,"owner_mentioned_explicit":false,"implementation_hint":"Add TYPE_SKIM + TYPE_CASH_DROP to CashMovement enum. POST /cash-drawer/sessions/{session}/movements endpoint (manager-gated config). UI 'Sortie coffre' button. Audit-trail via existing recordMovement.","score":6},{"id":"MASTER-GAP-015","title":"NF525 audit_logs UI search/browse (currently AuditTrailComponent reads WRONG table)","user_story":"Inspecteur DGFiP asks 'who reprinted ticket 11842 last Tuesday?'. Data exists in audit_logs (HMAC chained). Frontend AuditTrailComponent reads ActionLog (NON-chained) — MISLEADS. No Vue/route/controller for real audit_logs (grep AuditLog in resources/js = 0).","originating_agents":["S7-P5","S3-P5"],"system":"Admin_Fiscal_Inspector","severity":"P0","value_to_owner":4,"effort":"M","effort_days":2,"risk_if_absent":"NF525 inspector accessibility — no admin UI surface for chain-signed table. Currently misleading (wrong table).","frozen_zone_touch_needed":false,"v1_ship_blocker":false,"owner_mentioned_explicit":false,"implementation_hint":"Replace DashboardService::auditTrail data source from ActionLog to AuditLog. OR rename current widget 'Action history (non-fiscal)' and add separate 'Fiscal audit chain' widget reading AuditLog. Add /admin/audit-logs route + filter table (date/action/user/resource_id) + CSV export.","score":6},{"id":"MASTER-GAP-016","title":"NF525 fiscal archive 6-year export UI (FiscalArchiveCommand CLI-only)","user_story":"Inspector during control: 'Export NF525 archive branch X period Y'. CLI fully implemented (lazy-cursor + zip + branch-lock + manifest schema_v3 z_chain_verified). No admin route, no Vue page, no controller endpoint. Operator without SSH = blocked.","originating_agents":["S7-P5"],"system":"Admin_Fiscal_Inspector","severity":"P0","value_to_owner":4,"effort":"M","effort_days":2,"risk_if_absent":"NF525 art 88 — archive producible on demand by operator during control.","frozen_zone_touch_needed":false,"v1_ship_blocker":false,"owner_mentioned_explicit":false,"implementation_hint":"/admin/fiscal/archive page: pick branch+period → POST queued job FiscalArchiveCommand → download link in storage/fiscal/. GET list of already-produced bundles with manifest summary. Permission pos-manage-fiscal.","score":6},{"id":"MASTER-GAP-021","title":"OrderCancelled broadcast → KDS chef silent radio when cancel after send-to-kitchen","user_story":"Chef prepping #42, caissier annule order. Today: card disappears silently on next refresh (no toast, no son, no flash). SendFcmOnOrderStatusChange has no case for CANCELED. EventContract BROADCAST_MAP declares 'OrderCancelled' but ZERO emitter (PersistOrderCancelledToOutbox does not exist). Chef wastes matiere or pursues phantom cancel.","originating_agents":["B2-cluster-A"],"system":"Cross_System_C1_to_C8","severity":"P0","value_to_owner":4,"effort":"M","effort_days":2,"risk_if_absent":"Daily waste matiere chef + frustration + race chef-bump-vs-cashier-cancel cryptique.","frozen_zone_touch_needed":false,"v1_ship_blocker":false,"owner_mentioned_explicit":false,"implementation_hint":"(1) PersistOrderCancelledToOutbox listener wired to OrderCanceled in EventServiceProvider. (2) KitchenDisplaySystemComponent.vue subscribe handler {broadcastAs:'OrderCancelled' → showCancelToast + refresh}. (3) FCM kitchen_branch case CANCELED. (4) ItemAvailabilityChanged-like toast 6s sticky.","score":6},{"id":"MASTER-GAP-028","title":"POS allergen observation at counter — no capture path (kiosk handles it)","user_story":"Customer at counter 'allergique arachide'. PosComponent.vue displays allergens_snapshot ONLY in kiosk-cash detail (echo). Direct-sale cart has NO allergen field. No order-level customer_allergens column.","originating_agents":["S2-P1"],"system":"POS_Caisse","severity":"P1","value_to_owner":4,"effort":"M","effort_days":2,"risk_if_absent":"FIC UE 1169/2011 + EAA 2025 regulatory + safety legal.","frozen_zone_touch_needed":false,"v1_ship_blocker":false,"owner_mentioned_explicit":false,"implementation_hint":"orders.customer_allergens JSON column + chip with 8-12 common allergens (gluten/lactose/fruits coque/arachides/oeufs/soja/poisson/crustacés/sésame) in cart header. Broadcast KDS ticket header red banner.","score":6},{"id":"MASTER-GAP-030","title":"POS parked orders strictly user-scoped — shift handover breaks all in-flight tickets","user_story":"Lunch 12-14h handover. Cashier A parks order, called away. Cashier B cannot recall A's parked orders. ParkedOrderController abort_unless(authId===requestUser->id, 403). No admin override, no reassign endpoint.","originating_agents":["S2-P3"],"system":"POS_Caisse","severity":"P1","value_to_owner":4,"effort":"M","effort_days":2,"risk_if_absent":"Daily lunch/dinner handover loses N parked orders silently.","frozen_zone_touch_needed":false,"v1_ship_blocker":false,"owner_mentioned_explicit":false,"implementation_hint":"Relax ParkedOrderController gate to (admin OR cashier within branch). Add transfer-to-cashier endpoint with audit log. UI cashier-picker on parked drawer. Branch-scope guard stays (P0-POS-04 GOAL invariant).","score":6},{"id":"MASTER-GAP-056","title":"Owner tx/h synthesis chart (CustomerStatsComponent ORPHAN — not mounted in dashboard)","user_story":"DashboardService::customerStates() calcule tableau heure-par-heure (06h-23h). CustomerStatsComponent.vue EXISTS resources/js/components/admin/dashboard/ but DOES NOT APPEAR in DashboardComponent.vue:31-47 template. Orphan signal.","originating_agents":["S7-P4"],"system":"Admin_Owner","severity":"P1","value_to_owner":3,"effort":"XS","effort_days":0.1,"risk_if_absent":"Backend computes (CPU+DB) but rendu jamais ecran. Owner ne pilote pas staffing horaire.","frozen_zone_touch_needed":false,"v1_ship_blocker":false,"owner_mentioned_explicit":false,"implementation_hint":"ADD <CustomerStatsComponent /> in DashboardComponent.vue line 47. Verify component works. 5 min.","score":5.9},{"id":"MASTER-GAP-044","title":"KDS step ladder ACCEPT→PREPARING→PREPARED CTA label static 'Pret' for both taps","user_story":"CTA stays 'Pret' (label.kds_card_cta_ready) regardless of status. 1st tap dispatches ACCEPT→PREPARING, 2nd tap PREPARING→PREPARED. Newbie thinks 2nd tap is confirmation, not transition irreversible. Legacy 4-col layout had dynamic 'Demarrer' / 'Marquer Pret' labels per status — V2 regressed.","originating_agents":["S3-P6"],"system":"KDS","severity":"P1","value_to_owner":3,"effort":"XS","effort_days":0.25,"risk_if_absent":"Source structurelle erreur newbie.","frozen_zone_touch_needed":false,"v1_ship_blocker":false,"owner_mentioned_explicit":false,"implementation_hint":"Computed ctaLabel + ctaColor in KdsOrderCard: status=ACCEPT → 'Demarrer' orange, status=PREPARING → 'Marquer Pret' vert. 15 LOC. Mirror legacy convention.","score":5.75},{"id":"MASTER-GAP-068","title":"Kiosk is_rush UI banner (backend computes, store stocks, 0 consumer)","user_story":"KioskMenuService computeIsRush(branch) reads config kiosk.rush_windows. kioskMenu.js stocks branchFlags.is_rush. Zero consumer. Orphan signal. Customer paie sans savoir 'cuisine en rush, attente +5min'.","originating_agents":["S1-P1","B2-cluster-A"],"system":"Kiosk_Borne","severity":"P1","value_to_owner":3,"effort":"XS","effort_days":0.25,"risk_if_absent":"Expectation mismatch → 1-star Google rush hour 12h-14h / 19h-21h.","frozen_zone_touch_needed":false,"v1_ship_blocker":false,"owner_mentioned_explicit":false,"implementation_hint":"Bind kioskBranchFlags.is_rush in KioskIdleScreenComponent header + KioskCartComponent banner. Texte i18n 'Cuisine en pleine activite — attente estimee ~12 min'.","score":5.75},{"id":"MASTER-GAP-041","title":"KDS actor identity captured in transitions table but never exposed in drawer (anonymous bump)","user_story":"Inspector asks 'identify staff member responsible for PREPARED transition #X — name + employee number + station'. actor_id captured at OrderStateMachine.php:150 but historyToday() doesn't eager-load, KDSOrderDetailsResource doesn't expose, drawer Vue doesn't render. Anonymous from drawer.","originating_agents":["S3-P5"],"system":"KDS","severity":"P0","value_to_owner":3,"effort":"S","effort_days":0.5,"risk_if_absent":"Accountability gap — contested transition cannot be traced.","frozen_zone_touch_needed":false,"v1_ship_blocker":false,"owner_mentioned_explicit":false,"implementation_hint":"Eager-load latest PREPARED transition in historyToday(). Add bumped_by to KDSOrderDetailsResource. Render drawer 'Préparé par: {{ order.bumped_by_name }}'.","score":5.5},{"id":"MASTER-GAP-013","title":"Cash mid-shift count / X-report intermediate impossible","user_story":"Cashier 15h fin du rush wants verify physical cash = expected without closing (NF525 1-Z/day). Today: only path = closeSession (terminal). Pattern Toast/Lightspeed = Cash Count → X-report read-only snapshot.","originating_agents":["S5-P3"],"system":"Cash_Drawer","severity":"P1","value_to_owner":3,"effort":"S","effort_days":1,"risk_if_absent":"Detection precoce ecart cash impossible.","frozen_zone_touch_needed":false,"v1_ship_blocker":false,"owner_mentioned_explicit":false,"implementation_hint":"Method CashDrawerService::countSession() + endpoint GET /cash-drawer/sessions/{session}/count + UI 'Compter sans clôturer' modal (read-only snapshot, no NF525 mutation).","score":5}];
+
+    // ============================================================
+    //  System / Persona / Severity / Effort lookup labels
+    // ============================================================
+    const SYSTEM_LABELS = {
+      "Kiosk_Borne": "S1 Kiosk",
+      "POS_Caisse": "S2 POS Caisse",
+      "KDS": "S3 KDS",
+      "OSS": "S4 OSS",
+      "Cash_Drawer": "S5 Cash Drawer",
+      "Stock": "S6 Stock",
+      "Admin_Owner": "S7 Admin Owner",
+      "Admin_Fiscal_Inspector": "S7 Admin Inspector",
+      "Cross_System_C1_to_C8": "Cross-System"
+    };
+    const PERSONA_LABELS = {
+      "P1": "P1 Chef",
+      "P2": "P2 Client",
+      "P3": "P3 Caissier",
+      "P4": "P4 Owner",
+      "P5": "P5 Inspecteur",
+      "P6": "P6 Newbie"
+    };
+    const EFFORT_ORDER = ["XS","S","M","L","XL"];
+
+    // ============================================================
+    //  Impact derivation
+    //   v1_ship_blocker     → BLOCKER-DAILY
+    //   value_to_owner ≥ 4 → FRICTION-WEEKLY
+    //   else                → NICE
+    // ============================================================
+    function deriveImpact(g) {
+      if (g.v1_ship_blocker) return { key: "blocker", label: "BLOCKER-DAILY" };
+      if ((g.value_to_owner||0) >= 4) return { key: "friction", label: "FRICTION-WEEKLY" };
+      return { key: "nice", label: "NICE" };
+    }
+
+    // Extract persona codes (P1..P6) from originating_agents like "S2-P3" or "B2-cluster-A"
+    function extractPersonas(agents) {
+      const set = new Set();
+      (agents || []).forEach(a => {
+        const m = /-P(\d)/.exec(a);
+        if (m) set.add("P" + m[1]);
+      });
+      return Array.from(set).sort();
+    }
+
+    // ============================================================
+    //  Persistence layer — localStorage
+    // ============================================================
+    const STORAGE_KEY = "foodking_gap_decisions_2026-05-25";
+    function loadDecisions() {
+      try {
+        const raw = window.localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : {};
+      } catch (e) { return {}; }
+    }
+    function saveDecisions(d) {
+      try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
+      catch (e) { console.warn("LS write failed", e); }
+    }
+    let DECISIONS = loadDecisions();
+
+    // ============================================================
+    //  Filter state
+    // ============================================================
+    let FILTERS = {
+      system: null,
+      severity: null,
+      effort: null,
+      persona: null,
+      flags: null,    // "frozen", "owner", "blocker"
+      search: ""
+    };
+
+    // ============================================================
+    //  Stats compute + render
+    // ============================================================
+    function computeStats() {
+      const stats = { P0: 0, P1: 0, P2: 0, P3: 0, approved: 0, rejected: 0, deferred: 0 };
+      GAPS.forEach(g => {
+        if (stats[g.severity] !== undefined) stats[g.severity]++;
+        const dec = DECISIONS[g.id];
+        if (dec === "approve") stats.approved++;
+        else if (dec === "reject") stats.rejected++;
+        else if (dec === "defer") stats.deferred++;
+      });
+      return stats;
+    }
+    function renderStats() {
+      const s = computeStats();
+      document.getElementById("stat-p0").textContent = s.P0;
+      document.getElementById("stat-p1").textContent = s.P1;
+      document.getElementById("stat-p2").textContent = s.P2;
+      document.getElementById("stat-approved").textContent = s.approved;
+      document.getElementById("stat-rejected").textContent = s.rejected;
+      document.getElementById("stat-deferred").textContent = s.deferred;
+      document.getElementById("cta-count").textContent = s.approved + s.rejected + s.deferred;
+    }
+
+    // ============================================================
+    //  Filter chip rendering
+    // ============================================================
+    function renderChips() {
+      // Systems
+      const sysSet = new Set(GAPS.map(g => g.system));
+      const sysContainer = document.getElementById("filter-system");
+      sysContainer.querySelectorAll(".chip").forEach(c => c.remove());
+      Array.from(sysSet).sort().forEach(s => {
+        const chip = makeChip(SYSTEM_LABELS[s] || s, () => toggleFilter("system", s), FILTERS.system === s);
+        sysContainer.appendChild(chip);
+      });
+      // Severity
+      const sevContainer = document.getElementById("filter-severity");
+      sevContainer.querySelectorAll(".chip").forEach(c => c.remove());
+      ["P0","P1","P2","P3"].forEach(sev => {
+        if (GAPS.some(g => g.severity === sev)) {
+          const chip = makeChip(sev, () => toggleFilter("severity", sev), FILTERS.severity === sev);
+          sevContainer.appendChild(chip);
+        }
+      });
+      // Effort
+      const effContainer = document.getElementById("filter-effort");
+      effContainer.querySelectorAll(".chip").forEach(c => c.remove());
+      EFFORT_ORDER.forEach(eff => {
+        if (GAPS.some(g => g.effort === eff)) {
+          const chip = makeChip(eff, () => toggleFilter("effort", eff), FILTERS.effort === eff);
+          effContainer.appendChild(chip);
+        }
+      });
+      // Persona
+      const personaContainer = document.getElementById("filter-persona");
+      personaContainer.querySelectorAll(".chip").forEach(c => c.remove());
+      const personaSet = new Set();
+      GAPS.forEach(g => extractPersonas(g.originating_agents).forEach(p => personaSet.add(p)));
+      Array.from(personaSet).sort().forEach(p => {
+        const chip = makeChip(PERSONA_LABELS[p] || p, () => toggleFilter("persona", p), FILTERS.persona === p);
+        personaContainer.appendChild(chip);
+      });
+      // Flags
+      const flagsContainer = document.getElementById("filter-flags");
+      flagsContainer.querySelectorAll(".chip").forEach(c => c.remove());
+      [["blocker", "V1 Ship-Blocker"], ["frozen", "Frozen-zone"], ["owner", "Owner-mentionné"]].forEach(([k, label]) => {
+        const chip = makeChip(label, () => toggleFilter("flags", k), FILTERS.flags === k);
+        flagsContainer.appendChild(chip);
+      });
+    }
+    function makeChip(label, onclick, isActive) {
+      const c = document.createElement("button");
+      c.type = "button";
+      c.className = "chip" + (isActive ? " active" : "");
+      c.textContent = label;
+      c.addEventListener("click", onclick);
+      return c;
+    }
+    function toggleFilter(key, val) {
+      FILTERS[key] = (FILTERS[key] === val) ? null : val;
+      renderChips();
+      renderCards();
+    }
+
+    // ============================================================
+    //  Cards filter + render
+    // ============================================================
+    function gapMatchesFilters(g) {
+      if (FILTERS.system && g.system !== FILTERS.system) return false;
+      if (FILTERS.severity && g.severity !== FILTERS.severity) return false;
+      if (FILTERS.effort && g.effort !== FILTERS.effort) return false;
+      if (FILTERS.persona) {
+        if (!extractPersonas(g.originating_agents).includes(FILTERS.persona)) return false;
+      }
+      if (FILTERS.flags === "blocker" && !g.v1_ship_blocker) return false;
+      if (FILTERS.flags === "frozen" && !g.frozen_zone_touch_needed) return false;
+      if (FILTERS.flags === "owner" && !g.owner_mentioned_explicit) return false;
+      if (FILTERS.search) {
+        const q = FILTERS.search.toLowerCase();
+        const blob = [
+          g.id, g.title, g.user_story, g.implementation_hint, g.risk_if_absent,
+          g.system, (g.originating_agents||[]).join(" ")
+        ].join(" ").toLowerCase();
+        if (!blob.includes(q)) return false;
+      }
+      return true;
+    }
+
+    function renderCards() {
+      const container = document.getElementById("cards");
+      container.innerHTML = "";
+      const visible = GAPS.filter(gapMatchesFilters);
+      if (visible.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "Aucun gap ne correspond aux filtres actifs.";
+        container.appendChild(empty);
+        return;
+      }
+      visible.forEach(g => container.appendChild(buildCard(g)));
+    }
+
+    function buildCard(g) {
+      const decision = DECISIONS[g.id]; // "approve" | "reject" | "defer" | undefined
+      const card = document.createElement("div");
+      card.className = "card";
+      if (decision === "approve") card.classList.add("approved");
+      else if (decision === "reject") card.classList.add("rejected");
+      else if (decision === "defer") card.classList.add("deferred");
+      card.dataset.gapId = g.id;
+
+      const impact = deriveImpact(g);
+      const personas = extractPersonas(g.originating_agents);
+
+      // Head
+      const head = document.createElement("div");
+      head.className = "card-head";
+      const headLeft = document.createElement("div");
+      headLeft.style.flex = "1";
+      const idLine = document.createElement("div");
+      idLine.className = "card-id";
+      idLine.textContent = g.id;
+      const titleLine = document.createElement("div");
+      titleLine.className = "card-title";
+      if (g.owner_mentioned_explicit) {
+        const star = document.createElement("span");
+        star.className = "star-owner";
+        star.title = "Owner-mentioned explicit";
+        star.textContent = "★ ";
+        titleLine.appendChild(star);
+      }
+      titleLine.appendChild(document.createTextNode(g.title));
+      headLeft.appendChild(idLine);
+      headLeft.appendChild(titleLine);
+      const score = document.createElement("div");
+      score.className = "card-score";
+      score.textContent = "score " + g.score;
+      head.appendChild(headLeft);
+      head.appendChild(score);
+      card.appendChild(head);
+
+      // Badges
+      const badges = document.createElement("div");
+      badges.className = "badges";
+      badges.appendChild(badge("sev-" + g.severity, g.severity));
+      badges.appendChild(badge("impact-" + impact.key, impact.label));
+      badges.appendChild(badge("effort-" + g.effort, "Effort " + g.effort + " · " + g.effort_days + "j"));
+      badges.appendChild(badge("system", SYSTEM_LABELS[g.system] || g.system));
+      personas.forEach(p => badges.appendChild(badge("persona", PERSONA_LABELS[p] || p)));
+      if (g.frozen_zone_touch_needed) badges.appendChild(badge("frozen", "⚠ Frozen-zone"));
+      if (g.v1_ship_blocker) badges.appendChild(badge("shipblocker", "V1 Ship-Blocker"));
+      card.appendChild(badges);
+
+      // User story
+      const story = document.createElement("div");
+      story.className = "card-section";
+      const storyLabel = document.createElement("span");
+      storyLabel.className = "label-inline";
+      storyLabel.textContent = "Scénario utilisateur";
+      story.appendChild(storyLabel);
+      const storyBody = document.createElement("div");
+      storyBody.textContent = g.user_story;
+      story.appendChild(storyBody);
+      card.appendChild(story);
+
+      // Risk
+      const risk = document.createElement("div");
+      risk.className = "card-section";
+      const riskLabel = document.createElement("span");
+      riskLabel.className = "label-inline";
+      riskLabel.textContent = "Risque si absent";
+      risk.appendChild(riskLabel);
+      const riskBody = document.createElement("div");
+      riskBody.textContent = g.risk_if_absent;
+      risk.appendChild(riskBody);
+      card.appendChild(risk);
+
+      // Hint
+      const hint = document.createElement("div");
+      hint.className = "card-hint";
+      hint.textContent = g.implementation_hint;
+      hint.title = "Cliquer pour étendre / replier";
+      hint.addEventListener("click", () => hint.classList.toggle("expanded"));
+      card.appendChild(hint);
+
+      // Actions
+      const actions = document.createElement("div");
+      actions.className = "actions";
+      actions.appendChild(actionButton("approve", "✓ Approuver", g.id, decision));
+      actions.appendChild(actionButton("reject", "✗ Rejeter", g.id, decision));
+      actions.appendChild(actionButton("defer", "⏸ Différer", g.id, decision));
+      card.appendChild(actions);
+
+      return card;
+    }
+    function badge(cls, label) {
+      const el = document.createElement("span");
+      el.className = "badge " + cls;
+      el.textContent = label;
+      return el;
+    }
+    function actionButton(action, label, gapId, currentDecision) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "action-btn " + action + (currentDecision === action ? " active" : "");
+      btn.textContent = label;
+      btn.addEventListener("click", () => setDecision(gapId, action));
+      return btn;
+    }
+
+    function setDecision(gapId, action) {
+      if (DECISIONS[gapId] === action) {
+        delete DECISIONS[gapId];   // toggle off
+      } else {
+        DECISIONS[gapId] = action;
+      }
+      saveDecisions(DECISIONS);
+      renderStats();
+      renderCards();
+      showToast(
+        DECISIONS[gapId]
+          ? gapId + " → " + ({approve:"Approuvé", reject:"Rejeté", defer:"Différé"}[action])
+          : gapId + " → vote retiré"
+      );
+    }
+
+    // ============================================================
+    //  Summary modal
+    // ============================================================
+    function buildSummary() {
+      const buckets = { approve: [], reject: [], defer: [] };
+      // iterate over all known gaps (not just top 30) — but DECISIONS only contains top 30 ids since they're the only ones displayed
+      Object.keys(DECISIONS).forEach(id => {
+        const g = GAPS.find(x => x.id === id);
+        if (!g) return;
+        buckets[DECISIONS[id]] && buckets[DECISIONS[id]].push(g);
+      });
+      // sort each by score desc
+      ["approve","reject","defer"].forEach(k => buckets[k].sort((a,b) => b.score - a.score));
+      const lines = [];
+      lines.push("# Plan de décisions Owner — Gap-Hunt V1 Le Cayenne 2026-05-25");
+      lines.push("# Branche : heal/cms-pr1-quickwins-2026-05-18");
+      lines.push("# Top 30 sur 71 master gaps");
+      lines.push("");
+      lines.push("APPROVED (" + buckets.approve.length + "):");
+      buckets.approve.forEach(g => {
+        lines.push("- " + g.id + " " + g.title + "  [" + g.severity + " · " + g.effort + " · " + g.effort_days + "j · score " + g.score + "]");
+      });
+      if (buckets.approve.length === 0) lines.push("  (aucun)");
+      lines.push("");
+      lines.push("REJECTED (" + buckets.reject.length + "):");
+      buckets.reject.forEach(g => {
+        lines.push("- " + g.id + " " + g.title + "  [" + g.severity + " · score " + g.score + "]");
+      });
+      if (buckets.reject.length === 0) lines.push("  (aucun)");
+      lines.push("");
+      lines.push("DEFERRED (" + buckets.defer.length + "):");
+      buckets.defer.forEach(g => {
+        lines.push("- " + g.id + " " + g.title + "  [" + g.severity + " · score " + g.score + "]");
+      });
+      if (buckets.defer.length === 0) lines.push("  (aucun)");
+      lines.push("");
+      // Pending (top 30 not voted)
+      const voted = new Set(Object.keys(DECISIONS));
+      const pending = GAPS.filter(g => !voted.has(g.id));
+      lines.push("PENDING — pas encore voté (" + pending.length + "):");
+      pending.forEach(g => {
+        lines.push("- " + g.id + " " + g.title + "  [" + g.severity + " · score " + g.score + "]");
+      });
+      if (pending.length === 0) lines.push("  (aucun — tout est tranché)");
+      return lines.join("\n");
+    }
+
+    const modal = document.getElementById("modal");
+    const modalText = document.getElementById("summary-text");
+    document.getElementById("open-modal").addEventListener("click", () => {
+      modalText.value = buildSummary();
+      modal.classList.add("open");
+    });
+    document.getElementById("modal-close").addEventListener("click", () => modal.classList.remove("open"));
+    document.getElementById("modal-cancel").addEventListener("click", () => modal.classList.remove("open"));
+    modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.remove("open"); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") modal.classList.remove("open"); });
+    document.getElementById("copy-summary").addEventListener("click", async () => {
+      const text = modalText.value;
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          modalText.select(); document.execCommand("copy");
+        }
+        showToast("Copié dans le presse-papier");
+      } catch (e) {
+        modalText.select(); document.execCommand("copy");
+        showToast("Copié (fallback)");
+      }
+    });
+    document.getElementById("download-summary").addEventListener("click", () => {
+      const blob = new Blob([modalText.value], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "le-cayenne-gap-decisions-2026-05-25.txt";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    // ============================================================
+    //  Search debounce
+    // ============================================================
+    let searchT;
+    document.getElementById("search").addEventListener("input", (e) => {
+      clearTimeout(searchT);
+      searchT = setTimeout(() => {
+        FILTERS.search = e.target.value.trim();
+        renderCards();
+      }, 120);
+    });
+
+    // ============================================================
+    //  Reset buttons
+    // ============================================================
+    document.getElementById("reset-filters").addEventListener("click", () => {
+      FILTERS = { system: null, severity: null, effort: null, persona: null, flags: null, search: "" };
+      document.getElementById("search").value = "";
+      renderChips();
+      renderCards();
+    });
+    document.getElementById("reset-all").addEventListener("click", () => {
+      if (!confirm("Effacer TOUS les votes ? Cette action est irréversible (mais ne touche pas les fichiers du projet, juste le localStorage du navigateur).")) return;
+      DECISIONS = {};
+      saveDecisions(DECISIONS);
+      renderStats();
+      renderCards();
+      showToast("Tous les votes effacés");
+    });
+
+    // ============================================================
+    //  Toast
+    // ============================================================
+    const toastEl = document.getElementById("toast");
+    let toastT;
+    function showToast(msg) {
+      toastEl.textContent = msg;
+      toastEl.classList.add("show");
+      clearTimeout(toastT);
+      toastT = setTimeout(() => toastEl.classList.remove("show"), 1800);
+    }
+
+    // ============================================================
+    //  Init
+    // ============================================================
+    renderChips();
+    renderCards();
+    renderStats();
+  </script>
+</body>
+</html>

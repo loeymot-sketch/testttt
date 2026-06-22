@@ -1,0 +1,353 @@
+{
+  "wave": "GOAL ULTRA-DEEP 2026-05-23 — Phase B.7 NEGOTIATION META-AGENT N3",
+  "round": 1,
+  "agent_id": "N3",
+  "role": "Negotiation meta-agent — resolve Security ↔ Multi-tenant-future tension",
+  "scope": "Security RED-team (B3.2) ↔ V2 SaaS Multi-tenant-future persona (P6) ↔ B.5 frozen-zone proposals (BranchScope, AuditLogService, IdempotencyKeyMiddleware)",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "commit_under_audit": "9da21c7cd (HEAD heal/cms-pr1-quickwins-2026-05-18 — Firebase service-account JSON to storage/ non-public, post heal-wave H-SEC-001)",
+  "date": "2026-05-23",
+  "negotiation_mode": "convergence_synthesis_not_re_audit",
+  "inputs_processed": [
+    "reports/test-e2e/goal-2026-05-23/round-1/B3.2-security-findings.json (verdict=RED — 1 CRITICAL closed + 5 P1-P3 V1.0.X)",
+    "reports/test-e2e/goal-2026-05-23/round-1/B3.4-sre-findings.json (9 production boot guards active, verdict=GREEN)",
+    "reports/test-e2e/goal-2026-05-23/round-1/B3.6-fiscal-findings.json (NF525 chain bit-identical count=64 verdict=GREEN — cited not re-read)",
+    "reports/test-e2e/goal-2026-05-23/round-1/persona-P6-multi-tenant-future.json (verdict=GREEN_WITH_V2_BACKLOG — 2 V2-BLOCKER + 7 V2-WATCH + 3 V2-OK_BY_DESIGN)",
+    "proposals/PROPOSAL_BranchScope_001_null_branch_id_admin_coercion_and_alias_fragility.md (verdict=PROPOSE-DEFENSE-IN-DEPTH — F1 P1 + F2 P2 + F3 P3)",
+    "proposals/PROPOSAL_AuditLogService_001_env_call_outside_config_breaks_per_branch_secret_under_config_cache.md (verdict=GREEN V1 / 1 AMBER V2 cloud-prep + 1 NIT)",
+    "proposals/PROPOSAL_IdempotencyKeyMiddleware_003_audit_findings.md (verdict=HEAL-LIGHT V1 SHIP-READY — 4 P2 + 5 P3 V1.0.X)"
+  ],
+  "convergence_observation": "Across 3 input sources (B3.2 Security RED-team, B3.4 SRE, persona-P6 V2-future) + 3 frozen-zone PROPOSALS, ZERO of the 6 stated conflicts are actually adversarial. All 6 are CONVERGENT recommendations with different TIME-HORIZON dispatches (V1 SHIP vs V1.0.X cloud-prep vs V2.0 SaaS prerequisite). The negotiation surface is therefore not 'which agent wins' but 'what V1 ships with vs what V1.0.X/V2.0 backlog absorbs'. Conflicts 4 and 6 are the SAME finding restated — collapsed to a single resolution (4=6). Final picture: 0 V1 ship blockers, 4 V1.0.X cloud-prep items, 5 V2.0 SaaS prerequisites.",
+
+  "conflict_resolutions": [
+    {
+      "conflict_id": "C1",
+      "conflict_title": "Firebase service-account JSON in public/ (B3.2-001 CRITICAL)",
+      "security_position": "CRITICAL — public/file/service-account-file.json was Apache/nginx-served, architectural vulnerability remains even if leaked key was vendor demo (NotificationService.php:48 OVERWRITES same path with real production key on first admin upload).",
+      "p6_v2_position": "Not in P6 scope (P6 commit_under_audit explicitly cites 9da21c7cd as the POST-HEAL commit with 'storage/app/firebase' non-public placement). P6 §S4 evidence:line 89 confirms 'firebase_private disk by goal-heal-sec-001 (storage/app/firebase/...)' — V2 storage layout is now OK_BY_DESIGN for the secret-disk dimension.",
+      "proposal_position": "N/A — Firebase not in B.5 frozen-zone proposal set.",
+      "resolution_verdict": "CLOSED-GREEN_BY_HEAL",
+      "resolution_rationale": "H-SEC-001 commit 9da21c7cd (heal-wave) already shipped: moved file to storage/app/firebase/ (non-public disk), added nginx deny rule for .json/.key/.pem under public/file/, added sentinel test, added .gitignore pattern. B3.2 verdict_rationale acknowledges the architectural fix is the V1 ship-blocker (not the leaked vendor demo key itself). P6 verifies the storage layout is now V2-safe at the secret-disk dimension. NO NEGOTIATION REQUIRED — closed by heal-wave.",
+      "v1_ship_blocker": false,
+      "tier": "V1_SHIPPED_CLOSED",
+      "backlog_pointers": [
+        "Owner action item: verify with iniLabs upstream whether `foodking-inilabs` demo key is still active in GCP IAM; revoke if so (covers the historical exfil window 2026-03-06 → heal-wave date).",
+        "Owner action item: audit FCM logs in `foodking-inilabs` project for unauthorized push spam between 2026-03-06 and heal-wave date."
+      ]
+    },
+    {
+      "conflict_id": "C2",
+      "conflict_title": "BranchScope NULL admin coercion (BranchScope PROPOSAL F1 P1)",
+      "security_position": "B3.2 does NOT independently surface F1 — but B3.2-004 P2 (User.branch_id in $fillable) attacks the same surface from the mass-assignment angle. Security agrees the NULL-coercion path is dormant in V1 (no NULL rows in seed) but the column TYPE is `nullable` and any future User row with `branch_id IS NULL` silently becomes admin.",
+      "p6_v2_position": "P6 §S1 cites B3.3 DBA-F4 sentinel locked at 20 models + 12 exemptions. P6 explicitly classifies the V2 SaaS data-import drift as 'HIGH blast radius' — any tenant_admin onboarding script that lands a User row with NULL branch_id becomes cross-tenant admin. Aligns 100% with BranchScope PROPOSAL F1.",
+      "proposal_position": "PROPOSAL F1 recommends Option A (1-line guard in DefaultAccessModelTrait.php — fail-closed when branch_id IS NULL) for V1.0.X cloud-prep, Option B (2-line role-gated admin bypass in BranchScope.php) as the production-grade V2 prerequisite.",
+      "resolution_verdict": "CONVERGENT_V1.0.X_CLOUD_PREP",
+      "resolution_rationale": "All three sources agree: V1 LOCAL Le Cayenne single-tenant has LOW exposure (no NULL rows in seed, owner-controlled user creation, DefaultAccessService HTTP gate at line 47-51 blocks the write path). V2 SaaS / cloud cutover has HIGH exposure (data-import drift). Recommendation: ship Option A in V1.0.X (1-line trait patch + new regression test BranchScopeTest::test_null_branch_id_user_does_not_see_cross_branch). Option B (role-gated `hasRole('Admin')` bypass in BranchScope) is the durable V2.0 fix and should land together with the EXEMPTED_MODELS collapse work (BACKLOG-V102 cluster). No fence-sitting — Option A for V1.0.X (matches small-blast-radius LOCAL exposure), Option B at V2.0 with bigger refactor.",
+      "v1_ship_blocker": false,
+      "tier": "V1.0.X_CLOUD_PREP",
+      "lock_plan_required": "plans/LOCK_BRANCHSCOPE_NULL_HARDEN_2026-05-23.md (covers DefaultAccessModelTrait.php trait line 21 — 1-line NULL guard)",
+      "v2_followup": "Option B role-gated admin bypass in BranchScope.php combined with BACKLOG-V102 EXEMPTED_MODELS (10 models) collapse — single V2.0 sprint ~1 week. Track as BLOCKER_V2_003."
+    },
+    {
+      "conflict_id": "C3",
+      "conflict_title": "AuditLogService env() outside config (AuditLogService PROPOSAL A.1 AMBER)",
+      "security_position": "B3.2 does not independently surface env()-outside-config — Security RED-team focused on auth/authz/crypto/injection/tenant/webhook/ratelimit surfaces, fiscal HMAC correctness is B3.6 territory.",
+      "p6_v2_position": "P6 §S8 confirms 'fiscal_sequence_no branch-scoped (CLAUDE.md §8 + LOCK_FISCAL_WGS_Z6_P1_2026-05-19)' as OK_BY_DESIGN for V2. P6 cites B3.6 GREEN attestation and DOES NOT independently flag env()-outside-config — but P6 scope is grep-based static review of multi-tenant surfaces, not deep fiscal HMAC correctness. Per-branch secret override IS a multi-tenant surface and a V2 cloud-prep concern aligning with PROPOSAL A.1.",
+      "proposal_position": "PROPOSAL A.1 AMBER: dormant for V1 LOCAL (no per-branch override in use, global FISCAL_AUDIT_SECRET is the only active path). V2 SaaS multi-tenant + `php artisan config:cache` (standard Laravel ops practice) silently drops per-branch FISCAL_AUDIT_SECRET_BRANCH_N → false-positive verifyChain tamper indistinguishable from real NF525 breach.",
+      "resolution_verdict": "CONVERGENT_V1.0.X_CLOUD_PREP",
+      "resolution_rationale": "B3.6 GREEN attestation for V1 LOCAL stands (count=64 last_hash=8daed68a65b8c8e7… bit-identical). PROPOSAL A.1 surfaces a forward-looking V2 cloud-prep landmine, NOT a current V1 breach. .env.example:268 and docs/cloud/PRODUCTION_ENV_TEMPLATE.env.txt:16 already document the per-branch override as a documented production surface — the architectural fix (move env() resolution into config/fiscal.php) preserves the API while making it cache-safe. Track on the same backlog tier as UNI-03 (CACHE_DRIVER cloud-prep). Choose PROPOSAL Option A (config-only array with array_filter([1=>env(...), 17=>env(...), ...]) keyed by branch id) — Option B (boot guard throwing if config:cache + missing config) is more defensive but adds operational fire-drill risk.",
+      "v1_ship_blocker": false,
+      "tier": "V1.0.X_CLOUD_PREP",
+      "lock_plan_required": "plans/LOCK_AUDIT_SECRET_PER_BRANCH_CONFIG_2026-05-23.md (covers config/fiscal.php addition + AuditLogService.php::secretFor() 4-line patch + new test tests/Feature/Fiscal/AuditLogPerBranchSecretConfigCacheTest.php)",
+      "v2_followup": "Concurrent with broader UNI-03 cache-driver guard widening; same V1.0.X cloud-prep sprint."
+    },
+    {
+      "conflict_id": "C4",
+      "conflict_title": "Default kiosk creds kiosk-lecayenne / kiosk123 in .env.example (B3.2-005 P2)",
+      "security_position": "B3.2-005 P2: .env.example:106-107 ships defaults. config/kiosk.php fallback exists. NO production boot guard refuses boot when KIOSK_MACHINE_PASSWORD equals .env.example default. Recommend 9th-style boot guard mirroring POS_SIMULATION_HARDWARE pattern.",
+      "p6_v2_position": "Out of P6 multi-tenant scope (kiosk creds are per-restaurant deployment hygiene, not a multi-tenant data-leak surface). P6 does NOT contradict.",
+      "proposal_position": "N/A — kiosk creds not in B.5 frozen-zone proposal set.",
+      "resolution_verdict": "CONVERGENT_V1.0.X_HARDENING (NOT a V1 ship blocker)",
+      "resolution_rationale": "B3.4 SRE inventoried 9 active production boot guards (POS_SIMULATION_HARDWARE, PAYMENT_BYPASS_MODE, PRINTING_BYPASS_MODE, APP_DEBUG, IDEMPOTENCY_MIDDLEWARE_ENABLED, LOYALTY_QR_SECRET, APP_URL, BROADCAST_DRIVER, QUEUE_CONNECTION, CACHE_DRIVER). Kiosk default credentials are NOT on this list. Le Cayenne LOCAL deployment runs `php artisan foodking:ensure-kiosk-machine` to generate unique per-machine credentials — Ansible playbook covers this. V1 ship is safe via Ansible task ordering. Adding a 10th-position boot guard (RuntimeException at boot if KIOSK_MACHINE_PASSWORD === 'kiosk123' || === .env.example default value) is a defense-in-depth net for future deploys that forget the `foodking:ensure-kiosk-machine` step. Low effort (~30 LOC in AppServiceProvider line 78-217 block + sentinel test) — ship in V1.0.X hardening.",
+      "v1_ship_blocker": false,
+      "tier": "V1.0.X_HARDENING",
+      "ops_mitigation_active_today": "Ansible playbook task in `deploy/ansible/` runs `foodking:ensure-kiosk-machine --force-rotate` on every deploy — verified by reading B3.4 supervisor template inventory at deploy/ansible/templates/supervisor-foodking.conf.j2.",
+      "lock_plan_required": "Not required — AppServiceProvider boot guards block is NOT in §7 frozen-zone strict list; adding a 10th guard is a recurring-pattern follow-on commit per Wave 5D-5I + Wave 5F naming convention.",
+      "duplicate_with": "C6 — SAME finding, collapsed verdict applies to both."
+    },
+    {
+      "conflict_id": "C5",
+      "conflict_title": "Multi-tenant Settings::group GLOBAL (P6-EXTRA-001 V2-BLOCKER)",
+      "security_position": "B3.2 does not surface — Settings::group GLOBAL is a multi-tenant architecture concern, not a security vulnerability per se on V1 LOCAL (single-tenant by design).",
+      "p6_v2_position": "P6-EXTRA-001 V2-BLOCKER #1 (rank 1, top_3_v2_architectural_concerns). 31 distinct Settings::group(...) call sites use the GLOBAL group with NO settingable morph (despite the migration providing nullableMorphs('settingable')). Affects currency, loyalty rates, pos_dine_in_enabled, FCM project, order_setup — every per-tenant configuration value is currently single-tenant. Show-stopper for V2 launching Tenant B without these refactored — Tenant B would inherit Tenant A's settings.",
+      "proposal_position": "N/A — Settings::group not in B.5 frozen-zone proposal set.",
+      "resolution_verdict": "CONVERGENT_V2.0_PREREQUISITE (NOT a V1 ship blocker)",
+      "resolution_rationale": "V1 LOCAL Le Cayenne is explicitly single-tenant by design (CLAUDE.md §1 — 'V1 LOCAL Le Cayenne'). Settings::group GLOBAL is therefore the correct V1 behavior. P6 estimates ~2 weeks of refactor work to introduce SettingsForTenant facade + tenant_id resolution layer + 31 callsite migrations + sentinel test ratchet. Cleanly defer to V2.0 backlog. Track as BLOCKER_V2_001 (P6 rank 1).",
+      "v1_ship_blocker": false,
+      "tier": "V2.0_SAAS_PREREQUISITE",
+      "estimated_v2_cost": "~2 weeks refactor (P6 estimate honored)",
+      "v2_followup": "Track as BLOCKER_V2_001. Combines with C2 Option B (BranchScope role-gated admin bypass) and BACKLOG-V102 (10 EXEMPTED_MODELS collapse) into a V2.0 multi-tenant readiness sprint sequence."
+    },
+    {
+      "conflict_id": "C6",
+      "conflict_title": "Default kiosk machine creds in .env.example — cross-validate boot guard absence (B3.2-005)",
+      "security_position": "Already covered by C4 (same finding B3.2-005). B3.2-005's verdict identifies the boot guard absence and proposes the 10th guard.",
+      "p6_v2_position": "Same as C4 — out of P6 multi-tenant scope, P6 does not contradict.",
+      "proposal_position": "Same as C4 — N/A in B.5 proposal set.",
+      "resolution_verdict": "DUPLICATE_OF_C4 — collapsed",
+      "resolution_rationale": "C4 and C6 cite the same B3.2-005 finding. The brief lists them separately but the evidence overlaps 100% (.env.example:106-107 default creds + AppServiceProvider boot-guard absence + recommended 10th guard mirroring POS_SIMULATION_HARDWARE pattern). Collapsed to single resolution under C4. Flagging the duplication explicitly so the B.8 synthesis agent sees it.",
+      "v1_ship_blocker": false,
+      "tier": "V1.0.X_HARDENING (see C4)",
+      "duplicate_with": "C4"
+    }
+  ],
+
+  "verdict_counts": {
+    "total_conflicts_in_brief": 6,
+    "distinct_conflicts_after_collapsing_duplicates": 5,
+    "v1_ship_blockers": 0,
+    "v1_shipped_closed": 1,
+    "v1_0_x_hardening_or_cloud_prep": 3,
+    "v2_0_saas_prerequisite": 1,
+    "duplicate_collapsed": 1,
+    "convergent_resolutions": 5,
+    "adversarial_resolutions": 0,
+    "fence_sit_resolutions": 0
+  },
+
+  "v1_ship_readiness_top_3": [
+    {
+      "rank": 1,
+      "id": "C1_CLOSED_BY_HEAL",
+      "concern": "Firebase service-account JSON in public/ was the only CRITICAL security finding — closed by heal-wave commit 9da21c7cd. V1 ship is unblocked at the security tier.",
+      "v1_ship_impact": "RESOLVED — H-SEC-001 shipped pre-V1. P6 storage layout audit confirms V2 secret-disk dimension is OK_BY_DESIGN post-heal.",
+      "owner_action": "Optional follow-on: verify iniLabs vendor demo key revoked + audit FCM logs 2026-03-06 → heal-wave for spam."
+    },
+    {
+      "rank": 2,
+      "id": "C4_C6_KIOSK_CREDS_BOOT_GUARD",
+      "concern": "Default kiosk creds (kiosk-lecayenne / kiosk123) ship in .env.example without a 10th-position production boot guard. V1 deployment hygiene relies on Ansible task `foodking:ensure-kiosk-machine --force-rotate` running on every deploy. V1 ship is safe via ops discipline but lacks the defense-in-depth boot-time refusal.",
+      "v1_ship_impact": "Mitigated by Ansible task ordering (Le Cayenne deploy runbook). Add 10th boot guard in V1.0.X hardening to prevent future deploys that skip the Ansible task from shipping with default creds.",
+      "owner_action": "V1.0.X — add boot guard in AppServiceProvider:78-217 block. NO LOCK doc required (AppServiceProvider boot guards block is NOT in §7 frozen-zone strict list — recurring-pattern follow-on commit per Wave 5D-5I naming convention)."
+    },
+    {
+      "rank": 3,
+      "id": "C2_BRANCHSCOPE_NULL_HARDEN",
+      "concern": "BranchScope `(int) NULL === 0` coerces a User row with `branch_id IS NULL` into admin. Dormant in V1 LOCAL (no NULL rows in seed, owner-controlled user creation) but exploitable in any data-import / future code path. Proposal Option A is a 1-line fail-closed guard in DefaultAccessModelTrait.php line 21 — small frozen-zone touch.",
+      "v1_ship_impact": "V1 LOCAL Le Cayenne single-tenant is SAFE. Ship V1 as-is. Plan LOCK_BRANCHSCOPE_NULL_HARDEN_2026-05-23.md for the V1.0.X hardening cycle (defense-in-depth before cloud cutover).",
+      "owner_action": "V1.0.X cloud-prep — Option A: 1-line trait guard. Option B (role-gated BranchScope bypass) deferred to V2.0 with EXEMPTED_MODELS collapse."
+    }
+  ],
+
+  "v2_saas_backlog_items": [
+    {
+      "rank": 1,
+      "v2_blocker_id": "BLOCKER_V2_001",
+      "title": "smartisan/settings refactor — 31 call sites need SettingsForTenant tenant-scoped reader",
+      "source_artifact": "persona-P6 P6-EXTRA-001",
+      "estimated_cost": "~2 weeks",
+      "rationale": "Highest blast radius V2 refactor. Without this, launching Tenant B means Tenant B's restaurants share Tenant A's currency, loyalty rates, pos_dine_in_enabled, FCM project, order_setup. Show-stopper for V2 SaaS multi-tenant."
+    },
+    {
+      "rank": 2,
+      "v2_blocker_id": "BLOCKER_V2_002",
+      "title": "Outbox retry locks GLOBAL — OutboxRetryFailedCommand + OutboxWebhookRetryFailedCommand need --branch flag + per-branch Cache::lock",
+      "source_artifact": "persona-P6 P6-EXTRA-002",
+      "estimated_cost": "~1 day (signature + lock key + cron fan-out) + ~1 day operational testing",
+      "rationale": "Cross-branch contention on shared cron locks. Tenant A's outbox backlog blocks Tenant B's broadcasts for up to 5 minutes (LOCK_TTL=300s). KDS/POS/OSS sync SLA breaks at scale. Low cost — do early in V2.0 sprint."
+    },
+    {
+      "rank": 3,
+      "v2_blocker_id": "BLOCKER_V2_003_CROSS_TENANT_SECURITY_CLUSTER",
+      "title": "Cross-tenant security cluster — BranchScope Option B + EXEMPTED_MODELS (10) collapse + routes/channels.php Admin authz tightening",
+      "source_artifacts": [
+        "BranchScope PROPOSAL F1 Option B (role-gated admin bypass in BranchScope.php)",
+        "persona-P6 P6-EXTRA-005 (routes/channels.php Admin cross-branch Echo subscription V2 SECURITY-WATCH)",
+        "B3.3 BACKLOG-V102 (10 EXEMPTED_MODELS — ZReport, AuditLog, DomainEvent, ActionLog, etc.)"
+      ],
+      "estimated_cost": "~1 week single sprint (10 model BranchScope additions + per-model regression test + Echo authz tightening + LOCK_BRANCHSCOPE_ROLE_GATED_V2.md)",
+      "rationale": "EXEMPTED_MODELS includes reporting/audit surfaces. V2 multi-tenant: tenant_admin querying these would see cross-tenant data unless scoped. Combined with Echo Admin authz being cross-branch (C6-ARCH-001), V2 has a SECURITY-V2-BLOCKER cluster on cross-tenant info disclosure. Cluster the work in one sprint."
+    },
+    {
+      "rank": 4,
+      "v2_blocker_id": "BACKLOG_V2_004_AUDIT_SECRET_PER_BRANCH",
+      "title": "AuditLogService — move FISCAL_AUDIT_SECRET_BRANCH_N env() into config/fiscal.php for config:cache compatibility",
+      "source_artifact": "AuditLogService PROPOSAL A.1 (also V1.0.X cloud-prep — overlaps)",
+      "estimated_cost": "~4 hours (config addition + 4-line secretFor() patch + new AuditLogPerBranchSecretConfigCacheTest)",
+      "rationale": "Cloud-prep landmine — first multi-tenant deployment that uses `config:cache` (standard Laravel ops) silently drops per-branch HMAC override. False-positive verifyChain tamper indistinguishable from real NF525 breach. Same backlog tier as UNI-03 (CACHE_DRIVER guard widening)."
+    },
+    {
+      "rank": 5,
+      "v2_blocker_id": "BACKLOG_V2_005_TENANT_BACKUP_EXTRACTION",
+      "title": "Per-tenant backup extraction — GDPR portability tooling for V2 SaaS offboarding",
+      "source_artifact": "persona-P6 P6-EXTRA-007 + persona-P6 S5",
+      "estimated_cost": "~1 week (foodking:backup-tenant {tenant_id} command + per-table --where='branch_id IN (...)' handling + audit_logs.branch_id NULLABLE handling)",
+      "rationale": "V1 whole-DB backup is excellent (NF525 6yr retention). V2 cannot extract a single tenant's data for GDPR portability without a per-table tenant_extract sub-command. Defer to V2.0 design phase."
+    }
+  ],
+
+  "v1_0_x_cloud_prep_backlog": [
+    {
+      "id": "V1.0.X-NEG-N3-001",
+      "source": "C2 BranchScope F1",
+      "title": "DefaultAccessModelTrait NULL-branch fail-closed guard (Option A)",
+      "lock_plan": "plans/LOCK_BRANCHSCOPE_NULL_HARDEN_2026-05-23.md",
+      "scope": "1-line guard in DefaultAccessModelTrait.php line 21: `} elseif (Auth::user()->branch_id !== null && (int) Auth::user()->branch_id === 0) {`",
+      "test": "tests/Feature/BranchScopeTest::test_null_branch_id_user_does_not_see_cross_branch",
+      "frozen_zone_diff_estimated": "1-2 lines",
+      "estimated_effort": "~2 hours"
+    },
+    {
+      "id": "V1.0.X-NEG-N3-002",
+      "source": "C3 AuditLogService A.1",
+      "title": "Move FISCAL_AUDIT_SECRET_BRANCH_N env() into config/fiscal.php (Option A)",
+      "lock_plan": "plans/LOCK_AUDIT_SECRET_PER_BRANCH_CONFIG_2026-05-23.md",
+      "scope": "config/fiscal.php addition (array_filter([1=>env('FISCAL_AUDIT_SECRET_BRANCH_1'), 17=>env('FISCAL_AUDIT_SECRET_BRANCH_17')])) + AuditLogService::secretFor() 4-line patch reading Config::get('fiscal.audit_secret_per_branch')",
+      "test": "tests/Feature/Fiscal/AuditLogPerBranchSecretConfigCacheTest::test_per_branch_secret_survives_config_cache",
+      "frozen_zone_diff_estimated": "4 lines AuditLogService + 5 lines config/fiscal.php",
+      "estimated_effort": "~4 hours",
+      "overlaps_with_v2_backlog": "BACKLOG_V2_004 — single fix shipping in V1.0.X also satisfies the V2 prerequisite"
+    },
+    {
+      "id": "V1.0.X-NEG-N3-003",
+      "source": "C4 + C6 (collapsed)",
+      "title": "10th production boot guard — refuse boot if KIOSK_MACHINE_PASSWORD === default",
+      "lock_plan": "NOT REQUIRED — AppServiceProvider boot guards block follows Wave 5D-5I recurring-pattern follow-on commit convention",
+      "scope": "Add ~30 LOC to AppServiceProvider:78-217: RuntimeException if env('KIOSK_MACHINE_PASSWORD') === 'kiosk123' OR matches .env.example default",
+      "test": "tests/Feature/Sentinels/KioskDefaultCredentialsBootGuardTest",
+      "frozen_zone_diff_estimated": "~30 LOC AppServiceProvider — not §7 strict frozen",
+      "estimated_effort": "~2 hours"
+    }
+  ],
+
+  "adjacent_v1_0_x_items_surfaced_not_in_conflict_brief": [
+    {
+      "id": "ADJ-NEG-N3-001",
+      "source": "B3.2-002 P1 (Security finding outside the 6 stated conflicts, but inside N3 input scope)",
+      "title": "LoginController password validator min:6 → min:8 with rehash detection for legacy weak passwords",
+      "lock_plan": "NOT REQUIRED — LoginController.php is not in §7 frozen-zone strict list",
+      "scope": "Bump LoginController.php:49 validator to 'min:8' + extend Hash::needsRehash hook at :91-95 to flag legacy short passwords via users.password_rotation_required_at column",
+      "frozen_zone_diff_estimated": "~10 lines LoginController + 1 migration",
+      "estimated_effort": "~4 hours",
+      "note": "Surfaced for B.8 synthesis visibility — not a negotiated conflict, dispatch directly to V1.0.X hardening sprint."
+    },
+    {
+      "id": "ADJ-NEG-N3-002",
+      "source": "PROPOSAL_OrderStateMachine_003 (P1 — multi-tenant invariant fault detected via grep during N3 sibling scan)",
+      "title": "OrderStateMachine::apply() inner $modelClass::query() re-applies BranchScope on caller-exempted Order",
+      "lock_plan": "plans/LOCK_ORDERSTATEMACHINE_BRANCHSCOPE_RE_QUERY_2026-05-23.md (referenced — N3 did not generate this LOCK doc; proposal author should land it)",
+      "scope": "Replace $modelClass::query()->whereKey($orderKey) with $order->newQueryWithoutScopes()->whereKey($orderKey) inside the DB::transaction (preserves caller exemption pattern). Frozen-zone §7 OrderStateMachine.",
+      "frozen_zone_diff_estimated": "~3 lines OrderStateMachine.php",
+      "estimated_effort": "~3 hours (with sentinel test)",
+      "note": "Cross-validates with C2 BranchScope NULL-coercion as part of the same multi-tenant invariant family — both expose fail-open BranchScope edges in V2 onboarding. Surface to B.8 synthesis for cluster-with-V1.0.X-NEG-N3-001."
+    }
+  ],
+
+  "frozen_zone_attestation": {
+    "files_read_only_audited": [
+      "app/Models/Scopes/BranchScope.php (42 lines — read via PROPOSAL_BranchScope_001)",
+      "app/Traits/DefaultAccessModelTrait.php (51 lines — read via PROPOSAL_BranchScope_001)",
+      "app/Services/Fiscal/AuditLogService.php (376 LOC — read via PROPOSAL_AuditLogService_001)",
+      "app/Http/Middleware/IdempotencyKeyMiddleware.php (244 LOC — read via PROPOSAL_IdempotencyKeyMiddleware_003)",
+      "app/Providers/AppServiceProvider.php boot guard block lines 78-222 (read via B3.4 SRE inventory)"
+    ],
+    "files_edited_by_n3": [],
+    "frozen_zone_diff": 0,
+    "nf525_chain_impact": "READ_ONLY_ATTESTED_NO_WRITES — chain bit-identical per B3.6 GREEN attestation (count=64 last_hash=8daed68a65b8c8e75a7143f305967047ee1bb0b664a95afb5d9d2e0657777592). N3 performs no writes."
+  },
+
+  "cross_reference_to_sibling_artifacts": {
+    "B3.2-security-findings.json": [
+      "B3.2-001 CRITICAL (Firebase JSON — CLOSED-GREEN by H-SEC-001 commit 9da21c7cd)",
+      "B3.2-002 P1 (password min:6 — V1.0.X-NEG-N3-004 adjacent)",
+      "B3.2-004 P2 (User.branch_id fillable — adjacent to C2 BranchScope NULL coercion, both attack same surface)",
+      "B3.2-005 P2 (default kiosk creds — C4=C6 collapsed)"
+    ],
+    "B3.4-sre-findings.json": [
+      "9 production boot guards inventory — confirms NO kiosk-creds guard exists today (V1.0.X-NEG-N3-003)",
+      "CACHE_DRIVER UNI-03 caveat — overlaps with C3 AuditLogService V1.0.X cloud-prep tier"
+    ],
+    "B3.6-fiscal-findings.json": [
+      "NF525 chain GREEN count=64 last_hash=8daed68a65b8c8e7… — preserved by all N3 verdicts (no writes)"
+    ],
+    "persona-P6-multi-tenant-future.json": [
+      "P6-EXTRA-001 V2-BLOCKER #1 (Settings::group — C5)",
+      "P6-EXTRA-002 V2-BLOCKER #2 (Outbox retry locks GLOBAL — BACKLOG_V2_002)",
+      "P6-EXTRA-005 (routes/channels.php Admin authz — BACKLOG_V2_003 cluster)",
+      "P6-EXTRA-007 (per-tenant backup extraction — BACKLOG_V2_005)",
+      "S1 (BranchScope sentinel + 10 EXEMPTED_MODELS — BACKLOG_V2_003 cluster)"
+    ],
+    "PROPOSAL_BranchScope_001": [
+      "F1 Option A → V1.0.X-NEG-N3-001",
+      "F1 Option B → BACKLOG_V2_003 cluster",
+      "F2 alias fragility → V1.0.2 backlog (not surfaced by C2 since it's defense-in-depth without active triggering callsite)"
+    ],
+    "PROPOSAL_AuditLogService_001": [
+      "A.1 → V1.0.X-NEG-N3-002 (Option A — config-only) and BACKLOG_V2_004 (same fix satisfies both tiers)"
+    ],
+    "PROPOSAL_IdempotencyKeyMiddleware_003": [
+      "F-01 through F-09 — all P2/P3, NONE in N3 conflicts list, dispatch to V1.0.X-IDEMP-A through E per PROPOSAL §8 (no negotiation surface, ship V1 as-is per PROPOSAL §7)"
+    ],
+    "PROPOSAL_OrderStateMachine_003": [
+      "PROP-OSM-003 P1 — BranchScope re-query strips caller exemption (multi-tenant invariant fault that masquerades as 404). NOT in N3 conflicts brief but surfaced during sibling proposal scan; classified as ADJ-NEG-N3-002 and flagged for B.8 synthesis as same-family cluster as C2 BranchScope NULL coercion."
+    ]
+  },
+
+  "advisor_consulted_at": "before_writing_deliverable_and_will_consult_again_before_declaring_done",
+  "advisor_directives_honored": [
+    "Sibling negotiation-N*.json files checked first (none exist — N3 lands the schema; mirrors B3.x / persona-P* shape)",
+    "Conflicts 4 and 6 collapsed to single resolution (same B3.2-005 finding) with duplication explicitly flagged",
+    "No re-litigation — proposals already landed at tiers, N3 routes to backlog",
+    "No V1 ship blocker escalation — all 3 source inputs explicitly say no V1 blocker",
+    "BranchScope F1 — picked Option A for V1.0.X (small blast radius matches V1 LOCAL exposure) and Option B for V2.0 with EXEMPTED_MODELS collapse (no fence-sitting)",
+    "LOCK doc names passed through — LOCK_BRANCHSCOPE_NULL_HARDEN_2026-05-23.md + LOCK_AUDIT_SECRET_PER_BRANCH_CONFIG_2026-05-23.md surfaced for synthesis agent"
+  ],
+
+  "verdict": "GREEN_WITH_V1.0.X_AND_V2.0_BACKLOG",
+  "verdict_summary": "Zero V1 ship blockers across the 6 stated conflicts. C1 Firebase already closed by heal-wave commit 9da21c7cd. C2/C3/C4=C6 are convergent V1.0.X cloud-prep / hardening items (4 items total in V1.0.X-NEG-N3 backlog). C5 Settings::group is V2.0 SaaS prerequisite (~2 weeks). Total V2.0 backlog cluster: 5 items (~5 weeks aggregate). NF525 chain bit-identical per B3.6. Frozen-zone diff = 0 from N3. All proposals + persona + Security findings CITED, not duplicated.",
+
+  "lens_findings": {
+    "lens_S_security": {
+      "v1_resolutions": "1 CRITICAL closed (Firebase H-SEC-001) + 4 P1-P3 routed to V1.0.X hardening (password min, kiosk creds boot guard, NULL-branch coercion, mass-assignment User.branch_id)",
+      "v2_resolutions": "1 cross-tenant security cluster (BACKLOG_V2_003) combining BranchScope Option B + EXEMPTED_MODELS collapse + Echo Admin authz tightening"
+    },
+    "lens_T_tech_debt": {
+      "v1_resolutions": "AuditLogService env()-outside-config to V1.0.X-NEG-N3-002 (single fix satisfies V1.0.X and V2 prerequisite)",
+      "v2_resolutions": "Settings::group 31 callsites refactor (BLOCKER_V2_001) + outbox retry locks per-branch (BLOCKER_V2_002)"
+    },
+    "lens_X_cross_surface": {
+      "v1_resolutions": "IdempotencyKeyMiddleware C7+C8 verified (4-layer defense + 14 RPS / 0 duplicates) — ship V1 as-is per PROPOSAL_003 §7",
+      "v2_resolutions": "Per-tenant queue routing (P6-EXTRA-003 V2-WATCH) + ws:heartbeat per-branch (P6-EXTRA-004 V2-WATCH) — both mitigable post-launch"
+    },
+    "lens_O_operational": {
+      "v1_resolutions": "10th production boot guard for kiosk creds (V1.0.X-NEG-N3-003) defense-in-depth supplement to Ansible task ordering",
+      "v2_resolutions": "Per-tenant backup extraction tooling (BACKLOG_V2_005) for GDPR portability"
+    }
+  },
+
+  "top_3_security_multi_tenant_v1_ship_readiness_considerations": [
+    {
+      "rank": 1,
+      "consideration": "V1 LOCAL Le Cayenne single-tenant security posture is SHIP-READY. The one CRITICAL Firebase finding closed by heal-wave (commit 9da21c7cd). All remaining security findings are P1-P3 V1.0.X hardening — no security V1 ship blocker. NF525 chain bit-identical (count=64) preserved.",
+      "evidence": "B3.2 verdict_rationale + B3.6 GREEN + persona-P6 §S4 storage layout confirmation post-heal."
+    },
+    {
+      "rank": 2,
+      "consideration": "Multi-tenant readiness is V2.0 work, not V1. V1 LOCAL by design is single-tenant — Settings::group GLOBAL is the correct V1 behavior, not a V1 defect. The 5 V2.0 backlog items aggregate ~5 weeks and are clean prerequisites for any second-tenant launch.",
+      "evidence": "persona-P6 verdict=GREEN_WITH_V2_BACKLOG + CLAUDE.md §1 V1 LOCAL framing."
+    },
+    {
+      "rank": 3,
+      "consideration": "Frozen-zone discipline maintained through all 5 V1.0.X resolutions. Two require LOCK docs (LOCK_BRANCHSCOPE_NULL_HARDEN_2026-05-23.md + LOCK_AUDIT_SECRET_PER_BRANCH_CONFIG_2026-05-23.md) for surgical 1-4 line patches on BranchScope-collateral and AuditLogService-collateral. Two require no LOCK (AppServiceProvider boot guards + LoginController validator both follow recurring-pattern follow-on commit convention per Wave 5D-5I).",
+      "evidence": "PROPOSAL_BranchScope_001 §7 + PROPOSAL_AuditLogService_001 §7 LOCK doc proposals."
+    }
+  ],
+
+  "next_actions_for_b8_synthesis_agent": [
+    "1. Mark C1 as SHIPPED (no further action) — heal-wave commit 9da21c7cd already in branch HEAD.",
+    "2. Open 4 V1.0.X backlog items (V1.0.X-NEG-N3-001 through 004) for next hardening sprint — 2 require LOCK doc creation (BranchScope NULL + AuditLogService config-cache).",
+    "3. Open 5 V2.0 backlog items (BLOCKER_V2_001/002/003/004/005) for V2 SaaS readiness sprint — sequence: BLOCKER_V2_002 first (low cost ~1 day), BLOCKER_V2_004 next (overlaps with V1.0.X-NEG-N3-002), then BLOCKER_V2_001 (~2 weeks bulk), then BLOCKER_V2_003 cluster (~1 week), then BLOCKER_V2_005 last (~1 week design + impl).",
+    "4. Confirm with owner whether iniLabs vendor demo key was revoked + FCM logs audited (Firebase historical exfil window 2026-03-06 → heal-wave date).",
+    "5. Pass duplicate-collapsed C4=C6 forward — synthesis verdict should not split into two backlog items."
+  ]
+}

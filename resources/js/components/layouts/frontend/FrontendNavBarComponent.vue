@@ -55,6 +55,7 @@
                     </ul>
                 </div>
                 <button v-if="!staffOnlyMode" @click.prevent="openCanvas('cart')" type="button"
+                    :aria-label="$t('label.my_cart')"
                     class="webcart hidden lg:flex items-center justify-center gap-1.5 w-fit rounded-3xl capitalize text-sm font-medium h-8 px-3 transition text-white bg-heading">
                     <i class="lab lab-bag-2 lab-font-size-17"></i>
                     <span class="whitespace-nowrap">{{
@@ -63,7 +64,7 @@
                     }}</span>
                 </button>
                 <router-link v-if="!logged"
-                    class="hidden lg:flex items-center justify-center gap-1 w-fit rounded-3xl capitalize text-sm font-medium h-8 px-3 transition text-white bg-primary"
+                    class="hidden lg:flex items-center justify-center gap-1 w-fit rounded-3xl capitalize text-sm font-medium h-8 px-3 transition text-white bg-primary hover:bg-orange-700"
                     :to="{ name: 'auth.login' }">
                     <i class="lab lab-profile-circle"></i>
                     <span class="whitespace-nowrap">{{ $t('label.login') }}</span>
@@ -71,7 +72,7 @@
 
                 <div v-else class="dropdown-group">
                     <button
-                        class="dropdown-btn hidden lg:flex items-center justify-center gap-1 w-fit rounded-3xl capitalize text-sm font-medium h-8 px-3 transition text-white bg-primary">
+                        class="dropdown-btn hidden lg:flex items-center justify-center gap-1 w-fit rounded-3xl capitalize text-sm font-medium h-8 px-3 transition text-white bg-primary hover:bg-orange-700">
                         <i class="lab lab-profile-circle"></i>
                         <span class="whitespace-nowrap">{{ $t('label.account') }}</span>
                         <i class="lab lab-arrow-down-2 text-xs ml-1.5 lab-font-size-15"></i>
@@ -114,8 +115,14 @@
                             </figure>
                         </div>
                         <nav class="px-4">
+                            <!-- [iter15-mega-fix A-002 2026-05-10] Don't render the staff-landing
+                                 link when defaultMenu is missing url/language — that produced
+                                 href="/admin/undefined" + "menu.undefined" raw i18n key in the
+                                 admin account dropdown. authDefaultPermission can be populated
+                                 with permissions that don't carry a menu entry; require both
+                                 url + language on defaultMenu so we never emit an undefined link. -->
                             <router-link
-                                v-if="profile.role_id !== enums.roleEnum.CUSTOMER && Object.keys(authDefaultPermission).length > 0"
+                                v-if="profile.role_id !== enums.roleEnum.CUSTOMER && Object.keys(authDefaultPermission).length > 0 && defaultMenu?.url && defaultMenu?.language"
                                 :to="{ path: '/admin/' + defaultMenu?.url }"
                                 class="paper-link transition w-full flex items-center gap-3.5 py-2.5 border-b last:border-none border-[#EFF0F6]">
                                 <i class="lab-font-size-17" :class="defaultMenu?.icon"></i>
@@ -168,7 +175,7 @@
         <div class="modal-dialog max-w-xs">
             <div class="modal-header">
                 <h3 class="modal-title">{{ $t('menu.languages') }}</h3>
-                <button class="modal-close fa-regular fa-circle-xmark" @click="hideLanguageModal()"></button>
+                <button aria-label="Fermer" class="modal-close fa-regular fa-circle-xmark" @click="hideLanguageModal()"></button>
             </div>
             <nav class="p-2">
                 <button @click="changeLanguage(language.id, language.code)" v-for="language in languages" type="button"
@@ -182,7 +189,7 @@
 
     <div id="order" v-if="orderNotificationStatus" ref="orderNotificationModal" class="modal active ff-modal">
         <div class="modal-dialog max-w-[360px] p-6 text-center relative">
-            <button @click.prevent="closeOrderNotificationModal" class="modal-close absolute top-4 right-4">
+            <button aria-label="Fermer" @click.prevent="closeOrderNotificationModal" class="modal-close absolute top-4 right-4">
                 <i class="fa-regular fa-circle-xmark"></i>
             </button>
             <h3 class="text-[18px] font-semibold leading-8 mb-6">
@@ -190,7 +197,7 @@
                 <span class="block">{{ $t('message.please_check_your_order_list') }}</span>
             </h3>
             <router-link :to="{ path: '/admin/' + orderNotification.url }"
-                class="db-btn h-[38px] shadow-[0px_6px_10px_rgba(255,_0,_107,_0.24)] bg-primary text-white">
+                class="db-btn h-[38px] shadow-[0px_6px_10px_rgba(244,_80,_30,_0.24)] bg-primary text-white hover:bg-orange-700">
                 {{ $t('button.let_me_check') }}
             </router-link>
         </div>

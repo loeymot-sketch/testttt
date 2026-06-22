@@ -26,11 +26,16 @@ class LoyaltyTransaction extends Model
         'balance_after',
         'source_surface',
         'description',
+        // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] Cashier audit trail —
+        // links a POS redemption to the open CashDrawerSession at the time
+        // of redemption. Null for kiosk / web / mobile.
+        'pos_session_id',
     ];
 
     protected $casts = [
-        'points'        => 'integer',
-        'balance_after' => 'integer',
+        'points'         => 'integer',
+        'balance_after'  => 'integer',
+        'pos_session_id' => 'integer',
     ];
 
     /**

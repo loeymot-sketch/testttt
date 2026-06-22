@@ -1,0 +1,113 @@
+{
+  "specialist": "Architect",
+  "mode": "read-only",
+  "scope": "SpinBoost fold-in FoodKing V1.2 — architecture audit of Option C plan",
+  "branch": "v1-0-1-hardening-2026-05-17",
+  "head": "ce23352ab",
+  "date": "2026-05-19",
+  "method": "Cross-reference DESIGN_BRIEF_SPINBOOST_2026-05-16 + ULTRA_PLAN_SPINBOOST_DECOMPOSED_2026-05-16 + ULTRA_REVIEW_SPINBOOST_2026-05-16 + Wave D STATUS.md + live FoodKing app/ scan + plans/SPINBOOST_FOLD_IN_FOODKING_V12_PLAN_2026-05-19.md (this plan).",
+  "verdict": "Option C fold-in is architecturally sound and reduces risk vs Option A by ~30-40% via infrastructure reuse. The plan correctly maps reuse targets to verifiable FoodKing paths (PosRedemptionService, LoyaltyQrSigner, DiscountCalculator, AuditLogService, BranchScope, IdempotencyKeyMiddleware). 5 architectural concerns to surface before Sprint 0.",
+
+  "fold_in_reuse_validation": {
+    "verified_paths_exist_in_foodking": [
+      "app/Services/Loyalty/PosRedemptionService.php — exists, pattern atomic state + HMAC + idempotency directly transposable to voucher redemption",
+      "app/Services/Loyalty/LoyaltyQrSigner.php — exists, HMAC signing pattern reusable as-is for voucher QR",
+      "app/Services/Pricing/DiscountCalculator.php — exists, supports DiscountType enum extension for voucher rewards",
+      "app/Enums/DiscountType.php — exists, enum extension acceptable architecturally",
+      "app/Services/Fiscal/AuditLogService.php — exists, append-only chain HMAC pattern accommodates new event types without rupture if discipline respected",
+      "app/Models/Scopes/BranchScope.php — exists, global scope applied to 11 models post iter11+12 + WizardProfileBranchScope.php seconde",
+      "app/Http/Middleware/IdempotencyKeyMiddleware.php — exists, dual-layer middleware cache + DB UNIQUE constraint",
+      "app/Services/Idempotency/RedisIdempotencyKeyRepository.php — exists, Redis-backed idempotency for spin/redeem endpoints",
+      "app/Services/Loyalty/LoyaltyService.php — exists, LoyaltyService::award reusable for loyalty-points reward type",
+      "app/Mail/ — Laravel Mailable infra present, voucher email reuses pattern"
+    ],
+    "code_reuse_savings_estimate": "12-15 j-humain effectifs (vs greenfield Option A 38 j ULTRA_PLAN estimate), i.e., 30-40% reduction",
+    "verification": "Bash find on app/Services/Loyalty, app/Services/Idempotency, app/Models/Scopes confirmed all paths exist. Sprint 0 architecture validation must walk through each path with code-reading sub-agent before committing pattern adoption."
+  },
+
+  "P0_concerns_for_fold_in": [
+    {
+      "id": "ARCH-FOLDIN-01",
+      "title": "NF525 audit chain integrity must accommodate review_boost events without rupture",
+      "category": "fiscal critical",
+      "severity": "P0",
+      "rationale": "FoodKing app/Services/Fiscal/AuditLogService.php is HMAC SHA-256 chain-signed (prev_hash → current_hash). Adding 2 new event types (voucher_issued, voucher_redeemed) into audit_logs is append-only by design IF and ONLY IF AuditLogService::log() handles new event_type strings without schema migration risk. Pattern Loyalty already does this — verify Sprint 0 by reading AuditLogService::log signature + actual audit_logs table schema (event_type column? JSON payload?).",
+      "action_pre_sprint_0": "Walk-through code-reading sub-agent: confirm AuditLogService::log(eventType, payload, branchId) accepts arbitrary event_type strings, audit_logs.event_type is varchar/text (not enum). Confirm no DB trigger on event_type whitelist. Confirm NF525 chain test suite covers new event types or extend.",
+      "verification_in_sprint_5": "PHPUnit regression: chain count before voucher_issued = N, after voucher_issued = N+1, last_hash recomputable bit-identical. Same for voucher_redeemed. AC-16 of plan §9."
+    },
+    {
+      "id": "ARCH-FOLDIN-02",
+      "title": "PricingService::calculateOrder frozen zone — voucher discount must not modify SSOT logic",
+      "category": "frozen zone",
+      "severity": "P0",
+      "rationale": "CLAUDE.md §7 lists app/Services/Pricing/PricingService.php as frozen zone (NF525 + multi-tenant + payment critical). Voucher discount application must route through existing DiscountCalculator + OrderDiscountLog patterns without altering PricingService.calculateOrder core. If voucher requires new DiscountType enum variant, the addition is to app/Enums/DiscountType.php (acceptable) and to DiscountCalculator branching (acceptable). PricingService.calculateOrder must remain bit-identical.",
+      "action_pre_sprint_0": "Code-reading sub-agent: trace existing Loyalty redeem path through PricingService — does it modify calculateOrder or is it pure additional DiscountType handled in DiscountCalculator? If pure additional handling, voucher follows same path. If PricingService is touched even minimally, LOCK_REVIEW_BOOST_PRICING_2026-XX.md required + owner gate.",
+      "verification_in_sprint_5": "git diff app/Services/Pricing/PricingService.php → 0 lines. AC-17 of plan §9."
+    },
+    {
+      "id": "ARCH-FOLDIN-03",
+      "title": "BranchScope auto-injection on review_boost_* models must match existing pattern, not bypass",
+      "category": "multi-tenant",
+      "severity": "P0",
+      "rationale": "11 FoodKing models post-iter11+12 have BranchScope global. New review_boost_* models must follow same pattern (use HasBranchScope trait or apply scope in boot()). Admin (branch_id=0) bypass + staff (branch_id>0) scoped. Solo founder will leak cross-branch settings/spins/vouchers if BranchScope not properly applied — same risk as Prisma org-scope middleware (SPIN-ARCH-07 ULTRA_REVIEW) but for Laravel.",
+      "action_in_sprint_0": "Sprint 0 task: each ReviewBoostSpin, ReviewBoostVoucher, ReviewBoostSetting model declares `protected static function booted() { static::addGlobalScope(new BranchScope); }` OR uses HasBranchScope trait if exists. PHPUnit test: branch_id=2 user query → only sees branch_id=2 records.",
+      "verification_in_sprint_0": "PHPUnit Feature test: 2 branches seeded, 2 users (1 per branch), query → strict isolation. Admin branch_id=0 sees all. 8 tests Sprint 0 gate."
+    },
+    {
+      "id": "ARCH-FOLDIN-04",
+      "title": "Server-truth wheel — animation must follow backend slot_index, not client-roll",
+      "category": "tampering risk",
+      "severity": "P0",
+      "rationale": "Carry-over SPIN-ARCH-04 ULTRA_REVIEW. DESIGN_BRIEF §3.A A3 risks suggesting client-side wheel roll. In Vue WheelSvg.vue, the animation must START FROM idle, FETCH /spin endpoint, RECEIVE slot_index from server, THEN animate CSS keyframes to land on that known slot. Any client-side random or pre-fetched slot list is tampering vector.",
+      "action_in_sprint_2": "Vue component pattern strict: spin button click → axios.post(/api/frontend/review-boost/spin) → on success response.slot_index → set CSS animation target → wait animation_duration_ms → reveal voucher. Playwright sentinel intercepts /spin POST + asserts response.slot_index matches DOM final slot.",
+      "verification_in_sprint_5": "Playwright sentinel + PHPUnit: 100 spins, distribution of response.slot_index matches configured probabilities ±2%, AND DOM-visible slot matches response.slot_index 100/100."
+    },
+    {
+      "id": "ARCH-FOLDIN-05",
+      "title": "wheel_slots JSON column trade-off vs normalized CampaignSlot table — schema migration cost V1.3",
+      "category": "data model debt",
+      "severity": "P0-soft / P1",
+      "rationale": "Plan §3.3 uses wheel_slots JSON in review_boost_settings for MVP V1.2 simplicity. ULTRA_REVIEW P0-8 + SPIN-ARCH-05 recommended normalized CampaignSlot table with DB CHECK sum=10000. JSON pragmatic V1.2 but: (a) cannot DB CHECK sum=10000 trivially in MySQL JSON, (b) atomic stock decrement requires JSON_SET surgical update with race risk if 2 concurrent spins on stock=1, (c) V1.3 WheelEditor drag-drop will need migration to normalized table.",
+      "action_in_sprint_0": "Document trade-off explicitly: V1.2 = JSON + Zod-validated sum=10000 in ReviewBoostWheelService::validateSlots() + atomic stock check via SELECT ... FOR UPDATE pattern, NOT JSON_SET race. V1.3 = migrate to review_boost_campaign_slots normalized table + DB CHECK constraint (raw SQL migration).",
+      "verification_in_sprint_2": "PHPUnit concurrent spin test: 2 simultaneous spins on slot stock=1 → 1 wins, 1 fallback to consolation slot (never both win). Use Laravel DB::transaction + lockForUpdate."
+    }
+  ],
+
+  "P1_architectural_recommendations": [
+    {
+      "id": "ARCH-FOLDIN-06",
+      "title": "Sanctum guest token vs public endpoint for /spin — auth model decision required Sprint 0",
+      "rationale": "Customer-facing /api/frontend/review-boost/spin is public (no login). Options: (a) fully public endpoint with rate-limit + Turnstile (simple, ULTRA_PLAN pattern), (b) ephemeral Sanctum guest token issued by /review-boost/{branchSlug} page (more auditable, ties to session). Plan §3.4 mentions throttle:review-boost middleware. Owner decision Sprint 0.",
+      "default_recommendation": "Public endpoint with throttle + Turnstile + IdempotencyKey for V1.2 simplicity. Sanctum ephemeral V1.3 if scaling justifies."
+    },
+    {
+      "id": "ARCH-FOLDIN-07",
+      "title": "Mobile mirror standalone vs web responsive — decision Q-8 owner-gated",
+      "rationale": "Memory project_mobile_realignment_ultraplan_2026-05-16 shows mobile is standalone with composer_profile hardcoded mirror DB pattern. Review Boost mobile = same pattern (hardcoded data mirror) OR API call to web backend? Customer-facing flow is one-shot post-meal scan → web mobile responsive is functionally sufficient. Plan recommends differred V1.3 to keep V1.2 scope tight."
+    },
+    {
+      "id": "ARCH-FOLDIN-08",
+      "title": "Webhook retry pattern reuse for Resend bounce-tracking V1.2 light",
+      "rationale": "FoodKing has app/Console/Commands/OutboxWebhookRetryFailedCommand.php + outbox/webhook_events tables. If V1.2 adds bounce-tracking webhook from Resend (optional), reuse pattern directly. Not a P0, can be deferred V1.3.",
+      "default_recommendation": "Defer V1.3. V1.2 = fire-and-forget Mailable + Laravel default Mail queue retry."
+    },
+    {
+      "id": "ARCH-FOLDIN-09",
+      "title": "Cooldown enforcement: device_fingerprint + email_hash + ip — race condition window",
+      "rationale": "Plan §2.2 F-07 cooldown checks 3 vectors. Race: 3 concurrent spins from same device might all pass cooldown check (SELECT) before INSERT. Mitigate via INSERT ... ON DUPLICATE KEY UPDATE or row-level lock on email_hash check.",
+      "action_in_sprint_2": "Implement via DB UNIQUE constraint on (email_hash, branch_id, day_bucket) OR use SELECT ... FOR UPDATE in transaction. PHPUnit concurrent test: 3 simultaneous spins from same email → 1 wins, 2 blocked cooldown."
+    },
+    {
+      "id": "ARCH-FOLDIN-10",
+      "title": "OTel propagation differred V1.3 — acceptable but document",
+      "rationale": "SPIN-ARCH-06 ULTRA_REVIEW recommends OTel traceparent propagation. FoodKing Laravel is not on OTel currently. Adding for V1.2 would be scope-creep. Differred V1.3 FoodKing-wide. V1.2 uses Laravel Log + Sentry + existing tracking."
+    }
+  ],
+
+  "Q1_owner_gates_architect_view": [
+    "Q-1 variant C-1 vs C-2: architect strongly recommends C-1. C-2 adds 3-5j Place API integration + risk P0-1 contamination FoodKing brand.",
+    "Q-9 frozen-zone LOCK: architect verdict = NOT NEEDED if PricingService.calculateOrder untouched (likely path) + DiscountCalculator extension only + AuditLogService.log() arbitrary event_type accepted. To confirm Sprint 0 read-through. If touched: LOCK required + 2nd architect review."
+  ],
+
+  "summary_for_master": "Plan SPINBOOST_FOLD_IN_FOODKING_V12_PLAN_2026-05-19.md is architecturally sound. 5 P0 architectural concerns surfaced (audit chain integrity, pricing frozen zone, BranchScope auto-injection, server-truth wheel, wheel_slots JSON trade-off). All have clear Sprint 0 verification paths. 5 P1 recommendations (Sanctum vs public, mobile mirror, webhook retry, cooldown race, OTel). Owner gates synthesized. Estimated 30-40% code reuse savings vs greenfield Option A is realistic and verified against actual file paths in FoodKing app/."
+}

@@ -1,0 +1,61 @@
+{
+  "specialist": "Architect",
+  "zone": "Z-3-STOCK",
+  "round": 1,
+  "scope": "StockService dependency discipline + ChoiceAvailabilityResolver invariants + dashboard controller boundary",
+  "evidence_method": "Read-verified file:line citations only — no fiction",
+  "findings": [
+    {
+      "id": "Z3-ARCH-01",
+      "severity": "P2",
+      "title": "StockService::releaseForOrderInTransaction movementKey seed includes pre-mutation released_qty",
+      "anchor": "app/Services/Stock/StockService.php:406-411",
+      "evidence": "movementKey seed = 'released:' . (int) $orderItem->released_qty . ':delta:' . $deltaLineQty — at the moment of dispatch, the OrderItem is locked (L364-366 lockForUpdate). Across parallel partial refunds, the second one waits on the lock then reads the updated released_qty, so seed differs naturally. No collision.",
+      "verdict": "PASS — design intentional, lockForUpdate serializes refunds per OrderItem.",
+      "scope_minimal_heal": "Document the invariant inline (no code change needed)."
+    },
+    {
+      "id": "Z3-ARCH-02",
+      "severity": "P2",
+      "title": "requireOriginalDecrement guard prevents refund-without-prior-decrement",
+      "anchor": "app/Services/Stock/StockService.php:106-108",
+      "evidence": "if ($requireOriginalDecrement && ! StockMovement::query()->where('idempotency_key', $orderKey)->exists()) { continue; } — release path (mutateForOrder direction=+1) sets requireOriginalDecrement=true on L38. Refund called before decrement is silently skipped (no-op).",
+      "verdict": "PASS — defensive, idempotent.",
+      "scope_minimal_heal": "None."
+    },
+    {
+      "id": "Z3-ARCH-03",
+      "severity": "P1",
+      "title": "ChoiceAvailabilityResolver::availabilityFromLevel — manual rupture priority documented but no unit sentinel for boundary",
+      "anchor": "app/Services/Stock/ChoiceAvailabilityResolver.php:270-289",
+      "evidence": "Manual reason (line 281-284) overrides on_hand check. Comment cites F-016a-BIS reasoning. tests/Feature/Stock/StockRuptureAvailabilitySyncTest::test_stock_zero_does_not_override_manual_admin_rupture_reason covers this. CONFIRMED.",
+      "verdict": "PASS — invariant tested.",
+      "scope_minimal_heal": "None — heal already present from F-016a-BIS commit."
+    },
+    {
+      "id": "Z3-ARCH-04",
+      "severity": "P1",
+      "title": "StockRuptureDashboardController duplicates `stockable_name` and `label` in lowAlerts payload",
+      "anchor": "app/Http/Controllers/Admin/StockRuptureDashboardController.php:81-83",
+      "evidence": "L83 'label' returns same stockableLabel() value as L82 'stockable_name'. Vue StockLowAlertsWidget L31 prefers `alert.label || alert.stockable_name || ('#' + alert.stockable_id)` — both populated identically, no fallback breaks. Minor payload bloat.",
+      "verdict": "MINOR — payload duplication, no functional bug.",
+      "scope_minimal_heal": "Defer to V1.0.2 cleanup. Leave for backwards compat with widget."
+    },
+    {
+      "id": "Z3-ARCH-05",
+      "severity": "P0",
+      "title": "Stock dashboard component MISSING fr.json hierarchy used by widget (label.stock_low_alerts) — actually OK in fr.json/en.json BUT MISSING in ar.json",
+      "anchor": "resources/js/languages/ar.json:41-77 (no admin.stock_rupture block) + resources/js/languages/fr.json:77-94 (present) + en.json:77-94 (present, mixed French content L78-93)",
+      "evidence": "ar.json admin section ends at line 76 with item_preview close and then closes admin block at line 77 — there is no `admin.stock_rupture.*` block. Switching to AR locale on /admin/stock/rupture will display raw label keys 'admin.stock_rupture.title' etc. EN file has same keys but uses French strings at L78-93 (locale leak).",
+      "verdict": "FAIL — AR rupture surface presents raw keys.",
+      "scope_minimal_heal": "Add `admin.stock_rupture` JSON block to ar.json with Arabic translations; correct English strings in en.json L78-93 to true English copy."
+    }
+  ],
+  "summary": {
+    "P0": 1,
+    "P1": 0,
+    "P2": 2,
+    "P3": 0,
+    "minor": 1
+  }
+}

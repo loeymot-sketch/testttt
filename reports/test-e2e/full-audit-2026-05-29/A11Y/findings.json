@@ -1,0 +1,128 @@
+{
+  "audit": "A11y WCAG 2.1 AA sweep + heal verification",
+  "branch": "feature/mobile-app-le-cayenne-2026-05-10",
+  "head": "5032dc158",
+  "date": "2026-05-29T21:51Z",
+  "tool": "Playwright MCP direct DOM eval (axe-core not auto-injected — manual JS heuristic checks performed)",
+  "heal_verification": {
+    "file": "resources/css/pos-a11y.css",
+    "lines": 49,
+    "focus_visible_rules_count": 11,
+    "extended_selectors_present": {
+      "input:focus-visible": "line 40",
+      "[role='combobox']:focus-visible": "line 43",
+      "[role='combobox'] input:focus-visible": "line 44",
+      ".pos-v5-search-input__field:focus-visible": "line 46"
+    },
+    "css_loaded_on_pages_verified": [
+      { "url": "/admin/pos-v4", "pos_a11y_css_in_stylesheets": true },
+      { "url": "/admin/kitchen-display-system", "pos_a11y_css_in_stylesheets": true }
+    ],
+    "verdict": "HEAL_PRESENT_AND_LOADED — focus-visible ring now applied to <input>, role=combobox, role=combobox > input, and POS V5 search input (WCAG 2.4.7 Focus Visible)"
+  },
+  "surfaces": [
+    {
+      "url": "/login",
+      "total_btns": "n/a (form-only)",
+      "icon_btns_missing_aria_label": 0,
+      "small_btns_under_44px": 0,
+      "verdict": "GREEN — labels visible, focus chain visible"
+    },
+    {
+      "url": "/kiosk/idle",
+      "total_btns": 3,
+      "icon_btns": 2,
+      "icon_btns_missing_aria_label_or_title": 0,
+      "small_btns_under_44px": 0,
+      "verdict": "GREEN"
+    },
+    {
+      "url": "/admin/pos-v4",
+      "total_btns": 100,
+      "icon_btns": 5,
+      "icon_btns_missing_aria_label_or_title": 3,
+      "small_btns_under_44px": 32,
+      "verdict": "P2",
+      "finding_id": "A11Y-POS-P2-01",
+      "notes": "3 icon buttons lack aria-label/title (e.g. cart open/close icon toggles). 32 buttons under 44×44 likely include grid sub-control quantity steppers (-/+ inside line-items). Compliant by adjacency rule if visually paired with larger handle. Manual confirmation deferred."
+    },
+    {
+      "url": "/admin/pos (V5)",
+      "total_btns": 100,
+      "icon_btns": 5,
+      "icon_btns_missing_aria_label_or_title": 3,
+      "small_btns_under_44px": "not measured (same UI as v4)",
+      "verdict": "P2 (mirror of pos-v4)"
+    },
+    {
+      "url": "/admin/dashboard",
+      "total_btns": 13,
+      "icon_btns": 3,
+      "icon_btns_missing_aria_label_or_title": 2,
+      "verdict": "P2",
+      "finding_id": "A11Y-DASH-P2-01",
+      "notes": "2 icon buttons (likely notification bell + avatar dropdown trigger) lack aria-label/title. Same admin layout shared across screens."
+    },
+    {
+      "url": "/admin/stock-rupture-dashboard",
+      "total_btns": 4,
+      "icon_btns": 1,
+      "icon_btns_missing_aria_label_or_title": 1,
+      "verdict": "P2 (same admin layout icon-button issue)"
+    },
+    {
+      "url": "/admin/cash-overview",
+      "total_btns": 14,
+      "icon_btns": 3,
+      "icon_btns_missing_aria_label_or_title": 2,
+      "verdict": "P2 (same admin layout icon-button issue)"
+    },
+    {
+      "url": "/admin/kitchen-display-system (KDS)",
+      "total_btns": 12,
+      "icon_btns": 3,
+      "icon_btns_missing_aria_label_or_title": 2,
+      "bump_btn_count": "0 in narrow snapshot (test orders have status banner instead of 'Prêt' button); manual touch-size verification deferred",
+      "verdict": "P2 (admin layout shared) — KDS 'Prêt' bump targets visible in earlier full snapshot, region-labelled correctly per ARIA"
+    },
+    {
+      "url": "/order-status-screen (OSS)",
+      "total_btns": 12,
+      "icon_btns": 3,
+      "icon_btns_missing_aria_label_or_title": 2,
+      "contrast_concern": "Not measured automatically (no axe injection) — text rgb(31,31,57) on rgba(0,0,0,0) inherited bg sampled in nav; OSS TV-mode contrast 7:1 target needs WCAG color analyzer or dedicated axe-core run on /order-status-screen non-admin view (this URL redirected here through admin shell while admin-logged-in)"
+    }
+  ],
+  "summary": {
+    "surfaces_swept_a11y": 9,
+    "p0_count": 0,
+    "p1_count": 0,
+    "p2_findings": [
+      {
+        "id": "A11Y-ADMIN-LAYOUT-P2-01",
+        "scope": "Shared admin layout (header bell + avatar dropdown trigger)",
+        "issue": "2-3 icon buttons missing aria-label / title",
+        "wcag": "4.1.2 Name, Role, Value",
+        "occurrences": "Every admin page (dashboard, pos, cash-overview, kds, oss, stock-rupture-dashboard)",
+        "fix_estimate": "Single template edit on admin layout partial — ~3 lines"
+      },
+      {
+        "id": "A11Y-POS-V4-P2-02",
+        "scope": "/admin/pos-v4",
+        "issue": "32 buttons under 44×44 hit area",
+        "wcag": "2.5.5 Target Size (AAA — AA is target adequacy via adjacency rule)",
+        "occurrences": "Quantity steppers in line items + possibly numeric keypad",
+        "fix_estimate": "Verify visually whether composite parent ≥44px; if not, increase touch padding"
+      }
+    ],
+    "heal_pos_a11y_css_extension": "VERIFIED_PRESENT_AND_LIVE",
+    "delivery_cash_keys_14": "VERIFIED_PRESENT_IN_lang_fr_all_php_lines_182_192",
+    "verdict_a11y": "GREEN with 2 P2 (no P0/P1) — heals active"
+  },
+  "limitations": [
+    "axe-core not injected automatically — only DOM-heuristic checks performed",
+    "/admin/delivery-boys + /admin/delivery-boy-cash-sessions/1 NOT reachable with admin@lecayenne.fr (permission gate redirects to /admin/dashboard)",
+    "Contrast ratios not numerically computed — would require WCAG contrast-calc lib injection",
+    "Keyboard nav and focus-visible visual rendering not screenshotted (would need separate Tab-press capture wave)"
+  ]
+}

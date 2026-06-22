@@ -5,6 +5,7 @@ namespace App\Http\Resources;
 
 use App\Models\ThemeSetting;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Smartisan\Settings\Facades\Settings;
 
 class SettingResource extends JsonResource
 {
@@ -37,7 +38,11 @@ class SettingResource extends JsonResource
             'site_android_app_link'                => $this->info['site_android_app_link'] ?? '',
             'site_ios_app_link'                    => $this->info['site_ios_app_link'] ?? '',
             'site_copyright'                       => $this->info['site_copyright'] ?? '© ' . date('Y') . ' ' . config('app.name'),
-            'site_currency_position'               => $this->info['site_currency_position'] ?? 'left',
+            // [micro-ux 2026-06-18] FR-correct unset default: was the en-US string 'left' (€-prefix), which (a)
+            // doesn't match the numeric CurrencyPosition enum the admin select + kioskFormatPrice expect and
+            // (b) made the kiosk render "€0,00" instead of FR "0,00 €". Default to RIGHT (10), matching the
+            // SiteTableSeeder. POS unaffected (appService keys on LEFT=5).
+            'site_currency_position'               => $this->info['site_currency_position'] ?? \App\Enums\CurrencyPosition::RIGHT,
             'site_digit_after_decimal_point'       => $this->info['site_digit_after_decimal_point'] ?? 2,
             'site_default_currency_symbol'         => $this->info['site_default_currency_symbol'] ?? '€',
             'site_phone_verification'              => $this->info['site_phone_verification'] ?? 0,
@@ -110,26 +115,18 @@ class SettingResource extends JsonResource
             'kiosk_languages_enabled'              => $this->_parseLanguagesEnabled(),
             'kiosk_default_language'               => $this->info['kiosk_default_language'] ?? 'fr',
 
-            // [KIOSK-19-1] Admin PIN — exposed ONLY to authenticated kiosk tokens (kiosk:order ability).
-            // The frontend/setting route is public; returning the PIN to unauthenticated callers
-            // would be a critical security leak. Kiosk machines authenticate first via /auth/kiosk-login
-            // and then call /frontend/setting with their Sanctum token.
-            'kiosk_admin_pin'                      => $this->_kioskAdminPin($request),
+            // Customer kiosk is a locked client surface. Staff/admin intervention
+            // happens from caisse/admin only, so the kiosk never receives a PIN.
+            'kiosk_admin_pin'                      => null,
+
+            // [iter15-mega-fix C-019 2026-05-10] Expose pos.pos_dine_in_enabled
+            // to the kiosk frontend so the idle screen can hide the "Sur place"
+            // tile when V1 dine-in is disabled. Reads directly from the `pos`
+            // settings group (not merged into SettingService::list()) and
+            // defaults to FALSE to keep V1 deployments safe per
+            // feedback_v1_dine_in_disabled_2026-05-06.
+            'pos_dine_in_enabled'                  => (int) (bool) Settings::group('pos')->get('pos_dine_in_enabled', 0),
         ];
-    }
-
-    /**
-     * Return the kiosk admin PIN only to authenticated kiosk machines.
-     * Unauthenticated callers (public frontend/setting) receive null.
-     */
-    private function _kioskAdminPin(\Illuminate\Http\Request $request): ?string
-    {
-        $user = $request->user('sanctum');
-        if ($user && $user->tokenCan('kiosk:order')) {
-            return $this->info['kiosk_admin_pin'] ?? '1234';
-        }
-
-        return null;
     }
 
     /**

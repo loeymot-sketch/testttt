@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Models\Item;
 use App\Models\ItemCategory;
 use App\Models\Tax;
+use App\Enums\Status;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -25,7 +26,7 @@ class ItemFactory extends Factory
             'price' => fake()->randomFloat(2, 3, 25),
             'item_category_id' => \Database\Factories\ItemCategoryFactory::new(),
             'tax_id' => \Database\Factories\TaxFactory::new(),
-            'status' => 1,
+            'status' => Status::ACTIVE,
         ];
     }
 }

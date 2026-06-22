@@ -3,15 +3,16 @@
 use App\Enums\OrderStatus;
 
 return [
-    OrderStatus::PENDING          => 'Pending',
-    OrderStatus::ACCEPT           => 'Accept',
-    OrderStatus::PREPARING        => 'Preparing',
-    OrderStatus::PREPARED         => 'Prepared',
-    OrderStatus::OUT_FOR_DELIVERY => 'Out For Delivery',
-    OrderStatus::DELIVERED        => 'Delivered',
-    OrderStatus::CANCELED         => 'Canceled',
-    OrderStatus::REJECTED         => 'Rejected',
-    OrderStatus::RETURNED         => 'Returned',
+    OrderStatus::PENDING          => 'En attente',
+    OrderStatus::ACCEPT           => 'Acceptée',
+    OrderStatus::PREPARING        => 'En préparation',
+    OrderStatus::PREPARED         => 'Prête',
+    OrderStatus::OUT_FOR_DELIVERY => 'En livraison',
+    OrderStatus::DELIVERED        => 'Livrée',
+    OrderStatus::CANCELED         => 'Annulée',
+    OrderStatus::REJECTED         => 'Refusée',
+    OrderStatus::RETURNED         => 'Retournée',
+    ''                            => '',
 
 
 ];

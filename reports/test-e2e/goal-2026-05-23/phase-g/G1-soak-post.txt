@@ -1,0 +1,44 @@
+=== G.1 post-soak 2026-05-23 ===
+sam. 23 mai 2026 23:16:31 CEST
+
+--- audit_logs count ---
+audit_logs_count=67
+
+--- NF525 chain post ---
+  + branch=1 CHAIN OK
+  + branch=2 CHAIN OK
+  + branch=3 CHAIN OK
+  + branch=4 CHAIN OK
+  + branch=5 CHAIN OK
+SWEEP COMPLETE — CHAIN OK on every active branch (5 total)
+
+--- orders count ---
+orders_count=339
+
+--- outbox depth (dispatched_at IS NULL) ---
+outbox_pending=832
+outbox_stale_30s=832
+
+--- per-branch fiscal_sequence MAX + null_count ---
+branch=1 count=177 max_fs=68 null_fs=114
+branch=2 count=42 max_fs=null null_fs=42
+branch=3 count=40 max_fs=null null_fs=40
+branch=4 count=40 max_fs=null null_fs=40
+branch=5 count=40 max_fs=null null_fs=40
+
+--- PHP serve PID + RSS ---
+  PID    RSS  ELAPSED COMM
+53293  52320 01:02:24 /opt/homebrew/Cellar/php@8.2/8.2.30/bin/php
+
+--- fiscal_sequence_no contiguity check (orders with non-NULL fs) ---
+branch=1 n=63 min=1 max=68 expected=68 gap=5
+
+--- orders by payment_status (sample of soak orders) ---
+Array
+(
+    [5] => 78
+    [1] => 4
+    [10] => 234
+    [15] => 21
+    [20] => 2
+)

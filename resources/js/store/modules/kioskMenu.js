@@ -48,6 +48,11 @@ export const kioskMenu = {
     getters: {
         categories:         (s) => s.categories,
         allItems:           (s) => s.items,
+        forBranch:          (s) => (branchId) => ({
+            branch_id: branchId ?? s.branchId,
+            categories: s.categories,
+            items: s.items,
+        }),
         selectedCategoryId: (s) => s.selectedCategoryId,
         kioskSandwichSubcolumn: (s) => s.kioskSandwichSubcolumn,
         loading:            (s) => s.loading,
@@ -64,7 +69,24 @@ export const kioskMenu = {
         sidebarCategories: (s) => {
             const split = getKioskSandwichSplitConfig();
             const coldSlugs = split?.cold_item_slugs || [];
-            return expandKioskSidebarCategories(s.categories, {
+            // V3.8 (2026-05-10) Owner gate : exclure cat "Frites & Accompagnements"
+            // (id 315) de la sidebar kiosk. Owner : "tout accompagnement vient
+            // avec le produit lui-même ; cette catégorie crée confusion (un
+            // supplément cliqué standalone ne sait à quel produit il s'attache).
+            // On la cache du welcome screen mais les items restent au catalog
+            // pour POS staff + addons backend (360-403)."
+            // [owner-feedback 2026-05-10 round-5] Cats 306/307/308 (sandwich/burger/
+            // tacos) restent VISIBLES sur la borne. Le précédent gating était une
+            // mis-interprétation de "scape les sandwich, burger et tacos" — l'intent
+            // owner était de SAUTER ces cats dans le scope de l'audit test E2E
+            // uniquement, pas de les retirer de l'UI.
+            // Cat 315 (Frites & Accompagnements) reste masquée — ses items sont
+            // des addons d'autres produits, accédés via les steps wizard.
+            const KIOSK_HIDDEN_CATEGORY_IDS = new Set([315]);
+            const filtered = (s.categories || []).filter((c) =>
+                !KIOSK_HIDDEN_CATEGORY_IDS.has(parseInt(c.id, 10))
+            );
+            return expandKioskSidebarCategories(filtered, {
                 parentSlug: split?.parent_category_slug || 'nos-sandwichs',
                 coldSlugs,
                 coldLabel: split?.cold_sidebar_label || 'Sandwich froid',
@@ -246,6 +268,31 @@ export const kioskMenu = {
             const branchParam = resolvedBranchId ? `&branch_id=${resolvedBranchId}` : '';
 
             try {
+                try {
+                    const menuRes = await axios.get('frontend/menu');
+                    const data = menuRes?.data?.data || {};
+                    const categories = Array.isArray(data.categories) ? data.categories : [];
+                    const items = Array.isArray(data.items) ? data.items : [];
+
+                    commit('SET_CATEGORIES', categories);
+                    commit('SET_ITEMS', items);
+                    commit('SET_PROMOS', data.promos || []);
+                    commit('SET_BRANCH_FLAGS', data.branch || {});
+
+                    saveSnapshot(state.categories, state.items).catch(() => {});
+
+                    if (categories.length > 0 && !state.selectedCategoryId) {
+                        const first = categories.find(c => c.id && c.id !== 0) || categories[0];
+                        if (first) commit('SET_SELECTED_CATEGORY', first.id);
+                    }
+
+                    return;
+                } catch (_) {
+                    // Legacy fallback for unauthenticated web/table contexts. Kiosk machines
+                    // should normally use /frontend/menu because it resolves branch_id from
+                    // KioskMachine and includes item_branch_availability.
+                }
+
                 const [catRes, itemRes] = await Promise.all([
                     axios.get(
                         `frontend/item-category?paginate=0&status=5&surface=kiosk&order_column=sort&order_type=asc${branchParam}`

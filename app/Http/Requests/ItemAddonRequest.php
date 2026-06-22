@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Rules\IniAmount;
+use App\Models\ItemAddon;
 use Illuminate\Validation\Rule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -33,6 +34,7 @@ class ItemAddonRequest extends FormRequest
                 Rule::unique("item_addons", "addon_item_id")->whereNull('deleted_at')->ignore($this->route('itemAddon.id'))->where('item_id', $this->route('item.id')),
             ],
             'addon_item_variation'   => ['nullable', 'json'],
+            'role'                   => ['nullable', 'string', Rule::in(ItemAddon::ROLES)],
         ];
     }
 

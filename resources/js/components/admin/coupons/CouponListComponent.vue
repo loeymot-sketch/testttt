@@ -91,6 +91,27 @@
                             <input id="searchLimitPerUser" v-model="props.search.limit_per_user"
                                 v-on:keypress="floatNumber($event)" type="text" class="db-field-control">
                         </div>
+                        <!-- [PROMO-DASH-2026-05-06] Filtre status -->
+                        <div class="col-12 sm:col-6 md:col-4 xl:col-3">
+                            <label for="searchStatus" class="db-field-title after:hidden">{{ $t('label.status') }}</label>
+                            <vue-select class="db-field-control f-b-custom-select" id="searchStatus"
+                                v-model="props.search.status" :options="[
+                                    { id: 5, name: $t('label.active') },
+                                    { id: 10, name: $t('label.inactive') }
+                                ]" label-by="name" value-by="id" :closeOnSelect="true" :searchable="true"
+                                :clearOnClose="true" placeholder="--" search-placeholder="--" />
+                        </div>
+                        <!-- [PROMO-DASH-2026-05-06] Filtre surface (canal) -->
+                        <div class="col-12 sm:col-6 md:col-4 xl:col-3">
+                            <label for="searchSurface" class="db-field-title after:hidden">{{ $t('label.surface') }}</label>
+                            <vue-select class="db-field-control f-b-custom-select" id="searchSurface"
+                                v-model="props.search.surface" :options="[
+                                    { id: 'pos', name: 'POS' },
+                                    { id: 'kiosk', name: 'Kiosk' },
+                                    { id: 'web', name: 'Web' }
+                                ]" label-by="name" value-by="id" :closeOnSelect="true" :searchable="true"
+                                :clearOnClose="true" placeholder="--" search-placeholder="--" />
+                        </div>
                         <div class="col-12">
                             <div class="flex flex-wrap gap-3 mt-4">
                                 <button class="db-btn py-2 text-white bg-primary">
@@ -116,6 +137,8 @@
                             <th class="db-table-head-th">{{ $t("label.discount_type") }}</th>
                             <th class="db-table-head-th">{{ $t("label.start_date") }}</th>
                             <th class="db-table-head-th">{{ $t("label.end_date") }}</th>
+                            <th class="db-table-head-th">{{ $t("label.status") }}</th>
+                            <th class="db-table-head-th">{{ $t("label.usage") }}</th>
                             <th class="db-table-head-th hidden-print"
                                 v-if="permissionChecker('coupons_show') || permissionChecker('coupons_edit') || permissionChecker('coupons_delete')">
                                 {{ $t("label.action") }}</th>
@@ -128,7 +151,7 @@
                                 <div v-else>{{ coupon.name.substring(0, 40) + ".." }}</div>
                             </td>
                             <td class="db-table-body-td">{{ coupon.code }}</td>
-                            <td class="db-table-body-td">{{ coupon.flat_discount }}</td>
+                            <td class="db-table-body-td">{{ coupon.discount_type === enums.taxTypeEnum.PERCENTAGE ? (parseFloat(coupon.discount).toLocaleString('fr-FR') + ' %') : coupon.currency_discount }}</td>
                             <td class="db-table-body-td">
                                 <span :class="taxTypeClass(coupon.discount_type)">{{
                                     enums.taxTypeEnumArray[coupon.discount_type]
@@ -136,6 +159,17 @@
                             </td>
                             <td class="db-table-body-td">{{ coupon.convert_start_date }}</td>
                             <td class="db-table-body-td">{{ coupon.convert_end_date }}</td>
+                            <td class="db-table-body-td">
+                                <span :class="coupon.status === 5 ? 'badge bg-green-500 text-white px-2 py-0.5 rounded' : 'badge bg-gray-400 text-white px-2 py-0.5 rounded'"
+                                    :data-coupon-status="coupon.status">
+                                    {{ coupon.status === 5 ? $t('label.active') : $t('label.inactive') }}
+                                </span>
+                            </td>
+                            <td class="db-table-body-td">
+                                <span :data-coupon-usage="coupon.id">
+                                    {{ coupon.usage_count || 0 }}<template v-if="coupon.max_uses_global"> / {{ coupon.max_uses_global }}</template>
+                                </span>
+                            </td>
                             <td class="db-table-body-td hidden-print"
                                 v-if="permissionChecker('coupons_show') || permissionChecker('coupons_edit') || permissionChecker('coupons_delete')">
                                 <div class="flex justify-start items-center sm:items-start sm:justify-start gap-1.5">
@@ -143,6 +177,16 @@
                                         v-if="permissionChecker('coupons_show')" />
                                     <SmIconSidebarModalEditComponent @click="edit(coupon)"
                                         v-if="permissionChecker('coupons_edit')" />
+                                    <!-- [PROMO-DASH-2026-05-06] Bouton toggle status -->
+                                    <button v-if="permissionChecker('coupons_edit')"
+                                        type="button"
+                                        :aria-label="coupon.status === 5 ? $t('label.deactivate') : $t('label.activate')"
+                                        :title="coupon.status === 5 ? $t('label.deactivate') : $t('label.activate')"
+                                        class="db-btn-icon"
+                                        :data-action="'toggle-status'" :data-id="coupon.id"
+                                        @click="toggleStatus(coupon)">
+                                        <i class="lab" :class="coupon.status === 5 ? 'lab-tick-circle' : 'lab-close-circle'"></i>
+                                    </button>
                                     <SmIconDeleteComponent @click="destroy(coupon.id)"
                                         v-if="permissionChecker('coupons_delete')" />
                                 </div>
@@ -151,7 +195,7 @@
                     </tbody>
                     <tbody class="db-table-body" v-else>
                         <tr class="db-table-body-tr">
-                            <td class="db-table-body-td text-center" colspan="7">
+                            <td class="db-table-body-td text-center" colspan="9">
                                 <div class="p-4">
                                     <div class="max-w-[300px] mx-auto mt-2">
                                         <img class="w-full h-full" :src="ENV.API_URL + '/images/default/not-found.png'"
@@ -250,6 +294,13 @@ export default {
                     minimum_order: "",
                     maximum_discount: "",
                     limit_per_user: "",
+                    // [PROMO-DASH-2026-05-06] champs scoping avancé
+                    status: 5,
+                    max_uses_global: "",
+                    valid_hours_start: "",
+                    valid_hours_end: "",
+                    valid_days_of_week: [],
+                    surfaces: [],
                 },
                 search: {
                     paginate: 1,
@@ -266,6 +317,9 @@ export default {
                     minimum_order: "",
                     maximum_discount: "",
                     limit_per_user: "",
+                    // [PROMO-DASH-2026-05-06] Filtres avancés
+                    status: null,
+                    surface: null,
                 },
             },
             ENV: ENV
@@ -319,7 +373,28 @@ export default {
             this.props.search.minimum_order = "";
             this.props.search.maximum_discount = "";
             this.props.search.limit_per_user = "";
+            // [PROMO-DASH-2026-05-06] Reset filtres avancés
+            this.props.search.status = null;
+            this.props.search.surface = null;
             this.list();
+        },
+
+        // [PROMO-DASH-2026-05-06] Toggle status (active <-> inactive)
+        toggleStatus: function (coupon) {
+            this.loading.isActive = true;
+            this.$store
+                .dispatch("coupon/toggleStatus", {
+                    id: coupon.id,
+                    search: this.props.search,
+                })
+                .then(() => {
+                    this.loading.isActive = false;
+                    alertService.successFlip(1, this.$t("menu.coupons"));
+                })
+                .catch((err) => {
+                    this.loading.isActive = false;
+                    alertService.error(err.response?.data?.message || err.message || 'toggle failed');
+                });
         },
         list: function (page = 1) {
             this.loading.isActive = true;
@@ -347,6 +422,13 @@ export default {
                     minimum_order: coupon.minimum_order_flat_amount,
                     maximum_discount: coupon.maximum_flat_discount,
                     limit_per_user: coupon.limit_per_user,
+                    // [PROMO-DASH-2026-05-06] hydratation édition
+                    status: coupon.status || 5,
+                    max_uses_global: coupon.max_uses_global || "",
+                    valid_hours_start: coupon.valid_hours_start ? String(coupon.valid_hours_start).slice(0, 5) : "",
+                    valid_hours_end: coupon.valid_hours_end ? String(coupon.valid_hours_end).slice(0, 5) : "",
+                    valid_days_of_week: Array.isArray(coupon.valid_days_of_week) ? coupon.valid_days_of_week : [],
+                    surfaces: Array.isArray(coupon.surfaces) ? coupon.surfaces : [],
                 };
             }).catch((err) => {
                 alertService.error(err.response.data.message);

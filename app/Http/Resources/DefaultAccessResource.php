@@ -26,7 +26,7 @@ class DefaultAccessResource extends JsonResource
     public function toArray($request) : array
     {
         return [
-            "branch_id" => $this->info['branch_id']
+            "branch_id" => $this->info['branch_id'] ?? null
         ];
     }
 

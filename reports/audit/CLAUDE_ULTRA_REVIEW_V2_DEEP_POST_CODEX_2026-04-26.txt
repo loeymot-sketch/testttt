@@ -1,0 +1,46 @@
+Tu es l'orchestrateur FoodKing (AGENTS.md, invariants, human-gates). Aucun patch de code ici : analyse, arbitrage, plan. Nouvelle session sans historique de chat : tout le contexte est sur le disque.
+
+## Contexte d'entrée (déjà produit, à lire intégralement en priorité)
+
+Retour d'exécution **après** plan de correction de premier niveau (Codex / exécuteur principal) :
+
+- Verdict déclaré : **ciblées GREEN** ; **release globale RED / HOLD** ; enchaînement W2 #26→#36 **interrompu** tant que : worktree non prouvé propre + missions **CLOSED** non **prouvées** côté git.
+- Métriques actuelles signalées (à vérifier sur l'arbre) : `php artisan test` global ≈ 1013 passed, 8 skipped, **44 failed** ; `npx vitest run` ≈ 847 passed, **6 failed** ; script `npm run vitest` **absent** ; garde `lint-fk-bundle-legacy` strict = exit 0 mais **warning** `public/js/kiosk.js` / `kiosk-wizard.js` ; worktree de fin : **~111** fichiers modifiés suivis, **~662** non suivis.
+- Dépôt d'artefacts d’exécution (chemins type — valide présence) :
+  - `reports/audit/GPT_CORRECTION_EXECUTION_W1_W2_2026-04-26.md`
+  - `reports/audit/GPT_SELF_AUDIT_CV1-FIX-W1W2-ULTRA-REVIEW.md`
+  - `docs/runbooks/AUDIT_FERMETURE_CAISSE_V1.md`
+  - `reports/audit/` ou équivalent : **audit untracked**, `MISSIONS_CLOSED_VS_GIT_2026-04-26.md`
+  - `plans/PLAN_CAISSE_V1_W1W2_REWORK_AFTER_GLOBAL_TESTS_2026-04-26.md`
+  - `plans/masterplay/MASTERPLAY_QUEUE.md` (MASTERPLAY_FROZEN=1)
+  - Changements de fond : K09B (listeners outbox, `EventContract` + champs _origin, payment_method, queue_number) ; `OrderResource` + POS consommation ; `playwright.config.js` root collecte e2e + Playwright ; tests E2E tacos / staff routing / kiosk realtime, etc.
+- Piste reprise (selon exécuteur) : persistance git, tests hérités POS quote-binding, **fixtures** outbox, visibilité KDS, file offline Vitest, gate schéma **queue_number**, etc.
+
+**Ne pas** redire « c’est bon » si les preuves chiffrées (failures, untracked) restent. **Ne pas** se limiter à “lancer plus de tests” : il faut comprendre **systémiquement** ce qui manque à une **V1** défendable.
+
+## Demande d’ultra review — PROFONDEUR MAXIMALE (obligations)
+
+1) **Passe d’inventaire factuel** (table): pour chaque axe ci-dessous, indique *état* (OK / PARTIEL / DÉFAILLANT) + 2 lignes *preuve* (fichier, test, ou compteur git) :
+   - (a) **Cohérence `CLOSED` ↔ index git** (gouvernance).
+   - (b) **Invariant pricing SSOT, branch_id, OrderStatus, dispatch after commit.**
+   - (c) **Chaîne événementielle / outbox** (K09B) : champs, contrat, persistance, relecture POS/kiosk, absence de fuite.
+   - (d) **Pyramide de tests** : 44 + 6 échecs — *taxonomie* (regrouper par cause : flaky, data, env, vrai bug, test obsolète). Pas « tout rouge = ignorer ».
+   - (e) **E2E / Playwright** : config root 35/35 (si confirmé) vs exigences de release ; écart `tests/Playwright` / `tests/e2e` / sentinels.
+   - (f) **Produit générés (bundles) vs garde** `pos-wizard` / legacy.
+   - (g) **Mémoire** `memory/episodes/*.jsonl` : versionnés ou risque.
+   - (h) **Option B** vs toute dérive M-04A / refund ledger / P-10, P-13, schéma.
+
+2) **Alimentation critique (financier, fiscal, intégrité )** : liste ce qui, si faux ou partiel, invalide un **engagement** V1 (c’est plus large que le mot « test » : flux argent, Z, trésorerie, isolation branche, quote, TPE, offline) — chaque point avec *condition de clôture* binaire (oui/non), pas de flou.
+
+3) **Écart de vision globale** : *Qu’est-ce qui manque ENCORE* pour qu’un décideur ait en tête une **vision d’ensemble** (pas seulement “plus de green”) : liste 5 à 8 items manquants (rehearsal staging, preuves disque, UAT, hardware, preuve fiscale, etc. si toujours HOLD release).
+
+4) **ULTRA-PLAN DE CORRECTION** (pas un plan de “testing générique” uniquement) :
+   - **Phases** (A, B, C, …), **non** parallélisables quand c’est dangereux, avec **objectif d’ingénierie** (ex. : « prouver persistance », « réduire les 44 fails à *classes* A/B/C avec owners », « trancher gate W2 *avant* migration queue_number »).
+   - Sous chaque phase : 3–7 actions **vérifiées** (critère de sortie) ; quelles actions sont **obligatoirement** humaines, lesquelles **exécuteur (Codex)**.
+   - **Candidats TACH_ID** ou noms de micro-missions si tu en proposes de nouveaux (K09B suivi, FIX-GLOBAL-TEST-TAXONOMY, PERSIST-*, etc.) — *sans* élargir le scope au-delà de Caisse V1.
+
+5) **VERDICT** (une ligne) : `V1_STABILISATION` = PRÊT_À_… | BLOQUÉ_JUSQU_À_… (précis).
+
+6) **Question de clôture pour toi, Claude, honnête** : « Que te manque-t-il d’**information** ou d’**accès** (fichier, preuve, environnement) pour conclure sans trou **à la prochaine** passe ? » — liste courte.
+
+**Style** : analytique, sévère si les chiffres imposent, AUCUNE flatterie. Pas d’invention de chiffres : si tu n’as pas re-lu, indique *à vérifier* + chemin. Pas de contournement des invariants. Option B explicite, M-04A hors.

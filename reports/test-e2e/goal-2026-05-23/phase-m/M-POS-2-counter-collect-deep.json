@@ -1,0 +1,262 @@
+{
+  "agent": "M-POS-2-COUNTER-COLLECT-DEEP",
+  "phase": "M",
+  "title": "PosCounterCollectModal.vue lifecycle + edge inputs + race + L5.3 keyboard heal",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head_before_heal": "07e147cc16b238a34041a1fad2a83bb11c58091c",
+  "date": "2026-05-24",
+  "scope_file": "resources/js/components/admin/pos/PosCounterCollectModal.vue",
+  "loc_actual": 731,
+  "loc_expected_by_brief": "≥440",
+  "loc_check": "PASS (well over the 440-LOC floor — 291 LOC of <style scoped> bring the total higher than the brief estimate which counted logic+template only)",
+  "frozen_zone_status": "NOT FROZEN (per CLAUDE.md §7 — PaymentComponent.vue is frozen, but the sibling counter-collect modal is auditable + heal-eligible per inline-edit exception ≤30 LOC)",
+  "prior_heals_verified_in_place": [
+    {
+      "id": "WAVE-X-X1",
+      "commit": "f9c30bd00",
+      "what": "Initial sibling modal created — SSOT-flavored counter-collect mirroring PaymentComponent V5 design language, frozen PaymentComponent untouched per CLAUDE.md §7."
+    },
+    {
+      "id": "GOAL-D2",
+      "commit": "e49ef36c5",
+      "what": "MONTANT REÇU FR comma decimal pre-fill — cashier sees '8,50' not '8.50'. Parser at cashReceivedNumber (L253) accepts BOTH ',' and '.'. Sentinel counterCollectFrDecimalSentinel.spec.js 4/4 GREEN at HEAD."
+    },
+    {
+      "id": "GOAL-K2-HEAL-01",
+      "commit": "481013703",
+      "what": "Typed PaymentAlreadyCollectedException catch in onConfirm (L429-438). Branches on err.response.data.error_code === 'payment_already_collected' (stable identifier rather than translated message string). Surfaces FR error toast + emits cancel → parent Q10 refreshes → already-paid row disappears. Replaces the pre-heal silent 200 short-circuit that toasted cash_drawer_opened_simulation phantom-success."
+    },
+    {
+      "id": "K2-HEAL-01-SENTINEL",
+      "file": "tests/Feature/Payment/PosCounterCollectRaceProtectionSentinelTest.php",
+      "what": "PHPUnit RefreshDatabase 4-test sentinel — service-level typed exception, same-cashier replay no-op preservation, route-level 409 + error_code payload, negative-control (no 200 + no OrderDetailsResource on race loser). Locks the K2-HEAL-01 contract end-to-end."
+    }
+  ],
+  "verdict": "GREEN — surgical Enter+Escape+autoFocus heal applied per L5.3-F-02 owner-recommended pattern (12 LOC body, no §7 conflict, sentinel extended +4 assertions, 37→41 GREEN)",
+  "verdict_rationale": "Component lifecycle, race contracts (K2-HEAL-01 typed exception + IdempotencyKeyMiddleware double-tap protection + 409 not-cached), edge-input parsing (.50, very-large, comma-tolerant), 4 mode interactions, switch CASH↔CARD preservation, and 5 existing data-testid hooks all verified clean at HEAD. The only previously-open L5.3 friction (F-02 — no Enter on receivedInput, no Escape, no auto-focus) is now closed by the surgical 12-LOC heal applied in this report. Latent watcher race (P3) and 0-total loyalty path (P3 expected-behavior) documented as observations — no heal needed.",
+
+  "lifecycle_hooks_audit": {
+    "mounted": {
+      "before_heal": "ABSENT — component had NO mounted() hook. Only the order watcher (immediate:true) fired on prop arrival.",
+      "after_heal": "Installs document-level Escape keydown listener via document.addEventListener('keydown', this._onEsc) — mirrors KdsHistoryDrawer.vue:189-204 pattern. Listener is permanent for the SFC lifetime because PosComponent.vue always renders <PosCounterCollectModal> in its template (line 1299) — only the inner <div v-if='visible'> overlay toggles."
+    },
+    "order_watcher": {
+      "race_assessment": "SAFE for current parent usage. PosComponent (L3052/L3066) only does null → order or order → null transitions, never order_A → order_B. If a future caller ever transitioned order_A → order_B mid-axios-POST, the watcher would reset submitting=false (line 302) → re-enable Confirm button mid-flight → double-submit risk. Documented as P3 latent watcher race — no heal applied (out of scope, would need either a 'guard submitting during transition' branch OR a parent contract that null-first-then-set is always followed).",
+      "before_heal_responsibilities": [
+        "Pre-fill cashReceivedRaw with FR comma decimal (GOAL-D2 line 300)",
+        "Reset selectedMode to CASH (line 301)",
+        "Reset submitting=false (line 302) — see race note above"
+      ],
+      "after_heal_responsibilities": [
+        "All of the above PLUS this.$nextTick(() => this.$refs.receivedInput?.focus() + select()) so the input auto-receives focus AND its content is selected (cashier can type-then-Enter without mouse hop)"
+      ],
+      "nexttick_rationale": "cc-cash-section is v-if='selectedMode===CASH'. The receivedInput ref does NOT exist before selectedMode IS CASH and the DOM updates. immediate:true fires before mount on first run — wrapping in $nextTick defers focus until after the DOM produces the input element."
+    },
+    "beforeUnmount": {
+      "before_heal": "ABSENT.",
+      "after_heal": "Removes document-level Escape keydown listener via document.removeEventListener('keydown', this._onEsc). The arrow-/method-as-handler reference matches add/remove via this._onEsc property — no lost-reference bug."
+    },
+    "_onEsc_method": {
+      "guards": [
+        "if (!this.visible || this.submitting) return — modal is permanently mounted by parent, so the handler is global; the visibility guard ensures it's a no-op when no order is being collected. The submitting guard prevents an Escape press during a 200/409 in-flight POST from triggering onCancel mid-await.",
+        "if (e.key === 'Escape') → this.onCancel()"
+      ],
+      "tested_by_sentinel": "KeyboardNavigationSentinel.spec.js new M-POS-2 block (4 assertions)"
+    },
+    "emits": {
+      "confirmed": "Emitted on 2xx persist (line 408) with payload { orderId, mode, modeInt, received, total }. Parent (onCounterCollectConfirmed) clears counterCollectOrder + triggers loadKioskCashOrders + loadActiveOrdersStats + loadReadyOrders refresh.",
+      "cancel": "Emitted by: (a) overlay self-click (line 40), (b) close X button (line 56), (c) bottom cancel button (line 160), (d) Escape keydown (NEW — _onEsc handler), (e) typed-409 K2-HEAL-01 catch branch (line 436). Parent (onCounterCollectCancel) clears _collecting per-row guard + nulls counterCollectOrder."
+    }
+  },
+
+  "mode_interactions_audit": {
+    "CASH": {
+      "ui_atoms": "MONTANT REÇU input (receivedInput) + PosV5Numpad + cashChange rendu calc (visible when > 0) + cashShort alert (visible when received < total AND received > 0)",
+      "confirm_gate": "canConfirm requires cashReceivedNumber >= orderTotal AND orderTotal > 0 (line 274). Backend (PaymentService.php:315-319) also enforces server-side — client-side guard avoids 422 round-trip + confusing toast.",
+      "edge_pre_heal": "Cashier had to mouse-click ✓ Confirmer after typing — no Enter-to-confirm.",
+      "post_heal": "@keyup.enter=onConfirm now bound on receivedInput. Auto-focus + select-all on modal open."
+    },
+    "CARD": {
+      "ui_atoms": "Single mode-hint paragraph (cc_mode_card_hint). NO extra input.",
+      "confirm_gate": "canConfirm requires orderTotal > 0 only (line 278). Backend allows received=null for non-cash (PaymentService.php L247).",
+      "behavior": "Single-tap on mode tab + single-tap on Confirmer suffices. Submit sends received=null + note='Encaissement borne CARD (SSOT modal)'."
+    },
+    "MOBILE": {
+      "ui_atoms": "Same as CARD — mode-hint only (cc_mode_mobile_hint).",
+      "confirm_gate": "Same as CARD (orderTotal > 0).",
+      "modeInt": "posPaymentMethodEnum.MOBILE_BANKING"
+    },
+    "TICKET": {
+      "ui_atoms": "Same as CARD — mode-hint only (cc_mode_ticket_hint).",
+      "confirm_gate": "Same as CARD (orderTotal > 0).",
+      "modeInt": "posPaymentMethodEnum.TICKET_RESTAURANT"
+    },
+    "switch_CASH_to_CARD": {
+      "state_preservation": "selectedMode flips to CARD (line 310). cashReceivedRaw STAYS (not reset) — so if cashier flips back to CASH the value is preserved. cc-cash-section is hidden by v-if so the input is not visible during CARD/MOBILE/TICKET.",
+      "phase_H_finding_check": "Phase H (H2-HEAL-01) addressed the silent-409 problem; the state-preservation on mode switch was not regressed — verified at HEAD line 308-317."
+    },
+    "switch_CARD_to_CASH": {
+      "behavior_line_313": "setMode rehydrates cashReceivedRaw to FR-comma pre-fill IF the field is empty OR parses to <= 0 (covers the numpad C clear case). The condition '(cashReceivedRaw === \"\" || Number(replace(\",\", \".\")) <= 0)' correctly catches both '' and '0' edge cases."
+    }
+  },
+
+  "edge_inputs_hunt": [
+    {
+      "case": "Empty cashReceivedRaw + click Confirm in CASH mode",
+      "result": "BLOCKED by canConfirm (line 274) — cashReceivedNumber=0 < orderTotal → returns false → Confirm button :disabled. onConfirm has additional double-gate (line 359) so even direct method invocation is rejected. SAFE.",
+      "verdict": "OK"
+    },
+    {
+      "case": "Tap '1234567890.50' (very large)",
+      "result": "Number.isFinite(parseFloat('1234567890.50'))=true → cashReceivedNumber=1234567890.5. cashChange computes correctly. CSS font-variant-numeric: tabular-nums (line 636) keeps display clean. canConfirm enforces >= orderTotal so a billion-euro receipt for an 8,50€ order goes through (cashier's prerogative).",
+      "verdict": "OK"
+    },
+    {
+      "case": "Tap '.50' (no integer part)",
+      "result": "parseFloat('.50') === 0.5 — works. Underwater for typical orders so canConfirm blocks the submit.",
+      "verdict": "OK"
+    },
+    {
+      "case": "Tap ',,,,' (multiple commas)",
+      "result": "String(...).replace(',', '.') only replaces the FIRST comma. So ',,,,' → '.,,,' → parseFloat returns NaN → cashReceivedNumber=0 → canConfirm=false → CASH path blocked. CARD/MOBILE/TICKET unaffected. Acceptable behavior — cashier would visually see the multiple commas and Confirm button disabled.",
+      "verdict": "OBSERVATION (P3) — could be made stricter via .replace(/,/g, '.') if D2-adjacent decision wanted; NOT in M-POS-2 scope, deferred."
+    },
+    {
+      "case": "Loyalty redeem 100% — orderTotal=0",
+      "result": "canConfirm requires orderTotal > 0 (line 274 AND line 278) — 100%-discounted orders are BLOCKED from confirming through counter-collect. This is CORRECT V1 behavior: those orders should auto-PAID upstream by the loyalty redemption flow itself, not pass through cash counter-collect. PaymentService::confirmCounterPayment would also reject (assertCounterDeferredOrder asserts payment_method=COD + payment_status=PENDING_COUNTER). H2-HEAL-04 TTC-tax-bug context: per session memory, the TTC tax bug was fixed upstream — counter-collect itself is correct.",
+      "verdict": "OK (expected behavior, documented)"
+    }
+  ],
+
+  "race_condition_audit": [
+    {
+      "scenario": "Double-click Confirm rapidly",
+      "before_heal": "submitting flag (line 374) flips true synchronously inside onConfirm BEFORE the axios.post await. 2nd click's onConfirm checks `this.submitting` (line 359) and returns immediately. Button :disabled='submitting' (line 167) provides UI-level guard.",
+      "middleware_layer": "If somehow a 2nd POST escapes the JS guard, IdempotencyKeyMiddleware.php scopes the X-Idempotency-Key by (branch_id, user_id, sha256(key)). Same orderId + modeInt + minuteBucket → SAME key → first POST cached 2xx, second POST waits via waitForCompletion (up to idempotency.race_wait_ms ~1500ms) and replays the cached 2xx. SINGLE DB::transaction, SINGLE fiscal_sequence_no, SINGLE audit row, SINGLE OrderPaidAtCounter dispatch.",
+      "verdict": "TRIPLE-DEFENSE: button :disabled + this.submitting guard + middleware idempotency cache. SAFE."
+    },
+    {
+      "scenario": "2 cashiers same order (J-CASCADE H9)",
+      "before_K2_HEAL_01": "Cashier B silently received 200 + OrderDetailsResource → modal toasted phantom 'cash_drawer_opened_simulation' → operational defect (till double-count risk).",
+      "after_K2_HEAL_01 (HEAD)": "Cashier B receives 409 + { error_code: 'payment_already_collected', order_id, message }. Modal onConfirm catch (line 429-438) branches on error_code (stable id), surfaces FR error toast 'Cette commande a déjà été encaissée par un autre caissier.' (with backend message fallback), sets submitting=false, emits cancel. Parent Q10 panel refreshes, already-paid row disappears.",
+      "service_layer": "PaymentService.php:278-310 — same-cashier replay still preserved (V5.5 sister guard, lines 292-298), different-cashier OR unknown-collector → typed PaymentAlreadyCollectedException with collectedByUserId from audit_logs row + collectedAt from its created_at.",
+      "sentinel": "tests/Feature/Payment/PosCounterCollectRaceProtectionSentinelTest.php — 4-test PHPUnit RefreshDatabase suite verifying service-level typed exception + same-cashier replay no-op + route-level 409 + negative-control (no 200, no OrderDetailsResource).",
+      "verdict": "FULLY HEALED (K2-HEAL-01)."
+    },
+    {
+      "scenario": "Network drop during POST",
+      "behavior": "axios throws → onConfirm catch path (line 415). NOT the K2-HEAL-01 typed 409 branch (line 429) — falls through to the generic alertService.error(msg) at line 440 with err.response.data.message || $t('label.encaisser_failed'). submitting=false at line 441 → cashier can retry. Modal stays open (NOT auto-closed) because emit('cancel') not fired on network errors — preserves cashier context.",
+      "idempotency_replay": "If the original POST actually committed on backend but the response was lost in network → cashier retries → same X-Idempotency-Key (same minuteBucket) → middleware replays cached 2xx → success path runs cleanly. If the retry crosses a minute boundary → DIFFERENT key → middleware does NOT replay → POST hits service → service finds payment_status=PAID for same user → returns 200 no-op via V5.5 sister-guard (lines 292-298) → modal success path runs cleanly. Either way: no double-charge, no fiscal-sequence gap.",
+      "verdict": "OK — graceful UX retry + idempotency safety."
+    },
+    {
+      "scenario": "K2-HEAL-07 cash_movements record on cash refund",
+      "scope": "Refund is OUT OF SCOPE for PosCounterCollectModal (this modal is the COLLECT path, not the REFUND path). Refund is handled by RefundComponent + the X3 refund flow (M-POS-5 agent territory). counter-collect modal POSTs to /admin/pos/counter-collect/{order}/confirm only — never to a refund endpoint.",
+      "verdict": "N/A — out of scope for M-POS-2."
+    }
+  ],
+
+  "sentinel_verification": {
+    "before_heal": {
+      "posCounterCollectModalSentinel.spec.js": "15/15 GREEN",
+      "counterCollectFrDecimalSentinel.spec.js": "4/4 GREEN",
+      "KeyboardNavigationSentinel.spec.js": "18/18 GREEN",
+      "subtotal": "37/37 GREEN"
+    },
+    "after_heal": {
+      "posCounterCollectModalSentinel.spec.js": "15/15 GREEN — sentinel patterns unaffected (no testid/api/emit changes)",
+      "counterCollectFrDecimalSentinel.spec.js": "4/4 GREEN — D2 pre-fill behavior preserved by heal (auto-focus/select runs AFTER pre-fill in $nextTick)",
+      "KeyboardNavigationSentinel.spec.js": "22/22 GREEN — 4 NEW M-POS-2-001 assertions added: @keyup.enter on receivedInput + document Escape add/remove + _onEsc visible+submitting guard + $nextTick autoFocus",
+      "subtotal": "41/41 GREEN (37 → 41)"
+    },
+    "broader_regression_check": {
+      "command": "npx vitest run tests/js/sentinels/",
+      "result": "38/40 files PASS, 312 tests / 3 failed (309 passed). The 3 failures are PRE-EXISTING (verified via git stash → run → restore): tests/js/sentinels/f004KioskCancelReasonSent.spec.js (2 failures — kiosk cancel reason, NOT counter-collect) + tests/js/sentinels/kdsBundleFreshnessSentinel.spec.js (1 failure — KDS bundle staleness, NOT POS). My heal introduces ZERO new failures."
+    }
+  },
+
+  "L5_3_keyboard_heal_applied": {
+    "id": "FK-M-POS-2-001 (extends L5.3-F-02)",
+    "loc_count": 12,
+    "inline_edit_exception_eligible": true,
+    "exception_rationale": "≤30 LOC + tests immédiats + hors frozen-zone (CLAUDE.md feedback_orchestrator_inline_edit_exception.md)",
+    "patch_summary": [
+      "1) Template line 113 → add @keyup.enter=\"onConfirm\" on receivedInput",
+      "2) Watcher order handler → wrap auto-focus in this.$nextTick(() => this.$refs.receivedInput?.focus() + select()) AFTER existing pre-fill + reset block",
+      "3) NEW mounted() hook → document.addEventListener('keydown', this._onEsc)",
+      "4) NEW beforeUnmount() hook → document.removeEventListener('keydown', this._onEsc)",
+      "5) NEW method _onEsc(e) → guarded by visible + submitting, branches on e.key === 'Escape' → calls this.onCancel()"
+    ],
+    "design_invariants_preserved": [
+      "Modal still emits 'cancel' (not a new event) — parent contract unchanged",
+      "_onEsc is registered as a method property — Vue binds `this` correctly + same reference used in addEventListener / removeEventListener (no lost-handler bug)",
+      "Escape handler is no-op when modal hidden OR submitting in-flight",
+      "Auto-focus only fires when CASH section is mounted ($nextTick defers until DOM update)",
+      "Auto-focus also selects all → cashier's first keystroke overwrites the pre-fill (matches most-common 'change pre-filled amount' flow)"
+    ],
+    "sentinel_extension_strategy": "Added a new describe('Keyboard navigation — POS counter-collect modal (FK-M-POS-2-001)') block to the EXISTING KeyboardNavigationSentinel.spec.js — mirrors structure of the existing KDS bump / KDS drawer / kiosk wizard / kiosk payment+cart / POS grid+autocomplete blocks. No sibling sentinel file created."
+  },
+
+  "observations_no_heal": [
+    {
+      "id": "M-POS-2-OBS-01",
+      "severity": "P3",
+      "category": "LATENT_WATCHER_RACE",
+      "summary": "order watcher resets submitting=false on every newOrder.id truthy. If parent ever transitioned orderA → orderB (without null in between) mid-axios-POST, the Confirm button would re-enable mid-flight → double-submit risk. PosComponent currently only does null↔order transitions (L3052/L3066), so latent only.",
+      "fix_cost_if_ever_needed": "Add a `if (this.submitting) return;` early-out at the top of the order watcher handler, OR document a parent contract that orderA → orderB without null is forbidden. ~2 LOC.",
+      "verdict": "DOCUMENTED, NOT HEALED (out of scope, latent for current parent usage)"
+    },
+    {
+      "id": "M-POS-2-OBS-02",
+      "severity": "P3",
+      "category": "INPUT_STRICTNESS",
+      "summary": "Multiple commas in cashReceivedRaw → only first replaced → parseFloat NaN → cashReceivedNumber=0 → canConfirm=false → CASH path blocked. CARD/MOBILE/TICKET unaffected. Acceptable defensive behavior.",
+      "fix_cost_if_ever_needed": "Switch line 253 to `.replace(/,/g, '.')` — 1 char diff. Would also accept '1,000,50' as 1000.5 which arguably is wrong for FR fast-food (no thousand separator at the till for €€-only amounts < 1000). DEFERRED.",
+      "verdict": "DOCUMENTED, NOT HEALED"
+    },
+    {
+      "id": "M-POS-2-OBS-03",
+      "severity": "P3",
+      "category": "EXPECTED_BEHAVIOR",
+      "summary": "Loyalty redeem 100% (orderTotal=0) BLOCKED by canConfirm. Correct V1 behavior — those orders should auto-PAID upstream via the loyalty redemption flow, never pass through counter-collect.",
+      "verdict": "NO HEAL — DESIGN INTENT"
+    }
+  ],
+
+  "files_changed_by_heal": [
+    {
+      "path": "resources/js/components/admin/pos/PosCounterCollectModal.vue",
+      "kind": "modified",
+      "loc_delta": "+27 / -0 (12-LOC body + comment lines for inline doc)",
+      "frozen": false
+    },
+    {
+      "path": "tests/js/sentinels/KeyboardNavigationSentinel.spec.js",
+      "kind": "modified",
+      "loc_delta": "+29 / -0 (new describe block with 4 assertions + comment header)",
+      "frozen": false
+    }
+  ],
+
+  "evidence_chain": {
+    "command_run_pre_heal": "npx vitest run tests/js/sentinels/posCounterCollectModalSentinel.spec.js tests/js/sentinels/counterCollectFrDecimalSentinel.spec.js tests/js/sentinels/KeyboardNavigationSentinel.spec.js → 37/37 GREEN",
+    "command_run_post_heal": "npx vitest run tests/js/sentinels/posCounterCollectModalSentinel.spec.js tests/js/sentinels/counterCollectFrDecimalSentinel.spec.js tests/js/sentinels/KeyboardNavigationSentinel.spec.js → 41/41 GREEN",
+    "regression_check_full_sentinel_suite": "38/40 files PASS, 309/312 tests PASS — 3 PRE-EXISTING failures verified via git stash (f004KioskCancelReason ×2 + kdsBundleFreshness ×1) UNRELATED to PosCounterCollectModal.",
+    "i18n_key_verification": "grep -c on the 21 unique i18n keys used by the component → all 25 occurrences resolved in resources/js/languages/fr.json (including 4 mode keys × 2 + 2 sub keys + hero/footer/hints + cc_cash_short)",
+    "frozen_zone_diff": "0 — PaymentComponent.vue not touched, V5 PosV5TrancheRow not touched, NF525 services not touched",
+    "fiscal_chain_impact": "NONE — heal is pure UI keyboard contract, no backend / no PaymentService / no FiscalSequenceService / no audit_logs / no z_reports surface touched"
+  },
+
+  "summary_for_orchestrator": {
+    "verdict": "GREEN",
+    "lifecycle_race_verifications": [
+      "mounted/beforeUnmount Escape listener — installed via add/remove on same this._onEsc property reference (no lost-handler bug)",
+      "order watcher — pre-fill + reset + NEW $nextTick autoFocus; race assessment SAFE for current parent usage, P3 latent doc for future order_A→order_B transitions",
+      "emits ['confirmed', 'cancel'] — confirmed on 2xx, cancel on overlay click / close X / Cancel button / NEW Escape / typed-409 K2-HEAL-01 branch",
+      "double-click Confirm — triple-defense (button :disabled + this.submitting guard + IdempotencyKeyMiddleware cache)",
+      "2-cashier race — K2-HEAL-01 typed 409 + onConfirm error_code branch + emit cancel (sentinel PosCounterCollectRaceProtectionSentinelTest 4 tests)",
+      "network drop — submitting=false on error + idempotency replay cleanly handles retry (same minute or service V5.5 sister-guard cross-minute)"
+    ],
+    "heal_applied": "12-LOC inline-edit-exception heal closes L5.3-F-02 — @keyup.enter on receivedInput + document-level Escape add/remove with visible+submitting guards + $nextTick auto-focus + select on order open. KeyboardNavigationSentinel.spec.js extended with 4 new assertions (FK-M-POS-2-001 block). 37/37 → 41/41 GREEN. Zero broader-suite regression."
+  }
+}

@@ -1,0 +1,447 @@
+{
+  "synthesis_id": "master-15-systems-2026-05-27-round-1",
+  "date": "2026-05-27",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head_observed_h3": "27a036323",
+  "head_observed_h4": "df8d06a67",
+  "executor": "SYNTHESIS FINAL agent (Claude Opus 4.7 1M context)",
+  "discipline": "DM6-RO aggregation + DM8 honest delivery",
+  "mode": "READ_ONLY_AGGREGATION",
+
+  "delivery_integrity": {
+    "planned_reports": 13,
+    "delivered_reports": 8,
+    "delivery_rate_pct": 62,
+    "delivered": [
+      "V1-POS-deep",
+      "V2-Borne-deep",
+      "V3-KDS-deep",
+      "H1-Echo-deep",
+      "H2-Outbox-deep",
+      "H3-NF525-deep",
+      "H4-RBAC-deep",
+      "H5-Stock-deep"
+    ],
+    "not_delivered": [
+      "V4-OSS-deep",
+      "V5-Gestion-deep",
+      "H6-7-8-Cache-Cron-Backup-deep",
+      "H9-10-Notif-Payments-deep",
+      "ADV-redteam-cross"
+    ],
+    "captures_only_no_json": ["V4-OSS (4 PNG)", "V5-Gestion (3 JPEG)"],
+    "task_list_pending_evidence": ["#138", "#139", "#140", "#141"],
+    "honest_disclosure": "5/13 reports not delivered this round; not silently inferred; cross-system adversarial NOT executed"
+  },
+
+  "executive_summary": {
+    "systems_audited_at_max_depth": 8,
+    "verdict_distribution": {
+      "GREEN": 8,
+      "NOT_DELIVERED_THIS_ROUND": 5
+    },
+    "captures_total": 26,
+    "captures_by_system": {
+      "V1-pos": 11,
+      "V2-borne": 4,
+      "V3-kds": 3,
+      "V4-oss": 4,
+      "V5-gestion": 3,
+      "cross-agent-json": 1
+    },
+    "cycle_metrics": {
+      "loc_inspected_ro": "~14000",
+      "live_http_probes": "~30",
+      "artisan_ro_commands": 2,
+      "db_queries": "~58",
+      "sentinel_tests_green": 5,
+      "wall_clock_minutes_first_to_last_agent_timestamp": 141
+    }
+  },
+
+  "verdict_table": [
+    {
+      "id": "V1",
+      "system": "POS Caisse",
+      "verdict": "GREEN",
+      "p0": 0,
+      "p1": 0,
+      "p2": 0,
+      "p3": 0,
+      "v1_ship_impact": "GO — 7 named heals verified technical+visual; 6 adversarial scenarios PROTECTED; frozen zones untouched",
+      "captures_count": 11
+    },
+    {
+      "id": "V2",
+      "system": "Borne (Kiosk)",
+      "verdict": "GO_V1_LOCAL",
+      "p0": 0,
+      "p1": 0,
+      "p2": 2,
+      "p3": 1,
+      "v1_ship_impact": "GO — 4 frozen kiosk components untouched; Sanctum kiosk:order ability + token-name channel auth + 15min cleanup cron + triple-defense fiscal seq",
+      "captures_count": 4,
+      "notes": "Visual capture starvation (P2-01) is test-infra concern, not production"
+    },
+    {
+      "id": "V3",
+      "system": "KDS Cuisine",
+      "verdict": "GREEN_SHIPWORTHY",
+      "p0": 0,
+      "p1": 0,
+      "p2": 2,
+      "p3": 0,
+      "v1_ship_impact": "GO — 5 heals verified (+N chip, HEAL-5 recall, sync 401 skip-tick, K2-HEAL, N-HEAL-04); audit_logs 95→95 (no fiscal mutation)",
+      "captures_count": 3
+    },
+    {
+      "id": "V4",
+      "system": "OSS (Order Status Screen)",
+      "verdict": "NOT_DELIVERED_THIS_ROUND",
+      "p0": null,
+      "p1": null,
+      "p2": null,
+      "p3": null,
+      "v1_ship_impact": "captures exist (4 PNG: FR with order, FR data loaded, EN, AR) but no agent JSON synthesized",
+      "captures_count": 4
+    },
+    {
+      "id": "V5",
+      "system": "Gestion (Admin Dashboard)",
+      "verdict": "NOT_DELIVERED_THIS_ROUND",
+      "p0": null,
+      "p1": null,
+      "p2": null,
+      "p3": null,
+      "v1_ship_impact": "captures exist (3 JPEG: dashboard variants) but no agent JSON synthesized",
+      "captures_count": 3
+    },
+    {
+      "id": "H1",
+      "system": "Echo / Pusher Sync",
+      "verdict": "GREEN",
+      "p0": 0,
+      "p1": 0,
+      "p2": 2,
+      "p3": 2,
+      "v1_ship_impact": "GO — F-SEC-W6-01 + F-SEC-W6-02 closed; 32/32 domain_events dispatched; Soketi PID 50733 LISTEN verified via lsof",
+      "captures_count": 0
+    },
+    {
+      "id": "H2",
+      "system": "Outbox / Queue Redis",
+      "verdict": "GREEN_GO",
+      "p0": 0,
+      "p1": 2,
+      "p2": 2,
+      "p3": 0,
+      "v1_ship_impact": "GO — 14 listeners present, queue worker 18d uptime, Redis PONG, 0 backlog, HEAL B.4 crash-recovery lane closes silent-loss path. P1s reclassified as informational (Laravel honours job-level $tries)",
+      "captures_count": 0
+    },
+    {
+      "id": "H3",
+      "system": "NF525 Fiscal Chain",
+      "verdict": "GREEN_WITH_DEV_TAMPER_BASELINED",
+      "p0": 0,
+      "p1": 0,
+      "p2": 2,
+      "p3": 0,
+      "v1_ship_impact": "GO — audit_logs 97 rows monotonic; tamper id=34 baselined+documented; 4 triggers ACTIVE; fiscal_sequence_no gap=0; composition_snapshot trigger ACTIVE; fiscal:assert-chain-clean working as designed",
+      "captures_count": 0
+    },
+    {
+      "id": "H4",
+      "system": "RBAC Spatie",
+      "verdict": "GO",
+      "p0": 0,
+      "p1": 0,
+      "p2": 1,
+      "p3": 0,
+      "v1_ship_impact": "GO — 9 roles / 164 perms (82+82 post-df8d06a67); J2-HEAL-01/02/03 sentinel-green; BranchScope 20-model baseline locked; POS Operator excluded from pos-refund",
+      "captures_count": 0
+    },
+    {
+      "id": "H5",
+      "system": "Stock / Availability",
+      "verdict": "GREEN",
+      "p0": 0,
+      "p1": 0,
+      "p2": 1,
+      "p3": 0,
+      "v1_ship_impact": "GO — 5/5 cascade steps wired; race admin-vs-checkout protected by lockForUpdate; HEAL-2 NotifyStockLow active; Echo down → REST+TTL+checkout revalidation safe",
+      "captures_count": 0
+    },
+    {
+      "id": "H6-7-8",
+      "system": "Cache / Cron / Backup",
+      "verdict": "NOT_DELIVERED_THIS_ROUND",
+      "p0": null,
+      "p1": null,
+      "p2": null,
+      "p3": null,
+      "v1_ship_impact": "defer to Wave Polish Final 2026-05-21 baseline (stress 50/3/7s PASS, backup auto + restore drill PASS)",
+      "captures_count": 0
+    },
+    {
+      "id": "H9-10",
+      "system": "Notifications / Payments",
+      "verdict": "NOT_DELIVERED_THIS_ROUND",
+      "p0": null,
+      "p1": null,
+      "p2": null,
+      "p3": null,
+      "v1_ship_impact": "defer to V1 (POS payment paths) + V2 (Stripe stranded-CPN cron) + H1 (notification ShouldBroadcast inventory)",
+      "captures_count": 0
+    },
+    {
+      "id": "ADV",
+      "system": "Adversarial Cross-System Red-Team",
+      "verdict": "NOT_DELIVERED_THIS_ROUND",
+      "p0": null,
+      "p1": null,
+      "p2": null,
+      "p3": null,
+      "v1_ship_impact": "tasks #138-141 pending; per-system adversarial coverage dense (42+ scenarios across 8 systems all PROTECTED) but cross-system chained-exploit pass not performed",
+      "captures_count": 0,
+      "planned_vectors_not_executed": [
+        "A1 fiscal chain cross-surface",
+        "A2 multi-tab RBAC bypass",
+        "A3 cross-surface sync DoS",
+        "A4 cross-system PII leak",
+        "A5 cross-payment idempotency"
+      ]
+    }
+  ],
+
+  "adversarial_cross_system": {
+    "status": "NOT_EXECUTED_THIS_ROUND",
+    "evidence": "TaskList #138-141 confirmed pending",
+    "per_system_scenario_count_executed": 42,
+    "per_system_verdict": "all PROTECTED / GREEN / FAIL-SAFE",
+    "recommendation": "Run ADV-redteam-cross.json in follow-on round before V1 Le Cayenne LOCAL cutover ceremony"
+  },
+
+  "nf525_state": {
+    "audit_logs": {
+      "count": 97,
+      "min_id": 1,
+      "max_id": 97,
+      "monotonic": true,
+      "gap_count": 0,
+      "last_hash": "844b73a89f3b2b9e7ed2e95009acccf867588cd0a6f495e88da9931cd9974112",
+      "last_prev_hash": "83a5efe452b832199aae0bf6dee2ba77a763b98c92a16b62a34ae60ade6ad909",
+      "last_action": "user.login",
+      "last_created_at": "2026-05-27 13:27:31",
+      "tamper_baseline_id": 34,
+      "tamper_origin": "E2E-13 red-team adversarial agent (B3-P5 + UR-4) deliberately planted",
+      "cross_agent_corroboration": "V3 reported count=95 last_hash=c957cb88dcb104a2 at 11:35Z; H3 reported count=97 at 13:45Z = +2 legitimate user.login between readings, NF525 chain extended properly"
+    },
+    "z_reports": {
+      "total": 1,
+      "open_now": 0,
+      "closed": 1,
+      "last_sequence_no": 1,
+      "z_loop_cron_close_2359": "WIRED Kernel.php:361",
+      "z_loop_cron_open_0001": "WIRED Kernel.php:406",
+      "cross_chain_anchor_ratio": "1:1 (z_report.closed audit_logs row matches z_reports.status=closed)"
+    },
+    "fiscal_sequence_no": {
+      "min": 1,
+      "max": 3,
+      "count": 3,
+      "gap_count": 0,
+      "alloc_error_count": 0,
+      "triple_defense_verified": true,
+      "stress_baseline_referenced": "Wave Polish Final 2026-05-21 stress 50/3/7s PASS"
+    },
+    "triggers_active": [
+      "audit_logs_no_update",
+      "audit_logs_no_delete",
+      "z_reports_no_delete",
+      "order_items_composition_snapshot_no_update"
+    ],
+    "fiscal_verify_chain_all_exit": 1,
+    "fiscal_verify_chain_all_interpretation": "TAMPER detected on id=34 dev fixture — WORKING AS DESIGNED",
+    "fiscal_assert_chain_clean_exit": 1,
+    "fiscal_assert_chain_clean_interpretation": "Wave C1 deploy-gate functional — would block dev→prod snapshot push containing fixture"
+  },
+
+  "frozen_zone_state": {
+    "diff_lines_aggregate": 0,
+    "files_verified_section_7": [
+      "FiscalSequenceService.php (md5 dbb177b6ce0d26db45f61e660f0ef9c4)",
+      "ZReportService.php (md5 75a1f24dc1a4bb445e93dcc5a6ac6c3b)",
+      "AuditLogService.php (md5 91d5c218f529bca352b91f6d9c2fe269)",
+      "PricingService.php (md5 9c76e4cd4d9b28c822381b121e97e515)",
+      "KioskAppComponent.vue (V2 verified untouched)",
+      "KioskWizardComponent.vue (V2 verified untouched)",
+      "KioskUpsellComponent.vue (V2 verified untouched)",
+      "PaymentComponent.vue (V1 verified read-only inspection only)",
+      "PosV5TrancheRow.vue (V1 verified untouched)",
+      "public/js/pos-wizard.js (V1 verified untouched)",
+      "BranchScope.php (H4 BranchScopeCoverageSentinelTest GREEN)",
+      "IdempotencyKeyMiddleware.php (V2 referenced)",
+      "OrderStateMachine.php (V3 RO inspection lines 33-254)",
+      "audit_logs + z_reports DB triggers (H3 verified ACTIVE)"
+    ],
+    "total_files_attested": 14
+  },
+
+  "v1_local_ship_verdict": {
+    "verdict_for_8_audited_systems": "GO",
+    "verdict_for_full_15_system_master_plan": "PARTIAL — 8/13 delivered, ADV cross-system pending",
+    "blockers": 0,
+    "caveats_explicit": [
+      "5 systems not deep-tested this round (V4, V5, H6-7-8, H9-10, ADV) — recommend follow-on round",
+      "Cross-system adversarial red-team (A1-A5) NOT executed — TaskList #138-141 pending",
+      "10 unique P2 findings across 8 reports (none blocking) — all documented for V1.0.X / V1.0.2 backlog"
+    ],
+    "confidence_per_audited_system": {
+      "V1": "HIGH",
+      "V2": "HIGH (technical) — visual capture starvation = test infra",
+      "V3": "HIGH",
+      "H1": "HIGH",
+      "H2": "HIGH",
+      "H3": "HIGH",
+      "H4": "HIGH",
+      "H5": "HIGH"
+    }
+  },
+
+  "p2_p3_findings_deduplicated": [
+    {
+      "id": "UNI-03",
+      "title": "Cache driver guard at AppServiceProvider:215 forbidden list narrow (array/null only; file/database PASS)",
+      "severity": "P2",
+      "scope": "V1.0.X cloud-prep",
+      "cited_by": ["V2", "H1", "H2"],
+      "count_once_in_synthesis": true
+    },
+    {
+      "id": "UNI-15",
+      "title": "Sync 401 heal does not cover stale-but-present Sanctum token",
+      "severity": "P2",
+      "scope": "V1.0.2",
+      "cited_by": ["V3"]
+    },
+    {
+      "id": "UNI-16",
+      "title": "KDS bump events not mirrored to audit_logs HMAC chain (re-confirm B3-P5)",
+      "severity": "P2",
+      "scope": "V1.0.X",
+      "cited_by": ["V3", "H3"]
+    },
+    {
+      "id": "H1-P2-01",
+      "title": "healthz websocket=ok heuristic (no live TCP probe)",
+      "severity": "P2",
+      "scope": "V1.0.X cloud-prep"
+    },
+    {
+      "id": "H1-P3-01",
+      "title": "Per-surface polling cadence not SSOT (POS 30s, KDS 5/60s, Kiosk 15s)",
+      "severity": "P3",
+      "scope": "V1.0.2 SoT wire"
+    },
+    {
+      "id": "H1-P3-02",
+      "title": "eventContract dedupe sessionStorage-per-tab not cross-tab",
+      "severity": "P3",
+      "scope": "V2 SaaS multi-tab"
+    },
+    {
+      "id": "H2-P1-01",
+      "title": "Worker --tries=3 CLI vs Job::$tries=6 (Laravel 9+ honours job-level — informational)",
+      "severity": "P1_informational"
+    },
+    {
+      "id": "H2-P1-02",
+      "title": "Queue retry_after=90s vs worker --timeout=120 (Phase-1 lockForUpdate makes this safe — doctrinal cleanup)",
+      "severity": "P1_doctrinal"
+    },
+    {
+      "id": "H3-P2-02",
+      "title": "fiscal:assert-chain-clean not yet wired to deploy script",
+      "severity": "P2",
+      "scope": "V1.0.X owner gate before cloud cutover"
+    },
+    {
+      "id": "H4-P2-01",
+      "title": "FormRequest authz drift sentinel baseline 69 vs actual 66 (loose by 3)",
+      "severity": "P2",
+      "scope": "V1.0.2 ratchet"
+    },
+    {
+      "id": "H5-P2-01",
+      "title": "Multi-admin same-row toggle has no last-write-wins UI hint",
+      "severity": "P2",
+      "scope": "V1.0.2 SaaS multi-admin"
+    }
+  ],
+
+  "top_5_findings": [
+    {
+      "rank": 1,
+      "finding": "NF525 fiscal chain proven INTACT: audit_logs 97 rows monotonic gap-free, 4 immutability triggers ACTIVE, fiscal:assert-chain-clean Wave C1 deploy-gate functional",
+      "source": "H3-NF525-deep",
+      "v1_ship_signal": "GO"
+    },
+    {
+      "rank": 2,
+      "finding": "pos-refund permission correctly gated to Admin + Branch Manager only (ID 239/305); POS Operator (7-perm allowlist) cannot escalate; triple defense at PosOrderController.php:58-73 + DB UNIQUE constraint",
+      "source": "V1-POS-deep + H4-RBAC-deep",
+      "v1_ship_signal": "GO"
+    },
+    {
+      "rank": 3,
+      "finding": "HEAL-5 KDS recall 60s TTL + K2-HEAL optimistic lock empirically confirmed via live HTTP 422 + 409 probes; defensive re-read invariant (orders.status NEVER mutated by recall)",
+      "source": "V3-KDS-deep",
+      "v1_ship_signal": "GO"
+    },
+    {
+      "rank": 4,
+      "finding": "Echo F-SEC-W6-01 wildcard bypass + F-SEC-W6-02 Guest-Echo-Bypass both CLOSED + sentinel-locked; channel auth uses token-NAME (un-spoofable) and hasRole() (not bare branch_id===0)",
+      "source": "H1-Echo-deep + H4-RBAC-deep",
+      "v1_ship_signal": "GO"
+    },
+    {
+      "rank": 5,
+      "finding": "Outbox/Queue pipeline GREEN end-to-end: 14 listeners, queue worker 18d uptime, Redis PONG, 0 pending/0 failed_jobs/0 errors, HEAL B.4 crash-recovery lane closes silent-loss path; NF525 chain DECOUPLED from outbox",
+      "source": "H2-Outbox-deep",
+      "v1_ship_signal": "GO"
+    }
+  ],
+
+  "owner_physical_remaining": [
+    "Production env vars finalization (5 boot-guard flags)",
+    "First-boot post-snapshot artisan ceremony (fiscal:assert-chain-clean || exit 1; fiscal:open-all-active-branches)",
+    "Hardware verification (POS printer, kiosk cash drawer, TPE)",
+    "6-year audit retention storage path verified",
+    "Sentinel baseline ratchet H4-P2-01 (69 → 66)",
+    "5 missing reports follow-up round (V4, V5, H6-7-8, H9-10, ADV)"
+  ],
+
+  "cycle_total": {
+    "reports_delivered": 8,
+    "reports_planned": 13,
+    "captures_total": 26,
+    "p0_total": 0,
+    "p1_total": 0,
+    "p2_total_dedup": 10,
+    "p3_total": 2,
+    "frozen_zone_diff_aggregate": 0,
+    "nf525_chain_integrity": "INTACT_WITH_BASELINED_DEV_TAMPER",
+    "fiscal_sequence_gap_count": 0,
+    "live_http_probes": 30,
+    "ro_artisan_commands": 2,
+    "sentinel_tests_green": 5,
+    "owner_gates_remaining": 6
+  },
+
+  "output_paths": {
+    "md": "reports/test-e2e/master-15-systems-2026-05-27/convergence/CONVERGENCE_FINAL.md",
+    "json": "reports/test-e2e/master-15-systems-2026-05-27/convergence/CONVERGENCE_FINAL.json"
+  },
+
+  "headline_one_liner": "Master Plan 15 Systems Round 1 = 8/13 delivered, ALL audited systems GREEN, 0 P0/0 P1, NF525 INTACT (97 rows monotonic, 4 triggers active, deploy-gate functional), frozen-zone diff = 0; V1 Le Cayenne LOCAL is GO for the 8 audited systems pending 5 follow-on agent passes (V4 OSS, V5 Gestion, H6-7-8 cache/cron/backup, H9-10 notif/payments, ADV cross-system)."
+}

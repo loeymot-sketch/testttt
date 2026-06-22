@@ -1,0 +1,58 @@
+{
+  "agent": "H-SEC-002",
+  "phase": "Phase B.3 Security RED-team heal",
+  "finding": "B3.2-002 P1",
+  "scope": "LoginController login password validation min:N drop — OWASP-aligned",
+  "option_chosen": "A — drop min:N entirely, let bcrypt + rate-limiter enforce",
+  "files_touched": [
+    "app/Http/Controllers/Auth/LoginController.php"
+  ],
+  "files_added": [
+    "tests/Feature/Security/LoginPasswordValidationParity.php"
+  ],
+  "edits_applied": 1,
+  "comments_added_lines": 6,
+  "delta_LOC_controller": "+7 / -1 (net +6)",
+  "diff_clean": true,
+  "frozen_zone_touched": false,
+  "frozen_zone_reference_check": "LoginController NOT in CLAUDE.md §7 frozen list",
+  "auth_test_pre": {
+    "passed": 110,
+    "failed": 3,
+    "failure_locus": "Tests\\Feature\\Composer\\ComposerAuthzMinimalTest — pre-existing 404↔403 branch-isolation routing, UNRELATED to login validation",
+    "command": "php artisan test --filter=Auth",
+    "artifact": "reports/diff-audits/H-SEC-002-pre-tests.txt"
+  },
+  "auth_test_post": {
+    "passed": 110,
+    "failed": 3,
+    "failure_locus": "Same 3 ComposerAuthzMinimalTest failures — bit-identical pre/post — zero regression introduced by H-SEC-002",
+    "command": "php artisan test --filter=Auth",
+    "artifact": "reports/diff-audits/H-SEC-002-post-tests.txt"
+  },
+  "new_sentinel_results": {
+    "command": "php artisan test tests/Feature/Security/LoginPasswordValidationParity.php",
+    "tests_total": 3,
+    "tests_passed": 3,
+    "assertions_pinned": [
+      "SEC-002-01 — LoginController login() password rule does NOT carry min:N (regex over file source)",
+      "SEC-002-02 — EmployeeRequest creation keeps Password::min(12)->letters()->numbers()",
+      "SEC-002-03 — LoginController carries the GOAL-HEAL-SEC-002 + OWASP inline justification comment (audit trail preserved)"
+    ]
+  },
+  "regression_canary_bcrypt_rounds_upgrade_test": {
+    "command": "php artisan test tests/Feature/Auth/BcryptRoundsUpgradeTest.php",
+    "rationale": "BcryptRoundsUpgradeTest uses password123 (11 chars). Under Option B (min:12 at login) this would have BROKEN with HTTP 422. Under Option A it must still return 201. This is the cheapest evidence that Option A was the regression-safe choice.",
+    "tests_total": 4,
+    "tests_passed": 4
+  },
+  "sibling_drift_observed_out_of_scope": [
+    "KioskMachineLoginController.php:32 — same min:6 pattern at machine login; future H-SEC ticket",
+    "SignupRequest.php:36 — same min:6 pattern at customer signup; different threat model (customer-facing), defer V1.0.2",
+    "CustomerRequest.php:39 — customer creation min:6; same V1.0.2 cohort",
+    "ChangePasswordRequest.php:36 old_password min:6 — DELIBERATELY KEPT loose (legacy verification path); same rationale Option A applies here, do NOT touch"
+  ],
+  "owasp_authority": "OWASP ASVS V2.1.x — Authentication endpoints must not disclose password policy at submission time. Policy disclosure occurs at registration/reset only.",
+  "v1_0_2_backlog_followup": "Post-login password-rotation prompt for legacy users with passwords below the EmployeeRequest::Password::min(12) bar. Sequence: detect via Hash::check + length probe on raw plaintext (already accessible at the same Login moment), set users.force_password_reset = true (new column), redirect first request after login to /admin/password/rotate.",
+  "verdict": "CLEAN-FIX"
+}

@@ -18,6 +18,8 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Smartisan\Settings\Facades\Settings;
+use Tests\Feature\Concerns\HasPosQuoteBinding;
+use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
 use Tests\TestCase;
 
 /**
@@ -33,6 +35,8 @@ use Tests\TestCase;
 class PosOrderBL1WireInTest extends TestCase
 {
     use RefreshDatabase;
+    use HasPosQuoteBinding;
+    use SeedsOpenCashDrawerSession;
 
     protected Branch $branch;
     protected User $admin;
@@ -91,6 +95,8 @@ class PosOrderBL1WireInTest extends TestCase
             'branch_id' => $this->branch->id,
         ]);
         $this->admin->assignRole('Admin');
+        // [Sprint H6 TEST-DEBT-001 2026-05-17] Sprint 1B requires an OPEN cash session for CASH.
+        $this->seedOpenSessionFor($this->admin, $this->branch);
     }
 
     public function test_pos_order_receives_fiscal_sequence_no_monotonic_per_branch(): void
@@ -126,6 +132,8 @@ class PosOrderBL1WireInTest extends TestCase
 
         $otherAdmin = \Database\Factories\UserFactory::new()->create(['branch_id' => $otherBranch->id]);
         $otherAdmin->assignRole('Admin');
+        // [Sprint H6 TEST-DEBT-001 2026-05-17] Sprint 1B requires an OPEN cash session for CASH.
+        $this->seedOpenSessionFor($otherAdmin, $otherBranch);
 
         $ownA = $this->placePosOrder();
         $ownB = $this->placePosOrder();
@@ -186,27 +194,31 @@ class PosOrderBL1WireInTest extends TestCase
         $admin  ??= $this->admin;
         $branch ??= $this->branch;
 
+        $payload = [
+            'customer_id'         => $admin->id,
+            'branch_id'           => $branch->id,
+            'subtotal'            => 10.00,
+            'total'               => 11.00,
+            'order_type'          => OrderType::TAKEAWAY,
+            'is_advance_order'    => Ask::NO,
+            'source'              => Source::POS,
+            'pos_payment_method'  => PosPaymentMethod::CASH,
+            'pos_received_amount' => 11.00,
+            'items' => json_encode([
+                [
+                    'item_id'         => $this->item->id,
+                    'quantity'        => 1,
+                    'item_variations' => [],
+                    'item_extras'     => [],
+                ],
+            ]),
+        ];
+
+        // [prod-finale 2026-06-17] /api/admin/pos is idempotency-guarded (frozen middleware; live UI sends it).
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', config('app.api_key'))
-            ->postJson('/api/admin/pos', [
-                'customer_id'         => $admin->id,
-                'branch_id'           => $branch->id,
-                'subtotal'            => 10.00,
-                'total'               => 11.00,
-                'order_type'          => OrderType::TAKEAWAY,
-                'is_advance_order'    => Ask::NO,
-                'source'              => Source::POS,
-                'pos_payment_method'  => PosPaymentMethod::CASH,
-                'pos_received_amount' => 11.00,
-                'items' => json_encode([
-                    [
-                        'item_id'         => $this->item->id,
-                        'quantity'        => 1,
-                        'item_variations' => [],
-                        'item_extras'     => [],
-                    ],
-                ]),
-            ]);
+            ->withHeader('X-Idempotency-Key', (string) \Illuminate\Support\Str::uuid())
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($admin, $payload));
 
         $this->assertContains(
             $response->status(),

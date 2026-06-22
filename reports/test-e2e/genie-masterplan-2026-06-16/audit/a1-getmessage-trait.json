@@ -1,0 +1,1585 @@
+{
+  "audit_id": "A1-getMessage-trait",
+  "generated": "2026-06-16",
+  "head": "45e1a16741bad257067e60b28133bec6b412a4d2",
+  "worktree": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/.claude/worktrees/wizard-wysiwyg-2026-06-14",
+  "summary": {
+    "total_files_with_getMessage": 113,
+    "files_without_Log": 97,
+    "files_with_Log": 16,
+    "total_strict_422_single_line_matches": 404,
+    "total_getMessage_any_in_controllers": 473,
+    "note_404_vs_434": "404 = grep matches of getMessage()+422 on ONE line; the mission \"~434 lines\" counts the multi-line return-block lines too. 404 is the actionable single-line catch-return count."
+  },
+  "by_directory": {
+    "Admin_root": 339,
+    "Admin_Fiscal": 0,
+    "Admin_Pos": 0,
+    "Admin_Observability": 0,
+    "Frontend": 55,
+    "Auth": 4,
+    "Table": 6
+  },
+  "wave_summary": {
+    "0": {
+      "files": 14,
+      "leaky_matches": 0,
+      "test_path": "tests/Feature/Sentinels/ControllerErrorLeakAlreadyGoodSentinelTest.php"
+    },
+    "1": {
+      "files": 20,
+      "leaky_matches": 74,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave1HighRiskErrorLeakTest.php"
+    },
+    "2": {
+      "files": 20,
+      "leaky_matches": 94,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave2FrontendErrorLeakTest.php"
+    },
+    "3": {
+      "files": 20,
+      "leaky_matches": 125,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave3AdminCrudErrorLeakTest.php"
+    },
+    "4": {
+      "files": 20,
+      "leaky_matches": 78,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave4AdminCrudErrorLeakTest.php"
+    },
+    "5": {
+      "files": 19,
+      "leaky_matches": 33,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave5RemainderErrorLeakTest.php"
+    }
+  },
+  "trait_design": {
+    "location": "app/Traits/ApiErrorResponse.php (new trait), used by App\\Http\\Controllers\\Controller base OR per-controller `use ApiErrorResponse;`",
+    "recommended": "Add method to base Controller.php so all controllers inherit it with zero per-file use-statement churn",
+    "signature": "protected function jsonError(\\Throwable $e, int $status = 422, ?string $context = null): \\Illuminate\\Http\\JsonResponse",
+    "behavior": "If $e->getCode()===422 (intended user message from service trans()) OR $e instanceof HttpException OR $e instanceof ValidationException => pass $e->getMessage() through (user-needed). ELSE Log::error(context, [message,exception_class,...]) and return __(\"all.message.something_wrong\") generic.",
+    "translation_key": "all.message.something_wrong (ALREADY EXISTS lang/fr/all.php:259 = \"Quelque chose s'est mal passé.\" ; lang/en/all.php:261). No new key required.",
+    "adoption": "1-line replace: `return response(['status'=>false,'message'=>$e->getMessage()],422);` => `return $this->jsonError($e, 422, 'coupon.store');`"
+  },
+  "entries": [
+    {
+      "file": "app/Http/Controllers/Admin/AddressController.php",
+      "count": 5,
+      "risk": "low-medium",
+      "wave": 3,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave3AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        27,
+        37,
+        46,
+        57,
+        67
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/AdministratorAddressController.php",
+      "count": 5,
+      "risk": "low-medium",
+      "wave": 3,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave3AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        30,
+        39,
+        48,
+        58,
+        67
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/AdministratorController.php",
+      "count": 9,
+      "risk": "medium",
+      "wave": 2,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave2FrontendErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        43,
+        52,
+        61,
+        71,
+        80,
+        88,
+        97,
+        106,
+        115
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/AnalyticController.php",
+      "count": 5,
+      "risk": "low-medium",
+      "wave": 3,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave3AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        34,
+        44,
+        53,
+        63,
+        74
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/AnalyticSectionController.php",
+      "count": 5,
+      "risk": "low-medium",
+      "wave": 3,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave3AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        34,
+        44,
+        53,
+        63,
+        72
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/BranchController.php",
+      "count": 7,
+      "risk": "high",
+      "wave": 1,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave1HighRiskErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        32,
+        43,
+        53,
+        77,
+        103,
+        112,
+        121
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/ChefAddressController.php",
+      "count": 5,
+      "risk": "low-medium",
+      "wave": 3,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave3AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        30,
+        39,
+        48,
+        58,
+        67
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/ChefController.php",
+      "count": 9,
+      "risk": "medium",
+      "wave": 2,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave2FrontendErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        45,
+        54,
+        65,
+        75,
+        84,
+        94,
+        105,
+        116,
+        127
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/CompanyController.php",
+      "count": 2,
+      "risk": "low-medium",
+      "wave": 4,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave4AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        27,
+        39
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/CookiesController.php",
+      "count": 2,
+      "risk": "low-medium",
+      "wave": 4,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave4AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        26,
+        35
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/CountryCodeController.php",
+      "count": 2,
+      "risk": "low-medium",
+      "wave": 4,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave4AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        24,
+        38
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/CouponController.php",
+      "count": 7,
+      "risk": "high",
+      "wave": 1,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave1HighRiskErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        37,
+        48,
+        58,
+        72,
+        85,
+        94,
+        108
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/CreditBalanceReportController.php",
+      "count": 2,
+      "risk": "low-medium",
+      "wave": 4,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave4AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        49,
+        58
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/CurrencyController.php",
+      "count": 5,
+      "risk": "low-medium",
+      "wave": 3,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave3AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        29,
+        41,
+        53,
+        65,
+        74
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/CustomerAddressController.php",
+      "count": 5,
+      "risk": "low-medium",
+      "wave": 3,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave3AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        30,
+        39,
+        48,
+        58,
+        67
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/CustomerController.php",
+      "count": 9,
+      "risk": "medium",
+      "wave": 2,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave2FrontendErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        47,
+        56,
+        67,
+        77,
+        86,
+        96,
+        107,
+        118,
+        129
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/DashboardController.php",
+      "count": 16,
+      "risk": "medium",
+      "wave": 2,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave2FrontendErrorLeakTest.php",
+      "has_log": true,
+      "lines_422": [
+        69,
+        78,
+        87,
+        96,
+        106,
+        116,
+        126,
+        136,
+        145,
+        154,
+        163,
+        172,
+        181,
+        190,
+        199,
+        247
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/DefaultAccessController.php",
+      "count": 2,
+      "risk": "low-medium",
+      "wave": 5,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave5RemainderErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        34,
+        43
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/DeliveryBoyAddressController.php",
+      "count": 5,
+      "risk": "low-medium",
+      "wave": 3,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave3AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        40,
+        49,
+        58,
+        68,
+        77
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/DeliveryBoyCashSessionController.php",
+      "count": 0,
+      "risk": "already-good-skip",
+      "wave": 0,
+      "test_path": "tests/Feature/Sentinels/ControllerErrorLeakAlreadyGoodSentinelTest.php",
+      "has_log": false,
+      "lines_422": []
+    },
+    {
+      "file": "app/Http/Controllers/Admin/DeliveryBoyController.php",
+      "count": 9,
+      "risk": "medium",
+      "wave": 3,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave3AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        41,
+        50,
+        59,
+        69,
+        78,
+        87,
+        96,
+        105,
+        114
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/DeliveryBoyOrderController.php",
+      "count": 2,
+      "risk": "high",
+      "wave": 1,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave1HighRiskErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        30,
+        41
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/DiningTableController.php",
+      "count": 6,
+      "risk": "low-medium",
+      "wave": 3,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave3AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        35,
+        46,
+        56,
+        67,
+        78,
+        87
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/EmployeeAddressController.php",
+      "count": 5,
+      "risk": "low-medium",
+      "wave": 3,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave3AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        30,
+        39,
+        48,
+        58,
+        67
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/EmployeeController.php",
+      "count": 9,
+      "risk": "medium",
+      "wave": 3,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave3AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        40,
+        49,
+        58,
+        68,
+        77,
+        86,
+        95,
+        104,
+        113
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/ItemAddonController.php",
+      "count": 3,
+      "risk": "low-medium",
+      "wave": 4,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave4AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        30,
+        40,
+        50
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/ItemAttributeController.php",
+      "count": 5,
+      "risk": "low-medium",
+      "wave": 3,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave3AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        30,
+        40,
+        49,
+        61,
+        71
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/ItemCategoryController.php",
+      "count": 9,
+      "risk": "medium",
+      "wave": 3,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave3AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        46,
+        57,
+        67,
+        78,
+        89,
+        100,
+        109,
+        118,
+        128
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/ItemController.php",
+      "count": 12,
+      "risk": "medium",
+      "wave": 2,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave2FrontendErrorLeakTest.php",
+      "has_log": true,
+      "lines_422": [
+        106,
+        130,
+        140,
+        149,
+        159,
+        179,
+        191,
+        200,
+        209,
+        219,
+        242,
+        283
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/ItemExtraController.php",
+      "count": 5,
+      "risk": "low-medium",
+      "wave": 3,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave3AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        30,
+        40,
+        50,
+        60,
+        70
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/ItemPhotoController.php",
+      "count": 0,
+      "risk": "already-good-skip",
+      "wave": 0,
+      "test_path": "tests/Feature/Sentinels/ControllerErrorLeakAlreadyGoodSentinelTest.php",
+      "has_log": true,
+      "lines_422": []
+    },
+    {
+      "file": "app/Http/Controllers/Admin/ItemsReportController.php",
+      "count": 3,
+      "risk": "low-medium",
+      "wave": 4,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave4AdminCrudErrorLeakTest.php",
+      "has_log": true,
+      "lines_422": [
+        40,
+        49,
+        78
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/ItemVariationController.php",
+      "count": 6,
+      "risk": "low-medium",
+      "wave": 3,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave3AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        31,
+        40,
+        50,
+        60,
+        70,
+        81
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/KioskMachineController.php",
+      "count": 7,
+      "risk": "medium",
+      "wave": 3,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave3AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        30,
+        39,
+        48,
+        58,
+        67,
+        77,
+        87
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/KioskSetupController.php",
+      "count": 2,
+      "risk": "low-medium",
+      "wave": 5,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave5RemainderErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        28,
+        37
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/KitchenDisplaySystemController.php",
+      "count": 5,
+      "risk": "low-medium",
+      "wave": 4,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave4AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        42,
+        54,
+        65,
+        85,
+        127
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/LanguageController.php",
+      "count": 8,
+      "risk": "medium",
+      "wave": 3,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave3AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        35,
+        44,
+        53,
+        62,
+        72,
+        82,
+        98,
+        108
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/LicenseController.php",
+      "count": 2,
+      "risk": "low-medium",
+      "wave": 5,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave5RemainderErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        26,
+        35
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/LoyaltySetupController.php",
+      "count": 2,
+      "risk": "high",
+      "wave": 1,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave1HighRiskErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        27,
+        36
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/MailController.php",
+      "count": 2,
+      "risk": "low-medium",
+      "wave": 5,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave5RemainderErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        30,
+        39
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/MenuController.php",
+      "count": 1,
+      "risk": "low-medium",
+      "wave": 5,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave5RemainderErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        24
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/MenuSectionController.php",
+      "count": 1,
+      "risk": "low-medium",
+      "wave": 5,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave5RemainderErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        27
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/MenuTemplateController.php",
+      "count": 5,
+      "risk": "low-medium",
+      "wave": 4,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave4AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        37,
+        46,
+        55,
+        66,
+        76
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/MessageController.php",
+      "count": 5,
+      "risk": "low-medium",
+      "wave": 4,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave4AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        34,
+        45,
+        57,
+        69,
+        80
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/MyOrderDetailsController.php",
+      "count": 1,
+      "risk": "high",
+      "wave": 2,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave2FrontendErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        27
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/NotificationAlertController.php",
+      "count": 2,
+      "risk": "low-medium",
+      "wave": 5,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave5RemainderErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        27,
+        36
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/NotificationController.php",
+      "count": 2,
+      "risk": "low-medium",
+      "wave": 5,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave5RemainderErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        27,
+        36
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/OfferController.php",
+      "count": 7,
+      "risk": "medium",
+      "wave": 3,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave3AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        51,
+        60,
+        69,
+        78,
+        88,
+        97,
+        108
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/OfferItemController.php",
+      "count": 3,
+      "risk": "low-medium",
+      "wave": 4,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave4AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        43,
+        55,
+        67
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/OnlineOrderController.php",
+      "count": 7,
+      "risk": "high",
+      "wave": 1,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave1HighRiskErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        50,
+        59,
+        68,
+        90,
+        99,
+        108,
+        122
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/OrderHistoryController.php",
+      "count": 2,
+      "risk": "high",
+      "wave": 1,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave1HighRiskErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        58,
+        95
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/OrderSetupController.php",
+      "count": 2,
+      "risk": "high",
+      "wave": 1,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave1HighRiskErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        28,
+        40
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/OrderStatusScreenController.php",
+      "count": 4,
+      "risk": "high",
+      "wave": 1,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave1HighRiskErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        36,
+        47,
+        103,
+        138
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/OtpController.php",
+      "count": 2,
+      "risk": "low-medium",
+      "wave": 5,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave5RemainderErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        27,
+        36
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/PageController.php",
+      "count": 5,
+      "risk": "low-medium",
+      "wave": 4,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave4AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        34,
+        49,
+        64,
+        80,
+        96
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/PaymentGatewayController.php",
+      "count": 2,
+      "risk": "high",
+      "wave": 1,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave1HighRiskErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        35,
+        49
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/PermissionController.php",
+      "count": 2,
+      "risk": "low-medium",
+      "wave": 5,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave5RemainderErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        50,
+        59
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/Pos/CashDrawerController.php",
+      "count": 0,
+      "risk": "already-good-skip",
+      "wave": 0,
+      "test_path": "tests/Feature/Sentinels/ControllerErrorLeakAlreadyGoodSentinelTest.php",
+      "has_log": true,
+      "lines_422": []
+    },
+    {
+      "file": "app/Http/Controllers/Admin/Pos/CashDrawerSessionController.php",
+      "count": 0,
+      "risk": "already-good-skip",
+      "wave": 0,
+      "test_path": "tests/Feature/Sentinels/ControllerErrorLeakAlreadyGoodSentinelTest.php",
+      "has_log": false,
+      "lines_422": []
+    },
+    {
+      "file": "app/Http/Controllers/Admin/PosCategoryController.php",
+      "count": 1,
+      "risk": "low-medium",
+      "wave": 5,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave5RemainderErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        241
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/PosController.php",
+      "count": 1,
+      "risk": "low-medium",
+      "wave": 5,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave5RemainderErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        73
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/PosLoyaltyController.php",
+      "count": 0,
+      "risk": "already-good-skip",
+      "wave": 0,
+      "test_path": "tests/Feature/Sentinels/ControllerErrorLeakAlreadyGoodSentinelTest.php",
+      "has_log": true,
+      "lines_422": []
+    },
+    {
+      "file": "app/Http/Controllers/Admin/PosOrderController.php",
+      "count": 8,
+      "risk": "high",
+      "wave": 1,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave1HighRiskErrorLeakTest.php",
+      "has_log": true,
+      "lines_422": [
+        257,
+        283,
+        298,
+        308,
+        319,
+        330,
+        345,
+        381
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/PushNotificationController.php",
+      "count": 5,
+      "risk": "low-medium",
+      "wave": 4,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave4AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        33,
+        42,
+        51,
+        61,
+        70
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/RoleController.php",
+      "count": 5,
+      "risk": "low-medium",
+      "wave": 4,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave4AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        30,
+        39,
+        48,
+        57,
+        67
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/SalesReportController.php",
+      "count": 4,
+      "risk": "low-medium",
+      "wave": 4,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave4AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        48,
+        57,
+        81,
+        90
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/SimpleUserController.php",
+      "count": 5,
+      "risk": "low-medium",
+      "wave": 4,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave4AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        44,
+        54,
+        63,
+        72,
+        81
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/SiteController.php",
+      "count": 2,
+      "risk": "low-medium",
+      "wave": 5,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave5RemainderErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        27,
+        40
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/SliderController.php",
+      "count": 5,
+      "risk": "low-medium",
+      "wave": 4,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave4AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        35,
+        50,
+        65,
+        81,
+        97
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/SmsGatewayController.php",
+      "count": 2,
+      "risk": "low-medium",
+      "wave": 5,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave5RemainderErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        35,
+        49
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/SocialMediaController.php",
+      "count": 2,
+      "risk": "low-medium",
+      "wave": 5,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave5RemainderErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        27,
+        36
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/SubscriberController.php",
+      "count": 4,
+      "risk": "low-medium",
+      "wave": 4,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave4AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        34,
+        44,
+        53,
+        63
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/TableOrderController.php",
+      "count": 6,
+      "risk": "high",
+      "wave": 1,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave1HighRiskErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        41,
+        50,
+        59,
+        68,
+        77,
+        86
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/TaxController.php",
+      "count": 5,
+      "risk": "low-medium",
+      "wave": 4,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave4AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        30,
+        42,
+        54,
+        66,
+        75
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/ThemeController.php",
+      "count": 2,
+      "risk": "low-medium",
+      "wave": 5,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave5RemainderErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        27,
+        36
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/TimeSlotController.php",
+      "count": 3,
+      "risk": "low-medium",
+      "wave": 4,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave4AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        28,
+        37,
+        47
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/TimezoneController.php",
+      "count": 1,
+      "risk": "low-medium",
+      "wave": 5,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave5RemainderErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        25
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/TransactionController.php",
+      "count": 2,
+      "risk": "high",
+      "wave": 1,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave1HighRiskErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        31,
+        42
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/WaiterAddressController.php",
+      "count": 5,
+      "risk": "low-medium",
+      "wave": 4,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave4AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        30,
+        39,
+        48,
+        58,
+        67
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Admin/WaiterController.php",
+      "count": 9,
+      "risk": "medium",
+      "wave": 3,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave3AdminCrudErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        50,
+        59,
+        70,
+        80,
+        89,
+        99,
+        110,
+        121,
+        132
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Auth/GuestSignupController.php",
+      "count": 2,
+      "risk": "high",
+      "wave": 1,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave1HighRiskErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        56,
+        79
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Auth/LoginController.php",
+      "count": 0,
+      "risk": "already-good-skip",
+      "wave": 0,
+      "test_path": "tests/Feature/Sentinels/ControllerErrorLeakAlreadyGoodSentinelTest.php",
+      "has_log": true,
+      "lines_422": []
+    },
+    {
+      "file": "app/Http/Controllers/Auth/SignupController.php",
+      "count": 2,
+      "risk": "high",
+      "wave": 1,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave1HighRiskErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        39,
+        50
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Frontend/AddressController.php",
+      "count": 5,
+      "risk": "medium-high",
+      "wave": 2,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave2FrontendErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        29,
+        44,
+        53,
+        67,
+        82
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Frontend/BranchController.php",
+      "count": 3,
+      "risk": "high",
+      "wave": 1,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave1HighRiskErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        27,
+        36,
+        45
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Frontend/CookiesController.php",
+      "count": 2,
+      "risk": "medium-high",
+      "wave": 2,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave2FrontendErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        26,
+        35
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Frontend/CountryCodeController.php",
+      "count": 2,
+      "risk": "medium-high",
+      "wave": 2,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave2FrontendErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        25,
+        39
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Frontend/CouponController.php",
+      "count": 2,
+      "risk": "high",
+      "wave": 1,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave1HighRiskErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        32,
+        41
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Frontend/DeliveryBoyOrderController.php",
+      "count": 4,
+      "risk": "high",
+      "wave": 1,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave1HighRiskErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        31,
+        42,
+        51,
+        83
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Frontend/ItemCategoryController.php",
+      "count": 2,
+      "risk": "medium-high",
+      "wave": 2,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave2FrontendErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        36,
+        45
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Frontend/ItemController.php",
+      "count": 6,
+      "risk": "medium-high",
+      "wave": 2,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave2FrontendErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        30,
+        39,
+        48,
+        57,
+        106,
+        137
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Frontend/KioskEventController.php",
+      "count": 0,
+      "risk": "already-good-skip",
+      "wave": 0,
+      "test_path": "tests/Feature/Sentinels/ControllerErrorLeakAlreadyGoodSentinelTest.php",
+      "has_log": true,
+      "lines_422": []
+    },
+    {
+      "file": "app/Http/Controllers/Frontend/LanguageController.php",
+      "count": 2,
+      "risk": "medium-high",
+      "wave": 2,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave2FrontendErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        25,
+        33
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Frontend/LoyaltyController.php",
+      "count": 0,
+      "risk": "already-good-skip",
+      "wave": 0,
+      "test_path": "tests/Feature/Sentinels/ControllerErrorLeakAlreadyGoodSentinelTest.php",
+      "has_log": true,
+      "lines_422": []
+    },
+    {
+      "file": "app/Http/Controllers/Frontend/MenuController.php",
+      "count": 0,
+      "risk": "already-good-skip",
+      "wave": 0,
+      "test_path": "tests/Feature/Sentinels/ControllerErrorLeakAlreadyGoodSentinelTest.php",
+      "has_log": true,
+      "lines_422": []
+    },
+    {
+      "file": "app/Http/Controllers/Frontend/MessageController.php",
+      "count": 4,
+      "risk": "medium-high",
+      "wave": 2,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave2FrontendErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        27,
+        37,
+        46,
+        56
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Frontend/OfferController.php",
+      "count": 3,
+      "risk": "medium-high",
+      "wave": 2,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave2FrontendErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        32,
+        42,
+        53
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Frontend/OrderController.php",
+      "count": 5,
+      "risk": "high",
+      "wave": 1,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave1HighRiskErrorLeakTest.php",
+      "has_log": true,
+      "lines_422": [
+        42,
+        67,
+        77,
+        86,
+        311
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Frontend/PageController.php",
+      "count": 3,
+      "risk": "medium-high",
+      "wave": 2,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave2FrontendErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        27,
+        36,
+        45
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Frontend/PaymentReconcileController.php",
+      "count": 0,
+      "risk": "already-good-skip",
+      "wave": 0,
+      "test_path": "tests/Feature/Sentinels/ControllerErrorLeakAlreadyGoodSentinelTest.php",
+      "has_log": true,
+      "lines_422": []
+    },
+    {
+      "file": "app/Http/Controllers/Frontend/PricingPreviewController.php",
+      "count": 0,
+      "risk": "already-good-skip",
+      "wave": 0,
+      "test_path": "tests/Feature/Sentinels/ControllerErrorLeakAlreadyGoodSentinelTest.php",
+      "has_log": true,
+      "lines_422": []
+    },
+    {
+      "file": "app/Http/Controllers/Frontend/ProfileController.php",
+      "count": 4,
+      "risk": "medium-high",
+      "wave": 2,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave2FrontendErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        29,
+        38,
+        48,
+        57
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Frontend/PromoController.php",
+      "count": 0,
+      "risk": "already-good-skip",
+      "wave": 0,
+      "test_path": "tests/Feature/Sentinels/ControllerErrorLeakAlreadyGoodSentinelTest.php",
+      "has_log": true,
+      "lines_422": []
+    },
+    {
+      "file": "app/Http/Controllers/Frontend/SettingController.php",
+      "count": 1,
+      "risk": "medium-high",
+      "wave": 2,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave2FrontendErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        25
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Frontend/SliderController.php",
+      "count": 1,
+      "risk": "medium-high",
+      "wave": 2,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave2FrontendErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        25
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Frontend/SubscriberController.php",
+      "count": 1,
+      "risk": "medium-high",
+      "wave": 2,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave2FrontendErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        27
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Frontend/TimeSlotController.php",
+      "count": 2,
+      "risk": "medium-high",
+      "wave": 2,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave2FrontendErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        26,
+        36
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Frontend/TokenStoreController.php",
+      "count": 3,
+      "risk": "high",
+      "wave": 1,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave1HighRiskErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        28,
+        39,
+        50
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Frontend/UpsellController.php",
+      "count": 0,
+      "risk": "already-good-skip",
+      "wave": 0,
+      "test_path": "tests/Feature/Sentinels/ControllerErrorLeakAlreadyGoodSentinelTest.php",
+      "has_log": true,
+      "lines_422": []
+    },
+    {
+      "file": "app/Http/Controllers/HealthController.php",
+      "count": 0,
+      "risk": "already-good-skip",
+      "wave": 0,
+      "test_path": "tests/Feature/Sentinels/ControllerErrorLeakAlreadyGoodSentinelTest.php",
+      "has_log": false,
+      "lines_422": []
+    },
+    {
+      "file": "app/Http/Controllers/Table/DiningTableController.php",
+      "count": 2,
+      "risk": "low-medium",
+      "wave": 5,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave5RemainderErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        28,
+        37
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Table/ItemCategoryController.php",
+      "count": 2,
+      "risk": "low-medium",
+      "wave": 5,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave5RemainderErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        57,
+        66
+      ]
+    },
+    {
+      "file": "app/Http/Controllers/Table/OrderController.php",
+      "count": 2,
+      "risk": "high",
+      "wave": 1,
+      "test_path": "tests/Feature/Security/JsonErrorTrait/Wave1HighRiskErrorLeakTest.php",
+      "has_log": false,
+      "lines_422": [
+        29,
+        38
+      ]
+    }
+  ]
+}

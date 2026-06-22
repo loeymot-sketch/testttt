@@ -1,0 +1,110 @@
+{
+  "specialist": "RED-team",
+  "zone": "F-8 Notifications (Push + SMS + Mail + In-app)",
+  "lens": "Adversarial — spam vectors, PII leaks, bypass, cross-branch leakage, cost-amplification, recon",
+  "scope_read_only": true,
+  "approx_words": 1450,
+  "summary": "Adversarial review surfaces five concrete attack vectors and one PII surface that is unverified. The most severe is an in-app PushNotification cross-branch leak via PushNotificationService::store: an admin sending a 'promotional' notification with role_id=0 and user_id=0 pulls EVERY user's FCM token across ALL branches without consulting branch_id (which the record itself stores). Second is an SMS-bomb vector against a target phone number via IP rotation, given that throttling is per-IP (throttle:5,1) and not per-phone. Third is PII surface on driver-bound push: notification message templates are DB-driven (NotificationAlert.push_notification_message owner-managed) and may contain unescaped customer fields rendered into the driver's push body. Fourth is a topic-subscription PII surface: customer_order_{orderId} topics are predictable. Fifth is the duplicate-trigger vector when outbox replay AND in-process listeners both fire. The notification path lacks branch isolation at the BranchScope layer, but the User model is exempt from BranchScope by design (BRAIN §9), so no automatic guard catches the leak.",
+  "findings": [
+    {
+      "id": "F-8-RED-001",
+      "severity": "P0",
+      "title": "PushNotificationService::store cross-branch leak — admin push reaches all branches",
+      "files": [
+        "app/Services/PushNotificationService.php:55-100",
+        "app/Models/PushNotification.php:5,28-32"
+      ],
+      "evidence": "PushNotificationService.php:71-90: when role_id===0 && user_id===0 (broadcast mode), the service runs User::whereNotNull('web_token')->pluck('web_token') and User::whereNotNull('device_token')->pluck('device_token') with NO branch_id filter. The PushNotification record itself stores branch_id (PushNotification.php:18 fillable), but it is never read back into the recipient query. role-mode (role_id !== 0) runs User::role($role)->whereNotNull(...)->pluck(...) — still no branch scoping. User model is exempt from BranchScope per BRAIN §9 (Sanctum recursion mitigation), so no automatic safeguard catches the leak. The PushNotification model itself has BranchScope (PushNotification.php:28-32) for read-side admin badge counters, but the SEND-side query bypasses it.",
+      "attack_vector": "Branch A admin sends 'Spring promo' push intended for Branch A customers. With role_id=0 user_id=0, the query fan-out reaches Branch B + Branch C + admin staff. Customers of Branch B receive a promo for a restaurant they have never visited (leaks branch existence + cross-tenant marketing). For SaaS multi-tenant V1.0.2 this is a tenant-isolation breach.",
+      "impact": "GDPR concern: PII (device tokens) flowing across tenant boundary even if message is innocuous. SaaS contract breach. Reputation risk.",
+      "remediation": "In PushNotificationService::store, after $pushNotification->save(), add ->where('branch_id', $pushNotification->branch_id) to BOTH the web_token and device_token queries. For admin (branch_id=0) preserve the broadcast semantics with an explicit `is_global_broadcast` flag. Add a sentinel test."
+    },
+    {
+      "id": "F-8-RED-002",
+      "severity": "P1",
+      "title": "SMS-bomb via IP rotation — per-IP throttle, not per-phone",
+      "files": [
+        "routes/api.php:174-175,185-186",
+        "app/Services/OtpManagerService.php:23-67",
+        "app/Http/Controllers/Auth/SignupController.php:32-39",
+        "app/Http/Controllers/Auth/GuestSignupController.php:50-56"
+      ],
+      "evidence": "Routes /api/signup/otp and /api/guest-signup/otp are protected by throttle:5,1 (5 req/min/IP). The throttle key is per IP — verified via standard Laravel ThrottleRequests middleware behavior. OtpManagerService::otp does NOT track per-phone request count; it DELETE+INSERT on Otp table keyed on phone. With BRAIN §1 noting TrustProxies $proxies='*' enables per-IP throttle (as opposed to load-balancer-IP throttle), but does NOT add per-target-phone keying.",
+      "attack_vector": "Attacker behind a rotating residential proxy pool (commercial offering: 10$/M IPs) sends 5 requests/IP/min targeting victim phone +33XXXXXXXXX. Each request generates a fresh OTP token (CSPRNG random_int) and dispatches SendSmsCode → Twilio SMS to victim. At 100 IPs/min the victim receives 500 SMS/min. Twilio cost: 500 × $0.05 = $25/min = $1500/hour. DoS on victim's phone + bill amplification on FoodKing's Twilio account.",
+      "impact": "Twilio cost-amplification ($1k+/hour from one attacker). Victim phone unusable. Twilio may rate-limit our account globally (collateral damage to legitimate users).",
+      "remediation": "Add per-phone rate limit inside OtpManagerService::otp: RateLimiter::attempt(\"otp:phone:{$phone}\", 3, fn () => $this->actuallyOtp(...), 60). Reject with 429 + 'too many OTP requests for this phone'. Mirror Laravel password.broker pattern."
+    },
+    {
+      "id": "F-8-RED-003",
+      "severity": "P1",
+      "title": "Predictable FCM topics customer_order_{orderId} — eavesdropping surface",
+      "files": [
+        "app/Listeners/SendFcmOnOrderCreated.php:85-100",
+        "app/Listeners/SendFcmOnOrderStatusChange.php:114-156",
+        "app/Services/FcmNotificationService.php:108-160"
+      ],
+      "evidence": "SendFcmOnOrderCreated.php:91 publishes notifications to topic `customer_order_{$orderId}` with order_id, queue_number, type in the data payload. SendFcmOnOrderStatusChange.php:114-156 fires for PREPARED/DELIVERED/CANCELED to the same predictable topic. FCM topic subscription is client-controlled — any mobile client can subscribe to /topics/customer_order_42 via the standard FCM SDK without server-side authorization. Topic names use sequential integers (OrderId).",
+      "attack_vector": "A malicious mobile app or curious user subscribes to /topics/customer_order_42 (and 43, 44, ...) and receives real-time status updates for orders not belonging to them. Combined with the OSS topic oss_branch_{branchId} (predictable branch IDs), an attacker can map the kitchen activity rhythm of any branch.",
+      "impact": "PII / privacy leak (order status of strangers). Competitive intelligence (branch order velocity). Predictable, scriptable enumeration.",
+      "remediation": "Replace customer_order_{orderId} with customer_order_{hmac(orderId + user_id_or_session + secret)} OR migrate to per-device-token FCM (not topic). FCM topic should never embed predictable integer keys without HMAC."
+    },
+    {
+      "id": "F-8-RED-004",
+      "severity": "P1",
+      "title": "Driver/customer push body PII surface — DB-driven template injection unverified",
+      "files": [
+        "app/Services/OrderPushNotificationBuilder.php:117-118,125-126 (...all 9 status methods)",
+        "app/Services/OrderDeliveryBoyPushNotificationBuilder.php:74-76",
+        "app/Models/NotificationAlert.php (model schema not read in this round)"
+      ],
+      "evidence": "Builders pull $notificationAlert->push_notification_message and pass it as the message body to FirebaseService::sendNotification. The NotificationAlert table is owner-managed (Settings admin UI). If templates use {customer_name}/{phone}/{address} placeholders interpolated at render time, those PII fields land in driver-bound push body — viewable on driver's lockscreen.",
+      "attack_vector": "Owner sets 'delivery_boy_after_assign_message' template to include {customer_phone} for driver convenience. Driver's android lockscreen now exposes customer phone to anyone glancing at the phone. GDPR Article 32 concern: PII in push lockscreen requires encryption-at-rest justification.",
+      "impact": "Unverified surface — depends on whether NotificationAlert templates support placeholder interpolation. If yes, GDPR exposure. The current code path (OrderPushNotificationBuilder.php:101-108) wraps the raw message into pushNotification->description; FirebaseService:38 puts that into notification.body which IS the lockscreen content.",
+      "remediation": "Audit NotificationAlert seeder + admin UI to confirm whether templates interpolate PII. If yes, restrict driver-bound templates to non-PII fields (order_serial_no, branch_name) only. Document a 'driver-safe' template policy."
+    },
+    {
+      "id": "F-8-RED-005",
+      "severity": "P1",
+      "title": "Duplicate-trigger spam vector — OrderStatusChanged double-fires when CleanupStalePending re-emits",
+      "files": [
+        "app/Services/OrderService.php:1637-1643",
+        "app/Jobs/CleanupStalePendingKioskOrders.php:76-78"
+      ],
+      "evidence": "OrderService.php:1637-1639 dispatches SendOrderMail/Sms/Push when status changes via the normal path. CleanupStalePendingKioskOrders.php:76-78 dispatches the same triplet when a stale kiosk order is auto-rejected. If a kiosk customer pays right as the cron fires, both paths can fire for the same order_id (race window). Combined with no idempotency (F-8-ARCH-003), customer receives 2x SMS + 2x email + 2x push.",
+      "attack_vector": "Not directly attacker-controlled but reliably reproducible under load. A real-world bug; combined with the per-message Twilio cost, an attacker who can spam stale-order creation can multiplicatively amplify cost.",
+      "impact": "Customer UX degradation; cost amplification.",
+      "remediation": "F-8-ARCH-003 idempotency guard fixes this. Also: CleanupStalePendingKioskOrders should check current status before dispatching (lockForUpdate + state-machine guard)."
+    },
+    {
+      "id": "F-8-RED-006",
+      "severity": "P2",
+      "title": "FCM legacy server-key in plain env may be exposed in logs / response body",
+      "files": [
+        "app/Services/FcmNotificationService.php:85-90"
+      ],
+      "evidence": "FcmNotificationService.php:85-90 was already hardened (Wave 5G or earlier): comment notes 'Do not log full response body (may echo request with server key)'. Hardening landed. Verified safe.",
+      "impact": "No active exposure — flagged for completeness.",
+      "remediation": "n/a — already mitigated."
+    },
+    {
+      "id": "F-8-RED-007",
+      "severity": "P2",
+      "title": "Push notification image getter calls asset() inside getFirstMediaUrl branch — N+1 + potential SSRF",
+      "files": [
+        "app/Models/PushNotification.php:34-39"
+      ],
+      "evidence": "getImageAttribute calls getFirstMediaUrl on every model serialization. If a list endpoint paginates 50 records, that is 50 disk lookups. Not a security flaw on its own; flagged as a performance pothole near a model frequently exported via Excel (PushNotificationExport).",
+      "impact": "Latent N+1 on push-notification index + export.",
+      "remediation": "Eager-load 'media' relationship in PushNotificationService::list."
+    }
+  ],
+  "kpis": {
+    "branch_isolation_breaches": 1,
+    "spam_vectors_critical": 1,
+    "pii_surfaces_unverified": 1,
+    "pii_surfaces_confirmed": 1,
+    "predictable_topic_patterns": 2,
+    "swallowed_failure_sites": 24,
+    "duplicate_trigger_vectors": 1
+  }
+}

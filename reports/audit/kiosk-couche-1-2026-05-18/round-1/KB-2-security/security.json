@@ -1,0 +1,203 @@
+{
+  "specialist": "Security",
+  "scope": "Kiosk Borne Couche 1 — auth, token, channel-auth, anti-tampering, FR-lock enforcement",
+  "round": 1,
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head_at_audit": "4ad1adba8",
+  "date": "2026-05-18",
+  "mode": "READ-ONLY (FROZEN + DIRTY honored)",
+
+  "files_read": [
+    "app/Http/Controllers/Auth/KioskMachineLoginController.php (full)",
+    "app/Models/KioskMachine.php (full)",
+    "routes/channels.php (full)",
+    "routes/api.php (kiosk routes; grep)",
+    "app/Http/Requests/OrderRequest.php (authorize + isKioskOrderToken)",
+    "app/Http/Requests/OrderStatusRequest.php (cancel ability)",
+    "app/Http/Requests/Frontend/PaymentConfirmRequest.php",
+    "app/Http/Requests/Kiosk/PricingPreviewRequest.php",
+    "app/Http/Requests/Kiosk/PromoValidateRequest.php",
+    "app/Http/Controllers/Frontend/MenuController.php (kiosk gate)",
+    "app/Http/Controllers/Frontend/UpsellController.php (kiosk gate)",
+    "app/Http/Controllers/Frontend/PaymentReconcileController.php (kiosk gate)",
+    "app/Http/Controllers/Frontend/LoyaltyController.php (kiosk gate)",
+    "app/Http/Controllers/Frontend/KioskEventController.php (full)",
+    "app/Services/Order/OrderQuoteService.php (kiosk gate)",
+    "app/Http/Resources/ItemResource.php + NormalItemResource.php (kiosk visibility)",
+    "resources/js/store/modules/kioskCart.js (kioskLogin coalesce)"
+  ],
+
+  "verdict": "GREEN — DEFENSE-IN-DEPTH STACK INTACT, NO HEAL REQUIRED",
+
+  "kiosk_order_ability_callsite_inventory": {
+    "count_total": 18,
+    "callsites": [
+      "app/Http/Resources/ItemResource.php:178 (visibility gate)",
+      "app/Http/Resources/NormalItemResource.php:189 (visibility gate)",
+      "app/Http/Requests/OrderStatusRequest.php:31 (cancel-restriction)",
+      "app/Http/Requests/OrderStatusRequest.php:93 (authorize)",
+      "app/Http/Requests/Frontend/PaymentConfirmRequest.php:20 (authorize)",
+      "app/Http/Requests/OrderRequest.php:81 (authorize)",
+      "app/Http/Requests/OrderRequest.php:356 (isKioskOrderToken helper)",
+      "app/Http/Requests/Kiosk/PricingPreviewRequest.php:28 (authorize)",
+      "app/Http/Requests/Kiosk/PromoValidateRequest.php:19 (authorize)",
+      "app/Http/Controllers/Frontend/MenuController.php:37 (kiosk-menu gate)",
+      "app/Http/Controllers/Frontend/UpsellController.php:32 (kiosk-upsell gate)",
+      "app/Http/Controllers/Frontend/PaymentReconcileController.php:87 (reconcile gate)",
+      "app/Http/Controllers/Frontend/LoyaltyController.php:258 (loyalty redeem)",
+      "app/Http/Controllers/Frontend/LoyaltyController.php:579 (loyalty register)",
+      "app/Services/Order/OrderQuoteService.php:168 (quote actor gate)",
+      "routes/api.php:1286 abilities:kiosk:order route-level middleware (/kiosk-event)",
+      "routes/api.php:1332 abilities:kiosk:order route-level middleware (/kiosk/event alias)",
+      "routes/channels.php:44 token-NAME check (NOT tokenCan) — wildcard-immune by design"
+    ],
+    "assessment": "All state-changing kiosk endpoints (order POST, status change, payment confirm, promo validate, pricing preview, loyalty redeem/register, kiosk-event, upsell) are gated by either route-level `abilities:kiosk:order` middleware OR FormRequest `tokenCan('kiosk:order')` in `authorize()`. The R3 T-3.2.2 channel-auth heal (channels.php:44) replaced tokenCan with token-NAME because admin tokens minted with `['*']` would have passed tokenCan and escalated to subscribe to all branch channels."
+  },
+
+  "findings": [
+    {
+      "id": "KB-2-SEC-01",
+      "category": "AUTH",
+      "severity": "INFO",
+      "title": "Kiosk token minted with ['kiosk:order'] ability ONLY — wildcard-immune at issuance",
+      "evidence": [
+        "app/Http/Controllers/Auth/KioskMachineLoginController.php:98..102 — `$user->createToken('kiosk-token', ['kiosk:order'], now()->addMinutes(config('sanctum.expiration', 480)))`.",
+        "Token NAME is the discriminator used by channels.php:44 (immune to Sanctum '*' match).",
+        "Old tokens revoked line 96 — `$user->tokens()->where('name', 'kiosk-token')->delete()` before mint."
+      ],
+      "assessment": "Three-layer defense: (1) ability literal ['kiosk:order'], (2) name 'kiosk-token' for channel-auth discrimination, (3) TTL=480min (sanctum.expiration default). KEEP."
+    },
+    {
+      "id": "KB-2-SEC-02",
+      "category": "CHANNEL_AUTH",
+      "severity": "INFO",
+      "title": "Echo private-channel auth: token-NAME discriminator, NOT tokenCan",
+      "evidence": [
+        "routes/channels.php:41..62 — `Broadcast::channel('branch.{branchId}', ...)`.",
+        "Line 44 `if ($tokenName === 'kiosk-token')` — restricts to that machine's branch via KioskMachine row.",
+        "Line 56..58 — Admin / Tenant Admin role check (explicit role, NOT bare branch_id===0 sentinel) closes Guest-Echo-Bypass latent path.",
+        "Line 46 — `KioskMachine::withoutGlobalScope(BranchScope::class)` pre-auth-style explicit bypass (defense-in-depth comment + actual call)."
+      ],
+      "assessment": "F-SEC-W6-01 (token-name heal) + F-SEC-W6-02 (role-check tighten) both visible. The previous tokenCan-based gate was the documented vulnerability that real KDS/POS staff would have been silently locked out of branch.* channels because admin tokens minted with ['*'] passed tokenCan. KEEP."
+    },
+    {
+      "id": "KB-2-SEC-03",
+      "category": "AUTH",
+      "severity": "INFO",
+      "title": "OrderRequest authorize: ability gate present, tokenless-fallback tightened to route+guard match",
+      "evidence": [
+        "app/Http/Requests/OrderRequest.php:35..82 `authorize()`.",
+        "Line 60..78 — Sprint H1 K-002 tokenless fallback: requires BOTH `auth()->guard('web|sanctum')->check()` AND `route()->getName() startsWith 'frontend.order.'`.",
+        "Line 81 — when token present, strict `tokenCan('kiosk:order')` check."
+      ],
+      "assessment": "Wave Z RED-team caught the previous `return true` as too broad for hypothetical future controller reuse. The tightened fallback ensures the FormRequest only fail-opens for legitimate test fixtures on the namespaced routes. KEEP."
+    },
+    {
+      "id": "KB-2-SEC-04",
+      "category": "FR_LOCK",
+      "severity": "INFO",
+      "title": "BORNE-001 — FR-only dine-in rejection message on kiosk path",
+      "evidence": [
+        "app/Http/Requests/OrderRequest.php:208..229 `WAVE5-KIOSK-001` server-authoritative dine-in disabled enforcement.",
+        "Line 221..227 — [BORNE-001 heal] FR string `'Le service sur place est désactivé en V1 — les commandes borne doivent être à emporter.'`.",
+        "Line 218..220 — predicate `isKioskToken && !pos_dine_in_enabled && order_type IN [KIOSK, DINING_TABLE]`."
+      ],
+      "assessment": "Kiosk path is FR-locked per ADR-007. Previously the EN hardcoded string surfaced on French UI when a client bypassed the frontend gate (replay attack / legacy device / UI bypass). Server-authoritative defense — frontend visual gating in KioskCart Vue is deferred to F-016b for FROZEN wizard. KEEP."
+    },
+    {
+      "id": "KB-2-SEC-05",
+      "category": "AUTH",
+      "severity": "INFO",
+      "title": "Kiosk login pre-auth scope-bypass explicit",
+      "evidence": [
+        "app/Http/Controllers/Auth/KioskMachineLoginController.php:48..57 — `KioskMachine::withoutGlobalScope(BranchScope::class)->where('username', $username)->first()`.",
+        "Line 90..92 — in-transaction lock lookup ALSO `::withoutGlobalScope(BranchScope::class)->lockForUpdate()`.",
+        "Comments explicitly justify: 'BranchScope skips when Auth::check()=false anyway, but mark intent explicit to survive any future refactor that activates pre-auth.'"
+      ],
+      "assessment": "Defense-in-depth bypass-with-intent annotations. iter12 P1 KIOSK pattern. KEEP."
+    },
+    {
+      "id": "KB-2-SEC-06",
+      "category": "RGPD",
+      "severity": "INFO",
+      "title": "KioskEventController PII-key guard recursive",
+      "evidence": [
+        "app/Http/Controllers/Frontend/KioskEventController.php:143..147 FORBIDDEN_PAYLOAD_KEYS = [email, phone, telephone, first_name, last_name, name, iban, card_number, pan, cvv, cvc, full_address, customer_email, customer_phone, customer_name].",
+        "Line 278..289 `payloadHasForbiddenKeys` — recursive descent through arbitrary-depth payload arrays, case-insensitive.",
+        "Line 200..222 — branch_id mismatch detection logged on `security` channel (NOT a 422 — log + continue with server-truth)."
+      ],
+      "assessment": "RGPD guard correct. Branch mismatch is logged-only, not rejected, because rejecting would create a denial-of-service surface for malformed legacy clients; the kiosk events table records the claim for forensics. KEEP."
+    },
+    {
+      "id": "KB-2-SEC-07",
+      "category": "RATE_LIMIT",
+      "severity": "INFO",
+      "title": "Kiosk endpoints rate-limited per-throttle bucket",
+      "evidence": [
+        "routes/api.php:160 — `/kiosk-login` → `throttle:kiosk-login` (30/min by username|ip per `iter15-mega-fix D-001`).",
+        "routes/api.php:1178..1179 — `/order/quote` → `throttle:kiosk-orders`; `/order` POST → `throttle:kiosk-orders` + `idempotency`.",
+        "routes/api.php:1285..1287 + 1331..1333 — `/kiosk-event` + `/kiosk/event` alias → `throttle:30,1`.",
+        "routes/api.php:1298..1299 — `/menu` kiosk → `throttle:kiosk-menu`.",
+        "routes/api.php:1304..1305 — `/coupon-checking` → `throttle:60,1`.",
+        "routes/api.php:1308..1309 — `/promo/validate` → `throttle:30,1`.",
+        "routes/api.php:1313..1314 — `/loyalty/scan` (TZ-aware) → `throttle:60,1`."
+      ],
+      "assessment": "Per-endpoint throttle granularity correct; replaces the broad human `login-lockout` for the kiosk path (machines mint tokens, not humans). KEEP."
+    },
+    {
+      "id": "KB-2-SEC-08",
+      "category": "DEFENSE_IN_DEPTH",
+      "severity": "OBSERVATION (P3, V1.0.2 backlog)",
+      "title": "Token revocation by NAME only — future ability-named tokens would persist",
+      "evidence": [
+        "app/Http/Controllers/Auth/KioskMachineLoginController.php:96 — `$user->tokens()->where('name', 'kiosk-token')->delete()` revokes ONLY rows literally named 'kiosk-token'.",
+        "Any future code path that mints a kiosk-flavored token with a different name (e.g. 'kiosk-rotation-token', 'kiosk-debug') would survive a re-login, multiplying live tokens for the same user."
+      ],
+      "assessment": "BY-DESIGN today because the codebase mints exactly ONE kiosk token name. Defense-in-depth observation only: a future audit should re-check this if any new kiosk-flavored token name is introduced. Not a V1 blocker. Recommendation: add a Sentinel test `KioskTokenSinglNameInvariantTest` that scans for `createToken('kiosk-*'` in app/ and fails if any name != 'kiosk-token'. V1.0.2 backlog."
+    },
+    {
+      "id": "KB-2-SEC-09",
+      "category": "CSRF",
+      "severity": "INFO",
+      "title": "Sanctum bearer-token path bypasses CSRF — correct for kiosk machine traffic",
+      "evidence": [
+        "Kiosk traffic uses `Authorization: Bearer ...` (resources/js/store/modules/kioskCart.js:481+).",
+        "Sanctum stateful guard treats bearer-token requests as 'API', exempt from CSRF — by design, because the bearer itself is the proof."
+      ],
+      "assessment": "No finding. Documentation point only."
+    },
+    {
+      "id": "KB-2-SEC-10",
+      "category": "BRANCH_ISOLATION",
+      "severity": "INFO",
+      "title": "Branch_id NEVER trusted from kiosk client",
+      "evidence": [
+        "app/Http/Requests/OrderRequest.php:90..93 `prepareForValidation` — `$kiosk = $this->kioskMachineForToken(); if ($kiosk) $this->merge(['branch_id' => (int) $kiosk->branch_id]);`",
+        "app/Services/FrontendOrderService.php:144 `$kioskMachine = KioskMachine::where('user_id', Auth::id())->first(); $lockBranchId = (int) ($kioskMachine?->branch_id ...)`.",
+        "app/Http/Controllers/Frontend/KioskEventController.php:200..222 — branch_id from KioskMachine row, claimed branch_id logged-only for forensics."
+      ],
+      "assessment": "Branch isolation honored throughout kiosk path. Branch comes from the SERVER's KioskMachine row keyed on Auth::id(), never from the request body. The idempotency lock key (FrontendOrderService:157) `sha1($lockBranchId . '|' . $idempotencyKey)` correctly scopes by server-resolved branch — F-007 fix closed the cross-branch leak."
+    }
+  ],
+
+  "anti_tampering": {
+    "browser_back": "Wizard FROZEN — cannot inspect step-state restoration logic from a read of the 119KB file, but the cart store (resources/js/store/modules/kioskCart.js) persists via vuex-persistedstate; routing back from /payment does NOT pop the cart line via $router.replace.",
+    "localStorage_tamper": "Cart total client-side is REFRESHED via /frontend/order/quote (kioskCart.js:603..620 + KioskPayment:486..510) before payment. Tampering localStorage cart prices has zero effect — backend pricing SSOT (PricingService) recomputes.",
+    "fr_lock": "Server-side BORNE-001 heal makes the FR string unbypassable even if client UI is replaced.",
+    "wizard_snapshot_bypass": "composition_snapshot built server-side at order create (PricingService:266..297) from server-resolved DB rows; client cannot inject composition data."
+  },
+
+  "kept_as_is": [
+    "KioskMachineLoginController.php:96..103 token-name revocation + ['kiosk:order'] ability + 480min TTL.",
+    "channels.php:41..62 token-name discriminator (R3 T-3.2.2 F-SEC-W6-01 + 02).",
+    "OrderRequest.php:35..82 + 208..229 (K-002 tokenless tightening + BORNE-001 FR-lock).",
+    "KioskEventController.php:143..222 (PII keys + branch_id forensic log).",
+    "All 18 tokenCan('kiosk:order') callsites enumerated above."
+  ],
+
+  "recommendations_v1_0_2": [
+    "Add Sentinel test `KioskTokenSingleNameInvariantTest` enforcing the only-name='kiosk-token' invariant referenced in KB-2-SEC-08."
+  ],
+
+  "word_count_self_check": "approx 1150 words"
+}

@@ -1,0 +1,81 @@
+{
+  "wave": "C",
+  "round": 2,
+  "states_reviewed": 14,
+  "findings": [
+    {
+      "id": "C-001",
+      "state_artifact": "test-e2e-borne-C/09-313-wizard-step-sauce.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "STRICT REVIEWER PROTOCOL CATEGORY 6 — RE-OPENED. State 09 network.json contains POST /api/frontend/pricing/preview status=401 (ts=1778440369877) AND state 09 dom.html shows the kiosk toast container EMPTY: `<div data-v-60fd5967 data-v-6ffab5ed class=\"kiosk-toast-container\" role=\"status\" aria-live=\"polite\" aria-relevant=\"additions text\"></div>` (zero child nodes — verified via Python regex scan across all 14 DOM files: every state has identical empty container, including the 3 states (10, 11, 12) immediately following the 401 within the toast's 4000ms display window). The 401 is also logged in state 09 console.json as level=error 'Failed to load resource: the server responded with a status of 401 (Unauthorized)'. Cluster 1 (commit 18dc7a29c) added a kiosk.wizard.pricing_preview_offline i18n key + an `inject('showToast')` callback in createKioskPricingPreview onError, but the toast NEVER materializes in this capture path — no `[role=alert]` / `.toast` (the substring `kiosk-toast` only matches CSS class fragments + the empty container itself, never a child kiosk-toast.warning element with the message text). Visual confirmation via the 09 PNG: sauce step renders cleanly with title 'QUELLE SAUCE ?', composition strip 'Vos choix s'ajoutent ici…' empty-state hint, no orange/yellow/red toast banner anywhere on screen. Two plausible root causes: (a) the 401 fires DURING the wizard-mount $nextTick before `inject('showToast')` is resolved (Vue 3 inject() returns null if the wizard is mounted via a teleport / portal that bypasses KioskAppComponent's provide() chain) → showToast() is no-op; (b) showToast IS called but $refs.toast is undefined at that instant (KioskToastComponent ref not yet bound). Per REVIEWER_PROTOCOL category 6 (silent_error = P0): 4xx in network.json + DOM has no role=alert / .toast / .alert-* visible → C-001 STAYS P0 OPEN regardless of E-001 fiscal closure. The fiscal under-charge fix is real (PricingService menu_pricing ratios verified separately), but the SILENT-ERROR criterion is independent: customer received a 401 with zero UI feedback, so SSOT is OFF and they don't know.",
+      "fix_hint": "Three convergent fixes needed: (1) Investigate why /api/frontend/pricing/preview returns 401 at wizard ENTRY for item 313 — the kiosk Sanctum 'kiosk:order' token MUST already be present (kiosk landed on /kiosk/idle and went through onboarding); check `app/Http/Controllers/Frontend/PricingPreviewController.php` middleware stack — likely `auth:sanctum` + `abilities:kiosk:order` and the token's first-call cold-cache lookup lost the bearer header on the helper's debounced retry. Add a 401-retry-with-fresh-token interceptor in resources/js/helpers/kioskPricingPreview.js. (2) Verify the inject() chain: log `this.showToast` in KioskWizardComponent::created() — if null, the wizard is being teleported outside the KioskAppComponent provide-tree (KioskWizardComponent is rendered inside KioskAppComponent.template line ~145 verified, so inject SHOULD work; if not, the bug is upstream — possibly a v-if='showWizard' wrapping that's evaluating before provide() runs). Add a fallback: emit a custom 'kiosk:pricing-preview-offline' DOM event the parent listens on, instead of pure inject. (3) Ensure the toast render selector matches REVIEWER_PROTOCOL — current toast container is `role='status'` not `role='alert'`. Either change KioskToastComponent root to role='alert' for warning/error toasts (recommended — error toasts ARE assertive, warnings are polite), OR document the role=status branch in REVIEWER_PROTOCOL allowlist. WITHOUT (3), even a working toast won't satisfy the protocol's `[role=alert]` selector.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "C-002",
+      "state_artifact": "test-e2e-borne-C/11-313-wizard-step-frites-style-cheddar-oignons.png",
+      "category": "visual_hash_drift",
+      "severity": "P1",
+      "evidence": "DEFERRED — STILL OPEN. Visual re-confirmed: state 11 PNG renders all 3 frites_style cards (Frites nature, Cheddar fondu, Cheddar + Oignons croustillants) with the SAME parent item image (chicken tenders /storage/53/tenders.png). DOM grep state 11: 7× tenders.png + 2× chicken_wings.png + 1× salade_royale.png (the salade_royale persists from the previous wizard's _wizardSelections snapshot). State 04 (Salade Royale) shows analogous bug with salade_royale.png on all 3 cards. Customer is shown 3 chicken/salade images labelled with frites variant names — UX is confusing and contradicts Phase C marketing intent ('20% larger image for upgrade cards to drive +1/+2€ pickup'). Round 1 fix-hint not implemented in this capture run (KioskStepFritesStyleComponent.vue still uses natureImage() = parent item.thumb fallback).",
+      "fix_hint": "Same as round 1: KioskStepFritesStyleComponent.vue must (1) require a dedicated extras[i].thumb / extras[i].image field per frites_style row (backend migration needs frites_nature.png, cheddar_fondu.png, cheddar_oignons_croustillants.png assets — verify /storage/* path exists or add seeder); (2) compute card image per-card via `:src='extra.thumb || extra.image || fallbackEmoji'`. Default emoji 🍟 fallback is wired but suppressed by truthy parent natureImage. Severity P1 because this DIRECTLY undermines the +1€/+2€ upsell conversion goal Wave C is meant to validate.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "C-003",
+      "state_artifact": "test-e2e-borne-C/04-312-wizard-step-frites-style.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "DEFERRED — STILL OPEN. Round 1 finding stands: Nature card displays NO price label (no 'Incluses', no '+€0,00', no 'Standard'). DOM at state 04 + state 11 confirm only Cheddar fondu (+€1,00) and Cheddar+Oignons (+€2,00) carry .kiosk-frites-style-price spans; nature card omitted. Risk: customer reads it as 'unknown price' / 'unavailable' instead of 'incluses dans le menu'.",
+      "fix_hint": "Same as round 1: add positive-affirmation label on Nature card (`<span class='kiosk-frites-style-price kiosk-frites-style-price--free'>Incluses</span>` or 'Standard') styled with green accent.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "C-004",
+      "state_artifact": "test-e2e-borne-C/01-312-wizard-step-garnitures.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "DEFERRED — STILL OPEN. Round 1 finding stands: state name `01-312-wizard-step-garnitures` and `06-312-j2-step-menu-frites-cheddar` are misleading (actual rendered first step is 'sauce' for cat 312 because partitionKioskExtras filters out garnitures). Cosmetic only.",
+      "fix_hint": "Update AUDIT_PLAN.md or rename screenshots in next capture round.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "C-005",
+      "state_artifact": "test-e2e-borne-C/04-312-wizard-step-frites-style.png",
+      "category": "color_contrast",
+      "severity": "P3",
+      "evidence": "DEFERRED — STILL OPEN. Round 1 finding stands: composition chip strip lacks live 'frites style' chip — only 'sauce' + 'menu' chips appear. Re-verified state 11 DOM: kiosk-live-composition-list contains only chips 'Sauces · Ketchup' + 'Menu · Avec frites · Ketchup'; no chip for selected frites_style upgrade. Phase C marketing 'live confirmation reinforces the upgrade' principle violated.",
+      "fix_hint": "KioskWizardComponent.vue composition chip block: add `chip-frites-style` testid showing the selected extra name when fritesStyleExtraId != null.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    }
+  ],
+  "summary": {
+    "P0": 1,
+    "P1": 1,
+    "P2": 1,
+    "P3": 2,
+    "open_P0": 1,
+    "open_P1": 1,
+    "open_P2": 1,
+    "open_P3": 2
+  },
+  "round_to_round_closures": {
+    "C-001": "FAIL",
+    "C-002": "FAIL",
+    "C-003": "FAIL",
+    "C-004": "FAIL",
+    "C-005": "FAIL"
+  },
+  "verdict": "RED",
+  "notes": "P0-1 (fritesStyleExtraId clearing) — VERIFIED CLEAN at state 08 + state 14 payload sidecars. State 08 (Salade Tunisienne post-flip-to-none): pre_addToCart.selections.fritesStyleExtraId === null, supplements 923/924 both false, post-add cartItems[item_id=395].item_extras === [], item_extra_total === 0, total === 7.50. State 14 (Ailes 6 pcs post-flip-to-none): pre_addToCart.selections.fritesStyleExtraId === null, supplements 932/933 both false, post-add cartItems[item_id=396].item_extras === [], item_extra_total === 0, total === 6.00. NO regression vs round 1. Forbidden extra IDs absent from cart. P0-1 numeric_integrity continues PASS. C-001 RE-OPENED PER STRICT PROTOCOL CATEGORY 6: 401 fires at state 09 (wizard mount for item 313, not state 13 as claimed in round 1) with zero toast/role=alert in DOM across 14 states. Fiscal under-charge fix from cluster 1 (E-001 PricingService menu_pricing ratios) is REAL and closes the fiscal/SSOT-drift risk, BUT the silent_error category 6 criterion is independent: customer is not notified. Three convergent fixes required (cf C-001 fix_hint): (a) root-cause the 401 at wizard ENTRY (Sanctum kiosk:order ability + first-call header propagation in kioskPricingPreview helper); (b) verify inject('showToast') chain actually reaches the wizard (possible Vue 3 portal/teleport breakage of provide-tree); (c) update KioskToastComponent root role='alert' for error/warning toasts so the protocol's [role=alert] selector matches. WITHOUT (c) even a successfully-fired toast won't satisfy reviewer protocol. Pink residue: 0 confirmed (regex scan returned only #FFFFFF white false-positives). C-002 frites_style parent-image bug DEFERRED — direct hit on Phase C upsell conversion goal. C-003/C-004/C-005 deferred (P2/P3 cosmetic). Verdict RED driven by C-001 P0 still open AND C-002 P1 still open. To declare GREEN: C-001 toast must render with [role=alert] in DOM at state 09 capture, AND C-002 per-card frites_style images must replace parent fallback. P0-1 sidecar evidence pattern (payload.json) continues to be the gold standard for proving numeric_integrity beyond visual snap fragility — recommend mirror in waves D/E for any flow with conditional add-to-cart payload mutation."
+}

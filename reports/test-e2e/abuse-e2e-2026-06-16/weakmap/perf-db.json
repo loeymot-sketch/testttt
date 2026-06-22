@@ -1,0 +1,223 @@
+{
+  "meta": {
+    "title": "FoodKing V1 LOCAL — Performance / DB weak-point map (READ-ONLY audit)",
+    "date": "2026-06-16",
+    "scope": "Le Cayenne single-restaurant, single branch (branch_id=1), ~46 items, ~2700 orders",
+    "method": "5 parallel read-only explore agents (central, kds/oss, db-indexes, menu/pricing) + direct grep/Read verification of every cited file:line. Findings rejected where code could not confirm them (see rejected[]).",
+    "honesty_note": "At 2700 orders / 46 items most classic N+1 and missing-index issues are sub-millisecond. Impact graded now (V1 tangible) / saas-only (latent at scale) / negligible.",
+    "counts": { "now": 7, "saas_only": 6, "negligible": 6, "rejected": 4 }
+  },
+  "findings": [
+    {
+      "system": "kds",
+      "file": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1900-1919 (+:1545 delta sync)",
+      "title": "Dual parallel poll loops: full uncached `index` board refetch @5s (WS-down) running alongside the delta `sync` poll",
+      "pattern": "_pollingInterval(){return this.wsConnected ? 60000 : 5000} ... startAutoRefresh(){ this.autoRefreshInterval = setInterval(()=>{ this.refreshOrderList(); /* GET /admin/kds-order FULL list */ }, this._pollingInterval()); }  — AND separately kdsSyncService.start(...) polls the delta /sync endpoint; the sync handler also triggers _debouncedRefresh() which re-fetches the FULL board.",
+      "impact_v1": "now",
+      "evidence": "Full-list timer at KitchenDisplaySystemComponent.vue:1915, cadence :1907; delta sync start :1558; sync 'sync' handler at :1545 fires this._debouncedRefresh() (full refetch). The full `index` path (KitchenDisplaySystemController::index -> KitchenDisplaySystemOrderService::list) is NOT wrapped in Cache::remember, unlike the delta sync endpoint which IS cached (KdsSyncService.php:49 Cache::remember($key,5,...)). WS is frequently down in this deployment (port 6001, per OssSyncService comment). So while degraded the heavy uncached 50-row query + per-row N+1 serialization re-runs every 5s in parallel with the cheap cached delta poll — redundant by design.",
+      "fix": "Behavioral consolidation (owner gate — touches sync fallback design, not a frozen file): let the delta sync loop be the sole WS-down fallback (remove or widen the full `index` autoRefresh cadence), or at minimum wrap KitchenDisplaySystemOrderService::list() output in the same short Cache::remember the delta path uses."
+    },
+    {
+      "system": "central",
+      "file": "app/Services/OrderService.php:2730 (called from app/Http/Controllers/Admin/SalesReportController.php:88; dispatched SalesReportListComponent.vue:487)",
+      "title": "salesReportOverview() hydrates the ENTIRE orders table (no pagination, date filter gated behind user input) + eager-loads unused orderItems",
+      "pattern": "$orders = Order::with('transaction', 'orderItems')->where(function ($query) use ($requests) { if (!empty($requests['from_date']) && !empty($requests['to_date'])) { ...date bound only IF user picked dates... } ... })->orderBy(...)->get(); ... $orders->count(); $paidOrders->sum('total');",
+      "impact_v1": "now",
+      "evidence": "Verbatim at OrderService.php:2730-2740: the date filter is inside `if (from_date && to_date)`, so the DEFAULT report state (no range) has NO date bound -> ->get() hydrates all ~2700 Order models, eager-loads transaction (1 query) + orderItems (all order_items rows for all orders), then sums only scalar columns (total/discount/delivery_charge) in PHP — orderItems eager-load is pure waste (never read). Re-fires on every list load AND every pagination page-flip (SalesReportListComponent.vue:478-487).",
+      "fix": "Drop 'orderItems' from with() (unused). Replace collection sums with DB-side selectRaw(COUNT/SUM CASE WHEN realized) using the existing scopeRealizedRevenue, returning one row instead of hydrating the table. Optionally default to current-month bounds when no range selected."
+    },
+    {
+      "system": "kds",
+      "file": "app/Http/Resources/KDSOrderDetailsResource.php:50 (list() eager-load app/Services/KitchenDisplaySystemOrderService.php:73; sync() KdsSyncService.php:96)",
+      "title": "N+1: catalog Item relation lazy-loaded per order during KDS serialization on BOTH index and delta-sync endpoints",
+      "pattern": "'order_items' => OrderItemResource::collection($this->orderItems->loadMissing('orderItem')),",
+      "impact_v1": "now",
+      "evidence": "list() eager-loads only Order::with(['orderItems','address','user']) (KitchenDisplaySystemOrderService.php:73) and sync() the same (KdsSyncService.php:96) — neither includes orderItems.orderItem. OrderItem::orderItem() is belongsTo(Item::class) (OrderItem.php:120-123). So loadMissing fires one extra SELECT per order row at serialization; 1+N queries per board refetch on both endpoints, on every 5s poll while WS down.",
+      "fix": "Add 'orderItems.orderItem' to the eager-load in both list() (:73) and sync() (:96): Order::with(['orderItems.orderItem','address','user','diningTable']). loadMissing then becomes a no-op. One-line, risk-free; also kills the diningTable N+1 (next finding)."
+    },
+    {
+      "system": "kds",
+      "file": "app/Http/Resources/KDSOrderDetailsResource.php:51",
+      "title": "N+1: diningTable relation read per order but never eager-loaded (returns null per V1 takeaway traffic but still queries)",
+      "pattern": "'table_name' => $this->diningTable?->name,",
+      "impact_v1": "now",
+      "evidence": "diningTable() is belongsTo (Order.php:302); absent from eager-load arrays at KitchenDisplaySystemOrderService.php:73 and KdsSyncService.php:96. One lazy SELECT per order per board serialization, returning null for V1 takeaway-only rows — wasteful, stacked on top of the orderItem N+1, fired on every poll.",
+      "fix": "Fold 'diningTable' into the same eager-load array as the previous finding (single combined one-liner kills both KDS N+1s on both endpoints)."
+    },
+    {
+      "system": "kds",
+      "file": "app/Services/KitchenDisplaySystemOrderService.php:544 (query ends :544, hashing :547-575)",
+      "title": "orderItems() chef items-board query has NO row cap + per-line sha1/json_encode allergen-grouping",
+      "pattern": "})->get(); $allItems = $orders->pluck('orderItems')->flatten(); $mergedItems = $allItems->groupBy(function ($item) { ... $allergensHash = sha1(json_encode($this->normalizeAllergensForHash($item['allergens_snapshot'] ?? []))); return json_encode([... 'allergens_hash' => $allergensHash]); })",
+      "impact_v1": "now",
+      "evidence": "Confirmed verbatim at :536-548 — the query ends in ->get() with NO .limit() (contrast list() which caps at .limit(51) at :172). Then per-line json_encode+sha1 grouping for allergen-safe dedup. O(total_items) CPU with no ceiling; the only KDS query without a row cap. Polled via the orderItems dispatch (KitchenDisplaySystemComponent.vue:2145).",
+      "fix": "Add a defensive .limit() to the orderItems() query mirroring list()'s cap. The per-line hashing is food-safety logic (allergen splitting) — leave it; just bound the order set. Low risk."
+    },
+    {
+      "system": "borne",
+      "file": "app/Services/SettingService.php:9-24 (controller app/Http/Controllers/Frontend/SettingController.php:23)",
+      "title": "Caching gap: /frontend/setting issues 10 separate settings-table SELECTs per call; package cache disabled by default",
+      "pattern": "$array = array_merge($array, Settings::group('company')->all()); $array = array_merge($array, Settings::group('site')->all()); $array = array_merge($array, Settings::group('theme')->all()); ... (otp, social_media, order_setup, notification, cookies, kiosk_setup) ... return array_merge($array, Settings::group('loyalty_setup')->all());",
+      "impact_v1": "now",
+      "evidence": "10 Settings::group(...)->all() calls = one DatabaseRepository query per group. Settings package only caches if config('settings.cache.enabled'), which defaults to env('SETTINGS_CACHE_ENABLED', false); grep over .env/.env.example/.env.e2e/config/ found no override (no config/settings.php). Loaded on every client boot (kiosk idle / web app / POS shell all hit /frontend/setting). CLAUDE.md §8 confirms V1 uses file/database cache driver (safe for rememberForever).",
+      "fix": "Set SETTINGS_CACHE_ENABLED=true in .env — zero code change; package then rememberForever's each group and set() already forgets the key on write. Cheapest win in the audit (10 queries/boot-call removed across all 3 surfaces)."
+    },
+    {
+      "system": "borne",
+      "file": "app/Services/Composer/ComposerProfileProjection.php:25-27 (driven from app/Services/Kiosk/KioskMenuService.php:376 and app/Services/Menu/MenuProjectionService.php:166)",
+      "title": "N+1: composer projection re-runs per-item stock+availability query, throwing away the already-batched snapshotForItems",
+      "pattern": "$choiceAvailability = $branchId !== null && $branchId > 0 ? $this->choiceAvailabilityResolver()->snapshotForItem($item, $branchId, $surface) : null;  // snapshotForItem wraps the batch in collect([$item]) -> re-runs StockLevel + ItemBranchAvailability SELECT per item",
+      "impact_v1": "now",
+      "evidence": "projectItems already calls snapshotForItems($items,...) ONCE for the whole catalog (KioskMenuService.php:292 / MenuProjectionService.php:130). Then per-item ->project(...,$branchId) (:376 / :166) calls snapshotForItem (ChoiceAvailabilityResolver.php:110-117 -> snapshotForItems(collect([$item]))), re-issuing stockLevelsForBranch() + ItemBranchAvailability SELECTs for each composer-profile item. The batched $choiceAvailability is already in scope at the call site but not passed in. Mitigated on kiosk by 60s cache; recurs every load on the UNCACHED POS path (next finding).",
+      "fix": "Add optional ?array $choiceAvailability param to ComposerProfileProjection::project() and forward $choiceAvailability[$item->id] from the two projectItems methods, so project() skips snapshotForItem when the slice is supplied."
+    },
+    {
+      "system": "caisse",
+      "file": "app/Http/Controllers/Admin/MenuProjectionController.php:43 (app/Services/Menu/MenuProjectionService.php:65 forChannel)",
+      "title": "Caching gap: POS catalog projection rebuilt from DB on every request (no Cache::remember), bearing the full composer double-resolve cost",
+      "pattern": "$payload = $this->projection->forChannel(...);  // forChannel issues ItemCategory + Item::with([...]) + ItemBranchAvailability + 2x ItemWizardProfile + snapshotForItems + per-item re-query (Finding above) — none cached",
+      "impact_v1": "saas-only",
+      "evidence": "grep Cache:: over the controller and MenuProjectionService returned nothing (only MenuSnapshot/AvailabilityService cache). Contrast MenuController.php:71 which wraps the kiosk build() in Cache::remember(60s). At one-cashier scale the eager-loaded indexed projection is a few ms per catalog load; meaningful only under per-branch fan-out.",
+      "fix": "Wrap forChannel output in a branch-scoped Cache::remember('pos.menu.branch.{id}.{channel}', short TTL) mirroring the kiosk endpoint; OR just land the composer-double-resolve fix to halve the query count."
+    },
+    {
+      "system": "central",
+      "file": "app/Services/DashboardService.php:301-315 (->get()->count() at :314)",
+      "title": "customerStates(): 18 separate queries AND ->get()->count() (hydrates rows just to count them)",
+      "pattern": "for ($i=0; $i<=count($timeArray)-1; $i++) { ... $total_customer = (clone $order)->where('order_datetime','>=',$startParis)->where('order_datetime','<',$endParisExclusive)->whereTime('order_datetime','>=',...)->whereTime('order_datetime','<=',...)->get()->count(); }",
+      "impact_v1": "now",
+      "evidence": "Confirmed ->get()->count() at DashboardService.php:314 inside an 18-iteration hour-bucket loop (06:00-23:00). ->get()->count() materializes every matching Order model into memory only to count — should be ->count() (SQL COUNT). Also whereTime() on a TIMESTAMP applies a function to the column, defeating idx_orders_datetime. Default window = one month so volumes small, but the anti-pattern is a free fix.",
+      "fix": "Change ->get()->count() to ->count() (immediate). Ideally one grouped query selectRaw('HOUR(order_datetime) h, COUNT(*) ...')->groupBy('h') over the bounded range, fill 18 buckets in PHP."
+    },
+    {
+      "system": "central",
+      "file": "app/Services/DashboardService.php:99-108",
+      "title": "orderStatistics(): 10 independent full-COUNT queries that could be one grouped aggregate",
+      "pattern": "$arr['total_order']=$apply(clone $order)->count(); $arr['pending_order']=$apply((clone $order)->pending())->count(); $arr['accept_order']=...->accept())->count(); ... ->preparing/prepared/outForDelivery/delivered/canceled/returned/rejected ... ->count();  // 10 COUNT(*) round-trips, same date window, different status",
+      "impact_v1": "negligible",
+      "evidence": "10 ->count() over clone $order with same $apply date window (default = today, a few dozen rows). Each indexed COUNT is a handful of ms; 10x round-trips but trivial at V1.",
+      "fix": "Single selectRaw('status, COUNT(*) ...')->groupBy('status') over the bounded range, map status->bucket in PHP. One query instead of ten. Defer; cosmetic at V1."
+    },
+    {
+      "system": "central",
+      "file": "app/Services/DashboardService.php:478-538",
+      "title": "channelStatistics(): ->get() of the day's orders then PHP filter()/where() bucketing instead of grouped counts",
+      "pattern": "$orders = $this->orderQuery()->whereNull('parent_order_id')->where('order_datetime','>=',$startParis)->where('order_datetime','<',$endParisExclusive)->get(); $kioskCount=$orders->filter(...)->count(); $webCount=$orders->filter(...)->count(); $posCount=$orders->where('source',Source::POS)->count();",
+      "impact_v1": "negligible",
+      "evidence": "Window = today only -> a day's order count is small, so in-memory bucketing is fine. Read-side cleanliness, not a V1 problem.",
+      "fix": "Leave for V1. If touched later, grouped selectRaw on source/source_surface returns buckets directly."
+    },
+    {
+      "system": "central",
+      "file": "app/Services/DashboardService.php (whole class — grep Cache:: -> NONE; pollers SlaAlertsComponent.vue:47 @15s, RealtimeReportComponent.vue:39 / AuditTrailComponent.vue:62 @30s)",
+      "title": "No caching on any dashboard aggregate; ~16-endpoint fan-out per load + 3 polled widgets re-run aggregates continuously",
+      "pattern": "this.timer = setInterval(this.fetchData, 15000);  // SlaAlerts  | setInterval(this.fetchData, 30000);  // RealtimeReport + AuditTrail. realtimeReport() itself runs 3 aggregate queries (DashboardService.php:403,410,420).",
+      "impact_v1": "saas-only",
+      "evidence": "grep Cache:: in DashboardService.php = none. One dashboard load dispatches ~16 endpoints (several multi-query: orderStatistics=10, customerStates=18, realtimeReport=3); slaAlerts re-fires every 15s, realtimeReport/auditTrail every 30s. At 2700 orders each aggregate is fast so no latency pain today; steady background load, only matters under scale/concurrency.",
+      "fix": "Defer for V1. If addressed: Cache::remember(30-60s) on date-windowed read-only aggregates (salesSummary, customerStates, channelStatistics) keyed by (branch,date-range). Never cache fiscal/Z paths."
+    },
+    {
+      "system": "central",
+      "file": "app/Services/ItemService.php:584 (DashboardController::featuredItems :152)",
+      "title": "featuredItems uses inRandomOrder() (ORDER BY RAND())",
+      "pattern": "return Item::with('media','category','offer')->where(['is_featured'=>Ask::YES,'status'=>Status::ACTIVE])->inRandomOrder()->limit(8)->get();",
+      "impact_v1": "negligible",
+      "evidence": "ORDER BY RAND() is the classic anti-pattern (random value per row, full sort, no index) but the set is pre-filtered to is_featured=YES AND status=ACTIVE out of ~46 items — a handful of rows. Nothing at V1.",
+      "fix": "None at V1. At scale randomize in PHP after a cheap id fetch."
+    },
+    {
+      "system": "borne",
+      "file": "app/Services/Kiosk/KioskMenuService.php:66-69 (accessor app/Models/ItemCategory.php:87-130; sibling app/Services/Menu/MenuProjectionService.php:69)",
+      "title": "N+1: kiosk/web category projection lazy-loads media per category (thumb/cover accessors); bounded by 60s cache",
+      "pattern": "$categories = ItemCategory::query()->where('status', Status::ACTIVE)->get();  // no ->with('media'); then per category :270 'thumb'=>$cat->thumb,'cover'=>$cat->cover  -> getThumbAttribute calls getFirstMediaUrl()+getMedia() lazily",
+      "impact_v1": "negligible",
+      "evidence": "KioskMenuService.php:66 / MenuProjectionService.php:69 omit ->with('media') (items DO eager-load media). ~10-11 categories -> ~10 lazy media queries on first access. But the whole build() is Cache::remember(60s) at MenuController.php:71, so fires at most once/60s/branch. POS path PosCategoryController.php:55 correctly does with('media') — kiosk/web parity gap only.",
+      "fix": "Add 'media' to the category eager-load in KioskMenuService.php:66 and MenuProjectionService.php:69 (mirror PosCategoryController.php:55). One-liner each; hygiene."
+    },
+    {
+      "system": "oss",
+      "file": "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue:259-272 (app/Services/OrderStatusScreenOrderService.php:206-271 listForBranch)",
+      "title": "OSS public customer wall polls full UNCAPPED list @5s forever with no server-side cache (KDS sync IS cached, OSS is not)",
+      "pattern": "const isPublicWall = this.authBranchId() <= 0; ossSyncService.start({ ...(isPublicWall ? { options: { intervalMsWhenConnected: 5_000 } } : {}) });  // listForBranch(): Order::where(...)->get() with no ->limit() and no Cache::remember",
+      "impact_v1": "saas-only",
+      "evidence": "Public wall overrides connected cadence to 5s (never subscribes to push). Each poll runs listForBranch() — full Order query, no limit, no cache (asymmetric with KdsSyncService.php:49 which caches). BUT query leads on idx_orders_branch_status + idx_orders_datetime, result set is naturally tiny (PREPARING/PREPARED only, <20), and CDSOrderDetailsResource exposes 6 scalar fields with NO relations/N+1 (CDSOrderDetailsResource.php:17-24). So per-poll cost genuinely low at V1; the uncapped+uncached design is the latent concern.",
+      "fix": "Wrap listForBranch() in a short Cache::remember($key,5,...) keyed by branch (mirror KdsSyncService.php:49) so the 5s polls coalesce; add defensive ->limit()."
+    },
+    {
+      "system": "central",
+      "file": "resources/js/components/admin/salesReport/SalesReportListComponent.vue:193 (also CustomerListComponent.vue:86, CustomerShowComponent.vue:166, PageListComponent.vue:29, RoleShowComponent.vue:23)",
+      "title": "Frontend: v-for binds the OBJECT as :key (`:key=\"salesReport\"`), defeating Vue DOM reuse on every refetch",
+      "pattern": "<tr class=\"db-table-body-tr\" v-for=\"salesReport in salesReports\" :key=\"salesReport\">",
+      "impact_v1": "negligible",
+      "evidence": "Object-as-key stringifies to identity; each list()/poll refetch produces new objects -> Vue cannot reuse DOM nodes, forcing full re-render of every row. Confirmed verbatim at SalesReportListComponent.vue:193 and replicated across several admin lists. BUT sales report is paginated to 10 rows (per_page:10, paginate:1 at :376-378) so the re-render is 10 rows — negligible at V1.",
+      "fix": "Use a stable scalar key: :key=\"salesReport.id\" (or order_serial_no). Cosmetic at V1; tidy alongside other list work."
+    },
+    {
+      "system": "shared",
+      "file": "app/Services/Fiscal/ZReportService.php:344-346 (index absence: database/migrations/2022_11_17_110810_create_orders_table.php has only timestamps(); 2026_03_12_130000_add_performance_indexes.php indexes order_datetime, NOT created_at)",
+      "title": "orders.created_at has no index (Z-report / cash-enrichment window filters it)",
+      "pattern": "->where('created_at','<=',$to); if ($from) { $windowQuery->where('created_at','>',$from); }  (also ZReportCashEnrichmentService.php:490-491,:520-521)",
+      "impact_v1": "saas-only",
+      "evidence": "No created_at index in any migration (confirmed); query leads on indexed branch_id (narrows to the single branch), runs once/day at Z-close, not on any poll/page-load. Sub-ms residual filter at 2700 rows. The high-frequency dashboard consumer uses order_datetime (indexed), so the gap only touches the once-daily Z path.",
+      "fix": "Composite (branch_id, created_at) — defer to V2 cloud-prep; not warranted at V1 volume."
+    },
+    {
+      "system": "shared",
+      "file": "app/Services/KitchenDisplaySystemOrderService.php:73-138 + app/Services/OrderStatusScreenOrderService.php:94-99 (existing index database/migrations/2026_03_12_130000_add_performance_indexes.php:23 = (branch_id,status) only)",
+      "title": "No 3-col composite (branch_id, status, order_datetime) for the KDS/OSS 5s poll (2-col (branch_id,status) already suffices)",
+      "pattern": "Order::whereIn('status', KitchenReleaseRule::visibleStatuses())->where('branch_id',$userBranchId)->whereBetween('order_datetime',[$todayStart,$todayEnd])",
+      "impact_v1": "saas-only",
+      "evidence": "idx_orders_branch_status already narrows to active orders for the branch (a handful of rows on a single-branch box); order_datetime/is_advance_order filter that tiny set. Poll runs every 5s but against an index-narrowed working set, not a scan. Poll interval confirmed public/js/admin-oss.js:371 (intervalMsWhenConnected:5000).",
+      "fix": "Widen idx_orders_branch_status to (branch_id, status, order_datetime) only if per-branch volume reaches tens of thousands. Not warranted at V1."
+    },
+    {
+      "system": "caisse",
+      "file": "app/Services/OrderService.php:129-139 (list())",
+      "title": "OrderService::list defaults to get('*') (all rows) with a 5-deep eager-load chain when paginate != 1",
+      "pattern": "$method = $request->get('paginate',0)==1 ? 'paginate' : 'get'; $methodValue = ...? per_page : '*'; ... return Order::with(['transaction','orderItems.orderItem.media','orderItems.orderItem.category','branch','user'])->...->$method($methodValue);",
+      "impact_v1": "saas-only",
+      "evidence": "Default paginate fallback is 0 -> get('*') (all orders) with the deep orderItems.orderItem.media/category graph. Live screens send paginate:1 (SalesReportListComponent.vue:376) so the normal path is 10 rows, and SalesReportExport inherits paginate:1 (no override). So today it's a latent reachable branch + heavier-than-needed eager-load depth (media loaded for a table that renders no images), not a live hotspot.",
+      "fix": "Trim the eager-load to what the table/PDF render (transaction,branch,user + lean orderItems.orderItem:id,name instead of media/category chain). Not urgent at V1."
+    },
+    {
+      "system": "oss",
+      "file": "app/Services/OrderStatusScreenOrderService.php:185-190 (PopularItemComponent.vue:45-47 mount-only)",
+      "title": "OSS mostPopularItems withCount('orders') correlated subquery over full history — but mount-only, NOT polled",
+      "pattern": "return Item::with('media','category','offer')->withCount($ordersCount)->where(['status'=>Status::ACTIVE])->orderBy('orders_count','desc')->limit(9)->get();",
+      "impact_v1": "negligible",
+      "evidence": "withCount('orders') issues a correlated COUNT over all ~2700 orders for each ~46 active items, then sorts. Heaviest OSS query — BUT PopularItemComponent.vue:45-47 calls it only in mounted() (no setInterval, confirmed by grep). Runs once per wall page-load against indexed idx_order_items_order_id. Acceptable; flagged only so it isn't later wired into the 5s loop.",
+      "fix": "None at V1. If page reloads become frequent, date-bound the count (last 30d) or cache it for minutes."
+    },
+    {
+      "system": "kds",
+      "file": "app/Http/Resources/OrderItemResource.php:33-36 (cast app/Models/OrderItem.php:102; short-circuit :115)",
+      "title": "composition_snapshot read 4x per item by separate methods — but array-cast short-circuit makes it a no-op",
+      "pattern": "'item_variations'=>$this->resolveVariationsForApi(), 'item_extras'=>$this->resolveExtrasForApi(), 'item_addons'=>$this->resolveAddonsForApi(), 'composition_snapshot'=>$this->safeJsonDecode($this->composition_snapshot)  // each re-reads the snapshot",
+      "impact_v1": "negligible",
+      "evidence": "composition_snapshot is cast to 'array' (OrderItem.php:102) so $this->composition_snapshot is already decoded; safeJsonDecode short-circuits on is_array (:115). No repeated json_decode — just redundant array reads. Microseconds at 50 orders. Reported only because it would compound if the cast were ever removed.",
+      "fix": "None at V1. Could memoize the decoded snapshot into a local var in toArray() if ever needed."
+    }
+  ],
+  "rejected": [
+    {
+      "claim": "PricingService::calculateOrder issues Item::find per item in a loop (the prompt hypothesis)",
+      "verdict": "REJECTED — well-optimized",
+      "evidence": "app/Services/Pricing/PricingService.php:57-61 batches Item::query()->whereIn('id',$ids); variations/extras/addons each single whereIn (:90-98); attributes preloaded once (:114-117 with explicit anti-N+1 comment); taxes Tax::get() once (:63). The per-item foreach (:126) is pure array lookups against keyed collections — ZERO queries in the loop. grep '::find(' in the file returns NONE."
+    },
+    {
+      "claim": "Missing index on hot orders columns (status / branch_id / fiscal_sequence_no / order_items.order_id / created_at) hurts V1 now",
+      "verdict": "REJECTED for 'now' — already indexed or saas-only",
+      "evidence": "database/migrations/2026_03_12_130000_add_performance_indexes.php provides idx_orders_branch_status, idx_orders_status, idx_orders_datetime, idx_orders_user_id, idx_order_items_order_id; FK auto-indexes + NF525 composite uniques cover (branch_id,fiscal_sequence_no). Every hot WHERE/ORDER BY leading column on polled/per-page paths is indexed. Only created_at (Z, once/day) and a 3-col KDS composite are gaps — both saas-only at 2700 rows."
+    },
+    {
+      "claim": "StockRuptureDashboard / CashSessionReport / topCustomers / topItemsOfDay / itemReport / mostPopularItems(dashboard) carry N+1",
+      "verdict": "REJECTED — already healed / single aggregate",
+      "evidence": "StockRupture uses bucketed whereIn label maps + limit(100/200); CashSessionReport paginates(max 200) with with('openedBy:id,name')+withCount('movements'); topCustomers/mostPopularItems use withCount+orderBy+limit (single query); topItemsOfDay/auditTrail resolve names in one whereIn (explicit anti-N+1 comments); itemReport uses withSum (one aggregate) over ~46 items."
+    },
+    {
+      "claim": "Sales report / order history / KDS board v-for renders thousands of rows without virtualization",
+      "verdict": "REJECTED — bounded",
+      "evidence": "SalesReportListComponent paginates to 10 rows (per_page:10, paginate:1 at :376-378). KDS board v-fors iterate the active-order set capped at 50 server-side (list() .limit(51) at :172), grouped per dine-in/online/takeaway/kiosk lane with stable order-id :keys. No unbounded 2700-row list rendered anywhere."
+    }
+  ]
+}

@@ -1,0 +1,138 @@
+/* =====================================================================
+   FoodKing Kiosk V1 — Design Tokens (CSS vars)
+   Source: docs/design/tokens.json (W3C DTCG)
+   ===================================================================== */
+
+:root {
+  /* Brand */
+  --fk-red:          #E8001C;
+  --fk-red-dark:     #B8001A;
+  --fk-red-soft:     #FFE6E9;
+  --fk-red-aaa:      #A00013;
+
+  /* Neutral */
+  --fk-bg:            #FFF9F5;
+  --fk-surface:       #FFFFFF;
+  --fk-surface-alt:   #FFF2EA;
+  --fk-border:        #F0E4D8;
+  --fk-border-strong: #D9C9B8;
+
+  /* Text */
+  --fk-text:        #1A1A1A;
+  --fk-text-soft:   #4A4540;
+  --fk-text-mute:   #8A807A;
+  --fk-text-on-red: #FFFFFF;
+
+  /* Semantic */
+  --fk-success: #16A34A;
+  --fk-warning: #D97706;
+  --fk-error:   #DC2626;
+  --fk-info:    #2563EB;
+
+  /* Badges */
+  --fk-badge-veg:  #16A34A;
+  --fk-badge-hal:  #0D7A33;
+  --fk-badge-spy:  #DC2626;
+  --fk-badge-new:  #E8001C;
+  --fk-badge-chef: #D97706;
+
+  /* Focus */
+  --fk-focus-ring:  #2563EB;
+  --fk-focus-width: 4px;
+
+  /* Typo */
+  --fk-font-latin:  'Inter', system-ui, -apple-system, sans-serif;
+  --fk-font-arabic: 'Noto Sans Arabic', 'Inter', sans-serif;
+
+  /* Motion */
+  --fk-dur-fast: 140ms;
+  --fk-dur-base: 240ms;
+  --fk-dur-slow: 360ms;
+  --fk-ease-std: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Shadows */
+  --fk-shadow-card: 0 4px 14px rgba(232, 0, 28, 0.08);
+  --fk-shadow-modal: 0 24px 48px rgba(26, 26, 26, 0.24);
+  --fk-shadow-sticky: 0 -8px 24px rgba(0, 0, 0, 0.06);
+
+  /* Layout */
+  --fk-touch-min:  48px;
+  --fk-touch-comf: 64px;
+  --fk-touch-lg:   80px;
+}
+
+/* ---------- High-contrast mode (AAA) ---------- */
+[data-a11y-contrast="high"] {
+  --fk-red:      #A00013;
+  --fk-red-dark: #800010;
+  --fk-text:     #000000;
+  --fk-text-soft: #000000;
+  --fk-text-mute: #000000;   /* interdit d'avoir du mute en AAA */
+  --fk-bg:       #FFFFFF;
+  --fk-surface:  #FFFFFF;
+  --fk-surface-alt: #F4F4F4;
+  --fk-border:   #000000;
+  --fk-border-strong: #000000;
+  --fk-focus-ring: #0B2AB8;
+  --fk-focus-width: 6px;
+
+  /* text × 1.3 */
+  --fk-text-scale: 1.3;
+}
+
+[data-a11y-contrast="high"] * {
+  text-shadow: none !important;
+  box-shadow: none !important;
+  background-image: none !important; /* kill gradients */
+}
+
+[data-a11y-contrast="high"] .fk-mockup * {
+  outline-offset: 2px;
+}
+
+/* Force focus ring visible in AAA mode */
+[data-a11y-contrast="high"] button:focus-visible,
+[data-a11y-contrast="high"] [role="button"]:focus-visible,
+[data-a11y-contrast="high"] a:focus-visible {
+  outline: var(--fk-focus-width) solid var(--fk-focus-ring);
+  outline-offset: 3px;
+}
+
+/* ---------- PMR mode (repli bas) ---------- */
+/* La bande haute (0 → 160 px) devient décorative/non-interactive. */
+[data-a11y-pmr="true"] .fk-pmr-top {
+  pointer-events: none;
+  opacity: 0.75;
+  filter: grayscale(0.3);
+}
+
+[data-a11y-pmr="true"] .fk-mockup::before {
+  content: "ZONE PMR (160-1760 px)";
+  position: absolute;
+  top: 160px;
+  left: 0;
+  right: 0;
+  bottom: 160px;
+  border: 3px dashed rgba(37, 99, 235, 0.45);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 900;
+  color: rgba(37, 99, 235, 0.8);
+  padding: 6px 10px;
+  letter-spacing: 1px;
+  pointer-events: none;
+  z-index: 999;
+}
+
+/* ---------- RTL ---------- */
+[dir="rtl"] .fk-mockup {
+  font-family: var(--fk-font-arabic);
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0ms !important;
+    transition-duration: 0ms !important;
+  }
+}

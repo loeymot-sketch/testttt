@@ -1,0 +1,64 @@
+{
+  "system": "Kiosk borne (Vue wizard client + paiement + offline)",
+  "head": "962d9d154",
+  "verified_findings": [
+    {
+      "severity": "P2",
+      "file": "app/Http/Controllers/Frontend/PaymentReconcileController.php",
+      "line": "193-217 (promote-to-PAID); 288-301 (upsertAudit lookup-then-update)",
+      "title": "Offline reconcile path does NOT replicate paymentConfirm's cross-order duplicate-transaction guard — invariant drift between the two payment-promotion code paths",
+      "confirmed": true,
+      "grep_evidence": "PaymentReconcileController.php reconcileEntry promotes to PAID at L211-216 ($locked->payment_status=PAID; $locked->transaction_id=$transactionId; save()) inside DB::transaction (L193). The only guards before save are: branch check (L151), F-002 amount echo (L172-184), already-paid no-op (L187-190), CARD/TR method check (L207). There is NO cross-order duplicate-transaction check. Contrast OrderController.php paymentConfirm L184-191: $duplicateTransaction = FrontendOrder::withoutGlobalScope(BranchScope)->where('transaction_id',$request->transaction_id)->where('id','!=',$locked->id)->exists(); if($duplicateTransaction){abort(409,'This payment transaction is already attached to another order.');}. Migration 2026_03_25_004307_add_transaction_id_to_orders_table.php:22 = $table->string('transaction_id')->nullable() — plain nullable, NO DB UNIQUE. The only UNIQUE(transaction_id) is on the audit table (2026_05_08_120000_create_pending_payment_confirmations_table.php:43 $table->unique('transaction_id','uniq_pending_payment_transaction_id')), but upsertAudit (L288-301) reaches it AFTER promotion as a lookup-then-update ($existing=PendingPaymentConfirmation->where('transaction_id',$transactionId)->first(); if($existing){...->save();return;}) so the UNIQUE never fails the promotion and the row's order_id is not even rewritten on collision.",
+      "is_new": true,
+      "recommendation": "PaymentReconcileController is NOT a frozen zone — clean scope-minimal fix, no LOCK required. Tactical minimal patch: mirror the OrderController L184-191 where('id','!=',$locked->id)->exists() cross-order tx guard into reconcileEntry inside the lockForUpdate before L211. Structural: paymentConfirm (L184-218) and reconcileEntry (L193-217) duplicate ~80% of the promote-to-PAID logic — consolidate into one shared promotion service method so the guard cannot drift again. Optional defense-in-depth: partial-UNIQUE index on orders.transaction_id WHERE transaction_id IS NOT NULL (preserves nullable + retry semantics). Test gap: tests/Feature/Kiosk/PaymentReconcileTest.php::test_reconcile_unique_transaction_id_idempotency (L184) is NAMED for uniqueness but L193 and L205 both use $order->id — it only asserts the same-order idempotency half; add a same-tx-across-two-orders case asserting 409/rejection.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P2",
+      "file": "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue",
+      "line": "603-606 (Promise.race timeout reject), 508-557 (catch), 620-636 (void); test tests/js/kioskPaymentTpeTimeout.spec.js:13-23",
+      "title": "TPE approve-but-timeout strands a possibly-charged kiosk order: no void, no reconcile-queue entry, and the only 'timeout' test asserts only a constant value",
+      "confirmed": true,
+      "grep_evidence": "L603-606: const paymentResult = await Promise.race([ this._invokeTpe(...), new Promise((_, reject) => setTimeout(() => reject(new Error('TPE_TIMEOUT')), TPE_TIMEOUT_MS)) ]). On TPE_TIMEOUT the race REJECTS, so control jumps to the catch at L508. The void/cancel logic lives at L620-636 INSIDE the if(!paymentResult.approved){...} declined branch (axios.post('frontend/order/change-status/'+id, {status:CANCELED, reason:tpeReasonCode}) — and that reason even distinguishes 'tpe_timeout' but is only reachable on an explicit decline that RESOLVES with approved:false, never on a reject). The catch block (sed L508-557) contains NO void / cancel / reconcile / change-status / axios call — only error-message display, voice announce, and paymentFailureCount++ routing to the payment-refused screen. So an approve-but-timeout (card charged, bridge hung past 120s) leaves the order PENDING with no server-side void and no reconcile-pending queue entry. The only test, tests/js/kioskPaymentTpeTimeout.spec.js, is a static-source sentinel: L13-19 reads the file and matches the KIOSK_HARDWARE import + the literal 'TPE_TIMEOUT_MS'; L21-23 asserts KIOSK_HARDWARE.TPE_TIMEOUT_MS === 120_000. It asserts NOTHING about strand/void/reconcile behavior on timeout.",
+      "is_new": true,
+      "recommendation": "Non-frozen-zone (KioskPaymentComponent.vue is auditable per the kiosk-wizard-not-protected note; only KioskWizard/App/Upsell are frozen). Treat approve-but-timeout as 'state unknown' rather than 'failed': on TPE_TIMEOUT, either (a) enqueue a reconcile-pending entry for the order so the F-008 reconcile path can resolve it once the TPE bridge reports the true tx outcome, or (b) issue a tentative server-side void with reason 'tpe_timeout' guarded so a late approval can still reconcile. Add a behavioral (not static-sentinel) test that mocks _invokeTpe to never resolve and asserts the order is either voided or queued for reconcile — currently the timeout branch's runtime behavior is wholly unasserted.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P3",
+      "file": "app/Http/Controllers/Auth/KioskMachineLoginController.php",
+      "line": "96-102",
+      "title": "Per-user kiosk token revocation on login would cross-terminate sibling kiosks if multiple KioskMachine rows share one user_id (V2-latent, single-box-safe in V1)",
+      "confirmed": true,
+      "grep_evidence": "KioskMachineLoginController.php:96 $user->tokens()->where('name','kiosk-token')->delete() deletes ALL of the user's kiosk-token rows scoped by token NAME, not by machine id; the mint at L98-102 ($user->createToken('kiosk-token', ['kiosk:order'], ...)) is also per-user, not per-machine. Multiplicity is structurally possible: OrderController.php:115-117 resolves the machine via KioskMachine::query()->where('user_id',$authenticatedUserId)->first(), and OrderRequest.php:345-347 (method kioskMachineForToken at L338) resolves KioskMachine::query()->where('user_id',(int)$user->id)->first() — both ->first() over a user_id filter, implying >1 row per user is not prevented. NOTE: the architect finding cited app/Http/Requests/Frontend/OrderRequest.php:345-347; the actual file is app/Http/Requests/OrderRequest.php (no Frontend/ subdir) — path corrected, claim holds.",
+      "is_new": true,
+      "recommendation": "NOT a V1 blocker. V1 LOCAL Le Cayenne is single-box / single-kiosk (CLAUDE.md §3bis envelope, branch_id=1), so only one KioskMachine per user exists. Document as V2 multi-kiosk-latent: when V2 introduces >1 kiosk per linked user, scope the token name per machine (e.g. 'kiosk-token:'+$machine->id) so login revokes only the re-authenticating machine's token. No frozen-zone touch.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P3",
+      "file": "tests/Feature/KioskLoyaltyDoubleRedeemRefusedTest.php",
+      "line": "35 (setUp call), 178-186 (stub), 167-168 (fake token)",
+      "title": "Loyalty double-redeem-refusal tests stub out OrderQuoteService — the quote-seal x loyalty interaction is UNcovered",
+      "confirmed": true,
+      "grep_evidence": "setUp() at L34 calls $this->bypassKioskQuoteSealForLoyaltySentinel(). That method (L178-186) binds $this->app->instance(\\App\\Services\\Order\\OrderQuoteService::class, new class { public function sealForCommit(): \\App\\Models\\OrderQuote { return new \\App\\Models\\OrderQuote(); } }) — a stub returning an empty OrderQuote with NO token/signature/intent/expiry/total validation. orderPayload() (L167-168) sends a hard-coded fake quote_token '00000000-0000-4000-8000-000000000001' + str_repeat('a',64) signature that only pass because the real OrderQuoteService::sealForCommit (which the security summary cites at OrderQuoteService.php:109-125 enforcing quote_token+quote_signature pairing, 410 expiry, 409 total mismatch) is stubbed away. So the 3 loyalty atomicity tests never exercise the real quote->commit binding together with loyalty redemption. RECONCILE NOTE: the red lens initially suspected this same item and DROPPED it (claiming quote-seal is covered elsewhere); the security lens KEPT the distinct cross-interaction angle. They are not a true dup — quote-seal IS covered in isolation (KioskQuoteTokenRequiredOnCommitTest, KioskQuoteIntegrityTest) and loyalty double-redeem IS covered with the stub; only the quote-seal AND loyalty-redeem in one commit is the gap. Keeping the security verdict; recording the disagreement.",
+      "is_new": true,
+      "recommendation": "Low priority, test-only, no frozen-zone touch. Add one integration test that drives a real quote (POST /api/frontend/order/quote) then reuses its quote_token+quote_signature on POST /api/frontend/order WITH a loyalty_code+discount, asserting both the seal passes AND points deduct exactly once. Each side is independently covered today; only the cross-interaction is the gap.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P3",
+      "file": "app/Http/Controllers/Frontend/LoyaltyController.php",
+      "line": "305-321 (decrement + order_id=null pending row)",
+      "title": "Standalone /loyalty/redeem decrements points pre-order with no orphan-reclaim cron — OUT OF KIOSK V1 SCOPE (kiosk uses the atomic in-payload path, never POSTs /redeem)",
+      "confirmed": true,
+      "grep_evidence": "LoyaltyController.php redeem() at L258; L305-307 DB::table('users')->where('id',$user->id)->decrement('loyalty_points',$pointsToRedeem) runs before any order exists; L312-315 LoyaltyTransaction::create([... 'order_id' => null ...]). grep of app/Console/ for loyalty reclaim/restore returned ZERO scheduled task re-crediting orphaned pending redeems (only OutboxRetryFailedCommand/OutboxRescueCommand 'reclaim' hits, unrelated). Re-attach window is bounded: app/Services/FrontendOrderService.php:839 ->where('created_at','>=',now()->subMinutes(10)) (inside applyKioskLoyaltyDiscount, L784; finalizePaidKioskOrder at L1081) — after 10 min or on order abandonment, points are gone with no order and no reclaim. NOT reachable from kiosk: resources/js/components/frontend/kiosk/KioskLoyaltyComponent.vue only calls axios 'frontend/loyalty/config' (L431), 'frontend/loyalty/check' (L492), 'frontend/loyalty/register' (L578) and applies discount via setLoyalty (L516) — it NEVER POSTs /loyalty/redeem; the kiosk commit deducts atomically inside the order tx. PATH CORRECTION: finding cited FrontendOrderService.php at app/Services/Order/ — the real file is app/Services/FrontendOrderService.php (app/Services/Order/ holds OrderQuoteService, not FrontendOrderService).",
+      "is_new": true,
+      "recommendation": "OUT OF KIOSK V1 SCOPE — the kiosk borne path is atomic and does not touch this orphan window. Track on the mobile/web standalone backlog, NOT a kiosk V1 ship gate. For the mobile/web /redeem surface: either (a) defer the points decrement until order commit, or (b) add a daily cron reclaiming pending redeems with order_id=null older than the 10-min attach window. No frozen-zone touch.",
+      "drop_reason": ""
+    }
+  ],
+  "confirmed_count": 5,
+  "dropped_count": 0,
+  "disk_path": "reports/audit/goal-v1-sync-ordertaking-2026-05-29/kiosk-verified.json"
+}

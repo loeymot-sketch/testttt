@@ -1,5 +1,6 @@
 import axios from 'axios'
 import appService from "../../services/appService";
+import { buildIdempotencyHeaders } from "../../helpers/idempotencyHeaders";
 
 
 export const tableOrder = {
@@ -98,7 +99,9 @@ export const tableOrder = {
         },
         changeStatus: function (context, payload) {
             return new Promise((resolve, reject) => {
-                axios.post(`admin/table-order/change-status/${payload.id}`,payload).then((res) => {
+                axios.post(`admin/table-order/change-status/${payload.id}`, payload, {
+                    headers: buildIdempotencyHeaders(payload),
+                }).then((res) => {
                     context.commit('show', res.data.data);
                     resolve(res);
                 }).catch((err) => {
@@ -108,7 +111,9 @@ export const tableOrder = {
         },
         changePaymentStatus: function (context, payload) {
             return new Promise((resolve, reject) => {
-                axios.post(`admin/table-order/change-payment-status/${payload.id}`,payload).then((res) => {
+                axios.post(`admin/table-order/change-payment-status/${payload.id}`, payload, {
+                    headers: buildIdempotencyHeaders(payload),
+                }).then((res) => {
                     context.commit('show', res.data.data);
                     resolve(res);
                 }).catch((err) => {

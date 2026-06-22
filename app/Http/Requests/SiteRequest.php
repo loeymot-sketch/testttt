@@ -26,7 +26,9 @@ class SiteRequest extends FormRequest
         return [
             'site_date_format'               => ['required', 'string', 'max:190'],
             'site_time_format'               => ['required', 'string', 'max:190'],
-            'site_default_timezone'          => ['required', 'string', 'max:190'],
+            // [abuse-heal 2026-06-18] Added `timezone` rule — an invalid TZ ("Invalid/Timezone")
+            // previously persisted then threw deep in Carbon/DateTimeZone/the scheduler.
+            'site_default_timezone'          => ['required', 'string', 'max:190', 'timezone'],
             'site_default_branch'            => ['required', 'numeric'],
             'site_default_currency'          => ['required', 'numeric'],
             'site_currency_position'         => ['required', 'numeric'],

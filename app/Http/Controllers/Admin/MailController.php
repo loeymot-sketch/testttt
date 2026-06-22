@@ -15,7 +15,11 @@ class MailController extends AdminController
     {
         parent::__construct();
         $this->mailService = $mailService;
-        $this->middleware(['permission:settings'])->only('update');
+        // [GOAL-2026-05-30 SET-02] Gate index too: GET /admin/setting/mail returns the SMTP
+        // config incl. mail_password in cleartext. Only the settings MailComponent consumes
+        // this read (verified: sole `mail/lists` dispatch), so gating index does not break
+        // any non-settings surface. Mirrors KioskSetup/LoyaltySetup (->only('index','update')).
+        $this->middleware(['permission:settings'])->only('index', 'update');
     }
 
     public function index() : \Illuminate\Http\Response | MailResource | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
@@ -23,7 +27,7 @@ class MailController extends AdminController
         try {
             return new MailResource($this->mailService->list());
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -32,7 +36,7 @@ class MailController extends AdminController
         try {
             return new MailResource($this->mailService->update($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

@@ -3,7 +3,7 @@
 
     <!-- Header -->
     <div class="kiosk-loyalty-header">
-      <button class="kiosk-back-btn" @click="goBack">
+      <button type="button" class="kiosk-back-btn" @click="goBack">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
           <path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" stroke-width="2.5"
             stroke-linecap="round" stroke-linejoin="round"/>
@@ -33,12 +33,12 @@
             maxlength="20"
             @keyup.enter="checkLoyalty"
           />
-          <button class="kiosk-btn-clear" v-if="code" @click="code = ''">✕</button>
+          <button type="button" class="kiosk-btn-clear" v-if="code" @click="code = ''">✕</button>
         </div>
 
         <!-- Clavier numérique tactile -->
         <div class="kiosk-numpad">
-          <button
+          <button type="button"
             v-for="key in numpadKeys"
             :key="key"
             class="kiosk-numpad-btn"
@@ -58,7 +58,7 @@
 
         <div v-if="error" class="kiosk-loyalty-error">{{ error }}</div>
 
-        <button
+        <button type="button"
           class="kiosk-btn-primary full"
           :disabled="!code.trim() || loading"
           @click="checkLoyalty"
@@ -67,12 +67,12 @@
           <span v-else class="kiosk-spinner-inline"></span>
         </button>
 
-        <button class="kiosk-loyalty-skip" @click="goBack">
+        <button type="button" class="kiosk-loyalty-skip" @click="goBack">
           {{ $t('kiosk.loyalty_screen.skip') }}
         </button>
 
         <!-- Register new customer -->
-        <button class="kiosk-loyalty-register-btn" @click="step = 'register'">
+        <button type="button" class="kiosk-loyalty-register-btn" @click="step = 'register'">
           {{ $t('kiosk.loyalty_screen.register_cta') }}
         </button>
       </div>
@@ -133,7 +133,7 @@
 
         <div v-if="registerError" class="kiosk-loyalty-error">{{ registerError }}</div>
 
-        <button
+        <button type="button"
           class="kiosk-btn-primary full"
           :disabled="!registerName.trim() || !registerPhone.trim() || registerLoading"
           @click="submitRegister"
@@ -141,7 +141,7 @@
           <span v-if="!registerLoading">{{ $t('kiosk.loyalty_screen.register_submit') }}</span>
           <span v-else class="kiosk-spinner-inline"></span>
         </button>
-        <button class="kiosk-loyalty-skip" @click="step = 'input'">← {{ $t('kiosk.loyalty_screen.back') }}</button>
+        <button type="button" class="kiosk-loyalty-skip" @click="step = 'input'">← {{ $t('kiosk.loyalty_screen.back') }}</button>
       </div>
     </div>
 
@@ -184,7 +184,7 @@
 
         <!-- Options : utiliser ou pas -->
         <div v-if="canRedeem" class="kiosk-loyalty-options">
-          <button
+          <button type="button"
             class="kiosk-loyalty-option"
             :class="{ selected: redeemChoice === 'yes' }"
             @click="redeemChoice = 'yes'"
@@ -200,7 +200,7 @@
             </div>
           </button>
 
-          <button
+          <button type="button"
             class="kiosk-loyalty-option"
             :class="{ selected: redeemChoice === 'no' }"
             @click="redeemChoice = 'no'"
@@ -223,7 +223,7 @@
           <p class="green">{{ $t('kiosk.loyalty_screen.not_enough_green') }}</p>
         </div>
 
-        <button
+        <button type="button"
           class="kiosk-btn-primary full"
           @click="applyLoyalty"
           :disabled="canRedeem && !redeemChoice"
@@ -231,7 +231,7 @@
           {{ $t('kiosk.loyalty_screen.confirm') }}
         </button>
 
-        <button class="kiosk-loyalty-skip" @click="goBack">
+        <button type="button" class="kiosk-loyalty-skip" @click="goBack">
           {{ $t('kiosk.loyalty_screen.cancel') }}
         </button>
       </div>
@@ -286,7 +286,7 @@
         <p class="kiosk-loyalty-confirm-sub">
           {{ appliedDiscount > 0 ? $t('kiosk.loyalty_screen.confirm_discount_sub') : $t('kiosk.loyalty_screen.confirm_saved_sub') }}
         </p>
-        <button class="kiosk-btn-primary full" @click="proceedToPayment">
+        <button type="button" class="kiosk-btn-primary full" @click="proceedToPayment">
           {{ $t('kiosk.loyalty_screen.continue_payment') }}
         </button>
       </div>
@@ -320,6 +320,9 @@ export default {
   inject: {
     showToast: { default: () => () => {} },
   },
+
+  // [MEGA 2.E / F-09] Hard cap on loyalty check latency (QR/keyboard path uses same API).
+  LOYALTY_HTTP_TIMEOUT_MS: 25000,
 
   data() {
     return {
@@ -423,8 +426,9 @@ export default {
     ...mapActions('kioskCart', ['setLoyalty', 'markUpsellShown']),
 
     async loadConfig() {
+      const ms = this.$options.LOYALTY_HTTP_TIMEOUT_MS;
       try {
-        const res = await axios.get('frontend/loyalty/config');
+        const res = await axios.get('frontend/loyalty/config', { timeout: ms });
         const cfg = res.data?.data || res.data || {};
         this.minRedeemPoints = cfg.min_redeem_points || 100;
         if (Array.isArray(cfg.tiers) && cfg.tiers.length > 0) {
@@ -483,8 +487,9 @@ export default {
       if (!this.code.trim()) return;
       this.loading = true;
       this.error = null;
+      const ms = this.$options.LOYALTY_HTTP_TIMEOUT_MS;
       try {
-        const res = await axios.post('frontend/loyalty/check', { code: this.code.trim() });
+        const res = await axios.post('frontend/loyalty/check', { code: this.code.trim() }, { timeout: ms });
         const data = res.data?.data || res.data || {};
         // Normalize field names: API returns `points`, UI uses `loyalty_point`
         this.customer = {
@@ -494,8 +499,12 @@ export default {
         this.discountValue = parseFloat(data.discount_value || 0);
         this.step = 'balance';
       } catch (err) {
-        const msg = err.response?.data?.message || err.response?.data?.errors?.code?.[0];
-        this.error = msg || this.$t('kiosk.loyalty_screen.error_not_found');
+        if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+          this.error = this.$t('kiosk.loyalty_screen.request_timeout');
+        } else {
+          const msg = err.response?.data?.message || err.response?.data?.errors?.code?.[0];
+          this.error = msg || this.$t('kiosk.loyalty_screen.error_not_found');
+        }
       } finally {
         this.loading = false;
       }
@@ -632,12 +641,18 @@ export default {
 </script>
 
 <style scoped>
+/* FoodKing brand V3.3 (2026-05-10) — Loyalty page warmth + ergonomie 32".
+   Owner gate : "trop blanc-sur-blanc bancaire, faut chaleur restaurant".
+   Subtle warm gradient + yellow loyalty icon prominent + card centered. */
 .kiosk-loyalty-screen {
   min-height: 100vh;
-  background: linear-gradient(160deg, #0f0f1a 0%, #1a1a2e 60%, #16213e 100%);
+  background:
+    radial-gradient(ellipse at top, #FFF7ED 0%, #FFFFFF 45%),
+    radial-gradient(ellipse at bottom, #FFF7E0 0%, #FFFFFF 50%),
+    #FFFFFF;
   display: flex;
   flex-direction: column;
-  color: #fff;
+  color: #0F0F0F;
   padding-bottom: 2rem;
 }
 
@@ -645,13 +660,13 @@ export default {
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 1.5rem 2rem 1rem;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
+  padding: 1.25rem 2rem;
+  border-bottom: none;
 }
 
 .kiosk-back-btn {
-  background: rgba(255,255,255,0.08);
-  border: none;
+  background: #F7F7F7;
+  border: 1px solid #E5E5E5;
   border-radius: 12px;
   width: 52px;
   height: 52px;
@@ -659,40 +674,58 @@ export default {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: #fff;
+  color: #0F0F0F;
   transition: background 0.2s;
 }
-.kiosk-back-btn:hover { background: rgba(255,255,255,0.14); }
+.kiosk-back-btn:hover { background: #FFE8DD; color: #F4501E; }
 
 .kiosk-loyalty-title {
   font-size: 1.6rem;
   font-weight: 700;
   letter-spacing: 0.02em;
+  color: #0F0F0F;
 }
 
 .kiosk-loyalty-step {
   flex: 1;
   display: flex;
-  align-items: flex-start;
+  align-items: center; /* V3.3: vertical center pour ergo 32" portrait */
   justify-content: center;
-  padding: 2rem 1.5rem;
+  padding: 1rem 1.5rem;
 }
 
+/* Card warmth V3.3 — yellow ribbon top + Cayenne shadow + plus accueillant */
 .kiosk-loyalty-card {
+  position: relative;
   width: 100%;
-  max-width: 540px;
-  background: rgba(255,255,255,0.04);
-  border-radius: 24px;
-  padding: 2rem;
-  border: 1px solid rgba(255,255,255,0.08);
+  max-width: 600px;
+  background: #FFFFFF;
+  border-radius: 28px;
+  padding: 2.5rem 2rem 2rem;
+  border: 1.5px solid #FFE8DD;
+  box-shadow:
+    0 12px 40px rgba(244, 80, 30, 0.12),
+    0 4px 12px rgba(15, 15, 15, 0.04);
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
 }
 
+/* Decorative yellow accent banner top of card (warm restaurant feel) */
+.kiosk-loyalty-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 24px;
+  right: 24px;
+  height: 6px;
+  background: linear-gradient(90deg, #F5C518 0%, #F4501E 100%);
+  border-radius: 0 0 6px 6px;
+}
+
 .kiosk-loyalty-subtitle {
   font-size: 1.1rem;
-  color: rgba(255,255,255,0.6);
+  color: #5A5A5A;
   text-align: center;
 }
 
@@ -702,12 +735,12 @@ export default {
 
 .kiosk-loyalty-input {
   width: 100%;
-  background: rgba(255,255,255,0.08);
-  border: 2px solid rgba(255,255,255,0.15);
+  background: #FFFFFF;
+  border: 2px solid #E5E5E5;
   border-radius: 14px;
   padding: 1rem 3rem 1rem 1.25rem;
   font-size: 1.5rem;
-  color: #fff;
+  color: #0F0F0F;
   text-align: center;
   letter-spacing: 0.1em;
   outline: none;
@@ -716,9 +749,9 @@ export default {
 }
 .kiosk-loyalty-input:focus,
 .kiosk-loyalty-input--active {
-  border-color: #FFD700;
+  border-color: #F4501E;
 }
-.kiosk-loyalty-input::placeholder { color: rgba(255,255,255,0.3); }
+.kiosk-loyalty-input::placeholder { color: #8A8A8A; }
 
 .kiosk-btn-clear {
   position: absolute;
@@ -727,7 +760,7 @@ export default {
   transform: translateY(-50%);
   background: none;
   border: none;
-  color: rgba(255,255,255,0.5);
+  color: #8A8A8A;
   font-size: 1.2rem;
   cursor: pointer;
   padding: 0.25rem;
@@ -741,44 +774,52 @@ export default {
 }
 
 .kiosk-numpad-btn {
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: #FFFFFF;
+  border: 1.5px solid #E5E5E5;
   border-radius: 14px;
   height: 64px;
   font-size: 1.5rem;
-  font-weight: 600;
-  color: #fff;
+  font-weight: 700;
+  color: #0F0F0F;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s, transform 0.1s;
+  transition: background 0.15s, transform 0.1s, border-color 0.15s;
   user-select: none;
 }
+.kiosk-numpad-btn:hover {
+  background: #FAFAFA;
+  border-color: #F4501E;
+}
 .kiosk-numpad-btn:active {
-  background: rgba(255,215,0,0.2);
+  background: #FFE8DD;
+  border-color: #F4501E;
+  color: #F4501E;
   transform: scale(0.95);
 }
 .kiosk-numpad-btn.wide {
-  background: rgba(255,100,100,0.15);
+  background: #FAFAFA;
+  color: #5A5A5A;
 }
 .kiosk-numpad-btn.wide:active {
-  background: rgba(255,100,100,0.3);
+  background: #FFE8DD;
+  color: #F4501E;
 }
 
 .kiosk-loyalty-error {
-  background: rgba(220,38,38,0.15);
+  background: rgba(220,38,38,0.08);
   border: 1px solid rgba(220,38,38,0.4);
   border-radius: 10px;
   padding: 0.75rem 1rem;
-  color: #fca5a5;
+  color: #C21E2F;
   text-align: center;
   font-size: 0.95rem;
 }
 
 .kiosk-btn-primary {
-  background: linear-gradient(135deg, #FFD700, #FFA500);
-  color: #000;
+  background: #F4501E;
+  color: #FFFFFF;
   border: none;
   border-radius: 16px;
   padding: 1rem 2rem;
@@ -798,29 +839,41 @@ export default {
 .kiosk-btn-primary.full { width: 100%; }
 .kiosk-btn-primary:not(:disabled):active { transform: scale(0.97); }
 
+/* V3.4 (2026-05-10) — Owner gate: bouton skip + register invisibles
+   (couleurs trop pâles sur fond blanc). Renforcement contraste accessibilité. */
 .kiosk-loyalty-skip {
   background: none;
   border: none;
-  color: rgba(255,255,255,0.4);
-  font-size: 0.95rem;
+  color: #5A5A5A;
+  font-size: 1rem;
+  font-weight: 600;
   text-decoration: underline;
   cursor: pointer;
   text-align: center;
-  padding: 0.5rem;
+  padding: 0.75rem;
 }
+.kiosk-loyalty-skip:hover { color: #F4501E; }
 
 .kiosk-loyalty-register-btn {
-  background: none;
-  border: 1px solid rgba(255,215,0,0.25);
-  border-radius: 12px;
-  color: rgba(255,215,0,0.6);
-  font-size: 0.9rem;
-  padding: 0.6rem 1rem;
+  background: linear-gradient(135deg, #F5C518 0%, #E0B214 100%);
+  border: none;
+  border-radius: 14px;
+  color: #0F0F0F;
+  font-size: 1rem;
+  font-weight: 800;
+  padding: 0.85rem 1.25rem;
   cursor: pointer;
   text-align: center;
-  transition: border-color 0.2s, color 0.2s;
+  letter-spacing: 0.2px;
+  box-shadow: 0 4px 12px rgba(245, 197, 24, 0.32);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
 }
-.kiosk-loyalty-register-btn:hover { border-color: rgba(255,215,0,0.5); color: #FFD700; }
+.kiosk-loyalty-register-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+  box-shadow: 0 6px 16px rgba(245, 197, 24, 0.42);
+}
+.kiosk-loyalty-register-btn:active { transform: translateY(0); }
 
 .kiosk-register-fields {
   display: flex;
@@ -838,7 +891,7 @@ export default {
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: rgba(255,255,255,0.45);
+  color: #8A8A8A;
 }
 
 .kiosk-spinner-inline {
@@ -877,7 +930,7 @@ export default {
   margin: 0;
 }
 .kiosk-loyalty-member-since {
-  color: rgba(255,255,255,0.5);
+  color: #8A8A8A;
   font-size: 0.85rem;
   margin: 0.15rem 0 0;
 }
@@ -900,7 +953,7 @@ export default {
   line-height: 1;
 }
 .kiosk-loyalty-points-label {
-  color: rgba(255,255,255,0.6);
+  color: #5A5A5A;
   font-size: 0.9rem;
 }
 .kiosk-loyalty-points-equiv {
@@ -918,7 +971,7 @@ export default {
 }
 .kiosk-loyalty-progress-bar {
   height: 8px;
-  background: rgba(255,255,255,0.1);
+  background: #F7F7F7;
   border-radius: 4px;
   overflow: hidden;
 }
@@ -930,7 +983,7 @@ export default {
 }
 .kiosk-loyalty-progress-label {
   font-size: 0.8rem;
-  color: rgba(255,255,255,0.4);
+  color: #8A8A8A;
   text-align: center;
   margin: 0;
 }
@@ -946,13 +999,13 @@ export default {
   align-items: center;
   gap: 1rem;
   padding: 1rem 1.25rem;
-  background: rgba(255,255,255,0.05);
-  border: 2px solid rgba(255,255,255,0.1);
+  background: #FAFAFA;
+  border: 1.5px solid #E5E5E5;
   border-radius: 16px;
   cursor: pointer;
   text-align: left;
   transition: border-color 0.2s, background 0.2s;
-  color: #fff;
+  color: #0F0F0F;
   width: 100%;
 }
 .kiosk-loyalty-option.selected {
@@ -969,22 +1022,22 @@ export default {
   flex-shrink: 0;
 }
 .kiosk-loyalty-option-icon.green { background: rgba(74,222,128,0.15); color: #4ade80; }
-.kiosk-loyalty-option-icon.gray  { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.5); }
+.kiosk-loyalty-option-icon.gray  { background: #F7F7F7; color: #8A8A8A; }
 .kiosk-loyalty-option-text {
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
 }
 .kiosk-loyalty-option-text strong { font-size: 1rem; font-weight: 700; }
-.kiosk-loyalty-option-text span   { font-size: 0.85rem; color: rgba(255,255,255,0.5); }
+.kiosk-loyalty-option-text span   { font-size: 0.85rem; color: #8A8A8A; }
 .kiosk-loyalty-option.selected .kiosk-loyalty-option-text span { color: rgba(255,215,0,0.7); }
 
 .kiosk-loyalty-not-enough {
-  background: rgba(255,255,255,0.04);
+  background: #FAFAFA;
   border-radius: 12px;
   padding: 1rem;
   font-size: 0.95rem;
-  color: rgba(255,255,255,0.6);
+  color: #5A5A5A;
   text-align: center;
   line-height: 1.6;
 }
@@ -1011,7 +1064,7 @@ export default {
   margin: 0.5rem 0;
 }
 .kiosk-loyalty-confirm-sub {
-  color: rgba(255,255,255,0.5);
+  color: #8A8A8A;
   font-size: 1rem;
   margin-bottom: 1rem;
 }

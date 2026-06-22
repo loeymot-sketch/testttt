@@ -1,0 +1,20 @@
+[
+  {
+    "step": "D1-06",
+    "slug": "cleanliness",
+    "state": "capture",
+    "severity": "OK",
+    "note": "JS errors=0 (critical=0), console errors=3, network 4xx/5xx=0",
+    "screenshot": "tests/e2e/screenshots/audit-kds-2026-05-07/cycle1/06-cleanliness-capture.png",
+    "ts": "2026-05-16T17:00:02.303Z"
+  },
+  {
+    "step": "D1-07",
+    "slug": "responsive-tablet",
+    "state": "1024x768",
+    "severity": "OK",
+    "note": "tablet 1024×768: fatal=false, content-length=864, JS-errors=0",
+    "screenshot": "tests/e2e/screenshots/audit-kds-2026-05-07/cycle1/07-responsive-tablet-1024x768.png",
+    "ts": "2026-05-16T17:00:11.370Z"
+  }
+]

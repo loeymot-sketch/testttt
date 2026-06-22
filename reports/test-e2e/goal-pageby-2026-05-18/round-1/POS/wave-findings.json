@@ -1,0 +1,80 @@
+{
+  "wave": "POS",
+  "round": 1,
+  "agent": "E2E Agent POS",
+  "date": "2026-05-18",
+  "states_reviewed": 11,
+  "screenshot_root": "tests/e2e/__screenshots__/goal-pageby-pos-2026-05-18/",
+  "spec": "tests/e2e/_pageby-pos-2026-05-18.spec.js",
+  "findings": [
+    {
+      "id": "PG4-P0-001",
+      "state_artifact": "tests/e2e/__screenshots__/goal-pageby-pos-2026-05-18/04-pos-cart-after-add.png",
+      "page": "page-4-pos-cart",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "POS grid renders 5 clickable tiles in category 315 'Frites & Accompagnements' (Frites Seules id=361, Boisson Seule id=362, +3 others). Click on Frites Seules triggers GET /api/admin/item/details/361?surface=pos&branch_id=1 -> HTTP 404. Generic red toast 'Une erreur est survenue. Réessayez.' appears (visible in 04-pos-cart-after-add.png top-right). Cart total stays at 0.00 €. Root cause verified via tinker: ItemCategory::find(315)->channels returns array '[]' (empty), so isVisibleOn('pos') returns FALSE. ItemController::itemDetails at app/Http/Controllers/Admin/ItemController.php:208 aborts 404 on category visibility. The POS grid query is more permissive than the details endpoint -> tile renders but click silently fails. 5 items in this broken category cannot be sold from the POS. Network artifact: 04-pos-cart-after-add.network.json. Console artifact: 04-pos-cart-after-add.console.json (2 errors logged: 404 and '[POS] item/details failed AxiosError' at js/pos-shell.js:1501).",
+      "fix_hint": "Two-option remediation requiring OWNER GATE. Option A (data fix, 1 line): UPDATE item_categories SET channels=NULL WHERE id=315 — legacy default = visible on every surface per ItemCategory::isVisibleOn line 57. Option B (architectural fix): align the POS grid query with the details endpoint visibility — either (b1) filter the grid to hide items whose category channels disallow pos, OR (b2) relax ItemController::itemDetails to interpret channels=[] as 'legacy compat = visible everywhere'. Option A heals the symptom in 1 line. Option B fixes the broader inconsistency between grid render and details fetch. Owner must decide because cat 315 channels=[] may be intentional (per V1 SECTION 5 dual-channel projection note in ItemCategory.php:44).",
+      "frozen_zone": false,
+      "blocking_pages": ["page-4-pos-cart", "page-5-pos-payment-cash", "page-6-pos-payment-card", "page-7-pos-payment-split", "page-8-pos-parked"]
+    },
+    {
+      "id": "PG10-P1-001",
+      "state_artifact": "tests/e2e/__screenshots__/goal-pageby-pos-2026-05-18/10-pos-order-show.png",
+      "page": "page-10-pos-order-show",
+      "category": "i18n_leak",
+      "severity": "P1",
+      "evidence": "Order detail page /admin/pos-orders/<id> renders breadcrumb 'Tableau De Bord / Commandes Caisse / Menu.View'. DOM literal in 10-pos-order-show.dom.html is lowercase `menu.view` wrapped in `<span class=\"text-slate-800 font-medium\">` — the visual capitalization is a CSS effect (the lowercase source matches REVIEWER_PROTOCOL category 1 regex `^[a-z]+(\\.[a-z_]+){1,4}$` exactly). Visible top of capture 10-pos-order-show.png at the breadcrumb left of the order header.",
+      "fix_hint": "Locate the missing translation key `menu.view` (or `Menu.View`) in resources/js/languages/{fr,en,ar}.json and add the proper label ('Détails', 'Voir', 'View' as appropriate). Verify PosOrderShowComponent.vue or its breadcrumb partial for the binding.",
+      "frozen_zone": false
+    },
+    {
+      "id": "PG8-P3-001",
+      "state_artifact": "tests/e2e/__screenshots__/goal-pageby-pos-2026-05-18/08-pos-parked-after-park.png",
+      "page": "page-8-pos-parked",
+      "category": "downstream_blocked",
+      "severity": "P3",
+      "evidence": "Park button click correctly displays a French validation toast 'Ajoutez au moins un article avant de parker cette commande.' which is correct UX given the upstream P0 prevented any cart addition. Not a defect — recorded for completeness because the page-8 visual is degraded by the upstream P0.",
+      "fix_hint": "No fix required. Will re-attest page-8 GREEN once PG4-P0-001 is healed and cart can hold an item.",
+      "frozen_zone": false
+    },
+    {
+      "id": "PG3-P3-001",
+      "state_artifact": "tests/e2e/__screenshots__/goal-pageby-pos-2026-05-18/03-pos-wizard-opened.png",
+      "page": "page-3-pos-wizard",
+      "category": "visual_attest",
+      "severity": "P3",
+      "evidence": "POS Wizard popup for Chicken Burger (FROZEN public/js/pos-wizard.js) renders all 5 contract sections (viande+crudites+sauce+supplements+comment) — verified via DOM regex match on `wizard-section viande-section`, `crudites-section`, `sauce-section`, `supplements-section`, `comment-section` in 03-pos-wizard-opened.dom.html. Visual: Viande shows 4 options (Poulet mariné/curry/tandoori/crispy) with qty +/− pads, required 0/1 enforced, Crudités 4 pre-selected (Salade/Tomate/Oignon/Salade — click-to-remove pattern), Sauce row 13 chips (Ketchup..Ail) with '1ère gratuite' helper badge. Annuler + Ajouter au panier CTAs render in sticky footer. NO defect — section coverage confirmed for Sub 1.1 acceptance.",
+      "fix_hint": "None — visual attest only.",
+      "frozen_zone": true
+    }
+  ],
+  "summary": {
+    "P0": 1,
+    "P1": 1,
+    "P2": 0,
+    "P3": 2,
+    "open_P0": 1,
+    "open_P1": 1,
+    "open_P2": 0,
+    "open_P3": 0
+  },
+  "round_to_round_closures": {},
+  "verdict": "RED",
+  "verdict_reason": "1 P0 silent error blocking pages 4-8 (5 saleable items in category 315 'Frites & Accompagnements' cannot be sold from POS due to category channels=[] visibility regression). Pages 1, 2, 3, 9, 10 GREEN. Owner gate required to decide between data-fix (Option A — set channels=NULL) vs architectural-fix (Option B — align grid query with details endpoint visibility).",
+  "pages_summary": {
+    "page-1-login": "GREEN",
+    "page-2-pos-grid": "GREEN",
+    "page-3-pos-wizard": "GREEN (attest — frozen zone)",
+    "page-4-pos-cart": "RED (PG4-P0-001)",
+    "page-5-pos-payment-cash": "BLOCKED (by PG4-P0-001 — cart empty -> no pay button)",
+    "page-6-pos-payment-card": "BLOCKED (by PG4-P0-001)",
+    "page-7-pos-payment-split": "BLOCKED (by PG4-P0-001)",
+    "page-8-pos-parked": "BLOCKED (by PG4-P0-001 — park needs non-empty cart)",
+    "page-9-pos-orders-list": "GREEN",
+    "page-10-pos-order-show": "AMBER (PG10-P1-001 — Menu.View raw key in breadcrumb)"
+  },
+  "heals_applied": [],
+  "frozen_zone_diff_lines": 0,
+  "adversarial_handoff": "Pages 1, 2, 3 GREEN with captures + DOM/console/network quartets. Pages 4-8 BLOCKED by single P0 (cat 315 channels=[] -> 5 items unsellable). Page 9 GREEN. Page 10 AMBER (P1 i18n leak `Menu.View`). NO commit landed — fix needs owner decision (data vs architectural). All findings reproducible via tests/e2e/_pageby-pos-2026-05-18.spec.js."
+}

@@ -1,0 +1,25 @@
+{
+  "item": {
+    "id": 363,
+    "name": "Tacos M (1 Viande)",
+    "status": 5
+  },
+  "dispatch": {
+    "dispatched": true,
+    "item_id": 363
+  },
+  "before": {
+    "count": 4
+  },
+  "after": {
+    "count": 5,
+    "latest": {
+      "id": 254,
+      "event_type": "menu.item_availability_changed",
+      "aggregate_id": 363,
+      "branch_id": null,
+      "occurred_at": "2026-05-07T01:07:08.000000Z"
+    }
+  },
+  "delta": 1
+}

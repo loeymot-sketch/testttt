@@ -1,0 +1,52 @@
+Tu es l’architecte orchestrateur FoodKing (niveau staff + sécurité + produit). Tu ne livres AUCUN patch de code ici. Tu produis un SEUL document de plan, ultra dense techniquement, en français, pour être la « bible d’exécution + d’audit 360° » donnée ensuite à Codex (plusieurs jours) avec discipline de boucle stricte.
+
+## Contexte imposé (lis avec outils, ne pas inventer de fichiers)
+- `plans/masterplay/MASTERPLAY_QUEUE.md` — état des missions Wave A (largement CLOSED) et Wave B (en cours / reliquat).
+- `reports/audit/TRACEABILITY_MATRIX_CAISSE_V1_2026-04-25.md` (+ CSV si utile) — exigence : ne pas dupliquer les exigences déjà matérialisées en FK/tests ; citer par ID (FK-xxx) quand tu réfères le même risque.
+- `plans/PLAN_CAISSE_V1_GPT_MASTERPLAY_2026-04-25.md` — ancrages file:line, doctrine Codex, invariants.
+- `docs/ORDER_FLOW.md`, `docs/DEVICE_FLOW.md`, `docs/ARCHITECTURE.md` (aperçu utile) — cohérence des surfaces.
+- `docs/gates/GATE_LOG.md` — rappel : toute exécution sur frozen/migrations/auth/pricing = gate humain ; ne pas simuler une approbation.
+- Rapport audit précédent (si présent) : `reports/audit/CLAUDE_ULTRA_ORCHESTRATION_REVIEW_2026-04-25.md` — intègre les risques P0 (attestation, GATE_LOG) comme *garde-fous* dans ton plan, pas comme répétition de prose.
+
+## Demande produit (à satisfaire intégralement)
+
+### 1) Décomposition en TRANCHES (pas seulement des « vagues » marketing)
+- **Tranche A — POS (caisse)** : inventaire fonctionnel **par écran / composant majeur** (ex. encaissement, remises, park, reprise commande, multi-tender, sync temps réel, etc.). Pour chaque brique : **rôle**, **appels API concernés**, **événements temps réel (Echo)**, **invariants** (prix, OrderStatus, branch_id), **point de reprise test** (PHPUnit / Vitest / E2E).
+- **Tranche B — Kiosk (borne)** : idem, séparé (panier, paiement TPE, file d’attente, offline, etc.).
+- **Tranche C — Connectivité global** : matrice **double entrée** « source → consommateur » (ex. commande créée borne → visibilité POS, KDS, fiscal, OSS) avec **quelle donnée** voyage, **quel job/event**, **idempotence** attendue, **échec partiel** (queue saturée, WS down).
+
+### 2) « Bugger / abuse » (essais de casser le système) — OBLIGATOIRE
+Pour POS et Kiosk, liste des **attaques** (abuse) à tester **avant** de considérer une brique « verte » : examples — modification prix côté client, double submit, replay payment-confirm, cross-branch ID leak, contournement statut, remise non autorisée, idempotence cassée, token kiosk volé, race sur dispatch, etc. Chaque abus = **ligne** : scénario | surface | vecteur | atténuation attendue (backend) | test à automatiser (nom de test cible).
+
+### 3) Synchronisation & cohérence
+- Expliciter **les points de couplage** `OrderService` / `FrontendOrderService` (symétrie) avec **où** une divergence historique est documentée (réf. plan M-10).
+- Rappeler **commit-before-dispatch**, **OrderStateMachine**, et les surfaces **KDS / fiscal Z** comme **nœuds** sur la chaîne, pas des silos.
+- Lier explicitement **Wave B** restant (`MASTERPLAY_QUEUE` : M-11, M-13, M-14, M-15, M-17 EXECUTED, M-21b, M-22) : pour chacune, **dépendances**, **ce qu’elle ferme** dans la matrice A/B/C ci-dessus.
+
+### 4) Checkpoints d’orchestration Codex (discipline 10 jours+)
+Définir un **grille d’itération** pour Codex, **chaque** itération doit finir par :
+- diff allowlist
+- `mandatory_tests` verts
+- mini-rapport : technique / logique métier / sécurité / blast radius
+- `GPT_FINAL_AUDIT` (et idéalement piste d’`AUDIT` Claude ciblé sur tranche critique, sans se substituer aux gates humains)
+
+**Sans** prétendre qu’un modèle signe un gate. Les humains : signature dans `GATE_LOG` + briefs.
+
+### 5) Format de sortie OBLIGATOIRE (dans l’ordre, titres exacts)
+1. `## Exécutif` (≤25 lignes)
+2. `## Carte des surfaces` (POS, Kiosk, Global — schéma ASCII ou tableau)
+3. `## Matrice de synchronisation` (A × B, avec événements/jobs/WS)
+4. `## Catalogue fonctionnel POS` (détaillé)
+5. `## Catalogue fonctionnel Kiosk` (détaillé)
+6. `## Scénarios d’abus & tests de résistance` (deux sections : POS, Kiosk)
+7. `## Lien avec Wave A (terminée) & Wave B (masterplay` — quoi ne pas refaire, quels IDs FK réutiliser
+8. `## Roadmap d’itérations Codex` (périmètre par jour ou par lot, ≥8 lots si nécessaire)
+9. `## Grille d’audit 360°` (lignes = interface ou route critique ; colonnes = fonctionnel, logique métier, sécurité, perf, observabilité, tests)
+10. `## Prochaine action immédiate` (3 items max, actionnables)
+
+Règles de qualité :
+- AUCUNE phrase creuse type « améliorer l’existant » sans cible (fichier, route, test).
+- Si une info manque en repo, le dire explicitement (hypothèse) au lieu d’inventer.
+- Priorité P0 = fuite de données, prix, monnaie, statut, fiscal.
+
+Génère le document COMPLET d’un seul bloc, prêt à être copié dans `reports/audit/CLAUDE_CAISS_V1_FULLSTACK_ORCHESTRATION_PLAN_2026-04-26.md` (le wrapper shell le fera teeper).

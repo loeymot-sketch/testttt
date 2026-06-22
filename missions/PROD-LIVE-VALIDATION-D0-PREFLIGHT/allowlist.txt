@@ -1,0 +1,8 @@
+reports/audit/D0_SURFACE_INVENTORY_2026-04-27.md
+reports/audit/D0_COVERAGE_MATRIX_2026-04-27.md
+reports/audit/D0_BUG_BACKLOG_2026-04-27.md
+missions/PROD-LIVE-VALIDATION-D0-PREFLIGHT/allowlist.txt
+missions/PROD-LIVE-VALIDATION-D0-PREFLIGHT/execute_brief.md
+missions/PROD-LIVE-VALIDATION-D0-PREFLIGHT/input.json
+reports/audit/GPT_SELF_AUDIT_PROD-LIVE-VALIDATION-D0-PREFLIGHT.md
+reports/post_execute_latest.log

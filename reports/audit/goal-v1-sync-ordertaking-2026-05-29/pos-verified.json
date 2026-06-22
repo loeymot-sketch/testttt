@@ -1,0 +1,77 @@
+{
+  "system": "POS Caisse (order entry + cash/card payment + cash drawer + parked orders + refund)",
+  "verify_scope_note": "Header declared 3 lenses; raw input contained 2 visible lenses (architect, security). The security-P3 finding was truncated mid-sentence ('Recommend (V1.0.2, no frozen'), so a third lens likely exists beyond the input cutoff but was NOT received — cannot verify what was not provided. confirmed/dropped counts reflect the 6 findings actually received (3 architect + 3 security).",
+  "head": "962d9d154",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "verified_findings": [
+    {
+      "severity": "P2",
+      "file": "app/Services/PaymentService.php",
+      "line": "442-444 (callsite, inside confirmCounterPayment) + 472-477 (signature) + 454-462 (docblock) + OrderService.php:1170-1176 (strict=true contrast)",
+      "title": "Cash-trail strictness asymmetry: kiosk-cash collected at POS counter skips cash_movement when no drawer session is open (strict=false), unlike POS direct-sale CASH (strict=true)",
+      "confirmed": true,
+      "grep_evidence": "PaymentService.php:442-444 `if ($mode === PosPaymentMethod::CASH) { $this->recordCashOrderMovement($order, $note); }` — no strict arg passed; signature default `bool $strict = false` at L475. Docblock L454-462 confirms: 'strict = false (legacy, kiosk counter-collect) — best-effort, log + return si pas de session OPEN. NF525 fiscalement loose'. L442 sits inside confirmCounterPayment (method opens L193); OrderService.php:2347-2354 collectKioskCash → confirmCounterPayment(CASH). Contrast verified: OrderService.php:1170-1176 POS direct CASH passes `strict: true`.",
+      "is_new": true,
+      "recommendation": "V1 single-box: simulation_hardware=true downgrades strict→soft (PaymentService.php:481-483) so latent in dev. For production hardware-on: either (a) make kiosk-cash collection strict=true (symmetric with direct sale), or (b) keep strict=false but emit a typed reconciliation-gap event so the skipped movement surfaces in nightly alerts instead of vanishing into a Log::warning (L540). No frozen-zone touch — PaymentService.php and OrderService.php are NOT in the §7 list. Clusters with the security-P3 drawer-skim finding (same symptom — missing drawer credit — but different mechanism: no-session vs non-CASH mode).",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P2",
+      "file": "app/Http/Controllers/Admin/PosOrderController.php",
+      "line": "58-62 + 69-73 + 102-108 (+ RolePermissionTableSeeder.php:89, RefundWithCounterEntryService.php:103)",
+      "title": "Backlog #4 status-verification: POS Refund UI ship gate is SHIPPED + authz-gated (NOT an open defect)",
+      "confirmed": true,
+      "grep_evidence": "PosOrderController.php:58-62 `abort_unless(Auth::user()?->can('pos-refund') ?? false, 403, 'Insufficient permission to issue refund.')`; L69-73 cross-branch guard `if ($authUser && !$authUser->hasRole('Admin') && (int)($authUser->branch_id??0) !== (int)$order->branch_id) abort(403, 'Cross-branch refund denied.')`; L102-108 `if (($qe->errorInfo[0]??null)==='23000') return ...['code'=>'MIRROR_ALREADY_EXISTS'],409`. Seeder grant RolePermissionTableSeeder.php:89 `'pos-refund'` in $branchManagerPermissionNames (comment L86-88: 'POS Operator does NOT get it by default — mass-refund vector mitigation').",
+      "is_new": false,
+      "recommendation": "NO ACTION — this is a verified-RESOLVED status note for known-backlog #4, not an open finding. The refund path is shipped, permission-gated (pos-refund: Admin+Branch-Manager only, POS Operator excluded), cross-branch-guarded, and 409-protected against double-mirror. Do NOT count this toward open ship blockers. Recorded so backlog #4 is not re-surfaced as missing.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P2",
+      "file": "app/Services/Fiscal/FiscalSequenceService.php",
+      "line": "86-104 (SQLite no-op comment + lockForUpdate + max) + 65-66 (Cache::lock)",
+      "title": "Fiscal-sequence gap-free guarantee is unverified under production drivers (test-vs-prod evidentiary gap, NOT a proven race)",
+      "confirmed": true,
+      "grep_evidence": "FiscalSequenceService.php:86-87 `// SQLite ignores FOR UPDATE (it uses BEGIN IMMEDIATE semantics instead) so this stays a no-op in tests.`; L100 `->lockForUpdate()`; L101 `->max('fiscal_sequence_no')`; L103 `return $max + 1`. Empty-branch case: MAX over zero rows → NULL → `(int)` cast at L97 yields 0 → +1 = 1, with NO row for FOR UPDATE to lock, so first-order serialization relies solely on Cache::lock. Lock primitive at L65-66 `$lockKey = sprintf('fiscal_seq_b%d', $branchId); $lock = Cache::lock($lockKey, self::LOCK_TTL_SECONDS)` (note: actual key is `fiscal_seq_b{branchId}`, raw finding paraphrased it as `fiscal_seq_{branch}` — cosmetic only, substance holds). Test suite runs SQLite + array/file cache so the lockForUpdate is a no-op and Cache::lock is per-process under array driver.",
+      "is_new": true,
+      "recommendation": "TEST-HARDENING ONLY. Add a MySQL-backed (or pcntl_fork / parallel-process) concurrency test firing N simultaneous next() calls on the same branch (incl. the empty-branch seq=1 case) asserting N distinct gap-free numbers. Do NOT edit FiscalSequenceService.php — it is a FROZEN-ZONE §7 file (no logic change without LOCK). Prod (MySQL InnoDB + file/redis cache) is almost certainly safe; the gap is evidentiary, not a confirmed live race — hence P2.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P3",
+      "file": "routes/api.php",
+      "line": "815 (counter-collect/{order}/confirm closure mode validation) + 660-668 (assertCounterDeferredOrder) + PaymentService.php:203-209 (allowedModes) + 442",
+      "title": "Counter-collect payment-mode substitution lets a trusted cashier mis-record a cash kiosk order as TICKET_RESTAURANT (drawer-skim vector)",
+      "confirmed": true,
+      "grep_evidence": "routes/api.php:815-816 closure validates `'mode' => ['required', 'integer']` with NO enum/whitelist at the HTTP layer. PaymentService.php:203-209 allowedModes includes TICKET_RESTAURANT. assertCounterDeferredOrder (L660-668) checks the order is a kiosk counter-deferred order (source_surface=kiosk + CASH_ON_DELIVERY + COUNTER_DEFERRED) but does NOT constrain the recorded mode to the customer's actual tender. Drawer credit only written when `$mode === PosPaymentMethod::CASH` (L442); a non-CASH mode skips the TYPE_ORDER_PAYMENT CashMovement, so expected_closing_amount is not credited.",
+      "is_new": true,
+      "recommendation": "Real mechanism but threat model is LOW for V1 = single-trusted-owner Le Cayenne (CLAUDE.md §3bis); forensically mitigated by the order.counter_payment_confirmed audit row + Z TPE/mode breakdown. NOT a proven live exploit. V1.0.2 (no frozen-zone touch): constrain confirmCounterPayment to record only the order's actual due tender for kiosk-cash orders, or require explicit owner-gate to record a non-CASH mode on a cash-due order. Clusters with architect-P2 (same missing-drawer-credit symptom, different mechanism).",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P3",
+      "file": "tests/Feature/PosRefundUiPermissionSentinelTest.php",
+      "line": "200-202",
+      "title": "Refund-permission sentinel injects pos-refund manually for Branch Manager instead of running the seeder — does not lock the seeder grant against regression",
+      "confirmed": true,
+      "grep_evidence": "PosRefundUiPermissionSentinelTest.php:200-202 `// Default-grant per RolePermissionTableSeeder. Tests inject via // explicit givePermissionTo to mirror that production behaviour.` then `$manager->givePermissionTo('pos-refund');`. Production grant verified present at RolePermissionTableSeeder.php:89. The test injects the permission directly rather than running the seeder, so deleting seeder L89 would NOT fail this sentinel — the Branch-Manager refund-ability regression would ship undetected.",
+      "is_new": true,
+      "recommendation": "Add one assertion that runs RolePermissionTableSeeder on a fresh DB and asserts a freshly-seeded Branch Manager hasPermissionTo('pos-refund') AND a freshly-seeded POS Operator does NOT — closes the loop so the operator-exclusion (mass-refund vector mitigation) is locked at the seeder level. Test-only change, no production code touch.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P3",
+      "file": "routes/api.php",
+      "line": "815-887",
+      "title": "Counter-collect confirm/cancel/collect-kiosk-cash business logic + typed-exception handling lives in route closures rather than a controller (separation-of-concerns smell)",
+      "confirmed": true,
+      "grep_evidence": "routes/api.php:815 `Route::post('/counter-collect/{order}/confirm', function (Order $order, Request $request) {...})` carries ~40 lines incl. validation, service dispatch, and a typed `catch (PaymentAlreadyCollectedException $alreadyCollected)` → 409 with 'error_code'=>'payment_already_collected' (L842-851). /cancel closure L855-873, /collect-kiosk-cash closure L877-887. PaymentService.php docblock L263 itself references 'The route closure (routes/api.php:808-845)' — coupling the service contract doc to a routes line range (note: closure actually starts L815, docblock says 808 — minor doc drift). Sibling POS mutations use dedicated controllers (PosOrderController refund, ParkedOrderController, etc.).",
+      "is_new": true,
+      "recommendation": "Non-blocking for V1-final; behavior is covered (the 409 race path is tested). Maintainability/cohesion only. When convenient (V1.0.2) extract the three closures into a CounterCollectController to match the controller-per-concern pattern and decouple PaymentService's docblock from a routes line range. No frozen-zone involvement; pure refactor.",
+      "drop_reason": ""
+    }
+  ],
+  "confirmed_count": 6,
+  "dropped_count": 0,
+  "disk_path": "reports/audit/goal-v1-sync-ordertaking-2026-05-29/pos-verified.json"
+}

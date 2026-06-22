@@ -48,6 +48,12 @@ class ValidJsonOrder implements Rule
             return false;
         }
 
+        // [Gap-Hunt 2026-05-25 A.2] DoS guard: cap order items at 50
+        if (count($decoded) > 50) {
+            $this->message = trans('validation.items_cap_exceeded');
+            return false;
+        }
+
         // [PLAN_03 D-004] Étape 3 : Vérifier chaque item
         foreach ($decoded as $index => $item) {
             // item_id obligatoire et numérique > 0
@@ -59,6 +65,15 @@ class ValidJsonOrder implements Rule
             // quantity obligatoire, numérique, > 0
             if (!isset($item['quantity']) || !is_numeric($item['quantity']) || (int)$item['quantity'] <= 0) {
                 $this->message = "L'article à l'index {$index} n'a pas de quantité valide.";
+                return false;
+            }
+
+            // [abuse-heal 2026-06-18 engines] Per-line quantity ceiling. Without an
+            // upper bound a forged line (quantity = 10^9) was accepted → absurd /
+            // integer-overflow-prone totals downstream. Cap at 9999 units per item
+            // (sibling of the 50-line DoS cap above).
+            if ((int)$item['quantity'] > 9999) {
+                $this->message = trans('validation.item_quantity_cap_exceeded');
                 return false;
             }
 

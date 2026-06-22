@@ -1,0 +1,105 @@
+{
+  "specialist": "RED (Adversarial)",
+  "intersection": "POS x Fiscal (NF525)",
+  "timestamp": "2026-05-18",
+  "scope": "Adversarial: fiscal seq allocation race; Z-report close bypass; refund chain extension skipped; TRUNCATE-via-grant bypass (deploy doc dependence); audit_logs row tamper attempt; SealedOrderGuard window edge cases; cash drawer race; HMAC secret rotation collision; outbox/webhook fan-out for fiscal events",
+  "method": "Adversarial framing — attempted to break each invariant by enumerating plausible attacker / accidental paths. Cross-checked discovered claims against Architect / Security / DBA report attestations. Tried to invalidate the BASELINE attestation by enumerating mutation paths: TRUNCATE, raw SQL DELETE, queue worker forging, simulation bypass, lock-skip via cache outage, two-cashier race, refund-mirror double-counting, archive command bypass.",
+  "summary_findings": "I tried hard to break this intersection and failed. The defense-in-depth pattern (Cache::lock + DB transaction + lockForUpdate + UNIQUE constraint + BEFORE DELETE/UPDATE triggers + HMAC chain + per-branch secret + assertProductionSafe + SealedOrderGuard + ProductionContext gateway guard + canonical JSON sortRecursive) is genuinely belt-and-suspenders. Every attack scenario I enumerated either (a) hits a documented guard with a clear error, (b) is non-spoofable from outside Laravel's process boundary (e.g. you'd need .env write to disable kiosk_auto_allocate_sequence), or (c) is acknowledged as a known operator-dependency (TRUNCATE via GRANT). The one area where the contract relies on PEOPLE not CODE — the TRUNCATE bypass mitigation living in deploy docs — is the only structural vulnerability and is already documented in two migration headers. I escalate it to P2 (V1.0.X informational) rather than P0 because (i) reproducing the bypass requires DBA root + DROP TRIGGER + TRUNCATE in sequence, which is itself logged in MySQL binlog and detectable by any standard fiscal forensic review, and (ii) the production deploy doc references it. No P0 / P1 issues to report. The intersection is GREEN.",
+  "FIX_NOW_P0": [],
+  "FIX_SOON_P1": [],
+  "ROADMAP_P2": [
+    {
+      "id": "PFIS-R-R2-01",
+      "title": "TRUNCATE bypass mitigation lives in deploy doc — automate verification",
+      "file": "(operational, not source)",
+      "evidence": "Migrations 2026_04_22_000002 (audit_logs:138-140), 2026_05_09_160000 (z_reports:32), 2026_05_10_010000 (cash_*:46-49) all explicitly state TRUNCATE bypasses MySQL BEFORE DELETE triggers. The mitigation is REVOKE TRUNCATE ON `audit_logs`, `z_reports`, `cash_movements`, `cash_drawer_sessions`, `order_payments` FROM the app user. This relies on operator discipline. Recommend adding a `php artisan fiscal:assert-grants` command at V1.0.X that queries INFORMATION_SCHEMA.USER_PRIVILEGES and refuses to boot if app_user has DROP, DELETE, or TRUNCATE on any of these tables.",
+      "risk": "Medium — single-point-of-failure if a future deploy automation grants TRUNCATE inadvertently.",
+      "regression_cost": "Small (~50 lines CLI + a config flag to enforce at boot)."
+    },
+    {
+      "id": "PFIS-R-R2-02",
+      "title": "FiscalArchiveCommand --no-verify CLI flag exists for ops recovery",
+      "file": "config/fiscal.php:74-78 + (FiscalArchiveCommand source)",
+      "evidence": "The CLI flag `--no-verify` on the artisan command bypasses chain verification regardless of the config flag. Comment correctly states 'intended for ops recovery scenarios; use with care as the resulting bundle should not be considered evidence'. Risk: a recovery operator might forget to mark the resulting bundle as non-evidence in the manifest. Recommend asserting in the manifest that bundles produced with --no-verify carry a prominent `z_chain_verified=false` flag and a warning string, so legal reviewers see the caveat without reading the runbook.",
+      "risk": "Low — already partially handled (manifest records z_chain_verified=null when verify skipped).",
+      "regression_cost": "Small (a few lines)."
+    },
+    {
+      "id": "PFIS-R-R2-03",
+      "title": "kiosk_auto_allocate_sequence config flag can be flipped via env",
+      "file": "config/fiscal.php:137-141",
+      "evidence": "FISCAL_KIOSK_AUTO_ALLOCATE_SEQUENCE=false rolls back to legacy M-08 Option B behaviour (kiosk-paid TPE orders stay unsealed until POS collection). This is intentional emergency-rollback. RED concern: a misconfigured staging .env that silently disables this would cause kiosk orders to pile up as orphans visible only at Z close via `warnOnOrphanedPaidOrders`. The warning fires on the fiscal log channel but does not block close. Recommend wiring a fiscal:assert-config command into the boot guard that refuses production boot if any of {kiosk_auto_allocate_sequence, sealed_z_guard_enabled, chain_validation_enabled, verify_chain_before_archive} is FALSE without an explicit FISCAL_ROLLBACK_REASON env override (same pattern as POS_SIMULATION_HARDWARE production guard from Couche 0 F-X).",
+      "risk": "Low for V1 — defaults are all SAFE; misconfig requires explicit env edit.",
+      "regression_cost": "Small (mirror the existing simulation_hardware boot-guard pattern)."
+    }
+  ],
+  "KEEP_AS_IS": [
+    {
+      "id": "PFIS-R-KAI-01",
+      "title": "RED could not produce a fiscal_sequence_no collision",
+      "file": "app/Services/Fiscal/FiscalSequenceService.php:57-104 + database/migrations/2026_04_22_000001",
+      "evidence": "Attempted scenarios: (a) two concurrent kiosk webhook callbacks → Cache::lock blocks one for 3s; the other proceeds; lockForUpdate + UNIQUE catches the bypass case where cache is offline. (b) POS counter concurrent close → SplitPaymentService and PaymentService both call FiscalSequenceService::next inside DB::transaction nested under the parent posOrderStore DB::transaction; savepoint semantics prevent half-allocated state. (c) RefundWithCounterEntryService allocating in parallel with a POS new order → both go through FiscalSequenceService and serialise on the same per-branch cache lock. No collision path identified.",
+      "verdict": "Production-grade. Frozen."
+    },
+    {
+      "id": "PFIS-R-KAI-02",
+      "title": "RED could not bypass audit_logs chain extension",
+      "file": "app/Services/Fiscal/AuditLogService.php:70-192",
+      "evidence": "Attempted scenarios: (a) write with branch_id=null → InvalidArgumentException line 93-98. (b) write with empty action → InvalidArgumentException line 76-78. (c) two concurrent writes on same branch → per-branch Cache::lock + UNIQUE(branch_id, prev_hash) + retry-once. (d) payload with weird Unicode → json_encode with JSON_UNESCAPED_UNICODE produces deterministic bytes; sortRecursive ksorts. (e) UPDATE audit_logs to mutate a row → BEFORE UPDATE trigger SQLSTATE 45000. (f) DELETE audit_logs → BEFORE DELETE trigger SQLSTATE 45000. (g) verifyChain skipping a forged row → not possible, the walk re-computes current_hash from prev_hash + canonical(action+payload) and uses hash_equals (timing-safe). (h) TRUNCATE → only if app user has TRUNCATE grant (see R2-01).",
+      "verdict": "Production-grade. Frozen."
+    },
+    {
+      "id": "PFIS-R-KAI-03",
+      "title": "RED could not bypass Z.close double-aggregation invariant",
+      "file": "app/Services/Fiscal/ZReportService.php:297-435 + SealedOrderGuard.php (full)",
+      "evidence": "Attempted: (a) two cashiers pressing 'close Z' simultaneously → Cache::lock z_report_b{branch}, 4s wait, second cashier waits or fails. (b) re-running close on already-closed Z → existingOpen probe (line 100-110) is replaced by lockForUpdate on STATUS_OPEN row inside the close transaction; throws RuntimeException 'no open Z report to close' on second attempt. (c) an order at exactly opened_at instant → half-open window (from, to] correctly assigns it to the previous Z (where it was at upper-inclusive bound). (d) post-Z refund using OrderService::changeStatus → SealedOrderGuard::assertMutable throws OrderSealedException. The actor MUST use refund-with-counter-entry which creates a mirror in the NEW Z window (no double-count because the parent stays at status=PAID in the previous Z's aggregate; the mirror is negative in the new Z's aggregate).",
+      "verdict": "Production-grade. The sealed-Z guard + the half-open window + the mirror counter-entry together prove single-write semantics."
+    },
+    {
+      "id": "PFIS-R-KAI-04",
+      "title": "RED could not skip refund chain extension",
+      "file": "app/Services/Order/RefundWithCounterEntryService.php:194-210 + PaymentService.php:123-137 (cashback) + 443-454 (cancelCounterPayment)",
+      "evidence": "Every refund / cashback / cancel path in PaymentService and RefundWithCounterEntryService calls AuditLogService::write inside the parent DB::transaction with a specific action keyword ('payment.cash_back_issued', 'order.counter_payment_canceled', 'order.refund.counter_entry'). The audit write is mandatory inside the transaction, so a refund without a chain row would only be possible if the audit_logs INSERT itself failed silently. AuditLogService::write throws RuntimeException on secretFor() failure or QueryException on UNIQUE violation after retry — both propagate out of the transaction and roll back the refund.",
+      "verdict": "Production-grade. Every fiscally-significant mutation extends the chain or fails closed."
+    },
+    {
+      "id": "PFIS-R-KAI-05",
+      "title": "RED could not exploit fiscal_alloc_error_at retry path",
+      "file": "app/Console/Commands/RetryFiscalAllocCommand.php (full) + app/Services/FrontendOrderService.php:1130-1180",
+      "evidence": "Attempted: (a) modify orders WHERE fiscal_alloc_error_at IS NULL to trigger retry → RetryFiscalAllocCommand WHERE clause requires NOT NULL on the marker, so attacker would have to write to the row first (which requires Eloquent write access — already a higher compromise level). (b) infinite retry loop → bounded by --limit=50 per tick. (c) retry that succeeds but the order's payment_status is no longer PAID → finalizePaidKioskOrder line 1108-1115 re-checks PAID inside the lock and skips with Log::warning, no harm. (d) retry that succeeds on a different branch than the original → finalizePaidKioskOrder operates on the locked order's branch_id explicitly; no cross-branch leakage.",
+      "verdict": "Production-grade. The retry path is narrow, idempotent, and observable on the fiscal log channel."
+    },
+    {
+      "id": "PFIS-R-KAI-06",
+      "title": "RED could not exploit POS_SIMULATION_HARDWARE bypass to skip fiscal/audit",
+      "file": "config/pos.php (simulation_hardware) + PosController.php:95-97 + PaymentService.php:298-300 + SplitPaymentService.php:205-218 + Couche 0 boot guard (production refusal)",
+      "evidence": "All three guard sites downgrade STRICTNESS on cash drawer / TPE only. fiscal_sequence_no allocation is NEVER bypassed. audit_logs writes are NEVER bypassed. composition_snapshot is NEVER bypassed. Pricing SSOT is NEVER bypassed. Production boot guard (Couche 0) refuses boot if APP_ENV=production AND POS_SIMULATION_HARDWARE=true. Attempted bypass: set the flag in .env.production → boot fails closed (RuntimeException). RED concern: a developer who debug-flips this in a test container and forgets — production boot refusal catches it on next deploy.",
+      "verdict": "Production-grade. The perimeter is correctly drawn."
+    },
+    {
+      "id": "PFIS-R-KAI-07",
+      "title": "RED could not forge gateway context",
+      "file": "app/Services/PaymentService.php:585-616",
+      "evidence": "Attempted: (a) call PaymentService::payment from a queue job → backtrace walk finds no PaymentAbstract frame → HttpException 403. (b) call from a console command → same outcome. (c) call from a future controller that imports PaymentAbstract but doesn't extend → still rejected (is_subclass_of strict). (d) opt-in flag in container → consumed on first read (forgetInstance line 592), single-shot, no leak across tests. (e) attempt to bind a fake PaymentAbstract subclass at runtime → requires container write access which means RCE.",
+      "verdict": "Production-grade. Backtrace-walk guard is non-spoofable from outside the gateway hierarchy."
+    },
+    {
+      "id": "PFIS-R-KAI-08",
+      "title": "RED could not exploit per-branch HMAC secret rotation",
+      "file": "app/Services/Fiscal/AuditLogService.php:269-292",
+      "evidence": "Attempted: (a) rotate FISCAL_AUDIT_SECRET_BRANCH_1 to a different value → the chain breaks because verifyChain re-computes hashes with the new secret and they mismatch the stored current_hash → verifyChain returns the first mismatched row id → ZReportService::verifyChain throws on next Z.open. This is FAIL-LOUD by design — rotation requires a documented procedure (docs/FISCAL_SECRETS.md). Cannot be exploited to silently forge — at most an attacker DOSes verifyChain by rotating, and the chain is preserved (read-only verification, no destructive action). (b) per-branch override on APP_ENV=production with dev sentinel → assertProductionSafe refuses (RuntimeException). (c) per-branch override shorter than 32 chars in production → assertProductionSafe refuses.",
+      "verdict": "Production-grade. Rotation is observable + reversible (chain re-verifies once the secret is restored). The audit secret is FROZEN once a chain has been written under it."
+    }
+  ],
+  "adversarial_questions_considered": [
+    "Q: Could I forge a refund that bypasses audit_logs by deleting the OrderPayment row first? A: No — order_payments has BEFORE DELETE trigger (P0-FIX-4 / 2026_05_10_010000) on MySQL + restrictOnDelete FK. SQLite has no equivalent trigger for order_payments specifically (the SQLite parity migration 2026_05_16_130000 only covers cash_movements) but order_payments is not the audit source-of-truth — the audit_logs HMAC chain is. Deleting an order_payments row would not erase the audit_logs row referencing it.",
+    "Q: Could I exploit the SQLite-vs-MySQL trigger asymmetry to corrupt a chain during a backup/restore? A: No, backup/restore preserves trigger definitions in MySQL dumps (with --routines). SQLite is test-only; production is MySQL exclusive.",
+    "Q: Could I use the FISCAL_VERIFY_CHAIN_STRICT=false to silently skip chain verification? A: Default is production-aware (auto-strict in production). Override via env to non-strict in production logs an error but does NOT block close. Recommend the V1.0.X boot guard (see R2-03) refuse production boot when this is explicitly false.",
+    "Q: Could two refund-with-counter-entry calls on the same parent order succeed concurrently? A: No — line 73-78 throws InvalidArgumentException if parent.status === OrderStatus::RETURNED. The second call sees the mirror created by the first (which transitions the parent.status). Even if both reach the SealedOrderGuard concurrently, the DB::transaction wrapping the mirror creation locks the parent implicitly via the mirror's parent_order_id FK constraint. UNIQUE(branch_id, fiscal_sequence_no) on orders catches duplicate-allocation at the storage tier.",
+    "Q: Could the cashback path in PaymentService:90-156 be replayed to drain a customer balance? A: No — the `if ($existingCashBack) { return $existingCashBack; }` short-circuit at line 96-98 makes the path idempotent. Only the FIRST call creates the Transaction + audit_logs row + RefundCreated event. Subsequent calls are no-ops.",
+    "Q: Could the fiscal:verify-chain CLI return CHAIN OK on a corrupted chain due to a bug? A: The CLI is wired to ZReportService::verifyChain (Z chain) + AuditLogService::verifyChain (audit chain). Both re-walk from the first row and use hash_equals (timing-safe comparison). A bug would manifest as a false negative or false positive — covered by PHPUnit's NF525 sentinel tests. Baseline at start: CHAIN OK (audit_logs + z_reports) (branch=1)."
+  ],
+  "regressions_seen_during_recent_history": "None. The recent commits (Wave 3 P0-POS-02 gateway guard, iter15-P0-10 split-payment refund mirror, P0-FIX-4 cash table immutability, WAVE5-POS-001 SealedOrderGuard symmetry) all closed real classes of vulnerability without introducing new ones. Cross-checked against current branch heal/cms-pr1-quickwins-2026-05-18 — no in-flight fiscal changes.",
+  "verdict": "GREEN. RED could not produce a P0 or P1 finding. The intersection is at production-grade NF525 maturity. 0 P0, 0 P1, 3 P2 informational (deploy-doc dependency for TRUNCATE, --no-verify CLI manifest annotation, boot-guard symmetry for fiscal config flags), 8 KEEP-AS-IS attestations.",
+  "word_count_approx": 1490
+}

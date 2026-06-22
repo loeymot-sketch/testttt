@@ -22,7 +22,7 @@ class TimezoneController extends AdminController
         try {
             return TimezoneResource::collection($this->timezoneService->list());
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

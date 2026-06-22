@@ -1,0 +1,45 @@
+{
+  "surface": "Admin dashboard + Vue caisse unifiée (CashOverview) + Stock (StockRupture) + Observability Outbox",
+  "head": "04603fa87adefa6dd605c7ec3c0d0ef20f56661c",
+  "verified_at": "2026-05-29",
+  "mode": "READ-ONLY verification of RAW findings (grep/Read at HEAD) + global axios interceptor reconciliation",
+  "elements_checked": 34,
+  "confirmed_count": 2,
+  "dropped_count": 1,
+  "summary": "Verified the 3 RAW findings against HEAD 04603fa87 AND against the GLOBAL axios response interceptor (resources/js/bootstrap.js:178-280), which the RAW report failed to account for. app.js (admin entrypoint) imports ./bootstrap (line 9) and OutboxOverviewComponent chunks into admin-shell (router/modules/observabilityRoutes.js:6/20-22), so the interceptor IS active on this surface. The interceptor surfaces a visible vue-toastification toast for statuses {408,425,429,502,503,504} (bootstrap.js:192) plus 5xx (bootstrap.js:250 -> 'Service indisponible'), and critical-4xx ONLY for _CRITICAL_4XX_PATTERNS=['/api/admin/item','/api/admin/fiscal/'] (lines 135-138). The outbox endpoints are NOT in that allowlist. RECONCILED TRUTH TABLE for outbox POST/GET: 5xx/502/503/504/429 -> global toast shown (NOT silent); 403/400/404/422 + network-error(status 0) -> silent (reject, no toast); 200 success -> no feedback (interceptor is pass-through). CONSEQUENCE: RAW Finding 1/3's headline premise ('a 500/worker-down failure is invisible') is FALSE for the dominant cases. NET RESULT: Finding 2 (destructive ->delete() with no confirmation) CONFIRMED P2 — interceptor is post-response and irrelevant to a pre-POST confirm dialog; this is the strongest finding. Finding 1 NARROWED to P3 — the surviving truths are (a) no SUCCESS confirmation on retry/drain, and (b) residual silence ONLY on 403/non-critical-4xx + network errors, plus the global toast is transient (6s, line 270) and bucket-debounced (3s, line 263) where a permanent observability dashboard arguably warrants a persistent banner like the siblings' errorMessage role=alert. Finding 3 DROPPED — folded into Finding 1; a 5xx GET DOES toast so 'stale data with no indication' is false for the main case and the thin residual overlaps Finding 1. Backend routes confirmed (routes/api.php:1175-1181); controller app/Http/Controllers/Admin/Observability/SyncOverviewController.php (outboxDrainFailed:417, ->delete():429, SAFE-BY-DEFAULT older_than_hours<1 reject at 419-422). All 28 observability_outbox.* i18n keys resolve in fr.json (0 raw labels, validated programmatically). Sibling contrast confirmed: CashOverviewComponent.vue catch@387; StockRuptureDashboardComponent.vue errorMessage role=alert lines 65-71/314 set@522/570. None of these files are in CLAUDE.md §7 frozen-zone. Path corrections vs RAW: CashOverview at resources/js/components/admin/cashOverview/, StockRupture at resources/js/components/admin/stock/, controller under app/Http/Controllers/Admin/Observability/.",
+  "findings": [
+    {
+      "severity": "P2",
+      "type": "ux_gap",
+      "file": "resources/js/components/admin/observability/OutboxOverviewComponent.vue",
+      "line": "67-76 / 382-391",
+      "element": "Vider les échecs (outbox-drain-failed) button",
+      "title": "Destructive purge fires on single click with no confirmation dialog",
+      "confirmed": true,
+      "grep_evidence": "VERIFIED: drainFailed() (lines 382-391) posts to /admin/observability/outbox/drain-failed {older_than_hours:24} with no window.confirm/modal/swal — grep -nE 'confirm|window.confirm|modal|\\$swal' on the component returns NO match. Backend outboxDrainFailed at app/Http/Controllers/Admin/Observability/SyncOverviewController.php:417 executes hard DB::table('failed_jobs')->...->delete() at line 429 (grep-confirmed). Button correctly disabled when failedJobs.count===0 (template line 70: ':disabled=\"draining || failedJobs.count === 0\"') but is a one-click irreversible delete when failures exist. Backend has a SAFE-BY-DEFAULT guard rejecting older_than_hours<1 (lines 419-422), but the destructive single-click on >=24h-old failed_jobs still proceeds unconfirmed. The global axios interceptor (bootstrap.js:178-280) is POST-response and cannot prevent this — it is irrelevant to a pre-POST confirmation.",
+      "recommendation": "Gate drainFailed() behind a confirmation (window.confirm or project modal) stating how many records will be permanently deleted before issuing the POST.",
+      "frozen": false
+    },
+    {
+      "severity": "P3",
+      "type": "missing_state",
+      "file": "resources/js/components/admin/observability/OutboxOverviewComponent.vue",
+      "line": "358-392",
+      "element": "Actualiser / Réessayer les échecs / Vider les échecs (loadAll, retryFailed, drainFailed)",
+      "title": "No success confirmation, and residual silent failure on 403/non-critical-4xx + network errors; transient toast unsuitable for a persistent observability surface",
+      "confirmed": true,
+      "grep_evidence": "VERIFIED + RECONCILED: loadAll(358-372)/retryFailed(373-381)/drainFailed(382-392) use try/finally with NO local catch (the lone component-level catch at line 397 is inside formatTimestamp). HOWEVER the RAW '500/worker-down invisible' premise is FALSE: global interceptor at resources/js/bootstrap.js:178-280 (active here — app.js:9 imports ./bootstrap; component chunks into admin-shell per router/modules/observabilityRoutes.js:6) toasts TOAST_STATUSES={408,425,429,502,503,504} (line 192) and 5xx (line 250 'Service indisponible'). Surviving TRUE residual: (a) NO success confirmation on any of the three actions (interceptor is error-only, line 179 passes responses through); (b) 403/400/404/422 + network-error(status 0) on outbox stay SILENT because outbox endpoints are NOT in _CRITICAL_4XX_PATTERNS=['/api/admin/item','/api/admin/fiscal/'] (lines 135-138, fall-through reject at 200-202); (c) even when a toast fires it is transient (6s timeout, line 270) and bucket-debounced (3s gap, line 263) — adequate for POS bursts but a dashboard whose entire purpose is observability arguably warrants a persistent banner like siblings StockRuptureDashboardComponent.vue (errorMessage role=alert, lines 65-71, set 522/570) and CashOverviewComponent.vue (catch@387).",
+      "recommendation": "Add a brief success confirmation after loadAll() in retryFailed/drainFailed, and a local catch that sets a persistent errorMessage banner (role=alert, matching StockRupture lines 65-71) so 403/network failures and stale fetches are visible beyond the transient global toast.",
+      "frozen": false
+    }
+  ],
+  "dropped_findings": [
+    {
+      "raw_severity": "P3",
+      "file": "resources/js/components/admin/observability/OutboxOverviewComponent.vue",
+      "line": "358-372",
+      "title": "loadAll() has no error path — a failed GET leaves stale data with no indication",
+      "drop_reason": "PREMISE PARTIALLY FALSE + OVERLAP. A failed GET with status 5xx DOES surface a global toast via bootstrap.js:178-280 (status>=500 -> line 250 'Service indisponible'), so 'stale data with no indication' is false for the dominant failure case. The thin surviving residual (403/network silence + transient-vs-persistent toast) is identical to and folded into the narrowed Finding 1 to avoid double-counting. Not dropped as false overall — dropped as redundant with Finding 1 after interceptor reconciliation."
+    }
+  ]
+}

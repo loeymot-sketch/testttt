@@ -1,0 +1,11 @@
+[
+  {
+    "severity": "P3",
+    "system": "CAISSE",
+    "file": "app/Services/PosParkedOrderService.php:25",
+    "title": "Parked-order create dedup is opt-in (nullable idempotency_token) — duplicate cart drafts possible if client omits token",
+    "reproduction": "POST /api/admin/pos/parked-orders twice in <1s with a valid pos token and a body WITHOUT idempotency_token (validator at app/Http/Controllers/Admin/Pos/ParkedOrderController.php:34 marks it 'nullable'). The service short-circuit at PosParkedOrderService.php:25 only fires `if ($token !== null)`, so two pos_parked_orders rows are created. The DB UNIQUE is (user_id, idempotency_token) — a NULL token does not collide. No idempotency middleware is on the route (routes/api.php:924).",
+    "evidence": "PosParkedOrderService.php:24-34 — `$token = $this->normalizeToken($idempotencyToken); if ($token !== null) { ...return $existing; }`. ParkedOrderController.php:34 — `'idempotency_token' => ['nullable', 'string', 'max:64']`. No `idempotency` middleware on the parked-orders route.",
+    "fix_proposal": "Defense-in-depth only (NOT a money/fiscal surface — a parked order is a cart DRAFT: no payment, no fiscal_sequence_no, no cash_movement, no NF525 exposure). Optional: make the throttle/idempotency explicit, or require idempotency_token server-side. The shipped POS Vanilla wizard already sends a stable token, so in practice duplicates only arise from a non-conforming client. Lowest priority; a duplicate draft is visible to the cashier and discarded with one tap."
+  }
+]

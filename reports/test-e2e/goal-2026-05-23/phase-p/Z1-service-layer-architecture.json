@@ -1,0 +1,394 @@
+{
+  "agent": "Z1 Service layer architecture",
+  "wave": "BRAIN-WAVE-P 2026-05-24",
+  "methodology": "GStack + Superpowers + Adversarial — READ-ONLY",
+  "branch_head": "heal/cms-pr1-quickwins-2026-05-18",
+  "services_total_count": 152,
+  "services_by_domain": {
+    "_root_App_Services": 92,
+    "Fiscal": 7,
+    "Pricing": 7,
+    "Composer": 5,
+    "Idempotency": 5,
+    "Kiosk": 4,
+    "Loyalty": 4,
+    "Menu": 4,
+    "Order": 3,
+    "Delivery": 3,
+    "Hardware_PrinterTransport": 3,
+    "Hardware": 2,
+    "Stock": 2,
+    "Observability": 2,
+    "Ingredients": 2,
+    "Payments": 1,
+    "Cash": 1,
+    "Catalog": 1,
+    "Bypass": 1,
+    "Receipt": 1,
+    "Pos": 1,
+    "Orders": 1
+  },
+  "domain_layer_present": {
+    "files": [
+      "app/Domain/Order/OrderStateMachine.php",
+      "app/Domain/Order/PaymentStateMachine.php",
+      "app/Domain/Order/AutoPrepareOnPaidPolicy.php",
+      "app/Domain/Order/IllegalTransitionException.php",
+      "app/Domain/Kds/KitchenReleaseRule.php",
+      "app/Domain/Events/EventContract.php"
+    ],
+    "note": "Domain layer thin (6 files) — Order + Kds rules only. No DDD aggregate roots, no value-objects beyond enums."
+  },
+  "contracts_interfaces_total": 2,
+  "interfaces_inventory": [
+    "app/Contracts/BroadcastableOrder.php",
+    "app/Services/Hardware/PrinterTransport/PrinterTransportInterface.php"
+  ],
+  "abstract_classes": [
+    "app/Services/SmsAbstract.php",
+    "app/Services/PaymentAbstract.php"
+  ],
+  "god_services_500_loc": [
+    {
+      "file": "app/Services/OrderService.php",
+      "lines": 2837,
+      "public_methods": 21,
+      "total_methods": 34,
+      "model_imports": 12,
+      "concerns": [
+        "Single class handles: list, create (3 surface variants myOrder/posOrder/tableOrder), show, status transitions, payment status transitions, token creation, kiosk cash collect, delivery boy assign, destroy, sales report — too many responsibilities for one class",
+        "Uses service-locator app(...) pattern instead of constructor DI for: AvailabilityService, OrderQuoteService, StockService, FiscalSequenceService, AuditLogService, SplitPaymentService, PaymentService, SealedOrderGuard — bypasses Laravel auto-injection",
+        "Imports 12 Eloquent models — high coupling to persistence layer",
+        "Mutates $this->order public state — non-idempotent reuse pattern"
+      ]
+    },
+    {
+      "file": "app/Services/FrontendOrderService.php",
+      "lines": 1391,
+      "model_imports": 8,
+      "concerns": [
+        "Mirrors OrderService structure for Kiosk path — significant duplication of dispatch logic, status transitions, recovery branches (called out explicitly in OrderService comment 'Same recovery logic as OrderService::posOrderStore() for consistency')",
+        "Public $frontendOrder state mutation pattern same as OrderService — coupling/reuse anti-pattern",
+        "Service-locator app() calls for StockService, FiscalSequenceService"
+      ]
+    },
+    {
+      "file": "app/Services/Pricing/PricingService.php",
+      "lines": 814,
+      "frozen_zone": true,
+      "concerns": [
+        "FROZEN per CLAUDE.md §7 — documentation only.",
+        "Final class with constructor DI (good). Delegates to TaxCalculator, DiscountCalculator, CompositionSnapshotBuilder, ChoiceAvailabilityResolver — proper composition.",
+        "But: 814 LOC = monolithic calculateOrder() flow — coverage adequate (NF525 SSOT) but refactor-resistant"
+      ]
+    },
+    {
+      "file": "app/Services/PaymentService.php",
+      "lines": 800,
+      "model_imports": 3,
+      "concerns": [
+        "Couples Order + Transaction + Domain/Order state machines + Fiscal services + CashDrawerService — payment coordinator god class",
+        "Bidirectional service-locator relationship with OrderService: PaymentService comments reference 'called from OrderService::changeStatus', OrderService.php lines 1151, 1172, 1882, 2008, 2307 all use app(PaymentService::class) — see cyclic_dependency_chain below"
+      ]
+    },
+    {
+      "file": "app/Services/Menu/AvailabilityService.php",
+      "lines": 774,
+      "model_imports": 6,
+      "concerns": [
+        "Final class with constructor DI (good).",
+        "Single responsibility scope (manual rupture + auto-86 + snapshot reads) but 774 LOC + 19 methods suggests internal subdivision opportunity (toggle vs snapshot vs auto-86)"
+      ]
+    },
+    {
+      "file": "app/Services/ItemService.php",
+      "lines": 756,
+      "public_methods": 21,
+      "model_imports": 7,
+      "concerns": [
+        "Standard 'God CRUD service' — list, show, store, update, delete, plus image/variation/extra/addon side-quests",
+        "Uses DB:: facade transactions inline — opportunity to extract ItemRepository"
+      ]
+    },
+    {
+      "file": "app/Services/Fiscal/ZReportService.php",
+      "lines": 727,
+      "frozen_zone": true,
+      "concerns": [
+        "FROZEN per CLAUDE.md §7 — documentation only.",
+        "Composes FiscalSealingService + FiscalChainValidator (proper composition)",
+        "Cache::lock('z_report_b{n}') concurrency discipline visible — defensible god-ness for fiscal close orchestration"
+      ]
+    },
+    {
+      "file": "app/Services/Fiscal/ZReportCashEnrichmentService.php",
+      "lines": 587,
+      "model_imports": 8,
+      "concerns": [
+        "Couples Z reporting + AuditLog + Cash + multiple models — V1.0.x candidate to slim post-close"
+      ]
+    },
+    {
+      "file": "app/Services/Order/OrderQuoteService.php",
+      "lines": 574,
+      "concerns": [
+        "Final class with readonly constructor DI (good pattern). Delegates pricing to PricingService — proper composition.",
+        "574 LOC = quote-then-seal flow — borderline god but cohesion strong"
+      ]
+    },
+    {
+      "file": "app/Services/DashboardService.php",
+      "lines": 550,
+      "concerns": [
+        "Read-heavy aggregator — typical reporting god"
+      ]
+    },
+    {
+      "file": "app/Services/Cash/CashDrawerService.php",
+      "lines": 549,
+      "concerns": [
+        "Cash session lifecycle god — open/close/move/reconcile in one class. Defensible (cash drawer is a single aggregate)."
+      ]
+    },
+    {
+      "file": "app/Services/Kiosk/KioskMenuService.php",
+      "lines": 516,
+      "model_imports": 7,
+      "concerns": [
+        "Menu projection god — cache invalidation + filtering + branding rolled together"
+      ]
+    }
+  ],
+  "anti_patterns_found": [
+    {
+      "type": "missing_repository_layer",
+      "file": "app/Services/**",
+      "snippet": "find app -name '*Repository.php' returns ONLY 2 files (Idempotency/IdempotencyKeyRepository.php + Idempotency/RedisIdempotencyKeyRepository.php). All 152 other services query Eloquent directly via Model::query() / Model::find / Model::create.",
+      "severity": "MEDIUM",
+      "rationale": "No abstraction over persistence. V1 single-tenant single-DB tolerable, V2 SaaS multi-tenant / cloud refactor pain. Already documented as V1.0.x backlog implicitly via NF525 frozen-zone insulation pattern (Pricing/Fiscal only get clean boundaries)."
+    },
+    {
+      "type": "service_locator_app_function",
+      "file": "app/Services/OrderService.php",
+      "line": "989, 1151, 1172, 1882, 1985, 2008, 2178, 2182, 2307",
+      "snippet": "app(\\App\\Services\\Stock\\StockService::class)->decrementForOrder(...) — used 9+ times instead of constructor DI",
+      "severity": "MEDIUM",
+      "rationale": "Anti-DI pattern. 46 total app(*Service::class) calls inside app/Services + 12 inside controllers. Hard to mock for tests, hides dependency graph. Justified for circular deps avoidance (Order ↔ Payment) but should be flagged as architectural smell."
+    },
+    {
+      "type": "cyclic_dependency_chain",
+      "file": "app/Services/OrderService.php <-> app/Services/PaymentService.php",
+      "line": "OrderService:1172,2307 + PaymentService:119,185,468 (docblock)",
+      "snippet": "OrderService::changeStatus() calls app(PaymentService::class)->confirmCounterPayment(); PaymentService comments explicitly reference 'when called from OrderService::changeStatus' — service-locator papers over the cycle.",
+      "severity": "HIGH",
+      "rationale": "OrderService ↔ PaymentService bidirectional dependency papered over with service-locator. Same with SealedOrderGuard, SplitPaymentService. Sign of missing OrderOrchestrator aggregate. NOT a runtime risk today but blocks refactoring + obscures transaction boundaries."
+    },
+    {
+      "type": "controller_eloquent_leakage",
+      "file": "app/Http/Controllers/**",
+      "line": "23 occurrences",
+      "snippet": "Frontend/MenuController.php:57 Branch::query()->find(); StockRuptureDashboardController.php:92 StockLevel::query()->...; LoginController.php:79 Branch::query()->orderBy()->value()",
+      "severity": "MEDIUM",
+      "rationale": "Controllers should call services, not Eloquent builders. Bypasses BranchScope discipline pattern (though BranchScope is a global Eloquent scope so it still applies). Tests cost: must seed DB instead of mocking Service."
+    },
+    {
+      "type": "controller_db_facade_use",
+      "file": "app/Http/Controllers/**",
+      "line": "47 occurrences",
+      "snippet": "Frontend/OrderController.php DB::transaction(); Frontend/LoyaltyController.php DB::table('users')->lockForUpdate(); DB::table('loyalty_transactions')->insert()",
+      "severity": "HIGH",
+      "rationale": "LoyaltyController writes loyalty_transactions directly via DB::table() — bypasses Loyalty service layer + AuditLog. Audit trail risk if loyalty mutations slip past LoyaltyService. Verify Frontend/LoyaltyController is invariant-safe."
+    },
+    {
+      "type": "static_method_abuse",
+      "file": "app/Services/FcmNotificationService.php",
+      "line": "6 public static methods (sendToToken, sendToTopic, sendMulticast, notifyKitchen, notifyCustomerReady, notifyPosNewOrder)",
+      "snippet": "public static function sendToToken(...)",
+      "severity": "LOW",
+      "rationale": "Anti-testability (can't mock without runkit). Only called from Jobs/SendFcmNotificationJob.php which is itself a unit-of-work. Justifiable as utility but should be flagged for V2 refactor to instance."
+    },
+    {
+      "type": "static_method_abuse",
+      "file": "app/Services/Hardware/EscPosCommandBuilder.php",
+      "line": "16 static methods",
+      "snippet": "public static function cut(), bold(), etc.",
+      "severity": "NONE",
+      "rationale": "Acceptable — printer command builder is pure ESC/POS bytecode (no state, no I/O). Static is fine."
+    },
+    {
+      "type": "missing_interface_for_DI",
+      "file": "app/Services/**",
+      "snippet": "Only 2 interfaces total: BroadcastableOrder + PrinterTransportInterface. 150 services have no interface — can't easily swap impl for tests, can't double-bind in container.",
+      "severity": "MEDIUM",
+      "rationale": "V1 single-impl OK. V2 SaaS (e.g. swap PricingService for tenant-specific tax engine) becomes refactor blocker. Already partial progress: Idempotency split into IdempotencyKeyRepository (interface) + RedisIdempotencyKeyRepository impl + InMemory fallback — proves the team CAN do it when motivated."
+    },
+    {
+      "type": "high_model_coupling",
+      "file": "app/Services/OrderService.php",
+      "line": "12 model imports",
+      "snippet": "use App\\Models\\{Tax,Item,User,Order,Address,OrderDiscountLog,OrderItem,OrderCoupon,Transaction,OrderAddress,FrontendOrder,PaymentGateway}",
+      "severity": "LOW",
+      "rationale": "Reflects scope (POS+myOrder+table). Symptom of god service, not extra problem."
+    },
+    {
+      "type": "duplicated_listener_persistence_pattern",
+      "file": "app/Listeners/Persist*.php",
+      "snippet": "13 Persist*ToOutbox listeners each duplicate: open DB::afterCommit(...) → DomainEvent::create() → log warning on failure. No shared base class / trait.",
+      "severity": "LOW",
+      "rationale": "13 listeners with identical envelope. Refactor to AbstractPersistEventToOutbox base + abstract serializeEvent() would reduce drift risk. Currently all 13 hand-rolled — Sprint 5C Z8-P1-01 had to comment-mark all of them, suggests they drift independently."
+    }
+  ],
+  "boundary_leakage": [
+    {
+      "type": "service_calling_eloquent_directly",
+      "scope": "All 152 services",
+      "count": "45 services call DB:: facade; 22 use Model::create; 29 use Model::query()",
+      "severity": "MEDIUM",
+      "rationale": "Repository pattern only adopted for Idempotency. Tolerable for V1 (mature Eloquent integrates well with BranchScope + IdempotencyKeyMiddleware) but limits multi-database / multi-tenant V2 evolution."
+    },
+    {
+      "type": "service_calling_controller_anti_pattern",
+      "result": "0 occurrences",
+      "verdict": "CLEAN"
+    },
+    {
+      "type": "frontend_loyalty_controller_writes_directly",
+      "file": "app/Http/Controllers/Frontend/LoyaltyController.php",
+      "snippet": "DB::table('users')->where(...)->lockForUpdate(); DB::table('loyalty_transactions')->insert();",
+      "severity": "HIGH",
+      "rationale": "Loyalty mutations should flow through LoyaltyService (which exists at app/Services/LoyaltyService.php + app/Services/Loyalty/PosRedemptionService.php). Direct DB::table() bypass means: (1) AuditLogService not necessarily called, (2) BranchScope bypassed (DB::table is raw), (3) no event emitted. Verify whether this is fail-safe legacy or active risk — outside this agent's scope but ESCALATE to Z3 (Sync) or follow-on audit."
+    }
+  ],
+  "missing_interfaces": [
+    "PricingService — V1 has 1 impl but V2 SaaS may need tenant-specific tax engines. Frozen-zone makes refactor riskier.",
+    "OrderService — God-service should ideally be split into OrderQueryService + OrderCreationService + OrderTransitionService each with its own interface. Today 21 public methods, no interface.",
+    "FrontendOrderService — Same as OrderService.",
+    "PaymentService — Should expose interface PaymentCoordinator with explicit confirmCounterPayment / cashBack / recordCashOrderMovement signatures.",
+    "StockService — One public surface decrementForOrder(), no interface, only impl. V1 fine, V2 candidate.",
+    "AvailabilityService — Final class with no interface. assertItemsOrderableForBranch is critical SSOT but un-mockable.",
+    "FiscalSequenceService — FROZEN. Public surface is just next(int $branchId): int (verified). Adding an interface FiscalSequenceAllocator { next(int): int } would be DOC-only refactor — defer to V1.0.x.",
+    "AuditLogService — FROZEN. Public surface = write/verifyChain/computeHash. Same observation."
+  ],
+  "nf525_frozen_boundary_violations": [
+    {
+      "subject": "FiscalSequenceService private internals access",
+      "result": "CLEAN — all 4 external callers (OrderService, PaymentService, FrontendOrderService, Order/RefundWithCounterEntryService) invoke ONLY the public ->next(int $branchId) method. No private internal access detected.",
+      "severity": "NONE"
+    },
+    {
+      "subject": "AuditLogService private internals access",
+      "result": "CLEAN — 10 callers all invoke ONLY the documented public surface (write / verifyChain / computeHash). All other methods (performInsert, lastHashFor, resolveBranchId, secretFor, assertProductionSafe, canonicalise, sortRecursive) are private and not reachable from outside.",
+      "severity": "NONE"
+    },
+    {
+      "subject": "ZReportService internals access",
+      "result": "CLEAN — only ZReportCashEnrichmentService + RefundWithCounterEntryService + SealedOrderGuard + FiscalSealingService + XReportService + FiscalChainValidator + FiscalSequenceService reference ZReportService, all via public methods.",
+      "severity": "NONE"
+    },
+    {
+      "subject": "PricingService SSOT discipline",
+      "result": "CLEAN — calculateOrder() is the only entry point used by OrderService:358,751,1270 + FrontendOrderService:278 + OrderQuoteService:209,224 + Kiosk/PricingPreviewService:71,107 + Pricing/CompositionSnapshotBuilder.php (internal). No other service implements price calculation. CouponService::calculateDiscountAmount() exists but is invoked BY PricingService delegates AND inside Order/FrontendOrder for the legacy coupon path — verify §2 reconciliation in V1.0.x cleanup but it stays inside the Pricing aggregate boundary.",
+      "severity": "NONE",
+      "v1_0_x_note": "Couplon discount math runs in two places: CouponService::calculateDiscountAmount() (called from OrderService:509,946,1443 + FrontendOrderService:472) AND inside PricingService delegates to DiscountCalculator. Verify these always agree. Already wave-X tested but worth a sentinel test."
+    }
+  ],
+  "outbox_listener_discipline": {
+    "verdict": "STRONG",
+    "evidence": [
+      "All 13 Persist*ToOutbox listeners call DB::afterCommit() explicitly before writing to outbox.",
+      "All corresponding domain events use DispatchableAfterCommit trait (app/Events/Concerns/DispatchableAfterCommit.php) which defers event dispatch until outer transaction commits.",
+      "Sprint 5C Z8-P1-01 (2026-05-16) hardened all listeners with documented 'Skip afterCommit dispatch on listener' comments — explicit double-deferral discipline.",
+      "OutboxBroadcastSwallowedEvent + EscalateOutboxBroadcastSwallowed listener exist as observability for swallowed dispatches.",
+      "Console retry: OutboxRetryFailedCommand + OutboxWebhookRetryFailedCommand + MonitorOutboxStaleness + PruneOutboxCommand all present."
+    ],
+    "risk": "Duplicated envelope across 13 hand-rolled listeners (no shared trait) — drift opportunity. V1.0.x refactor candidate."
+  },
+  "non_outbox_listeners_after_commit_check": [
+    {"file": "AwardLoyaltyPointsOnDelivery", "afterCommit": false, "risk": "MEDIUM — loyalty points should be awarded post-commit. Verify event uses DispatchableAfterCommit trait (RefundCreated and OrderStatusChanged DO)."},
+    {"file": "DispatchKdsTicket", "afterCommit": false, "risk": "LOW — listener is a re-emitter calling OrderStatusChanged::dispatch which uses DispatchableAfterCommit. KDS sync safe."},
+    {"file": "DecrementStockOnOrderCreated", "afterCommit": false, "risk": "DOCUMENTED — has comment 'uses DispatchableAfterCommit, so this listener'. Inherits afterCommit from event."},
+    {"file": "ReleaseAvailabilityOnOrderCanceled", "afterCommit": false, "risk": "DOCUMENTED — 'silently reintroducing the cascade-halt class of bug' comment confirms event handles afterCommit."},
+    {"file": "ReleaseStockOnRefundCreated", "afterCommit": false, "risk": "DOCUMENTED — comment 'RefundCreated uses DispatchableAfterCommit'."},
+    {"file": "Send*Notification (FCM/SMS/Mail/Push x ~10)", "afterCommit": false, "risk": "LOW — these are queued jobs by design (ShouldQueue), fire-and-forget. Tolerable if event dispatch is post-commit."}
+  ],
+  "service_providers_di_bindings": {
+    "explicit_bindings_count": 3,
+    "bindings": [
+      "app/Providers/AppServiceProvider.php: $this->app->bind(PrinterTransportInterface::class, ...) — multi-impl swap",
+      "app/Providers/AppServiceProvider.php: $this->app->singleton(SyncMetricsRecorder::class) — single instance",
+      "app/Providers/AppServiceProvider.php: $this->app->bind(IdempotencyKeyRepository::class, ...) — Redis vs InMemory swap"
+    ],
+    "verdict": "MINIMAL — Laravel auto-resolution does most lifting. Adding interfaces would let us shift more services to explicit bindings."
+  },
+  "duplicated_logic_smells": [
+    {
+      "subject": "OrderService.posOrderStore vs FrontendOrderService.kioskOrderStore",
+      "evidence": "FrontendOrderService:'Same recovery logic as OrderService::posOrderStore() for consistency' (verbatim comment).",
+      "severity": "MEDIUM",
+      "rationale": "Two parallel paths for two surfaces. Documented as intentional split (POS UI vs Kiosk wizard) but the BACKEND business logic could converge behind an OrderOrchestrator. Owner mandate (feedback_pos_kiosk_wizard_unify_logic_keep_ui.md) explicitly allows backend unification — V1.0.x candidate."
+    },
+    {
+      "subject": "Outbox-writer listener pattern (13×)",
+      "severity": "LOW",
+      "rationale": "All 13 do DB::afterCommit + DomainEvent::create. Extract AbstractPersistEventToOutbox base."
+    },
+    {
+      "subject": "PaymentService confirmCounterPayment called from both OrderService:2307 (POS) and OrderService:1172 (kiosk counter)",
+      "severity": "LOW",
+      "rationale": "Double call sites with documented same-method intent. Verify they hit the same code path."
+    }
+  ],
+  "verdict": "AMBER",
+  "verdict_rationale": [
+    "STRENGTHS: NF525 frozen-zone boundary EXEMPLARY — FiscalSequenceService / AuditLogService / ZReportService / PricingService all show clean public surface, no private internals leakage, SSOT discipline strict. Outbox afterCommit discipline strong (Sprint 5C Z8-P1-01 hardening visible in every listener). DispatchableAfterCommit trait pattern is canonical.",
+    "STRENGTHS: Composer/Pricing/Fiscal sub-packages show readonly DI + final classes + composition over inheritance — modern Laravel patterns.",
+    "WEAKNESSES: God services concentrated at the OLD top-level (OrderService 2837 LOC, FrontendOrderService 1391, PaymentService 800, ItemService 756, DashboardService 550). Refactor risk because they sit on hot paths.",
+    "WEAKNESSES: 46 service-locator app(*Service::class) calls inside services + 12 inside controllers = anti-DI smell that obscures the dependency graph and papers over Order↔Payment cycle.",
+    "WEAKNESSES: 23 controller Eloquent::query() leakages + 47 controller DB:: facade calls — Frontend/LoyaltyController writes loyalty_transactions directly via DB::table(), bypassing LoyaltyService (HIGH severity).",
+    "WEAKNESSES: 2 interfaces total / 152 services = 1.3% — V2 SaaS multi-tenant evolution will be painful.",
+    "WEAKNESSES: No Repository layer (only Idempotency adopted it) — V1 tolerable, V2 cloud-evolution blocker.",
+    "VERDICT JUSTIFICATION: V1 production-ready (NF525 + business invariants are protected, outbox sync is sound), but architectural debt visible. Not RED because no V1 ship-blocker, not GREEN because the god services + LoyaltyController DB bypass + cycle smell would compound under V2 SaaS load."
+  ],
+  "recommendations_v1_0_x": [
+    "V1.0.x.A — Audit Frontend/LoyaltyController.php DB::table() direct writes. Move all loyalty mutations through LoyaltyService + emit LoyaltyEvent for AuditLog. HIGH priority. Risk: silent loyalty-balance drift if mutations slip past audit.",
+    "V1.0.x.B — Refactor PaymentService ↔ OrderService cycle: introduce OrderTransitionOrchestrator that holds both deps explicitly via constructor DI. Remove all 9 app(PaymentService::class) calls from OrderService.",
+    "V1.0.x.C — Extract AbstractPersistEventToOutbox base class for the 13 hand-rolled Persist*ToOutbox listeners. Drift risk shown by Sprint 5C having to comment-mark all 13 with the same boilerplate.",
+    "V1.0.x.D — Add interface for: OrderService, PaymentService, AvailabilityService, StockService, LoyaltyService (5 hottest services). Lets us add explicit container bindings + double-bind for tests.",
+    "V1.0.x.E — Audit Frontend/OrderController.php DB::transaction() inline blocks — verify no service-layer logic is duplicated.",
+    "V1.0.x.F — Reduce static-method count in FcmNotificationService (6 statics) — non-blocking but breaks future Sanctum/Notifications swap."
+  ],
+  "recommendations_v2": [
+    "V2.A — Introduce explicit Repository pattern for: OrderRepository, FrontendOrderRepository, ItemRepository, UserRepository, BranchRepository. Migrate Service → Repository → Eloquent stack progressively. V2 multi-DB / V2 read-replica friendly.",
+    "V2.B — Split OrderService into: OrderQueryService (read), OrderCreationService (write), OrderTransitionService (status), OrderTokenService (table). Each <500 LOC, each with interface.",
+    "V2.C — Split FrontendOrderService similarly. Then converge POS + Kiosk paths behind a shared OrderOrchestrator that swaps the surface (POS vs Kiosk) but reuses the business logic.",
+    "V2.D — Introduce DomainEventBus abstraction layered over Laravel events — gives us a swap point for cross-tenant routing in SaaS mode.",
+    "V2.E — Promote critical app/Services classes into app/Domain aggregates where appropriate (e.g. OrderAggregate with explicit state-machine API instead of Order eloquent + OrderStateMachine static)."
+  ],
+  "metrics_summary": {
+    "total_services": 152,
+    "god_services_over_500_loc": 12,
+    "largest_service_loc": 2837,
+    "interfaces_total": 2,
+    "abstract_classes_total": 2,
+    "service_locator_app_calls_in_services": 46,
+    "service_locator_app_calls_in_controllers": 12,
+    "controllers_with_eloquent_query_leak": 23,
+    "controllers_with_db_facade_calls": 47,
+    "events_defined": 38,
+    "listeners_defined": 42,
+    "persist_outbox_listeners_count": 13,
+    "explicit_di_bindings_in_providers": 3,
+    "models_referenced_by_orderservice": 12,
+    "frozen_nf525_services_boundary_violations": 0,
+    "service_inheritance_patterns": 1
+  },
+  "files_audited_evidence": [
+    "app/Services/ — full recursive scan",
+    "app/Listeners/ — afterCommit pattern verification on all 42 listeners",
+    "app/Events/ — DispatchableAfterCommit trait usage check on all 38 events",
+    "app/Domain/ — alternative-to-repository structure inventory",
+    "app/Contracts/ — interface inventory",
+    "app/Providers/ — DI binding inventory",
+    "app/Http/Controllers/ — Eloquent + DB facade leakage scan"
+  ]
+}

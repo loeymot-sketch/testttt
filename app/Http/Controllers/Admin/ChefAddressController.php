@@ -27,7 +27,7 @@ class ChefAddressController extends AdminController
         try {
             return AddressResource::collection($this->userAddressService->list($request, $chef));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -36,7 +36,7 @@ class ChefAddressController extends AdminController
         try {
             return new AddressResource($this->userAddressService->store($request, $chef));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -45,7 +45,7 @@ class ChefAddressController extends AdminController
         try {
             return new AddressResource($this->userAddressService->update($request, $chef, $address));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -55,7 +55,7 @@ class ChefAddressController extends AdminController
             $this->userAddressService->destroy($chef, $address);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -64,7 +64,7 @@ class ChefAddressController extends AdminController
         try {
             return new AddressResource($this->userAddressService->show($chef, $address));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

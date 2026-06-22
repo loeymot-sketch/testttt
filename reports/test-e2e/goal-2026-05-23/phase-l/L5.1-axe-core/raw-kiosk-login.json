@@ -1,0 +1,28 @@
+{
+  "url": "http://127.0.0.1:8000/kiosk/login",
+  "counts": {
+    "critical": 0,
+    "serious": 1,
+    "moderate": 0,
+    "minor": 0
+  },
+  "total_violations": 1,
+  "total_nodes": 1,
+  "violations": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "help": "Elements must meet minimum color contrast ratio thresholds",
+      "tags": [
+        "wcag2aa",
+        "wcag143"
+      ],
+      "node_count": 1,
+      "sample_target": [
+        "button > span"
+      ],
+      "sample_html": "<span data-v-8fd6c936=\"\">Réessayer</span>",
+      "sample_failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.49 (foreground color: #ffffff, background color: #f4501e, font size: 12.6pt (16.8px), font weight: bold). Expected contrast ratio of 4.5:1"
+    }
+  ]
+}

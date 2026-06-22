@@ -1,5 +1,9 @@
 # Menu availability (86 / branch stock) — V1
 
+> VA-SYS-09 note: this file remains useful for product-level 86 behavior, but
+> Version A now also supports stockable wizard-choice rupture. The canonical
+> combined spec is `docs/sync/STOCK_SYNC_AND_AVAILABILITY.md`.
+
 ## Overview
 
 FoodKing V1 gère deux niveaux de disponibilité :
@@ -97,7 +101,9 @@ Les surfaces (POS, Kiosk, KDS) s'abonnent à `private-branch.{id}` et écoutent 
 
 ## Hors V1 (V2+)
 
-- Inventaire matières premières, recettes (décrément par ingrédients).
+- Full recipe/raw-material inventory (decrement by recipe ingredients) remains V2+.
+  Stockable wizard choices themselves are Version A and are documented in
+  `docs/sync/STOCK_SYNC_AND_AVAILABILITY.md`.
 - Suggestions de substitution.
 - Catégorie-level rupture (table `category_branch_availability`).
 - Auto-restock scheduler configurable (cron 4 AM).

@@ -1,0 +1,4 @@
+app/Services/Order/OrderQuoteService.php
+app/Models/OrderQuote.php
+database/migrations/2026_04_25_190000_create_order_quotes_table.php
+tests/Feature/OrderQuoteHmacKeyRequiredTest.php

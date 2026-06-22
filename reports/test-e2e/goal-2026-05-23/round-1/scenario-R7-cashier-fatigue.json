@@ -1,0 +1,130 @@
+{
+  "scenario": "R7 Cashier 8h shift fatigue",
+  "method": "code_static",
+  "date": "2026-05-23",
+  "scope_audited": [
+    "resources/js/components/admin/pos/PosComponent.vue (4850 LOC)",
+    "resources/js/components/admin/pos/ItemComponent.vue",
+    "resources/js/components/admin/pos/PaymentComponent.vue",
+    "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue",
+    "resources/js/components/admin/pos/FloorplanComponent.vue",
+    "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue",
+    "resources/js/components/admin/stock/StockRuptureDashboardComponent.vue",
+    "resources/js/components/admin/kitchenDisplaySystem/* (KDS V2 Grid + Component + HistoryDrawer)",
+    "resources/js/components/frontend/kiosk/Kiosk{Idle,App,Wizard,Inactivity,Upsell,Waiting,Confirmation,CashInstruction,Payment}Component.vue",
+    "resources/js/components/admin/dashboard/{Realtime,Audit,SlaAlerts}*.vue",
+    "resources/js/components/admin/observability/OutboxOverviewComponent.vue",
+    "resources/js/components/common/ConnectionStatusBanner.vue",
+    "resources/js/composables/{useKioskTheme,useKioskSpeech,usePosOfflineState,useCatalogChangeNotifier}.js",
+    "resources/js/services/{appService,eventContract,OssSyncService,WebSocketService,MetricsBatcher,posNfc,PosSyncService}.js",
+    "resources/js/helpers/{posA11y,kioskOfflineQueue,posBarcode,kioskAuthInterceptor}.js",
+    "resources/js/store/modules/* (kdsInflight, posOrder, posCart, kioskCart, pushNotification, ...)"
+  ],
+  "listener_cleanup_audit": {
+    "addEventListener_without_remove": 1,
+    "setInterval_without_clear": 0,
+    "echo_channels_without_leave": 0
+  },
+  "memory_leak_candidates": [
+    {
+      "severity": "P2_LOW",
+      "file": "resources/js/components/admin/pos/ItemComponent.vue",
+      "line": 1485,
+      "pattern": "modal.addEventListener('wizard:add-to-cart', anonymous_handler)",
+      "issue": "ItemComponent.mounted() attaches an anonymous 'wizard:add-to-cart' listener to this.$refs.itemVariationModal. The handler reference is NOT stored, so beforeUnmount() at line 1495 cannot remove it. The document-level 'click' handler IS properly removed via stored this._posTileClickHandler, but the modal handler is unrecoverable.",
+      "impact": "Modal is a child DOM node of ItemComponent — Vue 3 unmount removes the modal node from DOM. Once detached, the listener becomes GC-eligible with the node. So in practice, no listener accumulates across remounts: the leak is bounded to the lifetime of the modal element. Risk = effectively nil for cashier-8h scenario (single POS mount, modal opens/closes but listener stays on same DOM node).",
+      "remediation_proposed": "Store handler in this._wizardSubmitHandler = (...) => {...}; modal.addEventListener('wizard:add-to-cart', this._wizardSubmitHandler); remove in beforeUnmount() with modal.removeEventListener(). Pure-hygiene fix, not blocking."
+    },
+    {
+      "severity": "P3_INFO",
+      "file": "resources/js/services/appService.js",
+      "line": "279, 300",
+      "pattern": "document.addEventListener('click', anonymous) inside singleSlideDown/singleGroupActive helpers",
+      "issue": "Two helpers attach anonymous document-level click listeners. Handler refs not stored — never removable. If called multiple times, listeners accumulate on document.",
+      "impact": "VERIFIED DEAD CODE — grep -rn 'singleSlideDown|singleGroupActive' yields ONLY the definitions in appService.js (no callers anywhere in the codebase). Functions are never invoked. Zero runtime impact.",
+      "remediation_proposed": "Delete dead code OR refactor to store/remove handlers. Defer to V1.0.2 cleanup wave."
+    },
+    {
+      "severity": "P3_INFO",
+      "file": "resources/js/components/{admin,frontend}/components/MapComponent.vue",
+      "line": 108,
+      "pattern": "currentLocationButton.addEventListener('click', anonymous)",
+      "issue": "Both MapComponent files attach an anonymous click listener to a DOM element looked up by getElementById('map-current-location'). No corresponding removeEventListener, no beforeUnmount hook in the component at all.",
+      "impact": "currentLocationButton is part of the MapComponent's own template DOM subtree — Vue removes it on unmount. Listener is GC'd with the detached node. Practical leak = none in a typical mount/unmount cycle. Worst case: if the same MapComponent is mounted and the listener is bound twice without an intermediate DOM rebuild, you'd see double-fire — not a memory leak.",
+      "remediation_proposed": "Add beforeUnmount() with explicit removeEventListener + handler stored on instance. Defensive cleanup, not a memory bug."
+    }
+  ],
+  "patterns_audited_and_PASSING": {
+    "addEventListener_balanced": [
+      {"file": "resources/js/composables/usePosOfflineState.js", "note": "online/offline listeners removed in onScopeDispose() via unbindAutoFlush()"},
+      {"file": "resources/js/services/OssSyncService.js", "note": "visibilitychange paired in _bindVisibility/_unbindVisibility; one apparent diff is a capability-check typeof === 'function', not a second listener"},
+      {"file": "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue", "note": "realtime-order-update, pointerdown, keydown, visibilitychange all properly removed"},
+      {"file": "resources/js/components/frontend/kiosk/KioskAppComponent.vue", "note": "touchstart, kiosk-offline-queue:quota-exceeded, kiosk-auth-failed, kiosk-auth-retried all symmetrically removed (commits round-4 2026-05-10 + iter15-mega-fix)"}
+    ],
+    "setInterval_balanced": [
+      {"file": "resources/js/components/admin/pos/PosComponent.vue", "note": "9 timers (kioskPoll, shortcutsRefresh, cartBump, totalFlash, successFlash, availabilityToast, posOfflineFlush, deliveryAc) ALL cleared in beforeUnmount lines 2068-2082"},
+      {"file": "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue", "note": "tickerId set on line 226, cleared on line 233 (apparent diff is a 'no per-pill setInterval' comment string, not a leak)"},
+      {"file": "resources/js/components/frontend/kiosk/KioskAppComponent.vue", "note": "offlineCheckTimer + healthcheckTimer + idleTimer + rippleTimer all cleared on unmount"},
+      {"file": "resources/js/components/frontend/kiosk/KioskUpsellComponent.vue", "note": "_autoSkipTimer paired set/clear"},
+      {"file": "resources/js/components/frontend/kiosk/KioskInactivityOverlayComponent.vue", "note": "tickTimer paired set/clear"},
+      {"file": "resources/js/components/frontend/kiosk/KioskIdleScreenComponent.vue", "note": "dotTimer paired set/clear"}
+    ],
+    "echo_channels_balanced": [
+      {"file": "resources/js/services/eventContract.js", "note": "Canonical helper onEvents() returns {unsubscribe()} that calls channel.stopListening(`.${broadcastAs}`) + window.Echo.leave(channelName). All 7 consumers (PosComponent, PosOrdersTrackerComponent, KitchenDisplaySystemComponent, PreparingAndReadyComponent, StockRuptureDashboardComponent, KioskAppComponent, KioskWaitingComponent) call _eventSub.unsubscribe() in beforeUnmount."},
+      {"file": "resources/js/components/admin/pos/PosComponent.vue", "note": "_unsubscribeEcho() at line 2873 cleans _eventSub; called from beforeUnmount line 2085"}
+    ],
+    "watcher_cleanup": [
+      {"file": "resources/js/components/admin/pos/PosComponent.vue line 4219", "note": "Uses Options-API watch:{} block. Vue 3 auto-disposes options watchers on unmount — no manual cleanup needed."},
+      {"file": "resources/js/components/frontend/kiosk/KioskAppComponent.vue line 410-411", "note": "this._unwatchA11y array of dispose fns called on unmount for any imperative watchers."}
+    ],
+    "vuex_store_growth": [
+      {"file": "resources/js/store/modules/kdsInflight.js", "note": "Explicitly designed with TTL_MS = 10min lazy purge in getter `liveRecentlyDeavailable` (no setInterval, immune to remount timer leaks). Per-branch isolation."},
+      {"file": "resources/js/store/modules/posCart.js / kioskCart.js", "note": "state.lists.push() is per-cart-add; cart is cleared on order submit. Not session-long accumulator."},
+      {"file": "resources/js/store/modules/pushNotification.js", "note": "Paginated admin CRUD module — not a runtime event accumulator."},
+      {"finding": "No Vuex module observed accumulating Echo events into an unbounded array without prune. realtime payloads trigger discrete refresh actions, no append."}
+    ],
+    "wsService_on_off_balanced": [
+      {"file": "PosComponent / PosOrdersTrackerComponent / PreparingAndReadyComponent / KitchenDisplaySystemComponent", "note": "_bindWsService and _unbindWsService present in every consumer, both 'connected'/'disconnected' listeners off'd via stored handler refs."},
+      {"file": "KioskAppComponent", "note": "Single _onWsReconnect listener bound/unbound symmetrically (line 395 bind, 412-414 unbind)."}
+    ],
+    "idempotent_module_singletons": [
+      {"file": "resources/js/helpers/kioskAuthInterceptor.js", "note": "window.__kioskAuthInterceptorInstalled flag — installs once per page load, lives until full reload. Acceptable for kiosk session model."},
+      {"file": "resources/js/helpers/kioskOfflineQueue.js", "note": "_channelInitialized flag on BroadcastChannel singleton — idempotent."},
+      {"file": "resources/js/services/eventContract.js line 174", "note": "Module-level pagehide listener — registered once per module load, not per remount."}
+    ]
+  },
+  "explicit_guards_against_late_callbacks": {
+    "_destroyed_flag_pattern": {
+      "file": "resources/js/components/admin/pos/PosComponent.vue",
+      "introduced": "[WT-R1-F2 2026-05-20]",
+      "note": "beforeUnmount sets this._destroyed=true BEFORE any cleanup. Then all 13 Echo handlers + ws reconnect handlers + setInterval ticks early-return if this._destroyed. Prevents 'Cannot read properties of null (reading emitsOptions)' on async resolve after teardown.",
+      "verified_lines": [2047, 2143, 2583, 2590, 2622, 2648, 2665, 2678, 2699, 2726]
+    }
+  },
+  "stress_test_recommendation": {
+    "if_empirically_runnable": "Open POS, mount/unmount /admin/pos 100 times via router push/back. After each cycle, run `performance.memory.usedJSHeapSize` (Chrome) — expect stable plateau (±10MB jitter), NOT linear growth. Also run `getEventListeners(document).click.length` in DevTools — expect bounded count (≤2: the document-level posTileClickHandler from ItemComponent's mounted hook, properly removed). Echo channels: `Object.keys(window.Echo.connector.channels).length` — expect to drop to baseline (auth/login chans only) after PosComponent unmount.",
+    "not_executed_this_round": "Bash agent has no browser context. Recommend dispatching a Playwright sub-agent in a follow-up round if owner wants empirical confirmation."
+  },
+  "verdict": "GREEN",
+  "verdict_justification": [
+    "Zero P0/P1 leaks identified in cashier-relevant POS surface (PosComponent, PaymentComponent, ItemComponent, PosOrdersTrackerComponent, FloorplanComponent).",
+    "All 9 setInterval timers in PosComponent (kiosk poll, shortcuts refresh, cart bump, total flash, success flash, availability toast, offline flush, delivery autocomplete, etc.) cleared symmetrically in beforeUnmount.",
+    "All Echo subscriptions go through the canonical onEvents() helper which returns unsubscribe(); every consumer calls it.",
+    "All wsService.on() bindings have matching .off() in _unbindWsService.",
+    "Late-callback safety via _destroyed flag introduced 2026-05-20 (WT-R1-F2) prevents reactive-state mutations on torn-down instances.",
+    "No Vuex module observed accumulating realtime event payloads without TTL or replace semantics. kdsInflight specifically designed with 10-min lazy purge.",
+    "3 minor hygiene findings (1 ItemComponent modal anonymous listener, 1 dead-code in appService.js, 1 MapComponent click handler) — all bounded to component DOM lifetime, no session-long accumulation.",
+    "Conclusion: POS layer is structurally robust for an 8h cashier shift. Expected behavior: single POS mount at login, never unmounted during shift → setInterval timers fire steadily, Echo channel subscribed once. Memory profile should be FLAT (modulo cart payload churn cleared on submit)."
+  ],
+  "top_3_leak_candidates_ranked": [
+    {"rank": 1, "severity": "P2_LOW", "file": "resources/js/components/admin/pos/ItemComponent.vue:1485", "summary": "Anonymous wizard:add-to-cart listener on $refs.itemVariationModal — not removable. Bounded by modal DOM lifetime, GC-friendly, but hygiene fix recommended."},
+    {"rank": 2, "severity": "P3_INFO", "file": "resources/js/services/appService.js:279,300", "summary": "singleSlideDown/singleGroupActive helpers attach anonymous document click listeners. Dead code (no callers in codebase) — zero runtime impact."},
+    {"rank": 3, "severity": "P3_INFO", "file": "resources/js/components/{admin,frontend}/components/MapComponent.vue:108", "summary": "currentLocationButton click listener anonymous; no beforeUnmount hook. DOM-bound, GC-eligible on unmount — defensive cleanup recommended."}
+  ],
+  "blocking_v1_ship": false,
+  "v1_0_2_backlog_additions": [
+    "ItemComponent.vue wizard:add-to-cart handler ref + removal in beforeUnmount (hygiene)",
+    "appService.js delete dead singleSlideDown/singleGroupActive (or refactor to be removable)",
+    "MapComponent.vue (admin + frontend) add beforeUnmount with explicit removeEventListener (defensive)"
+  ]
+}

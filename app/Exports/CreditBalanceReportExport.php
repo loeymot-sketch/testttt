@@ -23,6 +23,11 @@ class CreditBalanceReportExport implements FromCollection, WithHeadings
     public function collection(): \Illuminate\Support\Collection
     {
         $creditBalanceReportArray  = [];
+        // [CREDBAL-NET-01 heal 2026-06-01] Force a non-paginated fetch. The UI
+        // sends paginate=1 / per_page=10; UserService::list would otherwise
+        // return only the first page, silently truncating the store-credit
+        // liability register. An export must always be the FULL register.
+        $this->request->merge(['paginate' => 0]);
         $usersArray = $this->userService->list($this->request);
 
         foreach ($usersArray as $user) {

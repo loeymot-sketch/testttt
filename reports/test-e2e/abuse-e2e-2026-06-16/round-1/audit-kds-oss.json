@@ -1,0 +1,47 @@
+[
+  {
+    "severity": "PASS",
+    "system": "KDS",
+    "file": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1883",
+    "title": "KDS-01 heal HOLDS at runtime — v2OfflineSince reactivation drives the red OFFLINE banner end-to-end",
+    "reproduction": "Live :8766 /admin/kitchen-display-system (V2 layout is DEFAULT-ON: useV2Layout()=true via final fallback). 1) Fired window._wsService._emit('disconnected') -> banner flipped neutral->warning 'Mode secours actif / SYNC LOCAL' (fallbackMode=!wsConnected). 2) Confirmed root component's v2OfflineSince was stamped (=1781583679039) and wsConnected=false. 3) Back-dated v2OfflineSince by 61000ms; KdsV2Grid's 1s `now` ticker (line 283) re-evaluated KdsStatusBanner.bannerData -> banner rendered class=kds-banner--error, text='Connexion perdue depuis 1m 28s — Reconnexion automatique en cours', tag='OFFLINE', spinner present, counter live-ticking. 4) Fired _emit('connected') -> _onWsConnected nulled v2OfflineSince, banner cleared (no stuck-OFFLINE-while-online).",
+    "evidence": "Wiring chain confirmed: v2OfflineSince(data:1220) -> KdsV2Grid :offline-since (line 38) -> KdsStatusBanner offlineSince prop (KdsV2Grid:23) -> computed bannerData gates `offlineSince && now-offlineSince>60000` (KdsStatusBanner.vue:81). _bindWsService called in mounted (line 1495); _onWsConnected/_onWsDisconnected reachable (proven by live event fire). Translation key kds_connection_lost_long present in fr/en/ar.json. Compiled public/js/admin-kds.js (mtime 03:48) is NEWER than .vue source (03:46) -> heal IS in served JS (grep v2OfflineSince -> 4 hits). Vitest kdsStatusBannerOffline.spec.js 3/3 PASS.",
+    "fix_proposal": "None — heal verified working. (Note: OFFLINE banner is V2-layout-only; legacy layout uses ConnectionStatusBanner. V2 is default so this is full coverage on the box.)"
+  },
+  {
+    "severity": "PASS",
+    "system": "KDS",
+    "file": "app/Http/Controllers/Admin/KitchenDisplaySystemController.php:37",
+    "title": "KDS-02 heal HOLDS — catch(HttpException) precedes catch(Exception) in all 4 methods; real 403 is NOT flattened to 422",
+    "reproduction": "Read controller: index (l.37-43), changeStatus (l.51-55), orderItems (l.62-66), historyToday (l.82-86), recall (l.124-128) all order catch(HttpException) -> response($e->getStatusCode()) BEFORE catch(Exception) -> 422. The service layer mirrors it: changeStatus() rethrows HttpException (KitchenDisplaySystemOrderService.php:494) and recall() uses abort(403/409/422) which the controller preserves.",
+    "evidence": "PHPUnit tests/Feature/Kds/KdsControllerHttpExceptionPreservedTest.php 6/6 PASS: 'index preserves http exception status instead of flattening to 422', 'order items preserves...', 'history today preserves...', plus 'still flattens plain exception to 422' negatives. No path observed that collapses a 403/throttle to 422.",
+    "fix_proposal": "None — heal verified."
+  },
+  {
+    "severity": "PASS",
+    "system": "OSS",
+    "file": "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue:429",
+    "title": "OSS-01 heal HOLDS — list() .catch toast gated behind authBranchId()>0; public wall suppresses, attended fires",
+    "reproduction": "list() (l.415-433): on dispatch reject, loading cleared then `if (this.authBranchId() > 0) alertService.error(...)`. authBranchId() (l.187-206) coerces store getters to int, defaults 0 (public wall).",
+    "evidence": "Vitest ossPublicWallErrorToastGatingRuntime.spec.js 3/3 PASS — RUNTIME execution of the real .catch (mutation-resistant to a <=0 vs >0 inversion): public wall (<=0) SUPPRESSES alertService.error; attended (>0) FIRES once with backend message; i18n fallback 'message.something_wrong' when no backend message. ossPublicWallErrorToastGating.spec.js 2/2 PASS. Mirrors the same gating used by _playReadySound (l.366) and audio-unlock wiring (l.146).",
+    "fix_proposal": "None — heal verified."
+  },
+  {
+    "severity": "PASS",
+    "system": "KDS",
+    "file": "app/Services/KitchenDisplaySystemOrderService.php:447",
+    "title": "Bump/release guard is robust — UNPAID order cannot be bumped; optimistic lock prevents double-bump",
+    "reproduction": "changeStatus() runs in DB::transaction with lockForUpdate (l.399-402). Guards in order: cross-branch 403 (l.405), optimistic-lock 409 if locked.status != expected_status (l.411-423), state-machine canTransition+OrderStateMachine::allows 422 (l.430-435), board-release guard orderIsReleasedForBoard 422 (l.447-449). UNPAID delivery / UNPAID non-cash POS = invisible in list() AND non-bumpable. PENDING_COUNTER + POS-cash stay bumpable (Plan B).",
+    "evidence": "KitchenReleaseRule is SSOT: list() uses applyBoardReleaseFilter (SQL), changeStatus() uses orderIsReleasedForBoard (in-memory) — same definition so visible==bumpable. PHPUnit KdsUnreleasedOrderBumpP1Test: 'unpaid delivery order is blocked from bump' + 'unpaid non cash pos order is blocked from bump' PASS. (3 happy-path tests in that file fail ONLY on missing X-Idempotency-Key header — pre-existing harness baseline affecting 33 project tests, NOT a heal regression; the guard logic is exercised by the passing block-assertions.)",
+    "fix_proposal": "None for the guard. Backlog (test-infra, not prod): KdsUnreleasedOrderBumpP1Test happy-path cases should set withHeader('X-Idempotency-Key', ...) so the 202 path is reachable; otherwise they assert the idempotency-middleware 422, masking the real guard."
+  },
+  {
+    "severity": "P3",
+    "system": "OSS",
+    "file": "app/Services/OrderStatusScreenOrderService.php:45",
+    "title": "OSS list() lacks the KDS board-release payment filter (theoretical cross-surface mismatch — NOT reachable)",
+    "reproduction": "OSS list() filters order_type IN (KIOSK,TAKEAWAY) AND status IN (PREPARING,PREPARED) with NO payment-release predicate, whereas KDS list() additionally applies KitchenReleaseRule::applyBoardReleaseFilter (PAID|PENDING_COUNTER|POS-cash). In principle an UNPAID PREPARING kiosk order would show on the OSS wall but be hidden on KDS.",
+    "evidence": "DB probe on foodking_e2e (php artisan tinker): 104 PREPARING/PREPARED kiosk+takeaway orders, ALL payment_status=5 (PAID); divergent (OSS-visible AND KDS-release-hidden) count = 0. Defended-by-construction: an order only reaches PREPARING via the KDS bump, which enforces orderIsReleasedForBoard (service l.447) — an UNPAID order cannot be bumped to PREPARING, so it can never appear as PREPARING on OSS either. queue_number + order_serial_no are read from the same DB columns by both KDSOrderDetailsResource (l.23/49) and CDS/PosShortcut resources -> no numeric transform, no token/number mismatch.",
+    "fix_proposal": "Optional defense-in-depth (V1.0.2, not blocking): add KitchenReleaseRule::applyBoardReleaseFilter to OrderStatusScreenOrderService::list()/listForBranch() so the two surfaces share one release definition even if a future path mutates status without going through the KDS bump. Zero behaviour change on current data."
+  }
+]

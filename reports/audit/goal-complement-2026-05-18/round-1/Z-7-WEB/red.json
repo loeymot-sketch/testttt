@@ -1,0 +1,68 @@
+{
+  "zone": "Z-7-WEB",
+  "role": "RED-team",
+  "round": 1,
+  "audited_at": "2026-05-18T09:03:00Z",
+  "framing": "Adversarial: assume zone is over-validated by other specialists. Find what they missed. French market mandatory checks + cart edge cases + persistence edges.",
+  "summary": "Architect+Security+UX/A11y declared zone clean. RED-team contests: existing 76 E2E spec covers DATA + PRICING + RAW LABELS + LEGAL but has ZERO coverage on (a) account-v2 modal flow (login→OTP→success), (b) loyalty-v2 profile editor tabs, (c) orders.jsx history+filter+reorder, (d) funnel state machine back-button cart preservation, (e) axe-core a11y regression detection, (f) promo input XSS payload tolerance. These are NOT P0 production blockers since fixtures+integration are mocks, but they ARE coverage gaps that the heal mandate calls out (Sub 8.1/8.2/8.3 tasks).",
+  "findings_p0": [],
+  "findings_p1": [
+    {
+      "id": "Z-7-RED-P1-1",
+      "anchor": "tests/e2e/test-e2e-website-realignment-2026-05-16.spec.js",
+      "title": "Zero E2E coverage for account flow modal (Sub 8.2.1 mandate)",
+      "evidence": "Existing 76 tests cover home/menu/wizard data/legal/footer. AccountFlow modal (login tabs / signup OTP / forgot-pwd) never opened or stepped through.",
+      "recommendation": "Add tests/e2e/test-e2e-web-z7-gaps-2026-05-18.spec.js with: open Account modal, switch tabs, submit signup form with valid email+phone, observe OTP step, enter '1234', assert success. ~50 LOC, no source touch needed if existing UI is correct.",
+      "scope_minimal": true,
+      "task_ref": "T-8.2.1"
+    },
+    {
+      "id": "Z-7-RED-P1-2",
+      "anchor": "tests/e2e/test-e2e-website-realignment-2026-05-16.spec.js",
+      "title": "Zero E2E coverage for loyalty-v2 profile editor + orders history (Sub 8.2.2/8.2.3 mandate)",
+      "evidence": "loyalty-v2 LoyaltyProfileTab + orders.jsx OrdersPage never visited in existing spec. WebLoyalty (signed-out screen) visits route 'loyalty' but doesn't navigate to 'orders' or test profile editor.",
+      "recommendation": "Same new spec: route to 'orders' (auth-required gate), test signed-out CTA flow, then mock auth, test filter tabs (all/delivered/cancelled). Test reorder button presence on delivered orders.",
+      "scope_minimal": true,
+      "task_ref": "T-8.2.2 + T-8.2.3"
+    },
+    {
+      "id": "Z-7-RED-P1-3",
+      "anchor": "tests/e2e/test-e2e-website-realignment-2026-05-16.spec.js",
+      "title": "Zero E2E coverage for full funnel state machine + back-button cart preservation (Sub 8.1.2 mandate)",
+      "evidence": "Existing spec D/E test wizard buildSteps but never traverses checkout → payment → confirm → tracking. Back-button preservation: from checkout, click 'Retour', expect cart to still hold items.",
+      "recommendation": "Same new spec: home → add item to cart via wizard → open cart drawer → checkout → assert state, click back, assert cart preserved + drawer reopens. Then forward → payment → confirm → track.",
+      "scope_minimal": true,
+      "task_ref": "T-8.1.2"
+    },
+    {
+      "id": "Z-7-RED-P1-4",
+      "anchor": "tests/e2e/test-e2e-website-realignment-2026-05-16.spec.js",
+      "title": "Zero axe-core sweep across 4 viewports (Sub 8.3.2 mandate)",
+      "evidence": "Existing spec captures screenshots but does NOT run axe-core. node_modules/axe-core verified installed.",
+      "recommendation": "Add axe sweep test to same gap spec — page.addInitScript loads axe + page.evaluate(() => axe.run()). Assert zero serious/critical violations on home + menu + legal/cgv per viewport.",
+      "scope_minimal": true,
+      "task_ref": "T-8.3.2"
+    }
+  ],
+  "findings_p2": [
+    {
+      "id": "Z-7-RED-P2-1",
+      "anchor": "/Users/1millnonstop/Downloads/web/funnel.jsx:127",
+      "title": "Promo input ToUpperCase comparison but XSS payload acceptance is not validated",
+      "evidence": "funnel.jsx:127 const code = (ctx.promoInput || '').trim().toUpperCase(); — only valid codes ['CAYENNE10', 'WELCOME10', 'CAYENNE'] proceed; invalid sets error. XSS in input would just fail validation (good). No regex strip needed because comparison is exact-match. Edge: user pastes '<script>' → setCtx → React escapes on render. OK.",
+      "recommendation": "Verify via E2E that pasted '<script>alert(1)</script>' in promo gets rendered as text not executed. Single assertion in gap spec.",
+      "scope_minimal": true
+    },
+    {
+      "id": "Z-7-RED-P2-2",
+      "anchor": "/Users/1millnonstop/Downloads/web/account-v2.jsx:43",
+      "title": "OTP code input accepts non-digit then silently rejects (good UX) but no test",
+      "evidence": "account-v2.jsx:43 if (val && !/^\\d$/.test(val)) return; — non-digit ignored. Good. Untested.",
+      "recommendation": "Gap spec: type 'a' in OTP cell, assert cell empty + no advance.",
+      "scope_minimal": true
+    }
+  ],
+  "findings_p3": [],
+  "verdict": "RED RAISES 4 P1 coverage gaps (account/loyalty/orders/funnel state-machine/axe) + 2 P2 edge tests. These are HEAL-WORTHY in this zone since HEAL_ALLOWED and the GOAL Sub 8.1/8.2/8.3 explicitly lists these as required test files to create. Mandate: write ONE new spec file covering all 4 P1 + 2 P2 gaps. No source heal needed — existing UI implements the flows; we just need verification specs.",
+  "evidence_artifacts": []
+}

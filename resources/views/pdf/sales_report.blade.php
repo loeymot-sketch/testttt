@@ -95,51 +95,57 @@
          function getPaymentMethod($order)
          {
             if($order->order_type === App\Enums\OrderType::POS){
-            return trans('pos_payment_method.' . $order->pos_payment_method, [], 'en') != "pos_payment_method." ? trans('pos_payment_method.' . $order->pos_payment_method, [], 'en') : "";
+            return trans('pos_payment_method.' . $order->pos_payment_method) != "pos_payment_method." ? trans('pos_payment_method.' . $order->pos_payment_method) : "";
         }
 
         return trans(
-            'payment_gateway.' . $order->payment_method,[],'en'
+            'payment_gateway.' . $order->payment_method
         );
          }
     @endphp 
     <div class="container">
         <div class="report">
-            <p style="margin: 0px 0px 8px 0px;font-size: 16px;font-weight: bold">{{ App\Libraries\AppLibrary::textShortener($company['company_name'], 60) }}</p>
-            <p>{{ App\Libraries\AppLibrary::textShortener($company['company_address'],60) }}</p>
-            <p  style="color: #ff006b;margin: 0px 0px 8px 0px;font-size: 16px;font-weight: bold;">{{ trans('all.label.sales_report', [], 'en') }}</p>
+            <p style="margin: 0px 0px 8px 0px;font-size: 16px;font-weight: bold">{{ App\Libraries\AppLibrary::textShortener($company['company_name'] ?? 'Le Cayenne', 60) }}</p>
+            <p>{{ App\Libraries\AppLibrary::textShortener($company['company_address'] ?? '', 60) }}</p>
+            <p  style="color: #ff006b;margin: 0px 0px 8px 0px;font-size: 16px;font-weight: bold;">{{ trans('all.label.sales_report') }}</p>
             <table>
                 <thead>
                     <tr>
-                        <th>{{ trans('all.label.order_serial_no', [], 'en') }}</th>
-                        <th>{{ trans('all.label.date', [], 'en') }}</th>
-                        <th>{{ trans('all.label.payment_type', [], 'en') }}</th>
-                        <th>{{ trans('all.label.payment_status', [], 'en') }}</th>
-                        <th>{{ trans('all.label.discount', [], 'en') }}</th>
-                        <th>{{ trans('all.label.delivery_charge', [], 'en') }}</th>
-                        <th>{{ trans('all.label.total', [], 'en') }}</th>
+                        <th>{{ trans('all.label.order_serial_no') }}</th>
+                        <th>{{ trans('all.label.date') }}</th>
+                        <th>{{ trans('all.label.payment_type') }}</th>
+                        <th>{{ trans('all.label.payment_status') }}</th>
+                        <th>{{ trans('all.label.discount') }}</th>
+                        <th>{{ trans('all.label.delivery_charge') }}</th>
+                        <th>{{ trans('all.label.total') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach ($orders as $order)
                         @php
-                            $total+= $order->total;
-                            $total_discount += $order->discount;
-                            $total_delivery_charge += $order->delivery_charge;
+                            // [SALES-NET-01 heal 2026-06-01] The Total row sums only NET realized
+                            // revenue (drop cancelled-but-paid, include negative refund mirrors) so
+                            // it agrees with the on-screen card and the signed Z. Rows are still
+                            // listed for every order; only the aggregate is netted.
+                            if (\App\Models\Order::isRealizedRevenueRow($order)) {
+                                $total += $order->total;
+                                $total_discount += $order->discount;
+                                $total_delivery_charge += $order->delivery_charge;
+                            }
                          @endphp
                         <tr>
                             <td>{{$order->order_serial_no}}</td>
                             <td>{{ App\Libraries\AppLibrary::datetime($order->order_datetime) }}</td>
                             <td>{{  $order->transaction ? strtoupper($order->transaction->payment_method) 
                 : getPaymentMethod($order)}}</td>
-                            <td>{{ trans('payment_status.'. $order->payment_status, [], 'en') }}</td>
+                            <td>{{ trans('payment_status.'. $order->payment_status) }}</td>
                             <td>{{ App\Libraries\AppLibrary::reportCurrencyAmountFormat($order->discount) }}</td>
                             <td>{{ App\Libraries\AppLibrary::reportCurrencyAmountFormat($order->delivery_charge) }}</td>
                             <td>{{ App\Libraries\AppLibrary::reportCurrencyAmountFormat($order->total) }}</td>
                         </tr>
                     @endforeach
                     <tr class="total">
-                        <td colspan="4">{{ trans('all.label.total', [], 'en') }}</td>
+                        <td colspan="4">{{ trans('all.label.total') }}</td>
                         <td>{{ App\Libraries\AppLibrary::reportCurrencyAmountFormat($total_discount) }}</td>
                         <td>{{ App\Libraries\AppLibrary::reportCurrencyAmountFormat($total_delivery_charge) }}</td>
                         <td>{{ App\Libraries\AppLibrary::reportCurrencyAmountFormat($total) }}</td>

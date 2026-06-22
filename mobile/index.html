@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Le Cayenne — App mobile</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#FFD93D">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Le Cayenne">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="redesigns-styles.css">
+
+<style>
+  /* Production mobile entry — single full-viewport device frame, no prototype UI. */
+  html, body { margin: 0; height: 100%; width: 100%; background: #0A0A0A; overflow: hidden; }
+  body { font-family: 'Inter', sans-serif; color: var(--ink); }
+  #root { width: 100%; height: 100%; }
+
+  /* Device viewport — full mobile when on phone, framed iOS device on desktop preview */
+  .lc-device {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #fff;
+    overflow: hidden;
+  }
+  @media (min-width: 480px) {
+    /* Desktop preview : show iPhone frame centered */
+    body { background: #1a1a1a; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .lc-device {
+      width: 390px;
+      height: 844px;
+      max-height: calc(100vh - 40px);
+      border-radius: 48px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.45), 0 0 0 12px #0a0a0a, 0 0 0 13px #2a2a2a;
+    }
+    .lc-device::before {
+      content: '';
+      position: absolute;
+      top: 12px; left: 50%;
+      transform: translateX(-50%);
+      width: 124px;
+      height: 36px;
+      border-radius: 999px;
+      background: #0a0a0a;
+      z-index: 100;
+      pointer-events: none;
+    }
+  }
+  @media (max-width: 479px) {
+    /* Phone : full bleed */
+    .lc-device { border-radius: 0; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- Data layer (vanilla JS, attaches to window.LC.*) -->
+<!-- storage.js first: loyalty.js hydrates from LC.storage.getLoyalty(). -->
+<script src="api/storage.js"></script>
+<script src="data/menu.js"></script>
+<script src="data/loyalty.js"></script>
+<script src="data/loyaltyRewardState.js"></script>
+<script src="data/orders.js"></script>
+<script src="data/user.js"></script>
+<script src="data/wallet-spec.js"></script>
+<!-- Dev helpers last: wire onto LC.loyalty + LC.storage + LC.user. -->
+<script src="data/dev-helpers.js"></script>
+
+<!-- React + Babel runtime (prototype-grade ; en prod = build Vite/esbuild) -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<!-- Shared atoms + icons -->
+<script src="image-slot.js"></script>
+<script type="text/babel" src="icons.jsx"></script>
+<script type="text/babel" src="shared.jsx"></script>
+
+<!-- Hooks & components (must load BEFORE screens that consume them) -->
+<script src="hooks/useCountdown.js"></script>
+<script type="text/babel" src="hooks/useLoyaltyQR.js"></script>
+<script type="text/babel" src="components/BarcodeMock.jsx"></script>
+<script type="text/babel" src="components/LoyaltyQR.jsx"></script>
+<script type="text/babel" src="components/WizardRedeem.jsx"></script>
+
+<!-- Screens -->
+<script type="text/babel" src="screens-onboarding.jsx"></script>
+<script type="text/babel" src="screens-item-steps.jsx"></script>
+<script type="text/babel" src="screens-main.jsx"></script>
+<script type="text/babel" src="screens-modals.jsx"></script>
+
+<!-- App root -->
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+// Tabs that should hide bottom navigation
+const TAB_FOR = { home: 'home', menu: 'menu', orders: 'orders', orderDetail: 'orders', profile: 'profile', loyalty: 'profile' };
+const NO_TAB_SCREENS = ['splash','onb1','onb2','onb3','onb4','login','otp','item','cart','stripe','confirm','loyalty'];
+
+function App() {
+  const storage = window.LC.storage;
+
+  // Boot screen depends on auth + onboarding state
+  const initialScreen = (() => {
+    if (storage.isAuthenticated()) return 'home';
+    if (storage.hasSeenOnboarding()) return 'login';
+    return 'splash';
+  })();
+
+  const [screen, setScreen] = useState(initialScreen);
+  const [history, setHistory] = useState([initialScreen]);
+  const [itemId, setItemId] = useState(null);
+  const [cart, setCart] = useState(storage.getCart() || []);
+  const [modal, setModal] = useState(null);
+  const [modalCtx, setModalCtx] = useState(null);
+  const [toast, setToast] = useState(null);
+  // [test-e2e fix C-001 round-2 2026-05-11] bind to cart order — last placed order snapshot
+  const [lastOrder, setLastOrder] = useState(null);
+
+  // Persist cart on change
+  useEffect(() => { storage.setCart(cart); }, [cart]);
+
+  // [test-e2e fix C-001 round-2 2026-05-11] bind to cart order — snapshot cart at pay time
+  const snapshotOrder = () => {
+    const id = 'C-' + Math.floor(1000 + Math.random() * 9000);
+    const total = cart.reduce((s, i) => s + (i.lineTotal || i.price * i.qty), 0);
+    const eta = new Date(Date.now() + 12 * 60 * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', 'h');
+    const order = { id, total, eta, items: cart };
+    setLastOrder(order);
+    return order;
+  };
+
+  const go = (s, ext) => {
+    if (s === 'back') {
+      const h = [...history]; h.pop();
+      const prev = h[h.length-1] || 'home';
+      setHistory(h); setScreen(prev);
+      return;
+    }
+    if (s === 'pay')    { snapshotOrder(); setModal('pay'); return; }
+    if (s === 'gain')   { setModal('gain');   return; }
+    if (s === 'redeem') { setModal('redeem'); setModalCtx(ext || null); return; }
+    if (s === 'link')   { setModal('link');   return; }
+    if (s === 'walletApple')  { setModal('walletApple');  return; }
+    if (s === 'walletGoogle') { setModal('walletGoogle'); return; }
+    if (s === 'optOut') { setModal('optOut'); return; }
+    if (s === 'toast')  { setToast({ m: ext?.msg || 'OK', k: ext?.kind || 'info' }); return; }
+    if (s === 'logout') {
+      storage.clearAuth();
+      setCart([]);
+      setHistory(['login']);
+      setScreen('login');
+      return;
+    }
+    if (s === 'orderDetail' && ext) {
+      // ext = order id
+      setItemId(ext);
+    }
+    if (s === 'item' && ext) setItemId(ext);
+    setHistory(h => [...h, s]);
+    setScreen(s);
+  };
+
+  const addToCart = (it) => {
+    setCart(c => [...c, { ...it, sups: it.sups || it.extraIds || [], qty: it.qty || 1 }]);
+  };
+
+  const onLogin = () => {
+    storage.setAuth({ token: 'mock-v0-token', phone: '+33642799884', user_id: 12345 });
+    storage.markOnboardingSeen();
+  };
+
+  const showTab = !NO_TAB_SCREENS.includes(screen);
+  const activeTab = TAB_FOR[screen] || 'home';
+
+  let body;
+  switch (screen) {
+    case 'splash':  body = <ScreenSplash onNext={() => go('onb1')}/>; break;
+    case 'onb1':    body = <ScreenOnb1 onNext={() => go('onb2')} onSkip={() => { storage.markOnboardingSeen(); go('login'); }}/>; break;
+    case 'onb2':    body = <ScreenOnb2 onNext={() => go('onb3')} onSkip={() => { storage.markOnboardingSeen(); go('login'); }}/>; break;
+    case 'onb3':    body = <ScreenOnb3 onNext={() => go('onb4')} onSkip={() => { storage.markOnboardingSeen(); go('login'); }}/>; break;
+    case 'onb4':    body = <ScreenOnb4 onNext={() => { storage.markOnboardingSeen(); go('login'); }} onSkip={() => { storage.markOnboardingSeen(); go('login'); }}/>; break;
+    case 'login':   body = <ScreenLogin onNext={() => go('otp')} onBack={() => go('back')}/>; break;
+    case 'otp':     body = <ScreenOTP onNext={() => { onLogin(); setHistory(['home']); setScreen('home'); }} onBack={() => go('back')}/>; break;
+    case 'home':    body = <ScreenHome go={go} name={(window.LC.user.current.first_name)}/>; break;
+    case 'menu':    body = <ScreenMenu go={go} cart={cart} addToCart={addToCart}/>; break;
+    case 'item':    body = <ScreenItem go={go} itemId={itemId} addToCart={addToCart}/>; break;
+    case 'cart':    body = <ScreenCart go={(s)=> s==='confirm' ? go('pay') : go(s)} cart={cart} setCart={setCart}/>; break;
+    case 'stripe':  body = <ScreenStripe go={go} total={cart.reduce((s,i)=>s+i.price*i.qty,0)}/>; break;
+    case 'confirm': body = <ScreenConfirm go={go} order={lastOrder}/>; break;
+    case 'orders':  body = <ScreenOrders go={go}/>; break;
+    case 'orderDetail': body = <ScreenOrderDetail go={go} orderId={itemId || 'C-1234'}/>; break;
+    case 'profile': body = <ScreenProfile go={go}/>; break;
+    case 'loyalty': body = <ScreenLoyalty go={go}/>; break;
+    default: body = <ScreenHome go={go}/>;
+  }
+
+  const total = cart.reduce((s,i) => s + i.price * i.qty, 0);
+
+  return (
+    <div className="lc-device">
+      {body}
+      {showTab && <TabBar active={activeTab} onChange={(t) => go(t)}/>}
+      {modal === 'pay' && <ModalPayChoice total={total} onClose={()=>setModal(null)} onPickCounter={()=>{ setModal(null); setHistory(h=>[...h,'confirm']); setScreen('confirm'); setCart([]); setTimeout(()=>setModal('gain'), 900); }} onPickCard={()=>{ setModal(null); setHistory(h=>[...h,'stripe']); setScreen('stripe'); }}/>}
+      {/* [test-e2e fix C-003 round-2 2026-05-11] derive pointsEarned from the snapshotted
+          order total (1 pt / €, Math.round to match ScreenCart loyalty preview line 586
+          "+{Math.round(total)} pts gagnés sur cette commande"). Replaces the previous
+          hardcoded "+25 pts" literal. Falls back to 25 only if no order was snapshotted
+          (defensive — should never happen in the pay flow but keeps the welcome bonus
+          default for the modal's standalone story rendering). */}
+      {modal === 'gain' && <ModalPointsGain gain={lastOrder ? Math.round(lastOrder.total) : 25} onClose={()=>setModal(null)} onSee={()=>{ setModal(null); setHistory(h=>[...h,'loyalty']); setScreen('loyalty'); }}/>}
+      {modal === 'redeem' && <WizardRedeem ctx={modalCtx} onClose={()=>{ setModal(null); setModalCtx(null); }} onSuccess={(r)=>{ /* WizardRedeem handles toast internally via step3 success state */ }}/>}
+      {modal === 'optOut' && <ModalOptOutConfirm onClose={()=>setModal(null)} onConfirm={()=>{
+        setModal(null);
+        // [test-e2e fix D-002 round-2 2026-05-11] RGPD opt-out clears balance
+        // (article 17 right-to-erasure) — matches updated modal copy.
+        if (window.LC && window.LC.loyalty && window.LC.loyalty._replaceAccount) {
+          window.LC.loyalty._replaceAccount({ balance: 0, lifetime_earned: 0, lifetime_redeemed: 0 });
+        }
+        if (window.LC && window.LC.loyalty && window.LC.loyalty._replaceHistory) {
+          window.LC.loyalty._replaceHistory([]);
+        }
+        if (window.LC && window.LC.dev) window.LC.dev.setConsent('opted_out');
+        setToast({m:'Programme désactivé et points effacés. Tu peux te réinscrire à tout moment.', k:'info'});
+      }}/>}
+      {modal === 'link' && <ModalCardLink onClose={()=>setModal(null)} onScan={()=>{ setModal(null); storage.setPlasticCardLinked && storage.setPlasticCardLinked(true); setToast({m:'Carte plastique liée à ton compte', k:'success'}); }}/>}
+      {modal === 'walletApple' && <ModalWalletV0Notice kind="apple" onClose={()=>setModal(null)} onSeeQR={()=>{ setModal(null); setHistory(h=>[...h,'loyalty']); setScreen('loyalty'); }}/>}
+      {modal === 'walletGoogle' && <ModalWalletV0Notice kind="google" onClose={()=>setModal(null)} onSeeQR={()=>{ setModal(null); setHistory(h=>[...h,'loyalty']); setScreen('loyalty'); }}/>}
+      {toast && <Toast message={toast.m} kind={toast.k} onClose={()=>setToast(null)}/>}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

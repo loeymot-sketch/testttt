@@ -2,23 +2,19 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use App\Models\User;
-use App\Models\Branch;
-use App\Models\Item;
-use App\Models\ItemCategory;
-use App\Models\Coupon;
-use App\Models\DiningTable;
-use App\Models\KioskMachine;
-use App\Models\Tax;
-use App\Enums\ItemType;
 use App\Enums\DiscountType;
+use App\Enums\ItemType;
+use App\Models\Branch;
+use App\Models\Coupon;
+use App\Models\Item;
+use App\Models\Tax;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Tests\TestCase;
 
 /**
  * Module 2: CRUD Admin Complet (20 tests)
- * 
+ *
  * Surface: /api/admin/setting/*, /api/admin/item/*, /api/admin/branch/*, etc.
  * Priorité: 🟡 Haute
  */
@@ -38,6 +34,7 @@ class AdminCrudComprehensiveTest extends TestCase
         $branch = \Database\Factories\BranchFactory::new()->create();
         $admin = \Database\Factories\UserFactory::new()->create([]);
         $admin->assignRole('Admin');
+
         return [$branch, $admin];
     }
 
@@ -56,11 +53,11 @@ class AdminCrudComprehensiveTest extends TestCase
     {
         [$branch, $admin] = $this->setupAdmin();
         $item = \Database\Factories\ItemFactory::new()->create([]);
-        
+
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
             ->getJson('/api/admin/setting/item');
-        
+
         $response->assertStatus(200);
     }
 
@@ -73,7 +70,7 @@ class AdminCrudComprehensiveTest extends TestCase
         [$branch, $admin] = $this->setupAdmin();
         $category = \Database\Factories\ItemCategoryFactory::new()->create();
         $tax = Tax::factory()->create();
-        
+
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
             ->postJson('/api/admin/item', [
@@ -86,7 +83,7 @@ class AdminCrudComprehensiveTest extends TestCase
                 'order' => 1,
                 'status' => \App\Enums\Status::ACTIVE,
             ]);
-        
+
         $response->assertStatus(201);
         $this->assertDatabaseHas('items', ['name' => 'Test Item']);
     }
@@ -99,11 +96,11 @@ class AdminCrudComprehensiveTest extends TestCase
     {
         [$branch, $admin] = $this->setupAdmin();
         $item = \Database\Factories\ItemFactory::new()->create([]);
-        
+
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
             ->getJson("/api/admin/item/show/{$item->id}");
-        
+
         $response->assertStatus(200);
         $response->assertJsonFragment(['id' => $item->id]);
     }
@@ -116,9 +113,9 @@ class AdminCrudComprehensiveTest extends TestCase
     {
         [$branch, $admin] = $this->setupAdmin();
         $item = \Database\Factories\ItemFactory::new()->create([
-            'price' => 10.00
+            'price' => 10.00,
         ]);
-        
+
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
             ->putJson("/api/admin/item/{$item->id}", [
@@ -131,7 +128,7 @@ class AdminCrudComprehensiveTest extends TestCase
                 'order' => $item->order ?? 1,
                 'status' => $item->status,
             ]);
-        
+
         $response->assertStatus(200);
         $this->assertDatabaseHas('items', ['id' => $item->id, 'price' => 15.99]);
     }
@@ -144,11 +141,11 @@ class AdminCrudComprehensiveTest extends TestCase
     {
         [$branch, $admin] = $this->setupAdmin();
         $item = \Database\Factories\ItemFactory::new()->create([]);
-        
+
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
             ->deleteJson("/api/admin/item/{$item->id}");
-        
+
         $response->assertStatus(202);
         $this->assertSoftDeleted('items', ['id' => $item->id]);
     }
@@ -163,11 +160,11 @@ class AdminCrudComprehensiveTest extends TestCase
     {
         [$branch, $admin] = $this->setupAdmin();
         $category = \Database\Factories\ItemCategoryFactory::new()->create();
-        
+
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
             ->getJson('/api/admin/setting/item-category');
-        
+
         $response->assertStatus(200);
     }
 
@@ -178,14 +175,14 @@ class AdminCrudComprehensiveTest extends TestCase
     public function test_admin_can_create_category()
     {
         [$branch, $admin] = $this->setupAdmin();
-        
+
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
             ->postJson('/api/admin/setting/item-category', [
                 'name' => 'Test Category',
                 'status' => \App\Enums\Status::ACTIVE,
             ]);
-        
+
         $response->assertStatus(201);
         $this->assertDatabaseHas('item_categories', ['name' => 'Test Category']);
     }
@@ -198,11 +195,11 @@ class AdminCrudComprehensiveTest extends TestCase
     {
         [$branch, $admin] = $this->setupAdmin();
         $category = \Database\Factories\ItemCategoryFactory::new()->create();
-        
+
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
             ->deleteJson("/api/admin/setting/item-category/{$category->id}");
-        
+
         $response->assertStatus(202);
     }
 
@@ -215,11 +212,11 @@ class AdminCrudComprehensiveTest extends TestCase
     public function test_admin_can_list_branches()
     {
         [$branch, $admin] = $this->setupAdmin();
-        
+
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
             ->getJson('/api/admin/setting/branch');
-        
+
         $response->assertStatus(200);
     }
 
@@ -230,7 +227,7 @@ class AdminCrudComprehensiveTest extends TestCase
     public function test_admin_can_create_branch()
     {
         [$branch, $admin] = $this->setupAdmin();
-        
+
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
             ->postJson('/api/admin/setting/branch', [
@@ -243,7 +240,7 @@ class AdminCrudComprehensiveTest extends TestCase
                 'address' => '123 Test Street',
                 'status' => \App\Enums\Status::ACTIVE,
             ]);
-        
+
         $response->assertStatus(201);
         $this->assertDatabaseHas('branches', ['name' => 'Test Branch']);
     }
@@ -255,7 +252,7 @@ class AdminCrudComprehensiveTest extends TestCase
     public function test_admin_can_update_branch()
     {
         [$branch, $admin] = $this->setupAdmin();
-        
+
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
             ->putJson("/api/admin/setting/branch/{$branch->id}", [
@@ -268,7 +265,7 @@ class AdminCrudComprehensiveTest extends TestCase
                 'address' => $branch->address,
                 'status' => $branch->status,
             ]);
-        
+
         $response->assertStatus(200);
         $this->assertDatabaseHas('branches', ['id' => $branch->id, 'name' => 'Updated Branch Name']);
     }
@@ -281,11 +278,11 @@ class AdminCrudComprehensiveTest extends TestCase
     {
         [$branch, $admin] = $this->setupAdmin();
         $newBranch = \Database\Factories\BranchFactory::new()->create();
-        
+
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
             ->deleteJson("/api/admin/setting/branch/{$newBranch->id}");
-        
+
         $response->assertStatus(202);
     }
 
@@ -325,11 +322,11 @@ class AdminCrudComprehensiveTest extends TestCase
     {
         [$branch, $admin] = $this->setupAdmin();
         $coupon = \Database\Factories\CouponFactory::new()->create();
-        
+
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
             ->getJson('/api/admin/coupon');
-        
+
         $response->assertStatus(200);
     }
 
@@ -341,11 +338,11 @@ class AdminCrudComprehensiveTest extends TestCase
     {
         [$branch, $admin] = $this->setupAdmin();
         $coupon = \Database\Factories\CouponFactory::new()->create();
-        
+
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
             ->deleteJson("/api/admin/coupon/{$coupon->id}");
-        
+
         $response->assertStatus(202);
     }
 
@@ -358,7 +355,7 @@ class AdminCrudComprehensiveTest extends TestCase
     public function test_admin_can_create_dining_table()
     {
         [$branch, $admin] = $this->setupAdmin();
-        
+
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
             ->postJson('/api/admin/dining-table', [
@@ -367,7 +364,7 @@ class AdminCrudComprehensiveTest extends TestCase
                 'branch_id' => $branch->id,
                 'status' => \App\Enums\Status::ACTIVE,
             ]);
-        
+
         $response->assertStatus(201);
         $this->assertDatabaseHas('dining_tables', ['name' => 'Table 1']);
     }
@@ -380,11 +377,11 @@ class AdminCrudComprehensiveTest extends TestCase
     {
         [$branch, $admin] = $this->setupAdmin();
         $table = \Database\Factories\DiningTableFactory::new()->create(['branch_id' => $branch->id]);
-        
+
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
             ->getJson('/api/admin/dining-table');
-        
+
         $response->assertStatus(200);
     }
 
@@ -396,11 +393,11 @@ class AdminCrudComprehensiveTest extends TestCase
     {
         [$branch, $admin] = $this->setupAdmin();
         $table = \Database\Factories\DiningTableFactory::new()->create(['branch_id' => $branch->id]);
-        
+
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
             ->deleteJson("/api/admin/dining-table/{$table->id}");
-        
+
         $this->assertContains($response->status(), [202, 404]);
     }
 
@@ -413,8 +410,8 @@ class AdminCrudComprehensiveTest extends TestCase
     public function test_admin_can_create_kiosk_machine()
     {
         [$branch, $admin] = $this->setupAdmin();
-        $kioskUser = \Database\Factories\UserFactory::new()->create([]);
-        
+        $kioskUser = \Database\Factories\UserFactory::new()->create(['branch_id' => $branch->id]);
+
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
             ->postJson('/api/admin/setting/kiosk-machine', [
@@ -425,7 +422,7 @@ class AdminCrudComprehensiveTest extends TestCase
                 'user_id' => $kioskUser->id,
                 'status' => \App\Enums\Status::ACTIVE,
             ]);
-        
+
         $response->assertStatus(201);
         $this->assertDatabaseHas('kiosk_machines', ['machine_id' => 'machine-test-001']);
     }
@@ -437,19 +434,19 @@ class AdminCrudComprehensiveTest extends TestCase
     public function test_admin_can_change_kiosk_machine_status()
     {
         [$branch, $admin] = $this->setupAdmin();
-        $kioskUser = \Database\Factories\UserFactory::new()->create([]);
+        $kioskUser = \Database\Factories\UserFactory::new()->create(['branch_id' => $branch->id]);
         $kiosk = \Database\Factories\KioskMachineFactory::new()->create([
             'branch_id' => $branch->id,
             'user_id' => $kioskUser->id,
             'status' => \App\Enums\Status::ACTIVE,
         ]);
-        
+
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
             ->postJson("/api/admin/setting/kiosk-machine/change-status/{$kiosk->id}", [
                 'status' => \App\Enums\Status::INACTIVE,
             ]);
-        
+
         $response->assertStatus(202);
         $this->assertDatabaseHas('kiosk_machines', [
             'id' => $kiosk->id,

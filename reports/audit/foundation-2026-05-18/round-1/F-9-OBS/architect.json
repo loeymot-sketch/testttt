@@ -1,0 +1,144 @@
+{
+  "role": "architect",
+  "system": "F-9 Observability",
+  "scope": "Health checks, log channel composition, severity discipline, structured-vs-string logging, audit trail boundary",
+  "read_only": true,
+  "files_inspected": [
+    "app/Http/Controllers/HealthController.php",
+    "app/Http/Controllers/Admin/Observability/SyncOverviewController.php",
+    "app/Services/Observability/SloMetricCollector.php",
+    "app/Services/Observability/SyncMetricsRecorder.php",
+    "app/Jobs/Observability/SloEvaluatorJob.php",
+    "app/Http/Requests/Admin/Observability/StoreClientMetricsRequest.php",
+    "app/Services/Fiscal/AuditLogService.php",
+    "app/Services/Bypass/BypassAuditLogger.php",
+    "app/Console/Kernel.php",
+    "app/Console/Commands/MonitorOutboxStaleness.php",
+    "app/Logging/JsonFormatter.php",
+    "config/logging.php",
+    "routes/api.php"
+  ],
+  "findings_keep": [
+    {
+      "id": "ARCH-OBS-K1",
+      "title": "Channel separation = textbook clean",
+      "evidence": "config/logging.php:121-187 — 4 dedicated channels (hardware/security/observability/fiscal) each with explicit retention (30/90/90/400 days) and rationale block (lines 128-140, 158-169, 171-186). 'fiscal' = 400d for NF525 6-year archive pipeline, 'security' = 90d for forensic, 'observability' = JSON formatter for downstream Loki/Logtail. Mirrors testttt-kiosk-p93 reference.",
+      "verdict": "KEEP — production-grade. Don't touch."
+    },
+    {
+      "id": "ARCH-OBS-K2",
+      "title": "Health probe gate stack is layered correctly",
+      "evidence": "HealthController.php:13-32 (/healthz/full → all 4 subsystems + IP gate via assertFullHealthIpAllowed), :34-37 (/healthz/live → naked 200, intentional for K8s liveness), :39-60 (/healthz/ready → DB+Redis+queue_worker+broadcast_config + 503 if degraded). live() returns plain 'OK', ready() returns JSON. Asymmetry deliberate per AUDIT-F-015 spec (lines 41-46).",
+      "verdict": "KEEP — three-probe model (full/live/ready) follows K8s & SRE convention."
+    },
+    {
+      "id": "ARCH-OBS-K3",
+      "title": "F-015 outbox staleness probe baked into /ready",
+      "evidence": "HealthController.php:143-168 checkQueueWorker — single indexed COUNT(*) against domain_events.idx_pending, threshold 10 stale events >30s old. Probe self-degrades silently if domain_events missing (lines 162-167) — does NOT flap /ready to 503 during migrations. Same threshold replicated in MonitorOutboxStaleness.php:31-33 (--threshold=10 default).",
+      "verdict": "KEEP — defense-in-depth (HTTP probe + cron alerter) closes the silent-failure trap documented in plans/PLAN_AUDIT_F015_QUEUE_CONFIG_PROD_2026-05-07.md."
+    },
+    {
+      "id": "ARCH-OBS-K4",
+      "title": "Production broadcast misconfig probe",
+      "evidence": "HealthController.php:181-213 checkBroadcastConfig — runs ONLY in production env (line 186), refuses QUEUE_CONNECTION=sync (line 190) and BROADCAST_DRIVER=null/log (line 201) with operator-actionable error messages pointing to docs/REALTIME_SETUP.md. Outside prod (CI/local) sync+log are accepted (line 186-188).",
+      "verdict": "KEEP — environment-aware gating is the right pattern."
+    },
+    {
+      "id": "ARCH-OBS-K5",
+      "title": "SyncMetricsRecorder = non-blocking telemetry done right",
+      "evidence": "SyncMetricsRecorder.php:108-128 — internal try/catch around DB::insert guarantees a metric-write failure NEVER bubbles into the business flow. On insert failure → Log::warning + return silently. Client metric whitelist (ALLOWED_CLIENT_METRICS, line 46-52) caps cardinality. Validation symmetric in StoreClientMetricsRequest.php:30 via Rule::in(SyncMetricsRecorder::ALLOWED_CLIENT_METRICS) — single SSOT.",
+      "verdict": "KEEP — invariant 'telemetry never breaks business flow' explicitly enforced and documented."
+    },
+    {
+      "id": "ARCH-OBS-K6",
+      "title": "SLO collector classification is well-typed",
+      "evidence": "SloMetricCollector.php:30-36 SLO_TARGETS const with target/warn/breach triple for 5 metrics. Ratio vs latency split via classifyRatio (line 176-186) and classifyLatency (line 188-198) — 'no_data' status when null (line 179, 191). Driver-aware SQL for window bucketing (line 69-72) handles SQLite vs MySQL portability. Backend-only aggregation (ADR-10) — frontend never aggregates SLO.",
+      "verdict": "KEEP — invariant documented (line 11-16), explicit, testable."
+    },
+    {
+      "id": "ARCH-OBS-K7",
+      "title": "audit_logs NF525 HMAC chain — orthogonal to operational observability",
+      "evidence": "AuditLogService.php:30-65 — append-only HMAC SHA-256 chain (prev_hash || canonical payload), Cache::lock 10s + DB transaction + UNIQUE(branch_id, prev_hash) defense-in-depth (lines 60-65, 100-119). Single authorized writer (line 18-19). Distinct from ActionLog (operational): audit_logs = fiscal NF525 (6-year retention), ActionLog = operational/SLO snapshots. Boundary implicit but consistent.",
+      "verdict": "KEEP — frozen-zone, no modification proposed."
+    },
+    {
+      "id": "ARCH-OBS-K8",
+      "title": "SloEvaluatorJob has retry resilience",
+      "evidence": "SloEvaluatorJob.php:41-43 — tries=3, timeout=120s, backoff=10s. Per-branch try/catch (line 52-61) prevents one branch failure from blanking the entire 5-minute SLO bucket. Scheduled via Schedule::job() everyFiveMinutes() + withoutOverlapping(5) + onOneServer in Console/Kernel.php:125-128.",
+      "verdict": "KEEP — W9-AUDIT FIX-6 hardening visible in code (line 34-40 comment)."
+    },
+    {
+      "id": "ARCH-OBS-K9",
+      "title": "Outbox dashboard endpoints have role-tiered gating",
+      "evidence": "SyncOverviewController.php:45 — kitchen-display-system permission on index+clientMetrics (broad read+telemetry write), :52-56 — role:Admin|Tenant Admin on outboxOverview/Retry/Drain (mutating + cross-tenant pipeline data). Branch isolation enforced in resolveBranchScope (line 188-219) with explicit 403 on cross-branch read attempts (line 211-215).",
+      "verdict": "KEEP — defense-in-depth (permission gate + role gate + branch scope)."
+    }
+  ],
+  "findings_heal": [
+    {
+      "id": "ARCH-OBS-H1",
+      "title": "Severity mis-leveling — 320 occurrences of Log::info($exception->getMessage())",
+      "evidence": "Grep returns 320 hits across app/. Pattern: BranchService.php:52,65,78,95,108,121,164,215 (8 occurrences in single service), DefaultAccessService.php:34,59, RouteServiceProvider.php:191, all 8 SMS gateways (Bulksms/Bulksmsbd/Clickatell/Msg91/Nexmo/Telesign/Twilio/Twofactor), 3 Payment gateways (Paypal/Credit/Stripe partially), 8 Listeners (SendOrderGotPushNotification/SendOrderMailNotification/SendResetPasswordNotification/SendOrderGotSmsNotification/SendOrderSmsNotification/SendOrderDeliveryBoyPushNotification/SendSmsCodeNotification/SendEmailVerificationNotification), and 11 in DashboardService (DIRTY — defer). Each call: Log::info($e->getMessage()) — string concat, no stack trace, no context array, no exception class, INFO severity instead of ERROR/WARNING.",
+      "impact": "Production exceptions get logged at INFO and rotated out of the default 14-day laravel.log silently. Operators see no signal in alert pipelines (Sentry/Slack hooked above INFO). Diagnostic info (stack, file, line) lost. PII could leak if exception message embeds user data (e.g. SQL constraint dump).",
+      "verdict": "HEAL — refactor to Log::error('domain.event', ['exception_class'=>..., 'message'=>..., 'trace'=>substr($e->getTraceAsString(),0,2000), context]). Frozen-adjacent (Payment gateways → require LOCK per CLAUDE.md §7 NF525). DIRTY zone (DashboardService 11 occurrences) excluded from this heal — attest only."
+    },
+    {
+      "id": "ARCH-OBS-H2",
+      "title": "String-concat logging instead of structured fields",
+      "evidence": "FcmNotificationService.php:80,94 — Log::info('[FCM] Sent to token: ' . substr($token, 0, 20) . '...', ['title' => $title]) — message+context mix. KioskEventController.php:260,267,265 — Log::warning('[C6] ...: ' . $e->getMessage()). LoyaltyController.php:236,320 — Log::info(\"Loyalty addPoints: {$pointsToAdd} pts added to user #{$user->id}...\"). Compared to SloEvaluatorJob.php:88-97 (structured payload-only) — inconsistent across codebase.",
+      "impact": "Loki/Logtail downstream can't parse string-concat lines reliably. Filter/alert by metric_name fails. JsonFormatter (production_json/observability channels) wraps but doesn't normalize.",
+      "verdict": "HEAL (V1.0.2) — codify structured-logging convention in docs/PLAYWRIGHT_MCP_OPS.md or new docs/OBSERVABILITY_CONVENTIONS.md. Low priority compared to H1."
+    },
+    {
+      "id": "ARCH-OBS-H3",
+      "title": "Channel routing inconsistency — default Log:: facade vs Log::channel()",
+      "evidence": "58 Log::channel('observability'/'security'/'fiscal') calls in app/, but 487 unscoped Log::info/error/warning (count from grep). Result: most observability-relevant logs land in the default stack channel (single laravel.log, 14d rotation) instead of the dedicated 90-day observability or 400-day fiscal channels designed for them. Example: SyncMetricsRecorder.php:96 (Log::warning rejecting bad client metric) uses default — should be Log::channel('observability').",
+      "impact": "90-day forensic retention for observability events is unrealized for the majority of writes. Operator dashboards filtered by channel miss events.",
+      "verdict": "HEAL — apply channel routing discipline to high-value flows (sync metrics, outbox, SLO eval). Mostly DIRTY DashboardService doesn't matter; targeted heal on SyncMetricsRecorder + SloEvaluatorJob + new code."
+    },
+    {
+      "id": "ARCH-OBS-H4",
+      "title": "BypassAuditLogger writes to default channel only",
+      "evidence": "BypassAuditLogger.php:32-37, 45-50 — Log::warning(...) without channel scope. Bypass mode is a security-relevant event (TPE/printer short-circuit) and should land in 'security' (90d) or 'fiscal' (400d) channel — not the 14-day generic stack. AppServiceProvider boot() guard (referenced line 12-13) prevents prod bypass, so not breach today.",
+      "impact": "If bypass ever activates in misconfigured prod (despite the boot guard), the evidence trail rotates in 14 days instead of 90+.",
+      "verdict": "HEAL — change Log::warning(...) to Log::channel('security')->warning(...) in 2 places. Trivial scope-minimal patch."
+    },
+    {
+      "id": "ARCH-OBS-H5",
+      "title": "AuditLog vs ActionLog boundary is implicit",
+      "evidence": "AuditLogService.php (HMAC chain, NF525, 1 authorized writer) vs ActionLog::create direct calls (11 sites: OrderController.php:225,293, KioskEventController.php:253, SloEvaluatorJob.php:67, OrderService.php:536,978,1358,1816,2000,2239). Two parallel append-only stores. AuditLog = fiscal/security, ActionLog = operational/SLO/audit-light. No doc/contract defining the boundary.",
+      "impact": "Risk of drift — future dev unsure which store to use for a given event class. SoftDeleteAuditObserver and DiningTableAuditLog add 2 more audit stores.",
+      "verdict": "HEAL (docs) — write docs/AUDIT_TRAILS_CONTRACT.md defining: NF525 events → audit_logs (HMAC chain), security events → audit_logs + security channel, SLO/operational → ActionLog, soft-delete → SoftDeleteAuditObserver. Code unchanged."
+    }
+  ],
+  "findings_duplicate": [
+    {
+      "id": "ARCH-OBS-D1",
+      "title": "SloEvaluatorJob writes one event to two sinks with no dedup key",
+      "evidence": "SloEvaluatorJob.php:65-83 persistSnapshot — calls ActionLog::create([action=>'slo_evaluation', details=>json_encode(snapshot)]) AND Log::channel('observability')->info('slo_evaluation', [snapshot]). Same event, same payload, two append-only stores. No correlation_id linking them.",
+      "impact": "Downstream consumer (Loki + DB) sees 2 records per branch per 5min — counters double-count. Adds storage cost ~2x for the same signal.",
+      "verdict": "DUPLICATE — pick one canonical sink. ActionLog (queryable from admin UI) or observability channel (Loki-ingestible). The other becomes a debug-level secondary or removed."
+    },
+    {
+      "id": "ARCH-OBS-D2",
+      "title": "Outbox staleness checked in 3 places",
+      "evidence": "(a) HealthController.php:143-168 (/ready probe, threshold=10 hardcoded), (b) MonitorOutboxStaleness.php:37-84 (cron --threshold=10 default, schedule everyMinute Console/Kernel.php:50-54), (c) SyncOverviewController.php:128-153 recent_failures (dashboard query). Three independent reads of the same domain_events 'pending+stale' invariant.",
+      "impact": "Threshold drift risk — three places to update if SLO changes. Currently OK because all use 10 + 30s and (a)/(b) have explicit cross-reference comments.",
+      "verdict": "DUPLICATE-but-deliberate — KEEP because each surface has a distinct consumer (LB / pager / human dashboard). DOC the contract in a runbook."
+    }
+  ],
+  "findings_dead": [
+    {
+      "id": "ARCH-OBS-DEAD1",
+      "title": "SyncMetricsRecorder::recordWebSocketAuthFailure is UNCALLED server-side",
+      "evidence": "SyncMetricsRecorder.php:36-44 — explicit code comment: 'The server-side recordWebSocketAuthFailure() method below is currently UNCALLED. If a future caller is wired ... DO add a source label otherwise ws_auth_failures_count will double-count.' Grep confirms zero callers outside the metric type constant declaration.",
+      "impact": "Hook exists, dashboard panel (SyncOverviewController.php:166) reads ws_auth_failures_count which today reflects ONLY frontend (via /client-metrics). If a server-side authorizer is wired later without the source label fix, dashboard will silently double-count.",
+      "verdict": "DEAD-EXPECTED — keep the method (intentional surface, well-documented). Add a `// @phpstan-ignore-line` or a unit test pinning the unused state until wireup."
+    }
+  ],
+  "open_questions_for_owner": [
+    "Should DIRTY DashboardService Log::info(exception) be carved out as a 'session-A WIP' tracked item with its own LOCK plan, or attested as orphaned and deferred to the DashboardService refactor cycle?",
+    "Is the AuditLog vs ActionLog boundary worth documenting now (V1) or deferred to V1.0.2 along with the audit-trail contract doc?"
+  ],
+  "word_count_approx": 1480
+}

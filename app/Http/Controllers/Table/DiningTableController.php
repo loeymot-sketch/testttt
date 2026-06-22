@@ -25,7 +25,7 @@ class DiningTableController extends Controller
         try {
             return DiningTableResource::collection($this->diningTableService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -34,7 +34,7 @@ class DiningTableController extends Controller
         try {
             return new DiningTableResource($frontendDiningTable);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

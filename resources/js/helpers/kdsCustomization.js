@@ -1,0 +1,273 @@
+/**
+ * [kds/sprint-2 F-3] Adaptive customization renderer — the single source of
+ * truth that converts an OrderItem (post-T07 composition_snapshot or legacy
+ * item_variations/item_extras/item_addons) into a flat list of typed display
+ * nodes consumed by <KdsOrderLine>.
+ *
+ * Vue templates MUST NOT branch per-category — they iterate `renderItem().lines`.
+ * Adding a new category = one branch here + (optionally) one i18n group key.
+ *
+ * Per-category contract (DESIGN_SPEC_KDS_V2 §3.1):
+ *   SANDWICH    : header + grouped variations (Pain/Crudités/Sauce/Cuisson)
+ *                 + extras (yellow italic supplement)
+ *                 + addons (menu_full/menu_frites/menu_boisson → menu_child)
+ *   TACO/BURGER : same as sandwich, omit Pain group
+ *   ASSIETTE    : header + comma-joined variations on one "Avec :" line
+ *   MENU_FORMULE: header + addons indented as children
+ *   SIDE/DRINK/DESSERT/OTHER: header + extras only, no variations grouping
+ */
+
+import { kdsInstructionVisualClass } from './kdsLineSemantics.js';
+
+// Group keys are surfaced to i18n via `label.kds_group_<key>`.
+// Heuristic-keyword regex per group. The first match wins.
+const GROUP_PATTERNS = [
+    { key: 'bread', re: /\bpain\b|\bbread\b/i },
+    { key: 'crudites', re: /crudit|crudity|salade|legum|vegetab/i },
+    { key: 'sauce', re: /\bsauce\b/i },
+    { key: 'cooking', re: /cuisson|cook|temperature/i },
+    { key: 'drink', re: /boisson|drink|beverage/i },
+    { key: 'size', re: /\btaille\b|\bsize\b|\bportion\b/i },
+];
+
+function classifyGroup(variationName, attributeName) {
+    const name = `${variationName || ''} ${attributeName || ''}`;
+    for (const g of GROUP_PATTERNS) {
+        if (g.re.test(name)) {
+            return g.key;
+        }
+    }
+    return 'other';
+}
+
+/**
+ * Classify an item into a category. Server can override this by populating
+ * a future `items.kds_category` column; until then, name-based fallback.
+ *
+ * @param {object} orderItem
+ * @returns {'sandwich'|'taco'|'burger'|'assiette'|'menu_formule'|'side'|'drink'|'dessert'|'other'}
+ */
+export function categorize(orderItem) {
+    const declared = String(orderItem?.kds_category || '').toLowerCase();
+    if (
+        [
+            'sandwich',
+            'taco',
+            'burger',
+            'assiette',
+            'menu_formule',
+            'side',
+            'drink',
+            'dessert',
+            'other',
+        ].includes(declared)
+    ) {
+        return declared;
+    }
+    const name = String(orderItem?.item_name || '').toLowerCase();
+    if (/menu|formule/.test(name)) {
+        return 'menu_formule';
+    }
+    if (/sandwich|kafteji|brick/.test(name)) {
+        return 'sandwich';
+    }
+    if (/\btacos?\b/.test(name)) {
+        return 'taco';
+    }
+    if (/burger|cheeseburger/.test(name)) {
+        return 'burger';
+    }
+    if (/assiette|couscous|ojja|lablabi/.test(name)) {
+        return 'assiette';
+    }
+    if (/frite|onion ring/.test(name)) {
+        return 'side';
+    }
+    // [#4] Dessert BEFORE drink, and short drink tokens anchored with \b. An
+    // unanchored 'eau' matched 'gâteau'/'plateau'/'château', mislabeling desserts
+    // as drinks (the dessert branch was unreachable for those names).
+    if (/dessert|crepe|crêpe|gateau|gâteau|glace|tiramisu/.test(name)) {
+        return 'dessert';
+    }
+    if (/coca|fanta|sprite|\beau\b|coke|water|\bjus\b|\bthé?\b|menthe|caf[eé]/.test(name)) {
+        return 'drink';
+    }
+    return 'other';
+}
+
+function readVariations(orderItem) {
+    // Post-T07: composition_snapshot.lines wins (richer shape with attribute_name).
+    const snap = orderItem?.composition_snapshot;
+    if (snap && Array.isArray(snap.lines) && snap.lines.length > 0) {
+        return snap.lines;
+    }
+    return Array.isArray(orderItem?.item_variations) ? orderItem.item_variations : [];
+}
+
+function readExtras(orderItem) {
+    const snap = orderItem?.composition_snapshot;
+    if (snap && Array.isArray(snap.extras) && snap.extras.length > 0) {
+        return snap.extras;
+    }
+    return Array.isArray(orderItem?.item_extras) ? orderItem.item_extras : [];
+}
+
+function readAddons(orderItem) {
+    const snap = orderItem?.composition_snapshot;
+    if (snap && Array.isArray(snap.addons) && snap.addons.length > 0) {
+        return snap.addons;
+    }
+    return Array.isArray(orderItem?.item_addons) ? orderItem.item_addons : [];
+}
+
+function variationLabel(v) {
+    return v?.name || v?.variation_name || '';
+}
+
+function extraLabel(e) {
+    return e?.name || e?.extra_name || '';
+}
+
+function addonLabel(a) {
+    return a?.addon_name || a?.name || '';
+}
+
+/**
+ * Render an order item into a flat typed line list.
+ *
+ * Line types:
+ *   'header'        — the item itself (qty + name + allergen icon)
+ *   'variation'     — grouped or single variation row (Pain / Crudités / …)
+ *   'variation-flat'— the assiette "Avec : a, b, c" one-liner
+ *   'supplement'    — paid extra "+ Cheddar"
+ *   'addon'         — generic addon (rare)
+ *   'menu_child'    — addon with role startsWith 'menu_'
+ *   'instruction'   — free-text note (classified note/exclusion/allergen)
+ *   'allergen'      — explicit allergens_snapshot codes block
+ *
+ * @param {object} orderItem
+ * @returns {{ category: string, hasAllergen: boolean, lines: Array<object> }}
+ */
+export function renderItem(orderItem) {
+    const category = categorize(orderItem);
+    const lines = [];
+
+    const allergenCodes = Array.isArray(orderItem?.allergens_snapshot)
+        // [#8] Coerce to string BEFORE filtering — numeric allergen codes (the
+        // backend hash uses strval) were silently dropped, suppressing the
+        // allergen line AND the orange card border. Food-safety: never drop a
+        // non-empty code regardless of its JS type.
+        ? orderItem.allergens_snapshot
+            .map((c) => (c === null || c === undefined ? '' : String(c)))
+            .filter((c) => c.length > 0)
+        : [];
+    const itemAllergen = allergenCodes.length > 0;
+
+    lines.push({
+        type: 'header',
+        qty: orderItem?.quantity ?? 1,
+        label: orderItem?.item_name || '',
+        category,
+        hasAllergen: itemAllergen,
+    });
+
+    const vars = readVariations(orderItem);
+    if (vars.length > 0) {
+        if (category === 'assiette') {
+            const joined = vars
+                .map((v) => {
+                    const q = parseInt(v?.quantity, 10);
+                    const prefix = Number.isFinite(q) && q > 1 ? `${q} ` : '';
+                    return `${prefix}${variationLabel(v)}`;
+                })
+                .filter((s) => s.trim().length > 0)
+                .join(', ');
+            if (joined.length > 0) {
+                lines.push({ type: 'variation-flat', group: 'avec', label: joined });
+            }
+        } else {
+            // Group by classified attribute name. SANDWICH renders Pain, others omit.
+            const byGroup = new Map();
+            for (const v of vars) {
+                const g = classifyGroup(v?.variation_name, v?.attribute_name);
+                if (g === 'bread' && (category === 'taco' || category === 'burger')) {
+                    // taco/burger: skip the Pain group (no bread choice)
+                    continue;
+                }
+                if (!byGroup.has(g)) {
+                    byGroup.set(g, []);
+                }
+                byGroup.get(g).push(variationLabel(v));
+            }
+            for (const [group, labels] of byGroup.entries()) {
+                lines.push({
+                    type: 'variation',
+                    group,
+                    label: labels.filter((l) => l.length > 0).join(', '),
+                });
+            }
+        }
+    }
+
+    // Paid supplements — yellow italic, "+" prefix.
+    for (const e of readExtras(orderItem)) {
+        const label = extraLabel(e);
+        if (!label) continue;
+        const q = parseInt(e?.quantity, 10);
+        const suffix = Number.isFinite(q) && q > 1 ? ` ×${q}` : '';
+        lines.push({ type: 'supplement', label: `+ ${label}${suffix}` });
+    }
+
+    // Menu Formule children (composition_snapshot.addons[].role startsWith 'menu_').
+    for (const a of readAddons(orderItem)) {
+        const label = addonLabel(a);
+        if (!label) continue;
+        const role = String(a?.role || '').toLowerCase();
+        const isMenuChild = role.startsWith('menu_');
+        const q = parseInt(a?.quantity, 10);
+        const qtyPrefix = Number.isFinite(q) && q > 1 ? `${q}× ` : '';
+        lines.push({
+            type: isMenuChild ? 'menu_child' : 'addon',
+            label: `${qtyPrefix}${label}`,
+            role,
+        });
+    }
+
+    // Free-text instruction — keyword-classified.
+    const instruction = (orderItem?.instruction || '').trim();
+    if (instruction.length > 0) {
+        lines.push({
+            type: 'instruction',
+            label: instruction,
+            visualClass: kdsInstructionVisualClass(instruction),
+        });
+    }
+
+    // Allergens_snapshot codes (separate from instruction-keyword detection).
+    if (itemAllergen) {
+        lines.push({ type: 'allergen', codes: allergenCodes });
+    }
+
+    return { category, hasAllergen: itemAllergen, lines };
+}
+
+/**
+ * Aggregate `hasAllergen` across an entire order — used to flip the card-level
+ * orange border override regardless of age.
+ *
+ * @param {Array} orderItems
+ * @returns {boolean}
+ */
+export function orderHasAnyAllergen(orderItems) {
+    if (!Array.isArray(orderItems)) {
+        return false;
+    }
+    for (const it of orderItems) {
+        const codes = Array.isArray(it?.allergens_snapshot) ? it.allergens_snapshot : [];
+        // [#8] Coerce — numeric/non-string codes count as allergens too (food safety).
+        if (codes.some((c) => c !== null && c !== undefined && String(c).length > 0)) {
+            return true;
+        }
+    }
+    return false;
+}

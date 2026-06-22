@@ -37,7 +37,10 @@ class CustomerService
             $orderColumn = $request->get('order_column') ?? 'id';
             $orderType   = $request->get('order_type') ?? 'desc';
 
-            return User::with('media', 'addresses', 'messages')->role(EnumRole::CUSTOMER)->where(function ($query) use ($requests) {
+            // [GOAL-pageby-V1.0.2 class-of-bug] Spatie's ->role($int) calls findById($int) (HasRoles L84).
+            // Passing EnumRole::CUSTOMER int breaks whenever roles.id AUTO_INCREMENT skipped past it
+            // (fresh seed lands at 73-80). Stable identity = role NAME. Pattern from DeliveryBoyService heal (0332e5b7e).
+            return User::with('media', 'addresses', 'messages')->role('Customer', 'sanctum')->where(function ($query) use ($requests) {
                 foreach ($requests as $key => $request) {
                     if (in_array($key, $this->userFilter)) {
                         $query->where($key, 'like', '%' . $request . '%');
@@ -86,6 +89,14 @@ class CustomerService
      */
     public function update(CustomerRequest $request, User $customer)
     {
+        // [WAVE5-SEC-001] Verify the route-bound user actually has the expected role
+        // BEFORE entering the try/catch (which rewrites everything to 422). The
+        // pre-existing $blockRoles tautology never checked the target role, allowing
+        // a Branch Manager with `customers_edit` to PUT /api/admin/customer/{any_user_id}
+        // and rotate (e.g.) an Admin password. Guard placed at top so the 403 status
+        // survives QueryExceptionLibrary::message() rewrap.
+        $this->assertTargetRole($customer);
+
         try {
             if (!in_array(EnumRole::CUSTOMER, $this->blockRoles)) {
                 DB::transaction(function () use ($customer, $request) {
@@ -160,10 +171,30 @@ class CustomerService
     }
 
     /**
+     * [WAVE5-SEC-001] Defense-in-depth: ensure the route-bound User is actually a
+     * Customer before any mutation. The legacy `$blockRoles = [ADMIN]` tautology
+     * never checked the target's role, allowing privilege escalation.
+     *
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException 403
+     */
+    private function assertTargetRole(User $customer): void
+    {
+        if (! $customer->hasRole(EnumRole::CUSTOMER)) {
+            throw new \Symfony\Component\HttpKernel\Exception\HttpException(
+                403,
+                'Cannot mutate user outside expected role.'
+            );
+        }
+    }
+
+    /**
      * @throws Exception
      */
     public function changePassword(UserChangePasswordRequest $request, User $customer): User
     {
+        // [WAVE5-SEC-001] See update() comment — same role-target guard.
+        $this->assertTargetRole($customer);
+
         try {
             if (!in_array(EnumRole::CUSTOMER, $this->blockRoles)) {
                 $customer->password = Hash::make($request->password);
@@ -183,6 +214,9 @@ class CustomerService
      */
     public function changeImage(ChangeImageRequest $request, User $customer): User
     {
+        // [WAVE5-SEC-001] See update() comment — same role-target guard.
+        $this->assertTargetRole($customer);
+
         try {
             if (!in_array(EnumRole::CUSTOMER, $this->blockRoles)) {
                 if ($request->image) {

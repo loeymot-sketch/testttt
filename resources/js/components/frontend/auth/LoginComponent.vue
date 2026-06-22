@@ -16,7 +16,7 @@
             <form @submit.prevent="login">
                 <div class="mb-4">
                     <label for="formEmail" class="text-sm capitalize mb-1 text-heading">{{ $t('label.email') }}</label>
-                    <input type="text" :class="errors.email ? 'invalid' : ''" v-model="form.email"
+                    <input autocomplete="email" type="text" :class="errors.email ? 'invalid' : ''" v-model="form.email"
                         class="w-full h-12 rounded-lg border px-4 border-[#D9DBE9]" id="formEmail">
                     <small class="db-field-alert" v-if="errors.email">{{ errors.email[0] }}</small>
                 </div>
@@ -24,7 +24,7 @@
                     <label for="formPassword" class="text-sm capitalize mb-1 text-heading">{{
                         $t('label.password')
                     }}</label>
-                    <input autocomplete="off" type="password" :class="errors.password ? 'invalid' : ''"
+                    <input autocomplete="current-password" type="password" :class="errors.password ? 'invalid' : ''"
                         v-model="form.password" class="w-full h-12 rounded-lg border px-4 border-[#D9DBE9]"
                         id="formPassword">
                     <small class="db-field-alert" v-if="errors.password">{{ errors.password[0] }}</small>
@@ -41,7 +41,10 @@
                         </label>
                     </div>
                     <router-link :to="{ name: 'auth.forgetPassword' }"
-                        class="capitalize text-xs font-medium transition text-primary">
+                        class="capitalize text-xs font-medium transition text-orange-700 underline">
+                        <!-- [micro-ux 2026-06-19] text-primary #F4501E = 3.49:1 on white (WCAG AA fail).
+                             Reuse the in-project AA-safe brand-orange text token text-orange-700 #C2410C = 5.18:1 (PASS),
+                             same family as the dashboard text links; + underline for link affordance. -->
                         {{ $t('button.forget_password') }}
                     </router-link>
                 </div>
@@ -153,6 +156,9 @@ export default {
                     this.loading.isActive = false;
                     alertService.success(res.data.message);
 
+                    // Avant router.push : aligner meta.access (sinon ancien refus / race 1s avec setTimeout).
+                    appService.recursiveRouter(routes, res.data.permission);
+
                     // [LOGIN-02] Redirection intelligente selon le profil
                     // [STAFF-ONLY-V1] En staff-only mode : le fallback va au dashboard admin (plus de frontend.home).
                     const defaultPermission = res.data?.defaultPermission;
@@ -170,10 +176,6 @@ export default {
                     } else {
                         router.push({ name: "frontend.home" });
                     }
-
-                    setTimeout(() => {
-                        appService.recursiveRouter(routes, this.permission);
-                    }, 1000);
                 }).catch((err) => {
                     this.loading.isActive = false;
                     const data = err.response?.data;

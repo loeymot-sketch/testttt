@@ -1,0 +1,82 @@
+[
+    {
+        "sample": 1,
+        "item_id": 1,
+        "backend_latency_ms": 814,
+        "wall_e2e_ms": 835,
+        "metric_id": 821,
+        "status": "OK"
+    },
+    {
+        "sample": 2,
+        "item_id": 1,
+        "backend_latency_ms": 1847,
+        "wall_e2e_ms": 877,
+        "metric_id": 823,
+        "status": "OK"
+    },
+    {
+        "sample": 3,
+        "item_id": 1,
+        "backend_latency_ms": 875,
+        "wall_e2e_ms": 854,
+        "metric_id": 825,
+        "status": "OK"
+    },
+    {
+        "sample": 4,
+        "item_id": 1,
+        "backend_latency_ms": 900,
+        "wall_e2e_ms": 875,
+        "metric_id": 827,
+        "status": "OK"
+    },
+    {
+        "sample": 5,
+        "item_id": 1,
+        "backend_latency_ms": 928,
+        "wall_e2e_ms": 854,
+        "metric_id": 829,
+        "status": "OK"
+    },
+    {
+        "sample": 6,
+        "item_id": 1,
+        "backend_latency_ms": 956,
+        "wall_e2e_ms": 873,
+        "metric_id": 831,
+        "status": "OK"
+    },
+    {
+        "sample": 7,
+        "item_id": 1,
+        "backend_latency_ms": 1005,
+        "wall_e2e_ms": 904,
+        "metric_id": 833,
+        "status": "OK"
+    },
+    {
+        "sample": 8,
+        "item_id": 1,
+        "backend_latency_ms": 1041,
+        "wall_e2e_ms": 879,
+        "metric_id": 835,
+        "status": "OK"
+    },
+    {
+        "sample": 9,
+        "item_id": 1,
+        "backend_latency_ms": 1073,
+        "wall_e2e_ms": 887,
+        "metric_id": 837,
+        "status": "OK"
+    },
+    {
+        "sample": 10,
+        "item_id": 1,
+        "backend_latency_ms": 1099,
+        "wall_e2e_ms": 866,
+        "metric_id": 839,
+        "status": "OK"
+    }
+]

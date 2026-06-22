@@ -1,0 +1,26 @@
+[
+  {
+    "step": 0,
+    "slug": "retry-add-cart",
+    "severity": "P1",
+    "note": "Aucune tuile parmi 15 testées n'a un .pos-v5-item-add-cta enabled au load wizard — TOUTES exigent sélections. UX caissier rush : friction max.",
+    "screenshot": "tests/e2e/screenshots/red-team-r1-pos-2026-05-07/retry-after-add-attempts.png",
+    "ts": "2026-05-07T01:57:11.405Z"
+  },
+  {
+    "step": 0,
+    "slug": "retry-add-cart",
+    "severity": "P2",
+    "note": "pos-v5-item-add-cta n'a AUCUN data-testid — sentinel testabilité manquante (ItemComponent.vue:296)",
+    "screenshot": "tests/e2e/screenshots/red-team-r1-pos-2026-05-07/retry-after-add-attempts.png",
+    "ts": "2026-05-07T01:57:11.406Z"
+  },
+  {
+    "step": 0,
+    "slug": "modal-strict",
+    "severity": "OK",
+    "note": "0 modal active visible (probe stricte). roleDialog=0",
+    "screenshot": "tests/e2e/screenshots/red-team-r1-pos-2026-05-07/retry-strict-modal-state.png",
+    "ts": "2026-05-07T01:57:21.864Z"
+  }
+]

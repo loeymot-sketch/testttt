@@ -1,0 +1,223 @@
+{
+  "agent": "B1-P3",
+  "title": "Borne x Caissier — cashier perspective on bornes",
+  "reframe": "Au lieu d'auditer la borne pour le client, on audite ce que le CAISSIER voit/peut faire AU SUJET des bornes — visibilite des commandes borne, encaissement compteur (SSOT), supervision/override en cas d'incident.",
+  "discipline": "DM6 RO + DM3 + DM5 + DM8",
+  "server": "http://127.0.0.1:8000",
+  "date": "2026-05-25",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+
+  "states": [
+    {
+      "id": 1,
+      "name": "Surfaces alive — curl /kiosk/idle + /admin/pos",
+      "status": "GREEN",
+      "evidence": {
+        "kiosk_idle": {
+          "http_status": 200,
+          "content_type": "text/html; charset=UTF-8",
+          "title": "Le Cayenne",
+          "csp_present": true,
+          "xsrf_token_set": true
+        },
+        "admin_pos": {
+          "http_status": 200,
+          "content_type": "text/html; charset=UTF-8",
+          "title": "Le Cayenne",
+          "csp_present": true,
+          "xsrf_token_set": true
+        }
+      },
+      "note": "Les deux surfaces repondent 200 OK avec CSP report-only + XSRF cookie. Pas de degradation au niveau transport."
+    },
+    {
+      "id": 2,
+      "name": "Cross-surface state — borne order surfaces vers POS pour encaisser",
+      "status": "GREEN",
+      "evidence": {
+        "wire": "kiosk paid-at-counter (PaymentStatus::PENDING_COUNTER=15 + PosPaymentMethod::COUNTER_DEFERRED=6) -> SimpleOrderResource expose is_cash_pending=true -> PosOrdersTrackerComponent.ordersByStatus filtre ACCEPT lane => buckets.accept",
+          "channel": "Echo OrderPaidAtCounter event (handler L675) declenche fetchOrders, fallback polling 5s/15s selon realtimeConnected",
+          "lane_semantic": "A encaisser lane (id=accept) reservee aux commandes borne cash-pending uniquement (Wave S-4) — autres ACCEPT sont supprimees du view pour ne pas brouiller le signal caissier",
+          "ssot_modal": "Bouton Encaisser sur card (data-testid=tracker-encaisser-{id}) emet window CustomEvent foodking:pos:open-encaissement -> shell ouvre PosCounterCollectModal mounted ailleurs"
+      },
+      "note": "Le contrat cross-surface est solide et documente in-code (Wave S-1/S-4/S-5). Cache-bust badge + couleur ambre = signal visuel fort."
+    },
+    {
+      "id": 3,
+      "name": "Lecture PosCounterCollectModal.vue (M-POS-2 keyboard heal applique)",
+      "status": "GREEN",
+      "evidence": {
+        "file": "resources/js/components/admin/pos/PosCounterCollectModal.vue",
+        "lines": 768,
+        "ssot_intent_documented_at": "lines 3-34 (owner mandate verbatim + Option C sibling architecture)",
+        "frozen_zone_respect": "PaymentComponent.vue (CLAUDE.md §7 frozen + paymentComponentEmitsJsdocList sentinel) NON mounted via prop. Sibling mirror des V5 atoms (PosV5Numpad partage, hero card, mode picker 2x2).",
+        "m_pos_2_keyboard_heal": {
+          "escape_to_close": "ligne 319-394 — document keydown listener installe en mounted, retire en beforeUnmount. Guards: !visible || submitting => no-op. Stocke en arrow-property pour eviter perte de reference lors du remove.",
+          "auto_focus_input": "lignes 304-314 — watcher order.immediate=true, $nextTick declenche focus+select sur receivedInput une fois cc-cash-section v-if monte (selectedMode=CASH initialement).",
+          "enter_to_submit": "ligne 113 @keyup.enter=\"onConfirm\" sur input received",
+          "mirrors": "L5.3-F-02 recommendation + KdsHistoryDrawer.vue:189-204 pattern documente"
+        },
+        "race_protection": "lignes 452-475 — 409 Conflict avec error_code payment_already_collected => toast FR clair + emit cancel pour rafraichir le panel, EVITE le phantom drawer-open simulation (heal Phase K.4 H9 P1 + J-CASCADE H9)",
+        "idempotency_key": "lignes 369-378 buildIdempotencyKey = pos-counter-collect-{orderId}-{modeInt}-{minuteBucket} mirror Wave W ab0caa985 — double-tap < 60s replay la 2xx cachee via IdempotencyKeyMiddleware (Wave K Z7)",
+        "fr_locale": "lignes 250-256, 296-302, 336-341 — decimal separator FR/EN tolerant (parseFloat sur replace `,` -> `.`), pre-fill input affiche 8,50",
+        "scope_caveat_inline": "lignes 17-27 — multi-tranche split deferred V1.0.2 (PaymentService::confirmCounterPayment accepte single mode/received + short-circuit PAID), exige nouvelle route confirmCounterPaymentSplit + extension SplitPaymentService. Honest scope-shrink documente.",
+        "test_ids_complete": ["pos-counter-collect-modal", "pos-counter-collect-close", "pos-counter-collect-total", "pos-counter-collect-mode-{id}", "pos-counter-collect-cash-block", "pos-counter-collect-received-input", "pos-counter-collect-change", "pos-counter-collect-noncash-block", "pos-counter-collect-cancel", "pos-counter-collect-confirm"]
+      },
+      "note": "Modal techniquement irreprochable: SSOT-flavored, frozen-zone respect, idempotency mature, race-protection 409 robuste, M-POS-2 keyboard heal (Esc + auto-focus + Enter-to-submit) acceptable production. JSDoc + visual parity contract avec PaymentComponent V5 documente."
+    },
+    {
+      "id": 4,
+      "name": "Cashier-side capabilities sur bornes",
+      "status": "AMBER",
+      "tasks_audited": [
+        {
+          "task": "Cashier override sur borne",
+          "verdict": "PARTIEL",
+          "evidence": "Admin/settings/KioskMachine/KioskMachineListComponent.vue expose enable/disable status (checkbox status=ACTIVE) + logout (`is_login` flag). Pas de force-kill session en cours, pas d'override des etapes wizard.",
+          "gap": "Si un client est bloque a step composer (ex: viande absente du stock, sauce indisponible), le caissier ne peut PAS reprendre la session a distance ni la fermer du POS — il doit aller a la borne physiquement."
+        },
+        {
+          "task": "Voir borne live status (idle/active/in-wizard/cash-pending)",
+          "verdict": "MANQUANT",
+          "evidence": "KioskMachineListComponent affiche machine_id + branch_name + user_name + status binaire ACTIVE/INACTIVE + is_login (Y/N). Aucune colonne 'last_seen', 'current_order_in_progress', 'wizard_step', 'idle_since'.",
+          "gap": "Aucune vue 'borne #3 = idle depuis 4 min, borne #5 = client en wizard step 2 panier 23 EUR' pour le caissier. Manque heartbeat ping ou WS event KioskMachineHeartbeat."
+        },
+        {
+          "task": "Force-cancel borne order",
+          "verdict": "PARTIEL",
+          "evidence": "PosOrdersTrackerComponent expose openCancelDialog (data-testid tracker-cancel-{id}) avec reason required>=3 chars. Le caissier PEUT annuler une commande borne UNE FOIS qu'elle est soumise (status ACCEPT/PREPARING/PREPARED). col.id !== 'delivered' => bouton ban visible. Backend OrderService::changeStatus(CANCELED) + reason valide max:700.",
+          "gap": "Pas de cancel possible pendant que le client est encore en wizard (avant soumission). Si un client abandonne au step 4 panier 32 EUR, la session reste en memoire borne sans signal cote caissier."
+        },
+        {
+          "task": "Reprint ticket borne",
+          "verdict": "GREEN",
+          "evidence": "Bouton reprint sur chaque card tracker (data-testid=tracker-reprint-{id}). Charge full order puis monte ReceiptComponent inline."
+        }
+      ],
+      "note": "Le caissier est BIEN equipe pour les bornes APRES soumission (encaisser SSOT, annuler avec raison, reprint). Mais AVANT/PENDANT la session client, le caissier est aveugle."
+    },
+    {
+      "id": 5,
+      "name": "Adversarial + scores",
+      "status": "GREEN",
+      "adversarial_disputes": [
+        {
+          "claim": "M-POS-2 keyboard heal solide",
+          "dispute_initial": "Le focus auto pourrait piquer le keyboard d'une saisie en cours sur PosComponent panier — risque saisie volee.",
+          "resolution": "Verifie L304-314: watcher order immediate=true MAIS visible computed (L242-244) ne devient true que SI order != null. Parent (PosShell) ne hydrate order qu'au click 'Encaisser' (CustomEvent foodking:pos:open-encaissement). Donc focus ne se declenche QUE quand modal s'ouvre intentionnellement. Pas de race.",
+          "verdict": "DISPUTE_RESOLVED"
+        },
+        {
+          "claim": "Idempotency key minute-bucket protege",
+          "dispute_initial": "Au tournant de la minute (T=59.9s -> T=00.0s) deux POSTs distincts passeraient.",
+          "resolution": "Vrai EN THEORIE mais protege en aval: PaymentService::confirmCounterPayment short-circuit no-op si payment_status === PAID + lockForUpdate sur Order. Et 409 carrying error_code payment_already_collected est gere ligne 466-475 -> toast FR + emit cancel. Edge minute-bucket = ~16.7 ms/minute, et meme si traverse, race-protection backend tient.",
+          "verdict": "DISPUTE_RESOLVED"
+        },
+        {
+          "claim": "Scope-shrink multi-tranche V1.0.2 honnete",
+          "dispute_initial": "L'owner mandate dit 'meme popup que POS normal payment' — POS normal supporte multi-tranche split. SSOT incomplete.",
+          "resolution": "Lignes 17-27 documentent verbalement le scope-shrink + raison technique (PaymentService::confirmCounterPayment loop silencieusement perd tranches 2..N, SplitPaymentService accepte uniquement OrderService::posOrderStore entry path). C'est une SSOT *de la 4-mode parity + visual parity* + V1 single-tender. Le PaymentComponent multi-tranche reste accessible via le path normal POS direct. Caveat documente verbatim = honest scope-shrink V1.0.2.",
+          "verdict": "DISPUTE_RESOLVED"
+        },
+        {
+          "claim": "Le caissier voit toutes les sources kiosk/POS/online clairement",
+          "dispute_initial": "filterOrders source toggle existe (sourceTabs L470-477), MAIS la lane ACCEPT est exclusivement reservee 'A encaisser kiosk paid-at-counter' (Wave S-4 L495-509). Si une commande online cash-pending arrive, elle serait-elle masquee?",
+          "resolution": "Verifie L498-506: la condition est 'if s === orderStatusEnum.ACCEPT && isCashPending(o)' — pas de check sur source_surface. Donc une commande online cash-pending atterit aussi en ACCEPT lane (le badge `pos-tracker-card-source` distingue visuellement kiosk vs online vs pos via icone L152-155). Lane est about SEMANTIC (cash-pending) pas about ORIGIN. OK.",
+          "verdict": "DISPUTE_RESOLVED"
+        },
+        {
+          "claim": "Force-cancel mid-wizard borne gap est-il vraiment un probleme V1?",
+          "dispute_initial": "Le client peut juste tap 'Annuler' sur la borne lui-meme + timeout idle (KioskIdleService) ramene la borne a /kiosk/idle apres N minutes. Pas besoin de cashier override.",
+          "resolution": "Partiellement vrai. MAIS: (a) si la borne plante mi-wizard (JS error, etc), aucun reset cote caissier; (b) en cas de file d'attente derriere une borne stuck, le caissier doit aller physiquement reset. Pour V1 Le Cayenne single-resto avec proximite caissier, c'est OK. Pour V2 multi-resto ou borne distante du comptoir, il faudra un 'reset session' remote button.",
+          "verdict": "ACCEPTABLE_V1_BACKLOG_V2"
+        }
+      ],
+      "scores": {
+        "ssot_integrity": 9.5,
+        "ssot_integrity_note": "Owner mandate respecte verbatim: meme look + meme behavior (4 modes + numpad) pour borne cash collect. Frozen-zone respect total (PaymentComponent intact, sibling mirror). Caveat multi-tranche documente.",
+        "ux_caissier_borne": 8.0,
+        "ux_caissier_borne_note": "Tracker A encaisser lane + bell badge + amber pulse + total prefix 'A encaisser: 8,50 EUR' + CTA Encaisser visible+visible_only_cash_pending. Excellent signal-to-noise.",
+        "race_protection": 9.5,
+        "race_protection_note": "Triple defense: idempotency key minute-bucket + backend short-circuit PAID + 409 error_code distinct toast FR + emit cancel pour refresh parent. Phantom drawer-open simulation eliminee.",
+        "keyboard_a11y_m_pos_2": 9.0,
+        "keyboard_a11y_m_pos_2_note": "Esc + auto-focus + Enter-to-submit. Pattern document-level listener avec arrow-property = robuste. Guards visible/submitting. Pattern documente (KdsHistoryDrawer.vue mirror).",
+        "cashier_visibility_on_kiosks": 5.0,
+        "cashier_visibility_on_kiosks_note": "Apres soumission: 9/10. Avant/pendant wizard: 1/10 (aucun heartbeat ni vue live status). KioskMachineListComponent est admin-config, pas dashboard temps reel.",
+        "force_cancel_capability": 7.0,
+        "force_cancel_capability_note": "Post-soumission OK avec reason workflow. Mid-wizard absent — V1.0.2/V2 backlog acceptable pour Le Cayenne single-resto."
+      },
+      "global_score": 8.0,
+      "verdict": "GREEN-CONDITIONAL — surface caissier-borne post-soumission est production-grade. Trois findings ci-dessous documentent les gaps mid-wizard + cashier monitoring + retro-cancel boundary."
+    }
+  ],
+
+  "findings": [
+    {
+      "id": "F-B1-P3-01",
+      "severity": "P2",
+      "title": "Aucune visibilite cote caissier sur l'etat live des bornes (idle/in-wizard/stuck)",
+      "category": "Monitoring / supervision",
+      "evidence": {
+        "file": "resources/js/components/admin/settings/KioskMachine/KioskMachineListComponent.vue",
+        "lines": "1-80",
+        "fact": "Le tableau KioskMachine ne contient que machine_id, branch_name, user_name, username, status (ACTIVE/INACTIVE checkbox), is_login (logout button). Pas de colonne last_seen/heartbeat/current_session_state/wizard_step/cart_amount/idle_since."
+      },
+      "impact": "Si une borne plante mi-wizard (JS error, network), le caissier n'a aucun signal — le client risque d'abandonner sans que le caissier le sache. En heure de pointe avec 3 bornes, le caissier ne peut pas distinguer 'borne 2 = client tape activement' vs 'borne 2 = abandonnee depuis 6 min'.",
+      "v1_scope_call": "Acceptable V1 Le Cayenne (single-resto, caissier voit physiquement les bornes a 3m). Devient critique V2 SaaS multi-resto ou borne distante. Documenter en V1.0.2 backlog.",
+      "remediation_hint": "Ajouter colonne `last_heartbeat_at` sur kiosk_machines + WS event KioskMachineHeartbeat (60s ping) + state machine simple (IDLE/IN_WIZARD/PAYING/CASH_PENDING/STUCK). Nouvelle vue admin/pos/kiosk-live (separee, ne touche pas tracker existant). Frozen-zone: KioskWizardComponent OK pour emit event mais pas pour change logique."
+    },
+    {
+      "id": "F-B1-P3-02",
+      "severity": "P3",
+      "title": "Pas d'override caissier pour reset session borne mid-wizard",
+      "category": "Operational recovery",
+      "evidence": {
+        "files": [
+          "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:266 (cancel only post-submission)",
+          "resources/js/components/admin/settings/KioskMachine/KioskMachineListComponent.vue:60 (logout button = kiosk:order Sanctum revoke, pas un session-reset)"
+        ],
+        "fact": "openCancelDialog ne fonctionne que sur des orders REELS (post-POST a OrderService). Si client abandonne au step 3 (panier 23 EUR composer en memoire client + no DB row encore), le caissier ne peut rien faire depuis /admin/pos."
+      },
+      "impact": "Borne stuck mid-wizard => caissier doit se deplacer physiquement pour appuyer sur 'Annuler' ou redemarrer l'app. En heure de pointe avec file d'attente derriere, friction operationnelle non-negligeable.",
+      "v1_scope_call": "V1 single-resto Le Cayenne: caissier a 3-5m de la borne, reset physique acceptable. V1.0.2 backlog: bouton 'Reset borne' depuis KioskMachineListComponent qui emit WS event ResetKioskSession -> KioskAppComponent listen + navigate to /kiosk/idle.",
+      "remediation_hint": "Nouveau route POST /admin/kiosk-machines/{id}/reset-session + WS event broadcast sur Channel branch.{id}.kiosk.{machine_id}. KioskAppComponent abonne et reagit en kioskWizard.resetWizard() + router.push('/kiosk/idle'). Frozen-zone Kiosk Wizard: emit-only contract, pas de logique nouvelle."
+    },
+    {
+      "id": "F-B1-P3-03",
+      "severity": "P3",
+      "title": "Encaisser modal: feedback latency sur 409 race ambigu pour le caissier",
+      "category": "UX clarte race conflict",
+      "evidence": {
+        "file": "resources/js/components/admin/pos/PosCounterCollectModal.vue",
+        "lines": "466-475",
+        "fact": "Lors d'un 409 payment_already_collected, le toast FR fallback = 'Cette commande a deja ete encaissee par un autre caissier.' MAIS le modal se ferme immediatement (emit cancel). Le caissier perd le contexte = quel mode il avait choisi, quel montant, etc."
+      },
+      "impact": "Risque de confusion caissier en multi-poste: '? J'avais clique Carte sur N122, ca a dit deja encaisse, mais qui? quand? je dois le noter ou?'. Pas de drift NF525 (l'encaissement est trace), mais friction cognitive.",
+      "v1_scope_call": "Cosmetique V1. Tolerable car Le Cayenne single-resto + le toast FR est explicite.",
+      "remediation_hint": "Au lieu de emit('cancel') immediat sur 409, garder le modal ouvert avec etat 'INFO' rouge: 'Commande N122 deja encaissee par {cashier_name} a {time} en mode {mode}. Cliquez Fermer.' Pour cela, backend doit retourner les meta du paiement existant dans la response 409 (payment.collected_by, payment.collected_at, payment.mode). Une ligne dans confirmCounterPayment qui hydrate la response."
+    }
+  ],
+
+  "outputs": {
+    "json_path": "reports/test-e2e/master-plan-2026-05-25/agents/B1-P3-findings.json",
+    "states_count": 5,
+    "states_status": ["GREEN", "GREEN", "GREEN", "AMBER", "GREEN"],
+    "findings_count": 3,
+    "findings_severity": ["P2", "P3", "P3"],
+    "verdict": "GREEN-CONDITIONAL",
+    "global_score": 8.0,
+    "ssot_intent_score": 9.5
+  },
+
+  "memory_for_next_agent": {
+    "borne_caissier_contract_verified": "PosCounterCollectModal V5 sibling SSOT + race protection 409 + idempotency minute-bucket + frozen-zone respect (PaymentComponent intact). M-POS-2 keyboard heal applique + documented.",
+    "open_gaps_v1_0_2_backlog": [
+      "F-B1-P3-01 P2 cashier visibility borne live status (heartbeat + WS KioskMachineHeartbeat)",
+      "F-B1-P3-02 P3 cashier reset-session mid-wizard (WS ResetKioskSession + new route)",
+      "F-B1-P3-03 P3 modal 409 ux clarity (hydrate response with collected_by/at/mode meta)"
+    ],
+    "no_p0_no_p1_observed": true,
+    "frozen_zone_diff_required": 0,
+    "nf525_impact": "NONE — sibling modal n'utilise pas PricingService, ne touche pas FiscalSequenceService, ne change pas la chain audit_logs/z_reports."
+  }
+}

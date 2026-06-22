@@ -1,0 +1,56 @@
+{
+  "agent": "A4 frozen zone",
+  "mission": "Hostile verify 14 frozen-zone files = 0 LOC diff baseline d601fdd34 -> HEAD post all 6 heals + i18n fix",
+  "baseline_sha": "d601fdd34",
+  "head_sha": "65017fdde",
+  "discipline": ["DM6 NF525 RO", "READ-ONLY ABSOLU"],
+  "diff_per_file": {
+    "resources/js/components/admin/pos/PaymentComponent.vue": 0,
+    "resources/js/components/admin/pos/v5/PosV5TrancheRow.vue": 0,
+    "resources/js/components/frontend/kiosk/KioskWizardComponent.vue": 0,
+    "resources/js/components/frontend/kiosk/KioskAppComponent.vue": 0,
+    "resources/js/components/frontend/kiosk/KioskUpsellComponent.vue": 0,
+    "public/js/pos-wizard.js": 0,
+    "public/css/pos-wizard.css": 0,
+    "app/Services/Fiscal/FiscalSequenceService.php": 0,
+    "app/Services/Fiscal/ZReportService.php": 0,
+    "app/Services/Fiscal/AuditLogService.php": 0,
+    "app/Models/Scopes/BranchScope.php": 0,
+    "app/Http/Middleware/IdempotencyKeyMiddleware.php": 0,
+    "app/Services/Pricing/PricingService.php": 0,
+    "app/Domain/Order/OrderStateMachine.php": 0
+  },
+  "all_zero_loc": true,
+  "md5_critical": {
+    "resources/js/components/admin/pos/PaymentComponent.vue": "583ddaddb5873c8f8eef0603c5962ba4",
+    "app/Services/Fiscal/FiscalSequenceService.php": "dbb177b6ce0d26db45f61e660f0ef9c4",
+    "public/js/pos-wizard.js": "41b2cadce4c3bdb34eabe39c72def897"
+  },
+  "proposal_count": 100,
+  "heals_scanned": [
+    {"label": "HEAL-1", "sha": "e51d1b7f2", "subject": "confirm modal before destructive cancelKioskCashOrder", "frozen_touched": false},
+    {"label": "HEAL-2", "sha": "27883ef48", "subject": "FK_CATALOG_STOCK_LOW_ALERT flag + KDS rupture toast i18n", "frozen_touched": false},
+    {"label": "HEAL-3", "sha": "9a56a649a", "subject": "one-click EOD PDF recap button for comptable", "frozen_touched": false},
+    {"label": "HEAL-3-i18n", "sha": "31aa51240", "subject": "eod_pdf_button JSON i18n drift fix", "frozen_touched": false},
+    {"label": "HEAL-4", "sha": "ee77ce848", "subject": "POS Refund UI button + pos-refund permission", "frozen_touched": false},
+    {"label": "HEAL-5", "sha": "bf0c290bf", "subject": "KDS recall compensating action (Path B)", "frozen_touched": false},
+    {"label": "HEAL-5-sentinel", "sha": "a055233fc", "subject": "authz-permission gate sentinel", "frozen_touched": false}
+  ],
+  "heals_touched_frozen": [],
+  "verification_method": {
+    "diff_loc": "git diff d601fdd34..HEAD -- <file> | wc -l (counts unified-diff output lines incl. metadata + +/- markers; 0 = no change at all)",
+    "md5": "md5 <file> on working tree at HEAD",
+    "heal_scan": "git diff <SHA>^..<SHA> -- <file> for each of 14 frozen files across all 7 heal commits"
+  },
+  "notes": [
+    "All 14 §7 frozen-zone files show ZERO bytes of diff between baseline d601fdd34 and HEAD 65017fdde.",
+    "Per-commit forensic scan of HEAL-1..HEAL-5 + HEAL-3-i18n + HEAL-5-sentinel confirms none of these 7 commits touched ANY of the 14 frozen files.",
+    "HEAL-5 commit message explicitly attests OrderStateMachine.php + AuditLogService.php were NOT modified (Path B identity transition + business-events journal pattern). git diff confirms this attestation is truthful.",
+    "PaymentComponent.vue MD5 583ddaddb5873c8f8eef0603c5962ba4 — POS payment NF525-critical surface bit-identical to baseline.",
+    "FiscalSequenceService.php MD5 dbb177b6ce0d26db45f61e660f0ef9c4 — NF525 chain allocator bit-identical.",
+    "public/js/pos-wizard.js MD5 41b2cadce4c3bdb34eabe39c72def897 — non-Mix Vanilla JS wizard (~296KB) bit-identical.",
+    "Proposal corpus stable at 100 markdown files in proposals/ (read-only audit trail, not part of frozen zone but tracked).",
+    "Read-only audit: no file/index touched, no git ops performed."
+  ],
+  "verdict": "GREEN"
+}

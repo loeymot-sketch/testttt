@@ -84,7 +84,7 @@
                             <div class="db-list-item p-0">
                                 <span class="db-list-item-title w-full sm:w-1/2">{{ $t('label.phone') }}</span>
                                 <span class="db-list-item-text w-full sm:w-1/2">
-                                    {{ deliveryBoy.phone ? deliveryBoy.country_code + '' + deliveryBoy.phone : '' }}
+                                    {{ deliveryBoy.phone ? (deliveryBoy.country_code || '') + deliveryBoy.phone : '' }}
                                 </span>
                             </div>
                         </div>
@@ -121,7 +121,7 @@
                             </div>
 
                             <div class="form-col-12 sm:form-col-6">
-                                <label for="password" class="db-field-title required">
+                                <label for="confirm_password" class="db-field-title required">
                                     {{ $t("label.confirm_password") }}
                                 </label>
                                 <input v-model="password.props.form.password_confirmation"

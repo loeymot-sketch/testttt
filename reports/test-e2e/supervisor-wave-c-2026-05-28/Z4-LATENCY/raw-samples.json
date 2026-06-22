@@ -1,0 +1,405 @@
+{
+  "L-01": [
+    {
+      "iter": 1,
+      "order_id": 236,
+      "source": "KIOSK",
+      "t1": 1780002328643,
+      "t2": 1780002336698,
+      "latency_ms": 8055,
+      "observed": false,
+      "error": "page.waitForFunction: Timeout 8000ms exceeded."
+    },
+    {
+      "iter": 2,
+      "order_id": 237,
+      "source": "KIOSK",
+      "t1": 1780002337785,
+      "t2": 1780002345839,
+      "latency_ms": 8054,
+      "observed": false,
+      "error": "page.waitForFunction: Timeout 8000ms exceeded."
+    },
+    {
+      "iter": 3,
+      "order_id": 238,
+      "source": "KIOSK",
+      "t1": 1780002346905,
+      "t2": 1780002354961,
+      "latency_ms": 8056,
+      "observed": false,
+      "error": "page.waitForFunction: Timeout 8000ms exceeded."
+    },
+    {
+      "iter": 4,
+      "order_id": 239,
+      "source": "KIOSK",
+      "t1": 1780002355988,
+      "t2": 1780002364045,
+      "latency_ms": 8057,
+      "observed": false,
+      "error": "page.waitForFunction: Timeout 8000ms exceeded."
+    },
+    {
+      "iter": 5,
+      "order_id": 240,
+      "source": "KIOSK",
+      "t1": 1780002365099,
+      "t2": 1780002373150,
+      "latency_ms": 8051,
+      "observed": false,
+      "error": "page.waitForFunction: Timeout 8000ms exceeded."
+    },
+    {
+      "iter": 6,
+      "order_id": 241,
+      "source": "KIOSK",
+      "t1": 1780002374227,
+      "t2": 1780002382272,
+      "latency_ms": 8045,
+      "observed": false,
+      "error": "page.waitForFunction: Timeout 8000ms exceeded."
+    },
+    {
+      "iter": 7,
+      "order_id": 242,
+      "source": "KIOSK",
+      "t1": 1780002383321,
+      "t2": 1780002391362,
+      "latency_ms": 8041,
+      "observed": false,
+      "error": "page.waitForFunction: Timeout 8000ms exceeded."
+    },
+    {
+      "iter": 8,
+      "order_id": 243,
+      "source": "KIOSK",
+      "t1": 1780002392416,
+      "t2": 1780002400460,
+      "latency_ms": 8044,
+      "observed": false,
+      "error": "page.waitForFunction: Timeout 8000ms exceeded."
+    },
+    {
+      "iter": 9,
+      "order_id": 244,
+      "source": "KIOSK",
+      "t1": 1780002401566,
+      "t2": 1780002409613,
+      "latency_ms": 8047,
+      "observed": false,
+      "error": "page.waitForFunction: Timeout 8000ms exceeded."
+    },
+    {
+      "iter": 10,
+      "order_id": 245,
+      "source": "KIOSK",
+      "t1": 1780002410750,
+      "t2": 1780002418795,
+      "latency_ms": 8045,
+      "observed": false,
+      "error": "page.waitForFunction: Timeout 8000ms exceeded."
+    }
+  ],
+  "L-02": [
+    {
+      "iter": 1,
+      "order_id": 246,
+      "source": "KIOSK_PROXY_FOR_POS",
+      "t1": 1780002420732,
+      "t2": 1780002428778,
+      "latency_ms": 8046,
+      "observed": false,
+      "error": "page.waitForFunction: Timeout 8000ms exceeded."
+    },
+    {
+      "iter": 2,
+      "order_id": 247,
+      "source": "KIOSK_PROXY_FOR_POS",
+      "t1": 1780002429843,
+      "t2": 1780002437888,
+      "latency_ms": 8045,
+      "observed": false,
+      "error": "page.waitForFunction: Timeout 8000ms exceeded."
+    },
+    {
+      "iter": 3,
+      "order_id": 248,
+      "source": "KIOSK_PROXY_FOR_POS",
+      "t1": 1780002438804,
+      "t2": 1780002446842,
+      "latency_ms": 8038,
+      "observed": false,
+      "error": "page.waitForFunction: Timeout 8000ms exceeded."
+    },
+    {
+      "iter": 4,
+      "order_id": 249,
+      "source": "KIOSK_PROXY_FOR_POS",
+      "t1": 1780002448069,
+      "t2": 1780002456118,
+      "latency_ms": 8049,
+      "observed": false,
+      "error": "page.waitForFunction: Timeout 8000ms exceeded."
+    },
+    {
+      "iter": 5,
+      "order_id": 250,
+      "source": "KIOSK_PROXY_FOR_POS",
+      "t1": 1780002457086,
+      "t2": 1780002465133,
+      "latency_ms": 8047,
+      "observed": false,
+      "error": "page.waitForFunction: Timeout 8000ms exceeded."
+    },
+    {
+      "iter": 6,
+      "order_id": 251,
+      "source": "KIOSK_PROXY_FOR_POS",
+      "t1": 1780002465866,
+      "t2": 1780002473917,
+      "latency_ms": 8051,
+      "observed": false,
+      "error": "page.waitForFunction: Timeout 8000ms exceeded."
+    },
+    {
+      "iter": 7,
+      "order_id": 252,
+      "source": "KIOSK_PROXY_FOR_POS",
+      "t1": 1780002474621,
+      "t2": 1780002482679,
+      "latency_ms": 8058,
+      "observed": false,
+      "error": "page.waitForFunction: Timeout 8000ms exceeded."
+    },
+    {
+      "iter": 8,
+      "order_id": 253,
+      "source": "KIOSK_PROXY_FOR_POS",
+      "t1": 1780002483408,
+      "t2": 1780002491464,
+      "latency_ms": 8056,
+      "observed": false,
+      "error": "page.waitForFunction: Timeout 8000ms exceeded."
+    },
+    {
+      "iter": 9,
+      "order_id": 254,
+      "source": "KIOSK_PROXY_FOR_POS",
+      "t1": 1780002492227,
+      "t2": 1780002500270,
+      "latency_ms": 8043,
+      "observed": false,
+      "error": "page.waitForFunction: Timeout 8000ms exceeded."
+    },
+    {
+      "iter": 10,
+      "order_id": 255,
+      "source": "KIOSK_PROXY_FOR_POS",
+      "t1": 1780002500989,
+      "t2": 1780002509032,
+      "latency_ms": 8043,
+      "observed": false,
+      "error": "page.waitForFunction: Timeout 8000ms exceeded."
+    }
+  ],
+  "L-03": [
+    {
+      "iter": 1,
+      "order_id": 236,
+      "queue_number": 0,
+      "bump_http": 202,
+      "bump_ok": true,
+      "t1": 1780002520989,
+      "t2": 1780002528991,
+      "latency_ms": 8002,
+      "observed": false,
+      "error": "page.waitForFunction: Timeout 8000ms exceeded."
+    },
+    {
+      "iter": 2,
+      "order_id": 237,
+      "queue_number": 0,
+      "bump_http": 202,
+      "bump_ok": true,
+      "t1": 1780002529631,
+      "t2": 1780002537634,
+      "latency_ms": 8003,
+      "observed": false,
+      "error": "page.waitForFunction: Timeout 8000ms exceeded."
+    },
+    {
+      "iter": 3,
+      "order_id": 238,
+      "queue_number": 0,
+      "bump_http": 202,
+      "bump_ok": true,
+      "t1": 1780002538276,
+      "t2": 1780002546279,
+      "latency_ms": 8003,
+      "observed": false,
+      "error": "page.waitForFunction: Timeout 8000ms exceeded."
+    },
+    {
+      "iter": 4,
+      "order_id": 239,
+      "queue_number": 0,
+      "bump_http": 202,
+      "bump_ok": true,
+      "t1": 1780002546931,
+      "t2": 1780002554937,
+      "latency_ms": 8006,
+      "observed": false,
+      "error": "page.waitForFunction: Timeout 8000ms exceeded."
+    },
+    {
+      "iter": 5,
+      "order_id": 240,
+      "queue_number": 0,
+      "bump_http": 202,
+      "bump_ok": true,
+      "t1": 1780002555576,
+      "t2": 1780002563582,
+      "latency_ms": 8006,
+      "observed": false,
+      "error": "page.waitForFunction: Timeout 8000ms exceeded."
+    },
+    {
+      "iter": 6,
+      "order_id": 241,
+      "queue_number": 0,
+      "bump_http": 202,
+      "bump_ok": true,
+      "t1": 1780002564281,
+      "t2": 1780002572285,
+      "latency_ms": 8004,
+      "observed": false,
+      "error": "page.waitForFunction: Timeout 8000ms exceeded."
+    },
+    {
+      "iter": 7,
+      "order_id": 242,
+      "queue_number": 0,
+      "bump_http": 202,
+      "bump_ok": true,
+      "t1": 1780002572910,
+      "t2": 1780002580913,
+      "latency_ms": 8003,
+      "observed": false,
+      "error": "page.waitForFunction: Timeout 8000ms exceeded."
+    },
+    {
+      "iter": 8,
+      "order_id": 243,
+      "queue_number": 0,
+      "bump_http": 202,
+      "bump_ok": true,
+      "t1": 1780002581613,
+      "t2": 1780002589614,
+      "latency_ms": 8001,
+      "observed": false,
+      "error": "page.waitForFunction: Timeout 8000ms exceeded."
+    },
+    {
+      "iter": 9,
+      "order_id": 244,
+      "queue_number": 0,
+      "bump_http": 202,
+      "bump_ok": true,
+      "t1": 1780002590280,
+      "t2": 1780002598282,
+      "latency_ms": 8002,
+      "observed": false,
+      "error": "page.waitForFunction: Timeout 8000ms exceeded."
+    },
+    {
+      "iter": 10,
+      "order_id": 245,
+      "queue_number": 0,
+      "bump_http": 202,
+      "bump_ok": true,
+      "t1": 1780002598930,
+      "t2": 1780002606933,
+      "latency_ms": 8003,
+      "observed": false,
+      "error": "page.waitForFunction: Timeout 8000ms exceeded."
+    }
+  ],
+  "L-04": [
+    {
+      "iter": 1,
+      "toggle_http": 200,
+      "toggle_ok": true,
+      "t1": 1780002626283,
+      "t2_pos": null,
+      "latency_pos_ms": null,
+      "observed_pos": false,
+      "t2_kiosk": null,
+      "latency_kiosk_ms": null,
+      "observed_kiosk": false,
+      "latency_ms": null,
+      "observed": false,
+      "error": " POS:page.waitForFunction: Timeout 8000ms exceeded. KIOSK:page.waitForFunction: Timeout 8000ms exceeded."
+    },
+    {
+      "iter": 2,
+      "toggle_http": 200,
+      "toggle_ok": true,
+      "t1": 1780002635419,
+      "t2_pos": null,
+      "latency_pos_ms": null,
+      "observed_pos": false,
+      "t2_kiosk": null,
+      "latency_kiosk_ms": null,
+      "observed_kiosk": false,
+      "latency_ms": null,
+      "observed": false,
+      "error": " POS:page.waitForFunction: Timeout 8000ms exceeded. KIOSK:page.waitForFunction: Timeout 8000ms exceeded."
+    },
+    {
+      "iter": 3,
+      "toggle_http": 200,
+      "toggle_ok": true,
+      "t1": 1780002644450,
+      "t2_pos": null,
+      "latency_pos_ms": null,
+      "observed_pos": false,
+      "t2_kiosk": null,
+      "latency_kiosk_ms": null,
+      "observed_kiosk": false,
+      "latency_ms": null,
+      "observed": false,
+      "error": " POS:page.waitForFunction: Timeout 8000ms exceeded. KIOSK:page.waitForFunction: Timeout 8000ms exceeded."
+    },
+    {
+      "iter": 4,
+      "toggle_http": 200,
+      "toggle_ok": true,
+      "t1": 1780002653546,
+      "t2_pos": null,
+      "latency_pos_ms": null,
+      "observed_pos": false,
+      "t2_kiosk": null,
+      "latency_kiosk_ms": null,
+      "observed_kiosk": false,
+      "latency_ms": null,
+      "observed": false,
+      "error": " POS:page.waitForFunction: Timeout 8000ms exceeded. KIOSK:page.waitForFunction: Timeout 8000ms exceeded."
+    },
+    {
+      "iter": 5,
+      "toggle_http": 200,
+      "toggle_ok": true,
+      "t1": 1780002662576,
+      "t2_pos": null,
+      "latency_pos_ms": null,
+      "observed_pos": false,
+      "t2_kiosk": null,
+      "latency_kiosk_ms": null,
+      "observed_kiosk": false,
+      "latency_ms": null,
+      "observed": false,
+      "error": " POS:page.waitForFunction: Timeout 8000ms exceeded. KIOSK:page.waitForFunction: Timeout 8000ms exceeded."
+    }
+  ]
+}

@@ -1,0 +1,100 @@
+{
+  "specialist": "Architect",
+  "zone": "PK-2 Status Sync (transitions, recall, undo, concurrency)",
+  "mode": "read-only",
+  "scope": [
+    "app/Domain/Order/OrderStateMachine.php (FROZEN — attest only)",
+    "app/Domain/Kds/KitchenReleaseRule.php",
+    "app/Rules/ValidStatusTransition.php",
+    "app/Http/Requests/Kds/KdsOrderStatusRequest.php",
+    "app/Http/Requests/OrderStatusRequest.php",
+    "app/Http/Controllers/Admin/KitchenDisplaySystemController.php",
+    "app/Http/Controllers/Admin/KdsSyncController.php",
+    "app/Services/KitchenDisplaySystemOrderService.php",
+    "app/Listeners/DispatchKdsTicket.php",
+    "app/Listeners/PersistOrderStatusChangedToOutbox.php",
+    "resources/js/store/modules/kds.js (client-side recall)",
+    "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue (undo toast)",
+    "resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue"
+  ],
+  "findings": [
+    {
+      "id": "PK-2-ARCH-01",
+      "severity": "INFO_ATTEST",
+      "title": "OrderStateMachine FROZEN, forward-only whitelist enforced — integrity OK",
+      "file": "app/Domain/Order/OrderStateMachine.php:30-75",
+      "evidence": "allows() switch enumerates per-from-state targets. KDS-relevant transitions: ACCEPT->PREPARING (line 45 — only PREPARING+CANCELED allowed from ACCEPT for non-POS); PREPARING->PREPARED (line 52). PREPARED can only go OUT_FOR_DELIVERY|DELIVERED (line 55) — no PREPARED->PREPARING reverse transition. CANCELED/REJECTED/RETURNED are terminal except Admin override (line 64-70).",
+      "impact": "State machine cannot regress to a prior status from KDS — by design. Any 'recall' from PREPARED back to PREPARING would have to either (a) be added to the state machine (FROZEN, requires owner gate), or (b) live entirely client-side (current implementation, see PK-2-ARCH-04).",
+      "verdict": "PASS"
+    },
+    {
+      "id": "PK-2-ARCH-02",
+      "severity": "INFO_ATTEST",
+      "title": "KDS controller hardcodes whitelist {ACCEPT, PREPARING, PREPARED} via dedicated FormRequest",
+      "file": "app/Http/Requests/Kds/KdsOrderStatusRequest.php:23-39",
+      "evidence": "kdsStatuses() returns exactly [ACCEPT(4), PREPARING(7), PREPARED(8)]. Rule::in(self::kdsStatuses()) applied to BOTH status and expected_status. A KDS request to cancel/return/reject (forbidden per CV1-M07-KDS-RELEASE) is rejected at validation layer BEFORE reaching the service.",
+      "impact": "Double defense: Form Request whitelist + service-layer KitchenReleaseRule::canTransition() at KitchenDisplaySystemOrderService:209. Even if FormRequest was bypassed (no observed bypass path), the service would reject illegal transitions.",
+      "verdict": "PASS"
+    },
+    {
+      "id": "PK-2-ARCH-03",
+      "severity": "INFO_ATTEST",
+      "title": "Two-layer transition guard inside KDS service",
+      "file": "app/Services/KitchenDisplaySystemOrderService.php:208-213",
+      "evidence": "`KitchenReleaseRule::canTransition($from, $to)` (forward-only ACCEPT->PREPARING->PREPARED) AND `OrderStateMachine::allows($from, $to, $user)` (full whitelist) both gate the mutation. Either failing throws 422 invalid_status_transition.",
+      "verdict": "PASS"
+    },
+    {
+      "id": "PK-2-ARCH-04",
+      "severity": "P2",
+      "title": "Spec drift — `recall` is client-side localStorage only, not a backend transition (matches brief but worth declaring)",
+      "file": "resources/js/store/modules/kds.js:66-86, resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1729-1737",
+      "evidence": "Vuex `kds/recallItem` removes a bump marker from in-memory + localStorage. There is NO backend POST. Window: `Date.now() - b[itemId] >= 60000` (line 71) — 60s. i18n strings agree: 'kds_recall_grace_expired' says 'délai d'annulation (60 s) dépassé' (resources/js/languages/fr.json:1189).",
+      "drift": "Task brief says 'recall: bump back from PREPARED -> PREPARING (5s window)'. The implementation is: (a) per-item localStorage marker with 60s grace, (b) order-level pre-PATCH cancellation via KdsV2Grid undo toast with 3s window. NEITHER reverses a persisted backend status.",
+      "impact": "If owner expectation is 'KDS can un-mark Prêt on the chef screen with the order showing as PREPARING again everywhere (POS, OSS, KDS)' — current implementation does NOT satisfy that. The chef's localStorage marker won't survive a page refresh on another KDS tablet or another station. The 3s V2 undo cancels BEFORE the PATCH, so server never sees PREPARED.",
+      "recommendation": "EITHER (a) declare current scope-limited undo/recall as final V1 design and align brief, OR (b) escalate to owner-gate to allow PREPARED->PREPARING in OrderStateMachine (frozen-zone change, requires LOCK doc). Recommend (a) — current design is conservative and matches modern KDS UX (Toast/Otter all require explicit action on a forward-only ticket lifecycle).",
+      "verdict": "REVIEW"
+    },
+    {
+      "id": "PK-2-ARCH-05",
+      "severity": "P2",
+      "title": "Window-time drift between client-side undo paths (3s V2 vs 60s legacy per-item)",
+      "file": "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue:181-198 (3000ms) vs resources/js/store/modules/kds.js:71 (60000ms)",
+      "evidence": "KdsV2Grid onCtaTap schedules a setTimeout(..., 3000) before emitting change-status. KdsUndoToast hard-codes the same 3000ms. Meanwhile, the per-item kds.recallItem grace is 60000ms.",
+      "impact": "Visual mismatch and confusion: two simultaneously-mounted UIs offer wildly different 'undo' affordances. The V2 grid is the V1 default (kds.v2_enabled flag, public/js/admin-kds.js compiled). The 60s per-item path is the LEGACY 4-column code path retained for rollback.",
+      "recommendation": "Document in CLAUDE.md / KDS doc that V1 production = V2 grid = 3s pre-PATCH undo. The 60s localStorage recall is dead-code-by-default. Consider a follow-up to either delete or harmonize at V1.0.2.",
+      "verdict": "REVIEW"
+    },
+    {
+      "id": "PK-2-ARCH-06",
+      "severity": "INFO_ATTEST",
+      "title": "Bidirectional sync architecture: POS->KDS via OrderStatusChanged broadcast; KDS->POS via same path",
+      "file": "app/Listeners/DispatchKdsTicket.php:11-21, app/Services/KitchenDisplaySystemOrderService.php:241-246, app/Services/OrderService.php:1864",
+      "evidence": "POS side: OrderService::changeStatus (line 1864) calls `\\App\\Events\\OrderStatusChanged::dispatch($order, $oldStatusForBroadcast, $targetStatus)` after commit. KDS side: KitchenDisplaySystemOrderService:242 calls `kdsTicketDispatcher->dispatch($snapshot, $oldStatus, $newStatus)` which gates on KitchenReleaseRule::shouldDispatchStatusChanged (KDS-internal transitions only) then dispatches OrderStatusChanged. Both POS and KDS subscribe to OrderStatusChanged on private-branch.{branch_id} (Vue: PosComponent.vue:2169, KitchenDisplaySystemComponent.vue:1789).",
+      "verdict": "PASS — bidirectional sync wiring is symmetric"
+    },
+    {
+      "id": "PK-2-ARCH-07",
+      "severity": "INFO_ATTEST",
+      "title": "Outbox persistence via PersistOrderStatusChangedToOutbox correctly scoped per correlation_id",
+      "file": "app/Listeners/PersistOrderStatusChangedToOutbox.php:26-32",
+      "evidence": "Idempotency key = sha1(EventType|order_id|old|new|correlation_id). Same (old,new) tuple in different correlation_id (e.g. legitimate Admin DELIVERED<->RETURNED revert) gets a fresh row; duplicate listener fire within same request collapses (firstOrCreate).",
+      "verdict": "PASS — iter14 SPECIALIST-2 design comment matches behavior"
+    },
+    {
+      "id": "PK-2-ARCH-08",
+      "severity": "P3",
+      "title": "Auto-transition watcher in KdsV2Grid bypasses 3s undo window",
+      "file": "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue:130-148, resources/js/helpers/kdsAutoTransition.js:32-49",
+      "evidence": "When no order is PREPARING and a NEW order at the head exists, watcher emits 'auto-promote' which directly fires onV2ChangeStatus -> PATCH. No toast. No 3s grace.",
+      "impact": "Chef intent unclear — but auto-promote is documented design (kdsAutoTransition.js comment: 'deliberate departure for FoodKing V1 single-chef takeaway-only'). Server safety relies on OrderStateMachine::apply lockForUpdate idempotent early-return, which is correct. Low risk under current single-chef V1 assumption; medium risk if a second station ships.",
+      "recommendation": "V1.0.2 — gate auto-promote behind a per-branch settings toggle so multi-station deployments can disable it without code change.",
+      "verdict": "REVIEW"
+    }
+  ],
+  "attestations": [
+    "OrderStateMachine.php — read-only, NOT modified by this audit (frozen zone respected)",
+    "All KDS transition entry points double-guard via OrderStateMachine::allows + KitchenReleaseRule::canTransition",
+    "OrderStatusChanged broadcast is the single bidirectional sync channel between POS and KDS — coherent design"
+  ]
+}

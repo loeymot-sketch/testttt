@@ -1,0 +1,248 @@
+{
+  "version": "WI-8 2026-05-19",
+  "context": "V1 Le Cayenne single-resto LOCAL production (Linux/OVH VPS-1 target). Pre-production gate.",
+  "baseline_post_wave_5H": {
+    "composer_advisories": 12,
+    "composer_packages": 9,
+    "npm_advisories": 49,
+    "npm_critical": 3,
+    "npm_high": 17,
+    "npm_moderate": 21,
+    "npm_low": 8
+  },
+  "FIX_PRE_PROD": [
+    {
+      "id": "FPP-1",
+      "package": "sweetalert2",
+      "ecosystem": "npm",
+      "current": "8.19.1 (transitive in vendor.js)",
+      "target": "8.19.2+ (audit fix)",
+      "advisory": "GHSA-8jh9-wqpf-q52c (hidden functionality / supply-chain)",
+      "rationale": "Supply-chain CVE. Already shipped to every customer + admin browser. NOT exploit-required.",
+      "fix_command_not_executed": "npm audit fix",
+      "breaking": false,
+      "estimated_effort": "5 min + smoke test",
+      "owner_decision_needed": false
+    },
+    {
+      "id": "FPP-2",
+      "package": "axios",
+      "ecosystem": "npm",
+      "current": "in 1.0.0-1.15.1 range (declared ^1.1.2)",
+      "target": "1.15.2+ (audit fix)",
+      "advisory": "15+ cumulative (prototype pollution + SSRF + DoS + header injection + null byte + CRLF + JSON tampering)",
+      "rationale": "133 callsites direct dep. Defense-in-depth even though many CVEs not naturally reachable in FoodKing call shape. Non-breaking patch.",
+      "fix_command_not_executed": "npm audit fix",
+      "breaking": false,
+      "estimated_effort": "5 min + smoke test (regression risk LOW)",
+      "owner_decision_needed": false
+    },
+    {
+      "id": "FPP-3",
+      "package": "lodash",
+      "ecosystem": "npm",
+      "current": "<=4.17.23",
+      "target": "4.17.21+ (audit fix)",
+      "advisory": "GHSA-xxjr-mmjv-4gpg + GHSA-r5fr-rjxr-66jc + GHSA-f23m-r3pf-42rh",
+      "rationale": "Prototype pollution gadgets + _.template code injection. Wide usage. Non-breaking fix.",
+      "fix_command_not_executed": "npm audit fix",
+      "breaking": false,
+      "estimated_effort": "5 min + smoke test",
+      "owner_decision_needed": false
+    },
+    {
+      "id": "FPP-4",
+      "package": "OTHER npm audit fix candidates (non-breaking)",
+      "ecosystem": "npm",
+      "current": "various",
+      "target": "various",
+      "rationale": "Bundle with FPP-1/2/3 in a single `npm audit fix` run: @babel/plugin-transform-modules-systemjs / ajv / brace-expansion / esbuild→vite→vitest / fast-uri / follow-redirects / glob / immutable / minimatch / node-forge / path-to-regexp + body-parser/express/qs transitives / @protobufjs/utf8 / sass / svgo / serialize-javascript / sourcemap / yaml / ws / happy-dom (dev). Most are build-time/dev-only but cleared as bonus.",
+      "fix_command_not_executed": "npm audit fix",
+      "breaking": false,
+      "estimated_effort": "Same as FPP-1 (single npm install + lockfile update)",
+      "owner_decision_needed": false
+    }
+  ],
+  "DEFER_V1_0_X": [
+    {
+      "id": "DEF-1",
+      "package": "phpoffice/phpspreadsheet (ALREADY HEALED Wave 5H — NO ACTION)",
+      "current": "1.30.4",
+      "note": "Wave 5H closed 5 CVEs incl. CVE-2026-34084 CRITICAL. No outstanding advisories on phpspreadsheet."
+    },
+    {
+      "id": "DEF-2",
+      "package": "swiper",
+      "ecosystem": "npm",
+      "current": "^11.0.5 (in 6.5.1-12.1.1 range)",
+      "target": "12.1.4+",
+      "advisory": "GHSA-hmx5-qpq5-p643 (prototype pollution, critical severity)",
+      "rationale": "Major version bump (11 → 12) is BREAKING. Requires re-verifying 9+ Vue component callsites (SliderComponent / CheckoutComponent / 2× ItemComponent / KitchenDisplaySystem / TableMenuComponent / ChatComponent / CategoryComponent / admin POS ItemComponent). RED-team verified: current usage = hardcoded config, no user-input merge, so CVE NOT naturally exploitable.",
+      "v1_0_X_path": "Schedule swiper 11→12 migration as standalone V1.0.X-EARLY task with full visual+technical regression on all 9 surfaces.",
+      "owner_decision_needed": false,
+      "if_business_pushes_to_ship_now": "ACCEPT-RISK with note: any future swiper config refactor must audit user-input merge."
+    },
+    {
+      "id": "DEF-3",
+      "package": "firebase JS SDK + @firebase/firestore + @grpc/grpc-js + @grpc/proto-loader transitives",
+      "ecosystem": "npm",
+      "current": "^9.18.0",
+      "target": "12.13.0",
+      "advisory": "GHSA-7v5v-9h63-cj86 + GHSA-q6x5-8v7m-xcrf + protobufjs",
+      "rationale": "3-major-version bump (9→12) BREAKING. FoodKing uses Messaging only, not Firestore — gRPC/Firestore CVEs may be inert IF tree-shaken. Verify with bundle analysis before forcing upgrade.",
+      "v1_0_X_path": "Bundle analysis first (verify Firestore not shipped). Then either: confirm-inert-defer OR schedule firebase 9→12 migration alongside Laravel 10 cycle.",
+      "owner_decision_needed": true,
+      "decision": "Owner: confirm Firebase Messaging-only usage AND keep V1 ship, OR defer to V1.1."
+    },
+    {
+      "id": "DEF-4",
+      "package": "aws/aws-sdk-php",
+      "ecosystem": "composer",
+      "current": "3.359.13",
+      "target": "3.371.4+ (CloudFront fix) + 3.368.0+ (S3 encryption fix)",
+      "advisory": "PKSA-4t1p-xpk2-nsss + CVE-2025-14761",
+      "rationale": "Neither CVE reachable in FoodKing usage (no CloudFront, no S3 client-side encryption). Routine update at next composer maintenance window.",
+      "v1_0_X_path": "Routine bump in V1.0.X maintenance window.",
+      "owner_decision_needed": false
+    },
+    {
+      "id": "DEF-5",
+      "package": "league/commonmark",
+      "ecosystem": "composer",
+      "current": "2.7.1",
+      "target": "2.8.2+",
+      "advisory": "CVE-2026-33347 + CVE-2026-30838",
+      "rationale": "Zero callsites in FoodKing app code (transitive via Laravel mail rendering). Not exploitable. Routine bump.",
+      "v1_0_X_path": "Routine bump in V1.0.X.",
+      "owner_decision_needed": false
+    },
+    {
+      "id": "DEF-6",
+      "package": "phpseclib/phpseclib",
+      "ecosystem": "composer",
+      "current": "3.0.47",
+      "target": "3.0.52+",
+      "advisory": "CVE-2026-44167 (ASN1 DoS, high) + CVE-2026-40194 + CVE-2026-32935 (AES padding oracle, high)",
+      "rationale": "Zero FoodKing usage of SSH/SFTP/AES-CBC/OID parsing. Transitive via aws-sdk. Inert.",
+      "v1_0_X_path": "Will be transitively bumped by aws-sdk routine update.",
+      "owner_decision_needed": false
+    },
+    {
+      "id": "DEF-7",
+      "package": "firebase/php-jwt",
+      "ecosystem": "composer",
+      "current": "v6.11.1",
+      "target": "7.0.0+",
+      "advisory": "CVE-2025-45769 (weak encryption, low)",
+      "rationale": "Zero direct app callsites. Transitive. Low severity. Routine bump.",
+      "v1_0_X_path": "Routine bump.",
+      "owner_decision_needed": false
+    }
+  ],
+  "NOT_APPLICABLE": [
+    {
+      "id": "NA-1",
+      "package": "phpunit/phpunit",
+      "current": "9.6.29",
+      "advisory": "CVE-2026-24765 (deserialization)",
+      "reason": "require-dev — not installed on prod (composer install --no-dev). CVE requires running phpunit with attacker .phpt files, CI-only surface.",
+      "note": "Can bump within ^9.5.10 constraint at convenience (9.6.33+). Full phpunit 10/11/12 requires Laravel 10+ first."
+    },
+    {
+      "id": "NA-2",
+      "package": "psy/psysh",
+      "current": "v0.12.14",
+      "advisory": "CVE-2026-25129 (LPE via CWD .psysh.php)",
+      "reason": "Tinker is dev-only. Production servers do not run `artisan tinker`."
+    },
+    {
+      "id": "NA-3",
+      "package": "symfony/process",
+      "current": "v6.4.26",
+      "advisory": "CVE-2026-24739 (Windows MSYS2/Git Bash escape)",
+      "reason": "Platform precondition: Windows + MSYS2. FoodKing prod = Linux. Not applicable to prod runtime."
+    },
+    {
+      "id": "NA-4",
+      "package": "happy-dom",
+      "current": "<20.8.9",
+      "advisory": "GHSA-w4gp-fjgq-3q4g (fetch credentials leak)",
+      "reason": "Test environment only (Vitest DOM emulation). Not in browser runtime."
+    },
+    {
+      "id": "NA-5-bundle",
+      "packages_count": "~40 npm transitives",
+      "examples": [
+        "bn.js / elliptic / browserify-sign / node-forge / create-ecdh (laravel-mix node-libs-browser polyfills)",
+        "@babel/plugin-transform-modules-systemjs (webpack compile)",
+        "ajv / fast-uri / glob / minimatch / path-to-regexp (build tooling)",
+        "esbuild / vite / vite-node / vitest (test runner)",
+        "node-libs-browser / crypto-browserify / webpack / webpack-dev-server (build server)",
+        "ws / engine.io-client / socket.io-client (vitest-only)",
+        "yaml (postcss/tailwind config parse)",
+        "immutable (sass)",
+        "follow-redirects (axios http adapter test)",
+        "brace-expansion / sucrase (build tooling)"
+      ],
+      "reason": "Build-time-only or dev-server-only. Not shipped to browser runtime. Heal at convenience via `npm audit fix` (most are non-breaking and bundle with FPP-4)."
+    }
+  ],
+  "NEEDS_OWNER_DECISION": [
+    {
+      "id": "OWN-1",
+      "topic": "Laravel 9 → 10 → 11 migration track",
+      "current": "9.52.21 (EOL since Feb 2024)",
+      "advisory_forcing": "CVE-2025-27515 file validation bypass — NO 9.x fix exists. Only fixed in 10.48.29+ / 11.44.1+ / 12.1.1+.",
+      "context": "V1 ships on EOL framework. Admin-only file upload surface = bounded exposure. Insider/phishing threat = real but bounded by single-resto trust model.",
+      "owner_options": {
+        "A": "Ship V1 on Laravel 9 with CVE-2025-27515 ACCEPTED-RISK, schedule Laravel 10 migration as V1.1 release (4-6 weeks effort)",
+        "B": "Delay V1 ship 4-6 weeks for Laravel 10 migration",
+        "C": "Apply manual patch backport for CVE-2025-27515 specifically (research effort, custom maintenance)"
+      },
+      "recommendation": "Option A — admin-only surface + single-resto trust + Laravel 9.52.21 being the latest patched 9.x line = acceptable for V1 ship. Schedule V1.1 Laravel 10 migration with budget commitment."
+    },
+    {
+      "id": "OWN-2",
+      "topic": "Spatie permissions 5 → 6 migration track",
+      "current": "5.11.1",
+      "advisory_forcing": "NONE (no CVE on Spatie 5.x).",
+      "context": "Spatie 6 changes team_id resolution = potential interaction with FoodKing branch_id multi-tenant pattern. RBAC regression risk.",
+      "owner_options": {
+        "A": "Stay on Spatie 5 indefinitely (no security forcing function)",
+        "B": "Bundle Spatie 6 with Laravel 10 migration (V1.1)"
+      },
+      "recommendation": "Option B — defer until Laravel migration, then audit team_id↔branch_id interaction during migration cycle."
+    },
+    {
+      "id": "OWN-3",
+      "topic": "swiper 11 → 12 BREAKING bump timing",
+      "current": "^11.0.5",
+      "advisory_forcing": "GHSA-hmx5-qpq5-p643 (prototype pollution, critical)",
+      "context": "CVE not naturally exploitable in current hardcoded-config usage (RED-team verified). Bump is breaking, 9 components to re-verify.",
+      "owner_options": {
+        "A": "ACCEPT-RISK current usage, defer bump V1.0.X",
+        "B": "Schedule swiper 11→12 visual+technical regression as V1.0.X-EARLY task (1-2 days)"
+      },
+      "recommendation": "Option A — RED-team verified inert. Defer to V1.0.X bundled with firebase bump."
+    },
+    {
+      "id": "OWN-4",
+      "topic": "firebase JS SDK 9 → 12 BREAKING bump timing",
+      "current": "^9.18.0",
+      "advisory_forcing": "@grpc/grpc-js + @grpc/proto-loader + @protobufjs/utf8 transitives",
+      "context": "Used for Messaging only. Firestore CVEs may be tree-shaken inert. Verify with bundle analysis.",
+      "owner_options": {
+        "A": "Bundle analysis FIRST (1 day) — confirm Firestore not shipped → DEFER full bump",
+        "B": "Bundle firebase 9→12 migration with V1.1 Laravel cycle"
+      },
+      "recommendation": "Option A — cheap verification path, likely confirms inert."
+    }
+  ],
+  "summary_count": {
+    "FIX_PRE_PROD": 3,
+    "FIX_PRE_PROD_bundled_bonus": "~25 npm transitives via single audit fix",
+    "DEFER_V1_0_X": 6,
+    "NOT_APPLICABLE": 5,
+    "NEEDS_OWNER_DECISION": 4
+  }
+}

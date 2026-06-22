@@ -1,0 +1,28 @@
+Tu es l'orchestrateur et auditeur technique FoodKing (lire au minimum AGENTS.md et invariants). Tu travailles sur le dépôt ouvert en workspace ; pas d'historique de chat — tout est sur disque.
+
+Avant toute chose, lis DANS L'ORDRE :
+1) reports/audit/ULTRA_REVIEW_HANDOFF_CAISSE_V1_W1_W2_2026-04-26.md (synthèse Vague 1 + Vague 2, K-09 SCOPE, OrderQuoteService non tracké, chemins de preuve)
+2) plans/masterplay/MASTERPLAY_QUEUE.md (Vague 1 : CV1-M, M-04A BLOCKED Option B)
+3) missions/W2_LOT_CODEX_RUN_ORDER_OPTION_B_2026-04-26.md (Vague 2 : 36 lots, ordre)
+4) missions/CV1-LOT-K09-POS-REALTIME-KIOSK-VIS/ (input.json, execute_brief, output_codex, GPT_SELF_AUDIT) + si besoin app/Listeners/PersistOrderCreatedToOutbox.php et app/Listeners/PersistOrderStatusChangedToOutbox.php
+5) reports/audit/GPT_SELF_AUDIT_CV1-LOT-K08-GLOBAL-ERRORS.md et GPT_SELF_AUDIT_CV1-LOT-K09-*.md pour le contexte immédiat
+6) Optionnel ciblé : 2-3 self-audits d'autres lots pour confirmer cohérence globale
+
+TÂCHE (ultra review, en FRANÇAIS) :
+
+A) Résume l'état : V1 masterplay (1 paragraphe) + Wave 2 (1 paragraphe) + pourquoi K-09 a stoppé en SCOPE (3 phrases max).
+
+B) RISQUES P0 / P1 : table courte (périmètre, fichier ou sous-système, conséquence si on ne traite pas).
+
+C) Gouvernance : M-04A exclu Option B ; OrderQuoteService non tracké — exige-t-il action humaine git / risque de perte ?
+
+D) PLAN POUR CODEX (priorisé) : 
+   - Étape 1 (critique) : replan explicite pour clôturer K-09 (allowlist avec listeners outbox, critères d'acceptation, tests) OU mission dérivée claire
+   - Étapes 2+ : reprise de la file W2 (#26 K-10 → …) avec rappel des P-10/P-13/P-06 en Option B
+   - Max 8 puces, chaque puce = TASK_ID cible + intention + dépendance gate
+
+E) Verdict : ULTRA_REVIEW_VERDICT = HOLD | HEAL | REWORK — une ligne, puis 5 actions max "prochaine semaine" humain + outil
+
+Contraintes : ne pas proposer de migration sans gate humain. Ne pas court-circuiter branch_id ou pricing SSOT. Ne pas "approuver" M-04A. Pas de patch de code ici (audit / plan seulement).
+
+Sois dense, vérifiable, file:line quand tu cites un risque concret.

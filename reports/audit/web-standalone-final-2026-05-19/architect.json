@@ -1,0 +1,97 @@
+{
+  "persona": "Architect",
+  "zone": "Z-WEB-FINAL-V1-PREP",
+  "scope": "/Users/1millnonstop/Downloads/web/ — 17 files (5 .jsx + 1 .js + 5 .html + 1 index.html + 5 .css)",
+  "date": "2026-05-19",
+  "mode": "READ-ONLY audit, GStack architect persona",
+  "executive_summary": "Web standalone is a vanilla React (UMD + Babel-standalone) SPA with sound single-page route state machine (home/menu/orders/loyalty/about + funnel checkout/payment/confirm/track + 4 modal flows). Architecture is intentionally simple: no router lib, route is single useState in index.html App, cart+ctx+auth threaded via props, modals open/close booleans. Composer-profile wizard contract mirrors mobile (4 templates: sandwich / tacos / custom / simple) and reads window.LC.menu (SSOT mirror exposed by data/menu.js). One unfinished cross-surface mirror remains: loyalty-v2.jsx exports only LoyaltyProfileTab (profile chrome — Editor / Notifications / Cards / Preferences / DangerZone) and the wallet surface (QR / balance / history / redeem) lives in screens.jsx::WebLoyalty inline (lines 539-720) but is OWNER-GATED per LCS-A-002 — confirmed unchanged since prior cycle. No NF525 / branch-isolation / pricing-SSOT concerns reach this file tree (web is intentionally backend-less standalone).",
+  "checks_performed": [
+    "App.js (index.html line 40-128) — route state machine + child wiring",
+    "components.jsx — WebNav / WebFooter / WebModal / WebQR shared shell",
+    "screens.jsx — WebHome / WebMenu / WebLoyalty / WebAbout (4 main routes)",
+    "screens-v3.jsx — AnimCounter / PressStrip / Compare / FAQ / Leaderboard / Challenge / TeamStrip / ItemDetailModal (10 modules; orphan check)",
+    "funnel.jsx — CheckoutPage / PaymentPage / ConfirmationPage / TrackingPage state machine + OrderSummary + FunnelSteps + TicketQR + Confetti",
+    "flows.jsx — CartDrawer (note: dead AccountFlow + WizardFlow + W_WIZ removed in GOAL LONG-TERM cycle 2026-05-16)",
+    "wizard-v2.jsx — buildSteps(item) / WizardFlow / DirectAddView ; 4-template dispatch + composer_profile reader",
+    "account-v2.jsx — AccountFlow modal (login | signup | otp | success | forgot)",
+    "loyalty-v2.jsx — LoyaltyProfileTab (5 sub-cards profile chrome)",
+    "orders.jsx — OrdersPage (signed-out gate + filter tabs)",
+    "data/menu.js — window.LC namespace + W_CATS / W_ITEMS / W_DIET back-compat globals",
+    "legal/ × 5 HTML pages — static, server-less, link cross-refs"
+  ],
+  "findings": [
+    {
+      "id": "ARC-001",
+      "severity": "INFO",
+      "title": "Route state machine sound; no router lib by design",
+      "where": "/Users/1millnonstop/Downloads/web/index.html:41 (const [route, setRoute] = useState('home'))",
+      "description": "Single useState in App handles all top-level routing (8 routes: home / menu / orders / loyalty / about / checkout / payment / confirm / track). Smooth-scroll on route change (line 53). Cart preserved across route transitions (cart is sibling state). Funnel back-button preserves cart per Z7-FUN.1 prior test. Architecture is intentionally minimal; no React Router introduces zero bundle weight and zero history-API edge cases for V1 standalone scope.",
+      "evidence": "index.html lines 40-128; tests/e2e/test-e2e-web-z7-gaps-2026-05-18.spec.js Z7-FUN.1 cart-preserved-on-back asserts behavior holds.",
+      "impact": "Positive — V1 simple, maintainable. V1.x consideration: if SEO becomes a need, hash-fragment or server-side routing migration straightforward (boolean state to URL state is local change).",
+      "recommendation": "Accept as-is for V1. Document in README that 'web = standalone, no SPA-router, no SSR' is intentional V1 scope."
+    },
+    {
+      "id": "ARC-002",
+      "severity": "INFO",
+      "title": "Modal flows correctly isolated; close handlers symmetric",
+      "where": "components.jsx:151 WebModal + flows.jsx:8 CartDrawer (custom drawer not WebModal-based) + account-v2.jsx:61 + wizard-v2.jsx:306 + screens-v3.jsx:195",
+      "description": "Four modal/drawer surfaces: AccountFlow (WebModal full), WizardFlow (WebModal full), DirectAddView (WebModal), ItemDetailModal (WebModal full), CartDrawer (custom slide-in drawer with own backdrop). All use boolean open prop + onClose handler. Backdrop click closes (WebModal line 154 + CartDrawer line 32). Esc-key close NOT wired (P3 polish if WCAG 2.1.2 dialog pattern strictly enforced) — current behavior: click backdrop or X button only.",
+      "evidence": "components.jsx:154 (backdrop onClick={onClose}) ; flows.jsx:32 (drawer backdrop onClick={onClose}) ; aria-label='Fermer' on close icon (P0 heal Z-7 already applied).",
+      "impact": "Architectural — sound. Esc-key absence is WCAG 2.1.2 not 2.1.1, partial pattern.",
+      "recommendation": "P3 backlog V1.x: add useEffect keydown listener (Esc → onClose) for WCAG-friendly dialog UX. Not blocking V1 production."
+    },
+    {
+      "id": "ARC-003",
+      "severity": "P2",
+      "title": "loyalty-v2.jsx scope is profile chrome only — wallet surface lives inline in screens.jsx",
+      "where": "/Users/1millnonstop/Downloads/web/loyalty-v2.jsx (141 lines) + /Users/1millnonstop/Downloads/web/screens.jsx:539-720 (WebLoyalty inline)",
+      "description": "File naming suggests 'loyalty mirror module' but loyalty-v2.jsx only contains ProfileEditor / NotificationSettings / SavedCards / PreferencesCard / AccountDangerZone (exported as LoyaltyProfileTab). The actual wallet UI (QR via WebQR + balance + tier progression + rewards exchange + history + achievements + leaderboard + challenge + streak + referral) is defined inline in screens.jsx::WebLoyalty (181 lines, points hardcoded 347). Architecturally this is split: profile chrome is one tab, wallet+rewards+history+how is screens.jsx tabs. Mobile equivalent is one cohesive screen. NOT a defect — just a naming/decomposition observation. The LCS-A-002 finding from prior cycle interpreted loyalty-v2.jsx as 'the web mirror' and found it missing wallet bits; in fact wallet is in screens.jsx. Cross-surface mirror status: PARTIAL — web HAS QR / balance / redeem / history UI, but DOES NOT call any API (web is standalone, hardcoded 347 pts). Mobile calls /api/loyalty/balance for real points.",
+      "evidence": "screens.jsx lines 514-720 contain REWARDS / TIERS / ACHI consts + WebLoyalty function rendering wallet+tabs ; loyalty-v2.jsx lines 4-141 contain ONLY profile sub-cards.",
+      "impact": "LCS-A-002 prior cycle owner-gate framing partially incorrect: web HAS UI mirror, what it lacks is API wireup (intentional standalone V1 scope per data/menu.js header comment). Owner gate should be re-framed: 'web wireup to backend loyalty API' — deferred V1.x by intent.",
+      "recommendation": "Owner gate G-WEB-1: clarify V1 loyalty scope = (a) web stays standalone, hardcoded 347pts is V1 demo only and disclosure 'demo / illustratif' added near balance OR (b) web wireup to /api/loyalty/balance + /api/loyalty/redeem deferred V1.x. Do NOT heal in this cycle without owner decision (would touch screens.jsx WebLoyalty, ~200 lines)."
+    },
+    {
+      "id": "ARC-004",
+      "severity": "INFO",
+      "title": "Wizard contract canonical; mirrors mobile shape (4 templates + composer_profile)",
+      "where": "/Users/1millnonstop/Downloads/web/wizard-v2.jsx:13 (buildSteps + 4 switch cases)",
+      "description": "switch (template) handles 4 cases: sandwich (lines 50-101), tacos (alias 51), custom (composer_profile reader 103-138), simple/default (139-153). Composer_profile.steps[] iterated reading step_key { sauce | bol_supplements | bol_drink | frites_style }. Pattern mirrors mobile/screens-main.jsx wizard exactly. Massive-logic heal markers (2026-05-17 P0) at lines 28-33 (suppOptions reads allergens from pool, not silent empty array) confirm cross-surface defense-in-depth alignment. Image fallback (screens.jsx:38-47 ItemCard) gracefully degrades to emoji on 404.",
+      "evidence": "wizard-v2.jsx switch + composer_profile reader ; data/menu.js exposes priceForDrinkAddon / formuleDrinks / fritesStyles / supplements / supplementsBols / sauces / meats / crudites pools.",
+      "impact": "Wizard cross-surface contract holds: web/mobile produce same option shapes given same composer_profile JSON.",
+      "recommendation": "Accept as-is."
+    },
+    {
+      "id": "ARC-005",
+      "severity": "P3",
+      "title": "Babel-standalone in production (compile-on-load latency)",
+      "where": "/Users/1millnonstop/Downloads/web/index.html:22 + script type='text/babel' lines 27-35",
+      "description": "Eight .jsx files compiled via @babel/standalone in browser at every load. Acceptable for V1 fast-iteration (no build pipeline needed). Lighthouse FCP/LCP penalty ~2-3s on slow 3G versus pre-compiled bundle. Already noted as P3 backlog item in prior Z-7 cycle.",
+      "evidence": "tests/e2e/test-e2e-web-z7-gaps-2026-05-18.spec.js prior STATUS line 'P3 Babel-standalone prod deferred V1.1 build pipeline'.",
+      "impact": "Performance only ; functional behavior unaffected.",
+      "recommendation": "Deferred V1.1: switch to esbuild/vite static build, drop Babel script tag. Out-of-scope V1 ship."
+    },
+    {
+      "id": "ARC-006",
+      "severity": "P2",
+      "title": "No state persistence (cart/auth lost on page refresh)",
+      "where": "/Users/1millnonstop/Downloads/web/index.html:42-50 (useState defaults, no localStorage)",
+      "description": "Cart resets to single seeded item on refresh ; isAuth resets to false ; ctx (pickup time / promo) resets to defaults. UX gap, not architecture defect — V1 funnel is intentionally session-scoped (no account persistence in browser). Mobile equivalent uses AsyncStorage. Funnel demo-grade: production e-commerce would require localStorage gate post-G-WEB-1 owner gate.",
+      "evidence": "No occurrence of localStorage / sessionStorage / IndexedDB across all 17 web files (grep verified).",
+      "impact": "User opens checkout, refreshes tab, cart empty — surprising. V1 acceptable per 'standalone demo' scope but cite limitation in V1 release notes.",
+      "recommendation": "Owner gate or V1.x: add localStorage persistence on cart (key 'lc.cart') + ctx (key 'lc.ctx') with TTL 24h. Maybe 20 LOC in index.html if proceeded."
+    }
+  ],
+  "lcs_a_002_re_eval": {
+    "prior_finding": "Web loyalty wallet surface absent (loyalty-v2.jsx is profile chrome only).",
+    "current_re_eval": "PARTIALLY INCORRECT: loyalty-v2.jsx is profile chrome (correct framing), BUT the wallet surface (QR + balance + redeem + tier + history + achievements + leaderboard + referral) IS PRESENT in screens.jsx::WebLoyalty (lines 539-720, 181 LOC, mobile-equivalent depth). The real gap is API wireup, not UI absence. screens.jsx hardcodes points=347 (line 541). data/menu.js header explicitly states 'Web reste STANDALONE (no API/MCP wireup)'. This is intentional V1 scope, not a missing feature.",
+    "new_framing_for_owner_gate": "Web Pepper Club UI EXISTS at parity with mobile shape; wireup to /api/loyalty/* is deferred V1.x by intent. Owner gate clarifies: (a) Add visible 'Démo' disclosure near 347pts balance (V1, 1 LOC) OR (b) Wireup loyalty API V1.x (out-of-scope) OR (c) Accept V1 standalone with no disclosure (current state)."
+  },
+  "frozen_zone_check": "PASS — no occurrence of any frozen-zone path in /Downloads/web/ tree (it is standalone, decoupled from main repo).",
+  "cross_surface_contract_check": {
+    "wizard_template_dispatch": "PASS — 4 templates (sandwich / tacos / custom / simple) mirror mobile",
+    "menu_data_ssot": "PASS — data/menu.js header explicitly declares mirror of mobile/data/menu.js (11 cats / 41 items)",
+    "loyalty_api_wireup": "DEFERRED V1.x (intentional per data/menu.js)",
+    "fiscal_no_concern": "N/A — web standalone never calls fiscal endpoints"
+  },
+  "verdict": "ARCHITECTURE: SOUND for V1 standalone scope. 1 P2 (ARC-003 loyalty surface naming + Demo disclosure) + 1 P2 (ARC-006 no persistence) + 2 P3 (Babel prod + Esc-key dialog) for V1.x backlog. LCS-A-002 prior framing should be re-issued as 'API wireup deferred, UI present' — not 'mirror missing'. Owner gate G-WEB-1 still required (intentional but undisclosed = potential customer confusion at production)."
+}

@@ -1,0 +1,178 @@
+{
+  "extracted_at": "2026-05-11",
+  "scope": "Wave-Logic — Kiosk-Logic-Extractor sub-agent #1",
+  "source_kiosk": "resources/js/components/frontend/kiosk/KioskWizardComponent.vue (frozen, ~3091 lines)",
+  "source_mobile": "mobile/screens-item-steps.jsx (~922 lines, post-cluster)",
+  "step_keys": ["viandes", "sauce", "garnitures_or_crudites", "supplements", "menu", "drink", "frites_style", "frites_sauce", "recap"],
+  "step_key_aliasing": {
+    "kiosk_uses": "garnitures",
+    "mobile_uses": "crudites",
+    "note": "Different vocabulary, same concept (salad + tomato + onion add-ons that default ON, toggleable OFF)."
+  },
+  "templates": {
+    "tacos": {
+      "kiosk_steps_canonical_order": ["taille", "viandes", "sauce", "garnitures", "supplements", "menu", "cascade", "recap"],
+      "mobile_steps_canonical_order": ["viandes", "sauce", "crudites", "supplements", "menu", "cascade", "recap"],
+      "kiosk_source": "kiosk:556-565",
+      "mobile_source": "mobile:64-71",
+      "filters_kiosk": [
+        "item.has_taille_preset => taille skipped (V3.6 P-MEGA-01)",
+        "item.viandes > 0 => viandes",
+        "item.has_sauce => sauce",
+        "item.has_garnitures => garnitures",
+        "item.has_supplements !== false => supplements",
+        "item.has_menu_addon => menu"
+      ],
+      "divergence_taille": "SUSPECT — mobile has NO taille step. Hors scope design cycle (data migration P-MEGA-01)."
+    },
+    "sandwich": {
+      "kiosk_steps_canonical_order": ["pain", "viandes", "sauce", "garnitures", "supplements", "menu", "cascade", "recap"],
+      "mobile_steps_canonical_order": ["viandes?", "sauce", "crudites", "supplements", "menu", "cascade", "recap"],
+      "kiosk_source": "kiosk:566-575",
+      "mobile_source": "mobile:64-71",
+      "divergence_pain": "SUSPECT — mobile has NO pain (bun) selection step. Hors scope design cycle."
+    },
+    "burger": {
+      "kiosk_steps_canonical_order": ["viandes", "sauce", "garnitures", "supplements", "menu", "cascade", "recap"],
+      "mobile_steps_canonical_order": ["sauce", "crudites", "supplements", "menu", "cascade", "recap"],
+      "kiosk_source": "kiosk:576-584",
+      "mobile_source": "mobile:72-77",
+      "divergence_viandes": "INTENTIONAL — burger items have item.viandes=0 in mobile/data/menu.js, so viandes step naturally skipped. Aligned by data."
+    },
+    "assiette": {
+      "kiosk_steps_canonical_order": ["viandes?", "sauce", "recap"],
+      "mobile_steps_canonical_order": ["sauce", "supplements", "recap"],
+      "kiosk_source": "kiosk:585-597",
+      "mobile_source": "mobile:78-81",
+      "divergence_supplements": "SUSPECT — mobile includes supplements step, kiosk excludes (assiette has frites+salade+pain+sauce already at price). Hors scope design cycle."
+    },
+    "omelette": {
+      "kiosk_steps_canonical_order": ["sauce", "recap"],
+      "mobile_steps_canonical_order": ["sauce", "crudites", "supplements", "recap"],
+      "kiosk_source": "kiosk:609-618",
+      "mobile_source": "mobile:82-87",
+      "notes": "Ojja + Omelettes + Menus Enfants V3.8. Mobile adds crudites/supplements; kiosk minimal. Hors scope design cycle.",
+      "divergence_supplements_crudites": "SUSPECT — mobile has more steps. Hors scope."
+    },
+    "snacking": {
+      "kiosk_steps_canonical_order": ["sauce", "menu", "frites_style", "supplements", "recap"],
+      "mobile_steps_canonical_order": ["sauce", "menu", "supplements", "recap"],
+      "kiosk_source": "kiosk:598-608",
+      "mobile_source": "mobile:93-98",
+      "divergence_frites_style": "SUSPECT — kiosk V3.7 adds frites_style step conditional on menuChoice='full'||'frites'. Mobile does NOT have it. Hors scope design cycle.",
+      "notes": "Wings/tenders 15 sauces generic (U2 owner-gate)."
+    },
+    "salade": {
+      "kiosk_steps_canonical_order": ["garnitures", "sauce", "menu", "frites_style", "supplements", "recap"],
+      "mobile_steps_canonical_order": ["sauce", "supplements", "recap"],
+      "kiosk_source": "kiosk:619-629",
+      "mobile_source": "mobile:88-92",
+      "divergence_garnitures_menu_fritesstyle": "SUSPECT — mobile heavily simplified (D1 owner-gate). Kiosk V3.7 extended. Owner-gate pending. Hors scope design cycle."
+    },
+    "simple": {
+      "kiosk_steps_canonical_order": ["frites_style?", "supplements?"],
+      "mobile_steps_canonical_order": ["frites_style?", "sauce?", "supplements?"],
+      "kiosk_source": "kiosk:630-639",
+      "mobile_source": "mobile:99-108",
+      "notes": "Direct-add cases (desserts cat 11, boissons cat 12, suppléments cat 13). Mobile adds sauce step for items with has_sauce. Aligned by data flags."
+    }
+  },
+  "cascade_rules": {
+    "menu=full": {
+      "added_steps_mobile": ["drink", "frites_style", "frites_sauce"],
+      "added_steps_kiosk": ["drink", "frites_style", "frites_sauce"],
+      "mobile_source": "mobile:110-121 (inserted right after MENU step)",
+      "rendering_divergence": "INTENTIONAL — mobile renders 3 separate screens; kiosk renders 1 multi-section page (KioskStepMenuComponent). Documented mobile:l.17-22. CL-5."
+    },
+    "menu=frites": {
+      "added_steps": ["frites_style", "frites_sauce"]
+    },
+    "menu=boisson": {
+      "added_steps": ["drink"]
+    },
+    "menu=none": {
+      "added_steps": []
+    }
+  },
+  "validation_rules": {
+    "viandes": {
+      "mobile": "selections.meatIds.length === item.viandes",
+      "mobile_source": "mobile:134",
+      "kiosk": "(selections.totalViandes || 0) >= item.viandes",
+      "status": "ALIGNED — same intent, mobile is stricter equality vs kiosk >="
+    },
+    "sauce": {
+      "mobile": "(selections.sauceIds || []).length >= 1",
+      "mobile_source": "mobile:136",
+      "kiosk": "selections.sauceOrder.length > 0",
+      "status": "ALIGNED"
+    },
+    "crudites": {
+      "mobile": "true (toggle, default ON)",
+      "mobile_source": "mobile:138",
+      "kiosk": "true (toggle, default ON)",
+      "status": "ALIGNED"
+    },
+    "supplements": {
+      "mobile": "true (optional)",
+      "mobile_source": "mobile:140",
+      "kiosk": "true (optional)",
+      "status": "ALIGNED"
+    },
+    "menu": {
+      "mobile": "!!selections.menuChoice",
+      "mobile_source": "mobile:142",
+      "kiosk": "!!selections.menuChoice AND (wantsDrink => !!selections.boissonChoice) AND (hasFrites => selections.fritesSauceOrder.length > 0)",
+      "status": "ALIGNED — mobile splits cascade validation into per-step canAdvance (drink, fritesSauce). Equivalent overall."
+    },
+    "drink": {
+      "mobile": "!!selections.drinkId",
+      "mobile_source": "mobile:144",
+      "status": "ALIGNED"
+    },
+    "frites_style": {
+      "mobile": "selections.fritesStyleId !== undefined",
+      "mobile_source": "mobile:147",
+      "kiosk": "true (Nature null = default valid)",
+      "status": "ALIGNED — mobile distinguishes undefined (not yet picked) from null (Nature picked), enforcing explicit user action. Stricter than kiosk."
+    },
+    "frites_sauce": {
+      "mobile": "(selections.fritesSauceIds || []).length >= 1",
+      "mobile_source": "mobile:149",
+      "kiosk": "selections.fritesSauceOrder.length > 0",
+      "status": "ALIGNED"
+    },
+    "recap": {
+      "mobile": "true",
+      "mobile_source": "mobile:151",
+      "status": "ALIGNED"
+    }
+  },
+  "exclusivity_rules": {
+    "sans_sauce": {
+      "id": "s-sans",
+      "behavior": "Picking 's-sans' replaces entire sauceIds array with ['s-sans']. Picking any other sauce removes 's-sans'.",
+      "mobile_source": "mobile:338-342",
+      "kiosk_source": "KioskStepSauceComponent.vue:~65-78 (implicit, READ-only inspection)",
+      "status": "ALIGNED"
+    }
+  },
+  "divergences_summary": {
+    "intentional_in_scope": [
+      "Cascade rendering 3-pages mobile vs 1-page kiosk (CL-5)",
+      "Pricing client-only mobile vs server-preview kiosk (CL out-of-scope, design unaffected)"
+    ],
+    "suspect_out_of_scope_design": [
+      "Salade D1 simplified (owner-gate pending)",
+      "Snacking missing frites_style (kiosk V3.7 data migration)",
+      "Assiette supplements present mobile / absent kiosk (data divergence)",
+      "Tacos taille step absent mobile (kiosk V3.6 P-MEGA-01 migration)",
+      "Sandwich pain step absent mobile (data migration needed)"
+    ]
+  },
+  "design_cycle_verdict": {
+    "wave_logic_status": "FSM mobile structurally OK for design cycle scope. All validation rules + cascade insertion + exclusivity match kiosk intent. Divergences SUSPECT are DATA gaps (template extensions, missing steps), NOT design concerns.",
+    "block_for_design_cycle": false,
+    "owner_gate_followup": "Document 5 SUSPECT divergences in BRAIN owner-gate backlog after cycle ends. Do NOT block design cycle on them."
+  }
+}

@@ -51,6 +51,20 @@ class KioskFullFlowE2ETest extends TestCase
     {
         parent::setUp();
 
+        // [WG-4 TZ-test-drift V1.0.X 2026-05-19] NOTE: this test was originally
+        // listed under the KDS V1.0.X TZ pin cluster, but Carbon::setTestNow()
+        // alone CANNOT fix it — `FrontendOrderService.php:263` writes
+        // `order_datetime` using `date('Y-m-d H:i:s')` (raw PHP wall-clock,
+        // NOT Carbon-aware). Pinning Carbon to a fixed day decouples the
+        // controller's wall-clock date from the KDS service's pinned-Carbon
+        // bounds → date mismatch → test fails mid-day. The evening-window
+        // [22:00, 23:59:59] failure described in V1_0_X_BACKLOG_KDS_TZ_FIX.md
+        // is a PRODUCTION bug requiring a heal in FrontendOrderService.php:263
+        // (`date()` → `now()->format(...)`). Tracked as V1.0.X-followup.
+        // For now: NO pin on this class — relies on real wall-clock for both
+        // sides, which is the pre-WG-4 baseline (fails 22:00-23:59:59 Paris,
+        // passes otherwise). See reports/audit/wave-g-2026-05-19/WG-4-TZ-TEST-DRIFT/STATUS.md.
+
         $this->seedMinimalSettings();
         $this->seedSpatieRoles();
         config(['app.api_key' => '123456']);
@@ -244,11 +258,33 @@ class KioskFullFlowE2ETest extends TestCase
     {
         Sanctum::actingAs($user, ['kiosk:order']);
 
+        // [prod-finale 2026-06-17] Memoize the minted quote per (user, idempotency-key) so a SAME-user
+        // SAME-key REPLAY resends the IDENTICAL body (quote_token included). That mirrors the live kiosk
+        // offline-queue, which resends the stored body verbatim on retry — NOT a fresh quote. Re-minting a
+        // quote on replay would change the payload hash and make the FROZEN idempotency middleware return a
+        // 409 payload-conflict instead of replaying the cached 2xx (the bug this test was hitting). A
+        // DIFFERENT user/branch still mints its own quote (preserves the cross-branch isolation assertion).
+        $memoKey = $user->id . '|' . $idempotencyKey;
+        if (! isset($this->kioskQuoteMemo[$memoKey])) {
+            $this->kioskQuoteMemo[$memoKey] = $this
+                ->withHeader('x-api-key', '123456')
+                ->postJson('/api/frontend/order/quote', $payload)
+                ->assertOk()
+                ->json('data');
+        }
+        $quote = $this->kioskQuoteMemo[$memoKey];
+
         return $this
             ->withHeader('x-api-key', '123456')
             ->withHeader('X-Idempotency-Key', $idempotencyKey)
-            ->postJson('/api/frontend/order', $payload);
+            ->postJson('/api/frontend/order', $payload + [
+                'quote_token' => $quote['quote_token'],
+                'quote_signature' => $quote['signature'],
+            ]);
     }
+
+    /** @var array<string, array<string, mixed>> memoized kiosk quotes keyed by "userId|idempotencyKey" */
+    private array $kioskQuoteMemo = [];
 
     private function expectedTotalFor(int $branchId, int $userId, string $itemsJson): float
     {

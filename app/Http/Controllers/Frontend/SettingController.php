@@ -22,7 +22,7 @@ class SettingController extends Controller
         try {
             return new SettingResource($this->settingService->list());
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

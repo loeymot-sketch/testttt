@@ -1,0 +1,138 @@
+{
+  "audit": "i18n strict FR (ADR-007) sweep",
+  "branch": "feature/mobile-app-le-cayenne-2026-05-10",
+  "head": "5032dc158",
+  "date": "2026-05-29T21:51Z",
+  "tool": "Playwright MCP direct DOM regex sweep",
+  "regex": "\\b([a-z]+\\.[a-z_.]+)\\b | label\\.[a-zA-Z_]+ | LABEL\\.[A-Z_]+ | 0undefined | [object Object]",
+  "english_leak_words": ["Settings","Save","Cancel","Delete","Loading","Submit","Edit","Search","Add","Remove","Update","Send","Close","Continue","Back","Next","Confirm"],
+  "surfaces": [
+    {
+      "url": "/login",
+      "raw_labels": [],
+      "english_leaks": [],
+      "diacritics_count": 3,
+      "txt_len": 114,
+      "verdict": "GREEN",
+      "notes": "Connexion / Bon Retour / Email / Mot De Passe / Se Souvenir De Moi / Mot De Passe Oublié — fully FR localized"
+    },
+    {
+      "url": "/admin/dashboard",
+      "raw_labels": [
+        "user.login",
+        "cash.movement.recorded",
+        "order.counter_payment_confirmed",
+        "cash.delivery.session.reconciled",
+        "cash.delivery.session.closed",
+        "cash.delivery.session.opened"
+      ],
+      "english_leaks": [],
+      "diacritics_count": 34,
+      "txt_len": 6049,
+      "verdict": "P1",
+      "finding_id": "I18N-DASH-P1-01",
+      "notes": "Activity feed / audit_logs widget renders raw event-type strings instead of FR translations. Confirmed via DOM context lookup: 'Admin Le Cayenne | user.login | user#... | il y a 1 seconde'. Visible to admin user, not localized."
+    },
+    {
+      "url": "/admin/pos (V5)",
+      "raw_labels": [],
+      "english_leaks": [],
+      "diacritics_count": 26,
+      "txt_len": 2109,
+      "verdict": "GREEN"
+    },
+    {
+      "url": "/admin/pos-v4",
+      "raw_labels": [],
+      "english_leaks": [],
+      "diacritics_count": 24,
+      "txt_len": 2105,
+      "verdict": "GREEN"
+    },
+    {
+      "url": "/admin/items (navigation rendered, item table gated by permission:settings — admin user redirected to /admin/dashboard)",
+      "raw_labels": [],
+      "english_leaks": [],
+      "diacritics_count": 36,
+      "txt_len": 1581,
+      "verdict": "GREEN (partial — full table view not reachable with admin@lecayenne.fr)"
+    },
+    {
+      "url": "/admin/stock-rupture-dashboard",
+      "raw_labels": [],
+      "english_leaks": [],
+      "diacritics_count": 5,
+      "txt_len": 115,
+      "verdict": "GREEN"
+    },
+    {
+      "url": "/admin/cash-overview",
+      "raw_labels": [],
+      "english_leaks": [],
+      "diacritics_count": 22,
+      "txt_len": 1257,
+      "verdict": "GREEN"
+    },
+    {
+      "url": "/admin/delivery-boys (route gated — redirect to /admin/dashboard)",
+      "raw_labels": [],
+      "english_leaks": [],
+      "verdict": "NOT_ACCESSIBLE_WITH_ADMIN_ROLE",
+      "notes": "Permission gate (likely permission:settings or branch-manager scope)"
+    },
+    {
+      "url": "/admin/delivery-boy-cash-sessions/1 (route gated — redirect to /admin/dashboard)",
+      "raw_labels": [],
+      "english_leaks": [],
+      "verdict": "NOT_ACCESSIBLE_WITH_ADMIN_ROLE",
+      "notes": "Static-grep verified 14 livreur keys in lang/fr/all.php:182-192 (delivery_cash_session, delivery_cash_sessions, cash_session_closed_at, direction, notes, etc.) — heal artifact present, runtime visual verification deferred (needs role escalation)"
+    },
+    {
+      "url": "/kiosk/idle",
+      "raw_labels": [],
+      "english_leaks": [],
+      "diacritics_count": 3,
+      "txt_len": 125,
+      "verdict": "GREEN",
+      "notes": "Bienvenue / Commandez en quelques touches / À emporter / Je récupère ma commande / CHOISISSEZ UNE OPTION POUR COMMENCER"
+    },
+    {
+      "url": "/admin/kitchen-display-system (KDS)",
+      "raw_labels": [],
+      "english_leaks": [],
+      "diacritics_count": 10,
+      "txt_len": 885,
+      "verdict": "GREEN",
+      "notes": "Test orders A0002-A0006 + A001 visible — 'Galette Normale', 'Coca-Cola 33cl', 'Prêt', 'En attente encaissement', 'Borne', 'Caisse', 'Récemment servies' all FR"
+    },
+    {
+      "url": "/order-status-screen (OSS)",
+      "raw_labels": [],
+      "english_leaks": [],
+      "diacritics_count": 3,
+      "txt_len": 213,
+      "verdict": "GREEN"
+    }
+  ],
+  "heal_verification": {
+    "delivery_cash_keys_grep_lang_fr_all_php": {
+      "delivery_cash_sessions:182": "Caisses livreur",
+      "delivery_cash_session:183": "Caisse livreur",
+      "cash_session_closed_at:189": "Fermée le",
+      "direction:191": "Sens",
+      "notes:192": "Notes"
+    },
+    "verdict": "PRESENT_IN_LANG_FILE — runtime DOM verification deferred (admin role gating)"
+  },
+  "summary": {
+    "surfaces_swept": 11,
+    "surfaces_accessible_visual": 9,
+    "surfaces_gated_role": 2,
+    "raw_labels_total": 6,
+    "english_leaks_total": 0,
+    "diacritics_intact": true,
+    "p0_count": 0,
+    "p1_count": 1,
+    "verdict_i18n": "GREEN with 1 P1 (dashboard audit-log feed raw event names)"
+  }
+}

@@ -41,9 +41,9 @@
     </div>
 
     <div v-if="printFailed" class="kiosk-printer-fallback">
-      <p class="kiosk-printer-fallback-label">{{ $t('kiosk.confirmation.print_failed') || 'Impression indisponible — notez votre numéro :' }}</p>
+      <p class="kiosk-printer-fallback-label">{{ $t('kiosk.confirmation.print_failed') }}</p>
       <div class="kiosk-printer-fallback-number">#{{ displayNumber }}</div>
-      <p class="kiosk-printer-fallback-hint">{{ $t('kiosk.confirmation.print_failed_hint') || 'Présentez ce numéro au comptoir.' }}</p>
+      <p class="kiosk-printer-fallback-hint">{{ $t('kiosk.confirmation.print_failed_hint') }}</p>
     </div>
 
     <div class="kiosk-confirmation-message">
@@ -70,7 +70,7 @@
       </div>
     </div>
 
-    <button
+    <button type="button"
       class="kiosk-btn-print"
       :class="{ 'is-printing': printStatus === 'printing', 'is-done': printStatus === 'done', 'is-error': printStatus === 'error' }"
       @click="printReceipt"
@@ -84,13 +84,24 @@
       <span v-else>🖨️ {{ $t('kiosk.confirmation.print_button') }}</span>
     </button>
 
-    <button class="kiosk-btn-home" @click="goHome" data-testid="kiosk-confirmation-cta-home">
+    <button type="button" class="kiosk-btn-home" @click="goHome" data-testid="kiosk-confirmation-cta-home">
       {{ $t('kiosk.confirmation.new_order') }} →
     </button>
   </div>
 
-  <!-- Receipt zone (only visible when printing) -->
-  <div id="kiosk-print-receipt" class="kiosk-receipt-zone">
+  <!-- Receipt zone (hidden unless print dialog / print-failed fallback) -->
+  <div
+    id="kiosk-print-receipt"
+    class="kiosk-receipt-zone"
+    :data-print-failed="printFailed"
+    data-testid="kiosk-print-receipt"
+    :role="printFailed ? 'status' : undefined"
+    :aria-live="printFailed ? 'polite' : undefined"
+  >
+    <template v-if="printFailed">
+      <h2 class="kiosk-fallback-receipt-title">{{ $t('kiosk.confirmation.fallback_receipt_title') }}</h2>
+      <p class="kiosk-fallback-receipt-help">{{ $t('kiosk.confirmation.fallback_receipt_help') }}</p>
+    </template>
     <div class="receipt-header">
       <p class="receipt-restaurant">{{ restaurantName }}</p>
       <p class="receipt-date">{{ receiptDate }}</p>
@@ -130,6 +141,7 @@
 import { printReceipt as escPosPrint, buildReceiptData, reportPrinterFailure } from '../../../helpers/kioskPrinter';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
 import { sanitizeKioskCustomerFacingText } from '../../../helpers/kioskDisplayText';
+import kioskHardware from '../../../services/kioskHardware';
 // Kiosk Phase 9.1.12 — snapshot localStorage pour survie F5 du ticket.
 import {
   saveKioskReceiptSnapshot,
@@ -141,6 +153,11 @@ import {
 function clearKioskReceiptSnapshotSafe() {
   try { clearKioskReceiptSnapshot(); } catch (_) {}
 }
+
+function confirmationAutoReturnSeconds() {
+  const configured = Number(window.foodkingConfig?.kioskConfirmationAutoReturnSeconds ?? 30);
+  return Number.isFinite(configured) && configured > 0 ? Math.floor(configured) : 30;
+}
 // Kiosk Phase 9.1.8 — TTS sur l'écran de confirmation.
 // Énoncé du numéro de commande + total pour les malvoyants (EAA 2025).
 // Le composable no-op si `kioskSettings.audio` est off — aucun effet de bord.
@@ -149,14 +166,29 @@ import { useKioskSpeech } from '../../../composables/useKioskSpeech';
 export default {
   name: 'KioskConfirmationComponent',
   mixins: [kioskPriceMixin],
+  // [iter15-mega-fix Vue-warn-cluster round-7 2026-05-10]
+  // KioskAppComponent's <router-view> binds shell-level listeners
+  // (add-to-cart / go-to-cart / start-order / reset-kiosk) on every routed
+  // child. This component renders a fragment (two sibling root elements:
+  // `.kiosk-confirmation` + `#kiosk-print-receipt`), so Vue 3 cannot auto-
+  // inherit those listeners and warns:
+  //   "Extraneous non-emits event listeners (addToCart, goToCart, startOrder,
+  //    resetKiosk) were passed to component but could not be automatically
+  //    inherited because component renders fragment or text root nodes."
+  // Declaring them in `emits` tells Vue these events are intentionally not
+  // emitted from this confirmation screen (the cart shell drives them
+  // elsewhere) and silences the warning without weakening the contract.
+  emits: ['add-to-cart', 'go-to-cart', 'start-order', 'reset-kiosk'],
   props: {
     // Populated from route.query by kioskRoutes.js
     orderNumber: { type: String, default: '' },
     orderTotal:  { type: Number, default: null },
   },
   data() {
+    const autoReturnSeconds = confirmationAutoReturnSeconds();
     return {
-      countdown:      30,
+      autoReturnSeconds,
+      countdown:      autoReturnSeconds,
       progressWidth:  100,
       timer:          null,
       printStatus:    null,  // null | 'printing' | 'done' | 'error'
@@ -216,7 +248,7 @@ export default {
     restaurantName() {
       // globalState stores data in state.lists (not state.settings)
       const lists = this.$store.state.globalState?.lists;
-      return lists?.company_name || lists?.site_name || 'FoodKing';
+      return lists?.company_name || lists?.site_name || 'Le Cayenne';
     },
     receiptDate() {
       const locale = this.$i18n?.locale || 'fr';
@@ -300,10 +332,12 @@ export default {
 
     this.startTimer();
 
-    // [SPLASH] Auto-print receipt on confirmation (non-blocking)
-    // Splash always prints automatically — user can reprint manually if needed
+    // Auto-print only on the real kiosk bridge. Browser window.print() can
+    // suspend timers in dev/simulated payment and leave the kiosk on this page.
     this.$nextTick(() => {
-      this.printReceipt();
+      if (kioskHardware.isKioskBridge()) {
+        this.printReceipt();
+      }
     });
 
     // Kiosk Phase 9.1.8 — annonce vocale de la confirmation (audio only if
@@ -329,9 +363,12 @@ export default {
   },
   methods: {
     startTimer() {
+      this.clearTimer();
+      this.countdown = this.autoReturnSeconds;
+      this.progressWidth = 100;
       this.timer = setInterval(() => {
         this.countdown--;
-        this.progressWidth = (this.countdown / 30) * 100;
+        this.progressWidth = (this.countdown / this.autoReturnSeconds) * 100;
         if (this.countdown <= 0) this.goHome();
       }, 1000);
     },
@@ -342,7 +379,6 @@ export default {
 
     async printReceipt() {
       if (this.printStatus === 'printing') return;
-      this.clearTimer();
       this.printStatus = 'printing';
 
       const receiptData = buildReceiptData({
@@ -392,6 +428,7 @@ export default {
 
     goHome() {
       this.clearTimer();
+      this.$store.dispatch('kioskCart/reset');
       // Kiosk Phase 9.1.12 — retour idle = fin de session visible. On purge
       // le snapshot localStorage (le client n'a plus besoin de son ticket
       // à la borne) pour ne pas polluer la prochaine commande.
@@ -416,14 +453,14 @@ export default {
 <style scoped>
 .kiosk-confirmation {
   min-height: 100vh;
-  background: #f7f7f8;
+  background: var(--kiosk-page-bg, var(--kiosk-bg));
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 2.5rem 2rem;
   text-align: center;
-  color: #1f1f1f;
+  color: var(--kiosk-text);
   gap: 1.25rem;
 }
 
@@ -459,7 +496,7 @@ export default {
 
 /* Title */
 .kiosk-confirmation-title {
-  font-size: 2.2rem;
+  font-size: clamp(2.4rem, 6vw, 4.8rem);
   font-weight: 900;
   letter-spacing: -0.01em;
   margin: 0;
@@ -468,10 +505,10 @@ export default {
 
 /* Detail card */
 .kiosk-confirmation-card {
-  background: white;
-  border: 1px solid #ececec;
-  border-radius: 20px;
-  padding: 1.5rem 2.5rem;
+  background: var(--kiosk-surface);
+  border: 1.5px solid var(--kiosk-border);
+  border-radius: 30px;
+  padding: 1.8rem 2.8rem;
   width: 100%;
   max-width: 400px;
   display: flex;
@@ -490,26 +527,26 @@ export default {
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: #999;
+  color: var(--kiosk-text-muted);
 }
 
 .kiosk-confirmation-number {
-  font-size: 3rem;
+  font-size: 4rem;
   font-weight: 900;
-  color: #1f1f1f;
+  color: var(--kiosk-primary);
   line-height: 1;
 }
 
 .kiosk-confirmation-price {
   font-size: 1.8rem;
   font-weight: 800;
-  color: #FFD700;
+  color: var(--kiosk-warning);
 }
 
 /* Message */
 .kiosk-confirmation-message {
   font-size: 1rem;
-  color: #777;
+  color: var(--kiosk-text-muted);
   line-height: 1.7;
   animation: fadeUp 0.5s ease-out 1.1s both;
 }
@@ -520,7 +557,7 @@ export default {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: linear-gradient(135deg, rgba(255, 193, 7, 0.12), rgba(255, 152, 0, 0.08));
+  background: rgba(245, 158, 11, 0.12);
   border: 1px solid rgba(255, 193, 7, 0.24);
   border-radius: 16px;
   padding: 14px 20px;
@@ -540,14 +577,14 @@ export default {
 }
 .kiosk-points-name {
   font-size: 0.85rem;
-  color: #8a6b17;
+  color: var(--kiosk-text-muted);
 }
 .kiosk-points-value {
   font-size: 1rem;
-  color: #FFD54F;
+  color: var(--kiosk-warning);
 }
 .kiosk-points-value strong {
-  color: #FFB300;
+  color: var(--kiosk-warning);
   font-weight: 700;
 }
 /* Fade-up transition for v-if */
@@ -566,40 +603,40 @@ export default {
 
 .kiosk-timer-label {
   font-size: 0.85rem;
-  color: #999;
+  color: var(--kiosk-text-muted);
 }
 
 .kiosk-timer-bar {
   height: 5px;
-  background: #ececec;
+  background: var(--kiosk-surface-alt);
   border-radius: 3px;
   overflow: hidden;
 }
 
 .kiosk-timer-fill {
   height: 100%;
-  background: linear-gradient(90deg, #2ECC71, #00b894);
+  background: linear-gradient(90deg, var(--kiosk-success), #00b894);
   border-radius: 3px;
   transition: width 1s linear;
 }
 
 /* CTA */
 .kiosk-btn-home {
-  background: linear-gradient(135deg, #E8001C, #C0001A);
-  color: #fff;
+  background: linear-gradient(135deg, var(--kiosk-primary), var(--kiosk-primary-dark));
+  color: var(--kiosk-text-on-red);
   border: none;
-  border-radius: 14px;
-  padding: 1rem 2.4rem;
-  font-size: 1.05rem;
-  font-weight: 700;
+  border-radius: 28px;
+  padding: 1.15rem 2.8rem;
+  font-size: 1.25rem;
+  font-weight: 900;
   cursor: pointer;
-  box-shadow: 0 8px 24px rgba(232,0,28,0.18);
+  box-shadow: 0 8px 24px rgba(244, 80, 30, 0.22);
   transition: transform 0.1s, box-shadow 0.1s;
   animation: fadeUp 0.5s ease-out 1.3s both;
 }
 .kiosk-btn-home:active {
   transform: scale(0.96);
-  box-shadow: 0 4px 14px rgba(232,0,28,0.3);
+  box-shadow: 0 4px 14px rgba(244, 80, 30, 0.34);
 }
 
 @keyframes fadeUp {
@@ -608,9 +645,9 @@ export default {
 }
 
 .kiosk-btn-print {
-  background: white;
-  border: 1.5px solid #e4e4e4;
-  color: #666;
+  background: var(--kiosk-surface);
+  border: 1.5px solid var(--kiosk-border);
+  color: var(--kiosk-text-muted);
   border-radius: 50px;
   font-size: 1rem;
   padding: 0.75rem 2rem;
@@ -618,13 +655,42 @@ export default {
   transition: all 0.2s;
   font-family: inherit;
 }
-.kiosk-btn-print:hover:not(:disabled) { background: #f7f7f8; color: #1f1f1f; }
+.kiosk-btn-print:hover:not(:disabled) { background: var(--kiosk-surface-alt); color: var(--kiosk-text); }
 .kiosk-btn-print:disabled { opacity: 0.6; cursor: default; }
-.kiosk-btn-print.is-done { border-color: rgba(46,204,113,0.5); color: #2ecc71; }
-.kiosk-btn-print.is-error { border-color: rgba(232,0,28,0.5); color: #ff6b7a; }
+.kiosk-btn-print.is-done { border-color: rgba(46,204,113,0.5); color: var(--kiosk-success); }
+.kiosk-btn-print.is-error { border-color: rgba(194, 30, 47, 0.5); color: var(--kiosk-error); }
 
-/* Receipt zone — visible only when printing via window.print() */
+/* Receipt zone — visible when printing or fallback after print failure */
 .kiosk-receipt-zone { display: none; }
+
+.kiosk-receipt-zone[data-print-failed="true"] {
+  display: block !important;
+  max-width: 500px;
+  max-height: 80vh;
+  margin: 1.25rem auto;
+  padding: 1.25rem 1.5rem 1.5rem;
+  background: #fff;
+  border: 1px solid #e2e2e4;
+  border-radius: 16px;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.08);
+  text-align: center;
+  color: #1f1f1f;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.kiosk-fallback-receipt-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  margin: 0 0 0.75rem;
+}
+.kiosk-fallback-receipt-help {
+  font-size: 0.95rem;
+  color: #555;
+  margin: 0 0 1rem;
+  line-height: 1.45;
+}
 
 @media print {
   body > * { display: none !important; }

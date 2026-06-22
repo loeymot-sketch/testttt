@@ -1,0 +1,25 @@
+{
+  "task_id": "PRODUCT-COMPOSER-SYNC-B4-RUNTIME-WIZARD-MIGRATION",
+  "execution_date": "2026-04-27",
+  "delegation": "codex-extension",
+  "source_plan": "reports/audit/CLAUDE_PRODUCT_COMPOSER_FINAL_EXECUTION_PLAN_2026-04-27.md + B4 details from CLAUDE_PRODUCT_COMPOSER_MEGA_AUDIT_AND_PLAN_2026-04-27.md",
+  "preconditions": [
+    "B3 PASS",
+    "B2 schema available",
+    "no OrderService/FrontendOrderService edits"
+  ],
+  "scope": [
+    "expose published composer_profile in POS and kiosk menu projections",
+    "filter composer steps by visible_on and branch scope",
+    "prioritize composer_profile steps in kiosk runtime wizard",
+    "trace heuristic fallback only when no published profile exists",
+    "keep POS item payloads carrying composer_profile through shared resources"
+  ],
+  "invariants": [
+    "pricing backend SSOT",
+    "branch_id isolation",
+    "no schema migration",
+    "no order service edit",
+    "frontend analytics whitelist mirrored by backend"
+  ]
+}

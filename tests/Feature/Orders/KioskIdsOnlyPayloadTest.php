@@ -24,6 +24,7 @@ use App\Services\Pricing\PricingRequest;
 use App\Services\Pricing\PricingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use Smartisan\Settings\Facades\Settings;
 use Tests\TestCase;
@@ -142,10 +143,20 @@ class KioskIdsOnlyPayloadTest extends TestCase
 
         Event::fake([OrderCreated::class, OrderStatusChanged::class]);
         Sanctum::actingAs($kioskUser, ['kiosk:order']);
+        $quote = $this
+            ->withHeader('x-api-key', '123456')
+            ->postJson('/api/frontend/order/quote', $payload)
+            ->assertOk()
+            ->json('data');
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this
             ->withHeader('x-api-key', '123456')
-            ->postJson('/api/frontend/order', $payload);
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/frontend/order', $payload + [
+                'quote_token' => $quote['quote_token'],
+                'quote_signature' => $quote['signature'],
+            ]);
 
         $this->assertContains($response->status(), [200, 201], json_encode($response->json()));
 

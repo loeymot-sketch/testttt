@@ -1,0 +1,9 @@
+tests/e2e/composer-mega-flow.spec.js
+docs/hardware/UAT_COMPOSER_2026-04-27.md
+missions/PRODUCT-COMPOSER-SYNC-B9-E2E-HARDWARE-SIGNOFF/allowlist.txt
+missions/PRODUCT-COMPOSER-SYNC-B9-E2E-HARDWARE-SIGNOFF/input.json
+missions/PRODUCT-COMPOSER-SYNC-B9-E2E-HARDWARE-SIGNOFF/execute_brief.md
+missions/PRODUCT-COMPOSER-SYNC-B9-E2E-HARDWARE-SIGNOFF/report.md
+reports/audit/GPT_SELF_AUDIT_PRODUCT-COMPOSER-SYNC-B9-E2E-HARDWARE-SIGNOFF.md
+reports/audit/CODEX_FINAL_COMPOSER_AUDIT_2026-04-27.md
+reports/post_execute_latest.log

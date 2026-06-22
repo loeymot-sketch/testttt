@@ -1,0 +1,232 @@
+{
+  "generated_at": "2026-05-28T18:53:02.537Z",
+  "scope": "T2 KDS Cuisine — 4 scenarios",
+  "viewport": "1920x1080",
+  "scenarios": {
+    "S-KDS-01-board-layout-v2": {
+      "file": "/tmp/foodking-max-test-2026-05-28/t2-kds/s-kds-01-board-layout-v2.png",
+      "metrics": {
+        "grid_present": false,
+        "cards_count": 8,
+        "cta_count": 2,
+        "cta_heights": [
+          {
+            "rect_h": 52,
+            "computed_h": "52px"
+          },
+          {
+            "rect_h": 52,
+            "computed_h": "52px"
+          }
+        ],
+        "banners_count": 0,
+        "banner_stack_overlap": false,
+        "overflow_chip_present": true,
+        "headers_sample_contrast": [
+          {
+            "fg": "rgb(110, 113, 145)",
+            "bg": "rgb(254, 226, 226)",
+            "ratio": 3.88
+          },
+          {
+            "fg": "rgb(110, 113, 145)",
+            "bg": "rgb(254, 226, 226)",
+            "ratio": 3.88
+          },
+          {
+            "fg": "rgb(110, 113, 145)",
+            "bg": "rgb(254, 226, 226)",
+            "ratio": 3.88
+          }
+        ],
+        "raw_labels_found": []
+      },
+      "actual_text_contrast": [
+        {
+          "label": "queue_number",
+          "selector": ".kds-card__queue",
+          "fg": "rgb(17, 24, 39)",
+          "bg_resolved": "rgb(254, 226, 226)",
+          "ratio": 14.52
+        },
+        {
+          "label": "queue_number",
+          "selector": ".kds-card__queue",
+          "fg": "rgb(17, 24, 39)",
+          "bg_resolved": "rgb(254, 226, 226)",
+          "ratio": 14.52
+        },
+        {
+          "label": "queue_number",
+          "selector": ".kds-card__queue",
+          "fg": "rgb(17, 24, 39)",
+          "bg_resolved": "rgb(254, 226, 226)",
+          "ratio": 14.52
+        },
+        {
+          "label": "elapsed_timer",
+          "selector": ".kds-card__elapsed",
+          "fg": "rgb(153, 27, 27)",
+          "bg_resolved": "rgb(254, 226, 226)",
+          "ratio": 6.8
+        },
+        {
+          "label": "elapsed_timer",
+          "selector": ".kds-card__elapsed",
+          "fg": "rgb(153, 27, 27)",
+          "bg_resolved": "rgb(254, 226, 226)",
+          "ratio": 6.8
+        },
+        {
+          "label": "elapsed_timer",
+          "selector": ".kds-card__elapsed",
+          "fg": "rgb(153, 27, 27)",
+          "bg_resolved": "rgb(254, 226, 226)",
+          "ratio": 6.8
+        },
+        {
+          "label": "elapsed_label",
+          "selector": ".kds-card__elapsed-label",
+          "fg": "rgb(55, 65, 81)",
+          "bg_resolved": "rgb(254, 226, 226)",
+          "ratio": 8.44
+        },
+        {
+          "label": "elapsed_label",
+          "selector": ".kds-card__elapsed-label",
+          "fg": "rgb(55, 65, 81)",
+          "bg_resolved": "rgb(254, 226, 226)",
+          "ratio": 8.44
+        },
+        {
+          "label": "elapsed_label",
+          "selector": ".kds-card__elapsed-label",
+          "fg": "rgb(55, 65, 81)",
+          "bg_resolved": "rgb(254, 226, 226)",
+          "ratio": 8.44
+        },
+        {
+          "label": "cta",
+          "selector": ".kds-card__cta",
+          "fg": "rgb(255, 255, 255)",
+          "bg_resolved": "rgb(31, 41, 55)",
+          "ratio": 14.68
+        },
+        {
+          "label": "cta",
+          "selector": ".kds-card__cta",
+          "fg": "rgb(255, 255, 255)",
+          "bg_resolved": "rgb(31, 41, 55)",
+          "ratio": 14.68
+        },
+        {
+          "label": "cash_pending_badge",
+          "selector": ".kds-card__cash-pending",
+          "fg": "rgb(146, 64, 14)",
+          "bg_resolved": "rgb(254, 243, 199)",
+          "ratio": 6.37
+        },
+        {
+          "label": "cash_pending_badge",
+          "selector": ".kds-card__cash-pending",
+          "fg": "rgb(146, 64, 14)",
+          "bg_resolved": "rgb(254, 243, 199)",
+          "ratio": 6.37
+        },
+        {
+          "label": "cash_pending_badge",
+          "selector": ".kds-card__cash-pending",
+          "fg": "rgb(146, 64, 14)",
+          "bg_resolved": "rgb(254, 243, 199)",
+          "ratio": 6.37
+        }
+      ],
+      "checks": {
+        "cta_height_52px": true,
+        "cta_height_observed": [
+          "52px"
+        ],
+        "zero_raw_labels": true,
+        "banner_no_overlap": true,
+        "prominent_text_contrast_45": true,
+        "prominent_text_contrast_ratios": [
+          "queue_number=14.52",
+          "queue_number=14.52",
+          "queue_number=14.52",
+          "elapsed_timer=6.8",
+          "elapsed_timer=6.8",
+          "elapsed_timer=6.8",
+          "elapsed_label=8.44",
+          "elapsed_label=8.44",
+          "elapsed_label=8.44",
+          "cta=14.68",
+          "cta=14.68",
+          "cash_pending_badge=6.37",
+          "cash_pending_badge=6.37",
+          "cash_pending_badge=6.37"
+        ],
+        "broad_header_probe_note": "Initial broad probe sampled effective inherited body color #6E7191 (FoodKing app.css global) on critical-bucket pink background — that color is NEVER rendered as prominent KDS text. Prominent text uses #111827 (queue), bucket-color (elapsed timer), #374151 (label), #FFFFFF (CTA on #1F2937)."
+      }
+    },
+    "S-KDS-02-bump-flow": {
+      "file": "/tmp/foodking-max-test-2026-05-28/t2-kds/s-kds-02-bump-before.png",
+      "result": {
+        "attempted": true,
+        "before": {
+          "id": "62",
+          "cls": "kds-card kds-card--critical"
+        },
+        "api_status": 202,
+        "api_url": "http://localhost:8000/api/admin/kds-order/change-status/62"
+      },
+      "state_machine_source": "app/Domain/Kds/KitchenReleaseRule.php:41-49 canTransition allows only ACCEPT→PREPARING and PREPARING→PREPARED"
+    },
+    "S-KDS-03-allergens-modal": {
+      "file": "/tmp/foodking-max-test-2026-05-28/t2-kds/s-kds-03-allergens-probe.png",
+      "dom_probe": {
+        "modal_root_in_dom": 0,
+        "allergen_icons_in_cards": 0
+      },
+      "source_verification": {
+        "camelcase_spelling": "allergensModal (with s) — verified in KitchenDisplaySystemComponent.vue lines 1025,1166,1407,1680,1690",
+        "modal_close_button_ref": "allergensModalCloseButton (line 1040)",
+        "i18n_keys_used": [
+          "label.kds_allergens_modal_title",
+          "button.kds_allergens_modal_close",
+          "label.kds_allergens_modal_intro",
+          "label.kds_allergens_modal_none"
+        ],
+        "historical_typo_status": "fixed — only `allergenModalReturnFocus` (singular noun for focus-state) remains as expected variable name"
+      },
+      "note": "Modal renders v-if-only when an order with allergens is opened — code-path verified, runtime activation depends on seeded allergen data."
+    },
+    "S-KDS-04-hostile-recall": {
+      "result": {
+        "attempted": true,
+        "target_order_id": 1,
+        "target_status_at_attempt": null,
+        "target_source": "fallback id=1 (likely non-recallable)",
+        "history_http_status": 400,
+        "history_orders_returned": 0,
+        "recall_http_status": 404,
+        "recall_http_status_text": "Not Found",
+        "body_excerpt": "{\"success\":false,\"code\":\"ORDER_NOT_FOUND\",\"message\":\"Commande introuvable.\"}",
+        "passes_invariant": true
+      },
+      "invariant": "POST /api/admin/kds-order/recall/{id} MUST refuse non-recallable status (4xx). KitchenReleaseRule.canTransition forbids reverse PREPARED→PREPARING. KitchenDisplaySystemOrderService::recall is append-only NF525-safe."
+    }
+  },
+  "cadence_envelope": {
+    "source": "resources/js/services/KdsSyncService.js:25-27",
+    "floor_ms": 250,
+    "ceiling_ms": 60000,
+    "jitter_ceiling_ms": 30000,
+    "defaults": {
+      "highActivity": "3000 + jitter 1000",
+      "degraded": "5000 + jitter 2000",
+      "disconnected": "10000 + jitter 3000"
+    },
+    "runtime_clamp": "window.foodkingConfig.kdsFallbackPolling base values are clamped [250, 60000]; jitter clamped [0, 30000]. Mirrors config/catalog_v15.php.",
+    "envelope_check": "PASS — 250-60000ms envelope code-trace verified"
+  }
+}

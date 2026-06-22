@@ -26,7 +26,7 @@ class AddressController extends Controller
         try {
             return AddressResource::collection($this->addressService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -41,7 +41,7 @@ class AddressController extends Controller
         try {
             return new AddressResource($address);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -50,7 +50,7 @@ class AddressController extends Controller
         try {
             return new AddressResource($this->addressService->store($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -64,7 +64,7 @@ class AddressController extends Controller
         try {
             return new AddressResource($this->addressService->update($request, $address));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -79,7 +79,7 @@ class AddressController extends Controller
             $this->addressService->destroy($address);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

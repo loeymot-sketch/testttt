@@ -19,14 +19,14 @@ class LanguageTableSeeder extends Seeder
     public function run()
     {
         $englishLanguageArray = [
-            'name' => 'English',
+            'name' => 'Anglais',
             'code' => 'en',
             'display_mode' => DisplayMode::LTR,
             'status' => Status::ACTIVE
         ];
 
         $frenchLanguageArray = [
-            'name' => 'French',
+            'name' => 'Français',
             'code' => 'fr',
             'display_mode' => DisplayMode::LTR,
             'status' => Status::ACTIVE

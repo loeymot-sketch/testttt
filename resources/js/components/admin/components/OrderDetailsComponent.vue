@@ -111,6 +111,12 @@
                                         {{ $t('label.instruction') }}:</h3>
                                     <p class="text-xs">{{ item.instruction }}</p>
                                 </li>
+                                <!-- [prod-finale 2026-06-17 P3] surface allergens on the shared order-detail view (chef/staff
+                                     review surface; one edit covers ~15 consumers). The KDS remains the primary cooking surface. -->
+                                <li class="flex gap-1" v-if="Array.isArray(item.allergens_snapshot) && item.allergens_snapshot.length > 0">
+                                    <h3 class="capitalize text-xs w-fit whitespace-nowrap text-red-700">&#9888; {{ $t('label.kds_allergens_badge') }}:</h3>
+                                    <p class="text-xs font-semibold text-red-700">{{ item.allergens_snapshot.join(' · ') }}</p>
+                                </li>
                             </ul>
                         </div>
                     </div>

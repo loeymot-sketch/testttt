@@ -50,6 +50,13 @@
                                     <AddressComponent :getLocation="updateAddress" :props="addressProps" />
                                 </div>
                             </div>
+                            <div
+                                v-if="deliveryGeocodeError"
+                                class="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700"
+                                role="alert"
+                            >
+                                {{ deliveryGeocodeError }}
+                            </div>
                             <div v-if="addresses.length > 0" class="grid grid-cols-1 sm:grid-cols-3 gap-3 active-group">
                                 <label @click="changeAddress($event, address)"
                                     :class="checkoutProps.form.address_id === address.id ? 'active' : ''"
@@ -209,7 +216,7 @@
                             </div>
                         </div>
                         <div class="p-4">
-                            <CouponComponent :props="{ total: parseFloat(subtotal) }" :coupon="coupon" />
+                            <CouponComponent v-if="discountsEnabled" :props="{ total: parseFloat(subtotal) }" :coupon="coupon" />
 
                             <div class="rounded-xl mb-6 border border-[#EFF0F6]">
                                 <ul class="flex flex-col gap-2 p-3 border-b border-dashed border-[#EFF0F6]">
@@ -282,7 +289,7 @@
         <div class="modal-dialog">
             <div class="flex items-center justify-between gap-4 py-3.5 px-4 border-b border-slate-100">
                 <h3 class="text-lg font-semibold capitalize">{{ $t('label.select_time_schedule') }}</h3>
-                <button class="modal-close fa-regular fa-circle-xmark" @click="resetTimeSlotModal"></button>
+                <button aria-label="Fermer" class="modal-close fa-regular fa-circle-xmark" @click="resetTimeSlotModal"></button>
             </div>
 
             <div v-if="todayTimeSlots.length > 0 || tomorrowTimeSlots.length > 0" class="p-4 border-b border-gray-100">
@@ -353,6 +360,7 @@ import router from "../../../router";
 import _ from "lodash";
 import { Swiper, SwiperSlide } from 'swiper/vue';
 import 'swiper/css';
+import { calculateDeliveryChargeFromDistance } from "../../../helpers/deliveryCharge";
 
 
 export default {
@@ -380,6 +388,7 @@ export default {
             branchAddress: null,
             localDeliveryTimeLabel: null,
             localAddress: {},
+            deliveryGeocodeError: '',
             dayTakeEnum: dayTakeEnum,
             activityEnum: activityEnum,
             isAdvanceOrderEnum: isAdvanceOrderEnum,
@@ -394,6 +403,7 @@ export default {
                     subtotal: 0,
                     discount: 0,
                     delivery_charge: 0,
+                    delivery_distance_km: null,
                     delivery_time: null,
                     total: 0,
                     order_type: null,
@@ -542,6 +552,15 @@ export default {
         }
     },
     computed: {
+        // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-31 Q2] Hide the coupon entry while
+        // discretionary discounts are disabled in V1 so a customer can't apply a coupon
+        // and hit the backend 422 dead-end. Exposed via window.foodkingConfig
+        // .discountsEnabled (master.blade.php). Defaults to FALSE (hidden) when missing.
+        discountsEnabled: function () {
+            return (typeof window !== 'undefined' && window.foodkingConfig)
+                ? window.foodkingConfig.discountsEnabled === true
+                : false;
+        },
         globalState: function () {
             return this.$store.getters['globalState/lists'];
         },
@@ -711,6 +730,7 @@ export default {
             }
         },
         updateAddress: function (address) {
+            this.clearDeliveryGeocodeError();
             this.localAddress = address;
             this.checkoutProps.form.address_id = address.id;
             this.deliveryChargeCalculation();
@@ -747,12 +767,14 @@ export default {
         },
         changeAddress: function (e, address) {
             e.preventDefault();
+            this.clearDeliveryGeocodeError();
             this.localAddress = address;
             this.checkoutProps.form.address_id = address.id;
             this.deliveryChargeCalculation();
         },
         deliveryChargeCalculation: function () {
             if (this.checkoutProps.form.order_type === orderTypeEnum.DELIVERY && (typeof this.localAddress.latitude !== 'undefined' && this.localAddress.latitude !== '')) {
+                this.clearDeliveryGeocodeError();
                 this.$store.dispatch("frontendBranch/showByLatLong", {
                     latitude: this.localAddress.latitude,
                     longitude: this.localAddress.longitude
@@ -760,29 +782,63 @@ export default {
                     this.checkoutProps.form.branch_id = branchRes.data.data.id;
                     const distance = appService.distance(parseFloat(this.localAddress.latitude), parseFloat(this.localAddress.longitude), parseFloat(branchRes.data.data.latitude), parseFloat(branchRes.data.data.longitude));
 
-                    if (distance > this.setting.order_setup_free_delivery_kilometer) {
-                        let extraDistance = distance - parseFloat(this.setting.order_setup_free_delivery_kilometer);
-                        this.checkoutProps.form.delivery_charge = (extraDistance * parseFloat(this.setting.order_setup_charge_per_kilo) + parseFloat(this.setting.order_setup_basic_delivery_charge));
-                    } else {
-                        this.checkoutProps.form.delivery_charge = parseFloat(this.setting.order_setup_basic_delivery_charge);
+                    if (!Number.isFinite(distance) || distance < 0) {
+                        this.checkoutProps.form.delivery_distance_km = null;
+                        this.checkoutProps.form.delivery_charge = 0;
+                        this.showDeliveryGeocodeError();
+                        return;
                     }
+
+                    this.checkoutProps.form.delivery_distance_km = distance;
+                    this.checkoutProps.form.delivery_charge = calculateDeliveryChargeFromDistance(distance);
                 }).catch((err) => {
                     this.loading.isActive = false;
                     this.checkoutProps.form.branch_id = null;
                     this.localAddress = {};
                     this.checkoutProps.form.address_id = null;
+                    this.checkoutProps.form.delivery_distance_km = null;
                     this.checkoutProps.form.delivery_charge = 0;
-                    alertService.info(err.response.data.message);
+                    this.showDeliveryGeocodeError();
+                    alertService.info(err.response?.data?.message || this.deliveryGeocodeError);
 
                 });
             } else {
+                const hadAddress = Object.keys(this.localAddress || {}).length > 0;
                 this.localAddress = {};
                 this.checkoutProps.form.address_id = null;
                 if (this.checkoutProps.form.order_type === orderTypeEnum.DELIVERY) {
                     this.checkoutProps.form.branch_id = null;
                 };
+                this.checkoutProps.form.delivery_distance_km = null;
                 this.checkoutProps.form.delivery_charge = 0;
+                if (this.checkoutProps.form.order_type === orderTypeEnum.DELIVERY && hadAddress) {
+                    this.showDeliveryGeocodeError();
+                }
             }
+        },
+        clearDeliveryGeocodeError: function () {
+            this.deliveryGeocodeError = '';
+        },
+        showDeliveryGeocodeError: function () {
+            this.deliveryGeocodeError = 'Adresse non reconnue. Vérifiez l’adresse avant de valider la livraison.';
+            this.focusDeliveryAddressField();
+        },
+        handleGeocodeFailure: function (err) {
+            if (err?.response?.data?.code !== 'GEOCODE_FAILED') {
+                return false;
+            }
+
+            this.showDeliveryGeocodeError();
+            alertService.error(err.response.data.message || this.deliveryGeocodeError);
+            return true;
+        },
+        focusDeliveryAddressField: function () {
+            this.$nextTick(() => {
+                const input = document.querySelector('.address-modal input[type="text"], .address-modal input:not([type]), .address-modal textarea');
+                if (input && typeof input.focus === 'function') {
+                    input.focus();
+                }
+            });
         },
         coupon: function (e) {
             if (Object.keys(e).length !== 0) {
@@ -863,6 +919,7 @@ export default {
                 this.checkoutProps.form.subtotal = null;
                 this.checkoutProps.form.discount = 0;
                 this.checkoutProps.form.delivery_charge = 0;
+                this.checkoutProps.form.delivery_distance_km = null;
                 this.checkoutProps.form.delivery_time = null;
                 this.checkoutProps.form.total = 0;
                 this.checkoutProps.form.order_type = null;
@@ -877,10 +934,15 @@ export default {
                 }).catch();
             }).catch((err) => {
                 this.loading.isActive = false;
-                if (typeof err.response.data.errors === 'object') {
+                if (this.handleGeocodeFailure(err)) {
+                    return;
+                }
+                if (typeof err.response?.data?.errors === 'object') {
                     _.forEach(err.response.data.errors, (error) => {
                         alertService.error(error[0]);
                     });
+                } else if (err.response?.data?.message) {
+                    alertService.error(err.response.data.message);
                 }
             });
         },
@@ -894,6 +956,8 @@ export default {
                 }
                 this.branchAddress = this.branch.address;
                 this.checkoutProps.form.delivery_charge = 0;
+                this.checkoutProps.form.delivery_distance_km = null;
+                this.clearDeliveryGeocodeError();
             } else {
                 this.deliveryChargeCalculation();
             }

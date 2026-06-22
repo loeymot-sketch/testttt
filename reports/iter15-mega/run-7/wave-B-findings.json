@@ -1,0 +1,83 @@
+{
+  "wave": "B",
+  "run_n": 7,
+  "states_reviewed": 10,
+  "summary": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 1,
+    "P3": 0
+  },
+  "findings": [
+    {
+      "id": "B-006",
+      "state_artifact": "iter15-mega-lifecycle/03-pos-after-pay.dom.html, 03-pos-after-pay.png",
+      "category": "loading_state",
+      "severity": "P2",
+      "evidence": "STILL OPEN — 3rd consecutive run with the receipt-body-not-captured regression (run-5, run-6, run-7). The 03 PNG visually shows the receipt modal cleanly rendered (Le Cayenne / Paris, France / MODE TEST / Frites Seules / Rendu / Type de paiement: Espèces / N°A0048 — visually unambiguous in 03-pos-after-pay.png). The 03 page.content() (501036 bytes) captures 0 of the receipt-body proxy tokens: A0048=0, A0038=0, MODE TEST=0, Rendu=0, TVA=0, 'Type de paiement'=0, Encaissement=0, receipt-content=0. The single 'receipt-modal' hit in dom.html is a CSS scope rule '.receipt-modal[data-v-773e416b] .modal-dialog {…}' embedded in a <style> block — NOT a rendered DOM element. The 4 'Le Cayenne' hits in dom.html are static page chrome (header/sidebar/etc), not receipt body. Identical signature to run-5/run-6: receipt is Teleported to body OR mounted to a portal that page.content() does not serialize, AND the spec emits no receipt.html sibling artifact. Risk preserved: cat 11 numeric integrity cross-check (cart total = receipt total = KDS total) cannot be performed from artifacts; future receipt-content regressions will be invisible to the audit harness. P2 because the modal IS visible to the user (PNG proves it), so it is not a user-facing defect — it is an audit-tooling regression that violates the protocol's 'inspect all four artifact files' rule. Per CLAUDE.md §8 healing rule (max 3 consecutive heal cycles), this is the 3RD consecutive cycle on the same defect — at the §8 ceiling.",
+      "fix_hint": "Re-apply the run-2 fix that landed B-006 PASS. Either (a) render receipt modal in-place (no Teleport to body), or (b) have the spec emit a receipt.html sibling artifact via page.locator('#receipt-modal-portal, .receipt-modal, [data-testid=\"pos-receipt-modal\"]').innerHTML() and assert presence of A0048 / MODE TEST / Rendu tokens. Strongly recommend (b) as defense-in-depth so future Teleport reverts cannot silently re-open this. Status: 3 consecutive reopened cycles — at §8 ceiling, escalate if not closed in run-8."
+    }
+  ],
+  "round7_target_fix_verifications": {
+    "B-001_pos_tracker_real_euro_state_06": "PASS. 45 pos-tracker-card-total spans rendered. Distribution: 22,00€ ×1, 21,50€ ×1, 21,00€ ×1, 2,00€ ×42. Zero 0,00€ values. Visual confirmation in 06 PNG: 4 lanes (Confirmées 21,50€, En préparation, Prêts à servir 2,00€, Livrés 2,00€) all show real € totals.",
+    "B-001_pos_tracker_real_euro_state_08": "PASS. Identical distribution to state 06: 45 spans, zero zero-euro values, 22,00€/21,50€/21,00€/2,00€×42 split. Backend total_amount_price binding stable.",
+    "B-002_kds_cta_visible_state_04": "PASS. data-testid='kds-card-cta' x5 containers in state 04, 5 'Démarrer la préparation' literals as direct child text. Visual confirmation in 04 PNG: pink 'Démarrer la préparation' button visible directly under each kds-card (orderId 295 at #100526295 / N°A0048 confirmed).",
+    "B-002_kds_cta_visible_state_05": "PASS. 5 kds-card-cta containers, 4 'Démarrer la préparation' literals (one card already in 'En préparation' lane, expected progression).",
+    "B-002_kds_cta_visible_state_07": "PASS. 5 kds-card-cta containers, 4 'Démarrer la préparation' literals.",
+    "B-004_orphan_token_state_04": "PASS for round-7 token list. AUDIT-CYCLE4=0, AUDIT-HEAL=1 (in inline <script> source-code comment '// [BYPASS-P1 + AUDIT-HEAL B8] E2E flow validation flags exposed to SPA' — NOT a rendered order external_id, NOT user-visible), AUDIT-KIOSK-MULTI=0, RED-TEAM=0. Cards containing AUDIT-/RED-TEAM literal: 0/5 in state 04 (verified by regex over kds-card containers with data-testid='kds-card').",
+    "B-004_orphan_token_state_05": "PASS for round-7 token list. AUDIT-CYCLE4=0, AUDIT-HEAL=1 (same script comment, identical signature), AUDIT-KIOSK-MULTI=0, RED-TEAM=0. Cards containing AUDIT- literal: 0/5.",
+    "B-004_orphan_token_state_07": "PASS for round-7 token list. AUDIT-CYCLE4=0, AUDIT-HEAL=1 (same script comment), AUDIT-KIOSK-MULTI=0, RED-TEAM=0. Cards containing AUDIT- literal: 0/5.",
+    "B-004_residual_audit_p1_p2_in_html_comments": "INFO (not P1/P2 — outside round-7 scope). AUDIT-P1=8 and AUDIT-P2=5 occurrences per state 04/05/07 are HTML comments (e.g. '<!-- [AUDIT-P1] Array.isArray guard: legacy kiosk orders stored JS… -->' and '<!-- [AUDIT-P2] Print kitchen ticket button -->') used as anchor markers for code review. These are SOURCE annotations stripped from rendered text by the browser, not order external_id orphans. The round-7 cleanup correctly targeted CYCLE4/HEAL-as-token/KIOSK-MULTI/RED-TEAM (the actual previously-orphan order tokens) and completed.",
+    "B-007_aria_label_state_04": "PASS. 9 'title=Prêt' bump-ready buttons, 9 carry aria-label='Prêt — <item_name>' (samples: 'Prêt — Frites Seules', 'Prêt — Fanta Orange 33cl', 'Prêt — Coca-Cola Zero 33cl', 'Prêt — Orangina 33cl', 'Prêt — Omelette Nature'). 0 buttons without aria-label. Touch-only kitchen tablet now has accessible labels for screen readers and assistive tech.",
+    "B-007_aria_label_state_05": "PASS. 9/9 buttons carry the aria-label='Prêt — <name>' pattern. Identical wiring to state 04.",
+    "B-007_aria_label_state_07": "PASS. 9/9 buttons carry the aria-label='Prêt — <name>' pattern.",
+    "B-009_cart_timing_state_03": "PASS. After POS pay, pos-grand-total in cart sidebar shows 2.00€ (NOT 0.00€) — matches the paid amount displayed in receipt modal. Run-6 OPEN signature ('<span class=\"pos-v5-total-row__amount pos-v5-tabular\">0.00€</span>') is now '<span class=\"pos-v5-total-row__amount pos-v5-tabular\">2.00€</span>'. Cart no longer resets prematurely on payment-success — the visual conflict between two surfaces showing opposite values is resolved. pos-cart-stat-chip occurrence: 1 (Articles count='1', expected). Visual confirmation in 03 PNG: cart sidebar bottom-right reads 'Total 2,00 €' with 'Commande 2.00 €' on the pay button — consistent with the receipt's Frites Seules 2,00€ line.",
+    "B-010_i18n_no_raw_keys_per_state": "PASS. 0/0/0/0/0/0/0/0/0/0 across all 10 states for visible text matching the i18n-key heuristic regex (^[a-z]+\\.[a-z_]+(\\.[a-z_]+)*). Specifically: 'button.menu'=0, 'label.preparing'=0, 'label.add_to_cart'=0, 'kiosk.confirmation.*'=0, 'button.split_equally'=0, 'label.kds_toggle_items'=0, 'button.pay'=0, 'kds.bump_item'=0 across all 10 dom.html files. Vue-i18n keys are properly resolved on render."
+  },
+  "carry_forward_pass_findings": {
+    "B-003_global_reconnect_banner_gated": "PASS — 3rd consecutive PASS. KDS states 01/04/05/07/09: rendered 'Reconnexion en cours' text=0/0/0/0/0 (the single 'Reconnexion en cours' grep hit per state is inside a Vue source-code <!-- comment block --> tagged 'iter15-mega-fix B-003/D-002 2026-05-10', not rendered). class='connection-status-banner'=0/0/0/0/0. POS-tracker side states 06/08: pos-tracker-rt-warn=0/0. Banner correctly suppressed in dev/local.",
+    "B-005_intlify_console_warnings": "PASS — 6th consecutive PASS. 0 [intlify] warnings in any of the 10 console.json files.",
+    "B-008_csp_report_storms": "PASS — 3rd consecutive PASS. All 10 network.json files = exactly 2 bytes ('[]'). Zero csp-report entries, zero 4xx/5xx, zero responses with duration > 2000ms. WS reconnection noise stays in console.json (allowlisted), never surfaces as 4xx in network.json.",
+    "C-022_order_visibility_check": "PASS. tracker-order-285 visible in state 06 AND 08 (PREPARED-still-visible binding holds). tracker-order-295 (orderId of this run) visible in state 06 AND 08.",
+    "C-024_lane_label_a_envoyer_to_confirmees": "PASS. State 06: 'À envoyer'=0, 'Confirmées'=≥4 occurrences (lane title + button + chip). State 08: identical. Lane rename held."
+  },
+  "spot_check_evidence": {
+    "B-001_pos_tracker_card_total_count_state_06": "45 pos-tracker-card-total spans extracted; 0 zero-€ values. Distribution: 22,00€ ×1 / 21,50€ ×1 / 21,00€ ×1 / 2,00€ ×42",
+    "B-001_pos_tracker_card_total_count_state_08": "45 pos-tracker-card-total spans extracted; 0 zero-€ values. Identical distribution to state 06",
+    "B-002_kds_card_cta_count_per_state": "04=5 / 05=5 / 07=5 (data-testid='kds-card-cta' containers, all rendered outside any height:0 accordion)",
+    "B-002_demarrer_la_preparation_count_per_state": "04=5 / 05=4 / 07=4 (one card per in-prep/ready lane has been progressed past 'À démarrer', expected)",
+    "B-003_pos_tracker_rt_warn_grep_state_06": "0",
+    "B-003_pos_tracker_rt_warn_grep_state_08": "0",
+    "B-003_kds_connection_banner_grep_per_state": "01=0 / 04=0 / 05=0 / 07=0 / 09=0 (all 5 KDS states have 0 connection-status-banner elements)",
+    "B-003_reconnexion_en_cours_text_per_state_rendered_only": "01=0 / 04=0 / 05=0 / 07=0 / 09=0 (raw substring count is 1/state but all hits are inside <!-- … --> comment blocks)",
+    "B-008_network_json_size_per_state": "All 10 files = 2 bytes ('[]'); 0 csp-report entries; 0 4xx/5xx; 0 slow responses",
+    "B-010_raw_aria_label_i18n_keys_per_state": "0/0/0/0/0/0/0/0/0/0",
+    "B-010_button.menu_grep_per_state": "0/0/0/0/0/0/0/0/0/0",
+    "B-010_label.kds_toggle_items_grep_per_state": "0/0/0/0/0/0/0/0/0/0",
+    "intlify_warnings_per_state": "0/0/0/0/0/0/0/0/0/0",
+    "non_ws_console_errors_per_state": "0/0/0/0/0/0/0/0/0/0 (all error entries are ws://127.0.0.1:6001 / wss://127.0.0.1:6001 / Laravel websockets ECONNREFUSED — allowlisted)",
+    "B-004_round7_token_count_per_kds_state": "AUDIT-CYCLE4: 01=0 / 04=0 / 05=0 / 07=0 / 09=0. AUDIT-HEAL: 01=1 / 04=1 / 05=1 / 07=1 / 09=1 (all in <script> source-code comments). AUDIT-KIOSK-MULTI: 0/0/0/0/0. RED-TEAM: 0/0/0/0/0.",
+    "B-007_pret_button_per_state": "04=9 / 05=9 / 07=9 <button title='Prêt'> with aria-label='Prêt — <name>' (run-6 had 4/4/4 with 0 aria-label — fixed in round-7). Sample: <button data-v-66aac04e='' type='button' class='w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-primary hover:bg-primary/5' title='Prêt' aria-label='Prêt — Frites Seules'><i data-v-66aac04e='' class='fa-solid fa-arrow-right' aria-hidden='true'></i></button>",
+    "B-009_pos_grand_total_state_03": "2.00€ (data-testid='pos-grand-total'). Receipt visible in PNG with N°A0048 / MODE TEST / 2.00€. Cart sidebar synchronized with paid amount — run-6 0.00€ regression resolved.",
+    "B-006_receipt_dom_capture_state_03_run_7": "A0048=0, A0038=0, MODE TEST=0, Rendu=0, TVA=0, 'Type de paiement'=0, Encaissement=0, receipt-content=0 in 03 dom.html (501036 bytes). Modal visible in 03 PNG with full body. Receipt body NOT captured by page.content() — 3rd consecutive run reopened, identical signature to run-5/run-6. At §8 ceiling.",
+    "kds_lane_swiper_tabs_state_07": "['Toutes les commandes', 'Confirmées', 'En préparation', 'Terminées'] — 4 tabs. Color hits in dom: bg-amber=0, bg-primary=13, bg-green=1, text-muted=42. Lane rendering visually correct in 04/06/08 PNGs.",
+    "cross_surface_total_consistency_orderId_295": "POS cart 02 sub-total = 2.00€. POS cart 03 sub-total (after pay) = 2.00€ (no longer 0.00€). Receipt modal in 03 PNG shows N°A0048 / 2,00€ / Frites Seules. KDS card #100526295 / N°A0048 visible in 04 PNG ('À emporter' lane). POS tracker card-total for orderId 295 in state 06/08 = 2,00€. 4 surfaces × same fact = same value. Numeric integrity (cat 11) holds where DOM evidence is available."
+  },
+  "set_diff_vs_run6": {
+    "closed_in_run7": [
+      "B-004 (orphan tokens AUDIT-CYCLE4|AUDIT-HEAL-as-external_id|AUDIT-KIOSK-MULTI|RED-TEAM all=0 in user-visible content; residual AUDIT-P1/P2 are HTML comment markers, not rendered orphans)",
+      "B-007 (icon-only Prêt button — fixed: 9/9 buttons in each KDS state now carry aria-label='Prêt — <name>')",
+      "B-009 (cart resets to 0.00€ during receipt overlay — fixed: pos-grand-total now shows 2.00€ matching receipt total)"
+    ],
+    "still_open_carried_from_run6": [
+      "B-006 (receipt body not captured by page.content() — IDENTICAL signature vs run-5 and run-6)"
+    ],
+    "newly_filed_in_run7": [],
+    "p0_count_run1_through_run7": "1 / 0 / 0 / 0 / 0 / 0 / 0",
+    "p1_count_run1_through_run7": "3 / 1 / 1 / 1 / 0 / 0 / 0",
+    "p2_count_run1_through_run7": "5 / 3 / 3 / 4 / 4 / 4 / 1",
+    "p3_count_run1_through_run7": "0 / 0 / 0 / 0 / 0 / 0 / 0",
+    "round7_target_fixes_landed": "B-001 PASS / B-002 PASS / B-004 PASS / B-007 PASS / B-009 PASS / B-010 PASS — 6/6 of round-7 targets verified GREEN."
+  },
+  "convergence_verdict": "WAVE B FINAL CONVERGED + LOOP-EXIT RECOMMENDED. Run-7 satisfies the convergence requirement on all loop-blocking axes: (1) P0=0 + P1=0 simultaneously across the full Wave B scope (sustained from run-2 through run-7, with the brief P0=1 in run-1 long since closed); (2) all 6 round-7 target fixes (B-001 / B-002 / B-004 / B-007 / B-009 / B-010) verified PASS with adversarial DOM+visual evidence; (3) all run-6 PASS findings (B-003, B-005, B-008, plus cross-wave spot-checks C-022 + C-024) still PASS in run-7; (4) the run-6 → run-7 delta is 3 closed (B-004, B-007, B-009) + 0 newly filed + 1 still-open (B-006). Cross-surface numeric integrity holds for orderId 295 across POS cart (2.00€) → receipt (2,00€ visible in PNG) → KDS card (#100526295 / N°A0048) → POS tracker (2,00€). Console errors remain WS-noise only (allowlisted ws/wss://127.0.0.1:6001 ECONNREFUSED). Network = 2 bytes per state. Lane swiper tabs ('Toutes les commandes / Confirmées / En préparation / Terminées') render with the expected color split. Loop-blocking gate is GREEN. The single remaining open finding (B-006) is a P2 audit-tooling regression — does NOT block the loop and does NOT affect end users (the receipt modal IS visible per the 03 PNG). Recommendation: (a) declare Wave B FINAL CONVERGED at run-7, (b) merge round-7 fixes to main, (c) file a one-shot tooling task to land the receipt.html sibling-artifact emission in the spec (closes B-006 permanently and adds defense-in-depth so future Teleport reverts cannot silently bypass the audit harness)."
+}

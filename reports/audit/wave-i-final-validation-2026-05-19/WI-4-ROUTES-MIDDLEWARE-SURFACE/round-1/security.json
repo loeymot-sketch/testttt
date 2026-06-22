@@ -1,0 +1,125 @@
+{
+  "zone": "WI-4-ROUTES-MIDDLEWARE-SURFACE",
+  "role": "Security",
+  "specialist_mode": "read-only audit",
+  "scope": "Authz coverage matrix across 97 FormRequests + 97 admin controllers + Sanctum kiosk:order ability discipline + Spatie permission gates + token-name discriminator on Broadcast channels + WH-5 / S-1 IDOR / Admin@Branch0 bypass heals + per-IP throttle keying via TrustProxies",
+  "anchors_verified": {
+    "form_requests": "97 FormRequests under app/Http/Requests/, 66 with `return true;` authorize() (sentinel baseline 69, count below baseline)",
+    "admin_controllers": "97 controllers under app/Http/Controllers/Admin/, 78 have __construct middleware (`$this->middleware([...])`), 19 lack any __construct middleware",
+    "spatie_permission_aliases": "Kernel.php:119-121 registers permission / role / role_or_permission alias from spatie/laravel-permission package",
+    "broadcast_channels": "routes/channels.php:41-62 — branch.{branchId} authz uses token-name discriminator `$user->currentAccessToken()?->name === 'kiosk-token'` (un-spoofable, immune to Sanctum '*' wildcard)",
+    "wh5_admin_branch0_bypass": "tests/Feature/Sentinels/AdministratorBranchZeroMintBypassSentinelTest.php exists with scenarios 1+2+3 covering: branch_id omitted → 422, branch_id=0 explicit → 422, branch_id=42 valid → 201 — heal commit 1ad08c6fc (post WH-5 catch)",
+    "myorderdetails_idor_heal": "MyOrderDetailsController has ZERO controller-level middleware (verified read) BUT route-level alternation gate `permission:customers_show|waiters_show|delivery-boys_show|chefs_show|administrators_show|employees_show` applied at api.php:583. Sentinel MyOrderDetailsAuthzSentinelTest.php exists."
+  },
+  "design_assessment": "Layered authorization: (a) Sanctum auth:sanctum middleware resolves the user from PersonalAccessToken; (b) EnsureUserStatusActive re-checks status fresh from DB per request (defeats token-after-disable attacks); (c) per-route or per-controller `permission:xxx` Spatie middleware enforces Spatie capability; (d) FormRequest authorize() provides a defense-in-depth gate for routes whose namespace is the canonical mount point (OrderRequest checks `tokenCan('kiosk:order')` + namespace `frontend.order.*`). The model is sound. The MISSING coverage is: 16 admin controllers lack __construct middleware AND not all of them are gated at the route — some rely entirely on the FormRequest, which itself has `return true;`. This is the gap class: MenuTemplateController, AnalyticSectionController, DefaultAccessController.",
+  "spatie_permission_gate_audit": {
+    "controllers_with_constructor_middleware": 78,
+    "controllers_without_constructor_middleware": 19,
+    "ungated_list": [
+      "AdminController.php (abstract base — no routes mounted directly)",
+      "AnalyticSectionController.php — store/update/destroy ROUTE-UNGATED — see WI-4-S-01",
+      "AddressController.php (legacy, no routes in api.php — appears dead)",
+      "AdminPosV4Controller.php — public Blade view, intentional",
+      "ComposerStepController.php — gated at route via `permission:catalog.compose` group (L736)",
+      "ComposerProfileController.php — gated at route via `permission:catalog.compose` group (L736) + per-action permission:catalog.publish on publish",
+      "CountryCodeController.php — read-only GET endpoints only, low sensitivity",
+      "DefaultAccessController.php — ROUTE-UNGATED — see WI-4-S-01",
+      "IngredientController.php — gated at route via `permission:ingredients_manage` (L722)",
+      "MenuController.php — DEAD CODE, not mounted in api.php",
+      "MenuProjectionController.php — IN-METHOD gate `$user->can('catalog.compose|publish|items_show')` at line 56-61 (verified)",
+      "MenuSectionController.php — GET-only endpoint at L381, low sensitivity, no route gate but no mutation",
+      "MenuTemplateController.php — ROUTE-UNGATED — see WI-4-S-01",
+      "MyOrderDetailsController.php — ROUTE-GATED post S-1 IDOR heal (alternation gate)",
+      "PosLoyaltyController.php — gated via PosLoyaltyRedeemRequest authorize() `$user->can('pos.redeem-loyalty')` (verified)",
+      "TimezoneController.php — read-only GET endpoint",
+      "Fiscal/ZReportController.php — in-method `authorizeFiscal()` calls `abort_unless($user->can('pos-manage-fiscal'), 403)` at L91-95 + each action method invokes it (verified)",
+      "Fiscal/XReportController.php — same in-method pattern as ZReportController (cross-checked via grep — fiscal/x-report mount at api.php:1119)",
+      "Pos/PosReceiptPrintController.php — has NO permission gate at controller OR route; relies on auth:sanctum + idempotency only"
+    ],
+    "verdict": "5 controllers genuinely unprotected at route + controller level — DefaultAccessController storeOrUpdate, MenuTemplateController store/update/destroy, AnalyticSectionController store/update/destroy, MenuSectionController index (read-only mitigates), PosReceiptPrintController increment. Of those, MenuTemplateController + AnalyticSectionController + DefaultAccessController are MUTATING and reachable by any authenticated Sanctum user."
+  },
+  "form_request_authz_audit": {
+    "baseline_sentinel": 69,
+    "actual_count": 66,
+    "sentinel_status": "PASSING (count <= baseline, diagnostic emitted for further refactor)",
+    "high_risk_residuals": [
+      "MenuTemplateRequest — paired with MenuTemplateController (BOTH ungated — see WI-4-S-01 P1)",
+      "AnalyticSectionRequest — paired with AnalyticSectionController (BOTH ungated — see WI-4-S-01 P1)",
+      "OrderSetupRequest, KioskSetupRequest, LoyaltySetupRequest, MailRequest, SiteRequest, CompanyRequest, ThemeRequest, SmsGatewayRequest, NotificationRequest, NotificationAlertRequest, CookiesSetRequest, LicenseRequest, LanguageRequest, OtpRequest, TimeSlotRequest, SocialMediaRequest, PaymentMethodRequest — settings family — VERIFIED 17/17 controllers DO have `permission:` in __construct (Company/Site/OrderSetup/KioskSetup/LoyaltySetup/Mail/Theme/SmsGateway/Notification/NotificationAlert/Cookies/License/PaymentGateway/Otp/TimeSlot/Language/SocialMedia). Route-level mitigation in place — FormRequest authz hardening still desirable as defense-in-depth.",
+      "PrinterRequest — `/api/admin/printers/*` — PrinterController DOES gate `permission:settings` on store/update/destroy (verified line 28). Route-level gate not needed.",
+      "PaymentTerminalRequest — paired with PaymentTerminalController — needs verification (V1.0.2 backlog item)"
+    ]
+  },
+  "security_concerns": [
+    {
+      "id": "WI-4-S-01",
+      "severity": "P1",
+      "finding": "Three POST mutation endpoints (MenuTemplate, AnalyticSection, DefaultAccess) are reachable by any authenticated Sanctum user — no permission gate at controller __construct (verified), no permission middleware at route level (verified routes/api.php:271-274, 384-390, 438-446), FormRequest authorize() returns true (verified). DefaultAccessController::storeOrUpdate mutates the global default-access matrix (affects all branches' default authz binding). MenuTemplateController::store/update/destroy creates/modifies menu templates (catalog-tier mutation). AnalyticSectionController::store/update/destroy modifies tracking pixel sections. A customer's loyalty Sanctum token (created via /api/frontend/loyalty/register) would have any-user power on these endpoints if authenticated.",
+      "scenario": "Customer registers loyalty account → receives Sanctum token (no ability scoping for default `LoginController` mint = `['*']` per LoginController.php:111+115). Customer's token can call POST /api/admin/menu-template with valid body. EnsureUserStatusActive admits ACTIVE users. apiKey middleware admits any caller carrying the shared x-api-key (NOT a per-user secret). FormRequest authorize() returns true. → 200 Created.",
+      "exploitability": "HIGH — requires only loyalty signup (unauthenticated /api/frontend/loyalty/register, throttle:5,1) + the shared API_KEY config value (which is a shared secret leaked to every frontend bundle for kiosk handshake — see config/app.php). Production attacker needs to extract API key from kiosk JS bundle (trivially possible).",
+      "files": [
+        "routes/api.php:271-274 (default-access prefix)",
+        "routes/api.php:384-390 (menu-template prefix)",
+        "routes/api.php:438-446 (analytic-section prefix)",
+        "app/Http/Controllers/Admin/DefaultAccessController.php (no middleware)",
+        "app/Http/Controllers/Admin/MenuTemplateController.php (no middleware)",
+        "app/Http/Controllers/Admin/AnalyticSectionController.php (no middleware)",
+        "app/Http/Requests/MenuTemplateRequest.php:17 `return true;`",
+        "app/Http/Requests/AnalyticSectionRequest.php:16 `return true;`"
+      ],
+      "remediation": "Add `permission:settings` middleware on the three prefix groups OR move the gate into controller __construct. Recommended: route-level for consistency with /api/admin/setting/* siblings already gated through their respective controllers. Then add sentinel `RouteCoverage_AdminPermissionGateSentinelTest` asserting every /api/admin/* mutating route resolves to a middleware containing 'permission:' OR a controller method that calls `$user->can(...)`."
+    },
+    {
+      "id": "WI-4-S-02",
+      "severity": "P2",
+      "finding": "PosReceiptPrintController::increment carries `idempotency` middleware but NO permission gate (verified route L840 + controller has no __construct middleware). The endpoint mutates `orders.receipt_print_count` and writes to fiscal `audit_logs` chain. Any authenticated user (including a customer loyalty token) can hit POST /api/admin/pos/orders/{order}/print-receipt. The controller checks `$request->user()->branch_id` and scopes the update to the user's branch (line 37-46), so a customer with branch_id=0 would not match any row (UPDATE returns 0 rows affected → 404 path). Effective exploitation is bounded: attacker would need a branch-pinned user account to drive the increment. But the audit_logs chain entry is written BEFORE the row-not-found check (verified by reading the full controller).",
+      "exploitability": "MEDIUM — needs branch-pinned token. Less common than admin-zero loyalty token. Audit-chain pollution is the main risk: attacker creates noise in the immutable chain.",
+      "files": ["app/Http/Controllers/Admin/Pos/PosReceiptPrintController.php (entire file lacks permission gate)", "routes/api.php:840"],
+      "remediation": "Add `->middleware('permission:pos')` to the route declaration. Defense-in-depth: also add `$this->middleware(['permission:pos'])` in the controller __construct (matching the rest of the Pos/* controllers ParkedOrderController/FloorplanController/CashDrawerSessionController pattern)."
+    },
+    {
+      "id": "WI-4-S-03",
+      "severity": "P3",
+      "finding": "All admin controllers that depend on `auth:sanctum + permission:xxx` REQUIRE Sanctum tokens to carry the matching ability. LoginController.php:111 mints admin/staff tokens with abilities=['*'] (wildcard) and Sanctum's PersonalAccessToken::can() returns TRUE for any ability when '*' is present. The channels.php S-R3-P0-G fix correctly avoided this by using token-NAME discrimination (not tokenCan). HOWEVER, no equivalent fix exists for the `abilities:kiosk:order` middleware applied on /kiosk-event + /kiosk/event routes (api.php:1316 + 1362). An admin/staff token (which has abilities=['*']) PASSES `abilities:kiosk:order` check via wildcard. So an admin can spam kiosk events with no permission gate filtering. P3 because admin tokens are already privileged and kiosk event spam is low-impact (rate-limited to 30/min/token).",
+      "exploitability": "LOW — admin tokens are already high-trust. Kiosk event spam is rate-limited.",
+      "files": ["routes/api.php:1316", "routes/api.php:1362", "app/Http/Controllers/Auth/LoginController.php:111+115"],
+      "remediation": "V1.0.2 — narrow LoginController to mint scoped abilities per role (e.g., ['admin:read', 'admin:write'] instead of ['*']). Significant refactor — defer."
+    },
+    {
+      "id": "WI-4-S-04",
+      "severity": "P2",
+      "finding": "Sanctum kiosk-token discriminator on Broadcast channel branch.{branchId} (channels.php:45) checks `$tokenName === 'kiosk-token'` AND verifies `KioskMachine.branch_id === $branchId`. KioskMachineLoginController.php:96-99 deletes ALL existing kiosk-token records before creating a new one (line 96: `$user->tokens()->where('name', 'kiosk-token')->delete()`). Verified intact post 113-commit drift. HOWEVER: a kiosk machine that re-pairs with a NEW branch will have its OLD kiosk-token record purged, but if an in-flight broadcast subscription is open on a different branch (the old one), the connection will continue UNTIL the next reauth. Edge case: pairing-time TOCTTOU on broadcast channels. P2 because the window is bounded by Echo's reconnect interval (default 1 min) and kiosk re-pairing is rare (manual operator action).",
+      "files": ["routes/channels.php:41-62", "app/Http/Controllers/Auth/KioskMachineLoginController.php:96-99"],
+      "remediation": "Document in plans/v1-0-2-backlog/. Consider forced Echo re-subscribe broadcast on kiosk re-pair event."
+    },
+    {
+      "id": "WI-4-S-05",
+      "severity": "P2",
+      "finding": "`apiKey` middleware (ApiKeyMiddleware.php:21) reads `config('app.api_key')` and rejects any request without exact-match `x-api-key` header. The api_key is a SHARED single-value secret (no per-client rotation, no per-user scoping). Production frontend bundles (admin SPA, kiosk SPA, customer SPA) all read this same secret from config. ANY frontend bundle download (e.g., kiosk Blade view → kiosk JS bundle) exposes the value in a network-readable form. The middleware was added per AUDIT-P1 for token refresh, but is now applied to the entire /api/auth + /api/admin + /api/frontend + /api/table surfaces. An attacker who scrapes the kiosk JS bundle obtains the api_key and bypasses the gate. This is essentially a shared-secret signature scheme with no rotation.",
+      "exploitability": "MEDIUM — requires no auth, just network access to the kiosk Blade. Mitigation: api_key alone admits the request to the surface but does NOT replace auth:sanctum — protected routes still require a Sanctum token.",
+      "files": ["app/Http/Middleware/ApiKeyMiddleware.php (entire file)", "Kernel.php:117 alias", "routes/api.php × ~520 mounts"],
+      "remediation": "V1.0.2+ — move to a per-client API key issued at first handshake (kiosk pairing flow) + rotation policy + audit log on key usage. Significant refactor — defer with explicit P2 in V1.0.2 backlog."
+    },
+    {
+      "id": "WI-4-S-06",
+      "severity": "P3",
+      "finding": "Web payment redirect routes in routes/web.php use Route::match(['get','post'], '/payment/{paymentGateway:slug}/{order}/success|fail|cancel', PaymentController) — these are POST endpoints excluded from CSRF (VerifyCsrfToken::except L15-35 covers `/payment/sslcommerz/*` etc.). The CSRF except list does NOT include `/payment/{gateway}/{order}/success` generic pattern — it only enumerates specific gateway slugs (sslcommerz, paytm, cashfree, phonepe, iyzico, pesapal, stripe-webhook, senangpay-webhook). If a new gateway is added (e.g., Adyen, Mollie), the matching success/fail POST callback WILL be CSRF-blocked (HTTP 419) because the new slug isn't on the list. This is a roadmap-defense pattern — works correctly today but is a footgun for future gateway integration.",
+      "files": ["app/Http/Middleware/VerifyCsrfToken.php:14-36", "routes/web.php:41-43"],
+      "remediation": "V1.0.2 — replace the per-gateway list with a single wildcard `/payment/*/*/success`, `/payment/*/*/fail`, `/payment/*/*/cancel` (consistent with /payment/sslcommerz/* pattern already present). Verify external gateway docs for required CSRF posture (most require CSRF exempt)."
+    },
+    {
+      "id": "WI-4-S-07",
+      "severity": "P3",
+      "finding": "Catchall route `/{any}` at routes/web.php:62 returns RootController::index for ANY non-matching URL → serves the SPA Blade (which loads app.js). Combined with the `/admin/pos-v4/{any?}` catchall at L53 → POS V4 Blade. These return HTML 200 even for /api/* paths that don't match any registered api route. This is the documented `silent_html_masquerade` pattern (reference_silent_html_masquerade.md) — a missing api route falls through to SPA Blade with Content-Type text/html. Frontend JS expecting JSON gets HTML and silently fails (axios catches the parse error). Not a security issue but a debugging trap.",
+      "files": ["routes/web.php:53-62"],
+      "remediation": "V1.0.2 — add Route::fallback() guard for /api/* paths to return 404 JSON. The SPA catchall stays for non-api URLs."
+    }
+  ],
+  "evidence": {
+    "channels_token_name_discriminator_intact": "routes/channels.php:45 reads `$user->currentAccessToken()?->name === 'kiosk-token'` (immutable token NAME, not tokenCan which falls to '*' wildcard). KioskMachineLoginController.php:99 mints with name='kiosk-token'. LoginController.php mints with name='auth_token' (verified via grep `createToken`). Names are distinct.",
+    "ensure_user_status_active_runs_post_auth": "Kernel.php:91 in $middlewarePriority places EnsureUserStatusActive AFTER AuthenticatesRequests — verified intact. Without this, gate would silently no-op on guest passthrough at EnsureUserStatusActive.php:51-53.",
+    "trust_proxies_per_ip_intact": "app/Http/Middleware/TrustProxies.php:24 — `$proxies = '*'` heal from Wave 3 P1 SYNC-ADV3-01 still applied. Throttle keys via $request->ip() now resolve to the original X-Forwarded-For value (per-attacker keying restored).",
+    "trust_hosts_anchored_intact": "TrustHosts.php hosts() returns anchored regex `^127\\.0\\.0\\.1$`, `^localhost$`, `^\\[::1\\]$`, `^0\\.0\\.0\\.0$` — heal from Wave 3c P0 SYNC-ADV3C-01 intact. Verified read post-113-commit drift.",
+    "spatie_permission_gates_verified_admin_controllers": "Per controller inspection: AdministratorController (constructor permission:settings on store/update/destroy), CustomerController + WaiterController + ChefController + EmployeeController + DeliveryBoyController (constructor permission:<role>_create|edit), ItemController + ItemCategoryController + ItemAttributeController + ItemVariationController + ItemExtraController + ItemAddonController + ItemPhotoController (permission:items + permission:catalog.compose for composer), KioskMachineController (constructor permission:settings via KioskMachineRequest authz check), PosController (constructor permission:pos except quote), PosOrderController + OnlineOrderController + AdminTableOrderController + KitchenDisplaySystemController (constructor permission:pos-orders / kitchen-display-system), Fiscal/ZReport+XReport (in-method authorizeFiscal), Pos/ParkedOrderController + FloorplanController + CashDrawerSessionController (constructor permission:pos), Observability/SyncOverviewController (constructor permission:kitchen-display-system + role:Admin|Tenant Admin for outbox)."
+  }
+}

@@ -47,7 +47,7 @@ If you discover mid-edit that scope was understated, **stop**, log `SCOPE_PRESSU
 
 ## Invariants
 
-Treat `.cursor/rules/foodking-invariants.mdc` as hard constraints: backend pricing SSOT, `OrderStatus` enum (no status string literals where enum is required), `branch_id` boundaries, commit-before-dispatch, OrderService / FrontendOrderService symmetry when either is in scope, frozen zones.
+Treat `.cursor/rules/project-invariants.mdc` as hard constraints: backend pricing SSOT, `OrderStatus` enum (no status string literals where enum is required), `branch_id` boundaries, commit-before-dispatch, OrderService / FrontendOrderService symmetry when either is in scope, frozen zones.
 
 ## Token discipline
 

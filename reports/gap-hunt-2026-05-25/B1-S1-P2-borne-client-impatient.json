@@ -1,0 +1,204 @@
+{
+  "agent": "S1-P2 Borne x Client-impatient",
+  "scope": "Audit Borne (Kiosk) du point de vue d'un client pressé/impatient — surfaces post-cart en priorité, plus 5 questions transverses (split paiement, scheduled order, history, language inline, staff help).",
+  "screens_audited": [
+    "KioskIdleScreenComponent.vue (sélection Sur place / À emporter)",
+    "KioskCategoriesComponent.vue (catalogue avec sidebar + product grid)",
+    "KioskWizardComponent.vue (steps composition produit)",
+    "KioskCartComponent.vue (récap panier + promo + loyalty + Valider)",
+    "KioskUpsellComponent.vue (suggestions cross-sell)",
+    "KioskPaymentComponent.vue (CB / Espèces / TR)",
+    "KioskCashInstructionComponent.vue (référenced)",
+    "KioskWaitingComponent.vue (En préparation + Prêt)",
+    "KioskConfirmationComponent.vue (réussite + ticket)",
+    "KioskInactivityOverlayComponent.vue (Toujours là ?)",
+    "KioskAppComponent.vue (shell + cart bar + idle timer)",
+    "KioskLoyaltyComponent.vue (auth fidélité)",
+    "ds/KsAllergenBadge.vue (badges allergènes compact + détail)"
+  ],
+  "gaps_found": [
+    {
+      "id": "GAP-S1-P2-001",
+      "title": "Pas de bouton 'Retour panier' depuis l'écran Upsell",
+      "user_story": "En tant que client impatient ayant ajouté un upsell par accident ou voulu retirer un item après être passé à l'upsell, je devrais pouvoir revenir au panier d'origine sans devoir passer par 'Skip' ou attendre l'auto-skip 15s.",
+      "evidence_absence": "KioskUpsellComponent.vue lignes 1-110 : aucun bouton 'back', uniquement 'skip' (kiosk.upsell_screen.skip) + 'addAndContinue' qui poussent vers payment. router.replace cart absent.",
+      "impact": "FRICTION-WEEKLY",
+      "effort": "S",
+      "risk_if_absent": "client clique skip pour revenir au panier puis retombe sur payment, frustration; pas d'abandon majeur mais sentiment 'pas en contrôle'",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Ajouter button kiosk-upsell-back qui fait router.push({name:'kiosk.cart'}) — pattern déjà présent dans KioskPaymentComponent kiosk-pay-back ligne 5-13."
+    },
+    {
+      "id": "GAP-S1-P2-002",
+      "title": "Pas de notification SMS/email quand commande prête",
+      "user_story": "En tant que client impatient ayant validé une commande à emporter, je devrais pouvoir recevoir un SMS ou email quand ma commande est prête pour partir/discuter pendant l'attente au lieu d'être rivé à l'écran borne ou au tableau OSS.",
+      "evidence_absence": "Aucune référence SMS/notify/notification/email dans KioskConfirmationComponent.vue ni KioskWaitingComponent.vue. Le téléphone est collecté UNIQUEMENT pour loyalty (KioskLoyaltyComponent.vue:103-112 type='tel' placeholder) sans option opt-in 'me notifier quand prêt'. Le receipt persistence note 'email/phone exclus' (KioskConfirmationComponent.vue:316).",
+      "impact": "FRICTION-DAILY",
+      "effort": "M",
+      "risk_if_absent": "client part en attendant, doit revenir pile au bon moment ou rester planté devant écran 5-15min — UX très perçue dans tous benchmarks fast-food modernes (McDonald's, Uber Eats kiosks)",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Ajouter checkbox optionnelle sur KioskConfirmationComponent (ou en pre-payment) 'Me notifier par SMS (+frais X€?)'. Backend : extension SMS service existant Twilio/OVH côté admin. Loi RGPD : consent explicite requis."
+    },
+    {
+      "id": "GAP-S1-P2-003",
+      "title": "Pas de mode 'Commander pour plus tard' / scheduled order",
+      "user_story": "En tant que client impatient de l'heure du déjeuner, je devrais pouvoir commander à 11h pour récupérer à 12h30 afin de gagner du temps et éviter la queue.",
+      "evidence_absence": "Aucune référence 'scheduled', 'pickup_time', 'plus_tard', 'différé' dans aucun composant kiosk. Order types possibles : KIOSK (sur place V2) + TAKEAWAY (à emporter immédiat). Aucun selector d'heure pickup dans KioskCartComponent ni KioskPaymentComponent.",
+      "impact": "FRICTION-DAILY",
+      "effort": "L",
+      "risk_if_absent": "perte de business sur clientèle bureaux/écoles voulant commander en avance; pas de différenciation vs Deliveroo/Uber Eats pickup",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Ajouter step 'Quand ?' avant paiement avec radio 'Maintenant' vs 'Plus tard (slot 15min)'. Backend Order.requested_pickup_at + cron qui release l'order vers KDS au bon moment. Capacity check côté admin."
+    },
+    {
+      "id": "GAP-S1-P2-004",
+      "title": "Pas de bouton 'Voir mes commandes précédentes' pour client fidèle",
+      "user_story": "En tant que client fidèle (loyalty) revenant régulièrement et impatient de re-commander mon plat préféré, je devrais pouvoir voir 'Mes 3 dernières commandes — Re-commander en 1 clic'.",
+      "evidence_absence": "Aucune référence 'history', 'historique', 'past_orders' dans /resources/js/components/frontend/kiosk. KioskLoyaltyComponent affiche solde points + customer.name mais pas d'historique de commandes ni reorder. KioskCategoriesComponent.vue:38-44 'Mon compte' route vers kiosk.loyalty (solde uniquement).",
+      "impact": "FRICTION-WEEKLY",
+      "effort": "M",
+      "risk_if_absent": "client fidèle perdu, doit re-composer son combo wizard à chaque visite — friction prouvée moteur de churn dans tous QSR digital",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Ajouter screen kiosk.history après login loyalty avec liste 3 derniers orders + bouton 'Re-commander' qui pop le wizard pré-rempli ou ajoute direct au cart. API GET /api/frontend/orders/last/{customer_id} déjà probable côté backend."
+    },
+    {
+      "id": "GAP-S1-P2-005",
+      "title": "Pas de sélecteur langue inline pendant le flow (uniquement sur idle screen)",
+      "user_story": "En tant que client touriste impatient ayant tappé 'À emporter' en français par erreur, je devrais pouvoir switcher en anglais depuis n'importe quel écran sans devoir revenir à idle (perte du panier).",
+      "evidence_absence": "KioskIdleScreenComponent.vue:14-34 contient les boutons FR/EN/AR. Aucun langue selector dans KioskCartComponent, KioskWizardComponent, KioskPaymentComponent. CLAUDE.md confirme 'kiosk runtime FR-immutable' (KioskAppComponent.vue:182-184 commentaire ADR-007 / iter15-P1a 'setLocale retiré').",
+      "impact": "FRICTION-WEEKLY",
+      "effort": "M",
+      "risk_if_absent": "client non-francophone bloqué dans le flow, doit abandonner panier pour switcher langue depuis idle — abandon sale net",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Lever l'invariant FR-immutable runtime (ADR-007 réversible) OU ajouter un toggle dans le header de KioskCartComponent + KioskWizardComponent. NB: les langues sont déjà désactivées par défaut côté backend (kiosk_languages_enabled vide => seul FR exposé)."
+    },
+    {
+      "id": "GAP-S1-P2-006",
+      "title": "Pas de bouton 'Aidez-moi' / appel staff pendant le flow",
+      "user_story": "En tant que client impatient bloqué sur un wizard (allergie inconnue, prix inattendu, langue), je devrais pouvoir appuyer sur 'Aidez-moi' pour appeler le staff au lieu de devoir abandonner ma session ou rester planté.",
+      "evidence_absence": "Aucune référence 'Aidez-moi', 'staff_help', 'call_staff', 'assist' dans aucun composant kiosk. Le seul 'help' présent est tpe_stuck_help (KioskPaymentComponent.vue:183) — texte statique, pas un CTA.",
+      "impact": "FRICTION-WEEKLY",
+      "effort": "S",
+      "risk_if_absent": "client abandonne plutôt que se sentir bloqué ; staff ne sait pas qu'il y a un client en difficulté ; perte sale + image",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Bouton flottant 'Aidez-moi' qui POST /api/frontend/kiosk-event {type:'staff_call', kiosk_id} → notification dans admin shell ou KDS. Pattern déjà existant pour offline_conflict_cta (KioskAppComponent.vue:100-109)."
+    },
+    {
+      "id": "GAP-S1-P2-007",
+      "title": "Pas de split paiement pour groupe (1 borne, 4 personnes paient séparément)",
+      "user_story": "En tant que groupe de 4 amis impatients à la borne, je devrais pouvoir splitter le paiement 4 fois (chacun paie son sandwich) sans devoir faire 4 commandes séparées.",
+      "evidence_absence": "Grep 'split' dans /resources/js/components/frontend/kiosk = aucune occurrence. Le split_payment / split_tranches i18n est UNIQUEMENT côté POS (resources/js/languages/en.json:717,721). KioskPaymentComponent.vue offre 3 modes mutuellement exclusifs : card/cash/tr — un seul mode total.",
+      "impact": "FRICTION-DAILY",
+      "effort": "L",
+      "risk_if_absent": "groupes choisissent de bypass la borne et payer au comptoir → fait perdre le bénéfice du kiosk pour pic groupes (lunch/dîner) ; perte d'autonomie cliente",
+      "frozen_zone_touch_needed": true,
+      "implementation_hint": "Adapter le composant split_tranches existant POS au kiosk OU ajouter pre-payment 'Combien de personnes paient ?' qui crée N sous-orders. Frozen zone PaymentComponent.vue POS — mais ici scope kiosk donc fichier différent. Vérifier NF525 invariants : chaque tranche = paiement fiscal distinct."
+    },
+    {
+      "id": "GAP-S1-P2-008",
+      "title": "Pas de QR code 'Reprendre cette commande sur mon téléphone'",
+      "user_story": "En tant que client impatient ayant composé une commande complexe (wizard 3 steps + extras) à la borne mais voulant la finaliser tranquillement assis ou continuer chez moi, je devrais pouvoir scanner un QR pour transférer mon panier en cours.",
+      "evidence_absence": "Aucune référence QR/qrcode/save-cart/handoff dans aucun composant kiosk. KioskConfirmationComponent persiste un snapshot reçu (kioskReceiptPersistence) mais pour survival F5 du ticket FINI, pas pour reprise de session inachevée.",
+      "impact": "FRICTION-MONTHLY",
+      "effort": "L",
+      "risk_if_absent": "client coincé à la borne ; impact faible mais miss UX moderne (McDonald's app pickup, Starbucks)",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Backend endpoint POST /api/frontend/cart/share qui retourne un short_code + QR. Frontend mobile/web charge le panier via code. V2 nice-to-have."
+    },
+    {
+      "id": "GAP-S1-P2-009",
+      "title": "Bouton Annuler commande pendant préparation arrive TROP TARD (après 30s d'attente)",
+      "user_story": "En tant que client impatient ayant payé mais réalisant immédiatement qu'il a fait une erreur, je devrais pouvoir annuler dans les premières secondes sans attendre 30 secondes que le bouton apparaisse.",
+      "evidence_absence": "KioskWaitingComponent.vue:449 if (this.elapsedSeconds === 30 && !this.isReady) { this.showCancelButton = true; } — le bouton n'apparaît qu'après 30s. Pendant les 30 premières secondes, aucun moyen d'annuler.",
+      "impact": "FRICTION-WEEKLY",
+      "effort": "S",
+      "risk_if_absent": "client réalise erreur immédiatement (mauvaise sauce, oublié un item) mais doit attendre — frustration pure, le payment est déjà OK donc backend supporte cancel",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Afficher showCancelButton=true dès le mount (delay 0s au lieu de 30s). Backend OrderStatusRequest gate déjà sur status<PREPARING — donc safe."
+    },
+    {
+      "id": "GAP-S1-P2-010",
+      "title": "Pas de bouton 'Modifier ma commande' après validation cart (avant paiement)",
+      "user_story": "En tant que client impatient ayant cliqué 'Valider' (vers upsell ou direct vers payment), je devrais voir un retour clair vers panier sans risque de perdre l'état (loyalty appliqué, promo, etc.).",
+      "evidence_absence": "KioskPaymentComponent.vue:7-14 a un bouton 'back' qui fait router.replace({name:'kiosk.cart'}) — donc OK pour payment screen. MAIS depuis l'upsell, il faut soit skip soit accepter — aucun back direct vers cart (cf GAP-001). Côté cash-instruction screen idem à vérifier.",
+      "impact": "FRICTION-WEEKLY",
+      "effort": "S",
+      "risk_if_absent": "dupliqué avec GAP-001, contexte plus large : tout state post-cart doit avoir un retour cart clair",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Audit complet de tous les écrans post-cart pour back button cohérent : Upsell, CashInstruction, ErrorPaymentRefused. Le pattern KioskPaymentComponent.kiosk-pay-back est le standard à propager."
+    },
+    {
+      "id": "GAP-S1-P2-011",
+      "title": "Allergènes détaillés (description, sévérité) absents avant ajout au cart",
+      "user_story": "En tant que client allergique impatient, je devrais voir le détail des allergènes (gluten, lait, etc.) ET pouvoir tap dessus pour comprendre 'contient des traces de' vs 'contient directement' AVANT d'ajouter au cart.",
+      "evidence_absence": "KsAllergenBadge présent sur KioskCategoriesComponent.vue:204-210 (compact mode) avec liste codes. PAS de tap-to-expand pour détail. Pas d'info 'traces de' vs 'ingrédient direct'. Pas de filtrage 'cacher tous les plats avec X allergène' au catalogue.",
+      "impact": "FRICTION-WEEKLY",
+      "effort": "M",
+      "risk_if_absent": "client allergique sévère lent à scanner manuellement chaque badge — friction et risque légal si mauvaise lecture",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Modal détail allergène au tap KsAllergenBadge. Ajouter filtre 'Cacher [allergène]' dans top-actions du catalog. Customer profile a déjà declared_allergens (KioskCartComponent.vue:438-441) pour soft-highlight mais pas de filtrage proactif."
+    },
+    {
+      "id": "GAP-S1-P2-012",
+      "title": "Auto-redirect 10s pendant préparation force le client à quitter l'écran",
+      "user_story": "En tant que client impatient préférant rester sur l'écran pour voir mon numéro de queue/préparation, je ne devrais pas être forcé de quitter au bout de 10s vers idle — sauf si je le décide.",
+      "evidence_absence": "KioskWaitingComponent.vue:171-174 PREPARING_AUTO_REDIRECT_SECONDS=10 + startPreparingAutoRedirect() ligne 386-395 force this.newOrder() après 10s, ramène à kiosk.idle même si le client veut rester. Owner instruction explicite (commentaire 'Owner 2026-05-21').",
+      "impact": "FRICTION-DAILY",
+      "effort": "S",
+      "risk_if_absent": "client voit son numéro queue puis l'écran disparait — confus, doit aller voir OSS, queue physique. Acceptable si OSS visible — bloquant si OSS pas visible.",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Ajouter bouton 'Je préfère rester ici' qui clear le timer (au lieu de seulement 'Retour accueil'). Conditional UI : si OSS visible/connu, auto-redirect = OK ; sinon, opt-in."
+    },
+    {
+      "id": "GAP-S1-P2-013",
+      "title": "Pas de bouton 'Annuler toute la commande' bien visible pendant cart/wizard (uniquement 'Vider')",
+      "user_story": "En tant que client impatient ayant changé d'avis complètement, je devrais voir un bouton clair 'Quitter la commande / Recommencer' au lieu de devoir 'Vider' puis re-naviguer ou attendre l'inactivity timeout.",
+      "evidence_absence": "KioskCartComponent.vue:20-27 a un bouton kiosk-cart-clear ('Vider le panier') qui vide le panier MAIS reste sur l'écran cart. Pour quitter complètement le flow et revenir idle, le client doit attendre inactivityTimeout (3min) OU naviguer manuellement. Aucun bouton 'Quitter' explicite.",
+      "impact": "FRICTION-MONTHLY",
+      "effort": "S",
+      "risk_if_absent": "client veut quitter rapidement, ne sait pas comment, attend ou abandonne devant la borne (next user voit son cart) — risk data leak partiel",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Ajouter modal 'Recommencer ?' qui clear cart + analytics + push kiosk.idle. Pattern KioskInactivityOverlayComponent.onInactivityLeave existant comme blueprint."
+    },
+    {
+      "id": "GAP-S1-P2-014",
+      "title": "Pas d'estimation 'Temps d'attente actuel' avant validation cart",
+      "user_story": "En tant que client impatient à l'heure du déjeuner, je devrais voir 'Temps actuel estimé : 8 min' sur le cart ou idle pour décider si je commande ou si je vais autre part.",
+      "evidence_absence": "Aucune référence 'eta', 'estimation', 'wait_time', 'temps_attente' dans aucun composant kiosk. KioskWaitingComponent.vue affiche 'Préparation en cours' (indeterminate progress bar) mais aucune ETA exposée avant validation.",
+      "impact": "FRICTION-DAILY",
+      "effort": "M",
+      "risk_if_absent": "client commande sans visibilité → frustré si attente >prévue ; ou bypass kiosk pour aller voir le staff verbalement",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Backend KDS expose endpoint GET /api/frontend/kds/current-eta retournant avg wait. Affiché en banner top du cart + idle. Refresh 30s. Pattern Echo déjà en place pour live updates."
+    },
+    {
+      "id": "GAP-S1-P2-015",
+      "title": "Pas de pourboire (tip) optionnel pour le staff",
+      "user_story": "En tant que client impatient satisfait du service rapide précédent, je devrais pouvoir laisser un pourboire de 1€/2€/5€ au moment du paiement comme dans tous les kiosks modernes.",
+      "evidence_absence": "Aucune référence 'tip', 'pourboire', 'gratuity' dans aucun composant kiosk. KioskPaymentComponent ne propose que les 3 modes paiement avec total figé.",
+      "impact": "FRICTION-MONTHLY",
+      "effort": "M",
+      "risk_if_absent": "manque de revenue staff + UX qui matche les standards US/UK (Square, Toast)",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Composant tip-selector avant confirm payment : boutons 0€ / 1€ / 2€ / 5€ / autre. Backend Order.tip_amount + reporting. NF525 : tip = ligne fiscale distincte."
+    }
+  ],
+  "top_3_blocker_daily": [
+    {
+      "id": "GAP-S1-P2-002",
+      "title": "Pas de notification SMS/email quand commande prête",
+      "rationale": "Impact daily : client doit rester planté devant écran 5-15 min, frein énorme à takeaway. Standard moderne dans tous QSR (McDo, BK, Starbucks)."
+    },
+    {
+      "id": "GAP-S1-P2-003",
+      "title": "Pas de scheduled order (commande pour plus tard)",
+      "rationale": "Impact daily : perte de business heures de pointe pour bureaux/écoles voulant skip queue. Différenciateur clé face à Uber Eats/Deliveroo pickup."
+    },
+    {
+      "id": "GAP-S1-P2-007",
+      "title": "Pas de split paiement pour groupe",
+      "rationale": "Impact daily : groupes (lunch/dîner) bypass la borne et vont au comptoir → kiosk ne capture pas ce segment, perte d'autonomie et de débit pic."
+    }
+  ],
+  "verdict": "15 gaps found (3 BLOCKER-DAILY, 6 FRICTION-DAILY/WEEKLY, 6 FRICTION-MONTHLY) — Borne actuelle fonctionnellement solide pour parcours simple (1 personne, paiement immédiat, takeaway/dine-in) avec excellents safety nets (offline queue, allergens compact badges, retry logic). Manque cruellement les features modernes orientées rapidité/autonomie (notif prêt, scheduled, split, history reorder, staff call) qui dominent le marché QSR 2024-2026. Frozen-zone touch potentielle UNIQUEMENT pour split paiement (GAP-007) si on réutilise composant POS PaymentComponent.vue — sinon scope kiosk pur. Plusieurs quick-wins existent (GAP-001 back-from-upsell, GAP-009 cancel immédiat, GAP-013 quit explicit) ne touchant aucune frozen-zone."
+}

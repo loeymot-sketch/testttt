@@ -47,7 +47,7 @@ class OnlineOrderController extends AdminController
         try {
             return SimpleOrderResource::collection($this->orderService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -56,7 +56,7 @@ class OnlineOrderController extends AdminController
         try {
             return new OrderDetailsResource($this->orderService->show($order, false));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -65,7 +65,7 @@ class OnlineOrderController extends AdminController
         try {
             return Excel::download(new OrderExport($this->orderService, $request), 'Online-Order.xlsx');
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
     public function pdf(PaginateRequest $request): mixed
@@ -87,7 +87,7 @@ class OnlineOrderController extends AdminController
                 ]
             );
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -96,7 +96,7 @@ class OnlineOrderController extends AdminController
         try {
             return new OrderDetailsResource($this->orderService->changeStatus($order, $request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -105,7 +105,7 @@ class OnlineOrderController extends AdminController
         try {
             return new OrderDetailsResource($this->orderService->changePaymentStatus($order, $request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -113,8 +113,13 @@ class OnlineOrderController extends AdminController
     {
         try {
             return new OrderDetailsResource($this->orderService->selectDeliveryBoy($order, $request));
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $http) {
+            // [GOAL-2026-05-18 P0-LIV-01] Branch/role guards in
+            // OrderService::selectDeliveryBoy raise 403/422 via abort().
+            // Propagate so the multi-tenant guard reaches the client.
+            throw $http;
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

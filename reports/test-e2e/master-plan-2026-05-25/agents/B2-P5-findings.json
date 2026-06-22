@@ -1,0 +1,214 @@
+{
+  "agent": "B2-P5",
+  "surface": "POS × Inspecteur-fiscal (NF525 traceability)",
+  "persona": "Inspecteur-fiscal NF525",
+  "persona_reframe": "Si je passe demain matin contrôler ce restaurant, est-ce que les ventes POS laissent une trace fiscale inviolable, gap-free, signée HMAC, avec composition_snapshot figée à la vente, audit_logs append-only chaînée, et z_reports clôturée quotidiennement ? Quels signaux de NON-conformité ou de couverture insuffisante peut-on lever READ-ONLY ?",
+  "timestamp": "2026-05-25T22:05:00+02:00",
+  "server": "http://127.0.0.1:8000",
+  "git_branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "discipline": {
+    "DM3_quartet_captures": "PARTIAL — états 1-5 sont des sorties artisan/tinker/code-reads READ-ONLY. Pas de browser-capture (l'audit est code+DB-side, pas UI). Cohérent avec persona Inspecteur (lit la trace fiscale, ne navigue pas la borne).",
+    "DM5_adversarial_inline": "OUI — paragraphe dédié infra (worst-case déposition tribunal)",
+    "DM6_NF525_readonly": "RESPECTÉ ABSOLU — ZÉRO INSERT/UPDATE sur audit_logs/z_reports/orders/order_items. Lecture seule artisan (--all, assert-chain-clean), tinker (SELECT-only queries), Read tool sur PHP. Lesson E2E-13 dev tamper incident respectée.",
+    "DM8_honest_reporting": "OUI — DB est en état post-restore (orders_total=2, orders_with_fiscal=0, audit_logs=69), donc le pipeline complet POS→encaissement→fiscal_sequence_no→audit row→composition_snapshot n'a PAS pu être exercé runtime end-to-end. Validation est code-level + DB-trace baseline only. Explicité dans scope_note + verdict_rationale."
+  },
+  "states_audited": [
+    {
+      "id": 1,
+      "name": "fiscal:verify-chain --all output (operator diagnostic)",
+      "command": "php artisan fiscal:verify-chain --all",
+      "exit_code": 1,
+      "raw_output": "- branch=1 TAMPER:\n      * audit_logs.id=34\nSWEEP COMPLETE — TAMPER detected on 1/1 branches (exec_errors=0)",
+      "interpretation": "Chain integrity flag levé sur audit_logs.id=34 (1 unique seul tamper détecté sur 1/1 branches actives). Aucune autre breach. Aucun exec_errors. Correspond exactement au known baseline 'E2E-13 dev tamper incident' documenté dans la mission.",
+      "evidence": "artisan output direct (READ-ONLY, no DB mutation)"
+    },
+    {
+      "id": 2,
+      "name": "fiscal:assert-chain-clean (Wave C1 V1.0.2 UR4-007 deploy-gate)",
+      "command": "php artisan fiscal:assert-chain-clean",
+      "exit_code": 1,
+      "raw_output": "NF525 ASSERT FAILED — chain integrity breach detected on 1/1 branch(es): [1]",
+      "interpretation": "Le NEW Wave C1 deploy-gate command est ALIVE et fait son travail : exit 1 signal la breach. Il refuse de clear le deploy gate tant que la chain n'est pas propre. Architecture validée — séparation UX 'where is the breach?' (verify-chain --all) vs 'is it safe to deploy?' (assert-chain-clean exit 0/1/3) parfaitement cohérente. RUNTIME ENFORCEMENT EFFECTIVE — la routine `set -e` rejette toute production cut tant que id=34 n'est pas remediated/waived.",
+      "command_class": "app/Console/Commands/FiscalAssertChainCleanCommand.php (130 LOC, branchIds=Kernel::activeBranchIds(), strict=false explicite, exit 0/1/3 owned)",
+      "evidence": "artisan output direct + Read tool sur la command class"
+    },
+    {
+      "id": 3,
+      "name": "PaymentService.php:305 — K2-HEAL-01 throw site (PaymentAlreadyCollectedException)",
+      "evidence": "app/Services/PaymentService.php:305-309 → throw new \\App\\Exceptions\\Payment\\PaymentAlreadyCollectedException(orderId, collectedByUserId, collectedAt)",
+      "interpretation": "K2-HEAL-01 ALIVE et correctement câblé. Le path complet : ligne 281 lookup AuditLog where action='order.counter_payment_confirmed' + resource_id=orderId + latest('id'), ligne 293-298 V5.5 sister-guard (same-cashier idempotent replay → no-op 200), ligne 305-309 typed exception (different cashier OR unknown collector → 409). Le commentaire 300-304 documente explicitement : 'Treating unknown collector as foreign is the safe default'. Exception class étend \\RuntimeException (pas HttpException) à dessein — Handler::render hardcode HttpException → 422, ce qui downgrade silently le 409. La discipline architecturale est exemplaire.",
+      "fiscal_sequence_allocation": "PaymentService.php:321-323 — `if ($locked->fiscal_sequence_no === null) { $locked->fiscal_sequence_no = app(FiscalSequenceService::class)->next((int) $locked->branch_id); }` — allocation lazy, idempotent sur retry replay, gated par lockForUpdate ($locked vient de Order::lockForUpdate()).",
+      "audit_write": "PaymentService.php:389-401 — AuditLogService::write({action: 'order.counter_payment_confirmed', resource: 'order', resource_id: $locked->id, payload: {payment_method, payment_status, received, fiscal_sequence_no}}) APRÈS le commit du status → trace fiscal-grade émise pour chaque encaisser réussi. fiscal_sequence_no présent dans le payload = signal de traçabilité conforme.",
+      "evidence_files": ["app/Services/PaymentService.php (3060 LOC)", "app/Exceptions/Payment/PaymentAlreadyCollectedException.php (73 LOC)"]
+    },
+    {
+      "id": 4,
+      "name": "OrderService.php:1872 + :1947 — K2-HEAL-02 lockForUpdate (race fix)",
+      "evidence": "OrderService.php:1872 (self-cancel path, iter13 P1 LOCKFORUPDATE 2026-05-09) + :1947 (non-self path, GOAL-K2-HEAL-02 2026-05-24 K.2 H5 P1)",
+      "interpretation": "K2-HEAL-02 ALIVE. Le pattern lockForUpdate est appliqué uniformément sur les deux paths du changeStatus(Order, OrderStatusRequest, bool auth) — auth=true (customer self-cancel ligne 1862-1922) et auth=false (POS Livré ligne 1928-2099). Les deux closures DB::transaction relockent l'order via lockForUpdate() puis short-circuitent idempotemment si status target déjà atteint (ligne 1873-1875 et 1959-1965). Le pattern miroir explicite KitchenDisplaySystemOrderService::changeStatus:257-261 + PaymentService::confirmCounterPayment:219-249. La discipline cross-service est cohérente.",
+      "race_class": "Multi-cashier 'Livré' click sur le même PREPARED order — sans lockForUpdate, 2 cashiers reads stale in-memory model, passent idempotent gate, écrivent doublon order_status_transitions + action_logs. AVEC : transaction wins single → audit attribution unambigu.",
+      "evidence_files": ["app/Services/OrderService.php (3000+ LOC)"]
+    },
+    {
+      "id": 5,
+      "name": "READ-ONLY tinker — orders / audit_logs / z_reports state",
+      "query_type": "SELECT-only via Eloquent (withoutGlobalScopes for Inspecteur view)",
+      "fiscal_state": {
+        "orders_total": 2,
+        "orders_with_fiscal_sequence_no": 0,
+        "orders_with_fiscal_alloc_error_at": 0,
+        "order_items_total": 2,
+        "order_items_with_composition_snapshot": 2,
+        "composition_coverage_pct": 100,
+        "by_source_surface": [
+          {"source": null, "source_surface": "delivery", "total": 1, "with_fiscal": 0},
+          {"source": 5, "source_surface": "kiosk", "total": 1, "with_fiscal": 0}
+        ]
+      },
+      "audit_state": {
+        "audit_logs_total": 69,
+        "audit_max_id": 69,
+        "audit_id_gaps": [],
+        "audit_id_first": 1,
+        "audit_id_last": 69,
+        "has_id_34_tamper_row": true,
+        "rows_around_34_chain_proof": {
+          "id_33_current_hash": "242a7e0333558f9a28f3425f6b7acbe87fb0e1208480a3282ba2d725d6b9fab0",
+          "id_34_tamper_marker": "current_hash='FAKE_HASH', prev_hash=NULL, action='tamper.attempt', payload={hostile:true}",
+          "id_35_prev_hash": "FAKE_HASH (continuation post-tamper — re-anchored on the FAKE marker)"
+        },
+        "actions_top_5": [
+          {"action": "user.login", "cnt": 64},
+          {"action": "payment.method_restricted", "cnt": 1},
+          {"action": "cash.session.opened", "cnt": 1},
+          {"action": "z_report.closed", "cnt": 1},
+          {"action": "tamper.attempt", "cnt": 1}
+        ],
+        "audit_action_counter_payment_confirmed_count": 0,
+        "audit_action_paid_pattern_count": 0,
+        "audit_action_fiscal_pattern_count": 0
+      },
+      "z_report_state": {
+        "z_reports_total": 1,
+        "z_open": 0,
+        "z_closed": 1,
+        "z_last_3": [{"id": 1, "branch_id": 1, "sequence_no": 1, "opened_at": "2026-05-25T10:49:29Z", "closed_at": "2026-05-25T10:49:39Z"}]
+      },
+      "interpretation": "DB post-restore — état témoin propre : composition_snapshot coverage 100% sur les 2 order_items existants (cf. OrderItem.php:31-55 model boot guard + migration 2026_05_24_040211 immutability trigger), audit_logs gap-free 1→69 sans saut d'id (chain intégrité id-monotonic préservée même après tamper), z_reports clôturé proprement 1×. MAIS : zéro audit row 'order.counter_payment_confirmed' = zéro POS encaisser passée par le path PaymentService::confirmCounterPayment dans cette DB post-restore. Le pipeline ne peut donc pas être exercé end-to-end runtime — validation est code-level seulement.",
+      "evidence": "tinker SELECT-only outputs"
+    }
+  ],
+  "receipt_nf525_attestation": {
+    "service": "app/Services/Receipt/ReceiptDataService.php (74 LOC, final class)",
+    "fields_emitted": [
+      "fiscal_sequence_no (gap-free per-branch counter)",
+      "pos_register_id (caisse identifier)",
+      "pos_siret (établissement)",
+      "pos_vat_intra (TVA intracommunautaire)",
+      "pos_legal_footer (mentions légales)",
+      "operator_name (caissier ayant clôturé)",
+      "order_id + order_serial_no + created_at"
+    ],
+    "consumer_path": "OrderDetailsResource → posReceiptBuilder.js (resources/js/helpers/) — SSOT API↔JS",
+    "verdict": "Les 6 champs NF525 obligatoires sont émis correctement. ReceiptDataServiceWireInTest existe (mentionné en docblock). Pas exercé runtime ici (pas d'order PAID with fiscal_sequence_no allouée dans la DB post-restore)."
+  },
+  "findings_top_3": [
+    {
+      "id": "B2-P5-F01",
+      "severity": "P1",
+      "title": "Wave C1 fiscal:assert-chain-clean deploy-gate BLOQUE prod-cut sur known baseline id=34",
+      "category": "ops / deploy-gate semantics",
+      "evidence_file": "app/Console/Commands/FiscalAssertChainCleanCommand.php:106-112 + artisan output exit 1",
+      "description": "Le NEW Wave C1 deploy-gate `fiscal:assert-chain-clean` (V1.0.2 UR4-007) fait correctement son travail : exit 1 lève la breach NF525 sur audit_logs.id=34. La logique est exemplaire (sweep activeBranchIds, strict=false explicite, exit 0/1/3 owned). MAIS : id=34 est le 'known baseline E2E-13 dev tamper incident' documenté dans la mission. Tant que cette ligne reste dans audit_logs, le deploy gate va REFUSER tout `set -e` deploy.sh. Question opérationnelle : (a) on remediate manuellement (DROP la ligne — interdit DM6 + DB trigger BEFORE DELETE SIGNAL '45000' enforcement), ou (b) on accepte un mécanisme de waiver baseline ('annotated known dev artifact, ignore in deploy gate context'). Sans (b), chaque tentative de cut va lever et nécessiter override humain.",
+      "fiscal_impact": "Tribunal scenario : inspecteur arrive demain, run `fiscal:assert-chain-clean`, voit exit 1. Sans explication contemporaine que id=34 est un dev-incident historique, peut conclure 'restaurant en breach NF525 non-remédié' → procédure. Le deploy gate est correct techniquement mais il n'y a pas de mécanisme d'attestation 'breach remediated/ acknowledged' visible runtime.",
+      "v1_blocker": false,
+      "recommendation": "V1.0.2 backlog : ajouter table `fiscal_chain_baseline_waivers` (audit_row_id, reason, acknowledged_by_user_id, acknowledged_at) + flag au command `--respect-waivers` qui filtre les rows whitelistées avant verdict. Alternative plus simple : artisan check séparé `fiscal:export-incident-attestation` qui produit PDF horodaté 'incident dev id=34 enregistré, données business non affectées, chain rebooted post-incident'. À discuter owner.",
+      "estimated_fix": "2-4 hours — 1 migration table + 1 flag command + 1 PDF export Blade"
+    },
+    {
+      "id": "B2-P5-F02",
+      "severity": "P2",
+      "title": "Coverage gap RUNTIME — pipeline POS encaisser→fiscal_sequence_no→audit→composition non exercé sur DB post-restore",
+      "category": "test-evidence / coverage",
+      "evidence_file": "Tinker SELECT — orders_with_fiscal=0, audit_action_counter_payment_confirmed=0, by_source_surface={delivery:1, kiosk:1, POS:0}",
+      "description": "La DB courante est en état post-restore (state 5 tinker) : 2 orders total dont 0 POS, 0 fiscal_sequence_no alloué, 0 audit row 'order.counter_payment_confirmed'. Le pipeline NF525 POS → PaymentService::confirmCounterPayment → fiscal_sequence_no allocation (ligne 321-323) → audit write (ligne 389-401) → composition_snapshot freeze (déjà figé au create de l'order_item) n'a donc PAS pu être validé end-to-end runtime dans cet audit. La validation est code-level uniquement (Read tool sur PaymentService.php + ReceiptDataService.php + OrderItem.php boot guards). C'est honnête (DM8) — l'audit attest le câblage mais pas la trace runtime.",
+      "fiscal_impact": "Risque pratique : un défaut subtil dans le wiring (ex: AuditLogService::write throw silently catché en amont, fiscal_sequence_no allocation race, composition_snapshot mutation post-paid via shadow path) ne serait pas visible dans cet audit. Tribunal scenario : 'avez-vous testé un encaissement réel ?' → réponse honnête 'le pipeline est lu en code, pas exercé en données'.",
+      "v1_blocker": false,
+      "recommendation": "Post-deploy smoke test obligatoire : 1 POS encaisser CASH (avec drawer drill in real money sim) + verify (a) orders.fiscal_sequence_no non-null + monotonic, (b) audit_logs row 'order.counter_payment_confirmed' présente avec payload.fiscal_sequence_no, (c) order_items.composition_snapshot inchangé entre create et post-pay, (d) `fiscal:verify-chain --all` reste clean (sauf id=34 baseline F01), (e) z_report close-of-day inclut le nouveau fiscal_sequence_no. Si ces 5 checks GREEN post-smoke → attestation complète production-readiness.",
+      "estimated_fix": "30 min runtime smoke + script verify (déjà partiellement écrit via fiscal:verify-chain + cette tinker query)"
+    },
+    {
+      "id": "B2-P5-F03",
+      "severity": "P3 (INFO)",
+      "title": "Attestation positive — K2-HEAL-01 + K2-HEAL-02 + composition immutability + receipt SSOT tous ALIVE",
+      "category": "attestation",
+      "evidence_files": [
+        "app/Services/PaymentService.php:305-309 — K2-HEAL-01 throw site PaymentAlreadyCollectedException",
+        "app/Services/PaymentService.php:321-323 — FiscalSequenceService::next lazy idempotent",
+        "app/Services/PaymentService.php:389-401 — AuditLogService::write avec fiscal_sequence_no en payload",
+        "app/Services/OrderService.php:1872 — lockForUpdate self-cancel (iter13 P1)",
+        "app/Services/OrderService.php:1947 — lockForUpdate non-self K2-HEAL-02",
+        "app/Exceptions/Payment/PaymentAlreadyCollectedException.php:62-73 — 409 typed exception classe",
+        "app/Exceptions/Handler.php:70 — 409 conversion mapping",
+        "app/Models/OrderItem.php:31-55 — composition_snapshot boot guard + migration 2026_05_24_040211 trigger",
+        "app/Services/Receipt/ReceiptDataService.php:62-72 — 6 fields NF525 SSOT",
+        "app/Console/Commands/FiscalAssertChainCleanCommand.php — Wave C1 V1.0.2 deploy-gate ALIVE"
+      ],
+      "description": "Attestation positive — l'ensemble du périmètre fiscal NF525 mission est en place côté code : K2-HEAL-01 (race-loser 409 typed exception, V5.5 sister-guard same-cashier replay) ALIVE + K2-HEAL-02 (lockForUpdate cross-service uniforme self-cancel + non-self) ALIVE + composition_snapshot immutability double-guard (model boot + DB migration trigger) ENFORCED + ReceiptDataService SSOT 6 champs NF525 émis + assert-chain-clean Wave C1 deploy-gate fait son travail. Aucun défaut de wiring détecté lors de l'inspection READ-ONLY.",
+      "fiscal_impact": "Production-ready côté architecture fiscale POS. Le seul gap est runtime exercise (F02) et baseline waiver (F01) — pas un défaut code.",
+      "v1_blocker": false,
+      "recommendation": "Conserver discipline cross-service (PaymentService + OrderService + KitchenDisplaySystemOrderService partagent le même lockForUpdate pattern). Toute future modification du path encaissement DOIT mirror le triple-guard : (1) DB::transaction wrapping, (2) lockForUpdate explicit, (3) V5.5 sister-guard same-cashier idempotency.",
+      "estimated_fix": "N/A — attestation positive"
+    }
+  ],
+  "adversarial_paragraph": "Worst case as Inspecteur NF525 : je débarque samedi midi en plein service. Je demande au caissier de me sortir le ticket de la dernière vente. Il imprime — ticket affiche fiscal_sequence_no=NULL (DB post-restore — F02 coverage gap). Je note. Je vérifie audit_logs via `fiscal:verify-chain --all` : breach signalée id=34, action='tamper.attempt', current_hash='FAKE_HASH', payload={hostile:true} (F01 known baseline non-waived). Je note. Je demande l'attestation Z du jour : `z_reports` count=1, sequence_no=1, closed_at=10:49:39Z — mais sequence_no=1 alors qu'on est dans un restaurant en production active depuis plusieurs cycles ? Soit reboot complet du chain (acceptable si documenté), soit historique perdu (très grave). Je creuse : audit_logs.id range 1→69 gap-free, action mix dominé par user.login (64/69 = 92%), seulement 1 cash.session.opened + 1 z_report.closed + 1 payment.method_restricted + 1 tamper.attempt — ZÉRO action='order.counter_payment_confirmed'. Conclusion inspecteur : 'aucune vente POS encaissée traçable dans cette DB'. Si c'est un restaurant prétendant être en production, c'est NON-conformité grave (les ventes existent en orders mais ne sont jamais arrivées au stage PAID via le path NF525). Si c'est un environnement de test post-restore, ça doit être attesté par PDF horodaté contemporain + tamper id=34 doit être annotated. Le défaut majeur n'est pas dans le code (F03 attestation toutes les pièces sont ALIVE) — c'est l'asymétrie entre 'le code peut le faire' et 'le code l'a fait dans cette DB là maintenant'. Un inspecteur ne lit pas le code — il lit audit_logs + z_reports + fiscal:verify-chain. Et là, sans contexte 'DB post-restore témoin propre', le verdict serait sévère. Le risque V1 production cut : si owner pousse en prod sans (a) waiver id=34, (b) première vente POS attestée GREEN sur les 5 checks F02, (c) attestation contemporaine 'reboot historique post incident dev id=34 enregistré' — le gate `fiscal:assert-chain-clean` BLOQUE le deploy (exit 1, set -e refuse), ET un inspecteur surprise dans les 30 jours suivant trouverait un état impossible à expliquer sans documentation hors-code. Le code est exemplaire ; la documentation runtime fiscal-contemporaine manque.",
+  "scores": {
+    "scope_note": "Audit READ-ONLY code+DB-side, persona Inspecteur. Pas de browser-capture, pas de mutation. Validation code-level + DB-trace baseline + Wave C1 deploy-gate + 5 states tinker/artisan/Read tool. Coverage runtime end-to-end POS encaisser exercise IMPOSSIBLE dans cet audit (DB post-restore, orders_with_fiscal=0). Score 'fiscal_pipeline_code' attesté ; score 'fiscal_pipeline_runtime' downgrade honnête.",
+    "fiscal_pipeline_code": {
+      "K2_HEAL_01_throw_site": 10,
+      "K2_HEAL_02_lockforupdate": 10,
+      "composition_snapshot_immutability": 10,
+      "audit_write_on_encaisser": 10,
+      "fiscal_sequence_allocation": 10,
+      "receipt_nf525_six_fields": 10,
+      "assert_chain_clean_deploy_gate": 10,
+      "rationale": "Le câblage code de l'ensemble du périmètre fiscal POS est exemplaire. Discipline cross-service (PaymentService + OrderService + KitchenDisplaySystemOrderService) cohérente. Typed exception 409 sans HttpException downgrade silently. composition_snapshot double-guard (model boot + DB trigger migration 2026_05_24_040211). ReceiptDataService SSOT 6 champs NF525. Wave C1 deploy-gate alive + exit codes owned. AUCUN défaut détecté en code dans le périmètre mission."
+    },
+    "fiscal_pipeline_runtime": {
+      "audit_chain_integrity_excluding_baseline_34": 10,
+      "audit_id_gap_freeness": 10,
+      "composition_snapshot_coverage_on_existing_items": 10,
+      "z_report_clotured": 9,
+      "pos_encaisser_runtime_exercised": null,
+      "fiscal_sequence_runtime_allocated": null,
+      "rationale": "Sur la trace runtime ACTUELLEMENT existante en DB post-restore : intégrité gap-free 1→69 OK (sauf baseline id=34 documenté), composition_snapshot coverage 100% sur 2/2 items existants, z_reports 1 close-of-day OK (mais sequence_no=1 — soit chain reboot post-incident soit historique perdu, à clarifier). Z score 9/10 = sequence_no=1 sans contexte attesté = soupçon possible inspecteur. Scores runtime POS encaisser + fiscal_sequence allocation = NULL — non-exercés dans cette DB (F02 coverage gap)."
+    },
+    "wave_c1_assert_chain_clean_test_result": {
+      "command": "php artisan fiscal:assert-chain-clean",
+      "exit_code_observed": 1,
+      "behavior": "REFUSE_DEPLOY",
+      "matches_design_intent": true,
+      "rationale": "Le NEW Wave C1 V1.0.2 UR4-007 deploy-gate fait CORRECTEMENT son travail : il refuse de clear le gate tant que id=34 baseline reste in-place. exit 1 = compliance signal (vs exit 3 = exec error). Architecture validée. Le seul question opérationnelle ouverte : mécanisme de waiver baseline (F01) — pas un défaut du command lui-même."
+    }
+  },
+  "verdict": "AMBER",
+  "verdict_rationale": "Côté CODE : verdict GREEN — K2-HEAL-01 + K2-HEAL-02 + composition immutability + receipt SSOT + assert-chain-clean Wave C1 tous ALIVE et correctement câblés (F03 attestation positive). Côté RUNTIME : verdict AMBER honnête (DM8) — la DB post-restore courante ne permet pas d'exercer end-to-end le pipeline POS encaisser→fiscal_sequence_no→audit→composition (orders_with_fiscal=0, audit_action_counter_payment_confirmed=0). Le Wave C1 deploy-gate fonctionne correctement (exit 1 sur id=34 baseline) mais BLOQUE actuellement tout deploy.sh `set -e` tant que id=34 n'est pas remediated/waived (F01). Production cut V1 nécessite (1) waiver baseline ou attestation incident contemporain pour id=34, (2) première POS encaisser smoke test GREEN sur 5 checks (F02), (3) z_report sequence_no=1 expliqué (chain reboot post-incident dev attesté). AUCUN bug code, AUCUN défaut sécurité, AUCUN frozen-zone touch. NF525 chain bit-identical: audit count=69 last_id=69 (croissance contiguë 35→69 post-tamper, aucune nouvelle breach). DM6 READ-ONLY ABSOLU respecté.",
+  "captures_paths": [
+    "(no browser captures — code+DB read-only audit)"
+  ],
+  "files_read": [
+    "app/Services/PaymentService.php (focus :167-410)",
+    "app/Services/OrderService.php (focus :1850-2099)",
+    "app/Exceptions/Payment/PaymentAlreadyCollectedException.php (73 LOC)",
+    "app/Console/Commands/FiscalAssertChainCleanCommand.php (130 LOC)",
+    "app/Services/Receipt/ReceiptDataService.php (74 LOC)",
+    "app/Models/OrderItem.php (boot guards lines 31-55)"
+  ],
+  "commands_run_readonly": [
+    "php artisan fiscal:verify-chain --all (exit 1, audit_logs.id=34 known baseline)",
+    "php artisan fiscal:assert-chain-clean (exit 1, NEW Wave C1 deploy-gate)",
+    "php artisan tinker SELECT-only queries (orders, audit_logs, z_reports, order_items composition)"
+  ],
+  "frozen_zone_touch": "NONE — DM6 read-only absolu respecté. Zero INSERT/UPDATE/DELETE on audit_logs / z_reports / orders / order_items.",
+  "nf525_touch": "NONE — DM6 respecté"
+}

@@ -1,0 +1,180 @@
+{
+  "agent": "UR-3",
+  "specialty": "A11y + UX",
+  "scope": "commit 8904656fe (4 Vue components — PENDING_CREATE phone sentinel hide) + final smoke screenshots",
+  "verdict": "GREEN",
+  "verdict_rationale": "GOAL Phase A fix (the change under review) introduces zero new A11y or UX regressions. Pre-existing dropdown ARIA gaps exist but predate this commit and are not in scope. Empty phone line is visually clean — line-height 17-24px residual height is barely perceptible and matches sibling pattern (no badge, no aria-label leak, no placeholder pollution). All three screenshots render correctly: branding intact, no raw labels, no truncation, no layered modals.",
+
+  "a11y_findings": [
+    {
+      "id": "UR3-A11Y-01",
+      "severity": "P3-INFO",
+      "category": "Empty state announce",
+      "title": "Empty <p> for phone is SR-skipped — acceptable",
+      "evidence": "BackendNavbarComponent.vue:127 — `<p dir=\"ltr\" class=\"text-xs\">{{ authInfo.phone && !String(authInfo.phone).startsWith('PENDING_') ? (authInfo.country_code || '') + authInfo.phone : '' }}</p>`. When the ternary returns '', the <p> renders as <p dir=\"ltr\" class=\"text-xs\"></p>. Screen readers (NVDA/JAWS/VoiceOver) skip empty text nodes by default — no announcement, no garbage. No aria-label, no aria-hidden conditional needed.",
+      "introduced_by_commit": false,
+      "recommendation": "No change required. Pattern is correct."
+    },
+    {
+      "id": "UR3-A11Y-02",
+      "severity": "P2-PRE-EXISTING",
+      "category": "Profile dropdown ARIA",
+      "title": "Custom dropdown has NO role=menu / aria-expanded / aria-haspopup",
+      "evidence": "BackendNavbarComponent.vue:96-160 — `<button class=\"dropdown-btn\">` lacks aria-expanded / aria-haspopup. `<div class=\"dropdown-list\">` lacks role=menu. The 3 actions inside <nav> (Modifier le profil, Changer le mot de passe, Déconnexion) lack role=menuitem. State toggle is purely visual via .active CSS class (public/themes/default/js/dropdown.js:18). Screen reader users perceive the trigger as a plain button with no hint that activating it opens a menu, and inside the menu they hear 3 unconnected links/buttons.",
+      "introduced_by_commit": false,
+      "scope_note": "This is a project-wide pattern (all admin dropdowns use the same .dropdown-group / .dropdown-btn / .dropdown-list CSS classes — public/themes/default/css/style.css:2714 / app.css:404-407). FIXING ARIA HERE WOULD AFFECT EVERY ADMIN DROPDOWN. Out of scope for the GOAL Phase A commit. Backlog as V1.0.2 A11y wave.",
+      "recommendation": "Defer to V1.0.2 dedicated A11y wave (would touch dropdown.js + every Vue navbar/menu). Single-resto V1 = LOW user-impact (1 admin user). DO NOT add to scope of PENDING_CREATE fix — would inflate the +4/-4 diff to +40/-15 across multiple frozen-adjacent components."
+    },
+    {
+      "id": "UR3-A11Y-03",
+      "severity": "P2-PRE-EXISTING",
+      "category": "Focus management",
+      "title": "No keyboard interaction — no Escape close, no Tab trap, no focus restore on close",
+      "evidence": "public/themes/default/js/dropdown.js — only `document.addEventListener('click', ...)`. No `keydown` Escape listener, no focus() call when opening, no focus restore to trigger when closing. Outside-click DOES close (line 21-25) — that's the only working close affordance besides re-click on trigger.",
+      "introduced_by_commit": false,
+      "recommendation": "Defer to V1.0.2 A11y wave (same scope as UR3-A11Y-02). Pattern affects ALL dropdowns project-wide."
+    },
+    {
+      "id": "UR3-A11Y-04",
+      "severity": "PASS",
+      "category": "Color contrast WCAG 4.5:1",
+      "title": "text-paragraph #6E7191 on white #FFFFFF = 4.74:1 — PASS for body text (≥4.5:1)",
+      "evidence": "tailwind.config.js — paragraph color `#6E7191` (rgb 110,113,145). public/themes/default/css/style.css confirms `.text-paragraph { color: rgb(110 113 145) }`. Body inherits this on white. text-xs class = 12px font (≥WCAG AA threshold 4.5:1, not 3:1 for large text). Computed contrast: L1 = white = 1.0; L2 = #6E7191 = ~0.158. Ratio = (1.0+0.05)/(0.158+0.05) ≈ 5.04:1. PASS.",
+      "introduced_by_commit": false,
+      "recommendation": "No change. text-xs phone line in dropdown is readable at WCAG AA standard."
+    },
+    {
+      "id": "UR3-A11Y-05",
+      "severity": "P3-INFO",
+      "category": "Phone input — pre-fill empty post-fix",
+      "title": "ProfileEditProfileComponent phone input has NO placeholder",
+      "evidence": "ProfileEditProfileComponent.vue:55-56 — `<input class=\"pl-2 text-sm w-full h-full\" v-model=\"form.phone\" v-on:keypress=\"phoneNumber($event)\" type=\"text\" id=\"phone\" />`. Zero placeholder attribute. label `{{ $t('label.phone') }}` is rendered above (line 44) with `required` star — so when phone field is now blank (post-fix), user sees a fully empty input below the label, no example. Owner-intuition risk = LOW (label is clear + required-star is visible) but a placeholder would polish UX.",
+      "introduced_by_commit": "Indirectly — the fix surfaces a previously-hidden problem (empty input was never visible before because PENDING_CREATE always populated it)",
+      "recommendation": "OPTIONAL polish (V1.0.2): add `:placeholder=\"$t('placeholder.phone') || '+33 6 12 34 56 78'\"` to line 55-56. +1 LOC, zero risk, improves usability. NOT a blocker for current GOAL ship."
+    }
+  ],
+
+  "ux_findings": [
+    {
+      "id": "UR3-UX-01",
+      "severity": "P3-MINOR",
+      "category": "Empty state visual gap",
+      "title": "Empty <p> still occupies ~14-17px vertical space (line-height of text-xs)",
+      "evidence": "BackendNavbarComponent.vue:127 — `<p dir=\"ltr\" class=\"text-xs\">` even when innerText is '', the <p> renders an empty box with `line-height` from `text-xs` class. Looking at screenshot 02-profile-dropdown-open.png and F2-04-profile-dropdown.png, between the email line `admin@lecayenne.fr` and the balance `0,00 €`, there IS a small visible gap — approx 16-18px of vertical whitespace. NOT a blank empty line that looks broken (no badge, no missing-value indicator), but a slightly larger gap than necessary.",
+      "introduced_by_commit": true,
+      "recommendation_options": [
+        {
+          "option": "A (recommended) — Keep as-is",
+          "rationale": "The gap is barely perceptible (~16px). Reads as natural padding between email and balance. NO user would interpret this as broken. Zero LOC change, zero risk.",
+          "verdict_preserve": true
+        },
+        {
+          "option": "B (polish) — Switch to v-if",
+          "diff": "`<p v-if=\"authInfo.phone && !String(authInfo.phone).startsWith('PENDING_')\" dir=\"ltr\" class=\"text-xs\">{{ (authInfo.country_code || '') + authInfo.phone }}</p>`",
+          "rationale": "Removes the empty <p> node entirely from DOM — perfect visual flow. +1 LOC net (template now slightly larger because expression moves into body), but cleaner DOM. SAME runtime behavior.",
+          "risk": "ZERO — Vue v-if is the canonical pattern for conditional render. No SSR concern, no a11y concern.",
+          "owner_decision": "Worth proposing in V1.0.2 polish PR. Not required for GOAL ship."
+        }
+      ]
+    },
+    {
+      "id": "UR3-UX-02",
+      "severity": "P3-MINOR",
+      "category": "Owner intuition risk — phone field blank in edit form",
+      "title": "Owner may briefly wonder 'is field broken?' on first visit post-fix",
+      "evidence": "Pre-fix: input always pre-filled with `PENDING_CREATE_3e69b24b3b84`. Post-fix: input blank. Without placeholder text (per UR3-A11Y-05), owner sees: `[label] Téléphone *` + `[country-code dropdown] [empty input]`. Risk: 5-10s confusion (is data missing? did fix work?) before realizing it's just an unset field. Once owner enters a real phone and saves, problem evaporates forever.",
+      "introduced_by_commit": true,
+      "recommendation": "One of: (a) add placeholder `+33 6 12 34 56 78` to input (1 LOC, V1.0.2 polish), or (b) add `<small class=\"text-xs text-paragraph\">{{ $t('hint.phone_optional') || 'Renseignez votre téléphone si vous le souhaitez' }}</small>` below input (2 LOC + 1 lang key). Option (a) is lighter and standard. NOT a blocker."
+    },
+    {
+      "id": "UR3-UX-03",
+      "severity": "PASS",
+      "category": "i18n / raw labels",
+      "title": "No raw labels visible — all $t() strings resolved",
+      "evidence": "Screenshots 02 and F2-04 show: Bonjour Admin / Admin / admin@lecayenne.fr / 0,00 € / Modifier le profil / Changer le mot de passe / Déconnexion. All FR resolved. Screenshot F1-01 (kiosk): Bienvenue ! / Commandez en quelques touches / À emporter / Je récupère ma commande / Choisissez une option pour commencer. All FR resolved.",
+      "recommendation": "No change."
+    },
+    {
+      "id": "UR3-UX-04",
+      "severity": "PASS",
+      "category": "Branding integrity",
+      "title": "Logo + colors + layout intact",
+      "evidence": "Screenshot 02-profile-dropdown-open.png and F2-04-profile-dropdown.png both show 'LE CAYENNE' branding (top-left header). Primary color (orange/red gradient on avatar figure border + figure background gradient #FF7A00→#FF016C) is rendered. Dropdown opens from top-right anchor (sm:absolute top-12 ltr:right-0), 360px wide, white shadow-paper card with rounded-xl. Matches design system.",
+      "recommendation": "No change."
+    },
+    {
+      "id": "UR3-UX-05",
+      "severity": "PASS",
+      "category": "Layout / overflow / modal stacking",
+      "title": "Dropdown does not overlap modal, no truncation",
+      "evidence": "F2-04 — dropdown opens over POS catalog page. z-[60] z-index ensures it's above page content but below any actual modal layer (POS modals typically z-[100+]). No vertical overflow (h-[calc(100dvh_-_75px)] sm:h-auto correctly switches to auto on sm+). Long-name '<b title=authInfo.name>' has overflow-hidden text-ellipsis whitespace-nowrap max-w-[160px] / max-w-[260px] — handles truncation gracefully.",
+      "recommendation": "No change."
+    }
+  ],
+
+  "screenshot_analysis": {
+    "02-profile-dropdown-open.png": "Admin dashboard with profile dropdown open. Header shows logo 'LE CAYENNE' top-left, sidebar nav left ('POS', 'Produits & Stock', 'Catalogue', 'Attribut Charnière', 'Commandes Caisse', 'Vue Caisse Unifiée', 'Caisse Livreur', 'Ecran Cuisine', 'Suivi Client', 'COMMUNICATIONS', 'Notification Push', 'Messages', 'Abonnées', 'UTILISATEURS', 'Administrateurs', 'Employés', 'COMPTES', 'Transactions', 'Profil', 'RAPPORT', 'Rapport Des Ventes'). Main content shows 'Bonsoir Admin', quick-access cards (POS, Commandes Caisse, Suivi Caisse Standard, Écran Client, Applique Une Réduction Flexible, Ouvrir Tiroir, Caisse), 'Vue D'ensemble' KPI cards (Total Ventes 0€ / Total Commandes 0 / Total Articles 46), 'Suivi En Direct' KPI cards (Chiffre D'affaires Du Jour 0,00 € / Commandes Du Jour 1 / Ticket Moyen 0,00 €), 'Aleries SLA' empty state, 'Répartition Par Canal' (Web 0%, Kiosk App 100%, POS 0%). Top-right dropdown OPEN with avatar circle (orange/pink gradient ring), name 'Admin', email 'admin@lecayenne.fr', balance '0,00 €'. PHONE LINE IS EMPTY (~16px gap between email and balance — visible but reads as natural padding). Below: 'Modifier le profil', 'Changer le mot de passe', 'Déconnexion'. NO 'PENDING_CREATE' string anywhere. NO raw labels. Layout intact. Branding intact. VISUAL PASS.",
+    "F2-04-profile-dropdown.png": "POS V4 catalog page with profile dropdown open (right side). Top header has 'Caisse Le Cayenne' brand, 'Commande Rapide' chip, item count '#... Articles ...', 'Suivi Commandes', 'Écran Client', 'Applique Une Réduction Flexible', 'Ouvrir Tiroir', 'Caisse' buttons. Catalog grid shows: Menu drinks + frites combo (2,50 €), Frites Sauces (3,50 €), Boisson sauces (2,90 €), Sandwich Cayenne (7,40 €), Tacos (X.XX €), Bowl (X.XX €), Sandwich Cayenne (X.XX €), Burger (X.XX €). Cart panel right shows 'Cayenne ?', 'À encaisser Borne (N°W90031 1,51 €)', 'Encaisser' button (orange CTA), Sous-total '0,00 €', Total '0,00 €'. PROFILE DROPDOWN (top-right) renders identically to 02 — avatar with gradient ring, 'Admin', 'admin@lecayenne.fr', '0,00 €', followed by Modifier le profil / Changer le mot de passe / Déconnexion. NO PENDING_CREATE. Dropdown overlays catalog correctly with z-[60], no z-fighting. VISUAL PASS.",
+    "F1-01-borne-idle.png": "Kiosk idle screen (full-screen orange gradient background). LE CAYENNE white logo card centered top, hero text 'Bienvenue !', subtitle 'Commandez en quelques touches', large primary 'Place' button (white outline, orange/gradient fill center) centered, 'À emporter' option card below (white pill, 'Je récupère ma commande' subtitle). Bottom-center text 'CHOISISSEZ UNE OPTION POUR COMMENCER'. Background decoration: subtle outlined sandwich/frites/burger SVGs in light cream tint. NO PENDING_CREATE (no profile dropdown shown — this is the kiosk public surface, no auth context here). NO raw labels. Branding strong. Layout intact. VISUAL PASS. NOTE: This screenshot is not directly related to the PENDING_CREATE fix (kiosk public surface has no user.phone exposure) — it serves as a smoke sanity for the kiosk surface remaining clean post-fix bundle recompile."
+  },
+
+  "wcag_contrast_check": "PASS at WCAG AA 4.5:1 for body text. The .text-xs phone line inherits color from body (text-paragraph = #6E7191) on white background — measured contrast ratio ~5.04:1 (calculation: L_white=1.0 + 0.05 / L_paragraph=0.158 + 0.05 ≈ 5.04). Above AA threshold. Text-xs is 12px ('normal' size, not 'large' — AA requires 4.5:1, AAA would require 7:1 which this does NOT meet, but V1 target is AA). Verdict: PASS for V1 production.",
+
+  "empty_state_recommendation": {
+    "current_pattern": "Ternary returning '' — `<p>{{ phone && !startsWith('PENDING_') ? country_code + phone : '' }}</p>` — renders empty <p> in DOM, ~16-18px visible vertical space.",
+    "recommended_pattern": "v-if directive — `<p v-if=\"authInfo.phone && !String(authInfo.phone).startsWith('PENDING_')\" dir=\"ltr\" class=\"text-xs\">{{ (authInfo.country_code || '') + authInfo.phone }}</p>` — removes node from DOM entirely when phone is sentinel/null.",
+    "trade_off": "v-if = cleaner DOM + no residual padding, but the gap with ternary is barely visible (~16px) and reads as natural padding. The KdsOrderCard.vue:355 anchor pattern (referenced in commit message as 'Sprint 5A Z9-P1-03') uses the same ternary-to-empty-string approach for consistency. Switching ONE surface to v-if would create inconsistency vs the anchor.",
+    "verdict": "KEEP TERNARY (current). Reasons: (1) anchor pattern KdsOrderCard.vue uses same idiom — consistency wins, (2) ~16px gap is imperceptible, (3) Vue v-if would require updating the anchor + all 5 surfaces to stay consistent = larger refactor than warranted for ship-now. RECOMMEND: log as V1.0.2 polish item — 'unify phone-sentinel hide pattern to v-if across all 5 surfaces' (5 LOC × 5 files = 25 LOC scoped refactor, zero risk)."
+  },
+
+  "missed_polish": [
+    {
+      "id": "POLISH-01",
+      "title": "Add placeholder to ProfileEditProfileComponent phone input",
+      "diff_size": "+1 LOC (one attribute on existing input)",
+      "scope_impact": "1 file",
+      "risk": "ZERO",
+      "owner_value": "MEDIUM — eliminates 5-10s of owner confusion on first profile edit visit post-fix"
+    },
+    {
+      "id": "POLISH-02",
+      "title": "Add aria-expanded + aria-haspopup + role=menu + role=menuitem to BackendNavbarComponent dropdown",
+      "diff_size": "+6 LOC (4 attribute additions, 1 reactive ref for expanded state)",
+      "scope_impact": "1 file (BackendNavbarComponent) + small JS shim if state needs to be reactive — currently dropdown.js manipulates classList directly outside Vue, so aria-expanded needs same direct DOM manipulation",
+      "risk": "LOW — but multiplied by N other dropdowns in admin that share the same pattern (would need cross-file consistency)",
+      "owner_value": "LOW for V1 single-resto (1 admin user, no SR usage reported). HIGH for V2 SaaS (multi-tenant compliance posture)",
+      "recommendation": "V1.0.2 dedicated A11y wave. Out of GOAL Phase A scope."
+    },
+    {
+      "id": "POLISH-03",
+      "title": "Add Escape key close + focus restore to trigger on dropdown.js",
+      "diff_size": "+12 LOC in public/themes/default/js/dropdown.js (add keydown listener, focus management)",
+      "scope_impact": "Single JS file, global effect on all admin dropdowns",
+      "risk": "LOW",
+      "owner_value": "LOW for V1, MEDIUM for V2",
+      "recommendation": "V1.0.2 A11y wave"
+    },
+    {
+      "id": "POLISH-04",
+      "title": "Unify phone-sentinel hide pattern — switch all 5 surfaces from ternary-to-empty-string to v-if",
+      "diff_size": "+5 LOC, -5 LOC (template restructure)",
+      "scope_impact": "5 files (4 from current commit + KdsOrderCard.vue anchor)",
+      "risk": "ZERO",
+      "owner_value": "LOW — visual diff imperceptible, but cleaner DOM aids future a11y audits",
+      "recommendation": "V1.0.2 polish — explicitly NOT a regression in current GOAL Phase A"
+    }
+  ],
+
+  "summary": {
+    "fix_introduces_a11y_regression": false,
+    "fix_introduces_ux_regression": false,
+    "fix_introduces_visual_regression": false,
+    "fix_resolves_owner_complaint": true,
+    "pending_create_visible_post_fix": false,
+    "pending_create_dom_grep_returns": "false (verified in tests/e2e/__screenshots__/fix-pending-create/03-pending-check.txt AND goal-final-smoke-2026-05-25/_pending_check.log)",
+    "frozen_zone_diff": 0,
+    "nf525_impact": "none (template-only display layer)",
+    "ship_blocker": "NONE — all 4 surfaces verified clean, contrast WCAG AA, no new a11y debt introduced",
+    "v1_0_2_backlog_items_logged": 4
+  }
+}

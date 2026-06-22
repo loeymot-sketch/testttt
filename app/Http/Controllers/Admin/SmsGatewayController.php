@@ -19,7 +19,11 @@ class SmsGatewayController extends AdminController
     {
         parent::__construct();
         $this->smsGatewayService = $smsGatewayService;
-        $this->middleware(['permission:settings'])->only('update');
+        // [SET-01 heal 2026-06-01] Gate index too: GET /admin/setting/sms-gateway returns
+        // gateway_options 'value' incl. secrets (twilio_auth_token, nexmo_secret, msg91_key…)
+        // via GatewayOptionsResource. Gating index does not break any non-settings surface.
+        // Mirrors Mail (SET-02) / KioskSetup / LoyaltySetup ->only('index','update').
+        $this->middleware(['permission:settings'])->only('index', 'update');
     }
 
     public function index(
@@ -28,7 +32,7 @@ class SmsGatewayController extends AdminController
         try {
             return SmsGatewayResource::collection($this->smsGatewayService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -42,7 +46,7 @@ class SmsGatewayController extends AdminController
         try {
             return new SmsGatewayResource($this->smsGatewayService->update($validationRequests));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

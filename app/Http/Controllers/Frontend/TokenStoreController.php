@@ -25,7 +25,7 @@ class TokenStoreController extends Controller
             $this->tokenStoreService->webToken($request);
             return response(['status' => true, 'message' => trans("all.message.token_save")]);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -36,7 +36,7 @@ class TokenStoreController extends Controller
             $this->tokenStoreService->deviceToken($request);
             return response(['status' => true, 'message' => trans("all.message.token_save")]);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -47,7 +47,7 @@ class TokenStoreController extends Controller
             $this->tokenStoreService->kioskDeviceToken($request);
             return response(['status' => true, 'message' => trans("all.message.token_save")]);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

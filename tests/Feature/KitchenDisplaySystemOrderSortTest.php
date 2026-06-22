@@ -6,6 +6,7 @@ use App\Enums\Ask;
 use App\Enums\OrderStatus;
 use App\Models\Branch;
 use App\Models\Order;
+use App\Enums\Status;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -35,7 +36,10 @@ class KitchenDisplaySystemOrderSortTest extends TestCase
             'phone' => '0600000020',
             'password' => bcrypt('password123'),
             'branch_id' => $branch->id,
-            'status' => 1,
+            // [Sprint H1 Z6-06 2026-05-17] Was `1`; canonical user-status
+            // ACTIVE = 5 (App\Enums\Status). EnsureUserStatusActive rejects
+            // any non-ACTIVE user — pre-existing test-fixture data bug.
+            'status' => Status::ACTIVE,
         ]);
         $chef->assignRole('Chef');
 
@@ -46,7 +50,8 @@ class KitchenDisplaySystemOrderSortTest extends TestCase
             'phone' => '0600000021',
             'password' => bcrypt('password123'),
             'branch_id' => $branch->id,
-            'status' => 1,
+            // [Sprint H1 Z6-06 2026-05-17] Was `1`; see comment above.
+            'status' => Status::ACTIVE,
         ]);
 
         Order::forceCreate([

@@ -1,0 +1,229 @@
+{
+  "mission": "e2e-real-final-2026-05-26",
+  "timestamp": "2026-05-26T18:56:00+02:00",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head_commit": "a055233fc",
+  "server": "http://127.0.0.1:8000",
+  "auth": {
+    "user": "admin@lecayenne.fr",
+    "branch_id": 0,
+    "audit_log_id": 77,
+    "last_hash_prefix": "8d2fdec2"
+  },
+  "discipline": {
+    "dm6_nf525_ro": true,
+    "frozen_zone_diff": 0,
+    "no_db_mutations": true,
+    "no_order_mutations": true,
+    "no_stock_toggles_live": true
+  },
+  "scenarios": {
+    "S1_login_dashboard_heal3_eod": {
+      "status": "PARTIAL",
+      "login_ok": true,
+      "dashboard_loads": true,
+      "eod_button_present": true,
+      "eod_pdf_downloads": true,
+      "eod_pdf_pages": 1,
+      "eod_pdf_pages_verification_method": "mdls kMDItemNumberOfPages + python /Type /Page parse (file command 0-pages was heuristic misfire on dompdf non-standard /Count)",
+      "i18n_key_resolved": false,
+      "raw_label_visible": "label.eod_pdf_button",
+      "captures": ["s1-01-login.png", "s1-02-dashboard.png", "s1-03-after-eod-click.png", "heal3-eod.pdf"]
+    },
+    "S2_kiosk_borne_flow": {
+      "status": "PASS",
+      "idle_loads": true,
+      "categories_load": true,
+      "wizard_opens": true,
+      "captures": ["s2-01-kiosk-idle.png", "s2-02-kiosk-categories.png", "s2-03-kiosk-sandwiches.png", "s2-04-kiosk-wizard.png"]
+    },
+    "S3_pos_heal1_heal4": {
+      "status": "PARTIAL",
+      "pos_loads": true,
+      "heal1_modal_opens": true,
+      "heal1_aria_modal": true,
+      "heal1_reason_required": true,
+      "heal1_back_dismisses_without_post": true,
+      "heal1_i18n_resolved": true,
+      "heal4_modal_tested": false,
+      "heal4_reason_no_paid_order_in_db": true,
+      "captures": ["s3-01-pos-empty.png", "s3-02-pos-counter-collect-modal.png", "s3-03-pos-kiosk-cash-panel.png", "s3-04-heal1-confirm-modal.png", "s3-05-pos-orders-list.png", "s3-06-pos-order-detail-63.png"]
+    },
+    "S4_kds_heal5_chip": {
+      "status": "PARTIAL",
+      "kds_loads": true,
+      "history_drawer_opens": true,
+      "heal5_recall_button_visible": false,
+      "heal5_reason_no_prepared_order_within_60s": true,
+      "n_chip_implemented": false,
+      "i18n_kds_recall_keys": 11,
+      "captures": ["s4-01-kds-board.png", "s4-02-kds-history-drawer.png"]
+    },
+    "S5_oss": {
+      "status": "PASS",
+      "two_col_layout": true,
+      "en_preparation_col": true,
+      "pret_col": true,
+      "captures": ["s5-01-oss-layout.png"]
+    },
+    "S6_cash_overview": {
+      "status": "PASS",
+      "loads": true,
+      "title_resolved": "Vue caisse unifiée",
+      "captures": ["s6-01-cash-overview.png"]
+    },
+    "S7_admin_items_central_stock": {
+      "status": "PASS",
+      "catalogue_loads": true,
+      "items_count": 46,
+      "test_residue_visible": ["E2E_PLAYWRIGHT_STUDIO_ITEM", "E2E_PLAYWRIGHT_STUDIO_CATEGORY"],
+      "captures": ["s7-01-items-studio.png"]
+    },
+    "S8_cross_sync_verify": {
+      "status": "PASS_SOURCE_LEVEL",
+      "live_toggle_blocked_by_rO": true,
+      "wiring_verified": {
+        "backend_dispatcher": "app/Services/Stock/StockService.php:131,162,202,211,432",
+        "event": "app/Events/ItemAvailabilityChanged.php",
+        "outbox": "app/Listeners/PersistItemAvailabilityChangedToOutbox.php",
+        "kiosk_listener": "resources/js/components/frontend/kiosk/KioskAppComponent.vue:548-550,662",
+        "pos_listener": "resources/js/components/admin/pos/PosComponent.vue:2823,2852",
+        "kds_listener": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue"
+      },
+      "wave_polish_final_measurement_ms": 1000
+    },
+    "S9_stock_rupture_dashboard": {
+      "status": "PASS",
+      "loads": true,
+      "binary_toggles": true,
+      "in_stock_count_visible": 5,
+      "rupture_count_visible": 0,
+      "owner_mandate_copy_match": true,
+      "captures": ["s9-01-stock-rupture-dashboard.png"]
+    },
+    "S10_healthz": {
+      "status": "DEGRADED",
+      "db_ok": true,
+      "redis_ok": true,
+      "websocket_ok": true,
+      "fiscal_chain_fail_preexisting": true,
+      "queue_pending": 0,
+      "captures": ["healthz.json"]
+    },
+    "S11_console_errors": {
+      "status": "PASS_WITH_NOTES",
+      "pre_login_401s": 30,
+      "post_login_403s": 1,
+      "post_login_403_endpoint": "/api/admin/kds-order/sync?since=...&branch_id=1",
+      "js_exceptions": 0,
+      "vue_warnings": 0,
+      "axios_stack_traces": 10,
+      "captures": ["console-errors.log"]
+    }
+  },
+  "heals": {
+    "HEAL-1_cancel_confirm": {
+      "status": "PASS",
+      "source_ok": true,
+      "visual_ok": true,
+      "functional_ok": true,
+      "commit": "e51d1b7f2",
+      "source_file": "resources/js/components/admin/pos/PosComponent.vue:1290-1384",
+      "i18n_keys_fr_en_ar": "complete",
+      "ship_recommendation": "SHIP"
+    },
+    "HEAL-2_stock_toast_i18n": {
+      "status": "PASS_SOURCE_LEVEL",
+      "source_ok": true,
+      "visual_skipped_no_event_to_trigger": true,
+      "commit": "27883ef48",
+      "i18n_keys_fr_en_ar": "complete",
+      "ship_recommendation": "SHIP"
+    },
+    "HEAL-3_eod_pdf": {
+      "status": "INCOMPLETE_I18N",
+      "source_ok": true,
+      "visual_blocker_p0": "raw label.eod_pdf_button visible on dashboard",
+      "pdf_render_ok_1_page": true,
+      "commit": "9a56a649a",
+      "missing_i18n_keys": ["label.eod_pdf_button", "label.downloading", "label.eod_pdf_error"],
+      "ship_recommendation": "MUST-FIX i18n BEFORE SHIP"
+    },
+    "HEAL-4_pos_refund_ui": {
+      "status": "PASS_SOURCE_LEVEL",
+      "source_ok": true,
+      "visual_blocked_no_paid_order_in_db": true,
+      "paid_orders_count": 0,
+      "commit": "ee77ce848",
+      "i18n_keys_fr_en_ar": "complete",
+      "permission_pos_refund_seeded": true,
+      "ship_recommendation": "SHIP with smoke test"
+    },
+    "HEAL-5_kds_recall": {
+      "status": "PASS_SOURCE_LEVEL",
+      "source_ok": true,
+      "visual_blocked_no_prepared_within_60s": true,
+      "commit": "bf0c290bf",
+      "i18n_keys_per_locale": 11,
+      "nf525_safety": {
+        "orders_status_not_mutated": true,
+        "order_state_machine_not_touched": true,
+        "audit_log_service_not_touched": true
+      },
+      "ship_recommendation": "SHIP with smoke test"
+    },
+    "HEAL-01_n_chip": {
+      "status": "NOT_IMPLEMENTED",
+      "ship_recommendation": "DEFER — not a regression"
+    }
+  },
+  "findings": [
+    {
+      "id": "F-P0-01",
+      "severity": "P0",
+      "title": "HEAL-3 i18n drift on dashboard EOD button",
+      "evidence": "captures/s1-02-dashboard.png shows literal label.eod_pdf_button",
+      "files_missing_keys": ["resources/js/languages/fr.json", "resources/js/languages/en.json", "resources/js/languages/ar.json"],
+      "code_referencing_keys": "resources/js/components/admin/dashboard/DashboardComponent.vue:26,239",
+      "fix_eta_minutes": 10
+    },
+    {
+      "id": "F-P3-02",
+      "severity": "P3",
+      "title": "Super-admin gets 403 on KDS sync endpoint (controller allows it; middleware blocks)",
+      "evidence": "console-errors.log: GET /api/admin/kds-order/sync?branch_id=1 returned 403; KdsSyncController.php:55-59 explicitly allows admin override",
+      "user_context": "admin@lecayenne.fr branch_id=0 (super-admin) trying to fetch branch 1",
+      "likely_cause": "block_kiosk_token_admin middleware false-positive or other auth layer",
+      "fix_eta_minutes": 60
+    },
+    {
+      "id": "F-PRE-01",
+      "severity": "PRE_EXISTING",
+      "title": "Healthz fiscal_chain:fail caused by FAKE_HASH tamper.attempt row",
+      "evidence": "captures/healthz.json + dashboard NF525 audit table",
+      "note": "Pre-dates current branch heal work; production deploy requires fresh DB",
+      "fix_eta_minutes": 0
+    },
+    {
+      "id": "F-P3-01",
+      "severity": "P3",
+      "title": "E2E test residue visible to real users",
+      "evidence": "E2E_PLAYWRIGHT_STUDIO_CATEGORY in /admin/stock/rupture + /kiosk/categories",
+      "fix_eta_minutes": 5
+    }
+  ],
+  "go_live_verdict": {
+    "decision": "GO_WITH_FIX",
+    "blocking_p0": 1,
+    "blocking_p1": 0,
+    "non_blocking_p3": 2,
+    "fix_wall_clock_minutes": 15,
+    "production_readiness_score": 8.7,
+    "owner_acceptance_post_fix": "YES"
+  },
+  "captures_dir": "reports/test-e2e/real-final-2026-05-26/captures/",
+  "captures_count": 21,
+  "evidence_pdf": "reports/test-e2e/real-final-2026-05-26/captures/heal3-eod.pdf",
+  "console_log": "reports/test-e2e/real-final-2026-05-26/captures/console-errors.log",
+  "healthz_snapshot": "reports/test-e2e/real-final-2026-05-26/captures/healthz.json"
+}

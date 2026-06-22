@@ -1,0 +1,38 @@
+[
+  {
+    "step": "D4-01",
+    "slug": "allergen-aggregation-split",
+    "state": "source-check",
+    "severity": "OK",
+    "note": "orderItems()=true, allergens_hash-used=true, exposed-as-key=true",
+    "screenshot": null,
+    "ts": "2026-05-16T17:01:11.003Z"
+  },
+  {
+    "step": "D4-02",
+    "slug": "composition-snapshot-immutable",
+    "state": "source-check",
+    "severity": "OK",
+    "note": "resolveAddonsForKds=true, composition_snapshot=true, safe-json=true, addons-key=true",
+    "screenshot": null,
+    "ts": "2026-05-16T17:01:11.009Z"
+  },
+  {
+    "step": "D4-03",
+    "slug": "allergen-tests-inventory",
+    "state": "source-check",
+    "severity": "OK",
+    "note": "Inventaire tests allergens: [{\"file\":\"tests/Feature/Orders/KDSAllergenVisibilityTest.php\",\"exists\":true},{\"file\":\"tests/Feature/Orders/OrderAllergenSnapshotComposedTest.php\",\"exists\":true},{\"file\":\"tests/Feature/Orders/OrderAllergenSnapshotTest.php\",\"exists\":true},{\"file\":\"tests/js/kdsAllergens.spec.js\",\"exists\":true}]",
+    "screenshot": null,
+    "ts": "2026-05-16T17:01:11.014Z"
+  },
+  {
+    "step": "D4-04",
+    "slug": "allergens-immutable-frontend",
+    "state": "source-check",
+    "severity": "OK",
+    "note": "Mutations détectées: 0. Sample: ",
+    "screenshot": null,
+    "ts": "2026-05-16T17:01:11.020Z"
+  }
+]

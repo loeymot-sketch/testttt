@@ -1,0 +1,91 @@
+{
+  "zone": "Z-4-LIVREUR",
+  "round": 1,
+  "timestamp": "2026-05-18",
+  "deferred_to": "V1.0.2",
+  "context": "Items not gating §5 acceptance per GOAL contract. Bundled here for V1.0.2 backlog tracking. Each carries a clear scope, anchor, and recommendation.",
+  "items": [
+    {
+      "id": "LIVREUR-Z4-ARCH-05",
+      "severity": "P2",
+      "title": "Driver notification listeners lack idempotency on queue retry",
+      "anchor": "app/Listeners/SendOrderDeliveryBoy{Push,Sms,Mail}Notification.php",
+      "scope": "If queue worker retries a SendOrderDeliveryBoy* event (e.g. transient SMTP/SMS gateway failure), the listener fires again and the driver receives a duplicate notification.",
+      "recommendation": "Add a dedup table (webhook_events-style) keyed on (order_id, status, channel) OR adopt Cache::lock around the send() call with a 5-minute TTL. Pattern: see app/Models/WebhookEvent.php + IdempotencyKeyMiddleware. ETA V1.0.2: 1 day.",
+      "v1_blocker": false
+    },
+    {
+      "id": "LIVREUR-Z4-ARCH-06",
+      "severity": "P3",
+      "title": "Generic 422 controllers leak raw $exception->getMessage()",
+      "anchor": "Admin/DeliveryBoy{,Order,Address}Controller.php + Frontend/DeliveryBoyOrderController.php",
+      "scope": "User-facing error strings may leak SQL/DB exception fragments. Codebase-wide pattern; not unique to Livreur.",
+      "recommendation": "V1.0.2 polish wave: replace with `trans('all.message.generic_error')` + Log::error for ops. Wait until cross-cutting fix lands. ETA V1.0.2: 0.5 day per controller.",
+      "v1_blocker": false
+    },
+    {
+      "id": "LIVREUR-Z4-SEC-02",
+      "severity": "P2",
+      "title": "Frontend driver routes have no role:Delivery Boy guard",
+      "anchor": "routes/api.php:1205 (prefix delivery-boy-order)",
+      "scope": "Any authenticated sanctum user can hit /api/frontend/delivery-boy-order/* endpoints. Service-level ownership checks (deliveryBoyOrderDetails:1428-1444) provide last-line defense, but defense-in-depth wants a role guard.",
+      "recommendation": "Add `role:Delivery Boy,sanctum` middleware to the prefix group. Verify role exists in seeder. ETA V1.0.2: 0.5 day.",
+      "v1_blocker": false
+    },
+    {
+      "id": "LIVREUR-Z4-SEC-03",
+      "severity": "P2",
+      "title": "No throttle on driver status-change endpoint",
+      "anchor": "routes/api.php:1209",
+      "scope": "POST /api/frontend/delivery-boy-order/change-status/{order} can be hit at full throughput. While ValidStatusTransition + lockForUpdate provide logical bound, no per-IP rate limit.",
+      "recommendation": "Add `throttle:60,1` (60 req/min). Pattern: see routes/api.php Wave 3 P1 throttle additions. ETA V1.0.2: 0.5 day.",
+      "v1_blocker": false
+    },
+    {
+      "id": "LIVREUR-Z4-SEC-05",
+      "severity": "P2",
+      "title": "Driver status-change endpoint missing idempotency key support",
+      "anchor": "routes/api.php:1209",
+      "scope": "X-Idempotency-Key header not honoured. Service has logical idempotent early-return for same-status (OrderService:1540) but a fast double-tap across distinct states races past.",
+      "recommendation": "Add `idempotency` middleware to the route. Pattern: routes/api.php:880 (select-delivery-boy already has it). ETA V1.0.2: 0.5 day.",
+      "v1_blocker": false
+    },
+    {
+      "id": "LIVREUR-Z4-DBA-03",
+      "severity": "P2",
+      "title": "Missing composite index on orders(delivery_boy_id, branch_id, status, created_at)",
+      "anchor": "database/migrations (Order schema)",
+      "scope": "OrderService::deliveryBoyOrder + deliveryBoyOrderCount filter on three columns. Single-column index on delivery_boy_id (if any) not optimal for high volume.",
+      "recommendation": "Add migration with composite covering index. ETA V1.0.2: 0.5 day. Measure pre/post EXPLAIN.",
+      "v1_blocker": false
+    },
+    {
+      "id": "LIVREUR-Z4-DBA-04",
+      "severity": "P3",
+      "title": "deliveryBoyOrderCount runs two near-identical COUNT queries",
+      "anchor": "app/Services/OrderService.php:1475-1483",
+      "scope": "Two separate WHERE+COUNT queries (DELIVERED, RETURNED). Could be a single SELECT status, COUNT(*) GROUP BY status WHERE status IN (...).",
+      "recommendation": "V1.0.2 micro-optim. ETA V1.0.2: 0.5 day.",
+      "v1_blocker": false
+    },
+    {
+      "id": "LIVREUR-Z4-UX-02",
+      "severity": "P2",
+      "title": "E2E spec uses fixed 1500ms waitForTimeout — flaky on slow CI",
+      "anchor": "tests/e2e/_red-e-livreur-round3-2026-05-18.spec.js:15",
+      "scope": "Codebase-wide flaky pattern. Switch to waitForLoadState('networkidle') or semantic selector wait.",
+      "recommendation": "V1.0.2 test cleanup wave. ETA V1.0.2: 0.5 day per spec.",
+      "v1_blocker": false
+    },
+    {
+      "id": "LIVREUR-Z4-UX-03",
+      "severity": "INFO",
+      "title": "Hardcoded FR delivery-minimum error string with € symbol",
+      "anchor": "app/Http/Requests/OrderRequest.php:281",
+      "scope": "i18n roadmap: externalize to lang/fr/all.php.",
+      "recommendation": "V1.0.2 i18n wave. ETA V1.0.2: 0.5 day.",
+      "v1_blocker": false
+    }
+  ],
+  "summary": "9 deferred items — 0 V1 blockers. All are documented production-readiness polish targets for V1.0.2 (estimated ~4.5 days total). The HEAL-ALLOWED items closed in this cycle: LIVREUR-Z4-ARCH-01+02+03 (P0 bundled), LIVREUR-Z4-ARCH-04 (P1), LIVREUR-Z4-SEC-01 (P1). See round-1/Z-4-LIVREUR/{architect,security,uxa11y,dba,red}.json for full audit."
+}

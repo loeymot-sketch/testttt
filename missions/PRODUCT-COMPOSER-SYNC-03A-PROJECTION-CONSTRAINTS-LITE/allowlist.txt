@@ -1,0 +1,8 @@
+app/Services/Kiosk/KioskMenuService.php
+app/Services/Menu/MenuProjectionService.php
+tests/Feature/Services/Menu/MenuProjectionParitySentinelTest.php
+missions/PRODUCT-COMPOSER-SYNC-03A-PROJECTION-CONSTRAINTS-LITE/allowlist.txt
+missions/PRODUCT-COMPOSER-SYNC-03A-PROJECTION-CONSTRAINTS-LITE/execute_brief.md
+missions/PRODUCT-COMPOSER-SYNC-03A-PROJECTION-CONSTRAINTS-LITE/input.json
+reports/audit/GPT_SELF_AUDIT_PRODUCT-COMPOSER-SYNC-03A-PROJECTION-CONSTRAINTS-LITE.md
+reports/post_execute_latest.log

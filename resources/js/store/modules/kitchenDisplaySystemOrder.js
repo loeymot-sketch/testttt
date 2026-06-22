@@ -1,5 +1,6 @@
 import axios from 'axios'
 import appService from "../../services/appService";
+import { buildIdempotencyHeaders } from "../../helpers/idempotencyHeaders";
 
 
 export const kitchenDisplaySystemOrder = {
@@ -35,10 +36,16 @@ export const kitchenDisplaySystemOrder = {
         },
         changeStatus: function (context, payload) {
             return new Promise((resolve, reject) => {
-                axios.post(`admin/kds-order/change-status/${payload.id}`, payload).then((res) => {
+                axios.post(`admin/kds-order/change-status/${payload.id}`, payload, {
+                    headers: buildIdempotencyHeaders(payload),
+                }).then((res) => {
                     context.dispatch("lists", payload).then().catch();
                     resolve(res);
                 }).catch((err) => {
+                    if (err.response && err.response.status === 409) {
+                        context.dispatch("lists", payload).catch(() => {});
+                        context.dispatch("orderItems").catch(() => {});
+                    }
                     reject(err);
                 });
             });

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Resources\ItemReportResource;
 use Exception;
+use Illuminate\Support\Facades\Log;
 use App\Services\ItemService;
 use App\Exports\ItemsReportExport;
 use App\Http\Resources\ItemResource;
@@ -36,7 +37,7 @@ class ItemsReportController extends AdminController
         try {
             return ItemReportResource::collection($this->itemService->itemReport($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -45,7 +46,7 @@ class ItemsReportController extends AdminController
         try {
             return Excel::download(new ItemsReportExport($this->itemService, $request), 'Item-Report.xlsx');
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -71,7 +72,10 @@ class ItemsReportController extends AdminController
 
 
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            // [CENTRAL-02] log the items-report PDF render/aggregation failure server-side (was silent);
+            // the 422 response is byte-identical.
+            Log::error('items-report pdf failed', ['exception' => $exception]);
+            return $this->jsonError($exception, 422);
         }
     }
 }

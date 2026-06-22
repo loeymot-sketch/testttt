@@ -1,0 +1,767 @@
+{
+  "pos": [
+    {
+      "category": "/Nos Assiettes/i",
+      "expected": "/Assiette Poulet/i",
+      "screenshotName": "01-pos-assiette-poulet.png",
+      "stats": {
+        "generatedCount": 17,
+        "generatedVisibleCount": 17,
+        "broken": [],
+        "uniqueGeneratedCount": 17,
+        "sample": [
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-tacos.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-sandwichs.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-burgers.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-assiettes.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_ojja.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_omelettes.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-salades.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_chicken-tenders.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-menus-enfants.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_frites-accompagnements.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-desserts.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-boissons.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          }
+        ]
+      }
+    },
+    {
+      "category": "/Ojja/i",
+      "expected": "/Ojja Poulet/i",
+      "screenshotName": "02-pos-ojja-poulet.png",
+      "stats": {
+        "generatedCount": 17,
+        "generatedVisibleCount": 17,
+        "broken": [],
+        "uniqueGeneratedCount": 17,
+        "sample": [
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-tacos.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-sandwichs.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-burgers.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-assiettes.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_ojja.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_omelettes.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-salades.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_chicken-tenders.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-menus-enfants.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_frites-accompagnements.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-desserts.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-boissons.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          }
+        ]
+      }
+    },
+    {
+      "category": "/Omelettes/i",
+      "expected": "/Omelette Fromage/i",
+      "screenshotName": "03-pos-omelette-fromage.png",
+      "stats": {
+        "generatedCount": 16,
+        "generatedVisibleCount": 16,
+        "broken": [],
+        "uniqueGeneratedCount": 16,
+        "sample": [
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-tacos.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-sandwichs.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-burgers.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-assiettes.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_ojja.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_omelettes.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-salades.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_chicken-tenders.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-menus-enfants.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_frites-accompagnements.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-desserts.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-boissons.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          }
+        ]
+      }
+    },
+    {
+      "category": "/Nos Salades/i",
+      "expected": "/Salade Tunisienne/i",
+      "screenshotName": "04-pos-salade-tunisienne.png",
+      "stats": {
+        "generatedCount": 17,
+        "generatedVisibleCount": 17,
+        "broken": [],
+        "uniqueGeneratedCount": 17,
+        "sample": [
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-tacos.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-sandwichs.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-burgers.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-assiettes.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_ojja.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_omelettes.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-salades.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_chicken-tenders.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-menus-enfants.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_frites-accompagnements.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-desserts.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-boissons.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          }
+        ]
+      }
+    },
+    {
+      "category": "/Chicken|Poulet|Tenders/i",
+      "expected": "/Filets de poulet croustillants/i",
+      "screenshotName": "05-pos-filets-de-poulet-croustillants.png",
+      "stats": {
+        "generatedCount": 17,
+        "generatedVisibleCount": 17,
+        "broken": [],
+        "uniqueGeneratedCount": 17,
+        "sample": [
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-tacos.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-sandwichs.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-burgers.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-assiettes.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_ojja.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_omelettes.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-salades.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_chicken-tenders.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-menus-enfants.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_frites-accompagnements.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-desserts.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-boissons.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          }
+        ]
+      }
+    },
+    {
+      "category": "/Menus Enfants/i",
+      "expected": "/Menu Nuggets/i",
+      "screenshotName": "06-pos-menu-nuggets.png",
+      "stats": {
+        "generatedCount": 15,
+        "generatedVisibleCount": 15,
+        "broken": [],
+        "uniqueGeneratedCount": 15,
+        "sample": [
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-tacos.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-sandwichs.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-burgers.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-assiettes.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_ojja.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_omelettes.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-salades.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_chicken-tenders.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-menus-enfants.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_frites-accompagnements.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-desserts.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-boissons.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          }
+        ]
+      }
+    },
+    {
+      "category": "/Frites|Accompagnements/i",
+      "expected": "/Frites Grande/i",
+      "screenshotName": "07-pos-frites-grande.png",
+      "stats": {
+        "generatedCount": 18,
+        "generatedVisibleCount": 18,
+        "broken": [],
+        "uniqueGeneratedCount": 18,
+        "sample": [
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-tacos.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-sandwichs.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-burgers.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-assiettes.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_ojja.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_omelettes.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-salades.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_chicken-tenders.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-menus-enfants.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_frites-accompagnements.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-desserts.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-boissons.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          }
+        ]
+      }
+    },
+    {
+      "category": "/Desserts/i",
+      "expected": "/Tarte Daim|Tiramisu/i",
+      "screenshotName": "08-pos-tarte-daim-tiramisu.png",
+      "stats": {
+        "generatedCount": 16,
+        "generatedVisibleCount": 16,
+        "broken": [],
+        "uniqueGeneratedCount": 16,
+        "sample": [
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-tacos.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-sandwichs.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-burgers.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-assiettes.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_ojja.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_omelettes.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-salades.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_chicken-tenders.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-menus-enfants.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_frites-accompagnements.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-desserts.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          },
+          {
+            "src": "http://localhost:8000/images/menu/generated_category_nos-boissons.png",
+            "width": 900,
+            "height": 650,
+            "visible": true
+          }
+        ]
+      }
+    }
+  ],
+  "kiosk": {
+    "screenshotName": "09-kiosk-categories-generated-images.png",
+    "stats": {
+      "generatedCount": 23,
+      "generatedVisibleCount": 23,
+      "broken": [],
+      "uniqueGeneratedCount": 21,
+      "sample": [
+        {
+          "src": "http://localhost:8000/images/menu/generated_category_nos-boissons.png",
+          "width": 900,
+          "height": 650,
+          "visible": true
+        },
+        {
+          "src": "http://localhost:8000/images/menu/generated_category_nos-tacos.png",
+          "width": 900,
+          "height": 650,
+          "visible": true
+        },
+        {
+          "src": "http://localhost:8000/images/menu/generated_category_nos-sandwichs.png",
+          "width": 900,
+          "height": 650,
+          "visible": true
+        },
+        {
+          "src": "http://localhost:8000/images/menu/generated_category_nos-burgers.png",
+          "width": 900,
+          "height": 650,
+          "visible": true
+        },
+        {
+          "src": "http://localhost:8000/images/menu/generated_category_nos-assiettes.png",
+          "width": 900,
+          "height": 650,
+          "visible": true
+        },
+        {
+          "src": "http://localhost:8000/images/menu/generated_category_nos-salades.png",
+          "width": 900,
+          "height": 650,
+          "visible": true
+        },
+        {
+          "src": "http://localhost:8000/images/menu/generated_category_chicken-tenders.png",
+          "width": 900,
+          "height": 650,
+          "visible": true
+        },
+        {
+          "src": "http://localhost:8000/images/menu/generated_category_ojja.png",
+          "width": 900,
+          "height": 650,
+          "visible": true
+        },
+        {
+          "src": "http://localhost:8000/images/menu/generated_category_omelettes.png",
+          "width": 900,
+          "height": 650,
+          "visible": true
+        },
+        {
+          "src": "http://localhost:8000/images/menu/generated_category_nos-menus-enfants.png",
+          "width": 900,
+          "height": 650,
+          "visible": true
+        },
+        {
+          "src": "http://localhost:8000/images/menu/generated_category_frites-accompagnements.png",
+          "width": 900,
+          "height": 650,
+          "visible": true
+        },
+        {
+          "src": "http://localhost:8000/images/menu/generated_category_supplements.png",
+          "width": 900,
+          "height": 650,
+          "visible": true
+        }
+      ]
+    }
+  }
+}

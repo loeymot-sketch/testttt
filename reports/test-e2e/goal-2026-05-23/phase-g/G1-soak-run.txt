@@ -1,0 +1,524 @@
+=== G.1 soak run — 10 batches × 20 orders / 5 branches / concurrency 3 / kiosk / 85s sleep between ===
+Started: sam. 23 mai 2026 23:02:23 CEST
+Strategy: 5 distinct kiosk fixtures keyed independently → effective ceiling 300/min total / 60/min per fixture (well under cap at 20 orders / 85s).
+
+
+================ BATCH 1 / 10 at 23:02:23 ================
+[stress] Starting F-017 Suite 7 stress run
+[stress]   orders=20 branches=5 concurrency=3 type=kiosk
+[stress]   base-url=http://localhost:8000
+[stress] Built 20 requests across 5 branch fixtures.
+# F-017 Suite 7 — Stress Run Report
+
+**Verdict:** PASS
+**Generated:** 2026-05-23 23:02:25
+**Base URL:** http://localhost:8000
+
+## Parameters
+
+- orders: 20
+- branches: 5
+- concurrency: 3
+- type: kiosk
+
+## Timing
+
+- total_duration_s: 2.113
+- batch_duration_s: 1.277
+- avg_latency_ms: 63.85
+- throughput_rps: 15.66
+
+## HTTP Results
+
+- total: 20
+- ok: 20
+- failed: 0
+- status_breakdown:
+  - 201: 20
+
+## DB Invariants
+
+- duplicate_fiscal_sequence_no: 0 (must be 0)
+- duplicate_queue_number: 0 (must be 0)
+- cross_branch_leak: 0 (must be 0)
+- outbox_stale_30s: 832 (target: 0)
+
+## Notes
+
+- This run is owner-driven; CI structural invariants live in
+  `tests/load/RushMidiSimulationTest.php` (PHPUnit @group stress).
+- Real Cache::lock contention requires Redis cache + MySQL DB
+  (sqlite-memory in CI cannot truly contend).
+- A FAIL verdict here means production is at risk: investigate
+  before merging.
+
+
+-- sleeping 85s --
+
+================ BATCH 2 / 10 at 23:03:50 ================
+[stress] Starting F-017 Suite 7 stress run
+[stress]   orders=20 branches=5 concurrency=3 type=kiosk
+[stress]   base-url=http://localhost:8000
+[stress] Built 20 requests across 5 branch fixtures.
+# F-017 Suite 7 — Stress Run Report
+
+**Verdict:** PASS
+**Generated:** 2026-05-23 23:03:53
+**Base URL:** http://localhost:8000
+
+## Parameters
+
+- orders: 20
+- branches: 5
+- concurrency: 3
+- type: kiosk
+
+## Timing
+
+- total_duration_s: 2.051
+- batch_duration_s: 1.266
+- avg_latency_ms: 63.28
+- throughput_rps: 15.8
+
+## HTTP Results
+
+- total: 20
+- ok: 20
+- failed: 0
+- status_breakdown:
+  - 201: 20
+
+## DB Invariants
+
+- duplicate_fiscal_sequence_no: 0 (must be 0)
+- duplicate_queue_number: 0 (must be 0)
+- cross_branch_leak: 0 (must be 0)
+- outbox_stale_30s: 832 (target: 0)
+
+## Notes
+
+- This run is owner-driven; CI structural invariants live in
+  `tests/load/RushMidiSimulationTest.php` (PHPUnit @group stress).
+- Real Cache::lock contention requires Redis cache + MySQL DB
+  (sqlite-memory in CI cannot truly contend).
+- A FAIL verdict here means production is at risk: investigate
+  before merging.
+
+
+-- sleeping 85s --
+
+================ BATCH 3 / 10 at 23:05:18 ================
+[stress] Starting F-017 Suite 7 stress run
+[stress]   orders=20 branches=5 concurrency=3 type=kiosk
+[stress]   base-url=http://localhost:8000
+[stress] Built 20 requests across 5 branch fixtures.
+# F-017 Suite 7 — Stress Run Report
+
+**Verdict:** PASS
+**Generated:** 2026-05-23 23:05:23
+**Base URL:** http://localhost:8000
+
+## Parameters
+
+- orders: 20
+- branches: 5
+- concurrency: 3
+- type: kiosk
+
+## Timing
+
+- total_duration_s: 4.659
+- batch_duration_s: 3.08
+- avg_latency_ms: 153.98
+- throughput_rps: 6.49
+
+## HTTP Results
+
+- total: 20
+- ok: 20
+- failed: 0
+- status_breakdown:
+  - 201: 20
+
+## DB Invariants
+
+- duplicate_fiscal_sequence_no: 0 (must be 0)
+- duplicate_queue_number: 0 (must be 0)
+- cross_branch_leak: 0 (must be 0)
+- outbox_stale_30s: 832 (target: 0)
+
+## Notes
+
+- This run is owner-driven; CI structural invariants live in
+  `tests/load/RushMidiSimulationTest.php` (PHPUnit @group stress).
+- Real Cache::lock contention requires Redis cache + MySQL DB
+  (sqlite-memory in CI cannot truly contend).
+- A FAIL verdict here means production is at risk: investigate
+  before merging.
+
+
+-- sleeping 85s --
+
+================ BATCH 4 / 10 at 23:06:48 ================
+[stress] Starting F-017 Suite 7 stress run
+[stress]   orders=20 branches=5 concurrency=3 type=kiosk
+[stress]   base-url=http://localhost:8000
+[stress] Built 20 requests across 5 branch fixtures.
+# F-017 Suite 7 — Stress Run Report
+
+**Verdict:** PASS
+**Generated:** 2026-05-23 23:06:50
+**Base URL:** http://localhost:8000
+
+## Parameters
+
+- orders: 20
+- branches: 5
+- concurrency: 3
+- type: kiosk
+
+## Timing
+
+- total_duration_s: 2.036
+- batch_duration_s: 1.221
+- avg_latency_ms: 61.05
+- throughput_rps: 16.38
+
+## HTTP Results
+
+- total: 20
+- ok: 20
+- failed: 0
+- status_breakdown:
+  - 201: 20
+
+## DB Invariants
+
+- duplicate_fiscal_sequence_no: 0 (must be 0)
+- duplicate_queue_number: 0 (must be 0)
+- cross_branch_leak: 0 (must be 0)
+- outbox_stale_30s: 832 (target: 0)
+
+## Notes
+
+- This run is owner-driven; CI structural invariants live in
+  `tests/load/RushMidiSimulationTest.php` (PHPUnit @group stress).
+- Real Cache::lock contention requires Redis cache + MySQL DB
+  (sqlite-memory in CI cannot truly contend).
+- A FAIL verdict here means production is at risk: investigate
+  before merging.
+
+
+-- sleeping 85s --
+
+================ BATCH 5 / 10 at 23:08:15 ================
+[stress] Starting F-017 Suite 7 stress run
+[stress]   orders=20 branches=5 concurrency=3 type=kiosk
+[stress]   base-url=http://localhost:8000
+[stress] Built 20 requests across 5 branch fixtures.
+# F-017 Suite 7 — Stress Run Report
+
+**Verdict:** PASS
+**Generated:** 2026-05-23 23:08:17
+**Base URL:** http://localhost:8000
+
+## Parameters
+
+- orders: 20
+- branches: 5
+- concurrency: 3
+- type: kiosk
+
+## Timing
+
+- total_duration_s: 1.991
+- batch_duration_s: 1.22
+- avg_latency_ms: 61
+- throughput_rps: 16.39
+
+## HTTP Results
+
+- total: 20
+- ok: 20
+- failed: 0
+- status_breakdown:
+  - 201: 20
+
+## DB Invariants
+
+- duplicate_fiscal_sequence_no: 0 (must be 0)
+- duplicate_queue_number: 0 (must be 0)
+- cross_branch_leak: 0 (must be 0)
+- outbox_stale_30s: 832 (target: 0)
+
+## Notes
+
+- This run is owner-driven; CI structural invariants live in
+  `tests/load/RushMidiSimulationTest.php` (PHPUnit @group stress).
+- Real Cache::lock contention requires Redis cache + MySQL DB
+  (sqlite-memory in CI cannot truly contend).
+- A FAIL verdict here means production is at risk: investigate
+  before merging.
+
+
+-- sleeping 85s --
+
+================ BATCH 6 / 10 at 23:09:42 ================
+[stress] Starting F-017 Suite 7 stress run
+[stress]   orders=20 branches=5 concurrency=3 type=kiosk
+[stress]   base-url=http://localhost:8000
+[stress] Built 20 requests across 5 branch fixtures.
+# F-017 Suite 7 — Stress Run Report
+
+**Verdict:** PASS
+**Generated:** 2026-05-23 23:09:50
+**Base URL:** http://localhost:8000
+
+## Parameters
+
+- orders: 20
+- branches: 5
+- concurrency: 3
+- type: kiosk
+
+## Timing
+
+- total_duration_s: 6.978
+- batch_duration_s: 4.614
+- avg_latency_ms: 230.69
+- throughput_rps: 4.33
+
+## HTTP Results
+
+- total: 20
+- ok: 20
+- failed: 0
+- status_breakdown:
+  - 201: 20
+
+## DB Invariants
+
+- duplicate_fiscal_sequence_no: 0 (must be 0)
+- duplicate_queue_number: 0 (must be 0)
+- cross_branch_leak: 0 (must be 0)
+- outbox_stale_30s: 832 (target: 0)
+
+## Notes
+
+- This run is owner-driven; CI structural invariants live in
+  `tests/load/RushMidiSimulationTest.php` (PHPUnit @group stress).
+- Real Cache::lock contention requires Redis cache + MySQL DB
+  (sqlite-memory in CI cannot truly contend).
+- A FAIL verdict here means production is at risk: investigate
+  before merging.
+
+
+-- sleeping 85s --
+
+================ BATCH 7 / 10 at 23:11:15 ================
+[stress] Starting F-017 Suite 7 stress run
+[stress]   orders=20 branches=5 concurrency=3 type=kiosk
+[stress]   base-url=http://localhost:8000
+[stress] Built 20 requests across 5 branch fixtures.
+# F-017 Suite 7 — Stress Run Report
+
+**Verdict:** PASS
+**Generated:** 2026-05-23 23:11:17
+**Base URL:** http://localhost:8000
+
+## Parameters
+
+- orders: 20
+- branches: 5
+- concurrency: 3
+- type: kiosk
+
+## Timing
+
+- total_duration_s: 2.353
+- batch_duration_s: 1.573
+- avg_latency_ms: 78.66
+- throughput_rps: 12.71
+
+## HTTP Results
+
+- total: 20
+- ok: 20
+- failed: 0
+- status_breakdown:
+  - 201: 20
+
+## DB Invariants
+
+- duplicate_fiscal_sequence_no: 0 (must be 0)
+- duplicate_queue_number: 0 (must be 0)
+- cross_branch_leak: 0 (must be 0)
+- outbox_stale_30s: 832 (target: 0)
+
+## Notes
+
+- This run is owner-driven; CI structural invariants live in
+  `tests/load/RushMidiSimulationTest.php` (PHPUnit @group stress).
+- Real Cache::lock contention requires Redis cache + MySQL DB
+  (sqlite-memory in CI cannot truly contend).
+- A FAIL verdict here means production is at risk: investigate
+  before merging.
+
+
+-- sleeping 85s --
+
+================ BATCH 8 / 10 at 23:12:42 ================
+[stress] Starting F-017 Suite 7 stress run
+[stress]   orders=20 branches=5 concurrency=3 type=kiosk
+[stress]   base-url=http://localhost:8000
+[stress] Built 20 requests across 5 branch fixtures.
+# F-017 Suite 7 — Stress Run Report
+
+**Verdict:** PASS
+**Generated:** 2026-05-23 23:12:45
+**Base URL:** http://localhost:8000
+
+## Parameters
+
+- orders: 20
+- branches: 5
+- concurrency: 3
+- type: kiosk
+
+## Timing
+
+- total_duration_s: 2.005
+- batch_duration_s: 1.196
+- avg_latency_ms: 59.81
+- throughput_rps: 16.72
+
+## HTTP Results
+
+- total: 20
+- ok: 20
+- failed: 0
+- status_breakdown:
+  - 201: 20
+
+## DB Invariants
+
+- duplicate_fiscal_sequence_no: 0 (must be 0)
+- duplicate_queue_number: 0 (must be 0)
+- cross_branch_leak: 0 (must be 0)
+- outbox_stale_30s: 832 (target: 0)
+
+## Notes
+
+- This run is owner-driven; CI structural invariants live in
+  `tests/load/RushMidiSimulationTest.php` (PHPUnit @group stress).
+- Real Cache::lock contention requires Redis cache + MySQL DB
+  (sqlite-memory in CI cannot truly contend).
+- A FAIL verdict here means production is at risk: investigate
+  before merging.
+
+
+-- sleeping 85s --
+
+================ BATCH 9 / 10 at 23:14:10 ================
+[stress] Starting F-017 Suite 7 stress run
+[stress]   orders=20 branches=5 concurrency=3 type=kiosk
+[stress]   base-url=http://localhost:8000
+[stress] Built 20 requests across 5 branch fixtures.
+# F-017 Suite 7 — Stress Run Report
+
+**Verdict:** PASS
+**Generated:** 2026-05-23 23:14:12
+**Base URL:** http://localhost:8000
+
+## Parameters
+
+- orders: 20
+- branches: 5
+- concurrency: 3
+- type: kiosk
+
+## Timing
+
+- total_duration_s: 2.107
+- batch_duration_s: 1.2
+- avg_latency_ms: 60.02
+- throughput_rps: 16.66
+
+## HTTP Results
+
+- total: 20
+- ok: 20
+- failed: 0
+- status_breakdown:
+  - 201: 20
+
+## DB Invariants
+
+- duplicate_fiscal_sequence_no: 0 (must be 0)
+- duplicate_queue_number: 0 (must be 0)
+- cross_branch_leak: 0 (must be 0)
+- outbox_stale_30s: 832 (target: 0)
+
+## Notes
+
+- This run is owner-driven; CI structural invariants live in
+  `tests/load/RushMidiSimulationTest.php` (PHPUnit @group stress).
+- Real Cache::lock contention requires Redis cache + MySQL DB
+  (sqlite-memory in CI cannot truly contend).
+- A FAIL verdict here means production is at risk: investigate
+  before merging.
+
+
+-- sleeping 85s --
+
+================ BATCH 10 / 10 at 23:15:37 ================
+[stress] Starting F-017 Suite 7 stress run
+[stress]   orders=20 branches=5 concurrency=3 type=kiosk
+[stress]   base-url=http://localhost:8000
+[stress] Built 20 requests across 5 branch fixtures.
+# F-017 Suite 7 — Stress Run Report
+
+**Verdict:** PASS
+**Generated:** 2026-05-23 23:15:39
+**Base URL:** http://localhost:8000
+
+## Parameters
+
+- orders: 20
+- branches: 5
+- concurrency: 3
+- type: kiosk
+
+## Timing
+
+- total_duration_s: 1.873
+- batch_duration_s: 1.161
+- avg_latency_ms: 58.05
+- throughput_rps: 17.23
+
+## HTTP Results
+
+- total: 20
+- ok: 20
+- failed: 0
+- status_breakdown:
+  - 201: 20
+
+## DB Invariants
+
+- duplicate_fiscal_sequence_no: 0 (must be 0)
+- duplicate_queue_number: 0 (must be 0)
+- cross_branch_leak: 0 (must be 0)
+- outbox_stale_30s: 832 (target: 0)
+
+## Notes
+
+- This run is owner-driven; CI structural invariants live in
+  `tests/load/RushMidiSimulationTest.php` (PHPUnit @group stress).
+- Real Cache::lock contention requires Redis cache + MySQL DB
+  (sqlite-memory in CI cannot truly contend).
+- A FAIL verdict here means production is at risk: investigate
+  before merging.
+
+
+Finished: sam. 23 mai 2026 23:15:39 CEST

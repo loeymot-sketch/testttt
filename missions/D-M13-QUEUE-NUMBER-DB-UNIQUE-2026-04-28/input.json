@@ -1,0 +1,50 @@
+{
+  "task_id": "D-M13-QUEUE-NUMBER-DB-UNIQUE-2026-04-28",
+  "phase": "BLOCKED_PRE_EXECUTE",
+  "mode": "schema_gate_mission_brief_only",
+  "execute_delegation": "codex-extension",
+  "preconditions": [
+    "A.1 GOV-PERSIST-SENTINELS-2026-04-27 CLOSED",
+    "A.2 GOV-PERSIST-QUOTE-SUBSYSTEM-2026-04-27 CLOSED",
+    "A.3 GOV-CYCLE-AND-MEMORY-CLEANUP-2026-04-27 CLOSED",
+    "HG-PHASE-A-CLOSE-SIGNOFF",
+    "HG-DM13-MIGRATION-SIGNOFF"
+  ],
+  "human_authorization": {
+    "source": "GATE_PHASE2_TRAIN_A_HUMAN_DECISIONS_2026-04-26",
+    "summary": "DB uniqueness strategy approved in principle; migration execution deferred until signed preflight."
+  },
+  "files_to_modify_allowlist": [
+    "database/migrations/<YYYY_MM_DD_HHMMSS_add_unique_branch_queue_number_to_orders.php>",
+    "app/Services/OrderService.php",
+    "app/Services/FrontendOrderService.php",
+    "tests/Feature/Sentinels/QueueNumberUniquenessSentinelTest.php",
+    "tests/Feature/QueueNumberConcurrencyTest.php",
+    "docs/decisions/D-M13-QUEUE-NUMBER-UNIQUE.md",
+    "docs/runbooks/D-M13-QUEUE-NUMBER-ROLLOUT.md"
+  ],
+  "required_changes_after_gate": [
+    "Add database unique guard for branch_id and queue_number",
+    "Remove microtime queue-number fallbacks",
+    "Add bounded retry on duplicate key",
+    "Preserve OrderService and FrontendOrderService symmetry"
+  ],
+  "hard_prohibitions": [
+    "Do not execute before gates",
+    "No production migration without HG-DM13-MIGRATION-SIGNOFF",
+    "No sentinel weakening",
+    "No frontend pricing logic changes"
+  ],
+  "validation_commands": [
+    "php artisan test tests/Feature/Sentinels/QueueNumberUniquenessSentinelTest.php",
+    "php artisan test --filter='QueueNumber|Kiosk|POS|Order'",
+    "php artisan test"
+  ],
+  "expected_result": "QueueNumberUniquenessSentinelTest passes and full PHP suite has zero failures.",
+  "invariants_considered": [
+    "branch_isolation",
+    "queue_number_uniqueness",
+    "order_service_frontend_order_service_symmetry",
+    "dispatch_after_commit"
+  ]
+}

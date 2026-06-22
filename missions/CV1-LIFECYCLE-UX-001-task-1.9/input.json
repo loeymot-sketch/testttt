@@ -1,0 +1,52 @@
+{
+  "task_id": "CV1-LIFECYCLE-UX-001-task-1.9",
+  "parent_cycle": "CV1-LIFECYCLE-UX-001",
+  "execution_tier": "complex",
+  "primary_execution_model": "gpt-5.5-pro",
+  "reasoning_effort": "xhigh",
+  "plan_file": "plans/PLAN_CV1-LIFECYCLE-UX-001_2026-05-02.md",
+  "plan_section": "§ 1.9 (lines 227-241)",
+  "audit_source": "reports/audit/CLAUDE_ULTRA_REVIEW_REQUEST_MISSION_2_STOCK_COMPOSITION_2026-05-02.md",
+  "delegated_by": "Claude (in-session orchestrator) — terminal Claude in Anthropic Pro quota until 12:00 Europe/Paris",
+  "delegation_reason": "Concurrency primitive (lockForUpdate) on a method called from OrderService::create — touches order-flow invariant proximity. New sentinel must reproduce a race condition (no skipped sentinel exists; test pattern from tests/Feature/Stock/StockConcurrentDecrementTest.php). Doctrine §2 (MULTI_AGENT_LOOP_2026-05-02): doute → complex.",
+
+  "instruction": "Implémenter task 1.9 du plan CV1-LIFECYCLE-UX-001 strictly, with FoodKing invariants respected. Target file is app/Services/Menu/AvailabilityService.php, specifically the method decrementForOrder (lines ~191-236). Wrap the read at lines 197-200 (ItemBranchAvailability where + first()) inside a row-level pessimistic lock via lockForUpdate(), so that two concurrent OrderService::create calls touching the same item × branch row cannot lose an increment to daily_consumed_qty. The behaviour must be perfectly symmetric with the pattern already used in app/Services/Stock/StockService::decrementForOrder (read this file first to learn the local convention). Verify that the calling sites (OrderService::create and any other) already wrap this call inside a DB::transaction — if not, you MUST stop and write reports/handoff/blocks/NEEDS_CLAUDE_M2_1_9.md (do not silently introduce a new transaction here, that would change semantics). Then, create a new sentinel test at tests/Feature/Stock/AvailabilityServiceConcurrentTest.php modelled on tests/Feature/Stock/StockConcurrentDecrementTest.php that reproduces the race scenario and asserts the post-state is correct (daily_consumed_qty incremented exactly N times for N concurrent orders, is_available flipped exactly when the cap is reached, ItemAvailabilityChanged dispatched at most once per row). Use the same concurrency reproduction primitives as the existing test (DB::transaction nested + manual locks). Run `php artisan test --filter=AvailabilityServiceConcurrentTest` until all cases pass, then `php artisan test --filter=Stock` to confirm zero regression. Append the standard EXECUTE_DELEGATION trace to reports/post_execute_latest.log. Commit once with message [CV1-LIFECYCLE-UX-001 task 1.9] Lock for update AvailabilityService::decrementForOrder against concurrent orders.",
+
+  "subsystems": [
+    "app/Services/Menu/AvailabilityService.php (write — decrementForOrder only)",
+    "tests/Feature/Stock/AvailabilityServiceConcurrentTest.php (write — new sentinel)"
+  ],
+
+  "subsystems_off_limits": [
+    "app/Services/Orders/OrderService.php (frozen — only READ to verify caller is in transaction)",
+    "app/Services/Pricing/PricingService.php",
+    "app/Services/Payments/PaymentService.php",
+    "any frozen zone listed in reports/handoff/HANDOFF_CODEX_CV1_FOUNDATIONS_2026-05-02.md §2"
+  ],
+
+  "invariants_at_risk": [
+    "Dispatch-after-commit: ItemAvailabilityChanged event must still be dispatched after the surrounding transaction commits, never inside the lockForUpdate region's pre-commit window.",
+    "branch_id isolation: lock must scope to (item_id, branch_id) — never lock across branches.",
+    "OrderService/FrontendOrderService symmetry: do not change AvailabilityService's contract in a way that breaks either caller."
+  ],
+
+  "acceptance": [
+    "AvailabilityService::decrementForOrder reads the row via lockForUpdate() inside the existing transaction context (verified from caller).",
+    "If a caller is detected NOT to be in a transaction, the method must throw a meaningful exception OR the implementation must abort and the agent must write NEEDS_CLAUDE_M2_1_9.md instead of silently wrapping in a new transaction.",
+    "New sentinel tests/Feature/Stock/AvailabilityServiceConcurrentTest.php passes locally with at least 2 cases: (a) 2 simultaneous orders on the same item × branch, both succeed, daily_consumed_qty = sum of quantities; (b) cap-edge: cap=5, 2 orders of qty=3 each, total demand=6, exactly one order should be rejected via the existing checkOrderRespectsAvailability path OR the cap-flip behaviour must be deterministic and asserted.",
+    "Existing Stock suite passes without regression (--filter=Stock should retain its current passing count).",
+    "Trace block appended to reports/post_execute_latest.log with EXECUTE_DELEGATION: codex-extension and EXECUTION_TIER: complex.",
+    "Single commit with the conventional message above; no amend, no force-push."
+  ],
+
+  "halt_conditions": [
+    "OrderService::create (or any caller of decrementForOrder) is NOT wrapped in a DB::transaction at the relevant call point.",
+    "ItemBranchAvailability model has a non-trivial primary key or composite unique that makes lockForUpdate semantics ambiguous on this DB.",
+    "More than 2 attempts to make the concurrency test pass without a clear hypothesis for the flake.",
+    "Any frozen zone modification appears necessary."
+  ],
+
+  "trace_template": "=== CV1-LIFECYCLE-UX-001 / task 1.9 ===\nEXECUTE_DELEGATION: codex-extension\nEXECUTION_TIER: complex\nTASK_ID: CV1-LIFECYCLE-UX-001-task-1.9\nDATE: 2026-05-02\nFILES_TOUCHED:\n  - app/Services/Menu/AvailabilityService.php\n  - tests/Feature/Stock/AvailabilityServiceConcurrentTest.php\nNEW_SENTINEL: AvailabilityServiceConcurrentTest (X cases)\nLOCAL_VALIDATE: php artisan test --filter=AvailabilityServiceConcurrentTest -> <verdict> ; --filter=Stock -> <verdict, count>\nLINT: <verdict>\nHALT: <none | reason>\n",
+
+  "commit_message_template": "[CV1-LIFECYCLE-UX-001 task 1.9] Lock for update AvailabilityService::decrementForOrder against concurrent orders\n\n- decrementForOrder reads ItemBranchAvailability via lockForUpdate() inside the caller's transaction.\n- Symmetric with StockService::decrementForOrder pattern.\n- Sentinel: AvailabilityServiceConcurrentTest (new, 2 race cases).\n- Audit: reports/audit/CLAUDE_ULTRA_REVIEW_REQUEST_MISSION_2_STOCK_COMPOSITION_2026-05-02.md\n"
+}

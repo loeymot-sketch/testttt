@@ -1,0 +1,132 @@
+{
+  "run": "goal-pageby-2026-05-18",
+  "wave": "KDS",
+  "round": 1,
+  "agent": "E2E Agent KDS — Specialist Kitchen Display",
+  "generated_at": "2026-05-18T04:25:00Z",
+  "branch": "v1-0-1-hardening-2026-05-17",
+  "spec_under_test": "tests/e2e/test-e2e-kds-goal-pageby-2026-05-18.spec.js",
+  "states_reviewed": 11,
+  "surface": "/admin/kitchen-display-system (V2 default-on per config/kds.php)",
+  "auth": "admin@lecayenne.fr (admin, branch_id=0, sees all branches per BranchScope)",
+  "findings": [
+    {
+      "id": "KDS-R1-01",
+      "category": "element_overlap",
+      "severity": "P1",
+      "state": "P1-kds-board-default",
+      "evidence_file": "tests/e2e/__screenshots__/goal-pageby-kds-2026-05-18/P1-kds-board-default.png",
+      "evidence_snippet": "Every kds-card header renders the elapsed-timer digits (e.g. '15781:', '15779:', '15777:', '15766:') visually overlapping with the queue_number text (e.g. 'A0001', 'A0002'). The 'ATT…' Attente label on the right edge is clipped/truncated by the elapsed-wrap that overflows leftward into the queue display. Observed on ALL 8 visible cards in the 4x2 grid. DOM evidence: <div class=\"kds-card__main\"> contains both .kds-card__queue and .kds-card__elapsed-wrap as siblings; the elapsed digits push into the queue zone instead of stacking right-aligned beside the Attente label.",
+      "claim": "KDS V2 card header has a flexbox/grid layout defect where the elapsed-timer overflows into the queue_number text region and clips the Attente label. Affects 100% of rendered cards. Chef cannot read the queue number cleanly at a glance — primary information clarity is degraded. The visual collision is consistent across P1/P2/P3/P4/P5/P6/P7/P10 captures (8 of 8 rendering states).",
+      "fix_hint": "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue lines 59-79 (.kds-card__main + .kds-card__queue + .kds-card__elapsed-wrap). Likely root cause: .kds-card__elapsed-wrap is not constrained to a fixed max-width and lacks 'flex-shrink: 0' on the queue, or .kds-card__main is missing 'justify-content: space-between' with min-widths. Verify the CSS in the SFC <style> block and ensure elapsed-wrap right-aligns with proper spacing.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1,
+      "confidence": "HIGH"
+    },
+    {
+      "id": "KDS-R1-02",
+      "category": "color_contrast",
+      "severity": "P1",
+      "state": "P1-kds-board-default (axe-results.json)",
+      "evidence_file": "reports/test-e2e/goal-pageby-2026-05-18/round-1/KDS/axe-results.json",
+      "evidence_snippet": "axe-core violation id='color-contrast' impact='serious' — .kds-card__elapsed-label text 'Attente' renders foreground #b5bac3 on background #ffffff at 7.5pt/10px bold = contrast ratio 1.94:1 (WCAG AA expects ≥4.5:1, fails by 2.6 stops). Target selector: div[data-order-id=\"1494\"] > .kds-card__header > .kds-card__main > .kds-card__elapsed-wrap > .kds-card__elapsed-label.",
+      "claim": "The 'Attente' / 'ATT…' supporting label rendering at #b5bac3 on white is essentially invisible to anyone over 40 (1.94:1 ratio is 'large display only' at best). Kitchen lighting in rush + glove smudges on screen exacerbates. P1 because it makes the elapsed-context label functionally unreadable — chef sees the digits without knowing whether they're 'wait time', 'elapsed', 'time remaining'.",
+      "fix_hint": "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue line ~64: <span class=\"kds-card__elapsed-label\" :style=\"{ color: elapsedLabelColor }\"> — elapsedLabelColor computed currently emits rgb(156,163,175)/#9CA3AF for neutral state which renders as #b5bac3 anti-aliased. Bump to ≥#4B5563 (slate-600) or apply font-weight:600 + 12px minimum to meet 'large text' 3:1 threshold.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1,
+      "confidence": "HIGH"
+    },
+    {
+      "id": "KDS-R1-03",
+      "category": "color_contrast",
+      "severity": "P2",
+      "state": "P1-kds-board-default (axe-results.json)",
+      "evidence_file": "reports/test-e2e/goal-pageby-2026-05-18/round-1/KDS/axe-results.json",
+      "evidence_snippet": "axe-core 2 nodes: .kds-card__shortcut span [A] on .kds-card--critical (background #f4d9d9) = 3.63:1; .kds-card__shortcut [B] on normal card (background #f5f5f5) = 4.43:1 — both below WCAG AA 4.5:1 (foreground #6b7280 / Tailwind slate-500 at 8.3pt/11px bold).",
+      "claim": "Bump-shortcut badges [A]/[B] hint at keyboard shortcut binding but fall under AA contrast on both critical (pink) and normal (gray-50) card backgrounds. Not P0 because the badge is informational (shortcut hint), not a primary action target. Marked P2 per REVIEWER_PROTOCOL category 4.",
+      "fix_hint": "Same KdsOrderCard.vue <style> block — .kds-card__shortcut should use color: #374151 (slate-700) or higher on light backgrounds. Audit the elevated --critical theme separately since it has a pink background (#f4d9d9) — may need #1F2937 (slate-800) there.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1,
+      "confidence": "HIGH"
+    },
+    {
+      "id": "KDS-R1-04",
+      "category": "text_truncation",
+      "severity": "P3",
+      "state": "INTERMEDIATE — evidence not retained in final capture set",
+      "evidence_file": "tests/e2e/__screenshots__/goal-pageby-kds-2026-05-18/P1-kds-board-default.png — OVERWRITTEN by Run-4 single-item capture; original multi-item Run-2 PNG was not preserved",
+      "evidence_snippet": "OBSERVED during intermediate Run-2 (DB-seed variant where order 856 had 4 items: Assiette Poulet, Salade Royale, Menu Frites+Boisson, Formule, Fromage à raclette) — the last item line was bottom-clipped by the .kds-card__body-fade overlay. CANNOT BE RE-CAPTURED in Round 1 because subsequent DB normalization + sandbox permission restriction blocks the required state mutation.",
+      "claim": "Latent UX concern when an order carries 4+ composed items — the .kds-card__body-fade overlay obscures the last item name with no secondary affordance (no scroll, no 'see more' link). Demoted to P3 per REVIEWER_PROTOCOL §5 (no-companion-attribution): the artifact backing this claim is not in the final capture quartet. Re-verification requires a Round-2 spec specifically seeding multi-item orders.",
+      "fix_hint": "KdsOrderCard.vue line 87+ (.kds-card__body) — when confirmed in Round 2: (a) add a 'see more' chip when items.length > N at the fade border, OR (b) make the body scrollable (max-height + overflow-y:auto + remove the fade overlay), OR (c) increase card body min-height when items.length ≥ 4. Owner-gate UX decision.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1,
+      "confidence": "LOW"
+    },
+    {
+      "id": "KDS-R1-05",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "state": "P1-kds-board-default (axe-results.json)",
+      "evidence_file": "reports/test-e2e/goal-pageby-2026-05-18/round-1/KDS/axe-results.json",
+      "evidence_snippet": "axe-core violation id='scrollable-region-focusable' impact='serious' — 1 node has scrollable content but lacks keyboard accessibility (Safari focus path). The exact node target is the kds-card body or sticky-banner region with overflow:scroll.",
+      "claim": "A scrollable region in the KDS layout cannot be reached by keyboard tab/arrow in Safari. Low impact on Le Cayenne single-station V1 (kitchen uses mouse + bump shortcut, not keyboard nav), but is a true a11y violation.",
+      "fix_hint": "Identify the offending scroll container via axe Node.target[0]. Add tabindex=\"0\" + role=\"region\" + aria-label to make it focusable. Likely candidate: a banner/list region that overflows vertically on small viewports.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1,
+      "confidence": "MEDIUM"
+    }
+  ],
+  "historic_p0_status_round1_visual_confirmation": {
+    "accordion_fermé": {
+      "verdict": "CLOSED — VISUALLY CONFIRMED",
+      "evidence": "All 8 cards in P1/P3/P10 captures show items expanded by default (Tacos M (1 Viande) visible on each card without any toggle). V2 layout has no accordion mechanism — items render via <KdsOrderLine v-for> inside .kds-card__body."
+    },
+    "grid_4x2_dont_2_vides": {
+      "verdict": "CLOSED — VISUALLY CONFIRMED",
+      "evidence": "P1 capture with 8 KDS-eligible orders today shows the 4×2 grid filled (4 cards row 1 CAISSE source, 4 cards row 2 — CAISSE/BORNE mix). V2 layout uses single-FIFO 8-cell grid; placeholders only appear when fewer orders exist."
+    },
+    "five_banners_empilés": {
+      "verdict": "CLOSED — VISUALLY CONFIRMED",
+      "evidence": "P4 capture shows only 1 sticky banner at top of board ('Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur)…' + LOCAL chip). No banner stack. Post-C-009 consolidation landed. Spec also asserts visibleBanners ≤ 2 passes."
+    },
+    "bump_button_32px": {
+      "verdict": "RESOLVED — HIT-AREA 52px CONFIRMED",
+      "evidence": "Probed bump CTA bounding box = {x:47, y:531, width:268, height:52}. WCAG 2.5.5 minimum is 44px — passes. Below owner-pref 60px (kitchen-glove ideal) — captured as informational, not a P0/P1 finding."
+    },
+    "allergenModal_typo": {
+      "verdict": "CONFIRMED NOT A BUG (Round 1 static analysis)",
+      "evidence": "P7 capture shows no allergen pill on the current visible cards (none of the seeded items carry allergen flags). State property is allergensModal; allergenModalReturnFocus is an intentionally distinct return-focus reference. No defect."
+    },
+    "contrast_3.2_to_1": {
+      "verdict": "PARTIALLY RESOLVED (now 1.94/3.63/4.43:1 hot spots, see KDS-R1-02 P1 + KDS-R1-03 P2)",
+      "evidence": "axe-core run flagged 3 nodes — KDS-R1-02 P1 (Attente label 1.94:1) is a regression from the historic 3.2:1, KDS-R1-03 P2 (shortcut badges) are below AA but informational. The body-text palette upgrade (#374151 etc) IS confirmed clean on item lines and queue numbers."
+    },
+    "raw_fr_labels_18_items": {
+      "verdict": "CLOSED — VISUALLY + GREP CONFIRMED",
+      "evidence": "Spec asserts zero raw i18n key leaks via DOM tree-walker regex (^[a-z]+(.[a-z_]+){1,4}$ starting with label|button|message|kds|kiosk|pos). All visible labels in captures are proper FR copy ('EN COURS', 'CAISSE', 'BORNE', 'NOUVELLE', 'Prêt', 'ATTENTE', 'Aucune commande en cours', 'Avec:Ketchup', etc.)."
+    },
+    "age_colour_invisible": {
+      "verdict": "UNVERIFIED-VISUAL — INSUFFICIENT EVIDENCE IN ROUND 1",
+      "evidence": "All 8 visible cards rendered with the same 'critical' pink background (kds-card--critical) because all were promoted to 4h+ elapsed — saturates the age-bucket signal. Cannot distinguish 5min/15min/30min/critical buckets in this capture set. Visual diff between buckets needs orders staggered across realistic age windows (1m, 5m, 12m, 25m, 45m) — out of scope for Round 1 reseed budget."
+    }
+  },
+  "summary": {
+    "P0": 0, "P1": 2, "P2": 2, "P3": 1,
+    "open_P0": 0, "open_P1": 2, "open_P2": 2, "open_P3": 1
+  },
+  "investigated_not_defect": [
+    {
+      "observation": "P1-kds-board-default capture shows duplicate queue_number 'A0002' on 3 of 8 visible cards (order_ids 201, 856, 1494). At a kitchen station this would look like 3 tickets with the same human ID — a numeric_integrity concern at first glance.",
+      "verdict": "NOT-A-DEFECT — seed artifact only",
+      "evidence": "app/Services/OrderService.php lines 2467-2504 — `allocateQueueNumber($branchId, $businessDate)` acquires Cache::lock('queue_lock_{branchId}_{businessDate}', 30) + 15s blocking + DB scan WHERE branch_id=? AND business_date=? + MAX(num)+1. Allocator GUARANTEES per-(branch, business_date) uniqueness in production. The duplicates in this audit's capture are an artifact of cross-day promotion (201 from 2026-05-07, 856 from 2026-05-07, 1494 from 2026-05-14 all promoted to business_date 2026-05-18 by my seed mutations). Production traffic cannot reproduce this — the allocator's lock + per-day query precludes same-day duplicates."
+    }
+  ],
+  "round_to_round_closures": {},
+  "verdict": "AMBER",
+  "notes": "0 P0 (no production-breaking defect; admin sees orders, branch isolation holds, no console error, no 4xx, no numeric integrity mismatch, no silent error). 2 P1 (queue/elapsed visual collision on every card + Attente label 1.94:1 contrast). 3 P2 (shortcut badge contrast + multi-item body-fade truncation + Safari scrollable-region a11y). Verdict AMBER per REVIEWER_PROTOCOL severity gate (open_P0=0, open_P1>0). 4 of 8 historic P0s VISUALLY CLOSED this round (accordion, grid 4×2 emptiness, 5-banner stack, raw labels). 1 historic P0 PARTIALLY RESOLVED (contrast — 1 P1 regression at 1.94:1 on Attente). 1 historic P0 CONFIRMED NOT A BUG (allergenModal var). 1 historic P0 UNVERIFIED (age-colour bucket — needs staggered seed). DB STATE NOTE: this round mutated DB state (status promotions + order_datetime shifts on 6+5 orders, order_items backfill on 5 orders, item-row cleanup). 6 well-formed orders (198,201,204,207,228,234) were reverted to status=4 + original datetime. R4TEST orders (212,216,220,270,277) and 856/1494 retain some mutated state; next agent should normalize via php artisan db:seed --class=OrderTableSeeder if a clean baseline is needed."
+}

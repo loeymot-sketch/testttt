@@ -1,0 +1,52 @@
+{
+  "verdict": "PASS",
+  "assertions": {
+    "pos_bad_fixture_text": false,
+    "pos_header_clean": true,
+    "tacos_l_item_id": "364",
+    "pos_wizard_bad_fixture_text": false,
+    "pos_wizard_contains_official_tacos": true,
+    "pos_wizard_contains_viande_sauce": true,
+    "pos_images_loaded": true,
+    "kiosk_bad_fixture_text": false,
+    "kiosk_official_categories_visible": true
+  },
+  "errors": [],
+  "notes": [
+    {
+      "file": "01-pos-catalogue-restaure.png",
+      "label": "POS charge avec catalogue restaure",
+      "url": "http://127.0.0.1:8000/admin/pos",
+      "has_bad_fixture_text": false,
+      "excerpt": "Bonjour Caissier Caissier pos@lecayenne.fr +330600000002 0.00€ Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Ingrédients Commandes Caisse Aller au panier 👑 CAISSE FOODKING Commande rapide Filiale #1 Articles 0 📋 Suivi commandes 🖥️ Écran client 🪑 Plan de salle 💵 Ouvrir tiroir 🔍 Toutes les catégories Nos Tacos Nos Sandwichs Nos Burgers Nos Assiettes Ojja Omelettes Nos Salades Poulet croustillant Nos Menus Enfants Frites & Accompagnements Nos Desserts Nos Boissons Suppléments Menu (Frites + Boisson) 3.00€ Frites Seules 2.00€ Boisson Seule 2.00€ Tacos M (1 Viande) 6.50€ Tacos L (2 Viandes) 8.50€ Tacos XL (3 Viandes) 10.50€ Tacos XXL (4 Viandes) 12.50€ Le Méga 8.00€ Le Terminator 9.00€ Le Suprême 7.00€ Le Cayenne 7.00€ Sandwich Froid 4.50€ Panini 5.00€ Sandwich Classique (Pain) 6.50€ Sandwich Classique (Galette) 6.50€ Burger Poulet 6.00€ Cheese Burger 6.00€ Fish Burger 6.00€ Double Cheese 7.00€ Big Burger 9.00€ Grill Burger 8.00€ Assiette Poulet 12.50€ Assiette Kefta 12.50€ Assiette Merguez 12.50€ Assiette Mixte 14.50€ Ojja Bœuf 13.50€ Ojja Poulet 13.50€ Ojja Viande Hachée 13.50€ Ojja Merguez 13.50€ Omelette Nature 7.50€ Omelette Fromage 8.50€ Omelette Champignons Fromage 9.50€ Salade Chèvre 7.50€ Salade Royale 7.50€ Salade Saumon 7.50€ Salade Tunisienne 7.50€ Ailes De Poulet (6 Pièces) 6.00€ Ailes De Poulet (12 Pièces) 10.50€ Filets De Poulet Croustillants (6 Pièces) 7.50€ Filets De Poulet Croustillants (12 Pièces) 13.50€ Menu Cheese Burger (Enfant) 6.00€ Menu Nuggets (Enfant) 6.00€ Frites Moyenne 2.50€ Frites Grande 4.00€ Glace 3.80€ Tarte Daim 3.80€ Tiramisu 3.80€ Coca-Cola 33cl 1.50€ Coca-Cola Zero 33cl 1.50€ Fanta Orange 33cl 1.50€ Sprite 33cl 1.50€ Oasis Tropical 33cl 1.50€ Orangina 33cl 1.50€ Eau Plate 50cl 1.00€ Capri-Sun 1.50€ Sauce Supplémentaire 0.50€ Fromage Supplémentaire 1.00€ Jambon De Dinde 1.00€ Boursin 1.00€ Fromage À Raclette 1.00€ Œuf 1.00€ Galette Pommes De Terre 1.00€ Salade Verte 2.00€ TICKET CAISSE Commande en cours + ⏸ Mettre en attente 📦 Commandes en attente 0 SÉLECTIONNER LE TYPE DE COMMANDE 🥡 À emporter 🛵 Livraison 🍽️ Aucun article. Sélectionnez un produit dans la grille. Sous-total 0.00€ Total 0.00€"
+    },
+    {
+      "file": "02-pos-nos-tacos.png",
+      "label": "POS categorie Nos Tacos avec vrais produits",
+      "url": "http://127.0.0.1:8000/admin/pos",
+      "has_bad_fixture_text": false,
+      "excerpt": "Bonjour Caissier Caissier pos@lecayenne.fr +330600000002 0.00€ Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Ingrédients Commandes Caisse Aller au panier 👑 CAISSE FOODKING Commande rapide Filiale #1 Articles 0 📋 Suivi commandes 🖥️ Écran client 🪑 Plan de salle 💵 Ouvrir tiroir 🔍 Toutes les catégories Nos Tacos Nos Sandwichs Nos Burgers Nos Assiettes Ojja Omelettes Nos Salades Poulet croustillant Nos Menus Enfants Frites & Accompagnements Nos Desserts Nos Boissons Suppléments Menu (Frites + Boisson) 3.00€ Frites Seules 2.00€ Boisson Seule 2.00€ Tacos M (1 Viande) 6.50€ Tacos L (2 Viandes) 8.50€ Tacos XL (3 Viandes) 10.50€ Tacos XXL (4 Viandes) 12.50€ Le Méga 8.00€ Le Terminator 9.00€ Le Suprême 7.00€ Le Cayenne 7.00€ Sandwich Froid 4.50€ Panini 5.00€ Sandwich Classique (Pain) 6.50€ Sandwich Classique (Galette) 6.50€ Burger Poulet 6.00€ Cheese Burger 6.00€ Fish Burger 6.00€ Double Cheese 7.00€ Big Burger 9.00€ Grill Burger 8.00€ Assiette Poulet 12.50€ Assiette Kefta 12.50€ Assiette Merguez 12.50€ Assiette Mixte 14.50€ Ojja Bœuf 13.50€ Ojja Poulet 13.50€ Ojja Viande Hachée 13.50€ Ojja Merguez 13.50€ Omelette Nature 7.50€ Omelette Fromage 8.50€ Omelette Champignons Fromage 9.50€ Salade Chèvre 7.50€ Salade Royale 7.50€ Salade Saumon 7.50€ Salade Tunisienne 7.50€ Ailes De Poulet (6 Pièces) 6.00€ Ailes De Poulet (12 Pièces) 10.50€ Filets De Poulet Croustillants (6 Pièces) 7.50€ Filets De Poulet Croustillants (12 Pièces) 13.50€ Menu Cheese Burger (Enfant) 6.00€ Menu Nuggets (Enfant) 6.00€ Frites Moyenne 2.50€ Frites Grande 4.00€ Glace 3.80€ Tarte Daim 3.80€ Tiramisu 3.80€ Coca-Cola 33cl 1.50€ Coca-Cola Zero 33cl 1.50€ Fanta Orange 33cl 1.50€ Sprite 33cl 1.50€ Oasis Tropical 33cl 1.50€ Orangina 33cl 1.50€ Eau Plate 50cl 1.00€ Capri-Sun 1.50€ Sauce Supplémentaire 0.50€ Fromage Supplémentaire 1.00€ Jambon De Dinde 1.00€ Boursin 1.00€ Fromage À Raclette 1.00€ Œuf 1.00€ Galette Pommes De Terre 1.00€ Salade Verte 2.00€ TICKET CAISSE Commande en cours + ⏸ Mettre en attente 📦 Commandes en attente 0 SÉLECTIONNER LE TYPE DE COMMANDE 🥡 À emporter 🛵 Livraison 🍽️ Aucun article. Sélectionnez un produit dans la grille. Sous-total 0.00€ Total 0.00€"
+    },
+    {
+      "file": "03-pos-wizard-tacos-l-restaure.png",
+      "label": "Wizard POS ouvert sur Tacos L officiel",
+      "url": "http://127.0.0.1:8000/admin/pos",
+      "has_bad_fixture_text": false,
+      "excerpt": "Bonjour Caissier Caissier pos@lecayenne.fr +330600000002 0.00€ Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Ingrédients Commandes Caisse Aller au panier 👑 CAISSE FOODKING Commande rapide Filiale #1 Articles 0 📋 Suivi commandes 🖥️ Écran client 🪑 Plan de salle 💵 Ouvrir tiroir 🔍 Toutes les catégories Nos Tacos Nos Sandwichs Nos Burgers Nos Assiettes Ojja Omelettes Nos Salades Poulet croustillant Nos Menus Enfants Frites & Accompagnements Nos Desserts Nos Boissons Suppléments Menu (Frites + Boisson) 3.00€ Frites Seules 2.00€ Boisson Seule 2.00€ Tacos M (1 Viande) 6.50€ Tacos L (2 Viandes) 8.50€ Tacos XL (3 Viandes) 10.50€ Tacos XXL (4 Viandes) 12.50€ Le Méga 8.00€ Le Terminator 9.00€ Le Suprême 7.00€ Le Cayenne 7.00€ Sandwich Froid 4.50€ Panini 5.00€ Sandwich Classique (Pain) 6.50€ Sandwich Classique (Galette) 6.50€ Burger Poulet 6.00€ Cheese Burger 6.00€ Fish Burger 6.00€ Double Cheese 7.00€ Big Burger 9.00€ Grill Burger 8.00€ Assiette Poulet 12.50€ Assiette Kefta 12.50€ Assiette Merguez 12.50€ Assiette Mixte 14.50€ Ojja Bœuf 13.50€ Ojja Poulet 13.50€ Ojja Viande Hachée 13.50€ Ojja Merguez 13.50€ Omelette Nature 7.50€ Omelette Fromage 8.50€ Omelette Champignons Fromage 9.50€ Salade Chèvre 7.50€ Salade Royale 7.50€ Salade Saumon 7.50€ Salade Tunisienne 7.50€ Ailes De Poulet (6 Pièces) 6.00€ Ailes De Poulet (12 Pièces) 10.50€ Filets De Poulet Croustillants (6 Pièces) 7.50€ Filets De Poulet Croustillants (12 Pièces) 13.50€ Menu Cheese Burger (Enfant) 6.00€ Menu Nuggets (Enfant) 6.00€ Frites Moyenne 2.50€ Frites Grande 4.00€ Glace 3.80€ Tarte Daim 3.80€ Tiramisu 3.80€ Coca-Cola 33cl 1.50€ Coca-Cola Zero 33cl 1.50€ Fanta Orange 33cl 1.50€ Sprite 33cl 1.50€ Oasis Tropical 33cl 1.50€ Orangina 33cl 1.50€ Eau Plate 50cl 1.00€ Capri-Sun 1.50€ Sauce Supplémentaire 0.50€ Fromage Supplémentaire 1.00€ Jambon De Dinde 1.00€ Boursin 1.00€ Fromage À Raclette 1.00€ Œuf 1.00€ Galette Pommes De Terre 1.00€ Salade Verte 2.00€ Tacos L (2 Viandes) €8.50 − 1 + 🥩 Viandes 0/2 🌶️ Merguez − 0 + 🥩 Kefta − 0 + 🌮 Mexicain − 0 + 🔵 Cordon Bleu − 0 + 🥩 Viande Hachée − 0 + 🟡 Nuggets − 0 + 🍗 Escalope de poulet − 0 + 🍗 Tenders − 0 + 🥩 Fricandelle − 0 + ➕ V"
+    },
+    {
+      "file": "04-kiosk-accueil.png",
+      "label": "Borne accueil apres nettoyage catalogue",
+      "url": "http://127.0.0.1:8000/kiosk/idle",
+      "has_bad_fixture_text": false,
+      "excerpt": "☀ 🌮 🍔 🍟 Bienvenue ! Commandez en quelques touches Sur place Je mange ici À emporter Je récupère ma commande CHOISISSEZ UNE OPTION POUR COMMENCER"
+    },
+    {
+      "file": "05-kiosk-categories-restaurees.png",
+      "label": "Borne categories officielles restaurees",
+      "url": "http://127.0.0.1:8000/kiosk/categories?cat=317",
+      "has_bad_fixture_text": false,
+      "excerpt": "☀ NOS Boissons 👤 Mon compte TACOS SANDWICHS BURGERS ASSIETTES SALADES POULET CROUSTILLANT OJJA OMELETTES MENUS ENFANTS FRITES & ACCOMPAGNEMENTS SUPPLÉMENTS DESSERTS BOISSONS SANDWICH FROID BOISSONS 8 produits Nouveau + EAU PLATE 50CL Eau minérale €1,00 Nouveau + CAPRI-SUN Capri-Sun 20cl €1,50 Nouveau + COCA-COLA 33CL Coca-Cola original €1,50 Nouveau + COCA-COLA ZERO 33CL Coca-Cola sans sucre €1,50 Nouveau + FANTA ORANGE 33CL Fanta Orange €1,50 Nouveau + OASIS TROPICAL 33CL Oasis Tropical €1,50 Nouveau + ORANGINA 33CL Orangina €1,50 Nouveau + SPRITE 33CL Sprite €1,50 0 article €0,00 Abandonner ma commande Payer"
+    }
+  ]
+}

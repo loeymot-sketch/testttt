@@ -1,0 +1,98 @@
+{
+  "specialist": "Architect",
+  "zone": "KD-1 KDS standalone deeper (Wave C)",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head_pre_audit": "4ad1adba8",
+  "scope_charter": "Multi-station readiness + V2/legacy layout V1.0.X gap + observability/metrics. Disjoint from Z-1 (i18n+P1 catalog) and PK-1..4 (data flow / status sync / serializers / TZ resilience).",
+  "constraints": "READ-ONLY. Frozen-zones strict. Reference but do not re-count Z-1 and PK findings.",
+  "files_inspected": [
+    "app/Services/KdsSyncService.php (168 LOC)",
+    "app/Services/KitchenDisplaySystemOrderService.php (orderItems + changeStatus + list)",
+    "app/Listeners/DispatchKdsTicket.php (21 LOC, direct event dispatcher)",
+    "app/Domain/Kds/KitchenReleaseRule.php (83 LOC)",
+    "app/Http/Controllers/Admin/KdsSyncController.php (79 LOC)",
+    "app/Http/Controllers/Admin/Observability/SyncOverviewController.php (KDS metrics recorder)",
+    "app/Console/Commands/MonitorOutboxStaleness.php (sister monitor — no KDS counterpart)",
+    "resources/js/store/modules/kds.js (88 LOC, pure localStorage)",
+    "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue (2670 LOC, V2 + legacy paths)",
+    "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue (297 LOC)",
+    "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue (651 LOC)",
+    "tests/js/kdsStationFilter.spec.js"
+  ],
+  "findings": [
+    {
+      "id": "KD-A1-01",
+      "severity": "P1",
+      "title": "Multi-station readiness: per-user storage key + filter, but board still shared (no concurrent-bump dedupe across stations)",
+      "evidence": "KitchenDisplaySystemComponent.vue:1333-1361 — `kdsStationFilterStorageKey(userId)` persists station_filter PER USER, which is a step toward multi-station. However: (a) the Echo channel is `branch.{id}` shared across all stations of the same branch (line 1782 onEvents(branchId)), (b) the bump localStorage key STORAGE_BUMPED='kds.bumped_items_v1' (store/modules/kds.js:1) is NOT user-scoped or station-scoped — two chefs on two terminals in the same branch each maintain their OWN local bump state and CANNOT see each other's bumps. PK-4 owner-batch already filed 'Multi-pdo two-station concurrent-bump race test' as V1.0.X backlog. This is the architectural shape: V1 is multi-station-tolerant on filter view but multi-station-BLIND on bump coordination. Acceptable for V1 single-station Le Cayenne but a P0 latent gap for any 2+ station deployment.",
+      "impact": "V1 Le Cayenne single-station: ZERO impact. V1.1+ any branch with 2 chef terminals (cuisine_chaude + bar): bumping the same item twice from two screens produces two PATCH calls competing for the optimistic-lock window — first wins, second eats a 409 (kds_status_conflict, see Z-1 P1-S3-01). No silent corruption, but UX is poor: chef #2 sees the FR-in-EN error message and tries again.",
+      "files": [
+        "resources/js/store/modules/kds.js:1 (STORAGE_BUMPED constant — NOT user/station scoped)",
+        "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1782 (Echo branch.{id})",
+        "PK-4 V1.0.X backlog: 'Multi-pdo two-station concurrent-bump race test'"
+      ],
+      "recommendation": "DEFER V1.0.X. Owner-decision: introduce a station-id discriminant on the bump localStorage key (`kds.bumped_items.${branchId}.${stationId}.v2`) when multi-station rollout happens. The mass-rewrite is small (3 lines in kds.js + 1 line in component). Until then, RBAC-document 'V1 KDS = single terminal per branch' as an explicit operational invariant in the deploy checklist."
+    },
+    {
+      "id": "KD-A1-02",
+      "severity": "P1",
+      "title": "Observability: KdsSyncService has ZERO latency / cadence / cache-hit instrumentation. SyncOverviewController consumes KDS metrics but no producer feeds it from the sync hot path.",
+      "evidence": "KdsSyncService.php (168 LOC): no Log::info, no metric histogram, no Telescope tag. Cache::remember at line 49 returns either fresh-fetch or cache-hit indistinguishably — no counter ratchets a kds.sync.cache_hit vs cache_miss gauge. Compare with SyncOverviewController.php:102 which already reads `kdsIntervals` from `sync_metrics` table via SyncMetricsRecorder::METRIC_KDS_SYNC_FALLBACK_INTERVAL_MS — the schema exists, the CONSUMER exists, but the PRODUCER in KdsSyncService::sync() does NOT emit any rows. The sole Log::warning is at KitchenDisplaySystemOrderService.php:244 (KDS broadcast failure) and at lines 157/249/328 (catch-blocks). PK-4 V1.0.X backlog already filed 'MonitorOutboxStaleness cadence p95 dashboard' — this finding extends it to KDS-side parity.",
+      "impact": "P1: when a chef reports 'KDS slow', operator has no histogram. Can't distinguish 'cache cold' vs 'DB index regression' vs 'Echo silent dropout'. Z-1 §3 scored Performance 74/100 partly on theoretical bounds (50-row cap, single ticker) — no production p95 yet.",
+      "files": [
+        "app/Services/KdsSyncService.php (no instrumentation)",
+        "app/Http/Controllers/Admin/Observability/SyncOverviewController.php:102-167 (consumer awaiting producer)"
+      ],
+      "recommendation": "DEFER V1.0.X. Add a single `SyncMetricsRecorder::record(METRIC_KDS_SYNC_LATENCY_MS, $elapsed)` line at KdsSyncService.php:147 (just before the return). Adds 1 row per sync call to sync_metrics; SyncOverviewController already has the dashboard widget. ~3 LOC + 1 unit test. Owner-batch with PK-4 cadence backlog."
+    },
+    {
+      "id": "KD-A1-03",
+      "severity": "P2",
+      "title": "Legacy ?v2=0 layout — 8 of 11 cluster-7 P0s live ONLY here. No invariant test that V2-as-default remains in place.",
+      "evidence": "Z-1 already catalogued this. NEW Architect angle: there is no Vitest spec asserting that `featureFlags.kds_v2_default === true` or that the V2 path is the rendered branch in default boot. `tests/js/kdsV2KillSwitch.spec.js` exists (verified `find tests`) but covers the kill-switch toggle, NOT the default state. If a future PR flips the default flag (intentionally or accidentally during a refactor), 8 P0s would re-enter production silently. CTO audit 2026-05-16 scored KDS 58/100 — the gap is exactly this 'guard the V2 default' invariant.",
+      "impact": "P2 (latent regression). Owner accepted the legacy path as `?v2=0` rollback in Sprint 3C 2026-05-16 — keeping the dead code is a known trade-off. The missing invariant test is the audit gap.",
+      "files": [
+        "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1105-1129 (V2 default branch)",
+        "tests/js/kdsV2KillSwitch.spec.js (covers toggle, not default)"
+      ],
+      "recommendation": "DEFER V1.0.X. Add 1 Vitest assertion: `expect(mountedComponent.useV2Path).toBe(true)` in a new `kdsV2DefaultInvariant.spec.js`. ~15 LOC, single test. Cheap insurance against the silent flip."
+    },
+    {
+      "id": "KD-A1-04",
+      "severity": "P2",
+      "title": "DispatchKdsTicket exception swallowed silently — no retry, no outbox, no operator-visible signal",
+      "evidence": "KitchenDisplaySystemOrderService.php:241-245 — `try { $this->kdsTicketDispatcher->dispatch($snapshot, $oldStatus, $newStatus); } catch (\\Exception $e) { Log::warning('[KDS] OrderStatusChanged broadcast failed: ' . $e->getMessage()); }`. The dispatcher calls `OrderStatusChanged::dispatch($order, ...)` (DispatchKdsTicket.php:17) which is a queued broadcast — if queue is wedged or Pusher driver fails, the event is lost and chef's screen does not refresh. PK-2 fixed the idempotency wire on PATCH but did NOT touch this downstream broadcast resilience. Compare with PR commits 335b98134 / e264be951 / 79e214542 which all hardened OTHER outbox paths — KDS dispatch bypasses outbox entirely.",
+      "impact": "P2: chef bumps order, server PATCH succeeds, but Echo broadcast to OTHER stations / OSS fails silently. Other terminals + OSS go stale until next polling tick (5s when WS dead, 60s when WS alive). UX-visible at scale (2+ stations) but invisible at V1 single-station.",
+      "files": [
+        "app/Services/KitchenDisplaySystemOrderService.php:241-245 (silent catch)",
+        "app/Listeners/DispatchKdsTicket.php:11-20 (no try/catch, direct dispatch)"
+      ],
+      "recommendation": "DEFER V1.0.X. Two options: (a) route DispatchKdsTicket through OutboxRetryFailedCommand pattern (Wave 3 P1 commit 335b98134 model); (b) keep direct dispatch but escalate caught exception to operator-visible toast on the originating POS terminal. Owner-decision. V1 single-station Le Cayenne does not block ship."
+    },
+    {
+      "id": "KD-A1-05",
+      "severity": "P3",
+      "title": "KdsSyncService cache_key includes minute_bucket but no per-since-hash collision domain control",
+      "evidence": "KdsSyncService.php:42-47 — cache_key composes branch + minute_bucket + md5(since|includeDeleted). Two clients with identical since (down to the ISO8601 string) share cache. With Echo dropouts forcing storm-reconnect (PK-4 attestation 'reconnect-storm jitter 0-500ms'), 50+ clients can land on the SAME since stamp within the same minute_bucket → cache stampede on cache_miss, but on cache_hit the 50 clients all read identical bytes. Fine for correctness; opportunity for cache-hit metric.",
+      "impact": "P3 polish. No correctness issue. Performance is bounded by the 5-second TTL.",
+      "files": [
+        "app/Services/KdsSyncService.php:42-49"
+      ],
+      "recommendation": "DEFER V1.0.2. Co-locate with KD-A1-02 observability batch — record cache_hit/miss alongside latency."
+    }
+  ],
+  "attestations_kept_unchanged": [
+    "KdsSyncService.php TZ-aware bounds (Wave 3 KDS Adversarial P0, lines 65-94) intact",
+    "KitchenReleaseRule single source of truth for KDS-visible statuses (app/Domain/Kds/KitchenReleaseRule.php, 83 LOC, well-factored)",
+    "Per-user station_filter storage (KitchenDisplaySystemComponent.vue:1333) is a multi-station-tolerant pattern",
+    "V2 default rollout 2026-05-16 is live (Z-1 §3 architecture verdict)",
+    "Optimistic lock + transaction on changeStatus (KitchenDisplaySystemOrderService.php:200-230)"
+  ],
+  "duplicates_with_prior_audits": [
+    "Z-1 P1-S3-01..05 i18n FR-in-EN + hardcoded FR aria — DO NOT RE-COUNT",
+    "PK-3 KDSOrderItemsResource allergens_snapshot exposure — HEALED commit d6b80eef1, NOT IN SCOPE",
+    "PK-4 TZ-aware bounds + reconnect-storm + V1.0.X backlog (Multi-pdo race / MonitorOutboxStaleness p95 / Idempotency replay-after-revoke) — ACKNOWLEDGED, KD-A1-01 + KD-A1-02 extend, not duplicate"
+  ],
+  "heal_recommendations_for_this_audit": [],
+  "verdict": "PASS_WITH_FINDINGS — 5 new findings (2 P1 deferred V1.0.X, 2 P2 deferred V1.0.X, 1 P3 batch). 0 P0. 0 frozen-zone touch. V1 single-station Le Cayenne SHIPPABLE. Multi-station deploy needs KD-A1-01 + KD-A1-04 batched."
+}

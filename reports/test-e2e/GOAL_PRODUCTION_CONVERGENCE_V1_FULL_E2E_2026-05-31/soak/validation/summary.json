@@ -1,0 +1,193 @@
+{
+    "agent": "L3 long-soak orchestrator",
+    "duration_planned_h": 0.12,
+    "duration_actual_s": 432.1,
+    "started_at": "2026-05-31T22:45:23+02:00",
+    "finished_at": "2026-05-31T22:52:36+02:00",
+    "abort_reason": null,
+    "stop_condition": null,
+    "baseline": {
+        "ts": "2026-05-31T22:45:24+02:00",
+        "ts_unix": 1780260324,
+        "audit_logs": 441,
+        "orders": 416,
+        "outbox_pending": 0,
+        "outbox_stale_30s": 0,
+        "fiscal_seq_b1": 171,
+        "db_threads_connected": 3,
+        "db_max_connections": 151,
+        "db_pool_pct": 2,
+        "server_pid": 94392,
+        "server_rss_kb": 8112,
+        "storage_logs_kb": 3240,
+        "nf525_chain": "SWEEP COMPLETE \u2014 CHAIN OK on every active branch (1 total)",
+        "redis_keyspace_hits": 504149,
+        "redis_keyspace_misses": 2401005,
+        "redis_used_memory_kb": 13225,
+        "redis_connected_clients": 4
+    },
+    "final": {
+        "ts": "2026-05-31T22:52:36+02:00",
+        "ts_unix": 1780260756,
+        "audit_logs": 484,
+        "orders": 487,
+        "outbox_pending": 0,
+        "outbox_stale_30s": 0,
+        "fiscal_seq_b1": 214,
+        "db_threads_connected": 3,
+        "db_max_connections": 151,
+        "db_pool_pct": 2,
+        "server_pid": 94392,
+        "server_rss_kb": 8016,
+        "storage_logs_kb": 3276,
+        "nf525_chain": "SWEEP COMPLETE \u2014 CHAIN OK on every active branch (1 total)",
+        "redis_keyspace_hits": 508807,
+        "redis_keyspace_misses": 2404164,
+        "redis_used_memory_kb": 13686,
+        "redis_connected_clients": 3
+    },
+    "totals": {
+        "ok": 119,
+        "429": 0,
+        "5xx": 0,
+        "other_4xx": 0,
+        "network_err": 0,
+        "total_dispatched": 119
+    },
+    "per_stream": {
+        "S1_POS_DIRECT_SALE": {
+            "interval": 15,
+            "last": 428.160315990448,
+            "dispatched": 29,
+            "ok": 29,
+            "codes": {
+                "201": 29
+            }
+        },
+        "S2_KIOSK_ORDER": {
+            "interval": 10,
+            "last": 428.160315990448,
+            "dispatched": 42,
+            "ok": 42,
+            "codes": {
+                "201": 42
+            }
+        },
+        "S3_KIOSK_CASH_COLLECT": {
+            "interval": 30,
+            "last": 425.4887819290161,
+            "dispatched": 14,
+            "ok": 14,
+            "codes": {
+                "200": 14
+            }
+        },
+        "S4_KDS_BUMP": {
+            "interval": 15,
+            "last": 428.160315990448,
+            "dispatched": 27,
+            "ok": 27,
+            "codes": {
+                "202": 27
+            }
+        },
+        "S5_ADMIN_TOGGLE_AVAIL": {
+            "interval": 60,
+            "last": 391.47420501708984,
+            "dispatched": 7,
+            "ok": 7,
+            "codes": {
+                "200": 7
+            }
+        }
+    },
+    "rss_delta_kb": -96,
+    "rss_delta_mb": -0.09,
+    "rss_ceiling_mb": 200,
+    "rss_within_ceiling": true,
+    "fiscal_seq_b1_delta": 43,
+    "audit_logs_delta": 43,
+    "orders_delta": 71,
+    "disk_logs_delta_kb": 36,
+    "nf525_chain_baseline": "SWEEP COMPLETE \u2014 CHAIN OK on every active branch (1 total)",
+    "nf525_chain_final": "SWEEP COMPLETE \u2014 CHAIN OK on every active branch (1 total)",
+    "nf525_chain_ok_final": true,
+    "fiscal_contiguous_check": {
+        "allocated": 43,
+        "range": [
+            172,
+            214
+        ],
+        "contiguous": true,
+        "gaps": [],
+        "duplicates": []
+    },
+    "latency_distribution_ms": {
+        "min": 42.1,
+        "avg": 455.4,
+        "p50": 419.4,
+        "p95": 1367.5,
+        "p99": 2334.7,
+        "max": 2334.7,
+        "n": 119
+    },
+    "outbox_dispatch_latency": {
+        "n": 162,
+        "p50_s": 0,
+        "p95_s": 1,
+        "p99_s": 1,
+        "max_s": 1
+    },
+    "cache_hit_ratio": {
+        "ratio": 0.1747,
+        "hits": 508807,
+        "misses": 2404164,
+        "note": "Cumulative since redis-server start \u2014 not soak-window-scoped. For window-scoped ratio, diff monitor.jsonl tick deltas."
+    },
+    "php_dev_server_detected": true,
+    "latency_p99_authoritative": false,
+    "acceptance_criteria_result": {
+        "zero_429": {
+            "target": "== 0",
+            "measured": 0,
+            "pass": true
+        },
+        "zero_5xx": {
+            "target": "== 0",
+            "measured": 0,
+            "pass": true
+        },
+        "fiscal_contiguous": {
+            "target": "no gaps + no dupes",
+            "measured": null,
+            "pass": true
+        },
+        "chain_ok_final": {
+            "target": "CHAIN OK",
+            "measured": "SWEEP COMPLETE \u2014 CHAIN OK on every active branch (1 total)",
+            "pass": true
+        },
+        "rss_growth_bounded": {
+            "target": "\u2264 200MB",
+            "measured": -0.09,
+            "pass": true
+        },
+        "outbox_p99_under_ceil": {
+            "target": "\u2264 30s",
+            "measured": 1,
+            "pass": true
+        },
+        "cache_hit_ratio_80": {
+            "target": "\u2265 0.80",
+            "measured": 0.1747,
+            "pass": false
+        }
+    },
+    "files": {
+        "events_jsonl": "reports\/test-e2e\/GOAL_PRODUCTION_CONVERGENCE_V1_FULL_E2E_2026-05-31\/soak\/validation\/events.jsonl",
+        "monitor_jsonl": "reports\/test-e2e\/GOAL_PRODUCTION_CONVERGENCE_V1_FULL_E2E_2026-05-31\/soak\/validation\/monitor.jsonl",
+        "baseline_json": "reports\/test-e2e\/GOAL_PRODUCTION_CONVERGENCE_V1_FULL_E2E_2026-05-31\/soak\/validation\/baseline.json",
+        "summary_json": "reports\/test-e2e\/GOAL_PRODUCTION_CONVERGENCE_V1_FULL_E2E_2026-05-31\/soak\/validation\/summary.json"
+    },
+    "verdict": "AMBER"
+}

@@ -67,8 +67,8 @@
                     <div v-if="form.loyalty_points_per_euro > 0 && form.loyalty_points_for_1_euro_discount > 0" class="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
                         <p class="text-sm text-blue-700 font-medium">{{ $t('label.loyalty_preview') }}</p>
                         <p class="text-xs text-blue-600 mt-1">
-                            10€ d'achat = {{ form.loyalty_points_per_euro * 10 }} pts
-                            → {{ (form.loyalty_points_per_euro * 10 / form.loyalty_points_for_1_euro_discount).toFixed(2) }}€ de réduction
+                            10&nbsp;€ d'achat = {{ form.loyalty_points_per_euro * 10 }} pts
+                            → {{ (form.loyalty_points_per_euro * 10 / form.loyalty_points_for_1_euro_discount).toFixed(2).replace('.', ',') }}&nbsp;€ de réduction
                         </p>
                     </div>
                 </fieldset>

@@ -51,12 +51,13 @@
                         </div>
 
                         <div class="col-12 sm:col-6 md:col-4 xl:col-3">
-                            <label for="searchStartDate" class="db-field-title after:hidden">
+                            <label for="dp-input-searchStartDate" class="db-field-title after:hidden">
                                 {{ $t('label.date') }}
                             </label>
-                            <Datepicker hideInputIcon autoApply :enableTimePicker="false" utc="false"
+                            <Datepicker uid="searchStartDate" name="searchStartDate" hideInputIcon autoApply :enableTimePicker="false" utc="false"
                                 @update:modelValue="handleDate" v-model="props.form.date" range
-                                :preset-ranges="presetRanges">
+                                :preset-ranges="presetRanges"
+                                :aria-labels="{ input: $t('label.date') }">
                                 <template #yearly="{ label, range, presetDateRange }">
                                     <span @click="presetDateRange(range)">{{ label }}</span>
                                 </template>
@@ -84,6 +85,7 @@
                     <thead class="db-table-head">
                         <tr class="db-table-head-tr">
                             <th class="db-table-head-th">{{ $t('label.order_id') }}</th>
+                            <th class="db-table-head-th">{{ $t('label.queue_number') }}</th>
                             <th class="db-table-head-th">{{ $t('label.order_type') }}</th>
                             <th class="db-table-head-th">{{ $t('label.customer') }}</th>
                             <th class="db-table-head-th">{{ $t('label.amount') }}</th>
@@ -99,14 +101,29 @@
                                 {{ order.order_serial_no }}
                             </td>
                             <td class="db-table-body-td">
+                                <span v-if="order.queue_number" class="pos-order-queue-chip">
+                                    N°{{ order.queue_number }}
+                                </span>
+                                <span v-else class="text-[#6E7191]">—</span>
+                            </td>
+                            <td class="db-table-body-td">
                                 <span :class="statusClass(order.order_type)">
-                                    {{ enums.orderTypeEnumArray[order.order_type] }}
+                                    {{ enums.orderTypeEnumArray[order.order_type] || '—' }}
                                 </span>
                             </td>
                             <td class="db-table-body-td">
                                 {{ order.customer_name }}
                             </td>
-                            <td class="db-table-body-td">{{ order.total_amount_price }}</td>
+                            <!-- [WT-D-R1-F4 2026-05-20] Canonical FR EUR
+                                 rendering via shared `formatPrice()` helper.
+                                 Previously used `order.total_amount_price`
+                                 which renders as "19.00" (no €, US decimal)
+                                 while the tracker shows "19,00 €" and the
+                                 detail page shows "19.00€" — three layouts
+                                 for the same value across surfaces.
+                                 `order.total` is now exposed as a raw numeric
+                                 by SimpleOrderResource (Wave T R1 F4 heal). -->
+                            <td class="db-table-body-td">{{ formatPrice(order.total) }}</td>
                             <td class="db-table-body-td">{{ order.order_datetime }}</td>
                             <td class="db-table-body-td">
                                 <span :class="orderStatusClass(order.status)">
@@ -125,7 +142,7 @@
                     </tbody>
                     <tbody class="db-table-body" v-else>
                         <tr class="db-table-body-tr">
-                            <td class="db-table-body-td text-center" colspan="7">
+                            <td class="db-table-body-td text-center" colspan="8">
                                 <div class="p-4">
                                     <div class="max-w-[300px] mx-auto mt-2">
                                         <img class="w-full h-full" :src="ENV.API_URL + '/images/default/not-found.png'"
@@ -174,9 +191,11 @@ import statusEnum from "../../../enums/modules/statusEnum";
 import displayModeEnum from "../../../enums/modules/displayModeEnum";
 import SourceEnum from "../../../enums/modules/sourceEnum";
 import ENV from "../../../config/env";
+import { adminPriceMixin } from "../../../helpers/formatPrice";
 
 export default {
     name: "PosOrderListComponent",
+    mixins: [adminPriceMixin],
     components: {
         TableLimitComponent,
         PaginationSMBox,
@@ -195,15 +214,15 @@ export default {
         const date = ref();
 
         const presetRanges = ref([
-            { label: 'Today', range: [new Date(), new Date()] },
-            { label: 'This month', range: [startOfMonth(new Date()), endOfMonth(new Date())] },
+            { label: 'Aujourd’hui', range: [new Date(), new Date()] },
+            { label: 'Ce mois', range: [startOfMonth(new Date()), endOfMonth(new Date())] },
             {
-                label: 'Last month',
+                label: 'Mois dernier',
                 range: [startOfMonth(subMonths(new Date(), 1)), endOfMonth(subMonths(new Date(), 1))],
             },
-            { label: 'This year', range: [startOfYear(new Date()), endOfYear(new Date())] },
+            { label: 'Cette année', range: [startOfYear(new Date()), endOfYear(new Date())] },
             {
-                label: 'This year (slot)',
+                label: 'Cette année',
                 range: [startOfYear(new Date()), endOfYear(new Date())],
                 slot: 'yearly',
             },
@@ -336,6 +355,9 @@ export default {
                 this.loading.isActive = false;
             }).catch((err) => {
                 this.loading.isActive = false;
+                // [micro-ux 2026-06-18] surface a failed fetch (matches sibling methods)
+                // instead of a silent generic empty-state.
+                alertService.error(err?.response?.data?.message || this.$t('message.something_wrong'));
             });
         },
         destroy: function (id) {
@@ -347,11 +369,11 @@ export default {
                         alertService.successFlip(null, this.$t('menu.pos_orders'));
                     }).catch((err) => {
                         this.loading.isActive = false;
-                        alertService.error(err.response.data.message);
+                        alertService.error(err?.response?.data?.message || this.$t('message.something_wrong'));
                     })
                 } catch (err) {
                     this.loading.isActive = false;
-                    alertService.error(err.response.data.message);
+                    alertService.error(err?.response?.data?.message || this.$t('message.something_wrong'));
                 }
             }).catch((err) => {
                 this.loading.isActive = false;
@@ -371,7 +393,7 @@ export default {
                 URL.revokeObjectURL(link.href);
             }).catch((err) => {
                 this.loading.isActive = false;
-                alertService.error(err.response.data.message);
+                alertService.error(err?.response?.data?.message || this.$t('message.something_wrong'));
             });
         },
     }
@@ -379,9 +401,102 @@ export default {
 </script>
 
 <style scoped>
+/* =============================================================================
+   PosOrderListComponent — POS V5 Design Convergence (touches légères 2026-05-02)
+   -----------------------------------------------------------------------------
+   Cycle    : CV1-POS-DESIGN-CONVERGENCE-001 R2
+   Doc plan : §3.8
+   Approche : pass design léger sur la card admin standard (db-card pattern
+   conservé pour cohérence backoffice). On adopte les tokens V5 sur les surfaces
+   visibles (card radius/shadow, header gradient, table head, row hover, status
+   badges). Aucun template touché — overrides ciblés via :deep() + scoped.
+   ============================================================================= */
 @media print {
-    .hidden-print {
-        display: none !important;
-    }
+    .hidden-print { display: none !important; }
+}
+
+/* Card container */
+:deep(.db-card) {
+    border-radius: var(--pos-v5-radius-lg);
+    box-shadow: var(--pos-v5-shadow-md);
+    border: 1px solid var(--pos-v5-border);
+    background: var(--pos-v5-bg-panel);
+    overflow: hidden;
+}
+
+/* Card header */
+:deep(.db-card-header) {
+    background: linear-gradient(180deg, var(--pos-v5-brand-red-faint), var(--pos-v5-bg-panel) 80%);
+    border-bottom: 1px solid var(--pos-v5-border);
+    padding: var(--pos-v5-space-4) var(--pos-v5-space-5);
+}
+:deep(.db-card-title) {
+    font-family: var(--pos-v5-font-sans);
+    font-size: var(--pos-v5-text-h5);
+    font-weight: var(--pos-v5-weight-extrabold);
+    color: var(--pos-v5-ink);
+    letter-spacing: var(--pos-v5-tracking-tight);
+}
+
+/* Table head */
+:deep(.db-table-head) {
+    background: var(--pos-v5-bg-subtle);
+}
+:deep(.db-table-head-th) {
+    font-family: var(--pos-v5-font-sans);
+    font-size: var(--pos-v5-text-eyebrow);
+    font-weight: var(--pos-v5-weight-bold);
+    letter-spacing: var(--pos-v5-tracking-caps);
+    text-transform: uppercase;
+    color: var(--pos-v5-ink-soft);
+    padding: var(--pos-v5-space-3) var(--pos-v5-space-4);
+}
+
+/* Table body row hover */
+:deep(.db-table-body-tr) {
+    transition: background var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);
+}
+:deep(.db-table-body-tr:hover) {
+    background: var(--pos-v5-brand-red-faint);
+}
+:deep(.db-table-body-td) {
+    font-family: var(--pos-v5-font-sans);
+    font-size: var(--pos-v5-text-body);
+    color: var(--pos-v5-ink);
+    padding: var(--pos-v5-space-3) var(--pos-v5-space-4);
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
+}
+.pos-order-queue-chip {
+    display: inline-flex;
+    min-height: 2rem;
+    align-items: center;
+    border: 1px solid #fed7aa;
+    border-radius: 9999px;
+    background: #fff7ed;
+    color: #9a3412;
+    font-weight: var(--pos-v5-weight-extrabold);
+    padding: 0.2rem 0.65rem;
+    white-space: nowrap;
+}
+
+/* Search button — adopt V5 brand */
+:deep(.db-btn.bg-primary) {
+    background: var(--pos-v5-brand-red) !important;
+    border-radius: var(--pos-v5-radius-md);
+    font-weight: var(--pos-v5-weight-bold);
+    transition: background var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);
+}
+:deep(.db-btn.bg-primary:hover) {
+    background: var(--pos-v5-brand-red-dark) !important;
+}
+:deep(.db-btn.bg-gray-600) {
+    background: var(--pos-v5-bg-subtle) !important;
+    color: var(--pos-v5-ink) !important;
+    border-radius: var(--pos-v5-radius-md);
+    font-weight: var(--pos-v5-weight-semibold);
+}
+:deep(.db-btn.bg-gray-600:hover) {
+    background: var(--pos-v5-border-strong) !important;
 }
 </style>

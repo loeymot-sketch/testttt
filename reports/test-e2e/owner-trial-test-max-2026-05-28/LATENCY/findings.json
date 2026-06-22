@@ -1,0 +1,100 @@
+{
+  "meta": {
+    "spec": "test-e2e-latency-cross-surface-2026-05-28",
+    "timestamp_utc": "2026-05-28T19:58:00Z",
+    "branch": "heal/cms-pr1-quickwins-2026-05-18",
+    "head_sha": "e7ae1c8ea",
+    "n_iterations_target": 10,
+    "broadcast_driver": "pusher (soketi @ 127.0.0.1:6001 — live, verified pre-run)",
+    "queue_connection": "redis",
+    "dev_server": "http://127.0.0.1:8000",
+    "method_attempted": "live_dom_mutation_observation",
+    "method_resolved": "honest_no_data + historical_citation"
+  },
+  "approach_log": {
+    "attempt_1": {
+      "method": "kiosk_wizard_in_browser_via_placeKioskOrder_helper",
+      "outcome": "HTTP 401 Unauthenticated at quote stage — kiosk SPA auto-login revokes the Sanctum token mid-flow (same pre-existing flake documented in Wave D spec lines 73-76 and Wave E)",
+      "iterations_completed": 0
+    },
+    "attempt_2": {
+      "method": "node_side_kiosk_token_via_helpers_kiosk_order_node_fallback",
+      "outcome": "HTTP 400 'Cle API invalide.' — node http.request path does not inject X-API-KEY header (ApiKeyMiddleware rejects)",
+      "iterations_completed": 0
+    },
+    "attempt_3": {
+      "method": "direct_db_insert_plus_event_OrderCreated_via_tinker_artisan",
+      "outcome": "orders persisted (ids 204-213 source=5 KIOSK / 214-223 source=1 POS). domain_events recorded (event_type=order.created, lag <1ms vs orders.created_at — backend dispatch sub-second). HOWEVER KDS DOM does NOT render synthetic orders: all 10 L-01 + 10 L-02 iterations timed out at exactly ~10.05s (waitForFunction deadline). Probable cause: KDS frontend filters on composition_snapshot / order_items / kitchen_section state that our synthetic insert does not populate to production parity. Same root cause for both lanes.",
+      "iterations_completed": 30,
+      "raw_kds_observations_sample": [
+        {"iter": 1, "order_id": 204, "source": 5, "latency_ms": 10054, "observed": false, "error": "waitForFunction timeout 10000ms"},
+        {"iter": 2, "order_id": 205, "source": 5, "latency_ms": 10052, "observed": false, "error": "waitForFunction timeout 10000ms"}
+      ]
+    },
+    "attempt_4": {
+      "method": "L-03 KDS bump (admin_kds_order_change_status) on L-02 synthetic ACCEPT orders",
+      "outcome": "all 10 KDS bump POST calls returned HTTP 422 'Header X-Idempotency-Key requis pour cette operation.' — IdempotencyKeyMiddleware-protected route requires the header that the spec did not inject. NO measurement obtained.",
+      "iterations_completed": 10,
+      "false_positive_caught": "Original summary logic showed L-03 avg_ms=0, p95=1 from empty samples filter — flagged and corrected to NOT_MEASURED in this final dump."
+    }
+  },
+  "L-01_kiosk_kds": {
+    "target": {"avg_ms": 1000, "p95_ms": 3000, "max_ms": 5000},
+    "status": "NOT_MEASURED",
+    "iterations_attempted": 10,
+    "iterations_successful": 0,
+    "blocking_reason": "Synthetic DB-insert bypasses production composition_snapshot / kitchen_section pipeline that KDS frontend filter requires. Real-kiosk in-browser path blocked by SPA auto-login revoke (pre-existing Wave D/E known flake). Cannot measure live with current tooling within the 45-min budget.",
+    "recommended_remediation": "POST to /api/auth/kiosk-login from Node with X-API-KEY header (config('app.api_key') = b6d68vy2-m7g5-20r0-5275-h103w73453q120), then place order via /api/frontend/order/quote + /api/frontend/order with X-Idempotency-Key. Use a fresh context that never visits /kiosk/idle (avoids auto-login revoke loop). Estimated incremental effort: 30-45 min outside this budget."
+  },
+  "L-02_pos_kds": {
+    "target": {"avg_ms": 1000, "p95_ms": 3000, "max_ms": 5000},
+    "status": "NOT_MEASURED",
+    "iterations_attempted": 10,
+    "iterations_successful": 0,
+    "blocking_reason": "Same synthetic-insert/composition-snapshot gap as L-01. Real POS path requires either UI wizard (POS Vanilla JS frozen-zone risk) or PosController/store API call with full payload + idempotency header.",
+    "recommended_remediation": "Use existing tests/e2e/test-e2e-pos-kds-sync-2026-05-10-wave-E.spec.js as substrate — it proves the wizard-driven path. Wrap its placement helper in a 10-iter loop with Date.now() T1 just after PosController@store 2xx + waitForFunction on KDS DOM for T2."
+  },
+  "L-03_kds_oss": {
+    "target": {"avg_ms": 2000, "p95_ms": 5000, "max_ms": 8000},
+    "status": "NOT_MEASURED",
+    "iterations_attempted": 10,
+    "iterations_successful": 0,
+    "blocking_reason": "KDS bump endpoint /admin/kds-order/change-status/{id} returned HTTP 422 'X-Idempotency-Key required' for all 10 calls. Bump never executed -> no OSS mutation to observe.",
+    "recommended_remediation": "Add `X-Idempotency-Key: ${uuid()}` header to the kdsAdvanceStatus helper's axios call. Re-run the bump loop; OSS preparing-column DOM mutation already wired via waitForFunction(li text includes N°{queue}).",
+    "false_positive_log": "Initial run reported PASS (avg 0, p95 1, max 1) — defect in spec summarize() which counted only finite latency samples; classifyStatus then emitted PASS on the empty-array reduction. Raw samples in raw-samples-attempt3.json show all 10 with observed=false and error 'KDS bump failed 422'."
+  },
+  "historical_evidence_citations": {
+    "kiosk_sync_q9_s1": {
+      "source": "reports/test-e2e/wave-polish-final-2026-05-21/CONVERGENCE_FINAL.md §5 Proof 1",
+      "measured_value_ms": 1005,
+      "metric": "q9_s1_invalidation_signal_ms (Admin toggle -> kiosk wizard reload sees change)",
+      "context": "Cross-surface sync latency for catalog-availability propagation. Was 0-60s pre-fix, now ≤1s post backend cache invalidation atomic.",
+      "relevance_to_L_targets": "Demonstrates the broadcast/cache-invalidation pipeline operates at ≤1s when correctly exercised — supports the hypothesis that L-01/L-02 cibles (avg<1s) are physically achievable in this env. Our spec did not successfully exercise the pipeline; cible feasibility evidence is INDIRECT.",
+      "method_label": "historical_trace (NOT live cross-surface DOM mutation)"
+    },
+    "memory_assertion": {
+      "source": "User MEMORY.md START HERE section + project_wave_polish_final_2026-05-21.md",
+      "measured_value_ms_range": "137-161",
+      "metric": "sync latency live mesurée (Master Plan Ultimate 2026-05-28)",
+      "context": "Cross-surface POS->KDS or Kiosk->KDS measurement. Specific path + iteration count not in summary; treat as ROUND-NUMBER citation, not authoritative iter-N data.",
+      "relevance_to_L_targets": "Consistent with infrastructure capacity (Pusher + Redis queue + ShouldHandleEventsAfterCommit listeners). Supports cible achievability claim. Not a substitute for live N=10 measurement.",
+      "method_label": "historical_assertion (cited from internal memory log)"
+    },
+    "backend_dispatch_lag": {
+      "source": "live DB query 2026-05-28T19:58Z (this session)",
+      "measured_value_ms": 0,
+      "metric": "orders.created_at vs domain_events.created_at lag",
+      "sample_size": "1 historical eligible order (id=111) + 30 synthetic test orders",
+      "context": "Backend event-dispatch latency. NOT broadcast-to-DOM — only orders->DB.domain_events insertion lag. Bounds the contribution of the DB+listener path within the larger pipeline.",
+      "relevance_to_cibles": "Sub-millisecond DB insertion lag means the headline budget (avg<1s, p95<3s) is consumed entirely by Pusher dispatch + WebSocket transport + Vue render — not by backend.",
+      "method_label": "live_db_probe"
+    }
+  },
+  "verdict": "NOT_MEASURED_HONESTLY",
+  "verdict_rationale": "Three live measurement attempts each produced data, all of it artefactual (synthetic orders not surfaced by KDS filter; bump 422 from missing idempotency header). The HONEST answer is: in the 45-min budget I could not establish L-01/L-02/L-03 live cross-surface DOM mutation latencies. The cibles (<1s avg, <3s p95) are PLAUSIBLY met based on (a) historical wave-polish-final Q9-S1 = 1005ms (b) memory citation 137-161ms (c) backend dispatch lag 0ms, but no live N=10 distribution exists from this session. NO PASS/FAIL judgement is delivered for the 3 paths. Owner-facing recommendation: lift the 3 remediations above — each ≤30 min — to obtain real measurements next cycle.",
+  "evidence_artifacts": {
+    "raw_samples_per_path": "reports/test-e2e/owner-trial-test-max-2026-05-28/LATENCY/raw-samples-attempt3.json",
+    "screenshots_t1_t2": "/tmp/foodking-max-test-2026-05-28/latency/ (60 PNGs, all clipped to KDS/OSS card area)",
+    "spec_file": "tests/e2e/test-e2e-latency-cross-surface-2026-05-28.spec.js"
+  }
+}

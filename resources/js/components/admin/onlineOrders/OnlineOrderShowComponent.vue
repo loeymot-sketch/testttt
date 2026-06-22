@@ -74,26 +74,51 @@
 
                 <div class="flex flex-wrap gap-3"
                     v-else-if="order.status !== enums.orderStatusEnum.REJECTED && order.status !== enums.orderStatusEnum.CANCELED">
-                    <div class="dropdown-group" v-if="order.order_type === enums.orderTypeEnum.DELIVERY">
-                        <button
-                            class="min-w-[162px] flex items-center justify-start text-sm capitalize appearance-none pl-2 h-[38px] rounded border border-primary bg-white text-primary dropdown-btn">
+                    <!-- [WT-D-R1-09 / WT-D-R1-02 2026-05-20] Same combobox+
+                         listbox WCAG pattern + live-region chip + flash as
+                         PosOrderShowComponent. Kept template structure so the
+                         existing dropdown-group hover behaviour still works. -->
+                    <div class="dropdown-group" v-if="order.order_type === enums.orderTypeEnum.DELIVERY"
+                        role="combobox" aria-haspopup="listbox" aria-expanded="false"
+                        :aria-label="$t('label.select_delivery_boy')"
+                        :class="{ 'driver-assigned-flash': driverFlashHighlight }"
+                        data-testid="online-driver-assign-group">
+                        <button type="button"
+                            class="min-w-[162px] flex items-center justify-start text-sm capitalize appearance-none pl-2 h-[38px] rounded border border-primary bg-white text-primary dropdown-btn"
+                            :aria-label="order?.delivery_boy?.id
+                                ? $t('label.driver_assigned') + ': ' + order.delivery_boy.name
+                                : $t('label.select_delivery_boy')"
+                            data-testid="online-driver-assign-btn">
                             <span class="flex-1 text-start">{{ order?.delivery_boy?.id ? order?.delivery_boy?.name :
                                 $t('label.select_delivery_boy') }}
                             </span>
-                            <i class="lab lab-arrow-down-2 lab-font-size-17 mx-1"></i>
+                            <i class="lab lab-arrow-down-2 lab-font-size-17 mx-1" aria-hidden="true"></i>
                         </button>
-                        <ul
+                        <ul role="listbox"
+                            :aria-label="$t('label.select_delivery_boy')"
                             class="p-2 rounded-lg shadow-xl absolute top-10 ltr:right-0 rtl:left-0 z-10 bg-white transition-all duration-300 origin-top scale-y-0 dropdown-list w-full">
-                            <li class="active flex items-center gap-2 py-1 px-2.5 rounded-md cursor-pointer hover:bg-gray-100"
+                            <li role="option"
+                                :aria-selected="order?.delivery_boy?.id === deliveryBoy.id ? 'true' : 'false'"
+                                tabindex="0"
+                                class="active flex items-center gap-2 py-1 px-2.5 rounded-md cursor-pointer hover:bg-gray-100 focus:outline focus:outline-2 focus:outline-primary"
                                 v-for="deliveryBoy in deliveryBoys" :key="deliveryBoy.id"
-                                @click="selectDeliveryBoy(deliveryBoy.id)">
+                                @click="selectDeliveryBoy(deliveryBoy.id, deliveryBoy.name)"
+                                @keydown.enter.prevent="selectDeliveryBoy(deliveryBoy.id, deliveryBoy.name)"
+                                @keydown.space.prevent="selectDeliveryBoy(deliveryBoy.id, deliveryBoy.name)"
+                                :data-testid="'online-driver-option-' + deliveryBoy.id">
                                 <span class="text-heading capitalize text-sm"
                                     :class="order?.delivery_boy?.id === deliveryBoy.id ? 'text-primary' : ''">{{
                                         deliveryBoy.name
                                     }}</span>
-
                             </li>
                         </ul>
+                        <p v-if="order?.delivery_boy?.id"
+                            class="driver-assigned-chip mt-1.5 inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-[#E6F8EE] text-[#1AB759] font-semibold"
+                            role="status" aria-live="polite"
+                            data-testid="online-driver-assigned-chip">
+                            <i class="lab lab-tick-square lab-font-size-12" aria-hidden="true"></i>
+                            {{ $t('label.driver_assigned') }}: {{ order.delivery_boy.name }}
+                        </p>
                     </div>
 
                     <div class="dropdown-group" v-if="order.transaction === null">
@@ -264,7 +289,7 @@
                             </li>
                             <li class="flex items-center gap-2.5" v-if="orderUser.phone">
                                 <i class="lab lab-call-calling-linear lab-font-size-14"></i>
-                                <span dir="ltr" class="text-xs">{{ orderUser.country_code + '' + orderUser.phone
+                                <span dir="ltr" class="text-xs">{{ (orderUser.country_code || '') + orderUser.phone
                                 }}</span>
                             </li>
                         </ul>
@@ -320,7 +345,10 @@ export default {
                 paymentTypeEnum: paymentTypeEnum,
                 orderTypeEnum: orderTypeEnum,
 
-            }
+            },
+            // [WT-D-R1-02 2026-05-20] Brief CSS flash highlight after driver
+            // assignment for visual confirmation.
+            driverFlashHighlight: false,
         }
     },
     computed: {
@@ -340,6 +368,20 @@ export default {
             return this.$store.getters["deliveryBoy/lists"];
         },
         orderStatusObject: function () {
+            // [HEAL-4 / PROPOSAL-02 / B2-P3-CF-02 — V101-02 2026-05-26]
+            // RETURNED was REMOVED from the selectable status dropdown to
+            // mirror PosOrderShowComponent (same NF525 bypass fix). Pre-heal
+            // a staffer could flip an online order to "Returned" without
+            // creating the NF525 counter-entry mirror — violates the Loi
+            // de Finance France append-only requirement. Refunds must go
+            // through PosRefundModal (POST refund-with-counter-entry) which
+            // is exposed in PosOrderShowComponent for past orders. Online
+            // orders that need refunding should be routed through the same
+            // mirror service (future enhancement: surface the Refund CTA
+            // here too — V1.0.2 candidate). For now, lock the bypass.
+            //
+            // RETURNED stays in orderStatusEnumArray (display map) so
+            // historical refunded orders still render "Retourné".
             const list = [
                 { name: this.$t("label.accept"), value: orderStatusEnum.ACCEPT },
                 { name: this.$t("label.preparing"), value: orderStatusEnum.PREPARING },
@@ -348,7 +390,8 @@ export default {
                     ? [{ name: this.$t("label.out_for_delivery"), value: orderStatusEnum.OUT_FOR_DELIVERY }]
                     : []),
                 { name: this.$t("label.delivered"), value: orderStatusEnum.DELIVERED },
-                { name: this.$t("label.returned"), value: orderStatusEnum.RETURNED },
+                // REMOVED: { name: this.$t("label.returned"), value: orderStatusEnum.RETURNED }
+                // Use PosRefundModal NF525 counter-entry refund path instead.
             ];
 
             return list;
@@ -474,25 +517,40 @@ export default {
                 this.loading.isActive = false;
             });
         },
-        selectDeliveryBoy: function (id) {
+        // [WT-D-R1-02 2026-05-20] Toast naming the driver + order, refresh
+        // order so the chip renders, 2s flash for visual feedback.
+        selectDeliveryBoy: function (id, name) {
             try {
                 this.loading.isActive = true;
+                const orderSerial = this.order?.order_serial_no || '';
                 this.$store.dispatch("onlineOrder/selectDeliveryBoy", {
                     id: this.$route.params.id,
                     delivery_boy_id: id,
+                }).then(() => {
+                    return this.$store.dispatch('onlineOrder/show', this.$route.params.id);
                 }).then((res) => {
+                    this.payment_status = res.data.data.payment_status;
+                    this.delivery_boy = res.data.data.delivery_boy ? res.data.data.delivery_boy.id : 0;
+                    this.order_status = res.data.data.status;
                     this.loading.isActive = false;
-                    alertService.successInfo(
-                        1,
-                        this.$t("message.delivery_boy_add")
-                    );
+
+                    this.driverFlashHighlight = true;
+                    setTimeout(() => { this.driverFlashHighlight = false; }, 2000);
+
+                    const driverName = name
+                        || (res.data.data.delivery_boy ? res.data.data.delivery_boy.name : '');
+                    const msg = this.$t('message.delivery_boy_assigned_to_order', {
+                        name: driverName,
+                        order: orderSerial,
+                    });
+                    alertService.success(msg);
                 }).catch((err) => {
                     this.loading.isActive = false;
-                    alertService.error(err.response.data.message);
+                    alertService.error(err?.response?.data?.message || this.$t('label.error'));
                 });
             } catch (err) {
                 this.loading.isActive = false;
-                alertService.error(err.response.data.message);
+                alertService.error(err?.response?.data?.message || this.$t('label.error'));
             }
         },
         changePaymentStatus: function (status) {
@@ -541,3 +599,28 @@ export default {
 
 }
 </script>
+
+<style scoped>
+/* [WT-D-R1-02 2026-05-20] Driver-assignment visual feedback — mirrors
+   PosOrderShowComponent so cashier perception is consistent across POS and
+   admin online-order screens. Reduced-motion users see no animation. */
+.driver-assigned-flash {
+    animation: online-driver-flash 2s ease-out 1;
+    border-radius: 8px;
+}
+@keyframes online-driver-flash {
+    0%   { box-shadow: 0 0 0 0 rgba(26, 183, 89, 0.55); }
+    35%  { box-shadow: 0 0 0 6px rgba(26, 183, 89, 0.20); }
+    100% { box-shadow: 0 0 0 0 rgba(26, 183, 89, 0); }
+}
+.driver-assigned-chip {
+    line-height: 1;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+@media (prefers-reduced-motion: reduce) {
+    .driver-assigned-flash { animation: none; }
+}
+</style>

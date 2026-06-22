@@ -1,0 +1,352 @@
+{
+  "review": {
+    "id": "PR_C_KDS_SYNC_ULTRA_REVIEW_2026-05-18",
+    "branch": "v1-0-1-hardening-2026-05-17",
+    "plan_audited": "plans/ultra-plans-2026-05-18/PR_C_KDS_SYNC_ULTRA_PLAN_REVIEW_2026-05-18.md",
+    "verdict": "heal",
+    "verdict_reason": "T2 unsafe as written — routing all 7 OrderStatusChanged dispatch sites through DispatchKdsTicket would suppress legitimate OSS/FCM/loyalty consumers. Real defect is FE-side handler over-refresh, not BE dispatch site refactor. 3 of 4 plan-claimed P0s downgrade to P1.",
+    "counts": {
+      "p0_confirmed": 1,
+      "p0_reframed_to_p1": 3,
+      "p1_confirmed": 3,
+      "p1_new_or_extended": 1,
+      "p2": 3,
+      "p3": 2
+    },
+    "files_audited": 14,
+    "frozen_zone_touch_planned": "none"
+  },
+  "findings": [
+    {
+      "id": "PR-C-P0-1",
+      "severity": "P0",
+      "status": "confirmed",
+      "category": "perf",
+      "title": "KdsSyncService /sync whereDate non-sargable",
+      "file": "app/Services/KdsSyncService.php",
+      "line": "65,69",
+      "evidence": "whereDate('order_datetime', Carbon::today()) and whereDate('order_datetime', '<=', Carbon::today()) bypass idx_orders_datetime. Sibling /list hardened 2026-05-17 at KitchenDisplaySystemOrderService.php:94,100. Cache::remember 5s softens repeated cost but per-station 3-5s poll under WS_DEGRADED/DISCONNECTED amplifies linearly across fleet.",
+      "impact": "Full-table scan per poll; 50+ kiosks reconnect-storm = 100+ unindexed scans/min on orders table.",
+      "heal": "T1 — byte-mirror /list whereBetween + where < tomorrow pattern. EXPLAIN range scan acceptance.",
+      "test_paths": [
+        "tests/Feature/Admin/KdsSyncControllerTest.php (extend)",
+        "tests/Feature/Kds/KdsSyncSargableSentinelTest.php (NEW)"
+      ]
+    },
+    {
+      "id": "PR-C-P1-2",
+      "severity": "P1",
+      "status": "reframed_from_P0_2",
+      "category": "fe_over_refresh",
+      "title": "KDS Vue handler over-refreshes on non-kitchen OrderStatusChanged transitions",
+      "file_be_dispatch_sites": [
+        "app/Services/OrderService.php:1632",
+        "app/Services/OrderService.php:1707",
+        "app/Services/OrderService.php:1853",
+        "app/Services/FrontendOrderService.php:737",
+        "app/Services/FrontendOrderService.php:1232",
+        "app/Services/PaymentService.php:463",
+        "app/Jobs/CleanupStalePendingKioskOrders.php:79"
+      ],
+      "file_real_defect": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue",
+      "line_real_defect": "1762",
+      "plan_misframe": "Plan claims 5 sites 'bypass DispatchKdsTicket gate'. Found 7 sites total. Each site has at least one legitimate non-KDS consumer (OSS list refresh via PreparingAndReadyComponent.vue:254-267, SendFcmOnOrderStatusChange, AwardLoyaltyPointsOnDelivery). Routing through DispatchKdsTicket::shouldDispatchStatusChanged (which only allows ACCEPT->PREPARING || PREPARING->PREPARED) would break OSS on CANCELED, suppress FCM on DELIVERED, suppress loyalty award.",
+      "real_defect": "KDS Vue subscriber refreshes on every OrderStatusChanged regardless of (from, to). The gate must live in JS, not in BE dispatch.",
+      "heal": "Rewrite T2 — FE-side filter at KitchenDisplaySystemComponent.vue:1762. Mirror KitchenReleaseRule::shouldDispatchStatusChanged semantics in JS. Skip _debouncedRefresh() when (old_status, new_status) is not a kitchen transition.",
+      "block_t2_as_written": true,
+      "test_paths": [
+        "tests/js/components/kitchenDisplaySystem/KdsHandlerOverRefreshSentinel.spec.js (NEW Vitest)"
+      ]
+    },
+    {
+      "id": "PR-C-P1-3",
+      "severity": "P1",
+      "status": "reframed_from_P0_3",
+      "category": "sentinel_gap",
+      "title": "OSS SYNC-2 budget compliant today but no fail-loud sentinel",
+      "files": [
+        "config/oss.php:29",
+        "config/catalog_v15.php:76",
+        "resources/js/services/OssSyncService.js:13-23"
+      ],
+      "evidence": "intervalMsWhenDisconnected hardcoded default 2000 ms (verified). PreparingAndReadyComponent.vue:248 early-returns branchId<=0 (no Echo on public wall). 2s ≤ 4s = half of SYNC-2 8s budget. No defect today; only regression risk.",
+      "heal": "T3 as written — sentinel asserting interval_ms_when_disconnected ≤ 4000.",
+      "test_paths": [
+        "tests/Feature/OSS/OssSyncBudgetSentinelTest.php (NEW)",
+        "tests/js/services/OssSyncService.spec.js (NEW)"
+      ]
+    },
+    {
+      "id": "PR-C-P1-4",
+      "severity": "P1",
+      "status": "reframed_from_P0_4",
+      "category": "sentinel_gap",
+      "title": "Echo channel-name contract works today, lacks regression sentinel",
+      "files": [
+        "app/Listeners/PersistOrderStatusChangedToOutbox.php:52",
+        "app/Listeners/PersistCatalogChangedToOutbox.php:83",
+        "app/Listeners/PersistItemAvailabilityChangedToOutbox.php:46",
+        "app/Listeners/PersistItemExtraAvailabilityChangedToOutbox.php:32",
+        "app/Listeners/PersistItemVariationAvailabilityChangedToOutbox.php:31",
+        "resources/js/services/eventContract.js:337-338",
+        "routes/channels.php:25-39"
+      ],
+      "evidence": "Persisters write 'private-branch.{branchId}'. FE eventContract.js:337 builds channelName='branch.{branchId}' then window.Echo.private(channelName) auto-prepends 'private-'. Round-trip OK today. Rename on either side → silent zero events.",
+      "heal": "T4 + T9 — BranchChannelName helper at app/Events/Concerns/BranchChannelName.php (new namespace, non-frozen) + contract sentinel + E2E observe window.Echo.connector.channels keys.",
+      "test_paths": [
+        "tests/Feature/Outbox/ChannelNameContractSentinelTest.php (NEW)",
+        "tests/e2e/04-kds-status.spec.js (extend)"
+      ]
+    },
+    {
+      "id": "PR-C-P1-5",
+      "severity": "P1",
+      "status": "verified",
+      "category": "doc_drift",
+      "title": "Stale TODO in KdsSyncService::computeOrderVersion",
+      "file": "app/Services/KdsSyncService.php",
+      "line": "130-145",
+      "evidence": "TODO claims status_changed_at column needed, but KitchenDisplaySystemOrderService.php:197-198 $locked->save() updates updated_at via Eloquent timestamps. version=(updated_at unix) is correct on status flips.",
+      "heal": "T6 as written — replace TODO with comment citing Eloquent timestamps + OrderStatusTransition.occurred_at lineage ledger.",
+      "test_paths": [
+        "tests/Feature/Kds/KdsVersionMonotonicTest.php (optional NEW)"
+      ]
+    },
+    {
+      "id": "PR-C-P1-6",
+      "severity": "P1",
+      "status": "verified_deferred_V1_0_2",
+      "category": "code_duplication",
+      "title": "KDS changeStatus duplicates OrderStateMachine::apply()",
+      "files": [
+        "app/Services/KitchenDisplaySystemOrderService.php:158-210",
+        "app/Domain/Order/OrderStateMachine.php:179-254"
+      ],
+      "evidence": "KDS service hand-rolls lockForUpdate + branch-403 + expected_status 409 + recordTransition. apply() does first 3 of 4. 409 + branch-403 are KDS-specific UX.",
+      "heal": "T7 — doc-only V1.0.2 deferral (frozen-zone constraint keeps V1 acceptable).",
+      "test_paths": [
+        "tests/Feature/KitchenReleaseRuleTest.php (extend state machine parity)"
+      ]
+    },
+    {
+      "id": "PR-C-P1-7",
+      "severity": "P1",
+      "status": "verified",
+      "category": "multi_tenant_fragility",
+      "title": "publicMostPopularItems falls back to first ACTIVE branch ORDER BY id",
+      "files": [
+        "app/Http/Controllers/Admin/OrderStatusScreenController.php:111-135",
+        "app/Services/OrderStatusScreenOrderService.php:120-146"
+      ],
+      "evidence": "When ?branch_id absent on multi-branch fleet, returns popular items of wrong branch. Single-branch V1 unaffected.",
+      "heal": "T8 as written — log fallback warning gated on branches.count()>1.",
+      "test_paths": [
+        "tests/Feature/OSS/OssCustomerScreenFilterTest.php (extend)"
+      ]
+    },
+    {
+      "id": "PR-C-P1-8",
+      "severity": "P1",
+      "status": "verified_extended",
+      "category": "code_duplication",
+      "title": "5 hand-built 'private-branch.X' channel strings (plan listed 2)",
+      "files": [
+        "app/Listeners/PersistOrderStatusChangedToOutbox.php:52",
+        "app/Listeners/PersistCatalogChangedToOutbox.php:83",
+        "app/Listeners/PersistItemAvailabilityChangedToOutbox.php:46",
+        "app/Listeners/PersistItemExtraAvailabilityChangedToOutbox.php:32",
+        "app/Listeners/PersistItemVariationAvailabilityChangedToOutbox.php:31"
+      ],
+      "evidence": "Plan T9 scope = 2 persisters. Found 5 hand-built channel strings.",
+      "heal": "T9 extended — BranchChannelName helper wired to all 5 sites + folded into T4 sentinel.",
+      "test_paths": []
+    },
+    {
+      "id": "PR-C-P2-9",
+      "severity": "P2",
+      "status": "verified_partial",
+      "category": "i18n",
+      "title": "KDS i18n residue (hardcoded FR strings remain)",
+      "file": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue",
+      "line_approx": "2056 (plan claim — file now 2639 lines, exact line may have shifted)",
+      "evidence": "Spot-check confirms '🖥️ Borne' raw + ticket-print FR strings. File length grew from 2353→2639 since 6-day-old memory; per-line citations stale.",
+      "heal": "T10 as written + grep-driven acceptance criterion (no line numbers cited).",
+      "test_paths": [
+        "tests/js/components/kitchenDisplaySystem/I18nKeyCoverage.spec.js (NEW)"
+      ]
+    },
+    {
+      "id": "PR-C-P2-10",
+      "severity": "P2",
+      "status": "verified",
+      "category": "config_drift",
+      "title": "Cadence config drift BE/FE bridge not asserted equal",
+      "files": [
+        "config/catalog_v15.php:79-89",
+        "resources/js/services/KdsSyncService.js:447-465"
+      ],
+      "evidence": "KdsSyncService.js:448 reads window.foodkingConfig.kdsFallbackPolling. Blade bridge not audited. No assertion ties BE config to FE default.",
+      "heal": "T11 as written.",
+      "test_paths": [
+        "tests/e2e/04-kds-status.spec.js (extend)"
+      ]
+    },
+    {
+      "id": "PR-C-P2-NEW",
+      "severity": "P2",
+      "status": "cross_surface_check",
+      "category": "no_regression",
+      "title": "Today's OSS DELIVERY exclusion (memory 2026-05-18) does not break CANCELED visibility on wall",
+      "files": [
+        "app/Services/OrderStatusScreenOrderService.php:59-62",
+        "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue:254-267"
+      ],
+      "evidence": "OssCustomerScreenFilterTest 8 cases green per memory. CANCELED OrderStatusChanged still fires; OSS list() then filters out via whereIn(order_type, [KIOSK, TAKEAWAY]) + whereIn(status, [PREPARING, PREPARED]). Cancelled row disappears as expected.",
+      "heal": "N/A — informational confirmation no regression."
+    },
+    {
+      "id": "PR-C-P3-11",
+      "severity": "P3",
+      "status": "doc_only",
+      "category": "comment_drift",
+      "title": "_echoMarkedReady one-shot comment slightly imprecise",
+      "file": "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue",
+      "line": "362",
+      "evidence": "Behaviour correct (re-init at end of _hydrateFromRows). Comment wording slightly outdated.",
+      "heal": "Optional comment cleanup."
+    },
+    {
+      "id": "PR-C-P3-12",
+      "severity": "P3",
+      "status": "doc_only",
+      "category": "docs_gap",
+      "title": "OssSyncService connected cadence 60s — document cost ceiling",
+      "file": "resources/js/services/OssSyncService.js",
+      "line": "9",
+      "evidence": "intervalMsWhenConnected: 60_000 — sane (Echo handles realtime, polling is drift-resist only).",
+      "heal": "Document in T12 SYNC_CONTRACT_V1.md."
+    }
+  ],
+  "critical_question_answers": {
+    "p0_real_count": {
+      "plan_claim": 4,
+      "verified_confirmed": 1,
+      "downgraded_to_p1": 3,
+      "details": "Only P0-1 /sync whereDate holds. P0-2 mischaracterised (real defect FE-side, count off by 2). P0-3 / P0-4 sentinel gaps."
+    },
+    "state_machine_integrity": {
+      "verdict": "clean",
+      "details": "Every $order->status assignment paired with OrderStateMachine::recordTransition. Verified at OrderService.php:1575,1688,1793 + FrontendOrderService.php:578,723,1192. OrderStateMachine.php (FROZEN) untouched. Gating via ValidStatusTransition rule or KitchenReleaseRule."
+    },
+    "echo_channel_auth_a_to_b_leak": {
+      "verdict": "clean_no_leak",
+      "file": "routes/channels.php:25-39",
+      "details": "Kiosk token bound to KioskMachine.branch_id via $user->tokenCan('kiosk:order'); Admin (branch_id=0) wildcard; staff strict equality. Branch A user cannot subscribe to Branch B channel."
+    },
+    "outbox_listener_replay_dedupe_coverage": {
+      "verdict": "100_percent",
+      "verified_listeners": [
+        "PersistOrderStatusChangedToOutbox:64-66",
+        "PersistOrderCreatedToOutbox:57-59",
+        "PersistOrderPaidAtCounterToOutbox:54-56",
+        "PersistOrderPaymentStatusChangedToOutbox:69-71",
+        "PersistCatalogChangedToOutbox:90-94",
+        "PersistItemAvailabilityChangedToOutbox:89-91",
+        "PersistItemExtraAvailabilityChangedToOutbox:66-68",
+        "PersistItemVariationAvailabilityChangedToOutbox:65-67",
+        "PersistCouponChangedToOutbox:82-84",
+        "PersistSettingsUpdatedToOutbox:75-77"
+      ],
+      "details": "All 10 outbox listeners carry wasRecentlyCreated early-return guard around DB::afterCommit(DispatchDomainEventsJob)."
+    },
+    "polling_fallback_cadence_coherence": {
+      "verdict": "no_drift_today_t11_closes_be_fe_assertion",
+      "details": "KDS: config/catalog_v15.kds_fallback_polling + KdsSyncService.js:447-465 reads window.foodkingConfig.kdsFallbackPolling. OSS: config/catalog_v15.oss_fallback_polling + OssSyncService.js:9-16 hardcoded fallbacks override-able via window.foodkingConfig.ossFallbackPolling. No shared key; same config file."
+    },
+    "kds_bump_idempotency_double_tap": {
+      "verdict": "robust",
+      "file": "app/Services/KitchenDisplaySystemOrderService.php:158-210",
+      "details": "DB::transaction + lockForUpdate + expected_status (HTTP 409 on mismatch) + fromLocked === newStatus idempotent early-return. Double-tap → first wins, second gets 409 + structured [KDS_409] log."
+    },
+    "v2_unified_projection_flag_kds_impact": {
+      "verdict": "no_dependency",
+      "details": "KDS does NOT consume PosMenuProjection. Reads Order::with(orderItems, address, user) directly. R-1 P0 (featured-field dropped on flag-flip) class of defect does NOT exist for KDS."
+    },
+    "nf525_chain_kds_writes_audit_logs": {
+      "verdict": "no",
+      "details": "KDS bump writes orders.status + order_status_transitions (recordTransition). audit_logs written ONLY by NF525 endpoints (PaymentService / FiscalSequenceService / ZReportService — frozen). KDS NF525-decoupled. Chain integrity preserved."
+    },
+    "sync_2_budget_8s_violation_paths": {
+      "verdict": "no_violation_today",
+      "details": "OssSyncService.js:16 intervalMsWhenDisconnected=2000ms + ~80ms RTT = 2.1s wall observability under WS outage. Echo live = sub-second. Risk surface = silent regression on env override above 4000ms; T3 sentinel addresses."
+    }
+  },
+  "task_disposition": {
+    "T1": {
+      "decision": "land_as_written",
+      "rationale": "P0-1 confirmed; byte-mirror pattern from /list is correct."
+    },
+    "T2": {
+      "decision": "REWRITE_BEFORE_EXECUTION",
+      "rationale": "As written breaks OSS list refresh on CANCELED, FCM on DELIVERED, loyalty award on PREPARED→DELIVERED, kiosk auto-accept push. Real defect is FE-side handler over-refresh, not BE dispatch refactor.",
+      "rewrite_target": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1762",
+      "rewrite_pattern": "Mirror KitchenReleaseRule::shouldDispatchStatusChanged in JS handler; skip _debouncedRefresh when (old, new) is not a kitchen transition."
+    },
+    "T3": {
+      "decision": "land_with_severity_downgrade",
+      "rationale": "Sentinel gap not defect; still valuable preventive."
+    },
+    "T4": {
+      "decision": "land_with_severity_downgrade",
+      "rationale": "Sentinel gap not defect; still valuable preventive."
+    },
+    "T5": {
+      "decision": "land_as_written",
+      "rationale": "Replay dedupe parity already exists across 7 listeners; T5 extension covers ItemExtra + ItemVariation siblings."
+    },
+    "T6": {
+      "decision": "land_as_written",
+      "rationale": "Doc-only stale TODO cleanup."
+    },
+    "T7": {
+      "decision": "land_as_written",
+      "rationale": "V1.0.2 doc-only deferral acceptable; frozen-zone keeps V1 valid."
+    },
+    "T8": {
+      "decision": "land_as_written",
+      "rationale": "Multi-branch fallback warning gate is correct heal."
+    },
+    "T9": {
+      "decision": "extend_scope_to_5_sites",
+      "rationale": "Plan listed 2 sites; 5 found. Helper covers all 5."
+    },
+    "T10": {
+      "decision": "land_with_grep_acceptance",
+      "rationale": "Line citations may be stale; grep-driven acceptance is robust."
+    },
+    "T11": {
+      "decision": "land_as_written",
+      "rationale": "BE-FE bridge assertion closes drift gap."
+    },
+    "T12": {
+      "decision": "land_as_written",
+      "rationale": "Doc consolidation valuable; cross-link from CLAUDE.md §6/§9."
+    }
+  },
+  "frozen_zone_check": {
+    "verdict": "clean_no_planned_touches",
+    "files_verified": [
+      "app/Domain/Order/OrderStateMachine.php",
+      "app/Services/Fiscal/FiscalSequenceService.php",
+      "app/Services/Fiscal/ZReportService.php",
+      "app/Services/Fiscal/AuditLogService.php",
+      "app/Models/Scopes/BranchScope.php",
+      "app/Http/Middleware/IdempotencyKeyMiddleware.php",
+      "app/Services/Pricing/PricingService.php"
+    ]
+  },
+  "nf525_chain_audit": {
+    "verdict": "preserved",
+    "details": "KDS bump writes orders.status + order_status_transitions only. audit_logs untouched by KDS surface. Per BRAIN §3: audit_logs count=26, last_hash=ca4ac1fdc208dae1 invariant maintained."
+  }
+}

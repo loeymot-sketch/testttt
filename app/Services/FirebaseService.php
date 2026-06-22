@@ -69,18 +69,21 @@ class FirebaseService
     function getAccessToken()
     {
         $notificationSetting = NotificationSetting::where(['key' => 'notification_fcm_json_file'])->first();
-        if (!$notificationSetting || !$notificationSetting->file) {
+        if (!$notificationSetting) {
             throw new Exception('FCM JSON file setting not found');
         }
-        $keyFilePath = $notificationSetting->file;
-        $parsed_url = parse_url($keyFilePath);
 
-        if (isset($parsed_url['path'])) {
-            $relative_path = ltrim($parsed_url['path'], '/storage');
-            $this->filePath = storage_path('app/public/' . $relative_path);
-        } else {
-            throw new Exception('No file found in the URL');
+        // [GOAL-HEAL-SEC-001 2026-05-23] Resolve the JSON file path directly
+        // from the Spatie media record instead of parsing a public URL. The
+        // `notification-file` collection now lives on the non-public
+        // `firebase_private` disk (storage/app/firebase/...), so the old
+        // parse_url() + storage/public path math is obsolete. Phase B.3
+        // Security RED-team finding B3.2-001.
+        $media = $notificationSetting->getFirstMedia('notification-file');
+        if (!$media) {
+            throw new Exception('FCM JSON file media not found');
         }
+        $this->filePath = $media->getPath();
 
         $SCOPES = ['https://www.googleapis.com/auth/cloud-platform'];
 

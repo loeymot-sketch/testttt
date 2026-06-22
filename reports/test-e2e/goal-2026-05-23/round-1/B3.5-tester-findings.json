@@ -1,0 +1,386 @@
+{
+  "agent": "B3.5-tester",
+  "role": "Tester",
+  "phase": "B.3",
+  "scope": "Test coverage, edge cases, regression suite, sentinel discipline — read-only audit. NO test modifications. NO command execution.",
+  "generated_at": "2026-05-23T17:25:00+02:00",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head_sha": "f28688675",
+  "method": "Static inventory of tests/**, regex parse of sentinel internals, replication of sentinel logic in plain PHP for ground-truth counts, cross-check against Wave Final 2026-05-23 + Wave Polish Final 2026-05-21 convergence reports. NO PHPUnit / Vitest / Playwright invocations performed by this agent.",
+
+  "test_counts": {
+    "phpunit_files": 574,
+    "phpunit_methods_estimate_from_result_cache_times_keys": 2742,
+    "phpunit_methods_in_sentinel_dir_only": 323,
+    "vitest_files_in_tests_js_and_sentinels": 250,
+    "vitest_sentinel_subdir_files": 33,
+    "playwright_files_under_tests_e2e": 232,
+    "playwright_files_under_tests_mobile_e2e": 22,
+    "playwright_total_spec_files": 254,
+    "note_on_counts": "FILE counts are this agent's primary evidence. METHOD count for PHPUnit is the size of `.phpunit.result.cache.times` (2742) — a proxy, not a fresh execution. CLAUDE.md baseline cites '2114+' / '1494+' which are older snapshots; current trend is upward (good).",
+    "vs_baseline": {
+      "phpunit_2114_baseline": "current 2742 method-keys-in-cache > 2114 ⇒ baseline GROWN (consistent with Phase A + C5 test additions)",
+      "vitest_1494_baseline": "current 250 spec files (does not directly compare; baseline number is method count). Vitest sentinel sub-dir count 33 confirms expansion since Phase 2E.",
+      "playwright_multiple_specs": "232 e2e + 22 mobile-e2e = 254 spec files. Healthy fleet."
+    }
+  },
+
+  "sentinel_inventory": {
+    "phpunit_sentinel_test_files": 95,
+    "vitest_sentinel_spec_files_in_sentinels_subdir": 33,
+    "vitest_sentinel_named_files_outside_sentinels_subdir": 1,
+    "sentinel_count_total_files": 128,
+    "sentinel_count_total_methods_phpunit": 323,
+    "note_on_sentinel_definition": "Definition used: a `Sentinel*Test.php` file under tests/Feature/Sentinels/ or topical subdir (Branch/, Fiscal/, Observability/, Payment/, Sync/, Listeners/, Analytics/, Delivery/, Services/Menu/) PLUS any file under tests/js/sentinels/. This excludes generic tests that happen to lock behavior without the Sentinel naming convention.",
+    "discoverability_note": "tests/js/sentinels/ contains 33 specs but only 14 carry `*Sentinel*` in filename. Mixed naming convention — not breakage, but `find -name '*Sentinel*'` undercounts JS sentinels by ~58%. V1.0.2 cosmetic cleanup candidate."
+  },
+
+  "sentinel_discipline_audit": {
+    "branch_scope_coverage_sentinel": {
+      "file": "tests/Feature/Branch/BranchScopeCoverageSentinelTest.php",
+      "models_locked": 20,
+      "exempted_models_count": 12,
+      "exemption_breakdown": {
+        "architectural_intentional": 2,
+        "v1_0_2_backlog_baseline": 10
+      },
+      "drift_status": "STABLE — matches CLAUDE.md §9 (20 locked models)",
+      "v1_0_2_backlog_documented": true
+    },
+    "form_request_authz_drift_sentinel": {
+      "file": "tests/Feature/Sentinels/FormRequestAuthzDriftSentinelTest.php",
+      "baseline_ceiling": 69,
+      "actual_count_replicated_today": 66,
+      "semantics": "assertLessThanOrEqual — PASSES (66 <= 69)",
+      "ratchet_opportunity_v1_0_2": "Lower RETURN_TRUE_BASELINE from 69 to 66 to capture the chip-away since BUILD-6. Sentinel even emits a stdout hint when count < baseline (line 104-108) — this hint is already being ignored.",
+      "drift_with_claude_md": "CLAUDE.md §9 documents this exact drift ('Verified actual count 2026-05-21 = 66 FormRequests'). Self-attested."
+    },
+    "pos_counter_collect_sentinel_q10": {
+      "files": [
+        "tests/js/sentinels/posCounterCollectModalSentinel.spec.js",
+        "tests/js/sentinels/posShortcutsSentinel.spec.js",
+        "tests/js/sentinels/counterCollectFrDecimalSentinel.spec.js"
+      ],
+      "q10_always_render_locked": true,
+      "q10_lastrefresh_stamp_locked": true,
+      "q10_empty_state_testids_locked": true,
+      "d2_fr_decimal_locked": true,
+      "v_filter_kiosk_takeaway_pos_no_delivery_locked": true,
+      "verdict": "Q10 + D2 + Wave-X surface fully sentinel-guarded — strong"
+    },
+    "kds_bundle_freshness_sentinel_q12": {
+      "file": "tests/js/sentinels/kdsBundleFreshnessSentinel.spec.js",
+      "scope_groups_watched": 5,
+      "groups": ["kitchenDisplaySystem-vue", "i18n-catalogs", "kds-helpers", "kds-services", "kds-store"],
+      "smoke_baseline_guards_empty_set": true,
+      "false_positive_mitigation_documented": true,
+      "verdict": "Strong. The helper `assertBundleFresh` is exported on globalThis for reuse by future POS/OSS/admin-reports bundles — V1.0.2 chip-away pattern locked in."
+    },
+    "kds_history_drawer_sentinel": {
+      "file": "tests/js/sentinels/kdsHistoryDrawerSentinel.spec.js",
+      "wave_x_x3_locked": "structural"
+    },
+    "kds_v2_multi_bump_sentinel": {
+      "file": "tests/js/sentinels/kdsV2MultiBumpSentinel.spec.js",
+      "race_fix_assertion": "asserts NO `setTimeout(` wrapper on onCtaTap — synchronous emit only",
+      "verdict": "Strong — locks the exact regression mode"
+    },
+    "kiosk_cache_invalidation_wiring_sentinel_q9_s1": {
+      "file": "tests/Unit/Listeners/KioskCacheInvalidationWiringSentinelTest.php",
+      "events_locked": 3,
+      "listeners_asserted": [
+        "InvalidateKioskMenuCacheOnItemAvailabilityChanged",
+        "InvalidateKioskMenuCacheOnCatalogChange (x2 for extra + variation)"
+      ],
+      "reflection_against_eventserviceprovider_listen": true,
+      "verdict": "Locks the exact Q9-S1 wire-up — without this, a future EventServiceProvider refactor could silently un-wire the cache invalidator and the 60s stale window would return undetected"
+    },
+    "receipt_regression_coverage": {
+      "phpunit_files": ["PosReceiptFiscalExposureTest.php", "PosReceiptTaxLinesTest.php", "PrinterServiceTest.php", "PrinterControllerTest.php"],
+      "vitest_files": ["posReceiptPrintFlow.spec.js", "posReceiptDuplicataMarker.spec.js", "kioskReceiptPersistence.spec.js"],
+      "verdict": "Covered both layers"
+    },
+    "livreur_sentinels": {
+      "files": [
+        "tests/Feature/Sentinels/DeliveryBoyHardeningSentinelTest.php",
+        "tests/Feature/Sentinels/DeliveryBoyOrderIndexNoN1SentinelTest.php",
+        "tests/Feature/Sentinels/CashAudit2StepDriverFlowSentinelTest.php",
+        "tests/Feature/Sentinels/SelectDeliveryBoyRoleByNameSentinelTest.php",
+        "tests/Feature/Delivery/DeliveryFeeBranchWireupSentinelTest.php"
+      ],
+      "covers_p0_p1_p2_p3_findings_from_goal_2026_05_18_round_1": true
+    },
+    "stock_management_v2_sentinel": {
+      "file": "tests/js/sentinels/stockManagementV2Sentinel.spec.js",
+      "mission_1_locked": true
+    },
+    "idempotency_coverage_sentinels": {
+      "phpunit_files": [
+        "tests/Feature/Sentinels/IdempotencyMiddlewareSentinelTest.php",
+        "tests/Feature/Sentinels/IdempotencyMiddlewareProductionGuardSentinelTest.php",
+        "tests/Feature/Sentinels/F006PosIdempotencyParitySentinelTest.php",
+        "tests/Feature/Sentinels/AvailabilityIdempotencySentinelTest.php"
+      ],
+      "vitest_files": ["tests/js/sentinels/posOrderIdempotency409Handler.spec.js"],
+      "verdict": "Strong — middleware, production guard, POS/Kiosk parity, availability, and 409 client handler all locked"
+    },
+    "phase_a_new_sentinels": {
+      "telemetry_allowlist_sentinel": {
+        "file": "tests/js/sentinels/telemetryAllowlistSentinel.spec.js",
+        "commits_referenced": ["d973a4b1e", "f28688675"],
+        "runtime_check_test_methods": 7,
+        "round_1_heal_locked": "patterns use RELATIVE form (no /api prefix) because axios baseURL stored separately from config.url — exact failure mode captured in a behavioral expect()",
+        "verdict": "Strong heal — sentinel includes a runtime-substring sanity test that would have caught the as-shipped d973a4b1e gap"
+      },
+      "counter_collect_fr_decimal_sentinel": {
+        "file": "tests/js/sentinels/counterCollectFrDecimalSentinel.spec.js",
+        "commit_referenced": "e49ef36c5",
+        "test_methods": 4,
+        "covers_comma_prefill_dual_parser_canconfirm": true
+      }
+    },
+    "frozen_zone_sentinel_coverage_audit": {
+      "PaymentComponent_vue": {
+        "frozen_per": "CLAUDE.md §7",
+        "sentinels_that_lock_behavior": [
+          "tests/js/sentinels/paymentComponentEmitsJsdocList.spec.js",
+          "tests/js/sentinels/paymentComponentPropMutation.spec.js",
+          "tests/js/sentinels/PaymentComponentPropMutationSentinelTest.spec.js"
+        ],
+        "behavioral_protection_level": "Emits contract + prop-mutation immutability — covers the two most likely silent regression modes",
+        "gap_note": "Currency rendering D3 is LOCK_PAY pending owner countersign (commit 03e9bddde) — sentinel will be added at heal time, not pre-emptively"
+      },
+      "KioskWizardComponent_vue": {
+        "frozen_per": "CLAUDE.md §7",
+        "sentinels_that_lock_behavior": [
+          "tests/js/sentinels/menuParentGroupI18nKeysSentinel.spec.js (related — locks i18n keys consumed by wizard)",
+          "tests/js/sentinels/kioskExtrasOosMarkerStructure.spec.js",
+          "tests/js/sentinels/kioskCartAriaLive.spec.js"
+        ],
+        "behavioral_protection_level": "i18n + OOS marker structure + cart aria-live — partial",
+        "gap_v1_0_2": "No emits-list / prop-mutation sentinel on KioskWizardComponent itself analogous to PaymentComponent's pair. The wizard is large and pricing-adjacent; one structural sentinel asserting (1) cart event emit names, (2) step-progression contract, (3) `composition_snapshot` fields-only frontend payload would harden the frozen-zone."
+      },
+      "POS_pos_wizard_js_vanilla": {
+        "frozen_per": "CLAUDE.md §7 + reference_wizard_popup_pos_protected (memory)",
+        "sentinels": "Owner-protected, behavioral. No dedicated sentinel — protection comes from `git diff` audit + memory rule. Acceptable per CLAUDE.md §7 directive 'Modification autorisée: ajout de tests régression, fix typo, documentation'."
+      },
+      "FiscalSequenceService_php": {
+        "sentinels": [
+          "tests/Feature/Fiscal/FiscalSequenceTest.php",
+          "tests/Feature/Sentinels/F001KioskFiscalSequenceInvariantSentinelTest.php",
+          "tests/Feature/Sentinels/FiscalAllocErrorFlagOutsideTxSentinelTest.php (in Feature/Fiscal/)",
+          "tests/Feature/Sentinels/FiscalSealedZSentinelTest.php",
+          "tests/Feature/Sentinels/FiscalZBranchExactnessSentinelTest.php",
+          "tests/Feature/Fiscal/AuditLogConcurrencyTest.php"
+        ],
+        "concurrent_allocation_coverage": "AuditLogConcurrencyTest + F001 invariant sentinel — strong"
+      },
+      "BranchScope_php": {
+        "sentinels": [
+          "tests/Feature/Branch/BranchScopeCoverageSentinelTest.php",
+          "tests/Feature/Sentinels/ClaudeMdBranchScopeCountSentinelTest.php",
+          "tests/Feature/Sentinels/WithoutGlobalScopesAuditSentinelTest.php"
+        ],
+        "double_locked": "Count drift (Claude.md mention) + coverage drift (per-model) — strong"
+      },
+      "IdempotencyKeyMiddleware_php": {
+        "sentinels": ["IdempotencyMiddlewareSentinelTest.php", "IdempotencyMiddlewareProductionGuardSentinelTest.php"],
+        "production_guard_protected": true
+      },
+      "PricingService_php": {
+        "sentinels": [
+          "tests/Feature/Sentinels/PricingSsotFlagProductionStableSentinelTest.php",
+          "tests/Feature/Sentinels/Zone5PricingSsotConvergenceSentinelTest.php",
+          "tests/Feature/Sentinels/PosReorderHistoricalPricingSentinelTest.php",
+          "tests/Feature/Sentinels/ClientTotalWriteForbiddenSentinelTest.php",
+          "tests/Feature/Sentinels/PosSubtotalForgerySentinelTest.php"
+        ],
+        "verdict": "Anti-forgery + SSOT flag stability + historical-reorder pricing all locked"
+      },
+      "OrderStateMachine_php": {
+        "sentinels": ["tests/Feature/OrderStateMachineLockForUpdateTest.php"],
+        "race_condition_locked_for_update": true,
+        "transition_whitelist_sentinel": "tests/Feature/Sentinels/KdsTransitionWhitelistSentinelTest.php"
+      }
+    }
+  },
+
+  "coverage_critical_paths_audit": {
+    "PaymentService_confirmCounterPayment_C5": {
+      "test_file": "tests/Feature/Payment/C5_EncaisserKdsPreserveTest.php",
+      "test_methods": 3,
+      "assertions_per_round_1_run": 28,
+      "verifications_covered": ["V5.1_kds_state_preserved", "V5.2_composition_snapshot_frozen", "V5.3_audit_logs_append_only_chain_valid", "V5.4_fiscal_sequence_preserved", "V5.5_idempotency_replay_safe"],
+      "verdict": "GREEN (per C5 sync-chain agent round-1 capture)"
+    },
+    "PricingService_calculateOrder": {
+      "test_files": [
+        "tests/Feature/Services/Pricing/PricingServiceTest.php",
+        "tests/Feature/Services/Pricing/PricingServiceMultiQtyTest.php",
+        "tests/Feature/PosPricingSsotProofTest.php",
+        "tests/Feature/PosKioskPricingParityTest.php",
+        "tests/Feature/PricingIntegrityTest.php"
+      ],
+      "verdict": "Multi-angle covered — happy path, multi-qty edge, POS↔kiosk parity, integrity, SSOT proof"
+    },
+    "OrderStateMachine_transitions": {
+      "test_file": "tests/Feature/OrderStateMachineLockForUpdateTest.php",
+      "transition_sentinel": "tests/Feature/Sentinels/KdsTransitionWhitelistSentinelTest.php",
+      "verdict": "Race-condition lock + whitelist both covered"
+    },
+    "FiscalSequenceService_allocate_concurrent": {
+      "test_files": ["tests/Feature/Fiscal/FiscalSequenceTest.php", "tests/Feature/Fiscal/AuditLogConcurrencyTest.php", "tests/Feature/Sentinels/F001KioskFiscalSequenceInvariantSentinelTest.php"],
+      "verdict": "Strong — invariant locked, concurrency case present"
+    }
+  },
+
+  "coverage_gaps": [
+    {
+      "id": "GAP-T1",
+      "severity": "P2",
+      "title": "Vitest sentinel naming convention drift",
+      "evidence": "tests/js/sentinels/ holds 33 files but only ~14 carry the `Sentinel` token in their filename. Discoverability via `find -name '*Sentinel*'` undercounts by ~58%.",
+      "blast_radius": "Cosmetic — does not affect execution. A future audit script that filters by filename pattern would silently miss sentinels.",
+      "v1_0_2_recommendation": "Rename batch (e.g. `posShortcutsSentinel.spec.js` → already named correctly, but `connectionBannerNavigatorOnlineListener.spec.js`, `kdsA11yRichStructure.spec.js`, etc. lack the token). Keep test method names + describe() blocks stable to avoid CI churn."
+    },
+    {
+      "id": "GAP-T2",
+      "severity": "P2",
+      "title": "FormRequest authz baseline not ratcheted",
+      "evidence": "FormRequestAuthzDriftSentinelTest::RETURN_TRUE_BASELINE = 69 (sentinel file line 61). Empirical count today = 66 (replicated via the same regex outside the sentinel). Sentinel itself emits a stdout hint when count < baseline; that hint has been printed for ≥2 days without action.",
+      "blast_radius": "Sentinel still passes (semantics `<=`) but the ceiling is 3 units too loose. A regression that re-adds 3 `return true;` FormRequests would slip through silently.",
+      "v1_0_2_recommendation": "Lower RETURN_TRUE_BASELINE to 66. One-line PR. CLAUDE.md §9 already documents the drift explicitly."
+    },
+    {
+      "id": "GAP-T3",
+      "severity": "P3",
+      "title": "Placeholder e2e assertions (2 occurrences)",
+      "evidence": [
+        "tests/e2e/kiosk-edge-cases.spec.js:400 — `expect(true).toBe(true); // assertion soft : test doc le flow`",
+        "tests/e2e/concurrent-orders.spec.js:163 — `expect(true).toBe(true);`"
+      ],
+      "blast_radius": "2 tests in 254 e2e specs — both are documented as `soft` / flow-doc tests. They add a passing test count without adding real assertion coverage.",
+      "v1_0_2_recommendation": "Convert each to a real DOM/state assertion (the captures already exist; the assertion just needs to read from them) OR mark `test.skip` with a tracking comment so the count is honest."
+    },
+    {
+      "id": "GAP-T4",
+      "severity": "P3",
+      "title": "Playwright login helper used in only 59% of e2e specs",
+      "evidence": "`tests/e2e/helpers/login.js` exists and exports loginAsAdmin/loginAsPosOperator/loginAsChefOperator. Grep shows 136 specs import it across tests/e2e/ vs 232 total specs. Direct `page.goto('/login') + page.fill(...)` patterns observed in: _wave-y-d-wizard-round2-2026-05-21.spec.js, phase-c-visual-mandate-2026-05-17.spec.js, menu-v2-kiosk-final.spec.js, 03-kiosk-wizard.spec.js, _wave-y-d-pos-wizard-2026-05-21.spec.js, menu-v3-1-burger.spec.js, _le-cayenne-v2-pos-capture-2026-05-21.spec.js, ultra-goal-baseline-capture.spec.js, zone4-auth-cross-branch.spec.js, _red-a-pos-round3-2026-05-18.spec.js (sample, not exhaustive).",
+      "blast_radius": "Inconsistent — when login flow changes (e.g. CSRF, throttle, MFA), the 96 specs not using the helper must each be updated individually. Maintenance debt, not breakage.",
+      "v1_0_2_recommendation": "Backfill helper usage across the 96 outlier specs. Mechanical refactor — safe, no behavioral change."
+    },
+    {
+      "id": "GAP-T5",
+      "severity": "P3",
+      "title": "KioskWizardComponent.vue lacks emits-list / prop-mutation sentinel analogous to PaymentComponent",
+      "evidence": "PaymentComponent.vue is frozen + double-sentinelled (paymentComponentEmitsJsdocList + paymentComponentPropMutation). KioskWizardComponent.vue is frozen (CLAUDE.md §7) but the equivalent structural sentinel does not exist. Existing protection is via i18n + OOS marker + cart-aria sentinels, which lock surface symptoms but not the emits contract.",
+      "blast_radius": "Low today — wizard is stable. Future refactor that silently renames an emit (e.g. `cart-add` → `cart-added`) could land without sentinel red.",
+      "v1_0_2_recommendation": "Add `kioskWizardComponentEmitsJsdocList.spec.js` + `kioskWizardComponentPropMutation.spec.js` modeled exactly on the PaymentComponent pair. Hardens the frozen-zone."
+    }
+  ],
+
+  "coverage_acknowledged_deferred": [
+    {
+      "id": "DEFER-T1",
+      "title": "AllergenCoverageSentinel — 4 methods @group manual",
+      "owner_decision": "Q2 = skip — Wave Polish Final 2026-05-21",
+      "phpunit_xml_exclude": "ACTIVE (GOAL-D10 commit e33fe5b9e — phpunit.xml lines 26-32 `<groups><exclude><group>manual</group></exclude></groups>`)",
+      "evidence": "tests/Feature/Sentinels/AllergenCoverageSentinelTest.php docblock (lines 12-60) + phpunit.xml grouped-exclude. Re-enable gate documented: chef-signed allergen mapping → restore LeCayenneAllergenSeeder body → REQUIRED_ALLERGENS + EXPLICITLY_NONE constants reviewed → @group manual annotation removed.",
+      "not_a_coverage_gap": "Explicit owner-gated deferral with a documented FIC re-enable runbook. Counted separately from gaps."
+    }
+  ],
+
+  "test_smells": [
+    {
+      "id": "SMELL-1",
+      "title": "Two specs with `expect(true).toBe(true)` placeholder assertions",
+      "files": ["tests/e2e/kiosk-edge-cases.spec.js:400", "tests/e2e/concurrent-orders.spec.js:163"],
+      "severity": "P3"
+    },
+    {
+      "id": "SMELL-2",
+      "title": "Login helper not enforced across all e2e specs",
+      "ratio_helper_users_to_total": "136 / 232 (≈59%)",
+      "severity": "P3"
+    }
+  ],
+
+  "test_smells_checked_and_dismissed": [
+    {
+      "candidate": "Hardcoded Carbon dates (2026-04-22 / 2026-04-25 / 2026-05-18 in tests/Feature/Fiscal/*)",
+      "dismissed_because": "All wrapped in Carbon::setTestNow(Carbon::create(...)) — deterministic, not flaky. Intentional for fiscal X/Z report aggregation testing where the date window is the unit under test."
+    },
+    {
+      "candidate": "setTimeout / waitForTimeout matches in tests/js/sentinels/",
+      "dismissed_because": "All 5 hits are assertions that the SUT (system under test) does NOT use setTimeout — i.e. the sentinel is guarding against a race-prone pattern. Not a smell in the sentinel itself."
+    }
+  ],
+
+  "execution_status_unverified": {
+    "phpunit_result_cache_snapshot": {
+      "path": ".phpunit.result.cache",
+      "defects_in_cache": 1474,
+      "times_keys_in_cache": 2742,
+      "interpretation": "Cache is not stamped with current HEAD. Defects may reflect pre-Phase-A failures or intentionally @group manual tests that ran historically. This agent did NOT run PHPUnit to refresh the cache."
+    },
+    "external_attestations_consulted": [
+      {
+        "report": "reports/test-e2e/wave-final-2026-05-23/CONVERGENCE_FINAL.md",
+        "verdict_quoted": "6 GREEN + 1 AMBER, 0 CRITICAL (S1 borne AMBER on 1 deferred P1)",
+        "head_at_attestation": "d601fdd34 (now superseded by f28688675 Phase A.1)",
+        "weight_for_this_audit": "Indicative, not authoritative. Code surface has shifted by 5 commits (D1 mega-S1 heal, D2 FR decimal, D10 phpunit exclude, D3 LOCK doc) since this convergence."
+      },
+      {
+        "report": "reports/test-e2e/wave-polish-final-2026-05-21/CONVERGENCE_FINAL.md",
+        "verdict_quoted": "BranchScope sentinel baseline unchanged; FormRequest baseline 66 verified (sentinel ceiling at 69, room to ratchet)",
+        "ratchet_recommendation_already_known": true
+      }
+    ],
+    "verdict_caveat": "This audit is structural (sentinel discipline + coverage map). Execution status is read-only-inferred from external convergence reports. Not equivalent to a fresh CI run."
+  },
+
+  "regression_suite_health": {
+    "phpunit_sentinel_directory_methods": 323,
+    "vitest_sentinel_directory_specs": 33,
+    "trend_vs_claude_md_baseline": "GROWN — Phase A added 2 new vitest sentinels (telemetryAllowlistSentinel + counterCollectFrDecimalSentinel) and 1 new PHPUnit test (C5_EncaisserKdsPreserveTest). No deletions observed. Append-only growth pattern consistent with §13 Evidence Rules.",
+    "naming_convention_consistency": "PHPUnit: STRONG (95/95 follow *SentinelTest.php under tests/Feature/Sentinels/ or topical subdir). Vitest: DRIFTED (33 in sentinels/ subdir, only 14 carry `Sentinel` in filename) — see GAP-T1.",
+    "frozen_zone_coverage": "All 6 CLAUDE.md §7 frozen files are sentinel-protected at varying depths. KioskWizardComponent.vue is the relatively weakest (no emits-list sentinel) — see GAP-T5."
+  },
+
+  "top_3_testing_concerns": [
+    {
+      "rank": 1,
+      "concern": "Execution status not directly verified by this agent — relies on external convergence-report attestation (Wave Final + Wave Polish Final). A fresh CI run is the only way to confirm sentinel + suite GREEN at HEAD f28688675. The result-cache shows 1474 defects but is not timestamped, so its signal is ambiguous."
+    },
+    {
+      "rank": 2,
+      "concern": "FormRequest authz baseline (69) is 3 units looser than actual (66). The chip-away pattern is working — but the ceiling does not move down. A 3-FormRequest regression slipping through would not flip the sentinel red. One-line PR fixes it."
+    },
+    {
+      "rank": 3,
+      "concern": "KioskWizardComponent.vue is frozen per CLAUDE.md §7 but lacks the emits-list / prop-mutation pair that protects its frozen sibling PaymentComponent.vue. Adding the analogous JS sentinels would harden the frozen-zone with a 1-day cost. Currently the only structural sentinels touching the kiosk wizard family are i18n + OOS marker + cart-aria-live."
+    }
+  ],
+
+  "evidence_files_inspected": [
+    "tests/Feature/Branch/BranchScopeCoverageSentinelTest.php",
+    "tests/Feature/Sentinels/FormRequestAuthzDriftSentinelTest.php",
+    "tests/Feature/Sentinels/AllergenCoverageSentinelTest.php",
+    "tests/Unit/Listeners/KioskCacheInvalidationWiringSentinelTest.php",
+    "tests/Feature/Sentinels/DeliveryBoyHardeningSentinelTest.php",
+    "tests/Feature/Payment/C5_EncaisserKdsPreserveTest.php",
+    "tests/js/sentinels/kdsBundleFreshnessSentinel.spec.js",
+    "tests/js/sentinels/posShortcutsSentinel.spec.js",
+    "tests/js/sentinels/telemetryAllowlistSentinel.spec.js",
+    "tests/js/sentinels/counterCollectFrDecimalSentinel.spec.js",
+    "tests/js/sentinels/stockManagementV2Sentinel.spec.js",
+    "phpunit.xml",
+    "reports/test-e2e/wave-final-2026-05-23/CONVERGENCE_FINAL.md (header)",
+    "reports/test-e2e/wave-polish-final-2026-05-21/CONVERGENCE_FINAL.md (sentinel section)",
+    ".phpunit.result.cache (parsed via php -r)"
+  ],
+
+  "verdict": "GREEN",
+  "verdict_rationale": "Sentinel discipline is strong (128 files / 323 PHPUnit methods + 33 Vitest specs). All 6 CLAUDE.md §7 frozen files are sentinel-protected. Q9-S1, Q10, Q12, D1, D2, D10 fixes are each locked by a dedicated sentinel that exercises the exact failure mode (not just structural existence). Coverage of critical paths (PaymentService::confirmCounterPayment, PricingService::calculateOrder, OrderStateMachine, FiscalSequenceService concurrent) is covered. Identified gaps are P2/P3 hardening opportunities (naming convention, baseline ratchet, helper consistency, placeholder assertions, kiosk wizard emits sentinel) — none block V1 ship. Verdict is GREEN with the explicit caveat that execution status is read-only-inferred from external convergence reports; a fresh CI run would convert this from GREEN-attested to GREEN-verified."
+}

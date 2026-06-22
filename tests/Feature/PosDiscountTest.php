@@ -15,7 +15,10 @@ use App\Enums\TaxType;
 use App\Enums\DiscountType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Tests\TestCase;
+use Tests\Feature\Concerns\HasPosQuoteBinding;
+use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
 
 /**
  * Tests discount application in POS orders (Sprint 15 - BUG-3 FIX)
@@ -24,6 +27,8 @@ use Tests\TestCase;
 class PosDiscountTest extends TestCase
 {
     use RefreshDatabase;
+    use HasPosQuoteBinding;
+    use SeedsOpenCashDrawerSession;
 
     protected Branch $branch;
     protected User $posOperator;
@@ -34,6 +39,12 @@ class PosDiscountTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] Manual POS discounts are
+        // OFF by default in V1 (F1 fiscal split dormant guard). This suite
+        // validates the discount permission LADDER, which is preserved code —
+        // enable the flag so the ladder is exercised, not the V1 gate.
+        \Illuminate\Support\Facades\Config::set('pos.manual_discount_enabled', true);
 
         $this->seedSpatieRoles();
         $this->seedMinimalSettings();
@@ -51,6 +62,8 @@ class PosDiscountTest extends TestCase
         // the dedicated gate tests live in PosDiscountPermissionTest.
         $this->posOperator->givePermissionTo('pos-discount-unlimited');
         $this->posOperator->givePermissionTo('pos-discount-over-10-requires-manager');
+        // [Sprint H6 TEST-DEBT-001 2026-05-17] Sprint 1B requires an OPEN cash session for CASH.
+        $this->seedOpenSessionFor($this->posOperator, $this->branch);
 
         // Create Customer
         $this->customer = User::factory()->create([
@@ -123,7 +136,12 @@ class PosDiscountTest extends TestCase
             ]),
         ];
 
-        $response = $this->withHeader('x-api-key', config('app.api_key'))->postJson('/api/admin/pos', $orderData);
+        $orderData = $this->payloadWithPosQuote($this->posOperator, $orderData);
+
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+        $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/admin/pos', $orderData);
 
         $response->assertStatus(201);
 
@@ -136,15 +154,14 @@ class PosDiscountTest extends TestCase
     }
 
     /**
-     * DISCOUNT-02: Manual discount > subtotal is ignored (rejected)
+     * DISCOUNT-02: Manual discount > subtotal is rejected explicitly
      */
-    public function test_manual_discount_is_ignored_when_greater_than_subtotal(): void
+    public function test_manual_discount_is_rejected_when_greater_than_subtotal(): void
     {
         $this->actingAs($this->posOperator, 'sanctum');
 
         $subtotal = 10.00;
         $invalidDiscount = 15.00; // More than subtotal - should be rejected
-        $expectedDiscount = 0; // Should be ignored
         $expectedTotal = $subtotal + ($subtotal * 0.10); // +tax, no discount
 
         $orderData = [
@@ -173,16 +190,12 @@ class PosDiscountTest extends TestCase
             ]),
         ];
 
-        $response = $this->withHeader('x-api-key', config('app.api_key'))->postJson('/api/admin/pos', $orderData);
+        $response = $this
+            ->withHeader('x-api-key', config('app.api_key'))
+            ->postJson('/api/admin/pos/quote', $orderData);
 
-        $response->assertStatus(201);
-
-        // Verify order was created with discount = 0 (invalid discount rejected)
-        $this->assertDatabaseHas('orders', [
-            'user_id' => $this->customer->id,
-            'subtotal' => $subtotal,
-            'discount' => $expectedDiscount, // BUG-3 FIX: Invalid discount should be 0
-        ]);
+        $response->assertStatus(422);
+        $this->assertEquals(0, \App\Models\Order::count());
     }
 
     /**
@@ -235,7 +248,12 @@ class PosDiscountTest extends TestCase
             ]),
         ];
 
-        $response = $this->withHeader('x-api-key', config('app.api_key'))->postJson('/api/admin/pos', $orderData);
+        $orderData = $this->payloadWithPosQuote($this->posOperator, $orderData);
+
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+        $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/admin/pos', $orderData);
 
         $response->assertStatus(201);
 

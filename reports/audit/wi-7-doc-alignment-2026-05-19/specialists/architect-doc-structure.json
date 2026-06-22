@@ -1,0 +1,113 @@
+{
+  "specialist": "Architect",
+  "scope": "docs/ structure consistency with code reality",
+  "mandate": "Read-only audit. No edits. Identify ALIGN-AS-IS / STALE-DOCS / DRIFT.",
+  "timestamp": "2026-05-19T02:10:00+02:00",
+  "head_audited": "d5f934755",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "evidence_anchors": [
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/CLAUDE.md",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/docs/ARCHITECTURE.md",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/docs/AUTHZ_MATRIX.md",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/docs/ORDER_FLOW.md",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/docs/PROJECT_CONTINUITY_AND_VISION.md"
+  ],
+  "findings": [
+    {
+      "id": "ARCH-01",
+      "severity": "P1",
+      "category": "DRIFT-RECOMMENDATIONS",
+      "claim": "CLAUDE.md §7 frozen list is incomplete vs BRAIN.md §2 baseline.",
+      "evidence_doc": "CLAUDE.md:215-241 lists 13 frozen files.",
+      "evidence_code": "PROJECT_BRAIN.md:60 enumerates 'PricingService.php, PaymentComponent.vue, PosV5TrancheRow.vue, pos-wizard.js, KioskWizardComponent.vue' as untouched protected files. PaymentComponent.vue and PosV5TrancheRow.vue are NOT in CLAUDE.md §7.",
+      "recommendation": "Add 'resources/js/components/admin/pos/PaymentComponent.vue' and 'resources/js/components/admin/pos/PosV5TrancheRow.vue' to CLAUDE.md §7 'Frontend' bucket — they are operationally frozen per ongoing session evidence (BRAIN §2 line 60, Wave Z, V1 Cloud-Prep). Confirm path with quick grep before adding to ensure correct location."
+    },
+    {
+      "id": "ARCH-02",
+      "severity": "P2",
+      "category": "STALE-DOCS",
+      "claim": "CLAUDE.md §15 lists 'reports/antigravity/' as a directory to consult, but the active naming convention for Playwright cycle reports has shifted to 'reports/test-e2e/'.",
+      "evidence_doc": "CLAUDE.md:436 cites 'reports/antigravity/'.",
+      "evidence_code": "Most recent reports live under 'reports/test-e2e/critical-focus-2026-05-18/', 'reports/test-e2e/goal-final-validation-2026-05-18/', 'reports/test-e2e/goal-v1-production-perfect-phase2-2026-05-18/'. 'reports/antigravity/' is legacy.",
+      "recommendation": "Replace `reports/antigravity/` with `reports/test-e2e/` in CLAUDE.md §15 list."
+    },
+    {
+      "id": "ARCH-03",
+      "severity": "P2",
+      "category": "STALE-DOCS",
+      "claim": "docs/ARCHITECTURE.md is high-level monolith description, dated 2026-03-10. It does NOT reflect the Outbox pattern (V1.0.1), Domain Events (`app/Domain/Order/OrderStateMachine.php`), or the Saga pattern aspirational backlog. The §Zones Gelées section in ARCHITECTURE.md uses older terminology than CLAUDE.md §7.",
+      "evidence_doc": "docs/ARCHITECTURE.md (size 3730 bytes, last touched 2026-03-10) mentions OrderService + FrontendOrderService + Vuex but NOT Outbox, fiscal services, OrderStateMachine, BranchScope.",
+      "evidence_code": "OUTBOX_PATTERN.md (separate doc, 4253 bytes, 2026-05-09) exists. EVENT_CONTRACT.md (5280 bytes, 2026-05-11). PROJECT_BRAIN.md §2 references 'NF525 APPENDED-ONLY' chain, fiscal services, BranchScope, etc.",
+      "recommendation": "ARCHITECTURE.md needs a 'V1.0.1 hardening' addendum section pointing to: OUTBOX_PATTERN.md, EVENT_CONTRACT.md, FISCAL_SECRETS.md, MENU_AVAILABILITY.md. Or shorten it to a pointer file. Do NOT rewrite — point to source docs."
+    },
+    {
+      "id": "ARCH-04",
+      "severity": "P2",
+      "category": "STALE-DOCS",
+      "claim": "docs/PROJECT_CONTINUITY_AND_VISION.md (last touched 2026-04-18) describes 'à spécifier (annuler + recréer vs patch API)' for POS amend flow, but PosParkedOrder + OrderQuote (now BranchScope-scoped) handle this in V1.0.1.",
+      "evidence_doc": "docs/PROJECT_CONTINUITY_AND_VISION.md section 3.1 says 'Après coup (demande récurrente) : pouvoir modifier une commande déjà validée (amend / rouvrir) — à spécifier (annuler + recréer vs patch API) ; largement non implémenté'.",
+      "evidence_code": "app/Models/PosParkedOrder.php + app/Models/OrderQuote.php exist with BranchScope. Refund/RefundWithCounterEntryService present (recent commits 8edc72a36, 3b0776f7c).",
+      "recommendation": "Add a line in §3.1: 'V1.0.1: PosParkedOrder + RefundWithCounterEntryService handle amend via refund-and-recreate. See plans/v1-0-1-hardening/.'"
+    },
+    {
+      "id": "ARCH-05",
+      "severity": "P1",
+      "category": "DRIFT-RECOMMENDATIONS",
+      "claim": "CLAUDE.md §15 references 'plans/MASTER_ITER14_V1_HARDENING_DELIVERY_2026-05-09.md' as 'last delivery' — but since 2026-05-09, multiple MASTER plans superseded it: MASTER_ULTRAPLAN_MOBILE_REALIGNMENT_2026-05-16, GOAL_LONGTERM_LECAYENNE_FRONTENDS_2026-05-16, GOAL_PRODUCTION_READINESS_LECAYENNE_2026-05-18, GOAL_ULTRA_CENTRAL_MGMT_SYNC_2026-05-18, GOAL_PRODUCTION_READINESS_COMPLEMENT_2026-05-18, GOAL_V1_PRODUCTION_PERFECT_PHASE2_2026-05-18.",
+      "evidence_doc": "CLAUDE.md:425 cites only iter14 master plan.",
+      "evidence_code": "ls plans/ shows 8 newer GOAL/MASTER files post-2026-05-09. PROJECT_BRAIN.md §2 line 49 references current 'this session' on `heal/cms-pr1-quickwins-2026-05-18`.",
+      "recommendation": "Replace single-plan reference with: 'plans/GOAL_V1_PRODUCTION_PERFECT_PHASE2_2026-05-18.md (current) — see PROJECT_BRAIN.md §2 for active plan pointer'."
+    },
+    {
+      "id": "ARCH-06",
+      "severity": "P3",
+      "category": "SAFE-TO-ARCHIVE",
+      "claim": "plans/ folder has 153 .md files. Plans dated 2026-04-14 to 2026-05-04 (~80 files) are pre-iter14 hardening and overwritten by subsequent waves. They are safe to move to plans/archive/2026-04-pre-iter14/ for housekeeping.",
+      "evidence_doc": "ls plans/*.md | wc -l = 153.",
+      "evidence_code": "Pre-2026-05-09 plans include PLAN_CV1-* CV1 cycle (closed per BRAIN reports), PLAN_CAISSE_V1_* W1/W2 cycle, E2E_MASSIVE_AUDIT_* (cycle closed), PLAN_TASK_V1_* (V1 wired-in via iter11+12).",
+      "recommendation": "Move ~80 pre-iter14 plans to plans/archive/2026-04-pre-iter14/. Keep MASTER_ULTRA_PLAN_V1_INTERNAL_AUDIT_2026-05-09 + MASTER_ITER14_V1_HARDENING_DELIVERY_2026-05-09 as named anchors per CLAUDE.md §15 reference."
+    },
+    {
+      "id": "ARCH-07",
+      "severity": "P1",
+      "category": "DRIFT-RECOMMENDATIONS",
+      "claim": "CLAUDE.md is at git HEAD 9d9dddae1 (2026-05-09 commit) — 880 commits behind current HEAD d5f934755. PROJECT_BRAIN.md was updated 50bdd5150 (2026-05-19). This is the largest single-document drift in the repo.",
+      "evidence_doc": "git log -1 --format='%h %ai %s' -- CLAUDE.md = '9d9dddae1 2026-05-09 21:17:44 audit(iter15)'.",
+      "evidence_code": "git log | wc -l = 878. Date today 2026-05-19. 10 calendar days, ~450 commits since CLAUDE.md last touched.",
+      "recommendation": "Apply the §7 frozen-list patch (ARCH-01), the §9 BranchScope correction (see RED), the §15 plans pointer (ARCH-05), the §15 reports/test-e2e rename (ARCH-02), and stamp 'Last updated: 2026-05-19 post WI-7'."
+    },
+    {
+      "id": "ARCH-08",
+      "severity": "P2",
+      "category": "DRIFT-RECOMMENDATIONS",
+      "claim": "CLAUDE.md does not mention the production boot guards in AppServiceProvider.php that ENFORCE invariants stated abstractly in §8/§9 (POS_SIMULATION_HARDWARE=false in prod, IDEMPOTENCY_MIDDLEWARE_ENABLED=true in prod, APP_DEBUG=false in prod, APP_URL non-empty in prod).",
+      "evidence_doc": "CLAUDE.md §8 says 'Aucun env flag pour bypass' but does not mention the enforcement mechanism.",
+      "evidence_code": "app/Providers/AppServiceProvider.php:78-145 contains 4 production boot guards added by commits 2477a2d05, dafb6b3c4, 1e7c65ecc, 2949e92ed — they `throw new RuntimeException` at boot if env state is unsafe.",
+      "recommendation": "Add to CLAUDE.md §8: 'Production boot guards in AppServiceProvider.php REFUSE TO BOOT if POS_SIMULATION_HARDWARE!=false, IDEMPOTENCY_MIDDLEWARE_ENABLED!=true, APP_DEBUG=true, or APP_URL empty. See app/Providers/AppServiceProvider.php:78-145.'"
+    }
+  ],
+  "alignment_summary": {
+    "ALIGN_AS_IS": [
+      "docs/ORDER_FLOW.md — accurate state machine description",
+      "docs/BUSINESS_RULES.md — pricing/discount/SSOT rules still hold",
+      "docs/AUTHZ_MATRIX.md — POS Phase 9 permission matrix accurate",
+      "docs/IDEMPOTENCY.md — accurate",
+      "docs/OUTBOX_PATTERN.md — accurate"
+    ],
+    "STALE_DOCS": [
+      "docs/ARCHITECTURE.md — pre-Outbox era, no Domain Events mention",
+      "docs/PROJECT_CONTINUITY_AND_VISION.md — POS amend section outdated",
+      "CLAUDE.md §15 — reports/antigravity/ legacy, single iter14 plan pointer"
+    ],
+    "DRIFT_RECOMMENDATIONS": [
+      "CLAUDE.md §7 — add 2 PaymentComponent files to frozen list",
+      "CLAUDE.md §8 — document AppServiceProvider boot guards",
+      "CLAUDE.md §15 — update plan + reports pointer"
+    ],
+    "SAFE_TO_ARCHIVE": [
+      "~80 pre-2026-05-09 plans/PLAN_CV1-* PLAN_CAISSE_V1_* into plans/archive/"
+    ]
+  },
+  "word_count": 920,
+  "confidence": "HIGH (file:line citations on all findings)"
+}

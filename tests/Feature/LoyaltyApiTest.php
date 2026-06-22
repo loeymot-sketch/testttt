@@ -16,6 +16,13 @@ class LoyaltyApiTest extends TestCase
         $this->seedMinimalSettings();
         $this->seedSpatieRoles();
         config(['app.api_key' => '123456']);
+        // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-31 Q3] These tests exercise loyalty
+        // redeem MECHANICS (success, insufficient-points), not the V1 discount on/off
+        // policy. Enable the discretionary-discount master flag so the pre-redeem gate
+        // (LoyaltyController::redeem) does not short-circuit before the mechanics. The
+        // OFF behaviour is locked by KioskLoyaltyDoubleRedeemRefusedTest::
+        // test_pre_redeem_is_refused_when_discounts_disabled_v1.
+        config(['pos.manual_discount_enabled' => true]);
         $this->withHeaders([
             'x-api-key' => '123456',
             'Accept' => 'application/json',
@@ -81,10 +88,13 @@ class LoyaltyApiTest extends TestCase
             'status' => 1
         ]);
 
-        $response = $this->actingAs($admin, 'sanctum')->postJson('/api/frontend/loyalty/add-points', [
-            'code' => 'ADD99',
-            'points' => 20
-        ]);
+        // [prod-finale 2026-06-17] add-points is now idempotency-guarded (symmetric to /redeem) → send the key.
+        $response = $this->actingAs($admin, 'sanctum')
+            ->withHeader('X-Idempotency-Key', (string) \Illuminate\Support\Str::uuid())
+            ->postJson('/api/frontend/loyalty/add-points', [
+                'code' => 'ADD99',
+                'points' => 20
+            ]);
 
         $response->assertStatus(200);
         $this->assertDatabaseHas('users', ['loyalty_code' => 'ADD99', 'loyalty_points' => 30]);

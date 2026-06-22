@@ -120,8 +120,13 @@ class ForgotPasswordController extends Controller
         $validator = Validator::make($request->all(), [
             'email'                 => ['required', 'string', 'email', 'max:255'],
             'reset_token'           => ['required', 'string', 'size:64'],
-            'password'              => ['required', 'string', 'min:6', 'confirmed'],
-            'password_confirmation' => ['required', 'string', 'min:6'],
+            // [F-2 AUTH R1 V1.0.1 quick win — 2026-05-19]
+            // Bumped min:6 -> min:12 for parity with staff create/update and the
+            // bcrypt-rounds-12 hardening shipped in Wave 5G. Sentinel:
+            // tests/Feature/Sentinels/PasswordResetMinLengthSentinelTest.php
+            // Source: reports/audit/foundation-2026-05-18/round-1/F-2-AUTH/STATUS.md §5.1 R1
+            'password'              => ['required', 'string', 'min:12', 'confirmed'],
+            'password_confirmation' => ['required', 'string', 'min:12'],
         ]);
 
         if ($validator->fails()) {
@@ -161,6 +166,19 @@ class ForgotPasswordController extends Controller
             $user->update([
                 'password' => Hash::make($request->post('password'))
             ]);
+
+            // [WJ-3 WI-5 SEC-RST-01 V1.0.1 P1 — 2026-05-19]
+            // Revoke ALL existing Sanctum tokens BEFORE minting the new
+            // session token. A password reset signals potential credential
+            // compromise — any token already in circulation (any name, any
+            // ability scope) must be invalidated, otherwise an attacker who
+            // exfiltrated a token retains access for up to 480 min after
+            // the legitimate owner completed the reset. Mirror of the
+            // Sprint 5D Z6-01 relogin-revoke in LoginController.php:109,
+            // broader scope (all token names, not just `auth_token`)
+            // because reset = full session purge by definition.
+            // Sentinel: tests/Feature/Sentinels/PasswordResetRevokesTokensSentinelTest.php
+            $user->tokens()->delete();
 
             $this->token = $user->createToken(
                 'auth_token',

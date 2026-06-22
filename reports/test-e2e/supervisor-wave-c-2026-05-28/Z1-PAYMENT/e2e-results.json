@@ -1,0 +1,211 @@
+{
+  "mission": "SUPERVISOR WAVE C — Z1 E2E TESTER Payment Plan B (Playwright headed, read+test only)",
+  "agent": "Z1 E2E TESTER",
+  "timestamp_utc": "2026-05-28T20:42:00Z",
+  "branch": "feature/mobile-app-le-cayenne-2026-05-10",
+  "head_sha": "fcfef17fd",
+  "test_mode": "read+test only — no code/.env modification",
+  "verdict": "NEEDS_HEAL",
+  "verdict_severity": "P0_BLOCKER",
+  "verdict_one_liner": "Plan B is committed in code at HEAD but completely INACTIVE at runtime — kiosk still shows TPE payment grid because the master.blade.php flag-emit line was regressed by a later commit and KIOSK_PAY_AT_COUNTER_ONLY is absent from .env.",
+
+  "naming_discrepancy_flagged": {
+    "supervisor_task_says": "payment_method=CASH_ON_DELIVERY (counter-deferred)",
+    "implementer_code_uses": "PaymentGateway::PAY_AT_COUNTER (gateway_id=6)",
+    "config_kiosk_comment_says": "CASH_ON_DELIVERY=1 logique, mais l'enum/flag/method s'appellent pay_at_counter",
+    "risk": "NF525 daily reports / sales_report PDF / Z reports may attribute these orders to wrong category (CASH_ON_DELIVERY vs PAY_AT_COUNTER) if downstream reporting groups by gateway_id. Supervisor must reconcile naming intent BEFORE retest, otherwise reports are wrong from day 1.",
+    "evidence_files": [
+      "config/kiosk.php (block comment uses CASH_ON_DELIVERY=1)",
+      "app/Enums/PaymentGateway.php (added PAY_AT_COUNTER=6 per commit f36c84c11)",
+      "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue (method='counter' → processPayAtCounter)"
+    ]
+  },
+
+  "pre_flight_evidence": {
+    "server_reachable": true,
+    "urls_tested": {
+      "/kiosk/idle": "HTTP 200",
+      "/admin/pos": "HTTP 200",
+      "/login": "HTTP 200"
+    },
+    "kiosk_idle_renders_french": true,
+    "kiosk_idle_screenshot": "/tmp/foodking-wave-c-2026-05-28/payment-plan-b/t1-kiosk-idle-baseline.png",
+    "admin_pos_landing_screenshot": "/tmp/foodking-wave-c-2026-05-28/payment-plan-b/t2-admin-pos-landing.png",
+    "window_foodking_config_keys_observed": [
+      "baseUrl", "apiKey", "googleMapKey", "demo",
+      "kioskAutoLogin", "kioskDefaultLocale", "kioskLocaleSwitchAllowed",
+      "kioskMenuPricing", "kiosk", "kioskSandwichSplit",
+      "maxItemQty", "kioskConfirmationAutoReturnSeconds",
+      "ossFallbackPolling", "kdsFallbackPolling",
+      "staffOnlyMode", "kioskUsePosWizard",
+      "appEnv", "branchCount", "features", "bypassMode"
+    ],
+    "kioskPayAtCounterOnly_in_window_foodkingConfig": null,
+    "kioskPayAtCounterOnly_expected": true,
+    "tinker_config_check": "config('kiosk.pay_at_counter_only') === false",
+    "env_KIOSK_PAY_AT_COUNTER_ONLY": "absent (null)"
+  },
+
+  "tests": [
+    {
+      "id": "T1",
+      "title": "Kiosk order WITHOUT payment selection",
+      "status": "FAIL",
+      "severity": "P0_BLOCKER",
+      "expected": "On Valider, kiosk skips payment-method picker, auto-submits as PAY_AT_COUNTER, navigates to confirmation/waiting screen with queue number + 'Veuillez payer à la caisse'.",
+      "observed": "Plan B branch is unreachable from the UI. payAtCounterOnly computed property returns false because window.foodkingConfig.kioskPayAtCounterOnly is undefined/null. The original v-if='!submitting && !submitted' still renders the TPE method grid; mounted() hook does NOT call confirmPayment('counter') because payAtCounterOnly === false.",
+      "root_cause_evidence": [
+        "git diff f36c84c11..HEAD -- resources/views/master.blade.php → the kioskPayAtCounterOnly: @json(...) line added by f36c84c11 (line 95) is GONE in HEAD",
+        "Likely reverting commit: f485f5e4a (chore: snapshot working-tree state pre-bundle-rebuild) — last toucher of master.blade.php per git log -5",
+        "Empirical: page.evaluate(() => window.foodkingConfig.kioskPayAtCounterOnly) returned undefined/null at /kiosk/idle on http://127.0.0.1:8000",
+        "Plus secondary: .env has no KIOSK_PAY_AT_COUNTER_ONLY=true line — even if master.blade.php were restored, config('kiosk.pay_at_counter_only') would still be false."
+      ],
+      "captures": ["t1-kiosk-idle-baseline.png"],
+      "code_state_at_HEAD": {
+        "KioskPaymentComponent.vue": "Plan B logic INTACT (payAtCounterOnly computed + mounted auto-submit + processPayAtCounter method present at lines 250-255, 263-272, 504-516)",
+        "config/kiosk.php": "pay_at_counter_only key INTACT (added at lines 49 and 90 per f36c84c11)",
+        "PaymentGateway.php enum": "PAY_AT_COUNTER=6 INTACT (per f36c84c11 diff)",
+        "master.blade.php": "REGRESSED — kioskPayAtCounterOnly line REMOVED in HEAD (line 178 ends at kioskUsePosWizard, missing line 179 kioskPayAtCounterOnly that f36c84c11 added at line 95 of the diff)"
+      }
+    },
+    {
+      "id": "T2",
+      "title": "Order appears at Caisse encaissement queue",
+      "status": "BLOCKED",
+      "severity": "P0_BLOCKER_CASCADE",
+      "blocked_by": "T1",
+      "rationale": "Cannot produce a kiosk order with payment_method=PAY_AT_COUNTER since the Plan B flag is off — kiosk would either route through TPE flow or be unreachable. No order to inspect on Caisse queue."
+    },
+    {
+      "id": "T3",
+      "title": "Cashier opens Counter Collect modal",
+      "status": "BLOCKED",
+      "severity": "P0_BLOCKER_CASCADE",
+      "blocked_by": "T2",
+      "rationale": "No PAY_AT_COUNTER pending order in queue → no clickable row → PosCounterCollectModal cannot open in the Plan-B scenario.",
+      "side_note": "PosCounterCollectModal.vue EXISTS at resources/js/components/admin/pos/PosCounterCollectModal.vue and is mounted by PosComponent.vue line 1396 (verified via grep). The modal exists; the question is whether its EXISTING wiring accepts an unpaid kiosk-origin order — this is unverified in this cycle."
+    },
+    {
+      "id": "T4",
+      "title": "Cash payment at Caisse (Plan B)",
+      "status": "BLOCKED",
+      "severity": "P0_BLOCKER_CASCADE",
+      "blocked_by": "T3",
+      "rationale": "Without a counter-deferred order arriving at Caisse, cash encashment + drawer + audit log + fiscal_sequence allocation cannot be tested in the Plan-B end-to-end flow."
+    },
+    {
+      "id": "T5",
+      "title": "Card payment at Caisse (Plan B = print + manual TPE)",
+      "status": "BLOCKED",
+      "severity": "P0_BLOCKER_CASCADE",
+      "blocked_by": "T3",
+      "rationale": "Same precondition gap as T4. Cannot verify receipt print + manual TPE UX message."
+    },
+    {
+      "id": "T6",
+      "title": "Ticket Restaurant at Caisse",
+      "status": "BLOCKED",
+      "severity": "P0_BLOCKER_CASCADE",
+      "blocked_by": "T3",
+      "rationale": "Same precondition gap."
+    },
+    {
+      "id": "T7",
+      "title": "Verify KDS broadcast still fires after Caisse encashment",
+      "status": "BLOCKED",
+      "severity": "P0_BLOCKER_CASCADE",
+      "blocked_by": "T4",
+      "rationale": "T1→T2 latency measure (Caisse validate → KDS DOM mutation) is not runnable without a real encashment event. Cannot measure latency on a flow that does not execute."
+    },
+    {
+      "id": "T8",
+      "title": "NF525 chain integrity post Plan B flow",
+      "status": "NOT_APPLICABLE",
+      "severity": "INFO",
+      "rationale": "No new orders/payments produced by Plan-B path → audit_logs and composition_snapshot did not grow as a result of this test cycle. Chain integrity verify --all is testable independently but provides no Plan-B signal until T4-T6 succeed."
+    }
+  ],
+
+  "primary_finding_p0_blocker": {
+    "id": "WAVE-C-Z1-P0-01",
+    "title": "Plan B regression — runtime flag never reaches the browser",
+    "two_layer_root_cause": [
+      {
+        "layer": "master.blade.php",
+        "issue": "f36c84c11 added 'kioskPayAtCounterOnly: @json((bool) config(\\'kiosk.pay_at_counter_only\\', false))' at line 95 (post the kioskUsePosWizard line). HEAD at resources/views/master.blade.php:177-178 ends at kioskUsePosWizard and does NOT contain the kioskPayAtCounterOnly line.",
+        "regressing_commit_likely": "f485f5e4a (chore: snapshot working-tree state pre-bundle-rebuild) — confirmed via git log -5 master.blade.php",
+        "evidence": "git diff f36c84c11 HEAD -- resources/views/master.blade.php (line not in HEAD)"
+      },
+      {
+        "layer": ".env",
+        "issue": "KIOSK_PAY_AT_COUNTER_ONLY is absent from .env. Even if master.blade.php were restored verbatim, config('kiosk.pay_at_counter_only') would resolve to false (filter_var on null + default false).",
+        "evidence": "grep -E '^KIOSK_' .env shows only KIOSK_MACHINE_USERNAME, KIOSK_MACHINE_PASSWORD, KIOSK_REQUIRE_MACHINE_LOGIN, KIOSK_USE_POS_WIZARD, KIOSK_ORDER_RATE_LIMIT; tinker confirmed env('KIOSK_PAY_AT_COUNTER_ONLY') === null"
+      }
+    ]
+  },
+
+  "recommended_heals_for_supervisor_dispatch": [
+    {
+      "id": "HEAL-1",
+      "scope": ".env",
+      "patch": "Append a line: KIOSK_PAY_AT_COUNTER_ONLY=true",
+      "frozen_zone": false,
+      "risk": "trivial; reversible by removing the line",
+      "verification": "php artisan config:clear && php artisan tinker --execute='echo config(\\\"kiosk.pay_at_counter_only\\\");' → expect true"
+    },
+    {
+      "id": "HEAL-2",
+      "scope": "resources/views/master.blade.php",
+      "patch": "After the line 'kioskUsePosWizard: @json((bool) env(\\'KIOSK_USE_POS_WIZARD\\', false)),' add:\\n            // V1 launch: kiosk skips TPE, submits unpaid order, customer pays at caisse.\\n            kioskPayAtCounterOnly: @json((bool) config(\\'kiosk.pay_at_counter_only\\', false)),\\n",
+      "source_of_truth": "git show f36c84c11 -- resources/views/master.blade.php (the 3 added lines at +93/+95)",
+      "frozen_zone": false,
+      "risk": "trivial single-line restoration; identical to what was committed at f36c84c11",
+      "verification": "curl -s http://127.0.0.1:8000/kiosk/idle | grep kioskPayAtCounterOnly → expect 'kioskPayAtCounterOnly: true,'"
+    },
+    {
+      "id": "HEAL-3",
+      "scope": "runtime cache invalidation",
+      "patch": "php artisan view:clear && php artisan config:clear",
+      "frozen_zone": false,
+      "risk": "none",
+      "verification": "Re-run T1: page.evaluate(() => window.foodkingConfig.kioskPayAtCounterOnly) must return true; the TPE method grid v-if branch must be skipped; mounted() must auto-call confirmPayment('counter')."
+    },
+    {
+      "id": "HEAL-4-IF-NEEDED",
+      "scope": "Bundle rebuild (only if compiled JS path differs)",
+      "patch": "npm run dev (or equivalent mix build) IF the change to KioskPaymentComponent.vue is not present in the live kiosk-shell.js / kiosk-wizard.js bundles",
+      "verification": "Grep public/js/kiosk-shell.js (or whichever bundle hosts KioskPaymentComponent) for the string 'payAtCounterOnly' or 'processPayAtCounter' or 'kioskPayAtCounterOnly' to confirm Plan B is compiled in. Current grep returned empty for kiosk-shell.js and app.js — this MAY be code-splitting (component is a route-loaded chunk) OR a stale bundle. Supervisor should verify by inspecting the kiosk-wizard.js or the dynamic chunk that owns KioskPaymentComponent.vue.",
+      "note_for_supervisor": "I did not run the rebuild. If after HEAL-1/2/3 T1 still fails, then HEAL-4 is required."
+    }
+  ],
+
+  "supervisor_followup_recommended": [
+    "Reconcile naming: pick ONE — either rename PaymentGateway::PAY_AT_COUNTER → CASH_ON_DELIVERY (gateway_id=1) and update KioskPaymentComponent.vue + config comments to match, OR update the task description + config/kiosk.php comment to consistently say PAY_AT_COUNTER. Currently the supervisor brief says CASH_ON_DELIVERY and the code says PAY_AT_COUNTER — NF525 daily/Z reports will misattribute.",
+    "Add a Vitest sentinel that asserts master.blade.php contains the 'kioskPayAtCounterOnly: @json' line OR a Feature test that GET /kiosk/idle returns HTML containing that key — would have caught the regression at PR time.",
+    "Confirm whether KioskPaymentComponent.vue is in the kiosk-shell.js / kiosk-wizard.js bundles OR is dynamically code-split — if dynamic, a bundle rebuild may still be needed even after the blade + env fix."
+  ],
+
+  "frozen_zone_compliance": {
+    "files_modified_by_this_agent": [],
+    "scope": "read+test only as instructed"
+  },
+
+  "screenshots_index": [
+    {
+      "id": "t1-kiosk-idle-baseline.png",
+      "path": "/tmp/foodking-wave-c-2026-05-28/payment-plan-b/t1-kiosk-idle-baseline.png",
+      "describes": "Kiosk /kiosk/idle landing screen — French 'Bienvenue !' + 'À emporter' tile. Baseline for T1 evidence; Plan B flag absent from window.foodkingConfig observed during this capture."
+    },
+    {
+      "id": "t2-admin-pos-landing.png",
+      "path": "/tmp/foodking-wave-c-2026-05-28/payment-plan-b/t2-admin-pos-landing.png",
+      "describes": "/admin/pos reachable (HTTP 200, unauthenticated landing). T2 not executed end-to-end due to T1 blocker."
+    }
+  ],
+
+  "tests_not_executed_reason": "T2-T7 cascade-blocked by T1 root cause. Running browser choreography would have produced no new information beyond what is already evidenced: Plan B flag never reaches the browser → kiosk cannot enter the counter-deferred branch → no order arrives at Caisse via the Plan B path. Saving Playwright budget for the post-heal re-run.",
+
+  "budget_used_minutes": "~25 of 60 (orientation + capture + report)",
+
+  "next_action": "Supervisor dispatch a heal agent with HEAL-1 + HEAL-2 + HEAL-3 (+ HEAL-4 if bundle inspection requires). Then re-dispatch Z1 E2E TESTER for the full 8-test choreography against a runtime where window.foodkingConfig.kioskPayAtCounterOnly === true."
+}

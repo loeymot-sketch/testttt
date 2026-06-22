@@ -1,0 +1,111 @@
+{
+  "wave": "E",
+  "round": 1,
+  "states_reviewed": 14,
+  "findings": [
+    {
+      "id": "E-001",
+      "state_artifact": "test-e2e-borne-E/04-e-cart-totals-ssot.png",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "evidence": "Sidecar `04-e-cart-totals-ssot.delta.json` records `cart_displayed_total: 23.7`, `backend_quote_total_ttc: 22.5`, `absolute_delta: 1.1999999999999993`, `verdict: P0_NUMERIC_INTEGRITY_DELTA`. Sidecar `04-e-cart-totals-ssot.quote.json` returns the backend pricing service result `data.subtotal: 22.5` and `data.total_ttc: 22.5` (no separate menu-formula line). State 01 DOM offset 8584-8587 shows the Salade Royale cart line rendered at €8,70 with note `Formule : Avec boisson (Coca-Cola 33cl)`; subtraction confirms the delta lives on this single line (frontend prices the formula at base 7.50€ + 1.20€ menu addon, backend prices it at the bare 7.50€ — the 1.20€ menu-boisson upgrade is DISPLAYED but NOT CHARGED). DECISION: backend under-charges, owner loses 1.20€ per Salade-with-Coca-formule order. Frontend display (23.70€) is the correct intended total per the menu-formula pricing model; the backend lacks the corresponding ratio logic.",
+      "fix_hint": "ROOT CAUSE: SSOT divergence between `resources/js/helpers/kioskPricing.js` lines 46-68 (`getKioskMenuAddonPrice` applies `pricing.drinkRatio = 0.4` to the full menu addon price → 0.4 × 3.00 = 1.20€) called from line 113 of the same file in `calculateKioskRunningTotal`, vs `app/Services/Pricing/PricingService.php` lines 193-216 (`addonTotal += (float) ($dbAddon->addonItem?->price ?? 0) * $addonQuantity`) which has NO ratio awareness — it can ONLY emit 0€ (addon absent from payload) or full addon-item price (~3.00€), never 1.20€. The frontend forwards `_boissonMeta.addonId` to `item_addons[]` (KioskWizardComponent.vue lines 1878-1889) but on the kiosk surface the menu-formula upgrade does not resolve to a normal addon row priced at 1.20€ in the DB — backend therefore charges 0. Fix paths (owner decision required): (A) Move the menu-formula ratio model into PricingService — read `kiosk_menu_pricing` config and apply the same `fullRatio/friesRatio/drinkRatio` multipliers when building `addonTotal` for kiosk surface; OR (B) materialise a real `item_addon` row with `addon_item.price = 1.20€` so the frontend ratio computation and the backend FK price match. Any path MUST ensure a triple-vert PHPUnit + Vitest + Playwright SSOT delta=0.00€ before merging. Backend is the source of truth (CLAUDE.md §3 rule 7) — frontend ratio must round-trip identically server-side. Until then, every Salade-with-Coca-formule order leaks 1.20€ of revenue and breaches NF525 fiscal SSOT (composition_snapshot will record an under-priced line).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-002",
+      "state_artifact": "test-e2e-borne-E/11-e-cash-alt-branch-instruction.png",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "evidence": "State 11 PNG shows simultaneously on the SAME viewport: card `Numéro de commande #A0063 — Montant à régler 22,50 €` and the bottom global cart bar `Mon panier €23,70 ›`. Sidecar `12-e-cash-instruction-amount-display.totals.json` confirms `cart_total_cash: 23.7` AND `cash_amount_displayed: 22.5` — same fact, two values, on the same screen at the same time. Customer reads two different totals and cannot tell which to pay; cashier reconciliation will fail (NF525 receipt prints the lower 22,50€, customer expected 23,70€ from the persistent cart bar).",
+      "fix_hint": "Two-fold fix: (1) Resolve the underlying SSOT delta per E-001 so frontend cart total reconciles with backend total. (2) Add `kiosk.cash-instruction` (and `kiosk.loyalty`) to the `hiddenRoutes` array in `resources/js/components/frontend/kiosk/KioskAppComponent.vue` line 255 so the global floating bar is suppressed once the customer is past the cart screen. Currently only `['kiosk.idle', 'kiosk.categories', 'kiosk.cart', 'kiosk.payment', 'kiosk.waiting', 'kiosk.confirmation', 'kiosk.upsell']` are hidden — `kiosk.cash-instruction` (defined at `resources/js/router/modules/kioskRoutes.js:245`) and `kiosk.loyalty` (line 191) are missing.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-003",
+      "state_artifact": "test-e2e-borne-E/11-e-cash-alt-branch-instruction.png",
+      "category": "element_overlap",
+      "severity": "P1",
+      "evidence": "DOM at offset 9308 of `11-e-cash-alt-branch-instruction.dom.html` confirms `<button class=\"kiosk-cart-bar\">` is rendered as a fixed-position bottom button overlapping the `kiosk-cash` card. Same overlap visible on state 06 (loyalty step) where the cart bar sits above the loyalty number-pad and the `Pas encore membre ? S'inscrire` register CTA. The orchestrator note says the spec had to dispatch checkout via `page.evaluate(() => el.click())` to bypass the cart-bar intercepting clicks on the cash CTA — real customers cannot bypass that, they would be stuck. Confirmed root cause: `KioskAppComponent.vue` line 255 `hiddenRoutes` array misses `kiosk.loyalty` and `kiosk.cash-instruction`.",
+      "fix_hint": "Edit `resources/js/components/frontend/kiosk/KioskAppComponent.vue` line 255: extend `hiddenRoutes` to include `'kiosk.loyalty'` and `'kiosk.cash-instruction'` (route names taken from `resources/js/router/modules/kioskRoutes.js:191,245`). Re-run wave-E spec; states 06, 11, 12 must show NO `.kiosk-cart-bar` element and clicking the cash CTA via real `await el.click()` (no `page.evaluate`) must succeed without forced-click.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-004",
+      "state_artifact": "test-e2e-borne-E/09-e-payment-tpe-result-ok.png",
+      "category": "unexpected_4xx",
+      "severity": "P1",
+      "evidence": "Sidecar `09-e-payment-tpe-result-ok.network.json` captures `POST /api/frontend/order/309/payment-confirm → 401 Unauthorized` at ts 1778436693584. Console sink (`09-e-payment-tpe-result-ok.console.json`) records the matching `Failed to load resource: the server responded with a status of 401`. State 10 still shows confirmation #A0062 — so the receipt rendered for a separate order, but the CB happy-path payment-confirm itself FAILED auth. `app/Http/Controllers/Frontend/OrderController.php` lines 105-112 reject the call when `request->user('sanctum')` is null. Either the kiosk Sanctum token (`kiosk:order` ability, TTL 480 min per CLAUDE.md §9) was not carried on this specific axios call, or it was revoked between order create and payment-confirm. Not P0 because the order DID land downstream (#A0062 visible), but the 401 leaves order 309 in a hanging unconfirmed state.",
+      "fix_hint": "Investigate axios interceptor on the kiosk client — confirm `Authorization: Bearer <kiosk-token>` is attached to `/api/frontend/order/{id}/payment-confirm`. If the token is being silently dropped between order-create and payment-confirm (e.g. payment-confirm caller doesn't reuse the kiosk-cart store kioskToken), wire it explicitly. Add a Vitest unit on the payment-confirm caller asserting the Authorization header is present, and a Playwright network assertion that the response is 200, not 401, on the CB happy path.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-005",
+      "state_artifact": "test-e2e-borne-E/01-e-cart-multi-line.png",
+      "category": "unexpected_4xx",
+      "severity": "P1",
+      "evidence": "Sidecar `01-e-cart-multi-line.network.json` captures `POST /api/frontend/pricing/preview → 401 Unauthorized` at ts 1778436680947. Console log echoes the resource failure. The kiosk preview-pricing endpoint is being called from the cart screen unauthenticated despite the kiosk being logged in (Wave-E spec uses `loginAsKiosk`). DOM still renders the cart so the failure is silent — no `[role=alert]` or toast surfaces it to the user — but the preview is presumably falling back to the pre-quote frontend total (the 23.70€ that diverges from backend, see E-001). This is therefore a hidden contributor to the SSOT delta in E-001.",
+      "fix_hint": "Trace `/api/frontend/pricing/preview` route in `routes/api.php` and confirm the middleware stack matches the kiosk Sanctum ability (`kiosk:order`). Either the route is mis-scoped (requires a permission the kiosk token doesn't carry) or the axios call from kioskPricingPreview.js is missing the bearer token. Fix the call to include the kiosk Sanctum token; ensure the preview returns the same totals the quote endpoint will return so the cart screen displays an accurate pre-checkout total.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-006",
+      "state_artifact": "test-e2e-borne-E/04-e-cart-totals-ssot.png",
+      "category": "loading_state_missing",
+      "severity": "P2",
+      "evidence": "State 04 PNG renders almost entirely blank (white background) with only a small spinner mid-screen and the bottom cart bar `Mon panier €23,70`. Capture timing aligns with the post-checkout redirect to /kiosk/upsell or /kiosk/payment. There is no skeleton, no localized progress copy ('Vérification du paiement...'), no [aria-busy], and the cart bar still shows the pre-checkout (frontend-only) total which is a contradictory signal during the redirect. Sidecar console.json is empty so this is a pure visual loading-state gap.",
+      "fix_hint": "On the cart→checkout transition, render a localized loading state (e.g. `kiosk.cart.checking_out` copy + spinner + skeleton) instead of dropping the whole cart body. Suppress the global cart bar during the transition. Reduce time-to-first-paint of /kiosk/upsell or /kiosk/payment so the empty-screen window collapses below 300ms.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-007",
+      "state_artifact": "test-e2e-borne-E/06-e-loyalty-step-input.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "Sidecar `06-e-loyalty-step-input.register-btn.json` records `backgroundImage: 'linear-gradient(135deg, rgb(245, 197, 24) 0%, rgb(224, 178, 20) 100%)'`, `color: rgb(15, 15, 15)`, `fontWeight: 800`, button text `Pas encore membre ? S'inscrire`. PNG visually confirms a yellow gradient button with dark legible text — regression closed. Logged here for completeness so the loop closure tracker can mark the prior loyalty button visibility regression as PASS.",
+      "fix_hint": "No fix required. Mark prior round's loyalty register-button regression as CLOSED in round_to_round_closures.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-008",
+      "state_artifact": "test-e2e-borne-E/08-e-payment-tpe-waiting-overlay.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "Sidecar `08-e-payment-tpe-waiting-overlay.probe.json` records `backgroundColor: rgb(255, 255, 255)`, color rgb(15, 15, 15) — pure-white TPE overlay confirmed (light mode). PNG shows white background with Cayenne accent ring around the terminal icon, dark legible heading 'Simulation du paiement (mode navigateur)…'. No dark-navy regression. Logged for closure tracking.",
+      "fix_hint": "No fix required.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 2,
+    "P1": 3,
+    "P2": 1,
+    "P3": 2,
+    "open_P0": 2,
+    "open_P1": 3,
+    "open_P2": 1,
+    "open_P3": 0
+  },
+  "round_to_round_closures": {
+    "E-007": "PASS",
+    "E-008": "PASS"
+  },
+  "verdict": "RED",
+  "notes": "P0 numeric_integrity DECISION: backend under-charges. The drinkRatio mechanism (0.4 × full menu addon price = 1.20€) is by-design fast-food formula pricing in `kioskPricing.js`. PricingService at line 214 has NO ratio awareness — it can only charge 0€ or full addonItem price, NOT 1.20€. Delta is exactly 0.4 × 3.00€ = 1.20€, confirming backend isn't applying the ratio. Owner loses 1.20€ per Salade-with-Coca-formule order; NF525 composition_snapshot is sealed with the under-priced line. V1 dine-in feature flag verified-correct (spec forced takeaway because cart default KIOSK = dine-in disabled per V1) — not flagged. Inactivity overlay popping during slow waits NOT investigated in this round (orchestrator's question deferred — would require timing-sensitive re-run). State 14 idle 'Je récupère ma commande' card is the takeaway button subtitle (`resources/js/languages/fr.json:1137` → `kiosk.order_type.takeaway_hint`), intentional UX copy NOT a stale recovery state — verified, not flagged. Console WS errors (`vendor.js` Pusher noise) per protocol allowlist — not flagged. Two P0s require a single coordinated fix: (1) move ratio-pricing into PricingService OR materialise real 1.20€ addon rows AND (2) add `kiosk.cash-instruction` + `kiosk.loyalty` to hiddenRoutes — without (2), even after (1) fixes the value, the cart-bar overlap UX defect remains."
+}

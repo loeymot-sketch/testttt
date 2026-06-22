@@ -1,0 +1,28 @@
+{
+  "url": "http://127.0.0.1:8000/admin/dashboard",
+  "counts": {
+    "critical": 0,
+    "serious": 1,
+    "moderate": 0,
+    "minor": 0
+  },
+  "total_violations": 1,
+  "total_nodes": 1,
+  "violations": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "help": "Elements must meet minimum color contrast ratio thresholds",
+      "tags": [
+        "wcag2aa",
+        "wcag143"
+      ],
+      "node_count": 1,
+      "sample_target": [
+        ".router-link-exact-active > .text-base.flex-auto"
+      ],
+      "sample_html": "<span class=\"text-base flex-auto\">Tableau de bord</span>",
+      "sample_failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.27 (foreground color: #f4501e, background color: #fef6f4, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+    }
+  ]
+}

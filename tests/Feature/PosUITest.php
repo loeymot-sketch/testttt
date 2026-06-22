@@ -15,6 +15,9 @@ use App\Enums\PosPaymentMethod;
 use App\Enums\Status;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+use Tests\Feature\Concerns\HasPosQuoteBinding;
+use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
 use Tests\TestCase;
 
 /**
@@ -24,6 +27,8 @@ use Tests\TestCase;
 class PosUITest extends TestCase
 {
     use RefreshDatabase;
+    use HasPosQuoteBinding;
+    use SeedsOpenCashDrawerSession;
 
     protected Branch $branch;
     protected User $posOperator;
@@ -49,6 +54,8 @@ class PosUITest extends TestCase
         ]);
         $this->posOperator->assignRole('POS Operator');
         $this->posOperator->givePermissionTo('pos');
+        // [Sprint H6 TEST-DEBT-001 2026-05-17] Sprint 1B requires an OPEN cash session for CASH.
+        $this->seedOpenSessionFor($this->posOperator, $this->branch);
 
         // Create Customer
         $this->customer = User::factory()->create([
@@ -129,7 +136,10 @@ class PosUITest extends TestCase
             ]),
         ];
 
-        $response = $this->withHeader('x-api-key', config('app.api_key'))->postJson('/api/admin/pos', $orderData);
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+        $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->posOperator, $orderData));
 
         $response->assertCreated();
 
@@ -172,24 +182,32 @@ class PosUITest extends TestCase
 
     /**
      * UI-03: Mobile cart total includes delivery charge (BUG-A3)
+     *
+     * [abuse-heal 2026-06-18 engines-c2] Strengthened to the secured NF525
+     * contract. This test previously sent a manual `delivery_charge` WITHOUT a
+     * `delivery_distance_km` and asserted the client value (2.50) was persisted
+     * verbatim — exactly the tamper vector now closed in
+     * PosOrderRequest::prepareForValidation / PosController::normalizePosRuntimePayload
+     * (a distance-less POS DELIVERY fee has no server-trusted basis, so it is
+     * neutralized to 0.0; the client value can no longer reach the fiscal total).
+     * The legitimate way to attach a delivery fee is to supply the distance and
+     * let DeliveryFeeService compute it server-side. Here the seeded branch has
+     * no per-branch fee config, so the legacy formula `max(5, ceil(d/5)*5)`
+     * applies → 1km = 5.00. The test still proves its original intent (the order
+     * total includes the delivery charge) but via the server-authoritative fee.
      */
     public function test_order_total_includes_delivery_charge(): void
     {
         $this->actingAs($this->posOperator, 'sanctum');
 
         $subtotal = 10.00;
-        $deliveryCharge = 2.50;
+        // Server computes the fee from distance (client value is ignored / forged):
+        // unconfigured branch → legacy max(5, ceil(1/5)*5) = 5.00.
+        $distanceKm = 1.0;
+        $expectedDeliveryCharge = 5.00;
         // OrderService: TVA % sur les lignes articles uniquement (pas sur delivery_charge).
         $tax = $subtotal * 0.10;
-        $total = $subtotal + $deliveryCharge + $tax;
-        $address = Address::create([
-            'user_id' => $this->customer->id,
-            'label' => 'Home',
-            'address' => '123 Rue Test',
-            'apartment' => '',
-            'latitude' => '48.8566',
-            'longitude' => '2.3522',
-        ]);
+        $total = $subtotal + $expectedDeliveryCharge + $tax;
 
         $orderData = [
             'token' => null,
@@ -197,8 +215,9 @@ class PosUITest extends TestCase
             'branch_id' => $this->branch->id,
             'subtotal' => $subtotal,
             'discount' => 0,
-            'delivery_charge' => $deliveryCharge, // [BUG-A3 FIX] Delivery charge included
-            'address_id' => $address->id,
+            // Forged client charge — MUST be ignored in favour of the server fee.
+            'delivery_charge' => 2.50,
+            'delivery_distance_km' => $distanceKm,
             'coupon_id' => 0,
             'total' => $total,
             'order_type' => OrderType::DELIVERY,
@@ -220,14 +239,21 @@ class PosUITest extends TestCase
             ]),
         ];
 
-        $response = $this->withHeader('x-api-key', config('app.api_key'))->postJson('/api/admin/pos', $orderData);
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+        $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->posOperator, $orderData));
 
         $response->assertCreated();
 
-        // Verify delivery charge is stored
+        // Verify the SERVER-computed delivery charge is stored (not the forged 2.50).
         $this->assertDatabaseHas('orders', [
             'user_id' => $this->customer->id,
-            'delivery_charge' => $deliveryCharge,
+            'delivery_charge' => $expectedDeliveryCharge,
+        ]);
+        $this->assertDatabaseMissing('orders', [
+            'user_id' => $this->customer->id,
+            'delivery_charge' => 2.50,
         ]);
     }
 }

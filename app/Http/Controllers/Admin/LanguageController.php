@@ -20,7 +20,11 @@ class LanguageController extends AdminController
     {
         parent::__construct();
         $this->languageService = $languageService;
-        $this->middleware(['permission:settings'])->only('store', 'update', 'destroy');
+        // [P0 SEC-RCE] fileText (include() = LFI) + fileTextStore (file_put_contents = arbitrary
+        // file write) are RCE primitives. Combined with Sanctum wildcard ['*'] tokens issued to
+        // kiosk/customer logins, an unprivileged session could write PHP into /lang/* and execute.
+        // Gate ALL write-or-file-read endpoints behind permission:settings (admin-only).
+        $this->middleware(['permission:settings'])->only('store', 'update', 'destroy', 'fileText', 'fileTextStore');
     }
 
     public function index(PaginateRequest $request): \Illuminate\Http\Response|\Illuminate\Http\Resources\Json\AnonymousResourceCollection|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory
@@ -28,7 +32,7 @@ class LanguageController extends AdminController
         try {
             return LanguageResource::collection($this->languageService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -37,7 +41,7 @@ class LanguageController extends AdminController
         try {
             return new LanguageResource($this->languageService->store($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -46,7 +50,7 @@ class LanguageController extends AdminController
         try {
             return new LanguageResource($this->languageService->show($language));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -55,7 +59,7 @@ class LanguageController extends AdminController
         try {
             return new LanguageResource($this->languageService->update($request, $language));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -65,7 +69,7 @@ class LanguageController extends AdminController
             $this->languageService->destroy($language);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -75,7 +79,7 @@ class LanguageController extends AdminController
         try {
             return LanguageFileListResource::collection($this->languageService->fileList($language));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -91,7 +95,7 @@ class LanguageController extends AdminController
                 }
             }
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -101,7 +105,7 @@ class LanguageController extends AdminController
             $this->languageService->fileTextStore($request);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

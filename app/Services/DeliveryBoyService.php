@@ -6,6 +6,7 @@ use Exception;
 use App\Enums\Ask;
 use App\Models\User;
 use App\Enums\Role as EnumRole;
+use App\Services\Concerns\EnforcesOwnBranchScope;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
@@ -18,6 +19,8 @@ use App\Http\Requests\UserChangePasswordRequest;
 
 class DeliveryBoyService
 {
+    use EnforcesOwnBranchScope;
+
     public $user;
     public $phoneFilter = ['phone'];
     public $roleFilter = ['role_id'];
@@ -37,7 +40,12 @@ class DeliveryBoyService
             $orderColumn = $request->get('order_column') ?? 'id';
             $orderType   = $request->get('order_type') ?? 'desc';
 
-            return User::with('media', 'addresses')->role(EnumRole::DELIVERY_BOY)->where(
+            // [GOAL-PAGEBY-STOCK-2026-05-18 P0 LIVREUR-422 heal]
+            // Spatie's ->role($int) calls findById($int) (HasRoles trait L84). Passing
+            // EnumRole::DELIVERY_BOY (=3) breaks whenever the roles table AUTO_INCREMENT
+            // skipped past 3 (fresh seed often lands at id=73-76). The stable identity is
+            // the role NAME — see SpatieRoleLookup docblock for the same rationale.
+            return User::with('media', 'addresses')->role('Delivery Boy', 'sanctum')->where(
                 function ($query) use ($requests) {
                     foreach ($requests as $key => $request) {
                         if (in_array($key, $this->userFilter)) {
@@ -64,7 +72,7 @@ class DeliveryBoyService
                     'phone'             => $request->phone,
                     'username'          => $this->username($request->email),
                     'password'          => bcrypt($request->password),
-                    'branch_id'         => $request->branch_id,
+                    'branch_id'         => $this->effectiveBranchId(auth()->user(), $request->branch_id),
                     'status'            => $request->status,
                     'email_verified_at' => now(),
                     'country_code'      => $request->country_code,
@@ -86,6 +94,11 @@ class DeliveryBoyService
      */
     public function update(DeliveryBoyRequest $request, User $deliveryBoy)
     {
+        // [WAVE5-SEC-001] Verify the route-bound user actually has the expected role
+        // BEFORE entering the try/catch (which rewrites everything to 422). See
+        // CustomerService::assertTargetRole for the full rationale.
+        $this->assertTargetRole($deliveryBoy);
+
         try {
             if (!in_array(EnumRole::DELIVERY_BOY, $this->blockRoles)) {
                 DB::transaction(function () use ($deliveryBoy, $request) {
@@ -93,7 +106,7 @@ class DeliveryBoyService
                     $this->user->name         = $request->name;
                     $this->user->email        = $request->email;
                     $this->user->phone        = $request->phone;
-                    $this->user->branch_id    = $request->branch_id;
+                    $this->user->branch_id    = $this->effectiveBranchId(auth()->user(), $request->branch_id);
                     $this->user->status       = $request->status;
                     $this->user->country_code = $request->country_code;
                     if ($request->password) {
@@ -162,10 +175,29 @@ class DeliveryBoyService
     }
 
     /**
+     * [WAVE5-SEC-001] Defense-in-depth: ensure the route-bound User is actually a
+     * Delivery Boy before any mutation. See CustomerService::assertTargetRole.
+     *
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException 403
+     */
+    private function assertTargetRole(User $deliveryBoy): void
+    {
+        if (! $deliveryBoy->hasRole(EnumRole::DELIVERY_BOY)) {
+            throw new \Symfony\Component\HttpKernel\Exception\HttpException(
+                403,
+                'Cannot mutate user outside expected role.'
+            );
+        }
+    }
+
+    /**
      * @throws Exception
      */
     public function changePassword(UserChangePasswordRequest $request, User $deliveryBoy): User
     {
+        // [WAVE5-SEC-001] See update() comment — same role-target guard.
+        $this->assertTargetRole($deliveryBoy);
+
         try {
             if (!in_array(EnumRole::DELIVERY_BOY, $this->blockRoles)) {
                 $deliveryBoy->password = Hash::make($request->password);
@@ -185,6 +217,9 @@ class DeliveryBoyService
      */
     public function changeImage(ChangeImageRequest $request, User $deliveryBoy): User
     {
+        // [WAVE5-SEC-001] See update() comment — same role-target guard.
+        $this->assertTargetRole($deliveryBoy);
+
         try {
             if (!in_array(EnumRole::DELIVERY_BOY, $this->blockRoles)) {
                 if ($request->image) {

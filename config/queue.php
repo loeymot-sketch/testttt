@@ -67,7 +67,12 @@ return [
             'connection' => 'default',
             'queue' => env('REDIS_QUEUE', 'default'),
             'retry_after' => 90,
-            'block_for' => null,
+            // [F-LAT-01 sync heal 2026-06-03] block_for=null made the worker poll
+            // with --sleep (default 3s) when the queue was idle, so the FIRST
+            // broadcast after a quiet gap waited ~1-3s (measured 2.29s cold,
+            // exceeding the <2s SLO). A positive block_for switches to a blocking
+            // pop (BRPOP) → sub-second pickup even from idle. retry_after(90) ≫ 5.
+            'block_for' => env('REDIS_BLOCK_FOR', 5),
             'after_commit' => false,
         ],
 

@@ -22,7 +22,7 @@
                             </li>
                             <li class="db-list-item">
                                 <span class="db-list-item-title">{{ $t('label.discount') }}</span>
-                                <span class="db-list-item-text">{{ coupon.flat_discount }}</span>
+                                <span class="db-list-item-text">{{ coupon.discount_type === enums.taxTypeEnum.PERCENTAGE ? (parseFloat(coupon.discount).toLocaleString('fr-FR') + ' %') : coupon.currency_discount }}</span>
                             </li>
                             <li class="db-list-item">
                                 <span class="db-list-item-title">{{ $t('label.discount_type') }}</span>
@@ -40,11 +40,11 @@
                             </li>
                             <li class="db-list-item">
                                 <span class="db-list-item-title">{{ $t('label.minimum_order') }}</span>
-                                <span class="db-list-item-text">{{ coupon.minimum_order_flat_amount }}</span>
+                                <span class="db-list-item-text">{{ coupon.minimum_order_currency_amount }}</span>
                             </li>
                             <li class="db-list-item">
                                 <span class="db-list-item-title">{{ $t('label.maximum_discount') }}</span>
-                                <span class="db-list-item-text">{{ coupon.maximum_flat_discount }}</span>
+                                <span class="db-list-item-text">{{ coupon.maximum_currency_discount }}</span>
                             </li>
                             <li class="db-list-item">
                                 <span class="db-list-item-title">{{ $t('label.limit_per_user') }}</span>

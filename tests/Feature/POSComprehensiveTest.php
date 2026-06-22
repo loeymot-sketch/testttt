@@ -10,16 +10,21 @@ use App\Models\Item;
 use App\Models\Tax;
 use App\Enums\TaxType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
+use Tests\Feature\Concerns\HasPosQuoteBinding;
+use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
 
 /**
  * Module 3: POS / Caisse (8 tests)
- * 
+ *
  * Surface: /api/admin/pos, /api/admin/pos-order/*
  * Priorité: 🔴 Critique
  */
 class POSComprehensiveTest extends TestCase
 {
     use RefreshDatabase;
+    use HasPosQuoteBinding;
+    use SeedsOpenCashDrawerSession;
 
     protected function setUp(): void
     {
@@ -33,6 +38,9 @@ class POSComprehensiveTest extends TestCase
         $branch = \Database\Factories\BranchFactory::new()->create();
         $admin = \Database\Factories\UserFactory::new()->create(['branch_id' => $branch->id]);
         $admin->assignRole('Admin');
+        // [Sprint H6 TEST-DEBT-001 2026-05-17] Sprint 1B requires an OPEN
+        // CashDrawerSession before CASH-bearing POS orders can be created.
+        $this->seedOpenSessionFor($admin, $branch);
         return [$branch, $admin];
     }
 
@@ -61,31 +69,38 @@ class POSComprehensiveTest extends TestCase
             'price' => 10.00,
         ]);
         
-        $response = $this->actingAs($admin)
+        $payload = [
+            'order_type' => \App\Enums\OrderType::POS,
+            'subtotal' => 10.00,
+            'total' => 10.00,
+            'source' => \App\Enums\Source::POS,
+            'customer_id' => $admin->id,
+            'branch_id' => $branch->id,
+            'is_advance_order' => 0,
+            'pos_payment_method' => \App\Enums\PosPaymentMethod::CASH,
+            'pos_received_amount' => 15.00,
+            'items' => json_encode([[
+                'item_id' => $item->id,
+                'price' => 10.00,
+                'quantity' => 1,
+            ]]),
+        ];
+
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+        $response = $this->actingAs($admin, 'sanctum')
             ->withHeader('x-api-key', $this->apiKey())
-            ->postJson('/api/admin/pos', [
-                'order_type' => \App\Enums\OrderType::POS,
-                'subtotal' => 10.00,
-                'total' => 10.00,
-                'source' => \App\Enums\Source::POS,
-                'customer_id' => $admin->id,
-                'branch_id' => $branch->id,
-                'is_advance_order' => 0,
-                'pos_payment_method' => \App\Enums\PosPaymentMethod::CASH,
-                'pos_received_amount' => 15.00,
-                'items' => json_encode([[
-                    'item_id' => $item->id,
-                    'price' => 10.00,
-                    'quantity' => 1,
-                ]]),
-            ]);
-        
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($admin, $payload));
+
         $response->assertStatus(201);
         
-        // Vérifier que l'ordre est créé avec status ACCEPT
+        // [Wave S-1 — 2026-05-20] Owner P-OWNER Wave S-1: a POS direct paid
+        // sale auto-advances to PREPARING the moment the cashier confirms
+        // payment (no S-5 exception applies — POS direct sales never use
+        // the kiosk cash-at-counter / COUNTER_DEFERRED path).
         $order = Order::first();
         $this->assertNotNull($order);
-        $this->assertEquals(\App\Enums\OrderStatus::ACCEPT, $order->status);
+        $this->assertEquals(\App\Enums\OrderStatus::PREPARING, $order->status);
         $this->assertEquals(\App\Enums\PaymentStatus::PAID, $order->payment_status);
     }
 
@@ -146,12 +161,14 @@ class POSComprehensiveTest extends TestCase
             'order_datetime' => now(),
         ]);
         
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos-order/change-status/{$order->id}", [
                 'status' => \App\Enums\OrderStatus::PREPARING,
             ]);
-        
+
         $this->assertTrue(in_array($response->status(), [200, 400, 403, 422]));
     }
 
@@ -168,12 +185,14 @@ class POSComprehensiveTest extends TestCase
             'order_datetime' => now(),
         ]);
         
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos-order/change-payment-status/{$order->id}", [
                 'payment_status' => \App\Enums\PaymentStatus::PAID,
             ]);
-        
+
         $response->assertStatus(200);
     }
 

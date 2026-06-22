@@ -1,0 +1,412 @@
+{
+  "agent": "L.11.1 — Cron miss recovery (N-day server-down catch-up safety)",
+  "phase": "L — Ultra-final pre-cloud Wave L-A",
+  "mission": "Code-static walk of every Kernel.php schedule lane to determine: (a) what happens if the lane misses N days (server down / cron daemon dead / mutex stuck), (b) does the next run safely catch up or silently drop data, (c) is the lane fail-loud or fail-silent on recovery. Output a per-lane catch-up matrix + named P0/P1/P2 findings for the 3 NF525 quartet lanes + DLQ window lanes + storm-recovery edge.",
+  "date": "2026-05-24",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "scope": "All 19 schedule lanes registered in app/Console/Kernel.php (verified 2026-05-24 vs CRONTAB_PROD.md Appendix B). No live boot — pure code static. Assumes the system-crontab single line `* * * * * php artisan schedule:run` was missing/broken for N=3 days then comes back up.",
+  "method": "Per lane: (1) read the schedule binding in Kernel.php for cadence + concurrency primitives, (2) read the command's handle() method, (3) determine the predicate it filters on (created_at vs received_at vs dispatched_at vs business_date) and the WINDOW (--since=24h vs --older-than-days=90 vs --hours=24), (4) decide CATCH_UP_SAFE / CATCH_UP_DEGRADED / DATA_LOSS, (5) compose verdict + recovery_action. Cross-validated against ZReportService (window semantics) + FiscalArchiveCommand (--from/--to API) + ZReportController (only Z-open entry-point).",
+
+  "files_examined": [
+    "app/Console/Kernel.php (lines 1-395, all 19 lanes + activeBranchIds helper)",
+    "app/Console/Commands/Backup/RunDailyBackup.php (lines 89-204 handle + 325-388 rotation)",
+    "app/Console/Commands/FiscalArchiveCommand.php (lines 50-155 handle + --from/--to API + lock)",
+    "app/Console/Commands/FiscalCloseAllActiveBranchesCommand.php (lines 55-162 close-all + pre-check)",
+    "app/Console/Commands/FiscalVerifyChainCommand.php (lines 71-189 single + 205-283 --all sweep)",
+    "app/Console/Commands/PruneOutboxCommand.php (lines 42-103 90d retention + chunked delete)",
+    "app/Console/Commands/PruneWebhookEventsCommand.php (lines 50-108 180d retention)",
+    "app/Console/Commands/Stripe/DrainStrandedCpnCommand.php (lines 89-230 drain loop)",
+    "app/Console/Commands/OutboxRescueCommand.php (lines 15-69 two-lane rescue 2min + 10min)",
+    "app/Console/Commands/OutboxRetryFailedCommand.php (lines 69-172 with REPLAY_MAX_ATTEMPTS=12)",
+    "app/Console/Commands/OutboxWebhookRetryFailedCommand.php (lines 68-169 same pattern)",
+    "app/Console/Commands/MonitorOutboxStaleness.php (lines 37-85 threshold alerter)",
+    "app/Console/Commands/PosPurgeParkedOrders.php (lines 14-27 24h TTL purge)",
+    "app/Console/Commands/ResetStaleDailyQuotaCommand.php (lines 34-92 quota reset)",
+    "app/Console/Commands/RetryFiscalAllocCommand.php (lines 47-137 limit=50/tick)",
+    "app/Console/Commands/StockScanRupture.php (lines 56-155 gated scan)",
+    "app/Jobs/CleanupStalePendingKioskOrders.php (lines 19-85 15min threshold storm risk)",
+    "app/Services/Fiscal/ZReportService.php (lines 71-286 open + close window semantics)",
+    "app/Http/Controllers/Admin/Fiscal/ZReportController.php (lines 43-51 — only Z-open caller)",
+    "scripts/deploy/CRONTAB_PROD.md (Appendix B cross-reference matrix)"
+  ],
+
+  "scenario_assumed": {
+    "outage_duration_days": 3,
+    "outage_shape": "Hetzner box hard-down: system crontab dead, schedule:run never fires, no off-host runner (per CRONTAB_PROD §2.3 + §7 — V1 LOCAL single-box, off-host replication deferred).",
+    "post_recovery": "Server comes back online at T = day N+0 00:00. Crontab restored. schedule:run fires its first tick.",
+    "what_is_preserved": "All DB state from before the outage. audit_logs + z_reports rows untouched (append-only DB-trigger protected). storage/ files intact.",
+    "what_is_lost": "Real-time signals during the outage window (events not dispatched, webhooks not retried, Z not closed, backup not produced). Nothing has been silently corrupted; what is missing is the cron-WRITES during the window."
+  },
+
+  "catch_up_matrix": [
+    {
+      "lane_id": 1,
+      "name": "purge-expired-otps",
+      "kernel_line": "29-34",
+      "cadence": "every 15 min",
+      "predicate_on_recovery": "DELETE WHERE created_at < now() - otp_expire_time minutes",
+      "catch_up_behaviour": "Single tick on recovery deletes ALL expired OTPs (no time-window cap on the WHERE).",
+      "catch_up_safe": "SAFE",
+      "data_loss_window": "none",
+      "recovery_action": "none — auto-cleans on first tick",
+      "severity": "OK"
+    },
+    {
+      "lane_id": 2,
+      "name": "foodking:outbox:rescue",
+      "kernel_line": "40-43",
+      "cadence": "every minute",
+      "predicate_on_recovery": "(A) pending lane: dispatched_at NULL AND created_at < now()-2min, attempts<5. (B) crash-claimed lane: dispatched_at NOT NULL AND dispatched_at < now()-10min, attempts<5.",
+      "catch_up_behaviour": "Single tick re-queues EVERY stuck event under the attempts cap. 3-day backlog = potentially thousands of dispatches in ONE tick (no rate cap). The queue worker absorbs them but Echo broadcast burst may be visible.",
+      "catch_up_safe": "DEGRADED — fires a thundering herd of dispatches; queue saturation possible.",
+      "data_loss_window": "none on persistence — domain_events rows preserved",
+      "recovery_action": "Watch queue worker depth post-recovery; consider `php artisan queue:retry all` only AFTER rescue settles. If attempts>=5 on any row, RetryFailed lane (lane #4) won't pick them up (only --since=24h window).",
+      "severity": "P1 — burst risk + tail rows past 24h need manual triage"
+    },
+    {
+      "lane_id": 3,
+      "name": "foodking:outbox:monitor --threshold=10",
+      "kernel_line": "50-53",
+      "cadence": "every minute",
+      "predicate_on_recovery": "COUNT(*) WHERE created_at < now()-30s AND dispatched_at NULL — alerts if > 10",
+      "catch_up_behaviour": "First tick post-recovery sees ALL events stranded for 3 days. Threshold massively exceeded. Log::error + exit 1 → pages operator.",
+      "catch_up_safe": "SAFE — fail-loud by design",
+      "data_loss_window": "none",
+      "recovery_action": "Pager fires; operator already knows. Confirm rescue lane (#2) is draining. Verify queue worker (`php artisan queue:work --queue=high`) is up — without it, rescue dispatches go nowhere and monitor stays red.",
+      "severity": "OK — works as designed"
+    },
+    {
+      "lane_id": 4,
+      "name": "outbox-retry-failed --since=24h",
+      "kernel_line": "64-69",
+      "cadence": "hourly",
+      "predicate_on_recovery": "WHERE status=failed(>=5) AND attempts < REPLAY_MAX_ATTEMPTS(12) AND created_at >= now() - 24h",
+      "catch_up_behaviour": "Window-bounded. Failed events 24-72h old (the middle of the outage) FALL OUT OF THE WINDOW PERMANENTLY. They sit in domain_events with attempts>=5 forever until prune lane (#9) reclaims them at 90d (still terminal-failed, never replayed).",
+      "catch_up_safe": "DEGRADED — fixed 24h window can't reach into 3-day backlog tail",
+      "data_loss_window": "24-72h: ~48h of failed events lost to replay",
+      "recovery_action": "MANUAL: `php artisan foodking:outbox:retry-failed --since=96h` on first tick post-recovery to extend the window. Document in runbook. No code-level guard prevents this.",
+      "severity": "P1 — silent data loss on replay path past 24h"
+    },
+    {
+      "lane_id": 5,
+      "name": "webhook-retry-failed --since=24h",
+      "kernel_line": "76-81",
+      "cadence": "hourly",
+      "predicate_on_recovery": "WebhookEvent WHERE status=failed AND created_at >= now() - 24h, BATCH_CAP=500",
+      "catch_up_behaviour": "Same 24h window. Stripe / SenangPay failed webhooks 24-72h old NEVER replay. Customer-impact: orders charged-but-marked-unpaid that the K2-HEAL-05 Stripe drain (lane #19) doesn't cover (drain is only for stranded CPN, not pure-webhook failures).",
+      "catch_up_safe": "DEGRADED — same 24h drop as lane #4",
+      "data_loss_window": "24-72h",
+      "recovery_action": "MANUAL: `php artisan foodking:webhook:retry-failed --since=96h` immediately post-recovery. Without this, webhooks from days N-3/N-2 are dead-lettered (status=failed remains but no replay attempt).",
+      "severity": "P1 — silent payment-evidence loss past 24h"
+    },
+    {
+      "lane_id": 6,
+      "name": "CleanupStalePendingKioskOrders job",
+      "kernel_line": "83-86",
+      "cadence": "every 5 min",
+      "predicate_on_recovery": "WHERE status=PENDING AND payment_status=UNPAID AND source_surface=kiosk AND (created_at < now()-15min OR order_datetime < now()-15min)",
+      "catch_up_behaviour": "First tick post-recovery sweeps EVERY pending unpaid kiosk order accumulated across 3 days. EACH ONE fires SendOrderMail + SendOrderSms + SendOrderPush + OrderCanceled events. STORM: customers who walked away 2-3 days ago receive a barrage of 'Auto-rejected' notifications simultaneously. Each .each() iteration runs sequentially in-job — single tick = one big sweep.",
+      "catch_up_safe": "DEGRADED — STORM RISK",
+      "data_loss_window": "none on data integrity",
+      "recovery_action": "MANUAL pre-tick triage: SELECT COUNT(*) FROM frontend_orders WHERE status=1 AND payment_status=1 AND source_surface='kiosk' AND created_at < now()-15min. If >50, consider running a one-off bulk update WITHOUT dispatching notifications, or temporarily disabling the SendOrderMail/SMS listeners before letting the job fire. No code-level burst-cap exists.",
+      "severity": "P1 — customer-facing notification storm"
+    },
+    {
+      "lane_id": 7,
+      "name": "pos:purge-parked-orders",
+      "kernel_line": "89-92",
+      "cadence": "daily 03:15",
+      "predicate_on_recovery": "PosParkedOrder WHERE created_at < now()-24h",
+      "catch_up_behaviour": "Single tick deletes ALL parked orders > 24h. 3 days of missed runs = 3 days of accumulated parked orders deleted in ONE tick. Idempotent purge — no data integrity issue, but a cashier returning after the outage will find ALL their previously-parked work gone, not just yesterday's. Pre-outage assumption is 24h TTL — post-outage tick still applies that policy.",
+      "catch_up_safe": "SAFE — TTL policy preserved",
+      "data_loss_window": "none — 24h+ rows were always slated for deletion",
+      "recovery_action": "Warn cashiers post-recovery that parked orders > 24h are gone (this is the documented contract).",
+      "severity": "OK"
+    },
+    {
+      "lane_id": 8,
+      "name": "foodking-backup-daily",
+      "kernel_line": "105-110",
+      "cadence": "daily 03:00",
+      "predicate_on_recovery": "$dateStamp = $now->format('Y-m-d'); $dailyTarget = storage/backups/db-daily/daily-{$dateStamp}.sql.gz",
+      "catch_up_behaviour": "FIRST TICK post-recovery produces ONE backup for TODAY only ($now). NO BACKFILL LOOP. Days N-3, N-2, N-1 NEVER have their daily snapshot created. There is NO code path that iterates missed days and emits historical snapshots. The rotate() logic only does day-1-of-month / day-1-of-quarter copies based on $now->day, so if day-1-of-month fell INSIDE the outage window, the monthly snapshot for that month is ALSO MISSING and won't be auto-backfilled.",
+      "catch_up_safe": "DATA_LOSS — per-day point-in-time recovery for outage window IMPOSSIBLE post-recovery",
+      "data_loss_window": "Entire outage = 3 missing daily snapshots. If outage includes a 1st-of-month, ONE missing monthly snapshot. If outage includes a 1st-of-quarter (Jan/Apr/Jul/Oct), ONE missing quarterly snapshot (NF525 6y archive HOLE).",
+      "recovery_action": "MANUAL backfill via `php artisan foodking:backup-daily --no-rotate` is single-day only (always writes today). No --date= flag exists. Operator must `mysqldump | gzip > storage/backups/db-daily/daily-2026-05-{N}.sql.gz` for each missed day FROM CURRENT DB STATE (which doesn't represent that day's data — so the backfill is a fiction, not a real PITR backup). NF525-wise: audit_logs + z_reports are append-only so the row-level forensic survives; the FILE-level snapshot is irrecoverable.",
+      "severity": "P0 — NF525 quartet member with no auto-catch-up; if outage straddles month/quarter boundary, archive policy hole"
+    },
+    {
+      "lane_id": 9,
+      "name": "outbox-prune --older-than-days=90",
+      "kernel_line": "119-125",
+      "cadence": "daily 04:00",
+      "predicate_on_recovery": "WHERE (dispatched_at NOT NULL AND dispatched_at < now()-90d) OR (attempts>=6 AND created_at < now()-90d). Chunked delete LIMIT 1000.",
+      "catch_up_behaviour": "Idempotent. First tick deletes everything that's eligible. 3 days of accumulated eligible rows are still well within the 90d window — no growth bound concern.",
+      "catch_up_safe": "SAFE",
+      "data_loss_window": "none",
+      "recovery_action": "none",
+      "severity": "OK"
+    },
+    {
+      "lane_id": 10,
+      "name": "webhook-prune --older-than-days=180",
+      "kernel_line": "135-141",
+      "cadence": "daily 04:15",
+      "predicate_on_recovery": "WHERE status IN (processed, duplicate) AND received_at < now()-180d. Chunked delete.",
+      "catch_up_behaviour": "Same as lane #9 — idempotent, time-window safe.",
+      "catch_up_safe": "SAFE",
+      "data_loss_window": "none",
+      "recovery_action": "none",
+      "severity": "OK"
+    },
+    {
+      "lane_id": 11,
+      "name": "SloEvaluatorJob",
+      "kernel_line": "191-194",
+      "cadence": "every 5 min",
+      "predicate_on_recovery": "Observability SLO evaluator (Job, not Command)",
+      "catch_up_behaviour": "Single tick evaluates current window. SLO metrics for the outage window are simply MISSING from the evaluation log — no backfill.",
+      "catch_up_safe": "SAFE — observability gap acceptable",
+      "data_loss_window": "outage window has no SLO data points",
+      "recovery_action": "none — SLO history will show a hole; legitimate signal that the box was down",
+      "severity": "OK"
+    },
+    {
+      "lane_id": 12,
+      "name": "stock-scan-rupture",
+      "kernel_line": "196-202",
+      "cadence": "every 5 min (gated by feature flag)",
+      "predicate_on_recovery": "Per-branch active item scan. Stateless predicate — reads current stock_levels.",
+      "catch_up_behaviour": "Single tick reflects CURRENT stock state. During the outage no auto-86 happened — items that should have been flipped to is_available=false based on order consumption WERE only flipped via the reactive lazy-path in AvailabilityService::decrementForOrder (which runs in-line with each order). Cron is preventive-only, so the reactive path covered the outage. First tick post-recovery normalises.",
+      "catch_up_safe": "SAFE",
+      "data_loss_window": "none",
+      "recovery_action": "none",
+      "severity": "OK"
+    },
+    {
+      "lane_id": 13,
+      "name": "foodking-fiscal-retry-alloc",
+      "kernel_line": "209-213",
+      "cadence": "every minute",
+      "predicate_on_recovery": "FrontendOrder WHERE payment_status=PAID AND fiscal_sequence_no NULL AND fiscal_alloc_error_at NOT NULL, LIMIT 50/tick",
+      "catch_up_behaviour": "First tick processes 50 oldest flagged orders. Next tick processes next 50. 3-day backlog = up to ~4320 ticks needed (1 tick/min). Practical: real outage backlog is small (only PAID kiosk orders that FAILED fiscal alloc at the moment of payment — most paid orders succeed alloc inline). Re-invokes FrontendOrderService::finalizePaidKioskOrder which re-runs the alloc path under fresh Cache::lock — race-safe.",
+      "catch_up_safe": "SAFE — bounded rate drain works",
+      "data_loss_window": "none — flagged orders stay flagged until retried",
+      "recovery_action": "Watch fiscal log channel for `kiosk.fiscal_alloc_retry.success` events post-recovery. If queue depth large, `--limit=500` one-off override.",
+      "severity": "OK"
+    },
+    {
+      "lane_id": 14,
+      "name": "availability-reset-stale-quota",
+      "kernel_line": "222-226",
+      "cadence": "daily 00:05",
+      "predicate_on_recovery": "WHERE whereDate('daily_reset_at') < today. Idempotent UPDATE.",
+      "catch_up_behaviour": "First tick post-recovery flips EVERY stale row in one UPDATE. 3-day-old daily_reset_at values all become 'today'. Items 86-ruptured by quota during the outage stay 86-ruptured even if their quota would have reset on days N-2 and N-1 (the column gets ONE reset, not three). This is benign — quota counter goes from yesterday's value to 0 in one shot, which is the intended semantics.",
+      "catch_up_safe": "SAFE",
+      "data_loss_window": "none on integrity; theoretical 'lost availability days' for quota-86 items, but business-neutral",
+      "recovery_action": "none",
+      "severity": "OK"
+    },
+    {
+      "lane_id": 15,
+      "name": "fiscal-chain-monitor-all-branches",
+      "kernel_line": "240-274",
+      "cadence": "daily 03:30",
+      "predicate_on_recovery": "Per active branch: Artisan::call('fiscal:verify-chain', ['--branch'=>id]) — re-walks audit_logs + z_reports chains FROM SCRATCH every run.",
+      "catch_up_behaviour": "Stateless re-walk. First tick post-recovery verifies CURRENT chain state. If chain integrity was violated DURING the outage (e.g. someone with DB access tampered while the verifier was dark), THIS TICK CATCHES IT. Fail-loud: non-zero exit + Log::error on 'fiscal' channel. No data loss in the lane itself.",
+      "catch_up_safe": "SAFE — first-tick verification is the catch-up",
+      "data_loss_window": "Detection latency = outage duration. If a 3-day-old tamper exists, it surfaces 3 days late but DOES surface.",
+      "recovery_action": "Trust the first-tick output. If TAMPER detected, follow NF525 incident runbook (out of scope here).",
+      "severity": "OK — works correctly even after long darkness"
+    },
+    {
+      "lane_id": 16,
+      "name": "foodking-fiscal-archive-daily",
+      "kernel_line": "282-312",
+      "cadence": "daily 02:00",
+      "predicate_on_recovery": "$yesterday = now()->subDay()->format('Y-m-d'); foreach activeBranchIds { foodking:fiscal:archive {branch_id} --from=$yesterday --to=$yesterday }",
+      "catch_up_behaviour": "FIRST TICK post-recovery archives J-1 ONLY for each branch. NO BACKFILL LOOP. Days N-4, N-3, N-2 NEVER produce a signed ZIP archive. The signed daily bundle (orders + audit_logs + z_reports + manifest with z_chain_verified) is MISSING for those days. NF525 6-year archive policy says 'every day signed' — the policy is BROKEN for the outage window. FiscalArchiveCommand DOES accept --from / --to range arguments (line 50-54), so MANUAL backfill is technically possible: `php artisan foodking:fiscal:archive 1 --from=2026-05-N-3 --to=2026-05-N-3` for each branch × each missed day. But no cron does it automatically.",
+      "catch_up_safe": "DATA_LOSS — auto-backfill MISSING from scheduler",
+      "data_loss_window": "Entire outage minus J-1: 2 days × N branches × NO archive ZIP produced",
+      "recovery_action": "MANUAL: for each missed day D in {N-3, N-2}, for each active branch B: `php artisan foodking:fiscal:archive {B} --from={D} --to={D}`. The chain-verify pre-check inside the command still runs against current DB state — should pass if no tamper. The bundle includes z_reports closed in (D, D+1] which is correct since the audit_logs query uses `where('created_at', '<=', $to)` (line 357). Document in runbook.",
+      "severity": "P0 — NF525 quartet member with no auto-catch-up; daily archive policy gap"
+    },
+    {
+      "lane_id": 17,
+      "name": "foodking-z-close-safety-net",
+      "kernel_line": "339-346",
+      "cadence": "daily 23:55 Paris",
+      "predicate_on_recovery": "Per active branch: pre-check ZReport WHERE branch_id=B AND status=STATUS_OPEN exists; if yes, $service->close($branchId).",
+      "catch_up_behaviour": "FIRST TICK post-recovery at 23:55 day N+0 closes the OPEN Z. But the OPEN Z's `opened_at` is FROM BEFORE THE OUTAGE — possibly days N-4 if no one ran a manual open or close during the outage. ZReportService::close() aggregates ALL orders in the half-open window (opened_at, closedAt] — so the resulting Z report bundles 3+ days of transactions into ONE signed close. NF525 same-day Z segregation principle BROKEN: instead of 4 daily Zs (N-3, N-2, N-1, N+0), we get ONE multi-day Z. The chain integrity holds (HMAC chain works at row level), but the daily-Z auditor-friendliness is destroyed. CRITICAL DOWNSTREAM: only ZReportController::open (POST /api/admin/fiscal/z-report/open) opens a Z. NO cron auto-opens. After the safety-net closes, NO NEW Z exists. Transactions on day N+1 will hit FiscalSequenceService allocation, find no STATUS_OPEN Z, and the order goes through (fiscal_sequence allocation is independent of Z open-state) BUT the next Z when finally opened will start its (opened_at, closedAt] window FROM THE MOMENT OF OPEN — meaning all transactions BETWEEN the safety-net close on N+0 and the manual open on N+1 morning are in a fiscal NO-Z void. The next close will pick them up via the half-open (opened_at_new, closedAt] window — but ZReportService::aggregate() filters by created_at, so orders created in the void window are correctly captured by the NEXT Z. Net: integrity preserved, daily segregation lost, multi-day Z is fiscally inelegant but auditor-defensible.",
+      "catch_up_safe": "DEGRADED — chain holds, daily segregation lost",
+      "data_loss_window": "0 transactions lost. 3 daily Z reports collapsed into 1 (or 2 if cashier closed manually mid-outage).",
+      "recovery_action": "MANUAL: BEFORE the first 23:55 safety-net tick post-recovery, operator should consider: (a) accept the multi-day Z (auditor-acceptable but messy), OR (b) close-and-open per missed day manually via the admin API to produce per-day Z reports — but each manual close uses now() as closedAt, so the per-day fiction is post-hoc. There is NO code path to retroactively split a multi-day window into N daily Zs. Owner-decision item. ALSO: after the close, MANUALLY open a fresh Z via POST /api/admin/fiscal/z-report/open before day N+1 cashiering starts — otherwise transactions land in fiscal No-Z void until a cashier or admin remembers.",
+      "severity": "P0 — NF525 daily Z segregation policy gap on multi-day outage + post-close re-open is manual-only"
+    },
+    {
+      "lane_id": 18,
+      "name": "sanctum:prune-expired --hours=24",
+      "kernel_line": "154-160",
+      "cadence": "daily 04:30 Paris",
+      "predicate_on_recovery": "DELETE FROM personal_access_tokens WHERE expires_at < now()-24h",
+      "catch_up_behaviour": "Single tick deletes ALL expired-by-24h tokens. 3-day backlog of expired tokens deleted in one shot. No data loss (the entire point is to delete them).",
+      "catch_up_safe": "SAFE",
+      "data_loss_window": "none",
+      "recovery_action": "none",
+      "severity": "OK"
+    },
+    {
+      "lane_id": 19,
+      "name": "stripe-drain-stranded-cpn",
+      "kernel_line": "181-189",
+      "cadence": "every 5 min Paris",
+      "predicate_on_recovery": "CapturePaymentNotification WHERE created_at < now()-5min, LIMIT 100/tick",
+      "catch_up_behaviour": "First tick processes 100 oldest stranded CPNs. Next tick another 100. 3-day backlog of stranded Stripe payments = potentially LARGE (customers walked away while box was down — every uncompleted browser flush is a stranded CPN). Per-CPN: flips Order to PAID, writes Transaction row, NF525 audit_log entry, broadcasts OrderPaymentStatusChanged. STORM SUB-RISK: each drained CPN dispatches a broadcast (KDS, OSS, suivi UIs all wake up at once). Per CPN: order goes from UNPAID → PAID → kitchen receives ticket NOW even though the customer paid 3 days ago. Customer impact: ghost-orders flood into kitchen workflow on recovery.",
+      "catch_up_safe": "DEGRADED — STORM RISK + ghost-orders to kitchen",
+      "data_loss_window": "none on accounting; orders WERE charged, the drain correctly recovers them",
+      "recovery_action": "MANUAL pre-tick triage: SELECT COUNT(*) FROM capture_payment_notifications WHERE created_at < now()-5min. If >50, run DRY-RUN first (`--dry-run`) to inventory, then decide: (a) let the drain fire (kitchen gets surprised), or (b) operator manually voids/refunds the multi-day-old charges via Stripe dashboard then deletes the CPN rows (no longer eligible for drain). For days N-3 charges, customer-service reach-out is likely needed regardless.",
+      "severity": "P1 — operational chaos on recovery; consider raising --older-than-minutes on first tick post-recovery to defer"
+    }
+  ],
+
+  "p0_findings": [
+    {
+      "id": "L11.1-P0-01",
+      "title": "Lane #8 (foodking-backup-daily) has NO backfill loop — point-in-time DB recovery for outage window IMPOSSIBLE",
+      "kernel_line": "105-110",
+      "command": "app/Console/Commands/Backup/RunDailyBackup.php:111",
+      "evidence": "$dateStamp = $now->format('Y-m-d'); $dailyTarget = storage/backups/db-daily/daily-{$dateStamp}.sql.gz — ONE file per cron tick, always for $now. No --date= flag, no iteration over missed days.",
+      "impact": "After 3-day outage: daily snapshots for days N-3, N-2, N-1 NEVER created. If outage straddles 1st-of-month → ONE monthly snapshot MISSING. If outage straddles 1st-of-Jan/Apr/Jul/Oct → ONE quarterly NF525 6y archive snapshot MISSING. Recovery to 'state of day N-2' is irrecoverable.",
+      "owner_decision_needed": "(a) Add a --date= flag to the command + a one-shot backfill subcommand the operator runs post-recovery (operates on CURRENT DB state — historical accuracy is best-effort, but at least the snapshot file exists for the timeline). OR (b) accept gap in V1 with documented runbook. OR (c) deploy a real PITR solution (binlogs / WAL archiving) which is V2 cloud-prep territory.",
+      "severity": "P0",
+      "nf525_impact": "DB-dump file-level archive policy has holes during outage windows. NF525 row-level archive (audit_logs append-only) IS preserved — the violation is dump-file frequency, not fiscal-row retention. Auditor question: does NF525 require dump frequency? Investigate; if not, downgrade to P1."
+    },
+    {
+      "id": "L11.1-P0-02",
+      "title": "Lane #16 (foodking-fiscal-archive-daily) only archives J-1 — no backfill loop",
+      "kernel_line": "282-283 ($yesterday = now()->subDay())",
+      "command": "app/Console/Commands/FiscalArchiveCommand.php (--from / --to flags exist, but scheduler doesn't iterate)",
+      "evidence": "Kernel.php:283 $yesterday = now()->subDay()->format('Y-m-d'); per-branch call ['--from' => $yesterday, '--to' => $yesterday]. Single-day argument. No loop over missed days.",
+      "impact": "3-day outage: daily signed ZIP+JSON archives for N-3, N-2 NEVER produced (N-1 might be produced by first-tick post-recovery, depending on when the tick fires). Each missing day = missing forensic bundle in storage/app/fiscal/{branch}/{period}.zip. NF525 daily-archive policy broken.",
+      "owner_decision_needed": "(a) Add a Kernel-side backfill loop: on first tick post-recovery, detect gap between last successful archive and today, iterate every missing day. Implementation: query MAX(closed_at) from archive manifests or scan storage/app/fiscal/{branch}/ filenames. OR (b) document MANUAL recovery procedure: `for D in missed_days; for B in branches; php artisan foodking:fiscal:archive $B --from=$D --to=$D; done`. OR (c) accept gap, log it loudly, hope auditor never asks.",
+      "severity": "P0",
+      "nf525_impact": "Daily signed-bundle requirement broken on outage. audit_logs themselves are preserved (DB-trigger append-only), so the row-level forensic survives. The lost artifact is the SIGNED FILE-BUNDLE — which IS a NF525 compliance deliverable for auditor inspection."
+    },
+    {
+      "id": "L11.1-P0-03",
+      "title": "Lane #17 (foodking-z-close-safety-net) collapses multi-day backlog into ONE Z + leaves no auto-reopen path",
+      "kernel_line": "339-346",
+      "command": "app/Console/Commands/FiscalCloseAllActiveBranchesCommand.php:55 + app/Services/Fiscal/ZReportService.php:204-247",
+      "classification_note": "Matrix verdict is DEGRADED for the catch-up-safety axis (chain integrity holds, no row lost), raised to P0 here because the daily-Z segregation policy gap + no-auto-reopen interregnum outweigh the row-level catch-up classification. The two views are intentionally orthogonal — do not read the matrix verdict as contradicting the P0 severity.",
+      "evidence": "The safety-net pre-checks for STATUS_OPEN Z and calls $service->close(). ZReportService::close() aggregates with window (opened_at, closedAt]. If opened_at = day N-4 (last manual or cron close before outage) and closedAt = day N+0 23:55, the Z covers ~4 days of transactions in ONE signed report. AFTER the close: the ONLY way to create a new Z is via POST /api/admin/fiscal/z-report/open (ZReportController.php:43-51) — there is NO cron auto-opener. Search confirmed: zero callers of ZReportService::open in app/ except the admin controller. Additionally verified (grep on FiscalSequenceService.php): NO STATUS_OPEN Z check in the allocate path — so transactions during the no-Z interregnum DO get a fiscal_sequence_no successfully (the interregnum is daily-Z-segregation-bad, not payment-fatal).",
+      "impact": "Two coupled problems: (a) NF525 same-day Z segregation IS broken for the outage window — auditor sees a 4-day Z which is unusual and may trigger questions. (b) After the safety-net closes on N+0 23:55, day N+1 transactions land WITHOUT a STATUS_OPEN Z. They still get a fiscal_sequence_no via FiscalSequenceService (independent of Z state), but until a cashier or admin manually POSTs /open the next day, orders accumulate in a 'no-Z' interregnum. The next Z (whenever opened) WILL capture them via aggregate's created_at-based query, so no row is lost — but during the interregnum the system has no current Z context.",
+      "owner_decision_needed": "(a) Add a companion cron at 00:05 Paris that auto-opens a fresh Z for every active branch IFF no STATUS_OPEN Z exists — symmetric to the close safety-net. Code: mirror FiscalCloseAllActiveBranches but call $service->open() with no-op pre-check. OR (b) accept that the morning cashier opens manually and document in runbook. OR (c) split multi-day backlog: add a `--max-days=1` flag to close + a wrapper that calls close-then-open-then-close for each missed day to produce per-day Z reports. Each requires owner decision.",
+      "severity": "P0",
+      "nf525_impact": "Same-day segregation policy at risk + post-outage interregnum where transactions exist without an open Z. Chain integrity holds, accounting accuracy holds, but operational/auditor cleanliness suffers."
+    }
+  ],
+
+  "p1_findings": [
+    {
+      "id": "L11.1-P1-01",
+      "title": "Lanes #4 + #5 (outbox + webhook retry-failed) have hardcoded --since=24h window — 3-day backlog tail (24-72h) lost to replay",
+      "kernel_line": "64-69 + 76-81",
+      "evidence": "Both commands resolve $cutoff = now()->subHours(24) via resolveCutoff('24h'). Anything failed >24h ago does NOT enter the replay batch.",
+      "impact": "After 3-day outage: failed events 24-72h old sit forever in status=failed (until prune lane #9 reclaims at 90d, BUT prune only deletes attempts>=6 OR dispatched_at NOT NULL — chronically failed rows with attempts<6 STAY FOREVER). Customer-impact for webhook lane: missed Stripe/SenangPay events from days N-3/N-2 never replay; payment state may permanently mismatch provider state.",
+      "recovery_action": "MANUAL post-recovery: `php artisan foodking:outbox:retry-failed --since=96h && php artisan foodking:webhook:retry-failed --since=96h`. Document in runbook. Optionally widen the schedule's hardcoded window during recovery (requires Kernel.php edit + deploy).",
+      "severity": "P1"
+    },
+    {
+      "id": "L11.1-P1-02",
+      "title": "Lane #6 (CleanupStalePendingKioskOrders) fires notification STORM on recovery — 3 days of accumulated pending kiosk orders all rejected in ONE tick + email/SMS/push to each customer",
+      "kernel_line": "83-86",
+      "evidence": "CleanupStalePendingKioskOrders.php:42-83 iterates ALL matched orders in one .each() sweep, dispatching SendOrderMail + SendOrderSms + SendOrderPush + OrderCanceled per order. No rate cap, no batch size.",
+      "impact": "Customers who walked away from kiosks 2-3 days ago suddenly receive 'Auto-rejected' notifications. Reputation/UX damage. Email/SMS rate-limit at provider may trigger account flag.",
+      "recovery_action": "MANUAL pre-tick triage: SELECT COUNT(*) on the predicate; if large, consider a one-off raw UPDATE bypassing the job's notification dispatch, then let the job find an empty set. Or temporarily disable the SendOrderMail/SMS listeners during recovery. No code-level guard exists.",
+      "severity": "P1"
+    },
+    {
+      "id": "L11.1-P1-03",
+      "title": "Lane #19 (stripe-drain-stranded-cpn) drains 3-day backlog of stranded payments → ghost-orders flood kitchen on recovery",
+      "kernel_line": "181-189",
+      "evidence": "DrainStrandedCpnCommand processes up to 100/tick + flips Order to PAID + broadcasts OrderPaymentStatusChanged per drained CPN. No 'too old to bother' upper bound.",
+      "impact": "Customers paid via Stripe 2-3 days ago, browser never flushed, CPN stranded. On recovery, drain runs, orders flip PAID, kitchen receives tickets for orders the customer charged days ago and is no longer present for. Operational chaos + likely refund storm.",
+      "recovery_action": "MANUAL pre-tick triage: dry-run first (`php artisan stripe:drain-stranded-cpn --dry-run --older-than-minutes=5`). If results show charges > 6h old, customer-service workflow needed (refund + delete CPN row directly via SQL). Consider adding an --older-than-minutes-max upper cap to the command.",
+      "severity": "P1"
+    },
+    {
+      "id": "L11.1-P1-04",
+      "title": "Lane #2 (outbox:rescue) on recovery dispatches thundering herd of events — queue/Echo burst",
+      "kernel_line": "40-43",
+      "evidence": "OutboxRescueCommand.php:37-48 issues no LIMIT on the .get() — fetches every eligible event in one collection then iterates dispatch.",
+      "impact": "3-day backlog of stranded domain_events = potentially thousands. First tick dispatches all simultaneously. Queue worker absorbs them but Pusher/Soketi broadcast burst visible to all subscribed clients (KDS, OSS, POS). Possible Echo throttling depending on provider.",
+      "recovery_action": "Monitor queue depth via `php artisan queue:work --queue=high` log. If queue saturates, consider --batch flag (does not exist today — feature-add).",
+      "severity": "P1"
+    }
+  ],
+
+  "meta_finding": {
+    "id": "L11.1-META-01",
+    "title": "ALL paging / alerting channels live on the SAME box that went down → operator notified by 'nothing happened' (silent invisibility window)",
+    "evidence": "CRONTAB_PROD.md §2.2 + §4.1 + §4.3: lecayenne-pager script writes to /var/log/lecayenne/alerts.log (LOCAL file). §7 explicitly defers off-host alerting (Sentry/Pushover/email) to owner decision. §2.3 defers off-host backup mirror. So during the outage: backup-daily fails silently, monitor lane fails silently, fiscal-chain-monitor fails silently — every Log::error and every pager call lands on a dead host.",
+    "impact": "Operator only discovers the outage by NOT receiving expected reports, or by a third-party signal (customer complaint, monitoring vendor like UptimeRobot if configured). V1 LOCAL is a TRUE single-point-of-failure — the meta-monitoring is co-located with what it monitors.",
+    "owner_decision_needed": "Per feedback_no_cloud_until_owner_initiates.md, off-host paging is owner-deferred (V1.0.X). Confirm acceptance OR initiate the cloud-prep workstream. A minimal mitigation: external uptime probe (e.g. UptimeRobot free tier) hitting https://lecayenne.fr/api/health every 5 min — fires email/SMS to owner phone when down. Zero infra cost.",
+    "severity": "P1 — accepted by owner per CLAUDE.md §15, but worth surfacing again in cron-recovery context"
+  },
+
+  "summary_matrix": {
+    "lanes_total": 19,
+    "catch_up_safe": 11,
+    "catch_up_degraded": 6,
+    "catch_up_data_loss": 2,
+    "matrix_axis_note": "Matrix counts the catch-up-safety axis only. Lane #17 is DEGRADED on this axis (chain holds, no row lost) but separately raised to P0 in p0_findings because its policy-gap axis (daily-Z segregation + no auto-reopen) is independent of catch-up safety. P0 count below uses the policy-gap axis.",
+    "fail_loud_on_recovery": 3,
+    "fail_silent_on_recovery": 16,
+    "p0_count": 3,
+    "p1_count": 4,
+    "p2_count": 0,
+    "meta_count": 1,
+    "p0_concentration": "All three P0s are in the NF525 compliance quartet (backup #8, archive #16, z-close #17). The quartet is built for daily-correctness but NOT for outage-catch-up."
+  },
+
+  "verdict": {
+    "level": "GO-CONDITIONAL",
+    "rationale": "16/19 lanes are SAFE or DEGRADED-but-recoverable on first tick post-recovery. The 3 P0s and 4 P1s require MANUAL operator action documented in a runbook. None of the findings are silent ship-blockers — they are owner-decision items about (a) whether to add backfill loops to the NF525 quartet and (b) whether to accept storm-on-recovery behaviours. V1 LOCAL Le Cayenne single-box context means a 3-day outage is itself an exceptional event that warrants manual operator review regardless of cron behaviour — the findings here are about MAKING THAT REVIEW POSSIBLE, not about preventing the operator from having to do it.",
+    "blocking_for_v1_ship": false,
+    "blocking_for_cloud_cutover": "P0-01 (backup backfill) + P0-02 (fiscal-archive backfill) become more important once you have multi-instance failover where 'just check the box' isn't sufficient. Reconsider during cloud-prep.",
+    "recommended_immediate_actions": [
+      "Document a CRON_OUTAGE_RECOVERY.md runbook listing exact commands per missed-day per lane. Single artifact, operator follows step-by-step on recovery morning. Templates: (#8) per missed day mysqldump (knowing it's post-hoc), (#16) per missed day fiscal-archive with --from/--to, (#17) decision tree for multi-day Z, (#4 + #5) manual --since=96h runs, (#6) pre-triage SELECT COUNT, (#19) dry-run first.",
+      "Optional V1.0.X feature-add: --date= flag on foodking:backup-daily + Kernel-side iterate-missed-days loop on first tick post-recovery for both backup-daily and fiscal-archive-daily. ~50 lines of code each, no frozen-zone touch (commands live in app/Console/Commands/).",
+      "Optional V1.0.X feature-add: companion 00:05 Paris cron `fiscal:open-all-active-branches` that mirrors lane #17's safety-net pattern but for OPEN. Avoids the no-Z interregnum.",
+      "Optional V1.0.X feature-add: external uptime probe to defeat the META meta-monitoring SPOF. Free-tier UptimeRobot hitting /api/health every 5 min, alerts to owner phone."
+    ]
+  },
+
+  "frozen_zone_check": {
+    "files_modified": "NONE — this is a read-only static audit.",
+    "frozen_files_examined_read_only": [
+      "app/Services/Fiscal/FiscalSequenceService.php (NF525 frozen)",
+      "app/Services/Fiscal/ZReportService.php (NF525 frozen)",
+      "app/Services/Fiscal/AuditLogService.php (NF525 frozen — referenced indirectly)"
+    ],
+    "verdict": "0 line touched"
+  },
+
+  "nf525_invariants_check": {
+    "audit_logs_append_only": "PRESERVED — no lane touches audit_logs DELETE. RunDailyBackup READS via mysqldump SELECT-only (line 213-214 explicit). PruneOutbox + PruneWebhook explicitly exclude audit_logs (CLAUDE.md §8 cited in both docblocks).",
+    "z_reports_append_only": "PRESERVED — no lane DELETEs z_reports. Z-close lane (#17) does UPDATE (status=closed + signature + closed_at + aggregates), which the BEFORE DELETE trigger does not block.",
+    "fiscal_sequence_gap_free": "PRESERVED — FiscalSequenceService is not invoked by any cron except indirectly via retry-alloc (#13), which uses the SAME finalizePaidKioskOrder path as the live request, so allocation invariants are identical.",
+    "z_chain_hmac": "PRESERVED — fiscal-chain-monitor (#15) re-walks BOTH chains every run, catches tamper even after long darkness."
+  },
+
+  "advisor_consulted": true,
+  "advisor_alignments": [
+    "Per-lane matrix table — produced",
+    "Three NF525 P0 named findings with kernel_line cites — produced (L11.1-P0-01/02/03)",
+    "Two DLQ P1 named findings (lanes #4 + #5) — produced (L11.1-P1-01)",
+    "CleanupStalePendingKioskOrders storm P1 — produced (L11.1-P1-02)",
+    "Meta-finding on co-located paging SPOF — produced (L11.1-META-01)",
+    "Open-question on auto-Z-open after close — investigated and answered (NO auto-open, only ZReportController POST — fed into P0-03)",
+    "GO-CONDITIONAL verdict — adopted"
+  ]
+}

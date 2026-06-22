@@ -1,0 +1,242 @@
+{
+  "persona_id": "P4-OWNER-NIGHT",
+  "persona_role": "Owner Le Cayenne — 23h00 close-of-day check, café froid, 12h sur les pieds, dort 5h. Wants quick KPI overview, drill-down only if anomaly, fiscal peace-of-mind, trust-the-system-OR-check-papier mental model.",
+  "phase": "B.4",
+  "wave": "goal-2026-05-23",
+  "round": 1,
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "9da21c7cdf7a56b988d3e8521c522076ab4a493b",
+  "audited_at_utc": "2026-05-23T22:30:00Z",
+  "mode": "READ-ONLY persona audit · primary lens owner-night anxious-tired-brain · secondary lens fiscal-trust",
+  "method": "Static code analysis + cross-reference S5/S7/B3.4/B3.6 sibling findings + live fiscal:verify-chain dry-call + filesystem inspection of storage/backups + storage/logs.",
+  "scope": [
+    "/admin/dashboard — DashboardComponent.vue + 14 widgets",
+    "/admin/cash-overview — CashOverviewComponent.vue 3-cell honest reconciliation + filters",
+    "/admin/transactions/list — TransactionListComponent.vue date-range + payment-method filter",
+    "fiscal:verify-chain CLI + Console/Kernel.php:192-226 daily 03:30 cron",
+    "z_reports surface (LastZReportWidget) + sequence_no + status + closed_at",
+    "storage/backups/ db-daily / db-monthly / db-quarterly artifacts",
+    "Console/Kernel.php:105-110 foodking:backup-daily 03:00 schedule"
+  ],
+
+  "verdict_global": "AMBER",
+  "verdict_reasoning": "Le moteur tient. La chaîne NF525 est intacte (CHAIN OK count=64 verified 2026-05-23), les KPIs sont DB-correct (B.1 S7 verified 6/6), la reconciliation est honnête (Wave Polish C-013 3-cell sans cellule écart, S5 verified). Mais l'owner-night persona — un homme épuisé qui veut une preuve visuelle de sécurité, pas une commande shell — n'a PAS de surface UI qui dit 'CHAIN OK' ou 'Backup OK J-1'. Toute la preuve est CLI-only (verify-chain stdout, storage/logs/fiscal-*.log tail, ls -la storage/backups/db-daily/). Le système est sain ; l'expérience de confiance n'est pas livrée. Pour un owner anxieux qui veut dormir sans inquiétude fiscale, c'est un déficit de PEACE-OF-MIND, pas de correctness.",
+
+  "tier_classification": {
+    "blocker_peace_red": 2,
+    "friction_yellow": 4,
+    "good_green": 5
+  },
+
+  "findings_blocker_peace": [
+    {
+      "id": "P4-BPEACE-01",
+      "severity": "BLOCKER-PEACE",
+      "scope": "fiscal-trust UI surfacing",
+      "title": "NF525 chain integrity status invisible from admin UI — owner cannot self-verify 'CHAIN OK' at 23h without opening a terminal",
+      "where": "Console/Kernel.php:192-226 (cron daily 03:30) + app/Console/Commands/FiscalVerifyChainCommand.php + storage/logs/fiscal-*.log",
+      "what_persona_sees": "Au login admin, dashboard widgets 14 montrent CA jour, alertes SLA, audit trail, Z report widget (last_z_report #sequence_no + status). MAIS aucun indicateur 'CHAIN OK / TAMPERED'. Le LastZReportWidget montre `{{ resolvedReport.status }}` (capitalize) — un statut de clôture, pas une attestation cryptographique d'intégrité de chaîne.",
+      "what_persona_thinks": "« Si quelqu'un a touché à audit_logs en DB tonight, je ne le saurais jamais sans aller chercher dans le terminal. Je dors mal. » Anxiété fiscale persistante.",
+      "evidence_real": [
+        "fiscal:verify-chain CLI exécutée par script bash (manuel) — résultat : 'CHAIN OK' + 'SWEEP COMPLETE — CHAIN OK on every active branch (1 total)'. Donc la chaîne EST saine.",
+        "Cron schedule daily 03:30 wraps verify-chain per branch + logs to channel 'fiscal' on non-zero exit (Kernel.php:201-205). Si chain tamper detected → Log::error fired. PAS DE TOAST UI, PAS DE WIDGET, PAS DE BANNER.",
+        "grep across /resources/js/components/admin/dashboard/*.vue retourne 0 match pour 'chain_status', 'fiscal_chain', 'verify-chain', 'CHAIN OK'. Aucun mount-time call à un endpoint de status.",
+        "B3.6 fiscal findings confirme: 'output is operator-CLI-only. Owner-night persona cannot self-verify chain integrity from the UI.' (catched by sibling auditor)."
+      ],
+      "owner_pain_ratio_5h_sleep": "10/10 — c'est le pire scenario : sain en réalité, anxiogène en perception. Owner s'endort en se demandant si ZReportService.php:close() a bien linkPrevHash() correctement. Pas une question rationnelle, juste l'absence du feedback positif visible.",
+      "proposed_remediation_v1": "Endpoint read-only `GET /api/admin/fiscal/chain-status` retournant `{verified_at: 2026-05-23T03:30:42Z, status: 'CHAIN OK', count: 64, last_hash_prefix: '8daed68a', branch_id: 1}`. Petit chip vert 'NF525 OK · J-0 03:30' à côté du LastZReportWidget. Lit le dernier Log::channel('fiscal')->info ou re-call verify-chain en cache 5min côté serveur (≈50ms). Frontend = ajout d'un widget `FiscalChainStatusWidget.vue` sans nouvelle dépendance.",
+      "frozen_zone_impact": "Read-only endpoint = pas de modification fiscale, pas de NF525-critical zone touch. Frontend ajout = nouveau composant Vue, pas modification de widget existant.",
+      "deferral_acceptable": false,
+      "owner_decision_needed": false
+    },
+    {
+      "id": "P4-BPEACE-02",
+      "severity": "BLOCKER-PEACE",
+      "scope": "backup-trust UI surfacing + freshness alert",
+      "title": "Backup last-successful + freshness invisible from admin UI — owner cannot verify 'Sauvegarde J-1 OK' without ls -la",
+      "where": "Console/Kernel.php:105-110 schedule foodking:backup-daily 03:00 + storage/backups/db-daily/*.sql.gz",
+      "what_persona_sees": "Dashboard ne contient AUCUN widget backup. Aucun indicateur 'last backup successful 2026-05-22 03:00 (45 KB)'. Aucun toast/banner si backup absent depuis 24h+. Le persona doit faire `ls -la storage/backups/db-daily/` pour savoir.",
+      "what_persona_thinks": "« Le seeder a-t-il tourné cette nuit ? S'il plante 3 jours de suite et que je ne le sais pas, ma sauvegarde NF525 6y peut être à trous. La loi me pendra. »",
+      "evidence_real": [
+        "ls /storage/backups/db-daily/ shows ONLY `daily-2026-05-21.sql.gz` (90767 bytes, last modified 2026-05-21 06:50).",
+        "Today is 2026-05-23. Backups for 2026-05-22 and 2026-05-23 are MISSING — either the cron hasn't run on local dev env (highly likely, no scheduler running locally), or schedule:run is not active. Either way, owner has zero UI signal that backups are STALE BY 2 DAYS.",
+        "/storage/backups/db-monthly/ and db-quarterly/ contain ONLY .gitkeep — no monthly archive ever produced yet.",
+        "grep across /resources/js/components/admin/dashboard/ for 'backup' or 'sauvegarde' returns 0 matches. Pas de surface.",
+        "B3.4 SRE findings § Q14 confirme schedule existe, withoutOverlapping(60) + onOneServer + dailyAt('03:00') + NF525 6y retention via 30d/12mo/24q. Le moteur est correct ; l'observabilité owner-side est absente."
+      ],
+      "owner_pain_ratio_5h_sleep": "9/10 — un backup fiscal qui se rompt silencieusement = condamnation NF525. La loi 6 ans de rétention est cumulative — un jour manqué = trou permanent dans l'archive. Anxiété rationnelle.",
+      "proposed_remediation_v1": "Endpoint `GET /api/admin/operations/backup-status` retournant `{last_daily_at: ISO, last_daily_size_kb: 90, last_daily_age_hours: 6, last_monthly_at: ISO|null, stale: false}`. Widget chip vert si <26h, ambre 26-50h, rouge si >50h ('Backup J-2 manquant — vérifier supervisor'). Lit `Storage::disk('local')->files('backups/db-daily/')` + filemtime() sur le dernier. Zéro impact fiscal — pure lecture filesystem.",
+      "frozen_zone_impact": "Aucun. Read-only filesystem lookup + composant Vue additif.",
+      "deferral_acceptable": false,
+      "owner_decision_needed": false
+    }
+  ],
+
+  "findings_friction": [
+    {
+      "id": "P4-FRICTION-01",
+      "severity": "FRICTION",
+      "scope": "dashboard owner-night ergonomy",
+      "title": "Pas de comparaison J vs J-1 ni 'écart vs hier %' — owner doit faire le calcul mental ou aller chercher transaction-list",
+      "where": "OverviewComponent.vue:1-95 affiche total_sales / total_orders / total_menu_items en valeur absolue, sans delta",
+      "what_persona_sees": "Cartes KPI gradient pink/violet : « Total Sales 1234,56 € · Total Orders 47 · Total Menu Items 78 ». Aucune mention 'vs hier +12%' ou 'CA J-1 1102,34 €'.",
+      "what_persona_thinks": "« Bon, on a fait 1234,56 € aujourd'hui. C'est bien ou pas bien ? Hier on en a fait combien ? Je vais devoir aller dans transactions, mettre une plage hier, exporter Excel… » Trop d'étapes à 23h.",
+      "evidence_real": [
+        "grep 'J-1|previousDay|yesterday|hier|compare|comparison' dans /resources/js/components/admin/dashboard/*.vue → 0 match.",
+        "DashboardService::totalSales() / totalOrders() retournent valeur unique du jour (Paris TZ via Carbon::today(timezone)).",
+        "Sibling RealtimeReportComponent.vue affiche cards temps réel mais pas de delta non plus."
+      ],
+      "owner_pain_ratio_5h_sleep": "6/10 — pas un blocker fiscal, mais cause de fatigue mentale supplémentaire post-shift. Owner finit par ne plus regarder.",
+      "proposed_remediation_v1": "DashboardService::totalSales() retourne `{today: 1234.56, yesterday: 1102.34, delta_pct: +11.99, delta_abs: 132.22}`. KPI card affiche chip vert '+12% vs J-1' ou rouge '-8% vs J-1'. Implementation = 2e SELECT bounded sur Carbon::yesterday() + math simple. Zéro changement de schema."
+    },
+    {
+      "id": "P4-FRICTION-02",
+      "severity": "FRICTION",
+      "scope": "cash-overview date filter ergonomy",
+      "title": "Cash Overview date range = 2 inputs HTML <type=date> sans preset 'aujourd'hui / hier / cette semaine' — TransactionListComponent.vue a Datepicker preset-ranges, cash-overview n'a pas la parité",
+      "where": "CashOverviewComponent.vue:29-34 vs TransactionListComponent.vue:58-64 (preset-ranges présent côté transactions)",
+      "what_persona_sees": "Pour filtrer cash-overview sur hier, owner doit taper 2 dates au format YYYY-MM-DD via clavier qwerty. TransactionListComponent au contraire offre un Datepicker @vuepic avec `preset-ranges` (aujourd'hui, hier, cette semaine).",
+      "what_persona_thinks": "« Pourquoi ici je dois taper 2026-05-22 deux fois et là-bas j'ai un bouton 'Hier' ? Inconsistant. »",
+      "evidence_real": [
+        "CashOverviewComponent.vue:29-34 utilise `<input type='date'>` natif (zéro preset).",
+        "TransactionListComponent.vue:58-64 utilise `<Datepicker hideInputIcon autoApply :enableTimePicker='false' utc='false' @update:modelValue='handleDate' v-model='props.form.date' range :preset-ranges='presetRanges'>`",
+        "S5 B.1 findings ont noté Q8 URL filter sync GREEN, mais n'ont PAS challenged l'UX-parity ergo gap avec transactions."
+      ],
+      "owner_pain_ratio_5h_sleep": "5/10 — friction d'usage récurrente à 23h. 4-5 secondes perdues × 60+ usages/mois = ~300s/mois cognitive overhead.",
+      "proposed_remediation_v1": "Remplacer 2 inputs date par 1 Datepicker @vuepic range + presetRanges = ['Aujourd'hui', 'Hier', 'Cette semaine', 'Semaine dernière', 'Ce mois', 'Mois dernier']. Code = copier le pattern de TransactionListComponent.vue lignes 58-64 + handleDate(). Zéro impact business, pur UX parity heal."
+    },
+    {
+      "id": "P4-FRICTION-03",
+      "severity": "FRICTION",
+      "scope": "anomaly detection — suspicious-transaction flag",
+      "title": "Aucune détection ni mise en évidence des transactions suspectes (refund excessif, écart cash/expected, modification de prix opérateur, etc.)",
+      "where": "Dashboard ne contient aucun widget anomaly. AuditTrailComponent.vue:1-63 montre les 50 dernières actions ActionLog mais sans tag/couleur 'suspect' ni regroupement.",
+      "what_persona_sees": "AuditTrail liste 50 lignes (Utilisateur · Action · Ressource · Temps). Chaque action est `<span class='bg-blue-100 text-blue-800'>` — toutes égales visuellement. Un refund de 50 € ressemble à un order.created.",
+      "what_persona_thinks": "« Si un caissier rembourse 8 fois 50 € en 1 heure, je ne le verrai pas. C'est noyé dans 50 lignes uniformes. »",
+      "evidence_real": [
+        "grep 'ANOMAL|anomal|suspicious|suspect|flag|alert.*transaction|refund.*alert' dans dashboard/*.vue → 0 match.",
+        "AuditTrailComponent.vue:22-26 même styling pour chaque row. Pas de filter, pas de groupement.",
+        "Refund counter-entry events EXISTENT (audit_log.write avec `action: order.refund.counter_entry` — vu dans /storage/logs/fiscal-2026-05-23.log) mais ne sont pas highlighted en UI.",
+        "Aucun service anomaly-detection.php trouvé via grep."
+      ],
+      "owner_pain_ratio_5h_sleep": "7/10 — risque réel de fraude opérateur invisible. Pas un blocker fiscal direct mais un blocker contrôle interne.",
+      "proposed_remediation_v1": "V1 minimal : tag visuel rouge sur `action.startsWith('order.refund')` dans AuditTrailComponent — `<span class='bg-red-100 text-red-800' v-if='log.action.includes(\"refund\")'>`. V1.0.X : section dédiée 'Alertes opérationnelles' au-dessus de AuditTrail listant refunds >30 €, écarts cash >5 €, opérateurs ayant fait >3 refunds/1h."
+    },
+    {
+      "id": "P4-FRICTION-04",
+      "severity": "FRICTION",
+      "scope": "Z-report end-of-day accessibility",
+      "title": "LastZReportWidget montre #sequence_no + status mais aucune action 'Clôturer maintenant' ni indicateur 'Z manquant pour aujourd'hui'",
+      "where": "LastZReportWidget.vue:1-113 — affiche dernier z_report (closed prioritaire) + lien vers transactions.list ; pas d'état 'Z ouvert' ni de bouton close",
+      "what_persona_sees": "Card 'Last Z Report #28 · closed · 2026-05-22 23:55:00' + lien 'Voir toutes les alertes'. Si owner regarde à 23h SANS avoir fait le Z d'aujourd'hui (encore ouvert ou pas encore créé), il ne voit pas explicitement 'Z aujourd'hui = non clôturé, fais-le avant minuit'.",
+      "what_persona_thinks": "« J'ai bien fait le Z hier d'après le widget. Mais celui d'aujourd'hui ? Je dois aller sur /admin/transactions/list et chercher... »",
+      "evidence_real": [
+        "LastZReportWidget.vue:91-110 fetch admin/fiscal/z-report et prend `rows.find(r => r.status === 'closed') || rows[0]`. Si rows[0] est OPEN (today's Z en cours), le widget affiche le STATUS 'open' mais pas de CTA.",
+        "Aucun bouton de clôture dans le widget. Aucun warning si current_date > last_closed_z_date.",
+        "B3.4 SRE B.3 ne couvre pas ce gap (focus operational, pas owner-flow)."
+      ],
+      "owner_pain_ratio_5h_sleep": "6/10 — risque oubli Z = NF525 mineur (Z can be closed J+1 morning) mais friction nocturne réelle.",
+      "proposed_remediation_v1": "LastZReportWidget computed property `pendingZForToday` = (resolvedReport.status === 'open' || resolvedReport.closed_at < Carbon::today()). Si vrai → banner ambre 'Z d'aujourd'hui en cours — clôture à 23h59' + bouton-link vers le flow de clôture."
+    }
+  ],
+
+  "findings_good": [
+    {
+      "id": "P4-GOOD-01",
+      "title": "NF525 chain integrity réellement intacte — verify-chain returns CHAIN OK count=64 last_hash=8daed68a... (live measurement 2026-05-23)",
+      "evidence": "Live execution of `php artisan fiscal:verify-chain --all` returns 'CHAIN OK' + 'SWEEP COMPLETE — CHAIN OK on every active branch (1 total)'. B3.6 fiscal audit cross-verifies count=64 bit-identical pre/post audit. Triggers actifs (audit_logs_no_update + audit_logs_no_delete + z_reports_no_delete). Owner peut DORMIR sur la correctness — seul le surfacing UI manque."
+    },
+    {
+      "id": "P4-GOOD-02",
+      "title": "Cash overview reconciliation = honest 3-cell (opening + collected + expected) — pas de cellule 'écart' fake, amber note 'à venir'",
+      "evidence": "CashOverviewComponent.vue:122-165 rend exactement 3 cellules. Wave Polish Final C-013 (commit chain documented) a explicitement supprimé la cellule diff qui était algébriquement = -opening_amount. Note ambre `label.reconciliation_note_pending_counted_input` (71 chars) explique le 'à venir' au lieu de mentir avec une fausse soustraction. S5 B.1 verdict GREEN sur ce point. Owner-night persona = bon signal de transparence."
+    },
+    {
+      "id": "P4-GOOD-03",
+      "title": "Cash overview Q9-S1 cross-surface sync ~1s + Q8 URL filter sync persistant F5",
+      "evidence": "S5 B.1 verified empirically: source=borne URL filter survives reload (Q8 PASS) + reconciliation_invariance under filter (cash_collected stays bounded to drawer-day, ignoring source/mode filter — C-014 honored). Owner peut filtrer par source/mode à 23h sans perdre son état au F5."
+    },
+    {
+      "id": "P4-GOOD-04",
+      "title": "Production boot guards — 10 invariants enforced at AppServiceProvider.php boot (POS_SIMULATION_HARDWARE=false + APP_DEBUG=false + IDEMPOTENCY=true + APP_URL set + CACHE_DRIVER ≠ array/null + QUEUE ≠ sync + BROADCAST set + LOYALTY_QR_SECRET set + PAYMENT_BYPASS=false + PRINTING_BYPASS=false)",
+      "evidence": "B3.6 fiscal findings enumerate the 10 guards at AppServiceProvider.php lines 86/98/105/123/144/163/182/194/200/217. Production deploy will fail-fast at boot if any drift. Owner couldn't accidentally ship a non-NF525 config."
+    },
+    {
+      "id": "P4-GOOD-05",
+      "title": "fiscal:archive cron daily 02:00 + fiscal-chain-monitor cron daily 03:30 = double belt-and-suspenders on chain integrity",
+      "evidence": "Kernel.php:234-263 (archive) + Kernel.php:192-226 (verify chain) iterate over activeBranchIds() — Wave 2d FISCAL-ADV3C-01 alignment ensures both lanes auto-extend when new branches added. Logs to channel 'fiscal' on failure. Operational invariant solid even if owner doesn't see it."
+    }
+  ],
+
+  "top_3_owner_night_concerns": [
+    {
+      "rank": 1,
+      "concern": "Pas de signal UI 'CHAIN OK' au dashboard — owner ne peut pas vérifier la conformité fiscale visuellement à 23h sans ouvrir un terminal (P4-BPEACE-01). Anxiété fiscale persistante alors que la chain est en réalité saine.",
+      "fix_effort_estimated": "S — ~3h dev (1 endpoint read-only + 1 widget Vue + i18n keys)",
+      "ship_impact": "Confiance fiscale visible → owner peut dormir."
+    },
+    {
+      "rank": 2,
+      "concern": "Pas de signal UI 'Backup OK' au dashboard — owner ne sait pas que les backups db-daily sont stale de 2 jours (last = 2026-05-21, today = 2026-05-23) (P4-BPEACE-02). NF525 6y retention en péril silencieux.",
+      "fix_effort_estimated": "S — ~2h dev (1 endpoint filesystem lookup + 1 widget chip + freshness threshold logic)",
+      "ship_impact": "Détection précoce des incidents backup → 0 trou NF525."
+    },
+    {
+      "rank": 3,
+      "concern": "Aucune comparaison J vs J-1 sur les KPI cards (P4-FRICTION-01) + aucune mise en évidence des refunds/anomalies dans AuditTrail (P4-FRICTION-03) — owner doit faire le calcul mental ou aller fouiller manuellement. À 23h, il ne le fait pas → drift contrôle interne.",
+      "fix_effort_estimated": "M — ~5-6h dev (DashboardService delta queries + KPI card UI + AuditTrail color-tag refunds + section anomaly v1 minimal)",
+      "ship_impact": "Détection comportementale précoce + cognitive load -30%."
+    }
+  ],
+
+  "live_evidence_collected": {
+    "fiscal_verify_chain_output": "CHAIN OK · SWEEP COMPLETE — CHAIN OK on every active branch (1 total)",
+    "fiscal_verify_chain_executed_at_utc": "2026-05-23T22:15:00Z (local test env audit-trail-aware run)",
+    "audit_log_count_via_b3_6": 64,
+    "audit_log_last_hash": "8daed68a65b8c8e75a7143f305967047ee1bb0b664a95afb5d9d2e0657777592",
+    "backup_db_daily_files_present": ["daily-2026-05-21.sql.gz (90767 bytes, mtime 2026-05-21 06:50)"],
+    "backup_db_daily_files_missing_today": true,
+    "backup_db_daily_files_missing_yesterday": true,
+    "backup_db_monthly_files": [],
+    "backup_db_quarterly_files": [],
+    "dashboard_widgets_with_chain_status": 0,
+    "dashboard_widgets_with_backup_status": 0,
+    "dashboard_widgets_with_jvsj1_delta": 0,
+    "dashboard_widgets_with_anomaly_flag": 0
+  },
+
+  "cross_reference_to_sibling_findings": {
+    "S5_cash_overview_findings": "GREEN — reconciliation honest + URL sync. Confirmed by P4-GOOD-02 + P4-GOOD-03.",
+    "S7_admin_dashboard_findings": "GREEN with YELLOW (S7-MEGA-F1 missing fiscal:verify-chain UI surfacing) — P4-BPEACE-01 strongly confirms this YELLOW = actually a BLOCKER for owner-night persona, not just YELLOW.",
+    "B3_4_SRE_findings": "GREEN — backup cron + verify-chain cron + supervisor template all sound. Confirmed by P4-GOOD-05. But P4-BPEACE-02 surfaces that operational soundness ≠ owner observability.",
+    "B3_6_fiscal_findings": "GREEN — CHAIN bit-identical + triggers active + boot guards 10/10. Confirmed by P4-GOOD-01 + P4-GOOD-04. Already flagged the CLI-only verify-chain UI gap — P4 elevates severity from INFO to BLOCKER-PEACE."
+  },
+
+  "owner_night_decision_grid": {
+    "trust_the_system": "Yes (correctness-wise) — 5/5 NF525 invariants intact, B3.6 + P4-GOOD-01 to GOOD-05 confirm.",
+    "trust_the_screen": "No (peace-of-mind-wise) — 2 BLOCKER-PEACE + 4 FRICTION items mean an anxious owner at 23h has no visual proof of safety. Must check papier (CLI/filesystem) instead.",
+    "verdict_for_owner_question": "Tu peux faire confiance au moteur. Mais le tableau de bord ne te DIT PAS qu'il est sain. C'est comme avoir un airbag mais pas de témoin lumineux : la voiture est sûre, mais le conducteur ne le sait pas."
+  },
+
+  "proposed_phase_b_5_or_remediation_wave": {
+    "scope": "FiscalChainStatusWidget.vue + BackupStatusWidget.vue + 2 read-only endpoints + DashboardComponent.vue mount-row addition",
+    "frozen_zone_impact": "Zero — pure additive widgets. No change to PaymentComponent.vue / KioskWizardComponent.vue / FiscalSequenceService.php / ZReportService.php / AuditLogService.php.",
+    "estimated_dev_hours": "5-6h (2x widget + 2x controller read-only + i18n keys + 2x phpunit + 2x vitest)",
+    "estimated_test_e2e_hours": "1h (S7 dashboard re-capture + widget visibility assert)",
+    "blocker_for_v1_ship": "NO — system already correct. This is a PEACE-OF-MIND uplift, not a correctness blocker. Owner may choose to ship V1 without it and defer to V1.0.1.",
+    "recommended_for_v1_ship": "YES — small effort, large psychological-trust uplift for owner-night usage pattern. Aligns with FoodKing principle §6 Visual Evidence Required."
+  },
+
+  "return_summary": {
+    "path": "reports/test-e2e/goal-2026-05-23/round-1/persona-P4-owner-night.json",
+    "verdict": "AMBER — system correct, owner-night observability incomplete",
+    "peace_blocker_count": 2,
+    "friction_count": 4,
+    "good_count": 5,
+    "top_3_owner_night_concerns_short": [
+      "P4-BPEACE-01: NF525 chain status CLI-only — pas de widget UI 'CHAIN OK'",
+      "P4-BPEACE-02: Backup last-successful CLI-only — backups db-daily stale 2 jours sans alerte UI",
+      "P4-FRICTION-01+03: Pas de delta J vs J-1 + pas de tag visuel refund/anomaly dans AuditTrail"
+    ]
+  }
+}

@@ -1,0 +1,137 @@
+{
+  "specialist": "DBA",
+  "wave": "WF-5-FISCAL-CASCADE",
+  "scope": "trigger logic (MySQL SIGNAL + SQLite RAISE parity), UNIQUE constraints, retention, FK semantics",
+  "mode": "READ-ONLY",
+  "frozen_zone_touched": false,
+  "lens": "schema + indexes + FK + driver parity + retention + N+1 + multi-tenant",
+  "files_audited": [
+    "database/migrations/2026_04_22_000001_add_fiscal_sequence_no_to_orders.php (referenced)",
+    "database/migrations/2026_04_22_000002_create_audit_logs_table.php",
+    "database/migrations/2026_04_22_000003_create_z_reports_table.php (referenced)",
+    "database/migrations/2026_04_22_100000_add_unique_chain_index_to_audit_logs.php (referenced)",
+    "database/migrations/2026_05_09_160000_add_z_reports_delete_trigger_immutability.php",
+    "database/migrations/2026_05_10_010000_secure_fiscal_audit_trail_immutability.php",
+    "database/migrations/2026_05_09_200000_add_fiscal_alloc_error_at_to_orders.php (referenced)",
+    "database/migrations/2026_05_08_140200_alter_z_reports_add_cash_columns.php (referenced)",
+    "database/migrations/2026_05_06_200000_add_parent_order_id_to_orders.php (referenced)",
+    "tests/Feature/Fiscal/ZReportDeleteTriggerMysqlOnlyTest.php",
+    "tests/Feature/Fiscal/Concerns/InstallsAuditLogImmutabilityTriggers.php"
+  ],
+  "five_invariants_verified": {
+    "I-1_sequence_monotonic_gap_free": {
+      "verdict": "INTACT",
+      "evidence": [
+        "UNIQUE index orders_branch_fiscal_seq_unique (orders.branch_id, fiscal_sequence_no) provides final correctness gate",
+        "Order::lockForUpdate() at FiscalSequenceService L88-91 takes row-level lock on matching rows; MySQL InnoDB serialises on the gap+key",
+        "On SQLite test driver: FOR UPDATE is no-op but BEGIN IMMEDIATE serialises writers at transaction start",
+        "fiscal_alloc_error_at column (migration 2026_05_09_200000) marks failed kiosk allocations for cron retry — never NULL on success, NEVER kept after success (cleared at L1142-1144 of FrontendOrderService)"
+      ]
+    },
+    "I-2_hmac_chain_atomic": {
+      "verdict": "INTACT",
+      "evidence": [
+        "UNIQUE(branch_id, prev_hash) index on audit_logs (migration 2026_04_22_100000) rejects chain fork at storage layer",
+        "QueryException SQLSTATE 23000/23505 detection at AuditLogService L185 triggers single retry → recomputes prev_hash from new tail",
+        "Index on (branch_id, created_at) supports tail-read queries in verifyAuditChainTail bounded window",
+        "Index on (resource, resource_id) supports forensic lookups for audit trail joins"
+      ]
+    },
+    "I-3_composition_snapshot_frozen": {
+      "verdict": "INTACT (DB layer)",
+      "evidence": [
+        "order_items.composition_snapshot column is plain JSON text — no DB constraint enforces immutability (correctly: snapshot frozen at INSERT, no DB-level WHERE-clause to enforce 'no UPDATE')",
+        "Application layer (5 INSERT-only call sites + RefundWithCounterEntryService copy-forward) is the enforcement boundary",
+        "DBA recommendation: KEEP AS-IS. Adding a trigger to forbid UPDATE would block legitimate migrations (e.g. tax_rate normalization) without measurable security gain — service layer is the correct enforcement point"
+      ]
+    },
+    "I-4_db_triggers_active": {
+      "verdict": "INTACT",
+      "evidence": [
+        "audit_logs: MySQL/MariaDB SIGNAL SQLSTATE '45000' (raises SQLException) + SQLite RAISE(ABORT) (raises constraint violation) — driver parity verified in tests/Feature/Fiscal/Concerns/InstallsAuditLogImmutabilityTriggers.php",
+        "z_reports: MySQL-only DELETE trigger (UPDATE allowed by design — state machine open→closed→archived + cash enrichment). Test coverage in tests/Feature/Fiscal/ZReportDeleteTriggerMysqlOnlyTest.php asserts trigger installed AND DELETE raises '45000'",
+        "cash_movements + cash_drawer_sessions + order_payments: MySQL-only DELETE triggers (P0-FIX-4 iter15). Same SIGNAL SQLSTATE '45000' pattern",
+        "FK cascadeOnDelete REPLACED by restrictOnDelete for cash_movements.cash_drawer_session_id + order_payments.order_id — DELETE on parent now fails at FK layer BEFORE trigger fires (cleaner error path)",
+        "down() on audit_logs migration L70-76 blocks rollback in APP_ENV=production — defensive against accidental migrate:rollback"
+      ]
+    },
+    "I-5_truncate_bypass_mitigation": {
+      "verdict": "INTACT (deploy-doc dependency)",
+      "evidence": [
+        "Documented in 3 migration docblocks (audit_logs L138-140, z_reports L29-30, cash tables L46-49)",
+        "Mitigation = revoke TRUNCATE permission on production DB user via GRANT — outside migration scope",
+        "Cannot be enforced from PHP code; this is the industry-standard NF525 deployment posture",
+        "docs/FISCAL_SECRETS.md exists (filesystem confirmed) — referenced from service-layer secret rotation runbook"
+      ]
+    }
+  },
+  "dba_findings": [
+    {
+      "id": "DBA-FIS-01",
+      "severity": "INFO",
+      "kind": "driver-parity-discipline",
+      "location": "audit_logs migration L96-136 + z_reports/cash trigger migrations",
+      "observation": "audit_logs gets BOTH MySQL AND SQLite triggers (full parity in tests). z_reports + cash tables get MySQL-only triggers (test runner uses SQLite, so the immutability is asserted via Eloquent-layer tests instead). Pattern is defensible: the high-volume INSERT-only table (audit_logs) has the strictest two-driver enforcement; the lower-volume tables get MySQL-only because production is MySQL exclusively (see config/database.php).",
+      "verdict": "KEEP-AS-IS"
+    },
+    {
+      "id": "DBA-FIS-02",
+      "severity": "INFO",
+      "kind": "schema-shape-nf525-compliant",
+      "location": "audit_logs schema",
+      "observation": "prev_hash CHAR(64) nullable (first row of chain), current_hash CHAR(64) non-null (mandatory signature). Indexes: (branch_id, created_at) for time-range queries, (resource, resource_id) for forensic joins, UNIQUE(branch_id, prev_hash) for chain fork prevention. payload JSON column allows structured tamper-resistant evidence. created_at useCurrent() default (no manual override path that could backdate evidence).",
+      "verdict": "KEEP-AS-IS"
+    },
+    {
+      "id": "DBA-FIS-03",
+      "severity": "INFO",
+      "kind": "z-report-state-machine-mutability",
+      "location": "z_reports migration design (UPDATE allowed by design)",
+      "observation": "z_reports has BEFORE DELETE trigger only, NOT BEFORE UPDATE. Documented design: legitimate state transitions are open→closed (sign + lock totals via Eloquent UPDATE), closed→archived (FiscalArchiveCommand sets archived_at), cash enrichment (ZReportCashEnrichmentService post-close UPDATE). Application-layer signature verification (verifySignature L441-449) catches any tampering of signed columns after close. Pattern is correct: schema mutability + signed-row immutability via HMAC re-walk.",
+      "verdict": "KEEP-AS-IS"
+    },
+    {
+      "id": "DBA-FIS-04",
+      "severity": "INFO",
+      "kind": "index-coverage-verify-chain-tail",
+      "location": "FiscalChainValidator::verifyAuditChainTail L118-183",
+      "observation": "Bounded tail walk: DESC LIMIT $window (default 500) gets ids, then ASC walk via id >= min(tailIds). Both queries served by (branch_id, id) primary key + branch_id index. Keeps validator under 50ms even on 10M-row audit_logs tables — confirmed in docblock L114. No N+1: single cursor over the windowed range, computeHash + hash_equals per row.",
+      "verdict": "KEEP-AS-IS"
+    },
+    {
+      "id": "DBA-FIS-05",
+      "severity": "INFO",
+      "kind": "z-aggregate-query-discipline",
+      "location": "ZReportService::aggregate L297-435",
+      "observation": "Half-open interval (from, to] (lower strict, upper inclusive) prevents boundary double-count documented at L325-332. withTrashed() + withoutGlobalScope(BranchScope) explicitly includes soft-deleted post-allocation orders (NF525 fiscal continuity — P0-FIX-1/2 owner G0-A). whereNotNull('fiscal_sequence_no') ensures orphans cannot be silently included. taxBreakdownForOrders aggregates from order_items.tax_amount (already-persisted) — does NOT re-run PricingService at Z close (eliminates drift between receipt and Z aggregate).",
+      "verdict": "KEEP-AS-IS"
+    },
+    {
+      "id": "DBA-FIS-06",
+      "severity": "INFO",
+      "kind": "retention-policy-6y",
+      "location": "audit_logs migration L70-76 + z_reports retention documentation",
+      "observation": "audit_logs migration down() blocks in APP_ENV=production. NF525 / Loi Finance 2018 mandates 6-year retention post-close — both tables (audit_logs + z_reports) covered. No TTL/purge policy implemented (correct: retention is permanent within the 6-year window; archival via FiscalArchiveCommand offloads to S3 nightly per Kernel L216-225, but rows stay in DB).",
+      "verdict": "KEEP-AS-IS"
+    }
+  ],
+  "four_list_classification": {
+    "keep_as_is": [
+      "UNIQUE index orders_branch_fiscal_seq_unique (sequence gap-free final gate)",
+      "UNIQUE index audit_logs(branch_id, prev_hash) (chain-fork rejection)",
+      "audit_logs dual-driver triggers (MySQL SIGNAL + SQLite RAISE)",
+      "z_reports MySQL-only DELETE trigger (UPDATE intentional for state machine)",
+      "cash_movements/cash_drawer_sessions/order_payments MySQL DELETE triggers (P0-FIX-4)",
+      "FK cascadeOnDelete -> restrictOnDelete (FK-layer fail-fast)",
+      "audit_logs migration down() blocked in production",
+      "Half-open interval (from, to] in Z aggregate"
+    ],
+    "heal": [],
+    "lock_plan": [],
+    "defer_v1_0_2": []
+  },
+  "p0_findings_in_frozen_zone": 0,
+  "p1_findings_in_frozen_zone": 0,
+  "verdict": "INTACT",
+  "summary": "Schema and trigger design is NF525-compliant. UNIQUE indexes enforce both sequence gap-freedom (orders) and chain fork rejection (audit_logs). Dual-driver trigger parity covers test runner AND production. z_reports' UPDATE allowance is correct for state machine + cash enrichment + archival. TRUNCATE bypass is correctly mitigated at GRANT level (deploy doc scope). No DBA recommendations; KEEP-AS-IS."
+}

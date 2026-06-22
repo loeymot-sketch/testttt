@@ -1,0 +1,339 @@
+{
+  "at": "2026-04-24T15:23:00.789Z",
+  "base": "https://api.ctok.ai",
+  "target_output_tokens": 50000,
+  "chain_target_total_tokens": 50000,
+  "chain_max_rounds": 24,
+  "steps": [
+    {
+      "phase": "ping",
+      "model": "claude-opus-4-1-20250514",
+      "http": 503,
+      "ms": 585,
+      "err": {
+        "message": "No available accounts: no available accounts",
+        "type": "api_error"
+      },
+      "usage": null,
+      "content": ""
+    },
+    {
+      "phase": "ping_bearer",
+      "model": "claude-opus-4-1-20250514",
+      "http": 503,
+      "err": {
+        "error": {
+          "message": "No available accounts: no available accounts",
+          "type": "api_error"
+        },
+        "type": "error"
+      }
+    },
+    {
+      "phase": "ping",
+      "model": "claude-3-opus-20240229",
+      "http": 503,
+      "ms": 778,
+      "err": {
+        "message": "No available accounts: no available accounts",
+        "type": "api_error"
+      },
+      "usage": null,
+      "content": ""
+    },
+    {
+      "phase": "ping_bearer",
+      "model": "claude-3-opus-20240229",
+      "http": 503,
+      "err": {
+        "error": {
+          "message": "No available accounts: no available accounts",
+          "type": "api_error"
+        },
+        "type": "error"
+      }
+    },
+    {
+      "phase": "ping_ok",
+      "model": "claude-sonnet-4-5-20250929",
+      "usage": {
+        "cache_creation_input_tokens": 431,
+        "cache_read_input_tokens": 1439,
+        "input_tokens": 196,
+        "output_tokens": 4
+      },
+      "stop": "end_turn"
+    }
+  ],
+  "chain": [
+    {
+      "round": 1,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 238
+        },
+        "cache_creation_input_tokens": 238,
+        "cache_read_input_tokens": 170,
+        "input_tokens": 95,
+        "output_tokens": 59
+      },
+      "stop": "tool_use",
+      "chars": 46
+    },
+    {
+      "round": 2,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 106
+        },
+        "cache_creation_input_tokens": 106,
+        "cache_read_input_tokens": 170,
+        "input_tokens": 95,
+        "output_tokens": 74
+      },
+      "stop": "tool_use",
+      "chars": 46
+    },
+    {
+      "round": 3,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 149
+        },
+        "cache_creation_input_tokens": 149,
+        "cache_read_input_tokens": 170,
+        "input_tokens": 95,
+        "output_tokens": 2086
+      },
+      "stop": "end_turn",
+      "chars": 6925
+    },
+    {
+      "round": 4,
+      "usage": {
+        "cache_creation_input_tokens": 3120,
+        "cache_read_input_tokens": 6288,
+        "input_tokens": 907,
+        "output_tokens": 4765
+      },
+      "stop": "end_turn",
+      "chars": 19046
+    },
+    {
+      "round": 5,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 968
+        },
+        "cache_creation_input_tokens": 968,
+        "cache_read_input_tokens": 170,
+        "input_tokens": 95,
+        "output_tokens": 68
+      },
+      "stop": "tool_use",
+      "chars": 44
+    },
+    {
+      "round": 6,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 359
+        },
+        "cache_creation_input_tokens": 359,
+        "cache_read_input_tokens": 170,
+        "input_tokens": 95,
+        "output_tokens": 58
+      },
+      "stop": "tool_use",
+      "chars": 42
+    },
+    {
+      "round": 7,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 602
+        },
+        "cache_creation_input_tokens": 602,
+        "cache_read_input_tokens": 170,
+        "input_tokens": 95,
+        "output_tokens": 82
+      },
+      "stop": "tool_use",
+      "chars": 51
+    },
+    {
+      "round": 8,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 115
+        },
+        "cache_creation_input_tokens": 115,
+        "cache_read_input_tokens": 170,
+        "input_tokens": 95,
+        "output_tokens": 82
+      },
+      "stop": "tool_use",
+      "chars": 51
+    },
+    {
+      "round": 9,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 498
+        },
+        "cache_creation_input_tokens": 498,
+        "cache_read_input_tokens": 170,
+        "input_tokens": 95,
+        "output_tokens": 58
+      },
+      "stop": "tool_use",
+      "chars": 42
+    },
+    {
+      "round": 10,
+      "usage": {
+        "input_tokens": 1110,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "output_tokens": 2998,
+        "cache_creation": {},
+        "service_tier": "standard",
+        "claude_cache_creation_5_m_tokens": 0,
+        "claude_cache_creation_1_h_tokens": 0,
+        "inference_geo": null
+      },
+      "stop": "end_turn",
+      "chars": 9332
+    },
+    {
+      "round": 11,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 882
+        },
+        "cache_creation_input_tokens": 882,
+        "cache_read_input_tokens": 170,
+        "input_tokens": 95,
+        "output_tokens": 80
+      },
+      "stop": "tool_use",
+      "chars": 60
+    },
+    {
+      "round": 12,
+      "usage": {
+        "input_tokens": 1110,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "output_tokens": 2472,
+        "cache_creation": {},
+        "service_tier": "standard",
+        "claude_cache_creation_5_m_tokens": 0,
+        "claude_cache_creation_1_h_tokens": 0,
+        "inference_geo": null
+      },
+      "stop": "end_turn",
+      "chars": 8463
+    },
+    {
+      "round": 13,
+      "usage": {
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "input_tokens": 2861,
+        "output_tokens": 597
+      },
+      "stop": "end_turn",
+      "chars": 1992
+    },
+    {
+      "round": 14,
+      "usage": {
+        "cache_creation_input_tokens": 294,
+        "cache_read_input_tokens": 3640,
+        "input_tokens": 1666,
+        "output_tokens": 1418
+      },
+      "stop": "end_turn",
+      "chars": 5675
+    },
+    {
+      "round": 15,
+      "usage": {
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "input_tokens": 7133,
+        "output_tokens": 3721
+      },
+      "stop": "end_turn",
+      "chars": 14749
+    },
+    {
+      "round": 16,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 866
+        },
+        "cache_creation_input_tokens": 866,
+        "cache_read_input_tokens": 170,
+        "input_tokens": 95,
+        "output_tokens": 134
+      },
+      "stop": "tool_use",
+      "chars": 58
+    },
+    {
+      "round": 17,
+      "usage": {
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "input_tokens": 4823,
+        "output_tokens": 2072
+      },
+      "stop": "end_turn",
+      "chars": 8286
+    },
+    {
+      "round": 18,
+      "usage": {
+        "cache_creation_input_tokens": 10214,
+        "cache_read_input_tokens": 0,
+        "input_tokens": 98,
+        "output_tokens": 4825
+      },
+      "stop": "end_turn",
+      "chars": 19302
+    }
+  ],
+  "opus_or_upstream_full": true,
+  "ping_model": "claude-sonnet-4-5-20250929",
+  "long_max_tokens_used": 50000,
+  "long_usage": {
+    "cache_creation_input_tokens": 3091,
+    "cache_read_input_tokens": 6338,
+    "input_tokens": 1024,
+    "output_tokens": 6652
+  },
+  "long_chars": 26354,
+  "long_excerpt": "# Audit Plateforme FoodKing — Architecture SaaS Laravel + Vue\n\n---\n\n## 1. Vue d'ensemble et périmètre\n\nFoodKing est une plateforme SaaS multi-tenant couvrant le cycle complet de commande en restauration : prise de commande (POS caisse, borne kiosk), gestion de file d'attente, production cuisine (KDS), et encaissement multi-pistes. L'audit couvre l'architecture actuelle, les risques, la dette technique et les recommandations exploitables.\n\n---\n\n## 2. Caisse POS\n\n### État actuel présumé\nLaravel API REST + Vue SPA communiquant via Axios. Sessions caisse probablement gérées côté serveur ou JWT.\n\n### Risques\n\n**P0 — Mode hors-ligne absent ou partiel**\nSi la caisse POS n'a pas de couche offline-first (IndexedDB + service worker), toute coupure réseau bloque les ventes. En restauration, une panne de 5 minutes en heure de pointe est catastrophique.\n\nRecommandation : implémenter un PWA offline avec queue de synchronisation. Utiliser Workbox + IndexedDB. Les commandes créées offline sont stockées localement, envoyées au serveur dès reconnexion avec un flag `origin: offline` et un `created_at_local` pour audit.\n\n**P1 — Gestion des sessions caisse**\nSi les sessions ne sont pas isolées par `ter",
+  "long_stop_reason": "end_turn",
+  "output_tokens": 6652,
+  "input_tokens": 1024,
+  "severity": "GO_CHAIN_50K_TOTAL",
+  "note": "Chaînage `CTOK_CHAIN_UNTIL_TOTAL` : cumul **input+output** (champs `usage`) ≥ **50000** (voir `chained_total` / `chain`).",
+  "chained_total_in": 21682,
+  "chained_total_out": 32301,
+  "chained_total": 53983,
+  "chain_target_met": true,
+  "chain_rounds_executed": 18
+}

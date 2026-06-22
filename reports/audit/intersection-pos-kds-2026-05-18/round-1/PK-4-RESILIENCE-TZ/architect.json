@@ -1,0 +1,110 @@
+{
+  "role": "Architect",
+  "zone": "PK-4 Resilience + TZ-awareness",
+  "mode": "read-only",
+  "date": "2026-05-18",
+  "scope": [
+    "Polling cycle integrity (Vue mount -> setInterval -> axios -> backend service -> bounded query -> resource -> response -> state update)",
+    "Pusher subscribe + reconnect logic (WebSocketService.js / Echo / Pusher state_change)",
+    "Fallback trigger conditions (wsState -> _baseCadence formula)",
+    "ws:heartbeat staleness defense (write in DispatchDomainEventsJob, read in SyncOverviewController:531)"
+  ],
+  "anchors": {
+    "frontend_sync": "resources/js/services/KdsSyncService.js",
+    "frontend_ws": "resources/js/services/WebSocketService.js",
+    "backend_sync": "app/Services/KdsSyncService.php",
+    "backend_list": "app/Services/KitchenDisplaySystemOrderService.php",
+    "outbox_dispatcher": "app/Jobs/DispatchDomainEventsJob.php",
+    "observability_read": "app/Http/Controllers/Admin/Observability/SyncOverviewController.php"
+  },
+  "trace": {
+    "happy_path_ws_connected": [
+      "KdsComponent.vue mount -> kdsSyncService.start(branchId)",
+      "WebSocketService.start() binds pusher.connection.state_change (line 81)",
+      "state_change -> 'connected' -> wsService._setState(CONNECTED) -> emits state_change",
+      "KdsSyncService._bindWsState subscribes -> _recomputeCadence('ws_connected')",
+      "_baseCadence() returns { interval: Infinity, reason: 'ws_connected' } (line 293)",
+      "_schedule() arms _driftTimer at 60_000ms safety net (line 346) — forceSync as belt-and-suspenders if Echo silently drops events",
+      "On Echo broadcast: KdsComponent.vue receives order-updated/created -> applies version-gated patch (PK-3 surface)"
+    ],
+    "degraded_path_ws_dropped": [
+      "Pusher emits state_change disconnected/unavailable/failed -> WebSocketService._setState(DISCONNECTED|UNAVAILABLE|FAILED)",
+      "Storm detection: _recordDisconnectForStormDetection pushes timestamp; >= 4 in 30s -> _openReconnectStormCircuitBreaker (line 272)",
+      "Breaker: pusher.disconnect() + decorrelated jitter delay 5-30s + reconnect_storm event",
+      "KdsSyncService receives 'reconnect_storm' -> forceSync() with 0-500ms client-side jitter (line 255-273) — non-cadence path, single bridge",
+      "Normal state_change -> KdsSyncService._reasonFromWsState -> ws_disconnected -> _baseCadence returns disconnectedBaseMs + jitter (default 10s base + 3s jitter)",
+      "_schedule() arms _timer at currentIntervalMs",
+      "forceSync() axios GET /api/admin/kds-order/sync?since=...&branch_id=... -> backend KdsSyncService::sync()"
+    ],
+    "heartbeat_freshness_loop": [
+      "DispatchDomainEventsJob successfully broadcasts -> Cache::put('ws:heartbeat', now()->timestamp, 120) (line 128)",
+      "SyncOverviewController:531 reads ws:heartbeat -> admin observability widget green/red signal",
+      "TTL=120s = 4x polling fallback window — heartbeat staleness implies Pusher DOWN even if a single broadcast hasn't run recently (rare but possible at low-traffic branches)"
+    ]
+  },
+  "findings": [
+    {
+      "id": "PK4-ARCH-01",
+      "severity": "VERIFIED",
+      "claim": "Pusher subscribe + reconnect logic complete and defended.",
+      "evidence": [
+        "WebSocketService.js:81 binds state_change with all 4 transitions handled (connected/connecting/disconnected/unavailable+failed)",
+        "Idempotent .start() — guarded by this._bound (line 70)",
+        "Decorrelated jitter circuit breaker (lines 277-285) follows AWS pattern, bounds 5-30s",
+        "Breaker self-clears _disconnectTimestamps at timer fire (line 338) — 4 fresh disconnects required to reopen",
+        "session_invalid suppresses breaker reconnect (line 326) — no doomed pusher.connect() spin",
+        "KdsSyncService.on('reconnect_storm') -> immediate forceSync with 0-500ms herd-spreading jitter (line 257)"
+      ],
+      "action": "verified"
+    },
+    {
+      "id": "PK4-ARCH-02",
+      "severity": "VERIFIED",
+      "claim": "ws:heartbeat write-side now plumbed (Wave 5 S-P0-A heal 65f59e82f).",
+      "evidence": [
+        "app/Jobs/DispatchDomainEventsJob.php:127-131 writes ws:heartbeat after successful broadcaster->broadcast()",
+        "Wrapped in try/catch (line 129) — observability never breaks outbox",
+        "TTL 120s > 4x polling fallback (30s prod, 5s aspirational per V1 architecture)",
+        "Sentinel: tests/Feature/Observability/WsHeartbeatWriteSentinelTest.php (commit 65f59e82f)"
+      ],
+      "action": "verified"
+    },
+    {
+      "id": "PK4-ARCH-03",
+      "severity": "VERIFIED",
+      "claim": "Drift timer (60s) keeps KDS alive even when ws is healthy — belt-and-suspenders.",
+      "evidence": [
+        "KdsSyncService.js:346 _schedule() arms _driftTimer when currentIntervalMs===Infinity (ws_connected)",
+        "Self-rearms after each fire (line 351) — survives silent Echo drops",
+        "Result: kitchen never goes >60s without a server check, regardless of WS health"
+      ],
+      "action": "verified"
+    },
+    {
+      "id": "PK4-ARCH-04",
+      "severity": "P3-INFO",
+      "claim": "Fallback wsState=undefined default returns disconnected interval — intentional fail-degraded, but not documented.",
+      "evidence": [
+        "KdsSyncService.js:311 — if wsState matches no branch (e.g. wsService=null, init pre-Echo, or wsState undefined), returns disconnectedBaseMs+jitter with reason='ws_disconnected'",
+        "This is the correct fail-safe (polling kicks in if WS service is missing), but the docstring doesn't call it out — future contributor may assume connected as the default"
+      ],
+      "recommendation": "Add a single-line comment at line 311 stating 'unknown state -> assume disconnected (fail-degraded so polling kicks in)'. Pure docs, V1.0.1 backlog.",
+      "action": "defer"
+    },
+    {
+      "id": "PK4-ARCH-05",
+      "severity": "P3-INFO",
+      "claim": "OSS sister service (OrderStatusScreenOrderService) carries DUPLICATED query body across list() and listForBranch() — drift risk.",
+      "evidence": [
+        "app/Services/OrderStatusScreenOrderService.php:45-122 (list) and :185-238 (listForBranch) carry near-identical query body",
+        "Docstring at line 175 says 'query body MUST stay byte-identical' — but it's enforced by convention only, not by extraction to a private method",
+        "Wave 3c P0 heal applied to BOTH branches simultaneously (commit 4905138fa) — good — but the next contributor must remember to do the same"
+      ],
+      "recommendation": "Extract a single private query-builder method. V1.0.1 backlog (DRY refactor, no behavioral change). File is currently DIRTY-OBSERVE — do not heal here.",
+      "action": "defer"
+    }
+  ],
+  "verdict": "Polling cycle, Pusher reconnect, fallback engagement, and heartbeat plumbing are all CONVERGED and verified. Zone PK-4 architecture is production-grade. No P0/P1/P2 findings. 2 P3-INFO docs/refactor items deferred to V1.0.1.",
+  "heals_applied": 0,
+  "files_modified": []
+}

@@ -1,0 +1,48 @@
+{
+  "zone": "Z-7-WEB",
+  "role": "Architect",
+  "round": 1,
+  "audited_at": "2026-05-18T09:00:00Z",
+  "scope": {
+    "files_read": [
+      "/Users/1millnonstop/Downloads/web/index.html",
+      "/Users/1millnonstop/Downloads/web/components.jsx",
+      "/Users/1millnonstop/Downloads/web/screens.jsx",
+      "/Users/1millnonstop/Downloads/web/screens-v3.jsx",
+      "/Users/1millnonstop/Downloads/web/funnel.jsx",
+      "/Users/1millnonstop/Downloads/web/flows.jsx",
+      "/Users/1millnonstop/Downloads/web/account-v2.jsx",
+      "/Users/1millnonstop/Downloads/web/loyalty-v2.jsx",
+      "/Users/1millnonstop/Downloads/web/orders.jsx",
+      "/Users/1millnonstop/Downloads/web/wizard-v2.jsx",
+      "/Users/1millnonstop/Downloads/web/data/menu.js"
+    ]
+  },
+  "summary": "Web standalone SPA. Single-page state-driven routing (React useState in index.html App). 11 routes: home/menu/orders/loyalty/about/checkout/payment/confirm/track + 5 modals/drawers. Data SSOT via window.LC.menu (data/menu.js) mirroring central system. Wizard 4 templates + custom composer. Funnel 4-step state machine OK. Cart state in React only (no localStorage by design per README) — mock data, will wireup to Sanctum later. 76/76 existing E2E spec PASS on baseline cycle 1.",
+  "findings_p0": [],
+  "findings_p1": [],
+  "findings_p2": [
+    {
+      "id": "Z-7-ARCH-P2-1",
+      "anchor": "/Users/1millnonstop/Downloads/web/index.html:80",
+      "title": "Cart state not persisted across page reload (designed, but no inline doc)",
+      "evidence": "index.html line 80: const [cart, setCart] = useState([{...W_ITEMS[0], qty: 1}]); — React state only. README says wireup is future task. Refresh page = lose cart. Acceptable for standalone preview but worth docstring.",
+      "recommendation": "Add inline comment: '[DESIGN] Cart is ephemeral React state; persistence via Sanctum cookie + backend is V1.1 wireup'. Defer real heal to backend integration task.",
+      "scope_minimal": true,
+      "backlog_v101": "W-CART-PERSIST"
+    },
+    {
+      "id": "Z-7-ARCH-P2-2",
+      "anchor": "/Users/1millnonstop/Downloads/web/funnel.jsx:107",
+      "title": "Checkout back button drops cart to menu route (cart preserved in App state, OK)",
+      "evidence": "funnel.jsx CheckoutPage onBack={()=>{ setRoute('menu'); setCartOpen(true); }} — opens cart drawer on menu. cart array stays in App.",
+      "recommendation": "Already correct, just document the loop home→menu→cart→checkout→back→menu+cart_open as state machine spec.",
+      "scope_minimal": true
+    }
+  ],
+  "findings_p3": [],
+  "verdict": "ARCH OK. Architecture sound, state machine clean, routing trivially correct. No P0/P1 from structural perspective.",
+  "evidence_artifacts": [
+    "reports/test-e2e/goal-complement-2026-05-18/Z-7-WEB/round-1/baseline-76pass.txt"
+  ]
+}

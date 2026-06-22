@@ -1,0 +1,34 @@
+name: Vitest
+
+# E06 (méga-checklist) : mêmes déclencheurs sur main + develop (push) que les PRs.
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+jobs:
+  vitest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # POS v4 W0+ ST-1 — invariant guards (no magic int OrderStatus, no client-side pricing).
+      # Both must pass before any test job; failure here blocks the merge.
+      - name: POS v4 invariant guards (orderStatus + pricing SSOT)
+        run: |
+          npm run pos:lint:status
+          npm run pos:lint:pricing
+
+      - name: Run Vitest
+        run: npx vitest run --reporter=verbose

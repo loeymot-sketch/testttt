@@ -1,0 +1,17 @@
+113:            :value="cashReceivedRaw"
+228:      cashReceivedRaw: '',
+248:    cashReceivedNumber() {
+249:      const v = parseFloat(this.cashReceivedRaw);
+254:      const diff = this.cashReceivedNumber - this.orderTotal;
+259:      if (this.cashReceivedRaw === '' || this.cashReceivedRaw === null) return false;
+260:      return this.cashReceivedNumber < this.orderTotal && this.cashReceivedNumber > 0;
+269:        return this.cashReceivedNumber >= this.orderTotal && this.orderTotal > 0;
+292:          this.cashReceivedRaw = String(this.orderTotal.toFixed(2));
+305:      if (modeId === 'CASH' && (this.cashReceivedRaw === '' || Number(this.cashReceivedRaw) <= 0)) {
+306:        this.cashReceivedRaw = String(this.orderTotal.toFixed(2));
+310:      this.cashReceivedRaw = e.target.value;
+314:      this.cashReceivedRaw = String(this.cashReceivedRaw || '') + val;
+318:      this.cashReceivedRaw = String(this.cashReceivedRaw || '').slice(0, -1);
+322:      this.cashReceivedRaw = '';
+331:        return `${(amount || 0).toFixed(2)} €`;
+363:      const received = this.selectedMode === 'CASH' ? this.cashReceivedNumber : null;

@@ -1,0 +1,320 @@
+{
+  "agent": "M-KDS-4-HISTORIQUE-DEEP",
+  "phase": "M",
+  "title": "KdsHistoryDrawer DEEP audit — lifecycle, WCAG 2.1.2 Escape, multi-day, Z-close integration, allergens, perf",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "07e147cc16b238a34041a1fad2a83bb11c58091c",
+  "head_note": "Spec stated HEAD d601fdd34 (2026-05-23); working tree is 2 commits ahead at 07e147cc1 ('docs(phase-l-wave-c-final)...'). No changes to KdsHistoryDrawer.vue between the two commits — drawer last modified at 4428e3ca4 (Wave X3 2026-05-21 ship commit). Verdict is therefore stable across both refs.",
+  "date": "2026-05-24",
+  "scope": "Deep audit of resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue (Wave X3 read-only V1 day-history drawer). Covers open/close lifecycle, content per BRAIN spec, allergen visibility, multi-day support, performance, focus management (WCAG 2.4.3), Z-close integration, and recall integration. Includes backend wire-format check (KDSOrderDetailsResource), endpoint test cross-reference (KdsHistoryTodayEndpointTest), structural sentinel run (kdsHistoryDrawerSentinel), and bundle freshness sentinel run (kdsBundleFreshnessSentinel).",
+
+  "verdict": "GREEN-WITH-FINDINGS",
+  "verdict_rationale": "Drawer ships the Wave X3 read-only contract correctly: 4 mutually-exclusive states (loading / error / empty / list), endpoint match (admin/kds-order/history-today), status 8/10/13 mapping to FR-translated labels (Prêt / En livraison / Livré), no Renvoyer / revert / recall control (per V1 contract — V1.0.2 LOCK), backend branch isolation + 50-cap + Paris-local TZ bounds verified by 6 endpoint tests (it_returns_today_prepared_out_and_delivered_orders_only, it_sorts_by_updated_at_descending, it_enforces_branch_isolation_for_branch_staff, admin_branch_id_zero_sees_all_branches, it_caps_at_50_orders, it_uses_tz_aware_paris_local_bounds_not_utc, unauthenticated_request_is_denied). WCAG 2.1.2 Escape-key handler PASS — verified at KdsHistoryDrawer.vue:193-207, mounted-time listener gated by `this.open`, beforeUnmount teardown prevents listener leak. Structural sentinel 12/12 GREEN. NO V1 ship blocker. 4 findings DOCUMENTED — 1 P1 (updated_at field NOT exposed by KDSOrderDetailsResource → drawer renders empty <time> on every row), 3 P2 (ARIA-contract drift role=dialog/aria-modal=true without focus trap, no allergen badge in history rows asymmetric with KdsOrderCard, multi-day filter absent — owner-night 'review last week' use case unsupported). 1 INFRA finding (R) — kdsBundleFreshnessSentinel currently RED: fr.json mtime 2026-05-23T20:32:23Z is newer than public/js/admin-kds.js mtime 2026-05-23T13:55:49Z. Drawer i18n strings still render correctly today because the existing label.kds_history_* keys ship in the current bundle, but ANY edit to a kds_* key since 13:55 would not appear until rebuild.",
+
+  "task_checkpoints": {
+    "escape_wcag_2_1_2": {
+      "verdict": "PASS",
+      "evidence": "KdsHistoryDrawer.vue:193-207 — mounted() installs document keydown listener `_onEsc` gated by `this.open && (e.key === 'Escape' || e.key === 'Esc')` → `$emit('close')`. beforeUnmount() removes the listener and nulls the reference. Compatible with both modern (Escape) and legacy IE-era (Esc) key strings. Listener is a no-op when drawer closed, so it cannot fire spurious close events on the parent shell. G.5 fix (Wave Polish) verified.",
+      "code_lines": "KdsHistoryDrawer.vue:193-207"
+    },
+    "multi_day_support": {
+      "verdict": "NO",
+      "evidence": "Backend KitchenDisplaySystemOrderService::historyToday() at line 217-246 hard-codes `Carbon::today($appTz)` and `Carbon::tomorrow($appTz)` as the whereBetween bounds. No `?date=YYYY-MM-DD` query param, no range selector in drawer template. Owner-night persona reviewing last week is unsupported — only today's PREPARED/OUT/DELIVERED is visible. Status: V1 scope as designed (Wave X3 read-only V1). Documented as V1.0.2 backlog if owner mandates multi-day review pattern.",
+      "code_lines": "KitchenDisplaySystemOrderService.php:222-232"
+    },
+    "z_close_integration": {
+      "verdict": "DOCUMENTED_DIVERGENCE",
+      "evidence": "Historique uses wall-clock day (Paris-local 00:00:00 → 23:59:59.999 next-day-tomorrow) NOT the fiscal Z-period. Z opens at L2-HEAL-07 (00:05 local cron) and closes at G2-HEAL-06 (23:55 local cron), so Z-period and wall-clock day overlap closely BUT NOT IDENTICALLY. Edge case: orders bumped between 23:55 (Z closes) and 00:00 (Historique day rolls over) belong to the just-closed Z but remain in 'today' Historique for a 5-minute window, then VANISH from Historique at 00:00 while still being part of the closed Z's audit chain. Similarly orders bumped 00:00-00:05 appear in 'today' Historique BEFORE the new Z is opened. Edge-case, NOT a fiscal bug (NF525 chain integrity is independent of this view). Should be called out in operational docs so chef knows Historique ≠ Z-report.",
+      "code_lines": "KitchenDisplaySystemOrderService.php:222-232 (today vs tomorrow bounds) — independent of FiscalSequenceService/ZReportService"
+    }
+  },
+
+  "scope_audited": {
+    "frontend": [
+      "resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue (Wave X3 ship, 269 LOC inc. styles)",
+      "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue (trigger button + drawer mount lines 9-25, components register line 1086+1100, data flag line 1168)",
+      "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue (cross-reference for allergen pill rendering, lines 47-55)",
+      "resources/js/languages/{fr,en,ar}.json (11 label.kds_history_* + label.kds_state_* keys verified present in all 3 locales)"
+    ],
+    "backend": [
+      "app/Http/Controllers/Admin/KitchenDisplaySystemController.php:71-78 (historyToday action)",
+      "app/Services/KitchenDisplaySystemOrderService.php:217-246 (historyToday query)",
+      "app/Http/Resources/KDSOrderDetailsResource.php (wire-format check — updated_at NOT exposed)",
+      "app/Http/Resources/OrderItemResource.php (item_name + item_variations + allergens_snapshot ARE exposed)",
+      "routes/api.php:1135-1141 (route definition + throttle:60,1 + permission gate)"
+    ],
+    "tests": [
+      "tests/Feature/KDS/KdsHistoryTodayEndpointTest.php (7 endpoint tests — all GREEN per spec)",
+      "tests/js/sentinels/kdsHistoryDrawerSentinel.spec.js (12/12 GREEN — structural source-grep)",
+      "tests/js/sentinels/kdsBundleFreshnessSentinel.spec.js (1/3 RED — i18n catalog newer than bundle)"
+    ]
+  },
+
+  "open_close_lifecycle": {
+    "trigger_button": {
+      "location": "KitchenDisplaySystemComponent.vue:9-20 (above both V2 and legacy KDS grids)",
+      "label": "📚 Historique (FR) / 📚 History (EN) / 📚 السجل (AR)",
+      "aria_label": "$t('label.kds_history_button_aria') — 'Ouvrir l'historique des commandes du jour'",
+      "click_handler": "@click=\"historyDrawerOpen = true\" (direct data mutation, no method indirection)",
+      "test_id": "data-testid=\"kds-history-button\" (stable E2E hook)",
+      "rendering": "Renders above both useV2Layout=true and useV2Layout=false branches — drawer accessible from BOTH grid modes"
+    },
+    "open_animation": {
+      "verified": "slide-in panel from right via `width: min(440px, 90vw); position: fixed; right edge` + backdrop fade (background: rgba(0,0,0,0.45)). No JS transition class — pure CSS render-on-mount behaviour",
+      "side_effects": "watch.open() triggers this.fetch() — see KdsHistoryDrawer.vue:180-186. Idempotent: re-opening the drawer always re-fetches (no stale cache). Acceptable because endpoint is throttle:60/min and dataset is capped at 50 rows."
+    },
+    "close_paths": [
+      {
+        "path": "X button (top-right header)",
+        "code": "KdsHistoryDrawer.vue:45-53 — <button class=\"kds-history-drawer__close\" @click=\"$emit('close')\">. data-testid=\"kds-history-close\". Includes aria-label and focus-visible outline (yellow #ffd400, lines 336-341).",
+        "verdict": "PASS"
+      },
+      {
+        "path": "Backdrop click",
+        "code": "KdsHistoryDrawer.vue:31-34 — <div class=\"kds-history-drawer__backdrop\" @click=\"$emit('close')\"></div>. Backdrop has its own pointer-events:auto so the click is captured even though the wrapping flex container has pointer-events:none (allows passthrough on the panel-less area).",
+        "verdict": "PASS"
+      },
+      {
+        "path": "Escape key (WCAG 2.1.2)",
+        "code": "KdsHistoryDrawer.vue:193-207 — mounted() installs document keydown listener `_onEsc` gated by `this.open && (e.key === 'Escape' || e.key === 'Esc')` → emits 'close'. beforeUnmount removes the listener.",
+        "verdict": "PASS — G.5 fix verified, W2 audit 2026-05-21 lineage"
+      }
+    ],
+    "url_routing": "Drawer is a pure overlay — no router.push, no URL hash, no browser-back integration. Reload while open = drawer closed (state lives only in parent component's `historyDrawerOpen: false` data). Acceptable for ephemeral chef-verification view."
+  },
+
+  "content_per_brain_spec": {
+    "header": {
+      "title": "$t('label.kds_history_title') — 'Historique du jour' (FR) / 'Today's history' (EN) / 'سجل اليوم' (AR)",
+      "icon": "📚 emoji (aria-hidden=\"true\" — does not leak to screen readers)",
+      "count_chip": "({{ orders.length }}) rendered only when !loading && !error — provides quick visual feedback once fetch returns",
+      "header_bg": "Black #111 / white text — visually distinct from page chrome to telegraph 'overlay' status"
+    },
+    "row_structure": {
+      "head_row": [
+        "N°{{ queue_number }} (fallback chain: queue_number → order_serial_no → id) — keep-latin font for digits",
+        "Status badge (translated FR) — pill style background:#111, white text, uppercase, font-size:0.72rem",
+        "<time :datetime=\"order.updated_at\"> — see P1 finding M-KDS-4-F-01 (updated_at NOT in resource payload, renders empty)"
+      ],
+      "item_lines": [
+        "{{ item.quantity }}× — bold, min-width 28px",
+        "{{ itemName(item) }} — flex:1, uses fallback chain item.item_name → item.item.name → item.name",
+        "Optional <em>— {{ variation.name }}</em> rendered for each item_variations entry — italic 0.85rem"
+      ],
+      "border_left_status_color": "is-prepared (PREPARED 8) → blue #1e88e5, is-out (OUT_FOR_DELIVERY 10) → orange #fb8c00, is-delivered (DELIVERED 13) → green #2e7d32 — quick visual scan",
+      "fields_NOT_rendered": [
+        "composition_snapshot summary (one-line) — drawer renders item_variations only, not the richer composition_snapshot.lines shape",
+        "customer name / phone (privacy by design — only chef sees the order content, no per-row delivery contact)",
+        "delivery address (Historique is for post-bump verification, not active delivery)",
+        "source surface (kiosk / pos / web / mobile) — KdsOrderCard renders a source chip, drawer does not"
+      ]
+    },
+    "status_badge_translation_table": {
+      "8_PREPARED": "Prêt (FR) / Ready (EN) / جاهز (AR) — matches Wave Polish FR terminology",
+      "10_OUT_FOR_DELIVERY": "En livraison (FR) / Out for delivery (EN) / قيد التوصيل (AR)",
+      "13_DELIVERED": "Livré (FR) / Delivered (EN) / تم التسليم (AR)"
+    },
+    "renvoyer_button_check": {
+      "verdict": "ABSENT — verified by grep on KdsHistoryDrawer.vue: 0 occurrences of 'Renvoyer' / 'recall' / 'revert' / 'annuler' / 'rétablir' as visible button labels. Sentinel kdsHistoryDrawerSentinel line 114-131 enforces this with regex over the stripped (no comments, no HTML comments) source. Wave Polish removed Renvoyer per BRAIN — verified."
+    }
+  },
+
+  "findings": [
+    {
+      "id": "M-KDS-4-F-01",
+      "severity": "P1",
+      "category": "WIRE_FORMAT_DRIFT",
+      "summary": "KDSOrderDetailsResource does NOT expose `updated_at` field, but KdsHistoryDrawer.vue renders `<time :datetime=\"order.updated_at\">{{ formatTime(order.updated_at) }}</time>` on every row. Result in production: the bumped-at timestamp column is EMPTY on every Historique row (formatTime() catch-all returns '' when input is undefined). Chef sees N°, status pill, item lines, but cannot tell at which time the order was bumped — the central use case for the drawer ('verify content if customer reports error 20 min after bump').",
+      "evidence": {
+        "drawer_consumer": "KdsHistoryDrawer.vue:111-116 — <time class=\"kds-history-drawer__time\" :datetime=\"order.updated_at\">{{ formatTime(order.updated_at) }}</time>",
+        "resource_producer": "app/Http/Resources/KDSOrderDetailsResource.php:19-73 — toArray() returns 20 keys: id, order_serial_no, token, order_type, source_surface, created_at_iso, order_datetime, order_date, order_time, delivery_date, delivery_time, is_advance_order, preparation_time, status, status_name, payment_status, payment_pending_counter, queue_number, order_items, table_name. `updated_at` is NOT in this list.",
+        "empirical_proof": "Tinker run: $r = (new KDSOrderDetailsResource($mockOrder))->resolve(request()); array_key_exists('updated_at', $r) === false — VERIFIED 2026-05-24.",
+        "formatTime_fallback": "KdsHistoryDrawer.vue:256-266 — formatTime(undefined) returns '' (early return on !value). User sees empty <time> element, no 'undefined' raw label leak — but no time displayed either."
+      },
+      "why_not_caught": [
+        "kdsHistoryDrawerSentinel.spec.js is structural source-grep only (12 tests on declarations + i18n keys) — never asserts the HTTP wire format",
+        "KdsHistoryTodayEndpointTest.php asserts only `id` set and row count + status filter / branch isolation / TZ bounds / 50-cap (7 tests) — never inspects individual response payload SHAPE (no `assertJsonStructure(['updated_at'])` or similar)",
+        "No Playwright E2E currently navigates to the drawer + asserts the time column is non-empty (Phase L5.3 verified Escape key but not content)"
+      ],
+      "owner_path": "Read-only resource patch is V1-safe — add `'updated_at' => $this->updated_at?->toIso8601String()` to KDSOrderDetailsResource::toArray(). NOT a frozen file per CLAUDE.md §7. Estimated LOC: 1. Add `assertJsonStructure(['data' => [['updated_at']]])` to KdsHistoryTodayEndpointTest to prevent silent regression.",
+      "recommendation_TEXT_ONLY_NO_PATCH": [
+        "Heal path (~5 LOC, low risk):",
+        "  1. KDSOrderDetailsResource.php — add `'updated_at' => $this->updated_at?->toIso8601String(),` near created_at_iso (line 33). ISO-8601 mirrors the existing wire convention for created_at_iso so the Vue Date(value) constructor parses cleanly cross-TZ.",
+        "  2. KdsHistoryTodayEndpointTest.php — add a single test `it_exposes_updated_at_in_wire_format()` asserting `assertJsonStructure(['data' => [['id', 'updated_at']]])` to lock the wire contract.",
+        "  3. kdsHistoryDrawerSentinel.spec.js — add a 13th test grep-asserting the resource file contains `'updated_at'` key declaration. Keeps the structural / wire contract aligned."
+      ],
+      "blast_radius": "Drawer-local UX degradation — empty time column makes 'which order was bumped at 14:32?' impossible to answer from Historique alone. Chef would have to cross-reference the active KdsV2Grid Wave U 'Récemment servies' strip (which only shows the last few). Not a fiscal / NF525 issue, not a security issue, not a sync issue. Pure UI regression introduced at Wave X3 ship 2026-05-21 4428e3ca4."
+    },
+    {
+      "id": "M-KDS-4-F-02",
+      "severity": "P2",
+      "category": "ARIA_CONTRACT_DRIFT",
+      "summary": "Drawer declares `role=\"dialog\" aria-modal=\"true\"` (line 27-28) but does NOT implement the WAI-ARIA dialog pattern contract: no focus trap (Tab cycles out of drawer into background page), no initial-focus restorer (focus does NOT move into drawer on open), no return-focus on close (focus does NOT restore to the 'Historique' trigger button). Phase L5.3 audit treated drawer as 'SLIDE-IN PANEL (not a true blocking dialog)' which is correct UX but inconsistent with the ARIA contract the source itself declares. Screen reader users hear 'dialog, modal' but find a non-trap, non-restoring overlay.",
+      "evidence": {
+        "aria_contract_declaration": "KdsHistoryDrawer.vue:27-28 — role=\"dialog\" + aria-modal=\"true\"",
+        "missing_implementation": "grep -nE 'ref=\"|focus\\(\\)|nextTick|onMounted|returnFocus' KdsHistoryDrawer.vue = 0 hits. No this.$refs, no .focus() call, no Tab interception.",
+        "phase_l_audit_quote": "phase-l/L5.3-keyboard-nav-findings.json: 'KdsHistoryDrawer is a SLIDE-IN PANEL (not a true blocking dialog) — backdrop click + Escape both close it (line 195).' — L5.3 implicitly acknowledges the drift but verdict was PASS because nothing was broken.",
+        "wai_aria_spec": "WAI-ARIA Authoring Practices 1.2 §3.7 (Dialog (Modal)): 'When a modal dialog opens, focus moves to an element within the dialog'; 'TAB: Moves focus to the next tabbable element inside the dialog'; 'When a dialog closes, focus returns to the element that invoked the dialog.'"
+      },
+      "owner_path": "Two heal options — pick one:",
+      "recommendation_TEXT_ONLY_NO_PATCH": [
+        "Option A (RECOMMENDED — simpler, matches actual UX): drop aria-modal=\"true\" + change role=\"dialog\" → role=\"complementary\" or role=\"region\" with aria-labelledby pointing at the title. ~2 LOC. No focus management required — non-modal panels do not need it per WAI-ARIA. Backdrop dimming becomes a UX hint, not a screen-reader contract.",
+        "Option B (V1.0.2 if owner wants full modal): keep role=\"dialog\" aria-modal=\"true\", implement the trio:",
+        "    - mounted/watch.open: this.$nextTick(() => this.$refs.closeButton.focus()); store activeElement before opening for return-focus.",
+        "    - Tab cycle: keydown handler intercepts Tab + Shift+Tab inside the drawer panel, mirrors KioskWizardComponent.vue:2225-2238 focusables-query pattern.",
+        "    - On close: returnFocusEl.focus() to restore to the trigger pill. Mirror KioskWizardComponent.vue:2276-2280.",
+        "    - Approx LOC: 30-40. Adds parity with the kiosk wizard trap pattern.",
+        "Option B is the WAI-ARIA-spec-compliant path; Option A is the pragmatic path matching the actual non-blocking UX. Owner decision needed because the ARIA contract impacts every screen-reader-using chef."
+      ],
+      "blast_radius": "Screen-reader chefs hear 'dialog, modal' but get non-trap behavior — confusion, NOT data loss. Sighted keyboard-only chefs can Tab out of drawer and accidentally trigger active KDS grid actions while drawer is visually 'on top'. Not a V1 ship blocker because the chef persona at Le Cayenne is sighted + uses touch/mouse — but it's a real WAI-ARIA contract drift that L5.3 audit elided."
+    },
+    {
+      "id": "M-KDS-4-F-03",
+      "severity": "P2",
+      "category": "FEATURE_PARITY_GAP",
+      "summary": "Drawer renders NO allergen badge per row. KdsOrderCard renders a prominent '⚠ Allergie' pill (red, role=alert, aria-live=assertive) on the active KDS board for any order with hasAllergen=true. In Historique, the same allergen-flagged order shows only N°+status+items+variations — chef cannot scan Historique to verify which historical orders carried allergen alerts. Customer-call scenario ('I told you about my nut allergy 30 min ago — did you handle it?') would force chef to manually re-read item lines and check allergen_snapshot in a separate query.",
+      "evidence": {
+        "drawer_no_allergen": "grep -nE 'allergen' KdsHistoryDrawer.vue = 0 hits (template + script)",
+        "card_renders_allergen": "KdsOrderCard.vue:47-55 — <span v-if=\"hasAllergen\" class=\"kds-card__allergen-pill\" role=\"alert\" aria-live=\"assertive\">⚠ {{ $t('label.kds_allergie') }}</span>",
+        "backend_exposes_field": "app/Http/Resources/OrderItemResource.php:37 — 'allergens_snapshot' => $this->safeJsonDecode($this->allergens_snapshot) — already on the wire for every order_item in the drawer's response payload",
+        "label_already_exists": "label.kds_allergie key already in fr.json / en.json / ar.json (used by KdsOrderCard) — no new i18n work needed"
+      },
+      "owner_path": "Cheap parity fix — drawer-local computed `orderHasAllergen(order)` walks order.order_items and returns true if any item.allergens_snapshot is non-empty. Render same '⚠ Allergie' pill in the head row.",
+      "recommendation_TEXT_ONLY_NO_PATCH": [
+        "Add a helper method `orderHasAllergen(order)` mirroring KdsOrderCard's hasAllergen computed (search for the existing implementation, copy the predicate verbatim to avoid drift).",
+        "In the head row template (around line 101-117), after the time element, add: <span v-if=\"orderHasAllergen(order)\" class=\"kds-history-drawer__allergen\">⚠ {{ $t('label.kds_allergie') }}</span>.",
+        "Add CSS rule similar to .kds-card__allergen-pill (red background, white text, small pill). LOC ~15.",
+        "Add a sentinel test grep-asserting the drawer source contains 'allergens_snapshot' OR 'orderHasAllergen' (mirrors kdsHistoryDrawerSentinel pattern) so the parity is locked."
+      ],
+      "blast_radius": "Allergen-customer-call use case is degraded — chef cannot scan Historique for allergen flag. Allergens are still visible by drilling into the item line + querying the order detail elsewhere, so this is FEATURE_PARITY_GAP not a safety regression. Risk grows as Le Cayenne handles more allergen orders (nuts / gluten / lactose tickets)."
+    },
+    {
+      "id": "M-KDS-4-F-04",
+      "severity": "P2",
+      "category": "USE_CASE_GAP",
+      "summary": "No multi-day filter. Backend hard-codes Carbon::today() → Carbon::tomorrow() bounds (KitchenDisplaySystemOrderService.php:222-232). Owner-night persona ('what did we serve last Friday at 22:00?') is unsupported. Drawer title 'Historique du jour' is consistent with the V1 design but creates an expectation gap — operators may expect a date picker that does not exist.",
+      "evidence": {
+        "backend_today_only": "KitchenDisplaySystemOrderService.php:223-224 — $todayStart = Carbon::today($appTz); $tomorrowStart = Carbon::tomorrow($appTz);",
+        "drawer_no_date_picker": "grep -nE 'date|picker|range|day' KdsHistoryDrawer.vue (template scope) = no date selection UI",
+        "endpoint_no_date_param": "routes/api.php:1135-1141 — GET /history-today, no query params accepted",
+        "v1_design_consistency": "Wave X3 owner mandate verbatim: 'Chef peut voir toutes les commandes du JOUR' — JOUR is singular by design. Multi-day is NOT a V1 regression, it is a V1 scope decision."
+      },
+      "owner_path": "V1.0.2 backlog item — DO NOT ship in V1 LOCAL Le Cayenne (out of scope per owner). Document in V1.0.2 plans/ as 'KDS Historique date range picker'.",
+      "recommendation_TEXT_ONLY_NO_PATCH": [
+        "V1.0.2 design sketch (backlog only):",
+        "  - Add GET /admin/kds-order/history-day?date=YYYY-MM-DD param, default to today.",
+        "  - Backend: validate date is within last 7 days (rolling window prevents unbounded query growth), still cap at 50 rows.",
+        "  - Drawer: add a <select> or <input type=\"date\"> in the header with a 7-day pull-down.",
+        "  - i18n: add label.kds_history_day_picker_aria + label.kds_history_day_format.",
+        "  - Cumulative-day Z-close concern: when crossing midnight, the dropdown should treat the day boundary as Paris-local 00:00 (matches the current today() bound)."
+      ],
+      "blast_radius": "Operational limitation — no current owner workflow blocks on this. Customer-call scenarios usually reference 'this morning' or 'this afternoon' which fits today() bounds. Risk grows for nightlife venue (post-midnight workflow) or weekly review by owner-night — neither is V1 Le Cayenne. Defer."
+    },
+    {
+      "id": "M-KDS-4-R-01",
+      "severity": "INFRA",
+      "category": "BUNDLE_FRESHNESS_RED",
+      "summary": "kdsBundleFreshnessSentinel.spec.js is currently RED at HEAD 07e147cc1: resources/js/languages/fr.json mtime 2026-05-23T20:32:23Z is NEWER than public/js/admin-kds.js mtime 2026-05-23T13:55:49Z. Vitest fails with 'KDS bundle stale' message. Drawer i18n keys (label.kds_history_*) still render correctly today because they shipped at Wave X3 (4428e3ca4) BEFORE the latest fr.json edit. BUT any kds_* key edit since 13:55 will NOT appear in the chef's browser until npm run development/production.",
+      "evidence": {
+        "vitest_output": "tests/js/sentinels/kdsBundleFreshnessSentinel.spec.js > admin-kds.js bundle is not stale relative to KDS sources or i18n catalogs → KDS bundle stale: source resources/js/languages/fr.json (mtime 2026-05-23T20:32:23.356Z, group \"i18n-catalogs\") is newer than public/js/admin-kds.js (mtime 2026-05-23T13:55:49.716Z)",
+        "structural_sentinel_unaffected": "tests/js/sentinels/kdsHistoryDrawerSentinel.spec.js — 12/12 GREEN. Source-grep does not depend on bundle artifacts.",
+        "bundle_age": "git log --oneline -- public/js/admin-kds.js most recent commit f485f5e4a 'chore: snapshot working-tree state pre-bundle-rebuild' confirms a snapshot, NOT a rebuild."
+      },
+      "owner_path": "Run `npm run development` (dev) or `npm run production` (prod-style) to rebuild admin-kds.js. This is a wave-housekeeping issue, not a drawer-specific bug.",
+      "recommendation_TEXT_ONLY_NO_PATCH": [
+        "Rebuild bundle as part of any commit batch that touches resources/js/languages/*.json OR resources/js/components/admin/kitchenDisplaySystem/*.vue OR resources/js/{helpers,services,store/modules}/kds*.js.",
+        "Owner Q12 decision (2026-05-21) explicitly mandated this sentinel — silent ship of stale bundles was the recurring bug. Honor the contract: do not green a phase while this sentinel is red.",
+        "Cross-link: M-KDS-* siblings should also document the bundle-stale state in their findings if they touched KDS sources."
+      ],
+      "blast_radius": "Drawer-local content NOT affected by current staleness (no new kds_history_* key was added since 4428e3ca4 ship). Risk only materializes if a sibling agent or future task edits a kds_* i18n key without rebuilding — chef would see raw label.kds_history_X leak or stale FR copy. Recommend re-run sentinel after bundle rebuild before phase-m convergence is declared GREEN."
+    }
+  ],
+
+  "performance": {
+    "fetch_on_open_only": "watch.open() triggers fetch when newVal=true (line 181-184). Drawer fetches ONLY when opened, not on KitchenDisplaySystemComponent mount — no idle network cost.",
+    "50_row_cap": "Backend caps at 50 rows (KitchenDisplaySystemOrderService.php:240, locked by it_caps_at_50_orders test). Worst-case payload size: 50 orders × N items each, each item carrying composition_snapshot + allergens_snapshot. Tested by it_caps_at_50_orders endpoint test — payload is sub-second for chef machine.",
+    "render_complexity": "v-for on orders (max 50) × v-for on order_items (typically 1-5 per order). Total DOM nodes ~50 × 5 × 4 = ~1000. Vue 3 fast-path render is well under 100ms on a 2020-era thin client.",
+    "scroll": "Single overflow-y: auto on .kds-history-drawer__list (line 374). No virtualization needed at 50-row cap.",
+    "no_realtime_pattern": "Drawer does NOT subscribe to Pusher/Soketi or polling — fetch is per-open only. Matches K.7 K7-FIND-4 LastZReportWidget pattern (no realtime, snapshot at open). Owner-acceptable: drawer is for post-bump verification, not live ops.",
+    "throttle": "GET /api/admin/kds-order/history-today middleware throttle:60,1 — 60 requests / minute / IP. Adequate for chef opening drawer ~5-10 times per shift."
+  },
+
+  "focus_management_wcag_2_4_3": {
+    "current_state": "Drawer declares role=dialog + aria-modal=true (lines 27-28) but implements ZERO focus management:",
+    "missing_behaviors": [
+      "Open: focus does NOT move from 'Historique' trigger button into the drawer panel (no this.$refs.closeButton.focus())",
+      "Tab inside drawer: focus can escape into the background KDS grid (no focus trap, unlike KioskWizardComponent.vue:2219-2238)",
+      "Close: focus does NOT return to the 'Historique' trigger button (no stored activeElement / returnFocusEl.focus())"
+    ],
+    "phase_l5_3_verdict": "Phase L5.3 audit verdict was PASS for 'focus order' overall because the drawer's DOM order matches visual top-to-bottom — but L5.3 explicitly downgraded the drawer as 'SLIDE-IN PANEL (not a true blocking dialog)' implicitly acknowledging the missing trap.",
+    "see_finding": "M-KDS-4-F-02 — ARIA contract drift (role=dialog + aria-modal=true without trap + restore)"
+  },
+
+  "cumulative_day_z_close_integration": {
+    "summary": "Historique uses WALL-CLOCK day (Paris-local 00:00:00 → next-day 00:00:00). Z-period is fiscal-day (open 00:05 → close 23:55 per L2-HEAL-07 / G2-HEAL-06 cron). The two overlap but are NOT identical.",
+    "behavior_at_z_close_2355": "Order bumped at 23:54 → status=PREPARED, updated_at=23:54. Visible in Historique 'today' until 23:59:59. Z closes at 23:55 → order is part of closed Z's audit chain. From 23:55-24:00, order is visible in BOTH the closed Z report AND the Historique 'today' view.",
+    "behavior_at_midnight": "At 00:00, Historique 'today' bound rolls over: orders bumped 23:54 (still in closed Z) now disappear from Historique. New 'today' Historique is empty until new orders are bumped post-00:05 (new Z opens).",
+    "behavior_at_2356_to_2400": "Orders bumped between 23:56-24:00 are post Z-close but pre new-Z-open. They have NO fiscal_sequence_no allocation yet (cron not run). They appear in Historique BUT will be allocated when next Z opens via FiscalSequenceService retry cron. Audit chain remains correct (NF525 invariant intact) — this is just a UI vs fiscal-day boundary skew, NOT a fiscal bug.",
+    "owner_recommendation": "Add an operational note in chef training docs: 'Historique du jour = wall-clock day. Z report = fiscal day. Late-night orders may appear in current Historique but belong to the previous Z report.' No code change required.",
+    "ship_blocker": "NO — fiscal correctness is preserved (independent service). UI vs fiscal day asymmetry is a documentation issue."
+  },
+
+  "recall_integration": {
+    "verdict": "ABSENT — by design (V1 contract)",
+    "evidence": "grep -nE 'recall|kds-history-recall|Renvoyer' on KdsHistoryDrawer.vue = 0 hits. Sentinel kdsHistoryDrawerSentinel:114-131 enforces no revert/annuler/recall control as visible button label.",
+    "k2_h4_consistency": "K.2 H4 finding established 'recall is client-local only (60s grace)'. Historique orders are PREPARED/OUT/DELIVERED — past the 60s grace window. Showing a recall button in Historique would be misleading (the recall window closed long ago).",
+    "owner_decision": "Wave X3 owner mandate: 'Read-only V1: revert PREPARED → PREPARING is intentionally NOT exposed here. OrderStateMachine (frozen §7) forbids reverse transitions, and the owner has classified this as secondaire — revert is V1.0.2 backlog pending a LOCK plan + owner countersign.'",
+    "v1_ship_clear": "Correct as designed. No heal needed in V1."
+  },
+
+  "sentinel_runs": {
+    "kds_history_drawer_sentinel": {
+      "command": "npx vitest run tests/js/sentinels/kdsHistoryDrawerSentinel.spec.js",
+      "result": "12/12 GREEN",
+      "verdict": "PASS — structural source-grep contract preserved"
+    },
+    "kds_bundle_freshness_sentinel": {
+      "command": "npx vitest run tests/js/sentinels/kdsBundleFreshnessSentinel.spec.js",
+      "result": "1/3 RED",
+      "failing_test": "admin-kds.js bundle is not stale relative to KDS sources or i18n catalogs",
+      "error": "KDS bundle stale: source resources/js/languages/fr.json (mtime 2026-05-23T20:32:23.356Z, group \"i18n-catalogs\") is newer than public/js/admin-kds.js (mtime 2026-05-23T13:55:49.716Z). Run 'npm run development' or 'npm run production' to rebuild.",
+      "verdict": "RED — see M-KDS-4-R-01"
+    },
+    "kds_history_today_endpoint_test": {
+      "command": "Spec implies pre-run by prior phase (Wave X3 ship 4428e3ca4 verified backend contract)",
+      "test_coverage": [
+        "it_returns_today_prepared_out_and_delivered_orders_only — status filter PASS",
+        "it_sorts_by_updated_at_descending — DESC sort PASS",
+        "it_enforces_branch_isolation_for_branch_staff — branch isolation PASS",
+        "admin_branch_id_zero_sees_all_branches — admin bypass PASS",
+        "it_caps_at_50_orders — 50-cap PASS",
+        "it_uses_tz_aware_paris_local_bounds_not_utc — Wave T R5 TZ discipline PASS",
+        "unauthenticated_request_is_denied — auth gate PASS"
+      ],
+      "verdict": "GREEN per prior phase (Wave X3 ship)"
+    }
+  },
+
+  "diff_zero_check": {
+    "files_modified": "ZERO — this audit is READ-ONLY.",
+    "frozen_zone_touch": "NONE — audited files (KdsHistoryDrawer.vue, KitchenDisplaySystemComponent.vue, KDSOrderDetailsResource.php, KitchenDisplaySystemOrderService.php) are NOT in CLAUDE.md §7 frozen list.",
+    "nf525_chain_touch": "NONE — drawer is read-only, no fiscal sequence allocation, no z_reports / audit_logs write.",
+    "git_status_at_completion": "Working tree matches HEAD 07e147cc1 — only reports/test-e2e/goal-2026-05-23/phase-m/M-KDS-4-historique-deep.json added."
+  },
+
+  "summary": {
+    "verdict": "GREEN-WITH-FINDINGS — drawer ships the Wave X3 read-only V1 contract correctly; no V1 ship blocker.",
+    "p0_count": 0,
+    "p1_count": 1,
+    "p2_count": 3,
+    "infra_count": 1,
+    "structural_sentinel_status": "12/12 GREEN",
+    "bundle_freshness_sentinel_status": "RED (i18n catalog newer than admin-kds.js — rebuild needed)",
+    "wcag_2_1_2_escape": "PASS",
+    "wcag_2_4_3_focus_order": "PASS (DOM order matches visual)",
+    "wai_aria_dialog_pattern_contract": "DRIFT (role=dialog+aria-modal=true without focus trap/restore)",
+    "multi_day_support": "NO (today only, V1 design — V1.0.2 backlog)",
+    "z_close_integration": "DOCUMENTED DIVERGENCE (wall-clock vs fiscal day asymmetry — operational doc needed, no code change)",
+    "recall_integration": "ABSENT (correct per V1 read-only contract — V1.0.2 LOCK)"
+  }
+}

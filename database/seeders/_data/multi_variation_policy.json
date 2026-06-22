@@ -1,0 +1,6 @@
+{
+  "$schema": "Schema documentation: each rule matches an item_attribute by name regex (case-insensitive) and applies the multi_select fields.",
+  "version": 1,
+  "rules": [],
+  "_example_rule_template": "NOT USED — copy into rules[] after PO approval. Example: { \"match\": { \"name_regex\": \"^viande$\", \"item_id\": null }, \"apply\": { \"min_select\": 1, \"max_select\": 4, \"allow_repeat\": true }, \"scope\": \"all_branches\", \"comment\": \"Tacos: 1 to 4 meats, mix authorised\" }"
+}

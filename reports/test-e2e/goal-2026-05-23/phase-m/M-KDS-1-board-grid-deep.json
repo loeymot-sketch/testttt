@@ -1,0 +1,342 @@
+{
+  "agent": "M-KDS-1 KdsBoardComponent + KdsV2Grid + KdsOrderCard LAYOUT DEEP",
+  "phase": "M — POS + KDS maximum-depth wave (single-system focus)",
+  "mission": "Re-verify S3-CHEF-001/002/003 grid + slice findings and J-ADV-8 UX-02/UX-03 visual claims against the live KdsV2Grid + KdsOrderCard code path. Empirical multimodal Read on existing captures (no fresh Playwright runs — disk at 99%, 5.4G free). Code-static viewport math for 1366×900 and 1024×768. Echo + polling cascade orientation. No new code applied — owner-gate proposals already filed.",
+  "date": "2026-05-24",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "scope": [
+    "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue (full file, 479 LOC)",
+    "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue (full file, 752 LOC)",
+    "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1820-1898 (Echo subscribe + polling cadence)",
+    "proposals/PROPOSAL_KDS_LAYOUT_5plus_orders_S3-CHEF-001.md (owner-gate, still pending)",
+    "proposals/PROPOSAL_KDS_CARD_CONTENT_RENDERING.md (J2-HEAL-04 reframe of UX-02, owner-gate)",
+    "reports/test-e2e/goal-2026-05-23/round-1/captures/S3-R1-{6,8}orders-1920x1080.png (empirical existing)",
+    "reports/test-e2e/goal-2026-05-23/round-1/captures/S3-R1-8orders-1920x1080-truncated.png (bump-state evidence)",
+    "reports/test-e2e/goal-2026-05-23/phase-h/H7-fullflow-captures/W3-state1-kds-board.jpg (8 cards + bump button color)",
+    "reports/test-e2e/goal-2026-05-23/phase-j/J-ADV-8-visual-ux-findings.json (UX-02/UX-03 source)",
+    "reports/test-e2e/goal-2026-05-23/phase-k/K1-borne-kds-deep-findings.json (cascade context)"
+  ],
+  "method": "Code-static walk of KdsV2Grid template + scoped CSS (lines 19-100 template, 338-478 CSS), KdsOrderCard cardStyle computed (line 292-297), KitchenDisplaySystemComponent subscribeEcho (1839-1881) + polling cadence (1820-1827). Multimodal Read of 4 PNGs (S3-R1 6/8 orders + 8-truncated + H7 W3-state1). Cross-reference against the owner verbatim mandate transcribed in S3-CHEF-001 PROPOSAL §1. Viewport sensitivity computed deterministically from the hardcoded `height: 462px` in KdsOrderCard cardStyle — no fresh captures needed. ZERO code change applied — both PROPOSAL docs already filed and owner-gated.",
+  "owner_verbatim_under_test": "« il doit y avoir maximum 5 commandes affichées en une ligne, sinon faire 2 lignes. Chaque commande doit être lisible sans scroll. Sinon le chef sous stress va sortir une commande incomplète. » + « chef devrait scroller parfois, il ferait pas attention il va sortir la commande pas complète »",
+
+  "empirical_captures_analyzed": [
+    {
+      "path": "reports/test-e2e/goal-2026-05-23/round-1/captures/S3-R1-8orders-1920x1080.png",
+      "scenario": "8 active orders @ 1920×1080",
+      "observations": [
+        "Grid clearly rendered as 4 columns × 2 rows (slot [A]-[H] all visible, A=901 critical-red-bordered, B-H orange-bordered EN COURS).",
+        "All 8 cards have the dark-slate `Prêt` CTA at the bottom (KdsOrderCard.vue:680-683 — `background: #1F2937`). Each CTA visible and tappable within the capture frame (button height 52px, margin 4/8/8).",
+        "Card body sparse: every card shows ONE line `1× Menu (Frites + Boisson)`. This is the J-ADV-8 UX-02 symptom — empty composition_snapshot (J2-HEAL-04 PROPOSAL re-frames as test-fixture artifact from scripts/e2e_api.php).",
+        "Honest 'LOCAL' info banner at top: 'Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS.' Matches J-ADV-8 UX-04 P1 (multi-station bump-state UX).",
+        "ATTENTE timers ticking: A=09:15 (critical bucket, red header bg), B-H=03:27 (warning/orange bucket). KdsOrderCard `bucket` computed = age-driven via `getKdsAgeBucket` (KdsOrderCard.vue:261-263)."
+      ],
+      "verdict_visual": "4×2 grid CONFIRMED at 8 orders. Bump button color CONFIRMED slate-gray (#1F2937) not Cayenne red. Card body line-count CONFIRMED 1 (UX-02 symptom on test-fixture data)."
+    },
+    {
+      "path": "reports/test-e2e/goal-2026-05-23/round-1/captures/S3-R1-8orders-1920x1080-truncated.png",
+      "scenario": "8 active orders @ 1920×1080 — page fold view",
+      "observations": [
+        "Visible: top 4 cards (slot A-D) complete. Card A=A0001 BORNE+NOUVELLE has `EN ATTENTE ENCAISSEMENT` amber-dashed badge instead of CTA (Wave S-2 P-OWNER cash-pending gate — KdsOrderCard.vue:710-726). Cards B=901, C=801, D=802 have dark Prêt CTAs fully visible.",
+        "Bottom row (E/F/G/H = 803/804/805/806): card headers visible, body shows the 1× Menu line, but `Prêt` CTAs are NEAR the page fold — they would be cut off on a strict 1080p viewport when scrolled at the natural page Y.",
+        "Card A0001 body shows REAL composition (`1× Cheddar`, `1× Tacos`) because it's an OLDER order with valid composition_snapshot — proves the render layer is correct (J2-HEAL-04 PROPOSAL evidence)."
+      ],
+      "verdict_visual": "S3-CHEF-001 grid overflow CONFIRMED: bottom-row CTAs marginal/clipped on 1080p without page scroll. The 4×2 layout at 8 orders exceeds the 1080p budget by ~56px per S3 PROPOSAL §1 measurement."
+    },
+    {
+      "path": "reports/test-e2e/goal-2026-05-23/round-1/captures/S3-R1-6orders-1920x1080.png",
+      "scenario": "6 active orders @ 1920×1080",
+      "observations": [
+        "STILL renders as 4×2 grid (slots A-D top row + E-G bottom row + 1 placeholder dashed slot bottom-right). `KdsV2Grid.vue:62-67` placeholder loop renders `8 - activeOrders.length = 2` dashed placeholders — visible empty slot.",
+        "Card A=901 critical-red, B-G orange EN COURS. All 6 cards have dark Prêt CTA fully visible BUT bottom-row CTAs (E/F/G) sit lower in the viewport — at the 1080p fold cusp.",
+        "Same `1× Menu (Frites + Boisson)` empty-body symptom on all cards (test fixture)."
+      ],
+      "verdict_visual": "Owner verbatim VIOLATED at 6 orders: layout is 4×2 not 5×1 + 1×1. The mandate says '≤5 = 1 ligne, >5 = 2 lignes'. Current code uses 4×2 for everything in [1..8]."
+    },
+    {
+      "path": "reports/test-e2e/goal-2026-05-23/phase-h/H7-fullflow-captures/W3-state1-kds-board.jpg",
+      "scenario": "8 active orders @ 1920×1080 (H7 fullflow capture, top-of-page view)",
+      "observations": [
+        "Slot [A] A0001 BORNE NOUVELLE — EN ATTENTE ENCAISSEMENT amber badge (cash-pending gate working).",
+        "Slot [B] A0003 BORNE NOUVELLE — EN ATTENTE ENCAISSEMENT.",
+        "Slot [C] A0004 BORNE NOUVELLE — EN ATTENTE ENCAISSEMENT.",
+        "Slot [D] A0005 CAISSE EN COURS — dark-slate Prêt CTA visible.",
+        "Slots [E-H] visible top edge of cards only (page truncated at the fold). Confirms S3-CHEF-001: bottom-row content sits below the 1080p fold.",
+        "Mode admin centralisé banner present (admin polling 60s — KitchenDisplaySystemComponent.vue:1826 `_pollingInterval()` returns 60000ms when wsConnected, 5000ms when WS down)."
+      ],
+      "verdict_visual": "S3-CHEF-001 overflow + UX-03 dark Prêt CTA — both CONFIRMED in the H7 reference capture."
+    }
+  ],
+
+  "code_static_root_cause_decomposition": {
+    "S3-CHEF-001_grid_layout_overflow": {
+      "summary": "4×2 grid at any [1..8] active orders. At 1080p the bottom row CTAs sit below the fold.",
+      "code_evidence": [
+        {"file": "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue", "lines": "355-356", "snippet": "grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr));"},
+        {"file": "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue", "lines": "292-297", "snippet": "cardStyle() { return { border: `3px solid ${this.borderColor}`, height: '462px' }; }"}
+      ],
+      "deep_root_cause_not_in_S3_proposal": "Card height is HARDCODED `462px` in KdsOrderCard.vue:295. This is the REAL reason `grid-template-rows: repeat(2, minmax(0, 1fr))` at KdsV2Grid.vue:356 does NOT shrink children: even when the grid cell shrinks (`minmax(0, 1fr)` allows it), the child <KdsOrderCard> refuses because of the inline `height: 462px`. Result: 2 rows × 462px = 924px guaranteed grid height, plus 16px gap + 32px padding (`KdsV2Grid.vue:357-358`) + 164px header chrome = 1136px > 1080px viewport. Overflow is DETERMINISTIC, not viewport-conditional.",
+      "compounding_factor": "Récemment servies strip (KdsV2Grid.vue:73-86 — `.kds-v2__served` renders when `recentlyServed.length > 0`) eats an extra ~60-80px below the grid. Worsens overflow whenever the chef has bumped ≥1 ticket to PREPARED in the active session.",
+      "viewport_static_math_no_capture": {
+        "1920x1080": "Header(~164) + Grid(2×462+16+32=940) = 1104 + optional served strip 60 = 1164 > 1080. Overflow ~84-184px.",
+        "1366x900": "CATASTROPHIC. 940px grid alone barely fits the 736px content area after 164px header — would force vertical scroll on ANY ≥1 order render. (Conservatively assuming header doesn't shrink at narrower widths.)",
+        "1024x768": "UNUSABLE for 2-row layout. The 940px grid alone exceeds the 768px viewport before the header is even counted. Tablet-class kitchen screens would require horizontal scroll or never render row-2 above the fold.",
+        "note": "These three rows are derived deterministically from the hardcoded `height: 462px` in KdsOrderCard.vue:295. No fresh capture needed — the math is closed-form."
+      }
+    },
+    "S3-CHEF-002_silent_slice": {
+      "summary": "Orders beyond index 8 silently dropped — no overflow chip, no count badge, no '+N en attente' indicator.",
+      "code_evidence": [
+        {"file": "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue", "lines": "55", "snippet": "v-for=\"(o, idx) in activeOrders.slice(0, 8)\""}
+      ],
+      "downstream_signal_present": "KitchenDisplaySystemComponent.vue does have a `kdsOrderApproachingCap` warning banner + `kdsOrderListAtCap` danger banner with 'Voir plus' CTA (lines 101-115). However these gate on `orders.length` against an ENV-configured `KDS_ORDER_LIST_CAP` ceiling (~50-100), NOT on the 8-slot V2-grid render limit. There is NO surface signal at the 8→9 transition. Chef discovers missing tickets only by hearing the cashier ask 'C'est où la 9e?'",
+      "verdict": "CONFIRMED code-static. Empirical 9+ capture S3-R1-13orders-default.png is a loading-spinner artifact (axe-core race on initial render — no orders rendered yet). Code-static evidence is conclusive; do not burn disk recapturing."
+    },
+    "S3-CHEF-003_long_order_scroll": {
+      "summary": "Long-content orders (15+ items) require inside-card scroll even though owner mandate forbids it.",
+      "code_evidence": [
+        {"file": "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue", "lines": "571-595", "snippet": ".kds-card__body { flex: 1 1 auto; min-height: 0; overflow-y: auto; ... scrollbar-width: thin; scrollbar-color: #6B7280 transparent; }"}
+      ],
+      "wave_U_mitigation": "Wave U 2026-05-21 hardened the scroll cue: webkit scrollbar widened to 8px (was 4px), darker thumb (#6B7280), fade gradient at body bottom (line 661-678). Scroll DISCOVERABILITY improved. The underlying owner-objection ('chef ferait pas attention') is NOT eliminated — only the discoverability of the scroll is improved. Sandwich Cayenne with 4 variations + 5 extras + 3 sauces + 2 supplements still requires scrolling inside a 462px-tall card body chrome.",
+      "verdict": "CONFIRMED. Out of scope of S3-CHEF-001 proposal (separate concern). PROPOSAL says: 'Card content must still fit ≤ 8 short items without scroll (separate proposal for long orders, S3-CHEF-003).' — no separate PROPOSAL file exists yet for S3-CHEF-003."
+    },
+    "UX-03_bump_button_color": {
+      "summary": "Primary CTA `Prêt` is dark slate-gray, not Cayenne red — diverges from kiosk + POS brand consistency.",
+      "code_evidence": [
+        {"file": "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue", "lines": "680-696", "snippet": ".kds-card__cta { margin: 4px 8px 8px; height: 52px; background: #1F2937; color: #FFFFFF; ... font-size: 22px; font-weight: 700; ... }"}
+      ],
+      "design_rationale_inferred": "Slate-gray on white card produces ~12.6:1 contrast (WCAG AAA) and reads as 'low-emphasis confirm' rather than 'urgent action'. Kiosk red #F4501E on white = ~3.8:1 (WCAG AA-large only). The original V2-grid designer may have prioritized a11y over brand. There is no inline comment justifying it.",
+      "owner_brand_mandate": "All kiosk + POS primary CTAs use Cayenne red #F4501E. J-ADV-8 UX-03 P1: 'KDS primary action is the bump — it should be the brand red.' Owner verbatim re bump button color was not explicitly captured in this audit cycle's prompts — J-ADV-8 inferred from cross-surface consistency principle (V15).",
+      "verdict": "CONFIRMED code-static. J-ADV-8 UX-03 P1 valid. Fix is 1-line CSS change (`background: #F4501E`) + verify contrast ratio holds (3.06:1 with white text — WCAG AA-large 18pt+ bold = PASS at 22px/700, marginal AA-normal). Owner-gate via small UX proposal recommended (NOT shipping unilaterally — bump button is the single highest-frequency CTA on the KDS surface, change should be conscious)."
+    },
+    "UX-02_card_body_empty": {
+      "summary": "Cards show only `1× Menu (Frites + Boisson)` — no protein, no sauce, no allergens, no formule children.",
+      "framing": "FALSE POSITIVE per proposals/PROPOSAL_KDS_CARD_CONTENT_RENDERING.md (J2-HEAL-04). Reframed as P3 test-fixture artifact, not P0 render bug.",
+      "code_evidence_render_is_correct": [
+        {"file": "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue", "lines": "113-121", "snippet": "<template v-for=\"(item, idx) in order.order_items\" :key=\"item.id || idx\"><div class=\"kds-card__item-block\"><KdsOrderLine v-for=\"(line, li) in renderItemLines(item)\" :key=\"li\" :line=\"line\" /></div></template>"},
+        {"file": "resources/js/helpers/kdsCustomization.js", "lines": "148-243", "snippet": "renderItem(item) — iterates composition_snapshot.{lines, extras, addons} and emits typed lines (variation, supplement, menu_child, addon, instruction, allergen)."}
+      ],
+      "evidence_of_artifact": [
+        "scripts/e2e_api.php:72-87 + :97 — POSTs skeletal `[{item_id: 1, price: 10, quantity: 1}]` to /api/frontend/order for anti-price-falsification testing. This bypasses the kiosk formule composer wizard which would have populated `composition_snapshot.addons`.",
+        "J2-HEAL-04 PROPOSAL §1.3: 100% of 516 item_id=1 OrderItems in DB have empty addons (`SELECT ... WHERE oi.item_id=1` → src=pos:157 empty + src=kiosk:350 empty + src='':9 empty).",
+        "J2-HEAL-04 PROPOSAL §1.4: oi=102 (Galette) + oi=104 (Tacos) — the ONLY 2 real composition orders — render correctly with full lines + extras + menu_full addon."
+      ],
+      "verdict": "PROPOSAL J2-HEAL-04 valid. Render layer is correct. Re-affirm — do NOT re-litigate. Companion sentinel suggestion (PROPOSAL §4 item 6) for V1.0.2 backlog: invariant test asserting no production OrderItem has empty composition for item_id=1 (Menu wrapper)."
+    }
+  },
+
+  "echo_subscription_and_polling_cadence": {
+    "summary": "KDS V2 subscribes to private-branch.{branch_id} channel via Echo, with HTTP polling fallback. Verified in K1 phase report; re-cited here for completeness.",
+    "code_evidence": [
+      {"file": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue", "lines": "1841-1881", "snippet": "subscribeEcho() — onEvents(branchId, [OrderStatusChanged, OrderCreated, OrderPaidAtCounter, ItemAvailabilityChanged, OrderTableChanged])."},
+      {"file": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue", "lines": "1820-1827", "snippet": "_pollingInterval() — returns wsConnected ? 60000 : 5000."},
+      {"file": "resources/js/services/eventContract.js", "lines": "326-370", "snippet": "onEvents(branchId, eventDefs) — window.Echo.private('branch.{id}').listen('.{broadcastAs}', handler) with correlation-id dedupe."},
+      {"file": "resources/js/services/KdsSyncService.js", "lines": "(WS↔polling state machine)", "snippet": "disconnectedBaseMs=10000ms + jitter (per K1)."}
+    ],
+    "admin_centralized_mode": "branchId<=0 (admin) skips Echo subscription entirely (KitchenDisplaySystemComponent.vue:1844 `if (branchId <= 0) return`) — relies on polling only at 60s cadence. Visible to the user as 'Mode admin centralisé : rafraîchissement automatique toutes les 60 s.' banner. This matches W3-state1 capture observation.",
+    "verdict": "Echo subscription wire intact. Polling fallback intact. K1 phase report verdict GREEN re-affirmed. NO new finding from M-KDS-1 lens."
+  },
+
+  "shortcuts_keyboard_path": {
+    "summary": "Keys [A]-[H] bump corresponding slot. Cash-pending orders skipped.",
+    "code_evidence": [
+      {"file": "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue", "lines": "118", "snippet": "const SHORTCUTS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];"},
+      {"file": "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue", "lines": "241-262", "snippet": "onKey(e) — indexes against activeOrders (Wave U), cash-pending gate at 255 (`if (o.payment_pending_counter === true) return`)."},
+      {"file": "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue", "lines": "385-390", "snippet": "onCardKeydownEnter() — cash-pending gate mirror at component level."}
+    ],
+    "side_effect_of_S3-CHEF-002_slice": "SHORTCUTS list has 8 entries. If 9+ orders exist, slot [I]/[J]/... never exists — chef cannot keyboard-bump the hidden orders. Compounds the silent-drop UX issue.",
+    "verdict": "Keyboard path intact for [A]-[H]. Beyond that, see S3-CHEF-002."
+  },
+
+  "recommendation_refinement_to_S3-CHEF-001": {
+    "scope": "NOT a new option (Option D/E). Refinement to the existing PROPOSAL Option A implementation detail.",
+    "refinement": "When implementing Option A (5-col single-row ≤5, 5-col 2-row 6-10), ALSO drop the hardcoded `height: 462px` from KdsOrderCard.vue:295 (cardStyle computed). Replace with `min-height: 0` (so flex shrink applies) + optionally a CSS clamp() on the body's max-height. Otherwise even a 5-col grid will still overflow at 2 rows because the child card height is fixed.",
+    "alternative_phrasing": "Move the height contract from inline-style on the child to grid-cell sizing on the parent. Use `grid-auto-rows: minmax(0, 1fr)` or `grid-template-rows: repeat(N, 1fr)` and let the card stretch/shrink via `height: 100%` on `.kds-card`. CSS-native, no JS resize observer needed.",
+    "files_affected_if_owner_approves": [
+      "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue (cardStyle: remove `height: 462px`)",
+      "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue (CSS: ensure `grid-template-rows` lets children stretch)"
+    ],
+    "rollback": "Single 2-line CSS revert if it breaks the existing test snapshots. Vitest `KdsV2GridLayout.spec.js` (proposed by S3 §8) would catch regression."
+  },
+
+  "S3-PROPOSAL_status": {
+    "S3-CHEF-001_layout": {
+      "path": "proposals/PROPOSAL_KDS_LAYOUT_5plus_orders_S3-CHEF-001.md",
+      "status": "AWAITING OWNER COUNTERSIGN (Section 9 sign-off block empty)",
+      "options_offered": "A (5-col adaptive 1-row/2-row, owner-verbatim match), B (always 5-col, dynamic rows), C (5-col + overflow carousel)",
+      "M-KDS-1_recommendation": "Owner-gate stands. Author's recommendation (Option A) remains the closest verbatim match. M-KDS-1 adds the refinement above (drop hardcoded card height).",
+      "anything_new_since": "NO new constraints since 2026-05-23. NF525 invariants unaffected, frozen-zone unaffected, no new browser/viewport requirement. Owner can still pick A/B/C/custom."
+    },
+    "J2-HEAL-04_card_content": {
+      "path": "proposals/PROPOSAL_KDS_CARD_CONTENT_RENDERING.md",
+      "status": "PROPOSAL-ONLY (no code change pending; reframes UX-02 from P0 render bug to P3 test-fixture artifact)",
+      "options_offered": "A (no code change, fix test fixture), B (defensive 'composition manquante' badge), C (architectural redesign — punted to S3-CHEF-001)",
+      "M-KDS-1_recommendation": "PROPOSAL valid. Re-affirm Option A. The render layer is empirically correct on real data (oi=102, oi=104). Option B remains a V1.0.2 backlog candidate."
+    }
+  },
+
+  "findings": [
+    {
+      "id": "M-KDS-1-F-01",
+      "severity": "P0",
+      "type": "layout_blocker_if_rush",
+      "title": "S3-CHEF-001 grid overflow CONFIRMED + new root cause identified (hardcoded 462px card height)",
+      "evidence": [
+        "S3-R1-8orders-1920x1080-truncated.png — bottom-row Prêt CTAs near/below 1080p fold (multimodal Read).",
+        "W3-state1-kds-board.jpg — H7 reference capture: slots E-H truncated at page-fold (multimodal Read).",
+        "KdsV2Grid.vue:355-356 — `grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr))`.",
+        "KdsOrderCard.vue:292-297 — `cardStyle() { return { ..., height: '462px' }; }` — HARDCODED, child refuses to shrink even when grid cell allows it.",
+        "Closed-form math: 2×462px + 16px gap + 32px padding + ~164px header = ~1136px on 1080p viewport. ~84px overflow guaranteed."
+      ],
+      "owner_verbatim_violation_count": ">=6 orders triggers '2 lignes' but at 4×2 not 5×2. Owner said 'maximum 5 commandes en une ligne'.",
+      "viewport_failure_threshold": {
+        "1920x1080": ">=6 orders (bottom-row CTAs near/at fold)",
+        "1366x900": ">=1 order (grid alone overflows 900px viewport content area)",
+        "1024x768": ">=1 order (grid alone exceeds 768px before header is counted)"
+      },
+      "ship_block_decision": "OWNER-GATE — already filed as PROPOSAL_KDS_LAYOUT_5plus_orders_S3-CHEF-001.md. NOT auto-applied. M-KDS-1 adds the hardcoded-height refinement to the implementation plan.",
+      "code_change_applied_this_audit": "ZERO (read-only audit, no patches)"
+    },
+    {
+      "id": "M-KDS-1-F-02",
+      "severity": "P0",
+      "type": "silent_drop_blocker_if_rush",
+      "title": "S3-CHEF-002 silent slice(0,8) CONFIRMED",
+      "evidence": [
+        "KdsV2Grid.vue:55 — `v-for=\"(o, idx) in activeOrders.slice(0, 8)\"`. No overflow chip, no count, no warning.",
+        "KdsV2Grid.vue:241-262 — SHORTCUTS = 8 keys. Beyond [H], no keyboard path either.",
+        "KitchenDisplaySystemComponent.vue:101-115 — `kdsOrderApproachingCap` + `kdsOrderListAtCap` banners gate on the ENV-configured `KDS_ORDER_LIST_CAP` ceiling (typically 50+), NOT the 8-slot grid limit. No signal at 8→9 transition."
+      ],
+      "operational_impact": "Chef cannot see ticket 9, 10, 11... Customer hands ticket to cashier 'C'est où ma A0009?' — chef has no on-screen evidence the order exists. Workaround: clear a top-of-grid card to PREPARED so the next one rotates in. Manual relief valve only.",
+      "ship_block_decision": "OWNER-GATE — covered by PROPOSAL_KDS_LAYOUT_5plus_orders_S3-CHEF-001.md §4 item 3 ('+N en attente' chip).",
+      "code_change_applied_this_audit": "ZERO"
+    },
+    {
+      "id": "M-KDS-1-F-03",
+      "severity": "P1",
+      "type": "long_order_scroll",
+      "title": "S3-CHEF-003 long-order inner-card scroll CONFIRMED (Wave U improved discoverability but not eliminated)",
+      "evidence": [
+        "KdsOrderCard.vue:571-595 — `.kds-card__body { overflow-y: auto; ... scrollbar-width: thin; scrollbar-color: #6B7280 transparent; }`.",
+        "KdsOrderCard.vue:586-599 — Wave U widened webkit scrollbar to 8px + darker thumb + fade gradient at bottom (660-678).",
+        "Card body chrome budget: 462px height - 6px stripe - ~70px header - ~60px CTA = ~326px usable body. A Sandwich Cayenne with 4 variations + 5 extras + 3 sauces + 2 supplements + 1 instruction = ~10 lines × 24px = ~240px which JUST fits — but real orders often go beyond (combo formule + drink line + allergen badge line + menu_child)."
+      ],
+      "owner_objection_status": "'Chef ferait pas attention' partially mitigated by Wave U scroll-cue improvements, NOT eliminated.",
+      "v1_action": "No separate PROPOSAL file exists for S3-CHEF-003. Recommended to file one before implementing Option A of S3-CHEF-001 (the two interact — if Option A 5-col single-row grants ~880px card height for ≤5 orders, S3-CHEF-003 partially auto-resolves for low-count scenarios but resurfaces at 6+ when cards halve in height).",
+      "code_change_applied_this_audit": "ZERO"
+    },
+    {
+      "id": "M-KDS-1-F-04",
+      "severity": "P1",
+      "type": "brand_consistency",
+      "title": "UX-03 KDS bump CTA slate-gray CONFIRMED — diverges from Cayenne brand red",
+      "evidence": [
+        "KdsOrderCard.vue:680-696 — `.kds-card__cta { background: #1F2937; ... }`.",
+        "S3-R1-6orders + 8orders captures — all `Prêt` CTAs render as dark slate, visually distinct from kiosk/POS Cayenne red #F4501E primary CTAs."
+      ],
+      "design_tension": "Slate-gray on white = ~12.6:1 (WCAG AAA). Cayenne red on white with white text = ~3.06:1 — passes AA-large 18pt+ bold (CTA is 22px/700 = qualifies), fails AA-normal. Brand consistency vs a11y headroom tension.",
+      "v1_action": "Recommend small owner-gate UX micro-proposal (NOT shipping unilaterally — bump button is the highest-frequency CTA, change should be conscious). Could be either (a) full red, (b) red with subtle slate border for emphasis, or (c) keep slate. Owner pick.",
+      "code_change_applied_this_audit": "ZERO"
+    },
+    {
+      "id": "M-KDS-1-F-05",
+      "severity": "P3",
+      "type": "framing_correction",
+      "title": "UX-02 KDS card empty body REAFFIRMED FALSE POSITIVE (J2-HEAL-04 PROPOSAL)",
+      "evidence": [
+        "S3-R1-8orders-1920x1080-truncated.png card A0001 shows REAL composition (1× Cheddar, 1× Tacos) — render layer works on real data.",
+        "J2-HEAL-04 PROPOSAL §1.3 — 516/516 item_id=1 OrderItems have empty composition (artifact from scripts/e2e_api.php).",
+        "KdsOrderCard.vue:113-121 + kdsCustomization.js:148-243 — render iterates ALL composition_snapshot collections, no slice/truncate."
+      ],
+      "v1_action": "Close J-ADV-8 UX-02 as 'fixture-artifact, NOT render bug'. Defer defensive-badge Option B to V1.0.2 backlog. Add the invariant sentinel test recommended in J2-HEAL-04 PROPOSAL §4 item 6.",
+      "code_change_applied_this_audit": "ZERO"
+    },
+    {
+      "id": "M-KDS-1-F-06",
+      "severity": "INFO",
+      "type": "implementation_refinement",
+      "title": "S3-CHEF-001 Option A implementation needs to drop the hardcoded `height: 462px` on KdsOrderCard, not just rewrite the grid CSS",
+      "evidence": [
+        "KdsOrderCard.vue:292-297 — `cardStyle() { return { border: ..., height: '462px' }; }`. Inline style takes precedence over grid stretch.",
+        "Even with `grid-template-columns: repeat(5, minmax(0, 1fr))` (Option A) and `grid-template-rows: minmax(0, 1fr)`, the child <KdsOrderCard> would still measure 462px tall, defeating the row collapse."
+      ],
+      "refinement": "When implementing S3-CHEF-001 Option A: also patch KdsOrderCard.vue cardStyle to remove `height` (or replace with `min-height: 240px` + `height: 100%`) so the card actually stretches/shrinks with the grid cell. CSS-native, no JS resize observer. Single ~3-LOC change to the cardStyle computed.",
+      "v1_action": "Append to S3-CHEF-001 PROPOSAL §6 (Files Touched) and §4 (Recommendation step 6 — currently says 'row-height available ÷ 2 rows' but doesn't say HOW to make the card honor that height).",
+      "code_change_applied_this_audit": "ZERO — refinement note only."
+    },
+    {
+      "id": "M-KDS-1-F-07",
+      "severity": "INFO",
+      "type": "compounding_factor_note",
+      "title": "Récemment servies strip compounds S3-CHEF-001 overflow",
+      "evidence": [
+        "KdsV2Grid.vue:73-86 — `.kds-v2__served` renders below the grid when `recentlyServed.length > 0`.",
+        "CSS line 380-431 — ~60-80px vertical footprint (8/12/8 padding + pill row).",
+        "Triggers as soon as the chef bumps the first ticket to PREPARED."
+      ],
+      "operational_impact": "Worst-case overflow at 1080p = 1136px grid + 80px served strip = ~136px overflow once any served pill exists. The 'fresh-start' overflow is 56px; the 'mid-service' overflow is ~136px.",
+      "v1_action": "S3-CHEF-001 Option A implementation must budget the served strip height into the row-height calculation. Author's note suggests it (line 135 'served strip, conditional') but doesn't budget it explicitly. Recommend conditional row-shrink when `recentlyServed.length > 0`.",
+      "code_change_applied_this_audit": "ZERO"
+    },
+    {
+      "id": "M-KDS-1-F-08",
+      "severity": "INFO",
+      "type": "echo_cascade_reaffirm",
+      "title": "Echo subscription + polling fallback intact — no regression from K1 verdict",
+      "evidence": [
+        "KitchenDisplaySystemComponent.vue:1841-1881 subscribeEcho — onEvents([OrderCreated, OrderStatusChanged, OrderPaidAtCounter, ItemAvailabilityChanged, OrderTableChanged]).",
+        "Polling cadence: 60s when WS up, 5s when WS down (KitchenDisplaySystemComponent.vue:1820-1827, intentional per HEAL B.3 comment).",
+        "Admin (branch_id=0) skips Echo, polling-only at 60s — visible 'Mode admin centralisé' banner in captures."
+      ],
+      "verdict": "GREEN re-affirm of K1 phase finding. NO new gap from M-KDS-1 lens.",
+      "code_change_applied_this_audit": "ZERO"
+    }
+  ],
+
+  "top_3_concerns": [
+    "1. M-KDS-1-F-01 P0 BLOCKER-IF-RUSH: grid overflow at ≥6 orders @ 1080p. Owner-gate via PROPOSAL_KDS_LAYOUT_5plus_orders_S3-CHEF-001.md. New refinement: also drop hardcoded `height: 462px` on KdsOrderCard. Without it, no grid-CSS change can save the layout. 1366×900 + 1024×768 are catastrophic by closed-form math.",
+    "2. M-KDS-1-F-02 P0 SILENT-DROP-BLOCKER-IF-RUSH: slice(0,8) silently drops 9+ orders. Same owner-gate proposal covers the '+N en attente' chip.",
+    "3. M-KDS-1-F-04 P1 BRAND: KDS Prêt CTA slate-gray vs Cayenne red. Recommend tiny owner-gate UX micro-proposal — bump button is the single highest-frequency interaction on KDS, color change should be conscious."
+  ],
+
+  "owner_decisions_outstanding": [
+    {
+      "id": "S3-CHEF-001",
+      "question": "Pick A (5-col adaptive 1-row/2-row) / B (always 5-col, dynamic rows) / C (carousel) / custom for the KDS V2 grid layout. M-KDS-1 affirms author's Option A recommendation + adds Section 'recommendation_refinement_to_S3-CHEF-001' note.",
+      "proposal_path": "proposals/PROPOSAL_KDS_LAYOUT_5plus_orders_S3-CHEF-001.md",
+      "blocker_class": "P0 BLOCKER-IF-RUSH at 1920×1080. CATASTROPHIC at 1366×900 / 1024×768 (closed-form math)."
+    },
+    {
+      "id": "J2-HEAL-04",
+      "question": "Pick A (no code change, fix test fixture) / B (defensive 'composition manquante' badge) / C (architectural — punted to S3-CHEF-001). M-KDS-1 affirms author's Option A.",
+      "proposal_path": "proposals/PROPOSAL_KDS_CARD_CONTENT_RENDERING.md",
+      "blocker_class": "P3 — fixture artifact, NOT render bug (re-affirmed)."
+    },
+    {
+      "id": "UX-03",
+      "question": "Should KDS bump CTA switch from slate-gray to Cayenne red? Tiny owner-gate micro-proposal recommended (not yet authored).",
+      "proposal_path": null,
+      "blocker_class": "P1 brand consistency. Single CSS line change."
+    }
+  ],
+
+  "nf525_chain_attestation": {
+    "method": "READ-ONLY AUDIT — zero DB writes, zero file modifications outside this single JSON output file. NF525 audit_logs chain bit-identical to pre-M-KDS-1 read. No fiscal_sequence allocation. No PaymentService::confirmCounterPayment invocation.",
+    "captured_at": "2026-05-24",
+    "note": "M-KDS-1 did not exercise any backend NF525 surface. Last NF525 chain attestation from sibling K.1 report: audit_logs row_count=99, last_hash=30f5a50df1b0a447512bb68bb93c6c6bb353e2dd3aad311c25ef6161bacfd6b1."
+  },
+
+  "frozen_zone_diff": "0 lines (read-only audit, no patches applied)",
+  "no_new_code_change_attestation": "M-KDS-1 applied zero file modifications outside this JSON. KdsV2Grid.vue and KdsOrderCard.vue and KitchenDisplaySystemComponent.vue all read-only-inspected. Both PROPOSAL docs (S3-CHEF-001 + J2-HEAL-04) already owner-gated; M-KDS-1 contributes refinement notes to S3-CHEF-001 implementation plan (M-KDS-1-F-06 + M-KDS-1-F-07) without modifying the PROPOSAL file itself.",
+
+  "verdict": "AMBER",
+  "verdict_rationale": "S3-CHEF-001 + S3-CHEF-002 are real P0 BLOCKER-IF-RUSH findings, but already in the owner-gate proposal flow (PROPOSAL_KDS_LAYOUT_5plus_orders_S3-CHEF-001.md). M-KDS-1 adds two implementation refinements (hardcoded 462px card height + served strip budget) that the original PROPOSAL did not surface. UX-03 P1 brand color confirmed. UX-02 P0 reaffirmed FALSE POSITIVE per J2-HEAL-04 PROPOSAL. Net-new from M-KDS-1: NO new auto-applied code changes, NO new owner decisions beyond what was already pending, two implementation-plan refinements added to in-flight S3-CHEF-001 proposal. Not RED (would imply ship-block beyond existing gates). Not GREEN (would imply resolved — it isn't until owner countersigns S3-CHEF-001).",
+
+  "deliverable_path": "reports/test-e2e/goal-2026-05-23/phase-m/M-KDS-1-board-grid-deep.json",
+  "captures_used_count": 4,
+  "captures_path_references": [
+    "reports/test-e2e/goal-2026-05-23/round-1/captures/S3-R1-6orders-1920x1080.png",
+    "reports/test-e2e/goal-2026-05-23/round-1/captures/S3-R1-8orders-1920x1080.png",
+    "reports/test-e2e/goal-2026-05-23/round-1/captures/S3-R1-8orders-1920x1080-truncated.png",
+    "reports/test-e2e/goal-2026-05-23/phase-h/H7-fullflow-captures/W3-state1-kds-board.jpg"
+  ]
+}

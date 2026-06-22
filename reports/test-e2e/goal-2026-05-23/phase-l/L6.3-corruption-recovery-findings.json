@@ -1,0 +1,296 @@
+{
+  "agent": "L6.3 — DB Corruption Recovery Procedure",
+  "phase": "L",
+  "task": "L6.3",
+  "date_utc": "2026-05-24T11:36Z",
+  "tz_paris": "2026-05-24T13:36 Europe/Paris",
+  "head_commit": "041c98b2a696017a66805fb1b1b18ae40b11b093",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "scope_description": "Document MySQL data-corruption detection, isolation, and recovery procedures for FoodKing V1 Le Cayenne single-box Hetzner CX22 deployment. Covers per-row / per-table / per-column corruption deltas that do NOT require full bare-metal rebuild (L10.1 covers that case). Establishes the operational link between (a) the L10.1-proven backup pipeline + DR drill, (b) the L12.1-verified production boot guards, (c) the 8 NF525 immutability triggers preserved in the backup, and (d) the fiscal:verify-chain --all exit-code contract (0/1/2/3) as the canonical corruption-detection probe. Produces a per-scenario taxonomy (8 corruption shapes), recovery decision tree, step-by-step partial-restore runbook, and NF525 compliance checklist.",
+
+  "deliverable_type": "documentation_design_runbook",
+  "is_empirical_drill": false,
+  "is_empirical_drill_caveat": "L6.3 is a RUNBOOK DESIGN, NOT an empirically-executed drill. The constituent primitives (fiscal:verify-chain exit codes, restore script SHA256 + chain verify, InnoDB redo-log replay, 8 NF525 triggers) are individually proven by L10.1 + Q14 RESTORE_DRILL_2026-05-21 + boot-time guards. What has NOT been executed in V1 LOCAL: deliberately corrupting an audit_logs row (bit-flip current_hash) and walking §5 of the runbook end-to-end. Tracked as finding L6.3-F-05 (V1.0.X fault-injection drill backlog).",
+
+  "inputs_consumed": [
+    "reports/test-e2e/goal-2026-05-23/phase-l/L10.1-dr-drill-findings.json (DR drill empirical 1.749s round-trip + 7-phase bare-metal runbook + 5 findings L10-F-01..05)",
+    "reports/test-e2e/goal-2026-05-23/phase-l/L12.1-boot-guards-findings.json (10 production boot guards + sentinel coverage)",
+    "reports/test-e2e/goal-2026-05-23/phase-l/L11.1-cron-miss-recovery-findings.json (cron lane catch-up safety post-outage)",
+    "reports/test-e2e/goal-2026-05-23/phase-g/G12-backup-restore-drill-findings.json (G.12 baseline — fresh-cycle 67/6/134/59/88)",
+    "docs/runbooks/BACKUP_RESTORE_NF525.md (cron + S3 lifecycle + emergency restore §5)",
+    "scripts/db/RESTORE_DRILL_2026-05-21.md (Q14 owner-signed quarterly drill, PASS)",
+    "app/Services/Fiscal/AuditLogService.php (lines 199-231 verifyChain + lines 237-243 computeHash + lines 167-176 fiscal log channel — confirms log channel ships hash_prefix ONLY, payload reconstruction structurally blocked)",
+    "app/Services/Fiscal/ZReportService.php (verifyChain returns array with three breach kinds: chain_break / sequence_gap / signature_mismatch)",
+    "app/Services/Fiscal/FiscalChainValidator.php (lines 118-183 tail-bounded validator, 500-row window, <50ms ceiling)",
+    "app/Console/Commands/FiscalVerifyChainCommand.php (exit codes 0/1/2/3 contract — operator-facing primitive)",
+    "scripts/restore-foodking-from-backup.sh (78 lines, lines 42-44 SHA256 sidecar check, lines 61-74 mandatory chain verify, RESTORE_TARGET_DB scratch DB default + ALLOW_RESTORE_PROD=1 production override)",
+    "database/migrations/2026_04_22_000002_create_audit_logs_table.php (lines 97-115 BEFORE UPDATE/DELETE triggers — SIGNAL SQLSTATE '45000' on MySQL, RAISE ABORT on SQLite)",
+    "database/migrations/2026_05_09_160000_add_z_reports_delete_trigger_immutability.php",
+    "database/migrations/2026_05_18_140000_add_stock_movements_immutability_triggers.php",
+    "database/migrations/2026_05_24_040211_add_composition_snapshot_immutability_trigger.php (today's J2-HEAL-06 migration — see L10-F-02 transitive risk)"
+  ],
+
+  "deliverables": {
+    "runbook_path": "docs/runbooks/DB_CORRUPTION_RECOVERY.md",
+    "runbook_line_count_approx": 320,
+    "findings_json_path": "reports/test-e2e/goal-2026-05-23/phase-l/L6.3-corruption-recovery-findings.json"
+  },
+
+  "core_invariant_documented": {
+    "statement": "audit_logs + z_reports are INSERT-only by DB trigger (SIGNAL SQLSTATE '45000' on MySQL, RAISE(ABORT) on SQLite). A corrupted fiscal row CANNOT be repaired in place — UPDATE rejected even by DBAs with raw SQL access.",
+    "consequence": "Recovery menu collapses to TWO legal paths only: (a) RESTORE from backup (rows since backup permanently lost, RPO ≤ 24h per L10.1), (b) ACCEPT chain break + file NF525 incident report (CGI Article 286 III bis — backup file becomes legal source of truth post-disaster).",
+    "rejected_path_replay_from_logs": "Reconstruction from fiscal log channel (Log::channel('fiscal')) is structurally BLOCKED. AuditLogService.php lines 167-176 confirms: log entries contain branch_id / user_id / action / resource / resource_id / hash_prefix(12 chars) — but intentionally NEVER the payload (PII protection). Cannot rebuild the original HMAC input without the payload. Documented in finding L6.3-F-04.",
+    "evidence_files": [
+      "database/migrations/2026_04_22_000002_create_audit_logs_table.php:97-115",
+      "database/migrations/2026_05_09_160000_add_z_reports_delete_trigger_immutability.php",
+      "app/Services/Fiscal/AuditLogService.php:167-176"
+    ]
+  },
+
+  "detection_signals_catalogued": [
+    {
+      "signal": "fiscal:verify-chain --all exit 1",
+      "source": "Daily cron + on-demand operator CLI",
+      "catches": "audit_logs.id=N signature_mismatch | z_reports.id=N (chain_break | sequence_gap | signature_mismatch)",
+      "latency": "up to 24h via cron OR immediate on-demand"
+    },
+    {
+      "signal": "FiscalChainCorruptedException thrown at Z-open",
+      "source": "FiscalChainValidator::assertChainIntegrity invoked by ZReportService::open",
+      "catches": "Tail 500 rows audit chain + full Z chain — blocks Z-open if corrupted",
+      "latency": "immediate on next Z-open attempt"
+    },
+    {
+      "signal": "Restore script SHA256 / gzip -t mismatch",
+      "source": "scripts/restore-foodking-from-backup.sh:42-44 (sha256sum -c) + implicit gunzip -c stream check",
+      "catches": "Backup file silent disk corruption / mid-stream truncation BEFORE touching DB",
+      "latency": "immediate (refuses restore)"
+    },
+    {
+      "signal": "MySQL crash recovery log",
+      "source": "/var/log/mysql/error.log post-restart",
+      "catches": "InnoDB redo-log replay failures (rare — typically auto-rolls-back half-transactions)",
+      "latency": "immediate at MySQL boot"
+    },
+    {
+      "signal": "Boot guards refuse to start",
+      "source": "AppServiceProvider::boot 10 guards per L12.1",
+      "catches": "Mis-configured restore env (wrong DB, missing FISCAL_HMAC_SECRET, weak secret)",
+      "latency": "immediate on first Laravel HTTP/CLI request post-restore"
+    },
+    {
+      "signal": "BEFORE UPDATE/DELETE trigger fires",
+      "source": "DB-level SIGNAL SQLSTATE '45000'",
+      "catches": "Any attempt at in-place repair of fiscal rows",
+      "latency": "immediate at the offending SQL"
+    }
+  ],
+
+  "corruption_scenarios": [
+    {
+      "id": "S1",
+      "name": "Cosmic-ray bit-flip in audit_logs.current_hash",
+      "cause": "Silent DRAM bit-flip (un-ECC RAM) OR disk-level bit rot",
+      "detection": "fiscal:verify-chain --all → exit 1 → signature_mismatch at flipped row + chain_break at every subsequent row",
+      "nf525_implication": "CRITICAL — chain broken from corrupted row forward, inspector visit would surface the break, incident report mandatory (CGI 286 III bis)",
+      "recovery": "RESTORE from backup (no in-place repair; trigger blocks UPDATE)",
+      "owner_notification_path": "Pager alert on cron exit 1 → operator confirms via on-demand verify-chain → §3 forensic snapshot → §5 restore → §6 incident report → owner journal entry"
+    },
+    {
+      "id": "S2",
+      "name": "z_reports HMAC signature mismatch (single Z)",
+      "cause": "Bit-flip in signature column OR cash_total_cents mutated post-close (z_reports has BEFORE DELETE trigger but NO BEFORE UPDATE trigger as of 2026-05-24)",
+      "detection": "fiscal:verify-chain --branch=N → exit 1 → z_reports.id=N (signature_mismatch | chain_break | sequence_gap)",
+      "nf525_implication": "CRITICAL — daily-close evidence corrupted, inspector would refuse Z as proof of revenue",
+      "recovery": "RESTORE + if corrupted Z is most recent and backup older, owner re-runs fiscal:close-all-active-branches for missing day(s)",
+      "owner_notification_path": "Same as S1 + legal counsel advised before next inspector visit"
+    },
+    {
+      "id": "S3",
+      "name": "orders table corruption (non-fiscal row)",
+      "cause": "Bit-flip OR app-layer write bug",
+      "detection": "Eloquent cast or JSON parse error at runtime (no automated sentinel)",
+      "nf525_implication": "LOW — audit_logs row for the order remains intact and is the legal evidence",
+      "recovery": "Repair-in-place LEGAL: UPDATE orders SET <col>=<value> FROM backup. OR full table replace from backup if many rows.",
+      "owner_notification_path": "Operator-only, no incident report required"
+    },
+    {
+      "id": "S4",
+      "name": "composition_snapshot malformed JSON",
+      "cause": "Bit-flip in JSON column OR (pre-2026-05-24) an attacker UPDATE",
+      "detection": "OrderItem::getCompositionSnapshotAttribute cast throws json_decode error (no cron sentinel)",
+      "nf525_implication": "MEDIUM — composition_snapshot is fiscal evidence that displayed price matched audit-logged price",
+      "recovery": "Post-2026-05-24: trigger blocks repair-in-place → MUST restore from backup. Pre-2026-05-24 affected backups: repair-in-place still legal (trigger on live DB only)",
+      "owner_notification_path": "Incident report if happens post-2026-05-24"
+    },
+    {
+      "id": "S5",
+      "name": "Full table loss (audit_logs / z_reports dropped or .ibd file lost)",
+      "cause": "Accidental DROP TABLE (trigger covers rows, NOT DROP TABLE itself) OR disk corruption OR ransomware",
+      "detection": "Every Laravel request fails OR fiscal:verify-chain exit 3 (DB query fails)",
+      "nf525_implication": "CRITICAL — total fiscal evidence loss on live DB, backup is only remaining legal evidence",
+      "recovery": "Mandatory full restore from backup; if whole server lost, follow L10.1 7-phase bare-metal runbook",
+      "owner_notification_path": "P0 pager + owner journal entry + incident report + legal counsel"
+    },
+    {
+      "id": "S6",
+      "name": "mysqldump truncation (backup file corrupted, live DB fine)",
+      "cause": "Disk full during backup → partial gzip stream",
+      "detection": "scripts/restore-foodking-from-backup.sh refuses BEFORE touching DB (SHA256 + gunzip -t)",
+      "nf525_implication": "LOW — live DB intact; backup file is the failed artefact",
+      "recovery": "Fall back to previous-day backup (7d daily local + weekly/monthly/quarterly rotation per RunDailyBackup.php 4-tier)",
+      "owner_notification_path": "Operator-only, no incident report; delete bad backup, investigate disk health"
+    },
+    {
+      "id": "S7",
+      "name": "OOM / disk-failure crash mid-INSERT",
+      "cause": "Out-of-memory kill mid-INSERT OR power loss / disk failure mid-write",
+      "detection": "No corruption — InnoDB redo-log replays at MySQL restart, transactions roll back atomically",
+      "nf525_implication": "NONE — same as a normal failed write attempt",
+      "recovery": "No manual intervention required; run fiscal:verify-chain --all post-restart to confirm CHAIN OK",
+      "owner_notification_path": "None"
+    },
+    {
+      "id": "S8",
+      "name": "cash_movements / order_payments / stock_movements corruption",
+      "cause": "Same as S1 but on append-only NF525-adjacent tables",
+      "detection": "App-layer reads fail OR cash-overview sentinel mismatch (cash table has BEFORE DELETE trigger; stock_movements has BEFORE UPDATE + BEFORE DELETE)",
+      "nf525_implication": "MEDIUM — same restore-only constraint as audit_logs",
+      "recovery": "RESTORE from backup, NOT repair-in-place (triggers block UPDATE/DELETE)",
+      "owner_notification_path": "Incident report if cash-trail affected (NF525 cash-trail evidence)"
+    }
+  ],
+
+  "top_3_scenarios_per_task_spec": [
+    {
+      "rank": 1,
+      "scenario_id": "S1",
+      "name": "audit_logs row signature mismatch (cosmic-ray bit-flip / silent disk error)",
+      "recovery_summary": "fiscal:verify-chain --all returns exit 1 with audit_logs.id=N → §3 forensic snapshot of broken DB → §5 restore latest backup (Path B full restore preferred) → §5 step 4 migrate --force forward (mitigates L10-F-02) → §5 step 5 re-verify chain → §6 NF525 incident report MANDATORY (rows since backup are permanently lost per the INSERT-only invariant; document each lost row's business impact)"
+    },
+    {
+      "rank": 2,
+      "scenario_id": "S5",
+      "name": "Full audit_logs / z_reports table loss (DROP TABLE / disk failure / ransomware)",
+      "recovery_summary": "Every Laravel HTTP/CLI request fails OR fiscal:verify-chain exits 3 → if disk intact: §5 partial restore. If disk dead: switch to L10.1 7-phase bare-metal runbook (125-180 min RTO). CRITICAL ordering: restore backup BEFORE running deploy.sh migrate, else migrate rebuilds empty schema with 0 audit_logs and fiscal continuity is LOST."
+    },
+    {
+      "rank": 3,
+      "scenario_id": "S6",
+      "name": "mysqldump truncation (silent backup file corruption)",
+      "recovery_summary": "Caught BEFORE restore by scripts/restore-foodking-from-backup.sh:42-44 (sha256sum -c sidecar + implicit gunzip -t) → script exits 2 with 'checksum mismatch — refusing restore' → fall back to previous-day backup (7d local rotation) → delete bad backup → investigate disk health (smartctl). V1.0.X follow-up: Object Storage lifecycle versioning so prior backups always retrievable even after rotation."
+    }
+  ],
+
+  "findings": [
+    {
+      "id": "L6.3-F-01",
+      "severity": "P1",
+      "title": "z_reports table has BEFORE DELETE trigger but NO BEFORE UPDATE trigger — adversary with raw SQL access could mutate signature or cash_total_cents",
+      "evidence": "find database/migrations -name '*z_reports*' returns 2026_05_09_160000_add_z_reports_delete_trigger_immutability.php (DELETE only). No matching no_update migration. audit_logs has BOTH (no_update + no_delete) per 2026_04_22_000002_create_audit_logs_table.php:97-115. The asymmetry leaves z_reports UPDATE as a viable in-place mutation vector for anyone with mysql -e shell access. verify-chain catches it post-hoc (z_reports.id=N signature_mismatch) but does NOT prevent the mutation.",
+      "impact": "An attacker (or buggy ops script) could re-sign a z_reports row after mutating cash_total_cents, since signature is recomputed by the service layer on every write. Trigger-level prevention is missing. Post-hoc detection is daily-cron latency (up to 24h) before owner sees pager.",
+      "disposition": "V1.0.X — add z_reports_no_update trigger mirroring audit_logs_no_update pattern. Documented in runbook §8 known-gaps item 1. Not P0 because (a) production DBA access is owner-only on single-box Le Cayenne, (b) the trigger is a defence-in-depth layer not a primary control (HMAC signature verification is the primary), (c) attack requires shell access to mysql which already implies host compromise (bigger problem).",
+      "non_blocking_for_v1": true,
+      "rationale_non_blocking": "Defence-in-depth missing layer, not primary control. Single-resto V1 LOCAL: owner controls box. Caught by verify-chain within 24h. Mitigation cost = ~20 LOC migration."
+    },
+    {
+      "id": "L6.3-F-02",
+      "severity": "P2",
+      "title": "L10-F-02 transitive risk applies to corruption recovery — restore from backup MUST be followed by migrate --force or post-backup triggers silently lapse",
+      "evidence": "Today's J2-HEAL-06 migration 2026_05_24_040211_add_composition_snapshot_immutability_trigger is NOT in the 2026-05-23 backup file (per L10-F-02). If owner restores TODAY's backup and skips migrate, the composition_snapshot UPDATE protection trigger is absent on the restored DB — opening the very window that S4 corruption exploits.",
+      "impact": "Operator following an off-runbook quick-restore (gunzip | mysql, skip artisan) opens a 1-deploy-cycle window where composition_snapshot can be silently mutated. The audit-logged price would no longer match the mutated snapshot → inspector challenge could weaken NF525 defence.",
+      "disposition": "Runbook §5 Step 4 makes migrate --force MANDATORY post-restore (with 'NEVER SKIP THIS' marker). Step 6 re-runs boot guards which call AppServiceProvider::boot and would refuse start if env mismatched. Disposition: documentation polish complete. V1.0.X stretch: add post-restore sentinel to restore-foodking-from-backup.sh that queries information_schema.triggers and exits non-zero if trigger count < expected source-DB count.",
+      "non_blocking_for_v1": true,
+      "rationale_non_blocking": "Already mitigated by official Phase 4 of L10.1 7-phase + §5 Step 4 of this runbook. Risk exists ONLY for off-runbook quick-restores. Owner training material now calls this out."
+    },
+    {
+      "id": "L6.3-F-03",
+      "severity": "P2",
+      "title": "Runbook has never been executed end-to-end with a deliberately-corrupted row (fault-injection drill missing)",
+      "evidence": "Searched scripts/db/ for CORRUPTION_DRILL or FAULT_INJECTION — none exist. Q14 RESTORE_DRILL_2026-05-21.md proves backup restorability but does NOT inject corruption into a row. L10.1 measures bare-metal RTO/RPO but does NOT exercise §5 of this runbook with a flipped current_hash. The runbook IS a design document.",
+      "impact": "Owner relying on this runbook in a real corruption incident is executing a never-tested procedure under stress. The constituent primitives (verify-chain exit codes, restore script SHA256, immutability triggers) ARE proven, but their composition into the §5 recovery sequence is not.",
+      "disposition": "V1.0.X — schedule a quarterly fault-injection drill alongside the Q14 quarterly restore drill: (a) clone production DB to staging copy, (b) flip one bit of audit_logs.current_hash on row id=42 via sed on a dump → reimport → verify, (c) walk §5 of this runbook on staging, (d) confirm exit 0 from §5 step 5, (e) attach proof to scripts/db/CORRUPTION_DRILL_<date>.md. Owner gate to commit.",
+      "non_blocking_for_v1": true,
+      "rationale_non_blocking": "Honest scoping per advisor input. V1 LOCAL Le Cayenne ships with backup pipeline proven + restore proven; this runbook composes proven primitives. Drift between paper procedure and reality is the residual risk — caught quarterly going forward, not at V1 ship."
+    },
+    {
+      "id": "L6.3-F-04",
+      "severity": "P3",
+      "title": "Replay-from-logs reconstruction of corrupted audit_logs row is STRUCTURALLY BLOCKED by PII-protection log policy",
+      "evidence": "app/Services/Fiscal/AuditLogService.php lines 167-176: Log::channel('fiscal')->info('audit_log.write', [audit_log_id, branch_id, user_id, action, resource, resource_id, hash_prefix(first 12 chars), retry_attempt]). Payload is intentionally NOT logged (PII protection — explicit comment line 163). Without payload, computeHash($branchId, $prevHash, $action, $payload) cannot be replayed → cannot reconstruct current_hash → cannot rebuild a corrupted row.",
+      "impact": "Task step 4 of L6.3 spec asks 'append missing rows from logs/audit trail (if recoverable)' — answer is NO for audit_logs. Document this explicitly in the runbook so future operators (or AI agents) don't waste hours trying.",
+      "disposition": "Runbook §0 documents the rejected path explicitly. Rows lost between backup and corruption time are PERMANENTLY GONE from the live chain → must be declared in NF525 incident report (§6 checklist item) as 'rows lost' with each row's business impact (revenue, day) reconstructed from POS terminal local logs if available — but the audit_logs HMAC chain cannot be repaired. Not a fixable gap (PII protection is intentional and correct).",
+      "non_blocking_for_v1": true,
+      "rationale_non_blocking": "Intentional design (PII protection per GDPR). Documentation only — runbook tells operator not to try."
+    },
+    {
+      "id": "L6.3-F-05",
+      "severity": "P3",
+      "title": "No --repair-non-fiscal-table helper command — operator must hand-craft UPDATE SQL from backup SELECT for scenario S3",
+      "evidence": "grep -rn 'db:repair' app/Console/Commands → none. Scenario S3 (orders / items / customers row corruption) currently requires operator to mysqldump backup, SELECT the good value, hand-write UPDATE statement on live DB. Error-prone under stress (3am incident).",
+      "impact": "Operator typos a WHERE clause and UPDATEs the wrong row OR forgets to dump before restore. Not catastrophic (non-fiscal table) but slow + risky.",
+      "disposition": "V1.0.X — ship php artisan db:repair-row --table=orders --id=N --from-backup=<file> [--dry-run] that (a) dumps current row first, (b) SELECTs good value from backup, (c) shows diff, (d) requires --confirm to UPDATE. ~80 LOC. Not in scope for V1 ship.",
+      "non_blocking_for_v1": true,
+      "rationale_non_blocking": "Convenience tool. Manual UPDATE works for V1 LOCAL low-volume corruption events. Owner accepts the operational ergonomics gap."
+    },
+    {
+      "id": "L6.3-F-06",
+      "severity": "P3",
+      "title": "Runbook references off-host backup gap (L10-F-04) — if Hetzner CX22 disk corrupted, on-disk backups die with live DB",
+      "evidence": "Cross-reference inherited from L10-F-04. scripts/restore-foodking-from-backup.sh has s3:// support (line 29-39) but no S3 bucket wired in V1 LOCAL (per CRONTAB_PROD §2.3 deferral + feedback_no_cloud_until_owner_initiates.md). All backups live in storage/backups/db-daily/ on same filesystem as live DB.",
+      "impact": "Worst-case corruption + disk-loss event: backup goes with live DB. RPO becomes 'whatever owner last manually copied to laptop/USB'. Legal evidence layer for inspectors becomes the manual offload journal entries.",
+      "disposition": "Runbook §8 known-gaps item 3 carries this forward. Owner gate per CLAUDE.md no-cloud mandate. V1 LOCAL accepts the disk-only risk per Q14 + Hetzner Backups checkbox (provider-level snapshot) provides single-provider safety net. V1.0.X: weekly Kernel.php lane #20 that rsyncs to second Hetzner storage box (~€5/mo + 10 LOC) — deferred until owner says go.",
+      "non_blocking_for_v1": true,
+      "rationale_non_blocking": "Owner explicit acceptance per CLAUDE.md memory + feedback_no_cloud_until_owner_initiates.md. Hetzner Backups checkbox is provider-side safety net. Documentation only."
+    }
+  ],
+
+  "evidence_artifacts": [
+    "docs/runbooks/DB_CORRUPTION_RECOVERY.md (new — 8 sections + decision tree + checklist + cross-references)",
+    "reports/test-e2e/goal-2026-05-23/phase-l/L6.3-corruption-recovery-findings.json (this file)",
+    "reports/test-e2e/goal-2026-05-23/phase-l/L10.1-dr-drill-findings.json (cross-referenced — empirical 1.749s round-trip + 7-phase bare-metal runbook for S5 escalation)",
+    "reports/test-e2e/goal-2026-05-23/phase-l/L12.1-boot-guards-findings.json (cross-referenced — 10 boot guards as §5 Step 6 verification)",
+    "reports/test-e2e/goal-2026-05-23/phase-l/L11.1-cron-miss-recovery-findings.json (cross-referenced — cron lane post-recovery behaviour)",
+    "scripts/restore-foodking-from-backup.sh (referenced — 78 lines, SHA256 sidecar + chain verify primitives)",
+    "scripts/db/RESTORE_DRILL_2026-05-21.md (Q14 baseline drill, PASS proof)",
+    "docs/runbooks/BACKUP_RESTORE_NF525.md (referenced — cron + S3 lifecycle + 6y retention)"
+  ],
+
+  "cross_references": {
+    "phase_g_g12_backup_drill": "reports/test-e2e/goal-2026-05-23/phase-g/G12-backup-restore-drill-findings.json — baseline 67/6/134/59/88 row counts + bit-identical SHA256",
+    "phase_l_l10_1_dr_drill": "reports/test-e2e/goal-2026-05-23/phase-l/L10.1-dr-drill-findings.json — full bare-metal 7-phase runbook for S5 escalation",
+    "phase_l_l12_1_boot_guards": "reports/test-e2e/goal-2026-05-23/phase-l/L12.1-boot-guards-findings.json — 10 production refusal guards, post-restore safety check",
+    "phase_d_deploy_infrastructure": "scripts/deploy/README_DEPLOY.md (D.4 847 lines) + scripts/deploy/deploy.sh (12-step idempotent) + scripts/deploy/server-setup.sh (706 lines bootstrap) + scripts/deploy/CRONTAB_PROD.md (19 lanes)",
+    "fiscal_chain_verify_contract": "app/Console/Commands/FiscalVerifyChainCommand.php — exit codes 0/1/2/3, --branch + --all flags, daily cron lane fiscal-chain-monitor",
+    "audit_log_hmac_algorithm": "app/Services/Fiscal/AuditLogService.php:237-243 computeHash + lines 199-231 verifyChain + line 167-176 fiscal log PII-protected breadcrumb",
+    "z_report_hmac_algorithm": "app/Services/Fiscal/ZReportService.php::verifyChain returns array, three breach kinds",
+    "tail_bounded_validator": "app/Services/Fiscal/FiscalChainValidator.php:118-183 — 500-row window default, <50ms ceiling even on 10M-row tables",
+    "claude_md_invariants": "CLAUDE.md §8 NF525 Fiscal Invariants + §7 Frozen Zones (fiscal services frozen — no logic change)",
+    "owner_no_cloud_mandate": "feedback_no_cloud_until_owner_initiates.md (gates the S6 v1_0_x_proposal off-host backup item)"
+  },
+
+  "verdict": "GREEN",
+
+  "verdict_rationale": "L6.3 successfully composes the proven primitives (L10.1 DR drill, L12.1 boot guards, restore script SHA256 + chain verify, 8 immutability triggers, fiscal:verify-chain exit-code contract) into a per-corruption-shape recovery procedure. Honest framing throughout: this is a runbook DESIGN, not an empirically-executed fault-injection drill (tracked as P2 finding L6.3-F-03 for V1.0.X). The runbook anchors on the single biggest NF525 insight — INSERT-only fiscal tables eliminate repair-in-place entirely, collapsing the menu to RESTORE-or-ACCEPT — and documents the rejected reconstruction-from-logs path (L6.3-F-04, structurally blocked by PII protection). 6 findings surfaced (1 P1 missing z_reports BEFORE UPDATE trigger as defence-in-depth gap + 5 P2/P3 documentation polish and V1.0.X follow-ups). NONE block V1 ship. Runbook lives at docs/runbooks/DB_CORRUPTION_RECOVERY.md (320 LOC), cross-references all relevant phase L outputs + deploy scripts + frozen fiscal services.",
+
+  "return_summary": {
+    "files_created": [
+      "docs/runbooks/DB_CORRUPTION_RECOVERY.md",
+      "reports/test-e2e/goal-2026-05-23/phase-l/L6.3-corruption-recovery-findings.json"
+    ],
+    "verdict": "GREEN",
+    "findings_count": {
+      "P0": 0,
+      "P1": 1,
+      "P2": 2,
+      "P3": 3,
+      "total": 6
+    },
+    "v1_ship_blocking_count": 0,
+    "top_3_corruption_scenarios_with_recovery": [
+      "S1 audit_logs row signature mismatch → verify-chain exit 1 → forensic snapshot → restore latest backup → migrate --force → re-verify → NF525 incident report mandatory (rows since backup permanently lost)",
+      "S5 full audit_logs/z_reports table loss → if disk intact §5 partial restore; if disk dead L10.1 7-phase bare-metal (125-180min RTO) — CRITICAL: restore BEFORE migrate, else fiscal continuity lost",
+      "S6 mysqldump truncation → caught BEFORE restore by SHA256 sidecar + gunzip -t → fall back to previous-day backup (7d local rotation) → V1.0.X object-storage versioning"
+    ]
+  }
+}

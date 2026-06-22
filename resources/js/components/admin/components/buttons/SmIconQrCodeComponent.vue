@@ -1,5 +1,5 @@
 <template>
-    <a class="db-table-action qr-code" :href="this.$props.link" download>
+    <a class="db-table-action qr-code" :href="this.$props.link" download :aria-label="$t('button.qr')">
         <i class="fa fa-qrcode"></i>
         <span class="db-tooltip">{{ $t("button.qr") }}</span>
     </a>

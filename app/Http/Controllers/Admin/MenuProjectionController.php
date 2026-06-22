@@ -38,11 +38,30 @@ class MenuProjectionController extends Controller
             'branch_id' => ['required', 'integer', 'min:1'],
         ]);
 
+        $this->authorizeBranchRead($request, (int) $validated['branch_id']);
+
         $payload = $this->projection->forChannel(
             (string) $validated['channel'],
             (int) $validated['branch_id'],
         );
 
         return response()->json($payload);
+    }
+
+    private function authorizeBranchRead(Request $request, int $branchId): void
+    {
+        $user = $request->user();
+        abort_if(! $user, 403);
+
+        if ($user->hasRole('Admin') || $user->hasRole('Tenant Admin')) {
+            return;
+        }
+
+        abort_if(
+            ! $user->can('catalog.compose') && ! $user->can('catalog.publish') && ! $user->can('items_show'),
+            403
+        );
+
+        abort_if((int) $user->branch_id !== $branchId, 403);
     }
 }

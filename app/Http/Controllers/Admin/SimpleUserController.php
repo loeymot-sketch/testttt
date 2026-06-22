@@ -33,7 +33,13 @@ class SimpleUserController extends AdminController
         $this->simpleUserService  = $simpleUserService;
         $this->customerService    = $customerService;
         $this->userAddressService = $userAddressService;
-        $this->middleware(['permission:pos'])->only('store', 'addresses', 'storeAddress', 'updateAddress');
+        // [abuse-heal 2026-06-20 W5 RBAC-USERS-INDEX-01] Gate `index` too. GET /admin/users (the
+        // customer-lookup directory) had NO permission gate — any authenticated staff token
+        // (Chef/Waiter/POS Operator) could enumerate the whole users table incl. Admin emails
+        // (?role_id=1). The legitimate consumer is the POS customer-lookup, which holds `pos`.
+        // Defense-in-depth: SimpleUserService::list is ALSO forced to the CUSTOMER role so even an
+        // authorized `pos` caller can never enumerate staff/Admin accounts.
+        $this->middleware(['permission:pos'])->only('index', 'store', 'addresses', 'storeAddress', 'updateAddress');
     }
 
     public function index(PaginateRequest $request)
@@ -41,7 +47,7 @@ class SimpleUserController extends AdminController
         try {
             return SimpleUserResource::collection($this->simpleUserService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -51,7 +57,7 @@ class SimpleUserController extends AdminController
         try {
             return new CustomerResource($this->customerService->store($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -60,7 +66,7 @@ class SimpleUserController extends AdminController
         try {
             return AddressResource::collection($this->userAddressService->list($request, $customer));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -69,7 +75,7 @@ class SimpleUserController extends AdminController
         try {
             return new AddressResource($this->userAddressService->store($request, $customer));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -78,7 +84,7 @@ class SimpleUserController extends AdminController
         try {
             return new AddressResource($this->userAddressService->update($request, $customer, $address));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

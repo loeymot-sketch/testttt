@@ -1,0 +1,171 @@
+{
+  "agent": "UR-2",
+  "specialty": "Security + NF525",
+  "review_timestamp_utc": "2026-05-25T16:35:00Z",
+  "scope_commits": ["8904656fe", "ee7aef899"],
+  "base_ref": "bf1cc0382",
+  "mode": "READ-ONLY",
+  "verdict": "GREEN",
+
+  "frozen_zone_diff_clean": true,
+  "frozen_zone_violations": [],
+  "frozen_zone_method": "git diff bf1cc0382...HEAD --name-only | grep -E 'PaymentComponent|PosV5Tranche|KioskWizard|KioskApp|KioskUpsell|pos-wizard|FiscalSequence|ZReport|AuditLogService|BranchScope|IdempotencyKey|PricingService|OrderStateMachine'",
+  "frozen_zone_grep_result": "EMPTY (zero matches)",
+  "files_touched_in_scope": [
+    "public/js/admin-reports.js (compiled, mix output)",
+    "public/js/admin-shell.js (compiled, mix output)",
+    "public/js/pos-app.js (compiled, mix output, unrelated to PENDING fix)",
+    "public/mix-manifest.json",
+    "resources/js/components/admin/creditBalanceReport/CreditBalanceReportComponent.vue (1 ternary)",
+    "resources/js/components/admin/messages/MessageListComponent.vue (1 ternary)",
+    "resources/js/components/admin/profile/ProfileEditProfileComponent.vue (1 ternary)",
+    "resources/js/components/layouts/backend/BackendNavbarComponent.vue (1 ternary)",
+    "reports/test-e2e/goal-final-smoke-2026-05-25/*",
+    "reports/test-e2e/post-restore-deep-2026-05-25/round-2/S3-* (KDS round-2)",
+    "tests/e2e/__screenshots__/* (E2E artifacts)"
+  ],
+
+  "fix_summary": "4 Vue templates apply identical defensive ternary: `phone && !String(phone).startsWith('PENDING_') ? phone : ''`. UI-only filter on display. No backend logic, no DB schema, no API surface change.",
+
+  "api_phone_leak_audit": {
+    "verdict": "API JSON still emits raw PENDING_CREATE_<rand> sentinel — UI fix is cosmetic-only",
+    "severity_assessment": "P2 / defense-in-depth (NOT P0/P1)",
+    "rationale": "Sentinel is bin2hex(random_bytes(6)) = 48-bit ephemeral suffix, not PII, not a token. Admin curling /api/credit-balance-report already sees the underlying phone field via the same endpoint — no new privilege escalation. The brief asked me to surface it, not gate the GOAL on it.",
+    "endpoints_still_leaking_sentinel_to_json": [
+      {
+        "endpoint": "/api/credit-balance-report",
+        "resource": "app/Http/Resources/CreditBalanceUserResource.php:24",
+        "field": "phone",
+        "exposure": "admin role + permission:credit-balance-report (Spatie gate)"
+      },
+      {
+        "endpoint": "/api/messages*",
+        "resource": "app/Http/Resources/MessageResource.php:24,42",
+        "field": "user_phone",
+        "exposure": "admin role + permission:messages"
+      },
+      {
+        "endpoint": "/api/profile",
+        "resource": "app/Http/Resources/UserResource.php:24 (via Frontend/ProfileController::profile)",
+        "field": "phone",
+        "exposure": "auth:sanctum self-fetch only — caller sees their own sentinel; low impact"
+      },
+      {
+        "endpoint": "/api/administrators*",
+        "resource": "app/Http/Resources/AdministratorResource.php:23",
+        "field": "phone",
+        "exposure": "admin role + permission:administrators"
+      },
+      {
+        "endpoint": "/api/order-users*",
+        "resource": "app/Http/Resources/OrderUserResource.php:24",
+        "field": "phone",
+        "exposure": "admin / branch role"
+      }
+    ],
+    "recommendation": "Long-term root-cause heal (V1.0.2 backlog): backend stripping of PENDING_* on serialization OR phone-collection flow on first admin login. NOT a V1 ship blocker."
+  },
+
+  "branch_isolation_impact": "ZERO — fix touches 4 Vue templates only; BranchScope (app/Models/Scopes/BranchScope.php) last modified pre-scope (commit 7f8c771d8 = CV1-POS-AUDIT-MASSIVE-001, well before bf1cc0382). No BranchScope diff in this cycle.",
+
+  "authentication_impact": "ZERO — authInfo shape unchanged. Templates filter on display only; store getter (this.$store.getters.authInfo) feeds same data. UserResource (backend) unchanged. No login/token surface touched.",
+
+  "nf525_chain_status": "BREACH at audit_logs.id=34 (pre-existing fixture, NOT introduced by this fix)",
+  "nf525_chain_verify_output": "TAMPER detected (branch=1, breaches=1) — audit_logs.id=34",
+  "nf525_breach_attribution": {
+    "row_id": 34,
+    "action": "tamper.attempt",
+    "prev_hash": "null",
+    "current_hash": "FAKE_HASH",
+    "created_at": "2026-05-25 18:28:46",
+    "branch_id": 1,
+    "source": "E2E-08 healthz adversarial test (reports/test-e2e/bad-mood-final-2026-05-25/agents/E2E-08-healthz.json adv_2_fiscal_chain_drop)",
+    "evidence_quote": "audit_logs row id=34 was injected by a parallel adversarial agent during this cycle window: action='tamper.attempt', prev_hash=null, current_hash='FAKE_HASH'",
+    "confirmed_pre_existing": true,
+    "introduced_by_goal_fix": false,
+    "neighbor_rows_verified": {
+      "id_32": "user.login prev=81277b1d... curr=37e42083... (intact)",
+      "id_33": "user.login prev=37e42083... curr=242a7e03... (intact)",
+      "id_34": "tamper.attempt prev=null curr=FAKE_HASH (BREACH MARKER)",
+      "id_35": "user.login prev=FAKE_HASH curr=a3644c29... (chain RESUMES from FAKE_HASH — natural re-anchor)",
+      "id_36": "user.login prev=a3644c29... curr=92efd7bb... (intact post-resume)"
+    }
+  },
+
+  "nf525_fix_relevance": "ZERO impact on NF525 surface. 4 Vue templates have NO DB write access, NO axios.post audit-relevant calls, NO localStorage/cookie chain-coupled writes. BackendNavbarComponent only renders authInfo from store getter. MessageListComponent only renders message list. CreditBalanceReportComponent only renders report table. ProfileEditProfileComponent reads /api/profile and writes only profile updates (PUT /api/profile) — pre-existing flow, unchanged auth_log surface.",
+
+  "nf525_boot_guards_intact": true,
+  "nf525_boot_guards_verified": {
+    "POS_SIMULATION_HARDWARE": "app/Providers/AppServiceProvider.php:165-171 — refuse boot if true",
+    "PAYMENT_BYPASS_MODE": "AppServiceProvider.php:177-183 — refuse boot if true",
+    "PRINTING_BYPASS_MODE": "AppServiceProvider.php:184-190 — refuse boot if true",
+    "APP_DEBUG": "AppServiceProvider.php:202-210 — refuse boot if true",
+    "IDEMPOTENCY_MIDDLEWARE_ENABLED": "AppServiceProvider.php:223-231 — refuse boot if false",
+    "LOYALTY_QR_SECRET": "AppServiceProvider.php:241-251 — refuse boot if empty",
+    "APP_URL": "AppServiceProvider.php:261-271 — refuse boot if empty",
+    "BROADCAST_DRIVER": "AppServiceProvider.php:273-278 — refuse boot if null/'null'",
+    "QUEUE_CONNECTION": "AppServiceProvider.php:279-284 — refuse boot if sync",
+    "CACHE_DRIVER": "AppServiceProvider.php:294-302 — refuse boot if array/null (KNOWN: V1.0.X backlog UNI-03 widens to file/database)",
+    "STRIPE_WEBHOOK_SECRET": "AppServiceProvider.php:323-341 — refuse boot if Stripe enabled + secret empty",
+    "SENANGPAY_SECRET_KEY": "AppServiceProvider.php:380-417 — refuse boot if SenangPay enabled + secret empty",
+    "MAIL_HOST_SSRF": "AppServiceProvider.php:441+ — refuse boot if forbidden IP range",
+    "regression_check": "git diff bf1cc0382...HEAD -- app/Providers/AppServiceProvider.php = EMPTY (no change)"
+  },
+
+  "idempotency_middleware_intact": true,
+  "idempotency_verification": "app/Http/Middleware/IdempotencyKeyMiddleware.php — git diff bf1cc0382...HEAD = EMPTY. Last modification commit 7f8c771d8 (well pre-scope). Frozen-zone status preserved.",
+
+  "findings": [
+    {
+      "id": "UR2-001",
+      "severity": "P2",
+      "category": "security",
+      "title": "UI ternary masks PENDING_CREATE_ sentinel on 4 surfaces but API JSON still emits the raw sentinel",
+      "evidence": "git diff bf1cc0382...HEAD -- resources/js/.../*.vue shows defensive ternary added; grep -rn phone app/Http/Resources/ shows CreditBalanceUserResource:24, MessageResource:24,42, UserResource:24, AdministratorResource:23, OrderUserResource:24 all serialize $this->phone unguarded.",
+      "recommendation": "Defense-in-depth: add a single sanitizer in App\\Libraries\\AppLibrary (or a UserResource trait) that strips PENDING_* before serializing phone. Apply once to all 5 resources. Estimated effort 30 min. V1.0.2 backlog — NOT a V1 blocker because (a) admin role already sees underlying phone field through same endpoint = no privilege escalation, (b) sentinel is 48-bit random suffix without semantic value."
+    },
+    {
+      "id": "UR2-002",
+      "severity": "INFO",
+      "category": "nf525",
+      "title": "Pre-existing NF525 chain breach at audit_logs.id=34 (test fixture, E2E-08 cycle 2026-05-25 18:28:46)",
+      "evidence": "php artisan fiscal:verify-chain → 'TAMPER detected (branch=1, breaches=1) audit_logs.id=34'. Row inspection confirms action='tamper.attempt', prev_hash=NULL, current_hash='FAKE_HASH' — markers documented in reports/test-e2e/bad-mood-final-2026-05-25/agents/E2E-08-healthz.json adv_2_fiscal_chain_drop. NOT caused by GOAL fix; introduced by parallel adversarial agent during healthz audit window same day.",
+      "recommendation": "Owner-gate operation — see repair_recommendation_nf525_chain below. Until repaired, fiscal:verify-chain will permanently report breach at id=34 (correct NF525 behavior — chain history is immutable, breach is permanent forensic record)."
+    },
+    {
+      "id": "UR2-003",
+      "severity": "INFO",
+      "category": "security",
+      "title": "UI fix is cosmetic-correct but does not close the underlying root cause (sentinel-polluted DB rows persist)",
+      "evidence": "PENDING_CREATE_<rand> sentinel is injected by User::creating boot hook (app/Models/User.php:106-122) when admin tooling/walk-in resolver creates rows without phone. The fix at the Vue layer hides display but the DB still carries the sentinel; any future admin export/CSV/SQL audit will include them.",
+      "recommendation": "Long-term root-cause heal (V1.0.2 backlog): phone-collection flow on first admin login OR backend admin migration to ask-and-fill phone for sentinel-tagged accounts. Audit query: SELECT id, name, email, phone FROM users WHERE phone LIKE 'PENDING_%' — surfaces every polluted row for follow-up. CLAUDE.md log message at User.php:115 already provides observability."
+    }
+  ],
+
+  "new_nf525_risk_introduced_by_fix": "NONE",
+  "new_security_risk_introduced_by_fix": "NONE",
+  "new_idempotency_risk_introduced_by_fix": "NONE",
+  "new_branch_isolation_risk_introduced_by_fix": "NONE",
+
+  "repair_recommendation_nf525_chain": {
+    "owner_gate_required": true,
+    "FORBIDDEN_action": "DO NOT DELETE audit_logs.id=34 — DB trigger BEFORE DELETE SIGNALs SQLSTATE '45000' on MySQL prod (CLAUDE.md §8). Even if SQLite local lacks the trigger, deleting violates NF525 immutability principle (6-year retention, append-only).",
+    "RECOMMENDED_action": "Append-only annotation. Write a new audit_logs row with action='tamper.acknowledged', resource='audit_log', resource_id=34, payload={'breach_origin':'E2E-08 healthz adversarial test fixture', 'breach_window':'2026-05-25 18:28:46', 'verified_by':'UR-2 ultra-review 2026-05-25', 'verify_chain_status':'permanent breach record — chain re-anchors at id=35'}. Use the standard AuditLogService::write() path — it computes prev_hash from current chain tail, so the new row will sit on top of the already-resumed chain without re-introducing a break.",
+    "expected_post_repair_behavior": "fiscal:verify-chain will STILL report breach at id=34 forever — that is correct NF525 behavior. The annotation row provides forensic documentation that the breach was reviewed and attributed. NF525 audit doctrine: chain history is immutable, breach is a permanent record, repair = annotation not erasure.",
+    "alternative_radical_action_NOT_RECOMMENDED": "Some operators might consider a chain re-seal (regenerate hashes from id=34 onward with valid prev_hash). This would constitute hash forgery — explicitly forbidden by NF525 immutability principle. DO NOT do this. The breach must persist as a permanent record.",
+    "execution_timing": "Defer until next planned maintenance window. Not urgent — health/operational impact is zero (chain after id=34 is intact via natural re-anchor). Only forensic clarity is improved."
+  },
+
+  "summary_report_4_questions": {
+    "q1_frozen_zone_diff_zero": "YES — git grep returned no matches against the 13 frozen-zone path patterns (PaymentComponent, PosV5Tranche, KioskWizard, KioskApp, KioskUpsell, pos-wizard, FiscalSequence, ZReport, AuditLogService, BranchScope, IdempotencyKey, PricingService, OrderStateMachine).",
+    "q2_api_phone_leak_risk": "P2 / defense-in-depth: 5 API resources (CreditBalanceUserResource, MessageResource, UserResource, AdministratorResource, OrderUserResource) still emit raw PENDING_CREATE_<rand> in JSON. NOT a privilege-escalation vector (admins already see phone via same endpoints), but the UI fix does NOT propagate to API contract. V1.0.2 backlog.",
+    "q3_nf525_breach_attribution": "CONFIRMED test fixture. audit_logs.id=34: action='tamper.attempt', prev_hash=NULL, current_hash='FAKE_HASH', created 2026-05-25 18:28:46 by E2E-08 adversarial agent. Documented in reports/test-e2e/bad-mood-final-2026-05-25/agents/E2E-08-healthz.json. NOT caused by GOAL fix.",
+    "q4_boot_guards_intact": "YES — all 13 production boot guards verified intact. AppServiceProvider.php has zero diff in scope range. Guards cover: POS_SIMULATION_HARDWARE, PAYMENT_BYPASS, PRINTING_BYPASS, APP_DEBUG, IDEMPOTENCY, LOYALTY_QR_SECRET, APP_URL, BROADCAST_DRIVER, QUEUE_CONNECTION, CACHE_DRIVER, STRIPE_WEBHOOK_SECRET, SENANGPAY_SECRET_KEY, MAIL_HOST_SSRF.",
+    "q5_new_nf525_risk_by_fix": "NONE. Templates have zero DB write surface. authInfo / user.phone / profile.phone read paths only; no audit_logs / fiscal_sequence / z_reports interaction.",
+    "q6_repair_recommendation": "Owner-gate, append-only annotation row via AuditLogService::write with action='tamper.acknowledged' referencing id=34. DO NOT delete. DO NOT re-seal. Documented above in repair_recommendation_nf525_chain. Not urgent.",
+    "q7_top_p0_p1_findings": "None at P0/P1 severity. All 3 findings are P2/INFO. UR2-001 (API leak) = P2 defense-in-depth; UR2-002 (pre-existing chain breach) = INFO requiring annotation; UR2-003 (sentinel-polluted DB rows) = INFO V1.0.2 root-cause heal.",
+    "q8_overall_verdict": "GREEN — GOAL fix is security/NF525 clean. Frozen-zone diff=0, boot guards intact, idempotency middleware untouched, BranchScope untouched, no new attack surface introduced. Pre-existing breach at id=34 is documented test fixture and does not gate ship."
+  },
+
+  "ship_recommendation": "GO. Security + NF525 lanes are GREEN. Defer V1.0.2 backlog: (a) API resource sanitization for PENDING_*, (b) phone-collection flow root-cause heal, (c) audit_logs.id=34 annotation row (owner-gate, not urgent)."
+}

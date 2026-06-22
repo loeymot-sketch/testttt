@@ -38,7 +38,7 @@ class DeliveryBoyController extends AdminController
         try {
             return DeliveryBoyResource::collection($this->deliveryBoyService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -47,7 +47,7 @@ class DeliveryBoyController extends AdminController
         try {
             return new DeliveryBoyResource($this->deliveryBoyService->store($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -56,7 +56,7 @@ class DeliveryBoyController extends AdminController
         try {
             return new DeliveryBoyResource($this->deliveryBoyService->update($request, $deliveryBoy));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -66,7 +66,7 @@ class DeliveryBoyController extends AdminController
             $this->deliveryBoyService->destroy($deliveryBoy);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -75,7 +75,7 @@ class DeliveryBoyController extends AdminController
         try {
             return new DeliveryBoyResource($this->deliveryBoyService->show($deliveryBoy));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -84,7 +84,7 @@ class DeliveryBoyController extends AdminController
         try {
             return Excel::download(new DeliveryBoyExport($this->deliveryBoyService, $request), 'Delivery-Boy.xlsx');
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -93,7 +93,7 @@ class DeliveryBoyController extends AdminController
         try {
             return new DeliveryBoyResource($this->deliveryBoyService->changePassword($request, $deliveryBoy));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -102,7 +102,7 @@ class DeliveryBoyController extends AdminController
         try {
             return new DeliveryBoyResource($this->deliveryBoyService->changeImage($request, $deliveryBoy));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -111,7 +111,7 @@ class DeliveryBoyController extends AdminController
         try {
             return UserOrderResource::collection($this->orderService->userOrder($request, $deliveryBoy));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

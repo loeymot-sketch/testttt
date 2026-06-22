@@ -20,7 +20,10 @@ class SubscriberController extends AdminController
     {
         parent::__construct();
         $this->subscriberService = $subscriberService;
-        $this->middleware(['permission:subscribers'])->only('index', 'destroy', 'export');
+        // [GOAL-2026-05-30 SUB-1] Gate sendEmail too: POST /admin/subscriber/send-email is a
+        // mutating mass-email to the entire subscriber base; it was missing from the only()
+        // list, so any authenticated staff (without permission:subscribers) could trigger it.
+        $this->middleware(['permission:subscribers'])->only('index', 'destroy', 'export', 'sendEmail');
     }
 
     public function index(PaginateRequest $request): \Illuminate\Http\Response | \Illuminate\Http\Resources\Json\AnonymousResourceCollection | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
@@ -28,7 +31,7 @@ class SubscriberController extends AdminController
         try {
             return SubscriberResource::collection($this->subscriberService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -38,7 +41,7 @@ class SubscriberController extends AdminController
             $this->subscriberService->destroy($subscriber);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -47,7 +50,7 @@ class SubscriberController extends AdminController
         try {
             return Excel::download(new SubscriberExport($this->subscriberService, $request), 'Subscribers.xlsx');
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -57,7 +60,7 @@ class SubscriberController extends AdminController
             $this->subscriberService->sendEmail($request);
             return response(['status' => true, 'message' => trans('all.message.email_send')], 200);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

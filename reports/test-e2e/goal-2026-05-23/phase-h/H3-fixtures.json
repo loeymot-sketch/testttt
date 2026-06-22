@@ -1,0 +1,23 @@
+{
+    "timestamp_iso": "2026-05-24T01:52:45+02:00",
+    "branch_id": 1,
+    "cashier_user_id": 177,
+    "cashier_token": "1227|JSkUadxFJgC2mo7TrtmIqeZinsWwWBtHDafAyBDX34dfc397",
+    "kiosk_user_id": 178,
+    "kiosk_token": "1228|ClUS946Y9oHsiDaPhUkLV1ILBOHWbZVdnHINK27T61feb96e",
+    "admin_user_id": 179,
+    "admin_token": "1229|lmXdkTb2QThESaMMT2LYSKUaxboaNZV0HwsVmQht831bf0c4",
+    "item_id": 1,
+    "toggle_item_id": 2,
+    "baseline": {
+        "audit_logs_count": 69,
+        "orders_count": 374,
+        "outbox_pending": 889,
+        "outbox_stale_30s": 888,
+        "fiscal_seq_b1_max": 93,
+        "audit_last_id": 69,
+        "chain_verify_pre": "+ branch=1 CHAIN OK\n  + branch=2 CHAIN OK\n  + branch=3 CHAIN OK\n  + branch=4 CHAIN OK\n  + branch=5 CHAIN OK\nSWEEP COMPLETE \u2014 CHAIN OK on every active branch (5 total)",
+        "server_rss_kb": 58064,
+        "db_connection_count_proxy": 1
+    }
+}

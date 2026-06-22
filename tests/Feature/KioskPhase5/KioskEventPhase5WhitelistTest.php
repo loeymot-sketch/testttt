@@ -115,6 +115,19 @@ class KioskEventPhase5WhitelistTest extends TestCase
         ])->assertStatus(200);
     }
 
+    public function test_analytics_accepts_composer_heuristic_fallback_event_name(): void
+    {
+        $this->postEvent([
+            'type' => 'analytics',
+            'event_name' => 'wizard.composer_heuristic_fallback',
+            'payload' => [
+                'item_id' => 123,
+                'reason' => 'missing_published_composer_profile',
+            ],
+            'session_id' => '11111111-2222-4333-8444-555555555555',
+        ])->assertStatus(200);
+    }
+
     public function test_analytics_rejects_unknown_event_name(): void
     {
         $this->postEvent([

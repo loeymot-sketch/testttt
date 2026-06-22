@@ -198,7 +198,7 @@ export default {
 }
 
 .kiosk-inactivity-icon {
-    color: var(--kiosk-primary, #E8001C);
+    color: var(--kiosk-primary, #F4501E);
 }
 
 .kiosk-inactivity-title {
@@ -217,7 +217,7 @@ export default {
 }
 
 .kiosk-inactivity-countdown {
-    color: var(--kiosk-primary, #E8001C);
+    color: var(--kiosk-primary, #F4501E);
     font-weight: 900;
     font-variant-numeric: tabular-nums;
 }

@@ -19,7 +19,10 @@ class MessageController extends AdminController
     {
         parent::__construct();
         $this->messageService = $messageService;
-        $this->middleware(['permission:messages'])->only('index', 'show', 'store', 'destroy');
+        // [NC-MSG-CHANGESTATUS-GATE heal 2026-06-01] Gate `changeStatus` (state-mutating) too —
+        // it was omitted from this ->only() list, leaving it callable by any auth:sanctum staff
+        // without `messages`. Same gate as the other message mutations.
+        $this->middleware(['permission:messages'])->only('index', 'show', 'store', 'destroy', 'changeStatus');
     }
 
     public function index(
@@ -28,7 +31,7 @@ class MessageController extends AdminController
         try {
             return MessageResource::collection($this->messageService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -39,7 +42,7 @@ class MessageController extends AdminController
         try {
             return new MessageResource($this->messageService->show($message));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -51,7 +54,7 @@ class MessageController extends AdminController
             $this->messageService->store($request);
             return MessageResource::collection($this->messageService->list($request2));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -63,7 +66,7 @@ class MessageController extends AdminController
             $this->messageService->destroy($message);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -74,7 +77,7 @@ class MessageController extends AdminController
             $this->messageService->changeStatus($message, $customer);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

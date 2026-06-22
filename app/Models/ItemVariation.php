@@ -24,6 +24,12 @@ class ItemVariation extends Model
         'caution',
         'status',
         'visible_on',
+        // [WIZARD-STUDIO W4 / DATA-01] image_path + description columns exist (nullable) and the
+        // projection READS them (prefers image_path over thumb), but they are intentionally NOT
+        // $fillable: no validated writer exists yet, and the item create/update `variations` JSON
+        // blob is not key-whitelisted — leaving them fillable was an uncontrolled write surface.
+        // A future Studio option-edit endpoint must set them EXPLICITLY (forceFill / validated),
+        // not via mass-assignment. Reads are unaffected by $fillable.
     ];
     protected $casts = [
         'id'                => 'integer',
@@ -84,10 +90,12 @@ class ItemVariation extends Model
         }
 
         if ($filename && file_exists(public_path("{$basePath}/{$filename}"))) {
-            return asset("{$basePath}/{$filename}");
+            $hash = @filemtime(public_path("{$basePath}/{$filename}")) ?: 0;
+            return asset("{$basePath}/{$filename}") . "?v={$hash}";
         }
         if (file_exists(public_path("{$basePath}/{$defaultFile}"))) {
-            return asset("{$basePath}/{$defaultFile}");
+            $hash = @filemtime(public_path("{$basePath}/{$defaultFile}")) ?: 0;
+            return asset("{$basePath}/{$defaultFile}") . "?v={$hash}";
         }
         return null;
     }

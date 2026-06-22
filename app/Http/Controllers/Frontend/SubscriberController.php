@@ -24,7 +24,7 @@ class SubscriberController extends Controller
         try {
             return new SubscriberResource($this->subscriberService->store($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

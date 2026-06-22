@@ -21,6 +21,7 @@ final class PricingLineResult
         public readonly string $variationsJson,
         public readonly string $extrasJson,
         public readonly ?string $instruction,
+        public readonly float $addonTotal = 0.0,
     ) {
     }
 }

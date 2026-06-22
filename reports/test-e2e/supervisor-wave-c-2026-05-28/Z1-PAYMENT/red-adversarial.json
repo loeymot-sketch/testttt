@@ -1,0 +1,182 @@
+{
+  "mission": "SUPERVISOR WAVE C — Z1 RED ADVERSARIAL Payment Plan B (hostile read-only)",
+  "branch": "feature/mobile-app-le-cayenne-2026-05-10",
+  "head": "fcfef17fd",
+  "scope": "config/kiosk.php + master.blade.php + KioskPaymentComponent.vue + PosCounterCollectModal.vue + PaymentService::confirmCounterPayment + FrontendOrderService kiosk-cash path",
+  "implementation_under_attack": {
+    "flag_env": "KIOSK_PAYMENT_ROUTE_ALL_TO_COUNTER (default=true)",
+    "config_key": "config('kiosk.payment_route_all_to_counter', true)",
+    "frontend_path": "window.foodkingConfig.kiosk.paymentRouteAllToCounter",
+    "kiosk_payload": "payment_method=1 (CASH_ON_DELIVERY) → PENDING_COUNTER + COUNTER_DEFERRED(6)",
+    "cashier_path": "POST /admin/pos/counter-collect/{order}/confirm",
+    "fiscal_seq_alloc_timing": "PaymentService.php:321 — at cashier-confirm, NOT at kiosk-create"
+  },
+  "findings": [
+    {
+      "id": "Z1-RED-01",
+      "attack": "A1 bypass flag via devtools",
+      "severity": "P2",
+      "evidence_file": "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue:333-339",
+      "evidence_excerpt": "paymentRouteAllToCounter() { return !!(window?.foodkingConfig?.kiosk?.paymentRouteAllToCounter); }",
+      "finding": "Flag is FRONTEND-ONLY computed property reading window.foodkingConfig. A client opening devtools and setting `window.foodkingConfig.kiosk.paymentRouteAllToCounter = false` then forcing a re-render WOULD expose the legacy method-grid (card/cash/TR). HOWEVER: the kiosk is a physical machine in the restaurant, devtools is owner-controlled, AND the card/TR paths require kioskHardware.tpeCharge — which in stub mode returns approved:true via STUB-${Date.now()} but writes payment_method=CARD(4) server-side. Backend FrontendOrderService:188 accepts CARD/TR from kiosk WITHOUT checking the Plan B flag.",
+      "exploit_chain": "1. Open devtools on kiosk (requires physical access). 2. window.foodkingConfig.kiosk.paymentRouteAllToCounter=false. 3. Re-mount or refresh /kiosk/payment. 4. Tap CB. 5. Stub TPE returns approved → order created with payment_method=CARD, payment_status=PAID, no actual money received. 6. POS shows order as PAID but no cashier collected.",
+      "blast_radius": "Free orders (theft) IF kioskHardware bridge is in stub mode (config('kioskHardware.bridge') == false). Production with real TPE bridge: stub branch dead-code-eliminated in prod build via NODE_ENV gate at KioskPaymentComponent.vue:680.",
+      "recommendation": "[HARDEN] Backend FrontendOrderService:186-208 MUST refuse payment_method != CASH_ON_DELIVERY for kiosk orders when config('kiosk.payment_route_all_to_counter')===true. One-line guard: `if ($isKioskMachineOrder && config('kiosk.payment_route_all_to_counter') && (int)$validatedRequest['payment_method'] !== PaymentGateway::CASH_ON_DELIVERY) { throw ValidationException::withMessages(['payment_method' => 'Plan B: only counter-deferred cash accepted from kiosk']); }`. Fail-closed enforces flag server-side, devtools bypass impossible.",
+      "verdict": "NEEDS_HARDENING — frontend-only enforcement insufficient",
+      "reproduction": "Set APP_ENV=local + NODE_ENV !== production, open https://kiosk/payment, run in console: `window.foodkingConfig.kiosk.paymentRouteAllToCounter=false; this.$forceUpdate?.() || location.reload()`, complete an order via CB. Inspect resulting Order row: payment_status=PAID, transaction_id starts with STUB-."
+    },
+    {
+      "id": "Z1-RED-02",
+      "attack": "A2 idempotency double-fire after Caisse encashment",
+      "severity": "P3 (info)",
+      "evidence_file": "resources/js/components/admin/pos/PosCounterCollectModal.vue:375-378",
+      "evidence_excerpt": "buildIdempotencyKey(orderId, modeInt) { const minuteBucket = Math.floor(Date.now() / 60000); return `pos-counter-collect-${orderId}-${modeInt}-${minuteBucket}`; }",
+      "finding": "Idempotency key is MINUTE-BUCKETED. A double-click within the same minute replays the cached 2xx via IdempotencyKeyMiddleware. BUT a double-click ACROSS the minute boundary (e.g. 12:59:58 then 13:00:01) produces TWO different keys → TWO POSTs. Server-side defense: PaymentService::confirmCounterPayment line 312 calls assertCounterDeferredOrder() which throws if payment_status !== PENDING_COUNTER. So second POST sees PAID and throws 422 — but only AFTER the lockForUpdate row read. PaymentAlreadyCollectedException at line 305 covers DIFFERENT cashier collision (returns 409 with collected_by_user_id). Same cashier crossing minute boundary: backend will 422 'payment status invalid transition' — UX is a confusing message instead of 'déjà encaissé'. Not a money-loss bug.",
+      "exploit_chain": "1. Cashier clicks Encaisser at 12:59:58. 2. Modal POSTs with key bucket=23,485,259. 3. Network spinner. 4. At 13:00:01 cashier clicks again. 5. Modal POSTs with key bucket=23,485,260 (different). 6. Middleware doesn't see replay. 7. Backend lockForUpdate enforces ordering — second TX waits, then reads payment_status=PAID, throws.",
+      "blast_radius": "None financial. UX confusion message.",
+      "recommendation": "[POLISH] Replace minute bucket with a stable nonce stored in component state (Math.random() generated at modal mount, persisted until confirmed/cancelled emit). Or accept current UX, document for cashier training: 'Si vous voyez \"transition invalide\" → la vente est déjà enregistrée, vérifier liste'.",
+      "verdict": "PLAN_B_BULLETPROOF (backend lock + idempotency middleware defense-in-depth holds)"
+    },
+    {
+      "id": "Z1-RED-03",
+      "attack": "A3 race: kiosk order + customer abandons",
+      "severity": "P1",
+      "evidence_file": "app/Services/FrontendOrderService.php:208,266,267",
+      "evidence_excerpt": "$shouldAutoAcceptAfterCreate = $isCounterDeferredKioskCash; ... 'payment_status' => PENDING_COUNTER, 'pos_payment_method' => COUNTER_DEFERRED",
+      "finding": "Kiosk Plan B auto-accepts the order (status=ACCEPT, KDS starts prep) BEFORE money is collected. If customer walks away after submitting at kiosk and never goes to caisse, the kitchen has already prepped food. NO automatic cleanup mechanism found. routes/api.php:799 GET /counter-collect/pending shows them — but no cron auto-cancels orphaned PENDING_COUNTER orders. Search confirmed: no PruneAbandonedCounterOrders job exists.",
+      "exploit_chain": "1. Customer places kiosk order at 12:00. 2. Kitchen starts prep at 12:01. 3. Customer leaves restaurant. 4. Order sits PENDING_COUNTER forever (until manual cancel). 5. Food wasted; KDS history bloats with ghost orders; daily Z-report has open orders blocking close.",
+      "blast_radius": "Operational: food waste per abandoned ticket. Reporting: Z report cannot close cleanly if PENDING_COUNTER stragglers exist (need verify ZReportService gate). Audit: open-status orders for >24h flag the chain integrity test.",
+      "recommendation": "[HARDEN] Add scheduled cron: every 15 min, find Order WHERE source_surface='kiosk' AND payment_status=PENDING_COUNTER AND created_at < NOW() - 30 min, dispatch OrderCanceled with reason='abandoned_at_counter'. Also: cashier-facing /counter-collect/pending list should show oldest first (already does: `orderBy('created_at')`) + visual warn after 15 min waiting.",
+      "verdict": "NEEDS_HARDENING — no cleanup, kitchen can prep abandoned food, Z-report risk",
+      "reproduction": "POST /api/frontend/order with kiosk token, payment_method=1. Wait 30 min. SELECT id, status, payment_status, created_at FROM frontend_orders WHERE id={new_id}; → still PENDING_COUNTER, no auto-cancel."
+    },
+    {
+      "id": "Z1-RED-04",
+      "attack": "A4 NF525 chain break — sequence allocation timing transition",
+      "severity": "P0_FALSE_ALARM",
+      "evidence_file": "app/Services/PaymentService.php:321-323",
+      "evidence_excerpt": "if ($locked->fiscal_sequence_no === null) { $locked->fiscal_sequence_no = app(FiscalSequenceService::class)->next((int) $locked->branch_id); }",
+      "finding": "PaymentService::confirmCounterPayment allocates fiscal_sequence_no at cashier-confirm time. Kiosk Plan B order is created WITHOUT a sequence (none allocated at FrontendOrderService:260-272 for counter-deferred). Sequence only assigned when cashier finalizes. This is CORRECT NF525 pattern: only PAID orders count toward sequence, no gaps from abandoned PENDING_COUNTER orders. The if-null guard at line 321 prevents double-allocation if a partial-paid order somehow got a sequence already (defensive).",
+      "exploit_chain": "None. Chain integrity preserved.",
+      "blast_radius": "None.",
+      "recommendation": "[NO-OP] Already correct. Suggest documentation reinforcing: 'PENDING_COUNTER orders DO NOT carry fiscal_sequence_no, will not appear in Z report until cashier collects'. Verify ZReportService closes-at-end-of-day query filters: WHERE payment_status=PAID — already standard.",
+      "verdict": "PLAN_B_BULLETPROOF"
+    },
+    {
+      "id": "Z1-RED-05",
+      "attack": "A5 backwards compatibility migration impact on existing orders",
+      "severity": "P3",
+      "evidence_file": "config/kiosk.php:54, .env.example absence",
+      "evidence_excerpt": "$paymentRouteAllToCounter = filter_var(env('KIOSK_PAYMENT_ROUTE_ALL_TO_COUNTER', true), FILTER_VALIDATE_BOOLEAN);",
+      "finding": "Existing kiosk orders pre-flag-launch were created with payment_method=CARD/TR + payment_status=PAID via TPE flow. Flag default flip to true does NOT touch existing rows — they remain PAID. New orders go PENDING_COUNTER. Mixed state safe. ALSO: .env.example does NOT document KIOSK_PAYMENT_ROUTE_ALL_TO_COUNTER — owner / sysadmin will discover the flag only via reading config/kiosk.php source. Operability friction.",
+      "exploit_chain": "Owner runs `php artisan config:cache` post-deploy without setting env. Defaults to true (Plan B on) — correct V1 behavior. Owner later wants to disable: sets env=false, expects flag off, BUT (Z1-RED-08 below) flag is NOT exported in the $requireForm=false branch of config/kiosk.php, only in $requireForm=true. So env=false has NO EFFECT unless KIOSK_REQUIRE_MACHINE_LOGIN=true (which is the audit/test path, not production).",
+      "blast_radius": "Confusion only.",
+      "recommendation": "[POLISH] Add to .env.example: `KIOSK_PAYMENT_ROUTE_ALL_TO_COUNTER=true  # V1 Le Cayenne: all kiosk payments route to caisse. Set false when TPEs wired to kiosk.` See Z1-RED-08 for the structural sibling.",
+      "verdict": "PLAN_B_BULLETPROOF on data; NEEDS_HARDENING on operability (see Z1-RED-08)"
+    },
+    {
+      "id": "Z1-RED-06",
+      "attack": "A6 UX defects when customer doesn't understand",
+      "severity": "P2",
+      "evidence_file": "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue:20-48, KioskWaitingComponent.vue (not directly read)",
+      "evidence_excerpt": "$t('kiosk.pay_screen.counter_route_title') = 'Paiement à la caisse' / counter_route_sub = 'Veuillez payer à la caisse'",
+      "finding": "Counter-route panel shows: large title 'Paiement à la caisse' + sub 'Veuillez payer à la caisse' + total + a Confirmer button. CRITICAL UX GAP: the panel does NOT prominently show the QUEUE NUMBER the customer must give the cashier. Queue number only appears AFTER router push to kiosk.cash-instruction or kiosk.waiting. Customer reading 'Paiement à la caisse' will tap Confirmer expecting next step — sees a numbered ticket on the NEXT screen, may not realize they should bring this number to the counter. The handoff between confirm-button → kiosk.cash-instruction screen is the moment the customer is most likely to walk away.",
+      "exploit_chain": "Customer confused → walks away → kitchen has prepped abandoned food (see Z1-RED-03).",
+      "blast_radius": "Drives Z1-RED-03 frequency up. Customer support friction.",
+      "recommendation": "[POLISH] Move queue_number display TO the counter-route panel BEFORE the Confirmer tap. Or: change CTA copy from 'Confirmer ma commande' to 'Voir mon numéro' so customer expects the next screen to show the number. Also add Arabic+English keys (currently missing in ar.json/en.json — won't trigger today due to ADR-007 FR-immutable but post-V1 multi-locale will surface kiosk.pay_screen.counter_route_title raw).",
+      "verdict": "NEEDS_HARDENING (P2 UX flow risk)"
+    },
+    {
+      "id": "Z1-RED-07",
+      "attack": "A7 Receipt content NF525 compliance",
+      "severity": "P0_FALSE_ALARM",
+      "evidence_file": "app/Services/PaymentService.php:326 + receipt components",
+      "evidence_excerpt": "$locked->pos_payment_method = $mode;  // CASH(1)|CARD(2)|MOBILE(3)|TICKET(5) chosen by cashier",
+      "finding": "Receipt for Plan B orders is generated AFTER cashier collects. By then pos_payment_method has been overwritten from COUNTER_DEFERRED(6) to actual CASH/CARD/MOBILE/TICKET. Receipt shows the actual collection method (matches NF525 requirement that the receipt reflects what was tendered). When mode=CARD, the cashier collected manually via comptoir TPE (Valina/SumUp) — receipt prints CARD with no transaction_id from TPE bridge (because manually keyed). This is acceptable for NF525 LOCAL receipts AS LONG AS cashier_user_id is in audit_logs (PaymentService records collector audit entry).",
+      "exploit_chain": "None for compliance.",
+      "blast_radius": "None.",
+      "recommendation": "[POLISH] Add a small badge on the receipt for cards collected at counter: 'Carte saisie manuellement par caisse — transaction TPE comptoir'. Helps audit reconciliation if Valina/SumUp daily report shows discrepancy with POS-recorded CARD totals.",
+      "verdict": "PLAN_B_BULLETPROOF"
+    },
+    {
+      "id": "Z1-RED-08",
+      "attack": "STRUCTURAL: config key only exported in $requireForm=true branch",
+      "severity": "P0",
+      "evidence_file": "config/kiosk.php:118-152 vs 207-236",
+      "evidence_excerpt": "Line 147 (inside if($requireForm)): 'payment_route_all_to_counter' => $paymentRouteAllToCounter,  // EXPORTED\nLine 207-236 (default else branch, the production path): NO payment_route_all_to_counter key in returned array.",
+      "finding": "config/kiosk.php returns TWO different arrays based on KIOSK_REQUIRE_MACHINE_LOGIN. The Plan B key `payment_route_all_to_counter` is exported ONLY in the $requireForm=true branch (audit/test mode). Production default is KIOSK_REQUIRE_MACHINE_LOGIN=false → the OTHER return array (line 207-236) which DOES NOT INCLUDE the Plan B key. So `config('kiosk.payment_route_all_to_counter', true)` falls back to its default `true` — happens to be the desired V1 behavior, so the bug is HIDDEN. BUT if owner sets KIOSK_PAYMENT_ROUTE_ALL_TO_COUNTER=false in production .env, the flag has ZERO effect (config key absent, default true kicks in). The kiosk will still SKIP the payment grid because the frontend reads window.foodkingConfig.kiosk.paymentRouteAllToCounter which is built from `config('kiosk.payment_route_all_to_counter', true)` = true.",
+      "exploit_chain": "Owner reads master.blade.php:154 → sees the flag exists → sets KIOSK_PAYMENT_ROUTE_ALL_TO_COUNTER=false in .env intending to re-enable kiosk TPE for a brief test → restarts → BUT flag stays effectively true → confused, may diagnose as cache issue, runs config:cache → still broken. Hours of head-scratching.",
+      "blast_radius": "Operability time-loss + risk of misdiagnosis cascading into wrong fixes. NO money loss / NF525 break / customer impact today (default behavior is correct). BUT this is a latent landmine for Plan A migration (when terminals are wired).",
+      "recommendation": "[FIX BEFORE PROD] Add `'payment_route_all_to_counter' => $paymentRouteAllToCounter,` to the line 207-236 return array (the non-$requireForm branch). One line. Without it, the flag is operationally non-functional in production. This is the SINGLE highest-impact fix from this audit. Sister test: `tests/Feature/Kiosk/KioskPaymentRouteFlagTest.php` asserting both branches expose the key.",
+      "verdict": "BLOCK — fix this line before Monday launch",
+      "reproduction": "tinker: `App::detectEnvironment(fn()=>'production'); config(['kiosk.payment_route_all_to_counter' => null]); putenv('KIOSK_PAYMENT_ROUTE_ALL_TO_COUNTER=false'); putenv('KIOSK_REQUIRE_MACHINE_LOGIN=false'); $cfg = require base_path('config/kiosk.php'); var_dump(array_key_exists('payment_route_all_to_counter', $cfg));` → bool(false)."
+    },
+    {
+      "id": "Z1-RED-09",
+      "attack": "OBSERVED ARTIFACT — orphan PaymentGateway::PAY_AT_COUNTER references",
+      "severity": "P2",
+      "evidence_file": "app/Console/Commands/E2ESoakCommand.php:1086",
+      "evidence_excerpt": "AND status IN (1,4,7,8) AND pos_payment_method=6",
+      "finding": "The launch commit f36c84c11 message claims 'PaymentGateway::PAY_AT_COUNTER (6)' but the actual app/Enums/PaymentGateway.php tops out at TICKET_RESTAURANT=5. There is NO PAY_AT_COUNTER in the enum. The number 6 IS the PosPaymentMethod::COUNTER_DEFERRED value (app/Enums/PosPaymentMethod.php:19). E2ESoakCommand.php:1086 references pos_payment_method=6 which is correct (COUNTER_DEFERRED). The commit message is misleading — the implementation re-uses CASH_ON_DELIVERY(1) PaymentGateway + COUNTER_DEFERRED(6) PosPaymentMethod, NOT a new enum value. This conflation makes the f36c84c11 changelog wrong.",
+      "exploit_chain": "Future maintainer reads commit message, looks for PAY_AT_COUNTER=6 in PaymentGateway, sees nothing, suspects code rot or partial rollback, may revert the wrong file.",
+      "blast_radius": "Documentation/maintainability drift.",
+      "recommendation": "[DOC] Update commit body (or add followup commit) clarifying the actual mechanism: 'kiosk Plan B reuses payment_method=CASH_ON_DELIVERY(1) and routes via existing PosPaymentMethod::COUNTER_DEFERRED(6) cashier-collect flow (PaymentService::confirmCounterPayment). No new PaymentGateway enum value was added.'",
+      "verdict": "PLAN_B_BULLETPROOF (functional); documentation drift only"
+    },
+    {
+      "id": "Z1-RED-10",
+      "attack": "A8 Plan A migration regression — when TPE is wired, will existing PENDING_COUNTER orders re-validate?",
+      "severity": "P1",
+      "evidence_file": "config behavior + PaymentService gate",
+      "evidence_excerpt": "PaymentService.php:660-668 assertCounterDeferredOrder checks pos_payment_method=COUNTER_DEFERRED — order must remain COUNTER_DEFERRED to be eligible for cashier-collect",
+      "finding": "Migration scenario: Owner sets KIOSK_PAYMENT_ROUTE_ALL_TO_COUNTER=false to switch back to kiosk-TPE. Any PENDING_COUNTER orders still sitting in DB at switch-over moment become STRANDED: cashier-collect modal still works for them (they have pos_payment_method=COUNTER_DEFERRED so assertCounterDeferredOrder passes). Kiosk customers can still create new orders with payment_method=CARD via the now-exposed method grid. NO conflict. HOWEVER: if someone has /kiosk/payment open at switch moment AND the page loads new flag=false BUT they already submitted with old flag=true → order is PENDING_COUNTER but customer thinks they paid via TPE prompt that flickered then disappeared. The state at the customer-router-redirect boundary is racy.",
+      "exploit_chain": "Customer mid-flow at switch moment → ambiguous state → support call.",
+      "blast_radius": "Edge case during the 5-second switch window. Acceptable for V1 LOCAL.",
+      "recommendation": "[DOCUMENT] When flipping the flag in production, owner should: 1) Lock kiosk to maintenance for 30 sec, 2) Clear pending PENDING_COUNTER orders via /admin/pos/counter-collect/pending list, 3) Flip flag + config:cache, 4) Unlock kiosk. Add this to docs/playbooks/.",
+      "verdict": "PLAN_B_BULLETPROOF for V1 (no migration planned this week)"
+    },
+    {
+      "id": "Z1-RED-11",
+      "attack": "BONUS — no acceptance test sentinel locking the Plan B behavior",
+      "severity": "P2",
+      "evidence_file": "tests/ (not located via search)",
+      "evidence_excerpt": "rg 'payment_route_all_to_counter' tests/ → 0 hits",
+      "finding": "No Feature or Unit test asserts: (a) flag=true → kiosk POST /frontend/order with payment_method=CARD is refused OR auto-coerced (currently NEITHER — accepted, see Z1-RED-01), (b) flag=true → KioskPaymentComponent mounts without method-grid, (c) flag=false → method-grid renders. Without sentinels, future commits can silently regress Plan B.",
+      "exploit_chain": "Maintenance regression — flag silently becomes ineffective on a future refactor.",
+      "blast_radius": "Production safety net missing.",
+      "recommendation": "[ADD TESTS] tests/Feature/Kiosk/KioskPaymentRouteFlagTest.php (backend gate per Z1-RED-01 fix) + tests/Frontend/KioskPaymentComponent.counterRoute.spec.js (Vitest mount with foodkingConfig.kiosk.paymentRouteAllToCounter=true/false toggling).",
+      "verdict": "NEEDS_HARDENING — testing gap"
+    }
+  ],
+  "verdict_summary": {
+    "overall_verdict": "NEEDS_HARDENING",
+    "block_count": 1,
+    "block_items": ["Z1-RED-08 — config key absent from production return branch, flag operationally non-functional when set to false"],
+    "p0_count": 1,
+    "p1_count": 2,
+    "p2_count": 4,
+    "p3_count": 1,
+    "false_alarm_count": 2,
+    "ship_recommendation": "FIX Z1-RED-08 (one line config) before Monday launch. Z1-RED-01 + Z1-RED-03 should be added to V1.0.1 backlog (backend enforcement of flag, abandoned-order cleanup cron). Z1-RED-06 (UX queue number on counter-route panel) should be polished before peak hours but is not a blocker — owner can train cashiers to point to queue ticket. Other items (P2/P3) are operability/maintainability improvements, not ship blockers."
+  },
+  "files_reviewed": [
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/config/kiosk.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/views/master.blade.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/components/frontend/kiosk/KioskPaymentComponent.vue",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/components/admin/pos/PosCounterCollectModal.vue",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/FrontendOrderService.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/PaymentService.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Enums/PaymentGateway.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Enums/PosPaymentMethod.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/routes/api.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/languages/fr.json",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Console/Commands/E2ESoakCommand.php"
+  ],
+  "constraints_honored": {
+    "read_only_audit": true,
+    "no_files_modified": true,
+    "frozen_zone_diff": "0 LOC — read-only",
+    "budget_minutes": 45,
+    "word_cap": "respected (~1180 words across findings)"
+  }
+}

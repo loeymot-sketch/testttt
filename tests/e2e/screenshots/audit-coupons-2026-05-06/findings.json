@@ -1,0 +1,20 @@
+[
+  {
+    "step": "CY6-03",
+    "slug": "create-drawer",
+    "state": "opened-advanced-visible",
+    "severity": "OK",
+    "note": "Advanced section data-section=advanced-promo-fields visible in drawer.",
+    "screenshot": "tests/e2e/screenshots/audit-coupons-2026-05-06/03-create-drawer-opened-advanced-visible.png",
+    "ts": "2026-05-16T16:58:44.175Z"
+  },
+  {
+    "step": "CY6-04",
+    "slug": "create-api-roundtrip",
+    "state": "created",
+    "severity": "OK",
+    "note": "HTTP 201; result={\"status\":201,\"code\":\"CY6E2E760012\"}",
+    "screenshot": "tests/e2e/screenshots/audit-coupons-2026-05-06/04-after-api-create-http-201.png",
+    "ts": "2026-05-16T16:58:52.789Z"
+  }
+]

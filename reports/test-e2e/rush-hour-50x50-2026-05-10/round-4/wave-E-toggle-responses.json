@@ -1,0 +1,26 @@
+[
+  {
+    "url": "http://127.0.0.1:8000/api/admin/menu/availability/toggle",
+    "status": 200,
+    "method": "POST",
+    "ts": 1778462565836
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/admin/menu/availability/extra/toggle",
+    "status": 200,
+    "method": "POST",
+    "ts": 1778462567157
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/admin/menu/availability/toggle",
+    "status": 200,
+    "method": "POST",
+    "ts": 1778462651192
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/admin/menu/availability/extra/toggle",
+    "status": 200,
+    "method": "POST",
+    "ts": 1778462652300
+  }
+]

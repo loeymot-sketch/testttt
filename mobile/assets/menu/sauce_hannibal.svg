@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="Hannibal">
+  <defs>
+    <radialGradient id="g" cx="32%" cy="28%" r="75%">
+      <stop offset="0%" stop-color="#7f1d1d"/>
+      <stop offset="100%" stop-color="#1c1917"/>
+    </radialGradient>
+  </defs>
+  <rect width="200" height="200" rx="28" fill="#f3f4f6"/>
+  <ellipse cx="100" cy="108" rx="74" ry="58" fill="url(#g)"/>
+</svg>

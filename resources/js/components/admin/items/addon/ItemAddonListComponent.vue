@@ -1,5 +1,7 @@
 <template>
-    <ItemAddonCreateComponent :props="addonProps" />
+    <div data-testid="admin-addon-add">
+        <ItemAddonCreateComponent :props="addonProps" />
+    </div>
     <br><br>
     <div class="db-card" v-if="addons.length > 0">
         <div class="db-table-responsive">
@@ -13,7 +15,7 @@
                     </tr>
                 </thead>
                 <tbody class="db-table-body" v-if="addons.length > 0">
-                    <tr class="db-table-body-tr" v-for="addon in addons" :key="addon">
+                    <tr class="db-table-body-tr" v-for="addon in addons" :key="addon" :data-testid="`admin-addon-row-${addon.id}`">
                         <td class="db-table-body-td">
                             {{ addon.addon_item_name }}<br>
                             <span v-if="addon.variation_names.length > 0"
@@ -25,7 +27,7 @@
                             </span>
                         </td>
                         <td class="db-table-body-td">
-                            {{ addon.total_flat_price }}
+                            {{ addon.total_currency_price }}
                         </td>
                         <td class="db-table-body-td">
                             <span :class="statusClass(addon.addon_item_status)">
@@ -33,7 +35,9 @@
                             </span>
                         </td>
                         <td class="db-table-body-td">
-                            <SmIconDeleteComponent @click="destroy(addon.id)" />
+                            <span :data-testid="`admin-addon-delete-${addon.id}`">
+                                <SmIconDeleteComponent @click="destroy(addon.id)" />
+                            </span>
                         </td>
                     </tr>
                 </tbody>

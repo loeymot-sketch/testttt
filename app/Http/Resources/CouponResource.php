@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 
+use App\Enums\Status;
 use App\Libraries\AppLibrary;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -28,8 +29,8 @@ class CouponResource extends JsonResource
             "currency_discount" => AppLibrary::currencyAmountFormat($this->discount),
 
             'discount_type'      => $this->discount_type === null ? 5 : $this->discount_type,
-            'convert_start_date' => AppLibrary::datetime($this->start_date),
-            'convert_end_date'   => AppLibrary::datetime($this->end_date),
+            'convert_start_date' => AppLibrary::datetime($this->start_date, 'd-m-Y'),
+            'convert_end_date'   => AppLibrary::datetime($this->end_date, 'd-m-Y'),
             'start_date'         => !blank($this->start_date) ? $this->start_date : "",
             'end_date'           => !blank($this->end_date) ? $this->end_date : "",
 
@@ -45,6 +46,17 @@ class CouponResource extends JsonResource
 
             'limit_per_user' => $this->limit_per_user === null ? 0 : $this->limit_per_user,
             "image"          => $this->image,
+
+            // [PROMO-DASH-2026-05-06] Advanced scoping fields exposed to UI.
+            'valid_days_of_week' => is_array($this->valid_days_of_week) ? $this->valid_days_of_week : [],
+            'valid_hours_start'  => $this->valid_hours_start ?? null,
+            'valid_hours_end'    => $this->valid_hours_end ?? null,
+            'branch_scope'       => is_array($this->branch_scope) ? $this->branch_scope : [],
+            'surfaces'           => is_array($this->surfaces) ? $this->surfaces : [],
+            'max_uses_global'    => $this->max_uses_global,
+            'usage_count'        => (int) ($this->usage_count ?? 0),
+            'status'             => (int) ($this->status ?? Status::ACTIVE),
+            'status_label'       => ((int) ($this->status ?? Status::ACTIVE)) === Status::ACTIVE ? 'active' : 'inactive',
         ];
     }
 }

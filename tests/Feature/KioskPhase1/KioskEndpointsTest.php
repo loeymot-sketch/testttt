@@ -7,6 +7,7 @@ use App\Enums\Status;
 use App\Models\Branch;
 use App\Models\Coupon;
 use App\Models\Item;
+use App\Models\ItemBranchAvailability;
 use App\Models\ItemCategory;
 use App\Models\ItemExtra;
 use App\Models\ItemVariation;
@@ -39,11 +40,17 @@ class KioskEndpointsTest extends TestCase
     use RefreshDatabase;
 
     private Branch $branch;
+
     private User $user;
+
     private string $token;
+
     private Item $cayenne;
+
     private Item $fries;
+
     private ItemExtra $cheddar;
+
     private ItemVariation $sizeXL;
 
     protected function setUp(): void
@@ -125,6 +132,7 @@ class KioskEndpointsTest extends TestCase
     private function authed(): self
     {
         $this->withHeaders(['Authorization' => "Bearer {$this->token}"]);
+
         return $this;
     }
 
@@ -141,17 +149,44 @@ class KioskEndpointsTest extends TestCase
     {
         $r = $this->authed()->getJson('/api/frontend/menu');
         $r->assertStatus(200)
-          ->assertJsonStructure([
-              'status',
-              'data' => [
-                  'branch' => ['id', 'name', 'available_locales', 'currency'],
-                  'categories' => [['id', 'parent_id', 'slug', 'name', 'child_ids']],
-                  'items' => [['id', 'category_id', 'slug', 'name', 'price', 'is_chef_pick', 'allergens', 'variations', 'extras']],
-                  'upsell_rules',
-              ],
-          ]);
+            ->assertJsonStructure([
+                'status',
+                'data' => [
+                    'branch' => ['id', 'name', 'available_locales', 'currency'],
+                    'categories' => [['id', 'parent_id', 'slug', 'name', 'child_ids']],
+                    'items' => [['id', 'category_id', 'slug', 'name', 'price', 'is_chef_pick', 'allergens', 'variations', 'extras']],
+                    'upsell_rules',
+                ],
+            ]);
         $this->assertSame($this->branch->id, $r->json('data.branch.id'));
-        $this->assertSame(['fr','en','ar'], $r->json('data.branch.available_locales'));
+        $this->assertSame(['fr', 'en', 'ar'], $r->json('data.branch.available_locales'));
+    }
+
+    public function test_menu_projects_branch_availability_and_ui_price_fields(): void
+    {
+        ItemBranchAvailability::create([
+            'item_id' => $this->cayenne->id,
+            'branch_id' => $this->branch->id,
+            'is_available' => false,
+            'unavailable_reason' => 'stock_rupture',
+            'unavailable_since' => now(),
+            'daily_consumed_qty' => 0,
+            'daily_reset_at' => now()->toDateString(),
+            'max_daily_qty' => null,
+        ]);
+
+        $r = $this->authed()->getJson('/api/frontend/menu');
+        $r->assertOk();
+
+        $item = collect($r->json('data.items'))->firstWhere('id', $this->cayenne->id);
+
+        $this->assertFalse($item['is_available']);
+        $this->assertSame('stock_rupture', $item['unavailable_reason']);
+        $this->assertSame($this->cayenne->item_category_id, $item['item_category_id']);
+        $this->assertArrayHasKey('convert_price', $item);
+        $this->assertArrayHasKey('currency_price', $item);
+        $this->assertArrayHasKey('thumb', $item);
+        $this->assertArrayHasKey('image', $item);
     }
 
     public function test_menu_returns_503_when_no_kiosk_machine(): void
@@ -193,7 +228,7 @@ class KioskEndpointsTest extends TestCase
                     'price' => 0.01,     // <-- tentative injection : ignoré
                     'total' => 0.01,     // <-- idem, FormRequest strip
                     'item_variations' => [['id' => $this->sizeXL->id]],
-                    'item_extras'     => [['id' => $this->cheddar->id]],
+                    'item_extras' => [['id' => $this->cheddar->id]],
                 ],
             ],
         ]);
@@ -207,12 +242,38 @@ class KioskEndpointsTest extends TestCase
         );
     }
 
+    public function test_preview_honors_variation_and_extra_quantities(): void
+    {
+        \DB::table('item_attributes')
+            ->where('id', $this->sizeXL->item_attribute_id)
+            ->update(['max_select' => 3, 'allow_repeat' => true]);
+
+        $r = $this->authed()->postJson('/api/frontend/pricing/preview', [
+            'items' => [
+                [
+                    'item_id' => $this->cayenne->id,
+                    'quantity' => 1,
+                    'item_variations' => [['id' => $this->sizeXL->id, 'quantity' => 2]],
+                    'item_extras' => [['id' => $this->cheddar->id, 'quantity' => 3]],
+                ],
+            ],
+        ]);
+
+        $r->assertStatus(200);
+        $lineTotal = (float) $r->json('data.lines.0.line_subtotal');
+        $this->assertSame(
+            round(9.90 + (1.50 * 2) + (1.00 * 3), 2),
+            $lineTotal,
+            'Preview must preserve the same quantities that submit sends to PricingService.'
+        );
+    }
+
     public function test_preview_guards_cross_item_variation(): void
     {
         // Crée un item distinct ; on essaye d'attacher sa variation à cayenne.
         $otherItem = Item::forceCreate([
             'name' => 'Other', 'slug' => 'other-'.uniqid(),
-            'item_category_id' => $this->cayenne->item_category_id, 'tax_id' => 1,
+            'item_category_id' => $this->cayenne->item_category_id, 'tax_id' => $this->cayenne->tax_id,
             'item_type' => 1, 'price' => 5, 'status' => Status::ACTIVE, 'order' => 1,
             'is_featured' => 0, 'is_upsell' => 0, 'is_chef_pick' => false,
             'channels' => ['kiosk'],
@@ -249,7 +310,7 @@ class KioskEndpointsTest extends TestCase
         ]);
 
         $r->assertStatus(200)
-          ->assertJsonPath('data.discount_source', 'kiosk_promo');
+            ->assertJsonPath('data.discount_source', 'kiosk_promo');
         $this->assertGreaterThan(0, $r->json('data.discount'));
     }
 
@@ -275,7 +336,7 @@ class KioskEndpointsTest extends TestCase
         ]);
 
         $r->assertStatus(200)
-          ->assertJsonPath('data.source', 'kiosk_promo');
+            ->assertJsonPath('data.source', 'kiosk_promo');
     }
 
     public function test_promo_validate_falls_back_to_coupon(): void
@@ -291,7 +352,7 @@ class KioskEndpointsTest extends TestCase
         ]);
 
         $r->assertStatus(200)
-          ->assertJsonPath('data.source', 'coupon');
+            ->assertJsonPath('data.source', 'coupon');
     }
 
     public function test_promo_validate_rejects_unknown_code(): void

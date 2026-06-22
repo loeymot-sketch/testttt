@@ -24,7 +24,13 @@ class PermissionController extends AdminController
     {
         parent::__construct();
         $this->permissionService = $permissionService;
-        $this->middleware(['permission:settings'])->only('update');
+        // [GOAL-CMS-2026-05-18 M-R3-P0-A heal] R3 T-2.2.1 Arch F1: Wave 5H hardening
+        // gated Role/Branch/Administrator FormRequests but FORGOT Permission.
+        // `index` was unprotected — any auth:sanctum holder (POS Operator, Chef,
+        // stale Customer token) could enumerate full permission matrix of any
+        // role via GET /admin/permission/{role}. Now all 3 mutating + reading
+        // methods require permission:settings.
+        $this->middleware(['permission:settings']);
     }
 
     public function index(Role $role)
@@ -41,7 +47,7 @@ class PermissionController extends AdminController
             $permissions     = AppLibrary::numericToAssociativeArrayBuilder($permissions->toArray());
             return new JsonResponse(['data' => $permissions], 201);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -50,7 +56,7 @@ class PermissionController extends AdminController
         try {
             return new RoleResource($this->permissionService->update($request, $role));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

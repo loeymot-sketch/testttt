@@ -73,7 +73,13 @@ class EnsureKioskMachineCommand extends Command
             return 1;
         }
 
-        $machine = KioskMachine::query()->where('username', $username)->first();
+        // [iter12 P1 KIOSK 2026-05-09] CLI context (admin-only command):
+        // Auth is null in console, BranchScope bails out automatically, but
+        // we mark intent with withoutGlobalScope so future BranchScope changes
+        // (e.g., apply on console) don't break the command silently.
+        $machine = KioskMachine::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+            ->where('username', $username)
+            ->first();
 
         if ($dryRun) {
             $this->info('[dry-run] Utilisateur lié : '.$user->id.' ('.$user->email.')');

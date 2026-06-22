@@ -1,0 +1,5 @@
+{
+  "task": "BOUCLE-E2E-001",
+  "objective": "Démontration contrôlée : vérifier que le flux CLI `codex exec` produit une réponse courte reproductible sans toucher le code produit.",
+  "instruction": "Test d'intégration. Réponds en **exactement 3 lignes** en français, sans préambule ni markdown:\n1) le mot: boucle\n2) le slug: codex-terminal\n3) le mot: OK"
+}

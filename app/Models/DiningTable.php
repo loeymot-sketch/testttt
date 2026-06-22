@@ -10,7 +10,7 @@ class DiningTable extends Model
 {
     use HasFactory;
     protected $table = "dining_tables";
-    protected $fillable = ['name', 'slug', 'size', 'status', 'branch_id', 'qr_code'];
+    protected $fillable = ['name', 'slug', 'size', 'status', 'branch_id', 'qr_code', 'occupancy_status', 'occupied_order_id', 'occupied_at'];
     protected $casts = [
         'id'        => 'integer',
         'name'      => 'string',
@@ -19,6 +19,9 @@ class DiningTable extends Model
         'size'      => 'integer',
         'branch_id' => 'integer',
         'status'    => 'integer',
+        'occupancy_status'  => 'string',
+        'occupied_order_id' => 'integer',
+        'occupied_at'       => 'datetime',
     ];
 
     protected static function boot(): void
@@ -39,5 +42,15 @@ class DiningTable extends Model
             return asset($this->qr_code);
         }
         return null;
+    }
+
+    public function isFree(): bool
+    {
+        return $this->occupancy_status === 'free' || $this->occupancy_status === null;
+    }
+
+    public function isOccupied(): bool
+    {
+        return $this->occupancy_status === 'occupied';
     }
 }

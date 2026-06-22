@@ -1,0 +1,319 @@
+=== H-SEC-001 POST-AUDIT 2026-05-23T15:10:37Z ===
+
+=== HEAD pre-commit ===
+2caa8dae00569ca936ae6ecc23e322ddcabd9c60
+
+=== File NOT in public/file/ ===
+ls: public/file/service-account-file.json: No such file or directory
+
+=== File MOVED to storage/app/firebase/ ===
+-rw-rw-r--@ 1 1millnonstop  staff  2387 20 oct.   2025 storage/app/firebase/service-account-file.json
+
+=== SHA-256 unchanged (no key tampering) ===
+3f4138ae2514632ae75d28f2408f1951fa74bfcd765255fc64fe2d4f49f88f05  storage/app/firebase/service-account-file.json
+
+=== Git tracking status ===
+-- public/file/ tracked files --
+public/file/CategoryImportSample.xlsx
+public/file/itemImportSample.xlsx
+-- storage/app/firebase/ tracked files --
+-- ignore check on demo file --
+storage/app/firebase/.gitignore:1:*	storage/app/firebase/service-account-file.json
+
+=== Modified files (working tree) ===
+ M .gitignore
+ M app/Models/NotificationSetting.php
+ M app/Services/FirebaseService.php
+ M config/filesystems.php
+ M database/seeders/NotificationTableSeeder.php
+ M public/.htaccess
+D  public/file/service-account-file.json
+ M storage/app/.gitignore
+?? public/file/.htaccess
+?? scripts/deploy/
+?? storage/app/firebase/.gitignore
+?? tests/Feature/Security/FirebaseKeyStorageSecurityTest.php
+
+=== NotificationSetting.php content (post) ===
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
+
+class NotificationSetting extends Model implements HasMedia
+{
+    use InteractsWithMedia;
+
+    protected $table = "settings";
+
+    /**
+     * [GOAL-HEAL-SEC-001 2026-05-23] Pin the FCM service-account JSON media
+     * collection to the non-public `firebase_private` disk so admin-uploaded
+     * Firebase Admin private keys never land under public/ or the symlinked
+     * public/storage/. Other settings media (none defined for this model
+     * today) continue to use the default MEDIA_DISK. Phase B.3 Security
+     * RED-team finding B3.2-001.
+     */
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('notification-file')
+            ->useDisk('firebase_private');
+    }
+
+    /**
+     * [GOAL-HEAL-SEC-001 2026-05-23] When the JSON lives on a private disk,
+     * `getFirstMediaUrl()` returns '' (Spatie's default for non-public
+     * disks) — so the old `asset(getFirstMediaUrl(...))` would also return
+     * '' even when a file IS attached. We now return a stable, non-leaky
+     * sentinel string when a media record exists, used by both the admin
+     * UI ("is configured" indicator) and FirebaseService::getAccessToken
+     * (which now resolves the path via getFirstMedia()->getPath() rather
+     * than by parsing a URL).
+     */
+    public function getFileAttribute(): string
+    {
+        $media = $this->getFirstMedia('notification-file');
+        if ($media instanceof Media) {
+            // Stable non-URL sentinel; FirebaseService reads file via media path.
+            return 'firebase://service-account-file.json';
+        }
+        return '';
+    }
+}
+
+=== FirebaseService.php content (post) ===
+<?php
+
+namespace App\Services;
+
+
+use Exception;
+use GuzzleHttp\Client;
+use App\Models\NotificationSetting;
+use Illuminate\Support\Facades\Log;
+use Smartisan\Settings\Facades\Settings;
+use Google\Auth\Credentials\ServiceAccountCredentials;
+
+class FirebaseService
+{
+    public $filePath;
+
+    public function sendNotification($data, $fcmTokens, $topicName): void
+    {
+
+        try {
+            $notification = Settings::group('notification')->all();
+
+            $url = 'https://fcm.googleapis.com/v1/projects/' . $notification['notification_fcm_project_id'] . '/messages:send';
+            $accessToken = $this->getAccessToken();
+
+            $client  = new Client();
+            $headers = [
+                'Authorization' => 'Bearer ' . $accessToken,
+                'Content-Type'  => 'application/json',
+            ];
+            foreach ($fcmTokens as $fcmToken) {
+
+                $payload = [
+                    'message' => [
+                        'token' => $fcmToken,
+                        'notification' => [
+                            'title' => $data->title,
+                            'body' => $data->description,
+                            'image' => $data->image ?? null,
+                        ],
+                        'data' => [
+                            'title' => $data->title,
+                            'body' => $data->description,
+                            'sound' => 'default',
+                            'image' => $data->image ?? null,
+                            'topicName' => $topicName,
+                        ],
+                        'webpush' => [
+                            "headers" => [
+                                "Urgency" => "high"
+                            ]
+                        ],
+                    ],
+                ];
+
+                try {
+                    $client->post($url, [
+                        'headers' => $headers,
+                        "body"    => json_encode($payload)
+                    ]);
+                } catch (\Throwable $th) {
+                }
+            }
+        } catch (Exception $e) {
+            Log::info($e->getMessage());
+        }
+    }
+
+    function getAccessToken()
+    {
+        $notificationSetting = NotificationSetting::where(['key' => 'notification_fcm_json_file'])->first();
+        if (!$notificationSetting) {
+            throw new Exception('FCM JSON file setting not found');
+        }
+
+        // [GOAL-HEAL-SEC-001 2026-05-23] Resolve the JSON file path directly
+        // from the Spatie media record instead of parsing a public URL. The
+        // `notification-file` collection now lives on the non-public
+        // `firebase_private` disk (storage/app/firebase/...), so the old
+        // parse_url() + storage/public path math is obsolete. Phase B.3
+        // Security RED-team finding B3.2-001.
+        $media = $notificationSetting->getFirstMedia('notification-file');
+        if (!$media) {
+            throw new Exception('FCM JSON file media not found');
+        }
+        $this->filePath = $media->getPath();
+
+        $SCOPES = ['https://www.googleapis.com/auth/cloud-platform'];
+
+        if (!file_exists($this->filePath)) {
+            throw new Exception('Service account key file not found');
+        }
+
+        $credentials = new ServiceAccountCredentials($SCOPES, $this->filePath);
+        $token = $credentials->fetchAuthToken();
+
+        if (isset($token['access_token'])) {
+            return $token['access_token'];
+        } else {
+            throw new Exception('Failed to fetch access token');
+        }
+    }
+}
+=== NotificationTableSeeder.php content (post) ===
+<?php
+
+namespace Database\Seeders;
+
+
+use Illuminate\Database\Seeder;
+use App\Models\NotificationSetting;
+use Dipokhalder\EnvEditor\EnvEditor;
+use Smartisan\Settings\Facades\Settings;
+
+
+class NotificationTableSeeder extends Seeder
+{
+    /**
+     * Run the database seeds.
+     *
+     * @return void
+     */
+    public function run()
+    {
+        $envService = new EnvEditor();
+        Settings::group('notification')->set([
+            'notification_fcm_public_vapid_key'    => $envService->getValue('DEMO') ? 'BKAvKJbnB3QATdp8n1aUo_uhoNK3exVKLVzy7MP8VKydjjzthdlAWdlku6LQISxm4zA7dWoRACI9AHymf4V64kA' : '',
+            'notification_fcm_api_key'             => $envService->getValue('DEMO') ? 'AIzaSyDg1xBSwmHKV0usIKxTFL5a6fFTb4s3XVM' : '',
+            'notification_fcm_auth_domain'         => $envService->getValue('DEMO') ? 'foodking-inilabs.firebaseapp.com' : '',
+            'notification_fcm_project_id'          => $envService->getValue('DEMO') ? 'foodking-inilabs' : '',
+            'notification_fcm_storage_bucket'      => $envService->getValue('DEMO') ? 'foodking-inilabs.appspot.com' : '',
+            'notification_fcm_messaging_sender_id' => $envService->getValue('DEMO') ? '843456771665' : '',
+            'notification_fcm_app_id'              => $envService->getValue('DEMO') ? '1:843456771665:web:fb1e3115e9e17ee1582a70' : '',
+            'notification_fcm_measurement_id'      => $envService->getValue('DEMO') ? 'G-GSJPS921XW' : '',
+            'notification_fcm_json_file'           => '',
+        ]);
+
+        // [GOAL-HEAL-SEC-001 2026-05-23] Demo Firebase service-account JSON
+        // source moved from public/file/ (web-accessible) to storage/app/firebase/
+        // (non-public). The 'notification-file' media collection is also pinned
+        // to the firebase_private disk via NotificationSetting::registerMediaCollections.
+        // Phase B.3 Security RED-team finding B3.2-001.
+        if ($envService->getValue('DEMO') && file_exists(storage_path('app/firebase/service-account-file.json'))) {
+            $setting = NotificationSetting::where('key', 'notification_fcm_json_file')->first();
+            $setting->addMedia(storage_path('app/firebase/service-account-file.json'))->preservingOriginal()->usingFileName('service-account-file.json')->toMediaCollection('notification-file');
+        }
+    }
+}
+
+=== filesystems.php firebase_private disk ===
+        'firebase_private' => [
+            'driver'     => 'local',
+            'root'       => storage_path('app/firebase'),
+            'visibility' => 'private',
+            'throw'      => false,
+        ],
+
+
+=== public/.htaccess HEAL section ===
+# [GOAL-HEAL-SEC-001 2026-05-23] Defense-in-depth — deny direct access to
+# credential bundle file extensions anywhere under public/ (recursive,
+# applies to public/file/, public/storage/ symlink target, future subdirs).
+# The Firebase Admin service-account JSON has been relocated to
+# storage/app/firebase/ (non-public) and pinned via the firebase_private
+# disk on NotificationSetting's media collection — this rule is a belt-
+# and-braces guard against future regressions or operator mistakes.
+# Phase B.3 Security RED-team finding B3.2-001.
+<FilesMatch "\.(pem|key|p12|pkcs12|crt|cer|ppk|asc|gpg)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+# NOTE: *.json is denied ONLY under public/file/ (see public/file/.htaccess)
+# because public/storage/ legitimately serves JSON-shaped media metadata
+
+=== public/file/.htaccess content ===
+# [GOAL-HEAL-SEC-001 2026-05-23] Defense-in-depth deny rule.
+# Firebase Admin SDK service-account JSON (and any credential bundle) now
+# lives under storage/app/firebase/ (non-public, see NotificationSetting
+# media collection pin). This .htaccess is a belt-and-braces guard in case
+# any future code or operator accidentally drops a key file under
+# public/file/. Phase B.3 Security RED-team finding B3.2-001.
+<FilesMatch "\.(json|pem|key|p12|pkcs12|crt|cer|ppk|asc|gpg)$">
+    # Apache 2.4 syntax (Le Cayenne V1 LOCAL stack)
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    # Apache 2.2 fallback
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+=== .gitignore HEAL section ===
+# [GOAL-HEAL-SEC-001 2026-05-23] Firebase Admin SDK service-account JSON
+# (and any credential-bearing file shapes) must never live in public/.
+# Real file is now stored on the firebase_private disk
+# (storage/app/firebase/...). These globs are belt-and-braces against
+# operator mistakes re-introducing the B3.2-001 vector.
+/public/file/service-account-file.json
+/public/file/*.json
+/public/file/*.pem
+/public/file/*.key
+/public/file/*.p12
+/public/file/*.pkcs12
+/public/file/*.crt
+/public/file/*.cer
+/public/file/*.ppk
+# Allow .htaccess inside public/file/ (defense-in-depth deny rule).
+!/public/file/.htaccess
+
+=== Sentinel test result ===
+......                                                              6 / 6 (100%)
+
+Time: 00:00.127, Memory: 50.50 MB
+
+OK (6 tests, 21 assertions)
+
+=== Related FCM regression scan ===
+PHPUnit 9.6.29 by Sebastian Bergmann and contributors.
+
+.                                                                   1 / 1 (100%)
+
+Time: 00:00.359, Memory: 65.00 MB
+
+OK (1 test, 4 assertions)

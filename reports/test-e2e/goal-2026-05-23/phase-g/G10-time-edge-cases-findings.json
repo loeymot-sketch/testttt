@@ -1,0 +1,384 @@
+{
+  "agent": "G.10",
+  "phase": "G — Ultra-deep pre-live testing",
+  "scope": "Time-based edge cases (DST, midnight rollover, Z-close boundary, fiscal day, NF525 chain across midnight, year boundary)",
+  "generated_at": "2026-05-23",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "verdict": "AMBER — chain integrity (NF525) verified TZ-portable; reporting/operations surface has two CONFLICTING TZ-handling generations co-existing in the same codebase. P0-class operational risk on Dashboard + Sales Report against the Le Cayenne production deployment (MySQL session_tz=Europe/Paris confirmed via server-setup.sh). DST window has one cron exposed (J-1 fiscal archive at 02:00) that is skipped on spring-forward and double-runs on fall-back.",
+
+  "top_3_concerns": [
+    {
+      "rank": 1,
+      "id": "G10-C1-TZ-GENERATION-DRIFT",
+      "severity": "P0-operational (non-fiscal)",
+      "title": "Two contradictory MySQL session_tz assumptions co-exist in code",
+      "essence": "Wave 5C (commit 4905138fa, 2026-05-18) converts day bounds to UTC strings ASSUMING MySQL session_tz=UTC; Wave T R5 (2026-05-20) empirically tested production MySQL session_tz=SYSTEM=Europe/Paris and corrected KDS/OSS/Sync to use Paris-local bounds. Dashboard, Sales Report (OrderService::list / salesReportOverview), AvailabilityService daily reset, ResetStaleDailyQuotaCommand still apply the older UTC pattern — these now silently shift their effective day window by ±1-2h on the actual production deployment.",
+      "production_impact": "Sales Report (CSV/PDF) for a day request can miss/double-count orders straddling 22:00-23:59 Paris; Dashboard widgets (today's revenue, customer counts) show wrong totals during the same window; AvailabilityService stale-quota reset fires at the wrong wall-clock.",
+      "fiscal_chain_impact": "ZERO. NF525 chain (audit_logs + z_reports HMAC) is unaffected — chain integrity is anchored on `closed_at->copy()->utc()->toIso8601String()` (FiscalSealingService.php:29) and AuditLog canonicalise() omits timestamps entirely. Cryptographic verification is TZ-portable by design."
+    },
+    {
+      "rank": 2,
+      "id": "G10-C2-DST-SPRING-SKIP-FISCAL-ARCHIVE",
+      "severity": "P1 operational",
+      "title": "J-1 fiscal:archive cron at 02:00 Europe/Paris is SKIPPED on spring DST",
+      "essence": "Laravel scheduler `$schedule->dailyAt('02:00')` matches against Carbon::now('Europe/Paris')->format('H:i') each minute. Spring forward last Sunday March, Paris jumps 02:00→03:00 — the 02:00 minute never exists in wall-clock, so the J-1 fiscal archive (Kernel.php:234-264) WILL NOT FIRE on that day. Fall back last Sunday October repeats 02:00-02:59 — Laravel scheduler's withoutOverlapping() prevents reentrant overlap but NOT same-wall-clock repeat-fire in the next hour (Laravel scheduler tracks last fired by mutex key, not by absolute time).",
+      "files_in_dst_skip_window_0200_0259_paris": [
+        "foodking-fiscal-archive-daily at 02:00 — SKIPPED on spring DST"
+      ],
+      "files_outside_skip_window": [
+        "foodking-backup-daily at 03:00 — fires normally (03:00 exists after the jump)",
+        "pos:purge-parked-orders at 03:15 — fires normally",
+        "fiscal-chain-monitor-all-branches at 03:30 — fires normally",
+        "outbox-prune at 04:00 — fires normally",
+        "webhook-prune at 04:15 — fires normally",
+        "availability:reset-stale-quota at 00:05 — fires normally"
+      ],
+      "fall_back_double_fire_risk": "FiscalArchiveCommand::build() (line 213-215) writes `${branchId}/${period}.zip` where period = `from->Ymd-to->Ymd`. The same-day re-run produces the same filename; line 215 `@unlink($absolute)` deletes the prior file before rebuild (clobber, not append). Combined with the cache lock 'z_report_b{n}' (line 125-138), fall-back double-fire is idempotent — second run regenerates the same bundle with a refreshed manifest.generated_at timestamp but identical signed payload. NO duplicate-bundle risk, but the manifest.generated_at timestamp will be 2h after the first run (operator confusion when reading audit timeline)."
+    },
+    {
+      "rank": 3,
+      "id": "G10-C3-RESOLVE-BUSINESS-DATE-TZ-FALLBACK",
+      "severity": "P2 latent",
+      "title": "resolveBusinessDate() Carbon::parse fallback path (line 2677) is TZ-ambiguous",
+      "essence": "OrderService::resolveBusinessDate (and FrontendOrderService mirror) has 3 branches: (a) DateTimeInterface → Carbon::instance($dt)->toDateString() — Paris-correct (Eloquent datetime cast returns Carbon in app.timezone); (b) blank → Carbon::now()->toDateString() — Paris-correct; (c) raw string → Carbon::parse((string)$dt)->toDateString() — TZ-AMBIGUOUS, parses without explicit TZ and returns app.timezone Carbon. The first two paths are exercised by the existing code (order_datetime is always either a Carbon-cast model attribute or `date('Y-m-d H:i:s')` set on the same row before save). The third path is reachable only if an external caller passes a raw string; not currently exercised in production, but the unguarded `Carbon::parse` is a latent footgun.",
+      "production_impact": "Currently zero. business_date computed in two places (OrderService:2667 + FrontendOrderService:1019); both invoked with $this->order->order_datetime which is Carbon-cast → path (a) hits 100% of the time on existing code paths. ANY future call site that passes a string would silently mis-bucket orders across day boundary.",
+      "recommendation": "Add explicit `Carbon::parse($string, config('app.timezone'))` on line 2677 of OrderService.php and line 1029 of FrontendOrderService.php — single-line hardening, defense in depth."
+    }
+  ],
+
+  "tz_defenses_verified": {
+    "app_timezone": {
+      "value": "Europe/Paris",
+      "source": "config/app.php:140",
+      "note": "Override via TIMEZONE env. Comment line 128-138 calls out NF525 fiscal pipeline MUST run in merchant legal TZ; cryptographic signature canonizes to UTC."
+    },
+    "server_os_timezone": {
+      "value": "Europe/Paris",
+      "source": "scripts/deploy/server-setup.sh:137 — timedatectl set-timezone Europe/Paris",
+      "note": "Server OS TZ pinned to Paris. MySQL daemon inherits OS TZ when @@global.time_zone='SYSTEM' (default)."
+    },
+    "mysql_session_timezone": {
+      "value": "SYSTEM (= Europe/Paris on production)",
+      "source": "scripts/deploy/server-setup.sh — NO `default-time-zone` directive in mysql_install function; NO `connections.mysql.timezone` in config/database.php:46-64",
+      "empirical_verification": "Wave T R5 (2026-05-20) ran `SELECT @@session.time_zone, NOW(), UTC_TIMESTAMP();` and observed time_zone='SYSTEM', NOW()=Paris-local, UTC_TIMESTAMP()=NOW()-2h. Documented in KitchenDisplaySystemOrderService.php:96-100, KdsSyncService.php:69-71, OrderStatusScreenOrderService.php:68-72."
+    },
+    "z_report_signature_canonization": {
+      "value": "UTC ISO-8601",
+      "source": "app/Services/Fiscal/FiscalSealingService.php:29 — `$closedAt->copy()->utc()->toIso8601String()`",
+      "note": "Z-report signed payload includes closed_at canonized to UTC. The chain is portable across TZ migrations (deployment in Europe/Paris that later migrates to UTC, or vice versa, can still verify old Z reports). Comment ZReportService.php:618-625 (POS-9-H.2.7 / F-B4) makes this explicit."
+    },
+    "audit_log_chain_hash_input": {
+      "value": "action + sorted(payload), no timestamp",
+      "source": "app/Services/Fiscal/AuditLogService.php:335-352 — canonicalise() encodes ['action', 'payload'] only",
+      "note": "audit_logs.created_at is appended by Eloquent timestamps but NOT part of the HMAC input. Chain integrity is TZ-independent by construction."
+    },
+    "fiscal_sequence_no_allocation": {
+      "value": "MAX+1 per branch_id, TZ-independent",
+      "source": "app/Services/Fiscal/FiscalSequenceService.php:97-103",
+      "note": "Sequence is allocated as MAX(fiscal_sequence_no)+1 per branch under Cache::lock + DB lockForUpdate. Day boundary / DST / year boundary have ZERO impact on allocation. Monotonic + gap-free invariant is preserved across all wall-clock transitions."
+    },
+    "broadcast_timestamps": {
+      "value": "ISO-8601 UTC (via Carbon::now()->toIso8601String() and ->utc())",
+      "source": "ZReportService.php:165 — `$staleClosing->updated_at?->toIso8601String()`; FiscalSealingService.php:29 — UTC conversion before sign",
+      "note": "All structured fiscal log entries serialize timestamps as toIso8601String() which encodes the offset, so a downstream reader can reconstruct UTC unambiguously."
+    },
+    "tz_aware_sentinels_existing": [
+      "tests/Feature/KDS/KdsSyncTzAwareTest.php",
+      "tests/Feature/Sentinels/TzAwareRowVsBoundInclusionSentinelTest.php",
+      "tests/Feature/Sentinels/KdsTodayWindowTzSentinelTest.php",
+      "tests/Feature/Sentinels/ResetStaleDailyQuotaTzCorrectSentinelTest.php",
+      "tests/Feature/Services/SisterServicesTzAwareTest.php",
+      "tests/Feature/Services/SisterServicesTzAwareV2Test.php"
+    ],
+    "dst_specific_sentinels": {
+      "count": 0,
+      "note": "ZERO tests specifically pin DST spring-forward or fall-back behavior. Recommended: a sentinel that travel()s to 2026-03-29 02:00 Europe/Paris (the next spring DST in France) and asserts the J-1 fiscal:archive cron is enqueued at 03:00 (post-jump) or the next available minute, and a fall-back sentinel that travel()s to 2026-10-25 02:00 Europe/Paris and asserts exactly-once fire."
+    }
+  },
+
+  "findings_by_sub_scope": {
+    "G10.1_dst_transition": {
+      "verdict": "AMBER",
+      "details": [
+        {
+          "category": "App + DB TZ resolution",
+          "status": "verified",
+          "evidence": "config/app.php:140 — Europe/Paris; scripts/deploy/server-setup.sh:137 — OS Europe/Paris; no MySQL TZ override (config/database.php:46-64); empirical Wave T R5 observation MySQL session_tz=SYSTEM=Paris.",
+          "note": "Production deployment MySQL session_tz IS Europe/Paris (not UTC as Wave 5C heals assumed). This is the central operational fact."
+        },
+        {
+          "category": "Z-report signature UTC canonization",
+          "status": "verified",
+          "evidence": "FiscalSealingService.php:29 — `$closedAt->copy()->utc()->toIso8601String()`",
+          "note": "Z-chain HMAC is portable across DST and TZ migrations. Spring-forward and fall-back do NOT break chain verification."
+        },
+        {
+          "category": "audit_logs.created_at TZ rendering",
+          "status": "verified",
+          "evidence": "MySQL TIMESTAMP column with session_tz=Paris — stored as UTC at write, displayed as Paris at read by the same session. Eloquent datetime cast returns Paris-local Carbon. UI rendering implicit in app.timezone.",
+          "note": "On fall-back day, two rows with `created_at='2026-10-25 02:30:00'` (one from the first 02:30 Paris, one from the repeated 02:30 Paris) are stored with DIFFERENT UTC values (00:30 UTC and 01:30 UTC) — display will collapse them to the same local string but chain remains intact via row order + HMAC. No data loss; only display ambiguity for forensic auditors comparing local timestamps."
+        },
+        {
+          "category": "fiscal_sequence_no allocation on DST",
+          "status": "verified safe",
+          "evidence": "FiscalSequenceService.php:97-103 — MAX+1 per branch, no date involvement",
+          "note": "DST has zero impact. Allocation is monotonic regardless of wall-clock transitions."
+        },
+        {
+          "category": "Wave 5C UTC-conversion heals contradict Wave T R5 empirical TZ",
+          "status": "RISK CONFIRMED",
+          "evidence": "DashboardService.php:123-264 (multiple `->setTimezone('UTC')`), OrderService.php:142-151 + 2440-2451 (Sales Report range), AvailabilityService daily reset, ResetStaleDailyQuotaCommand — all bind UTC-converted Paris days as literals. Under session_tz=Paris (confirmed production), MySQL re-interprets those literals as Paris-local, shifting effective window backward 1h (winter) or 2h (summer). Wave T R5 documents this exact bug in sister services KDS/OSS/Sync and corrected those to Paris-local bounds (KitchenDisplaySystemOrderService.php:111-121, KdsSyncService.php:81-90, OrderStatusScreenOrderService.php:79-85).",
+          "impact": "Dashboard 'today' widgets, Sales Report Excel/PDF, customer-segment time-of-day breakdown silently miss the last 1-2h of every Paris day. Same severity as the KDS bug already healed by Wave T R5.",
+          "recommendation": "P0 follow-up: extend Wave T R5 pattern to DashboardService + OrderService::list/salesReportOverview + AvailabilityService + ResetStaleDailyQuotaCommand. Sister-service convergence."
+        }
+      ]
+    },
+
+    "G10.2_midnight_rollover": {
+      "verdict": "MOSTLY-VERIFIED",
+      "details": [
+        {
+          "category": "business_date derivation at order create",
+          "status": "verified for current call sites",
+          "evidence": "OrderService.php:2667-2678 + FrontendOrderService.php:1019-1030 — resolveBusinessDate() casts DateTimeInterface to Carbon and reads ->toDateString() in app.timezone. Called from saveOrderWithQueueNumber with $this->order->order_datetime (Eloquent datetime-cast, Paris-local).",
+          "note": "Order at 23:59:55 Paris → business_date = today (Paris). Order at 00:00:05 Paris → business_date = tomorrow (Paris). Boundary semantics are correct on the read path."
+        },
+        {
+          "category": "order_datetime set via PHP date()",
+          "status": "needs follow-up",
+          "evidence": "OrderService.php:337, 694, 1198 + FrontendOrderService.php:264 — `'order_datetime' => date('Y-m-d H:i:s')` writes a Paris-local STRING into a TIMESTAMP column.",
+          "note": "Under MySQL session_tz=Paris (production), the string is interpreted as Paris and stored as the equivalent UTC. Roundtrip is consistent for read-via-Eloquent. UNDER session_tz=UTC (test environment? not yet verified), the same string would be interpreted as UTC and stored as 2h-earlier UTC — a silent drift. Sentinel SisterServicesTzAwareV2Test pins SQLite-side but does not assert against MySQL prod-like session_tz."
+        },
+        {
+          "category": "queue_number uniqueness across midnight",
+          "status": "verified",
+          "evidence": "Migration 2026_04_26_213800_add_unique_branch_queue_number_to_orders.php enforces UNIQUE(branch_id, business_date, queue_number). Once business_date flips at Paris midnight, queue_number can reset to 1 for the new day without collision.",
+          "note": "OrderService.php:2628-2660 allocateQueueNumber takes a per-(branch, date) cache lock so two orders at exactly 00:00:00 (rare) serialize at the cache layer. Boundary is safe."
+        },
+        {
+          "category": "Z-close window aggregate boundary",
+          "status": "verified",
+          "evidence": "ZReportService.php:325-347 — half-open interval (from, to] with strict-> and inclusive-<=. Comment POS-9-H.2.6 / F-B3 codifies the 'every receipt in exactly one Z' invariant.",
+          "note": "Order created at exact `$from` is in PREVIOUS Z, not next — no double-count or gap at boundary instant."
+        }
+      ]
+    },
+
+    "G10.3_z_close_at_day_boundary": {
+      "verdict": "VERIFIED-SAFE",
+      "details": [
+        {
+          "category": "Z-close is operator-triggered, not scheduled",
+          "status": "verified",
+          "evidence": "ZReportController.php:53-61 — POST /api/admin/fiscal/z-report/close requires pos-manage-fiscal permission. Kernel.php scheduler has NO `z_report:close` cron — only `fiscal-chain-monitor` (verify) at 03:30 and `fiscal-archive` (J-1 export) at 02:00.",
+          "note": "There is NO automated daily close — operators manually close Z each day. Concurrent cron + manual close is not a risk class because no cron exists."
+        },
+        {
+          "category": "Double-close prevention (concurrent operator clicks)",
+          "status": "verified",
+          "evidence": "ZReportService.php:79-83 — Cache::lock('z_report_b{n}', 10s) with block(4s). Line 105-110 inside transaction checks `existingOpen != null` and throws. Line 204-211 close() also takes the same lock + lockForUpdate on the open Z row.",
+          "note": "Triple defense: cache lock + transaction + lockForUpdate. Two cashiers clicking 'Close Z' at the same instant cannot create duplicate sequence_no or double-aggregate. Matches the F.10 13/13 finding documented in MEMORY."
+        },
+        {
+          "category": "Close at exact day rollover (23:59:59 vs 00:00:01)",
+          "status": "verified",
+          "evidence": "ZReportService.php:214 uses Carbon::now() which is app.timezone Paris. close_at is stored as Paris-local TIMESTAMP under session_tz=Paris. The signature canonizes UTC (FiscalSealingService.php:29), so chain is TZ-portable regardless.",
+          "note": "If operator manually closes at 23:59:59 Paris, business_date of orders in window is still 'today' Paris. The aggregate window is (prev_close, current_close] in Paris-local timestamps which under session_tz=Paris match the column TZ. No silent misclassification."
+        }
+      ]
+    },
+
+    "G10.4_fiscal_day_boundary": {
+      "verdict": "VERIFIED-SAFE",
+      "details": [
+        {
+          "category": "Fiscal day = Paris midnight, per NF525",
+          "status": "verified",
+          "evidence": "config/app.php:128-139 — comment 'NF525 fiscal pipeline MUST run in merchant legal timezone'. Server OS + app + MySQL session all Paris. business_date column on orders + frontend_orders is `date:Y-m-d` cast (Paris-local at write time).",
+          "note": "Production deployment respects French fiscal day boundary."
+        },
+        {
+          "category": "composition_snapshot.timestamp + audit_logs.created_at TZ alignment",
+          "status": "verified safe",
+          "evidence": "composition_snapshot is stored as JSON. PricingService writes via the PHP runtime in app.timezone (Paris). audit_logs.created_at is `useCurrent()` (migration 2026_04_22_000002:52) — set by MySQL `CURRENT_TIMESTAMP` which under session_tz=Paris is Paris-local.",
+          "note": "Both are Paris-local at write under production session_tz=Paris. Cross-referencing them within a single Z window is consistent. NF525 audit-chain HMAC excludes timestamp from canonical input (AuditLogService.php:335), so TZ ambiguity does not affect chain verification."
+        }
+      ]
+    },
+
+    "G10.5_nf525_chain_across_midnight": {
+      "verdict": "VERIFIED-SAFE",
+      "details": [
+        {
+          "category": "Chain HMAC continuity across day boundary",
+          "status": "verified",
+          "evidence": "ZReportService.php:233-247 — close() reads prev_hash = signature of the previous CLOSED Z for the same branch, sealed via UTC-canonized closed_at. ZReportService::verifyChain (line 463-572) walks the full historical chain ordered by id (not date).",
+          "note": "Z-1 closed at 03:00 Paris today; Z-2 opens immediately after with prev_hash = Z-1.signature. Chain link is per-branch monotonic by sequence_no, NOT per-date. Midnight rollover is invisible to chain semantics."
+        },
+        {
+          "category": "audit_logs chain across midnight",
+          "status": "verified",
+          "evidence": "AuditLogService.php:199-231 — verifyChain walks rows ordered by id. canonicalise() (line 335) excludes any timestamp from HMAC input.",
+          "note": "audit_log row at 23:59:59 → 00:00:01 chains by id, with current_hash = HMAC(prev_hash || canonical(action, payload)). Midnight has zero impact."
+        }
+      ]
+    },
+
+    "G10.6_year_boundary": {
+      "verdict": "VERIFIED-SAFE",
+      "details": [
+        {
+          "category": "fiscal_sequence_no year-rollover",
+          "status": "verified safe",
+          "evidence": "FiscalSequenceService.php:97-103 — MAX(fiscal_sequence_no)+1 per branch, no date filter. NF525 requires gap-free monotonic per branch FOREVER (not per-year). Sequence does NOT reset at year boundary.",
+          "note": "On 2027-01-01 00:00:00, fiscal_sequence_no continues from last value of 2026-12-31. Matches NF525 'numérotation continue sur la durée de vie du logiciel' requirement."
+        },
+        {
+          "category": "6-year retention readability",
+          "status": "verified",
+          "evidence": "config/fiscal.php archive_retention_years=6 (default). Migration 2026_04_22_000003_create_z_reports_table.php contains BEFORE DELETE trigger SIGNAL SQLSTATE '45000' on MySQL prod. CLAUDE.md §8 codifies 'TRUNCATE bypass mitigated via GRANT-level REVOKE'.",
+          "note": "Z reports + audit_logs retain prior-year entries inside the same monotonic chain. ZReportService::verifyChain reads ALL closed Z reports per branch (line 480-484, no date filter) — verifies across year boundary unambiguously."
+        },
+        {
+          "category": "fiscal-archive daily cron and year rollover",
+          "status": "verified safe",
+          "evidence": "Kernel.php:234-264 — `$yesterday = now()->subDay()->format('Y-m-d')`. On 2027-01-01 02:00 Paris, subDay() returns 2026-12-31 → archive runs for 2026-12-31. Cross-year run is naturally handled.",
+          "note": "Archive ZIP path includes period={branch_id}/{Ymd}-{Ymd}.zip (FiscalArchiveCommand.php:212-213). Year boundary produces a normal-looking file."
+        }
+      ]
+    }
+  },
+
+  "additional_findings": [
+    {
+      "id": "G10-A1",
+      "severity": "INFO",
+      "title": "Dashboard whereTime is acknowledged-broken V1.0.2 backlog",
+      "evidence": "DashboardService.php:276-279 — 'whereTime intentionally NOT converted — admin tunes hours-of-day analytics in Paris-local clock; whereTime on a TIMESTAMP column would surface time-of-day in MySQL session UTC. This is a known V1.0.2 backlog item (KDS-ADV3C-12)'",
+      "note": "Customer time-of-day breakdown is known-wrong against session_tz=UTC assumption. Under session_tz=Paris (production), whereTime IS Paris-local which is actually CORRECT — accidentally matches intent. Backlog item KDS-ADV3C-12 may already be resolved by deployment reality. Recommend re-evaluating against production session_tz."
+    },
+    {
+      "id": "G10-A2",
+      "severity": "INFO",
+      "title": "AvailabilityService daily_reset_at TZ semantics",
+      "evidence": "AvailabilityService writes to DATE column daily_reset_at via `Carbon::today(config('app.timezone'))->toDateString()` (per Wave 5C commit 4905138fa). DATE column is TZ-agnostic — Paris-day semantics are preserved regardless of session_tz.",
+      "note": "Safe pattern. Different from TIMESTAMP-bound queries which are the actual risk."
+    },
+    {
+      "id": "G10-A3",
+      "severity": "INFO",
+      "title": "OSS stale-prune (now('UTC')->subHours) inverts Wave T R5 fix",
+      "evidence": "OrderStatusScreenOrderService.php:117 — `now('UTC')->subHours((int) config('oss.stale_window_hours', 8))`. Bound as UTC literal vs MySQL session_tz=Paris column → window shifts forward 2h.",
+      "note": "Wave 3c heal commit 4905138fa added now('UTC') to the prune predicate. Under session_tz=Paris (production), this prunes orders 10h old instead of 8h in summer (or 9h in winter). Same class of bug as the others. Should be `now()->subHours()` (Paris-local) under the current confirmed session_tz."
+    },
+    {
+      "id": "G10-A4",
+      "severity": "INFO",
+      "title": "FiscalArchive write is idempotent (re-run safe)",
+      "evidence": "FiscalArchiveCommand.php:212-215 — `${branchId}/${period}.zip` with `@unlink($absolute)` before re-create. Cache lock 'z_report_b{n}' held throughout (line 125-138).",
+      "note": "DST fall-back double-fire produces same-name ZIP with refreshed manifest.generated_at. No corruption, only timestamp confusion for ops."
+    },
+    {
+      "id": "G10-A5",
+      "severity": "INFO",
+      "title": "Z-close re-trigger after midnight is operator-prevented by existing-open check",
+      "evidence": "ZReportService.php:101-109 — open() refuses if existing OPEN Z exists for branch. close() requires existing OPEN Z (line 210-212). Sequence is per-branch monotonic, not per-date.",
+      "note": "Operator workflow naturally enforces 1-Z-per-day discipline; if a cashier forgets to close one day and closes the next morning, the Z covers the extended (prev_close, now] period. No fiscal violation, just a long-period Z. NF525 allows this — the requirement is 'closure at least daily during operation' not 'closure at exactly midnight'."
+    }
+  ],
+
+  "recommendations": {
+    "priority_p0": [
+      {
+        "id": "RECO-P0-1",
+        "title": "Resolve TZ-generation drift: align Dashboard/OrderService/AvailabilityService/ResetStaleDailyQuota to Wave T R5 Paris-local pattern",
+        "files_to_audit": [
+          "app/Services/DashboardService.php (12+ setTimezone('UTC') call sites)",
+          "app/Services/OrderService.php:142-151 + 2440-2451 (Sales Report)",
+          "app/Services/Menu/AvailabilityService.php (Wave 5C-introduced UTC pattern)",
+          "app/Console/Commands/ResetStaleDailyQuotaCommand.php (Wave 5C-introduced UTC pattern)",
+          "app/Services/OrderStatusScreenOrderService.php:117 (now('UTC')->subHours prune predicate)"
+        ],
+        "approach": "Run `SELECT @@session.time_zone, NOW(), UTC_TIMESTAMP()` on the live MySQL host first to confirm session_tz one more time. If session_tz='SYSTEM' (=Paris) is the production reality (highly likely given server-setup.sh and Wave T R5 empirical), revert UTC-conversion bindings to Paris-local Carbon bounds across these surfaces, mirroring KitchenDisplaySystemOrderService::list pattern.",
+        "blocker_for_ship": "Owner-decision: is this a P0 ship blocker or a 'V1.0.2 reconcile after live data confirms'? Wave Polish Final claimed convergence GREEN — these surfaces may not have been visually re-tested under the corrected session_tz."
+      }
+    ],
+    "priority_p1": [
+      {
+        "id": "RECO-P1-1",
+        "title": "Add DST sentinel pair (spring-forward + fall-back)",
+        "approach": "tests/Feature/Cron/DstScheduleSentinelTest.php — travel() to 2026-03-29 (spring) and 2026-10-25 (fall) Europe/Paris boundaries, assert (a) fiscal:archive at 02:00 fires exactly once on spring-forward (skipping the 02:00 wall-clock that doesn't exist; falling back to next valid minute OR documenting that it's skipped that day), (b) fires exactly once on fall-back (not twice during repeated 02:00-02:59)."
+      },
+      {
+        "id": "RECO-P1-2",
+        "title": "Document the DST spring-forward 02:00 J-1 archive skip in operational runbook",
+        "approach": "On 2026-03-29 (the next FR spring DST), the J-1 fiscal:archive cron WILL NOT FIRE because Paris 02:00-02:59 doesn't exist. Owner/ops must either (a) accept the gap and run archive manually that morning, (b) schedule the cron at 01:30 or 03:30 to avoid the DST window. Recommend (b) — move to 01:30 Paris which exists year-round and stays before the OS time jump."
+      }
+    ],
+    "priority_p2": [
+      {
+        "id": "RECO-P2-1",
+        "title": "Harden resolveBusinessDate() Carbon::parse fallback",
+        "approach": "OrderService.php:2677 + FrontendOrderService.php:1029 — change `Carbon::parse((string) $orderDatetime)` to `Carbon::parse((string) $orderDatetime, config('app.timezone'))`. Single-line defense-in-depth against future callers passing raw strings."
+      },
+      {
+        "id": "RECO-P2-2",
+        "title": "Pin MySQL session_tz explicitly in config/database.php",
+        "approach": "Set connections.mysql.timezone => '+01:00' (or '+02:00' DST) is BAD — TZ-naive. Better: set `'timezone' => '+00:00'` (UTC) and align ALL code to bind UTC literals. This collapses the Paris-vs-UTC duality and makes Wave 5C heals correct, Wave T R5 heals wrong (would need re-inversion). High-risk migration touching live data — NOT for V1, defer to V2 SaaS multi-region prep."
+      }
+    ]
+  },
+
+  "evidence_files": {
+    "primary_tz_anchors": [
+      "config/app.php:140 (app.timezone)",
+      "config/database.php:46-64 (no mysql.timezone)",
+      "scripts/deploy/server-setup.sh:137 (timedatectl Europe/Paris)",
+      "scripts/deploy/server-setup.sh:258-345 (mysql_install no time_zone directive)"
+    ],
+    "fiscal_chain_anchors": [
+      "app/Services/Fiscal/FiscalSealingService.php:29 (Z-report UTC canonization)",
+      "app/Services/Fiscal/AuditLogService.php:335-352 (audit chain canonical excludes timestamp)",
+      "app/Services/Fiscal/FiscalSequenceService.php:97-103 (sequence allocation TZ-independent)",
+      "app/Services/Fiscal/ZReportService.php:118-122 + 213-247 (open/close use Carbon::now Paris-local for storage)",
+      "app/Services/Fiscal/ZReportService.php:325-347 (half-open aggregate window)"
+    ],
+    "tz_generation_drift_evidence": [
+      "app/Services/DashboardService.php:122-264 (Wave 5C UTC pattern persists)",
+      "app/Services/OrderService.php:142-151 + 2440-2451 (Sales Report Wave 5C UTC pattern persists)",
+      "app/Services/Menu/AvailabilityService.php (Wave 5C UTC pattern)",
+      "app/Console/Commands/ResetStaleDailyQuotaCommand.php (Wave 5C UTC pattern)",
+      "app/Services/KitchenDisplaySystemOrderService.php:92-121 (Wave T R5 Paris-local correction)",
+      "app/Services/KdsSyncService.php:66-94 (Wave T R5 Paris-local correction)",
+      "app/Services/OrderStatusScreenOrderService.php:67-89 (Wave T R5 Paris-local correction)",
+      "app/Services/OrderStatusScreenOrderService.php:117 (Wave 3c UTC prune still present, contradicts R5 in same file)"
+    ],
+    "cron_anchors": [
+      "app/Console/Kernel.php:234-264 (foodking-fiscal-archive-daily at 02:00 — DST spring-forward SKIP)",
+      "app/Console/Kernel.php:192-226 (fiscal-chain-monitor at 03:30 — outside DST skip window)",
+      "app/Console/Kernel.php:105-110 (foodking-backup-daily at 03:00 — outside DST skip window)",
+      "app/Console/Kernel.php:171-178 (availability-reset-stale-quota at 00:05 — outside DST skip window)"
+    ],
+    "business_date_anchors": [
+      "app/Models/Order.php:23 + 63 (business_date date:Y-m-d cast)",
+      "app/Services/OrderService.php:2667-2678 (resolveBusinessDate)",
+      "app/Services/FrontendOrderService.php:1019-1030 (resolveBusinessDate mirror)",
+      "database/migrations/2026_04_26_213800_add_unique_branch_queue_number_to_orders.php (queue_number UNIQUE per business_date)"
+    ],
+    "wave_references": [
+      "Wave 5C commit 4905138fa (2026-05-18) — first UTC heals (assumed session_tz=UTC)",
+      "Wave T R5 commit on 2026-05-20 — empirical correction (session_tz=SYSTEM=Paris) for KDS/OSS/Sync",
+      "PROJECT_BRAIN.md / CLAUDE.md §8 NF525 invariants",
+      "reports/audit/critical-focus-2026-05-18/wave-3c/adv-1-kds-heals-r3.md (Wave 5C heal report)"
+    ]
+  },
+
+  "summary_for_caller": {
+    "status": "AMBER — chain integrity verified, two operational risks surfaced",
+    "fiscal_chain_at_risk": false,
+    "reporting_surfaces_at_risk": true,
+    "dst_cron_skip": "foodking-fiscal-archive-daily at 02:00 Europe/Paris is skipped on spring-forward DST (next: 2026-03-29). Other crons outside 02:00-02:59 window fire normally.",
+    "ship_blocker_v1_le_cayenne": "PROBABLY NOT — assumes (a) Wave Polish Final convergence GREEN truly verified Dashboard + Sales Report visually under production session_tz, and (b) DST 2026-03-29 fiscal:archive miss is acceptable for one day (manual rerun available). Owner decision required.",
+    "verification_command_to_run": "On the live MySQL host: `mysql -e \"SELECT @@global.time_zone, @@session.time_zone, NOW(), UTC_TIMESTAMP()\"` — confirms session_tz=SYSTEM=Paris assumption. If output shows time_zone='UTC' or '+00:00', invert this entire analysis (Wave 5C heals would be correct, Wave T R5 heals would be wrong)."
+  }
+}

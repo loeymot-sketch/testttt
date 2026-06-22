@@ -6,7 +6,7 @@
         <div class="drawer-dialog">
             <div class="drawer-header">
                 <h3 class="drawer-title">{{ $t('menu.dining_tables') }}</h3>
-                <button class="fa-solid fa-xmark close-btn" @click="reset"></button>
+                <button aria-label="Fermer" class="fa-solid fa-xmark close-btn" @click="reset"></button>
             </div>
             <div class="drawer-body">
                 <form @submit.prevent="save">
@@ -54,7 +54,7 @@
                                     <i class="lab lab-save"></i>
                                     <span>{{ $t("label.save") }}</span>
                                 </button>
-                                <button type="button" class="modal-btn-outline modal-close" @click="reset">
+                                <button aria-label="Fermer" type="button" class="modal-btn-outline modal-close" @click="reset">
                                     <i class="lab lab-close"></i>
                                     <span>{{ $t("button.close") }}</span>
                                 </button>

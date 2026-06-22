@@ -1,0 +1,34 @@
+# Par défaut : **Claude Opus 4.6** (souvent quota OK quand 4.7 / L-5DB28B7B est à 0).
+# Repasser 4.7 : renommer les `model:` vers us.anthropic.claude-opus-4-7
+model_list:
+  - model_name: bedrock-claude-opus
+    litellm_params:
+      model: bedrock/us.anthropic.claude-opus-4-6-v1
+      max_tokens: 32768
+      aws_access_key_id: os.environ/AWS_ACCESS_KEY_ID
+      aws_secret_access_key: os.environ/AWS_SECRET_ACCESS_KEY
+      aws_region_name: os.environ/AWS_REGION_NAME
+
+  - model_name: bedrock-claude-opus-global
+    litellm_params:
+      model: bedrock/global.anthropic.claude-opus-4-6-v1
+      max_tokens: 32768
+      aws_access_key_id: os.environ/AWS_ACCESS_KEY_ID
+      aws_secret_access_key: os.environ/AWS_SECRET_ACCESS_KEY
+      aws_region_name: os.environ/AWS_REGION_NAME
+
+  # — Opus 4.7 (décommenter si ton quota L-5DB28B7B n’est plus à 0)
+  # - model_name: bedrock-claude-opus-47
+  #   litellm_params:
+  #     model: bedrock/us.anthropic.claude-opus-4-7
+  #     max_tokens: 32768
+  #     aws_access_key_id: os.environ/AWS_ACCESS_KEY_ID
+  #     aws_secret_access_key: os.environ/AWS_SECRET_ACCESS_KEY
+  #     aws_region_name: os.environ/AWS_REGION_NAME
+
+litellm_settings:
+  drop_params: true
+  set_verbose: false
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY

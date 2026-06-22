@@ -1,0 +1,189 @@
+{
+  "wave": "surfaces",
+  "round": 1,
+  "states_reviewed": 16,
+  "findings": [
+    {
+      "id": "S-001",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-surfaces/15-loyalty-optout-applied.png",
+      "category": "audit_integrity",
+      "severity": "P0",
+      "evidence": "PRIMARY-SOURCE CONFIRMED via 15-loyalty-optout-applied.evidence.json : { consent_after_optout: 'opted_out', balance_card_visible: true, balance_text: '0', verdict: 'S-001 CONFIRMED — POINTS card not gated' }. screens-main.jsx:1020-1049 POINTS black card NOT wrapped in {!isOptedOut && (...)} — opted-out user still sees full balance card (showing '0 PTS' after balance zeroed by data/dev-helpers.js setConsent). RGPD UX inconsistency: modal copy promises 'Tes points seront effacés' but UI still shows card with 0 value instead of disappearing. ADVERSARIAL UPGRADE P1→P0 : RGPD consent violation = fiscal/security category.",
+      "fix_hint": "screens-main.jsx:1020 — wrap lines 1020-1049 inside {!isOptedOut && (...)} matching the gates at l.1052/1082/1104/1238. data/dev-helpers.js:246-254 setConsent('opted_out') already zeros balance via _replaceAccount({ balance: 0 }) — verify chain.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "S-002",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-surfaces/07-cart-1-line.png",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "screens-main.jsx:553 `{cart.length} article{cart.length>1?'s':''}` uses array length, not Σ(qty). 1 line × qty=2 reads '1 article'.",
+      "fix_hint": "screens-main.jsx:553 — `const totalItems = cart.reduce((s, l) => s + l.qty, 0);` then `{totalItems} article${totalItems > 1 ? 's' : ''}`.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "S-003",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-a11y/05-home-icon-buttons-aria.png",
+      "category": "aria_keyboard",
+      "severity": "P1",
+      "evidence": "shared.jsx:96 IconBtn signature drops aria-label silently: `function IconBtn({ children, onClick, size = 40, bg = 'var(--gray-1)', color = 'var(--ink)', style = {} })` — no aria-label, no ...rest spread. Cross-validated A11-002+A11-010. CONFIRMED via 05-home-icon-buttons-aria.evidence.json (icon-only Home buttons have aria-label: null).",
+      "fix_hint": "shared.jsx:96 — `function IconBtn({ children, onClick, size = 44, bg, color, style, ariaLabel, ...rest })` then `<button aria-label={ariaLabel} {...rest} ...>`. Then add ariaLabel prop at every callsite: screens-main.jsx:50 (Bell), 176 (Search), 312/314/315 (back/heart/close), 550 (cart back), 658 (confirm close), 875-876 (DirectAdd). Effort M (1 signature + 8 callsites).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "S-004",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-a11y/04-tabbar-aria-pressed.png",
+      "category": "aria_keyboard",
+      "severity": "P1",
+      "evidence": "Cross-validated A11-001 + F-004 + round-1 A-007. shared.jsx:52 `<div className=\"lc-tab\" onClick={...}>` — no role, no tabindex, no aria-pressed, no aria-label. Confirmed via 04-tabbar-aria-pressed.evidence.json (all DIV, no role/aria-pressed) + axe.json (button-name CRITICAL × 1).",
+      "fix_hint": "shared.jsx:47-58 — wrap into <div role=\"tablist\" aria-label=\"Navigation principale\">{tabs.map(t => <button type=\"button\" role=\"tab\" aria-pressed={isActive} aria-label={t.label} className=\"lc-tab\" style={{background:'transparent',border:0,padding:'6px 0',cursor:'pointer',color:'inherit',font:'inherit'}} onClick={() => onChange(t.id)}>...</button>)}</div>. Effort S.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "S-005",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-surfaces/05-home-envies-du-moment.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "CONFIRMED via 05-home-envies-du-moment.evidence.json : { hasFeatured: { count: 0, slugs: [] } }. screens-main.jsx:109-122 filters `ITEMS.filter(i => i.is_featured).slice(0, 4)` — but data/menu.js:153 schema has is_featured field, NEVER set true in seed. Section header 'Les envies du moment' renders empty carousel.",
+      "fix_hint": "Either (a) set is_featured: true on 3-4 hand-picked items in data/menu.js (tacos-xxl, le-terminator, ojja, etc.), or (b) hide entire section when items.length===0 at screens-main.jsx:109-122. Prefer (a) — populate seed.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "S-006",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-surfaces/09-confirm.png",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "CONFIRMED via 09-confirm.evidence.json : { eta_12_min_present: true }. screens-main.jsx:694 `<span style={{ color: 'var(--yellow)' }}>~12 MIN</span>` — magic literal. Same screen at l.682 binds order.eta correctly. Hardcoded inside progress card invariant of distance/queue.",
+      "fix_hint": "Compute etaMinutes from order.eta_minutes (or derive from order.eta string). Replace ~12 MIN at l.694 with `~{etaMinutes} MIN`.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "S-007",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-surfaces/07-cart-1-line.png",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "screens-main.jsx:605 `Plus que 153 pts pour ton burger gratuit` hardcoded — ignores account.balance. Loyalty preview at Profile screen (l.880) and ScreenLoyalty (l.1040) both bind to progress.remaining/target.name dynamically.",
+      "fix_hint": "screens-main.jsx:605 — replace static string with `Plus que {window.LC.loyalty.progressToNext(window.LC.loyalty.account.balance).remaining} pts pour {progress.target.name}`. Use the existing progressToNext helper.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "S-008",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-surfaces/07-cart-1-line.png",
+      "category": "element_overlap",
+      "severity": "P2",
+      "evidence": "screens-main.jsx:609-628 cart upsell carousel below loyalty banner. Sticky checkout l.631-644 has position:absolute bottom:0 with paddingBottom:200 on screen but full-height sticky panel clips cards at 390×844 viewport.",
+      "fix_hint": "Reduce screen paddingBottom from 200→280, OR hide section when no suggestions slice(0,5).length===0. Prefer padding tweak.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "S-009",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-surfaces/04-home.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "screens-main.jsx:50 `<IconBtn bg=\"var(--cream)\"><I.Bell size={18}/></IconBtn>` — no onClick. Same at l.176 (Search). Render fully but tap → nothing. Confusing affordance.",
+      "fix_hint": "Either wire to real handler OR `onClick={() => go('toast', { msg: 'Notifications bientôt disponibles', kind: 'info' })}` matching Profile-row pattern.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "S-010",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-surfaces/09-confirm.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "screens-modals.jsx:91 ModalPointsGain default param gain=25. index.html:217 passes `gain={lastOrder ? Math.round(lastOrder.total) : 25}` — falls back to hardcoded 25 with same '+BIENVENUE AU CLUB' copy regardless. Welcome vs per-order disambiguation absent.",
+      "fix_hint": "Add `kind` prop ('welcome' | 'order') to ModalPointsGain at screens-modals.jsx:91. Show 'BIENVENUE AU CLUB' for welcome ; '+{N} pts sur ta commande' for order.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "S-011",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-surfaces/09-confirm.png",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "screens-main.jsx:702-705 ScreenConfirm 'Accueil' button raw inline-styled (height 50, fontSize 12, manual padding) while sibling 'Suivre →' uses .lc-btn class. Inconsistent visual rhythm.",
+      "fix_hint": "Convert Accueil to <button className=\"lc-btn\" style={{ background:'var(--ink)', color:'#fff', flex:1, height:50 }}>Accueil</button>.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "S-012",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-surfaces/10-orders-active.png",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "screens-modals.jsx:52 + 190 ScreenStripe + ScreenOrderDetail use raw <button>←</button> — no IconBtn, no I.Back, no aria-label. Other surfaces use <IconBtn><I.Back/></IconBtn>.",
+      "fix_hint": "Replace with <IconBtn ariaLabel=\"Retour\" bg=\"var(--cream)\"><I.Back size={20}/></IconBtn>. Benefits from S-003 IconBtn aria-label refactor.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "S-013",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-surfaces/04-home.png",
+      "category": "color_contrast",
+      "severity": "P2",
+      "evidence": "screens-main.jsx:108, 174 + multiple sites use `fontSize: 12, color: 'var(--gray-3)'` on cream. var(--gray-3) #6F6A60 on var(--cream) #FAF7F2 ≈ 4.6:1 (AA pass but borderline at 12px).",
+      "fix_hint": "Two options: bump fontSize 12→13 on body subtitles OR swap color to var(--gray-4) #4A4640 (8.7:1 on cream).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "S-014",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-surfaces/13-loyalty-hero.png",
+      "category": "empty_state",
+      "severity": "P3",
+      "evidence": "screens-main.jsx:1186-1205 history filter chips empty state at l.1207 shows single-line text. No illustration, no reset CTA per REVIEWER_PROTOCOL §5 empty_state.",
+      "fix_hint": "Bump to <I.Receipt size={32} stroke=\"var(--gray-3)\"/> + copy ≥20 chars + 'Voir toutes les transactions' secondary CTA resetting filterSource to 'all'.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "S-015",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-surfaces/02-onb1.png",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "screens-onboarding.jsx:69-72 EST.24 yellow text positioned absolute inside black Stamp circle with no top/left/right/bottom anchors. Fragile cross-density.",
+      "fix_hint": "Either anchor with inset:0 + flex centering, or use <text> directly in Stamp SVG so position is rasterized.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "ADV-S-016",
+      "state_artifact": "test-e2e-mobile-design-perfect-wave-a11y/04-tabbar-aria-pressed.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "NEW from axe.json — 'region' moderate impact × 33 nodes: 'All page content should be contained by landmarks'. Mobile app has no <main>/<nav>/<aside> semantic landmarks. ScreenItem/Menu/Home all live in <div data-screen-label>.",
+      "fix_hint": "Wrap each screen's outer <div data-screen-label> with role=\"main\". TabBar at shared.jsx:48 already wraps with role=\"tablist\" once F-004/S-004 land. Add role=\"navigation\" + aria-label=\"Pied de page\" on TabBar wrapper. Effort S.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 1, "P1": 2, "P2": 7, "P3": 6,
+    "open_P0": 1, "open_P1": 2, "open_P2": 7, "open_P3": 6
+  },
+  "verdict": "RED",
+  "notes": "S-001 RGPD CRITICAL UPGRADED P1→P0 — primary-source confirmed via evidence JSON. Cluster validation : cluster-1 (4/4 closed), cluster-2 (2/2 critical + 1 partial), cluster-3 (4/5 closed — D-002 RGPD still open as S-001), cluster-4 (5/5 closed). Top-3 fix for RED → AMBER : S-001 (gate POINTS card 2-line) + S-003 (IconBtn signature) + S-004 (TabBar div→button)."
+}

@@ -5,6 +5,10 @@ namespace App\Http\Resources;
 
 use App\Enums\Status;
 use App\Libraries\AppLibrary;
+use App\Models\KioskMachine;
+use App\Models\ItemWizardProfile;
+use App\Services\Composer\ComposerProfileProjection;
+use App\Services\Stock\ChoiceAvailabilityResolver;
 use Carbon\Carbon;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -31,6 +35,25 @@ class NormalItemResource extends JsonResource
         $filteredVariations = $surface
             ? $this->variations->filter(fn($v) => $v->isVisibleOn($surface))->values()
             : $this->variations;
+        $branchId = $this->resolveComposerBranchId($request);
+        $choiceAvailability = $branchId !== null
+            ? app(ChoiceAvailabilityResolver::class)->snapshotForItem($this->resource, $branchId, (string) ($surface ?: 'kiosk'))
+            : ['variations' => [], 'extras' => [], 'addons' => []];
+        $filteredVariations = $filteredVariations->each(function ($variation) use ($choiceAvailability) {
+            $availability = $choiceAvailability['variations'][(int) $variation->id] ?? ['is_available' => true, 'unavailable_reason' => null];
+            $variation->setAttribute('is_available', $availability['is_available']);
+            $variation->setAttribute('unavailable_reason', $availability['unavailable_reason']);
+        });
+        $filteredExtras = $filteredExtras->each(function ($extra) use ($choiceAvailability) {
+            $availability = $choiceAvailability['extras'][(int) $extra->id] ?? ['is_available' => true, 'unavailable_reason' => null];
+            $extra->setAttribute('is_available', $availability['is_available']);
+            $extra->setAttribute('unavailable_reason', $availability['unavailable_reason']);
+        });
+        $addons = $this->addons->each(function ($addon) use ($choiceAvailability) {
+            $availability = $choiceAvailability['addons'][(int) $addon->id] ?? ['is_available' => true, 'unavailable_reason' => null];
+            $addon->setAttribute('is_available', $availability['is_available']);
+            $addon->setAttribute('unavailable_reason', $availability['unavailable_reason']);
+        });
 
         // Kiosk Phase 9.1.1 — allergens[] projection pour safety UI (header wizard).
         // Sécurité FIC (Règlement UE 1169/2011) + EAA 2025 : exposer la liste normalisée
@@ -82,7 +105,11 @@ class NormalItemResource extends JsonResource
             "variations" => $filteredVariations->groupBy('item_attribute_id'),
             "itemAttributes" => ItemAttributeResource::collection($this->itemAttributeList($filteredVariations)),
             "extras" => ItemExtraResource::collection($filteredExtras->load('item')),
-            "addons" => ItemAddonResource::collection($this->addons->load('addonItem', 'addonItem.variations', 'addonItem.offer', 'item')),
+            "addons" => ItemAddonResource::collection($addons->load('addonItem', 'addonItem.variations', 'addonItem.offer', 'item')),
+            "composer_profile" => $this->composerProfilePayload(
+                (string) ($surface ?: 'kiosk'),
+                $branchId,
+            ),
             "offer" => SimpleOfferResource::collection(
                 $this->offer->filter(function ($offer) use ($price) {
                     if (
@@ -112,12 +139,75 @@ class NormalItemResource extends JsonResource
         foreach ($variations as $b) {
             if (!isset($array[$b->itemAttribute->id])) {
                 $array[$b->itemAttribute->id] = (object) [
-                    'id' => $b->itemAttribute->id,
-                    'name' => $b->itemAttribute->name,
-                    'status' => $b->itemAttribute->status
+                    'id'           => $b->itemAttribute->id,
+                    'name'         => $b->itemAttribute->name,
+                    'status'       => $b->itemAttribute->status,
+                    'min_select'   => $b->itemAttribute->min_select ?? 0,
+                    'max_select'   => $b->itemAttribute->max_select ?? 1,
+                    'allow_repeat' => $b->itemAttribute->allow_repeat ?? false,
                 ];
             }
         }
         return collect($array);
     }
+
+    private function composerProfilePayload(string $surface, ?int $branchId): ?array
+    {
+        $query = ItemWizardProfile::query()
+            ->with(['steps' => fn ($query) => $query->where('is_active', true)->orderBy('position')])
+            ->where('item_id', $this->id)
+            ->where('is_published', true);
+
+        if ($branchId !== null) {
+            $query->where(function ($scope) use ($branchId): void {
+                $scope->where('branch_id_scope', $branchId)
+                    ->orWhereNull('branch_id_scope');
+            })->orderByRaw('CASE WHEN branch_id_scope = ? THEN 0 ELSE 1 END', [$branchId]);
+        } else {
+            $query->whereNull('branch_id_scope');
+        }
+
+        $profile = $query
+            ->latest('version')
+            ->latest('id')
+            ->first();
+
+        if (! $profile) {
+            return null;
+        }
+
+        return app(ComposerProfileProjection::class)->project($profile, $this->resource, $surface, $branchId);
+    }
+
+    private function resolveComposerBranchId($request): ?int
+    {
+        $user = $request->user();
+        if (! $user) {
+            return null;
+        }
+
+        if (method_exists($user, 'tokenCan') && $user->tokenCan('kiosk:order')) {
+            $branchId = (int) KioskMachine::query()
+                ->where('user_id', $user->id)
+                ->value('branch_id');
+
+            return $branchId > 0 ? $branchId : null;
+        }
+
+        $requestedBranch = $request->get('branch_id') ?? $request->get('branch_id_scope');
+        if (($user->hasRole('Admin') || $user->hasRole('Tenant Admin')) && $requestedBranch !== null && $requestedBranch !== '') {
+            $branchId = (int) $requestedBranch;
+            return $branchId > 0 ? $branchId : null;
+        }
+
+        $candidate = $user->branch_id;
+
+        if ($candidate === null || $candidate === '') {
+            return null;
+        }
+
+        $branchId = (int) $candidate;
+        return $branchId > 0 ? $branchId : null;
+    }
+
 }

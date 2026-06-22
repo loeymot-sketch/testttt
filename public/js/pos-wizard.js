@@ -145,23 +145,25 @@
      * @param {boolean} forceEmoji - [S24] Force emoji-only mode (for sauces, garnitures)
      */
     function renderOptionIcon(thumb, emoji, isMicro, forceEmoji) {
+        // [LOCK XSS 2026-06-19] thumb (API image URL) + emoji (API field for non-getEmoji callers,
+        // e.g. sauce.emoji/viande.emoji) flow into innerHTML here — escape both.
         // [S24 FIX] For sauces and garnitures, always use emoji/pictogram
         if (forceEmoji) {
             if (isMicro) {
-                return '<span class="option-icon-micro force-emoji">' + (emoji || '🥄') + '</span>';
+                return '<span class="option-icon-micro force-emoji">' + escapeHtml(emoji || '🥄') + '</span>';
             }
-            return '<span class="option-icon force-emoji">' + (emoji || '') + '</span>';
+            return '<span class="option-icon force-emoji">' + escapeHtml(emoji || '') + '</span>';
         }
         if (isMicro) {
             if (thumb && typeof thumb === 'string' && thumb.length > 0) {
-                return '<img src="' + thumb + '" alt="" class="option-img-micro" />';
+                return '<img src="' + escapeHtml(thumb) + '" alt="" class="option-img-micro" />';
             }
-            return '<span class="option-icon-micro">' + (emoji || '🥄') + '</span>';
+            return '<span class="option-icon-micro">' + escapeHtml(emoji || '🥄') + '</span>';
         }
         if (thumb && typeof thumb === 'string' && thumb.length > 0) {
-            return '<img src="' + thumb + '" alt="" class="option-img" />';
+            return '<img src="' + escapeHtml(thumb) + '" alt="" class="option-img" />';
         }
-        return '<span class="option-icon">' + (emoji || '') + '</span>';
+        return '<span class="option-icon">' + escapeHtml(emoji || '') + '</span>';
     }
 
     /* ==============================
@@ -217,7 +219,31 @@
        ============================== */
     function fmtPrice(val) {
         var num = parseFloat(val) || 0;
-        return '€' + num.toFixed(2);
+        // [LOCK G-FROZEN-WIZARD-MONEY 2026-06-18 — owner-approved frozen-zone edit] FR money display: was
+        // en-US '€' + num.toFixed(2) = "€0.90" (€-prefix, dot decimal), clashing with the FR "0,90 €" used
+        // everywhere else in the app. Now Intl fr-FR (comma decimal + NBSP thousands) + " €" suffix =
+        // "0,90 €", matching appService.currencyFormat. DISPLAY-ONLY: callers concatenate this string for
+        // rendering and never parse it back (verified: 74 uses, all `+ fmtPrice`, no parseFloat(fmtPrice)).
+        // The wizard's pricing math is untouched (it operates on the raw numbers, not this string).
+        try {
+            return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num) + ' €';
+        } catch (e) {
+            return num.toFixed(2).replace('.', ',') + ' €';
+        }
+    }
+
+    // [LOCK XSS 2026-06-19] HTML-escape any user/API-controlled string before it is concatenated
+    // into an innerHTML sink. Item/extra/variation/option names come from the items API (set via
+    // items_edit) and were interpolated RAW into the `h`/`html`/`newHtml` builders assigned to
+    // wizardEl.innerHTML — a name like `<img src=x onerror=...>` = stored XSS in the POS operator's
+    // session. Render-only: escaped text still displays identically; pricing/selection/math untouched.
+    // NOTE: never apply this to the print/ticket text path (buildTicketInstruction → textarea.value),
+    // which is plain-text and must stay literal.
+    function escapeHtml(s) {
+        if (s === null || s === undefined) return '';
+        return String(s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
     /**
@@ -264,7 +290,20 @@
         if (byName > 0) return byName;
         var byDesc = extractViandeCountFromText(data.description || '');
         if (byDesc > 0) return byDesc;
-        if (hasViandeAttribute(data)) return 1;
+        if (hasViandeAttribute(data)) {
+            var viandeAttrs = (data.itemAttributes || []).filter(function (attr) {
+                var n = normalizeStr(attr.name || '');
+                return n.includes('viande') || n.includes('meat') || n.includes('proteine');
+            });
+            if (viandeAttrs.length > 1) {
+                return viandeAttrs.length;
+            }
+            if (viandeAttrs.length === 1) {
+                var mx = parseInt(viandeAttrs[0].max_select, 10);
+                if (isFinite(mx) && mx > 0) return mx;
+            }
+            return 1;
+        }
         return 0;
     }
 
@@ -418,13 +457,132 @@
     }
 
     /* ==============================
+       COMPOSER-AWARE PATH (T-WC-POS-RUNTIME-01)
+       ============================== */
+    function isComposerAwareEnabled() {
+        return !!(window && window.foodkingConfig
+            && window.foodkingConfig.posWizardComposerAware
+            && window.foodkingConfig.posWizardComposerAware.enabled);
+    }
+
+    function getComposerProfileFromData(data) {
+        if (!data) return null;
+        var profile = data.composer_profile;
+        if (!profile || !Array.isArray(profile.steps) || profile.steps.length === 0) return null;
+        return profile;
+    }
+
+    var COMPOSER_STEP_KEY_MAP = {
+        pain: 'pain', galette: 'pain', bun: 'pain',
+        viande: 'viande', meat: 'viande', proteine: 'viande',
+        sauce: 'sauce', sauces: 'sauce',
+        garnitures: 'garnitures', garniture: 'garnitures', crudites: 'garnitures',
+        supplements: 'supplements', supplement: 'supplements', extras: 'supplements',
+        menu: 'menu', formule: 'menu', boisson: 'menu', drink: 'menu',
+        frites: 'menu', side: 'menu', dessert: 'menu',
+        taille: 'taille', size: 'taille'
+    };
+
+    var COMPOSER_ADDON_ROLE_MAP = {
+        drink: 'menu', side: 'menu', dessert: 'menu', menu_component: 'menu'
+    };
+
+    // [V2-WIZARD-RT-REFACTOR-XL Batch B] Small internal extraction only.
+    // Keeps behavior identical while making composer filters easier to audit.
+    function isComposerStepVisibleOnPos(step) {
+        var missingPos = Array.isArray(step.visible_on) ? step.visible_on.indexOf('pos') === -1 : false;
+        // empty / missing visible_on => all surfaces
+        if (!Array.isArray(step.visible_on) || step.visible_on.length === 0) {
+            return true;
+        }
+        return !missingPos;
+    }
+
+    // [V2-WIZARD-RT-REFACTOR-XL Batch C] Defensive adapter seam:
+    // normalize one composer step so malformed payloads degrade gracefully.
+    function normalizeComposerStep(step) {
+        if (!step || typeof step !== 'object') {
+            return null;
+        }
+        return {
+            step_key: step.step_key,
+            label: step.label,
+            min_select: step.min_select,
+            max_select: step.max_select,
+            choices: Array.isArray(step.choices) ? step.choices : [],
+            allow_repeat: !!step.allow_repeat,
+            visible_on: Array.isArray(step.visible_on) ? step.visible_on : [],
+            addon_role: step.addon_role
+        };
+    }
+
+    function buildStepsFromComposerProfile(profile, data) {
+        var result = [];
+        profile.steps.forEach(function (rawStep) {
+            var step = normalizeComposerStep(rawStep);
+            if (!step) return;
+            // Filter visible_on (skip if 'pos' not in array — empty array = all surfaces)
+            if (!isComposerStepVisibleOnPos(step)) {
+                return;
+            }
+            // Resolve internal type: addon_role priority, then step_key, then generic_choices fallback
+            var internalType = null;
+            var addonRole = String(step.addon_role || '').toLowerCase().trim();
+            if (addonRole && COMPOSER_ADDON_ROLE_MAP[addonRole]) {
+                internalType = COMPOSER_ADDON_ROLE_MAP[addonRole];
+            } else {
+                var stepKey = String(step.step_key || '').toLowerCase().trim();
+                if (stepKey && COMPOSER_STEP_KEY_MAP[stepKey]) {
+                    internalType = COMPOSER_STEP_KEY_MAP[stepKey];
+                }
+            }
+            if (!internalType) {
+                if (Array.isArray(step.choices) && step.choices.length > 0) {
+                    internalType = 'generic_choices';
+                } else {
+                    if (typeof console !== 'undefined' && console.warn) {
+                        console.warn('[pos-wizard.composer] step skipped (unsupported)', {
+                            step_key: step.step_key, label: step.label
+                        });
+                    }
+                    return;
+                }
+            }
+            result.push({
+                type: internalType,
+                key: step.step_key,
+                label: step.label || step.step_key,
+                min: Number(step.min_select) || 0,
+                max: Number(step.max_select) || 1,
+                options: Array.isArray(step.choices) ? step.choices : [],
+                allow_repeat: !!step.allow_repeat,
+                composer_step: step
+            });
+        });
+        // Always append recap step for consistency with legacy buildSteps
+        result.push({ type: 'recap', label: 'Récap', subtitle: 'Vérifiez votre commande' });
+        return result;
+    }
+
+    /* ==============================
        BUILD STEPS FROM ITEM DATA
        ============================== */
     /**
      * [REFACTORED SPRINT 4] Build wizard steps based on item data.
      * NEW: Combined steps for faster POS workflow.
+     * [T-WC-POS-RUNTIME-01] When flag pos_wizard_composer_aware.enabled=true and
+     * data.composer_profile.steps is present, delegate to buildStepsFromComposerProfile
+     * (admin-defined wizard) instead of legacy heuristic. Default OFF preserves legacy.
      */
     function buildSteps(data) {
+        // [T-WC-POS-RUNTIME-01] Composer-aware early-return (gated by flag).
+        if (isComposerAwareEnabled()) {
+            var composerProfile = getComposerProfileFromData(data);
+            if (composerProfile) {
+                return buildStepsFromComposerProfile(composerProfile, data);
+            }
+        }
+
         var s = [];
         selections = {};
 
@@ -520,13 +678,20 @@
                 var unitPrice = parseFloat(ad.addon_item_convert_price)
                     || parseFloat(ad.addonItem && ad.addonItem.convert_price || 0)
                     || parseFloat(ad.total_convert_price) || 0;
+                // [POS-WIZARD-DRINKS 2026-05-02] Capture group_label pour détection boisson
+                // multi-priorité (alignée sur kioskIsDrinkAddon — symétrie POS↔borne).
+                var groupLabel = '';
+                if (ad.group_label) groupLabel = String(ad.group_label);
+                else if (ad.addonItem && ad.addonItem.group_label) groupLabel = String(ad.addonItem.group_label);
+                else if (ad.addon_item && ad.addon_item.group_label) groupLabel = String(ad.addon_item.group_label);
                 return {
                     id: ad.id,
                     itemId: ad.addon_item_id || ad.item_addon_id,
                     name: ad.addon_item_name,
                     price: unitPrice,
-                    currencyPrice: '€' + unitPrice.toFixed(2),
-                    thumb: (ad.addonItem && ad.addonItem.thumb) ? ad.addonItem.thumb : (ad.thumb || ad.cover || '')
+                    currencyPrice: fmtPrice(unitPrice), // [LOCK G-FROZEN-WIZARD-MONEY-MISSED 2026-06-22 owner-countersigned] was '€'+toFixed = "€5.00" en-US → FR "5,00 €" (display-only, bypassed the 2026-06-18 fmtPrice sweep)
+                    thumb: (ad.addonItem && ad.addonItem.thumb) ? ad.addonItem.thumb : (ad.thumb || ad.cover || ''),
+                    groupLabel: groupLabel.toLowerCase()
                 };
             });
         }
@@ -779,25 +944,60 @@
                 inline: true
             });
 
-            // [P1] Step: boisson_choice — Choix boisson (visible si menu complet ou boisson seule)
-            // [BUG-W5 FIX] Only add boisson_choice step if there are actual boisson items
-            // [FIX] Exclude "Boisson Seule" addon which is a formula option, not a real drink
-            var boissonItems = addonItems.filter(function (a) {
-                var name = a.name.toLowerCase().trim();
-                // Skip formula addons that contain "seule" or are exactly "boisson"
-                if (name === 'boisson' || name === 'boisson seule' || name.includes('seule')) {
-                    return false;
+            // [POS-WIZARD-DRINKS 2026-05-02] Détection boisson catalogue-aware multi-priorité.
+            // Aligné sur `kioskIsDrinkAddon` (resources/js/helpers/kioskDrinkAddons.js) pour
+            // garantir la symétrie POS↔borne (même item, même règles, stock partagé via
+            // le même item_id côté backend).
+            //
+            // Sources d'autorité (ordre décroissant) :
+            //   P1. Catalogue Vue : addon dont l'`itemId` est dans la catégorie « boisson »
+            //       (data-pos-drinks-catalog attribut DOM, alimenté par PosComponent.drinksCatalog)
+            //   P2. Catalogue Vue : addon dont le nom matche un nom du catalogue
+            //   P3. group_label explicite ('boisson' | 'drink' | 'drinks' | 'beverage')
+            //   P4. Regex legacy (eau, thé, jus, lipton, evian, perrier, etc. — couvre cas
+            //       où admin n'a pas encore configuré le catalogue/group_label)
+            //
+            // Exclusions explicites : addons formule (boisson seule), food-like (frites,
+            // nuggets, wraps, etc.), addons groupés en frites ou menu.
+            var boissonItems = (function () {
+                var modalEl = document.getElementById('item-variation-modal');
+                var catalogList = [];
+                if (modalEl) {
+                    var rawCatalog = modalEl.getAttribute('data-pos-drinks-catalog');
+                    if (rawCatalog) {
+                        try { catalogList = JSON.parse(rawCatalog) || []; } catch (e) { catalogList = []; }
+                    }
                 }
-                // Match real drink items: named drinks or specific drink keywords
-                return (name.includes('coca') || name.includes('fanta') || name.includes('sprite') ||
-                    name.includes('pepsi') || name.includes('7up') || name.includes('orangina') ||
-                    name.includes('oasis') || name.includes('volvic') || name.includes('evian') ||
-                    name.includes('cristalline') || name.includes('soda') || name.includes('jus') ||
-                    name.includes('citron') || name.includes('orange') || name.includes('pomme') ||
-                    name.includes('raisin') || name.includes('tropico') || name.includes('schweppes') ||
-                    name.includes('red bull') || name.includes('monster') || name.includes('eau')) &&
-                    !name.includes('frite') && !name.includes('menu');
-            });
+                var catalogIds = new Set();
+                var catalogNames = new Set();
+                for (var ci = 0; ci < catalogList.length; ci++) {
+                    var d = catalogList[ci];
+                    if (!d) continue;
+                    if (d.id != null) catalogIds.add(String(d.id));
+                    if (d.name) catalogNames.add(String(d.name).toLowerCase().trim());
+                }
+
+                var DRINK_LIKE_REGEX = /\b(coca|cola|pepsi|fanta|sprite|schweppes|eau|th[ée]|tea|ice\s?tea|jus|boisson|soda|drink|limonade|orangina|oasis|tropico|caf[ée]|coffee|red\s?bull|vittel|evian|perrier|badoit|heineken|1664|kronenbourg|desperados|kas|san\s?pellegrino|lipton|nestea|cristalline|volvic|monster|citron|raisin|7up|pomme)/i;
+                var FOOD_LIKE_REGEX = /frite|patate|nugget|tender|onion|oignon|mozzarella|accompagn|snack|dessert|glace|wrap|cornet|potato|boulette|stick|ring|douille|corbeille|panier|barquette|salade/i;
+                var GENERIC_OPTION_REGEX = /^\s*(?:\+?\s*)?(boisson|drink)(?:\s+(seule?|only))?\s*$/i;
+
+                return addonItems.filter(function (a) {
+                    var name = String(a.name || '').toLowerCase().trim();
+                    if (!name) return false;
+                    if (GENERIC_OPTION_REGEX.test(name)) return false;
+                    if (FOOD_LIKE_REGEX.test(name)) return false;
+                    if (name.indexOf('menu') !== -1) return false;
+
+                    if (a.itemId != null && catalogIds.has(String(a.itemId))) return true;
+                    if (catalogNames.has(name)) return true;
+
+                    var gl = a.groupLabel || '';
+                    if (gl === 'boisson' || gl === 'drink' || gl === 'drinks' || gl === 'beverage') return true;
+                    if (gl !== '' && (gl.indexOf('frite') !== -1 || gl.indexOf('food') !== -1 || gl === 'menu' || gl.indexOf('menu_') === 0)) return false;
+
+                    return DRINK_LIKE_REGEX.test(name);
+                });
+            })();
             if (boissonItems.length > 0) {
                 s.push({
                     type: 'boisson_choice',
@@ -883,10 +1083,10 @@
         if (lastItemData) {
             html += '<div class="wizard-item-header">';
             if (lastItemData.thumb) {
-                html += '<img src="' + lastItemData.thumb + '" alt="item" class="wizard-item-img">';
+                html += '<img src="' + escapeHtml(lastItemData.thumb) + '" alt="item" class="wizard-item-img">';
             }
             html += '<div class="wizard-item-info">';
-            html += '<h2>' + lastItemData.name + '</h2>';
+            html += '<h2>' + escapeHtml(lastItemData.name) + '</h2>';
             html += '<p class="wizard-item-price">' + fmtPrice(basePrice) + '</p>';
             html += '</div>';
             
@@ -949,8 +1149,8 @@
         var step = steps[currentStep];
         html += '<div class="wizard-step active" data-step="' + currentStep + '">';
         html += '<div class="wizard-step-header">';
-        html += '<h3>' + step.label + '</h3>';
-        html += '<p>' + (step.subtitle || '') + '</p>';
+        html += '<h3>' + escapeHtml(step.label) + '</h3>';
+        html += '<p>' + escapeHtml(step.subtitle || '') + '</p>';
         html += '</div>';
 
         // [REFACTORED SPRINT 4] New combined steps + legacy steps
@@ -1017,8 +1217,8 @@
             var canAdd = total < max;
             h += '<div class="wizard-viande-row' + (count > 0 ? ' active' : '') + '">';
             h += '<div class="viande-info">';
-            h += '<span class="viande-emoji">' + viande.emoji + '</span>';
-            h += '<span class="viande-name">' + viande.name + '</span>';
+            h += '<span class="viande-emoji">' + escapeHtml(viande.emoji) + '</span>';
+            h += '<span class="viande-name">' + escapeHtml(viande.name) + '</span>';
             h += '</div>';
             h += '<div class="viande-controls">';
             h += '<button type="button" class="viande-btn minus' + (count <= 0 ? ' disabled' : '') + '" data-viande="' + viande.key + '" data-action="minus">−</button>';
@@ -1069,7 +1269,7 @@
             h += '<div class="wizard-option sauce-opt micro-opt' + sel + hiddenClass + '" data-type="sauce" data-id="' + sauce.id + '">';
             h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
             h += renderOptionIcon(sauce.thumb, sauce.emoji, true, true); // [S24 FIX] Force emoji for sauces
-            h += '<span class="option-name">' + sauce.name + '</span>';
+            h += '<span class="option-name">' + escapeHtml(sauce.name) + '</span>';
             h += priceLabel;
             h += '</div>';
         });
@@ -1166,7 +1366,7 @@
             h += '<div class="wizard-option sauce-opt' + sel + '" data-type="sauce_single" data-id="' + sauce.id + '">';
             h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
             h += renderOptionIcon(sauce.thumb, sauce.emoji, false, true); // [S24 FIX] Force emoji for sauces
-            h += '<span class="option-name">' + sauce.name + '</span>';
+            h += '<span class="option-name">' + escapeHtml(sauce.name) + '</span>';
             h += '<span class="option-price free">Inclus</span>';
             h += '</div>';
         });
@@ -1182,7 +1382,7 @@
             h += '<div class="wizard-option accomp' + sel + '" data-type="accompagnement" data-id="' + item.id + '">';
             h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
             h += renderOptionIcon(item.thumb, getEmoji(GARNITURE_EMOJIS, item.name), false, true); // [S24 FIX] Force emoji for garnitures
-            h += '<span class="option-name">' + item.name + '</span>';
+            h += '<span class="option-name">' + escapeHtml(item.name) + '</span>';
             h += '<span class="option-price free">Inclus</span>';
             h += '</div>';
         });
@@ -1198,7 +1398,7 @@
             h += '<div class="wizard-option garniture micro-opt' + sel + '" data-type="garniture" data-id="' + item.id + '">';
             h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
             h += renderOptionIcon(item.thumb, getEmoji(GARNITURE_EMOJIS, item.name), true, true); // [S24 FIX] Force emoji for garnitures
-            h += '<span class="option-name">' + item.name + '</span>';
+            h += '<span class="option-name">' + escapeHtml(item.name) + '</span>';
             h += '<span class="option-price">Inclus</span>';
             h += '</div>';
         });
@@ -1214,8 +1414,8 @@
             h += '<div class="wizard-option micro-opt' + sel + '" data-type="supplement" data-id="' + item.id + '">';
             h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
             h += renderOptionIcon(item.thumb, getEmoji(SUPPLEMENT_EMOJIS, item.name), true, true); // [S24 FIX] Force emoji for supplements
-            h += '<span class="option-name">' + item.name + '</span>';
-            h += '<span class="option-price paid">+' + item.currencyPrice + '</span>';
+            h += '<span class="option-name">' + escapeHtml(item.name) + '</span>';
+            h += '<span class="option-price paid">+' + escapeHtml(item.currencyPrice) + '</span>';
             h += '</div>';
         });
         h += '</div>';
@@ -1233,7 +1433,7 @@
         var selFull = selections.menuChoice === 'full' ? ' selected' : '';
         h += '<div class="menu-choice-card' + selFull + '" data-action="menu-choice" data-value="full">';
         h += '<div class="menu-card-icon">' + renderOptionIcon(step.menuComplet.thumb, '🍟🥤') + '</div>';
-        h += '<div class="menu-card-name">' + step.menuComplet.name + '</div>';
+        h += '<div class="menu-card-name">' + escapeHtml(step.menuComplet.name) + '</div>';
         h += '<div class="menu-card-price">+' + fmtPrice(step.menuComplet.price) + '</div>';
         h += '<div class="menu-card-desc">Frites + Boisson incluse</div>';
         h += '</div>';
@@ -1242,7 +1442,7 @@
         var selFrites = selections.menuChoice === 'frites' ? ' selected' : '';
         h += '<div class="menu-choice-card' + selFrites + '" data-action="menu-choice" data-value="frites">';
         h += '<div class="menu-card-icon">' + renderOptionIcon(step.fritesSeules.thumb, '🍟') + '</div>';
-        h += '<div class="menu-card-name">' + step.fritesSeules.name + '</div>';
+        h += '<div class="menu-card-name">' + escapeHtml(step.fritesSeules.name) + '</div>';
         h += '<div class="menu-card-price">+' + fmtPrice(step.fritesSeules.price) + '</div>';
         h += '<div class="menu-card-desc">Juste les frites</div>';
         h += '</div>';
@@ -1252,7 +1452,7 @@
             var selBoisson = selections.menuChoice === 'boisson' ? ' selected' : '';
             h += '<div class="menu-choice-card' + selBoisson + '" data-action="menu-choice" data-value="boisson">';
             h += '<div class="menu-card-icon">' + renderOptionIcon(step.boissonSeule.thumb, '🥤') + '</div>';
-            h += '<div class="menu-card-name">' + step.boissonSeule.name + '</div>';
+            h += '<div class="menu-card-name">' + escapeHtml(step.boissonSeule.name) + '</div>';
             h += '<div class="menu-card-price">+' + fmtPrice(step.boissonSeule.price) + '</div>';
             h += '<div class="menu-card-desc">Juste la boisson</div>';
             h += '</div>';
@@ -1343,11 +1543,11 @@
                 h += '<div class="wizard-option boisson-opt' + sel + '" data-action="boisson-choice" data-id="' + boisson.id + '">';
                 h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
                 if (boisson.thumb) {
-                    h += '<span class="option-icon has-img"><img src="' + boisson.thumb + '" alt="' + boisson.name + '"></span>';
+                    h += '<span class="option-icon has-img"><img src="' + escapeHtml(boisson.thumb) + '" alt="' + escapeHtml(boisson.name) + '"></span>';
                 } else {
                     h += '<span class="option-icon">' + getEmoji(ADDON_EMOJIS, boisson.name) + '</span>';
                 }
-                h += '<span class="option-name">' + boisson.name + '</span>';
+                h += '<span class="option-name">' + escapeHtml(boisson.name) + '</span>';
                 h += '<span class="option-price free">Incluse</span>';
                 h += '</div>';
             });
@@ -1391,7 +1591,7 @@
             h += '<div class="wizard-option sauce-opt' + sel + '" data-type="sauce_frite" data-id="' + sauce.id + '">';
             h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
             h += renderOptionIcon(sauce.thumb, sauce.emoji, false, true); // [S24 FIX] Force emoji for sauces
-            h += '<span class="option-name">' + sauce.name + '</span>';
+            h += '<span class="option-name">' + escapeHtml(sauce.name) + '</span>';
             h += priceLabel;
             h += '</div>';
         });
@@ -1414,8 +1614,8 @@
             var sel = selections.pain === pain.id ? ' selected' : '';
             h += '<div class="wizard-option pain-opt' + sel + '" data-type="pain" data-id="' + pain.id + '">';
             h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
-            h += '<span class="option-icon" style="font-size: 36px; margin-bottom: 8px;">' + pain.emoji + '</span>';
-            h += '<span class="option-name">' + pain.name + '</span>';
+            h += '<span class="option-icon" style="font-size: 36px; margin-bottom: 8px;">' + escapeHtml(pain.emoji) + '</span>';
+            h += '<span class="option-name">' + escapeHtml(pain.name) + '</span>';
             h += '<span class="option-price free">Inclus</span>';
             h += '</div>';
         });
@@ -1430,7 +1630,7 @@
 
         // LEFT: Viandes
         h += '<div class="wizard-col">';
-        h += '<h4>🥩 ' + step.label + '</h4>';
+        h += '<h4>🥩 ' + escapeHtml(step.label) + '</h4>';
         var total = selections.totalViandes || 0;
         var max = step.maxViandes;
         h += '<div class="wizard-viande-counter-header">';
@@ -1450,8 +1650,8 @@
             var hiddenClass = (hasMoreViandes && index >= viandeLimit) ? ' hidden-opt' : '';
             h += '<div class="wizard-viande-row' + (count > 0 ? ' active' : '') + hiddenClass + '">';
             h += '<div class="viande-info">';
-            h += '<span class="viande-emoji">' + viande.emoji + '</span>';
-            h += '<span class="viande-name">' + viande.name + '</span>';
+            h += '<span class="viande-emoji">' + escapeHtml(viande.emoji) + '</span>';
+            h += '<span class="viande-name">' + escapeHtml(viande.name) + '</span>';
             h += '</div>';
             h += '<div class="viande-controls">';
             h += '<button type="button" class="viande-btn minus' + (count <= 0 ? ' disabled' : '') + '" data-viande="' + viande.key + '" data-action="minus">−</button>';
@@ -1495,7 +1695,7 @@
             h += '<div class="wizard-option sauce-opt' + sel + '" data-type="sauce" data-id="' + sauce.id + '">';
             h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
             h += renderOptionIcon(sauce.thumb, sauce.emoji, false, true); // [S24 FIX] Force emoji for sauces
-            h += '<span class="option-name">' + sauce.name + '</span>';
+            h += '<span class="option-name">' + escapeHtml(sauce.name) + '</span>';
             h += priceLabel;
             h += '</div>';
         });
@@ -1523,8 +1723,8 @@
                     (selections.garnitures[cKey] !== false && selections.garnitures[g.id] !== false);
                 var stateClass = isIncluded ? ' included' : ' removed';
                 var emoji = getEmoji(GARNITURE_EMOJIS, g.name);
-                var label = isIncluded ? ('✓ ' + g.name) : ('✕ Sans ' + g.name);
-                h += '<button type="button" class="garniture-toggle-btn' + stateClass + '" data-type="garniture" data-id="' + g.id + '" data-name="' + g.name + '" data-emoji="' + emoji + '">';
+                var label = isIncluded ? ('✓ ' + escapeHtml(g.name)) : ('✕ Sans ' + escapeHtml(g.name));
+                h += '<button type="button" class="garniture-toggle-btn' + stateClass + '" data-type="garniture" data-id="' + g.id + '" data-name="' + escapeHtml(g.name) + '" data-emoji="' + escapeHtml(emoji) + '">';
                 h += emoji + ' ' + label;
                 h += '</button>';
             });
@@ -1542,7 +1742,7 @@
                 var sc = (selections.viandeSupplItems && selections.viandeSupplItems[key]) || 0;
                 var emoji = getEmoji(VIANDE_EMOJIS, variation.name);
                 h += '<div class="wizard-viande-suppl-row' + (sc > 0 ? ' active' : '') + '" data-suppl-id="' + key + '">';
-                h += '<div class="viande-info"><span class="viande-emoji">' + emoji + '</span><span class="viande-name">' + variation.name + '</span></div>';
+                h += '<div class="viande-info"><span class="viande-emoji">' + escapeHtml(emoji) + '</span><span class="viande-name">' + escapeHtml(variation.name) + '</span></div>';
                 h += '<div class="viande-controls">';
                 h += '<button type="button" class="viande-suppl-btn viande-btn minus' + (sc <= 0 ? ' disabled' : '') + '" data-viande-suppl="' + key + '" data-action="minus">−</button>';
                 h += '<span class="viande-suppl-count viande-count">' + sc + '</span>';
@@ -1564,8 +1764,8 @@
                 h += '<div class="wizard-option supplement-opt' + sel + '" data-type="supplement" data-id="' + s.id + '">';
                 h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
                 h += renderOptionIcon(s.thumb, emoji, false, true); // [S24 FIX] Force emoji for supplements
-                h += '<span class="option-name">' + s.name + '</span>';
-                h += '<span class="option-price">' + s.currencyPrice + '</span>';
+                h += '<span class="option-name">' + escapeHtml(s.name) + '</span>';
+                h += '<span class="option-price">' + escapeHtml(s.currencyPrice) + '</span>';
                 h += '</div>';
             });
             h += '</div>';
@@ -1604,7 +1804,7 @@
             h += '<div class="wizard-option sauce-opt' + sel + '" data-type="sauce" data-id="' + sauce.id + '">';
             h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
             h += renderOptionIcon(sauce.thumb, sauce.emoji, false, true); // [S24 FIX] Force emoji for sauces
-            h += '<span class="option-name">' + sauce.name + '</span>';
+            h += '<span class="option-name">' + escapeHtml(sauce.name) + '</span>';
             h += priceLabel;
             h += '</div>';
         });
@@ -1623,8 +1823,8 @@
                 (selections.garnitures[cKey] !== false && selections.garnitures[g.id] !== false);
             var stateClass = isIncluded ? ' included' : ' removed';
             var emoji = getEmoji(GARNITURE_EMOJIS, g.name);
-            var label = isIncluded ? ('✓ ' + g.name) : ('✕ Sans ' + g.name);
-            h += '<button type="button" class="garniture-toggle-btn' + stateClass + '" data-type="garniture" data-id="' + g.id + '" data-name="' + g.name + '" data-emoji="' + emoji + '">';
+            var label = isIncluded ? ('✓ ' + escapeHtml(g.name)) : ('✕ Sans ' + escapeHtml(g.name));
+            h += '<button type="button" class="garniture-toggle-btn' + stateClass + '" data-type="garniture" data-id="' + g.id + '" data-name="' + escapeHtml(g.name) + '" data-emoji="' + escapeHtml(emoji) + '">';
             h += emoji + ' ' + label;
             h += '</button>';
         });
@@ -1650,8 +1850,8 @@
                 h += '<div class="wizard-option supplement-opt' + sel + '" data-type="supplement" data-id="' + s.id + '">';
                 h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
                 h += renderOptionIcon(s.thumb, emoji);
-                h += '<span class="option-name">' + s.name + '</span>';
-                h += '<span class="option-price">' + s.currencyPrice + '</span>';
+                h += '<span class="option-name">' + escapeHtml(s.name) + '</span>';
+                h += '<span class="option-price">' + escapeHtml(s.currencyPrice) + '</span>';
                 h += '</div>';
             });
             h += '</div>';
@@ -1670,7 +1870,7 @@
             h += '<div class="wizard-menu-card' + (selections.menuChoice === 'full' ? ' selected' : '') + '" data-menu="full">';
             h += '<div class="menu-icon">🍟🥤</div>';
             h += '<div class="menu-name">Menu Complet</div>';
-            h += '<div class="menu-price">+€' + menuPrice + '</div>';
+            h += '<div class="menu-price">+' + fmtPrice(menuPrice) + '</div>'; // [LOCK G-FROZEN-WIZARD-MONEY-MISSED 2026-06-22] was "+€3.00" en-US → FR "+3,00 €"
             h += '<div class="menu-desc">Frites + Boisson</div>';
             h += '</div>';
 
@@ -1678,8 +1878,8 @@
             step.menuItems.forEach(function (addon) {
                 h += '<div class="wizard-menu-card' + (selections.individualAddons && selections.individualAddons[addon.id] ? ' selected' : '') + '" data-addon-id="' + addon.id + '">';
                 h += '<div class="menu-icon">' + (addon.name.toLowerCase().includes('frites') ? '🍟' : '🥤') + '</div>';
-                h += '<div class="menu-name">' + addon.name + '</div>';
-                h += '<div class="menu-price">' + addon.currencyPrice + '</div>';
+                h += '<div class="menu-name">' + escapeHtml(addon.name) + '</div>';
+                h += '<div class="menu-price">' + escapeHtml(addon.currencyPrice) + '</div>';
                 h += '</div>';
             });
 
@@ -1747,7 +1947,7 @@
                 h += '<div class="wizard-option sauce-frite-opt' + sel + '" data-type="sauce_frite" data-id="' + sauce.id + '">';
                 h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
                 h += renderOptionIcon(sauce.thumb, sauce.emoji, false, true); // [S24 FIX] Force emoji for sauces
-                h += '<span class="option-name">' + sauce.name + '</span>';
+                h += '<span class="option-name">' + escapeHtml(sauce.name) + '</span>';
                 h += priceLabel;
                 h += '</div>';
             });
@@ -1787,7 +1987,7 @@
             h += '<div class="wizard-option sauce-opt' + sel + '" data-type="sauce" data-id="' + sauce.id + '">';
             h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
             h += renderOptionIcon(sauce.thumb, sauce.emoji, false, true); // [S24 FIX] Force emoji for sauces
-            h += '<span class="option-name">' + sauce.name + '</span>';
+            h += '<span class="option-name">' + escapeHtml(sauce.name) + '</span>';
             h += priceLabel;
             h += '</div>';
         });
@@ -1804,7 +2004,7 @@
                 h += '<div class="wizard-option radio-opt' + sel + '" data-type="accompagnement" data-id="' + acc.id + '">';
                 h += '<span class="radio-mark"><i class="fa-solid fa-circle-dot"></i></span>';
                 h += renderOptionIcon(acc.thumb, emoji, false, true); // [S24 FIX] Force emoji for accompaniments
-                h += '<span class="option-name">' + acc.name + '</span>';
+                h += '<span class="option-name">' + escapeHtml(acc.name) + '</span>';
                 h += '<span class="option-price">Inclus</span>';
                 h += '</div>';
             });
@@ -1843,7 +2043,7 @@
             h += '<div class="wizard-option sauce-opt' + sel + '" data-type="sauce" data-id="' + sauce.id + '">';
             h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
             h += renderOptionIcon(sauce.thumb, sauce.emoji, false, true); // [S24 FIX] Force emoji for sauces
-            h += '<span class="option-name">' + sauce.name + '</span>';
+            h += '<span class="option-name">' + escapeHtml(sauce.name) + '</span>';
             h += priceLabel;
             h += '</div>';
         });
@@ -1861,8 +2061,8 @@
                 h += '<div class="wizard-option supplement-opt' + sel + '" data-type="supplement" data-id="' + s.id + '">';
                 h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
                 h += renderOptionIcon(s.thumb, emoji, false, true); // [S24 FIX] Force emoji for supplements
-                h += '<span class="option-name">' + s.name + '</span>';
-                h += '<span class="option-price">' + s.currencyPrice + '</span>';
+                h += '<span class="option-name">' + escapeHtml(s.name) + '</span>';
+                h += '<span class="option-price">' + escapeHtml(s.currencyPrice) + '</span>';
                 h += '</div>';
             });
             h += '</div>';
@@ -1893,7 +2093,7 @@
 
         h += '<div class="wizard-recap">';
         h += '<div class="wizard-ticket-head">';
-        h += '<div class="wizard-ticket-title">' + ((lastItemData && lastItemData.name) ? lastItemData.name : 'Votre commande') + '</div>';
+        h += '<div class="wizard-ticket-title">' + ((lastItemData && lastItemData.name) ? escapeHtml(lastItemData.name) : 'Votre commande') + '</div>';
         h += '<div class="wizard-ticket-subtitle">Résumé clair avant validation panier</div>';
         h += '</div>';
         h += '<div class="wizard-recap-section-title">Choix principaux</div>';
@@ -1909,7 +2109,7 @@
             if (painStep) {
                 var painItem = painStep.painItems.find(function (p) { return p.id === selections.pain; });
                 if (painItem) {
-                    h += '<div class="wizard-recap-row"><span class="label">' + painItem.emoji + ' Pain' + editBtn('pain') + '</span><span class="value">' + painItem.name + '</span></div>';
+                    h += '<div class="wizard-recap-row"><span class="label">' + escapeHtml(painItem.emoji) + ' Pain' + editBtn('pain') + '</span><span class="value">' + escapeHtml(painItem.name) + '</span></div>';
                 }
             }
         }
@@ -1928,7 +2128,7 @@
             if (viandeNames.length > 0) {
                 var viandeGoto = steps.find(function (s) { return s.type === 'viande_sauce'; }) ? 'viande_sauce' : 'viande';
                 h += '<div class="wizard-recap-row"><span class="label">🥩 Viandes' + editBtn(viandeGoto) + '</span><span class="value">' +
-                    viandeNames.join(', ') + '</span></div>';
+                    escapeHtml(viandeNames.join(', ')) + '</span></div>';
             }
         }
 
@@ -1961,7 +2161,7 @@
                 else if (steps.find(function (s) { return s.type === 'sauce_accompagnement'; })) sauceGoto = 'sauce_accompagnement';
                 else if (steps.find(function (s) { return s.type === 'sauce_supplements'; })) sauceGoto = 'sauce_supplements';
                 h += '<div class="wizard-recap-row"><span class="label">🥄 Sauce' + editBtn(sauceGoto) + '</span><span class="value">' +
-                    sauceNames.join(', ') + '</span></div>';
+                    escapeHtml(sauceNames.join(', ')) + '</span></div>';
             }
         }
 
@@ -1975,7 +2175,7 @@
                 });
                 if (sName) {
                     h += '<div class="wizard-recap-row"><span class="label">🥄 Sauce' + editBtn('sauce_single') + '</span><span class="value">' +
-                        sName + ' (inclus)</span></div>';
+                        escapeHtml(sName) + ' (inclus)</span></div>';
                 }
             }
         }
@@ -1992,7 +2192,7 @@
                 if (accName) {
                     var accGoto = steps.find(function (s) { return s.type === 'sauce_accompagnement'; }) ? 'sauce_accompagnement' : 'accompagnement';
                     h += '<div class="wizard-recap-row"><span class="label">🍟 Accompagnement' + editBtn(accGoto) + '</span><span class="value">' +
-                        accName + ' (inclus)</span></div>';
+                        escapeHtml(accName) + ' (inclus)</span></div>';
                 }
             }
         }
@@ -2023,10 +2223,10 @@
             if (steps.find(function (s) { return s.type === 'perso'; })) garnGoto = 'perso';
             else if (steps.find(function (s) { return s.type === 'sauce_garnitures'; })) garnGoto = 'sauce_garnitures';
             h += '<div class="wizard-recap-row"><span class="label">🥬 Crudités incluses' + editBtn(garnGoto) + '</span><span class="value">' +
-                (garnIncluded.length > 0 ? garnIncluded.join(', ') : 'Aucune') + '</span></div>';
+                (garnIncluded.length > 0 ? escapeHtml(garnIncluded.join(', ')) : 'Aucune') + '</span></div>';
             if (garnRemoved.length > 0) {
                 h += '<div class="wizard-recap-row"><span class="label">✕ Retirées</span><span class="value">' +
-                    garnRemoved.join(', ') + '</span></div>';
+                    escapeHtml(garnRemoved.join(', ')) + '</span></div>';
             }
         }
 
@@ -2053,7 +2253,7 @@
                 else if (steps.find(function (s) { return s.type === 'supplements_menu'; })) suppGoto = 'supplements_menu';
                 else if (steps.find(function (s) { return s.type === 'sauce_supplements'; })) suppGoto = 'sauce_supplements';
                 h += '<div class="wizard-recap-row"><span class="label">➕ Suppléments' + editBtn(suppGoto) + '</span><span class="value">' +
-                    suppNames.join(', ') + '</span></div>';
+                    escapeHtml(suppNames.join(', ')) + '</span></div>';
             }
         }
 
@@ -2078,7 +2278,7 @@
                 if (formuleLabel) {
                     addonTotal += formulePrice;
                     h += '<div class="wizard-recap-row"><span class="label">🍟 Formule' + editBtn('menu_choice') + '</span><span class="value">' +
-                        formuleLabel + ' <span style="color:#E93C3C;font-weight:700">+€' + formulePrice.toFixed(2) + '</span></span></div>';
+                        escapeHtml(formuleLabel) + ' <span style="color:#E93C3C;font-weight:700">+' + fmtPrice(formulePrice) + '</span></span></div>'; // [LOCK G-FROZEN-WIZARD-MONEY-MISSED 2026-06-22] was "+€3.00" en-US → FR "+3,00 €"
                 }
                 // Frites upgrades — prices from POS_WIZARD_CONFIG
                 if (selections.fritesGrande) {
@@ -2100,7 +2300,7 @@
                     });
                     var menuGoto = steps.find(function (s) { return s.type === 'supplements_menu'; }) ? 'supplements_menu' : 'menu';
                     h += '<div class="wizard-recap-row"><span class="label">🍟 Menu' + editBtn(menuGoto) + '</span><span class="value">' +
-                        addonNames.join(' + ') + '</span></div>';
+                        escapeHtml(addonNames.join(' + ')) + '</span></div>';
                 } else if (selections.menuChoice === 'individual') {
                     var indNames = [];
                     menuItems.forEach(function (a) {
@@ -2112,7 +2312,7 @@
                     if (indNames.length > 0) {
                         var indGoto = steps.find(function (s) { return s.type === 'supplements_menu'; }) ? 'supplements_menu' : 'menu';
                         h += '<div class="wizard-recap-row"><span class="label">🍟 À la carte' + editBtn(indGoto) + '</span><span class="value">' +
-                            indNames.join(', ') + '</span></div>';
+                            escapeHtml(indNames.join(', ')) + '</span></div>';
                     }
                 }
             }
@@ -2143,7 +2343,7 @@
             if (sfNames.length > 0) {
                 var sfGoto = steps.find(function (s) { return s.type === 'supplements_menu'; }) ? 'supplements_menu' : 'menu';
                 h += '<div class="wizard-recap-row"><span class="label">🍟 Sauce frites' + editBtn(sfGoto) + '</span><span class="value">' +
-                    sfNames.join(', ') + '</span></div>';
+                    escapeHtml(sfNames.join(', ')) + '</span></div>';
             }
         }
 
@@ -2629,10 +2829,10 @@
         if (lastItemData) {
             h += '<div class="wizard-item-header">';
             if (lastItemData.thumb) {
-                h += '<img src="' + lastItemData.thumb + '" alt="item" class="wizard-item-img">';
+                h += '<img src="' + escapeHtml(lastItemData.thumb) + '" alt="item" class="wizard-item-img">';
             }
             h += '<div class="wizard-item-info">';
-            h += '<h2>' + lastItemData.name + '</h2>';
+            h += '<h2>' + escapeHtml(lastItemData.name) + '</h2>';
             h += '<p class="wizard-item-price">' + fmtPrice(basePrice) + '</p>';
             h += '</div>';
             // Qté inline à droite du nom
@@ -2662,7 +2862,7 @@
                     var emoji = variation.name.toLowerCase().includes('galette') ? '🫓' : '🥖';
                     h += '<button type="button" class="pain-btn' + sel + '" data-type="pain" data-id="' + variation.id + '">';
                     h += '<span class="pain-emoji">' + emoji + '</span>';
-                    h += variation.name;
+                    h += escapeHtml(variation.name);
                     h += '</button>';
                 });
                 h += '</div>';
@@ -2735,7 +2935,7 @@
                 var idx = selections.sauceOrder ? selections.sauceOrder.indexOf(key) : -1;
                 var badge = idx === 0 ? ' <span class="chip-free">✓</span>' : (idx > 0 ? ' <span class="chip-paid">+' + fmtPrice(SAUCE_EXTRA_PRICE) + '</span>' : '');
                 sh += '<button type="button" class="sauce-chip' + sel + '" data-type="sauce" data-id="' + key + '">';
-                sh += sauce.name + badge;
+                sh += escapeHtml(sauce.name) + badge;
                 sh += '</button>';
             });
             sh += '</div>';
@@ -2758,12 +2958,12 @@
                 var key = 'p_' + sup.id;
                 var sel = selections.supplements && selections.supplements[key] ? ' selected' : '';
                 var emoji = getEmoji(SUPPLEMENT_EMOJIS, sup.name);
-                var price = sup.currency_price || '€1.00';
+                var price = sup.currency_price || '1,00 €'; // [LOCK G-FROZEN-WIZARD-MONEY-MISSED 2026-06-22] FR fallback (was en-US '€1.00')
                 sh += '<div class="wizard-option supplement-opt micro-opt' + sel + '" data-type="supplement" data-key="' + key + '">';
                 sh += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
                 sh += '<span class="option-icon supplement-icon">' + emoji + '</span>';
-                sh += '<span class="option-name">' + sup.name + '</span>';
-                sh += '<span class="option-price paid">+' + price + '</span>';
+                sh += '<span class="option-name">' + escapeHtml(sup.name) + '</span>';
+                sh += '<span class="option-price paid">+' + escapeHtml(price) + '</span>';
                 sh += '</div>';
             });
             sh += '</div>';
@@ -2808,7 +3008,7 @@
                 h += '<div class="wizard-viande-row' + (count > 0 ? ' active' : '') + '">';
                 h += '<div class="viande-info">';
                 h += '<span class="viande-emoji">' + emoji + '</span>';
-                h += '<span class="viande-name">' + variation.name + '</span>';
+                h += '<span class="viande-name">' + escapeHtml(variation.name) + '</span>';
                 h += '</div>';
                 h += '<div class="viande-controls">';
                 h += '<button type="button" class="viande-btn minus' + (count <= 0 ? ' disabled' : '') + '" data-viande="' + key + '" data-action="minus">−</button>';
@@ -2837,7 +3037,7 @@
                 h += '<div class="wizard-viande-suppl-row' + (sc > 0 ? ' active' : '') + '" data-suppl-id="' + key + '">';
                 h += '<div class="viande-info">';
                 h += '<span class="viande-emoji">' + emoji + '</span>';
-                h += '<span class="viande-name">' + variation.name + '</span>';
+                h += '<span class="viande-name">' + escapeHtml(variation.name) + '</span>';
                 h += '</div>';
                 h += '<div class="viande-controls">';
                 h += '<button type="button" class="viande-suppl-btn viande-btn minus' + (sc <= 0 ? ' disabled' : '') + '" data-viande-suppl="' + key + '" data-action="minus">−</button>';
@@ -2867,7 +3067,7 @@
                         isIncluded = true;
                     }
                     var stateClass = isIncluded ? ' included' : ' removed';
-                    var label = isIncluded ? ('✓ ' + c.name) : ('✕ Sans ' + c.name);
+                    var label = isIncluded ? ('✓ ' + escapeHtml(c.name)) : ('✕ Sans ' + escapeHtml(c.name));
                     var emoji = getEmoji(GARNITURE_EMOJIS, c.name);
                     h += '<button type="button" class="garniture-toggle-btn' + stateClass + '" data-garniture="' + key + '">' + emoji + ' ' + label + '</button>';
                 });
@@ -2909,7 +3109,7 @@
                     h += '<div class="wizard-option radio-opt' + (isSelected ? ' selected' : '') + '" data-type="accompagnement" data-id="' + acc.id + '">';
                     h += '<span class="radio-mark"><i class="fa-solid fa-circle-dot"></i></span>';
                     h += '<span class="option-icon">' + emoji + '</span>';
-                    h += '<span class="option-name">' + acc.name + '</span>';
+                    h += '<span class="option-name">' + escapeHtml(acc.name) + '</span>';
                     h += '<span class="option-price">Inclus</span>';
                     h += '</div>';
                 });
@@ -2940,8 +3140,8 @@
                            addon.addon_item_name.toLowerCase().includes('frite') ? '🍟' : '🍟🥤';
                 h += '<div class="formule-card' + sel + '" data-action="menu-choice" data-value="' + value + '">';
                 h += '<span class="formule-icon">' + icon + '</span>';
-                h += '<span class="formule-name">' + addon.addon_item_name + '</span>';
-                h += '<span class="formule-price">+' + addon.addon_item_currency_price + '</span>';
+                h += '<span class="formule-name">' + escapeHtml(addon.addon_item_name) + '</span>';
+                h += '<span class="formule-price">+' + escapeHtml(addon.addon_item_currency_price) + '</span>';
                 h += '</div>';
             });
 
@@ -2990,7 +3190,7 @@
                     var sfIdx = selections.sauceFritesOrder ? selections.sauceFritesOrder.indexOf(key) : -1;
                     var badge = sfIdx === 0 ? ' <span class="chip-free">✓</span>' : (sfIdx > 0 ? ' <span class="chip-paid">+' + fmtPrice(SAUCE_EXTRA_PRICE) + '</span>' : '');
                     h += '<button type="button" class="sauce-chip' + sel + '" data-type="sauce_frite" data-id="' + key + '">';
-                    h += sauce.name + badge;
+                    h += escapeHtml(sauce.name) + badge;
                     h += '</button>';
                 });
                 h += '</div>';
@@ -3003,14 +3203,14 @@
         // === SECTION 7: COMMENTAIRE ===
         h += '<div class="wizard-section comment-section">';
         h += '<h4>📝 Instruction spéciale</h4>';
-        h += '<textarea class="wizard-comment-field" placeholder="Ex: Pas trop de sauce, sandwich pas trop sec...">' + (instructionText || '') + '</textarea>';
+        h += '<textarea class="wizard-comment-field" placeholder="Ex: Pas trop de sauce, sandwich pas trop sec...">' + escapeHtml(instructionText || '') + '</textarea>';
         h += '</div>';
 
         // === TICKET PREVIEW ===
         var ticket = buildTicketInstruction();
         h += '<div class="wizard-ticket-preview">';
         h += '<div class="ticket-label">Aperçu ticket</div>';
-        h += '<div class="ticket-content">' + (ticket || 'Aucune sélection') + '</div>';
+        h += '<div class="ticket-content">' + escapeHtml(ticket || 'Aucune sélection') + '</div>';
         h += '</div>';
 
         // === STICKY BOTTOM BAR ===
@@ -3152,7 +3352,7 @@
             // first UTF-16 code unit, leaving a lone surrogate for multi-unit emojis (🥬, 🧅, etc.)
             var emojiChars = Array.from(btn.textContent.trim());
             var emoji = emojiChars.length > 0 ? emojiChars[0] : '';
-            btn.innerHTML = emoji + ' ' + (isIncluded ? '✓ ' + displayName : '✕ Sans ' + displayName);
+            btn.innerHTML = emoji + ' ' + (isIncluded ? '✓ ' + escapeHtml(displayName) : '✕ Sans ' + escapeHtml(displayName));
         });
 
         // Update sauce badges
@@ -4144,6 +4344,15 @@
 
         originalBody.style.display = 'none';
 
+        // [POS-V4-WIZARD-VIEWPORT-FIT] Hide Vue-injected wizard footer (Add to cart) so the
+        // wizard's own sticky CTA remains the single source of truth (bound to running total).
+        // Without this, the Vue button stays visible above the wizard and submits temp.total_price = 0.
+        var vueFooter = modal.querySelector('[data-wiz-vue-footer]');
+        if (vueFooter) {
+            vueFooter.setAttribute('data-wiz-hidden', '1');
+            vueFooter.style.display = 'none';
+        }
+
         // [NEW SPRINT 4] Inject CSS styles if not already present
         if (!document.getElementById('pos-wizard-styles')) {
             var styleEl = document.createElement('style');
@@ -4529,6 +4738,12 @@
                 originalHeader.removeAttribute('data-wiz-hidden');
             }
             if (originalBody) originalBody.style.display = '';
+            // [POS-V4-WIZARD-VIEWPORT-FIT] Restore Vue-injected footer for simple products
+            // (no wizard rendered → Vue native CTA must be visible).
+            if (vueFooter) {
+                vueFooter.style.display = '';
+                vueFooter.removeAttribute('data-wiz-hidden');
+            }
             // Clear any stale wizard data-attributes from previous wizard session
             modal.removeAttribute('data-wizard-total');
             modal.removeAttribute('data-wizard-pos-line-addons');
@@ -4612,6 +4827,12 @@
                 if (hiddenHeader) {
                     hiddenHeader.style.display = '';
                     hiddenHeader.removeAttribute('data-wiz-hidden');
+                }
+                // [POS-V4-WIZARD-VIEWPORT-FIT] Restore Vue-injected wizard footer for fallback (simple products).
+                var hiddenVueFooter = modalEl.querySelector('[data-wiz-vue-footer][data-wiz-hidden]');
+                if (hiddenVueFooter) {
+                    hiddenVueFooter.style.display = '';
+                    hiddenVueFooter.removeAttribute('data-wiz-hidden');
                 }
             }
             if (!keepOriginalHidden) {
@@ -4788,10 +5009,10 @@
             btn.classList.remove('included', 'removed');
             if (isSelected) {
                 btn.classList.add('included');
-                btn.innerHTML = emoji + ' ✓ ' + name;
+                btn.innerHTML = emoji + ' ✓ ' + escapeHtml(name);
             } else {
                 btn.classList.add('removed');
-                btn.innerHTML = emoji + ' ✕ Sans ' + name;
+                btn.innerHTML = emoji + ' ✕ Sans ' + escapeHtml(name);
             }
         });
 

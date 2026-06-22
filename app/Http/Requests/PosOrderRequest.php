@@ -3,37 +3,93 @@
 namespace App\Http\Requests;
 
 use App\Enums\Activity;
+use App\Enums\Ask;
 use App\Enums\OrderType;
 use App\Enums\PosPaymentMethod;
+use App\Http\Requests\Concerns\ValidatesAddonRoles;
+use App\Http\Requests\Concerns\ValidatesOrderItemVariations;
+use App\Models\PaymentTerminal;
 use App\Rules\ValidJsonOrder;
-use Smartisan\Settings\Facades\Settings;
+use App\Services\Delivery\DeliveryFeeService;
 use Illuminate\Foundation\Http\FormRequest;
+use Smartisan\Settings\Facades\Settings;
 
 class PosOrderRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     *
-     * @return bool
-     */
-    public function authorize(): bool
+    use ValidatesAddonRoles;
+    use ValidatesOrderItemVariations;
+
+    protected function prepareForValidation(): void
     {
-        return true;
+        if ($this->has('is_advance_order') && (int) $this->input('is_advance_order') === 0) {
+            $this->merge(['is_advance_order' => Ask::NO]);
+        }
+
+        if ($this->filled('delivery_distance_km')) {
+            // [GOAL-COMPLEMENT-2026-05-18 Z-4 LIVREUR-Z4-ARCH-03 P0] DEL-5 wire-up.
+            // POS walk-in DELIVERY path must also resolve the per-branch fee
+            // config when branch_id is in the payload. Mirrors OrderRequest:117
+            // and DeliveryQuoteService:63. Null-safe: unknown branch -> legacy.
+            $branchId = (int) $this->input('branch_id', 0);
+            $branch = $branchId > 0 ? \App\Models\Branch::find($branchId) : null;
+            $this->merge([
+                'delivery_charge' => app(DeliveryFeeService::class)
+                    ->fromDistanceKm($this->input('delivery_distance_km'), $branch),
+            ]);
+        } elseif ($this->has('delivery_charge')) {
+            // [abuse-heal 2026-06-18 engines-c2] NF525 delivery-fee tamper close.
+            // The block above recomputes `delivery_charge` from distance ONLY when
+            // `delivery_distance_km` is filled. WITHOUT it, the client-sent
+            // `delivery_charge` was TRUSTED straight through to
+            // OrderService::posOrderStore -> PricingRequest::forPos(... delivery)
+            // (OrderService:838) -> it inflated the order total signed into the
+            // Z-report (NF525: amounts must be backend-computed).
+            //
+            // The web twin (OrderRequest:152-159) closes this by requiring BOTH
+            // delivery_charge + delivery_distance_km for delivery so the charge is
+            // ALWAYS recomputed. But the POS UI legitimately supports a manual,
+            // distance-less delivery fee (PosUITest), so mirroring "distance
+            // required" would break that flow. Instead we NEUTRALIZE: when no
+            // distance is available there is no server-trusted basis for a
+            // delivery fee, so we force the value to DeliveryFeeService's own
+            // null-distance answer (0.0). This also strips a stray delivery_charge
+            // smuggled onto a non-DELIVERY (e.g. TAKEAWAY) order. A real distance
+            // still routes through the recompute above. Cashier-entered manual
+            // fees must travel with a distance (or a future signed flat-fee
+            // config); an arbitrary typed amount can no longer reach the fiscal
+            // total.
+            $this->merge([
+                'delivery_charge' => app(DeliveryFeeService::class)
+                    ->fromDistanceKm(null),
+            ]);
+        }
+
+        // [F-SPLIT-PAYMENT-001] When the multi-tender feature flag is OFF,
+        // strip `payment_breakdown` from the payload BEFORE validation runs.
+        // This way an older deployment that still receives the field from a
+        // newer frontend silently falls back to single-tender (legacy path).
+        if (! config('split_payment.enabled', false)) {
+            $this->offsetUnset('payment_breakdown');
+        }
     }
 
     /**
-     * [POS-9.1.1] Discount permission thresholds (% of subtotal).
-     * - cashier (pos-discount-up-to-10) : 0-10%
-     * - manager (pos-discount-over-10-requires-manager) : 10-50%
-     * - owner   (pos-discount-unlimited) : 50-100%
+     * Determine if the user is authorized to make this request.
+     *
+     * V1.0.2 BUILD-6 heal: defense-in-depth — PosController constructor enforces
+     * `permission:pos` on every action except `quote` (kiosk pricing path uses its
+     * own auth:sanctum + ability gate). PosOrderRequest is only injected on the
+     * `store` action which carries the `permission:pos` middleware. FormRequest
+     * doubles down so any future route bypass (e.g. inline controller invocation)
+     * still authz-checks. Pattern matches Wave 5H (CurrencyRequest/TaxRequest/...).
      */
-    private const DISCOUNT_CASHIER_MAX_PCT = 10.0;
-    private const DISCOUNT_MANAGER_MAX_PCT = 50.0;
+    public function authorize(): bool
+    {
+        return $this->user()?->can('pos') ?? false;
+    }
 
     /**
      * Get the validation rules that apply to the request.
-     *
-     * @return array
      */
     public function rules(): array
     {
@@ -47,41 +103,80 @@ class PosOrderRequest extends FormRequest
         return [
             // Numeric daily counter OR delivery call-out name (prénom) — must not be digits-only
             'token' => ['nullable', 'string', 'max:191'],
-            'customer_id' => ['required', 'numeric'],
+            'customer_id' => ['nullable', 'numeric'],
             'branch_id' => ['required', 'numeric'],
             // [GAP-31-1] subtotal is recalculated server-side — nullable here, backend ignores client value
-            'subtotal' => ['nullable', 'numeric'],
+            // [P7] Reject negative client-sent amounts if present.
+            'subtotal' => ['nullable', 'numeric', 'min:0'],
             'discount' => ['nullable', 'numeric', 'min:0'],
             // [POS-9.1.1] Mandatory motif for any discount above 0
             'discount_reason' => ['nullable', 'string', 'max:191'],
             'dining_table_id' => ($orderTypeInt === OrderType::DINING_TABLE && $dineInEnabled) ? [
                 'required',
-                'numeric'
+                'numeric',
             ] : ['nullable'],
-            'delivery_charge' => request('order_type') === OrderType::DELIVERY ? [
+            'delivery_charge' => $orderTypeInt === OrderType::DELIVERY ? [
                 'required',
-                'numeric'
-            ] : ['nullable'],
+                'numeric',
+                'min:0',
+            ] : ['nullable', 'numeric', 'min:0'],
+            'delivery_distance_km' => ['nullable', 'numeric', 'min:0'],
             // [POS-9.1.8] total is recomputed server-side in OrderService::posOrderStore;
             // payload value is only used as a UX cross-check for cash payments
             // (see withValidator below). nullable so a desynced UI cannot bypass
             // server logic by spoofing total. (POS-GA-F-47)
             // [AUDIT-P50-BUG4] kept min:0 — server allows total=0 for 100% loyalty redemption.
             'total' => ['nullable', 'numeric', 'min:0'],
+            'quote_token' => ['nullable', 'string', 'uuid'],
+            'quote_signature' => ['nullable', 'string', 'size:64'],
             'order_type' => ['required', 'numeric'],
             'is_advance_order' => ['required', 'numeric'],
-            'address_id' => request('order_type') === OrderType::DELIVERY ? [
+            'address_id' => $orderTypeInt === OrderType::DELIVERY ? [
                 'required',
-                'numeric'
+                'numeric',
             ] : ['nullable'],
             'delivery_time' => ['nullable'],
             'coupon_id' => ['nullable', 'numeric'],
             'source' => ['required', 'numeric'],
             'items' => ['required', 'json', new ValidJsonOrder],
             'pos_payment_method' => ['required', 'numeric'],
-            'pos_payment_note' => request('pos_payment_method') === PosPaymentMethod::CARD || request('pos_payment_method') === PosPaymentMethod::MOBILE_BANKING || request('pos_payment_method') === PosPaymentMethod::OTHER ? (request('pos_payment_method') === PosPaymentMethod::CARD ? ['required', 'numeric', 'min_digits:4', 'max_digits:4'] : ['required', 'string']) : ['nullable', 'string'],
-            'pos_received_amount' => request('pos_payment_method') === PosPaymentMethod::CASH ? ['required', 'numeric'] : ['nullable', 'numeric'],
+            'pos_payment_note' => request('pos_payment_method') === PosPaymentMethod::CARD || request('pos_payment_method') === PosPaymentMethod::MOBILE_BANKING || request('pos_payment_method') === PosPaymentMethod::OTHER || (string) request('pos_payment_method') === (string) PosPaymentMethod::TICKET_RESTAURANT ? (request('pos_payment_method') === PosPaymentMethod::CARD ? ['required', 'numeric', 'min_digits:4', 'max_digits:4'] : ['required', 'string', 'max:200']) : ['nullable', 'string'],
+            'pos_received_amount' => request('pos_payment_method') === PosPaymentMethod::CASH ? ['required', 'numeric', 'min:0'] : ['nullable', 'numeric', 'min:0'],
+            // [P1 V1 Cloud-Prep insights 2026-05-18] Single-tender CARD path
+            // also requires a `terminal_id` so the Z-report TPE breakdown can
+            // attribute the sale to a specific terminal. Wave 5F
+            // F-SPLIT-PHANTOM-CARD-001 closed the split-tender path
+            // (payment_breakdown.*.terminal_id) but legacy single-tender CARD
+            // sales (pos_payment_method=CARD WITHOUT payment_breakdown) were
+            // still being bucketed as "Sans TPE" in the Z-report — losing
+            // per-terminal fee/volume attribution. Shape-level rule only here;
+            // the deep ACTIVE+branch ownership check is enforced in
+            // OrderService::posOrderStore where branch context is reliable.
+            'terminal_id' => [
+                'nullable',
+                'integer',
+                'min:1',
+                'required_if:pos_payment_method,' . PosPaymentMethod::CARD,
+            ],
             'loyalty_customer_code' => ['nullable', 'string', 'min:4', 'max:25'],
+            // [F-SPLIT-PAYMENT-001] Optional multi-tender breakdown — see SplitPaymentService.
+            // When the feature flag is OFF, prepareForValidation() strips this field
+            // BEFORE these rules run, so they only fire on flag-enabled deployments.
+            'payment_breakdown' => ['nullable', 'array', 'max:12'],
+            'payment_breakdown.*' => ['array'],
+            'payment_breakdown.*.mode' => ['required_with:payment_breakdown', 'integer', 'in:1,2,3,4,5'],
+            'payment_breakdown.*.amount' => ['required_with:payment_breakdown', 'numeric', 'min:0.01'],
+            'payment_breakdown.*.tendered' => ['nullable', 'numeric', 'min:0'],
+            'payment_breakdown.*.change' => ['nullable', 'numeric', 'min:0'],
+            'payment_breakdown.*.note' => ['nullable', 'string', 'max:191'],
+            'payment_breakdown.*.reference' => ['nullable', 'string', 'max:64'],
+            // [Sprint H2 P1-Z7-01 2026-05-17] Optional FK to payment_terminals (Sprint 1C).
+            // Nullable for V1.0.1 — POS UI selector is Stage B; legacy callers without
+            // a terminal selector keep working ("Sans TPE" bucket per MASTER §5 Risk #4).
+            // No `exists` rule yet — branch-level cross-check belongs in a Stage B
+            // dedicated request after the UI ships, to avoid coupling V1.0.1 backend
+            // wire-in to a branch_id-aware exists rule that needs ->where().
+            'payment_breakdown.*.terminal_id' => ['nullable', 'integer', 'min:1'],
         ];
     }
 
@@ -94,16 +189,17 @@ class PosOrderRequest extends FormRequest
             // (DINING_TABLE) would bypass the UI and create a dine-in order.
             $orderTypeInt = (int) request('order_type', 0);
             if ($orderTypeInt === OrderType::DINING_TABLE
-                && !(bool) Settings::group('pos')->get('pos_dine_in_enabled', false)) {
+                && ! (bool) Settings::group('pos')->get('pos_dine_in_enabled', false)) {
                 $validator->errors()->add('order_type', 'Dine-in is disabled for this branch.');
+
                 return;
             }
 
-            if ($orderTypeInt === OrderType::DELIVERY && Settings::group('order_setup')->get("order_setup_delivery") == Activity::DISABLE) {
+            if ($orderTypeInt === OrderType::DELIVERY && Settings::group('order_setup')->get('order_setup_delivery') == Activity::DISABLE) {
                 $validator->errors()->add('order_type', 'This order type is disabled now you can try another order type right now or call the management.');
-            } else if ($orderTypeInt === OrderType::TAKEAWAY && Settings::group('order_setup')->get("order_setup_takeaway") == Activity::DISABLE) {
+            } elseif ($orderTypeInt === OrderType::TAKEAWAY && Settings::group('order_setup')->get('order_setup_takeaway') == Activity::DISABLE) {
                 $validator->errors()->add('order_type', 'This order type is disabled now you can try another order type right now or call the management.');
-            } else if (blank(request('order_type'))) {
+            } elseif (blank(request('order_type'))) {
                 $validator->errors()->add('order_type', 'This order type is disabled now you can try another order type right now or call the management.');
             }
             // [AUDIT-P1-B] NOTE: This validation uses the client-sent 'total' as a preliminary check.
@@ -120,42 +216,66 @@ class PosOrderRequest extends FormRequest
                 $validator->errors()->add('pos_received_amount', 'The received amount can not be less than the total amount.');
             }
 
-            // [POS-9.1.1] Discount permission gate:
-            //  - every non-zero discount requires a written motif (≥ 3 chars)
-            //  - discount_pct = discount / subtotal * 100
-            //  - cashier  (pos-discount-up-to-10)                    ≤ 10%
-            //  - manager  (pos-discount-over-10-requires-manager)    ≤ 50%
-            //  - owner    (pos-discount-unlimited)                   > 50%
+            // M-06: this request only performs shape/UX checks. Discount permission
+            // and percentage authority are enforced against the backend subtotal in
+            // OrderService::posOrderStore, never against the client-sent subtotal.
             $discount = (float) request('discount', 0);
-            $subtotal = (float) request('subtotal', 0);
             if ($discount > 0) {
                 $reason = trim((string) request('discount_reason', ''));
                 if (strlen($reason) < 3) {
                     $validator->errors()->add('discount_reason', 'A reason is required for any POS discount (min 3 characters).');
+
                     return;
-                }
-
-                if ($subtotal <= 0) {
-                    $validator->errors()->add('discount', 'Cannot apply discount without a valid subtotal.');
-                    return;
-                }
-
-                $pct = ($discount / $subtotal) * 100.0;
-                $user = auth()->user();
-
-                if (!$user) {
-                    $validator->errors()->add('discount', 'Authentication required to apply a discount.');
-                    return;
-                }
-
-                if ($pct > self::DISCOUNT_MANAGER_MAX_PCT && !$user->can('pos-discount-unlimited')) {
-                    $validator->errors()->add('discount', 'Only an owner can apply a discount above ' . self::DISCOUNT_MANAGER_MAX_PCT . '%.');
-                } elseif ($pct > self::DISCOUNT_CASHIER_MAX_PCT && !$user->can('pos-discount-over-10-requires-manager') && !$user->can('pos-discount-unlimited')) {
-                    $validator->errors()->add('discount', 'Discount above ' . self::DISCOUNT_CASHIER_MAX_PCT . '% requires manager approval.');
-                } elseif (!$user->can('pos-discount-up-to-10') && !$user->can('pos-discount-over-10-requires-manager') && !$user->can('pos-discount-unlimited')) {
-                    $validator->errors()->add('discount', 'You do not have permission to apply POS discounts.');
                 }
             }
+
+            // [F-SPLIT-PHANTOM-CARD-001 2026-05-17] Phantom-CARD theft vector fix.
+            // Without this guard, a cashier could submit a CARD tranche with a
+            // forged/free-form reference and pocket the matching cash (no
+            // cash_movement is written for CARD tranches → drawer reconciles).
+            // Rule: every CARD tranche MUST carry a `terminal_id` pointing to
+            // an ACTIVE payment_terminals row OWNED by the order's branch.
+            // `exists` alone is unsafe — BranchScope is bypassed by the DB
+            // query builder, so we explicitly check branch_id + status.
+            $breakdown = (array) $this->input('payment_breakdown', []);
+            $orderBranchId = (int) $this->input('branch_id', 0);
+            foreach ($breakdown as $idx => $tranche) {
+                if (! is_array($tranche)) {
+                    continue;
+                }
+                if ((int) ($tranche['mode'] ?? 0) !== PosPaymentMethod::CARD) {
+                    continue;
+                }
+                $terminalId = (int) ($tranche['terminal_id'] ?? 0);
+                if ($terminalId <= 0) {
+                    $validator->errors()->add(
+                        "payment_breakdown.{$idx}.terminal_id",
+                        'A valid payment terminal is required for every CARD tranche.'
+                    );
+                    continue;
+                }
+                // [Z6-P1-WGS 2026-05-19] singular form — PaymentTerminal has no
+                // SoftDeletingScope so this is a no-op refactor, but the explicit
+                // BranchScope::class arg documents that the bypass is intentional
+                // (caller already constrains branch_id explicitly below).
+                $exists = PaymentTerminal::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+                    ->where('id', $terminalId)
+                    ->where('branch_id', $orderBranchId)
+                    ->where('status', PaymentTerminal::STATUS_ACTIVE)
+                    ->exists();
+                if (! $exists) {
+                    $validator->errors()->add(
+                        "payment_breakdown.{$idx}.terminal_id",
+                        'The selected payment terminal is not available for this branch.'
+                    );
+                }
+            }
+
+            $this->validateOrderItemVariationsAfter($validator);
+            // [HEAL-PLAN-D.1 / RED-Z4 P0-Z4-01 2026-05-19] Bind payload
+            // addon role to DB membership. Blocks the kiosk menu-formula
+            // ratio injection on non-menu_component addons.
+            $this->validateAddonRolesAfter($validator);
         });
     }
 
@@ -166,7 +286,7 @@ class PosOrderRequest extends FormRequest
             'pos_payment_note.min_digits' => 'The cart must contain at least 4 digits',
             'pos_payment_note.max_digits' => 'The cart must not contain more than 4 digits',
             'pos_received_amount.required' => 'The received amount field is required',
-            'dining_table_id.required' => 'The dining table field is required'
+            'dining_table_id.required' => 'The dining table field is required',
         ];
     }
 }

@@ -4,6 +4,7 @@ namespace App\Services;
 
 
 use Exception;
+use App\Events\ItemAvailabilityChanged;
 use App\Models\Item;
 use App\Models\ItemExtra;
 use Illuminate\Support\Facades\Log;
@@ -54,7 +55,10 @@ class ItemExtraService
     public function store(ItemExtraRequest $request, Item $item)
     {
         try {
-            return ItemExtra::create($request->validated() + ['item_id' => $item->id]);
+            $extra = ItemExtra::create($request->validated() + ['item_id' => $item->id]);
+            $this->dispatchItemCatalogRefresh($item);
+
+            return $extra;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -68,7 +72,10 @@ class ItemExtraService
     {
         try {
             if ($item->id == $itemExtra->item_id) {
-                return tap($itemExtra)->update($request->validated());
+                $itemExtra->update($request->validated());
+                $this->dispatchItemCatalogRefresh($item);
+
+                return $itemExtra->refresh();
             } else {
                 throw new Exception(trans('all.item_match'), 422);
             }
@@ -86,6 +93,7 @@ class ItemExtraService
         try {
             if ($item->id == $itemExtra->item_id) {
                 $itemExtra->delete();
+                $this->dispatchItemCatalogRefresh($item);
             } else {
                 throw new Exception(trans('all.item_match'), 422);
             }
@@ -109,6 +117,24 @@ class ItemExtraService
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
+    private function dispatchItemCatalogRefresh(Item $item): void
+    {
+        try {
+            $refreshed = $item->refresh();
+            ItemAvailabilityChanged::dispatch(
+                (int) $refreshed->id,
+                (int) $refreshed->status,
+                (float) $refreshed->price,
+                'full'
+            );
+        } catch (\Throwable $e) {
+            Log::warning('[CatalogSync] item extra refresh dispatch failed', [
+                'item_id' => $item->id,
+                'exception' => $e->getMessage(),
+            ]);
         }
     }
 }

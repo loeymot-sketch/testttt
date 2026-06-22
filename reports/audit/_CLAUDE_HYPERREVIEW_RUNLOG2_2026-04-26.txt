@@ -1,0 +1,16 @@
+Fichier écrit : `reports/audit/HYPERREVIEW_CLAUDE_POS_V4_EXEC_FINAL_2026-04-26.md`
+
+---
+
+**Synthèse des décisions structurantes** :
+
+**Verdict : GO-WITH-AMENDS** — 3 amends bloquants avant W1 :
+1. Gate `pricing_ssot` explicite sur `ItemComponent.vue::totalPriceSetup()` (lignes 734–773) — violation pré-existante non auditée dans le plan
+2. Critères cross-surface KDS/Kiosk dans G3 et G5 — lacune L4 non comblée par EXEC FINAL
+3. ADR couleur signé (human gate)
+
+**Contradiction principale détectée** : MASTER §5 met le POS shell en premier (zone structurante) ; EXEC FINAL §4 met ReceiptComponent en premier (risque minimum). Les deux logiques sont défendables mais le plan ne documente pas ce choix comme supersession délibérée.
+
+**Lacune la plus sévère** : `OrderService/FrontendOrderService symétrie` — invariant documenté dans le périmètre interdit mais absent de **tous** les gates G0–G8 des deux plans. Aucun gate ne contrôle activement cette parité.
+
+**Trouvaille code critique** : `PosComponent.vue` l.1390 et l.1413 utilisent des integers magiques `[4, 7, 8]` et `13` pour `order_status` — le plan interdit les strings magiques mais la définition ne couvre pas les integers.

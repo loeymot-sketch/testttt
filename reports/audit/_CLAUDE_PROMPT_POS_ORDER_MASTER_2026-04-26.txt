@@ -1,0 +1,64 @@
+Tu es l’architecte produit + audit FoodKing. Tu n’écris AUCUN patch. Tu produis UN document Markdown en français, prêt à être donné à Codex (GPT-5.5 / codex CLI) pour la Vague 2 et au-delà.
+
+## Lecture obligatoire (outils) avant de rédiger
+- `docs/ORDER_FLOW.md`, `docs/DEVICE_FLOW.md`, `docs/BUSINESS_RULES.md` (aperçu pricing / commande si présent)
+- `resources/js/router/modules/posRoutes.js`
+- Liste/grep `resources/js/components/admin/pos/*.vue` (noms de fichiers)
+- `app/Http/Controllers/Admin/PosController.php` ou équivalent, `app/Http/Controllers/Admin/PosOrderController.php` si existent
+- `app/Services/OrderService.php` (sections posOrderStore, changeStatus, encaissement) — ne pas copier 500 lignes : résumer les points d’ancrage
+- `routes/api.php` (groupe admin/pos) — repérer les routes critiques
+- `reports/audit/TRACEABILITY_MATRIX_CAISSE_V1_2026-04-25.md` — citer les FK concernés le cas échéant
+- `plans/PLAN_CAISSE_V1_GPT_MASTERPLAY_2026-04-25.md` §2 (ancrages) si utile
+- Rappel invariants : pricing SSOT backend, OrderStatus enum, branch_id, symétrie OS/FOS, dispatch after commit, frozen/gates
+
+## Philosophie
+- S’inspirer des parcours **matures** du marché (caisse cloud type Toast / Square / Lightspeed) : clarté des étapes, reprise de commande, file, park, remises contrôlées, multi-tender, Z — **sans** inventer des UX farfelues.
+- Chaque étape = **comportement attendu** + **preuve** (composant, route API, test) + **risque** + **niveau de difficulté** pour Codex (EASY / MEDIUM / HARD).
+
+## Document de sortie : structure EXACTE des titres
+
+# AUDIT & PLAN MAÎTRE — PARCOURS CAISSE (POS) — Prise de commande à finition
+
+## 0. Métadonnées
+(1 paragraphe : version du doc, cible Codex, prérequis Wave B déjà livrés, liens vers docs SSOT)
+
+## 1. Carte du parcours (vue opérateur)
+Schéma ou liste ordonnée des **écrans/états** de la prise de commande POS (du login caissier à la commande finalisée / ticket / KDS), avec numérotation S01, S02, …
+
+## 2. Matrice écran → composant Vue → route → service backend
+Tableau : | Étape | Composant(.vue) | Store/vuex | Route name | API (méthode + path) | Service PHP principal | Données clés | Pricing à cette étape (qui recalcule) |
+
+## 3. Détail millimétrique par étape (S01…)
+Pour **chaque** étape, sous-sections :
+- **But opérationnel** (1 phrase)
+- **UI** : boutons, champs, états disabled, erreurs affichées
+- **Front** : computed, watchers, appels axios (noms d’actions)
+- **Back** : validation, règles métier, idempotence
+- **Prix** : d’où vient le montant affiché (jamais calcul autorisé côté client pour le total final)
+- **Sync temps réel** : Echo / events (si applicable)
+- **Tests** : PHPUnit / Vitest / Playwright (noms cibles ou à créer)
+- **Abus / edge** : 2–3 scénarios (double clic, fuite branche, etc.)
+- **Tâche Codex** : [EASY|MEDIUM|HARD] + titre + critère DONE
+
+## 4. Parcours alternatifs
+Park, reprise, annulation, remise, coupon, commande invité vs connecté, multi-tender, split (si applicable), erreur réseau.
+
+## 5. Synchronisation globale (POS comme hub)
+- Comment les **commandes créées ailleurs** (borne) apparaissent sur la caisse (liste admin, file d’attente, refresh)
+- Filtre `branch_id`, statuts, WebSocket
+- Cohérence avec KDS / OSS (qui voit quoi, quand)
+
+## 6. Checklist d’audit 360° POS (avant “GO”)
+Tableau : fonctionnalité | fonctionnel | logique | sécurité | sync | tests | owner
+
+## 7. Plan découpé pour Codex (lots ordonnés)
+Minimum **12 lots** numérotés P-01… avec : objectif, fichiers allowlist *indicatifs*, tests obligatoires, dépendance au lot précédent, difficulté, risque si raté.
+Aligner quand c’est possible sur le format `missions/CV1-MXX-…/input.json` existant (ne pas inventer de numéro de mission : utiliser `SUGGESTED_LOT`).
+
+## 8. Exigences d’audit en cascade pour Codex
+Texte : après chaque lot, mini-rapport + `mandatory_tests` + self-audit GPT + piste audit Claude ciblé (sans remplacer gates humains).
+
+## 9. Prochaines 5 actions immédiates
+Actions vérifiables (fichier ou commande).
+
+Règles : pas de remplissage vide — si une info manque en repo, marquer **À CONFIRMER** + chemin à ouvrir. Sortie = **un seul bloc Markdown**, pas de ``` wrapper.

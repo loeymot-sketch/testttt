@@ -1,0 +1,147 @@
+{
+  "meta": {
+    "audit": "READ-ONLY tech-debt / architecture-fragility / maintainability map",
+    "date": "2026-06-16",
+    "worktree": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/.claude/worktrees/wizard-wysiwyg-2026-06-14",
+    "branch": "goal/wizard-wysiwyg-builder-2026-06-14",
+    "scope": "V1 LOCAL single-restaurant Le Cayenne. No files edited.",
+    "method": "All counts grep/Read-confirmed. Unconfirmable claims rejected."
+  },
+  "entries": [
+    {
+      "system": "CENTRAL/admin (+ Frontend/Table/Auth)",
+      "file": "app/Http/Controllers/**/*.php (104 files)",
+      "title": "#1 SYSTEMIC: catch(Exception) -> response(['message'=>$e->getMessage()],422) leaks internal/SQL messages to client; 97/104 files log NOTHING",
+      "count": "434 leak lines across 104 controllers (Admin-only: 360 lines / 78 controllers). Of the 104 files, 97 have ZERO Log:: anywhere (observability-blind); only 7 contain any Log:: call.",
+      "impact": "Leaks raw exception text (SQL errors, integrity-constraint names, file paths, class names) to the HTTP client = information disclosure. 97 files swallow the error with no Log:: -> production failures are invisible (no trace, no alert). Generic 422 status hides 500-class faults from monitoring.",
+      "fixable": "too-broad",
+      "evidence": "grep -rnE \"['\\\"]message['\\\"]\\s*=>\\s*\\$(e|exception|ex)->getMessage\" app/Http/Controllers => 434 lines. Per-file Log:: presence loop => 97 of 104 files have no Log::. Example app/Http/Controllers/Admin/AnalyticController.php:33-34,43-44,52-53,62-63,73-74 (6 catch blocks, all return getMessage(), file has no Log::). Scope-minimal fix: a shared trait jsonError($e) that Log::error()s the real message + returns a generic translated 422 ('label.something_went_wrong'). 104-file sweep = too broad for one pass; do it system-by-system, highest-risk controllers first (Pos*, Order*, Payment*, Loyalty*)."
+    },
+    {
+      "system": "SHARED (frontend/table/pos)",
+      "file": "resources/js/services/appService.js:71-77",
+      "title": "appService.currencyFormat hardcodes en-US toFixed (no FR thousands/decimal separator) -> '0.00EUR' not '0,00 EUR'",
+      "count": "13 files reference it; the method itself does parseFloat(amount).toFixed(decimal)+currency with NO Intl/locale. 9 components render prices through it (vs the FR-correct kiosk formatPrice SSOT).",
+      "impact": "Money is shown in en-US notation (dot decimal, no FR comma, no NBSP) on the public web site, table-ordering, and POS payment screens. Inconsistent with the kiosk's locale-correct formatPrice() and FR-locale ADR-007. User-facing correctness debt.",
+      "fixable": "now-safe",
+      "evidence": "Read appService.js:71-77. grep -rln currencyFormat resources/js => 13 files. Fix scope-minimal: make currencyFormat use Intl.NumberFormat('fr-FR') (or reuse kiosk formatPrice logic). Pure presentation, no backend/NF525 SSOT change (prices stay backend-computed). EXCEPT it also feeds PaymentComponent.vue (frozen) -> see frozen-zone entry."
+    },
+    {
+      "system": "WEB/frontend + TABLE + CAISSE/pos",
+      "file": "Checkout/Coupon/Item/FrontendCart/FrontendNavBar/TableCart/TableNavBar/Table-Checkout/Table-Item/Pos*/PaymentComponent",
+      "title": "en-US money consumer list: every non-kiosk price surface routes through appService.currencyFormat instead of the FR formatPrice() SSOT",
+      "count": "12 .vue consumers (excluding appService.js def): admin/pos/ItemComponent.vue:308, admin/pos/PosComponent.vue:815/835/1145, admin/pos/PaymentComponent.vue:28/101/186/203/219 (FROZEN), frontend/checkout/CheckoutComponent.vue:185/229/240/254/268, frontend/checkout/CouponComponent.vue:65, frontend/components/ItemComponent.vue:272, layouts/frontend/FrontendCartComponent.vue:66/113, layouts/frontend/FrontendNavBarComponent.vue:62, layouts/table/TableCartComponent.vue:40/85, layouts/table/TableNavBarComponent.vue:15/56, table/checkout/CheckoutComponent.vue:82/121/133, table/components/ItemComponent.vue:277.",
+      "impact": "FR-locale inconsistency surface = the entire web/table/POS money UI. Kiosk (BORNE) uses formatPrice() and is FR-correct; everything else is en-US. Two parallel money-formatting code paths = drift risk + visible inconsistency between systems.",
+      "fixable": "now-safe",
+      "evidence": "grep -rln currencyFormat resources/js. Fixing the single appService.currencyFormat def (above) heals 11 of 12 consumers at once. PaymentComponent.vue is FROZEN (see frozen-zone entry) -> stuck."
+    },
+    {
+      "system": "SHARED layouts",
+      "file": "FrontendNavBarComponent.vue:453, TableCartComponent.vue:120, FrontendCartComponent.vue:170, TableNavBarComponent.vue:173, PaymentComponent.vue:535",
+      "title": "currencyFormat method body copy-pasted verbatim across 5 components (mixin candidate)",
+      "count": "5 byte-identical method bodies: currencyFormat(amount,decimal,currency,position){ return appService.currencyFormat(...); }. floatNumber referenced in 19 .vue files (same duplication shape).",
+      "impact": "Pure copy-paste maintenance debt. A change to currency rendering must be made in N places. These 5 are trivial 1-line delegators that could be a shared mixin or just call appService directly in template.",
+      "fixable": "now-safe",
+      "evidence": "grep -nA4 'currencyFormat(amount, decimal, currency, position)' on each file shows identical 1-line delegator. Fix: a moneyMixin (currencyFormat+floatNumber) or import appService directly. PaymentComponent.vue:535 copy is FROZEN."
+    },
+    {
+      "system": "CENTRAL/admin",
+      "file": "resources/js/components/admin/items/wizard/ProductCreateWizardComponent.vue:183 (+ 9 more)",
+      "title": "10 orphan Vue components never imported/registered/routed (incl. previously-flagged ProductCreateWizardComponent)",
+      "count": "10 confirmed orphans, all CENTRAL/admin: ProductCreateWizardComponent.vue:183, dashboard/CustomerStatsComponent.vue:33, dashboard/StockLowAlertsWidget.vue:48, dashboard/TopCustomersComponent.vue:29, ingredients/IngredientAvailabilityToggleComponent.vue:32, items/AvailabilityToggleComponent.vue:20, items/composer/StepEditorComponent.vue:46, items/composer/StepPreviewComponent.vue:18, items/ItemPhotoUpload.vue:110, settings/TimeSlot/TimeSlotComponent.vue:7.",
+      "impact": "Dead source shipped in bundles (weight + confusion). StepEditorComponent/StepPreviewComponent are dead siblings inside the LIVE composer dir (live composer uses ComposerStepFormPanel/ComposerStepListSidebar) -> high confusion risk for the next dev. ProductCreateWizardComponent carries 4 missing i18n keys, corroborating it was never wired.",
+      "fixable": "now-safe",
+      "evidence": "Per-component basename+kebab-tag grep across resources/js/*.js,*.vue,*.blade.php excluding own file => 0 external refs; no defineAsyncComponent/router lazy-route. ProductCreateWizard: only 3 self-refs (lines 3,119,183), zero imports. Deletion is safe (read-only audit did not delete). Low-risk now-safe but verify each once more before delete."
+    },
+    {
+      "system": "CENTRAL/admin (+ kiosk/KDS/POS)",
+      "file": "coupons/CouponCreateComponent.vue:143-245, CouponListComponent.vue:106/183-184, posOrders/PosOrderShowComponent.vue:761, kitchenDisplaySystem/...:1652, frontend/kiosk/ds/KsVirtualKeyboard.vue:49",
+      "title": "21 i18n keys used in templates but absent from fr/en locales -> render the raw key string to the user",
+      "count": "21 live raw-render keys (15 admin/coupon incl. 7 label.{day}_short where a JS || fallback never fires because vue-i18n returns the truthy key; 1 POS-order label.error; 1 KDS label.kds_status_conflict; 2 kiosk: kiosk.a11y.vkeyb_shift + kiosk.wizard.generic.step_fallback). +4 more in the orphan ProductCreateWizardComponent (don't render since component is dead).",
+      "impact": "User sees raw tokens like 'label.monday_short', 'label.branch_scope', 'label.error', 'kiosk.wizard.generic.step_fallback' instead of translated text. Worst on the LIVE-routed coupon create/list screens (15 keys). The day_short keys are a real bug: $t('label.x_short') || 'Mon' never falls through because $t returns the key (truthy).",
+      "fixable": "now-safe",
+      "evidence": "Extracted fr.json/en.json keys, cross-checked $t() literals (dynamic-concat keys excluded). Locales at resources/js/languages/{fr,en,ar}.json. Fix: add the 21 missing keys to fr+en (additive). 2 studio.* candidates REJECTED (they call a local t(key,fallback) method, not $t -> render fallback, not raw)."
+    },
+    {
+      "system": "SHARED + KDS + BORNE/kiosk + CAISSE/pos",
+      "file": "resources/js/services/appService.js:287/294/313, resources/js/helpers/*.js",
+      "title": "Dead exported functions: 3 appService methods + 23 helper exports never used outside their own file",
+      "count": "3 appService dead (formDataShow:287, singleSlideDown:294, singleGroupActive:313). 23 helper exports dead (8 fully dead incl. helpers/posReceiptBuilder.js:73/105 buildPaymentBreakdownLines+sumPaymentBreakdownTotal, helpers/kioskFilters.js:79/94 applyKioskFilters+getAllergenCollision, helpers/kdsDisplay.js:21 LS_GROUP_BY_TABLE; 15 dead-public-export used only internally).",
+      "impact": "Dead API surface + bundle weight. Low severity but signals incomplete refactors (e.g. an unused payment-breakdown receipt builder and an unused allergen-collision helper hint at abandoned feature paths).",
+      "fixable": "now-safe",
+      "evidence": "grep -rn 'appService\\.formDataShow|appService\\.singleGroupActive|appService\\.singleSlideDown' resources/js => 0. Per-export name grep across resources/js+tests excluding own file => 0 external refs. The named spot-check targets (currencyFormat/floatNumber/onlyNumber/phoneNumber/logoutConfirmation) are all LIVE. Deletion safe but verify the test-internals hooks (__KIOSK_TACOS_SIZE_INTERNALS__, _resetKioskAuthInterceptorForTests) aren't future test scaffolding before removing."
+    },
+    {
+      "system": "CENTRAL/admin (+ POS-surface modals)",
+      "file": "items/composer/ComposerTemplatePickerModal.vue:13, settings/PaymentTerminals/PaymentTerminalsComponent.vue:46/50, messages/MessageListComponent.vue:10/103, ~40 *CreateComponent.vue:8-9 modal-close, pos/ItemComponent.vue:81/99/104/264",
+      "title": "69 icon-only buttons with no accessible name (a11y debt beyond edit-buttons)",
+      "count": "69 nameless icon-only <button> (0 anchors). 56 = icon-class-on-button empty body (dominant: 'modal-close fa-xmark' copy-pasted across ~40 Create/Edit/Upload modals at :8/:9). 13 = icon in child <i>/<svg> only (edit/delete/search/send/info/+- steppers). Worst: ComposerTemplatePickerModal.vue:13 where the <i> is aria-hidden -> zero SR fallback.",
+      "impact": "Screen-reader users hear 'button' with no name -> cannot operate close/edit/delete/search/send or POS qty steppers (+/- indistinguishable). Food-safety-adjacent: pos/ItemComponent allergen-info buttons (:81/:264) are nameless.",
+      "fixable": "now-safe",
+      "evidence": "Parsed <button>/<a> blocks across resources/js/components/admin (279 files), excluded those with visible text/aria-label. Fix = additive :aria-label='$t(...)' (close/edit/delete/search/send/increase/decrease). The ~40 modal-close copies = one shared close-button component clears the bulk. CAVEAT: pos/ItemComponent.vue + pos/PosComponent.vue are POS-V5 surface (not in the §7 frozen Vanilla-JS list, but confirm no POS LOCK) - aria-label add is behaviorally inert."
+    },
+    {
+      "system": "CENTRAL/admin",
+      "file": "administrators/AdministratorShowComponent.vue:132, chefs/ChefShowComponent.vue:133, customers/CustomerShowComponent.vue:133, items/CatalogStudioComponent.vue:93/124/127/129, components/MultiInputLanguageComponent.vue:9, settings/NotificationAlert/NotificationAlertComponent.vue:52/88/124",
+      "title": "51 form controls with no programmatic label (incl. a real broken dangling-for bug in 6 password-confirm forms)",
+      "count": "51 of 492 scanned controls (29 text, 8 file, 6 password, 4 number, 2 checkbox, 1 tel, 1 email; 12 placeholder-only, 39 with no name at all). 6 Show components have confirm-password input id='confirm_password' but BOTH labels use for='password' -> dangling/duplicate for, confirm field unlabeled.",
+      "impact": "SR + voice-control users cannot identify/target fields. The 6 password-confirm forms have an actual association BUG (duplicate for='password'). MultiInputLanguageComponent is a shared component in a v-for -> non-unique for='name' -> impact multiplies.",
+      "fixable": "now-safe",
+      "evidence": "Parsed input/select/textarea, excluded valid <label>-wrapped (40 valid blocks excluded, e.g. ComposerStepFormPanel correct). Fix: add :id + matching <label for>, or aria-label. Password fix = correct the dangling for='password' -> 'confirm_password' (additive bug fix). MultiInputLanguageComponent needs a unique computed id (slightly broader, low risk). No frozen files involved. <img> alt: 0 missing of 102 scanned (CLEAN)."
+    },
+    {
+      "system": "CAISSE/pos + WEB + KDS + BORNE",
+      "file": "public/js/*.js (sizes from disk ls; mix-manifest carries no byte sizes)",
+      "title": "Bundle weight: app.js 7.4MB, pos-app.js 7.1MB, admin-shell.js 6.7MB are oversized (dev/unminified-looking)",
+      "count": "app.js 7,427,666 B (7.4MB), pos-app.js 7,070,689 B (7.1MB), admin-shell.js 6,712,975 B (6.7MB), vendor.js 1.94MB, pos-shell.js 1.63MB, kiosk-shell.js 701KB, admin-kds.js 582KB, kiosk-wizard-step.js 384KB, admin-reports.js 362KB, pos-wizard.js 297KB (frozen Vanilla JS), admin-oss.js 101KB.",
+      "impact": "7MB entry bundles = slow first paint on the kiosk/POS hardware (single-box, no CDN). app.js+pos-app.js+admin-shell.js each >6.7MB suggests these are unminified or carry the full Vue+deps inline rather than splitting vendor. Heaviest 3 dwarf vendor.js (1.9MB), implying vendor isn't being shared into them.",
+      "fixable": "owner-gate",
+      "evidence": "ls -la public/js/*.js. mix-manifest.json has 14 hashed entries but NO byte sizes (Laravel Mix doesn't emit sizes). Sizes are from disk. Fix = code-split + ensure production minify (npm run production) + extract shared vendor; but build-config change is broad and could shift hashes/break frozen pos-wizard wiring -> owner-gate. NOTE: pos-wizard.js (297KB) is FROZEN per CLAUDE.md §7 (S25-SinglePage, non-Mix)."
+    },
+    {
+      "system": "CAISSE/pos (frozen)",
+      "file": "resources/js/components/admin/pos/PaymentComponent.vue:535-536 + :28/101/186/203/219",
+      "title": "FROZEN-ZONE DEBT: en-US money format (POS-ERG-07) trapped in frozen PaymentComponent; cannot fix without owner gate",
+      "count": "1 frozen file, 5 currencyFormat call sites + 1 local delegator (line 535) that forwards to the en-US appService.currencyFormat. Documented as POS-ERG-07 (wizard EUR1.50 en-US).",
+      "impact": "POS payment screen shows en-US money (no FR comma/NBSP) and this is locked. Even when appService.currencyFormat is fixed FR-wide, PaymentComponent is in the §7 frozen list -> its money UX stays stuck until owner LOCK. Same trap for the pos-wizard.js Vanilla bundle (POS-ERG-07 EUR formatting).",
+      "fixable": "owner-gate",
+      "evidence": "grep currencyFormat resources/js/components/admin/pos/PaymentComponent.vue:535 -> return appService.currencyFormat(...). File listed in CLAUDE.md §7 Frozen Zones. PaymentComponent.vue + PosV5TrancheRow.vue + pos-wizard.js all frozen. Fix requires LOCK_<id>.md + owner sign-off (frozen + payment-critical). If appService.currencyFormat is healed, PaymentComponent inherits the fix automatically since it delegates - but verifying/touching it still needs the gate."
+    },
+    {
+      "system": "SHARED (governance)",
+      "file": "tests/Feature/Sentinels/FormRequestAuthzDriftSentinelTest.php:65",
+      "title": "Governance debt: 66 FormRequest authorize() bare 'return true;' (authz fully deferred to middleware)",
+      "count": "66 (exact, == sentinel RETURN_TRUE_BASELINE which was ratcheted 69->66 on 2026-05-29). 99 FormRequest files total. Higher-blast-radius members still on backlog: PaymentRequest, PaymentMethodRequest, OtpRequest, VerifyPhoneRequest.",
+      "impact": "Each defers all authorization to route middleware. V1-LOCAL single-operator = low risk; sentinel locks the ceiling so it cannot grow. Refactor risk: each fix is a behavior-adjacent authz change needing its own regression test before lowering the constant.",
+      "fixable": "owner-gate",
+      "evidence": "Sentinel regex run over app/Http/Requests/** => 66. FormRequestAuthzDriftSentinelTest.php:65 const RETURN_TRUE_BASELINE=66, assertLessThanOrEqual. STALE DOC: CLAUDE.md §9 says 'sentinel baseline still set to 69' -> now 66 (doc-only correction, now-safe)."
+    },
+    {
+      "system": "SHARED (governance / multi-tenant)",
+      "file": "tests/Feature/Branch/BranchScopeCoverageSentinelTest.php:48-66",
+      "title": "Governance debt: 12 models exempt from BranchScope (10 are V1.0.2 cross-branch-leak backlog)",
+      "count": "12 exempted total = 2 architectural (Branch self-ref, Customer Sanctum-recursion) + 10 V1.0.2-backlog (FrontendDiningTable:56, ZReport:57, AuditLog:58, OrderDiscountLog:59, Message:60, DiningTableAuditLog:61, KioskPromo:62, UpsellRule:63, ActionLog:64, DomainEvent:65). All 10 confirmed, matches CLAUDE.md §9 (no drift).",
+      "impact": "Each backlog model has a branch_id but no global BranchScope -> cross-branch read leak. V1 single-tenant (branch_id=1) unexposed; V2 SaaS hard-fail. ZReport/AuditLog are NF525-adjacent (frozen proximity).",
+      "fixable": "owner-gate",
+      "evidence": "BranchScopeCoverageSentinelTest.php:48-66 EXEMPTED_MODELS. Sentinel enumerates branch_id models and asserts scope-or-exempt -> no NEW unscoped model can slip in silently. Matches CLAUDE.md exactly. Fix deferred to V2 SaaS cutover (owner-gate); ZReport/AuditLog specifically need owner gate (NF525)."
+    },
+    {
+      "system": "SHARED (governance / NF525 cloud-prep)",
+      "file": "app/Providers/AppServiceProvider.php:294-296",
+      "title": "Governance debt UNI-03: prod cache-driver guard only forbids ['array','null']; 'file' and 'database' PASS",
+      "count": "Forbidden list = ['array','null'] (2 entries). 'file' + 'database' drivers pass the boot guard despite the exception message claiming intent is 'shared driver (redis or memcached)'.",
+      "impact": "V1 LOCAL single-box 'file' driver is SAFE (one FPM pool, Cache::lock coherent for NF525 audit-chain). On multi-instance/ALB cloud, 'file' breaks cross-worker lock coherence -> risk of UNIQUE(branch_id,prev_hash) collision / silent fiscal-chain break. This is the documented UNI-03 cloud-prep backlog item.",
+      "fixable": "owner-gate",
+      "evidence": "AppServiceProvider.php:294 $cacheDriver=config('cache.default'); :295 $forbiddenCacheDrivers=['array','null']; :296 in_array -> throw RuntimeException. Matches CLAUDE.md §8 UNI-03. STALE DOC: CLAUDE.md §8 cites AppServiceProvider.php:215; real line is 294-296 (doc-only correction). Widening list only required at cloud cutover (owner-gate)."
+    },
+    {
+      "system": "SHARED (docs/governance)",
+      "file": "CLAUDE.md:330 vs resources/js/router/modules/stockRoutes.js:7",
+      "title": "Stale doc: CLAUDE.md §6 lists /admin/stock-rupture-dashboard which has no Vue route (real route = /admin/stock/rupture)",
+      "count": "1 wrong documented surface URL. Real SPA route name admin.stock.rupture at path /admin/stock/rupture (stockRoutes.js:7); 3 corroborating refs (BackendMenuComponent.vue:93, DashboardComponent.vue:171, StockLowAlertsWidget.vue:7) all use /admin/stock/rupture. Zero web routes for either path (SPA catch-all serves the shell HTTP 200, but Vue router has no match for the hyphenated path -> fallback/not-found view).",
+      "impact": "Any agent following the §6 Visual Test Mandate for the stock dashboard captures the wrong/empty screen. Misleads the verification discipline. Also surfaced 2 other stale CLAUDE.md line refs (§8 :215, §9 baseline 69).",
+      "fixable": "now-safe",
+      "evidence": "CLAUDE.md:330 says /admin/stock-rupture-dashboard. stockRoutes.js:7 path:'/admin/stock/rupture'. grep routes/*.php for 'rupture' => only API (routes/api.php:313-323); web served by catch-all routes/web.php:62. Doc-only fix (CLAUDE.md is operating memory, not frozen)."
+    }
+  ]
+}

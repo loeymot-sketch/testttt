@@ -1,0 +1,131 @@
+{
+  "specialist": "RED-team",
+  "discipline": "AUDIT-ONLY — Adversarial",
+  "scope": "Find a CVE reachable from PUBLIC unauthenticated surface OR escalatable from low-priv authenticated surface",
+  "session_id": "WI-8-composer-frontend-advisories-2026-05-19",
+  "framing": "Hostile attacker model. Goals: (1) find any CVE chainable to RCE / data theft / NF525 fiscal-state tampering from outside the building. (2) Disprove benign-by-default assumptions of Architect+Security.",
+  "public_unauthenticated_surfaces_v1_lecayenne": [
+    "https://lecayenne.fr (customer ordering website, root + menu + checkout)",
+    "https://lecayenne.fr/mobile-app/* (mobile app webview shell)",
+    "Kiosk borne URL (in-store touchscreen, technically LAN-only but physically accessible to anyone)",
+    "/api/v1/* customer ordering endpoints (Sanctum kiosk:order ability, customer tokens)",
+    "Webhook receivers: /senangpay-webhook, /stripe-webhook (provider-IP-restricted recommended but verify)",
+    "/storage/* uploaded image direct delivery (if public disk symlinked)"
+  ],
+  "red_team_attack_paths_attempted": [
+    {
+      "id": "RED-1",
+      "name": "Laravel CVE-2025-27515 file validation bypass — customer-facing path?",
+      "attack": "Customer uploads polyglot image-PDF that passes 'image' mime check, gets served from /storage, browser executes embedded payload.",
+      "finding": "Customer-facing uploads do NOT exist in FoodKing surface. ItemPhoto/Coupon/Theme uploads are ADMIN-ONLY. CouponRequest has 'nullable' image but is admin-gated. No customer-side image upload path identified.",
+      "verdict": "NOT-EXPLOITABLE from public surface. Admin-authenticated only.",
+      "residual_risk": "Insider threat: rogue admin / branch manager could plant polyglot. Mitigated by single-resto Le Cayenne model (small admin team, owner-trusted)."
+    },
+    {
+      "id": "RED-2",
+      "name": "axios prototype pollution via customer-controlled JSON",
+      "attack": "Customer mobile/web app receives malicious response from MITM/compromised CDN that exploits axios __proto__ pollution → cascading auth bypass / response tampering.",
+      "finding": "FoodKing axios calls go to OWN backend (api.lecayenne.fr) over HTTPS. No third-party axios calls. MITM requires breaking HTTPS. Pollution requires server to return __proto__ key in response — Laravel does not. CHAIN BROKEN.",
+      "verdict": "NOT-EXPLOITABLE absent HTTPS break OR backend response tampering (which would be game-over anyway).",
+      "residual_risk": "If customer adds malicious browser extension or visits compromised page first, prototype-pollution gadget on axios COULD persist into FoodKing session. Real but low-probability. FIX-PRE-PROD recommended regardless."
+    },
+    {
+      "id": "RED-3",
+      "name": "sweetalert2 8.19.1 supply-chain compromise",
+      "attack": "GHSA-8jh9-wqpf-q52c affects sweetalert2 8.19.1+ specifically — 'hidden functionality' suggests malicious code shipped in published package. EVERY page loading vendor.js is exposed.",
+      "finding": "vendor.js IS shipped to every customer page (mobile + web + kiosk + admin). If the hidden functionality is data exfiltration / backdoor / cryptojacker, every visitor's browser executes it. This is a SUPPLY-CHAIN attack already armed.",
+      "verdict": "REACHABLE PUBLIC SURFACE — supply-chain CVE means the package itself contains the payload, no exploit required.",
+      "residual_risk": "CRITICAL category. MUST FIX PRE-PROD. Audit npm package contents OR upgrade to 8.19.2+ immediately."
+    },
+    {
+      "id": "RED-4",
+      "name": "swiper prototype pollution via customer-controlled URL params",
+      "attack": "Customer-controlled URL params populate swiper config (e.g. slider hash navigation, image gallery indexes) → __proto__ injection → admin session hijack.",
+      "finding": "Inspected resources/js/components/frontend/home/SliderComponent.vue + ItemComponent.vue (admin POS) — swiper config is HARDCODED (slidesPerView, navigation, autoplay literal options). No user-input merge into config object. CHAIN BROKEN.",
+      "verdict": "NOT-EXPLOITABLE in current usage. Risk persists if future feature adds dynamic-config swiper.",
+      "residual_risk": "DEFER V1.0.X with note: any swiper config refactor MUST audit for user-input merge."
+    },
+    {
+      "id": "RED-5",
+      "name": "league/commonmark embed/raw-html bypass via customer-input markdown",
+      "attack": "Customer review/comment/notification rendered as markdown → XSS payload bypasses sanitizer → admin browser executes JS → admin session hijack.",
+      "finding": "Grep zero matches for CommonMark / Str::markdown / convertToHtml in FoodKing app code. League/commonmark is transitive (Laravel mail rendering). No user-content markdown render path identified.",
+      "verdict": "NOT-EXPLOITABLE.",
+      "residual_risk": "DEFER V1.0.X."
+    },
+    {
+      "id": "RED-6",
+      "name": "firebase JS SDK gRPC memory allocation DoS via FCM push",
+      "attack": "Attacker spoofs FCM payload to allocate huge memory in customer browser → DoS.",
+      "finding": "FCM payloads originate from FoodKing backend (controlled). Attacker would need to compromise FCM project credentials (separate threat). gRPC memory allocation requires Firestore-streaming usage — FoodKing uses Firebase Messaging only, NOT Firestore. CHAIN BROKEN.",
+      "verdict": "NOT-EXPLOITABLE in current usage.",
+      "residual_risk": "If FoodKing adds Firestore data sync in V1.x, re-audit immediately."
+    },
+    {
+      "id": "RED-7",
+      "name": "phpseclib AES-CBC padding oracle via webhook/encryption",
+      "attack": "Attacker probes any FoodKing endpoint that encrypts/decrypts using phpseclib AES-CBC → padding oracle leaks plaintext.",
+      "finding": "Grep zero matches for phpseclib / Crypt\\\\AES in FoodKing app code. FoodKing encryption = Laravel's openssl-based Encrypter (config/app.php APP_KEY). No phpseclib AES surface.",
+      "verdict": "NOT-EXPLOITABLE.",
+      "residual_risk": "None."
+    },
+    {
+      "id": "RED-8",
+      "name": "lodash _.template code injection via admin import file",
+      "attack": "Admin imports Excel file → controller passes user content to _.template() somewhere → arbitrary JS executed in admin browser.",
+      "finding": "Grep lodash usage: heavy use of _.debounce / _.throttle / _.cloneDeep / _.merge across admin/POS/kiosk components. No _.template() call identified in spot check. Would need full audit to confirm zero usage.",
+      "verdict": "LIKELY-NOT-EXPLOITABLE but unverified. Conservative bump to 4.17.21+ closes it regardless.",
+      "residual_risk": "FIX-PRE-PROD is cheap (`npm audit fix` non-breaking)."
+    },
+    {
+      "id": "RED-9",
+      "name": "Chained attack — axios prototype pollution + sweetalert2 supply chain",
+      "attack": "sweetalert2 (already compromised) pollutes window.__proto__ → axios picks up polluted config → silent credential exfiltration to attacker server.",
+      "finding": "Theoretically possible but speculative without knowing exactly what sweetalert2 8.19.1's 'hidden functionality' is. The mere PRESENCE of a supply-chain CVE in a globally-loaded vendor.js is THE critical issue.",
+      "verdict": "REINFORCES RED-3 — sweetalert2 fix is non-negotiable.",
+      "residual_risk": "CRITICAL."
+    },
+    {
+      "id": "RED-10",
+      "name": "Webhook surface — symfony/process Windows escape (Stripe webhook → exec on Windows dev)",
+      "attack": "Stripe/SenangPay webhook triggers backend exec on Windows dev machine via symfony/process → command injection.",
+      "finding": "FoodKing prod = Linux (Ansible/OVH plan). Dev = mixed. Windows CVE not reachable on Linux prod.",
+      "verdict": "NOT-APPLICABLE prod."
+    }
+  ],
+  "adversarial_disputes_to_security_findings": [
+    {
+      "dispute": "Security claims 'Laravel CVE-2025-27515 admin-only' — counter: insider threat / phishing → admin credentials compromised → exploit triggers.",
+      "resolution": "Insider threat is real but mitigated by single-resto trust model. Laravel 9 EOL is the real structural issue, not single CVE scope."
+    },
+    {
+      "dispute": "Security claims 'swiper hardcoded config' — counter: dynamic-config refactor in V1.x could silently introduce attack surface.",
+      "resolution": "Add to V1.0.X review checklist: any swiper config object that uses object-spread/Object.assign with user input MUST be audited."
+    },
+    {
+      "dispute": "Architect dismisses build-time CVEs — counter: malicious npm package in dev tree could compromise developer workstation → backdoor commit → prod compromise.",
+      "resolution": "Build-time CVEs ARE NOT zero-risk in supply-chain era. Lower priority than prod-runtime but should still bump at convenience. NPM audit fix non-breaking covers most."
+    }
+  ],
+  "red_team_top_3_actual_concerns": [
+    {
+      "rank": 1,
+      "package": "sweetalert2 8.19.1",
+      "rationale": "GHSA-8jh9-wqpf-q52c labelled 'hidden functionality' = supply-chain compromise already shipped. Loaded on every page via vendor.js. FIX NOW.",
+      "severity_v1_lecayenne": "CRITICAL"
+    },
+    {
+      "rank": 2,
+      "package": "axios 1.x (≥15 CVEs)",
+      "rationale": "Direct dep, 133 callsites, cumulative prototype-pollution + SSRF + DoS attack surface. Mostly not exploitable due to backend-controlled responses, but defense-in-depth principle + non-breaking fix = no reason not to bump.",
+      "severity_v1_lecayenne": "HIGH"
+    },
+    {
+      "rank": 3,
+      "package": "laravel/framework 9.52.21 (EOL + CVE-2025-27515)",
+      "rationale": "EOL since Feb 2024. CVE-2025-27515 has NO 9.x fix. Even if exploit is admin-only insider-threat, running EOL framework is governance failure for production. Drives V1.1 migration urgency.",
+      "severity_v1_lecayenne": "STRUCTURAL"
+    }
+  ],
+  "no_critical_unauthenticated_rce_found": "After full adversarial sweep, NO chained CVE produces unauthenticated RCE on V1 Le Cayenne. sweetalert2 supply-chain remains the single 'no-exploit-needed' exposure. Everything else requires admin auth, MITM, or precondition not met."
+}

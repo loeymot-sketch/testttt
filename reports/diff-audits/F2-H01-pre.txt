@@ -1,0 +1,2 @@
+16:window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+261:                    toast.error(message, { timeout: 6000 });

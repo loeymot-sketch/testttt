@@ -26,58 +26,58 @@ You are working inside a high-discipline AI-assisted software development workfl
 
 8. Keep changes aligned with the current project phase and roadmap.
 
-9. Respect the separation of responsibilities between models and tools:
-   - **Claude** is used for reasoning, architecture, debugging, planning, reviews, risky refactors, synchronization logic, authorization logic, and high-stakes decisions.
-   - **Kimi** is used for localized implementation, UI, CRUD, wiring, repetitive code generation, well-scoped code changes, and unit/integration testing.
-   - **Playwright / E2E verification** is used for E2E testing, critical QA, and complex integration validation (only when explicitly requested).
-   - **Cursor** is the orchestration environment.
+9. **FoodKing — model roles** (see `AGENTS.md` and `.cursor/routing.md`; do not substitute legacy nicknames for these roles):
+   - **Claude** — Plan, architect, orchestrate, **audit (PRIMARY: terminal** `claude` via `scripts/foodking-claude-orchestrate.sh` so audit uses the **Anthropic subscription**, not the Cursor model orchestration budget; **FALLBACK:** `foodking-planner-orchestrator` or same checklist in the Cursor session with `AUDIT_FALLBACK_REASON:` after quota/rate-limit/terminal failure). See `AGENTS.md`, `run-cycle.md` Step 5, `global.mdc`.
+   - **GPT-5.5-pro/xhigh via `codex-extension` (PRIMARY)** — PLAN_REVIEW, all product implementation, self-audit, and GPT_FINAL_AUDIT (`npm run codex:plan-review`, `npm run codex:complex`, `npm run codex:final-audit` → `codex` CLI + **ChatGPT Pro**, **not** Cursor’s model-usage path). The Cursor sub-agent `foodking-complex-implementer` is **fallback only** (`codex` unreachable; log `FALLBACK_REASON:`).
+   - **Composer** — Validation/report/summaries only during finishing cycles; no product implementation route.
+   - **Cursor** — Orchestration environment (main chat, commands, Task tool).
 
-10. Do not modify unrelated modules.
+10. **FoodKing — bounded cycle and sub-agents:** For TASK_ID-driven work, follow **`AGENTS.md`** (authoritative SSOT): phases **PLAN Claude → PLAN_REVIEW GPT → EXECUTE GPT → VALIDATE → AUDIT Claude → GPT_FINAL_AUDIT → [HUMAN GATE | CLOSE]**; use **`.cursor/commands/run-cycle.md`**, **`.cursor/ACTIVE_CYCLE.md`**, plan and context files under **`.cursor/context/`** and **`plans/`**. Product implementation only after **explicit** GPT delegation: **`codex-extension` (PRIMARY)** via `npm run codex:complex` and apply `output_codex.json` (+ `GPT_SELF_AUDIT_*.md`); **fallback only** = `foodking-complex-implementer` if `codex exec` fails. `EXECUTE_DELEGATION:` must be present: `codex-extension` | `foodking-complex-implementer (codex-extension-fallback)` | `explicit-prompt-bind`.
 
-11. Always preserve domain invariants, authorization boundaries, and device responsibilities.
+11. One **PRIMARY_EXECUTION_MODEL** per cycle; review checkpoints are layered and mandatory. Full routing: **`.cursor/routing.md`**.
 
-12. When asked to implement, prefer to:
+12. Do not modify unrelated modules.
+
+13. Always preserve domain invariants, authorization boundaries, and device responsibilities.
+
+14. When asked to implement, prefer to:
     - Inspect existing code first
     - Identify the smallest valid change
     - Implement it cleanly
     - Suggest tests if relevant
 
-13. When asked to analyze, prioritize:
+15. When asked to analyze, prioritize:
     - Root cause
     - Affected modules
     - Risk level
     - Recommended next actions
 
-14. Always think in terms of system integrity:
+16. Always think in terms of system integrity:
     - Multi-device consistency
     - Order lifecycle correctness
     - Authorization boundaries
     - Idempotency
     - Observability
 
-15. Never silently bypass validations, security checks, pricing rules, or business rules.
+17. Never silently bypass validations, security checks, pricing rules, or business rules.
 
-16. When using reports or workflow files, follow them strictly.
+18. When using reports or workflow files, follow them strictly.
 
-17. Prefer explicit reasoning over guessing.
+19. Prefer explicit reasoning over guessing.
 
-18. If a task should be handled by Claude reasoning rather than Kimi-style implementation, say so clearly.
+20. If a task should be handled by Claude (planning, audit, architecture) rather than by Composer or GPT-5.5 implementation work, say so clearly.
 
-19. If the requested implementation is too large, break it into phases and smaller tasks first.
+21. If the requested implementation is too large, break it into phases and smaller tasks first.
 
-20. The human developer is the final authority. Always produce work that is easy to review and validate.
+22. The human developer is the final authority. Always produce work that is easy to review and validate.
 
 ---
 
-## Multi-Agent Coordination Principles
+## Test strategy (vocabulary from the plan / `AGENTS.md`)
 
-- **Claude decides test strategy** in every plan: "local-validation" / "Playwright / E2E verification" / "No-test"
-- **Kimi implements AND tests** when plan specifies "local-validation"
-- **Claude reviews** with verdict: APPROVED / NEEDS_FIX / NEEDS_PLAYWRIGHT
-- **Playwright / E2E verification only on explicit request** (10% of cases)
-- **Human validates at key points**: plan approval + final result
+Test strategy is declared **in the plan** using the **active vocabulary** in **`AGENTS.md`** (for example `local-validation`, `playwright-mcp`, `playwright-critical-flow`, `playwright-full-e2e`, `no-test`, `static-inspection`, `human-verification`). Do not run browser E2E or MCP-driven E2E outside what the plan and `AGENTS.md` allow.
 
-## Workflow Autonomy
+## Workflow autonomy
 
 This workflow is semi-autonomous, not fully autonomous.
 Agents must automatically read relevant project files and latest operational reports,

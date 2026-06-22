@@ -1,0 +1,5 @@
+{
+  "mission": "POS_V4_G55_PRECLAUDE_001",
+  "role": "Second avis re-audit (pré-Claude) — intégration design POS v4 FoodKing",
+  "instruction": "CREATE file reports/audit/REAUDIT_G55PRO_POS_V4_PRECLAUDE_2026-04-26.md (full French). This is a rigorous re-audit of plans/PLAN_POS_V4_IMPL_MASTER_2026-04-26.md (summarized in AUX) for: (1) gaps/risks/assumptions, (2) P0 blockers, (3) what must NOT be delegated to the next Claude-only step, (4) 10 concrete recommendations to tighten execution, (5) sign-off line for 'ready for terminal Claude orchestration'. Invariants: pricing SSOT, OrderStatus, branch_id, commit-before-dispatch, frozen script. No app code. op create only that file."
+}

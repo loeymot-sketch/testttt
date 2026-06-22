@@ -1,0 +1,174 @@
+{
+  "wave": "WF-3-KIOSK-KDS-OSS-SYNC",
+  "round": 1,
+  "agent": "agent-1-creation-fiscal",
+  "role": "Kiosk Order Creation + Fiscal Allocation Specialist",
+  "scope_steps": [1, 2, 3, 7],
+  "scope_description": "Steps 1-3 (kiosk wizard completion -> Frontend/OrderController::store -> fiscal_sequence_no allocation AT CREATION per NF525 -> OrderCreated event -> outbox) + Step 7 (NF525 chain gap-free verification across kiosk+POS orders).",
+  "captured_at_utc": "2026-05-19T00:06:43Z",
+  "head_sha": "50bdd5150d784355168abd6d503ab9b3583d55a4",
+  "branch": "v1-0-1-hardening-2026-05-17",
+  "files_audited": [
+    "app/Http/Controllers/Frontend/OrderController.php",
+    "app/Services/FrontendOrderService.php",
+    "app/Services/Fiscal/FiscalSequenceService.php",
+    "app/Listeners/PersistOrderCreatedToOutbox.php",
+    "app/Events/OrderCreated.php",
+    "app/Events/Concerns/DispatchableAfterCommit.php",
+    "app/Providers/EventServiceProvider.php",
+    "app/Jobs/DispatchDomainEventsJob.php",
+    "app/Http/Requests/OrderRequest.php",
+    "routes/channels.php",
+    "database/migrations/2026_03_26_075905_add_source_surface_to_orders_table.php",
+    "app/Console/Commands/FiscalVerifyChainCommand.php"
+  ],
+  "invariants_verified": [
+    {
+      "id": "INV-A1-01",
+      "title": "Outbox-first listener registration ordering",
+      "expectation": "PersistOrderCreatedToOutbox runs BEFORE side-effect listeners (FCM, stock, availability) so the durable DomainEvent row is committed even if a downstream sync listener throws.",
+      "evidence": "app/Providers/EventServiceProvider.php:145-151 registers PersistOrderCreatedToOutbox first, then DecrementItemAvailabilityOnOrder, DecrementStockOnOrderCreated, SendFcmOnOrderCreated. Comment block at :130-137 explicitly documents the F-002 round-3 ordering invariant.",
+      "status": "PASS"
+    },
+    {
+      "id": "INV-A1-02",
+      "title": "Idempotent outbox write under listener replay",
+      "expectation": "If the listener fires twice for the same order (queue retry between persistence and post-commit dispatch), only one DomainEvent row exists and only one DispatchDomainEventsJob is queued.",
+      "evidence": "PersistOrderCreatedToOutbox.php:22 builds idempotency_key=sha1(ORDER_CREATED|aggregate_id); :24 firstOrCreate on that key; :57-59 short-circuits returns when wasRecentlyCreated=false (skips the afterCommit dispatch registration entirely on replay). DB UNIQUE on domain_events(idempotency_key) per migration 2026_05_09_180000.",
+      "status": "PASS"
+    },
+    {
+      "id": "INV-A1-03",
+      "title": "OrderCreated dispatch deferred until DB::transaction commits (no ghost orders on rollback)",
+      "expectation": "OrderCreated must use afterCommit semantics so KDS/OSS consumers never observe an order that did not actually persist.",
+      "evidence": "app/Events/OrderCreated.php uses DispatchableAfterCommit trait (per docstring). PersistOrderCreatedToOutbox itself registers DispatchDomainEventsJob inside DB::afterCommit() at :61, double-layered defense.",
+      "status": "PASS"
+    },
+    {
+      "id": "INV-A1-04",
+      "title": "Kiosk paid-at-creation dispatch gate (truth table)",
+      "expectation": "Cash kiosk (PENDING_COUNTER) auto-accepts + dispatches OrderCreated immediately. Card / TR kiosk DEFERS dispatch until paymentConfirm flips ps=PAID (no ghost orders pre-TPE).",
+      "evidence": "FrontendOrderService.php:205-247 documents the gate truth table; line 236 builds $shouldDispatchNewOrderSignals = !$isKioskOrderType || $isCounterDeferredKioskCash || !$isKioskPaymentMethod. Lines 599-606 fire SendOrderMail/Sms/Push + dispatchNewOrderSignals only when gate is true. The card/TR deferred path lands at FrontendOrderService.php:1212 inside finalizePaidKioskOrder, called from OrderController::paymentConfirm:267 only after the prior DB::transaction commits payment_status=PAID + transaction_id.",
+      "status": "PASS"
+    },
+    {
+      "id": "INV-A1-05",
+      "title": "NF525 fiscal_sequence_no allocated INSIDE the same DB::transaction as ACCEPT status promotion",
+      "expectation": "For deferred kiosk card/TR path, allocation + promotion must be atomic. Allocation failure must rollback promotion (stays PENDING). Re-attempt persists fiscal_alloc_error_at marker so foodking:fiscal:retry-alloc cron picks it up — never throws upward.",
+      "evidence": "FrontendOrderService.php:1086-1195 wraps allocation + status update in DB::transaction. Allocation at :1130-1190; catch at :1154-1189 writes $locked->fiscal_alloc_error_at = now() INSIDE the same closure then returns (no throw). On success, :1142-1144 clears the error flag. config('fiscal.kiosk_auto_allocate_sequence', true) gates the auto-alloc with env override for emergency rollback.",
+      "status": "PASS"
+    },
+    {
+      "id": "INV-A1-05b",
+      "title": "Kiosk-cash path follows POS cash AT-CLOSE timing — not at kiosk creation",
+      "expectation": "Per NF525 §8 prompt framing: kiosk paid orders allocate AT CREATION, but kiosk-cash (PENDING_COUNTER / COUNTER_DEFERRED) is a hybrid — the kiosk only creates the order at status=ACCEPT with payment_status=PENDING_COUNTER, no sequence allocated. The cashier physically collects cash at the counter and triggers PaymentService::collect which calls FiscalSequenceService::next at that moment. This mirrors the POS cash at-close pattern, not the kiosk paid-at-creation pattern.",
+      "evidence": "FrontendOrderService.php:265-266 sets payment_status=PENDING_COUNTER + pos_payment_method=COUNTER_DEFERRED for kiosk cash; no FiscalSequenceService::next call in this code path. Allocation happens later at PaymentService.php:206-207 ($locked->fiscal_sequence_no = app(FiscalSequenceService::class)->next) — same per-branch counter pool as direct kiosk TPE and direct POS cash. KitchenReleaseRule.php:70-72 already documents the POS=cash special-case for kitchen release; kiosk-cash benefits from the same auto-accept-without-PAID path.",
+      "status": "PASS"
+    },
+    {
+      "id": "INV-A1-06",
+      "title": "NF525 chain integrity — re-walked HMAC verification",
+      "expectation": "audit_logs + z_reports HMAC chains valid; no fork, no tamper, no orphan row.",
+      "evidence": "Ran `php artisan fiscal:verify-chain --all` at HEAD 50bdd5150. Output: `+ branch=1 CHAIN OK / SWEEP COMPLETE — CHAIN OK on every active branch (1 total)`. Exit code 0.",
+      "status": "PASS_RUNTIME"
+    },
+    {
+      "id": "INV-A1-07",
+      "title": "No duplicate (branch_id, fiscal_sequence_no) tuples",
+      "expectation": "DB UNIQUE constraint orders_branch_fiscal_seq_unique prevents two orders from sharing a sequence number on the same branch.",
+      "evidence": "SHOW INDEX FROM orders confirms orders_branch_fiscal_seq_unique on (branch_id, fiscal_sequence_no), Non_unique=0. DB tinker query: `SELECT branch_id, fiscal_sequence_no, count(*) GROUP BY HAVING c>1` returned zero rows.",
+      "status": "PASS_RUNTIME"
+    },
+    {
+      "id": "INV-A1-08",
+      "title": "Kiosk + POS share a single per-branch sequence pool, interleaved by allocation order",
+      "expectation": "Both kiosk (FrontendOrderService::finalizePaidKioskOrder:1134) and POS (OrderService.php:938 / PaymentService.php:207) call the SAME FiscalSequenceService::next(branchId). NF525 requires one contiguous receipt sequence per fiscal entity.",
+      "evidence": "branch=1 db dump of first 20 fiscal_sequence_no shows interleaving: seq 8=kiosk, 9-10=pos, 11=kiosk, 12-17=pos, 18=kiosk, 19-21=pos. Single MAX(fiscal_sequence_no)+1 strategy in FiscalSequenceService.php:88-93.",
+      "status": "PASS_RUNTIME"
+    },
+    {
+      "id": "INV-A1-09",
+      "title": "Cross-branch isolation on OrderCreated outbox row",
+      "expectation": "DomainEvent.branch_id = order.branch_id; broadcast channel = private-branch.{order.branch_id}; channel auth in routes/channels.php prevents cross-branch leak.",
+      "evidence": "PersistOrderCreatedToOutbox.php:30 sets branch_id from $order->branch_id. :43 sets channel = ['private-branch.' . $order->branch_id]. routes/channels.php:41-62 'branch.{branchId}' authorizes (a) kiosk-token only for its KioskMachine.branch_id (token-name check, immune to Sanctum '*' wildcard per R3 T-3.2.2 Sec F-SEC-W6-01 heal), (b) Admin/Tenant Admin role-based cross-branch, (c) regular staff only own branch.",
+      "status": "PASS"
+    },
+    {
+      "id": "INV-A1-10",
+      "title": "DispatchDomainEventsJob atomic claim — no double broadcast under retry",
+      "expectation": "Concurrent or retried jobs claim the row under lockForUpdate + dispatched_at NULL guard; loser observes dispatched_at != null and silently returns. Broadcast happens OUTSIDE the claim transaction (commit_before_dispatch invariant).",
+      "evidence": "app/Jobs/DispatchDomainEventsJob.php:65-94 phase 1 atomic claim under DB::transaction with lockForUpdate; :88-94 skip path. Phase 2 (validation + broadcast) at :96-117 runs OUTSIDE the transaction. tries=6 backoff [1,5,15,60,300] documented at :40-42.",
+      "status": "PASS"
+    }
+  ],
+  "findings": [
+    {
+      "id": "WF3-A1-P1-01",
+      "severity": "P1",
+      "title": "source enum mislabel — kiosk client sends source=5 (WEB) but DashboardService treats source=10 (APP) as the kiosk count",
+      "category": "data-fidelity / analytics",
+      "evidence": {
+        "client": "public/js/app.js:133611 sets `var SOURCE_KIOSK = 5;` with comment `// Source identique à sourceEnum.WEB (pas de valeur KIOSK côté frontend)`. Sent on every kiosk POST /frontend/order via buildKioskQuotePayload:133749.",
+        "backend_validation": "app/Http/Requests/OrderRequest.php:179 accepts any numeric source without enum-narrowing.",
+        "downstream_consumer": "app/Services/DashboardService.php:442 counts `source = Source::APP` as kiosk (`$app = $orders->where('source', \\App\\Enums\\Source::APP)->count(); // Utilisé pour le kiosk`).",
+        "runtime_db_state": "DB has 152 kiosk orders (source_surface='kiosk') all with source=5; 0 with source=10. POS orders correctly tagged source=15. Result: dashboard 'kiosk' bucket is always 0; 152 kiosk orders silently miscounted into the 'web' bucket."
+      },
+      "impact": "Analytics-only — sync correctness is unaffected because KdsSyncService/OSS query by `order_type` + `source_surface` (correct), not by `source`. But owner dashboards underreport kiosk usage by ~100% (all kiosk reads as web).",
+      "blast_radius": "DashboardService.php:441-443; any owner UI that consumes this metric. KDS/OSS sync paths are UNAFFECTED.",
+      "remediation_options": [
+        "Server-side: force `source = Source::APP` when KioskMachine token detected (FrontendOrderService.php near line 196 where $isKioskMachineOrder is established).",
+        "Client-side: change SOURCE_KIOSK constant in app.js from 5 to 10 (Source::APP) — requires Mix rebuild + manifest update.",
+        "Both: server-side authoritative override is the discipline-correct fix (clients can be forged/legacy/replayed)."
+      ],
+      "confidence": "HIGH (runtime db query + grep both confirm)",
+      "wave": "WF-3-A1"
+    },
+    {
+      "id": "WF3-A1-P2-02",
+      "severity": "P2",
+      "title": "fiscal_sequence_no gap rate 48% (172 gaps / 355 range) — rolled-back transactions burn sequence numbers",
+      "category": "fiscal hygiene / observability",
+      "evidence": {
+        "db_state": "branch=1: min=1 max=355 alive_count=183 missing=172. Missing seqs include 6,88-98,105-128,261,264-282,317-323,335-337.",
+        "allocation_strategy": "FiscalSequenceService.php:88-93 — MAX(fiscal_sequence_no)+1 inside DB::transaction with lockForUpdate. Strategy guarantees monotonic + no-duplicate but a transaction that allocates then rolls back leaves the seq abandoned (next caller skips ahead).",
+        "nf525_compliance_note": "NF525 / Loi Finance anti-fraude requires HMAC chain integrity over audit_logs + z_reports (verified PASS in INV-A1-06). Strict gap-freeness of `fiscal_sequence_no` integer is NOT a hard NF525 requirement — the legal chain is the HMAC chain, not the per-receipt counter. However, 48% gap rate is an operational health signal."
+      },
+      "impact": "Operational: hard to diagnose silent rollback failures from a sequence-skip alone. NF525 audit-of-record (HMAC chain) remains intact. Some auditors view large gaps as a credibility concern even if chain is valid.",
+      "remediation_options": [
+        "Add fiscal_sequence_allocated_at_skipped event log when MAX(seq) jumps by >1 between two committed orders — surfaces rollback hotspots.",
+        "Track in BRAIN as health metric (target gap_rate < 10% under normal POS load); spike alert via existing observability dashboards."
+      ],
+      "confidence": "HIGH (runtime db query confirms)",
+      "wave": "WF-3-A1"
+    },
+    {
+      "id": "WF3-A1-P3-03",
+      "severity": "P3",
+      "title": "Comment-vs-prompt nomenclature drift — Source enum has no KIOSK constant",
+      "category": "documentation / contract clarity",
+      "evidence": {
+        "prompt_statement": "Wave-F prompt step 5 says 'OSS receives kiosk order with source=KIOSK (matches public wall allowlist)'.",
+        "code_reality_1": "app/Enums/Source.php declares only WEB=5, APP=10, POS=15. No KIOSK constant.",
+        "code_reality_2": "OSS allowlist in OrderStatusScreenOrderService.php:59-63, 196-200 filters by `order_type` (KIOSK=25 / TAKEAWAY=10), NOT by `source`.",
+        "code_reality_3": "DashboardService.php:442 comment 'Utilisé pour le kiosk' on Source::APP — but client actually sends Source::WEB (see WF3-A1-P1-01).",
+        "fields_in_play": "Three distinct columns confused in informal speech: (a) `source` (int enum WEB/APP/POS), (b) `source_surface` (varchar kiosk/pos/web/mobile, the truthy operational tag), (c) `order_type` (DELIVERY/TAKEAWAY/POS/DINING_TABLE/KIOSK, the channel-by-fulfillment-mode tag)."
+      },
+      "impact": "Audit ambiguity. New engineers reading the OSS query mistake source-filter for the discriminator when it's actually order_type. Owner / auditor briefings risk repeating the prompt's mislabel.",
+      "remediation_options": [
+        "Add ADR / docs/ARCHITECTURE.md note on the three-fields-three-meanings split (source vs source_surface vs order_type).",
+        "Inline comment block above OrderStatusScreenOrderService.php:59 explaining the choice (order_type-driven allowlist, source-field intentionally ignored for OSS routing)."
+      ],
+      "confidence": "HIGH",
+      "wave": "WF-3-A1"
+    }
+  ],
+  "verdict": {
+    "summary": "Kiosk -> OrderCreated -> outbox -> broadcast path is structurally sound. NF525 chain integrity confirmed at runtime (PASS_RUNTIME on fiscal:verify-chain --all). Fiscal allocation at-creation (kiosk paid path) is atomically tied to status promotion via DB::transaction with error-flag fallback. The dispatch gate truth table correctly defers OrderCreated on card/TR until TPE confirms (no ghost KDS orders).",
+    "p0": 0,
+    "p1": 1,
+    "p2": 1,
+    "p3": 1,
+    "blockers": [],
+    "production_readiness": "GO with P1 source-enum mislabel fix scheduled (analytics-only, not sync-blocking)"
+  }
+}

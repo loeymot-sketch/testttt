@@ -1,0 +1,384 @@
+[
+  {
+    "step": "R3-01",
+    "slug": "harness-reality",
+    "state": "queue-async-no-worker",
+    "severity": "P1",
+    "note": "queue=database, broadcast=pusher, domain_events 0/133 dispatched, pending=133, worker=DOWN. CONSEQUENCE ADVERSAIRE : si pending>0 et worker=DOWN, Pusher ne broadcast PAS — toute claim \"live event push\" est NON-VALIDÉE runtime dans ce harness.",
+    "screenshot": "tests/e2e/screenshots/red-team-r3-rupture-2026-05-07/step-01-harness-reality-P1.png",
+    "ts": "2026-05-07T03:38:24.618Z",
+    "config": {
+      "queue_default": "database",
+      "broadcast_default": "pusher",
+      "jobs_pending": 619,
+      "failed_jobs": 0,
+      "domain_events_total": 133,
+      "domain_events_dispatched": 0,
+      "domain_events_pending": 133,
+      "item_branch_availability_rows": 1,
+      "stock_levels_rows": 0
+    },
+    "workerInfo": ""
+  },
+  {
+    "step": "R3-02",
+    "slug": "toggle-off-trace",
+    "state": "persisted",
+    "severity": "OK",
+    "note": "HTTP 200 in 375ms. domain_events delta=1. branch_avail row created=true is_available=false (OK). payload contract OK=true. dispatched_at=NULL (queue not drained).",
+    "screenshot": "tests/e2e/screenshots/red-team-r3-rupture-2026-05-07/step-02-toggle-off-trace-persisted.png",
+    "ts": "2026-05-07T03:38:27.779Z",
+    "toggleA": {
+      "ok": true,
+      "status": 200,
+      "body": {
+        "ok": true,
+        "item_id": 363,
+        "branch_id": 1,
+        "is_available": false,
+        "unavailable_reason": "manual_admin"
+      },
+      "error": null,
+      "ms": 375
+    },
+    "delta": 1,
+    "rowCreated": true,
+    "isUnavail": true,
+    "payloadOk": true,
+    "dispatchedAt": null
+  },
+  {
+    "step": "R3-03",
+    "slug": "pos-live-update",
+    "state": "unavailable-state-not-rendered",
+    "severity": "P1",
+    "note": "POS UI live update : NEVER flipped within 10s. After reload: OOS state ABSENT (post-mortem: API returns is_available=false correctly ⇒ bug SPA Vuex/projection, P1).",
+    "screenshot": "tests/e2e/screenshots/red-team-r3-rupture-2026-05-07/step-03-pos-after-toggle-refresh-needed.png",
+    "ts": "2026-05-07T03:38:57.112Z",
+    "isLive": false,
+    "firstFlipMs": null,
+    "samplesCount": 49,
+    "afterReload": {
+      "found": true,
+      "disabled": false,
+      "ariaDisabled": "false",
+      "has86Badge": false
+    }
+  },
+  {
+    "step": "R3-04",
+    "slug": "kiosk-live-update",
+    "state": "precondition-no-tacos-on-kiosk",
+    "severity": "P2",
+    "note": "Kiosk hasTacos baseline=false (count=39). LiveUpdate=NEVER (10s timeout). After reload: tacos=0, oosBadge=false. Si tacos absent à l'état de base, kiosk peut filtrer pre-affichage (P2 a confirmer).",
+    "screenshot": "tests/e2e/screenshots/red-team-r3-rupture-2026-05-07/step-04-kiosk-after-toggle-no-change.png",
+    "ts": "2026-05-07T03:39:16.713Z",
+    "isLive": false,
+    "firstChangeMs": null,
+    "beforeKiosk": {
+      "countAll": 39,
+      "sampleTexts": [
+        "☀🌮🍔🍟Bienvenue !Commandez en quelques touchesSur placeJe m",
+        "☀",
+        "🌮🍔🍟Bienvenue !Commandez en quelques touchesSur placeJe ma",
+        "",
+        ""
+      ],
+      "hasTacos": false
+    },
+    "afterReload": {
+      "countAll": 39,
+      "tacosCount": 0,
+      "tacosOOSBadge": false
+    },
+    "samplesCount": 40
+  },
+  {
+    "step": "R3-05",
+    "slug": "st5-submit-revalidation",
+    "state": "rejected-422-OK",
+    "severity": "OK",
+    "note": "Submit POS order with OOS item 363 → HTTP 422. Body: {\"status\":false,\"message\":\"Article 363 indisponible pour cette branche (manual_admin).\"}. OK : rejetée 422 (assertItemsOrderableForBranch fonctionne).",
+    "screenshot": "tests/e2e/screenshots/red-team-r3-rupture-2026-05-07/step-05-st5-submit-while-oos-rejected.png",
+    "ts": "2026-05-07T03:39:20.498Z",
+    "submit": {
+      "ok": false,
+      "status": 422,
+      "body": {
+        "status": false,
+        "message": "Article 363 indisponible pour cette branche (manual_admin)."
+      },
+      "error": null
+    },
+    "toggle": {
+      "ok": true,
+      "status": 200,
+      "body": {
+        "ok": true,
+        "item_id": 363,
+        "branch_id": 1,
+        "is_available": false,
+        "unavailable_reason": "manual_admin"
+      },
+      "error": null,
+      "ms": 362
+    },
+    "messageMentionsAvailability": true
+  },
+  {
+    "step": "R3-06",
+    "slug": "st4-double-vente",
+    "state": "one-accepted-OK",
+    "severity": "OK",
+    "note": "Stock seed on_hand=1, 2 commands parallèles : A=201 B=422. on_hand après=0, orders créés=1. OK : 1 seule passée, l'autre StockUnavailable.",
+    "screenshot": "tests/e2e/screenshots/red-team-r3-rupture-2026-05-07/step-06-st4-double-vente-protected.png",
+    "ts": "2026-05-07T03:39:25.155Z",
+    "results": {
+      "a": {
+        "status": 201,
+        "body": {
+          "data": {
+            "id": 207,
+            "order_serial_no": "070526207",
+            "queue_number": "A0004",
+            "token": null,
+            "subtotal": 6.5,
+            "discount": 0,
+            "total_tax": 20,
+            "total": 26.5,
+            "subtotal_currency_price": "6.50€",
+            "subtotal_without_tax_currency_price": "-13.50€",
+            "discount_currency_price": "0.00€",
+            "delivery_charge_currency_price": "0.00€",
+            "total_currency_price": "26.50€",
+            "total_tax_currency_price": "20.00€",
+            "order_type": 15,
+            "created_at": "2026-05-07T05:39:24+02:00",
+            "order_datetime": "05:39 AM, 07-05-2026",
+            "order_date": "07-05-2026",
+            "order_time": "05:39 AM",
+            "delivery_date": "07-05-2026",
+            "delivery_time": "05:39 AM - 05:39 AM",
+            "payment_method": null,
+            "payment_status": 5,
+            "payment_pending_counter": false,
+            "is_advance_order": 10,
+            "preparation_time": 15,
+            "status": 4,
+            "status_name": "Acceptée",
+            "reason": null,
+            "user": {
+              "id": 28,
+              "name": "Client Comptoir",
+              "first_name": "Client",
+              "last_name": "Comptoir",
+              "phone": null,
+              "email": "walkingcustomer@example.com",
+              "username": "client_comptoir",
+              "balance": "0.00",
+              "currency_balance": "0.00€",
+              "image": "http://localhost:8000/images/default/profile.png",
+              "role_id": null,
+              "country_code": "+33",
+              "create_date": "05-05-2026",
+              "update_date": "05-05-2026"
+            },
+            "order_address": null,
+            "branch": {
+              "id": 1,
+              "name": "Pfannerstill, Moore and Schmitt Branch",
+              "email": "kody21@kirlin.com",
+              "phone": "+1-954-654-5404",
+              "latitude": "-76.174049",
+              "longitude": "86.137836",
+              "city": "East Marielle",
+              "state": "Maine",
+              "zip_code": "41434",
+              "address": "10995 Erdman Valleys Suite 516",
+              "status": 1,
+              "zone": ""
+            },
+            "delivery_boy": null,
+            "coupon": null,
+            "transaction": null,
+            "order_items": [
+              {
+                "id": 199,
+                "order_id": 207,
+                "branch_id": 1,
+                "item_id": 363,
+                "item_name": "Tacos M (1 Viande)",
+                "item_image": "http://localhost:8000/storage/18/tacos.png",
+                "quantity": 1,
+                "discount": "0.00€",
+                "price": "6.50€",
+                "item_variations": [],
+                "item_extras": [],
+                "item_addons": [],
+                "composition_snapshot": {
+                  "lines": [],
+                  "addons": [],
+                  "extras": [],
+                  "captured_at": "2026-05-07T05:39:24+02:00",
+                  "schema_version": 1
+                },
+                "allergens_snapshot": [],
+                "item_variation_currency_total": "0.00€",
+                "item_extra_currency_total": "0.00€",
+                "total_convert_price": 6.5,
+                "total_currency_price": "6.50€",
+                "instruction": null,
+                "kds_station": "none",
+                "tax_type": "EUR",
+                "tax_rate": "20.000000",
+                "tax_currency_rate": "20.00",
+                "tax_name": "TVA 65%",
+                "tax_currency_amount": "20.00€",
+                "total_without_tax_currency_price": "-13.50€"
+              }
+            ],
+            "table_name": null,
+            "pos_payment_method": 1,
+            "pos_payment_note": null,
+            "source": 15,
+            "pos_received_amount": "50.000000",
+            "pos_received_currency_amount": "50.00€",
+            "cash_back_amount": 23.5,
+            "cash_back_currency_amount": "23.50€",
+            "tax_lines": [
+              {
+                "tax_name": "TVA 65%",
+                "tax_rate": "20",
+                "tax_type": 5,
+                "base_ht": 0,
+                "base_ht_currency": "0.00€",
+                "tax": 20,
+                "tax_currency": "20.00€"
+              }
+            ],
+            "fiscal_sequence_no": 4,
+            "audit_chain_fingerprint": null,
+            "pos_register_id": null,
+            "pos_siret": null,
+            "pos_vat_intra": null,
+            "pos_legal_footer": null,
+            "operator_name": "Client Comptoir",
+            "payments_breakdown": [
+              {
+                "method": 1,
+                "amount": 50,
+                "currency_amount": "50.00€",
+                "change_amount": 23.5,
+                "reference": null
+              }
+            ]
+          }
+        }
+      },
+      "b": {
+        "status": 422,
+        "body": {
+          "status": false,
+          "message": "Article 363 indisponible pour cette branche (stock_rupture)."
+        }
+      },
+      "quoteToken": true
+    },
+    "after": {
+      "on_hand_after": 0,
+      "orders_count": 1
+    }
+  },
+  {
+    "step": "R3-07",
+    "slug": "ing-cascade",
+    "state": "all-cascaded",
+    "severity": "OK",
+    "note": "Extra \"Œuf\" group=null : 20 same-group siblings. After cascade : same-group all unavail=true. ingredient_de count=0.",
+    "screenshot": "tests/e2e/screenshots/red-team-r3-rupture-2026-05-07/step-07-ing-cascade-cascaded.png",
+    "ts": "2026-05-07T03:39:27.705Z",
+    "targetName": "Œuf",
+    "firstGroup": null,
+    "sameGroupCount": 20,
+    "allUnavail": true,
+    "ingDe": {
+      "count": 0,
+      "latest": null
+    },
+    "beforeCount": 20
+  },
+  {
+    "step": "R3-08",
+    "slug": "kds-inflight-signal",
+    "state": "subscribed-but-no-inflight-marker",
+    "severity": "P1",
+    "note": "KDS subscribes to ItemAvailabilityChanged=true, in-flight 86 marker=false. ST6 ADVERSAIRE : si KDS subscribe mais ne distingue PAS un ticket dont l'item vient d'être 86, le cuisinier prépare une commande sans warning.",
+    "screenshot": "tests/e2e/screenshots/red-team-r3-rupture-2026-05-07/step-08-kds-st6-signal-silent.png",
+    "ts": "2026-05-07T03:39:28.480Z",
+    "exists": true,
+    "subscribesToItemAvailability": true,
+    "hasInflightHighlight": false,
+    "hasOrderItemFlag": false,
+    "srcLen": 91582
+  },
+  {
+    "step": "R3-09",
+    "slug": "ux-reason",
+    "state": "explicit",
+    "severity": "OK",
+    "note": "POS shows reason=true, Kiosk shows reason=true. ST7 : si rupture muette UX, caissier/client ne sait pas pourquoi → friction + double-tap support.",
+    "screenshot": "tests/e2e/screenshots/red-team-r3-rupture-2026-05-07/step-09-st7-ux-reason-explicit.png",
+    "ts": "2026-05-07T03:39:29.005Z",
+    "pos-i18n": {
+      "missing": true
+    },
+    "pos-en": {
+      "missing": true
+    },
+    "pos-component": {
+      "hasReason": true,
+      "sample": "title=\"modifierUnavailableReason"
+    },
+    "kiosk-component": {
+      "hasReason": true,
+      "sample": "reason"
+    }
+  },
+  {
+    "step": "R3-10",
+    "slug": "st8-job-latency",
+    "state": "stuck",
+    "severity": "P1",
+    "note": "queue:work --once durée=204ms. events_pending 150→150. latest dispatched_at=null. ST8 : si Pusher fail (websockets DOWN) le worker peut tourner mais retry indéfiniment ; checker last_error/attempts.",
+    "screenshot": "tests/e2e/screenshots/red-team-r3-rupture-2026-05-07/step-10-st8-queue-latency-stuck.png",
+    "ts": "2026-05-07T03:39:31.839Z",
+    "eventCreatedMs": 393,
+    "workMs": 204,
+    "beforeWork": {
+      "jobs_pending": 637,
+      "events_pending": 150
+    },
+    "afterWork": {
+      "jobs_pending": 636,
+      "events_pending": 150,
+      "events_dispatched": 0,
+      "latest_event": {
+        "id": 398,
+        "event_type": "menu.item_availability_changed",
+        "aggregate_type": "item",
+        "aggregate_id": 363,
+        "branch_id": 1,
+        "payload": "{\"type\": \"branch_availability\", \"price\": 0, \"reason\": \"manual_admin\", \"status\": 0, \"item_id\": 363, \"branch_id\": 1, \"is_available\": false}",
+        "channel": "[\"private-branch.1\"]",
+        "broadcast_as": "ItemAvailabilityChanged",
+        "correlation_id": "60627991-ea96-43c4-b5d4-10a3931ff21d",
+        "occurred_at": "2026-05-07 05:39:30.000",
+        "dispatched_at": null,
+        "attempts": 0,
+        "last_error": null,
+        "created_at": "2026-05-07 05:39:30",
+        "updated_at": "2026-05-07 05:39:30"
+      }
+    }
+  }
+]

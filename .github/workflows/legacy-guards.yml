@@ -1,0 +1,25 @@
+name: legacy-guards
+on:
+  pull_request:
+    paths:
+      - 'resources/js/**'
+      - 'routes/**'
+      - 'public/build/**'
+      - 'public/js/**'
+      - 'kiosk_implementation/**'
+      - 'borne (Remix)/**'
+  push:
+    branches: [main]
+jobs:
+  legacy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Banner check
+        run: bash scripts/lint-fk-archive-banner.sh
+      - name: Imports check
+        run: bash scripts/lint-fk-legacy-imports.sh
+      - name: Routes monitor
+        run: bash scripts/lint-fk-legacy-routes.sh
+      - name: Bundle scan
+        run: bash scripts/scan-bundle-legacy.sh

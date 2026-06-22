@@ -1,0 +1,39 @@
+{
+  "task_id": "GOV-PERSIST-SENTINELS-2026-04-27",
+  "phase": "EXECUTE",
+  "mode": "governance_persistence_only",
+  "execute_delegation": "codex-extension",
+  "human_authorization": {
+    "source": "GATE_PHASE2_TRAIN_A_HUMAN_DECISIONS_2026-04-26",
+    "summary": "Persist targeted V1 sentinels/helpers only; document remaining cleanup; do not touch product code."
+  },
+  "files_to_modify_allowlist": [
+    "tests/Feature/Sentinels/*.php",
+    "tests/Feature/Concerns/HasPosQuoteBinding.php",
+    "tests/Feature/KioskQuote*Test.php",
+    "tests/Feature/PaymentConfirm*Test.php",
+    "tests/Feature/Payment/*.php",
+    "tests/Feature/Quote*Test.php",
+    "tests/Feature/Pos/QuoteBindingTest.php"
+  ],
+  "hard_prohibitions": [
+    "No app/** edits",
+    "No database/** edits",
+    "No resources/** edits",
+    "No test weakening or skips",
+    "No git add -A",
+    "Do not make D-M13 green in this mission"
+  ],
+  "validation_commands": [
+    "php artisan test",
+    "git diff --cached --name-only"
+  ],
+  "expected_result": "Full PHPUnit has exactly one failure: Tests\\Feature\\Sentinels\\QueueNumberUniquenessSentinelTest.",
+  "invariants_considered": [
+    "pricing_ssot",
+    "branch_isolation",
+    "order_status_enum",
+    "dispatch_after_commit",
+    "no_product_code_edits"
+  ]
+}

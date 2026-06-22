@@ -26,7 +26,7 @@ class ProfileController extends Controller
         try {
             return  new UserResource(auth()->user());
         } catch (\Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -35,7 +35,7 @@ class ProfileController extends Controller
         try {
             return  new UserResource($this->profileService->update($request));
         } catch (\Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -45,7 +45,7 @@ class ProfileController extends Controller
         try {
             return  new UserResource($this->profileService->changePassword($request));
         } catch (\Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -54,7 +54,7 @@ class ProfileController extends Controller
         try {
             return new UserResource($this->profileService->changeImage($request));
         } catch (\Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

@@ -60,25 +60,25 @@
             </div>
             <div class="modal-body">
                 <section class="mb-5">
-                    <h4 class="mb-2 font-bold">{{ __('Step1: ') }} <a href="{{ config('product.officialSite') }}"
-                            target="_blank">{{ __(' Go to iNilabs') }}</a></h4>
+                    <h4 class="mb-2 font-bold">{{ trans('installer.license.step_1') }} <a href="{{ config('product.officialSite') }}"
+                            target="_blank">{{ trans('installer.license.go_to_inilabs') }}</a></h4>
                     <picture>
                         <img src="{{ asset('images/installer/home.png') }}" class="img-fluid img-thumbnail image-css"
                             alt="...">
                     </picture>
                 </section>
                 <section class="mb-5">
-                    <h4 class="mb-2 font-bold">{{ __('Step2: ') }} <a href="{{ config('product.loginUrl') }}"
-                            target="_blank">{{ __(' Login to iNilabs') }}</a></h4>
+                    <h4 class="mb-2 font-bold">{{ trans('installer.license.step_2') }} <a href="{{ config('product.loginUrl') }}"
+                            target="_blank">{{ trans('installer.license.login_to_inilabs') }}</a></h4>
                     <picture>
                         <img src="{{ asset('images/installer/login.png') }}" class="img-fluid img-thumbnail image-css"
                             alt="...">
                     </picture>
                 </section>
                 <section class="mb-5">
-                    <h4 class="mb-2 font-bold">{{ __('Step3: ') }} <a href="{{ config('product.activeLicense') }}"
-                            target="_blank">{{ __(' Active your license code') }} </a></h4>
-                    <h6>{{ __('You can easily get the activation code and try to install your product by this code.') }}
+                    <h4 class="mb-2 font-bold">{{ trans('installer.license.step_3') }} <a href="{{ config('product.activeLicense') }}"
+                            target="_blank">{{ trans('installer.license.active_license_code') }} </a></h4>
+                    <h6>{{ trans('installer.license.activation_help') }}
                     </h6>
                     <picture class="mt-1">
                         <img src="{{ asset('images/installer/active.png') }}" class="img-fluid img-thumbnail image-css"

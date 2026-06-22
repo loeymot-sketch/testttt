@@ -1,0 +1,64 @@
+{
+  "system": "KDS Kitchen Display System (cuisine, status transitions, recall, overflow)",
+  "head": "962d9d154",
+  "verification_scope_note": "Verified the 5 findings present in the raw input (architect lens: 3, security lens: 2). The red lens block was TRUNCATED in the input (cut off at '\"summary' with no findings array), so red-lens findings could NOT be verified and are NOT included. confirmed_count/dropped_count are scoped to the 5 verifiable findings. Architect #1 and #3 share one root cause (KitchenReleaseRule is a named SSOT with zero production callers) and are kept as two facets, cross-referenced, not double-counted.",
+  "verified_findings": [
+    {
+      "severity": "P2",
+      "file": "app/Services/KitchenDisplaySystemOrderService.php",
+      "line": "75-82 (list payment clause) vs app/Services/KdsSyncService.php:96-117 (no payment filter) vs app/Domain/Kds/KitchenReleaseRule.php:56-72 (PAID or POS+CASH)",
+      "title": "Three divergent kitchen-release contracts: list() payment clause, KdsSyncService (no payment filter), and the named SSOT KitchenReleaseRule disagree",
+      "confirmed": true,
+      "grep_evidence": "KitchenDisplaySystemOrderService.php:76-81 payment clause = where(payment_status=PAID)->orWhere(payment_status=PENDING_COUNTER)->orWhere(order_type=POS AND pos_payment_method=CASH). KdsSyncService.php:96-108 whereIn(status,activeStatuses) + where(updated_at>=since) + today/advance window — grep 'payment_status|PaymentStatus' on KdsSyncService.php returned ZERO matches (no payment filter at all). KitchenReleaseRule.php:56-72 isReleasedToKitchen returns true for PAID (L66-68) OR (order_type=POS AND pos_payment_method=CASH) (L70-71) — EXCLUDES PENDING_COUNTER. Three different release predicates confirmed. Mitigation confirmed: KitchenDisplaySystemComponent.vue (actual path resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1527) consumes sync 'orders' ONLY as a change-detector (hasFreshOrders -> _debouncedRefresh() L1531-1532) which re-hydrates from /index, so the sync extra-inclusion never directly renders. Test coverage confirmed: tests/Feature/Admin/KdsSyncControllerTest.php makeOrderInBranch (L50-64) uses raw Order::factory() whose default payment_status=5 which the enum (app/Enums/PaymentStatus.php:7) defines as PAID — so /sync vs /index payment parity is NEVER asserted (all test orders pass the payment clause regardless). NOTE: the OrderFactory.php:30 inline comment '// Unpaid' is MISLABELED (value 5 = PAID per the enum); the default value is genuinely PAID.",
+      "is_new": true,
+      "recommendation": "Make KitchenReleaseRule the single payment-release SSOT and have BOTH list() and KdsSyncService call it (or a shared query scope) so the three predicates cannot drift; this also resolves finding #3 (wires the dead SSOT). Add a parity test creating an UNPAID active-status order and asserting /sync and /index return the SAME id-set. All three files (KitchenDisplaySystemOrderService, KdsSyncService, KitchenReleaseRule) are NOT in CLAUDE.md §7 frozen zone — editable directly. The OrderStateMachine.php:111-127 duplicate IS frozen §7 — do not consolidate into it without a LOCK. Render-impact is mitigated (sync is a change-detector only), so P2 not P1.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P2",
+      "file": "app/Services/KitchenDisplaySystemOrderService.php",
+      "line": "75-82",
+      "title": "DELIVERY + CASH_ON_DELIVERY order is UNPAID for its whole prep window and is excluded from the primary KDS board by list()'s payment clause — LATENT in V1 (no wired COD-delivery intake)",
+      "confirmed": true,
+      "grep_evidence": "list() L76-81 admits only PAID OR PENDING_COUNTER OR (POS+CASH); a DELIVERY+UNPAID row matches none. COD flow is REAL in code: OrderService.php:1746-1774 — $isCod = pm===CASH_ON_DELIVERY (L1746); at OFD it deliberately LEAVES payment_status=UNPAID (comment L1766-1769 'CASH_ON_DELIVERY at OFD: leave payment_status = UNPAID'), flipping to PAID only at DELIVERED (L1750-1751), with NF525 escrow plumbing [P0-LIV-02] L1753-1764. KitchenReleaseRuleTest.php:69-74 asserts isReleasedToKitchen(ACCEPT,UNPAID,KIOSK)=false. RECONCILIATION with security #2: security #2's blanket 'no unpaid order sits at ACCEPT' is scoped-true for WIRED V1 surfaces — kiosk-direct is hard-gated PAID-before-ACCEPT (FrontendOrderService.php:1130 F-21 guard: 'if payment_status !== PAID ... return' before status=ACCEPT at L1212), and POS is created payment_status=PAID (OrderService.php:715). The COD-UNPAID-through-prep path is keyed on payment_method=CASH_ON_DELIVERY, a frontend (web/mobile) concept; PosController.php:230 confirms POS can set order_type=DELIVERY but POS orders are still created PAID. Web/mobile standalone are NOT wired to this backend (CLAUDE.md §3bis mandate) and NO delivery_enabled config flag exists (grep returned none). So a DELIVERY+COD+UNPAID Order row reaching ACCEPT/PREPARING/PREPARED is NOT producible in V1 today — the 1746-1774 plumbing is forward-looking. Hence LATENT, not currently reachable.",
+      "is_new": true,
+      "recommendation": "Latent in V1 — do NOT surface as a V1 ship blocker. When delivery+COD intake wires up (web/mobile API wireup or a backend COD-delivery intake path), list()/KitchenReleaseRule must release UNPAID DELIVERY+COD orders to the kitchen (prep precedes doorstep cash) — add 'OR (order_type=DELIVERY AND payment_method=CASH_ON_DELIVERY)' to the release predicate and pin it with a test. KitchenDisplaySystemOrderService.php is NOT frozen. Existing coverage gap confirmed: tests/Feature/KDS/KDSDeliveryEnrichmentTest.php creates DELIVERY orders ONLY with payment_status=PAID (L148, L270) — the COD-delivery visibility case is untested. Owner-gate: confirm whether COD-delivery is a planned V1 surface before investing. Severity P2 (latent + unconfirmed enablement).",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P3",
+      "file": "app/Domain/Kds/KitchenReleaseRule.php",
+      "line": "56-72 (also duplicated byte-identical at app/Domain/Order/OrderStateMachine.php:111-127, FROZEN §7)",
+      "title": "isReleasedToKitchen / orderIsReleased is a dead + duplicated abstraction — documented as the kitchen-release SSOT but has zero production callers (same root as finding #1)",
+      "confirmed": true,
+      "grep_evidence": "grep -rn 'isReleasedToKitchen|orderIsReleased' app/ (excluding tests) returned ONLY definitions: KitchenReleaseRule.php:56 (def), :74 (orderIsReleased wrapper def), OrderStateMachine.php:111 (duplicate def). NO production call site anywhere in app/. Test/spec references only: tests/Feature/KitchenReleaseRuleTest.php:62-100 (exercises the method directly) + 3 e2e spec comment mentions (goal-functional-kds-2026-05-28.spec.js, wave-p-kds-2026-05-20.spec.js). The real release decision is reimplemented inline in list() L75-82 with DIFFERENT semantics (list includes PENDING_COUNTER; isReleasedToKitchen does not — verified KitchenReleaseRule.php:66-71). Both copies (KitchenReleaseRule + OrderStateMachine) are byte-identical PAID-or-POS-CASH logic (compared OrderStateMachine.php:117-126 vs KitchenReleaseRule.php:62-71).",
+      "is_new": true,
+      "recommendation": "Two facets of the same root as finding #1. Prefer WIRING over deletion: route list()/KdsSyncService through KitchenReleaseRule so the named SSOT becomes load-bearing (resolves #1 and #3 together). The KitchenReleaseRule copy is editable; the OrderStateMachine.php:111-127 copy is FROZEN §7 — leave it, removal requires a LOCK + owner countersign. Keeping both #1 and #3 in the report is intentional (#1 = the runtime drift risk, #3 = the dead-abstraction/false-confidence facet); they are NOT double-counted.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P3",
+      "file": "app/Services/KitchenDisplaySystemOrderService.php",
+      "line": "285-381 (recall) vs app/Services/KdsSyncService.php:96-153 (sync delta)",
+      "title": "KDS recall is invisible to the /sync polling fallback — RAPPELE badge only propagates over WebSocket, so a station on the degraded-WS fallback never observes the recall",
+      "confirmed": true,
+      "grep_evidence": "recall() KitchenDisplaySystemOrderService.php:285-381 appends ONE OrderStatusTransition row (L338-348, reason=kitchen_recall) and writes NO column on orders — grep '->save()|->touch()' on the file returns ONLY L432 (inside changeStatus) and L198 (a code comment); recall does a read-only re-read at L354 (Order::query()->whereKey()->value('status')) to assert orders.status stays PREPARED. KdsSyncService.php:98 filters orders by where('updated_at','>=',$sinceForDb) — recall never touches updated_at, so a recalled order is NOT in the orders delta; deleted_ids (L132-153) is built only from onlyTrashed + inactiveStatuses, so the recalled (still-PREPARED) order is NOT there either. Net: the polling fallback never re-injects the recalled card; the RAPPELE badge rides only the KdsOrderRecalled broadcast (dispatched L371-378). Frontend mitigation confirmed: KitchenDisplaySystemComponent.vue has the KdsOrderRecalled Echo handler (broadcastAs:'KdsOrderRecalled' L1934-1938, onKdsOrderRecalled, recallActiveIds computed L1234, 1s expiry ticker). Root cause is the same updated_at-as-version proxy already tracked as TODO D-03bis at KdsSyncService.php:165-172. Test gap confirmed: tests/Feature/KDS/KitchenRecallEndpointSentinelTest.php exists (security finding cited it without the KDS/ subdir — path drift, file present) and pins the recall endpoint contract but references /sync ZERO times (grep 'sync' on it = 0). KdsSyncControllerTest does not reference recall/kitchen_recall/KdsOrderRecalled.",
+      "is_new": false,
+      "recommendation": "Underlying issue (status moves without an updated_at/version bump being dropped by the sync delta) is ALREADY TRACKED as D-03bis (KdsSyncService.php:165-172 TODO, plans/MEGA_PLAN_SYNC_HARDENING_v3_2026-04-23.md §5) — flagged is_new=false on that basis; the recall-specific manifestation is the new facet. Scope-minimal V1 fix (no frozen zone touched — both files NOT in §7): in recall(), after appending the transition, $locked->touch() so the recalled card re-enters the /sync orders-delta; touch() updates only the timestamp, not status (NF525-safe, orders.status stays PREPARED). Add a sync-level test asserting a recalled order appears in /sync within the window. For V1 single-screen Le Cayenne the order stays correctly PREPARED so this is cosmetic-only — acceptable to defer with D-03bis. P3.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P3",
+      "file": "app/Services/KitchenDisplaySystemOrderService.php",
+      "line": "424-429",
+      "title": "changeStatus() does not re-verify KitchenReleaseRule::isReleasedToKitchen on the mutation path — release gate enforced only by list() query (defense-in-depth gap, not reachable in V1)",
+      "confirmed": true,
+      "grep_evidence": "changeStatus() transition guard at KitchenDisplaySystemOrderService.php:424-429 calls KitchenReleaseRule::canTransition + OrderStateMachine::allows, plus branch isolation (L399) and optimistic lock (L405-418) — but does NOT call isReleasedToKitchen/orderIsReleased (consistent with finding #3: orderIsReleased KitchenReleaseRule.php:74 has zero callers). Not reachable in V1 confirmed: POS orders created payment_status=PAID (OrderService.php:715), and the kiosk/frontend ACCEPT promotion is hard-gated PAID by the F-21 guard (FrontendOrderService.php:1130 'if payment_status !== PAID ... return' before status=ACCEPT at L1212) — so no unreleased (unpaid non-POS-cash) order sits at ACCEPT to be bumped today.",
+      "is_new": true,
+      "recommendation": "Optional hardening for V2/multi-tenant (and a prerequisite once COD-delivery wires up per finding #2): add a one-line 'if (! KitchenReleaseRule::orderIsReleased($locked)) abort(422)' inside the changeStatus lock — also makes the named SSOT load-bearing on the mutation path. No frozen zone touched. Safe to defer for V1 LOCAL (not reachable). Do NOT surface as a V1 blocker. P3.",
+      "drop_reason": ""
+    }
+  ],
+  "confirmed_count": 5,
+  "dropped_count": 0
+}

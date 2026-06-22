@@ -1,0 +1,68 @@
+{
+  "specialist": "dba",
+  "scope": "6 migrations 2026-05-18 (2 branches delivery fee settings + 4 cash session schema), FK + UNIQUE constraints, NF525 immutability triggers, partial-index driver matrix",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "4ad1adba8",
+  "method": "read-only audit of 6 migration files + 2 models BranchScope + 2 service layer transaction patterns",
+  "findings": [
+    {
+      "id": "LIV-DBA-01",
+      "severity": "INFO",
+      "title": "Branch delivery fee migration is additive + nullable — zero-risk legacy fallback",
+      "evidence": "2026_05_18_100000_add_delivery_fee_settings_to_branches.php L20-24 adds 3 columns (delivery_fee_base, delivery_fee_per_km, delivery_fee_minimum) all decimal(10,2) nullable, after 'zone'. 2026_05_18_110000_add_delivery_minimum_order_to_branches.php L17-19 adds delivery_minimum_order decimal(10,2) nullable after delivery_fee_minimum. DeliveryFeeService.php L33-42 requires ALL THREE fee columns set before using new formula; else legacy `max(5, ceil(d/5)*5)`. Zero risk for unmigrated branches.",
+      "recommendation": "Pattern correct. Admin UI to populate these per branch is V1.0.2 (operators use tinker/SQL for V1.0.1 per docblock L21)."
+    },
+    {
+      "id": "LIV-DBA-02",
+      "severity": "INFO",
+      "title": "delivery_boy_cash_sessions table mirrors cash_drawer_sessions verbatim — Path B design intent",
+      "evidence": "Migration 120000 L30-57 — 17 columns including (branch_id, delivery_boy_id, opened_by_user_id, closed_by_user_id, reconciled_by_user_id), 2 timestamps (opened_at, closed_at), 4 amounts (opening, closing, expected_closing, variance), variance_reason, status, notes, timestamps. 3 indexes (branch+status, livreur+status, opened_at). BranchScope applied at Model::boot (DeliveryBoyCashSession.php L78-80). status as string ENUM with 3 values managed as PHP constants (DeliveryBoyCashSession.php L37-39).",
+      "recommendation": "Schema correct. Note: status as 16-char string rather than ENUM/tinyint — slight perf hit on filtering but matches POS pattern; acceptable for V1."
+    },
+    {
+      "id": "LIV-DBA-03",
+      "severity": "INFO",
+      "title": "delivery_boy_cash_movements FK uses restrictOnDelete (NF525 immutability)",
+      "evidence": "Migration 120100 L54-57 — `$table->foreign('delivery_boy_cash_session_id', 'fk_dbcm_session')->references('id')->on('delivery_boy_cash_sessions')->restrictOnDelete()`. NO cascade. Combined with the NO-DELETE triggers (migration 120300), movements are physically immune to silent removal even if session row is forced. order_id FK is nullable (drawer_open/close events have no order).",
+      "recommendation": "Strong NF525 posture. Verified by passing sentinel DeliveryBoyCashSessionAuditChainTest."
+    },
+    {
+      "id": "LIV-DBA-04",
+      "severity": "INFO",
+      "title": "UNIQUE partial index driver matrix is comprehensive (MySQL + PG + SQLite)",
+      "evidence": "Migration 120200 — driver-aware implementation. SQLite + PostgreSQL (L40-44): native `CREATE UNIQUE INDEX … WHERE status='open'`. MySQL (L46-62): generated STORED column `open_livreur_lock = CASE WHEN status='open' THEN delivery_boy_id ELSE NULL END` plus UNIQUE(branch_id, vcol). MySQL handles NULL-as-distinct so closed/reconciled rows do NOT participate in the uniqueness constraint. Mirrors iter15-P0-09 POS cash-drawer pattern (documented L21).",
+      "recommendation": "Excellent multi-driver coverage. Sentinel `layer3 unique partial index blocks raw insert` passes. No action."
+    },
+    {
+      "id": "LIV-DBA-05",
+      "severity": "P2",
+      "title": "DELETE triggers exist for SQLite (tests) but MySQL prod equivalent is missing — deploy gap documented",
+      "evidence": "Migration 120300 L11-22 docblock: 'la production MySQL doit séparer GRANT/REVOKE TRUNCATE au niveau deploy doc (cf. CLAUDE.md §8)'. L27-30 driver guard: triggers only created on SQLite. Edge case acknowledged L17-19: 'Production MySQL → no-op (driver guard) ; les triggers MySQL devront être ajoutés via une migration MySQL-only dans une wave 6b ultérieure ou par deploy doc.' This means production deploy of V1.0.2 Sub-6.3 has NO row-level DELETE immutability on delivery_boy_cash_movements + delivery_boy_cash_sessions, only GRANT-based REVOKE TRUNCATE.",
+      "recommendation": "P2 V1.0.2: ship a MySQL-specific migration mirroring 2026_05_16_130000 (cash_movements delete trigger MySQL variant) for delivery_boy_cash_movements + delivery_boy_cash_sessions BEFORE production go-live. CLAUDE.md §8 NF525 invariants list DELETE forbidden via DB trigger on `audit_logs` + `z_reports` — extending to these 2 cash tables completes the immutability surface for the doorstep cash chain."
+    },
+    {
+      "id": "LIV-DBA-06",
+      "severity": "P2",
+      "title": "No FK declared from delivery_boy_cash_sessions to users(id) for delivery_boy_id/opened_by_user_id/closed_by_user_id/reconciled_by_user_id",
+      "evidence": "Migration 120000 L34-37 — 4 unsignedBigInteger user references, ZERO `->foreign()->references('id')->on('users')`. Same gap for branch_id (L33) -> branches.id. If a user is deleted (or branch removed) the cash session row retains a dangling FK. The BranchScope global scope hides the row from queries, but the immutability triggers (migration 120300) still prevent its physical DELETE — leaving a 'tombstone' row referencing a non-existent user/branch.",
+      "recommendation": "P2 V1.0.2: add `->restrictOnDelete()` FKs from delivery_boy_cash_sessions on (branch_id, delivery_boy_id, opened_by_user_id, closed_by_user_id, reconciled_by_user_id). Same for delivery_boy_cash_movements on (branch_id, order_id) — order_id should be nullable+nullOnDelete or restrictOnDelete depending on NF525 stance. The session's restrictOnDelete is correct (already present, migration 120100 L54-57). Without these FKs, multi-tenant data lifecycle has soft-delete-only enforcement at the user layer."
+    },
+    {
+      "id": "LIV-DBA-07",
+      "severity": "P3",
+      "title": "Decimal(10,2) for cash columns matches POS pattern — adequate for V1 EUR range",
+      "evidence": "All 4 amount columns (opening_amount, closing_amount, expected_closing_amount, variance) in migration 120000 + the (amount) in migration 120100 use decimal(10,2). Max value: 99,999,999.99 EUR. Suitable for any realistic single-driver shift. Sub-6.3 doc-block L43 confirms 'decimals 10,2 — cash en euros, jamais besoin de plus de précision'.",
+      "recommendation": "Acceptable. Multi-currency support is V2 scope."
+    },
+    {
+      "id": "LIV-DBA-08",
+      "severity": "INFO",
+      "title": "Indexes are well-chosen for typical read patterns",
+      "evidence": "Migration 120000 L54-56 — (branch_id, status), (delivery_boy_id, status), (opened_at). The admin-list controller filter (`status=open`) + 'who has an open session' check (`branch_id + delivery_boy_id + status=open`) are both covered. opened_at index supports the orderByDesc at L63-64. Migration 120100 L49-51 — idx_dbcm_session (movement→session), idx_dbcm_branch_created (chronological per-branch), idx_dbcm_order_type (per-order audit lookup).",
+      "recommendation": "Strong index design. No action."
+    }
+  ],
+  "summary": "Schema is solid: nullable additive Branch columns (zero migration risk), well-defended cash session lifecycle (UNIQUE partial index multi-driver, NO-DELETE triggers SQLite), proper restrictOnDelete on the session-movement FK. Two P2 production gaps: (a) MySQL prod DELETE triggers are documented-missing (deploy doc only), (b) no FK from session→users for the 4 user references means tombstone rows on user deletion.",
+  "verdict": "GO V1 — schema is shippable. V1.0.2 hardening: LIV-DBA-05 (MySQL prod DELETE triggers), LIV-DBA-06 (FK to users + branches).",
+  "word_count_approx": 1180
+}

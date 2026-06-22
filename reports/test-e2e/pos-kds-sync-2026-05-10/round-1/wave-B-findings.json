@@ -1,0 +1,102 @@
+{
+  "wave": "B",
+  "round": 1,
+  "states_reviewed": 17,
+  "findings": [
+    {
+      "id": "B-001",
+      "state_artifact": "test-e2e-pos-kds-sync-B/04-b-cart-after-validate-item-1.png",
+      "category": "numeric_integrity",
+      "severity": "P1",
+      "evidence": "Item 363 'Tacos M (1 Viande)' wizard at state 02-b-wizard-open-item-1.png shows the Viande badge as '0/1' with NO meat row ticked (all rows show '0' qty). Spec did NOT call tickPrimaryOption() for item-1 (line 313-327 of spec). Yet the Vuex sidecar 16-b-cart-three-lines-aggregate.payload.json shows item-1 cart line contains item_variations[0]={id:262,item_attribute_id:307,quantity:1,variation_name:'Viande 1',name:'Merguez'}. Same pattern for item 367 'Le Méga' at state 12 (badge '0/2' Viandes, no row ticked) — Vuex shows item_variations include Merguez x2 (id:412 + id:421) for Viande 1 + Viande 2. The wizard auto-injects a default 'Merguez' meat selection at validate without any visual indication on the operator's screen during selection. Operator believes they are validating a configurable product but the kitchen receives a fixed default that the operator never explicitly selected — different operators / customers will silently receive Merguez.",
+      "fix_hint": "FROZEN-ZONE (public/js/pos-wizard.js syncAndSubmit ~line 3708 + viande sync block) — owner gate required before patch. Two acceptable behaviors: (a) BLOCK validate when required N/M Viande badge has 0 selection, surface a toast 'Sélectionnez 1 Viande' (matches kiosk wizard pattern); or (b) make the default selection VISIBLE in the UI (highlight Merguez row + 1 qty + show 1/1 badge) so the operator can intentionally accept or change it. Current path silently substitutes operator intent.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-002",
+      "state_artifact": "test-e2e-pos-kds-sync-B/02-b-wizard-open-item-1.png",
+      "category": "aria_keyboard",
+      "severity": "P1",
+      "evidence": "Wizard modal does not bind Escape to dismiss. Verified by reading public/js/pos-wizard.js lines 5871-5879 (only handler binds Ctrl+Enter for syncAndSubmit) and lines 5595-5617 (only handles Enter, ArrowRight, ArrowLeft, Backspace, number keys — no e.key === 'Escape' branch). Modal HAS role='dialog' + aria-modal + aria-labelledby (verified in 02-b-wizard-open-item-1.dom.html), so screen readers announce it as a dialog, but WCAG 2.1.2 Keyboard requires keyboard-dismissible dialogs and 2.4.3 Focus Order is broken when ESC is the universal dismiss expectation. Capture spec also flagged this self-flag #1 — reviewer confirms.",
+      "fix_hint": "FROZEN-ZONE (public/js/pos-wizard.js line ~5871) — owner gate required before patch. Add: `if (e.key === 'Escape') { e.preventDefault(); var cancelBtn = wizardEl.querySelector('[data-action=\"cancel-wizard\"]'); if (cancelBtn) cancelBtn.click(); }` inside the existing keydown handler. ~5 lines, surgical.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-003",
+      "state_artifact": "test-e2e-pos-kds-sync-B/06-b-wizard-step-1-item-2.png",
+      "category": "element_overlap",
+      "severity": "P1",
+      "evidence": "Top-right success toast (SweetAlert2 .swal2-toast based on the swal2-popup CSS in dom.html) shows a green container with a SUCCESS check icon on the left and a close 'x' button on the right. The toast title text (presumably 'Cheese Burger ajouté au panier' based on the wizard flow) is rendered in white-on-greenish-white that is fully illegible AND the close 'x' button visually overlaps / sits on top of the rightmost characters of the title. Same overlap-illegible pattern reproducible at states 07-b-wizard-step-2-item-2.png, 08-b-wizard-step-extras-item-2.png, 09-b-wizard-recap-item-2.png, 12-b-wizard-step-1-item-3.png, 13-b-wizard-step-menu-or-upsell-item-3.png. Customer-facing operator cannot read the confirmation message of the previously added item.",
+      "fix_hint": "Likely the cart-add success toast emitted by the Vue cart store / mixin (search resources/js/ for 'Swal.fire.*toast' or 'swal2-toast' invocation). Apply two fixes: (a) ensure the title text color contrasts against the green background (token --fk.success-text on --fk.success-soft per resources/css color tokens — visible in dom.html), and (b) add right padding so the close X does not overlap the title (CSS: .swal2-popup.swal2-toast .swal2-title { padding-right: 1.5em; } in the FoodKing override stylesheet). NOT frozen-zone — this is the Vue/SweetAlert2 layer.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-004",
+      "state_artifact": "test-e2e-pos-kds-sync-B/16-b-cart-three-lines-aggregate.dom.html",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Every dom.html snapshot is hard-truncated at exactly 500_000 bytes by the recorder helper (tests/e2e/helpers/mega-audit-snap.js line ~80: `fs.writeFileSync(... html.substring(0, 500_000))`). Verified: state 16 dom.html size = 501062 bytes (file system overhead + truncation). Direct consequence: late-DOM elements past byte ~500000 cannot be audited by adversarial reviewer — for example grep for 'pos-grand-total' or 'grand-total' in 16-b-cart-three-lines-aggregate.dom.html returns 0 hits, and grep for 'pos-v5-cart-item__name' returns 0 hits, even though the spec successfully read .pos-v5-cart-item .pos-v5-cart-item__price + [data-testid='pos-grand-total'] from the live page (Vuex sidecar shows lists_count=3, grand_total_value=26.5). Reviewer cannot independently verify cart line ordering, hidden lines, or grand-total markup from the dom.html artifact for any future round.",
+      "fix_hint": "tests/e2e/helpers/mega-audit-snap.js — increase truncation limit to 2_000_000 bytes OR write full HTML and gzip (.dom.html.gz) to keep disk footprint low while preserving auditability. NOT frozen-zone (helper file).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-005",
+      "state_artifact": "reports/test-e2e/pos-kds-sync-2026-05-10/AUDIT_PLAN.md",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "AUDIT_PLAN.md Wave B section (lines 73-124) names states 'step-1', 'step-2', 'step-extras' assuming a multi-step wizard pipeline AND uses the marker selector `[data-pos-wizard]` (line 84 in plan, also line 121). Live wizard is a single-page render: code path is renderSinglePage in pos-wizard.js, root selector is '.pos-wizard.single-page' inside '#item-variation-modal.active'. Verified: grep for 'data-pos-wizard' across all 17 dom.html files returns 0 matches. The spec adapted (header lines 15-27 + line 84 selector substitution) and kept the plan filenames for compatibility, so capture works — but a future reviewer reading only AUDIT_PLAN.md gets a wrong mental model of the wizard topology. Capture self-flagged this as items #2 and #3.",
+      "fix_hint": "Update AUDIT_PLAN.md Wave B selector marker line 84 from `[data-pos-wizard]` to `.pos-wizard.single-page` (inside #item-variation-modal.active) and add a one-line note under the Wave B intro: 'Single-page wizard — step-N filenames are sub-state markers, not multi-step DOM transitions'. Also add the same correction to line 121's frozen-zone constraint reference.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-006",
+      "state_artifact": "test-e2e-pos-kds-sync-B/16-b-cart-three-lines-aggregate.payload.json",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "Sidecar field aggregate_dom.grand_total_text = 'Total26.50€' — the label 'Total' is concatenated directly to the value with no separator (no space, no colon). Verified visually in state 16 PNG: cart panel shows 'Total' on a line then '26.50€' immediately below as a stacked layout — but when scraped via textContent the two children flatten without whitespace. NOT a numeric defect (parsed value=26.5 is correct). Cosmetic but affects machine readability of the surface. Capture self-flagged this as item #4.",
+      "fix_hint": "POS V5 cart template (resources/js/components/admin/pos-v5/Cart*.vue or similar — NOT frozen-zone, this is the Vue cart, NOT pos-wizard.js): insert a space or use separate styled siblings so DOM textContent reads 'Total 26.50€'. Optional — prefer keeping current visual layout and just add `&nbsp;` text node. Pure cosmetic.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-007",
+      "state_artifact": "reports/test-e2e/pos-kds-sync-2026-05-10/AUDIT_PLAN.md",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "AUDIT_PLAN.md Wave B 'Item-3 (composite/menu)' states 11-15 expect a wizard exercising the menu/upsell branch with a true composite item (item with 0 base variations + addon menu). Capture flagged self-item #5: catalog has no such 'true composite' item — every wizard item carries variations + an optional formule/menu addon (the 'Menu (Frites + Boisson)' addon is the formule branch but is exposed on items 376 and 367 simultaneously with their viande/sauce variations). The spec's item-3 (Le Méga 367) is the closest available proxy. Plan should record this catalog reality so reviewers know there is no separate 'composite' typology to test.",
+      "fix_hint": "AUDIT_PLAN.md Wave B intro note: 'Catalog has no zero-variation composite items in current branch state; item-3 is selected as the largest-variation item (35 variations) with formule addon for menu-branch coverage.' No code change.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-008",
+      "state_artifact": "test-e2e-pos-kds-sync-B/15-b-cart-after-validate-item-3.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "POS V5 cart panel (right sidebar) at state 15 has 3 cart lines (Tacos M, Cheese Burger, Le Méga — verified in Vuex sidecar lists_count=3 and per_item_recap entries) but only the FIRST line 'Tacos M (1 Viande) 6.50€' is visible. The 2 subsequent lines (Cheese Burger 9.00€ + Le Méga 11.00€) are hidden by container overflow yet contribute to grand total 26.50€. Same pattern at states 11-tile-tap-item-3, 16-cart-three-lines-aggregate, 17-wizard-cancel-edge — only 1 of 3 lines ever visible at the spec's 1440x900 viewport. Operator cannot visually verify what they are about to charge the customer. NOT a wizard defect (out-of-scope for Wave B's frozen wizard) — flagged here because it is observable in every Wave B post-add capture; primary owner is Wave A (POS shell/cart). Reviewer surfaces it once for visibility, marks it as belonging to Wave A in fix_hint.",
+      "fix_hint": "Wave A territory (POS V5 cart Vue component, NOT frozen-zone). Likely resources/js/components/admin/pos-v5/Cart.vue or PosV5CartComponent.vue — the cart-lines container needs `overflow-y: auto` + visible scrollbar OR the height calculation needs to allow N lines visible at 900px tall viewport. Reclassify against Wave A in next round if not already captured there.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 0, "P1": 3, "P2": 3, "P3": 2,
+    "open_P0": 0, "open_P1": 3, "open_P2": 3, "open_P3": 2
+  },
+  "round_to_round_closures": {},
+  "verdict": "AMBER",
+  "notes": "Frozen-zone diff verified empty: `git status --short public/js/pos-wizard.js public/css/pos-wizard.css resources/views/admin-pos-v4.blade.php` returned no output. All 17 PNG + 17 dom.html + 17 console.json + 17 network.json + 1 sidecar payload = 69 files exactly per plan. Console errors at state 01 (4 entries) are all wss://Pusher ERR_CONNECTION_REFUSED — explicitly allowlisted in REVIEWER_PROTOCOL.md. All other states have 0 console errors and 0 network 4xx/5xx (filter is duration>2000 OR status>=400 — empty arrays mean clean). Network capture cannot prove add-to-cart wire integrity because POS V5 wizard add-to-cart is purely client-side Vuex (no POST until pay) — Vuex sidecar probe confirms lists_count=3 + subtotal=26.5 matches DOM grand_total_value=26.5 + sum_lines=26.50 (per_item_recap.integrity_ok=true for all 3 items). Verdict AMBER because open_P0=0 but open_P1=3 (B-001 silent-viande-default, B-002 ESC missing, B-003 toast contrast/overlap). The two FROZEN-ZONE P1 findings (B-001, B-002) require owner gate before patch and will block a GREEN verdict until either (a) owner explicitly accepts the design, or (b) a LOCK plan authorizes surgical patches to public/js/pos-wizard.js. B-003 (toast) is fixable in the Vue layer and should be closed in round 2."
+}

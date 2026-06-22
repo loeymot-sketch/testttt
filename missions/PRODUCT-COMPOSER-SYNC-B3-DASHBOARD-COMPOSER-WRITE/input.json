@@ -1,0 +1,25 @@
+{
+  "task_id": "PRODUCT-COMPOSER-SYNC-B3-DASHBOARD-COMPOSER-WRITE",
+  "execution_date": "2026-04-27",
+  "delegation": "codex-extension",
+  "source_plan": "reports/audit/CLAUDE_PRODUCT_COMPOSER_FINAL_EXECUTION_PLAN_2026-04-27.md",
+  "preconditions": [
+    "B0 PASS",
+    "B2 PASS",
+    "HG-DASHBOARD-AUTHZ-CATALOG-OPS approved"
+  ],
+  "scope": [
+    "minimal Spatie permissions catalog.compose/catalog.publish",
+    "dashboard composer profile and steps API",
+    "price-free composer requests and UI payloads",
+    "published profile event after commit",
+    "dedicated dashboard editor route exposed from the existing product composition tab"
+  ],
+  "invariants": [
+    "backend pricing SSOT",
+    "branch_id isolation",
+    "dispatch after commit",
+    "no OrderService or FrontendOrderService edit",
+    "no new catalog role"
+  ]
+}

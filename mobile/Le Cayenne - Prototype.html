@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Le Cayenne — Prototype mobile</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Archivo+Black&family=Druk+Wide+Bold&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+  body { background: #0E0E10; color: #fff; font-family: 'Inter', sans-serif; min-height: 100vh; padding: 32px 0; }
+  .stage { display: flex; flex-direction: column; align-items: center; gap: 28px; }
+  .header { text-align: center; max-width: 720px; padding: 0 24px; }
+  .header h1 { font-family: 'Anton', sans-serif; font-size: 56px; letter-spacing: 0.02em; line-height: 0.9; margin: 0; text-transform: uppercase; }
+  .header h1 span { color: #FF5A1F; }
+  .header p { color: rgba(255,255,255,0.6); font-size: 14px; margin: 12px 0 0; }
+  .nav-row { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; max-width: 700px; padding: 0 16px; }
+  .nav-row button { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 8px 14px; border-radius: 999px; font-family: 'Inter'; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; cursor: pointer; }
+  .nav-row button.active { background: #FF5A1F; border-color: #FF5A1F; }
+  .footer { text-align: center; color: rgba(255,255,255,0.4); font-size: 11px; padding: 12px; max-width: 460px; }
+  /* tweak custom font */
+  .typo-anton { --font-display: 'Anton', sans-serif; }
+  .typo-bebas { --font-display: 'Bebas Neue', sans-serif; }
+  .typo-archivo { --font-display: 'Archivo Black', sans-serif; }
+  .typo-druk { --font-display: 'Druk Wide Bold', 'Archivo Black', sans-serif; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script src="image-slot.js"></script>
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="icons.jsx"></script>
+<script type="text/babel" src="shared.jsx"></script>
+<script type="text/babel" src="screens-onboarding.jsx"></script>
+<script type="text/babel" src="screens-main.jsx"></script>
+<script type="text/babel" src="screens-modals.jsx"></script>
+
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "typo": "anton",
+  "primary": "#FF5A1F",
+  "accent": "#FFD93D",
+  "showCanvas": false
+}/*EDITMODE-END*/;
+
+const SCREENS = [
+  { id: 'splash',  label: '00 Splash' },
+  { id: 'onb1',    label: '01 Bienvenue' },
+  { id: 'onb2',    label: '02 Speed' },
+  { id: 'onb3',    label: '03 Pickup' },
+  { id: 'onb4',    label: '04 Fidélité' },
+  { id: 'login',   label: '05 Login' },
+  { id: 'otp',     label: '06 OTP' },
+  { id: 'home',    label: '07 Accueil' },
+  { id: 'menu',    label: '08 Menu' },
+  { id: 'item',    label: '09 Item' },
+  { id: 'cart',    label: '10 Panier' },
+  { id: 'stripe',  label: '10b Stripe' },
+  { id: 'confirm', label: '11 Confirm' },
+  { id: 'orders',  label: '12 Commandes' },
+  { id: 'orderDetail', label: '12b Détail' },
+  { id: 'profile', label: '13 Profil' },
+  { id: 'loyalty', label: '14 Fidélité' },
+];
+
+const TAB_FOR = { home: 'home', menu: 'menu', orders: 'orders', orderDetail: 'orders', profile: 'profile', loyalty: 'profile' };
+
+function App() {
+  const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const [screen, setScreen] = useState('splash');
+  const [history, setHistory] = useState(['splash']);
+  const [itemId, setItemId] = useState('nashville');
+  const [cart, setCart] = useState([
+    { ...ITEMS[1], sups: ['oignon','frits'], qty: 1 },
+    { ...ITEMS[5], sups: [], qty: 1 },
+  ]);
+  const [showCanvas, setShowCanvas] = useState(false);
+  const [modal, setModal] = useState(null); // 'pay' | 'gain' | 'redeem' | 'link'
+  const [toast, setToast] = useState(null);
+
+  const go = (s, ext) => {
+    if (s === 'back') {
+      const h = [...history]; h.pop();
+      const prev = h[h.length-1] || 'home';
+      setHistory(h); setScreen(prev);
+      return;
+    }
+    if (s === 'pay')    { setModal('pay');    return; }
+    if (s === 'gain')   { setModal('gain');   return; }
+    if (s === 'redeem') { setModal('redeem'); return; }
+    if (s === 'link')   { setModal('link');   return; }
+    if (s === 'item' && ext) setItemId(ext);
+    setHistory(h => [...h, s]);
+    setScreen(s);
+  };
+
+  const addToCart = (it) => {
+    setCart(c => [...c, { ...it, sups: it.sups || [], qty: it.qty || 1 }]);
+  };
+
+  // apply CSS variables from tweaks
+  useEffect(() => {
+    document.documentElement.style.setProperty('--orange', tweaks.primary);
+    document.documentElement.style.setProperty('--yellow', tweaks.accent);
+  }, [tweaks.primary, tweaks.accent]);
+
+  const showTab = !['splash','onb1','onb2','onb3','onb4','login','otp','item','cart','stripe','confirm','loyalty'].includes(screen);
+  const activeTab = TAB_FOR[screen] || 'home';
+
+  let body;
+  switch (screen) {
+    case 'splash':  body = <ScreenSplash onNext={() => go('onb1')}/>; break;
+    case 'onb1':    body = <ScreenOnb1 onNext={() => go('onb2')} onSkip={() => go('login')}/>; break;
+    case 'onb2':    body = <ScreenOnb2 onNext={() => go('onb3')} onSkip={() => go('login')}/>; break;
+    case 'onb3':    body = <ScreenOnb3 onNext={() => go('onb4')} onSkip={() => go('login')}/>; break;
+    case 'onb4':    body = <ScreenOnb4 onNext={() => go('login')} onSkip={() => go('login')}/>; break;
+    case 'login':   body = <ScreenLogin onNext={() => go('otp')} onBack={() => go('back')}/>; break;
+    case 'otp':     body = <ScreenOTP onNext={() => go('home')} onBack={() => go('back')}/>; break;
+    case 'home':    body = <ScreenHome go={go}/>; break;
+    case 'menu':    body = <ScreenMenu go={go} cart={cart} addToCart={addToCart}/>; break;
+    case 'item':    body = <ScreenItem go={go} itemId={itemId} addToCart={addToCart}/>; break;
+    case 'cart':    body = <ScreenCart go={(s)=> s==='confirm' ? go('pay') : go(s)} cart={cart} setCart={setCart}/>; break;
+    case 'stripe':  body = <ScreenStripe go={go} total={cart.reduce((s,i)=>s+i.price*i.qty,0)}/>; break;
+    case 'confirm': body = <ScreenConfirm go={go}/>; break;
+    case 'orders':  body = <ScreenOrders go={go}/>; break;
+    case 'orderDetail': body = <ScreenOrderDetail go={go}/>; break;
+    case 'profile': body = <ScreenProfile go={go}/>; break;
+    case 'loyalty': body = <ScreenLoyalty go={go}/>; break;
+    default: body = <ScreenHome go={go}/>;
+  }
+
+  return (
+    <div className={`typo-${tweaks.typo}`}>
+      <div className="stage">
+        <div className="header">
+          <h1>Le <span>Cayenne</span></h1>
+          <p>Prototype mobile · 15 écrans · Smash burgers, tacos, bowls — Hénin-Beaumont 62210</p>
+        </div>
+
+        <div className="nav-row">
+          {SCREENS.map(s => (
+            <button key={s.id} className={screen === s.id ? 'active' : ''} onClick={() => { setHistory([s.id]); setScreen(s.id); }}>{s.label}</button>
+          ))}
+        </div>
+
+        <div style={{ position: 'relative' }}>
+          <IOSDevice width={390} height={844}>
+            <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+              {body}
+              {showTab && <TabBar active={activeTab} onChange={(t) => go(t === 'profile' ? 'profile' : t)}/>}
+              {modal === 'pay' && <ModalPayChoice total={cart.reduce((s,i)=>s+i.price*i.qty,0)} onClose={()=>setModal(null)} onPickCounter={()=>{ setModal(null); setHistory(h=>[...h,'confirm']); setScreen('confirm'); setTimeout(()=>setModal('gain'), 900); }} onPickCard={()=>{ setModal(null); setHistory(h=>[...h,'stripe']); setScreen('stripe'); }}/>}
+              {modal === 'gain' && <ModalPointsGain onClose={()=>setModal(null)} onSee={()=>{ setModal(null); setHistory(h=>[...h,'loyalty']); setScreen('loyalty'); }}/>}
+              {modal === 'redeem' && <ModalRedeem onClose={()=>setModal(null)} onConfirm={()=>{ setModal(null); setToast({m:'Récompense activée — appliquée à ta prochaine commande', k:'success'}); }}/>}
+              {modal === 'link' && <ModalCardLink onClose={()=>setModal(null)} onScan={()=>{ setModal(null); setToast({m:'Carte plastique liée à ton compte', k:'success'}); }}/>}
+              {toast && <Toast message={toast.m} kind={toast.k} onClose={()=>setToast(null)}/>}
+            </div>
+          </IOSDevice>
+        </div>
+
+        <div className="footer">
+          Astuce — Active <b style={{ color: '#FFD93D' }}>Tweaks</b> en haut pour switcher la typo display, la couleur primaire, ou afficher la vue canvas. Glisse une photo dans n'importe quel emplacement gris pour la voir apparaître.
+        </div>
+      </div>
+
+      <TweaksPanel tweaks={tweaks} setTweak={setTweak}>
+        <TweakSection title="Typographie display">
+          <TweakSelect tweaks={tweaks} setTweak={setTweak} k="typo" label="Police titres" options={[
+            { value: 'anton', label: 'Anton (condensé serré)' },
+            { value: 'bebas', label: 'Bebas Neue (condensé)' },
+            { value: 'archivo', label: 'Archivo Black (large)' },
+            { value: 'druk', label: 'Druk Wide (très large)' },
+          ]}/>
+        </TweakSection>
+        <TweakSection title="Couleurs">
+          <TweakColor tweaks={tweaks} setTweak={setTweak} k="primary" label="Orange primaire" options={['#FF5A1F','#FF7A1F','#E5341A','#FF9500']}/>
+          <TweakColor tweaks={tweaks} setTweak={setTweak} k="accent" label="Jaune accent" options={['#FFD93D','#FFC107','#FFE066','#FFB400']}/>
+        </TweakSection>
+      </TweaksPanel>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

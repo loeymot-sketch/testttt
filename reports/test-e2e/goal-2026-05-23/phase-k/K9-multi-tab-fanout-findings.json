@@ -1,0 +1,313 @@
+{
+  "agent": "K.9 Multi-tab + multi-user Echo fanout (read-only static)",
+  "timestamp": "2026-05-24",
+  "scope": "FoodKing Le Cayenne V1 — Pusher/Echo broadcast discipline across 6 concurrent surfaces (POS×2, KDS, OSS, Admin, Kiosk) on shared private-branch.{id} channel",
+  "methodology": "Static analysis of broadcast wiring (Events / Outbox listeners / DispatchDomainEventsJob / channels.php) cross-referenced with every JS surface (KDS / OSS / POS / Kiosk / StockRuptureDashboard / PosOrdersTracker / KioskWaiting) and their subscribeEcho/unsubscribeEcho lifecycle. Sentinel tests inventoried and read in full.",
+
+  "channel_architecture": {
+    "topology": "Single channel per branch: private-branch.{branchId}. Per K.9 / C6 unified channel design — ALL surfaces subscribe to the SAME channel; cross-pollution is prevented by event-name filter inside each surface's handler array.",
+    "channels_defined": [
+      {
+        "name": "App.Models.User.{id}",
+        "auth": "user.id === id (1:1)",
+        "purpose": "Personal user-scoped events (unused for fanout)"
+      },
+      {
+        "name": "branch.{branchId}",
+        "auth_layers": [
+          "1. Kiosk-token discriminator: currentAccessToken()?->name === 'kiosk-token' → MUST equal own KioskMachine.branch_id (token-name check, IMMUNE to Sanctum '*' wildcard)",
+          "2. Admin / Tenant Admin role check: $user->hasRole('Admin') || $user->hasRole('Tenant Admin') → cross-branch allowed (NOT bare branch_id===0 — closes Guest-Echo-Bypass)",
+          "3. Regular staff: (int) $user->branch_id === (int) $branchId"
+        ],
+        "source": "routes/channels.php:41-62",
+        "sentinel": "tests/Feature/Sync/PusherChannelAuthWildcardSentinelTest.php (locks both invariants — line 30 + line 64)"
+      }
+    ]
+  },
+
+  "events_inventory": {
+    "broadcast_to_private-branch.{id}": [
+      {"event": "OrderCreated", "outbox_listener": "PersistOrderCreatedToOutbox.php:44", "JS_subscribers": ["KDS", "OSS", "POS PosComponent", "POS PosOrdersTracker"]},
+      {"event": "OrderStatusChanged", "outbox_listener": "PersistOrderStatusChangedToOutbox.php:53", "JS_subscribers": ["KDS (filtered by _statusChangeAffectsKds)", "OSS", "POS PosComponent", "POS PosOrdersTracker"]},
+      {"event": "OrderPaidAtCounter", "outbox_listener": "PersistOrderPaidAtCounterToOutbox", "JS_subscribers": ["KDS", "POS PosComponent", "POS PosOrdersTracker"]},
+      {"event": "OrderTableChanged", "outbox_listener": "PersistOrderTableChangedToOutbox", "JS_subscribers": ["KDS only (F-02 floorplan transfer)"]},
+      {"event": "ItemAvailabilityChanged", "outbox_listener": "PersistItemAvailabilityChangedToOutbox", "JS_subscribers": ["Kiosk", "POS PosComponent", "KDS (in-flight 86 marker)", "StockRuptureDashboard"]},
+      {"event": "CatalogChanged", "outbox_listener": "PersistCatalogChangedToOutbox", "JS_subscribers": ["Kiosk", "POS PosComponent"]},
+      {"event": "CouponChanged", "outbox_listener": "PersistCouponChangedToOutbox", "JS_subscribers": ["Kiosk"]},
+      {"event": "OrderPaymentStatusChanged", "outbox_listener": "PersistOrderPaymentStatusChangedToOutbox.php:61", "JS_subscribers": "NONE — see scenario K.9.5 finding"},
+      {"event": "ComposerProfileChanged", "outbox_listener": "PersistComposerProfileChangedToOutbox", "JS_subscribers": ["Kiosk (catalog-change-notifier composable)"]}
+    ],
+    "internal_only_NOT_broadcast": [
+      {"event": "RefundCreated", "rationale": "RefundCreated.php:14 explicit comment 'NOT broadcast (internal only)'. Bridges to OrderPaymentStatusChanged + OrderStatusChanged through downstream listeners + PaymentService::cashRefund (line 566 — explicit OrderStatusChanged::dispatch CANCELED). Surface fanout therefore travels via OrderStatusChanged, NOT directly."}
+    ],
+    "ItemUpdated_path": "ItemUpdated event fires CatalogChanged listener path (EventServiceProvider:249-252) → PersistCatalogChangedToOutbox + InvalidateKioskMenuCacheOnCatalogChange. JS surfaces receive CatalogChanged, not raw ItemUpdated."
+  },
+
+  "scenarios": {
+
+    "K.9.1_OrderCreated_fanout": {
+      "name": "Customer at borne creates order → 3 surfaces react",
+      "verdict": "GREEN",
+      "discipline": [
+        "Backend: OrderCreated fires PersistOrderCreatedToOutbox → DomainEvent row INSERTed (idempotency_key=sha1('order.created|'+id)) → DB::afterCommit hook dispatches DispatchDomainEventsJob → broadcast on ['private-branch.'.branch_id] as broadcast_as='OrderCreated'",
+        "POS PosComponent subscribeEcho() line 2642-2660: OrderCreated handler calls _notifyNewOrder + loadKioskCashOrders + loadActiveOrdersStats + loadReadyOrders (X2 sync)",
+        "POS PosOrdersTracker line 662: OrderCreated handler calls fetchOrders()",
+        "KDS line 1860: OrderCreated handler calls _debouncedRefresh()",
+        "OSS line 282-284: OrderCreated handler calls this.list()",
+        "Kiosk does NOT subscribe to OrderCreated (customer-facing, no need to react to other-customer orders) — by design"
+      ],
+      "delta_t_attestation": "Per H-SYNC-001 polling fallback: ≤5s worst case. Per Q9-S1 measured 2026-05-21: ~1s wall-clock end-to-end when WS connected (vs prior 0-60s with polling-only). Heartbeat via Cache::put('ws:heartbeat',ts,120) at DispatchDomainEventsJob:129 attests broadcaster liveness to SyncOverviewController.",
+      "branch_isolation": "branchId baked into channel name 'private-branch.'+$order->branch_id (PersistOrderCreatedToOutbox:44) — cashier C in branch 2 NEVER receives the event because Pusher refuses to bind subscription to branch.1 (channels.php:61)."
+    },
+
+    "K.9.2_OrderStatusChanged_fanout": {
+      "name": "KDS bump → all surfaces transition",
+      "verdict": "GREEN",
+      "discipline": [
+        "OrderStatusChanged fires after PUT /admin/order-status / KDS bump button. PersistOrderStatusChangedToOutbox writes DomainEvent with payload {order_id, old_status, new_status, branch_id}",
+        "POS PosOrdersTracker line 663-674: filters new_status===PREPARED → _markFresh(oid) then fetchOrders()",
+        "OSS line 265-279: filters new_status===PREPARED → pre-registers in _echoMarkedReady Set (de-dup vs subsequent list() refresh) then _markNewReady (sound + 10s flash, S-3 TV-optim)",
+        "KDS line 1855-1859: JS-side filter _statusChangeAffectsKds drops DELIVERED→REFUNDED / CANCELED→RETURNED noise — refreshes only when old OR new status ∈ {ACCEPT=4, PREPARING=7, PREPARED=8} (mirror KitchenReleaseRule)"
+      ],
+      "admin_recent_orders_widget": "POS Admin dashboard re-uses PosOrdersTracker component; OrderStatusChanged updates the tracker badge + ready-orders list."
+    },
+
+    "K.9.3_ItemAvailabilityChanged_fanout": {
+      "name": "Admin toggles item → kiosk + POS + stock dashboard react",
+      "verdict": "GREEN",
+      "discipline": [
+        "Backend: EventServiceProvider:201-209 fires BumpMenuSnapshotOnItemAvailabilityChanged + InvalidateKioskMenuCacheOnItemAvailabilityChanged + PersistCatalogChangedToOutbox + PersistItemAvailabilityChangedToOutbox",
+        "Kiosk KioskAppComponent line 547-552: re-fetches menu via _handleItemAvailabilityChanged (kiosk-side TTL 60s bypassed by BE cache flush)",
+        "POS PosComponent line 2690: subscribes ItemAvailabilityChanged → _onItemAvailabilityChanged (greys out tile in real time)",
+        "KDS line 1867: subscribes ItemAvailabilityChanged → _onItemAvailabilityChanged → dispatches into kdsInflight Vuex module (lazy-purged 10min TTL) so in-flight tickets flag the freshly 86'd item",
+        "StockRuptureDashboard line 478-479: subscribes ItemAvailabilityChanged → _debouncedReload()",
+        "KDS COMMENT (line 1862) accurate: KDS does react to 86 (in-flight marker), contradicts mission STEP K.9.3 'KDS doesn't need to react'. Order details from snapshot remain authoritative; the in-flight marker is an OVERLAY for chef UX"
+      ],
+      "mission_correction": "K.9.3 mission says 'KDS doesn't need to react'. Code says KDS DOES subscribe + dispatches in-flight 86 marker. The mission spec is outdated post-CV1-KDS-INFLIGHT-OOS-MARKER-001."
+    },
+
+    "K.9.4_CatalogChanged_and_ItemUpdated_fanout": {
+      "name": "Admin renames item → ItemUpdated bridges to CatalogChanged",
+      "verdict": "GREEN",
+      "discipline": [
+        "Backend: ItemUpdated wired in EventServiceProvider:249-252 to InvalidateKioskMenuCacheOnCatalogChange + PersistCatalogChangedToOutbox (mirrors ItemCreated/ItemDeleted via I.3 RISK-01 AMBER heal 2026-05-24)",
+        "ItemUpdated is NEVER broadcast as 'ItemUpdated' — it ONLY bridges to CatalogChanged broadcast. JS surfaces subscribe to CatalogChanged, not ItemUpdated. BROADCAST_MAP (eventContract.js:16-25) contains no ItemUpdated entry — consistent with backend design.",
+        "Kiosk handles CatalogChanged via _handleCatalogChanged + _handleCatalogChangeMidSession composable (useCatalogChangeNotifier — see ComposerProfileChanged handler line 561-565)",
+        "POS PosComponent line 2691: CatalogChanged handler → _onCatalogChanged"
+      ]
+    },
+
+    "K.9.5_RefundCreated_fanout": {
+      "name": "Refund → POS / KDS / Loyalty clawback react",
+      "verdict": "AMBER",
+      "severity_for_mission": "P2 (V1 single-resto, accepted)",
+      "discipline_OK": [
+        "EventServiceProvider:182-196 fires 4 listeners in strict order (per HEAL-PLAN-D.3 / RED-Z8 P2-2): PersistOrderPaymentStatusChangedOnRefundCreated → ReleaseStockOnRefundCreated → ReleaseAvailabilityOnRefundCreated → ClawbackLoyaltyPointsOnRefund (J2-HEAL-07 added 2026-05-24)",
+        "PaymentService::cashRefund:566 explicitly dispatches OrderStatusChanged::dispatch($order, $oldStatus, CANCELED) AFTER setting status=CANCELED. So FULL refund → OrderStatusChanged fires → POS/KDS/OSS all react via their existing OrderStatusChanged handlers",
+        "Loyalty clawback fires INSIDE the same RefundCreated listener cascade (try/catch isolated by J2-HEAL-07 so a clawback throw cannot halt cash-trail/stock/availability above)"
+      ],
+      "gap_identified": [
+        "RefundCreated.php:14 explicitly: 'NOT broadcast (internal only)'. Only OrderStatusChanged + OrderPaymentStatusChanged carry the refund signal to surfaces.",
+        "PersistOrderPaymentStatusChangedToOutbox.php:61 writes broadcast_as='OrderPaymentStatusChanged' BUT NO JS surface subscribes to OrderPaymentStatusChanged. BROADCAST_MAP (eventContract.js:16-25) does not list it. grep across resources/js/**/*.{js,vue} returns zero hits.",
+        "Practical impact: FULL refund (status→CANCELED) → surfaces react via OrderStatusChanged piggyback. PARTIAL refund (payment_status→PARTIAL_REFUNDED while order.status unchanged) → only OrderPaymentStatusChanged fires → SILENT on surfaces. KDS Historique drawer (filterable by status only) shows no badge."
+      ],
+      "v1_classification": "V1 Le Cayenne single-resto / fast-food = mostly cash full-refunds (NF525 cancel order). Partial refunds are V1.0.2 backlog (no UI today). Net: ACCEPT as V1.0.2 backlog finding — partial-refund silent fanout. Tracked: ADD OrderPaymentStatusChanged to BROADCAST_MAP + JS subscribers in POS/KDS Historique drawer when partial-refund UI lands."
+    },
+
+    "K.9.6_channel_auth_race": {
+      "name": "6 surfaces subscribe to private-branch.1 → channel auth gate",
+      "verdict": "GREEN",
+      "discipline": [
+        "Auth flow: each Echo.private('branch.1') triggers POST /api/broadcasting/auth (bootstrap.js:343) carrying Bearer token from localStorage (vuex.kioskCart.kioskToken for kiosk, vuex.auth.authToken for staff/admin — selectSurfaceBearerToken helper)",
+        "Server-side routes/channels.php:41-62 evaluates 3 mutually exclusive branches:",
+        "  - Kiosk: tokenName==='kiosk-token' → require KioskMachine.branch_id === branchId (BranchScope bypass via withoutGlobalScope)",
+        "  - Admin/Tenant Admin: hasRole check → all branches OK",
+        "  - Staff: user.branch_id === branchId",
+        "ALL 6 legitimate surfaces succeed (cashierA/cashierB/chef/OSS-public/admin/customer-at-borne) provided each role is rightly seeded",
+        "Race condition: Pusher subscribe ops are serial per connection — no race in the auth gate itself"
+      ],
+      "sentinel_locked": "PusherChannelAuthWildcardSentinelTest both methods (test_channel_auth_uses_token_name_not_tokenCan + test_channel_auth_admin_branch_requires_role_check)"
+    },
+
+    "K.9.7_Echo_subscription_leak_on_reload": {
+      "name": "Cashier reloads POS tab → no zombie subscriptions",
+      "verdict": "GREEN",
+      "discipline": [
+        "Page reload destroys window.Echo entirely (Pusher socket closed by browser unload event) — Pusher server reaps stale connections after activity_timeout+pong_timeout = 30+5s = 35s max (bootstrap.js:341-342)",
+        "Within the SAME page session: every Vue surface calls unsubscribeEcho() ALWAYS BEFORE subscribeEcho() (defensive idempotency — AUDIT-P51-BUG2 / AUDIT-52-BUG2 / AUDIT-P1)",
+        "onEvents (eventContract.js:330-386) returns {unsubscribe} object that stopListening per binding + Echo.leave(channelName) — guaranteed by vitest spec echoMemoryLeak.spec.js (5 cases: object-shape, count-increment, count-decrement-to-zero, convenience-wrapper, skipped-bindings)",
+        "beforeUnmount calls _unsubscribeEcho on KDS:2368, OSS, POS:622, KioskApp:815 — symmetric to mounted/created subscribeEcho"
+      ],
+      "sentinel_locked": "tests/js/echoMemoryLeak.spec.js — 10 mount/unmount cycles never leave residual listener (contract clause 5)"
+    },
+
+    "K.9.8_multi_tab_same_user_different_surfaces": {
+      "name": "Cashier opens POS tab + KDS tab with same Sanctum token",
+      "verdict": "GREEN (INFO note)",
+      "discipline": [
+        "Both tabs subscribe to private-branch.1 independently — Pusher allows multiple subscriptions per token (separate WS connections)",
+        "Backend broadcasts to channel — Pusher fans out to ALL subscribers regardless of who they are",
+        "Tab 1 POS handler updates POS state, Tab 2 KDS handler updates KDS state — no cross-pollution because the broadcastAs filter is applied INSIDE each handler array",
+        "Correlation dedupe: SAME correlation_id appears in BOTH tabs but each tab has its own sessionStorage (W3C spec: per-tab). Dedupe key is `${eventType}:branch:${branchId}:${correlationId}` (eventContract.js:260-268)"
+      ],
+      "info_note": "Cross-tab dedupe is NOT shared (Audit G5/G6/G7 — accepted by design per eventContract.js:89-94 comment). Each tab acts on the same event once. POS/KDS handlers are idempotent (refresh-list patterns) so double-action is invisible. Toasts may fire in BOTH tabs simultaneously — by design, since both tabs are the same operator and they may have either tab focused. No action required."
+    },
+
+    "K.9.9_three_cashiers_concurrent_branch_RBAC": {
+      "name": "Cashier A (branch 1) + Cashier B (branch 1) + Cashier C (branch 2)",
+      "verdict": "GREEN",
+      "discipline": [
+        "A and B both have user.branch_id === 1 → both authorized on private-branch.1 (channels.php:61)",
+        "C has user.branch_id === 2 → routes/channels.php returns FALSE for branchId=1 → Pusher refuses subscription with 403, JS receives pusher:subscription_error → wsService.handleSubscriptionError fires, sliding-window counter increments, no further attempts on branch.1",
+        "Backend broadcasts to private-branch.1 ONLY — branch 2 cashier physically cannot receive even if they spoofed channel auth (Pusher server enforces the channel-name → subscriber-set mapping)",
+        "BranchScope at API layer (CLAUDE.md §9 — 20 models) guarantees data exposure parity: even if branch 2 cashier somehow subscribed, the subsequent fetchOrders() would return branch-2 data only (User model BranchScope baseline-locked by BranchScopeCoverageSentinelTest)"
+      ],
+      "h1_evidence": "Phase H.1 H1-multiuser-rbac-findings.json verified the same RBAC pattern at HTTP API layer empirically — cashC (branch 2) returns 403 / empty payload from branch-1-scoped endpoints. Echo channel auth pattern is the broadcast-layer mirror of the same discipline."
+    },
+
+    "K.9.10_owner_admin_dashboard_observability": {
+      "name": "Owner watches admin dashboard while cashier activity unfolds",
+      "verdict": "GREEN",
+      "discipline": [
+        "Owner (hasRole('Admin')) passes the cross-branch clause in channels.php:56 — subscribes to ANY private-branch.{id} they request",
+        "Admin dashboard widgets typically subscribe to the owner's own branch (or fall back to polling if branchId<=0 which is the Admin branch_id=0 case — see KDS:1844, OSS:260, POS:2640 'if (branchId <= 0) return; // Admin: polling fallback')",
+        "PosOrdersTracker / PosComponent / KDS / OSS / StockRuptureDashboard fall back to polling for Admin user → polling intervals: POS 30s (kioskPollingInterval), KDS 5-60s, OSS list refresh on tick. Per heal B.3 2026-05-19 (config/broadcasting.php SoT note).",
+        "Per Q9-S1 measured: ~1s sync when WS active, ~30s worst when polling-only. Acceptable for owner observability widgets (not real-time-critical for owner POV)."
+      ],
+      "info_note": "Admin (branch_id=0) by design relies on polling — single-resto Le Cayenne owner is also the staff/has direct access to branch-specific surfaces. V2 SaaS multi-tenant would warrant a presence channel for cross-branch live dashboard."
+    },
+
+    "K.9.11_high_frequency_event_burst": {
+      "name": "10 events in 1s → all 6 surfaces receive",
+      "verdict": "AMBER (INFO — accepted, fallback layers active)",
+      "discipline_present": [
+        "KDS uses _debouncedRefresh() (line 1857-1861) → 10 events coalesce into ONE fetch within the debounce window",
+        "Correlation dedupe (eventContract.js:270-285): 2048 cap + 10-min TTL — burst of 10 distinct correlation_ids all retained, none dropped",
+        "axios error toast throttle (bootstrap.js:75 _BUCKET_MIN_GAP_MS=3000): even if surfaces fire 10 fetches and N return 429, only one toast per 3s bucket"
+      ],
+      "discipline_missing": [
+        "POS PosComponent (line 2642-2692): every OrderCreated handler calls loadKioskCashOrders + loadActiveOrdersStats + loadReadyOrders (3 XHR per event × 10 events = 30 XHR in 1s). NO debounce on this handler.",
+        "POS PosOrdersTracker (line 662, 672): fetchOrders() per event, no debounce",
+        "OSS (line 278, 283): this.list() per event, no debounce — could fire 10 list refreshes in 1s",
+        "Net: under a real 10/sec burst from multi-cashier + multi-kiosk activity, POS+OSS surfaces could storm the API with 40-60 XHR in 1s — caught by api rate-limit (429 → toast suppressed via 3s bucket), but real network spam"
+      ],
+      "v1_classification": "INFO/P2 — acceptable for V1 single-resto where event rate is realistically <2/sec sustained (24+ tables × 1 status flip per 5 min = 0.08/sec peak). Wave-X soak test 50 orders/3 concurrency/7s = 21/sec INSTANTANEOUS — PASSED. Bursts mitigated by polling fallback already debouncing organic refreshes. V1.0.2 backlog: add _debouncedRefresh pattern to POS/OSS handlers (parity with KDS)."
+    },
+
+    "K.9.12_subscription_failure_silent_kiosk_admin": {
+      "name": "Kiosk token broken admin subscription (J-ADV-6 PATH-1)",
+      "verdict": "GREEN",
+      "discipline": [
+        "J2-HEAL-02 BlockKioskTokenFromAdminRoutes middleware (app/Http/Middleware/BlockKioskTokenFromAdminRoutes.php) intercepts ANY request hitting /api/admin/* with a Sanctum token carrying ONLY kiosk:order ability (no wildcard '*') → 403 + error='token_ability_insufficient'",
+        "Sentinel KioskTokenAdminBlockSentinelTest.php verifies BOTH: kiosk-only token → 403, wildcard token → not blocked (test_kiosk_only_token_is_blocked... + test_wildcard_admin_token_is_not_blocked...)",
+        "In Echo context: kiosk token subscribing to private-branch.1 succeeds ONLY if KioskMachine.branch_id === 1 (channels.php:46-50). Even if a kiosk token somehow received OrderCreated broadcasts via the channel, the handlers in KioskAppComponent do NOT subscribe to OrderCreated — kiosk only listens to ItemAvailabilityChanged + CatalogChanged + ComposerProfileChanged + CouponChanged (line 546-575). No data-leak path.",
+        "Defense Layer 2 documented (proposals/PROPOSAL_KIOSK_DEDICATED_USER_REFACTOR.md) — re-bind KioskMachine to dedicated kiosk_kayenne_borne_1 user with NO Spatie roles. Owner countersign pending."
+      ],
+      "multi_tab_kiosk_attack_simulation": "If attacker opens kiosk borne in dev-tools, copies kiosk-token from localStorage, opens new tab on /admin → BlockKioskTokenFromAdminRoutes denies 403. Echo subscription to private-branch.X with X!=ownBranch denied by channels.php:46-50. Self-contained defense."
+    }
+  },
+
+  "fanout_discipline_summary": {
+    "broadcast_topology": "Unified private-branch.{id} channel (C6 ARCH-001) — single Pusher fanout, per-surface event-name filter — GREEN",
+    "branch_isolation": "3-layer (channel auth + Pusher subscription gate + downstream API BranchScope) — GREEN, sentinel-locked",
+    "kiosk_token_isolation": "Channel auth token-name check (immune to '*' wildcard) + BlockKioskTokenFromAdminRoutes admin-API guard + kiosk JS subscribes ONLY to menu/promo events — GREEN, dual sentinel",
+    "subscription_lifecycle": "unsubscribe-before-subscribe idempotency + beforeUnmount cleanup + vitest leak contract (echoMemoryLeak.spec.js) — GREEN",
+    "correlation_dedupe": "sessionStorage 10-min TTL + 2048 cap + per-eventType+branch+correlation key + debounced persist + pagehide flush — GREEN, per-tab by design (Audit G5 INFO)",
+    "polling_fallback": "Every surface keeps a polling interval running ALONGSIDE Echo (POS 30s, KDS 5-60s per heal B.3, OSS list-tick) — Pusher dead does not break surfaces — GREEN",
+    "auth_refresh": "_refreshEchoAuth on pusher:subscription_error (bootstrap.js:368-381 + wsService.handleSubscriptionError sliding window 3 failures/60s → SESSION_INVALID) — GREEN",
+    "ws_heartbeat": "Cache::put('ws:heartbeat', now()->timestamp, 120) at DispatchDomainEventsJob:129 — SyncOverviewController reads cache key to attest broadcaster liveness, post S-P0-A heal — GREEN"
+  },
+
+  "findings": [
+    {
+      "id": "K9-001",
+      "severity": "P2",
+      "scenario": "K.9.5",
+      "title": "OrderPaymentStatusChanged broadcast has zero JS subscribers — partial refund fanout silent",
+      "evidence": "app/Listeners/PersistOrderPaymentStatusChangedToOutbox.php:61 writes DomainEvent.broadcast_as='OrderPaymentStatusChanged'. eventContract.js:16-25 BROADCAST_MAP contains no entry. grep -rnE 'OrderPaymentStatusChanged' resources/js → 0 hits.",
+      "impact": "Partial refund (payment_status→PARTIAL_REFUNDED while order.status unchanged) → no surface picks up the change in real time. POS Historique / KDS Historique drawer / OSS badge would only refresh on next polling tick. Full refund unaffected (piggybacks on OrderStatusChanged → CANCELED).",
+      "v1_classification": "V1.0.2 backlog. V1 Le Cayenne has no partial-refund UI today (cash-trail = full cancel). Add when partial-refund UI lands.",
+      "fix_proposal": "Add 'OrderPaymentStatusChanged: EVENT_TYPES.ORDER_PAYMENT_STATUS_CHANGED' to BROADCAST_MAP + new EVENT_TYPES.ORDER_PAYMENT_STATUS_CHANGED constant. Add handler to POS PosComponent + KDS Historique drawer subscribeEcho() arrays."
+    },
+    {
+      "id": "K9-002",
+      "severity": "P2",
+      "scenario": "K.9.11",
+      "title": "POS + OSS Echo handlers lack debounce — burst can produce N×XHR storm",
+      "evidence": "PosComponent.vue:2642-2692 (3 XHR per event, no debounce); PosOrdersTracker.vue:662 (fetchOrders per event); PreparingAndReadyComponent.vue:278,283 (this.list() per event). Only KDS uses _debouncedRefresh (KitchenDisplaySystemComponent.vue:1857-1861).",
+      "impact": "Realistic V1 event rate (<2/sec sustained, 21/sec instantaneous Wave-X soak PASSED) does not surface this — but a multi-cashier + multi-kiosk burst could fire 30-60 XHR in 1s. Caught by API rate-limit + 3s axios toast bucket, but visible as network spam in dev-tools.",
+      "v1_classification": "V1.0.2 backlog. V1 ship-blocker false-positive — empirical Wave-X soak PASSED.",
+      "fix_proposal": "Mirror KDS pattern: introduce _debouncedRefresh() (250ms trailing) wrapping the XHR triplet. Or coalesce loadKioskCashOrders+loadActiveOrdersStats+loadReadyOrders into a single batched endpoint."
+    },
+    {
+      "id": "K9-003",
+      "severity": "INFO",
+      "scenario": "K.9.3",
+      "title": "Mission spec stale — K.9.3 says KDS doesn't react to ItemAvailabilityChanged, code says KDS DOES react",
+      "evidence": "Mission STEP K.9.3 'KDS doesn't need to react (already has order details from snapshot)' vs KitchenDisplaySystemComponent.vue:1867 'ItemAvailabilityChanged handler → _onItemAvailabilityChanged → dispatches into kdsInflight Vuex module' + comment CV1-KDS-INFLIGHT-OOS-MARKER-001.",
+      "impact": "None — code is correct, mission spec is outdated. KDS in-flight marker overlay is a desired UX feature (chef sees freshly 86'd item flag on tickets that include it).",
+      "v1_classification": "No action — update mission spec next iteration."
+    },
+    {
+      "id": "K9-004",
+      "severity": "INFO",
+      "scenario": "K.9.8",
+      "title": "Cross-tab correlation dedupe not shared (by design, documented)",
+      "evidence": "eventContract.js:89-94 explicit comment 'sessionStorage is per-tab (W3C spec); dedupe is NOT shared across browser tabs. Each tab maintains its own window. Cross-tab dedup would require BroadcastChannel + localStorage and is out of scope.'",
+      "impact": "Same operator with POS tab + KDS tab open will process the same event in BOTH tabs. Handlers are idempotent (refresh-list pattern). Toast may fire in both tabs simultaneously.",
+      "v1_classification": "No action — accepted by design (Audit G5/G6/G7). Cross-tab BroadcastChannel would be V2 SaaS multi-window dashboard scope."
+    }
+  ],
+
+  "verdict": {
+    "level": "GREEN_WITH_2_P2_BACKLOG",
+    "echo_fanout_discipline": "VERIFIED — single private-branch.{id} channel with per-surface event-name filter, broadcast wiring via Outbox+DomainEvent+DispatchDomainEventsJob, atomic claim under row lock prevents double broadcast, after-commit dispatch prevents broadcast-without-persist",
+    "branch_isolation": "VERIFIED — 3 layers (channels.php auth + Pusher channel-scoped fanout + downstream BranchScope), kiosk-token isolation token-NAME check (immune to Sanctum '*' wildcard) + BlockKioskTokenFromAdminRoutes guard, both sentinel-locked",
+    "memory_leak_safety": "VERIFIED — onEvents → {unsubscribe} contract sentinel-locked (echoMemoryLeak.spec.js 5 cases), unsubscribeEcho symmetric to subscribeEcho in all 7 Vue surfaces, defensive double-unsubscribe-before-subscribe idiom applied (AUDIT-P51-BUG2 pattern propagated)",
+    "subscription_failure_handling": "VERIFIED — pusher:subscription_error → _refreshEchoAuth (token rotation pickup) + wsService 3-failures/60s → SESSION_INVALID promote → polling fallback always-on, 4-disconnects/30s storm breaker (decorrelated jitter reconnect)",
+    "p0_p1_count_added": 0,
+    "p2_count_added": 2,
+    "info_count": 2,
+    "v1_ship_blocker": false,
+    "recommendation": "K.9 PASS for V1 Le Cayenne single-resto. K9-001 (partial-refund silent) + K9-002 (POS/OSS handler debounce) tracked as V1.0.2 backlog. No code change required for V1 cut."
+  },
+
+  "files_inspected": [
+    "routes/channels.php",
+    "app/Http/Middleware/BlockKioskTokenFromAdminRoutes.php",
+    "app/Events/OrderCreated.php",
+    "app/Events/OrderStatusChanged.php",
+    "app/Events/OrderTableChanged.php",
+    "app/Events/OrderPaymentStatusChanged.php",
+    "app/Events/RefundCreated.php",
+    "app/Events/ItemAvailabilityChanged.php",
+    "app/Events/CatalogChanged.php",
+    "app/Events/ItemUpdated.php",
+    "app/Listeners/PersistOrderCreatedToOutbox.php",
+    "app/Listeners/PersistOrderStatusChangedToOutbox.php",
+    "app/Listeners/PersistOrderPaymentStatusChangedToOutbox.php",
+    "app/Listeners/PersistOrderPaymentStatusChangedOnRefundCreated.php",
+    "app/Listeners/ReleaseStockOnRefundCreated.php",
+    "app/Listeners/ReleaseAvailabilityOnRefundCreated.php",
+    "app/Listeners/ClawbackLoyaltyPointsOnRefund.php",
+    "app/Jobs/DispatchDomainEventsJob.php",
+    "app/Providers/EventServiceProvider.php",
+    "app/Services/PaymentService.php",
+    "app/Services/OrderStatusScreenOrderService.php",
+    "app/Http/Controllers/Admin/OrderStatusScreenController.php",
+    "resources/js/bootstrap.js",
+    "resources/js/services/eventContract.js",
+    "resources/js/services/WebSocketService.js",
+    "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue",
+    "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue",
+    "resources/js/components/admin/pos/PosComponent.vue",
+    "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue",
+    "resources/js/components/admin/stock/StockRuptureDashboardComponent.vue",
+    "resources/js/components/frontend/kiosk/KioskAppComponent.vue",
+    "resources/js/composables/useCatalogChangeNotifier.js",
+    "tests/Feature/Sync/PusherChannelAuthWildcardSentinelTest.php",
+    "tests/Feature/Security/KioskTokenAdminBlockSentinelTest.php",
+    ".claude/worktrees/blissful-mclean-c915c2/tests/js/echoMemoryLeak.spec.js",
+    ".claude/worktrees/blissful-mclean-c915c2/tests/js/echoAuth.spec.js"
+  ]
+}

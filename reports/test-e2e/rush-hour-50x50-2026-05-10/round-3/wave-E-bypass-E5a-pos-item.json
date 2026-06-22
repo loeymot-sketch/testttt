@@ -1,0 +1,18 @@
+{
+  "request": {
+    "token": "MIX-E-POS-BYPASS-ITEM-1778462148271",
+    "item_id": 362
+  },
+  "response": {
+    "ok": false,
+    "status": 422,
+    "body": {
+      "stage": "quote",
+      "message": "Article 362 indisponible pour cette branche (unavailable).",
+      "data": {
+        "status": false,
+        "message": "Article 362 indisponible pour cette branche (unavailable)."
+      }
+    }
+  }
+}

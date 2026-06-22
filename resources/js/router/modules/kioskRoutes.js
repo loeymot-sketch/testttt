@@ -1,35 +1,33 @@
 import store from "../../store/index.js";
+import { trackLegacyRouteHit } from "../../helpers/kioskAnalytics.js";
+// Shell borne + idle + catalogue : imports synchrones. Le trio lazy-only provoquait des
+// navigations où l’URL changeait sans montage de vue (DOM vide jusqu’à F5) et des cold-load
+// /kiosk/categories avant résolution du chunk parent. Voir tests/e2e/kiosk-spa-black-screen-guard.spec.js
+import KioskAppComponent from "../../components/frontend/kiosk/KioskAppComponent.vue";
+import KioskIdleScreenComponent from "../../components/frontend/kiosk/KioskIdleScreenComponent.vue";
+import KioskCategoriesComponent from "../../components/frontend/kiosk/KioskCategoriesComponent.vue";
 
-// [C4] Lazy-load all kiosk components into a dedicated "kiosk" webpack chunk.
-// This keeps the initial app.js lighter for non-kiosk surfaces (admin, POS, KDS, OSS).
-// The kiosk chunk is prefetched on the idle screen so navigation feels instant.
-const KioskAppComponent          = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskAppComponent.vue");
-const KioskLoginComponent        = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskLoginComponent.vue");
-const KioskIdleScreenComponent   = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskIdleScreenComponent.vue");
-const KioskCategoriesComponent   = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskCategoriesComponent.vue");
-const KioskWizardComponent       = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskWizardComponent.vue");
-const KioskPosWizardComponent    = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskPosWizardComponent.vue");
-const KioskCartComponent         = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskCartComponent.vue");
-const KioskLoyaltyComponent      = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskLoyaltyComponent.vue");
-const KioskUpsellComponent       = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskUpsellComponent.vue");
-const KioskPaymentComponent      = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskPaymentComponent.vue");
-const KioskWaitingComponent      = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskWaitingComponent.vue");
-const KioskConfirmationComponent = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskConfirmationComponent.vue");
-const KioskAdminComponent        = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskAdminComponent.vue");
+// [C4] Lazy-load les autres écrans kiosk dans des chunks dédiés.
+const KioskLoginComponent        = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskLoginComponent.vue");
+const KioskWizardComponent       = () => import(/* webpackChunkName: "kiosk-wizard" */ "../../components/frontend/kiosk/KioskWizardComponent.vue");
+const KioskPosWizardComponent    = () => import(/* webpackChunkName: "kiosk-wizard" */ "../../components/frontend/kiosk/KioskPosWizardComponent.vue");
+const KioskCartComponent         = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskCartComponent.vue");
+const KioskLoyaltyComponent      = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskLoyaltyComponent.vue");
+const KioskUpsellComponent       = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskUpsellComponent.vue");
+const KioskPaymentComponent      = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskPaymentComponent.vue");
+const KioskWaitingComponent      = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskWaitingComponent.vue");
+const KioskConfirmationComponent = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskConfirmationComponent.vue");
 // [KIOSK-DS V1 Phase 3] Écrans UX critiques (cash + erreurs globales).
-const KioskCashInstructionComponent      = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskCashInstructionComponent.vue");
-const KioskErrorNetworkComponent         = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskErrorNetworkComponent.vue");
-const KioskErrorMenuUnavailableComponent = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskErrorMenuUnavailableComponent.vue");
-const KioskErrorProductRemovedComponent  = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskErrorProductRemovedComponent.vue");
-const KioskErrorPaymentRefusedComponent  = () => import(/* webpackChunkName: "kiosk" */ "../../components/frontend/kiosk/KioskErrorPaymentRefusedComponent.vue");
+const KioskCashInstructionComponent      = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskCashInstructionComponent.vue");
+const KioskErrorNetworkComponent         = () => import(/* webpackChunkName: "kiosk-errors" */ "../../components/frontend/kiosk/KioskErrorNetworkComponent.vue");
+const KioskErrorMenuUnavailableComponent = () => import(/* webpackChunkName: "kiosk-errors" */ "../../components/frontend/kiosk/KioskErrorMenuUnavailableComponent.vue");
+const KioskErrorProductRemovedComponent  = () => import(/* webpackChunkName: "kiosk-errors" */ "../../components/frontend/kiosk/KioskErrorProductRemovedComponent.vue");
+const KioskErrorPaymentRefusedComponent  = () => import(/* webpackChunkName: "kiosk-errors" */ "../../components/frontend/kiosk/KioskErrorPaymentRefusedComponent.vue");
 
 function getKioskAutoCredentials() {
     if (typeof window === 'undefined') return null;
-    // [C5] Maintenance mode: staff activated via KioskAdminComponent — suspend auto-login
-    // until the page is reloaded (sessionStorage is cleared on tab/browser close).
-    try {
-        if (sessionStorage.getItem('kiosk_maintenance_mode') === '1') return null;
-    } catch (_) { /* ignore if sessionStorage unavailable */ }
+    // Customer kiosk is locked. Staff maintenance is handled from the caisse/admin,
+    // not from the customer kiosk surface.
     const a = window.foodkingConfig?.kioskAutoLogin;
     if (a?.username && a.password !== undefined && a.password !== null && String(a.password) !== '') {
         return { username: String(a.username).trim(), password: String(a.password) };
@@ -42,19 +40,32 @@ function getKioskAutoCredentials() {
  * Si window.foodkingConfig.kioskAutoLogin est défini (config/kiosk.php) : login API silencieux.
  */
 function requireKioskAuth(to, from, next) {
-    if (to.name === 'kiosk.login') return next();
-    const token = store.state.kioskCart?.kioskToken;
-    if (token) return next();
+    const proceed = () => {
+        if (to.name === 'kiosk.login') return next();
+        const token = store.state.kioskCart?.kioskToken;
+        if (token) return next();
 
-    const auto = getKioskAutoCredentials();
-    if (auto) {
-        store
-            .dispatch('kioskCart/kioskLogin', auto)
-            .then(() => next())
-            .catch(() => next({ name: 'kiosk.login' }));
-        return;
+        const auto = getKioskAutoCredentials();
+        if (auto) {
+            store
+                .dispatch('kioskCart/kioskLogin', auto)
+                .then(() => next())
+                .catch(() => next({ name: 'kiosk.login' }));
+            return;
+        }
+        next({ name: 'kiosk.login' });
+    };
+
+    try {
+        if (!store.getters['kioskFilter/hydrated']) {
+            store.dispatch('kioskFilter/init').then(proceed).catch(proceed);
+            return;
+        }
+    } catch (_) {
+        /* no-op — deep-link / wizard sans Categories ne doit pas bloquer la nav */
     }
-    next({ name: 'kiosk.login' });
+
+    proceed();
 }
 
 /**
@@ -96,6 +107,28 @@ function requireConfirmationContext(to, from, next) {
     next();
 }
 
+function firstRouteParam(value) {
+    return String(Array.isArray(value) ? value[0] : value || '');
+}
+
+function redirectLegacyProductsRoute(to) {
+    const categoryId = firstRouteParam(to.params?.categoryId);
+    trackLegacyRouteHit({
+        from_route: 'kiosk.products',
+        target_route: 'kiosk.categories',
+        category_id: categoryId,
+        query_keys: Object.keys(to.query || {}).sort(),
+    });
+
+    return {
+        name: 'kiosk.categories',
+        query: {
+            ...(to.query || {}),
+            cat: categoryId,
+        },
+    };
+}
+
 export default [
     // Standalone login page — outside KioskAppComponent to avoid idle timer
     {
@@ -133,13 +166,7 @@ export default [
                 name: "kiosk.products",
                 // Legacy deep-link kept for backward compatibility; the active catalogue
                 // surface is `kiosk.categories` with query-driven category selection.
-                redirect: (to) => ({
-                    name: 'kiosk.categories',
-                    query: {
-                        cat: to.params.categoryId,
-                        ...(to.query || {}),
-                    },
-                }),
+                redirect: redirectLegacyProductsRoute,
                 meta: { isKiosk: true },
             },
             {
@@ -202,9 +229,8 @@ export default [
             {
                 path: "admin",
                 name: "kiosk.admin",
-                component: KioskAdminComponent,
+                redirect: { name: "kiosk.idle" },
                 meta: { isKiosk: true },
-                beforeEnter: requireKioskAuth,
             },
 
             /* ============================================================

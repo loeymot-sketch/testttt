@@ -18,7 +18,8 @@ class ItemAttributeController extends AdminController
     {
         parent::__construct();
         $this->itemAttributeService = $itemAttributeService;
-        $this->middleware(['permission:settings'])->only('show', 'store', 'update', 'destroy');
+        // [v1-0-1-h5 Z5-P1-04 2026-05-17] index guarded — mirrors ItemCategoryController gate (Wave Z inconsistency fix)
+        $this->middleware(['permission:settings'])->only('index', 'show', 'store', 'update', 'destroy');
     }
 
     public function index(PaginateRequest $request
@@ -26,7 +27,7 @@ class ItemAttributeController extends AdminController
         try {
             return ItemAttributeResource::collection($this->itemAttributeService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -36,7 +37,7 @@ class ItemAttributeController extends AdminController
         try {
             return new ItemAttributeResource($this->itemAttributeService->show($itemAttribute));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -45,7 +46,7 @@ class ItemAttributeController extends AdminController
         try {
             return new ItemAttributeResource($this->itemAttributeService->store($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -57,7 +58,7 @@ class ItemAttributeController extends AdminController
         try {
             return new ItemAttributeResource($this->itemAttributeService->update($request, $itemAttribute));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -67,7 +68,7 @@ class ItemAttributeController extends AdminController
             $this->itemAttributeService->destroy($itemAttribute);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

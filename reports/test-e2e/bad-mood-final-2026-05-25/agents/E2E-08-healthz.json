@@ -1,0 +1,235 @@
+{
+  "agent": "E2E-08",
+  "mission": "Healthz endpoint deep audit (A.1 just-shipped this cycle)",
+  "timestamp_utc": "2026-05-25T16:31:18Z",
+  "server": "http://127.0.0.1:8000",
+  "source_files": {
+    "controller": "app/Http/Controllers/HealthzController.php",
+    "cli_command": "app/Console/Commands/HealthzCheckCommand.php",
+    "scheduler": "app/Console/Kernel.php:88-103",
+    "route": "routes/api.php:148",
+    "commit_shipped": "86c1efeba feat(ops-gate-1): healthz endpoint + UptimeRobot setup doc"
+  },
+
+  "task_1_get_healthz": {
+    "status": "PASS",
+    "command": "curl -s http://127.0.0.1:8000/api/healthz",
+    "http_code": 200,
+    "response_time_seconds": 0.021,
+    "body": {
+      "status": "ok",
+      "checks": {
+        "db": "ok",
+        "redis": "ok",
+        "websocket": "ok",
+        "fiscal_chain": "ok",
+        "queue_pending": 0
+      },
+      "timestamp": "2026-05-25T18:27:21+02:00"
+    },
+    "raw_file": "/tmp/healthz.json"
+  },
+
+  "task_2_parse_json": {
+    "status_equals_ok": true,
+    "checks_db_ok": true,
+    "checks_redis_ok": true,
+    "checks_websocket_ok": true,
+    "checks_fiscal_chain_ok": true,
+    "checks_queue_pending_is_int": true,
+    "queue_pending_value": 0,
+    "timestamp_iso8601_regex_match": true,
+    "timestamp_python_fromisoformat_parseable": true,
+    "verdict": "PASS — full contract satisfied for nominal state"
+  },
+
+  "task_3_adversarial": {
+    "adv_1_redis_down": {
+      "method": "brew services stop redis (full disconnect, 6s window)",
+      "request_during_outage": "curl -s -m 8 http://127.0.0.1:8000/api/healthz",
+      "expected_per_task_brief": "fail then 503",
+      "expected_per_actual_contract": "redis=fail + status=degraded + 200 (lenient V1 — only ALL-FAIL triggers 503)",
+      "actual_observed": "HTTP 500 Server Error HTML page (NOT a JSON response, NOT a structured fail)",
+      "verdict": "FAIL",
+      "severity": "P0",
+      "finding_id": "E2E-08-F1",
+      "root_cause": "The 'api' middleware group includes 'throttle:api' (app/Http/Kernel.php:'api' group). Laravel's RateLimiter resolves Cache::store(), which uses CACHE_DRIVER=redis. When redis is down, the rate limiter throws an unhandled PHP exception BEFORE the request reaches HealthzController. The try/catch blocks inside HealthzController::checkRedis() only protect the redis probe; they cannot protect against middleware-chain failures upstream.",
+      "impact": "An uptime probe is supposed to be the LAST endpoint that fails. UptimeRobot/Cronitor will see a 500 with HTML body instead of parseable JSON. Monitors that match on 'status:\"fail\"' or 'checks.redis:\"fail\"' will MISS the actual incident — they'll show 'server-down' instead of 'redis-down', muddying the on-call paging signal.",
+      "recommended_fix": "Either (a) remove the 'api' middleware group from /api/healthz (assign explicit empty middleware), OR (b) keep throttle but use a memory-only RateLimiter for this route, OR (c) cache the throttle state in file driver, OR (d) wrap the entire HealthzController dispatch in a try/catch that emits the same JSON schema with all checks=fail + 503. Recommended: option (a) — uptime probes should bypass auth, rate-limit, CSRF, and session middleware by design.",
+      "evidence_files": ["/tmp/healthz-redis-down.json (HTML 500 body captured)"]
+    },
+
+    "adv_2_fiscal_chain_drop": {
+      "method": "audit_logs row id=34 was injected by a parallel adversarial agent during this cycle window: action='tamper.attempt', prev_hash=null, current_hash='FAKE_HASH', created_at=2026-05-25 18:28:46 — verified via `AuditLog::orderBy('id','desc')->take(3)->get()`",
+      "request_after_tamper": "curl -s http://127.0.0.1:8000/api/healthz",
+      "actual_observed": {
+        "http_code": 200,
+        "body": {
+          "status": "degraded",
+          "checks": {"db":"ok","redis":"ok","websocket":"ok","fiscal_chain":"fail","queue_pending":0},
+          "timestamp": "2026-05-25T18:29:09+02:00"
+        }
+      },
+      "verdict": "PASS",
+      "note": "Endpoint correctly detects the chain break and reports fiscal_chain=fail. Per the documented contract (lenient V1, HealthzController.php docblock lines 32-36), one-of-four failure = status=degraded + 200, NOT 503. Only ALL FOUR critical checks (db/redis/websocket/fiscal_chain) failing simultaneously triggers 503. The task brief's expectation 'should report fail' is satisfied at the field level (checks.fiscal_chain==='fail').",
+      "behavior_sticky_across_3_consecutive_calls": true,
+      "auditlog_evidence": "id=34 action=tamper.attempt prev=null curr=FAKE_HASH ts=2026-05-25 18:28:46 (other-agent fixture, NF525 chain reset required at end of wave)"
+    },
+
+    "adv_3_queue_1000_jobs": {
+      "method": "inserted 1000 rows into DB::table('jobs') via tinker (chunked 100 per insert)",
+      "before_value": 0,
+      "after_value_observed": 1000,
+      "expected": "queue_pending grows to 1000",
+      "verdict": "PASS at field level",
+      "finding_id": "E2E-08-F2",
+      "severity": "P1",
+      "secondary_finding": "HealthzController::checkQueuePending() reads DB::table('jobs')->count(). This is the DATABASE queue driver's table. The production env has QUEUE_CONNECTION=redis (verified via .env), so real-world pending jobs accumulate in REDIS lists (`queues:default`, `queues:high`, etc.), NEVER in DB::table('jobs'). In production: queue_pending will ALWAYS report 0 even when the redis queue is overflowing.",
+      "impact": "The owner-facing 'queue_pending' graph in UptimeRobot/Cronitor will be permanently flat-at-zero, hiding queue backlog incidents.",
+      "recommended_fix": "Switch to driver-aware probe: `Queue::size('default') + Queue::size('high')`. Laravel's Queue::size() works for redis, database, and sqs drivers. Adds ~1ms latency.",
+      "cleanup_performed": "DB::table('jobs')->truncate() — verified count=0 post-cleanup"
+    },
+
+    "adv_4_100_concurrent_requests": {
+      "method": "seq 1 100 | xargs -P 50 -n 1 curl -s -o /dev/null -w '%{http_code} %{time_total}s'",
+      "wall_clock_seconds": 1.92,
+      "http_200_count": 100,
+      "http_4xx_count": 0,
+      "http_5xx_count": 0,
+      "p50_seconds": 0.828,
+      "p95_seconds": 0.929,
+      "p99_seconds": 0.935,
+      "verdict": "PASS",
+      "note": "100/100 succeeded, no rate-limit 429 triggered (throttle:api 60/min keyed by IP — burst was within the configured cap because php artisan serve is single-threaded and serialized them. With PHP-FPM in prod the cap would actually trigger). Latency p95 < 1s under load. NO regression detected."
+    }
+  },
+
+  "task_4_cli_check": {
+    "default_mode": {
+      "command": "php artisan healthz:check",
+      "stdout": "[2026-05-25T18:27:28+02:00] healthz=ok db=ok redis=ok ws=ok fiscal=ok queue=0",
+      "exit_code": 0,
+      "verdict": "PASS"
+    },
+    "json_mode": {
+      "command": "php artisan healthz:check --json",
+      "stdout": "{\"status\":\"ok\",\"checks\":{\"db\":\"ok\",\"redis\":\"ok\",\"websocket\":\"ok\",\"fiscal_chain\":\"ok\",\"queue_pending\":0},\"timestamp\":\"2026-05-25T18:27:31+02:00\"}",
+      "exit_code": 0,
+      "verdict": "PASS"
+    },
+    "exit_code_contract": "exit 0 for ok+degraded (lenient), exit 1 only when ALL critical checks fail — matches HealthzCheckCommand.php:71 docblock",
+    "verdict_overall": "PASS"
+  },
+
+  "task_5_cron_registered": {
+    "command": "php artisan schedule:list | grep healthz",
+    "output": "*/5  *  * * *  php artisan healthz:check .......... Next Due: dans 2 minutes",
+    "frequency": "every 5 minutes",
+    "name": "healthz-heartbeat",
+    "description": "OPS-GATE-1: 5-min heartbeat → storage/logs/heartbeat.log",
+    "appendOutputTo": "storage_path('logs/heartbeat.log')",
+    "onOneServer": true,
+    "withoutOverlapping": true,
+    "source": "app/Console/Kernel.php:97-103",
+    "verdict": "PASS"
+  },
+
+  "task_6_heartbeat_log": {
+    "before_cron_fire": {
+      "exists": false,
+      "note": "Cron last fired at next */5 boundary; cron daemon must be running on the host (launchctl/launchd) AND `php artisan schedule:run` must be wired up for the file to be created automatically. The schedule:list confirms registration but Laravel scheduler itself needs a host-level cron entry (`* * * * * cd /path && php artisan schedule:run`) — not verified here."
+    },
+    "after_manual_fire": {
+      "command_used_to_simulate_cron": "php artisan healthz:check >> storage/logs/heartbeat.log 2>&1",
+      "file_size_bytes": 86,
+      "content_first_line": "[2026-05-25T18:31:18+02:00] healthz=degraded db=ok redis=ok ws=ok fiscal=fail queue=0",
+      "format_matches_command_docblock": true,
+      "verdict": "PASS for the format; OPEN for cron-daemon wiring on host"
+    },
+    "finding_id": "E2E-08-F3",
+    "severity": "P2",
+    "open_question": "Is the host-level crontab actually running `php artisan schedule:run` every minute? Without it, the Laravel scheduler entry exists in code but never fires. Recommendation: add `verify-cron.sh` to scripts/deploy/ that greps for the schedule:run line in `crontab -l`."
+  },
+
+  "summary_findings": [
+    {
+      "id": "E2E-08-F1",
+      "severity": "P0",
+      "title": "Redis-down causes HTML 500 instead of structured JSON degraded/fail",
+      "blocker": true,
+      "category": "uptime-probe-contract-violation",
+      "fix_estimate_hours": 0.5,
+      "recommended_action": "Detach /api/healthz from 'api' middleware group; assign empty middleware. Add E2E test stopping redis and asserting JSON body."
+    },
+    {
+      "id": "E2E-08-F2",
+      "severity": "P1",
+      "title": "queue_pending reads wrong driver — always 0 in production (QUEUE_CONNECTION=redis)",
+      "blocker": false,
+      "category": "metric-misreport",
+      "fix_estimate_hours": 0.25,
+      "recommended_action": "Replace DB::table('jobs')->count() with Queue::size('default') + Queue::size('high') (driver-aware)."
+    },
+    {
+      "id": "E2E-08-F3",
+      "severity": "P2",
+      "title": "Heartbeat.log only exists after first cron fire — verify host crontab wires schedule:run",
+      "blocker": false,
+      "category": "ops-deployment",
+      "fix_estimate_hours": 0.25,
+      "recommended_action": "Add `verify-cron.sh` to UPTIMEROBOT_SETUP.md preflight, document in PROJECT_BRAIN.md §7."
+    }
+  ],
+
+  "what_works": [
+    "Endpoint returns 200 + correct JSON shape under nominal conditions (db/redis/ws/fiscal all healthy)",
+    "Timestamp is ISO8601 with timezone offset, parseable by both regex and Python fromisoformat",
+    "fiscal_chain probe correctly catches AuditLog tampering (tested via id=34 FAKE_HASH fixture injected by parallel adversarial agent — chain returns id, controller maps to 'fail')",
+    "Lenient V1 status logic is correctly implemented: zero failures = 'ok' / 200, mixed = 'degraded' / 200, all fail = 'fail' / 503",
+    "CLI artisan healthz:check default mode emits human-readable line ending in queue=N",
+    "CLI artisan healthz:check --json emits the same JSON as the HTTP endpoint",
+    "CLI exit codes: 0 for ok+degraded (lenient), 1 only for full fail — matches doctrine of 'heartbeat lane should not churn alerts'",
+    "Scheduler registered every 5 minutes with onOneServer + withoutOverlapping + appendOutputTo correctly configured",
+    "Heartbeat.log line format matches HealthzCheckCommand.php:83-92 expectation",
+    "100 concurrent requests: 100/100 = 200, no 4xx/5xx, p99 < 1s",
+    "Source code well-documented with [GAP-HUNT 2026-05-25 Phase A.1 / OPS-GATE-1] tags + companion contracts referenced (UPTIMEROBOT_SETUP.md, healthz:check CLI, heartbeat.log)",
+    "NF525 invariant respected: controller is read-only on audit_logs (verifyChain re-walks via cursor — no UPDATE/DELETE/INSERT). Frozen-zone diff = 0."
+  ],
+
+  "post_test_state_concerns": [
+    {
+      "concern": "audit_logs id=34 (action=tamper.attempt prev_hash=null current_hash=FAKE_HASH) was INJECTED by a parallel adversarial agent during this E2E wave window and is STILL present in the table at the end of this test",
+      "impact": "fiscal_chain probe will continue to return 'fail' until this row is either (a) removed AND chain re-stitched, or (b) explicitly accepted as a permanent break point (does not match NF525 invariant)",
+      "recommended_followup": "Wave coordinator (or post-E2E reset script) must clean up adversarial fixtures. If id=34 was supposed to be ephemeral, it needs to be deleted + a recompute of the chain from id=33 forward. NOT done by this agent (E2E-08) since cleanup orchestration is the wave-coordinator's responsibility, and there may be other agents still relying on the broken state for their own validations."
+    },
+    {
+      "concern": "DB::table('jobs') was truncated by this agent after adv_3 cleanup; verified count=0 post-cleanup; no production jobs were affected because the env uses redis queue not database queue.",
+      "impact": "none"
+    },
+    {
+      "concern": "redis was stopped and restarted via brew services during adv_1 (~6s downtime window); fully recovered.",
+      "impact": "Any queue worker that was processing jobs during the window may have lost in-flight work — verify queue:work supervisor recovered. Verified via ps: queue:work PID 37474 still running."
+    }
+  ],
+
+  "verdict": "GO-CONDITIONAL",
+  "verdict_rationale": [
+    "Nominal path: PASS — endpoint contract honored under healthy conditions.",
+    "Fiscal chain detection: PASS — break correctly detected.",
+    "Concurrency: PASS — 100/100 under load with p99 < 1s.",
+    "Redis-down path: FAIL P0 — 500 HTML instead of structured JSON. This BREAKS the uptime-probe contract because monitors expect JSON and will misclassify 'redis-down' as 'server-down'. Must fix before go-live.",
+    "Queue measurement: FAIL P1 — always reports 0 in prod (wrong driver). Hides backlog incidents in the owner graph. Must fix before relying on the metric.",
+    "Heartbeat.log: PASS for code/format; OPEN P2 for host crontab verification.",
+    "Recommendation: ship A.1 with the contract caveats documented BUT fix E2E-08-F1 before pointing the external monitor at this URL."
+  ],
+
+  "files_referenced_absolute": [
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Controllers/HealthzController.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Console/Commands/HealthzCheckCommand.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Console/Kernel.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Kernel.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/routes/api.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/storage/logs/heartbeat.log"
+  ],
+  "report_path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/bad-mood-final-2026-05-25/agents/E2E-08-healthz.json"
+}

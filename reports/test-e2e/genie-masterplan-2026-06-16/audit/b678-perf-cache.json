@@ -1,0 +1,107 @@
+{
+  "generated": "2026-06-16",
+  "mode": "READ-ONLY architect/DBA audit — no edits applied",
+  "worktree": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/.claude/worktrees/wizard-wysiwyg-2026-06-14",
+  "scope": "V1 LOCAL FR, single branch, ~2700 orders / 46 items",
+  "items": [
+    {
+      "item": "B6",
+      "title": "salesReportOverview() loads ALL orders + dead orderItems eager-load + PHP-side ->sum()",
+      "file": "app/Services/OrderService.php:2723-2807",
+      "anchor_confirmed": {
+        "eager_load": "app/Services/OrderService.php:2730  Order::with('transaction', 'orderItems')->where(...)->orderBy(...)->get()",
+        "no_date_bound_default": "the from_date/to_date where-block (2731-2743) is conditional; with no dates the only filters are optional orderFilter keys -> default request hydrates ALL ~2700 rows",
+        "orderItems_never_read": "grep of method body 2723-2807: 'orderItems' appears ONLY at the eager-load decl line 2730, never dereferenced. Money is computed from scalar columns total/discount/delivery_charge (2798-2800) and Order::isRealizedRevenueRow (2796) which reads only payment_status/status/parent_order_id (all scalar). PROVEN unused.",
+        "transaction_only_query_side": "the 'transaction' eager-load is referenced only query-side via whereHas('transaction')/whereDoesntHave('transaction') (2751,2754) when payment_method filter is set — those are SQL clauses, not the hydrated relation. The hydrated transaction relation is also never dereferenced in the summing block."
+      },
+      "fix_safe": {
+        "label": "now-safe — drop the unused orderItems eager-load",
+        "change": "app/Services/OrderService.php:2730  Order::with('transaction', 'orderItems')  ->  Order::with('transaction')   (or drop ->with entirely; transaction relation is also never dereferenced post-fetch, but keeping it is harmless and lower-blast-radius)",
+        "why_safe": "orderItems collection is never accessed in the method; removing the eager-load cannot change any returned number. Pure N-row hydration-cost removal: ~2700 parent rows no longer trigger the orderItems child query + model hydration of every line item. No business number touched.",
+        "blast_radius": "ZERO numeric change. Output array keys (total_orders/total_earnings/total_discounts/total_delivery_charges) computed from scalar columns only.",
+        "classification": "now-safe"
+      },
+      "fix_bigger": {
+        "label": "needs-equality-proof — push aggregation to SQL via scopeRealizedRevenue",
+        "change": "Replace the ->get() + PHP Collection ->filter(isRealizedRevenueRow)->sum() with two DB aggregates: (1) total_orders = (clone base query)->whereNull('parent_order_id' optionally? NO — current code counts ALL fetched incl. mirrors via $orders->count(); keep semantics: total_orders = base filtered query ->count()) ; (2) money figures = (clone base query)->realizedRevenue()->selectRaw('COALESCE(SUM(total),0) t, COALESCE(SUM(discount),0) d, COALESCE(SUM(delivery_charge),0) dc')->first(). scopeRealizedRevenue exists at app/Models/Order.php:267 and is the SQL twin of isRealizedRevenueRow (app/Models/Order.php:286, documented lock-step at 280-284).",
+        "subtlety_total_orders": "CRITICAL: current total_orders = $orders->count() counts the FULL fetched set INCLUDING refund mirrors (parent_order_id != null). The realizedRevenue scope is applied ONLY to the money set. So the bigger fix must keep total_orders = (base filtered)->count() WITHOUT realizedRevenue, and apply realizedRevenue ONLY to the SUM query. Mixing them would silently change the count metric.",
+        "subtlety_filter_clone": "the filter closure (date bounds + orderFilter + exceptSource) must be applied to BOTH the count query and the sum query identically. Safest impl: build the base query once, clone() before applying realizedRevenue/aggregate so the where-closure is byte-identical to today.",
+        "subtlety_formatting": "AppLibrary::currencyAmountFormat is applied to the PHP sum today; apply it identically to the SQL-returned sum. Float/decimal rounding: MySQL SUM on DECIMAL columns vs PHP float ->sum() can differ at the cent boundary if `total` is stored as float. Equality test MUST assert formatted-string equality (post currencyAmountFormat) not raw float ==.",
+        "why_not_now_safe": "DB SUM vs PHP Collection->sum() over float columns is not guaranteed bit-identical (float accumulation order, DECIMAL vs DOUBLE). The CA number is business-visible (agrees with the signed Z per SALES-NET-01). Requires an equality proof before ship.",
+        "classification": "needs-equality-proof"
+      },
+      "test_path": "tests/Feature/Reports/SalesReportOverviewAggregateEqualityTest.php (NEW — sibling of existing tests/Feature/Reports/SalesReportNetTotalSentinelTest.php which already drives salesReportOverview)",
+      "test_design": {
+        "strategy": "byte-identical (formatted-string equality) before/after across a representative fixture set, plus property over randomized seed",
+        "case_1_golden_fixture": "Seed the exact mix from SalesReportNetTotalSentinelTest (clean PAID 100, cancelled-paid 50, parent 30, refund mirror -30) PLUS messy decimals (e.g. 12.33, 7.77, 0.01) and >1 currency-format-edge totals. Capture the CURRENT (pre-refactor) overview output array. Assert the NEW impl returns the SAME total_earnings / total_discounts / total_delivery_charges / total_orders strings character-for-character.",
+        "case_2_implementation_diff_oracle": "Within ONE test run (so no need for git stash), compute the reference value the OLD way inline (Order::with->get->filter(isRealizedRevenueRow)->sum then AppLibrary::currencyAmountFormat) and assert it === the refactored service output. This pins the two code paths together as a permanent sentinel — if a future change diverges SQL from the collection predicate, the test goes red.",
+        "case_3_no_date_default_path": "Call salesReportOverview(new Request([])) (no date bounds) over ~50 seeded orders and assert numbers match the inline old-way computation — exercises the exact unbounded path B6 targets.",
+        "case_4_decimal_boundary": "Seed totals chosen to stress float accumulation (many 0.01 and 33.33 rows). Assert formatted equality. If this fails it proves the SUM/float divergence and the bigger fix must be deferred / use DECIMAL cast in selectRaw.",
+        "assertion_style": "assertSame on the formatted strings (NOT assertEquals on floats). e.g. $this->assertSame($oldFormatted, $overview['total_earnings']);",
+        "regression_guard": "keep SalesReportNetTotalSentinelTest green (it already asserts net semantics) — the new test is the EQUALITY layer on top."
+      },
+      "risk": "LOW for fix_safe (provably no numeric change). MEDIUM for fix_bigger (business-visible CA must remain Z-aligned; float-vs-DECIMAL SUM divergence is the only real hazard — gated by case_4). NF525: salesReportOverview is a READ report, not the fiscal chain; PricingService/Z services untouched. No frozen-zone file touched (OrderService.php is not in CLAUDE.md §7 list)."
+    },
+    {
+      "item": "B7",
+      "title": "customerStates() — 18 buckets each ->get()->count() hydrates models to count",
+      "file": "app/Services/DashboardService.php:301-316",
+      "anchor_confirmed": {
+        "loop": "for i 0..17 over $timeArray (18 hour buckets 06:00-23:00) at app/Services/DashboardService.php:301",
+        "antipattern": "app/Services/DashboardService.php:309-314  (clone $order)->where(order_datetime >= start)->where(order_datetime < end)->whereTime(>= first)->whereTime(<= last)->get()->count()",
+        "result_used_only_for_count": "grep of 300-322: $total_customer is assigned at :309 and consumed ONLY at :315 $totalCustomerArray[] = $total_customer. The hydrated Collection is discarded immediately after ->count(). PROVEN count-only."
+      },
+      "fix_safe": {
+        "label": "replace ->get()->count() with ->count() (SQL COUNT, no hydration)",
+        "change": "app/Services/DashboardService.php:314  ->get()->count()  ->  ->count()",
+        "why_safe": "->count() issues SELECT COUNT(*) and returns an int identical to ->get()->count() for the same WHERE. Zero model hydration; turns 18 full-result-set fetches into 18 COUNT queries. No numeric change.",
+        "optional_bigger_single_query": "OPTIONAL further step: collapse the 18 queries into ONE GROUP BY HOUR(order_datetime) returning hour=>count, then map onto $timeArray. Higher blast radius (timezone of HOUR() — note the existing comment at 305-308 deliberately uses Paris-local whereTime and flags KDS-ADV3C-12 V1.0.2 backlog that whereTime runs in MySQL session TZ). Defer the single-query GROUP BY to avoid re-opening the documented TZ subtlety; the ->count() swap alone removes the hydration cost with ZERO semantic risk.",
+        "classification": "now-safe (->count swap); GROUP-BY-HOUR = optional, defer (TZ-adjacent)"
+      },
+      "fix_bigger": "GROUP BY HOUR(order_datetime) single query — DEFERRED: re-opens the KDS-ADV3C-12 documented MySQL-session-TZ-vs-Paris-local subtlety (DashboardService.php:305-308). Not needed for the perf win.",
+      "test_path": "tests/Feature/Dashboard/CustomerStatesCountEqualityTest.php (NEW — sibling of tests/Feature/Dashboard/DashboardBranchScopeMatrixTest.php)",
+      "test_design": {
+        "case_1_equality": "Seed orders across several hour buckets (e.g. 3 at 08:xx, 5 at 12:xx, 2 at 20:xx). Call customerStates(request with first_date/last_date covering the month). Assert total_customers array equals the expected per-bucket counts AND equals the old-way (->get()->count()) computed inline. assertSame on the int array.",
+        "case_2_empty_buckets": "Assert buckets with no orders return 0 (not null/missing) — same as before.",
+        "case_3_branch_scope": "Run as a branch-scoped user and an admin (branch_id 0) to confirm ->count() respects the same BranchScope/orderQuery() base as ->get()->count() did (the (clone $order) base is shared, so this is a guard not a behavior change).",
+        "assertion_style": "assertSame($oldArray, $newArray) — ints, exact."
+      },
+      "risk": "VERY LOW — ->count() is a drop-in for ->get()->count() with identical WHERE. No business number changes, no TZ logic touched (whereTime preserved verbatim). DashboardService.php not frozen."
+    },
+    {
+      "item": "B8",
+      "title": "settings group-all() cache invalidation gap — enabling SETTINGS_CACHE_ENABLED makes admin changes STALE on frontend",
+      "file": "app/Services/SettingService.php:9-24",
+      "anchor_confirmed": {
+        "frontend_boot_cost": "SettingService::list() (app/Services/SettingService.php:11-23) calls Settings::group(X)->all() 10 times (company, site, theme, otp, social_media, order_setup, notification, cookies, kiosk_setup, loyalty_setup). Called per /frontend/setting request via app/Http/Controllers/Frontend/SettingController.php:23 (every client boot).",
+        "cache_currently_off": "SETTINGS_CACHE_ENABLED defaults to FALSE (vendor/smartisan/laravel-settings/config/settings.php:44 'enabled' => env('SETTINGS_CACHE_ENABLED', false)). No published config/settings.php in app — package default in force. So B8 is LATENT: today every list() hits the DB 10x; flipping the env to true would ENABLE the bug below.",
+        "package_all_cache_key": "Settings::all() (vendor/smartisan/laravel-settings/src/Settings.php:104-113) when cache enabled does cache->rememberForever(resolveCacheKey(null), ...). With a group set via group(X), resolveCacheKey(null) (:173-186) yields key '...settings.keys=&group=X&excepts=&for='.",
+        "package_set_forgets_per_key_only": "Settings::set() (vendor/.../Settings.php:51-60) calls forgetCacheIfEnabled($key) (:232-241). forgetCacheIfEnabled resolves resolveCacheKey(array_keys($key)) i.e. the SPECIFIC keys being written (e.g. 'settings.keys=company_name,...&group=company&...'), and only forgets THAT key if it exists. It NEVER forgets resolveCacheKey(null) — the group-ALL cache entry that all() populated.",
+        "invalidation_gap_PROVEN": "Sequence: (1) frontend list() -> group('company')->all() caches under key 'group=company keys=(empty)'. (2) admin saves company -> CompanyService::update -> Settings::group('company')->set([...]) -> forgetCacheIfEnabled forgets key 'group=company keys=company_name,...' (a DIFFERENT key) -> the 'keys=(empty)' all() entry survives rememberForever. (3) next frontend list() returns the STALE cached all(). Confirmed by reading set()/all()/forget()/forgetCacheIfEnabled/resolveCacheKey in the package."
+      },
+      "fix_safe": {
+        "label": "(a) targeted Cache::remember in SettingService + explicit invalidation on the SettingsUpdated event — IN-REPO, SAFE",
+        "rationale_pick_a_over_b": "Option (b) patching the vendor package (forget all()-key on set) is NOT in-repo — vendor/ is not committed-source-of-truth and would be wiped on composer install; also it would require enabling SETTINGS_CACHE_ENABLED (package cache) which re-introduces the rememberForever-never-expires risk for ALL settings call sites, broader blast radius. Option (a) keeps package cache OFF (leave env default false) and caches ONLY the SettingService::list() aggregate in app code with an invalidation hook we control.",
+        "design": [
+          "1. In SettingService::list(): wrap the 10-group merge in Cache::remember('frontend.settings.payload', <ttl or forever>, fn() => <current merge>). Use a stable app-owned cache key (NOT the package's). This collapses 10 DB round-trips per client boot to 1 cache read.",
+          "2. Invalidation is ALREADY half-wired: the SettingsUpdated event EXISTS (app/Events/SettingsUpdated.php) and is dispatched by EVERY admin settings controller AFTER update(): CompanyController:36, SiteController:37, OrderSetupController:37, CurrencyController:38/50/62, TaxController:39/51/63 (grep-confirmed). It carries changedKeys group names.",
+          "3. Add a listener (or extend handling) on SettingsUpdated that does Cache::forget('frontend.settings.payload'). Register it in app/Providers/EventServiceProvider.php:300 alongside the existing PersistSettingsUpdatedToOutbox listener (SettingsUpdated::class => [PersistSettingsUpdatedToOutbox::class, ForgetFrontendSettingsCache::class]).",
+          "4. GAP TO CLOSE: not every settings writer dispatches SettingsUpdated. grep shows controllers for company/site/order_setup/currency/tax dispatch it, but theme/otp/social_media/notification/cookies/kiosk_setup/loyalty_setup services call ->set() WITHOUT a confirmed SettingsUpdated::dispatch (verify each controller). For SAFETY, EITHER (i) add SettingsUpdated::dispatch([group]) to the remaining setting controllers (low-risk, mirrors existing pattern), OR (ii) use a short TTL (e.g. Cache::remember(..., now()->addMinutes(5), ...)) so any un-evented writer self-heals within minutes. Recommend BOTH: TTL as the safety floor + event-forget for instant propagation on the evented groups.",
+          "5. Leave SETTINGS_CACHE_ENABLED=false (package cache stays off) so admin Settings pages (which read via the package, not SettingService::list) always see fresh DB values — only the FRONTEND aggregate is cached, with a TTL floor + event invalidation."
+        ],
+        "in_repo": true,
+        "safe": true
+      },
+      "fix_bigger": "(b) vendor-level all()-cache-forget (patch Settings::set to forget resolveCacheKey(null) for the group) — REJECTED as primary: not in-repo (vendor wiped on composer install), requires enabling package rememberForever cache globally (broad blast radius incl. admin read paths), and rememberForever has no TTL floor so any missed invalidation path is permanently stale. Documented only as the inferior alternative.",
+      "test_path": "tests/Feature/Settings/FrontendSettingsCacheInvalidationTest.php (NEW — sibling of existing tests/Feature/Settings/SettingsUpdatedBroadcastTest.php)",
+      "test_design": {
+        "case_1_cache_hit": "Call SettingService::list() twice; assert the 2nd call does NOT re-issue the 10 DB queries (use DB::enableQueryLog or assert via a spy that getAllEntries ran once). Assert identical payload.",
+        "case_2_invalidation_on_event": "list() to warm cache; change a setting via the admin service/controller (which dispatches SettingsUpdated); call list() again; assert the NEW value is returned (cache was forgotten). This is the core anti-staleness proof.",
+        "case_3_ttl_floor_for_unevented_writer": "Directly Settings::group('theme')->set([...]) WITHOUT dispatching the event (simulating an un-evented path); travel time past the TTL; assert list() returns fresh value (TTL self-heal). Confirms the safety floor.",
+        "case_4_admin_reads_fresh": "Assert the admin-side package read path (Settings::group('company')->all() directly, package cache off) is unaffected and always fresh — guards that we did NOT enable SETTINGS_CACHE_ENABLED.",
+        "assertion_style": "payload assertSame + query-count assertion + value-freshness after event."
+      },
+      "risk": "MEDIUM if done carelessly (staleness is the failure mode). Mitigated by: keep package cache OFF, app-owned key, TTL floor + event-forget. NF525: settings are config not fiscal chain; no frozen file (SettingService.php / EventServiceProvider.php not in §7). Must NOT enable SETTINGS_CACHE_ENABLED in .env as a 'fix' — that is the bug trigger, not the fix."
+    }
+  ]
+}

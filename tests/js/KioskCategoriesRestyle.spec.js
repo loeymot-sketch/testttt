@@ -136,7 +136,24 @@ describe('KioskCategoriesComponent (P2.2 restyle)', () => {
         expect(item2.attributes('aria-current')).toBeFalsy();
     });
 
-    it('product cards expose role=button + aria-label + testid', () => {
+    it('does not duplicate category navigation or render catalogue filters above products', () => {
+        const categories = [
+            { id: 1, name: 'Tacos', kioskRowKey: 't', kioskSandwichSub: null },
+            { id: 2, name: 'Burgers', kioskRowKey: 'b', kioskSandwichSub: null },
+        ];
+        const store = makeStore({
+            categories,
+            sidebarCategories: categories,
+            selectedCategoryId: 2,
+        });
+        const wrapper = mount(KioskCategoriesComponent, mountOpts(store));
+        expect(wrapper.find('[data-testid="kiosk-categories-quick-strip"]').exists()).toBe(false);
+        expect(wrapper.find('[data-testid="kiosk-filter-bar"]').exists()).toBe(false);
+        expect(wrapper.find('[data-testid="kiosk-active-filter-banner"]').exists()).toBe(false);
+        expect(wrapper.findAll('[data-testid^="kiosk-categories-sidebar-item-"]')).toHaveLength(2);
+    });
+
+    it('product cards expose list semantics and an accessible add button', () => {
         const categories = [{ id: 1, name: 'Tacos', kioskRowKey: 't' }];
         const items = [{ id: 42, name: 'Tacos Classic', convert_price: 8.5 }];
         const store = makeStore({
@@ -149,9 +166,9 @@ describe('KioskCategoriesComponent (P2.2 restyle)', () => {
         const wrapper = mount(KioskCategoriesComponent, mountOpts(store));
         const card = wrapper.find('[data-testid="kiosk-product-card-42"]');
         expect(card.exists()).toBe(true);
-        expect(card.attributes('role')).toBe('button');
-        expect(card.attributes('tabindex')).toBe('0');
-        expect(card.attributes('aria-label')).toContain('Tacos Classic');
+        expect(card.attributes('role')).toBe('listitem');
+        expect(card.attributes('tabindex')).toBeUndefined();
+        expect(card.attributes('aria-label')).toBeUndefined();
         const add = wrapper.find('[data-testid="kiosk-product-add-42"]');
         expect(add.exists()).toBe(true);
         expect(add.attributes('aria-label')).toContain('Tacos Classic');

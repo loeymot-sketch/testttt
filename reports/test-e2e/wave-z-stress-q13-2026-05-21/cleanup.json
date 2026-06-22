@@ -1,0 +1,16 @@
+{
+    "dry_run": false,
+    "applied": true,
+    "patterns": [
+        "STRESS-Q13-%"
+    ],
+    "active_statuses": [
+        1,
+        4,
+        7,
+        8
+    ],
+    "matched_count": 0,
+    "deleted_count": 0,
+    "matched_ids": []
+}

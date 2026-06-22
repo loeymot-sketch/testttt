@@ -1,0 +1,28 @@
+{
+  "url": "http://127.0.0.1:8000/admin/cash-overview",
+  "counts": {
+    "critical": 0,
+    "serious": 2,
+    "moderate": 0,
+    "minor": 0
+  },
+  "total_violations": 1,
+  "total_nodes": 2,
+  "violations": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "help": "Elements must meet minimum color contrast ratio thresholds",
+      "tags": [
+        "wcag2aa",
+        "wcag143"
+      ],
+      "node_count": 2,
+      "sample_target": [
+        "button[type=\"submit\"] > span"
+      ],
+      "sample_html": "<span>Rechercher</span>",
+      "sample_failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.49 (foreground color: #ffffff, background color: #f4501e, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+    }
+  ]
+}

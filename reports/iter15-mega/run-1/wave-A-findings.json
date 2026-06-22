@@ -1,0 +1,120 @@
+{
+  "wave": "A",
+  "run_n": 1,
+  "findings": [
+    {
+      "id": "A-001",
+      "state_artifact": "iter15-mega-admin/05-observability-default.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "Visiting /admin/observability renders the public-facing 'Page non trouvée !' 404 illustration with CTA 'Retour à l'accueil' (href=/home). DOM contains <img alt=\"404\" src=\".../404.gif\"> and text 'Impossible de trouver la page demandée.' inside <section class=\"pt-16 pb-12 flex flex-col items-center justify-center text-center\">. network.json for this state has 0 entries — server returned 200 HTML, so there is no 4xx alert, no [role=alert] toast, and no admin shell. Owner-facing observability/outbox dashboard is silently absent.",
+      "fix_hint": "Either register the /admin/observability Vue route + page component (and its API endpoint), or wire a real 404 fallback that distinguishes 'feature unavailable' from 'page not found' and routes back into the admin shell."
+    },
+    {
+      "id": "A-002",
+      "state_artifact": "iter15-mega-admin/05-observability-default.dom.html",
+      "category": "i18n_leak",
+      "severity": "P0",
+      "evidence": "Sidebar nav link emits raw href '/admin/undefined' and visible text 'menu.undefined' inside <a href=\"/admin/undefined\" class=\"paper-link...\"><span class=\"text-sm leading-6 capitalize\">menu.undefined</span></a> at DOM line 7153. Indicates a menu definition where both label and route are JS undefined — clicking would 404 again. This is fiscal-adjacent because the same broken sidebar is what staff use to navigate.",
+      "fix_hint": "In the menu config (likely resources/js/.../menu.js or AppHeader Vue component), guard against undefined entries: filter out items where slug/route is null and surface a build-time error instead of pushing 'undefined' literals into i18n + href."
+    },
+    {
+      "id": "A-003",
+      "state_artifact": "iter15-mega-admin/04-order-status-screen-default.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "Customer-facing order-status-screen renders banner '<div class=\"ws-reconnect-banner\">Connexion temps réel perdue — actualisation automatique toutes les 5s...</div>' (DOM line 7203) AND 'En préparation' / 'Prêt' columns are empty with only an em-dash placeholder. Console shows 'WebSocket connection to ws://127.0.0.1:6001/app/app-key' refused. Customers see a 'real-time lost' yellow banner indefinitely; order status updates depend on a 5-second polling fallback whose evidence we do not see in network.json (0 entries). This is the customer-facing waiting screen — a fiscal/UX failure if it stays in production with WS down.",
+      "fix_hint": "Two fixes: (a) ensure pusher/laravel-websockets is supervised in prod (process not running here); (b) when WS is unavailable, hide the banner only if the polling fallback is actually firing — currently the banner shouts 'lost' but there's no observable polling traffic. Add /api/admin/orders/active poll every 5s and surface a less alarming 'mode dégradé' UX."
+    },
+    {
+      "id": "A-004",
+      "state_artifact": "iter15-mega-admin/05-observability-default.dom.html",
+      "category": "i18n_leak",
+      "severity": "P1",
+      "evidence": "Visible text node 'menu.undefined' rendered inside <span class=\"text-sm leading-6 capitalize\"> at DOM line 7153 (and the equivalent console warning '[intlify] Not found menu.undefined key in fr locale messages' fires 5× per page load).",
+      "fix_hint": "Same root cause as A-002: prevent the menu entry from being pushed when its key resolves to undefined. Adding 'menu.undefined' to lang/fr.json is a band-aid and would mask the real bug."
+    },
+    {
+      "id": "A-005",
+      "state_artifact": "iter15-mega-admin/01-dashboard-default.console.json",
+      "category": "console_error",
+      "severity": "P1",
+      "evidence": "console.json line 26-44 contains warnings '[intlify] Not found menu.undefined key in fr locale messages' (ts 1778375097485) AND '[intlify] Not found button.menu key in fr locale messages' (ts 1778375097652). Same warnings recur in observability state (5× menu.undefined). These are i18n integrity warnings, not WS noise — they reveal a real translation gap.",
+      "fix_hint": "Add 'button.menu' to lang/fr.json + lang/en.json + lang/ar.json (or remove the t('button.menu') call if obsolete). For 'menu.undefined' fix the upstream menu definition (see A-002)."
+    },
+    {
+      "id": "A-006",
+      "state_artifact": "iter15-mega-admin/01-dashboard-default.network.json",
+      "category": "unexpected_4xx",
+      "severity": "P1",
+      "evidence": "network.json contains 14 entries, ALL POST http://127.0.0.1:8000/api/frontend/csp-report with status 400. Pattern recurs on items-list (14× 400 + 9× 429) and order-status-screen (10× 429). The CSP endpoint is rejecting browser-emitted CSP reports as malformed, then rate-limiting the retries. This means real CSP violations (img-src etc.) are NOT being captured in production telemetry — security posture is silently degraded.",
+      "fix_hint": "Inspect Frontend\\CspReportController validation (likely expects {'csp-report': {...}} envelope but the browser is sending the new application/reports+json format). Accept both legacy and Reporting-API payload shapes. Then revisit the rate-limit threshold."
+    },
+    {
+      "id": "A-007",
+      "state_artifact": "iter15-mega-admin/02-items-list-default.console.json",
+      "category": "console_error",
+      "severity": "P1",
+      "evidence": "console.json contains 23 entries with level=error: 14× 'Failed to load resource: the server responded with a status of 400 (Bad Request)' for /api/frontend/csp-report (ts 1778375106218–1778375106344) followed by 9× 429. None of these are in the WS allowlist, so per category-9 rule they count as user-visible console pollution.",
+      "fix_hint": "Resolves with A-006 (fix the CSP-report endpoint). Until fixed, the admin Items page console is unusable for triaging real errors."
+    },
+    {
+      "id": "A-008",
+      "state_artifact": "iter15-mega-admin/04-order-status-screen-default.console.json",
+      "category": "console_error",
+      "severity": "P1",
+      "evidence": "console.json shows 10× 'Failed to load resource: 429 (Too Many Requests)' on /api/frontend/csp-report (ts 1778375111545–1778375111654). On a customer-facing screen, this is doubly bad: (a) noisy console for any field engineer attaching DevTools, (b) the rate-limiter is being hit by our own browser — CSP reports for the customer screen are being dropped.",
+      "fix_hint": "Same as A-006 + tune the rate-limit so legitimate report bursts (page load with 10+ violations) are not throttled."
+    },
+    {
+      "id": "A-009",
+      "state_artifact": "iter15-mega-admin/01-dashboard-default.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "Header dropdown button shows 'Bonjour Admin Le Cayenn..' (note the literal '..' suffix). DOM line 7902 contains the exact string 'Admin Le Cayenn..' inside <b class=\"block font-semibold text-[#111827]\">, while the full name 'Admin Le Cayenne' appears 52× elsewhere in the same DOM. So this is NOT a CSS ellipsis (which would mean scrollWidth > clientWidth) — it's a hard-coded JS slice that chops the last char and appends '..'. There is no title attr or tooltip on the <b>.",
+      "fix_hint": "Find the slice/substr in the header user-display component (likely AppHeader.vue or a 'shortName' computed prop). Either remove the truncation entirely, or use CSS text-overflow with a title attribute to keep the full name accessible on hover."
+    },
+    {
+      "id": "A-010",
+      "state_artifact": "iter15-mega-admin/02-items-list-default.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "Catalog control-plane metric tile labelled 'INDISPONIBLES' (full DOM text: <small data-v-cc7abcfc>indisponibles</small> at offset 314850, then displayed via text-transform: uppercase) is visibly clipped in the PNG to 'INDISPONIB(' — the closing letters and any tooltip arrow get cut by the next tile's bounding box. No title attribute on the <small>.",
+      "fix_hint": "Increase the metric tile min-width (catalog-control-plane__metric class) or shorten the label to 'INDISPO' / use a more compact word. Add a title attribute as a fallback."
+    },
+    {
+      "id": "A-011",
+      "state_artifact": "iter15-mega-admin/04-order-status-screen-default.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "'En préparation' and 'Prêt' columns are empty: DOM contains only <ul></ul> followed by <p class=\"text-center text-[#A0A3BD] text-base mt-8\">—</p> (literal em-dash). No illustration <img>, no copy ≥20 chars, no primary CTA. A customer staring at this screen sees nothing but two big columns with a single dash, plus a yellow 'connexion perdue' banner — terrible first impression.",
+      "fix_hint": "Replace '—' placeholder with a small illustration (e.g. /images/empty-orders.svg) + copy 'Aucune commande en préparation pour le moment.' + maybe a subtle pulse animation so customers know the screen is alive."
+    },
+    {
+      "id": "A-012",
+      "state_artifact": "iter15-mega-admin/04-order-status-screen-default.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "Header dropdown button on order-status-screen also shows 'Admin Le Cayenn..' (same hard-coded chop as A-009). DOM at section <h3 class=\"whitespace-nowrap text-sm capitalize text-left leading-[17px]\">Bonjour <b>Admin Le Cayenn..</b></h3>. Truncation propagates to every page that uses the AppHeader dropdown.",
+      "fix_hint": "Same fix as A-009 — remove the hard-coded slice from the shared header component so all admin pages benefit."
+    },
+    {
+      "id": "A-013",
+      "state_artifact": "iter15-mega-admin/05-observability-default.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Observability page renders the public 404 layout but the surrounding chrome (Compte dropdown <button class=\"dropdown-btn ...\">) has no role=alert or aria-live announcement that the page failed to load. A screen-reader user would land on a generic 'Page non trouvée' h3 with no contextual indication that the requested admin feature is missing.",
+      "fix_hint": "On the 404 fallback, add role=\"alert\" with a tabindex=\"-1\" and focus it on mount. Better: distinguish admin-route-not-found (with link back to /admin/dashboard) from public 404."
+    },
+    {
+      "id": "A-014",
+      "state_artifact": "iter15-mega-admin/01-dashboard-1920.console.json",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "01-dashboard-1920.console.json is empty ([]) but 01-dashboard-default.console.json has 34 entries at 1280×800. Same page, same auth, only viewport differs. The fact that warnings disappear at 1920×1080 suggests viewport-specific code paths (maybe the menu component is hidden/skipped at desktop width, dodging the menu.undefined warning). Not a defect on its own, but worth noting that the i18n leak is viewport-conditional.",
+      "fix_hint": "Investigate whether <AppHeader> renders different menu trees at sm/md/lg/xl breakpoints — if so, the broken menu entry only appears in mobile-collapsed nav. Either way, fixing A-002 root cause cleans this up."
+    }
+  ],
+  "summary": { "P0": 3, "P1": 5, "P2": 5, "P3": 1 },
+  "states_reviewed": 6
+}

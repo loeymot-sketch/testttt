@@ -21,7 +21,7 @@ class AppLibrary
     public static function date($date, $pattern = null): string
     {
         if (!$pattern) {
-            $pattern = env('DATE_FORMAT');
+            $pattern = env('DATE_FORMAT', 'd-m-Y');
         }
         return Carbon::parse($date)->format($pattern);
     }
@@ -29,7 +29,7 @@ class AppLibrary
     public static function time($time, $pattern = null): string
     {
         if (!$pattern) {
-            $pattern = env('TIME_FORMAT');
+            $pattern = env('TIME_FORMAT', 'h:i A');
         }
         return Carbon::parse($time)->format($pattern);
     }
@@ -37,7 +37,7 @@ class AppLibrary
     public static function datetime($dateTime, $pattern = null): string
     {
         if (!$pattern) {
-            $pattern = env('TIME_FORMAT') . ', ' . env('DATE_FORMAT');
+            $pattern = env('TIME_FORMAT', 'h:i A') . ', ' . env('DATE_FORMAT', 'd-m-Y');
         }
         return Carbon::parse($dateTime)->format($pattern);
     }
@@ -45,7 +45,7 @@ class AppLibrary
     public static function increaseDate($dateTime, $days, $pattern = null): string
     {
         if (!$pattern) {
-            $pattern = env('DATE_FORMAT');
+            $pattern = env('DATE_FORMAT', 'd-m-Y');
         }
         return Carbon::parse($dateTime)->addDays($days)->format($pattern);
     }
@@ -53,7 +53,7 @@ class AppLibrary
     public static function deliveryTime($dateTime, $pattern = null): string
     {
         if (!$pattern) {
-            $pattern = env('TIME_FORMAT');
+            $pattern = env('TIME_FORMAT', 'h:i A');
         }
         $explode = explode('-', $dateTime);
         if (count($explode) == 2) {
@@ -270,20 +270,52 @@ class AppLibrary
 
     public static function currencyAmountFormat($amount): string
     {
-        if (env('CURRENCY_POSITION') == CurrencyPosition::LEFT) {
-            return env('CURRENCY_SYMBOL') . number_format($amount, env('CURRENCY_DECIMAL_POINT'), '.', '');
+        // [GOAL-G2-HEAL-02 2026-05-23] FR-canonical currency format per NF525
+        // receipt compliance + ISO 4217. Previous implementation hardcoded
+        // "." decimal separator and concatenated the symbol with no nbsp →
+        // produced "12.50€" on receipts/emails/reports, while PaymentComponent
+        // (D3 LOCK_PAY) + formatPrice.js (WT-D-R1-F4) emit canonical "12,50 €"
+        // (Intl fr-FR EUR with NBSP). Same caisse, divergent format ≠
+        // ISO 4217 + FR locale convention. Surfaced by Phase G.5 finding
+        // G5-F-003 P1.
+        //
+        // Resolution: use NumberFormatter::CURRENCY with fr_FR locale (matches
+        // frontend Intl output bit-for-bit) and fall back to manual FR layout
+        // (virgule decimal + NBSP + symbol) when ext-intl is unavailable. The
+        // env CURRENCY_SYMBOL / CURRENCY_POSITION / CURRENCY_DECIMAL_POINT
+        // contract is preserved for the fallback branch — admins keep control
+        // if they want a non-EUR display in some downstream surface.
+        $amount = (float) $amount;
+        $decimal = (int) (env('CURRENCY_DECIMAL_POINT') ?? 2);
+
+        if (class_exists('NumberFormatter')) {
+            $fmt = new \NumberFormatter('fr_FR', \NumberFormatter::CURRENCY);
+            $fmt->setAttribute(\NumberFormatter::FRACTION_DIGITS, $decimal);
+            return $fmt->formatCurrency($amount, 'EUR');
         }
-        return number_format($amount, env('CURRENCY_DECIMAL_POINT'), '.', '') . env('CURRENCY_SYMBOL');
+
+        // Fallback: manual FR layout (virgule + nbsp + symbol).
+        $symbol    = env('CURRENCY_SYMBOL', '€');
+        $position  = env('CURRENCY_POSITION');
+        $formatted = number_format($amount, $decimal, ',', "\xC2\xA0");
+        return $position == CurrencyPosition::LEFT
+            ? $symbol . "\xC2\xA0" . $formatted
+            : $formatted . "\xC2\xA0" . $symbol;
     }
 
     public static function flatAmountFormat($amount): string
     {
-        return number_format($amount, env('CURRENCY_DECIMAL_POINT'), '.', '');
+        // [audit-360 W5] env('CURRENCY_DECIMAL_POINT') is null at runtime after
+        // `php artisan config:cache` (prod) → number_format($amount, null) rounds to
+        // INTEGER ("12.50"→"13"). Default to 2 decimals, mirroring :289. Display-only
+        // (PricingService SSOT math untouched); fed by ~31 resources (item/order/coupon/tax).
+        return number_format($amount, (int) (env('CURRENCY_DECIMAL_POINT') ?? 2), '.', '');
     }
 
     public static function convertAmountFormat($amount): float
     {
-        return (float)number_format($amount, env('CURRENCY_DECIMAL_POINT'), '.', '');
+        // [audit-360 W5] Same undefaulted-env rounding bug as flatAmountFormat (see above).
+        return (float)number_format($amount, (int) (env('CURRENCY_DECIMAL_POINT') ?? 2), '.', '');
     }
 
     public static function fcmDataBind($request)
@@ -374,7 +406,12 @@ class AppLibrary
 
     public static function reportCurrencyAmountFormat($amount): string
     {
-        return number_format($amount, env('CURRENCY_DECIMAL_POINT'), '.', ',');
+        // [prod-finale 2026-06-17 P2] FR money on the FR-locked report PDFs (sales/items/online_orders) —
+        // was en-US "1,234.50" (dot decimal, comma thousands, no symbol). Now "1 234,50 €" (NBSP thousands,
+        // comma decimal, € suffix), matching the EOD fiscal PDF (eod_synthesis.blade.php) which already
+        // renders € in DomPDF so the font supports the glyph. Display-only; values unchanged.
+        $decimals = (int) (env('CURRENCY_DECIMAL_POINT') ?? 2);
+        return number_format((float) $amount, $decimals, ',', "\u{00A0}") . "\u{00A0}€";
     }
 
     public static function textShortener($text, $number = 30)

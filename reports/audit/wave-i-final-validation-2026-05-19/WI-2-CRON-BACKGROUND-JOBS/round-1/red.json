@@ -1,0 +1,94 @@
+{
+  "specialist": "red-team",
+  "mission": "WI-2 RED angle — adversarial hunt for silent failures, retry loops, prune-cutoff off-by-one, TZ siblings of WH-3, queue saturation",
+  "branch": "v1-0-1-hardening-2026-05-17",
+  "head": "1e7c65ecc",
+  "discipline": "READ-ONLY",
+  "summary": "Three adversarial attacks land successful hits. One is P1 (silent branch-selection bug post-migration affecting 2 lanes) — same class as FISCAL-ADV3B-01 that the codebase already healed for fiscal but did NOT propagate to SLO/Stock crons. Two are P2 (unbounded fetch in OutboxRescueCommand + closure inside fiscal-archive scheduler not enclosed in withoutOverlapping rescue). Adversarial sweep on TZ traps reveals NO sibling of WH-3 in the daily fiscal/archive lanes because app.timezone=Europe/Paris means Carbon::parse() defaults to Paris — the WH-3 trap was specific to DATE-column-vs-TIMESTAMP-column ambiguity, which only the availability quota table exhibits in this codebase.",
+  "findings": [
+    {
+      "id": "WI-2-RED-01",
+      "severity": "P1",
+      "title": "Silent DOS scenario — pending Status::ACTIVE migration disables 2 critical crons (SLO + auto-86)",
+      "files": ["app/Jobs/Observability/SloEvaluatorJob.php:48", "app/Console/Commands/StockScanRupture.php:168"],
+      "attack_vector": "Owner runs the pending data migration UPDATE branches SET status=5 WHERE status=1 (which Kernel.php:262-285 activeBranchIds() docstring acknowledges is owner-flagged). Immediately after migration runs: (a) Branch::query()->where('status', 1)->get() in SloEvaluatorJob:48 returns an empty collection — every 5min SLO sweep produces zero ActionLog entries, zero observability.slo_breach broadcasts, zero Slack alerts. (b) Branch::query()->where('status', 1)->get() in StockScanRupture::targetBranches:168 returns empty — every 5min auto-86 preventive cron stops flipping rupture rows. Both crons return SUCCESS (silent) because their foreach loops simply iterate zero items. Operators see no log noise, no failure exit codes, no pager.",
+      "why_silent": "Both crons emit Log::info on COMPLETION not on COVERAGE. SloEvaluatorJob writes ActionLog only inside the foreach branch loop (line 51-63), so zero branches = zero log rows. StockScanRupture emits Log::info('[stock.scan-rupture-summary]') inside the per-branch loop (line 142), so zero branches = zero summary. The 'started' log line at 67 fires but does not reveal the branch-set being empty.",
+      "impact_realistic": "(1) SLO alerts go dark across every restaurant — a paying customer impact (POS latency, kiosk staleness, fiscal allocation failure) raises no Slack ping. (2) Auto-86 stops flipping out-of-stock items between orders, so customers can add a sold-out item to cart until the reactive AvailabilityService::decrementForOrder path fires on the LAST unit consumption. Cross-customer race: customer A drains stock, customer B adds to cart, customer C orders, AvailabilityService:: trips a rupture at order completion = bad UX surface. NF525 not affected (fiscal lanes are healed). Multi-tenant impact: post-V1.0.2 (V2) the impact compounds across all branches simultaneously.",
+      "proof_of_silent_failure": "There is no sentinel test that asserts 'when Branch.status=5, SloEvaluatorJob still iterates the branch'. The Kernel.php:282-285 docstring on activeBranchIds() literally documents that a future sentinel test could substitute a fake Branch model — but no such test exists for these two sites. So a CI passing build = no signal.",
+      "fix_priority": "P1 — same class as FISCAL-ADV3B-01 which was P1-healed in Wave 2d for the fiscal lanes. Propagation gap.",
+      "fix_sketch": "Refactor both to use App\\Console\\Kernel::activeBranchIds() (export it, or duplicate the whereIn pattern inline). For SloEvaluatorJob, the cleanest fix is: $branches = Branch::query()->whereIn('status', [\\App\\Enums\\Status::ACTIVE, 1])->get(). For StockScanRupture::targetBranches at line 168: $query->whereIn('status', [\\App\\Enums\\Status::ACTIVE, 1])->get(). Both should grow a sentinel test similar to the fiscal-chain sentinel pattern.",
+      "cross_ref": "Confirmed independently by Architect (WI-2-ARCH-01). Cross-validation 2/2."
+    },
+    {
+      "id": "WI-2-RED-02",
+      "severity": "P2",
+      "title": "OutboxRescueCommand unbounded fetch → high-queue saturation under worker-down recovery",
+      "files": ["app/Console/Commands/OutboxRescueCommand.php:17-25"],
+      "attack_vector": "Adversarial scenario: queue worker for the 'high' lane is down for 30 minutes during an outage. During that window, every successful POS/Kiosk order writes a DomainEvent row (Persist*ToOutbox listeners) but DispatchDomainEventsJob never runs. The MonitorOutboxStaleness command (Kernel.php:50, everyMinute) raises Log::error + non-zero exit after the first minute (10-event threshold breached) — operator pager fires. Worker is restarted at minute 30. The very next minute, OutboxRescueCommand runs: DomainEvent::query()->stale(2)->where('attempts','<',5)->get() — no LIMIT, no take(). At a realistic load of ~100 orders/minute × 30 minutes × 4 events per order = 12,000 stale events. ALL 12,000 are loaded into memory (memory_limit risk) and DispatchDomainEventsJob::dispatch is called 12,000 times — saturating the high queue lane.",
+      "why_silent_to_audit": "The DispatchDomainEventsJob has $tries=6 with $backoff=[1,5,15,60,300]. If Pusher / broadcaster also failed during the outage (likely correlated), the 12,000 jobs each consume 6 attempts × ~6.4 min total retry window = 76,800 useful seconds = ~21 hours of saturated workers. SLO 'outbox_dispatch_latency_p95 < 2s' is breached for the entire window. The system technically recovers but the saturation is self-inflicted.",
+      "comparison_to_siblings": "OutboxRetryFailedCommand learned this lesson via Wave 3c SYNC-ADV3C-04: BATCH_CAP=500 + LOCK_TTL=300s + orderBy('id') + 'overflow drains on next hourly tick'. OutboxWebhookRetryFailedCommand mirrors the same. OutboxRescueCommand did NOT receive the same hardening — it remains the pre-Wave-3c shape.",
+      "impact_realistic": "Medium-High during recovery from any worker-down or broadcaster-down outage. Steady state: zero impact (the stale-2-min + attempts<5 predicate is sparse). Worst-case observed in production-grade systems: the queue saturation cascade is a class of secondary outage where recovery actions amplify the original incident.",
+      "fix_sketch": "Mirror the OutboxRetryFailedCommand skeleton: (1) Cache::lock('outbox.rescue.lock', 60); (2) ->orderBy('id')->take(500); (3) Log::channel('fiscal')->info summary; (4) Optional: audit_log.write per dispatched event so rescue's replays are auditable (NF525-adjacent for SAFE retention symmetry with OutboxRetryFailedCommand). Overflow drains across multiple everyMinute() ticks.",
+      "cross_ref": "Architect confirms architectural inconsistency (WI-2-ARCH-02). RED adds the saturation realism."
+    },
+    {
+      "id": "WI-2-RED-03",
+      "severity": "P2",
+      "title": "Inline scheduler closures (chain-monitor + fiscal-archive-daily) abandon partial-failure context to log channel only",
+      "files": ["app/Console/Kernel.php:174-208 (chain-monitor)", "app/Console/Kernel.php:216-246 (archive-daily)"],
+      "attack_vector": "Both closures wrap Artisan::call() per-branch in inner try/catch with Log::channel('fiscal')->error logging. The OUTER try/catch on scheduler_error catches any throw from activeBranchIds() itself (DB down, etc.). However: the closures return void — they do NOT propagate a non-zero exit to the scheduler. So if EVERY branch fails (e.g. DB outage, NF525 secret rotation, missing audit_secret config), the scheduler records the run as successful. The supervisor / cron runner sees exit 0 = no alert. Compare to MonitorOutboxStaleness which returns FAILURE on threshold breach.",
+      "why_silent": "Inline $schedule->call() closures cannot signal failure to the scheduler via exit code in the same way commands can. The Log::channel('fiscal')->error inside the inner catch fires, but if the operator's log routing is misconfigured or the channel itself is throwing, the only evidence is in the channel's destination — not in the scheduler runlog.",
+      "impact_realistic": "Low under happy path. Medium during config-rotation incidents (FISCAL_Z_REPORT_SECRET / FISCAL_AUDIT_SECRET): every branch fails verifyChain, every branch fails archive, every cron tick claims success. NF525 chain monitor is the daily integrity check — a silent failure here means tamper detection could lag a full day. PreflightProductionCommand (line 224) checks FISCAL_Z_REPORT_SECRET length on deploy, but not at runtime.",
+      "fix_sketch": "Extract closures into App\\Console\\Schedulers\\FiscalChainMonitorScheduler invokable classes. Return a non-zero exit (or throw) when ALL branches fail. Scheduler can then surface the failure via standard Laravel scheduler-failed signaling. Defer to V1.0.2 — current logging at Log::channel('fiscal')->error is acceptable for V1 LOCAL provided the operator log pipeline is correctly routed (verified separately).",
+      "cross_ref": "Sister of WI-2-ARCH-04 (testability angle). Same fix closes both."
+    },
+    {
+      "id": "WI-2-RED-04",
+      "severity": "P3",
+      "title": "PruneWebhookEventsCommand could destroy DLQ evidence under specific status-drift scenario",
+      "files": ["app/Console/Commands/PruneWebhookEventsCommand.php:57-65"],
+      "attack_vector": "Adversarial scenario: $safeStatuses = [STATUS_PROCESSED, STATUS_DUPLICATE]. The DLQ retry lane (OutboxWebhookRetryFailedCommand) resets a failed row to STATUS_PENDING BEFORE dispatching (line 141-144). If the row then succeeds, it transitions to STATUS_PROCESSED. After 180 days, the prune deletes it. SO FAR SO GOOD — the DLQ recovery already succeeded by then. BUT: if the row is reset to PENDING and then the DLQ replay JOB crashes mid-handle (after DB reset but before re-dispatch via ProcessWebhookEventJob — see OutboxWebhookRetryFailedCommand:138-153), the row is left in STATUS_PENDING. PENDING is NOT in safeStatuses, so prune doesn't delete it — correct behavior. CONFIRMED NOT A BUG. False alarm.",
+      "verification": "Read again: OutboxWebhookRetryFailedCommand:138-153 places the status reset AND the dispatch in the SAME try block. If dispatch throws, the per-event catch logs+continues but the row is already PENDING. Next hourly cron tick: the query at line 97 is where('status', WebhookEvent::STATUS_FAILED) — so PENDING rows are NOT picked up by the retry lane either. The row sits in PENDING limbo forever (until manual intervention). Prune does NOT delete it. So no data destruction risk. BUT — there is a separate orphan issue here: PENDING rows that never made it to PROCESSED OR FAILED have no recovery lane. This is a P3 separate from prune.",
+      "downgrade": "P3 — prune is safe. The actual finding is orphaned-PENDING webhook_events after DLQ reset failure, which is orthogonal to WI-2 scope. Defer to V1.0.2.",
+      "fix_sketch": "Out of WI-2 scope. If picked up: add a separate retry lane for PENDING-stuck webhook_events (status=PENDING AND created_at < now-1h)."
+    },
+    {
+      "id": "WI-2-RED-05",
+      "severity": "P3",
+      "title": "OutboxRescueCommand attempts<5 boundary misalignment with retry-failed >=5 boundary",
+      "files": ["app/Console/Commands/OutboxRescueCommand.php:20", "app/Models/DomainEvent.php:45 (scopeFailed)"],
+      "attack_vector": "OutboxRescueCommand picks rows with attempts<5. OutboxRetryFailedCommand uses scopeFailed(5) which picks attempts>=5 (line 47 of DomainEvent.php). Boundary partition: rescue handles 0..4, retry-failed handles 5+. CORRECT — no overlap, no gap. NOT A BUG, just verifying the partition.",
+      "but": "DispatchDomainEventsJob has $tries=6. A job that has been retried 6 times by the queue worker arrives at attempts=6 (incremented in Phase 1 claim, line 81-83). After exhausting all 6 attempts, the row sits with attempts=6 + dispatched_at=null + last_error populated. It is now scopeFailed(5) eligible (6>=5). RescueCommand will NOT touch it (5<5 is false, so attempts<5 excludes 5+). retry-failed picks it up on next hourly tick. Boundary partition WORKS. No bug.",
+      "finding_status": "VERIFIED CORRECT — partition is clean. Including this as a negative finding for completeness."
+    },
+    {
+      "id": "WI-2-RED-06",
+      "severity": "P3",
+      "title": "FiscalArchiveCommand TZ-trap check — VERIFIED SAFE",
+      "files": ["app/Console/Commands/FiscalArchiveCommand.php:82-94", "config/app.php:120", "app/Console/Kernel.php:217"],
+      "attack_vector": "Adversarial hypothesis from advisor: Carbon::parse('YYYY-MM-DD')->endOfDay() might default to UTC rather than Paris, causing the daily fiscal archive at 02:00 Paris to grab a window that doesn't align with the Paris business day. Verified: config('app.timezone') = env('TIMEZONE') ?: 'Europe/Paris'. Laravel's bootstrap calls date_default_timezone_set($timezone) early in the request lifecycle. Carbon, being a wrapper over DateTime, picks up the PHP default TZ. So Carbon::parse('2026-05-17')->endOfDay() resolves to '2026-05-17 23:59:59 Europe/Paris'. The Kernel.php:217 closure uses now()->subDay()->format('Y-m-d') which is also Paris-aware via the same mechanism.",
+      "verification": "WH-3 was a DATE-column-specific bug (daily_reset_at is `$table->date(...)`, plain Y-m-d string with no TZ semantics in MySQL). Daily archive operates on closed_at + created_at which are TIMESTAMP columns (timezone-aware). So the WH-3 bug class does NOT apply to FiscalArchiveCommand. NOT A BUG.",
+      "finding_status": "VERIFIED NOT VULNERABLE — included for transparency that the adversarial sweep specifically checked this and found it sound."
+    },
+    {
+      "id": "WI-2-RED-07",
+      "severity": "P3",
+      "title": "Retry loop risk on ProcessWebhookEventJob inner handler that throws on rate-limited provider",
+      "files": ["app/Jobs/ProcessWebhookEventJob.php:62-72"],
+      "attack_vector": "If the Stripe or SenangPay provider handler (handleFromStoredEvent) throws on a rate-limited / 429 response, the job retries up to 3 times with backoff [10, 60, 300]. Total retry budget = ~6 min. If Stripe is throttling globally, 1000 webhook rows = 3000 retries × bandwidth = potential auto-amplification. However: $tries=3 caps the retry depth, and the DLQ status=FAILED is the terminal state. So no infinite loop. Hourly OutboxWebhookRetryFailedCommand could re-dispatch the failed rows next hour — and that command has BATCH_CAP=500, so even a worst-case backlog is bounded. NOT A BUG, defense-in-depth verified.",
+      "finding_status": "VERIFIED SAFE — included as a negative finding."
+    }
+  ],
+  "summary_of_attack_sweep": {
+    "successful_hits": 2,
+    "verified_safe": 4,
+    "out_of_scope_orphan": 1,
+    "p1_count": 1,
+    "p2_count": 2,
+    "p3_count": 4,
+    "tz_sibling_of_wh3": "VERIFIED NOT VULNERABLE — daily fiscal lanes are Paris-aware via config('app.timezone'). WH-3 bug class is DATE-column specific.",
+    "queue_saturation_risk": "OutboxRescueCommand unbounded fetch (WI-2-RED-02) — bounded BATCH_CAP fix needed.",
+    "silent_status_migration_risk": "SloEvaluatorJob + StockScanRupture (WI-2-RED-01) — propagation gap from Wave 2d fiscal heal."
+  },
+  "deliverable_summary": "1 P1 (silent DOS post-migration, cross-validated with Architect), 2 P2 (rescue saturation + inline scheduler closure observability), 4 P3 (verified-safe negatives + 1 orphan defer). NO new TZ traps in cron lanes; the WH-3 heal was thorough. The 2 actionable findings (RED-01 + RED-02) are V1.0.2 hardening targets, NOT V1 LOCAL ship blockers."
+}

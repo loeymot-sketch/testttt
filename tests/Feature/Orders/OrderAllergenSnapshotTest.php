@@ -20,6 +20,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use Smartisan\Settings\Facades\Settings;
 use Tests\TestCase;
@@ -138,24 +139,36 @@ class OrderAllergenSnapshotTest extends TestCase
         Sanctum::actingAs($this->kioskUser, ['kiosk:order']);
         Event::fake([OrderCreated::class, OrderStatusChanged::class]);
 
+        $payload = [
+            'branch_id' => $this->branch->id,
+            'subtotal' => 12.50,
+            'discount' => 0,
+            'delivery_charge' => 0,
+            'total' => 12.50,
+            'order_type' => OrderType::TAKEAWAY,
+            'is_advance_order' => Ask::NO,
+            'source' => Source::APP,
+            'payment_method' => PaymentGateway::CASH_ON_DELIVERY,
+            'items' => json_encode([[
+                'item_id' => $this->item->id,
+                'quantity' => 1,
+                'item_variations' => [],
+                'item_extras' => [],
+            ]]),
+        ];
+        $quote = $this
+            ->withHeader('x-api-key', '123456')
+            ->postJson('/api/frontend/order/quote', $payload)
+            ->assertOk()
+            ->json('data');
+
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this
             ->withHeader('x-api-key', '123456')
-            ->postJson('/api/frontend/order', [
-                'branch_id' => $this->branch->id,
-                'subtotal' => 12.50,
-                'discount' => 0,
-                'delivery_charge' => 0,
-                'total' => 12.50,
-                'order_type' => OrderType::TAKEAWAY,
-                'is_advance_order' => Ask::NO,
-                'source' => Source::APP,
-                'payment_method' => PaymentGateway::CASH_ON_DELIVERY,
-                'items' => json_encode([[
-                    'item_id' => $this->item->id,
-                    'quantity' => 1,
-                    'item_variations' => [],
-                    'item_extras' => [],
-                ]]),
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/frontend/order', $payload + [
+                'quote_token' => $quote['quote_token'],
+                'quote_signature' => $quote['signature'],
             ]);
 
         $this->assertContains($response->status(), [200, 201], json_encode($response->json()));

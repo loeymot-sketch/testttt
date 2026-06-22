@@ -1,0 +1,14 @@
+{
+  "task_id": "T-COMPLEX-POS-PAYMENT",
+  "context": "FoodKing POS (Vue 3, Composition API, Vuex pour panier, axios). Backend SSOT pour les prix.",
+  "objective": "Generer un composant Vue 3 PosPaymentSplitDialog.vue qui ouvre un modal pour split payment (Cash + Card) sur une commande POS. Doit : afficher le total backend (props), permettre saisie montant cash + carte, valider que cash + carte = total au centime, desactiver le bouton Confirmer si invalide, emettre 'confirm' avec {cash, card, txn_uuid} ou 'cancel'. Pas de calcul de prix front, juste somme de saisies.",
+  "constraints": [
+    "Pas de logique fiscale frontend",
+    "Pas de string OrderStatus en dur",
+    "Composant autonome, props : total (Number, centimes), currency (String), orderId (Number)",
+    "Emit confirm avec entiers en centimes",
+    "Aucun appel API dans le composant",
+    "Code Vue 3 valide, single-file component complet"
+  ],
+  "expected_output_format": "Renvoie UNIQUEMENT le code du fichier .vue complet, balises template/script setup/style. Aucun texte avant/apres."
+}

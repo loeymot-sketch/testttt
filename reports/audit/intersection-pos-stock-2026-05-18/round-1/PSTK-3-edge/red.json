@@ -1,0 +1,77 @@
+{
+  "intersection": "POS x Stock",
+  "specialist": "RED (adversarial)",
+  "scope": "Concurrent terminals, refund-twice, ChoiceAvailabilityResolver bypass, soft-deleted decrement, manual rupture bypass",
+  "round": 1,
+  "timestamp": "2026-05-18",
+  "anchors_reviewed": [
+    "app/Services/Stock/StockService.php",
+    "app/Services/Stock/ChoiceAvailabilityResolver.php",
+    "app/Services/Menu/AvailabilityService.php (releaseForOrderItems, decrementForOrder)",
+    "app/Models/Item.php (SoftDeletes)",
+    "app/Models/OrderItem.php (SoftDeletes)",
+    "tests/Feature/Stock/StockConcurrentDecrementTest.php",
+    "tests/Feature/Stock/StockReleaseOnRefundTest.php",
+    "tests/Feature/Stock/StockReleaseOnCancelTest.php"
+  ],
+  "attack_vectors_tested": [
+    {
+      "id": "PSTK-R-1",
+      "title": "Concurrent POS-1 + POS-2 same item — race wide open via lockForUpdate?",
+      "scenario": "Terminal A and Terminal B simultaneously submit an order containing item X with on_hand=1. Without proper serialization both could pass the check and decrement to -1 or partial state.",
+      "result": "BLOCKED. lockForUpdate at StockService.php:90 forces row-level X-lock. Terminal A acquires lock first, reads on_hand=1, decrements to 0, commits. Terminal B waits, then reads on_hand=0, throws StockUnavailableException at line 112. Multi-line decrement rolls back via DB::transaction in mutateForOrder (line 49). VERIFIED by test_stress_guard_allows_only_20_successes_across_50_attempts and test_failed_multi_line_decrement_rolls_back_prior_stock_changes.",
+      "severity": "P0-MITIGATED",
+      "recommendation": "Add MySQL-CI integration test (current tests run on SQLite which serializes anyway — true concurrent test requires MySQL with multiple connections). V1.0.1 sentinel."
+    },
+    {
+      "id": "PSTK-R-2",
+      "title": "Refund TWICE attack — release stock twice for same line",
+      "scenario": "Attacker (e.g. compromised admin) calls RefundCreated event twice in rapid succession on the same order to double-release stock back to on_hand.",
+      "result": "BLOCKED. Two layers: (a) StockService::releaseForOrderInTransaction line 412 checks idempotency_key existence — second call finds key with same released_qty:N:delta:D and skips. (b) AvailabilityService::releaseForOrderItems uses 'released_qty' ledger on order_items — after first release, released_qty=quantity, remaining=0, delta=0, skip (line 657-668). VERIFIED by test_refund_event_releases_decremented_stock_once and test_decrement_and_partial_refund_track_addon_target_stock_from_composition_snapshot (3 dispatches, only 2 effective).",
+      "severity": "P0-MITIGATED",
+      "recommendation": "None — coverage is solid."
+    },
+    {
+      "id": "PSTK-R-3",
+      "title": "ChoiceAvailabilityResolver bypass — submit order with variation/extra that has on_hand=0",
+      "scenario": "Attacker patches POST /api/pos/store payload to include a variation_id whose stock_levels.on_hand=0 (manually flipped 86 by manager). Try to bypass the resolver and order anyway.",
+      "result": "PARTIALLY BLOCKED. Resolver::assertSelectionsOrderable (line 124) is called during pricing/validation and throws InvalidArgumentException(422). But: the assertion is called only IF the caller invokes it. Verified caller: app/Services/Pricing/* hooks via Order/SubmitRevalidatesChoiceAvailabilityThroughPricingTest. POS flow goes through PricingService::calculateOrder which routes through validation. CRITICAL CHECK: is the assertSelectionsOrderable called BEFORE the lockForUpdate in StockService::decrementForOrder? If a variation is flagged manual_unavailable_reason but on_hand>0, the resolver's availabilityFromLevel() (line 281) returns false. So validation throws. But StockService::decrementForOrder line 86 only matches on stockable_type+stockable_id, IGNORES manual_unavailable_reason — decrement proceeds if on_hand>0 even on manually-86 items. The PRICE-PATH guard prevents the order from being submitted, but if a future flow bypasses pricing (e.g. a direct admin tool), stock would silently decrement.",
+      "severity": "P1",
+      "recommendation": "Make StockService::mutateForOrderInTransaction respect manual_unavailable_reason — throw StockUnavailableException if the level has manual_unavailable_reason set AND direction < 0. Currently the resolver is the ONLY gate. Defense-in-depth: add the check in StockService. HEAL-ALLOWED. V1.0.1 with test asserting decrementForOrder on manually-86 item throws."
+    },
+    {
+      "id": "PSTK-R-4",
+      "title": "Soft-deleted item still decremented (cascade orphan)",
+      "scenario": "Manager soft-deletes an Item that has a StockLevel. Cashier still has the item cached in their POS catalog. Submit order — what happens?",
+      "result": "PARTIALLY MITIGATED. StockService::requirementsForOrder (line 225) calls $order->orderItems()->get() — order items themselves use SoftDeletes (OrderItem.php:13) but the query inside requirementsForOrder doesn't filter on deleted_at for the related Item. Stock decrement proceeds against the soft-deleted item's stock_level row, which still exists (no cascade on SoftDeletes). The order would be created with composition_snapshot pointing to a now-deleted item. Pricing path uses PricingService — does it reject deleted items? Need verification, but architecturally: SoftDeletes on Item means the Item model is filtered from Item::query() but the orderItem->item_id still points to the deleted id; the stock_level row keyed on stockable_id=item_id remains accessible.",
+      "severity": "P2",
+      "recommendation": "Add an explicit Item::withTrashed() check before stock decrement; reject if item is soft-deleted. Edge case — soft-delete during active session is rare but possible during catalog migrations. V1.0.1 with regression test."
+    },
+    {
+      "id": "PSTK-R-5",
+      "title": "Manual rupture toggle bypass — set manual_unavailable_reason but on_hand>0, order still decrements",
+      "scenario": "Manager flags item X with manual_unavailable_reason='seasonal' via admin dashboard (on_hand stays at 5). Cashier (with stale catalog cache) tries to add X to order.",
+      "result": "PARTIALLY BLOCKED at pricing (ChoiceAvailabilityResolver::availabilityFromLevel line 281-284 returns is_available=false). But StockService::mutateForOrderInTransaction line 86 ignores manual_unavailable_reason — only checks on_hand. If validation bypassed, stock decrements, creating an oversell of a 86-flagged item. Same vector as PSTK-R-3.",
+      "severity": "P1",
+      "recommendation": "Same as PSTK-R-3 — add manual_unavailable_reason check in StockService::mutateForOrderInTransaction. One line: 'if ($direction < 0 && $level->manual_unavailable_reason !== null) throw StockUnavailableException'."
+    },
+    {
+      "id": "PSTK-R-6",
+      "title": "OrderItem soft-delete after order creation — release would skip",
+      "scenario": "Order created with stock decremented. Admin soft-deletes the OrderItem (data cleanup). Then cancel/refund fires. The release path queries OrderItem::query()->where('id', $id) without withTrashed() — soft-deleted rows are filtered, release skips, stock stays decremented.",
+      "result": "LATENT BUG. StockService::releaseForOrderInTransaction line 364 query: OrderItem::query()->where('id', ...)->lockForUpdate()->first() — soft-deleted OrderItems are EXCLUDED. AvailabilityService::releaseForOrderItems line 630 uses DB::table('order_items') which bypasses SoftDeletes scope BUT also lacks deleted_at filter — would still find the soft-deleted row but the on_hand correction logic relies on order_item.quantity and released_qty which are stable.",
+      "severity": "P2",
+      "recommendation": "Document that OrderItem soft-delete is INCOMPATIBLE with stock release flow. Either (a) prohibit OrderItem soft-delete (force hard-delete only via Order cascade), OR (b) use withTrashed() in StockService release path. Currently no UI path soft-deletes individual order_items, so risk is theoretical. V1.0.2 doc + sentinel."
+    },
+    {
+      "id": "PSTK-R-7",
+      "title": "Composition snapshot tampering — addon_item_id pointing to wrong branch's item",
+      "scenario": "POST /api/pos/store with composition_snapshot.addons[].addon_item_id pointing to a different branch's item. StockService loops through composition_snapshot and decrements stock_levels keyed on (current order's branch_id, addon_item_id).",
+      "result": "BLOCKED IF stock_level rows are scoped (no row exists for addon_item from other branch in current branch -> 'continue' at line 93). Defense: StockService::requirementsForOrderItem line 280 iterates addons but doesn't validate addon_item belongs to the order's branch. The stock decrement would silently skip (no level found) but the order is created with the foreign addon recorded — leading to a confused composition_snapshot. PricingService should reject this earlier (the addon_item->branch check), but if it doesn't, the order persists with bad data.",
+      "severity": "P2",
+      "recommendation": "Verify PricingService::validateOptions rejects cross-branch addon_item_id. Add a sentinel test. V1.0.2."
+    }
+  ],
+  "verdict": "RED FINDINGS: 2 P0 mitigated, 2 P1 (manual rupture bypass + resolver-only gate), 3 P2 (soft-delete edges, composition_snapshot)",
+  "summary": "The two most credible RED scenarios — concurrent decrement and refund-twice — are MITIGATED by lockForUpdate + UNIQUE idempotency_key + released_qty ledger. The remaining surface: StockService::mutateForOrderInTransaction does NOT respect manual_unavailable_reason (PSTK-R-3, PSTK-R-5) — it trusts the pricing-path resolver as the only gate. If any future entry point bypasses pricing (admin tool, migration script), oversells of manually-86 items would happen. Defense-in-depth fix: 1 line in StockService line ~111. HEAL-ALLOWED but defer to V1.0.1 with explicit test. Soft-delete edges (PSTK-R-4, PSTK-R-6) are LATENT but no current UI exercises them."
+}

@@ -1,0 +1,2 @@
+  + branch=1 CHAIN OK
+SWEEP COMPLETE — CHAIN OK on every active branch (1 total)

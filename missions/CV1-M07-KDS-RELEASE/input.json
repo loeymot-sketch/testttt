@@ -1,0 +1,46 @@
+{
+  "task_id": "CV1-M07-KDS-RELEASE",
+  "mission_id": "M-07",
+  "plan_file": "plans/PLAN_CAISSE_V1_GPT_MASTERPLAY_2026-04-25.md",
+  "primary_model": "codex-extension",
+  "model": "gpt-5.5-pro",
+  "reasoning_effort": "xhigh",
+  "objective": "Durcir KDS release transitions: request whitelist OrderStatus, expected_status obligatoire, 409 conflit, prédicat KitchenRelease et overflow visible.",
+  "instruction": "Applique uniquement M-07. Gate KDS Option B approuvée: server authority avec expected_status. JSON unique.",
+  "allowlist": [
+    "app/Http/Requests/Kds/KdsOrderStatusRequest.php",
+    "app/Services/KitchenDisplaySystemOrderService.php",
+    "app/Domain/Order/OrderStateMachine.php",
+    "app/Http/Controllers/Admin/KitchenDisplaySystemController.php",
+    "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue",
+    "resources/js/store/modules/kds.js",
+    "tests/Feature/KdsTransitionWhitelistTest.php",
+    "tests/Feature/KdsExpectedStatusConflictTest.php",
+    "tests/Feature/KitchenReleaseRuleTest.php",
+    "tests/Feature/KdsPaginationOverflowTest.php",
+    "tests/Playwright/KdsMultiScreenPlaywrightTest.spec.js"
+  ],
+  "off_limits": ["database/**", "app/Services/Fiscal/**", "app/Services/OrderService.php", ".cursor/**", "AGENTS.md"],
+  "human_gate_decisions": [
+    {"gate": "GATE_KDS_BUMP_AUTHORITY_V1_2026-04-25", "status": "Approved", "decision": "Option B — Server authority with expected_status", "date": "2026-04-25"}
+  ],
+  "invariants_at_risk": ["order_status", "branch_id", "dispatch_after_commit", "frozen_zones"],
+  "gate_conditions": ["kds_bump approved Option B"],
+  "mandatory_tests": [
+    "php artisan test --filter=KdsTransitionWhitelistSentinelTest",
+    "php artisan test --filter=KdsExpectedStatusConflictSentinelTest",
+    "php artisan test --filter=KdsTransitionWhitelistTest",
+    "php artisan test --filter=KdsExpectedStatusConflictTest",
+    "php artisan test --filter=KitchenReleaseRuleTest"
+  ],
+  "self_audit_checklist": [
+    "expected_status is required and compared server-side under lock",
+    "invalid transitions return 422 and conflict returns 409",
+    "OrderStatus enum is used; no magic strings/numbers",
+    "KDS UI sends expected_status and shows overflow signal"
+  ],
+  "rollback": {"feature_flag": "kds_strict_release", "max_window_days": 7, "predicates": ["kds error rate > 5%", "409 storm"]},
+  "graphiti_query": "Caisse V1 KDS expected_status server authority transition whitelist",
+  "memory_episode_to_write_on_close": "memory/episodes/caisse_v1_kds_release_2026-04-25.jsonl",
+  "claude_audit_prompt_id": "disabled-gpt-only"
+}

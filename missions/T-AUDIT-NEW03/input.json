@@ -1,0 +1,55 @@
+{
+  "task_id": "T-AUDIT-NEW03",
+  "mode": "AUDIT_ONLY_NO_CODE",
+  "lot": "NEW-03 audit — Queue topology + retry SLO. Independent second-opinion review of the orchestrator's NEW-03 implementation BEFORE the Claude Code terminal audit. Output is a JSON verdict, NO code patches.",
+  "auditor_persona": "Senior staff backend engineer specialized in Laravel queue topology, retry/backoff policy under SLO, observability for terminal failures, and operational hardening (Supervisor/Forge). Adversarial mindset: hunt for routing leaks (jobs landing on the wrong queue), backoff math errors, log payload regressions, optional-Sentry integration breaking environments without the SDK, and worker-config drift between docs and code.",
+  "what_was_shipped": {
+    "modified_files": [
+      "app/Jobs/DispatchDomainEventsJob.php — $backoff changed from [1,5,30,300] to [1,5,15,60,300] (5 entries to match $tries=5). failed() refactored: Log level upgraded warning→error (terminal failure deserves pager-grade), structured payload now includes domain_event_id/event_type/queue/connection/attempts/delay_since_creation_seconds/error/error_class, optional Sentry breadcrumb (category=queue.dispatch_domain_events.failed) guarded by class_exists(\\Sentry\\State\\Scope::class) AND function_exists('Sentry\\\\addBreadcrumb') AND class_exists(\\Sentry\\Breadcrumb::class) so environments without the SDK are unaffected. handle() body NOT touched (NEW-01 frozen).",
+      "app/Jobs/SendFcmNotificationJob.php — constructor now calls $this->onQueue('notifications') so dispatch sites do NOT need to chain ->onQueue(...). tries=3 / backoff()=[10,30] / timeout=30 unchanged. handle() body NOT touched."
+    ],
+    "created_files": [
+      "docs/operations/QUEUE_TOPOLOGY.md — SSOT for the 3-queue topology (high / notifications / default), Supervisor program blocks per lane (NOT a combined --queue list, to prevent FCM stalls from starving high), worker order rationale, retry policy table, monitoring snippets (queue:monitor, queue:failed, SQL pending count), troubleshooting (queue:retry, outbox:retry-failed, outbox:rescue, queue:restart, queue:flush), deployment checklist. References docs/QUEUE_WORKER_SETUP.md as the existing primer.",
+      "tests/Feature/Queue/QueueRoutingTest.php — 7 tests: dispatch_domain_events_job_targets_high_queue (Queue::fake + assertPushedOn), send_fcm_notification_job_targets_notifications_queue, send_fcm_via_topic_also_targets_notifications_queue, dispatch_domain_events_default_queue_property (instance inspection: $job->queue === 'high'), send_fcm_default_queue_property (instance inspection: $job->queue === 'notifications'), dispatch_domain_events_backoff_curve_is_5_steps_outlasting_pusher_restart (assertSame [1,5,15,60,300] + count===tries), send_fcm_backoff_is_short_to_avoid_amplifying_throttling (tries===3, backoff()===[10,30])."
+    ]
+  },
+  "validation_already_done_by_orchestrator": {
+    "phpunit_new03_only": "QueueRoutingTest 7/7 PASS.",
+    "phpunit_outbox_regression": "OutboxConcurrentWorkerDedupeTest 9/9 PASS (NEW-01 invariants preserved).",
+    "phpunit_feature_filter_outbox_queue_domain": "31/31 PASS.",
+    "vitest_full_suite": "108 files / 790 tests PASS (no frontend regression).",
+    "invariants": "scripts/check-invariants.sh — 6/6 OK."
+  },
+  "exact_code_to_audit": {
+    "DispatchDomainEventsJob.php — backoff and tries (top of class)": "/**\n * [NEW-03] Backoff curve: 1s → 5s → 15s → 60s → 5min.\n * 5 entries align with $tries=5, total worst-case ~6 minutes — sized to\n * outlast a typical Pusher/Soketi restart while keeping the SLO\n * `outbox_dispatch_latency_p95 < 2s` healthy in steady state.\n */\npublic array $backoff = [1, 5, 15, 60, 300];\npublic int $tries = 5;\n\npublic function __construct(public int $domainEventId)\n{\n    $this->onQueue('high');\n    $this->initializeCorrelationId();\n}",
+    "DispatchDomainEventsJob.php — failed() (full new body)": "public function failed(\\Throwable $exception): void\n{\n    $domainEvent = DomainEvent::query()->find($this->domainEventId);\n    if ($domainEvent !== null) {\n        // [NEW-01 / Audit G1] Preserve the `contract_violation:` prefix written by\n        // handle() for PayloadMismatchException so monitoring filters that key on\n        // this prefix do NOT lose terminal failures after `tries` exhaustion.\n        $domainEvent->forceFill([\n            'last_error' => $exception instanceof PayloadMismatchException\n                ? 'contract_violation: ' . $exception->getMessage()\n                : $exception->getMessage(),\n        ])->save();\n    }\n\n    // [NEW-03] Structured log + optional Sentry breadcrumb for pager-grade signaling.\n    $createdAt = $domainEvent?->created_at;\n    $context = [\n        'domain_event_id' => $this->domainEventId,\n        'event_type' => $domainEvent?->event_type,\n        'queue' => $this->queue ?? 'high',\n        'connection' => $this->connection ?? config('queue.default'),\n        'attempts' => method_exists($this, 'attempts') ? $this->attempts() : null,\n        'delay_since_creation_seconds' => $createdAt ? (int) now()->diffInSeconds($createdAt) : null,\n        'error' => $exception->getMessage(),\n        'error_class' => get_class($exception),\n    ];\n    Log::error('[DispatchDomainEventsJob] Final failure dispatching domain event', $context);\n\n    // Sentry integration is OPTIONAL — codebase does not require sentry/sentry-laravel.\n    if (class_exists(\\Sentry\\State\\Scope::class)\n        && function_exists('Sentry\\\\addBreadcrumb')\n        && class_exists(\\Sentry\\Breadcrumb::class)\n    ) {\n        \\Sentry\\addBreadcrumb(\\Sentry\\Breadcrumb::fromArray([\n            'category' => 'queue.dispatch_domain_events.failed',\n            'level' => 'error',\n            'message' => 'Final failure dispatching domain event',\n            'data' => $context,\n        ]));\n    }\n}",
+    "SendFcmNotificationJob.php — constructor (NEW-03 routing)": "public function __construct(\n    public ?string $token,\n    public ?string $topic,\n    public string $title,\n    public string $body,\n    public array $data = [],\n    public string $sound = 'default'\n) {\n    // [NEW-03] Route to the dedicated 'notifications' queue so slow FCM\n    // sends cannot starve `high` (DispatchDomainEventsJob → POS/KDS sync).\n    $this->onQueue('notifications');\n}\n\npublic int $tries = 3;\npublic int $timeout = 30;\npublic function backoff(): array { return [10, 30]; }"
+  },
+  "audit_axes": [
+    "G1 — Queue routing source-of-truth: confirm SendFcmNotificationJob constructor onQueue('notifications') is the SSOT and that we have NOT regressed by also setting a $queue property elsewhere that could conflict. Same for DispatchDomainEventsJob with 'high'.",
+    "G2 — Backoff curve match-up: validate $backoff has exactly 5 entries equal to [1,5,15,60,300] AND that count === $tries. Laravel re-uses the last value if the array is shorter than $tries; flag if a future bump of $tries would go beyond the array.",
+    "G3 — failed() observability regression risk: confirm the new structured log preserves AT LEAST the prior fields (domain_event_id, event_type, error). Verify the prefix `contract_violation: ` for PayloadMismatchException is still written to last_error AND survives in the Log::error context (not stripped or doubled).",
+    "G4 — Optional Sentry SDK: assess the triple guard (class_exists Scope + function_exists addBreadcrumb + class_exists Breadcrumb). Is it sufficient to ensure the code is a no-op when sentry/sentry-laravel is NOT installed? Flag any path that could fatal in dev.",
+    "G5 — Edge case: domainEvent is null in failed() (event row deleted before final attempt). Verify the code does NOT crash and the structured log still carries `domain_event_id` (raw int from $this->domainEventId).",
+    "G6 — `delay_since_creation_seconds` math: now()->diffInSeconds($createdAt) returns a positive number even if $createdAt is in the future (Carbon abs) — confirm casted to int is acceptable and not silently zero.",
+    "G7 — Default queue property: SendFcmNotificationJob does NOT declare `public string $queue` at class level; the value is only set via the runtime `onQueue()` call inside the constructor. Confirm `$job->queue === 'notifications'` is reliable for assertion (this is the contract assumed by the test).",
+    "G8 — Listener call sites: existing dispatchers (PersistOrderCreatedToOutbox etc.) STILL chain ->onQueue('high'). Confirm this is harmless (defense-in-depth) and does not double-set or override the constructor.",
+    "G9 — Topology doc consistency: the doc recommends 3 dedicated Supervisor programs (one per lane). The Lot README also mentions a fallback `--queue=high,notifications,default` for mono-worker dev. Confirm the doc is internally consistent and aligned with the Job class queue assignments.",
+    "G10 — Worker `--tries=0`: the doc recommends `--tries=0` so the per-job `$tries` is authoritative. Verify this matches Laravel 10 semantics (yes — `--tries=0` means rely on job class). Flag if the doc accidentally suggests a hard `--tries=N` that would override the job."
+  ],
+  "missing_test_axes_to_check": [
+    "T-MISS-A — failed() with null DomainEvent: simulate a row deleted between the last attempt and the failed() callback; assert no crash, assert Log::error still carries domain_event_id from the job state, assert no DB::forceFill call.",
+    "T-MISS-B — failed() with PayloadMismatchException keeps the contract_violation: prefix in last_error AFTER the new structured log path runs.",
+    "T-MISS-C — failed() Sentry path is no-op when SDK absent: with Sentry classes intentionally NOT installed in test env, ensure the conditional block silently skips and no warning/notice is emitted.",
+    "T-MISS-D — explicit override of queue at dispatch time: SendFcmNotificationJob::dispatch(...)->onQueue('default') should still work (Laravel allows runtime override). Assert the override wins. Document if intentional.",
+    "T-MISS-E — backoff curve length: assert count(\\$job->backoff) === \\$job->tries (already covered partially in QueueRoutingTest, confirm)."
+  ],
+  "expected_response_shape": "Strict JSON: { \"verdict\": \"PASS|PASS_WITH_WARNINGS|FAIL\", \"summary\": \"<2-3 sentences>\", \"findings\": [ { \"id\":\"G1..G10\", \"severity\":\"critical|warning|info\", \"title\":\"...\", \"observation\":\"...\", \"recommendation\":\"...\" } ], \"missing_tests\": [ { \"id\":\"T-MISS-A..E\", \"priority\":\"P0|P1|P2\", \"rationale\":\"...\", \"sketch\":\"<phpunit pseudo-code>\" } ], \"green_lights\": [ \"<short bullets of what is correctly done>\" ] }",
+  "self_check_before_returning": [
+    "Did you address every G1..G10 axis explicitly (even if just to mark as info/no-action)?",
+    "Did you address every T-MISS-A..E axis explicitly (priority + rationale)?",
+    "Is the verdict consistent with the severity of findings (any 'critical' ⇒ FAIL or PASS_WITH_WARNINGS; all info ⇒ PASS)?",
+    "Are recommendations actionable (concrete line/file/method)?",
+    "NO code patches in the response. AUDIT ONLY."
+  ]
+}

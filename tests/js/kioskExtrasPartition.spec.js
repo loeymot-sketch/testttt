@@ -44,6 +44,17 @@ describe('kioskIsViandePaidExtra', () => {
     expect(kioskIsViandePaidExtra({ name: 'Bacon', convert_price: 1 })).toBe(false);
     expect(kioskIsViandePaidExtra({ name: 'Cheddar', convert_price: 1 })).toBe(false);
   });
+
+  // [HEAL v3.1 2026-05-14] Burger Double viande remains a SUPPLEMENT
+  it('treats Double viande with group=supplement as NOT viande-paid (heal v3.1)', () => {
+    expect(kioskIsViandePaidExtra({ name: 'Double viande', group_label: 'supplement', price: 2.5 })).toBe(false);
+    expect(kioskIsViandePaidExtra({ name: 'Double viande', group_label: 'supplement_burger', price: 2.5 })).toBe(false);
+    expect(kioskIsViandePaidExtra({ name: 'Double viande', group_label: 'supplements', price: 2.5 })).toBe(false);
+    // explicit viande group_label still wins
+    expect(kioskIsViandePaidExtra({ name: 'Double viande', group_label: 'viande', price: 2.5 })).toBe(true);
+    // name-only fallback (no group) still detects
+    expect(kioskIsViandePaidExtra({ name: 'Double viande', price: 2.5 })).toBe(true);
+  });
 });
 
 describe('partitionKioskExtras', () => {

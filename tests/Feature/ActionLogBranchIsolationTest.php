@@ -70,14 +70,33 @@ class ActionLogBranchIsolationTest extends TestCase
         $this->assertEquals($this->branchB->id, $log->fresh()->branch_id);
     }
 
+    /**
+     * [GOAL-2026-05-29] DashboardService::auditTrail() reads the NF525 audit_logs
+     * table (deliberately re-pointed from action_logs at GAP-FIX-02 / 52e015197,
+     * 2026-05-25, + locked by AuditTrailUsesAuditLogSentinelTest). Seed via the real
+     * AuditLogService so rows land in audit_logs with a valid hash chain. The legacy
+     * "null branch" concept is the SYSTEM chain (branch_id=0): the service REJECTS
+     * null, and branch_id=0 is admin-only in auditTrail() (the staff filter
+     * where('branch_id', X>0) never matches 0) — preserving the exact F-A3 isolation
+     * invariant these tests guard (staff-own-branch-only; admin sees all/system).
+     */
+    private function seedAudit(?int $userId, string $action, int $branchId): void
+    {
+        app(\App\Services\Fiscal\AuditLogService::class)->write([
+            'user_id'   => $userId,
+            'action'    => $action,
+            'branch_id' => $branchId,
+        ]);
+    }
+
     public function test_audit_trail_scoped_to_actor_branch(): void
     {
-        // 2 rows for branch A, 2 for branch B, 1 legacy (null branch)
-        ActionLog::create(['user_id' => $this->userA->id, 'action' => 'A.1', 'branch_id' => $this->branchA->id]);
-        ActionLog::create(['user_id' => $this->userA->id, 'action' => 'A.2', 'branch_id' => $this->branchA->id]);
-        ActionLog::create(['user_id' => $this->userB->id, 'action' => 'B.1', 'branch_id' => $this->branchB->id]);
-        ActionLog::create(['user_id' => $this->userB->id, 'action' => 'B.2', 'branch_id' => $this->branchB->id]);
-        ActionLog::create(['user_id' => null, 'action' => 'LEGACY.1', 'branch_id' => null]);
+        // 2 rows for branch A, 2 for branch B, 1 legacy/system (branch_id=0).
+        $this->seedAudit($this->userA->id, 'A.1', $this->branchA->id);
+        $this->seedAudit($this->userA->id, 'A.2', $this->branchA->id);
+        $this->seedAudit($this->userB->id, 'B.1', $this->branchB->id);
+        $this->seedAudit($this->userB->id, 'B.2', $this->branchB->id);
+        $this->seedAudit(null, 'LEGACY.1', 0); // legacy/system chain = branch_id 0 (admin-only)
 
         $this->actingAs($this->userA, 'sanctum');
         $service = app(DashboardService::class);
@@ -95,8 +114,8 @@ class ActionLogBranchIsolationTest extends TestCase
 
     public function test_audit_trail_admin_sees_null_branch_legacy_rows(): void
     {
-        ActionLog::create(['user_id' => null, 'action' => 'LEGACY.1', 'branch_id' => null]);
-        ActionLog::create(['user_id' => $this->userA->id, 'action' => 'A.1', 'branch_id' => $this->branchA->id]);
+        $this->seedAudit(null, 'LEGACY.1', 0); // legacy/system chain = branch_id 0
+        $this->seedAudit($this->userA->id, 'A.1', $this->branchA->id);
 
         $this->actingAs($this->admin, 'sanctum');
         $service = app(DashboardService::class);
@@ -127,8 +146,8 @@ class ActionLogBranchIsolationTest extends TestCase
 
     public function test_audit_trail_admin_sees_every_branch(): void
     {
-        ActionLog::create(['user_id' => $this->userA->id, 'action' => 'A.1', 'branch_id' => $this->branchA->id]);
-        ActionLog::create(['user_id' => $this->userB->id, 'action' => 'B.1', 'branch_id' => $this->branchB->id]);
+        $this->seedAudit($this->userA->id, 'A.1', $this->branchA->id);
+        $this->seedAudit($this->userB->id, 'B.1', $this->branchB->id);
 
         $this->actingAs($this->admin, 'sanctum');
         $service = app(DashboardService::class);

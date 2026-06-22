@@ -1,0 +1,239 @@
+{
+  "at": "2026-04-24T14:58:42.986Z",
+  "base": "https://api.ctok.ai",
+  "target_output_tokens": 50000,
+  "chain_target_total_tokens": 50000,
+  "steps": [
+    {
+      "phase": "ping",
+      "model": "claude-opus-4-1-20250514",
+      "http": 503,
+      "ms": 889,
+      "err": {
+        "message": "No available accounts: no available accounts",
+        "type": "api_error"
+      },
+      "usage": null,
+      "content": ""
+    },
+    {
+      "phase": "ping_bearer",
+      "model": "claude-opus-4-1-20250514",
+      "http": 503,
+      "err": {
+        "error": {
+          "message": "No available accounts: no available accounts",
+          "type": "api_error"
+        },
+        "type": "error"
+      }
+    },
+    {
+      "phase": "ping",
+      "model": "claude-3-opus-20240229",
+      "http": 503,
+      "ms": 676,
+      "err": {
+        "message": "No available accounts: no available accounts",
+        "type": "api_error"
+      },
+      "usage": null,
+      "content": ""
+    },
+    {
+      "phase": "ping_bearer",
+      "model": "claude-3-opus-20240229",
+      "http": 503,
+      "err": {
+        "error": {
+          "message": "No available accounts: no available accounts",
+          "type": "api_error"
+        },
+        "type": "error"
+      }
+    },
+    {
+      "phase": "ping_ok",
+      "model": "claude-sonnet-4-5-20250929",
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 39
+        },
+        "cache_creation_input_tokens": 39,
+        "cache_read_input_tokens": 101,
+        "input_tokens": 27,
+        "output_tokens": 4
+      },
+      "stop": "end_turn"
+    }
+  ],
+  "chain": [
+    {
+      "round": 1,
+      "usage": {
+        "input_tokens": 155,
+        "output_tokens": 229,
+        "cache_read_input_tokens": 267
+      },
+      "stop": "end_turn",
+      "chars": 688
+    },
+    {
+      "round": 2,
+      "usage": {
+        "cache_creation_input_tokens": 328,
+        "cache_read_input_tokens": 4068,
+        "input_tokens": 1863,
+        "output_tokens": 1888
+      },
+      "stop": "end_turn",
+      "chars": 7510
+    },
+    {
+      "round": 3,
+      "usage": {
+        "cache_creation_input_tokens": 10175,
+        "cache_read_input_tokens": 0,
+        "input_tokens": 98,
+        "output_tokens": 5986
+      },
+      "stop": "end_turn",
+      "chars": 23876
+    },
+    {
+      "round": 4,
+      "usage": {
+        "cache_creation_input_tokens": 2179,
+        "cache_read_input_tokens": 7122,
+        "input_tokens": 1014,
+        "output_tokens": 5910
+      },
+      "stop": "end_turn",
+      "chars": 23501
+    },
+    {
+      "round": 5,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 600
+        },
+        "cache_creation_input_tokens": 600,
+        "cache_read_input_tokens": 170,
+        "input_tokens": 95,
+        "output_tokens": 76
+      },
+      "stop": "tool_use",
+      "chars": 51
+    },
+    {
+      "round": 6,
+      "usage": {
+        "cache_creation_input_tokens": 10216,
+        "cache_read_input_tokens": 0,
+        "input_tokens": 98,
+        "output_tokens": 6250
+      },
+      "stop": "end_turn",
+      "chars": 24937
+    },
+    {
+      "round": 7,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 47
+        },
+        "cache_creation_input_tokens": 47,
+        "cache_read_input_tokens": 170,
+        "input_tokens": 95,
+        "output_tokens": 58
+      },
+      "stop": "tool_use",
+      "chars": 42
+    },
+    {
+      "round": 8,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 961
+        },
+        "cache_creation_input_tokens": 961,
+        "cache_read_input_tokens": 170,
+        "input_tokens": 95,
+        "output_tokens": 58
+      },
+      "stop": "tool_use",
+      "chars": 42
+    },
+    {
+      "round": 9,
+      "usage": {
+        "cache_creation_input_tokens": 254,
+        "cache_read_input_tokens": 3149,
+        "input_tokens": 1442,
+        "output_tokens": 966
+      },
+      "stop": "end_turn",
+      "chars": 3855
+    },
+    {
+      "round": 10,
+      "usage": {
+        "cache_creation_input_tokens": 10213,
+        "cache_read_input_tokens": 0,
+        "input_tokens": 98,
+        "output_tokens": 4672
+      },
+      "stop": "end_turn",
+      "chars": 18688
+    },
+    {
+      "round": 11,
+      "usage": {
+        "cache_creation_input_tokens": 8983,
+        "cache_read_input_tokens": 0,
+        "input_tokens": 98,
+        "output_tokens": 5138
+      },
+      "stop": "end_turn",
+      "chars": 20439
+    },
+    {
+      "round": 12,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 245
+        },
+        "cache_creation_input_tokens": 245,
+        "cache_read_input_tokens": 170,
+        "input_tokens": 95,
+        "output_tokens": 107
+      },
+      "stop": "tool_use",
+      "chars": 60
+    }
+  ],
+  "opus_or_upstream_full": true,
+  "ping_model": "claude-sonnet-4-5-20250929",
+  "long_max_tokens_used": 50000,
+  "long_usage": {
+    "cache_creation_input_tokens": 2731,
+    "cache_read_input_tokens": 5603,
+    "input_tokens": 929,
+    "output_tokens": 5818
+  },
+  "long_chars": 22847,
+  "long_excerpt": "# Audit Plateforme FoodKing — Architecture SaaS Laravel + Vue\n\n---\n\n## 1. Vue d'ensemble et périmètre\n\nFoodKing est une plateforme SaaS multi-tenant couvrant le cycle complet de commande en restauration : prise de commande (POS caisse, borne kiosk), gestion de file d'attente, production cuisine (KDS), et encaissement multi-pistes. L'audit couvre l'architecture actuelle, les risques, la dette technique et les recommandations exploitables.\n\n---\n\n## 2. Caisse POS\n\n### État actuel présumé\nLaravel API REST + Vue SPA côté front, sessions par tenant, gestion des articles/modificateurs, impression ticket.\n\n### Risques et recommandations\n\n**R1 — Mode offline non garanti**\nSi la caisse POS dépend d'une connexion réseau permanente vers l'API Laravel, toute coupure réseau arrête les ventes. C'est un P0 opérationnel.\n- Recommandation : implémenter un Service Worker avec IndexedDB pour stocker le catalogue, les commandes en attente et les paiements cash localement. Synchronisation différée via queue Laravel (Redis) à la reconnexion.\n- Pattern : CRDT ou simple log d'événements append-only côté client, réconciliation serveur.\n\n**R2 — Gestion des modificateurs complexes**\nLes modificateurs imbriqué",
+  "long_stop_reason": "end_turn",
+  "output_tokens": 5818,
+  "input_tokens": 929,
+  "severity": "GO_WEAK",
+  "note": "Plafond effectif (sortie) ou budget plan : sortie < 50k *tokens* et total < 50k. Vérifier **dashboard** ctok (plafond `max_tokens`, modèle) ; `Opus` peut renvoyer 503 (pas de compte disponible) — utiliser le modèle qui **passe** le ping. Réessayer `CTOK_MAX_OUTPUT=50000` si le plan l’autorise.",
+  "chained_total_in": 6175,
+  "chained_total_out": 37156,
+  "chained_total": 43331
+}

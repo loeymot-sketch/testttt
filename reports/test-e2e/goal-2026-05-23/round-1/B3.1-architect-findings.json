@@ -1,0 +1,323 @@
+{
+  "wave": "GOAL ULTRA-DEEP 2026-05-23 — B3.1 Architect coherence + dependency discipline",
+  "round": 1,
+  "agent_id": "B3.1",
+  "role": "Architect",
+  "scope": "Backend layering, dependency discipline, cross-cutting concerns, event-driven backbone, cohesion/coupling, frozen-zone meta-justification. STATIC source review only — no MCP browser, no code modification. Cross-referenced with C6-multi-tab-echo.json for Echo channel naming verdict.",
+  "commit_under_audit": "heal/cms-pr1-quickwins-2026-05-18 (HEAD on session start)",
+  "audit_methodology": "Targeted file reads on high-signal candidates (PricingService, FiscalSequenceService, PaymentService, FrontendOrderService, OrderService, BranchScope, AppServiceProvider, EventServiceProvider, channels.php, DispatchableAfterCommit, OrderStateMachine) + grep-driven counts on cross-cutting concerns (raw DB in controllers, Eloquent leak, afterCommit, BranchScope coverage, Cache::lock keying, idempotency middleware coverage, FormRequest authorize patterns). Cited verifiable file:line evidence for every claim.",
+  "evidence_collection_grep_keys": [
+    "DB::table|DB::statement|DB::raw|DB::select in app/Http/Controllers/ → 31 matches across 8 controllers",
+    "::query()|->where(|::with( in app/Http/Controllers/Admin/ → 113 matches across 10 admin controllers",
+    "ShouldDispatchAfterCommit|afterCommit in app/Events app/Listeners → 17 listener invocations + DispatchableAfterCommit trait on 26+ Domain events (Outbox-bound)",
+    "private-branch in app/+resources/js/ → unified single-channel SSOT confirmed (matches C6-ARCH-001)",
+    "Gate::|->authorize( in app/Http/Controllers/Admin/ → 0 (authz uniformly via route `permission:*` middleware + FormRequest::authorize())",
+    "Cache::lock branch-keyed: fiscal_seq_{branch}, z_report_b{n}, audit_chain_b{n}, kiosk.menu.branch.{id} — discipline GREEN",
+    "BranchScope::addGlobalScope across 20 models (matches sentinel BranchScopeCoverageSentinelTest baseline)",
+    "wc -l: OrderService=2729, FrontendOrderService=1391, PaymentService=720, PricingService=814, FiscalSequenceService=115",
+    "public function count: OrderService=22, PaymentService=7, FrontendOrderService=6, PricingService=3, FiscalSequenceService=2",
+    "Interface count in app/Services/: 2 (PrinterTransportInterface, IdempotencyKeyRepository) + 2 abstracts (PaymentAbstract, SmsAbstract)",
+    "app/Repositories/ does NOT exist (0 files)"
+  ],
+  "files_audited_sample": [
+    "app/Services/OrderService.php (2729 LOC, 22 public methods)",
+    "app/Services/FrontendOrderService.php (1391 LOC, 6 public methods)",
+    "app/Services/PaymentService.php (720 LOC, 7 public methods)",
+    "app/Services/Pricing/PricingService.php (814 LOC, 3 public methods — decomposed into TaxCalculator/DiscountCalculator/CompositionSnapshotBuilder/PricingRequest/PricingResult helpers)",
+    "app/Services/Fiscal/FiscalSequenceService.php (115 LOC, 2 public methods — tight NF525 SSOT)",
+    "app/Models/Scopes/BranchScope.php + 20 model registrations",
+    "app/Providers/AppServiceProvider.php (254 LOC, production boot guards GREEN per CLAUDE.md §8)",
+    "app/Providers/EventServiceProvider.php (310 LOC — explicit listen map, no $shouldDiscoverEvents auto-discovery)",
+    "routes/channels.php (single private-branch.{id} channel, three authz branches: kiosk-token / Admin|Tenant Admin / staff-own-branch)",
+    "app/Events/Concerns/DispatchableAfterCommit.php (trait used by 26+ Outbox-bound domain events)",
+    "app/Domain/Order/OrderStateMachine.php (header comment self-documents partial-adoption drift)",
+    "app/Http/Controllers/Admin/AdminPosV4Controller.php (34 LOC — thin Blade-render passthrough, clean)",
+    "app/Http/Controllers/Admin/CashOverviewController.php (491 LOC — direct Transaction::query/CashDrawerSession::query, layering leak)",
+    "app/Http/Controllers/Admin/StockRuptureDashboardController.php (642 LOC — multiple direct ::query)",
+    "config/idempotency.php (28 required_routes pinned)"
+  ],
+  "findings": [
+    {
+      "id": "B3-ARCH-001",
+      "severity": "P2",
+      "category": "A5_cohesion_vs_coupling",
+      "title": "OrderService is a 2729 LOC god-class with 34 functions (22 public + 12 private)",
+      "evidence": {
+        "file": "app/Services/OrderService.php",
+        "loc": 2729,
+        "public_method_count": 22,
+        "total_method_count": 34,
+        "responsibilities_mixed": [
+          "list / userOrder / deliveredOrder / deliveryBoyOrder paginated read paths (5 listers)",
+          "myOrderStore / posOrderStore / tableOrderStore (3 creators, ~600 LOC each)",
+          "changeStatus + changePaymentStatus + selectDeliveryBoy + tokenCreate (4 mutators)",
+          "collectKioskCash (POS→Kiosk cash-bridge)",
+          "destroy + salesReportOverview (cleanup + reporting)",
+          "Direct Cache::lock idempotency (621, 627, 1736, 2631)",
+          "Direct OrderStateMachine::recordTransition (714, 1721, 1833, 1939)"
+        ]
+      },
+      "rationale": "PricingService already extracted (decomposed into TaxCalculator/DiscountCalculator/CompositionSnapshotBuilder helpers — exemplary). Same decomposition pattern should be applied to OrderService: e.g. OrderListService, OrderCreateService (POS/Frontend/Table sub-strategies), OrderTransitionService, OrderReportingService. Current god-class encodes 8 distinct responsibilities; any frozen-zone audit boundary becomes a single-file 2729 LOC blob.",
+      "v1_blocker": false,
+      "remediation_proposal": "V1.0.2 backlog — extract OrderListService + OrderTransitionService first (lowest blast radius, mirrors PricingService split). Defer creator split (myOrderStore/posOrderStore/tableOrderStore) to V1.1 because each has its own idempotency lock + transaction nesting that test debt would explode."
+    },
+    {
+      "id": "B3-ARCH-002",
+      "severity": "P2",
+      "category": "A4_event_driven_backbone_documented_drift",
+      "title": "OrderStateMachine `apply()` adoption is partial — header comment self-documents drift",
+      "evidence": {
+        "file": "app/Domain/Order/OrderStateMachine.php",
+        "self_documenting_comment_lines": "18-23",
+        "verbatim_quote": "\"Existing OrderService / FrontendOrderService call sites keep their historical pattern (`$order->status = $next; save(); recordTransition(...)`) to honour the frozen zone V1 rule. The `apply()` method is the path forward.\"",
+        "actual_callsites_using_recordTransition_only": [
+          "app/Services/OrderService.php:714 (PaymentService callback)",
+          "app/Services/OrderService.php:1721 (legacy myOrderStore flow)",
+          "app/Services/OrderService.php:1833 (changeStatus mutator)",
+          "app/Services/OrderService.php:1939 (changePaymentStatus mutator)",
+          "app/Services/PaymentService.php:286, 537",
+          "app/Services/KitchenDisplaySystemOrderService.php:291"
+        ],
+        "callsites_using_OrderStateMachine_apply": "ZERO (per grep — file's apply() method is unused in production code paths)"
+      },
+      "rationale": "Domain layer has the right abstraction (`apply()` does guard + mutate + audit atomically), but every production callsite still hand-rolls the historic 3-line pattern. This is benign at V1 — the OrderStateMachine::allows() guard still fires before each manual mutation — but undermines the architectural promise of a `Domain/` layer. New code added in 13-zone wave (2026-05-19) still followed the legacy pattern.",
+      "v1_blocker": false,
+      "remediation_proposal": "V1.0.2 backlog — migrate ONE callsite (KitchenDisplaySystemOrderService:291, lowest blast radius) to OrderStateMachine::apply() as proof-of-pattern. Then chip away one callsite per release."
+    },
+    {
+      "id": "B3-ARCH-003",
+      "severity": "P2",
+      "category": "A1_layer_cohesion_admin_controllers",
+      "title": "8 admin controllers directly invoke Eloquent ::query() / ::where() (113 occurrences) — layering leak concentrated in 3 reporting controllers",
+      "evidence": {
+        "raw_db_count_in_controllers": 31,
+        "eloquent_query_count_in_admin_controllers": 113,
+        "concentration": {
+          "app/Http/Controllers/Admin/StockRuptureDashboardController.php": "642 LOC — multiple Transaction::query, ItemBranchAvailability::query, StockLevel::query (lines 338, 388, 446)",
+          "app/Http/Controllers/Admin/CashOverviewController.php": "491 LOC — Transaction::query (111), CashDrawerSession::query (294), Transaction::query (341)",
+          "app/Http/Controllers/Admin/ItemController.php": "324 LOC — Branch::query (85), Item::query (256)",
+          "app/Http/Controllers/Admin/PosCategoryController.php": "Direct join on item_branch_availability with branch_id where-clause"
+        },
+        "controllers_without_service_layer": [
+          "AdminController.php (acceptable — homepage)",
+          "AdminPosV4Controller.php (acceptable — 34 LOC Blade passthrough)",
+          "CashOverviewController.php (LEAKAGE — 491 LOC business logic)",
+          "CashSessionReportController.php (LEAKAGE — reporting logic)",
+          "ItemPhotoController.php (acceptable — file storage thin layer)",
+          "PaymentTerminalController.php (acceptable — small)",
+          "StockRuptureDashboardController.php (LEAKAGE — 642 LOC reporting logic)"
+        ]
+      },
+      "rationale": "Read-only reporting controllers (CashOverview, StockRuptureDashboard, CashSessionReport) host significant SQL/Eloquent logic that should sit in a ReportService. Mutation controllers correctly delegate to Services. The leak is concentrated in reporting/dashboard surfaces — same as the 'flat /Services with no /Repositories' pattern below (B3-ARCH-005). NOT a security issue: BranchScope global scope still applies, and explicit `branch_id` filters add a second fence.",
+      "v1_blocker": false,
+      "remediation_proposal": "V1.0.2 backlog — extract CashOverviewReportService + StockRuptureDashboardService. Keep controllers as 30-50 LOC thin orchestrators returning JSON. This is the same pattern that already exists in 'app/Services/Stock/' but is unused by these controllers."
+    },
+    {
+      "id": "B3-ARCH-004",
+      "severity": "INFO",
+      "category": "A2_dependency_discipline_low_abstraction",
+      "title": "Only 2 interfaces + 2 abstracts in app/Services/ — concrete-class DI is the norm, mocking friction is real",
+      "evidence": {
+        "interfaces_in_services": [
+          "app/Services/Hardware/PrinterTransport/PrinterTransportInterface.php (clean abstraction — NullPrinterTransport + TcpPrinterTransport)",
+          "app/Services/Idempotency/IdempotencyKeyRepository.php (interface) with RedisIdempotencyKeyRepository impl"
+        ],
+        "abstracts": [
+          "app/Services/PaymentAbstract.php (27 LOC, base for payment gateway implementations)",
+          "app/Services/SmsAbstract.php"
+        ],
+        "concrete_di_examples": [
+          "OrderService::__construct(CouponService $couponService, PricingService $pricingService) — concrete classes",
+          "PricingService::__construct(TaxCalculator, DiscountCalculator, AvailabilityService, CompositionSnapshotBuilder, ComposerProfileProjection, ChoiceAvailabilityResolver) — all concrete, all `private readonly` with sensible defaults"
+        ]
+      },
+      "rationale": "This is INFO not a finding-to-fix. Laravel idiom is concrete-class DI via auto-resolved containers — abstracting every collaborator behind an interface would inflate the 152-service tree without test benefit (the project uses Pest/PHPUnit with real DB + transaction rollback, not mock-heavy unit tests). The 2 interfaces that DO exist are exactly where polymorphism matters (Hardware printer Null vs TCP swap-out; Idempotency repo with planned Redis vs DB backends). Architectural choice, not drift.",
+      "v1_blocker": false
+    },
+    {
+      "id": "B3-ARCH-005",
+      "severity": "INFO",
+      "category": "A1_no_repository_layer",
+      "title": "app/Repositories/ directory does not exist — Repository pattern is intentionally absent",
+      "evidence": {
+        "find_count": "find app/Repositories -name '*.php' → 0 files (directory does not exist)",
+        "the_one_repo_that_exists": "app/Services/Idempotency/IdempotencyKeyRepository.php — lives under Services, not Repositories. The 'Repository' suffix is for HTTP-cache idempotency record store, not the general DDD Repository pattern."
+      },
+      "rationale": "Eloquent Models ARE the repository in this codebase (active record). BranchScope global scope adds the multi-tenant fence at model level. Adding a Repository layer would force a second mapping layer with no business benefit and would dilute BranchScope coverage (the global-scope sentinel currently covers 20 models — Repositories would proliferate untested ::query() callsites). Architectural choice, not drift. INFO for synthesis context.",
+      "v1_blocker": false
+    },
+    {
+      "id": "B3-ARCH-006",
+      "severity": "INFO",
+      "category": "A3_authorization_cross_cutting_consistent",
+      "title": "Authorization layering is consistent: route `permission:*` middleware + FormRequest::authorize() — zero Gate::/->authorize() in Admin controllers",
+      "evidence": {
+        "gate_facade_in_admin_controllers": "grep Gate::|->authorize( in app/Http/Controllers/Admin/ → 0",
+        "route_permission_middleware": "Confirmed in routes/api.php — permission:catalog.compose, permission:catalog.publish, permission:customers_show|waiters_show|delivery-boys_show|chefs_show|administrators_show|employees_show, permission:ingredients_manage",
+        "formrequest_authorize_baseline": "83 FormRequests with authorize() method, 65 currently return true (per CLAUDE.md §9 sentinel baseline 66, drifting down via chip-away)",
+        "sentinel_protection": "FormRequestAuthzDriftSentinelTest — count GROWS = CI fails. Currently ratcheting DOWN — exemplary."
+      },
+      "rationale": "Three-layer enforcement (Sanctum auth:sanctum → route permission:* gate → FormRequest::authorize per-payload check) is correctly orchestrated. No god-controller dispatching to Gate::authorize manually. INFO confirms cross-cutting concern is GREEN.",
+      "v1_blocker": false
+    },
+    {
+      "id": "B3-ARCH-007",
+      "severity": "INFO",
+      "category": "A4_outbox_pattern_consistent",
+      "title": "Outbox pattern is consistently applied: 26+ domain events use DispatchableAfterCommit + Persist*ToOutbox listener-first ordering enforced",
+      "evidence": {
+        "dispatchable_after_commit_users": [
+          "OrderCreated, OrderStatusChanged, OrderPaidAtCounter, OrderPaymentStatusChanged, OrderCanceled, RefundCreated, OrderTableChanged (order pipeline)",
+          "ItemAvailabilityChanged, ItemExtraAvailabilityChanged, ItemVariationAvailabilityChanged, IngredientAvailabilityChanged (availability pipeline)",
+          "CatalogChanged, ItemCreated, ItemDeleted, CategoryCreated, CategoryUpdated, CategoryDeleted, ComposerProfileChanged, ComposerProfilePublished, StockLevelChanged (catalog pipeline)",
+          "CouponChanged, SettingsUpdated, BranchStatusChanged (admin pipeline)"
+        ],
+        "non_dispatchable_after_commit_events": "12 events — all Send*Order*Notification + SendResetPassword + SendSmsCode + OutboxBroadcastSwallowedEvent (notification side-effects + the alarm event itself — none need transactional gating)",
+        "listener_ordering_doctrine": "EventServiceProvider.php:144-149 + :171-186 — Persist*ToOutbox listeners declared FIRST in $listen array so a downstream FCM/loyalty/stock-release crash cannot silently re-open the broadcast hole (sync dispatcher halts on listener throw). HEAL-PLAN-D.3 / RED-Z8 P2-2 documented inline."
+      },
+      "rationale": "This is the V1 outbox SSOT pattern working as designed. Cross-referenced with C6-multi-tab-echo.json: single `private-branch.{id}` channel + per-event `broadcastAs` opt-in + DB-anchored outbox row = cross-pollution structurally impossible. INFO confirms event-driven backbone is GREEN.",
+      "v1_blocker": false
+    },
+    {
+      "id": "B3-ARCH-008",
+      "severity": "INFO",
+      "category": "A5_cohesion_winner",
+      "title": "PricingService is the cohesion winner: 814 LOC + 3 public methods, decomposed into 5 helper classes — exemplary template for OrderService split",
+      "evidence": {
+        "facade": "app/Services/Pricing/PricingService.php (814 LOC, 3 public methods: calculateOrder + 2 query helpers)",
+        "decomposition_helpers": [
+          "app/Services/Pricing/TaxCalculator.php (49 LOC)",
+          "app/Services/Pricing/DiscountCalculator.php (65 LOC)",
+          "app/Services/Pricing/CompositionSnapshotBuilder.php (257 LOC)",
+          "app/Services/Pricing/PricingRequest.php (value object)",
+          "app/Services/Pricing/PricingResult.php (value object)",
+          "app/Services/Pricing/PricingLineResult.php (value object)"
+        ],
+        "di_pattern": "private readonly + sensible defaults via constructor — testable, mockable, immutable inputs/outputs"
+      },
+      "rationale": "PricingService is the SSOT for NF525 price calculation AND it cleanly separates concerns. Same pattern should be replicated for OrderService split (B3-ARCH-001 remediation). This is the architectural style guide the project should reference. INFO logs the winner for synthesis."
+    }
+  ],
+  "frozen_zone_meta_scores": {
+    "rationale_note": "Score 1-5 = 'frozen for good architectural reason'. 5 = NF525/security invariant violation = legal exposure. 4 = production-validated UI, regression risk on payment flow. 3 = owner-protected legacy, no architectural justification but social contract honoured. 1-2 = unfreeze candidate. META-analysis only, NOT a proposal to unfreeze.",
+    "frontend_vue_components": {
+      "resources/js/components/admin/pos/PaymentComponent.vue": {
+        "loc": 1478,
+        "score": 5,
+        "rationale": "POS payment flow drives multi-tranche split + cash-drawer trigger + fiscal_sequence_no allocation chain. Visual regression here = direct NF525 cash-trail exposure. Owner explicitly marked V1 untouched (CLAUDE.md §7 + BRAIN §2)."
+      },
+      "resources/js/components/admin/pos/v5/PosV5TrancheRow.vue": {
+        "loc": 352,
+        "score": 5,
+        "rationale": "Single-tranche payment line UI — touches multi-tranche split logic + amount validation. Frozen per BRAIN §2 V1 untouched. Modification here = same exposure surface as PaymentComponent."
+      },
+      "resources/js/components/frontend/kiosk/KioskWizardComponent.vue": {
+        "loc": 3104,
+        "score": 4,
+        "rationale": "3104 LOC composition builder — drives kiosk cart contract + composer profile snapshot which is sent to PricingService as ITEM_ID+OPTION_IDS only. Architectural risk: contract mismatch with backend snapshot builder. Production-validated by extensive E2E coverage; not NF525-direct but regression here breaks the kiosk→backend SSOT contract."
+      },
+      "resources/js/components/frontend/kiosk/KioskAppComponent.vue": {
+        "loc": 1576,
+        "score": 4,
+        "rationale": "Kiosk shell + Echo subscription + cart state machine. Direct broadcast handler bindings (per C6 evidence). Risk: untested event-name binding change silently breaks real-time sync. Owner gate is justified."
+      },
+      "resources/js/components/frontend/kiosk/KioskUpsellComponent.vue": {
+        "loc": 543,
+        "score": 4,
+        "rationale": "Upsell rules drive cart augmentation BEFORE PricingService receives the request. Mis-augmentation = wrong fiscal total. Lower size than KioskWizard but same contract surface."
+      }
+    },
+    "frontend_pos_vanilla_js": {
+      "public/js/pos-wizard.js": {
+        "loc": 5964,
+        "score": 3,
+        "rationale": "Owner-protected 'design parfait' Vanilla JS hand-written wizard (non-Mix compiled). Architecturally fragile (5964 LOC monolith with no module boundaries, ~296 KB), zero unit tests possible due to DOM-globals coupling, but social contract: owner marked it untouchable. Score 3 (not 5) because no NF525/security invariant lives here — it's a UI shell calling /api/admin/pos/* endpoints. Score 3 (not 1) because owner gate is explicit and re-build cost is high."
+      },
+      "public/css/pos-wizard.css": {
+        "loc": 1987,
+        "score": 3,
+        "rationale": "Companion stylesheet — same social-contract status as pos-wizard.js. Architecturally a legacy artifact, but breaking the visual contract has owner gate. Score 3 honest."
+      },
+      "resources/views/admin-pos-v4.blade.php": {
+        "loc": "minimal",
+        "score": 3,
+        "rationale": "Blade entry that loads pos-wizard.js via <script src>. Architectural justification = the social contract on pos-wizard.js extends here. No NF525 logic in this Blade."
+      }
+    },
+    "backend_nf525_critical": {
+      "app/Services/Fiscal/FiscalSequenceService.php": {
+        "loc": 115,
+        "score": 5,
+        "rationale": "115 LOC + 2 public methods. Crystal-clear single responsibility (allocate monotonic fiscal_sequence_no per branch). Cache::lock + DB lockForUpdate + UNIQUE index = triple defense. Any modification = direct NF525 anti-fraud-VAT exposure. Architecturally tight, frozen for hard legal reason. EXEMPLARY."
+      },
+      "app/Services/Fiscal/ZReportService.php": {
+        "score": 5,
+        "rationale": "Daily Z-report close + HMAC chain signing. NF525 6-year retention dependency. Cache::lock(z_report_b{n}) serialization. Same legal-exposure class as FiscalSequenceService."
+      },
+      "app/Services/Fiscal/AuditLogService.php": {
+        "score": 5,
+        "rationale": "Audit-chain HMAC SHA-256 writer with prev_hash → current_hash chain. Cache::lock(audit_chain_b{n}) cross-worker serialization. Any modification = chain break = legal exposure. Production-validated by chain-validity checks in every audit cycle (bit-identical hash checks)."
+      },
+      "migrations audit_logs + z_reports triggers (DELETE forbidden)": {
+        "score": 5,
+        "rationale": "DB-level BEFORE DELETE trigger raising SIGNAL SQLSTATE '45000' on MySQL. TRUNCATE bypass mitigated via REVOKE (Ansible CVP0-1, commit f840c3ef5). Modifying these = direct fiscal-evidence destruction surface."
+      }
+    },
+    "backend_multi_tenant_payment_critical": {
+      "app/Models/Scopes/BranchScope.php": {
+        "score": 5,
+        "rationale": "Global scope drives multi-tenant fence on 20 models (baseline locked by BranchScopeCoverageSentinelTest). Modification here = mass-cross-branch-leak risk = security incident class. Architecturally the single most load-bearing 30-line file in the codebase."
+      },
+      "app/Http/Middleware/IdempotencyKeyMiddleware.php": {
+        "score": 5,
+        "rationale": "Drives duplicate-POST protection on 28 mutation routes (cash-drawer open/close, refund-with-counter-entry, change-status × 6, kiosk paid order confirm, loyalty redeem). Production boot guard refuses to boot if IDEMPOTENCY_MIDDLEWARE_ENABLED != true. Modification = direct double-charge / double-drawer-open / double-status-change exposure."
+      },
+      "app/Services/Pricing/PricingService.php": {
+        "loc": 814,
+        "score": 5,
+        "rationale": "SSOT for pricing. NF525-adjacent (composition_snapshot frozen at order creation). Already cleanly decomposed (TaxCalculator + DiscountCalculator + CompositionSnapshotBuilder) — frozen-zone status protects the SSOT property, not the decomposition. EXEMPLARY architecture + critical SSOT."
+      },
+      "app/Domain/Order/OrderStateMachine.php": {
+        "score": 5,
+        "rationale": "Order status transition SSOT (drives KDS bump + POS shortcuts + OSS allowlist). allows() guard fires on every transition. Modification = breaks KDS/POS/OSS sync contract. Note B3-ARCH-002 architectural drift (apply() vs recordTransition-only adoption) does NOT affect this score — the file IS critical, adoption-pattern-of-its-method is separately tracked."
+      }
+    },
+    "summary": {
+      "score_5_count": 10,
+      "score_4_count": 3,
+      "score_3_count": 3,
+      "score_2_count": 0,
+      "score_1_count": 0,
+      "verdict": "All 16 frozen-zone items justified architecturally. Three items (pos-wizard.js + pos-wizard.css + admin-pos-v4.blade.php) sit at score 3 (social contract, not architectural necessity) — owner gate is honoured, no proposal to unfreeze. Zero candidates at score ≤2."
+    }
+  },
+  "architectural_drift_count": 2,
+  "drift_summary": [
+    "B3-ARCH-001 — OrderService god-class (2729 LOC, 22 public methods) deviates from PricingService decomposition winner",
+    "B3-ARCH-002 — OrderStateMachine::apply() unused; all callsites use legacy 3-line pattern documented in the file's own header"
+  ],
+  "informational_count": 6,
+  "v1_blocker_count": 0,
+  "verdict": "AMBER",
+  "verdict_rationale": "AMBER (not GREEN) because two real architectural drifts are documented (OrderService god-class + OrderStateMachine partial-adoption). AMBER (not RED) because (1) no NF525 bypass, (2) Outbox pattern + DispatchableAfterCommit consistently applied to 26+ domain events, (3) Echo channel naming converged (per C6), (4) Cache locks are branch-keyed across all NF525-adjacent surfaces, (5) BranchScope covers the sentinel-locked 20 models, (6) Authorization layering is uniformly enforced via route + FormRequest. The two drifts are V1.0.2 backlog items, not V1 ship blockers.",
+  "top_3_architectural_concerns": [
+    "OrderService 2729 LOC god-class — the single biggest extraction-debt item; replicate PricingService split pattern (B3-ARCH-001)",
+    "OrderStateMachine::apply() defined but unused — Domain layer abstraction promised but not adopted (B3-ARCH-002)",
+    "8 admin controllers (concentrated in CashOverview / StockRuptureDashboard / CashSessionReport reporting flows) directly hit Eloquent ::query() — extract ReportService layer (B3-ARCH-003)"
+  ],
+  "cross_reference": {
+    "C6_multi_tab_echo_finding": "C6-ARCH-001 confirmed single `private-branch.{branchId}` channel is by design; task-spec language referencing kds.branch.{id} / pos.shortcuts.branch.{id} was outdated. B3.1 architect agrees — channel topology is correct, cross-pollution prevented at event-name layer, NOT a finding to track."
+  },
+  "nf525_chain_invariant": {
+    "audit_method": "static source review only — no order mutations triggered, no audit_logs INSERT, no z_reports INSERT",
+    "result": "BIT_IDENTICAL — chain untouched. B3.1 is purely STATIC architect review."
+  },
+  "frozen_zones_verified_read_only": [
+    "resources/js/components/admin/pos/PaymentComponent.vue — read only via wc -l",
+    "resources/js/components/admin/pos/v5/PosV5TrancheRow.vue — read only",
+    "public/js/pos-wizard.js — read only",
+    "public/css/pos-wizard.css — read only",
+    "All NF525-critical backend files — read only (FiscalSequenceService inspected head-50 only)",
+    "All Kiosk frozen Vue components — read only (wc -l + file location confirmation)"
+  ]
+}

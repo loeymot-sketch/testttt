@@ -23,16 +23,21 @@ class ItemsReportExport implements FromCollection, WithHeadings
     public function collection() : \Illuminate\Support\Collection
     {
         $itemsReportArray  = [];
-        $itemsReportsArray = $this->itemService->list($this->request);
+        // [ITEMS-SEM-04 heal 2026-06-01] Use the date-aware itemReport() (list() ignored
+        // from/to entirely → export diverged from screen/PDF) and force a full fetch.
+        $this->request->merge(['paginate' => 0]);
+        $itemsReportsArray = $this->itemService->itemReport($this->request);
 
         $total = 0;
         foreach ($itemsReportsArray as $item) {
-            $total              += $item->orders->count();
+            // [ITEMS-SEM-02 heal] units sold (SUM quantity, realized, date-scoped), not line count.
+            $units              = (int) ($item->units_sold ?? 0);
+            $total              += $units;
             $itemsReportArray[] = [
                 $item->name,
                 optional($item->category)->name,
                 trans('itemType.' . $item->item_type),
-                $item->orders->count()
+                $units
             ];
         }
         $itemsReportArray[] = [

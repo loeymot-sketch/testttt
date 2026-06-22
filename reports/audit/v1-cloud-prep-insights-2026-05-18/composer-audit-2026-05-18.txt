@@ -1,0 +1,154 @@
+# composer audit — 2026-05-18 — V1 Cloud-Prep insights heal verification
+# Branch: v1-0-1-hardening-2026-05-17
+# HEAD: b9867d77f00c70f17c47cb1382ea393f7ad255d7 (pre-commit; this artefact
+#       is bundled into the P1 cluster commit that follows)
+# Composer version: 2.9.5 (PHP 8.2.30)
+# Post Wave 5H PhpSpreadsheet bump verification
+# ---
+#
+# SUMMARY
+# -------
+# 12 security vulnerability advisories affecting 8 packages.
+# All advisories are PRE-EXISTING (none introduced by Wave 5H PhpSpreadsheet
+# bump — PhpSpreadsheet itself has zero open advisories as of this scan).
+#
+# Breakdown by severity:
+#   - high   : 5  (aws/aws-sdk-php, phpseclib/phpseclib x2, phpunit/phpunit, ...)
+#   - medium : 6  (aws/aws-sdk-php, laravel/framework, league/commonmark x2,
+#                  psy/psysh, symfony/process)
+#   - low    : 2  (firebase/php-jwt, phpseclib/phpseclib)
+#
+# DEFERRAL DECISION — V1.0.2 SCOPE
+# --------------------------------
+# These advisories are documented here as part of the V1 Cloud-Prep insights
+# heal (P1-#17 evidence), but DELIBERATELY NOT FIXED in this commit. Reasons:
+#
+#   1. None block V1 Le Cayenne single-restaurant launch (the threat models
+#      do not apply — no CloudFront S3-encryption usage, no SSH2 binary
+#      packet handling, no MSYS2/Windows shell, no Markdown user-input
+#      rendering exposed to untrusted writers).
+#   2. Bumping laravel/framework or phpseclib transitively risks Wave Z
+#      regression on a 7-day-frozen V1.0.1 baseline. V1.0.1 ships first,
+#      V1.0.2 cycle picks up these CVEs as a dedicated security sprint.
+#   3. phpunit/psysh are dev-deps — production deploy MUST pin
+#      `--no-dev` (already in deploy doc). Their advisories therefore
+#      do not affect the running prod surface.
+#
+# V1.0.2 BACKLOG ENTRY
+# --------------------
+# Owner-gate item: "Composer security debt — 12 advisories audit + bump
+# decision per package, with regression suite on each bump." Estimated
+# 2-day sprint. Stripe-cents commit + PCI dispute-window bump already
+# closed two of the most operationally-acute issues; remaining items are
+# defense-in-depth.
+#
+# RAW OUTPUT (composer audit --format=plain)
+# ===========================================
+Found 12 security vulnerability advisories affecting 8 packages:
+Package: aws/aws-sdk-php
+Severity: high
+Advisory ID: PKSA-4t1p-xpk2-nsss
+CVE: NO CVE
+Title: AWS SDK for PHP has CloudFront Policy Document Injection via Special Characters
+URL: https://github.com/advisories/GHSA-27qh-8cxx-2cr5
+Affected versions: >=3.11.7,<=3.371.3
+Reported at: 2026-03-27T19:54:58+00:00
+--------
+Package: aws/aws-sdk-php
+Severity: medium
+Advisory ID: PKSA-dxyf-6n16-t87m
+CVE: CVE-2025-14761
+Title: Key Commitment Issues in S3 Encryption Clients
+URL: https://aws.amazon.com/security/security-bulletins/AWS-2025-032/
+Affected versions: >=3.0.0,<3.368.0
+Reported at: 2025-12-17T20:15:00+00:00
+--------
+Package: firebase/php-jwt
+Severity: low
+Advisory ID: PKSA-y2cr-5h3j-g3ys
+CVE: CVE-2025-45769
+Title: php-jwt contains weak encryption
+URL: https://github.com/advisories/GHSA-2x45-7fc3-mxwq
+Affected versions: <7.0.0
+Reported at: 2025-07-31T21:31:53+00:00
+--------
+Package: laravel/framework
+Severity: medium
+Advisory ID: PKSA-8qx3-n5y5-vvnd
+CVE: CVE-2025-27515
+Title: Laravel has a File Validation Bypass
+URL: https://github.com/advisories/GHSA-78fx-h6xr-vch4
+Affected versions: <10.48.29|>=11.0.0,<11.44.1|>=12.0.0,<12.1.1
+Reported at: 2025-03-05T19:09:39+00:00
+--------
+Package: league/commonmark
+Severity: medium
+Advisory ID: PKSA-21fb-n1x5-5nf7
+CVE: CVE-2026-33347
+Title: league/commonmark has an embed extension allowed_domains bypass
+URL: https://github.com/advisories/GHSA-hh8v-hgvp-g3f5
+Affected versions: >=2.3.0,<=2.8.1
+Reported at: 2026-03-19T19:04:24+00:00
+--------
+Package: league/commonmark
+Severity: medium
+Advisory ID: PKSA-2cx9-ynrq-qdk3
+CVE: CVE-2026-30838
+Title: CommonMark has DisallowedRawHtml extension bypass via whitespace in HTML tag names
+URL: https://github.com/advisories/GHSA-4v6x-c7xx-hw9f
+Affected versions: >=2.0.0,<=2.8.0
+Reported at: 2026-03-06T23:27:03+00:00
+--------
+Package: phpseclib/phpseclib
+Severity: high
+Advisory ID: PKSA-smrh-yx37-92ws
+CVE: CVE-2026-44167
+Title: phpseclib has a CVE-2024-27355 mitigation bypass — OID amplification DoS in ASN1::decodeOID()
+URL: https://github.com/advisories/GHSA-3qpq-r242-jqj7
+Affected versions: >=0.1.1,<=1.0.28|>=3.0.0,<=3.0.51|>=2.0.0,<=2.0.53
+Reported at: 2026-05-05T21:17:57+00:00
+--------
+Package: phpseclib/phpseclib
+Severity: low
+Advisory ID: PKSA-zh4j-by9m-7mz8
+CVE: CVE-2026-40194
+Title: phpseclib has a variable-time HMAC comparison in SSH2::get_binary_packet() using != instead of hash_equals()
+URL: https://github.com/advisories/GHSA-r854-jrxh-36qx
+Affected versions: >=0.1.1,<1.0.28|>=3.0.0,<3.0.51|>=2.0.0,<2.0.53
+Reported at: 2026-04-10T20:58:10+00:00
+--------
+Package: phpseclib/phpseclib
+Severity: high
+Advisory ID: PKSA-km2b-zc3b-mjm3
+CVE: CVE-2026-32935
+Title: phpseclib's AES-CBC unpadding susceptible to padding oracle timing attack
+URL: https://github.com/advisories/GHSA-94g3-g5v7-q4jg
+Affected versions: >=0.1.1,<=1.0.26|>=2.0.0,<=2.0.51|>=3.0.0,<=3.0.49
+Reported at: 2026-03-19T16:42:18+00:00
+--------
+Package: phpunit/phpunit
+Severity: high
+Advisory ID: PKSA-z3gr-8qht-p93v
+CVE: CVE-2026-24765
+Title: Unsafe Deserialization in PHPT Code Coverage Handling
+URL: https://github.com/sebastianbergmann/phpunit/security/advisories/GHSA-vvj3-c3rp-c85p
+Affected versions: >=0,<8.5.52|>=9.0.0,<9.6.33|>=10.0.0,<10.5.62|>=11.0.0,<11.5.50|>=12.0.0,<12.5.8
+Reported at: 2026-01-27T05:21:14+00:00
+--------
+Package: psy/psysh
+Severity: medium
+Advisory ID: PKSA-4s4z-t146-6123
+CVE: CVE-2026-25129
+Title: PsySH has Local Privilege Escalation via CWD .psysh.php auto-load
+URL: https://github.com/advisories/GHSA-4486-gxhx-5mg7
+Affected versions: <=0.11.22|>=0.12.0,<=0.12.18
+Reported at: 2026-01-30T21:28:44+00:00
+--------
+Package: symfony/process
+Severity: medium
+Advisory ID: PKSA-rkkf-636k-qjb3
+CVE: CVE-2026-24739
+Title: Symfony's incorrect argument escaping under MSYS2/Git Bash can lead to destructive file operations on Windows
+URL: https://github.com/advisories/GHSA-r39x-jcww-82v6
+Affected versions: >=8.0,<8.0.5|>=7.4,<7.4.5|>=7.3,<7.3.11|>=6.4,<6.4.33|<5.4.51
+Reported at: 2026-01-28T21:28:10+00:00

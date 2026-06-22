@@ -1,0 +1,58 @@
+{
+  "wave": "A",
+  "run_n": 6,
+  "findings": [
+    {
+      "id": "A-009",
+      "state_artifact": "iter15-mega-admin/01-dashboard-default.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "Header dropdown still renders 'Bonjour Admin Le Cayenn..' with literal '..' suffix on every captured admin state. 6/6 DOMs (01-dashboard-default, 01-dashboard-1920, 02-items-list-default, 03-items-toggle-row-visible, 04-order-status-screen-default, 05-observability-default) contain 'Cayenn..' (1 occurrence each — verified with grep -c). Hard-coded JS slice still chops trailing 'e' and appends '..'. No title attribute. Visual confirmation in 01-dashboard-default.png header dropdown. Identical to run-1/run-2/run-3/run-4/run-5 A-009.",
+      "fix_hint": "Same as run-1 — remove the substring slice in the shared AppHeader user-display computed prop or replace with CSS text-overflow: ellipsis + title attribute."
+    },
+    {
+      "id": "A-010",
+      "state_artifact": "iter15-mega-admin/02-items-list-default.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "Catalog control-plane metric tile labelled 'INDISPONIBLES' (DOM contains <small>indisponibles</small>, displayed via text-transform: uppercase) still visually clipped to 'INDISPONIB(' in 02-items-list-default.png and 03-items-toggle-row-visible.png. The closing letters and any tooltip arrow get cut by the next tile's bounding box. No title attribute on the <small>. Both DOMs report 1 occurrence of '>indisponibles<'. Identical to run-1/run-2/run-3/run-4/run-5 A-010.",
+      "fix_hint": "Same as run-1 — increase metric tile min-width (catalog-control-plane__metric class) or shorten label, plus add title attribute fallback."
+    },
+    {
+      "id": "A-012",
+      "state_artifact": "iter15-mega-admin/04-order-status-screen-default.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "Header dropdown on customer-facing order-status-screen still renders 'Admin Le Cayenn..' with same hard-coded chop as A-009. Truncation propagates to all 6 captured states sharing AppHeader. Identical to run-1/run-2/run-3/run-4/run-5 A-012.",
+      "fix_hint": "Same fix as A-009 — fix the shared AppHeader once."
+    }
+  ],
+  "summary": { "P0": 0, "P1": 0, "P2": 3, "P3": 0 },
+  "states_reviewed": 6,
+  "run_5_p0_p1_verification": [
+    { "id": "A-001", "category": "silent_error", "severity": "P0", "verdict": "PASS", "note": "0 occurrences of '404.gif' or 'Page non trouv' across all 6 DOMs. 05-observability-default.dom.html contains 9 occurrences of outbox/queue:work/websockets:serve/Pipeline outbox/événements — real Pipeline observability dashboard rendering. Identical signal to run-5." },
+    { "id": "A-002", "category": "i18n_leak", "severity": "P0", "verdict": "PASS", "note": "0 occurrences of '/admin/undefined' or 'menu.undefined' as rendered DOM in any of the 6 DOMs. FrontendNavBar guards holding stable across run-5 → run-6." },
+    { "id": "A-003", "category": "silent_error", "severity": "P0", "verdict": "PASS", "note": "0 rendered class=\"ws-reconnect-banner\" elements in any DOM. appEnv: \"local\" correctly injected at line 7259 of 04-order-status-screen-default.dom.html (master.blade.php fix sticks). OSS columns populated: 13 orders in 'En préparation', N°A0028 in 'Prêt'. Identical to run-5." },
+    { "id": "A-004", "category": "i18n_leak", "severity": "P1", "verdict": "PASS", "note": "Same root-cause as A-002 — stable. Same evidence (0 menu.undefined hits)." },
+    { "id": "A-005", "category": "console_error", "severity": "P1", "verdict": "PASS", "note": "0 'intlify' / 'Not found .* key' warnings across all 6 console.json files. lang/{fr,en,ar}.json button.menu fix from F3.1 holds clean across run-5 → run-6." },
+    { "id": "A-006", "category": "unexpected_4xx", "severity": "P1", "verdict": "PASS", "note": "All 6 network.json files are empty arrays []. CSP-report endpoint relocation outside apiKey middleware (returning 204) holds — no 400 or 429 entries anywhere. 0 csp-report mentions in network or console." },
+    { "id": "A-007", "category": "console_error", "severity": "P1", "verdict": "PASS", "note": "02-items-list-default.console.json identical (1399 bytes — same as run-5) — only 1 generic Vue feature-flag warning + 2 allowlisted Pusher WS errors (ws + wss ERR_CONNECTION_REFUSED). 0 csp-report 400/429 noise." },
+    { "id": "A-008", "category": "console_error", "severity": "P1", "verdict": "PASS", "note": "04-order-status-screen-default.console.json identical (2851 bytes — same as run-5): 1 Vue feature-flag warning + 2 allowlisted Pusher WS errors + 4 AudioContext autoplay warnings (browser policy, level=warning not error, not in P1 scope). 0 csp-report 429 noise." }
+  ],
+  "set_equality_check_vs_run_5": {
+    "run_5_residuals": ["A-009", "A-010", "A-012"],
+    "run_6_residuals": ["A-009", "A-010", "A-012"],
+    "carried_over_unchanged": ["A-009", "A-010", "A-012"],
+    "new_in_run_6": [],
+    "regressed_in_run_6": [],
+    "delta": "Set-equality holds. Same 3 P2 truncation findings, same evidence pattern, same fix hints. Console.json file sizes are byte-identical to run-5 (01-dashboard-default 1399, 02-items-list-default 1399, 03-items-toggle-row-visible 2, 04-order-status-screen-default 2851, 05-observability-default 1399, 01-dashboard-1920 2). Network.json: all 6 are empty arrays — identical to run-5."
+  },
+  "adversarial_spot_checks": [
+    { "check": "i18n leak regex on rendered text >x.y.z<", "result": "Hits found: catalog.changed, menu.item_availability_changed, order.created, order.status_changed — all inside the observability event-log table (font-mono diagnostic context). Per REVIEWER_PROTOCOL category 1 false-positive note ('code blocks, monospace fonts on diagnostic pages'), these are intended event-type codes, not user-facing labels. Not flagged. Same handling as run-2/run-3/run-5." },
+    { "check": "Network 4xx/5xx unexpected", "result": "All 6 network.json = []. 0 unexpected 4xx/5xx." },
+    { "check": "Console error level outside allowlist", "result": "Only allowlisted entries: Vue feature-flag warning (warning), Pusher ws/wss ERR_CONNECTION_REFUSED (allowlist WS noise), AudioContext autoplay (warning, not error, browser policy)." },
+    { "check": "Rendered 'undefined' / 'NaN' / unrendered $t(...) in DOMs", "result": "Only matches were CSS class names (.error-boundary, .kiosk-init-error, etc.) — not user-visible defect text." }
+  ],
+  "convergence_verdict": "GREEN — CONVERGENT. P0 + P1 = 0. Set-equality with run-5 confirmed: same 3 P2 truncation findings (A-009, A-010, A-012), zero new defects, zero regressions. All 8 prior P0/P1 findings (A-001 through A-008) continue to PASS with identical evidence to run-5. File-size parity on console.json artifacts is byte-identical to run-5. The cumulative fix bundle (observability route, FrontendNavBar guard, OSS appEnv-gated banner, i18n cluster, csp-report relocation) holds simultaneously for the second consecutive run. Wave A is merge-ready. The 3 P2 residuals are non-blocking per protocol severity table; a single AppHeader ellipsis fix would resolve A-009 + A-012 across the entire admin shell.",
+  "new_issues_introduced": []
+}

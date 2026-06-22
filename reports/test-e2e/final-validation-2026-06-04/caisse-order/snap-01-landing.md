@@ -1,0 +1,701 @@
+- main [ref=e5]:
+  - generic [ref=e6]:
+    - link "logo" [ref=e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=e8]
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - generic [ref=e11]:
+          - button " Filiale Le Cayenne (principal) " [ref=e12] [cursor=pointer]:
+            - generic [ref=e13]: 
+            - heading "Filiale Le Cayenne (principal)" [level=3] [ref=e14]:
+              - generic [ref=e15]: Filiale
+              - text: Le Cayenne (principal)
+            - generic [ref=e16]: 
+          - list:
+            - listitem:
+              - radio "Le Cayenne (principal)" [checked]
+              - generic: Le Cayenne (principal)
+        - generic [ref=e18]:
+          - button "flag" [ref=e20] [cursor=pointer]:
+            - img "flag" [ref=e21]
+          - link "POS" [ref=e22] [cursor=pointer]:
+            - /url: /admin/pos
+            - generic [ref=e23]: 
+      - button "Menu" [ref=e24] [cursor=pointer]: 
+      - generic [ref=e25]:
+        - button "avatar Bonjour Admin Le Cayenne" [ref=e26] [cursor=pointer]:
+          - img "avatar" [ref=e27]
+          - heading "Bonjour Admin Le Cayenne" [level=3] [ref=e28]:
+            - text: Bonjour
+            - generic "Admin Le Cayenne" [ref=e29]
+          - generic [ref=e30]: 
+        - menu "avatar Bonjour Admin Le Cayenne":
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "Admin Le Cayenne" [level=3]
+            - paragraph: admin@lecayenne.fr
+            - paragraph: "+330600000000"
+            - heading "0,00 €" [level=3]
+          - menuitem "Modifier le profil":
+            - text: 
+            - generic: Modifier le profil
+          - menuitem "Changer le mot de passe":
+            - text: 
+            - generic: Changer le mot de passe
+          - menuitem "Déconnexion":
+            - text: 
+            - generic: Déconnexion
+  - complementary [ref=e31]:
+    - text: 
+    - navigation [ref=e32]:
+      - list [ref=e33]:
+        - listitem [ref=e34]:
+          - link " Tableau de bord" [ref=e35] [cursor=pointer]:
+            - /url: /admin/dashboard
+            - generic [ref=e36]: 
+            - generic [ref=e37]: Tableau de bord
+      - list [ref=e38]:
+        - listitem [ref=e39]:
+          - link " POS" [ref=e40] [cursor=pointer]:
+            - /url: /admin/pos
+            - generic [ref=e41]: 
+            - generic [ref=e42]: POS
+      - list [ref=e43]:
+        - listitem [ref=e44]:
+          - link "Produits & Stock" [ref=e45] [cursor=pointer]:
+            - /url: /admin/stock/rupture
+            - generic [ref=e46]: Produits & Stock
+      - list [ref=e47]:
+        - listitem [ref=e48]:
+          - link " Catalogue" [ref=e49] [cursor=pointer]:
+            - /url: /admin/items/studio
+            - generic [ref=e50]: 
+            - generic [ref=e51]: Catalogue
+        - listitem [ref=e52]:
+          - link " Attribut d’articles" [ref=e53] [cursor=pointer]:
+            - /url: /admin/settings/item-attributes/list
+            - generic [ref=e54]: 
+            - generic [ref=e55]: Attribut d’articles
+      - list [ref=e56]:
+        - listitem [ref=e57]:
+          - link " Ingrédients" [ref=e58] [cursor=pointer]:
+            - /url: /admin/ingredients
+            - generic [ref=e59]: 
+            - generic [ref=e60]: Ingrédients
+      - list [ref=e61]:
+        - listitem [ref=e62]:
+          - link " Commandes caisse" [ref=e63] [cursor=pointer]:
+            - /url: /admin/pos-orders
+            - generic [ref=e64]: 
+            - generic [ref=e65]: Commandes caisse
+      - list [ref=e66]:
+        - listitem [ref=e67]:
+          - link " Historique" [ref=e68] [cursor=pointer]:
+            - /url: /admin/historique
+            - generic [ref=e69]: 
+            - generic [ref=e70]: Historique
+      - list [ref=e71]:
+        - listitem [ref=e72]:
+          - link " Encaissement" [ref=e73] [cursor=pointer]:
+            - /url: /admin/encaissement
+            - generic [ref=e74]: 
+            - generic [ref=e75]: Encaissement
+      - list [ref=e76]:
+        - listitem [ref=e77]:
+          - link " Vue caisse unifiée" [ref=e78] [cursor=pointer]:
+            - /url: /admin/cash-overview
+            - generic [ref=e79]: 
+            - generic [ref=e80]: Vue caisse unifiée
+      - list [ref=e81]:
+        - listitem [ref=e82]:
+          - link " Caisse livreur" [ref=e83] [cursor=pointer]:
+            - /url: /admin/delivery-boy-cash-sessions
+            - generic [ref=e84]: 
+            - generic [ref=e85]: Caisse livreur
+      - list [ref=e86]:
+        - listitem [ref=e87]:
+          - button "Caisse et commandes" [ref=e88] [cursor=pointer]
+        - listitem [ref=e89]:
+          - link " Écran cuisine" [ref=e90] [cursor=pointer]:
+            - /url: /admin/kitchen-display-system
+            - generic [ref=e91]: 
+            - generic [ref=e92]: Écran cuisine
+        - listitem [ref=e93]:
+          - link " Suivi client" [ref=e94] [cursor=pointer]:
+            - /url: /admin/order-status-screen
+            - generic [ref=e95]: 
+            - generic [ref=e96]: Suivi client
+      - list [ref=e97]:
+        - listitem [ref=e98]:
+          - button "Communications" [ref=e99] [cursor=pointer]
+        - listitem [ref=e100]:
+          - link " Notification pushs" [ref=e101] [cursor=pointer]:
+            - /url: /admin/push-notifications
+            - generic [ref=e102]: 
+            - generic [ref=e103]: Notification pushs
+        - listitem [ref=e104]:
+          - link " Messages" [ref=e105] [cursor=pointer]:
+            - /url: /admin/messages
+            - generic [ref=e106]: 
+            - generic [ref=e107]: Messages
+        - listitem [ref=e108]:
+          - link " Abonnés" [ref=e109] [cursor=pointer]:
+            - /url: /admin/subscribers
+            - generic [ref=e110]: 
+            - generic [ref=e111]: Abonnés
+      - list [ref=e112]:
+        - listitem [ref=e113]:
+          - button "Utilisateurs" [ref=e114] [cursor=pointer]
+        - listitem [ref=e115]:
+          - link " Administrateurs" [ref=e116] [cursor=pointer]:
+            - /url: /admin/administrators
+            - generic [ref=e117]: 
+            - generic [ref=e118]: Administrateurs
+        - listitem [ref=e119]:
+          - link " Employés" [ref=e120] [cursor=pointer]:
+            - /url: /admin/employees
+            - generic [ref=e121]: 
+            - generic [ref=e122]: Employés
+        - listitem [ref=e123]:
+          - link " Chefs" [ref=e124] [cursor=pointer]:
+            - /url: /admin/chefs
+            - generic [ref=e125]: 
+            - generic [ref=e126]: Chefs
+      - list [ref=e127]:
+        - listitem [ref=e128]:
+          - button "Comptes" [ref=e129] [cursor=pointer]
+        - listitem [ref=e130]:
+          - link " Transactions" [ref=e131] [cursor=pointer]:
+            - /url: /admin/transactions
+            - generic [ref=e132]: 
+            - generic [ref=e133]: Transactions
+      - list [ref=e134]:
+        - listitem [ref=e135]:
+          - button "Rapports" [ref=e136] [cursor=pointer]
+        - listitem [ref=e137]:
+          - link " Rapport des ventes" [ref=e138] [cursor=pointer]:
+            - /url: /admin/sales-report
+            - generic [ref=e139]: 
+            - generic [ref=e140]: Rapport des ventes
+        - listitem [ref=e141]:
+          - link " Rapport articles" [ref=e142] [cursor=pointer]:
+            - /url: /admin/items-report
+            - generic [ref=e143]: 
+            - generic [ref=e144]: Rapport articles
+      - list [ref=e145]:
+        - listitem [ref=e146]:
+          - button "Configuration" [ref=e147] [cursor=pointer]
+        - listitem [ref=e148]:
+          - link " Paramètres" [ref=e149] [cursor=pointer]:
+            - /url: /admin/settings
+            - generic [ref=e150]: 
+            - generic [ref=e151]: Paramètres
+  - generic [ref=e152]:
+    - link "Aller au panier" [ref=e153] [cursor=pointer]:
+      - /url: "#pos-cart"
+    - generic [ref=e161]:
+      - banner [ref=e162]:
+        - generic:
+          - generic [ref=e163]: 👑
+          - generic:
+            - paragraph: Caisse Le Cayenne
+            - heading "Commande rapide" [level=1]
+            - generic:
+              - generic [ref=e361]:
+                - generic [ref=e362]: Filiale
+                - generic [ref=e363]: "#1"
+              - generic [ref=e166]:
+                - generic [ref=e167]: Articles
+                - generic [ref=e168]: "0"
+        - navigation "Actions caisse" [ref=e169]:
+          - button "À encaisser 200" [ref=e170] [cursor=pointer]:
+            - generic [ref=e171]: 🖥️
+            - generic [ref=e173]: À encaisser
+            - generic [ref=e174]: "200"
+          - generic "Voir les commandes en attente, en préparation et prêtes à servir. Le bouton devient vert quand une commande est prête." [ref=e175] [cursor=pointer]:
+            - generic [ref=e176]: 📋
+            - generic [ref=e178]: Suivi commandes
+          - generic "Ouvre l'écran d'affichage client (statuts en grand, prêt à montrer aux clients)." [ref=e179] [cursor=pointer]:
+            - generic [ref=e180]: 🖥️
+            - generic [ref=e182]: Écran client
+          - button "Créez d'abord une commande pour appliquer une réduction fidélité" [disabled]:
+            - generic: 🎁
+            - generic:
+              - generic: Appliquer une réduction fidélité
+          - button "Ouvrir tiroir" [ref=e183] [cursor=pointer]:
+            - generic [ref=e184]: 💵
+            - generic [ref=e186]: Ouvrir tiroir
+          - button "Caisse" [ref=e187] [cursor=pointer]:
+            - generic [ref=e188]: 🏦
+            - generic [ref=e190]: Caisse
+      - generic [ref=e191]:
+        - region "Prêt à livrer (0)" [ref=e192]:
+          - heading "Prêt à livrer (0)" [level=2] [ref=e194]:
+            - generic [ref=e195]: 🛎️
+            - text: Prêt à livrer (0)
+          - paragraph [ref=e196]: Aucune commande prête à livrer pour le moment.
+          - paragraph [ref=e364]: Mis à jour à l'instant
+        - region "À encaisser borne (200)" [ref=e197]:
+          - heading "À encaisser borne (200)" [level=2] [ref=e199]:
+            - generic [ref=e200]: 💰
+            - text: À encaisser borne (200)
+          - list [ref=e201]:
+            - listitem [ref=e202]:
+              - generic [ref=e203]: N°A0038
+              - generic [ref=e204]: 30,00 €
+              - button "💳 Encaisser" [ref=e205] [cursor=pointer]
+            - listitem [ref=e206]:
+              - generic [ref=e207]: N°A0043
+              - generic [ref=e208]: 42,00 €
+              - button "💳 Encaisser" [ref=e209] [cursor=pointer]
+            - listitem [ref=e210]:
+              - generic [ref=e211]: N°A0046
+              - generic [ref=e212]: 30,00 €
+              - button "💳 Encaisser" [ref=e213] [cursor=pointer]
+            - listitem [ref=e214]:
+              - generic [ref=e215]: N°A0048
+              - generic [ref=e216]: 36,00 €
+              - button "💳 Encaisser" [ref=e217] [cursor=pointer]
+          - button "Voir plus (196) →" [ref=e218] [cursor=pointer]
+          - paragraph [ref=e219]: Mis à jour à l'instant
+      - search [ref=e220]:
+        - generic [ref=e221]: 🔍
+        - searchbox "Rechercher un article du menu" [ref=e222]
+      - tablist "Catégories" [ref=e223]:
+        - tab "Toutes les catégories" [selected] [ref=e224] [cursor=pointer]:
+          - img "Toutes les catégories" [ref=e226]
+          - generic [ref=e227]: Toutes les catégories
+        - tab "Sandwich Cayenne" [ref=e228] [cursor=pointer]:
+          - img "Sandwich Cayenne" [ref=e230]
+          - generic [ref=e231]: Sandwich Cayenne
+        - tab "Galette" [ref=e232] [cursor=pointer]:
+          - img "Galette" [ref=e234]
+          - generic [ref=e235]: Galette
+        - tab "Sandwich Classique" [ref=e236] [cursor=pointer]:
+          - img "Sandwich Classique" [ref=e238]
+          - generic [ref=e239]: Sandwich Classique
+        - tab "Burgers" [ref=e240] [cursor=pointer]:
+          - img "Burgers" [ref=e242]
+          - generic [ref=e243]: Burgers
+        - tab "Tacos" [ref=e244] [cursor=pointer]:
+          - img "Tacos" [ref=e246]
+          - generic [ref=e247]: Tacos
+        - tab "Bols Gourmands" [ref=e248] [cursor=pointer]:
+          - img "Bols Gourmands" [ref=e250]
+          - generic [ref=e251]: Bols Gourmands
+        - tab "Frites" [ref=e252] [cursor=pointer]:
+          - img "Frites" [ref=e254]
+          - generic [ref=e255]: Frites
+        - tab "Suppléments" [ref=e256] [cursor=pointer]:
+          - img "Suppléments" [ref=e258]
+          - generic [ref=e259]: Suppléments
+        - tab "Desserts" [ref=e260] [cursor=pointer]:
+          - img "Desserts" [ref=e262]
+          - generic [ref=e263]: Desserts
+        - tab "Boissons" [ref=e264] [cursor=pointer]:
+          - img "Boissons" [ref=e266]
+          - generic [ref=e267]: Boissons
+        - tab "Menu enfant" [ref=e268] [cursor=pointer]:
+          - img "Menu enfant" [ref=e270]
+          - generic [ref=e271]: Menu enfant
+      - generic [ref=e365]:
+        - button "Ajouter Menu (Frites + Boisson), 3,00 €" [ref=e366] [cursor=pointer]:
+          - img "Menu (Frites + Boisson)" [ref=e368]
+          - generic [ref=e369]:
+            - heading "Menu (Frites + Boisson)" [level=3] [ref=e370]
+            - paragraph [ref=e371]: Upsell item
+            - generic [ref=e372]:
+              - heading "3,00 €" [level=4] [ref=e373]
+              - generic [ref=e375]: 
+        - button "Ajouter Frites Seules, 2,00 €" [ref=e376] [cursor=pointer]:
+          - img "Frites Seules" [ref=e378]
+          - generic [ref=e379]:
+            - heading "Frites Seules" [level=3] [ref=e380]
+            - paragraph [ref=e381]: Upsell item
+            - generic [ref=e382]:
+              - heading "2,00 €" [level=4] [ref=e383]
+              - generic [ref=e385]: 
+        - button "Ajouter Boisson Seule, 2,00 €" [ref=e386] [cursor=pointer]:
+          - img "Boisson Seule" [ref=e388]
+          - generic [ref=e389]:
+            - heading "Boisson Seule" [level=3] [ref=e390]
+            - paragraph [ref=e391]: Upsell item
+            - generic [ref=e392]:
+              - heading "2,00 €" [level=4] [ref=e393]
+              - generic [ref=e395]: 
+        - button "Ajouter Cheddar, 0,90 €" [ref=e396] [cursor=pointer]:
+          - img "Cheddar" [ref=e398]
+          - generic [ref=e399]:
+            - heading "Cheddar" [level=3] [ref=e400]
+            - generic [ref=e401]:
+              - heading "0,90 €" [level=4] [ref=e402]
+              - generic [ref=e404]: 
+        - button "Ajouter Raclette, 0,90 €" [ref=e405] [cursor=pointer]:
+          - img "Raclette" [ref=e407]
+          - generic [ref=e408]:
+            - heading "Raclette" [level=3] [ref=e409]
+            - generic [ref=e410]:
+              - heading "0,90 €" [level=4] [ref=e411]
+              - generic [ref=e413]: 
+        - button "Ajouter Emmental, 0,90 €" [ref=e414] [cursor=pointer]:
+          - img "Emmental" [ref=e416]
+          - generic [ref=e417]:
+            - heading "Emmental" [level=3] [ref=e418]
+            - generic [ref=e419]:
+              - heading "0,90 €" [level=4] [ref=e420]
+              - generic [ref=e422]: 
+        - button "Ajouter Œuf, 0,90 €" [ref=e423] [cursor=pointer]:
+          - img "Œuf" [ref=e425]
+          - generic [ref=e426]:
+            - heading "Œuf" [level=3] [ref=e427]
+            - generic [ref=e428]:
+              - heading "0,90 €" [level=4] [ref=e429]
+              - generic [ref=e431]: 
+        - button "Ajouter Légumes sautés, 0,90 €" [ref=e432] [cursor=pointer]:
+          - img "Légumes sautés" [ref=e434]
+          - generic [ref=e435]:
+            - heading "Légumes sautés" [level=3] [ref=e436]
+            - generic [ref=e437]:
+              - heading "0,90 €" [level=4] [ref=e438]
+              - generic [ref=e440]: 
+        - button "Ajouter Jambon, 0,90 €" [ref=e441] [cursor=pointer]:
+          - img "Jambon" [ref=e443]
+          - generic [ref=e444]:
+            - heading "Jambon" [level=3] [ref=e445]
+            - generic [ref=e446]:
+              - heading "0,90 €" [level=4] [ref=e447]
+              - generic [ref=e449]: 
+        - button "Ajouter Oignon frais, 0,90 €" [ref=e450] [cursor=pointer]:
+          - img "Oignon frais" [ref=e452]
+          - generic [ref=e453]:
+            - heading "Oignon frais" [level=3] [ref=e454]
+            - generic [ref=e455]:
+              - heading "0,90 €" [level=4] [ref=e456]
+              - generic [ref=e458]: 
+        - button "Ajouter Champignons, 0,90 €" [ref=e459] [cursor=pointer]:
+          - img "Champignons" [ref=e461]
+          - generic [ref=e462]:
+            - heading "Champignons" [level=3] [ref=e463]
+            - generic [ref=e464]:
+              - heading "0,90 €" [level=4] [ref=e465]
+              - generic [ref=e467]: 
+        - button "Ajouter Boule gratinée, 2,00 €" [ref=e468] [cursor=pointer]:
+          - img "Boule gratinée" [ref=e470]
+          - generic [ref=e471]:
+            - heading "Boule gratinée" [level=3] [ref=e472]
+            - generic [ref=e473]:
+              - heading "2,00 €" [level=4] [ref=e474]
+              - generic [ref=e476]: 
+        - button "Ajouter Sandwich Cayenne, 7,00 €" [ref=e477] [cursor=pointer]:
+          - img "Sandwich Cayenne" [ref=e479]
+          - generic [ref=e480]:
+            - heading "Sandwich Cayenne" [level=3] [ref=e481]
+            - paragraph [ref=e482]: Sandwich signature avec sauce Cayenne maison. Choix de viande + crudités + suppléments.
+            - generic [ref=e483]:
+              - heading "7,00 €" [level=4] [ref=e484]
+              - generic [ref=e486]: 
+        - button "Ajouter Galette Normale, 6,50 €" [ref=e487] [cursor=pointer]:
+          - img "Galette Normale" [ref=e489]
+          - generic [ref=e490]:
+            - heading "Galette Normale" [level=3] [ref=e491]
+            - paragraph [ref=e492]: Galette traditionnelle. Sauce au choix parmi 13 sauces.
+            - generic [ref=e493]:
+              - heading "6,50 €" [level=4] [ref=e494]
+              - generic [ref=e496]: 
+        - button "Ajouter Galette Cayenne, 7,00 €" [ref=e497] [cursor=pointer]:
+          - img "Galette Cayenne" [ref=e499]
+          - generic [ref=e500]:
+            - heading "Galette Cayenne" [level=3] [ref=e501]
+            - paragraph [ref=e502]: Galette signature avec sauce Cayenne maison incluse.
+            - generic [ref=e503]:
+              - heading "7,00 €" [level=4] [ref=e504]
+              - generic [ref=e506]: 
+        - button "Ajouter Sandwich Classique, 6,50 €" [ref=e507] [cursor=pointer]:
+          - img "Sandwich Classique" [ref=e509]
+          - generic [ref=e510]:
+            - heading "Sandwich Classique" [level=3] [ref=e511]
+            - paragraph [ref=e512]: Sandwich classique servi en pain faluche. Viande + crudités + sauce au choix.
+            - generic [ref=e513]:
+              - heading "6,50 €" [level=4] [ref=e514]
+              - generic [ref=e516]: 
+        - button "Ajouter Tacos, 6,90 €" [ref=e517] [cursor=pointer]:
+          - img "Tacos" [ref=e519]
+          - generic [ref=e520]:
+            - heading "Tacos" [level=3] [ref=e521]
+            - paragraph [ref=e522]: 1 viande au choix + frites maison + sauce fromagère maison.
+            - generic [ref=e523]:
+              - heading "6,90 €" [level=4] [ref=e524]
+              - generic [ref=e526]: 
+        - button "Ajouter Big Tacos, 8,90 €" [ref=e527] [cursor=pointer]:
+          - img "Big Tacos" [ref=e529]
+          - generic [ref=e530]:
+            - heading "Big Tacos" [level=3] [ref=e531]
+            - paragraph [ref=e532]: 2 viandes au choix + frites maison + sauce fromagère maison.
+            - generic [ref=e533]:
+              - heading "8,90 €" [level=4] [ref=e534]
+              - generic [ref=e536]: 
+        - button "Ajouter Petite Frites, 2,50 €" [ref=e537] [cursor=pointer]:
+          - img "Petite Frites" [ref=e539]
+          - generic [ref=e540]:
+            - heading "Petite Frites" [level=3] [ref=e541]
+            - paragraph [ref=e542]: Petites frites maison. Style nature ou avec cheddar/oignons.
+            - generic [ref=e543]:
+              - heading "2,50 €" [level=4] [ref=e544]
+              - generic [ref=e546]: 
+        - button "Ajouter Grande Frites, 4,00 €" [ref=e547] [cursor=pointer]:
+          - img "Grande Frites" [ref=e549]
+          - generic [ref=e550]:
+            - heading "Grande Frites" [level=3] [ref=e551]
+            - paragraph [ref=e552]: Grandes frites maison. Style nature ou avec cheddar/oignons.
+            - generic [ref=e553]:
+              - heading "4,00 €" [level=4] [ref=e554]
+              - generic [ref=e556]: 
+        - button "Ajouter Boursin, 0,90 €" [ref=e557] [cursor=pointer]:
+          - img "Boursin" [ref=e559]
+          - generic [ref=e560]:
+            - heading "Boursin" [level=3] [ref=e561]
+            - paragraph [ref=e562]: Supplément Boursin
+            - generic [ref=e563]:
+              - heading "0,90 €" [level=4] [ref=e564]
+              - generic [ref=e566]: 
+        - button "Ajouter Big Cayenne, 9,50 €" [ref=e567] [cursor=pointer]:
+          - img "Big Cayenne" [ref=e569]
+          - generic [ref=e570]:
+            - heading "Big Cayenne" [level=3] [ref=e571]
+            - paragraph [ref=e572]: "Sandwich signature XL · 2 viandes au choix · Sauce Cayenne maison incluse · INCLUS : Cheddar + Œuf + Jambon · Crudités · Suppléments optionnels."
+            - generic [ref=e573]:
+              - heading "9,50 €" [level=4] [ref=e574]
+              - generic [ref=e576]: 
+        - button "Ajouter Big Classique, 9,00 €" [ref=e577] [cursor=pointer]:
+          - img "Big Classique" [ref=e579]
+          - generic [ref=e580]:
+            - heading "Big Classique" [level=3] [ref=e581]
+            - paragraph [ref=e582]: "Sandwich classique XL en pain faluche · 2 viandes au choix · Sauce libre · INCLUS : Cheddar + Œuf + Jambon · Crudités · Suppléments optionnels."
+            - generic [ref=e583]:
+              - heading "9,00 €" [level=4] [ref=e584]
+              - generic [ref=e586]: 
+        - button "Ajouter Chicken Burger, 6,90 €" [ref=e587] [cursor=pointer]:
+          - img "Chicken Burger" [ref=e589]
+          - generic [ref=e590]:
+            - heading "Chicken Burger" [level=3] [ref=e591]
+            - paragraph [ref=e592]: Burger pain brioché · Poulet crispy · Sauce libre · Crudités · Suppléments optionnels.
+            - generic [ref=e593]:
+              - heading "6,90 €" [level=4] [ref=e594]
+              - generic [ref=e596]: 
+        - button "Ajouter Big Chicken, 8,90 €" [ref=e597] [cursor=pointer]:
+          - img "Big Chicken" [ref=e599]
+          - generic [ref=e600]:
+            - heading "Big Chicken" [level=3] [ref=e601]
+            - paragraph [ref=e602]: "Big Burger pain brioché · Poulet crispy · Sauce libre · INCLUS : Cheddar + Jambon + Œuf · Crudités · Suppléments optionnels."
+            - generic [ref=e603]:
+              - heading "8,90 €" [level=4] [ref=e604]
+              - generic [ref=e606]: 
+        - button "Ajouter Menu Nuggets, 6,00 €" [ref=e607] [cursor=pointer]:
+          - img "Menu Nuggets" [ref=e609]
+          - generic [ref=e610]:
+            - heading "Menu Nuggets" [level=3] [ref=e611]
+            - paragraph [ref=e612]: "Menu enfant : 6 nuggets de poulet · Frites · Capri-Sun."
+            - generic [ref=e613]:
+              - heading "6,00 €" [level=4] [ref=e614]
+              - generic [ref=e616]: 
+        - button "Ajouter Bowl Frites Poulet mariné, 8,90 €" [ref=e617] [cursor=pointer]:
+          - img "Bowl Frites Poulet mariné" [ref=e619]
+          - generic [ref=e620]:
+            - heading "Bowl Frites Poulet mariné" [level=3] [ref=e621]
+            - paragraph [ref=e622]: Poulet mariné · Base Frites · Sauce + suppléments + boisson optionnels · Option Gratiné +2€.
+            - generic [ref=e623]:
+              - heading "8,90 €" [level=4] [ref=e624]
+              - generic [ref=e626]: 
+        - button "Ajouter Bowl Frites Poulet curry, 8,90 €" [ref=e627] [cursor=pointer]:
+          - img "Bowl Frites Poulet curry" [ref=e629]
+          - generic [ref=e630]:
+            - heading "Bowl Frites Poulet curry" [level=3] [ref=e631]
+            - paragraph [ref=e632]: Poulet curry · Base Frites · Sauce + suppléments + boisson optionnels · Option Gratiné +2€.
+            - generic [ref=e633]:
+              - heading "8,90 €" [level=4] [ref=e634]
+              - generic [ref=e636]: 
+        - button "Ajouter Bowl Frites Poulet tandoori, 8,90 €" [ref=e637] [cursor=pointer]:
+          - img "Bowl Frites Poulet tandoori" [ref=e639]
+          - generic [ref=e640]:
+            - heading "Bowl Frites Poulet tandoori" [level=3] [ref=e641]
+            - paragraph [ref=e642]: Poulet tandoori · Base Frites · Sauce + suppléments + boisson optionnels · Option Gratiné +2€.
+            - generic [ref=e643]:
+              - heading "8,90 €" [level=4] [ref=e644]
+              - generic [ref=e646]: 
+        - button "Ajouter Bowl Frites Poulet crispy, 8,90 €" [ref=e647] [cursor=pointer]:
+          - img "Bowl Frites Poulet crispy" [ref=e649]
+          - generic [ref=e650]:
+            - heading "Bowl Frites Poulet crispy" [level=3] [ref=e651]
+            - paragraph [ref=e652]: Poulet crispy · Base Frites · Sauce + suppléments + boisson optionnels · Option Gratiné +2€.
+            - generic [ref=e653]:
+              - heading "8,90 €" [level=4] [ref=e654]
+              - generic [ref=e656]: 
+        - button "Ajouter Bowl Riz Poulet mariné, 8,90 €" [ref=e657] [cursor=pointer]:
+          - img "Bowl Riz Poulet mariné" [ref=e659]
+          - generic [ref=e660]:
+            - heading "Bowl Riz Poulet mariné" [level=3] [ref=e661]
+            - paragraph [ref=e662]: Poulet mariné · Base Riz basmati · Sauce + suppléments + boisson optionnels · Option Gratiné +2€.
+            - generic [ref=e663]:
+              - heading "8,90 €" [level=4] [ref=e664]
+              - generic [ref=e666]: 
+        - button "Ajouter Bowl Riz Poulet curry, 8,90 €" [ref=e667] [cursor=pointer]:
+          - img "Bowl Riz Poulet curry" [ref=e669]
+          - generic [ref=e670]:
+            - heading "Bowl Riz Poulet curry" [level=3] [ref=e671]
+            - paragraph [ref=e672]: Poulet curry · Base Riz basmati · Sauce + suppléments + boisson optionnels · Option Gratiné +2€.
+            - generic [ref=e673]:
+              - heading "8,90 €" [level=4] [ref=e674]
+              - generic [ref=e676]: 
+        - button "Ajouter Bowl Riz Poulet tandoori, 8,90 €" [ref=e677] [cursor=pointer]:
+          - img "Bowl Riz Poulet tandoori" [ref=e679]
+          - generic [ref=e680]:
+            - heading "Bowl Riz Poulet tandoori" [level=3] [ref=e681]
+            - paragraph [ref=e682]: Poulet tandoori · Base Riz basmati · Sauce + suppléments + boisson optionnels · Option Gratiné +2€.
+            - generic [ref=e683]:
+              - heading "8,90 €" [level=4] [ref=e684]
+              - generic [ref=e686]: 
+        - button "Ajouter Bowl Riz Poulet crispy, 8,90 €" [ref=e687] [cursor=pointer]:
+          - img "Bowl Riz Poulet crispy" [ref=e689]
+          - generic [ref=e690]:
+            - heading "Bowl Riz Poulet crispy" [level=3] [ref=e691]
+            - paragraph [ref=e692]: Poulet crispy · Base Riz basmati · Sauce + suppléments + boisson optionnels · Option Gratiné +2€.
+            - generic [ref=e693]:
+              - heading "8,90 €" [level=4] [ref=e694]
+              - generic [ref=e696]: 
+        - button "Ajouter Glace, 3,80 €" [ref=e697] [cursor=pointer]:
+          - img "Glace" [ref=e699]
+          - generic [ref=e700]:
+            - heading "Glace" [level=3] [ref=e701]
+            - paragraph [ref=e702]: Glace artisanale
+            - generic [ref=e703]:
+              - heading "3,80 €" [level=4] [ref=e704]
+              - generic [ref=e706]: 
+        - button "Ajouter Tarte Daim, 3,80 €" [ref=e707] [cursor=pointer]:
+          - img "Tarte Daim" [ref=e709]
+          - generic [ref=e710]:
+            - heading "Tarte Daim" [level=3] [ref=e711]
+            - paragraph [ref=e712]: Tarte au Daim
+            - generic [ref=e713]:
+              - heading "3,80 €" [level=4] [ref=e714]
+              - generic [ref=e716]: 
+        - button "Ajouter Tiramisu, 3,80 €" [ref=e717] [cursor=pointer]:
+          - img "Tiramisu" [ref=e719]
+          - generic [ref=e720]:
+            - heading "Tiramisu" [level=3] [ref=e721]
+            - paragraph [ref=e722]: Tiramisu maison
+            - generic [ref=e723]:
+              - heading "3,80 €" [level=4] [ref=e724]
+              - generic [ref=e726]: 
+        - button "Ajouter Coca-Cola 33cl, 1,50 €" [ref=e727] [cursor=pointer]:
+          - img "Coca-Cola 33cl" [ref=e729]
+          - generic [ref=e730]:
+            - heading "Coca-Cola 33cl" [level=3] [ref=e731]
+            - paragraph [ref=e732]: Coca-Cola original
+            - generic [ref=e733]:
+              - heading "1,50 €" [level=4] [ref=e734]
+              - generic [ref=e736]: 
+        - button "Ajouter Coca-Cola Zero 33cl, 1,50 €" [ref=e737] [cursor=pointer]:
+          - img "Coca-Cola Zero 33cl" [ref=e739]
+          - generic [ref=e740]:
+            - heading "Coca-Cola Zero 33cl" [level=3] [ref=e741]
+            - paragraph [ref=e742]: Coca-Cola sans sucre
+            - generic [ref=e743]:
+              - heading "1,50 €" [level=4] [ref=e744]
+              - generic [ref=e746]: 
+        - button "Ajouter Fanta Orange 33cl, 1,50 €" [ref=e747] [cursor=pointer]:
+          - img "Fanta Orange 33cl" [ref=e749]
+          - generic [ref=e750]:
+            - heading "Fanta Orange 33cl" [level=3] [ref=e751]
+            - paragraph [ref=e752]: Fanta Orange
+            - generic [ref=e753]:
+              - heading "1,50 €" [level=4] [ref=e754]
+              - generic [ref=e756]: 
+        - button "Ajouter Sprite 33cl, 1,50 €" [ref=e757] [cursor=pointer]:
+          - img "Sprite 33cl" [ref=e759]
+          - generic [ref=e760]:
+            - heading "Sprite 33cl" [level=3] [ref=e761]
+            - paragraph [ref=e762]: Sprite
+            - generic [ref=e763]:
+              - heading "1,50 €" [level=4] [ref=e764]
+              - generic [ref=e766]: 
+        - button "Ajouter Oasis Tropical 33cl, 1,50 €" [ref=e767] [cursor=pointer]:
+          - img "Oasis Tropical 33cl" [ref=e769]
+          - generic [ref=e770]:
+            - heading "Oasis Tropical 33cl" [level=3] [ref=e771]
+            - paragraph [ref=e772]: Oasis Tropical
+            - generic [ref=e773]:
+              - heading "1,50 €" [level=4] [ref=e774]
+              - generic [ref=e776]: 
+        - button "Ajouter Orangina 33cl, 1,50 €" [ref=e777] [cursor=pointer]:
+          - img "Orangina 33cl" [ref=e779]
+          - generic [ref=e780]:
+            - heading "Orangina 33cl" [level=3] [ref=e781]
+            - paragraph [ref=e782]: Orangina
+            - generic [ref=e783]:
+              - heading "1,50 €" [level=4] [ref=e784]
+              - generic [ref=e786]: 
+        - button "Ajouter Eau Plate 50cl, 1,00 €" [ref=e787] [cursor=pointer]:
+          - img "Eau Plate 50cl" [ref=e789]
+          - generic [ref=e790]:
+            - heading "Eau Plate 50cl" [level=3] [ref=e791]
+            - paragraph [ref=e792]: Eau minérale
+            - generic [ref=e793]:
+              - heading "1,00 €" [level=4] [ref=e794]
+              - generic [ref=e796]: 
+        - button "Ajouter Capri-Sun, 1,50 €" [ref=e797] [cursor=pointer]:
+          - img "Capri-Sun" [ref=e799]
+          - generic [ref=e800]:
+            - heading "Capri-Sun" [level=3] [ref=e801]
+            - paragraph [ref=e802]: Capri-Sun 20cl
+            - generic [ref=e803]:
+              - heading "1,50 €" [level=4] [ref=e804]
+              - generic [ref=e806]: 
+    - region "Panier commande" [ref=e277]:
+      - generic [ref=e278]:
+        - generic [ref=e279]:
+          - paragraph [ref=e280]: Ticket caisse
+          - heading "Commande en cours" [level=2] [ref=e281]
+        - generic [ref=e282]:
+          - generic [ref=e285]:
+            - combobox [ref=e287]:
+              - textbox [ref=e290]:
+                - /placeholder: Client passage
+            - button "Ajouter un client" [ref=e292] [cursor=pointer]:
+              - generic [ref=e293]: +
+          - generic [ref=e294]:
+            - button "Mettre en attente" [ref=e295] [cursor=pointer]:
+              - generic [ref=e296]: ⏸
+              - generic [ref=e297]: Mettre en attente
+            - button "Commandes en attente" [ref=e298] [cursor=pointer]:
+              - generic [ref=e299]: 📦
+              - generic [ref=e300]: En attente
+              - generic [ref=e301]: "0"
+        - group "Sélectionner le type de commande" [ref=e306]:
+          - generic [ref=e307]: Sélectionner le type de commande
+          - radiogroup [ref=e308]:
+            - generic [ref=e309] [cursor=pointer]:
+              - radio "À emporter" [checked] [active]
+              - generic [ref=e310]: 🥡
+              - generic [ref=e311]: À emporter
+            - generic [ref=e312] [cursor=pointer]:
+              - radio "Livraison"
+              - generic [ref=e313]: 🛵
+              - generic [ref=e314]: Livraison
+          - text: 
+      - region "Panier commande" [ref=e315]:
+        - generic [ref=e807]:
+          - generic [ref=e808]: 🍽️
+          - paragraph [ref=e809]: Aucun article. Sélectionnez un produit dans la grille.
+      - status [ref=e345]:
+        - generic [ref=e346]:
+          - generic [ref=e347]: Sous-total
+          - generic [ref=e349]: 0.00€
+        - generic [ref=e350]:
+          - generic [ref=e351]: Total
+          - generic [ref=e353]: 0.00€
+    - text: 

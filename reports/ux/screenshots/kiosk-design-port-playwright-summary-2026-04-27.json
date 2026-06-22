@@ -1,0 +1,49 @@
+{
+  "url": "http://127.0.0.1:8000/kiosk/idle",
+  "theme": "dark",
+  "shots": [
+    {
+      "name": "kiosk-design-port-idle-dark-2026-04-27",
+      "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/ux/screenshots/kiosk-design-port-idle-dark-2026-04-27.png",
+      "bytes": 341950
+    },
+    {
+      "name": "kiosk-design-port-categories-dark-2026-04-27",
+      "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/ux/screenshots/kiosk-design-port-categories-dark-2026-04-27.png",
+      "bytes": 805056
+    },
+    {
+      "name": "kiosk-design-port-categories-light-2026-04-27",
+      "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/ux/screenshots/kiosk-design-port-categories-light-2026-04-27.png",
+      "bytes": 637805
+    },
+    {
+      "name": "kiosk-design-port-idle-light-2026-04-27",
+      "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/ux/screenshots/kiosk-design-port-idle-light-2026-04-27.png",
+      "bytes": 341853
+    }
+  ],
+  "consoleMessages": [
+    {
+      "type": "error",
+      "text": "The report-only Content Security Policy '\n            default-src 'self';\n            script-src 'self' 'unsafe-inline' 'unsafe-eval';\n            style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;\n            font-src 'self' data: https://fonts.gstatic.com;\n            img-src 'self' data: blob: https:;\n            connect-src 'self' ws: wss: https:;\n            frame-ancestors 'none';\n            base-uri 'self';\n            form-action 'self';\n            object-src 'none';\n            report-uri /api/frontend/csp-report;\n        ' was delivered via a <meta> element, which is disallowed. The policy has been ignored."
+    },
+    {
+      "type": "error",
+      "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "type": "error",
+      "text": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "type": "error",
+      "text": "The report-only Content Security Policy '\n            default-src 'self';\n            script-src 'self' 'unsafe-inline' 'unsafe-eval';\n            style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;\n            font-src 'self' data: https://fonts.gstatic.com;\n            img-src 'self' data: blob: https:;\n            connect-src 'self' ws: wss: https:;\n            frame-ancestors 'none';\n            base-uri 'self';\n            form-action 'self';\n            object-src 'none';\n            report-uri /api/frontend/csp-report;\n        ' was delivered via a <meta> element, which is disallowed. The policy has been ignored."
+    },
+    {
+      "type": "error",
+      "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    }
+  ],
+  "consoleMessageCount": 5
+}

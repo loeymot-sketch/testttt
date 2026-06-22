@@ -1,0 +1,14 @@
+{
+  "pos": {
+    "broadcastAs": true,
+    "handler": true
+  },
+  "kiosk": {
+    "broadcastAs": true,
+    "handler": true
+  },
+  "kds": {
+    "broadcastAs": true,
+    "handler": true
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "task_id": "POS_V4_READINESS_PLAN_001",
+  "title": "Plan de remédiation — pack design POS (4) v4 exploitable pour FoodKing",
+  "constraints": {
+    "implementation": "FORBIDDEN — output only: plan phases, deliverables, gates, owners, order of work",
+    "foodking_invariants": [
+      "Backend pricing SSOT",
+      "OrderStatus enum authoritative",
+      "branch_id isolation",
+      "Dispatch after DB commit (if backend touched — prefer UI-only in this plan)"
+    ]
+  },
+  "inputs": {
+    "audit_report_path": "reports/audit/AUDIT_POS_V4_EXPORT_DESIGN_2026-04-24.md",
+    "prior_codex_risks": "missions/POS_V4_DESIGN_AUDIT_001/output_codex.json (P0/P1, merge checklist)"
+  },
+  "objective": "Produce an intelligent, ordered roadmap: (1) pre-merge fixes inside the design ZIP/README/preview, (2) FoodKing integration strategy (template+CSS only, binding matrix, tests), (3) what makes the package 'exploitable' (definition of done), (4) human gates, (5) optional parallel tracks. French headings OK.",
+  "output_format": "Markdown with: ## Executive summary ## Gaps in current audit report (what to add) ## Phase 0..N with steps, doD, risks ## Definition of 'exploitable' ## P0 blockers list"
+}

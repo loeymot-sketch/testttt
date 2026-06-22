@@ -1,0 +1,56 @@
+{
+  "zone": "PLOY-1-EARN-FLOW",
+  "role": "Architect",
+  "scope": "POS earn = order DELIVERED → AwardLoyaltyPointsOnDelivery listener → users.loyalty_points + loyalty_transactions ledger",
+  "anchors_verified": {
+    "listener": "app/Listeners/AwardLoyaltyPointsOnDelivery.php (exists, 165 lines)",
+    "event_dispatcher": "app/Events/OrderStatusChanged.php (fired from OrderService line 1641 + 1716, FrontendOrderService change-status path)",
+    "settings_keys": "loyalty_setup.loyalty_points_per_euro (default 10), loyalty_setup.loyalty_points_for_1_euro_discount (default 100)",
+    "ledger_table": "loyalty_transactions (migration 2026_03_26_075918 + UNIQUE 2026_03_26_075919)",
+    "pos_payload_field": "loyalty_customer_code accepted by PosOrderRequest line 133 (nullable string min:4 max:25), persisted to orders.loyalty_customer_code in OrderService::posOrderStore line 910-917"
+  },
+  "design_assessment": "Two-tier exactly-once: (a) atomic sentinel on orders.loyalty_points_awarded — claim NULL, set -1, finalize with real value — using whereNull guard + DB::table direct (bypasses BranchScope safely since listener runs in app context); (b) ledger insert inside DB::transaction guarantees points+balance_after+row atomic. Kiosk vs POS column-selection: branch on order_type to pick `total` (FrontendOrder) vs `order_amount` (Order) — see AUDIT-P49-BUG2 comment. Cancelled-status double-guard (lines 31-35 + WHERE status != CANCELED on UPDATE) prevents the late-event-after-cancel race. Surface tag fallback (line 113) defaults to 'kiosk' for KIOSK/TAKEAWAY else 'web' — POS-cashier-driven orders never set source_surface=pos here; that's done at order creation in OrderService line 919 (verified).",
+  "idempotency_layers": [
+    "L1: sentinel update with whereNull(loyalty_points_awarded) — atomic claim",
+    "L2: UNIQUE INDEX loyalty_transactions_user_order_type_unique on (user_id, order_id, type) — ledger uniqueness for earn-per-order",
+    "L3: DB::transaction wrapping increment + insert + finalize"
+  ],
+  "eventual_consistency": {
+    "verdict": "OK",
+    "rationale": "Listener fires post-status-change (afterCommit per OrderService line 1524 comment + line 1641). If listener fails mid-way (catch block line 152), sentinel is reverted to NULL — order remains eligible for retry on next OrderStatusChanged. No Outbox dependency observed for this path (synchronous in-process listener).",
+    "gaps": [
+      "No explicit ShouldQueue interface on AwardLoyaltyPointsOnDelivery — listener runs synchronously. If sync-process crashes between sentinel claim (line 56) and ledger insert (line 125), sentinel stays at -1 forever and order is permanently locked out from earn retry. Fail-open path at line 154-161 catches Throwable and reverts sentinel, but only inside the same request lifecycle — a process kill -9 between the two would leave -1 stuck. P2 — recommend a periodic reconciliation cron that finds orders.loyalty_points_awarded=-1 older than N minutes and reverts to NULL."
+    ]
+  },
+  "architecture_concerns": [
+    {
+      "id": "PLOY-1-A-01",
+      "severity": "P3",
+      "finding": "Listener uses raw DB::table('orders') to bypass FrontendOrder/Order model dispatch. Comment on line 50 acknowledges this. Acceptable architecture choice for atomic claim, but means BranchScope is bypassed — if an attacker can inject an order_id from another branch into the event payload, the sentinel claim succeeds cross-branch. However, event is dispatched from server-controlled OrderService — no external user-controlled order_id flows in. Documented assumption.",
+      "files": ["app/Listeners/AwardLoyaltyPointsOnDelivery.php:52-56"]
+    },
+    {
+      "id": "PLOY-1-A-02",
+      "severity": "P2",
+      "finding": "Stuck-sentinel recovery is implicit (only inside catch block of same request). If PHP process is killed between line 56 (sentinel claim) and line 142 (finalize), order.loyalty_points_awarded stays at -1 forever, blocking future earn. No reconciliation cron found.",
+      "files": ["app/Listeners/AwardLoyaltyPointsOnDelivery.php:56", "app/Listeners/AwardLoyaltyPointsOnDelivery.php:154-161"],
+      "remediation": "Add app/Console/Commands/LoyaltyReconcileStuckSentinelCommand.php scheduled hourly: WHERE loyalty_points_awarded = -1 AND updated_at < now()-5min → revert to NULL + re-dispatch OrderStatusChanged."
+    },
+    {
+      "id": "PLOY-1-A-03",
+      "severity": "P3",
+      "finding": "Settings::group('loyalty_setup')->get('loyalty_points_per_euro', 10) — default 10 means €1 spent = 10 points. Frontend LoyaltyController::config() returns same key, consistent. No drift risk observed but no validation that rate > 0 at settings-write time (could go to 0 silently).",
+      "files": ["app/Listeners/AwardLoyaltyPointsOnDelivery.php:84", "app/Http/Controllers/Frontend/LoyaltyController.php:413"]
+    }
+  ],
+  "evidence": {
+    "earn_path_trace": [
+      "POS cashier completes order in admin-pos-v4 → POST /api/admin/pos-order → OrderService::posOrderStore line 910 sets loyalty_customer_code from request or derived from customer_id",
+      "Order persisted with status=PENDING, loyalty_points_awarded=NULL",
+      "Cashier changes status to DELIVERED via PATCH /api/admin/pos-order/{id}/change-status → OrderService::changeStatus line 1700+ fires OrderStatusChanged event afterCommit",
+      "AwardLoyaltyPointsOnDelivery::handle runs synchronously → sentinel claim → user lookup by loyalty_code → increment + ledger insert + finalize sentinel"
+    ]
+  },
+  "verdict": "PASS-WITH-CONCERN",
+  "notes": "Architecture is solid for happy-path. Single P2 = stuck-sentinel recovery cron missing. P3s are documentation/observability only."
+}

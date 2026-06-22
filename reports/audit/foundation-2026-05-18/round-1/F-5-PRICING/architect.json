@@ -1,0 +1,137 @@
+{
+  "specialist": "Architect",
+  "zone": "F-5 Pricing SSOT",
+  "scope": "Structural integrity of PricingService as Single Source of Truth — duplication patterns, layer cohesion, dependency discipline. READ-ONLY.",
+  "date": "2026-05-18",
+  "round": 1,
+  "files_read": [
+    "app/Services/Pricing/PricingService.php",
+    "app/Services/Pricing/CompositionSnapshotBuilder.php",
+    "app/Services/Pricing/DiscountCalculator.php",
+    "app/Services/Pricing/TaxCalculator.php",
+    "app/Services/Pricing/PricingRequest.php",
+    "app/Services/Pricing/PricingResult.php",
+    "app/Services/Pricing/PricingLineResult.php",
+    "app/Services/OrderService.php",
+    "app/Services/FrontendOrderService.php",
+    "app/Services/Order/OrderQuoteService.php",
+    "app/Services/Order/RefundWithCounterEntryService.php",
+    "app/Services/Kiosk/PricingPreviewService.php",
+    "app/Models/OrderItem.php",
+    "config/pricing.php"
+  ],
+  "findings": [
+    {
+      "id": "F5-ARCH-01",
+      "severity": "P1",
+      "title": "Legacy fallback path duplicates ~300 LOC of pricing/tax/snapshot logic across 4 sites",
+      "type": "structural-duplication",
+      "evidence": {
+        "ssot_branch_sites": [
+          "app/Services/OrderService.php:339-357 (web)",
+          "app/Services/OrderService.php:655-686 (POS)",
+          "app/Services/OrderService.php:1129-1147 (table)",
+          "app/Services/FrontendOrderService.php:276-295 (kiosk)"
+        ],
+        "legacy_branch_sites": [
+          "app/Services/OrderService.php:358-493 (web legacy ~135 LOC)",
+          "app/Services/OrderService.php:687-839 (POS legacy ~150 LOC)",
+          "app/Services/OrderService.php:1148-1295 (table legacy ~145 LOC)",
+          "app/Services/FrontendOrderService.php:296-459 (kiosk legacy ~165 LOC)"
+        ],
+        "feature_flag": "config('pricing.use_ssot_service', true)",
+        "flag_definition": "config/pricing.php:9 — filter_var(env('PRICING_USE_SSOT', true), FILTER_VALIDATE_BOOLEAN)",
+        "pinning_sentinel": "tests/Feature/Sentinels/PricingSsotFlagProductionStableSentinelTest.php — asserts default=true + .env.example + .env.testing + .github/workflows/phpunit.yml + playwright.yml all pin =true"
+      },
+      "consequence": "Single env-var flip restores ~595 LOC of legacy math. Each legacy branch reimplements: (a) item/variation/extra price lookups, (b) tax_inclusive_prices TTC/HT branching, (c) CompositionSnapshotBuilder invocation, (d) discount recalc. Drift between SSOT and legacy possible if either path is patched independently. Legacy path is documented as 'must remain testable until C.5 explicitly removes the inline recompute paths' (sentinel test docblock).",
+      "backlog_owner": "plans/caisse-v1-ultra-finition/PHASE_C_BACKEND_SECURITY_2026-04-26.md task C.5 (CV1-CLEANUP-LEGACY-PRICING-PATH)",
+      "production_risk_today": "LOW — sentinel + 5 pinned artefacts + invariant flag=true. Discoverable on any drift attempt.",
+      "v1_1_recommendation": "Land C.5 cleanup: delete the 4 legacy `else { ... }` branches; remove `config('pricing.use_ssot_service')` reads from OrderService + FrontendOrderService; update sentinel to assert absence of the config key (or move sentinel to a removal-witness test). Net savings: ~595 LOC of unmaintained duplicate math."
+    },
+    {
+      "id": "F5-ARCH-02",
+      "severity": "P2",
+      "title": "menuRoleAdjustedAddonPrice duplicated between PricingService and CompositionSnapshotBuilder",
+      "type": "intentional-duplication-with-lockstep-config",
+      "evidence": {
+        "primary": "app/Services/Pricing/PricingService.php:793-813 (public method, called from main pricing loop at :224-227)",
+        "mirror": "app/Services/Pricing/CompositionSnapshotBuilder.php:171-191 (private method, called from snapshot build loop at :138)",
+        "shared_config": "config('kiosk.menu_pricing') with keys full_ratio / fries_ratio / drink_ratio",
+        "docblock_rationale": "CompositionSnapshotBuilder.php:163-170 — 'kept local to keep the snapshot builder a pure transformer (no PricingService dep). Same config source config(\"kiosk.menu_pricing\") so frontend + PricingService + snapshot stay in lock-step. Any drift here would be an NF525 audit-chain mismatch (line_total ≠ recomputed addon price).'"
+      },
+      "consequence": "Two implementations of the same ratio computation. Lock-step is enforced by reading the same config key in both methods, but a future patch to one side (e.g., adding a 4th role) requires manual mirroring. NF525 audit-chain breaks if drift is introduced.",
+      "v1_1_recommendation": "Extract a stateless `MenuFormulaRatioCalculator` value object (no DB deps, no constructor args) injectable into both. PricingService consumes it via DI; CompositionSnapshotBuilder consumes it the same way. Keeps the 'pure transformer' contract because the helper is itself stateless and config-driven."
+    },
+    {
+      "id": "F5-ARCH-03",
+      "severity": "P3",
+      "title": "TaxCalculator and CompositionSnapshotBuilder instantiated inline (new ...) inside legacy paths instead of injected",
+      "type": "minor-discipline-debt",
+      "evidence": {
+        "TaxCalculator": [
+          "app/Services/OrderService.php:444 — new \\App\\Services\\Pricing\\TaxCalculator()",
+          "app/Services/OrderService.php:799 — new \\App\\Services\\Pricing\\TaxCalculator()",
+          "app/Services/OrderService.php:1255 — new \\App\\Services\\Pricing\\TaxCalculator()",
+          "app/Services/FrontendOrderService.php:419 — new \\App\\Services\\Pricing\\TaxCalculator()"
+        ],
+        "CompositionSnapshotBuilder": [
+          "app/Services/OrderService.php:451 — new \\App\\Services\\Pricing\\CompositionSnapshotBuilder()",
+          "app/Services/OrderService.php:806 — new \\App\\Services\\Pricing\\CompositionSnapshotBuilder()",
+          "app/Services/OrderService.php:1262 — new \\App\\Services\\Pricing\\CompositionSnapshotBuilder()",
+          "app/Services/FrontendOrderService.php:426 — new \\App\\Services\\Pricing\\CompositionSnapshotBuilder()"
+        ]
+      },
+      "consequence": "Each invocation rebuilds the calculator/builder. Negligible performance impact (calculators are stateless). Inconsistent with PricingService.php:24-27 which receives them via DI constructor.",
+      "v1_1_recommendation": "Self-resolves when F5-ARCH-01 (C.5 cleanup) lands — the legacy paths and their inline `new` calls disappear entirely. No standalone action needed."
+    },
+    {
+      "id": "F5-ARCH-04",
+      "severity": "P3",
+      "title": "PricingService.calculateOrder() is a 335-line god-method",
+      "type": "method-size",
+      "evidence": "app/Services/Pricing/PricingService.php:36-370 — single method covering: availability assert × 2, DB preload (items/variations/extras/addons/attributes), per-line loop (validation + price calc + tax calc + snapshot build + row assembly), per-line PricingLineResult emit, order-level tax round, discount calc, TTC/HT branching, final total round.",
+      "consequence": "Hard to unit-test individual concerns without exercising the whole pipeline. Test coverage already 119 cases (109 main + 10 kiosk) compensates, but contributor onboarding is steep.",
+      "v1_1_recommendation": "Extract: (a) DB preload step → `PricingPreloadStage` private object, (b) per-line build → `PricingLineStage` (consumes PreloadStage output + line payload, emits PricingLineResult + insertRow), (c) order-level finalize → already factored as separate method calls. NOT a V1 blocker."
+    },
+    {
+      "id": "F5-ARCH-05",
+      "severity": "INFO",
+      "title": "Pricing namespace dependency hygiene is CLEAN",
+      "type": "positive-finding",
+      "evidence": {
+        "no_env_calls_in_namespace": "grep 'env(' app/Services/Pricing/ — 0 matches",
+        "config_reads_centralized": "Only 2 config reads in PricingService.php (lines 250, 350, 800) — pricing.tax_inclusive_prices + kiosk.menu_pricing. CompositionSnapshotBuilder reads only kiosk.menu_pricing.",
+        "no_external_db_writes_in_namespace": "Pricing namespace files perform 0 writes — pure transformer + validator.",
+        "immutable_inputs": "PricingRequest is readonly with named-factory constructors (forWeb/forPos/forTable/forKiosk).",
+        "immutable_outputs": "PricingResult + PricingLineResult are readonly value objects."
+      },
+      "consequence": "The Pricing namespace itself is well-architected. Issues live OUTSIDE it (legacy duplicate paths in OrderService/FrontendOrderService, client-trust in CouponCheckResource)."
+    }
+  ],
+  "ssot_topology_verified": {
+    "calculateOrder_callers": [
+      "app/Services/OrderService.php:340 (web SSOT branch)",
+      "app/Services/OrderService.php:656 (POS SSOT branch)",
+      "app/Services/OrderService.php:1130 (table SSOT branch)",
+      "app/Services/FrontendOrderService.php:277 (kiosk SSOT branch)",
+      "app/Services/Order/OrderQuoteService.php:209 + :224 (quote preview)",
+      "app/Services/Kiosk/PricingPreviewService.php:71 + :107 (kiosk preview controller)"
+    ],
+    "calculateOrder_total_uses": 8,
+    "verdict": "All order-creation surfaces in production (web, POS, table, kiosk) route through calculateOrder() when feature flag = true (pinned). 0 controller-level Order/FrontendOrder::create bypasses found that skip the service."
+  },
+  "duplication_summary": {
+    "price_multiplication_outside_pricing_namespace": "Only the 4 legacy paths (F5-ARCH-01). 0 patterns found in controllers, resources (except CouponCheckResource — see Security/RED), models, or other services.",
+    "tax_rate_division_outside_pricing_namespace": "Only the 4 legacy paths. CouponCheckResource:39 multiplies by percentage but operates on a client-supplied `$request->total` (Security finding, not a tax calc).",
+    "snapshot_building_outside_builder": "Zero. Refund site (RefundWithCounterEntryService.php:136) copies the snapshot forward verbatim — does not rebuild. This is the correct NF525 invariant.",
+    "discount_logic_outside_DiscountCalculator": "CouponService::calculateDiscountAmount + DiscountType::FIXED/PERCENT logic in CouponCheckResource (see Security)."
+  },
+  "ssot_health_score": "8.5/10 — strong type discipline, immutable I/O, single calculateOrder entry, 4 legacy paths pinned-off but still loaded.",
+  "p0_in_frozen_file": 0,
+  "owner_gate_g3_trigger": false,
+  "v1_1_hardening_asks": [
+    "Land C.5 (remove legacy pricing fallback) — eliminates F5-ARCH-01 and F5-ARCH-03 in one stroke",
+    "Extract MenuFormulaRatioCalculator — eliminates F5-ARCH-02",
+    "Optionally decompose calculateOrder via stage objects — F5-ARCH-04 (post-C.5)"
+  ]
+}

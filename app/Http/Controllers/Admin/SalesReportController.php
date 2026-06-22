@@ -34,7 +34,15 @@ class SalesReportController extends AdminController
         $this->orderService = $order;
         $this->companyService = $companyService;
         $this->themeService  = $themeService;
-        $this->middleware(['permission:sales-report'])->only('index', 'export', 'pdf');
+        // [REP-AUTHZ-01 heal 2026-06-01] Gate `overview` too — GET /admin/sales-report/overview
+        // returns the revenue aggregate and was omitted from this ->only() list, leaving it
+        // readable by any auth:sanctum staff without `sales-report`. Same consumer as index.
+        // [abuse-heal 2026-06-20 W5 REP-AUTHZ-OVERVIEW-01] The 2026-06-01 heal listed the literal
+        // 'overview', but Laravel binds ->only() middleware by the HANDLER METHOD NAME, and the
+        // route /overview is handled by salesReportOverview() — no method named 'overview' exists.
+        // So the gate never attached → any verified staff (Chef/POS/Waiter) could read branch
+        // revenue. Use the real method name. (The false-green sentinel is hardened in the same pass.)
+        $this->middleware(['permission:sales-report'])->only('index', 'export', 'pdf', 'salesReportOverview');
     }
 
     public function index(PaginateRequest $request): \Illuminate\Http\Response | \Illuminate\Http\Resources\Json\AnonymousResourceCollection | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
@@ -42,7 +50,7 @@ class SalesReportController extends AdminController
         try {
             return SimpleOrderResource::collection($this->orderService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -51,7 +59,7 @@ class SalesReportController extends AdminController
         try {
             return Excel::download(new SalesReportExport($this->orderService, $request), 'Sales-Report.xlsx');
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -75,7 +83,7 @@ class SalesReportController extends AdminController
                 ]
             );
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -84,7 +92,7 @@ class SalesReportController extends AdminController
         try {
             return new SalesReportOverviewResource($this->orderService->salesReportOverview($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

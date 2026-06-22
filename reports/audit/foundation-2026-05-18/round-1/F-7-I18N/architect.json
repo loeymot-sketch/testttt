@@ -1,0 +1,137 @@
+{
+  "specialist": "Architect",
+  "system": "F-7-I18N",
+  "round": 1,
+  "audit_date": "2026-05-18",
+  "mode": "read-only",
+  "scope": "namespace organization, key naming convention consistency, shared-key consolidation, structural duplication",
+  "data_sources": [
+    "lang/{fr,en,ar,bn,de}/*.php (16 files per locale x 5 locales = 80 files; FR 686 lines, EN 670, AR 615)",
+    "resources/js/languages/{fr,en,ar,bn,de}.json (5 files; FR 107242 bytes 1912 flat keys; EN 105136 2031; AR 118619 1881)",
+    "tools/i18n/audit_locale_keys.mjs (executed 2026-05-18 19:44, reports written to reports/i18n/)",
+    "1503 distinct $t() calls + 159 distinct PHP-side trans()/__()/Lang:: keys"
+  ],
+
+  "namespace_inventory_vue_json": {
+    "root_keys_fr": 16,
+    "root_keys_en": 15,
+    "root_keys_ar": 15,
+    "namespaces_observed": [
+      "a11y", "admin", "all", "allergens", "button", "catalog", "common", "delivery", "error",
+      "frontend", "kds", "kiosk", "label", "menu", "message", "modules", "navigation", "notifications",
+      "oss", "panel", "payment", "permissions", "placeholder", "pos", "settings", "status", "stock",
+      "table_management", "title", "warning", "ws_session_invalid_action", "ws_session_invalid_text"
+    ],
+    "ws_session_keys_at_root": {
+      "issue": "ws_session_invalid_action and ws_session_invalid_text exist at top level of fr.json (lines around end) but NOT in en.json/ar.json",
+      "expected_namespace": "kiosk.session OR error.session",
+      "remediation": "move to error.ws_session_invalid_{text,action} in all 3 locales"
+    }
+  },
+
+  "key_naming_convention_drift": {
+    "label_namespace_role": {
+      "current": "label.* is a 261-key catchall: pagination, forms, kiosk admin, KDS, POS, fiscal labels, addons, delivery cash",
+      "smell": "no per-surface scoping; conflicts with admin.*, kiosk.*, pos.*, kds.* which exist in parallel",
+      "examples_overlap": [
+        "label.dine_in vs kiosk.order_type.dine_in vs label.kds_type_dinein (3 keys, identical value 'Sur place')",
+        "label.takeaway vs kiosk.order_type.takeaway vs label.kds_type_takeaway vs kiosk.takeaway (4 keys, identical value)",
+        "label.kiosk vs admin.item_preview.surface_kiosk vs pos.tracker.source_kiosk vs label.channel_kiosk vs label.kds_type_kiosk (5 keys, identical value 'Borne')",
+        "label.cancel vs button.cancel vs admin.stock_rupture.cancel vs label.kds_undo_bump vs button.kds_recall (5 keys + 5 alias variants, identical value 'Annuler')"
+      ],
+      "consolidation_proposal": "single canonical key per concept under common.* (or shared.*), all surface-specific keys reference via fallback; 253 redundant FR keys eliminable"
+    },
+    "kiosk_subspace_inconsistency": {
+      "pattern_inconsistency": [
+        "kiosk.confirm vs kiosk.loyalty_screen.confirm vs admin.stock_rupture.confirm (3 keys, value 'Confirmer')",
+        "kiosk.retry vs kiosk.error.retry vs kiosk.login_screen.retry vs kiosk.app.retry (4 keys, value 'Réessayer')",
+        "kiosk.back vs kiosk.loyalty_screen.back vs label.back vs label.cash_session_back (4 keys, value 'Retour')",
+        "kiosk.wizard.frites_sauce.ketchup vs kiosk.wizard.step.sauce.fallback_ketchup (2 keys, identical 'Ketchup')"
+      ],
+      "diagnosis": "screen-based subnamespacing led to local copies of the same shared label"
+    },
+    "menu_namespace_collision": {
+      "issue": "Top-level 'menu.*' (frontend menu) collides with potential admin nav 'menu.*' in BLADE PHP files; fr.json has empty-key '\"\":\"Menu\"' at line 287 producing rendered string 'menu.' if iterated",
+      "files": ["resources/js/languages/fr.json:287"]
+    }
+  },
+
+  "namespace_drift_php_vs_vue": {
+    "laravel_side": "PHP namespaces: addressType, all, ask, auth, discount_types, installer, itemType, orderStatus, orderType, pagination, passwords, payment_gateway, payment_status, pos_payment_method, statuse, validation (16)",
+    "vue_side": "JSON merged single-file (no namespace files), flat 16 root keys",
+    "duplication_observed": [
+      "addressType.php / orderStatus.php / orderType.php / payment_gateway.php / payment_status.php / pos_payment_method.php / itemType.php / discount_types.php / ask.php / statuse.php all have 0 keys (matching pattern 'return [];' or empty array) — placeholder shells from legacy Bangladesh template never populated for FR",
+      "fr/all.php (226 keys) carries nearly all PHP-rendered labels including all.label.*, all.message.*, all.order.status.* — should be split into admin.php, fiscal.php, payment.php for maintainability"
+    ],
+    "verdict": "Bangladesh legacy shell never refactored; 10/16 PHP namespace files are empty stubs in FR and have negligible value"
+  },
+
+  "shared_key_opportunities": {
+    "total_redundant_keys": 253,
+    "top_consolidation_candidates": [
+      {"value": "Annuler", "occurrences": 10, "candidate_canonical": "common.action.cancel"},
+      {"value": "Menu", "occurrences": 7, "candidate_canonical": "common.menu (after fixing empty-key bug)"},
+      {"value": "Réessayer", "occurrences": 7, "candidate_canonical": "common.action.retry"},
+      {"value": "Fermer", "occurrences": 6, "candidate_canonical": "common.action.close"},
+      {"value": "Borne", "occurrences": 5, "candidate_canonical": "common.surface.kiosk"},
+      {"value": "Sur place", "occurrences": 5, "candidate_canonical": "common.order_type.dine_in"},
+      {"value": "Supprimer", "occurrences": 4, "candidate_canonical": "common.action.delete"},
+      {"value": "Caisse", "occurrences": 4, "candidate_canonical": "common.surface.pos"},
+      {"value": "En ligne", "occurrences": 4, "candidate_canonical": "common.surface.online"},
+      {"value": "Continuer", "occurrences": 4, "candidate_canonical": "common.action.continue"}
+    ]
+  },
+
+  "dead_keys_after_dynamic_filter": {
+    "raw_dead_count_from_tool": 558,
+    "dynamic_patterns_protecting_keys": [
+      "label.${normalized}", "admin.help.${concept}.body/title", "admin.stock_rupture.reason.${value}",
+      "admin.product_wizard.steps.${step.key}", "kiosk.filters.${f}", "kiosk.pay_screen.${tpeKey}",
+      "kiosk.wizard.instruction.${key}", "label.delivery_cash_mvt_${type}", "label.delivery_cash_status_${session.status}",
+      "${s}.menu_label_boisson|frites|full", "warning.catalog.${code}.${segment}",
+      "allergens.${code}", "kiosk.allergens.${code}"
+    ],
+    "high_confidence_dead_count": 240,
+    "categories_of_high_confidence_dead": [
+      "kiosk.admin_screen.fb_* feedback toasts (40+ keys never $t-referenced; admin screen probably reads them via a router)",
+      "Bangladesh payment gateways: bkash/easypaisa/clickatell/cashfree/flutterwave/jazzcash/sslcommerz/marg (55 keys in en.json+ar.json, never in fr.json, never $t-referenced)",
+      "Legacy admin: label.bulksms*, label.paystack_*, label.bnpl_* (carry-over from Bangladesh template)"
+    ],
+    "estimated_v1_0_x_purge_yield": "~150-200 keys after careful per-key verification (final figure requires runtime smoke confirmation)"
+  },
+
+  "identical_fr_en_findings": {
+    "tool_count": 170,
+    "breakdown": {
+      "legitimate_proper_nouns_or_brands": "~60 keys (Ketchup, Mayonnaise, Edenred, Swile, Sodexo, Stripe, Exception, technical placeholders like '06 12 34 56 78')",
+      "interpolation_placeholders_identical": "~40 keys (e.g. '({n}s)', '{item}', '{count}')",
+      "genuine_untranslated_english": "~70 keys (e.g. a11y.skip_to_cart 'Aller au panier' in EN slot, kiosk.upsell_screen.* in EN)"
+    },
+    "v1_blocker_assessment": "NOT V1 blocker (admin=FR sentinel, kiosk=FR-only V1). V1.0.x to V1.1 heal when EN locale enabled."
+  },
+
+  "found_files_with_line_numbers": [
+    {"file": "resources/js/languages/fr.json", "line": 287, "issue": "empty-string key inside 'menu' namespace, value='Menu' — produces flat key 'menu.' which is broken/orphan"},
+    {"file": "resources/js/languages/fr.json", "line": 656, "issue": "empty-string key inside 'label' namespace, value='Libellé' — produces flat key 'label.'"},
+    {"file": "resources/js/languages/fr.json", "line": 1459, "issue": "empty-string key inside 'kiosk.filters' namespace, value='Tous' — produces flat key 'kiosk.filters.'"},
+    {"file": "tools/i18n/audit_locale_keys.mjs", "line": 1, "issue": "operational tool, not wired in CI (no .github/workflows or scripts/ci that invokes it); BRAIN flagged 'dormant since 9 mai'"},
+    {"file": "lang/fr/all.php", "line": 1, "issue": "226-key god-namespace; should be split into admin/fiscal/payment per maintainability concern"}
+  ],
+
+  "verdict_architect": "i18n architecture has organic-growth namespace pollution: 253 redundant key copies (16% of FR JSON), 240 high-confidence dead keys (Bangladesh legacy + admin feedback), 3 empty-string-key structural bugs at fr.json:287/656/1459, 10/16 PHP namespace files are empty shells. NOT a V1 blocker (admin=FR sentinel makes EN/AR drift irrelevant for ship), but technical debt is sizeable. Recommend V1.0.x consolidation cycle with audit_locale_keys.mjs in CI, common.* canonical introduction, Bangladesh legacy purge.",
+
+  "p0_count": 0,
+  "p1_count": 3,
+  "p1_findings": [
+    "fr.json:287 empty-string key produces 'menu.' broken flat key",
+    "fr.json:656 empty-string key produces 'label.' broken flat key (collides with label.* namespace)",
+    "fr.json:1459 empty-string key produces 'kiosk.filters.' broken flat key"
+  ],
+  "p2_count": 4,
+  "p2_findings": [
+    "240 high-confidence dead keys (after dynamic-pattern filter)",
+    "253 redundant duplicate FR values across namespaces — consolidation candidate",
+    "Bangladesh-legacy 55 keys in en.json/ar.json (bkash/easypaisa/etc) — purge candidate",
+    "10/16 PHP namespace files are empty shells (addressType, itemType, orderStatus, orderType, payment_gateway, etc) — flatten into all.php or delete"
+  ]
+}

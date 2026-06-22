@@ -1,0 +1,19 @@
+Tu es l'orchestrateur FoodKing (AGENTS.md, human-gates.mdc). Ne modifie aucun fichier code ici.
+
+Contexte : l'équipe veut UNE consigne claire pour Codex afin qu'il exécute la Wave 2 en boucle (missions/CV1-LOT-*, 36 lots, Option B) avec tout le contexte nécessaire sur le disque, sans redemander chaque TASK_ID à l'humain.
+
+P-01 (CV1-LOT-P01-QUOTE-BIND) vient d'être implémenté par Codex (durcissement sealForCommit POS quote explicite, PosOrderRequest, QuoteBindingTest, suite quote 13 tests PASS, GPT self-audit PASS). Risque noté : OrderQuoteService.php possiblement non suivi par git selon le worktree.
+
+Tâche (deuxième avis, en français) :
+
+1) CONFORT_CODEX : En 5 puces max, quels chemins / fichiers forment l'environnement de travail **minimal suffisant** pour que Codex (codex-extension) enchaîne les lots sans deviner (missions/W2_LOT, missions/CV1-LOT-*/input+execute_brief, AGENTS, gates lus quand frozen, post_execute, activity-log) ?
+
+2) UNE_CONSIGNE : Propose UNE seule consigne opérateur (paragraphe) que l'humain pourrait coller UNE FOIS à Codex pour "mode file d'attente" Wave 2 (ordre W2_LOT, skip status BLOCKED, jamais M-04A, un run = un TASK_ID) — pas de copier un bash de 30 lignes, juste l'intention exécutable.
+
+3) SUITE_EXÉCUTION : D'après missions/W2_LOT_CODEX_RUN_ORDER_OPTION_B_2026-04-26.md, après P-01 le prochain numéro est K-01 (CV1-LOT-K01-ROUTING-LEGACY). Confirme l'ordre.
+
+4) RISQUES : P-01 : note P0/P1 (client POS sans pré-quote = 401 voulu — impact déploiement, fichier untracked, symétrie kiosk K-03).
+
+5) VERDICT une ligne : P-01 prêt à considérer clos côté doc + tests — OUI / REWORK / HOLD et pourquoi.
+
+Pas de code, pas de patch.

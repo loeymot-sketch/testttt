@@ -9,14 +9,14 @@
                     <SwiperSlide class="!w-fit relative" v-for="(category, index) in categories" :key="category"
                         :class="category.id === itemProps.search.item_category_id || (category.id === 0 && itemProps.search.item_category_id === '') ? 'pos-group' : ''">
                         <router-link v-if="index === 0" to="#" @click.prevent="allCategory(category)"
-                            class="w-32 flex flex-col items-center text-center gap-4 p-3 rounded-2xl border-b-2 border-transparent transition hover:bg-[#FFEDF4] bg-[#F7F7FC] overflow-hidden">
+                            class="w-32 flex flex-col items-center text-center gap-4 p-3 rounded-2xl border-b-2 border-transparent transition hover:bg-[#FFE8DD] bg-[#F7F7FC] overflow-hidden">
                             <img class="h-10 drop-shadow-category" :src="category.thumb" alt="category">
                             <h3
                                 class="w-full text-xs leading-[16px] whitespace-nowrap overflow-hidden text-ellipsis font-medium font-rubik">
                                 {{ category.name }}</h3>
                         </router-link>
                         <router-link v-else to="#" @click.prevent="setCategory(category.id, category.slug)"
-                            class="w-32 flex flex-col items-center text-center gap-4 p-3 rounded-2xl border-b-2 border-transparent transition hover:bg-[#FFEDF4] bg-[#F7F7FC] overflow-hidden">
+                            class="w-32 flex flex-col items-center text-center gap-4 p-3 rounded-2xl border-b-2 border-transparent transition hover:bg-[#FFE8DD] bg-[#F7F7FC] overflow-hidden">
                             <img class="h-10 drop-shadow-category" :src="category.thumb" alt="category">
                             <h3
                                 class="w-full text-xs leading-[16px] whitespace-nowrap overflow-hidden text-ellipsis font-medium font-rubik">
@@ -54,10 +54,10 @@
                     {{ category.name }}
                 </h2>
                 <div class="flex items-center gap-3">
-                    <button type="button" class="lab lab-row-vertical lab-font-size-20 text-xl"
+                    <button type="button" class="lab lab-row-vertical lab-font-size-20 text-xl" aria-label="Vue liste"
                         v-on:click="itemProps.property.design = enums.itemDesignEnum.LIST"
                         :class="itemProps.property.design === enums.itemDesignEnum.LIST ? 'text-primary' : 'text-[#A0A3BD]'"></button>
-                    <button type="button" class="lab lab-element-3 lab-font-size-20 text-xl"
+                    <button type="button" class="lab lab-element-3 lab-font-size-20 text-xl" aria-label="Vue grille"
                         v-on:click="itemProps.property.design = enums.itemDesignEnum.GRID"
                         :class="itemProps.property.design === enums.itemDesignEnum.GRID ? 'text-primary' : 'text-[#A0A3BD]'"></button>
                 </div>

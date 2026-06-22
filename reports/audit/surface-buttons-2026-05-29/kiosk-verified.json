@@ -1,0 +1,59 @@
+{
+  "surface": "Kiosk Borne (kiosk)",
+  "head": "04603fa87adefa6dd605c7ec3c0d0ef20f56661c",
+  "elements_checked": 47,
+  "confirmed_count": 4,
+  "dropped_count": 0,
+  "reclassified_count": 1,
+  "findings": [
+    {
+      "severity": "P1",
+      "type": "dead_button",
+      "file": "resources/js/components/frontend/kiosk/KioskErrorPaymentRefusedComponent.vue",
+      "line": "80,85 (retryPayment / payCounter)",
+      "element": "Reessayer le paiement (kiosk-error-payment-cta-retry) + Payer au comptoir (kiosk-error-payment-cta-counter)",
+      "title": "Payment-refused screen: 'Retry' and 'Pay-at-counter' CTAs emit events with ZERO listeners and no router fallback -> dead. Screen PROVEN reachable after 2 TPE declines.",
+      "confirmed": true,
+      "grep_evidence": "VERIFIED at HEAD 04603fa87. retryPayment() L77-82 does only this.$emit('retry') (L80) + 500ms spinner; payCounter() L83-86 does only this.$emit('pay-at-counter') (L85). Contrast: cancelOrder() L87-91 HAS this.$router?.push({name:'kiosk.idle'}) fallback at L90 -- retry/payCounter have NO $router line. Component is ROUTED, not embedded: router/modules/kioskRoutes.js:281-289 name 'kiosk.error.payment-refused' mounted via <router-view> in KioskAppComponent.vue:116-129 whose <component :is> forwards ONLY @add-to-cart/@go-to-cart/@start-order/@reset-kiosk (L124-127) -- retry/pay-at-counter NOT forwarded. grep -rn '@retry' / '@pay-at-counter' resources/js = 0 listeners (only the emitter). REACHABILITY PROVEN: KioskPaymentComponent.vue:541 'if (this.paymentFailureCount >= this.$options.MAX_PAYMENT_FAILURES)' (MAX=2, L324) then hard this.$router.push({name:'kiosk.error.payment-refused'}) at L548. Unit test tests/js/KioskPhase3Screens.spec.js:211-218 only asserts wrapper.emitted('retry')/emitted('pay-at-counter') -- it never verifies a listener handles them, so green tests do NOT prove the buttons work.",
+      "recommendation": "Add self-fallback navigation mirroring cancelOrder L90: retryPayment -> this.$router.push({name:'kiosk.payment'}); payCounter -> this.$router.push({name:'kiosk.cash-instruction', query:{...}}). Both buttons currently flash a 500ms spinner (retry) or nothing (payCounter) then leave the customer stranded; only Annuler escapes (losing the order).",
+      "frozen": false
+    },
+    {
+      "severity": "P2",
+      "type": "dead_button",
+      "file": "resources/js/components/frontend/kiosk/KioskErrorNetworkComponent.vue",
+      "line": "57,65 (retry / callStaff)",
+      "element": "Reessayer (kiosk-error-network-cta-retry) + Appeler le personnel (kiosk-error-network-cta-staff)",
+      "title": "Network-error screen: BOTH CTAs ('Retry' + 'Call staff') are emit-only with zero listeners and no fallback -- AND the screen itself is ORPHANED (no production navigation path reaches it at HEAD).",
+      "confirmed": true,
+      "grep_evidence": "VERIFIED at HEAD 04603fa87. retry() L54-63 does only this.$emit('retry') (L58); callStaff() L64-67 does only this.$emit('call-staff') (L65). NO this.$router anywhere in file. Routed component kioskRoutes.js:259-262 'kiosk.error.network'; parent <component :is> (KioskAppComponent.vue:124-127) does not forward retry/call-staff. grep -rn '@retry' / '@call-staff' resources/js = 0 listeners. REACHABILITY DROPPED TO ORPHANED: the only dynamic nav into this route is store helper goToKioskError()/resolveKioskErrorRoute() (kioskCart.js:77,87) which map KIOSK_ERROR_CODES.NETWORK -> 'kiosk.error.network' (L29). grep -rn 'goToKioskError|resolveKioskErrorRoute' resources/js tests = ONLY the kioskCart.js definitions + TEST files (tests/js/kioskGlobalErrors.spec.js:6-7,38-39,56-69 and tests/Playwright/kiosk-errors.spec.js:21-22 source-string assertions). ZERO production callers. grep -rn 'error/network' resources/js = only the route def. So no production component pushes to this screen -- a customer cannot currently land on it, so there is no live customer impact today; the defect is an orphaned screen whose buttons are also dead. Severity lowered from the raw P1 accordingly.",
+      "recommendation": "Two-part: (1) wire the screen -- call goToKioskError(NETWORK,{router:this.$router}) from the actual network-loss/heartbeat-failure path so the screen is reachable; (2) give the CTAs real behavior -- retry() -> re-init/this.$router.go(0); callStaff() -> POST /frontend/kiosk/event type=staff_called (valid observability channel, kiosk-event endpoint confirmed at api.php) OR remove the button. As-is the screen advertises non-functional actions and is never shown.",
+      "frozen": false
+    },
+    {
+      "severity": "P3",
+      "type": "dead_button",
+      "file": "resources/js/components/frontend/kiosk/KioskErrorMenuUnavailableComponent.vue",
+      "line": "53 (retry)",
+      "element": "Reessayer (kiosk-error-menu-cta-retry)",
+      "title": "Menu-unavailable screen: 'Retry' CTA is emit-only with zero listeners and no fallback ('Retour accueil' DOES work) -- AND the screen is ORPHANED (no production nav reaches it).",
+      "confirmed": true,
+      "grep_evidence": "VERIFIED at HEAD 04603fa87. retry() L52-57 does only this.$emit('retry') (L56) + 500ms spinner, no $router. backHome() L58-62 correctly HAS this.$router?.push({name:'kiosk.idle'}) at L61. Routed kioskRoutes.js:265-268; parent forwards no @retry. grep -rn '@retry' resources/js = 0 listeners. ORPHANED screen: route reached only via goToKioskError(MENU_UNAVAILABLE) (kioskCart.js:30) which has ZERO production callers (grep -rn 'goToKioskError|resolveKioskErrorRoute' resources/js tests = definitions + test files only); grep -rn 'error/menu-unavailable' resources/js = only the route def. Lower severity than payment-refused because (a) screen is unreachable in prod and (b) even if shown, a working escape (backHome) exists on the same screen.",
+      "recommendation": "(1) Wire reachability via goToKioskError from the GET /api/frontend/menu 503/empty-menu path. (2) retry() -> re-fetch menu then route to kiosk.categories, or at minimum this.$router.go(0). Keep backHome() as secondary escape.",
+      "frozen": false
+    },
+    {
+      "severity": "P3",
+      "type": "i18n_consistency",
+      "file": "resources/js/components/frontend/kiosk/KioskAppComponent.vue",
+      "line": "107",
+      "element": "Voir (kiosk-offline-conflict-cta)",
+      "title": "Hardcoded non-i18n French label 'Voir' on the offline-conflict CTA (i18n-consistency nit, NOT a dead button, NOT an unresolved raw key).",
+      "confirmed": true,
+      "grep_evidence": "VERIFIED at HEAD 04603fa87. Button KioskAppComponent.vue:100-108 renders literal 'Voir' (L107) instead of a $t() key, unlike every other kiosk control. NOT a dead button: handler openOfflineConflictModal exists and is real (KioskAppComponent.vue:825, wired at @click L105). NOT a raw_label per task definition (which requires a VISIBLE unresolved key like 'kiosk.x'/'undefined') -- this renders correct French, and kiosk is FR-locked (ADR-007), so user impact is nil. Reclassified from raw_label to i18n_consistency. KioskAppComponent.vue is a FROZEN-ZONE file (CLAUDE.md §7) -- any change requires owner gate.",
+      "recommendation": "Replace 'Voir' with $t('kiosk.app.offline_conflict_view') for catalogue consistency. Non-blocking AND frozen-zone-gated -- defer unless owner authorizes touching KioskAppComponent.vue.",
+      "frozen": true
+    }
+  ],
+  "summary": "All 4 raw findings CONFIRMED at HEAD 04603fa87 (0 dropped, 1 reclassified). The dead-button MECHANISM is verified across all three error screens: handlers emit kebab events (retry / pay-at-counter / call-staff / back-home) that grep proves have ZERO listeners in resources/js, and the components are mounted via <router-view> whose <component :is> forwards only @add-to-cart/@go-to-cart/@start-order/@reset-kiosk (KioskAppComponent.vue:124-127), so the emits go nowhere. Green unit tests (KioskPhase3Screens.spec.js) only assert emitted(...) -- they never verify a listener, the classic test-pass-without-working trap (CLAUDE.md S3 invariant 10). KEY REACHABILITY DISTINCTION (corrected after grep): only the PAYMENT-REFUSED screen is reachable in production (hard $router.push at KioskPaymentComponent.vue:548 after MAX_PAYMENT_FAILURES=2 TPE declines) -> its dead retry+payCounter CTAs are a REAL, reproducible customer-stranding bug (P1). The NETWORK and MENU-UNAVAILABLE screens are ORPHANED: the sole dynamic nav helper goToKioskError()/resolveKioskErrorRoute() (kioskCart.js:77,87) has ZERO production callers (referenced only in tests/js/kioskGlobalErrors.spec.js + tests/Playwright/kiosk-errors.spec.js), and no static push to error/network or error/menu-unavailable exists -- so although their buttons are dead, no customer can currently land on them; severities lowered to P2/P3 and reframed as 'orphaned screen + dead buttons'. KioskErrorProductRemovedComponent is clean (CTAs have $router fallbacks). The exact POS dead-CustomEvent pattern does NOT recur in kiosk (grep dispatchEvent/new CustomEvent/eventBus across kiosk components = 0). One P3 reclassified: KioskAppComponent.vue:107 'Voir' is a hardcoded-label i18n-consistency nit (handler real, French renders, FR-locked) -- typed i18n_consistency not raw_label, and the file is FROZEN-ZONE (frozen=true). SCOPE NOTE: KioskLoyaltyComponent internals and the in-Categories cart bottom-sheet were not line-by-line enumerated (outside listed anchors); 'near-zero on anchors' is not 'Loyalty audited clean'."
+}

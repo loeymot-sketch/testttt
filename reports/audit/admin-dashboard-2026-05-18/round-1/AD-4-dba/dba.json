@@ -1,0 +1,152 @@
+{
+  "specialist": "DBA",
+  "zone": "Admin Dashboard (15.1-15.7)",
+  "wave": "B-Admin",
+  "round": 1,
+  "date": "2026-05-18",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "scope_note": "Admin dashboard surfaces aggregate reads (totals, breakdowns, top-N), filtered list reads (catalog, coupons, orders), and rare mutations (CRUD per resource). Heavy data volume on orders/transactions over time. DashboardService.php is DIRTY (session-A WIP) — observe call-sites only, do not score internals.",
+  "branchscope_coverage": {
+    "total_models_with_BranchScope": 20,
+    "claimed_by_BRAIN": 17,
+    "diff": "BRAIN said '17 models post iter11+12'. Actual grep finds 20 (`/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Models/Scopes/BranchScope.php` import).",
+    "verified_models": ["Order", "FrontendOrder", "OrderItem", "OrderPayment", "OrderQuote", "PosParkedOrder", "KioskMachine", "StockLevel", "StockMovement", "ItemBranchAvailability", "CashDrawerSession", "CashMovement", "DeliveryBoyCashSession", "DeliveryBoyCashMovement", "PendingPaymentConfirmation", "PushNotification", "DiningTable", "Printer", "PaymentTerminal", "User"],
+    "verdict": "Coverage exceeds BRAIN claim by 3 models. BRAIN §9 should be updated to '20 models'."
+  },
+  "dashboardservice_query_patterns_observed": {
+    "OK_patterns": [
+      {
+        "method": "orderQuery() L19-29",
+        "pattern": "Single-query base with optional `branch_id` filter. Returns Eloquent builder for chaining. No N+1.",
+        "verdict": "Idiomatic."
+      },
+      {
+        "method": "orderStatistics() L72-95",
+        "pattern": "Wave 3c heal: TZ-aware Paris-day boundary using `whereBetween [startUtc, endUtcExclusive)`. Builder cloned 10× for `pending`/`accept`/`preparing`/etc. counts. Each cloned scope adds a `where status` predicate.",
+        "verdict": "10 queries per pageload. Could be reduced to 1 query with `SELECT status, COUNT(*) ... GROUP BY status` but acceptable for non-hot path (dashboard refresh 30-60s polling). Wave 3c TZ heal is correct (commit 148dbebce visible)."
+      },
+      {
+        "method": "realtimeReport() L355-390",
+        "pattern": "Two queries per refresh: sum(total) WHERE paid + count(*). Both filtered by [startUtc,endUtcExclusive) on order_datetime — TZ-aware. Uses `idx_orders_datetime` index per comment.",
+        "verdict": "Cheap. Defensive."
+      },
+      {
+        "method": "topCustomers() L295-313",
+        "pattern": "withCount + orderBy 'orders_count' + limit 8. Single SQL with subquery COUNT.",
+        "verdict": "Clean. No N+1."
+      },
+      {
+        "method": "slaAlerts() L392-417",
+        "pattern": "with('user') eager load. orderBy + get + map.",
+        "verdict": "Eager-loaded. No N+1."
+      },
+      {
+        "method": "auditTrail() L456-491",
+        "pattern": "ActionLog::with('user') + orderBy + limit 50. F-A3 heal scoped branch_id to actor's branch.",
+        "verdict": "Clean. F-A3 heal verified."
+      }
+    ],
+    "questionable_patterns": [
+      {
+        "method": "channelStatistics() L419-454",
+        "pattern": "`->get()` (FULL day's orders into memory) then 4× `$orders->count()` / `$orders->where('source', ...)->count()` in PHP collection — NOT SQL.",
+        "issue": "Pulls every column of every order for the day into memory just to count by source. At Le Cayenne single-resto V1 scale (~200 orders/day) this is fine. At any scaling event (multi-tenant V2 or busy chain location 1000+ orders/day) this becomes a memory drag.",
+        "fix": "Replace with single `SELECT source, COUNT(*) FROM orders WHERE order_datetime BETWEEN ... GROUP BY source` SQL.",
+        "severity": "P2",
+        "deferred": "DashboardService DIRTY — coordinate with session-A."
+      },
+      {
+        "method": "customerStates() L260-293 (read partial)",
+        "pattern": "Loop over $timeArray with `(clone $order)->get()->count()` — looks like a per-time-bucket count via get-then-count. Suspect N+queries pattern.",
+        "fix": "Need full read to assess. Defer P2.",
+        "severity": "P2",
+        "deferred": "DashboardService DIRTY."
+      }
+    ]
+  },
+  "admin_controllers_query_patterns": {
+    "ItemController::index": {
+      "delegation": "ItemService::simpleList($request)",
+      "verdict": "Delegated. Resource layer is SimpleItemResource (lighter than full ItemResource for list views). Surface-aware (POS surface vs admin) per CV1 catalog convergence."
+    },
+    "SalesReportController::index": {
+      "delegation": "OrderService::list($request)",
+      "verdict": "Single delegation. PaginateRequest controls page size. Acceptable."
+    },
+    "DashboardController::*": {
+      "delegation": "DashboardService::* (every endpoint)",
+      "verdict": "Thin controllers. DBA risk centered in DashboardService (dirty)."
+    },
+    "CouponController::index": {
+      "delegation": "CouponService::list($request)",
+      "verdict": "Not deeply audited. Coupons table is low cardinality, no concern."
+    }
+  },
+  "index_coverage_assumptions": {
+    "orders_table_indexes_observed_via_comments": [
+      "idx_orders_datetime (used by realtimeReport, orderStatistics, channelStatistics)",
+      "idx orders branch_id (implied by global BranchScope filter)",
+      "Likely idx orders user_id (for topCustomers join)",
+      "Likely idx orders status (for orderStatistics scope predicates)"
+    ],
+    "verdict": "Not audited via migrations in this pass. The TZ-aware whereBetween pattern in DashboardService is SARGABLE on order_datetime — index will be used. Wave 3c comment specifically references this."
+  },
+  "n_plus_one_risks": {
+    "found": [
+      {
+        "location": "DashboardService::channelStatistics() — in-memory filter (P2 deferred)",
+        "blast_radius": "Single-tenant low",
+        "deferred": true
+      }
+    ],
+    "not_found": [
+      "Eager-load discipline observed across slaAlerts, auditTrail, topCustomers",
+      "ItemListComponent.vue uses SimpleItemResource (lazy-load detail on click)",
+      "No `->load(...)->each(...)->thingThatTriggersAnotherQuery(...)` patterns spotted"
+    ]
+  },
+  "branchscope_gap_analysis": {
+    "models_NOT_yet_scoped": [
+      "Coupon — `branch_scope` is a JSON column not a foreign-key, so global BranchScope wouldn't apply. Filtering is done in CouponService for staff users.",
+      "Offer — same as Coupon",
+      "Item — branch availability is via separate ItemBranchAvailability model (scoped) + Item::is_available overlay. Item itself global by design.",
+      "ItemCategory — global by design.",
+      "User — IS scoped (in 20-model list) but exempted from BranchScope::class via Sanctum recursion-avoidance noted in BRAIN.",
+      "ActionLog — NOT scoped via BranchScope but DashboardService::auditTrail does manual branch_id filter at L470 (F-A3 heal)."
+    ],
+    "verdict": "All admin-dashboard-relevant cross-tenant leaks are mitigated either by global BranchScope (20 models) or by manual filters at service layer (Coupon, Offer, ActionLog). No gap discovered."
+  },
+  "findings_summary": [
+    {
+      "id": "D-1",
+      "severity": "P2",
+      "title": "DashboardService::channelStatistics() in-memory count",
+      "deferred": "DashboardService DIRTY"
+    },
+    {
+      "id": "D-2",
+      "severity": "P2",
+      "title": "DashboardService::customerStates() suspected N-queries per time-bucket",
+      "deferred": "DashboardService DIRTY"
+    },
+    {
+      "id": "D-3",
+      "severity": "info",
+      "title": "BranchScope coverage = 20 models (BRAIN claims 17)",
+      "fix": "Update PROJECT_BRAIN.md §9 to '20 models'"
+    },
+    {
+      "id": "D-4",
+      "severity": "info",
+      "title": "Wave 3c TZ heal verified in 3 DashboardService methods",
+      "verdict": "Closed (orderStatistics, realtimeReport, channelStatistics)"
+    },
+    {
+      "id": "D-5",
+      "severity": "info",
+      "title": "F-A3 heal verified in auditTrail()",
+      "verdict": "Closed"
+    }
+  ],
+  "verdict": "NO P0/P1 DBA RISK. 2 P2 in DashboardService internals (DIRTY — defer). BranchScope coverage exceeds BRAIN claim. Wave 3c TZ heal is correctly applied. Service-layer manual branch filters protect Coupon/Offer/ActionLog/User."
+}

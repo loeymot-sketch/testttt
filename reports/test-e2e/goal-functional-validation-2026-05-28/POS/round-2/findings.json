@@ -1,0 +1,292 @@
+{
+  "zone": "POS-Caisse",
+  "mission": "goal-functional-validation-2026-05-28",
+  "round": 2,
+  "agent": "Claude (Opus 4.7 1M) — POS caissier read+test+report only",
+  "mode": "AUDIT-ONLY",
+  "branch": "feature/mobile-app-le-cayenne-2026-05-10",
+  "head": "2bb6f1113e96b7b38baf6537029ca22194c4abf4",
+  "run_at": "2026-05-28T20:10Z",
+  "frozen_zone_diff": {
+    "files": [
+      "public/js/pos-wizard.js",
+      "public/css/pos-wizard.css",
+      "resources/views/admin-pos-v4.blade.php",
+      "app/Services/Pricing/PricingService.php",
+      "app/Services/Fiscal/FiscalSequenceService.php",
+      "app/Services/Fiscal/ZReportService.php"
+    ],
+    "diff_stat": "0 lines changed (verified via git diff --stat HEAD)",
+    "status": "PASS"
+  },
+  "nf525_baseline_post_restore": {
+    "audit_logs_count": 127,
+    "last_audit_id": 127,
+    "last_audit_hash": "d0edbd1e3734f8489aa935bc9792e7e249567bb39980ab90bd12ef80c6f1db62",
+    "chain_full_verify": {
+      "rows_walked": 127,
+      "break_detected": false,
+      "method": "prev_hash[i] === current_hash[i-1] for i=1..126"
+    },
+    "orders_count": 80,
+    "pos_orders_count_type15": 1,
+    "kiosk_orders_count_type25": 2,
+    "takeaway_orders_count_type10": 61,
+    "last_fiscal_seq": 37,
+    "z_reports": "1 row (Z#1 seq=1 br=1 status=closed opened 2026-05-28 14:59:19 closed 2026-05-28 14:59:29)",
+    "open_cash_drawer_sessions": 2,
+    "open_drawer_ids": [4, 7],
+    "payment_terminals": 0
+  },
+  "db_state_observations_round2": {
+    "items_total": 45,
+    "wizard_profiles_total": 10,
+    "wizard_profiles_with_item_id": [33, 34, 41, 42, 43, 44, 45, 46, 47, 48],
+    "mission_items_present": {
+      "sandwich_cayenne_id_22": "PRESENT (price 7.00€, 10 sauces in attr#5, no wizard profile — uses pos-wizard.js template logic)",
+      "tacos_id_26": "PRESENT (price 8.50€, 10 sauces in attr#5, no wizard profile)",
+      "bowl_frites_poulet_marine_id_41": "PRESENT (price 8.90€, WP#8 custom template, 3 steps: sauce min=1 max=2 / supplements supplement_bol min=0 max=4 / drink min=0 max=1)"
+    }
+  },
+  "wizard_corrections_audit": {
+    "sandwich_cayenne_sauces_count": {"expected_mission": 10, "actual_db_attr5_for_item22": 10, "status": "PASS"},
+    "tacos_sauces_count": {"expected_mission": 10, "actual_db_attr5_for_item26": 10, "status": "PASS"},
+    "bowl_frites_marine_sauces_count": {
+      "expected_mission": 2,
+      "actual_db_attr8_for_item41": 11,
+      "actual_step_min_select": 1,
+      "actual_step_max_select": 2,
+      "status": "AMBIGUOUS",
+      "note": "Mission says 'bols reduced to 2 sauces'. Step config DOES enforce max=2 picks. But sauce option LIST has 11 entries (Algérienne, Andalouse, Blanche, Curry, Hannibal, Harissa, Ketchup, Mayonnaise, Samouraï, Sauce fromagère maison, Spicy). If 'reduced to 2' means LIST=2 (Cayenne fromagère + Spicy maison) per memory MEMORY.md #178 — DB DOES NOT match (still 11). If 'reduced to 2' means choice limit (max_select=2), DB matches. Owner-resolve required."
+    },
+    "boule_gratinee_in_supplement_bol_group": {
+      "expected_mission": "PRESENT at €2.00 in supplement_bol group",
+      "actual_db_supplement_bol_entries": 15,
+      "actual_boule_gratinee_count": 8,
+      "actual_option_gratine_duplicate_count": 5,
+      "status": "PASS-WITH-OBSERVATION",
+      "note": "Boule gratinée @ €2.00 present and applied per item (8 rows). Duplicate name 'Option Gratiné' @ €2.00 co-exists (5 rows). Possible UI confusion if both surface in wizard step — investigate which name pos-wizard.js renders."
+    }
+  },
+  "code_path_verification": {
+    "pricing_ssot_backend": {
+      "ref": "app/Services/Pricing/PricingService.php:266-291",
+      "verified": "composition_snapshot built at order creation, persisted via 'composition_snapshot' => json_encode($compositionSnapshot)"
+    },
+    "fiscal_seq_at_close_pos_cash": {
+      "ref": "app/Services/PaymentService.php:321-322",
+      "verified": "POS settle: if ($locked->fiscal_sequence_no === null) { $locked->fiscal_sequence_no = app(FiscalSequenceService::class)->next($locked->branch_id); } — at PAID transition (close)"
+    },
+    "fiscal_seq_at_creation_pos_card_collect": {
+      "ref": "app/Services/OrderService.php:1028",
+      "verified": "Reserved atomically right before persisting via FiscalSequenceService::next() inside outer transaction; SAVEPOINT-safe rollback"
+    },
+    "fiscal_chain_hmac": {
+      "ref": "app/Services/Fiscal/FiscalSequenceService.php:66-101",
+      "verified": "Cache::lock('fiscal_seq_'.branch, 5s) + MAX(fiscal_sequence_no) + lockForUpdate triple defense — 0 frozen-zone diff confirms intact"
+    },
+    "sealed_order_guard": {
+      "ref": "app/Services/Order/SealedOrderGuard.php:42,90",
+      "verified": "Any post-seal mutation blocked if fiscal_sequence_no IS NOT NULL"
+    },
+    "refund_counter_entry_mirror": {
+      "ref": "app/Services/Order/RefundWithCounterEntryService.php:127-128",
+      "verified": "Mirror gets its OWN fresh $mirrorSeq via FiscalSequenceService::next() — parent untouched, NF525-compliant"
+    }
+  },
+  "i18n_raw_label_sweep_pos_wizard_js": {
+    "patterns_checked": ["\\bpos\\.[a-z_.]+", "\\bkiosk\\.[a-z_.]+", "\\[object Object\\]", "\\b0undefined\\b", "\\bLabel\\.[A-Z][a-z]+", "\\bNaN ?€?\\b"],
+    "total_matches": 0,
+    "status": "PASS"
+  },
+  "i18n_raw_label_sweep_admin_pos_blade": {
+    "raw_labels": 0,
+    "status": "PASS"
+  },
+  "findings": [
+    {
+      "id": "POS-R2-FIND-01",
+      "severity": "RESOLVED-FROM-R1",
+      "title": "Round 1 P0-01 RECLASSIFIED — /admin/cash-drawer-overview is wrong URL; real route is /admin/cash-overview AND dialog is embedded in /admin/pos",
+      "type": "audit-correction",
+      "evidence": {
+        "round1_url_tested": "/admin/cash-drawer-overview (404 — does NOT exist)",
+        "real_vue_router_path_1": "/admin/cash-overview — resources/js/router/modules/cashOverviewRoutes.js:11 (CashOverviewComponent)",
+        "real_drawer_open_close_dialog": "PosCashDrawerSessionDialog mounted INSIDE PosComponent.vue:1097 (admin/pos page) — caissier opens/closes drawer from POS screen itself, not separate URL",
+        "permission": "cash-sessions-report (Admin + Branch Manager)",
+        "spa_shell_size_bytes_for_unmatched": 10173,
+        "spa_shell_size_for_pos_v4": 4260
+      },
+      "impact": "Round 1 finding withdrawn. Cash drawer UI exists and is reachable from /admin/pos. Cash overview UI exists at /admin/cash-overview."
+    },
+    {
+      "id": "POS-R2-FIND-02",
+      "severity": "P1",
+      "title": "No dedicated /admin/z-reports SPA page — Z close UI surface is a dashboard widget only",
+      "type": "ux+coverage",
+      "evidence": {
+        "vue_router_search": "grep -rn 'z-report' resources/js/router/modules/ → no matches",
+        "actual_z_surfaces": [
+          "resources/js/components/admin/dashboard/LastZReportWidget.vue (READ-ONLY widget; fetches admin/fiscal/z-report; shows last sequence_no + status)",
+          "resources/js/components/admin/dashboard/DashboardComponent.vue:230 (PDF download link.download = 'cloture_jour_*.pdf')"
+        ],
+        "missing_capabilities": ["No UI button to CLOSE a Z-report from /admin (only POST api/admin/fiscal/z-report/close exists API-side)", "No listing/history of past Z-reports (only 'last' widget shown)"]
+      },
+      "impact": "Caissier/Manager can SEE last Z and DOWNLOAD daily PDF but cannot CLOSE next Z from a UI surface — must rely on automated cron or direct API call. CLAUDE.md §15 references /admin/order-status-screen but no Z-report UI route. P1 functional gap for caissier daily-closure workflow.",
+      "verification_command": "grep -rnE 'path.*z-report|z-report.*path' resources/js/router/"
+    },
+    {
+      "id": "POS-R2-FIND-03",
+      "severity": "P1",
+      "title": "Bowl Frites sauce list still 11 options despite mission claim 'reduced to 2'",
+      "type": "data",
+      "evidence": {
+        "item_id": 41,
+        "item_name": "Bowl Frites Poulet mariné",
+        "attribute_id": 8,
+        "attribute_name": "Sauce bol",
+        "actual_options_count": 11,
+        "actual_options_list": ["Algérienne", "Andalouse", "Blanche", "Curry", "Hannibal", "Harissa", "Ketchup", "Mayonnaise", "Samouraï", "Sauce fromagère maison", "Spicy"],
+        "memory_quote": "MEMORY.md task #178 'Bols sauce list réduit à 2 choix (Cayenne fromagère + Spicy maison)' — completed",
+        "interpretation_a": "Reduced to 2 CHOICES allowed per order — min_select=1 max_select=2 on wizard step confirms",
+        "interpretation_b": "Reduced to 2 OPTIONS in list — DB still shows 11"
+      },
+      "impact": "If interpretation B was intended, seeder didn't apply or got overwritten. Owner gate to confirm intent.",
+      "verification_command": "SELECT name FROM item_variations WHERE item_id=41 AND item_attribute_id=8 ORDER BY name"
+    },
+    {
+      "id": "POS-R2-FIND-04",
+      "severity": "P2",
+      "title": "Duplicate name 'Option Gratiné' co-exists with 'Boule gratinée' in supplement_bol group",
+      "type": "data-quality",
+      "evidence": {
+        "supplement_bol_group_total_rows": 15,
+        "boule_gratinee_count": 8,
+        "option_gratine_count": 5,
+        "both_priced_at": "€2.00",
+        "applies_to_items": "Bowl items 41-48"
+      },
+      "impact": "Wizard UI may render both labels for the same actual choice — caissier confusion + possible double-add bug. Verify pos-wizard.js render filters one out.",
+      "verification_command": "SELECT name, price, item_id FROM item_extras WHERE group_label='supplement_bol'"
+    },
+    {
+      "id": "POS-R2-FIND-05",
+      "severity": "P0",
+      "title": "0 payment_terminals row for branch 1 — Card scenario remains untestable end-to-end (R1 finding stands)",
+      "type": "data",
+      "evidence": {
+        "sql": "SELECT count(*) FROM payment_terminals WHERE branch_id=1 → 0",
+        "round1_finding": "POS-FIND-04 reported same; no fix shipped"
+      },
+      "impact": "CARD payment scenario E2E impossible — TPE simulation needs at least 1 terminal row to bind terminal_id. PaymentService line 322 fiscal-allocation path for CARD/MOBILE/TICKET cannot be exercised by E2E. PosSplitPaymentPhantomCardSentinelTest covers it at unit level (intact per frozen-zone diff=0).",
+      "ref_sentinel": "tests/Feature/Sentinels/PosSplitPaymentPhantomCardSentinelTest.php",
+      "remediation": "Add fixture seeder creating 1 PaymentTerminal { branch_id:1, name:'TPE Test Comptoir', status:active } for E2E coverage."
+    },
+    {
+      "id": "POS-R2-FIND-06",
+      "severity": "P1",
+      "title": "0 POS-typed orders with REAL composition_snapshot — all 9 post-restore snapshots are empty `{lines:[], addons:[], extras:[]}`",
+      "type": "data+coverage",
+      "evidence": {
+        "pos_orders_type_15_count": 1,
+        "pos_order_132_snapshot": "{\"source\":\"goal-kds-seed\",\"suffix\":\"K05\"}",
+        "kiosk_orders_post_restore_snapshots": "9 rows all 106 bytes, payload = empty lines/addons/extras"
+      },
+      "impact": "No real wizard composition flow has been exercised since DB restore. Mission's CASH 10.40€ (Cayenne) / BOWL Bowl Frites Poulet mariné scenarios cannot be validated against PricingService SSOT round-trip. PricingService::calculateOrder code path (PricingService.php:266) verified via static code review only, not runtime.",
+      "verification_command": "SELECT id, LENGTH(composition_snapshot) AS l, composition_snapshot FROM order_items WHERE composition_snapshot IS NOT NULL ORDER BY id DESC LIMIT 10"
+    },
+    {
+      "id": "POS-R2-FIND-07",
+      "severity": "P2",
+      "title": "2 cash_drawer_sessions left open for branch 1 — drift from clean state",
+      "type": "data-state",
+      "evidence": {
+        "open_session_ids": [4, 7],
+        "both_opening_amount": "50.00€",
+        "opened_at": ["2026-05-28 14:27:34", "2026-05-28 18:27:31"],
+        "z_report_count": 1,
+        "z_status": "closed (sequence_no=1)"
+      },
+      "impact": "Two concurrent open sessions on the same branch is anomalous — UI may pick wrong session. CashDrawerSessionDialog uses /current endpoint which would resolve one; second is dangling. Could mask future test starts.",
+      "remediation": "Manual reconcile + close drawer #4 or revoke (admin tinker, NF525-safe via update closed_at)."
+    },
+    {
+      "id": "POS-R2-FIND-08",
+      "severity": "INFO",
+      "title": "NF525 audit chain integrity verified across 127 rows — 0 break",
+      "type": "verification",
+      "evidence": {
+        "rows_walked": 127,
+        "last_hash": "d0edbd1e3734f8489aa935bc9792e7e249567bb39980ab90bd12ef80c6f1db62",
+        "first_hash_genesis": "prev_hash empty as expected",
+        "delta_vs_baseline": "+26 rows since Round 1 baseline (101→127)",
+        "delta_explanation": "Concurrent KIOSK/CROSS spec runs + admin nav audit events",
+        "frozen_zone_diff_lines": 0
+      }
+    },
+    {
+      "id": "POS-R2-FIND-09",
+      "severity": "INFO",
+      "title": "Frozen-zone diff 0 lines — public/js/pos-wizard.js (5964 LOC), pos-wizard.css (1987 LOC), admin-pos-v4.blade.php (165 LOC), PricingService, FiscalSequenceService, ZReportService all untouched",
+      "type": "verification",
+      "evidence": "git diff --stat HEAD -- public/js/pos-wizard.js public/css/pos-wizard.css resources/views/admin-pos-v4.blade.php app/Services/Pricing/PricingService.php app/Services/Fiscal/FiscalSequenceService.php app/Services/Fiscal/ZReportService.php → empty"
+    },
+    {
+      "id": "POS-R2-FIND-10",
+      "severity": "INFO",
+      "title": "Raw-label sweep — pos-wizard.js (5964 LOC) + pos-wizard.css + admin-pos-v4.blade.php all clean (0 matches on 6 raw-label patterns)",
+      "type": "i18n",
+      "evidence": "patterns: pos.*, kiosk.*, [object Object], 0undefined, Label.X, NaN€ — zero matches"
+    },
+    {
+      "id": "POS-R2-FIND-11",
+      "severity": "P0-BLOCKED-AUDIT",
+      "title": "End-to-end runtime flow steps 3-7 still not exercised — same blocker as R1",
+      "type": "coverage",
+      "evidence": {
+        "constraints": [
+          "FROZEN: pos-wizard.js cannot be modified to add E2E hooks",
+          "P0 FIND-05 unfixed: 0 payment_terminals → CARD blocked",
+          "P1 FIND-06: 0 real composition snapshots → wizard add-to-cart not exercised post-restore",
+          "P1 FIND-02: no /admin/z-reports UI → Z close caissier-driven flow can't be tested via UI"
+        ],
+        "what_was_done_in_r2": "Re-traced URLs (found cash-overview), re-verified frozen-zone diff (0), re-verified audit chain (full walk, no break), re-verified wizard data alignment (Cayenne/Tacos 10 sauces PASS, Bowl ambiguous), code-path NF525 attestation"
+      },
+      "impact": "Mission steps 3 (drawer open), 4 (wizard add), 5-6 (payment cycles), 7 (Z close) remain code-attested but NOT runtime-exercised."
+    }
+  ],
+  "summary": {
+    "total_findings": 11,
+    "by_severity": {"P0": 1, "P0-BLOCKED-AUDIT": 1, "P1": 3, "P2": 2, "INFO": 3, "RESOLVED-FROM-R1": 1},
+    "frozen_zone_diff_lines": 0,
+    "nf525_chain_continuity_verified": true,
+    "nf525_chain_full_walk_verified": true,
+    "mission_step_results": {
+      "1_login": "PASS (200 + form available)",
+      "2_navigate_pos": "PASS (200 + SPA shell 4260b)",
+      "3_open_drawer": "BLOCKED runtime (code-attested via PosComponent.vue:1097 dialog mount); 2 dangling open sessions found",
+      "4_wizard_add": "BLOCKED runtime (pos-wizard.js frozen, no test hook); data alignment PARTIAL (Cayenne/Tacos PASS, Bowl ambiguous, Boule duplicates)",
+      "5_payment_cash": "BLOCKED runtime (no real POS orders post-restore)",
+      "5_payment_card": "BLOCKED runtime (0 payment_terminals)",
+      "6_refund": "code-attested (RefundWithCounterEntryService:127 NF525-compliant mirror seq) — not runtime-exercised",
+      "7_z_close": "BLOCKED UI (no /admin/z-reports route, only widget + API); audit chain intact"
+    },
+    "round1_vs_round2_delta": {
+      "p0_resolved": ["POS-FIND-01 (cash-drawer-overview wrong URL — real URL exists)"],
+      "p0_new_in_r2": [],
+      "p0_carried": ["POS-FIND-04 → R2-FIND-05 (0 payment_terminals)"],
+      "p1_new_in_r2": ["R2-FIND-02 (no Z-report UI page)", "R2-FIND-03 (bowl sauce count ambiguity)", "R2-FIND-06 (empty composition snapshots)"],
+      "p2_new_in_r2": ["R2-FIND-04 (Option Gratiné / Boule gratinée duplicate)", "R2-FIND-07 (2 dangling open drawers)"]
+    }
+  },
+  "decision": "heal",
+  "decision_reason": "Round 2 narrowed blockers: 1 P0 (payment_terminals seed deficit) + 3 P1 (Z-report UI surface + bowl sauce data ambiguity + empty composition snapshots). Frozen-zone 0 LOC + NF525 chain intact = ship-safety preserved. Heal path: seed 1 PaymentTerminal fixture + owner-resolve bowl sauce intent + investigate empty-snapshot regression. Mission steps 3-7 remain code-attested only.",
+  "next_steps_recommended": [
+    "OWNER GATE: clarify 'bols reduced to 2 sauces' — list-count=2 (heal seeder) vs choice-quota=2 (already correct)",
+    "Seed 1 PaymentTerminal row for branch 1 (POS_SIMULATION_HARDWARE compatible) to unblock CARD E2E",
+    "Investigate why post-restore composition snapshots are empty (likely test seeder bypass, not production-path regression)",
+    "Either add /admin/z-reports SPA route OR document widget+API-only as intentional V1 surface (caissier daily close uses dashboard widget link)",
+    "Reconcile + close 1 of the 2 open cash_drawer_sessions (CDS#4 or CDS#7)",
+    "Rename 'Option Gratiné' rows to canonical 'Boule gratinée' or remove duplicates (P2 data cleanup)"
+  ]
+}

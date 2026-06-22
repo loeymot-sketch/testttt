@@ -1,0 +1,166 @@
+{
+  "run": "rush-100-2026-05-13",
+  "wave": "A",
+  "round": 1,
+  "generated_at": "2026-05-13T07:55:40Z",
+  "states_reviewed": 35,
+  "findings": [
+    {
+      "id": "WA-R1-01",
+      "category": "i18n_leak",
+      "severity": "P1",
+      "state": "S1-03-wizard-open",
+      "evidence_file": "tests/e2e/__screenshots__/rush-100/kiosk/S1-03-wizard-open.png",
+      "evidence_snippet": "DOM body: \"Votre tacos comprend 1 viande : touchez celle que vous voulez.\" rendered inside wizard title \"SANDWICH CAYENNE\"",
+      "claim": "Sandwich Cayenne wizard QUELLE VIANDE step renders the Tacos template helper sentence (\"Votre tacos comprend 1 viande...\") instead of a sandwich-specific copy — hardcoded literal \"tacos\" string leaks on a Sandwich wizard. Categorised as i18n_leak (cat 1) because it is a template-string drift visible in the DOM, even though it doesn't match the dotted-key regex.",
+      "fix_hint": "In the meat-step component (KioskWizardComponent or kioskCustomization helper), replace the hardcoded \"Votre tacos comprend X viande\" with item-template-aware copy: `Votre {{ item.template_label }} comprend ...` driven by item.template (sandwich / galette / tacos / bol).",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "WA-R1-02",
+      "category": "i18n_leak",
+      "severity": "P1",
+      "state": "S2-03-wizard-open",
+      "evidence_file": "tests/e2e/__screenshots__/rush-100/kiosk/S2-03-wizard-open.png",
+      "evidence_snippet": "DOM body: \"Votre tacos comprend 1 viande : touchez celle que vous voulez.\" rendered inside wizard title \"GALETTE NORMALE\"",
+      "claim": "Galette Normale wizard QUELLE VIANDE step renders the Tacos template helper sentence — same root-cause as WA-R1-01 (Sandwich). Confirms shared meat-step component leaks across 2 non-tacos templates.",
+      "fix_hint": "Same as WA-R1-01: parametrise the helper sentence by item.template; remove the literal \"tacos\" from the meat-step view.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "WA-R1-03",
+      "category": "aria_keyboard",
+      "severity": "P1",
+      "state": "S7-03-wizard-open",
+      "evidence_file": "tests/e2e/__screenshots__/rush-100/kiosk/S7-03-wizard-open.png",
+      "evidence_snippet": "DOM: <button class=\"kiosk-generic-choice\" aria-pressed=\"false\"><span class=\"kiosk-generic-choice-name\">Frites</span></button> — no \"+\" icon, no \"CHOISIR\" text, no badge. Empty <!----> after the name span.",
+      "claim": "Bol Curry composer step \"Choix de la base\" renders option cards (Frites, Riz basmati) as plain text rectangles with zero visible affordance — no \"+\", no \"CHOISIR\" button, no red badge. The cards ARE buttons technically (aria-pressed=false) but a real customer cannot guess they are tappable. The wizard then sits stuck at step 1 with no advance until user accidentally taps a card. P1 because this blocks the primary task path (cannot compose product) for a paying customer.",
+      "fix_hint": "Add a trailing \"+\" badge and/or \"CHOISIR\" label inside the .kiosk-generic-choice element template, matching the pattern of .kiosk-product-card-add (used on the meat step). Update the empty <!----> sibling slot in kiosk-step-generic to render the affordance icon.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "WA-R1-04",
+      "category": "aria_keyboard",
+      "severity": "P1",
+      "state": "S9-03-wizard-open",
+      "evidence_file": "tests/e2e/__screenshots__/rush-100/kiosk/S9-03-wizard-open.png",
+      "evidence_snippet": "Petite Frites \"Choix du style\" step shows Nature / Cheddar fondu / Cheddar+Oignons frits cards with same plain-rectangle markup — no + or CHOISIR.",
+      "claim": "Same affordance gap as WA-R1-03 reproduced on Petite Frites composer-style step. Confirms the kiosk-step-generic / kiosk-generic-choice component is the shared root cause and impacts 2+ product families.",
+      "fix_hint": "Single fix in kiosk-step-generic component fixes both S7 and S9.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "WA-R1-05",
+      "category": "unexpected_4xx_5xx",
+      "severity": "P0",
+      "state": "S7-03-wizard-open",
+      "evidence_file": "tests/e2e/__screenshots__/rush-100/kiosk/S7-03-wizard-open.network.json",
+      "evidence_snippet": "[{\"url\":\"http://127.0.0.1:8000/api/frontend/pricing/preview\",\"method\":\"POST\",\"status\":422}] + console warning \"[kiosk] pricing preview failed: Request failed with status code 422\"",
+      "claim": "Backend pricing/preview endpoint returns 422 (validation reject) when the kiosk opens the Bol Curry composer step, BEFORE the user selects anything. Protocol allowlist for 422 covers only \"form validation submission\" — a pricing-preview AJAX is NOT a user-submitted form, so this 422 is unexpected (cat 10). NF525-sensitive: pricing SSOT contract is `PricingService::calculateOrder` and the kiosk falling back to local pricing is exactly the kind of silent drift the project mandate forbids. A yellow toast IS displayed (kiosk DOM has role=alert), so this is NOT cat 6 silent_error, but the underlying 4xx is itself the defect.",
+      "fix_hint": "Two fixes: (1) Fix the kiosk client payload sent to /api/frontend/pricing/preview at composer-step open — likely missing required option_ids when the step has no pre-selection yet; backend should accept partial payloads or kiosk should defer the preview call until first selection. (2) Strengthen the toast copy to distinguish \"calculé localement (backend rejected payload)\" from a normal local refresh.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "WA-R1-06",
+      "category": "unexpected_4xx_5xx",
+      "severity": "P0",
+      "state": "S9-03-wizard-open",
+      "evidence_file": "tests/e2e/__screenshots__/rush-100/kiosk/S9-03-wizard-open.network.json",
+      "evidence_snippet": "[{\"url\":\"http://127.0.0.1:8000/api/frontend/pricing/preview\",\"status\":422}]",
+      "claim": "Same 422 pricing/preview unexpected 4xx reproduced on Petite Frites composer step. Confirms WA-R1-05 is systemic on composer-step-first products (bol / frites) — not a one-off. Same NF525 SSOT concern.",
+      "fix_hint": "Single fix in kiosk client (defer pricing-preview until at least one option selected, or fix payload contract) closes both.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "WA-R1-07",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "state": "S9-07-confirmation",
+      "evidence_file": "tests/e2e/__screenshots__/rush-100/kiosk/S9-07-confirmation.png",
+      "evidence_snippet": "UI: \"Numéro de commande #A0003, Montant à régler 2,50 €, Paiement en espèces uniquement à la caisse\" — but DB check `wave-A-db-checks.json` reports \"S9.confirmation_reached=false, db_row={error:no_new_order, after_id:1324}\" identical to before_max_id.",
+      "claim": "Order S9 visually completed (kiosk reached confirmation screen #A0003 cash-at-counter) but the spec's DB lookup found NO new order row after baseline_max_id=1321 / before_max_id=1324. Either (a) the kiosk never posted the order to backend yet still drew a confirmation screen (P0 customer-facing lie — order looks confirmed but disappears), or (b) the spec's DB query reads a wrong column (queries `id` whereas kiosk orders may have a separate pseudo-number namespace #A0003) — making the S9 db_row untrustworthy. NOTE: the other 4 scenarios (S1/S2/S5/S7) ALSO show no_new_order, but those flows ended on an empty-cart screen so no_new_order is expected for them. S9 is the unique anomaly.",
+      "fix_hint": "Investigate FrontendOrderController / kiosk submit path — does cash-pay flow only persist on POS validation, not at kiosk confirmation? If yes, current behaviour is by design but the confirmation copy must say \"En attente de validation caisse\" not present-tense. Also verify wave-A db-check SQL (likely `SELECT MAX(id) FROM orders` — needs to also check `frontend_orders` + `kiosk_order_codes`). Either fix is required before declaring this state green.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "WA-R1-08",
+      "category": "loading_state_missing",
+      "severity": "P1",
+      "state": "all-S1..S9-04..S5..S6..S7",
+      "evidence_file": "reports/test-e2e/rush-100-2026-05-13/round-1/wave-A-report.md (lines 40-104)",
+      "evidence_snippet": "Report says \"walkWizard step 0 no-advance CTA found — abort\" for every scenario, yet PNGs S1-04, S2-04, S5-04 clearly show the wizard advanced to step 5 (QUEL MENU?), step 2 (QUELLE SAUCE?), and step 2 respectively. PNGs S9-06 + S9-07 show payment screen + #A0003 confirmation. Report logs are wrong.",
+      "claim": "Spec quality defect (not a protocol cat 1-12 per se, mapped here to loading_state_missing because the wait/advance helper aborts before the UI stabilises). The capture spec's walkWizard helper aborts after one frame, then captures further states that NO LONGER correspond to the labelled state names. S1-05-cart actually shows QUEL MENU wizard step, S2-05-cart shows QUELLE SAUCE wizard step, S1-06-payment / S2-06-payment / S5-06-payment / S7-06-payment all show empty cart (Votre panier est vide) NOT a payment screen, S1-07-confirmation is also empty cart. State-name-vs-content mismatch invalidates 60%+ of the artifact set as evidence — see open_questions for triage note. P1 because it blocks declaring this wave green without a re-run.",
+      "fix_hint": "Rewrite rush-100-kiosk-capture.spec.js walkWizard helper: do not abort on no_advance, instead wait for an element-stable signal then screenshot the actual current state with a state-name that reflects DOM (e.g. capture(\"after-step-1-meat\") not capture(\"05-cart\")). Additionally fix the wizard-advance detector — looks for a CHOISIR button but composer steps render aria-pressed buttons (S7/S9) and the meat step has CHOISIR but needs a click on the round + icon, not the text button.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "WA-R1-09",
+      "category": "empty_state",
+      "severity": "P2",
+      "state": "S1-06-payment, S2-06-payment, S5-06-payment, S7-06-payment, S1-07-confirmation, S2-07-confirmation, S5-07-confirmation, S7-07-confirmation",
+      "evidence_file": "tests/e2e/__screenshots__/rush-100/kiosk/S1-06-payment.png",
+      "evidence_snippet": "DOM: \"VOTRE PANIER / 0 article / [cart emoji] / Votre panier est vide / Parcourez le menu et ajoutez des articles ! / Ajouter des articles\".",
+      "claim": "Empty-cart state IS well-structured (illustration emoji + copy >=20 chars + primary CTA) so it passes empty-state quality protocol §5. However, hitting an empty cart on a /payment/ URL is itself a navigation defect — the kiosk should refuse to route to payment when cart is empty (route guard) instead of rendering panier-empty under a /payment context. Currently the spec-induced visit succeeds and shows empty cart, which means a customer who manually paste-navigates can land in a dead state.",
+      "fix_hint": "Add a route-level guard in KioskAppComponent or router: if cart.line_count===0, redirect /payment -> /categories. Same for /confirmation when no last_order. P2 because protocol's empty-state rubric passes, but worth listing in the report.",
+      "confidence": "MEDIUM"
+    },
+    {
+      "id": "WA-R1-10",
+      "category": "visual_hash_drift",
+      "severity": "P2",
+      "state": "S9-04-wizard-recap (and all category sidebars)",
+      "evidence_file": "tests/e2e/__screenshots__/rush-100/kiosk/S9-04-wizard-recap.png",
+      "evidence_snippet": "DOM: every <img class=\"kiosk-sidebar-thumb\" src=\"http://127.0.0.1:8000/images/category/cover.png\"> — identical for Sandwich Cayenne / Galette / Sandwich Classique / Tacos / Bols Gourmands / Frites / Suppléments / Desserts / Boissons.",
+      "claim": "All 9 category sidebar thumbnails render the SAME placeholder (cover.png / item-default.svg) — visually 9 identical burger pictures. A customer cannot distinguish categories by image, defeating the purpose of the sidebar visual nav. Also the brand thumbnail uses cover.png with alt=\"Bols Gourmands\" regardless of the current category. Mapped to visual_hash_drift (cat 12) since it is a content-vs-baseline divergence on a non-animated region.",
+      "fix_hint": "Backend: ensure each Category has a real `image_url` populated; frontend should fallback to a CATEGORY-SPECIFIC emoji or generated tile (not a meat-burger) when no image is set.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "WA-R1-11",
+      "category": "element_overlap",
+      "severity": "P2",
+      "state": "S7-04-wizard-recap, S9-04-wizard-recap",
+      "evidence_file": "tests/e2e/__screenshots__/rush-100/kiosk/S7-04-wizard-recap.png",
+      "evidence_snippet": "Yellow toast \"Tarif rafraîchi localement. Le total est vérifié au paiement.\" anchored bottom-center overlaps with the bottom navigation bar \"ABANDONNER L'ARTICLE / PRÉCÉDENT / SUIVANT / Total €10,50\".",
+      "claim": "On S7/S9 the persistent yellow warning toast is positioned over (or visually touching) the bottom-nav action row, partially obscuring the Total price chip and the SUIVANT button hit area on a 1080-wide kiosk viewport. Not a full P1 click-blocker because the toast has a × close, but reduces tap accuracy on a public-kiosk touch surface. Mapped to element_overlap (cat 3) because two clickable regions (toast × button + nav SUIVANT button) share screen real estate without clean separation.",
+      "fix_hint": "Move .kiosk-toast-container anchor from bottom: 0 to bottom: 96px (above the bottom nav) when the wizard is open, or shift the toast to top-center for kiosk-app context.",
+      "confidence": "MEDIUM"
+    },
+    {
+      "id": "WA-R1-12",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "state": "S7-03-wizard-open",
+      "evidence_file": "tests/e2e/__screenshots__/rush-100/kiosk/S7-03-wizard-open.dom.html",
+      "evidence_snippet": "<button class=\"kiosk-generic-choice\" aria-pressed=\"false\"><span class=\"kiosk-generic-choice-name\">Frites</span><!----></button> — no aria-label, only inner text; no role=group description for the choice set beyond aria-label=\"Choix de la base\".",
+      "claim": "Generic-choice buttons rely solely on inner span text for accessibility (acceptable per WCAG) but no aria-describedby links to the \"Minimum 1 choix\" validation hint, so a screen reader user hearing \"Frites, button, not pressed\" does not know how many to pick. Combined with WA-R1-03 (no visible affordance) this further weakens discoverability.",
+      "fix_hint": "Add aria-describedby on each .kiosk-generic-choice pointing to the .kiosk-validation-hint element id, so AT announces both the question and the constraint.",
+      "confidence": "MEDIUM"
+    }
+  ],
+  "passing_states": [
+    "S1-01-idle",
+    "S2-01-idle",
+    "S5-01-idle",
+    "S7-01-idle",
+    "S9-01-idle",
+    "S9-06-payment"
+  ],
+  "open_questions": [
+    "WA-R1-07: Is kiosk cash-pay supposed to persist the order at confirmation, or only at POS cashier validation? If the latter, the confirmation copy must say \"en attente caisse\" — please confirm the contract.",
+    "WA-R1-08: The spec's walkWizard.no_advance abort happens on the meat step (4-option) — is the kiosk supposed to auto-pick a default meat for the spec, or should the spec click an explicit option? Affects whether we re-run round 1 or treat this as design.",
+    "Are 422 on /api/frontend/pricing/preview at composer-step OPEN a backend bug (should accept empty composition) or a kiosk bug (should defer call) — needs backend log inspection.",
+    "Single-option auto-advance UX (e.g. Sauce Cayenne locked on Sandwich Cayenne): cannot be confirmed directly from captures (test stalled at meat step). Defer to round 2 once walkWizard advance helper is fixed."
+  ],
+  "summary": {
+    "P0": 3,
+    "P1": 5,
+    "P2": 4,
+    "P3": 0,
+    "open_P0": 3,
+    "open_P1": 5,
+    "open_P2": 4,
+    "open_P3": 0
+  },
+  "verdict": "NO-GO"
+}

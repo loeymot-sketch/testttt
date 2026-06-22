@@ -1,0 +1,143 @@
+{
+  "specialist": "RED-Adversarial",
+  "zone": "PS-1 POS Wizard composition",
+  "scope": "Composition forging, phantom item injection, profile mismatch bugs (cf. POS payment 4-scenarios fix 2026-05-18 profile 85)",
+  "mode": "READ-ONLY (FROZEN — CLAUDE.md §7)",
+  "generated_at": "2026-05-18",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "d3dc4c2c6",
+  "stance": "Adversarial — find what a determined attacker (or buggy code path) could exploit to violate NF525 / Pricing SSOT / composition integrity.",
+  "findings": {
+    "composition_forging_vectors": {
+      "vector_1_frontend_only_payload_tampering": {
+        "premise": "Attacker (or rogue JS extension) intercepts the wizard's dispatched data-wizard-pos-line-addons attribute and rewrites prices.",
+        "feasibility": "HIGH on client side — anyone with DevTools can rewrite DOM attributes.",
+        "impact": "NONE on backend pricing. Per CLAUDE.md §8 Pricing SSOT, backend PricingService::calculateOrder ignores frontend prices entirely; it reads item_id / variation_id / extra_id / addon_item_id from payload and re-computes using DB rows.",
+        "verification": "app/Services/Pricing/PricingService.php:266 [T07 SSOT] builds immutable composition_snapshot AT order creation using DB-resolved entities. The wizard's pos-wizard.js:4143-4172 addonToPayload() does carry currency_price / convert_price fields, but those are display-only and overridden server-side.",
+        "verdict": "Mitigated by design. NO COMPOSITION FORGING via price tampering. NF525 invariant intact."
+      },
+      "vector_2_phantom_id_injection": {
+        "premise": "Attacker rewrites data-wizard-pos-line-addons to inject a fake item_id that doesn't exist in DB, or a variation_id belonging to a cheaper item.",
+        "feasibility": "Medium — possible via DOM manipulation",
+        "impact_analysis": [
+          "Phantom item_id → PricingService loads Item::find($itemId); if null, the order line is dropped or 500. No price arbitrage.",
+          "Cross-item variation_id → CompositionSnapshotBuilder validates variation belongs to item via dbVariations[$varId] lookup keyed by id. If the variation belongs to ANOTHER item, the line is still inserted with the variation's price. This MIGHT allow cross-item arbitrage IF the backend doesn't cross-check item_attribute_id->item_id."
+        ],
+        "verification_attempted": "Read app/Services/Pricing/CompositionSnapshotBuilder.php:41-60 — it keys $dbVariations by $varId and assumes the caller (PricingService) has already loaded only the variations belonging to the requested item_ids. Cross-check happens UPSTREAM in PricingService::calculateOrder when loading variations via whereIn('id', $variationIds)->whereIn('item_id', $itemIds). Need to verify this is actually enforced. Not in scope to read PricingService fully here, but flagging.",
+        "verdict": "POTENTIAL gap — not confirmed exploitable, but worth a dedicated test sentinel. Backlog WIZ-RED-1: add cross-item variation rejection test.",
+        "severity": "MEDIUM-INVESTIGATIVE"
+      },
+      "vector_3_double_submit_race": {
+        "premise": "Attacker rapidly clicks 'Ajouter au panier' twice; wizard dispatches two 'wizard:add-to-cart' events.",
+        "feasibility": "HIGH — no debounce in wizard (pos-wizard.js:5850-5854 binds direct click handler with no e.preventDefault / no debounce)",
+        "impact": "Vue ItemComponent.addToCart() would be called twice. If Vue's addToCart isn't idempotent, two cart lines get added. NOT a NF525 violation — both lines re-priced backend. User sees double line; cashier removes one.",
+        "actual_mitigation_in_code": "After dispatch, wizard closes (setTimeout 200ms at pos-wizard.js:4270-4273) and originalBody.style.display = 'none', which prevents the second click from reaching the button. Race window = ~200ms.",
+        "verdict": "Low impact, defensible by 200ms close delay. Backlog WIZ-RED-2: add explicit debounce (disable button on click).",
+        "severity": "LOW"
+      },
+      "vector_4_composer_profile_mismatch_bug_profile_85": {
+        "premise": "Per BRAIN entry 'POS Payment 4-scenarios fix 2026-05-18 profile 85', the root cause of 'Composition #N n'appartient pas' was missing viande+crudite STEPS in profile 85. The wizard was sending option_ids that the backend rejected.",
+        "current_state": "Per project notes: data fix via seeder + simulation_hardware config + i18n keys + E2E spec. Profile 85 steps now complete.",
+        "remaining_risk": "Other composer_profiles may have similar missing-step gaps. The wizard's buildStepsFromComposerProfile() at pos-wizard.js:493-539 trusts profile.steps as-emitted by backend. If backend emits an incomplete profile (admin error in CRUD), the wizard renders what it gets and the submit may fail server-side validation.",
+        "detection_difficulty": "HIGH — failure only surfaces at payment time as a generic 'Composition' error. No early validation.",
+        "verdict": "ARCHITECTURAL — backlog WIZ-RED-3: add a server-side smoke validator that flags composer_profiles missing required steps (viande/sauce for items in viande-bearing categories, etc.) at admin save time, not at order time.",
+        "severity": "MEDIUM-PRODUCTION-PERFECTION"
+      },
+      "vector_5_garniture_default_inclusion_bypass": {
+        "premise": "The wizard treats crudités as 'default included unless explicitly toggled off' (pos-wizard.js:3842-3850). Garniture key 'c_<id>' === false means removed; absence means included.",
+        "feasibility": "Attacker rewrites selections.garnitures to set 'c_<id>' = undefined for a paid garniture.",
+        "impact": "Only crudités (price 0) are treated as default-included. Paid garnitures require explicit true. No arbitrage possible — server re-prices.",
+        "verdict": "Logic-safe.",
+        "severity": "INFO"
+      },
+      "vector_6_xhr_intercept_data_poisoning": {
+        "premise": "Attacker intercepts /admin/item/* response via service worker or browser extension; rewrites it to include a $0 phantom variation.",
+        "feasibility": "Requires browser-level compromise. Out of normal threat model.",
+        "impact": "Wizard renders the poisoned variation; user clicks; wizard sends variation_id to backend; backend looks up DB → variation doesn't exist → line dropped OR backend pricing uses real DB price (not poisoned price).",
+        "verdict": "Backend SSOT defends.",
+        "severity": "INFO"
+      }
+    },
+    "phantom_item_option_injection_attempts": {
+      "attempt_A": {
+        "description": "Inject item_id=9999 (non-existent) via data-wizard-pos-line-addons.menu_extras",
+        "predicted_outcome": "Backend Item::find(9999) → null → PricingService either skips or 422s. Worst case: order line absent. Best case: cleanly rejected.",
+        "actual_code_path_to_verify": "app/Services/Pricing/PricingService.php variation+addon resolution. Not in PS-1 scope."
+      },
+      "attempt_B": {
+        "description": "Inject parent_addon_id pointing to an ItemAddon belonging to a different parent item",
+        "code_reference": "pos-wizard.js:4144 parent_addon_id: String(ad.id) — wizard passes the ItemAddon.id as string. Backend resolves ad.id → ItemAddon → addon_item_id. If backend doesn't validate ItemAddon.item_id matches the requesting parent item, it's a vector.",
+        "verdict": "ARCHITECTURAL — needs verification in backend OrderService addon resolution. Backlog WIZ-RED-4: confirm ItemAddon ownership cross-check at order create time.",
+        "severity": "MEDIUM-INVESTIGATIVE"
+      }
+    },
+    "profile_mismatch_class_of_bugs": {
+      "general_pattern": "POS wizard renders whatever the backend emits as composer_profile, then sends back option_ids. Mismatches between backend profile definition and runtime DB state (e.g. seeder created profile but didn't link required attributes) surface as cryptic 'Composition' errors at payment.",
+      "concrete_instances_in_recent_history": [
+        "Profile 85 missing viande+crudite (BRAIN 2026-05-18)",
+        "Menu V3 owner-file ingest cycle 2026-05-14 — bowl 3-step bowl-drink combo-vs-drink-pure path ambiguity (P1 open)",
+        "Profile 488/489/479 created by MenuHealLightV2Round2PatchCommand (manual seeders)"
+      ],
+      "prevention_strategy": [
+        "Server-side: schema validator on composer_profile save (admin CRUD)",
+        "Server-side: nightly cron audit comparing item categories to composer_profile step coverage",
+        "Frontend: defensive console.warn in normalizeComposerStep (already present at pos-wizard.js:517-522 for unsupported step types)"
+      ],
+      "verdict": "Class-of-bug exists. Profile 85 was the trigger. Backlog WIZ-RED-5: composer_profile coverage report command + admin guardrail.",
+      "severity": "MEDIUM"
+    },
+    "dispute_against_architect_security_findings": {
+      "architect_claimed_8_10_score": "RED accepts the 8/10 architecture score for the wizard's frontend code. RED escalates concern on backend ownership cross-checks (variation→item, addon→item) — those are OUT of PS-1 frontend scope but flagged as 3 backlog items.",
+      "security_low_severity_xss_dispute": "RED concurs MED-1 and MED-2 are correctly Medium and not Higher, because (a) POS is admin-auth-only, (b) Backend re-prices everything, (c) cross-surface instruction render risk requires KDS/OSS template audit (not in PS-1)."
+    }
+  },
+  "backlog_recommendations_red_specific": [
+    {
+      "id": "WIZ-RED-1",
+      "title": "Cross-item variation_id rejection sentinel",
+      "rationale": "Vector 2 phantom_id_injection — verify variation_id MUST belong to item_id in the payload",
+      "priority": "P1",
+      "effort": "S (1 day test)",
+      "frozen_zone_touch": false
+    },
+    {
+      "id": "WIZ-RED-2",
+      "title": "Add-to-cart debounce / button-disable",
+      "rationale": "Vector 3 double-submit race",
+      "priority": "P3",
+      "effort": "XS (1 hour)",
+      "frozen_zone_touch": true,
+      "frozen_zone_LOCK_required": "LOCK_WIZ-RED-2 — single line addBtn.disabled=true after click"
+    },
+    {
+      "id": "WIZ-RED-3",
+      "title": "composer_profile completeness validator (admin save + nightly cron)",
+      "rationale": "Vector 4 profile mismatch class of bugs",
+      "priority": "P1",
+      "effort": "M (3-4 days)",
+      "frozen_zone_touch": false
+    },
+    {
+      "id": "WIZ-RED-4",
+      "title": "ItemAddon ownership cross-check at order create",
+      "rationale": "Phantom B — parent_addon_id pointing to ItemAddon of another item",
+      "priority": "P1",
+      "effort": "S (2 days)",
+      "frozen_zone_touch": false
+    },
+    {
+      "id": "WIZ-RED-5",
+      "title": "composer_profile coverage report Artisan command",
+      "rationale": "Detect profile gaps before admin saves (linter-style)",
+      "priority": "P2",
+      "effort": "S (2 days)",
+      "frozen_zone_touch": false
+    }
+  ],
+  "verdict": {
+    "critical_attacks_found": 0,
+    "exploitable_pricing_breach": 0,
+    "investigative_mediums": 3,
+    "summary": "RED could not find an exploitable composition-forging vector through pos-wizard.js itself — backend Pricing SSOT defends correctly. Three backend cross-check questions (variation→item, addon→item, profile completeness) are flagged for follow-up but are NOT in PS-1 frontend scope. The class-of-bug 'profile X missing step Y' is a recurring production-perfection issue (profile 85, bowls, others) — owner-grade backlog WIZ-RED-3 is the highest-value RED recommendation."
+  }
+}

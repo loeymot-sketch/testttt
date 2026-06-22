@@ -1,5 +1,6 @@
 import axios from 'axios'
 import appService from "../../../services/appService";
+import { buildIdempotencyHeaders } from "../../../helpers/idempotencyHeaders";
 
 
 export const frontendOrder = {
@@ -109,7 +110,9 @@ export const frontendOrder = {
         },
         changeStatus: function (context, payload) {
             return new Promise((resolve, reject) => {
-                axios.post(`frontend/order/change-status/${payload.id}`,payload).then((res) => {
+                axios.post(`frontend/order/change-status/${payload.id}`, payload, {
+                    headers: buildIdempotencyHeaders(payload),
+                }).then((res) => {
                     context.commit('show', res.data.data);
                     resolve(res);
                 }).catch((err) => {

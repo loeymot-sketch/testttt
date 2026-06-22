@@ -1,0 +1,72 @@
+{
+  "specialist": "RED-team / adversarial",
+  "task": "WE-2 — challenge the Path A DÉMO V1 badge approach end-to-end",
+  "scope": "read-only adversarial review of UX/A11y plan + risk envelope",
+  "frame": "hostile-but-constructive — find what could make this fail in production",
+  "attack_vectors_considered": {
+    "ATK-1_customer_doesnt_see_badge": {
+      "scenario": "Customer is excited about +25 pts, sees big number, taps Commencer à commander, never reads chip",
+      "feasibility": "MEDIUM-HIGH — Gestalt principle: bold large numbers dominate over small uppercase chips",
+      "counter_mitigation_proposed_by_ux": "3 placements (head + QR + success modal) — all in attention hotspots",
+      "residual_assessment": "ACCEPTABLE: 3 surfaces, customer crosses all 3 surfaces in flow (signup → success modal → loyalty page → present QR at POS). Each surface independently surfaces demo state. Statistical residual risk: customer ignores all 3 chips simultaneously = unlikely.",
+      "stronger_alternative_NOT_chosen": "Full modal/banner with explicit copy 'Cette balance est démonstration, ne sera pas honorée à la caisse'. Rejected because: (a) owner explicit Path A scope ~6 LOC heal; (b) UX cost — would break wallet hero aesthetic; (c) success modal already congratulatory — banner overlap = noise. Defer to Path B if Round-1 visual analysis flags weak signal."
+    },
+    "ATK-2_badge_text_ambiguous": {
+      "scenario": "Customer sees 'DÉMO V1' — interprets as version label, not as 'this is fake'",
+      "feasibility": "MEDIUM — non-tech customer may not parse DÉMO as 'this won't work at the till'",
+      "counter_mitigation_proposed_by_ux": "aria-label + tooltip title attribute = full explanation 'points non synchronisés avec la caisse' / 'ce QR code n'est pas connecté à la caisse'",
+      "residual_assessment": "MITIGATED for screen-reader users. PARTIAL for sighted non-screen-reader users — tooltip only on hover (desktop) / long-press (mobile may not surface). Acceptable V1 because: (a) Path A scope budget; (b) badge alone is signal that something is different from production; (c) POS-side decline message will be the ultimate signal if customer presents at till.",
+      "stronger_alternative_NOT_chosen": "Replace 'DÉMO V1' with 'TEST — non utilisable en caisse' (more explicit). Rejected because: (a) owner-locked badge label per brief; (b) long text breaks chip visual; (c) chip aesthetic is internationally readable as 'this is a label'. Surface for owner consideration in STATUS."
+    },
+    "ATK-3_color_contrast_borderline": {
+      "scenario": "yellow + ink chip on dark wallet — chip border against bg insufficient for low-vision users",
+      "feasibility": "LOW — palette inspection shows ink (#0A0A0A) wallet bg + yellow (#FFD93D) chip = chip-to-bg luminance contrast ~14:1, chip-internal text ~16:1",
+      "counter_mitigation_proposed_by_ux": "yellow chip color matches lc-wallet-mark which already passed WCAG (verified Z-7 axe sweep 116/116 GREEN)",
+      "residual_assessment": "NO ATTACK — palette already in production-validated palette set"
+    },
+    "ATK-4_i18n_FR_only_users_misunderstand_DEMO": {
+      "scenario": "Non-French speaker tourist sees 'DÉMO V1' — ambiguous",
+      "feasibility": "LOW — site is explicitly FR-only V1 (Le Cayenne single-restaurant Hénin-Beaumont); tourist target is minor segment",
+      "counter_mitigation_proposed_by_ux": "FR-only acceptable V1 debt, documented in STATUS",
+      "residual_assessment": "ACCEPTABLE — single-restaurant FR market"
+    },
+    "ATK-5_e2e_test_flake_due_to_async_loyalty_load": {
+      "scenario": "Playwright spec asserts badge visibility before React renders loyalty page after auth flow",
+      "feasibility": "HIGH — z7-ORD.1 already shows complex async OTP → success → loyalty flow",
+      "counter_mitigation_required": "Spec MUST: (a) waitForFunction window.LC after boot; (b) waitForTimeout post-OTP success transition (≥1s); (c) waitForFunction document.body.innerText match 'DÉMO V1' before assert; (d) include 4 viewports × 3 contexts = 12 screenshot captures. Reuse z7 spec OTP-flow pattern verbatim — already proven stable.",
+      "residual_assessment": "ACCEPTABLE if spec follows established pattern"
+    },
+    "ATK-6_screen_reader_announce_redundant": {
+      "scenario": "If badge announced on every page load, screen reader users get fatigued by repeated 'mode démonstration version 1' on every loyalty visit",
+      "feasibility": "LOW — aria-label is read once when element receives focus or is read in document order; not announced as live region (correct choice not to use role='status')",
+      "counter_mitigation_proposed_by_ux": "Plain span with aria-label (not aria-live) per ARIA APG static content pattern",
+      "residual_assessment": "MITIGATED — plain span correct semantic choice"
+    },
+    "ATK-7_breaks_existing_layout": {
+      "scenario": "Adding badge to lc-wallet-head row may push lc-wallet-tier off, break flex layout",
+      "feasibility": "LOW-MEDIUM — depends on viewport width. Mobile 390px has limited row real estate",
+      "counter_mitigation_required": "Insert badge BEFORE lc-wallet-mark (so layout is [DÉMO V1] [LE CAYENNE · CLUB] [★ Pepper Club]) OR as text-shrink-safe element; mobile fallback may wrap. Test 4 viewports.",
+      "residual_assessment": "VERIFY in visual test phase — 4 viewport capture × 3 contexts = 12 screenshots will catch any wrap/overlap issue"
+    },
+    "ATK-8_owner_decided_path_A_but_path_B_could_be_better": {
+      "scenario": "Path A is minimal but may not fully de-risk; Path B (API wireup) is the true fix but defers to V1.0.x roadmap",
+      "feasibility": "META — task-level decision already made by owner 2026-05-19",
+      "counter_mitigation_proposed_by_ux": "n/a — owner gate-cleared Path A as V1 ship-it. Path B is V1.0.x backlog.",
+      "residual_assessment": "OUT OF SCOPE — execute Path A as instructed; document V1.0.x backlog item in STATUS"
+    }
+  },
+  "test_strategy_demands": {
+    "T1_visible_on_4_viewports": "must capture mobile 390 / tablet 768 / desktop 1280 / wide 1920 — 4 captures",
+    "T2_visible_in_3_contexts": "must capture (a) wallet head; (b) QR area; (c) success modal — 3 contexts",
+    "T3_text_substring_assertion": "assert page.innerText contains 'DÉMO V1' substring (3 occurrences expected across loyalty page; 1 on success modal)",
+    "T4_aria_label_present": "assert at least 1 element has aria-label containing 'démonstration' (case-insensitive)",
+    "T5_existing_116_green_unbroken": "must run web-z7 spec post-implementation to verify no regression",
+    "T6_console_clean": "no new console errors introduced by inline aria-label JSX",
+    "T7_axe_no_new_violations": "optional — defer to next axe run; badges add aria-label so should be fine, but may flag duplicate aria-label if 3 badges share text"
+  },
+  "expected_failures_before_implementation": [
+    "Spec written BEFORE implementation = RED expected: 'DÉMO V1' text not in page innerText, 0 occurrences. Spec must fail.",
+    "Post-implementation = GREEN: 3 occurrences on loyalty page (head + QR + ... wait, 2 placements there: head + QR), 1 on success modal."
+  ],
+  "verdict": "GO — Path A bounded acceptable risk, 3-surface placement strategy adequate, test plan executable, residual risks documented and minor. Stronger alternatives (banner / full modal) explicitly deferred to Path B per owner gate. Execute now."
+}

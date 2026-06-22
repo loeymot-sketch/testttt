@@ -1,0 +1,73 @@
+{
+  "at": "2026-04-24T11:35:36.817Z",
+  "model": "gpt-5.5",
+  "target_tokens": 100000,
+  "max_completion_per_stream": 22000,
+  "cumulative_api": {
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0
+  },
+  "cumulative_est": {
+    "prompt_tokens": 78999,
+    "completion_tokens": 21839,
+    "total_tokens": 100838
+  },
+  "parts": [
+    {
+      "theme": "POS — caisse, panier, encaissement",
+      "http": 200,
+      "ms": 161435,
+      "err": null,
+      "char_user": 52703,
+      "char_out": 13811,
+      "est_prompt": 16470,
+      "est_completion": 4316,
+      "est_total": 20786
+    },
+    {
+      "theme": "Paiements & transactions (backend + fiscalité aperçu)",
+      "http": 200,
+      "ms": 167772,
+      "err": null,
+      "char_user": 52722,
+      "char_out": 14976,
+      "est_prompt": 16476,
+      "est_completion": 4680,
+      "est_total": 21156
+    },
+    {
+      "theme": "Commande en ligne & FrontendOrder",
+      "http": 200,
+      "ms": 158897,
+      "err": null,
+      "char_user": 51859,
+      "char_out": 13849,
+      "est_prompt": 16206,
+      "est_completion": 4328,
+      "est_total": 20534
+    },
+    {
+      "theme": "Cuisine KDS & affichage",
+      "http": 200,
+      "ms": 141306,
+      "err": null,
+      "char_user": 42814,
+      "char_out": 12153,
+      "est_prompt": 13379,
+      "est_completion": 3798,
+      "est_total": 17177
+    },
+    {
+      "theme": "Borne Kiosk & attente & wizard",
+      "http": 200,
+      "ms": 172018,
+      "err": null,
+      "char_user": 52699,
+      "char_out": 15095,
+      "est_prompt": 16468,
+      "est_completion": 4717,
+      "est_total": 21185
+    }
+  ]
+}

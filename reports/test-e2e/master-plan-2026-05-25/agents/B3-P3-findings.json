@@ -1,0 +1,280 @@
+{
+  "agent": "B3-P3",
+  "title": "KDS x Caissier signal chain — chef-to-cashier communication",
+  "reframe": "Audit RO de la chaine de communication entre Chef (KDS) et Caissier (POS). Verification : signal chef -> cashier sur ingredient manque, cashier override KDS bump, cashier visibility sur KDS load. Cross-validate B1-P3 finding 'borne live status MISSING'.",
+  "discipline": "DM6 RO + DM3 + DM5 + DM8",
+  "server": "http://127.0.0.1:8000",
+  "date": "2026-05-25",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+
+  "surfaces_verified_alive": {
+    "kiosk_idle": "HTTP 200",
+    "admin_pos": "HTTP 200",
+    "kds": "HTTP 200"
+  },
+
+  "states": [
+    {
+      "id": 1,
+      "name": "Read KitchenDisplaySystemComponent.vue — chef->cashier signal mechanism inventory",
+      "status": "AMBER",
+      "evidence": {
+        "file": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue",
+        "lines_total": 2778,
+        "echo_subscriptions": {
+          "OrderStatusChanged": "L1865",
+          "OrderCreated": "L1870 (debouncedRefresh)",
+          "OrderPaidAtCounter": "L1871 (debouncedRefresh)",
+          "ItemAvailabilityChanged": "L1877 (_onItemAvailabilityChanged L2230)",
+          "OrderTableChanged": "L1882"
+        },
+        "chef_outbound_signals_found": "ZERO — KDS Vue n'emet AUCUN broadcast vers POS/Cashier sur:\n  - 'ingredient manquant'\n  - 'item indisponible signale par chef'\n  - 'order delayed'\n  - 'kitchen overloaded'\n  - 'recall request'\nLe KDS est read-only / write-on-self : il ne fait que mettre a jour le order status (ACCEPT/PREPARING/PREPARED) via POST /api/admin/kds-order/{id}/change-status, qui declenche OrderStatusChanged. C'est un signal de progression, pas un signal d'alerte.",
+        "inbound_oos_handling": {
+          "function": "_onItemAvailabilityChanged L2230-2267",
+          "behavior": "Sur reception event branch-scoped is_available=false: dispatch kdsInflight/markDeavailable + toast warning 'Item indisponible' + aria-live region. SI is_available=true: clearItem. Sinon: debouncedRefresh.",
+          "ui_consequence": "kds-oos-warning-badge L297/487/659/837 affiche un badge rouge sur les cards in-flight (status ACCEPT ou PREPARING) qui contiennent le item 86. Pas affiche sur PREPARED (rationale: chef a fini, plus pertinent)."
+        }
+      },
+      "verdict": "KDS est consumer pur de ItemAvailabilityChanged. Pas de signal sortant chef-initie vers cashier."
+    },
+    {
+      "id": 2,
+      "name": "Verify ItemAvailabilityChanged event flow — direction",
+      "status": "RED",
+      "evidence": {
+        "event_file": "app/Events/ItemAvailabilityChanged.php",
+        "two_modes": {
+          "global": "fromItem() — admin edits item.status/item.price (ItemController). Broadcast a TOUTES branches.",
+          "branch_scoped": "forBranch() — MENU_86 per-branch rupture. Broadcast canal 'private-branch.{id}' uniquement (Listener PersistItemAvailabilityChangedToOutbox L34-44)."
+        },
+        "dispatchers": {
+          "ItemService::dispatch(L406, L564)": "admin edit item (global) — actor=admin via ItemController",
+          "ItemExtraService L127": "admin edit option — actor=admin",
+          "ItemAddonService L91": "admin edit addon — actor=admin",
+          "ItemVariationService L201": "admin edit variation — actor=admin",
+          "AvailabilityService L386 / L763": "MENU_86 manual rupture — actor=admin via POST /api/admin/menu/availability/toggle (middleware permission:items_edit, RouteServiceProvider throttle menu-availability 60/min)",
+          "StockService L151 / L202 / L211": "AUTO-86 sur stock_rupture (declenche par OrderCreated listener — pas par chef directement)"
+        },
+        "permission_gate": {
+          "controller": "app/Http/Controllers/Admin/AvailabilityController.php L21",
+          "middleware": "permission:items_edit applied to toggle/setMaxDailyQty/toggleExtra/toggleVariation/showBranchAvailability",
+          "chef_role_permissions": "database/seeders/RolePermissionTableSeeder.php — Chef = ['dashboard', 'kitchen-display-system', 'order-status-screen'] UNIQUEMENT. PAS de items_edit.",
+          "implication": "Chef NE PEUT PAS signaler 'manque ingredient' via les endpoints existants — il faudrait soit un endpoint dedie chef-only (inexistant), soit elever le role chef (anti-pattern security + brouille NF525 actor trace)."
+        },
+        "direction_finding": "TOUS les emitteurs d'ItemAvailabilityChanged sont COTE ADMIN (cashier=admin pour rupture mode, ou auto-stock). Le chef KDS est uniquement RECEIVER. Le signal est donc strictement CASHIER->CHEF (direction inverse de la mission)."
+      },
+      "verdict_red": "Flow reverse only confirme. Chef -> Cashier directionalement ABSENT."
+    },
+    {
+      "id": 3,
+      "name": "Look for: kitchen_signal table, chef_to_cashier broadcast",
+      "status": "RED",
+      "search_results": {
+        "tables_searched": ["kitchen_signal", "chef_signal", "cashier_alert", "kitchen_to_pos", "kds_to_pos", "chef_alert"],
+        "migrations_found": "ZERO — aucune migration ne cree de table de signal chef->cashier (database/migrations/ inspecte, seules notifications/push_notifications/capture_payment_notifications/notification_alerts existent, toutes orientees customer ou system).",
+        "events_searched": "app/Events/ inspecte exhaustivement. Aucun evenement nomme 'KitchenSignal', 'ChefToCashier', 'IngredientMissing', 'KitchenOverloaded', 'OrderDelayed', 'KitchenAlert'. La closest = IngredientAvailabilityChanged (mais ce sont admin/stock pipelines, pas chef-initiated).",
+        "broadcast_channels_searched": "private-pos, private-cashier, private-admin.notifications — INEXISTANTS. Le seul canal cross-surface est 'private-branch.{id}' (fan-out a TOUS les listeners de la branch: KDS, POS, Kiosk, OSS via Echo subscriptions).",
+        "kds_outbound_axios_calls": {
+          "POST /api/admin/kds-order/{id}/change-status": "change order status ACCEPT->PREPARING->PREPARED",
+          "POST /api/admin/kds-order/{id}/bump-revert": "uncook ticket (Wave J)",
+          "no_signal_endpoint": "PAS d'endpoint /api/admin/kitchen-signal ni /api/admin/kds/alert-cashier."
+        }
+      },
+      "gap_canonical": "L'architecture FoodKing n'a PAS de canal sortant chef-initiated. Le chef peut SEULEMENT exprimer:\n  (a) progression d'order via status transitions (consume via OrderStatusChanged sur tracker)\n  (b) revert d'un bump (Wave J)\nIl ne peut PAS exprimer:\n  - 'cet ingredient est manquant maintenant'\n  - 'cette commande est retardee'\n  - 'la cuisine est saturee, ralentissez encaissements'\n  - 'cette modification de commande est impossible (vrac)'"
+    },
+    {
+      "id": 4,
+      "name": "Cross-validate B1-P3 finding — borne live status MISSING",
+      "status": "GREEN",
+      "cross_validation": {
+        "b1_p3_finding_id": "F-B1-P3-01",
+        "b1_p3_claim": "KioskMachineListComponent expose seulement machine_id+branch_name+user_name+status+is_login. Pas de last_seen/heartbeat/current_session_state/wizard_step/cart_amount/idle_since.",
+        "my_independent_verification": {
+          "file_inspected": "resources/js/components/admin/settings/KioskMachine/KioskMachineListComponent.vue",
+          "result": "CONFIRME — colonnes affichees = machine_id, branch_name, user_name, username, status (ACTIVE/INACTIVE checkbox), is_login (Y/N + logout button). Aucune colonne d'etat session vivante.",
+          "extension": "Le meme principe s'applique au KDS: KDS ne diffuse PAS son etat de charge (nombre de cards in_preparation, temps moyen de prep, queue depth) vers le caissier. PosOrdersTrackerComponent voit les meme orders que KDS via /api/admin/pos/orders/* mais SANS metadata de charge (juste status + age via order_serial_no + total)."
+        },
+        "kds_load_visibility_in_pos": {
+          "verdict": "MANQUANT",
+          "evidence": "PosOrdersTrackerComponent.vue inspecte: Echo subscriptions L662-675 sont OrderCreated, OrderStatusChanged, OrderPaidAtCounter — PAS ItemAvailabilityChanged. Le caissier voit cards in-flight individuelles mais pas KPI agregeable ('5 orders en preparation, ETA 8 min, chef OK').",
+          "consequence": "Le caissier ne peut PAS prendre une decision informee sur 'accepter une nouvelle commande borne' versus 'attendre que la cuisine vide la queue' parce qu'il n'a aucun signal de saturation venant du KDS."
+        }
+      },
+      "verdict": "B1-P3 finding F-B1-P3-01 reconfirme + etendu: le pattern 'caissier aveugle' s'applique au-dela des bornes — il s'applique aussi a la cuisine. Aucune surface de monitoring chef-state cote cashier."
+    },
+    {
+      "id": 5,
+      "name": "Cashier override KDS bump rare — verification",
+      "status": "AMBER",
+      "evidence": {
+        "what_exists": {
+          "OrderStatusRequest": "app/Http/Requests/OrderStatusRequest.php L25 — gate ['Admin', 'Branch Manager', 'Chef', 'POS Operator', 'Cashier']. POS Operator/Cashier PEUT changer le status d'un order (theoriquement override KDS bump).",
+          "POS_tracker_cancel": "PosOrdersTrackerComponent L266 openCancelDialog — cashier peut annuler un order REEL avec reason >=3 chars (visible quand col.id !== 'delivered'). Backend OrderService::changeStatus(CANCELED) avec reason max:700.",
+          "POS_reprint": "Cashier peut reprint ticket (cf. B1-P3 §4)."
+        },
+        "what_is_missing": {
+          "no_kds_bump_revert_from_pos": "Le bouton 'bump-revert' (KdsHistoryDrawer Wave J 2026-05-23 git log d601fdd34) existe SEULEMENT dans le KDS UI — pas dans POS tracker. Si chef bump PREPARED par erreur, le caissier doit aller cote KDS (changement de surface = friction). Pour Le Cayenne single-resto c'est OK (caissier voit le KDS), pour V2 multi-resto/distance ce sera bloquant.",
+          "no_force_to_preparing": "Le caissier ne peut PAS forcer un order ACCEPT->PREPARING depuis POS (la transition est auto-promote sur counter-collect Wave S-1 / Wave S-5, ou manuelle cote KDS). Pas de bouton 'rush this order' dans POS.",
+          "no_chef_to_cashier_block": "Si un chef detecte qu'une commande contient un item rendu indisponible en cours de prep (cas: dernier sandwich poulet vient d'etre fait, le ticket suivant aussi en demande), il n'a aucun moyen technique de NOTIFIER le caissier specifiquement ('order N122 a un probleme'). Le KDS dispatch _onItemAvailabilityChanged sur sa propre instance, mais le POS tracker ne le re-affiche pas."
+        }
+      },
+      "verdict": "Cashier override post-bump = MANUAL OU CROSS-SURFACE. Pas de telecommande POS->KDS atomique. Acceptable V1 Le Cayenne (proximite physique), backlog V1.0.2/V2."
+    }
+  ],
+
+  "adversarial_disputes": [
+    {
+      "claim": "Chef ne peut pas signaler 'manque ingredient' au cashier",
+      "dispute_initial": "Faux — le chef peut juste appeler le caissier de vive voix (Le Cayenne single-resto, 3m de distance). Pas besoin de signal technique.",
+      "resolution": "Vrai en V1 Le Cayenne. MAIS: (a) Voix ne genere AUCUNE trace NF525 sur 'pourquoi cet order a ete annule' — le caissier doit ressaisir manuellement la reason dans openCancelDialog reason field. (b) En heure de pointe avec bruit + 3 bornes + 2 caissiers, la voix est non-deterministe. (c) Le V2 SaaS multi-resto OU le chef est dans une cuisine separee (food court, dark kitchen) RENDRA ce gap bloquant. Donc V1 OK, V2 P0 deja identifie.",
+      "verdict": "DISPUTE_RESOLVED — gap reel mais V1 acceptable"
+    },
+    {
+      "claim": "Le signal ItemAvailabilityChanged broadcasts deja vers tout le monde, donc le chef PEUT toggle un item et tous voient",
+      "dispute_initial": "Si chef a access au /admin/items page (KioskMachine permission via Spatie 'kitchen-display-system'), il peut toggle availability et le signal arrive partout.",
+      "resolution": "Verifie RolePermissionTableSeeder L33-43: Chef role = ['dashboard', 'kitchen-display-system', 'order-status-screen']. PAS de 'items_edit' ni 'item_master' ni 'menu_management'. Donc l'AvailabilityController::toggle middleware L21 'permission:items_edit' BLOQUE le chef (HTTP 403). Le chef peut voir le dashboard, le KDS, et l'OSS, mais NE PEUT PAS toggle un item. Le toggle est strictement reserve a Admin / Branch Manager / POS Operator (qui a items_edit selon le seeder, A VERIFIER).",
+      "verdict": "DISPUTE_RESOLVED — gap confirme, role chef strict RO"
+    },
+    {
+      "claim": "Le PosOrdersTrackerComponent (caissier tracker) devrait afficher la warning OOS comme le KDS",
+      "dispute_initial": "Le caissier voit les cards in-flight ACCEPT/PREPARING dans 'A encaisser' lane. Si un order contient un item qui vient de devenir OOS, le caissier devrait voir le warning rouge sur la card AVANT que le chef ne le decouvre lui-meme cote KDS.",
+      "resolution": "Verifie PosOrdersTrackerComponent.vue L662-675: Echo subscriptions sont OrderCreated/OrderStatusChanged/OrderPaidAtCounter UNIQUEMENT. Pas d'ecoute ItemAvailabilityChanged. Donc le caissier:\n  - NE VOIT PAS de warning sur sa card 'A encaisser' meme si un item de l'order vient d'etre 86d.\n  - DECOUVRE le probleme via le chef qui appelle de vive voix, ou via un client qui ne recoit pas son order, ou via le KDS qu'il regarde de loin.\nCe gap est REEL et constituerait un finding P2 cote POS (mirror du kds-oos-warning-badge L297-289). Pour V1 Le Cayenne single-cuisinier + tracker visible a 2m du KDS = OK. Pour V2 SaaS = P1.",
+      "verdict": "DISPUTE_VALIDATED — finding nouveau identifie"
+    }
+  ],
+
+  "scores": {
+    "chef_to_cashier_signal_existence": 1.0,
+    "chef_to_cashier_signal_existence_note": "AUCUN canal sortant chef-initie. Tous les broadcasts visibles cote KDS sont des status transitions sur les orders eux-memes (OrderStatusChanged), pas des signaux meta. Le chef est consumer de ItemAvailabilityChanged mais ne peut pas l'emettre.",
+
+    "cashier_visibility_kds_state": 2.5,
+    "cashier_visibility_kds_state_note": "POS tracker voit cards via OrderStatusChanged broadcast. PAS d'agregateur KDS load (queue depth, avg prep time, chef ready/busy). PAS de warning OOS sur cards 'A encaisser' (gap nouveau identifie).",
+
+    "cashier_override_kds_bump": 6.0,
+    "cashier_override_kds_bump_note": "Cancel order avec reason existe (PosOrdersTrackerComponent.openCancelDialog L266). Bump-revert (Wave J) existe cote KDS UI mais pas dans POS tracker. Acceptable V1 Le Cayenne.",
+
+    "ssot_integrity": 9.0,
+    "ssot_integrity_note": "Permission gating (permission:items_edit sur AvailabilityController) est solide et tracee. Chef role explicite read-only sur catalogue. Pas de drift entre seeder et middleware.",
+
+    "nf525_actor_trace": 9.5,
+    "nf525_actor_trace_note": "Toggle availability passe par AvailabilityController authentifie (Sanctum admin) + Throttle menu-availability 60/min + DB transaction. L'auteur du 86 est traceable via audit_logs (User actor). Pas de drift NF525.",
+
+    "v1_le_cayenne_acceptability": 7.5,
+    "v1_le_cayenne_acceptability_note": "Pour Le Cayenne single-resto avec proximite chef-caissier (3-5m), tous les gaps sont tolerables via communication verbale. Backlog V1.0.2 ou V2 SaaS doit adresser. 0 ship blocker V1.",
+
+    "v2_saas_readiness": 3.0,
+    "v2_saas_readiness_note": "Dark kitchen / food court / multi-resto rendraient critiques: (a) chef-initiated alert channel; (b) cashier KDS-load metric; (c) cashier-side OOS warning sur tracker; (d) chef ability to signal 'order N122 has issue'. 4 nouvelles primitives manquent."
+  },
+
+  "global_score": 5.0,
+  "verdict": "AMBER-V1-CLEAN / RED-V2-BACKLOG — V1 Le Cayenne shippable (proximite physique compense), mais l'asymetrie chef<-cashier est totale et structurelle: aucun signal chef-initiated, aucun agregateur cuisine-side, aucun warning OOS cote POS tracker. 3 findings documentes ci-dessous.",
+
+  "findings": [
+    {
+      "id": "F-B3-P3-01",
+      "severity": "P2",
+      "title": "Aucun canal chef-to-cashier — chef ne peut pas signaler 'manque ingredient' au caissier de maniere tracee",
+      "category": "Communication chain / supervision",
+      "evidence": {
+        "facts": [
+          "app/Events/ — inventaire exhaustif: AUCUN evenement nomme KitchenSignal/ChefAlert/IngredientMissing/OrderDelayed/KitchenOverloaded.",
+          "database/migrations/ — AUCUNE table kitchen_signal/chef_alert/cashier_notification non-NF525.",
+          "database/seeders/RolePermissionTableSeeder.php — Chef role = ['dashboard','kitchen-display-system','order-status-screen'] sans 'items_edit', donc chef ne peut PAS toggle availability cote /admin/items.",
+          "app/Http/Controllers/Admin/AvailabilityController.php L21 — middleware('permission:items_edit') BLOQUE le chef sur le seul endpoint qui dispatche ItemAvailabilityChanged manuellement.",
+          "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue — aucun bouton 'Rupture' / 'Signaler manque' / 'Alerte caisse' dans le UI chef."
+        ],
+        "asymmetry": "Le flux est strictement ADMIN/Cashier->Chef (Cashier 86s an item -> Chef voit le badge OOS sur ses cards). Reciproque IMPOSSIBLE.",
+        "verbal_workaround_drawback": "Communication de vive voix Le Cayenne (3m distance) fonctionne MAIS ne genere AUCUNE trace audit. Si un order est annule pour 'rupture ingredient', le caissier doit ressaisir manuellement la reason — pas d'auto-propagation chef->cashier."
+      },
+      "impact": {
+        "v1_le_cayenne": "Tolerable — proximite physique + bruit moyen + 1-2 caissiers. Le caissier voit le KDS en peripherique.",
+        "v2_saas_multi_resto": "BLOQUANT — dark kitchen/food court/distance physique > 5m rendent la communication verbale non-deterministe. Risque: orders pris en encaissement alors que la cuisine sait que c'est impossible.",
+        "v2_dark_kitchen": "P0 — il faut un canal techniquement deterministe (event sortant + DB-traced)."
+      },
+      "v1_scope_call": "ACCEPTABLE V1 Le Cayenne single-resto. Documenter en V1.0.2 backlog.",
+      "remediation_hint": {
+        "step_1": "Nouveau permission 'kitchen_alert' attribuee au Chef role dans RolePermissionTableSeeder.",
+        "step_2": "Nouveau endpoint POST /api/admin/kds/alert (middleware: auth + permission:kitchen_alert) avec body {type: 'ingredient_missing'|'order_delayed'|'kitchen_overloaded', order_id?: int, item_id?: int, message: string}.",
+        "step_3": "Nouveau event app/Events/KitchenAlertRaised + Listener PersistKitchenAlertRaisedToOutbox -> private-branch.{id} channel + broadcastAs 'KitchenAlertRaised'.",
+        "step_4": "PosOrdersTrackerComponent.vue Echo subscription add 'KitchenAlertRaised' -> toast warning + card highlight sur order_id concerne.",
+        "step_5": "audit_logs entry pour chaque alert (NF525-friendly, actor=chef, reason=string).",
+        "frozen_zone_impact": "ZERO — n'ajoute QUE du nouveau code (controller, event, listener, route, JS subscription)."
+      }
+    },
+    {
+      "id": "F-B3-P3-02",
+      "severity": "P2",
+      "title": "PosOrdersTrackerComponent NE PAS ecoute ItemAvailabilityChanged — caissier aveugle sur OOS in-flight",
+      "category": "Sync asymmetry / cashier visibility",
+      "evidence": {
+        "file": "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue",
+        "lines_studied": "L662-675 Echo subscriptions",
+        "fact": "Le tracker s'abonne a OrderCreated, OrderStatusChanged, OrderPaidAtCounter UNIQUEMENT. Pas a ItemAvailabilityChanged. Contrast: \n  - KDS L1877 ECOUTE ItemAvailabilityChanged -> kds-oos-warning-badge sur cards in-flight\n  - POS catalogue (PosComponent L2714) ECOUTE -> grey out tiles + cart prune\n  - POS tracker (cards 'A encaisser'/'En cours') N'ECOUTE PAS -> caissier ne voit pas que l'order qu'il regarde a un item qui vient d'etre 86.",
+        "consequence": "Scenario realiste: une commande borne arrive 'A encaisser' a 14:32 avec 1x Le Supreme. A 14:33, le dernier poulet est consume cote stock -> auto-86. Le KDS marque le badge OOS rouge sur la card preparing. Le caissier sur tracker continue de voir la card en mode normal, encaisse 8.50 EUR, le client paye. Quand le chef appelle 'Order N122 plus de poulet', le caissier doit faire un refund manuel + re-encaisser une variation."
+      },
+      "impact": {
+        "v1_le_cayenne": "Tolerable car proximite (caissier voit KDS de loin) MAIS non-zero probabilite de friction operationnelle en heure de pointe.",
+        "v2_saas": "P1 — caissier dans un comptoir different du chef ne voit JAMAIS le badge KDS. Risque encaissement-then-refund eleve."
+      },
+      "v1_scope_call": "P2 Le Cayenne (backlog V1.0.2), P1 V2 SaaS.",
+      "remediation_hint": {
+        "minimal_change": "Ajouter dans PosOrdersTrackerComponent.vue L662-675:\n  { broadcastAs: 'ItemAvailabilityChanged', handler: (event) => this._onItemAvailabilityChanged(event) }",
+        "handler_implementation": "Sur is_available=false: marquer Vuex kdsInflight (re-use), puis getter posTrackerHasOos(order) miroir de kdsHasOosWarning. Affichage badge 'OOS' rouge sur card 'A encaisser' avec data-testid=pos-tracker-oos-warning-{id}.",
+        "frozen_zone_impact": "PosOrdersTrackerComponent.vue n'est PAS dans la frozen-zone CLAUDE.md §7. PaymentComponent / PosV5TrancheRow intact."
+      }
+    },
+    {
+      "id": "F-B3-P3-03",
+      "severity": "P3",
+      "title": "Aucun agregateur KDS-load visible cote POS — caissier ne peut pas decider 'accepter ou attendre' sur saturation cuisine",
+      "category": "Operational decision support",
+      "evidence": {
+        "file": "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue",
+        "facts": [
+          "Aucun KPI 'cuisine load' (queue depth, avg prep time, chef ready/busy state) expose dans le POS tracker.",
+          "Aucun event sortant 'KitchenLoadChanged' dans app/Events/.",
+          "KDS ne publie pas sa charge — il consomme des OrderStatusChanged et les affiche en cards, point.",
+          "Le caissier voit indirectement la charge via le nombre de cards 'En cours' (status PREPARING) sur son propre tracker, mais sans metrique aggregable ni alerte de saturation."
+        ],
+        "cross_ref": "Cross-validate B1-P3 F-B1-P3-01: meme pattern d'invisibilite (caissier aveugle sur bornes ET sur cuisine). C'est un pattern structurel V1, pas un bug isole."
+      },
+      "impact": {
+        "v1_le_cayenne": "Acceptable — single-cuisinier, charge visible a l'oeil nu sur le KDS adjacent.",
+        "v2_saas": "P1 — multi-cuisines / dark kitchen / scaling 30+ orders/h rendent un metric explicit indispensable pour la decision caissier."
+      },
+      "v1_scope_call": "P3 V1, P1 V2.",
+      "remediation_hint": {
+        "design_sketch": "Nouveau endpoint GET /api/admin/kds/load (cached 5s) retourne {orders_in_prep: int, oldest_in_prep_age_sec: int, avg_prep_time_sec_last_10: float, chef_ready: bool}. POS tracker affiche un widget compact 'Cuisine: 5 en cours / ETA 8m' avec couleur tone amber si avg > seuil.",
+        "frozen_zone_impact": "ZERO — additif."
+      }
+    }
+  ],
+
+  "outputs": {
+    "json_path": "reports/test-e2e/master-plan-2026-05-25/agents/B3-P3-findings.json",
+    "states_count": 5,
+    "states_status": ["AMBER", "RED", "RED", "GREEN", "AMBER"],
+    "findings_count": 3,
+    "findings_severity": ["P2", "P2", "P3"],
+    "verdict": "AMBER-V1-CLEAN / RED-V2-BACKLOG",
+    "global_score": 5.0,
+    "ssot_intent_score": 9.0,
+    "chef_to_cashier_signal_absent": true,
+    "cross_validates_b1_p3": "F-B1-P3-01 reconfirme + etendu (pattern caissier-aveugle s'applique aussi a la cuisine)"
+  },
+
+  "memory_for_next_agent": {
+    "key_insight_1": "ItemAvailabilityChanged est strictement Admin/Cashier -> Chef (KDS receiver). Le chef role (permission scope: dashboard+kds+oss) ne peut PAS dispatch ce signal via /admin/menu/availability/toggle (permission:items_edit gate).",
+    "key_insight_2": "Aucun canal chef-initiated dans l'architecture FoodKing V1. Les chef peuvent uniquement transitionner les statuts d'order (ACCEPT->PREPARING->PREPARED) — pas de signal meta.",
+    "key_insight_3": "PosOrdersTrackerComponent (cashier surface) ECOUTE OrderCreated/OrderStatusChanged/OrderPaidAtCounter — N'ECOUTE PAS ItemAvailabilityChanged. Asymetrie avec KDS (qui l'ecoute) -> P2 finding F-B3-P3-02.",
+    "key_insight_4": "Le pattern 'caissier aveugle sur etat operationnel' est STRUCTUREL (cross-validates B1-P3 F-B1-P3-01: invisibilite des bornes; B3-P3 F-B3-P3-03: invisibilite de la cuisine). Acceptable V1 Le Cayenne single-resto, bloquant V2 SaaS multi-resto.",
+    "no_p0_no_p1_v1": true,
+    "frozen_zone_diff_required": 0,
+    "nf525_impact": "NONE — pas de drift NF525, la permission gate 'items_edit' et la dispatch via AvailabilityController preservent l'actor trace dans audit_logs.",
+    "remediation_priority_v1_0_2": [
+      "F-B3-P3-02 P2 — ajouter ItemAvailabilityChanged listener sur PosOrdersTrackerComponent (changement minimal ~10 LOC).",
+      "F-B3-P3-01 P2 — design d'un canal KitchenAlertRaised + permission kitchen_alert (changement design + ~150 LOC nouveau).",
+      "F-B3-P3-03 P3 — endpoint /kds/load + widget POS tracker (changement design + ~100 LOC)."
+    ]
+  }
+}

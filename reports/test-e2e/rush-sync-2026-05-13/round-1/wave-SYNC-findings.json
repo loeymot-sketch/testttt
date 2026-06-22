@@ -1,0 +1,95 @@
+{
+  "run": "rush-sync-2026-05-13",
+  "wave": "SYNC",
+  "round": 1,
+  "states_reviewed": 50,
+  "findings": [
+    {
+      "id": "WS-R1-01",
+      "category": "visual_hash_drift",
+      "severity": "P2",
+      "state": "kiosk/* (all 11 kiosk PNGs)",
+      "evidence_file": "tests/e2e/__screenshots__/rush-sync/kiosk/S1-02-kiosk-after-post.png",
+      "evidence_snippet": "All 11 kiosk PNGs in rush-sync/kiosk/ are idle-screen states ('Bienvenue !' / 'Session rafraîchie automatiquement'). No wizard / cart / payment / confirmation PNGs were captured for S1/S2/S5/S7/S9.",
+      "claim": "Wave A heals (commit 7322940a3 'Choisissez 1 viande' + commit 0a83f0795 composer '+' affordance) are NOT visually re-verified in this run because the spec injects orders via API and never walks the kiosk wizard UI; the dom.html confirms 'kiosk-idle-title' is the rendered screen for every after-post capture.",
+      "fix_hint": "Future runs must include a UI-walked variant (KioskWizard step PNGs for at least Sandwich Cayenne + Bol Curry) to support the 'Wave A heals re-verified' claim. Code review confirms heals are present in repo (7322940a3 + 0a83f0795 committed), so this is a coverage gap in this wave, not a code regression.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "WS-R1-02",
+      "category": "loading_state_missing",
+      "severity": "P3",
+      "state": "kds/S1-04-kds-ready (1 of 5 ready states)",
+      "evidence_file": "tests/e2e/__screenshots__/rush-sync/kds/S1-04-kds-ready.png",
+      "evidence_snippet": "Only the S1 'ready' PNG is whited-out with a centered spinner; checked all four other ready captures (S2/S5/S7/S9-04) — they all show a normal KDS overview. Pattern is 1/5, not wave-wide.",
+      "claim": "S1-04 specifically was captured mid-transition (likely between bump request and DOM refresh). S2/S5/S7/S9-04 render normally. Bump-success API evidence is sound (202 returned for all 5). One-off capture timing glitch, not a regression.",
+      "fix_hint": "Add a `waitForResponse` or DOM-readiness check before the S1-04 screenshot to align it with the others.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "WS-R1-03",
+      "category": "loading_state_missing",
+      "severity": "P2",
+      "state": "kds/<all S?-02..04>",
+      "evidence_file": "reports/test-e2e/rush-sync-2026-05-13/round-1/wave-SYNC-db-tracking.json",
+      "evidence_snippet": "Per-scenario kds_dom_found=false for all 5 orders with kds_dispatch_attempts=4 across 30+ seconds; visual S?-02-kds-card-appeared.png clearly shows the cards, so the DOM card DID appear — the script's polling matcher missed it inside its 30s window. The 30s figure is script-measurement, not real kitchen-blind time.",
+      "claim": "The 30s 'KDS lag' as reported is a SPEC MATCHER ARTIFACT, not real kitchen-blind time: the card was already visible by the time the screenshot was captured (verified visually in S1-02/S2-02/S5-02 kds-card-appeared.png). GStack's framing 'UI cadence concern' is inaccurate; the issue is the spec's DOM matcher (looks for a selector that doesn't match the rendered shape). True KDS DOM render is < a few seconds based on visual evidence.",
+      "fix_hint": "Audit the spec's KDS DOM matcher (likely a selector like `[data-order-id=...]` that doesn't exist) and align it with the actual KdsCard component's data-testid. After the fix the 30s figure should drop to <1s.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "WS-R1-04",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "state": "DB / order_items.composition_snapshot for order 1397 (Tacos)",
+      "evidence_file": "mysql: SELECT JSON_PRETTY(composition_snapshot) FROM order_items WHERE order_id=1397;",
+      "evidence_snippet": "Order 1397 (Tacos, item_id=478) has composition_snapshot = `{\\\"lines\\\": [], \\\"addons\\\": [], \\\"extras\\\": [], \\\"captured_at\\\": \\\"2026-05-13T13:24:34+02:00\\\", \\\"schema_version\\\": 1}` — lines[] is EMPTY for a Tacos that normally requires a meat selection. The other 4 orders have populated lines.",
+      "claim": "GStack's 'composition_snapshot FULL coverage' claim is shallow: the spec checks `items_with_composition_snapshot == item_count` (i.e., field is non-null) but not that lines[] is populated when the item template requires a wizard composition. Order 1397 was created via API-bypass with no meat selected — fine for an order that allows it, but if Tacos requires meat (variation 'Choisissez 1 viande'), this is an invariant violation. Verify item 478's wizard_required flag.",
+      "fix_hint": "Tighten the spec's coverage check to: for each item with wizard-required attributes (sandwich/galette/tacos/bol), assert lines[] count >= number of required attributes. Also clarify whether the kiosk API allows API-direct order placement to bypass required wizard steps — this is a frontend-only validation in current code.",
+      "confidence": "HIGH"
+    }
+  ],
+  "passing_states": [
+    "kiosk/00-kiosk-idle",
+    "kiosk/S1-01-kiosk-idle-before-post",
+    "kiosk/S1-02-kiosk-after-post",
+    "kiosk/S2-01-kiosk-idle-before-post",
+    "kiosk/S2-02-kiosk-after-post",
+    "kiosk/S5-01-kiosk-idle-before-post",
+    "kiosk/S5-02-kiosk-after-post",
+    "kiosk/S7-01-kiosk-idle-before-post",
+    "kiosk/S7-02-kiosk-after-post",
+    "kiosk/S9-01-kiosk-idle-before-post",
+    "kiosk/S9-02-kiosk-after-post",
+    "kds/00-kds-initial",
+    "kds/S1-02-kds-card-appeared",
+    "kds/S5-02-kds-card-appeared",
+    "oss/00-oss-initial",
+    "oss/S1-03-oss-ready",
+    "admin/00-admin-initial",
+    "admin/01-admin-orders-list"
+  ],
+  "claims_verified": [
+    "frozen-zone diff vs HEAD@phase0 (a26a56afe) = 0 lines across pos-wizard.js + pos-wizard.css + FiscalSequenceService.php + PricingService.php + BranchScope.php",
+    "audit_logs count unchanged at 26 (max_id=26) — 0 new rows since 2026-05-13 13:23:00 ; GStack 'no fiscal events in audit scope' claim VERIFIED",
+    "composition_snapshot structural shape (lines + addons + extras + captured_at + schema_version=1) present in order_items for all 5 orders 1395/1396/1397/1398/1399 — STRUCTURE VERIFIED",
+    "kds_station data contract VERIFIED — kds_station lives at items.kds_station (enum bar/cuisine_chaude/cuisine_froide/none), NOT inside composition_snapshot.lines. All 5 ordered items (474/475/478/480/485) have kds_station='none' (the default), so the OrderItemResource fallback `?? 'none'` yields a consistent value across the run.",
+    "fiscal_sequence_no monotonic 317..321 above baseline 316, gap-free — VERIFIED",
+    "branch_id=1 for all 5 new orders (1395..1399) — VERIFIED via direct MySQL query",
+    "DB total matches kiosk-API total for all 5 orders (7 / 6.5 / 8.5 / 10.5 / 2.5) — VERIFIED in cross_surface_integrity_table",
+    "KDS admin-API surfaces all 5 orders with queue A0047..A0051, status=8, source_surface=kiosk — VERIFIED",
+    "Single unallowlisted 4xx (POST 401 /api/frontend/order/quote on S1-02-kiosk-after-post.network.json) — VERIFIED (no other 4xx/5xx across 50 network.json files)",
+    "43 console errors with 42/43 (97.7%) Pusher WS port 6001 ERR_CONNECTION_REFUSED — VERIFIED (the remaining 1 is the same S1-02 401)",
+    "401 on /api/frontend/order/quote is NOT user-visible — S1-02-after-post DOM is on kiosk-idle screen (Bienvenue!) with only a 'Session rafraîchie automatiquement' toast ; no [role=alert] for the 401, no error UI shown ; the 401 happens on a background quote refresh, not on placement",
+    "No raw i18n leaks (regex `^[a-z]+(\\.[a-z_]+){1,4}$`) in any of the 50 DOM HTML files",
+    "Idempotency conflict 409 on payload mismatch — confirmed by db-tracking.json security.idempotency_conflict.second_status=409"
+  ],
+  "claims_disputed": [
+    "'Wave A heals VERIFIED in SYNC captures' — REFUTED. No wizard / cart / confirmation PNGs exist in tests/e2e/__screenshots__/rush-sync/kiosk/ ; all 11 kiosk captures are idle-state. The 'Votre tacos' fix and the Bol Curry composer '+' badge cannot be visually re-confirmed from these artifacts. (Code review confirms commits 7322940a3 + 0a83f0795 remain in HEAD, so it is a coverage gap, not a regression.)",
+    "'Idempotency-Replayed: true header' — DOWNGRADED. The db-tracking.json asserts second_replayed_header=true but no network.json artifact captures response headers (network sink only logs status >=400 OR duration >2000ms ; non-error 2xx responses aren't captured). The replay assertion stands on GStack's spec internals only, not visible in primary artifacts. Recommend the spec emit a security/idempotency-evidence.json sidecar with the actual response headers next round.",
+    "OSS_latency 33s 'includes KDS DOM-wait spillover' — VERIFIED IN OBSERVATIONS BUT MISLEADING IN SUMMARY TABLE. The observations log shows true oss-poll elapsed=2..506 ms, but the headline table column still publishes 33s, which a casual reader will misread as an OSS sync defect. Add an `oss_poll_true_ms` column to the summary.",
+    "'composition_snapshot FULL coverage YES (all orders)' — SHALLOW. The non-null field check passes for all 5, but order 1397 (Tacos) has lines[]=[], so the snapshot is structurally present but semantically empty. See WS-R1-04.",
+    "'kds_latency_ms 83-91ms claim across all 5 scenarios — too uniform / possible cached response?' (task pre-flag) — DISMISSED. Variance of 8ms across 5 sequential cold-network HTTP calls is normal Laravel/HTTP variance. Not a cache, not a defect."
+  ],
+  "verdict": "GO-CONDITIONAL"
+}

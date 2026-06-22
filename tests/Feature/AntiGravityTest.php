@@ -12,10 +12,15 @@ use App\Models\ItemCategory;
 use App\Models\Tax;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Enums\TaxType;
+use Illuminate\Support\Str;
+use Tests\Feature\Concerns\HasPosQuoteBinding;
+use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
 
 class AntiGravityTest extends TestCase
 {
     use RefreshDatabase;
+    use HasPosQuoteBinding;
+    use SeedsOpenCashDrawerSession;
 
     protected function setUp(): void
     {
@@ -49,6 +54,8 @@ class AntiGravityTest extends TestCase
         $branch = \Database\Factories\BranchFactory::new()->create();
         $admin = \Database\Factories\UserFactory::new()->create(['branch_id' => $branch->id]);
         $admin->assignRole('Admin');
+        // [Sprint H6 TEST-DEBT-001 2026-05-17] Sprint 1B requires an OPEN cash session for CASH.
+        $this->seedOpenSessionFor($admin, $branch);
         return [$branch, $admin];
     }
 
@@ -67,6 +74,20 @@ class AntiGravityTest extends TestCase
     private function apiKey(): string
     {
         return config('app.api_key', env('MIX_API_KEY', 'test-api-key'));
+    }
+
+    private function withKioskQuote(User $user, array $payload): array
+    {
+        $quote = $this->actingAs($user)
+            ->withHeader('x-api-key', $this->apiKey())
+            ->postJson('/api/frontend/order/quote', $payload)
+            ->assertOk()
+            ->json('data');
+
+        return $payload + [
+            'quote_token' => $quote['quote_token'],
+            'quote_signature' => $quote['signature'],
+        ];
     }
 
     // MODULE 1 — Authentification Kiosk
@@ -138,18 +159,22 @@ class AntiGravityTest extends TestCase
             'item_category_id' => $category->id,
         ]);
 
+        $payload = [
+            'order_type' => 10, // TAKEAWAY (pas besoin d'adresse)
+            'branch_id' => $branch->id,
+            'subtotal' => 10,
+            'total' => 10,
+            'delivery_charge' => 0,
+            'is_advance_order' => 0,
+            'source' => 1,
+            'items' => json_encode([['item_id' => $item->id, 'price' => 10, 'quantity' => 1]])
+        ];
+
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->actingAs($user)
             ->withHeader('x-api-key', $this->apiKey())
-            ->postJson('/api/frontend/order', [
-                'order_type' => 10, // TAKEAWAY (pas besoin d'adresse)
-                'branch_id' => $branch->id,
-                'subtotal' => 10,
-                'total' => 10,
-                'delivery_charge' => 0,
-                'is_advance_order' => 0,
-                'source' => 1,
-                'items' => json_encode([['item_id' => $item->id, 'price' => 10, 'quantity' => 1]])
-            ]);
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/frontend/order', $this->withKioskQuote($user, $payload));
         $this->assertTrue(in_array($response->status(), [200, 201]));
         if (in_array($response->status(), [200, 201])) {
             $this->assertEquals($branch->id, Order::first()->branch_id);
@@ -172,7 +197,9 @@ class AntiGravityTest extends TestCase
         $item = \Database\Factories\ItemFactory::new()->create(['price' => 10]);
 
         // Client sends forged price (0.01) — API must recalculate from DB and store 10
-        $response = $this->actingAs($user)->postJson('/api/frontend/order', [
+        $response = $this->actingAs($user)
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/frontend/order', [
             'order_type' => 5,
             'subtotal' => 0.01,
             'total' => 0.01,
@@ -197,7 +224,9 @@ class AntiGravityTest extends TestCase
 
         // API recalculates total server-side — a forged total is silently corrected, not rejected.
         // This test verifies the order is accepted and the stored total matches DB price, not client input.
-        $response = $this->actingAs($user)->postJson('/api/frontend/order', [
+        $response = $this->actingAs($user)
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/frontend/order', [
             'order_type' => 5,
             'subtotal' => 10,
             'total' => 0.01,
@@ -221,7 +250,9 @@ class AntiGravityTest extends TestCase
 
         // API uses coupon_id (integer), not coupon_code (string).
         // Invalid coupon_id must now reject the order instead of being silently ignored.
-        $response = $this->actingAs($user)->postJson('/api/frontend/order', [
+        $response = $this->actingAs($user)
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/frontend/order', [
             'order_type' => 5,
             'subtotal' => 10,
             'total' => 10,
@@ -259,6 +290,7 @@ class AntiGravityTest extends TestCase
 
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos-order/change-status/' . $order->id, [
                 'status' => \App\Enums\OrderStatus::ACCEPT // 4
             ]);
@@ -272,6 +304,7 @@ class AntiGravityTest extends TestCase
 
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos-order/change-status/' . $order->id, [
                 'status' => 14 // PREPARED
             ]);
@@ -307,6 +340,7 @@ class AntiGravityTest extends TestCase
 
         $response = $this->actingAs($chef)
             ->withHeader('x-api-key', $this->apiKey())
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/kds-order/change-status/' . $order->id, [
                 'status' => 14 // DELIVERED
             ]);
@@ -348,29 +382,31 @@ class AntiGravityTest extends TestCase
         $customer = \Database\Factories\UserFactory::new()->create(['branch_id' => $branch->id]);
         
         // Envoyer requête avec prix falsifié (0.01)
+        $payload = [
+            'order_type' => \App\Enums\OrderType::POS,
+            'subtotal' => 0.01,  // Falsifié
+            'total' => 0.01,     // Falsifié
+            'source' => \App\Enums\Source::POS,
+            'customer_id' => $customer->id,
+            'branch_id' => $branch->id,
+            'is_advance_order' => 0,
+            'pos_payment_method' => \App\Enums\PosPaymentMethod::CASH,
+            // Montant reçu doit couvrir le total recalculé serveur (prix DB + taxes), pas le total falsifié 0.01
+            'pos_received_amount' => 50.00,
+            'items' => json_encode([[
+                'item_id' => $item->id,
+                'price' => 0.01,  // Falsifié
+                'quantity' => 1,
+                'total_price' => 0.01, // Falsifié
+            ]]),
+        ];
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
-            ->postJson('/api/admin/pos', [
-                'order_type' => \App\Enums\OrderType::POS,
-                'subtotal' => 0.01,  // Falsifié
-                'total' => 0.01,     // Falsifié
-                'source' => \App\Enums\Source::POS,
-                'customer_id' => $customer->id,
-                'branch_id' => $branch->id,
-                'is_advance_order' => 0,
-                'pos_payment_method' => \App\Enums\PosPaymentMethod::CASH,
-                // Montant reçu doit couvrir le total recalculé serveur (prix DB + taxes), pas le total falsifié 0.01
-                'pos_received_amount' => 50.00,
-                'items' => json_encode([[
-                    'item_id' => $item->id,
-                    'price' => 0.01,  // Falsifié
-                    'quantity' => 1,
-                    'total_price' => 0.01, // Falsifié
-                ]]),
-            ]);
-        
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($admin, $payload));
+
         $response->assertStatus(201);
-        
+
         // Vérifier commande créée avec prix DB (10.00), pas 0.01
         $order = \App\Models\Order::latest()->first();
         $this->assertNotNull($order);
@@ -399,27 +435,29 @@ class AntiGravityTest extends TestCase
         ]);
         
         // Créer commande POS
+        $payload = [
+            'order_type' => \App\Enums\OrderType::POS,
+            'subtotal' => 10.00,
+            'total' => 10.00,
+            'source' => \App\Enums\Source::POS,
+            'customer_id' => $customer->id,
+            'branch_id' => $branch->id,
+            'is_advance_order' => 0,
+            'pos_payment_method' => \App\Enums\PosPaymentMethod::CASH,
+            'pos_received_amount' => 50.00,
+            'items' => json_encode([[
+                'item_id' => $item->id,
+                'price' => 10.00,
+                'quantity' => 1,
+            ]]),
+        ];
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
-            ->postJson('/api/admin/pos', [
-                'order_type' => \App\Enums\OrderType::POS,
-                'subtotal' => 10.00,
-                'total' => 10.00,
-                'source' => \App\Enums\Source::POS,
-                'customer_id' => $customer->id,
-                'branch_id' => $branch->id,
-                'is_advance_order' => 0,
-                'pos_payment_method' => \App\Enums\PosPaymentMethod::CASH,
-                'pos_received_amount' => 50.00,
-                'items' => json_encode([[
-                    'item_id' => $item->id,
-                    'price' => 10.00,
-                    'quantity' => 1,
-                ]]),
-            ]);
-        
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($admin, $payload));
+
         $response->assertStatus(201);
-        
+
         // Vérifier notifications dispatchées
         \Illuminate\Support\Facades\Event::assertDispatched(\App\Events\SendOrderGotPush::class);
         \Illuminate\Support\Facades\Event::assertDispatched(\App\Events\SendOrderGotMail::class);

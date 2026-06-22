@@ -1,0 +1,228 @@
+{
+  "mission": "Wave D RETRY — Hardware failure simulation (read+test only)",
+  "scope": "3 critical hardware failure scenarios — verify graceful degradation",
+  "mode": "code-trace only (no Playwright)",
+  "budget_min": 25,
+  "scenarios": {
+    "S1_receipt_printer_offline": {
+      "title": "Receipt printer offline (TCP fsockopen fail OR ESC/POS send_failed)",
+      "code_paths": [
+        {
+          "layer": "kiosk_frontend",
+          "file": "resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue",
+          "lines": "380-426",
+          "behavior": "printReceipt() catches `result.method === 'none'` → sets `this.printFailed = true` + calls reportPrinterFailure(displayNumber, err). The 'kiosk-print-receipt' DOM element gets `data-print-failed=\"true\"` attribute (line 96) which flips the receipt zone display via scoped CSS."
+        },
+        {
+          "layer": "kiosk_helper",
+          "file": "resources/js/helpers/kioskPrinter.js",
+          "lines": "198-262",
+          "behavior": "3-tier fallback chain: (1) Electron bridge printReceipt → (2) Electron ESC/POS lines → (3) browser window.print(). Returns `{method: 'none', error: ...}` only when ALL 3 fail. PRINTER_RETRY_MAX retries the electron bridge before falling through (config in kioskHardware.js)."
+        },
+        {
+          "layer": "kiosk_css_fallback_global",
+          "file": "resources/css/kiosk-fallback.css",
+          "lines": "75-101",
+          "behavior": "Global ID selector `#kiosk-print-receipt[data-print-failed=\"true\"]` provides safety-net display:block + amber border + scroll. Works EVEN if Vue SFC scoped CSS fails to load. P-MEGA W7.B."
+        },
+        {
+          "layer": "kiosk_css_fallback_scoped",
+          "file": "resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue",
+          "lines": "666-700",
+          "behavior": ".kiosk-receipt-zone hidden by default (display:none); when data-print-failed=\"true\" → display:block + 80vh scroll + bordered card. .kiosk-printer-fallback amber alert banner with large queue number (3.5rem) for staff to read across counter."
+        },
+        {
+          "layer": "backend_tcp_transport",
+          "file": "app/Services/Hardware/PrinterTransport/TcpPrinterTransport.php",
+          "lines": "9-44",
+          "behavior": "fsockopen with 2.0s connect timeout + stream_set_timeout(2). On failure returns false + sets lastError ('tcp_open_failed', 'tcp_write_partial', 'missing_host'). NEVER throws — always graceful."
+        },
+        {
+          "layer": "backend_service",
+          "file": "app/Services/Hardware/EscPosPrinterService.php",
+          "lines": "85-149",
+          "behavior": "openDrawer/print wraps transport->send in try/catch + returns structured array {success: false, error: ...}. NEVER throws. Audit log via BypassAuditLogger when printing.bypass.enabled."
+        }
+      ],
+      "i18n_keys": {
+        "kiosk.confirmation.print_failed": "Impression indisponible — notez votre numéro :",
+        "kiosk.confirmation.print_failed_hint": "Présentez ce numéro au comptoir.",
+        "kiosk.confirmation.fallback_receipt_title": "Votre ticket",
+        "kiosk.confirmation.fallback_receipt_help": "L'imprimante semble indisponible. Vous pouvez prendre une photo de ce ticket ou demander à un opérateur."
+      },
+      "a11y": "role=status + aria-live=polite added on .kiosk-receipt-zone when printFailed=true (lines 98-99). Screen reader announces fallback state.",
+      "degradation_strategy": "RESILIENT — order is ALREADY confirmed (printReceipt fires post-payment-success). Printer failure NEVER blocks fiscal sealing, KDS broadcast, or cart reset. Customer sees queue number + on-screen receipt + amber 'go to counter' banner. Staff sees displayNumber in big font.",
+      "ux_clarity": "GOOD — explicit FR message, large queue number, amber color scheme, scroll for full receipt, ARIA live region.",
+      "verdict": "HANDLED"
+    },
+    "S2_tpe_timeout": {
+      "title": "TPE (terminal de paiement) timeout / failure",
+      "code_paths": [
+        {
+          "layer": "config",
+          "file": "config/payment.php",
+          "lines": "58-93",
+          "behavior": "PAYMENT_BYPASS_MODE env flag (gate GATE_BYPASS_MODE_2026-05-08) — simulates 'approved' response when true. forbidden_environments=['production','prod','live'] enforced at boot via AppServiceProvider."
+        },
+        {
+          "layer": "config_pos",
+          "file": "config/pos.php",
+          "lines": "21-37",
+          "behavior": "POS_SIMULATION_HARDWARE env flag — when true, bypasses cash-drawer + TPE hardware presence checks. NF525 invariants (sequence + audit chain + composition_snapshot) PRESERVED."
+        },
+        {
+          "layer": "boot_guard",
+          "file": "app/Providers/AppServiceProvider.php",
+          "lines": "78-145, 165",
+          "behavior": "RefuseToBoot exception in production if POS_SIMULATION_HARDWARE != false. Triple-defense: env + boot + runtime."
+        },
+        {
+          "layer": "kiosk_config",
+          "file": "config/kiosk.php",
+          "lines": "146",
+          "behavior": "[SUPERVISOR WAVE C Z1] Plan B: ALL kiosk payments route to counter (no TPE at kiosk in V1 Le Cayenne) — TPE timeout at kiosk is N/A because TPE is NOT wired to kiosk."
+        },
+        {
+          "layer": "pos_controller_guard",
+          "file": "app/Http/Controllers/Admin/PosController.php",
+          "lines": "90-115",
+          "behavior": "assertCashDrawerSessionOpenIfCashInvolved() returns early if simulation_hardware=true. CashDrawerSessionNotOpenException raised when CASH involved + no session in non-sim mode. Atomic — fiscal-seq allocation not started until guard passes."
+        },
+        {
+          "layer": "split_payment",
+          "file": "app/Services/Payments/SplitPaymentService.php",
+          "lines": "200-220",
+          "behavior": "Split payment also short-circuits cashSession lookup when simulating. CASH tranches still recorded (OrderPayment row + audit log) but no cash_movement (no physical drawer to reconcile against)."
+        },
+        {
+          "layer": "payment_service",
+          "file": "app/Services/PaymentService.php",
+          "lines": "470-510",
+          "behavior": "recordCashOrderMovement() downgrades strict→soft when simulation_hardware=true (line 481). Cash session lookup non-fatal — Logs warning instead of throwing."
+        }
+      ],
+      "degradation_strategy": "BYPASS MODE — In V1 Le Cayenne, TPE is NOT wired (kiosk routes to counter, POS uses simulation_hardware=true). PAYMENT_BYPASS_MODE simulates 'approved' TPE response so cashier sees no terminal error. Real-world TPE timeout (when physical TPE plugged) would surface via PaymentService catch-all but specific TPE driver class not yet present in V1 — see config/payment.php:66 ('le vrai driver TPE' = future work).",
+      "ux_clarity": "PARTIAL — No dedicated TPE-timeout user-facing message because the real driver isn't wired yet. Bypass mode shows 'approved' silently. Production boot guard prevents bypass in prod env (RuntimeException at boot).",
+      "gaps": [
+        "No dedicated TPE_TIMEOUT exception class — falls back to generic PaymentException",
+        "No 'TPE timeout — retry / cash fallback' modal in pos-wizard.js (Vanilla JS) — would surface as generic XHR error toast",
+        "Real TPE driver not implemented yet (config comment 'le vrai driver TPE' line 66)"
+      ],
+      "verdict": "HANDLED_FOR_V1_BYPASS — GAPS for production hardware drop-in"
+    },
+    "S3_cash_drawer_fail": {
+      "title": "Cash drawer fail to open (TCP send_failed OR no printer wired)",
+      "code_paths": [
+        {
+          "layer": "controller",
+          "file": "app/Http/Controllers/Admin/Pos/CashDrawerController.php",
+          "lines": "25-76",
+          "behavior": "open() endpoint validates printer_id, calls EscPosPrinterService::openDrawer, returns 200 on success, 422 on failure (NO 500). On success, writes TYPE_DRAWER_OPEN movement to audit chain via recordMovement (strict=false). On failure to find OPEN session → Log::warning 'forensic gap' but does NOT block hardware response."
+        },
+        {
+          "layer": "service",
+          "file": "app/Services/Hardware/EscPosPrinterService.php",
+          "lines": "85-149",
+          "behavior": "openDrawer returns structured array — possible errors: 'invalid_branch' (branchId<=0), 'no_printer' (no Printer row with station=receipt), tcp_open_failed/tcp_write_partial (transport layer). All catch-all wrapped, NEVER throws."
+        },
+        {
+          "layer": "transport_fallback",
+          "file": "app/Providers/AppServiceProvider.php",
+          "lines": "34-42",
+          "behavior": "AppServiceProvider binds NullPrinterTransport (instead of TcpPrinterTransport) when env=testing OR printing.bypass.enabled=true. NullPrinterTransport short-circuits send() to log + return true (skipped flag). No fsockopen attempt."
+        },
+        {
+          "layer": "simulation_path",
+          "file": "config/pos.php + app/Services/PaymentService.php",
+          "lines": "37, 481",
+          "behavior": "When simulation_hardware=true, the assertCashDrawerSessionOpenIfCashInvolved guard is skipped → CASH order proceeds without physical drawer. PaymentService::recordCashOrderMovement downgrades strict→soft. Cashier never blocked."
+        },
+        {
+          "layer": "audit_forensic",
+          "file": "app/Http/Controllers/Admin/Pos/CashDrawerController.php",
+          "lines": "39-74",
+          "behavior": "[Sprint 5B Z10-NEW-001 F-7] Every hardware drawer pop → TYPE_DRAWER_OPEN audit row (amount=0) on operator's OPEN session. Manager-mode drawer-test before shift = Log::warning 'forensic gap'. Throwable caught — forensic write NEVER blocks hardware response."
+        }
+      ],
+      "i18n_keys": "No dedicated FR string for drawer-open failure in fr.json (returns raw 422 JSON to frontend toast handler).",
+      "degradation_strategy": "RESILIENT — drawer failure NEVER cascades. (a) If simulation mode → endpoint not called; (b) if TCP fail → 422 returned, frontend can retry or surface toast, fiscal seq + audit chain unaffected; (c) NullPrinterTransport in test/bypass = always success. Forensic gap logged as warning, never blocks order completion.",
+      "ux_clarity": "GAP — frontend toast on 422 is generic 'erreur' (no specific 'tiroir-caisse n'a pas pu s'ouvrir' string). Cashier must check log to know cause.",
+      "gaps": [
+        "No dedicated FR i18n string for 'drawer open failed' — frontend renders raw HTTP error",
+        "No automatic retry on TCP transport fail (frontend must trigger second open call manually)",
+        "Manager-mode drawer-test (no OPEN session) → audit row SKIPPED (forensic gap only logged, not chain-anchored)"
+      ],
+      "verdict": "HANDLED — minor UX gap (no FR string for failure toast)"
+    }
+  },
+  "cross_scenario_observations": {
+    "transport_unification": "All hardware (printer + drawer) goes through PrinterTransportInterface — single abstraction. NullPrinterTransport vs TcpPrinterTransport swap is config-driven (printing.bypass.enabled).",
+    "bypass_production_guard": "Triple-defense at boot: env flag → AppServiceProvider RuntimeException (lines 78-145) → runtime config check. PAYMENT_BYPASS + PRINTING_BYPASS + POS_SIMULATION_HARDWARE all refuse production.",
+    "audit_chain_invariant": "Hardware failure NEVER bypasses NF525 audit chain. Either: success → audit row written; bypass → BypassAuditLogger::printingBypassed() row written (forensic trail of bypass).",
+    "fiscal_seq_invariant": "Hardware failure NEVER causes fiscal sequence gap. assertCashDrawerSessionOpenIfCashInvolved runs BEFORE fiscal alloc — order rejected atomically if guard fails.",
+    "ux_state_machine": "Kiosk: orange amber banner on printer fail + queue number 3.5rem. POS: generic 422 toast on drawer fail (UX gap). TPE: bypass mode silent (UX gap for prod driver)."
+  },
+  "css_fallback_verified": {
+    "global_safety_net": "resources/css/kiosk-fallback.css lines 75-101 — ID selector overrides scoped CSS load failure",
+    "scoped_styles": "KioskConfirmationComponent.vue lines 666-700 + 695-700 (.kiosk-printer-fallback amber)",
+    "bundled_into": "public/js/kiosk-shell.js line 66 (Webpack CSS-in-JS chunk, verified data-v-255fc987 scoping)"
+  },
+  "verdict_global": "HW_FAIL_HANDLED with MINOR_GAPS",
+  "gaps_summary": [
+    {
+      "id": "HWF-G1",
+      "severity": "P2",
+      "scope": "S2",
+      "description": "No dedicated TPE_TIMEOUT exception class + no real TPE driver — only bypass mode for V1 Le Cayenne"
+    },
+    {
+      "id": "HWF-G2",
+      "severity": "P2",
+      "scope": "S3",
+      "description": "No FR i18n string for 'cash drawer open failed' — frontend toast renders raw HTTP error"
+    },
+    {
+      "id": "HWF-G3",
+      "severity": "P3",
+      "scope": "S3",
+      "description": "No automatic frontend retry on drawer TCP fail — manual retry only"
+    },
+    {
+      "id": "HWF-G4",
+      "severity": "P3",
+      "scope": "S3",
+      "description": "Manager-mode drawer-test (no OPEN session) → audit row skipped (forensic gap logged-only, not chain-anchored)"
+    }
+  ],
+  "ship_blocker": false,
+  "rationale_no_block": "V1 Le Cayenne LOCAL config: kiosk routes to counter (no TPE at kiosk per config/kiosk.php:146), POS uses simulation_hardware=true until real TPE drop-in. All gaps are UX-polish (FR strings + retry UX) — NF525 audit chain + fiscal seq invariants preserved across all 3 failure modes. Backend layer hardware-fail-safe (never throws, never blocks fiscal sealing).",
+  "v1_0_2_backlog_items": [
+    "HWF-G1: Implement real TPE driver class + TPE_TIMEOUT dedicated exception (when owner wires Valina TPE)",
+    "HWF-G2: Add fr.json key 'pos.cash_drawer.open_failed' + frontend toast hook",
+    "HWF-G3: Auto-retry drawer TCP fail (1 retry, 1s delay) before surfacing toast",
+    "HWF-G4: Wire manager-mode drawer-test to dedicated audit_logs row (amount=0, type=TYPE_DRAWER_TEST_NO_SESSION)"
+  ],
+  "files_audited_count": 12,
+  "files_audited": [
+    "resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue",
+    "resources/js/helpers/kioskPrinter.js",
+    "resources/css/kiosk-fallback.css",
+    "public/js/kiosk-shell.js (verified bundled)",
+    "resources/js/languages/fr.json (i18n keys)",
+    "app/Services/Hardware/EscPosPrinterService.php",
+    "app/Services/Hardware/PrinterTransport/TcpPrinterTransport.php",
+    "app/Services/Hardware/PrinterTransport/NullPrinterTransport.php",
+    "app/Http/Controllers/Admin/Pos/CashDrawerController.php",
+    "app/Http/Controllers/Admin/PosController.php",
+    "app/Services/Payments/SplitPaymentService.php",
+    "app/Services/PaymentService.php",
+    "app/Providers/AppServiceProvider.php",
+    "config/pos.php",
+    "config/payment.php",
+    "config/kiosk.php",
+    "config/printing.php"
+  ],
+  "frozen_zone_touched": false,
+  "nf525_chain_impact": "NONE — read-only audit, no code change",
+  "mode": "read+test only as requested"
+}

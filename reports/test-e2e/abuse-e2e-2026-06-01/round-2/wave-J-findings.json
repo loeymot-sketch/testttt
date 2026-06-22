@@ -1,0 +1,91 @@
+{
+  "wave": "J",
+  "round": 2,
+  "surface": "Delivery-boy cash session (admin cockpit) — /admin/delivery-boy-cash-sessions",
+  "states_reviewed": 11,
+  "states": [
+    "J-1a-list-all",
+    "J-1b-filter-all",
+    "J-1b-filter-open",
+    "J-1b-filter-closed",
+    "J-1b-filter-reconciled",
+    "J-1c-detail-existing",
+    "J-2-open-form",
+    "J-3-reconciled-detail"
+  ],
+  "note_states_count": "8 visual states captured (each .png+.dom.html+.console.json+.network.json). J-4 destructive lifecycle skipped by design (J_RUN_DESTRUCTIVE unset). 11 = 8 captured + 3 brief-enumerated states never captured (see J-004).",
+  "ground_truth_verified": {
+    "balance_identity": "DOM numbers AGREE — no product P0.",
+    "opening": "50,00 € (data-testid=delivery-cash-opening-amount)",
+    "movements": "1 row id=1: +15,50 € IN ('Encaissement commande livrée', note R3-verify-heal5-simulated-delivered)",
+    "signed_sum": "+15.50",
+    "expected_displayed": "Montant attendu = 65,50 € (dt/dd pair)",
+    "expected_computed": "opening + Sigma(signed mvts) = 50.00 + 15.50 = 65.50 -> MATCH",
+    "closing_displayed": "Montant compté = 65,50 €",
+    "variance_displayed": "Écart = 0,00 € (data-testid=delivery-cash-variance)",
+    "variance_computed": "closing - expected = 65.50 - 65.50 = 0.00 -> MATCH",
+    "cross_surface": "List row #1 (opening 50,00 € / compté 65,50 € / écart 0,00 €) == detail view. No skew.",
+    "lock_state": "Réconciliée detail: action-close=0, action-reconcile=0, action-form-wrap=0 -> terminal state fully locked, NO leaked edit controls.",
+    "filters": "open->row#2(Ouverte), reconciled->row#1(Réconciliée), closed->empty-state, all->[#2,#1]. Server-side status filter genuinely works.",
+    "console": "All 8 states: [] (zero entries).",
+    "network": "Only POST /api/auth/login 201 + POST /api/auth/authcheck 200 (allowlisted). No 4xx/5xx, no >2000ms."
+  },
+  "findings": [
+    {
+      "id": "J-001",
+      "state_artifact": "tests/e2e/test-e2e-abuse-J-livreur-cash.spec.js",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "title": "Named balance assertion (opening + Sigma mvts = expected) is under-proven — J-3 asserts only finiteness + a tautology",
+      "evidence": "Wave J KEY ASSERTION = 'balance = opening + cash-in − cash-out ± collects (no skew)'. The test that claims to prove it (J-3 'balance math on reconciled session') computes expectedDerived = opening + signedSum (L306) but then NEVER compares it against the rendered 'Montant attendu' (65,50 €) cell. Lines 313-314 assert only Number.isFinite(expectedDerived) and Number.isFinite(variance). Line 320-322 builds closingReconstructed = expectedDerived + variance and asserts closingReconstructed >= 0 — a tautology: closing is DEFINED from opening+signedSum+variance, so the check passes for ANY numbers regardless of DOM consistency. The author explicitly abandoned the real cross-check, commenting 'Locate the expected cell by its sibling <dt> label text is brittle across locales' (L309-312). So the spec's headline numeric guarantee is not actually enforced.",
+      "product_impact": "NONE this run — I verified the DOM math by hand and it closes exactly (50.00 + 15.50 = 65.50 = Montant attendu; variance 0.00 = 65.50 − 65.50). This is purely a TEST coverage gap: a future regression that skews expected vs opening+Σmvts would slip past J-3 silently.",
+      "fix_hint": "In J-3, read the 'Montant attendu' <dd> (it has a stable adjacent <dt> 'Montant attendu' — the label is i18n-stable in this FR-only V1, and the cell is the <dd> immediately after that <dt>). Assert parseFrMoney(expectedCell) toBeCloseTo(opening + signedSum, 2), and assert variance toBeCloseTo(closingCell − expectedCell, 2). That turns the headline assertion from finiteness into the actual identity.",
+      "status": "OPEN"
+    },
+    {
+      "id": "J-002",
+      "state_artifact": "tests/captures/abuse-J-livreur-cash-2026-06-02/J-1c-detail-existing.png",
+      "category": "color_contrast",
+      "severity": "P2",
+      "title": "'Clôturer la caisse' button: white text on pale bg-warning — label invisible in render (cash action)",
+      "evidence": "On the OPEN session detail (Caisse Livreur #2... actually #1c shows an Ouverte session), the screenshot shows an empty white rounded rectangle where the close button sits. DOM confirms it is NOT empty: <button type=\"button\" class=\"db-btn bg-warning text-white\" data-testid=\"delivery-cash-action-close\">Clôturer la caisse</button>. The label exists but renders white-on-pale-warning, so it is visually unreadable in the capture (contrast well under WCAG AA 4.5:1). Contrast vs the clearly-legible orange 'Ouvrir La Caisse' (white on #F4501E) and 'Annuler' buttons in J-2.",
+      "product_impact": "Sighted operator sees a blank button for the primary mutation on a CASH surface (closing a delivery-boy float). Functional (label is in DOM, reachable by keyboard/SR), but an embarrassing/confusing visual defect on a money screen. measured-P1 candidate downgraded to P2 because the text is present and the action path is not blocked.",
+      "fix_hint": "DeliveryBoyCashSessionShowComponent.vue ~L77 — the close action uses 'db-btn bg-warning text-white'; bg-warning is too pale for white text. Use a darker warning token or dark text (e.g. text-dark / amber-600 bg) to reach >=4.5:1.",
+      "status": "OPEN"
+    },
+    {
+      "id": "J-003",
+      "state_artifact": "tests/e2e/test-e2e-abuse-J-livreur-cash.spec.js",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "title": "'Close locks further entries' proven only on RECONCILED, never on CLOSED-not-reconciled",
+      "evidence": "Wave J KEY ASSERTION includes 'close locks further entries'. The read-only run proves the RECONCILED (terminal) state is locked (action-close=0, action-reconcile=0 on J-3). But RECONCILED != CLOSED. The CLOSED-not-reconciled state — where the brief expects the close button gone but reconcile present — is only exercised in J-4 (skipped, J_RUN_DESTRUCTIVE unset). So 'close locks' (the transition close->no-more-close) is NOT demonstrated by any captured artifact this run.",
+      "product_impact": "NONE observed (no closed-not-reconciled session exists in the dirty dev DB to inspect). Coverage gap only.",
+      "fix_hint": "On a throwaway DB run with J_RUN_DESTRUCTIVE=1 J_LIVREUR_ID=<id> to capture J-4c-detail-closed and assert action-close hasCount(0) while action-reconcile is visible. Or seed a CLOSED (not reconciled) row for a read-only snapshot.",
+      "status": "OPEN"
+    },
+    {
+      "id": "J-004",
+      "state_artifact": "reports/test-e2e/abuse-e2e-2026-06-01/AUDIT_PLAN.md (Wave J states list)",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "title": "Brief enumerates states with no implementation route — scope discrepancy (manual cash-in / cash-out / error close-with-unsettled)",
+      "evidence": "AUDIT_PLAN Wave J states list includes 'manual cash-in · cash-out · ... · error close-with-unsettled'. The spec header (L26-28) documents, from routes/api.php L674-690, that there is NO cash-in/cash-out/movement-mutation route — movements are auto-appended server-side by DeliveryBoyCashSessionService::recordMovement and never exposed in this UI. So those brief states are unrealizable against the actual implementation. 'error close-with-unsettled' likewise has no captured artifact.",
+      "product_impact": "NONE — it is a brief-vs-implementation scope mismatch, not a product defect. Documenting so the next reviewer does not flag the missing manual cash-in/out UI as a P0 gap.",
+      "fix_hint": "Reconcile AUDIT_PLAN Wave J state list with the read-only movement reality, or add a note that manual movements are out of scope for V1 (auto-entry only).",
+      "status": "OPEN"
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 3,
+    "P3": 1,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 3,
+    "open_P3": 1
+  },
+  "verdict": "GREEN",
+  "verdict_rationale": "Zero product P0/P1. The CASH balance identity (opening + Σsigned mvts = expected; variance = closing − expected) holds exactly in the DOM and is consistent across list and detail — no numeric skew. No console errors, no unexpected 4xx/5xx, no i18n leaks, terminal (reconciled) session is fully locked with no leaked edit controls, status filters genuinely filter. The named balance assertion in the spec is under-proven (J-001, P2 audit_integrity) but the underlying DOM numbers actually agree, so per the reviewer protocol this is NOT a product P0. One visual contrast defect on the close button (J-002, P2) and two coverage gaps (J-003 P2, J-004 P3) round out the non-blocking list."
+}

@@ -1,0 +1,31 @@
+{
+  "task_id": "PRODUCT-COMPOSER-SYNC-01-SCHEMA-ADR",
+  "execution_delegation": "codex-extension",
+  "mode": "execute-after-human-gate",
+  "objective": "Create the schema decision and fail-first sentinels for Product Composer and Stock V2.",
+  "preconditions": [
+    "PRODUCT-COMPOSER-SYNC-00-DEMAND-REGISTRY complete",
+    "HG-COMPOSER-SCHEMA-ADR recorded before migrations",
+    "HG-STOCK-STOCKABLE-SCOPE recorded before stock migrations"
+  ],
+  "allowlist_file": "missions/PRODUCT-COMPOSER-SYNC-01-SCHEMA-ADR/allowlist.txt",
+  "forbidden": [
+    "Do not edit OrderService",
+    "Do not edit FrontendOrderService",
+    "Do not edit frontend runtime",
+    "Do not self-approve gates"
+  ],
+  "invariants_considered": [
+    "pricing-backend-ssot",
+    "branch-isolation",
+    "frozen-zone-gates",
+    "dispatch-after-commit"
+  ],
+  "expected_outputs": [
+    "Schema ADR",
+    "Gate briefs",
+    "Migrations and models only after gate",
+    "Fail-first schema tests",
+    "GPT self-audit"
+  ]
+}

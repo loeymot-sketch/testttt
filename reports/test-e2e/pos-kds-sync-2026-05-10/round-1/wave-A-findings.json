@@ -1,0 +1,97 @@
+{
+  "wave": "A",
+  "round": 1,
+  "states_reviewed": 15,
+  "findings": [
+    {
+      "id": "A-001",
+      "state_artifact": "test-e2e-pos-kds-sync-A/14-pos-parked-orders.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "14-pos-parked-orders.network.json contains 7 entries with status 429 (GET /api/admin/pos/walk-in-customer ×2, GET /api/admin/users/address/28, POST /api/admin/users, GET /api/admin/users?...Client%20Comptoir, GET /api/admin/pos/parked-orders ×2). 14-pos-parked-orders.console.json has 7 matching 'Failed to load resource: 429' errors. 14-pos-parked-orders.dom.html (after stripping <style> and <script> blocks) contains ZERO elements matching swal2-popup, .toast, .alert-*, .v-toast, .Toastify, [role=alert], .iziToast, .noty, or .snackbar. The cashier never sees that customer/parked-orders endpoints failed. State 15-pos-logout repeats the pattern (2× 429 on /api/admin/pos/counter-collect/pending and /api/admin/oss-order). Per REVIEWER_PROTOCOL.md category 6 (silent_error → P0) and category 10 (unexpected_4xx not in allowlist → P0).",
+      "fix_hint": "Two surfaces involved. (1) Backend rate-limit configuration: app/Http/Kernel.php throttle:api appears to be too aggressive for the POS resume-from-tracker re-mount sequence (it fires walk-in-customer + parked-orders + users in <500ms). Bump throttle on /api/admin/pos/* and /api/admin/users for authenticated POS operator role, or implement client-side debounce. (2) Frontend silent-failure: resources/js/components/admin/pos/ParkedOrdersComponent.vue (mounted/loadParked) and PosComponent.vue's walk-in customer fetch must surface a SweetAlert2 toast or Vuex notify('error') on 429 — currently the axios interceptor swallows 429 specifically without firing toast. Check resources/js/axios-interceptors or the global axios instance in resources/js/app.js for status===429 short-circuit.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-002",
+      "state_artifact": "test-e2e-pos-kds-sync-A/01-login-form.png",
+      "category": "color_contrast",
+      "severity": "P1",
+      "evidence": "State 01 PNG shows the 'Connexion' primary CTA button rendered in hot pink/magenta (#E8001C-family), and the 'Mot De Passe Oublié' link is also pink. The FoodKing logo top-left is pink across states 01, 02, 03, 04, 05, 06, 07, 08, 09, 10, 13, 14, 15. State 13 (admin orders list) shows pink 'N°A0055' badges, pink 'Livré' status pills, pink action icons (eye, trash). State 15 PNG shows the post-logout login form with a pink 'Log In' top-right CTA. CLAUDE.md frozen-zone reference and user feedback memory (project_kiosk_design_refresh_2026-05-10) confirm Le Cayenne palette is orange/yellow/black/white (mobile app palette). Pink #E8001C is the rejected legacy palette explicitly out per recent owner directive. This is systemic palette drift across the POS shell + login + admin views — not a one-off.",
+      "fix_hint": "Centralize the brand-primary CSS variable. Search resources/css/**/*.{css,scss} and resources/js/**/*.vue for hard-coded #E8001C / pink-500 / 'magenta' / 232,0,28 / rgb(232,0,28) and replace with the Cayenne primary token (var(--brand-primary) → #F4501E orange). Highest-impact files to grep: resources/css/login.css (Connexion CTA + 'Mot de passe oublié' link), resources/css/admin.css or app.css (FoodKing logo SVG fill if it's inline), resources/js/components/Frontend/auth/LoginComponent.vue, resources/js/components/Backend/orders/OrdersComponent.vue (status pill 'Livré' background). Confirm via Wave A re-snap that pink is gone from states 01, 13, 15.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-003",
+      "state_artifact": "test-e2e-pos-kds-sync-A/15-pos-logout.png",
+      "category": "i18n_leak",
+      "severity": "P1",
+      "evidence": "State 15 PNG visibly renders English text on a French app: 'Welcome Back' (h2), 'Email' label, 'Password' label, 'Remember Me' (checkbox label), 'Forget Password' link, 'Login' button label, 'Log In' top-right CTA. State 01 PNG of the same /login page shows 'Bon Retour', 'Mot De Passe', 'Se Souvenir De Moi', 'Mot De Passe Oublié', 'Connexion'. 15-pos-logout.dom.html captured AFTER the screenshot does contain French ('Bon retour', 'Mot de passe', 'Connexion') — meaning the page hydrated French AFTER the visible English flash. This is a Flash-Of-Unstyled-Content for locale: the cashier sees English for ~300-700ms during the logout→/login redirect. State 15 PNG also captures spinner bars beneath the Login button — confirming mid-transition. The HTML lang attribute is 'fr' so the SSR shell is correct; the i18n bundle resolves AFTER the initial paint.",
+      "fix_hint": "Two-pronged fix. (1) Server-render the login form copy in the active locale (Blade render rather than client-side i18n() resolution) so first paint is correct French. resources/views/auth/login.blade.php should use {{ __('login.welcome_back') }} for h2, label, button. (2) If a Vue component owns the form, hoist the i18n strings into a <noscript>/SSR fallback OR delay paint until i18n.global.locale is set. Check resources/js/components/Frontend/auth/LoginComponent.vue and the Vue i18n bootstrap in resources/js/app.js — the locale guard runs after the first render tick. Repro: hit /login in a fresh tab with Network throttling 'Slow 3G' and observe English flash.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-004",
+      "state_artifact": "test-e2e-pos-kds-sync-A/13-pos-receipt-baseline.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "State 13 PNG shows the admin breadcrumb 'Tableau De Bord / Commandes Caisse' and a paginated 'Commandes Caisse' table — this is the AdminOrdersComponent (route /admin/orders or /admin/pos-orders), NOT PosOrderReceiptComponent which the AUDIT_PLAN.md specified. 13-pos-receipt-baseline.dom.html confirms breadcrumb 'Tableau de bord' and 0 elements matching [data-testid^=\"tracker-order-\"] (per spec receiptState evaluation). The spec at lines 561-600 self-documents this as 'CONDITIONAL — won't fail if no orders exist' and falls through to the tracker history page, but the artifact label 'pos-receipt-baseline' actively misleads the reviewer into thinking the POS receipt UI was visually verified — it was not. Receipt UI is therefore unaudited in Wave A round 1.",
+      "fix_hint": "Two options. (a) Rename the artifact slug to '13-pos-orders-history' and update AUDIT_PLAN.md to reflect that PosOrderReceiptComponent requires a paid order in the test DB and is therefore deferred to Wave D where state 05 captures a real receipt. (b) Pre-seed a paid order in beforeAll (mirror Wave C's tinker seed pattern with prefix AUDIT-WAVE-A-RECEIPT) so the spec can drive PosOrderReceiptComponent open against a known order ID. Either way, the current artifact-name vs surface-captured mismatch must be resolved or the receipt acceptance criterion stays uncovered.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-005",
+      "state_artifact": "test-e2e-pos-kds-sync-2026-05-10-wave-A.spec.js",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "tests/e2e/test-e2e-pos-kds-sync-2026-05-10-wave-A.spec.js contains 10 instances of `.catch(() => {})` (silent swallow): lines 164, 170, 173, 230, 252, 280, 285, 286, 443, 538, 614, 640, 641, 680, 681 (grep count: 10 unique callsites). Several wrap critical interactions: line 252 wraps `addToCartBtn.isVisible()` decision — if it throws, no error logged, fallback path runs blind. Line 443 wraps `trackerBtn.isVisible()` — if tracker button query throws (DOM hot-swap), state 10 silently skips the click. Lines 680/681 wrap clearCookies + storage clear during logout fallback — if those fail, state 15 may capture authenticated stale page rather than logged-out form. Per REVIEWER_PROTOCOL category 'audit_integrity', silent catches that swallow assertion-relevant errors degrade evidence quality.",
+      "fix_hint": "Replace `.catch(() => {})` with `.catch((e) => observations.push(`<state-id>: <action> threw ${e.message}`))` for every callsite. This preserves the resilient flow but surfaces the failure in the observations dump (which the reviewer reads). For the truly best-effort hover/focus calls (lines 170, 173) leave them silent BUT add a comment `// best-effort hover, headless may not honor :hover`. Critical paths (252, 443, 538, 680, 681) MUST log.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-006",
+      "state_artifact": "test-e2e-pos-kds-sync-A/10-pos-orders-tracker-baseline.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "State 10 header reads '37 actives, 2 prête(s), 68 aujourd'hui'. 10-pos-orders-tracker-baseline.dom.html contains 19 [data-testid=\"tracker-order-...\"] cards in the visible viewport (37 total active per header but only 19 in the rendered grid). This is pre-existing test-data pollution — the audit baseline is not reproducible across runs. Capture agent's self-flag #5 noted '65 pre-existing tracker cards' which differs from 37 here — consistent with DB state shifting between rounds.",
+      "fix_hint": "Per AUDIT_PLAN per-round pre-flight: run `php artisan iter15:cleanup-test-orders --apply` BEFORE each round (the plan documents this but Wave A doesn't enforce it in beforeAll). Add `test.beforeAll(async () => { execSync('php artisan iter15:cleanup-test-orders --apply'); })` to the Wave A spec OR seed a known fixture set with 'AUDIT-WAVE-A' prefix and clean it in afterAll, mirroring Wave C's pattern. Information-only finding — does not gate green.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-007",
+      "state_artifact": "test-e2e-pos-kds-sync-A/14-pos-parked-orders.png",
+      "category": "empty_state",
+      "severity": "P3",
+      "evidence": "State 14 parked-orders drawer empty body shows 'Aucune commande parkée.' (23 chars — passes copy bar) but 14-pos-parked-orders.dom.html grep shows .parked-orders-empty has 0 <img> illustrations and 0 CTA buttons (e.g. a 'Retour à la caisse' link). Per REVIEWER_PROTOCOL §5 the state passes (one of three required is met: copy ≥20 chars). Logged as P3 cosmetic — adding a simple emoji-prefixed copy or a small SVG icon would lift this empty state from 'plain text only' to 'designed empty state'.",
+      "fix_hint": "resources/js/components/admin/pos/ParkedOrdersComponent.vue → .parked-orders-empty template. Add `<i class='fa-solid fa-box-open' aria-hidden='true'></i>` icon above the copy and a secondary action `<button class='pos-v5-btn-ghost' @click='close'>Retour à la caisse</button>` to give the cashier a one-click exit when the drawer was opened by mistake.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 1,
+    "P1": 2,
+    "P2": 2,
+    "P3": 2,
+    "open_P0": 1,
+    "open_P1": 2,
+    "open_P2": 2,
+    "open_P3": 2
+  },
+  "round_to_round_closures": {},
+  "verdict": "RED",
+  "notes": "Wave A round 1. Verified capture agent's 5 self-flags: (1) 429 storm at states 14/15 = PASS, confirmed P0 silent_error after CSS-stripped DOM check found zero toast/alert/swal popup elements; (2) plan-vs-code direct-add mismatch = PARTIAL, spec adapted via Vue modal Ajouter au panier CTA, no user-visible defect — note only, not a finding; (3) hidden Vue add-to-cart anti-pattern = PARTIAL_PASS, anti-pattern is real (Vue button hidden under wizard CTA) but spec's visibility iteration handles it — bundled into A-005 spec hardening; (4) logout via $store dispatch = PARTIAL, window.app exposure gap is real but spec fallback (clearCookies + goto /login) recovers — bundled into A-005; (5) 65 pre-existing tracker cards = FAIL classification, this is DB state pollution not an audit defect — reclassified as A-006 P3 audit-integrity (reproducibility). NEW issues found: A-002 systemic pink palette drift (10+ states), A-003 English locale FOUC at /login post-logout, A-004 state 13 captured admin orders list NOT receipt component (artifact mislabeled). State 08 numeric integrity confirmed P0-clean: 1× Boisson Seule 2.00€ → qty 2 → grand 4.00€ lock-step. Verdict RED gates on A-001 P0 silent_error."
+}

@@ -32,7 +32,7 @@ class DiningTableController extends AdminController
         try {
             return DiningTableResource::collection($this->diningTableService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -43,7 +43,7 @@ class DiningTableController extends AdminController
         try {
             return new DiningTableResource($this->diningTableService->store($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -53,7 +53,7 @@ class DiningTableController extends AdminController
         try {
             return new DiningTableResource($this->diningTableService->show($diningTable));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -64,7 +64,7 @@ class DiningTableController extends AdminController
         try {
             return new DiningTableResource($this->diningTableService->update($request, $diningTable));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -75,7 +75,7 @@ class DiningTableController extends AdminController
             $this->diningTableService->destroy($diningTable);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -84,7 +84,7 @@ class DiningTableController extends AdminController
         try {
             return Excel::download(new DiningTableExport($this->diningTableService, $request), 'Dining-Table.xlsx');
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

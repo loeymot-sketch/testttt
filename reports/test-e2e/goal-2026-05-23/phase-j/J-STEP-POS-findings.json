@@ -1,0 +1,517 @@
+{
+  "agent": "J-STEP-POS — POS CASHIER JOURNEY STEP-BY-STEP DECOMPOSITION",
+  "date": "2026-05-24",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "method": "Code-static + grep + read components. Verified against existing phase F/G/H findings and frozen-zone constraints (CLAUDE.md §7). No Playwright capture session in this pass — dev server not started; relies on H.7 captures (already in this cycle).",
+  "scope": "Decompose cashier journey into 12 atomic steps (P1..P12) + 3 cross-flow (CF1..CF3). For each: visual + UX + speed + completeness + error paths evaluation. Surface friction points, missing UI, and security/NF525 gaps.",
+  "code_paths_audited": [
+    "resources/js/components/admin/pos/PosComponent.vue (4850 LOC)",
+    "resources/js/components/admin/pos/PaymentComponent.vue (1478 LOC, FROZEN §7)",
+    "resources/js/components/admin/pos/PosCounterCollectModal.vue (708 LOC, Wave X X1 SSOT-flavored sibling)",
+    "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue (1785 LOC)",
+    "resources/js/components/admin/pos/ReceiptComponent.vue (706 LOC)",
+    "resources/js/components/admin/pos/ReceiptDuplicataMarker.vue",
+    "resources/js/components/admin/pos/ReceiptRemboursementMarker.vue",
+    "resources/js/components/admin/pos/v5/PosV5TrancheRow.vue (FROZEN §7)",
+    "resources/js/components/admin/pos/ItemComponent.vue",
+    "resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue (Sprint 1A 2026-05-16)",
+    "resources/js/components/admin/dashboard/LastZReportWidget.vue (dashboard widget — NOT a POS-flow button)",
+    "resources/views/admin-pos-v4.blade.php (POS shell — Dine-in hide rule)",
+    "public/js/pos-wizard.js (5964 LOC, FROZEN §7 Vanilla)",
+    "public/css/pos-wizard.css (FROZEN §7)",
+    "app/Http/Controllers/Auth/LoginController.php (H2-HEAL-02 audit chain)",
+    "routes/api.php:920-930 + 1140-1170 (refund-with-counter-entry + fiscal z-report routes)",
+    "routes/web.php:151-160 (login throttle:login-lockout)",
+    "app/Providers/RouteServiceProvider.php:247-260 (login-lockout limiter: max_attempts=10 / decay=10min)",
+    "tests/js/sentinels/posShortcutsSentinel.spec.js (Wave X X2 sentinel)",
+    "tests/js/sentinels/counterCollectFrDecimalSentinel.spec.js (D2 FR comma pre-fill)",
+    "plans/LOCK_PAY_PaymentComponent_currency_2026-05-23.md (D3 currency LOCK DRAFT)",
+    "reports/test-e2e/goal-2026-05-23/phase-h/CONVERGENCE_PHASE_H.md (cycle convergence)",
+    "reports/test-e2e/goal-2026-05-23/phase-h/H2-split-tranche-findings.json"
+  ],
+  "steps": [
+    {
+      "id": "P1",
+      "title": "Login as cashier",
+      "status": "GREEN",
+      "visual": "Standard Laravel SPA login form rendered via /login (master.blade.php route — POS V4 shell is NOT the login surface). Login form is the legacy admin login.",
+      "ux": {
+        "clear_form": true,
+        "feedback_on_wrong_creds": "JSON 400 with `validation: trans('all.message.credentials_invalid')` — frontend toasts via alertService.error. Generic wording (no email-exists leak) per OWASP guidance (LoginController:51-57 GOAL-HEAL-SEC-002 explicitly documents the design)."
+      },
+      "speed": "Single POST /login round-trip. Login route: throttle:login-lockout (10 attempts / 10 min per IP+email per RouteServiceProvider:247-260, config auth.login_lockout.*).",
+      "completeness": {
+        "lockout": "YES — `login-lockout` named limiter at 10/10min (configurable via config/auth.login_lockout)",
+        "audit_log_per_H2_HEAL_02": "YES — LoginController:117-144 writes `user.login` event on NF525 HMAC chain with branch_id + user_id + IP + user-agent + role. Wrapped in try/catch + Log::warning so audit failure does NOT block login.",
+        "logout_audit": "YES — LoginController:218-249 writes `user.logout` with identity captured BEFORE token destruction.",
+        "transparent_bcrypt_rehash": "YES — LoginController:103-106 silently upgrades 10→12 rounds on next login (Wave 5G hardening).",
+        "token_sprawl_protection": "YES — `auth_token` rows revoked on relogin (LoginController:155 Sprint 5D Z6-01)."
+      },
+      "error_paths": [
+        "Wrong creds → 400 + generic message (no enumeration)",
+        "Lockout → throttle middleware returns 429 after 10 attempts (cashier sees `Too Many Requests`)",
+        "User has branch_id=0 AND no site_default_branch → 422 with generic 'preview_unavailable' (LoginController:81-87) — cashier sees DEFENSIVE error, not 'no branch assigned' (CONFUSING wording, see friction point)",
+        "Audit write fail → login still succeeds (defensive try/catch — correct NF525 trade-off)"
+      ],
+      "friction_points": [
+        "P1-FRICTION-1 [P3]: Wrong-branch-or-no-branch fallback message reuses `composer.preview_unavailable` translation key (LoginController:85). A new cashier without branch assignment sees 'Aperçu indisponible' rather than 'Aucune filiale assignée — contactez l’admin'. Confusing on first login attempt. Recommended: dedicated `auth.no_branch_assigned` key.",
+        "P1-FRICTION-2 [P4]: No 'remember me' / 'stay signed in' checkbox visible — every shift opening requires retyping credentials. Sanctum token TTL 480 min covers a long shift but session is destroyed on browser close (Auth::guard('web')->logout() at L146 immediately after attempt). Cashier on a shared terminal with auto-close browser will retype daily."
+      ]
+    },
+    {
+      "id": "P2",
+      "title": "Open shift / open cash drawer session",
+      "status": "GREEN (post Sprint 1A 2026-05-16)",
+      "visual": "PosV5Button header (🏦 'Caisse' label, neutral tone when closed / 'ready' green halo when active) — PosComponent.vue:235-246. Dialog (PosCashDrawerSessionDialog.vue) renders modal 'No session' state with header (eyebrow + title), increment chips +5/+10/+20/+50, manual number input, and 'Ouvrir' button.",
+      "ux": {
+        "auto_prompt_on_login": "YES — autoLoadCashSession() (PosComponent.vue:2277-2299) auto-opens dialog in 'open' mode if no session active. Fail-soft on network error so POS bootstrap doesn't block.",
+        "initial_count_input": "YES — opening amount input + increments + reset chip (PosCashDrawerSessionDialog.vue:81-91)",
+        "branch_id_forwarded": "YES — Wave O-1 2026-05-20 passes branchId for admin multi-filiale scenarios"
+      },
+      "speed": "Single dialog mount; one POST /cash-drawer/sessions to open. Local Vuex store update on success (cashDrawer module).",
+      "completeness": {
+        "audit_log": "Confirmed via cashDrawer service path (not re-audited in this pass). G.6 earlier finding was 'UI may be missing' — INCORRECT; UI ships since Sprint 1A.",
+        "session_status_visible": "Tone='ready' on header pill when session open (cashSessionActive computed at PosComponent.vue:1697)."
+      },
+      "error_paths": [
+        "Open POST fails → error band rendered at top of dialog (cash-session-error testid)",
+        "Network blip on auto-load → silent fail-soft, cashier can manually open via header button"
+      ],
+      "friction_points": [
+        "P2-FRICTION-1 [P3]: Manual decimal input (type='number' step='0.01' min='0') accepts negative attempt via direct DOM manipulation only — UI defaults safe. No keyboard-shortcut to open dialog mid-shift (must reach for header button).",
+        "P2-FRICTION-2 [P2]: Auto-prompt overlay can be DISMISSED via backdrop click (@click.self='onBackdrop' on .cash-session-overlay) without opening. Cashier can begin selling WITHOUT a session, which means subsequent cash payments may fall into the wrong flow. Recommended: make backdrop dismiss inert for 'open' initial mode, OR show persistent banner 'Aucune session caisse ouverte' until opened."
+      ]
+    },
+    {
+      "id": "P3",
+      "title": "Main POS view (post-login)",
+      "status": "GREEN with friction",
+      "visual": "Full POS V4/V5 shell — left rail: category strip + search + grid; right rail: cart ticket. Header: 5 buttons (Suivi commandes, Loyalty redeem main CTA, No-sale drawer, Caisse session, Customer screen). Q10 'Prêt à livrer' + 'À encaisser borne' shortcut panels render ALWAYS (even empty) since Q10 P-OWNER 2026-05-21 always-render heal.",
+      "ux": {
+        "Q10_ready_panel_visible": "YES — always rendered (PosComponent.vue:267-333). Empty state: 'Aucune commande prête' copy + 'Mis à jour il y a Xs' health ticker.",
+        "last_refresh_ticker_alive": "YES — 5s setInterval (PosComponent.vue:2137-2141) bumps _lastRefreshTick reactive so 'il y a Xs' labels re-render. Cleared on unmount.",
+        "item_catalog_visible": "YES — SkeletonGrid placeholder while loading + ItemComponent grid.",
+        "featured_categories_first": "YES — F-4 2026-05-18 fix. `displayedCategories` filters on `featured===true`. 'Toutes/Réduire' toggle pill renders when non-featured exist (PosComponent.vue:454-468).",
+        "customer_search_clear": "YES — vue-select dropdown with placeholder 'Sélectionner un client' + search input. Add-customer (+) button adjacent."
+      },
+      "speed": "Initial render: skeletons until items load. Polling for Q10 panels runs in background. Search input debounced.",
+      "completeness": {
+        "loyalty_redeem_main_cta": "YES — V1 only, dine-in disabled. `pos.redeem-loyalty` permission gate (PosComponent.vue:200-209). Disabled with hint when not eligible.",
+        "park_parked_shortcuts": "YES — 2-col grid in cart head (⏸ Mettre en attente + 📦 En attente with badge count). Wave Q-5 2026-05-20 shortened labels.",
+        "order_type_segmented": "Sur place hidden, takeaway + delivery + table options (V1 dine-in disabled via Blade Style override at admin-pos-v4.blade.php:139-160)."
+      },
+      "error_paths": [
+        "Polling 5xx → toast via alertService.error (rate-limited via Q10 implementation)",
+        "Customer search empty results → vue-select shows native 'No results' fallback (label.search_customer)"
+      ],
+      "friction_points": [
+        "P3-FRICTION-1 [P2 — HIGH CASHIER VALUE]: NO keyboard shortcuts whatsoever. Cashier must mouse-click everything. POS power users (rush 19h-21h) expect F1=cash, F2=card, ESC=cancel, Space=add-item. grep confirms ZERO keydown handlers in PosComponent.vue except inline ESC for delivery autocomplete suggestion list. PaymentComponent has no global keyboard listener. Recommended: V1.0.2 PosKeyboardShortcuts mixin (F1..F12 + Ctrl+Shift+Z for Z-close).",
+        "P3-FRICTION-2 [P3]: Header buttons hide labels below `lg:` breakpoint (`<span class='hidden lg:inline'>`). On a 13'' tablet portrait the icons-only header is ambiguous — no tooltips visible. Recommended: ensure :title attribute is always set so OS tooltips fire on hover/long-press.",
+        "P3-FRICTION-3 [P2]: Q10 'Mis à jour il y a Xs' uses a `setInterval(5s)` that COULD silently die under tab-throttle in background (Chromium 60s minimum throttle for inactive tabs). When cashier returns to a backgrounded POS tab, the ticker may show 60-180s stale before the next bump. Add Page Visibility API listener to force-refresh on tab focus."
+      ]
+    },
+    {
+      "id": "P4",
+      "title": "Direct sale (add items)",
+      "status": "GREEN",
+      "visual": "ItemComponent grid — click adds. Quantity stepper inline (per-row). Cart total in right rail bottom 'Encaisser X €' CTA always visible.",
+      "ux": {
+        "click_adds_to_cart": "YES — ItemComponent.vue:21-22 also wires Enter + Space for keyboard add (the ONLY keyboard interaction in POS).",
+        "quantity_stepper": "YES — number input + keyup handlers (ItemComponent.vue:98)",
+        "cart_total_always_visible": "YES — sticky bottom of right cart panel. On mobile: floating bottom bar `.pos-v4-mobile-cart` (PosComponent.vue:1140).",
+        "custom_note_per_item": "Investigate further — saw `instruction` field on order items in ReceiptComponent.vue:520-522 but did not find a per-item note input in ItemComponent.vue at the call paths grepped."
+      },
+      "speed": "Pure local cart mutation (Vuex posCart module). No network round-trip per add. Cart bump animation triggered post-add (triggerCartBump() with debounce).",
+      "completeness": {
+        "addons_visible": "YES — addons rendered with quantity (ItemComponent.vue:271)",
+        "skeleton_loading": "YES — SkeletonGrid count=12 while loadingItems true"
+      },
+      "error_paths": [
+        "Item without stock → AvailabilityService should mark it as such; need to verify a 'sold out' visual state exists on the grid (not confirmed in this audit pass — see open question)",
+        "Negative quantity prevented at input level"
+      ],
+      "friction_points": [
+        "P4-FRICTION-1 [P3]: No per-item note input visible in the grid ItemComponent — cashier-added notes (allergies, 'sans oignon') may not be possible from POS direct sale path (only from wizard). Recommend verifying with owner-walk whether this is in-scope V1 or V1.0.2.",
+        "P4-FRICTION-2 [P3]: maxItemQty config (default 20 per kiosk.max_item_qty) is enforced silently — when cashier hits cap, no toast explains why the stepper won't increment further."
+      ]
+    },
+    {
+      "id": "P5",
+      "title": "Wizard popup (POS Vanilla wizard FROZEN)",
+      "status": "GREEN (FROZEN — observation only)",
+      "visual": "Single-page Vanilla JS wizard popup (pos-wizard.js 5964 LOC + pos-wizard.css). CLAUDE.md §7 frozen — design parfait per owner. Loaded via Blade <script src=`{{ asset('js/pos-wizard.js') }}`?v=9-{{ time() }}> (admin-pos-v4.blade.php:136).",
+      "ux": {
+        "popup_opens_fast": "Per F.5 + I.4 prior phase findings — green",
+        "composition_flow_works": "Per H.6 i18n char encoding probe — XSS-safe, no apostrophe rendering issues",
+        "add_to_cart": "Per Wave Final 2026-05-23 S2 PaymentComponent flow test"
+      },
+      "speed": "Vanilla JS, no Vue bundle dependency. Fast modal open. Cache-busted via `?v=9-{{ time() }}` query param (admin-pos-v4.blade.php:136).",
+      "completeness": "FROZEN — not auditable for change. Owner has confirmed design parfait (2026-05-06 + 2026-05-09 reaffirmed).",
+      "error_paths": [
+        "Composition ID drift → handled via simulation_hardware + seeder fix (per project_pos_payment_fix_2026-05-18)"
+      ],
+      "friction_points": [
+        "P5-FRICTION-1 [P3 — FROZEN, cannot fix]: Cache-bust on every page load (`?v=9-{{ time() }}`) defeats browser HTTP cache for all clients. Acceptable for production-perfect freshness but each POS bootstrap re-downloads 296 KB. Recommend swapping to mix() asset versioning post-V1 (would require Vue migration = LOCK).",
+        "P5-FRICTION-2 [P3 — FROZEN, observation]: The wizard is the only path for composed items. Power-cashier shortcut (e.g. 'last composition' or 'duplicate previous order item') does not exist."
+      ]
+    },
+    {
+      "id": "P6",
+      "title": "Customer attribution (optional)",
+      "status": "GREEN",
+      "visual": "Cart head: vue-select dropdown with searchable customer list + '+' button. Loyalty badge `pos-v5-loyalty` (warm gold star + points + loyalty code) appears when selected customer has loyalty active (PosComponent.vue:601-610).",
+      "ux": {
+        "walking_customer_default": "YES — no customer selected by default; cart works without attribution. Required only for loyalty redeem.",
+        "search_by_phone": "vue-select :searchable='true' — searches against label-by='name'. Phone-based search would require swapping the label-by or extending search predicate. Not confirmed in this audit pass.",
+        "loyalty_points_display": "YES — points + code badge visible immediately on customer selection (`selectedCustomerLoyalty` reactive computed)"
+      },
+      "speed": "Customer list pre-loaded into Vuex on POS mount. Selection is local.",
+      "completeness": {
+        "add_customer_flow": "YES — '#addCustomer' modal with name/phone/email/password fields (PosComponent.vue:1012-1080)"
+      },
+      "error_paths": [
+        "Loyalty fetch race → `selectedCustomerLoyalty.loading` shows '...' placeholder",
+        "Add customer 422 (e.g. duplicate phone) → standard alertService error toast"
+      ],
+      "friction_points": [
+        "P6-FRICTION-1 [P3]: 'Search by phone' is the most common cashier scenario (customer says 'I'm 06...') but the vue-select default searches by NAME. Need to confirm if there's a custom search predicate. If not — add search-by-phone as a switch.",
+        "P6-FRICTION-2 [P3]: Loyalty badge shows points but NO 'redeem now' inline CTA — cashier must close cart panel, click loyalty header CTA, then re-open the modal. Recommend inline 'Utiliser pts' button on the badge for one-tap redeem from cart."
+      ]
+    },
+    {
+      "id": "P7",
+      "title": "Payment via PaymentComponent (FROZEN §7)",
+      "status": "GREEN with 1 KNOWN P3 cosmetic (D3 LOCK_PAY pending)",
+      "visual": "Hero `À encaisser` 48px monospace tabular = moment de vérité. Mode segmented control 3-col (cash | card | multi). Numpad shared via PosV5Numpad. CTA `Confirmer & Imprimer` full-width primary-pay with red shadow. PaymentComponent.vue:1-330.",
+      "ux": {
+        "mode_picker_cash_card_multi": "3 modes visible at top (PaymentComponent.vue:38-78). CARD requires terminal_id selector (PR-A blocker heal 2026-05-18 — line 117-140).",
+        "amount_input_or_prefill": "Cash: manual input + numpad. Card: card last-4 input. Multi: tranches list with +Ajouter une tranche.",
+        "currency_format_BUG_P3": "PRE-EXISTING DOCUMENTED P3 — `4.90€` instead of FR canonical `4,90 €` (virgule + nbsp). LOCK_PAY draft at plans/LOCK_PAY_PaymentComponent_currency_2026-05-23.md awaiting owner countersign. Implementation gap: appService.currencyFormat (line 71-77) uses parseFloat.toFixed(decimal) + currency — no Intl.NumberFormat, no nbsp, no comma. Comparable Q5 CashOverviewComponent.vue:509-522 uses Intl.NumberFormat('fr-FR', {style:'currency', currency:'EUR'}) — canonical.",
+        "confirm_button_disabled_states": "YES — :disabled covers loading + (multi && !canConfirmMulti) + (card && !canConfirmCard). canConfirmCard requires terminal_id > 0. canConfirmMulti requires balanced split (cents equality)."
+      },
+      "speed": "fetchPaymentTerminals on mount (admin/payment-terminals filtered status=1 per_page=50). Single POST /api/admin/pos with X-Idempotency-Key. Quote auto-refresh every 60s while modal open (PaymentComponent.vue:472-480).",
+      "completeness": {
+        "TPE_terminal_selector_when_card": "YES — PR-A V1 GO-LIVE blocker heal 2026-05-18 (PaymentComponent.vue:117-140). Empty list shows hint 'Aucun TPE actif sur cette filiale.'",
+        "change_due_calc": "YES — cashChange computed (parseFloat received - parseFloat total) rendered when > 0 (PaymentComponent.vue:411-414).",
+        "multi_tender_split_helpers": "YES — `Diviser à parts égales` + `Équilibrer le reste` + `Suggérer les rendus monnaie` (iter12 2026-05-09)",
+        "single_flight_guard": "YES — :disabled + this.loading.isActive early-return guard. AUDIT-P2 + RED-R1 sentinel."
+      },
+      "error_paths": [
+        "TPE list empty → hint banner role='alert' + canConfirmCard returns false → confirm button disabled",
+        "CARD without TPE selection → frontend toast 'Sélectionnez un TPE avant d’encaisser par carte' BEFORE POST",
+        "Multi unbalanced → frontend toast 'Le paiement multi n’est pas équilibré' BEFORE POST",
+        "Quote expired → 60s auto-refresh keeps quote alive; if it still expires the confirm POST returns 'quote.expired' error",
+        "Network 401 → confirmOrderWithAuthRetry handles refresh + retry"
+      ],
+      "friction_points": [
+        "P7-FRICTION-1 [P3 — FROZEN-PENDING-LOCK]: Hero amount FR currency format `4.90€` instead of `4,90 €`. LOCK draft ready, owner countersign pending. NF525 receipt paper render is unaffected (separate ReceiptComponent.vue formatter). Cashier-facing only.",
+        "P7-FRICTION-2 [P3]: Numpad input is shared across cash and card sub-tabs (id='cashInput' or 'cardInput' via this.inputIdName mutation). Switching modes mid-input clears the field via resetPaymentInputs(). Cashier who typed in card then realises CASH must retype.",
+        "P7-FRICTION-3 [P2]: NO post-amount-typed enter-to-confirm shortcut. Cashier types '50' in cash input, has to MOUSE click ✓ Confirmer to commit. With keyboard shortcuts (P3-FRICTION-1), 50 ENTER would close the loop. Currently 0 keyboard listeners on the confirm button.",
+        "P7-FRICTION-4 [P3]: TPE dropdown auto-selects FIRST active terminal (PaymentComponent.vue:525-527). If branch has 2 TPEs with the SAME name (e.g. 'Caisse 1' + 'Caisse 1 Réserve'), cashier may not notice the pre-selection and submit wrong terminal_id silently. Recommend audit_log per-confirm pre-selected vs explicit pick (V1.0.2)."
+      ]
+    },
+    {
+      "id": "P8",
+      "title": "Split-tranche (V5)",
+      "status": "GREEN (5 V1 tested modes) / AMBER (3 modes test-gap)",
+      "visual": "Tranches block (PaymentComponent.vue:176-305). Summary panel (Couvert + Reste dû + Monnaie). Tranche rows via PosV5TrancheRow (FROZEN §7). + bouton 'Ajouter une tranche'. Diviser entre N personnes input + 2 helper buttons (Équilibrer + Suggérer rendus monnaie).",
+      "ux": {
+        "split_works": "YES per H.2 phase findings + SplitPaymentEndToEndTest (6 tests) + SplitPaymentServiceTest (10 tests) + SplitPaymentSentinelTest (3 tests).",
+        "add_tranche_row": "YES — PaymentComponent.vue:296-304 +Ajouter button. Max 12 tranches (config split_payment.max_tranches default 12).",
+        "sum_verified_visually": "YES — Couvert + Reste dû computed in cents (no float drift). Row gets pos-v5-split-summary__row--ok class when remaining <= 0.01.",
+        "confirm_only_when_balanced": "YES — canConfirmMulti = splitCanConfirm(totalCents, tranches). +1.00€ tolerance (H.2.5 documented)."
+      },
+      "speed": "Pure local cents math. POST persists all tranches atomically in DB::transaction.",
+      "completeness": {
+        "all_5_modes_whitelisted": "YES backend (CASH/CARD/MOBILE_BANKING/OTHER/TICKET_RESTAURANT) per H.2.1.",
+        "mobile_banking_ticket_restaurant_test_gap": "AMBER — 3 modes never asserted via PHPUnit. EC-1 in H.2 backlog."
+      },
+      "error_paths": [
+        "Sum < total → 422 ValidationException before any persistence",
+        "Sum > total + 1€ → 422 (TOLERANCE_OVERPAY = 1€ at line 36 of SplitPaymentService)",
+        "Per H.2.3: TPE decline detection is OUT-OF-BAND (cashier-asserted, no per-tranche idempotency — V1.0.X concern)"
+      ],
+      "friction_points": [
+        "P8-FRICTION-1 [P2]: Multi-payment is a MODAL switch. Cashier who started in CASH mode then realises customer wants split must click 'Multi-paiement' tab, losing already-typed cash value. Multi inherits NOTHING from cash mode. Recommend pre-populate first tranche as the cash mode's amount if non-zero.",
+        "P8-FRICTION-2 [P2]: Per H.2.4 — partial-refund-by-tranche UNSUPPORTED V1. Real-world scenario (customer returns 1 item paid by CARD, keeps meal paid by CASH) requires full refund + new sale workaround. V1.0.X backlog acknowledged.",
+        "P8-FRICTION-3 [P2 — FROZEN PosV5TrancheRow]: Per PROPOSAL_PosV5TrancheRow_005 — tendered field LOST on mode toggle (cashier switches CARD↔CASH on the same row, the cash 'tendered' value vanishes). FROZEN §7 — requires LOCK to fix."
+      ]
+    },
+    {
+      "id": "P9",
+      "title": "Encaisser-borne (PosCounterCollectModal — kiosk-cash flow)",
+      "status": "GREEN (Wave X X1 P-OWNER 2026-05-21 shipped)",
+      "visual": "Sibling SSOT-flavored modal (NOT PaymentComponent — FROZEN §7 forbids prop addition). Mirrors V5 visual atoms: hero `À encaisser` 48px monospace, 4-mode picker (cash | card | mobile | ticket), PosV5Numpad shared, change due block (`✨ Monnaie à rendre`).",
+      "ux": {
+        "Q10_panel_click_opens_modal": "YES — openCounterCollect(o) on PosComponent.vue:366 fired by Q10 'Encaisser' button.",
+        "montant_recu_prefill_FR_comma": "YES — D2 GOAL-D2 2026-05-23 fix at PosCounterCollectModal.vue:300 and :315 prefills `String(this.orderTotal.toFixed(2)).replace('.', ',')` (e.g. `8,50`). Watch-handler at line 250 normalizes `,` → `.` for parse — bidirectional.",
+        "cash_change_visible": "YES — cashChange computed only displayed when > 0 (PosCounterCollectModal.vue:127-138)",
+        "confirm_prints_receipt": "Implied via confirmed event payload — parent triggers receipt modal."
+      },
+      "speed": "Single POST /counter-payment with X-Idempotency-Key=`pos-counter-collect-{orderId}-{modeInt}-{minuteBucket}` (Wave W formula). Backend short-circuits (no-op) if payment_status === PAID — safe double-tap.",
+      "completeness": {
+        "4_mode_parity": "YES — cash + card + mobile + ticket all selectable (no multi-tranche split, deferred V1.0.2)",
+        "ssot_design_language": "YES — owner verbatim Wave X X1: 'même popup que pour le POS normal payment'. Sibling pattern justified because PaymentComponent is §7 FROZEN.",
+        "idempotency_minute_bucket": "YES — minute-bucket key replays 2xx within same minute (debounce-by-design)"
+      },
+      "error_paths": [
+        "Already paid (payment_status === PAID) → backend no-op → still returns 2xx (idempotent)",
+        "TPE decline (CARD mode) → backend rejects, cashier sees error toast",
+        "Network 5xx → retry-safe via idempotency key"
+      ],
+      "friction_points": [
+        "P9-FRICTION-1 [P3]: 'cash short' message (PosCounterCollectModal.vue:139-141 role='alert' label.cc_cash_short) only fires when received < total — but the field is PRE-FILLED with the exact total, so 'cash short' rarely surfaces. Cashier who enters < total (e.g. trial) gets the alert. Hint copy could be more informative: 'Insuffisant: il manque X €'.",
+        "P9-FRICTION-2 [P2]: No multi-tranche on counter-collect (deferred V1.0.2 per modal scope comment lines 18-27). If customer at counter says 'split cash + card', cashier must rejecter the kiosk-cash flow, open POS direct sale, manually rebuild the order, and split-pay. Lost order linkage = NF525 audit gap (kiosk parent order STAYS unpaid).",
+        "P9-FRICTION-3 [P3]: No 'cancel order' option on the modal — cashier who realises kiosk order is invalid must close modal and use a separate cancel path from the tracker. One-stop UI gap."
+      ]
+    },
+    {
+      "id": "P10",
+      "title": "Receipt print",
+      "status": "GREEN",
+      "visual": "ReceiptComponent renders 58mm/80mm paper layouts with DUPLICATA marker (red dashed border + reprint count) + REMBOURSEMENT marker (red dashed border + parent serial reference). Print directive on hidden trigger button.",
+      "ux": {
+        "auto_print_after_confirm": "Implicit via PaymentComponent.confirmOrder paymentSucceeded path (line 1002-1018) — opens receipt modal after success. The print itself is triggered by handlePrintClientClick which fires window.print() fallback.",
+        "duplicata_reprint_accessible": "YES — PosOrdersTrackerComponent.vue:240-250 has tracker-reprint-{id} button per order. Calls requestReprint(order) which loads full order then mounts ReceiptComponent.",
+        "remboursement_marker": "YES — G2-HEAL-01+03 ReceiptRemboursementMarker visible on refund counter-entry orders (red dashed + parent serial)",
+        "addons_rendered_per_G2_HEAL_03": "YES — receiptAddonsFor(item) iterates item.item_addons (e.g. Coca bundled with Big Burger menu_formule)"
+      },
+      "speed": "POST admin/pos/orders/{id}/print-receipt increments NF525 receipt_print_count + writes audit chain row server-side. UI renders before/concurrent.",
+      "completeness": {
+        "duplicata_count_visible": "YES — receipt_print_count incremented on every print. label.duplicata fallback 'DUPLICATA n'.",
+        "audit_chain_warn_on_failure": "YES — PS-4 audit heal 2026-05-18 (ReceiptComponent.vue:553-556) shows `pos.receipt_audit_chain_warning` toast when audit_emitted=false. Print itself succeeds (paper still delivered) but manager alerted for SIEM."
+      },
+      "error_paths": [
+        "API 403 (permission revoked mid-shift) → warning toast `pos.receipt_print_forbidden`",
+        "API 404 (order deleted) → `pos.receipt_print_not_found`",
+        "API 409 (idempotency conflict on rapid double-click) → `pos.receipt_print_conflict`",
+        "API 5xx → `pos.receipt_print_server_error` + still prints via local counter increment",
+        "audit_emitted=false → warning toast (NEW PS-4 heal)"
+      ],
+      "friction_points": [
+        "P10-FRICTION-1 [P3]: Print uses window.print() fallback when hiddenPrintClientButton is missing. On a real thermal POS printer with USB/network driver, window.print() opens the OS print dialog — cashier must click 'OK' to actually print. Receipt printer integration (escpos / CUPS auto-select default printer) is V1.0.2 scope. Current V1 = browser print dialog every time.",
+        "P10-FRICTION-2 [P3]: Duplicata marker count starts at 0 then increments on reprint — first print shows ZERO marker (correct NF525), reprint shows DUPLICATA n=1, 2, etc. UI is clear. But on POS browser tab refresh between original print and reprint, the localPrintCount resets to order.receipt_print_count from backend — small race window where parallel print could double-count."
+      ]
+    },
+    {
+      "id": "P11",
+      "title": "Refund counter-entry",
+      "status": "RED — BACKEND READY / NO UI BUTTON (P0 V1 GAP)",
+      "visual": "NO visible refund button anywhere in resources/js/components/admin/pos/ or admin/order/ surfaces. PosOrdersTrackerComponent.vue has only: Encaisser (Q10), Reprint, Cancel-with-reason, Mark-delivered. ZERO 'Rembourser' / 'Refund' CTA.",
+      "ux": {
+        "refund_button_on_past_order": "NO — confirmed via grep: ZERO occurrences of refund/rembours strings as @click or button in resources/js/components/. Only the ReceiptRemboursementMarker component (display-only).",
+        "reason_input_mandatory": "Backend RefundWithCounterEntryService::execute signature accepts $reason string (req'd) but there's NO UI form collecting it.",
+        "audit_log_cashier_attribution": "Backend ready — NF525 chain extends + new fiscal_sequence_no allocated per H.2.4 evidence.",
+        "duplicata_vs_remboursement_distinction": "Marker components exist (DUPLICATA on reprint of ANY order, REMBOURSEMENT on a refund counter-entry order). Both visually distinct (red dashed border + label). But NO PATH for cashier to TRIGGER a refund."
+      },
+      "speed": "N/A — feature not surfaced.",
+      "completeness": {
+        "backend_route_exists": "YES — POST /api/admin/pos/orders/{order}/refund-with-counter-entry (routes/api.php:925-927) with throttle:pos-order-update + idempotency middleware",
+        "backend_service_exists": "YES — RefundWithCounterEntryService.php (266 LOC) creates mirror order in current Z window, allocates new fiscal_sequence_no, signs new audit row",
+        "frontend_caller_NONEXIST": "Confirmed via `grep -rn refund-with-counter-entry resources/js/` — NO MATCH",
+        "permission_gate": "Need to verify PosOrderController::refundWithCounterEntry has permission gate; not audited in this pass"
+      },
+      "error_paths": [
+        "N/A — UI gap means cashier physically CANNOT initiate a refund. Workaround = cancel-with-reason (which only transitions status, does NOT create NF525 counter-entry mirror)"
+      ],
+      "friction_points": [
+        "P11-CRITICAL-GAP [P0 V1]: Cashier cannot initiate a NF525-compliant refund. The cancel-with-reason flow (PosOrdersTrackerComponent.vue:264-266) transitions status to CANCELED but does NOT create the mirror counter-entry NEEDED for closed-Z-window refunds per French fiscal law. For ANY refund after a Z-report has closed, the backend service must be invoked but there is NO UI doing so. Recommend: V1 SHIP BLOCKER — add 'Rembourser' button to tracker (next to Annuler) that opens a reason modal + invokes POST /refund-with-counter-entry. This is a real-world day-1 use case (returning customer, wrong item delivered) and the cashier has no path.",
+        "P11-FRICTION-1 [P0 BLOCKER]: If owner has not noticed this gap, cashiers will use cancel-with-reason for refunds, leaving NF525 books unbalanced (revenue recorded but money returned via cash drawer without audit trail). This is a 6-year-retention fiscal exposure."
+      ]
+    },
+    {
+      "id": "P12",
+      "title": "Close shift / Z-close",
+      "status": "RED — NO UI BUTTON (P0 V1 GAP, partially mitigated by cron G2-HEAL-06)",
+      "visual": "NO visible 'Clôturer la journée' / 'Z-close' button anywhere in POS UI. grep across resources/js/ confirms ZERO ZCloseBtn / cloturer / fermer.*caisse occurrences.",
+      "ux": {
+        "end_of_day_reconciliation_prompt": "Cash session dialog DOES have a 'close' mode (PosCashDrawerSessionDialog.vue mode='close' branch) for closing the cash drawer session with drawer count input. BUT that is the cash drawer session close (Sprint 1A), NOT the NF525 Z-report close.",
+        "drawer_count_input": "YES via cash session dialog 'close' mode",
+        "z_close_button_per_G6": "NO — V1.0.X backlog item from PROPOSAL ready (CONVERGENCE_PHASE_H §9 'Z-close Vue UI button — P1 V1.0.X')",
+        "confirmation_z_report_print": "N/A — no UI path. Backend produces PDF via /api/admin/fiscal/z-report/{id}/pdf but no cashier UI links to it.",
+        "owner_sees_z_closed_indicator": "LastZReportWidget.vue exists on dashboard (admin/dashboard) — shows last close timestamp, NOT real-time 'session needs Z-close' alert in POS view."
+      },
+      "speed": "N/A — no UI.",
+      "completeness": {
+        "backend_routes_exist": "YES — POST /admin/fiscal/z-report/open + POST /admin/fiscal/z-report/close (routes/api.php:1148-1154) with throttle:10/1 to prevent sequence_no spam",
+        "safety_net_cron_per_G2_HEAL_06": "YES — auto-close cron should exist (referenced in CONVERGENCE_PHASE_H §9 as 'safety-net cron G2-HEAL-06'). Cashiers who forget Z-close still get end-of-day NF525 sealing.",
+        "audit_chain_HMAC_signed": "YES — ZReportService writes HMAC-chain z_reports rows + extends audit_logs"
+      },
+      "error_paths": [
+        "Cashier forgets Z-close → safety-net cron should fire end-of-day (need confirmation cron is wired in production deploy.sh)",
+        "Double-tap close → throttle:10/1 + monotonic sequence_no protect against duplicate close"
+      ],
+      "friction_points": [
+        "P12-CRITICAL-GAP [P0 V1]: Cashiers have NO UI to perform Z-close at end of shift. Only the safety-net cron protects fiscal closure. This violates the NF525 best-practice of operator-initiated daily Z-close — and creates a daily race where the cron MUST fire correctly or the day rolls over unsealed (Y+1 day starts before Y is closed). Recommend V1.0.X PROPOSAL approval + implementation: add 'Clôturer la journée' button in PosComponent header (similar to Caisse but distinct icon) that opens confirmation modal showing day totals + final-cash-count + 'Imprimer Z' CTA.",
+        "P12-FRICTION-1 [P1]: LastZReportWidget on dashboard only shows AFTER-THE-FACT — cashier cannot SEE 'a Z-close is pending today' in the POS surface. Recommend: visible indicator on POS header when last Z-close is > 18h ago (or similar threshold)."
+      ]
+    }
+  ],
+  "cross_flows": [
+    {
+      "id": "CF1",
+      "title": "Direct sale + parallel kiosk-cash encaissement",
+      "status": "GREEN",
+      "evidence": "PosOrdersTracker + Q10 panels update via polling independently of the current cart state (PosComponent posCart Vuex module separate from kiosk-cash list). 2 simultaneous flows: cashier types in cart at the same time PosCounterCollectModal opens (triggered by clicking Encaisser on Q10 panel). Modal is independent transitional overlay — does NOT mutate posCart.",
+      "race": "Per H.2.7 — two cashiers using DIFFERENT idempotency keys for the SAME logical order create distinct Order rows but each independently allocates its own fiscal_sequence_no (no double-allocation). Per H2-HEAL-01 — fixed cross-cashier idempotency leak via (branch_id, user_id, hash(key)) UNIQUE constraint.",
+      "Q10_independent_updates": "YES — readyOrders + kioskCashOrders separate computed sources, polling independent of cart mutations.",
+      "concern": "If the cashier is mid-cart and clicks Encaisser on a Q10 kiosk-cash order, PosCounterCollectModal opens OVER the cart. Closing the modal returns cart intact. No state leak observed."
+    },
+    {
+      "id": "CF2",
+      "title": "Multiple orders queued (5+)",
+      "status": "GREEN with friction",
+      "evidence": "Q10 panels slice .slice(0, 4) — shows MAX 4 rows + 'Voir plus' link/button (PosComponent.vue:316-323 + 380-388). Overflow routes to PosOrdersTracker (ready) or opens showKioskCashPanel slide-in (cash).",
+      "visual_clarity": "Each row shows N° queue_number + price + 1-click CTA — compact. Empty state has 'Mis à jour il y a Xs' health beacon.",
+      "pagination": "After 4 visible, link to full tracker page. NO inline pagination/scroll within the panel.",
+      "concern": "Rush 19h-21h with 8+ orders may hide critical ones below the cut. Recommend bumping slice to 6 OR auto-scroll within panel with max-height + overflow-y."
+    },
+    {
+      "id": "CF3",
+      "title": "Mobile/tablet POS view",
+      "status": "AMBER — partial responsive design",
+      "evidence": "Cart panel: `md:w-[340px] lg:w-[360px] xl:w-[400px]` + full-screen overlay below md (PosComponent.vue:505). Mobile-only close button + floating bottom 'View cart' bar (PosComponent.vue:1140). CSS media queries at 767px + 640px breakpoints. Header buttons hide labels below `lg:` breakpoint (1024px).",
+      "portrait_landscape": "No explicit landscape detection. iPad portrait (768x1024) = md breakpoint, cart visible 340px. iPad landscape (1024x768) = lg, cart 360px.",
+      "touch_targets": "Most buttons are PosV5Button size='md' which renders >= 40px. Header icons (32x32 inside 40px button) likely meet 44px target but need empirical verification. Q10 'Encaisser' / 'Livré' CTAs render as small inline buttons (need measure).",
+      "concern": "P3-FRICTION-2 — header buttons hide labels on tablet portrait (768px width is hidden lg:inline). Cashier on a 10'' tablet sees ICONS ONLY for 5 header buttons. Tooltips (title attr) help but require long-press on touchscreens (not native).",
+      "friction_points": [
+        "CF3-FRICTION-1 [P3]: lg:inline cutoff at 1024px = hides labels on most tablets. Recommend md:inline cutoff (768px) OR mandatory tooltip overlay on first tablet boot.",
+        "CF3-FRICTION-2 [P3]: Q10 panel CTAs are 32-36px height (PosV5 sm-size). Cashier with thick fingers in rush may misclick adjacent rows. Recommend bumping to size='md' (40px+) on tablet breakpoint."
+      ]
+    }
+  ],
+  "top_10_cashier_friction_points": [
+    {
+      "rank": 1,
+      "id": "P11-CRITICAL-GAP",
+      "severity": "P0 V1 SHIP BLOCKER",
+      "summary": "NO UI button to initiate NF525-compliant refund counter-entry. Backend route + service ready but ZERO Vue caller. Cashiers WILL use cancel-with-reason instead, leaving fiscal books unbalanced.",
+      "recommendation": "Add 'Rembourser' button to tracker row that opens reason-input modal + invokes POST /refund-with-counter-entry."
+    },
+    {
+      "rank": 2,
+      "id": "P12-CRITICAL-GAP",
+      "severity": "P0 V1 SHIP BLOCKER",
+      "summary": "NO UI button to perform Z-close at end of shift. Only safety-net cron protects fiscal closure. Operator-initiated daily Z-close is NF525 best practice + the only path for the cashier to print a Z-report at end of day.",
+      "recommendation": "Approve PROPOSAL Z-close Vue UI button + ship it. Header CTA 'Clôturer la journée' opens confirmation modal."
+    },
+    {
+      "rank": 3,
+      "id": "P3-FRICTION-1",
+      "severity": "P2 — High cashier value",
+      "summary": "ZERO keyboard shortcuts in POS (only Enter/Space on ItemComponent grid). Power users in rush 19-21h need F1=cash, F2=card, ESC=cancel, Ctrl+Shift+Z=close.",
+      "recommendation": "V1.0.2 PosKeyboardShortcuts mixin."
+    },
+    {
+      "rank": 4,
+      "id": "P7-FRICTION-3",
+      "severity": "P2",
+      "summary": "No Enter-to-confirm in PaymentComponent. Cashier types amount then must mouse-click ✓ Confirmer.",
+      "recommendation": "Bind Enter on cashInput/cardInput fields to confirm action when canConfirm computed is true."
+    },
+    {
+      "rank": 5,
+      "id": "P2-FRICTION-2",
+      "severity": "P2",
+      "summary": "Cash session 'open' dialog can be dismissed via backdrop click — cashier can sell WITHOUT a session, cash payments fall into wrong audit flow.",
+      "recommendation": "Disable backdrop dismiss when initial-mode='open' OR show persistent 'Aucune session caisse ouverte' banner."
+    },
+    {
+      "rank": 6,
+      "id": "P9-FRICTION-2",
+      "severity": "P2",
+      "summary": "PosCounterCollectModal does NOT support multi-tranche split. Customer at counter who wants split cash+card has no path — cashier must abandon kiosk order + manually rebuild in POS direct sale.",
+      "recommendation": "V1.0.2 backend confirmCounterPaymentSplit endpoint + extend modal."
+    },
+    {
+      "rank": 7,
+      "id": "P8-FRICTION-1",
+      "severity": "P2",
+      "summary": "Switching CASH/CARD → MULTI mode in PaymentComponent loses any already-typed amount. Pre-populate first tranche.",
+      "recommendation": "Carry over cashReceivedRaw into tranches[0].amount when toggling to multi."
+    },
+    {
+      "rank": 8,
+      "id": "P8-FRICTION-3",
+      "severity": "P2 — FROZEN",
+      "summary": "PROPOSAL_PosV5TrancheRow_005 — tendered field LOST on mode toggle (CARD↔CASH). FROZEN §7 requires LOCK to fix.",
+      "recommendation": "Approve LOCK on PosV5TrancheRow.vue + patch."
+    },
+    {
+      "rank": 9,
+      "id": "P7-FRICTION-1",
+      "severity": "P3 — FROZEN-PENDING-LOCK",
+      "summary": "Hero amount FR currency format `4.90€` instead of `4,90 €` (virgule + nbsp). LOCK_PAY draft pending owner countersign 10+ days.",
+      "recommendation": "Owner countersign LOCK_PAY + apply Intl.NumberFormat fix."
+    },
+    {
+      "rank": 10,
+      "id": "P6-FRICTION-1",
+      "severity": "P3",
+      "summary": "Customer search defaults to NAME — common cashier scenario is 'customer says 06...'. Phone search would be more useful default.",
+      "recommendation": "Add phone-search predicate to vue-select OR toggle between name/phone search modes."
+    }
+  ],
+  "ui_gaps": [
+    {
+      "id": "UI-GAP-1",
+      "severity": "P0 V1",
+      "scope": "Refund counter-entry (P11)",
+      "missing": "Button + modal to invoke POST /admin/pos/orders/{order}/refund-with-counter-entry. Reason input mandatory.",
+      "backend_ready": true,
+      "expected_route_in_ui": "PosOrdersTrackerComponent.vue row actions (next to Annuler), only enabled for orders within last Z window OR closed-Z (the service supports both)"
+    },
+    {
+      "id": "UI-GAP-2",
+      "severity": "P0 V1",
+      "scope": "Z-close (P12)",
+      "missing": "Button in POS header (or sidebar) to perform operator-initiated Z-close + receipt print. Confirmation modal with day totals + cash count reconciliation.",
+      "backend_ready": true,
+      "expected_route_in_ui": "PosComponent.vue header nav (5th button, distinct color)"
+    },
+    {
+      "id": "UI-GAP-3",
+      "severity": "P2",
+      "scope": "Keyboard shortcuts (P3 + P7)",
+      "missing": "Global F1..F12 + Ctrl modifiers for cash/card/multi/confirm/cancel/Z-close.",
+      "backend_ready": "n/a",
+      "expected_route_in_ui": "PosKeyboardShortcuts global mixin attached to PosComponent root"
+    },
+    {
+      "id": "UI-GAP-4",
+      "severity": "P2",
+      "scope": "Receipt print (P10)",
+      "missing": "ESC/POS thermal printer integration (CUPS auto-select or escpos.js). Current V1 = browser print dialog every time.",
+      "backend_ready": "n/a",
+      "expected_route_in_ui": "ReceiptComponent.vue print method swap from window.print() to escpos bridge"
+    },
+    {
+      "id": "UI-GAP-5",
+      "severity": "P2",
+      "scope": "Per-item note from POS direct sale (P4)",
+      "missing": "Note input on ItemComponent grid row (not just wizard path). Common cashier scenario: 'sans oignon', allergen flag.",
+      "backend_ready": "Order item.instruction field exists (used by ReceiptComponent kitchenInstructionText)",
+      "expected_route_in_ui": "ItemComponent.vue row or quick-action drawer"
+    },
+    {
+      "id": "UI-GAP-6",
+      "severity": "P3",
+      "scope": "Z-pending visible health beacon (P12)",
+      "missing": "Visible indicator on POS surface when last Z-close > 18h ago. LastZReportWidget exists on dashboard but not POS.",
+      "backend_ready": "Service can return 'last z-close timestamp'",
+      "expected_route_in_ui": "PosComponent.vue header banner OR header button with red dot indicator"
+    }
+  ],
+  "convergence_with_prior_phases": {
+    "phase_F": "F.4 first-page featured filter + F.5 wizard XSS + F.10 split-tranche all GREEN per phase F findings — confirmed present in components.",
+    "phase_G": "G.5/G2-HEAL-03 addon rendering + G2-HEAL-01 REMBOURSEMENT marker + G.6 cash session UI all GREEN. G2-HEAL-06 Z-close cron safety-net mitigates UI gap.",
+    "phase_H": "H.1 cross-user idempotency leak HEALED (H2-HEAL-01). H.2 split-tranche AMBER docs added. H.5 loyalty TTC tax double-count CRITICAL HEALED. H.7 14 captures GREEN.",
+    "open_items_from_H": "Z-close Vue UI button (P12 = this finding confirms RED) + pos-wizard XSS LOCK + PricingService 2 P0 NF525 drift + S3 KDS layout + LOCK_PAY currency + PosV5TrancheRow multi-TPE + partial-refund-by-tranche."
+  },
+  "verdict": {
+    "overall": "AMBER — 10/12 steps GREEN, 2/12 steps RED (P11 refund UI + P12 Z-close UI both P0 V1 ship blockers from a fiscal completeness standpoint, mitigated only by safety-net cron + workarounds).",
+    "production_readiness": "V1 LOCAL Le Cayenne single-resto: SHIPPABLE if owner accepts cron-only Z-close + cancel-with-reason as refund workaround. V1.0.2 backlog mandatory: ship P11 + P12 UIs before second restaurant or before any V2 SaaS cutover (multi-tenant fiscal exposure compounds).",
+    "frozen_zone_discipline": "Confirmed §7 untouched. All P0/P2/P3 findings remediable in non-frozen surfaces EXCEPT P8-FRICTION-3 (PosV5TrancheRow FROZEN, requires LOCK).",
+    "NF525_alignment": "Login + logout audit chain HEALED (H2-HEAL-02). Receipt print + Z-close + audit chain backend integrity GREEN. Cashier-facing fiscal trail INCOMPLETE without P11/P12 UI."
+  }
+}

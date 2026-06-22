@@ -1,0 +1,83 @@
+{
+  "wave": "B",
+  "run_n": 3,
+  "states_reviewed": 10,
+  "summary": {
+    "P0": 0,
+    "P1": 1,
+    "P2": 3,
+    "P3": 0
+  },
+  "findings": [
+    {
+      "id": "B-004",
+      "state_artifact": "iter15-mega-lifecycle/01-kds-pile-baseline.dom.html, 04-kds-en-attente-with-order.dom.html, 05-kds-en-preparation.dom.html, 07-kds-prete.dom.html, 09-kds-livree-or-final.dom.html",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "Synthetic AUDIT-* orders STILL leak into the production KDS pile across every state. Token frequency in 01-kds-pile-baseline.dom.html: AUDIT-P1 x4, AUDIT-P2 x3, AUDIT-CYCLE4-9bb11124 x1, AUDIT-HEAL x1. The CYCLE4 card is rendered as a real À-emporter card: <p class=\"text-sm font-normal leading-6 font-client capitalize text-[#6E7191]\">N° commande: <span class=\"text-heading font-medium\">AUDIT-CYCLE4-9bb11124</span></p>. Same root cause as run-1 / run-2: afterAll teardown only cancels the current cycle's order. Run-2 fix attempt did not reach prior-cycle leftovers, and AUDIT-P1 / AUDIT-P2 / AUDIT-HEAL are NEW prefixes (different audit harnesses) leaking on top of the legacy CYCLE4 card. Counts per state: 01=9 occurrences, 04=10, 05=10, 07=9, 09=9.",
+      "fix_hint": "(1) One-off DB cleanup pass on this branch: cancel/delete every order whose external_id LIKE 'AUDIT-%' or whose customer name = 'Client Comptoir Test'. (2) Strengthen test teardown to be a global beforeAll cleanup, not per-cycle afterAll, so any future audit run starts from a clean pile regardless of prior crashes. (3) Optional defense in depth: hide orders with external_id starting with 'AUDIT-' from the production KDS view via a DB constraint or display filter when APP_ENV != 'local'."
+    },
+    {
+      "id": "B-007",
+      "state_artifact": "iter15-mega-lifecycle/04-kds-en-attente-with-order.dom.html",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Per-item 'Prêt' (bump-ready) button still icon-only and unchanged from run-1 and run-2: <button type=\"button\" class=\"w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-primary hover:bg-primary/5\" title=\"Prêt\"><i class=\"fa-solid fa-arrow-right\"></i></button>. 4 such buttons in state 04 DOM, zero of them carry an aria-label. Title attribute is hover-only (useless on a kitchen tablet). Cat 8 (Aria/keyboard) — 3rd consecutive run with this finding open, escalation candidate per CLAUDE.md healing rule.",
+      "fix_hint": "Add aria-label=\"Marquer cet article comme prêt — {item.name}\" and either visible micro-text ('PRÊT ➡' chip) or a touch-friendly long-press tooltip. Apply the same fix to all KDS card icon-only actions (look for siblings with title-only patterns)."
+    },
+    {
+      "id": "B-009",
+      "state_artifact": "iter15-mega-lifecycle/03-pos-after-pay.dom.html",
+      "category": "loading_state",
+      "severity": "P2",
+      "evidence": "Receipt modal IS captured (Espèces, MODE TEST, N°A0025 visible — confirms run-2 B-006 fix held). However the underlying cart sidebar pos-grand-total still resets to 0.00€ at the moment the receipt overlay claims the real charge: <div ... data-testid=\"pos-grand-total\"><span class=\"pos-v5-total-row__label\">Total</span><span class=\"pos-v5-total-row__value\"><!--v-if--><span class=\"pos-v5-total-row__amount pos-v5-tabular\">0.00€</span></span></div>. No 'Dernière commande' / 'Dernière vente' chip was added (string searches all return 0). Cat 11-adjacent (visual conflict between two surfaces showing the same business fact with opposite values). 3rd consecutive run with this finding open.",
+      "fix_hint": "Defer the cart reset until after the receipt modal is dismissed (or until 'Nouvelle commande' is clicked). Alternative: surface the just-paid amount in a 'Dernière commande: 2,00 €' chip in the sidebar as a memory aid for the cashier."
+    },
+    {
+      "id": "B-010",
+      "state_artifact": "iter15-mega-lifecycle/01-kds-pile-baseline.dom.html, 04-kds-en-attente-with-order.dom.html, 05-kds-en-preparation.dom.html, 07-kds-prete.dom.html, 09-kds-livree-or-final.dom.html, 01-pos-empty.dom.html, 02-pos-cart-with-frites.dom.html, 03-pos-after-pay.dom.html",
+      "category": "i18n_leak",
+      "severity": "P1",
+      "evidence": "NEW finding — raw i18n keys leak into aria-label DOM attributes (screen-reader surface). KDS states 01/04/05/07/09 each carry 4× <button ... aria-expanded=\"false\" aria-label=\"label.kds_toggle_items\">…</button> on the per-card chevron. The B-002 run-2 fix (added aria-expanded for screen readers) hardcoded the literal string 'label.kds_toggle_items' instead of routing it through t(). POS states 01/02/03 carry <button ... aria-label=\"button.menu\">…</button> on the burger-menu icon (legacy — was reported as console warning in run-1 B-005, the console warning is now silenced because Vue-i18n's missing-key console handler was muted, but the underlying raw key still leaks to the accessibility tree). Visible to screen-reader users today; visible as raw text to any user whose locale lacks fr fallback. Cat 1 (i18n leak) via accessibility surface.",
+      "fix_hint": "(1) KDS card toggle: replace the literal 'label.kds_toggle_items' with t('label.kds_toggle_items') (or :aria-label=\"$t('label.kds_toggle_items')\" in the template) AND add the key to lang/fr.json + lang/en.json + lang/ar.json. (2) POS header burger: same fix for 'button.menu' — add to translation files and bind via t(). (3) Add an audit-grade Playwright assertion: page.evaluate() over $$('[aria-label]') and fail if any aria-label matches /^[a-z]+(\\.[a-z_]+)+$/. This catches future regressions of the same shape."
+    }
+  ],
+  "run2_findings_status": {
+    "B-003_pos_tracker_rt_warn_banner": "PASS — pos-tracker-rt-warn banner is now gated by app_env=='local' and is NOT rendered in run-3 dev. dom.html for state 06 contains only the CSS rule '.pos-tracker-rt-warn[data-v-551500c8] { ... }' (style block) — no <div class=\"pos-tracker-rt-warn\"> element exists. The two textual occurrences of 'Connexion temps réel perdue' in state 06 DOM are both inside SOURCE-CODE COMMENTS (one Vue template comment block citing 'iter15-mega-fix B-003/C-008 2026-05-10', one JS comment block citing 'iter15-mega-fix C-003/A-003 2026-05-10') describing the gating logic — NOT rendered text. State 08 DOM identical pattern. Visual screenshot 06-pos-tracker-shows-preparing.png confirms: tracker grid sits flush below the 'Suivi commandes' header with no yellow band. Spot-check verdict: PASS.",
+    "B-004_AUDIT_orphan_cards": "FAIL — re-filed as run-3 B-004 with stronger evidence (multiple AUDIT- prefixes leaking, not just CYCLE4).",
+    "B-007_pret_button_icon_only": "FAIL — unchanged from run-1 and run-2. Re-filed as run-3 B-007 (3rd consecutive heal cycle on same finding — escalation candidate).",
+    "B-009_cart_resets_to_zero_during_receipt": "FAIL — pos-grand-total still 0.00€ in state 03 DOM, no 'Dernière commande' chip added. Re-filed as run-3 B-009 (3rd consecutive heal cycle)."
+  },
+  "run1_findings_status": {
+    "B-001_POS_tracker_zero_euro": "PASS (confirmed run-3) — 22 tracker cards in state 06 DOM all carry non-zero amounts (N°A0002=22,00 €; N°A0001=21,00 €; remaining 20 cards = 2,00 € each; zero cards with 0,00 €). State 08 identical pattern. Backend/frontend binding to total_amount_price is stable across two consecutive runs.",
+    "B-002_KDS_CTA_hidden_in_accordion": "PASS (confirmed run-3) — 'Démarrer la préparation' CTA rendered inside <div class=\"kds-card-cta mt-2\" data-testid=\"kds-card-cta\"> as direct child of the card root, NOT inside the height:0 accordion. 4 instances on state 04 DOM, all visible in screenshot. NOTE: run-2 fix introduced a NEW i18n leak via aria-label on the toggle button — see new finding B-010.",
+    "B-003_reconnect_banner_overlap": "PASS — see run2_findings_status above.",
+    "B-005_intlify_menu_undefined_warnings": "PARTIAL — console.json shows 0 intlify warnings across all 10 states (the noisy log is silenced), BUT the DOM still carries raw aria-label='button.menu' on the POS burger. The console-warning surface is clean; the accessibility-tree surface is not. See new finding B-010.",
+    "B-006_receipt_not_captured_in_DOM": "PASS — state 03 DOM contains receipt body (Le Cayenne / Paris / N°A0025 / Espèces / Rendu). Future receipt-content regressions can now be DOM-validated.",
+    "B-008_csp_report_400_429_storms": "PASS — all 10 network.json files are empty arrays (zero 4xx/5xx, zero slow requests). Confirmed for second consecutive run."
+  },
+  "spot_check_evidence": {
+    "B-003_state_06_dom_grep": "grep -c 'class=\"pos-tracker-rt-warn\"' 06-pos-tracker-shows-preparing.dom.html → 0 (only CSS rule definition matches '.pos-tracker-rt-warn[data-v-551500c8] {')",
+    "B-003_state_08_dom_grep": "grep -c 'class=\"pos-tracker-rt-warn\"' 08-pos-tracker-shows-ready.dom.html → 0 (only CSS rule definition matches '.pos-tracker-rt-warn[data-v-551500c8] {')",
+    "B-003_v_if_placeholder_evidence_state_06": "Near 'Suivi commandes' header in 06 DOM: '<h1 data-v-551500c8=\"\" class=\"pos-tracker-title\">Suivi commandes</h1><div data-v-551500c8=\"\" class=\"pos-tracker-status-row\"><span data-v-551500c8=\"\"><strong data-v-551500c8=\"\">11</strong> actives</span><!--v-if--><span data-v-551500c8=\"\">25 aujourd\\u2019hui</span></div>' — the <!--v-if--> placeholder where the rt-warn banner used to render is present.",
+    "B-003_source_comment_evidence": "Both occurrences of the literal phrase 'Connexion temps réel perdue' in state 06 DOM are inside source-code comments: (a) Vue template comment '[iter15-mega-fix B-003/C-008 2026-05-10] Local realtime banner was missed by run-1 fix that gated only the global ConnectionStatusBanner. In local/dev (no Pusher/Soketi), realtimeConnected is permanently false → banner shouts \"Connexion temps réel perdue\" forever, polluting dev/demo screenshots and visual audits.' and (b) JS comment '[iter15-mega-fix C-003/A-003 2026-05-10] Expose APP_ENV so the SPA can suppress the \"Connexion temps réel perdue\" banner in dev/local environments where Pusher/Soketi is not running.' — neither is rendered text.",
+    "B-001_tracker_amounts_state_06": "22 cards parsed; 0 zeros. Sample: N°A0002=22,00 €, N°A0001=21,00 €, N°A0025/A0024/A0023/A0022/A0020/A0019/A0017/A0015/A0004/A0021/A0018/A0016/A0014/A0013/A0012/A0011/A0010/A0009/A0008/A0007=2,00 € each.",
+    "B-001_tracker_amounts_state_08": "22 cards parsed; 0 zeros. Identical headline cards (A0002=22,00 €, A0001=21,00 €) plus 20× 2,00 € cards.",
+    "csp_report_count_per_state": "0/0/0/0/0/0/0/0/0/0",
+    "non_ws_console_errors_per_state": "0/0/0/0/0/0/0/0/0/0",
+    "intlify_warnings_per_state": "0/0/0/0/0/0/0/0/0/0",
+    "audit_orphan_token_count_baseline_state_01": "AUDIT-P1 x4, AUDIT-P2 x3, AUDIT-CYCLE4-9bb11124 x1, AUDIT-HEAL x1 (total 9)",
+    "audit_orphan_token_count_per_state": "01=9, 04=10, 05=10, 07=9, 09=9 (incremented during 04/05 because the cycle order is mid-flight)",
+    "icon_only_pret_buttons_state_04": "4 buttons matching <button title=\"Prêt\">…<i class=\"fa-solid fa-arrow-right\"></i></button> with zero aria-label attributes",
+    "pos_grand_total_state_03": "0.00€ (DOM data-testid=\"pos-grand-total\" inside cart sidebar, while receipt modal claims real charge)",
+    "aria_label_i18n_leaks": "POS states (01/02/03): aria-label=\"button.menu\" x1 each. KDS states (01/04/05/07/09): aria-label=\"label.kds_toggle_items\" x4 each."
+  },
+  "set_diff_vs_run2": {
+    "closed_in_run3": ["B-003 (rt-warn banner now gated, P1 → 0)"],
+    "still_open": ["B-004 (AUDIT orphans)", "B-007 (icon-only Prêt)", "B-009 (cart resets to 0.00€)"],
+    "newly_filed": ["B-010 (raw i18n keys leaking through aria-label DOM attributes — partly a regression introduced by run-2's B-002 fix that hardcoded 'label.kds_toggle_items' instead of t()-binding it)"],
+    "p0_count_run1_run2_run3": "1 / 0 / 0",
+    "p1_count_run1_run2_run3": "3 / 1 / 1 (run-2 P1 was B-003 partial-fix; run-3 P1 is the new aria leak B-010)"
+  },
+  "convergence_verdict": "PARTIAL CONVERGENCE — run-3 closed B-003 cleanly (the loop-blocking P1 from run-2). P0 remains 0 for the 2nd consecutive run. However, three findings are now in their 3rd consecutive heal cycle (B-004 AUDIT orphans, B-007 icon-only Prêt, B-009 cart-resets-to-zero) — per CLAUDE.md §8 healing rule (max 3 consecutive heals), these MUST be either fixed in the next cycle or formally escalated to human gate. A NEW P1 (B-010) was uncovered: run-2's B-002 fix introduced a hardcoded i18n key in an aria-label, and the legacy 'button.menu' aria-label leak that run-1's console-warning fix did not address is now visible at the DOM-attribute layer. Net delta vs run-2: P1 stayed at 1 (B-003 closed, B-010 opened), P2 stayed at 3 (same three never-fixed P2s). Wave B is GREEN on the loop-blocking P0 gate but NOT yet converged on the P1 gate. Recommend: (a) one final heal cycle to land aria-label translations, AUDIT cleanup, Prêt button accessibility, and cart reset deferral, (b) if any of B-004 / B-007 / B-009 reappear in run-4, escalate to human review per CLAUDE.md §8 — that would be 4 consecutive heals on the same defect family."
+}

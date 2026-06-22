@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Events\SettingsUpdated;
 use App\Http\Requests\SiteRequest;
 use App\Http\Resources\SiteResource;
 use App\Services\SiteService;
@@ -23,20 +24,20 @@ class SiteController extends AdminController
         try {
             return new SiteResource($this->siteService->list());
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
     public function update(SiteRequest $request): SiteResource | \Illuminate\Http\Response | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
-            if (env('DEMO')) {
-                return new SiteResource($this->siteService->update($request));
-            } else {
-                    return new SiteResource($this->siteService->update($request));
-            }
+            // [CENTRAL-01] collapsed dead env('DEMO') if/else — both arms were byte-identical (no-op).
+            $resource = new SiteResource($this->siteService->update($request));
+            // [Wave 5G R9 heal 2026-05-17] Fan-out settings.updated -> outbox.
+            SettingsUpdated::dispatch(['site']);
+            return $resource;
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

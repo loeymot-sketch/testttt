@@ -1,0 +1,147 @@
+{
+  "wave": "B",
+  "round": 1,
+  "run_name": "wave-t-caisse-to-delivered-2026-05-20",
+  "spec_path": "tests/e2e/test-e2e-wave-t-caisse-to-delivered-B-kds.spec.js",
+  "screenshot_dir": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/wave-t-caisse-to-delivered-B-kds",
+  "fixture_file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__fixtures__/wave-t-orders.json",
+  "fixture_captured_at": "2026-05-20T21:12:07.363Z",
+  "order_1_id": 84,
+  "order_2_id": 85,
+  "fixture_error": null,
+  "states_expected": 8,
+  "states_captured": 8,
+  "png_filenames": [
+    "01-kds-landing-loaded.png",
+    "02-kds-both-orders-visible.png",
+    "03-kds-order1-card-detail.png",
+    "04-kds-order2-card-detail.png",
+    "05-kds-order1-bump-clicked-undo-window.png",
+    "06-kds-order1-after-bump.png",
+    "07-kds-order2-bump-clicked-undo-window.png",
+    "08-kds-final-both-bumped.png"
+  ],
+  "observations": [
+    "stale-clean (WT-R3-F3): keep=[84,85] swept=0 detail=[]",
+    "state01 (kds-landing-loaded): url=http://127.0.0.1:8000/admin/kitchen-display-system?v2=1",
+    "state01: v2_layout_root_count=1",
+    "state02 grid-id audit: count=1 ids=[\"71\"] expected=[\"84\",\"85\"] unexpected=[\"71\"] order2_missing=false",
+    "state02 pills: order1=\"\" order2=\"\"",
+    "state02 server statuses (pre-bump): 84|status=7 85|status=7",
+    "state02 allergen_pill_count=0",
+    "state02 cta order1: cta=0 cash=0 | order2: cta=0 cash=0",
+    "state03 SKIPPED scrollIntoView for [data-order-id=\"84\"] — card not in DOM (V2 grid sync race)",
+    "state03 order1 body length=0 preview=\"\"",
+    "state04 SKIPPED scrollIntoView for [data-order-id=\"85\"] — card not in DOM (V2 grid sync race)",
+    "state04 order2 body length=0 preview=\"\"",
+    "state04 order2 delivery_block_count=0",
+    "state05 pre-click order1 cta_visible=false",
+    "state05 order1 awaited_response_status=null listener_count=0 → effective=0",
+    "state06 order1 still_rendered=0 ready_class=false",
+    "state07 pre-click order2 cta_visible=false",
+    "state07 order2 awaited_response_status=null listener_count=0 → effective=0",
+    "state08 final: order1 rendered=0 ready=false | order2 rendered=0 ready=false",
+    "NF525 pre={\"chain\":\"CHAIN OK (audit_logs + z_reports) (branch=1)\",\"count\":42,\"last_hash\":\"c3725f84bf011c317cbdb8bf48ff4f7a89bce0dbeaeea9a1157a99cf2b47375f\"} post={\"chain\":\"CHAIN OK (audit_logs + z_reports) (branch=1)\",\"count\":42,\"last_hash\":\"c3725f84bf011c317cbdb8bf48ff4f7a89bce0dbeaeea9a1157a99cf2b47375f\"}",
+    "server statuses post-bump:\n84|status=7\n85|status=7",
+    "fixture updated: kds_ready_at_order_1+2 = 2026-05-20T21:18:23.963Z"
+  ],
+  "findings_inline": [
+    {
+      "level": "P0",
+      "code": "B-S1-A",
+      "msg": "Order #84 (TAKEAWAY) not visible on KDS within 8s — sync regression or auto-PREPA never fired"
+    },
+    {
+      "level": "P0",
+      "code": "B-S1-B",
+      "msg": "Order #85 (DELIVERY) not visible on KDS within 8s"
+    },
+    {
+      "level": "P2",
+      "code": "B-S0-STALE-LEAK",
+      "msg": "Stale orders still in V2 grid after WT-R3-F3 preflight: [\"71\"] (expected only [\"84\",\"85\"]). Sweep prefix or status-window may need broadening."
+    },
+    {
+      "level": "P1",
+      "code": "B-S2-CTA",
+      "msg": "Single-CTA contract broken: order1 cta=0 cash=0 ; order2 cta=0 cash=0"
+    },
+    {
+      "level": "P1",
+      "code": "B-NUM3-O1",
+      "msg": "Order #84 KDS card missing fixture items: Sandwich Cayenne, Tacos, Coca-Cola 33cl — body preview=\"\""
+    },
+    {
+      "level": "P1",
+      "code": "B-NUM3-O2",
+      "msg": "Order #85 KDS card missing fixture items: Sandwich Cayenne, Big Cayenne, Petite Frites — body preview=\"\""
+    },
+    {
+      "level": "P0",
+      "code": "B-CTA-O1-MISSING",
+      "msg": "CTA not visible for order #84 — bump impossible"
+    },
+    {
+      "level": "P0",
+      "code": "B-CTA-O2-MISSING",
+      "msg": "CTA not visible for order #85 — bump impossible"
+    },
+    {
+      "level": "P1",
+      "code": "B-S2-PATCH-O1",
+      "msg": "Order #84 bump fired 0 POST(s) status=null (expected 1 × 2xx)"
+    },
+    {
+      "level": "P1",
+      "code": "B-S2-PATCH-O2",
+      "msg": "Order #85 bump fired 0 POST(s) status=null (expected 1 × 2xx)"
+    },
+    {
+      "level": "P0",
+      "code": "B-DB-O1-NOT-PREPARED",
+      "msg": "Order #84 server status after bump = 7, expected 8 (PREPARED)"
+    },
+    {
+      "level": "P0",
+      "code": "B-DB-O2-NOT-PREPARED",
+      "msg": "Order #85 server status after bump = 7, expected 8 (PREPARED)"
+    }
+  ],
+  "nf525_pre": {
+    "chain": "CHAIN OK (audit_logs + z_reports) (branch=1)",
+    "count": 42,
+    "last_hash": "c3725f84bf011c317cbdb8bf48ff4f7a89bce0dbeaeea9a1157a99cf2b47375f"
+  },
+  "nf525_post": {
+    "chain": "CHAIN OK (audit_logs + z_reports) (branch=1)",
+    "count": 42,
+    "last_hash": "c3725f84bf011c317cbdb8bf48ff4f7a89bce0dbeaeea9a1157a99cf2b47375f"
+  },
+  "validations": {
+    "S-1_auto_preparing": "PASS",
+    "S-2_single_cta": "FAIL",
+    "S-2_one_patch": "FAIL",
+    "R-1_no_429_toast": "PASS",
+    "Q-4_no_allergen_pill": "PASS"
+  },
+  "click_counts": {
+    "order_1_clicks_to_bump": 1,
+    "order_2_clicks_to_bump": 1
+  },
+  "sync_latency_ms": {
+    "mount_to_visible_order_1": null,
+    "mount_to_visible_order_2": null,
+    "fixture_to_visible_order_1": null,
+    "fixture_to_visible_order_2": null
+  },
+  "network_change_status": [],
+  "order_2_missing": false,
+  "initial_server_statuses": {
+    "84": 7,
+    "85": 7
+  },
+  "server_statuses": {
+    "84": 7,
+    "85": 7
+  }
+}

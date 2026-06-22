@@ -1,0 +1,22 @@
+{
+  "task_id": "PROD-LIVE-VALIDATION-D0-PREFLIGHT",
+  "date": "2026-04-27",
+  "delegation": "codex-extension",
+  "mission_type": "documentation_only_preflight",
+  "source_plan": "reports/audit/CLAUDE_ORDERS_TO_CODEX_MEGA_TEST_ORCHESTRATION_2026-04-27.md",
+  "deliverables": [
+    "reports/audit/D0_SURFACE_INVENTORY_2026-04-27.md",
+    "reports/audit/D0_COVERAGE_MATRIX_2026-04-27.md",
+    "reports/audit/D0_BUG_BACKLOG_2026-04-27.md",
+    "reports/audit/GPT_SELF_AUDIT_PROD-LIVE-VALIDATION-D0-PREFLIGHT.md"
+  ],
+  "constraints": {
+    "product_code_edits": false,
+    "pricing_ssot": "backend_only",
+    "branch_isolation": "must_be_reported_for_next_missions",
+    "frozen_services": [
+      "app/Services/OrderService.php",
+      "app/Services/FrontendOrderService.php"
+    ]
+  }
+}

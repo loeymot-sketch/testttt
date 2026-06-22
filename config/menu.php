@@ -45,20 +45,23 @@ return [
     |--------------------------------------------------------------------------
     */
     'categories' => [
-        // [BUG-4 FIX] Added wizard_template and has_menu for proper POS wizard flow
-        ['name' => 'Nos Tacos', 'sort' => 1, 'description' => 'Nos délicieux tacos avec viandes au choix', 'wizard_template' => 'tacos', 'has_menu' => true],
-        ['name' => 'Nos Sandwichs', 'sort' => 2, 'description' => 'Sandwichs gourmands et généreux', 'wizard_template' => 'sandwich', 'has_menu' => true],
-        ['name' => 'Nos Burgers', 'sort' => 3, 'description' => 'Burgers maison 100% frais', 'wizard_template' => 'burger', 'has_menu' => true],
-        ['name' => 'Nos Assiettes', 'sort' => 4, 'description' => 'Assiettes complètes avec garnitures', 'wizard_template' => 'assiette', 'has_menu' => false],
-        ['name' => 'Ojja', 'sort' => 5, 'description' => 'Ojja traditionnelle', 'wizard_template' => 'simple', 'has_menu' => false],
-        ['name' => 'Omelettes', 'sort' => 6, 'description' => 'Omelettes faites maison', 'wizard_template' => 'omelette', 'has_menu' => false],
-        ['name' => 'Nos Salades', 'sort' => 7, 'description' => 'Salades fraîches et légères', 'wizard_template' => 'salade', 'has_menu' => false],
-        ['name' => 'Chicken & Tenders', 'sort' => 8, 'description' => 'Ailes de poulet et tenders croustillants', 'wizard_template' => 'snacking', 'has_menu' => false],
-        ['name' => 'Nos Menus Enfants', 'sort' => 9, 'description' => 'Pour les petits gourmands', 'wizard_template' => 'simple', 'has_menu' => false],
-        ['name' => 'Frites & Accompagnements', 'sort' => 10, 'description' => 'Frites et accompagnements', 'wizard_template' => 'simple', 'has_menu' => false],
-        ['name' => 'Nos Desserts', 'sort' => 11, 'description' => 'Desserts gourmands', 'wizard_template' => 'simple', 'has_menu' => false],
-        ['name' => 'Nos Boissons', 'sort' => 12, 'description' => 'Boissons fraîches', 'wizard_template' => 'simple', 'has_menu' => false],
-        ['name' => 'Suppléments', 'sort' => 13, 'description' => 'Suppléments et extras commandables séparément', 'wizard_template' => 'simple', 'has_menu' => false],
+        // [MENU-RESET 2026-05-13] Le Cayenne 9-category baseline.
+        // [HEAL-LIGHT V2 2026-05-14] Owner-validated spec: added Burgers (sort=4) + Menu enfant (sort=11).
+        // Resort: Tacos→5, Bols→6, Frites→7, Suppléments→8, Desserts→9, Boissons→10.
+        // Old categories archived via `menu:reset-le-cayenne` (8 categories soft-deleted).
+        // Cat "Frites & Accompagnements" stays hidden (id 315) for addon items
+        // (Menu/Frites Seules/Boisson Seule). New "Frites" cat exposes Petite/Grande.
+        ['name' => 'Sandwich Cayenne',   'slug' => 'sandwich-cayenne',   'sort' => 1,  'description' => 'Sandwich signature avec sauce Cayenne maison',                'wizard_template' => 'sandwich', 'has_menu' => true],
+        ['name' => 'Galette',            'slug' => 'galette',            'sort' => 2,  'description' => 'Galette traditionnelle ou Cayenne, viande au choix',         'wizard_template' => 'sandwich', 'has_menu' => true],
+        ['name' => 'Sandwich Classique', 'slug' => 'sandwich-classique', 'sort' => 3,  'description' => 'Sandwich classique en pain faluche',                          'wizard_template' => 'sandwich', 'has_menu' => true],
+        ['name' => 'Burgers',            'slug' => 'burgers',            'sort' => 4,  'description' => 'Burgers pain brioché, viande croustillante, sauce au choix', 'wizard_template' => 'sandwich', 'has_menu' => true],
+        ['name' => 'Tacos',              'slug' => 'tacos',              'sort' => 5,  'description' => 'Tacos M ou Tacos L, sauce fromagère maison',                 'wizard_template' => 'tacos',    'has_menu' => true],
+        ['name' => 'Bols Gourmands',     'slug' => 'bols-gourmands',     'sort' => 6,  'description' => 'Bowls Frites ou Riz + viande + sauce + suppléments',         'wizard_template' => 'custom',   'has_menu' => false],
+        ['name' => 'Frites',             'slug' => 'frites',             'sort' => 7,  'description' => 'Petite ou Grande frites, style nature/cheddar/cheddar+oignons','wizard_template' => 'custom', 'has_menu' => false],
+        ['name' => 'Suppléments',        'slug' => 'supplements',        'sort' => 8,  'description' => 'Suppléments et extras commandables séparément',              'wizard_template' => 'simple',   'has_menu' => false],
+        ['name' => 'Desserts',           'slug' => 'desserts',           'sort' => 9,  'description' => 'Desserts gourmands',                                          'wizard_template' => 'simple',   'has_menu' => false],
+        ['name' => 'Boissons',           'slug' => 'boissons',           'sort' => 10, 'description' => 'Boissons fraîches',                                           'wizard_template' => 'simple',   'has_menu' => false],
+        ['name' => 'Menu enfant',        'slug' => 'menu-enfant',        'sort' => 11, 'description' => 'Menu enfant : Nuggets + Frites + Capri-Sun',                  'wizard_template' => 'simple',   'has_menu' => false],
     ],
 
     /*
@@ -68,7 +71,13 @@ return [
     */
     'settings' => [
         'tax_rate'              => 10.00,
-        'default_tax_id'        => 1,
+        // [GOAL-GOLIVE-VAT10 2026-05-30] Was 1 (= "No-VAT 0%") → the root cause of
+        // the 0%-VAT menu. Le Cayenne charges 10% VAT included in the price.
+        // NOTE: MenuSeeder::defaultTaxId() resolves the VAT 10% row BY ATTRIBUTES
+        // (rate=10 + PERCENTAGE + name='VAT'), so this int is now a documented
+        // fallback only — the resolver is authoritative and id-agnostic. Set to 3
+        // (the seeded VAT 10% row) for consumers that read this value directly.
+        'default_tax_id'        => 3,
         'status_active'         => \App\Enums\Status::ACTIVE,
         'featured_default'      => true,
         'currency_decimals'     => 2,
@@ -77,54 +86,51 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Meat Options (from Image 2)
+    | Meat Options — Le Cayenne 2026-05-13 canonical set (4 viandes only)
     |--------------------------------------------------------------------------
     */
     'meats' => [
-        'Merguez',
-        'Kefta',
-        'Mexicain',
-        'Cordon Bleu',
-        'Viande Hachée',
-        'Nuggets',
-        'Escalope de poulet',
-        'Tenders',
-        'Fricandelle',
+        'Poulet classic',
+        'Poulet curry',
+        'Poulet tandoori',
+        'Poulet crispy',
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Sauce Options (from Image 2)
+    | Sauce Options — Le Cayenne canonical 13 (owner mandate 2026-05-21)
     |--------------------------------------------------------------------------
+    | Owner-validated list: 12 sauces + Sans Sauce. Order matches kiosk wizard
+    | grid (most popular first). Image mapping in config/menu_images.php
+    | 'sauces' bucket — each name keys a sauce-<slug>.png in public/images/menu.
     */
     'sauces' => [
-        'Ketchup',
         'Mayonnaise',
-        'Algérienne',
-        'Curry',
-        'Andalouse',
-        'Burger',
-        'Samouraï',
-        'Barbecue',
-        'Cocktail',
-        'Américaine',
-        'Hannibal',
-        'Harissa',
+        'Ketchup',
         'Blanche',
-        'Poivre',
+        'Hannibal',
+        'Samouraï',
+        'Algérienne',
+        'Andalouse',
+        'Curry',
+        'Barbecue',
+        'Harissa',
+        'Sauce Fromagère Maison',
+        'Sauce Spicy Maison',
         'Sans Sauce',
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Crudité Options (Atomiques - Sprint 23 Fix)
-    | Chaque crudité est un élément individuel toggle-able (vert/rouge)
+    | Crudité Options (atomic toggle per item)
     |--------------------------------------------------------------------------
+    | Owner mandate 2026-05-21: added Cornichon as 4th canonical crudité.
     */
     'crudites' => [
         'Salade',
         'Tomate',
         'Oignon',
+        'Cornichon',
     ],
 
     /*
@@ -214,10 +220,11 @@ return [
                 'has_crudites'=> true,
             ],
             [
+                // [Owner re-cadrage 2026-05-11] 2 viandes au choix (steak + cordon bleu par exemple)
                 'name'        => 'Le Suprême',
                 'price'       => 7.00,
-                'description' => 'Steak + Cordon Bleu + Cheddar',
-                'viandes'     => 1, // Only fixed meats but let's allow customization or not. It says "Steak + Cordon Bleu" directly. I'll limit to 0 custom meats since it's fixed.
+                'description' => '2 viandes au choix + Cheddar (Steak + Cordon Bleu par exemple)',
+                'viandes'     => 2,
                 'has_sauce'   => true,
                 'has_crudites'=> true,
             ],
@@ -268,7 +275,8 @@ return [
         // =========================================================================
         'nos-burgers' => [
             [
-                'name'        => 'Chicken Burger',
+                'name'        => 'Burger Poulet',
+                'slug'        => 'chicken-burger',
                 'price'       => 6.00,
                 'description' => 'Poulet pané + Cheddar',
                 'viandes'     => 0,
@@ -466,33 +474,37 @@ return [
         // =========================================================================
         'chicken-tenders' => [
             [
-                'name'        => 'Chicken Wings (6 pièces)',
+                'name'        => 'Ailes de poulet (6 pièces)',
+                'slug'        => 'chicken-wings-6-pieces',
                 'price'       => 6.00,
-                'description' => '6 pièces de Chicken Wings',
+                'description' => '6 ailes de poulet croustillantes',
                 'viandes'     => 0,
                 'has_sauce'   => true,
                 'has_crudites'=> false,
             ],
             [
-                'name'        => 'Chicken Wings (12 pièces)',
+                'name'        => 'Ailes de poulet (12 pièces)',
+                'slug'        => 'chicken-wings-12-pieces',
                 'price'       => 10.50,
-                'description' => '12 pièces de Chicken Wings',
+                'description' => '12 ailes de poulet croustillantes',
                 'viandes'     => 0,
                 'has_sauce'   => true,
                 'has_crudites'=> false,
             ],
             [
-                'name'        => 'Tenders (6 pièces)',
+                'name'        => 'Filets de poulet croustillants (6 pièces)',
+                'slug'        => 'tenders-6-pieces',
                 'price'       => 7.50,
-                'description' => '6 pièces de Tenders',
+                'description' => '6 filets de poulet croustillants',
                 'viandes'     => 0,
                 'has_sauce'   => true,
                 'has_crudites'=> false,
             ],
             [
-                'name'        => 'Tenders (12 pièces)',
+                'name'        => 'Filets de poulet croustillants (12 pièces)',
+                'slug'        => 'tenders-12-pieces',
                 'price'       => 13.50,
-                'description' => '12 pièces de Tenders',
+                'description' => '12 filets de poulet croustillants',
                 'viandes'     => 0,
                 'has_sauce'   => true,
                 'has_crudites'=> false,
@@ -722,18 +734,26 @@ return [
     | Addons (Upsell Items)
     |--------------------------------------------------------------------------
     */
+    // [OWNER-FIX 2026-06-04] Chaque addon doit atterrir dans SA catégorie réelle
+    // (slug). Sans clé `category`, MenuSeeder::createAddons retombait sur la 1re
+    // catégorie (Sandwich Cayenne) car les clés legacy 'frites-accompagnements'
+    // / 'nos-boissons' n'existent pas dans le baseline 11 catégories → boisson,
+    // frites et menu apparaissaient à tort dans les sandwichs (borne + caisse).
     'addons' => [
         [
-            'name'  => 'Menu (Frites + Boisson)',
-            'price' => 3.00,
+            'name'     => 'Menu (Frites + Boisson)',
+            'price'    => 3.00,
+            'category' => 'supplements',
         ],
         [
-            'name'  => 'Frites Seules',
-            'price' => 2.00,
+            'name'     => 'Frites Seules',
+            'price'    => 2.00,
+            'category' => 'frites',
         ],
         [
-            'name'  => 'Boisson Seule',
-            'price' => 2.00,
+            'name'     => 'Boisson Seule',
+            'price'    => 2.00,
+            'category' => 'boissons',
         ],
     ],
 

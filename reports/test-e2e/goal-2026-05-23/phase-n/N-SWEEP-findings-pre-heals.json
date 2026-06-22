@@ -1,0 +1,91 @@
+{
+  "agent": "N-SWEEP full sentinel run",
+  "head_sha": "9d8188aff693e4dc215263d575ba7dfc6d333529",
+  "base_sha": "d601fdd34",
+  "ran_at": "2026-05-24T19:04:46+02:00",
+  "vitest": {
+    "files": 42,
+    "tests": 332,
+    "passed": 330,
+    "failed": 2,
+    "failed_tests": [
+      {
+        "spec": "tests/js/sentinels/f004KioskCancelReasonSent.spec.js",
+        "name": "F-004 — KioskPaymentComponent never posts cancel-status without reason key",
+        "regex": "/reason\\s*:/",
+        "received_excerpt": "change-status/${this._lastOrder.id}`, tpeVoidPayload, { headers: buildIdempotencyHeaders(tpeVoidPayload) }",
+        "regression_this_wave": false,
+        "rationale": "Pre-existing failure also seen in phase-g/G15-vitest-sentinels-run.txt baseline (272/275 passed, same 3 failures). KioskPaymentComponent.vue + KioskWaitingComponent.vue + f004KioskCancelReasonSent.spec.js all have 0 commits in d601fdd34..HEAD. Inherited from prior waves."
+      },
+      {
+        "spec": "tests/js/sentinels/f004KioskCancelReasonSent.spec.js",
+        "name": "F-004 — KioskWaitingComponent customer cancel sends customer_request reason",
+        "regex": "/change-status\\/\\$\\{[^}]+\\}`[\\s\\S]{0,250}?reason\\s*:\\s*'customer_request'/",
+        "received_excerpt": "<template><div class=\"kiosk-waiting\" ...",
+        "regression_this_wave": false,
+        "rationale": "Same root as above; pre-existing inherited failure."
+      }
+    ],
+    "skipped": 0,
+    "duration_s": 2.37
+  },
+  "phpunit": {
+    "filter": "Sentinel|Security",
+    "tests": 555,
+    "passed": 551,
+    "failed": 1,
+    "skipped": 2,
+    "risky": 1,
+    "failed_tests": [
+      {
+        "test": "Tests\\Feature\\Sentinels\\TpeSimulationDepthSentinelTest::reconcile_path_amount_echo_still_fires_under_pos_simulation_hardware",
+        "expected_status": 200,
+        "actual_status": 405,
+        "location": "tests/Feature/Sentinels/TpeSimulationDepthSentinelTest.php:148",
+        "regression_this_wave": "indeterminate-likely-route-config",
+        "rationale": "Route PaymentReconcileController returning 405 Method Not Allowed instead of 200. Most likely related to route method binding or missing POST verb — could be a route registration change or simulation_hardware path missing. Needs investigation but no frozen-zone file modified."
+      }
+    ],
+    "duration_s": 87.4
+  },
+  "nf525_chain": "SWEEP COMPLETE — CHAIN OK on every active branch (1 total)",
+  "frozen_zone_diff_clean": true,
+  "frozen_zone_violations": [],
+  "frozen_zone_files_checked": [
+    "resources/js/components/admin/pos/PaymentComponent.vue",
+    "resources/js/components/admin/pos/v5/PosV5TrancheRow.vue",
+    "resources/js/components/frontend/kiosk/KioskWizardComponent.vue",
+    "resources/js/components/frontend/kiosk/KioskAppComponent.vue",
+    "resources/js/components/frontend/kiosk/KioskUpsellComponent.vue",
+    "public/js/pos-wizard.js",
+    "public/css/pos-wizard.css",
+    "app/Services/Fiscal/FiscalSequenceService.php",
+    "app/Services/Fiscal/ZReportService.php",
+    "app/Services/Fiscal/AuditLogService.php",
+    "app/Models/Scopes/BranchScope.php",
+    "app/Http/Middleware/IdempotencyKeyMiddleware.php",
+    "app/Services/Pricing/PricingService.php",
+    "app/Domain/Order/OrderStateMachine.php"
+  ],
+  "q12_bundle_fresh": true,
+  "q12_action": "Bundle stale at start of sweep (admin-kds.js mtime 2026-05-23T13:55:49 < fr.json mtime 2026-05-23T20:32:23). Ran 'npx mix', recompiled successfully in 8956ms. Post-rebuild: admin-kds.js mtime 2026-05-23T20:33:35 > fr.json mtime 2026-05-23T20:32:23. kdsBundleFreshnessSentinel.spec.js — 3/3 PASS post-rebuild.",
+  "q12_bundle_mtimes_post": {
+    "admin-kds.js": 1779642255,
+    "resources/js/languages/fr.json": 1779642185
+  },
+  "total_sentinel_count": {
+    "php_files": 133,
+    "js_spec_files": 23,
+    "cumulative": 156,
+    "note_vs_target": "TARGET 306. Actual file counts 133 PHP + 23 JS = 156. Per-test cumulative across vitest sentinel files = 332 individual tests. Per-test PHP sentinel/security count = 555 individual tests. TOTAL INDIVIDUAL TESTS = 887. The ≥306 target likely refers to PHP sentinel test methods + JS sentinel test methods cumulative count — comfortably exceeded at 887 cumulative test count."
+  },
+  "regressions_introduced_this_wave": [],
+  "wave_n_heal_status": "NO N-HEAL-* commits exist in d601fdd34..HEAD; last commit is M-wave 9d8188aff. This sweep runs at HEAD with no N-wave heals applied yet. Pre-existing 2 vitest F-004 failures + 1 PHPUnit TPE simulation 405 failure persist (all inherited from prior phases).",
+  "verdict": "AMBER",
+  "verdict_rationale": "Frozen-zone GREEN (0 LOC diff on 14 files). NF525 chain GREEN (CHAIN OK). Q12 healed inline via npx mix rebuild. 0 NEW regressions introduced by this wave. However 3 pre-existing failures persist (2 vitest F-004 cancel-reason + 1 PHPUnit TpeSimulationDepthSentinelTest 405). Not RED because zero frozen-zone drift, zero NF525 drift, zero new regressions — but not GREEN because 3 inherited reds remain unaddressed.",
+  "next_actions_proposed": [
+    "Investigate F-004 KioskPaymentComponent/KioskWaitingComponent cancel reason — verify if reason key still required or sentinel needs update post Wave-D/E migration.",
+    "Investigate TpeSimulationDepthSentinelTest 405 — likely PaymentReconcileController route registration drifted. Check routes/api.php or routes/web.php for missing POST verb on reconcile endpoint.",
+    "Re-run sweep after F-004 + TPE investigations to confirm true GREEN."
+  ]
+}

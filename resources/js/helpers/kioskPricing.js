@@ -67,6 +67,15 @@ export function getKioskMenuAddonPrice(item, menuChoice) {
   return Math.round(result * 100) / 100;
 }
 
+export function normalizeKioskSelectionCount(value) {
+  if (value === true) return 1;
+
+  const count = parseInt(value, 10);
+  if (!Number.isFinite(count) || count <= 0) return 0;
+
+  return count;
+}
+
 export function calculateKioskRunningTotal(item, selections = {}) {
   if (!item) {
     return 0;
@@ -87,7 +96,8 @@ export function calculateKioskRunningTotal(item, selections = {}) {
 
   if (Array.isArray(item.extras)) {
     item.extras.forEach((extra) => {
-      if (!selections.supplements?.[extra.id]) return;
+      const count = normalizeKioskSelectionCount(selections.supplements?.[extra.id]);
+      if (count <= 0) return;
 
       const price = parseFloat(extra.convert_price || extra.price || 0);
       const groupLabel = (extra.group_label || '').toLowerCase();
@@ -95,12 +105,27 @@ export function calculateKioskRunningTotal(item, selections = {}) {
       const isSauce = (groupLabel !== '' ? groupLabel === 'sauce' : name.includes('sauce'));
 
       if (price > 0 && !isSauce) {
-        total += price;
+        total += price * count;
       }
     });
   }
 
   total += getKioskMenuAddonPrice(item, selections.menuChoice);
+
+  // V3.6.1 (2026-05-10) Owner gate — frites_style upgrade :
+  // Si user a sélectionné Cheddar/Cheddar+Oignons (group_label='frites_style'),
+  // ajouter le prix de l'extra au running total. Les frites_style extras sont
+  // exclus de la boucle .supplements ci-dessus car leur group_label les fait
+  // partir dans la partition fritesUpgrades (cf. kioskExtrasPartition).
+  const fritesStyleId = selections.fritesStyleExtraId;
+  if (fritesStyleId != null && Array.isArray(item.extras)) {
+    const fritesExtra = item.extras.find(
+      (e) => e && Number(e.id) === Number(fritesStyleId) && e.group_label === 'frites_style'
+    );
+    if (fritesExtra) {
+      total += parseFloat(fritesExtra.convert_price || fritesExtra.price || 0) || 0;
+    }
+  }
 
   // [PHASE9 W-P0-1 FIX] Surplus viandes marquées `source='extra'` — produites
   // par le helper kioskViandeCatalog et remontées par KioskStepViande dans

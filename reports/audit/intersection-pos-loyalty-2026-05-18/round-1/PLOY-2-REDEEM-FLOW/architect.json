@@ -1,0 +1,57 @@
+{
+  "zone": "PLOY-2-REDEEM-FLOW",
+  "role": "Architect",
+  "scope": "POS redemption: apply loyalty discount BEFORE payment, decrement loyalty_points, write redeem ledger row, refund on cancel",
+  "framing_finding": {
+    "id": "PLOY-2-A-00",
+    "severity": "P1",
+    "title": "There is NO INTEGRATED POS-SIDE REDEMPTION UI in the V1 codebase",
+    "evidence": {
+      "pos_wizard_js": "grep -c 'loyalty' public/js/pos-wizard.js = 0",
+      "admin_pos_blade": "grep -n 'loyalty\\|Loyalty\\|fidelite\\|nfc' resources/views/admin-pos-v4.blade.php = 0 matches",
+      "pos_app_js_hits": "All 51 'loyalty' hits in public/js/pos-app.js are within the kiosk Vue bundle (kiosk.loyalty route, kioskSettings store, loyalty_scanned event) — pos-app.js is the multi-app Vue bundle compiled by Mix; the POS view itself uses the Vanilla pos-wizard.js + pos-shell.js which have zero loyalty references",
+      "pos_request_field": "PosOrderRequest line 133 accepts `loyalty_customer_code` (for EARN attribution only) — not redemption discount amount or points",
+      "discount_field": "PosOrderRequest line 88 accepts pre-computed `discount` value with min:0; OrderService::posOrderStore does NOT call DiscountCalculator::kioskLoyaltyRedemption() — that method is exclusively used by FrontendOrderService (kiosk surface)",
+      "loyalty_redeem_endpoint": "POST /api/loyalty/redeem (routes/api.php line 1278) exists, gated by auth:sanctum, and the LoyaltyController::redeem method has an isStaff branch — but NO POS surface invokes this endpoint. It's reachable in theory by a logged-in cashier with Postman; not wired through pos-wizard.js"
+    },
+    "conclusion": "POS loyalty redemption is **architecturally specified but not implemented at the UI layer**. The brief's framing 'POS apply loyalty redemption discount before payment + loyalty_points decremented + discount applied' describes an aspirational flow. The earn flow (PLOY-1) is complete; redeem is kiosk-only in V1.",
+  "impact": "If owner expected POS loyalty redemption parity with kiosk, this is a missing feature. If V1 scope is intentionally kiosk-only redeem (mobile + kiosk are the customer-facing redeem surfaces, POS is staff-only earn-attribution), document this explicitly. Tests/mobile-e2e/loyalty-04-redeem-wizard targets mobile-app, not POS."
+  },
+  "kiosk_redeem_architecture": {
+    "trace": [
+      "Kiosk UI calls POST /api/loyalty/redeem with code + points BEFORE order creation (pre-order pattern) → LoyaltyController::redeem decrements users.loyalty_points + creates LoyaltyTransaction(order_id=NULL, type=redeem, points=-N)",
+      "Kiosk then POSTs the order to /api/frontend/order-store → FrontendOrderService::placeOrder runs DiscountCalculator::kioskLoyaltyRedemption with loyalty_code + requested_discount",
+      "FrontendOrderService line 818-840 looks up the pending redeem row (order_id=NULL, source=kiosk, age<10min, lockForUpdate) and attaches it to the new order_id — the 'two-phase redemption' pattern",
+      "If no pending redeem found, FrontendOrderService creates a NEW redeem row directly via createKioskLoyaltyRedeemLedger (line 872) — second deduction path. The createKioskLoyaltyRedeemLedger handles the UNIQUE constraint violation by re-reading and returning existing row (lines 880-902)"
+    ],
+    "verdict": "Kiosk redeem is two-phase (pre-deduct + attach). Architectural complexity high but defensible: kiosk needs to show 'You'll save X€' BEFORE final payment, requiring early-deduct to show accurate balance. Risk: orphaned pre-deduct rows if customer abandons checkout (covered in PLOY-2-R-01)."
+  },
+  "findings": [
+    {
+      "id": "PLOY-2-A-01",
+      "severity": "P1",
+      "title": "POS redeem flow missing",
+      "details": "See PLOY-2-A-00 above. P1 if owner expected feature parity with kiosk; P3 documentation-only if V1 scope is kiosk-redeem-only.",
+      "remediation": "Owner gate. If feature needed: add 'Apply loyalty' button to pos-wizard checkout step, scan/type loyalty_code, call LoyaltyController::redeem with $isStaff=true, then include the discount in OrderService::posOrderStore via PosOrderRequest's existing `discount` field. Must protect against cashier-applies-without-customer-consent (fraud)."
+    },
+    {
+      "id": "PLOY-2-A-02",
+      "severity": "P2",
+      "title": "Pre-order redemption pattern creates ledger rows with order_id=NULL — orphan risk",
+      "files": ["app/Http/Controllers/Frontend/LoyaltyController.php:312"],
+      "details": "LoyaltyController::redeem inserts LoyaltyTransaction with order_id=NULL. FrontendOrderService at order creation looks for this row within 10min and attaches order_id. If customer abandons checkout AFTER pre-redeem, points are decremented but order_id stays NULL forever — ledger row is orphan. No GC cron found.",
+      "remediation": "Add LoyaltyOrphanRedeemReconcileCommand: WHERE type='redeem' AND order_id IS NULL AND created_at < now()-INTERVAL 30 MINUTE → either (a) re-credit points + write manual_add reversal entry, or (b) flag for ops review. Run hourly. Also document the 10-minute attach window as a hard-coded business constraint."
+    },
+    {
+      "id": "PLOY-2-A-03",
+      "severity": "P3",
+      "title": "Refund logic (LoyaltyService::refundPoints) reads stale loyalty_points snapshot for balance_after computation",
+      "files": ["app/Services/LoyaltyService.php:56-60"],
+      "details": "Line 56-58 increments users.loyalty_points via DB::table. Line 60 computes balance_after = $loyaltyUser->loyalty_points + $totalPointsToRefund — but $loyaltyUser was fetched at line 45 BEFORE the increment. Result is correct (pre+refund=post) but the variable is conceptually stale. Fragile if future maintainer adds intermediate mutations. Recommend re-read: `$balanceAfter = (int) DB::table('users')->where('id', $loyaltyUser->id)->value('loyalty_points');`",
+      "verdict_priority": "Cosmetic/maintainability."
+    }
+  ],
+  "verdict": "FAIL",
+  "blocker_for_v1": "Depends on owner expectation",
+  "notes": "If V1 = kiosk-redeem-only by design, this is PASS-DOCUMENTED. If V1 = redeem-at-all-surfaces, this is BLOCKER. PLOY-2-A-02 is a quiet operational debt (orphan ledger rows). PLOY-2-A-03 is cosmetic."
+}

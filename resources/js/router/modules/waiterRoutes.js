@@ -1,9 +1,11 @@
-import WaiterComponent from "../../components/admin/waiters/WaiterComponent.vue";
-import WaiterListComponent from "../../components/admin/waiters/WaiterListComponent.vue";
-import WaiterShowComponent from "../../components/admin/waiters/WaiterShowComponent.vue";
-import WaiterOrderDetailsComponent from "../../components/admin/waiters/WaiterOrderDetailsComponent.vue";
-
-
+// [POS-V4 W1-C 2026-04-26] Lazy-load all SFC imports into webpack chunk "admin-shell".
+// Pattern identical to posRoutes.js (W1-A) and kioskRoutes.js. Converted by
+// tools/refactor/lazy_router_modules.mjs. Goal: reduce app.js first-paint
+// (see reports/baseline/POS_V4_PERF_HISTORY.md — cross-cycle SSOT).
+const WaiterComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/waiters/WaiterComponent.vue");
+const WaiterListComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/waiters/WaiterListComponent.vue");
+const WaiterShowComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/waiters/WaiterShowComponent.vue");
+const WaiterOrderDetailsComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/waiters/WaiterOrderDetailsComponent.vue");
 export default [
     {
         path: "/admin/waiters",

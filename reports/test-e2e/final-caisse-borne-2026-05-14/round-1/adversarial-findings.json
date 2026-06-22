@@ -1,0 +1,157 @@
+{
+  "run": "final-caisse-borne-2026-05-14",
+  "round": 1,
+  "reviewer": "adversarial-supervisor-claude-opus-4-7",
+  "reviewed_at": "2026-05-14T11:35:00Z",
+  "states_reviewed": 88,
+  "states_reviewed_breakdown": {
+    "caisse_visual_examined": 8,
+    "caisse_dom_examined": 83,
+    "borne_visual_examined": 4,
+    "borne_dom_examined": 5
+  },
+  "findings": [
+    {
+      "id": "FCB-R1-01",
+      "category": "test_infrastructure_gap",
+      "severity": "P3",
+      "wave": "BORNE",
+      "state": "BO-S2 through BO-S10 (9 of 10 scenarios)",
+      "evidence_file": "tests/e2e/__screenshots__/final/borne/ (only 5 PNGs present)",
+      "evidence_snippet": "Only BO-S1-01 through BO-S1-03 captured. No BO-S1-04 wizard-mid, no BO-S1-05 wizard-recap, no BO-S1-06 after-pay, no BO-S2 through BO-S10. Spec walker `tests/e2e/final-borne-deep.spec.js` lines 813-842 uses generic `button:has-text('Suivant')` / `Valider` selectors with 1500ms visibility timeout; composer-aware kiosk wizard (V1+V2+Sauce+Crud+Supp+Menu+Récap = 6 steps with required selections per step) is not driven by spec helper that doesn't pick the required viande/sauce/menu options. Spec stalled at S1 step 1 and never advanced to S2-S10.",
+      "claim": "BORNE wave coverage is 1 of 10 scenarios and only partial (3 of 6+ states for that scenario). The DOM at BO-S1-03 confirms wizard structure intact (all 6 step labels present: QUELLE VIANDE/SAUCE/CRUDITÉ/SUPPLÉMENT/MENU/RÉCAP), so this is verifiably a spec-helper coverage gap, not a production wizard regression — but visual evidence for BO-S2 through BO-S10 is absent and cannot be vouched for.",
+      "fix_hint": "V1.0.1 — rewrite final-borne-deep.spec.js wizard walker to use scenario-aware step selectors that select required option per step (e.g., click first viande, click Suivant; click first sauce, click Suivant; etc.) before the generic Suivant loop. Alternative: increase composer profile coverage in `tests/e2e/_helpers/kiosk-wizard-walker.js` modeled on the pos-wizard helper. For Round 2 of this run, document in run README and accept BORNE @ scenario-1 partial evidence + DB validation pending dedicated re-run.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "FCB-R1-02",
+      "category": "empty_state_quality",
+      "severity": "P2",
+      "wave": "BORNE",
+      "state": "00-kiosk-categories-overview (cat 349 Burgers)",
+      "evidence_file": "tests/e2e/__screenshots__/final/borne/00-kiosk-categories-overview.png",
+      "evidence_snippet": "PNG shows two products in Burgers category: 'Chicken Burger' (€6,90) rendered with proper photo + description; 'Big Chicken' (€8,90) rendered with **empty placeholder `+` icon** (no product image) and description text. Same item also shows partial description truncation: 'Big Burger pain brioché - Poulet libre - Sauce libre - INCLUS - Cru...'.",
+      "claim": "Big Chicken (item 490, NEW from heal-light V2 commit 62959bfc9) has no kiosk product image, rendering as bare `+` placeholder tile next to Chicken Burger which has a proper photo. This degrades the customer-facing visual quality of a NEW V2 menu item; combined with empty-image viande tiles in wizard (BO-S1-03), creates an inconsistent visual experience for NEW products.",
+      "fix_hint": "Owner / content team to upload product image for items 490 (Big Chicken), 488 (Big Cayenne), 489 (Big Classique) via `/admin/items/<id>` upload. Backend `item.image_url` should resolve to non-null S3/local path. Track as content task pre-launch, not code.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "FCB-R1-03",
+      "category": "empty_state_quality",
+      "severity": "P2",
+      "wave": "BORNE",
+      "state": "BO-S1-03 wizard-open (Sandwich Cayenne QUELLE VIANDE step)",
+      "evidence_file": "tests/e2e/__screenshots__/final/borne/BO-S1-03-wizard-open.png",
+      "evidence_snippet": "Viande step shows 4 tiles (Poulet Mariné / Poulet Curry / Poulet Tandoori / Poulet Crispy), each rendered as a large empty box with bare `+` icon, no viande images. Tile labels present + 'CHOISIR' CTA buttons functional.",
+      "claim": "Kiosk composer-aware wizard option tiles render without images for viande, sauce and likely other composer steps. Functional (text + CTA visible) but visually weak for self-service kiosk UX where photo recognition is critical for non-French speakers and ESL customers.",
+      "fix_hint": "Same as FCB-R1-02 — content task: upload images for `item_attributes` table rows (Poulet Mariné/Curry/Tandoori/Crispy attribute records). Backend likely already supports `item_attribute.image_url`; verify and populate.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "FCB-R1-04",
+      "category": "test_infrastructure_gap",
+      "severity": "P3",
+      "wave": "CAISSE",
+      "state": "SEC-3 idempotency check + KDS/OSS API polls (all 10 scenarios)",
+      "evidence_file": "reports/test-e2e/final-caisse-borne-2026-05-14/round-1/wave-CAISSE-tracking.json",
+      "evidence_snippet": "JSON `security.idempotency: {ok: false, first_status: 401, second_status: 401, replayed_header: null}`. All 10 scenarios `kds_poll.last_status: 401`, `oss_poll.last_status: 401`. Root cause: page.request.post()/get() carries browser session cookie but `/api/admin/pos`, `/api/admin/kds-order`, `/api/admin/oss-order` routes require Sanctum Bearer token (axios interceptor adds via localStorage) — page.request bypasses interceptor, so 401 fires before middleware.",
+      "claim": "Idempotency middleware was not exercised by this spec, and KDS/OSS API polling was not actually validated end-to-end via the API path. UI screenshots captured + DB independently verified, so business correctness is established by a different path (db_domain_events table + ui_db_total_match), but the API-level cross-check is a known scaffold gap. Already documented in wave-CAISSE-report.md `Anomalies surfaced #1 and #2`.",
+      "fix_hint": "Add helper `await page.evaluate(() => localStorage.getItem('token'))` to extract Bearer token in spec, pass as `Authorization: Bearer ${t}` to all page.request.* calls. Apply across rush-sync, audit-pos-cycle, and final-caisse specs.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "FCB-R1-05",
+      "category": "observability_gap",
+      "severity": "P3",
+      "wave": "CAISSE",
+      "state": "All 10 receipt-rendered captures (CA-S1 through CA-S10)",
+      "evidence_file": "tests/e2e/__screenshots__/final/caisse/CA-S*-06-receipt-rendered.png",
+      "evidence_snippet": "Tracking JSON `ui_receipt_total: null` for all 10 scenarios. Spec regex `MONTANT TOTAL\\s+\\d+,\\d{2}` does not match. Actual receipt PNG shows totals as e.g. 'TOTAL: 15.20€' (lowercase 'TOTAL', colon, period decimal). The payment-modal MONTANT TOTAL with comma decimal is visible in CA-S10-05-payment-cash-keypad ('MONTANT TOTAL 15.20€'), but the post-pay receipt format differs.",
+      "claim": "ui_receipt_total assertion mechanism is non-functional — 10/10 returned null. UI = DB integrity is still verified via cart-total assertion (10/10 OK), so the load-bearing check passes. But the spec's claim 'receipt total matches' is unverifiable from this run's JSON; it is verifiable from the PNG via human inspection only.",
+      "fix_hint": "Update spec receipt-total regex to: `/(?:TOTAL|MONTANT TOTAL)[:\\s]+(\\d+[.,]\\d{2})\\s*€/i` to capture both payment-modal and printed-receipt formats with comma OR period decimal. Add unit test for the regex against captured DOM samples.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "FCB-R1-06",
+      "category": "observability_gap",
+      "severity": "P3",
+      "wave": "CAISSE",
+      "state": "All 10 KDS UI captures + 10 OSS UI captures",
+      "evidence_file": "tests/e2e/__screenshots__/final/caisse/CA-S*-08-kds-board.png, CA-S*-09-oss-screen.png",
+      "evidence_snippet": "Tracking JSON `kds_ui_card_visible: false` for 10/10. `oss_ui_serial_found: false` for 10/10. UI screenshots captured but `[data-order-id=N]` card not in DOM at navigation time. Domain events table confirms order propagation (orders 1481-1491 all have order.created + order.status_changed events).",
+      "claim": "KDS and OSS UI propagation cannot be visually validated by this run. The 10-12 sec wall-clock between POS pay and KDS navigation may have advanced the order past the visible 'Préparation' lane. Without a deterministic poll loop with retry-until-card-visible, this is an observability gap, not a regression.",
+      "fix_hint": "Add KDS-poll-until-visible loop in spec: `await page.waitForSelector(\\`[data-order-id=\\${N}]\\`, { timeout: 15000 })` with retry on the KDS page itself (not via API polls). Same for OSS via order_serial_no selector. For now, the db_domain_events table provides ground truth of propagation and is documented as the canonical evidence path.",
+      "confidence": "HIGH"
+    }
+  ],
+  "passing_states": [
+    "CA-S1 through CA-S10 — UI cart total = DB total = expected for all 10/10 (exact decimal match)",
+    "All 10 orders payment_status=5 (PAID), branch_id=1 (BranchScope), composition_snapshot_present=true",
+    "Fiscal sequence 325-334 strictly monotonic +1, gap-free (NF525 compliant)",
+    "CA-S1 (Sandwich Cayenne 7.50€): Viande 0/1 wizard, receipt shows 'Viande 1: Poulet mariné, Sauce Cayenne maison'",
+    "CA-S2 (Big Cayenne 9.50€): Viandes 0/2 wizard — composer-aware 5-step profile, NOT fallback 1-viande logic. Paranoid check resolved: composition_lines=3 (V1+V2+Sauce)",
+    "CA-S5 (Big Classique 9.00€): same 0/2 viandes pattern, composition_lines=3",
+    "CA-S6 (Tacos M 6.90€): renamed correctly, Viande 0/1, composition_lines=1 (1 viande, Sans formule default)",
+    "CA-S7 (Tacos L 7.90€): renamed correctly, Viandes 0/2, composition_lines=2 (2 viandes)",
+    "CA-S9 (Big Chicken 8.90€): Burgers cat 349, composition_lines=2 (V1+Sauce)",
+    "CA-S10 multi-cart: 3 DOM cart-item bodies confirmed ('Bowl Frites Poulet curry', 'Petite Frites', 'Tiramisu'), cart total 15.20€ matches DB 15.20€, db.lines_count=3",
+    "POS V4 sidebar: all 12 expected aria-labels present (Toutes les catégories + 11 user-facing categories incl. Burgers + Menu enfant)",
+    "All truncated sidebar pills carry both aria-label AND title attributes (Sandwich Cayenne, Sandwich Classique, Bols Gourmands, Menu enfant) — A11y heal e7cb4578e re-verified in production DOM",
+    "BORNE: Menu enfant absent from kiosk DOM (correctly hidden per heal-light V2 commit c487b052f)",
+    "BORNE BO-S1-03 wizard: all 6 composer-aware step labels present in DOM (QUELLE VIANDE / SAUCE / CRUDITÉ / SUPPLÉMENT / MENU / RÉCAP)",
+    "Zero raw i18n labels (regex /^[a-z]+(\\.[a-z_]+){1,4}$/) across 88 DOM files (CAISSE + BORNE)",
+    "Zero non-allowlisted console errors across 88 console.json files (only wss:// Pusher in vendor.js noise, allowlisted)",
+    "Zero 4xx/5xx network errors across 88 network.json files",
+    "pos-wizard.js frozen-zone diff vs HEAD = 0 lines, no commits touched it since 2026-05-13",
+    "pos-app.js unhandled-promise-rejections = 0 on load + 0/scenario across all 10 (heal 5218168ef stable)",
+    "audit_logs.count baseline=26, after-run=26 (no Z-report close fired — expected mid-day, NF525 chain HMAC head intact)"
+  ],
+  "claims_verified": [
+    "GStack claim: 10/10 POS scenarios placed → CONFIRMED via tracking JSON db_order presence + screenshot cart-line + payment-cash-keypad + receipt PNGs",
+    "GStack claim: fiscal_seq 324-333 → MINOR CORRECTION — actual data is 325-334 (off-by-one in prompt context, tracking JSON + markdown report both consistent with 325-334)",
+    "GStack claim: All payment_status=5 → CONFIRMED (10/10 in tracking JSON)",
+    "GStack claim: POS V4 sidebar 12 pills with aria-label + title → CONFIRMED in 00-pos-v4-ready.dom.html",
+    "GStack claim: pos-app.js stubs (5218168ef) prevent unhandled rejections → CONFIRMED (0 rejections on load + per scenario)",
+    "GStack claim: sidebar a11y heal (e7cb4578e) → CONFIRMED (aria-label='Sandwich Cayenne' + title='Sandwich Cayenne' both present)",
+    "GStack claim: modal defensive close (0f201e29d) → CONFIRMED (modal_state.before_close_click=true for 10/10 — modal closed by app code BEFORE fallback click)",
+    "GStack claim: NF525 chain audit_logs.count=26 unchanged → CONFIRMED in tracking JSON baseline + final_baseline",
+    "GStack claim: Wave BORNE 9 missing scenarios = test infra limitation, not production bug → CONFIRMED via DOM evidence (BO-S1-03 wizard structure intact, all 6 step labels present) — but only verifiable for BO-S1; BO-S2 through BO-S10 have NO captured evidence",
+    "GStack claim: Big Cayenne uses composer 82 profile (5 steps), not fallback 1-viande Vanilla wizard → CONFIRMED via CA-S2-02 PNG (Viandes 0/2 plural badge) + composition_lines=3 (V1+V2+Sauce) in DB",
+    "GStack claim: Tacos M / Tacos L renamed correctly → CONFIRMED via CA-S6-02 (Tacos M €6.90) + CA-S7-02 (Tacos L €7.90) PNGs and DB item_variations strings",
+    "GStack claim: multi-cart S10 shows 3 distinct items → CONFIRMED via DOM (3 pos-v5-cart-item__body containers with names Bowl Frites Poulet curry / Petite Frites / Tiramisu)",
+    "GStack claim: Big Chicken + Big Cayenne + Big Classique visible in POS V4 grid → CONFIRMED via 00-pos-v4-ready.dom.html aria-labels"
+  ],
+  "claims_disputed": [
+    "Prompt context claim 'fiscal_seq 324-333' is INACCURATE — actual range 325-334 (verified in tracking JSON db_order.fiscal_sequence_no). Trivial off-by-one; tracking artifacts are self-consistent at 325-334. No code finding.",
+    "Wave CAISSE report markdown line 31 says 'CA-S10 ... order_id 1491 fiscal_seq 334' which is CORRECT, but earlier 'order_id 1481-1490 fiscal_seq 324-333' framing in prompt context is wrong by 1. Cosmetic context drift."
+  ],
+  "verdict": "GO-CONDITIONAL",
+  "verdict_reasoning": "Wave CAISSE is production-grade GREEN across all 12 reviewer-protocol defect categories — visual evidence (8 PNGs examined), DOM evidence (83 dom.html files clean), JSON evidence (10/10 numeric integrity), DB evidence (fiscal monotonic + branch scope intact + composition snapshots present), and a11y evidence (aria-label + title on all truncated pills). Zero P0/P1 findings. 5 visual heals re-confirmed in production DOM. The paranoid Big Cayenne composer-vs-fallback worry was resolved decisively: composer 82 profile fires with Viandes 0/2 badge and 3-line composition_snapshot, NOT a fallback 1-viande Vanilla heuristic. Wave BORNE is partially verified — 1 of 10 scenarios captured, and only states 01-03 of that one. DOM at BO-S1-03 proves wizard structure intact (all 6 composer-aware step labels), and 9 missing scenarios reflect spec-walker selector gaps that can be deterministically fixed in V1.0.1 (FCB-R1-01 fix_hint). Conditions for unqualified GO: (1) BORNE re-run with composer-aware step-button selectors covering S1-S10, OR owner explicit waiver accepting 'BORNE@scenario-1-partial' + DB-only validation; (2) Content task to upload product images for items 488/489/490 + item_attribute viande images (FCB-R1-02/03) — required for production launch but not gating fiscal/numeric correctness. No P0/P1 blockers. All 4 P3 findings are test-infra/observability gaps already self-disclosed in wave-CAISSE-report.md Anomalies section. Frozen-zone integrity intact (pos-wizard.js diff=0 vs HEAD, no commits since 2026-05-13).",
+  "summary_by_severity": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 2,
+    "P3": 4,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 2,
+    "open_P3": 4
+  },
+  "frozen_zone_check": {
+    "pos_wizard_js_diff_vs_main": 304,
+    "pos_wizard_js_diff_vs_HEAD": 0,
+    "pos_wizard_js_commits_since_2026-05-13": 0,
+    "result": "INTACT — 304-line diff vs main is pre-existing feature-branch baseline (commits 91a1e1b2c / 9730b18e7 / 53f1ea45c / 6a975dfff before today), nothing fresh in this session."
+  },
+  "nf525_attestation": {
+    "fiscal_sequence_monotonic_gap_free": true,
+    "fiscal_sequence_range_observed": "325-334 (10 orders)",
+    "composition_snapshot_present_all_items": true,
+    "composition_anomalies_count": 0,
+    "audit_logs_hmac_chain_unchanged": true,
+    "branch_scope_isolation_intact": true,
+    "all_orders_branch_id_1": true,
+    "result": "PASS"
+  },
+  "reviewer_signoff": "Adversarial supervisor — disagree with unqualified GREEN; agree with GO-CONDITIONAL pending BORNE walker fix + content team product images. CAISSE is fiscally and visually production-ready. No NF525 risk. No P0/P1 surfaced. Frozen-zone integrity confirmed. Prior heals (e7cb4578e + 0f201e29d + 5218168ef) re-verified in production DOM."
+}

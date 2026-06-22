@@ -27,7 +27,7 @@ class WaiterAddressController extends AdminController
         try {
             return AddressResource::collection($this->userAddressService->list($request, $waiter));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -36,7 +36,7 @@ class WaiterAddressController extends AdminController
         try {
             return new AddressResource($this->userAddressService->store($request, $waiter));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -45,7 +45,7 @@ class WaiterAddressController extends AdminController
         try {
             return new AddressResource($this->userAddressService->update($request, $waiter, $address));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -55,7 +55,7 @@ class WaiterAddressController extends AdminController
             $this->userAddressService->destroy($waiter, $address);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -64,7 +64,7 @@ class WaiterAddressController extends AdminController
         try {
             return new AddressResource($this->userAddressService->show($waiter, $address));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

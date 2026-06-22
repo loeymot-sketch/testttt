@@ -1,0 +1,31 @@
+{
+  "task_id": "CV1-M16-HARDWARE-LAB",
+  "mission_id": "M-16",
+  "plan_file": "plans/PLAN_CAISSE_V1_GPT_MASTERPLAY_2026-04-25.md",
+  "primary_model": "codex-extension",
+  "model": "gpt-5.5-pro",
+  "reasoning_effort": "xhigh",
+  "objective": "Produire la checklist hardware lab pour la qualification Caisse V1 : TPE, imprimante ESC/POS, tiroir-caisse, kiosk hardware (touchscreen, NFC, scanner), tablette POS (Wi-Fi/4G failover, sleep recovery). Document signable par l'humain Ops. Aucun code.",
+  "instruction": "Crée la checklist exhaustive + procédures de test + grille d'acceptation. Aucun code produit. Renvoie un JSON unique selon agents/codex.prompt.txt.",
+  "allowlist": [
+    "reports/hardware/CAISSE_V1_HARDWARE_QUALIF_CHECKLIST_2026-04-25.md",
+    "reports/hardware/CAISSE_V1_HARDWARE_TEST_PROTOCOLS_2026-04-25.md",
+    "reports/hardware/CAISSE_V1_HARDWARE_ACCEPTANCE_GRID_2026-04-25.md",
+    "docs/orchestration/HARDWARE_LAB_PROCEDURE_2026-04-25.md"
+  ],
+  "off_limits": ["app/**", "resources/**", "routes/**", "database/**", "tests/**", "scripts/**", ".cursor/**", "AGENTS.md"],
+  "invariants_at_risk": [],
+  "gate_conditions": [],
+  "mandatory_tests": [],
+  "self_audit_checklist": [
+    "Checklist couvre 5 catégories hardware (TPE, printer, drawer, kiosk, tablet)",
+    "Chaque test a : objectif, prérequis, étapes, résultat attendu, critères PASS/FAIL, durée estimée",
+    "Acceptance grid permet signature humaine ligne par ligne",
+    "Procédure mentionne fallback en cas d'échec hardware (matériel de remplacement, escalation)",
+    "Aucun fichier produit modifié"
+  ],
+  "rollback": { "feature_flag": null, "max_window_days": 0, "predicates": [] },
+  "graphiti_query": "Caisse V1 hardware qualification lab",
+  "memory_episode_to_write_on_close": "memory/episodes/caisse_v1_hardware_lab_2026-04-25.jsonl",
+  "claude_audit_prompt_id": "audit-prompt-hardware"
+}

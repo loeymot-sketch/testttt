@@ -63,7 +63,7 @@ class CustomerRequest extends FormRequest
     {
         $validator->after(function ($validator) {
             if ($this->password !== $this->password_confirmation) {
-                $validator->errors()->add('password_confirmation', 'The password confirmation does not match.');
+                $validator->errors()->add('password_confirmation', __('auth.password_confirmation_mismatch'));
             }
         });
     }

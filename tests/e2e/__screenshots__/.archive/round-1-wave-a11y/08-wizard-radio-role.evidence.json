@@ -1,0 +1,50 @@
+{
+  "widgets": [
+    {
+      "role": "checkbox",
+      "tabindex": "0",
+      "ariaChecked": "false"
+    },
+    {
+      "role": "checkbox",
+      "tabindex": "0",
+      "ariaChecked": "false"
+    },
+    {
+      "role": "checkbox",
+      "tabindex": "0",
+      "ariaChecked": "false"
+    },
+    {
+      "role": "checkbox",
+      "tabindex": "0",
+      "ariaChecked": "false"
+    },
+    {
+      "role": "checkbox",
+      "tabindex": "0",
+      "ariaChecked": "false"
+    },
+    {
+      "role": "checkbox",
+      "tabindex": "0",
+      "ariaChecked": "false"
+    },
+    {
+      "role": "checkbox",
+      "tabindex": "0",
+      "ariaChecked": "false"
+    },
+    {
+      "role": "checkbox",
+      "tabindex": "0",
+      "ariaChecked": "false"
+    },
+    {
+      "role": "checkbox",
+      "tabindex": "0",
+      "ariaChecked": "false"
+    }
+  ],
+  "count": 9
+}

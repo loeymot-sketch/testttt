@@ -3,7 +3,6 @@
 namespace App\Http\Requests;
 
 use App\Services\InstallerService;
-use Dipokhalder\EnvEditor\EnvEditor;
 use Illuminate\Foundation\Http\FormRequest;
 
 class LicenseRequest extends FormRequest
@@ -42,13 +41,13 @@ class LicenseRequest extends FormRequest
         $validator->after(function ($validator) {
             $installerService = new InstallerService();
             $response         = $installerService->licenseCodeChecker($validator->validated());
-            $request          = $validator->validated();
-            if (isset($response->status) && $response->status) {
-                $envService = new EnvEditor();
-                $envService->addData([
-                    'MIX_API_KEY' => $request['license_key'],
-                ]);
-            } else {
+            // [G-LICENSE-KEY 2026-06-21] DECOUPLED. The success branch previously wrote
+            // MIX_API_KEY = license_key (config('app.api_key')) — rotating the global
+            // x-api-key on every license save and bricking already-open SPA tabs (400
+            // invalid_api_key). The remote license check stays (rejects an invalid code);
+            // it must NOT hijack the API key. See LicenseService::update + sentinel
+            // LicenseKeyApiKeyDecouplingSentinelTest.
+            if (! (isset($response->status) && $response->status)) {
                 $validator->errors()->add('license_key', $response->message);
             }
         });

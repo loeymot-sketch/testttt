@@ -1,0 +1,30 @@
+  2026_05_09_180000_add_idempotency_key_to_domain_events ............. [1] Ran  
+  2026_05_09_200000_add_fiscal_alloc_error_at_to_orders .............. [1] Ran  
+  2026_05_10_010000_secure_fiscal_audit_trail_immutability ........... [1] Ran  
+  2026_05_10_020000_add_unique_partial_cash_drawer_open .............. [1] Ran  
+  2026_05_10_030000_fix_tax_misconfig_type_fixed_to_percentage ....... [1] Ran  
+  2026_05_10_040000_add_frites_style_upgrade_extras .................. [1] Ran  
+  2026_05_10_050000_phase_d_omelette_ojja_salade_poulet_menu_supplements  [1] Ran  
+  2026_05_10_060000_phase_d_v38_revert_menu_frites_included .......... [1] Ran  
+  2026_05_10_070000_phase_d_v381_wizard_template_align ............... [1] Ran  
+  2026_05_11_010000_fix_orders_loyalty_points_awarded_signed ......... [1] Ran  
+  2026_05_16_120000_create_payment_terminals_table ................... [1] Ran  
+  2026_05_16_120001_add_terminal_id_to_order_payments_table .......... [1] Ran  
+  2026_05_16_130000_add_cash_movements_delete_trigger_sqlite ......... [1] Ran  
+  2026_05_16_140000_add_geocode_status_to_addresses_table ............ [1] Ran  
+  2026_05_16_140100_make_user_phone_required ......................... [1] Ran  
+  2026_05_17_100000_add_actor_columns_to_cash_drawer_sessions ........ [1] Ran  
+  2026_05_18_100000_add_delivery_fee_settings_to_branches ............ [1] Ran  
+  2026_05_18_110000_add_delivery_minimum_order_to_branches ........... [1] Ran  
+  2026_05_18_120000_add_webhook_events_order_id_fk ................... [1] Ran  
+  2026_05_18_120000_create_delivery_boy_cash_sessions_table .......... [1] Ran  
+  2026_05_18_120100_create_delivery_boy_cash_movements_table ......... [1] Ran  
+  2026_05_18_120200_add_unique_partial_delivery_boy_cash_open ........ [1] Ran  
+  2026_05_18_120300_add_delivery_boy_cash_no_delete_triggers_sqlite .. [1] Ran  
+  2026_05_18_140000_add_stock_movements_immutability_triggers ........ [1] Ran  
+  2026_05_19_100000_create_loyalty_qr_nonces_consumed_table .......... [1] Ran  
+  2026_05_19_120000_add_pos_session_id_to_loyalty_transactions ....... [1] Ran  
+  2026_05_19_200000_add_unique_parent_order_id_to_orders ............. [1] Ran  
+  2026_05_19_210000_add_unique_branch_machine_id_to_kiosk_machines ... [1] Ran  
+  2026_05_20_120000_clear_fake_allergen_data_wave_q4 ................. [2] Ran  
+

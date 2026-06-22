@@ -1,0 +1,77 @@
+{
+  "task_id": "T-NEW02-RECONNECT-STORM",
+  "lot": "NEW-02 (Phase 1bis, Vague 3) — Echo/Pusher reconnect-storm detection + decorrelated-jitter throttle. When the WebSocket transitions disconnected → connecting → disconnected too rapidly (server restart, NAT timeout, transient network), wsService should detect the storm, open a brief circuit breaker (pusher.disconnect() + decorrelated-jitter delay before allowing reconnect), and emit a `reconnect_storm` event so polling fallbacks (KDS, POS) can proactively bump their cadence without waiting for normal WS re-establishment.",
+  "finding_origin": "NEW-02 from second-opinion GPT-5.4-pro (reports/audit/SECOND_OPINION_GPT54PRO_SYNC_PLAN_2026-04-23.json). Risk: in production, if the broadcasting server restarts (Soketi/Pusher), every connected client (POS terminal, KDS station, every kiosk tablet) reconnects within Pusher's internal backoff window. Pusher.js does exponential backoff per-client (1s→2s→4s→…→30s) but does NOT add jitter, so a fleet of 50+ clients converges on the same retry cadence and retries in lockstep — `thundering herd` that overwhelms the freshly restarted server, triggering another disconnect, looping. We need: (a) per-client storm detection (N rapid disconnects in W seconds), (b) decorrelated-jitter circuit breaker (random delay 5–30s before next reconnect attempt), (c) public event so polling fallback can engage immediately.",
+  "context_already_in_repo": {
+    "WebSocketService": "resources/js/services/WebSocketService.js — class WebSocketService is a singleton (`wsService` export). Owns the Pusher connection state machine via `state_change` binding. Public surface: start(), stop(), isConnected(), getState(), on(event, fn), off(event, fn), handleSubscriptionError(payload), authFailureCount, _setState(state). Already emits `state_change`, `connected`, `disconnected`, `auth_error`, `session_invalid` to listeners. STATE enum: INITIALIZED, CONNECTING, CONNECTED, DISCONNECTED, UNAVAILABLE, FAILED, SESSION_INVALID. The `state_change` handler maps Pusher state strings to STATE constants — see lines 66-87.",
+    "bootstrap": "resources/js/bootstrap.js — wires Echo + binds wsService.start(). Calls `pusher.connection.bind('state_change', ...)` indirectly via wsService. Pusher's own backoff (1s → 30s) runs underneath; we have NO control over it from the Echo API.",
+    "pusher_disconnect": "window.Echo.connector.pusher.disconnect() forcibly closes the connection. The next call to window.Echo.connector.pusher.connect() reopens it. wsService can call these via window.Echo?.connector?.pusher.",
+    "kds_polling_fallback": "resources/js/services/KdsSyncService.js — already subscribes to wsService events via on('state_change') / on('connected') / on('disconnected') and adapts its polling cadence (5s/10s/Infinity). MUST gain a new on('reconnect_storm') subscription that immediately drops the cadence to 5s (degraded mode) without waiting for the next state_change cycle. (Patch is small: just add the subscription in start() and treat 'reconnect_storm' as an alias for 'disconnected'.)",
+    "vitest_setup": "tests/js/*.spec.js using vi.useFakeTimers() and direct WebSocketService instantiation; closest neighbor is tests/js/kdsBackoffOn5xx.spec.js. The wsService singleton is exported alongside the WebSocketService class — tests can `new WebSocketService()` for isolation.",
+    "no_phpunit_needed": "This lot is frontend-only — no backend code touched, no PHPUnit tests."
+  },
+  "scope_files_to_modify": [
+    "resources/js/services/WebSocketService.js (add storm detector + circuit breaker + reconnect_storm event; preserve all existing public surface; do NOT touch the auth-failure F-12 logic)",
+    "resources/js/services/KdsSyncService.js (subscribe to the new 'reconnect_storm' event in start(); call _scheduleNextSync({ adaptive: true, force: true }) or equivalent so the polling cadence drops to degraded mode immediately — small patch)"
+  ],
+  "scope_files_to_create": [
+    "tests/js/wsReconnectStormDetection.spec.js",
+    "tests/js/wsReconnectStormCircuitBreaker.spec.js",
+    "tests/js/kdsReactsToReconnectStorm.spec.js"
+  ],
+  "do_NOT_touch": [
+    "resources/js/bootstrap.js (Echo configuration is frozen — adjust at the wsService layer only)",
+    "Pusher.js or laravel-echo packages (no external override)",
+    "F-12 auth-failure logic in WebSocketService (handleSubscriptionError, _pruneAuthFailures, _resetAuthFailures, sessionInvalid emission) — must keep working untouched",
+    "Anything in app/* (this is purely frontend infra)"
+  ],
+  "frontend_contract": {
+    "storm_detection_algorithm": "Maintain a sliding window of `disconnected` state-entry timestamps (push on every transition INTO STATE.DISCONNECTED or STATE.UNAVAILABLE). Window size = STORM_DETECTION_WINDOW_MS (default 30_000 ms). Threshold = STORM_DETECTION_THRESHOLD (default 4). When 4 `disconnected` events occur within 30s, the storm condition is true.",
+    "circuit_breaker": "Upon storm detection: (1) call pusher.disconnect() if available, (2) compute a decorrelated-jitter delay using the formula `delay = min(STORM_MAX_DELAY_MS, random_between(STORM_MIN_DELAY_MS, max(STORM_MIN_DELAY_MS, this._lastStormDelayMs * 3)))` (AWS decorrelated-jitter classic), (3) schedule a setTimeout(delay) that calls pusher.connect() and resets `_circuitBreakerOpen = false`, (4) emit `reconnect_storm` with `{ delay_ms, attempts_in_window, next_reconnect_at }`. Constants: STORM_MIN_DELAY_MS = 5_000, STORM_MAX_DELAY_MS = 30_000.",
+    "single_active_breaker": "If `_circuitBreakerOpen === true`, do NOT open a new breaker on subsequent disconnect events; just push to the timestamps array. Reset `_circuitBreakerOpen = false` on successful CONNECTED transition AND clear the timestamps array.",
+    "public_api_additions": "Add public getters: `isCircuitBreakerOpen()` (boolean), `getDisconnectAttemptsInWindow()` (number, prunes window first). Keep all existing methods/getters/events backward-compatible.",
+    "kds_subscription": "In KdsSyncService.start(), add `wsService.on('reconnect_storm', () => { ... })`. Inside the handler, transition to degraded cadence immediately (call the same internal method that the 'disconnected' handler calls — likely `this._setCadence('degraded')` or schedule an immediate sync). This guarantees polling kicks in BEFORE the breaker timeout expires, so KDS doesn't go stale during storms.",
+    "no_thundering_in_unit_tests": "All timers MUST be controlled via vi.useFakeTimers() / vi.advanceTimersByTime in tests. Do NOT rely on Math.random() — stub it via vi.spyOn(Math, 'random').mockReturnValue(0.5) so the decorrelated-jitter delay is deterministic per assertion."
+  },
+  "tests_required": [
+    "wsReconnectStormDetection.spec.js::it does NOT detect a storm under threshold — Trigger 3 disconnects within 30s; assert no `reconnect_storm` emission, isCircuitBreakerOpen()===false.",
+    "wsReconnectStormDetection.spec.js::it detects a storm at threshold — Trigger 4 disconnects within 30s; assert `reconnect_storm` emitted exactly once with payload containing delay_ms, attempts_in_window=4, next_reconnect_at.",
+    "wsReconnectStormDetection.spec.js::it prunes timestamps outside the window — 3 disconnects, advance 31s, then 1 more disconnect; assert NO storm (only 1 timestamp in window).",
+    "wsReconnectStormCircuitBreaker.spec.js::it calls pusher.disconnect() then schedules pusher.connect() after the jitter delay — Stub window.Echo.connector.pusher with mock disconnect/connect; trigger storm; assert disconnect called immediately AND connect called after vi.advanceTimersByTime(jitterDelay).",
+    "wsReconnectStormCircuitBreaker.spec.js::it does NOT open a second breaker while one is already open — While breaker is open, fire 4 more disconnects; assert NO new `reconnect_storm` emission, only the original one.",
+    "wsReconnectStormCircuitBreaker.spec.js::it resets the breaker on successful CONNECTED transition — After breaker opens and timer fires reconnect, simulate state→CONNECTED; assert isCircuitBreakerOpen()===false AND timestamps array is cleared (next storm requires 4 fresh disconnects).",
+    "wsReconnectStormCircuitBreaker.spec.js::it uses decorrelated-jitter formula bounded by STORM_MAX_DELAY_MS — Stub Math.random to return 0.99; trigger storms repeatedly; assert delay never exceeds STORM_MAX_DELAY_MS = 30_000.",
+    "kdsReactsToReconnectStorm.spec.js::it transitions to degraded cadence immediately on reconnect_storm — Stub wsService events; emit `reconnect_storm`; assert KdsSyncService scheduled a poll within ~5s (degraded cadence) without waiting for state_change."
+  ],
+  "non_negotiable_constraints": [
+    "Preserve all existing wsService public API (start, stop, isConnected, getState, on, off, handleSubscriptionError, authFailureCount, etc.) bit-for-bit. The new methods are additions only.",
+    "Preserve F-12 auth-failure logic (handleSubscriptionError, _pruneAuthFailures, _resetAuthFailures, session_invalid emission) — do NOT merge with the new disconnect-storm window. They are independent counters.",
+    "Decorrelated-jitter delay MUST be bounded between STORM_MIN_DELAY_MS (5s) and STORM_MAX_DELAY_MS (30s). NEVER unbounded.",
+    "Circuit breaker MUST self-reset on STATE.CONNECTED transition (not on STATE.CONNECTING — only confirmed connections clear the storm window).",
+    "All new timers MUST be cleared in destroy() to avoid leaks.",
+    "KdsSyncService patch MUST be minimal — just one new event subscription that re-uses the existing 'disconnected' codepath.",
+    "Tests MUST use vi.useFakeTimers() + vi.spyOn(Math, 'random') — no flaky time-based assertions."
+  ],
+  "acceptance_criteria_measurable": [
+    "4 disconnects in 30s → storm detected → pusher.disconnect() called → pusher.connect() called after jitter delay 5–30s.",
+    "3 disconnects in 30s → no storm.",
+    "Circuit-breaker single-open: storm during open breaker does NOT re-trigger.",
+    "Successful CONNECTED transition resets breaker AND clears timestamps.",
+    "Decorrelated-jitter delay strictly bounded by [STORM_MIN_DELAY_MS, STORM_MAX_DELAY_MS].",
+    "KdsSyncService bumps to degraded polling cadence within 100ms of receiving `reconnect_storm`.",
+    "All existing wsService tests (if any) still pass.",
+    "All KdsSyncService existing tests (cadence, version-gate, dedupe, backoff) still pass.",
+    "scripts/check-invariants.sh remains 6/6."
+  ],
+  "expected_response_shape": "Strict JSON per agents/codex.prompt.txt schema. Surgical patches (op='replace') for the 2 modified files; full bodies (op='create') for the 3 new test files.",
+  "self_check_before_returning": [
+    "Did you preserve EVERY existing public method/getter/event of wsService?",
+    "Did you keep F-12 auth-failure logic completely separate from the new storm detector?",
+    "Is the decorrelated-jitter formula correct: delay = min(MAX, rand(MIN, max(MIN, last*3)))?",
+    "Does the circuit breaker self-reset ONLY on CONNECTED (not CONNECTING)?",
+    "Does destroy() clear the new storm timer + reset _circuitBreakerOpen + clear timestamps?",
+    "Is the KdsSyncService patch ≤ 10 lines (just a new subscription)?",
+    "Do all 8 tests use vi.useFakeTimers() + vi.spyOn(Math,'random') for determinism?",
+    "Do you reset _circuitBreakerOpen back to false after pusher.connect() fires (so a future storm can open a NEW breaker)?"
+  ]
+}

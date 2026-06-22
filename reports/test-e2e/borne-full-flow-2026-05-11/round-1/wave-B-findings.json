@@ -1,0 +1,42 @@
+{
+  "wave": "B",
+  "round": 1,
+  "states_reviewed": 10,
+  "findings": [
+    {
+      "id": "B-001",
+      "state_artifact": "test-e2e-borne-B/314-02-step-recap.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "Recap card for Menu Cheese Burger (Enfant) renders a circular placeholder (plus '+' icon) instead of the product image. Same placeholder also visible in 15-cart-after-add-309-310-311-314.png for the line 'Menu Cheese Burger (Enfant) — €6,00'. The other 3 cats (309 Assiette Poulet, 310 Ojja Boeuf, 311 Omelette Fromage) all render real thumbnails. Likely missing asset for catalog item cat 314 'menu-cheese-burger-enfant'.",
+      "fix_hint": "Verify storage/public/images/menu/ (or wherever kiosk item images live) for the 314 menu-cheese-burger-enfant slug. Either upload the missing image OR fall back to a default Cayenne placeholder rather than a generic UI '+' icon (current placeholder reads as a 'add image' affordance, not a product visual).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-002",
+      "state_artifact": "test-e2e-borne-B/15-cart-after-add-309-310-311-314.png",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "PNG bytes for state 15 (15-cart-after-add-309-310-311-314.png) and state 16 (16-cart-thumbnails-quartet.png) are bit-identical (md5 e50b133e7320382b160c5ce7e27d497e for both). The audit plan describes state 16 as 'verify recap thumbnails (pain/viande/sauce/garniture/supplement) render in cart', but the spec captures the same screen twice without any state transition between them. Not a defect in the product — a wave-budget observation: state 16 adds no incremental coverage over state 15.",
+      "fix_hint": "Wave-B spec should either (a) capture state 16 after an explicit interaction (e.g. open bottom-sheet, expand a line) so the two states differ, or (b) drop state 16 to reclaim the budget for an actual additional check (e.g. cart bottom-sheet open, qty-stepper increment, takeaway vs sur-place toggle). Reference: tests/e2e/test-e2e-borne-2026-05-10-wave-B.spec.js.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 1,
+    "P3": 1,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 1,
+    "open_P3": 1
+  },
+  "round_to_round_closures": {},
+  "verdict": "GREEN",
+  "notes": "Wave-B pipeline simplification verified end-to-end across all 10 captured states (4 wizard journeys cat 309/310/311/314 with sauce+recap only, + 2 cart states). All P0/P1 gates pass: (1) B-001 anti-regression 'Taille : 1 viande' leak grep=0 in both cart states; (2) zero forbidden-step refs (kiosk-step-menu / kiosk-step-frites-style / kiosk-step-viande / kiosk-step-garnitures / kiosk-step-supplements) across all 10 DOMs; (3) zero pink residue (#E8001C / rgb(232,0,28)) across all 10 DOMs; (4) zero unallowlisted 4xx/5xx across all 10 network sidecars; (5) console errors limited to Pusher ws://127.0.0.1:6001 ERR_CONNECTION_REFUSED (allowlisted per REVIEWER_PROTOCOL); (6) numeric integrity verified — recap totals €12,50 + €13,50 + €8,50 + €6,00 = €40,50, matched exactly by cart Sous-total / Total / Valider button (3-surface cross-check); (7) multimodal inspection of all 4 recap PNGs confirms each shows base price + 'SAUCES Ketchup (Gratuite)' + Total = base price, NO menu line, NO frites_style line, single 'QUELLE SAUCE ?' icon in progress strip. The owner pipeline simplification (sauce + recap for cats 309/310/311/314) holds with zero leakage. Note: artifact dir has 10 states, not 14 as referenced in task prompt — actual count reconciles to plan (4 cats x 2 wizard states + 2 cart states = 10), original AUDIT_PLAN.md target of 16 was reduced by the post-simplification spec. Open items are cosmetic (B-001 P2 missing image, B-002 P3 duplicate state capture) — neither blocks GREEN."
+}

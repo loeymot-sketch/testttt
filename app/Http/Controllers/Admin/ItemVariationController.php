@@ -19,7 +19,8 @@ class ItemVariationController extends AdminController
     {
         parent::__construct();
         $this->itemVariationService = $itemVariationService;
-        $this->middleware(['permission:items_show'])->only('index', 'listGroupByAttribute', 'show', 'store', 'update', 'destroy');
+        $this->middleware(['permission:items_show'])->only('index', 'listGroupByAttribute', 'show');
+        $this->middleware(['permission:items_edit'])->only('store', 'update', 'destroy');
     }
 
     public function index(PaginateRequest $request, Item $item) : \Illuminate\Http\Response | \Illuminate\Http\Resources\Json\AnonymousResourceCollection | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
@@ -27,7 +28,7 @@ class ItemVariationController extends AdminController
         try {
             return ItemVariationResource::collection($this->itemVariationService->list($request, $item));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -36,7 +37,7 @@ class ItemVariationController extends AdminController
         try {
             return ItemVariationGroupByAttributeResource::collection($this->itemVariationService->listGroupByAttribute($request, $item));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -46,7 +47,7 @@ class ItemVariationController extends AdminController
         try {
             return new ItemVariationResource($this->itemVariationService->store($request, $item));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -56,7 +57,7 @@ class ItemVariationController extends AdminController
         try {
             return new ItemVariationResource($this->itemVariationService->update($request, $item, $itemVariation));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -66,7 +67,7 @@ class ItemVariationController extends AdminController
         try {
             return new ItemVariationResource($this->itemVariationService->show($item, $itemVariation));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -77,7 +78,7 @@ class ItemVariationController extends AdminController
             $this->itemVariationService->destroy($item, $itemVariation);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

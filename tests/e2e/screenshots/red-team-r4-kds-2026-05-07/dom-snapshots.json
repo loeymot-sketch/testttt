@@ -1,0 +1,110 @@
+[
+  {
+    "label": "R4-05_surface",
+    "payload": {
+      "url": "http://localhost:8000/admin/kitchen-display-system",
+      "text_length": 6544,
+      "console_errors": [
+        "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+        "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+        "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+      ],
+      "page_errors": []
+    },
+    "ts": "2026-05-11T08:47:37.910Z"
+  },
+  {
+    "label": "R4-06_a11y_summary",
+    "payload": {
+      "total": 1,
+      "critical_serious": 1,
+      "ids": [
+        "color-contrast(serious)"
+      ]
+    },
+    "ts": "2026-05-11T08:47:48.622Z"
+  },
+  {
+    "label": "R4-07_aria_probe",
+    "payload": {
+      "order_card_count_no_role": 22,
+      "order_card_with_role_article": 22,
+      "live_region_count": 1,
+      "live_region_samples": [
+        {
+          "tag": "DIV",
+          "attrs": {
+            "role": "status",
+            "aria-live": "polite"
+          },
+          "text_snippet": ""
+        }
+      ]
+    },
+    "ts": "2026-05-11T08:47:58.278Z"
+  },
+  {
+    "label": "R4-08_audio_probe",
+    "payload": {
+      "audio_element": "present",
+      "src": "/sounds/kds-new-order.mp3",
+      "preload": "auto",
+      "currentTime": 0,
+      "paused": true,
+      "muted": false,
+      "volume": 1
+    },
+    "ts": "2026-05-11T08:48:08.503Z"
+  },
+  {
+    "label": "R4-10_before_cancel",
+    "payload": {
+      "serial": "R4CANCEL-5a50fd",
+      "visible_in_dom": true
+    },
+    "ts": "2026-05-11T08:48:23.240Z"
+  },
+  {
+    "label": "R4-10_after_cancel",
+    "payload": {
+      "serial": "R4CANCEL-5a50fd",
+      "still_visible": false
+    },
+    "ts": "2026-05-11T08:48:30.761Z"
+  },
+  {
+    "label": "R4-11_probe",
+    "payload": {
+      "has_oos_class_in_dom": true,
+      "has_86_attr": false,
+      "listened_event": true
+    },
+    "ts": "2026-05-11T08:48:40.868Z"
+  },
+  {
+    "label": "R4-12_ws",
+    "payload": {
+      "banner_present": false,
+      "banner_text": null,
+      "ws_service_present": true,
+      "ws_connected_state": false
+    },
+    "ts": "2026-05-11T08:48:50.484Z"
+  },
+  {
+    "label": "R4-13_focus",
+    "payload": {
+      "action_button_count": 0,
+      "first_button": null
+    },
+    "ts": "2026-05-11T08:49:00.051Z"
+  },
+  {
+    "label": "R4-16_render",
+    "payload": {
+      "visible": true,
+      "qty_badges_in_dom": 59
+    },
+    "ts": "2026-05-11T08:49:25.018Z"
+  }
+]

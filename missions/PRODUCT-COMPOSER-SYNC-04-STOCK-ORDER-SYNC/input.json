@@ -1,0 +1,36 @@
+{
+  "task_id": "PRODUCT-COMPOSER-SYNC-04-STOCK-ORDER-SYNC",
+  "execution_delegation": "codex-extension",
+  "mode": "execute-after-frozen-gate",
+  "objective": "Implement shared stock decrement, release, realtime updates, and rupture UX for POS and kiosk orders.",
+  "preconditions": [
+    "PRODUCT-COMPOSER-SYNC-01-SCHEMA-ADR PASS",
+    "PRODUCT-COMPOSER-SYNC-03-PROJECTION-RUNTIME PASS",
+    "HG-FROZEN-ORDERSERVICE-UNLOCK recorded",
+    "HG-STOCK-STOCKABLE-SCOPE recorded"
+  ],
+  "allowlist_file": "missions/PRODUCT-COMPOSER-SYNC-04-STOCK-ORDER-SYNC/allowlist.txt",
+  "forbidden": [
+    "Do not change pricing calculation",
+    "Do not bypass backend quote sealing",
+    "Do not dispatch stock events before commit",
+    "Do not touch unrelated POS wizard design"
+  ],
+  "invariants_considered": [
+    "pricing-backend-ssot",
+    "branch-isolation",
+    "dispatch-after-commit",
+    "order-service-frontend-order-service-symmetry",
+    "frozen-zone-gates"
+  ],
+  "expected_outputs": [
+    "StockService",
+    "Order integration after quote seal",
+    "Release listener",
+    "Realtime stock fanout",
+    "Rupture UI",
+    "Stock dashboard",
+    "Sentinel tests",
+    "GPT self-audit"
+  ]
+}

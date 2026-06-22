@@ -2,11 +2,11 @@
 
 namespace App\Events;
 
-use Illuminate\Foundation\Events\Dispatchable;
+use App\Events\Concerns\DispatchableAfterCommit;
 
 class ItemCreated
 {
-    use Dispatchable;
+    use DispatchableAfterCommit;
 
     public function __construct(
         public int $itemId,

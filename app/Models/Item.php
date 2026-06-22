@@ -21,6 +21,7 @@ class Item extends Model implements HasMedia
         'name',
         'item_category_id',
         'slug',
+        'barcode',
         'tax_id',
         'item_type',
         'price',
@@ -42,6 +43,7 @@ class Item extends Model implements HasMedia
         'channels',
         'allergen_flags',
         'kiosk_emoji',
+        'kds_station',
     ];
     protected $dates = ['deleted_at'];
     protected $casts = [
@@ -49,6 +51,7 @@ class Item extends Model implements HasMedia
         'name'             => 'string',
         'item_category_id' => 'integer',
         'slug'             => 'string',
+        'barcode'          => 'string',
         'tax_id'           => 'integer',
         'item_type'        => 'integer',
         'price'            => 'decimal:6',
@@ -70,6 +73,7 @@ class Item extends Model implements HasMedia
         'channels'         => 'array', // null = all surfaces (back-compat V1)
         'allergen_flags'   => 'array',
         'kiosk_emoji'      => 'string',
+        'kds_station'      => 'string',
     ];
 
     /**
@@ -85,7 +89,7 @@ class Item extends Model implements HasMedia
     {
         if (!empty($this->getFirstMediaUrl('item'))) {
             $item = $this->getMedia('item')->last();
-            return $item->getUrl('thumb');
+            return file_exists($item->getPath('thumb')) ? $item->getUrl('thumb') : $item->getUrl();
         }
         // Fallback: images depuis config/menu_images.php (améliore visuel POS)
         $images = Config::get('menu_images.items', []) + Config::get('menu_images.addons', []);
@@ -94,7 +98,9 @@ class Item extends Model implements HasMedia
         $filename = $images[$this->slug] ?? $defaultFile;
         $fullPath = public_path("{$basePath}/{$filename}");
         if (file_exists($fullPath)) {
-            return asset("{$basePath}/{$filename}");
+            // Cache-bust: filemtime suffix forces browsers to refetch when the file changes.
+            $hash = @filemtime($fullPath) ?: 0;
+            return asset("{$basePath}/{$filename}") . "?v={$hash}";
         }
         return asset('images/item/thumb.png');
     }
@@ -103,7 +109,7 @@ class Item extends Model implements HasMedia
     {
         if (!empty($this->getFirstMediaUrl('item'))) {
             $item = $this->getMedia('item')->last();
-            return $item->getUrl('cover');
+            return file_exists($item->getPath('cover')) ? $item->getUrl('cover') : $item->getUrl();
         }
         return asset('images/item/cover.png');
     }
@@ -112,7 +118,7 @@ class Item extends Model implements HasMedia
     {
         if (!empty($this->getFirstMediaUrl('item'))) {
             $item = $this->getMedia('item')->last();
-            return $item->getUrl('preview');
+            return file_exists($item->getPath('preview')) ? $item->getUrl('preview') : $item->getUrl();
         }
         return asset('images/item/cover.png');
     }

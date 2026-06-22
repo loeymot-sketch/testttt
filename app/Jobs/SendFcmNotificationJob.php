@@ -60,6 +60,11 @@ class SendFcmNotificationJob implements ShouldQueue
         public array $data = [],
         public string $sound = 'default'
     ) {
+        // [NEW-03] Route to the dedicated 'notifications' queue so slow FCM
+        // sends cannot starve `high` (DispatchDomainEventsJob → POS/KDS sync).
+        // Encoded in the constructor so dispatch sites do not need to chain
+        // ->onQueue('notifications').
+        $this->onQueue('notifications');
     }
 
     /**

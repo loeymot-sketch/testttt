@@ -1,0 +1,266 @@
+{
+  "meta": {
+    "wave": "FoodKing MAX TEST WAVE B — GSTACK Architectural Review + RED Visual Cross-cut",
+    "agent": "ARCH-RED",
+    "head_commit": "e7ae1c8ea",
+    "generated_at": "2026-05-28T22:00:00+02:00",
+    "scope": "Read-only architectural dispute + adversarial visual cross-cut on 8 Wave A T2 surfaces + 5 heal commits from 2026-05-28",
+    "wave_a_artifacts_read": [
+      "reports/test-e2e/owner-trial-test-max-2026-05-28/T2-KIOSK/findings.json",
+      "reports/test-e2e/owner-trial-test-max-2026-05-28/T2-POS/findings.json",
+      "reports/test-e2e/owner-trial-test-max-2026-05-28/T2-KDS/findings.json",
+      "reports/test-e2e/owner-trial-test-max-2026-05-28/T2-OSS/findings.json",
+      "reports/test-e2e/owner-trial-test-max-2026-05-28/T2-ADMIN/findings.json",
+      "reports/test-e2e/owner-trial-test-max-2026-05-28/T2-LIVREUR/findings.json",
+      "/tmp/foodking-max-test-2026-05-28/t2-kiosk/s-kio-03-wizard-cayenne-sauce.png",
+      "/tmp/foodking-max-test-2026-05-28/t2-kiosk/s-kio-04-wizard-bowl-sauce.png",
+      "/tmp/foodking-max-test-2026-05-28/t2-kiosk/s-kio-04-wizard-tacos-sauce.png",
+      "/tmp/foodking-max-test-2026-05-28/t2-admin/S-ADM-04-zreport-1920.png",
+      "/tmp/foodking-max-test-2026-05-28/t2-livreur/S-LIV-03-cash-session-show.png"
+    ]
+  },
+
+  "architectural_review": {
+    "layer_discipline": {
+      "verdict": "CLEAN",
+      "evidence": [
+        "app/Services/OrderService.php:1822-1864 heal R2-P1-LIV-DELIVERED-HOOK — OrderService (orchestrator/service layer) resolves DeliveryBoyCashSessionService via app() container, calls recordMovement(...) — proper Service→Service layer call, no model-touching, no controller-leak.",
+        "app/Services/Delivery/DeliveryBoyCashSessionService.php:50,286 — recordMovement is a public service method with documented invariants I1..I5 (open-session-only, type whitelist, direction whitelist) — Service owns transactional/business invariants, model layer only persists.",
+        "try/catch wraps the cross-service call (1851-1864) — Log::error + payload + non-blocking continue. Drift is surfaced to logs, not silenced. Severity=error (was warning) per R3-RD-03 — appropriate signal for ZReportCashEnrichmentService:489 end-of-day cross-check."
+      ],
+      "violations": []
+    },
+
+    "pattern_cohesion": {
+      "verdict": "CLEAN",
+      "evidence": [
+        "5 axios fix components all use IDENTICAL relative-URL pattern post-heal: GET /admin/<resource> resolves to /api/admin/<resource> via axios baseURL=/api — no /api/api/ double-prefix anywhere. Verified by S-LIV-01/02/03 network traces (3 traces, 0 double-prefix occurrences) + T2-ADMIN cross_cutting.observability_outbox_heal.api_calls show /api/admin/observability/outbox 200 application/json.",
+        "Files: DeliveryBoyCashSessionFormComponent.vue (-6), DeliveryBoyCashSessionListComponent.vue (-2), DeliveryBoyCashSessionShowComponent.vue (-2), DeliveryBoyListComponent.vue (-2), OutboxOverviewComponent.vue (-6), PosLoyaltyRedeemModal.vue (-2) — same conventional axios+vuex pattern as the rest of the admin SPA. No bespoke fetch wrapper, no manual baseURL override, no inline fetch() — pattern cohesion intact.",
+        "Router alias pattern (orderStatusScreenRoutes.js:9 — alias: '/order-status-screen') + publicFriendlyPaths in app.js:165 + router/index.js:224 fallback path-check — defense-in-depth triple-gate is consistent across the SPA's other public surfaces (e.g. /kiosk paths follow the same publicFriendlyPaths convention).",
+        "Vue components are PRESENTATIONAL — backend OrderService owns the cash-mirror business logic, the new code is OUTSIDE the Vue tree. POS/KDS/Kiosk presentational layer is untouched by the heal."
+      ],
+      "violations": []
+    },
+
+    "dependency_direction": {
+      "verdict": "CLEAN",
+      "evidence": [
+        "OrderService → Services\\Delivery\\DeliveryBoyCashSessionService is a one-way dependency (Service layer calling sister Service in a subdomain). No circular import — DeliveryBoyCashSessionService does not import OrderService.",
+        "Resolution via app() (Laravel container) instead of constructor injection — pragmatic for a best-effort optional hook. Acceptable for V1 LOCAL; minor architectural note: long-term this could be constructor-injected with `?DeliveryBoyCashSessionService` to make the dependency explicit at OrderService boundary. Not a V1 blocker.",
+        "Model references in heal block: \\App\\Models\\DeliveryBoyCashMovement::TYPE_ORDER_COLLECT + ::DIRECTION_IN — Service consumes Model constants for type-safety, no model-to-model leak."
+      ],
+      "violations": [],
+      "hint_of_debt": "OrderService is ALREADY 1900+ LOC (the heal lands at :1822); future refactor candidate is splitting cash-mirror orchestration into a dedicated CashMirrorOrchestrator. Not V1 priority, BACKLOG."
+    },
+
+    "frozen_zone_integrity": {
+      "verdict": "CLEAN",
+      "evidence": [
+        "Commit e7ae1c8ea diff stat: 13 files / +71 / -25 — NONE of the 14 §7 CLAUDE.md frozen-zone files touched. Verified files: PROJECT_BRAIN.md, app/Services/OrderService.php (not in §7 list), public/js/admin-shell.js (build artifact, not frozen), public/js/pos-app.js, public/js/pos-shell.js, public/mix-manifest.json, resources/js/app.js, 5x Vue components in /admin/* (NOT KioskWizardComponent/KioskAppComponent/KioskUpsellComponent/PaymentComponent/PosV5TrancheRow), router files.",
+        "FROZEN §7 ZERO TOUCH confirmed: KioskWizardComponent.vue, KioskAppComponent.vue, KioskUpsellComponent.vue, PaymentComponent.vue, PosV5TrancheRow.vue, public/js/pos-wizard.js, public/css/pos-wizard.css, admin-pos-v4.blade.php, FiscalSequenceService.php, ZReportService.php, AuditLogService.php, BranchScope.php, IdempotencyKeyMiddleware.php, PricingService.php, OrderStateMachine.php = NONE touched.",
+        "Safety check sentinel verified active by T2-POS S-POS-11 — .cursor/hooks/safety-check.sh:18-19 covers public/js/pos-wizard.js + public/css/pos-wizard.css."
+      ],
+      "violations": []
+    },
+
+    "ddd_boundaries": {
+      "verdict": "CLEAN",
+      "evidence": [
+        "Order domain (app/Domain/Order/OrderStateMachine.php) — untouched. State transitions remain centralized.",
+        "Kds domain (app/Domain/Kds/KitchenReleaseRule.php) — untouched. KitchenReleaseRule.canTransition still controls ACCEPT→PREPARING and PREPARING→PREPARED whitelist (verified by T2-KDS S-KDS-04 hostile recall: POST /api/admin/kds-order/recall/{id} returned 404 ORDER_NOT_FOUND, passes_invariant=true).",
+        "Fiscal domain (app/Services/Fiscal/*) — untouched. Z report PDF endpoint (ZReportController.php:79-95) still enforces resolveBranchId() with HTTP 422 for branch=0 admin — NF525 compliance correctly preserved as security gate, not regressed by the heal cycle.",
+        "Delivery domain boundary: heal calls Service via container at the Order-service edge, no domain-event-fanout entanglement — clean cross-boundary call."
+      ],
+      "violations": []
+    },
+
+    "verdict": "GREEN"
+  },
+
+  "red_visual": {
+    "surface_revisits": {
+      "T2-KIOSK_S-KIO-03_cayenne_sauce": {
+        "screenshot": "/tmp/foodking-max-test-2026-05-28/t2-kiosk/s-kio-03-wizard-cayenne-sauce.png",
+        "agent_a_verdict": "INCONCLUSIVE — wizard never opened, FALSE_POSITIVE sauce-text matches in description bodies",
+        "red_re_examination": "CONFIRMED INCONCLUSIVE. Screenshot is the Sandwich Cayenne CATEGORY page showing 5 product tiles (BOISSON SEULE €2,00 / FRITES SEULES €2,00 / MENU FRITES+BOISSON €5,00 / SANDWICH CAYENNE €7,00 / BIG CAYENNE €9,50). The 'Personnaliser' yellow ribbon is visible on Sandwich Cayenne + Big Cayenne tiles — selector strategy needed to CLICK that ribbon to open the wizard, not the sidebar category label.",
+        "red_verdict": "Agent T2-KIOSK was honest and disciplined to dispute their own auto-PASS — RED concurs. Sauce list correctness is NOT VISUALLY ATTESTED this cycle. Empirical proof from T2-POS S-POS-03 db-probe DOES attest the data layer (DB query shows 10 sauces for item_id=22 attr_id=5, no 'Cayenne fromagère'). DATA-LAYER GREEN, UI-LAYER UNATTESTED — net effect: VERY LIKELY GREEN but not formally proven.",
+        "confirmation_bias_check": "T2-KIOSK agent did NOT fall to confirmation bias — they raised the alarm. RED finds no missed defect; the screenshot itself is correctly characterized."
+      },
+      "T2-KIOSK_S-KIO-04_bowl_sauce": {
+        "screenshot": "/tmp/foodking-max-test-2026-05-28/t2-kiosk/s-kio-04-wizard-bowl-sauce.png",
+        "agent_a_verdict": "INCONCLUSIVE — wizard never opened, 'Curry' matched as 'sauce' but was a variant name",
+        "red_re_examination": "CONFIRMED. Screenshot is Bols Gourmands category listing showing 8 bowl tiles (BOWL FRITES POULET CRISPY/CURRY/MARINE/TANDOORI + BOWL RIZ POULET CRISPY/CURRY visible, all €8,90, descriptions read 'Poulet crispy. Base Frites. Sauce + suppléments + boisson optionnel'). NO sauce checkbox grid visible.",
+        "red_verdict": "Same as Cayenne — UI-LAYER UNATTESTED. T2-POS S-POS-05 db-probe attests data: COUNT=2 live sauces [Sauce fromagère maison, Spicy] + 9 soft-deleted = DATA-LAYER GREEN. WIZ-3 + WIZ-4 + WIZ-5 commits are intact per DB query. Boule gratinée 2€ + Option Gratiné 2€ both present in supplement_bol step.",
+        "confirmation_bias_check": "Agent honest. No new defect."
+      },
+      "T2-KIOSK_S-KIO-04_tacos_sauce": {
+        "screenshot": "/tmp/foodking-max-test-2026-05-28/t2-kiosk/s-kio-04-wizard-tacos-sauce.png",
+        "agent_a_verdict": "FALSE_POSITIVE sauce match in 'sauce fromagère maison' description text",
+        "red_re_examination": "CONFIRMED. Screenshot is Tacos category showing 2 tiles (TACOS €8,50 + BIG TACOS €11,50). Description text mentions 'sauce fromagère maison' but that's the printed PRODUCT description, not the wizard sauce step.",
+        "red_verdict": "Same as Cayenne+Bowl — UI UNATTESTED, DATA-LAYER GREEN (T2-POS S-POS-04: Tacos id=26 + Big Tacos id=27 both have 10 canonical sauces, identical to Sandwich Cayenne family).",
+        "confirmation_bias_check": "Agent honest. No new defect."
+      },
+      "T2-ADMIN_S-ADM-04_zreport_pdf_422": {
+        "screenshot": "/tmp/foodking-max-test-2026-05-28/t2-admin/S-ADM-04-zreport-1920.png",
+        "agent_a_verdict": "AMBER — PDF endpoint 422 for admin branch_id=0, documented as Round 2 P1 caveat",
+        "red_re_examination": "PDF 422 is NOT a bug — it is a deliberate NF525 SECURITY DESIGN. ZReportController.php:79-95 + :104-117 resolveBranchId() throws HTTP 422 when authenticated user has branch_id=0 (admin) AND no payload branch_id is trustable. The code comment :112 says 'never trust a payload-side branch_id for a fiscal-sensitive operation'. This is correct fiscal-controlled behavior, not a regression. The PDF button is visible (S-ADM-04 pdf_button_visible=true) and the data widget GET /api/admin/fiscal/z-report works (200, signature d48c536e... HMAC). Admin can VIEW the Z reports — only the PDF download is gated.",
+        "red_verdict_v1_local": "ACCEPTABLE for V1 LOCAL Le Cayenne. Owner has 2 trivial workarounds: (a) pin admin user to branch_id=1 in DB (single-resto deployment); (b) use the existing Branch Manager account (id=11 in S-ADM-06) which has branch_id=1 — verified to land on /admin/dashboard with appropriate sidebar. NOT a V1 ship-blocker. NF525 invariant integrity > UX convenience for fiscal exports.",
+        "v2_saas_note": "For V2 multi-tenant SaaS, this exposes a UX gap: super-admin needs an explicit branch-picker BEFORE clicking PDF (modal with branch dropdown). BACKLOG V1.0.X UX-04."
+      },
+      "T2-LIVREUR_S-LIV-03_raw_labels": {
+        "screenshot": "/tmp/foodking-max-test-2026-05-28/t2-livreur/S-LIV-03-cash-session-show.png",
+        "agent_a_verdict": "GREEN_WITH_P1 — 5 raw labels visible on session show page",
+        "red_re_examination": "RED COUNTED 5 RAW LABELS VISIBLY RENDERED IN BROWSER on /admin/delivery-boy-cash-sessions/1:",
+        "red_raw_label_inventory_exact": [
+          {"location_pixel_approx": "header card title left", "raw_key_rendered": "Label.Delivery_cash_session #1", "i18n_key_used_in_component_source": "label.delivery_cash_session (lowercase) at DeliveryBoyCashSessionShowComponent.vue:8", "fr_translation_present_in_lang_fr_all_php": false, "expected_fr_value_recommended": "Caisse livreur"},
+          {"location_pixel_approx": "right column field label, row 3", "raw_key_rendered": "label.cash_session_closed_at", "i18n_key_used_in_component_source": "label.cash_session_closed_at (suspected DeliveryBoyCashSessionShowComponent.vue right column)", "fr_translation_present_in_lang_fr_all_php": false, "expected_fr_value_recommended": "Fermée le"},
+          {"location_pixel_approx": "movements table header col 4", "raw_key_rendered": "LABEL.DIRECTION", "i18n_key_used_in_component_source": "label.direction (auto-uppercased by CSS text-transform)", "fr_translation_present_in_lang_fr_all_php": false, "expected_fr_value_recommended": "Sens"},
+          {"location_pixel_approx": "movements table header col 5", "raw_key_rendered": "LABEL.NOTES", "i18n_key_used_in_component_source": "label.notes (auto-uppercased by CSS text-transform)", "fr_translation_present_in_lang_fr_all_php": false, "expected_fr_value_recommended": "Notes"},
+          {"location_pixel_approx": "movements table row 1, col 2 cell content", "raw_key_rendered": "label.delivery_cash_mvt_order_collect", "i18n_key_used_in_component_source": "label.delivery_cash_mvt_order_collect (movement type cell rendered as-is)", "fr_translation_present_in_lang_fr_all_php": false, "expected_fr_value_recommended": "Encaissement commande livrée"}
+        ],
+        "red_count_total": 5,
+        "red_dispute_status": "T2-LIVREUR T2-LIV-P1-01 finding is REAL — confirmed by source grep (lang/fr/all.php greps for all 5 keys returned 0 matches; only related keys exist e.g. 'delivery_cash_sessions' plural). HEAL needed: add 5 keys to lang/fr/all.php + lang/en/all.php — pure data fix, no code logic change.",
+        "p_severity_assessment": "P1 — visible to owner on a working V1 page, ugly but page is functional. NOT V1 ship-blocker per CLAUDE.md §6 (raw labels qualify the visual mandate; rendering of raw key strings violates the mandate but does not break payment/fiscal/sync). Owner approval needed before ship — heal estimated <10 min."
+      }
+    },
+
+    "new_findings": [
+      {
+        "id": "RED-FN-01",
+        "severity": "P1",
+        "scope": "Wizard E2E selector strategy regression risk",
+        "issue": "Three out of four kiosk wizard scenarios (S-KIO-03 + S-KIO-04 Bowl + S-KIO-04 Tacos) reach category page instead of wizard. While Wave A agent honestly flagged this as INCONCLUSIVE, the test SPEC selector strategy uses getByText('Sandwich Cayenne'|'Tacos'|'Bowl').click() which lands on the SIDEBAR category label rather than the PRODUCT TILE 'Personnaliser' ribbon. Future test cycles will keep producing INCONCLUSIVE wizard runs until the locator strategy is migrated to a tile-specific data-test attribute or aria-label 'Personnaliser …'.",
+        "recommendation": "Add data-test='kiosk-product-tile-{id}' OR data-test='kiosk-personnaliser-{id}' on the yellow Personnaliser ribbon in the kiosk catalog component, then change the E2E spec to .locator('[data-test^=kiosk-personnaliser]').first().click() before asserting wizard-step DOM. Pure test infrastructure improvement — not a V1 blocker but blocks future visual proof of WIZ-2..WIZ-7.",
+        "owner_visible": false,
+        "blocks_v1_ship": false
+      },
+      {
+        "id": "RED-FN-02",
+        "severity": "P2",
+        "scope": "OrderService monolith growth",
+        "issue": "OrderService.php is 1900+ LOC after the +42 LOC heal at line 1822. The cash-escrow + cash-mirror + audit-log + broadcast orchestration sits in a single Service. Container-resolved cross-Service calls (app(...)) inside try/catch fences is a code smell for an otherwise constructor-injection architecture.",
+        "recommendation": "BACKLOG V1.0.X — extract a CashEscrowOrchestrator that owns the cash-mirror + audit-log fan-out. Inject DeliveryBoyCashSessionService via constructor. Do NOT do this for V1 LOCAL — risk of regression > benefit.",
+        "owner_visible": false,
+        "blocks_v1_ship": false
+      },
+      {
+        "id": "RED-FN-03",
+        "severity": "P2",
+        "scope": "HTML-masquerade chronic pattern (re-confirmed)",
+        "issue": "T2-ADMIN cross_cutting flagged: wrong-prefix /admin/observability/outbox returns 200 text/html (SPA catchall), /api/admin/setting returns 200 text/html — Laravel route catchall serves SPA shell for any unmatched path. Programmatic API consumers (curl, Postman, monitoring) get 200 HTML instead of 404 JSON.",
+        "recommendation": "BACKLOG V1.0.X UX-05 — add an /api/* fallthrough route in routes/api.php returning HTTP 404 JSON. Documented in MEMORY.md feedback_silent_html_masquerade.md (project decision: chronic pattern, not blocking V1).",
+        "owner_visible": false,
+        "blocks_v1_ship": false
+      }
+    ],
+
+    "confirmed_clean": [
+      "S-KIO-01 Idle screen 100% LIGHT MODE — both technical (localStorage='light', dataset='light', body bg rgb(255,255,255)) AND visual (Le Cayenne logo + Tap-to-start CTA + clean orange gradient) — owner's dark-mode concern fully resolved.",
+      "S-KIO-02 Catalogue 9 categories Le Cayenne all present (Sandwich Cayenne, Tacos, Bols Gourmands, Sandwich Classique, Burger, Galette, Frites, Boissons, Desserts), 8 product tiles visible with €-prices.",
+      "S-KIO-05 Cart page FR i18n strict — all labels translated (VOTRE PANIER, 0 article, Votre panier est vide, etc.).",
+      "S-POS-01 Login page French clean — Bon Retour / Email / Mot De Passe / Connexion / Se Souvenir De Moi all FR.",
+      "S-POS-02 POS Caisse interface loaded — French labels (À encaisser, Suivi commandes, Écran client, Appliquer une réduction fidélité, Ouvrir tiroir), 2 pre-existing CDS open #4 #7 documented.",
+      "S-POS-03/04/05 db-probe attestation — Cayenne family 10 sauces SANS fromagère, Bowl 41 EXACTLY 2 live sauces + supplement_bol gratine-step removed, WizardCayenneAndBolsCorrectionsSeeder correctly applied.",
+      "S-POS-11 frozen-zone sentinel covers public/js/pos-wizard.js + public/css/pos-wizard.css.",
+      "S-KDS-01 board CTA height 52px verified, 0 raw labels in cards, contrast ratios 6.37–14.68 (all WCAG AA+, queue_number=14.52 AAA).",
+      "S-KDS-02 bump API 202 ACK, KitchenReleaseRule whitelist enforces ACCEPT→PREPARING→PREPARED.",
+      "S-KDS-04 hostile recall correctly refuses non-recallable status (404 ORDER_NOT_FOUND).",
+      "S-OSS-01 alias /order-status-screen 200 OK serves clean 2-col TV wall — FIFO N°A0001/A0002/A0040/A0078 preparing + N°A0035 ready, brand colors #B0004D + #1AB759, 56px TV-readable tokens.",
+      "S-OSS-02/03 wakelock + poll cadence wired (PreparingAndReadyComponent.vue:201-213 + visibilitychange listener :145-156).",
+      "S-ADM-01 Dashboard 34 sidebar links FR (Tableau De Bord, POS, Catalogue, Vue Caisse Unifiée, Écran Cuisine, etc.) + KPIs 852,50€ ventes / 10,66€ ticket moyen.",
+      "S-ADM-02 Catalogue 45 PRODUITS / 11 catégories / 45 actifs / 0 indisponibles — BranchScope admin sees all (items table no branch_id by design).",
+      "S-ADM-05 Cash Overview Vue Unifiée — GRAND TOTAL 696,00€ + ESPÈCES 696€ + Réconciliation Fond ouverture 60,00€ + Espèces attendues 696€ + écart Limit.",
+      "S-ADM-06 Branch Manager permission gate enforced — /admin/settings 403 redirect + UI sidebar reduced.",
+      "Cross-cutting observability_outbox_heal — Pipeline outbox & événements page renders OK, queue:work UP, websockets:serve UP, 581 events 24h, /api/admin/observability/outbox 200 application/json.",
+      "S-LIV-01/02/03 — 4 heals verified empirically: zero /api/api/ double-prefix across all 3 traces, PII PENDING_CREATE_ cleaned, recordMovement hook fires (movement row + audit_trail action='cash.delivery.movement.recorded')."
+    ]
+  },
+
+  "wizard_kiosk_dispute_resolved": {
+    "investigation_method": "(1) Visual re-read of all 3 wizard screenshots; (2) cross-check against T2-POS db-probe findings at data layer; (3) source grep for wizard render gate.",
+    "kiosk_ui_attestation": "NOT ATTESTED this cycle — wizard never opened in screenshots (category page rendered instead). Re-test required with corrected locator strategy.",
+    "data_layer_attestation_via_db_probe_from_T2_POS": {
+      "sauce_count_cayenne_sandwich_item_22": 10,
+      "sauce_count_big_cayenne_item_36": 10,
+      "sauce_count_galette_cayenne_item_24": 10,
+      "sauce_count_tacos_item_26": 10,
+      "sauce_count_big_tacos_item_27": 10,
+      "sauce_list_canonical_no_cayenne_fromagere": ["Algérienne", "Andalouse", "Blanche", "Curry", "Hannibal", "Harissa", "Ketchup", "Mayonnaise", "Samouraï", "Spicy"],
+      "sauce_count_bowl_frites_poulet_marine_item_41": 2,
+      "sauce_list_bowl_canonical": ["Sauce fromagère maison", "Spicy"],
+      "soft_deleted_sauces_on_bowl_41_count": 9,
+      "supplement_bol_extras_for_bowl_41_includes_option_gratine": true,
+      "wizard_steps_bowl_no_gratine_standalone_step": "verified — profile_id=8 steps=[sauce, supplements, drink (optional)], NO gratine step"
+    },
+    "verdict": "DATA-LAYER MATCHES_SPEC + UI-LAYER UI_UNATTESTED. The owner-trial-test will witness the wizard live and close this gap empirically. No regression suspected.",
+    "owner_action_required": "During manual trial-test, open Sandwich Cayenne wizard from kiosk + verify 10 sauces sans 'Cayenne fromagère'. Open Bowl Frites Poulet Mariné wizard + verify exactly 2 sauces [Cayenne fromagère, Spicy] + Option Gratiné +2€ checkbox in supplements step (cart total reflects +2€ when checked)."
+  },
+
+  "i18n_raw_label_full_count": 5,
+  "i18n_raw_label_locations": {
+    "T2-LIVREUR_S-LIV-03_session_show": 5
+  },
+  "i18n_raw_label_inventory": [
+    "Label.Delivery_cash_session — DeliveryBoyCashSessionShowComponent.vue:8 (key: label.delivery_cash_session)",
+    "label.cash_session_closed_at — DeliveryBoyCashSessionShowComponent.vue (right column field label)",
+    "LABEL.DIRECTION — movements table header (key: label.direction)",
+    "LABEL.NOTES — movements table header (key: label.notes)",
+    "label.delivery_cash_mvt_order_collect — movements table type cell (movement type rendering)"
+  ],
+  "i18n_raw_label_heal_recipe": {
+    "files_to_edit": ["lang/fr/all.php", "lang/en/all.php"],
+    "fr_additions": {
+      "delivery_cash_session": "Caisse livreur",
+      "cash_session_closed_at": "Fermée le",
+      "direction": "Sens",
+      "notes": "Notes",
+      "delivery_cash_mvt_order_collect": "Encaissement commande livrée"
+    },
+    "en_additions": {
+      "delivery_cash_session": "Delivery boy cash session",
+      "cash_session_closed_at": "Closed at",
+      "direction": "Direction",
+      "notes": "Notes",
+      "delivery_cash_mvt_order_collect": "Delivered order cash collected"
+    },
+    "expected_loc_delta": 10,
+    "blocks_v1_ship": false,
+    "owner_visible_in_v1_workflow": "yes — Caisse Livreur module is part of V1 LOCAL Le Cayenne courier workflow"
+  },
+
+  "verdict": "NEEDS_HEAL",
+  "verdict_breakdown": {
+    "architectural_review": "GREEN — 0 violations of layer/cohesion/dependency/frozen/DDD across the 8 heal commits + 2 polish changes from 2026-05-28.",
+    "red_visual_overall": "YELLOW — 1 P1 confirmed (5 raw labels visible on Caisse Livreur show page), 1 P1 test-infra (wizard locator strategy), 2 P2 backlog (OrderService monolith growth + HTML-masquerade chronic pattern). UI-layer wizard sauce-list NOT attested this cycle (data-layer GREEN per T2-POS db-probe).",
+    "ship_status": "V1 LOCAL Le Cayenne — SHIP-CONDITIONAL on T2-LIV-P1-01 i18n heal (already queued as task #201). All other findings are V1.0.X BACKLOG or owner-trial-test follow-up. NF525 fiscal chain integrity preserved. Frozen-zone 0 LOC. No security/business invariant violation."
+  },
+
+  "owner_facing_summary": {
+    "what_is_OK_for_owner_trial": [
+      "Kiosk light mode 100% — owner can navigate without dark-mode visual concerns",
+      "POS Caisse loaded, payment terminal seeded (id=1 status=1 active), CARD payment path unblocked",
+      "KDS V2 board with 52px CTA, contrast ratios all AA+, zero raw labels",
+      "OSS TV wall via alias /order-status-screen — clean 2-col display with brand colors",
+      "Admin dashboard French clean — 34 sidebar links, KPIs render, BranchScope behaving correctly",
+      "Caisse Livreur module functional — list + show + 1 movement persisted via DELIVERED hook",
+      "5 axios double-prefix bugs healed across delivery + outbox + loyalty modules",
+      "Frozen-zone integrity verified — POS wizard + Kiosk wizard + PaymentComponent + NF525 services all untouched"
+    ],
+    "what_owner_should_verify_in_trial": [
+      "Open kiosk Sandwich Cayenne wizard tile → verify step 1 shows 4 viande tiles + step 2 shows EXACTLY 10 sauces SANS 'Cayenne fromagère'",
+      "Open kiosk Bowl Frites Poulet Mariné wizard tile → verify EXACTLY 2 sauces [Sauce fromagère maison + Spicy] + Option Gratiné +2€ in supplements step → check cart total when Gratiné selected",
+      "Complete a CASH payment + complete a CARD payment + complete a SPLIT payment (DB-probe attests schema supports it, UI-probe deferred to owner)",
+      "Refund order #111 (currently PAID with fiscal_sequence_no=36) → verify mirror order with parent_order_id=111 + fresh fiscal_sequence_no",
+      "Close current Z report → verify sequence_no=2 + audit_logs z_report.closed extends chain"
+    ],
+    "what_needs_minor_heal_before_ship": [
+      "T2-LIV-P1-01 — Add 5 i18n keys to lang/fr/all.php (Caisse Livreur show page raw labels: Label.Delivery_cash_session + label.cash_session_closed_at + label.direction + label.notes + label.delivery_cash_mvt_order_collect). Estimated 10 min. Queued as task #201."
+    ],
+    "what_is_backlog_post_v1": [
+      "Z report PDF branch-picker modal (V2 SaaS — currently NF525-correct as 422 for admin without pinned branch)",
+      "OrderService.php monolith refactor (extract CashEscrowOrchestrator)",
+      "/api/* catchall HTTP 404 fallthrough (HTML-masquerade pattern)",
+      "Kiosk E2E locator strategy improvement (data-test='kiosk-personnaliser-{id}')"
+    ]
+  }
+}

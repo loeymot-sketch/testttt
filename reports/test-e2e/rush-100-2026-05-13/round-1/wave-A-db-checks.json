@@ -1,0 +1,97 @@
+{
+  "run": "rush-100-2026-05-13",
+  "wave": "A",
+  "round": 1,
+  "generated_at": "2026-05-13T08:04:27.990Z",
+  "baseline_max_order_id": 1329,
+  "scenarios": [
+    {
+      "scenario": "S1",
+      "label": "Sandwich Cayenne + menu formule",
+      "item_id": 474,
+      "before_max_id": 1329,
+      "ui_order_number": null,
+      "ui_total": null,
+      "confirmation_reached": false,
+      "confirmation_surface": null,
+      "db_row": {
+        "error": "no_new_order",
+        "after_id": 1329
+      }
+    },
+    {
+      "scenario": "S2",
+      "label": "Galette Normale + sauce + supp",
+      "item_id": 475,
+      "before_max_id": 1329,
+      "ui_order_number": null,
+      "ui_total": null,
+      "confirmation_reached": false,
+      "confirmation_surface": null,
+      "db_row": {
+        "error": "no_new_order",
+        "after_id": 1329
+      }
+    },
+    {
+      "scenario": "S5",
+      "label": "Tacos 1v 8.50",
+      "item_id": 478,
+      "before_max_id": 1329,
+      "ui_order_number": "#A0007",
+      "ui_total": "€11,50",
+      "confirmation_reached": true,
+      "confirmation_surface": "url-match",
+      "db_row": {
+        "id": 1330,
+        "fiscal_sequence_no": 295,
+        "total": 11.5,
+        "order_status": null,
+        "payment_status": 5,
+        "order_type": 10,
+        "source": "5",
+        "item_count": 1,
+        "has_composition_snapshot": "all",
+        "created_at": "2026-05-13 10:03:28",
+        "token": ""
+      }
+    },
+    {
+      "scenario": "S7",
+      "label": "Bol Curry 4-step compose",
+      "item_id": 480,
+      "before_max_id": 1330,
+      "ui_order_number": null,
+      "ui_total": null,
+      "confirmation_reached": false,
+      "confirmation_surface": null,
+      "db_row": {
+        "error": "no_new_order",
+        "after_id": 1330
+      }
+    },
+    {
+      "scenario": "S9",
+      "label": "Petite Frites + supp",
+      "item_id": 485,
+      "before_max_id": 1330,
+      "ui_order_number": "#A0008",
+      "ui_total": "€2,50",
+      "confirmation_reached": true,
+      "confirmation_surface": "url-match",
+      "db_row": {
+        "id": 1331,
+        "fiscal_sequence_no": 296,
+        "total": 2.5,
+        "order_status": null,
+        "payment_status": 5,
+        "order_type": 10,
+        "source": "5",
+        "item_count": 1,
+        "has_composition_snapshot": "all",
+        "created_at": "2026-05-13 10:04:21",
+        "token": ""
+      }
+    }
+  ]
+}

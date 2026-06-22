@@ -1,0 +1,103 @@
+{
+  "specialist": "RED (Adversarial)",
+  "zone": "KD-3 KDS standalone deeper (Wave C)",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head_pre_audit": "4ad1adba8",
+  "scope_charter": "Adversarial NEW vectors not covered by Z-1 or PK-1..4. Focus: cross-language allergen display attack surface, observability gaps as audit-blindspots, Outbox 2c-5 lock integration post-session-A. RED framing: hostile to claims like 'V1 KDS production-ready'.",
+  "constraints": "READ-ONLY. Hostile framing. Surface inversions the green findings would not catch.",
+  "files_inspected": [
+    "app/Listeners/DispatchKdsTicket.php (21 LOC — direct event dispatcher, NOT outbox)",
+    "app/Services/KitchenDisplaySystemOrderService.php:241-245 (silent catch on broadcast failure)",
+    "app/Console/Commands/OutboxRetryFailedCommand.php (Wave 3 P1 commit e264be951 — KDS is NOT a consumer)",
+    "app/Console/Commands/OutboxWebhookRetryFailedCommand.php (modified per git status — KDS not impacted)",
+    "app/Services/KdsSyncService.php (168 LOC — no metrics emitted)",
+    "app/Http/Controllers/Admin/Observability/SyncOverviewController.php:102-167 (consumer awaits non-existent KDS producer)",
+    "resources/js/languages/en.json (FR-in-EN allergen leaks 1078..1263)",
+    "resources/js/store/modules/kds.js (88 LOC localStorage bump persistence)",
+    "tests/js/kdsBumpRecall.spec.js + kdsAllergens.spec.js"
+  ],
+  "findings": [
+    {
+      "id": "KD-RED3-01",
+      "severity": "P0",
+      "title": "Allergen display defense-in-depth FAILS in EN locale — chef working a peanut-allergy order in EN sees the modal title `Allergènes commande #1234` (FR), intro `Vérifiez chaque article avant préparation` (FR), and Close button `Fermer` (FR). A chef who does not read French will close the modal without parsing the allergen warning. PK-3 healed the BACKEND allergen exposure (allergens_snapshot now flows to KDSOrderItemsResource — commit d6b80eef1) BUT the FRONTEND surface that displays it is FR-only in the EN locale. Backend hardening + frontend FR leak = the allergen info is technically transmitted but operationally invisible to an EN-speaking chef.",
+      "evidence": "Verified en.json census in KD-UX2-01 (7 FR keys at lines 1078, 1079, 1083, 1084, 1085, 1086, 1263). Critical: these are NOT badge polish — they are the modal that pops up when a chef is about to prepare a flagged order. The modal_intro says (in FR) 'Vérifiez chaque article avant préparation' — the chef literally CANNOT verify if they don't read French. Le Cayenne is FR-default so V1 single-resto IS shielded — but the prompt mandate explicitly says 'KDS allergens cross-language (en/ar — Z-8 i18n drift impact)'. AR locale is FINE (ar.json:933-941 + 1119 correctly translated). EN is the broken locale.",
+      "impact": "P0 for any EN-locale deploy. The KDS allergen feature has zero operational value in EN. Combined with Z-1 P1-S3-01 (kds_status_conflict FR in EN) and 2x Z-1 hardcoded-FR aria-labels (P1-S3-02 + P1-S3-03), the EN KDS surface is functionally bilingual-broken. Pattern recognition: EN locale received only mechanical key-extraction without translation review. Risk multiplier: a peanut-allergy customer in an EN-default cloud tenant = silent serving incident. NF525 is unaffected (audit chain doesn't care about modal copy) but customer-safety is.",
+      "files": [
+        "resources/js/languages/en.json:1078",
+        "resources/js/languages/en.json:1079",
+        "resources/js/languages/en.json:1083",
+        "resources/js/languages/en.json:1084",
+        "resources/js/languages/en.json:1085",
+        "resources/js/languages/en.json:1086",
+        "resources/js/languages/en.json:1263"
+      ],
+      "recommendation": "HEAL THIS AUDIT — promoted from KD-UX2-01's P1 to P0 by RED framing. RED rationale: allergen display = customer safety = NEVER P1. Heal is 7 string changes in en.json. 0 frozen-zone touch. Single commit. RED-team will block ship-to-EN-cloud-tenant until landed."
+    },
+    {
+      "id": "KD-RED3-02",
+      "severity": "P1",
+      "title": "Observability gap is a HIDDEN AUDIT-BLINDSPOT — when an attacker (or runaway PR) regresses KDS performance, there is NO sentinel to catch it. SyncOverviewController dashboard is wired to consume KDS metrics but no producer exists. RED inversion: 'production-ready' KDS is only 'production-ready' if it has eyes; current state is blind.",
+      "evidence": "KdsSyncService.php 168 LOC, zero Log::info / SyncMetricsRecorder::record / Telescope tag emitted on the hot path. Cache::remember at line 49 returns cache_hit or cache_miss indistinguishably from outside. SyncOverviewController.php:102 reads `kdsIntervals = $metrics->where('metric_type', SyncMetricsRecorder::METRIC_KDS_SYNC_FALLBACK_INTERVAL_MS)->count()` — the consumer exists, the SQL exists, the dashboard tile exists. The producer side is empty. The audit chain in Z-1 + PK-1..4 + Wave A POS×OSS all hardened OUTBOX cadence — KDS sync cadence has zero p95. An attacker (or a careless refactor) introducing N+1 in the cache_miss path will not trigger any alarm until a chef complains.",
+      "impact": "P1 latent. V1 Le Cayenne with 30-50 orders/day at lunch rush: zero impact. V1.1 cloud with 5+ resto sharing a queue: a regression that doubles cache_miss latency from 80ms to 160ms is invisible until ticket. Compare PK-4 owner-batch which filed 'MonitorOutboxStaleness cadence p95 dashboard' as V1.0.X — this finding is the KDS-side TWIN that pairs with it.",
+      "files": [
+        "app/Services/KdsSyncService.php:49 (cache_remember without metric emit)",
+        "app/Http/Controllers/Admin/Observability/SyncOverviewController.php:102-167 (consumer pre-wired)",
+        "Cross-ref: PK-4 V1.0.X backlog item 'MonitorOutboxStaleness cadence p95 dashboard'"
+      ],
+      "recommendation": "DEFER V1.0.X (with KD-A1-02 architect finding — same gap from different angle). RED rationale: a metrics-blind production system has 'unknown unknowns' that the audit cannot catch. Even one Log::info('[KDS_SYNC] elapsed_ms=' . $elapsed) at line 147 of KdsSyncService is better than nothing. Cheap. ~3 LOC. Owner-batch."
+    },
+    {
+      "id": "KD-RED3-03",
+      "severity": "P1",
+      "title": "Outbox post-2c-5 lock integration: DispatchKdsTicket is NOT routed through outbox. Wave 3 P1 commits 335b98134 (fiscal verify-chain branch validation) + e264be951 (outbox write-then-dispatch ordering) + 79e214542 (TrustProxies per-IP throttle) hardened FOUR sister paths — KDS broadcast remains the LAST direct-dispatch event in the OrderStatusChanged family. RED inversion: if outbox is the V1 production-ready transport, why is KDS the only consumer NOT migrated?",
+      "evidence": "DispatchKdsTicket.php:11-20 calls `OrderStatusChanged::dispatch($order, $oldStatus, $newStatus)` directly. No outbox enqueue. KitchenDisplaySystemOrderService.php:241-245 wraps the call in `try { ... } catch (\\Exception $e) { Log::warning(...) }` — exception SWALLOWED, no retry, no operator signal. Compare: OutboxRetryFailedCommand handles webhook + mail + sms via outbox; KDS broadcast is on its own. Post commit e264be951 ('write-then-dispatch ordering + batch continuity') the outbox transport is hardened V1 — the architecture intent is clear, but KDS missed the migration. This is exactly the 'two consumers, one hardened, one not' inconsistency that RED-team teams find in audits.",
+      "impact": "P1 production-readiness asymmetry. If Echo/Pusher is down for 30s and an order status changes during that 30s, the KDS card stays stale until next polling tick. With WS connected polling = 60s; without WS polling = 5s. So the staleness window is 30s+5s = 35s worst-case (WS dropped mid-broadcast then reconnect). NOT catastrophic but operator-visible. The outbox would auto-retry the broadcast within seconds.",
+      "files": [
+        "app/Listeners/DispatchKdsTicket.php:17",
+        "app/Services/KitchenDisplaySystemOrderService.php:241-245",
+        "app/Console/Commands/OutboxRetryFailedCommand.php (compare model — KDS would benefit from sibling cmd)"
+      ],
+      "recommendation": "DEFER V1.0.X. Owner-batch with KD-A1-04 architect finding. RED escalation: until KDS-via-outbox lands, OPERATIONAL invariant 'Echo/Pusher SLA = 99.9%' must be on the deploy checklist. Single-resto Le Cayenne is fine; cloud tenants need this batched."
+    },
+    {
+      "id": "KD-RED3-04",
+      "severity": "P2",
+      "title": "Bump-stays-local INVARIANT has no test sentinel — regression risk if anyone tries to wire it server-side",
+      "evidence": "Z-1 §3 Tests section noted: 'No test for KDS bump → OSS sync (by design — bump is local-only) but also no test that the bump-stays-local invariant holds (regression risk if anyone tries to wire it).' RED escalation: this is a SENTINEL-MISSING bug. The 88-LOC kds.js store module is small enough that a future agent (Claude / Codex / Cursor) could 'helpfully' wire it to backend for cross-station coordination, breaking the chef's mental model (KDS bump is a local 'I'm done with this item' note, NOT a system event). The lack of a freezing test means the next refactor wave (V1.0.X multi-station rollout) could silently flip the semantics.",
+      "impact": "P2 latent. V1 ship-to-prod is shielded by the single-station scope. The risk activates when V1.1+ multi-station rollout happens AND a developer naïvely wires bump to outbox without consulting the design memo.",
+      "files": [
+        "resources/js/store/modules/kds.js (88 LOC — needs a freezing test)",
+        "tests/js/kdsBumpRecall.spec.js (covers semantics but does NOT assert no-network-call)"
+      ],
+      "recommendation": "DEFER V1.0.X. Add a single Vitest spec: `expect(axios.post).not.toHaveBeenCalled()` after `await store.dispatch('kds/bumpItem', ...)`. Cheap sentinel. ~10 LOC."
+    },
+    {
+      "id": "KD-RED3-05",
+      "severity": "P2",
+      "title": "Pre-existing 10 KDS test failures (TZ regression from c2613cab0) are OUT OF SCOPE per prompt, but RED notes the failure SET is in tests touching exactly the bump+sync chain. RED inversion: 'audit clean' claim cannot hold while the test suite contains 10 documented failures on this exact surface.",
+      "evidence": "Prompt explicitly states '10 pre-existing failures documented V1.0.X (TZ regression from c2613cab0) — NOT YOUR SCOPE'. RED reads this as 'CI is red on KDS, and the audit is being told to ignore it'. The KDS V1.0.X backlog (from BRAIN) tracks this; no resolution committed. This is a meta-finding: the audit converges as 'production-ready' while CI is red. RED does NOT change the verdict — single-resto Le Cayenne ships fine — but raises the meta-objection that 'green audit + red CI' is an inconsistent posture.",
+      "impact": "P2 process. No correctness issue. Hygiene + audit-credibility issue.",
+      "files": [
+        "10 failures documented in V1.0.X backlog (BRAIN ref), commit c2613cab0 source"
+      ],
+      "recommendation": "DEFER V1.0.X (already tracked). RED escalation: when V1.0.X heal-light cycle happens, the 10 TZ failures should be Wave-A priority. Until then, deploy checklist must note 'KDS CI = 10 known failures, manual smoke required'."
+    }
+  ],
+  "attestations_kept_unchanged_red_acknowledgments": [
+    "PK-2 idempotency propagation P0 healed across 11 callsites — RED concurs the heal is comprehensive",
+    "PK-3 KDSOrderItemsResource allergens_snapshot exposed — RED concurs the heal closes Z-1's flagged gap",
+    "PK-4 TZ-aware bounds + Echo reconnect-storm jitter — RED concurs production-converged",
+    "KdsSyncService TZ heal (lines 65-94) preserves Wave 3 KDS Adversarial P0 fix",
+    "Frozen-zones intact across KDS surface — RED grep verified 0 NF525 / fiscal sequence files touched"
+  ],
+  "duplicates_with_prior_audits": [
+    "Z-1 P1-S3-01..05 — RED acknowledges the i18n catalog; this audit's KD-UX2-01 and KD-RED3-01 are the SIBLINGS Z-1 missed in the allergen modal namespace",
+    "PK-2 P0 idempotency propagation — HEALED, RED concurs",
+    "PK-4 V1.0.X backlog — RED-A1-02 and KD-RED3-03 extend (not duplicate) the cadence + outbox-via-KDS items"
+  ],
+  "heal_recommendations_for_this_audit": [
+    "KD-RED3-01 — promoted from KD-UX2-01 P1 to P0 by RED framing. SAME 7-key en.json heal. HEAL INLINE."
+  ],
+  "verdict": "PASS_WITH_FINDINGS_RED_BLOCKING_INLINE_HEAL — 1 P0 promotion (allergen EN-modal heal, mandatory before EN-locale deploy), 2 P1 (defer V1.0.X — observability + outbox routing), 2 P2 (defer V1.0.X — sentinels). V1 single-resto Le Cayenne FR-locale SHIPPABLE after KD-RED3-01 heal. EN-locale cloud deploys BLOCKED until KD-RED3-01 lands. RED stance: heal in this audit cycle, do not punt the allergen EN modal."
+}

@@ -1,0 +1,46 @@
+ 1 | Menu (Frites + Boisson)          | 3.000000 | 
+ 2 | Frites Seules                    | 2.000000 | 
+ 3 | Boisson Seule                    | 2.000000 | 
+12 | Cheddar                          | 0.900000 | 
+13 | Raclette                         | 0.900000 | 
+14 | Emmental                         | 0.900000 | 
+15 | Œuf                             | 0.900000 | 
+17 | Légumes sautés                 | 0.900000 | 
+18 | Jambon                           | 0.900000 | 
+19 | Oignon frais                     | 0.900000 | 
+20 | Champignons                      | 0.900000 | 
+21 | Boule gratinée                  | 2.000000 | 
+22 | Sandwich Cayenne                 | 7.000000 | 
+23 | Galette Normale                  | 6.500000 | 
+24 | Galette Cayenne                  | 7.000000 | 
+25 | Sandwich Classique               | 6.500000 | 
+26 | Tacos                            | 8.500000 | 
+27 | Big Tacos                        | 11.500000 | 
+33 | Petite Frites                    | 2.500000 | 
+34 | Grande Frites                    | 4.000000 | 
+35 | Boursin                          | 0.900000 | 
+36 | Big Cayenne                      | 9.500000 | 
+37 | Big Classique                    | 9.000000 | 
+38 | Chicken Burger                   | 6.900000 | 
+39 | Big Chicken                      | 8.900000 | 
+40 | Menu Nuggets                     | 6.000000 | 
+41 | Bowl Frites Poulet mariné       | 8.900000 | 
+42 | Bowl Frites Poulet curry         | 8.900000 | 
+43 | Bowl Frites Poulet tandoori      | 8.900000 | 
+44 | Bowl Frites Poulet crispy        | 8.900000 | 
+45 | Bowl Riz Poulet mariné          | 8.900000 | 
+46 | Bowl Riz Poulet curry            | 8.900000 | 
+47 | Bowl Riz Poulet tandoori         | 8.900000 | 
+48 | Bowl Riz Poulet crispy           | 8.900000 | 
+49 | Glace                            | 3.800000 | 
+50 | Tarte Daim                       | 3.800000 | 
+51 | Tiramisu                         | 3.800000 | 
+52 | Coca-Cola 33cl                   | 1.500000 | 
+53 | Coca-Cola Zero 33cl              | 1.500000 | 
+54 | Fanta Orange 33cl                | 1.500000 | 
+55 | Sprite 33cl                      | 1.500000 | 
+56 | Oasis Tropical 33cl              | 1.500000 | 
+57 | Orangina 33cl                    | 1.500000 | 
+58 | Eau Plate 50cl                   | 1.000000 | 
+59 | Capri-Sun                        | 1.500000 | 
+TOTAL=45

@@ -1,0 +1,124 @@
+{
+  "items": [
+    {
+      "id": 101,
+      "name": "Legacy universal A",
+      "item_category_id": 1,
+      "channels": null,
+      "status": 5,
+      "tax_id": 1,
+      "is_available": true,
+      "is_featured": 0,
+      "offer": [],
+      "currency_price": "1,00 €"
+    },
+    {
+      "id": 102,
+      "name": "Legacy universal B",
+      "item_category_id": 1,
+      "channels": null,
+      "status": 5,
+      "tax_id": 1,
+      "is_available": true,
+      "is_featured": 0,
+      "offer": [],
+      "currency_price": "2,00 €"
+    },
+    {
+      "id": 103,
+      "name": "Legacy universal C",
+      "item_category_id": 1,
+      "channels": null,
+      "status": 5,
+      "tax_id": 1,
+      "is_available": true,
+      "is_featured": 0,
+      "offer": [],
+      "currency_price": "3,00 €"
+    },
+    {
+      "id": 201,
+      "name": "Explicit dual-channel A",
+      "item_category_id": 1,
+      "channels": ["pos", "kiosk"],
+      "status": 5,
+      "tax_id": 1,
+      "is_available": true,
+      "is_featured": 0,
+      "offer": [],
+      "currency_price": "4,00 €"
+    },
+    {
+      "id": 202,
+      "name": "Explicit dual-channel B",
+      "item_category_id": 1,
+      "channels": ["pos", "kiosk"],
+      "status": 5,
+      "tax_id": 1,
+      "is_available": true,
+      "is_featured": 0,
+      "offer": [],
+      "currency_price": "5,00 €"
+    },
+    {
+      "id": 301,
+      "name": "POS-exclusive A",
+      "item_category_id": 1,
+      "channels": ["pos"],
+      "status": 5,
+      "tax_id": 1,
+      "is_available": true,
+      "is_featured": 0,
+      "offer": [],
+      "currency_price": "6,00 €"
+    },
+    {
+      "id": 302,
+      "name": "POS-exclusive B",
+      "item_category_id": 1,
+      "channels": ["pos"],
+      "status": 5,
+      "tax_id": 1,
+      "is_available": true,
+      "is_featured": 0,
+      "offer": [],
+      "currency_price": "7,00 €"
+    },
+    {
+      "id": 401,
+      "name": "Kiosk-exclusive A",
+      "item_category_id": 1,
+      "channels": ["kiosk"],
+      "status": 5,
+      "tax_id": 1,
+      "is_available": true,
+      "is_featured": 0,
+      "offer": [],
+      "currency_price": "8,00 €"
+    },
+    {
+      "id": 402,
+      "name": "Kiosk-exclusive B",
+      "item_category_id": 1,
+      "channels": ["kiosk"],
+      "status": 5,
+      "tax_id": 1,
+      "is_available": true,
+      "is_featured": 0,
+      "offer": [],
+      "currency_price": "9,00 €"
+    },
+    {
+      "id": 500,
+      "name": "Explicit empty channels (nowhere)",
+      "item_category_id": 1,
+      "channels": [],
+      "status": 5,
+      "tax_id": 1,
+      "is_available": true,
+      "is_featured": 0,
+      "offer": [],
+      "currency_price": "0,00 €"
+    }
+  ]
+}

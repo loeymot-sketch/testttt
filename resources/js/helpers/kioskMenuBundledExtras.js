@@ -26,6 +26,15 @@ function isSauce(extra) {
 }
 
 export function kioskIsBundledFritesMenuUpgradeExtra(extra, item) {
+  // V3.6 (2026-05-10) Owner gate : group_label='frites_style' (Cheddar fondu /
+  // Cheddar+Oignons) doit ÊTRE détecté comme upgrade frites MEME si l'item n'a
+  // pas has_menu (les items Frites Moyenne/Grande/Seules/Menu eux-mêmes
+  // exposent ce upgrade directement). Cela exclut ces extras du step
+  // Supplements (sinon double affichage avec KioskStepFritesStyle).
+  const glFast = String(extra?.group_label || '').toLowerCase();
+  if (glFast === 'frites_style') {
+    return true;
+  }
   if (!item?.has_menu) return false;
   const price = parseFloat(extra?.convert_price || extra?.price || 0);
   if (!(price > 0)) return false;

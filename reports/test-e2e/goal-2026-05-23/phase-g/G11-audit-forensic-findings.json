@@ -1,0 +1,171 @@
+{
+  "agent": "G.11 Audit log forensic walk",
+  "timestamp_utc": "2026-05-23T22:58:00Z",
+  "scope": "NF525 inspector simulation DEEP — manual + automated end-to-end HMAC chain walk of audit_logs + composition_snapshot immutability + fiscal_sequence_no continuity",
+
+  "G_11_1_state_capture": {
+    "total_audit_logs_rows": 67,
+    "genesis_row": {
+      "id": 1,
+      "prev_hash": null,
+      "current_hash": "945f14b4a101a29ff0fc4807a1096bdade899981a6e61b1ce6aa829fb5bd8e4f",
+      "branch_id": 1,
+      "action": "cash.session.opened"
+    },
+    "tail_row": {
+      "id": 67,
+      "prev_hash": "167a6e4583be7257df0ea8f041e7952632cac7e9cbb1b3b2ad05b6b1134d0922",
+      "current_hash": "4d92d827cfc05f3da0f2bca60540cfd5c9750845500cc4cefa6a97915f8dd069",
+      "branch_id": 1,
+      "action": "order.refund.counter_entry"
+    },
+    "branch_distribution": [{"branch_id": 1, "count": 67}],
+    "active_branches": 1,
+    "comment": "Single-tenant Le Cayenne V1 LOCAL — only branch_id=1 chain exists. Genesis row's prev_hash=NULL is legitimate (only one NULL prev_hash in entire table, and it's id=1 = MIN(id) for branch 1)."
+  },
+
+  "G_11_2_sample_walk": {
+    "method": "Full end-to-end walk of ALL 67 rows via PHP tinker, recomputing HMAC-SHA256 from (prev_hash || canonical_json(action,payload)) under fiscal.audit_secret",
+    "rows_walked": 67,
+    "first_10_walked": true,
+    "last_10_walked": true,
+    "random_20_walked": true,
+    "link_errors": 0,
+    "hmac_errors": 0,
+    "broken_rows": [],
+    "sample_walk_20_rows_passed": 67,
+    "code_static_review": {
+      "AuditLogService_FROZEN": "app/Services/Fiscal/AuditLogService.php:30 — verifyChain() walks ascending by id, normalises trim(), uses hash_equals() for constant-time compare. computeHash() uses hash_hmac('sha256', prev_hash||canonical, secret). canonicalise() sorts keys recursively + JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE for SQLite/MySQL parity.",
+      "FiscalChainValidator_FROZEN": "app/Services/Fiscal/FiscalChainValidator.php:24 — bounded tail check (default window 500), used inside ZReportService::open() under z_report_b{N} cache lock to avoid deadlock.",
+      "algorithm_confirmed": "SHA-256 HMAC, per-branch secret from env FISCAL_AUDIT_SECRET_BRANCH_{id} or config('fiscal.audit_secret') with strict production safeguards (sentinel rejection + min_secret_length 32)"
+    }
+  },
+
+  "G_11_3_branch_isolation": {
+    "branch_isolation_verified": true,
+    "branches_with_audit_chain": [1],
+    "branches_with_audit_chain_count": 1,
+    "verifyChain_implementation": "Per-branch ORDER BY id ASC walk WHERE branch_id = ?. Each chain is internally self-referential — branch=1's prev_hash NEVER references branch=2's current_hash. Verified at code level: AuditLogService.php:201-203 (where('branch_id', $branchId))",
+    "lastHashFor_implementation": "AuditLogService.php:245-254 — query orderByDesc('id')->where('branch_id', $branchId)->value('current_hash'). Strict per-branch tail.",
+    "lock_isolation": "Cache::lock('audit_chain_b{N}') is per-branch — two branches can write in parallel without contention",
+    "UNIQUE_index_per_branch": "migration 2026_04_22_100000_add_unique_chain_index_to_audit_logs.php creates UNIQUE(branch_id, prev_hash) — per-branch fork detection at DB level"
+  },
+
+  "G_11_4_full_verify_output": {
+    "command": "php artisan fiscal:verify-chain --all",
+    "output_path": "reports/test-e2e/goal-2026-05-23/phase-g/G11-chain-verify-full.txt",
+    "stdout_verbatim": "  + branch=1 CHAIN OK\nSWEEP COMPLETE — CHAIN OK on every active branch (1 total)",
+    "exit_code": 0,
+    "chain_verify_full_output": "CHAIN OK on every active branch (1 total)",
+    "covers_both_chains": "audit_logs (AuditLogService::verifyChain) AND z_reports (ZReportService::verifyChain) per Wave 3b FISCAL-ADV3B-02 dual-chain heal"
+  },
+
+  "G_11_5_inspector_probes": {
+    "probe_1_orphan_rows": {
+      "description": "Find rows with prev_hash=NULL that are NOT the genesis (smallest id) for their branch",
+      "rows_with_null_prev_hash_total": 1,
+      "legitimate_genesis_count": 1,
+      "orphan_count": 0,
+      "orphan_ids": [],
+      "verdict": "CLEAN — exactly 1 row has prev_hash=NULL and it is the legitimate genesis (id=1, branch=1)"
+    },
+    "probe_2_broken_hmac_rows": {
+      "description": "Find rows where current_hash != HMAC-SHA256(prev_hash || canonical(action,payload), secret)",
+      "broken_hmac_rows_found": 0,
+      "method": "Recomputed HMAC for ALL 67 rows via AuditLogService::computeHash and hash_equals against stored current_hash",
+      "verdict": "CLEAN — bit-identical match on every row"
+    },
+    "probe_3_delete_statements_in_code": {
+      "description": "Search app/ for any DELETE/TRUNCATE/->delete()/->forceDelete()/truncate() targeting audit_logs",
+      "delete_statements_in_code": 0,
+      "search_pattern_grep_audit_logs_delete": "Zero matches in app/",
+      "model_level_guard": "app/Models/AuditLog.php:42-58 — booted() hooks throw RuntimeException on updating + deleting events",
+      "db_level_guard_MySQL_active": "Triggers `audit_logs_no_update` AND `audit_logs_no_delete` BOTH installed (verified via SHOW TRIGGERS): SIGNAL SQLSTATE '45000' on UPDATE or DELETE",
+      "verdict": "CLEAN — triple defense (no code path + Eloquent model guard + DB triggers)"
+    },
+    "probe_4_update_current_hash_in_code": {
+      "description": "Search for any UPDATE statement mutating audit_logs.current_hash post-creation",
+      "update_current_hash_in_code": 0,
+      "current_hash_references_audit": 5,
+      "current_hash_audit_locations": [
+        "app/Models/AuditLog.php:28 — fillable array (write at INSERT only)",
+        "app/Services/Fiscal/AuditLogService.php:156 — set during create() at INSERT",
+        "app/Services/Fiscal/AuditLogService.php:222 — READ during verifyChain (constant-time hash_equals)",
+        "app/Services/Fiscal/AuditLogService.php:251 — READ via ->value() in lastHashFor",
+        "app/Services/Fiscal/FiscalChainValidator.php:168 — READ during verifyAuditChainTail"
+      ],
+      "current_hash_references_non_audit": [
+        "app/Http/Resources/OrderDetailsResource.php:108-112 — READ-only for receipt UI hash prefix display"
+      ],
+      "verdict": "CLEAN — current_hash is set exactly once at AuditLog::create() and never reassigned"
+    }
+  },
+
+  "G_11_6_composition_snapshot_forensic": {
+    "composition_snapshot_update_count": 0,
+    "all_references": "37 lines across app/ (incl. fillable, casts, json_encode at create, READ via decoders, Resource toArray)",
+    "write_sites": [
+      "app/Services/OrderService.php:475 — json_encode at INSERT",
+      "app/Services/OrderService.php:894 — json_encode at INSERT",
+      "app/Services/OrderService.php:1358 — json_encode at INSERT",
+      "app/Services/FrontendOrderService.php:442 — json_encode at INSERT",
+      "app/Services/Pricing/PricingService.php:291 — json_encode at INSERT",
+      "app/Services/Order/RefundWithCounterEntryService.php:146 — COPY of source item's composition_snapshot into NEW refund row (preserves immutability of source)"
+    ],
+    "mutation_sites": "ZERO — no ->update(), ->save(), ->fill(), UPDATE SQL, or forceFill touching composition_snapshot",
+    "sample_10_orders_verified": {
+      "method": "Read OrderItem rows ordered DESC by id, validated composition_snapshot is non-empty array with expected schema keys",
+      "sample_count": 10,
+      "all_valid": true,
+      "schema_observed": ["lines", "addons", "extras", "captured_at", "schema_version"],
+      "schema_version_observed": 1
+    },
+    "cross_order_consistency_check": {
+      "orders_checked": 5,
+      "all_have_lines_array": true,
+      "all_schema_v": 1,
+      "matches_order_items_rows": true
+    },
+    "verdict": "CLEAN — composition_snapshot is INSERT-only by code construction, NF525 immutability invariant preserved"
+  },
+
+  "G_11_7_fiscal_sequence_continuity": {
+    "branch_id": 1,
+    "min_fiscal_sequence_no": 1,
+    "max_fiscal_sequence_no": 68,
+    "count_assigned": 63,
+    "expected_if_continuous": 68,
+    "fiscal_sequence_gaps_branch_1": [29, 30, 31, 32, 35],
+    "gap_count": 5,
+    "documented_reason": "B3.6 F3 INFO (PROJECT_BRAIN/Wave Q-4) — dev DB TRUNCATE residue + FreshOrderSeed.php retraction. Production guard FreshOrderSeed.php:21-24 BLOCKS this seeder in production environment (refuses to boot when APP_ENV=production).",
+    "production_implication": "ZERO. Gaps cannot occur in production because (a) seeder is environment-gated, (b) allocation is atomic via Cache::lock 5s + DB FOR UPDATE (FiscalSequenceService.php), (c) any alloc failure flags fiscal_alloc_error_at + retry cron without leaking sequence_no — no silent gap path exists in production code.",
+    "context_around_gaps": "Order id=96 (seq=28, 2026-05-21T00:58) jumps directly to id=272 (seq=33, 2026-05-21T07:29) — confirms TRUNCATE residue between dev sessions, not a runtime allocation bug",
+    "verdict": "ACCEPTABLE — gaps are dev-environment artifacts, fully documented, production-blocked at boot"
+  },
+
+  "code_static_audit_summary": {
+    "audit_logs_immutability": "TRIPLE LAYER (model guard + DB trigger MySQL + UNIQUE chain index)",
+    "audit_logs_secrets": "Production-validated (FISCAL_AUDIT_SECRET_BRANCH_{id} env or config('fiscal.audit_secret'), min 32 chars in prod, dev sentinels rejected)",
+    "hmac_algorithm": "SHA-256 with constant-time hash_equals comparison",
+    "canonical_json": "Recursive ksort + JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE — deterministic across SQLite/MySQL/PHP 8.0+",
+    "concurrent_writer_defense": "Cache::lock per-branch 10s TTL + DB::transaction + UNIQUE(branch_id, prev_hash) index + retry-once-on-23000",
+    "composition_snapshot_immutability": "INSERT-only by code review (zero ->update / ->save / UPDATE SQL targeting field)",
+    "frozen_zone_status": "AuditLogService FROZEN per CLAUDE.md §7 — only read-only audit performed by this agent"
+  },
+
+  "inspector_probe_results": {
+    "orphan_rows_found": 0,
+    "broken_hmac_rows_found": 0,
+    "delete_statements_in_code": 0,
+    "update_current_hash_in_code": 0
+  },
+
+  "verdict": "GREEN",
+
+  "legal_risk": "ZERO. NF525 audit_logs HMAC chain is bit-identical across all 67 rows (manual recompute + automated fiscal:verify-chain --all both return CHAIN OK). Triple-layer immutability enforcement is intact (DB triggers + Eloquent model guard + zero code-path that mutates current_hash). composition_snapshot has zero mutation sites in 37 references — INSERT-only by code construction. fiscal_sequence_no gaps in dev DB (29-32, 35) are documented Wave Q-4 dev-seed TRUNCATE residue and PRODUCTION-BLOCKED by FreshOrderSeed.php:21-24 environment guard. Branch isolation verified: single-tenant chain (branch=1 only, no cross-branch HMAC references). Audit-grade inspector evidence: AuditLogService::verifyChain manually re-implemented in tinker yielded 0 link_errors and 0 hmac_errors over all 67 rows. An NF525 fiscal inspector would PASS this chain walk on every line of evidence: chain continuity, signature recompute, INSERT-only enforcement, per-branch secret derivation, canonical payload encoding determinism.",
+
+  "evidence_files": [
+    "reports/test-e2e/goal-2026-05-23/phase-g/G11-chain-verify-full.txt",
+    "reports/test-e2e/goal-2026-05-23/phase-g/G11-audit-forensic-findings.json"
+  ]
+}

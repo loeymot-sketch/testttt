@@ -23,13 +23,19 @@ class TableOrderController extends AdminController
     {
         parent::__construct();
         $this->orderService = $order;
+        // [abuse-heal 2026-06-20 W6 PHANTOM-GATE-TABLEORDER-01] The last entry named 'selectDeliveryBoy'
+        // — a PHANTOM method (it exists on OnlineOrderController, not here; clear copy-paste). Laravel
+        // binds ->only() middleware by the HANDLER METHOD NAME, so a name that isn't a real method gates
+        // nothing AND silently omits the real write handler `tokenCreate` (which then ran ungated: any
+        // admin-area user without permission:table-orders could overwrite an order's token, live 200).
+        // Exact sibling of the SalesReport 'overview' false-green class. Use the real handler name.
         $this->middleware(['permission:table-orders'])->only(
             'index',
             'show',
             'export',
             'changeStatus',
             'changePaymentStatus',
-            'selectDeliveryBoy'
+            'tokenCreate'
         );
     }
 
@@ -38,7 +44,7 @@ class TableOrderController extends AdminController
         try {
             return OrderResource::collection($this->orderService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -47,7 +53,7 @@ class TableOrderController extends AdminController
         try {
             return new OrderDetailsResource($this->orderService->show($order, false));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -56,7 +62,7 @@ class TableOrderController extends AdminController
         try {
             return Excel::download(new OrderExport($this->orderService, $request), 'Table-Order.xlsx');
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -65,7 +71,7 @@ class TableOrderController extends AdminController
         try {
             return new OrderDetailsResource($this->orderService->changeStatus($order, $request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -74,7 +80,7 @@ class TableOrderController extends AdminController
         try {
             return new OrderDetailsResource($this->orderService->changePaymentStatus($order, $request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -83,7 +89,7 @@ class TableOrderController extends AdminController
         try {
             return new OrderDetailsResource($this->orderService->tokenCreate($order, $request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

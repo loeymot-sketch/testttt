@@ -1,0 +1,212 @@
+[
+  {
+    "step": "01-idle",
+    "url": "http://localhost:8000/kiosk/idle",
+    "ts": 1779990181817,
+    "htmlClass": "",
+    "htmlData": {
+      "lang": "fr",
+      "dir": "ltr",
+      "data-kiosk-theme": "light",
+      "data-kiosk-visual-theme": "light",
+      "data-kiosk-contrast": "aa",
+      "data-kiosk-pmr": "false",
+      "data-kiosk-audio": "false",
+      "data-kiosk-audio-description": "false",
+      "data-kiosk-reduced-motion": "false"
+    },
+    "bodyClass": "",
+    "bodyBg": "rgb(255, 255, 255)",
+    "bodyColor": "rgb(110, 113, 145)",
+    "wrapperBg": "rgb(255, 251, 245)",
+    "wrapperColor": "rgb(15, 15, 15)",
+    "wrapperTag": "DIV",
+    "wrapperClass": "kiosk-app kiosk-theme--light",
+    "spotChecks": []
+  },
+  {
+    "step": "02-after-start-tap",
+    "url": "http://localhost:8000/kiosk/idle",
+    "ts": 1779990183488,
+    "htmlClass": "",
+    "htmlData": {
+      "lang": "fr",
+      "dir": "ltr",
+      "data-kiosk-theme": "light",
+      "data-kiosk-visual-theme": "light",
+      "data-kiosk-contrast": "aa",
+      "data-kiosk-pmr": "false",
+      "data-kiosk-audio": "false",
+      "data-kiosk-audio-description": "false",
+      "data-kiosk-reduced-motion": "false"
+    },
+    "bodyClass": "",
+    "bodyBg": "rgb(255, 255, 255)",
+    "bodyColor": "rgb(110, 113, 145)",
+    "wrapperBg": "rgb(255, 251, 245)",
+    "wrapperColor": "rgb(15, 15, 15)",
+    "wrapperTag": "DIV",
+    "wrapperClass": "kiosk-app kiosk-theme--light",
+    "spotChecks": []
+  },
+  {
+    "step": "03-catalog-land",
+    "url": "http://localhost:8000/kiosk/categories?cat=10",
+    "ts": 1779990185316,
+    "htmlClass": "",
+    "htmlData": {
+      "lang": "fr",
+      "dir": "ltr",
+      "data-kiosk-theme": "light",
+      "data-kiosk-visual-theme": "light",
+      "data-kiosk-contrast": "aa",
+      "data-kiosk-pmr": "false",
+      "data-kiosk-audio": "false",
+      "data-kiosk-audio-description": "false",
+      "data-kiosk-reduced-motion": "false"
+    },
+    "bodyClass": "",
+    "bodyBg": "rgb(255, 255, 255)",
+    "bodyColor": "rgb(110, 113, 145)",
+    "wrapperBg": "rgb(255, 251, 245)",
+    "wrapperColor": "rgb(15, 15, 15)",
+    "wrapperTag": "DIV",
+    "wrapperClass": "kiosk-app kiosk-theme--light",
+    "spotChecks": [
+      {
+        "tag": "MAIN",
+        "cls": "kiosk-product-zone",
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(15, 15, 15)"
+      }
+    ]
+  },
+  {
+    "step": "04-cayenne-category",
+    "url": "http://localhost:8000/kiosk/categories?cat=1",
+    "ts": 1779990192587,
+    "htmlClass": "",
+    "htmlData": {
+      "lang": "fr",
+      "dir": "ltr",
+      "data-kiosk-theme": "light",
+      "data-kiosk-visual-theme": "light",
+      "data-kiosk-contrast": "aa",
+      "data-kiosk-pmr": "false",
+      "data-kiosk-audio": "false",
+      "data-kiosk-audio-description": "false",
+      "data-kiosk-reduced-motion": "false"
+    },
+    "bodyClass": "",
+    "bodyBg": "rgb(255, 255, 255)",
+    "bodyColor": "rgb(110, 113, 145)",
+    "wrapperBg": "rgb(255, 251, 245)",
+    "wrapperColor": "rgb(15, 15, 15)",
+    "wrapperTag": "DIV",
+    "wrapperClass": "kiosk-app kiosk-theme--light",
+    "spotChecks": [
+      {
+        "tag": "MAIN",
+        "cls": "kiosk-product-zone",
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(15, 15, 15)"
+      }
+    ]
+  },
+  {
+    "step": "05-cayenne-wizard-step1",
+    "url": "http://localhost:8000/kiosk/categories?cat=1",
+    "ts": 1779990194739,
+    "htmlClass": "",
+    "htmlData": {
+      "lang": "fr",
+      "dir": "ltr",
+      "data-kiosk-theme": "light",
+      "data-kiosk-visual-theme": "light",
+      "data-kiosk-contrast": "aa",
+      "data-kiosk-pmr": "false",
+      "data-kiosk-audio": "false",
+      "data-kiosk-audio-description": "false",
+      "data-kiosk-reduced-motion": "false"
+    },
+    "bodyClass": "",
+    "bodyBg": "rgb(255, 255, 255)",
+    "bodyColor": "rgb(110, 113, 145)",
+    "wrapperBg": "rgb(255, 251, 245)",
+    "wrapperColor": "rgb(15, 15, 15)",
+    "wrapperTag": "DIV",
+    "wrapperClass": "kiosk-app kiosk-theme--light",
+    "spotChecks": [
+      {
+        "tag": "MAIN",
+        "cls": "kiosk-product-zone",
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(15, 15, 15)"
+      }
+    ]
+  },
+  {
+    "step": "06-cayenne-wizard-step1-before",
+    "url": "http://localhost:8000/kiosk/categories?cat=1",
+    "ts": 1779990194858,
+    "htmlClass": "",
+    "htmlData": {
+      "lang": "fr",
+      "dir": "ltr",
+      "data-kiosk-theme": "light",
+      "data-kiosk-visual-theme": "light",
+      "data-kiosk-contrast": "aa",
+      "data-kiosk-pmr": "false",
+      "data-kiosk-audio": "false",
+      "data-kiosk-audio-description": "false",
+      "data-kiosk-reduced-motion": "false"
+    },
+    "bodyClass": "",
+    "bodyBg": "rgb(255, 255, 255)",
+    "bodyColor": "rgb(110, 113, 145)",
+    "wrapperBg": "rgb(255, 251, 245)",
+    "wrapperColor": "rgb(15, 15, 15)",
+    "wrapperTag": "DIV",
+    "wrapperClass": "kiosk-app kiosk-theme--light",
+    "spotChecks": [
+      {
+        "tag": "MAIN",
+        "cls": "kiosk-product-zone",
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(15, 15, 15)"
+      }
+    ]
+  },
+  {
+    "step": "06-cayenne-wizard-step2-before",
+    "url": "http://localhost:8000/kiosk/categories?cat=1",
+    "ts": 1779990195780,
+    "htmlClass": "",
+    "htmlData": {
+      "lang": "fr",
+      "dir": "ltr",
+      "data-kiosk-theme": "light",
+      "data-kiosk-visual-theme": "light",
+      "data-kiosk-contrast": "aa",
+      "data-kiosk-pmr": "false",
+      "data-kiosk-audio": "false",
+      "data-kiosk-audio-description": "false",
+      "data-kiosk-reduced-motion": "false"
+    },
+    "bodyClass": "",
+    "bodyBg": "rgb(255, 255, 255)",
+    "bodyColor": "rgb(110, 113, 145)",
+    "wrapperBg": "rgb(255, 251, 245)",
+    "wrapperColor": "rgb(15, 15, 15)",
+    "wrapperTag": "DIV",
+    "wrapperClass": "kiosk-app kiosk-theme--light",
+    "spotChecks": [
+      {
+        "tag": "MAIN",
+        "cls": "kiosk-product-zone",
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(15, 15, 15)"
+      }
+    ]
+  }
+]

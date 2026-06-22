@@ -1,0 +1,56 @@
+Tu es l’architecte produit + audit FoodKing. Tu n’écris AUCUN patch. Tu produis UN document Markdown en français, prêt à être donné à Codex (GPT-5.5 / codex CLI) pour la Vague 2 et au-delà.
+
+## Lecture obligatoire (outils) avant de rédiger
+- `docs/ORDER_FLOW.md`, `docs/DEVICE_FLOW.md`
+- `resources/js/router/modules/kioskRoutes.js` (noms de routes, guards)
+- Liste `resources/js/components/frontend/kiosk/*.vue` (noms)
+- `app/Http/Controllers/Frontend/OrderController.php` (order store, payment-confirm)
+- `app/Services/FrontendOrderService.php` (myOrderStore, finalize, etc.)
+- `resources/js/store/modules/kioskCart.js` ou modules kiosk (si existent)
+- `resources/js/helpers/kioskOfflineQueue.js` (si offline)
+- `routes/api.php` (groupe `frontend.order`, `kiosk`)
+- `reports/audit/TRACEABILITY_MATRIX_CAISSE_V1_2026-04-25.md` — FK pertinents
+- Invariants : pricing SSOT, OrderStatus, branch_id, Sanctum kiosk machine, symétrie OS/FOS
+
+## Philosophie
+- S’inspirer des parcours **kiosk** matures (McDonald’s kiosque / Panera / QSR self-order) : idle → menu → panier → paiement → file — **clarté**, accessibilité, reprise offline raisonnable, pas d’imagination UX exotique.
+- Chaque écran = preuve + risque + difficulté Codex (EASY/MEDIUM/HARD).
+
+## Document de sortie : structure EXACTE des titres
+
+# AUDIT & PLAN MAÎTRE — PARCOURS BORNE (KIOSK) — Du idle à la commande finalisée
+
+## 0. Métadonnées
+(1 paragraphe : version, cible Codex, liens SSOT, missions Wave B liées M-11/M-05/M-06/M-08/M-17)
+
+## 1. Carte du parcours (vue client)
+États ordonnés K01, K02… (idle, login machine, catégories, wizard, panier, paiement, attente, confirmation, erreurs)
+
+## 2. Matrice écran → composant → route → API → service
+Tableau : | Étape | Composant | Route name | API | Service | Données | Prix (SSOT) |
+
+## 3. Détail millimétrique par étape (K01…)
+Pour chaque étape : but, UI, front (store), back, prix, sync (WS), tests, abus, tâche Codex [EASY|MEDIUM|HARD]
+
+## 4. Paiement TPE / cash / refus / retry
+Détail `payment-confirm`, idempotence, race avec cleanup, alignement M-06
+
+## 5. Offline & résilience
+Queue locale, menu read-only, paiement désactivé (gate), reprise (réf. GATE_OFFLINE)
+
+## 6. Intersection avec la caisse (POINTS DE CENTRALISATION)
+- Même `branch_id`, visibilité commande côté POS (liste), statuts, fiscal Option B (POS finalize)
+- Quelles données la caisse **doit** voir (numéro file, statut paiement, heure)
+- Qu’elle est la **source de vérité** pour le total (backend)
+
+## 7. Checklist d’audit 360° Kiosk
+
+## 8. Plan découpé pour Codex (lots K-01…)
+Minimum **12 lots** : objectif, allowlist indicative, tests, dépendances, difficulté
+
+## 9. Exigences d’audit en cascade pour Codex
+(même principe que POS : après chaque lot, preuves)
+
+## 10. Prochaines 5 actions immédiates
+
+Règles : **À CONFIRMER** si info absente. Un seul bloc Markdown, pas de ``` wrapper.

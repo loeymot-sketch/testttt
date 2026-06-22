@@ -1,0 +1,12 @@
+=== Vitest 1054/0/2 (2026-05-03 21:50) ===
+Test Files  163 passed (163)
+Tests  1054 passed | 2 skipped (1056)
+
+=== PHPUnit Composer + Items (50 passed, 2 skipped) ===
+ComposerDiffServiceTest: 6/6 PASS
+ItemPhotoUploadTest: 5/5 PASS
+ComposerStepServiceContractTest: 5/5 PASS
+
+=== Playwright critical-flow ===
+catalog-studio-create-product-flow.spec.js: 1 passed (12.2s)
+catalog-studio-a11y-axe.spec.js: structurellement valide, axe-core skippe (deps optionnel)

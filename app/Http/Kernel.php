@@ -15,7 +15,12 @@ class Kernel extends HttpKernel
      * @var array<int, class-string|string>
      */
     protected $middleware = [
-        // \App\Http\Middleware\TrustHosts::class,
+        // [Wave 2c P1 SYNC-ADV3B-01 2026-05-18] Defense vs Host spoof —
+        // TrustProxies::$proxies='*' (Wave 2b) trusts X-Forwarded-Host /
+        // X-Forwarded-Proto from any upstream. TrustHosts pins host to
+        // APP_URL subdomains + 127.0.0.1 + localhost to prevent URL
+        // generation poisoning. No-op under runningUnitTests() / local.
+        \App\Http\Middleware\TrustHosts::class,
         \App\Http\Middleware\TrustProxies::class,
         \Illuminate\Http\Middleware\HandleCors::class,
         \App\Http\Middleware\PreventRequestsDuringMaintenance::class,
@@ -38,6 +43,9 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \App\Http\Middleware\CorrelationIdMiddleware::class,
+            // [RED-R2 §1 P2] CSP via HTTP header (replaces <meta http-equiv>).
+            // Mode piloté par env CSP_ENFORCE_MODE — défaut report_only.
+            \App\Http\Middleware\ContentSecurityPolicyHeader::class,
         ],
 
         'api' => [
@@ -48,7 +56,44 @@ class Kernel extends HttpKernel
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \App\Http\Middleware\JsonMiddleware::class,
             \App\Http\Middleware\CorrelationIdMiddleware::class,
+            // [Sprint H1 Z6-06 2026-05-17] Per-request user status revalidation.
+            // MUST run AFTER auth:sanctum so $request->user() is populated.
+            // See local $middlewarePriority below — it inserts this entry just
+            // after AuthenticatesRequests in the sort order. CLAUDE.md §9.
+            \App\Http\Middleware\EnsureUserStatusActive::class,
         ],
+    ];
+
+    /**
+     * The priority-sorted list of middleware.
+     *
+     * Forces the listed middleware into this order regardless of their
+     * group/route order. Laravel's parent default lists
+     * AuthenticatesRequests before SubstituteBindings; we extend it to
+     * place EnsureUserStatusActive AFTER AuthenticatesRequests so
+     * $request->user() is populated when our status gate runs.
+     *
+     * Without this explicit override, Kernel::sortMiddleware() would
+     * `array_unshift` EnsureUserStatusActive to position 0 (line 410 of
+     * Foundation\Http\Kernel) — running it before Sanctum resolves the
+     * user, causing every authenticated request to bypass our gate.
+     *
+     * [Sprint H1 Z6-06 2026-05-17]
+     *
+     * @var array<int, class-string>
+     */
+    protected $middlewarePriority = [
+        \Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests::class,
+        \Illuminate\Cookie\Middleware\EncryptCookies::class,
+        \Illuminate\Session\Middleware\StartSession::class,
+        \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+        \Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class,
+        \App\Http\Middleware\EnsureUserStatusActive::class,
+        \Illuminate\Routing\Middleware\ThrottleRequests::class,
+        \Illuminate\Routing\Middleware\ThrottleRequestsWithRedis::class,
+        \Illuminate\Contracts\Session\Middleware\AuthenticatesSessions::class,
+        \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        \Illuminate\Auth\Middleware\Authorize::class,
     ];
 
     /**
@@ -76,5 +121,28 @@ class Kernel extends HttpKernel
         'role_or_permission' => \Spatie\Permission\Middlewares\RoleOrPermissionMiddleware::class,
         'localization' => \App\Http\Middleware\localization::class,
         'installed' => \App\Http\Middleware\Installed::class,
+        // [T08b / K-6.1] Register Sanctum ability middleware aliases so routes
+        // can use `abilities:kiosk:order` / `ability:kiosk:order` without the
+        // full FQCN. Mirrors Sanctum's documented usage and aligns with the
+        // testttt-kiosk-p93 reference worktree.
+        'abilities' => \Laravel\Sanctum\Http\Middleware\CheckAbilities::class,
+        'ability' => \Laravel\Sanctum\Http\Middleware\CheckForAnyAbility::class,
+        // [C4 / K-8] Validates `X-Kiosk-Locale` / `?lang=` against
+        // `Branch.available_locales` of the authenticated kiosk machine.
+        // Returns 400 LOCALE_NOT_ALLOWED_FOR_BRANCH when the requested
+        // locale is outside the branch allowlist. Aligned with the
+        // testttt-kiosk-p93 reference worktree.
+        'kiosk.locale' => \App\Http\Middleware\ValidateKioskLocale::class,
+        'wizard.per_item_demo' => \App\Http\Middleware\EnsureWizardPerItemDemoEnabled::class,
+        'wizard.per_item_profile_guard' => \App\Http\Middleware\EnsureProfileNotItemOwnedUnlessDemoEnabled::class,
+        // [F-VERIFY-09-02 / PLAN_P11] HTTP-level idempotency guard. Opt-in
+        // per-route via routes/api.php; flag-gated via IDEMPOTENCY_MIDDLEWARE_ENABLED.
+        'idempotency' => \App\Http\Middleware\IdempotencyKeyMiddleware::class,
+        // [GOAL-J2-HEAL-02 2026-05-24] Phase J-ADV-6 PATH-1 RED P0 closer.
+        // Blocks Sanctum tokens carrying the kiosk:order ability from reaching
+        // /api/admin/* routes regardless of the underlying user's Spatie
+        // permissions. Applied to both admin route groups in routes/api.php.
+        // See BlockKioskTokenFromAdminRoutes::handle() for full rationale.
+        'block_kiosk_token_admin' => \App\Http\Middleware\BlockKioskTokenFromAdminRoutes::class,
     ];
 }

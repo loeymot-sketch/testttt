@@ -28,7 +28,7 @@
                 <div class="col-12 sm:col-6 !py-1.5">
                     <div class="db-list-item p-0">
                         <span class="db-list-item-title w-full sm:w-1/2">{{ $t('label.discount_percentage') }}</span>
-                        <span class="db-list-item-text w-full sm:w-1/2">{{ offer.flat_amount }} %</span>
+                        <span class="db-list-item-text w-full sm:w-1/2">{{ parseFloat(offer.amount).toLocaleString('fr-FR') }} %</span>
                     </div>
                 </div>
 

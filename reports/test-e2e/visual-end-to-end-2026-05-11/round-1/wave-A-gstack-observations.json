@@ -1,0 +1,241 @@
+{
+  "wave": "A",
+  "round": 1,
+  "ts_iso": "2026-05-11T04:11:53.867Z",
+  "elapsed_ms": 30415,
+  "states_captured": [
+    "01-idle-fresh",
+    "02-idle-lang-fr",
+    "03-idle-lang-en",
+    "04-order-type",
+    "05-categories",
+    "06-cat-switch",
+    "07-tacos-focused",
+    "08-wizard-viande-empty",
+    "09-wizard-viande-filled",
+    "10-wizard-sauce",
+    "11-wizard-menu",
+    "12-wizard-extras",
+    "13-wizard-recap",
+    "14-cart-tacos",
+    "15-cat-cart-indicator",
+    "16-frites-simple",
+    "17-cart-2-lines",
+    "18-cart-qty-plus",
+    "19-upsell",
+    "20-payment-modal",
+    "21-payment-loading",
+    "22-confirmation",
+    "23-thank-you",
+    "24-return-idle"
+  ],
+  "palette_reference": {
+    "orange": "#F4501E",
+    "black": "#000000",
+    "yellow": "#FFD400",
+    "white": "#FFFFFF"
+  },
+  "observations": [
+    {
+      "state": "__auth",
+      "url_at_snap": "http://127.0.0.1:8000/kiosk/idle",
+      "note": "kiosk authenticated"
+    },
+    {
+      "state": "01-idle-fresh",
+      "marker_selector": "[data-testid=\"kiosk-idle-root\"]",
+      "marker_present": true,
+      "url_at_snap": "http://127.0.0.1:8000/kiosk/idle",
+      "ts": "2026-05-11T04:11:25.923Z"
+    },
+    {
+      "state": "02-idle-lang-fr",
+      "marker_selector": "[data-testid=\"kiosk-idle-lang-fr\"]",
+      "marker_present": false,
+      "url_at_snap": "http://127.0.0.1:8000/kiosk/idle",
+      "ts": "2026-05-11T04:11:26.428Z"
+    },
+    {
+      "state": "03-idle-lang-en",
+      "note": "kiosk-idle-lang-en testid not visible — EN selector may be absent or already FR-only"
+    },
+    {
+      "state": "03-idle-lang-en",
+      "marker_selector": "[data-testid=\"kiosk-idle-lang-en\"]",
+      "marker_present": false,
+      "url_at_snap": "http://127.0.0.1:8000/kiosk/idle",
+      "ts": "2026-05-11T04:11:26.527Z"
+    },
+    {
+      "state": "04-order-type",
+      "marker_selector": "[data-testid=\"kiosk-order-type-chooser\"]",
+      "marker_present": true,
+      "url_at_snap": "http://127.0.0.1:8000/kiosk/idle",
+      "ts": "2026-05-11T04:11:26.627Z"
+    },
+    {
+      "state": "04-order-type",
+      "note": "takeaway clicked"
+    },
+    {
+      "state": "05-categories",
+      "marker_selector": "[data-testid=\"kiosk-categories-root\"]",
+      "marker_present": true,
+      "url_at_snap": "http://127.0.0.1:8000/kiosk/categories?cat=317",
+      "ts": "2026-05-11T04:11:27.695Z"
+    },
+    {
+      "state": "06-cat-switch",
+      "marker_selector": "[data-testid=\"kiosk-categories-products\"]",
+      "marker_present": true,
+      "url_at_snap": "http://127.0.0.1:8000/kiosk/categories?cat=307",
+      "ts": "2026-05-11T04:11:28.518Z"
+    },
+    {
+      "state": "07-tacos-focused",
+      "marker_selector": "[data-testid=\"kiosk-product-card-363\"]",
+      "marker_present": true,
+      "url_at_snap": "http://127.0.0.1:8000/kiosk/categories?cat=306",
+      "ts": "2026-05-11T04:11:30.001Z"
+    },
+    {
+      "state": "08-wizard-viande-empty",
+      "marker_selector": ".kiosk-wizard",
+      "marker_present": true,
+      "url_at_snap": "http://127.0.0.1:8000/kiosk/categories?cat=306",
+      "ts": "2026-05-11T04:11:31.125Z"
+    },
+    {
+      "state": "09-wizard-viande-filled",
+      "marker_selector": ".kiosk-step-content",
+      "marker_present": true,
+      "url_at_snap": "http://127.0.0.1:8000/kiosk/categories?cat=306",
+      "ts": "2026-05-11T04:11:31.647Z"
+    },
+    {
+      "state": "10-wizard-sauce",
+      "marker_selector": ".kiosk-step-content",
+      "marker_present": true,
+      "url_at_snap": "http://127.0.0.1:8000/kiosk/categories?cat=306",
+      "ts": "2026-05-11T04:11:32.454Z"
+    },
+    {
+      "state": "11-wizard-menu",
+      "marker_selector": ".kiosk-step-menu, .kiosk-step-content",
+      "marker_present": true,
+      "url_at_snap": "http://127.0.0.1:8000/kiosk/categories?cat=306",
+      "ts": "2026-05-11T04:11:33.582Z"
+    },
+    {
+      "state": "11-wizard-menu",
+      "note": "menu step not detected — Tacos M may skip menu in V1 config"
+    },
+    {
+      "state": "12-wizard-extras",
+      "marker_selector": ".kiosk-step-content",
+      "marker_present": true,
+      "url_at_snap": "http://127.0.0.1:8000/kiosk/categories?cat=306",
+      "ts": "2026-05-11T04:11:34.359Z"
+    },
+    {
+      "state": "13-wizard-recap",
+      "marker_selector": "[data-testid=\"kiosk-order-summary-root\"]",
+      "marker_present": true,
+      "url_at_snap": "http://127.0.0.1:8000/kiosk/categories?cat=306",
+      "ts": "2026-05-11T04:11:35.798Z"
+    },
+    {
+      "state": "14-cart-tacos",
+      "marker_selector": "[data-testid=\"kiosk-cart-bottom-sheet\"], [data-testid=\"kiosk-categories-cart-indicator\"]",
+      "marker_present": true,
+      "url_at_snap": "http://127.0.0.1:8000/kiosk/categories?cat=306",
+      "ts": "2026-05-11T04:11:36.929Z"
+    },
+    {
+      "state": "15-cat-cart-indicator",
+      "marker_selector": "[data-testid=\"kiosk-categories-cart-indicator\"]",
+      "marker_present": true,
+      "url_at_snap": "http://127.0.0.1:8000/kiosk/categories?cat=306",
+      "ts": "2026-05-11T04:11:37.037Z"
+    },
+    {
+      "state": "16-frites-simple",
+      "marker_selector": "[data-testid=\"kiosk-categories-cart-indicator\"]",
+      "marker_present": true,
+      "url_at_snap": "http://127.0.0.1:8000/kiosk/categories?cat=315",
+      "ts": "2026-05-11T04:11:41.636Z"
+    },
+    {
+      "state": "17-cart-2-lines",
+      "marker_selector": "[data-testid=\"kiosk-cart-bottom-sheet\"], [data-testid=\"kiosk-categories-cart-indicator\"]",
+      "marker_present": true,
+      "url_at_snap": "http://127.0.0.1:8000/kiosk/categories?cat=315",
+      "ts": "2026-05-11T04:11:42.582Z"
+    },
+    {
+      "state": "18-cart-qty-plus",
+      "note": "qty +1 click landed on bottom-sheet or cart line"
+    },
+    {
+      "state": "18-cart-qty-plus",
+      "marker_selector": "[data-testid=\"kiosk-cart-bottom-sheet\"], [data-testid=\"kiosk-cart-root\"]",
+      "marker_present": true,
+      "url_at_snap": "http://127.0.0.1:8000/kiosk/categories?cat=315",
+      "ts": "2026-05-11T04:11:43.235Z"
+    },
+    {
+      "state": "19-upsell",
+      "marker_selector": "[data-testid=\"kiosk-upsell-root\"]",
+      "marker_present": true,
+      "url_at_snap": "http://127.0.0.1:8000/kiosk/upsell",
+      "ts": "2026-05-11T04:11:44.209Z"
+    },
+    {
+      "state": "19-upsell",
+      "upsell_visible": true,
+      "note": "upsell rendered"
+    },
+    {
+      "state": "20-payment-modal",
+      "marker_selector": "[data-testid=\"kiosk-payment-root\"]",
+      "marker_present": true,
+      "url_at_snap": "http://127.0.0.1:8000/kiosk/payment",
+      "ts": "2026-05-11T04:11:45.396Z"
+    },
+    {
+      "state": "21-payment-loading",
+      "marker_selector": "[data-testid=\"kiosk-payment-processing\"], [data-testid=\"kiosk-payment-tpe-overlay\"]",
+      "marker_present": true,
+      "url_at_snap": "http://127.0.0.1:8000/kiosk/payment",
+      "ts": "2026-05-11T04:11:46.299Z"
+    },
+    {
+      "state": "22-confirmation",
+      "marker_selector": "[data-testid=\"kiosk-confirmation-root\"]",
+      "marker_present": true,
+      "url_at_snap": "http://127.0.0.1:8000/kiosk/confirmation?number=A0130&total=15",
+      "ts": "2026-05-11T04:11:50.170Z"
+    },
+    {
+      "state": "22-confirmation",
+      "confirmation_visible": true,
+      "queue_number_text": "#A0130",
+      "captured_order_id": 1269
+    },
+    {
+      "state": "23-thank-you",
+      "marker_selector": "[data-testid=\"kiosk-confirmation-root\"], [data-testid=\"kiosk-waiting-root\"]",
+      "marker_present": true,
+      "url_at_snap": "http://127.0.0.1:8000/kiosk/confirmation?number=A0130&total=15",
+      "ts": "2026-05-11T04:11:52.240Z"
+    },
+    {
+      "state": "24-return-idle",
+      "marker_selector": "[data-testid=\"kiosk-idle-root\"]",
+      "marker_present": true,
+      "url_at_snap": "http://127.0.0.1:8000/kiosk/idle",
+      "ts": "2026-05-11T04:11:53.867Z"
+    }
+  ],
+  "captured_order_id": 1269
+}

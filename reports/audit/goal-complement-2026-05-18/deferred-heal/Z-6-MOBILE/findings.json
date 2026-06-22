@@ -1,0 +1,75 @@
+{
+  "zone": "Z-6-MOBILE",
+  "mode": "AUDIT-ONLY",
+  "round": 1,
+  "date": "2026-05-18",
+  "reference_commit": "cfa9ec679ef2631195dc7cb5284c7d283364a351",
+  "convergence_baseline": "P0=0 / P1=0 / P2=0 across 58 page captures (2-round real E2E, 2026-05-18 10:47 UTC)",
+
+  "deferred_findings": [
+    {
+      "id": "Z6-DEF-01",
+      "severity": "P2",
+      "title": "Dead-code fictional fallback in ScreenOrderDetail (Box Nashville / Bowl Gratiné / Frite XXL)",
+      "file": "mobile/screens-modals.jsx",
+      "lines": "201-207",
+      "current_code": "const items = real ? real.items.map(...) : [\n  { name: 'Box Nashville', sups: 'Oignon caramélisé, Cheddar', qty: 1, price: 17 },\n  { name: 'Bowl Gratiné',  sups: 'Sauce maison',                qty: 1, price: 12 },\n  { name: 'Frite XXL',     sups: '',                            qty: 1, price: 4  },\n];",
+      "issue": "When LC.orders.findById(orderId) returns null, the fallback renders 3 fictional products that violate the canonical Le Cayenne catalogue (post MENU-RESET 2026-05-13).",
+      "reachability": "UNREACHABLE via normal navigation. Le Cayenne - Prototype.html:135 mounts ScreenOrderDetail with default orderId='C-1234', which is the ORDERS_ACTIVE[0].id (orders.js:25-43). Fallback only triggers if (a) go('orderDetail', 'C-XXXX') with non-existent id or (b) LC.orders is undefined at render.",
+      "principle_violated": "anti-fiction discipline (CLAUDE.md §13 Evidence Rules + project_massive_logic_image_cycle 2026-05-17 fictional purge mandate)",
+      "user_visible_impact": "None in normal flow",
+      "recommendation_v1_0_2": {
+        "approach": "Replace hardcoded fallback with role='status' empty-state UI",
+        "scope_loc": 5,
+        "proposed_code": "const items = real ? real.items.map(i => ({ name: i.name, sups: i.extras_summary || '', qty: i.qty, price: i.line_total / Math.max(1, i.qty) })) : null;\n// ...\n{!items ? (\n  <div role=\"status\" style={{ padding: 32, textAlign: 'center', color: 'var(--gray-4)' }}>\n    Détails de cette commande indisponibles. <button onClick={() => go('orders')} style={{ color: 'var(--orange)', background: 'transparent', border: 0, cursor: 'pointer', textDecoration: 'underline' }}>Retour à la liste</button>\n  </div>\n) : (\n  // existing items render\n)}",
+        "test_required": "tests/mobile-e2e/order-detail-empty-state.spec.js — navigate with go('orderDetail', 'C-NONEXISTENT') + assert role='status' + assert no 'Box Nashville'/'Bowl Gratiné'/'Frite XXL' text in body.innerText",
+        "backlog_ticket": "V1.0.2-Z6-P2-001",
+        "estimated_effort": "30 min (5 LOC heal + 1 spec)",
+        "owner_gate_required": false
+      },
+      "blocker_for_ship": false
+    }
+  ],
+
+  "observations_no_heal_required": [
+    {
+      "id": "Z6-OBS-01",
+      "title": "No first-launch RGPD consent banner",
+      "context": "Mobile is standalone V0 with no third-party tracking SDKs. RGPD opt-out flow exists post-onboarding via ScreenLoyalty consent gate (proper art. 17 erasure).",
+      "trigger_if": "Production release adds analytics SDK (Firebase, Sentry replay, GA, etc.)",
+      "recommendation": "If analytics added → add first-launch consent screen before SDK init. CNIL guidance applies.",
+      "backlog_ticket": "V1.0.2-Z6-OBS-001 (conditional)"
+    },
+    {
+      "id": "Z6-OBS-02",
+      "title": "V0 cross-tab redemption race not defended",
+      "context": "WizardRedeem race defense relies on JS single-thread guarantee. Cross-tab (2 browser tabs of mobile/Le Cayenne - Prototype.html simultaneously) breaks the guarantee.",
+      "trigger_if": "Mobile remains a browser-based prototype in production (it shouldn't — production targets native iOS/Android)",
+      "recommendation": "Phase 6 server-side X-Idempotency-Key + lockForUpdate eliminates this. Native app eliminates cross-tab vector entirely. No heal for V0 prototype.",
+      "backlog_ticket": "Phase-6-server-wireup (already tracked)"
+    }
+  ],
+
+  "validated_no_finding": [
+    {"id": "Z6-VAL-01", "title": "Menu SSOT alignment — 11 cats, 4 viandes, 11 sauces, 9+4 supplements aligned with kiosk catalogue", "evidence": "mobile/data/menu.js:217-229 + 130-180"},
+    {"id": "Z6-VAL-02", "title": "Wizard 4-template parity with kiosk KW.vue state machine + composer profile DB-mirror", "evidence": "mobile/screens-item-steps.jsx:60-152 + mobile/data/menu.js:296-388"},
+    {"id": "Z6-VAL-03", "title": "RGPD opt-out flow + localStorage cleanup on logout", "evidence": "mobile/screens-modals.jsx:311-334 + mobile/api/storage.js:31-49"},
+    {"id": "Z6-VAL-04", "title": "All 6 modals labelled with role='dialog' + aria-modal + ESC handler + initial focus", "evidence": "mobile/screens-modals.jsx ModalShell:10-37"},
+    {"id": "Z6-VAL-05", "title": "WizardRedeem idempotency key per session + D-009 replay banner ('Déjà échangée')", "evidence": "mobile/components/WizardRedeem.jsx:34-43+222-243"},
+    {"id": "Z6-VAL-06", "title": "5 adversarial scenarios (A1-A5) all defended in code + sentinel specs present", "evidence": "tests/mobile-e2e/loyalty-adv-A{1..5}-*.spec.js (5 specs, 151 LOC total)"},
+    {"id": "Z6-VAL-07", "title": "Contrast >=4.5:1 maintained post design-perfect round-3", "evidence": "tests/mobile-e2e/inspect-contrast.spec.js + screenshot manual review A01-home + Z00-home-overview"},
+    {"id": "Z6-VAL-08", "title": "Dirty 2 PNG screenshots are sub-pixel marquee scroll drift only (commit 27ef0aa85 Round 3 regen)", "evidence": "git log -1 -- tests/e2e/__screenshots__/test-e2e-mobile-realignment-2026-05-16/A01-home.png + Read+visual analysis"}
+  ],
+
+  "summary": {
+    "total_findings": 10,
+    "p0": 0,
+    "p1": 0,
+    "p2": 1,
+    "observations_conditional": 2,
+    "validated_clean": 8,
+    "blockers_for_v1_ship": 0,
+    "v1_0_2_backlog_items": 1,
+    "verdict_audit_only": "VALIDATED (AUDIT-ONLY) — 1 P2 dead-code residue queued V1.0.2, no V1 blockers"
+  }
+}

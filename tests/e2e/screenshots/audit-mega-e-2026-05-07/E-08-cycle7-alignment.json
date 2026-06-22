@@ -1,0 +1,10 @@
+{
+  "cycle_7A_idempotency": true,
+  "cycle_7B_payment_event": true,
+  "cycle_7C_split_payment": true,
+  "cycle_7D_chain_validator": true,
+  "cycle_7D_sealed_guard": true,
+  "cycle_7D_refund_mirror": true,
+  "kr2_kiosk_coupon_echo": true,
+  "k11_fiscal_auto_allocate": true
+}

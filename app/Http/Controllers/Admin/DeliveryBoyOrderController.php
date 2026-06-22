@@ -9,6 +9,7 @@ use App\Services\OrderService;
 use App\Http\Resources\OrderResource;
 use App\Http\Requests\PaginateRequest;
 use App\Http\Resources\OrderDetailsResource;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 class DeliveryBoyOrderController extends AdminController
 {
@@ -26,7 +27,7 @@ class DeliveryBoyOrderController extends AdminController
         try {
             return OrderResource::collection($this->orderService->deliveredOrder($request, $deliveryBoy));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -34,8 +35,10 @@ class DeliveryBoyOrderController extends AdminController
     {
         try {
             return new OrderDetailsResource($this->orderService->deliveryBoyDeliveredOrderDetails($deliveryBoy, $order));
+        } catch (HttpExceptionInterface $exception) {
+            return response(['status' => false, 'message' => $exception->getMessage()], $exception->getStatusCode());
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

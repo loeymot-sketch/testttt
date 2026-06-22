@@ -7,10 +7,10 @@
                     {{ props.search.name }}
                 </h2>
                 <div class="flex items-center gap-3" v-if="props.search.name">
-                    <button type="button" class="lab lab-row-vertical lab-font-size-20 text-xl"
+                    <button type="button" class="lab lab-row-vertical lab-font-size-20 text-xl" aria-label="Vue liste"
                         v-on:click="itemProps.design = itemDesignEnum.LIST"
                         :class="itemProps.design === itemDesignEnum.LIST ? 'text-primary' : 'text-[#A0A3BD]'"></button>
-                    <button type="button" class="lab lab-element-3 lab-font-size-20 text-xl"
+                    <button type="button" class="lab lab-element-3 lab-font-size-20 text-xl" aria-label="Vue grille"
                         v-on:click="itemProps.design = itemDesignEnum.GRID"
                         :class="itemProps.design === itemDesignEnum.GRID ? 'text-primary' : 'text-[#A0A3BD]'"></button>
                 </div>
@@ -23,7 +23,7 @@
                 </div>
                 <span class="w-full mb-4 text-center text-black">{{ $t('message.no_items_found') }}</span>
                 <router-link :to="{ name: 'frontend.home' }"
-                    class="block w-full mx-auto max-w-[250px] py-3 rounded-3xl capitalize text-base font-medium leading-6 text-center bg-primary text-white">
+                    class="block w-full mx-auto max-w-[250px] py-3 rounded-3xl capitalize text-base font-medium leading-6 text-center bg-primary text-white transition hover:bg-orange-700">
                     {{ $t('button.go_home') }}
                 </router-link>
             </div>

@@ -1,0 +1,104 @@
+{
+  "specialist": "Architect",
+  "discipline": "AUDIT-ONLY",
+  "scope": "Dep graph + version constraints + migration tracks",
+  "session_id": "WI-8-composer-frontend-advisories-2026-05-19",
+  "branch": "v1-0-1-hardening-2026-05-17",
+  "current_versions": {
+    "php": "^8.1.0 (installed runtime 8.2.30)",
+    "laravel/framework": "v9.52.21 (EOL since Feb 2024)",
+    "spatie/laravel-permission": "5.11.1",
+    "phpunit/phpunit": "9.6.29 (require-dev)",
+    "phpoffice/phpspreadsheet": "1.30.4 (Wave 5H bump, kept)",
+    "phpseclib/phpseclib": "3.0.47",
+    "aws/aws-sdk-php": "3.359.13",
+    "firebase/php-jwt": "v6.11.1",
+    "league/commonmark": "2.7.1",
+    "psy/psysh": "v0.12.14",
+    "symfony/process": "v6.4.26",
+    "axios": "^1.1.2 (installed 1.x in 1.0.0-1.15.1 range)",
+    "firebase_npm": "^9.18.0",
+    "swiper": "^11.0.5",
+    "sweetalert2": "8.19.1 (transitive)",
+    "lodash": "^4.17.19",
+    "laravel-mix": "^6.0.15 (build-time only)"
+  },
+  "advisory_totals": {
+    "composer_remaining_post_5H": 12,
+    "composer_packages_affected": 9,
+    "npm_total": 49,
+    "npm_critical": 3,
+    "npm_high": 17,
+    "npm_moderate": 21,
+    "npm_low": 8
+  },
+  "dependency_graph_analysis": {
+    "production_runtime_php": [
+      "laravel/framework (CORE)",
+      "aws/aws-sdk-php (used by S3/SES — verify)",
+      "firebase/php-jwt (verify usage)",
+      "league/commonmark (verify markdown rendering)",
+      "phpseclib/phpseclib (verify SSH/encryption use)"
+    ],
+    "dev_only_php": [
+      "phpunit/phpunit (require-dev — CI test runner only)",
+      "psy/psysh (artisan tinker — local dev only)",
+      "symfony/process (used transitively by tinker + commands)"
+    ],
+    "production_runtime_js": [
+      "axios (133 callsites in resources/js — DIRECT prod dep)",
+      "lodash (admin/POS/kiosk callsites — DIRECT prod dep)",
+      "swiper (9+ component callsites — DIRECT prod dep)",
+      "sweetalert2 (vendor.js bundled — DIRECT prod dep)",
+      "firebase JS SDK (FrontendNavBar + BackendNavbar messaging)"
+    ],
+    "build_time_only_js_49_pkgs": [
+      "laravel-mix + 49 transitives (node-libs-browser/elliptic/bn.js/browserify-sign/node-forge etc.)",
+      "vitest + vite + vite-node + esbuild",
+      "happy-dom + jsdom (vitest env)",
+      "@babel/plugin-transform-modules-systemjs (webpack compile)",
+      "webpack + webpack-dev-server (dev server)",
+      "fast-uri/glob/minimatch/path-to-regexp (build tooling)",
+      "ws (vitest fake-indexeddb)"
+    ]
+  },
+  "migration_tracks": {
+    "laravel_9_to_10_to_11": {
+      "current": "9.52.21",
+      "target_v1": "9.x security backport (9.52.x staying patched until Feb 2024 EOL fully closed)",
+      "target_v1_1_or_v2": "10.x then 11.x",
+      "blocker": "EOL since Feb 2024, no community security backports — version 9.52.21 is the latest 9.x and IS vulnerable to CVE-2025-27515 (file validation bypass) with no fix available in the 9.x line",
+      "migration_breaking_changes": [
+        "PHP 8.1 minimum → PHP 8.1+ kept",
+        "Symfony 6.x → 7.x (passes through requirement on Laravel 11)",
+        "Pest/PHPUnit version coupling",
+        "Sanctum personal-access-token type change",
+        "config/auth.php password verbiage changes"
+      ],
+      "estimated_effort": "2-4 weeks (Laravel 9→10) + 1-2 weeks (10→11), broad regression smoke required",
+      "verdict": "BLOCKER for full security parity. Track as separate V1.1 migration cycle. NOT achievable pre-V1 ship without breaking SLA."
+    },
+    "spatie_permissions_5_to_6": {
+      "current": "5.11.1",
+      "target": "6.x",
+      "breaking_changes": [
+        "Cache key versioning",
+        "TeamId resolution refactor (potential branch-isolation impact!)",
+        "PermissionRegistrar API changes",
+        "config/permission.php structure changes"
+      ],
+      "branch_isolation_risk": "Spatie 6 changes team_id resolution which interacts with FoodKing multi-tenant branch_id pattern — needs RBAC regression audit before bump",
+      "verdict": "DEFER V1.0.X / V1.1. No CVE forcing it. Bump only when Laravel migration done."
+    }
+  },
+  "constraint_blockers_identified": {
+    "phpspreadsheet_1_30_x_pinned": "maatwebsite/excel ^3.1 caps phpspreadsheet at ^1.30 — Wave 5H bumped 1.30.0→1.30.4 within constraint successfully, no further upgrade possible without maatwebsite/excel bump",
+    "phpunit_9_x_pinned_by_laravel_9": "phpunit ^9.5.10 because Laravel 9 — moving phpunit 10/11/12 requires Laravel 10+ first",
+    "firebase_9_x_pinned_in_package_json": "^9.18.0 — fix is firebase@12.13.0 (3 major versions, breaking)"
+  },
+  "structural_finding": {
+    "primary": "12 composer advisories remaining post-Wave-5H — most are dev-only OR platform-precondition-not-met (Windows). REAL prod-runtime blockers are 2-3 packages.",
+    "secondary": "49 npm advisories — vast majority (40+) are build-time/dev-only (laravel-mix transitives + vitest + happy-dom). Real prod-shipped browser-runtime CVEs = ~5-6 packages (axios + lodash + swiper + sweetalert2 + firebase-js + happy-dom is dev).",
+    "tertiary": "Laravel 9 EOL is the structural elephant — file-validation CVE has no 9.x fix, only available in 10.48.29+ / 11.44.1+ / 12.1.1+. This is a forcing function for V1.1 Laravel migration."
+  }
+}

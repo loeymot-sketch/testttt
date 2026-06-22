@@ -24,7 +24,17 @@ class ItemCategoryController extends AdminController
     {
         parent::__construct();
         $this->itemCategoryService = $itemCategory;
-        $this->middleware(['permission:settings'])->only('store', 'update', 'destroy', 'show');
+        $this->middleware(['permission:settings'])->only(
+            'store',
+            'update',
+            'destroy',
+            'index',
+            'show',
+            'sortCategory',
+            'export',
+            'downloadSample',
+            'import'
+        );
     }
 
     public function index(
@@ -33,7 +43,7 @@ class ItemCategoryController extends AdminController
         try {
             return ItemCategoryResource::collection($this->itemCategoryService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -44,7 +54,7 @@ class ItemCategoryController extends AdminController
         try {
             return new ItemCategoryResource($this->itemCategoryService->store($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -54,7 +64,7 @@ class ItemCategoryController extends AdminController
         try {
             return new ItemCategoryResource($this->itemCategoryService->show($itemCategory));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -65,7 +75,7 @@ class ItemCategoryController extends AdminController
         try {
             return new ItemCategoryResource($this->itemCategoryService->update($request, $itemCategory));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -76,7 +86,7 @@ class ItemCategoryController extends AdminController
             $this->itemCategoryService->destroy($itemCategory);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -87,7 +97,7 @@ class ItemCategoryController extends AdminController
             $this->itemCategoryService->sortCategory($request);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -96,7 +106,7 @@ class ItemCategoryController extends AdminController
         try {
             return Excel::download(new ItemCategoryExport($this->itemCategoryService, $request), 'Item.xlsx');
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -105,7 +115,7 @@ class ItemCategoryController extends AdminController
         try {
             return Response::download(public_path('/file/CategoryImportSample.xlsx'));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -115,7 +125,7 @@ class ItemCategoryController extends AdminController
             Excel::import(new ItemCategoryImport($request->file('file')), $request->file('file'));
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

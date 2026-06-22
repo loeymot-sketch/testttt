@@ -12,6 +12,14 @@ export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/
 # See start-graphiti-mcp.sh — DEBUG=release breaks LiteLLM Click (--debug must be boolean).
 unset DEBUG LITELLM_DEBUG 2>/dev/null || true
 
+_GRAPHITI_ENV_FILE="${GRAPHITI_ENV_FILE:-${HOME}/.cursor/mcp-graphiti.env}"
+if [[ -f "${_GRAPHITI_ENV_FILE}" ]]; then
+  set -a
+  # shellcheck source=/dev/null
+  source "${_GRAPHITI_ENV_FILE}"
+  set +a
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "${SCRIPT_DIR}/lib-litellm-health.sh"
@@ -24,7 +32,7 @@ PROXY_LOG="/tmp/litellm-foodking.log"
 PID_FILE="/tmp/litellm-foodking.pid"
 
 if [[ -z "${MOONSHOT_API_KEY:-}" ]]; then
-  echo "✗ MOONSHOT_API_KEY vide. Exporte la clé Moonshot (console https://platform.moonshot.cn/) puis relance ce script."
+  echo "✗ MOONSHOT_API_KEY vide. Remplis ~/.cursor/mcp-graphiti.env (voir .cursor/mcp/mcp-graphiti.env.example) ou exporte la clé puis relance."
   exit 1
 fi
 

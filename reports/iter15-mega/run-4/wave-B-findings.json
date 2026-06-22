@@ -1,0 +1,105 @@
+{
+  "wave": "B",
+  "run_n": 4,
+  "states_reviewed": 10,
+  "summary": {
+    "P0": 0,
+    "P1": 1,
+    "P2": 4,
+    "P3": 0
+  },
+  "findings": [
+    {
+      "id": "B-003",
+      "state_artifact": "iter15-mega-lifecycle/04-kds-en-attente-with-order.png, 04-kds-en-attente-with-order.dom.html, 05-kds-en-preparation.dom.html, 07-kds-prete.png, 07-kds-prete.dom.html",
+      "category": "element_overlap",
+      "severity": "P1",
+      "evidence": "REGRESSION (re-opened). The KDS-side connection-status-banner--reconnecting is BACK. The run-2/3 fix only gated the POS-tracker '.pos-tracker-rt-warn' banner via app_env=='local'; the global ConnectionStatusBanner that mounts ABOVE the FoodKing logo on KDS is NOT gated. dom.html for states 04, 05, 07 each contain exactly 1 element matching <div class=\"connection-status-banner connection-status-banner--reconnecting\" role=\"alert\" aria-live=\"polite\"><span class=\"connection-status-banner__text\">Reconnexion en cours…</span>…. Visual evidence in 07-kds-prete.png: full-width orange/yellow band at the top, the FoodKing 'F' logo is clipped behind it, the 'Bonjour Chef Cuisine' avatar is partially overlapped. WebSocket connection refused entries in console.json (ws://127.0.0.1:6001) drive the banner — same root cause as run-1 B-003. Per protocol cat 3 (clickable element overlap) + cat 8 (banner re-renders on every reconnect attempt = polluting demo screenshots).",
+      "fix_hint": "Apply the same app_env=='local' gate that already silences pos-tracker-rt-warn to the global ConnectionStatusBanner component. Search for `connection-status-banner--reconnecting` in src/components or src/layouts and wrap the mount with v-if=\"appEnv !== 'local'\" or wrap with v-if=\"realtimeEnabled\". Add a Playwright assertion: state 04/05/07 KDS DOM must have 0 occurrences of class=\"connection-status-banner\". Note: B-003 was reported PASS in run-3 because the reviewer only verified the POS-tracker banner — they missed the KDS-side banner is a different component."
+    },
+    {
+      "id": "B-004",
+      "state_artifact": "iter15-mega-lifecycle/01-kds-pile-baseline.dom.html, 04-kds-en-attente-with-order.dom.html, 05-kds-en-preparation.dom.html, 07-kds-prete.dom.html, 09-kds-livree-or-final.dom.html, 09-kds-livree-or-final.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "PARTIAL HEAL but still leaking — 4th consecutive run with this defect open. Run-3 baseline had 9 occurrences across 4 distinct AUDIT-* prefixes (AUDIT-P1 x4, AUDIT-P2 x3, AUDIT-CYCLE4 x1, AUDIT-HEAL x1). Run-4 baseline has 2 occurrences with only 2 distinct prefixes: AUDIT-CYCLE4-9bb11124 x1 and AUDIT-HEAL x1. So the AUDIT-P1 / AUDIT-P2 prefixes were cleaned up between run-3 and run-4 (good). However, the legacy AUDIT-CYCLE4-9bb11124 card and the AUDIT-HEAL card persist across all 5 KDS states (01/04/05/07/09). State 09 PNG visually confirms: one orphan card at the bottom of À-emporter shows 'N° Commande: AUDIT-CYCLE4-9bb11124' with an empty '#' header pill. Per CLAUDE.md §8 (max 3 consecutive heal cycles on the same problem), this is now the 4th cycle without full closure — formal escalation candidate.",
+      "fix_hint": "Two surviving cards likely originate from a crashed test cycle weeks ago that the per-cycle afterAll never reached. One-off DB cleanup: `UPDATE orders SET cancelled_at=NOW() WHERE external_id IN ('AUDIT-CYCLE4-9bb11124','AUDIT-HEAL') AND cancelled_at IS NULL;` (or hard-delete if branch policy permits). Long-term: add a beforeAll global purge that cancels every order with external_id LIKE 'AUDIT-%'. Per healing rule, this must be either fixed-once-and-for-all in run-5 or escalated to human gate."
+    },
+    {
+      "id": "B-007",
+      "state_artifact": "iter15-mega-lifecycle/04-kds-en-attente-with-order.dom.html, 05-kds-en-preparation.dom.html",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "UNCHANGED. 4th consecutive run — escalation candidate. Per-item 'Prêt' (bump-ready) button still icon-only: 4 instances of <button title=\"Prêt\">…<i class=\"fa-solid fa-arrow-right\"></i></button> in state 04 DOM, 0 of which carry an aria-label. State 05 same pattern. Title attribute provides no signal on a touch-only kitchen tablet, which is the actual deployment target. Per protocol cat 8 (Aria/keyboard).",
+      "fix_hint": "Add aria-label=\"Marquer cet article comme prêt — {item.name}\" to every per-item bump button. Either add visible micro-text (small 'PRÊT ➡' chip) or migrate the title attribute to an on-tap tooltip. CLAUDE.md §8 healing rule: this is the 4th heal cycle for the same defect — escalate to human gate per the 3-cycle ceiling, OR commit a single PR that lands the aria-label fix unconditionally."
+    },
+    {
+      "id": "B-009",
+      "state_artifact": "iter15-mega-lifecycle/03-pos-after-pay.dom.html, 03-pos-after-pay.png",
+      "category": "loading_state",
+      "severity": "P2",
+      "evidence": "UNCHANGED. 4th consecutive run — escalation candidate. Receipt modal IS captured (state 03 PNG shows N°A0035 / Espèces / MODE TEST overlay), but the underlying POS cart sidebar pos-grand-total still resets to 0.00€ AT THE SAME MOMENT the receipt modal claims a real charge. DOM evidence: <div data-testid=\"pos-grand-total\"><span class=\"pos-v5-total-row__label\">Total</span><span class=\"pos-v5-total-row__value\"><!----><!----><span class=\"pos-v5-total-row__amount pos-v5-tabular\">0.00€</span></span></div>. Zero occurrences of any 'Dernière commande' / 'Dernière vente' chip. Visual conflict between two surfaces showing the same business fact with opposite values.",
+      "fix_hint": "Defer cart reset to 'Nouvelle commande' button click OR receipt-modal close handler — NOT to the payment-success event. Alternative: render a 'Dernière commande: 2,00 €' chip in the cart sidebar that survives until the next item is added. CLAUDE.md §8: 4th cycle on the same defect family — escalate or commit a definitive fix in run-5."
+    },
+    {
+      "id": "B-008",
+      "state_artifact": "iter15-mega-lifecycle/01-kds-pile-baseline.network.json, 01-pos-empty.network.json, 02-pos-cart-with-frites.network.json",
+      "category": "unexpected_4xx_5xx",
+      "severity": "P2",
+      "evidence": "REGRESSION (re-opened). Run-2 and run-3 both reported 'all 10 network.json files are empty arrays (zero 4xx/5xx)'. Run-4 has 95 4xx events in network.json (sum across the 3 active-capture states): state 01-pos-empty has 44× POST /api/frontend/csp-report → 429, state 02-pos-cart-with-frites has 35× POST /api/frontend/csp-report → 429, state 01-kds-pile-baseline has 14× POST /api/frontend/csp-report → 429. Plus 2× 403 in state 01 (/api/admin/fiscal/z-report and /api/admin/stock/low-alerts — known role-permission gating, expected). The CSP-report 429 storm is fired by the browser on every CSP violation; the rate-limit then rejects each report. No corresponding [role=alert]/.toast in DOM (cat 6 'silent' criterion technically met), but per protocol cat 10 these 429s are not in the documented allowlist (the allowlist covers 401-on-logout, 422-on-form-validation, 304-noop). Marked P2 because the endpoint is internal-only and the 429 is intentional throttling, but the regression itself is real (zero entries → 95 entries between run-3 and run-4).",
+      "fix_hint": "Either (a) cap the SPA's CSP-report fetch frequency client-side (debounce to 1 every 5s instead of one per violation), or (b) reduce the CSP report-only directives so fewer violations fire (the dashboard image-load 403 cascade was the original source per run-1 B-008), or (c) re-enable the 204-noop short-circuit that landed in run-2 if it was reverted. Suspicion: the run-2 fix was reverted as part of the appEnv injection commit between run-3 and run-4."
+    }
+  ],
+  "run3_findings_status": {
+    "B-004_AUDIT_orphan_cards": "PARTIAL — AUDIT-P1 and AUDIT-P2 prefixes cleaned, but AUDIT-CYCLE4-9bb11124 and AUDIT-HEAL still leak across all 5 KDS states. Re-filed as run-4 B-004. 4th consecutive heal cycle (escalation candidate per CLAUDE.md §8).",
+    "B-007_pret_button_icon_only": "FAIL — unchanged from run-1/2/3. Re-filed as run-4 B-007. 4th consecutive heal cycle (escalation candidate).",
+    "B-009_cart_resets_to_zero_during_receipt": "FAIL — pos-grand-total still 0.00€ in state 03 DOM, no 'Dernière commande' chip. Re-filed as run-4 B-009. 4th consecutive heal cycle (escalation candidate).",
+    "B-010_aria_label_i18n_leaks": "PASS — both raw-key aria-labels are GONE. dom.html grep for 'aria-label=\"button.menu\"' = 0 across all 10 states. dom.html grep for 'aria-label=\"label.kds_toggle_items\"' = 0 across all 10 states. Broader regex grep `aria-label=\"[a-z]+(\\.[a-z_]+)+\"` = 0 across all 10 states. POS burger now uses aria-label=\"Actions caisse\" (resolved FR text). KDS toggle now resolves through t() (no raw key in attribute). Console.json zero [intlify] warnings across all 10 states (confirmed)."
+  },
+  "run3_run2_run1_findings_status": {
+    "B-001_POS_tracker_zero_euro": "PASS (3rd consecutive run) — 22 tracker cards in state 06 with non-zero amounts; 22 cards in state 08 same. Order 282 visible at tracker-order-282 in both states 06 and 08.",
+    "B-002_KDS_CTA_hidden_in_accordion": "PASS (3rd consecutive run) — 'Démarrer la préparation' rendered outside the height:0 accordion.",
+    "B-003_KDS_global_reconnect_banner": "FAIL (REGRESSION) — run-3 marked PASS based on POS-tracker rt-warn banner only; the KDS-side connection-status-banner is a different component and still mounts. Re-filed as run-4 B-003 (P1).",
+    "B-005_intlify_console_warnings": "PASS — 0 intlify warnings across all 10 console.json (confirmed for 3rd consecutive run).",
+    "B-006_receipt_not_captured_in_DOM": "PASS — N°A0035 / Espèces / MODE TEST visible in state 03 DOM body.",
+    "B-008_csp_report_400_429_storms": "FAIL (REGRESSION) — 0 entries in run-2/3, 93 entries in run-4 (all 429 on /api/frontend/csp-report). Re-filed as run-4 B-008 (P2).",
+    "B-010_aria_label_i18n_leaks": "PASS — see run3_findings_status above."
+  },
+  "spot_check_evidence": {
+    "F3.1_button.menu_grep_per_state": "01-pos-empty=0, 02-pos-cart-with-frites=0, 03-pos-after-pay=0, 04-kds-en-attente=0, 05-kds-en-preparation=0, 06-pos-tracker-preparing=0, 07-kds-prete=0, 08-pos-tracker-ready=0, 09-kds-livree=0, 01-kds-pile=0 (TOTAL=0)",
+    "F3.1_label.kds_toggle_items_grep_per_state": "01=0, 02=0, 03=0, 04=0, 05=0, 06=0, 07=0, 08=0, 09=0, 01-kds-pile=0 (TOTAL=0)",
+    "F3.1_broad_aria_label_raw_key_regex": "Pattern aria-label=\"[a-z]+(\\.[a-z_]+)+\" matches 0 across all 10 dom.html files",
+    "F3.1_intlify_warnings_per_state": "0/0/0/0/0/0/0/0/0/0",
+    "F3.1_aria_label_resolved_examples": "POS state 01 has aria-label=\"Actions caisse\" (was button.menu); KDS state 04 has resolved labels: 'Fermer', 'Modifier le profil', 'Rechercher', 'Station KDS', 'Volume'",
+    "F3.2_Mode_secours_grep_KDS_states": "01-kds-pile=0, 04=0, 05=0, 07=0, 09=0 (TOTAL=0). Banner correctly gated.",
+    "F3.2_kds-fallback_class_grep_KDS_states": "01=0, 04=0, 05=0, 07=0, 09=0 (TOTAL=0)",
+    "F3.3_C-022_order_282_visibility": "tracker-order-282 found in state 06-pos-tracker-shows-preparing.dom.html AND state 08-pos-tracker-shows-ready.dom.html. Order 282 N° hits in KDS dom: state 04=1, state 05=1, state 07=1 (PREPARED-still-visible confirmed), state 09=0 (correctly bumped off after delivery). PASS.",
+    "F3.3_C-024_lane_label_a_envoyer_to_confirmees": "06-pos-tracker-shows-preparing.dom.html: 'À envoyer'=0, 'Confirmées'=1. 08-pos-tracker-shows-ready.dom.html: 'À envoyer'=0, 'Confirmées'=1. Rename PASS.",
+    "B-003_KDS_reconnect_banner_dom_grep": "04-kds-en-attente: 1 occurrence of class=\"connection-status-banner\". 05-kds-en-preparation: 1. 07-kds-prete: 1. 09-kds-livree: 0 (modal/teleport state). 01-kds-pile: 0 (banner not yet mounted at baseline).",
+    "B-003_KDS_visual_evidence_state_07": "07-kds-prete.png shows full-width yellow banner 'Reconnexion en cours…' overlapping FoodKing logo at top. Fixed-position banner clips header content.",
+    "B-004_AUDIT_orphan_count_run-3_vs_run-4": "run-3 baseline=9 (4 prefixes). run-4 baseline=2 (2 prefixes: AUDIT-CYCLE4-9bb11124 + AUDIT-HEAL). All 5 KDS states show count=2.",
+    "B-007_pret_buttons_state_04": "4 <button title=\"Prêt\"> with 0 aria-label (unchanged for 4th run)",
+    "B-009_pos_grand_total_state_03": "data-testid=\"pos-grand-total\" still reads 0.00€ (unchanged); 0 hits for 'Dernière commande'/'Dernière vente'",
+    "B-008_csp_report_429_per_state": "01-kds-pile=14, 01-pos-empty=44, 02-pos-cart-with-frites=35, 03..09=0 (TOTAL=93)",
+    "console_errors_excluding_websocket_noise_per_state": "01-kds-pile=5 (3× csp 429 + 2× admin 403), 01-pos-empty=48 (44× csp 429 + 2× admin 403 + 1× ws + 1× CSP fetch failure), 02-pos-cart=36 (all csp 429 / fetch fail), 03=1 (ws), 04=2 (ws), 05=0, 06=4 (ws), 07=0, 08=2 (ws), 09=2 (ws). Excluding ws-noise + csp 429 + 403-known: net non-allowlisted errors = 0.",
+    "non_ws_console_errors_per_state": "0/0/0/0/0/0/0/0/0/0 (after removing ws + csp-429 + admin-403 expected noise)"
+  },
+  "set_diff_vs_run3": {
+    "closed_in_run4": [
+      "B-010 (aria-label raw i18n keys for button.menu and label.kds_toggle_items — both keys now resolve to FR text in DOM, P1 → 0)"
+    ],
+    "still_open_4th_consecutive_cycle": [
+      "B-004 (AUDIT orphans — partial heal, AUDIT-P1/P2 cleaned, AUDIT-CYCLE4 + AUDIT-HEAL persist)",
+      "B-007 (icon-only Prêt button still no aria-label — unchanged)",
+      "B-009 (cart resets to 0.00€ during receipt overlay — unchanged, no Dernière commande chip)"
+    ],
+    "newly_filed_or_reopened": [
+      "B-003 REOPENED (P1) — KDS-side connection-status-banner not gated, distinct from POS-tracker rt-warn that run-3 closed",
+      "B-008 REOPENED (P2) — CSP-report 429 storm returned (0 → 93 entries between run-3 and run-4)"
+    ],
+    "p0_count_run1_run2_run3_run4": "1 / 0 / 0 / 0",
+    "p1_count_run1_run2_run3_run4": "3 / 1 / 1 / 1 (run-4 P1 is reopened B-003 KDS reconnect banner)",
+    "p2_count_run1_run2_run3_run4": "5 / 3 / 3 / 4 (B-004 + B-007 + B-009 unchanged + B-008 reopened)"
+  },
+  "convergence_verdict": "NOT CONVERGED — wave B is GREEN on the P0 gate (4th consecutive zero) but RED on every other dimension. Run-4 closed exactly one finding (B-010 aria-label i18n leaks, the new P1 from run-3) — confirming F3.1 fix is solid and F3.3 lane-rename + order-282 visibility both PASS. However the cycle simultaneously REGRESSED on two previously-closed findings: B-003 (KDS-side reconnect banner that runs-2/3 fix missed because it gated only the POS-tracker rt-warn banner, not the global ConnectionStatusBanner above the FoodKing logo) and B-008 (CSP-report 429 storm: 0 → 93 entries). Three findings (B-004/B-007/B-009) are now in their 4TH consecutive heal cycle, exceeding CLAUDE.md §8's 3-cycle ceiling. Per the doctrine, the next cycle MUST either land definitive fixes for all three OR formally escalate to human gate. Net delta vs run-3: P1 stayed at 1 (B-010 closed, B-003 reopened); P2 went from 3 to 4 (B-008 reopened). The fact that an appEnv injection commit between run-3 and run-4 simultaneously fixed F3.1/F3.2/F3.3 AND regressed B-003 + B-008 is a strong signal of insufficient regression-test coverage of the previously-closed findings — recommend adding to the spec: assertions for `class=\"connection-status-banner\"` count == 0 in KDS states AND for csp-report response count == 0 in network.json, so future appEnv-shaped commits cannot silently re-open these. Recommendation: ESCALATE B-004/B-007/B-009 to human gate AND require run-5 to re-close B-003 + B-008 before declaring wave B converged."
+}

@@ -1,0 +1,733 @@
+[
+  {
+    "label": "R3-03-before-toggle",
+    "payload": [
+      {
+        "text": "Tacos M (1 Viande)6.50€",
+        "disabled": false,
+        "ariaDisabled": "false",
+        "classNames": "pos-v5-tile pos-item-tile",
+        "has86Badge": false
+      }
+    ],
+    "ts": "2026-05-07T03:38:41.275Z"
+  },
+  {
+    "label": "R3-03-poll-samples",
+    "payload": [
+      {
+        "ms": 343,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 548,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 751,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 956,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 1167,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 1372,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 1577,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 1781,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 1987,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 2197,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 2404,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 2608,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 2813,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 3017,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 3224,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 3429,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 3632,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 3836,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 4046,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 4249,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 4455,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 4659,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 4863,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 5070,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 5280,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 5487,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 5692,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 5897,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 6103,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 6314,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 6525,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 6730,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 6936,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 7143,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 7353,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 7564,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 7768,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 7974,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 8184,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 8394,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 8599,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 8801,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 9007,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 9213,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 9418,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 9622,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 9827,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 10033,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      },
+      {
+        "ms": 10238,
+        "found": true,
+        "disabled": false,
+        "ariaDisabled": "false",
+        "has86Badge": false,
+        "classes": "pos-v5-tile pos-item-tile"
+      }
+    ],
+    "ts": "2026-05-07T03:38:51.718Z"
+  },
+  {
+    "label": "R3-03-after-reload",
+    "payload": {
+      "found": true,
+      "disabled": false,
+      "ariaDisabled": "false",
+      "has86Badge": false
+    },
+    "ts": "2026-05-07T03:38:57.050Z"
+  },
+  {
+    "label": "R3-04-kiosk-before",
+    "payload": {
+      "countAll": 39,
+      "sampleTexts": [
+        "☀🌮🍔🍟Bienvenue !Commandez en quelques touchesSur placeJe m",
+        "☀",
+        "🌮🍔🍟Bienvenue !Commandez en quelques touchesSur placeJe ma",
+        "",
+        ""
+      ],
+      "hasTacos": false
+    },
+    "ts": "2026-05-07T03:39:02.970Z"
+  },
+  {
+    "label": "R3-04-kiosk-samples",
+    "payload": [
+      {
+        "ms": 2,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 257,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 509,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 763,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 1016,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 1269,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 1523,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 1776,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 2030,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 2283,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 2535,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 2789,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 3044,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 3298,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 3553,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 3806,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 4059,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 4313,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 4567,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 4821,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 5075,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 5329,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 5583,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 5837,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 6091,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 6344,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 6597,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 6850,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 7103,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 7355,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 7609,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 7864,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 8117,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 8371,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 8625,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 8878,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 9130,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 9384,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 9638,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      },
+      {
+        "ms": 9892,
+        "countAll": 39,
+        "tacosCount": 0,
+        "tacosClasses": [],
+        "tacosOOSBadge": false
+      }
+    ],
+    "ts": "2026-05-07T03:39:13.460Z"
+  },
+  {
+    "label": "R3-04-kiosk-after-reload",
+    "payload": {
+      "countAll": 39,
+      "tacosCount": 0,
+      "tacosOOSBadge": false
+    },
+    "ts": "2026-05-07T03:39:16.713Z"
+  }
+]

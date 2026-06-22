@@ -1,0 +1,28 @@
+{
+  "task_id": "PRODUCT-COMPOSER-SYNC-B7-KIOSK-LOCKDOWN-RELEASE-AUDIT",
+  "delegation": "codex-extension",
+  "source_plan": "reports/audit/CLAUDE_PRODUCT_COMPOSER_FINAL_EXECUTION_PLAN_2026-04-27.md",
+  "status": "executed",
+  "precondition": "B0 PASS",
+  "scope": [
+    "kiosk public bundle lockdown scan",
+    "legacy public/js/kiosk.js deletion",
+    "forbidden kiosk asset 404 route",
+    "Playwright kiosk lockdown E2E",
+    "kiosk lockdown policy documentation"
+  ],
+  "forbidden": [
+    "cash-at-counter lifecycle",
+    "payment state machine",
+    "OrderService",
+    "FrontendOrderService",
+    "stock schema",
+    "catalog schema"
+  ],
+  "invariants_considered": [
+    "customer_kiosk_no_staff_escape",
+    "forbidden_assets_do_not_fall_through_to_spa",
+    "no_order_service_edits",
+    "no_gate_self_approval"
+  ]
+}

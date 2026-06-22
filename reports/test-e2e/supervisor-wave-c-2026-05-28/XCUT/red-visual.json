@@ -1,0 +1,123 @@
+{
+  "supervisor_wave": "C",
+  "cross_cut": "XCUT/red-visual",
+  "role": "hostile read-only adversarial visual reviewer",
+  "head": "fcfef17fd",
+  "branch": "feature/mobile-app-le-cayenne-2026-05-10",
+  "ran_at": "2026-05-28T22:45:00+02:00",
+  "verdict": "NEEDS_HEAL",
+  "sub_status": "BLOCKED_ON_INPUTS",
+  "word_count_used": "~380 of 1500 budget — kept short because falsifying findings to fill budget would be the exact pathology RED is meant to prevent",
+
+  "input_inventory": {
+    "method": "find /tmp/foodking-wave-c-2026-05-28/ -type f and per-dir ls",
+    "expected_capture_dirs": 7,
+    "dirs_with_screenshots": 0,
+    "total_png_jpg_files_found": 0,
+    "dirs_empty_bytewise": [
+      "/tmp/foodking-wave-c-2026-05-28/payment-plan-b/",
+      "/tmp/foodking-wave-c-2026-05-28/refund-live/",
+      "/tmp/foodking-wave-c-2026-05-28/wizard-sandwich-tacos/",
+      "/tmp/foodking-wave-c-2026-05-28/wizard-bowl-gratine/",
+      "/tmp/foodking-wave-c-2026-05-28/wizard-burger/",
+      "/tmp/foodking-wave-c-2026-05-28/latency/",
+      "/tmp/foodking-wave-c-2026-05-28/xcut/"
+    ],
+    "dirs_with_partial_artifacts": [
+      {
+        "dir": "/tmp/foodking-wave-c-2026-05-28/z-pdf-live/",
+        "files": [
+          "01-index-before.json (21 B — empty data array)",
+          "02-open.json (216 B — z-report open, sequence_no=1)",
+          "03-index-after-open.json (34 B — HTTP 400 \"Cle API invalide.\")",
+          "04-close.json (628 B — z-report close, status=closed, signature present, all totals=0)",
+          "cookies.txt (927 B — Sanctum + XSRF set)",
+          "csrf.txt (0 B — EMPTY)",
+          "login.html (10614 B)",
+          "login-page.html (12176 B)",
+          "z-report.pdf (690 B — see XCUT-FINDING-2)"
+        ]
+      }
+    ]
+  },
+
+  "xcut_findings": [
+    {
+      "id": "XCUT-FINDING-1",
+      "severity": "P0",
+      "category": "INPUT_MISSING",
+      "title": "6/7 Wave C capture directories empty — XCUT visual audit cannot be performed",
+      "evidence_path": "ls -la /tmp/foodking-wave-c-2026-05-28/*/",
+      "what_was_reported_by_submitters": "Wave C plan promised E2E captures across payment-plan-b, refund-live, z-pdf-live, wizard-sandwich-tacos (6 items x 2 surfaces x N steps), wizard-bowl-gratine (8 bowls), wizard-burger, latency T1+T2 pairs.",
+      "hostile_finding": "Zero PNG/JPG files exist system-wide for the Wave C tag. The XCUT cross-cut tasks (Plan B 'Veuillez payer a la caisse' legibility, PosCounterCollectModal post-encashment clarity, wizard 10-sauces Cayenne visibility, bowl 2-sauces visibility, Gratine +2EUR feedback, latency T1+T2 visual deltas) ALL require screenshots that do not exist. Issuing any visual verdict would be confabulation.",
+      "recommendation": "RERUN Wave C capture agents (payment Plan B E2E, refund live cycle, Z+PDF live, 3 wizard agents, latency T1/T2) before XCUT can return a real visual verdict. Verify each agent persists its PNGs to the documented /tmp/foodking-wave-c-2026-05-28/<dir>/ path BEFORE marking itself complete."
+    },
+    {
+      "id": "XCUT-FINDING-2",
+      "severity": "P0",
+      "category": "ARTIFACT_INTEGRITY",
+      "title": "z-report.pdf is NOT a PDF — it is a 690-byte JSON payload mis-extensioned",
+      "evidence_path": "/tmp/foodking-wave-c-2026-05-28/z-pdf-live/z-report.pdf",
+      "empirical_proof": {
+        "file_command": "file /tmp/foodking-wave-c-2026-05-28/z-pdf-live/z-report.pdf -> 'JSON data'",
+        "header_bytes": "First 500 bytes start with '{\"data\":{\"z_report\":{\"id\":1,...' — not '%PDF-' magic header.",
+        "size": "690 bytes — orders of magnitude smaller than a real Z-report PDF (typical 1.2 MB per BRAIN HEAL-3 EOD PDF reference).",
+        "content_match_with_04_close_json": "Body is bit-identical to /tmp/foodking-wave-c-2026-05-28/z-pdf-live/04-close.json — proves the agent either curl-saved the close response under the wrong filename OR the /pdf endpoint silently returned JSON."
+      },
+      "two_hostile_interpretations": [
+        "A) TEST-TOOLING DEFECT: the live-z agent saved POST /z-reports/{id}/close response to z-report.pdf instead of separately GETting the /pdf endpoint. Cheap fix in the agent script. Does NOT impeach backend.",
+        "B) NF525 DEFECT (worse): the actual /z-reports/{id}/pdf or /z-reports/{id}.pdf endpoint is broken and returning JSON to a PDF Accept header (or the route is missing and Laravel SPA catchall returned the JSON-close response). This is the 'silent HTML masquerade' pattern documented in MEMORY (feedback_silent_html_masquerade) but applied to PDF endpoint. CAUSE-A and CAUSE-B are indistinguishable without seeing the agent's curl/wget command — recommend running 'curl -H \"Accept: application/pdf\" -o /tmp/probe.pdf .../z-reports/1/pdf' and checking Content-Type + magic header."
+      ],
+      "recommendation": "BLOCK Z-PDF claim until A vs B disambiguated. If B: this is a NF525 owner-facing defect (PDF Z-report is the legal daily archive — 6-year retention obligation, BRAIN section 8). Issue a P0 backend ticket. If A: harden the agent script + retry — but ALSO add a sentinel test that GETs the PDF endpoint and asserts magic header '%PDF-'."
+    }
+  ],
+
+  "things_considered_then_dismissed": [
+    {
+      "claim_considered": "z-report signature 7eddd896... + prev_hash:null is a NF525 chain break",
+      "dismissed_because": "sequence_no=1 on a freshly-seeded DB legitimately has prev_hash=null (first link of the chain). Not a defect. Worth flagging to the next reviewer so they do not chase it.",
+      "evidence": "04-close.json shows sequence_no:1, all totals 0, order_count:0 — consistent with first-ever Z on this DB."
+    },
+    {
+      "claim_considered": "03-index-after-open.json returning HTTP 400 'Cle API invalide.' is a P0",
+      "dismissed_because": "Likely the agent dropped its X-XSRF-TOKEN or Sanctum bearer between calls 02-open and 03-index — note csrf.txt is EMPTY (0 B) — not a backend defect. Tooling artifact only. Flagged as Wave C input-quality issue, not a product defect."
+    },
+    {
+      "claim_considered": "Empty totals + zero orders means kiosk ordering is broken",
+      "dismissed_because": "The Z window opened at 20:39:24 and closed at 20:39:39 — 15 seconds. No real customer journey could complete in 15s. This was a smoke-only sequence open+close, NOT a representative Z-of-day. Cannot derive ordering-pipeline defects from this run."
+    }
+  ],
+
+  "specific_xcut_questions_status": {
+    "Q1_payment_plan_b_message_legibility": "UNANSWERABLE — payment-plan-b dir empty.",
+    "Q2_PosCounterCollectModal_post_encashment_clarity": "UNANSWERABLE — no payment-plan-b captures and no refund-live captures.",
+    "Q3_PDF_Z_report_readable_NF525_fields": "ANSWERED NO — z-report.pdf is JSON, not PDF; see XCUT-FINDING-2. Either the PDF was never generated OR the file naming defects the run.",
+    "Q4_wizard_10_sauces_Cayenne_visible_no_truncate": "UNANSWERABLE — wizard-sandwich-tacos dir empty.",
+    "Q5_wizard_bowl_2_sauces_visible_no_scroll_hide": "UNANSWERABLE — wizard-bowl-gratine dir empty.",
+    "Q6_Gratine_plus_2eur_visual_feedback_clear": "UNANSWERABLE — wizard-bowl-gratine dir empty."
+  },
+
+  "new_p0_p1_summary": {
+    "P0_total": 2,
+    "P1_total": 0,
+    "list": [
+      {"id": "XCUT-FINDING-1", "title": "Wave C capture inputs missing — XCUT cannot adjudicate visual verdict"},
+      {"id": "XCUT-FINDING-2", "title": "z-report.pdf is JSON masquerading as PDF — see two hostile interpretations"}
+    ]
+  },
+
+  "final_verdict": {
+    "label": "NEEDS_HEAL",
+    "sub_status": "BLOCKED_ON_INPUTS",
+    "rationale": "VISUAL_BULLETPROOF cannot be claimed without screenshots. Issuing UI-grounded NEEDS_HEAL would also be confabulation (no UI evidence either way). The honest XCUT verdict is BLOCKED: rerun Wave C capture agents AND disambiguate z-report.pdf cause-A vs cause-B before re-submitting for XCUT review.",
+    "next_actions_owner_or_orchestrator": [
+      "1. Re-dispatch Wave C capture agents with explicit BLOCK-IF-EMPTY post-condition (assert >=1 PNG per dir before marking complete).",
+      "2. Probe Z-report PDF endpoint with curl + magic header check; classify as test-tooling fix (A) vs backend NF525 ticket (B).",
+      "3. Once captures land, re-invoke XCUT RED VISUAL on the populated dirs.",
+      "4. Optionally enable a CI sentinel: assert magic bytes %PDF- on any artifact ending in .pdf in /tmp/foodking-wave-*/."
+    ]
+  },
+
+  "frozen_zone_diff": "N/A — XCUT is read-only audit, no code touched.",
+  "nf525_chain_assertion_attempted": "N/A — chain verify not run (out-of-scope for visual XCUT); flagged that the PDF artifact for the sequence_no=1 Z-window is NOT a real PDF, which is the NF525-adjacent finding."
+}

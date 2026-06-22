@@ -18,7 +18,8 @@ class ItemAddonController extends AdminController
     {
         parent::__construct();
         $this->itemAddonService = $itemAddonService;
-        $this->middleware(['permission:items_show'])->only('index', 'store', 'destroy');
+        $this->middleware(['permission:items_show'])->only('index');
+        $this->middleware(['permission:items_edit'])->only('store', 'destroy');
     }
 
     public function index(PaginateRequest $request, Item $item) : \Illuminate\Http\Response | \Illuminate\Http\Resources\Json\AnonymousResourceCollection | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
@@ -26,7 +27,7 @@ class ItemAddonController extends AdminController
         try {
             return ItemAddonResource::collection($this->itemAddonService->list($request, $item));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -36,7 +37,7 @@ class ItemAddonController extends AdminController
         try {
             return new ItemAddonResource($this->itemAddonService->store($request, $item));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -46,7 +47,7 @@ class ItemAddonController extends AdminController
             $this->itemAddonService->destroy($item, $itemAddon);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

@@ -1,0 +1,105 @@
+{
+  "zone": "WI-4-ROUTES-MIDDLEWARE-SURFACE",
+  "role": "Architect",
+  "specialist_mode": "read-only audit",
+  "scope": "Route layer composition + middleware ordering + idempotency wiring discipline across api.php (1403 LOC) + web.php (62 LOC) + channels.php (62 LOC) + Kernel.php $middlewarePriority sort guarantees + config/idempotency.php required_routes coverage",
+  "anchors_verified": {
+    "routes_api": "routes/api.php — 1403 lines, ~204 mutation routes (POST/PUT/PATCH/DELETE), ~248 GET, 12 Route::match multi-verb (auth + setting GET/POST pairs)",
+    "routes_web": "routes/web.php — 62 lines, 1 installer prefix group + payment gateway redirect endpoints + admin-pos-v4 dedicated entry + 2 catchalls (RootController SPA fallback + kiosk asset 404 guard)",
+    "routes_channels": "routes/channels.php — 62 lines, 2 channels: App.Models.User.{id} (own-id) + branch.{branchId} (token-name discriminator + role check)",
+    "kernel": "app/Http/Kernel.php — global middleware [TrustHosts, TrustProxies, HandleCors, PreventRequestsDuringMaintenance, ValidatePostSize, TrimStrings, ConvertEmptyStringsToNull]; 'api' group [throttle:api, SubstituteBindings, JsonMiddleware, CorrelationIdMiddleware, EnsureUserStatusActive]; $middlewarePriority overrides to place EnsureUserStatusActive AFTER AuthenticatesRequests",
+    "idempotency_config": "config/idempotency.php — 26 required_routes patterns covering POS create/change-status/change-payment-status, online-order, table-order, kds-order, frontend order, cash-drawer sessions, livreur cash sessions, loyalty redeem (mobile + cashier)",
+    "form_requests_dir": "app/Http/Requests/ — 97 files, sentinel FormRequestAuthzDriftSentinelTest baseline = 69, ACTUAL count = 66 (3 BELOW baseline — sentinel emits diagnostic for further refactor)"
+  },
+  "design_assessment": "Three concentric perimeters: (a) global middleware enforces TrustHosts anchoring (regex `^127\\.0\\.0\\.1$` blocks `127X0X0X1` bypass + Wave 2c heal) and TrustProxies=* for per-IP throttle keying (Wave 3 P1 heal); (b) api middleware group enforces throttle:api (default limiter from config app.api_throttle_per_minute) + JSON normalization + correlation-id propagation + EnsureUserStatusActive per-request token revocation gate (Sprint H1 Z6-06); (c) per-prefix middleware stacks layer auth:sanctum + apiKey + named throttle (admin-mutation, pos-quote, pos-order-create, pos-order-update, kiosk-orders, oss-public, etc.) + opt-in `idempotency` middleware on financially-sensitive POSTs. Middleware composition pattern is `installed → apiKey → auth:sanctum → localization → throttle:<bucket>` repeated 5 times for /api/admin (split groups for separate throttle buckets) + /api/frontend + /api/table + /api/profile + /api/auth. Per-IP key derivation works because TrustProxies passes through X-Forwarded-For from the local nginx fronting PHP-FPM.",
+  "middleware_ordering_assessment": {
+    "verdict": "INTACT",
+    "evidence": "Kernel.php:85-97 defines local $middlewarePriority array that explicitly places EnsureUserStatusActive AFTER AuthenticatesRequests. Without this override, Foundation\\Http\\Kernel::sortMiddleware() would array_unshift EnsureUserStatusActive to position 0 (line 410 of the vendor parent), running it BEFORE Sanctum resolves the user, causing every authenticated request to short-circuit with `if (! $user)` passthrough at EnsureUserStatusActive.php:51-53 — i.e., the gate would silently no-op. The local override is the load-bearing piece. Verified post-113-commit drift: the array is still in place, line range unchanged, no removal commits in `git log --all -- app/Http/Kernel.php`.",
+    "regression_risk": "P3 — sentinel coverage. No automated test asserts the priority array exists. If a future refactor strips it (e.g., aligning back to vanilla Laravel Kernel), the gate silently degrades. RECOMMEND adding a sentinel: `tests/Feature/Sentinels/MiddlewarePrioritySentinelTest.php` asserting `(new Kernel(...))->middlewarePriority` contains EnsureUserStatusActive immediately after AuthenticatesRequests."
+  },
+  "route_inventory_summary": {
+    "total_routes": "~520 ish (1403 LOC api + 62 LOC web + 62 LOC channels — 248 GET + 204 mutation in api alone, plus channels Broadcast::channel × 2)",
+    "groups": [
+      "/api/auth/* (apiKey + localization, login-lockout / kiosk-login / signup specific throttles)",
+      "/api/profile/* (auth:sanctum)",
+      "/api/admin/* — split into TWO sibling groups for throttle isolation: (a) [throttle:60,1] for /menu/availability/toggle endpoints (avoid POS self-DoS at rush — see BLUE 2026-05-08 comment L248-255), (b) [throttle:admin-mutation] for everything else",
+      "/api/frontend/* (apiKey + localization, optional auth:sanctum for /order, /address, /message, /loyalty.auth, /payment, /device-token, /delivery-boy-order)",
+      "/api/frontend/csp-report (lifted out of /frontend group — apiKey stripped because browsers can't attach headers on CSP report POST, throttle:1000,1)",
+      "/api/table/* (QR-code path, table.dining-order POST throttle:20,1 — unauthenticated by design)"
+    ],
+    "auth_bypass_endpoints_listed": [
+      "/health, /health/live, /health/ready — no middleware (intentional liveness probes)",
+      "/login (no-op closure returning 401 — placeholder for Laravel's auth.failure route name lookup)",
+      "/refresh-token (apiKey only, no auth — uses Sanctum refresh token from request body)",
+      "/api/auth/login + /api/auth/kiosk-login (apiKey only — pre-auth login endpoint, login-lockout / kiosk-login throttles applied)",
+      "/api/auth/forgot-password/* + /api/auth/signup/* + /api/auth/guest-signup/* (apiKey only — phone-OTP-gated)",
+      "/api/frontend/subscriber + /api/frontend/branch (public, apiKey)",
+      "/api/frontend/oss-order (UNAUTHENTICATED — TV-wall feed, oss-public 60/min/IP throttle, see Sprint H5-B Z4-P2-05 heal — branch_id enumeration mitigated)",
+      "/api/frontend/loyalty/register (UNAUTHENTICATED — creates loyalty account, throttle:5,1 anti-mass-registration)",
+      "/api/frontend/csp-report (no apiKey by design)",
+      "/api/table/dining-order POST (unauthenticated — QR code path, throttle:20,1 per AUDIT-P1)"
+    ]
+  },
+  "idempotency_coverage_assessment": {
+    "verdict": "COMPLETE post WE-4",
+    "evidence": "Sentinel tests/Feature/Idempotency/IdempotencyRequiredRoutesCoverageTest.php iterates every Route with `idempotency` middleware in `gatherMiddleware()` and asserts the URI matches a config('idempotency.required_routes') pattern. Config covers 26 URI patterns including the WE-4 catch (api/admin/pos-order/*/redeem-loyalty). Manual cross-check of api.php → every `->middleware('idempotency')` route appears with matching pattern in config.",
+    "details": [
+      "Routes carrying `idempotency`: pos store, pos counter-collect (confirm/cancel/print-receipt/collect-kiosk-cash), pos cash-drawer (open + sessions open/close/reconcile), pos-order (change-status/change-payment-status/select-delivery-boy/refund/redeem-loyalty), online-order (change-status/change-payment-status/select-delivery-boy), table-order (change-status/change-payment-status), kds-order change-status, frontend order (store/change-status/payment-confirm), frontend delivery-boy-order change-status, frontend loyalty/redeem, delivery-boy cash-sessions (open/close/reconcile) — 26 unique URIs",
+      "Header-omission bypass (C-P0-H) is fully closed: pre-heal, IdempotencyKeyMiddleware:58 fell through silently when X-Idempotency-Key was absent on a route that wasn't in required_routes — the route had idempotency middleware but middleware silently bypassed. The sentinel locked this in."
+    ]
+  },
+  "architecture_concerns": [
+    {
+      "id": "WI-4-A-01",
+      "severity": "P3",
+      "finding": "Two sibling /api/admin route groups (L256 + L270) use DIFFERENT throttle buckets (60,1 vs admin-mutation). This is a documented anti-pattern from BLUE 2026-05-08 B3-S5 — needed to avoid POS cashier 429 self-DoS at rush hour. The siblings ARE NOT NESTED (which would stack to min(30,60)=30). Both share the same `installed,apiKey,auth:sanctum,localization` 4-tuple prefix. Future readers may not realize the split is intentional and merge them in a refactor; sentinel coverage absent.",
+      "files": ["routes/api.php:256-268", "routes/api.php:270"],
+      "remediation": "Add a comment-anchor sentinel: a `tests/Feature/Sentinels/AvailabilityToggleSeparateThrottleSentinelTest.php` EXISTS (verified). It locks /menu/availability/* throttle bucket to NOT be admin-mutation. Defense-in-depth coverage already in place. Closing as documented."
+    },
+    {
+      "id": "WI-4-A-02",
+      "severity": "P2",
+      "finding": "Closure-based POS counter-collect routes (api.php L769-839) are 70+ LOC inline closures with try/catch + abort_unless auth checks. Should be controller methods on a dedicated CounterCollectController. Inline closures bypass `routes:cache` optimization (Laravel docs: closures cannot be route-cached) and make middleware composition harder to read. Pre-prod observed: 5 closure routes × ~15 LOC = 75 LOC inline; if route-cache is needed for cold-start latency (prod queue worker boot), these closures will silently disable artisan route:cache.",
+      "files": ["routes/api.php:769-839 (counter-collect family) + L1110-1115 (fiscal Z-report inline)"],
+      "remediation": "V1.0.2 — extract to App\\Http\\Controllers\\Admin\\Pos\\CounterCollectController. Authorize via __construct middleware `permission:pos`. Zero behavior change. Sentinel: assert RouteCollection contains no closure-target POST routes (count baseline = current 5)."
+    },
+    {
+      "id": "WI-4-A-03",
+      "severity": "P2",
+      "finding": "FormRequest authz coverage is incomplete by V1 design — 66/97 FormRequest classes still have naked `return true;` in authorize() (sentinel baseline = 69, actual = 66, drift sentinel emits diagnostic since count shrunk). The hot endpoints have been progressively healed (Wave 5H = 5, BUILD-6 = 8, AdministratorRequest, PosLoyaltyRedeemRequest). Remaining ~66 are gated by their route middleware (`permission:settings`, etc.) but if a route is ever wired to those FormRequests without a `permission:*` gate, the FormRequest will admit unauthenticated access. Effective today: route gate is the load-bearing piece for those 66.",
+      "files": [
+        "app/Http/Requests/MenuTemplateRequest.php (relevant — route lacks permission gate, see WI-4-S-01)",
+        "app/Http/Requests/AnalyticSectionRequest.php (relevant — route lacks permission gate, see WI-4-S-01)",
+        "app/Http/Requests/CookiesSetRequest.php, MailRequest.php, ProfileRequest.php, ... 63 more"
+      ],
+      "remediation": "Continue staged FormRequest hardening per V1.0.2 backlog. Lower baseline to 66 in the sentinel (`RETURN_TRUE_BASELINE = 66`). New refactors should target highest-blast first: MenuTemplateRequest, AnalyticSectionRequest, KioskSetupRequest, LoyaltySetupRequest, OrderSetupRequest, MailRequest (settings family)."
+    },
+    {
+      "id": "WI-4-A-04",
+      "severity": "P2",
+      "finding": "Closure-defined inline GET /api/admin/pos/counter-collect/pending (L769-784) executes a complex Eloquent query with branch isolation logic INSIDE the route closure. Branch resolution `$branchId = (int) (auth()->user()?->branch_id ?? 0); if ($branchId > 0) { $query->where('branch_id', $branchId); }` is duplicated logic that exists in BranchScope global scope — should rely on the global scope rather than re-implement. Today: when admin/Tenant Admin (branch_id=0) calls this, BranchScope applies its own bypass (admin@0 cross-branch), but the in-closure logic short-circuits the where-clause, achieving the same effect by accident. Code duplication = drift risk.",
+      "files": ["routes/api.php:769-784"],
+      "remediation": "Extract to controller method. Use Order::query() (which auto-applies BranchScope) + remove the manual branch_id where-clause. Sentinel: assert results equivalent for admin@0 + staff@N before and after."
+    },
+    {
+      "id": "WI-4-A-05",
+      "severity": "P3",
+      "finding": "Frontend kiosk routes (api.php L1191-1364) duplicate `auth:sanctum + throttle:kiosk-orders + idempotency` triplet on /order POST + similar combos on /pricing/preview + /promo/validate + /upsell + /loyalty/* + /kiosk/event. ~12 routes each redeclare similar 2-3-tuple middleware. A `Route::middleware(['auth:sanctum', 'kiosk.locale'])->group(function() {...})` wrapper would tidy. Cosmetic — no security impact.",
+      "files": ["routes/api.php:1180-1364"],
+      "remediation": "V1.0.2 cosmetic refactor. Defer."
+    },
+    {
+      "id": "WI-4-A-06",
+      "severity": "P3",
+      "finding": "Health endpoints (/health, /health/live, /health/ready at L139-141) have NO middleware whatsoever — not even throttle:api. A malicious unauthenticated caller can hammer /health/ready (which performs a real DB SELECT + Redis PING + storage check per HealthController). At 1k req/sec, this saturates the DB connection pool. P3 because production fronting will typically reject from k8s liveness IP allowlist or ingress rate limit before hitting Laravel. Defense-in-depth: add throttle:60,1.",
+      "files": ["routes/api.php:139-141"],
+      "remediation": "Add `->middleware('throttle:60,1')` to /health/full and /health/ready (NOT /health/live which must be a fast in-memory PHP no-op for k8s)."
+    }
+  ],
+  "evidence": {
+    "kernel_priority_intact": "git log --all -- app/Http/Kernel.php — no commits modify $middlewarePriority array since Sprint H1 Z6-06 introduction (commit 79e214542 at branch HEAD context). Read confirms lines 85-97 unchanged.",
+    "idempotency_sentinel_passes": "tests/Feature/Idempotency/IdempotencyRequiredRoutesCoverageTest.php exercises Route::getRoutes() and asserts all 26 patterns match — config/idempotency.php:25-71 covers every idempotency-wired POST/PUT/PATCH/DELETE in api.php (manual cross-check verified).",
+    "form_request_authz_drift_sentinel_passes": "tests/Feature/Sentinels/FormRequestAuthzDriftSentinelTest.php emits diagnostic for count=66 < baseline=69 (count SHRUNK post-AdministratorRequest + PosLoyaltyRedeemRequest + 1 other heal). Test passes (assertLessThanOrEqual).",
+    "middleware_aliases_verified": "Kernel.php:106-141 — all alias references in routes/api.php resolve to registered classes: idempotency, permission, role, abilities, ability, kiosk.locale, wizard.per_item_demo, wizard.per_item_profile_guard, apiKey, throttle. No phantom alias references in api.php."
+  }
+}

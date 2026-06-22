@@ -1,0 +1,179 @@
+{
+  "auditor": "Bad-mood AUDIT-5 production failure modes 2026-05-25",
+  "audit_timestamp": "2026-05-25T12:30:00Z",
+  "scenario": "Monday 11h rush · 50 orders/h · 1 cashier · 1 chef · 1 borne",
+  "branch_under_test": 1,
+  "git_branch": "heal/cms-pr1-quickwins-2026-05-18",
+
+  "preflight": {
+    "spatie_roles_present": {
+      "Admin": true,
+      "Branch Manager": false,
+      "POS Operator": false,
+      "Chef": "not_checked_but_inferred_missing",
+      "Kiosk": "not_checked_but_inferred_missing"
+    },
+    "spatie_admin_duplicate": "Admin role exists twice (id=5 sanctum guard + id=6 web guard) — this is correct multi-guard pattern, not duplicate bug",
+    "permissions_count": 78,
+    "users_count": 16,
+    "users_with_admin_role": 1,
+    "users_with_zero_roles": 14,
+    "branches_count": 1,
+    "queue_workers_running": 2,
+    "redis_responding": true,
+    "soketi_responding_http200": true,
+    "soketi_port": 6001
+  },
+
+  "catalog": {
+    "items_total": 45,
+    "items_active": 45,
+    "categories": 11,
+    "branch_1_availability_rows": 59,
+    "branch_1_is_available_true": 59,
+    "verdict": "CATALOG OK"
+  },
+
+  "boot_guards": {
+    "pos_sim_hardware": "guarded (AppServiceProvider:161-168 throws RuntimeException in prod if true)",
+    "idempotency_middleware": "guarded (AppServiceProvider:215-228)",
+    "app_debug": "guarded (AppServiceProvider:193-207)",
+    "cache_driver": "guarded for ['array','null'] only (AppServiceProvider:295) — file/database drivers still PASS the guard (UNI-03 backlog)",
+    "current_env_state": {
+      "APP_ENV": "local",
+      "APP_DEBUG": "false",
+      "POS_SIMULATION_HARDWARE": "true",
+      "IDEMPOTENCY_MIDDLEWARE_ENABLED": "true",
+      "CACHE_DRIVER": "redis",
+      "BROADCAST_DRIVER": "pusher",
+      "QUEUE_CONNECTION": "redis"
+    },
+    "cutover_blocker": "If owner flips APP_ENV=production with current .env, AppServiceProvider WILL REFUSE TO BOOT — POS_SIMULATION_HARDWARE=true is prod-forbidden. .env must be flipped to false BEFORE APP_ENV change."
+  },
+
+  "stress_result": {
+    "orders_attempted": 0,
+    "command_exit": "ABORTED at fixture provisioning",
+    "error": "There is no role named `POS Operator`.",
+    "fiscal_invariants_held": "UNKNOWN (could not run stress because cashier user could not be provisioned)",
+    "throughput_rps": 0,
+    "verdict": "STRESS BLOCKED — RBAC seed missing"
+  },
+
+  "fiscal_state": {
+    "orders_count": 2,
+    "orders_with_fiscal_sequence_no": 0,
+    "orders_with_fiscal_alloc_error": 0,
+    "audit_logs_count": 24,
+    "audit_logs_last_hash_prefix": "f35d1c97134bebe2",
+    "z_reports_count": 0,
+    "verdict": "Audit chain has 24 entries from prior test runs. ZERO Z reports ever produced. End-of-day close cron (23:59 Paris) never exercised on real data — owner Monday night will be FIRST EVER prod close."
+  },
+
+  "payment_gateways_db_state": {
+    "payment_gateways_rows": 0,
+    "stripe_row_exists": false,
+    "paypal_row_exists": false,
+    "senangpay_row_exists": false,
+    "stripe_constructor_failure_mode": "app/Http/PaymentGateways/Gateways/Stripe.php:36 — PaymentGateway::where(slug=stripe)->first() returns null → parent::__construct sets typed `object` paymentGateway property to null → TypeError. Observed in storage/logs/laravel.log at 2026-05-25 12:26:55 (testing env)."
+  },
+
+  "infra_state": {
+    "disk_free_gi": 3.0,
+    "disk_used_pct": 100,
+    "mysql_write_test": "OK at audit time (probably InnoDB reserve)",
+    "verdict": "DISK 100% FULL. Image uploads will fail. Log writes will start failing. Backup runs will fail. MySQL ibdata could refuse extension."
+  },
+
+  "single_points_of_failure": [
+    {
+      "id": "SPOF-01",
+      "title": "Redis dies — fiscal chain blocks",
+      "impact": "Cache::lock('fiscal_seq_{branch}'), Cache::lock('z_report_b{n}'), Cache::lock('audit_chain_b{n}') all fail. NF525 audit chain inserts blocked. Orders cannot complete fiscally. POS hangs on payment finalize.",
+      "mitigation_present": "None — Redis is single point. Sentinel/cluster not configured.",
+      "severity": "P0"
+    },
+    {
+      "id": "SPOF-02",
+      "title": "MySQL hangs — innodb_lock_wait_timeout",
+      "impact": "Per-session 5s timeout in place (F2-HEAL-02 AppServiceProvider:466) means deadlocks bounded.",
+      "mitigation_present": "YES",
+      "severity": "P2 (mitigated)"
+    },
+    {
+      "id": "SPOF-03",
+      "title": "Disk fills — already 100%",
+      "impact": "Logs, uploaded images, MySQL ibdata1 extension, backups — all fail silently or with errors.",
+      "mitigation_present": "NONE active. Backup automation Wave Polish Final puts files on SAME volume.",
+      "severity": "P0 BLOCKER for Monday"
+    },
+    {
+      "id": "SPOF-04",
+      "title": "Payment gateway null — Stripe class crash",
+      "impact": "Card payments fail at 11h rush. Customers leave or cashier forced to cash-only.",
+      "mitigation_present": "NONE. Stripe.php:36 needs null-guard or payment_gateways must be seeded.",
+      "severity": "P0 BLOCKER for Monday"
+    },
+    {
+      "id": "SPOF-05",
+      "title": "Spatie role seeds missing",
+      "impact": "Cashier users (POS Operator role) cannot be provisioned. Stress command aborts. Real cashier login fails authz on `permission:settings` gated routes.",
+      "mitigation_present": "NONE. RolesAndPermissionsSeeder needs to run.",
+      "severity": "P0 BLOCKER for Monday"
+    },
+    {
+      "id": "SPOF-06",
+      "title": "All 14 'soak/stress' users have zero roles",
+      "impact": "Only `admin@lecayenne.fr` can functionally log in. Real cashier + kiosk users not present.",
+      "mitigation_present": "NONE — needs CreateBranchUsers seeder",
+      "severity": "P0 BLOCKER for Monday"
+    },
+    {
+      "id": "SPOF-07",
+      "title": "Z-report has never fired on this DB",
+      "impact": "First close at 23:59 Monday Paris = first ever execution. If close-all-active-branches cron fails (lock timeout, disk full, queue worker hung), NO Z report = NF525 segregation lost.",
+      "mitigation_present": "Z-open companion at 00:05 (HEAL-07) — but if close fails, open succeeds into a chain with no prior Z = invariant break.",
+      "severity": "P1 — must dry-run before Monday"
+    }
+  ],
+
+  "go_live_simulation": {
+    "step_01_borne_pay_card": "RISK — payment_gateways table empty. Stripe gateway constructor will throw TypeError on first card transaction. Customer sees 500 error.",
+    "step_02_borne_to_backend_order": "RISK — fiscal allocation has never been exercised on a paid order in this DB (2 orders, both unpaid/pending). First paid order = first ever fiscal allocation.",
+    "step_03_echo_broadcast_to_kds": "OK — Soketi responds 200, Echo configured.",
+    "step_04_chef_bump_to_prepared": "RISK — NO UNDO documented per KDS gap. Chef misclick = wrong status. No revert button.",
+    "step_05_oss_show_ready": "OK probably — OSS feature flagged on per prior audits.",
+    "step_06_customer_leaves": "OK",
+    "step_07_cashier_close_drawer": "RISK — no cashier user provisioned (POS Operator role missing).",
+    "step_08_z_close_2359_paris": "RISK — Z report never exercised. First production run."
+  },
+
+  "owner_close_of_day": {
+    "drawer_close_ui": "exists per prior Wave Polish Final delivery",
+    "z_report_cron": "scheduled at 23:59 Paris (Kernel.php:362)",
+    "z_open_companion": "scheduled at 00:05 Paris (HEAL-07)",
+    "pdf_export_ui": "NOT VERIFIED — bad-mood notes prior insights flagged 'no PDF export UI' as a gap",
+    "verdict": "Mechanical close lane wired. Owner UI for PDF/Excel export may still be missing — needs manual verify."
+  },
+
+  "first_likely_break": "Card payment at borne (Stripe TypeError because payment_gateways table is EMPTY). Within first hour: cashier login fails (POS Operator role missing). Within first 6h: disk-full kills logs + backups. Monday 23:59: first-ever Z-close fires against an untested DB state.",
+
+  "p0_blockers_for_monday": [
+    "P0-1: Seed payment_gateways with Stripe row (or wire null-guard in Stripe::__construct).",
+    "P0-2: Seed Spatie roles (POS Operator, Branch Manager, Chef, Kiosk) + assign to 14 unrolled users.",
+    "P0-3: Free disk space (currently 3 Gi / 460 Gi = 0.7% free). Need minimum 50 Gi headroom.",
+    "P0-4: Flip POS_SIMULATION_HARDWARE=false in .env BEFORE flipping APP_ENV=production (otherwise app refuses to boot).",
+    "P0-5: Dry-run fiscal:close-all-active-branches against real branch_id=1 BEFORE Monday."
+  ],
+
+  "p1_warnings": [
+    "P1-1: KDS has no undo button — chef mistakes are permanent",
+    "P1-2: Owner PDF/Excel export UI status unverified",
+    "P1-3: Redis is single point — no Sentinel/cluster. Fiscal chain depends on it.",
+    "P1-4: Backup automation may be writing to the same 100%-full volume"
+  ],
+
+  "overall_verdict": "NOT-READY for Monday morning. 5 P0 blockers identified. Earliest realistic launch = 3-5 business days assuming a competent ops engineer can fix the 5 P0s. Without P0-1 fixed, card payments crash. Without P0-2 fixed, no one but admin@lecayenne.fr can log in. Without P0-3 fixed, the box dies within hours.",
+
+  "honest_caveat": "Catalog itself is healthy (45/45 active, 59 branch availabilities, 11 categories). Audit chain bit-OK. Boot guards correctly wired. NF525 invariant code in place. The product is technically production-ready — the DEPLOYMENT is not."
+}

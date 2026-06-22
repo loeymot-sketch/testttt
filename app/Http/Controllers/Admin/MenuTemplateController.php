@@ -20,6 +20,13 @@ class MenuTemplateController extends AdminController
     {
         parent::__construct();
         $this->menuTemplateService = $menuTemplate;
+        // [WJ-1 / WI-4-RED-01 P0 SECURITY 2026-05-19] Customer Sanctum tokens
+        // (abilities=['*']) could previously POST/PUT/DELETE menu-template
+        // routes because the route group had no permission gate. Mirror the
+        // ~20 existing settings-controllers (CurrencyController, SliderController,
+        // ItemAttributeController, …) and require `permission:settings` on
+        // every mutation verb. GET stays open to any authenticated user.
+        $this->middleware(['permission:settings'])->only('store', 'update', 'destroy');
     }
 
     public function index(PaginateRequest $request
@@ -27,7 +34,7 @@ class MenuTemplateController extends AdminController
         try {
             return MenuTemplateResource::collection($this->menuTemplateService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -36,7 +43,7 @@ class MenuTemplateController extends AdminController
         try {
             return new MenuTemplateResource($this->menuTemplateService->store($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -45,7 +52,7 @@ class MenuTemplateController extends AdminController
         try {
             return new MenuTemplateResource($this->menuTemplateService->show($menuTemplate));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -56,7 +63,7 @@ class MenuTemplateController extends AdminController
         try {
             return new MenuTemplateResource($this->menuTemplateService->update($request, $menuTemplate));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -66,7 +73,7 @@ class MenuTemplateController extends AdminController
             $this->menuTemplateService->destroy($menuTemplate);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

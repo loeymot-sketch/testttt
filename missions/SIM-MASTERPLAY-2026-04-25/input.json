@@ -1,0 +1,27 @@
+{
+  "task_id": "SIM-MASTERPLAY-2026-04-25",
+  "role": "adversarial-auditor-gpt-pro",
+  "objective": "Round 2 — Attaquer le breakdown V0 POS/Borne/KDS : trouver failles, sur-confiance, omissions, incohérences doc↔code, violations d'invariants (pricing, OrderStatus, branch_id). Proposer renforcements mesurables. Français.",
+  "inputs_must_read": [
+    "reports/audit/SIM_MASTERPLAY_BREAKDOWN_SYNTH_V0_2026-04-25.md",
+    "docs/orchestration/SIM_MASTERPLAY_POS_BORNE_KDS_CHALLENGE.md",
+    "reports/audit/AUDIT_KDS_POS_SYNCHRONISATION_PROFONDE_2026-04-24.md",
+    "docs/DEVICE_FLOW.md",
+    "docs/HANDOFF_NEW_CURSOR/04_FICHIERS_PIVOTS_PAR_FLUX.md",
+    "AGENTS.md (invariants § FoodKing Non-Negotiables)"
+  ],
+  "deliverables": [
+    "SECTION_A: minimum 5 attaques structurées contre le V0 (titre + preuve attendue + fichier ou grep à ouvrir)",
+    "SECTION_B: minimum 5 validations où le V0 est correct (avec citation repo si possible)",
+    "SECTION_C: matrice événement→surface complétée (remplacer les ? du V0 section 5.2 ou infirmer la matrice)",
+    "SECTION_D: 3 métriques de qualité mesurables pour un futur cycle impl",
+    "VERDICT: GPT_CHALLENGE_VERDICT: MERGE_V0_WITH_REVISIONS | REWRITE_BREAKDOWN | ESCALATE_HUMAN",
+    "Liste priorisée P0/P1/P2 pour Master Play V1 (max 15 lignes)"
+  ],
+  "constraints": [
+    "Ne pas proposer de patch code produit dans ce livrable — uniquement plan/audit/breakdown.",
+    "Si une affirmation ne peut pas être sourcée : marquer UNVERIFIED.",
+    "Respecter invariants FoodKing (pricing backend, OrderStatus enum, branch_id, dispatch after commit)."
+  ],
+  "tone": "compétitif_maximum — chercher à battre le V0 ; si le V0 est solide, le dire explicitement avec preuves."
+}
