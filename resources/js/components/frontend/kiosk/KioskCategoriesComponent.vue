@@ -977,14 +977,20 @@ export default {
 
 .kiosk-sidebar-item {
   width: 100%;
-  border: 2px solid transparent;
-  background: transparent;
+  /* [owner 2026-06-22] Fond/carte par catégorie : avant le fond était transparent
+     (seul l'item actif avait un fond) → nom + photo flottaient sans séparation, on ne
+     distinguait pas quel texte va avec quelle photo. Chaque item est maintenant une
+     carte blanche distincte (bordure + ombre + espacement). */
+  border: 1.5px solid var(--kiosk-border, rgba(28, 16, 0, 0.10));
+  background: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(34, 18, 0, 0.09);
+  margin-bottom: 9px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  padding: 9px 6px 10px;
-  border-radius: 18px;
+  padding: 10px 6px 11px;
+  border-radius: 16px;
   cursor: pointer;
   transition: transform 0.16s ease, background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
 }

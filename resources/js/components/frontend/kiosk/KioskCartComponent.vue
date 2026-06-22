@@ -554,9 +554,11 @@ export default {
       const clean = (s) => sanitizeKioskCustomerFacingText(s);
 
       if (Array.isArray(item.item_variations) && item.item_variations.length > 0) {
-        const bits = item.item_variations
+        // [owner 2026-06-22] dédup : la compo ne doit jamais répéter une même valeur
+        // (ex. "poulet crispy, poulet crispy", "burger, burger") — seulement le nécessaire.
+        const bits = [...new Set(item.item_variations
           .map((v) => clean(v.name || v.variation_name || ''))
-          .filter(Boolean);
+          .filter(Boolean))];
         if (bits.length) parts.push(bits.join(', '));
       } else if (item.item_variations?.names) {
         const names = Object.values(item.item_variations.names)
@@ -566,7 +568,7 @@ export default {
       }
 
       if (Array.isArray(item.item_extras) && item.item_extras.length > 0) {
-        const extras = item.item_extras.map((e) => clean(e.name)).filter(Boolean);
+        const extras = [...new Set(item.item_extras.map((e) => clean(e.name)).filter(Boolean))];
         if (extras.length) parts.push(extras.join(', '));
       } else if (item.item_extras?.names) {
         const raw = Array.isArray(item.item_extras.names)
