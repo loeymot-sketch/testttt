@@ -67,11 +67,14 @@
     <!-- Overlay warm gradient (chaud, pas le noir froid actuel) -->
     <div class="kiosk-idle-overlay" />
 
-    <!-- Décor : food emojis flottants (très subtils, fond uniquement) -->
-    <div class="kiosk-idle-decor" aria-hidden="true">
-      <span class="kiosk-idle-decor-em em-1">🌮</span>
-      <span class="kiosk-idle-decor-em em-2">🍔</span>
-      <span class="kiosk-idle-decor-em em-3">🍟</span>
+    <!-- [owner 2026-06-22] Vitrine animée : vrais produits Le Cayenne flottants,
+         calibrée écran vertical 32". Décoratif (aria-hidden), images statiques. -->
+    <div class="kiosk-idle-decor kiosk-idle-vitrine" aria-hidden="true">
+      <div class="kiosk-prod kiosk-prod--1"><span class="kiosk-prod-glow"></span><img src="/images/menu/cheeseburger.png" alt="" loading="eager" /></div>
+      <div class="kiosk-prod kiosk-prod--2"><span class="kiosk-prod-glow"></span><img src="/images/menu/tacos.png" alt="" loading="eager" /></div>
+      <div class="kiosk-prod kiosk-prod--3"><span class="kiosk-prod-glow"></span><img src="/images/menu/sandwich-cayenne.png" alt="" loading="eager" /></div>
+      <div class="kiosk-prod kiosk-prod--4"><span class="kiosk-prod-glow"></span><img src="/images/menu/bol-frites.png" alt="" loading="eager" /></div>
+      <div class="kiosk-prod kiosk-prod--5"><span class="kiosk-prod-glow"></span><img src="/images/menu/galette.png" alt="" loading="eager" /></div>
     </div>
 
     <!-- Contenu central — Bold Appétissant -->
@@ -334,10 +337,15 @@ export default {
      (`kiosk-app kiosk-theme--light` after F7-4) but the bg stayed dark. We
      consume the variable; fallback `#FFFFFF` matches the owner's V2 palette
      mandate (black/red Cayenne/yellow/white — no warm browns). */
-  background: var(--kiosk-idle-bg, #FFFFFF);
-  /* Texte toujours clair : l'idle screen a TOUJOURS un overlay warm sombre par-dessus
-     vidéo/image/gradient. On ne consomme PAS les tokens text-inverse (qui s'inversent
-     en dark mode) — on fixe la couleur claire en dur. */
+  /* [owner 2026-06-22 vitrine] On REDÉFINIT le token --kiosk-idle-bg ici : la règle theme
+     `.kiosk-theme--light .kiosk-idle-fallback { background: var(--kiosk-idle-bg) }` le consomme,
+     donc la couche de fond visible devient notre orange brand vibrant (pas le cream→orange
+     clair où le texte blanc disparaissait en haut). Glow jaune chaud + radial orange centré
+     sur la zone texte = lisible partout, appétissant. La borne reste light-mode (orange=marque). */
+  --kiosk-idle-bg:
+    radial-gradient(ellipse 78% 46% at 50% 12%, rgba(255, 198, 60, 0.46) 0%, transparent 52%),
+    radial-gradient(ellipse 98% 80% at 50% 40%, #FF7B41 0%, #F4501E 46%, #D2400F 100%);
+  background: var(--kiosk-idle-bg);
   color: #FFF5E8;
 }
 
@@ -353,13 +361,11 @@ export default {
 }
 
 /* Fallback : gradient warm appétissant + food emojis fond */
-.kiosk-idle-fallback {
+.kiosk-idle--bold .kiosk-idle-fallback {
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(ellipse 80% 60% at 30% 20%, rgba(230, 57, 70, 0.18) 0%, transparent 60%),
-    radial-gradient(ellipse 70% 50% at 80% 80%, rgba(255, 182, 39, 0.12) 0%, transparent 55%),
-    linear-gradient(135deg, #1A1410 0%, #0E0A07 100%);
+  /* consomme le --kiosk-idle-bg redéfini ci-dessus (orange brand vibrant) */
+  background: var(--kiosk-idle-bg) !important;
   z-index: 0;
 }
 
@@ -367,12 +373,11 @@ export default {
 .kiosk-idle-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    180deg,
-    rgba(26, 20, 16, 0.20) 0%,
-    rgba(26, 20, 16, 0.40) 50%,
-    rgba(26, 20, 16, 0.85) 100%
-  );
+  /* [owner 2026-06-22] Vitrine-forward : vignette douce (cadre + profondeur)
+     au lieu d'un assombrissement lourd, pour que les vrais produits ressortent.
+     Le contraste du texte central est porté par .kiosk-idle-content::before. */
+  background:
+    radial-gradient(ellipse 98% 90% at 50% 44%, transparent 56%, rgba(120, 34, 4, 0.34) 100%);
   z-index: 1;
 }
 
@@ -384,20 +389,62 @@ export default {
   pointer-events: none;
   overflow: hidden;
 }
-.kiosk-idle-decor-em {
+/* [owner 2026-06-22] Vitrine animée — vrais produits Le Cayenne, prominents.
+   Calibrée écran VERTICAL 32" (portrait) : les plats encadrent le contenu central
+   dans les marges hautes / latérales / basses, sans recouvrir le texte. */
+.kiosk-idle-vitrine { z-index: 1; }
+.kiosk-prod {
   position: absolute;
-  font-size: clamp(80px, 16vw, 220px);
-  opacity: 0.06;
-  filter: saturate(1.4);
-  animation: kiosk-decor-drift 18s ease-in-out infinite alternate;
+  display: grid;
+  place-items: center;
+  filter: drop-shadow(0 26px 40px rgba(38, 10, 0, 0.48));
+  animation: kiosk-prod-float var(--dur, 7s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+  will-change: transform;
 }
-.kiosk-idle-decor-em.em-1 { top: 10%; left: -3%; transform: rotate(-15deg); animation-delay: 0s; }
-.kiosk-idle-decor-em.em-2 { top: 65%; right: -3%; transform: rotate(12deg); animation-delay: 6s; }
-.kiosk-idle-decor-em.em-3 { top: 38%; left: 70%; transform: rotate(-8deg); animation-delay: 12s; opacity: 0.04; }
+.kiosk-prod img {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  /* Entrée bouncy étagée (jouée à l'apparition de l'écran d'accueil — ex. retour auto
+     après commande) ; le flottement continu vit sur le parent .kiosk-prod. */
+  animation: kiosk-prod-in 850ms cubic-bezier(0.34, 1.56, 0.64, 1) var(--delay, 0s) backwards;
+}
+@keyframes kiosk-prod-in {
+  0%   { opacity: 0; transform: scale(0.5) translateY(24px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+.kiosk-prod-glow {
+  position: absolute;
+  width: 82%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 184, 0, 0.55) 0%, rgba(244, 80, 30, 0.28) 46%, transparent 72%);
+  filter: blur(26px);
+  animation: kiosk-glow-pulse 4.6s ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+}
+.kiosk-prod--1 { width: clamp(240px, 36vw, 500px); top: 1%;    left: -6%;  --dur: 7.5s; --delay: 0s;   --rot: -7deg; }
+.kiosk-prod--2 { width: clamp(200px, 30vw, 420px); top: 5%;    right: -5%; --dur: 8.4s; --delay: 0.9s; --rot: 8deg; }
+.kiosk-prod--3 { width: clamp(190px, 27vw, 380px); top: 59%;   left: -7%;  --dur: 9.1s; --delay: 1.7s; --rot: -6deg; }
+.kiosk-prod--4 { width: clamp(200px, 29vw, 410px); top: 65%;   right: -6%; --dur: 7.9s; --delay: 0.5s; --rot: 7deg; }
+.kiosk-prod--5 { width: clamp(250px, 36vw, 500px); bottom: -3%; left: 50%; transform: translateX(-50%); --dur: 8.7s; --delay: 1.3s; --rot: -3deg; }
 
-@keyframes kiosk-decor-drift {
-  from { transform: translateY(0) rotate(var(--rot, 0deg)); }
-  to   { transform: translateY(-30px) rotate(var(--rot, 0deg)); }
+@keyframes kiosk-prod-float {
+  0%, 100% { transform: translateY(0) rotate(var(--rot, 0deg)); }
+  50%      { transform: translateY(-30px) rotate(calc(var(--rot, 0deg) + 2deg)); }
+}
+/* --5 est déjà translateX(-50%) : float dédié qui préserve le centrage horizontal */
+.kiosk-prod--5 { animation-name: kiosk-prod-float-center; }
+@keyframes kiosk-prod-float-center {
+  0%, 100% { transform: translateX(-50%) translateY(0) rotate(var(--rot, 0deg)); }
+  50%      { transform: translateX(-50%) translateY(-24px) rotate(var(--rot, 0deg)); }
+}
+@keyframes kiosk-glow-pulse {
+  0%, 100% { opacity: 0.5;  transform: scale(0.9); }
+  50%      { opacity: 0.92; transform: scale(1.1); }
 }
 
 /* Contenu central — alignement centré pour identité bold */
@@ -419,12 +466,12 @@ export default {
 .kiosk-idle-content::before {
   content: '';
   position: absolute;
-  inset: -4% -6%;
+  inset: -8% -10%;
   z-index: -1;
-  background-color: rgba(15, 12, 10, 0.62);
-  border-radius: 40px;
-  -webkit-mask-image: radial-gradient(ellipse 75% 70% at 50% 50%, #000 55%, transparent 100%);
-          mask-image: radial-gradient(ellipse 75% 70% at 50% 50%, #000 55%, transparent 100%);
+  /* [owner 2026-06-22 vitrine] Halo chaud doux derrière le texte (au lieu de l'ellipse
+     grise opaque) — donne le contraste au texte blanc sans bloc gris terne. */
+  background:
+    radial-gradient(ellipse 66% 60% at 50% 46%, rgba(58, 12, 0, 0.50) 0%, rgba(58, 12, 0, 0.16) 58%, transparent 80%);
   pointer-events: none;
 }
 
@@ -702,7 +749,9 @@ export default {
   .kiosk-idle-tap-hint { animation: none; }
   .kiosk-idle-pulse-ring,
   .kiosk-idle-touch-btn { animation: none; }
-  .kiosk-idle-decor-em,
+  .kiosk-prod,
+  .kiosk-prod img,
+  .kiosk-prod-glow,
   .kiosk-idle-logo-wrap { animation: none; }
 }
 [data-kiosk-reduced-motion='true'] .kiosk-idle-brand-block,
@@ -712,7 +761,9 @@ export default {
 [data-kiosk-reduced-motion='true'] .kiosk-idle-tap-hint,
 [data-kiosk-reduced-motion='true'] .kiosk-idle-pulse-ring,
 [data-kiosk-reduced-motion='true'] .kiosk-idle-touch-btn,
-[data-kiosk-reduced-motion='true'] .kiosk-idle-decor-em,
+[data-kiosk-reduced-motion='true'] .kiosk-prod,
+[data-kiosk-reduced-motion='true'] .kiosk-prod img,
+[data-kiosk-reduced-motion='true'] .kiosk-prod-glow,
 [data-kiosk-reduced-motion='true'] .kiosk-idle-logo-wrap { animation: none !important; }
 
 @media (max-width: 720px) {
