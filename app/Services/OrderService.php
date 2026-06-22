@@ -2989,10 +2989,13 @@ class OrderService
             $orderColumn = $this->sanitizeOrderColumn((string) ($request->get('order_column') ?? 'id'));
             $orderType = $this->sanitizeOrderDirection((string) ($request->get('order_by') ?? 'desc'));
 
-            // [GENIE Wave4 B6 2026-06-16] dropped the 'orderItems' eager-load — it is never dereferenced
-            // in this method (money is summed from the scalar total/discount/delivery_charge columns), so
-            // eager-loading every report row's items was pure waste. Zero numeric change.
-            $orders = Order::with('transaction')->where(function ($query) use ($requests) {
+            // [GENIE Wave4 B6 2026-06-16 + audit-360 W6 perf] Aggregate in SQL, not ->get()->filter()->sum().
+            // Previously this loaded EVERY matching order (the entire orders table when no date filter is
+            // set — the default report page-load) into PHP just to sum 3 scalar columns + count. Now we
+            // build the filtered query ONCE and count/sum in the DB. The realized-revenue SQL scope
+            // (Order::scopeRealizedRevenue) is byte-equivalent to isRealizedRevenueRow (verified; locked by
+            // SalesReportNetTotalSentinelTest), so the totals are unchanged — only the work moves to SQL.
+            $baseQuery = Order::where(function ($query) use ($requests) {
                 if (!empty($requests['from_date']) && !empty($requests['to_date'])) {
                     // [GOAL-G2-HEAL-04 2026-05-23] TZ-generation alignment to
                     // Wave T R5 Paris bounds — sibling of list() above, keep
@@ -3045,7 +3048,7 @@ class OrderService
                 if (isset($requests['exceptSource'])) {
                     $query->where('source', '!=', $requests['exceptSource']);
                 }
-            })->orderBy($orderColumn, $orderType)->get();
+            });
             $salesReportArray = [];
 
             // [GOAL-2026-05-30 H-03] Revenue figures must be PAID-only so the sales report
@@ -3058,18 +3061,24 @@ class OrderService
             // include the negative refund counter-entry mirrors so a refunded sale nets to ~0 —
             // agrees with the dashboard (scopeRealizedRevenue) and the signed Z. total_orders stays
             // the placed-volume count.
-            $paidOrders = $orders->filter(fn ($o) => \App\Models\Order::isRealizedRevenueRow($o));
-            // [audit-360 2026-06-21 P2] Count REAL placed orders only — exclude refund
-            // counter-entry mirrors (parent_order_id set), matching the dashboard headline
-            // (DashboardService::orderQuery()->whereNull('parent_order_id')->count()). Both
-            // cards are titled "Total Commandes"; this one previously INCLUDED the refund
-            // mirrors while the dashboard excluded them, so an owner reconciling the two
-            // screens saw an unexplained N-order gap. Money figures keep the net realized set
-            // (WITH negative mirrors) so refunds still net to ~0 — count-only change.
-            $salesReportArray['total_orders'] = $orders->whereNull('parent_order_id')->count();
-            $salesReportArray['total_earnings'] = AppLibrary::currencyAmountFormat($paidOrders->sum('total'));
-            $salesReportArray['total_discounts'] = AppLibrary::currencyAmountFormat($paidOrders->sum('discount'));
-            $salesReportArray['total_delivery_charges'] = AppLibrary::currencyAmountFormat($paidOrders->sum('delivery_charge'));
+            // [audit-360 2026-06-21 P2 + W6 perf] total_orders = REAL placed orders only (exclude
+            // refund counter-entry mirrors, parent_order_id set), matching the dashboard headline
+            // (DashboardService::orderQuery()->whereNull('parent_order_id')->count()). Both cards are
+            // titled "Total Commandes"; this previously INCLUDED the refund mirrors while the dashboard
+            // excluded them → unexplained N-order gap. SQL count — no rows loaded into PHP.
+            $salesReportArray['total_orders'] = (clone $baseQuery)->whereNull('parent_order_id')->count();
+            // [SALES-NET-01 + W6 perf] Money = NET realized revenue via Order::scopeRealizedRevenue —
+            // the SQL byte-equivalent of isRealizedRevenueRow (PAID-&-not-terminal OR refund-mirror),
+            // verified identical + locked by SalesReportNetTotalSentinelTest. SQL SUM over the scope:
+            // refund mirrors carry negative totals so a refunded sale nets to ~0, agreeing with the
+            // dashboard + signed Z. COALESCE → 0 on the empty set. Replaces ->get()->filter()->sum()
+            // which loaded every matching order into PHP just to sum 3 scalar columns.
+            $realized = (clone $baseQuery)->realizedRevenue()
+                ->selectRaw('COALESCE(SUM(total),0) as e, COALESCE(SUM(discount),0) as d, COALESCE(SUM(delivery_charge),0) as dc')
+                ->first();
+            $salesReportArray['total_earnings'] = AppLibrary::currencyAmountFormat($realized->e ?? 0);
+            $salesReportArray['total_discounts'] = AppLibrary::currencyAmountFormat($realized->d ?? 0);
+            $salesReportArray['total_delivery_charges'] = AppLibrary::currencyAmountFormat($realized->dc ?? 0);
 
             return $salesReportArray;
         } catch (Exception $exception) {
