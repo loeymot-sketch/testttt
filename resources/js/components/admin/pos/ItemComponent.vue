@@ -363,6 +363,10 @@ export default {
             default: function () { return []; }
         }
     },
+    // [POS-CATEGORY-FIRST 2026-06-23 /goal] Emitted after a NEW cart line is
+    // added (simple item or Vanilla-wizard add) so PosComponent can auto-return
+    // to the category grid hub. Edits (replaceCartLine) do NOT emit.
+    emits: ['item:added'],
     data() {
         return {
             item: null,
@@ -1450,6 +1454,9 @@ export default {
                         this.$store.commit('posCart/subtotal');
                     }
                     finishSuccess();
+                    // [POS-CATEGORY-FIRST 2026-06-23 /goal] New line taken →
+                    // signal the parent to return to the category grid hub.
+                    this.$emit('item:added');
                 })
                 .catch(() => {
                     if (optimisticTempId != null) {

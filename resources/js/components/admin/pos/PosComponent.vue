@@ -420,7 +420,7 @@
           `category.featured === true` on the /admin/pos-category response.
         -->
         <nav
-            v-if="displayedCategories.length > 1"
+            v-if="!showCategoryGrid && displayedCategories.length > 1"
             class="pos-v5-category-strip pos-menu-category-scroll pos-v4-category-strip"
             ref="categoryScrollStrip"
             role="tablist"
@@ -468,12 +468,73 @@
             </button>
         </nav>
 
-        <div aria-live="polite" aria-relevant="additions"
+        <!--
+          [POS-CATEGORY-FIRST 2026-06-23 /goal] Landing = category grid hub.
+          Owner direction: the first POS screen shows the categories (big tiles),
+          NOT the full product dump — the cashier picks a category, then drills
+          into its products. Rendered only when no category/search is active.
+        -->
+        <section
+            v-if="showCategoryGrid"
+            class="pos-v5-cat-grid-region"
+            aria-label="Catégories"
+            data-testid="pos-category-grid"
+        >
+            <div v-if="categoryTiles.length > 0" class="pos-v5-cat-grid" role="list">
+                <button
+                    v-for="category in categoryTiles"
+                    :key="category.id"
+                    type="button"
+                    role="listitem"
+                    class="pos-v5-cat-tile"
+                    :aria-label="category.name || ''"
+                    :title="category.name || ''"
+                    data-testid="pos-category-tile"
+                    @click="setCategory(category.id)"
+                >
+                    <span class="pos-v5-cat-tile__visual">
+                        <img v-if="category.thumb" :src="category.thumb" :alt="category.name || ''" loading="lazy" />
+                        <span v-else class="pos-v5-cat-tile__visual-fallback" aria-hidden="true">{{ (category.name || '?').charAt(0).toUpperCase() }}</span>
+                    </span>
+                    <span class="pos-v5-cat-tile__label">{{ category.name }}</span>
+                </button>
+            </div>
+            <SkeletonGrid v-else-if="loadingItems || posItemsFetchPending" :count="8" />
+            <div class="my-12" v-else>
+                <div class="max-w-[350px] mx-auto">
+                    <img class="w-full mb-8" :src="setting.image_order_not_found" alt="image_order_not_found">
+                </div>
+                <span class="w-full mb-4 text-center text-black">{{ $t('message.no_data_available') }}</span>
+            </div>
+        </section>
+
+        <div v-else aria-live="polite" aria-relevant="additions"
             :aria-busy="loadingItems ? 'true' : 'false'"
             class="pos-menu-products-region">
+            <!--
+              [POS-CATEGORY-FIRST] Back bar — return to the category grid hub.
+              Shown whenever the cashier has drilled into a category or run a
+              search (mirrors the owner's "retourner en arrière" direction).
+            -->
+            <div
+                v-if="activeBrowseCategory || props.search.name"
+                class="pos-v5-browse-back"
+                data-testid="pos-browse-back-bar"
+            >
+                <button
+                    type="button"
+                    class="pos-v5-browse-back__btn"
+                    data-testid="pos-browse-back"
+                    @click="allCategory"
+                >
+                    <span aria-hidden="true">←</span>
+                    <span>Toutes les catégories</span>
+                </button>
+                <span v-if="activeBrowseCategory" class="pos-v5-browse-back__current">{{ activeBrowseCategory.name }}</span>
+            </div>
             <SkeletonGrid v-if="loadingItems" :count="12" />
             <template v-else>
-                <ItemComponent ref="posItemComponent" :items="displayedItems" :drinks-catalog="drinksCatalog" />
+                <ItemComponent ref="posItemComponent" :items="displayedItems" :drinks-catalog="drinksCatalog" @item:added="onProductAddedReturnToCategories" />
 
                 <div class="my-12" v-if="items.length === 0 && !props.search.name">
                     <div class="max-w-[350px] mx-auto">
@@ -1463,6 +1524,16 @@ import {
     bundledOrderQuantityAndTotal,
     parsePositiveInt,
 } from "../../../helpers/posCartLineMath";
+// [POS-CATEGORY-FIRST 2026-06-23 /goal] Category-first browse view — the
+// landing screen renders the category grid (the hub); picking a category
+// drills into its products. Pure resolvers (unit-tested in
+// tests/js/posBrowseView.spec.js) so the view decision stays separate from
+// the catalog getters.
+import {
+    resolvePosBrowseMode,
+    browseCategoryTiles,
+    activeBrowseCategory,
+} from "../../../helpers/posBrowseView";
 import {
     normalizeExtraEntries,
     normalizeId,
@@ -1993,6 +2064,33 @@ export default {
         },
         isLanding: function () {
             return this.props.search.item_category_id === '' && !this.props.search.name;
+        },
+        // [POS-CATEGORY-FIRST 2026-06-23 /goal] Which region renders in the POS
+        // main column. 'categories' on the landing screen (the cashier sees the
+        // category grid hub, never the full product dump); 'products' once a
+        // real category is picked OR a search is active. Pure resolver →
+        // tests/js/posBrowseView.spec.js.
+        posBrowseMode: function () {
+            return resolvePosBrowseMode({
+                categoryId: this.props.search.item_category_id,
+                searchName: this.props.search.name,
+            });
+        },
+        showCategoryGrid: function () {
+            return this.posBrowseMode === 'categories';
+        },
+        // Real categories (id>0) rendered as the landing grid tiles. Excludes
+        // the id=0 "Toutes" sentinel; keeps non-featured categories (the grid
+        // is the full hub, not the featured pill allowlist).
+        categoryTiles: function () {
+            return browseCategoryTiles(this.$store.getters["posCategory/lists"] || []);
+        },
+        // The drilled-in category (for the back-bar header), or null on landing.
+        activeBrowseCategory: function () {
+            return activeBrowseCategory(
+                this.$store.getters["posCategory/lists"] || [],
+                this.props.search.item_category_id,
+            );
         },
         bestSellerItems: function () {
             // [V8 FIX] Use is_featured flag from API as the primary source for best sellers.
@@ -3623,6 +3721,16 @@ export default {
             this.props.search.name = "";
             this.props.search.item_category_id = id;
             this.itemList(1, { overlay: false });
+        },
+        // [POS-CATEGORY-FIRST 2026-06-23 /goal] After a cart line is taken from
+        // a category, auto-return to the category grid hub so the cashier picks
+        // the next category fresh ("redirigé directement vers toutes les
+        // catégories après chaque prise de commande"). Fired by ItemComponent's
+        // `item:added` event — the single add funnel for BOTH simple items and
+        // the (frozen) Vanilla wizard. Edits (replaceCartLine) do NOT emit, so
+        // editing a line keeps the cashier in place.
+        onProductAddedReturnToCategories: function () {
+            this.allCategory();
         },
         cartQuantityUp: function (id, e) {
             // [V4 FIX] e.target.value is always a string from DOM input; parseInt before storing

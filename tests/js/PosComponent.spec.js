@@ -286,3 +286,117 @@ describe('PosComponent', () => {
         expect(wrapper.vm.isDiscountApplyable).toBe(true);
     });
 });
+
+// [POS-CATEGORY-FIRST 2026-06-23 /goal] Category-first browse flow.
+// Owner direction: the POS landing screen must show the CATEGORY GRID hub,
+// not the full product dump. Picking a category drills into its products with
+// a back bar; adding a line auto-returns to the grid.
+describe('PosComponent — category-first browse (POS-CATEGORY-FIRST)', () => {
+    function makeBrowseStore(overrides = {}) {
+        const getters = {
+            ...getterValues,
+            'posCategory/lists': [
+                { id: 0, name: 'Toutes les catégories', featured: true },
+                { id: 3, name: 'Sandwichs', featured: true, thumb: '' },
+                { id: 8, name: 'Tacos', featured: false, thumb: '' },
+            ],
+            'item/lists': [
+                { id: 101, name: 'Cayenne', item_category_id: 3 },
+                { id: 102, name: 'Tacos M', item_category_id: 8 },
+            ],
+            ...overrides,
+        };
+        return {
+            getters: new Proxy(getters, {
+                get(target, property) {
+                    return property in target ? target[property] : [];
+                },
+            }),
+            dispatch: vi.fn(() => Promise.resolve({ data: { data: {} } })),
+            commit: vi.fn(),
+        };
+    }
+
+    function mountBrowse(store) {
+        return shallowMount(TestPosComponent, {
+            global: {
+                stubs: { transition: false },
+                mocks: {
+                    $store: store,
+                    $t: (key) => key,
+                    $route: { query: {}, params: {} },
+                    $router: { push: vi.fn(), replace: vi.fn() },
+                },
+            },
+        });
+    }
+
+    it('landing renders the category grid hub (real categories only), not the product dump', () => {
+        const wrapper = mountBrowse(makeBrowseStore());
+
+        expect(wrapper.vm.showCategoryGrid).toBe(true);
+        expect(wrapper.find('[data-testid="pos-category-grid"]').exists()).toBe(true);
+        // id=0 "Toutes" sentinel is excluded; 2 real category tiles render.
+        const tiles = wrapper.findAll('[data-testid="pos-category-tile"]');
+        expect(tiles.length).toBe(2);
+        expect(wrapper.text()).toContain('Sandwichs');
+        expect(wrapper.text()).toContain('Tacos');
+        // The product region is NOT shown on the landing hub.
+        expect(wrapper.find('.pos-menu-products-region').exists()).toBe(false);
+    });
+
+    it('picking a category drills into products and surfaces the back bar', async () => {
+        const wrapper = mountBrowse(makeBrowseStore());
+
+        wrapper.vm.setCategory(8);
+        await wrapper.vm.$nextTick();
+
+        expect(wrapper.vm.showCategoryGrid).toBe(false);
+        expect(wrapper.find('[data-testid="pos-category-grid"]').exists()).toBe(false);
+        expect(wrapper.find('.pos-menu-products-region').exists()).toBe(true);
+        // Back bar with the drilled-in category name.
+        expect(wrapper.find('[data-testid="pos-browse-back-bar"]').exists()).toBe(true);
+        expect(wrapper.find('[data-testid="pos-browse-back"]').exists()).toBe(true);
+        expect(wrapper.vm.activeBrowseCategory).toEqual({ id: 8, name: 'Tacos', featured: false, thumb: '' });
+    });
+
+    it('the back control returns to the category grid hub', async () => {
+        const wrapper = mountBrowse(makeBrowseStore());
+
+        wrapper.vm.setCategory(8);
+        await wrapper.vm.$nextTick();
+        expect(wrapper.vm.showCategoryGrid).toBe(false);
+
+        await wrapper.find('[data-testid="pos-browse-back"]').trigger('click');
+
+        expect(wrapper.vm.props.search.item_category_id).toBe('');
+        expect(wrapper.vm.showCategoryGrid).toBe(true);
+    });
+
+    it('taking a cart line auto-returns to the category grid ("après chaque prise de commande")', async () => {
+        const wrapper = mountBrowse(makeBrowseStore());
+
+        wrapper.vm.setCategory(8);
+        await wrapper.vm.$nextTick();
+        expect(wrapper.vm.showCategoryGrid).toBe(false);
+
+        // ItemComponent emits `item:added` after a NEW line is taken.
+        wrapper.vm.onProductAddedReturnToCategories();
+        await wrapper.vm.$nextTick();
+
+        expect(wrapper.vm.props.search.item_category_id).toBe('');
+        expect(wrapper.vm.showCategoryGrid).toBe(true);
+    });
+
+    it('an active search shows products (search spans the catalogue), with a back-to-categories bar', async () => {
+        const wrapper = mountBrowse(makeBrowseStore());
+
+        await wrapper.setData({
+            props: { search: { ...wrapper.vm.props.search, name: 'cola', item_category_id: '' } },
+        });
+
+        expect(wrapper.vm.showCategoryGrid).toBe(false);
+        expect(wrapper.find('.pos-menu-products-region').exists()).toBe(true);
+        expect(wrapper.find('[data-testid="pos-browse-back-bar"]').exists()).toBe(true);
+    });
+});
