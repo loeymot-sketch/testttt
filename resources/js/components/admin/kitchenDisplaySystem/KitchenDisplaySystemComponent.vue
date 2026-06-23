@@ -156,7 +156,7 @@
                 <p v-if="Array.isArray(orderItem.item_variations) && orderItem.item_variations.length > 0"
                   class="text-xs font-normal font-client capitalize text-[#6E7191]">
                   <span v-for="(variation, index) in orderItem.item_variations" :key="index" class="text-heading">
-                    {{ variation.variation_name }}: {{ variation.name }}<span
+                    {{ variationLine(variation) }}<span
                       v-if="index + 1 < orderItem.item_variations.length">,&nbsp;</span>
                   </span>
                 </p>
@@ -390,7 +390,7 @@
                         <p v-if="Array.isArray(item.item_variations) && item.item_variations.length > 0"
                           class="text-xs font-normal font-client capitalize text-[#6E7191]">
                           <span v-for="(variation, index) in item.item_variations" :key="index" class="text-heading">
-                            {{ variation.variation_name }}: {{ variation.name }}<span
+                            {{ variationLine(variation) }}<span
                               v-if="index + 1 < item.item_variations.length">,&nbsp;</span>
                           </span>
                         </p>
@@ -575,7 +575,7 @@
                         <p v-if="Array.isArray(item.item_variations) && item.item_variations.length > 0"
                           class="text-xs font-normal font-client capitalize text-[#6E7191]">
                           <span v-for="(variation, index) in item.item_variations" :key="index" class="text-heading">
-                            {{ variation.variation_name }}: {{ variation.name }}<span
+                            {{ variationLine(variation) }}<span
                               v-if="index + 1 < item.item_variations.length">,&nbsp;</span>
                           </span>
                         </p>
@@ -748,7 +748,7 @@
                         <p v-if="Array.isArray(item.item_variations) && item.item_variations.length > 0"
                           class="text-xs font-normal font-client capitalize text-[#6E7191]">
                           <span v-for="(variation, index) in item.item_variations" :key="index" class="text-heading">
-                            {{ variation.variation_name }}: {{ variation.name }}<span
+                            {{ variationLine(variation) }}<span
                               v-if="index + 1 < item.item_variations.length">,&nbsp;</span>
                           </span>
                         </p>
@@ -918,7 +918,7 @@
                         <p v-if="Array.isArray(item.item_variations) && item.item_variations.length > 0"
                           class="text-xs font-normal font-client capitalize text-[#6E7191]">
                           <span v-for="(variation, index) in item.item_variations" :key="index" class="text-heading">
-                            {{ variation.variation_name }}: {{ variation.name }}<span
+                            {{ variationLine(variation) }}<span
                               v-if="index + 1 < item.item_variations.length">,&nbsp;</span>
                           </span>
                         </p>
@@ -1086,6 +1086,11 @@ import {
 import { kdsInstructionVisualClass } from "../../../helpers/kdsLineSemantics";
 import { orderHasAllergens as kdsOrderHasAllergens, sortedAllergens as kdsSortedAllergens } from "../../../helpers/kdsAllergens";
 import { ORDER_STATUS } from "../../../helpers/kdsState";
+// [POS-WIZARD-COMPO-AUDIT 2026-06-23 P2-B] Shape-agnostic GROUP:VALUE render so
+// snapshot-shaped composition lines (attribute_name=GROUP / variation_name=VALUE)
+// no longer invert on the KDS order-cards + kitchen ticket. Legacy items-board
+// shape stays correct through the same helper.
+import { kdsVariationLine } from "../../../helpers/kdsCustomization";
 // [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT — mirrors App\Support\PhoneDisplay::safe
 import { safePhone } from "../../../helpers/phoneDisplay";
 // [kds/sprint-2 V-5] V2 layout components — feature-flagged single FIFO 4×2 grid.
@@ -1563,6 +1568,13 @@ export default {
     // [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT proxy for template access.
     safePhone(phone) {
       return safePhone(phone);
+    },
+    // [POS-WIZARD-COMPO-AUDIT 2026-06-23 P2-B] Shape-agnostic "GROUP: VALUE"
+    // variation render for the order-cards (snapshot-shaped) AND the items-board
+    // (legacy-shaped). Replaces the inline `{{variation_name}}: {{name}}` that
+    // inverted snapshot lines into "Poulet mariné: ".
+    variationLine(v) {
+      return kdsVariationLine(v);
     },
     // [2026-05-18 PR-C T2 reframe heal] JS-side filter for OrderStatusChanged.
     // Mirrors `KitchenReleaseRule::visibleStatuses` (ACCEPT / PREPARING /
@@ -2217,7 +2229,7 @@ export default {
         lines.push(`<strong style="font-size:15px;">${item.quantity}× ${e(item.item_name)}</strong>`);
 
         if (Array.isArray(item.item_variations) && item.item_variations.length > 0) {
-          const vars = item.item_variations.map(v => `${e(v.variation_name)}: ${e(v.name)}`).join(' | ');
+          const vars = item.item_variations.map(v => e(kdsVariationLine(v))).join(' | ');
           lines.push(`<div style="font-size:12px;color:#444;margin-top:2px;">${vars}</div>`);
         }
         if (Array.isArray(item.item_extras) && item.item_extras.length > 0) {

@@ -4,6 +4,8 @@ import {
     categorize,
     renderItem,
     orderHasAnyAllergen,
+    kdsVariationGroupValue,
+    kdsVariationLine,
 } from '../../resources/js/helpers/kdsCustomization.js';
 
 // [kds/sprint-2 F-3] Adaptive customization renderer. The Vue card template
@@ -219,5 +221,42 @@ describe('orderHasAnyAllergen — aggregates across all items', () => {
     it('returns false on malformed input (defensive)', () => {
         expect(orderHasAnyAllergen(null)).toBe(false);
         expect(orderHasAnyAllergen('not-an-array')).toBe(false);
+    });
+});
+
+// [POS-WIZARD-COMPO-AUDIT 2026-06-23 P2-B] Shape-agnostic "GROUP: VALUE" accessor
+// for the KDS order-card / kitchen-ticket variation render. Fixes the field
+// inversion where snapshot-shaped lines (attribute_name=GROUP, variation_name=
+// VALUE, no `name`) were rendered with the legacy template `{{variation_name}}:
+// {{name}}` → "Poulet mariné: " (group dropped, value mislabeled). Works for
+// BOTH shapes so the items-board (legacy shape) stays correct too.
+describe('kdsVariationGroupValue / kdsVariationLine — shape-agnostic GROUP:VALUE', () => {
+    it('snapshot shape: attribute_name=GROUP, variation_name=VALUE (no name)', () => {
+        const v = { attribute_name: 'Viande 1', variation_name: 'Poulet mariné' };
+        expect(kdsVariationGroupValue(v)).toEqual({ group: 'Viande 1', value: 'Poulet mariné' });
+        expect(kdsVariationLine(v)).toBe('Viande 1: Poulet mariné');
+    });
+
+    it('legacy shape: variation_name=GROUP, name=VALUE', () => {
+        const v = { variation_name: 'Pain', name: 'Galette' };
+        expect(kdsVariationGroupValue(v)).toEqual({ group: 'Pain', value: 'Galette' });
+        expect(kdsVariationLine(v)).toBe('Pain: Galette');
+    });
+
+    it('empty/missing attribute_name falls back to legacy interpretation', () => {
+        const v = { attribute_name: '', variation_name: 'Sauce', name: 'Algérienne' };
+        expect(kdsVariationLine(v)).toBe('Sauce: Algérienne');
+    });
+
+    it('value-only (no group) renders the value alone, no dangling colon', () => {
+        expect(kdsVariationLine({ variation_name: 'Frites' })).toBe('Frites');
+        expect(kdsVariationLine({ attribute_name: 'Taille', variation_name: '' })).toBe('Taille');
+    });
+
+    it('null / garbage is safe (empty string, never throws)', () => {
+        expect(kdsVariationLine(null)).toBe('');
+        expect(kdsVariationLine(undefined)).toBe('');
+        expect(kdsVariationLine({})).toBe('');
+        expect(kdsVariationGroupValue(null)).toEqual({ group: '', value: '' });
     });
 });

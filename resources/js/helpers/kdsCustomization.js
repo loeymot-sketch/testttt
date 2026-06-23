@@ -124,6 +124,50 @@ function variationLabel(v) {
     return v?.name || v?.variation_name || '';
 }
 
+/**
+ * [POS-WIZARD-COMPO-AUDIT 2026-06-23 P2-B] Shape-agnostic GROUP/VALUE accessor.
+ *
+ * The composition has two on-wire shapes that INVERT the meaning of
+ * `variation_name`:
+ *   - snapshot (composition_snapshot.lines, OrderItemResource): `attribute_name`
+ *     = GROUP ("Viande 1"), `variation_name` = VALUE ("Poulet mariné"), no `name`.
+ *   - legacy (item_variations column, KDSOrderItemsResource / kiosk payload):
+ *     `variation_name` = GROUP, `name` = VALUE.
+ *
+ * Rendering a snapshot line with the legacy template `{{variation_name}}:
+ * {{name}}` produced "Poulet mariné: " (group dropped, value mislabeled). This
+ * helper resolves {group, value} correctly for BOTH shapes (discriminant =
+ * presence of `attribute_name`), so the KDS order-cards/print AND the legacy
+ * items-board render identically and correctly.
+ */
+export function kdsVariationGroupValue(v) {
+    if (!v || typeof v !== 'object') {
+        return { group: '', value: '' };
+    }
+    const attr = v.attribute_name;
+    if (attr !== null && attr !== undefined && String(attr) !== '') {
+        // snapshot shape
+        return {
+            group: String(attr),
+            value: String(v.variation_name ?? v.name ?? ''),
+        };
+    }
+    // legacy shape
+    return {
+        group: String(v.variation_name ?? ''),
+        value: String(v.name ?? ''),
+    };
+}
+
+/** "GROUP: VALUE" (or just the value when there is no group) — never a dangling colon. */
+export function kdsVariationLine(v) {
+    const { group, value } = kdsVariationGroupValue(v);
+    if (group && value) {
+        return `${group}: ${value}`;
+    }
+    return value || group || '';
+}
+
 function extraLabel(e) {
     return e?.name || e?.extra_name || '';
 }
