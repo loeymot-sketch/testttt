@@ -79,7 +79,22 @@ class NormalItemResource extends JsonResource
         // par `KioskMenuService::projectItems` pour les projections kiosk par branche.
         $isAvailable = $this->is_available === null ? true : (bool) $this->is_available;
 
+        // [VIANDE-COUNT 2026-06-24] SSOT serveur du nombre de viandes à choisir
+        // = nombre d'attributs « Viande N » distincts ayant des variations actives.
+        // KioskWizardComponent.detectViandeCount() (frozen) lit ce champ EN PRIORITÉ
+        // (avant l'heuristique nom : « Méga »→4, « Terminator »/« Bol »→null = étape
+        // viande absente/fausse). Méga/Terminator=2, Tacos M/Bols=1, Tacos L=2.
+        $viandeCount = $filteredVariations
+            ->filter(function ($v): bool {
+                $n = mb_strtolower((string) optional($v->itemAttribute)->name);
+                return str_contains($n, 'viande') || str_contains($n, 'meat');
+            })
+            ->pluck('item_attribute_id')
+            ->unique()
+            ->count();
+
         return [
+            "viande_count" => $viandeCount,
             "id" => $this->id,
             "name" => $this->name,
             "category_name" => optional($this->category)->name,

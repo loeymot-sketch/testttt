@@ -308,7 +308,22 @@ final class KioskMenuService
                 'addons' => [],
             ];
 
+            // [VIANDE-COUNT 2026-06-24] SSOT serveur du nombre de viandes à choisir
+            // = nombre d'attributs « Viande N » ayant des variations actives. La
+            // borne (KioskWizardComponent.detectViandeCount, frozen) lit ce champ
+            // EN PRIORITÉ (avant l'heuristique nom buggée : « Méga »→4, « Terminator »
+            // / « Bol »→null = pas d'étape viande). Méga/Terminator=2, Tacos M/Bols=1,
+            // Tacos L=2, burgers/desserts=0 (la borne retombe alors sur le nom = 0).
+            $projectedItemAttributes = $this->projectItemAttributes($item, self::CHANNEL);
+            $viandeCount = collect($projectedItemAttributes)
+                ->filter(function ($a): bool {
+                    $n = mb_strtolower((string) ($a['name'] ?? ''));
+                    return str_contains($n, 'viande') || str_contains($n, 'meat');
+                })
+                ->count();
+
             return [
+                'viande_count'       => $viandeCount,
                 'id'                 => (int) $item->id,
                 'category_id'        => (int) $item->item_category_id,
                 'item_category_id'   => (int) $item->item_category_id,
@@ -372,7 +387,7 @@ final class KioskMenuService
                             'unavailable_reason' => $availability['unavailable_reason'],
                         ];
                     })->values()->all(),
-                'itemAttributes'      => $this->projectItemAttributes($item, self::CHANNEL),
+                'itemAttributes'      => $projectedItemAttributes,
                 'composer_profile'    => $this->composerProfileProjection()->project($composerProfiles->get($item->id), $item, self::CHANNEL, $branchId),
                 'extras'             => $item->extras
                     ->filter(fn ($e) => $e->isVisibleOn(self::CHANNEL))
