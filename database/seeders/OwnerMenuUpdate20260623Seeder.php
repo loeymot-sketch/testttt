@@ -96,13 +96,13 @@ class OwnerMenuUpdate20260623Seeder extends Seeder
         $tacosM = $this->upsertItem(26, 'Tacos M', 6.90, 5, 'Galette de blé, 1 viande au choix, frites maison et sauce.');
         $this->wireMeatChoice($tacosM, 1);      // 1 viande
         $this->wireSauces($tacosM);
-        $this->wireGarnitures($tacosM);
+        $this->clearGarnitures($tacosM);        // owner : tacos SANS crudités (« on n'en propose même pas »)
         $this->wireSupplements($tacosM);
 
         $tacosL = $this->upsertItem(null, 'Tacos L', 7.90, 5, 'Galette de blé, 2 viandes au choix, frites maison et sauce.');
         $this->wireMeatChoice($tacosL, 2);      // 2 viandes
         $this->wireSauces($tacosL);
-        $this->wireGarnitures($tacosL);
+        $this->clearGarnitures($tacosL);        // owner : tacos SANS crudités
         $this->wireSupplements($tacosL);
 
         // 4) BURGERS (cat 4) — compositions fixes, PAS de choix de viande.
@@ -238,16 +238,28 @@ class OwnerMenuUpdate20260623Seeder extends Seeder
             $this->clearAddons($fv->id);
             $this->unpublishProfiles([$fv->id]);
         }
-        // (4) Viande supplémentaire +2,50 RÉELLE : extra facturé (le « +2,50 » du wizard
-        //     frozen est display-only). Ajouté en EXTRA sur les produits à choix de viande
-        //     -> rendu + facturé par le backend via le pont extras (le caissier note la
-        //     viande en instruction). Additif (ne touche pas les 9 suppléments).
-        foreach ([26, 97, 104, 105] as $meatItemId) {
+        // (4) Viande supplémentaire +2,50 : extra facturé proposable sur TOUS les plats
+        //     (décision owner « on peut proposer des suppléments de viande partout »),
+        //     y compris burgers/Cayenne/Suprême (viande fixe mais viande EN PLUS possible)
+        //     + galettes. Rendu en étape suppléments sur caisse ET borne (group 'supplement').
+        $viandeSuppItems = [
+            22, 103, 104, 105,   // Sandwichs : Cayenne, Suprême, Méga, Terminator
+            23, 24,              // Galettes
+            38, 98, 99, 100, 101, 102, // Burgers (viande fixe + viande sup possible)
+            26, 97,             // Tacos M/L
+        ];
+        foreach ($viandeSuppItems as $meatItemId) {
             $this->addExtraToGroup($meatItemId, 'supplement', 'Viande supplémentaire', 2.50);
         }
         foreach ([41, 45] as $bolId) {
             $this->addExtraToGroup($bolId, self::SUPP_GROUP_BOL, 'Viande supplémentaire', 2.50);
         }
+
+        // (5) Catégorie « Suppléments » (cat 8) MASQUÉE de la caisse/borne : les
+        //     suppléments sont des OPTIONS de wizard (item_extras), pas des produits
+        //     vendables seuls (« un Cheddar nu » au comptoir = absurde + tickets faux).
+        //     Réversible (status). Les item_extras des wizards sont indépendants.
+        $this->hideCategories([8]);
 
         // 10) Désactiver le menu hors-carte (jamais supprimé). Décision owner
         //    2026-06-24 : caisse = EXACTEMENT la carte. Galette CONSERVÉE
@@ -518,13 +530,21 @@ class OwnerMenuUpdate20260623Seeder extends Seeder
             $supps['Option Gratiné'] = 2.00;
         }
         $this->syncExtras($item->id, self::SUPP_GROUP_BOL, $supps);
-        // Pas de formule menu (+2,50) sur les bols — carte = standalone.
+        // PAS la formule menu +2,50 (les bols ont déjà frites/riz) — MAIS une BOISSON
+        // OPTIONNELLE (décision owner « s'il veut une boisson pourquoi pas »). On câble
+        // SEULEMENT l'addon role 'drink' (boisson seule), pas menu_component/side, et on
+        // NE met PAS cat6.has_menu=true (sinon la borne déclencherait la formule +2,50).
         $this->clearAddons($item->id);
-        // Composer profile : viande -> sauce -> suppléments.
+        $this->wireDrinkAddon($item->id);
+        // Composer profile : viande -> sauce -> suppléments -> boisson (optionnelle).
+        // Le step boisson (source_type=addon, addon_role=drink, min0) rend un drink
+        // optionnel sur la CAISSE (COMPOSER_ADDON_ROLE_MAP['drink']='menu') ET la BORNE
+        // (shouldShowComposerStep menu+addon_role) SANS toucher has_menu → pas de +2,50.
         $this->setComposerProfile($item, 6, [
             ['step_key' => 'viande',      'label' => 'Choix de la viande', 'source_type' => 'item_attribute', 'source_ref' => 'Viande 1',      'attr_id' => self::ATTR_VIANDE_1,  'min' => 1, 'max' => 1, 'addon_role' => null],
             ['step_key' => 'sauce',       'label' => 'Choix de la sauce',  'source_type' => 'item_attribute', 'source_ref' => 'sauce bol',     'attr_id' => self::ATTR_SAUCE_BOL, 'min' => 1, 'max' => 1, 'addon_role' => null],
             ['step_key' => 'supplements', 'label' => 'Suppléments',        'source_type' => 'extra_group',    'source_ref' => self::SUPP_GROUP_BOL, 'attr_id' => null,            'min' => 0, 'max' => 5, 'addon_role' => null],
+            ['step_key' => 'boisson',     'label' => 'Boisson (optionnel)', 'source_type' => 'addon',         'source_ref' => 'drink',         'attr_id' => null,            'min' => 0, 'max' => 1, 'addon_role' => 'drink'],
         ]);
     }
 
@@ -615,6 +635,30 @@ class OwnerMenuUpdate20260623Seeder extends Seeder
     private function clearAddons(int $itemId): void
     {
         ItemAddon::withoutGlobalScopes()->where('item_id', $itemId)->delete();
+    }
+
+    /** Retire les crudités (group 'crudite') d'un item (owner : tacos sans crudités). */
+    private function clearGarnitures(Item $item): void
+    {
+        $this->syncExtras($item->id, 'crudite', []);
+    }
+
+    /** Câble une boisson OPTIONNELLE (addon role 'drink' = Boisson Seule #3), sans formule menu. */
+    private function wireDrinkAddon(int $itemId): void
+    {
+        $exists = ItemAddon::withoutGlobalScopes()
+            ->where('item_id', $itemId)
+            ->where('addon_item_id', 3)
+            ->whereNull('deleted_at')
+            ->exists();
+        if (! $exists) {
+            ItemAddon::create([
+                'item_id'              => $itemId,
+                'addon_item_id'        => 3,        // Boisson Seule
+                'addon_item_variation' => null,
+                'role'                 => 'drink',
+            ]);
+        }
     }
 
     private function setItemPrice(int $itemId, float $price): void
