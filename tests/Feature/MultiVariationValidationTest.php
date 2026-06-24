@@ -302,4 +302,63 @@ class MultiVariationValidationTest extends TestCase
 
         $this->assertSame([], $failures);
     }
+
+    /**
+     * [HEAL 2026-06-24 / e2e sweep wh6f2bepp] A REQUIRED attribute (min_select>=1)
+     * that is wholly omitted from the payload must be rejected — previously the
+     * min was only checked over attributes PRESENT in the payload, so an order
+     * missing a required modifier entirely (tacos with no meat) was accepted.
+     */
+    public function test_preview_rejects_when_required_attribute_wholly_omitted(): void
+    {
+        $viande = $this->makeAttribute('Viande', 1, 1, false);
+        $this->makeVariation($this->item, $viande, 'Poulet', 0.0);
+
+        $r = $this->authedKiosk()->postJson('/api/frontend/pricing/preview', [
+            'items' => [[
+                'item_id' => $this->item->id,
+                'quantity' => 1,
+                // required Viande attribute entirely omitted
+            ]],
+        ]);
+
+        $r->assertStatus(422)
+            ->assertJsonValidationErrors(['items.0.item_variations']);
+        $msg = implode(' ', $this->variationErrorMessages($r));
+        $this->assertStringContainsString($viande->name, $msg);
+    }
+
+    public function test_preview_rejects_when_one_of_two_required_attributes_omitted(): void
+    {
+        $viande = $this->makeAttribute('Viande', 1, 1, false);
+        $sauce = $this->makeAttribute('Sauce', 1, 1, false);
+        $vv = $this->makeVariation($this->item, $viande, 'Poulet', 0.0);
+        $this->makeVariation($this->item, $sauce, 'Mayo', 0.0);
+
+        $r = $this->authedKiosk()->postJson('/api/frontend/pricing/preview', [
+            'items' => [[
+                'item_id' => $this->item->id,
+                'quantity' => 1,
+                'item_variations' => [['id' => $vv->id]], // sauce (required) omitted
+            ]],
+        ]);
+
+        $r->assertStatus(422)
+            ->assertJsonValidationErrors(['items.0.item_variations']);
+    }
+
+    /** False-positive guard: a valid order with every required attribute present must pass. */
+    public function test_preview_accepts_when_all_required_attributes_present(): void
+    {
+        $viande = $this->makeAttribute('Viande', 1, 1, false);
+        $vv = $this->makeVariation($this->item, $viande, 'Poulet', 0.0);
+
+        $this->authedKiosk()->postJson('/api/frontend/pricing/preview', [
+            'items' => [[
+                'item_id' => $this->item->id,
+                'quantity' => 1,
+                'item_variations' => [['id' => $vv->id]],
+            ]],
+        ])->assertStatus(200);
+    }
 }
