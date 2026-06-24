@@ -15,6 +15,22 @@
 return [
     /*
     |--------------------------------------------------------------------------
+    | Real-mode transport driver
+    |--------------------------------------------------------------------------
+    |
+    | Which PrinterTransport to use when bypass is OFF (production / real mode):
+    |   'tcp'         → network ESC/POS (TcpPrinterTransport, port 9100) [default]
+    |   'windows_raw' → USB thermal printer on a Windows caisse (winspool RAW;
+    |                    requires Laravel running ON that Windows box, single-box V1).
+    |                    Set the Windows printer queue name in Printer.host.
+    |
+    | [PRINT-SAGA 2026-06-24] The counter SAGA is USB on Windows → 'windows_raw'.
+    |
+    */
+    'driver' => env('PRINT_DRIVER', 'tcp'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Bypass Mode — TCP/IP transport short-circuit
     |--------------------------------------------------------------------------
     |

@@ -13,6 +13,7 @@ use App\Services\Fiscal\AuditLogService;
 use App\Services\Hardware\PrinterTransport\NullPrinterTransport;
 use App\Services\Hardware\PrinterTransport\PrinterTransportInterface;
 use App\Services\Hardware\PrinterTransport\TcpPrinterTransport;
+use App\Services\Hardware\PrinterTransport\WindowsRawPrinterTransport;
 use App\Services\Observability\SyncMetricsRecorder;
 use App\Observers\ItemObserver;
 use App\Observers\SoftDeleteAuditObserver;
@@ -39,7 +40,13 @@ class AppServiceProvider extends ServiceProvider
                 return new NullPrinterTransport();
             }
 
-            return new TcpPrinterTransport();
+            // [PRINT-SAGA 2026-06-24] Real-mode transport selection. Default 'tcp'
+            // (network ESC/POS, port 9100). 'windows_raw' = USB thermal printer on a
+            // Windows caisse (spool RAW via winspool). config('printing.driver').
+            return match ((string) config('printing.driver', 'tcp')) {
+                'windows_raw' => new WindowsRawPrinterTransport(),
+                default => new TcpPrinterTransport(),
+            };
         });
 
         // [NEW-04] Single recorder instance per request — keeps internal state

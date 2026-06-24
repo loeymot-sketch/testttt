@@ -95,17 +95,21 @@ describe('ReceiptComponent print policy (W9.D)', () => {
         );
     });
 
-    it('does not call the fiscal increment endpoint for kitchen print', async () => {
-        axios.post = vi.fn(() => Promise.resolve({
-            data: { order_id: 42, receipt_print_count: 1, is_duplicata: false, audit_emitted: true },
-        }));
+    it('does not call the FISCAL increment endpoint for kitchen print (non-fiscal; may call the ESC/POS print-kitchen endpoint)', async () => {
+        // [PRINT-SAGA 2026-06-24] Kitchen ticket is NOT a fiscal document, so it must
+        // never hit the fiscal `print-receipt` increment route. It MAY call the
+        // non-fiscal `print-kitchen` route to drive a thermal (SAGA) print.
+        axios.post = vi.fn(() => Promise.resolve({ data: { order_id: 42, printed_escpos: false } }));
 
         const wrapper = mountReceipt(0);
 
         await wrapper.find('[data-testid="receipt-print-kitchen"]').trigger('click');
         await flushPromises();
 
-        expect(axios.post).not.toHaveBeenCalled();
+        const hitFiscal = axios.post.mock.calls.some((c) => String(c[0]).includes('print-receipt'));
+        expect(hitFiscal).toBe(false);
+        const hitKitchen = axios.post.mock.calls.some((c) => String(c[0]).includes('print-kitchen'));
+        expect(hitKitchen).toBe(true);
     });
 
     it('updates the local DUPLICATA marker BEFORE triggering the iframe print', async () => {

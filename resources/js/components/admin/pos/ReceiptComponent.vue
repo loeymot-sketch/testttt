@@ -534,6 +534,7 @@ export default {
                 return;
             }
             this.isPrinting = true;
+            this._printedThermally = false;
             try {
                 if (this.order?.id) {
                     try {
@@ -554,6 +555,8 @@ export default {
                             data?.receipt_print_count
                             ?? (Number(this.localPrintCount ?? 0) + 1)
                         );
+                        // [PRINT-SAGA] server printed straight to the thermal printer?
+                        this._printedThermally = data?.printed_escpos === true;
                         // [PS-4 audit heal 2026-05-18] NF525 audit-chain write
                         // is best-effort server-side (PosReceiptPrintController
                         // returns audit_emitted=false on chain failure). The
@@ -580,12 +583,17 @@ export default {
                     }
                 }
 
-                await this.$nextTick();
-                const trigger = this.$refs.hiddenPrintClientButton;
-                if (trigger && typeof trigger.click === 'function') {
-                    trigger.click();
-                } else if (typeof window !== 'undefined' && typeof window.print === 'function') {
-                    window.print();
+                // [PRINT-SAGA] If the server already printed the ticket directly on
+                // the thermal printer (e.g. USB SAGA), skip browser print to avoid a
+                // double ticket. Otherwise fall back to window.print() (unchanged).
+                if (!this._printedThermally) {
+                    await this.$nextTick();
+                    const trigger = this.$refs.hiddenPrintClientButton;
+                    if (trigger && typeof trigger.click === 'function') {
+                        trigger.click();
+                    } else if (typeof window !== 'undefined' && typeof window.print === 'function') {
+                        window.print();
+                    }
                 }
             } finally {
                 this.isPrinting = false;
@@ -599,13 +607,29 @@ export default {
                 return;
             }
             this.isPrinting = true;
+            let printedThermally = false;
             try {
-                await this.$nextTick();
-                const trigger = this.$refs.hiddenPrintKitchenButton;
-                if (trigger && typeof trigger.click === 'function') {
-                    trigger.click();
-                } else if (typeof window !== 'undefined' && typeof window.print === 'function') {
-                    window.print();
+                if (this.order?.id) {
+                    try {
+                        const idempotencyKey = `pos-print-kitchen-${this.order.id}-${Date.now()}`;
+                        const { data } = await axios.post(
+                            `admin/pos/orders/${this.order.id}/print-kitchen`,
+                            {},
+                            { headers: { 'X-Idempotency-Key': idempotencyKey } }
+                        );
+                        printedThermally = data?.printed_escpos === true;
+                    } catch (e) {
+                        console.warn('[ReceiptComponent] kitchen thermal print failed, printing anyway', e);
+                    }
+                }
+                if (!printedThermally) {
+                    await this.$nextTick();
+                    const trigger = this.$refs.hiddenPrintKitchenButton;
+                    if (trigger && typeof trigger.click === 'function') {
+                        trigger.click();
+                    } else if (typeof window !== 'undefined' && typeof window.print === 'function') {
+                        window.print();
+                    }
                 }
             } finally {
                 this.isPrinting = false;

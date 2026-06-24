@@ -909,6 +909,8 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             }
         })->middleware(['throttle:pos-order-update', 'idempotency'])->name('collect-kiosk-cash');
         Route::post('/orders/{order}/print-receipt', [PosReceiptPrintController::class, 'increment'])->middleware('idempotency')->name('orders.print-receipt');
+        // [PRINT-SAGA 2026-06-24] Kitchen production ticket → best-effort ESC/POS (no fiscal audit).
+        Route::post('/orders/{order}/print-kitchen', [PosReceiptPrintController::class, 'kitchen'])->middleware('idempotency')->name('orders.print-kitchen');
         Route::prefix('parked-orders')->name('parked-orders.')->group(function () {
             Route::get('/', [ParkedOrderController::class, 'index'])->name('index');
             Route::post('/', [ParkedOrderController::class, 'store'])->name('store');

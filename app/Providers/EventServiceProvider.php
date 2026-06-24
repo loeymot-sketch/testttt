@@ -77,6 +77,7 @@ use App\Listeners\PersistSettingsUpdatedToOutbox;
 use App\Listeners\RevokeTokensOnBranchDeactivated;
 use App\Listeners\NotifyStockLowOnStockLevelChanged;
 use App\Listeners\SendFcmOnOrderCreated;
+use App\Listeners\PrintKioskOrderToCounter;
 use App\Listeners\SendFcmOnOrderStatusChange;
 use App\Listeners\SendOrderGotMailNotification;
 use App\Listeners\SendOrderGotPushNotification;
@@ -172,6 +173,8 @@ class EventServiceProvider extends ServiceProvider
             DecrementItemAvailabilityOnOrder::class,
             DecrementStockOnOrderCreated::class,
             SendFcmOnOrderCreated::class,
+            // [PRINT-SAGA 2026-06-24] Kiosk/borne order → print a COPY on the caisse printer.
+            PrintKioskOrderToCounter::class,
         ],
         OrderPaidAtCounter::class => [
             PersistOrderPaidAtCounterToOutbox::class,

@@ -4,10 +4,15 @@ namespace App\Http\Controllers\Admin\Pos;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\Printer;
+use App\Models\Scopes\BranchScope;
 use App\Services\Fiscal\AuditLogService;
+use App\Services\Hardware\EscPosPrinterService;
+use App\Services\Hardware\OrderReceiptEscPosRenderer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
@@ -72,12 +77,87 @@ class PosReceiptPrintController extends Controller
         // admin reprinting a branch order must audit on that branch, not on 0.
         $auditEmitted = $this->emitAudit((int) $freshOrder->branch_id, $userId, $freshOrder->id, $newCount, $isDuplicata);
 
+        // [PRINT-SAGA 2026-06-24] Best-effort direct ESC/POS print to the configured
+        // thermal printer (e.g. USB SAGA). If no printer is configured, returns false
+        // and the UI falls back to window.print() — so existing installs are unchanged.
+        $printedEscpos = $this->printThermalTicket((int) $freshOrder->branch_id, (int) $freshOrder->id, 'client', $isDuplicata);
+
         return response()->json([
             'order_id' => $freshOrder->id,
             'receipt_print_count' => $newCount,
             'is_duplicata' => $isDuplicata,
             'audit_emitted' => $auditEmitted,
+            'printed_escpos' => $printedEscpos,
         ]);
+    }
+
+    /**
+     * Kitchen production ticket — no fiscal audit (not a fiscal document), just a
+     * best-effort ESC/POS send to the configured thermal printer.
+     */
+    public function kitchen(Request $request, int $order): JsonResponse
+    {
+        $branchId = (int) $request->user()->branch_id;
+        $found = Order::query()
+            ->select(['id', 'branch_id'])
+            ->whereKey($order)
+            ->when($branchId > 0, fn ($q) => $q->where('branch_id', $branchId))
+            ->firstOrFail();
+
+        $printed = $this->printThermalTicket((int) $found->branch_id, (int) $found->id, 'kitchen', false);
+
+        return response()->json(['order_id' => $found->id, 'printed_escpos' => $printed]);
+    }
+
+    /**
+     * Render + send a ticket to the branch's configured ESC/POS printer.
+     * Best-effort: any failure (no printer, transport error) returns false and is
+     * logged — it MUST NOT break the print HTTP call (operational continuity).
+     */
+    private function printThermalTicket(int $branchId, int $orderId, string $ticket, bool $isDuplicata): bool
+    {
+        try {
+            if ($branchId <= 0) {
+                return false;
+            }
+            $printer = Printer::withoutGlobalScope(BranchScope::class)
+                ->where('branch_id', $branchId)
+                ->where('station', 'receipt')
+                ->where('status', \App\Enums\Status::ACTIVE)
+                ->orderBy('id')
+                ->first();
+            if (! $printer) {
+                return false;
+            }
+
+            $order = Order::withoutGlobalScope(BranchScope::class)
+                ->with(['branch', 'user'])
+                ->find($orderId);
+            if (! $order) {
+                return false;
+            }
+            $order->setRelation('orderItems', $order->orderItems()->withoutGlobalScope(BranchScope::class)->get());
+
+            $renderer = app(OrderReceiptEscPosRenderer::class);
+            $opts = [
+                'width_chars' => (int) ($printer->width_chars ?: 48),
+                'is_duplicata' => $isDuplicata,
+            ];
+            $bytes = $ticket === 'kitchen'
+                ? $renderer->renderKitchenTicket($order, $opts)
+                : $renderer->renderClientTicket($order, $opts);
+
+            return app(EscPosPrinterService::class)->sendRaw($printer, $bytes);
+        } catch (Throwable $e) {
+            Log::warning('[PosReceiptPrintController] thermal print failed', [
+                'order_id' => $orderId,
+                'branch_id' => $branchId,
+                'ticket' => $ticket,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
     }
 
     private function emitAudit(int $branchId, int $userId, int $orderId, int $newCount, bool $isDuplicata): bool
