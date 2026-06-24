@@ -48,6 +48,12 @@ return [
         'boissons'           => 'cat-boissons.png',
         'menu-enfant'        => 'cat-menu-enfant.png',
 
+        // Le Cayenne caisse v5 2026-06-24 — catégories renommées (slug changé) :
+        // cat 1 « Sandwich Cayenne » → « Sandwichs » (slug sandwichs) ; cat 6
+        // « Bols Gourmands » → « Bols » (slug bols). Sans ces entrées → item-default.
+        'sandwichs'          => 'cat-sandwich-cayenne.png',
+        'bols'               => 'cat-bols-gourmands.png',
+
         // Legacy V0 slugs (back-compat for fixtures / archived orders).
         'nos-tacos'              => 'cat-tacos.png',
         'nos-sandwichs'          => 'cat-sandwich-classique.png',
@@ -176,6 +182,33 @@ return [
         'eau-plate-50cl'            => 'eau.png',
         'eau-gazeuse-50cl'          => 'eau.png',
         'orangina-33cl'             => 'tropico.png',
+
+        // ── Le Cayenne carte officielle 2026-06-24 (visuels owner « seul » —
+        //    dernière occurrence = priorité PHP last-wins sur les slugs live).
+        'cayenne'        => 'sandwich-cayenne.png',
+        'supreme'        => 'sandwich-supreme.png',
+        'mega'           => 'sandwich-mega.png',
+        'terminator'     => 'sandwich-terminator.png',
+        'tacos-m'        => 'tacos-cayenne.png',
+        'tacos-l'        => 'tacos-cayenne.png',
+        'chicken-burger' => 'chicken_burger.png',
+        'cheese-burger'  => 'cheese-burger.png',
+        'double-cheese'  => 'double-cheese.png',
+        'fish-burger'    => 'fish-burger.png',
+        'big-burger'     => 'big-burger.png',
+        'grill-burger'   => 'grill-burger.png',
+
+        // ── Le Cayenne caisse v5 2026-06-24 (slugs renommés / nouveaux SKU) :
+        //    bols repurposés, menu enfant 2 produits, variantes frites cheese.
+        //    Sans ces entrées → item-default.svg sur la caisse ET la borne.
+        'bol-frites'                          => 'bol-frites.png',
+        'bol-riz'                             => 'bol-riz.png',
+        'menu-enfant-nuggets'                 => 'nuggets.png',
+        'menu-enfant-burger'                  => 'chicken_burger.png',
+        'petite-frites-cheddar-fondu'         => 'frites.png',
+        'petite-frites-cheddar-oignons-frits' => 'frites.png',
+        'grande-frites-cheddar-fondu'         => 'frites.png',
+        'grande-frites-cheddar-oignons-frits' => 'frites.png',
     ],
 
     /*
@@ -328,6 +361,17 @@ return [
         'Curry'              => 'viande-curry.png',
         'Crispy'             => 'viande-crispy.png',
         'Mariné'             => 'viande-marine.png',
+
+        // ── Le Cayenne viandes officielles 2026-06-24 (visuels owner —
+        //    dernière occurrence = priorité PHP last-wins). Cordon Bleu
+        //    sans visuel dédié → garde le générique viande-marine.png.
+        'Mexicanos'     => 'viande-mexicanos.png',
+        'Fricadelle'    => 'viande-fricadelle.png',
+        'Tenders'       => 'viande-tenders.png',
+        'Nuggets'       => 'viande-nuggets.png',
+        'Poulet mariné' => 'viande-poulet.png',
+        'Viande Hachée' => 'viande-hachee.png',
+        'Cordon Bleu'   => 'viande-cordon-bleu.png', // ⚠️ visuel watermarké PNGTREE — à remplacer par version propre
     ],
 
     'default' => 'item-default.svg',
