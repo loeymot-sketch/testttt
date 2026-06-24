@@ -2,6 +2,7 @@
 
 namespace App\Rules;
 
+use App\Enums\Status;
 use App\Models\ItemAttribute;
 use App\Models\ItemVariation;
 use Closure;
@@ -46,11 +47,24 @@ class MultiVariationConstraint
         }
 
         $allVarIds = array_values(array_unique($allVarIds));
-        if ($allVarIds === []) {
+
+        // [HEAL 2026-06-24 / e2e sweep wh6f2bepp] Reject a REQUIRED attribute
+        // (min_select>=1) that is wholly OMITTED from the payload. The
+        // per-attribute min check below only inspects attributes PRESENT in the
+        // payload, so an order missing a required modifier entirely (a tacos
+        // with no meat, a sandwich with no bread, a bol with no sauce) was
+        // silently accepted. All required attributes in the V1 menu are visible
+        // on both pos & kiosk, so enforcing presence cannot reject a valid order
+        // (the wizard always defaults a value for each required attribute).
+        $requiredByItem = self::requiredAttributesByOrderedItem($orderItems);
+
+        if ($allVarIds === [] && $requiredByItem === []) {
             return;
         }
 
-        $variationModels = ItemVariation::query()->whereIn('id', $allVarIds)->get()->keyBy('id');
+        $variationModels = $allVarIds === []
+            ? collect()
+            : ItemVariation::query()->whereIn('id', $allVarIds)->get()->keyBy('id');
         $attrIds = $variationModels->pluck('item_attribute_id')->unique()->values()->all();
         $attributeModels = $attrIds === []
             ? collect()
@@ -60,19 +74,113 @@ class MultiVariationConstraint
             if (! is_array($item)) {
                 continue;
             }
-            $vars = $item['item_variations'] ?? null;
-            if (! is_array($vars) || $vars === []) {
+            $vars = $item['item_variations'] ?? [];
+            $vars = is_array($vars) ? $vars : [];
+
+            if ($vars !== []) {
+                self::validateVariationsPayloadAgainstMaps(
+                    $vars,
+                    $variationModels,
+                    $attributeModels,
+                    function (string $message) use ($failItem, $index): void {
+                        $failItem((int) $index, $message);
+                    }
+                );
+            }
+
+            $itemId = (int) ($item['item_id'] ?? 0);
+            $required = $requiredByItem[$itemId] ?? [];
+            if ($required === []) {
                 continue;
             }
-            self::validateVariationsPayloadAgainstMaps(
-                $vars,
-                $variationModels,
-                $attributeModels,
-                function (string $message) use ($failItem, $index): void {
-                    $failItem((int) $index, $message);
+            $presentAttrIds = self::presentAttributeIds($vars, $variationModels, $itemId);
+            foreach ($required as $attrId => $req) {
+                if (! in_array($attrId, $presentAttrIds, true)) {
+                    $failItem((int) $index, __('validation.multi_variation.min', [
+                        'attribute' => $req['name'],
+                        'min' => $req['min'],
+                        'actual' => 0,
+                    ]));
                 }
-            );
+            }
         }
+    }
+
+    /**
+     * [HEAL 2026-06-24] Map each ordered item_id to its REQUIRED attributes
+     * (min_select>=1), derived from the item's ACTIVE variations. Lets the
+     * caller detect a wholly-omitted required attribute, which the
+     * present-attribute loop cannot see.
+     *
+     * @param  array<int, mixed>  $orderItems
+     * @return array<int, array<int, array{name: string, min: int}>>  [item_id => [attribute_id => [name, min]]]
+     */
+    private static function requiredAttributesByOrderedItem(array $orderItems): array
+    {
+        $itemIds = [];
+        foreach ($orderItems as $item) {
+            if (is_array($item) && (int) ($item['item_id'] ?? 0) > 0) {
+                $itemIds[] = (int) $item['item_id'];
+            }
+        }
+        $itemIds = array_values(array_unique($itemIds));
+        if ($itemIds === []) {
+            return [];
+        }
+
+        $rows = ItemVariation::query()
+            ->whereIn('item_id', $itemIds)
+            ->where('status', Status::ACTIVE)
+            ->get(['item_id', 'item_attribute_id']);
+        if ($rows->isEmpty()) {
+            return [];
+        }
+
+        $attrIds = $rows->pluck('item_attribute_id')->filter()->unique()->values()->all();
+        $attrs = $attrIds === []
+            ? collect()
+            : ItemAttribute::query()->whereIn('id', $attrIds)->get()->keyBy('id');
+
+        $out = [];
+        foreach ($rows as $row) {
+            $attrId = (int) $row->item_attribute_id;
+            $attr = $attrs->get($attrId);
+            if (! $attr instanceof ItemAttribute) {
+                continue;
+            }
+            $min = (int) ($attr->min_select ?? 0);
+            if ($min < 1) {
+                continue;
+            }
+            $out[(int) $row->item_id][$attrId] = [
+                'name' => (string) $attr->name,
+                'min' => $min,
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * Attribute ids present in the payload AND owned by the item.
+     *
+     * @param  array<int, mixed>  $vars
+     * @return list<int>
+     */
+    private static function presentAttributeIds(array $vars, Collection $variationModels, int $itemId): array
+    {
+        $ids = [];
+        foreach ($vars as $v) {
+            if (! is_array($v)) {
+                continue;
+            }
+            $model = $variationModels->get((int) ($v['id'] ?? 0));
+            if ($model instanceof ItemVariation && (int) $model->item_id === $itemId) {
+                $ids[] = (int) $model->item_attribute_id;
+            }
+        }
+
+        return array_values(array_unique($ids));
     }
 
     /**
