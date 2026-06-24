@@ -131,7 +131,7 @@
                                             class="text-xs leading-5 font-normal text-heading max-w-[200px]">
                                             {{ $t('label.extras') }}:
                                             <span v-for="(extra, index) in receiptExtrasFor(item)" :key="'extra-' + idx + '-' + index">
-                                                <template v-if="extra.quantity > 1">{{ extra.quantity }}× </template>{{ extra.name }}
+                                                <template v-if="extra.quantity > 1">{{ extra.quantity }}× </template>{{ extra.name }}<template v-if="extra.line_total > 0"> (+{{ formatReceiptAddonPrice(extra.line_total) }})</template>
                                                 <span v-if="index + 1 < receiptExtrasFor(item).length">, </span>
                                             </span>
                                         </p>

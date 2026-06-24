@@ -179,10 +179,10 @@
                   </p>
                 </span>
                 <div
-                  v-if="orderItem.instruction"
-                  :class="[kdsInstructionClass(orderItem.instruction), 'kds-instruction', 'mt-1', 'text-xs', 'text-heading']"
+                  v-if="kdsCleanInstruction(orderItem)"
+                  :class="[kdsInstructionClass(kdsCleanInstruction(orderItem)), 'kds-instruction', 'mt-1', 'text-xs', 'text-heading']"
                   style="white-space: pre-line"
-                >{{ orderItem.instruction }}</div>
+                >{{ kdsCleanInstruction(orderItem) }}</div>
               </div>
               <div
                 class="text-sm font-medium w-6 h-6 rounded-full bg-black text-white flex items-center justify-center">{{
@@ -414,10 +414,10 @@
                         </div>
                         <!-- [P3-1 FIX] Show instruction on dine-in cards -->
                         <div
-                          v-if="item.instruction && item.instruction !== ''"
-                          :class="[kdsInstructionClass(item.instruction), 'kds-instruction', 'mt-1', 'text-xs', 'text-heading']"
+                          v-if="kdsCleanInstruction(item)"
+                          :class="[kdsInstructionClass(kdsCleanInstruction(item)), 'kds-instruction', 'mt-1', 'text-xs', 'text-heading']"
                           style="white-space: pre-line"
-                        >{{ item.instruction }}</div>
+                        >{{ kdsCleanInstruction(item) }}</div>
                       </div>
                       <div class="flex flex-col items-end gap-1 shrink-0 pt-0.5">
                         <!-- [iter15-mega-fix B-007 round-7 2026-05-10] Icon-only Prêt button needs aria-label for touch tablets / SR -->
@@ -598,10 +598,10 @@
                           </p>
                         </div>
                         <div
-                          v-if="item.instruction && item.instruction !== ''"
-                          :class="[kdsInstructionClass(item.instruction), 'kds-instruction', 'mt-1', 'text-xs', 'text-heading']"
+                          v-if="kdsCleanInstruction(item)"
+                          :class="[kdsInstructionClass(kdsCleanInstruction(item)), 'kds-instruction', 'mt-1', 'text-xs', 'text-heading']"
                           style="white-space: pre-line"
-                        >{{ item.instruction }}</div>
+                        >{{ kdsCleanInstruction(item) }}</div>
                       </div>
                       <div class="flex flex-col items-end gap-1 shrink-0 pt-0.5">
                         <!-- [iter15-mega-fix B-007 round-7 2026-05-10] Icon-only Prêt button needs aria-label for touch tablets / SR -->
@@ -772,10 +772,10 @@
                         </div>
                         <!-- [P3-1 FIX] Show instruction on takeaway cards -->
                         <div
-                          v-if="item.instruction && item.instruction !== ''"
-                          :class="[kdsInstructionClass(item.instruction), 'kds-instruction', 'mt-1', 'text-xs', 'text-heading']"
+                          v-if="kdsCleanInstruction(item)"
+                          :class="[kdsInstructionClass(kdsCleanInstruction(item)), 'kds-instruction', 'mt-1', 'text-xs', 'text-heading']"
                           style="white-space: pre-line"
-                        >{{ item.instruction }}</div>
+                        >{{ kdsCleanInstruction(item) }}</div>
                       </div>
                       <div class="flex flex-col items-end gap-1 shrink-0 pt-0.5">
                         <!-- [iter15-mega-fix B-007 round-7 2026-05-10] Icon-only Prêt button needs aria-label for touch tablets / SR -->
@@ -949,10 +949,10 @@
                           </span>
                         </div>
                         <div
-                          v-if="item.instruction && item.instruction !== ''"
-                          :class="[kdsInstructionClass(item.instruction), 'kds-instruction', 'mt-1', 'text-xs', 'text-heading']"
+                          v-if="kdsCleanInstruction(item)"
+                          :class="[kdsInstructionClass(kdsCleanInstruction(item)), 'kds-instruction', 'mt-1', 'text-xs', 'text-heading']"
                           style="white-space: pre-line"
-                        >{{ item.instruction }}</div>
+                        >{{ kdsCleanInstruction(item) }}</div>
                       </div>
                       <div class="flex flex-col items-end gap-1 shrink-0 pt-0.5">
                         <!-- [iter15-mega-fix B-007 round-7 2026-05-10] Icon-only Prêt button needs aria-label for touch tablets / SR -->
@@ -1090,7 +1090,7 @@ import { ORDER_STATUS } from "../../../helpers/kdsState";
 // snapshot-shaped composition lines (attribute_name=GROUP / variation_name=VALUE)
 // no longer invert on the KDS order-cards + kitchen ticket. Legacy items-board
 // shape stays correct through the same helper.
-import { kdsVariationLine } from "../../../helpers/kdsCustomization";
+import { kdsVariationLine, sanitizeKdsInstruction } from "../../../helpers/kdsCustomization";
 // [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT — mirrors App\Support\PhoneDisplay::safe
 import { safePhone } from "../../../helpers/phoneDisplay";
 // [kds/sprint-2 V-5] V2 layout components — feature-flagged single FIFO 4×2 grid.
@@ -1696,6 +1696,13 @@ export default {
     kdsInstructionClass(text) {
       return kdsInstructionVisualClass(text);
     },
+    // [POS-OUTPUT-AUDIT 2026-06-24 P1-KDS] Strip the compo duplicate the
+    // structured render already shows (frozen pos-wizard.js echoes the full
+    // composition into instruction); keep unique extras (↳ Sauce frites, +Menu,
+    // free notes). Empty result → the v-if hides the line. Display-only.
+    kdsCleanInstruction(item) {
+      return sanitizeKdsInstruction(item?.instruction, item?.item_name);
+    },
     isPaymentPendingCounter(order) {
       return order?.payment_pending_counter === true
         || parseInt(order?.payment_status, 10) === paymentStatusEnum.PENDING_COUNTER;
@@ -2244,8 +2251,9 @@ export default {
           }).join(', ');
           lines.push(`<div style="font-size:12px;color:#444;margin-top:2px;">+ ${addons}</div>`);
         }
-        if (item.instruction) {
-          const vis = kdsInstructionVisualClass(item.instruction);
+        const cleanInstr = sanitizeKdsInstruction(item.instruction, item.item_name);
+        if (cleanInstr) {
+          const vis = kdsInstructionVisualClass(cleanInstr);
           let instStyle =
             "font-size:11px;color:#666;margin-top:3px;white-space:pre-line";
           if (vis === "kds-instruction--allergen") {
@@ -2255,7 +2263,7 @@ export default {
             instStyle =
               "font-size:11px;color:#7c2d12;background:#fff7ed;border:1px solid #fdba74;padding:4px 6px;border-radius:4px;margin-top:3px;white-space:pre-line";
           }
-          lines.push(`<div style="${instStyle}">${e(item.instruction)}</div>`);
+          lines.push(`<div style="${instStyle}">${e(cleanInstr)}</div>`);
         }
         lines.push('</div>');
       });

@@ -224,7 +224,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n.ks-vkeyb[data-v-9b4f461c] {\n  position: fixed;\n  inset-inline: 0;\n  bottom: 0;\n  z-index: 150;\n  background: var(--kiosk-surface);\n  border-top: 1.5px solid var(--kiosk-border);\n  box-shadow: var(--kiosk-shadow-modal);\n  padding: 16px 20px 22px;\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n  /* Les chiffres 1080x1920 : le clavier occupe ~30% de la hauteur borne. */\n  max-height: 36vh;\n  font-family: var(--kiosk-font-sans, system-ui);\n  color: var(--kiosk-text);\n}\n.ks-vkeyb--rtl[data-v-9b4f461c] {\n  direction: rtl;\n}\n.ks-vkeyb__preview[data-v-9b4f461c] {\n  min-height: 44px;\n  padding: 10px 16px;\n  background: var(--kiosk-surface-alt);\n  border: 1.5px solid var(--kiosk-border);\n  border-radius: 12px;\n  font-size: 20px;\n  font-weight: 700;\n  color: var(--kiosk-text);\n  display: flex;\n  align-items: center;\n  overflow: hidden;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n}\n.ks-vkeyb__preview-value[data-v-9b4f461c] { flex: 1;\n}\n.ks-vkeyb__row[data-v-9b4f461c] {\n  display: grid;\n  grid-template-columns: repeat(10, 1fr);\n  gap: 8px;\n}\n.ks-vkeyb__row--actions[data-v-9b4f461c] {\n  grid-template-columns: 1fr 4fr 1fr 2fr;\n}\n.ks-vkeyb__key[data-v-9b4f461c] {\n  height: 62px;\n  min-width: 0;\n  min-height: var(--kiosk-tap-min, 56px);\n  border: 1.5px solid var(--kiosk-border);\n  border-radius: 12px;\n  background: var(--kiosk-surface);\n  color: var(--kiosk-text);\n  font-size: 22px;\n  font-weight: 700;\n  cursor: pointer;\n  transition: background 0.12s ease, transform 0.08s ease, border-color 0.12s ease;\n  touch-action: manipulation;\n  -webkit-user-select: none;\n     -moz-user-select: none;\n          user-select: none;\n}\n.ks-vkeyb__key[data-v-9b4f461c]:hover { background: var(--kiosk-surface-alt);\n}\n.ks-vkeyb__key[data-v-9b4f461c]:active {\n  transform: scale(0.96);\n  background: var(--kiosk-primary-soft);\n  border-color: var(--kiosk-primary);\n}\n.ks-vkeyb__key[data-v-9b4f461c]:focus-visible {\n  outline: var(--kiosk-focus-width, 3px) solid var(--kiosk-focus-ring, var(--kiosk-primary));\n  outline-offset: 2px;\n}\n.ks-vkeyb__key--wide[data-v-9b4f461c] { font-size: 16px;\n}\n.ks-vkeyb__key--action[data-v-9b4f461c] {\n  background: var(--kiosk-surface-alt);\n  color: var(--kiosk-text-muted);\n  font-size: 16px;\n  font-weight: 800;\n  letter-spacing: 0.02em;\n}\n.ks-vkeyb__key--active[data-v-9b4f461c] {\n  background: var(--kiosk-primary);\n  color: var(--kiosk-text-on-red);\n  border-color: var(--kiosk-primary);\n}\n.ks-vkeyb__key--submit[data-v-9b4f461c] {\n  background: var(--kiosk-primary);\n  color: var(--kiosk-text-on-red);\n  border-color: var(--kiosk-primary);\n}\n.ks-vkeyb__key--submit[data-v-9b4f461c]:hover { background: var(--kiosk-primary-dark);\n}\n.ks-vkeyb__key--submit[data-v-9b4f461c]:active { background: var(--kiosk-primary-dark);\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n.ks-vkeyb[data-v-9b4f461c] {\n  position: fixed;\n  inset-inline: 0;\n  bottom: 0;\n  z-index: 150;\n  background: var(--kiosk-surface);\n  border-top: 1.5px solid var(--kiosk-border);\n  box-shadow: var(--kiosk-shadow-modal);\n  padding: 16px 20px 22px;\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n  /* Les chiffres 1080x1920 : le clavier occupe ~30% de la hauteur borne. */\n  max-height: 36vh;\n  font-family: var(--kiosk-font-sans, system-ui);\n  color: var(--kiosk-text);\n}\n.ks-vkeyb--rtl[data-v-9b4f461c] {\n  direction: rtl;\n}\n.ks-vkeyb__preview[data-v-9b4f461c] {\n  min-height: 44px;\n  padding: 10px 16px;\n  background: var(--kiosk-surface-alt);\n  border: 1.5px solid var(--kiosk-border);\n  border-radius: 12px;\n  font-size: 20px;\n  font-weight: 700;\n  color: var(--kiosk-text);\n  display: flex;\n  align-items: center;\n  overflow: hidden;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n}\n.ks-vkeyb__preview-value[data-v-9b4f461c] { flex: 1;\n}\n.ks-vkeyb__row[data-v-9b4f461c] {\n  display: grid;\n  grid-template-columns: repeat(10, 1fr);\n  gap: 8px;\n}\n.ks-vkeyb__row--actions[data-v-9b4f461c] {\n  /* [F5 heal 2026-06-09] +1 column for the Shift key (was 1fr 4fr 1fr 2fr):\n     shift · clear · space · backspace · submit */\n  grid-template-columns: 1fr 1fr 4fr 1fr 2fr;\n}\n.ks-vkeyb__key[data-v-9b4f461c] {\n  height: 62px;\n  min-width: 0;\n  min-height: var(--kiosk-tap-min, 56px);\n  border: 1.5px solid var(--kiosk-border);\n  border-radius: 12px;\n  background: var(--kiosk-surface);\n  color: var(--kiosk-text);\n  font-size: 22px;\n  font-weight: 700;\n  cursor: pointer;\n  transition: background 0.12s ease, transform 0.08s ease, border-color 0.12s ease;\n  touch-action: manipulation;\n  -webkit-user-select: none;\n     -moz-user-select: none;\n          user-select: none;\n}\n.ks-vkeyb__key[data-v-9b4f461c]:hover { background: var(--kiosk-surface-alt);\n}\n.ks-vkeyb__key[data-v-9b4f461c]:active {\n  transform: scale(0.96);\n  background: var(--kiosk-primary-soft);\n  border-color: var(--kiosk-primary);\n}\n.ks-vkeyb__key[data-v-9b4f461c]:focus-visible {\n  outline: var(--kiosk-focus-width, 3px) solid var(--kiosk-focus-ring, var(--kiosk-primary));\n  outline-offset: 2px;\n}\n.ks-vkeyb__key--wide[data-v-9b4f461c] { font-size: 16px;\n}\n.ks-vkeyb__key--action[data-v-9b4f461c] {\n  background: var(--kiosk-surface-alt);\n  color: var(--kiosk-text-muted);\n  font-size: 16px;\n  font-weight: 800;\n  letter-spacing: 0.02em;\n}\n.ks-vkeyb__key--active[data-v-9b4f461c] {\n  background: var(--kiosk-primary);\n  color: var(--kiosk-text-on-red);\n  border-color: var(--kiosk-primary);\n}\n.ks-vkeyb__key--submit[data-v-9b4f461c] {\n  background: var(--kiosk-primary);\n  color: var(--kiosk-text-on-red);\n  border-color: var(--kiosk-primary);\n}\n.ks-vkeyb__key--submit[data-v-9b4f461c]:hover { background: var(--kiosk-primary-dark);\n}\n.ks-vkeyb__key--submit[data-v-9b4f461c]:active { background: var(--kiosk-primary-dark);\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -3352,6 +3352,14 @@ var PAYMENT_PENDING_COUNTER = _enums_modules_paymentStatusEnum__WEBPACK_IMPORTED
     },
     markReady: function markReady() {
       clearInterval(this.pollTimer);
+      // [F6 heal 2026-06-09] Cancel the preparing-state 10s auto-redirect (and the
+      // elapsed/timeout timer) on PREPARED. Otherwise it keeps running and fires
+      // newOrder() at the 10s mark, kicking the customer off the READY screen to
+      // idle before the intended 20s ready auto-reset. The comment on
+      // startPreparingAutoRedirect() claimed stopAll() cleared it on PREPARED, but
+      // markReady() never called stopPreparingAutoRedirect().
+      this.stopPreparingAutoRedirect();
+      clearInterval(this.elapsedTimer);
       this.isReady = true;
       this.playReadySound();
       this.startAutoReset();
@@ -6468,10 +6476,11 @@ var _hoisted_4 = ["aria-label", "data-testid", "onClick"];
 var _hoisted_5 = {
   "class": "ks-vkeyb__row ks-vkeyb__row--actions"
 };
-var _hoisted_6 = ["aria-label"];
+var _hoisted_6 = ["aria-pressed", "aria-label"];
 var _hoisted_7 = ["aria-label"];
 var _hoisted_8 = ["aria-label"];
 var _hoisted_9 = ["aria-label"];
+var _hoisted_10 = ["aria-label"];
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   return $props.visible ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
     key: 0,
@@ -6495,39 +6504,50 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         }
       }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.displayLabel(key)), 11 /* TEXT, CLASS, PROPS */, _hoisted_4);
     }), 128 /* KEYED_FRAGMENT */))]);
-  }), 128 /* KEYED_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Actions globales "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_5, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }), 128 /* KEYED_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Actions globales "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_5, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [F5 heal 2026-06-09] Shift/Maj key. Without it `shift` was permanently\n           false (the rows computed never emits a toggle key), so uppercase + the\n           AR tashkeel layer were unreachable. All other machinery (shift data,\n           ROW_DEFS.*.shift, toggleShift, --active styling, auto-off) already exists. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["ks-vkeyb__key ks-vkeyb__key--action", {
+      'ks-vkeyb__key--active': $data.shift
+    }]),
+    "aria-pressed": $data.shift ? 'true' : 'false',
+    "aria-label": _ctx.$t('kiosk.a11y.vkeyb_shift'),
+    "data-testid": "kiosk-vkeyb-shift",
+    onClick: _cache[0] || (_cache[0] = function () {
+      return $options.toggleShift && $options.toggleShift.apply($options, arguments);
+    })
+  }, "⇧", 10 /* CLASS, PROPS */, _hoisted_6), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "ks-vkeyb__key ks-vkeyb__key--action",
     "aria-label": _ctx.$t('kiosk.a11y.vkeyb_clear'),
     "data-testid": "kiosk-vkeyb-clear",
-    onClick: _cache[0] || (_cache[0] = function () {
+    onClick: _cache[1] || (_cache[1] = function () {
       return $options.clearAll && $options.clearAll.apply($options, arguments);
     })
-  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.a11y.vkeyb_clear_short')), 9 /* TEXT, PROPS */, _hoisted_6), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.a11y.vkeyb_clear_short')), 9 /* TEXT, PROPS */, _hoisted_7), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "ks-vkeyb__key ks-vkeyb__key--action ks-vkeyb__key--wide",
     "aria-label": _ctx.$t('kiosk.a11y.vkeyb_space'),
     "data-testid": "kiosk-vkeyb-space",
-    onClick: _cache[1] || (_cache[1] = function ($event) {
+    onClick: _cache[2] || (_cache[2] = function ($event) {
       return $options.pressChar(' ');
     })
-  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.a11y.vkeyb_space_short')), 9 /* TEXT, PROPS */, _hoisted_7), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.a11y.vkeyb_space_short')), 9 /* TEXT, PROPS */, _hoisted_8), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "ks-vkeyb__key ks-vkeyb__key--action",
     "aria-label": _ctx.$t('kiosk.a11y.vkeyb_backspace'),
     "data-testid": "kiosk-vkeyb-backspace",
-    onClick: _cache[2] || (_cache[2] = function () {
+    onClick: _cache[3] || (_cache[3] = function () {
       return $options.backspace && $options.backspace.apply($options, arguments);
     })
-  }, "⌫", 8 /* PROPS */, _hoisted_8), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, "⌫", 8 /* PROPS */, _hoisted_9), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "ks-vkeyb__key ks-vkeyb__key--action ks-vkeyb__key--submit",
     "aria-label": _ctx.$t('kiosk.a11y.vkeyb_submit'),
     "data-testid": "kiosk-vkeyb-submit",
-    onClick: _cache[3] || (_cache[3] = function () {
+    onClick: _cache[4] || (_cache[4] = function () {
       return $options.submit && $options.submit.apply($options, arguments);
     })
-  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.a11y.vkeyb_submit_short')), 9 /* TEXT, PROPS */, _hoisted_9)])], 10 /* CLASS, PROPS */, _hoisted_1)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true);
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.a11y.vkeyb_submit_short')), 9 /* TEXT, PROPS */, _hoisted_10)])], 10 /* CLASS, PROPS */, _hoisted_1)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true);
 }
 
 /***/ },

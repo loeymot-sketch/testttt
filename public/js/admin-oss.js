@@ -140,6 +140,10 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
       newReadyIds: new Set(),
       newReadyFlash: false,
       _flashTimer: null,
+      // [#14] Per-order "clear highlight" timers — tracked so they are cleared on
+      // unmount and replaced on rapid re-marks (the inner 6s setTimeout was
+      // previously untracked → post-unmount mutation + timer leak on a 24/7 wall).
+      _readyClearTimers: {},
       // [iter15-mega-fix C-034 round-7 2026-05-10] AudioContext is now
       // lazy-initialized on the first user gesture. Prior implementation
       // created a fresh suspended context on EVERY Echo `prepared` event, which
@@ -212,6 +216,13 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
     this._unbindWsService();
     this.stopOssSync();
     if (this._flashTimer) clearTimeout(this._flashTimer);
+    // [#14] Clear any pending per-order highlight timers so none fire post-unmount.
+    Object.values(this._readyClearTimers || {}).forEach(function (t) {
+      try {
+        clearTimeout(t);
+      } catch (_) {/* noop */}
+    });
+    this._readyClearTimers = {};
     // [iter15-mega-fix C-034 round-7 2026-05-10] Tear down audio listeners +
     // close the context so the next mount starts clean.
     try {
@@ -429,21 +440,28 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
     _markNewReady: function _markNewReady(orderId) {
       var _this6 = this;
       if (!orderId) return;
-      this.newReadyIds = new Set([].concat(_toConsumableArray(this.newReadyIds), [parseInt(orderId)]));
+      var id = parseInt(orderId);
+      this.newReadyIds = new Set([].concat(_toConsumableArray(this.newReadyIds), [id]));
       this._playReadySound();
+      // Column-level flash: a single shared 4s timer is fine (the whole column
+      // flashes), so re-marking simply restarts the column flash.
       this.newReadyFlash = true;
       if (this._flashTimer) clearTimeout(this._flashTimer);
       this._flashTimer = setTimeout(function () {
         _this6.newReadyFlash = false;
-        // Clear the highlight after a further 6s so the per-card pulse
-        // persists ~10s total — readable at distance, dismissable before
-        // the next batch arrives.
-        setTimeout(function () {
-          var ids = new Set(_this6.newReadyIds);
-          ids["delete"](parseInt(orderId));
-          _this6.newReadyIds = ids;
-        }, 6000);
       }, 4000);
+      // [#14] Per-order highlight clear (~10s total) tracked INDEPENDENTLY of the
+      // shared column-flash timer. Nesting it inside _flashTimer (RED cross-order
+      // finding) meant marking a 2nd order <4s later clobbered the shared timer
+      // and the 1st order's clear was never registered → it pulsed forever.
+      // Replaced on a same-id re-mark; all cleared in beforeUnmount.
+      if (this._readyClearTimers[id]) clearTimeout(this._readyClearTimers[id]);
+      this._readyClearTimers[id] = setTimeout(function () {
+        var ids = new Set(_this6.newReadyIds);
+        ids["delete"](id);
+        _this6.newReadyIds = ids;
+        delete _this6._readyClearTimers[id];
+      }, 10000);
     },
     // Splash-inspired: 3-tone ascending chime when order is ready
     _playReadySound: function _playReadySound() {
@@ -971,7 +989,7 @@ var OssSyncService = /*#__PURE__*/function () {
                 _context.n = 5;
                 break;
               }
-              this._handle5xx();
+              this._handleErrorBackoff(status);
               return _context.a(2);
             case 5:
               rows = (result === null || result === void 0 || (_result$data = result.data) === null || _result$data === void 0 ? void 0 : _result$data.data) || [];
@@ -993,12 +1011,14 @@ var OssSyncService = /*#__PURE__*/function () {
               }
               return _context.a(2);
             case 7:
-              _status = this._statusFromError(_t);
-              if (!(_status >= 500 && _status <= 599)) {
+              _status = this._statusFromError(_t); // [#6] Back off on 5xx, on any client error (4xx), AND on network
+              // failures (status 0) — not just 5xx — so a permanent 401/403/404/422
+              // or an unreachable server is rate-limited instead of hammered at 2s.
+              if (!(_status === 0 || _status >= 400)) {
                 _context.n = 8;
                 break;
               }
-              this._handle5xx();
+              this._handleErrorBackoff(_status);
               return _context.a(2);
             case 8:
               this._state = STATE.POLLING;
@@ -1022,10 +1042,14 @@ var OssSyncService = /*#__PURE__*/function () {
         return _poll2.apply(this, arguments);
       }
       return _poll;
-    }()
+    }() // [#6] Exponential backoff for ANY non-recoverable poll outcome — 5xx,
+    // client errors (4xx), and network failures (status 0). Previously only 5xx
+    // backed off, so a persistent 401/403/404/422 or an unreachable server
+    // hammered the endpoint at the 2s disconnected cadence forever.
   }, {
-    key: "_handle5xx",
-    value: function _handle5xx() {
+    key: "_handleErrorBackoff",
+    value: function _handleErrorBackoff() {
+      var status = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 500;
       if (!this._started) {
         return;
       }
@@ -1033,7 +1057,7 @@ var OssSyncService = /*#__PURE__*/function () {
       var delay = this._currentBackoffMs;
       this._currentBackoffMs = Math.min(this._currentBackoffMs * 2, this._opts.backoffCapMs);
       this._emit('error', {
-        status: 500,
+        status: status,
         backoffMs: delay
       });
       this._scheduleNext(delay);
@@ -1166,8 +1190,19 @@ var OssSyncService = /*#__PURE__*/function () {
       if (!listeners) {
         return;
       }
+      // [#7] Never let a throwing listener escape — _emit is called BEFORE the
+      // reschedule in _poll/_handleErrorBackoff, so an uncaught exception here
+      // would unwind past _scheduleNext and freeze the poll loop (no timer ever
+      // re-armed → the wall silently stops updating).
       listeners.forEach(function (handler) {
-        return handler(payload);
+        try {
+          handler(payload);
+        } catch (e) {
+          if (typeof console !== 'undefined' && console.warn) {
+            // eslint-disable-next-line no-console
+            console.warn('[OSS] listener for "' + eventName + '" threw (swallowed to keep poll loop alive):', e);
+          }
+        }
       });
     }
   }], [{

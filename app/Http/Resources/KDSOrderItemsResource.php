@@ -19,8 +19,13 @@ class KDSOrderItemsResource extends JsonResource
             'item_id'            => $this->item_id,
             'item_name'          => $this->orderItem?->name,
             'quantity'           => $this->quantity,
-            'item_variations'    => $this->safeJsonDecode($this->item_variations),
-            'item_extras'        => $this->safeJsonDecode($this->item_extras),
+            // [POS-OUTPUT-AUDIT 2026-06-24 P2-KDS-SSOT] Prefer the immutable
+            // composition_snapshot (NF525 SSOT) like OrderItemResource — the
+            // items-board was the only KDS surface still reading the raw legacy
+            // item_variations/item_extras columns. Falls back to legacy for
+            // pre-snapshot rows. Addons were already snapshot-first below.
+            'item_variations'    => $this->resolveVariationsForKds(),
+            'item_extras'        => $this->resolveExtrasForKds(),
             'item_addons'        => $this->resolveAddonsForKds(),
             'instruction'        => $this->instruction,
             // [PK-3 Wave 1 Intersection POS×KDS 2026-05-18] Confirms Z-1 KDS
@@ -52,6 +57,35 @@ class KDSOrderItemsResource extends JsonResource
         }
 
         return [];
+    }
+
+    /**
+     * Variations from the immutable composition_snapshot.lines (SSOT) when
+     * present; legacy rows fall back to the raw item_variations column. Mirrors
+     * OrderItemResource::resolveVariationsForApi so both KDS surfaces agree.
+     */
+    private function resolveVariationsForKds(): mixed
+    {
+        $snapshot = $this->safeJsonDecodeArray($this->composition_snapshot);
+        if (isset($snapshot['lines']) && is_array($snapshot['lines']) && $snapshot['lines'] !== []) {
+            return array_values($snapshot['lines']);
+        }
+
+        return $this->safeJsonDecode($this->item_variations);
+    }
+
+    /**
+     * Extras from composition_snapshot.extras (SSOT) when present; legacy rows
+     * fall back to the raw item_extras column.
+     */
+    private function resolveExtrasForKds(): mixed
+    {
+        $snapshot = $this->safeJsonDecodeArray($this->composition_snapshot);
+        if (isset($snapshot['extras']) && is_array($snapshot['extras']) && $snapshot['extras'] !== []) {
+            return array_values($snapshot['extras']);
+        }
+
+        return $this->safeJsonDecode($this->item_extras);
     }
 
     /**

@@ -176,6 +176,49 @@ function addonLabel(a) {
     return a?.addon_name || a?.name || '';
 }
 
+// Compo markers that the STRUCTURED render (composition_snapshot SSOT) already
+// shows. "Sauce :" (group + space-colon) is compo; "↳ Sauce frites: X" is an
+// extra (no space before ':', kept by the ↳-prefix rule below before this runs).
+const KDS_COMPO_LINE_RE = /(^|\s)(Viandes?|Sauce|Suppl[ée]ment|Pain|Galette)\s*:/i;
+
+/**
+ * Sanitize the free-text `instruction` for KDS / kitchen-ticket display.
+ *
+ * The FROZEN pos-wizard.js (buildTicketInstruction) writes the FULL composition
+ * into `instruction`: line0 = PRODUCT NAME (uppercased), line1 = compo blob
+ * ("Viandes : X Sauce : Y - crudités"), then UNIQUE extras ("+ Menu (…)",
+ * "↳ Sauce frites: X", "[note]") and any free client note. The KDS already
+ * renders the composition STRUCTURALLY from composition_snapshot (the SSOT), so
+ * echoing the raw instruction DOUBLES it — and on legacy bridge-divergent rows
+ * shows TWO contradictory sauces for one product (kitchen makes the wrong food).
+ *
+ * This keeps ONLY what the structured render does NOT carry: the formule child
+ * ("+ …"), the "↳ Sauce frites: X" choice (exists ONLY here, never in the
+ * snapshot), bracketed notes, and free client notes. It drops the product-name
+ * line and the compo blob. pos-wizard.js (the writer) is FROZEN and untouched —
+ * this is a display-only sanitiser.
+ *
+ * @param {string} raw     orderItem.instruction
+ * @param {string} itemName orderItem.item_name (to strip the echoed name line)
+ * @returns {string} cleaned instruction (may be empty → caller emits no line)
+ */
+export function sanitizeKdsInstruction(raw, itemName) {
+    if (typeof raw !== 'string') {
+        return '';
+    }
+    const name = String(itemName || '').trim().toUpperCase();
+    const kept = raw.split('\n').filter((ln) => {
+        const t = ln.trim();
+        if (t === '') return false;
+        if (name && t.toUpperCase() === name) return false; // echoed product name (header shows it)
+        if (/^[+↳\[]/.test(t)) return true;                 // formule / sauce frites / bracketed note → KEEP
+        if (/^-\s/.test(t)) return false;                   // bare crudités-removal (structured covers it)
+        if (KDS_COMPO_LINE_RE.test(t)) return false;        // compo blob "Viandes : … Sauce : …" → DROP (dup)
+        return true;                                        // free client note → KEEP
+    });
+    return kept.join('\n').trim();
+}
+
 /**
  * Render an order item into a flat typed line list.
  *
@@ -277,8 +320,9 @@ export function renderItem(orderItem) {
         });
     }
 
-    // Free-text instruction — keyword-classified.
-    const instruction = (orderItem?.instruction || '').trim();
+    // Free-text instruction — sanitized (strip the compo duplicate the
+    // structured render already shows, keep unique extras), then keyword-classified.
+    const instruction = sanitizeKdsInstruction(orderItem?.instruction, orderItem?.item_name);
     if (instruction.length > 0) {
         lines.push({
             type: 'instruction',

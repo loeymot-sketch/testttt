@@ -198,9 +198,20 @@ export function normalizeReceiptExtras(rawExtras) {
         .map((e) => {
             const qtyRaw = e.quantity;
             const qty = Number.isFinite(Number(qtyRaw)) ? Math.max(0, Number(qtyRaw)) : 1;
+            // [POS-OUTPUT-AUDIT 2026-06-24 P1-RECU] Keep the charged amount so
+            // paid supplements (Cheddar +0,90, Viande supplémentaire +2,50) show
+            // their price on the client ticket — same shape as
+            // normalizeReceiptAddons. line_total wins; fall back to
+            // unit_price*qty; 0 for free garnishes (Salade/Tomate/Oignon).
+            let lineTotal = Number.isFinite(Number(e.line_total)) ? Number(e.line_total) : NaN;
+            if (!Number.isFinite(lineTotal)) {
+                const unit = Number(e.unit_price);
+                lineTotal = Number.isFinite(unit) ? unit * (qty || 1) : 0;
+            }
             return {
                 name: String(e.name || e.extra_name || ''),
                 quantity: qty || 1,
+                line_total: Math.max(0, lineTotal),
             };
         })
         .filter((line) => line.name !== '');

@@ -6,6 +6,7 @@ import {
     orderHasAnyAllergen,
     kdsVariationGroupValue,
     kdsVariationLine,
+    sanitizeKdsInstruction,
 } from '../../resources/js/helpers/kdsCustomization.js';
 
 // [kds/sprint-2 F-3] Adaptive customization renderer. The Vue card template
@@ -201,6 +202,68 @@ describe('renderItem — instruction line is keyword-classified', () => {
         const ins = out.lines.find((l) => l.type === 'instruction');
         expect(ins).toBeTruthy();
         expect(ins.visualClass).toBe('kds-instruction--allergen');
+    });
+});
+
+// [POS-OUTPUT-AUDIT 2026-06-24 P1-KDS] The frozen pos-wizard.js writes the FULL
+// composition into orderItem.instruction (line0=PRODUCT NAME, line1=compo blob
+// "Viandes : X Sauce : Y - crudités", then UNIQUE extras "+ Menu", "↳ Sauce
+// frites: X", free notes). The KDS already renders the composition structurally
+// from composition_snapshot (SSOT) — so rendering the raw instruction DOUBLES it
+// (and on legacy bridge-divergent orders shows TWO contradictory sauces for one
+// product → kitchen makes the wrong food). sanitizeKdsInstruction strips the
+// compo-duplicate (product name + compo blob + bare crudités) and KEEPS the
+// unique extras (↳ / + / [note] / free notes) that the snapshot does NOT carry.
+describe('sanitizeKdsInstruction — strips compo duplicate, keeps unique extras', () => {
+    it('strips the product-name line + compo blob entirely (pure duplicate → empty)', () => {
+        expect(sanitizeKdsInstruction('TACOS M\nViandes : Mexicanos Sauce : Harissa', 'Tacos M')).toBe('');
+    });
+
+    it('keeps the "↳ Sauce frites: X" extra (it exists ONLY in the instruction, never in the snapshot)', () => {
+        expect(sanitizeKdsInstruction('TACOS M\n↳ Sauce frites: Curry', 'Tacos M')).toBe('↳ Sauce frites: Curry');
+    });
+
+    it('drops compo + name, keeps "+ Menu" formule AND "↳ Sauce frites" together', () => {
+        const raw = 'SANDWICH CAYENNE\nViandes : Poulet Sauce : Blanche - Salade, Tomate\n+ Menu (Frites, Coca)\n↳ Sauce frites: Harissa';
+        expect(sanitizeKdsInstruction(raw, 'Sandwich Cayenne')).toBe('+ Menu (Frites, Coca)\n↳ Sauce frites: Harissa');
+    });
+
+    it('keeps a free client note that is not a compo line', () => {
+        expect(sanitizeKdsInstruction('allergie gluten — pain sans gluten obligatoire', 'Lablabi'))
+            .toBe('allergie gluten — pain sans gluten obligatoire');
+    });
+
+    it('drops a bare crudités-removal line "- Oignon" (already covered by structured render)', () => {
+        expect(sanitizeKdsInstruction('TACOS M\n- Oignon', 'Tacos M')).toBe('');
+    });
+
+    it('is safe on empty / null / non-string (never throws, returns empty)', () => {
+        expect(sanitizeKdsInstruction('', 'X')).toBe('');
+        expect(sanitizeKdsInstruction(null, 'X')).toBe('');
+        expect(sanitizeKdsInstruction(undefined, undefined)).toBe('');
+        expect(sanitizeKdsInstruction(42, 'X')).toBe('');
+    });
+});
+
+describe('renderItem — instruction is sanitized (no compo doublage, extras preserved)', () => {
+    it('does NOT emit an instruction line when the instruction is a pure compo duplicate', () => {
+        const out = renderItem({
+            item_name: 'Tacos M',
+            quantity: 1,
+            instruction: 'TACOS M\nViandes : Mexicanos Sauce : Harissa',
+        });
+        expect(out.lines.find((l) => l.type === 'instruction')).toBeFalsy();
+    });
+
+    it('emits an instruction line ONLY with the unique extra (sauce frites kept)', () => {
+        const out = renderItem({
+            item_name: 'Tacos M',
+            quantity: 1,
+            instruction: 'TACOS M\n↳ Sauce frites: Curry',
+        });
+        const ins = out.lines.find((l) => l.type === 'instruction');
+        expect(ins).toBeTruthy();
+        expect(ins.label).toBe('↳ Sauce frites: Curry');
     });
 });
 

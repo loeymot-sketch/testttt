@@ -52472,6 +52472,13 @@ function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
     },
     runningTotal: function runningTotal() {
       return (0,_helpers_kioskPricing__WEBPACK_IMPORTED_MODULE_2__.calculateKioskRunningTotal)(this.item, this.selections);
+    },
+    // [F1 heal 2026-06-09] Cap the recap quantity stepper at MAX_ITEM_QTY, in
+    // parity with the cart stepper (KioskCartComponent maxItemQty). Without the
+    // cap a customer could drive quantity past the cap and the line was then
+    // silently clamped by the store with a mismatched total.
+    maxItemQty: function maxItemQty() {
+      return typeof window !== 'undefined' && window.foodkingConfig && window.foodkingConfig.maxItemQty || 20;
     }
   },
   methods: {
@@ -52652,7 +52659,8 @@ function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
       });
     },
     incrementQty: function incrementQty() {
-      this.$emit('update', 'quantity', (this.selections.quantity || 1) + 1);
+      var next = Math.min((this.selections.quantity || 1) + 1, this.maxItemQty);
+      this.$emit('update', 'quantity', next);
     },
     decrementQty: function decrementQty() {
       if (this.selections.quantity > 1) {
@@ -66132,7 +66140,7 @@ var _hoisted_62 = {
 };
 var _hoisted_63 = ["disabled", "aria-label"];
 var _hoisted_64 = ["aria-label"];
-var _hoisted_65 = ["aria-label"];
+var _hoisted_65 = ["disabled", "aria-label"];
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Item principal "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [$props.item.thumb ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("img", {
     key: 0,
@@ -66215,6 +66223,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onClick: _cache[1] || (_cache[1] = function () {
       return $options.incrementQty && $options.incrementQty.apply($options, arguments);
     }),
+    disabled: $props.selections.quantity >= $options.maxItemQty,
     "aria-label": _ctx.$t('kiosk.increase_qty'),
     "data-testid": "kiosk-order-summary-qty-plus"
   }, "+", 8 /* PROPS */, _hoisted_65)])])]);
@@ -74300,7 +74309,7 @@ function _syncQueue() {
           return _context15.a(2, _syncInFlight);
         case 1:
           _syncInFlight = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee14() {
-            var owner, synced, failed, abandonedNew, remaining, lockHeartbeat, _iterator, _step, entry, nextRetryAt, config, payload, failedAt, attempts, _error$response, _error$response2, _t6, _t7;
+            var owner, synced, failed, abandonedNew, remaining, lockHeartbeat, _syncSnapshot, _syncSnapshotKeys, _iterator, _step, entry, nextRetryAt, config, payload, failedAt, attempts, _error$response, _error$response2, _enqueuedDuringSync, _t6, _t7;
             return _regenerator().w(function (_context14) {
               while (1) switch (_context14.p = _context14.n) {
                 case 0:
@@ -74331,7 +74340,17 @@ function _syncQueue() {
                   lockHeartbeat = setInterval(function () {
                     _refreshLock(owner)["catch"](function () {});
                   }, LOCK_HEARTBEAT_MS);
-                  _iterator = _createForOfIteratorHelper(_queueCache);
+
+                  // [F4 heal 2026-06-09] Snapshot the queue we iterate. saveOrder() can
+                  // reassign _queueCache (a brand-new array) while we await a network
+                  // POST below; iterating a captured snapshot — and re-merging anything
+                  // added during the run before the final reassignment — stops those
+                  // freshly-queued offline orders from being silently dropped.
+                  _syncSnapshot = _queueCache;
+                  _syncSnapshotKeys = new Set(_syncSnapshot.map(function (e) {
+                    return e.localKey;
+                  }));
+                  _iterator = _createForOfIteratorHelper(_syncSnapshot);
                   _context14.p = 5;
                   _iterator.s();
                 case 6:
@@ -74428,7 +74447,14 @@ function _syncQueue() {
                   _iterator.f();
                   return _context14.f(16);
                 case 17:
-                  _queueCache = remaining;
+                  // [F4 heal 2026-06-09] Re-merge any entries enqueued via saveOrder()
+                  // while this sync was in flight (keys absent from the pre-sync
+                  // snapshot). Without this, `_queueCache = remaining` would clobber
+                  // them and lose a queued offline order.
+                  _enqueuedDuringSync = _queueCache.filter(function (e) {
+                    return !_syncSnapshotKeys.has(e.localKey);
+                  });
+                  _queueCache = _mergeQueue(remaining, _enqueuedDuringSync);
                   _context14.n = 18;
                   return _persistQueue();
                 case 18:
@@ -91634,13 +91660,18 @@ var kioskCart = {
         var newItem = _objectSpread(_objectSpread({}, item), {}, {
           quantity: Math.max(1, Math.min(Number.isFinite(rawQty) ? Math.floor(rawQty) : 1, MAX_ITEM_QTY))
         });
-        // Ensure total is always present
-        if (!newItem.total) {
-          var _base = parseFloat(newItem.convert_price) || 0;
-          var _varE = parseFloat(newItem.item_variation_total) || 0;
-          var _ext = parseFloat(newItem.item_extra_total) || 0;
-          newItem.total = parseFloat(((_base + _varE + _ext) * newItem.quantity).toFixed(2));
-        }
+        // [F1 heal 2026-06-09] ALWAYS recompute the line total from the
+        // CLAMPED quantity. Trusting an incoming `total` let the wizard
+        // recap (whose stepper was unbounded) ship total=line*rawQty for
+        // rawQty > MAX_ITEM_QTY; the clamp above then capped `quantity`
+        // but the stale `total` survived, so the cart line, the subtotal
+        // getter, and the grand total diverged on screen. Recompute is
+        // identical to buildCartItem's formula for qty <= MAX and correct
+        // after the clamp.
+        var _base = parseFloat(newItem.convert_price) || 0;
+        var _varE = parseFloat(newItem.item_variation_total) || 0;
+        var _ext = parseFloat(newItem.item_extra_total) || 0;
+        newItem.total = parseFloat(((_base + _varE + _ext) * newItem.quantity).toFixed(2));
         state.items.push(newItem);
       }
     },
@@ -91659,12 +91690,13 @@ var kioskCart = {
       var safeItem = _objectSpread(_objectSpread({}, item), {}, {
         quantity: Math.max(1, Math.min(Number.isFinite(rawQty) ? Math.floor(rawQty) : 1, MAX_ITEM_QTY))
       });
-      if (!safeItem.total) {
-        var base = parseFloat(safeItem.convert_price) || 0;
-        var varE = parseFloat(safeItem.item_variation_total) || 0;
-        var ext = parseFloat(safeItem.item_extra_total) || 0;
-        safeItem.total = parseFloat(((base + varE + ext) * safeItem.quantity).toFixed(2));
-      }
+      // [F1 heal 2026-06-09] Always recompute from the clamped quantity
+      // (same rationale as ADD_ITEM) so an edit-mode replace cannot carry a
+      // stale oversized total past the MAX_ITEM_QTY clamp.
+      var base = parseFloat(safeItem.convert_price) || 0;
+      var varE = parseFloat(safeItem.item_variation_total) || 0;
+      var ext = parseFloat(safeItem.item_extra_total) || 0;
+      safeItem.total = parseFloat(((base + varE + ext) * safeItem.quantity).toFixed(2));
       state.items.splice(index, 1, safeItem);
     },
     SET_EDITING: function SET_EDITING(state, _ref6) {

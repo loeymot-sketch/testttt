@@ -146,15 +146,34 @@ describe('posReceiptBuilder', () => {
      * Sentinel : Extras snapshot shape `[{extra_id, name, quantity}]`
      * is normalized identically. Quantity defaults to 1 when missing.
      */
-    it('normalizeReceiptExtras reads snapshot + legacy + null', () => {
+    it('normalizeReceiptExtras reads snapshot + legacy + null (keeps line_total)', () => {
         expect(normalizeReceiptExtras([
             { extra_id: 12, name: 'Cheddar', quantity: 2 },
             { extra_id: 13, name: 'Bacon' },
         ])).toEqual([
-            { name: 'Cheddar', quantity: 2 },
-            { name: 'Bacon', quantity: 1 },
+            { name: 'Cheddar', quantity: 2, line_total: 0 },
+            { name: 'Bacon', quantity: 1, line_total: 0 },
         ]);
         expect(normalizeReceiptExtras(null)).toEqual([]);
+    });
+
+    // [POS-OUTPUT-AUDIT 2026-06-24 P1-RECU] Paid supplements (Cheddar +0,90,
+    // Viande supplémentaire +2,50) must surface their price on the CLIENT
+    // ticket — previously the price was dropped, so a Tacos billed +3,40 of
+    // extras listed "Cheddar, Viande supplémentaire" with no amount (opaque).
+    it('normalizeReceiptExtras keeps the paid-supplement price (line_total)', () => {
+        expect(normalizeReceiptExtras([
+            { extra_name: 'Cheddar', quantity: 1, unit_price: 0.9, line_total: 0.9 },
+            { extra_name: 'Viande supplémentaire', quantity: 1, unit_price: 2.5, line_total: 2.5 },
+        ])).toEqual([
+            { name: 'Cheddar', quantity: 1, line_total: 0.9 },
+            { name: 'Viande supplémentaire', quantity: 1, line_total: 2.5 },
+        ]);
+    });
+
+    it('normalizeReceiptExtras derives line_total from unit_price*quantity when line_total absent', () => {
+        const out = normalizeReceiptExtras([{ name: 'Cheddar', quantity: 2, unit_price: 0.9 }]);
+        expect(out[0].line_total).toBeCloseTo(1.8);
     });
 
     it('receiptBranchHeader overlays fresh order.branch onto stale Vuex snapshot', () => {
