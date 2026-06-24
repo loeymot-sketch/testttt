@@ -134,6 +134,19 @@
             apiKey: @json((string) config('app.api_key')),
             googleMapKey: @json((string) config('app.google_map_key')),
             demo: @json((bool) config('app.demo_mode')),
+            // [BOLS/2-VIANDES 2026-06-24] La caisse v5 (PosComponent) charge
+            // public/js/pos-wizard.js mais n'exposait PAS ce flag (contrairement
+            // à admin-pos-v4.blade.php) → pos-wizard.js tombait sur le builder
+            // LEGACY (detectCategory par nom) qui (a) crash sur les Bols
+            // (attribut « Viande 1 » sans init selections.viandes pour le
+            // template 'snacking'/'simple') et (b) dédupe-par-nom les 2 viandes
+            // (Tacos L/Méga/Terminator → 2ᵉ viande perdue). Le builder COMPOSER
+            // (item.composer_profile.steps) rend correctement bols + 2 viandes
+            // distinctes (prouvé live sur /admin/pos-v4). Le flag suit la même
+            // config que la v4 : FK_POS_WIZARD_COMPOSER_AWARE_ENABLED.
+            posWizardComposerAware: {
+                enabled: @json((bool) config('catalog_v15.pos_wizard_composer_aware.enabled', false)),
+            },
             // [2026-05-18 PR-B P0 heal] Machine creds gated by IP allowlist +
             // APP_ENV=local. See @php block above. Public unauth requests now
             // get `null` even on /kiosk/* paths.

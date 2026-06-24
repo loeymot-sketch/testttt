@@ -191,6 +191,42 @@
                         </div>
                     </div>
                 </div>
+                <!-- [WIZARD-VARIATION-BRIDGE 2026-06-24] Le shim FROZEN public/js/pos-wizard.js
+                     (overlay « design parfait » de la caisse) transfère les choix viande/sauce/pain
+                     vers le modal Vue en écrivant dans des <select> (viande l.4039, sauce l.3740,
+                     pain l.3764). Or la v5 rend ces attributs single-select en radios SANS `value`
+                     → le bridge value-based no-op → l'ordre soumettait les variations PAR DÉFAUT
+                     (1ʳᵉ viande/sauce), faussant le composition_snapshot NF525 + le KDS, et perdant
+                     la 2ᵉ viande (Tacos L/Méga/Terminator). Ces <select> cachés write-only sont des
+                     CIBLES de bridge : le wrapper .form-group porte le nom d'attribut (filtre viande),
+                     l'option.value = id de variation (sauce/pain par id ; viandes par index → la 2ᵉ
+                     viande tombe dans le 2ᵉ select). @change → setVariationQuantity = SSOT de sélection.
+                     Aucun fichier frozen modifié. -->
+                <div aria-hidden="true" class="pos-wizard-variation-bridge"
+                     style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;"
+                     v-if="item.itemAttributes.length > 0">
+                    <div v-for="bridgeAttr in item.itemAttributes" :key="'vbridge-' + bridgeAttr.id"
+                         class="form-group" :data-bridge-attr="bridgeAttr.id">
+                        <span>{{ bridgeAttr.name }}</span>
+                        <select :data-bridge-select="bridgeAttr.id" @change="onWizardBridgeSelect(bridgeAttr, $event)">
+                            <option value=""></option>
+                            <option v-for="bridgeVar in getAttributeVariations(bridgeAttr)"
+                                    :key="'vbo-' + bridgeVar.id" :value="bridgeVar.id">{{ bridgeVar.name }}</option>
+                        </select>
+                    </div>
+                    <!-- Extras (crudités + suppléments) : le shim frozen toggle des
+                         `.extra .custom-checkbox-field` (value=extra id). La v5 rend les
+                         extras en boutons +/- → sans ces checkboxes le supplément +0,90 ne
+                         se transférait pas → le backend re-facturait SANS (sous-facturation
+                         NF525). @change → setExtraQuantity = SSOT extras. -->
+                    <div v-for="bridgeExtra in item.extras" :key="'ebridge-' + bridgeExtra.id"
+                         class="extra" :data-bridge-extra="bridgeExtra.id">
+                        <label>{{ bridgeExtra.name }}</label>
+                        <input type="checkbox" class="custom-checkbox-field" :value="bridgeExtra.id"
+                               :checked="getExtraQuantity(bridgeExtra.id) > 0"
+                               @change="onWizardBridgeExtra(bridgeExtra, $event)">
+                    </div>
+                </div>
                 <div class="mb-4" v-if="item.extras.length > 0">
                     <h3 class="text-sm leading-6 font-medium capitalize mb-2 text-heading">{{ $t('label.extras') }}</h3>
                     <div class="space-y-2">
@@ -654,6 +690,27 @@ export default {
         },
         selectLegacyVariation: function (attribute, variation) {
             this.setVariationQuantity(attribute, variation, 1);
+        },
+        // [WIZARD-VARIATION-BRIDGE 2026-06-24] @change des <select> cachés pilotés par
+        // le shim frozen pos-wizard.js. Mappe la variation choisie (par id) vers
+        // temp.item_variations via le SSOT de sélection setVariationQuantity, pour que
+        // l'ordre soumette la vraie viande/sauce/pain (et non le défaut). Single-select :
+        // setVariationQuantity remplace déjà la variation de l'attribut.
+        onWizardBridgeSelect: function (attribute, event) {
+            const variationId = normalizeId(event && event.target ? event.target.value : null);
+            if (variationId === null) return;
+            const variation = (this.getAttributeVariations(attribute) || [])
+                .find((entry) => normalizeId(entry && entry.id) === variationId);
+            if (variation) {
+                this.setVariationQuantity(attribute, variation, 1);
+            }
+        },
+        // [WIZARD-VARIATION-BRIDGE 2026-06-24] @change des checkboxes cachées extras
+        // pilotées par le shim frozen pos-wizard.js (cb.click() toggle). Reflète l'état
+        // coché dans temp.item_extras via setExtraQuantity (SSOT) -> suppléments facturés.
+        onWizardBridgeExtra: function (extra, event) {
+            const checked = !!(event && event.target && event.target.checked);
+            this.setExtraQuantity(extra, checked ? 1 : 0);
         },
         incrementVariation: function (attribute, variation) {
             if (this.isAttributeAtMax(attribute)) return;
