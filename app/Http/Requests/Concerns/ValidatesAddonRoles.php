@@ -73,14 +73,23 @@ trait ValidatesAddonRoles
      * Payload roles that trigger the kiosk menu-formula ratio reduction.
      * Mirrors `PricingService::menuRoleAdjustedAddonPrice` switch arms.
      */
-    private const KIOSK_MENU_PAYLOAD_ROLES = ['menu_full', 'menu_frites', 'menu_boisson'];
+    private static function kioskMenuPayloadRoles(): array
+    {
+        // [PHP-8.1-COMPAT 2026-06-25] Méthode au lieu d'une CONSTANTE DE TRAIT
+        // (interdite avant PHP 8.2 → fatale « Traits cannot have constants » sur le
+        // serveur PHP 8.1 → 500 à la création de commande). Valeur inchangée.
+        return ['menu_full', 'menu_frites', 'menu_boisson'];
+    }
 
     /**
      * DB role required when a KIOSK_MENU_PAYLOAD_ROLES is sent in the
      * payload — only `menu_component` addons (the parent "Menu (Frites +
      * Boisson)" row of a kiosk item) may receive the ratio reduction.
      */
-    private const MENU_ELIGIBLE_DB_ROLE = 'menu_component';
+    private static function menuEligibleDbRole(): string
+    {
+        return 'menu_component';
+    }
 
     /**
      * Validate `items[].item_addons[].role` against the DB row's role
@@ -147,7 +156,7 @@ trait ValidatesAddonRoles
             ->toArray();
 
         $whitelist = array_merge(
-            self::KIOSK_MENU_PAYLOAD_ROLES,
+            self::kioskMenuPayloadRoles(),
             array_map('strtolower', ItemAddon::ROLES)
         );
 
@@ -175,8 +184,8 @@ trait ValidatesAddonRoles
                 // menu_component DB role. This blocks the P0-Z4-01
                 // exploit on ALL non-menu addons (NULL OR 'drink' OR
                 // 'side' OR 'dessert' OR 'upsell').
-                if (in_array($payloadRole, self::KIOSK_MENU_PAYLOAD_ROLES, true)) {
-                    if ($dbRole !== self::MENU_ELIGIBLE_DB_ROLE) {
+                if (in_array($payloadRole, self::kioskMenuPayloadRoles(), true)) {
+                    if ($dbRole !== self::menuEligibleDbRole()) {
                         $validator->errors()->add(
                             $key,
                             'Ce rôle menu est réservé aux addons "menu_component" '
