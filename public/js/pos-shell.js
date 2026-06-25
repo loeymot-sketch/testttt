@@ -8769,8 +8769,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../../../enums/modules/posPaymentMethodEnum */ "./resources/js/enums/modules/posPaymentMethodEnum.js");
 /* harmony import */ var _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../../../enums/modules/orderTypeEnum */ "./resources/js/enums/modules/orderTypeEnum.js");
 /* harmony import */ var _ReceiptDuplicataMarker_vue__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./ReceiptDuplicataMarker.vue */ "./resources/js/components/admin/pos/ReceiptDuplicataMarker.vue");
-/* harmony import */ var _ReceiptRemboursementMarker_vue__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./ReceiptRemboursementMarker.vue */ "./resources/js/components/admin/pos/ReceiptRemboursementMarker.vue");
-/* harmony import */ var _helpers_posReceiptBuilder__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ../../../helpers/posReceiptBuilder */ "./resources/js/helpers/posReceiptBuilder.js");
+/* harmony import */ var _helpers_kdsCustomization__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../../../helpers/kdsCustomization */ "./resources/js/helpers/kdsCustomization.js");
+/* harmony import */ var _ReceiptRemboursementMarker_vue__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ./ReceiptRemboursementMarker.vue */ "./resources/js/components/admin/pos/ReceiptRemboursementMarker.vue");
+/* harmony import */ var _helpers_posReceiptBuilder__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ../../../helpers/posReceiptBuilder */ "./resources/js/helpers/posReceiptBuilder.js");
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
 function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
 function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
@@ -8791,11 +8792,12 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
 
 
 
+
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
   name: "ReceiptComponent",
   components: {
     ReceiptDuplicataMarker: _ReceiptDuplicataMarker_vue__WEBPACK_IMPORTED_MODULE_7__["default"],
-    ReceiptRemboursementMarker: _ReceiptRemboursementMarker_vue__WEBPACK_IMPORTED_MODULE_8__["default"]
+    ReceiptRemboursementMarker: _ReceiptRemboursementMarker_vue__WEBPACK_IMPORTED_MODULE_9__["default"]
   },
   props: {
     order: Object,
@@ -8844,7 +8846,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       return this.$store.getters['company/lists'];
     },
     receiptBranch: function receiptBranch() {
-      return (0,_helpers_posReceiptBuilder__WEBPACK_IMPORTED_MODULE_9__.receiptBranchHeader)(this.order, this.$store.getters['backendGlobalState/branchShow']);
+      return (0,_helpers_posReceiptBuilder__WEBPACK_IMPORTED_MODULE_10__.receiptBranchHeader)(this.order, this.$store.getters['backendGlobalState/branchShow']);
     },
     orderItems: function orderItems() {
       return this.$store.getters['posOrder/orderItems'];
@@ -8856,13 +8858,13 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       return 58;
     },
     receiptPaperRootClass: function receiptPaperRootClass() {
-      return ['rounded-none', (0,_helpers_posReceiptBuilder__WEBPACK_IMPORTED_MODULE_9__.receiptWidthClass)(this.paperWidthMm)];
+      return ['rounded-none', (0,_helpers_posReceiptBuilder__WEBPACK_IMPORTED_MODULE_10__.receiptWidthClass)(this.paperWidthMm)];
     },
     paymentLines: function paymentLines() {
-      return (0,_helpers_posReceiptBuilder__WEBPACK_IMPORTED_MODULE_9__.formatPaymentsBreakdown)(this.order);
+      return (0,_helpers_posReceiptBuilder__WEBPACK_IMPORTED_MODULE_10__.formatPaymentsBreakdown)(this.order);
     },
     nf525FooterLines: function nf525FooterLines() {
-      return (0,_helpers_posReceiptBuilder__WEBPACK_IMPORTED_MODULE_9__.buildNf525Footer)(this.order);
+      return (0,_helpers_posReceiptBuilder__WEBPACK_IMPORTED_MODULE_10__.buildNf525Footer)(this.order);
     },
     effectiveOrder: function effectiveOrder() {
       var _this$order$receipt_p, _this$order;
@@ -8917,17 +8919,17 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       return method !== null && method !== void 0 ? method : '';
     },
     receiptVariationsFor: function receiptVariationsFor(item) {
-      return (0,_helpers_posReceiptBuilder__WEBPACK_IMPORTED_MODULE_9__.normalizeReceiptVariations)(item ? item.item_variations : []);
+      return (0,_helpers_posReceiptBuilder__WEBPACK_IMPORTED_MODULE_10__.normalizeReceiptVariations)(item ? item.item_variations : []);
     },
     receiptExtrasFor: function receiptExtrasFor(item) {
-      return (0,_helpers_posReceiptBuilder__WEBPACK_IMPORTED_MODULE_9__.normalizeReceiptExtras)(item ? item.item_extras : []);
+      return (0,_helpers_posReceiptBuilder__WEBPACK_IMPORTED_MODULE_10__.normalizeReceiptExtras)(item ? item.item_extras : []);
     },
     // [G2-HEAL-03 / G.5 G5-F-002 P1 2026-05-23] Composer addons (kiosk
     // menu_formule bundled drinks/sides) rendered alongside variations
     // + extras on the customer ticket. NF525: line_total is the
     // ratio-adjusted price (NEVER catalog_price).
     receiptAddonsFor: function receiptAddonsFor(item) {
-      return (0,_helpers_posReceiptBuilder__WEBPACK_IMPORTED_MODULE_9__.normalizeReceiptAddons)(item ? item.item_addons : []);
+      return (0,_helpers_posReceiptBuilder__WEBPACK_IMPORTED_MODULE_10__.normalizeReceiptAddons)(item ? item.item_addons : []);
     },
     formatReceiptAddonPrice: function formatReceiptAddonPrice(amount) {
       var _this$$store$getters$, _this$$store2, _this$$store$getters$2, _this$$store3, _this$$store$getters$3, _this$$store4;
@@ -8943,7 +8945,13 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       return position === 0 ? "".concat(symbol).concat(formatted) : "".concat(formatted).concat(symbol);
     },
     kitchenInstructionText: function kitchenInstructionText(item) {
-      return item && item.instruction ? String(item.instruction).trim() : '';
+      // [PRINT-SAGA 2026-06-25] Le ticket CUISINE imprimé rend déjà la compo
+      // structurée (variations/extras) au-dessus ; renvoyer l'instruction BRUTE
+      // ré-imprimait nom+viande+sauce+supplément une 2e fois (doublage prouvé
+      // par l'audit e2e). On assainit avec le MÊME helper SSOT que le KDS :
+      // strip le préambule nom-produit + le blob compo, garde les extras uniques
+      // (« ↳ Sauce frites », « + Menu », notes libres).
+      return item ? (0,_helpers_kdsCustomization__WEBPACK_IMPORTED_MODULE_8__.sanitizeKdsInstruction)(item.instruction, item.item_name) : '';
     },
     refreshBranchShowFromOrder: function refreshBranchShowFromOrder() {
       var _this$order$branch_id, _this$order4, _this$order5;
@@ -8969,6 +8977,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               return _context.a(2);
             case 1:
               _this.isPrinting = true;
+              _this._printedThermally = false;
               _context.p = 2;
               if (!((_this$order6 = _this.order) !== null && _this$order6 !== void 0 && _this$order6.id)) {
                 _context.n = 6;
@@ -8993,6 +9002,8 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               _yield$axios$post = _context.v;
               data = _yield$axios$post.data;
               _this.localPrintCount = Number((_data$receipt_print_c = data === null || data === void 0 ? void 0 : data.receipt_print_count) !== null && _data$receipt_print_c !== void 0 ? _data$receipt_print_c : Number((_this$localPrintCount = _this.localPrintCount) !== null && _this$localPrintCount !== void 0 ? _this$localPrintCount : 0) + 1);
+              // [PRINT-SAGA] server printed straight to the thermal printer?
+              _this._printedThermally = (data === null || data === void 0 ? void 0 : data.printed_escpos) === true;
               // [PS-4 audit heal 2026-05-18] NF525 audit-chain write
               // is best-effort server-side (PosReceiptPrintController
               // returns audit_emitted=false on chain failure). The
@@ -9021,6 +9032,10 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               _this.localPrintCount = Number((_this$localPrintCount2 = _this.localPrintCount) !== null && _this$localPrintCount2 !== void 0 ? _this$localPrintCount2 : 0) + 1;
               console.warn('[ReceiptComponent] increment API failed, printing anyway', _t);
             case 6:
+              if (_this._printedThermally) {
+                _context.n = 8;
+                break;
+              }
               _context.n = 7;
               return _this.$nextTick();
             case 7:
@@ -9046,7 +9061,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     handlePrintKitchenClick: function handlePrintKitchenClick() {
       var _this2 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2() {
-        var trigger;
+        var printedThermally, _this2$order, idempotencyKey, _yield$axios$post2, data, trigger, _t2;
         return _regenerator().w(function (_context2) {
           while (1) switch (_context2.p = _context2.n) {
             case 0:
@@ -9057,24 +9072,52 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               return _context2.a(2);
             case 1:
               _this2.isPrinting = true;
+              printedThermally = false;
               _context2.p = 2;
-              _context2.n = 3;
+              if (!((_this2$order = _this2.order) !== null && _this2$order !== void 0 && _this2$order.id)) {
+                _context2.n = 6;
+                break;
+              }
+              _context2.p = 3;
+              idempotencyKey = "pos-print-kitchen-".concat(_this2.order.id, "-").concat(Date.now());
+              _context2.n = 4;
+              return axios__WEBPACK_IMPORTED_MODULE_0__["default"].post("admin/pos/orders/".concat(_this2.order.id, "/print-kitchen"), {}, {
+                headers: {
+                  'X-Idempotency-Key': idempotencyKey
+                }
+              });
+            case 4:
+              _yield$axios$post2 = _context2.v;
+              data = _yield$axios$post2.data;
+              printedThermally = (data === null || data === void 0 ? void 0 : data.printed_escpos) === true;
+              _context2.n = 6;
+              break;
+            case 5:
+              _context2.p = 5;
+              _t2 = _context2.v;
+              console.warn('[ReceiptComponent] kitchen thermal print failed, printing anyway', _t2);
+            case 6:
+              if (printedThermally) {
+                _context2.n = 8;
+                break;
+              }
+              _context2.n = 7;
               return _this2.$nextTick();
-            case 3:
+            case 7:
               trigger = _this2.$refs.hiddenPrintKitchenButton;
               if (trigger && typeof trigger.click === 'function') {
                 trigger.click();
               } else if (typeof window !== 'undefined' && typeof window.print === 'function') {
                 window.print();
               }
-            case 4:
-              _context2.p = 4;
+            case 8:
+              _context2.p = 8;
               _this2.isPrinting = false;
-              return _context2.f(4);
-            case 5:
+              return _context2.f(8);
+            case 9:
               return _context2.a(2);
           }
-        }, _callee2, null, [[2,, 4, 5]]);
+        }, _callee2, null, [[3, 5], [2,, 8, 9]]);
       }))();
     }
   },
@@ -16223,6 +16266,569 @@ var adminPriceMixin = {
   }
 };
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (formatPrice);
+
+/***/ },
+
+/***/ "./resources/js/helpers/kdsCustomization.js"
+/*!**************************************************!*\
+  !*** ./resources/js/helpers/kdsCustomization.js ***!
+  \**************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   categorize: () => (/* binding */ categorize),
+/* harmony export */   kdsVariationGroupValue: () => (/* binding */ kdsVariationGroupValue),
+/* harmony export */   kdsVariationLine: () => (/* binding */ kdsVariationLine),
+/* harmony export */   orderHasAnyAllergen: () => (/* binding */ orderHasAnyAllergen),
+/* harmony export */   renderItem: () => (/* binding */ renderItem),
+/* harmony export */   sanitizeKdsInstruction: () => (/* binding */ sanitizeKdsInstruction)
+/* harmony export */ });
+/* harmony import */ var _kdsLineSemantics_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./kdsLineSemantics.js */ "./resources/js/helpers/kdsLineSemantics.js");
+function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t["return"] && (u = t["return"](), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
+function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t["return"] || t["return"](); } finally { if (u) throw o; } } }; }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+/**
+ * [kds/sprint-2 F-3] Adaptive customization renderer — the single source of
+ * truth that converts an OrderItem (post-T07 composition_snapshot or legacy
+ * item_variations/item_extras/item_addons) into a flat list of typed display
+ * nodes consumed by <KdsOrderLine>.
+ *
+ * Vue templates MUST NOT branch per-category — they iterate `renderItem().lines`.
+ * Adding a new category = one branch here + (optionally) one i18n group key.
+ *
+ * Per-category contract (DESIGN_SPEC_KDS_V2 §3.1):
+ *   SANDWICH    : header + grouped variations (Pain/Crudités/Sauce/Cuisson)
+ *                 + extras (yellow italic supplement)
+ *                 + addons (menu_full/menu_frites/menu_boisson → menu_child)
+ *   TACO/BURGER : same as sandwich, omit Pain group
+ *   ASSIETTE    : header + comma-joined variations on one "Avec :" line
+ *   MENU_FORMULE: header + addons indented as children
+ *   SIDE/DRINK/DESSERT/OTHER: header + extras only, no variations grouping
+ */
+
+
+
+// Group keys are surfaced to i18n via `label.kds_group_<key>`.
+// Heuristic-keyword regex per group. The first match wins.
+var GROUP_PATTERNS = [{
+  key: 'bread',
+  re: /\bpain\b|\bbread\b/i
+}, {
+  key: 'crudites',
+  re: /crudit|crudity|salade|legum|vegetab/i
+}, {
+  key: 'sauce',
+  re: /\bsauce\b/i
+}, {
+  key: 'cooking',
+  re: /cuisson|cook|temperature/i
+}, {
+  key: 'drink',
+  re: /boisson|drink|beverage/i
+}, {
+  key: 'size',
+  re: /\btaille\b|\bsize\b|\bportion\b/i
+}];
+function classifyGroup(variationName, attributeName) {
+  var name = "".concat(variationName || '', " ").concat(attributeName || '');
+  var _iterator = _createForOfIteratorHelper(GROUP_PATTERNS),
+    _step;
+  try {
+    for (_iterator.s(); !(_step = _iterator.n()).done;) {
+      var g = _step.value;
+      if (g.re.test(name)) {
+        return g.key;
+      }
+    }
+  } catch (err) {
+    _iterator.e(err);
+  } finally {
+    _iterator.f();
+  }
+  return 'other';
+}
+
+/**
+ * Classify an item into a category. Server can override this by populating
+ * a future `items.kds_category` column; until then, name-based fallback.
+ *
+ * @param {object} orderItem
+ * @returns {'sandwich'|'taco'|'burger'|'assiette'|'menu_formule'|'side'|'drink'|'dessert'|'other'}
+ */
+function categorize(orderItem) {
+  var declared = String((orderItem === null || orderItem === void 0 ? void 0 : orderItem.kds_category) || '').toLowerCase();
+  if (['sandwich', 'taco', 'burger', 'assiette', 'menu_formule', 'side', 'drink', 'dessert', 'other'].includes(declared)) {
+    return declared;
+  }
+  var name = String((orderItem === null || orderItem === void 0 ? void 0 : orderItem.item_name) || '').toLowerCase();
+  if (/menu|formule/.test(name)) {
+    return 'menu_formule';
+  }
+  if (/sandwich|kafteji|brick/.test(name)) {
+    return 'sandwich';
+  }
+  if (/\btacos?\b/.test(name)) {
+    return 'taco';
+  }
+  if (/burger|cheeseburger|double cheese/.test(name)) {
+    return 'burger';
+  }
+  if (/assiette|couscous|ojja|lablabi/.test(name)) {
+    return 'assiette';
+  }
+  if (/frite|onion ring/.test(name)) {
+    return 'side';
+  }
+  // [#4] Dessert BEFORE drink, and short drink tokens anchored with \b. An
+  // unanchored 'eau' matched 'gâteau'/'plateau'/'château', mislabeling desserts
+  // as drinks (the dessert branch was unreachable for those names).
+  if (/dessert|crepe|crêpe|gateau|gâteau|glace|tiramisu/.test(name)) {
+    return 'dessert';
+  }
+  if (/coca|fanta|sprite|\beau\b|coke|water|\bjus\b|\bthé?\b|menthe|caf[eé]/.test(name)) {
+    return 'drink';
+  }
+  return 'other';
+}
+function readVariations(orderItem) {
+  // Post-T07: composition_snapshot.lines wins (richer shape with attribute_name).
+  var snap = orderItem === null || orderItem === void 0 ? void 0 : orderItem.composition_snapshot;
+  if (snap && Array.isArray(snap.lines) && snap.lines.length > 0) {
+    return snap.lines;
+  }
+  return Array.isArray(orderItem === null || orderItem === void 0 ? void 0 : orderItem.item_variations) ? orderItem.item_variations : [];
+}
+function readExtras(orderItem) {
+  var snap = orderItem === null || orderItem === void 0 ? void 0 : orderItem.composition_snapshot;
+  if (snap && Array.isArray(snap.extras) && snap.extras.length > 0) {
+    return snap.extras;
+  }
+  return Array.isArray(orderItem === null || orderItem === void 0 ? void 0 : orderItem.item_extras) ? orderItem.item_extras : [];
+}
+function readAddons(orderItem) {
+  var snap = orderItem === null || orderItem === void 0 ? void 0 : orderItem.composition_snapshot;
+  if (snap && Array.isArray(snap.addons) && snap.addons.length > 0) {
+    return snap.addons;
+  }
+  return Array.isArray(orderItem === null || orderItem === void 0 ? void 0 : orderItem.item_addons) ? orderItem.item_addons : [];
+}
+function variationLabel(v) {
+  return (v === null || v === void 0 ? void 0 : v.name) || (v === null || v === void 0 ? void 0 : v.variation_name) || '';
+}
+
+/**
+ * [POS-WIZARD-COMPO-AUDIT 2026-06-23 P2-B] Shape-agnostic GROUP/VALUE accessor.
+ *
+ * The composition has two on-wire shapes that INVERT the meaning of
+ * `variation_name`:
+ *   - snapshot (composition_snapshot.lines, OrderItemResource): `attribute_name`
+ *     = GROUP ("Viande 1"), `variation_name` = VALUE ("Poulet mariné"), no `name`.
+ *   - legacy (item_variations column, KDSOrderItemsResource / kiosk payload):
+ *     `variation_name` = GROUP, `name` = VALUE.
+ *
+ * Rendering a snapshot line with the legacy template `{{variation_name}}:
+ * {{name}}` produced "Poulet mariné: " (group dropped, value mislabeled). This
+ * helper resolves {group, value} correctly for BOTH shapes (discriminant =
+ * presence of `attribute_name`), so the KDS order-cards/print AND the legacy
+ * items-board render identically and correctly.
+ */
+function kdsVariationGroupValue(v) {
+  var _v$variation_name2, _v$name;
+  if (!v || _typeof(v) !== 'object') {
+    return {
+      group: '',
+      value: ''
+    };
+  }
+  var attr = v.attribute_name;
+  if (attr !== null && attr !== undefined && String(attr) !== '') {
+    var _ref, _v$variation_name;
+    // snapshot shape
+    return {
+      group: String(attr),
+      value: String((_ref = (_v$variation_name = v.variation_name) !== null && _v$variation_name !== void 0 ? _v$variation_name : v.name) !== null && _ref !== void 0 ? _ref : '')
+    };
+  }
+  // legacy shape
+  return {
+    group: String((_v$variation_name2 = v.variation_name) !== null && _v$variation_name2 !== void 0 ? _v$variation_name2 : ''),
+    value: String((_v$name = v.name) !== null && _v$name !== void 0 ? _v$name : '')
+  };
+}
+
+/** "GROUP: VALUE" (or just the value when there is no group) — never a dangling colon. */
+function kdsVariationLine(v) {
+  var _kdsVariationGroupVal = kdsVariationGroupValue(v),
+    group = _kdsVariationGroupVal.group,
+    value = _kdsVariationGroupVal.value;
+  if (group && value) {
+    return "".concat(group, ": ").concat(value);
+  }
+  return value || group || '';
+}
+function extraLabel(e) {
+  return (e === null || e === void 0 ? void 0 : e.name) || (e === null || e === void 0 ? void 0 : e.extra_name) || '';
+}
+function addonLabel(a) {
+  return (a === null || a === void 0 ? void 0 : a.addon_name) || (a === null || a === void 0 ? void 0 : a.name) || '';
+}
+
+// Compo markers that the STRUCTURED render (composition_snapshot SSOT) already
+// shows. "Sauce :" (group + space-colon) is compo; "↳ Sauce frites: X" is an
+// extra (no space before ':', kept by the ↳-prefix rule below before this runs).
+var KDS_COMPO_LINE_RE = /(^|\s)(Viandes?|Sauce|Suppl[ée]ment|Pain|Galette)\s*:/i;
+
+/**
+ * Sanitize the free-text `instruction` for KDS / kitchen-ticket display.
+ *
+ * The FROZEN pos-wizard.js (buildTicketInstruction) writes the FULL composition
+ * into `instruction`: line0 = PRODUCT NAME (uppercased), line1 = compo blob
+ * ("Viandes : X Sauce : Y - crudités"), then UNIQUE extras ("+ Menu (…)",
+ * "↳ Sauce frites: X", "[note]") and any free client note. The KDS already
+ * renders the composition STRUCTURALLY from composition_snapshot (the SSOT), so
+ * echoing the raw instruction DOUBLES it — and on legacy bridge-divergent rows
+ * shows TWO contradictory sauces for one product (kitchen makes the wrong food).
+ *
+ * This keeps ONLY what the structured render does NOT carry: the formule child
+ * ("+ …"), the "↳ Sauce frites: X" choice (exists ONLY here, never in the
+ * snapshot), bracketed notes, and free client notes. It drops the product-name
+ * line and the compo blob. pos-wizard.js (the writer) is FROZEN and untouched —
+ * this is a display-only sanitiser.
+ *
+ * @param {string} raw     orderItem.instruction
+ * @param {string} itemName orderItem.item_name (to strip the echoed name line)
+ * @returns {string} cleaned instruction (may be empty → caller emits no line)
+ */
+function sanitizeKdsInstruction(raw, itemName) {
+  if (typeof raw !== 'string') {
+    return '';
+  }
+  var name = String(itemName || '').trim().toUpperCase();
+  var kept = raw.split('\n').filter(function (ln) {
+    var t = ln.trim();
+    if (t === '') return false;
+    if (name && t.toUpperCase() === name) return false; // echoed product name (header shows it)
+    if (/^[+↳\[]/.test(t)) return true; // formule / sauce frites / bracketed note → KEEP
+    if (/^-\s/.test(t)) return false; // bare crudités-removal (structured covers it)
+    if (KDS_COMPO_LINE_RE.test(t)) return false; // compo blob "Viandes : … Sauce : …" → DROP (dup)
+    return true; // free client note → KEEP
+  });
+  return kept.join('\n').trim();
+}
+
+/**
+ * Render an order item into a flat typed line list.
+ *
+ * Line types:
+ *   'header'        — the item itself (qty + name + allergen icon)
+ *   'variation'     — grouped or single variation row (Pain / Crudités / …)
+ *   'variation-flat'— the assiette "Avec : a, b, c" one-liner
+ *   'supplement'    — paid extra "+ Cheddar"
+ *   'addon'         — generic addon (rare)
+ *   'menu_child'    — addon with role startsWith 'menu_'
+ *   'instruction'   — free-text note (classified note/exclusion/allergen)
+ *   'allergen'      — explicit allergens_snapshot codes block
+ *
+ * @param {object} orderItem
+ * @returns {{ category: string, hasAllergen: boolean, lines: Array<object> }}
+ */
+function renderItem(orderItem) {
+  var _orderItem$quantity;
+  var category = categorize(orderItem);
+  var lines = [];
+  var allergenCodes = Array.isArray(orderItem === null || orderItem === void 0 ? void 0 : orderItem.allergens_snapshot)
+  // [#8] Coerce to string BEFORE filtering — numeric allergen codes (the
+  // backend hash uses strval) were silently dropped, suppressing the
+  // allergen line AND the orange card border. Food-safety: never drop a
+  // non-empty code regardless of its JS type.
+  ? orderItem.allergens_snapshot.map(function (c) {
+    return c === null || c === undefined ? '' : String(c);
+  }).filter(function (c) {
+    return c.length > 0;
+  }) : [];
+  var itemAllergen = allergenCodes.length > 0;
+  lines.push({
+    type: 'header',
+    qty: (_orderItem$quantity = orderItem === null || orderItem === void 0 ? void 0 : orderItem.quantity) !== null && _orderItem$quantity !== void 0 ? _orderItem$quantity : 1,
+    label: (orderItem === null || orderItem === void 0 ? void 0 : orderItem.item_name) || '',
+    category: category,
+    hasAllergen: itemAllergen
+  });
+  var vars = readVariations(orderItem);
+  if (vars.length > 0) {
+    if (category === 'assiette') {
+      var joined = vars.map(function (v) {
+        var q = parseInt(v === null || v === void 0 ? void 0 : v.quantity, 10);
+        var prefix = Number.isFinite(q) && q > 1 ? "".concat(q, " ") : '';
+        return "".concat(prefix).concat(variationLabel(v));
+      }).filter(function (s) {
+        return s.trim().length > 0;
+      }).join(', ');
+      if (joined.length > 0) {
+        lines.push({
+          type: 'variation-flat',
+          group: 'avec',
+          label: joined
+        });
+      }
+    } else {
+      // Group by classified attribute name. SANDWICH renders Pain, others omit.
+      var byGroup = new Map();
+      var _iterator2 = _createForOfIteratorHelper(vars),
+        _step2;
+      try {
+        for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
+          var v = _step2.value;
+          var g = classifyGroup(v === null || v === void 0 ? void 0 : v.variation_name, v === null || v === void 0 ? void 0 : v.attribute_name);
+          if (g === 'bread' && (category === 'taco' || category === 'burger')) {
+            // taco/burger: skip the Pain group (no bread choice)
+            continue;
+          }
+          if (!byGroup.has(g)) {
+            byGroup.set(g, []);
+          }
+          byGroup.get(g).push(variationLabel(v));
+        }
+      } catch (err) {
+        _iterator2.e(err);
+      } finally {
+        _iterator2.f();
+      }
+      var _iterator3 = _createForOfIteratorHelper(byGroup.entries()),
+        _step3;
+      try {
+        for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
+          var _step3$value = _slicedToArray(_step3.value, 2),
+            group = _step3$value[0],
+            labels = _step3$value[1];
+          lines.push({
+            type: 'variation',
+            group: group,
+            label: labels.filter(function (l) {
+              return l.length > 0;
+            }).join(', ')
+          });
+        }
+      } catch (err) {
+        _iterator3.e(err);
+      } finally {
+        _iterator3.f();
+      }
+    }
+  }
+
+  // Paid supplements — yellow italic, "+" prefix.
+  var _iterator4 = _createForOfIteratorHelper(readExtras(orderItem)),
+    _step4;
+  try {
+    for (_iterator4.s(); !(_step4 = _iterator4.n()).done;) {
+      var e = _step4.value;
+      var label = extraLabel(e);
+      if (!label) continue;
+      var q = parseInt(e === null || e === void 0 ? void 0 : e.quantity, 10);
+      var suffix = Number.isFinite(q) && q > 1 ? " \xD7".concat(q) : '';
+      lines.push({
+        type: 'supplement',
+        label: "+ ".concat(label).concat(suffix)
+      });
+    }
+
+    // Menu Formule children (composition_snapshot.addons[].role startsWith 'menu_').
+  } catch (err) {
+    _iterator4.e(err);
+  } finally {
+    _iterator4.f();
+  }
+  var _iterator5 = _createForOfIteratorHelper(readAddons(orderItem)),
+    _step5;
+  try {
+    for (_iterator5.s(); !(_step5 = _iterator5.n()).done;) {
+      var a = _step5.value;
+      var _label = addonLabel(a);
+      if (!_label) continue;
+      var role = String((a === null || a === void 0 ? void 0 : a.role) || '').toLowerCase();
+      var isMenuChild = role.startsWith('menu_');
+      var _q = parseInt(a === null || a === void 0 ? void 0 : a.quantity, 10);
+      var qtyPrefix = Number.isFinite(_q) && _q > 1 ? "".concat(_q, "\xD7 ") : '';
+      lines.push({
+        type: isMenuChild ? 'menu_child' : 'addon',
+        label: "".concat(qtyPrefix).concat(_label),
+        role: role
+      });
+    }
+
+    // Free-text instruction — sanitized (strip the compo duplicate the
+    // structured render already shows, keep unique extras), then keyword-classified.
+  } catch (err) {
+    _iterator5.e(err);
+  } finally {
+    _iterator5.f();
+  }
+  var instruction = sanitizeKdsInstruction(orderItem === null || orderItem === void 0 ? void 0 : orderItem.instruction, orderItem === null || orderItem === void 0 ? void 0 : orderItem.item_name);
+  if (instruction.length > 0) {
+    lines.push({
+      type: 'instruction',
+      label: instruction,
+      visualClass: (0,_kdsLineSemantics_js__WEBPACK_IMPORTED_MODULE_0__.kdsInstructionVisualClass)(instruction)
+    });
+  }
+
+  // Allergens_snapshot codes (separate from instruction-keyword detection).
+  if (itemAllergen) {
+    lines.push({
+      type: 'allergen',
+      codes: allergenCodes
+    });
+  }
+  return {
+    category: category,
+    hasAllergen: itemAllergen,
+    lines: lines
+  };
+}
+
+/**
+ * Aggregate `hasAllergen` across an entire order — used to flip the card-level
+ * orange border override regardless of age.
+ *
+ * @param {Array} orderItems
+ * @returns {boolean}
+ */
+function orderHasAnyAllergen(orderItems) {
+  if (!Array.isArray(orderItems)) {
+    return false;
+  }
+  var _iterator6 = _createForOfIteratorHelper(orderItems),
+    _step6;
+  try {
+    for (_iterator6.s(); !(_step6 = _iterator6.n()).done;) {
+      var it = _step6.value;
+      var codes = Array.isArray(it === null || it === void 0 ? void 0 : it.allergens_snapshot) ? it.allergens_snapshot : [];
+      // [#8] Coerce — numeric/non-string codes count as allergens too (food safety).
+      if (codes.some(function (c) {
+        return c !== null && c !== undefined && String(c).length > 0;
+      })) {
+        return true;
+      }
+    }
+  } catch (err) {
+    _iterator6.e(err);
+  } finally {
+    _iterator6.f();
+  }
+  return false;
+}
+
+/***/ },
+
+/***/ "./resources/js/helpers/kdsLineSemantics.js"
+/*!**************************************************!*\
+  !*** ./resources/js/helpers/kdsLineSemantics.js ***!
+  \**************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   isLikelyExclusionOrHoldInstruction: () => (/* binding */ isLikelyExclusionOrHoldInstruction),
+/* harmony export */   kdsInstructionVisualClass: () => (/* binding */ kdsInstructionVisualClass)
+/* harmony export */ });
+function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t["return"] || t["return"](); } finally { if (u) throw o; } } }; }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+/**
+ * KDS: classify free-text instruction lines for *visual* emphasis (no medical decision).
+ * Structured allergens_snapshot from the API always wins in the UI if shown separately;
+ * this only highlights likely exclusions / hold / allergy *words* in instruction text.
+ */
+
+var EXCLUSION_RE = [/\b([s\u017F]an[s\u017F])[\t-\r \xA0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF]+(?:['\x2D0-9A-Za-z\xAA\xB5\xBA\xC0-\xD6\xD8-\xF6\xF8-\u02C1\u02C6-\u02D1\u02E0-\u02E4\u02EC\u02EE\u0345\u0370-\u0374\u0376\u0377\u037A-\u037D\u037F\u0386\u0388-\u038A\u038C\u038E-\u03A1\u03A3-\u03F5\u03F7-\u0481\u048A-\u052F\u0531-\u0556\u0559\u0560-\u0588\u05D0-\u05EA\u05EF-\u05F2\u0620-\u064A\u066E\u066F\u0671-\u06D3\u06D5\u06E5\u06E6\u06EE\u06EF\u06FA-\u06FC\u06FF\u0710\u0712-\u072F\u074D-\u07A5\u07B1\u07CA-\u07EA\u07F4\u07F5\u07FA\u0800-\u0815\u081A\u0824\u0828\u0840-\u0858\u0860-\u086A\u0870-\u0887\u0889-\u088F\u08A0-\u08C9\u0904-\u0939\u093D\u0950\u0958-\u0961\u0971-\u0980\u0985-\u098C\u098F\u0990\u0993-\u09A8\u09AA-\u09B0\u09B2\u09B6-\u09B9\u09BD\u09CE\u09DC\u09DD\u09DF-\u09E1\u09F0\u09F1\u09FC\u0A05-\u0A0A\u0A0F\u0A10\u0A13-\u0A28\u0A2A-\u0A30\u0A32\u0A33\u0A35\u0A36\u0A38\u0A39\u0A59-\u0A5C\u0A5E\u0A72-\u0A74\u0A85-\u0A8D\u0A8F-\u0A91\u0A93-\u0AA8\u0AAA-\u0AB0\u0AB2\u0AB3\u0AB5-\u0AB9\u0ABD\u0AD0\u0AE0\u0AE1\u0AF9\u0B05-\u0B0C\u0B0F\u0B10\u0B13-\u0B28\u0B2A-\u0B30\u0B32\u0B33\u0B35-\u0B39\u0B3D\u0B5C\u0B5D\u0B5F-\u0B61\u0B71\u0B83\u0B85-\u0B8A\u0B8E-\u0B90\u0B92-\u0B95\u0B99\u0B9A\u0B9C\u0B9E\u0B9F\u0BA3\u0BA4\u0BA8-\u0BAA\u0BAE-\u0BB9\u0BD0\u0C05-\u0C0C\u0C0E-\u0C10\u0C12-\u0C28\u0C2A-\u0C39\u0C3D\u0C58-\u0C5A\u0C5C\u0C5D\u0C60\u0C61\u0C80\u0C85-\u0C8C\u0C8E-\u0C90\u0C92-\u0CA8\u0CAA-\u0CB3\u0CB5-\u0CB9\u0CBD\u0CDC-\u0CDE\u0CE0\u0CE1\u0CF1\u0CF2\u0D04-\u0D0C\u0D0E-\u0D10\u0D12-\u0D3A\u0D3D\u0D4E\u0D54-\u0D56\u0D5F-\u0D61\u0D7A-\u0D7F\u0D85-\u0D96\u0D9A-\u0DB1\u0DB3-\u0DBB\u0DBD\u0DC0-\u0DC6\u0E01-\u0E30\u0E32\u0E33\u0E40-\u0E46\u0E81\u0E82\u0E84\u0E86-\u0E8A\u0E8C-\u0EA3\u0EA5\u0EA7-\u0EB0\u0EB2\u0EB3\u0EBD\u0EC0-\u0EC4\u0EC6\u0EDC-\u0EDF\u0F00\u0F40-\u0F47\u0F49-\u0F6C\u0F88-\u0F8C\u1000-\u102A\u103F\u1050-\u1055\u105A-\u105D\u1061\u1065\u1066\u106E-\u1070\u1075-\u1081\u108E\u10A0-\u10C5\u10C7\u10CD\u10D0-\u10FA\u10FC-\u1248\u124A-\u124D\u1250-\u1256\u1258\u125A-\u125D\u1260-\u1288\u128A-\u128D\u1290-\u12B0\u12B2-\u12B5\u12B8-\u12BE\u12C0\u12C2-\u12C5\u12C8-\u12D6\u12D8-\u1310\u1312-\u1315\u1318-\u135A\u1380-\u138F\u13A0-\u13F5\u13F8-\u13FD\u1401-\u166C\u166F-\u167F\u1681-\u169A\u16A0-\u16EA\u16F1-\u16F8\u1700-\u1711\u171F-\u1731\u1740-\u1751\u1760-\u176C\u176E-\u1770\u1780-\u17B3\u17D7\u17DC\u1820-\u1878\u1880-\u1884\u1887-\u18A8\u18AA\u18B0-\u18F5\u1900-\u191E\u1950-\u196D\u1970-\u1974\u1980-\u19AB\u19B0-\u19C9\u1A00-\u1A16\u1A20-\u1A54\u1AA7\u1B05-\u1B33\u1B45-\u1B4C\u1B83-\u1BA0\u1BAE\u1BAF\u1BBA-\u1BE5\u1C00-\u1C23\u1C4D-\u1C4F\u1C5A-\u1C7D\u1C80-\u1C8A\u1C90-\u1CBA\u1CBD-\u1CBF\u1CE9-\u1CEC\u1CEE-\u1CF3\u1CF5\u1CF6\u1CFA\u1D00-\u1DBF\u1E00-\u1F15\u1F18-\u1F1D\u1F20-\u1F45\u1F48-\u1F4D\u1F50-\u1F57\u1F59\u1F5B\u1F5D\u1F5F-\u1F7D\u1F80-\u1FB4\u1FB6-\u1FBC\u1FBE\u1FC2-\u1FC4\u1FC6-\u1FCC\u1FD0-\u1FD3\u1FD6-\u1FDB\u1FE0-\u1FEC\u1FF2-\u1FF4\u1FF6-\u1FFC\u2019\u2071\u207F\u2090-\u209C\u2102\u2107\u210A-\u2113\u2115\u2119-\u211D\u2124\u2126\u2128\u212A-\u212D\u212F-\u2139\u213C-\u213F\u2145-\u2149\u214E\u2183\u2184\u2C00-\u2CE4\u2CEB-\u2CEE\u2CF2\u2CF3\u2D00-\u2D25\u2D27\u2D2D\u2D30-\u2D67\u2D6F\u2D80-\u2D96\u2DA0-\u2DA6\u2DA8-\u2DAE\u2DB0-\u2DB6\u2DB8-\u2DBE\u2DC0-\u2DC6\u2DC8-\u2DCE\u2DD0-\u2DD6\u2DD8-\u2DDE\u2E2F\u3005\u3006\u3031-\u3035\u303B\u303C\u3041-\u3096\u309D-\u309F\u30A1-\u30FA\u30FC-\u30FF\u3105-\u312F\u3131-\u318E\u31A0-\u31BF\u31F0-\u31FF\u3400-\u4DBF\u4E00-\uA48C\uA4D0-\uA4FD\uA500-\uA60C\uA610-\uA61F\uA62A\uA62B\uA640-\uA66E\uA67F-\uA69D\uA6A0-\uA6E5\uA717-\uA71F\uA722-\uA788\uA78B-\uA7DC\uA7F1-\uA801\uA803-\uA805\uA807-\uA80A\uA80C-\uA822\uA840-\uA873\uA882-\uA8B3\uA8F2-\uA8F7\uA8FB\uA8FD\uA8FE\uA90A-\uA925\uA930-\uA946\uA960-\uA97C\uA984-\uA9B2\uA9CF\uA9E0-\uA9E4\uA9E6-\uA9EF\uA9FA-\uA9FE\uAA00-\uAA28\uAA40-\uAA42\uAA44-\uAA4B\uAA60-\uAA76\uAA7A\uAA7E-\uAAAF\uAAB1\uAAB5\uAAB6\uAAB9-\uAABD\uAAC0\uAAC2\uAADB-\uAADD\uAAE0-\uAAEA\uAAF2-\uAAF4\uAB01-\uAB06\uAB09-\uAB0E\uAB11-\uAB16\uAB20-\uAB26\uAB28-\uAB2E\uAB30-\uAB5A\uAB5C-\uAB69\uAB70-\uABE2\uAC00-\uD7A3\uD7B0-\uD7C6\uD7CB-\uD7FB\uF900-\uFA6D\uFA70-\uFAD9\uFB00-\uFB06\uFB13-\uFB17\uFB1D\uFB1F-\uFB28\uFB2A-\uFB36\uFB38-\uFB3C\uFB3E\uFB40\uFB41\uFB43\uFB44\uFB46-\uFBB1\uFBD3-\uFD3D\uFD50-\uFD8F\uFD92-\uFDC7\uFDF0-\uFDFB\uFE70-\uFE74\uFE76-\uFEFC\uFF21-\uFF3A\uFF41-\uFF5A\uFF66-\uFFBE\uFFC2-\uFFC7\uFFCA-\uFFCF\uFFD2-\uFFD7\uFFDA-\uFFDC]|\uD800[\uDC00-\uDC0B\uDC0D-\uDC26\uDC28-\uDC3A\uDC3C\uDC3D\uDC3F-\uDC4D\uDC50-\uDC5D\uDC80-\uDCFA\uDE80-\uDE9C\uDEA0-\uDED0\uDF00-\uDF1F\uDF2D-\uDF40\uDF42-\uDF49\uDF50-\uDF75\uDF80-\uDF9D\uDFA0-\uDFC3\uDFC8-\uDFCF]|\uD801[\uDC00-\uDC9D\uDCB0-\uDCD3\uDCD8-\uDCFB\uDD00-\uDD27\uDD30-\uDD63\uDD70-\uDD7A\uDD7C-\uDD8A\uDD8C-\uDD92\uDD94\uDD95\uDD97-\uDDA1\uDDA3-\uDDB1\uDDB3-\uDDB9\uDDBB\uDDBC\uDDC0-\uDDF3\uDE00-\uDF36\uDF40-\uDF55\uDF60-\uDF67\uDF80-\uDF85\uDF87-\uDFB0\uDFB2-\uDFBA]|\uD802[\uDC00-\uDC05\uDC08\uDC0A-\uDC35\uDC37\uDC38\uDC3C\uDC3F-\uDC55\uDC60-\uDC76\uDC80-\uDC9E\uDCE0-\uDCF2\uDCF4\uDCF5\uDD00-\uDD15\uDD20-\uDD39\uDD40-\uDD59\uDD80-\uDDB7\uDDBE\uDDBF\uDE00\uDE10-\uDE13\uDE15-\uDE17\uDE19-\uDE35\uDE60-\uDE7C\uDE80-\uDE9C\uDEC0-\uDEC7\uDEC9-\uDEE4\uDF00-\uDF35\uDF40-\uDF55\uDF60-\uDF72\uDF80-\uDF91]|\uD803[\uDC00-\uDC48\uDC80-\uDCB2\uDCC0-\uDCF2\uDD00-\uDD23\uDD4A-\uDD65\uDD6F-\uDD85\uDE80-\uDEA9\uDEB0\uDEB1\uDEC2-\uDEC7\uDF00-\uDF1C\uDF27\uDF30-\uDF45\uDF70-\uDF81\uDFB0-\uDFC4\uDFE0-\uDFF6]|\uD804[\uDC03-\uDC37\uDC71\uDC72\uDC75\uDC83-\uDCAF\uDCD0-\uDCE8\uDD03-\uDD26\uDD44\uDD47\uDD50-\uDD72\uDD76\uDD83-\uDDB2\uDDC1-\uDDC4\uDDDA\uDDDC\uDE00-\uDE11\uDE13-\uDE2B\uDE3F\uDE40\uDE80-\uDE86\uDE88\uDE8A-\uDE8D\uDE8F-\uDE9D\uDE9F-\uDEA8\uDEB0-\uDEDE\uDF05-\uDF0C\uDF0F\uDF10\uDF13-\uDF28\uDF2A-\uDF30\uDF32\uDF33\uDF35-\uDF39\uDF3D\uDF50\uDF5D-\uDF61\uDF80-\uDF89\uDF8B\uDF8E\uDF90-\uDFB5\uDFB7\uDFD1\uDFD3]|\uD805[\uDC00-\uDC34\uDC47-\uDC4A\uDC5F-\uDC61\uDC80-\uDCAF\uDCC4\uDCC5\uDCC7\uDD80-\uDDAE\uDDD8-\uDDDB\uDE00-\uDE2F\uDE44\uDE80-\uDEAA\uDEB8\uDF00-\uDF1A\uDF40-\uDF46]|\uD806[\uDC00-\uDC2B\uDCA0-\uDCDF\uDCFF-\uDD06\uDD09\uDD0C-\uDD13\uDD15\uDD16\uDD18-\uDD2F\uDD3F\uDD41\uDDA0-\uDDA7\uDDAA-\uDDD0\uDDE1\uDDE3\uDE00\uDE0B-\uDE32\uDE3A\uDE50\uDE5C-\uDE89\uDE9D\uDEB0-\uDEF8\uDFC0-\uDFE0]|\uD807[\uDC00-\uDC08\uDC0A-\uDC2E\uDC40\uDC72-\uDC8F\uDD00-\uDD06\uDD08\uDD09\uDD0B-\uDD30\uDD46\uDD60-\uDD65\uDD67\uDD68\uDD6A-\uDD89\uDD98\uDDB0-\uDDDB\uDEE0-\uDEF2\uDF02\uDF04-\uDF10\uDF12-\uDF33\uDFB0]|\uD808[\uDC00-\uDF99]|\uD809[\uDC80-\uDD43]|\uD80B[\uDF90-\uDFF0]|[\uD80C\uD80E\uD80F\uD81C-\uD822\uD840-\uD868\uD86A-\uD86D\uD86F-\uD872\uD874-\uD879\uD880-\uD883\uD885-\uD88C][\uDC00-\uDFFF]|\uD80D[\uDC00-\uDC2F\uDC41-\uDC46\uDC60-\uDFFF]|\uD810[\uDC00-\uDFFA]|\uD811[\uDC00-\uDE46]|\uD818[\uDD00-\uDD1D]|\uD81A[\uDC00-\uDE38\uDE40-\uDE5E\uDE70-\uDEBE\uDED0-\uDEED\uDF00-\uDF2F\uDF40-\uDF43\uDF63-\uDF77\uDF7D-\uDF8F]|\uD81B[\uDD40-\uDD6C\uDE40-\uDE7F\uDEA0-\uDEB8\uDEBB-\uDED3\uDF00-\uDF4A\uDF50\uDF93-\uDF9F\uDFE0\uDFE1\uDFE3\uDFF2\uDFF3]|\uD823[\uDC00-\uDCD5\uDCFF-\uDD1E\uDD80-\uDDF2]|\uD82B[\uDFF0-\uDFF3\uDFF5-\uDFFB\uDFFD\uDFFE]|\uD82C[\uDC00-\uDD22\uDD32\uDD50-\uDD52\uDD55\uDD64-\uDD67\uDD70-\uDEFB]|\uD82F[\uDC00-\uDC6A\uDC70-\uDC7C\uDC80-\uDC88\uDC90-\uDC99]|\uD835[\uDC00-\uDC54\uDC56-\uDC9C\uDC9E\uDC9F\uDCA2\uDCA5\uDCA6\uDCA9-\uDCAC\uDCAE-\uDCB9\uDCBB\uDCBD-\uDCC3\uDCC5-\uDD05\uDD07-\uDD0A\uDD0D-\uDD14\uDD16-\uDD1C\uDD1E-\uDD39\uDD3B-\uDD3E\uDD40-\uDD44\uDD46\uDD4A-\uDD50\uDD52-\uDEA5\uDEA8-\uDEC0\uDEC2-\uDEDA\uDEDC-\uDEFA\uDEFC-\uDF14\uDF16-\uDF34\uDF36-\uDF4E\uDF50-\uDF6E\uDF70-\uDF88\uDF8A-\uDFA8\uDFAA-\uDFC2\uDFC4-\uDFCB]|\uD837[\uDF00-\uDF1E\uDF25-\uDF2A]|\uD838[\uDC30-\uDC6D\uDD00-\uDD2C\uDD37-\uDD3D\uDD4E\uDE90-\uDEAD\uDEC0-\uDEEB]|\uD839[\uDCD0-\uDCEB\uDDD0-\uDDED\uDDF0\uDEC0-\uDEDE\uDEE0-\uDEE2\uDEE4\uDEE5\uDEE7-\uDEED\uDEF0-\uDEF4\uDEFE\uDEFF\uDFE0-\uDFE6\uDFE8-\uDFEB\uDFED\uDFEE\uDFF0-\uDFFE]|\uD83A[\uDC00-\uDCC4\uDD00-\uDD43\uDD4B]|\uD83B[\uDE00-\uDE03\uDE05-\uDE1F\uDE21\uDE22\uDE24\uDE27\uDE29-\uDE32\uDE34-\uDE37\uDE39\uDE3B\uDE42\uDE47\uDE49\uDE4B\uDE4D-\uDE4F\uDE51\uDE52\uDE54\uDE57\uDE59\uDE5B\uDE5D\uDE5F\uDE61\uDE62\uDE64\uDE67-\uDE6A\uDE6C-\uDE72\uDE74-\uDE77\uDE79-\uDE7C\uDE7E\uDE80-\uDE89\uDE8B-\uDE9B\uDEA1-\uDEA3\uDEA5-\uDEA9\uDEAB-\uDEBB]|\uD869[\uDC00-\uDEDF\uDF00-\uDFFF]|\uD86E[\uDC00-\uDC1D\uDC20-\uDFFF]|\uD873[\uDC00-\uDEAD\uDEB0-\uDFFF]|\uD87A[\uDC00-\uDFE0\uDFF0-\uDFFF]|\uD87B[\uDC00-\uDE5D]|\uD87E[\uDC00-\uDE1D]|\uD884[\uDC00-\uDF4A\uDF50-\uDFFF]|\uD88D[\uDC00-\uDC79])+/i, /\b(exclu|retrait|retirer|enlever|enlevez)\b/i, /^[\t-\r \xA0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF]*[s\u017F]an[s\u017F][\t-\r \xA0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF]*[,:]/i, /\bhold\b/i, /\bno[\t-\r \xA0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF]+(?:[A-Za-z\xAA\xB5\xBA\xC0-\xD6\xD8-\xF6\xF8-\u02C1\u02C6-\u02D1\u02E0-\u02E4\u02EC\u02EE\u0345\u0370-\u0374\u0376\u0377\u037A-\u037D\u037F\u0386\u0388-\u038A\u038C\u038E-\u03A1\u03A3-\u03F5\u03F7-\u0481\u048A-\u052F\u0531-\u0556\u0559\u0560-\u0588\u05D0-\u05EA\u05EF-\u05F2\u0620-\u064A\u066E\u066F\u0671-\u06D3\u06D5\u06E5\u06E6\u06EE\u06EF\u06FA-\u06FC\u06FF\u0710\u0712-\u072F\u074D-\u07A5\u07B1\u07CA-\u07EA\u07F4\u07F5\u07FA\u0800-\u0815\u081A\u0824\u0828\u0840-\u0858\u0860-\u086A\u0870-\u0887\u0889-\u088F\u08A0-\u08C9\u0904-\u0939\u093D\u0950\u0958-\u0961\u0971-\u0980\u0985-\u098C\u098F\u0990\u0993-\u09A8\u09AA-\u09B0\u09B2\u09B6-\u09B9\u09BD\u09CE\u09DC\u09DD\u09DF-\u09E1\u09F0\u09F1\u09FC\u0A05-\u0A0A\u0A0F\u0A10\u0A13-\u0A28\u0A2A-\u0A30\u0A32\u0A33\u0A35\u0A36\u0A38\u0A39\u0A59-\u0A5C\u0A5E\u0A72-\u0A74\u0A85-\u0A8D\u0A8F-\u0A91\u0A93-\u0AA8\u0AAA-\u0AB0\u0AB2\u0AB3\u0AB5-\u0AB9\u0ABD\u0AD0\u0AE0\u0AE1\u0AF9\u0B05-\u0B0C\u0B0F\u0B10\u0B13-\u0B28\u0B2A-\u0B30\u0B32\u0B33\u0B35-\u0B39\u0B3D\u0B5C\u0B5D\u0B5F-\u0B61\u0B71\u0B83\u0B85-\u0B8A\u0B8E-\u0B90\u0B92-\u0B95\u0B99\u0B9A\u0B9C\u0B9E\u0B9F\u0BA3\u0BA4\u0BA8-\u0BAA\u0BAE-\u0BB9\u0BD0\u0C05-\u0C0C\u0C0E-\u0C10\u0C12-\u0C28\u0C2A-\u0C39\u0C3D\u0C58-\u0C5A\u0C5C\u0C5D\u0C60\u0C61\u0C80\u0C85-\u0C8C\u0C8E-\u0C90\u0C92-\u0CA8\u0CAA-\u0CB3\u0CB5-\u0CB9\u0CBD\u0CDC-\u0CDE\u0CE0\u0CE1\u0CF1\u0CF2\u0D04-\u0D0C\u0D0E-\u0D10\u0D12-\u0D3A\u0D3D\u0D4E\u0D54-\u0D56\u0D5F-\u0D61\u0D7A-\u0D7F\u0D85-\u0D96\u0D9A-\u0DB1\u0DB3-\u0DBB\u0DBD\u0DC0-\u0DC6\u0E01-\u0E30\u0E32\u0E33\u0E40-\u0E46\u0E81\u0E82\u0E84\u0E86-\u0E8A\u0E8C-\u0EA3\u0EA5\u0EA7-\u0EB0\u0EB2\u0EB3\u0EBD\u0EC0-\u0EC4\u0EC6\u0EDC-\u0EDF\u0F00\u0F40-\u0F47\u0F49-\u0F6C\u0F88-\u0F8C\u1000-\u102A\u103F\u1050-\u1055\u105A-\u105D\u1061\u1065\u1066\u106E-\u1070\u1075-\u1081\u108E\u10A0-\u10C5\u10C7\u10CD\u10D0-\u10FA\u10FC-\u1248\u124A-\u124D\u1250-\u1256\u1258\u125A-\u125D\u1260-\u1288\u128A-\u128D\u1290-\u12B0\u12B2-\u12B5\u12B8-\u12BE\u12C0\u12C2-\u12C5\u12C8-\u12D6\u12D8-\u1310\u1312-\u1315\u1318-\u135A\u1380-\u138F\u13A0-\u13F5\u13F8-\u13FD\u1401-\u166C\u166F-\u167F\u1681-\u169A\u16A0-\u16EA\u16F1-\u16F8\u1700-\u1711\u171F-\u1731\u1740-\u1751\u1760-\u176C\u176E-\u1770\u1780-\u17B3\u17D7\u17DC\u1820-\u1878\u1880-\u1884\u1887-\u18A8\u18AA\u18B0-\u18F5\u1900-\u191E\u1950-\u196D\u1970-\u1974\u1980-\u19AB\u19B0-\u19C9\u1A00-\u1A16\u1A20-\u1A54\u1AA7\u1B05-\u1B33\u1B45-\u1B4C\u1B83-\u1BA0\u1BAE\u1BAF\u1BBA-\u1BE5\u1C00-\u1C23\u1C4D-\u1C4F\u1C5A-\u1C7D\u1C80-\u1C8A\u1C90-\u1CBA\u1CBD-\u1CBF\u1CE9-\u1CEC\u1CEE-\u1CF3\u1CF5\u1CF6\u1CFA\u1D00-\u1DBF\u1E00-\u1F15\u1F18-\u1F1D\u1F20-\u1F45\u1F48-\u1F4D\u1F50-\u1F57\u1F59\u1F5B\u1F5D\u1F5F-\u1F7D\u1F80-\u1FB4\u1FB6-\u1FBC\u1FBE\u1FC2-\u1FC4\u1FC6-\u1FCC\u1FD0-\u1FD3\u1FD6-\u1FDB\u1FE0-\u1FEC\u1FF2-\u1FF4\u1FF6-\u1FFC\u2071\u207F\u2090-\u209C\u2102\u2107\u210A-\u2113\u2115\u2119-\u211D\u2124\u2126\u2128\u212A-\u212D\u212F-\u2139\u213C-\u213F\u2145-\u2149\u214E\u2183\u2184\u2C00-\u2CE4\u2CEB-\u2CEE\u2CF2\u2CF3\u2D00-\u2D25\u2D27\u2D2D\u2D30-\u2D67\u2D6F\u2D80-\u2D96\u2DA0-\u2DA6\u2DA8-\u2DAE\u2DB0-\u2DB6\u2DB8-\u2DBE\u2DC0-\u2DC6\u2DC8-\u2DCE\u2DD0-\u2DD6\u2DD8-\u2DDE\u2E2F\u3005\u3006\u3031-\u3035\u303B\u303C\u3041-\u3096\u309D-\u309F\u30A1-\u30FA\u30FC-\u30FF\u3105-\u312F\u3131-\u318E\u31A0-\u31BF\u31F0-\u31FF\u3400-\u4DBF\u4E00-\uA48C\uA4D0-\uA4FD\uA500-\uA60C\uA610-\uA61F\uA62A\uA62B\uA640-\uA66E\uA67F-\uA69D\uA6A0-\uA6E5\uA717-\uA71F\uA722-\uA788\uA78B-\uA7DC\uA7F1-\uA801\uA803-\uA805\uA807-\uA80A\uA80C-\uA822\uA840-\uA873\uA882-\uA8B3\uA8F2-\uA8F7\uA8FB\uA8FD\uA8FE\uA90A-\uA925\uA930-\uA946\uA960-\uA97C\uA984-\uA9B2\uA9CF\uA9E0-\uA9E4\uA9E6-\uA9EF\uA9FA-\uA9FE\uAA00-\uAA28\uAA40-\uAA42\uAA44-\uAA4B\uAA60-\uAA76\uAA7A\uAA7E-\uAAAF\uAAB1\uAAB5\uAAB6\uAAB9-\uAABD\uAAC0\uAAC2\uAADB-\uAADD\uAAE0-\uAAEA\uAAF2-\uAAF4\uAB01-\uAB06\uAB09-\uAB0E\uAB11-\uAB16\uAB20-\uAB26\uAB28-\uAB2E\uAB30-\uAB5A\uAB5C-\uAB69\uAB70-\uABE2\uAC00-\uD7A3\uD7B0-\uD7C6\uD7CB-\uD7FB\uF900-\uFA6D\uFA70-\uFAD9\uFB00-\uFB06\uFB13-\uFB17\uFB1D\uFB1F-\uFB28\uFB2A-\uFB36\uFB38-\uFB3C\uFB3E\uFB40\uFB41\uFB43\uFB44\uFB46-\uFBB1\uFBD3-\uFD3D\uFD50-\uFD8F\uFD92-\uFDC7\uFDF0-\uFDFB\uFE70-\uFE74\uFE76-\uFEFC\uFF21-\uFF3A\uFF41-\uFF5A\uFF66-\uFFBE\uFFC2-\uFFC7\uFFCA-\uFFCF\uFFD2-\uFFD7\uFFDA-\uFFDC]|\uD800[\uDC00-\uDC0B\uDC0D-\uDC26\uDC28-\uDC3A\uDC3C\uDC3D\uDC3F-\uDC4D\uDC50-\uDC5D\uDC80-\uDCFA\uDE80-\uDE9C\uDEA0-\uDED0\uDF00-\uDF1F\uDF2D-\uDF40\uDF42-\uDF49\uDF50-\uDF75\uDF80-\uDF9D\uDFA0-\uDFC3\uDFC8-\uDFCF]|\uD801[\uDC00-\uDC9D\uDCB0-\uDCD3\uDCD8-\uDCFB\uDD00-\uDD27\uDD30-\uDD63\uDD70-\uDD7A\uDD7C-\uDD8A\uDD8C-\uDD92\uDD94\uDD95\uDD97-\uDDA1\uDDA3-\uDDB1\uDDB3-\uDDB9\uDDBB\uDDBC\uDDC0-\uDDF3\uDE00-\uDF36\uDF40-\uDF55\uDF60-\uDF67\uDF80-\uDF85\uDF87-\uDFB0\uDFB2-\uDFBA]|\uD802[\uDC00-\uDC05\uDC08\uDC0A-\uDC35\uDC37\uDC38\uDC3C\uDC3F-\uDC55\uDC60-\uDC76\uDC80-\uDC9E\uDCE0-\uDCF2\uDCF4\uDCF5\uDD00-\uDD15\uDD20-\uDD39\uDD40-\uDD59\uDD80-\uDDB7\uDDBE\uDDBF\uDE00\uDE10-\uDE13\uDE15-\uDE17\uDE19-\uDE35\uDE60-\uDE7C\uDE80-\uDE9C\uDEC0-\uDEC7\uDEC9-\uDEE4\uDF00-\uDF35\uDF40-\uDF55\uDF60-\uDF72\uDF80-\uDF91]|\uD803[\uDC00-\uDC48\uDC80-\uDCB2\uDCC0-\uDCF2\uDD00-\uDD23\uDD4A-\uDD65\uDD6F-\uDD85\uDE80-\uDEA9\uDEB0\uDEB1\uDEC2-\uDEC7\uDF00-\uDF1C\uDF27\uDF30-\uDF45\uDF70-\uDF81\uDFB0-\uDFC4\uDFE0-\uDFF6]|\uD804[\uDC03-\uDC37\uDC71\uDC72\uDC75\uDC83-\uDCAF\uDCD0-\uDCE8\uDD03-\uDD26\uDD44\uDD47\uDD50-\uDD72\uDD76\uDD83-\uDDB2\uDDC1-\uDDC4\uDDDA\uDDDC\uDE00-\uDE11\uDE13-\uDE2B\uDE3F\uDE40\uDE80-\uDE86\uDE88\uDE8A-\uDE8D\uDE8F-\uDE9D\uDE9F-\uDEA8\uDEB0-\uDEDE\uDF05-\uDF0C\uDF0F\uDF10\uDF13-\uDF28\uDF2A-\uDF30\uDF32\uDF33\uDF35-\uDF39\uDF3D\uDF50\uDF5D-\uDF61\uDF80-\uDF89\uDF8B\uDF8E\uDF90-\uDFB5\uDFB7\uDFD1\uDFD3]|\uD805[\uDC00-\uDC34\uDC47-\uDC4A\uDC5F-\uDC61\uDC80-\uDCAF\uDCC4\uDCC5\uDCC7\uDD80-\uDDAE\uDDD8-\uDDDB\uDE00-\uDE2F\uDE44\uDE80-\uDEAA\uDEB8\uDF00-\uDF1A\uDF40-\uDF46]|\uD806[\uDC00-\uDC2B\uDCA0-\uDCDF\uDCFF-\uDD06\uDD09\uDD0C-\uDD13\uDD15\uDD16\uDD18-\uDD2F\uDD3F\uDD41\uDDA0-\uDDA7\uDDAA-\uDDD0\uDDE1\uDDE3\uDE00\uDE0B-\uDE32\uDE3A\uDE50\uDE5C-\uDE89\uDE9D\uDEB0-\uDEF8\uDFC0-\uDFE0]|\uD807[\uDC00-\uDC08\uDC0A-\uDC2E\uDC40\uDC72-\uDC8F\uDD00-\uDD06\uDD08\uDD09\uDD0B-\uDD30\uDD46\uDD60-\uDD65\uDD67\uDD68\uDD6A-\uDD89\uDD98\uDDB0-\uDDDB\uDEE0-\uDEF2\uDF02\uDF04-\uDF10\uDF12-\uDF33\uDFB0]|\uD808[\uDC00-\uDF99]|\uD809[\uDC80-\uDD43]|\uD80B[\uDF90-\uDFF0]|[\uD80C\uD80E\uD80F\uD81C-\uD822\uD840-\uD868\uD86A-\uD86D\uD86F-\uD872\uD874-\uD879\uD880-\uD883\uD885-\uD88C][\uDC00-\uDFFF]|\uD80D[\uDC00-\uDC2F\uDC41-\uDC46\uDC60-\uDFFF]|\uD810[\uDC00-\uDFFA]|\uD811[\uDC00-\uDE46]|\uD818[\uDD00-\uDD1D]|\uD81A[\uDC00-\uDE38\uDE40-\uDE5E\uDE70-\uDEBE\uDED0-\uDEED\uDF00-\uDF2F\uDF40-\uDF43\uDF63-\uDF77\uDF7D-\uDF8F]|\uD81B[\uDD40-\uDD6C\uDE40-\uDE7F\uDEA0-\uDEB8\uDEBB-\uDED3\uDF00-\uDF4A\uDF50\uDF93-\uDF9F\uDFE0\uDFE1\uDFE3\uDFF2\uDFF3]|\uD823[\uDC00-\uDCD5\uDCFF-\uDD1E\uDD80-\uDDF2]|\uD82B[\uDFF0-\uDFF3\uDFF5-\uDFFB\uDFFD\uDFFE]|\uD82C[\uDC00-\uDD22\uDD32\uDD50-\uDD52\uDD55\uDD64-\uDD67\uDD70-\uDEFB]|\uD82F[\uDC00-\uDC6A\uDC70-\uDC7C\uDC80-\uDC88\uDC90-\uDC99]|\uD835[\uDC00-\uDC54\uDC56-\uDC9C\uDC9E\uDC9F\uDCA2\uDCA5\uDCA6\uDCA9-\uDCAC\uDCAE-\uDCB9\uDCBB\uDCBD-\uDCC3\uDCC5-\uDD05\uDD07-\uDD0A\uDD0D-\uDD14\uDD16-\uDD1C\uDD1E-\uDD39\uDD3B-\uDD3E\uDD40-\uDD44\uDD46\uDD4A-\uDD50\uDD52-\uDEA5\uDEA8-\uDEC0\uDEC2-\uDEDA\uDEDC-\uDEFA\uDEFC-\uDF14\uDF16-\uDF34\uDF36-\uDF4E\uDF50-\uDF6E\uDF70-\uDF88\uDF8A-\uDFA8\uDFAA-\uDFC2\uDFC4-\uDFCB]|\uD837[\uDF00-\uDF1E\uDF25-\uDF2A]|\uD838[\uDC30-\uDC6D\uDD00-\uDD2C\uDD37-\uDD3D\uDD4E\uDE90-\uDEAD\uDEC0-\uDEEB]|\uD839[\uDCD0-\uDCEB\uDDD0-\uDDED\uDDF0\uDEC0-\uDEDE\uDEE0-\uDEE2\uDEE4\uDEE5\uDEE7-\uDEED\uDEF0-\uDEF4\uDEFE\uDEFF\uDFE0-\uDFE6\uDFE8-\uDFEB\uDFED\uDFEE\uDFF0-\uDFFE]|\uD83A[\uDC00-\uDCC4\uDD00-\uDD43\uDD4B]|\uD83B[\uDE00-\uDE03\uDE05-\uDE1F\uDE21\uDE22\uDE24\uDE27\uDE29-\uDE32\uDE34-\uDE37\uDE39\uDE3B\uDE42\uDE47\uDE49\uDE4B\uDE4D-\uDE4F\uDE51\uDE52\uDE54\uDE57\uDE59\uDE5B\uDE5D\uDE5F\uDE61\uDE62\uDE64\uDE67-\uDE6A\uDE6C-\uDE72\uDE74-\uDE77\uDE79-\uDE7C\uDE7E\uDE80-\uDE89\uDE8B-\uDE9B\uDEA1-\uDEA3\uDEA5-\uDEA9\uDEAB-\uDEBB]|\uD869[\uDC00-\uDEDF\uDF00-\uDFFF]|\uD86E[\uDC00-\uDC1D\uDC20-\uDFFF]|\uD873[\uDC00-\uDEAD\uDEB0-\uDFFF]|\uD87A[\uDC00-\uDFE0\uDFF0-\uDFFF]|\uD87B[\uDC00-\uDE5D]|\uD87E[\uDC00-\uDE1D]|\uD884[\uDC00-\uDF4A\uDF50-\uDFFF]|\uD88D[\uDC00-\uDC79])+/i,
+// "no onion" in EN menus
+/\b(without|w\/o|w\/)[\t-\r \xA0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF]+(?:[A-Za-z\xAA\xB5\xBA\xC0-\xD6\xD8-\xF6\xF8-\u02C1\u02C6-\u02D1\u02E0-\u02E4\u02EC\u02EE\u0345\u0370-\u0374\u0376\u0377\u037A-\u037D\u037F\u0386\u0388-\u038A\u038C\u038E-\u03A1\u03A3-\u03F5\u03F7-\u0481\u048A-\u052F\u0531-\u0556\u0559\u0560-\u0588\u05D0-\u05EA\u05EF-\u05F2\u0620-\u064A\u066E\u066F\u0671-\u06D3\u06D5\u06E5\u06E6\u06EE\u06EF\u06FA-\u06FC\u06FF\u0710\u0712-\u072F\u074D-\u07A5\u07B1\u07CA-\u07EA\u07F4\u07F5\u07FA\u0800-\u0815\u081A\u0824\u0828\u0840-\u0858\u0860-\u086A\u0870-\u0887\u0889-\u088F\u08A0-\u08C9\u0904-\u0939\u093D\u0950\u0958-\u0961\u0971-\u0980\u0985-\u098C\u098F\u0990\u0993-\u09A8\u09AA-\u09B0\u09B2\u09B6-\u09B9\u09BD\u09CE\u09DC\u09DD\u09DF-\u09E1\u09F0\u09F1\u09FC\u0A05-\u0A0A\u0A0F\u0A10\u0A13-\u0A28\u0A2A-\u0A30\u0A32\u0A33\u0A35\u0A36\u0A38\u0A39\u0A59-\u0A5C\u0A5E\u0A72-\u0A74\u0A85-\u0A8D\u0A8F-\u0A91\u0A93-\u0AA8\u0AAA-\u0AB0\u0AB2\u0AB3\u0AB5-\u0AB9\u0ABD\u0AD0\u0AE0\u0AE1\u0AF9\u0B05-\u0B0C\u0B0F\u0B10\u0B13-\u0B28\u0B2A-\u0B30\u0B32\u0B33\u0B35-\u0B39\u0B3D\u0B5C\u0B5D\u0B5F-\u0B61\u0B71\u0B83\u0B85-\u0B8A\u0B8E-\u0B90\u0B92-\u0B95\u0B99\u0B9A\u0B9C\u0B9E\u0B9F\u0BA3\u0BA4\u0BA8-\u0BAA\u0BAE-\u0BB9\u0BD0\u0C05-\u0C0C\u0C0E-\u0C10\u0C12-\u0C28\u0C2A-\u0C39\u0C3D\u0C58-\u0C5A\u0C5C\u0C5D\u0C60\u0C61\u0C80\u0C85-\u0C8C\u0C8E-\u0C90\u0C92-\u0CA8\u0CAA-\u0CB3\u0CB5-\u0CB9\u0CBD\u0CDC-\u0CDE\u0CE0\u0CE1\u0CF1\u0CF2\u0D04-\u0D0C\u0D0E-\u0D10\u0D12-\u0D3A\u0D3D\u0D4E\u0D54-\u0D56\u0D5F-\u0D61\u0D7A-\u0D7F\u0D85-\u0D96\u0D9A-\u0DB1\u0DB3-\u0DBB\u0DBD\u0DC0-\u0DC6\u0E01-\u0E30\u0E32\u0E33\u0E40-\u0E46\u0E81\u0E82\u0E84\u0E86-\u0E8A\u0E8C-\u0EA3\u0EA5\u0EA7-\u0EB0\u0EB2\u0EB3\u0EBD\u0EC0-\u0EC4\u0EC6\u0EDC-\u0EDF\u0F00\u0F40-\u0F47\u0F49-\u0F6C\u0F88-\u0F8C\u1000-\u102A\u103F\u1050-\u1055\u105A-\u105D\u1061\u1065\u1066\u106E-\u1070\u1075-\u1081\u108E\u10A0-\u10C5\u10C7\u10CD\u10D0-\u10FA\u10FC-\u1248\u124A-\u124D\u1250-\u1256\u1258\u125A-\u125D\u1260-\u1288\u128A-\u128D\u1290-\u12B0\u12B2-\u12B5\u12B8-\u12BE\u12C0\u12C2-\u12C5\u12C8-\u12D6\u12D8-\u1310\u1312-\u1315\u1318-\u135A\u1380-\u138F\u13A0-\u13F5\u13F8-\u13FD\u1401-\u166C\u166F-\u167F\u1681-\u169A\u16A0-\u16EA\u16F1-\u16F8\u1700-\u1711\u171F-\u1731\u1740-\u1751\u1760-\u176C\u176E-\u1770\u1780-\u17B3\u17D7\u17DC\u1820-\u1878\u1880-\u1884\u1887-\u18A8\u18AA\u18B0-\u18F5\u1900-\u191E\u1950-\u196D\u1970-\u1974\u1980-\u19AB\u19B0-\u19C9\u1A00-\u1A16\u1A20-\u1A54\u1AA7\u1B05-\u1B33\u1B45-\u1B4C\u1B83-\u1BA0\u1BAE\u1BAF\u1BBA-\u1BE5\u1C00-\u1C23\u1C4D-\u1C4F\u1C5A-\u1C7D\u1C80-\u1C8A\u1C90-\u1CBA\u1CBD-\u1CBF\u1CE9-\u1CEC\u1CEE-\u1CF3\u1CF5\u1CF6\u1CFA\u1D00-\u1DBF\u1E00-\u1F15\u1F18-\u1F1D\u1F20-\u1F45\u1F48-\u1F4D\u1F50-\u1F57\u1F59\u1F5B\u1F5D\u1F5F-\u1F7D\u1F80-\u1FB4\u1FB6-\u1FBC\u1FBE\u1FC2-\u1FC4\u1FC6-\u1FCC\u1FD0-\u1FD3\u1FD6-\u1FDB\u1FE0-\u1FEC\u1FF2-\u1FF4\u1FF6-\u1FFC\u2071\u207F\u2090-\u209C\u2102\u2107\u210A-\u2113\u2115\u2119-\u211D\u2124\u2126\u2128\u212A-\u212D\u212F-\u2139\u213C-\u213F\u2145-\u2149\u214E\u2183\u2184\u2C00-\u2CE4\u2CEB-\u2CEE\u2CF2\u2CF3\u2D00-\u2D25\u2D27\u2D2D\u2D30-\u2D67\u2D6F\u2D80-\u2D96\u2DA0-\u2DA6\u2DA8-\u2DAE\u2DB0-\u2DB6\u2DB8-\u2DBE\u2DC0-\u2DC6\u2DC8-\u2DCE\u2DD0-\u2DD6\u2DD8-\u2DDE\u2E2F\u3005\u3006\u3031-\u3035\u303B\u303C\u3041-\u3096\u309D-\u309F\u30A1-\u30FA\u30FC-\u30FF\u3105-\u312F\u3131-\u318E\u31A0-\u31BF\u31F0-\u31FF\u3400-\u4DBF\u4E00-\uA48C\uA4D0-\uA4FD\uA500-\uA60C\uA610-\uA61F\uA62A\uA62B\uA640-\uA66E\uA67F-\uA69D\uA6A0-\uA6E5\uA717-\uA71F\uA722-\uA788\uA78B-\uA7DC\uA7F1-\uA801\uA803-\uA805\uA807-\uA80A\uA80C-\uA822\uA840-\uA873\uA882-\uA8B3\uA8F2-\uA8F7\uA8FB\uA8FD\uA8FE\uA90A-\uA925\uA930-\uA946\uA960-\uA97C\uA984-\uA9B2\uA9CF\uA9E0-\uA9E4\uA9E6-\uA9EF\uA9FA-\uA9FE\uAA00-\uAA28\uAA40-\uAA42\uAA44-\uAA4B\uAA60-\uAA76\uAA7A\uAA7E-\uAAAF\uAAB1\uAAB5\uAAB6\uAAB9-\uAABD\uAAC0\uAAC2\uAADB-\uAADD\uAAE0-\uAAEA\uAAF2-\uAAF4\uAB01-\uAB06\uAB09-\uAB0E\uAB11-\uAB16\uAB20-\uAB26\uAB28-\uAB2E\uAB30-\uAB5A\uAB5C-\uAB69\uAB70-\uABE2\uAC00-\uD7A3\uD7B0-\uD7C6\uD7CB-\uD7FB\uF900-\uFA6D\uFA70-\uFAD9\uFB00-\uFB06\uFB13-\uFB17\uFB1D\uFB1F-\uFB28\uFB2A-\uFB36\uFB38-\uFB3C\uFB3E\uFB40\uFB41\uFB43\uFB44\uFB46-\uFBB1\uFBD3-\uFD3D\uFD50-\uFD8F\uFD92-\uFDC7\uFDF0-\uFDFB\uFE70-\uFE74\uFE76-\uFEFC\uFF21-\uFF3A\uFF41-\uFF5A\uFF66-\uFFBE\uFFC2-\uFFC7\uFFCA-\uFFCF\uFFD2-\uFFD7\uFFDA-\uFFDC]|\uD800[\uDC00-\uDC0B\uDC0D-\uDC26\uDC28-\uDC3A\uDC3C\uDC3D\uDC3F-\uDC4D\uDC50-\uDC5D\uDC80-\uDCFA\uDE80-\uDE9C\uDEA0-\uDED0\uDF00-\uDF1F\uDF2D-\uDF40\uDF42-\uDF49\uDF50-\uDF75\uDF80-\uDF9D\uDFA0-\uDFC3\uDFC8-\uDFCF]|\uD801[\uDC00-\uDC9D\uDCB0-\uDCD3\uDCD8-\uDCFB\uDD00-\uDD27\uDD30-\uDD63\uDD70-\uDD7A\uDD7C-\uDD8A\uDD8C-\uDD92\uDD94\uDD95\uDD97-\uDDA1\uDDA3-\uDDB1\uDDB3-\uDDB9\uDDBB\uDDBC\uDDC0-\uDDF3\uDE00-\uDF36\uDF40-\uDF55\uDF60-\uDF67\uDF80-\uDF85\uDF87-\uDFB0\uDFB2-\uDFBA]|\uD802[\uDC00-\uDC05\uDC08\uDC0A-\uDC35\uDC37\uDC38\uDC3C\uDC3F-\uDC55\uDC60-\uDC76\uDC80-\uDC9E\uDCE0-\uDCF2\uDCF4\uDCF5\uDD00-\uDD15\uDD20-\uDD39\uDD40-\uDD59\uDD80-\uDDB7\uDDBE\uDDBF\uDE00\uDE10-\uDE13\uDE15-\uDE17\uDE19-\uDE35\uDE60-\uDE7C\uDE80-\uDE9C\uDEC0-\uDEC7\uDEC9-\uDEE4\uDF00-\uDF35\uDF40-\uDF55\uDF60-\uDF72\uDF80-\uDF91]|\uD803[\uDC00-\uDC48\uDC80-\uDCB2\uDCC0-\uDCF2\uDD00-\uDD23\uDD4A-\uDD65\uDD6F-\uDD85\uDE80-\uDEA9\uDEB0\uDEB1\uDEC2-\uDEC7\uDF00-\uDF1C\uDF27\uDF30-\uDF45\uDF70-\uDF81\uDFB0-\uDFC4\uDFE0-\uDFF6]|\uD804[\uDC03-\uDC37\uDC71\uDC72\uDC75\uDC83-\uDCAF\uDCD0-\uDCE8\uDD03-\uDD26\uDD44\uDD47\uDD50-\uDD72\uDD76\uDD83-\uDDB2\uDDC1-\uDDC4\uDDDA\uDDDC\uDE00-\uDE11\uDE13-\uDE2B\uDE3F\uDE40\uDE80-\uDE86\uDE88\uDE8A-\uDE8D\uDE8F-\uDE9D\uDE9F-\uDEA8\uDEB0-\uDEDE\uDF05-\uDF0C\uDF0F\uDF10\uDF13-\uDF28\uDF2A-\uDF30\uDF32\uDF33\uDF35-\uDF39\uDF3D\uDF50\uDF5D-\uDF61\uDF80-\uDF89\uDF8B\uDF8E\uDF90-\uDFB5\uDFB7\uDFD1\uDFD3]|\uD805[\uDC00-\uDC34\uDC47-\uDC4A\uDC5F-\uDC61\uDC80-\uDCAF\uDCC4\uDCC5\uDCC7\uDD80-\uDDAE\uDDD8-\uDDDB\uDE00-\uDE2F\uDE44\uDE80-\uDEAA\uDEB8\uDF00-\uDF1A\uDF40-\uDF46]|\uD806[\uDC00-\uDC2B\uDCA0-\uDCDF\uDCFF-\uDD06\uDD09\uDD0C-\uDD13\uDD15\uDD16\uDD18-\uDD2F\uDD3F\uDD41\uDDA0-\uDDA7\uDDAA-\uDDD0\uDDE1\uDDE3\uDE00\uDE0B-\uDE32\uDE3A\uDE50\uDE5C-\uDE89\uDE9D\uDEB0-\uDEF8\uDFC0-\uDFE0]|\uD807[\uDC00-\uDC08\uDC0A-\uDC2E\uDC40\uDC72-\uDC8F\uDD00-\uDD06\uDD08\uDD09\uDD0B-\uDD30\uDD46\uDD60-\uDD65\uDD67\uDD68\uDD6A-\uDD89\uDD98\uDDB0-\uDDDB\uDEE0-\uDEF2\uDF02\uDF04-\uDF10\uDF12-\uDF33\uDFB0]|\uD808[\uDC00-\uDF99]|\uD809[\uDC80-\uDD43]|\uD80B[\uDF90-\uDFF0]|[\uD80C\uD80E\uD80F\uD81C-\uD822\uD840-\uD868\uD86A-\uD86D\uD86F-\uD872\uD874-\uD879\uD880-\uD883\uD885-\uD88C][\uDC00-\uDFFF]|\uD80D[\uDC00-\uDC2F\uDC41-\uDC46\uDC60-\uDFFF]|\uD810[\uDC00-\uDFFA]|\uD811[\uDC00-\uDE46]|\uD818[\uDD00-\uDD1D]|\uD81A[\uDC00-\uDE38\uDE40-\uDE5E\uDE70-\uDEBE\uDED0-\uDEED\uDF00-\uDF2F\uDF40-\uDF43\uDF63-\uDF77\uDF7D-\uDF8F]|\uD81B[\uDD40-\uDD6C\uDE40-\uDE7F\uDEA0-\uDEB8\uDEBB-\uDED3\uDF00-\uDF4A\uDF50\uDF93-\uDF9F\uDFE0\uDFE1\uDFE3\uDFF2\uDFF3]|\uD823[\uDC00-\uDCD5\uDCFF-\uDD1E\uDD80-\uDDF2]|\uD82B[\uDFF0-\uDFF3\uDFF5-\uDFFB\uDFFD\uDFFE]|\uD82C[\uDC00-\uDD22\uDD32\uDD50-\uDD52\uDD55\uDD64-\uDD67\uDD70-\uDEFB]|\uD82F[\uDC00-\uDC6A\uDC70-\uDC7C\uDC80-\uDC88\uDC90-\uDC99]|\uD835[\uDC00-\uDC54\uDC56-\uDC9C\uDC9E\uDC9F\uDCA2\uDCA5\uDCA6\uDCA9-\uDCAC\uDCAE-\uDCB9\uDCBB\uDCBD-\uDCC3\uDCC5-\uDD05\uDD07-\uDD0A\uDD0D-\uDD14\uDD16-\uDD1C\uDD1E-\uDD39\uDD3B-\uDD3E\uDD40-\uDD44\uDD46\uDD4A-\uDD50\uDD52-\uDEA5\uDEA8-\uDEC0\uDEC2-\uDEDA\uDEDC-\uDEFA\uDEFC-\uDF14\uDF16-\uDF34\uDF36-\uDF4E\uDF50-\uDF6E\uDF70-\uDF88\uDF8A-\uDFA8\uDFAA-\uDFC2\uDFC4-\uDFCB]|\uD837[\uDF00-\uDF1E\uDF25-\uDF2A]|\uD838[\uDC30-\uDC6D\uDD00-\uDD2C\uDD37-\uDD3D\uDD4E\uDE90-\uDEAD\uDEC0-\uDEEB]|\uD839[\uDCD0-\uDCEB\uDDD0-\uDDED\uDDF0\uDEC0-\uDEDE\uDEE0-\uDEE2\uDEE4\uDEE5\uDEE7-\uDEED\uDEF0-\uDEF4\uDEFE\uDEFF\uDFE0-\uDFE6\uDFE8-\uDFEB\uDFED\uDFEE\uDFF0-\uDFFE]|\uD83A[\uDC00-\uDCC4\uDD00-\uDD43\uDD4B]|\uD83B[\uDE00-\uDE03\uDE05-\uDE1F\uDE21\uDE22\uDE24\uDE27\uDE29-\uDE32\uDE34-\uDE37\uDE39\uDE3B\uDE42\uDE47\uDE49\uDE4B\uDE4D-\uDE4F\uDE51\uDE52\uDE54\uDE57\uDE59\uDE5B\uDE5D\uDE5F\uDE61\uDE62\uDE64\uDE67-\uDE6A\uDE6C-\uDE72\uDE74-\uDE77\uDE79-\uDE7C\uDE7E\uDE80-\uDE89\uDE8B-\uDE9B\uDEA1-\uDEA3\uDEA5-\uDEA9\uDEAB-\uDEBB]|\uD869[\uDC00-\uDEDF\uDF00-\uDFFF]|\uD86E[\uDC00-\uDC1D\uDC20-\uDFFF]|\uD873[\uDC00-\uDEAD\uDEB0-\uDFFF]|\uD87A[\uDC00-\uDFE0\uDFF0-\uDFFF]|\uD87B[\uDC00-\uDE5D]|\uD87E[\uDC00-\uDE1D]|\uD884[\uDC00-\uDF4A\uDF50-\uDFFF]|\uD88D[\uDC00-\uDC79])+/i];
+
+/* Prefix-friendly (e.g. allergique, arachide). Arabic forms added for RTL kitchens. */
+var ALLERGEN_RE = [/\ballerg/i, /\bintol/i, /\bgluten/i, /\barach/i, /\bcacahu/i, /\blacto[s\u017F]/i, /\b[s\u017F]oja/i,
+// [kds/sprint-2 F-6] Arabic allergen prefixes — حساسية (allergy), غلوتين (gluten), لاكتوز (lactose),
+// فول (peanut/bean), مكسرات (nuts), صويا (soy). RTL marker-free for whole-word fallback.
+/\u062D\u0633\u0627\u0633\u064A/, /\u063A\u0644\u0648\u062A\u064A\u0646/, /\u0644\u0627\u0643\u062A\u0648\u0632/, /\b\u0641\u0648\u0644\b/, /\u0645\u0643\u0633\u0631\u0627\u062A/, /\u0635\u0648\u064A\u0627/];
+function matchesAllergen(text) {
+  var _iterator = _createForOfIteratorHelper(ALLERGEN_RE),
+    _step;
+  try {
+    for (_iterator.s(); !(_step = _iterator.n()).done;) {
+      var re = _step.value;
+      if (re.test(text)) {
+        return true;
+      }
+    }
+  } catch (err) {
+    _iterator.e(err);
+  } finally {
+    _iterator.f();
+  }
+  return false;
+}
+function matchesExclusion(text) {
+  var _iterator2 = _createForOfIteratorHelper(EXCLUSION_RE),
+    _step2;
+  try {
+    for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
+      var re = _step2.value;
+      if (re.test(text)) {
+        return true;
+      }
+    }
+  } catch (err) {
+    _iterator2.e(err);
+  } finally {
+    _iterator2.f();
+  }
+  return false;
+}
+
+/**
+ * @param {string|null|undefined} text
+ * @returns {boolean}
+ */
+function isLikelyExclusionOrHoldInstruction(text) {
+  if (text == null || typeof text !== 'string') {
+    return false;
+  }
+  var t = text.trim();
+  if (t.length < 2) {
+    return false;
+  }
+  return matchesAllergen(t) || matchesExclusion(t);
+}
+
+/**
+ * CSS class (scoped in KDS): allergen (strongest) > exclusion / hold > default note
+ * @param {string|null|undefined} text
+ * @returns {'kds-instruction--allergen' | 'kds-instruction--exclusion' | 'kds-instruction--note'}
+ */
+function kdsInstructionVisualClass(text) {
+  if (text == null || typeof text !== 'string') {
+    return 'kds-instruction--note';
+  }
+  var t = text.trim();
+  if (t.length < 2) {
+    return 'kds-instruction--note';
+  }
+  if (matchesAllergen(t)) {
+    return 'kds-instruction--allergen';
+  }
+  if (matchesExclusion(t)) {
+    return 'kds-instruction--exclusion';
+  }
+  return 'kds-instruction--note';
+}
 
 /***/ },
 

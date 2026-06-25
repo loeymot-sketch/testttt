@@ -351,6 +351,7 @@ import displayModeEnum from "../../../enums/modules/displayModeEnum";
 import posPaymentMethodEnum from "../../../enums/modules/posPaymentMethodEnum";
 import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
 import ReceiptDuplicataMarker from "./ReceiptDuplicataMarker.vue";
+import { sanitizeKdsInstruction } from "../../../helpers/kdsCustomization";
 import ReceiptRemboursementMarker from "./ReceiptRemboursementMarker.vue";
 import {
     formatPaymentsBreakdown as buildPaymentLines,
@@ -518,7 +519,13 @@ export default {
             return position === 0 ? `${symbol}${formatted}` : `${formatted}${symbol}`;
         },
         kitchenInstructionText: function (item) {
-            return item && item.instruction ? String(item.instruction).trim() : '';
+            // [PRINT-SAGA 2026-06-25] Le ticket CUISINE imprimé rend déjà la compo
+            // structurée (variations/extras) au-dessus ; renvoyer l'instruction BRUTE
+            // ré-imprimait nom+viande+sauce+supplément une 2e fois (doublage prouvé
+            // par l'audit e2e). On assainit avec le MÊME helper SSOT que le KDS :
+            // strip le préambule nom-produit + le blob compo, garde les extras uniques
+            // (« ↳ Sauce frites », « + Menu », notes libres).
+            return item ? sanitizeKdsInstruction(item.instruction, item.item_name) : '';
         },
         refreshBranchShowFromOrder: function () {
             const bid = this.order?.branch_id ?? this.order?.branch?.id;

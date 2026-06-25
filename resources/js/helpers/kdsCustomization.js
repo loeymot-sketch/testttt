@@ -74,7 +74,7 @@ export function categorize(orderItem) {
     if (/\btacos?\b/.test(name)) {
         return 'taco';
     }
-    if (/burger|cheeseburger/.test(name)) {
+    if (/burger|cheeseburger|double cheese/.test(name)) {
         return 'burger';
     }
     if (/assiette|couscous|ojja|lablabi/.test(name)) {
