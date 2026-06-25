@@ -305,12 +305,15 @@ class AppLibrary
 
     public static function flatAmountFormat($amount): string
     {
-        return number_format($amount, env('CURRENCY_DECIMAL_POINT'), '.', '');
+        // [MONEY-FIX 2026-06-25] `?? 2` : sous config:cache (prod) env() renvoie null
+        // → number_format($x, null) arrondit à l'ENTIER (rapports faux). Garde-fou
+        // identique à currencyAmountFormat:289. Idéalement config() (survit au cache).
+        return number_format($amount, (int) (env('CURRENCY_DECIMAL_POINT') ?? 2), '.', '');
     }
 
     public static function convertAmountFormat($amount): float
     {
-        return (float)number_format($amount, env('CURRENCY_DECIMAL_POINT'), '.', '');
+        return (float)number_format($amount, (int) (env('CURRENCY_DECIMAL_POINT') ?? 2), '.', '');
     }
 
     public static function fcmDataBind($request)
@@ -401,7 +404,9 @@ class AppLibrary
 
     public static function reportCurrencyAmountFormat($amount): string
     {
-        return number_format($amount, env('CURRENCY_DECIMAL_POINT'), '.', ',');
+        // [MONEY-FIX 2026-06-25] `?? 2` : voir flatAmountFormat — évite l'arrondi
+        // entier des totaux de rapport sous config:cache.
+        return number_format($amount, (int) (env('CURRENCY_DECIMAL_POINT') ?? 2), '.', ',');
     }
 
     public static function textShortener($text, $number = 30)
