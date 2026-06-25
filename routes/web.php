@@ -34,7 +34,16 @@ Route::prefix('install')->name('installer.')->middleware(['web'])->group(functio
 });
 
 
-Route::get('/', [RootController::class, 'index'])->middleware(['installed'])->name('home');
+// [STOREFRONT-REMOVAL 2026-06-25] V1 LOCAL Le Cayenne = AUCUN site vitrine public
+// (commande en ligne hors périmètre V1). La racine et les pages vitrine
+// Accueil/Menu/Offres redirigent vers l'admin → l'owner arrive sur login →
+// dashboard → caisse / écran cuisine / borne. Le SPA admin/caisse/KDS/borne
+// reste servi par le catch-all plus bas. Rollback : remettre la ligne
+// `Route::get('/', [RootController::class, 'index'])...` d'origine.
+Route::redirect('/', '/login')->name('home');
+Route::redirect('/menu', '/login')->name('legacy.menu');
+Route::redirect('/offers', '/login')->name('legacy.offers');
+Route::redirect('/offres', '/login')->name('legacy.offres');
 Route::prefix('payment')->name('payment.')->middleware(['installed'])->group(function () {
     Route::get('/{order}/pay', [PaymentController::class, 'index'])->name('index');
     Route::post('/{order}/pay', [PaymentController::class, 'payment'])->name('store');
