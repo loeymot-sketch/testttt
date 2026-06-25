@@ -67,8 +67,34 @@ class VerifyZMembershipCommand extends Command
                     ->first();
 
                 if (! $coveringZ) {
-                    // created_at is in the still-open current window → it will be
-                    // aggregated by the next Z. Not an orphan.
+                    // [GAP-ORPHAN 2026-06-25] Aucun Z FERMÉ ne couvre created_at.
+                    // Si un Z OUVERT la couvre (opened_at < created_at) → elle sera
+                    // agrégée à la clôture → OK. Sinon la vente tombe dans le TROU
+                    // entre un Z fermé et le prochain Z ouvert (ou avant tout Z) :
+                    // le prochain Z n'agrège que depuis SON opened_at (fenêtre
+                    // (opened_at, closed_at]) → elle ne sera dans AUCUN Z signé →
+                    // orphelin (« rapport faux » : sous-évalue ce qu'a rapporté le
+                    // service). L'ancien `continue` aveugle la ratait (faux-vert).
+                    $openZ = ZReport::query()
+                        ->where('branch_id', $bid)
+                        ->where('status', ZReport::STATUS_OPEN)
+                        ->where('opened_at', '<', $o->created_at)
+                        ->orderByDesc('opened_at')
+                        ->first();
+
+                    if ($openZ) {
+                        // Dans la fenêtre du Z ouvert courant → sera agrégée à la clôture.
+                        continue;
+                    }
+
+                    $candidates[] = [
+                        'branch'      => $bid,
+                        'order'       => (string) ($o->order_serial_no ?? $o->id),
+                        'seq'         => (int) $o->fiscal_sequence_no,
+                        'total'       => number_format((float) $o->total, 2),
+                        'created_at'  => (string) $o->created_at,
+                        'Z_closed_at' => 'TROU — aucun Z ne couvre cette vente',
+                    ];
                     continue;
                 }
 

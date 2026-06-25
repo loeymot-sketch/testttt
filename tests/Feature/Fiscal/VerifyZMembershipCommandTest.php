@@ -82,4 +82,45 @@ class VerifyZMembershipCommandTest extends TestCase
             ->expectsOutputToContain('A9999')
             ->assertExitCode(1);
     }
+
+    /**
+     * [GAP-ORPHAN 2026-06-25] Point aveugle : une vente numérotée créée dans le TROU
+     * entre un Z fermé et le PROCHAIN Z ouvert n'est dans AUCUN Z (le Z suivant
+     * n'agrège que depuis SON opened_at, fenêtre (opened_at, closed_at]). Le
+     * détecteur la ratait (`continue` → faux-vert). Il doit la flaguer.
+     */
+    public function test_order_in_gap_between_closed_Z_and_next_open_Z_is_flagged(): void
+    {
+        $branch = Branch::factory()->create();
+        // Z fermé jour 1 : 08:00 → 20:00
+        ZReport::create([
+            'branch_id'   => $branch->id,
+            'sequence_no' => 1,
+            'opened_at'   => Carbon::parse('2026-05-01 08:00:00'),
+            'closed_at'   => Carbon::parse('2026-05-01 20:00:00'),
+            'status'      => ZReport::STATUS_CLOSED,
+        ]);
+        // Z ouvert jour 2 08:00 → TROU entre jour1 20:00 et jour2 08:00.
+        ZReport::create([
+            'branch_id'   => $branch->id,
+            'sequence_no' => 2,
+            'opened_at'   => Carbon::parse('2026-05-02 08:00:00'),
+            'closed_at'   => null,
+            'status'      => ZReport::STATUS_OPEN,
+        ]);
+        // Vente payée+numérotée créée dans le TROU (jour1 22:00) → dans aucun Z.
+        $order = Order::factory()->create([
+            'branch_id'       => $branch->id,
+            'status'          => OrderStatus::ACCEPT,
+            'payment_status'  => PaymentStatus::PAID,
+            'total'           => 13.00,
+            'order_serial_no' => 'GAP777',
+            'created_at'      => Carbon::parse('2026-05-01 22:00:00'),
+        ]);
+        $this->numberOrder($order->id, 7, Carbon::parse('2026-05-01 22:01:00'));
+
+        $this->artisan('fiscal:verify-z-membership', ['--branch' => $branch->id])
+            ->expectsOutputToContain('GAP777')
+            ->assertExitCode(1);
+    }
 }
