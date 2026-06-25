@@ -3504,6 +3504,24 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
 
 /***/ },
 
+/***/ "./resources/js/enums/modules/itemTypeEnum.js"
+/*!****************************************************!*\
+  !*** ./resources/js/enums/modules/itemTypeEnum.js ***!
+  \****************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+var itemTypeEnum = Object.freeze({
+  VEG: 5,
+  NON_VEG: 10
+});
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (itemTypeEnum);
+
+/***/ },
+
 /***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/creditBalanceReport/CreditBalanceReportComponent.vue?vue&type=style&index=0&id=684cf049&scoped=true&lang=css"
 /*!*****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
   !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/creditBalanceReport/CreditBalanceReportComponent.vue?vue&type=style&index=0&id=684cf049&scoped=true&lang=css ***!

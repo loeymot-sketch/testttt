@@ -64011,6 +64011,25 @@ var inputTypeEnum = Object.freeze({
 
 /***/ },
 
+/***/ "./resources/js/enums/modules/itemTypeEnum.js"
+/*!****************************************************!*\
+  !*** ./resources/js/enums/modules/itemTypeEnum.js ***!
+  \****************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+var itemTypeEnum = Object.freeze({
+  VEG: 5,
+  NON_VEG: 10
+});
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (itemTypeEnum);
+
+/***/ },
+
 /***/ "./resources/js/enums/modules/notificationTypeEnum.js"
 /*!************************************************************!*\
   !*** ./resources/js/enums/modules/notificationTypeEnum.js ***!
