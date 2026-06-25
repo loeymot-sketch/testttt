@@ -460,11 +460,15 @@ export default {
         this.refreshBranchShowFromOrder();
         this.printObjClient.popTitle = this.$t("pos.print_ticket_client");
         this.printObjKitchen.popTitle = this.$t("pos.print_ticket_kitchen");
+        // [AUTO-PRINT 2026-06-25] Garde anti-double + cas reçu déjà posé au montage.
+        this._autoPrintedOrderId = null;
+        this.maybeAutoPrintClient(this.order?.id);
     },
     watch: {
-        'order.id': function () {
+        'order.id': function (newId) {
             this.localPrintCount = Number(this.order?.receipt_print_count ?? 0);
             this.refreshBranchShowFromOrder();
+            this.maybeAutoPrintClient(newId);
         },
     },
     methods: {
@@ -532,6 +536,27 @@ export default {
             if (bid) {
                 this.$store.dispatch('backendGlobalState/branchShow', bid).catch(() => {});
             }
+        },
+        /**
+         * [AUTO-PRINT 2026-06-25] Impression AUTO du ticket client en fin de
+         * commande (choix owner : 1 clic). Uniquement le reçu d'un encaissement
+         * FRAIS (clearCartOnClose=true, posé par PaymentComponent) — les re-prints
+         * depuis le tracker restent à clearCartOnClose=false → pas d'auto-print.
+         * Garde anti-double : une seule fois par order id ; en plus
+         * handlePrintClientClick a son verrou isPrinting et le POST /print-receipt
+         * est idempotency-keyed → aucun double-incrément NF525 receipt_print_count.
+         */
+        maybeAutoPrintClient: function (orderId) {
+            if (!this.clearCartOnClose || !orderId) {
+                return;
+            }
+            if (this._autoPrintedOrderId === orderId) {
+                return;
+            }
+            this._autoPrintedOrderId = orderId;
+            this.$nextTick(() => {
+                this.handlePrintClientClick();
+            });
         },
         /**
          * Ticket client : incrément NF525 + audit via POST print-receipt.

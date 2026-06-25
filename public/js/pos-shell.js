@@ -8889,18 +8889,22 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     }
   },
   mounted: function mounted() {
-    var _this$order$receipt_p2, _this$order2;
+    var _this$order$receipt_p2, _this$order2, _this$order3;
     this.$store.dispatch("company/lists").then()["catch"]();
     this.localPrintCount = Number((_this$order$receipt_p2 = (_this$order2 = this.order) === null || _this$order2 === void 0 ? void 0 : _this$order2.receipt_print_count) !== null && _this$order$receipt_p2 !== void 0 ? _this$order$receipt_p2 : 0);
     this.refreshBranchShowFromOrder();
     this.printObjClient.popTitle = this.$t("pos.print_ticket_client");
     this.printObjKitchen.popTitle = this.$t("pos.print_ticket_kitchen");
+    // [AUTO-PRINT 2026-06-25] Garde anti-double + cas reçu déjà posé au montage.
+    this._autoPrintedOrderId = null;
+    this.maybeAutoPrintClient((_this$order3 = this.order) === null || _this$order3 === void 0 ? void 0 : _this$order3.id);
   },
   watch: {
-    'order.id': function orderId() {
-      var _this$order$receipt_p3, _this$order3;
-      this.localPrintCount = Number((_this$order$receipt_p3 = (_this$order3 = this.order) === null || _this$order3 === void 0 ? void 0 : _this$order3.receipt_print_count) !== null && _this$order$receipt_p3 !== void 0 ? _this$order$receipt_p3 : 0);
+    'order.id': function orderId(newId) {
+      var _this$order$receipt_p3, _this$order4;
+      this.localPrintCount = Number((_this$order$receipt_p3 = (_this$order4 = this.order) === null || _this$order4 === void 0 ? void 0 : _this$order4.receipt_print_count) !== null && _this$order$receipt_p3 !== void 0 ? _this$order$receipt_p3 : 0);
       this.refreshBranchShowFromOrder();
+      this.maybeAutoPrintClient(newId);
     }
   },
   methods: {
@@ -8966,32 +8970,54 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       return item ? (0,_helpers_kdsCustomization__WEBPACK_IMPORTED_MODULE_8__.sanitizeKdsInstruction)(item.instruction, item.item_name) : '';
     },
     refreshBranchShowFromOrder: function refreshBranchShowFromOrder() {
-      var _this$order$branch_id, _this$order4, _this$order5;
-      var bid = (_this$order$branch_id = (_this$order4 = this.order) === null || _this$order4 === void 0 ? void 0 : _this$order4.branch_id) !== null && _this$order$branch_id !== void 0 ? _this$order$branch_id : (_this$order5 = this.order) === null || _this$order5 === void 0 || (_this$order5 = _this$order5.branch) === null || _this$order5 === void 0 ? void 0 : _this$order5.id;
+      var _this$order$branch_id, _this$order5, _this$order6;
+      var bid = (_this$order$branch_id = (_this$order5 = this.order) === null || _this$order5 === void 0 ? void 0 : _this$order5.branch_id) !== null && _this$order$branch_id !== void 0 ? _this$order$branch_id : (_this$order6 = this.order) === null || _this$order6 === void 0 || (_this$order6 = _this$order6.branch) === null || _this$order6 === void 0 ? void 0 : _this$order6.id;
       if (bid) {
         this.$store.dispatch('backendGlobalState/branchShow', bid)["catch"](function () {});
       }
     },
     /**
+     * [AUTO-PRINT 2026-06-25] Impression AUTO du ticket client en fin de
+     * commande (choix owner : 1 clic). Uniquement le reçu d'un encaissement
+     * FRAIS (clearCartOnClose=true, posé par PaymentComponent) — les re-prints
+     * depuis le tracker restent à clearCartOnClose=false → pas d'auto-print.
+     * Garde anti-double : une seule fois par order id ; en plus
+     * handlePrintClientClick a son verrou isPrinting et le POST /print-receipt
+     * est idempotency-keyed → aucun double-incrément NF525 receipt_print_count.
+     */
+    maybeAutoPrintClient: function maybeAutoPrintClient(orderId) {
+      var _this = this;
+      if (!this.clearCartOnClose || !orderId) {
+        return;
+      }
+      if (this._autoPrintedOrderId === orderId) {
+        return;
+      }
+      this._autoPrintedOrderId = orderId;
+      this.$nextTick(function () {
+        _this.handlePrintClientClick();
+      });
+    },
+    /**
      * Ticket client : incrément NF525 + audit via POST print-receipt.
      */
     handlePrintClientClick: function handlePrintClientClick() {
-      var _this = this;
+      var _this2 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
-        var _this$order6, _data$receipt_print_c, _this$localPrintCount, idempotencyKey, _yield$axios$post, data, _apiError$response, _this$localPrintCount2, status, trigger, _t;
+        var _this2$order, _data$receipt_print_c, _this2$localPrintCoun, idempotencyKey, _yield$axios$post, data, _apiError$response, _this2$localPrintCoun2, status, trigger, _t;
         return _regenerator().w(function (_context) {
           while (1) switch (_context.p = _context.n) {
             case 0:
-              if (!_this.isPrinting) {
+              if (!_this2.isPrinting) {
                 _context.n = 1;
                 break;
               }
               return _context.a(2);
             case 1:
-              _this.isPrinting = true;
-              _this._printedThermally = false;
+              _this2.isPrinting = true;
+              _this2._printedThermally = false;
               _context.p = 2;
-              if (!((_this$order6 = _this.order) !== null && _this$order6 !== void 0 && _this$order6.id)) {
+              if (!((_this2$order = _this2.order) !== null && _this2$order !== void 0 && _this2$order.id)) {
                 _context.n = 6;
                 break;
               }
@@ -9003,9 +9029,9 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               // route predated the 2026-05-18 required_routes addition). Fresh key per
               // click so each intentional (re)print increments the counter; a same-click
               // network-retry dedupes on the identical key.
-              idempotencyKey = "pos-print-receipt-".concat(_this.order.id, "-").concat(Date.now());
+              idempotencyKey = "pos-print-receipt-".concat(_this2.order.id, "-").concat(Date.now());
               _context.n = 4;
-              return axios__WEBPACK_IMPORTED_MODULE_0__["default"].post("admin/pos/orders/".concat(_this.order.id, "/print-receipt"), {}, {
+              return axios__WEBPACK_IMPORTED_MODULE_0__["default"].post("admin/pos/orders/".concat(_this2.order.id, "/print-receipt"), {}, {
                 headers: {
                   'X-Idempotency-Key': idempotencyKey
                 }
@@ -9013,9 +9039,9 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
             case 4:
               _yield$axios$post = _context.v;
               data = _yield$axios$post.data;
-              _this.localPrintCount = Number((_data$receipt_print_c = data === null || data === void 0 ? void 0 : data.receipt_print_count) !== null && _data$receipt_print_c !== void 0 ? _data$receipt_print_c : Number((_this$localPrintCount = _this.localPrintCount) !== null && _this$localPrintCount !== void 0 ? _this$localPrintCount : 0) + 1);
+              _this2.localPrintCount = Number((_data$receipt_print_c = data === null || data === void 0 ? void 0 : data.receipt_print_count) !== null && _data$receipt_print_c !== void 0 ? _data$receipt_print_c : Number((_this2$localPrintCoun = _this2.localPrintCount) !== null && _this2$localPrintCoun !== void 0 ? _this2$localPrintCoun : 0) + 1);
               // [PRINT-SAGA] server printed straight to the thermal printer?
-              _this._printedThermally = (data === null || data === void 0 ? void 0 : data.printed_escpos) === true;
+              _this2._printedThermally = (data === null || data === void 0 ? void 0 : data.printed_escpos) === true;
               // [PS-4 audit heal 2026-05-18] NF525 audit-chain write
               // is best-effort server-side (PosReceiptPrintController
               // returns audit_emitted=false on chain failure). The
@@ -9024,7 +9050,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               // fiscal ops can investigate the gap. Pre-heal the UI
               // silently swallowed this signal — see RED-PS4-005.
               if ((data === null || data === void 0 ? void 0 : data.audit_emitted) === false) {
-                _services_alertService__WEBPACK_IMPORTED_MODULE_2__["default"].warning(_this.$t('pos.receipt_audit_chain_warning'));
+                _services_alertService__WEBPACK_IMPORTED_MODULE_2__["default"].warning(_this2.$t('pos.receipt_audit_chain_warning'));
               }
               _context.n = 6;
               break;
@@ -9033,25 +9059,25 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               _t = _context.v;
               status = _t === null || _t === void 0 || (_apiError$response = _t.response) === null || _apiError$response === void 0 ? void 0 : _apiError$response.status;
               if (status === 403) {
-                _services_alertService__WEBPACK_IMPORTED_MODULE_2__["default"].warning(_this.$t('pos.receipt_print_forbidden'));
+                _services_alertService__WEBPACK_IMPORTED_MODULE_2__["default"].warning(_this2.$t('pos.receipt_print_forbidden'));
               } else if (status === 404) {
-                _services_alertService__WEBPACK_IMPORTED_MODULE_2__["default"].warning(_this.$t('pos.receipt_print_not_found'));
+                _services_alertService__WEBPACK_IMPORTED_MODULE_2__["default"].warning(_this2.$t('pos.receipt_print_not_found'));
               } else if (status === 409) {
-                _services_alertService__WEBPACK_IMPORTED_MODULE_2__["default"].warning(_this.$t('pos.receipt_print_conflict'));
+                _services_alertService__WEBPACK_IMPORTED_MODULE_2__["default"].warning(_this2.$t('pos.receipt_print_conflict'));
               } else {
-                _services_alertService__WEBPACK_IMPORTED_MODULE_2__["default"].warning(_this.$t('pos.receipt_print_server_error'));
+                _services_alertService__WEBPACK_IMPORTED_MODULE_2__["default"].warning(_this2.$t('pos.receipt_print_server_error'));
               }
-              _this.localPrintCount = Number((_this$localPrintCount2 = _this.localPrintCount) !== null && _this$localPrintCount2 !== void 0 ? _this$localPrintCount2 : 0) + 1;
+              _this2.localPrintCount = Number((_this2$localPrintCoun2 = _this2.localPrintCount) !== null && _this2$localPrintCoun2 !== void 0 ? _this2$localPrintCoun2 : 0) + 1;
               console.warn('[ReceiptComponent] increment API failed, printing anyway', _t);
             case 6:
-              if (_this._printedThermally) {
+              if (_this2._printedThermally) {
                 _context.n = 8;
                 break;
               }
               _context.n = 7;
-              return _this.$nextTick();
+              return _this2.$nextTick();
             case 7:
-              trigger = _this.$refs.hiddenPrintClientButton;
+              trigger = _this2.$refs.hiddenPrintClientButton;
               if (trigger && typeof trigger.click === 'function') {
                 trigger.click();
               } else if (typeof window !== 'undefined' && typeof window.print === 'function') {
@@ -9059,7 +9085,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               }
             case 8:
               _context.p = 8;
-              _this.isPrinting = false;
+              _this2.isPrinting = false;
               return _context.f(8);
             case 9:
               return _context.a(2);
@@ -9071,29 +9097,29 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
      * Ticket cuisine : pas d’appel fiscal — bon de préparation uniquement.
      */
     handlePrintKitchenClick: function handlePrintKitchenClick() {
-      var _this2 = this;
+      var _this3 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2() {
-        var printedThermally, _this2$order, idempotencyKey, _yield$axios$post2, data, trigger, _t2;
+        var printedThermally, _this3$order, idempotencyKey, _yield$axios$post2, data, trigger, _t2;
         return _regenerator().w(function (_context2) {
           while (1) switch (_context2.p = _context2.n) {
             case 0:
-              if (!_this2.isPrinting) {
+              if (!_this3.isPrinting) {
                 _context2.n = 1;
                 break;
               }
               return _context2.a(2);
             case 1:
-              _this2.isPrinting = true;
+              _this3.isPrinting = true;
               printedThermally = false;
               _context2.p = 2;
-              if (!((_this2$order = _this2.order) !== null && _this2$order !== void 0 && _this2$order.id)) {
+              if (!((_this3$order = _this3.order) !== null && _this3$order !== void 0 && _this3$order.id)) {
                 _context2.n = 6;
                 break;
               }
               _context2.p = 3;
-              idempotencyKey = "pos-print-kitchen-".concat(_this2.order.id, "-").concat(Date.now());
+              idempotencyKey = "pos-print-kitchen-".concat(_this3.order.id, "-").concat(Date.now());
               _context2.n = 4;
-              return axios__WEBPACK_IMPORTED_MODULE_0__["default"].post("admin/pos/orders/".concat(_this2.order.id, "/print-kitchen"), {}, {
+              return axios__WEBPACK_IMPORTED_MODULE_0__["default"].post("admin/pos/orders/".concat(_this3.order.id, "/print-kitchen"), {}, {
                 headers: {
                   'X-Idempotency-Key': idempotencyKey
                 }
@@ -9114,9 +9140,9 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
                 break;
               }
               _context2.n = 7;
-              return _this2.$nextTick();
+              return _this3.$nextTick();
             case 7:
-              trigger = _this2.$refs.hiddenPrintKitchenButton;
+              trigger = _this3.$refs.hiddenPrintKitchenButton;
               if (trigger && typeof trigger.click === 'function') {
                 trigger.click();
               } else if (typeof window !== 'undefined' && typeof window.print === 'function') {
@@ -9124,7 +9150,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               }
             case 8:
               _context2.p = 8;
-              _this2.isPrinting = false;
+              _this3.isPrinting = false;
               return _context2.f(8);
             case 9:
               return _context2.a(2);
