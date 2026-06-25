@@ -3844,6 +3844,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _v5_PosV5SearchInput_vue__WEBPACK_IMPORTED_MODULE_42__ = __webpack_require__(/*! ./v5/PosV5SearchInput.vue */ "./resources/js/components/admin/pos/v5/PosV5SearchInput.vue");
 /* harmony import */ var _cash_PosCashDrawerSessionDialog_vue__WEBPACK_IMPORTED_MODULE_43__ = __webpack_require__(/*! ../cash/PosCashDrawerSessionDialog.vue */ "./resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue");
 /* harmony import */ var _composables_usePosOfflineState__WEBPACK_IMPORTED_MODULE_44__ = __webpack_require__(/*! ../../../composables/usePosOfflineState */ "./resources/js/composables/usePosOfflineState.js");
+/* harmony import */ var _helpers_caisseZoom__WEBPACK_IMPORTED_MODULE_45__ = __webpack_require__(/*! ../../../helpers/caisseZoom */ "./resources/js/helpers/caisseZoom.js");
 function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
 function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
 function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
@@ -3937,6 +3938,10 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
 // shell so the cashier sees MODE DÉGRADÉ + queue depth + manual flush. Server
 // remains SSOT for fiscal_sequence_no (NF525 CLAUDE.md §8) — we only stash
 // item_id / quantity / option_ids / total_cents until reconnect.
+
+// [CAISSE-ZOOM 2026-06-25] Zoom auto ~67% de la page caisse (réplique le Ctrl+-
+// navigateur que l'owner appliquait à la main) — appliqué au montage, retiré au
+// démontage. Helper NON-frozen ; le wizard Vanilla frozen n'est pas modifié.
 
 
 // [Phase-6 / T10–T12] Recherche menu, lecteur code-barres + F-keys, debounce,
@@ -4613,6 +4618,9 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
   },
   beforeUnmount: function beforeUnmount() {
     var _this = this;
+    // [CAISSE-ZOOM 2026-06-25] Retire le zoom caisse pour ne pas rétrécir les
+    // autres pages admin (dashboard, rapports, etc.) après navigation.
+    (0,_helpers_caisseZoom__WEBPACK_IMPORTED_MODULE_45__.clearCaisseZoom)(document);
     // [WT-R1-F2 2026-05-20] Mark instance as destroyed BEFORE any cleanup so
     // late-firing async callbacks (echo/wsService reconnect handlers,
     // in-flight axios resolves, debounced flushers) can early-out instead of
@@ -4692,6 +4700,10 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
   },
   mounted: function mounted() {
     var _this2 = this;
+    // [CAISSE-ZOOM 2026-06-25] Affiche la caisse en ~67% automatiquement (toutes
+    // catégories + produits + panier visibles sur un écran), comme le Ctrl+- que
+    // l'owner appliquait à la main. Surchargeable via localStorage.caisse_zoom.
+    (0,_helpers_caisseZoom__WEBPACK_IMPORTED_MODULE_45__.applyCaisseZoom)(document, (0,_helpers_caisseZoom__WEBPACK_IMPORTED_MODULE_45__.resolveCaisseZoom)(window.localStorage));
     this._debouncedListRefresh = lodash_debounce__WEBPACK_IMPORTED_MODULE_33___default()(function () {
       _this2.itemList(1, {
         overlay: false
@@ -16181,6 +16193,83 @@ var discountTypeEnum = Object.freeze({
   PERCENTAGE: 10
 });
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (discountTypeEnum);
+
+/***/ },
+
+/***/ "./resources/js/helpers/caisseZoom.js"
+/*!********************************************!*\
+  !*** ./resources/js/helpers/caisseZoom.js ***!
+  \********************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   CAISSE_ZOOM: () => (/* binding */ CAISSE_ZOOM),
+/* harmony export */   applyCaisseZoom: () => (/* binding */ applyCaisseZoom),
+/* harmony export */   clearCaisseZoom: () => (/* binding */ clearCaisseZoom),
+/* harmony export */   resolveCaisseZoom: () => (/* binding */ resolveCaisseZoom)
+/* harmony export */ });
+/**
+ * Zoom automatique de la page CAISSE (POS).
+ *
+ * L'owner trouve la caisse trop chargée à 100 % (catégories + produits + panier
+ * + encaissement ne tiennent pas lisiblement sur un écran). À la main il applique
+ * un zoom navigateur Chrome ~67 % (Ctrl+-) et tout devient visible sur une seule
+ * page. Ce helper réplique ce zoom AUTOMATIQUEMENT : appliqué au montage du
+ * PosComponent, retiré au démontage → scopé à la caisse uniquement (n'affecte
+ * PAS les autres pages admin).
+ *
+ * Zone NON-frozen : on n'édite AUCUN fichier frozen. Le wizard Vanilla frozen
+ * (pos-wizard.js/.css) n'est pas modifié — il hérite simplement du zoom du body,
+ * exactement comme sous le zoom navigateur que l'owner utilisait déjà.
+ *
+ * `zoom` est supporté nativement par Chrome/Edge/Safari (la caisse tourne sous
+ * Chrome). Valeur surchargeable EN LIVE sans redéploiement via la console :
+ *   localStorage.setItem('caisse_zoom', '0.7')   // puis recharger la caisse
+ */
+
+var CAISSE_ZOOM = 0.67;
+
+/**
+ * Résout le zoom à appliquer : override localStorage `caisse_zoom` s'il est
+ * valide (entre 0.3 et 1), sinon la valeur par défaut testée par l'owner.
+ */
+function resolveCaisseZoom(storage) {
+  try {
+    var raw = storage && typeof storage.getItem === 'function' ? storage.getItem('caisse_zoom') : null;
+    var n = Number(raw);
+    if (Number.isFinite(n) && n >= 0.3 && n <= 1) {
+      return n;
+    }
+  } catch (e) {
+    /* accès storage refusé → défaut */
+  }
+  return CAISSE_ZOOM;
+}
+
+/** Applique le zoom sur le body. Défensif : no-op si doc/body absent. */
+function applyCaisseZoom(doc, zoom) {
+  if (!doc || !doc.body) {
+    return;
+  }
+  var z = typeof zoom === 'number' && zoom > 0 ? zoom : CAISSE_ZOOM;
+  doc.body.style.zoom = String(z);
+  if (typeof doc.body.setAttribute === 'function') {
+    doc.body.setAttribute('data-caisse-zoom', String(z));
+  }
+}
+
+/** Retire le zoom (sortie de la caisse) pour ne pas affecter les autres pages. */
+function clearCaisseZoom(doc) {
+  if (!doc || !doc.body) {
+    return;
+  }
+  doc.body.style.zoom = '';
+  if (typeof doc.body.removeAttribute === 'function') {
+    doc.body.removeAttribute('data-caisse-zoom');
+  }
+}
 
 /***/ },
 

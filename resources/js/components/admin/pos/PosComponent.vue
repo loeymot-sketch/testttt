@@ -1562,6 +1562,10 @@ import PosCashDrawerSessionDialog from "../cash/PosCashDrawerSessionDialog.vue";
 // remains SSOT for fiscal_sequence_no (NF525 CLAUDE.md §8) — we only stash
 // item_id / quantity / option_ids / total_cents until reconnect.
 import { usePosOfflineState } from "../../../composables/usePosOfflineState";
+// [CAISSE-ZOOM 2026-06-25] Zoom auto ~67% de la page caisse (réplique le Ctrl+-
+// navigateur que l'owner appliquait à la main) — appliqué au montage, retiré au
+// démontage. Helper NON-frozen ; le wizard Vanilla frozen n'est pas modifié.
+import { applyCaisseZoom, clearCaisseZoom, resolveCaisseZoom } from "../../../helpers/caisseZoom";
 
 // [Phase-6 / T10–T12] Recherche menu, lecteur code-barres + F-keys, debounce,
 // `SkeletonGrid` sur chargement grille — perçu perfo (spinners discrets) ; pas de
@@ -2243,6 +2247,9 @@ export default {
         },
     },
     beforeUnmount() {
+        // [CAISSE-ZOOM 2026-06-25] Retire le zoom caisse pour ne pas rétrécir les
+        // autres pages admin (dashboard, rapports, etc.) après navigation.
+        clearCaisseZoom(document);
         // [WT-R1-F2 2026-05-20] Mark instance as destroyed BEFORE any cleanup so
         // late-firing async callbacks (echo/wsService reconnect handlers,
         // in-flight axios resolves, debounced flushers) can early-out instead of
@@ -2307,6 +2314,10 @@ export default {
         }
     },
     mounted() {
+        // [CAISSE-ZOOM 2026-06-25] Affiche la caisse en ~67% automatiquement (toutes
+        // catégories + produits + panier visibles sur un écran), comme le Ctrl+- que
+        // l'owner appliquait à la main. Surchargeable via localStorage.caisse_zoom.
+        applyCaisseZoom(document, resolveCaisseZoom(window.localStorage));
         this._debouncedListRefresh = debounce(() => {
             this.itemList(1, { overlay: false });
         }, 150);
