@@ -67,6 +67,7 @@ return [
             'driver' => 'single',
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
+            'permission' => 0664, // [PERMS-FIX 2026-06-25] cf. canal fiscal
         ],
 
         'daily' => [
@@ -74,6 +75,7 @@ return [
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'days' => 14,
+            'permission' => 0664, // [PERMS-FIX 2026-06-25] cf. canal fiscal
         ],
 
         'slack' => [
@@ -129,6 +131,7 @@ return [
             'path' => storage_path('logs/hardware.log'),
             'level' => 'info',
             'days' => 30,
+            'permission' => 0664, // [PERMS-FIX 2026-06-25] cf. canal fiscal
         ],
 
         // [C6 / K-6] Dedicated security channel — rotated daily, retained
@@ -149,6 +152,7 @@ return [
             'path' => storage_path('logs/security.log'),
             'level' => 'info',
             'days' => 90,
+            'permission' => 0664, // [PERMS-FIX 2026-06-25] cf. canal fiscal
         ],
 
         'production_json' => [
@@ -172,6 +176,7 @@ return [
             'level' => 'info',
             'days' => 90,
             'formatter' => \App\Logging\JsonFormatter::class,
+            'permission' => 0664, // [PERMS-FIX 2026-06-25] cf. canal fiscal
         ],
 
         // [POS-9-H.3.2 / F-C7]
@@ -190,6 +195,13 @@ return [
             'path'   => storage_path('logs/fiscal.log'),
             'level'  => 'info',
             'days'   => 400,
+            // [PERMS-FIX 2026-06-25] 0664 = fichier inscriptible par le GROUPE.
+            // Sans ça, le log fiscal du jour se crée en 0644 (groupe lecture seule) :
+            // si php-fpm (www-data) le crée, le cron (ubuntu) ne peut plus l'écrire
+            // (et inversement) → l'ouverture/clôture Z et l'allocation fiscale d'une
+            // commande échouent (rollback) → 500 / Z manquant. 0664 + groupe partagé
+            // www-data = les deux peuvent écrire.
+            'permission' => 0664,
         ],
     ],
 
