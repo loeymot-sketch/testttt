@@ -105,7 +105,7 @@
                                 {{ administrator.email }}
                             </td>
                             <td class="db-table-body-td">
-                                {{ administrator.phone ? administrator.country_code + '' + administrator.phone : '' }}
+                                {{ administrator.phone ? (administrator.country_code || '') + administrator.phone : '' }}
                             </td>
                             <td class="db-table-body-td ">
                                 <span :class="statusClass(administrator.status)">

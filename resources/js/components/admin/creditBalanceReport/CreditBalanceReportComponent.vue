@@ -86,7 +86,7 @@
                                 <td class="db-table-body-td">{{ user.name }}</td>
                                 <td class="db-table-body-td">{{ user.email }}</td>
                                 <!-- [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT -->
-                                <td class="db-table-body-td">{{ safePhone(user.phone) ? user.country_code + '' + safePhone(user.phone) : '' }}
+                                <td class="db-table-body-td">{{ safePhone(user.phone) ? (user.country_code || '') + safePhone(user.phone) : '' }}
                                 </td>
                                 <td class="db-table-body-td">{{ user.balance }}</td>
 
