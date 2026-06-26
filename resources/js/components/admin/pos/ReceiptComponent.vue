@@ -518,9 +518,14 @@ export default {
             const decimal = Number(this.$store?.getters?.['setting/lists']?.site_digit_after_decimal_point ?? 2);
             const symbol = String(this.$store?.getters?.['setting/lists']?.site_default_currency_symbol ?? '€');
             const position = Number(this.$store?.getters?.['setting/lists']?.site_currency_position ?? 0);
-            const formatted = n.toFixed(Number.isFinite(decimal) ? decimal : 2);
-            // 0 = LEFT (per currencyPositionEnum), 1 = RIGHT
-            return position === 0 ? `${symbol}${formatted}` : `${formatted}${symbol}`;
+            // [HEAL-money-fr 2026-06-26] FR (ADR-007): comma decimal + NBSP
+            // (U+00A0) between amount and symbol. Was "€7.90"/"7.90€" (US point,
+            // glued symbol). Aligns the addon/extra upcharge with the rest of the
+            // ticket (backend *_currency_price fields already render FR).
+            const formatted = n.toFixed(Number.isFinite(decimal) ? decimal : 2).replace('.', ',');
+            const NBSP = ' ';
+            // 0 = LEFT (symbol first), else RIGHT (symbol after) — ticket-local convention
+            return position === 0 ? `${symbol}${NBSP}${formatted}` : `${formatted}${NBSP}${symbol}`;
         },
         kitchenInstructionText: function (item) {
             // [PRINT-SAGA 2026-06-25] Le ticket CUISINE imprimé rend déjà la compo

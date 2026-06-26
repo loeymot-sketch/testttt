@@ -310,7 +310,9 @@ export default {
                         : null;
                     const eur = Number(data.discount_eur) || 0;
                     this.successMessage = this.$t('pos.loyalty.redeem.success', {
-                        amount: `${eur.toFixed(2)} €`,
+                        // [HEAL-money-fr 2026-06-26] FR comma decimal — twin of the
+                        // live-preview render (template L113). Was "1.00 €".
+                        amount: `${eur.toFixed(2).replace('.', ',')} €`,
                     });
                     this.lastResponse = data;
                     this.$emit('applied', data);

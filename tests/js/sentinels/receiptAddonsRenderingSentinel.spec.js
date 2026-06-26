@@ -186,8 +186,12 @@ describe('G2-HEAL-03 / G5-F-002 P1 — Receipt addons rendering', () => {
             const html = wrapper.html();
             // line_total = 1.20 must appear; catalog_price = 3.00 must NOT.
             // Use the formatted currency strings (right-position, € suffix).
-            expect(html).toMatch(/\+1\.20\s*€/);
-            expect(html).toMatch(/\+1\.80\s*€/);
+            // [HEAL-money-fr 2026-06-26] FR render: "+1,20 €" / "+1,80 €" (comma
+            // decimal + NBSP U+00A0 before €). Was the US "+1.20€" the fix replaced.
+            // wrapper.html() serializes the NBSP as the &nbsp; entity, so the
+            // separator class tolerates both that entity and a literal space.
+            expect(html).toMatch(/\+1,20(?:&nbsp;|\s)*€/);
+            expect(html).toMatch(/\+1,80(?:&nbsp;|\s)*€/);
             // 3.00 (catalog) should NEVER be rendered for these addon lines.
             // Note: the order total (11,00 €) is fine — we test the addon string
             // shape specifically.

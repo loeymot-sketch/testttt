@@ -34,7 +34,7 @@
                             <span class="capitalize">{{ terminal.gateway_type }}</span>
                         </td>
                         <td class="db-table-body-td">{{ Number(terminal.fee_percent).toFixed(3) }}%</td>
-                        <td class="db-table-body-td">{{ Number(terminal.fee_fixed).toFixed(2) }}</td>
+                        <td class="db-table-body-td">{{ Number(terminal.fee_fixed).toFixed(2).replace('.', ',') }}&nbsp;€</td>
                         <td class="db-table-body-td">{{ terminal.serial_number || '-' }}</td>
                         <td class="db-table-body-td">
                             <span :class="terminal.status === 1 ? 'text-green-600' : 'text-gray-400'">

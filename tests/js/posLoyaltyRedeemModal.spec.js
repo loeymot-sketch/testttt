@@ -114,7 +114,10 @@ describe('PosLoyaltyRedeemModal', () => {
 
         const preview = wrapper.find('[data-testid="pos-loyalty-redeem-preview"]');
         expect(preview.exists()).toBe(true);
-        expect(preview.text()).toMatch(/2\.50/);
+        // [HEAL-money-fr 2026-06-26] FR (ADR-007): preview renders "2,50" (comma
+        // decimal). This assertion previously pinned the stale US "2.50" while the
+        // template (L113) already rendered FR — a pre-existing companion-spec drift.
+        expect(preview.text()).toMatch(/2,50/);
     });
 
     it('shows the rate hint with the rate prop value', async () => {

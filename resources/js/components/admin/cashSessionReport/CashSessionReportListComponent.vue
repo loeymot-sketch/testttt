@@ -143,6 +143,7 @@
 
 <script>
 import axios from 'axios';
+import { formatPrice } from '../../../helpers/formatPrice';
 
 export default {
     name: 'CashSessionReportListComponent',
@@ -245,8 +246,10 @@ export default {
             }
         },
         formatMoney(v) {
-            const n = Number(v || 0);
-            return n.toFixed(2);
+            // [HEAL-money-fr 2026-06-26] FR (ADR-007): render "7,90 €" (comma
+            // decimal, NBSP U+00A0 before €) via the canonical admin renderer.
+            // Was "7.90" (US point, no symbol) on the cash reconciliation report.
+            return formatPrice(v);
         },
         varianceClass(v) {
             if (v === null || v === undefined) return '';
