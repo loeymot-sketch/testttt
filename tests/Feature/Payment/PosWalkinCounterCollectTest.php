@@ -163,4 +163,43 @@ class PosWalkinCounterCollectTest extends TestCase
         $this->assertNull($unpaid->fresh()->fiscal_sequence_no);
         $this->assertNotSame(PaymentStatus::PAID, (int) $unpaid->fresh()->payment_status);
     }
+
+    /**
+     * [TERMINAL-COLLECT-GUARD 2026-06-26 / P2] An order moved to a terminal status
+     * (CANCELED/REJECTED/RETURNED) via the generic OrderService::changeStatus path keeps
+     * payment_status=PENDING_COUNTER, so it lingers in the counter-collect queue. It must
+     * NOT be collectable — collecting would charge the customer + consume a fiscal_sequence_no
+     * for an order the kitchen treats as void.
+     *
+     * @dataProvider terminalStatuses
+     */
+    public function test_terminal_status_order_cannot_be_counter_collected(int $terminalStatus): void
+    {
+        Queue::fake();
+        [$branch, $operator] = $this->branchOperator();
+        $order = $this->posDeferredOrder($branch, ['status' => $terminalStatus, 'total' => 9.00]);
+
+        $this->assertNull($order->fiscal_sequence_no);
+
+        $this->actingAs($operator, 'sanctum')
+            ->postJson("/api/admin/pos/counter-collect/{$order->id}/confirm", [
+                'mode' => PosPaymentMethod::CASH,
+                'received' => 9.00,
+            ])
+            ->assertStatus(422);
+
+        $fresh = $order->fresh();
+        $this->assertSame(PaymentStatus::PENDING_COUNTER, (int) $fresh->payment_status, 'terminal order must NOT become PAID');
+        $this->assertNull($fresh->fiscal_sequence_no, 'no fiscal_sequence_no may be consumed for a terminal order');
+        $this->assertSame($terminalStatus, (int) $fresh->status, 'status must stay terminal');
+    }
+
+    public static function terminalStatuses(): array
+    {
+        return [
+            'CANCELED' => [OrderStatus::CANCELED],
+            'REJECTED' => [OrderStatus::REJECTED],
+            'RETURNED' => [OrderStatus::RETURNED],
+        ];
+    }
 }

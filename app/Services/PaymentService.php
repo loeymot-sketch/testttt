@@ -312,6 +312,20 @@ class PaymentService
             $this->assertCounterDeferredOrder($locked);
             PaymentStateMachine::assertCanTransition((int) $locked->payment_status, PaymentStatus::PAID);
 
+            // [TERMINAL-COLLECT-GUARD 2026-06-26 / P2] An order moved to a terminal
+            // status (CANCELED/REJECTED/RETURNED) via the GENERIC OrderService::changeStatus
+            // path keeps payment_status=PENDING_COUNTER (that path only touches `status`),
+            // so it lingers in the counter-collect queue and would otherwise be collectable
+            // here — charging the customer + consuming a fiscal_sequence_no for an order the
+            // kitchen treats as void. confirmCounterPayment never read `status`; close the
+            // seam. (The signed Z already excludes terminal statuses — ZReportService:350-356 —
+            // so this is operational/cash robustness, not a Z-pollution fix.)
+            if (in_array((int) $locked->status, [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED], true)) {
+                throw ValidationException::withMessages([
+                    'order' => 'Cette commande est annulée ou retournée : elle ne peut pas être encaissée.',
+                ]);
+            }
+
             if ($mode === PosPaymentMethod::CASH && $received !== null && (float) $received < (float) $locked->total) {
                 throw ValidationException::withMessages([
                     'received' => 'Le montant recu est inferieur au total a encaisser.',
