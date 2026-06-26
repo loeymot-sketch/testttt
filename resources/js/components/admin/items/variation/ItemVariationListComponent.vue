@@ -21,7 +21,7 @@
                 <tbody class="db-table-body" v-if="variation.children">
                     <tr class="db-table-body-tr" v-for="child in variation.children" :key="child" :data-testid="`admin-variation-row-${child.id}`">
                         <td class="db-table-body-td overflow-hidden text-wrap">{{ child.name }}</td>
-                        <td class="db-table-body-td">{{ child.flat_price }}</td>
+                        <td class="db-table-body-td">{{ child.currency_price }}</td>
                         <td class="db-table-body-td">
                             <span v-if="!child.visible_on" class="text-xs text-green-600 font-medium">Toutes</span>
                             <span v-else class="text-xs text-blue-600 font-medium">{{ child.visible_on.join(', ') }}</span>

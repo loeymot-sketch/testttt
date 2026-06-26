@@ -23,7 +23,7 @@
                         <h5 class="font-semibold text-red-700">Ticket #{{ alert.queue_number }} ({{ alert.order_serial_no }})</h5>
                         <p class="text-sm text-red-600 font-medium mt-1">
                             <i class="lab lab-time w-4 h-4 mr-1"></i>
-                            En attente depuis {{ alert.time_preparing }} minutes
+                            En attente depuis {{ humanizeWait(alert.time_preparing) }}
                         </p>
                     </div>
                 </div>
@@ -54,6 +54,18 @@ export default {
             this.$store.dispatch('dashboard/slaAlerts').then(res => {
                 this.alerts = res.data.data;
             });
+        },
+        // [FR-DURÉE 2026-06-26] Humanise l'attente : « 22922 minutes » (brut, ~16 j sur
+        // des commandes bloquées anciennes) → « 6 j 4 h » / « 2 h 15 min » / « 18 min ».
+        humanizeWait(minutes) {
+            const m = Math.max(0, Math.round(Number(minutes) || 0));
+            if (m < 60) return `${m} min`;
+            if (m < 1440) {
+                const h = Math.floor(m / 60), rm = m % 60;
+                return rm ? `${h} h ${rm} min` : `${h} h`;
+            }
+            const d = Math.floor(m / 1440), rh = Math.floor((m % 1440) / 60);
+            return rh ? `${d} j ${rh} h` : `${d} j`;
         }
     }
 }

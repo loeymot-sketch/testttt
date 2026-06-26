@@ -426,6 +426,13 @@
         "setup": "Configuration"
     },
     "label": {
+        "monday_short": "Lun",
+        "tuesday_short": "Mar",
+        "wednesday_short": "Mer",
+        "thursday_short": "Jeu",
+        "friday_short": "Ven",
+        "saturday_short": "Sam",
+        "sunday_short": "Dim",
         "encaisser": "Encaisser",
         "encaisser_queue_subtitle": "Commandes en attente d’encaissement",
         "encaisser_queue_empty": "Aucune commande à encaisser",
