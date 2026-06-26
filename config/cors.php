@@ -19,7 +19,12 @@ return [
         'http://localhost:8011',
         'http://127.0.0.1:8011',
     ]))),
-    'allowed_origins_patterns' => [],
+    'allowed_origins_patterns' => [
+        // [WEB-WIREUP 2026-06-26] Loopback dev origins (any port) — the standalone web / e2e
+        // server runs on assorted local ports. Safe: only matches localhost/127.0.0.1 (same box),
+        // never a remote origin; production uses the explicit APP_URL / FRONTEND_WEB_DOMAIN above.
+        '#^http://(localhost|127\.0\.0\.1):\d{2,5}$#',
+    ],
     'allowed_headers' => ['*'],
     'exposed_headers' => [],
     'max_age' => 86400,
