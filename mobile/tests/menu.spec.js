@@ -102,8 +102,11 @@ function verify(label, file) {
 
   // --- BOISSONS ---
   const drinks = items.filter(i => i.category_id === 10);
-  check(drinks.filter(d => d.slug !== 'eau-plate').every(d => d.price === 1.90), 'Canettes 1,90€');
+  // Canettes 33cl = 1,90€ ; Eau 50cl = 1,00€ ; Capri-Sun 20cl = 1,50€
+  // (canon — confirmé live kiosk + seeder 2026-06-26 ; Capri n'est PAS une canette 1,90).
+  check(drinks.filter(d => d.slug !== 'eau-plate' && d.slug !== 'capri-sun').every(d => d.price === 1.90), 'Canettes 1,90€');
   check(byName('Eau Plate 50cl') && byName('Eau Plate 50cl').price === 1.00, 'Eau 1,00€ (inchangée)');
+  check(byName('Capri-Sun') && byName('Capri-Sun').price === 1.50, 'Capri-Sun 1,50€ (20cl, ≠ canette)');
 
   // --- MENU ENFANT (2 SKU @ 4,90) ---
   const enfant = items.filter(i => i.category_id === 11);

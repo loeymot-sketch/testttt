@@ -101,7 +101,7 @@ function computeActiveSteps(item, selections) {
       if (item.has_menu_addon) steps.push(STEP.MENU);
       break;
     case 'snacking':
-      // Wings + tenders (cat 8/313). Sauce générique 15 sauces (U2 owner: pas BBQ/Nashville).
+      // Wings + tenders (cat 8/313). Sauce générique 12 sauces (U2 owner: pas BBQ/Nashville).
       if (item.has_sauce) steps.push(STEP.SAUCE);
       if (item.has_menu_addon) steps.push(STEP.MENU);
       if (item.has_supplements !== false) steps.push(STEP.SUPPLEMENTS);
@@ -769,7 +769,7 @@ function ScreenStepRecap({ item, selections, setSelections, headingRef }) {
     : null;
   const fritesSauceLabels = (selections.fritesSauceIds || []).map(id => (lcMenu.sauces.find(s => s.id === id) || {}).name).filter(Boolean);
   // [MOBILE-REALIGNMENT 2026-05-16] Show locked sauce for items with sauce_locked
-  // (e.g. Sandwich Cayenne, Big Cayenne, Galette Cayenne → "Sauce Cayenne maison incluse").
+  // (e.g. Cayenne → "Sauce fromagère maison (incluse)").
   const sauceLockedLabel = item.sauce_locked ? `Sauce ${item.sauce_locked} maison (incluse)` : null;
   // [MOBILE-REALIGNMENT 2026-05-16] Show fixed meat for bols (item.bol_meat_fixed)
   const bolMeatLabel = item.bol_meat_fixed || null;

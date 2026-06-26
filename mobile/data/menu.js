@@ -426,7 +426,7 @@
     mkItem(1005, 'oasis',       10, 'Oasis Tropical 33cl', 1.90, 'Oasis Tropical',       { has_sauce: false, has_crudites: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🌴' }),
     mkItem(1006, 'orangina',    10, 'Orangina 33cl',       1.90, 'Orangina',             { has_sauce: false, has_crudites: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🍊' }),
     mkItem(1007, 'eau-plate',   10, 'Eau Plate 50cl',      1.00, 'Eau minérale',         { has_sauce: false, has_crudites: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '💧' }),
-    mkItem(1008, 'capri-sun',   10, 'Capri-Sun',           1.90, 'Capri-Sun 20cl',       { has_sauce: false, has_crudites: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🧃' }),
+    mkItem(1008, 'capri-sun',   10, 'Capri-Sun',           1.50, 'Capri-Sun 20cl',       { has_sauce: false, has_crudites: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🧃' }),
   ];
 
   // ====== MENU ENFANT (cat 11) — seeder : 2 SKU @ 4,90€ (Nuggets / Burger), frites + Capri-Sun inclus. ======
@@ -440,7 +440,7 @@
   ];
 
   // -------------------------------------------------------------------------
-  // ALL ITEMS ([MENU-CANON 2026-06-26] — 25 produits sur 9 catégories)
+  // ALL ITEMS ([MENU-CANON 2026-06-26] — 31 produits sur 9 catégories)
   // -------------------------------------------------------------------------
   const ITEMS = [
     ...SANDWICHS, ...GALETTE, ...BURGERS, ...TACOS,

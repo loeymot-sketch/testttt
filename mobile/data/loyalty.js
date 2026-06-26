@@ -120,7 +120,7 @@
     { id: 4, name: '−5 € sur ta commande',       points_cost: 500,  type: 'discount',          payload: { amount: 5.00 },                       icon: '🎁' },
     { id: 5, name: 'Burger gratuit (au choix)',  points_cost: 1000, type: 'free_item',         payload: { category_id: 4 },                     icon: '🍔' },
     { id: 6, name: 'Tacos M offert',             points_cost: 1500, type: 'free_item',         payload: { item_id: 501 },                       icon: '🌮' },
-    { id: 7, name: 'Big Cayenne −50 %',          points_cost: 2000, type: 'percent_discount',  payload: { item_id: 102, percent: 50 },          icon: '🌶️' },
+    { id: 7, name: 'Cayenne −50 %',              points_cost: 2000, type: 'percent_discount',  payload: { item_id: 101, percent: 50 },          icon: '🌶️' },
     { id: 8, name: 'Repas complet à 1 €',        points_cost: 3000, type: 'flat_price',        payload: { amount: 1.00 },                       icon: '🎉' },
   ]);
 
@@ -147,12 +147,12 @@
   // Removed fictional refs: Box Nashville, Wrap Poulet, Smash Cheese, Le Gourmet,
   // "Box Nashville −50%".
   const DEFAULT_HISTORY = [
-    { id: 1001, date: '2026-05-08', type: 'earn',       points: +30,  description: 'Big Cayenne · Tacos L · Bowl Frites',  order_id: 'C-1234', source_surface: 'mobile' },
+    { id: 1001, date: '2026-05-08', type: 'earn',       points: +30,  description: 'Suprême · Tacos L · Bol Riz',          order_id: 'C-1234', source_surface: 'mobile' },
     { id: 1002, date: '2026-05-05', type: 'earn',       points: +13,  description: 'Sandwich Cayenne · Grande Frites',     order_id: 'C-1212', source_surface: 'mobile' },
-    { id: 1003, date: '2026-05-02', type: 'redeem',     points: -1000, description: 'Burger gratuit (Big Chicken)',         order_id: null,     source_surface: 'mobile', reward_id: 5 },
-    { id: 1004, date: '2026-04-30', type: 'earn',       points: +17,  description: 'Galette Cayenne · Bowl Riz',           order_id: 'C-1190', source_surface: 'kiosk' },
-    { id: 1005, date: '2026-04-28', type: 'earn',       points: +15,  description: 'Sandwich Classique',                   order_id: 'C-1180', source_surface: 'pos' },
-    { id: 1006, date: '2026-04-24', type: 'earn',       points: +9,   description: 'Sandwich Classique · Coca-Cola',       order_id: 'C-1142', source_surface: 'kiosk' },
+    { id: 1003, date: '2026-05-02', type: 'redeem',     points: -1000, description: 'Burger gratuit (Chicken Burger)',      order_id: null,     source_surface: 'mobile', reward_id: 5 },
+    { id: 1004, date: '2026-04-30', type: 'earn',       points: +17,  description: 'Galette Cayenne · Bol Riz',            order_id: 'C-1190', source_surface: 'kiosk' },
+    { id: 1005, date: '2026-04-28', type: 'earn',       points: +15,  description: 'Suprême',                              order_id: 'C-1180', source_surface: 'pos' },
+    { id: 1006, date: '2026-04-24', type: 'earn',       points: +9,   description: 'Cayenne · Coca-Cola',                  order_id: 'C-1142', source_surface: 'kiosk' },
     { id: 1007, date: '2026-04-20', type: 'manual_add', points: +25,  description: 'Bienvenue · Bonus inscription',        order_id: null,     source_surface: 'mobile_welcome' },
   ];
 

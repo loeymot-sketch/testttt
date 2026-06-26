@@ -106,7 +106,7 @@ function ScreenHome({ go, name = 'Ikyes' }) {
         <div style={{ padding: '20px 20px 0' }}>
           {(() => {
             // Featured card pointing to a real Le Cayenne signature item.
-            const featured = window.LC.menu.findItem('tacos-xxl') || window.LC.menu.items[0];
+            const featured = window.LC.menu.findItem('tacos-l') || window.LC.menu.items[0];
             return (
               <div onClick={() => go('item', featured.slug)} style={{ borderRadius: 24, overflow: 'hidden', background: 'var(--yellow)', position: 'relative', height: 220, display: 'flex', cursor: 'pointer', boxShadow: '6px 6px 0 var(--ink)' }}>
                 <div style={{ flex: 1, padding: 20, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
@@ -193,7 +193,7 @@ function ScreenHome({ go, name = 'Ikyes' }) {
           </div>
           <div style={{ width: 32, height: 4, background: 'var(--orange)', marginBottom: 12 }}/>
           <h3 className="lc-display" style={{ margin: 0, fontSize: 26, color: 'var(--yellow)' }}>LE CAYENNE<br/>HÉNIN-BEAUMONT</h3>
-          <p style={{ margin: '12px 0 0', fontSize: 13, lineHeight: 1.5, color: 'rgba(255,255,255,0.75)' }}>Abdoullah en cuisine, fait maison chaque jour à Hénin-Beaumont. Sandwich Cayenne signature, bols gourmands, tacos M & L — du peuple, pour le peuple.</p>
+          <p style={{ margin: '12px 0 0', fontSize: 13, lineHeight: 1.5, color: 'rgba(255,255,255,0.75)' }}>Abdoullah en cuisine, fait maison chaque jour à Hénin-Beaumont. Sandwich Cayenne signature, bols Frites/Riz, tacos M & L — du peuple, pour le peuple.</p>
           <div style={{ marginTop: 18, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.12)', display: 'flex', justifyContent: 'space-between', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
             <span>Ouvert 11h — 00h</span>
             <span style={{ color: 'var(--orange)' }}>06 51 30 XX XX</span>
