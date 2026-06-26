@@ -1,12 +1,12 @@
 /**
  * Zoom automatique de la page CAISSE (POS).
  *
- * L'owner trouve la caisse trop chargée à 100 % (catégories + produits + panier
- * + encaissement ne tiennent pas lisiblement sur un écran). À la main il applique
- * un zoom navigateur Chrome ~67 % (Ctrl+-) et tout devient visible sur une seule
- * page. Ce helper réplique ce zoom AUTOMATIQUEMENT : appliqué au montage du
- * PosComponent, retiré au démontage → scopé à la caisse uniquement (n'affecte
- * PAS les autres pages admin).
+ * L'owner veut un peu plus de contenu visible (catégories + produits + panier +
+ * encaissement) SANS que tout devienne minuscule. Un zoom 0.67 (= Chrome 67 %)
+ * testé sur l'écran 16" réel s'est avéré TROP petit / étroit → on retient un zoom
+ * léger 0.9 (≈ taille normale, juste un peu compact). Ce helper l'applique
+ * AUTOMATIQUEMENT : appliqué au montage du PosComponent, retiré au démontage →
+ * scopé à la caisse uniquement (n'affecte PAS les autres pages admin).
  *
  * Zone NON-frozen : on n'édite AUCUN fichier frozen. Le wizard Vanilla frozen
  * (pos-wizard.js/.css) n'est pas modifié — il hérite simplement du zoom du body,
@@ -14,10 +14,11 @@
  *
  * `zoom` est supporté nativement par Chrome/Edge/Safari (la caisse tourne sous
  * Chrome). Valeur surchargeable EN LIVE sans redéploiement via la console :
- *   localStorage.setItem('caisse_zoom', '0.7')   // puis recharger la caisse
+ *   localStorage.setItem('caisse_zoom', '0.85')  // puis recharger la caisse
+ * Bornes acceptées : 0.3 → 1 (1 = taille 100 % normale).
  */
 
-export const CAISSE_ZOOM = 0.67;
+export const CAISSE_ZOOM = 0.9;
 
 /**
  * Résout le zoom à appliquer : override localStorage `caisse_zoom` s'il est

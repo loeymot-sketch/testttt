@@ -25,15 +25,15 @@ function fakeStorage(map = {}) {
 }
 
 describe('caisseZoom', () => {
-    it('CAISSE_ZOOM par défaut = 0.67 (valeur testée par l\'owner = Chrome 67%)', () => {
-        expect(CAISSE_ZOOM).toBe(0.67);
+    it('CAISSE_ZOOM par défaut = 0.9 (16" lisible — Chrome 67% était trop petit/étroit)', () => {
+        expect(CAISSE_ZOOM).toBe(0.9);
     });
 
-    it('applyCaisseZoom écrit body.style.zoom = "0.67" + l\'attribut data', () => {
+    it('applyCaisseZoom écrit body.style.zoom = "0.9" + l\'attribut data', () => {
         const d = fakeDoc();
         applyCaisseZoom(d);
-        expect(d.body.style.zoom).toBe('0.67');
-        expect(d.body._attrs['data-caisse-zoom']).toBe('0.67');
+        expect(d.body.style.zoom).toBe('0.9');
+        expect(d.body._attrs['data-caisse-zoom']).toBe('0.9');
     });
 
     it('applyCaisseZoom accepte une valeur explicite', () => {
