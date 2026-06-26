@@ -335,30 +335,52 @@ class OrderRequest extends FormRequest
             && in_array((int) $this->input('order_type'), [OrderType::KIOSK, OrderType::TAKEAWAY], true));
     }
 
+    /**
+     * [WEB-WIREUP 2026-06-26] Memoised resolution of the KioskMachine bound to the
+     * caller's token. A machine exists ONLY for physical kiosk tokens; web/app guest
+     * tokens (guest-signup) carry the kiosk:order ability too but have no machine.
+     */
+    private ?bool $kioskMachineResolved = null;
+    private ?KioskMachine $kioskMachineCache = null;
+
     private function kioskMachineForToken(): ?KioskMachine
     {
+        if ($this->kioskMachineResolved === true) {
+            return $this->kioskMachineCache;
+        }
+        $this->kioskMachineResolved = true;
+        $this->kioskMachineCache = null;
+
         $user = $this->user('sanctum');
-        if (! $user || ! $this->isKioskOrderToken()) {
+        if (! $user) {
+            return null;
+        }
+        $token = $user->currentAccessToken();
+        if (! $token || $token instanceof TransientToken) {
+            return null;
+        }
+        if (! $user->tokenCan('kiosk:order')) {
             return null;
         }
 
-        return KioskMachine::query()
+        return $this->kioskMachineCache = KioskMachine::query()
             ->where('user_id', (int) $user->id)
             ->first();
     }
 
+    /**
+     * [WEB-WIREUP 2026-06-26] A "kiosk order token" = a PHYSICAL kiosk machine token:
+     * kiosk:order ability AND a registered KioskMachine bound to the token's user.
+     *
+     * Web/app guest tokens (guest-signup) also carry kiosk:order but have NO machine →
+     * they are WEB orders: branch_id is taken from the validated request, quote_token is
+     * OPTIONAL (PricingService recomputes the price server-side = price SSOT preserved),
+     * while ability scoping, idempotency, and variation/constraint validation still apply.
+     * The physical-kiosk machine flow (quote_token + signature required, branch from
+     * machine) is UNCHANGED for callers that own a KioskMachine.
+     */
     private function isKioskOrderToken(): bool
     {
-        $user = $this->user('sanctum');
-        if (! $user) {
-            return false;
-        }
-
-        $token = $user->currentAccessToken();
-        if (! $token || $token instanceof TransientToken) {
-            return false;
-        }
-
-        return (bool) $user->tokenCan('kiosk:order');
+        return $this->kioskMachineForToken() !== null;
     }
 }

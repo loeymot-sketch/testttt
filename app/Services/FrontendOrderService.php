@@ -145,6 +145,19 @@ class FrontendOrderService
         $kioskMachine = \App\Models\KioskMachine::where('user_id', Auth::id())->first();
         $lockBranchId = (int) ($kioskMachine?->branch_id ?? Auth::user()?->branch_id ?? 0);
         if ($lockBranchId <= 0) {
+            // [WEB-WIREUP 2026-06-26] Web/app guest tokens carry the kiosk:order ability but
+            // have no KioskMachine and a guest branch_id of 0. Fall back to the validated
+            // request branch_id (OrderRequest requires + validates it for non-kiosk orders).
+            // Must reference a real branch so the idempotency namespace stays branch-scoped
+            // and we never create against a bogus/cross-branch context.
+            $requestBranchId = (int) ($request->input('branch_id') ?? 0);
+            // Raw existence check — bypass Eloquent global scopes (Branch carries active/
+            // soft-delete scopes whose columns may not exist in every deployment schema).
+            if ($requestBranchId > 0 && DB::table('branches')->where('id', $requestBranchId)->exists()) {
+                $lockBranchId = $requestBranchId;
+            }
+        }
+        if ($lockBranchId <= 0) {
             throw new \Symfony\Component\HttpKernel\Exception\HttpException(
                 422,
                 'Order request has no resolvable branch context (kiosk machine missing or user has no branch).'

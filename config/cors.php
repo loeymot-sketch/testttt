@@ -12,6 +12,12 @@ return [
         // passes CORS without depending on the operator aligning APP_URL with the served origin.
         'http://localhost:8000',
         'http://127.0.0.1:8000',
+        // [WEB-WIREUP 2026-06-26] Standalone customer web (React CDN, no build) served on :8011,
+        // calls the API cross-origin with Bearer token + X-API-Key (no cookies). FRONTEND_WEB_DOMAIN
+        // overrides for prod; the localhost variants cover local dev / e2e.
+        env('FRONTEND_WEB_DOMAIN'),
+        'http://localhost:8011',
+        'http://127.0.0.1:8011',
     ]))),
     'allowed_origins_patterns' => [],
     'allowed_headers' => ['*'],
