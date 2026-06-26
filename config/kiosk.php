@@ -54,6 +54,22 @@ $localeSwitchAllowed = filter_var(env('KIOSK_LOCALE_SWITCH_ALLOWED', false), FIL
 $paymentRouteAllToCounter = filter_var(env('KIOSK_PAYMENT_ROUTE_ALL_TO_COUNTER', true), FILTER_VALIDATE_BOOLEAN);
 
 /*
+| [W2 audit heal 2026-06-26] Kiosk promo/loyalty discount UI — DEDICATED gate.
+|
+| The borne cart exposed a promo-code + loyalty-redeem block that promised a
+| "-X €" the backend never applies: the kiosk only sends `kiosk_promo_code`
+| metadata, never a `coupon_id`, so the order is created at full price while
+| the cart UI shows a discount → the customer is charged more than the cart
+| promised. The shared `pos.manual_discount_enabled` flag CANNOT be flipped
+| off to hide it (it also drives the legitimate POS manual discount + the web
+| CheckoutComponent). This dedicated flag (default FALSE = hidden) gates the
+| kiosk promo + loyalty entries ONLY, without weakening POS or checkout.
+| Flip to true via KIOSK_PROMO_ENABLED once the kiosk coupon path is genuinely
+| wired end-to-end (coupon_id sent + backend applies it).
+*/
+$promoEnabled = filter_var(env('KIOSK_PROMO_ENABLED', false), FILTER_VALIDATE_BOOLEAN);
+
+/*
 | [TRAP-2 2026-06-04] Stale counter-collect TTL (minutes).
 |
 | A walk-away kiosk order auto-accepts to status=ACCEPT + PENDING_COUNTER and
@@ -159,6 +175,8 @@ if ($requireForm) {
         'confirmation_auto_return_seconds' => (int) env('KIOSK_CONFIRMATION_AUTO_RETURN_SECONDS', 30),
         // [SUPERVISOR WAVE C Z1 2026-05-28] Plan B: route ALL kiosk payments to counter (no TPE at kiosk).
         'payment_route_all_to_counter' => $paymentRouteAllToCounter,
+        // [W2 audit heal 2026-06-26] Dedicated kiosk promo/loyalty UI gate (default FALSE) — see top of file.
+        'promo_enabled' => $promoEnabled,
         // [TRAP-2 2026-06-04] Stale counter-collect cleanup TTL (minutes) — see top of file.
         'stale_collect_ttl_minutes' => $staleCollectTtlMinutes,
         // [Sprint H1 K-003 2026-05-17] Externalized FRITES_INCLUDED_CATS — see top of file.
@@ -255,6 +273,8 @@ return [
     // breaking env override on production code path (RED-08 P0 caught
     // by adversarial review during Wave C dispatch).
     'payment_route_all_to_counter' => $paymentRouteAllToCounter,
+    // [W2 audit heal 2026-06-26] Dedicated kiosk promo/loyalty UI gate (default FALSE) — see top of file.
+    'promo_enabled' => $promoEnabled,
     // [TRAP-2 2026-06-04] Stale counter-collect cleanup TTL (minutes) — see top of file.
     'stale_collect_ttl_minutes' => $staleCollectTtlMinutes,
 ];

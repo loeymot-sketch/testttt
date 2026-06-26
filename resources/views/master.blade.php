@@ -172,6 +172,13 @@
             // hits a raw 422 dead-end (the backend gates the order). When F1 is fixed
             // and the flag flipped on, the entries reappear automatically.
             discountsEnabled: @json((bool) config('pos.manual_discount_enabled', false)),
+            // [W2 audit heal 2026-06-26] DEDICATED kiosk promo/loyalty gate (default FALSE).
+            // The borne promo-code + loyalty-redeem block promised a discount the backend
+            // never applies (kiosk sends only kiosk_promo_code metadata, never a coupon_id →
+            // cart showed "-X €" but the customer was charged full price). This flag is
+            // INDEPENDENT of the shared discountsEnabled flag so POS manual discount + web
+            // checkout stay untouched. Default FALSE hides the kiosk entries. See config/kiosk.php.
+            kioskPromoEnabled: @json((bool) config('kiosk.promo_enabled', false)),
             // Borne : une catégorie « Nos Sandwichs » en base, deux lignes sidebar (signatures / froid)
             kioskSandwichSplit: @json(config('kiosk.sandwich_split')),
             maxItemQty: @json((int) config('kiosk.max_item_qty', 20)),

@@ -81,7 +81,11 @@ describe('KioskCartComponent restyle', () => {
         // discretionary discounts are enabled (window.foodkingConfig.discountsEnabled).
         // Set the flag so the structural assertions hold; the OFF (hidden) behaviour is
         // the V1 dormancy default verified at the backend gate level.
-        global.window.foodkingConfig = { discountsEnabled: true };
+        // [W2 audit heal 2026-06-26] The promo/loyalty entries are now ALSO behind a
+        // dedicated kiosk gate (window.foodkingConfig.kioskPromoEnabled, default FALSE).
+        // Enable it here so the structural assertions still find the elements; the
+        // default-hidden behaviour is covered by tests/js/kioskCartPromoGate.spec.js.
+        global.window.foodkingConfig = { discountsEnabled: true, kioskPromoEnabled: true };
     });
 
     it('empty state : testid + role=status + CTA present', () => {

@@ -272,7 +272,7 @@
 
       <!-- Kiosk Phase 9.1.6 — Champ code promo (SSOT lecture-seule, revalidé
            serveur à /order). Affiche success / error inline. -->
-      <div v-if="discountsEnabled" class="kiosk-cart-promo" data-testid="kiosk-cart-promo">
+      <div v-if="discountsEnabled && kioskPromoEnabled" class="kiosk-cart-promo" data-testid="kiosk-cart-promo">
         <div v-if="!promoCode" class="kiosk-cart-promo-form">
           <label for="kiosk-cart-promo-input" class="kiosk-cart-promo-label">
             {{ $t('kiosk.promo.label') }}
@@ -324,8 +324,10 @@
         </div>
       </div>
 
-      <!-- Bouton fidélité — masqué quand les remises sont désactivées (V1 F1-dormancy) -->
-      <button v-if="discountsEnabled" type="button"
+      <!-- Bouton fidélité — masqué quand les remises sont désactivées (V1 F1-dormancy)
+           ET derrière le gate dédié borne kioskPromoEnabled (W2 audit 2026-06-26 :
+           redeem fidélité = même promesse de remise non-appliquée que le code promo). -->
+      <button v-if="discountsEnabled && kioskPromoEnabled" type="button"
         class="kiosk-btn-loyalty"
         @click="$router.push({ name: 'kiosk.loyalty' })"
         data-testid="kiosk-cart-loyalty-btn"
@@ -444,6 +446,22 @@ export default {
     discountsEnabled() {
       return (typeof window !== 'undefined' && window.foodkingConfig)
         ? window.foodkingConfig.discountsEnabled === true
+        : false;
+    },
+    /**
+     * [W2 audit heal 2026-06-26] DEDICATED kiosk promo/loyalty gate. The shared
+     * discountsEnabled flag stays ON for the legitimate POS manual discount + web
+     * checkout, but on the BORNE the promo-code + loyalty-redeem block promised a
+     * "-X €" the backend never applies (kiosk sends only kiosk_promo_code metadata,
+     * never a coupon_id → cart lied, customer charged full price). This flag
+     * (window.foodkingConfig.kioskPromoEnabled, exposed by master.blade.php /
+     * config/kiosk.php) hides those entries on the kiosk ONLY. Defaults to FALSE so a
+     * missing/empty config stays safe (hidden = no lie). Combined with
+     * discountsEnabled at the v-if so neither flag alone re-exposes the dead-end.
+     */
+    kioskPromoEnabled() {
+      return (typeof window !== 'undefined' && window.foodkingConfig)
+        ? window.foodkingConfig.kioskPromoEnabled === true
         : false;
     },
     customerAllergenCodes() {
