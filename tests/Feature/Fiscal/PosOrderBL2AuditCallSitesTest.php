@@ -99,6 +99,14 @@ class PosOrderBL2AuditCallSitesTest extends TestCase
             'phone' => fake()->unique()->numerify('06########'),
         ]);
         $this->admin->assignRole('Admin');
+        // [REFUND-BYPASS-GUARD 2026-06-26] PosOrderController::changeStatus now
+        // gates RETURNED (22) on can('pos-refund') — mirroring the dedicated
+        // refund endpoint. In production Admin holds this via Permission::all()
+        // (RolePermissionTableSeeder:19); seedSpatieRoles()'s fixed list omits
+        // it, so grant it explicitly to the Admin actor so the returned-audit
+        // test exercises a LEGITIMATE refund (not the closed bypass).
+        \Spatie\Permission\Models\Permission::firstOrCreate(['name' => 'pos-refund', 'guard_name' => 'sanctum']);
+        $this->admin->givePermissionTo('pos-refund');
 
         // [Sprint 1B 2026-05-16] POS CASH path now requires an OPEN cash
         // drawer session — open one for the admin actor so the BL2 audit

@@ -68,12 +68,33 @@ export default {
         else e.preventDefault();
     },
 
+    // [HEAL-money-fr 2026-06-26] FR (ADR-007) money rendering. Previously this
+    // returned "0.00€" (US decimal point + glued symbol, no space) — visible on
+    // the POS cart Sous-total/Total. French typography requires a comma decimal,
+    // an NBSP (U+00A0) thousands separator, and an NBSP between the amount and the
+    // symbol. Aligned with the codebase canonical convention in
+    // helpers/posFormatCents.js ("1 234,56 €"). The number is built manually
+    // (not via Intl) so output is deterministic and never depends on the runtime's
+    // locale-data (and so the thousands separator is NBSP U+00A0, not Intl's narrow
+    // NBSP U+202F). Signature is unchanged: (amount, decimal, currency, position).
     currencyFormat(amount, decimal, currency, position) {
+        const NBSP = " ";
+        const digits = Number.isFinite(decimal) ? decimal : 0;
+        const num = parseFloat(amount);
+        const safe = Number.isFinite(num) ? num : 0;
+
+        // toFixed gives a US-formatted fixed-precision string; split into the
+        // integer + fractional parts so we can apply FR grouping/decimal.
+        const fixed = Math.abs(safe).toFixed(digits);
+        const sign = safe < 0 ? "-" : "";
+        const [whole, fraction] = fixed.split(".");
+        const groupedWhole = whole.replace(/\B(?=(\d{3})+(?!\d))/g, NBSP);
+        const number = sign + (fraction !== undefined ? `${groupedWhole},${fraction}` : groupedWhole);
+
         if (position === currencyPositionEnum.LEFT) {
-            return currency + parseFloat(amount).toFixed(decimal);
-        } else {
-            return parseFloat(amount).toFixed(decimal) + currency;
+            return `${currency}${NBSP}${number}`;
         }
+        return `${number}${NBSP}${currency}`;
     },
     logoutConfirmation: function () {
         return new VueSimpleAlert.confirm(

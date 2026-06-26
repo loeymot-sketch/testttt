@@ -1598,7 +1598,7 @@
             "subtitle": "Présentez votre numéro à un membre de l'équipe",
             "order_label": "Numéro de commande",
             "amount_label": "Montant à régler",
-            "help": "Paiement en espèces uniquement à la caisse.",
+            "help": "Réglez votre commande à la caisse : espèces, carte bleue ou titres-restaurant.",
             "cta_understood": "J'ai compris",
             "auto_redirect": "Retour à l'accueil dans {n} s"
         },

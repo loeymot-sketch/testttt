@@ -235,9 +235,20 @@ export default {
         // Backend feed still returns PREPARED orders until OSS/POS flips them
         // to DELIVERED, so this list naturally compacts as orders are picked up.
         recentlyServed() {
+            // [P3 2026-06-26 served-age-clamp] "Récemment servies" must show only the
+            // genuinely-recent. Advance PREPARED orders (is_advance_order) linger in the
+            // TODAY feed for days, so without an age cap they bubble to the top of this
+            // strip and render "il y a 9601 min" (~6.6j). Cap at 8h so the strip reflects
+            // real recent pickups; reads `now` reactively so pills age out live.
+            const maxAgeMs = 8 * 60 * 60 * 1000;
+            const nowTs = this.now || Date.parse(new Date().toISOString());
             const prepared = this.visibleOrders.filter((o) => {
                 const s = parseInt(o?.status ?? o?.rawStatus, 10);
-                return s === ORDER_STATUS.PREPARED;
+                if (s !== ORDER_STATUS.PREPARED) {
+                    return false;
+                }
+                const stamp = Date.parse(o?.updated_at || '') || 0;
+                return stamp > 0 && (nowTs - stamp) <= maxAgeMs;
             });
             prepared.sort((a, b) => {
                 const ta = Date.parse(a?.updated_at || '') || 0;

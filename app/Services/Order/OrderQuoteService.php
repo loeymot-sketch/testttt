@@ -66,6 +66,8 @@ class OrderQuoteService
         $items = $this->safeJsonDecode((string) $request->input('items', '[]'));
         $items = is_array($items) ? $items : [];
 
+        $this->assertVariationPresenceConstraints($items);
+
         $pricing = $this->calculatePricing($request, $surface, $branchId, $items, $actor);
         $this->assertManualDiscountAllowed($request, $surface, $pricing, $actor);
 
@@ -198,6 +200,84 @@ class OrderQuoteService
         }
 
         return $branchId;
+    }
+
+    /**
+     * [HEAL e2e all-systems 2026-06-26 / caisse r1] Quote↔store parity for
+     * REQUIRED variation attributes. The quote path runs through PricingService
+     * (frozen, whose root assertVariationConstraints early-returns over attrs not
+     * present in the payload), so a wholly-OMITTED required attribute (a Tacos
+     * with no meat/no sauce) was priced & accepted here while the STORE
+     * FormRequest rejected it in 422 — the preview lied. Re-using the same
+     * {@see MultiVariationConstraint} the store uses closes the gap on BOTH
+     * surfaces (pos & kiosk). Composer-profile items (published bols) are NOT
+     * affected: the rule only derives required attributes from legacy ACTIVE
+     * item_variations, and the present-attribute min/max checks run identically
+     * to the store, so a valid composer order keeps passing.
+     *
+     * @param  array<int, object>  $items  stdClass items from safeJsonDecode
+     */
+    private function assertVariationPresenceConstraints(array $items): void
+    {
+        if ($items === []) {
+            return;
+        }
+
+        $normalized = array_map([$this, 'itemForVariationRule'], $items);
+
+        $errors = [];
+        \App\Rules\MultiVariationConstraint::validateCollectionKeyedByItemIndex(
+            $normalized,
+            function (int $index, string $message) use (&$errors): void {
+                $errors["items.{$index}.item_variations"][] = $message;
+            }
+        );
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
+    }
+
+    /**
+     * Normalize a stdClass quote item into the array shape the variation rule
+     * expects: ['item_id' => int, 'item_variations' => [['id'=>int,'quantity'=>int], ...]].
+     *
+     * @return array<string, mixed>
+     */
+    private function itemForVariationRule(mixed $item): array
+    {
+        if ($item instanceof \stdClass) {
+            $item = (array) $item;
+        }
+        if (! is_array($item)) {
+            return [];
+        }
+
+        $rawVariations = $item['item_variations'] ?? [];
+        if ($rawVariations instanceof \stdClass) {
+            $rawVariations = (array) $rawVariations;
+        }
+        $variations = [];
+        if (is_array($rawVariations)) {
+            foreach ($rawVariations as $variation) {
+                if ($variation instanceof \stdClass) {
+                    $variation = (array) $variation;
+                }
+                if (! is_array($variation)) {
+                    continue;
+                }
+                $entry = ['id' => (int) ($variation['id'] ?? 0)];
+                if (array_key_exists('quantity', $variation)) {
+                    $entry['quantity'] = (int) $variation['quantity'];
+                }
+                $variations[] = $entry;
+            }
+        }
+
+        return [
+            'item_id' => (int) ($item['item_id'] ?? 0),
+            'item_variations' => $variations,
+        ];
     }
 
     /**

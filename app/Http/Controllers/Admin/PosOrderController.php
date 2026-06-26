@@ -313,8 +313,33 @@ class PosOrderController extends AdminController
         Order $order,
         OrderStatusRequest $request
     ): \Illuminate\Http\Response|OrderDetailsResource|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory {
+        // [REFUND-BYPASS-GUARD 2026-06-26 / P1] Twin-route authz parity.
+        // RETURNED (22) IS the refund transition (fires PaymentService::cashBack
+        // + LoyaltyService::refundPoints in OrderService::changeStatus). The
+        // dedicated endpoint refundWithCounterEntry:58-62 gates it on
+        // can('pos-refund') (Admin/Branch Manager only — mass-refund vector
+        // mitigation, PROPOSAL_POS_REFUND_UI_2026-05-25 §8 risk #1). This sibling
+        // route was gated only by `permission:pos-orders` (route group), which a
+        // POS Operator HAS — re-opening the refund path. Mirror the dedicated
+        // endpoint's gate EXACTLY, fail-fast BEFORE delegating. The
+        // OrderStateMachine DELIVERED->RETURNED edge stays unconditional (frozen
+        // + owner-locked LOCK_ORDERSTATEMACHINE_PREZ_REFUND); authorization lives
+        // here at the controller layer, not in the state machine.
+        if ((int) $request->status === \App\Enums\OrderStatus::RETURNED) {
+            abort_unless(
+                auth()->user()?->can('pos-refund') ?? false,
+                403,
+                'Permission insuffisante pour effectuer un remboursement.'
+            );
+        }
+
         try {
             return new OrderDetailsResource($this->orderService->changeStatus($order, $request));
+        } catch (HttpException $http) {
+            // Security-critical HTTP codes (e.g. 403 cross-branch from
+            // OrderService::changeStatus) must reach the client intact — never
+            // masked as a generic 422.
+            throw $http;
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
