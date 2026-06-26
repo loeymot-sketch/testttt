@@ -32,7 +32,9 @@ class CleanupWebTestOrdersCommand extends Command
         $phone = $this->option('phone');
         $olderThanHours = $this->option('older-than-hours');
 
-        $query = Order::withoutGlobalScopes()
+        // [WEB-WIREUP 2026-06-26] Drop only the BranchScope (guest test orders span branch_id);
+        // keep the SoftDeletingScope so already soft-deleted orders are not re-listed/re-touched.
+        $query = Order::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
             ->where('source', Source::WEB)
             ->whereNull('fiscal_sequence_no'); // hard NF525 guard: never touch fiscalised orders
 
