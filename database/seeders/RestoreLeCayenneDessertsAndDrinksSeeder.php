@@ -139,12 +139,15 @@ class RestoreLeCayenneDessertsAndDrinksSeeder extends Seeder
         }
 
         $drinks = [
-            ['slug' => 'coca',        'name' => 'Coca-Cola 33cl',      'price' => 1.50, 'description' => 'Coca-Cola original',   'kiosk_emoji' => ''],
-            ['slug' => 'coca-zero',   'name' => 'Coca-Cola Zero 33cl', 'price' => 1.50, 'description' => 'Coca-Cola sans sucre', 'kiosk_emoji' => ''],
-            ['slug' => 'fanta',       'name' => 'Fanta Orange 33cl',   'price' => 1.50, 'description' => 'Fanta Orange',         'kiosk_emoji' => ''],
-            ['slug' => 'sprite',      'name' => 'Sprite 33cl',         'price' => 1.50, 'description' => 'Sprite',               'kiosk_emoji' => ''],
-            ['slug' => 'oasis',       'name' => 'Oasis Tropical 33cl', 'price' => 1.50, 'description' => 'Oasis Tropical',       'kiosk_emoji' => ''],
-            ['slug' => 'orangina',    'name' => 'Orangina 33cl',       'price' => 1.50, 'description' => 'Orangina',             'kiosk_emoji' => ''],
+            // [MENU-CANON 2026-06-26] sodas alignés au canon Le Cayenne 1,90 (était 1,50,
+            // superseded par OwnerMenuUpdate20260623Seeder ; ce seeder ne doit plus régresser
+            // la DB à un re-run). Eau 1,00 et Capri-Sun 1,50 restent au canon.
+            ['slug' => 'coca',        'name' => 'Coca-Cola 33cl',      'price' => 1.90, 'description' => 'Coca-Cola original',   'kiosk_emoji' => ''],
+            ['slug' => 'coca-zero',   'name' => 'Coca-Cola Zero 33cl', 'price' => 1.90, 'description' => 'Coca-Cola sans sucre', 'kiosk_emoji' => ''],
+            ['slug' => 'fanta',       'name' => 'Fanta Orange 33cl',   'price' => 1.90, 'description' => 'Fanta Orange',         'kiosk_emoji' => ''],
+            ['slug' => 'sprite',      'name' => 'Sprite 33cl',         'price' => 1.90, 'description' => 'Sprite',               'kiosk_emoji' => ''],
+            ['slug' => 'oasis',       'name' => 'Oasis Tropical 33cl', 'price' => 1.90, 'description' => 'Oasis Tropical',       'kiosk_emoji' => ''],
+            ['slug' => 'orangina',    'name' => 'Orangina 33cl',       'price' => 1.90, 'description' => 'Orangina',             'kiosk_emoji' => ''],
             ['slug' => 'eau-plate',   'name' => 'Eau Plate 50cl',      'price' => 1.00, 'description' => 'Eau minérale',         'kiosk_emoji' => ''],
             ['slug' => 'capri-sun',   'name' => 'Capri-Sun',           'price' => 1.50, 'description' => 'Capri-Sun 20cl',       'kiosk_emoji' => ''],
         ];

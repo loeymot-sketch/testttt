@@ -110,7 +110,7 @@
                         data-testid="pos-loyalty-redeem-preview"
                     >
                         {{ $t('pos.loyalty.redeem.preview_discount') }} :
-                        <strong>−{{ previewDiscountEur.toFixed(2) }} €</strong>
+                        <strong>−{{ previewDiscountEur.toFixed(2).replace('.', ',') }} €</strong>
                     </p>
                 </div>
 
