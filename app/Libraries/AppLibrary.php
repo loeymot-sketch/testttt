@@ -18,10 +18,18 @@ use Smartisan\Settings\Facades\Settings;
 
 class AppLibrary
 {
+    // [FR-DATE-SAFE 2026-06-26] env() returns null after `config:cache` (same class as
+    // the money flatAmountFormat null bug — BRAIN PR-07) → Carbon::format(null) breaks the
+    // date/time on every fiscal-adjacent display. FR-safe defaults mirror the canonical
+    // site settings (site_date_format="d-m-Y", site_time_format="H:i" — 24h FR, ADR-007).
+    // NB: the live "h:i A" (12h English « PM ») symptom is an env↔DB drift (env TIME_FORMAT
+    // mis-set vs DB site_time_format="H:i") — corrected by setting .env TIME_FORMAT="H:i"
+    // or re-saving Site settings (SiteService:54 re-propagates). These defaults guarantee a
+    // valid FR format even when env is empty/null; they do not override a non-empty env.
     public static function date($date, $pattern = null): string
     {
         if (!$pattern) {
-            $pattern = env('DATE_FORMAT');
+            $pattern = env('DATE_FORMAT') ?: 'd-m-Y';
         }
         return Carbon::parse($date)->format($pattern);
     }
@@ -29,7 +37,7 @@ class AppLibrary
     public static function time($time, $pattern = null): string
     {
         if (!$pattern) {
-            $pattern = env('TIME_FORMAT');
+            $pattern = env('TIME_FORMAT') ?: 'H:i';
         }
         return Carbon::parse($time)->format($pattern);
     }
@@ -37,7 +45,7 @@ class AppLibrary
     public static function datetime($dateTime, $pattern = null): string
     {
         if (!$pattern) {
-            $pattern = env('TIME_FORMAT') . ', ' . env('DATE_FORMAT');
+            $pattern = (env('TIME_FORMAT') ?: 'H:i') . ', ' . (env('DATE_FORMAT') ?: 'd-m-Y');
         }
         return Carbon::parse($dateTime)->format($pattern);
     }

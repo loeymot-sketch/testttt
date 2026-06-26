@@ -35,4 +35,32 @@ class MoneyFormatConfigCacheTest extends TestCase
             }
         }
     }
+
+    /**
+     * [FR-DATE-SAFE 2026-06-26] Même classe : sous config:cache, env(DATE_FORMAT)/
+     * env(TIME_FORMAT) renvoient null → Carbon::format(null) casse la date/heure de
+     * CHAQUE écran (rapports, historique, KDS, tickets). On verrouille les défauts
+     * FR-safe (« d-m-Y » + « H:i » 24h, ADR-007) quand l'env est vide.
+     */
+    public function test_date_formatters_fall_back_to_fr_format_when_env_is_null(): void
+    {
+        $origDate = getenv('DATE_FORMAT');
+        $origTime = getenv('TIME_FORMAT');
+        putenv('DATE_FORMAT');
+        putenv('TIME_FORMAT');
+        unset($_ENV['DATE_FORMAT'], $_SERVER['DATE_FORMAT'], $_ENV['TIME_FORMAT'], $_SERVER['TIME_FORMAT']);
+
+        try {
+            $this->assertNull(env('DATE_FORMAT'), 'pré-condition : simule config:cache');
+            $this->assertNull(env('TIME_FORMAT'), 'pré-condition : simule config:cache');
+
+            $stamp = '2026-06-26 14:21:00';
+            $this->assertSame('26-06-2026', AppLibrary::date($stamp), 'date défaut FR d-m-Y');
+            $this->assertSame('14:21', AppLibrary::time($stamp), 'time défaut FR 24h H:i (pas de « PM » anglais)');
+            $this->assertSame('14:21, 26-06-2026', AppLibrary::datetime($stamp), 'datetime défaut FR 24h');
+        } finally {
+            if ($origDate !== false) { putenv("DATE_FORMAT={$origDate}"); $_ENV['DATE_FORMAT'] = $origDate; $_SERVER['DATE_FORMAT'] = $origDate; }
+            if ($origTime !== false) { putenv("TIME_FORMAT={$origTime}"); $_ENV['TIME_FORMAT'] = $origTime; $_SERVER['TIME_FORMAT'] = $origTime; }
+        }
+    }
 }
