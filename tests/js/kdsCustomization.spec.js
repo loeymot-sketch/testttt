@@ -237,6 +237,16 @@ describe('sanitizeKdsInstruction — strips compo duplicate, keeps unique extras
         expect(sanitizeKdsInstruction('TACOS M\n- Oignon', 'Tacos M')).toBe('');
     });
 
+    it('[FOOD-SAFETY] keeps continuation lines of a multi-line bracketed free note (allergens NOT stripped)', () => {
+        // pos-wizard.js (frozen) wrappe la note libre caissier en [...] : une note
+        // « Allergie:\n- gluten\n- arachide » devient « [Allergie:\n- gluten\n- arachide] ».
+        // Les lignes « - X » de continuation NE doivent PAS être confondues avec un
+        // retrait de compo et droppées → sinon les allergènes disparaissent du ticket cuisine.
+        const out = sanitizeKdsInstruction('TACOS M\n[Allergie:\n- gluten\n- arachide]', 'Tacos M');
+        expect(out).toContain('gluten');
+        expect(out).toContain('arachide');
+    });
+
     it('is safe on empty / null / non-string (never throws, returns empty)', () => {
         expect(sanitizeKdsInstruction('', 'X')).toBe('');
         expect(sanitizeKdsInstruction(null, 'X')).toBe('');

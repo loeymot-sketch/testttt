@@ -1661,7 +1661,9 @@ export default {
           }
           if (this.kdsErrorBanner) {
             this.kdsErrorBanner.visible = true;
-            this.kdsErrorBanner.message = this.$t('label.kds_status_conflict');
+            // [I18N-FIX 2026-06-27] La clé existe sous `message.` (pas `label.`,
+            // absente partout) → alignée sur l'usage correct en toast l.~2311.
+            this.kdsErrorBanner.message = this.$t('message.kds_status_conflict');
           }
         });
     },

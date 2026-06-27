@@ -207,11 +207,26 @@ export function sanitizeKdsInstruction(raw, itemName) {
         return '';
     }
     const name = String(itemName || '').trim().toUpperCase();
+    // [FOOD-SAFETY 2026-06-27] pos-wizard.js (frozen) wrappe la note libre caissier
+    // en [...] ; une note multi-ligne « Allergie:\n- gluten\n- arachide » devient
+    // « [Allergie:\n- gluten\n- arachide] ». Sans suivi d'état, les lignes « - X »
+    // de continuation étaient confondues avec un retrait de compo (l.« ^-\s ») et
+    // DROPPÉES → les allergènes disparaissaient du ticket cuisine imprimé. On garde
+    // donc toute ligne tant qu'une note crochet ouverte n'est pas refermée par « ] ».
+    let insideBracketNote = false;
     const kept = raw.split('\n').filter((ln) => {
         const t = ln.trim();
         if (t === '') return false;
         if (name && t.toUpperCase() === name) return false; // echoed product name (header shows it)
-        if (/^[+↳\[]/.test(t)) return true;                 // formule / sauce frites / bracketed note → KEEP
+        if (insideBracketNote) {                            // continuation d'une note libre multi-ligne → KEEP
+            if (t.includes(']')) insideBracketNote = false;
+            return true;
+        }
+        if (/^\[/.test(t)) {                                // bracketed note → KEEP
+            if (!t.includes(']')) insideBracketNote = true; // ouvre une note multi-ligne
+            return true;
+        }
+        if (/^[+↳]/.test(t)) return true;                   // formule / sauce frites → KEEP
         if (/^-\s/.test(t)) return false;                   // bare crudités-removal (structured covers it)
         if (KDS_COMPO_LINE_RE.test(t)) return false;        // compo blob "Viandes : … Sauce : …" → DROP (dup)
         return true;                                        // free client note → KEEP
