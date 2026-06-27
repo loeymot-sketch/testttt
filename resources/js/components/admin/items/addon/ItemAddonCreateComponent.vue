@@ -10,7 +10,7 @@
         <div class="modal-dialog">
             <div class="modal-header">
                 <h3 class="modal-title">{{ $t("menu.addons") }}</h3>
-                <button class="modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500"
+                <button class="modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500" :aria-label="$t('button.close')"
                     @click="reset"></button>
             </div>
             <div class="modal-body">
@@ -50,7 +50,7 @@
 
                         <div class="form-col-12">
                             <div class="modal-btns">
-                                <button type="button" class="modal-btn-outline modal-close" @click="reset">
+                                <button type="button" class="modal-btn-outline modal-close" :aria-label="$t('button.close')" @click="reset">
                                     <i class="lab lab-close"></i>
                                     <span>{{ $t("button.close") }}</span>
                                 </button>

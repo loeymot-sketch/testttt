@@ -9,7 +9,7 @@
         <div class="modal-dialog">
             <div class="modal-header">
                 <h3 class="modal-title">{{ $t("label.token") }}</h3>
-                <button class="modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500"
+                <button class="modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500" :aria-label="$t('button.close')"
                     @click.prevent="resetModal"></button>
             </div>
             <div class="modal-body">
@@ -27,7 +27,7 @@
                         </div>
                         <div class="form-col-12">
                             <div class="modal-btns">
-                                <button type="button" class="modal-btn-outline modal-close" @click.prevent="resetModal">
+                                <button type="button" class="modal-btn-outline modal-close" :aria-label="$t('button.close')" @click.prevent="resetModal">
                                     <i class="lab lab-close"></i>
                                     <span>{{ $t("button.close") }}</span>
                                 </button>

@@ -31,7 +31,7 @@
                                 <span>{{ $t("label.save") }}</span>
                             </button>
 
-                            <button type="button" class="modal-btn-outline modal-close" @click="reset">
+                            <button type="button" class="modal-btn-outline modal-close" :aria-label="$t('button.close')" @click="reset">
                                 <i class="lab lab-close"></i>
                                 <span>{{ $t("button.close") }}</span>
                             </button>

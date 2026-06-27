@@ -53,7 +53,7 @@
         <div class="modal-dialog" v-if="itemInfo">
             <div class="modal-header flex items-start gap-3">
                 <h3 class="modal-title text-base font-medium">{{ itemInfo.name }}</h3>
-                <button class="modal-close fa-regular fa-circle-xmark" @click.prevent="infoModalHide"></button>
+                <button type="button" class="modal-close fa-regular fa-circle-xmark" :aria-label="$t('button.close')" @click.prevent="infoModalHide"></button>
             </div>
             <div class="modal-body">
                 {{ itemInfo.caution }}
@@ -88,8 +88,8 @@
                             item.currency_price }}</h4>
                     </div>
                 </div>
-                <button class="modal-close lab-close-circle-line font-fill-danger lab-font-size-24"
-                    @click.prevent="variationModalHide"></button>
+                <button type="button" class="modal-close lab-close-circle-line font-fill-danger lab-font-size-24"
+                    :aria-label="$t('button.close')" @click.prevent="variationModalHide"></button>
             </div>
             <div class="modal-body pos-v4-item-wizard-scroll flex-1 min-h-0 overflow-y-auto overscroll-contain">
                 <div class="flex items-center gap-2 mb-4">

@@ -29,8 +29,10 @@
       - Parent order strictly immutable (backend invariant)
 
     A11y:
-      - role="dialog" + aria-modal="true" + focus trap (focus on first
-        interactive on mount)
+      - role="dialog" + aria-modal="true" + REAL focus trap via the shared
+        `focusTrap` mixin (factored from ds/KsModal.vue): focus enters the
+        panel on open, Tab/Shift+Tab cycle first<->last, and focus is restored
+        to the trigger element on close.
       - Escape closes modal (unless POST in flight)
       - reason field with aria-describedby for char counter
       - Error/success regions with role="alert" / role="status"
@@ -44,6 +46,7 @@
       @keydown.esc.stop="onCancel"
     >
       <div
+        ref="panel"
         class="refund-modal"
         role="dialog"
         aria-modal="true"
@@ -192,6 +195,7 @@
 <script>
 import axios from 'axios';
 import alertService from '../../../services/alertService';
+import focusTrap from '../../../mixins/focusTrap';
 
 /**
  * PosRefundModal — HEAL-4 / PROPOSAL-02 NF525 counter-entry refund modal.
@@ -224,6 +228,7 @@ import alertService from '../../../services/alertService';
  */
 export default {
   name: 'PosRefundModal',
+  mixins: [focusTrap],
   props: {
     order: {
       type: Object,
@@ -288,11 +293,17 @@ export default {
           this.reason = '';
           this.errorMessage = '';
           this.submitting = false;
+          // [A11y round4] Install the WCAG focus trap on the dialog panel and
+          // land initial focus on the reason field (preserves prior UX). The
+          // mixin confines Tab and restores focus to the trigger on close.
           this.$nextTick(() => {
-            if (this.$refs.reasonInput) {
-              this.$refs.reasonInput.focus();
-            }
+            this.activateFocusTrap(this.$refs.panel, {
+              initialFocus: this.$refs.reasonInput,
+            });
           });
+        } else {
+          // Order cleared (parent closed the modal) → release trap + restore focus.
+          this.deactivateFocusTrap();
         }
       },
     },

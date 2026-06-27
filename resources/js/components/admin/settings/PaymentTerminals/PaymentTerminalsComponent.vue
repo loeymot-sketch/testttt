@@ -72,7 +72,7 @@
                 <h3 class="modal-title">
                     {{ isEditing ? $t('button.edit') : $t('button.add') }}
                 </h3>
-                <button class="modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500"
+                <button class="modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500" :aria-label="$t('button.close')"
                         @click="closeModal" type="button"></button>
             </div>
             <div class="modal-body">

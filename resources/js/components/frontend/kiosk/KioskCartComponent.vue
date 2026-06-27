@@ -31,10 +31,12 @@
     <transition name="fade">
       <div
         v-if="showClearConfirm"
+        ref="clearPanel"
         class="kiosk-clear-overlay"
         role="dialog"
         aria-modal="true"
         aria-labelledby="kiosk-cart-clear-title"
+        tabindex="-1"
         data-testid="kiosk-cart-clear-modal"
         @click.self="showClearConfirm = false"
         @keydown.esc="showClearConfirm = false"
@@ -49,6 +51,7 @@
               data-testid="kiosk-cart-clear-yes"
             >{{ $t('kiosk.yes_clear') }}</button>
             <button type="button"
+              ref="clearCancelBtn"
               class="kiosk-clear-no"
               @click="showClearConfirm = false"
               data-testid="kiosk-cart-clear-no"
@@ -373,6 +376,7 @@
 <script>
 import { mapGetters, mapActions } from 'vuex';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
+import focusTrap from '../../../mixins/focusTrap';
 import { shouldSkipKioskUpsellScreen } from '../../../helpers/kioskUpsellFlow';
 import { sanitizeKioskCustomerFacingText } from '../../../helpers/kioskDisplayText';
 import { findVariationObjectById, findExtraObjectById } from '../../../helpers/kioskFilters';
@@ -384,7 +388,7 @@ const ORDER_TYPE_TAKEAWAY = 10;
 
 export default {
   name: 'KioskCartComponent',
-  mixins: [kioskPriceMixin],
+  mixins: [kioskPriceMixin, focusTrap],
   components: { KsAllergenBadge },
 
   inject: {
@@ -472,6 +476,25 @@ export default {
     /** Phase A — skip upsell when all lines are in "skip after cart" categories */
     shouldSkipKioskUpsell() {
       return shouldSkipKioskUpsellScreen(this.cartItems, this.categories);
+    },
+  },
+  watch: {
+    // [A11y round4 P2] "Vider le panier" confirm dialog focus trap. On open,
+    // move focus into the dialog (cancel button) so Esc/Tab work and the
+    // aria-modal="true" contract holds (the dialog previously never received
+    // focus → Esc inert + Tab escaped behind the overlay). On close, restore
+    // focus to the trigger. Reuses the shared focusTrap mixin (canonical
+    // ds/KsModal pattern) — no structural rewrite of the inline dialog.
+    showClearConfirm(v) {
+      if (v) {
+        this.$nextTick(() => {
+          this.activateFocusTrap(this.$refs.clearPanel, {
+            initialFocus: this.$refs.clearCancelBtn,
+          });
+        });
+      } else {
+        this.deactivateFocusTrap();
+      }
     },
   },
   /**

@@ -1039,7 +1039,7 @@
           <button
             ref="allergensModalCloseButton"
             type="button"
-            class="kds-allergens-modal-close"
+            class="kds-allergens-modal-close" :aria-label="$t('button.close')"
             @click="closeAllergensModal"
           >{{ $t('button.kds_allergens_modal_close') }}</button>
         </header>

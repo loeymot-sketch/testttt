@@ -13,7 +13,7 @@
                         <input type="text" id="name" v-model="props.search.name" :placeholder="$t('label.search_customer')"
                             class="w-full h-full rounded-r-lg ml-3">
                         <button @click.prevent="resetName" type="button" v-if="props.search.name"
-                            class="text-sm text-red-500 fa-regular fa-circle-xmark !ml-2 mr-1"></button>
+                            class="text-sm text-red-500 fa-regular fa-circle-xmark !ml-2 mr-1" :aria-label="$t('button.close')"></button>
                     </form>
                 </div>
                 <ul class="h-[400px] sm:h-[calc(100vh_-_290px)] overflow-y-auto thin-scrolling db-message-list">

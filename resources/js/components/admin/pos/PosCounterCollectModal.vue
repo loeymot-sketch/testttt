@@ -39,7 +39,7 @@
       data-testid="pos-counter-collect-modal"
       @click.self="onCancel"
     >
-      <div class="cc-modal" role="dialog" :aria-label="$t('label.encaisser_mode_title')">
+      <div ref="panel" class="cc-modal" role="dialog" aria-modal="true" :aria-label="$t('label.encaisser_mode_title')">
         <!-- Header: hero total + queue number (mirror PaymentComponent design language) -->
         <div class="cc-modal-header">
           <div class="cc-modal-title-row">
@@ -188,6 +188,7 @@ import PosV5Numpad from './v5/PosV5Numpad.vue';
 import posPaymentMethodEnum from '../../../enums/modules/posPaymentMethodEnum';
 import appService from '../../../services/appService';
 import alertService from '../../../services/alertService';
+import focusTrap from '../../../mixins/focusTrap';
 
 /**
  * PosCounterCollectModal — Wave X X1 sibling counter-collect SSOT-flavored modal.
@@ -217,6 +218,7 @@ import alertService from '../../../services/alertService';
 export default {
   name: 'PosCounterCollectModal',
   components: { PosV5Numpad },
+  mixins: [focusTrap],
   props: {
     order: {
       type: Object,
@@ -314,11 +316,20 @@ export default {
           // input (receivedInput ref does not exist before selectedMode
           // is CASH AND the DOM updates). Mirrors L5.3-F-02 recommendation.
           this.$nextTick(() => {
+            // [A11y round4] WCAG focus trap on the dialog panel; initial focus
+            // stays on the received field (cashier types-then-Enter). The mixin
+            // confines Tab and restores focus to the trigger on close.
+            this.activateFocusTrap(this.$refs.panel, {
+              initialFocus: this.$refs.receivedInput,
+            });
             if (this.$refs.receivedInput) {
               this.$refs.receivedInput.focus();
               this.$refs.receivedInput.select();
             }
           });
+        } else {
+          // Order cleared (parent closed the modal) → release trap + restore focus.
+          this.deactivateFocusTrap();
         }
       },
     },

@@ -12,7 +12,7 @@
             tabindex="-1"
             ref="overlayRef"
         >
-            <section class="pos-loyalty-redeem-dialog" :aria-busy="loading">
+            <section ref="panel" class="pos-loyalty-redeem-dialog" :aria-busy="loading">
                 <header class="pos-loyalty-redeem-dialog__head">
                     <h2 class="pos-loyalty-redeem-dialog__title" data-testid="pos-loyalty-redeem-title">
                         {{ $t('pos.loyalty.redeem.title') }}
@@ -168,13 +168,17 @@
  *   - aria-label from i18n
  *   - Esc key handler emits close
  *   - Backdrop click emits close (click.self only)
- *   - Initial focus moved to loyalty code input on mount
+ *   - REAL focus trap via the shared `focusTrap` mixin (factored from
+ *     ds/KsModal.vue): initial focus on the loyalty code input, Tab/Shift+Tab
+ *     cycle first<->last, focus restored to the trigger on close.
  *   - Error / success bands carry role="alert" + role="status"
  */
 import axios from 'axios';
+import focusTrap from '../../../mixins/focusTrap';
 
 export default {
     name: 'PosLoyaltyRedeemModal',
+    mixins: [focusTrap],
     props: {
         open: {
             type: Boolean,
@@ -229,15 +233,16 @@ export default {
                 this.successMessage = '';
                 this.loading = false;
                 this.lastResponse = null;
+                // [A11y round4] WCAG focus trap; initial focus on the loyalty
+                // code input. The mixin confines Tab and restores focus to the
+                // trigger element when the modal closes.
                 this.$nextTick(() => {
-                    if (this.$refs.codeInput) {
-                        try {
-                            this.$refs.codeInput.focus();
-                        } catch (e) {
-                            // ignore — jsdom / non-DOM env
-                        }
-                    }
+                    this.activateFocusTrap(this.$refs.panel, {
+                        initialFocus: this.$refs.codeInput,
+                    });
                 });
+            } else {
+                this.deactivateFocusTrap();
             }
         },
     },

@@ -47,3 +47,6 @@ role=radiogroup/list/listitem). Les écarts ci-dessous sont les gaps réels rest
 - KioskWizardComponent.vue:2220-2305 & ds/KsModal.vue:149-158 : focus-trap Tab complet + role/aria-modal/aria-labelledby. Conforme.
 - Tokens cibles tactiles borne : css/kiosk/tokens.css:141 `--kiosk-touch-min:48px` (≥44px AA OK) ; tokens-pmr.css:49 plancher 64px. Conforme — pas de finding.
 - KeyboardNavigationSentinel.spec.js:192-201 : contrat `:focus-visible` CSS présent (button + [role=button] + .kiosk-touch-btn). L'échec « pré-existant » mentionné dans le brief relève du CSS visuel runtime, non source-grep ; non reproduit comme régression source ici.
+
+## [P3] CLASSE aria-label boutons-close — 46 composants admin (élargissement superviseur)
+Grep systématique : 46 composants admin ont un `<button class="modal-close|fa-circle-xmark|...">` icône-seule SANS aria-label (WCAG 4.1.2). Ex : CustomerCreate, RoleCreate, BranchCreate, TaxCreate, KioskMachineCreate, PaymentTerminals, PageCreate, + 39 autres. Fix de classe : `:aria-label="$t('button.close')"` (clé existante). À sweeper après l'agent focus-trap (qui couvre ItemComponent + 3 modales POS + KioskCart).
