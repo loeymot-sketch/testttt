@@ -270,6 +270,17 @@ class FrontendOrderService
                 // Prevents any client-manipulated value from persisting even transiently.
                 unset($validatedRequest['total'], $validatedRequest['subtotal'], $validatedRequest['discount']);
 
+                // [DELIVERY hardening 2026-06-27] Non-DELIVERY orders MUST carry no delivery
+                // charge. delivery_charge is `nullable` for non-delivery in OrderRequest, so a
+                // crafted payload (e.g. order_type=TAKEAWAY + delivery_charge=99) would otherwise
+                // mass-assign a phantom charge into the total (over-billing / report pollution).
+                // For DELIVERY the value is the server-recomputed SSOT (OrderRequest merges the
+                // signed quote) and is preserved. This also makes the free-above invariant below
+                // ("delivery_charge=0 sinon") actually hold.
+                if ((int) ($validatedRequest['order_type'] ?? 0) !== OrderType::DELIVERY) {
+                    $validatedRequest['delivery_charge'] = 0;
+                }
+
                 $this->frontendOrder = FrontendOrder::create(
                     $validatedRequest + [
                         'user_id'          => Auth::user()->id,
@@ -706,7 +717,7 @@ class FrontendOrderService
         }
     }
 
-    protected function findExistingFrontendOrderForIdempotencyRecovery(?string $idempotencyKey, int $branchId, ?int $userId): ?FrontendOrder
+    protected function findExistingFrontendOrderForIdempotencyRecovery(?string $idempotencyKey, int $branchId, ?int $userId = null): ?FrontendOrder
     {
         if (blank($idempotencyKey) || $branchId <= 0) {
             return null;
@@ -721,7 +732,9 @@ class FrontendOrderService
             // — depuis le wireup WEB l'endpoint est multi-utilisateur (tokens guest
             // web, même branch_id), donc sans ce scope un client B réutilisant la
             // clé d'un client A récupérait SA commande (fuite PII/total/items).
-            ->where('user_id', $userId)
+            // Miroir EXACT du jumeau POS : défaut null (tests branch-only) saute le
+            // scope ; les vrais appels myOrderStore passent auth()->id().
+            ->when($userId !== null, fn ($q) => $q->where('user_id', $userId))
             ->first();
     }
 
