@@ -26,11 +26,13 @@ use Symfony\Component\HttpFoundation\IpUtils;
 class KioskAutoLoginGate
 {
     /**
-     * @param  array<string,mixed>|null  $payload     identifiants machine (config kiosk.spa_payload) ou null
-     * @param  bool                       $isKioskPath request()->is('kiosk*')
-     * @param  bool                       $localBypass APP_ENV=local (config kiosk.auto_login_local_bypass)
-     * @param  array<int,string>          $trustedIps  KIOSK_AUTO_LOGIN_TRUSTED_IPS (IP exactes et/ou CIDR)
-     * @param  string|null                $clientIp    request()->ip()
+     * @param  array<string,mixed>|null  $payload          identifiants machine (config kiosk.spa_payload) ou null
+     * @param  bool                       $isKioskPath      request()->is('kiosk*')
+     * @param  bool                       $localBypass      APP_ENV=local (config kiosk.auto_login_local_bypass)
+     * @param  array<int,string>          $trustedIps       KIOSK_AUTO_LOGIN_TRUSTED_IPS (IP exactes et/ou CIDR)
+     * @param  string|null                $clientIp         request()->ip()
+     * @param  string|null                $requestSecret    ?machine_key=… de l'URL borne (lien secret)
+     * @param  string                     $configuredSecret KIOSK_AUTO_LOGIN_SECRET (vide = chemin secret inactif)
      * @return array<string,mixed>|null   le payload si autorisé, sinon null
      */
     public static function resolvePayload(
@@ -38,13 +40,24 @@ class KioskAutoLoginGate
         bool $isKioskPath,
         bool $localBypass,
         array $trustedIps,
-        ?string $clientIp
+        ?string $clientIp,
+        ?string $requestSecret = null,
+        string $configuredSecret = ''
     ): ?array {
         if (! $isKioskPath || $payload === null) {
             return null;
         }
 
         if ($localBypass) {
+            return $payload;
+        }
+
+        // Lien secret (RÉSEAU-INDÉPENDANT : survit au changement d'IP/box/fibre) —
+        // ?machine_key=<secret> == KIOSK_AUTO_LOGIN_SECRET, comparaison timing-safe.
+        // Secret configuré vide ⇒ chemin inactif (jamais de bypass par secret vide).
+        $configuredSecret = trim($configuredSecret);
+        if ($configuredSecret !== '' && is_string($requestSecret) && $requestSecret !== ''
+            && hash_equals($configuredSecret, $requestSecret)) {
             return $payload;
         }
 

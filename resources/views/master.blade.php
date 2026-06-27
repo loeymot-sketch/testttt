@@ -124,6 +124,8 @@
             (bool) config('kiosk.auto_login_local_bypass', false),
             (array) config('kiosk.auto_login_trusted_ips', []),
             request()->ip(),
+            request()->query('machine_key'),
+            (string) config('kiosk.auto_login_secret', ''),
         );
     @endphp
     <script>

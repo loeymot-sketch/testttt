@@ -130,4 +130,40 @@ class KioskAutoLoginGateTest extends TestCase
             'When operator opts out by setting KIOSK_REQUIRE_MACHINE_LOGIN=true, gate must emit null even on trusted IP.',
         );
     }
+
+    /**
+     * [BORNE-CLOUD 2026-06-27] Lien secret : ?machine_key=<KIOSK_AUTO_LOGIN_SECRET>
+     * débloque l'auto-login depuis N'IMPORTE QUELLE IP (borne distante dont le
+     * réseau change). Indépendant de l'allowlist IP.
+     */
+    public function test_matching_url_secret_serves_payload_from_any_ip(): void
+    {
+        Config::set('kiosk.auto_login_local_bypass', false);
+        Config::set('kiosk.auto_login_trusted_ips', []);
+        Config::set('kiosk.auto_login_secret', 'feat-secret-borne');
+
+        $response = $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.42'])
+            ->get('/kiosk/idle?machine_key=feat-secret-borne');
+        $response->assertStatus(200);
+        preg_match('/kioskAutoLogin\s*:\s*(null|\{[^}]*\})/u', (string) $response->getContent(), $m);
+        $payload = isset($m[1]) ? json_decode($m[1], true) : null;
+
+        $this->assertIsArray($payload, 'URL secret valide doit servir les identifiants depuis toute IP.');
+        $this->assertSame('kiosk-test-machine', $payload['username'] ?? null);
+    }
+
+    public function test_wrong_url_secret_blocked_from_untrusted_ip(): void
+    {
+        Config::set('kiosk.auto_login_local_bypass', false);
+        Config::set('kiosk.auto_login_trusted_ips', []);
+        Config::set('kiosk.auto_login_secret', 'feat-secret-borne');
+
+        $response = $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.42'])
+            ->get('/kiosk/idle?machine_key=MAUVAIS');
+        $response->assertStatus(200);
+        preg_match('/kioskAutoLogin\s*:\s*(null|\{[^}]*\})/u', (string) $response->getContent(), $m);
+        $payload = isset($m[1]) ? json_decode($m[1], true) : null;
+
+        $this->assertNull(is_array($payload) ? $payload : null, 'Mauvais secret = pas d\'identifiants.');
+    }
 }

@@ -75,4 +75,48 @@ class KioskAutoLoginGateResolverTest extends TestCase
     {
         $this->assertNull(KioskAutoLoginGate::resolvePayload($this->payload, true, false, ['192.168.1.10'], null));
     }
+
+    // --- Lien secret (réseau-indépendant : survit au changement d'IP/box/fibre) ---
+
+    /** Le secret marche depuis N'IMPORTE QUELLE IP, sans allowlist. */
+    public function test_matching_url_secret_emits_payload_regardless_of_ip(): void
+    {
+        $this->assertSame(
+            $this->payload,
+            KioskAutoLoginGate::resolvePayload($this->payload, true, false, [], '203.0.113.99', 'S3CR3T-borne', 'S3CR3T-borne')
+        );
+    }
+
+    public function test_wrong_url_secret_blocked(): void
+    {
+        $this->assertNull(
+            KioskAutoLoginGate::resolvePayload($this->payload, true, false, [], '203.0.113.99', 'mauvais', 'S3CR3T-borne')
+        );
+    }
+
+    /** Aucun secret configuré ⇒ fournir un secret ne débloque PAS (pas de bypass vide). */
+    public function test_empty_configured_secret_keeps_secret_path_inactive(): void
+    {
+        $this->assertNull(
+            KioskAutoLoginGate::resolvePayload($this->payload, true, false, [], '203.0.113.99', 'whatever', '')
+        );
+        // garde anti-régression : secret fourni vide vs configuré non-vide ⇒ refus
+        $this->assertNull(
+            KioskAutoLoginGate::resolvePayload($this->payload, true, false, [], '203.0.113.99', '', 'S3CR3T-borne')
+        );
+    }
+
+    public function test_secret_still_requires_kiosk_path(): void
+    {
+        $this->assertNull(
+            KioskAutoLoginGate::resolvePayload($this->payload, false, false, [], '203.0.113.99', 'S3CR3T-borne', 'S3CR3T-borne')
+        );
+    }
+
+    public function test_secret_still_blocked_when_payload_null(): void
+    {
+        $this->assertNull(
+            KioskAutoLoginGate::resolvePayload(null, true, false, [], '203.0.113.99', 'S3CR3T-borne', 'S3CR3T-borne')
+        );
+    }
 }

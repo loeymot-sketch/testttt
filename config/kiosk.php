@@ -242,6 +242,10 @@ return [
     'spa_auto_login' => (bool) $spaPayload,
     'spa_payload'    => $spaPayload,
     'auto_login_trusted_ips' => $autoLoginTrustedIps,
+    // [BORNE-CLOUD 2026-06-27] Lien secret réseau-indépendant pour borne distante
+    // (l'IP/box change — fibre à venir). ?machine_key=<secret> == ce secret ⇒
+    // auto-login. Vide = chemin secret désactivé. Voir App\Support\KioskAutoLoginGate.
+    'auto_login_secret' => (string) env('KIOSK_AUTO_LOGIN_SECRET', ''),
     'auto_login_local_bypass' => env('APP_ENV') === 'local',
     'default_locale' => $defaultLocale,
     // [ADR-007 / Sprint 3D] V1 FR-immutable. `false` désactive le picker UI côté
