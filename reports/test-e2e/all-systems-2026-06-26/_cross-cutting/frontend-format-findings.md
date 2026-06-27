@@ -44,3 +44,8 @@ Commande 5179 pilotée à travers les 3 acteurs sur endpoints réels (:8766 food
 - FISCAL : fiscal_sequence_no=2574 alloué (2573+1 = GAP-FREE), TVA 0,17€ calculée backend.
 - NF525 : CHAIN OK 4 branches après transaction · audit_logs 4635→4637 (append-only) · réconciliation order=fiscal=transaction=1,90€ parfaite.
 → Les 5 systèmes prouvés FONCTIONNELS ENSEMBLE sur le terrain réel. Token terrain révoqué (cleanup).
+
+## ⚠️ FIX ENV (à valider owner) — .env DB_DATABASE aligné sur la canonique
+- Symptôme : serveur :8766 500 sur tout (« Unknown column branches.deleted_at ») après un restart qui a perdu l'env-override → fallback sur `.env DB_DATABASE=foodking` (coquille abandonnée SANS deleted_at, BRAIN).
+- Fix : `.env DB_DATABASE=foodking → foodking_e2e` (la DB canonique réelle : 2812 orders, fiscal, schéma complet ; backup `.env.bak-dbfix-2026-06-27`). Aligne la config sur la DB que l'owner utilise vraiment. PAS une migration (foodking intouchée, footgun BRAIN respecté).
+- Owner : valider ce pointage .env (le .env pointait historiquement vers la coquille ; le canonique est foodking_e2e). APP_DEBUG re-mis à false après diagnostic.
