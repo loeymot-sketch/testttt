@@ -173,7 +173,7 @@ class FrontendOrderService
             );
             $idempotencyLock->block(5);
             // [SIM-MP] Read must match DB unique (branch_id, idempotency_key) — not key alone.
-            $existing = $this->findExistingFrontendOrderForIdempotencyRecovery($idempotencyKey, $lockBranchId);
+            $existing = $this->findExistingFrontendOrderForIdempotencyRecovery($idempotencyKey, $lockBranchId, auth()->id());
             if ($existing) {
                 $this->frontendOrder = $existing;
                 // [AUDIT-P47-BUG10] Restore loyaltyApplied based on existing order's discount
@@ -519,6 +519,17 @@ class FrontendOrderService
                     $this->frontendOrder->total_tax = round($totalTax, 2);
                     $this->frontendOrder->subtotal = round($realSubtotal, 2);
                     $this->frontendOrder->discount = $calculatedDiscount;
+                    // [DELIVERY 2026-06-27] Livraison OFFERTE au-dessus du seuil (owner : ≥30€).
+                    // Appliqué ICI — hors PricingService (frozen) — où le sous-total SSOT
+                    // ($realSubtotal, recalculé serveur) est connu, donc non-falsifiable client.
+                    // N'affecte que les commandes DELIVERY (delivery_charge=0 sinon). Seuil
+                    // configurable via Settings delivery.free_delivery_above (défaut 30€).
+                    $freeAbove = (float) (Settings::group('delivery')->get('free_delivery_above', 30) ?? 30);
+                    if ($freeAbove > 0
+                        && (float) $realSubtotal >= $freeAbove
+                        && (float) $this->frontendOrder->delivery_charge > 0) {
+                        $this->frontendOrder->delivery_charge = 0;
+                    }
                     // [TTC-MODE] In TTC mode, $realSubtotal already contains tax.
                     if ((bool) config('pricing.tax_inclusive_prices', false)) {
                         $this->frontendOrder->total = round(max(0, $realSubtotal + $this->frontendOrder->delivery_charge - $calculatedDiscount), 2);
@@ -655,7 +666,7 @@ class FrontendOrderService
             // [FIX-54-6] Catch MySQL duplicate key on idempotency_key UNIQUE constraint.
             // Same recovery logic as OrderService::posOrderStore() for consistency.
             if ($qe->getCode() === '23000' && $idempotencyKey) {
-                $existing = $this->findExistingFrontendOrderForIdempotencyRecovery($idempotencyKey, $lockBranchId);
+                $existing = $this->findExistingFrontendOrderForIdempotencyRecovery($idempotencyKey, $lockBranchId, auth()->id());
                 if ($existing) {
                     Log::info('[Kiosk Idempotency] Duplicate key caught at DB level — returning existing order #' . $existing->id);
                     return $existing;
@@ -691,7 +702,7 @@ class FrontendOrderService
         }
     }
 
-    protected function findExistingFrontendOrderForIdempotencyRecovery(?string $idempotencyKey, int $branchId): ?FrontendOrder
+    protected function findExistingFrontendOrderForIdempotencyRecovery(?string $idempotencyKey, int $branchId, ?int $userId): ?FrontendOrder
     {
         if (blank($idempotencyKey) || $branchId <= 0) {
             return null;
@@ -700,6 +711,13 @@ class FrontendOrderService
         return FrontendOrder::query()
             ->where('idempotency_key', $idempotencyKey)
             ->where('branch_id', $branchId)
+            // [IDEMPOTENCY-USER-SCOPE 2026-06-27] Scoper par user_id (miroir du
+            // jumeau POS OrderService:3066, déjà durci). Aligne la couche service
+            // sur le scope du middleware idempotency (branch_id, user_id, hash(key))
+            // — depuis le wireup WEB l'endpoint est multi-utilisateur (tokens guest
+            // web, même branch_id), donc sans ce scope un client B réutilisant la
+            // clé d'un client A récupérait SA commande (fuite PII/total/items).
+            ->where('user_id', $userId)
             ->first();
     }
 

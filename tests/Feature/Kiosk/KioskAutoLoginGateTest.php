@@ -166,4 +166,26 @@ class KioskAutoLoginGateTest extends TestCase
 
         $this->assertNull(is_array($payload) ? $payload : null, 'Mauvais secret = pas d\'identifiants.');
     }
+
+    /**
+     * [BORNE-CLOUD-SEC 2026-06-27] L'allowlist IP doit s'appuyer sur le pair TCP
+     * RÉEL (REMOTE_ADDR), pas sur request()->ip() qui, sous TrustProxies $proxies='*',
+     * est dérivé de X-Forwarded-For → spoofable. Un attaquant qui forge XFF avec une
+     * IP de confiance ne doit PAS récupérer les identifiants machine.
+     */
+    public function test_xff_spoof_does_not_bypass_ip_allowlist(): void
+    {
+        Config::set('kiosk.auto_login_local_bypass', false);
+        Config::set('kiosk.auto_login_trusted_ips', ['192.168.1.10']);
+        Config::set('kiosk.auto_login_secret', '');
+
+        $response = $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.42']) // vrai pair = attaquant
+            ->withHeaders(['X-Forwarded-For' => '192.168.1.10'])                  // IP de confiance SPOOFÉE
+            ->get('/kiosk/idle');
+        $response->assertStatus(200);
+        preg_match('/kioskAutoLogin\s*:\s*(null|\{[^}]*\})/u', (string) $response->getContent(), $m);
+        $payload = isset($m[1]) ? json_decode($m[1], true) : null;
+
+        $this->assertNull(is_array($payload) ? $payload : null, 'XFF spoofé ne doit PAS livrer les creds machine.');
+    }
 }

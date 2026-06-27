@@ -294,7 +294,7 @@ class AppLibrary
         // contract is preserved for the fallback branch — admins keep control
         // if they want a non-EUR display in some downstream surface.
         $amount = (float) $amount;
-        $decimal = (int) (env('CURRENCY_DECIMAL_POINT') ?? 2);
+        $decimal = (int) (env('CURRENCY_DECIMAL_POINT') ?: 2);
 
         if (class_exists('NumberFormatter')) {
             $fmt = new \NumberFormatter('fr_FR', \NumberFormatter::CURRENCY);
@@ -316,12 +316,12 @@ class AppLibrary
         // [MONEY-FIX 2026-06-25] `?? 2` : sous config:cache (prod) env() renvoie null
         // → number_format($x, null) arrondit à l'ENTIER (rapports faux). Garde-fou
         // identique à currencyAmountFormat:289. Idéalement config() (survit au cache).
-        return number_format($amount, (int) (env('CURRENCY_DECIMAL_POINT') ?? 2), '.', '');
+        return number_format($amount, (int) (env('CURRENCY_DECIMAL_POINT') ?: 2), '.', '');
     }
 
     public static function convertAmountFormat($amount): float
     {
-        return (float)number_format($amount, (int) (env('CURRENCY_DECIMAL_POINT') ?? 2), '.', '');
+        return (float)number_format($amount, (int) (env('CURRENCY_DECIMAL_POINT') ?: 2), '.', '');
     }
 
     public static function fcmDataBind($request)
@@ -414,7 +414,7 @@ class AppLibrary
     {
         // [MONEY-FIX 2026-06-25] `?? 2` : voir flatAmountFormat — évite l'arrondi
         // entier des totaux de rapport sous config:cache.
-        return number_format($amount, (int) (env('CURRENCY_DECIMAL_POINT') ?? 2), '.', ',');
+        return number_format($amount, (int) (env('CURRENCY_DECIMAL_POINT') ?: 2), '.', ',');
     }
 
     public static function textShortener($text, $number = 30)

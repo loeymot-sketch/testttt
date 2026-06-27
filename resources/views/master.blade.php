@@ -117,13 +117,18 @@
         // [BORNE-CLOUD 2026-06-27] Matching délégué à KioskAutoLoginGate
         // (IpUtils) → supporte les plages CIDR (ex. /64 IPv6 de la borne cloud,
         // robuste à la rotation d'IPv6) en plus des IP exactes. Comportement
-        // sécurité inchangé : kiosk* ET (local OU IP/CIDR de confiance).
+        // sécurité inchangé : kiosk* ET (local OU IP/CIDR de confiance OU secret).
+        // [BORNE-CLOUD-SEC 2026-06-27] Pour la DÉCISION DE RELEASE des creds on
+        // utilise le pair TCP RÉEL (REMOTE_ADDR), PAS request()->ip() : sous
+        // TrustProxies $proxies='*', request()->ip() est dérivé de X-Forwarded-For
+        // → spoofable (un attaquant forge XFF avec une IP de confiance). REMOTE_ADDR
+        // n'est pas falsifiable par le client (posé par nginx/php-fpm).
         $kioskAutoLoginPayload = \App\Support\KioskAutoLoginGate::resolvePayload(
             config('kiosk.spa_payload'),
             request()->is('kiosk*'),
             (bool) config('kiosk.auto_login_local_bypass', false),
             (array) config('kiosk.auto_login_trusted_ips', []),
-            request()->ip(),
+            request()->server('REMOTE_ADDR'),
             request()->query('machine_key'),
             (string) config('kiosk.auto_login_secret', ''),
         );

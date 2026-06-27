@@ -512,6 +512,13 @@ class KitchenDisplaySystemOrderService
             $query = Order::with('orderItems')
                 ->whereIn('status', KitchenReleaseRule::itemBoardStatuses());
 
+            // [KDS-RELEASE-TWIN 2026-06-27] Même prédicat de release paiement que
+            // list() (l.78) : sans ça, une commande ACCEPT mais UNPAID/non-libérée
+            // (ex. delivery / POS non-cash impayée) faisait fuiter ses items vers
+            // le board « à préparer » alors qu'elle est correctement absente de
+            // list(). Classe du P1 déjà corrigé côté changeStatus (897d2cfff).
+            KitchenReleaseRule::applyBoardReleaseFilter($query);
+
             // Admin bypass: branch_id=0 sees all branches
             if ($userBranchId > 0) {
                 $query->where('branch_id', $userBranchId);
