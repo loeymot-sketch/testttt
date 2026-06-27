@@ -49,7 +49,12 @@ class SimpleOrderResource extends JsonResource
             "total_currency_price"         => AppLibrary::currencyAmountFormat($this->total),
             "total_amount_price"           => AppLibrary::flatAmountFormat($this->total),
             "discount_amount_price"        => AppLibrary::flatAmountFormat($this->discount),
+            // [FR-MONEY 2026-06-27] variantes FR « 0,00 € » pour l'affichage liste (sales-report
+            // rows, online/table orders) — le flat reste pour les inputs. Le brut « 0.00 » était
+            // rendu au commerçant (SalesReportListComponent:197-198).
+            "discount_currency_price"      => AppLibrary::currencyAmountFormat($this->discount),
             "delivery_charge_amount_price" => AppLibrary::flatAmountFormat($this->delivery_charge),
+            "delivery_charge_currency_price" => AppLibrary::currencyAmountFormat($this->delivery_charge),
             'payment_method'               => $this->payment_method,
             'payment_status'               => $this->payment_status,
             'transaction'                  => $this->transaction ? strtoupper($this->transaction?->payment_method) : null,

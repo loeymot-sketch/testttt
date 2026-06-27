@@ -40,7 +40,7 @@
                             </li>
                             <li class="db-list-item">
                                 <span class="db-list-item-title">{{ $t('label.minimum_order') }}</span>
-                                <span class="db-list-item-text">{{ coupon.minimum_order_flat_amount }}</span>
+                                <span class="db-list-item-text">{{ coupon.minimum_order_currency_amount }}</span>
                             </li>
                             <li class="db-list-item">
                                 <span class="db-list-item-title">{{ $t('label.maximum_discount') }}</span>

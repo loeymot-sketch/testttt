@@ -116,7 +116,7 @@
                             <td class="db-table-body-td">
                                 {{ textShortener(order.customer_name, 20) }}
                             </td>
-                            <td class="db-table-body-td">{{ order.total_amount_price }}</td>
+                            <td class="db-table-body-td">{{ order.total_currency_price }}</td>
                             <td class="db-table-body-td">
                                 {{ order.order_datetime }}
                             </td>
