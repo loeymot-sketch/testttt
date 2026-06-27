@@ -311,7 +311,10 @@ class DashboardService
                 ->where('order_datetime', '<', $endParisExclusive)
                 ->whereTime('order_datetime', '>=', Carbon::parse($first_time))
                 ->whereTime('order_datetime', '<=', Carbon::parse($last_time))
-                ->get()->count();
+                // [PERF 2026-06-27] COUNT(*) SQL au lieu de ->get()->count() qui hydratait
+                // ~2184 modèles Order ×18 créneaux par chargement dashboard. Résultat identique,
+                // logique TZ Paris (whereTime non-converti, backlog KDS-ADV3C-12) intacte. R4 perf.
+                ->count();
             $totalCustomerArray[] = $total_customer;
         }
 

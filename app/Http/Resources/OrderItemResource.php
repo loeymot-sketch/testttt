@@ -49,7 +49,9 @@ class OrderItemResource extends JsonResource
             'total_currency_price'             => AppLibrary::currencyAmountFormat($this->total_price),
             'instruction'                      => $this->instruction,
             'kds_station'                      => $this->orderItem?->kds_station ?? 'none',
-            'tax_type'                         => $this->tax_type === TaxType::FIXED ? env('CURRENCY') : '%',
+            // [FR-ENV-SAFE 2026-06-27] env('CURRENCY') null sous config:cache → label tax fixe vide.
+            // Défaut FR-safe (même classe que AppLibrary date/money). Cf. R4 env-config-cache.
+            'tax_type'                         => $this->tax_type === TaxType::FIXED ? (env('CURRENCY') ?: 'EUR') : '%',
             'tax_rate'                         => $this->tax_rate,
             'tax_currency_rate'                => AppLibrary::flatAmountFormat($this->tax_rate),
             'tax_name'                         => $this->tax_name,
