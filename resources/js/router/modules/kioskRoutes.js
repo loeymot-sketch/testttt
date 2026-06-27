@@ -40,32 +40,37 @@ function getKioskAutoCredentials() {
  * Si window.foodkingConfig.kioskAutoLogin est défini (config/kiosk.php) : login API silencieux.
  */
 function requireKioskAuth(to, from, next) {
-    const proceed = () => {
-        if (to.name === 'kiosk.login') return next();
-        const token = store.state.kioskCart?.kioskToken;
-        if (token) return next();
+    // [BORNE-BLANK-FIX 2026-06-27] Reproduit sur la borne cloud (machine_key) :
+    // chaîner next()/proceed sur la promesse de `kioskFilter/init` (puis `kioskLogin`)
+    // pouvait laisser le guard ne JAMAIS rappeler next() → <router-view> reste vide =
+    // ÉCRAN BLANC (0 réseau, app kiosk jamais montée — prouvé : `#app` = router-view
+    // vide, 0 XHR, 0 erreur). On NE BLOQUE PLUS la navigation sur ces dispatches : on
+    // monte l'écran tout de suite, l'hydratation des filtres + le login machine se font
+    // en fire-and-forget, et l'auth se rattrape de toute façon via l'intercepteur 401
+    // (app.js) au 1er fetch menu. Comportement sécurité conservé : pas de creds ni de
+    // token → on renvoie vers l'écran login machine.
+    if (to.name === 'kiosk.login') return next();
 
-        const auto = getKioskAutoCredentials();
-        if (auto) {
-            store
-                .dispatch('kioskCart/kioskLogin', auto)
-                .then(() => next())
-                .catch(() => next({ name: 'kiosk.login' }));
-            return;
-        }
-        next({ name: 'kiosk.login' });
-    };
-
+    // Hydratation des filtres (action SYNCHRONE, localStorage) — fire-and-forget.
     try {
         if (!store.getters['kioskFilter/hydrated']) {
-            store.dispatch('kioskFilter/init').then(proceed).catch(proceed);
-            return;
+            store.dispatch('kioskFilter/init');
         }
-    } catch (_) {
-        /* no-op — deep-link / wizard sans Categories ne doit pas bloquer la nav */
-    }
+    } catch (_) { /* no-op */ }
 
-    proceed();
+    const token = store.state.kioskCart?.kioskToken;
+    if (token) return next();
+
+    const auto = getKioskAutoCredentials();
+    if (!auto) return next({ name: 'kiosk.login' });
+
+    // Creds machine présents : pré-chauffe le token en arrière-plan (l'intercepteur 401
+    // d'app.js rattrape au 1er appel menu si pas encore prêt) et MONTE l'écran tout de
+    // suite — plus aucun blocage de navigation = plus d'écran blanc.
+    try {
+        store.dispatch('kioskCart/kioskLogin', auto).catch(() => {});
+    } catch (_) { /* no-op */ }
+    return next();
 }
 
 /**
