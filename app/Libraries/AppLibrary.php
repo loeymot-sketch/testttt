@@ -53,7 +53,10 @@ class AppLibrary
     public static function increaseDate($dateTime, $days, $pattern = null): string
     {
         if (!$pattern) {
-            $pattern = env('DATE_FORMAT');
+            // [FR-DATE-SAFE 2026-06-27] jumeau de date()/datetime() : env() null après
+            // config:cache → format(null) casse la date de livraison (KDSOrderDetailsResource
+            // delivery_date). Défaut FR-safe d-m-Y.
+            $pattern = env('DATE_FORMAT') ?: 'd-m-Y';
         }
         return Carbon::parse($dateTime)->addDays($days)->format($pattern);
     }
@@ -61,7 +64,8 @@ class AppLibrary
     public static function deliveryTime($dateTime, $pattern = null): string
     {
         if (!$pattern) {
-            $pattern = env('TIME_FORMAT');
+            // [FR-DATE-SAFE 2026-06-27] jumeau : créneau de livraison « HH:MM - HH:MM » 24h FR.
+            $pattern = env('TIME_FORMAT') ?: 'H:i';
         }
         $explode = explode('-', $dateTime);
         if (count($explode) == 2) {

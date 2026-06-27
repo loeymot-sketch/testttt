@@ -58,6 +58,9 @@ class MoneyFormatConfigCacheTest extends TestCase
             $this->assertSame('26-06-2026', AppLibrary::date($stamp), 'date défaut FR d-m-Y');
             $this->assertSame('14:21', AppLibrary::time($stamp), 'time défaut FR 24h H:i (pas de « PM » anglais)');
             $this->assertSame('14:21, 26-06-2026', AppLibrary::datetime($stamp), 'datetime défaut FR 24h');
+            // jumeaux increaseDate (delivery_date KDS) + deliveryTime (créneau) — même classe
+            $this->assertSame('27-06-2026', AppLibrary::increaseDate($stamp, 1), 'increaseDate défaut FR d-m-Y (delivery_date)');
+            $this->assertSame('14:21 - 14:51', AppLibrary::deliveryTime('14:21 - 14:51'), 'deliveryTime défaut FR 24h (créneau HH:MM - HH:MM)');
         } finally {
             if ($origDate !== false) { putenv("DATE_FORMAT={$origDate}"); $_ENV['DATE_FORMAT'] = $origDate; $_SERVER['DATE_FORMAT'] = $origDate; }
             if ($origTime !== false) { putenv("TIME_FORMAT={$origTime}"); $_ENV['TIME_FORMAT'] = $origTime; $_SERVER['TIME_FORMAT'] = $origTime; }
