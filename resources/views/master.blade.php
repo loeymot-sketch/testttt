@@ -114,19 +114,17 @@
         // LAN IPs of the physical kiosk machines, OR set
         // KIOSK_REQUIRE_MACHINE_LOGIN=true (shows a UI login form instead).
         // Sister test: tests/Feature/Kiosk/KioskAutoLoginGateTest.php
-        $kioskAutoLoginPayload = null;
-        if (request()->is('kiosk*')) {
-            $payload = config('kiosk.spa_payload');
-            if ($payload !== null) {
-                $localBypass = (bool) config('kiosk.auto_login_local_bypass', false);
-                $trustedIps  = (array) config('kiosk.auto_login_trusted_ips', []);
-                $clientIp    = (string) request()->ip();
-                $ipTrusted   = ! empty($trustedIps) && in_array($clientIp, $trustedIps, true);
-                if ($localBypass || $ipTrusted) {
-                    $kioskAutoLoginPayload = $payload;
-                }
-            }
-        }
+        // [BORNE-CLOUD 2026-06-27] Matching délégué à KioskAutoLoginGate
+        // (IpUtils) → supporte les plages CIDR (ex. /64 IPv6 de la borne cloud,
+        // robuste à la rotation d'IPv6) en plus des IP exactes. Comportement
+        // sécurité inchangé : kiosk* ET (local OU IP/CIDR de confiance).
+        $kioskAutoLoginPayload = \App\Support\KioskAutoLoginGate::resolvePayload(
+            config('kiosk.spa_payload'),
+            request()->is('kiosk*'),
+            (bool) config('kiosk.auto_login_local_bypass', false),
+            (array) config('kiosk.auto_login_trusted_ips', []),
+            request()->ip(),
+        );
     @endphp
     <script>
         window.foodkingConfig = {
