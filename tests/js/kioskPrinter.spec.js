@@ -83,6 +83,37 @@ describe('kioskPrinter', () => {
     expect(result.method).toBe('none');
   });
 
+  it('[BORNE-PRINT] ne masque PAS un échec bridge en succès navigateur même si l\'élément reçu existe', async () => {
+    // Cas réel borne Electron : #kiosk-print-receipt est TOUJOURS rendu. Un échec
+    // imprimante réel (papier épuisé) ne doit pas tomber sur window.print() et être
+    // rapporté { method:'browser' } (faux « Imprimé » → le filet on-screen ne s'affiche
+    // jamais, reportPrinterFailure jamais appelé).
+    hwMock.isKioskBridge.mockReturnValue(true);
+    hwMock.printReceipt.mockResolvedValue({ ok: false, error: 'paper_out' });
+    hwMock.printEscPos.mockResolvedValue({ ok: false, error: 'paper_out' });
+    document.body.innerHTML = '<div id="kiosk-print-receipt"></div>';
+    window.print = vi.fn();
+
+    const result = await printReceipt({ restaurantName: 'X', queueNumber: 'N1', items: [], total: 0 });
+
+    expect(window.print).not.toHaveBeenCalled();
+    expect(result.method).toBe('none');
+  });
+
+  it('[BORNE-PRINT] un retour bridge {ok:true, success:false} ne compte PAS comme imprimé (tente l\'ESC/POS)', async () => {
+    // IPC transporté OK mais job d'impression échoué → ne pas court-circuiter en
+    // { method:'electron' } via `|| r.ok` ; doit tenter le fallback ESC/POS.
+    hwMock.isKioskBridge.mockReturnValue(true);
+    hwMock.printReceipt.mockResolvedValue({ ok: true, success: false });
+    hwMock.printEscPos.mockResolvedValue({ ok: true });
+    document.body.innerHTML = '';
+
+    const result = await printReceipt({ restaurantName: 'X', queueNumber: 'N1', items: [], total: 0 });
+
+    expect(hwMock.printEscPos).toHaveBeenCalled();
+    expect(result.method).toBe('electron-escpos');
+  });
+
   it('respects PRINTER_RETRY_DELAY_MS between bridge attempts', async () => {
     vi.useFakeTimers();
     hwMock.isKioskBridge.mockReturnValue(true);

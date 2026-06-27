@@ -552,11 +552,15 @@ class FrontendOrderService
                     if ($request->loyalty_code) {
                         $this->frontendOrder->loyalty_customer_code = $request->loyalty_code;
                     }
-                    // Track which surface generated this order for loyalty analytics
+                    // Track which surface generated this order for loyalty analytics.
+                    // [SOURCE-SURFACE-FIX 2026-06-27] Distinguer borne vs web par la
+                    // présence d'une KioskMachine liée au token ($isKioskMachineOrder),
+                    // PAS par order_type : le site web envoie order_type=TAKEAWAY(10),
+                    // donc l'ancien dérivé classait TOUTE commande web-à-emporter en
+                    // 'kiosk' → analytics fidélité + Dashboard + CashOverview faussés
+                    // (comptées borne) depuis le wireup web. La machine = vraie borne.
                     if (!$this->frontendOrder->source_surface) {
-                        $orderType = (int) ($this->frontendOrder->order_type ?? 0);
-                        $isKiosk = in_array($orderType, [\App\Enums\OrderType::KIOSK, \App\Enums\OrderType::TAKEAWAY], true);
-                        $this->frontendOrder->source_surface = $isKiosk ? 'kiosk' : 'web';
+                        $this->frontendOrder->source_surface = $isKioskMachineOrder ? 'kiosk' : 'web';
                     }
                 }, $isKioskMachineOrder ? 'kiosk' : 'frontend');
 

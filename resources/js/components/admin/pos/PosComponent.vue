@@ -2314,9 +2314,9 @@ export default {
         }
     },
     mounted() {
-        // [CAISSE-ZOOM 2026-06-25] Affiche la caisse en ~67% automatiquement (toutes
-        // catégories + produits + panier visibles sur un écran), comme le Ctrl+- que
-        // l'owner appliquait à la main. Surchargeable via localStorage.caisse_zoom.
+        // [CAISSE-ZOOM 2026-06-27] Affiche la caisse en ~90% (0.9) automatiquement
+        // (catégories + produits + panier lisibles sur un écran 16"). Le 0.67 testé
+        // initialement était trop petit. Surchargeable via localStorage.caisse_zoom.
         applyCaisseZoom(document, resolveCaisseZoom(window.localStorage));
         this._debouncedListRefresh = debounce(() => {
             this.itemList(1, { overlay: false });

@@ -227,10 +227,16 @@ export async function printReceipt(receipt, printElementId = 'kiosk-print-receip
       const r = await kioskHardware.printReceipt(orderData);
       if (r?.ok) {
         const raw = r.data || r;
-        if (raw?.success || raw?.skipped || r.ok) {
+        // [BORNE-PRINT 2026-06-27] Traiter `ok` comme imprimé SAUF si le main Electron
+        // signale explicitement success:false (job échoué mais IPC transporté). L'ancien
+        // `|| r.ok` court-circuitait TOUJOURS en succès (la branche warn + fallback ESC/POS
+        // était du code mort → un échec d'impression était rapporté comme imprimé).
+        if (raw?.success === false) {
+          console.warn('[kioskPrinter] printReceipt returned non-success:', raw);
+          // → ne PAS retourner electron ; tenter le fallback ESC/POS ci-dessous.
+        } else {
           return { method: 'electron' };
         }
-        console.warn('[kioskPrinter] printReceipt returned non-success:', raw);
       } else if (r?.error && r.error !== 'printer_unavailable') {
         console.warn('[kioskPrinter] printReceipt failed:', r.error);
       }
@@ -248,18 +254,26 @@ export async function printReceipt(receipt, printElementId = 'kiosk-print-receip
     }
   }
 
-  // ── Browser window.print() fallback (dev / navigateur) ───────────────────
-  const el = document.getElementById(printElementId);
-  if (el && typeof window.print === 'function') {
-    try {
-      window.print();
-      return { method: 'browser' };
-    } catch (err) {
-      return { method: 'none', error: err.message };
+  // ── Browser window.print() fallback — UNIQUEMENT hors bridge (dev / navigateur /
+  // Chrome-kiosk). [BORNE-PRINT 2026-06-27] Sur la VRAIE borne Electron, un échec
+  // bridge ne doit PAS retomber sur window.print() : #kiosk-print-receipt existe
+  // toujours, donc l'ancien code masquait l'échec en { method:'browser' } (faux
+  // « Imprimé », filet on-screen jamais montré, reportPrinterFailure jamais appelé,
+  // et window.print() pouvait ouvrir un dialogue OS bloquant sur écran tactile).
+  // On laisse l'échec remonter pour déclencher printFailed + reportPrinterFailure.
+  if (!isBridge) {
+    const el = document.getElementById(printElementId);
+    if (el && typeof window.print === 'function') {
+      try {
+        window.print();
+        return { method: 'browser' };
+      } catch (err) {
+        return { method: 'none', error: err.message };
+      }
     }
   }
 
-  return { method: 'none', error: 'No print method available' };
+  return { method: 'none', error: isBridge ? 'kiosk_printer_failed' : 'No print method available' };
 }
 
 /**
