@@ -693,15 +693,29 @@ export default {
 }
 
 @media print {
-  body > * { display: none !important; }
+  /* [BORNE-PRINT-FIX 2026-06-27] `#kiosk-print-receipt` est imbriqué profondément
+     sous `#app` (mount('#app')), PAS enfant direct de body. L'ancien
+     `body > * { display:none }` masquait `#app` et TOUT son sous-arbre — un
+     `display:none` sur un ancêtre l'emporte sur un `display:block` du descendant →
+     le ticket sortait BLANC. On bascule sur `visibility` (héritable/ré-affichable par
+     les descendants) : on masque tout, on ré-affiche UNIQUEMENT le reçu + ses enfants,
+     et on remonte le bloc en haut-gauche de la page (les ancêtres en visibility:hidden
+     occupent encore l'espace, d'où le position:absolute). Largeur 300px ≈ 80mm. */
+  body * { visibility: hidden !important; }
+  #kiosk-print-receipt,
+  #kiosk-print-receipt * { visibility: visible !important; }
   #kiosk-print-receipt {
     display: block !important;
-    font-family: monospace;
+    position: absolute !important;
+    top: 0;
+    left: 0;
     width: 300px;
-    margin: 0 auto;
+    margin: 0;
     padding: 12px;
+    font-family: monospace;
     font-size: 14px;
     color: #000;
+    background: #fff;
   }
 }
 .kiosk-printer-fallback {
