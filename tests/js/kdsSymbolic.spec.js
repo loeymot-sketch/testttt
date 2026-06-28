@@ -166,6 +166,26 @@ describe('renderItemSymbolic — line list for the KDS card', () => {
         expect(menuLine).toMatchObject({ type: 'symbolic-menu', label: 'F' });
     });
 
+    it('a paid extra named like a crudité (Oignons frits 0,90) is a supplement, not folded', () => {
+        const item = {
+            item_name: 'Sandwich',
+            quantity: 1,
+            composition_snapshot: {
+                lines: [{ attribute_name: 'Sauce', variation_name: 'Mayonnaise' }],
+                extras: [
+                    { extra_name: 'Salade', unit_price: 0 },
+                    { extra_name: 'Oignon', unit_price: 0 },
+                    { extra_name: 'Oignons frits', unit_price: 0.9 },
+                ],
+            },
+        };
+        const out = renderItemSymbolic(item);
+        // crudités = SO (free only); Oignons frits stays a paid supplement line.
+        expect(out.lines[0].label).toBe('SANDWICH | SO | MAY');
+        const sup = out.lines.filter((l) => l.type === 'supplement').map((l) => l.label);
+        expect(sup).toEqual(['+ Oignons frits']);
+    });
+
     it('crudité extras never leak into the supplement lines', () => {
         const item = {
             item_name: 'Sandwich',

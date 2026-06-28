@@ -103,7 +103,8 @@ final class OrderReceiptEscPosRenderer
 
         // ── Totaux ──────────────────────────────────────────────────────────
         $b .= EscPosCommandBuilder::lineKV('SOUS-TOTAL :', $this->money((float) ($order->subtotal ?? 0)), $w);
-        $b .= EscPosCommandBuilder::lineKV('REDUCTION :', $this->money((float) ($order->discount ?? 0)), $w);
+        $discount = (float) ($order->discount ?? 0);
+        $b .= EscPosCommandBuilder::lineKV('REDUCTION :', ($discount > 0 ? '-' : '') . $this->money($discount), $w);
         $delivery = (float) ($order->delivery_charge ?? 0);
         if ($delivery > 0) {
             $b .= EscPosCommandBuilder::lineKV('LIVRAISON :', $this->money($delivery), $w);
@@ -134,6 +135,12 @@ final class OrderReceiptEscPosRenderer
                     $b .= EscPosCommandBuilder::lineKV('RENDU :', $this->money($p['change']), $w);
                 }
             }
+        } elseif ((int) ($order->payment_status ?? 0) === \App\Enums\PaymentStatus::PAID) {
+            // Paid outside the POS tender flow (e.g. online/web order) — never tell the
+            // customer to pay again; just confirm it is settled.
+            $b .= EscPosCommandBuilder::alignCenter();
+            $b .= EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::textLine('*** PAYÉ ***') . EscPosCommandBuilder::bold(false);
+            $b .= EscPosCommandBuilder::alignLeft();
         } elseif ((float) ($order->total ?? 0) > 0) {
             $b .= EscPosCommandBuilder::lineKV('A REGLER TTC :', $this->money((float) $order->total), $w);
             $b .= EscPosCommandBuilder::alignCenter();
@@ -414,8 +421,26 @@ final class OrderReceiptEscPosRenderer
             $groups[$key]['ht'] += max(0.0, $ttc - $tax);
         }
 
-        // Drop zero-tax groups (e.g. items with no rate) — nothing to ventilate.
-        return array_values(array_filter($groups, fn ($g) => $g['tax'] > 0));
+        $groups = array_values(array_filter($groups, fn ($g) => $g['tax'] > 0));
+
+        // [AUDIT P2-1] An order-level discount is NOT allocated back to per-line tax,
+        // so the gross ventilation would overstate the VAT and not reconcile with the
+        // (discounted) total. Prorate each rate by the net/gross ratio on the goods so
+        // Σ(base HT + TVA) matches what the customer actually pays.
+        $discount = (float) ($order->discount ?? 0);
+        if ($discount > 0 && ! empty($groups)) {
+            $gross = array_sum(array_map(fn ($g) => $g['ht'] + $g['tax'], $groups));
+            if ($gross > 0) {
+                $ratio = max(0.0, ($gross - $discount) / $gross);
+                foreach ($groups as &$g) {
+                    $g['ht'] = round($g['ht'] * $ratio, 2);
+                    $g['tax'] = round($g['tax'] * $ratio, 2);
+                }
+                unset($g);
+            }
+        }
+
+        return $groups;
     }
 
     private function money(float $v): string

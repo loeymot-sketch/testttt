@@ -35,9 +35,18 @@ class PosCustomerDisplayController extends Controller
         try {
             $service = new CustomerDisplayService(app(CustomerDisplayTransportInterface::class), $config);
             $mode = $data['mode'] ?? 'total';
-            $sent = $mode === 'welcome' || ! isset($data['total'])
+            $send = fn () => $mode === 'welcome' || ! isset($data['total'])
                 ? $service->showWelcome()
                 : $service->showTotal((float) $data['total']);
+
+            // [AUDIT P2] Serialize writes to the single serial port: two concurrent
+            // COM opens would make the 2nd fail ("port in use") and could leave a
+            // stale total. The lock makes refreshes run in arrival order (last wins).
+            try {
+                $sent = \Illuminate\Support\Facades\Cache::lock('pos:customer-display', 5)->block(2, $send);
+            } catch (\Illuminate\Contracts\Cache\LockTimeoutException $e) {
+                $sent = false; // a fresher refresh is already running — drop this one
+            }
 
             if (! $sent && $service->lastError()) {
                 Log::warning('[CustomerDisplay] send failed', ['error' => $service->lastError(), 'mode' => $mode]);

@@ -53,8 +53,11 @@ class AppServiceProvider extends ServiceProvider
         // = USB→COM on the caisse PC ; 'null' = dev / no hardware (swallows bytes).
         $this->app->bind(
             \App\Services\Hardware\DisplayTransport\CustomerDisplayTransportInterface::class,
+            // 'none' is the env-safe keyword for the dev/no-hardware transport
+            // (Laravel env() coerces the literal "null" → PHP null, so 'null' is
+            // unreachable from .env; both are accepted here for safety).
             fn () => match ((string) config('printing.customer_display.driver', 'windows_serial')) {
-                'null' => new \App\Services\Hardware\DisplayTransport\NullCustomerDisplayTransport(),
+                'none', 'null' => new \App\Services\Hardware\DisplayTransport\NullCustomerDisplayTransport(),
                 default => new \App\Services\Hardware\DisplayTransport\WindowsSerialDisplayTransport(),
             }
         );

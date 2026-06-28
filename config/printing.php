@@ -53,7 +53,7 @@ return [
     */
     'customer_display' => [
         'enabled' => env('CUSTOMER_DISPLAY_ENABLED', false),
-        'driver' => env('CUSTOMER_DISPLAY_DRIVER', 'windows_serial'), // windows_serial | null
+        'driver' => env('CUSTOMER_DISPLAY_DRIVER', 'windows_serial'), // windows_serial | none (dev/no-hardware)
         'port' => env('CUSTOMER_DISPLAY_PORT', 'COM3'),
         'baud' => (int) env('CUSTOMER_DISPLAY_BAUD', 9600),
         'code_page' => (int) env('CUSTOMER_DISPLAY_CODE_PAGE', 19), // 19 = CP858

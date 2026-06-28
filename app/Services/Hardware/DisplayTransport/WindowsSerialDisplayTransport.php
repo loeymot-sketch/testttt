@@ -24,7 +24,9 @@ final class WindowsSerialDisplayTransport implements CustomerDisplayTransportInt
 
             return false;
         }
-        $port = trim((string) ($config['port'] ?? ''));
+        // Sanitize the COM port name (e.g. "COM3") — defends the PowerShell string
+        // against any stray quote/character even though the value is env-only.
+        $port = preg_replace('/[^A-Za-z0-9]/', '', (string) ($config['port'] ?? ''));
         if ($port === '') {
             $this->lastError = 'missing_serial_port (set CUSTOMER_DISPLAY_PORT, e.g. COM3)';
 

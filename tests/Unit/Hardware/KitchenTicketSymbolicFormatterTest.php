@@ -95,6 +95,23 @@ class KitchenTicketSymbolicFormatterTest extends TestCase
         $this->assertSame('', $this->f->cleanInstruction("SANDWICH\nSauce : Blanche", 'Sandwich'));
     }
 
+    public function test_paid_supplement_named_like_a_crudite_is_not_folded(): void
+    {
+        // "Oignons frits" (0,90€ supplement) must NOT collapse into the crudités slot
+        // like the free "Oignon" garniture, and must appear as a paid line.
+        $snap = [
+            'lines' => [['attribute_name' => 'Sauce', 'variation_name' => 'Mayonnaise']],
+            'extras' => [
+                ['extra_name' => 'Salade', 'unit_price' => 0],
+                ['extra_name' => 'Oignon', 'unit_price' => 0],
+                ['extra_name' => 'Oignons frits', 'unit_price' => 0.90],
+            ],
+        ];
+        // crudités = S + O (free garnitures only), NOT a 2nd O from "Oignons frits".
+        $this->assertSame('SANDWICH | SO | MAY', $this->f->mainLine('Sandwich', $snap));
+        $this->assertSame(['+ Oignons frits'], $this->f->supplementLines($snap));
+    }
+
     public function test_menu_line(): void
     {
         $menu = ['addons' => [['addon_name' => 'Frites Moyennes', 'role' => 'menu_frites']]];

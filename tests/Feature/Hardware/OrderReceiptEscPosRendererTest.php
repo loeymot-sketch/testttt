@@ -127,6 +127,50 @@ class OrderReceiptEscPosRendererTest extends TestCase
         $this->assertStringContainsString('7,90', $bytes, 'unit price for qty>1 missing');
     }
 
+    public function test_client_ticket_tva_is_prorated_when_discounted(): void
+    {
+        // Gross goods 15,90 (HT 14,45 / TVA 1,45 @10%), discount 5,00 → net 10,90.
+        // The printed VAT must reflect the NET (≈0,99), not the gross 1,45.
+        $oi = (new OrderItem)->forceFill([
+            'quantity' => 1, 'total_price' => 15.90,
+            'tax_rate' => 10, 'tax_name' => 'TVA', 'tax_type' => 1, 'tax_amount' => 1.45,
+            'composition_snapshot' => ['lines' => [['attribute_name' => 'Sauce', 'variation_name' => 'Blanche']]],
+        ]);
+        $oi->name = 'Cayenne';
+        $order = (new Order)->forceFill([
+            'order_serial_no' => 'D-1', 'order_type' => \App\Enums\OrderType::TAKEAWAY,
+            'subtotal' => 15.90, 'discount' => 5.00, 'delivery_charge' => 0,
+            'total' => 10.90, 'total_tax' => 1.45, 'pos_payment_method' => 1, 'pos_received_amount' => 10.90,
+            'fiscal_sequence_no' => 12,
+        ]);
+        $order->setRelation('branch', (new Branch)->forceFill(['name' => 'Le Cayenne']));
+        $order->setRelation('user', null);
+        $order->setRelation('orderItems', collect([$oi]));
+
+        $bytes = (new OrderReceiptEscPosRenderer)->renderClientTicket($order);
+        $this->assertStringContainsString('0,99', $bytes, 'TVA should be prorated to the net');
+        $this->assertStringNotContainsString('1,45 EUR', $bytes, 'gross TVA must not be printed when discounted');
+    }
+
+    public function test_paid_order_without_pos_method_is_not_marked_to_pay(): void
+    {
+        $order = $this->makeOrder();
+        $order->pos_payment_method = null;
+        $order->payment_status = \App\Enums\PaymentStatus::PAID;
+        $bytes = (new OrderReceiptEscPosRenderer)->renderClientTicket($order);
+        $this->assertStringNotContainsString('REGLER EN CAISSE', $bytes, 'paid order must not say "à régler"');
+        $this->assertStringContainsString('PAY', $bytes, 'paid order should be marked paid');
+    }
+
+    public function test_unpaid_order_is_marked_to_pay_at_counter(): void
+    {
+        $order = $this->makeOrder();
+        $order->pos_payment_method = null;
+        $order->payment_status = \App\Enums\PaymentStatus::UNPAID;
+        $bytes = (new OrderReceiptEscPosRenderer)->renderClientTicket($order);
+        $this->assertStringContainsString('REGLER EN CAISSE', $bytes);
+    }
+
     public function test_client_ticket_marks_duplicata(): void
     {
         $bytes = (new OrderReceiptEscPosRenderer)->renderClientTicket($this->makeOrder(), ['is_duplicata' => true]);

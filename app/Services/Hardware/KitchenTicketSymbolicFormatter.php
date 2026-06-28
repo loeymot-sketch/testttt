@@ -101,6 +101,14 @@ final class KitchenTicketSymbolicFormatter
         return '';
     }
 
+    /** A free garniture has no price; a paid supplement (e.g. "Oignons frits") does. */
+    private function isFreeExtra(array $e): bool
+    {
+        $price = (float) ($e['unit_price'] ?? $e['line_total'] ?? 0);
+
+        return $price <= 0;
+    }
+
     public function supportSymbol(?string $name): string
     {
         $n = $this->norm($name);
@@ -126,9 +134,10 @@ final class KitchenTicketSymbolicFormatter
         foreach (($snapshot['lines'] ?? []) as $l) {
             $group = (string) ($l['attribute_name'] ?? $l['variation_name'] ?? '');
             $value = (string) ($l['variation_name'] ?? $l['name'] ?? '');
-            // legacy shape: attribute_name absent → variation_name IS the group, name IS the value
+            // legacy shape: attribute_name absent → variation_name IS the group, name IS
+            // the value (parity with kdsSymbolic.js / kdsVariationGroupValue: name only).
             if (! isset($l['attribute_name']) || $l['attribute_name'] === '') {
-                $value = (string) ($l['name'] ?? $l['variation_name'] ?? '');
+                $value = (string) ($l['name'] ?? '');
             }
             if ($value === '') {
                 continue;
@@ -150,7 +159,10 @@ final class KitchenTicketSymbolicFormatter
         foreach (($snapshot['extras'] ?? []) as $e) {
             $name = (string) ($e['extra_name'] ?? $e['name'] ?? '');
             $cs = $this->cruditeSymbol($name);
-            if ($cs !== '') {
+            // Only FREE garnitures (Salade/Tomate/Oignon, price 0) fold into the
+            // crudités slot. A PAID extra that happens to match (e.g. "Oignons frits"
+            // 0,90€) is a supplement, not a crudité.
+            if ($cs !== '' && $this->isFreeExtra($e)) {
                 $crud[$cs] = true;
             }
         }
@@ -183,7 +195,9 @@ final class KitchenTicketSymbolicFormatter
         $out = [];
         foreach (($snapshot['extras'] ?? []) as $e) {
             $name = (string) ($e['extra_name'] ?? $e['name'] ?? '');
-            if ($name === '' || $this->cruditeSymbol($name) !== '') {
+            // Skip only FREE garnitures (folded into Line 1). Paid extras — even
+            // crudité-named ones like "Oignons frits" — stay as supplement lines.
+            if ($name === '' || ($this->cruditeSymbol($name) !== '' && $this->isFreeExtra($e))) {
                 continue;
             }
             $q = (int) ($e['quantity'] ?? 1);

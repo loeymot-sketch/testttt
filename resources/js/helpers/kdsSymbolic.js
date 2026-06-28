@@ -186,7 +186,10 @@ export function buildSymbolic(orderItem) {
         const name = extraName(e);
         if (!name) continue;
         const cs = cruditeSymbol(name);
-        if (cs) {
+        const price = Number(e?.unit_price ?? e?.line_total ?? 0) || 0;
+        // Only FREE garnitures (price 0) fold into the crudités slot; a paid extra
+        // that happens to match (e.g. "Oignons frits" 0,90) is a supplement.
+        if (cs && price <= 0) {
             crud.add(cs);
         } else {
             const q = parseInt(e?.quantity, 10);

@@ -2517,7 +2517,7 @@ export default {
                 const t = Number(total) || 0;
                 const payload = t > 0 ? { mode: 'total', total: t } : { mode: 'welcome' };
                 axios.post('admin/pos/customer-display', payload).catch(() => {});
-            }, 150);
+            }, 350);
         },
         // [Sprint 1A 2026-05-16] Cash drawer session — handlers UI ──────────────
         /**
