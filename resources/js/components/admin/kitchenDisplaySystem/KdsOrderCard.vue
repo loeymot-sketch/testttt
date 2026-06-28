@@ -177,7 +177,8 @@
 
 <script>
 import KdsOrderLine from './KdsOrderLine.vue';
-import { renderItem, orderHasAnyAllergen } from '../../../helpers/kdsCustomization.js';
+import { orderHasAnyAllergen } from '../../../helpers/kdsCustomization.js';
+import { renderItemSymbolic } from '../../../helpers/kdsSymbolic.js';
 import {
     getKdsAgeBucket,
     parseOrderCreatedMs,
@@ -388,7 +389,9 @@ export default {
     },
     methods: {
         renderItemLines(item) {
-            return renderItem(item).lines;
+            // [KITCHEN-SYMBOLS 2026-06-28] Owner: the kitchen reads symbolic codes
+            // (G | SANDWICH | P | STO | SAM), not full prose. See kdsSymbolic.js.
+            return renderItemSymbolic(item).lines;
         },
         onCta() {
             // [GOAL-2026-05-30 D1] No payment gate — the chef may bump an unpaid (PENDING_COUNTER)

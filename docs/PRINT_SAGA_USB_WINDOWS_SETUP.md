@@ -87,3 +87,49 @@ réelle). L'envoi `winspool` RAW + la sortie physique ne peuvent se valider QUE 
 PC Windows + la SAGA réelle (étape 5). Si le test-print ne sort pas du premier coup,
 c'est presque toujours le **nom d'imprimante** ou un **réglage du spouleur** — itération
 rapide via les logs.
+
+---
+
+## ⚡ Activation rapide (2026-06-28) — pourquoi le ticket sortait en charabia
+
+**Symptôme** (photo owner) : à l'impression, accents/€ cassés (« Opúrateur », « áç »),
+en-tête `https://…/admin/pos` + `1/1`, colonnes collées, AUCUNE coupe entre les 2 tickets.
+
+**Cause** : `PRINT_DRIVER` valait `tcp` (défaut) **et** aucune ligne `Printer`
+`station=receipt status=ACTIVE` n'existait → le contrôleur renvoyait `printed_escpos=false`
+→ le front retombait sur le `window.print()` du **navigateur** (qui ajoute l'URL + le n°
+de page et massacre l'encodage). Le renderer ESC/POS lui-même était déjà correct.
+
+**Activer le vrai moteur thermique** (sur le PC Windows où la SAGA est branchée USB) :
+
+```bash
+# 1) Nom EXACT de l'imprimante (Périphériques et imprimantes)
+php artisan pos:setup-receipt-printer "SAGA-80mm"   # ← remplace par le nom réel
+# 2) .env
+PRINT_DRIVER=windows_raw
+PRINTING_BYPASS_MODE=false
+# 3)
+php artisan config:clear
+```
+
+Ensuite, depuis la caisse : « Ticket Client » → ticket caisse propre + coupe ; « Ticket
+Cuisine » → bon de prod **symbolique** + coupe. Plus de fallback navigateur, plus d'URL.
+
+## Ticket CUISINE = format symbolique (owner)
+
+Le bon cuisine n'imprime plus la composition en toutes lettres mais le code court
+lisible par le cuisinier — **identique à l'écran de cuisine (KDS)** :
+
+```
+1 x G | TACOS | M | K | SAM     ← [Support]|[Produit]|[Taille]|[Viande]|[Crudités]|[Sauce]
+  + Cheddar                     ← suppléments (nom complet)
+  MENU                          ← MENU / F
+```
+
+Tables de symboles : `app/Services/Hardware/KitchenTicketSymbolicFormatter.php`
+(jumeau PHP de `resources/js/helpers/kdsSymbolic.js` — parité testée). Pour ajouter
+une viande/sauce, éditer **les deux** tables + leurs tests (`tests/Unit/Hardware/
+KitchenTicketSymbolicFormatterTest.php` et `tests/js/kdsSymbolic.spec.js`).
+
+Le **ticket CLIENT** reste en toutes lettres (lisible client) + minimal NF525
+(plus d'empreinte audit longue, plus d'URL, plus de « Propulsé par »).

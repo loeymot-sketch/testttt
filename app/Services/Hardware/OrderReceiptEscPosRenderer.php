@@ -24,7 +24,10 @@ use App\Services\Receipt\ReceiptDataService;
  */
 final class OrderReceiptEscPosRenderer
 {
-    public function __construct(private readonly ReceiptDataService $receiptData = new ReceiptDataService) {}
+    public function __construct(
+        private readonly ReceiptDataService $receiptData = new ReceiptDataService,
+        private readonly KitchenTicketSymbolicFormatter $symbolic = new KitchenTicketSymbolicFormatter,
+    ) {}
 
     /** Client (fiscal) ticket — prices, totals, TVA, payment, NF525 footer. */
     public function renderClientTicket(BroadcastableOrder $order, array $opts = []): string
@@ -145,8 +148,29 @@ final class OrderReceiptEscPosRenderer
         $b .= EscPosCommandBuilder::separator('=', $w);
         $b .= EscPosCommandBuilder::alignLeft();
 
-        foreach ($this->lines($order) as $line) {
-            $b .= $this->renderLine($line, $w, false);
+        // [KITCHEN-SYMBOLS 2026-06-28] Owner: the cook reads symbolic shorthand
+        // (G | SANDWICH | P | STO | SAM), not prose. Same table as the KDS screen.
+        foreach (($order->orderItems ?? collect()) as $oi) {
+            $name = (string) ($oi->name ?? optional($oi->orderItem)->name ?? 'Article');
+            $snap = is_array($oi->composition_snapshot) ? $oi->composition_snapshot : [];
+            $qty = max(1, (int) ($oi->quantity ?? 1));
+
+            $main = $this->symbolic->mainLine($name, $snap);
+            $b .= EscPosCommandBuilder::bold(true);
+            $b .= EscPosCommandBuilder::textLine($qty . ' x ' . $main);
+            $b .= EscPosCommandBuilder::bold(false);
+
+            foreach ($this->symbolic->supplementLines($snap) as $sup) {
+                $b .= EscPosCommandBuilder::textLine('  ' . $sup);
+            }
+            $menu = $this->symbolic->menuLine($snap);
+            if ($menu !== '') {
+                $b .= EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::textLine('  ' . $menu) . EscPosCommandBuilder::bold(false);
+            }
+            $note = $this->symbolic->cleanInstruction((string) ($oi->instruction ?? ''), $name);
+            foreach (array_filter(explode("\n", $note)) as $noteLine) {
+                $b .= EscPosCommandBuilder::textLine('  ** ' . trim($noteLine));
+            }
             $b .= EscPosCommandBuilder::textLine('');
         }
         $b .= EscPosCommandBuilder::feed(3);

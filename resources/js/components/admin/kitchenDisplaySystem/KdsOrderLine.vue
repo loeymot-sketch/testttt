@@ -25,6 +25,20 @@
       </div>
     </template>
 
+    <!-- symbolic-main — qty + "G | SANDWICH | P | STO | SAM" (kitchen shorthand) -->
+    <template v-else-if="line.type === 'symbolic-main'">
+      <div class="kds-line__symbolic">
+        <span class="kds-line__qty">{{ line.qty }}<span class="kds-line__qty-x">×</span></span>
+        <span v-if="line.hasAllergen" class="kds-line__allergen-icon" :aria-label="$t('label.kds_line_allergen_icon_aria')">⚠</span>
+        <span class="kds-line__symbolic-text">{{ line.label }}</span>
+      </div>
+    </template>
+
+    <!-- symbolic-menu — "MENU" / "F" badge -->
+    <template v-else-if="line.type === 'symbolic-menu'">
+      <div class="kds-line__symbolic-menu">{{ line.label }}</div>
+    </template>
+
     <!-- grouped variation: "Pain : Baguette" -->
     <template v-else-if="line.type === 'variation'">
       <div class="kds-line__variation">
@@ -164,6 +178,40 @@ export default {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* SYMBOLIC MAIN — qty + pipe-delimited shorthand, big & bold for the line cook */
+.kds-line--symbolic-main {
+  padding: 0.5rem 0 0.25rem;
+}
+.kds-line__symbolic {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.kds-line__symbolic-text {
+  flex: 1;
+  color: #111827;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.5px;
+  font-variant-numeric: tabular-nums;
+  word-break: break-word;
+}
+
+/* SYMBOLIC MENU — "MENU" / "F" badge */
+.kds-line__symbolic-menu {
+  display: inline-block;
+  margin-top: 5px;
+  margin-inline-start: 56px;
+  padding: 2px 10px;
+  border-radius: 6px;
+  background: #111827;
+  color: #FFFFFF;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 1px;
 }
 
 /* VARIATION — "Pain : Baguette" */
