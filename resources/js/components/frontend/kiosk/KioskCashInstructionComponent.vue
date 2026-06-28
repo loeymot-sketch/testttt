@@ -41,6 +41,18 @@
       <p v-if="countdown > 0" class="kiosk-cash__countdown" aria-live="polite">
         {{ $t('kiosk.cash_instruction.auto_redirect', { n: countdown }) }}
       </p>
+      <!-- [G2] Filet écran : si le pont d'impression est injoignable, le client
+           (ou un membre de l'équipe) peut relancer l'impression du ticket. -->
+      <KsButton
+        v-if="printFailed"
+        variant="secondary"
+        size="lg"
+        full-width
+        data-testid="kiosk-cash-reprint"
+        @click="reprintTicket"
+      >
+        🖨️ Réimprimer le ticket
+      </KsButton>
       <KsButton
         variant="primary"
         size="lg"
@@ -89,6 +101,7 @@ export default {
         return {
             countdown: this.autoRedirectSeconds,
             timer: null,
+            printFailed: false, // [G2] filet écran si le pont est injoignable
         };
     },
     mounted() {
@@ -103,8 +116,14 @@ export default {
             try {
                 if (kioskHardware.isKioskBridge() || await isLocalBridgeAvailable()) {
                     this.autoPrintCounterTicket();
+                } else {
+                    // [G2] Pont INJOIGNABLE = échec n°1 en prod (process down, port pris,
+                    // reboot). Ne plus le laisser silencieux : on TRACE + on lève le filet
+                    // écran (bouton réimprimer) au lieu d'un trou noir.
+                    reportPrinterFailure(this.orderNumber, 'bridge_unavailable');
+                    this.printFailed = true;
                 }
-            } catch (_) { /* détection pont non bloquante */ }
+            } catch (_) { this.printFailed = true; }
         });
     },
     beforeUnmount() {
@@ -143,35 +162,51 @@ export default {
                 /* observabilité best-effort — ne bloque jamais l'UX */
             });
         },
-        // [BORNE-LOCAL-BRIDGE 2026-06-28] Construit le ticket client (numéro + total +
-        // items best-effort depuis le panier encore présent) et l'imprime via le pont.
-        // Une seule fois par commande (garde anti-double).
-        autoPrintCounterTicket() {
-            // Garde module-level : 1 ticket max par commande, même après re-montage.
-            if (!markPrintedOnce(this.orderNumber)) return;
+        // [BORNE-LOCAL-BRIDGE] Construit le reçu (numéro + total + items best-effort du
+        // panier encore présent). Libellés FR littéraux (borne FR-only ADR-007).
+        buildTicketReceipt() {
             let cartItems = [];
             try { cartItems = this.$store?.state?.kioskCart?.items || []; } catch (_) {}
             let restaurantName = 'Le Cayenne';
             try { restaurantName = this.$store?.state?.frontendSetting?.company_name || restaurantName; } catch (_) {}
             const amount = typeof this.orderTotal === 'number' ? this.orderTotal : 0;
-            const receipt = buildReceiptData({
+            return buildReceiptData({
                 restaurantName,
                 queueNumber: String(this.orderNumber || ''),
                 cartItems,
                 subtotal: amount,
                 discount: 0,
                 total: amount,
-                // Libellés ticket en FR littéral (borne FR-only ADR-007) : le bridge
-                // ASCII-fold, et $t n'est pas garanti résolu au montage → on évite la
-                // clé i18n brute imprimée. Le e2e LIVE a révélé ce défaut.
                 paymentMethod: 'A regler en caisse',
                 thankYou: 'Merci de votre visite !',
             });
-            try {
-                escPosPrint(receipt).catch((e) => reportPrinterFailure(this.orderNumber, e?.message || 'cash-print'));
-            } catch (e) {
-                reportPrinterFailure(this.orderNumber, e?.message || 'cash-print-throw');
-            }
+        },
+        // [G3] Clé datée = order# + jour : évite la collision au rollover quotidien des
+        // numéros (A0001 réinitialisé/jour) si la borne tourne après minuit.
+        printGuardKey() {
+            const day = new Date().toISOString().slice(0, 10);
+            return `${this.orderNumber || ''}|${day}`;
+        },
+        autoPrintCounterTicket() {
+            // [G3] Garde persistée (survit au F5) + datée. 1 ticket max/commande.
+            if (!markPrintedOnce(this.printGuardKey())) return;
+            // [G5] allowBrowserPrint:false → pas de window.print() en auto ; [G2] result-check.
+            escPosPrint(this.buildTicketReceipt(), 'kiosk-print-receipt', { allowBrowserPrint: false })
+                .then((result) => {
+                    if (!result || result.method === 'none') {
+                        reportPrinterFailure(this.orderNumber, (result && result.error) || 'cash-print-none');
+                        this.printFailed = true;
+                    } else {
+                        this.printFailed = false;
+                    }
+                })
+                .catch((e) => { reportPrinterFailure(this.orderNumber, e?.message || 'cash-print'); this.printFailed = true; });
+        },
+        // [G2] Réimpression manuelle (filet écran) : ré-attaque le pont sans la garde.
+        reprintTicket() {
+            escPosPrint(this.buildTicketReceipt(), 'kiosk-print-receipt', { allowBrowserPrint: false })
+                .then((result) => { this.printFailed = !result || result.method === 'none'; })
+                .catch(() => { this.printFailed = true; });
         },
     },
 };

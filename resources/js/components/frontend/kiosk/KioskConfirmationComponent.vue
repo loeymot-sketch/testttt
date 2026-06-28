@@ -339,12 +339,14 @@ export default {
     // bridge ni pont, le client garde le bouton « Imprimer le ticket » manuel.
     this.$nextTick(async () => {
       try {
-        // markPrintedOnce garde l'AUTO-print (1×/commande, anti re-mount) ; le
-        // bouton manuel « Imprimer le ticket » appelle printReceipt() directement,
-        // donc reste toujours disponible pour une réimpression volontaire.
-        const ref = this.displayNumber || this.orderNumber;
+        // markPrintedOnce garde l'AUTO-print (1×/commande, anti re-mount ET anti-F5
+        // via localStorage) ; le bouton manuel « Imprimer le ticket » appelle
+        // printReceipt() directement → toujours disponible. [G3] clé datée = anti
+        // collision au rollover quotidien des numéros de file.
+        const day = new Date().toISOString().slice(0, 10);
+        const ref = `${this.displayNumber || this.orderNumber || ''}|${day}`;
         if ((kioskHardware.isKioskBridge() || await isLocalBridgeAvailable()) && markPrintedOnce(ref)) {
-          this.printReceipt();
+          this.printReceipt(false); // [G5] auto : pas de fallback window.print (dialogue bloquant / faux succès)
         }
       } catch (_) { /* détection pont non bloquante */ }
     });
@@ -386,7 +388,7 @@ export default {
       if (this.timer) { clearInterval(this.timer); this.timer = null; }
     },
 
-    async printReceipt() {
+    async printReceipt(allowBrowserPrint = true) {
       if (this.printStatus === 'printing') return;
       this.printStatus = 'printing';
 
@@ -413,7 +415,7 @@ export default {
       });
 
       try {
-        const result = await escPosPrint(receiptData, 'kiosk-print-receipt');
+        const result = await escPosPrint(receiptData, 'kiosk-print-receipt', { allowBrowserPrint });
 
         if (result.method === 'none') {
           this.printStatus = 'error';

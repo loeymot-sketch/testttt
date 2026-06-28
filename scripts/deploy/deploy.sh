@@ -96,12 +96,19 @@ fi
 
 cd "$APP_DIR"
 
-# Warn on local changes — `git reset --hard` would discard operator hot-patches.
+# [G9 2026-06-28] Garde BLOQUANTE : `git reset --hard` écraserait des hot-patches SCP
+# (ex. fichiers borne déployés directement) SANS trace — et le `sleep 5` était sans effet
+# en non-interactif (cron/CI). On EXIGE désormais --force explicite pour écraser un
+# working-tree sale. Voir docs/runbooks/BORNE_LOCAL_BRIDGE_SETUP.md.
 if [[ -n "$(git -C "$APP_DIR" status --porcelain 2>/dev/null)" ]]; then
-    echo "  WARNING: local changes detected at ${APP_DIR}. Reset will discard them."
-    echo "  Stash them first if needed: git -C ${APP_DIR} stash"
-    echo "  Continuing in 5s — Ctrl-C to abort..."
-    sleep 5
+    echo "  WARNING: local changes detected at ${APP_DIR}. 'git reset --hard' les détruirait."
+    git -C "$APP_DIR" status --short 2>/dev/null | head -20
+    if [[ "${1:-}" == "--force" || "${DEPLOY_FORCE:-}" == "1" ]]; then
+        echo "  --force/DEPLOY_FORCE=1 fourni → on écrase les changements locaux."
+    else
+        echo "  ABORT : commit/push ces changements (ou stash), puis relance. Forcer = --force ou DEPLOY_FORCE=1."
+        exit 1
+    fi
 fi
 
 git -C "$APP_DIR" fetch origin

@@ -195,7 +195,12 @@ export function buildEscPosReceipt(receipt) {
  * @param {string} [printElementId='kiosk-print-receipt']  — DOM id for web fallback
  * @returns {Promise<{method: 'electron'|'electron-escpos'|'browser'|'none', error?: string}>}
  */
-export async function printReceipt(receipt, printElementId = 'kiosk-print-receipt') {
+export async function printReceipt(receipt, printElementId = 'kiosk-print-receipt', opts = {}) {
+  // [G5] allowBrowserPrint : en AUTO (false) on ne retombe PAS sur window.print() —
+  // sinon faux « Imprimé » (method:'browser' traité comme succès), dialogue OS bloquant
+  // sur écran tactile, et 2ᵉ ticket possible si le pont imprime puis répond après l'abort.
+  // window.print() reste réservé au BOUTON MANUEL (allowBrowserPrint défaut true).
+  const allowBrowserPrint = opts.allowBrowserPrint !== false;
   // [PHASE-6.2] Électron bridge — via kioskHardware (pas d'accès direct window.borne).
   //
   // `kioskHardware.printReceipt` et `printEscPos` retournent le contrat {ok, error?}
@@ -268,6 +273,12 @@ export async function printReceipt(receipt, printElementId = 'kiosk-print-receip
     const bridge = await printViaLocalBridge(receipt);
     if (bridge) return bridge;
 
+    // [G5] En AUTO (allowBrowserPrint=false), ne pas masquer l'échec du pont en
+    // window.print() → on remonte 'none' pour déclencher printFailed + reportPrinterFailure.
+    if (!allowBrowserPrint) {
+      return { method: 'none', error: 'local_bridge_failed' };
+    }
+
     const el = document.getElementById(printElementId);
     if (el && typeof window.print === 'function') {
       try {
@@ -329,6 +340,7 @@ export function buildReceiptData({
   paymentMethod,
   loyaltyPointsEarned = 0,
   loyaltyCustomerName = '',
+  thankYou = '',
   labels = {},
 }) {
   const now = new Date();
@@ -355,6 +367,7 @@ export function buildReceiptData({
     paymentMethod:  paymentMethod || '',
     loyaltyPointsEarned: parseInt(loyaltyPointsEarned, 10) || 0,
     loyaltyCustomerName: loyaltyCustomerName || '',
+    thankYou: thankYou || '', // [G8] propagé jusqu'au footer du pont (était droppé)
     labels,
   };
 }
@@ -367,16 +380,37 @@ export function buildReceiptData({
 // context → fetch autorisé depuis une page HTTPS (exempté du blocage mixed-content).
 export const LOCAL_BRIDGE_URL = 'http://127.0.0.1:9100';
 
-// [BORNE-PRINT-ONCE 2026-06-28] Garde anti-double-impression au niveau MODULE (pas
-// instance) : un re-montage de composant (confirmation OU cash-instruction) ne doit
-// JAMAIS sortir un 2ᵉ ticket thermique pour la même commande. Survit aux re-mounts.
-const _printedOrders = new Set();
+// [BORNE-PRINT-ONCE 2026-06-28] Garde anti-double-impression : un re-montage de
+// composant OU un hard-reload (F5 / watchdog kiosque) ne doit JAMAIS sortir un 2ᵉ
+// ticket thermique pour la même commande. [G3] Persistée en localStorage (survit au
+// reload — la garde mémoire seule était ré-initialisée au reload → 2ᵉ ticket). Clé =
+// fournie par l'appelant ; préférer l'order id backend (unique) ou queue+date pour
+// éviter la collision au rollover quotidien des numéros (A0001 réinitialisé/jour).
+const PRINTED_LS_KEY = 'kiosk_printed_orders_v1';
+let _printedOrders = null;
+function _loadPrinted() {
+  if (_printedOrders) return _printedOrders;
+  _printedOrders = new Set();
+  try {
+    const raw = window.localStorage.getItem(PRINTED_LS_KEY);
+    if (raw) JSON.parse(raw).forEach(k => _printedOrders.add(k));
+  } catch (_) { /* localStorage indispo → garde mémoire seule */ }
+  return _printedOrders;
+}
 export function markPrintedOnce(orderRef) {
   const k = String(orderRef == null ? '' : orderRef).trim();
-  if (k === '' || _printedOrders.has(k)) return false;
-  _printedOrders.add(k);
+  if (k === '') return false;
+  const set = _loadPrinted();
+  if (set.has(k)) return false;
+  set.add(k);
+  try {
+    const arr = Array.from(set).slice(-200); // cap mémoire/LS
+    window.localStorage.setItem(PRINTED_LS_KEY, JSON.stringify(arr));
+  } catch (_) { /* best-effort */ }
   return true;
 }
+/** Test-only : réinitialise la garde (le localStorage réel n'est pas purgé en prod). */
+export function _resetPrintedOnce() { _printedOrders = null; }
 
 // Le pont envoie ses octets en 'binary' (Latin-1) et le codepage du SK1-31 est
 // imprévisible → on ASCII-fold (accents retirés, € → EUR) pour garantir un ticket
@@ -416,6 +450,11 @@ export function buildBridgePayload(receipt) {
   }
   if (receipt.paymentMethod) {
     lines.push(padLine('Paiement', asciiFold(receipt.paymentMethod), width));
+  }
+  // [G11] Bloc fidélité (était imprimé par buildEscPosReceipt mais absent du payload pont).
+  if (receipt.loyaltyPointsEarned && receipt.loyaltyPointsEarned > 0) {
+    const name = asciiFold(receipt.loyaltyCustomerName).slice(0, 16);
+    lines.push(`+${receipt.loyaltyPointsEarned} pts${name ? ' - ' + name : ''}`);
   }
   return {
     title: asciiFold(receipt.restaurantName) || 'LE CAYENNE',

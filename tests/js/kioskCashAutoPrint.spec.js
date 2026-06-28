@@ -22,9 +22,13 @@ import Comp from '../../resources/js/components/frontend/kiosk/KioskCashInstruct
 
 describe('KioskCashInstruction — auto-print ticket caisse', () => {
   const ctx = (orderNumber, over = {}) => ({
-    orderNumber, orderTotal: 1.9,
+    orderNumber, orderTotal: 1.9, printFailed: false,
     $store: { state: { kioskCart: { items: [{ name: 'Coca', quantity: 1, convert_price: 1.9 }] }, frontendSetting: { company_name: 'Le Cayenne' } } },
-    $t: (k) => k, ...over,
+    $t: (k) => k,
+    // méthodes réelles du composant (le `this` simulé doit les porter)
+    printGuardKey: Comp.methods.printGuardKey,
+    buildTicketReceipt: Comp.methods.buildTicketReceipt,
+    ...over,
   });
 
   it('imprime le ticket une seule fois par commande (garde module-level)', () => {

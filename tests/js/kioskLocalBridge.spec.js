@@ -3,6 +3,7 @@ import {
   isLocalBridgeAvailable,
   printViaLocalBridge,
   buildBridgePayload,
+  buildReceiptData,
   markPrintedOnce,
   LOCAL_BRIDGE_URL,
 } from '../../resources/js/helpers/kioskPrinter';
@@ -56,6 +57,22 @@ describe('buildBridgePayload — codepage-safe (ASCII)', () => {
   it('robuste sur reçu vide (jamais throw)', () => {
     expect(() => buildBridgePayload({})).not.toThrow();
     expect(() => buildBridgePayload(null)).not.toThrow();
+  });
+});
+
+describe('G8/G11 — thankYou propagé + bloc fidélité (audit adversaire)', () => {
+  it('[G8] buildReceiptData propage thankYou jusqu\'au footer du pont (était droppé)', () => {
+    const r = buildReceiptData({ restaurantName: 'Le Cayenne', queueNumber: 'A1', cartItems: [], total: 5, thankYou: 'Au revoir Le Cayenne !' });
+    expect(r.thankYou).toBe('Au revoir Le Cayenne !');
+    expect(buildBridgePayload(r).footer).toMatch(/Au revoir Le Cayenne/);
+  });
+  it('[G11] buildBridgePayload imprime les points fidélité + nom', () => {
+    const p = buildBridgePayload({ restaurantName: 'X', queueNumber: 'A1', items: [], total: 5, loyaltyPointsEarned: 5, loyaltyCustomerName: 'Marie' });
+    expect(p.lines.some(l => /\+5 pts - Marie/.test(l))).toBe(true);
+  });
+  it('[G11] pas de ligne fidélité si 0 point', () => {
+    const p = buildBridgePayload({ items: [], total: 5, loyaltyPointsEarned: 0 });
+    expect(p.lines.some(l => /pts/.test(l))).toBe(false);
   });
 });
 

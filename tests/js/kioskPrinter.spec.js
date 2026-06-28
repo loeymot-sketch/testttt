@@ -171,4 +171,17 @@ describe('kioskPrinter', () => {
     expect(window.print).toHaveBeenCalledTimes(1);
     vi.restoreAllMocks();
   });
+
+  it('[G5] en AUTO (allowBrowserPrint:false), pont échoué → method:none SANS window.print', async () => {
+    hwMock.isKioskBridge.mockReturnValue(false);
+    global.fetch = vi.fn().mockRejectedValue(new Error('ECONNREFUSED')); // pont absent
+    document.body.innerHTML = '<div id="kiosk-print-receipt"></div>';
+    window.print = vi.fn();
+
+    const result = await printReceipt({ restaurantName: 'X', queueNumber: 'A1', items: [], total: 1 }, 'kiosk-print-receipt', { allowBrowserPrint: false });
+
+    expect(result.method).toBe('none'); // remonte l'échec (→ printFailed/reportPrinterFailure)
+    expect(window.print).not.toHaveBeenCalled(); // pas de dialogue OS bloquant en auto
+    vi.restoreAllMocks();
+  });
 });
