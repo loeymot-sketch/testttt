@@ -103,6 +103,19 @@ class OrderReceiptEscPosRendererTest extends TestCase
         $this->assertStringContainsString('TVA 10', $bytes, 'TVA rate line missing');
     }
 
+    public function test_client_ticket_shows_phone_email_and_website(): void
+    {
+        config(['printing.receipt.website' => 'lecayenne.fr']);
+        $order = $this->makeOrder();
+        $order->branch->phone = '0365678291';
+        $order->branch->email = 'contact@lecayenne.fr';
+        $bytes = (new OrderReceiptEscPosRenderer)->renderClientTicket($order);
+        // French 10-digit number grouped in pairs.
+        $this->assertStringContainsString('03 65 67 82 91', $bytes, 'phone not formatted');
+        $this->assertStringContainsString('contact@lecayenne.fr', $bytes, 'email missing');
+        $this->assertStringContainsString('lecayenne.fr', $bytes, 'website missing');
+    }
+
     public function test_client_ticket_shows_unit_price_when_qty_above_one(): void
     {
         $order = $this->makeOrder();

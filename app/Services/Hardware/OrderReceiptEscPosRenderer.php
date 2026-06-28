@@ -51,10 +51,14 @@ final class OrderReceiptEscPosRenderer
             $b .= EscPosCommandBuilder::textLine((string) $branch->address);
         }
         if (optional($branch)->phone) {
-            $b .= EscPosCommandBuilder::textLine('Tel: ' . $branch->phone);
+            $b .= EscPosCommandBuilder::textLine('Tél : ' . $this->formatPhone((string) $branch->phone));
         }
         if (optional($branch)->email) {
-            $b .= EscPosCommandBuilder::textLine('E-mail: ' . $branch->email);
+            $b .= EscPosCommandBuilder::textLine('E-mail : ' . $branch->email);
+        }
+        $website = (string) config('printing.receipt.website', '');
+        if ($website !== '') {
+            $b .= EscPosCommandBuilder::textLine('Web : ' . $website);
         }
         if (! empty($head['pos_siret'])) {
             $b .= EscPosCommandBuilder::textLine('SIRET ' . $head['pos_siret']);
@@ -322,6 +326,17 @@ final class OrderReceiptEscPosRenderer
         }
 
         return $b;
+    }
+
+    /** "0365678291" → "03 65 67 82 91" (French 10-digit); otherwise unchanged. */
+    private function formatPhone(string $p): string
+    {
+        $digits = preg_replace('/\D+/', '', $p);
+        if (strlen($digits) === 10 && $digits[0] === '0') {
+            return trim(chunk_split($digits, 2, ' '));
+        }
+
+        return trim($p);
     }
 
     /** "27 juin 2026 23:49" — French long date without a locale dependency. */

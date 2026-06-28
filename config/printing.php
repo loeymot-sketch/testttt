@@ -31,6 +31,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Receipt header extras (single-restaurant V1 — no per-branch column)
+    |--------------------------------------------------------------------------
+    |
+    | Affichés en en-tête du ticket client. Le téléphone et l'e-mail viennent
+    | de la branche ; le site web n'a pas de colonne dédiée en V1 → ici.
+    |
+    */
+    'receipt' => [
+        'website' => env('RECEIPT_WEBSITE', 'lecayenne.fr'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Bypass Mode — TCP/IP transport short-circuit
     |--------------------------------------------------------------------------
     |
