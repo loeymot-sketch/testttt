@@ -49,6 +49,16 @@ class AppServiceProvider extends ServiceProvider
             };
         });
 
+        // [CUSTOMER-DISPLAY 2026-06-28] SAGA pole display transport. 'windows_serial'
+        // = USB→COM on the caisse PC ; 'null' = dev / no hardware (swallows bytes).
+        $this->app->bind(
+            \App\Services\Hardware\DisplayTransport\CustomerDisplayTransportInterface::class,
+            fn () => match ((string) config('printing.customer_display.driver', 'windows_serial')) {
+                'null' => new \App\Services\Hardware\DisplayTransport\NullCustomerDisplayTransport(),
+                default => new \App\Services\Hardware\DisplayTransport\WindowsSerialDisplayTransport(),
+            }
+        );
+
         // [NEW-04] Single recorder instance per request — keeps internal state
         // (correlation cache, etc.) consistent across the call stack and avoids
         // re-instantiating the service for every metric write.

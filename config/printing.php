@@ -44,6 +44,26 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Customer pole display (SAGA 2x20 VFD, CD5220 over serial)
+    |--------------------------------------------------------------------------
+    |
+    | Affiche le TOTAL au client à chaque ajout produit, et un message d'accueil
+    | en veille. USB→série sur la caisse Windows (driver 'windows_serial').
+    |
+    */
+    'customer_display' => [
+        'enabled' => env('CUSTOMER_DISPLAY_ENABLED', false),
+        'driver' => env('CUSTOMER_DISPLAY_DRIVER', 'windows_serial'), // windows_serial | null
+        'port' => env('CUSTOMER_DISPLAY_PORT', 'COM3'),
+        'baud' => (int) env('CUSTOMER_DISPLAY_BAUD', 9600),
+        'code_page' => (int) env('CUSTOMER_DISPLAY_CODE_PAGE', 19), // 19 = CP858
+        'welcome_line1' => env('CUSTOMER_DISPLAY_WELCOME1', 'LE CAYENNE'),
+        'welcome_line2' => env('CUSTOMER_DISPLAY_WELCOME2', 'Soyez le bienvenu !'),
+        'total_label' => env('CUSTOMER_DISPLAY_TOTAL_LABEL', 'TOTAL'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Bypass Mode — TCP/IP transport short-circuit
     |--------------------------------------------------------------------------
     |

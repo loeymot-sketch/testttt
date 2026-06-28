@@ -2250,6 +2250,10 @@ export default {
         // [CAISSE-ZOOM 2026-06-25] Retire le zoom caisse pour ne pas rétrécir les
         // autres pages admin (dashboard, rapports, etc.) après navigation.
         clearCaisseZoom(document);
+        // [CUSTOMER-DISPLAY 2026-06-28] Stoppe le timer de refresh afficheur client.
+        if (this._cdTimer) {
+            clearTimeout(this._cdTimer);
+        }
         // [WT-R1-F2 2026-05-20] Mark instance as destroyed BEFORE any cleanup so
         // late-firing async callbacks (echo/wsService reconnect handlers,
         // in-flight axios resolves, debounced flushers) can early-out instead of
@@ -2318,6 +2322,8 @@ export default {
         // (catégories + produits + panier lisibles sur un écran 16"). Le 0.67 testé
         // initialement était trop petit. Surchargeable via localStorage.caisse_zoom.
         applyCaisseZoom(document, resolveCaisseZoom(window.localStorage));
+        // [CUSTOMER-DISPLAY 2026-06-28] Écran client en veille au démarrage (accueil).
+        this.pushCustomerDisplay(this.grandTotal);
         this._debouncedListRefresh = debounce(() => {
             this.itemList(1, { overlay: false });
         }, 150);
@@ -2498,6 +2504,21 @@ export default {
 
     },
     methods: {
+        /**
+         * [CUSTOMER-DISPLAY 2026-06-28] Push the running total to the SAGA pole
+         * display (only the total). Debounced + best-effort: a missing display or
+         * a network hiccup must NEVER affect the cashier. Empty cart -> welcome.
+         */
+        pushCustomerDisplay(total) {
+            if (this._cdTimer) {
+                clearTimeout(this._cdTimer);
+            }
+            this._cdTimer = setTimeout(() => {
+                const t = Number(total) || 0;
+                const payload = t > 0 ? { mode: 'total', total: t } : { mode: 'welcome' };
+                axios.post('admin/pos/customer-display', payload).catch(() => {});
+            }, 150);
+        },
         // [Sprint 1A 2026-05-16] Cash drawer session — handlers UI ──────────────
         /**
          * Charge la session OPEN du caissier courant et auto-ouvre le dialog
@@ -4524,6 +4545,11 @@ export default {
     watch: {
         "customerProps.form.password"(newValue) {
             this.customerProps.form.password_confirmation = newValue;
+        },
+        // [CUSTOMER-DISPLAY 2026-06-28] Refléter le total sur l'afficheur client
+        // SAGA à chaque changement (ajout/retrait/remise). Empties -> accueil.
+        grandTotal(newVal) {
+            this.pushCustomerDisplay(newVal);
         },
         carts: {
             handler(newCarts, oldCarts) {

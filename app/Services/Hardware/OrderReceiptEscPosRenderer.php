@@ -110,7 +110,7 @@ final class OrderReceiptEscPosRenderer
         }
         $b .= EscPosCommandBuilder::separator('-', $w);
         $b .= EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::doubleSize(true);
-        $b .= EscPosCommandBuilder::lineKV('MONTANT TOTAL :', $this->money((float) ($order->total ?? 0)), max(20, (int) floor($w / 2)));
+        $b .= EscPosCommandBuilder::lineKV('MONTANT TOTAL:', $this->money((float) ($order->total ?? 0)), max(20, (int) floor($w / 2)));
         $b .= EscPosCommandBuilder::doubleSize(false) . EscPosCommandBuilder::bold(false);
         $b .= EscPosCommandBuilder::separator('-', $w);
 

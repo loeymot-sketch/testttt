@@ -911,6 +911,8 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::post('/orders/{order}/print-receipt', [PosReceiptPrintController::class, 'increment'])->middleware('idempotency')->name('orders.print-receipt');
         // [PRINT-SAGA 2026-06-24] Kitchen production ticket → best-effort ESC/POS (no fiscal audit).
         Route::post('/orders/{order}/print-kitchen', [PosReceiptPrintController::class, 'kitchen'])->middleware('idempotency')->name('orders.print-kitchen');
+        // [CUSTOMER-DISPLAY 2026-06-28] Refresh the SAGA pole display (total / welcome). Best-effort, no fiscal.
+        Route::post('/customer-display', [\App\Http\Controllers\Admin\Pos\PosCustomerDisplayController::class, 'update'])->name('customer-display.update');
         Route::prefix('parked-orders')->name('parked-orders.')->group(function () {
             Route::get('/', [ParkedOrderController::class, 'index'])->name('index');
             Route::post('/', [ParkedOrderController::class, 'store'])->name('store');
