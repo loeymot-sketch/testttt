@@ -57,7 +57,7 @@
 <script>
 import axios from 'axios';
 import kioskHardware from '../../../services/kioskHardware';
-import { printReceipt as escPosPrint, buildReceiptData, reportPrinterFailure, isLocalBridgeAvailable } from '../../../helpers/kioskPrinter';
+import { printReceipt as escPosPrint, buildReceiptData, reportPrinterFailure, isLocalBridgeAvailable, markPrintedOnce } from '../../../helpers/kioskPrinter';
 
 /**
  * KioskCashInstructionComponent — Kiosk Design V1 Phase 3.1
@@ -147,8 +147,8 @@ export default {
         // items best-effort depuis le panier encore présent) et l'imprime via le pont.
         // Une seule fois par commande (garde anti-double).
         autoPrintCounterTicket() {
-            if (this._printedFor && this._printedFor === String(this.orderNumber)) return;
-            this._printedFor = String(this.orderNumber);
+            // Garde module-level : 1 ticket max par commande, même après re-montage.
+            if (!markPrintedOnce(this.orderNumber)) return;
             let cartItems = [];
             try { cartItems = this.$store?.state?.kioskCart?.items || []; } catch (_) {}
             let restaurantName = 'Le Cayenne';

@@ -32,7 +32,7 @@ return [
             style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
             font-src 'self' data: https://fonts.gstatic.com;
             img-src 'self' data: blob: https:;
-            connect-src 'self' ws: wss: https:;
+            connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100;
             frame-ancestors 'none';
             base-uri 'self';
             form-action 'self';

@@ -367,6 +367,17 @@ export function buildReceiptData({
 // context → fetch autorisé depuis une page HTTPS (exempté du blocage mixed-content).
 export const LOCAL_BRIDGE_URL = 'http://127.0.0.1:9100';
 
+// [BORNE-PRINT-ONCE 2026-06-28] Garde anti-double-impression au niveau MODULE (pas
+// instance) : un re-montage de composant (confirmation OU cash-instruction) ne doit
+// JAMAIS sortir un 2ᵉ ticket thermique pour la même commande. Survit aux re-mounts.
+const _printedOrders = new Set();
+export function markPrintedOnce(orderRef) {
+  const k = String(orderRef == null ? '' : orderRef).trim();
+  if (k === '' || _printedOrders.has(k)) return false;
+  _printedOrders.add(k);
+  return true;
+}
+
 // Le pont envoie ses octets en 'binary' (Latin-1) et le codepage du SK1-31 est
 // imprévisible → on ASCII-fold (accents retirés, € → EUR) pour garantir un ticket
 // LISIBLE quel que soit le codepage (V1 pragmatique : « Méga » → « Mega »).

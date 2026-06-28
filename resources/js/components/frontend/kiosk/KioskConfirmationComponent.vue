@@ -138,7 +138,7 @@
 </template>
 
 <script>
-import { printReceipt as escPosPrint, buildReceiptData, reportPrinterFailure, isLocalBridgeAvailable } from '../../../helpers/kioskPrinter';
+import { printReceipt as escPosPrint, buildReceiptData, reportPrinterFailure, isLocalBridgeAvailable, markPrintedOnce } from '../../../helpers/kioskPrinter';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
 import { sanitizeKioskCustomerFacingText } from '../../../helpers/kioskDisplayText';
 import kioskHardware from '../../../services/kioskHardware';
@@ -339,7 +339,11 @@ export default {
     // bridge ni pont, le client garde le bouton « Imprimer le ticket » manuel.
     this.$nextTick(async () => {
       try {
-        if (kioskHardware.isKioskBridge() || await isLocalBridgeAvailable()) {
+        // markPrintedOnce garde l'AUTO-print (1×/commande, anti re-mount) ; le
+        // bouton manuel « Imprimer le ticket » appelle printReceipt() directement,
+        // donc reste toujours disponible pour une réimpression volontaire.
+        const ref = this.displayNumber || this.orderNumber;
+        if ((kioskHardware.isKioskBridge() || await isLocalBridgeAvailable()) && markPrintedOnce(ref)) {
           this.printReceipt();
         }
       } catch (_) { /* détection pont non bloquante */ }

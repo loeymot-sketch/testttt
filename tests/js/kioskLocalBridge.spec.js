@@ -3,6 +3,7 @@ import {
   isLocalBridgeAvailable,
   printViaLocalBridge,
   buildBridgePayload,
+  markPrintedOnce,
   LOCAL_BRIDGE_URL,
 } from '../../resources/js/helpers/kioskPrinter';
 
@@ -55,6 +56,27 @@ describe('buildBridgePayload — codepage-safe (ASCII)', () => {
   it('robuste sur reçu vide (jamais throw)', () => {
     expect(() => buildBridgePayload({})).not.toThrow();
     expect(() => buildBridgePayload(null)).not.toThrow();
+  });
+});
+
+describe('markPrintedOnce — garde anti-double module-level', () => {
+  it('true au 1er appel, false aux suivants (même commande)', () => {
+    const ref = 'A-ONCE-' + Math.floor(performance.now());
+    expect(markPrintedOnce(ref)).toBe(true);
+    expect(markPrintedOnce(ref)).toBe(false);
+    expect(markPrintedOnce(ref)).toBe(false);
+  });
+  it('false sur ref vide/null (jamais imprimer sans référence)', () => {
+    expect(markPrintedOnce('')).toBe(false);
+    expect(markPrintedOnce(null)).toBe(false);
+    expect(markPrintedOnce(undefined)).toBe(false);
+  });
+  it('commandes différentes → chacune imprimable une fois', () => {
+    const a = 'A-' + Math.floor(performance.now()) + '-x';
+    const b = 'B-' + Math.floor(performance.now()) + '-y';
+    expect(markPrintedOnce(a)).toBe(true);
+    expect(markPrintedOnce(b)).toBe(true);
+    expect(markPrintedOnce(a)).toBe(false);
   });
 });
 
