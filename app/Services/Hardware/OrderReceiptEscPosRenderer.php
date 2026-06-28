@@ -185,11 +185,20 @@ final class OrderReceiptEscPosRenderer
         $b = EscPosCommandBuilder::init();
         $b .= EscPosCommandBuilder::selectCodePage($codePage);
         $b .= EscPosCommandBuilder::alignCenter();
-        $b .= EscPosCommandBuilder::doubleSize(true) . EscPosCommandBuilder::bold(true);
+        $b .= EscPosCommandBuilder::bold(true);
         $b .= EscPosCommandBuilder::textLine('CUISINE');
+        $b .= EscPosCommandBuilder::bold(false);
+        // [AUDIT F1] Same call number as the client ticket (queue, not the long serial),
+        // big so the cook can match it when handing the order over.
+        $callNo = (string) ($order->queue_number ?: ($order->order_serial_no ?? $order->id));
+        $b .= EscPosCommandBuilder::doubleSize(true) . EscPosCommandBuilder::bold(true);
+        $b .= EscPosCommandBuilder::textLine($callNo);
         $b .= EscPosCommandBuilder::doubleSize(false) . EscPosCommandBuilder::bold(false);
-        $serial = (string) ($order->order_serial_no ?? $order->id);
-        $b .= EscPosCommandBuilder::textLine('Commande N ' . $serial);
+        // [AUDIT F2] Order type — packaging/prep differs (sur place / à emporter / livraison).
+        $orderType = $this->orderTypeLabel($order);
+        if ($orderType !== '') {
+            $b .= EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::textLine('*** ' . mb_strtoupper($orderType) . ' ***') . EscPosCommandBuilder::bold(false);
+        }
         $dt = $order->order_datetime ?? $order->created_at;
         if ($dt) {
             $b .= EscPosCommandBuilder::textLine($dt->format('H:i'));

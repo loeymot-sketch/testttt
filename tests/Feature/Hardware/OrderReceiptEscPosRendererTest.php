@@ -144,6 +144,11 @@ class OrderReceiptEscPosRendererTest extends TestCase
         $this->assertStringContainsString('+ Viande suppl', $bytes);
         // No prices on the kitchen ticket.
         $this->assertStringNotContainsString('EUR', $bytes, 'kitchen ticket must not show prices');
+        // [AUDIT F1] Same call number as the client ticket (queue, not the long serial).
+        $this->assertStringContainsString('A0010', $bytes, 'kitchen must show the call number');
+        $this->assertStringNotContainsString('TEST-1', $bytes, 'kitchen must not show the long serial');
+        // [AUDIT F2] Order type so the cook knows the packaging.
+        $this->assertStringContainsString('EMPORTER', $bytes, 'kitchen must show order type');
     }
 
     public function test_windows_raw_transport_builds_winspool_command(): void
