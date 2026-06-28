@@ -1094,6 +1094,7 @@
         "kds_type_kiosk": "كشك",
         "kds_source_online": "أونلاين",
         "kds_source_app": "تطبيق",
+        "kds_source_uber": "UBER",
         "kds_state_new": "جديدة",
         "kds_state_preparing": "قيد التحضير",
         "kds_state_ready": "جاهزة",

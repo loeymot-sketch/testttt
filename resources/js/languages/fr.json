@@ -769,6 +769,7 @@
         "kds_type_kiosk": "Borne",
         "kds_source_online": "En ligne",
         "kds_source_app": "App",
+        "kds_source_uber": "UBER",
         "kds_state_new": "Nouvelle",
         "kds_state_preparing": "En cours",
         "kds_state_ready": "Prête",

@@ -71,3 +71,24 @@ describe('kdsSource — theme + i18n in sync', () => {
         expect(KDS_SOURCE_THEME.POS.text).not.toBe(KDS_SOURCE_THEME.KIOSK.text);
     });
 });
+
+// [UBER-EATS 2026-06-28] Aggregator channel: an Uber order must show a distinct,
+// prominent UBER chip on the KDS, distinct from every native channel.
+describe('kdsSource — UBER EATS aggregator', () => {
+    it('"uber" and "uber_eats" both → UBER', () => {
+        expect(kdsSourceFromSurface('uber')).toBe('UBER');
+        expect(kdsSourceFromSurface('uber_eats')).toBe('UBER');
+        expect(kdsSourceFromSurface('UBER_EATS')).toBe('UBER'); // case-insensitive
+    });
+    it('UBER theme is the Uber green and prominent (distinct from all natives)', () => {
+        expect(KDS_SOURCE.UBER).toBe('UBER');
+        expect(KDS_SOURCE_THEME.UBER.bg).toBe('#06C167'); // Uber Eats green
+        const others = ['POS', 'KIOSK', 'DELIVERY', 'ONLINE', 'APP', 'DINE_IN'];
+        for (const o of others) {
+            expect(KDS_SOURCE_THEME.UBER.bg).not.toBe(KDS_SOURCE_THEME[o].bg);
+        }
+    });
+    it('UBER has an i18n key', () => {
+        expect(KDS_SOURCE_I18N_KEYS.UBER).toBe('label.kds_source_uber');
+    });
+});

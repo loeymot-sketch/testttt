@@ -15,6 +15,9 @@ export const KDS_SOURCE = Object.freeze({
     ONLINE: 'ONLINE',
     APP: 'APP',
     DINE_IN: 'DINE_IN',
+    // [UBER-EATS 2026-06-28] Aggregator channel — Uber injects orders via webhook;
+    // they must surface on the KDS in line with native orders but plainly marked UBER.
+    UBER: 'UBER',
 });
 
 // Reverse map: source_surface (DB lowercase) → KDS_SOURCE.
@@ -32,6 +35,10 @@ const SURFACE_TO_SOURCE = {
     app: KDS_SOURCE.APP,
     dinein: KDS_SOURCE.DINE_IN,
     dine_in: KDS_SOURCE.DINE_IN,
+    // [UBER-EATS 2026-06-28] Both the short and the canonical surface map to UBER.
+    uber: KDS_SOURCE.UBER,
+    uber_eats: KDS_SOURCE.UBER,
+    ubereats: KDS_SOURCE.UBER,
 };
 
 /**
@@ -56,6 +63,9 @@ export const KDS_SOURCE_THEME = Object.freeze({
     ONLINE: { bg: '#ECFDF5', text: '#047857', icon: 'globe' },
     APP: { bg: '#FDF2F8', text: '#BE185D', icon: 'phone' },
     DINE_IN: { bg: '#FEF3C7', text: '#B45309', icon: 'chair' },
+    // [UBER-EATS 2026-06-28] Uber Eats brand green (#06C167) on white text — the
+    // most saturated chip on the board so the cook instantly spots an Uber order.
+    UBER: { bg: '#06C167', text: '#FFFFFF', icon: 'uber' },
 });
 
 export const KDS_SOURCE_I18N_KEYS = Object.freeze({
@@ -65,4 +75,5 @@ export const KDS_SOURCE_I18N_KEYS = Object.freeze({
     ONLINE: 'label.kds_source_online',
     APP: 'label.kds_source_app',
     DINE_IN: 'label.kds_type_dinein',
+    UBER: 'label.kds_source_uber',
 });
