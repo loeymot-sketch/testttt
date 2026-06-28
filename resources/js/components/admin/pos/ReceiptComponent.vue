@@ -352,6 +352,7 @@ import posPaymentMethodEnum from "../../../enums/modules/posPaymentMethodEnum";
 import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
 import ReceiptDuplicataMarker from "./ReceiptDuplicataMarker.vue";
 import { sanitizeKdsInstruction } from "../../../helpers/kdsCustomization";
+import { isCaisseBridgeAvailable, printEscPosViaCaisseBridge } from "../../../helpers/posLocalPrinter";
 import ReceiptRemboursementMarker from "./ReceiptRemboursementMarker.vue";
 import {
     formatPaymentsBreakdown as buildPaymentLines,
@@ -624,16 +625,44 @@ export default {
                 // the thermal printer (e.g. USB SAGA), skip browser print to avoid a
                 // double ticket. Otherwise fall back to window.print() (unchanged).
                 if (!this._printedThermally) {
-                    await this.$nextTick();
-                    const trigger = this.$refs.hiddenPrintClientButton;
-                    if (trigger && typeof trigger.click === 'function') {
-                        trigger.click();
-                    } else if (typeof window !== 'undefined' && typeof window.print === 'function') {
-                        window.print();
+                    // [CAISSE-BRIDGE 2026-06-28] Pont local caisse (SILENCIEUX, sans
+                    // fenêtre) AVANT window.print : le serveur cloud ne joint pas l'USB
+                    // SAGA, donc on récupère les octets ESC/POS rendus serveur et on les
+                    // POSTe au pont local. window.print reste le fallback ultime.
+                    const viaBridge = await this.tryCaisseBridge('client');
+                    if (!viaBridge) {
+                        await this.$nextTick();
+                        const trigger = this.$refs.hiddenPrintClientButton;
+                        if (trigger && typeof trigger.click === 'function') {
+                            trigger.click();
+                        } else if (typeof window !== 'undefined' && typeof window.print === 'function') {
+                            window.print();
+                        }
                     }
                 }
             } finally {
                 this.isPrinting = false;
+            }
+        },
+        /**
+         * [CAISSE-BRIDGE 2026-06-28] Tente l'impression SILENCIEUSE via le pont local
+         * caisse : récupère les octets ESC/POS rendus serveur (SSOT NF525) puis les POSTe
+         * au pont 127.0.0.1:9100/raw. Renvoie true si imprimé (→ pas de window.print).
+         * Jamais throw ; si pont absent/échec → false → fallback window.print.
+         */
+        async tryCaisseBridge(ticket) {
+            try {
+                if (!this.order?.id) return false;
+                if (!(await isCaisseBridgeAvailable())) return false;
+                const { data } = await axios.get(
+                    `admin/pos/orders/${this.order.id}/escpos`,
+                    { params: { ticket } }
+                );
+                if (!data?.escpos_b64) return false;
+                const r = await printEscPosViaCaisseBridge(data.escpos_b64, { orderRef: this.order.id });
+                return !!(r && r.ok);
+            } catch (_) {
+                return false;
             }
         },
         /**
@@ -660,12 +689,16 @@ export default {
                     }
                 }
                 if (!printedThermally) {
-                    await this.$nextTick();
-                    const trigger = this.$refs.hiddenPrintKitchenButton;
-                    if (trigger && typeof trigger.click === 'function') {
-                        trigger.click();
-                    } else if (typeof window !== 'undefined' && typeof window.print === 'function') {
-                        window.print();
+                    // [CAISSE-BRIDGE 2026-06-28] pont local silencieux avant window.print
+                    const viaBridge = await this.tryCaisseBridge('kitchen');
+                    if (!viaBridge) {
+                        await this.$nextTick();
+                        const trigger = this.$refs.hiddenPrintKitchenButton;
+                        if (trigger && typeof trigger.click === 'function') {
+                            trigger.click();
+                        } else if (typeof window !== 'undefined' && typeof window.print === 'function') {
+                            window.print();
+                        }
                     }
                 }
             } finally {
