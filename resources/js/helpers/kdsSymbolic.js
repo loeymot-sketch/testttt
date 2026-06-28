@@ -124,9 +124,8 @@ function addonName(a) {
     return a?.addon_name || a?.name || '';
 }
 
-/** Classify a variation line into a Line-1 slot from its GROUP (with value fallback). */
-function classifyVariation(v) {
-    const { group, value } = kdsVariationGroupValue(v);
+/** Classify a Line-1 slot from its GROUP (with value-based fallback). */
+function classifyVariation(group, value) {
     const g = normalize(group);
     if (/viande|meat/.test(g)) return 'meat';
     if (/sauce/.test(g)) return 'sauce';
@@ -162,9 +161,16 @@ export function buildSymbolic(orderItem) {
     const supplements = [];
 
     for (const v of readVariations(orderItem)) {
-        const { value } = kdsVariationGroupValue(v);
+        const gv = kdsVariationGroupValue(v);
+        let value = gv.value;
+        // Defensive: a snapshot line with attribute_name=null falls into the legacy
+        // branch (value=name=undefined). Recover the value from variation_name so a
+        // meat/sauce never silently vanishes from the kitchen line (food safety).
+        if (!value && (v?.name === undefined || v?.name === null || v?.name === '') && v?.variation_name) {
+            value = String(v.variation_name);
+        }
         if (!value) continue;
-        switch (classifyVariation(v)) {
+        switch (classifyVariation(gv.group, value)) {
             case 'meat':
                 viandes.push(meatSymbol(value) || normalize(value).slice(0, 3).toUpperCase());
                 break;

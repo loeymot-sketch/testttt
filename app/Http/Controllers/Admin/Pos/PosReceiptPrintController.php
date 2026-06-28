@@ -120,12 +120,24 @@ class PosReceiptPrintController extends Controller
             if ($branchId <= 0) {
                 return false;
             }
-            $printer = Printer::withoutGlobalScope(BranchScope::class)
-                ->where('branch_id', $branchId)
-                ->where('station', 'receipt')
-                ->where('status', \App\Enums\Status::ACTIVE)
-                ->orderBy('id')
-                ->first();
+            // [AUDIT P2 2026-06-28] A kitchen ticket should target a kitchen-station
+            // printer if one is configured, and only FALL BACK to the receipt printer
+            // (the single counter SAGA in V1). A client ticket always uses receipt.
+            $stations = $ticket === 'kitchen'
+                ? ['kitchen_hot', 'kitchen_cold', 'receipt']
+                : ['receipt'];
+            $printer = null;
+            foreach ($stations as $station) {
+                $printer = Printer::withoutGlobalScope(BranchScope::class)
+                    ->where('branch_id', $branchId)
+                    ->where('station', $station)
+                    ->where('status', \App\Enums\Status::ACTIVE)
+                    ->orderBy('id')
+                    ->first();
+                if ($printer) {
+                    break;
+                }
+            }
             if (! $printer) {
                 return false;
             }
@@ -143,6 +155,12 @@ class PosReceiptPrintController extends Controller
                 'width_chars' => (int) ($printer->width_chars ?: 48),
                 'is_duplicata' => $isDuplicata,
             ];
+            // [AUDIT P3 2026-06-28] Honor the printer's configured code page (e.g. 16 =
+            // CP1252) so accents don't mojibake on firmware that isn't CP858 (19).
+            $pOpts = is_array($printer->options) ? $printer->options : [];
+            if (! empty($pOpts['code_page'])) {
+                $opts['code_page'] = (int) $pOpts['code_page'];
+            }
             $bytes = $ticket === 'kitchen'
                 ? $renderer->renderKitchenTicket($order, $opts)
                 : $renderer->renderClientTicket($order, $opts);

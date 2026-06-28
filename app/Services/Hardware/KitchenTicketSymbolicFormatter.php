@@ -132,12 +132,20 @@ final class KitchenTicketSymbolicFormatter
         $crud = [];
 
         foreach (($snapshot['lines'] ?? []) as $l) {
-            $group = (string) ($l['attribute_name'] ?? $l['variation_name'] ?? '');
-            $value = (string) ($l['variation_name'] ?? $l['name'] ?? '');
-            // legacy shape: attribute_name absent → variation_name IS the group, name IS
-            // the value (parity with kdsSymbolic.js / kdsVariationGroupValue: name only).
-            if (! isset($l['attribute_name']) || $l['attribute_name'] === '') {
+            $attrName = (string) ($l['attribute_name'] ?? '');
+            if ($attrName !== '') {
+                // snapshot shape: attribute_name = group, variation_name = value.
+                $group = $attrName;
+                $value = (string) ($l['variation_name'] ?? $l['name'] ?? '');
+            } else {
+                // legacy shape: variation_name = group, name = value (parity with JS).
+                $group = (string) ($l['variation_name'] ?? '');
                 $value = (string) ($l['name'] ?? '');
+                // Defensive: a malformed snapshot line (attribute_name null) keeps the
+                // value in variation_name → recover it so a meat never vanishes.
+                if ($value === '' && ! empty($l['variation_name'])) {
+                    $value = (string) $l['variation_name'];
+                }
             }
             if ($value === '') {
                 continue;

@@ -114,6 +114,20 @@ describe('symbolicMainLine — owner examples', () => {
         expect(symbolicMainLine(item)).toBe('G | TACOS | L | K P | CURY');
     });
 
+    it('never drops a meat when attribute_name is null (malformed snapshot)', () => {
+        const item = {
+            item_name: 'Tacos M',
+            composition_snapshot: {
+                lines: [
+                    { attribute_name: null, variation_name: 'Poulet mariné' },
+                    { attribute_name: 'Sauce', variation_name: 'Mayonnaise' },
+                ],
+            },
+        };
+        // The meat must still surface (P), not vanish.
+        expect(symbolicMainLine(item)).toBe('G | TACOS | M | P | MAY');
+    });
+
     it('a drink renders just the product name (no slots)', () => {
         expect(symbolicMainLine({ item_name: 'Coca 33cl' })).toBe('COCA 33CL');
     });

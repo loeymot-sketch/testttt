@@ -69,6 +69,17 @@ class KitchenTicketSymbolicFormatterTest extends TestCase
         $this->assertSame('SANDWICH | SO | BL', $this->f->mainLine('Sandwich', $snap));
     }
 
+    public function test_meat_not_dropped_when_attribute_name_null(): void
+    {
+        $snap = [
+            'lines' => [
+                ['attribute_name' => null, 'variation_name' => 'Poulet mariné'],
+                ['attribute_name' => 'Sauce', 'variation_name' => 'Mayonnaise'],
+            ],
+        ];
+        $this->assertSame('G | TACOS | M | P | MAY', $this->f->mainLine('Tacos M', $snap));
+    }
+
     public function test_drink_is_just_the_name(): void
     {
         $this->assertSame('COCA 33CL', $this->f->mainLine('Coca 33cl', []));
