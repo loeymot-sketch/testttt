@@ -297,37 +297,20 @@
                                 </tr>
                             </thead>
                             <tbody>
+                                <!-- [KITCHEN-SYMBOLS 2026-06-28] Format symbolique pour la cuisine :
+                                     L1 [Support]|[Produit]|[Taille]|[Viande]|[Crudités]|[Sauce],
+                                     L2 suppléments « + … », L3 MENU/F. Plus de « Sauce 1ère gratuite ». -->
                                 <tr v-for="(item, idx) in orderItems" :key="'k-' + (item.id || `ki-${idx}`)" class="border-b border-dashed border-gray-300 align-top">
-                                    <td class="py-1.5 align-top text-xs font-semibold">{{ item.quantity }}</td>
+                                    <td class="py-1.5 align-top text-base font-black">{{ item.quantity }}×</td>
                                     <td class="py-1.5">
-                                        <p class="text-sm font-semibold capitalize">{{ item.item_name }}</p>
-                                        <p v-if="receiptVariationsFor(item).length !== 0" class="text-[11px] leading-snug text-heading mt-0.5">
-                                            <span v-for="(variation, index) in receiptVariationsFor(item)" :key="'kv-' + idx + '-' + index">
-                                                <template v-if="variation.label">{{ variation.label }}: </template>
-                                                <template v-if="variation.quantity > 1">{{ variation.quantity }}× </template>{{ variation.name }}
-                                                <span v-if="index + 1 < receiptVariationsFor(item).length"> · </span>
-                                            </span>
-                                        </p>
-                                        <p v-if="receiptExtrasFor(item).length > 0" class="text-[11px] leading-snug mt-0.5">
-                                            {{ $t('label.extras') }}:
-                                            <span v-for="(extra, index) in receiptExtrasFor(item)" :key="'ke-' + idx + '-' + index">
-                                                <template v-if="extra.quantity > 1">{{ extra.quantity }}× </template>{{ extra.name }}
-                                                <span v-if="index + 1 < receiptExtrasFor(item).length"> · </span>
-                                            </span>
-                                        </p>
-                                        <!-- [G2-HEAL-03 / G.5 G5-F-002 P1] Kitchen ticket — name + qty only (no price). -->
-                                        <p v-if="receiptAddonsFor(item).length > 0" class="text-[11px] leading-snug mt-0.5"
-                                            data-testid="receipt-addon-line-kitchen">
-                                            {{ $t('label.addons') }}:
-                                            <span v-for="(addon, index) in receiptAddonsFor(item)" :key="'ka-' + idx + '-' + index">
-                                                <template v-if="addon.quantity > 1">{{ addon.quantity }}× </template>{{ addon.name }}
-                                                <span v-if="index + 1 < receiptAddonsFor(item).length"> · </span>
-                                            </span>
-                                        </p>
+                                        <template v-for="(line, li) in kitchenSymbolicLines(item)" :key="'ks-' + idx + '-' + li">
+                                            <p v-if="line.type === 'symbolic-main'" class="text-base font-black tracking-wide leading-snug">{{ line.label }}</p>
+                                            <p v-else-if="line.type === 'supplement'" class="text-sm font-bold leading-snug mt-0.5">{{ line.label }}</p>
+                                            <p v-else-if="line.type === 'symbolic-menu'" class="text-sm font-black leading-snug mt-0.5">{{ line.label }}</p>
+                                        </template>
                                         <p v-if="kitchenInstructionText(item)"
-                                            class="text-[11px] leading-snug mt-1 whitespace-pre-wrap border-l-2 border-gray-400 pl-2">
-                                            <span class="font-semibold">{{ $t('label.instruction') }}:</span>
-                                            {{ kitchenInstructionText(item) }}
+                                            class="text-xs leading-snug mt-1 whitespace-pre-wrap border-l-2 border-gray-500 pl-2 font-semibold">
+                                            ** {{ kitchenInstructionText(item) }}
                                         </p>
                                     </td>
                                 </tr>
@@ -352,6 +335,7 @@ import posPaymentMethodEnum from "../../../enums/modules/posPaymentMethodEnum";
 import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
 import ReceiptDuplicataMarker from "./ReceiptDuplicataMarker.vue";
 import { sanitizeKdsInstruction } from "../../../helpers/kdsCustomization";
+import { renderItemSymbolic } from "../../../helpers/kdsSymbolic";
 import { isCaisseBridgeAvailable, printEscPosViaCaisseBridge } from "../../../helpers/posLocalPrinter";
 import ReceiptRemboursementMarker from "./ReceiptRemboursementMarker.vue";
 import {
@@ -497,6 +481,17 @@ export default {
                 return method;
             }
             return method ?? '';
+        },
+        // [KITCHEN-SYMBOLS 2026-06-28] Symbolic kitchen lines (same engine as the KDS
+        // screen + the ESC/POS kitchen ticket) — main line + supplements + MENU/F.
+        kitchenSymbolicLines: function (item) {
+            try {
+                return renderItemSymbolic(item || {}).lines.filter(
+                    (l) => l.type === 'symbolic-main' || l.type === 'supplement' || l.type === 'symbolic-menu'
+                );
+            } catch (e) {
+                return [];
+            }
         },
         receiptVariationsFor: function (item) {
             return normalizeReceiptVariations(item ? item.item_variations : []);

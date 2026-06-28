@@ -201,17 +201,18 @@ describe('G2-HEAL-03 / G5-F-002 P1 — Receipt addons rendering', () => {
             expect(addonText).not.toMatch(/3,00/);
         });
 
-        it('renders addon name + qty on the kitchen ticket (no price)', () => {
+        it('renders the SYMBOLIC kitchen format (owner spec): product in full + MENU, no prices', () => {
+            // [KITCHEN-SYMBOLS 2026-06-28] Owner spec replaces the prose addon list on
+            // the kitchen ticket with the 3-line symbolic format: line 3 = "MENU"/"F"
+            // (a menu_* addon → MENU), NOT the addon names. The CLIENT ticket still
+            // lists addons (tests above) — only the kitchen prep ticket is symbolic.
             const wrapper = mountReceipt();
-            const lines = wrapper.findAll('[data-testid="receipt-addon-line-kitchen"]');
-            // Kitchen ticket renders ONE wrapper <p> per item that joins all addons inline
-            expect(lines.length).toBeGreaterThanOrEqual(1);
-            const kitchenText = lines[0].text();
-            expect(kitchenText).toContain('Coca-Cola');
-            expect(kitchenText).toContain('Frites');
-            // Kitchen prep tickets do NOT render prices
-            expect(kitchenText).not.toMatch(/1\.20\s*€/);
-            expect(kitchenText).not.toMatch(/€\s*1\.20/);
+            const kitchenText = wrapper.find('#print-receipt-kitchen').text();
+            expect(kitchenText).toContain('BIG BURGER'); // produit écrit en entier
+            expect(kitchenText).toContain('MENU');        // ligne 3 = formule
+            // Kitchen prep ticket carries no prices.
+            expect(kitchenText).not.toMatch(/1[.,]20/);
+            expect(kitchenText).not.toMatch(/3[.,]00/);
         });
 
         it('does not render addon block when item_addons is empty (no empty extras gap)', () => {
