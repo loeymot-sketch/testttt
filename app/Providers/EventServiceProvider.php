@@ -78,6 +78,7 @@ use App\Listeners\RevokeTokensOnBranchDeactivated;
 use App\Listeners\NotifyStockLowOnStockLevelChanged;
 use App\Listeners\SendFcmOnOrderCreated;
 use App\Listeners\PrintKioskOrderToCounter;
+use App\Listeners\PrintKioskKitchenTicketOnOrderCreated;
 use App\Listeners\PrintFiscalReceiptAndOpenDrawerOnCounterPaid;
 use App\Listeners\SendFcmOnOrderStatusChange;
 use App\Listeners\SendOrderGotMailNotification;
@@ -176,6 +177,8 @@ class EventServiceProvider extends ServiceProvider
             SendFcmOnOrderCreated::class,
             // [PRINT-SAGA 2026-06-24] Kiosk/borne order → print a COPY on the caisse printer.
             PrintKioskOrderToCounter::class,
+            // [BORNE-KITCHEN 2026-06-28] + ticket CUISINE sur la station 'kitchen' (best-effort).
+            PrintKioskKitchenTicketOnOrderCreated::class,
         ],
         OrderPaidAtCounter::class => [
             PersistOrderPaidAtCounterToOutbox::class,
