@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { afterEach } from 'vitest';
 import {
   kioskItemCompositionText,
   buildReceiptData,
   buildBridgePayload,
+  borneTicketSize,
 } from '../../resources/js/helpers/kioskPrinter';
 import {
   saveKioskReceiptSnapshot,
@@ -114,6 +116,38 @@ describe('buildBridgePayload — le pont imprime la compo complète', () => {
     expect(blob).toMatch(/Samoura|Samourai/i);  // ascii-fold possible
     expect(blob).toContain('Salade');
     expect(blob).toContain('Tomate');
+  });
+});
+
+describe('taille ticket borne — pilotée serveur, grande par défaut', () => {
+  afterEach(() => { try { delete window.foodkingConfig; } catch (_) {} });
+
+  it('défaut = double hauteur corps (0x01) + n° commande 2×2 (0x11)', () => {
+    expect(borneTicketSize()).toEqual({ bodySize: 0x01, titleSize: 0x11 });
+  });
+
+  it('le payload porte bodySize/titleSize pour que le pont applique GS ! n', () => {
+    const receipt = buildReceiptData({ cartItems: [cheeseBurger], total: 8.8, queueNumber: 'A0009' });
+    const p = buildBridgePayload(receipt);
+    expect(p.bodySize).toBe(0x01);
+    expect(p.titleSize).toBe(0x11);
+  });
+
+  it('config serveur peut piloter la taille (window.foodkingConfig.borneTicket)', () => {
+    window.foodkingConfig = { borneTicket: { bodySize: 0x11, titleSize: 0x22 } };
+    expect(borneTicketSize()).toEqual({ bodySize: 0x11, titleSize: 0x22 });
+    const p = buildBridgePayload(buildReceiptData({ cartItems: [cheeseBurger], total: 8.8 }));
+    expect(p.bodySize).toBe(0x11);
+  });
+
+  it('en double LARGEUR (0x11) la compo wrappe plus court (jamais coupée)', () => {
+    window.foodkingConfig = { borneTicket: { bodySize: 0x11, titleSize: 0x11 } };
+    const p = buildBridgePayload(buildReceiptData({ cartItems: [cheeseBurger], total: 8.8 }));
+    // largeur effective ~16 → aucune ligne du corps ne dépasse ~16 + le préfixe "  > "
+    const longest = Math.max(...p.lines.map((l) => l.length));
+    expect(longest).toBeLessThanOrEqual(20);
+    // la compo reste présente (rien n'est perdu)
+    expect(p.lines.join('\n')).toContain('Salade');
   });
 });
 

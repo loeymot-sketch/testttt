@@ -44,6 +44,29 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Ticket BORNE — taille de police (pilotée serveur)
+    |--------------------------------------------------------------------------
+    |
+    | Le ticket borne est imprimé par le pont local `bridge.js` (PC borne). La
+    | taille de police est désormais envoyée par le serveur dans le payload
+    | (`bodySize` / `titleSize`) : le pont applique `GS ! n` (ESC/POS). Octet n =
+    | (largeur×16) | hauteur, multiplicateurs 0–7 (1×–8×).
+    |   0x00 = normal | 0x01 = double HAUTEUR | 0x11 = double largeur+hauteur (2×2)
+    | Owner: « bien grande » → défaut 2×2. `wrap_width` = caractères par ligne à
+    | cette taille (32 normal → 16 en double largeur) pour que la compo ne déborde
+    | pas. Modifiable sans toucher la borne (config serveur → redeploy bundle).
+    |
+    */
+    'borne_ticket' => [
+        // 0x01 = double HAUTEUR (grand & propre, garde 32 car/ligne). Pour ÉNORME
+        // (double largeur+hauteur) passer à 0x11 — le front réduit alors la largeur
+        // automatiquement (16 car/ligne) pour ne rien couper.
+        'body_size' => (int) env('BORNE_TICKET_BODY_SIZE', 0x01),
+        'title_size' => (int) env('BORNE_TICKET_TITLE_SIZE', 0x11), // n° commande 2×2 (ressort)
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Customer pole display (SAGA 2x20 VFD, CD5220 over serial)
     |--------------------------------------------------------------------------
     |

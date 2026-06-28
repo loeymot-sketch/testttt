@@ -34,6 +34,13 @@
             href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,900&display=swap"
             rel="stylesheet"
         >
+        {{-- Borne Accueil attract redesign 2026-06-28 — Bricolage Grotesque
+             (display) + Hanken Grotesk (body), per owner design import. CSP
+             font-src/style-src whitelistent déjà fonts.googleapis/gstatic. --}}
+        <link
+            href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap"
+            rel="stylesheet"
+        >
     @endif
 
     <link rel="stylesheet" href="{{ asset('themes/default/fonts/fontawesome/fontawesome.css') }}">
@@ -170,6 +177,13 @@
             // until cashier collects at POS. See config/kiosk.php for env override.
             kiosk: {
                 paymentRouteAllToCounter: @json((bool) config('kiosk.payment_route_all_to_counter', true)),
+            },
+            // [BORNE-TICKET-SIZE 2026-06-28] Taille de police du ticket borne, pilotée
+            // serveur (le pont bridge.js applique GS ! n). Owner: « bien grande » → 2×2.
+            // Modifiable via config/printing.php (BORNE_TICKET_BODY_SIZE) sans toucher la borne.
+            borneTicket: {
+                bodySize: @json((int) config('printing.borne_ticket.body_size', 0x01)),
+                titleSize: @json((int) config('printing.borne_ticket.title_size', 0x11)),
             },
             // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-31 Q2] Discretionary-discount
             // master flag, exposed so the customer UI hides coupon + loyalty-redeem

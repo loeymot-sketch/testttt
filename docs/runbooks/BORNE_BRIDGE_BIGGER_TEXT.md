@@ -19,27 +19,47 @@ Une imprimante thermique ne connaît pas le « 1,5× ». Commande ESC/POS `GS ! 
 lisible, et la composition (sauce, crudités…) reste sur une ligne. Si tu veux ENCORE
 plus gros, passe à `0x11` (mais les longues lignes se couperont en deux).
 
-## Modification minimale dans `bridge.js`
-Là où le pont écrit les **lignes du corps** (`payload.lines`), encadre-les par la
-commande de taille. En ESC/POS (octets bruts envoyés à l'imprimante) :
+## ✅ Taille pilotée par le SERVEUR (recommandé)
+Le serveur envoie désormais la taille **dans le JSON** : `payload.bodySize` (corps) et
+`payload.titleSize` (en-tête + n° commande + total) — octets `GS ! n` prêts à l'emploi.
+**Une seule modif à `bridge.js`** : lire ces champs (avec un défaut si absents). Ensuite
+la taille se règle côté serveur (`config/printing.php` → `BORNE_TICKET_BODY_SIZE`) sans
+jamais retoucher la borne.
 
 ```js
-const ESC = 0x1B, GS = 0x1D;
-const SIZE = (n) => Buffer.from([GS, 0x21, n]);   // GS ! n  → taille de caractère
-const SIZE_BODY  = 0x01;   // double hauteur (mets 0x11 pour 2×2)
-const SIZE_TITLE = 0x11;   // titre / numéro de commande encore plus gros
-const SIZE_NORM  = 0x00;
+const GS = 0x1D;
+const SIZE = (n) => Buffer.from([GS, 0x21, n]);          // GS ! n
+const SIZE_NORM = 0x00;
+// Lit la taille envoyée par le serveur (défaut « grand » = double hauteur si absent) :
+const bodySize  = Number.isInteger(payload.bodySize)  ? payload.bodySize  : 0x01;
+const titleSize = Number.isInteger(payload.titleSize) ? payload.titleSize : 0x11;
 
-// ... au moment d'imprimer les lignes du corps :
-write(SIZE(SIZE_BODY));                 // ← AVANT les lignes
-for (const line of payload.lines) {
-  write(Buffer.from(asciiFold(line) + '\n', 'binary'));
-}
-write(SIZE(SIZE_NORM));                  // ← remettre normal après
+// En-tête + numéro de commande : titleSize
+write(SIZE(titleSize)); write(Buffer.from(asciiFold(payload.order ? 'Commande ' + payload.order : payload.title) + '\n', 'binary')); write(SIZE(SIZE_NORM));
+
+// CORPS (compo) : bodySize
+write(SIZE(bodySize));
+for (const line of payload.lines) write(Buffer.from(asciiFold(line) + '\n', 'binary'));
+write(SIZE(SIZE_NORM));
+
+// Total : titleSize (ressort)
+write(SIZE(titleSize)); write(Buffer.from('TOTAL: ' + payload.total + '\n', 'binary')); write(SIZE(SIZE_NORM));
 ```
 
-Et pour le **numéro de commande** (gros, déjà probablement en double) garde `SIZE_TITLE`.
-Le `total` peut aussi passer en `SIZE_BODY` pour rester cohérent.
+> Le front réduit déjà automatiquement la largeur des lignes quand `bodySize` est en
+> double largeur (0x11) → rien n'est coupé, quelle que soit la taille choisie au serveur.
+
+## (Alternative) taille EN DUR dans `bridge.js`
+Si tu préfères figer la taille dans le pont sans lire le payload :
+
+```js
+const SIZE = (n) => Buffer.from([0x1D, 0x21, n]);   // GS ! n
+const SIZE_BODY  = 0x01;   // double hauteur (mets 0x11 pour 2×2)
+const SIZE_NORM  = 0x00;
+write(SIZE(SIZE_BODY));
+for (const line of payload.lines) write(Buffer.from(asciiFold(line) + '\n', 'binary'));
+write(SIZE(SIZE_NORM));
+```
 
 ## `bridge.js` de référence complet (rendu + taille)
 Si tu préfères remplacer le rendu d'un bloc, voici la fonction de rendu complète.

@@ -536,28 +536,62 @@ function wrapText(s, width) {
  * Mappe un reçu (buildReceiptData) vers le payload JSON du pont :
  * {title, subtitle, order, lines:[], total, footer}. ASCII codepage-safe.
  */
+// [BORNE-TICKET-SIZE 2026-06-28] Taille de police pilotée serveur (config injectée
+// dans window.foodkingConfig.borneTicket). Le pont bridge.js applique GS ! bodySize.
+// Défaut « grand » = double hauteur (0x01) ; 0x11 = ÉNORME (2×2).
+export function borneTicketSize() {
+  const def = { bodySize: 0x01, titleSize: 0x11 };
+  try {
+    const c = window.foodkingConfig && window.foodkingConfig.borneTicket;
+    if (c && typeof c === 'object') {
+      return {
+        bodySize: Number.isFinite(c.bodySize) ? c.bodySize : def.bodySize,
+        titleSize: Number.isFinite(c.titleSize) ? c.titleSize : def.titleSize,
+      };
+    }
+  } catch (_) { /* défaut ci-dessous */ }
+  return def;
+}
+
+// Largeur effective en caractères selon le multiplicateur de LARGEUR de la taille
+// (octet GS ! : nibble haut = largeur 0–7 → 1×–8×). Double largeur ⇒ 2× moins de
+// caractères tiennent sur le papier → on wrappe en conséquence (rien n'est coupé).
+function effectiveWidthFor(sizeByte) {
+  const widthMult = ((Number(sizeByte) >> 4) & 0x07) + 1;
+  return Math.max(8, Math.floor(RECEIPT_WIDTH / widthMult));
+}
+
 export function buildBridgePayload(receipt) {
   receipt = receipt || {};
-  const width = RECEIPT_WIDTH;
+  const sz = borneTicketSize();
+  const bodyWidth = effectiveWidthFor(sz.bodySize);
   const lines = [];
   (receipt.items || []).forEach(item => {
     const qty = item.quantity || 1;
     const price = frEur((parseFloat(item.unitPrice) || 0) * qty);
-    lines.push(padLine(`${qty}x ${asciiFold(item.name)}`, price, width));
+    const label = `${qty}x ${asciiFold(item.name)}`;
+    // À largeur normale (double hauteur) le prix tient sur la ligne du nom ; à
+    // double largeur (peu de place) on met le prix sur sa propre ligne à droite.
+    if ((label.length + 1 + price.length) <= bodyWidth) {
+      lines.push(padLine(label, price, bodyWidth));
+    } else {
+      lines.push(label);
+      lines.push(padLine('', price, bodyWidth));
+    }
     if (item.instruction) {
-      // [FIX P2 audit 2026-06-28] WORD-WRAP au lieu de tronquer à width-4 : sinon
-      // une compo « 2 viandes + suppléments » > 28 car perdait la 2e viande / les extras.
+      // [FIX P2 audit 2026-06-28] WORD-WRAP (jamais de troncature) ; largeur adaptée
+      // à la taille de police pour que « 2 viandes + suppléments » reste entier.
       String(item.instruction).split('. ').forEach(l => {
         const t = asciiFold(l);
-        if (t) wrapText(t, width - 4).forEach(w => lines.push('  > ' + w));
+        if (t) wrapText(t, bodyWidth - 4).forEach(w => lines.push('  > ' + w));
       });
     }
   });
   if (receipt.discount && receipt.discount > 0) {
-    lines.push(padLine('Remise', '-' + frEur(receipt.discount), width));
+    lines.push(padLine('Remise', '-' + frEur(receipt.discount), bodyWidth));
   }
   if (receipt.paymentMethod) {
-    lines.push(padLine('Paiement', asciiFold(receipt.paymentMethod), width));
+    lines.push(padLine('Paiement', asciiFold(receipt.paymentMethod), bodyWidth));
   }
   // [G11] Bloc fidélité (était imprimé par buildEscPosReceipt mais absent du payload pont).
   if (receipt.loyaltyPointsEarned && receipt.loyaltyPointsEarned > 0) {
@@ -571,6 +605,10 @@ export function buildBridgePayload(receipt) {
     lines,
     total: frEur(receipt.total),
     footer: asciiFold(receipt.thankYou) || 'Merci et bon appetit !',
+    // [BORNE-TICKET-SIZE 2026-06-28] Tailles ESC/POS (GS ! n) à appliquer par le pont :
+    // bodySize = corps (compo), titleSize = en-tête + n° commande + total.
+    bodySize: sz.bodySize,
+    titleSize: sz.titleSize,
   };
 }
 
