@@ -34,6 +34,8 @@
  *    jsdom sans stub) → renvoie toujours `null` plutôt que throw.
  */
 
+import { kioskItemCompositionText } from './kioskPrinter';
+
 const STORAGE_KEY = 'kiosk.lastReceipt';
 const DEFAULT_TTL_MS = 60 * 60 * 1000; // 1h
 
@@ -84,6 +86,11 @@ export function saveKioskReceiptSnapshot(receipt) {
                 name: typeof it.name === 'string' ? it.name : '',
                 quantity: Number.isFinite(it.quantity) ? it.quantity : 1,
                 total: Number.isFinite(it.total) ? it.total : 0,
+                // [BORNE-TICKET-COMPO 2026-06-28] Persiste la compo complète (sauce,
+                // crudités, viandes, formule…) pour qu'un reprint après reload F5
+                // décrive le ticket à l'identique (sinon le snapshot ne gardait que
+                // le nom → ticket minimaliste au rechargement).
+                instruction: kioskItemCompositionText(it) || it.instruction || null,
             }))
             : [],
         paymentMethod: receipt.paymentMethod || '',

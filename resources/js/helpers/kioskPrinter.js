@@ -315,6 +315,93 @@ function formatEur(amount) {
   return (parseFloat(amount) || 0).toFixed(2) + ' EUR';
 }
 
+// [BORNE-TICKET-COMPO 2026-06-28] Le wizard frozen (buildInstruction) n'émet que
+// la formule + sauces EXTRA + viandes — il OMET la sauce principale, les crudités
+// et les suppléments → le ticket borne ne décrivait presque rien (cf. photo owner
+// A0009 « 1x Cheese Burger > Formule … » sans sauce ni crudités).
+//
+// On reconstruit ici la composition COMPLÈTE depuis les champs STRUCTURÉS du
+// cartItem (déjà présents, prêts-serveur), une SEULE source par élément (zéro
+// doublage), sans toucher au wizard frozen :
+//   - item_variations  → pain, sauce (1ère), viandes               (variation_name=GROUPE, name=VALEUR)
+//   - item_extras      → crudités gratuites + suppléments payants    ({name})
+//   - item_addons      → formule (role menu_*)
+//   - _wizardSelections → taille (_tailleMeta), boisson (_boissonMeta), note libre
+// Renvoie '' si rien de structuré (l'appelant retombe sur item.instruction).
+
+/** Nettoie un libellé de groupe pour le ticket : "Viande 1"→"Viande", "Sauce (1ère Gratuite)"→"Sauce". */
+function cleanCompoGroup(label) {
+  return String(label == null ? '' : label)
+    .replace(/\([^)]*\)/g, '')   // parenthèses ("1ère Gratuite")
+    .replace(/\s*\d+\s*$/, '')   // index final ("Viande 1" → "Viande")
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+const KIOSK_MENU_ROLE_LABEL = {
+  menu_full: 'Formule (frites + boisson)',
+  menu_frites: 'Formule (frites)',
+  menu_boisson: 'Formule (boisson)',
+};
+
+export function kioskItemCompositionText(item) {
+  if (!item || typeof item !== 'object') return '';
+  const parts = [];
+  const sel = (item._wizardSelections && typeof item._wizardSelections === 'object')
+    ? item._wizardSelections : {};
+
+  // Taille (n'est pas dans item_variations) — en tête.
+  const taille = sel._tailleMeta && sel._tailleMeta.label;
+  if (taille) parts.push(String(taille).trim());
+
+  // Variations groupées (pain, viandes, sauce 1ère). "Viande 1"+"Viande 2" → une
+  // seule ligne "Viande: Nuggets, Tenders".
+  const order = [];
+  const byGroup = {};
+  (item.item_variations || []).forEach((v) => {
+    const value = String((v && (v.name ?? v.variation_value)) || '').trim();
+    if (!value) return;
+    const group = cleanCompoGroup(v && v.variation_name);
+    const q = v && v.quantity > 1 ? ` x${v.quantity}` : '';
+    const key = group || '_';
+    if (!(key in byGroup)) { byGroup[key] = []; order.push(key); }
+    byGroup[key].push(value + q);
+  });
+  order.forEach((key) => {
+    const vals = byGroup[key].join(', ');
+    parts.push(key === '_' ? vals : `${key}: ${vals}`);
+  });
+
+  // Extras : crudités gratuites + suppléments (tous décrits ; pas de prix sur le cartItem).
+  const extras = (item.item_extras || [])
+    .map((e) => {
+      const n = String((e && e.name) || '').trim();
+      if (!n) return '';
+      return n + (e && e.quantity > 1 ? ` x${e.quantity}` : '');
+    })
+    .filter(Boolean);
+  if (extras.length) parts.push(extras.join(', '));
+
+  // Formule (addons role menu_*) + nom de la boisson (porté par _boissonMeta côté kiosk).
+  let hasFormula = false;
+  (item.item_addons || []).forEach((a) => {
+    const role = String((a && a.role) || '');
+    const label = KIOSK_MENU_ROLE_LABEL[role] || String((a && a.name) || '').trim();
+    if (label) { parts.push(label); hasFormula = true; }
+  });
+  const drink = sel._boissonMeta && sel._boissonMeta.boissonName;
+  if (drink) parts.push(`(${String(drink).trim()})`);
+  // Sauce frites (séparée du menu) si capturée.
+  const frySauce = sel._fritesSauceMeta && sel._fritesSauceMeta.fritesSauceName;
+  if (frySauce) parts.push(`Sauce frites: ${String(frySauce).trim()}`);
+
+  // Note libre du client.
+  const note = String(sel.instruction || '').trim();
+  if (note) parts.push(`Note: ${note}`);
+
+  return parts.join('. ');
+}
+
 /**
  * Build a receipt data object from kiosk cart state + order response.
  *
@@ -353,7 +440,10 @@ export function buildReceiptData({
     unitPrice: (parseFloat(item.convert_price) || 0)
                + (parseFloat(item.item_variation_total) || 0)
                + (parseFloat(item.item_extra_total) || 0),
-    instruction: item.instruction || null,
+    // [BORNE-TICKET-COMPO 2026-06-28] Compo COMPLÈTE depuis les champs structurés
+    // (sauce + crudités + viandes + suppléments + formule), fallback sur l'ancienne
+    // instruction si l'item n'a pas de compo structurée (produit simple, snapshot F5).
+    instruction: kioskItemCompositionText(item) || item.instruction || null,
   }));
 
   return {
