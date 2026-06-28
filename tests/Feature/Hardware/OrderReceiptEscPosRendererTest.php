@@ -28,6 +28,10 @@ class OrderReceiptEscPosRendererTest extends TestCase
         $oi = (new OrderItem)->forceFill([
             'quantity' => 1,
             'total_price' => 13.80,
+            'tax_rate' => 10,
+            'tax_name' => 'TVA',
+            'tax_type' => 1,
+            'tax_amount' => 1.25,
             'composition_snapshot' => [
                 'lines' => [
                     ['attribute_name' => 'Viande 1', 'variation_name' => 'Cordon Bleu'],
@@ -45,6 +49,8 @@ class OrderReceiptEscPosRendererTest extends TestCase
 
         $order = (new Order)->forceFill([
             'order_serial_no' => 'TEST-1',
+            'queue_number' => 'A0010',
+            'order_type' => \App\Enums\OrderType::TAKEAWAY,
             'subtotal' => 13.80,
             'total' => 13.80,
             'total_tax' => 1.25,
@@ -81,18 +87,45 @@ class OrderReceiptEscPosRendererTest extends TestCase
         $this->assertStringContainsString('2550', $bytes);
     }
 
+    public function test_client_ticket_shows_order_type_queue_and_tva_breakdown(): void
+    {
+        $bytes = (new OrderReceiptEscPosRenderer)->renderClientTicket($this->makeOrder());
+        // Queue number prominent (customer pickup number).
+        $this->assertStringContainsString('A0010', $bytes);
+        // Order type (sur place / à emporter / livraison).
+        $this->assertStringContainsString('emporter', $bytes);
+        // NF525: TVA ventilated by rate + base HT (not a lone lump sum).
+        $this->assertStringContainsString('TVA 10', $bytes, 'TVA rate line missing');
+        $this->assertStringContainsString('12,55', $bytes, 'base HT per rate missing');
+        $this->assertStringContainsString('TOTAL', $bytes);
+    }
+
+    public function test_client_ticket_shows_unit_price_when_qty_above_one(): void
+    {
+        $order = $this->makeOrder();
+        $oi = $order->orderItems->first();
+        $oi->quantity = 2;
+        $oi->total_price = 15.80;
+        $bytes = (new OrderReceiptEscPosRenderer)->renderClientTicket($order);
+        // 15,80 / 2 = 7,90 unit price shown.
+        $this->assertStringContainsString('7,90', $bytes, 'unit price for qty>1 missing');
+    }
+
     public function test_client_ticket_marks_duplicata(): void
     {
         $bytes = (new OrderReceiptEscPosRenderer)->renderClientTicket($this->makeOrder(), ['is_duplicata' => true]);
         $this->assertStringContainsString('DUPLICATA', $bytes);
     }
 
-    public function test_kitchen_ticket_has_composition_but_no_prices(): void
+    public function test_kitchen_ticket_uses_symbolic_format_no_prices(): void
     {
         $bytes = (new OrderReceiptEscPosRenderer)->renderKitchenTicket($this->makeOrder());
         $this->assertStringContainsString('CUISINE', $bytes);
-        $this->assertStringContainsString('Cordon Bleu', $bytes);
-        $this->assertStringContainsString('Viande suppl', $bytes);
+        // [KITCHEN-SYMBOLS 2026-06-28] Tacos L, Cordon Bleu + Fricadelle, Samouraï.
+        $this->assertStringContainsString('G | TACOS | L | Cordon Frec | SAM', $bytes);
+        // Paid supplement kept full-name on its own line (accent must survive CP858).
+        $this->assertStringContainsString('+ Cheddar', $bytes);
+        $this->assertStringContainsString('+ Viande suppl', $bytes);
         // No prices on the kitchen ticket.
         $this->assertStringNotContainsString('EUR', $bytes, 'kitchen ticket must not show prices');
     }

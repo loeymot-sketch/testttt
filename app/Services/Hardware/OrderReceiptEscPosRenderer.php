@@ -53,7 +53,25 @@ final class OrderReceiptEscPosRenderer
         if (optional($branch)->phone) {
             $b .= EscPosCommandBuilder::textLine('Tel: ' . $branch->phone);
         }
+        if (! empty($head['pos_siret'])) {
+            $b .= EscPosCommandBuilder::textLine('SIRET ' . $head['pos_siret']);
+        }
         $b .= EscPosCommandBuilder::separator('=', $w);
+
+        // Customer pickup number — big & centered (the number called out).
+        $queue = (string) ($order->queue_number ?? $order->order_serial_no ?? $order->id);
+        if ($queue !== '') {
+            $b .= EscPosCommandBuilder::alignCenter();
+            $b .= EscPosCommandBuilder::doubleSize(true) . EscPosCommandBuilder::bold(true);
+            $b .= EscPosCommandBuilder::textLine('N ' . $queue);
+            $b .= EscPosCommandBuilder::doubleSize(false) . EscPosCommandBuilder::bold(false);
+        }
+        $orderType = $this->orderTypeLabel($order);
+        if ($orderType !== '') {
+            $b .= EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::textLine($orderType) . EscPosCommandBuilder::bold(false);
+        }
+        $b .= EscPosCommandBuilder::alignLeft();
+        $b .= EscPosCommandBuilder::separator('-', $w);
 
         if ($counterCopy) {
             $b .= EscPosCommandBuilder::bold(true);
@@ -87,20 +105,40 @@ final class OrderReceiptEscPosRenderer
 
         // Totals
         $b .= EscPosCommandBuilder::lineKV('Sous-total', $this->money((float) ($order->subtotal ?? 0)), $w);
-        $tax = (float) ($order->total_tax ?? 0);
-        if ($tax > 0) {
-            $b .= EscPosCommandBuilder::lineKV('Dont TVA', $this->money($tax), $w);
+        $discount = (float) ($order->discount ?? 0);
+        if ($discount > 0) {
+            $b .= EscPosCommandBuilder::lineKV('Remise', '-' . $this->money($discount), $w);
         }
+        $delivery = (float) ($order->delivery_charge ?? 0);
+        if ($delivery > 0) {
+            $b .= EscPosCommandBuilder::lineKV('Livraison', $this->money($delivery), $w);
+        }
+
         $b .= EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::doubleSize(true);
         $b .= EscPosCommandBuilder::lineKV('TOTAL', $this->money((float) ($order->total ?? 0)), max(20, (int) floor($w / 2)));
         $b .= EscPosCommandBuilder::doubleSize(false) . EscPosCommandBuilder::bold(false);
 
-        // Payment
+        // Payment (right after the total, as on a standard receipt).
         foreach ($this->payments($order) as $p) {
             $b .= EscPosCommandBuilder::lineKV($p['label'], $this->money($p['amount']), $w);
             if (($p['change'] ?? 0) > 0) {
                 $b .= EscPosCommandBuilder::lineKV('  Rendu', $this->money($p['change']), $w);
             }
+        }
+
+        // NF525: ventilation de la TVA par taux (taux / base HT / montant).
+        $taxLines = $this->taxLines($order);
+        if (! empty($taxLines)) {
+            $b .= EscPosCommandBuilder::separator('-', $w);
+            $b .= EscPosCommandBuilder::textLine('Detail TVA :');
+            foreach ($taxLines as $tl) {
+                // "10.00" → "10", "5.50" → "5,5" (strip only trailing decimals).
+                $rate = rtrim(rtrim(number_format((float) $tl['rate'], 2, ',', ''), '0'), ',');
+                $label = 'TVA ' . $rate . '% (HT ' . number_format($tl['ht'], 2, ',', ' ') . ')';
+                $b .= EscPosCommandBuilder::lineKV($label, $this->money($tl['tax']), $w);
+            }
+        } elseif ((float) ($order->total_tax ?? 0) > 0) {
+            $b .= EscPosCommandBuilder::lineKV('Dont TVA', $this->money((float) $order->total_tax), $w);
         }
 
         // NF525 footer
@@ -109,16 +147,15 @@ final class OrderReceiptEscPosRenderer
         if (! empty($head['fiscal_sequence_no'])) {
             $b .= EscPosCommandBuilder::textLine('Ticket fiscal N ' . $head['fiscal_sequence_no']);
         }
-        if (! empty($head['pos_siret'])) {
-            $b .= EscPosCommandBuilder::textLine('SIRET ' . $head['pos_siret']);
-        }
         if (! empty($head['pos_vat_intra'])) {
             $b .= EscPosCommandBuilder::textLine('TVA ' . $head['pos_vat_intra']);
         }
         if (! empty($head['pos_legal_footer'])) {
             $b .= EscPosCommandBuilder::textLine((string) $head['pos_legal_footer']);
         }
-        $b .= EscPosCommandBuilder::textLine('Merci de votre visite !');
+        $b .= EscPosCommandBuilder::textLine('Prix nets en euros TTC');
+        $b .= EscPosCommandBuilder::feed(1);
+        $b .= EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::textLine('Merci et a tres bientot !') . EscPosCommandBuilder::bold(false);
         $b .= EscPosCommandBuilder::feed(3);
         $b .= EscPosCommandBuilder::cut();
 
@@ -235,6 +272,11 @@ final class OrderReceiptEscPosRenderer
             $b = EscPosCommandBuilder::bold(true);
             $b .= EscPosCommandBuilder::lineKV($head, $this->money($line['total']), $w);
             $b .= EscPosCommandBuilder::bold(false);
+            // Unit price for multi-quantity lines (clarity + good fiscal practice).
+            if ((int) $line['qty'] > 1 && (float) $line['total'] > 0) {
+                $unit = round((float) $line['total'] / (int) $line['qty'], 2);
+                $b .= EscPosCommandBuilder::textLine('  (' . $line['qty'] . ' x ' . $this->money($unit) . ')');
+            }
         } else {
             $b = EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::textLine($head) . EscPosCommandBuilder::bold(false);
         }
@@ -273,6 +315,45 @@ final class OrderReceiptEscPosRenderer
             'amount' => $amount,
             'change' => (float) ($order->cash_back_amount ?? 0),
         ]];
+    }
+
+    private function orderTypeLabel(BroadcastableOrder $order): string
+    {
+        return match ((int) ($order->order_type ?? 0)) {
+            \App\Enums\OrderType::DELIVERY => 'Livraison',
+            \App\Enums\OrderType::TAKEAWAY => 'À emporter',
+            \App\Enums\OrderType::DINING_TABLE => 'Sur place',
+            \App\Enums\OrderType::KIOSK => 'Commande borne',
+            \App\Enums\OrderType::POS => 'Sur place',
+            default => '',
+        };
+    }
+
+    /**
+     * Ventilation de la TVA par taux — mirror of OrderDetailsResource::buildTaxLines
+     * (groupe par taux, base HT = total TTC ligne - TVA ligne).
+     *
+     * @return array<int, array{name:string, rate:string, ht:float, tax:float}>
+     */
+    private function taxLines(BroadcastableOrder $order): array
+    {
+        $groups = [];
+        foreach (($order->orderItems ?? collect()) as $oi) {
+            $rate = (string) (0 + (float) ($oi->tax_rate ?? 0));
+            $name = (string) ($oi->tax_name ?? 'TVA');
+            $type = (int) ($oi->tax_type ?? 0);
+            $key = $type . '|' . $rate . '|' . $name;
+            if (! isset($groups[$key])) {
+                $groups[$key] = ['name' => $name, 'rate' => $rate, 'ht' => 0.0, 'tax' => 0.0];
+            }
+            $tax = (float) ($oi->tax_amount ?? 0);
+            $ttc = (float) ($oi->total_price ?? 0);
+            $groups[$key]['tax'] += $tax;
+            $groups[$key]['ht'] += max(0.0, $ttc - $tax);
+        }
+
+        // Drop zero-tax groups (e.g. items with no rate) — nothing to ventilate.
+        return array_values(array_filter($groups, fn ($g) => $g['tax'] > 0));
     }
 
     private function money(float $v): string
