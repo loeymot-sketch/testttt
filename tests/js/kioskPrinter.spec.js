@@ -143,4 +143,32 @@ describe('kioskPrinter', () => {
     await p;
     vi.useRealTimers();
   });
+
+  it('[BORNE-LOCAL-BRIDGE] hors Electron, imprime via le pont local AVANT window.print', async () => {
+    hwMock.isKioskBridge.mockReturnValue(false);
+    // pont local dispo : /health → UP, POST / → PRINTED
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve('PRINTED') });
+    document.body.innerHTML = '<div id="kiosk-print-receipt"></div>';
+    window.print = vi.fn();
+
+    const result = await printReceipt({ restaurantName: 'Le Cayenne', queueNumber: 'A0001', items: [], total: 1.9 });
+
+    expect(result).toEqual({ method: 'local-bridge' });
+    expect(window.print).not.toHaveBeenCalled(); // le pont a court-circuité le fallback
+    expect(global.fetch).toHaveBeenCalledWith('http://127.0.0.1:9100/', expect.objectContaining({ method: 'POST' }));
+    vi.restoreAllMocks();
+  });
+
+  it('[BORNE-LOCAL-BRIDGE] si le pont échoue, retombe sur window.print', async () => {
+    hwMock.isKioskBridge.mockReturnValue(false);
+    global.fetch = vi.fn().mockRejectedValue(new Error('ECONNREFUSED')); // pont absent
+    document.body.innerHTML = '<div id="kiosk-print-receipt"></div>';
+    window.print = vi.fn();
+
+    const result = await printReceipt({ restaurantName: 'Le Cayenne', queueNumber: 'A0001', items: [], total: 1.9 });
+
+    expect(result).toEqual({ method: 'browser' });
+    expect(window.print).toHaveBeenCalledTimes(1);
+    vi.restoreAllMocks();
+  });
 });
