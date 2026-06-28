@@ -78,6 +78,7 @@ use App\Listeners\RevokeTokensOnBranchDeactivated;
 use App\Listeners\NotifyStockLowOnStockLevelChanged;
 use App\Listeners\SendFcmOnOrderCreated;
 use App\Listeners\PrintKioskOrderToCounter;
+use App\Listeners\PrintFiscalReceiptAndOpenDrawerOnCounterPaid;
 use App\Listeners\SendFcmOnOrderStatusChange;
 use App\Listeners\SendOrderGotMailNotification;
 use App\Listeners\SendOrderGotPushNotification;
@@ -178,6 +179,8 @@ class EventServiceProvider extends ServiceProvider
         ],
         OrderPaidAtCounter::class => [
             PersistOrderPaidAtCounterToOutbox::class,
+            // [G10/G12 2026-06-28] reçu d'encaissement + tiroir-caisse (best-effort).
+            PrintFiscalReceiptAndOpenDrawerOnCounterPaid::class,
         ],
         // [P13 — F-VERIFY-09-01 / F-VERIFY-09-10] payment_status transitions.
         OrderPaymentStatusChanged::class => [
