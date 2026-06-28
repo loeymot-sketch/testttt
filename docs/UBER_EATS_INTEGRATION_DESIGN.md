@@ -102,15 +102,20 @@ Tout se passe dans le **Uber Eats Developer Dashboard** (developer.uber.com), es
    - `client_id`
    - `client_secret`  ← **secret, à m'envoyer de façon sécurisée** (pas par message
      en clair ; voir note ci-dessous).
-2. **Le(s) Store UUID** du restaurant (identifiant Uber du point de vente) —
-   visible dans Uber Eats Manager → Paramètres → infos de l'établissement, ou
-   fourni par le support intégration.
+2. **Le(s) Store UUID** du restaurant — normalement récupéré **par API** après
+   liaison du compte marchand (`GET /v1/eats/stores`), pas tapé à la main ;
+   parfois visible dans Uber Eats Manager (`merchants.ubereats.com`).
 3. **Activer le rôle « Integrator »** sur l'application + **activer l'intégration
    POS** sur le store (« Integration Activation » / « POS integration ») — souvent
    via une demande au support Uber Eats partenaires.
-4. **Scopes OAuth2** à cocher sur l'application :
-   `eats.store`, `eats.store.orders`, `eats.store.orders.read`, `eats.order`,
-   `eats.report` (lecture commandes + gestion store).
+4. **Scopes OAuth2** (noms exacts confirmés doc Uber, allow-listés par Uber) :
+   `eats.pos_provisioning` (activation stores), `eats.store` (store+menu),
+   `eats.store.status.write` (dispo store), `eats.order` (orders v1),
+   `eats.store.orders.read` (orders v2 lecture), `eats.report`.
+   ⚠️ **L'accès Eats Marketplace n'est pas 100 % self-service** : Uber exige
+   souvent une approbation écrite (NDA + accord licence API) + un partner manager,
+   et whiteliste les scopes POS sur demande du développeur — support
+   `https://t.uber.com/integration-support`.
 5. **URL de webhook** à enregistrer côté Uber (je la fournis une fois l'endpoint
    déployé) : `https://<domaine-cloud>/api/webhooks/uber`.
 6. (Optionnel selon flux) **Menu publié** côté Uber correspondant au catalogue, pour
