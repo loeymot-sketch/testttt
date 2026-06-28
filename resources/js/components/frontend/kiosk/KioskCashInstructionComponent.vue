@@ -161,8 +161,11 @@ export default {
                 subtotal: amount,
                 discount: 0,
                 total: amount,
-                paymentMethod: this.$t('kiosk.cash_instruction.pay_at_counter_short') || 'A regler en caisse',
-                thankYou: this.$t('kiosk.confirmation.receipt_thanks') || 'Merci et a bientot !',
+                // Libellés ticket en FR littéral (borne FR-only ADR-007) : le bridge
+                // ASCII-fold, et $t n'est pas garanti résolu au montage → on évite la
+                // clé i18n brute imprimée. Le e2e LIVE a révélé ce défaut.
+                paymentMethod: 'A regler en caisse',
+                thankYou: 'Merci de votre visite !',
             });
             try {
                 escPosPrint(receipt).catch((e) => reportPrinterFailure(this.orderNumber, e?.message || 'cash-print'));
