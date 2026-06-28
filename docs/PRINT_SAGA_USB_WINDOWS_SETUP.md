@@ -133,3 +133,52 @@ KitchenTicketSymbolicFormatterTest.php` et `tests/js/kdsSymbolic.spec.js`).
 
 Le **ticket CLIENT** reste en toutes lettres (lisible client) + minimal NF525
 (plus d'empreinte audit longue, plus d'URL, plus de « Propulsé par »).
+
+---
+
+## 🖥️ Afficheur client SAGA (petit écran 2×20) — 2026-06-28
+
+Le petit écran bleu SAGA (2 lignes × 20 caractères) affiche au client :
+- **en veille** (panier vide) : un message d'accueil ;
+- **pendant la vente** : UNIQUEMENT le total, mis à jour à chaque ajout produit.
+
+Le charabia constaté sur la photo = mauvais encodage / commandes brutes ; on envoie
+désormais des commandes **CD5220** propres (CP858), assemblées comme le ticket.
+
+### Branchement
+USB→série sur le PC Windows de la caisse → un port COM (ex. `COM3`). Laravel doit
+tourner sur ce PC (mono-poste V1), comme pour l'imprimante.
+
+### Activation (.env)
+```
+CUSTOMER_DISPLAY_ENABLED=true
+CUSTOMER_DISPLAY_DRIVER=windows_serial
+CUSTOMER_DISPLAY_PORT=COM3          # le port réel (Gestionnaire de périphériques)
+CUSTOMER_DISPLAY_BAUD=9600          # selon le manuel SAGA (souvent 9600)
+CUSTOMER_DISPLAY_WELCOME1=LE CAYENNE
+CUSTOMER_DISPLAY_WELCOME2=Soyez le bienvenu !
+CUSTOMER_DISPLAY_TOTAL_LABEL=TOTAL
+```
+puis `php artisan config:clear`. (Lignes coupées à 20 caractères.)
+
+### Rendu
+```
++--------------------+        +--------------------+
+|LE CAYENNE          |        |TOTAL               |
+|Soyez le bienvenu ! |        |           24,20 EUR|
++--------------------+        +--------------------+
+   (veille)                      (à chaque ajout)
+```
+
+### Dépannage
+- **Rien ne s'affiche** : vérifier `CUSTOMER_DISPLAY_PORT` (port COM exact), le baud,
+  et `storage/logs/laravel.log` (`[CustomerDisplay] send failed` + lastError).
+- **Toujours du charabia** : mauvais code page → ajuster `CUSTOMER_DISPLAY_CODE_PAGE`
+  (19=CP858, 16=CP1252) selon le firmware SAGA.
+- **`requires_windows_host`** : Laravel ne tourne pas sur Windows.
+- Best-effort : un afficheur absent/HS n'empêche JAMAIS d'encaisser.
+
+### Limite honnête
+La génération des octets CD5220 + l'endpoint + le déclenchement front (watcher sur le
+total) sont **testés** (unit + feature + e2e HTTP). L'écriture série réelle + l'affichage
+physique ne se valident QUE sur le PC Windows + la SAGA branchée.
