@@ -182,8 +182,10 @@
           </p>
         </div>
 
-        <!-- Options : utiliser ou pas -->
-        <div v-if="canRedeem" class="kiosk-loyalty-options">
+        <!-- Options : utiliser ou pas — [FIX P2 audit 2026-06-28] uniquement si les
+             remises sont activées (sinon /loyalty/redeem renvoie 422 → cul-de-sac).
+             En V1 earn-only (remises OFF), on n'affiche PAS l'option « utiliser ». -->
+        <div v-if="canRedeem && discountsEnabled" class="kiosk-loyalty-options">
           <button type="button"
             class="kiosk-loyalty-option"
             :class="{ selected: redeemChoice === 'yes' }"
@@ -218,15 +220,21 @@
           </button>
         </div>
 
-        <div v-else class="kiosk-loyalty-not-enough">
+        <div v-else-if="!canRedeem" class="kiosk-loyalty-not-enough">
           <p>{{ $t('kiosk.loyalty_screen.not_enough', { current: customer.loyalty_point, min: minRedeemPoints }) }}</p>
+          <p class="green">{{ $t('kiosk.loyalty_screen.not_enough_green') }}</p>
+        </div>
+
+        <!-- Earn-only (remises désactivées en V1) : on montre le SOLDE, pas « pas assez ». -->
+        <div v-else class="kiosk-loyalty-not-enough">
+          <p>Vous avez {{ customer.loyalty_point }} points fidélité 🎉</p>
           <p class="green">{{ $t('kiosk.loyalty_screen.not_enough_green') }}</p>
         </div>
 
         <button type="button"
           class="kiosk-btn-primary full"
           @click="applyLoyalty"
-          :disabled="canRedeem && !redeemChoice"
+          :disabled="canRedeem && discountsEnabled && !redeemChoice"
         >
           {{ $t('kiosk.loyalty_screen.confirm') }}
         </button>
@@ -367,6 +375,14 @@ export default {
 
     canRedeem() {
       return this.customer && this.customer.loyalty_point >= this.minRedeemPoints;
+    },
+    // [FIX P2 audit 2026-06-28] Même flag que le panier (window.foodkingConfig.
+    // discountsEnabled = config pos.manual_discount_enabled, défaut false). Si OFF,
+    // le backend rejette toute remise (422) → on masque l'option « utiliser mes points ».
+    discountsEnabled() {
+      return typeof window !== 'undefined'
+        && window.foodkingConfig
+        && window.foodkingConfig.discountsEnabled === true;
     },
 
     nextTierPoints() {
@@ -511,7 +527,8 @@ export default {
     },
 
     async applyLoyalty() {
-      if (this.canRedeem && this.redeemChoice === 'yes') {
+      // [FIX P2 audit] redeem seulement si activé (sinon le backend 422 rejette la commande).
+      if (this.canRedeem && this.discountsEnabled && this.redeemChoice === 'yes') {
         this.appliedDiscount = Math.min(this.discountValue, this.total);
         await this.setLoyalty({ customer: this.customer, discount: this.appliedDiscount });
         this.showToast(

@@ -40,12 +40,22 @@ class PrintKioskKitchenTicketOnOrderCreated
                 return;
             }
 
-            $printer = Printer::withoutGlobalScope(BranchScope::class)
-                ->where('branch_id', $branchId)
-                ->where('station', 'kitchen')
-                ->where('status', Status::ACTIVE)
-                ->orderBy('id')
-                ->first();
+            // [FIX P1 audit 2026-06-28] PrinterRequest n'autorise que receipt/kitchen_hot/
+            // kitchen_cold/bar — 'kitchen' seul n'est jamais créable en admin → on matche
+            // les vraies stations cuisine (chaude d'abord). Sinon : no-op silencieux permanent.
+            $kitchenStations = ['kitchen_hot', 'kitchen', 'kitchen_cold'];
+            $printer = null;
+            foreach ($kitchenStations as $station) { // kitchen_hot prioritaire (portable, pas de FIELD() SQLite)
+                $printer = Printer::withoutGlobalScope(BranchScope::class)
+                    ->where('branch_id', $branchId)
+                    ->where('station', $station)
+                    ->where('status', Status::ACTIVE)
+                    ->orderBy('id')
+                    ->first();
+                if ($printer) {
+                    break;
+                }
+            }
             if (! $printer) {
                 return; // pas d'imprimante cuisine → la cuisine utilise le KDS écran
             }

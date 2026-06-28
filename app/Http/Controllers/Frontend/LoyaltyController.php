@@ -79,7 +79,7 @@ class LoyaltyController extends Controller
                 $user = User::where('phone', $phone)->first();
             }
 
-            if ($user && $user->status == 1) {
+            if ($user && $this->isCustomerActive($user)) { // [FIX P3 audit] accepte status 1 OU ACTIVE(5) (cohérent avec le reste)
                 // Ensure the user has a loyalty code (may have registered by phone only)
                 if (!$user->loyalty_code) {
                     $user->loyalty_code = strtoupper(substr(md5(uniqid()), 0, 8));

@@ -58,6 +58,19 @@ describe('buildBridgePayload — codepage-safe (ASCII)', () => {
     expect(() => buildBridgePayload({})).not.toThrow();
     expect(() => buildBridgePayload(null)).not.toThrow();
   });
+
+  it('[FIX P2] word-wrap les compos LONGUES (2 viandes) sans tronquer (la 2e viande restait perdue)', () => {
+    const r = { restaurantName: 'X', queueNumber: 'A1', total: 13.8, items: [{
+      name: 'Tacos L', quantity: 1, unitPrice: 13.8,
+      instruction: 'Viande 1: Cordon Bleu. Viande 2: Fricadelle Maison. Sauce: Algerienne et Samourai',
+    }] };
+    const p = buildBridgePayload(r);
+    const blob = p.lines.join('\n');
+    expect(blob).toMatch(/Cordon Bleu/);
+    expect(blob).toMatch(/Fricadelle/);   // 2e viande PRÉSENTE (était tronquée avant)
+    expect(blob).toMatch(/Samourai/);     // sauce longue PRÉSENTE
+    p.lines.forEach(l => expect(l.length).toBeLessThanOrEqual(32)); // jamais > largeur
+  });
 });
 
 describe('G8/G11 — thankYou propagé + bloc fidélité (audit adversaire)', () => {

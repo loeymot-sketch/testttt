@@ -58,8 +58,10 @@ class KioskKitchenTicketTest extends TestCase
 
     private function makeKitchenPrinter(): void
     {
+        // station 'kitchen_hot' = valeur réellement créable en admin (PrinterRequest whitelist),
+        // pas 'kitchen' (qui n'existe pas côté config) → prouve le vrai chemin de prod.
         Printer::create([
-            'branch_id' => $this->branch->id, 'name' => 'Cuisine', 'station' => 'kitchen',
+            'branch_id' => $this->branch->id, 'name' => 'Cuisine', 'station' => 'kitchen_hot',
             'status' => Status::ACTIVE, 'width_chars' => 48,
         ]);
     }

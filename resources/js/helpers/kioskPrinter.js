@@ -426,6 +426,22 @@ function frEur(amount) {
   return (parseFloat(amount) || 0).toFixed(2).replace('.', ',') + ' EUR';
 }
 
+// [FIX P2 audit 2026-06-28] Word-wrap : coupe sur les espaces à `width` (jamais en
+// plein mot), conserve TOUT le texte de compo (plus de troncature de la 2e viande).
+function wrapText(s, width) {
+  const w = Math.max(8, width | 0);
+  const words = String(s == null ? '' : s).split(/\s+/).filter(Boolean);
+  const out = [];
+  let line = '';
+  for (const word of words) {
+    if (line && (line.length + 1 + word.length) > w) { out.push(line); line = word; }
+    else line = line ? line + ' ' + word : word;
+    while (line.length > w) { out.push(line.slice(0, w)); line = line.slice(w); } // mot unique trop long
+  }
+  if (line) out.push(line);
+  return out.length ? out : [''];
+}
+
 /**
  * Mappe un reçu (buildReceiptData) vers le payload JSON du pont :
  * {title, subtitle, order, lines:[], total, footer}. ASCII codepage-safe.
@@ -439,9 +455,11 @@ export function buildBridgePayload(receipt) {
     const price = frEur((parseFloat(item.unitPrice) || 0) * qty);
     lines.push(padLine(`${qty}x ${asciiFold(item.name)}`, price, width));
     if (item.instruction) {
+      // [FIX P2 audit 2026-06-28] WORD-WRAP au lieu de tronquer à width-4 : sinon
+      // une compo « 2 viandes + suppléments » > 28 car perdait la 2e viande / les extras.
       String(item.instruction).split('. ').forEach(l => {
         const t = asciiFold(l);
-        if (t) lines.push('  > ' + t.substring(0, width - 4));
+        if (t) wrapText(t, width - 4).forEach(w => lines.push('  > ' + w));
       });
     }
   });
