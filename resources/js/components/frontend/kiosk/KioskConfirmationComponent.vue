@@ -138,7 +138,7 @@
 </template>
 
 <script>
-import { printReceipt as escPosPrint, buildReceiptData, reportPrinterFailure } from '../../../helpers/kioskPrinter';
+import { printReceipt as escPosPrint, buildReceiptData, reportPrinterFailure, isLocalBridgeAvailable } from '../../../helpers/kioskPrinter';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
 import { sanitizeKioskCustomerFacingText } from '../../../helpers/kioskDisplayText';
 import kioskHardware from '../../../services/kioskHardware';
@@ -332,12 +332,17 @@ export default {
 
     this.startTimer();
 
-    // Auto-print only on the real kiosk bridge. Browser window.print() can
-    // suspend timers in dev/simulated payment and leave the kiosk on this page.
-    this.$nextTick(() => {
-      if (kioskHardware.isKioskBridge()) {
-        this.printReceipt();
-      }
+    // Auto-print : Electron bridge OU [BORNE-LOCAL-BRIDGE 2026-06-28] pont HTTP
+    // local (POST silencieux au SK1-31 via 127.0.0.1:9100 — pas de dialogue
+    // navigateur bloquant, donc l'auto-impression est sûre). On NE déclenche PAS
+    // window.print() en auto (il suspend les timers / ouvre un dialogue OS) : si ni
+    // bridge ni pont, le client garde le bouton « Imprimer le ticket » manuel.
+    this.$nextTick(async () => {
+      try {
+        if (kioskHardware.isKioskBridge() || await isLocalBridgeAvailable()) {
+          this.printReceipt();
+        }
+      } catch (_) { /* détection pont non bloquante */ }
     });
 
     // Kiosk Phase 9.1.8 — annonce vocale de la confirmation (audio only if

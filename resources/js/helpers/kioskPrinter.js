@@ -262,6 +262,12 @@ export async function printReceipt(receipt, printElementId = 'kiosk-print-receip
   // et window.print() pouvait ouvrir un dialogue OS bloquant sur écran tactile).
   // On laisse l'échec remonter pour déclencher printFailed + reportPrinterFailure.
   if (!isBridge) {
+    // [BORNE-LOCAL-BRIDGE 2026-06-28] Pont WinUSB local d'abord : impression
+    // thermique SILENCIEUSE sur le SK1-31 (POST 127.0.0.1:9100), sans dialogue
+    // navigateur. Fall-through vers window.print() si le pont est absent/échoue.
+    const bridge = await printViaLocalBridge(receipt);
+    if (bridge) return bridge;
+
     const el = document.getElementById(printElementId);
     if (el && typeof window.print === 'function') {
       try {
@@ -351,4 +357,95 @@ export function buildReceiptData({
     loyaltyCustomerName: loyaltyCustomerName || '',
     labels,
   };
+}
+
+// ── [BORNE-LOCAL-BRIDGE 2026-06-28] Pont d'impression WinUSB local ───────────
+// Sur la VRAIE borne (Chrome plein écran, PAS Electron), le SK1-31 n'a aucune file
+// d'impression Windows (driver WinUSB only). Un petit pont local (bridge.js / node-usb)
+// écoute sur http://127.0.0.1:9100 et écrit l'ESC/POS directement au SK1-31. La borne
+// POSTe le ticket au pont au lieu de window.print(). `http://127.0.0.1` est un secure
+// context → fetch autorisé depuis une page HTTPS (exempté du blocage mixed-content).
+export const LOCAL_BRIDGE_URL = 'http://127.0.0.1:9100';
+
+// Le pont envoie ses octets en 'binary' (Latin-1) et le codepage du SK1-31 est
+// imprévisible → on ASCII-fold (accents retirés, € → EUR) pour garantir un ticket
+// LISIBLE quel que soit le codepage (V1 pragmatique : « Méga » → « Mega »).
+function asciiFold(s) {
+  return String(s == null ? '' : s)
+    .normalize('NFD').replace(/[̀-ͯ]/g, '') // diacritiques
+    .replace(/€/g, 'EUR').replace(/[^\x20-\x7E]/g, ' ')
+    .replace(/[ \t]{2,}/g, ' ').trim();
+}
+
+function frEur(amount) {
+  return (parseFloat(amount) || 0).toFixed(2).replace('.', ',') + ' EUR';
+}
+
+/**
+ * Mappe un reçu (buildReceiptData) vers le payload JSON du pont :
+ * {title, subtitle, order, lines:[], total, footer}. ASCII codepage-safe.
+ */
+export function buildBridgePayload(receipt) {
+  receipt = receipt || {};
+  const width = RECEIPT_WIDTH;
+  const lines = [];
+  (receipt.items || []).forEach(item => {
+    const qty = item.quantity || 1;
+    const price = frEur((parseFloat(item.unitPrice) || 0) * qty);
+    lines.push(padLine(`${qty}x ${asciiFold(item.name)}`, price, width));
+    if (item.instruction) {
+      String(item.instruction).split('. ').forEach(l => {
+        const t = asciiFold(l);
+        if (t) lines.push('  > ' + t.substring(0, width - 4));
+      });
+    }
+  });
+  if (receipt.discount && receipt.discount > 0) {
+    lines.push(padLine('Remise', '-' + frEur(receipt.discount), width));
+  }
+  if (receipt.paymentMethod) {
+    lines.push(padLine('Paiement', asciiFold(receipt.paymentMethod), width));
+  }
+  return {
+    title: asciiFold(receipt.restaurantName) || 'LE CAYENNE',
+    subtitle: asciiFold(receipt.orderDate),
+    order: asciiFold(receipt.queueNumber),
+    lines,
+    total: frEur(receipt.total),
+    footer: asciiFold(receipt.thankYou) || 'Merci et bon appetit !',
+  };
+}
+
+function fetchWithTimeout(url, opts, timeoutMs) {
+  if (typeof fetch !== 'function') return Promise.reject(new Error('no fetch'));
+  const ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+  const t = ctrl ? setTimeout(() => ctrl.abort(), timeoutMs) : null;
+  const o = Object.assign({}, opts);
+  if (ctrl) o.signal = ctrl.signal;
+  return fetch(url, o).finally(() => { if (t) clearTimeout(t); });
+}
+
+/** True si le pont local répond /health → "UP". Timeout court, jamais throw. */
+export async function isLocalBridgeAvailable(timeoutMs = 800) {
+  try {
+    const res = await fetchWithTimeout(LOCAL_BRIDGE_URL + '/health', {}, timeoutMs);
+    if (!res || !res.ok) return false;
+    const txt = await res.text();
+    return /UP/i.test(txt);
+  } catch (_) { return false; }
+}
+
+/**
+ * POSTe le ticket au pont local (ESC/POS → SK1-31). Renvoie {method:'local-bridge'}
+ * sur succès, sinon null (fall-through vers window.print). Jamais throw.
+ */
+export async function printViaLocalBridge(receipt, timeoutMs = 4000) {
+  try {
+    const res = await fetchWithTimeout(LOCAL_BRIDGE_URL + '/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(buildBridgePayload(receipt)),
+    }, timeoutMs);
+    return res && res.ok ? { method: 'local-bridge' } : null;
+  } catch (_) { return null; }
 }
