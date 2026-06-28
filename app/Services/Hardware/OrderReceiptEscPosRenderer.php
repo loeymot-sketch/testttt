@@ -42,7 +42,7 @@ final class OrderReceiptEscPosRenderer
         $b = EscPosCommandBuilder::init();
         $b .= EscPosCommandBuilder::selectCodePage($codePage);
 
-        // Header
+        // ── En-tête établissement (centré) ──────────────────────────────────
         $b .= EscPosCommandBuilder::alignCenter();
         $b .= EscPosCommandBuilder::doubleSize(true) . EscPosCommandBuilder::bold(true);
         $b .= EscPosCommandBuilder::textLine(optional($branch)->name ?: 'LE CAYENNE');
@@ -53,97 +53,95 @@ final class OrderReceiptEscPosRenderer
         if (optional($branch)->phone) {
             $b .= EscPosCommandBuilder::textLine('Tel: ' . $branch->phone);
         }
+        if (optional($branch)->email) {
+            $b .= EscPosCommandBuilder::textLine('E-mail: ' . $branch->email);
+        }
         if (! empty($head['pos_siret'])) {
             $b .= EscPosCommandBuilder::textLine('SIRET ' . $head['pos_siret']);
         }
-        $b .= EscPosCommandBuilder::separator('=', $w);
-
-        // Customer pickup number — big & centered (the number called out).
-        $queue = (string) ($order->queue_number ?? $order->order_serial_no ?? $order->id);
-        if ($queue !== '') {
-            $b .= EscPosCommandBuilder::alignCenter();
-            $b .= EscPosCommandBuilder::doubleSize(true) . EscPosCommandBuilder::bold(true);
-            $b .= EscPosCommandBuilder::textLine('N ' . $queue);
-            $b .= EscPosCommandBuilder::doubleSize(false) . EscPosCommandBuilder::bold(false);
-        }
-        $orderType = $this->orderTypeLabel($order);
-        if ($orderType !== '') {
-            $b .= EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::textLine($orderType) . EscPosCommandBuilder::bold(false);
-        }
-        $b .= EscPosCommandBuilder::alignLeft();
         $b .= EscPosCommandBuilder::separator('-', $w);
 
-        if ($counterCopy) {
-            $b .= EscPosCommandBuilder::bold(true);
-            $b .= EscPosCommandBuilder::textLine('*** COMMANDE BORNE - COPIE CAISSE ***');
-            $b .= EscPosCommandBuilder::bold(false);
-        }
-        if ($isDuplicata) {
-            $b .= EscPosCommandBuilder::bold(true);
-            $b .= EscPosCommandBuilder::textLine('*** DUPLICATA ***');
-            $b .= EscPosCommandBuilder::bold(false);
-        }
-
-        // Order meta
-        $b .= EscPosCommandBuilder::alignLeft();
+        // ── N° de ticket (gros) + date (centrés) ────────────────────────────
         $serial = (string) ($order->order_serial_no ?? $order->id);
-        $b .= EscPosCommandBuilder::lineKV('Commande', 'N ' . $serial, $w);
+        $ticketNo = (string) ($order->queue_number ?: $serial);
+        $b .= EscPosCommandBuilder::doubleSize(true) . EscPosCommandBuilder::bold(true);
+        $b .= EscPosCommandBuilder::textLine($ticketNo);
+        $b .= EscPosCommandBuilder::doubleSize(false) . EscPosCommandBuilder::bold(false);
         $dt = $order->order_datetime ?? $order->created_at;
         if ($dt) {
-            $b .= EscPosCommandBuilder::lineKV('Date', $dt->format('d/m/Y H:i'), $w);
-        }
-        if (! empty($head['operator_name'])) {
-            $b .= EscPosCommandBuilder::lineKV('Caissier', (string) $head['operator_name'], $w);
+            $b .= EscPosCommandBuilder::textLine($this->frenchDateTime($dt));
         }
         $b .= EscPosCommandBuilder::separator('-', $w);
 
-        // Line items (with prices)
+        // ── Bannière type de commande ───────────────────────────────────────
+        $orderType = $this->orderTypeLabel($order);
+        if ($orderType !== '') {
+            $b .= EscPosCommandBuilder::doubleSize(true) . EscPosCommandBuilder::bold(true);
+            $b .= EscPosCommandBuilder::textLine('*** ' . mb_strtoupper($orderType) . ' ***');
+            $b .= EscPosCommandBuilder::doubleSize(false) . EscPosCommandBuilder::bold(false);
+        }
+        if ($counterCopy) {
+            $b .= EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::textLine('*** COMMANDE BORNE - COPIE CAISSE ***') . EscPosCommandBuilder::bold(false);
+        }
+        if ($isDuplicata) {
+            $b .= EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::textLine('*** DUPLICATA ***') . EscPosCommandBuilder::bold(false);
+        }
+
+        // ── Articles ────────────────────────────────────────────────────────
+        $b .= EscPosCommandBuilder::alignLeft();
+        $b .= EscPosCommandBuilder::feed(1);
+        $b .= EscPosCommandBuilder::lineKV('QT ARTICLES', 'MONTANT', $w);
+        $b .= EscPosCommandBuilder::separator('-', $w);
         foreach ($this->lines($order) as $line) {
-            $b .= $this->renderLine($line, $w, true);
+            $b .= $this->renderClientItem($line, $w);
         }
         $b .= EscPosCommandBuilder::separator('-', $w);
 
-        // Totals
-        $b .= EscPosCommandBuilder::lineKV('Sous-total', $this->money((float) ($order->subtotal ?? 0)), $w);
-        $discount = (float) ($order->discount ?? 0);
-        if ($discount > 0) {
-            $b .= EscPosCommandBuilder::lineKV('Remise', '-' . $this->money($discount), $w);
-        }
+        // ── Totaux ──────────────────────────────────────────────────────────
+        $b .= EscPosCommandBuilder::lineKV('SOUS-TOTAL :', $this->money((float) ($order->subtotal ?? 0)), $w);
+        $b .= EscPosCommandBuilder::lineKV('REDUCTION :', $this->money((float) ($order->discount ?? 0)), $w);
         $delivery = (float) ($order->delivery_charge ?? 0);
         if ($delivery > 0) {
-            $b .= EscPosCommandBuilder::lineKV('Livraison', $this->money($delivery), $w);
+            $b .= EscPosCommandBuilder::lineKV('LIVRAISON :', $this->money($delivery), $w);
         }
-
+        $b .= EscPosCommandBuilder::separator('-', $w);
         $b .= EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::doubleSize(true);
-        $b .= EscPosCommandBuilder::lineKV('TOTAL', $this->money((float) ($order->total ?? 0)), max(20, (int) floor($w / 2)));
+        $b .= EscPosCommandBuilder::lineKV('MONTANT TOTAL :', $this->money((float) ($order->total ?? 0)), max(20, (int) floor($w / 2)));
         $b .= EscPosCommandBuilder::doubleSize(false) . EscPosCommandBuilder::bold(false);
+        $b .= EscPosCommandBuilder::separator('-', $w);
 
-        // Payment (right after the total, as on a standard receipt).
-        foreach ($this->payments($order) as $p) {
-            $b .= EscPosCommandBuilder::lineKV($p['label'], $this->money($p['amount']), $w);
-            if (($p['change'] ?? 0) > 0) {
-                $b .= EscPosCommandBuilder::lineKV('  Rendu', $this->money($p['change']), $w);
-            }
-        }
-
-        // NF525: ventilation de la TVA par taux (taux / base HT / montant).
+        // ── TVA (par taux) ──────────────────────────────────────────────────
         $taxLines = $this->taxLines($order);
         if (! empty($taxLines)) {
-            $b .= EscPosCommandBuilder::separator('-', $w);
-            $b .= EscPosCommandBuilder::textLine('Detail TVA :');
             foreach ($taxLines as $tl) {
-                // "10.00" → "10", "5.50" → "5,5" (strip only trailing decimals).
                 $rate = rtrim(rtrim(number_format((float) $tl['rate'], 2, ',', ''), '0'), ',');
-                $label = 'TVA ' . $rate . '% (HT ' . number_format($tl['ht'], 2, ',', ' ') . ')';
-                $b .= EscPosCommandBuilder::lineKV($label, $this->money($tl['tax']), $w);
+                $b .= EscPosCommandBuilder::lineKV('TVA ' . $rate . '% :', $this->money($tl['tax']), $w);
             }
         } elseif ((float) ($order->total_tax ?? 0) > 0) {
-            $b .= EscPosCommandBuilder::lineKV('Dont TVA', $this->money((float) $order->total_tax), $w);
+            $b .= EscPosCommandBuilder::lineKV('TVA :', $this->money((float) $order->total_tax), $w);
         }
 
-        // NF525 footer
-        $b .= EscPosCommandBuilder::separator('=', $w);
+        // ── Paiement (ou à régler en caisse si non payé) ────────────────────
+        $payments = $this->payments($order);
+        if (! empty($payments)) {
+            foreach ($payments as $p) {
+                $b .= EscPosCommandBuilder::lineKV(mb_strtoupper($p['label']) . ' :', $this->money($p['amount']), $w);
+                if (($p['change'] ?? 0) > 0) {
+                    $b .= EscPosCommandBuilder::lineKV('RENDU :', $this->money($p['change']), $w);
+                }
+            }
+        } elseif ((float) ($order->total ?? 0) > 0) {
+            $b .= EscPosCommandBuilder::lineKV('A REGLER TTC :', $this->money((float) $order->total), $w);
+            $b .= EscPosCommandBuilder::alignCenter();
+            $b .= EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::textLine('** A REGLER EN CAISSE **') . EscPosCommandBuilder::bold(false);
+            $b .= EscPosCommandBuilder::alignLeft();
+        }
+
+        // ── Pied : remerciement + mentions fiscales (centré) ────────────────
+        $b .= EscPosCommandBuilder::separator('-', $w);
         $b .= EscPosCommandBuilder::alignCenter();
+        $b .= EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::textLine('BON APPÉTIT ET À BIENTÔT !') . EscPosCommandBuilder::bold(false);
+        $b .= EscPosCommandBuilder::feed(1);
         if (! empty($head['fiscal_sequence_no'])) {
             $b .= EscPosCommandBuilder::textLine('Ticket fiscal N ' . $head['fiscal_sequence_no']);
         }
@@ -154,8 +152,18 @@ final class OrderReceiptEscPosRenderer
             $b .= EscPosCommandBuilder::textLine((string) $head['pos_legal_footer']);
         }
         $b .= EscPosCommandBuilder::textLine('Prix nets en euros TTC');
-        $b .= EscPosCommandBuilder::feed(1);
-        $b .= EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::textLine('Merci et a tres bientot !') . EscPosCommandBuilder::bold(false);
+
+        // ── Bloc opération (gauche, infos techniques discrètes) ─────────────
+        $b .= EscPosCommandBuilder::separator('-', $w);
+        $b .= EscPosCommandBuilder::alignLeft();
+        $b .= EscPosCommandBuilder::textLine('Operation : VENTE');
+        if (! empty($head['operator_name'])) {
+            $b .= EscPosCommandBuilder::textLine('Caissier : ' . $head['operator_name']);
+        }
+        $b .= EscPosCommandBuilder::textLine('Ticket : ' . $serial);
+        if ($dt) {
+            $b .= EscPosCommandBuilder::textLine($this->frenchDateTime($dt));
+        }
         $b .= EscPosCommandBuilder::feed(3);
         $b .= EscPosCommandBuilder::cut();
 
@@ -265,37 +273,67 @@ final class OrderReceiptEscPosRenderer
         return $out;
     }
 
-    private function renderLine(array $line, int $w, bool $withPrices): string
+    /**
+     * One article block on the client ticket (VAZY-GOOD style) :
+     *   "1  Tacos M ................ 9,40 EUR"
+     *   "   Cordon Bleu, Fricadelle, Samouraï"     (compo + free crudités, compact)
+     *   "   + Cheddar ............... 0,90 EUR"     (paid supplements, with price)
+     */
+    private function renderClientItem(array $line, int $w): string
     {
-        $head = $line['qty'] . ' x ' . $line['name'];
-        if ($withPrices) {
-            $b = EscPosCommandBuilder::bold(true);
-            $b .= EscPosCommandBuilder::lineKV($head, $this->money($line['total']), $w);
-            $b .= EscPosCommandBuilder::bold(false);
-            // Unit price for multi-quantity lines (clarity + good fiscal practice).
-            if ((int) $line['qty'] > 1 && (float) $line['total'] > 0) {
-                $unit = round((float) $line['total'] / (int) $line['qty'], 2);
-                $b .= EscPosCommandBuilder::textLine('  (' . $line['qty'] . ' x ' . $this->money($unit) . ')');
-            }
-        } else {
-            $b = EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::textLine($head) . EscPosCommandBuilder::bold(false);
+        $qty = (int) $line['qty'];
+        $b = EscPosCommandBuilder::bold(true);
+        $b .= EscPosCommandBuilder::lineKV($qty . '  ' . $line['name'], $this->money((float) $line['total']), $w);
+        $b .= EscPosCommandBuilder::bold(false);
+        if ($qty > 1 && (float) $line['total'] > 0) {
+            $unit = round((float) $line['total'] / $qty, 2);
+            $b .= EscPosCommandBuilder::textLine('   (' . $qty . ' x ' . $this->money($unit) . ')');
         }
+
+        // Compo values (strip the "Group: " prefix) + free (0-price) extras → one compact line.
+        $compo = [];
         foreach ($line['comps'] as $c) {
-            $b .= EscPosCommandBuilder::textLine('  - ' . $c);
+            $pos = mb_strpos($c, ': ');
+            $compo[] = $pos !== false ? mb_substr($c, $pos + 2) : $c;
         }
-        foreach (array_merge($line['extras'], $line['addons']) as $opt) {
-            $label = '  + ' . $opt['name'];
-            if ($withPrices && $opt['amount'] > 0) {
-                $b .= EscPosCommandBuilder::lineKV($label, $this->money($opt['amount']), $w);
+        $paid = [];
+        foreach ($line['extras'] as $e) {
+            if (($e['amount'] ?? 0) > 0) {
+                $paid[] = $e;
             } else {
-                $b .= EscPosCommandBuilder::textLine($label);
+                $compo[] = $e['name'];
             }
         }
-        if ($line['instruction'] !== '') {
-            $b .= EscPosCommandBuilder::textLine('  ** ' . $line['instruction']);
+        if (! empty($compo)) {
+            $b .= EscPosCommandBuilder::textLine('   ' . implode(', ', $compo));
+        }
+        foreach ($paid as $e) {
+            $b .= EscPosCommandBuilder::lineKV('   + ' . $e['name'], $this->money((float) $e['amount']), $w);
+        }
+        foreach ($line['addons'] as $a) {
+            if (($a['amount'] ?? 0) > 0) {
+                $b .= EscPosCommandBuilder::lineKV('   + ' . $a['name'], $this->money((float) $a['amount']), $w);
+            } else {
+                $b .= EscPosCommandBuilder::textLine('   + ' . $a['name']);
+            }
+        }
+        if (($line['instruction'] ?? '') !== '') {
+            $b .= EscPosCommandBuilder::textLine('   ** ' . $line['instruction']);
         }
 
         return $b;
+    }
+
+    /** "27 juin 2026 23:49" — French long date without a locale dependency. */
+    private function frenchDateTime($dt): string
+    {
+        if (! $dt) {
+            return '';
+        }
+        $months = [1 => 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+        $m = (int) $dt->format('n');
+
+        return (int) $dt->format('j') . ' ' . ($months[$m] ?? '') . ' ' . $dt->format('Y') . ' ' . $dt->format('H:i');
     }
 
     /** @return array<int, array{label:string, amount:float, change:float}> */

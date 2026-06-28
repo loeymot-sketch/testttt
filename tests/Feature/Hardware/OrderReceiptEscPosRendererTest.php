@@ -92,12 +92,15 @@ class OrderReceiptEscPosRendererTest extends TestCase
         $bytes = (new OrderReceiptEscPosRenderer)->renderClientTicket($this->makeOrder());
         // Queue number prominent (customer pickup number).
         $this->assertStringContainsString('A0010', $bytes);
-        // Order type (sur place / à emporter / livraison).
-        $this->assertStringContainsString('emporter', $bytes);
-        // NF525: TVA ventilated by rate + base HT (not a lone lump sum).
+        // Order type banner (sur place / à emporter / livraison).
+        $this->assertStringContainsString('EMPORTER', $bytes);
+        // Reference layout (VAZY GOOD style).
+        $this->assertStringContainsString('ARTICLES', $bytes, 'column header missing');
+        $this->assertStringContainsString('MONTANT TOTAL', $bytes);
+        $this->assertStringContainsString('SOUS', $bytes);
+        $this->assertStringContainsString('BON APP', $bytes, 'BON APPÉTIT footer missing');
+        // TVA ventilated by rate.
         $this->assertStringContainsString('TVA 10', $bytes, 'TVA rate line missing');
-        $this->assertStringContainsString('12,55', $bytes, 'base HT per rate missing');
-        $this->assertStringContainsString('TOTAL', $bytes);
     }
 
     public function test_client_ticket_shows_unit_price_when_qty_above_one(): void
