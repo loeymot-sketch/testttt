@@ -56,6 +56,8 @@
 
 <script>
 import axios from 'axios';
+import kioskHardware from '../../../services/kioskHardware';
+import { printReceipt as escPosPrint, buildReceiptData, reportPrinterFailure, isLocalBridgeAvailable } from '../../../helpers/kioskPrinter';
 
 /**
  * KioskCashInstructionComponent — Kiosk Design V1 Phase 3.1
@@ -92,6 +94,18 @@ export default {
     mounted() {
         this.logEvent('cash_instruction_shown');
         this.startCountdown();
+        // [BORNE-LOCAL-BRIDGE 2026-06-28] Auto-impression du ticket client pour le
+        // mode PAIEMENT À LA CAISSE (Plan B Le Cayenne) : ce flux finit ici (PAS sur
+        // /confirmation), donc l'auto-print de la confirmation ne s'y déclenche jamais.
+        // On imprime via le pont local (POST silencieux 127.0.0.1:9100 → SK1-31) si
+        // disponible. Le e2e LIVE a révélé ce trou (commande caisse → cash-instruction).
+        this.$nextTick(async () => {
+            try {
+                if (kioskHardware.isKioskBridge() || await isLocalBridgeAvailable()) {
+                    this.autoPrintCounterTicket();
+                }
+            } catch (_) { /* détection pont non bloquante */ }
+        });
     },
     beforeUnmount() {
         this.stopCountdown();
@@ -128,6 +142,33 @@ export default {
             axios.post('/frontend/kiosk/event', payload).catch(() => {
                 /* observabilité best-effort — ne bloque jamais l'UX */
             });
+        },
+        // [BORNE-LOCAL-BRIDGE 2026-06-28] Construit le ticket client (numéro + total +
+        // items best-effort depuis le panier encore présent) et l'imprime via le pont.
+        // Une seule fois par commande (garde anti-double).
+        autoPrintCounterTicket() {
+            if (this._printedFor && this._printedFor === String(this.orderNumber)) return;
+            this._printedFor = String(this.orderNumber);
+            let cartItems = [];
+            try { cartItems = this.$store?.state?.kioskCart?.items || []; } catch (_) {}
+            let restaurantName = 'Le Cayenne';
+            try { restaurantName = this.$store?.state?.frontendSetting?.company_name || restaurantName; } catch (_) {}
+            const amount = typeof this.orderTotal === 'number' ? this.orderTotal : 0;
+            const receipt = buildReceiptData({
+                restaurantName,
+                queueNumber: String(this.orderNumber || ''),
+                cartItems,
+                subtotal: amount,
+                discount: 0,
+                total: amount,
+                paymentMethod: this.$t('kiosk.cash_instruction.pay_at_counter_short') || 'A regler en caisse',
+                thankYou: this.$t('kiosk.confirmation.receipt_thanks') || 'Merci et a bientot !',
+            });
+            try {
+                escPosPrint(receipt).catch((e) => reportPrinterFailure(this.orderNumber, e?.message || 'cash-print'));
+            } catch (e) {
+                reportPrinterFailure(this.orderNumber, e?.message || 'cash-print-throw');
+            }
         },
     },
 };
