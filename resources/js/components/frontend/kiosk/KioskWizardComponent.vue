@@ -1767,19 +1767,38 @@ export default {
         allVariationNames['Pain'] = painMeta.name;
       }
 
-      // [AUDIT 2026-04-17 C3] Viande : la première variation choisie alimente
-      // item_variations (mappage attribut). Les viandes-extras payantes sont
-      // gérées plus bas via normalizedExtras (un extra par unité).
+      // [FIX P0 2026-06-30] Viandes multiples → DISTRIBUER sur TOUS les attributs
+      // "Viande N" (Viande 1, Viande 2, ...), pas seulement la 1ère sur Viande 1.
+      // Avant : seule `firstVariationViande` était assignée à la 1ère attr viande →
+      // les produits 2+ viandes (Tacos L/XL/XXL, Méga, Terminator, Suprême) sortaient
+      // SANS Viande 2 → le quote backend rejetait "Viande 2 (actuel: 0)" → produits
+      // INCOMMANDABLES sur la borne. Chaque viande existe en variation sous CHAQUE
+      // attribut (ex. "Viande Hachée" = id 363 sous Viande 1, id 370 sous Viande 2),
+      // donc pour le slot Viande 2 on prend la variation de CE nom sous CET attribut.
       const viandeMeta = this.selections._viandeMeta || [];
-      const firstVariationViande = viandeMeta.find(v => v.source === 'variation' && typeof v.id === 'number');
-      if (firstVariationViande && item.itemAttributes) {
-        const viandeAttr = item.itemAttributes.find(a =>
-          (a.name || '').toLowerCase().includes('viande')
-        );
-        if (viandeAttr && item.variations?.[viandeAttr.id]) {
-          allVariations[viandeAttr.id] = firstVariationViande.id;
-          allVariationNames[viandeAttr.name] = firstVariationViande.name;
-        }
+      const variationViandes = viandeMeta.filter(v => v.source === 'variation' && typeof v.id === 'number');
+      if (variationViandes.length && Array.isArray(item.itemAttributes)) {
+        const viandeAttrs = item.itemAttributes
+          .filter(a => (a.name || '').toLowerCase().includes('viande'))
+          .sort((a, b) => (Number(a.id) || 0) - (Number(b.id) || 0)); // Viande 1, Viande 2, …
+        // Un slot par UNITÉ de viande (respecte le count).
+        const slots = [];
+        variationViandes.forEach(v => { for (let i = 0; i < Math.max(1, Number(v.count) || 1); i++) slots.push(v); });
+        const allVars = Array.isArray(item.variations) ? item.variations : [];
+        slots.forEach((v, idx) => {
+          const attr = viandeAttrs[idx];
+          if (!attr) return; // plus de viandes que d'attributs → ignoré (MAX déjà borné)
+          // La variation de CE nom de viande sous CET attribut (Viande 1 / Viande 2…).
+          const match = allVars.find(x =>
+            String(x.item_attribute_id) === String(attr.id) &&
+            (x.name || '').trim().toLowerCase() === (v.name || '').trim().toLowerCase()
+          );
+          const varId = match ? match.id : (idx === 0 ? v.id : null);
+          if (varId) {
+            allVariations[attr.id] = varId;
+            allVariationNames[attr.name] = v.name;
+          }
+        });
       }
 
       // Sauce variation (first selection only — extras are priced via sauceVariationSurcharge)
