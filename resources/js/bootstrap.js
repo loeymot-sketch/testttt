@@ -414,6 +414,33 @@ if (_MIX_PUSHER_APP_KEY) {
         window.Echo.join = (...args) => _bindSubscriptionErrorHandler(_origJoin(...args));
     }
 
+    // [WS-GRACEFUL 2026-06-29] Quand AUCUN serveur temps-réel (soketi/reverb) n'est
+    // joignable — cas V1 LOCAL où le serveur WS n'est pas déployé — Pusher retente la
+    // connexion en boucle et spamme la console de 401. On coupe PROPREMENT après 4
+    // échecs consécutifs SANS s'être jamais connecté → le KDS/POS bascule sur son repli
+    // polling (5 s), sans bruit. Si un vrai serveur répond une fois ('connected'), on ne
+    // coupe JAMAIS (forward-compatible : le jour où soketi est monté, le temps réel marche
+    // sans rien changer). Best-effort, ne casse jamais le boot.
+    try {
+        const _conn = window.Echo.connector?.pusher?.connection;
+        if (_conn && typeof _conn.bind === 'function') {
+            let _everConnected = false;
+            let _connFails = 0;
+            _conn.bind('connected', () => { _everConnected = true; _connFails = 0; });
+            const _giveUpIfDead = () => {
+                if (_everConnected) return; // vrai serveur présent → on garde le WS
+                if (++_connFails >= 4) {
+                    try { window.Echo.disconnect(); } catch (_) { /* ignore */ }
+                    try { wsService._setState(WS_STATE.UNAVAILABLE); } catch (_) { /* ignore */ }
+                    console.info('[WS] Aucun serveur temps-réel joignable → mode polling (normal en V1).');
+                }
+            };
+            _conn.bind('unavailable', _giveUpIfDead);
+            _conn.bind('failed', _giveUpIfDead);
+            _conn.bind('error', _giveUpIfDead);
+        }
+    } catch (_) { /* best-effort */ }
+
     wsService.start();
     window._wsService = wsService;
 } else {
