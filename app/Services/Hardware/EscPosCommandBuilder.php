@@ -63,9 +63,14 @@ final class EscPosCommandBuilder
         return str_repeat(self::LF, max(1, $lines));
     }
 
-    public static function cut(): string
+    /**
+     * GS V m — coupe papier. m=0 : coupe TOTALE (ticket se détache). m=1 : coupe
+     * PARTIELLE (ticket reste accroché au rouleau, ne tombe jamais). Voir
+     * config/printing.php `cut.mode`.
+     */
+    public static function cut(bool $partial = false): string
     {
-        return self::GS . 'V' . "\x00";
+        return self::GS . 'V' . ($partial ? "\x01" : "\x00");
     }
 
     /**
@@ -107,6 +112,9 @@ final class EscPosCommandBuilder
     public static function encodeForPrinter(string $text, string $encoding = 'CP858'): string
     {
         if ($text === '') return '';
+        // CP858 lacks the French ligatures Œ/œ/Æ/æ; pre-map to their 2-letter form so
+        // the printer shows "Oeuf" (real supplement "Œuf"), not the TRANSLIT "OEuf".
+        $text = strtr($text, ['Œ' => 'Oe', 'œ' => 'oe', 'Æ' => 'Ae', 'æ' => 'ae']);
         // First try iconv with TRANSLIT (most printers expect single-byte)
         $converted = @iconv('UTF-8', $encoding . '//TRANSLIT//IGNORE', $text);
         if ($converted !== false) return $converted;
@@ -145,6 +153,49 @@ final class EscPosCommandBuilder
         $padding = max(1, $widthChars - mb_strlen($label) - mb_strlen($value));
 
         return $label . str_repeat(' ', $padding) . $value . self::LF;
+    }
+
+    /**
+     * Word-wrap a body string to the printer width with a hanging indent so a long
+     * compo/ingredient list never overflows 48 cols (it would otherwise wrap raw,
+     * breaking alignment). Splits on spaces; a single token wider than the available
+     * space is hard-split. Returns the wrapped lines (each already indented, <= width),
+     * NOT including LF — the caller emits them via textLine().
+     *
+     * @return array<int, string>
+     */
+    public static function wrapIndented(string $body, int $widthChars = 48, string $indent = '   '): array
+    {
+        $body = trim(self::sanitize($body));
+        if ($body === '') {
+            return [];
+        }
+        $avail = max(1, $widthChars - mb_strlen($indent));
+        $lines = [];
+        $cur = '';
+        foreach (explode(' ', $body) as $word) {
+            // Hard-split a token longer than the available width.
+            while (mb_strlen($word) > $avail) {
+                if ($cur !== '') {
+                    $lines[] = $indent . $cur;
+                    $cur = '';
+                }
+                $lines[] = $indent . mb_substr($word, 0, $avail);
+                $word = mb_substr($word, $avail);
+            }
+            $candidate = $cur === '' ? $word : $cur . ' ' . $word;
+            if (mb_strlen($candidate) > $avail) {
+                $lines[] = $indent . $cur;
+                $cur = $word;
+            } else {
+                $cur = $candidate;
+            }
+        }
+        if ($cur !== '') {
+            $lines[] = $indent . $cur;
+        }
+
+        return $lines;
     }
 
     private static function sanitize(string $text): string

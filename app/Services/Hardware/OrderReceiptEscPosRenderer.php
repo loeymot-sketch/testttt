@@ -376,7 +376,11 @@ final class OrderReceiptEscPosRenderer
             }
         }
         if (! empty($compo)) {
-            $b .= EscPosCommandBuilder::textLine('   ' . implode(', ', $compo));
+            // Word-wrap with hanging indent so a long ingredient list never overflows
+            // the printer width (e.g. 67-col compo on a 48-col SAGA would wrap raw).
+            foreach (EscPosCommandBuilder::wrapIndented(implode(', ', $compo), $w, '   ') as $compoLine) {
+                $b .= EscPosCommandBuilder::textLine($compoLine);
+            }
         }
         foreach ($paid as $e) {
             $b .= EscPosCommandBuilder::lineKV('   + ' . $e['name'], $this->money((float) $e['amount']), $w);
@@ -427,6 +431,14 @@ final class OrderReceiptEscPosRenderer
         $labels = [1 => 'Espèces', 2 => 'Carte', 3 => 'Mixte', 4 => 'Carte', 5 => 'Ticket Resto'];
         $method = $order->pos_payment_method ?? null;
         if ($method === null || $method === '') {
+            return [];
+        }
+        // [SYNC-BORNE 2026-06-30] COUNTER_DEFERRED (6) = commande borne Plan B PAS encore
+        // encaissée au comptoir (received=0, payment_status=PENDING_COUNTER). Ce n'est PAS un
+        // règlement réel : on retourne [] pour que le ticket affiche « ** A REGLER EN CAISSE ** »
+        // au lieu de « PAIEMENT 6 : 0,00 € ». À l'encaissement, confirmCounterPayment() écrase
+        // pos_payment_method par la vraie méthode (1/2…) → le ticket final montre le vrai paiement.
+        if ((int) $method === \App\Enums\PosPaymentMethod::COUNTER_DEFERRED) {
             return [];
         }
         $amount = $order->pos_received_amount !== null && $order->pos_received_amount !== ''

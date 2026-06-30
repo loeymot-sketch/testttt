@@ -96,9 +96,14 @@ export function supportSymbol(name) {
     return '';
 }
 
-/** Un item « Menu (Frites + Boisson) » / « Formule … » → affiché juste « MENU » en cuisine. */
+/**
+ * Un item ADDON « Menu (Frites + Boisson) » / « Formule … » → affiché juste « MENU ».
+ * [SYNC-BORNE 2026-07-01] Parité PHP : on NE matche QUE l'addon (menu + parenthèse, ou
+ * « formule ») — surtout PAS un vrai produit "Menu Enfant Burger"/"Nuggets" qui DOIT
+ * garder son identité sur l'écran cuisine.
+ */
 export function isMenuItem(name) {
-    return /\bmenu\b|formule/.test(normalize(name));
+    return /\bmenu\s*\(|\bformule\b/.test(normalize(name));
 }
 
 /** Sauce frites du menu (depuis l'instruction) → SYMBOLE court (Andalouse → AND). */

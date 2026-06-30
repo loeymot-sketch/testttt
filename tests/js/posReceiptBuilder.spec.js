@@ -45,6 +45,20 @@ describe('posReceiptBuilder', () => {
         expect(formatPaymentsBreakdown({})).toEqual([]);
     });
 
+    // [SYNC-BORNE 2026-06-30] COUNTER_DEFERRED (6) = borne Plan B pas encore encaissée.
+    // Le fallback ne doit PAS fabriquer une ligne « méthode 6 = total » : sinon l'écran
+    // afficherait la commande comme payée alors que le ticket papier dit « à régler en
+    // caisse ». Doit retourner [] tant que non encaissée (cohérence cross-surface).
+    it('formatPaymentsBreakdown returns [] for COUNTER_DEFERRED (6) not yet settled', () => {
+        const order = {
+            payments_breakdown: [],
+            pos_payment_method: 6,
+            pos_received_amount: 0,
+            total: 7.9,
+        };
+        expect(formatPaymentsBreakdown(order)).toEqual([]);
+    });
+
     it('buildNf525Footer includes fiscal, fingerprint, and legal lines when set', () => {
         const order = {
             fiscal_sequence_no: 42,

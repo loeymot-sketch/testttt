@@ -171,6 +171,26 @@ class OrderReceiptEscPosRendererTest extends TestCase
         $this->assertStringContainsString('REGLER EN CAISSE', $bytes);
     }
 
+    /**
+     * [SYNC-BORNE 2026-06-30] La borne Plan B crée la commande avec
+     * pos_payment_method=COUNTER_DEFERRED(6) + payment_status=PENDING_COUNTER(15)
+     * + pos_received_amount=0. AVANT encaissement, le ticket client doit dire
+     * « À RÉGLER EN CAISSE » — JAMAIS « PAIEMENT 6 : 0,00 € » (méthode 6 = différé,
+     * pas un vrai règlement). L'encaissement caisse (confirmCounterPayment) écrase
+     * ensuite la méthode par la vraie (1/2…) → le ticket final montre le vrai paiement.
+     */
+    public function test_counter_deferred_kiosk_order_is_marked_to_pay_not_payment6(): void
+    {
+        $order = $this->makeOrder();
+        $order->pos_payment_method = \App\Enums\PosPaymentMethod::COUNTER_DEFERRED; // 6
+        $order->pos_received_amount = '0.000000';
+        $order->payment_status = \App\Enums\PaymentStatus::PENDING_COUNTER; // 15
+        $bytes = (new OrderReceiptEscPosRenderer)->renderClientTicket($order);
+        $this->assertStringContainsString('REGLER EN CAISSE', $bytes, 'commande borne différée doit afficher "à régler en caisse"');
+        $this->assertStringNotContainsString('PAIEMENT 6', $bytes, 'méthode différée 6 ne doit pas apparaître comme un règlement');
+        $this->assertStringNotContainsString('Paiement 6', $bytes);
+    }
+
     public function test_tickets_use_enlarged_readable_body(): void
     {
         // [TICKET-BIG 2026-06-30] Owner: écriture grande & lisible (~+30%). On agrandit
@@ -234,5 +254,40 @@ class OrderReceiptEscPosRendererTest extends TestCase
         $t = new WindowsRawPrinterTransport;
         $this->assertFalse($t->send('bytes', ['host' => 'SAGA']));
         $this->assertStringContainsString('requires_windows_host', (string) $t->lastError());
+    }
+
+    /* ───────── [TICKET-FEED 2026-06-30] le ticket tombait par terre ─────────
+     * Cause : feed(3) puis coupe immédiate (GS V 0) → la queue (~10 mm) ne dégage
+     * pas la barre de coupe (~15-20 mm au-dessus de la tête) → stub trop court qui
+     * tombe. Fix : queue allongée (config, défaut 8 lignes ≈ 28 mm) à hauteur NORMALE
+     * avant la coupe, + mode coupe PARTIELLE optionnel (ticket reste attaché). */
+    public function test_client_ticket_feeds_long_tail_before_cut(): void
+    {
+        config(['printing.cut.feed_lines_before_cut' => 8, 'printing.cut.mode' => 'full']);
+        $bytes = (new OrderReceiptEscPosRenderer)->renderClientTicket($this->makeOrder());
+        // 8 sauts de ligne consécutifs JUSTE avant la coupe GS V → queue à attraper.
+        $this->assertStringContainsString(str_repeat("\x0A", 8) . "\x1D\x56", $bytes, 'queue client avant coupe trop courte (ticket tombe)');
+    }
+
+    public function test_kitchen_ticket_feeds_long_tail_before_cut(): void
+    {
+        config(['printing.cut.feed_lines_before_cut' => 8, 'printing.cut.mode' => 'full']);
+        $bytes = (new OrderReceiptEscPosRenderer)->renderKitchenTicket($this->makeOrder());
+        $this->assertStringContainsString(str_repeat("\x0A", 8) . "\x1D\x56", $bytes, 'queue cuisine avant coupe trop courte');
+    }
+
+    public function test_feed_lines_before_cut_is_configurable(): void
+    {
+        config(['printing.cut.feed_lines_before_cut' => 12, 'printing.cut.mode' => 'full']);
+        $bytes = (new OrderReceiptEscPosRenderer)->renderClientTicket($this->makeOrder());
+        $this->assertStringContainsString(str_repeat("\x0A", 12) . "\x1D\x56", $bytes);
+    }
+
+    public function test_partial_cut_mode_keeps_ticket_attached(): void
+    {
+        config(['printing.cut.mode' => 'partial']);
+        $bytes = (new OrderReceiptEscPosRenderer)->renderClientTicket($this->makeOrder());
+        // GS V 1 = coupe PARTIELLE (ticket reste accroché au rouleau → ne tombe jamais).
+        $this->assertStringContainsString("\x1D\x56\x01", $bytes, 'coupe partielle (GS V 1) absente');
     }
 }

@@ -41,6 +41,13 @@ export function formatPaymentsBreakdown(order) {
             reference: p.reference ?? null,
         }));
     }
+    // [SYNC-BORNE 2026-06-30] COUNTER_DEFERRED (6) = commande borne Plan B PAS encore
+    // encaissée. Ne pas fabriquer une ligne synthétique « méthode 6 = total » : ce n'est
+    // pas un règlement (miroir du garde serveur OrderDetailsResource + ESC/POS renderer).
+    // À l'encaissement, pos_payment_method devient le vrai mode → la ligne réapparaît.
+    if (Number(order?.pos_payment_method) === 6) {
+        return [];
+    }
     if (order?.pos_payment_method !== undefined && order?.pos_payment_method !== null && order?.pos_payment_method !== '') {
         const tendered = order.pos_received_amount != null && order.pos_received_amount !== ''
             ? Number(order.pos_received_amount)

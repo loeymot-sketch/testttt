@@ -67,6 +67,28 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Coupe & avance papier (ticket qui « tombe par terre »)
+    |--------------------------------------------------------------------------
+    |
+    | Owner 2026-06-30 : « ~3 cm sortent puis ça coupe → le ticket tombe ». Cause :
+    | la queue (feed avant coupe) ne dégageait pas la barre de coupe (~15-20 mm
+    | au-dessus de la tête d'impression). On avance désormais `feed_lines_before_cut`
+    | lignes vierges à HAUTEUR NORMALE (8 ≈ 28 mm) pour que le ticket soit assez long
+    | à attraper avant la coupe. Réglable sur la VRAIE SAGA sans redéployer le code.
+    |   mode = 'full'    → GS V 0 : coupe totale (le ticket se détache).
+    |   mode = 'partial' → GS V 1 : coupe partielle (le ticket reste accroché au
+    |                       rouleau, ne tombe JAMAIS ; le client le détache à la main).
+    | NB : la borne-CLIENT imprime via bridge.js (PC borne, hors repo) qui applique
+    | SA propre coupe → ce réglage agit sur la CAISSE (chemin RAW) et la borne-CUISINE.
+    |
+    */
+    'cut' => [
+        'feed_lines_before_cut' => (int) env('PRINT_FEED_LINES_BEFORE_CUT', 8),
+        'mode' => env('PRINT_CUT_MODE', 'full'), // 'full' | 'partial'
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Customer pole display (SAGA 2x20 VFD, CD5220 over serial)
     |--------------------------------------------------------------------------
     |

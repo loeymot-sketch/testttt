@@ -173,6 +173,11 @@ class KitchenTicketSymbolicFormatterTest extends TestCase
         $this->assertTrue($this->f->isMenuItem('Menu (Frites + Boisson)'));
         $this->assertTrue($this->f->isMenuItem('Formule midi'));
         $this->assertFalse($this->f->isMenuItem('Cayenne'));
+        // [SYNC-BORNE 2026-07-01] Un VRAI produit dont le nom contient "menu"
+        // (Menu Enfant Burger/Nuggets) ne doit PAS se réduire à « MENU » : la cuisine
+        // doit pouvoir distinguer le Burger des Nuggets. Seul l'ADDON menu/formule se réduit.
+        $this->assertFalse($this->f->isMenuItem('Menu Enfant Burger'), 'Menu Enfant Burger doit garder son identité');
+        $this->assertFalse($this->f->isMenuItem('Menu Enfant Nuggets'), 'Menu Enfant Nuggets doit garder son identité');
     }
 
     public function test_clean_instruction_strips_price_annotations(): void

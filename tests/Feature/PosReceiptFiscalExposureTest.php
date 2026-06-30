@@ -59,6 +59,32 @@ class PosReceiptFiscalExposureTest extends TestCase
         $this->assertEqualsWithDelta(50.0, (float) $data['payments_breakdown'][0]['amount'], 0.01);
     }
 
+    /**
+     * [SYNC-BORNE 2026-06-30] Cohérence cross-surface écran/API == ticket papier.
+     * Une commande borne Plan B (COUNTER_DEFERRED=6, received=0, PENDING_COUNTER)
+     * n'est PAS encore réglée. Le ticket papier dit déjà « À RÉGLER EN CAISSE » ;
+     * le reçu ÉCRAN/API ne doit donc PAS exposer une ligne « méthode 6 = total »
+     * (sinon l'écran montre la commande comme payée alors que payment_pending_counter
+     * est vrai). payments_breakdown doit être vide tant que non encaissée.
+     */
+    public function test_counter_deferred_kiosk_order_exposes_empty_payments_breakdown(): void
+    {
+        [, , $order] = $this->makePosOrderWithBranchUser();
+        $order->forceFill([
+            'order_type' => OrderType::TAKEAWAY,
+            'pos_payment_method' => PosPaymentMethod::COUNTER_DEFERRED, // 6
+            'pos_received_amount' => 0,
+            'payment_status' => \App\Enums\PaymentStatus::PENDING_COUNTER, // 15
+        ])->save();
+        $order->refresh();
+        $order->load(['branch', 'user', 'orderItems']);
+
+        $data = (new OrderDetailsResource($order))->toArray(request());
+
+        $this->assertSame([], $data['payments_breakdown'], 'commande borne différée ne doit exposer aucun paiement');
+        $this->assertTrue($data['payment_pending_counter'], 'flag pending_counter doit rester vrai');
+    }
+
     public function test_legacy_order_without_fiscal_sequence_exposes_null(): void
     {
         [, , $order] = $this->makePosOrderWithBranchUser();

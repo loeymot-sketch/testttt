@@ -230,6 +230,17 @@ describe('renderItemSymbolic — line list for the KDS card', () => {
         expect(out.lines.filter((l) => l.type === 'supplement')).toHaveLength(0);
     });
 
+    it('a real "Menu Enfant" product keeps its identity (NOT collapsed to MENU)', () => {
+        // [SYNC-BORNE 2026-07-01] Burger vs Nuggets must be distinguishable on the KDS.
+        const burger = renderItemSymbolic({ item_name: 'Menu Enfant Burger', quantity: 1, composition_snapshot: { lines: [] } });
+        const nuggets = renderItemSymbolic({ item_name: 'Menu Enfant Nuggets', quantity: 1, composition_snapshot: { lines: [] } });
+        expect(burger.lines[0].label).not.toBe('MENU');
+        expect(nuggets.lines[0].label).not.toBe('MENU');
+        expect(burger.lines[0].label).not.toBe(nuggets.lines[0].label);
+        expect(burger.lines[0].label.toUpperCase()).toContain('BURGER');
+        expect(nuggets.lines[0].label.toUpperCase()).toContain('NUGGETS');
+    });
+
     it('crudité extras never leak into the supplement lines', () => {
         const item = {
             item_name: 'Sandwich',

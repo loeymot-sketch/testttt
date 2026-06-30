@@ -216,10 +216,16 @@ final class KitchenTicketSymbolicFormatter
         return $out;
     }
 
-    /** Un item « Menu (Frites + Boisson) » / « Formule … » → affiché juste « MENU » en cuisine. */
+    /**
+     * Un item ADDON « Menu (Frites + Boisson) » / « Formule … » → affiché juste « MENU »
+     * en cuisine. [SYNC-BORNE 2026-07-01] On NE matche QUE la ligne addon (menu suivi
+     * d'une parenthèse, ou « formule ») — surtout PAS un vrai produit dont le nom contient
+     * « menu » (ex. « Menu Enfant Burger »/« Nuggets ») qui DOIT garder son identité en
+     * cuisine (le cuisinier doit savoir Burger vs Nuggets).
+     */
     public function isMenuItem(string $name): bool
     {
-        return (bool) preg_match('/\bmenu\b|formule/u', $this->norm($name));
+        return (bool) preg_match('/\bmenu\s*\(|\bformule\b/u', $this->norm($name));
     }
 
     /** Sauce frites du menu (depuis l'instruction) → SYMBOLE court (Andalouse → AND). */

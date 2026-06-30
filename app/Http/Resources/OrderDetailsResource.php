@@ -151,6 +151,15 @@ class OrderDetailsResource extends JsonResource
     {
         $order = $this->resource;
 
+        // [SYNC-BORNE 2026-06-30] COUNTER_DEFERRED (6) = commande borne Plan B PAS encore
+        // encaissée (received=0, PENDING_COUNTER). Ce n'est pas un règlement : on n'expose
+        // AUCUNE ligne de paiement — sinon l'écran/API afficherait « méthode 6 = total »
+        // (incohérent avec le ticket papier « A REGLER EN CAISSE » et avec payment_pending_counter).
+        // À l'encaissement, confirmCounterPayment() pose le vrai mode → la ventilation réapparaît.
+        if ((int) ($order->pos_payment_method ?? 0) === \App\Enums\PosPaymentMethod::COUNTER_DEFERRED) {
+            return [];
+        }
+
         if (method_exists($order, 'payments')) {
             try {
                 $payments = $order->relationLoaded('payments')
