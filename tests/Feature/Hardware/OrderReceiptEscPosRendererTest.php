@@ -171,6 +171,17 @@ class OrderReceiptEscPosRendererTest extends TestCase
         $this->assertStringContainsString('REGLER EN CAISSE', $bytes);
     }
 
+    public function test_tickets_use_enlarged_readable_body(): void
+    {
+        // [TICKET-BIG 2026-06-30] Owner: écriture grande & lisible (~+30%). On agrandit
+        // la HAUTEUR du corps (GS ! 0x01) → présent dans les 2 tickets, et la largeur
+        // double (0x11) reste pour l'en-tête/total. 48 colonnes préservées (pas de débordement).
+        $client = (new OrderReceiptEscPosRenderer)->renderClientTicket($this->makeOrder());
+        $kitchen = (new OrderReceiptEscPosRenderer)->renderKitchenTicket($this->makeOrder());
+        $this->assertStringContainsString("\x1D!\x01", $client, 'client body not enlarged (double-height)');
+        $this->assertStringContainsString("\x1D!\x01", $kitchen, 'kitchen body not enlarged (double-height)');
+    }
+
     public function test_client_ticket_marks_duplicata(): void
     {
         $bytes = (new OrderReceiptEscPosRenderer)->renderClientTicket($this->makeOrder(), ['is_duplicata' => true]);

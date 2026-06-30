@@ -38,6 +38,26 @@ final class EscPosCommandBuilder
         return self::GS . '!' . ($on ? "\x11" : "\x00");
     }
 
+    /**
+     * [TICKET-BIG 2026-06-30] GS ! n — taille caractère, multiplicateurs 1..8.
+     * n = ((largeur-1) << 4) | (hauteur-1). Pour un ticket « grand & lisible »
+     * sans réduire le nombre de colonnes (donc sans débordement), on agrandit la
+     * HAUTEUR seule (textSize(1,2)) : le corps reste à 48 car/ligne mais ~2× plus haut.
+     */
+    public static function textSize(int $w = 1, int $h = 1): string
+    {
+        $w = max(1, min(8, $w));
+        $h = max(1, min(8, $h));
+
+        return self::GS . '!' . chr((($w - 1) << 4) | ($h - 1));
+    }
+
+    /** Corps « grand » lisible : hauteur ×2, largeur inchangée (48 colonnes préservées). */
+    public static function doubleHeight(bool $on): string
+    {
+        return self::textSize(1, $on ? 2 : 1);
+    }
+
     public static function feed(int $lines = 1): string
     {
         return str_repeat(self::LF, max(1, $lines));

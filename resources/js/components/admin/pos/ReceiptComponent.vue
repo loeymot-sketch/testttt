@@ -728,6 +728,13 @@ export default {
     .hidden-print { display: none !important; }
     .receipt-58mm { width: 58mm !important; }
     .receipt-80mm { width: 80mm !important; }
+    /* [TICKET-BIG 2026-06-30] Owner : écriture grande & lisible (~+30%) au window.print()
+       de secours. On agrandit toute la police des 2 tickets ; la largeur 80mm est gardée. */
+    #print-receipt-client,
+    #print-receipt-kitchen {
+        font-size: 130% !important;
+        line-height: 1.35 !important;
+    }
 }
 
 /* =============================================================================

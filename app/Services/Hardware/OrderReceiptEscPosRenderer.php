@@ -93,6 +93,7 @@ final class OrderReceiptEscPosRenderer
 
         // ── Articles ────────────────────────────────────────────────────────
         $b .= EscPosCommandBuilder::alignLeft();
+        $b .= EscPosCommandBuilder::doubleHeight(true); // [TICKET-BIG] corps grand & lisible (48 col conservées)
         $b .= EscPosCommandBuilder::feed(1);
         $b .= EscPosCommandBuilder::lineKV('QT ARTICLES', 'MONTANT', $w);
         $b .= EscPosCommandBuilder::separator('-', $w);
@@ -112,7 +113,7 @@ final class OrderReceiptEscPosRenderer
         $b .= EscPosCommandBuilder::separator('-', $w);
         $b .= EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::doubleSize(true);
         $b .= EscPosCommandBuilder::lineKV('MONTANT TOTAL:', $this->money((float) ($order->total ?? 0)), max(20, (int) floor($w / 2)));
-        $b .= EscPosCommandBuilder::doubleSize(false) . EscPosCommandBuilder::bold(false);
+        $b .= EscPosCommandBuilder::doubleHeight(true) . EscPosCommandBuilder::bold(false); // retour corps grand (pas normal)
         $b .= EscPosCommandBuilder::separator('-', $w);
 
         // ── TVA (par taux) ──────────────────────────────────────────────────
@@ -152,6 +153,7 @@ final class OrderReceiptEscPosRenderer
         $b .= EscPosCommandBuilder::separator('-', $w);
         $b .= EscPosCommandBuilder::alignCenter();
         $b .= EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::textLine('BON APPÉTIT ET À BIENTÔT !') . EscPosCommandBuilder::bold(false);
+        $b .= EscPosCommandBuilder::doubleHeight(false); // mentions légales en taille normale (fine print)
         $b .= EscPosCommandBuilder::feed(1);
         if (! empty($head['fiscal_sequence_no'])) {
             $b .= EscPosCommandBuilder::textLine('Ticket fiscal N ' . $head['fiscal_sequence_no']);
@@ -212,6 +214,7 @@ final class OrderReceiptEscPosRenderer
         }
         $b .= EscPosCommandBuilder::separator('=', $w);
         $b .= EscPosCommandBuilder::alignLeft();
+        $b .= EscPosCommandBuilder::doubleHeight(true); // [TICKET-BIG] cuisine grand & lisible
 
         // [KITCHEN-SYMBOLS 2026-06-28] Owner: the cook reads symbolic shorthand
         // (G | SANDWICH | P | STO | SAM), not prose. Same table as the KDS screen.
