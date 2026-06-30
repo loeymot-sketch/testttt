@@ -50,15 +50,20 @@ describe('user-reported runtime blockers', () => {
     expect(controller).toMatch(/DeliveryFeeService/);
   });
 
-  it('keeps KDS composer addon choices visible on boards and printed kitchen tickets', () => {
+  it('keeps KDS composer addon choices VISIBLE on the board (display) — and the board does NOT print', () => {
     const kds = read('resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue');
     const resource = read('app/Http/Resources/KDSOrderItemsResource.php');
 
+    // Addons résolus côté serveur (snapshot SSOT).
     expect(resource).toMatch(/'item_addons'\s*=>\s*\$this->resolveAddonsForKds\(\)/);
     expect(resource).toMatch(/composition_snapshot/);
+    // Le board AFFICHE toujours les addons à l'écran (template v-for + helper).
     expect(kds).toMatch(/Array\.isArray\(item\.item_addons\)/);
     expect(kds).toMatch(/Array\.isArray\(orderItem\.item_addons\)/);
     expect(kds).toMatch(/kdsAddonDisplayName\(addon\)/);
-    expect(kds).toMatch(/item\.item_addons\.map\(addon/);
+    expect(kds).toMatch(/v-for="\(addon, index\) in (item|orderItem)\.item_addons"/);
+    // [TICKET-UNIFIED 2026-06-30] Owner : le board N'IMPRIME PAS (ticket cuisine = caisse only).
+    expect(kds).not.toMatch(/win\.print\(/);
+    expect(kds).not.toMatch(/@click="printKitchenTicket/);
   });
 });

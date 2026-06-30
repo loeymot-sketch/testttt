@@ -435,12 +435,6 @@
                         </button>
                       </div>
                     </div>
-                    <!-- [AUDIT-P2] Print kitchen ticket button -->
-                    <button type="button" @click="printKitchenTicket(dineinOrder)"
-                      class="rounded-lg w-full h-8 flex justify-center items-center gap-1.5 text-xs font-medium bg-[#F7F7FC] text-[#2E2F38] mb-2 hover:bg-[#EFF0F6]">
-                      <i class="fa-solid fa-print text-xs"></i>
-                      Imprimer ticket
-                    </button>
                   </div>
                   <!-- [iter15-mega-fix B-002 2026-05-10] State-transition CTAs
                        moved OUT of the accordion. Always rendered so the chef
@@ -619,12 +613,6 @@
                         </button>
                       </div>
                     </div>
-                    <!-- [AUDIT-P2] Print kitchen ticket button -->
-                    <button type="button" @click="printKitchenTicket(onlineOrder)"
-                      class="rounded-lg w-full h-8 flex justify-center items-center gap-1.5 text-xs font-medium bg-[#F7F7FC] text-[#2E2F38] mb-2 hover:bg-[#EFF0F6]">
-                      <i class="fa-solid fa-print text-xs"></i>
-                      Imprimer ticket
-                    </button>
                   </div>
                   <!-- [iter15-mega-fix B-002 2026-05-10] CTAs hoisted out of accordion. -->
                   <div class="kds-card-cta mt-2" data-testid="kds-card-cta">
@@ -793,12 +781,6 @@
                         </button>
                       </div>
                     </div>
-                    <!-- [AUDIT-P2] Print kitchen ticket button -->
-                    <button type="button" @click="printKitchenTicket(takeawayOrder)"
-                      class="rounded-lg w-full h-8 flex justify-center items-center gap-1.5 text-xs font-medium bg-[#F7F7FC] text-[#2E2F38] mb-2 hover:bg-[#EFF0F6]">
-                      <i class="fa-solid fa-print text-xs"></i>
-                      Imprimer ticket
-                    </button>
                   </div>
                   <!-- [iter15-mega-fix B-002 2026-05-10] CTAs hoisted out of accordion. -->
                   <div class="kds-card-cta mt-2" data-testid="kds-card-cta">
@@ -970,12 +952,6 @@
                         </button>
                       </div>
                     </div>
-                    <!-- [AUDIT-P2] Print kitchen ticket button -->
-                    <button type="button" @click="printKitchenTicket(kioskOrder)"
-                      class="rounded-lg w-full h-8 flex justify-center items-center gap-1.5 text-xs font-medium bg-[#F7F7FC] text-[#2E2F38] mb-2 hover:bg-[#EFF0F6]">
-                      <i class="fa-solid fa-print text-xs"></i>
-                      Imprimer ticket
-                    </button>
                   </div>
                   <!-- [iter15-mega-fix B-002 2026-05-10] CTAs hoisted out of accordion. -->
                   <div class="kds-card-cta mt-2" data-testid="kds-card-cta">
@@ -2215,75 +2191,10 @@ export default {
     // Opens a minimal print window with order ref, items, variations, extras, addons, and instructions.
     // No external library needed — uses native window.print() on an isolated document.
     // [AUDIT-P47-BUG4] All dynamic values escaped to prevent stored XSS.
-    printKitchenTicket(order) {
-      const e = this.escapeHtml.bind(this);
-      const lines = [];
-      const orderLabel = e(order.order_serial_no) || ('#' + e(order.id));
-      const queueLabel = order.queue_number ? ` — N°${e(order.queue_number)}` : '';
-      const typeLabel = {
-        [this.enums.orderTypeEnum.DINING_TABLE]: this.$t('label.kds_type_dinein'),
-        [this.enums.orderTypeEnum.DELIVERY]: this.$t('label.kds_type_delivery'),
-        [this.enums.orderTypeEnum.TAKEAWAY]: this.$t('label.kds_type_takeaway'),
-        [this.enums.orderTypeEnum.POS]: this.$t('label.kds_type_pos'),
-        [this.enums.orderTypeEnum.KIOSK]: this.$t('label.kds_type_kiosk'),
-      }[order.order_type] || '';
-
-      lines.push(`<h2 style="margin:0 0 6px;font-size:18px;">${orderLabel}${queueLabel}</h2>`);
-      if (typeLabel) lines.push(`<p style="margin:0 0 4px;font-size:13px;color:#555;">${typeLabel}</p>`);
-      if (order.order_datetime) lines.push(`<p style="margin:0 0 10px;font-size:12px;color:#888;">${e(order.order_datetime)}</p>`);
-      lines.push('<hr style="border:none;border-top:1px dashed #ccc;margin:8px 0;">');
-
-      (order.order_items || []).forEach(item => {
-        lines.push(`<div style="margin-bottom:10px;">`);
-        lines.push(`<strong style="font-size:15px;">${item.quantity}× ${e(item.item_name)}</strong>`);
-
-        if (Array.isArray(item.item_variations) && item.item_variations.length > 0) {
-          const vars = item.item_variations.map(v => e(kdsVariationLine(v))).join(' | ');
-          lines.push(`<div style="font-size:12px;color:#444;margin-top:2px;">${vars}</div>`);
-        }
-        if (Array.isArray(item.item_extras) && item.item_extras.length > 0) {
-          const extras = item.item_extras.map(ex => e(ex.name)).join(', ');
-          lines.push(`<div style="font-size:12px;color:#444;margin-top:2px;">+ ${extras}</div>`);
-        }
-        if (Array.isArray(item.item_addons) && item.item_addons.length > 0) {
-          const addons = item.item_addons.map(addon => {
-            const qty = Number(addon.quantity || 1);
-            const name = e(this.kdsAddonDisplayName(addon));
-            return qty > 1 ? `${name} ×${qty}` : name;
-          }).join(', ');
-          lines.push(`<div style="font-size:12px;color:#444;margin-top:2px;">+ ${addons}</div>`);
-        }
-        const cleanInstr = sanitizeKdsInstruction(item.instruction, item.item_name);
-        if (cleanInstr) {
-          const vis = kdsInstructionVisualClass(cleanInstr);
-          let instStyle =
-            "font-size:11px;color:#666;margin-top:3px;white-space:pre-line";
-          if (vis === "kds-instruction--allergen") {
-            instStyle =
-              "font-size:11px;color:#7f1d1d;background:#fef2f2;border:1px solid #fecaca;padding:4px 6px;border-radius:4px;margin-top:3px;white-space:pre-line;font-weight:600";
-          } else if (vis === "kds-instruction--exclusion") {
-            instStyle =
-              "font-size:11px;color:#7c2d12;background:#fff7ed;border:1px solid #fdba74;padding:4px 6px;border-radius:4px;margin-top:3px;white-space:pre-line";
-          }
-          lines.push(`<div style="${instStyle}">${e(cleanInstr)}</div>`);
-        }
-        lines.push('</div>');
-      });
-
-      lines.push('<hr style="border:none;border-top:1px dashed #ccc;margin:8px 0;">');
-      lines.push('<p style="font-size:11px;color:#aaa;text-align:center;">FoodKing KDS</p>');
-
-      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Ticket cuisine</title>
-        <style>body{font-family:monospace;padding:12px;max-width:300px;margin:0 auto;}</style>
-        </head><body>${lines.join('')}</body></html>`;
-
-      const win = window.open('', '_blank', 'width=320,height=600,toolbar=0,menubar=0');
-      if (!win) return; // popup blocked
-      win.document.write(html);
-      win.document.close();
-      win.focus();
-      win.print();
-      win.close();
+    printKitchenTicket(/* order */) {
+      // [TICKET-UNIFIED 2026-06-30] Owner : l'écran cuisine (board) N'IMPRIME PAS.
+      // Le ticket cuisine sort UNIQUEMENT de la caisse (ReceiptComponent -> pont SAGA),
+      // au format symbolique unifié. Méthode neutralisée (boutons retirés).
     },
     orderStatus: function (order, status) {
       try {

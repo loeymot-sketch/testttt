@@ -177,8 +177,13 @@ final class OrderReceiptEscPosRenderer
         if ($dt) {
             $b .= EscPosCommandBuilder::textLine($this->frenchDateTime($dt));
         }
-        $b .= EscPosCommandBuilder::feed(3);
-        $b .= EscPosCommandBuilder::cut();
+        // [TICKET-FEED 2026-06-30] Queue plus longue à hauteur NORMALE avant la coupe
+        // (le ticket tombait : feed(3) ≈ 10 mm ne dégageait pas la barre de coupe
+        // ~15-20 mm au-dessus de la tête). Longueur + mode (full/partial) pilotés par
+        // config/printing.php → réglables sur la vraie SAGA sans redéployer le code.
+        $b .= EscPosCommandBuilder::doubleHeight(false);
+        $b .= EscPosCommandBuilder::feed($this->feedLinesBeforeCut());
+        $b .= EscPosCommandBuilder::cut($this->cutIsPartial());
 
         // Transcode the WHOLE assembled stream once (control bytes are <0x80 and
         // pass through iconv unchanged; only the UTF-8 text becomes CP858).
@@ -241,10 +246,8 @@ final class OrderReceiptEscPosRenderer
             $b .= EscPosCommandBuilder::textLine($qty . ' x ' . $main);
             $b .= EscPosCommandBuilder::bold(false);
 
-            foreach ($this->symbolic->supplementLines($snap) as $sup) {
-                $b .= EscPosCommandBuilder::textLine('  ' . $sup);
-            }
-            // Menu attaché au produit (addon) → « MENU » ou « MENU : SYM » (sauce frites symbole).
+            // [KITCHEN-MENU 2026-06-30] Ordre owner : ligne 2 = MENU (: sauce frites symbole)
+            // PUIS les suppléments. Identique au board (kdsSymbolic.renderItemSymbolic).
             $menu = $this->symbolic->menuLine($snap);
             if ($menu === 'MENU') {
                 $sym = $this->symbolic->fritesSauceSymbol($instruction);
@@ -253,16 +256,36 @@ final class OrderReceiptEscPosRenderer
             if ($menu !== '') {
                 $b .= EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::textLine('  ' . $menu) . EscPosCommandBuilder::bold(false);
             }
+            foreach ($this->symbolic->supplementLines($snap) as $sup) {
+                $b .= EscPosCommandBuilder::textLine('  ' . $sup);
+            }
             $note = $this->symbolic->cleanInstruction($instruction, $name); // sans menu/sauce-frites (anti double)
             foreach (array_filter(explode("\n", $note)) as $noteLine) {
                 $b .= EscPosCommandBuilder::textLine('  ** ' . trim($noteLine));
             }
             $b .= EscPosCommandBuilder::textLine('');
         }
-        $b .= EscPosCommandBuilder::feed(3);
-        $b .= EscPosCommandBuilder::cut();
+        // [TICKET-FEED 2026-06-30] Queue plus longue à hauteur NORMALE avant la coupe
+        // (le ticket tombait : feed(3) ≈ 10 mm ne dégageait pas la barre de coupe
+        // ~15-20 mm au-dessus de la tête). Longueur + mode (full/partial) pilotés par
+        // config/printing.php → réglables sur la vraie SAGA sans redéployer le code.
+        $b .= EscPosCommandBuilder::doubleHeight(false);
+        $b .= EscPosCommandBuilder::feed($this->feedLinesBeforeCut());
+        $b .= EscPosCommandBuilder::cut($this->cutIsPartial());
 
         return EscPosCommandBuilder::encodeForPrinter($b, $this->encodingFor($codePage));
+    }
+
+    /** [TICKET-FEED] Nb de lignes vierges (hauteur normale) avancées avant la coupe. */
+    private function feedLinesBeforeCut(): int
+    {
+        return max(1, (int) config('printing.cut.feed_lines_before_cut', 8));
+    }
+
+    /** [TICKET-FEED] true = coupe partielle (GS V 1, le ticket reste accroché). */
+    private function cutIsPartial(): bool
+    {
+        return strtolower((string) config('printing.cut.mode', 'full')) === 'partial';
     }
 
     /**
@@ -290,7 +313,7 @@ final class OrderReceiptEscPosRenderer
                 if ($en === '') {
                     continue;
                 }
-                $extras[] = ['name' => $en, 'amount' => (float) ($e['line_total'] ?? 0)];
+                $extras[] = ['name' => $en, 'amount' => (float) ($e['line_total'] ?? $e['unit_price'] ?? 0)];
             }
             $addons = [];
             foreach (($snap['addons'] ?? []) as $a) {

@@ -291,14 +291,15 @@ export function renderItemSymbolic(orderItem) {
         hasAllergen,
     });
 
-    for (const sup of s.supplements) {
-        lines.push({ type: 'supplement', label: sup });
-    }
-
+    // [KITCHEN-MENU 2026-06-30] Ordre owner (identique au ticket imprimé) :
+    // ligne 2 = MENU (: sauce frites symbole) PUIS les suppléments.
     if (s.menu) {
-        // « MENU » attaché au produit → enrichi de la sauce frites en symbole si dispo.
         const menuLabel = s.menu === 'MENU' && fritesSym ? `MENU : ${fritesSym}` : s.menu;
         lines.push({ type: 'symbolic-menu', label: menuLabel });
+    }
+
+    for (const sup of s.supplements) {
+        lines.push({ type: 'supplement', label: sup });
     }
 
     if (hasAllergen) {

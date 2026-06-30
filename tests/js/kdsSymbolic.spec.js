@@ -134,7 +134,7 @@ describe('symbolicMainLine — owner examples', () => {
 });
 
 describe('renderItemSymbolic — line list for the KDS card', () => {
-    it('emits symbolic-main, supplements, menu, then allergen', () => {
+    it('emits symbolic-main, MENU, supplements, then allergen (owner order)', () => {
         const item = {
             item_name: 'Tacos M',
             quantity: 2,
@@ -152,18 +152,19 @@ describe('renderItemSymbolic — line list for the KDS card', () => {
         const types = out.lines.map((l) => l.type);
         expect(types).toEqual([
             'symbolic-main',
-            'supplement',
             'symbolic-menu',
+            'supplement',
             'allergen',
         ]);
+        // Menu enrichi de la sauce frites en symbole quand dispo (ici pas d'instruction → MENU).
+        expect(out.lines[1]).toMatchObject({ type: 'symbolic-menu', label: 'MENU' });
         expect(out.lines[0]).toMatchObject({
             type: 'symbolic-main',
             qty: 2,
             label: 'G | TACOS | M | K | SAM',
             hasAllergen: true,
         });
-        expect(out.lines[1]).toMatchObject({ type: 'supplement', label: '+ Cheddar' });
-        expect(out.lines[2]).toMatchObject({ type: 'symbolic-menu', label: 'MENU' });
+        expect(out.lines[2]).toMatchObject({ type: 'supplement', label: '+ Cheddar' });
         expect(out.hasAllergen).toBe(true);
     });
 
