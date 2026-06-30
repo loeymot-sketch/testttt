@@ -219,13 +219,15 @@ describe('sanitizeKdsInstruction — strips compo duplicate, keeps unique extras
         expect(sanitizeKdsInstruction('TACOS M\nViandes : Mexicanos Sauce : Harissa', 'Tacos M')).toBe('');
     });
 
-    it('keeps the "↳ Sauce frites: X" extra (it exists ONLY in the instruction, never in the snapshot)', () => {
-        expect(sanitizeKdsInstruction('TACOS M\n↳ Sauce frites: Curry', 'Tacos M')).toBe('↳ Sauce frites: Curry');
+    it('[KITCHEN-MENU 2026-06-30] drops "↳ Sauce frites: X" (now shown as the "MENU : SYM" line)', () => {
+        // Owner: la sauce frites du menu s'affiche en symbole sur la ligne MENU, pas en clair.
+        expect(sanitizeKdsInstruction('TACOS M\n↳ Sauce frites: Curry', 'Tacos M')).toBe('');
     });
 
-    it('drops compo + name, keeps "+ Menu" formule AND "↳ Sauce frites" together', () => {
+    it('[KITCHEN-MENU 2026-06-30] drops compo + name AND the "+ Menu"/"↳ Sauce frites" lines', () => {
         const raw = 'SANDWICH CAYENNE\nViandes : Poulet Sauce : Blanche - Salade, Tomate\n+ Menu (Frites, Coca)\n↳ Sauce frites: Harissa';
-        expect(sanitizeKdsInstruction(raw, 'Sandwich Cayenne')).toBe('+ Menu (Frites, Coca)\n↳ Sauce frites: Harissa');
+        // Tout part : compo (dup), menu et sauce frites (→ ligne MENU : SYM). Reste vide ici.
+        expect(sanitizeKdsInstruction(raw, 'Sandwich Cayenne')).toBe('');
     });
 
     it('keeps a free client note that is not a compo line', () => {
@@ -265,15 +267,14 @@ describe('renderItem — instruction is sanitized (no compo doublage, extras pre
         expect(out.lines.find((l) => l.type === 'instruction')).toBeFalsy();
     });
 
-    it('emits an instruction line ONLY with the unique extra (sauce frites kept)', () => {
+    it('[KITCHEN-MENU 2026-06-30] no instruction line when it was only menu/sauce-frites (now MENU : SYM)', () => {
         const out = renderItem({
             item_name: 'Tacos M',
             quantity: 1,
             instruction: 'TACOS M\n↳ Sauce frites: Curry',
         });
-        const ins = out.lines.find((l) => l.type === 'instruction');
-        expect(ins).toBeTruthy();
-        expect(ins.label).toBe('↳ Sauce frites: Curry');
+        // La sauce frites est désormais portée par la ligne « MENU : SYM », pas par une note.
+        expect(out.lines.find((l) => l.type === 'instruction')).toBeFalsy();
     });
 });
 

@@ -222,6 +222,19 @@ final class OrderReceiptEscPosRenderer
             $name = (string) ($oi->name ?? optional($oi->orderItem)->name ?? 'Article');
             $snap = is_array($oi->composition_snapshot) ? $oi->composition_snapshot : [];
             $qty = max(1, (int) ($oi->quantity ?? 1));
+            $instruction = (string) ($oi->instruction ?? '');
+
+            // [KITCHEN-MENU 2026-06-30] Un item « Menu/Formule » → juste « MENU »
+            // (+ sauce frites en SYMBOLE), AUCUN prix ni « Frites + Boisson ». Le menu,
+            // c'est frites + boisson : rien à préparer de plus, juste la sauce des frites.
+            if ($this->symbolic->isMenuItem($name)) {
+                $sym = $this->symbolic->fritesSauceSymbol($instruction);
+                $line = $sym !== '' ? 'MENU : ' . $sym : 'MENU';
+                $b .= EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::textLine($qty . ' x ' . $line) . EscPosCommandBuilder::bold(false);
+                $b .= EscPosCommandBuilder::textLine('');
+
+                continue;
+            }
 
             $main = $this->symbolic->mainLine($name, $snap);
             $b .= EscPosCommandBuilder::bold(true);
@@ -231,11 +244,16 @@ final class OrderReceiptEscPosRenderer
             foreach ($this->symbolic->supplementLines($snap) as $sup) {
                 $b .= EscPosCommandBuilder::textLine('  ' . $sup);
             }
+            // Menu attaché au produit (addon) → « MENU » ou « MENU : SYM » (sauce frites symbole).
             $menu = $this->symbolic->menuLine($snap);
+            if ($menu === 'MENU') {
+                $sym = $this->symbolic->fritesSauceSymbol($instruction);
+                $menu = $sym !== '' ? 'MENU : ' . $sym : 'MENU';
+            }
             if ($menu !== '') {
                 $b .= EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::textLine('  ' . $menu) . EscPosCommandBuilder::bold(false);
             }
-            $note = $this->symbolic->cleanInstruction((string) ($oi->instruction ?? ''), $name);
+            $note = $this->symbolic->cleanInstruction($instruction, $name); // sans menu/sauce-frites (anti double)
             foreach (array_filter(explode("\n", $note)) as $noteLine) {
                 $b .= EscPosCommandBuilder::textLine('  ** ' . trim($noteLine));
             }
@@ -340,8 +358,11 @@ final class OrderReceiptEscPosRenderer
                 $b .= EscPosCommandBuilder::textLine('   + ' . $a['name']);
             }
         }
-        if (($line['instruction'] ?? '') !== '') {
-            $b .= EscPosCommandBuilder::textLine('   ** ' . $line['instruction']);
+        // Note client assainie : on retire le nom-produit échoé, le blob de compo
+        // (déjà affiché) et les lignes menu/sauce-frites (le menu est sa propre ligne).
+        $note = $this->symbolic->cleanInstruction((string) ($line['instruction'] ?? ''), (string) $line['name']);
+        foreach (array_filter(explode("\n", $note)) as $noteLine) {
+            $b .= EscPosCommandBuilder::textLine('   ** ' . trim($noteLine));
         }
 
         return $b;
@@ -448,7 +469,9 @@ final class OrderReceiptEscPosRenderer
 
     private function money(float $v): string
     {
-        return number_format(round($v, 2), 2, ',', ' ') . ' EUR';
+        // Owner: symbole € (pas « EUR »). CP858 (code page 19) contient € → encodé
+        // correctement par encodeForPrinter en fin de flux.
+        return number_format(round($v, 2), 2, ',', ' ') . ' €';
     }
 
     private function encodingFor(int $codePage): string

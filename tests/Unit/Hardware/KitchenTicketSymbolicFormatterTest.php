@@ -123,6 +123,29 @@ class KitchenTicketSymbolicFormatterTest extends TestCase
         $this->assertSame(['+ Oignons frits'], $this->f->supplementLines($snap));
     }
 
+    public function test_frites_sauce_symbol_from_instruction(): void
+    {
+        // Owner: la sauce frites du menu s'affiche en SYMBOLE, pas en nom.
+        $this->assertSame('AND', $this->f->fritesSauceSymbol("** + Menu (Frites + Boisson)\n↳ Sauce frites: Andalouse"));
+        $this->assertSame('ALG', $this->f->fritesSauceSymbol('Sauce frites : Algérienne'));
+        $this->assertSame('', $this->f->fritesSauceSymbol('Bien cuit svp'));
+    }
+
+    public function test_clean_instruction_drops_menu_and_frites_sauce_lines(): void
+    {
+        // Le menu + la sauce frites sont représentés par la ligne « MENU : SYM »,
+        // donc on les retire de l'instruction cuisine (anti double-menu / verbeux).
+        $raw = "TACOS L\nViandes : Poulet\n+ Menu (Frites + Boisson) (+2,50€)\n↳ Sauce frites: Andalouse\n[Sans oignon]";
+        $this->assertSame('[Sans oignon]', $this->f->cleanInstruction($raw, 'Tacos L'));
+    }
+
+    public function test_is_menu_item(): void
+    {
+        $this->assertTrue($this->f->isMenuItem('Menu (Frites + Boisson)'));
+        $this->assertTrue($this->f->isMenuItem('Formule midi'));
+        $this->assertFalse($this->f->isMenuItem('Cayenne'));
+    }
+
     public function test_menu_line(): void
     {
         $menu = ['addons' => [['addon_name' => 'Frites Moyennes', 'role' => 'menu_frites']]];

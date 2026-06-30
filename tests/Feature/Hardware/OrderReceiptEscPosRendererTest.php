@@ -73,14 +73,14 @@ class OrderReceiptEscPosRendererTest extends TestCase
         // The accented label MUST survive (regression: double-encoding dropped it).
         $this->assertStringContainsString('Viande suppl', $bytes, 'accented extra label dropped');
         $this->assertStringContainsString('Cheddar', $bytes);
-        $this->assertStringContainsString('2,50 EUR', $bytes, 'paid supplement price missing');
-        $this->assertStringContainsString('0,90 EUR', $bytes);
+        $this->assertStringContainsString('2,50', $bytes, 'paid supplement price missing');
+        $this->assertStringContainsString('0,90', $bytes);
         // 2 distinct meats present.
         $this->assertStringContainsString('Cordon Bleu', $bytes);
         $this->assertStringContainsString('Fricadelle', $bytes);
         // Totals + ESC/POS framing.
         $this->assertStringContainsString('TOTAL', $bytes);
-        $this->assertStringContainsString('13,80 EUR', $bytes);
+        $this->assertStringContainsString('13,80', $bytes);
         $this->assertStringContainsString("\x1B\x40", $bytes, 'missing ESC @ init');
         $this->assertStringContainsString("\x1D\x56", $bytes, 'missing GS V cut');
         // Fiscal footer.
@@ -149,7 +149,7 @@ class OrderReceiptEscPosRendererTest extends TestCase
 
         $bytes = (new OrderReceiptEscPosRenderer)->renderClientTicket($order);
         $this->assertStringContainsString('0,99', $bytes, 'TVA should be prorated to the net');
-        $this->assertStringNotContainsString('1,45 EUR', $bytes, 'gross TVA must not be printed when discounted');
+        $this->assertStringNotContainsString('1,45', $bytes, 'gross TVA must not be printed when discounted');
     }
 
     public function test_paid_order_without_pos_method_is_not_marked_to_pay(): void

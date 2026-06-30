@@ -96,6 +96,18 @@ export function supportSymbol(name) {
     return '';
 }
 
+/** Un item « Menu (Frites + Boisson) » / « Formule … » → affiché juste « MENU » en cuisine. */
+export function isMenuItem(name) {
+    return /\bmenu\b|formule/.test(normalize(name));
+}
+
+/** Sauce frites du menu (depuis l'instruction) → SYMBOLE court (Andalouse → AND). */
+export function fritesSauceSymbol(instruction) {
+    if (typeof instruction !== 'string' || instruction === '') return '';
+    const m = instruction.match(/sauce\s*frites\s*:\s*([^\n]+)/i);
+    return m ? sauceSymbol(m[1].trim()) : '';
+}
+
 // ── Composition decomposition ────────────────────────────────────────────────
 
 function readVariations(orderItem) {
@@ -252,6 +264,24 @@ export function renderItemSymbolic(orderItem) {
             .filter((c) => c.length > 0)
         : [];
     const hasAllergen = allergenCodes.length > 0;
+    const fritesSym = fritesSauceSymbol(orderItem?.instruction);
+
+    // [KITCHEN-MENU 2026-06-30] Un item Menu/Formule → juste « MENU » (+ sauce frites
+    // en symbole), AUCUN prix ni « Frites + Boisson » : c'est frites + boisson, rien à
+    // préparer de plus côté cuisine.
+    if (isMenuItem(orderItem?.item_name)) {
+        lines.push({
+            type: 'symbolic-main',
+            qty: orderItem?.quantity ?? 1,
+            label: fritesSym ? `MENU : ${fritesSym}` : 'MENU',
+            category: s.category,
+            hasAllergen,
+        });
+        if (hasAllergen) {
+            lines.push({ type: 'allergen', codes: allergenCodes });
+        }
+        return { category: s.category, hasAllergen, lines };
+    }
 
     lines.push({
         type: 'symbolic-main',
@@ -266,7 +296,9 @@ export function renderItemSymbolic(orderItem) {
     }
 
     if (s.menu) {
-        lines.push({ type: 'symbolic-menu', label: s.menu });
+        // « MENU » attaché au produit → enrichi de la sauce frites en symbole si dispo.
+        const menuLabel = s.menu === 'MENU' && fritesSym ? `MENU : ${fritesSym}` : s.menu;
+        lines.push({ type: 'symbolic-menu', label: menuLabel });
     }
 
     if (hasAllergen) {

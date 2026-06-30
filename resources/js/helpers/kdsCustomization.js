@@ -226,7 +226,10 @@ export function sanitizeKdsInstruction(raw, itemName) {
             if (!t.includes(']')) insideBracketNote = true; // ouvre une note multi-ligne
             return true;
         }
-        if (/^[+↳]/.test(t)) return true;                   // formule / sauce frites → KEEP
+        // [KITCHEN-MENU 2026-06-30] Menu + sauce frites sont rendus par la ligne
+        // symbolique « MENU : SYM » → on les retire ici (anti double-menu / verbeux).
+        if (/sauce\s*frites|menu\s*\(\s*frites|^\+\s*menu\b/i.test(t)) return false;
+        if (/^[+↳]/.test(t)) return true;                   // autres formule / notes → KEEP
         if (/^-\s/.test(t)) return false;                   // bare crudités-removal (structured covers it)
         if (KDS_COMPO_LINE_RE.test(t)) return false;        // compo blob "Viandes : … Sauce : …" → DROP (dup)
         return true;                                        // free client note → KEEP

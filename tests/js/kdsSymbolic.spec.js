@@ -200,6 +200,19 @@ describe('renderItemSymbolic — line list for the KDS card', () => {
         expect(sup).toEqual(['+ Oignons frits']);
     });
 
+    it('a menu/formule item renders just "MENU : <sauce frites symbol>" (no price, no verbose)', () => {
+        const menuItem = {
+            item_name: 'Menu (Frites + Boisson)',
+            quantity: 1,
+            instruction: 'Menu (Frites + Boisson)\n↳ Sauce frites: Andalouse',
+            composition_snapshot: { lines: [] },
+        };
+        const out = renderItemSymbolic(menuItem);
+        expect(out.lines[0]).toMatchObject({ type: 'symbolic-main', label: 'MENU : AND' });
+        // no supplement / no extra verbose line
+        expect(out.lines.filter((l) => l.type === 'supplement')).toHaveLength(0);
+    });
+
     it('crudité extras never leak into the supplement lines', () => {
         const item = {
             item_name: 'Sandwich',

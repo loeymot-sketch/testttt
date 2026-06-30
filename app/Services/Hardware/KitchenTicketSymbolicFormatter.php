@@ -216,6 +216,25 @@ final class KitchenTicketSymbolicFormatter
         return $out;
     }
 
+    /** Un item « Menu (Frites + Boisson) » / « Formule … » → affiché juste « MENU » en cuisine. */
+    public function isMenuItem(string $name): bool
+    {
+        return (bool) preg_match('/\bmenu\b|formule/u', $this->norm($name));
+    }
+
+    /** Sauce frites du menu (depuis l'instruction) → SYMBOLE court (Andalouse → AND). */
+    public function fritesSauceSymbol(?string $instruction): string
+    {
+        if (! is_string($instruction) || $instruction === '') {
+            return '';
+        }
+        if (preg_match('/sauce\s*frites\s*:\s*([^\n]+)/iu', $instruction, $m)) {
+            return $this->sauceSymbol(trim($m[1]));
+        }
+
+        return '';
+    }
+
     /** @param array<string,mixed> $snapshot */
     public function menuLine(array $snapshot): string
     {
@@ -270,6 +289,11 @@ final class KitchenTicketSymbolicFormatter
                 }
                 $kept[] = $t;
 
+                continue;
+            }
+            // [KITCHEN-MENU 2026-06-30] Menu + sauce frites → représentés par la ligne
+            // « MENU : SYM » : on les retire de l'instruction (anti double-menu / verbeux).
+            if (preg_match('/sauce\s*frites|menu\s*\(\s*frites|^\+\s*menu\b/iu', $t)) {
                 continue;
             }
             if (preg_match('/^[+↳]/u', $t)) {
