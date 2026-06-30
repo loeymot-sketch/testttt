@@ -129,6 +129,20 @@ axios.interceptors.response.use(
                         return response;
                     })
                     .catch((e) => {
+                        // [OWNER 2026-06-30 — bug « déconnexion en pleine compo »]
+                        // Le replay a RÉUSSI l'auth (re-login OK) mais peut renvoyer une
+                        // erreur MÉTIER, typiquement `pricing/preview` → 422 (compo
+                        // incomplète = attendu pendant la personnalisation). Avant ce fix,
+                        // ce 422 était traité comme une panne d'auth terminale → token vidé
+                        // + toast ROUGE « Borne déconnectée » + retour écran login EN PLEINE
+                        // COMMANDE. C'est exactement le « ça sort / notification » vu par
+                        // l'owner. → Une erreur 4xx NON-401 n'est PAS une panne d'auth : on
+                        // rejette en silence (le helper appelant gère le 422). Seuls
+                        // 401 / 5xx / pas-de-réponse = vraie panne auth/serveur.
+                        const replayStatus = e?.response?.status;
+                        if (replayStatus && replayStatus !== 401 && replayStatus < 500) {
+                            return Promise.reject(e);
+                        }
                         store.commit('kioskCart/CLEAR_KIOSK_TOKEN');
                         // [iter15-mega-fix C-037/D5-003 round-7 2026-05-10] Surface
                         // a UI toast on terminal kiosk auth failure so the borne

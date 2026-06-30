@@ -24,7 +24,11 @@ function distributeViandes(item, viandeMeta) {
       .sort((a, b) => (Number(a.id) || 0) - (Number(b.id) || 0));
     const slots = [];
     variationViandes.forEach(v => { for (let i = 0; i < Math.max(1, Number(v.count) || 1); i++) slots.push(v); });
-    const allVars = Array.isArray(item.variations) ? item.variations : [];
+    // [FIX 2026-06-30] item.variations peut être un OBJET groupé par attribut (forme prod
+    // de la projection menu) et pas un tableau → on aplatit, sinon la 2e viande est droppée.
+    const allVars = Array.isArray(item.variations)
+      ? item.variations
+      : (item.variations && typeof item.variations === 'object' ? Object.values(item.variations).flat() : []);
     slots.forEach((v, idx) => {
       const attr = viandeAttrs[idx];
       if (!attr) return;
@@ -86,6 +90,30 @@ describe('Wizard borne — distribution multi-viandes (FIX P0)', () => {
     const { allVariations } = distributeViandes(tacosM, meta);
     expect(allVariations[1]).toBe(361);
     expect(allVariations[2]).toBeUndefined();
+  });
+
+  // [BUG 2026-06-30 — 2e viande perdue au PANIER, plainte owner] En PROD, `item.variations`
+  // est un OBJET groupé par attribut, pas un tableau. L'ancien `Array.isArray ? : []` donnait
+  // allVars=[] → le match "viande sous Viande 2" échouait → 2e viande droppée → commande
+  // rejetée au paiement. Ce test utilise la VRAIE forme objet et exige les 2 viandes.
+  const tacosLObjet = {
+    ...tacosL,
+    variations: {
+      1: [{ id: 361, name: 'Mexicanos', item_attribute_id: 1 }, { id: 363, name: 'Viande Hachée', item_attribute_id: 1 }, { id: 365, name: 'Tenders', item_attribute_id: 1 }],
+      2: [{ id: 368, name: 'Mexicanos', item_attribute_id: 2 }, { id: 370, name: 'Viande Hachée', item_attribute_id: 2 }, { id: 372, name: 'Tenders', item_attribute_id: 2 }],
+      5: [{ id: 379, name: 'Samouraï', item_attribute_id: 5 }],
+    },
+  };
+
+  it('item.variations en OBJET (forme PROD) : 2 viandes → Viande 1 ET Viande 2 gardées', () => {
+    const meta = [
+      { id: 361, name: 'Mexicanos', source: 'variation', attrId: 1, count: 1 },
+      { id: 363, name: 'Viande Hachée', source: 'variation', attrId: 1, count: 1 },
+    ];
+    const { allVariations } = distributeViandes(tacosLObjet, meta);
+    expect(allVariations[1]).toBe(361);        // Mexicanos sous Viande 1
+    expect(allVariations[2]).toBe(370);        // Viande Hachée sous Viande 2 (PAS droppée)
+    expect(Object.keys(allVariations).filter(k => k === '1' || k === '2')).toHaveLength(2);
   });
 
   it('SENTINELLE anti-régression : l’ancienne logique (1ère viande seule) ne suffirait PAS', () => {

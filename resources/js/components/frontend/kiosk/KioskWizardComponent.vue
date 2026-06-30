@@ -1784,7 +1784,18 @@ export default {
         // Un slot par UNITÉ de viande (respecte le count).
         const slots = [];
         variationViandes.forEach(v => { for (let i = 0; i < Math.max(1, Number(v.count) || 1); i++) slots.push(v); });
-        const allVars = Array.isArray(item.variations) ? item.variations : [];
+        // [FIX 2026-06-30 — 2e viande PERDUE au panier (plainte owner)] `item.variations`
+        // peut être un OBJET groupé par attribut (forme de la projection menu kiosk), pas un
+        // tableau. L'ancien `Array.isArray ? : []` donnait alors allVars=[] → le `match`
+        // "viande de CE nom sous l'attribut Viande 2" échouait toujours → seule la 1ère viande
+        // (fallback `idx===0 ? v.id`) survivait, la 2ème était droppée → l'article panier
+        // sortait SANS Viande 2 → commande REJETÉE au paiement ("Viande 2 actuel: 0"). On
+        // aplatit donc l'objet en tableau de variations.
+        const allVars = Array.isArray(item.variations)
+          ? item.variations
+          : (item.variations && typeof item.variations === 'object'
+            ? Object.values(item.variations).flat()
+            : []);
         slots.forEach((v, idx) => {
           const attr = viandeAttrs[idx];
           if (!attr) return; // plus de viandes que d'attributs → ignoré (MAX déjà borné)

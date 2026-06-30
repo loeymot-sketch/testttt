@@ -319,6 +319,42 @@
         #dine {
             display: none !important;
         }
+
+        /* [OWNER 2026-06-30] Bug borne PORTRAIT « ça sort du tableau / scroll bizarre » :
+           sur les étapes du wizard à beaucoup d'options (12 sauces, 12 suppléments…), le
+           contenu dépasse la zone visible en 1080×1920. Le layout scrolle déjà proprement,
+           MAIS le scrollbar était masqué (scrollbar-width:none) → le client ne voyait AUCUN
+           indice et croyait les options coupées. Fix FROZEN-SAFE : surcharges globales
+           !important (KioskWizardComponent.vue intouché). Indice de scroll visible + marge
+           basse + fondu d'incitation au-dessus de la barre d'action. */
+        .kiosk-step-content {
+            scrollbar-width: thin !important;
+            scrollbar-color: rgba(244, 80, 30, 0.5) transparent !important;
+            padding-bottom: 36px !important;
+            scroll-padding-bottom: 36px !important;
+        }
+        .kiosk-step-content::-webkit-scrollbar {
+            display: block !important;
+            width: 9px !important;
+        }
+        .kiosk-step-content::-webkit-scrollbar-thumb {
+            background: rgba(244, 80, 30, 0.5) !important;
+            border-radius: 999px !important;
+        }
+        .kiosk-nav {
+            position: relative !important;
+        }
+        .kiosk-nav::before {
+            content: '' !important;
+            position: absolute !important;
+            left: 0;
+            right: 0;
+            bottom: 100% !important;
+            height: 44px !important;
+            background: linear-gradient(to top, rgba(255, 250, 245, 0.97), rgba(255, 250, 245, 0)) !important;
+            pointer-events: none !important;
+            z-index: 3 !important;
+        }
     </style>
     <script>
         document.addEventListener('DOMContentLoaded', function () {

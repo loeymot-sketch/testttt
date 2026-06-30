@@ -60,6 +60,29 @@
 const DEBOUNCE_MS = 1500;
 
 /**
+ * [OWNER 2026-06-30 — toast jaune qui revient]
+ * `kiosk-auth-retried` = un 401 a été SILENCIEUSEMENT récupéré (re-login + replay
+ * réussis). Le toast jaune « Session rafraîchie automatiquement » (warning) qu'il
+ * déclenche dans KioskAppComponent n'existait QUE pour un protocole d'audit auto
+ * (prouver qu'un 4xx récupéré a un [role=alert] dans le DOM). Pour le CLIENT sur la
+ * borne c'est du bruit anxiogène en pleine commande : la récupération a réussi, rien
+ * à signaler. → On le SUPPRIME ENTIÈREMENT (capture-phase + stopImmediatePropagation
+ * sur CHAQUE event, pas seulement les doublons). `kiosk-auth-failed` (déconnexion
+ * RÉELLE → « Reconnexion en cours… ») reste légitime et seulement débouncé.
+ * Frozen-safe : KioskAppComponent.vue intouché (son listener ne reçoit plus l'event).
+ */
+const ALWAYS_SUPPRESS_EVENTS = ['kiosk-auth-retried'];
+
+function makeSuppressor() {
+  return function suppressor(evt) {
+    try {
+      if (typeof evt.stopImmediatePropagation === 'function') evt.stopImmediatePropagation();
+      if (typeof evt.preventDefault === 'function') evt.preventDefault();
+    } catch (_) { /* ne jamais casser la chaîne d'events */ }
+  };
+}
+
+/**
  * Per-event-name "last delivered" timestamps. The first event in a burst
  * passes through (timestamp 0 → diff > debounce). Subsequent events within
  * DEBOUNCE_MS are swallowed by `stopImmediatePropagation()`.
@@ -69,7 +92,7 @@ const DEBOUNCE_MS = 1500;
  */
 const lastDeliveredAt = Object.create(null);
 
-const DEBOUNCED_EVENTS = ['kiosk-auth-retried', 'kiosk-auth-failed'];
+const DEBOUNCED_EVENTS = ['kiosk-auth-failed'];
 
 function makeDebouncer(eventName) {
   return function debouncer(evt) {
@@ -115,6 +138,13 @@ export function installKioskAuthInterceptor() {
     // runs first; if it decides to drop the event, KioskAppComponent's
     // bubble listener never sees it.
     window.addEventListener(eventName, makeDebouncer(eventName), true);
+  });
+
+  // [OWNER 2026-06-30] Suppression TOTALE du toast jaune « Session rafraîchie
+  // automatiquement » : on avale CHAQUE kiosk-auth-retried en capture-phase, donc
+  // le listener bubble de KioskAppComponent (frozen) ne le reçoit jamais.
+  ALWAYS_SUPPRESS_EVENTS.forEach((eventName) => {
+    window.addEventListener(eventName, makeSuppressor(), true);
   });
 
   window.__kioskAuthInterceptorInstalled = true;
