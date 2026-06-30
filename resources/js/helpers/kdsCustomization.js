@@ -234,7 +234,12 @@ export function sanitizeKdsInstruction(raw, itemName) {
         if (KDS_COMPO_LINE_RE.test(t)) return false;        // compo blob "Viandes : … Sauce : …" → DROP (dup)
         return true;                                        // free client note → KEEP
     });
-    return kept.join('\n').trim();
+    // [KITCHEN-NOPRICE 2026-06-30] Cuisine sans prix : retire « (+2,00 €) » / « (+2,50) »
+    // des notes conservées (parité avec KitchenTicketSymbolicFormatter::cleanInstruction).
+    return kept
+        .map((l) => l.replace(/\s*\(\s*\+?\s*\d+[.,]\d{1,2}\s*(€|EUR)?\s*\)/g, '').trim())
+        .join('\n')
+        .trim();
 }
 
 /**

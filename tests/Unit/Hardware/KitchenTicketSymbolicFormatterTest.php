@@ -175,6 +175,13 @@ class KitchenTicketSymbolicFormatterTest extends TestCase
         $this->assertFalse($this->f->isMenuItem('Cayenne'));
     }
 
+    public function test_clean_instruction_strips_price_annotations(): void
+    {
+        // Cuisine = ZÉRO prix. Une note addon « + Boisson Seule (+2,00 €) » → sans le prix.
+        $this->assertSame('+ Boisson Seule', $this->f->cleanInstruction("TACOS M\n+ Boisson Seule (+2,00 €)", 'Tacos M'));
+        $this->assertSame('+ Extra', $this->f->cleanInstruction("X\n+ Extra (+2,50)", 'X'));
+    }
+
     public function test_menu_line(): void
     {
         $menu = ['addons' => [['addon_name' => 'Frites Moyennes', 'role' => 'menu_frites']]];

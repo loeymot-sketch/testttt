@@ -310,6 +310,13 @@ final class KitchenTicketSymbolicFormatter
             $kept[] = $t;
         }
 
+        // [KITCHEN-NOPRICE 2026-06-30] La cuisine n'affiche JAMAIS de prix : on retire
+        // toute annotation « (+2,00 €) » / « (+2,50) » des notes conservées.
+        $kept = array_map(
+            fn ($l) => trim(preg_replace('/\s*\(\s*\+?\s*\d+[.,]\d{1,2}\s*(€|EUR)?\s*\)/u', '', $l)),
+            $kept
+        );
+
         return trim(implode("\n", $kept));
     }
 
