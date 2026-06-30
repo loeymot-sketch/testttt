@@ -305,7 +305,12 @@ const _MIX_PUSHER_HOST        = process.env.MIX_PUSHER_HOST;
 const _MIX_PUSHER_PORT        = process.env.MIX_PUSHER_PORT;
 const _MIX_PUSHER_SCHEME      = process.env.MIX_PUSHER_SCHEME;
 
-if (_MIX_PUSHER_APP_KEY) {
+// [SYNC-BORNE 2026-07-01] Garde anti-« undefined » : si le build n'a pas reçu de clé
+// (MIX_PUSHER_APP_KEY absent au moment de `npm run production`), webpack peut injecter la
+// STRING littérale "undefined"/"null" (truthy) → Echo tenterait de se connecter à un
+// serveur WS avec une clé invalide et échouerait en boucle. On exige une vraie clé, sinon
+// on bascule proprement sur le polling de secours (KDS/caisse/OSS continuent de fonctionner).
+if (_MIX_PUSHER_APP_KEY && _MIX_PUSHER_APP_KEY !== 'undefined' && _MIX_PUSHER_APP_KEY !== 'null') {
     // [GAP-34-2] Echo must send the Sanctum Bearer token when authenticating private channels.
     // Default Echo auth uses cookies (session) — this SPA uses Bearer tokens.
     // We read the token from localStorage (same source as the axios interceptor in app.js).
