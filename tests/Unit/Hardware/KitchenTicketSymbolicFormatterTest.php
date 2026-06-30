@@ -106,6 +106,35 @@ class KitchenTicketSymbolicFormatterTest extends TestCase
         $this->assertSame('', $this->f->cleanInstruction("SANDWICH\nSauce : Blanche", 'Sandwich'));
     }
 
+    /** Couverture EXHAUSTIVE du vrai menu Le Cayenne : chaque valeur → symbole attendu. */
+    public function test_every_real_menu_value_maps_to_expected_symbol(): void
+    {
+        $meats = [
+            'Mexicanos' => 'Mex', 'Cordon Bleu' => 'Cordon', 'Viande Hachée' => 'K',
+            'Nuggets' => 'Nug', 'Tenders' => 'Tender', 'Fricadelle' => 'Frec', 'Poulet mariné' => 'P',
+        ];
+        foreach ($meats as $name => $sym) {
+            $this->assertSame($sym, $this->f->meatSymbol($name), "viande $name");
+        }
+        $sauces = [
+            'Mayonnaise' => 'MAY', 'Ketchup' => 'KTP', 'Blanche' => 'BL', 'Hannibal' => 'HAN',
+            'Samouraï' => 'SAM', 'Algérienne' => 'ALG', 'Andalouse' => 'AND', 'Curry' => 'CURY',
+            'Barbecue' => 'BBQ', 'Harissa' => 'HAR', 'Fromagère maison' => 'FRO', 'Spicy maison' => 'SPI',
+        ];
+        $seen = [];
+        foreach ($sauces as $name => $sym) {
+            $this->assertSame($sym, $this->f->sauceSymbol($name), "sauce $name");
+            $seen[$sym] = ($seen[$sym] ?? 0) + 1;
+        }
+        // Les 12 sauces produisent 12 symboles DISTINCTS (pas de collision en cuisine).
+        $this->assertCount(12, $seen, 'collision de symboles sauce');
+        foreach (['Salade' => 'S', 'Tomate' => 'T', 'Oignon' => 'O'] as $name => $sym) {
+            $this->assertSame($sym, $this->f->cruditeSymbol($name), "crudité $name");
+        }
+        $this->assertSame('S', $this->f->supportSymbol('Pain'));
+        $this->assertSame('G', $this->f->supportSymbol('Galette'));
+    }
+
     public function test_paid_supplement_named_like_a_crudite_is_not_folded(): void
     {
         // "Oignons frits" (0,90€ supplement) must NOT collapse into the crudités slot

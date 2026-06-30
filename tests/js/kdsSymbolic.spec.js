@@ -52,6 +52,22 @@ describe('symbol mappers — owner table', () => {
     });
 });
 
+describe('couverture EXHAUSTIVE du vrai menu (parité avec le ticket imprimé)', () => {
+    it('chaque viande/sauce/crudité/support du menu → symbole attendu', () => {
+        const meats = { Mexicanos: 'Mex', 'Cordon Bleu': 'Cordon', 'Viande Hachée': 'K', Nuggets: 'Nug', Tenders: 'Tender', Fricadelle: 'Frec', 'Poulet mariné': 'P' };
+        Object.entries(meats).forEach(([n, s]) => expect(meatSymbol(n)).toBe(s));
+        const sauces = { Mayonnaise: 'MAY', Ketchup: 'KTP', Blanche: 'BL', Hannibal: 'HAN', 'Samouraï': 'SAM', 'Algérienne': 'ALG', Andalouse: 'AND', Curry: 'CURY', Barbecue: 'BBQ', Harissa: 'HAR', 'Fromagère maison': 'FRO', 'Spicy maison': 'SPI' };
+        const seen = new Set();
+        Object.entries(sauces).forEach(([n, s]) => { expect(sauceSymbol(n)).toBe(s); seen.add(s); });
+        expect(seen.size).toBe(12); // 12 symboles distincts
+        expect(cruditeSymbol('Salade')).toBe('S');
+        expect(cruditeSymbol('Tomate')).toBe('T');
+        expect(cruditeSymbol('Oignon')).toBe('O');
+        expect(supportSymbol('Pain')).toBe('S');
+        expect(supportSymbol('Galette')).toBe('G');
+    });
+});
+
 describe('symbolicMainLine — owner examples', () => {
     it('sandwich galette / poulet / salade tomate oignon / samouraï → "G | SANDWICH | P | STO | SAM"', () => {
         const item = {
