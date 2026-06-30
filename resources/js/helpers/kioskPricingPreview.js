@@ -242,7 +242,16 @@ export function createKioskPricingPreview(options = {}) {
                     const isCancel = err && (err.name === 'CanceledError'
                         || err.name === 'AbortError'
                         || (client.isCancel && client.isCancel(err)));
-                    if (!isCancel && options.onError) options.onError(err);
+                    // [FIX SIGNAL-JAUNE 2026-06-30] Un 422 = composition INCOMPLÈTE en cours :
+                    // l'utilisateur n'a pas fini de choisir (il manque une viande/sauce requise,
+                    // ex. « Sélectionnez au moins 1 Viande 2 »). C'est ATTENDU à chaque sélection
+                    // intermédiaire d'un produit multi-attributs (Tacos L, Méga…), PAS une erreur.
+                    // On ne déclenche le toast jaune « Tarif rafraîchi » QUE pour les VRAIES
+                    // erreurs (réseau / 401 / 5xx). Le total local provisoire est de toute façon
+                    // affiché, et le prix est scellé/vérifié au paiement (SSOT). Avant ce fix, le
+                    // client voyait un signal jaune à chaque clic intermédiaire de composition.
+                    const isIncompleteComposition = !!(err && err.response && err.response.status === 422);
+                    if (!isCancel && !isIncompleteComposition && options.onError) options.onError(err);
                     resolve(null);
                 }
             }, debounceMs);

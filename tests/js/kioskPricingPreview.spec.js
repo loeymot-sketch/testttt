@@ -165,4 +165,43 @@ describe('createKioskPricingPreview — debounce + SSOT', () => {
         vi.advanceTimersByTime(500);
         expect(axiosMock.post).not.toHaveBeenCalled();
     });
+
+    // [FIX SIGNAL-JAUNE 2026-06-30] Un 422 = composition incomplète pendant la compo
+    // (viande/sauce requise pas encore choisie) → NE doit PAS déclencher onError (pas de
+    // toast jaune « Tarif rafraîchi »). Seules les vraies erreurs (réseau/401/5xx) le font.
+    function errWithStatus(status) {
+        const e = new Error('http ' + status);
+        e.response = { status, data: { errors: { 'items.0.item_variations': ['Sélectionnez au moins 1 Viande 2 (actuel : 0).'] } } };
+        return e;
+    }
+
+    it('422 (compo incomplète) NE déclenche PAS onError → pas de signal jaune', async () => {
+        const onError = vi.fn();
+        const axiosMock = makeAxiosMock(errWithStatus(422));
+        const preview = createKioskPricingPreview({ axios: axiosMock, onError });
+        const p = preview.request({ items: [{ item_id: 97, quantity: 1, item_variations: [{ id: 361, quantity: 1 }] }] });
+        vi.advanceTimersByTime(500);
+        await p;
+        expect(onError).not.toHaveBeenCalled();
+    });
+
+    it('une vraie erreur (500) déclenche bien onError → toast légitime', async () => {
+        const onError = vi.fn();
+        const axiosMock = makeAxiosMock(errWithStatus(500));
+        const preview = createKioskPricingPreview({ axios: axiosMock, onError });
+        const p = preview.request({ items: [{ item_id: 97, quantity: 1, item_variations: [{ id: 361, quantity: 1 }] }] });
+        vi.advanceTimersByTime(500);
+        await p;
+        expect(onError).toHaveBeenCalledTimes(1);
+    });
+
+    it('401 (auth) déclenche bien onError → toast légitime', async () => {
+        const onError = vi.fn();
+        const axiosMock = makeAxiosMock(errWithStatus(401));
+        const preview = createKioskPricingPreview({ axios: axiosMock, onError });
+        const p = preview.request({ items: [{ item_id: 97, quantity: 1, item_variations: [{ id: 361, quantity: 1 }] }] });
+        vi.advanceTimersByTime(500);
+        await p;
+        expect(onError).toHaveBeenCalledTimes(1);
+    });
 });
