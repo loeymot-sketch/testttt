@@ -273,7 +273,14 @@ final class KitchenTicketSymbolicFormatter
                 continue;
             }
             if ($name !== '' && mb_strtoupper($t) === $name) {
-                continue; // echoed product name
+                continue; // echoed product name (exact)
+            }
+            // [KITCHEN 2026-06-30] Le pos-wizard écrit le nom produit en MAJUSCULES en
+            // 1re ligne (ex « TACOS », « SANDWICH CAYENNE ») — souvent ≠ du nom stocké.
+            // Toute ligne 100% MAJUSCULES (lettres/espaces, sans chiffre) = écho produit → drop
+            // (la ligne 1 symbolique montre déjà le produit ; les vraies notes ont des minuscules).
+            if (! $insideBracket && preg_match('/^[\p{Lu}][\p{Lu}\s\'\-]*$/u', $t) && mb_strlen($t) >= 2) {
+                continue;
             }
             if ($insideBracket) {
                 if (str_contains($t, ']')) {
@@ -312,10 +319,9 @@ final class KitchenTicketSymbolicFormatter
 
         // [KITCHEN-NOPRICE 2026-06-30] La cuisine n'affiche JAMAIS de prix : on retire
         // toute annotation « (+2,00 €) » / « (+2,50) » des notes conservées.
-        $kept = array_map(
-            fn ($l) => trim(preg_replace('/\s*\(\s*\+?\s*\d+[.,]\d{1,2}\s*(€|EUR)?\s*\)/u', '', $l)),
-            $kept
-        );
+        // € avant OU après le nombre, décimale point OU virgule : (+2,00 €) / (+€1.00) / (+2,50).
+        $priceRe = '/\s*\(\s*\+?\s*(?:€|EUR)?\s*\d+[.,]\d{1,2}\s*(?:€|EUR)?\s*\)/u';
+        $kept = array_map(fn ($l) => trim(preg_replace($priceRe, '', $l)), $kept);
 
         return trim(implode("\n", $kept));
     }

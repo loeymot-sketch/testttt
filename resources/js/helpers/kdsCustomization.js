@@ -217,7 +217,10 @@ export function sanitizeKdsInstruction(raw, itemName) {
     const kept = raw.split('\n').filter((ln) => {
         const t = ln.trim();
         if (t === '') return false;
-        if (name && t.toUpperCase() === name) return false; // echoed product name (header shows it)
+        if (name && t.toUpperCase() === name) return false; // echoed product name (exact)
+        // [KITCHEN 2026-06-30] Ligne 100% MAJUSCULES (sans chiffre) = écho du nom produit
+        // écrit par le wizard (« TACOS », « SANDWICH CAYENNE ») → drop (la L1 le montre déjà).
+        if (!insideBracketNote && t.length >= 2 && /^[A-ZÀ-Ÿ][A-ZÀ-Ÿ '\-]*$/.test(t)) return false;
         if (insideBracketNote) {                            // continuation d'une note libre multi-ligne → KEEP
             if (t.includes(']')) insideBracketNote = false;
             return true;
@@ -237,7 +240,7 @@ export function sanitizeKdsInstruction(raw, itemName) {
     // [KITCHEN-NOPRICE 2026-06-30] Cuisine sans prix : retire « (+2,00 €) » / « (+2,50) »
     // des notes conservées (parité avec KitchenTicketSymbolicFormatter::cleanInstruction).
     return kept
-        .map((l) => l.replace(/\s*\(\s*\+?\s*\d+[.,]\d{1,2}\s*(€|EUR)?\s*\)/g, '').trim())
+        .map((l) => l.replace(/\s*\(\s*\+?\s*(?:€|EUR)?\s*\d+[.,]\d{1,2}\s*(?:€|EUR)?\s*\)/g, '').trim())
         .join('\n')
         .trim();
 }

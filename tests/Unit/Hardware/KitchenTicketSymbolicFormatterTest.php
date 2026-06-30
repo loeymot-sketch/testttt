@@ -177,9 +177,16 @@ class KitchenTicketSymbolicFormatterTest extends TestCase
 
     public function test_clean_instruction_strips_price_annotations(): void
     {
-        // Cuisine = ZÉRO prix. Une note addon « + Boisson Seule (+2,00 €) » → sans le prix.
+        // Cuisine = ZÉRO prix, quel que soit le format : (+2,00 €), (+2,50), (+€1.00).
         $this->assertSame('+ Boisson Seule', $this->f->cleanInstruction("TACOS M\n+ Boisson Seule (+2,00 €)", 'Tacos M'));
         $this->assertSame('+ Extra', $this->f->cleanInstruction("X\n+ Extra (+2,50)", 'X'));
+        // € AVANT le nombre + décimale point (vrai cas commande #4509).
+        $out = $this->f->cleanInstruction("TACOS\nViandes : Poulet Sauce : Algérienne\n↳ Grande Portion (+€1.00)\n↳ Cheddar Fondu (+€1.00)", 'Tacos');
+        $this->assertStringNotContainsString('€', $out, 'aucun € en cuisine');
+        $this->assertStringNotContainsString('1.00', $out);
+        $this->assertStringNotContainsString('TACOS', $out, 'nom produit échoé retiré');
+        $this->assertStringContainsString('Grande Portion', $out);
+        $this->assertStringContainsString('Cheddar Fondu', $out);
     }
 
     public function test_menu_line(): void
