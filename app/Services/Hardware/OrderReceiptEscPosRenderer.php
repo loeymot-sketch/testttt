@@ -43,46 +43,57 @@ final class OrderReceiptEscPosRenderer
         $b .= EscPosCommandBuilder::selectCodePage($codePage);
 
         // ── En-tête établissement (centré) ──────────────────────────────────
+        // [TICKET-WIDTHSAFE 2026-07-01] Nom en double HAUTEUR + gras (PAS double largeur :
+        // celle-ci débordait le papier 58mm → ré-enroulement). Toutes les lignes sont
+        // word-wrappées à la largeur pour ne JAMAIS être coupées par l'imprimante.
         $b .= EscPosCommandBuilder::alignCenter();
-        $b .= EscPosCommandBuilder::doubleSize(true) . EscPosCommandBuilder::bold(true);
-        $b .= EscPosCommandBuilder::textLine(optional($branch)->name ?: 'LE CAYENNE');
-        $b .= EscPosCommandBuilder::doubleSize(false) . EscPosCommandBuilder::bold(false);
+        $b .= EscPosCommandBuilder::doubleHeight(true) . EscPosCommandBuilder::bold(true);
+        $b .= EscPosCommandBuilder::textWrap(optional($branch)->name ?: 'LE CAYENNE', $w);
+        $b .= EscPosCommandBuilder::doubleHeight(false) . EscPosCommandBuilder::bold(false);
         if (optional($branch)->address) {
-            $b .= EscPosCommandBuilder::textLine((string) $branch->address);
+            $b .= EscPosCommandBuilder::textWrap((string) $branch->address, $w);
         }
         if (optional($branch)->phone) {
-            $b .= EscPosCommandBuilder::textLine('Tél : ' . $this->formatPhone((string) $branch->phone));
+            $b .= EscPosCommandBuilder::textWrap('Tél : ' . $this->formatPhone((string) $branch->phone), $w);
         }
         if (optional($branch)->email) {
-            $b .= EscPosCommandBuilder::textLine('E-mail : ' . $branch->email);
+            $b .= EscPosCommandBuilder::textWrap('E-mail : ' . $branch->email, $w);
         }
         $website = (string) config('printing.receipt.website', '');
         if ($website !== '') {
-            $b .= EscPosCommandBuilder::textLine('Web : ' . $website);
+            $b .= EscPosCommandBuilder::textWrap('Web : ' . $website, $w);
         }
         if (! empty($head['pos_siret'])) {
-            $b .= EscPosCommandBuilder::textLine('SIRET ' . $head['pos_siret']);
+            $b .= EscPosCommandBuilder::textWrap('SIRET ' . $head['pos_siret'], $w);
         }
         $b .= EscPosCommandBuilder::separator('-', $w);
 
         // ── N° de ticket (gros) + date (centrés) ────────────────────────────
         $serial = (string) ($order->order_serial_no ?? $order->id);
         $ticketNo = (string) ($order->queue_number ?: $serial);
-        $b .= EscPosCommandBuilder::doubleSize(true) . EscPosCommandBuilder::bold(true);
-        $b .= EscPosCommandBuilder::textLine($ticketNo);
-        $b .= EscPosCommandBuilder::doubleSize(false) . EscPosCommandBuilder::bold(false);
+        // Le n° de file (« A0004 ») est court → double taille OK s'il tient en largeur/2,
+        // sinon double HAUTEUR (jamais de débordement largeur).
+        if (mb_strlen($ticketNo) <= max(1, (int) floor($w / 2))) {
+            $b .= EscPosCommandBuilder::doubleSize(true) . EscPosCommandBuilder::bold(true);
+            $b .= EscPosCommandBuilder::textLine($ticketNo);
+            $b .= EscPosCommandBuilder::doubleSize(false) . EscPosCommandBuilder::bold(false);
+        } else {
+            $b .= EscPosCommandBuilder::doubleHeight(true) . EscPosCommandBuilder::bold(true);
+            $b .= EscPosCommandBuilder::textWrap($ticketNo, $w);
+            $b .= EscPosCommandBuilder::doubleHeight(false) . EscPosCommandBuilder::bold(false);
+        }
         $dt = $order->order_datetime ?? $order->created_at;
         if ($dt) {
-            $b .= EscPosCommandBuilder::textLine($this->frenchDateTime($dt));
+            $b .= EscPosCommandBuilder::textWrap($this->frenchDateTime($dt), $w);
         }
         $b .= EscPosCommandBuilder::separator('-', $w);
 
-        // ── Bannière type de commande ───────────────────────────────────────
+        // ── Bannière type de commande (double HAUTEUR + gras, pas double largeur) ──
         $orderType = $this->orderTypeLabel($order);
         if ($orderType !== '') {
-            $b .= EscPosCommandBuilder::doubleSize(true) . EscPosCommandBuilder::bold(true);
-            $b .= EscPosCommandBuilder::textLine('*** ' . mb_strtoupper($orderType) . ' ***');
-            $b .= EscPosCommandBuilder::doubleSize(false) . EscPosCommandBuilder::bold(false);
+            $b .= EscPosCommandBuilder::doubleHeight(true) . EscPosCommandBuilder::bold(true);
+            $b .= EscPosCommandBuilder::textWrap('*** ' . mb_strtoupper($orderType) . ' ***', $w);
+            $b .= EscPosCommandBuilder::doubleHeight(false) . EscPosCommandBuilder::bold(false);
         }
         if ($counterCopy) {
             $b .= EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::textLine('*** COMMANDE BORNE - COPIE CAISSE ***') . EscPosCommandBuilder::bold(false);
@@ -111,9 +122,11 @@ final class OrderReceiptEscPosRenderer
             $b .= EscPosCommandBuilder::lineKV('LIVRAISON :', $this->money($delivery), $w);
         }
         $b .= EscPosCommandBuilder::separator('-', $w);
-        $b .= EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::doubleSize(true);
-        $b .= EscPosCommandBuilder::lineKV('MONTANT TOTAL:', $this->money((float) ($order->total ?? 0)), max(20, (int) floor($w / 2)));
-        $b .= EscPosCommandBuilder::doubleHeight(true) . EscPosCommandBuilder::bold(false); // retour corps grand (pas normal)
+        // [TICKET-WIDTHSAFE] Total en double HAUTEUR + gras (pas double largeur), montant
+        // atomique aligné à droite sur toute la largeur → jamais coupé.
+        $b .= EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::doubleHeight(true);
+        $b .= EscPosCommandBuilder::lineItemKV('MONTANT TOTAL', $this->money((float) ($order->total ?? 0)), $w);
+        $b .= EscPosCommandBuilder::bold(false);
         $b .= EscPosCommandBuilder::separator('-', $w);
 
         // ── TVA (par taux) ──────────────────────────────────────────────────
@@ -152,30 +165,30 @@ final class OrderReceiptEscPosRenderer
         // ── Pied : remerciement + mentions fiscales (centré) ────────────────
         $b .= EscPosCommandBuilder::separator('-', $w);
         $b .= EscPosCommandBuilder::alignCenter();
-        $b .= EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::textLine('BON APPÉTIT ET À BIENTÔT !') . EscPosCommandBuilder::bold(false);
+        $b .= EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::textWrap('BON APPÉTIT ET À BIENTÔT !', $w) . EscPosCommandBuilder::bold(false);
         $b .= EscPosCommandBuilder::doubleHeight(false); // mentions légales en taille normale (fine print)
         $b .= EscPosCommandBuilder::feed(1);
         if (! empty($head['fiscal_sequence_no'])) {
-            $b .= EscPosCommandBuilder::textLine('Ticket fiscal N ' . $head['fiscal_sequence_no']);
+            $b .= EscPosCommandBuilder::textWrap('Ticket fiscal N ' . $head['fiscal_sequence_no'], $w);
         }
         if (! empty($head['pos_vat_intra'])) {
-            $b .= EscPosCommandBuilder::textLine('TVA ' . $head['pos_vat_intra']);
+            $b .= EscPosCommandBuilder::textWrap('TVA ' . $head['pos_vat_intra'], $w);
         }
         if (! empty($head['pos_legal_footer'])) {
-            $b .= EscPosCommandBuilder::textLine((string) $head['pos_legal_footer']);
+            $b .= EscPosCommandBuilder::textWrap((string) $head['pos_legal_footer'], $w);
         }
-        $b .= EscPosCommandBuilder::textLine('Prix nets en euros TTC');
+        $b .= EscPosCommandBuilder::textWrap('Prix nets en euros TTC', $w);
 
         // ── Bloc opération (gauche, infos techniques discrètes) ─────────────
         $b .= EscPosCommandBuilder::separator('-', $w);
         $b .= EscPosCommandBuilder::alignLeft();
-        $b .= EscPosCommandBuilder::textLine('Operation : VENTE');
+        $b .= EscPosCommandBuilder::textWrap('Operation : VENTE', $w);
         if (! empty($head['operator_name'])) {
-            $b .= EscPosCommandBuilder::textLine('Caissier : ' . $head['operator_name']);
+            $b .= EscPosCommandBuilder::textWrap('Caissier : ' . $head['operator_name'], $w);
         }
-        $b .= EscPosCommandBuilder::textLine('Ticket : ' . $serial);
+        $b .= EscPosCommandBuilder::textWrap('Ticket : ' . $serial, $w);
         if ($dt) {
-            $b .= EscPosCommandBuilder::textLine($this->frenchDateTime($dt));
+            $b .= EscPosCommandBuilder::textWrap($this->frenchDateTime($dt), $w);
         }
         // [TICKET-FEED 2026-06-30] Queue plus longue à hauteur NORMALE avant la coupe
         // (le ticket tombait : feed(3) ≈ 10 mm ne dégageait pas la barre de coupe
@@ -205,13 +218,20 @@ final class OrderReceiptEscPosRenderer
         // [AUDIT F1] Same call number as the client ticket (queue, not the long serial),
         // big so the cook can match it when handing the order over.
         $callNo = (string) ($order->queue_number ?: ($order->order_serial_no ?? $order->id));
-        $b .= EscPosCommandBuilder::doubleSize(true) . EscPosCommandBuilder::bold(true);
-        $b .= EscPosCommandBuilder::textLine($callNo);
-        $b .= EscPosCommandBuilder::doubleSize(false) . EscPosCommandBuilder::bold(false);
+        // [TICKET-WIDTHSAFE] n° court → double taille ; sinon double hauteur (jamais déborder).
+        if (mb_strlen($callNo) <= max(1, (int) floor($w / 2))) {
+            $b .= EscPosCommandBuilder::doubleSize(true) . EscPosCommandBuilder::bold(true);
+            $b .= EscPosCommandBuilder::textLine($callNo);
+            $b .= EscPosCommandBuilder::doubleSize(false) . EscPosCommandBuilder::bold(false);
+        } else {
+            $b .= EscPosCommandBuilder::doubleHeight(true) . EscPosCommandBuilder::bold(true);
+            $b .= EscPosCommandBuilder::textWrap($callNo, $w);
+            $b .= EscPosCommandBuilder::doubleHeight(false) . EscPosCommandBuilder::bold(false);
+        }
         // [AUDIT F2] Order type — packaging/prep differs (sur place / à emporter / livraison).
         $orderType = $this->orderTypeLabel($order);
         if ($orderType !== '') {
-            $b .= EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::textLine('*** ' . mb_strtoupper($orderType) . ' ***') . EscPosCommandBuilder::bold(false);
+            $b .= EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::textWrap('*** ' . mb_strtoupper($orderType) . ' ***', $w) . EscPosCommandBuilder::bold(false);
         }
         $dt = $order->order_datetime ?? $order->created_at;
         if ($dt) {
@@ -260,15 +280,30 @@ final class OrderReceiptEscPosRenderer
         }
 
         foreach ($blocks as $blk) {
-            $b .= EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::textLine($blk['head']) . EscPosCommandBuilder::bold(false);
+            // [TICKET-WIDTHSAFE] La ligne symbolique (ex. « 1 x S | TERMINATOR | Mex Cordon |
+            // STO | AND ») dépasse 32 col sur une 58mm → on l'enroule proprement (indent) au
+            // lieu de laisser l'imprimante la couper au milieu d'un symbole.
+            $b .= EscPosCommandBuilder::bold(true);
+            foreach (EscPosCommandBuilder::wrapIndented($blk['head'], $w, '    ') as $headLine) {
+                $b .= EscPosCommandBuilder::textLine($headLine);
+            }
+            $b .= EscPosCommandBuilder::bold(false);
             if ($blk['menu'] !== null) {
-                $b .= EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::textLine('  ' . $blk['menu']) . EscPosCommandBuilder::bold(false);
+                $b .= EscPosCommandBuilder::bold(true);
+                foreach (EscPosCommandBuilder::wrapIndented($blk['menu'], $w - 2, '  ') as $menuLine) {
+                    $b .= EscPosCommandBuilder::textLine('  ' . $menuLine);
+                }
+                $b .= EscPosCommandBuilder::bold(false);
             }
             foreach ($blk['supps'] as $sup) {
-                $b .= EscPosCommandBuilder::textLine('  ' . $sup);
+                foreach (EscPosCommandBuilder::wrapIndented($sup, $w - 2, '  ') as $supLine) {
+                    $b .= EscPosCommandBuilder::textLine('  ' . $supLine);
+                }
             }
             foreach ($blk['notes'] as $n) {
-                $b .= EscPosCommandBuilder::textLine('  ** ' . $n);
+                foreach (EscPosCommandBuilder::wrapIndented('** ' . $n, $w - 2, '  ') as $noteLine) {
+                    $b .= EscPosCommandBuilder::textLine('  ' . $noteLine);
+                }
             }
             $b .= EscPosCommandBuilder::textLine('');
         }
@@ -354,7 +389,8 @@ final class OrderReceiptEscPosRenderer
     {
         $qty = (int) $line['qty'];
         $b = EscPosCommandBuilder::bold(true);
-        $b .= EscPosCommandBuilder::lineKV($qty . '  ' . $line['name'], $this->money((float) $line['total']), $w);
+        // [TICKET-WIDTHSAFE] nom long → enroulé sous le prix (jamais tronqué), prix atomique.
+        $b .= EscPosCommandBuilder::lineItemKV($qty . '  ' . $line['name'], $this->money((float) $line['total']), $w);
         $b .= EscPosCommandBuilder::bold(false);
         if ($qty > 1 && (float) $line['total'] > 0) {
             $unit = round((float) $line['total'] / $qty, 2);
@@ -383,13 +419,15 @@ final class OrderReceiptEscPosRenderer
             }
         }
         foreach ($paid as $e) {
-            $b .= EscPosCommandBuilder::lineKV('   + ' . $e['name'], $this->money((float) $e['amount']), $w);
+            $b .= EscPosCommandBuilder::lineItemKV('   + ' . $e['name'], $this->money((float) $e['amount']), $w);
         }
         foreach ($line['addons'] as $a) {
             if (($a['amount'] ?? 0) > 0) {
-                $b .= EscPosCommandBuilder::lineKV('   + ' . $a['name'], $this->money((float) $a['amount']), $w);
+                $b .= EscPosCommandBuilder::lineItemKV('   + ' . $a['name'], $this->money((float) $a['amount']), $w);
             } else {
-                $b .= EscPosCommandBuilder::textLine('   + ' . $a['name']);
+                foreach (EscPosCommandBuilder::wrapIndented('+ ' . $a['name'], $w, '   ') as $addonLine) {
+                    $b .= EscPosCommandBuilder::textLine($addonLine);
+                }
             }
         }
         // Note client assainie : on retire le nom-produit échoé, le blob de compo

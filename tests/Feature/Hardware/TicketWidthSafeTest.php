@@ -1,0 +1,167 @@
+<?php
+
+namespace Tests\Feature\Hardware;
+
+use App\Models\Branch;
+use App\Models\Order;
+use App\Models\OrderItem;
+use App\Services\Hardware\OrderReceiptEscPosRenderer;
+use Tests\TestCase;
+
+/**
+ * [TICKET-WIDTHSAFE 2026-07-01] GARDE ANTI-COUPURE.
+ *
+ * Plainte owner : « il met sept euros, il revient, 40 € » — l'imprimante 58mm (32 col)
+ * ré-enroulait les lignes de 48 col. Ce test simule le papier physique : il décode les
+ * octets ESC/POS EN TENANT COMPTE de la double-largeur (GS ! n) et vérifie qu'AUCUNE ligne
+ * ne dépasse la largeur → aucun « 7,40 € » coupé en deux. Verrouille client + cuisine à 32 ET 48.
+ */
+class TicketWidthSafeTest extends TestCase
+{
+    /** @return array<int,array{text:string,width:int}> lignes avec leur largeur EFFECTIVE (×2 si double-largeur) */
+    private function decodeLines(string $bytes): array
+    {
+        $lines = [];
+        $cur = '';
+        $wmul = 1;
+        $i = 0;
+        $len = strlen($bytes);
+        while ($i < $len) {
+            $c = $bytes[$i];
+            if ($c === "\x1D" && $i + 2 < $len && $bytes[$i + 1] === '!') { // GS ! n → taille
+                $n = ord($bytes[$i + 2]);
+                $wmul = (($n >> 4) & 0x07) + 1;
+                $i += 3;
+                continue;
+            }
+            if ($c === "\x1D" && $i + 1 < $len && $bytes[$i + 1] === 'V') { // coupe
+                if ($cur !== '') { $lines[] = [$cur, $wmul]; $cur = ''; }
+                $i += 2; if ($i < $len) $i++;
+                continue;
+            }
+            if ($c === "\x1B" && $i + 1 < $len && in_array($bytes[$i + 1], ['a', 'E', 't', 'd', '!'], true)) { $i += 3; continue; }
+            if ($c === "\x1B" && $i + 1 < $len && $bytes[$i + 1] === '@') { $i += 2; continue; }
+            if ($c === "\x0A") { $lines[] = [$cur, $wmul]; $cur = ''; $i++; continue; }
+            if (ord($c) < 0x20) { $i++; continue; }
+            $cur .= $c;
+            $i++;
+        }
+        if ($cur !== '') { $lines[] = [$cur, $wmul]; }
+
+        $out = [];
+        foreach ($lines as [$ln, $wm]) {
+            $txt = iconv('CP858', 'UTF-8//IGNORE', $ln);
+            $out[] = ['text' => $txt, 'width' => mb_strlen($txt) * $wm];
+        }
+
+        return $out;
+    }
+
+    private function assertNoLineExceeds(string $bytes, int $width, string $ctx): void
+    {
+        $bad = [];
+        foreach ($this->decodeLines($bytes) as $ln) {
+            if ($ln['width'] > $width) {
+                $bad[] = "[{$ln['width']}] « {$ln['text']} »";
+            }
+        }
+        $this->assertSame([], $bad, "$ctx : lignes qui dépassent $width col (seraient coupées) :\n  " . implode("\n  ", $bad));
+    }
+
+    private function makeOrder(array $snapshot, string $itemName, float $total = 8.90): Order
+    {
+        $branch = (new Branch)->forceFill([
+            'name' => 'Le Cayenne (principal)',
+            'address' => '437 Rue Élie Gruyelle, 62110 Hénin-Beaumont',
+            'phone' => '+33365678291',
+            'email' => 'contact@lecayenne.fr',
+        ]);
+        $oi = (new OrderItem)->forceFill([
+            'quantity' => 1,
+            'total_price' => $total,
+            'tax_rate' => 10,
+            'tax_name' => 'TVA',
+            'tax_type' => 1,
+            'tax_amount' => round($total - $total / 1.1, 2),
+            'composition_snapshot' => $snapshot,
+            'instruction' => '',
+        ]);
+        $oi->name = $itemName;
+        $order = (new Order)->forceFill([
+            'order_serial_no' => '0107265333',
+            'queue_number' => 'A0040',
+            'order_type' => \App\Enums\OrderType::TAKEAWAY,
+            'subtotal' => $total,
+            'total' => $total,
+            'total_tax' => round($total - $total / 1.1, 2),
+            'pos_payment_method' => \App\Enums\PosPaymentMethod::COUNTER_DEFERRED,
+            'pos_received_amount' => 0,
+            'payment_status' => \App\Enums\PaymentStatus::PENDING_COUNTER,
+            'order_datetime' => '2026-07-01 01:35:00',
+            'fiscal_sequence_no' => 2550,
+        ]);
+        $order->setRelation('orderItems', collect([$oi]));
+        $order->setRelation('branch', $branch);
+
+        return $order;
+    }
+
+    public static function orderProvider(): array
+    {
+        return [
+            'cayenne + menu' => [[
+                'lines' => [
+                    ['attribute_name' => 'Sauce (1ère Gratuite)', 'variation_name' => 'Algérienne'],
+                    ['attribute_name' => 'Type de Pain', 'variation_name' => 'Pain'],
+                ],
+                'extras' => [['extra_name' => 'Salade', 'line_total' => 0], ['extra_name' => 'Tomate', 'line_total' => 0], ['extra_name' => 'Oignon', 'line_total' => 0]],
+                'addons' => [['addon_name' => 'Menu (Frites + Boisson)', 'line_total' => 1.50, 'role' => 'menu_frites']],
+            ], 'Cayenne'],
+            'terminator 2 viandes + suppléments' => [[
+                'lines' => [
+                    ['attribute_name' => 'Viande 1', 'variation_name' => 'Mexicanos'],
+                    ['attribute_name' => 'Viande 2', 'variation_name' => 'Cordon Bleu'],
+                    ['attribute_name' => 'Sauce (1ère Gratuite)', 'variation_name' => 'Andalouse'],
+                    ['attribute_name' => 'Type de Pain', 'variation_name' => 'Pain'],
+                ],
+                'extras' => [['extra_name' => 'Salade', 'line_total' => 0], ['extra_name' => 'Tomate', 'line_total' => 0], ['extra_name' => 'Oignon', 'line_total' => 0], ['extra_name' => 'Champignons', 'line_total' => 0.90], ['extra_name' => 'Jambon', 'line_total' => 0.90]],
+                'addons' => [],
+            ], 'Terminator'],
+            'nom très long' => [[
+                'lines' => [], 'extras' => [], 'addons' => [],
+            ], 'Grande Frites Cheddar + Oignons frits'],
+        ];
+    }
+
+    /** @dataProvider orderProvider */
+    public function test_client_ticket_never_exceeds_width(array $snapshot, string $name): void
+    {
+        $order = $this->makeOrder($snapshot, $name);
+        $renderer = new OrderReceiptEscPosRenderer;
+        foreach ([32, 48] as $w) {
+            $bytes = $renderer->renderClientTicket($order, ['width_chars' => $w]);
+            $this->assertNoLineExceeds($bytes, $w, "CLIENT ".$name." @".$w);
+        }
+    }
+
+    /** @dataProvider orderProvider */
+    public function test_kitchen_ticket_never_exceeds_width(array $snapshot, string $name): void
+    {
+        $order = $this->makeOrder($snapshot, $name);
+        $renderer = new OrderReceiptEscPosRenderer;
+        foreach ([32, 48] as $w) {
+            $bytes = $renderer->renderKitchenTicket($order, ['width_chars' => $w]);
+            $this->assertNoLineExceeds($bytes, $w, "CUISINE ".$name." @".$w);
+        }
+    }
+
+    public function test_price_stays_atomic_on_one_line(): void
+    {
+        $order = $this->makeOrder(self::orderProvider()['cayenne + menu'][0], 'Cayenne');
+        $bytes = (new OrderReceiptEscPosRenderer)->renderClientTicket($order, ['width_chars' => 32]);
+        $decoded = iconv('CP858', 'UTF-8//IGNORE', preg_replace('/[\x00-\x09\x0B-\x1F]/', '', $bytes));
+        // Le montant total « 8,90 € » ne doit JAMAIS être scindé (« 8,\n90 » ou « 8,90\n€ »).
+        $this->assertStringContainsString('8,90 €', $decoded, 'le prix doit rester atomique');
+        $this->assertDoesNotMatchRegularExpression('/\d,\s*\n\s*\d{2}/', $decoded, 'aucun prix coupé après la virgule');
+    }
+}

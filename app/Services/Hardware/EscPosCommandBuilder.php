@@ -198,6 +198,116 @@ final class EscPosCommandBuilder
         return $lines;
     }
 
+    /**
+     * [TICKET-WIDTHSAFE 2026-07-01] Word-wrap `text` to width (no indent), one textLine per
+     * wrapped line. Combine with alignCenter() for centered multi-line headers/footers qui
+     * ne débordent JAMAIS le papier (évite que l'imprimante ré-enroule « 7,40 € » → « 7,\n40 € »).
+     */
+    public static function textWrap(string $text, int $widthChars = 48): string
+    {
+        $out = '';
+        foreach (self::wordWrapLines($text, $widthChars) as $line) {
+            $out .= $line . self::LF;
+        }
+
+        return $out;
+    }
+
+    /**
+     * [TICKET-WIDTHSAFE 2026-07-01] Ligne article : « qty name » à gauche + montant à DROITE,
+     * le montant restant TOUJOURS ATOMIQUE (jamais coupé) sur la 1re ligne. Si le nom est trop
+     * long, il s'enroule sur des lignes indentées EN DESSOUS (jamais tronqué). Chaque ligne
+     * émise fait ≤ widthChars caractères.
+     */
+    public static function lineItemKV(string $left, string $value, int $widthChars = 48, string $indent = '   '): string
+    {
+        $w = max(8, $widthChars);
+        $value = self::sanitize($value);
+        $left = self::sanitize($left);
+        $vlen = mb_strlen($value);
+        $firstAvail = max(1, $w - $vlen - 1);
+        $contAvail = max(1, $w - mb_strlen($indent));
+
+        $segments = [];
+        $cur = '';
+        $avail = $firstAvail;
+        $indentFor = '';
+        foreach (explode(' ', trim($left)) as $word) {
+            while (mb_strlen($word) > $avail) {
+                if ($cur !== '') {
+                    $segments[] = [$indentFor, $cur];
+                    $cur = '';
+                }
+                $indentFor = empty($segments) ? '' : $indent;
+                $avail = empty($segments) ? $firstAvail : $contAvail;
+                $take = $avail;
+                $segments[] = [$indentFor, mb_substr($word, 0, $take)];
+                $word = mb_substr($word, $take);
+                $indentFor = $indent;
+                $avail = $contAvail;
+            }
+            $cand = $cur === '' ? $word : $cur . ' ' . $word;
+            if (mb_strlen($cand) > $avail) {
+                $segments[] = [$indentFor, $cur];
+                $cur = $word;
+                $indentFor = $indent;
+                $avail = $contAvail;
+            } else {
+                $cur = $cand;
+            }
+        }
+        if ($cur !== '' || empty($segments)) {
+            $segments[] = [$indentFor, $cur];
+        }
+
+        $out = '';
+        foreach ($segments as $i => [$ind, $seg]) {
+            $text = $ind . $seg;
+            if ($i === 0) {
+                $pad = max(1, $w - mb_strlen($text) - $vlen);
+                $out .= $text . str_repeat(' ', $pad) . $value . self::LF;
+            } else {
+                $out .= $text . self::LF;
+            }
+        }
+
+        return $out;
+    }
+
+    /** @return array<int,string> Pur word-wrap à `widthChars` (coupe dure les mots trop longs). */
+    private static function wordWrapLines(string $text, int $widthChars): array
+    {
+        $text = trim(self::sanitize($text));
+        if ($text === '') {
+            return [];
+        }
+        $w = max(1, $widthChars);
+        $lines = [];
+        $cur = '';
+        foreach (explode(' ', $text) as $word) {
+            while (mb_strlen($word) > $w) {
+                if ($cur !== '') {
+                    $lines[] = $cur;
+                    $cur = '';
+                }
+                $lines[] = mb_substr($word, 0, $w);
+                $word = mb_substr($word, $w);
+            }
+            $cand = $cur === '' ? $word : $cur . ' ' . $word;
+            if (mb_strlen($cand) > $w) {
+                $lines[] = $cur;
+                $cur = $word;
+            } else {
+                $cur = $cand;
+            }
+        }
+        if ($cur !== '') {
+            $lines[] = $cur;
+        }
+
+        return $lines;
+    }
+
     private static function sanitize(string $text): string
     {
         return preg_replace('/[\x00-\x08\x0B-\x1F\x7F]/u', '', $text) ?? '';
