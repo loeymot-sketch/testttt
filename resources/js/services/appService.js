@@ -79,7 +79,13 @@ export default {
     // NBSP U+202F). Signature is unchanged: (amount, decimal, currency, position).
     currencyFormat(amount, decimal, currency, position) {
         const NBSP = " ";
-        const digits = Number.isFinite(decimal) ? decimal : 0;
+        // [PRIX-AFFICHÉ-DÉCIMALES 2026-07-01] Le réglage `site_digit_after_decimal_point`
+        // arrive en CHAÎNE ('2') depuis l'API settings. `Number.isFinite('2')` === false
+        // → l'ancien code retombait sur 0 décimale → TOUS les prix caisse s'affichaient
+        // arrondis à l'entier (« 9 € » au lieu de « 9,40 € »). On coerce en nombre ;
+        // défaut 2 (EUR) si absent/invalide. Un 0 numérique explicite reste respecté.
+        const parsedDecimal = typeof decimal === "number" ? decimal : parseInt(decimal, 10);
+        const digits = Number.isFinite(parsedDecimal) ? parsedDecimal : 2;
         const num = parseFloat(amount);
         const safe = Number.isFinite(num) ? num : 0;
 

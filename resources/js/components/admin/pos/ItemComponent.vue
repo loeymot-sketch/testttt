@@ -710,7 +710,16 @@ export default {
         // coché dans temp.item_extras via setExtraQuantity (SSOT) -> suppléments facturés.
         onWizardBridgeExtra: function (extra, event) {
             const checked = !!(event && event.target && event.target.checked);
-            this.setExtraQuantity(extra, checked ? 1 : 0);
+            // [VIANDE-SUPPL-CHARGE 2026-07-01 — LOCK_POS_WIZARD_VIANDE_SUPPL_CHARGE_2026-07-01.md]
+            // pos-wizard.js peut poser data-wizard-qty sur la checkbox de l'extra
+            // « Viande supplémentaire » (N viandes en plus × 2,50€). Sinon binaire (1)
+            // — comportement inchangé pour Cheddar & co.
+            let quantity = checked ? 1 : 0;
+            if (checked && event.target && typeof event.target.getAttribute === 'function') {
+                const q = parseInt(event.target.getAttribute('data-wizard-qty'), 10);
+                if (Number.isFinite(q) && q > 0) quantity = q;
+            }
+            this.setExtraQuantity(extra, quantity);
         },
         incrementVariation: function (attribute, variation) {
             if (this.isAttributeAtMax(attribute)) return;

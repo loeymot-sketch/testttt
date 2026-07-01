@@ -2321,6 +2321,21 @@
             }
         }
 
+        // [VIANDE-SUPPL-CHARGE 2026-07-01 — LOCK_POS_WIZARD_VIANDE_SUPPL_CHARGE_2026-07-01.md]
+        // Les viandes supplémentaires sont désormais facturées (2,50€/viande) et
+        // incluses dans le total "running" (calculateRunningTotal). Le récap les
+        // omettait → total récap inférieur à l'encaissement de 2,50€×N. On les
+        // ajoute ici pour que récap = running = encaissé.
+        if (selections.viandeSupplItems) {
+            var recapViandeSupplN = 0;
+            Object.keys(selections.viandeSupplItems).forEach(function (k) {
+                recapViandeSupplN += selections.viandeSupplItems[k] || 0;
+            });
+            if (recapViandeSupplN > 0) {
+                totalExtra += recapViandeSupplN * VIANDE_SUPPL_PRICE;
+            }
+        }
+
         // Total
         var unitPrice = basePrice + totalExtra;
         var total = (unitPrice + addonTotal) * itemQuantity;
@@ -3880,17 +3895,31 @@
             allSelectedExtras[selections.accompagnement] = true;
         }
 
-        // [X6 FIX] Include viandeSupplItems as extras so they appear in Vue item_extras.
-        // Each key is 'v_<id>'; the count is stored but extras are binary (present/absent).
-        // We mark each extra viande id as selected once — quantity is reflected in instruction.
+        // [VIANDE-SUPPL-CHARGE 2026-07-01 — LOCK_POS_WIZARD_VIANDE_SUPPL_CHARGE_2026-07-01.md]
+        // Les viandes EN PLUS ("viande supplémentaire") sont un EXTRA FACTURÉ
+        // (item_extras "Viande supplémentaire", 2,50€ en base), PAS des variations
+        // gratuites. L'ancien [X6 FIX] marquait l'id de VARIATION (introuvable
+        // parmi les checkboxes du pont, indexées par id d'item_extra) → rien coché
+        // → backend facturait 0€ alors que l'écran affichait +2,50€ (fantôme).
+        // On sérialise désormais vers l'extra "Viande supplémentaire" avec la
+        // quantité totale, exposée via data-wizard-qty (lue par ItemComponent
+        // onWizardBridgeExtra → setExtraQuantity(N)). Décision owner 2026-07-01 :
+        // facturer 2,50€/viande (affichage = encaissement).
+        var viandeSupplExtraId = null;
+        var viandeSupplQty = 0;
         if (selections.viandeSupplItems) {
             Object.keys(selections.viandeSupplItems).forEach(function (key) {
-                var sc = selections.viandeSupplItems[key] || 0;
-                if (sc > 0) {
-                    var match = key.match(/_(\d+)$/);
-                    if (match) allSelectedExtras[parseInt(match[1])] = true;
-                }
+                viandeSupplQty += selections.viandeSupplItems[key] || 0;
             });
+            if (viandeSupplQty > 0 && lastItemData && Array.isArray(lastItemData.extras)) {
+                var vsExtra = lastItemData.extras.find(function (e) {
+                    return e && /viande\s*suppl/i.test(e.name || '');
+                });
+                if (vsExtra) {
+                    viandeSupplExtraId = parseInt(vsExtra.id);
+                    allSelectedExtras[viandeSupplExtraId] = true;
+                }
+            }
         }
 
         // Include extra sauces found in 2b
@@ -3901,6 +3930,12 @@
         extraCheckboxes.forEach(function (cb) {
             var cbId = parseInt(cb.value);
             var shouldBeChecked = !!allSelectedExtras[cbId];
+            // [VIANDE-SUPPL-CHARGE 2026-07-01] transmet la quantité de viandes
+            // supplémentaires sur la checkbox de l'extra "Viande supplémentaire"
+            // → ItemComponent.onWizardBridgeExtra applique setExtraQuantity(N).
+            if (viandeSupplExtraId !== null && cbId === viandeSupplExtraId) {
+                cb.setAttribute('data-wizard-qty', String(viandeSupplQty));
+            }
             if (cb.checked !== shouldBeChecked) {
                 cb.click();
             }
