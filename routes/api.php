@@ -817,6 +817,9 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             // result set is unchanged.
             $query = \App\Models\Order::with(['orderItems.orderItem'])
                 ->where('payment_status', \App\Enums\PaymentStatus::PENDING_COUNTER)
+                // [ENCAISSEMENT-ROBUSTE 2026-07-01] Une commande ANNULÉE ne doit jamais rester
+                // dans la file d'encaissement (sinon « fantôme » qui 422 à l'encaissement).
+                ->where('status', '!=', \App\Enums\OrderStatus::CANCELED)
                 ->where(function ($q) {
                     $q->where(function ($k) {
                         $k->where('source_surface', 'kiosk')
@@ -824,6 +827,12 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
                     })->orWhere(function ($p) {
                         $p->where('source_surface', 'pos')
                           ->where('pos_payment_method', \App\Enums\PosPaymentMethod::COUNTER_DEFERRED);
+                    })->orWhere(function ($n) {
+                        // [ENCAISSEMENT-ROBUSTE 2026-07-01] Filet anti-NULL : une commande borne
+                        // PENDING_COUNTER dont le tag source_surface manque (donnée héritée) resterait
+                        // INVISIBLE en caisse donc INENCAISSABLE. On la rattrape par le type kiosk/emporter.
+                        $n->whereNull('source_surface')
+                          ->whereIn('order_type', [\App\Enums\OrderType::KIOSK, \App\Enums\OrderType::TAKEAWAY]);
                     });
                 })
                 ->orderBy('created_at');
