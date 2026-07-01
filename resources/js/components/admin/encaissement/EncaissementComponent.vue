@@ -71,6 +71,9 @@ import BreadcrumbComponent from "../components/BreadcrumbComponent";
 import PosCounterCollectModal from "../pos/PosCounterCollectModal.vue";
 import appService from "../../../services/appService";
 import alertService from "../../../services/alertService";
+import axios from "axios";
+// [ENCAISSEMENT-TICKET 2026-07-01] Impression du ticket client au pont ESC/POS à l'encaissement.
+import { printEscPosViaCaisseBridge } from "../../../helpers/posLocalPrinter";
 import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
 import { adminPriceMixin } from "../../../helpers/formatPrice";
 import { onEvents } from "../../../services/eventContract";
@@ -185,10 +188,21 @@ export default {
             // PosCounterCollectModal reads order.total — map the amount due onto it.
             this.encaisseOrder = { ...order, total: amount };
         },
-        onEncaisseConfirmed() {
+        async onEncaisseConfirmed(payload) {
             this.encaisseOrder = null;
             alertService.success(this.$t('label.encaisser_success', { order: '' }));
             this.fetchPending();
+            // [ENCAISSEMENT-TICKET 2026-07-01] Imprimer le TICKET CLIENT via le pont ESC/POS
+            // (octets serveur SSOT = même rendu que l'aperçu). Best-effort — page unifiée caisse+borne.
+            const orderId = payload?.orderId ?? payload?.order_id ?? null;
+            if (!orderId) return;
+            try {
+                const res = await axios.get(`admin/pos/orders/${orderId}/escpos`, { params: { ticket: 'client' } });
+                const b64 = res?.data?.escpos_b64;
+                if (b64) {
+                    await printEscPosViaCaisseBridge(b64);
+                }
+            } catch (_) { /* pont indisponible : ignoré (l'encaissement a réussi) */ }
         },
     },
 };
