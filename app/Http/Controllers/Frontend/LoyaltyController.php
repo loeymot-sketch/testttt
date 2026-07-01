@@ -130,14 +130,17 @@ class LoyaltyController extends Controller
             if ($email && filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 $existingByEmail = User::where('email', $email)->first();
                 if ($existingByEmail && (!$user || $existingByEmail->id !== $user->id)) {
-                    // Email belongs to a different account — suggest using existing loyalty account
+                    // Email belongs to a different account.
+                    // [SEC-LOYALTY-LEAK 2026-07-02] Endpoint PUBLIC (api/frontend/loyalty/register) :
+                    // NE JAMAIS renvoyer le loyalty_code + phone du titulaire de cet email (fuite PII
+                    // par simple énumération d'emails). On confirme seulement l'existence + un conseil
+                    // neutre ; le titulaire légitime récupère son compte via le lookup par SON code /
+                    // téléphone, jamais en connaissant juste un email tiers.
                     return response()->json([
                         'status' => false,
                         'code' => 'EMAIL_EXISTS',
                         'message' => 'Cet email est déjà associé à un compte fidélité.',
                         'data' => [
-                            'existing_loyalty_code' => $existingByEmail->loyalty_code,
-                            'existing_phone' => $existingByEmail->phone,
                             'suggestion' => 'Utilisez ce compte existant ou entrez un autre email.'
                         ]
                     ], 409);

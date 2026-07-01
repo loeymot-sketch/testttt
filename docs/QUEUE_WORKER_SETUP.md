@@ -58,7 +58,7 @@ DB_QUEUE_TABLE=jobs
 Test local (terminal) :
 
 ```bash
-php artisan queue:work --sleep=3 --tries=3 --timeout=30
+php artisan queue:work --queue=high,default --sleep=3 --tries=3 --timeout=30
 ```
 
 Options :
@@ -90,7 +90,7 @@ Créer `/etc/supervisor/conf.d/foodking-worker.conf` :
 ```ini
 [program:foodking-worker]
 process_name=%(program_name)s_%(process_num)02d
-command=php /var/www/foodking/artisan queue:work --sleep=3 --tries=3 --timeout=30 --max-jobs=1000
+command=php /var/www/foodking/artisan queue:work --queue=high,default --sleep=3 --tries=3 --timeout=30 --max-jobs=1000
 autostart=true
 autorestart=true
 stopasgroup=true

@@ -77,7 +77,7 @@ Laravel gère les tâches asynchrones (envoyer des notifications Firebase FCM à
 ```ini
 [program:foodking-worker]
 process_name=%(program_name)s_%(process_num)02d
-command=php /var/www/foodking-web/artisan queue:work --sleep=3 --tries=3 --max-time=3600
+command=php /var/www/foodking-web/artisan queue:work --queue=high,default --sleep=3 --tries=3 --max-time=3600
 autostart=true
 autorestart=true
 stopasgroup=true

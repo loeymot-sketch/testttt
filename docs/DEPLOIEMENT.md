@@ -610,7 +610,7 @@ php artisan event:cache
 php artisan down --message="Mise à jour en cours" --retry=60
 
 # Voir les tâches en queue
-php artisan queue:work --daemon --sleep=3 --tries=3
+php artisan queue:work --queue=high,default --daemon --sleep=3 --tries=3
 ```
 
 ### B. Contact d'Urgence
