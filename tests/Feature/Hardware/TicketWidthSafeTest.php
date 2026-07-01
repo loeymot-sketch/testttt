@@ -68,7 +68,7 @@ class TicketWidthSafeTest extends TestCase
         $this->assertSame([], $bad, "$ctx : lignes qui dépassent $width col (seraient coupées) :\n  " . implode("\n  ", $bad));
     }
 
-    private function makeOrder(array $snapshot, string $itemName, float $total = 8.90): Order
+    private function makeOrder(array $snapshot, string $itemName, float $total = 8.90, string $instruction = ''): Order
     {
         $branch = (new Branch)->forceFill([
             'name' => 'Le Cayenne (principal)',
@@ -84,7 +84,7 @@ class TicketWidthSafeTest extends TestCase
             'tax_type' => 1,
             'tax_amount' => round($total - $total / 1.1, 2),
             'composition_snapshot' => $snapshot,
-            'instruction' => '',
+            'instruction' => $instruction,
         ]);
         $oi->name = $itemName;
         $order = (new Order)->forceFill([
@@ -153,6 +153,35 @@ class TicketWidthSafeTest extends TestCase
             $bytes = $renderer->renderKitchenTicket($order, ['width_chars' => $w]);
             $this->assertNoLineExceeds($bytes, $w, "CUISINE ".$name." @".$w);
         }
+    }
+
+    public function test_long_client_note_wraps_within_width(): void
+    {
+        // [P1 audit] la note client libre (longue) débordait — doit s'enrouler comme la cuisine.
+        $order = $this->makeOrder(
+            ['lines' => [['attribute_name' => 'Sauce (1ère Gratuite)', 'variation_name' => 'Algérienne']], 'extras' => [], 'addons' => []],
+            'Tacos',
+            8.90,
+            'Sans oignon, bien cuit, sauce à part et surtout pas de sel du tout merci beaucoup'
+        );
+        foreach ([32, 48] as $w) {
+            $bytes = (new OrderReceiptEscPosRenderer)->renderClientTicket($order, ['width_chars' => $w]);
+            $this->assertNoLineExceeds($bytes, $w, 'CLIENT note longue @' . $w);
+        }
+    }
+
+    public function test_ligature_oeuf_keeps_width_and_reads_oeuf(): void
+    {
+        // [P2 audit] « Œuf » : mb_strlen=3 mais imprime « Oeuf »=4 → largeur faussée + « UF » bizarre.
+        // Normalisation Œ→Oe en amont : largeur juste ET « + Oeuf » lisible.
+        $order = $this->makeOrder(
+            ['lines' => [], 'extras' => [['extra_name' => 'Œuf', 'line_total' => 0.90]], 'addons' => []],
+            'Tacos'
+        );
+        $bytes = (new OrderReceiptEscPosRenderer)->renderClientTicket($order, ['width_chars' => 32]);
+        $this->assertNoLineExceeds($bytes, 32, 'CLIENT Œuf @32');
+        $decoded = iconv('CP858', 'UTF-8//IGNORE', preg_replace('/[\x00-\x09\x0B-\x1F]/', '', $bytes));
+        $this->assertStringContainsString('Oeuf', $decoded, '« Œuf » doit s\'imprimer « Oeuf »');
     }
 
     public function test_price_stays_atomic_on_one_line(): void

@@ -434,7 +434,11 @@ final class OrderReceiptEscPosRenderer
         // (déjà affiché) et les lignes menu/sauce-frites (le menu est sa propre ligne).
         $note = $this->symbolic->cleanInstruction((string) ($line['instruction'] ?? ''), (string) $line['name']);
         foreach (array_filter(explode("\n", $note)) as $noteLine) {
-            $b .= EscPosCommandBuilder::textLine('   ** ' . trim($noteLine));
+            // [TICKET-WIDTHSAFE 2026-07-01] Wrap la note client (miroir de la cuisine) — une note
+            // libre longue débordait la largeur (asymétrie client/cuisine relevée à l'audit).
+            foreach (EscPosCommandBuilder::wrapIndented('** ' . trim($noteLine), $w - 3, '   ') as $wrapped) {
+                $b .= EscPosCommandBuilder::textLine('   ' . $wrapped);
+            }
         }
 
         return $b;

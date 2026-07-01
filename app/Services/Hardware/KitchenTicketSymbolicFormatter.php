@@ -57,6 +57,10 @@ final class KitchenTicketSymbolicFormatter
     private function norm(?string $s): string
     {
         $s = (string) $s;
+        // [TICKET-WIDTHSAFE 2026-07-01] Pré-mapper les ligatures AVANT iconv : selon la libc,
+        // iconv//IGNORE peut SUPPRIMER « Œ » → « Œuf » devient « uf » → symbole « UF » (bizarre,
+        // vu par l'owner). En forçant « Œ→Oe », « Œuf » → « oeuf » → symbole clair « OEU ».
+        $s = strtr($s, ['Œ' => 'Oe', 'œ' => 'oe', 'Æ' => 'Ae', 'æ' => 'ae']);
         $ascii = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $s);
         if ($ascii !== false) {
             $s = $ascii;

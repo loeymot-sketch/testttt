@@ -310,6 +310,12 @@ final class EscPosCommandBuilder
 
     private static function sanitize(string $text): string
     {
+        // [TICKET-WIDTHSAFE 2026-07-01] Normaliser les ligatures AVANT la mise en page :
+        // « Œuf » compte 3 caractères en mb_strlen mais s'imprime « Oeuf » (4) → la largeur
+        // calculée était fausse d'1 colonne (débordement / « € » coupé). En pré-mappant ici,
+        // mb_strlen == largeur imprimée. (encodeForPrinter garde le même strtr, idempotent.)
+        $text = strtr($text, ['Œ' => 'Oe', 'œ' => 'oe', 'Æ' => 'Ae', 'æ' => 'ae']);
+
         return preg_replace('/[\x00-\x08\x0B-\x1F\x7F]/u', '', $text) ?? '';
     }
 

@@ -25,6 +25,10 @@ function normalize(s) {
         .normalize('NFD')
         .replace(/[̀-ͯ]/g, '')
         .toLowerCase()
+        // [TICKET-WIDTHSAFE 2026-07-01] Parité PHP : NFD ne décompose pas les ligatures →
+        // « Œuf » → « oeuf » (symbole « OEU »), jamais « ŒUF »/« UF ».
+        .replace(/œ/g, 'oe')
+        .replace(/æ/g, 'ae')
         .trim();
 }
 
