@@ -52,9 +52,13 @@
          (kds-card--ready opacity:0.7) with the elapsed timer still ticking, occupying
          a slot. Now they leave the active FIFO entirely and surface in a compact
          strip at the bottom for ~last 4 served, with elapsed-since-served. -->
+    <!-- [KDS-SHOW-ALL 2026-07-01] Owner-gate levée : afficher TOUTES les commandes actives
+         (plus de plafond 8 qui cachait les 9+). Grille multi-colonnes qui DÉFILE ; chaque
+         carte prend la hauteur de son contenu → tous les produits d'une commande sont
+         visibles, une grosse commande prend plus de hauteur. Ordre FIFO préservé. -->
     <div v-else class="kds-v2__grid">
       <KdsOrderCard
-        v-for="(o, idx) in activeOrders.slice(0, 8)"
+        v-for="(o, idx) in activeOrders"
         :key="o.id"
         :order="o"
         :now="now"
@@ -62,32 +66,6 @@
         :recall-active="isRecallActive(o)"
         @ready="onCtaTap(o.id, o.queue_number)"
       />
-      <!-- placeholders to keep grid stable when <8 -->
-      <div
-        v-for="i in Math.max(0, 8 - activeOrders.length)"
-        :key="`ph-${i}`"
-        class="kds-v2__placeholder"
-      ></div>
-    </div>
-
-    <!-- [Wave N M-KDS-6 F1 P0 2026-05-24] Overflow chip — chef visibility safety net.
-         Wave M empirical finding: KdsV2Grid:55 slice(0,8) silently dropped orders 9+
-         from the rendered FIFO grid. No chip, no count, no [I]–… keyboard shortcut
-         beyond [H]. Owner verbatim mandate « chef qui pourrait sortir une commande
-         incomplète » = operational safety risk: if chef thinks the board fully shows
-         the queue, orders 9+ silently age past SLA. This chip is the independent
-         operational safety net BEFORE the full S3 PROPOSAL Option A/B/C layout
-         redesign (owner-gate). Trigger = activeOrders.length > 8 (the partition the
-         grid actually slices — NOT total feed length, which would falsely count
-         recently-served PREPARED orders in the bottom strip). -->
-    <div
-      v-if="overflowActiveCount > 0"
-      class="kds-overflow-chip"
-      role="status"
-      aria-live="polite"
-    >
-      <span class="kds-overflow-chip__icon" aria-hidden="true">!</span>
-      <span class="kds-overflow-chip__text">+{{ overflowActiveCount }} {{ $t('label.kds_orders_waiting_more') }}</span>
     </div>
 
     <!-- [Wave U 2026-05-21] Récemment servies — compact archive strip.
@@ -257,13 +235,13 @@ export default {
             });
             return prepared.slice(0, 4);
         },
-        // [Wave N M-KDS-6 F1 P0 2026-05-24] Overflow count for the chef-visibility
-        // safety chip. Counts ACTIVE orders (ACCEPT|PREPARING) beyond the 8 slots
-        // the FIFO grid actually renders — recentlyServed (PREPARED) orders are
-        // NOT counted (they live in the bottom strip and are not "waiting"). Stays
-        // 0 when the queue fits the grid (overflow chip stays hidden via v-if).
+        // [KDS-SHOW-ALL 2026-07-01] La grille affiche désormais TOUTES les commandes
+        // actives (flux défilable, plus de plafond 8) → il n'y a plus de commande cachée,
+        // donc plus de « backlog invisible » : le compteur d'overflow est structurellement 0
+        // (la pastille de sécurité et le gutter réservé sont neutralisés). L'ancien filet de
+        // sécurité (chip +N) est remplacé par la garantie « aucune commande n'est jamais masquée ».
         overflowActiveCount() {
-            return Math.max(0, this.activeOrders.length - 8);
+            return 0;
         },
     },
     watch: {
@@ -424,20 +402,25 @@ export default {
 }
 
 .kds-v2__grid {
+    /* [KDS-SHOW-ALL 2026-07-01] Flux multi-colonnes DÉFILABLE : plus de grille 4×2 figée.
+       grid-auto-rows:min-content + align-items:start → chaque carte prend la hauteur de son
+       contenu (tous les produits visibles), une grosse commande occupe plus de hauteur.
+       overflow-y:auto → si la file dépasse l'écran, on défile au lieu de cacher les 9+. */
     flex: 1;
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    grid-template-rows: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: min-content;
+    align-items: start;
     gap: 16px;
     padding: 16px;
     min-height: 0;
+    overflow-y: auto;
 }
 
-/* 4K: 5 cols × 2 rows, more breathing room */
+/* 4K: 5 colonnes, même flux défilable */
 @media (min-width: 2560px) {
     .kds-v2__grid {
         grid-template-columns: repeat(5, minmax(0, 1fr));
-        grid-template-rows: repeat(2, minmax(0, 1fr));
     }
 }
 
