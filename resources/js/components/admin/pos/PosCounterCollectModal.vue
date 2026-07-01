@@ -94,14 +94,16 @@
           </nav>
         </div>
 
-        <!-- Cash sub-section: received amount input + numpad + rendu calc -->
+        <!-- [MONTANT-CARTE 2026-07-01] Saisie du montant : ESPÈCES (montant reçu + rendu) ET
+             CARTE (montant carte tapé manuellement, enregistré pour la compta : X carte / X espèces).
+             Le TPE est manuel — la caisse ne fait qu'enregistrer le montant en détail. -->
         <div
-          v-if="selectedMode === 'CASH'"
+          v-if="selectedMode === 'CASH' || selectedMode === 'CARD'"
           class="cc-cash-section"
           data-testid="pos-counter-collect-cash-block"
         >
           <label for="ccReceivedInput" class="cc-input-label">
-            {{ $t('label.received_amount') }}
+            {{ amountLabel }}
           </label>
           <!-- [PAVE-NUMERIQUE 2026-07-01] readonly + inputmode="none" : sur écran tactile
                Windows, toucher le champ n'ouvre PLUS le clavier Windows. La saisie se fait
@@ -149,7 +151,7 @@
           </p>
         </div>
 
-        <!-- Card / Mobile / Ticket — single-tap confirm (no extra input) -->
+        <!-- Mobile / Ticket — validation directe (pas de saisie montant) -->
         <div
           v-else
           class="cc-mode-info"
@@ -281,16 +283,21 @@ export default {
     },
     canConfirm() {
       if (!this.order) return false;
-      if (this.selectedMode === 'CASH') {
-        // For CASH: require received >= total. Backend
-        // (PaymentService::confirmCounterPayment L235-238) enforces
-        // this server-side; surface it client-side to avoid the 422
-        // round-trip + confusing toast.
+      // [MONTANT-CARTE 2026-07-01] CASH ET CARTE exigent un montant saisi >= total.
+      // CASH : montant reçu (rendu calculé). CARTE : montant tapé manuellement (TPE manuel),
+      // prérempli = total, enregistré pour la compta (X carte / X espèces).
+      if (this.selectedMode === 'CASH' || this.selectedMode === 'CARD') {
         return this.cashReceivedNumber >= this.orderTotal && this.orderTotal > 0;
       }
-      // For CARD / MOBILE / TICKET: backend allows null received (L247-249);
-      // a single tap on the mode confirms the collection.
+      // MOBILE / TICKET : validation directe (backend accepte received null).
       return this.orderTotal > 0;
+    },
+    amountLabel() {
+      if (this.selectedMode === 'CARD') {
+        const t = this.$t('label.card_amount');
+        return (t && t !== 'label.card_amount') ? t : 'Montant carte';
+      }
+      return this.$t('label.received_amount');
     },
     modeHint() {
       const map = {
@@ -357,9 +364,9 @@ export default {
     setMode(modeId) {
       if (this.submitting) return;
       this.selectedMode = modeId;
-      // When switching back to CASH, re-pre-fill the received field if
-      // the cashier had emptied it via the numpad C key.
-      if (modeId === 'CASH' && (this.cashReceivedRaw === '' || Number(String(this.cashReceivedRaw).replace(',', '.')) <= 0)) {
+      // [MONTANT-CARTE 2026-07-01] Préremplir le montant (= total) pour CASH ET CARTE quand le
+      // champ est vide (le caissier a vidé via C, ou bascule de mode). CARTE = montant tapé pour la compta.
+      if ((modeId === 'CASH' || modeId === 'CARD') && (this.cashReceivedRaw === '' || Number(String(this.cashReceivedRaw).replace(',', '.')) <= 0)) {
         // [GOAL-D2 2026-05-23] FR decimal pre-fill (see watcher comment).
         this.cashReceivedRaw = String(this.orderTotal.toFixed(2)).replace('.', ',');
         this.cashFieldPristine = true;
@@ -447,9 +454,11 @@ export default {
       if (!modeInt) return;
       const orderId = this.order.id;
       const total = this.orderTotal;
-      // CASH path sends explicit received (backend enforces >= total).
-      // Non-CASH path sends null (backend allows null for non-cash modes).
-      const received = this.selectedMode === 'CASH' ? this.cashReceivedNumber : null;
+      // [MONTANT-CARTE 2026-07-01] CASH ET CARTE envoient le montant saisi (CARTE = montant tapé
+      // manuellement, enregistré pour la compta). MOBILE/TICKET envoient null (validation directe).
+      const received = (this.selectedMode === 'CASH' || this.selectedMode === 'CARD')
+        ? this.cashReceivedNumber
+        : null;
 
       this.submitting = true;
       try {
