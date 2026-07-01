@@ -103,10 +103,16 @@
           <label for="ccReceivedInput" class="cc-input-label">
             {{ $t('label.received_amount') }}
           </label>
+          <!-- [PAVE-NUMERIQUE 2026-07-01] readonly + inputmode="none" : sur écran tactile
+               Windows, toucher le champ n'ouvre PLUS le clavier Windows. La saisie se fait
+               UNIQUEMENT via le pavé numérique de l'app ci-dessous (PosV5Numpad). Le champ
+               reste focusable (Entrée valide) et pré-rempli. -->
           <input
             id="ccReceivedInput"
             ref="receivedInput"
             type="text"
+            inputmode="none"
+            readonly
             class="cc-input cc-tabular"
             v-on:keypress="onlyFloat"
             @input="onReceivedInput"
