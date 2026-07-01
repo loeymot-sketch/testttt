@@ -155,6 +155,13 @@ Route::match(['get', 'post'], '/login', function () {
 // [AUDIT-P1] Added apiKey: token refresh must authenticate the client app, not be public.
 Route::match(['get', 'post'], '/refresh-token', [RefreshTokenController::class, 'refreshToken'])->middleware(['installed', 'apiKey']);
 
+// [UBER-EATS 2026-07-01] Webhook Uber Eats — PUBLIC (Uber n'a pas notre apiKey ; l'auth = signature
+// HMAC-SHA256 vérifiée dans le controller). URL à enregistrer sur le dashboard Uber :
+//   https://<domaine>/api/webhooks/uber
+Route::post('/webhooks/uber', [\App\Http\Controllers\Webhook\UberWebhookController::class, 'handle'])
+    ->middleware(['installed', 'throttle:60,1'])
+    ->name('webhooks.uber');
+
 Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name('auth.')->namespace('Auth')->group(function () {
     // [SEC-02] Rate limiting — login lockout (named limiter)
     Route::post('/login', [LoginController::class, 'login'])

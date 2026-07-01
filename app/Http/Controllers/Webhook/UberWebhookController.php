@@ -1,0 +1,170 @@
+<?php
+
+namespace App\Http\Controllers\Webhook;
+
+use App\Http\Controllers\Controller;
+use App\Models\Order;
+use App\Models\OrderItem;
+use App\Services\Uber\UberClient;
+use App\Services\Uber\UberOrderMapper;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+
+/**
+ * [UBER-EATS 2026-07-01] Réception des commandes Uber Eats en temps réel.
+ *
+ * Flux : Uber POST le webhook → on vérifie la SIGNATURE HMAC → idempotence (webhook_events)
+ * → on FETCH le détail complet de la commande (Orders API) → on MAPPE vers composition_snapshot
+ * → on CRÉE la commande dans NOTRE système (source Uber, visible caisse « en cours » + KDS)
+ * → auto-accept côté Uber si configuré.
+ *
+ * Sécurité : endpoint PUBLIC (pas d'auth Sanctum), mais body signé HMAC-SHA256. Répond TOUJOURS
+ * 200 après idempotence pour éviter les rejeux inutiles ; 401 seulement si signature invalide.
+ *
+ * ⚠️ À VALIDER EN LIVE une fois le Production Access Uber accordé + le webhook enregistré.
+ */
+class UberWebhookController extends Controller
+{
+    public function __construct(
+        private UberClient $client,
+        private UberOrderMapper $mapper,
+    ) {}
+
+    public function handle(Request $request)
+    {
+        $raw = $request->getContent();
+
+        // 1) Signature HMAC-SHA256 (clé = webhook signing secret, souvent le client_secret).
+        if (! $this->signatureValid($request, $raw)) {
+            Log::warning('[Uber webhook] signature invalide');
+            return response()->json(['status' => 'invalid_signature'], 401);
+        }
+
+        $payload = json_decode($raw, true) ?: [];
+        $webhookId = (string) ($payload['event_id'] ?? $payload['meta']['resource_id'] ?? $payload['resource_id'] ?? '');
+        $eventType = (string) ($payload['event_type'] ?? $payload['meta']['event_type'] ?? '');
+        $uberOrderId = (string) ($payload['meta']['resource_id'] ?? $payload['resource_id'] ?? '');
+
+        if ($webhookId === '') {
+            return response()->json(['status' => 'ignored_no_id'], 200);
+        }
+
+        // 2) Idempotence : une seule fois même si Uber rejoue.
+        $event = DB::table('webhook_events')->where('provider', 'uber_eats')->where('webhook_id', $webhookId)->first();
+        if ($event && $event->status === 'processed') {
+            return response()->json(['status' => 'already_processed'], 200);
+        }
+        if (! $event) {
+            DB::table('webhook_events')->insert([
+                'provider'    => 'uber_eats',
+                'webhook_id'  => $webhookId,
+                'event_type'  => $eventType,
+                'payload'     => $raw,
+                'signature'   => (string) $request->header('X-Uber-Signature', ''),
+                'status'      => 'pending',
+                'received_at' => now(),
+                'created_at'  => now(),
+                'updated_at'  => now(),
+            ]);
+        }
+
+        // On ne traite que les nouvelles commandes (les autres events sont acquittés 200).
+        if ($eventType !== '' && ! str_contains(strtolower($eventType), 'order')) {
+            $this->markProcessed($webhookId, null);
+            return response()->json(['status' => 'ack'], 200);
+        }
+
+        try {
+            $orderId = $this->createFromUber($uberOrderId);
+            $this->markProcessed($webhookId, $orderId);
+
+            if ($orderId && (bool) config('uber.auto_accept', true)) {
+                $this->client->acceptOrder($uberOrderId);
+            }
+        } catch (\Throwable $e) {
+            Log::error('[Uber webhook] traitement échec: ' . $e->getMessage(), ['uber_order' => $uberOrderId]);
+            DB::table('webhook_events')->where('provider', 'uber_eats')->where('webhook_id', $webhookId)
+                ->update(['status' => 'failed', 'error_message' => mb_substr($e->getMessage(), 0, 500), 'attempts' => DB::raw('attempts + 1'), 'updated_at' => now()]);
+            // 200 quand même : Uber rejouera, mais on ne veut pas boucler sur une donnée cassée.
+            return response()->json(['status' => 'error_logged'], 200);
+        }
+
+        return response()->json(['status' => 'ok'], 200);
+    }
+
+    /** Crée la commande dans notre système à partir du détail Uber. Retourne l'order_id ou null. */
+    private function createFromUber(string $uberOrderId): ?int
+    {
+        if ($uberOrderId === '') {
+            return null;
+        }
+        $detail = $this->client->fetchOrder($uberOrderId);
+        if (! $detail) {
+            throw new \RuntimeException('fetchOrder null pour ' . $uberOrderId);
+        }
+        $mapped = $this->mapper->map($detail);
+
+        return DB::transaction(function () use ($mapped, $uberOrderId) {
+            $branchId = (int) config('uber.branch_id', 1);
+            $order = (new Order)->forceFill([
+                'branch_id'          => $branchId,
+                'order_type'         => \App\Enums\OrderType::DELIVERY, // canal agrégateur
+                'source'             => \App\Enums\Source::WEB, // canal API/web ; Uber distingué par source_surface
+                'source_surface'     => 'uber_eats',
+                'status'             => \App\Enums\OrderStatus::ACCEPT, // visible KDS immédiatement (board-release OK car PAID)
+                'payment_status'     => \App\Enums\PaymentStatus::PAID, // Uber prépayé
+                'total'              => $mapped['total'],
+                'subtotal'           => $mapped['total'],
+                'discount'           => 0,
+                'queue_number'       => $mapped['queue_number'],
+                'order_serial_no'    => $mapped['display_id'],
+                'order_datetime'     => now(),
+                // Fiscal : NON par défaut (canal séparé). Si config uber.fiscalize=true, le
+                // cron/encaissement alloue un fiscal_sequence_no ; sinon reste null (Uber facture à part).
+            ]);
+            $order->save();
+
+            foreach ($mapped['items'] as $line) {
+                (new OrderItem)->forceFill([
+                    'order_id'             => $order->id,
+                    'branch_id'            => $branchId,
+                    'item_id'              => $line['item_id'],
+                    'quantity'             => $line['quantity'],
+                    'price'                => $line['unit_price'],
+                    'total_price'          => $line['total'],
+                    'composition_snapshot' => $line['composition_snapshot'],
+                    'instruction'          => $line['instruction'],
+                ])->save();
+            }
+
+            Log::info('[Uber webhook] commande créée', ['order_id' => $order->id, 'uber' => $uberOrderId, 'total' => $mapped['total']]);
+            return (int) $order->id;
+        });
+    }
+
+    private function markProcessed(string $webhookId, ?int $orderId): void
+    {
+        DB::table('webhook_events')->where('provider', 'uber_eats')->where('webhook_id', $webhookId)->update([
+            'status'       => 'processed',
+            'order_id'     => $orderId,
+            'processed_at' => now(),
+            'updated_at'   => now(),
+        ]);
+    }
+
+    private function signatureValid(Request $request, string $raw): bool
+    {
+        $secret = (string) config('uber.webhook_signing_secret', '');
+        if ($secret === '') {
+            // Pas de secret configuré (.env non renseigné) : on REFUSE tout (fail-closed sécurité).
+            return false;
+        }
+        $provided = (string) $request->header('X-Uber-Signature', '');
+        if ($provided === '') {
+            return false;
+        }
+        $expected = hash_hmac('sha256', $raw, $secret);
+        return hash_equals($expected, $provided);
+    }
+}
