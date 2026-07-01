@@ -139,6 +139,7 @@
 
 <script>
 import { printReceipt as escPosPrint, buildReceiptData, reportPrinterFailure, isLocalBridgeAvailable, markPrintedOnce } from '../../../helpers/kioskPrinter';
+import { printEscPosViaCaisseBridge } from '../../../helpers/posLocalPrinter';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
 import { sanitizeKioskCustomerFacingText } from '../../../helpers/kioskDisplayText';
 import kioskHardware from '../../../services/kioskHardware';
@@ -388,6 +389,31 @@ export default {
       if (this.timer) { clearInterval(this.timer); this.timer = null; }
     },
 
+    // [TICKET-UNIFY 2026-07-01] Imprime le ticket borne via les MÊMES octets serveur que la
+    // caisse (renderer SSOT width-safe). Fetch client + cuisine, POST au pont local /raw.
+    // Renvoie true si au moins le ticket client a été imprimé, false sinon (→ fallback appelant).
+    async printServerUnifiedTicket() {
+      try {
+        const orderId = this.$store?.state?.kioskCart?.orderRef;
+        if (!orderId || String(orderId).startsWith('local-')) return false;
+        const ax = (typeof window !== 'undefined' && window.axios) ? window.axios : null;
+        if (!ax) return false;
+        let clientPrinted = false;
+        for (const ticket of ['client', 'kitchen']) {
+          let b64 = null;
+          try {
+            const res = await ax.get(`frontend/order/show/${orderId}/escpos`, { params: { ticket } });
+            b64 = res?.data?.escpos_b64 || null;
+          } catch (_) { b64 = null; }
+          if (!b64) continue;
+          const r = await printEscPosViaCaisseBridge(b64);
+          if (r?.ok && ticket === 'client') clientPrinted = true;
+        }
+        return clientPrinted;
+      } catch (_) {
+        return false;
+      }
+    },
     async printReceipt(allowBrowserPrint = true) {
       if (this.printStatus === 'printing') return;
       this.printStatus = 'printing';
@@ -415,6 +441,17 @@ export default {
       });
 
       try {
+        // [TICKET-UNIFY 2026-07-01] Chemin PRIMAIRE : ticket rendu par le MÊME renderer
+        // serveur que la caisse (octets ESC/POS fetchés + POSTés au pont local /raw) →
+        // ticket papier IDENTIQUE caisse/borne, width-safe. Additif : si indisponible
+        // (pas d'orderId, pas de pont, échec réseau) → fallback flux existant, zéro régression.
+        if (await this.printServerUnifiedTicket()) {
+          this.printStatus = 'done';
+          this.printFailed = false;
+          setTimeout(() => { this.printStatus = null; }, 2000);
+          return;
+        }
+
         const result = await escPosPrint(receiptData, 'kiosk-print-receipt', { allowBrowserPrint });
 
         if (result.method === 'none') {

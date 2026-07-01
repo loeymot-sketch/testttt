@@ -56,38 +56,9 @@ class PosTicketBytesController extends Controller
      */
     private function renderTicketBytes(int $branchId, int $orderId, string $ticket, bool $isDuplicata): ?string
     {
-        if ($branchId <= 0) {
-            return null;
-        }
-        $order = Order::withoutGlobalScope(BranchScope::class)->with(['branch', 'user'])->find($orderId);
-        if (! $order) {
-            return null;
-        }
-        $order->setRelation('orderItems', $order->orderItems()->withoutGlobalScope(BranchScope::class)->get());
-
-        // Largeur/code-page : imprimante station si présente, sinon défauts.
-        $stations = $ticket === 'kitchen' ? ['kitchen_hot', 'kitchen_cold', 'receipt'] : ['receipt'];
-        $printer = null;
-        foreach ($stations as $station) {
-            $printer = Printer::withoutGlobalScope(BranchScope::class)
-                ->where('branch_id', $branchId)->where('station', $station)
-                ->where('status', \App\Enums\Status::ACTIVE)->orderBy('id')->first();
-            if ($printer) {
-                break;
-            }
-        }
-        $opts = [
-            'width_chars'  => (int) ($printer->width_chars ?? 0) ?: 48,
-            'is_duplicata' => $isDuplicata,
-        ];
-        $pOpts = ($printer && is_array($printer->options)) ? $printer->options : [];
-        if (! empty($pOpts['code_page'])) {
-            $opts['code_page'] = (int) $pOpts['code_page'];
-        }
-
-        $renderer = app(OrderReceiptEscPosRenderer::class);
-        return $ticket === 'kitchen'
-            ? $renderer->renderKitchenTicket($order, $opts)
-            : $renderer->renderClientTicket($order, $opts);
+        // [TICKET-UNIFY 2026-07-01] Délégué au service partagé (SSOT) — la borne l'appelle aussi
+        // via Frontend\OrderController::escpos → ticket papier IDENTIQUE caisse/borne.
+        return app(\App\Services\Hardware\EscPosTicketBytesService::class)
+            ->render($branchId, $orderId, $ticket, $isDuplicata);
     }
 }

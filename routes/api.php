@@ -1318,6 +1318,9 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     Route::prefix('order')->name('order.')->middleware(['auth:sanctum'])->group(function () {
         Route::get('/', [FrontendOrderController::class, 'index']);
         Route::get('/show/{frontendOrder}', [FrontendOrderController::class, 'show']);
+        // [TICKET-UNIFY 2026-07-01] Octets ESC/POS du ticket borne (client|cuisine) — MÊME
+        // renderer serveur que la caisse → ticket papier identique. Garde de propriété + token borne.
+        Route::get('/show/{frontendOrder}/escpos', [FrontendOrderController::class, 'escpos'])->name('escpos-bytes');
         Route::post('/quote', [PosController::class, 'quote'])->middleware('throttle:kiosk-orders');
         Route::post('/', [FrontendOrderController::class, 'store'])->middleware(['throttle:kiosk-orders', 'idempotency']);
         // [V1.0.2-IDEMP-01] idempotency on frontend order change-status — see L856 comment.

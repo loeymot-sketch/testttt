@@ -78,6 +78,38 @@ class OrderController extends Controller
         }
     }
 
+    /**
+     * [TICKET-UNIFY 2026-07-01] Octets ESC/POS du ticket borne (client|cuisine) rendus par le
+     * MÊME service serveur que la caisse (EscPosTicketBytesService) → ticket papier IDENTIQUE.
+     * La borne fetch ces octets et les POSTe au pont local (au lieu de reconstruire un ticket
+     * côté client). Garde de propriété : le token borne ne peut imprimer QUE sa propre commande.
+     */
+    public function escpos(FrontendOrder $frontendOrder, Request $request): \Illuminate\Http\JsonResponse
+    {
+        $authenticatedUserId = (int) ($request->user('sanctum')?->id ?? $request->user()?->id ?? Auth::id() ?? 0);
+        if (! $authenticatedUserId) {
+            return response()->json(['status' => false, 'message' => 'Unauthenticated'], 401);
+        }
+        $kioskMachine = KioskMachine::query()->where('user_id', $authenticatedUserId)->first();
+        if (! $kioskMachine) {
+            return response()->json(['status' => false, 'message' => 'Unauthorized'], 403);
+        }
+        if ((int) $frontendOrder->user_id !== $authenticatedUserId
+            || (int) $frontendOrder->branch_id !== (int) $kioskMachine->branch_id) {
+            return response()->json(['status' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $ticket = $request->query('ticket') === 'kitchen' ? 'kitchen' : 'client';
+        $bytes = app(\App\Services\Hardware\EscPosTicketBytesService::class)
+            ->render((int) $frontendOrder->branch_id, (int) $frontendOrder->id, $ticket, false);
+
+        return response()->json([
+            'order_id'   => $frontendOrder->id,
+            'ticket'     => $ticket,
+            'escpos_b64' => $bytes === null ? null : base64_encode($bytes),
+        ]);
+    }
+
     public function changeStatus(FrontendOrder $frontendOrder, OrderStatusRequest $request): \Illuminate\Http\Response | OrderDetailsResource | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
