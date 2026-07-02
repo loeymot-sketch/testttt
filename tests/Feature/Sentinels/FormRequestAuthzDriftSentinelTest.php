@@ -27,7 +27,9 @@ use Tests\TestCase;
 class FormRequestAuthzDriftSentinelTest extends TestCase
 {
     /**
-     * Baseline = 66 (2026-05-29 SUP-2 ratchet — actual count -3 vs prior 69 ceiling).
+     * Baseline = 64 (2026-07-02 ULTRA-AUDIT V4-DEPLOY ratchet — CompanyRequest + SiteRequest
+     * refactorés `return true` → `$this->user()?->can('settings')` (defense-in-depth des settings
+     * écrits en .env). -2 vs le plancher 66 précédent ; ratchet pour verrouiller le progrès.
      *
      * History:
      *   - 77 initial Wave 8 (commit 68b63c090) — sentinel baseline establishment.
@@ -62,7 +64,7 @@ class FormRequestAuthzDriftSentinelTest extends TestCase
      *   - ItemCategoryRequest, ItemAttributeRequest, ItemExtraRequest, ItemAddonRequest,
      *     ItemVariationRequest, MenuTemplateRequest, OfferItemRequest (catalog family)
      */
-    private const RETURN_TRUE_BASELINE = 66;
+    private const RETURN_TRUE_BASELINE = 64;
 
     public function test_form_request_return_true_count_does_not_grow_past_baseline(): void
     {

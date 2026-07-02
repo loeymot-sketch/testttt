@@ -13,7 +13,10 @@ class SiteRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        // [ULTRA-AUDIT V4-DEPLOY 2026-07-02] Defense-in-depth : la route SiteController::update porte déjà
+        // `permission:settings` ; on double le garde ici (cohérence, évite un return-true nu sur des settings
+        // sensibles écrits en .env via SiteService/EnvEditor).
+        return (bool) ($this->user()?->can('settings'));
     }
 
     /**
