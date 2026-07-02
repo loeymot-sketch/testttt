@@ -194,9 +194,13 @@ final class OrderReceiptEscPosRenderer
         // (le ticket tombait : feed(3) ≈ 10 mm ne dégageait pas la barre de coupe
         // ~15-20 mm au-dessus de la tête). Longueur + mode (full/partial) pilotés par
         // config/printing.php → réglables sur la vraie SAGA sans redéployer le code.
+        // [TICKET-BORNE-LONG 2026-07-02] Feed + coupe surchargeables par le contexte (la borne
+        // passe une queue plus longue + coupe partielle pour que le ticket ne tombe pas).
+        $feedLines = (int) ($opts['feed_lines'] ?? $this->feedLinesBeforeCut());
+        $partial = array_key_exists('cut_partial', $opts) ? (bool) $opts['cut_partial'] : $this->cutIsPartial();
         $b .= EscPosCommandBuilder::doubleHeight(false);
-        $b .= EscPosCommandBuilder::feed($this->feedLinesBeforeCut());
-        $b .= EscPosCommandBuilder::cut($this->cutIsPartial());
+        $b .= EscPosCommandBuilder::feed($feedLines);
+        $b .= EscPosCommandBuilder::cut($partial);
 
         // Transcode the WHOLE assembled stream once (control bytes are <0x80 and
         // pass through iconv unchanged; only the UTF-8 text becomes CP858).

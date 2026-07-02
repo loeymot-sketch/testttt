@@ -26,7 +26,7 @@ final class EscPosTicketBytesService
      * Rend les octets ESC/POS. Largeur/code-page lus de l'imprimante station si configurée,
      * sinon défauts (48 car, CP858). Retourne null si branche/commande introuvable.
      */
-    public function render(int $branchId, int $orderId, string $ticket, bool $isDuplicata = false): ?string
+    public function render(int $branchId, int $orderId, string $ticket, bool $isDuplicata = false, bool $kioskClient = false): ?string
     {
         if ($branchId <= 0) {
             return null;
@@ -55,6 +55,13 @@ final class EscPosTicketBytesService
         $pOpts = ($printer && is_array($printer->options)) ? $printer->options : [];
         if (! empty($pOpts['code_page'])) {
             $opts['code_page'] = (int) $pOpts['code_page'];
+        }
+
+        // [TICKET-BORNE-LONG 2026-07-02] Ticket CLIENT imprimé par la BORNE : queue longue +
+        // coupe partielle (ne tombe pas). N'affecte QUE la borne (le caissier tend le ticket).
+        if ($kioskClient && $ticket === 'client') {
+            $opts['feed_lines'] = max(1, (int) config('printing.cut.kiosk_client_feed_lines', 30));
+            $opts['cut_partial'] = strtolower((string) config('printing.cut.kiosk_client_mode', 'partial')) === 'partial';
         }
 
         return $ticket === 'kitchen'

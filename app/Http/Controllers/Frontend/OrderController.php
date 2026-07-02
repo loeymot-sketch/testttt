@@ -100,8 +100,10 @@ class OrderController extends Controller
         }
 
         $ticket = $request->query('ticket') === 'kitchen' ? 'kitchen' : 'client';
+        // [TICKET-BORNE-LONG 2026-07-02] kioskClient=true → ticket client borne LONG + coupe
+        // partielle (ne tombe pas). La caisse (PosTicketBytesController) reste en défaut court.
         $bytes = app(\App\Services\Hardware\EscPosTicketBytesService::class)
-            ->render((int) $frontendOrder->branch_id, (int) $frontendOrder->id, $ticket, false);
+            ->render((int) $frontendOrder->branch_id, (int) $frontendOrder->id, $ticket, false, true);
 
         return response()->json([
             'order_id'   => $frontendOrder->id,
