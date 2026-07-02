@@ -40,4 +40,42 @@ class LoyaltyRegisterNoLeakTest extends TestCase
         $res->assertJsonMissingPath('data.existing_loyalty_code');
         $res->assertJsonMissingPath('data.existing_phone');
     }
+
+    /** @test */
+    public function lookup_par_telephone_seul_ne_divulgue_pas_les_pii_d_un_compte_existant(): void
+    {
+        // Vecteur PRINCIPAL : phone est requis, email optionnel. Un compte existant trouvé par
+        // téléphone ne doit PAS renvoyer name/loyalty_code/points.
+        $victim = User::factory()->create([
+            'phone' => '0699887766',
+            'loyalty_code' => 'VICTIM77',
+            'loyalty_points' => 250,
+            'name' => 'Victime Test',
+        ]);
+
+        $res = $this->postJson('/api/frontend/loyalty/register', [
+            'name'  => 'Peu importe',
+            'phone' => '0699887766',
+        ], ['x-api-key' => config('app.api_key')]);
+
+        $body = $res->getContent();
+        $this->assertStringNotContainsString('VICTIM77', $body, 'loyalty_code d autrui ne doit pas fuiter (phone)');
+        $this->assertStringNotContainsString('250', $body, 'points d autrui ne doivent pas fuiter (phone)');
+        $res->assertJsonMissingPath('data.loyalty_code');
+        $res->assertJsonMissingPath('data.points');
+    }
+
+    /** @test */
+    public function nouveau_compte_recoit_bien_son_code(): void
+    {
+        // Le flux légitime (NOUVEAU client) doit continuer à recevoir son propre code.
+        $res = $this->postJson('/api/frontend/loyalty/register', [
+            'name'  => 'Nouveau Client',
+            'phone' => '0755443322',
+        ], ['x-api-key' => config('app.api_key')]);
+
+        $res->assertOk();
+        $res->assertJsonPath('data.name', 'Nouveau Client');
+        $this->assertNotEmpty($res->json('data.loyalty_code'), 'un nouveau compte doit recevoir son code');
+    }
 }

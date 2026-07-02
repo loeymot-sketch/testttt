@@ -170,6 +170,22 @@ class LoyaltyController extends Controller
             }
             $user->save();
 
+            // [SEC-LOYALTY-LEAK 2026-07-02] Vecteur PRINCIPAL de la fuite PII (raté au 1er fix) :
+            // `phone` est REQUIS ; un compte trouvé par téléphone tombait ici et renvoyait
+            // name+loyalty_code+points D'AUTRUI sur un endpoint PUBLIC (routes/api.php:1434, sans
+            // auth) → énumération de téléphones = récolte PII. `/register` est destiné à CRÉER un
+            // NOUVEAU compte (cf. commentaire routes/api.php:1429) : on ne renvoie les données QUE
+            // pour un compte réellement créé par CETTE requête (wasRecentlyCreated). Un compte
+            // préexistant → réponse neutre ; le titulaire récupère son compte via /loyalty/check
+            // (auth:sanctum) ou l'OTP.
+            if (! $user->wasRecentlyCreated) {
+                return response()->json([
+                    'status' => true,
+                    'code' => 'PHONE_EXISTS',
+                    'message' => 'Un compte fidélité existe déjà pour ce numéro.',
+                ]);
+            }
+
             return response()->json([
                 'status' => true,
                 'data' => [

@@ -86,8 +86,16 @@ class UberWebhookController extends Controller
             Log::error('[Uber webhook] traitement échec: ' . $e->getMessage(), ['uber_order' => $uberOrderId]);
             DB::table('webhook_events')->where('provider', 'uber_eats')->where('webhook_id', $webhookId)
                 ->update(['status' => 'failed', 'error_message' => mb_substr($e->getMessage(), 0, 500), 'attempts' => DB::raw('attempts + 1'), 'updated_at' => now()]);
-            // 200 quand même : Uber rejouera, mais on ne veut pas boucler sur une donnée cassée.
-            return response()->json(['status' => 'error_logged'], 200);
+            // [UBER-RETRY 2026-07-02] 2xx = ACK Uber (PAS de rejeu) → une commande PAYÉE serait perdue.
+            // On renvoie 5xx sur échec transitoire → Uber REJOUE ; la dédup par uber order id
+            // (createFromUber) empêche le doublon. Après N tentatives (poison définitif) on acquitte
+            // 200 pour ne pas boucler indéfiniment ; la ligne webhook_events status=failed reste pour
+            // le monitoring/alerte (à brancher : superviser webhook_events provider=uber_eats status=failed).
+            $attempts = (int) (DB::table('webhook_events')->where('provider', 'uber_eats')->where('webhook_id', $webhookId)->value('attempts') ?? 1);
+            if ($attempts < 5) {
+                return response()->json(['status' => 'retry_requested', 'attempt' => $attempts], 503);
+            }
+            return response()->json(['status' => 'error_gave_up', 'note' => 'superviser webhook_events uber_eats status=failed'], 200);
         }
 
         return response()->json(['status' => 'ok'], 200);
@@ -98,6 +106,13 @@ class UberWebhookController extends Controller
     {
         if ($uberOrderId === '') {
             return null;
+        }
+        // [UBER-DEDUP 2026-07-02] Idempotence AU NIVEAU COMMANDE : l'idempotence webhook est keyée sur
+        // event_id ; deux events Uber pour la MÊME commande (resource_id identique, event_id distincts,
+        // filtre 'order' large) créeraient 2 commandes internes. On dédup ici sur l'uber order id.
+        $existing = Order::withoutGlobalScopes()->where('transaction_id', 'uber:' . $uberOrderId)->first();
+        if ($existing) {
+            return (int) $existing->id;
         }
         $detail = $this->client->fetchOrder($uberOrderId);
         if (! $detail) {
@@ -119,6 +134,9 @@ class UberWebhookController extends Controller
                 'discount'           => 0,
                 'queue_number'       => $mapped['queue_number'],
                 'order_serial_no'    => $mapped['display_id'],
+                // [UBER-DEDUP 2026-07-02] Clé d'idempotence AU NIVEAU COMMANDE (uber order id), pour
+                // qu'un 2e event Uber sur la MÊME commande (event_id distinct) ne duplique pas.
+                'transaction_id'     => 'uber:' . $uberOrderId,
                 'order_datetime'     => now(),
                 // Fiscal : NON par défaut (canal séparé). Si config uber.fiscalize=true, le
                 // cron/encaissement alloue un fiscal_sequence_no ; sinon reste null (Uber facture à part).
