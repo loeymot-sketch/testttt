@@ -20,6 +20,7 @@ use App\Exceptions\Delivery\GeocodeUnavailableException;
 use App\Http\Requests\Frontend\PaymentConfirmRequest;
 use App\Models\KioskMachine;
 use App\Models\Scopes\BranchScope;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\HttpException;

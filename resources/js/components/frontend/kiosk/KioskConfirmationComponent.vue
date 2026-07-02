@@ -308,6 +308,13 @@ export default {
         : Math.max(0, this._snapshotSubtotal - this._snapshotDiscount);
     }
 
+    // [TICKET-BORNE-LONG 2026-07-02] Capturer l'id backend de la commande AVANT le reset :
+    // l'auto-impression serveur (printServerUnifiedTicket) tourne en $nextTick APRÈS ce reset,
+    // et lisait alors `kioskCart.orderRef=null` → le rendu serveur (feed long / coupe partielle)
+    // était un no-op et la borne retombait sur l'impression client-side (ticket court). On
+    // mémorise l'orderRef ici pour que l'impression serveur reste atteignable.
+    this._orderIdForPrint = state?.orderRef ?? state?.lastOrderId ?? null;
+
     // Reset cart immediately — confirmation screen owns the data via snapshot
     this.$store.dispatch('kioskCart/reset');
 
@@ -394,12 +401,18 @@ export default {
     // Renvoie true si au moins le ticket client a été imprimé, false sinon (→ fallback appelant).
     async printServerUnifiedTicket() {
       try {
-        const orderId = this.$store?.state?.kioskCart?.orderRef;
+        // [TICKET-BORNE-LONG 2026-07-02] Priorité à l'id capturé avant le reset du panier
+        // (mounted), sinon le store (déjà vidé → null) rendait ce chemin serveur inatteignable.
+        const orderId = this._orderIdForPrint ?? this.$store?.state?.kioskCart?.orderRef;
         if (!orderId || String(orderId).startsWith('local-')) return false;
         const ax = (typeof window !== 'undefined' && window.axios) ? window.axios : null;
         if (!ax) return false;
         let clientPrinted = false;
-        for (const ticket of ['client', 'kitchen']) {
+        // [TICKET-BORNE-LONG 2026-07-02] Imprimer la CUISINE d'ABORD, le CLIENT en DERNIER : le
+        // ticket client sort avec une coupe PARTIELLE (reste accroché → ne tombe pas). S'il était
+        // imprimé avant la cuisine, la coupe TOTALE de la cuisine (juste après, même rouleau)
+        // détacherait tout → le client tomberait quand même. Ordre = cuisine puis client.
+        for (const ticket of ['kitchen', 'client']) {
           let b64 = null;
           try {
             const res = await ax.get(`frontend/order/show/${orderId}/escpos`, { params: { ticket } });
