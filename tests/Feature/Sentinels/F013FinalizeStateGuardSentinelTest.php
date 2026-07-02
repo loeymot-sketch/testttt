@@ -6,7 +6,7 @@ use Tests\TestCase;
 
 /**
  * @FK-ID F-013 — finalizePaidKioskOrder state guard whitelist
- * @source .claude/worktrees/blissful-mclean-c915c2/plans/PLAN_AUDIT_F013_FINALIZE_STATE_GUARD_2026-05-07.md
+ * @source plans/PLAN_AUDIT_F013_FINALIZE_STATE_GUARD_2026-05-07.md
  * @sprint Backlog (P3 — pattern hardening)
  *
  * Structural anti-regression for F-013.
@@ -101,7 +101,7 @@ class F013FinalizeStateGuardSentinelTest extends TestCase
     public function test_F013_plan_remains_for_traceability(): void
     {
         $this->assertFileExists(
-            base_path('.claude/worktrees/blissful-mclean-c915c2/plans/PLAN_AUDIT_F013_FINALIZE_STATE_GUARD_2026-05-07.md'),
+            base_path('plans/PLAN_AUDIT_F013_FINALIZE_STATE_GUARD_2026-05-07.md'),
             'F-013 plan must remain available for traceability.'
         );
     }

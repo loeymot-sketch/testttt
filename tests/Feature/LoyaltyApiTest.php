@@ -57,6 +57,10 @@ class LoyaltyApiTest extends TestCase
             'status' => 1
         ]);
 
+        // [ULTRA-AUDIT V3 2026-07-02] /check exige désormais un appelant autorisé (borne/staff/owner) —
+        // fix de l'IDOR (fuite PII de tout code à tout token). Ici Jane consulte SON PROPRE code (owner).
+        \Laravel\Sanctum\Sanctum::actingAs($user, ['kiosk:order']);
+
         $response = $this->postJson('/api/frontend/loyalty/check', [
             'code' => 'XYZ1234'
         ]);

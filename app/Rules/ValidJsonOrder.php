@@ -68,6 +68,17 @@ class ValidJsonOrder implements Rule
                 return false;
             }
 
+            // [ULTRA-AUDIT V2 2026-07-02 — P3 parité preview↔create] Le preview kiosk cape à
+            // config('kiosk.max_item_qty')=20/ligne, mais la création (/order, /order/quote) n'avait
+            // AUCUN plafond → un client bypassant le preview (device legacy/replay) créait des
+            // quantités arbitraires (999999999). Plafond de sécurité GÉNÉREUX (999/ligne) : bloque
+            // les valeurs absurdes/DoS/overflow SANS gêner une commande POS bulk réaliste (la règle
+            // est partagée kiosk+POS ; on ne réplique donc pas le cap kiosk strict de 20 ici).
+            if ((int) $item['quantity'] > 999) {
+                $this->message = "La quantité de l'article à l'index {$index} dépasse le maximum autorisé (999).";
+                return false;
+            }
+
             // [P2-2] instruction longueur max 500 caractères
             if (isset($item['instruction']) && is_string($item['instruction']) && strlen($item['instruction']) > 500) {
                 $this->message = "L'instruction de l'article à l'index {$index} dépasse 500 caractères.";

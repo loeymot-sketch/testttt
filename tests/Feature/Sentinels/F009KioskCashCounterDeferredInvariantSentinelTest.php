@@ -257,7 +257,7 @@ class F009KioskCashCounterDeferredInvariantSentinelTest extends TestCase
     public function test_F009_INV_5_plan_file_exists(): void
     {
         $this->assertFileExists(
-            base_path('.claude/worktrees/blissful-mclean-c915c2/plans/PLAN_AUDIT_F009_KIOSK_CASH_BACKEND_HOOK_2026-05-07.md'),
+            base_path('plans/PLAN_AUDIT_F009_KIOSK_CASH_BACKEND_HOOK_2026-05-07.md'),
             'F009-INV-5: plan F-009 must remain available for traceability.'
         );
     }

@@ -27,7 +27,9 @@ class KioskQuoteTokenRequiredOnCommitTest extends TestCase
     {
         [$kioskUser, $payload] = $this->fixture();
 
-        Sanctum::actingAs($kioskUser, ['kiosk:order']);
+        // [ULTRA-AUDIT 2026-07-02] Vrai token machine (PersonalAccessToken) — le guard
+        // KIOSK rejette TransientToken/null (kioskMachineForToken) ; NE PAS revert le guard.
+        $this->kioskToken($kioskUser);
 
         $this->postJson('/api/frontend/order', $payload)
             ->assertStatus(422)
@@ -39,7 +41,7 @@ class KioskQuoteTokenRequiredOnCommitTest extends TestCase
         [$kioskUser, $payload] = $this->fixture();
         $quote = $this->quote($kioskUser, $payload);
 
-        Sanctum::actingAs($kioskUser, ['kiosk:order']);
+        $this->kioskToken($kioskUser);
 
         $this->postJson('/api/frontend/order', $payload + [
                 'quote_token' => $quote['quote_token'],
@@ -54,7 +56,7 @@ class KioskQuoteTokenRequiredOnCommitTest extends TestCase
         $quote = $this->quote($kioskUser, $payload);
         OrderQuote::where('quote_token', $quote['quote_token'])->update(['expires_at' => now()->subSecond()]);
 
-        $this->actingAs($kioskUser, 'sanctum')
+        $this->kioskToken($kioskUser)
             ->postJson('/api/frontend/order', $payload + [
                 'quote_token' => $quote['quote_token'],
                 'quote_signature' => $quote['signature'],
@@ -67,7 +69,7 @@ class KioskQuoteTokenRequiredOnCommitTest extends TestCase
         [$kioskUser, $payload] = $this->fixture();
         $quote = $this->quote($kioskUser, $payload);
 
-        $response = $this->actingAs($kioskUser, 'sanctum')
+        $response = $this->kioskToken($kioskUser)
             ->postJson('/api/frontend/order', $payload + [
                 'quote_token' => $quote['quote_token'],
                 'quote_signature' => $quote['signature'],
@@ -75,6 +77,18 @@ class KioskQuoteTokenRequiredOnCommitTest extends TestCase
 
         $this->assertContains($response->status(), [200, 201], $response->getContent());
         $this->assertNotNull(OrderQuote::where('quote_token', $quote['quote_token'])->value('consumed_at'));
+    }
+
+    /**
+     * [ULTRA-AUDIT 2026-07-02] Authentifie comme une VRAIE borne enregistrée : un
+     * PersonalAccessToken réel avec l'ability kiosk:order (pas TransientToken/session).
+     * kioskMachineForToken() exige un vrai token → c'est le seul chemin qui reflète la
+     * production (A0001 prouvé live). Retourne $this pour chaîner ->postJson().
+     */
+    private function kioskToken(User $kioskUser): self
+    {
+        $plain = $kioskUser->createToken('kiosk-e2e', ['kiosk:order'])->plainTextToken;
+        return $this->withHeader('Authorization', 'Bearer ' . $plain);
     }
 
     /**
@@ -125,7 +139,7 @@ class KioskQuoteTokenRequiredOnCommitTest extends TestCase
      */
     private function quote(User $kioskUser, array $payload): array
     {
-        return $this->actingAs($kioskUser, 'sanctum')
+        return $this->kioskToken($kioskUser)
             ->postJson('/api/frontend/order/quote', $payload)
             ->assertOk()
             ->json('data');

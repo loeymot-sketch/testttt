@@ -128,7 +128,7 @@ class F006PosIdempotencyParitySentinelTest extends TestCase
     public function test_F006_plan_exists_for_traceability(): void
     {
         $this->assertFileExists(
-            base_path('.claude/worktrees/blissful-mclean-c915c2/plans/PLAN_AUDIT_F006_POS_IDEMPOTENCY_PARITY_2026-05-07.md'),
+            base_path('plans/PLAN_AUDIT_F006_POS_IDEMPOTENCY_PARITY_2026-05-07.md'),
             'F-006 plan must remain available for traceability.'
         );
     }

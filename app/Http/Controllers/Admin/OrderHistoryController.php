@@ -35,6 +35,11 @@ class OrderHistoryController extends AdminController
     {
         parent::__construct();
         $this->orderService = $order;
+        // [ULTRA-AUDIT 2026-07-02] Défense-en-profondeur : gate constructeur fail-closed pour
+        // TOUTE méthode (présente + future). Les gardes inline `abort_unless(can('pos-orders')||
+        // can('pos'))` d'index()/show() restent (belt-and-suspenders + logique cross-branch de show).
+        // Vérifié : seules index()+show() existent, toutes deux déjà gatées → 0 régression.
+        $this->middleware('permission:pos-orders|pos');
     }
 
     public function index(

@@ -134,11 +134,9 @@ class ItemController extends AdminController
     public function store(ItemRequest $request) : \Illuminate\Http\Response | ItemResource | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
-            if (env('DEMO')) {
-                return new ItemResource($this->itemService->store($request));
-            } else {
-                    return new ItemResource($this->itemService->store($request));
-            }
+            // [ULTRA-AUDIT 2026-07-02] Retrait du if(env('DEMO')){...}else{...} : les deux branches
+            // étaient IDENTIQUES (code mort) et env() hors config renvoie null après config:cache.
+            return new ItemResource($this->itemService->store($request));
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

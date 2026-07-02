@@ -5,6 +5,7 @@ namespace Tests\Feature\Fiscal;
 use App\Enums\PaymentStatus;
 use App\Models\Branch;
 use App\Models\Order;
+use App\Models\User;
 use App\Models\ZReport;
 use App\Services\Fiscal\XReportService;
 use App\Services\Fiscal\ZReportService;
@@ -95,6 +96,26 @@ class XReportTest extends TestCase
         $this->assertSame(1, $snap['totals']['order_count']);
 
         Carbon::setTestNow(null);
+    }
+
+    /**
+     * [ULTRA-AUDIT 2026-07-02] GET /x-report avec une date malformée doit renvoyer 422
+     * (validation), PAS 500 (InvalidFormatException non catchée = fuite de trace si APP_DEBUG).
+     * Cohérent avec DashboardController::eodPdf.
+     */
+    public function test_bad_date_param_returns_422_not_500(): void
+    {
+        $this->seedSpatieRoles();
+        $this->seedMinimalSettings();
+
+        $branch = Branch::factory()->create();
+        $manager = User::factory()->create(['branch_id' => $branch->id]);
+        $manager->givePermissionTo('pos-manage-fiscal');
+
+        $this->actingAs($manager, 'sanctum')
+            ->withHeaders(['x-api-key' => config('app.api_key')])
+            ->getJson('/api/admin/fiscal/x-report?from=garbagenotadate')
+            ->assertStatus(422);
     }
 
     public function test_snapshot_is_idempotent(): void

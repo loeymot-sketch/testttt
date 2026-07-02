@@ -28,12 +28,12 @@ class KioskQuoteIntegrityTest extends TestCase
         config(['app.api_key' => 'test-api-key']);
         [$kioskUser, $payload] = $this->kioskFixture();
 
-        $quote = $this->actingAs($kioskUser, 'sanctum')
+        $quote = $this->kioskToken($kioskUser)
             ->postJson('/api/frontend/order/quote', $payload)
             ->assertOk()
             ->json('data');
 
-        $response = $this->actingAs($kioskUser, 'sanctum')
+        $response = $this->kioskToken($kioskUser)
             ->withHeader('x-api-key', 'test-api-key')
             ->postJson('/api/frontend/order', $payload + [
                 'quote_token' => $quote['quote_token'],
@@ -61,7 +61,7 @@ class KioskQuoteIntegrityTest extends TestCase
         config(['app.api_key' => 'test-api-key']);
         [$kioskUser, $payload] = $this->kioskFixture();
 
-        $quote = $this->actingAs($kioskUser, 'sanctum')
+        $quote = $this->kioskToken($kioskUser)
             ->postJson('/api/frontend/order/quote', $payload)
             ->assertOk()
             ->json('data');
@@ -74,7 +74,7 @@ class KioskQuoteIntegrityTest extends TestCase
             'item_extras' => [],
         ]]);
 
-        $this->actingAs($kioskUser, 'sanctum')
+        $this->kioskToken($kioskUser)
             ->withHeader('x-api-key', 'test-api-key')
             ->postJson('/api/frontend/order', $tamperedPayload + [
                 'quote_token' => $quote['quote_token'],
@@ -127,5 +127,17 @@ class KioskQuoteIntegrityTest extends TestCase
                 'item_extras' => [],
             ]]),
         ]];
+    }
+
+    /**
+     * [ULTRA-AUDIT 2026-07-02] Authentifie comme une VRAIE borne enregistrée : un
+     * PersonalAccessToken réel (ability kiosk:order). Le guard KIOSK (OrderRequest
+     * kioskMachineForToken) exige un vrai token — TransientToken/session rejeté ;
+     * NE PAS revert le guard. Reflète la production (borne physique enregistrée).
+     */
+    private function kioskToken(User $kioskUser): self
+    {
+        $plain = $kioskUser->createToken('kiosk-e2e', ['kiosk:order'])->plainTextToken;
+        return $this->withHeader('Authorization', 'Bearer ' . $plain);
     }
 }

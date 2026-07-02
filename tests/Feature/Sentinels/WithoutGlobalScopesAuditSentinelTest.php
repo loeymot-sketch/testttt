@@ -50,7 +50,12 @@ use Tests\TestCase;
  *       — Already chains `->withTrashed()` explicitly; intent is to find ALL
  *         phone matches including soft-deleted guests for safe restore
  *
- * Total allowlist: 7 sites. Any other plural usage = sentinel fail.
+ *   - app/Http/Controllers/Webhook/UberWebhookController.php (1 site: 113)
+ *       — [2026-07-02] dédup idempotente webhook Uber cross-branch + soft-deleted
+ *   - app/Console/Commands/CleanupWebTestOrdersCommand.php (1 site: 42)
+ *       — [2026-07-02] purge e2e web-test orders par téléphone, cross-branch + soft-deleted
+ *
+ * Total allowlist: 9 sites. Any other plural usage = sentinel fail.
  *
  * PURPOSE OF THIS SENTINEL
  * ------------------------
@@ -82,6 +87,15 @@ class WithoutGlobalScopesAuditSentinelTest extends TestCase
         'Console/Commands/EnsurePosOperatorLoginCommand.php'  => [55],
         'Console/Commands/EnsureChefLoginCommand.php'         => [53],
         'Http/Controllers/Auth/GuestSignupController.php'     => [98],
+        // [ULTRA-AUDIT 2026-07-02] Cat A additions (legit both-scopes-off) :
+        //   - UberWebhookController:113 — dédup idempotente du webhook Uber :
+        //     `Order::withoutGlobalScopes()->where('transaction_id','uber:'.$id)` DOIT trouver
+        //     la commande quelle que soit la branche ET même soft-deleted, pour ne PAS recréer
+        //     un doublon au REJEU du webhook (503-retry). Canal agrégateur cross-branch by design.
+        //   - CleanupWebTestOrdersCommand:42 — commande de purge des commandes de TEST web par
+        //     téléphone, cross-branche + soft-deleted (utilitaire de nettoyage e2e).
+        'Http/Controllers/Webhook/UberWebhookController.php'  => [113],
+        'Console/Commands/CleanupWebTestOrdersCommand.php'    => [42],
     ];
 
     public function test_no_unannotated_plural_withoutGlobalScopes_in_app(): void
@@ -233,8 +247,8 @@ class WithoutGlobalScopesAuditSentinelTest extends TestCase
 
         // The total includes Cat A allowlist AND any Cat C `[GlobalScopes:keep-both]`
         // annotated sites that are NF525-justified (e.g. fiscal MAX, archive).
-        // Wave M post-heal expected total = 7 allowlist (Cat A) + 0 annotated
-        // (all NF525 sites were healed to singular+withTrashed, not annotated).
+        // Wave M post-heal expected total = 7 allowlist (Cat A) + 0 annotated ;
+        // +2 (2026-07-02 ultra-audit : Uber webhook dedup + web-test cleanup) = 9 allowlist.
         // If this count drifts, either ALLOWLIST is out of date, an annotated
         // site appeared/disappeared, or a Cat B regression was introduced.
         $this->assertSame(

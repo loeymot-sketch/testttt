@@ -52,6 +52,10 @@ return [
         'api/admin/pos/counter-collect/*/cancel',
         'api/admin/pos/collect-kiosk-cash/*',
         'api/admin/pos/orders/*/print-receipt',
+        // [ULTRA-AUDIT 2026-07-02] Route print-kitchen porte le middleware `idempotency`
+        // (routes/api.php) mais manquait dans required_routes → IdempotencyRequiredRoutesCoverageTest
+        // rouge. Même défense-en-profondeur que print-receipt (pas de double impression cuisine au retry).
+        'api/admin/pos/orders/*/print-kitchen',
         'api/admin/pos/cash-drawer/open',
         'api/admin/pos/cash-drawer/sessions/open',
         'api/admin/pos/cash-drawer/sessions/*/close',

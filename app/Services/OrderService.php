@@ -1257,7 +1257,16 @@ class OrderService
                 //
                 // Kiosk counter-collect path (PaymentService::confirmCounterPayment)
                 // is untouched — still calls recordCashOrderMovement($strict=false).
+                //
+                // [ULTRA-AUDIT V2 2026-07-02 — P2 cash-trail] Gate `! $deferToCounter`.
+                // BUG : `$request->pos_payment_method` = valeur BRUTE client (reste CASH même
+                // quand defer_to_counter=1 ; le serveur n'écrase que $validated l.725). Sans ce
+                // gate, une commande DIFFÉRÉE (PENDING_COUNTER, non payée) enregistrait un
+                // cash-in à la CRÉATION, puis un 2e à l'encaissement (confirmCounterPayment)
+                // → double/phantom mouvement de tiroir (corruption piste NF525, réconciliation).
+                // La commande différée reçoit son mouvement UNIQUEMENT à l'encaissement.
                 if (! $splitActive
+                    && ! $deferToCounter
                     && (int) $request->pos_payment_method === \App\Enums\PosPaymentMethod::CASH) {
                     app(\App\Services\PaymentService::class)->recordCashOrderMovement(
                         order: $this->order,
@@ -2410,6 +2419,21 @@ class OrderService
                 if ($freshOld === $targetPaymentStatus) {
                     $order->setRawAttributes($locked->getAttributes(), true);
                     return;
+                }
+
+                // [ULTRA-AUDIT V4 2026-07-02 — P1 vente off-book NF525] Une commande DIFFÉRÉE
+                // (borne Plan B, PENDING_COUNTER) NE DOIT PAS passer PAID via change-payment-status :
+                // ce chemin n'alloue NI `fiscal_sequence_no` NI `cash_movement` → vente PAID hors
+                // chaîne fiscale NF525 (exclue du Z, `ZReportService` filtre `whereNotNull`) + hors
+                // trail de caisse (invisible à la réconciliation) = orphelin PERMANENT (jamais rattrapé
+                // par RetryFiscalAllocCommand). Le SEUL chemin correct pour sceller une commande
+                // différée = l'ENCAISSEMENT (`PaymentService::confirmCounterPayment`, qui alloue la
+                // séquence fiscale + enregistre le mouvement de tiroir). On rejette donc ici (zéro
+                // allocation depuis ce chemin = zéro risque de corruption de chaîne).
+                if ($targetPaymentStatus === \App\Enums\PaymentStatus::PAID
+                    && $freshOld === \App\Enums\PaymentStatus::PENDING_COUNTER
+                    && $locked->fiscal_sequence_no === null) {
+                    abort(422, "Une commande différée (borne Plan B) doit être marquée payée via l'encaissement (allocation fiscale NF525) — le passage direct en « payé » est interdit.");
                 }
 
                 // Re-validate the transition against the FRESH locked status — the

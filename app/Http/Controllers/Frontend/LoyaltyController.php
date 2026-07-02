@@ -80,6 +80,22 @@ class LoyaltyController extends Controller
             }
 
             if ($user && $this->isCustomerActive($user)) { // [FIX P3 audit] accepte status 1 OU ACTIVE(5) (cohérent avec le reste)
+                // [ULTRA-AUDIT V3 2026-07-02 — P2 IDOR JUMEAU] /check fuyait name+loyalty_code+points
+                // de N'IMPORTE QUEL code/téléphone à tout token Sanctum (reverse phone→nom + énumération
+                // PII). Même classe de fuite que /register et /scan colmatés en V2 — mais /check oublié.
+                // Parité avec /redeem : autorisé pour une VRAIE borne (KioskMachine, pas un token guest),
+                // le staff, OU le propriétaire du code. Un guest ne peut consulter QUE son propre compte.
+                $caller = $request->user();
+                $isKiosk = $caller
+                    && $caller->tokenCan('kiosk:order')
+                    && \App\Models\KioskMachine::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+                        ->where('user_id', $caller->id)->exists();
+                $isStaff = $caller && $caller->hasAnyRole(['Admin', 'Branch Manager', 'POS Operator', 'Stuff']);
+                if (! $isKiosk && ! $isStaff && (! $caller || (int) $caller->id !== (int) $user->id)) {
+                    // Non-borne, non-staff, non-propriétaire → ne rien divulguer (indistinguable de « non trouvé »).
+                    return response()->json(['status' => false, 'message' => 'Non trouvé'], 404);
+                }
+
                 // Ensure the user has a loyalty code (may have registered by phone only)
                 if (!$user->loyalty_code) {
                     $user->loyalty_code = strtoupper(substr(md5(uniqid()), 0, 8));
@@ -157,10 +173,13 @@ class LoyaltyController extends Controller
                 $user->password = bcrypt(uniqid());
                 $user->status = 1;
             } else {
-                // [AUDIT-P50-BUG8] Update email on existing phone-based account if provided and empty
-                if ($email && empty($user->email)) {
-                    $user->email = $email;
-                }
+                // [ULTRA-AUDIT V2 2026-07-02 — P2 account-hijack] NE PLUS attacher un email à un
+                // compte EXISTANT via /register (public, non-auth). L'ancien code (AUDIT-P50-BUG8)
+                // permettait : attaquant POST {phone: victime-sans-email, email: attaquant} →
+                // email attaché au compte victime → forgot-password → prise de contrôle. L'email
+                // n'est désormais posé qu'à la CRÉATION d'un NOUVEAU compte (branche if ci-dessus).
+                // Un client existant ajoute/modifie son email via un chemin AUTHENTIFIÉ + vérifié.
+                // (no-op ici : compte préexistant → email inchangé)
             }
 
             // Génération d'un code de fidélité s'il n'en a pas

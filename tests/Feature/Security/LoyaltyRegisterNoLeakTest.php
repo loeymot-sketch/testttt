@@ -78,4 +78,32 @@ class LoyaltyRegisterNoLeakTest extends TestCase
         $res->assertJsonPath('data.name', 'Nouveau Client');
         $this->assertNotEmpty($res->json('data.loyalty_code'), 'un nouveau compte doit recevoir son code');
     }
+
+    /**
+     * @test
+     * [ULTRA-AUDIT V2 2026-07-02 — P2 account-hijack] /register public NE DOIT PAS attacher un email
+     * arbitraire à un compte EXISTANT téléphone-only (sinon : attaquant pose son email sur le compte
+     * victime → forgot-password → prise de contrôle).
+     */
+    public function register_public_ne_doit_pas_attacher_un_email_a_un_compte_existant(): void
+    {
+        // Victime : compte fidélité existant par téléphone, SANS email.
+        $victim = User::factory()->create([
+            'phone' => '0699112233',
+            'email' => null,
+            'loyalty_code' => 'VICT1234',
+        ]);
+
+        // Attaquant public non-auth : register avec le téléphone victime + SON email.
+        $this->postJson('/api/frontend/loyalty/register', [
+            'name'  => 'Attaquant',
+            'phone' => '0699112233',
+            'email' => 'attaquant@evil.test',
+        ], ['x-api-key' => config('app.api_key')]);
+
+        $this->assertNull(
+            $victim->fresh()->email,
+            "l'email de l'attaquant ne doit PAS être attaché au compte victime via /register public"
+        );
+    }
 }

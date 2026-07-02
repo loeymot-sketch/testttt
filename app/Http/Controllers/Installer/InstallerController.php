@@ -25,9 +25,21 @@ class InstallerController extends Controller
         $this->installerRequirementsCheckerService = $installerRequirementsCheckerService;
         $this->installerPermissionCheckerService   = $installerPermissionCheckerService;
 
-        if (file_exists(storage_path('installed'))) {
-            Redirect::to(env('APP_URL'))->send();
-        }
+        // [ULTRA-AUDIT V3 2026-07-02 — P0/P1] Garde « déjà installé ». BUG CRITIQUE de l'ancien code :
+        // `Redirect::to(...)->send()` ENVOIE la réponse 302 mais NE STOPPE PAS l'exécution PHP (pas de
+        // exit/throw) → le constructeur se terminait et la MÉTHODE demandée s'exécutait quand même sur
+        // une app installée : `/install/database` reconfigurait la DB de prod, `/install/final-store`
+        // réécrivait `.env` (APP_ENV=production…) — le tout NON AUTHENTIFIÉ.
+        //
+        // Correctif : garde en MIDDLEWARE de contrôleur (s'exécute au moment de la REQUÊTE, pas à
+        // l'instanciation — un throw dans le constructeur casse le route-scan/tests). Retourner une
+        // réponse depuis un middleware COURT-CIRCUITE le pipeline → la méthode n'est JAMAIS atteinte.
+        $this->middleware(function ($request, $next) {
+            if (file_exists(storage_path('installed'))) {
+                return redirect(env('APP_URL') ?: '/');
+            }
+            return $next($request);
+        });
     }
 
     public function index(): \Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View|\Illuminate\Contracts\Foundation\Application

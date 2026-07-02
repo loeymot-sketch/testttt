@@ -111,14 +111,19 @@ class TpeSimulationDepthSentinelTest extends TestCase
         // Happy path must NOT spuriously fire F-002 when simulation is on.
         // Downstream may return 200 or 422 (FCM/event sync sidecar) but the
         // error code MUST NOT be AMOUNT_ECHO_MISMATCH.
-        if ($response->status() === 422) {
-            $body = $response->json();
-            $this->assertNotSame(
-                'AMOUNT_ECHO_MISMATCH',
-                $body['error_code'] ?? null,
-                'Exact-amount echo must never raise F-002 under simulation.'
-            );
-        }
+        // [ULTRA-AUDIT 2026-07-02] Assertion INCONDITIONNELLE (avant : dans `if 422` →
+        // 0 assertion sur le happy-path 200 → test « risky »). L'invariant tient pour les
+        // deux statuts : un 200 n'a pas d'`error_code` (null ≠ AMOUNT_ECHO_MISMATCH).
+        $this->assertContains(
+            $response->status(),
+            [200, 201, 422],
+            'Exact-amount echo must not 500 under simulation (got ' . $response->status() . ').'
+        );
+        $this->assertNotSame(
+            'AMOUNT_ECHO_MISMATCH',
+            $response->json('error_code'),
+            'Exact-amount echo must never raise F-002 under simulation.'
+        );
     }
 
     public function test_reconcile_path_amount_echo_still_fires_under_pos_simulation_hardware(): void

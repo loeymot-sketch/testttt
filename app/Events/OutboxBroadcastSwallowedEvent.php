@@ -21,14 +21,15 @@ namespace App\Events;
  *     typically only catch `Log::error` / structured events, so the failure
  *     was effectively silent.
  *
- * Mirror policy of {@see StockDecrementFailedEvent}:
- *   - Intentionally **unwired** (no listener registered in
- *     `EventServiceProvider`). Ops alerting (Sentry breadcrumb, Datadog
- *     pipeline, custom listener) can subscribe later. Until then the
- *     structured `Log::error` tier in the originating listener is the
- *     visible signal — this event class is the typed hook for that drift.
- *   - Nested-try at the dispatch site absorbs failure of THIS event too —
- *     observability MUST NOT itself re-break the cascade.
+ * Wiring (corrigé 2026-07-02 — le docblock disait « intentionally unwired », c'était FAUX) :
+ *   - **CÂBLÉ** : `EventServiceProvider::$listen` mappe
+ *     `OutboxBroadcastSwallowedEvent::class => [EscalateOutboxBroadcastSwallowed::class]`
+ *     (EventServiceProvider.php:327-329). Le listener émet
+ *     `Log::channel('fiscal')->critical` avec le payload structuré (pager-grade
+ *     alarm V1 LOCAL, HEAL B.2 2026-05-19). Un tiers d'alerting (Sentry, Datadog)
+ *     peut s'ajouter à cette liste sans toucher le site de dispatch.
+ *   - Nested-try au site de dispatch absorbe l'échec de CET event aussi —
+ *     l'observabilité ne doit JAMAIS re-casser la cascade.
  */
 final class OutboxBroadcastSwallowedEvent
 {

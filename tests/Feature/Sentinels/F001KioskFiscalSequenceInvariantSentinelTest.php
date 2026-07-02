@@ -121,7 +121,7 @@ class F001KioskFiscalSequenceInvariantSentinelTest extends TestCase
     public function test_F001_plan_and_report_exist(): void
     {
         $this->assertFileExists(
-            base_path('.claude/worktrees/blissful-mclean-c915c2/plans/PLAN_AUDIT_F001_KIOSK_FISCAL_SEQUENCE_2026-05-07.md'),
+            base_path('plans/PLAN_AUDIT_F001_KIOSK_FISCAL_SEQUENCE_2026-05-07.md'),
             'F-001 plan must remain available for traceability.'
         );
         $this->assertFileExists(

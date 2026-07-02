@@ -45,4 +45,25 @@ class ValidJsonOrderItemCapTest extends TestCase
         $result = $rule->passes('items', $items);
         $this->assertTrue($result, 'baseline single-item order must still pass');
     }
+
+    /**
+     * @test
+     * [ULTRA-AUDIT V2 2026-07-02 — P3 parité preview↔create] Plafond de sécurité par ligne = 999.
+     * Le preview kiosk capait à 20 mais la création n'avait aucun plafond → quantités absurdes.
+     */
+    public function it_rejects_absurd_per_line_quantity()
+    {
+        $rule = $this->rule();
+        $items = json_encode([['item_id' => 1, 'quantity' => 1000000000]]);
+        $this->assertFalse($rule->passes('items', $items), 'quantité absurde (>999) doit être rejetée');
+        $this->assertStringContainsString('999', $rule->message());
+    }
+
+    /** @test */
+    public function it_accepts_999_per_line_inclusive_cap()
+    {
+        $rule = $this->rule();
+        $items = json_encode([['item_id' => 1, 'quantity' => 999]]);
+        $this->assertTrue($rule->passes('items', $items), '999/ligne est le plafond inclusif et doit passer');
+    }
 }
