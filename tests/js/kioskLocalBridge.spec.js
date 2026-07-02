@@ -73,6 +73,32 @@ describe('buildBridgePayload — codepage-safe (ASCII)', () => {
   });
 });
 
+describe('[TICKET-BORNE 2026-07-03] téléphone + feed long + coupe partielle dans le payload', () => {
+  afterEach(() => { try { delete window.foodkingConfig; } catch (_) { window.foodkingConfig = undefined; } });
+
+  it('défauts sûrs SANS config (vieux bundle) : feedLines=30, cutPartial=true, phone=""', () => {
+    window.foodkingConfig = undefined;
+    const p = buildBridgePayload(receipt);
+    expect(p.feedLines).toBe(30);       // ticket LONG (ne tombe pas court)
+    expect(p.cutPartial).toBe(true);    // coupe partielle (ne tombe pas par terre)
+    expect(p.phone).toBe('');           // le pont applique alors SON défaut (03 65 67 82 91)
+  });
+
+  it('prend le téléphone + feed + mode injectés par le serveur (window.foodkingConfig.borneTicket)', () => {
+    window.foodkingConfig = { borneTicket: { phone: '03 65 67 82 91', feedLines: 40, cutPartial: false } };
+    const p = buildBridgePayload(receipt);
+    expect(p.phone).toBe('03 65 67 82 91');
+    expect(p.feedLines).toBe(40);
+    expect(p.cutPartial).toBe(false);
+  });
+
+  it('ASCII-fold le téléphone (codepage-safe) et ne throw jamais', () => {
+    window.foodkingConfig = { borneTicket: { phone: '03 65 67 82 91' } };
+    expect(() => buildBridgePayload({})).not.toThrow();
+    expect(buildBridgePayload(receipt).phone).toBe('03 65 67 82 91');
+  });
+});
+
 describe('G8/G11 — thankYou propagé + bloc fidélité (audit adversaire)', () => {
   it('[G8] buildReceiptData propage thankYou jusqu\'au footer du pont (était droppé)', () => {
     const r = buildReceiptData({ restaurantName: 'Le Cayenne', queueNumber: 'A1', cartItems: [], total: 5, thankYou: 'Au revoir Le Cayenne !' });

@@ -116,6 +116,21 @@ class OrderReceiptEscPosRendererTest extends TestCase
         $this->assertStringContainsString('lecayenne.fr', $bytes, 'website missing');
     }
 
+    /**
+     * [TICKET-PHONE 2026-07-03] Owner : « le n° n'est pas affiché ». La branche V1
+     * peut ne pas avoir de téléphone en base → le ticket doit alors retomber sur le
+     * défaut config `printing.receipt.phone` (03 65 67 82 91) pour que le n° apparaisse
+     * TOUJOURS. Si la branche EN a un, il prime (test précédent).
+     */
+    public function test_client_ticket_falls_back_to_config_phone_when_branch_has_none(): void
+    {
+        config(['printing.receipt.phone' => '03 65 67 82 91']);
+        $order = $this->makeOrder();
+        $order->branch->phone = null; // branche sans téléphone renseigné
+        $bytes = (new OrderReceiptEscPosRenderer)->renderClientTicket($order);
+        $this->assertStringContainsString('03 65 67 82 91', $bytes, 'config phone fallback missing (n° absent du ticket)');
+    }
+
     public function test_client_ticket_shows_unit_price_when_qty_above_one(): void
     {
         $order = $this->makeOrder();

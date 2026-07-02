@@ -561,9 +561,30 @@ function effectiveWidthFor(sizeByte) {
   return Math.max(8, Math.floor(RECEIPT_WIDTH / widthMult));
 }
 
+// [TICKET-BORNE 2026-07-03] Options ticket borne pilotées serveur (injectées dans
+// window.foodkingConfig.borneTicket) : téléphone + avance papier + mode de coupe.
+// Défauts sûrs si la config n'est pas injectée (vieux bundle) — le pont bridge.js a
+// LUI AUSSI ses propres défauts (30 lignes + coupe partielle), donc un ticket correct
+// sort même avant redéploiement du bundle.
+export function borneTicketExtras() {
+  const def = { phone: '', feedLines: 30, cutPartial: true };
+  try {
+    const c = window.foodkingConfig && window.foodkingConfig.borneTicket;
+    if (c && typeof c === 'object') {
+      return {
+        phone: typeof c.phone === 'string' ? c.phone : def.phone,
+        feedLines: Number.isFinite(c.feedLines) ? c.feedLines : def.feedLines,
+        cutPartial: typeof c.cutPartial === 'boolean' ? c.cutPartial : def.cutPartial,
+      };
+    }
+  } catch (_) { /* défaut ci-dessous */ }
+  return def;
+}
+
 export function buildBridgePayload(receipt) {
   receipt = receipt || {};
   const sz = borneTicketSize();
+  const extras = borneTicketExtras();
   const bodyWidth = effectiveWidthFor(sz.bodySize);
   const lines = [];
   (receipt.items || []).forEach(item => {
@@ -609,6 +630,12 @@ export function buildBridgePayload(receipt) {
     // bodySize = corps (compo), titleSize = en-tête + n° commande + total.
     bodySize: sz.bodySize,
     titleSize: sz.titleSize,
+    // [TICKET-PHONE 2026-07-03] Téléphone imprimé en en-tête par le pont.
+    phone: asciiFold(extras.phone),
+    // [TICKET-BORNE-LONG 2026-07-02] Avance papier (lignes) + coupe PARTIELLE : ticket
+    // LONG attrapable qui NE TOMBE PAS (reste accroché, le client le détache).
+    feedLines: extras.feedLines,
+    cutPartial: extras.cutPartial,
   };
 }
 

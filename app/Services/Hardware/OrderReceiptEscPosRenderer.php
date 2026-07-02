@@ -53,8 +53,12 @@ final class OrderReceiptEscPosRenderer
         if (optional($branch)->address) {
             $b .= EscPosCommandBuilder::textWrap((string) $branch->address, $w);
         }
-        if (optional($branch)->phone) {
-            $b .= EscPosCommandBuilder::textWrap('Tél : ' . $this->formatPhone((string) $branch->phone), $w);
+        // [TICKET-PHONE 2026-07-03] Téléphone = branche si renseigné, SINON défaut config
+        // (`printing.receipt.phone`, ex. 03 65 67 82 91) → le n° apparaît TOUJOURS sur le
+        // ticket même quand la branche V1 n'a pas de téléphone en base.
+        $phone = (string) (optional($branch)->phone ?: config('printing.receipt.phone', ''));
+        if (trim($phone) !== '') {
+            $b .= EscPosCommandBuilder::textWrap('Tél : ' . $this->formatPhone($phone), $w);
         }
         if (optional($branch)->email) {
             $b .= EscPosCommandBuilder::textWrap('E-mail : ' . $branch->email, $w);

@@ -40,6 +40,12 @@ return [
     */
     'receipt' => [
         'website' => env('RECEIPT_WEBSITE', 'lecayenne.fr'),
+        // [TICKET-PHONE 2026-07-03] Owner : le n° de téléphone n'apparaissait pas sur
+        // les tickets. Source primaire = `branch->phone` ; ce défaut config est le
+        // FALLBACK quand la branche n'a pas de téléphone renseigné (cas V1 Le Cayenne).
+        // Utilisé par la CAISSE (OrderReceiptEscPosRenderer) et injecté à la BORNE
+        // (master.blade → window.foodkingConfig.borneTicket.phone → bridge.js).
+        'phone' => env('RECEIPT_PHONE', '03 65 67 82 91'),
     ],
 
     /*
