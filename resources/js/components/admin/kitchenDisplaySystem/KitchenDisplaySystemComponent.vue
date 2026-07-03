@@ -1533,7 +1533,17 @@ export default {
       })
     );
     this.kdsSyncUnsubscribers.push(
-      kdsSyncService.on('error', () => { this.syncNowTick = Date.now(); })
+      kdsSyncService.on('error', (info) => {
+        this.syncNowTick = Date.now();
+        // [HARDWARE-HARDENING 2026-07-03] Un 401/403 sur le poll sync NE se répare pas tout seul
+        // (permission web-guard manquante côté serveur — cf. AdminWebGuardPermissionsSyncSeeder) et
+        // laissait le tableau BLANC en SILENCE → le poste cuisine paraissait « planté » (mène à un
+        // faux diagnostic « bug WebSocket »). On rend l'échec BRUYANT : bannière claire + cause réelle.
+        const st = info && info.status;
+        if (st === 401 || st === 403) {
+          this.kdsErrorBanner = { visible: true, message: this.$t('message.kds_sync_forbidden'), lastRetryAt: null };
+        }
+      })
     );
     try {
       kdsSyncService.start(this.authBranchId());
