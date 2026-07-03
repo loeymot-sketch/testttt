@@ -349,6 +349,20 @@ class PosOrderController extends AdminController
         Order $order,
         PaymentStatusRequest $request
     ): \Illuminate\Http\Response|OrderDetailsResource|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory {
+        // [NUIT-A 2026-07-03 / P2 twin-route authz parity] REFUNDED est la transition de remboursement.
+        // La route sœur change-status gate RETURNED sur `pos-refund` (PosOrderController::changeStatus:328,
+        // Admin/Branch Manager only). Cette route n'était gardée que par `permission:pos-orders` (groupe),
+        // qu'un POS Operator POSSÈDE → il pouvait marquer une commande REMBOURSÉE sans le droit de
+        // remboursement (vente off-book / vecteur de remboursements de masse). On miroir EXACTEMENT le
+        // gate de la sœur, fail-fast AVANT de déléguer (hors try → le 403 n'est pas masqué en 422).
+        if ((int) $request->payment_status === \App\Enums\PaymentStatus::REFUNDED) {
+            abort_unless(
+                auth()->user()?->can('pos-refund') ?? false,
+                403,
+                'Permission insuffisante pour effectuer un remboursement.'
+            );
+        }
+
         try {
             return new OrderDetailsResource($this->orderService->changePaymentStatus($order, $request));
         } catch (Exception $exception) {
