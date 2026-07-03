@@ -131,6 +131,19 @@ class OrderReceiptEscPosRendererTest extends TestCase
         $this->assertStringContainsString('03 65 67 82 91', $bytes, 'config phone fallback missing (n° absent du ticket)');
     }
 
+    /**
+     * [TICKET-ADRESSE 2026-07-03] L'adresse doit apparaître via le défaut config
+     * `printing.receipt.address` quand la branche n'en a pas (design pro nom/adresse/tél).
+     */
+    public function test_client_ticket_falls_back_to_config_address_when_branch_has_none(): void
+    {
+        config(['printing.receipt.address' => '12 Rue Exemple, 59000 Lille']);
+        $order = $this->makeOrder();
+        $order->branch->address = null; // branche sans adresse
+        $bytes = (new OrderReceiptEscPosRenderer)->renderClientTicket($order);
+        $this->assertStringContainsString('12 Rue Exemple', $bytes, 'config address fallback missing');
+    }
+
     public function test_client_ticket_shows_unit_price_when_qty_above_one(): void
     {
         $order = $this->makeOrder();

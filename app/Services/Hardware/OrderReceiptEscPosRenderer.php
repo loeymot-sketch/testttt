@@ -50,8 +50,11 @@ final class OrderReceiptEscPosRenderer
         $b .= EscPosCommandBuilder::doubleHeight(true) . EscPosCommandBuilder::bold(true);
         $b .= EscPosCommandBuilder::textWrap(optional($branch)->name ?: 'LE CAYENNE', $w);
         $b .= EscPosCommandBuilder::doubleHeight(false) . EscPosCommandBuilder::bold(false);
-        if (optional($branch)->address) {
-            $b .= EscPosCommandBuilder::textWrap((string) $branch->address, $w);
+        // [TICKET-ADRESSE 2026-07-03] Adresse = branche si renseignée, SINON défaut config
+        // (`printing.receipt.address`) → design pro (nom/adresse/tél) même sans adresse en base.
+        $address = (string) (optional($branch)->address ?: config('printing.receipt.address', ''));
+        if (trim($address) !== '') {
+            $b .= EscPosCommandBuilder::textWrap($address, $w);
         }
         // [TICKET-PHONE 2026-07-03] Téléphone = branche si renseigné, SINON défaut config
         // (`printing.receipt.phone`, ex. 03 65 67 82 91) → le n° apparaît TOUJOURS sur le
