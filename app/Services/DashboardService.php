@@ -240,20 +240,26 @@ class DashboardService
             $dateRangeArray[] = $date;
         }
 
+        // [NUIT-A 2026-07-03 / P3 perf] UNE seule requête GROUP BY au lieu d'un SUM par jour (jusqu'à 365
+        // aller-retours/an). `realizedRevenue()` = where-clauses (nested where + orWhere miroir RETURNED) →
+        // compose avec DATE()+GROUP BY. session_tz=Paris (même hypothèse face-value que la borne actuelle) →
+        // DATE(order_datetime) = date Paris-locale, alignée sur les bornes jour de la boucle d'origine.
+        // On récupère via get() (pas pluck, qui écraserait le selectRaw des alias) puis on mappe par date.
+        $perDayRows = (clone $order)
+            ->where('order_datetime', '>=', $startParis)
+            ->where('order_datetime', '<', $endParisExclusive)
+            ->realizedRevenue()
+            ->groupBy(\Illuminate\Support\Facades\DB::raw('DATE(order_datetime)'))
+            ->selectRaw('DATE(order_datetime) as d, SUM(total) as t')
+            ->get();
+        $perDayTotals = [];
+        foreach ($perDayRows as $row) {
+            $perDayTotals[(string) $row->d] = $row->t;
+        }
+
         $dateRangeValueArray = [];
-        for ($i = 0; $i <= count($dateRangeArray) - 1; $i++) {
-            // Per-day Paris range — bind Paris-local Carbon directly
-            // (Wave T R5 pattern, session_tz=Paris face-value).
-            $dayStartParis = Carbon::parse($dateRangeArray[$i], $appTz)->startOfDay();
-            $nextDayStartParis = $dayStartParis->copy()->addDay();
-            $per_day = AppLibrary::flatAmountFormat(
-                (clone $order)
-                    ->where('order_datetime', '>=', $dayStartParis)
-                    ->where('order_datetime', '<', $nextDayStartParis)
-                    ->realizedRevenue()
-                    ->sum('total')
-            );
-            $dateRangeValueArray[] = floatval($per_day);
+        foreach ($dateRangeArray as $date) {
+            $dateRangeValueArray[] = floatval(AppLibrary::flatAmountFormat($perDayTotals[$date] ?? 0));
         }
 
 
