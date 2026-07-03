@@ -42,7 +42,10 @@ const PORT = parseInt(process.env.BORNE_BRIDGE_PORT || '9100', 10);
 
 // ── Défauts SÛRS (appliqués si le payload ne les fournit pas — vieux bundle) ──
 const DEFAULT_PHONE = process.env.BORNE_PHONE || '03 65 67 82 91';
-const DEFAULT_FEED_LINES = clampFeed(parseInt(process.env.BORNE_FEED_LINES || '30', 10));
+const DEFAULT_ADDRESS = process.env.BORNE_ADDRESS || ''; // adresse Le Cayenne (mise via config serveur)
+// [COMPACT 2026-07-03] 8 lignes suffisent à dégager la barre de coupe : la coupe PARTIELLE
+// garde le ticket accroché → plus besoin d'une longue queue (fini le grand espace blanc).
+const DEFAULT_FEED_LINES = clampFeed(parseInt(process.env.BORNE_FEED_LINES || '8', 10));
 const DEFAULT_CUT_PARTIAL = (process.env.BORNE_CUT_MODE || 'partial').toLowerCase() !== 'full';
 
 function clampFeed(n) { n = Number.isFinite(n) ? Math.floor(n) : 30; return Math.max(0, Math.min(255, n)); }
@@ -86,6 +89,7 @@ function renderTicket(p) {
   const bodySize = Number.isInteger(p.bodySize) ? p.bodySize : 0x01;  // double hauteur
   const titleSize = Number.isInteger(p.titleSize) ? p.titleSize : 0x11; // 2×2
   const phone = (p.phone != null && String(p.phone).trim() !== '') ? String(p.phone).trim() : DEFAULT_PHONE;
+  const address = (p.address != null && String(p.address).trim() !== '') ? String(p.address).trim() : DEFAULT_ADDRESS;
   const feedLines = Number.isInteger(p.feedLines) ? clampFeed(p.feedLines) : DEFAULT_FEED_LINES;
   const cutPartial = (p.cutPartial === undefined || p.cutPartial === null) ? DEFAULT_CUT_PARTIAL : !!p.cutPartial;
 
@@ -95,8 +99,9 @@ function renderTicket(p) {
   align(1);
   bold(1); size(titleSize); text(p.title || 'LE CAYENNE');
   size(0x00); bold(0);
-  if (phone) text('Tel : ' + phone);
-  if (p.subtitle) text(p.subtitle);
+  if (address) text(address);                 // adresse (design pro)
+  if (phone) text('Tel : ' + phone);          // téléphone
+  if (p.subtitle) text(p.subtitle);           // date
   if (p.order) { bold(1); size(titleSize); text('Commande ' + p.order); size(0x00); bold(0); }
   rule();
 

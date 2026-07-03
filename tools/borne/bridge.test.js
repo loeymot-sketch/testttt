@@ -44,10 +44,11 @@ const a = renderTicket({
   ],
   total: '9,40 EUR', footer: 'Merci et bon appetit !',
   bodySize: 0x01, titleSize: 0x11,
-  phone: '03 65 67 82 91', feedLines: 30, cutPartial: true,
+  phone: '03 65 67 82 91', address: '12 Rue du Test, Lille', feedLines: 30, cutPartial: true,
 });
 check('téléphone imprimé en en-tête', () => assert.ok(has(a, Buffer.from('Tel : 03 65 67 82 91', 'binary'))));
-check('avance papier LONGUE ESC d 30 (0x1B 0x64 0x1E)', () => assert.ok(has(a, [ESC, 0x64, 30])));
+check('adresse imprimée en en-tête (design pro)', () => assert.ok(has(a, Buffer.from('12 Rue du Test, Lille', 'binary'))));
+check('avance papier ESC d 30 (override serveur)', () => assert.ok(has(a, [ESC, 0x64, 30])));
 check('coupe PARTIELLE GS V 1 (0x1D 0x56 0x01)', () => assert.ok(has(a, [GS, 0x56, 0x01])));
 check('coupe entière ABSENTE (pas de GS V 0 final)', () => assert.ok(!has(a, [GS, 0x56, 0x00])));
 check('nom de produit en GRAS (ESC E 1 présent)', () => assert.ok(has(a, [ESC, 0x45, 0x01])));
@@ -71,7 +72,7 @@ const b = renderTicket({
   total: '6,00 EUR',
 });
 check('téléphone par DÉFAUT présent (03 65 67 82 91)', () => assert.ok(has(b, Buffer.from('Tel : ' + DEFAULT_PHONE, 'binary'))));
-check('avance LONGUE par défaut (ESC d 30)', () => assert.ok(has(b, [ESC, 0x64, 30])));
+check('avance COURTE par défaut (ESC d 8 — plus de grand vide)', () => assert.ok(has(b, [ESC, 0x64, 8])));
 check('coupe PARTIELLE par défaut (GS V 1)', () => assert.ok(has(b, [GS, 0x56, 0x01])));
 check('0 ligne > 32 colonnes', () => {
   const over = printedLines(b).filter((l) => l.length > 32);

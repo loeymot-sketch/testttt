@@ -46,6 +46,10 @@ return [
         // Utilisé par la CAISSE (OrderReceiptEscPosRenderer) et injecté à la BORNE
         // (master.blade → window.foodkingConfig.borneTicket.phone → bridge.js).
         'phone' => env('RECEIPT_PHONE', '03 65 67 82 91'),
+        // [TICKET-ADRESSE 2026-07-03] Owner veut l'adresse en en-tête (design pro).
+        // Source primaire = `branch->address` ; ce défaut config est le fallback.
+        // ⚠️ À REMPLACER par la VRAIE adresse Le Cayenne (env RECEIPT_ADDRESS ou branche).
+        'address' => env('RECEIPT_ADDRESS', ''),
     ],
 
     /*
@@ -92,14 +96,13 @@ return [
         'feed_lines_before_cut' => (int) env('PRINT_FEED_LINES_BEFORE_CUT', 8),
         'mode' => env('PRINT_CUT_MODE', 'full'), // 'full' | 'partial'
 
-        // [TICKET-BORNE-LONG 2026-07-02] Owner : le ticket CLIENT de la BORNE est trop court
-        // → il tombe par terre avant que le client l'attrape. On veut un ticket LONG (~15-20 cm,
-        // il ressort bien → le client le voit et le prend) + coupe PARTIELLE (GS V 1 : il reste
-        // accroché au rouleau → ne tombe JAMAIS ; le client le détache). Réglages SPÉCIFIQUES
-        // borne-client (la CAISSE garde feed_lines_before_cut/mode ci-dessus : le caissier tend
-        // le ticket). ~4 mm/ligne → 30 lignes ≈ 12 cm de queue. Si l'imprimante ne fait PAS la
-        // coupe partielle → BORNE_CLIENT_CUT_MODE=full (la longue queue le rend quand même attrapable).
-        'kiosk_client_feed_lines' => (int) env('BORNE_CLIENT_FEED_LINES', 30),
+        // [TICKET-BORNE-COMPACT 2026-07-03] Owner : « le ticket ne tombe plus (coupe partielle
+        // OK) mais il y a BEAUCOUP d'espace blanc en dessous → supprime-le ». La coupe PARTIELLE
+        // (GS V 1) garde le ticket accroché au rouleau → il ne tombe JAMAIS, donc plus besoin
+        // d'une longue queue. On réduit à ~8 lignes : juste de quoi dégager la barre de coupe
+        // (~15-20 mm au-dessus de la tête) sans rogner le pied → ticket PROPRE, compact, sans
+        // grand vide. (Avant : 30 lignes ≈ 12 cm de blanc = « nul ».)
+        'kiosk_client_feed_lines' => (int) env('BORNE_CLIENT_FEED_LINES', 8),
         'kiosk_client_mode' => env('BORNE_CLIENT_CUT_MODE', 'partial'), // 'partial' | 'full'
     ],
 

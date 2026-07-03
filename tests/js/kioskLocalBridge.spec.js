@@ -76,18 +76,20 @@ describe('buildBridgePayload — codepage-safe (ASCII)', () => {
 describe('[TICKET-BORNE 2026-07-03] téléphone + feed long + coupe partielle dans le payload', () => {
   afterEach(() => { try { delete window.foodkingConfig; } catch (_) { window.foodkingConfig = undefined; } });
 
-  it('défauts sûrs SANS config (vieux bundle) : feedLines=30, cutPartial=true, phone=""', () => {
+  it('défauts sûrs SANS config (vieux bundle) : feedLines=8 (compact), cutPartial=true, phone/address=""', () => {
     window.foodkingConfig = undefined;
     const p = buildBridgePayload(receipt);
-    expect(p.feedLines).toBe(30);       // ticket LONG (ne tombe pas court)
+    expect(p.feedLines).toBe(8);        // compact (plus de grand vide) — la coupe partielle évite la chute
     expect(p.cutPartial).toBe(true);    // coupe partielle (ne tombe pas par terre)
     expect(p.phone).toBe('');           // le pont applique alors SON défaut (03 65 67 82 91)
+    expect(p.address).toBe('');
   });
 
-  it('prend le téléphone + feed + mode injectés par le serveur (window.foodkingConfig.borneTicket)', () => {
-    window.foodkingConfig = { borneTicket: { phone: '03 65 67 82 91', feedLines: 40, cutPartial: false } };
+  it('prend téléphone + adresse + feed + mode injectés par le serveur (window.foodkingConfig.borneTicket)', () => {
+    window.foodkingConfig = { borneTicket: { phone: '03 65 67 82 91', address: '12 Rue du Test', feedLines: 40, cutPartial: false } };
     const p = buildBridgePayload(receipt);
     expect(p.phone).toBe('03 65 67 82 91');
+    expect(p.address).toBe('12 Rue du Test');
     expect(p.feedLines).toBe(40);
     expect(p.cutPartial).toBe(false);
   });

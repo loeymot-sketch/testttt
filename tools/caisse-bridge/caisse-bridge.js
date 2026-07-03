@@ -70,7 +70,9 @@ function printRaw(buffer) {
       'if(-not [FKRaw]::Send(' + escPrinter + ', $bytes)){ exit 2 }',
     ].join('\n');
     const b64 = Buffer.from(ps, 'utf16le').toString('base64');
-    const child = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', b64]);
+    // [FLASH-FIX 2026-07-03] windowsHide:true → PAS de fenêtre console qui « flashe »
+    // à chaque impression (owner : « un Terminal s'ouvre d'un coup, un flash »).
+    const child = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', b64], { windowsHide: true });
     let err = '';
     child.stderr.on('data', (d) => { err += d.toString(); });
     child.on('error', (e) => { try { fs.unlinkSync(tmp); } catch (_) {} resolve({ ok: false, error: 'spawn_failed: ' + e.message }); });

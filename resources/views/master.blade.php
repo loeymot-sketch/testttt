@@ -184,12 +184,13 @@
             borneTicket: {
                 bodySize: @json((int) config('printing.borne_ticket.body_size', 0x01)),
                 titleSize: @json((int) config('printing.borne_ticket.title_size', 0x11)),
-                // [TICKET-PHONE 2026-07-03] Téléphone imprimé sur le ticket borne (le pont
-                // bridge.js l'affiche en en-tête). Fallback config si branche sans téléphone.
+                // [TICKET-PHONE 2026-07-03] Téléphone + adresse imprimés sur le ticket borne (le
+                // pont bridge.js les affiche en en-tête, design pro). Fallback config si branche vide.
                 phone: @json((string) config('printing.receipt.phone', '')),
-                // [TICKET-BORNE-LONG 2026-07-02] Avance papier + mode de coupe envoyés au pont
-                // (bridge.js) : ticket LONG (queue attrapable) + coupe PARTIELLE (ne tombe pas).
-                feedLines: @json((int) config('printing.cut.kiosk_client_feed_lines', 30)),
+                address: @json((string) config('printing.receipt.address', '')),
+                // [TICKET-BORNE-COMPACT 2026-07-03] Avance papier COURTE (8) + coupe PARTIELLE :
+                // ticket compact qui ne tombe pas (reste accroché) — fini le grand espace blanc.
+                feedLines: @json((int) config('printing.cut.kiosk_client_feed_lines', 8)),
                 cutPartial: @json(strtolower((string) config('printing.cut.kiosk_client_mode', 'partial')) === 'partial'),
             },
             // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-31 Q2] Discretionary-discount
