@@ -624,8 +624,9 @@ export default {
                     // fenêtre) AVANT window.print : le serveur cloud ne joint pas l'USB
                     // SAGA, donc on récupère les octets ESC/POS rendus serveur et on les
                     // POSTe au pont local. window.print reste le fallback ultime.
-                    const viaBridge = await this.tryCaisseBridge('client');
-                    if (!viaBridge) {
+                    const bridgeRes = await this.tryCaisseBridge('client');
+                    if (bridgeRes === 'no-bridge') {
+                        // Aucun pont (dev/navigateur) → fallback window.print historique.
                         await this.$nextTick();
                         const trigger = this.$refs.hiddenPrintClientButton;
                         if (trigger && typeof trigger.click === 'function') {
@@ -633,6 +634,9 @@ export default {
                         } else if (typeof window !== 'undefined' && typeof window.print === 'function') {
                             window.print();
                         }
+                    } else if (bridgeRes === 'failed') {
+                        // Pont présent mais échec → erreur claire, JAMAIS la page grise.
+                        alertService.error(this.$t('pos.reprint_error'));
                     }
                 }
             } finally {
@@ -646,18 +650,27 @@ export default {
          * Jamais throw ; si pont absent/échec → false → fallback window.print.
          */
         async tryCaisseBridge(ticket) {
+            // [HARDWARE-HARDENING 2026-07-03] Renvoie un STATUT (plus un simple booléen) pour
+            // distinguer 2 cas au retour :
+            //   'printed'   → imprimé sur le SAGA (rien d'autre à faire).
+            //   'failed'    → le pont est LÀ (health OK) mais l'impression a échoué (mauvais nom
+            //                 d'imprimante, USB débranché, octets absents) → on affiche une ERREUR
+            //                 claire et on NE retombe PAS sur window.print (fini la page grise + URL).
+            //   'no-bridge' → aucun pont (health KO) = machine dev/navigateur → window.print autorisé.
             try {
-                if (!this.order?.id) return false;
-                if (!(await isCaisseBridgeAvailable())) return false;
+                if (!this.order?.id) return 'no-bridge';
+                if (!(await isCaisseBridgeAvailable())) return 'no-bridge';
                 const { data } = await axios.get(
                     `admin/pos/orders/${this.order.id}/escpos`,
                     { params: { ticket } }
                 );
-                if (!data?.escpos_b64) return false;
+                if (!data?.escpos_b64) return 'failed';
                 const r = await printEscPosViaCaisseBridge(data.escpos_b64, { orderRef: this.order.id });
-                return !!(r && r.ok);
+                return (r && r.ok) ? 'printed' : 'failed';
             } catch (_) {
-                return false;
+                // Health a réussi mais une étape a jeté (serveur/pont) → pont présent = 'failed',
+                // pas 'no-bridge' → on ne dégrade PAS vers la page grise du navigateur.
+                return 'failed';
             }
         },
         /**
@@ -685,8 +698,8 @@ export default {
                 }
                 if (!printedThermally) {
                     // [CAISSE-BRIDGE 2026-06-28] pont local silencieux avant window.print
-                    const viaBridge = await this.tryCaisseBridge('kitchen');
-                    if (!viaBridge) {
+                    const bridgeRes = await this.tryCaisseBridge('kitchen');
+                    if (bridgeRes === 'no-bridge') {
                         await this.$nextTick();
                         const trigger = this.$refs.hiddenPrintKitchenButton;
                         if (trigger && typeof trigger.click === 'function') {
@@ -694,6 +707,9 @@ export default {
                         } else if (typeof window !== 'undefined' && typeof window.print === 'function') {
                             window.print();
                         }
+                    } else if (bridgeRes === 'failed') {
+                        // [HARDWARE-HARDENING 2026-07-03] Pont là mais échec → erreur, pas de page grise.
+                        alertService.error(this.$t('pos.reprint_error'));
                     }
                 }
             } finally {
