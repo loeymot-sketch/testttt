@@ -41,9 +41,16 @@ class MonitorOutboxStaleness extends Command
 
         $cutoff = now()->subSeconds($staleAfter);
 
+        // [NUIT-A 2026-07-03 / P2 alarme désensibilisée] Le signal « worker down » ne doit compter QUE les
+        // events encore dans la fenêtre de re-queue automatique (attempts < 5 = repris par outbox:rescue).
+        // Auparavant il comptait TOUS les pending → les orphelins terminaux (attempts >= 5, jamais repris par
+        // aucune lane) s'accumulaient et maintenaient l'alarme en FAILURE permanent → fatigue d'alerte →
+        // une VRAIE panne worker était masquée. Les terminaux sont désormais une dimension DEAD-LETTER
+        // distincte (ci-dessous), pas le signal « worker down ».
         $staleCount = (int) DB::table('domain_events')
             ->where('created_at', '<', $cutoff)
             ->whereNull('dispatched_at')
+            ->where('attempts', '<', 5)
             ->count();
 
         // [GOAL-sync-ordertaking 2026-05-29 H3] Crash-claimed orphan class.
@@ -76,8 +83,19 @@ class MonitorOutboxStaleness extends Command
             ->where('dispatched_at', '<', $orphanCutoff)
             ->count();
 
-        if ($staleCount <= $threshold && $crashClaimedCount === 0) {
-            $this->info("[OK] {$staleCount} stale outbox events (threshold: {$threshold}, stale_after: {$staleAfter}s). 0 crash-claimed orphans.");
+        // [NUIT-A 2026-07-03 / P2] DEAD-LETTER : pending + attempts >= 5. Ces rows ont épuisé la fenêtre de
+        // re-queue (outbox:rescue ne reprend que attempts < 5) sans jamais réussir, et prune ne supprime
+        // qu'à attempts >= 6 → elles restent orphelines. Dimension distincte du « worker down » : elles
+        // exigent une action MANUELLE (re-drive), pas un redémarrage de worker. Gate d'âge (orphanCutoff)
+        // pour ne pas alerter sur un event tout juste passé à attempts=5 encore en cours de traitement.
+        $deadLetterCount = (int) DB::table('domain_events')
+            ->whereNull('dispatched_at')
+            ->where('attempts', '>=', 5)
+            ->where('created_at', '<', $orphanCutoff)
+            ->count();
+
+        if ($staleCount <= $threshold && $crashClaimedCount === 0 && $deadLetterCount === 0) {
+            $this->info("[OK] {$staleCount} stale outbox events (threshold: {$threshold}, stale_after: {$staleAfter}s). 0 crash-claimed orphans, 0 dead-letter.");
 
             return self::SUCCESS;
         }
@@ -105,6 +123,7 @@ class MonitorOutboxStaleness extends Command
             'event' => 'outbox.staleness.alert',
             'stale_count' => $staleCount,
             'crash_claimed_count' => $crashClaimedCount,
+            'dead_letter_count' => $deadLetterCount,
             'threshold' => $threshold,
             'stale_after_seconds' => $staleAfter,
             'oldest_id' => $oldest->id ?? null,
@@ -118,13 +137,15 @@ class MonitorOutboxStaleness extends Command
             'oldest_orphan_attempts' => $oldestOrphan->attempts ?? null,
         ];
 
-        $message = "[OUTBOX STALE] {$staleCount} undispatched events older than {$staleAfter}s "
-            . "(threshold: {$threshold}) + {$crashClaimedCount} crash-claimed orphans. "
+        $message = "[OUTBOX STALE] {$staleCount} undispatched retryable events older than {$staleAfter}s "
+            . "(threshold: {$threshold}) + {$crashClaimedCount} crash-claimed orphans + {$deadLetterCount} dead-letter. "
             . 'If stale_count is high: queue worker may be down — verify '
-            . '`php artisan queue:work --queue=high` is running (docs/REALTIME_SETUP.md). '
+            . '`php artisan queue:work --queue=high,default` is running (docs/REALTIME_SETUP.md). '
             . 'If crash_claimed_count is high: those rows are claimed-but-never-broadcast '
             . 'and are UNREACHABLE by retry-failed/rescue — re-drive them MANUALLY '
-            . '(e.g. `DispatchDomainEventsJob::dispatch($id)` after nulling dispatched_at).';
+            . '(e.g. `DispatchDomainEventsJob::dispatch($id)` after nulling dispatched_at). '
+            . 'If dead_letter_count is high: pending rows that exhausted the rescue window (attempts>=5) '
+            . 'and are not worker-down — re-drive or purge them manually.';
 
         Log::error($message, $context);
         $this->error($message);
