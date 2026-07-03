@@ -160,6 +160,33 @@
           <p class="cc-mode-info-text">{{ modeHint }}</p>
         </div>
 
+        <!-- [PRINT-AENCAISSER 2026-07-03] Imprimer le ticket (client ou cuisine) de la
+             commande AVANT encaissement — via le pont RAW (silencieux, pas de window.print). -->
+        <div class="cc-print-row" v-if="hasOrder">
+          <button
+            type="button"
+            class="cc-print-btn"
+            :disabled="submitting || !!printingTicket"
+            data-testid="pos-counter-collect-print-client"
+            @click="printTicket('client')"
+          >
+            <span v-if="printingTicket === 'client'" class="cc-spinner cc-spinner-dark" aria-hidden="true"></span>
+            <span v-else aria-hidden="true">🧾</span>
+            {{ $t('label.print_ticket_client') }}
+          </button>
+          <button
+            type="button"
+            class="cc-print-btn"
+            :disabled="submitting || !!printingTicket"
+            data-testid="pos-counter-collect-print-kitchen"
+            @click="printTicket('kitchen')"
+          >
+            <span v-if="printingTicket === 'kitchen'" class="cc-spinner cc-spinner-dark" aria-hidden="true"></span>
+            <span v-else aria-hidden="true">🍳</span>
+            {{ $t('label.print_ticket_kitchen') }}
+          </button>
+        </div>
+
         <!-- Footer: confirm + cancel -->
         <div class="cc-modal-footer">
           <button
@@ -197,6 +224,10 @@ import posPaymentMethodEnum from '../../../enums/modules/posPaymentMethodEnum';
 import appService from '../../../services/appService';
 import alertService from '../../../services/alertService';
 import focusTrap from '../../../mixins/focusTrap';
+// [PRINT-AENCAISSER 2026-07-03] Impression SILENCIEUSE via le pont RAW caisse (mêmes
+// helpers que ReceiptComponent) — le serveur rend les octets ESC/POS fiscaux, le pont
+// local les sort sur le SAGA. Aucun window.print (donc pas de page grise / URL).
+import { isCaisseBridgeAvailable, printEscPosViaCaisseBridge } from '../../../helpers/posLocalPrinter';
 
 /**
  * PosCounterCollectModal — Wave X X1 sibling counter-collect SSOT-flavored modal.
@@ -244,6 +275,10 @@ export default {
       // (owner-reported "chiffres bizarres": pre-filled 8,50 + tap 1 → 8,501).
       cashFieldPristine: true,
       submitting: false,
+      // [PRINT-AENCAISSER 2026-07-03] Ticket en cours d'impression ('client'|'kitchen'|null)
+      // → désactive les 2 boutons + spinner. Owner : pouvoir imprimer le ticket client OU
+      // cuisine d'une commande AVANT de l'encaisser (via le pont RAW, impression silencieuse).
+      printingTicket: null,
       // Static mode list — kept inside data to ease i18n key reference;
       // intentionally NOT a computed because keys never change.
       modes: [
@@ -404,6 +439,42 @@ export default {
       if (this.submitting) return;
       this.cashFieldPristine = false;
       this.cashReceivedRaw = '';
+    },
+    // [PRINT-AENCAISSER 2026-07-03] Imprime le ticket CLIENT ou CUISINE de la commande
+    // à encaisser, via le pont RAW (octets ESC/POS fiscaux rendus serveur → SAGA). Lecture
+    // seule côté fiscal (endpoint /escpos n'incrémente pas le compteur NF525 : ce n'est pas
+    // le reçu officiel de clôture, juste une copie de service avant encaissement).
+    async printTicket(type) {
+      const ticket = type === 'kitchen' ? 'kitchen' : 'client';
+      const id = this.order && this.order.id;
+      if (!id || this.submitting || this.printingTicket) return;
+      this.printingTicket = ticket;
+      try {
+        // Pont requis : impression SILENCIEUSE. Pas de pont → message clair, JAMAIS window.print
+        // (sinon page grise Windows + URL du serveur = le ticket « nul » signalé par l'owner).
+        if (!(await isCaisseBridgeAvailable())) {
+          alertService.error(this.$t('pos.reprint_error'));
+          return;
+        }
+        const { data } = await axios.get(`admin/pos/orders/${id}/escpos`, { params: { ticket } });
+        if (!data || !data.escpos_b64) {
+          alertService.error(this.$t('pos.reprint_error'));
+          return;
+        }
+        const r = await printEscPosViaCaisseBridge(data.escpos_b64, { orderRef: id });
+        if (r && r.ok) {
+          const label = ticket === 'kitchen'
+            ? this.$t('label.print_ticket_kitchen')
+            : this.$t('label.print_ticket_client');
+          alertService.success(`${label} ✓`);
+        } else {
+          alertService.error(this.$t('pos.reprint_error'));
+        }
+      } catch (e) {
+        alertService.error(this.$t('pos.reprint_error'));
+      } finally {
+        this.printingTicket = null;
+      }
     },
     onlyFloat(e) {
       return appService.floatNumber(e);
@@ -826,6 +897,34 @@ export default {
   opacity: 0.55;
   cursor: not-allowed;
   box-shadow: none;
+}
+
+/* [PRINT-AENCAISSER 2026-07-03] Rangée d'impression (client / cuisine) au-dessus du footer. */
+.cc-print-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+.cc-print-btn {
+  flex: 1;
+  padding: 11px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--pos-v5-surface-2, #f5f5f5);
+  border: 1px solid var(--pos-v5-border, #ccc);
+  color: var(--pos-v5-text, #1a1a1a);
+}
+.cc-print-btn:hover:not(:disabled) { background: var(--pos-v5-surface-3, #ececec); }
+.cc-print-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.cc-spinner-dark {
+  border: 2px solid rgba(0, 0, 0, 0.25);
+  border-top-color: var(--pos-v5-text, #1a1a1a);
 }
 
 .cc-spinner {
