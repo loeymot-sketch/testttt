@@ -162,7 +162,7 @@
 
         <!-- [PRINT-AENCAISSER 2026-07-03] Imprimer le ticket (client ou cuisine) de la
              commande AVANT encaissement — via le pont RAW (silencieux, pas de window.print). -->
-        <div class="cc-print-row" v-if="hasOrder">
+        <div class="cc-print-row" v-if="visible">
           <button
             type="button"
             class="cc-print-btn"
@@ -172,7 +172,7 @@
           >
             <span v-if="printingTicket === 'client'" class="cc-spinner cc-spinner-dark" aria-hidden="true"></span>
             <span v-else aria-hidden="true">🧾</span>
-            {{ $t('label.print_ticket_client') }}
+            {{ $t('pos.print_ticket_client') }}
           </button>
           <button
             type="button"
@@ -183,7 +183,7 @@
           >
             <span v-if="printingTicket === 'kitchen'" class="cc-spinner cc-spinner-dark" aria-hidden="true"></span>
             <span v-else aria-hidden="true">🍳</span>
-            {{ $t('label.print_ticket_kitchen') }}
+            {{ $t('pos.print_ticket_kitchen') }}
           </button>
         </div>
 
@@ -464,8 +464,8 @@ export default {
         const r = await printEscPosViaCaisseBridge(data.escpos_b64, { orderRef: id });
         if (r && r.ok) {
           const label = ticket === 'kitchen'
-            ? this.$t('label.print_ticket_kitchen')
-            : this.$t('label.print_ticket_client');
+            ? this.$t('pos.print_ticket_kitchen')
+            : this.$t('pos.print_ticket_client');
           alertService.success(`${label} ✓`);
         } else {
           alertService.error(this.$t('pos.reprint_error'));
