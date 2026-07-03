@@ -408,19 +408,22 @@ export default {
        overflow-y:auto → si la file dépasse l'écran, on défile au lieu de cacher les 9+. */
     flex: 1;
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    /* [KDS-COMPACT 2026-07-04] Owner : 3 commandes par ligne (cartes ~+33% plus larges)
+       → la ligne symbolique tient sans se replier en 5 lignes. Écran 16". Espaces resserrés
+       (gap/padding 10px) pour récupérer l'espace perdu entre les cartes. */
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     grid-auto-rows: min-content;
     align-items: start;
-    gap: 16px;
-    padding: 16px;
+    gap: 10px;
+    padding: 10px;
     min-height: 0;
     overflow-y: auto;
 }
 
-/* 4K: 5 colonnes, même flux défilable */
+/* Très grand écran (≥ 2560px) : 4 colonnes, sinon les cartes deviennent trop larges. */
 @media (min-width: 2560px) {
     .kds-v2__grid {
-        grid-template-columns: repeat(5, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 }
 
