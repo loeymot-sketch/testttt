@@ -10,6 +10,7 @@ use App\Events\SendSmsCode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use App\Libraries\QueryExceptionLibrary;
 use Smartisan\Settings\Facades\Settings;
 use App\Http\Requests\VerifyPhoneRequest;
@@ -77,8 +78,25 @@ class OtpManagerService
                 return true;
             }
 
+            $phone = $request->post('phone');
+
+            // [NUIT 2026-07-03 — P2 anti-brute-force OTP] Verrou PAR IDENTITÉ (téléphone), en complément du
+            // throttle par-IP (3/5min). Le code n'était consommé qu'au SUCCÈS → un attaquant pouvait deviner
+            // un code 4-6 chiffres tant qu'il n'expire pas (rejeu du même code, contournable par rotation
+            // d'IP). Ici : au-delà de N échecs pour CE téléphone, on BRÛLE le(s) OTP vivant(s) et on force une
+            // nouvelle demande (throttlée côté /otp). Compteur en Cache (TTL = fenêtre d'expiration) →
+            // fail-open si cache indisponible (repli propre sur le throttle existant, jamais de blocage dur).
+            $failKey = 'otp_verify_fail:' . $phone;
+            $maxAttempts = 5;
+            $ttlMinutes = max(1, (int) Settings::group('otp')->get('otp_expire_time') ?: 5);
+            if ((int) Cache::get($failKey, 0) >= $maxAttempts) {
+                DB::table('otps')->where('phone', $phone)->delete(); // consume-on-abuse : le code est brûlé
+                Cache::forget($failKey);
+                throw new Exception(trans('all.message.code_is_invalid'), 422);
+            }
+
             $otp = DB::table('otps')->where([
-                ['phone', $request->post('phone')],
+                ['phone', $phone],
                 ['token', $request->post('token')],
             ])->first();
             if ($otp) {
@@ -87,12 +105,15 @@ class OtpManagerService
                     throw new Exception(trans('all.message.code_is_expired'), 422);
                 } else {
                     DB::table('otps')->where([
-                        ['phone', $request->post('phone')],
+                        ['phone', $phone],
                         ['token', $request->post('token')],
                     ])->delete();
+                    Cache::forget($failKey); // succès → réinitialise le compteur d'échecs par identité
                     return true;
                 }
             } else {
+                // Échec : incrémente le compteur d'échecs de CE téléphone (fenêtre = expiration du code).
+                Cache::put($failKey, ((int) Cache::get($failKey, 0)) + 1, now()->addMinutes($ttlMinutes));
                 throw new Exception(trans('all.message.code_is_invalid'), 422);
             }
         } catch (Exception $exception) {
