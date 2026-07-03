@@ -31,6 +31,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Caisse : impression SILENCIEUSE uniquement (jamais window.print)
+    |--------------------------------------------------------------------------
+    |
+    | [1000%-NO-POPUP 2026-07-03] Owner : « le ticket sort avec un popup gris + en
+    | paragraphe, différent de l'écran ». Cause = window.print() du navigateur (imprime
+    | la PAGE web = URL/zéros/paragraphe) quand le pont RAW n'est pas joignable. Sur la
+    | VRAIE caisse, mettre `POS_PRINT_SILENT_ONLY=true` : le front NE retombe JAMAIS sur
+    | window.print — il n'imprime QUE via le pont local (octets ESC/POS serveur = ticket
+    | == écran) ; si le pont est absent → message d'erreur clair, PAS de popup gris.
+    | Laisser `false` en dev/navigateur (où window.print sert d'aperçu).
+    |
+    */
+    'pos_silent_only' => (bool) env('POS_PRINT_SILENT_ONLY', false),
+
+    /*
+    |--------------------------------------------------------------------------
     | Receipt header extras (single-restaurant V1 — no per-branch column)
     |--------------------------------------------------------------------------
     |

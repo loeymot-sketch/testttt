@@ -193,6 +193,9 @@
                 feedLines: @json((int) config('printing.cut.kiosk_client_feed_lines', 8)),
                 cutPartial: @json(strtolower((string) config('printing.cut.kiosk_client_mode', 'partial')) === 'partial'),
             },
+            // [1000%-NO-POPUP 2026-07-03] Caisse silencieuse : true → JAMAIS window.print (popup gris).
+            // Le ticket ne sort QUE via le pont RAW (octets serveur = ticket == écran). POS_PRINT_SILENT_ONLY.
+            posSilentPrintOnly: @json((bool) config('printing.pos_silent_only', false)),
             // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-31 Q2] Discretionary-discount
             // master flag, exposed so the customer UI hides coupon + loyalty-redeem
             // entries while discounts are disabled — otherwise a customer who uses them

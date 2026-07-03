@@ -392,6 +392,11 @@ export default {
         }
     },
     computed: {
+        // [1000%-NO-POPUP 2026-07-03] Caisse silencieuse : quand true, JAMAIS window.print()
+        // (= le popup gris du navigateur). Injecté par master.blade → config printing.pos_silent_only.
+        silentPrintOnly: function () {
+            return !!(typeof window !== 'undefined' && window.foodkingConfig && window.foodkingConfig.posSilentPrintOnly);
+        },
         // [BYPASS-P3] Lit window.foodkingConfig.bypassMode injecté par master.blade.php.
         bypassPrintingActive: function () {
             return !!(typeof window !== 'undefined' && window.foodkingConfig?.bypassMode?.printing);
@@ -626,14 +631,7 @@ export default {
                     // POSTe au pont local. window.print reste le fallback ultime.
                     const bridgeRes = await this.tryCaisseBridge('client');
                     if (bridgeRes === 'no-bridge') {
-                        // Aucun pont (dev/navigateur) → fallback window.print historique.
-                        await this.$nextTick();
-                        const trigger = this.$refs.hiddenPrintClientButton;
-                        if (trigger && typeof trigger.click === 'function') {
-                            trigger.click();
-                        } else if (typeof window !== 'undefined' && typeof window.print === 'function') {
-                            window.print();
-                        }
+                        await this._browserPrintFallback('hiddenPrintClientButton');
                     } else if (bridgeRes === 'failed') {
                         // Pont présent mais échec → erreur claire, JAMAIS la page grise.
                         alertService.error(this.$t('pos.reprint_error'));
@@ -674,6 +672,26 @@ export default {
             }
         },
         /**
+         * [1000%-NO-POPUP 2026-07-03] Repli quand AUCUN pont n'est détecté.
+         * En mode CAISSE SILENCIEUSE (config `printing.pos_silent_only` → window.foodkingConfig
+         * .posSilentPrintOnly), on NE déclenche JAMAIS window.print() = le « popup gris » du
+         * navigateur qui imprime la page web (URL + zéros + paragraphe). On affiche une ERREUR
+         * claire à la place. window.print reste réservé au dev/navigateur (flag OFF).
+         */
+        async _browserPrintFallback(refName) {
+            if (this.silentPrintOnly) {
+                alertService.error(this.$t('pos.print_bridge_offline'));
+                return;
+            }
+            await this.$nextTick();
+            const trigger = this.$refs[refName];
+            if (trigger && typeof trigger.click === 'function') {
+                trigger.click();
+            } else if (typeof window !== 'undefined' && typeof window.print === 'function') {
+                window.print();
+            }
+        },
+        /**
          * Ticket cuisine : pas d’appel fiscal — bon de préparation uniquement.
          */
         async handlePrintKitchenClick() {
@@ -700,13 +718,7 @@ export default {
                     // [CAISSE-BRIDGE 2026-06-28] pont local silencieux avant window.print
                     const bridgeRes = await this.tryCaisseBridge('kitchen');
                     if (bridgeRes === 'no-bridge') {
-                        await this.$nextTick();
-                        const trigger = this.$refs.hiddenPrintKitchenButton;
-                        if (trigger && typeof trigger.click === 'function') {
-                            trigger.click();
-                        } else if (typeof window !== 'undefined' && typeof window.print === 'function') {
-                            window.print();
-                        }
+                        await this._browserPrintFallback('hiddenPrintKitchenButton');
                     } else if (bridgeRes === 'failed') {
                         // [HARDWARE-HARDENING 2026-07-03] Pont là mais échec → erreur, pas de page grise.
                         alertService.error(this.$t('pos.reprint_error'));

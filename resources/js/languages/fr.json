@@ -330,7 +330,8 @@
             "error_invalid": "Cette commande ne peut pas être remboursée.",
             "error_server": "Erreur serveur — réessayez ou contactez l'administrateur.",
             "error_generic": "Impossible d'émettre le remboursement."
-        }
+        },
+        "print_bridge_offline": "Imprimante caisse injoignable (pont d'impression non lancé) — ticket NON imprimé. Vérifiez le pont, puis réimprimez."
     },
     "menu": {
         "historique": "Historique",

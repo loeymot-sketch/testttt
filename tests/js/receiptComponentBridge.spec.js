@@ -7,8 +7,12 @@ vi.mock('../../resources/js/helpers/posLocalPrinter', () => ({
   printEscPosViaCaisseBridge: vi.fn(),
 }));
 vi.mock('axios', () => ({ default: { get: vi.fn(), post: vi.fn() } }));
+vi.mock('../../resources/js/services/alertService', () => ({
+  default: { success: vi.fn(), error: vi.fn(), warning: vi.fn() },
+}));
 
 import axios from 'axios';
+import alertService from '../../resources/js/services/alertService';
 import { isCaisseBridgeAvailable, printEscPosViaCaisseBridge } from '../../resources/js/helpers/posLocalPrinter';
 import Receipt from '../../resources/js/components/admin/pos/ReceiptComponent.vue';
 
@@ -51,5 +55,32 @@ describe('ReceiptComponent.tryCaisseBridge — statut (pas de page grise si pont
 
   it("'no-bridge' sans commande (rien à imprimer)", async () => {
     expect(await tryCaisseBridge.call(ctx(null), 'client')).toBe('no-bridge');
+  });
+});
+
+// [1000%-NO-POPUP 2026-07-03] En mode CAISSE SILENCIEUSE, aucun pont ne doit JAMAIS déclencher
+// window.print() (= le popup gris qui imprime la page web). On montre une erreur claire à la place.
+describe('ReceiptComponent._browserPrintFallback — jamais de popup gris en caisse silencieuse', () => {
+  const fallback = Receipt.methods._browserPrintFallback;
+  const mkCtx = (silent, refs = {}) => ({ silentPrintOnly: silent, $t: (k) => k, $nextTick: () => Promise.resolve(), $refs: refs });
+  let printSpy;
+  beforeEach(() => { vi.clearAllMocks(); printSpy = vi.fn(); global.window = global.window || {}; window.print = printSpy; });
+
+  it('silentPrintOnly=true → ERREUR claire, window.print JAMAIS appelé', async () => {
+    await fallback.call(mkCtx(true), 'hiddenPrintClientButton');
+    expect(alertService.error).toHaveBeenCalled();
+    expect(printSpy).not.toHaveBeenCalled();
+  });
+
+  it('silentPrintOnly=false + bouton présent → click du bouton (aperçu dev), pas d\'erreur', async () => {
+    const clickSpy = vi.fn();
+    await fallback.call(mkCtx(false, { hiddenPrintClientButton: { click: clickSpy } }), 'hiddenPrintClientButton');
+    expect(clickSpy).toHaveBeenCalled();
+    expect(alertService.error).not.toHaveBeenCalled();
+  });
+
+  it('silentPrintOnly=false + aucun bouton → window.print (fallback dev historique)', async () => {
+    await fallback.call(mkCtx(false, {}), 'hiddenPrintClientButton');
+    expect(printSpy).toHaveBeenCalled();
   });
 });

@@ -329,7 +329,8 @@
             "error_invalid": "This order cannot be refunded.",
             "error_server": "Server error — try again or contact the administrator.",
             "error_generic": "Unable to issue the refund."
-        }
+        },
+        "print_bridge_offline": "Counter printer unreachable (print bridge not running) — ticket NOT printed. Check the bridge, then reprint."
     },
     "menu": {
         "historique": "History",
