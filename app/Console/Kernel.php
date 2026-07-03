@@ -197,6 +197,17 @@ class Kernel extends ConsoleKernel
             ->onOneServer()
             ->runInBackground();
 
+        // [NUIT-A2 2026-07-03] order_quotes croît sans purge (~96/j) — miroir de webhook:prune/outbox:prune.
+        // Purge SEULEMENT les devis abandonnés (expirés + jamais consommés). Les consommés (preuve de
+        // litige, liés à une commande) sont préservés — rétention = décision owner. 04:25 stagge le lock.
+        $schedule->command('foodking:order-quotes:prune --older-than-days=7')
+            ->dailyAt('04:25')
+            ->name('order-quotes-prune')
+            ->description('Prune abandoned (expired + never-consumed) order_quotes older than 7d')
+            ->withoutOverlapping()
+            ->onOneServer()
+            ->runInBackground();
+
         // [GOAL-I2-HEAL-04 2026-05-24] Phase I.7 R6 P2: vendor command
         // sanctum:prune-expired was NEVER scheduled. Compound risk: relogin-
         // revoke only touches the active token name, so expired rows of all

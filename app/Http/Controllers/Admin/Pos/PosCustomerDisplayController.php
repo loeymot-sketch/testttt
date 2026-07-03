@@ -20,6 +20,16 @@ use Throwable;
  */
 class PosCustomerDisplayController extends Controller
 {
+    public function __construct()
+    {
+        // [NUIT-A2 2026-07-03 / P3 authz parity] Toutes les autres routes POS (PosController,
+        // ParkedOrderController, CashDrawerController) portent `permission:pos` ; cette route en était
+        // dépourvue → un staff authentifié SANS droit POS (rôle Chef/KDS) pouvait pousser un total
+        // arbitraire sur l'afficheur client. Miroir du gate des contrôleurs sœurs (defense-in-depth ;
+        // impact borné = afficheur non-fiscal, actif seulement si printing.customer_display.enabled).
+        $this->middleware(['permission:pos']);
+    }
+
     public function update(Request $request): JsonResponse
     {
         $data = $request->validate([
