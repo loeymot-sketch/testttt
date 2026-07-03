@@ -42,6 +42,15 @@ class KDSOrderDetailsResource extends JsonResource
             'delivery_time'                       => $this->is_advance_order == Ask::YES ? AppLibrary::deliveryTime($this->delivery_time) : AppLibrary::deliveryTimeCheck($this->delivery_time),
             'is_advance_order'                    => $this->is_advance_order,
             'preparation_time'                    => $this->preparation_time,
+            // [KITCHEN-TIMING 2026-07-03] horodatages RÉELS du parcours cuisine (vs l'estimé
+            // preparation_time) + temps de préparation réel mesuré en secondes (accepted→prepared).
+            // Null tant que non franchi / pour les anciennes commandes. Socle analytique productivité.
+            'accepted_at_iso'                     => $this->accepted_at?->toIso8601String(),
+            'preparing_at_iso'                    => $this->preparing_at?->toIso8601String(),
+            'prepared_at_iso'                     => $this->prepared_at?->toIso8601String(),
+            'actual_prep_seconds'                 => ($this->accepted_at && $this->prepared_at)
+                ? $this->prepared_at->diffInSeconds($this->accepted_at)
+                : null,
             'status'                              => $this->status,
             'status_name'                         => trans('orderStatus.' . $this->status),
             'payment_status'                      => $this->payment_status,

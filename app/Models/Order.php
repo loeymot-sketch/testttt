@@ -94,6 +94,10 @@ class Order extends Model implements BroadcastableOrder
         'fiscal_alloc_error_at' => 'datetime',
         // [H.1 P1 AMBER 2026-05-24 / H2-HEAL-02] cashier attribution
         'creator_id' => 'integer',
+        // [KITCHEN-TIMING 2026-07-03] horodatages du temps réel de préparation cuisine
+        'accepted_at' => 'datetime',
+        'preparing_at' => 'datetime',
+        'prepared_at' => 'datetime',
     ];
 
     /**
