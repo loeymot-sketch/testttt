@@ -53,6 +53,10 @@ class ZReportSplitBucketingLockTest extends TestCase
         $svc = app(ZReportService::class);
         $svc->open($branch->id, $user);
 
+        // aggregate() borne la fenêtre en `created_at > opened_at` STRICT : on avance le temps
+        // pour que la commande tombe strictement DANS la fenêtre (open T → commande T+2min → close T+4min).
+        $this->travel(2)->minutes();
+
         // Split RÉEL : 15 € CASH + 10 € CARD, pos_payment_method = CASH (dominant).
         $order = Order::factory()->create([
             'user_id'            => $user->id,
@@ -75,6 +79,7 @@ class ZReportSplitBucketingLockTest extends TestCase
             ]);
         }
 
+        $this->travel(2)->minutes();
         $z = $svc->close($branch->id, $user);
         $byMethod = (array) $z->total_by_method;
 
