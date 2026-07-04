@@ -97,6 +97,12 @@ sous `lockForUpdate` — `PosRedemptionService:135` (`available < points → Sol
 historique (250 pré-existants sans entrée + redeems depuis 0) **NON reproductible avec le code actuel** ; cohérent
 avec le P3 Wave 2 (`add-points` non-idempotent) déjà documenté, pas un nouveau bug.
 
+## 2sexies. RBAC / AUTHZ / isolation multi-tenant — validé
+Dernier corner nommé. **13 tests verts** : `FormRequestAuthzDriftSentinel` (baseline authz tenu),
+`BranchScopeCoverageSentinel` (isolation sur 20 models), `ClaudeMdBranchScopeCount` (doc↔code synchro),
+`MgmtReadAuthzGate` + `PermissionControllerIndex` (gates permission), `BranchIsolation` (6 tests — cœur
+multi-tenant). Les gardes d'autorisation + l'isolation branche sont verrouillées par sentinelles vertes.
+
 ## 3. GATES
 - Chaîne LIVE borne verte (1 test, 3 itérations) · heals service-layer 5/5 verts live · **NF525 CHAIN OK** (4 branches) après les runs · 0 pageerror.
 - Le nettoyage e2e supprime la commande fixture + son order → 1 gap de fiscal_seq sur la base DEV (artefact de test attendu, pas de prod ; la chaîne HMAC audit_logs/z_reports reste intacte).
