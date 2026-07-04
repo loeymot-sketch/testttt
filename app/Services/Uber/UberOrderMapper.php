@@ -108,8 +108,25 @@ class UberOrderMapper
             return (int) $item->id;
         }
         $item = Item::query()->whereRaw('LOWER(name) LIKE ?', ['%' . mb_strtolower(trim($title)) . '%'])->first(['id']);
+        if ($item) {
+            return (int) $item->id;
+        }
 
-        return $item ? (int) $item->id : null;
+        // [GO-LIVE UBER 2026-07-04] Passage INSENSIBLE AUX ACCENTS/CASSE sur le catalogue actif :
+        // les titres Uber perdent souvent les accents (« Supreme » vs « Suprême », « Mega » vs
+        // « Méga » — la moitié de la carte Le Cayenne est accentuée) → le match SQL exact ratait
+        // et la ligne tombait inutilement sur le placeholder. norm() (translit ASCII + lower)
+        // des DEUX côtés rend la carte vide (uber_menu_map) fonctionnelle pour toute la carte
+        // canonique aux noms identiques. Catalogue ≤ ~60 items → scan en mémoire trivial.
+        if ($n !== '') {
+            foreach (Item::query()->where('status', \App\Enums\Status::ACTIVE)->get(['id', 'name']) as $candidate) {
+                if ($this->norm((string) $candidate->name) === $n) {
+                    return (int) $candidate->id;
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -154,7 +171,11 @@ class UberOrderMapper
 
     private function norm(string $s): string
     {
-        $ascii = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $s);
-        return trim(mb_strtolower($ascii !== false ? $ascii : $s));
+        // [GO-LIVE UBER 2026-07-04] iconv//TRANSLIT est FRAGILE PAR PLATEFORME : la libiconv
+        // macOS rend « Suprême »→« Supr^eme » et « Méga »→« M'ega » (accents → ^ ') → les clés
+        // normalisées ne matchaient jamais selon l'OS. Str::ascii() (foldering Laravel) est
+        // déterministe cross-plateforme ; on strip aussi la ponctuation résiduelle.
+        $ascii = \Illuminate\Support\Str::ascii($s);
+        return trim(preg_replace('/[^a-z0-9 ]+/', '', mb_strtolower($ascii)) ?? '');
     }
 }

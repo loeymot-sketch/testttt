@@ -168,6 +168,22 @@ class UberGoLiveHardeningTest extends TestCase
         $this->assertSame(0, Order::withoutGlobalScopes()->where('transaction_id', 'uber:R-GHOST')->count());
     }
 
+    /** @test — 7. résolution INSENSIBLE AUX ACCENTS : les titres Uber sans accents matchent le
+     * catalogue canonique (« Supreme »→« Suprême », « Mega »→« Méga ») au lieu de tomber sur le
+     * placeholder — la carte vide (uber_menu_map) devient fonctionnelle pour toute la carte réelle. */
+    public function resolution_insensible_aux_accents_matche_le_catalogue(): void
+    {
+        $tax = \App\Models\Tax::factory()->create(['tax_rate' => 0]);
+        $cat = \App\Models\ItemCategory::factory()->create(['name' => 'Sandwichs', 'status' => \App\Enums\Status::ACTIVE]);
+        $supreme = \App\Models\Item::factory()->create(['name' => 'Suprême', 'item_category_id' => $cat->id, 'tax_id' => $tax->id, 'status' => \App\Enums\Status::ACTIVE, 'price' => 7.00]);
+        $mega = \App\Models\Item::factory()->create(['name' => 'Méga', 'item_category_id' => $cat->id, 'tax_id' => $tax->id, 'status' => \App\Enums\Status::ACTIVE, 'price' => 8.00]);
+
+        $mapper = app(\App\Services\Uber\UberOrderMapper::class);
+        $this->assertSame((int) $supreme->id, $mapper->resolveItemId('Supreme'), 'Titre Uber SANS accent doit matcher « Suprême ».');
+        $this->assertSame((int) $mega->id, $mapper->resolveItemId('MEGA'), 'Casse+accent : « MEGA » doit matcher « Méga ».');
+        $this->assertNull($mapper->resolveItemId('Produit Totalement Inconnu 999'), 'Un vrai inconnu reste NULL (→ placeholder).');
+    }
+
     /** @test — 6. token 401 → cache invalidé + refresh + retry (l'intégration ne reste plus bloquée). */
     public function token_401_invalide_le_cache_et_retente(): void
     {
