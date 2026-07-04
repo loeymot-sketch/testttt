@@ -1,5 +1,10 @@
 # GATES PRÉPARÉS — chaque porte réduite à UN MOT d'approbation — 2026-07-04
 
+> **RÉPONSES OWNER (async — coche/écris ici OU dis-le en session, 2 escalades §10 posées le 2026-07-04, AFK ×2)** :
+> - G1 M6-002 (Z split, FROZEN) : ☐ OUI applique sous LOCK ☐ NON plus tard
+> - G3 ≥30€ : ☐ PARTOUT (patch A) ☐ WEB-ONLY (patch B) ☐ plus tard
+> - G2 autoskip : ☐ 12 s j'applique ☐ via cowork ☐ garder 30 s
+
 > Fin de campagne ULTRA : il ne reste AUCUN défaut in-code non-frozen connu. Les 4 portes
 > ci-dessous sont préparées clé-en-main (patch exact + plan de test) — dis le mot, j'applique.
 
