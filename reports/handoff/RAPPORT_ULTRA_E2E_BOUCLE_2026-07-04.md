@@ -87,6 +87,16 @@ négatifs, audit `order.refund.counter_entry`), gardé (parent doit être scell�
 NON reproductible via le service (qui n'écrit jamais le parent) → manipulation test-DB probable, pas un défaut de
 code. Flaggé pour vérif owner de la chaîne Z (est-ce un double-comptage dans un vieux Z de test ?), pas un heal.
 
+## 2quinquies. Système FIDÉLITÉ (earn→redeem→clawback) — validé
+Corner nommé par la boucle. **23 tests verts** (earn-cycle-proof, clawback-sentinel, refund-idempotent,
+double-redeem-refused, ledger-atomic, API). Ground-truth live : ledger `loyalty_transactions` avec
+`balance_after` (snapshot running) + `source_surface` + `pos_session_id`, **0 orphelin user**.
+**Over-redemption RÉFUTÉ comme bug actuel** (verify-before-report) : les 2 chemins redeem gardent le solde
+sous `lockForUpdate` — `PosRedemptionService:135` (`available < points → Solde insuffisant`) + `DiscountCalculator:66`
+— et `KioskLoyaltyDoubleRedeemRefused` est vert. 1 user test-DB (VICT1234) montre une dérive ledger↔points
+historique (250 pré-existants sans entrée + redeems depuis 0) **NON reproductible avec le code actuel** ; cohérent
+avec le P3 Wave 2 (`add-points` non-idempotent) déjà documenté, pas un nouveau bug.
+
 ## 3. GATES
 - Chaîne LIVE borne verte (1 test, 3 itérations) · heals service-layer 5/5 verts live · **NF525 CHAIN OK** (4 branches) après les runs · 0 pageerror.
 - Le nettoyage e2e supprime la commande fixture + son order → 1 gap de fiscal_seq sur la base DEV (artefact de test attendu, pas de prod ; la chaîne HMAC audit_logs/z_reports reste intacte).
