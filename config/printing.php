@@ -56,6 +56,15 @@ return [
     */
     'receipt' => [
         'website' => env('RECEIPT_WEBSITE', 'lecayenne.fr'),
+        // [TICKET-WIDTH 2026-07-04] Owner (photo IMG_1709) : chaque ligne « retournait »
+        // (adresse coupée « …Beaumon\nt », en-tête « M\nONTANT », prix rejeté sur la ligne
+        // suivante) + marge blanche. CAUSE : le renderer composait des lignes de 48 col alors
+        // que l'imprimante SAGA n'imprime physiquement que ~42 col → l'imprimante ré-enroulait
+        // les 6 derniers caractères. La largeur de rendu est désormais PILOTÉE PAR CONFIG :
+        // on cale RECEIPT_WIDTH_CHARS sur la largeur PHYSIQUE réelle (SAGA=42) → chaque ligne
+        // tient, le prix reste sur la ligne de l'article, aucune marge. Ajustable en .env sans
+        // redéploiement (config:clear) si une autre imprimante a une autre largeur.
+        'width_chars' => (int) env('RECEIPT_WIDTH_CHARS', 48),
         // [TICKET-PHONE 2026-07-03] Owner : le n° de téléphone n'apparaissait pas sur
         // les tickets. Source primaire = `branch->phone` ; ce défaut config est le
         // FALLBACK quand la branche n'a pas de téléphone renseigné (cas V1 Le Cayenne).

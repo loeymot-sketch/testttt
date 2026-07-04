@@ -32,7 +32,10 @@ final class OrderReceiptEscPosRenderer
     /** Client (fiscal) ticket — prices, totals, TVA, payment, NF525 footer. */
     public function renderClientTicket(BroadcastableOrder $order, array $opts = []): string
     {
-        $w = (int) ($opts['width_chars'] ?? 48);
+        // [TICKET-WIDTH 2026-07-04] Largeur PILOTÉE PAR CONFIG (défaut 48). Cale-la sur la
+        // largeur PHYSIQUE de l'imprimante (SAGA=42) via RECEIPT_WIDTH_CHARS : au-delà,
+        // l'imprimante ré-enroule les derniers caractères (adresse/prix/en-tête coupés).
+        $w = (int) ($opts['width_chars'] ?? config('printing.receipt.width_chars', 48));
         $codePage = (int) ($opts['code_page'] ?? 19); // 19 = CP858 (FR accents + €)
         $isDuplicata = (bool) ($opts['is_duplicata'] ?? false);
         $counterCopy = (bool) ($opts['counter_copy'] ?? false);
@@ -217,7 +220,10 @@ final class OrderReceiptEscPosRenderer
     /** Kitchen (production) ticket — composition + instruction, NO prices. */
     public function renderKitchenTicket(BroadcastableOrder $order, array $opts = []): string
     {
-        $w = (int) ($opts['width_chars'] ?? 48);
+        // [TICKET-WIDTH 2026-07-04] Largeur PILOTÉE PAR CONFIG (défaut 48). Cale-la sur la
+        // largeur PHYSIQUE de l'imprimante (SAGA=42) via RECEIPT_WIDTH_CHARS : au-delà,
+        // l'imprimante ré-enroule les derniers caractères (adresse/prix/en-tête coupés).
+        $w = (int) ($opts['width_chars'] ?? config('printing.receipt.width_chars', 48));
         $codePage = (int) ($opts['code_page'] ?? 19);
 
         $b = EscPosCommandBuilder::init();
