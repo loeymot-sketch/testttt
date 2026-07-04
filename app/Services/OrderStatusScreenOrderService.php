@@ -62,6 +62,14 @@ class OrderStatusScreenOrderService
                 ])
                 ->whereIn('status', [OrderStatus::PREPARING, OrderStatus::PREPARED]);
 
+            // [ULTRA PARITÉ BOARD-RELEASE 2026-07-04] Même SSOT que TOUTES les surfaces cuisine
+            // (KDS list/orderItems/sync + guard changeStatus) : le mur client ne doit montrer
+            // que ce que la cuisine voit (PAID | PENDING_COUNTER | POS-cash). Sans ce filtre,
+            // une commande UNPAID non-cash forcée en PREPARING (action admin) s'affichait
+            // « En préparation » au client alors que le board cuisine l'exclut.
+            // Sentinel : tests/Feature/OSS/OssBoardReleaseParityTest.php.
+            \App\Domain\Kds\KitchenReleaseRule::applyBoardReleaseFilter($query);
+
             // [RED-team P1 perf 2026-05-17] whereDate non-sargable → range query (uses idx_orders_datetime)
             //
             // [Wave T R5 OSS Adversarial P0 2026-05-20 KDS-T-R5-03] CORRECTION
@@ -227,6 +235,14 @@ class OrderStatusScreenOrderService
                     \App\Enums\OrderType::TAKEAWAY,
                 ])
                 ->whereIn('status', [OrderStatus::PREPARING, OrderStatus::PREPARED]);
+
+            // [ULTRA PARITÉ BOARD-RELEASE 2026-07-04] Même SSOT que TOUTES les surfaces cuisine
+            // (KDS list/orderItems/sync + guard changeStatus) : le mur client ne doit montrer
+            // que ce que la cuisine voit (PAID | PENDING_COUNTER | POS-cash). Sans ce filtre,
+            // une commande UNPAID non-cash forcée en PREPARING (action admin) s'affichait
+            // « En préparation » au client alors que le board cuisine l'exclut.
+            // Sentinel : tests/Feature/OSS/OssBoardReleaseParityTest.php.
+            \App\Domain\Kds\KitchenReleaseRule::applyBoardReleaseFilter($query);
 
             // [RED-team P1 perf 2026-05-17] whereDate non-sargable → range query (uses idx_orders_datetime)
             //
