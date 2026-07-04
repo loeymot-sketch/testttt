@@ -99,15 +99,14 @@ class TzAwareRowVsBoundInclusionSentinelTest extends TestCase
             'pinned UTC 20:20 must resolve to Paris 22:20 (CEST, DST active in May)'
         );
 
-        // Expected post-Wave-T-R5 Paris-local bound literals at this moment.
-        // Paris-today (DST May): start = '2026-05-18 00:00:00', end =
-        // '2026-05-18 23:59:59', tomorrow = '2026-05-19 00:00:00'.
+        // [MINUIT-STRADDLE 2026-07-04] La borne basse non-advance est passée du midnight civil
+        // à la fenêtre GLISSANTE now-8h (Paris-local) : à Paris 22:20 CEST → floor = 14:20:00.
+        // L'intention DST du pin est INCHANGÉE : le floor doit être bindé PARIS-local (le bug
+        // UTC donnerait 12:20). La borne haute anti-futur (< demain 00:00 Paris) est conservée.
         $appTz = config('app.timezone');
-        $expectedStart = Carbon::today($appTz)->format('Y-m-d H:i:s');
-        $expectedEnd = Carbon::today($appTz)->endOfDay()->format('Y-m-d H:i:s');
+        $expectedStart = now($appTz)->subHours((int) config('oss.stale_window_hours', 8))->format('Y-m-d H:i:s');
         $expectedTomorrow = Carbon::tomorrow($appTz)->format('Y-m-d H:i:s');
-        $this->assertSame('2026-05-18 00:00:00', $expectedStart, 'Paris-today start CEST = Paris-local midnight');
-        $this->assertSame('2026-05-18 23:59:59', $expectedEnd, 'Paris-today end CEST = Paris-local 23:59:59');
+        $this->assertSame('2026-05-18 14:20:00', $expectedStart, 'Floor glissant Paris CEST = 22:20 - 8h = 14:20 Paris-local');
         $this->assertSame('2026-05-19 00:00:00', $expectedTomorrow, 'Paris-tomorrow start CEST = Paris-local midnight next');
 
         // Seed an admin user + an active KIOSK order at "now" so the
@@ -177,22 +176,21 @@ class TzAwareRowVsBoundInclusionSentinelTest extends TestCase
         // appear. If it does, `->setTimezone('UTC')` has been re-introduced
         // and production MySQL session_tz=Paris will silently drop the last
         // 22:00-23:59:59 Paris orders from the KDS UI. Wave T R5.
+        // [MINUIT-STRADDLE] Le bug UTC sur le floor glissant donnerait 12:20 (20:20 UTC - 8h)
+        // au lieu du Paris-local 14:20 → détecteur de régression `->setTimezone('UTC')`.
         $this->assertStringNotContainsString(
-            '2026-05-17 22:00:00',
+            '2026-05-18 12:20:00',
             $joined,
-            'KDS service MUST NOT bind UTC-converted Paris-day-start at Paris '
-            . '22:20 CEST. If this fails, the Wave 3b `->setTimezone(\'UTC\')` '
-            . 'pattern has been re-introduced — production MySQL session_tz='
-            . "Paris re-interprets UTC literals as Paris-local. Wave T R5.\n"
-            . "Captured bindings: $joined"
+            'KDS service MUST NOT bind the UTC-converted sliding floor at Paris '
+            . '22:20 CEST (le bug `->setTimezone(\'UTC\')` donnerait 12:20). Wave T R5 / MINUIT-STRADDLE.'
+            . "\nCaptured bindings: $joined"
         );
 
-        // ASSERTION-B (positive — Paris-local start bound): Paris-local
-        // today-start MUST be bound (whereBetween lower bound).
+        // ASSERTION-B (positive — floor glissant Paris-local bindé).
         $this->assertStringContainsString(
             $expectedStart,
             $joined,
-            'KDS service MUST bind Paris-local today-start '
+            'KDS service MUST bind the Paris-local sliding floor '
             . "(expected '$expectedStart') at Paris 22:20 CEST. "
             . "If this fails, DST handling has regressed or `->setTimezone('UTC')` "
             . "is back.\nCaptured bindings: $joined"

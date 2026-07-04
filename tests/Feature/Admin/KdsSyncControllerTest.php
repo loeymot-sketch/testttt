@@ -53,7 +53,13 @@ class KdsSyncControllerTest extends TestCase
         $order = Order::factory()->create([
             'branch_id' => $branch->id,
             'status' => $status,
-            'order_datetime' => Carbon::today()->addHours(12),
+            // [MINUIT-STRADDLE 2026-07-04] order_datetime = l'instant de la commande (≈ son
+            // updated_at), pas un midi civil arbitraire : la fenêtre KDS non-advance est
+            // désormais GLISSANTE (now-8h, midnight-safe) donc un midi fixe « expirait » quand
+            // la suite tourne après 20h (commande de 11h d'âge = zombie, correctement prunée).
+            // Une commande fraîche (order_datetime = son propre instant) est dans la fenêtre
+            // quelle que soit l'heure d'exécution.
+            'order_datetime' => $now,
             'is_advance_order' => Ask::NO,
         ]);
         // forceFill bypasses the timestamps mutator so we can pin updated_at
