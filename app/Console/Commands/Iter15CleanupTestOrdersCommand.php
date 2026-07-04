@@ -91,6 +91,12 @@ class Iter15CleanupTestOrdersCommand extends Command
                 $this->deleteWhereIn('transactions', 'order_id', $matchedIds);
                 $this->deleteWhereIn('domain_events', 'aggregate_id', $matchedIds);
                 $this->deleteWhereIn('order_addresses', 'order_id', $matchedIds);
+                // [WAVE5 GÉRANCE 2026-07-04] cash_movements (référence order_id SANS FK → orphelinait
+                // le trail caisse) + order_payments (FK RESTRICT → un ordre matché avec tranche faisait
+                // rollback TOUT le nettoyage). On les cascade avant le delete orders. Le garde fiscal
+                // ci-dessus exclut déjà les ordres fiscalisés, mais on cascade par robustesse.
+                $this->deleteWhereIn('cash_movements', 'order_id', $matchedIds);
+                $this->deleteWhereIn('order_payments', 'order_id', $matchedIds);
                 $this->deleteWhereIn('order_items', 'order_id', $matchedIds);
 
                 // hard delete (not soft) — these are fixtures, no audit trail kept.
@@ -146,7 +152,13 @@ class Iter15CleanupTestOrdersCommand extends Command
                     $outer->orWhere('token', 'like', $pattern);
                 }
             })
-            ->whereIn('status', self::ACTIVE_STATUSES);
+            ->whereIn('status', self::ACTIVE_STATUSES)
+            // [WAVE5 GÉRANCE 2026-07-04 — garde NF525] Ne JAMAIS matcher un ordre FISCALISÉ : ce
+            // chemin fait un hard-delete (ligne ~97), qui retirerait PHYSIQUEMENT un n° de séquence
+            // fiscale alloué = rupture gap-free NF525 (ZReportService agrège withTrashed → un
+            // soft-delete survit, un hard-delete disparaît). Miroir du garde éprouvé de
+            // CleanupWebTestOrdersCommand:39. Les fixtures fiscalisées restent intactes (trail fiscal > nettoyage test).
+            ->whereNull('fiscal_sequence_no');
 
         return $query->pluck('id');
     }
