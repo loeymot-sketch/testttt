@@ -245,6 +245,64 @@ class SplitPaymentEndToEndTest extends TestCase
         $this->assertArrayHasKey('amount', $breakdown[0]);
     }
 
+    /**
+     * [ULTRA-AUDIT Wave 3 2026-07-04] Le frontend frozen (PaymentComponent.vue:833-847) envoie en
+     * split pos_payment_method = mode de la tranche DOMINANTE + pos_received_amount = tendered de la
+     * SEULE tranche cash (montant PARTIEL). Ces deux tests reproduisent ce payload réel (les tests
+     * existants envoyaient pos_received_amount=total complet, ce qui MASQUAIT les deux bugs).
+     */
+    public function test_split_cash_dominant_with_partial_received_amount_succeeds(): void
+    {
+        // Split cash-dominant (15 cash > 10 card). La garde cash serveur (OrderService:1071) comparait
+        // le tendered PARTIEL (15) au TOTAL complet (25) → 422 à tort. La somme 15+10=25 est déjà
+        // garantie par SplitPaymentService::validateBreakdown → la garde single-tender ne doit pas s'appliquer.
+        $this->actingAs($this->operator, 'sanctum');
+
+        $payload = $this->basePayload([
+            'pos_payment_method'  => PosPaymentMethod::CASH,
+            'pos_received_amount' => 15.00, // tendered PARTIEL de la tranche cash, pas le total
+            'payment_breakdown'   => [
+                ['mode' => PosPaymentMethod::CASH, 'amount' => 15.00, 'tendered' => 15.00, 'change' => 0],
+                ['mode' => PosPaymentMethod::CARD, 'amount' => 10.00, 'reference' => '4242', 'terminal_id' => $this->terminal->id],
+            ],
+        ]);
+
+        $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload));
+
+        $response->assertStatus(201);
+        $orderId = $response->json('data.id');
+        $this->assertCount(2, OrderPayment::where('order_id', $orderId)->get(),
+            'Un split cash-dominant valide doit aboutir et persister 2 tranches.');
+    }
+
+    public function test_split_card_dominant_with_multi_tender_note_succeeds(): void
+    {
+        // Split card-dominant (15 card > 10 cash). Le frontend pose pos_payment_method=CARD +
+        // pos_payment_note='multi-tender' + PAS de terminal_id top-level (il vit par-tranche). Les règles
+        // single-tender CARD (note 4 chiffres PosOrderRequest:129 + terminal_id required_if :141) se
+        // déclenchaient à tort sur le champ dominant → 422. Elles doivent être gatées sur l'absence de split.
+        $this->actingAs($this->operator, 'sanctum');
+
+        $payload = $this->basePayload([
+            'pos_payment_method'  => PosPaymentMethod::CARD,
+            'pos_payment_note'    => 'multi-tender',
+            'pos_received_amount' => 10.00,
+            'payment_breakdown'   => [
+                ['mode' => PosPaymentMethod::CARD, 'amount' => 15.00, 'reference' => '4242', 'terminal_id' => $this->terminal->id],
+                ['mode' => PosPaymentMethod::CASH, 'amount' => 10.00, 'tendered' => 10.00, 'change' => 0],
+            ],
+        ]);
+
+        $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload));
+
+        $response->assertStatus(201);
+        $orderId = $response->json('data.id');
+        $this->assertCount(2, OrderPayment::where('order_id', $orderId)->get(),
+            'Un split card-dominant valide doit aboutir et persister 2 tranches.');
+    }
+
     public function test_pos_create_with_breakdown_when_flag_off_falls_back_legacy(): void
     {
         Config::set('split_payment.enabled', false);

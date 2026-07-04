@@ -86,6 +86,13 @@ class PosOrderRequest extends FormRequest
         $orderTypeInt = (int) request('order_type', 0);
         $dineInEnabled = (bool) Settings::group('pos')->get('pos_dine_in_enabled', false);
 
+        // [ULTRA-AUDIT Wave 3 2026-07-04] Split multi-tender actif ? (prepareForValidation a déjà
+        // strippé payment_breakdown quand le flag est OFF, donc présent = split réellement actif).
+        // En split, le frontend frozen pose pos_payment_method = mode DOMINANT + pos_payment_note
+        // ='multi-tender' + terminal_id PAR TRANCHE (pas top-level). Les règles single-tender CARD
+        // (note 4 chiffres + terminal_id required_if) ne doivent donc PAS s'appliquer au champ dominant.
+        $hasBreakdown = ! empty(request('payment_breakdown'));
+
         return [
             // Numeric daily counter OR delivery call-out name (prénom) — must not be digits-only
             'token' => ['nullable', 'string', 'max:191'],
@@ -126,7 +133,7 @@ class PosOrderRequest extends FormRequest
             'source' => ['required', 'numeric'],
             'items' => ['required', 'json', new ValidJsonOrder],
             'pos_payment_method' => ['required', 'numeric'],
-            'pos_payment_note' => request('pos_payment_method') === PosPaymentMethod::CARD || request('pos_payment_method') === PosPaymentMethod::MOBILE_BANKING || request('pos_payment_method') === PosPaymentMethod::OTHER || (string) request('pos_payment_method') === (string) PosPaymentMethod::TICKET_RESTAURANT ? (request('pos_payment_method') === PosPaymentMethod::CARD ? ['required', 'numeric', 'min_digits:4', 'max_digits:4'] : ['required', 'string', 'max:200']) : ['nullable', 'string'],
+            'pos_payment_note' => $hasBreakdown ? ['nullable', 'string', 'max:200'] : (request('pos_payment_method') === PosPaymentMethod::CARD || request('pos_payment_method') === PosPaymentMethod::MOBILE_BANKING || request('pos_payment_method') === PosPaymentMethod::OTHER || (string) request('pos_payment_method') === (string) PosPaymentMethod::TICKET_RESTAURANT ? (request('pos_payment_method') === PosPaymentMethod::CARD ? ['required', 'numeric', 'min_digits:4', 'max_digits:4'] : ['required', 'string', 'max:200']) : ['nullable', 'string']),
             'pos_received_amount' => request('pos_payment_method') === PosPaymentMethod::CASH ? ['required', 'numeric', 'min:0'] : ['nullable', 'numeric', 'min:0'],
             // [P1 V1 Cloud-Prep insights 2026-05-18] Single-tender CARD path
             // also requires a `terminal_id` so the Z-report TPE breakdown can
@@ -138,12 +145,13 @@ class PosOrderRequest extends FormRequest
             // per-terminal fee/volume attribution. Shape-level rule only here;
             // the deep ACTIVE+branch ownership check is enforced in
             // OrderService::posOrderStore where branch context is reliable.
-            'terminal_id' => [
-                'nullable',
-                'integer',
-                'min:1',
-                'required_if:pos_payment_method,' . PosPaymentMethod::CARD,
-            ],
+            'terminal_id' => array_merge(
+                ['nullable', 'integer', 'min:1'],
+                // Single-tender CARD exige un terminal_id top-level (attribution TPE au Z). En split,
+                // le terminal_id vit dans chaque tranche CARD (payment_breakdown.*.terminal_id) → ne pas
+                // l'exiger au niveau top, sinon tout split card-dominant est rejeté 422.
+                $hasBreakdown ? [] : ['required_if:pos_payment_method,' . PosPaymentMethod::CARD],
+            ),
             'loyalty_customer_code' => ['nullable', 'string', 'min:4', 'max:25'],
             // [F-SPLIT-PAYMENT-001] Optional multi-tender breakdown — see SplitPaymentService.
             // When the feature flag is OFF, prepareForValidation() strips this field

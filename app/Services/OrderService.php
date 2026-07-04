@@ -1068,7 +1068,13 @@ class OrderService
                     // [AUDIT-P1-B] Server-side cash validation against the REAL computed total.
                     // The client-side check in PosOrderRequest uses the client-sent total (may differ).
                     // This check uses the server-recalculated total to ensure correct cash handling.
-                    if ($request->pos_payment_method == \App\Enums\PosPaymentMethod::CASH
+                    // [ULTRA-AUDIT Wave 3 2026-07-04] Garde single-tender UNIQUEMENT : en split multi-tender
+                    // le frontend envoie pos_received_amount = tendered de la SEULE tranche cash (montant
+                    // PARTIEL), pas le total → comparer ce partiel au total complet rejetait à tort tout split
+                    // cash-dominant. La somme des tranches ≥ total (et tendered ≥ amount par tranche cash) est
+                    // déjà garantie par SplitPaymentService::validateBreakdown.
+                    if (empty($request->input('payment_breakdown'))
+                        && $request->pos_payment_method == \App\Enums\PosPaymentMethod::CASH
                         && $request->pos_received_amount !== null
                         && (float) $request->pos_received_amount < $this->order->total) {
                         throw new \InvalidArgumentException(
