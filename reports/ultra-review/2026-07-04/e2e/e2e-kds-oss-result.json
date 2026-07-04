@@ -1,0 +1,27 @@
+{
+  "fixture": {
+    "order_id": 5484,
+    "branch_id": 1,
+    "item_id": 118,
+    "item_name": "ULTRA-E2E-KDSOSS Tacos 19C4F",
+    "serial": "E19C4F",
+    "queue_number": "K19C",
+    "accepted_at_stamped": true
+  },
+  "timing_after_preparing": {
+    "status": 7,
+    "accepted_at": true,
+    "preparing_at": true,
+    "prepared_at": false,
+    "actual_prep_seconds": null
+  },
+  "timing_after_prepared": {
+    "status": 8,
+    "accepted_at": true,
+    "preparing_at": true,
+    "prepared_at": true,
+    "actual_prep_seconds": 7
+  },
+  "oss_shows_queue_number": true,
+  "oss_excerpt": "Filiale Le Cayenne (Principal) Le Cayenne (Principal) Tableau De Bord Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion En préparation — Prêt N°K19C"
+}

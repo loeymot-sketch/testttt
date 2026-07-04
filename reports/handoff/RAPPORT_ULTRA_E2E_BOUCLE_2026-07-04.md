@@ -18,6 +18,24 @@ borne headless : idle → takeaway → wizard produit → panier → upsell → 
 
 **Boucle red→red→green** (discipline e2e) : it.1 fixture supprimée par retry+cleanup + signature `confirmCounterPayment` → corrigé (retries off, Order arg) ; it.2 upsell skip raté (bouton se re-rend toutes les 100 ms, timer autoskip 30 s) → clic en boucle + attente 45 s > autoskip ; it.3 **VERT**.
 
+## 1bis. Chaîne LIVE cuisine→client : KDS bump → OSS mur client + timing (navigateur réel, VERT en 4 itérations)
+Spec `tests/e2e/_ultra-e2e-kds-oss-timing-2026-07-04.spec.js`. Commande kiosk née à ACCEPT sur le board →
+bump ACCEPT→PREPARING→PREPARED via l'**endpoint KDS réel** (`admin/kds-order/change-status`) → mur client OSS.
+
+**Commande #5484 (`e2e-kds-oss-result.json` + captures)** :
+| Maillon | Attendu | Obtenu |
+|---|---|---|
+| Naissance ACCEPT | `accepted_at` posé (hook timing Wave 1) | ✅ `accepted_at_stamped=true` |
+| KDS reçoit + affiche le produit | visible | ✅ (assertion produit passée) |
+| Bump ACCEPT→PREPARING (endpoint réel) | `preparing_at` posé sur transition réelle | ✅ `status=7`, `preparing_at=true` |
+| Bump PREPARING→PREPARED | `prepared_at` + `actual_prep_seconds` | ✅ `status=8`, **`actual_prep_seconds=7`** (durée réelle entre bumps) |
+| Mur client OSS | commande visible colonne « Prêt » | ✅ `oss_shows_queue_number=true` — **N°K19C** dans « Prêt » (capture `e2e-oss-01-wall.png`) |
+
+C'est le heal timing Wave 1 prouvé **sur le vrai chemin de transition** (endpoint KDS → changeStatus → hook modèle),
+avec `actual_prep_seconds` = durée RÉELLE (7 s), pas 0/instant. Boucle red→red→green : it1/it2 `order_items`
+NOT-NULL (`branch_id`, `discount`) → corrigés ; it3 vert ; it4 assertion OSS durcie (queue_number). Note design :
+l'OSS affiche le **queue_number** (repère client), pas le `order_serial_no`.
+
 ## 2. Validation LIVE des heals au niveau service (rollback-wrappé, non-destructif)
 Exécuté sur la base live sous `DB::transaction`+`rollBack` (0 pollution, 0 fiscal_seq consommé) :
 | Heal | Assertion live | Résultat |
