@@ -18,8 +18,25 @@ export function rowUnitMain(row) {
     );
 }
 
-/** Unité addon regroupé (même formule que la ligne commande addon) */
+/** Unité addon regroupé (menu, etc.) — prix AUTORITATIF affiché au panier.
+ *
+ * [FIX 2026-07-04 owner] Le menu s'affichait au panier à
+ * `convert_price + item_variation_total + item_extra_total` (rowUnitMain, ex. 3,00 €)
+ * alors que le prix RÉEL — celui soumis, facturé et imprimé sur le ticket (= base de
+ * données) — est `total_price` (= total_convert_price du wizard, ex. 2,50 €). L'écart
+ * venait d'une VARIATION menu (ex. taille de frites) comptée à l'AFFICHAGE mais NON
+ * facturée par le backend (option incluse dans le prix menu). On renvoie donc la valeur
+ * AUTORITATIVE `total_price` → panier == wizard == ticket == base. Fallback sur la somme
+ * des composants si `total_price` est absent (addons hérités / robustesse).
+ */
 export function rowUnitBundled(row) {
+    if (!row) return 0;
+    if (row.total_price !== undefined && row.total_price !== null && row.total_price !== '') {
+        const authoritative = parseFloat(row.total_price);
+        if (Number.isFinite(authoritative)) {
+            return authoritative;
+        }
+    }
     return rowUnitMain(row);
 }
 
