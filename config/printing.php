@@ -64,7 +64,8 @@ return [
         // on cale RECEIPT_WIDTH_CHARS sur la largeur PHYSIQUE réelle (SAGA=42) → chaque ligne
         // tient, le prix reste sur la ligne de l'article, aucune marge. Ajustable en .env sans
         // redéploiement (config:clear) si une autre imprimante a une autre largeur.
-        'width_chars' => (int) env('RECEIPT_WIDTH_CHARS', 48),
+        // 0 = « non défini » → on retombe sur Printer.width_chars puis 48. Mettre 42 pour la SAGA.
+        'width_chars' => (int) env('RECEIPT_WIDTH_CHARS', 0),
         // [TICKET-PHONE 2026-07-03] Owner : le n° de téléphone n'apparaissait pas sur
         // les tickets. Source primaire = `branch->phone` ; ce défaut config est le
         // FALLBACK quand la branche n'a pas de téléphone renseigné (cas V1 Le Cayenne).

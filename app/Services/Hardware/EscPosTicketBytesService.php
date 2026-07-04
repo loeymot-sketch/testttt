@@ -48,8 +48,15 @@ final class EscPosTicketBytesService
                 break;
             }
         }
+        // [TICKET-WIDTH 2026-07-04] La largeur est désormais PILOTABLE par config
+        // (RECEIPT_WIDTH_CHARS) qui a PRIORITÉ sur la row Printer — c'était le vrai bug de la
+        // photo IMG_1709 : le ticket rendait à 48 col (fallback) alors que la SAGA n'imprime
+        // que ~42 col → chaque ligne « retournait ». Priorité : config .env → Printer.width_chars
+        // → 48. Ainsi on cale la vraie largeur physique en 1 réglage .env (config:clear), sans
+        // dépendre d'une row Printer correcte en base.
         $opts = [
-            'width_chars'  => (int) ($printer->width_chars ?? 0) ?: 48,
+            'width_chars'  => (int) config('printing.receipt.width_chars', 0)
+                ?: ((int) ($printer->width_chars ?? 0) ?: 48),
             'is_duplicata' => $isDuplicata,
         ];
         $pOpts = ($printer && is_array($printer->options)) ? $printer->options : [];

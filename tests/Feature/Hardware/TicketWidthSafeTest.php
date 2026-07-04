@@ -138,7 +138,7 @@ class TicketWidthSafeTest extends TestCase
     {
         $order = $this->makeOrder($snapshot, $name);
         $renderer = new OrderReceiptEscPosRenderer;
-        foreach ([32, 48] as $w) {
+        foreach ([32, 42, 48] as $w) {
             $bytes = $renderer->renderClientTicket($order, ['width_chars' => $w]);
             $this->assertNoLineExceeds($bytes, $w, "CLIENT ".$name." @".$w);
         }
@@ -149,7 +149,7 @@ class TicketWidthSafeTest extends TestCase
     {
         $order = $this->makeOrder($snapshot, $name);
         $renderer = new OrderReceiptEscPosRenderer;
-        foreach ([32, 48] as $w) {
+        foreach ([32, 42, 48] as $w) {
             $bytes = $renderer->renderKitchenTicket($order, ['width_chars' => $w]);
             $this->assertNoLineExceeds($bytes, $w, "CUISINE ".$name." @".$w);
         }
@@ -164,7 +164,7 @@ class TicketWidthSafeTest extends TestCase
             8.90,
             'Sans oignon, bien cuit, sauce à part et surtout pas de sel du tout merci beaucoup'
         );
-        foreach ([32, 48] as $w) {
+        foreach ([32, 42, 48] as $w) {
             $bytes = (new OrderReceiptEscPosRenderer)->renderClientTicket($order, ['width_chars' => $w]);
             $this->assertNoLineExceeds($bytes, $w, 'CLIENT note longue @' . $w);
         }
@@ -182,6 +182,17 @@ class TicketWidthSafeTest extends TestCase
         $this->assertNoLineExceeds($bytes, 32, 'CLIENT Œuf @32');
         $decoded = iconv('CP858', 'UTF-8//IGNORE', preg_replace('/[\x00-\x09\x0B-\x1F]/', '', $bytes));
         $this->assertStringContainsString('Oeuf', $decoded, '« Œuf » doit s\'imprimer « Oeuf »');
+    }
+
+    public function test_config_width_chars_is_honored_when_no_opts(): void
+    {
+        // [TICKET-WIDTH 2026-07-04] Régression du vrai bug photo IMG_1709 : la largeur DOIT
+        // suivre config('printing.receipt.width_chars') (RECEIPT_WIDTH_CHARS) quand aucune
+        // largeur n'est passée en opts — sinon la SAGA 42 col ré-enroule des lignes de 48.
+        config(['printing.receipt.width_chars' => 42]);
+        $order = $this->makeOrder(self::orderProvider()['terminator 2 viandes + suppléments'][0], 'Terminator');
+        $bytes = (new OrderReceiptEscPosRenderer)->renderClientTicket($order, []); // pas de width_chars
+        $this->assertNoLineExceeds($bytes, 42, 'CLIENT largeur-config @42 (sans opts)');
     }
 
     public function test_price_stays_atomic_on_one_line(): void
