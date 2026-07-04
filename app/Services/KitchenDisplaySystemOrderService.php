@@ -449,6 +449,19 @@ class KitchenDisplaySystemOrderService
                 }
 
                 $locked->status = $newStatus;
+
+                // [E2E-AUDIT 2026-07-04 — P2 timing cuisine chemin KDS] Le bump depuis le KDS (le chemin
+                // que les cuisiniers utilisent RÉELLEMENT) doit horodater le temps réel de préparation, au
+                // même titre que le bump POS (OrderService::changeStatus). Sans ça, l'analytique de prépa
+                // ne captait que les commandes bumpées via la caisse — pas depuis l'écran cuisine. First-
+                // write-wins (ne jamais écraser un horodatage déjà posé). Additif, hors zone gelée.
+                if ($newStatus === OrderStatus::ACCEPT && $locked->accepted_at === null) {
+                    $locked->accepted_at = now();
+                } elseif ($newStatus === OrderStatus::PREPARING && $locked->preparing_at === null) {
+                    $locked->preparing_at = now();
+                } elseif ($newStatus === OrderStatus::PREPARED && $locked->prepared_at === null) {
+                    $locked->prepared_at = now();
+                }
                 $locked->save();
 
                 OrderStateMachine::recordTransition(
