@@ -5261,6 +5261,24 @@
     }
 
     /**
+     * [C-2 e2e / LOCK 2026-07-04] Valide TOUTES les étapes actives avant l'ajout SINGLE-PAGE
+     * (le wizard multi-étapes valide déjà pas-à-pas). Réutilise la validation EXISTANTE
+     * canProceedFromStep() + showValidationError() → bloque l'ajout tant qu'une étape requise
+     * (ex. viandes 0/2) n'est pas satisfaite. Renvoie true si l'ajout est permis.
+     */
+    function singlePageCanAddToCart() {
+        var activeSteps = (typeof getActiveSteps === 'function') ? getActiveSteps() : [];
+        for (var i = 0; i < activeSteps.length; i++) {
+            var v = canProceedFromStep(activeSteps[i]);
+            if (v && !v.canProceed) {
+                showValidationError(v.errorMessage);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
      * [Sprint 23 Fix P2] Show validation error message in wizard footer
      */
     function showValidationError(message) {
@@ -5885,6 +5903,10 @@
         var addBtn = wizardEl.querySelector('[data-action="add-to-cart"]');
         if (addBtn) {
             addBtn.addEventListener('click', function () {
+                // [C-2 e2e / LOCK 2026-07-04] Owner : bloquer l'ajout tant que les étapes REQUISES
+                // (ex. viandes 0/2) ne sont pas satisfaites — comme le wizard multi-étapes. On réutilise
+                // la validation EXISTANTE canProceedFromStep() sur toutes les étapes actives.
+                if (!singlePageCanAddToCart()) return;
                 syncAndSubmit();
             });
         }
@@ -5909,6 +5931,8 @@
 
                 if (e.key === 'Enter' && e.ctrlKey) {
                     e.preventDefault();
+                    // [C-2 e2e / LOCK 2026-07-04] Même garde que le bouton : pas d'ajout si étape requise manquante.
+                    if (!singlePageCanAddToCart()) return;
                     syncAndSubmit();
                 }
             });
