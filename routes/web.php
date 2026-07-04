@@ -68,4 +68,23 @@ Route::get('/admin/pos-v4/{any?}', [AdminPosV4Controller::class, 'index'])
 Route::get('/js/{forbiddenKioskAsset}', static fn () => abort(404))
     ->where('forbiddenKioskAsset', 'kiosk(?:-admin)?\.js(?:\.LICENSE\.txt)?');
 
+// [C-5 e2e 2026-07-04] Téléchargement ROBUSTE des ponts d'impression (PC caisse/borne).
+// AVANT le catch-all SPA (sinon /dl/*.txt était absorbé par la SPA → HTML au lieu du script
+// → `node` crash `SyntaxError: Unexpected token '<'`). Sert le fichier JS VERSIONNÉ du repo en
+// texte brut : aucune dépendance à `public/dl` ni à la config nginx. `Invoke-WebRequest .../dl/
+// caisse-bridge.js -OutFile` récupère le vrai script.
+Route::get('/dl/{bridge}', function (string $bridge) {
+    $map = [
+        'caisse-bridge.js' => base_path('tools/caisse-bridge/caisse-bridge.js'),
+        'borne-bridge.js' => base_path('tools/borne/bridge.js'),
+    ];
+    abort_unless(isset($map[$bridge]) && is_file($map[$bridge]), 404);
+
+    return response(file_get_contents($map[$bridge]), 200, [
+        'Content-Type' => 'text/plain; charset=utf-8',
+        'Content-Disposition' => 'attachment; filename="' . $bridge . '"',
+        'X-Content-Type-Options' => 'nosniff',
+    ]);
+})->where('bridge', '[a-z0-9\-]+\.js')->name('dl.bridge');
+
 Route::get('/{any}', [RootController::class, 'index'])->middleware(['installed'])->where(['any' => '.*']);
