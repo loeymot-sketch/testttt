@@ -50,6 +50,17 @@ Exécuté sur la base live sous `DB::transaction`+`rollBack` (0 pollution, 0 fis
 Note méthode : `actual_prep_seconds` n'est PAS une colonne DB mais un champ calculé de la resource → une 1ʳᵉ
 assertion (sur l'attribut modèle) fausse-négative a été corrigée en interrogeant la resource (le heal est sain).
 
+## 2bis. File d'encaissement counter-collect (fonction partagée borne→caisse) — validée LIVE
+Réplique EXACTE de la query de l'endpoint `GET /api/admin/pos/counter-collect/pending` (routes/api.php:818)
+exécutée live sur 4 variantes (rollback-wrappé) → valide les DEUX moitiés du fix `258f74722` :
+| Commande | Attendu | Live |
+|---|---|---|
+| kiosk PENDING_COUNTER actif | dans la file | ✅ IN |
+| kiosk PENDING_COUNTER **CANCELED** | exclue (pas de fantôme 422) | ✅ OUT |
+| **source_surface NULL** kiosk/emporter PENDING_COUNTER | rattrapée (filet anti-NULL) | ✅ IN |
+| kiosk PAID | absente | ✅ OUT |
++ test `CounterCollectQueueRobustTest` 3/3 vert.
+
 ## 3. GATES
 - Chaîne LIVE borne verte (1 test, 3 itérations) · heals service-layer 5/5 verts live · **NF525 CHAIN OK** (4 branches) après les runs · 0 pageerror.
 - Le nettoyage e2e supprime la commande fixture + son order → 1 gap de fiscal_seq sur la base DEV (artefact de test attendu, pas de prod ; la chaîne HMAC audit_logs/z_reports reste intacte).
