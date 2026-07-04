@@ -94,7 +94,12 @@ class WithoutGlobalScopesAuditSentinelTest extends TestCase
         //     un doublon au REJEU du webhook (503-retry). Canal agrégateur cross-branch by design.
         //   - CleanupWebTestOrdersCommand:42 — commande de purge des commandes de TEST web par
         //     téléphone, cross-branche + soft-deleted (utilitaire de nettoyage e2e).
-        'Http/Controllers/Webhook/UberWebhookController.php'  => [113],
+        // [2026-07-04] createFromUber dedup — ligne 113→124 (go-live hardening a inséré
+        // is_advance_order/business_date/OrderCreated + les méthodes cancelFromUber/uberSystemUserId
+        // au-dessus). Reste PLURIEL par design : le dédup au REJEU doit trouver la commande
+        // MÊME soft-deleted (sinon doublon). Les 2 nouveaux sites (cancel/system-user) sont en
+        // SINGULIER (withoutGlobalScope(BranchScope)) → hors compte pluriel.
+        'Http/Controllers/Webhook/UberWebhookController.php'  => [124],
         'Console/Commands/CleanupWebTestOrdersCommand.php'    => [42],
     ];
 

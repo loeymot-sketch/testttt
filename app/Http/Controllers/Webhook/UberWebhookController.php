@@ -207,7 +207,10 @@ class UberWebhookController extends Controller
         if ($uberOrderId === '') {
             return null;
         }
-        $order = Order::withoutGlobalScopes()->where('transaction_id', 'uber:' . $uberOrderId)->first();
+        // [Z6-P1-WGS] Bypass branch-fence SEULEMENT (singulier) : une commande Uber SOFT-DELETED
+        // n'a pas à être annulée (déjà partie) → on garde le SoftDeletingScope actif.
+        $order = Order::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+            ->where('transaction_id', 'uber:' . $uberOrderId)->first();
         if (! $order) {
             return null; // jamais reçue (ou création échouée) : on n'invente rien.
         }
@@ -228,7 +231,9 @@ class UberWebhookController extends Controller
     /** User technique Uber (non privilégié, aucun rôle) — ancre FK pour orders.user_id NOT NULL. */
     private function uberSystemUserId(int $branchId): int
     {
-        $user = \App\Models\User::withoutGlobalScopes()->firstOrCreate(
+        // [Z6-P1-WGS] Branch-fence only (singulier) : le user système ne doit PAS ressusciter
+        // une ligne soft-deleted → SoftDeletingScope conservé.
+        $user = \App\Models\User::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->firstOrCreate(
             ['username' => 'uber-eats-system'],
             [
                 'name'      => 'Uber Eats',
