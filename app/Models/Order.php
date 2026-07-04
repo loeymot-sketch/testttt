@@ -162,6 +162,44 @@ class Order extends Model implements BroadcastableOrder
                 $order->source_surface = 'delivery';
             }
         });
+
+        // [ULTRA-AUDIT 2026-07-04 — P2 timing cuisine CENTRALISÉ] Horodatage du temps réel de préparation
+        // posé au niveau MODÈLE (même philosophie que le hook source_surface ci-dessus : « sans per-writer
+        // plumbing ») pour qu'AUCUN chemin ne l'oublie. BUG trouvé par l'audit intersections : le stamp
+        // vivait dans les 2 changeStatus (POS+KDS) MAIS les flux DOMINANTS créent la commande directement
+        // à ACCEPT/PREPARING (auto-prepare borne Plan B, POS direct, counter-collect) SANS passer par
+        // changeStatus → accepted_at jamais posé → actual_prep_seconds NULL sur ~100 % du volume (0/3092
+        // en base). Ici on horodate sur CHAQUE save quand le statut est dans le flux cuisine, en cascade
+        // first-write-wins (atteindre un statut plus avancé implique les précédents). Remplace/centralise
+        // les stamps explicites des 2 changeStatus (retirés).
+        static::saving(function (self $order) {
+            $s = (int) $order->status;
+            $inKitchenFlow = [
+                \App\Enums\OrderStatus::ACCEPT,
+                \App\Enums\OrderStatus::PREPARING,
+                \App\Enums\OrderStatus::PREPARED,
+                \App\Enums\OrderStatus::OUT_FOR_DELIVERY,
+                \App\Enums\OrderStatus::DELIVERED,
+            ];
+            if (! in_array($s, $inKitchenFlow, true)) {
+                return; // PENDING / CANCELED / REJECTED / RETURNED : pas d'horodatage cuisine.
+            }
+            if ($order->accepted_at === null) {
+                $order->accepted_at = now();
+            }
+            if ($order->preparing_at === null && in_array($s, [
+                \App\Enums\OrderStatus::PREPARING, \App\Enums\OrderStatus::PREPARED,
+                \App\Enums\OrderStatus::OUT_FOR_DELIVERY, \App\Enums\OrderStatus::DELIVERED,
+            ], true)) {
+                $order->preparing_at = now();
+            }
+            if ($order->prepared_at === null && in_array($s, [
+                \App\Enums\OrderStatus::PREPARED, \App\Enums\OrderStatus::OUT_FOR_DELIVERY,
+                \App\Enums\OrderStatus::DELIVERED,
+            ], true)) {
+                $order->prepared_at = now();
+            }
+        });
     }
 
     public function orderItems(): \Illuminate\Database\Eloquent\Relations\HasMany

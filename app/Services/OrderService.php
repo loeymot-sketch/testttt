@@ -2206,17 +2206,9 @@ class OrderService
 
                     $oldStatusForBroadcast = $locked->status;
                     $locked->status = $request->status;
-
-                    // [KITCHEN-TIMING 2026-07-03] Chemin STAFF (POS/KDS bump) — pose le temps réel du
-                    // parcours cuisine au franchissement des statuts clés (first-write-wins). Socle de
-                    // l'analytique de productivité (prepared_at − accepted_at, vs l'estimé preparation_time).
-                    if ($targetStatus === OrderStatus::ACCEPT && $locked->accepted_at === null) {
-                        $locked->accepted_at = now();
-                    } elseif ($targetStatus === OrderStatus::PREPARING && $locked->preparing_at === null) {
-                        $locked->preparing_at = now();
-                    } elseif ($targetStatus === OrderStatus::PREPARED && $locked->prepared_at === null) {
-                        $locked->prepared_at = now();
-                    }
+                    // [KITCHEN-TIMING 2026-07-04] Horodatage cuisine CENTRALISÉ dans le hook saving du modèle
+                    // Order (couvre AUSSI les flux auto-prepare qui ne passent pas par changeStatus) → plus de
+                    // stamp explicite ici.
                     $locked->save();
 
                     OrderStateMachine::recordTransition(
