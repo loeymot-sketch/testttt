@@ -66,6 +66,9 @@ return [
         // redéploiement (config:clear) si une autre imprimante a une autre largeur.
         // 0 = « non défini » → on retombe sur Printer.width_chars puis 48. Mettre 42 pour la SAGA.
         'width_chars' => (int) env('RECEIPT_WIDTH_CHARS', 0),
+        // [BORNE 2026-07-05] Largeur PROPRE à la borne (imprimante SK1-31, plus large que la SAGA).
+        // 0 = non défini → Printer.width_chars puis 48 (remplit la largeur, pas de marge blanche).
+        'borne_width_chars' => (int) env('RECEIPT_BORNE_WIDTH_CHARS', 0),
         // [TICKET-PHONE 2026-07-03] Owner : le n° de téléphone n'apparaissait pas sur
         // les tickets. Source primaire = `branch->phone` ; ce défaut config est le
         // FALLBACK quand la branche n'a pas de téléphone renseigné (cas V1 Le Cayenne).

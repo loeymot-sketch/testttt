@@ -54,9 +54,16 @@ final class EscPosTicketBytesService
         // que ~42 col → chaque ligne « retournait ». Priorité : config .env → Printer.width_chars
         // → 48. Ainsi on cale la vraie largeur physique en 1 réglage .env (config:clear), sans
         // dépendre d'une row Printer correcte en base.
+        // [TICKET-WIDTH-BORNE 2026-07-05] Largeur DÉCOUPLÉE caisse ↔ borne. La caisse (SAGA)
+        // imprime ~42 col (RECEIPT_WIDTH_CHARS=42) MAIS la borne (SK1-31) est plus large (48).
+        // Appliquer 42 à la borne laissait une MARGE BLANCHE à droite. On choisit donc la config
+        // selon la surface : borne → RECEIPT_BORNE_WIDTH_CHARS, caisse → RECEIPT_WIDTH_CHARS ;
+        // fallback commun Printer.width_chars → 48. Chaque imprimante remplit sa largeur.
+        $cfgWidth = $kioskClient
+            ? (int) config('printing.receipt.borne_width_chars', 0)
+            : (int) config('printing.receipt.width_chars', 0);
         $opts = [
-            'width_chars'  => (int) config('printing.receipt.width_chars', 0)
-                ?: ((int) ($printer->width_chars ?? 0) ?: 48),
+            'width_chars'  => $cfgWidth ?: ((int) ($printer->width_chars ?? 0) ?: 48),
             'is_duplicata' => $isDuplicata,
         ];
         $pOpts = ($printer && is_array($printer->options)) ? $printer->options : [];
