@@ -98,7 +98,16 @@ export default {
       const auto = this.getAutoCredentials();
       if (!auto) {
         this.setupRequired = true;
+        // [SEC/UX 2026-07-04] L'écran /kiosk est PUBLIC (client). Ne JAMAIS y exposer .env /
+        // artisan (fuite d'infos techniques). Le client voit un message propre ; les
+        // instructions dev vont en CONSOLE seulement. NB : la vraie borne s'ouvre avec
+        // ?machine_key=<clé> — ce chemin ne passe pas ici.
         this.error = this.$t('kiosk.login_screen.err_no_credentials');
+        // eslint-disable-next-line no-console
+        console.warn('[Kiosk] Auto-login indisponible (identifiants machine absents). ' +
+          'Corriger côté serveur : renseigner KIOSK_MACHINE_* dans .env (identiques à Admin → Bornes) ' +
+          'puis `php artisan foodking:ensure-kiosk-machine` + `php artisan config:clear` ; ' +
+          'OU ouvrir la borne avec l\'URL ?machine_key=<clé> (méthode borne physique).');
         return;
       }
       this.setupRequired = false;

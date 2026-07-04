@@ -453,7 +453,9 @@ export default {
         // Pont requis : impression SILENCIEUSE. Pas de pont → message clair, JAMAIS window.print
         // (sinon page grise Windows + URL du serveur = le ticket « nul » signalé par l'owner).
         if (!(await isCaisseBridgeAvailable())) {
-          alertService.error(this.$t('pos.reprint_error'));
+          // [C-3 e2e 2026-07-04] Message CLAIR (pont pas lancé) au lieu de « impossible de
+          // réimprimer » — sinon le clic paraît « sans effet » (cf. rapport Cowork).
+          alertService.error(this.$t('pos.print_bridge_offline'));
           return;
         }
         const { data } = await axios.get(`admin/pos/orders/${id}/escpos`, { params: { ticket } });

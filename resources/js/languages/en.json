@@ -1850,7 +1850,7 @@
             "retry": "Try again",
             "devhint": "Local development: credentials provided by your team — change them after first sign-in.",
             "footer": "Configure this kiosk in the admin area under Kiosks.",
-            "err_no_credentials": "Automatic sign-in is unavailable. For local dev: copy .env.example KIOSK_MACHINE_* lines into .env, run php artisan migrate --seed (or php artisan foodking:ensure-kiosk-machine), then php artisan config:clear. Production: set machine credentials in .env to match Admin → Kiosks.",
+            "err_no_credentials": "Kiosk temporarily unavailable. Please order at the counter. 🙏",
             "err_login_failed": "Sign-in failed for now. Another attempt will happen shortly.",
             "err_rate_limited": "Too many sign-in attempts. The kiosk will resume automatically in a moment."
         },

@@ -114,7 +114,7 @@
         "users": "Benutzer",
         "accounts": "Konten",
         "reports": "Berichte",
-        "setup": "aufstellen",
+        "setup": "Einrichtung",
         "home": "Heim",
         "dining_tables": "Eettafels",
         "table_orders": "Tafelbestellingen",
@@ -126,12 +126,7 @@
         "kiosk_machines": "Kiosk Machines",
         "ingredients": "Zutaten",
         "advanced_tools": "Erweiterte Werkzeuge",
-        "demo_wizard_advanced": "Demo erweiterter Wizard",
-        "communications": "Kommunikation",
-        "users": "Benutzer",
-        "accounts": "Konten",
-        "reports": "Berichte",
-        "setup": "Einrichtung"
+        "demo_wizard_advanced": "Demo erweiterter Wizard"
     },
     "label": {
         "monday_short": "Mo",
@@ -1286,7 +1281,7 @@
             "devhint": "Mode développement : identifiants fournis par l'équipe technique — à modifier après la première connexion.",
             "footer": "Configurez cette borne dans l'espace administration, rubrique Bornes.",
             "err_maintenance": "Mode maintenance actif. Quittez le mode maintenance pour relancer la borne.",
-            "err_no_credentials": "Connexion automatique indisponible. En local : copiez les lignes KIOSK_MACHINE_* de .env.example dans .env, exécutez php artisan migrate --seed (ou php artisan foodking:ensure-kiosk-machine), puis php artisan config:clear. En production : renseignez les identifiants machine dans .env (identiques à Admin → Bornes).",
+            "err_no_credentials": "Kiosk tijdelijk niet beschikbaar. Bestel aan de kassa. 🙏",
             "err_login_failed": "Connexion impossible pour le moment. Nouvelle tentative automatique sous peu."
         },
         "admin_screen": {

@@ -112,7 +112,7 @@
         "promo": "প্রচার",
         "communications": "যোগাযোগ",
         "users": "ব্যবহারকারী",
-        "accounts": "হিসাব",
+        "accounts": "অ্যাকাউন্ট",
         "reports": "রিপোর্ট",
         "setup": "সেটআপ",
         "home": "হোম",
@@ -126,12 +126,7 @@
         "kiosk_machines": "কিয়স্ক মেশিন",
         "ingredients": "উপকরণ",
         "advanced_tools": "উন্নত টুল",
-        "demo_wizard_advanced": "উন্নত উইজার্ড ডেমো",
-        "communications": "যোগাযোগ",
-        "users": "ব্যবহারকারী",
-        "accounts": "অ্যাকাউন্ট",
-        "reports": "রিপোর্ট",
-        "setup": "সেটআপ"
+        "demo_wizard_advanced": "উন্নত উইজার্ড ডেমো"
     },
     "label": {
         "monday_short": "Lun",
@@ -1286,7 +1281,7 @@
             "devhint": "Mode développement : identifiants fournis par l'équipe technique — à modifier après la première connexion.",
             "footer": "Configurez cette borne dans l'espace administration, rubrique Bornes.",
             "err_maintenance": "Mode maintenance actif. Quittez le mode maintenance pour relancer la borne.",
-            "err_no_credentials": "Connexion automatique indisponible. En local : copiez les lignes KIOSK_MACHINE_* de .env.example dans .env, exécutez php artisan migrate --seed (ou php artisan foodking:ensure-kiosk-machine), puis php artisan config:clear. En production : renseignez les identifiants machine dans .env (identiques à Admin → Bornes).",
+            "err_no_credentials": "কিয়স্ক সাময়িকভাবে অনুপলব্ধ। অনুগ্রহ করে কাউন্টারে অর্ডার করুন। 🙏",
             "err_login_failed": "Connexion impossible pour le moment. Nouvelle tentative automatique sous peu."
         },
         "admin_screen": {
