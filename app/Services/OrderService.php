@@ -2443,6 +2443,27 @@ class OrderService
                 // pre-lock guard used the possibly-superseded route status.
                 \App\Domain\Order\PaymentStateMachine::assertCanTransition($freshOld, $targetPaymentStatus);
 
+                // [ULTRA-AUDIT Wave 2 2026-07-04 — P1 vente off-book NF525] Sceller une commande en
+                // PAID DOIT allouer un `fiscal_sequence_no` (invariant §8, appliqué aux 3 autres
+                // points de scellage : POS create OrderService:1117, confirmCounterPayment
+                // PaymentService:335-337, kiosk TPE FrontendOrderService:1232). L'arête UNPAID→PAID
+                // de ce chemin (« marquer payé » sur commandes livraison/en-ligne/table) l'OUBLIAIT
+                // → commande PAID sans numéro fiscal = vente HORS chaîne NF525 (exclue du Z signé,
+                // jamais rattrapée par RetryFiscalAllocCommand car fiscal_alloc_error_at reste NULL).
+                // Miroir EXACT de confirmCounterPayment : l'appel next() est nested dans CETTE tx →
+                // Cache::lock + lockForUpdate participent au savepoint, l'unique orders_branch_fiscal_seq
+                // garantit zéro gap/double. Exclusions : (a) PENDING_COUNTER→PAID reste BLOQUÉ plus
+                // haut (doit passer par l'encaissement pour le cash_movement) ; (b) statut terminal =
+                // vente void, pas de séquence (miroir PaymentService:323, le Z exclut déjà ces
+                // statuts) ; (c) Uber (source_surface='uber_eats', uber.fiscalize=false → facturé
+                // séparément par l'agrégateur, pas de Z FR).
+                if ($targetPaymentStatus === \App\Enums\PaymentStatus::PAID
+                    && $locked->fiscal_sequence_no === null
+                    && ! in_array((int) $locked->status, [\App\Enums\OrderStatus::CANCELED, \App\Enums\OrderStatus::REJECTED, \App\Enums\OrderStatus::RETURNED], true)
+                    && $locked->source_surface !== 'uber_eats') {
+                    $locked->fiscal_sequence_no = app(\App\Services\Fiscal\FiscalSequenceService::class)->next((int) $locked->branch_id);
+                }
+
                 $locked->payment_status = $request->payment_status;
                 $locked->save();
 
