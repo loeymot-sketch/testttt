@@ -1436,7 +1436,14 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::get('/config', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'config']);
     });
     Route::prefix('loyalty')->name('loyalty.auth.')->middleware(['auth:sanctum'])->group(function () {
-        Route::post('/add-points', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'addPoints']);
+        // [ULTRA-AUDIT Wave 2 2026-07-04] Idempotence sur le CRÉDIT de points, en miroir du
+        // DÉBIT (/redeem ci-dessous) : même groupe auth:sanctum, même grand-livre
+        // loyalty_transactions. Un double-POST / retry réseau créditait 2× les points + 2 lignes
+        // de ledger (increment inconditionnel, aucune dédup — la contrainte UNIQUE (user_id,
+        // order_id, type) ne protège pas car addPoints insère order_id=NULL → NULLs distincts sur
+        // MySQL). La couche HTTP idempotency ferme la fenêtre (staff authentifié → user_id>0).
+        Route::post('/add-points', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'addPoints'])
+            ->middleware('idempotency');
         // [LCS-S-002 / 2026-05-19] Idempotency middleware on loyalty redeem.
         // Mobile sends Idempotency-Key header per B-02 spec but server ignored
         // it before this commit. Network retry = double-debit of points.

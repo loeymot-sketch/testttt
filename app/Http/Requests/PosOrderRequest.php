@@ -25,17 +25,29 @@ class PosOrderRequest extends FormRequest
             $this->merge(['is_advance_order' => Ask::NO]);
         }
 
-        if ($this->filled('delivery_distance_km')) {
-            // [GOAL-COMPLEMENT-2026-05-18 Z-4 LIVREUR-Z4-ARCH-03 P0] DEL-5 wire-up.
-            // POS walk-in DELIVERY path must also resolve the per-branch fee
-            // config when branch_id is in the payload. Mirrors OrderRequest:117
-            // and DeliveryQuoteService:63. Null-safe: unknown branch -> legacy.
-            $branchId = (int) $this->input('branch_id', 0);
-            $branch = $branchId > 0 ? \App\Models\Branch::find($branchId) : null;
-            $this->merge([
-                'delivery_charge' => app(DeliveryFeeService::class)
-                    ->fromDistanceKm($this->input('delivery_distance_km'), $branch),
-            ]);
+        // [ULTRA-AUDIT Wave 2 2026-07-04 — durcissement anti-gonflage delivery_charge, miroir
+        // FrontendOrderService:280 / OrderRequest] Une commande NON-DELIVERY ne doit porter AUCUN
+        // delivery_charge : le champ est `nullable` pour non-livraison (rules() ci-dessous), donc
+        // un payload forgé (order_type=TAKEAWAY + delivery_charge=99) OU une désync UI
+        // livraison→emporter gonflerait le total facturé au client (PricingService l'ajoute au
+        // rawTotal). On force 0 hors DELIVERY, et on ne recalcule le fee depuis la distance QUE
+        // pour une vraie livraison (sinon un TAKEAWAY portant delivery_distance_km recevrait un
+        // fee fantôme — 2e manifestation du même invariant manquant).
+        if ((int) $this->input('order_type', 0) === OrderType::DELIVERY) {
+            if ($this->filled('delivery_distance_km')) {
+                // [GOAL-COMPLEMENT-2026-05-18 Z-4 LIVREUR-Z4-ARCH-03 P0] DEL-5 wire-up.
+                // POS walk-in DELIVERY path must also resolve the per-branch fee
+                // config when branch_id is in the payload. Mirrors OrderRequest:117
+                // and DeliveryQuoteService:63. Null-safe: unknown branch -> legacy.
+                $branchId = (int) $this->input('branch_id', 0);
+                $branch = $branchId > 0 ? \App\Models\Branch::find($branchId) : null;
+                $this->merge([
+                    'delivery_charge' => app(DeliveryFeeService::class)
+                        ->fromDistanceKm($this->input('delivery_distance_km'), $branch),
+                ]);
+            }
+        } else {
+            $this->merge(['delivery_charge' => 0]);
         }
 
         // [F-SPLIT-PAYMENT-001] When the multi-tender feature flag is OFF,

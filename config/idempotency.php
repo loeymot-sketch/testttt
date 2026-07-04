@@ -83,6 +83,9 @@ return [
         // per B-02 spec but server ignored before this commit. Network retry
         // would double-debit loyalty points balance.
         'api/frontend/loyalty/redeem',
+        // [ULTRA-AUDIT Wave 2 2026-07-04] Miroir du crédit : /add-points (staff auth:sanctum)
+        // doit être idempotent comme /redeem — retry réseau = double-crédit de points sinon.
+        'api/frontend/loyalty/add-points',
         // [Wave E-1 / 2026-05-19] POS cashier loyalty redeem at-payment.
         // Route declared `idempotency` middleware in routes/api.php but was
         // missing from required_routes — WE-4 final convergence sentinel
