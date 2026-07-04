@@ -194,7 +194,11 @@ describe('Keyboard navigation — focus-visible CSS contract (FK-L5.3-001)', () 
 
     it('Global :focus-visible ring is defined for buttons and [role=button]', () => {
         expect(appCss).toMatch(/button:focus-visible/);
-        expect(appCss).toMatch(/\[role="button"\]:focus-visible/);
+        // [2026-07-04] Tolérant à la minification CSS : le minifier retire les guillemets de
+        // l'attribut (`[role="button"]` source → `[role=button]` compilé). La source
+        // (resources/css/pos-a11y.css) déclare bien le ring ; on matche les deux formes pour
+        // que ce sentinel a11y cesse d'être faux-rouge sur le bundle minifié.
+        expect(appCss).toMatch(/\[role=["']?button["']?\]:focus-visible/);
     });
 
     it('Kiosk touch surfaces declare a focus-visible outline (WCAG 2.4.7)', () => {
