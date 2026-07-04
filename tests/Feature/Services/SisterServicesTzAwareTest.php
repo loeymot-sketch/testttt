@@ -90,12 +90,17 @@ class SisterServicesTzAwareTest extends TestCase
         CarbonImmutable::setTestNow($now);
 
         $appTz = config('app.timezone'); // 'Europe/Paris'
-        $expectedStart = Carbon::today($appTz)->format('Y-m-d H:i:s');
+        // [MINUIT-STRADDLE 2026-07-04] La borne basse non-advance est désormais la
+        // fenêtre GLISSANTE now-8h (Paris-local), plus le jour civil. 12:00 UTC =
+        // 13:00 Paris (hiver) → floor = 05:00 Paris. L'intention TZ du pin est
+        // inchangée : le littéral bindé doit être PARIS-local (le bug UTC donnerait
+        // 04:00, soit now_utc-8h).
+        $expectedStart = now($appTz)->subHours((int) config('oss.stale_window_hours', 8))->format('Y-m-d H:i:s');
         $expectedEnd = Carbon::today($appTz)->endOfDay()->format('Y-m-d H:i:s');
         $expectedTomorrow = Carbon::tomorrow($appTz)->format('Y-m-d H:i:s');
 
-        // Sanity: Paris-local midnight literals (NOT UTC-shifted).
-        $this->assertSame('2026-01-15 00:00:00', $expectedStart);
+        // Sanity: Paris-local literals (NOT UTC-shifted).
+        $this->assertSame('2026-01-15 05:00:00', $expectedStart);
         $this->assertSame('2026-01-15 23:59:59', $expectedEnd);
         $this->assertSame('2026-01-16 00:00:00', $expectedTomorrow);
 

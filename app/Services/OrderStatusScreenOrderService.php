@@ -88,10 +88,15 @@ class OrderStatusScreenOrderService
             $todayEnd = Carbon::today($appTz)->endOfDay();
             $tomorrowStart = Carbon::tomorrow($appTz);
 
-            $query->where(function ($q) use ($todayStart, $todayEnd, $tomorrowStart) {
-                    $q->where(function ($sub) use ($todayStart, $todayEnd) {
-                        // [P3-4 FIX] Align with KDS: today's non-advance orders
-                        $sub->whereBetween('order_datetime', [$todayStart, $todayEnd])->where('is_advance_order', Ask::NO);
+            $query->where(function ($q) use ($tomorrowStart) {
+                    $q->where(function ($sub) use ($tomorrowStart) {
+                        // [ULTRA MINUIT-STRADDLE 2026-07-04] Ex-jour-civil ([todayStart, todayEnd]) :
+                        // à 00h00 le mur client perdait une commande de 23h30 encore en préparation
+                        // (Le Cayenne opère après minuit, commandes réelles 23h-02h). La borne BASSE
+                        // est le prune glissant 8h global ci-dessous (déjà en AND) ; ici on ne garde
+                        // que la borne haute anti-futur. Miroir fenêtre KDS (parité 4 chemins).
+                        // Sentinel : OssKdsMidnightStraddleTest.
+                        $sub->where('order_datetime', '<', $tomorrowStart)->where('is_advance_order', Ask::NO);
                     })->orWhere(function ($sub) use ($tomorrowStart) {
                         // [AUDIT-52-BUG1] Mirror KDS fix: show ALL overdue advance orders (not just yesterday)
                         // that are still active (not DELIVERED or CANCELED). Prevents zombie disappearance.
@@ -236,9 +241,12 @@ class OrderStatusScreenOrderService
             $todayEnd = Carbon::today($appTz)->endOfDay();
             $tomorrowStart = Carbon::tomorrow($appTz);
 
-            $query->where(function ($q) use ($todayStart, $todayEnd, $tomorrowStart) {
-                    $q->where(function ($sub) use ($todayStart, $todayEnd) {
-                        $sub->whereBetween('order_datetime', [$todayStart, $todayEnd])->where('is_advance_order', Ask::NO);
+            $query->where(function ($q) use ($tomorrowStart) {
+                    $q->where(function ($sub) use ($tomorrowStart) {
+                        // [ULTRA MINUIT-STRADDLE 2026-07-04] Sister-of list() — byte-identical
+                        // (voir le commentaire du sibling) : jour civil → borne haute anti-futur
+                        // seule, le prune glissant 8h ci-dessous fait la borne basse.
+                        $sub->where('order_datetime', '<', $tomorrowStart)->where('is_advance_order', Ask::NO);
                     })->orWhere(function ($sub) use ($tomorrowStart) {
                         $sub->where('is_advance_order', Ask::YES)
                             ->where('order_datetime', '<', $tomorrowStart)

@@ -151,13 +151,21 @@ class KdsTodayWindowTzSentinelTest extends TestCase
 
     /**
      * Boundary test (the OTHER direction): "now" is 00:30 the NEXT Paris day.
-     * Orders from the PRIOR Paris day must NOT appear in the active window
-     * (non-advance only — that's the day-filter window).
      *
-     * This guards against an over-correction where the new heal would
-     * accidentally include yesterday's orders.
+     * [ULTRA MINUIT-STRADDLE 2026-07-04 — ATTENTE INVERSÉE] L'ancienne version de ce
+     * test exigeait que les commandes de la veille (23:00/23:55, encore PREPARING)
+     * DISPARAISSENT à 00:30 — prémisse « hier = périmé » FAUSSE pour Le Cayenne qui
+     * opère après minuit (commandes réelles 23h-02h) : la cuisine perdait un ticket
+     * actif de 35 min en pleine préparation. La fenêtre non-advance est désormais
+     * GLISSANTE (`oss.stale_window_hours`, 8h) : les commandes récentes de la veille
+     * restent visibles, et l'intention anti-zombie d'origine est préservée par
+     * l'exclusion des commandes > 8h. Sister : OssKdsMidnightStraddleTest.
+     *
+     * La dimension TZ d'origine du sentinel reste couverte : les bornes sont
+     * toujours générées en Paris-local (voir test_orders_at_paris_end_of_day + le
+     * pin du format de binding ci-dessous).
      */
-    public function test_prior_day_orders_are_excluded_after_paris_midnight(): void
+    public function test_recent_prior_day_orders_stay_visible_after_paris_midnight_stale_pruned(): void
     {
         // "Now" = 00:30 on 2026-01-16 Paris (winter, UTC+1).
         $parisNow = CarbonImmutable::parse('2026-01-16 00:30:00', 'Europe/Paris');
@@ -167,8 +175,9 @@ class KdsTodayWindowTzSentinelTest extends TestCase
         $branch = Branch::factory()->create();
         $admin = $this->createAdminUser();
 
-        // Prior-day orders (Paris 23:00 + 23:55 on the 15th).
-        $priorIds = [];
+        // Prior-day RECENT orders (Paris 23:00 + 23:55 on the 15th — 1h30/0h35 d'âge) :
+        // encore actives, elles DOIVENT rester sur le board après minuit.
+        $recentPriorIds = [];
         foreach (['23:00', '23:55'] as $hm) {
             $when = Carbon::parse("2026-01-15 $hm:00", 'Europe/Paris');
             $order = Order::factory()->create([
@@ -178,8 +187,19 @@ class KdsTodayWindowTzSentinelTest extends TestCase
                 'is_advance_order' => Ask::NO,
             ]);
             $order->forceFill(['updated_at' => $when])->saveQuietly();
-            $priorIds[] = $order->id;
+            $recentPriorIds[] = $order->id;
         }
+
+        // Prior-day STALE order (12:30 on the 15th — 12h d'âge, > fenêtre 8h) :
+        // zombie, DOIT rester exclue (l'intention anti-zombie d'origine).
+        $staleWhen = Carbon::parse('2026-01-15 12:30:00', 'Europe/Paris');
+        $staleOrder = Order::factory()->create([
+            'branch_id' => $branch->id,
+            'status' => OrderStatus::PREPARING,
+            'order_datetime' => $staleWhen,
+            'is_advance_order' => Ask::NO,
+        ]);
+        $staleOrder->forceFill(['updated_at' => $staleWhen])->saveQuietly();
 
         // One same-day order (00:20 on the 16th) — must be visible.
         $sameDay = Carbon::parse('2026-01-16 00:20:00', 'Europe/Paris');
@@ -205,12 +225,19 @@ class KdsTodayWindowTzSentinelTest extends TestCase
             . '(post-midnight) order id=' . $sameDayOrder->id . '. KDS-T-R5-01.'
         );
 
-        $leaked = array_intersect($priorIds, $listIds);
+        $missing = array_diff($recentPriorIds, $listIds);
         $this->assertEmpty(
-            $leaked,
-            'KitchenDisplaySystemOrderService::list MUST NOT include prior-day '
-            . '(non-advance) orders after Paris midnight rollover. Leaked: ['
-            . implode(',', $leaked) . ']. KDS-T-R5-01.'
+            $missing,
+            'KitchenDisplaySystemOrderService::list MUST keep RECENT prior-day active '
+            . 'orders (< stale window) visible across Paris midnight — Le Cayenne opère '
+            . 'après minuit. Missing: [' . implode(',', $missing) . ']. MINUIT-STRADDLE.'
+        );
+
+        $this->assertNotContains(
+            $staleOrder->id,
+            $listIds,
+            'KitchenDisplaySystemOrderService::list MUST still exclude STALE (>8h) '
+            . 'prior-day orders — the original anti-zombie intent. MINUIT-STRADDLE.'
         );
     }
 
@@ -259,23 +286,36 @@ class KdsTodayWindowTzSentinelTest extends TestCase
             ->flatMap(fn ($q) => $q['bindings'])
             ->implode(' | ');
 
-        // Paris-local today-start MUST appear (heal invariant).
+        // [MINUIT-STRADDLE 2026-07-04] La fenêtre non-advance est désormais GLISSANTE
+        // (now-8h) au lieu du jour civil. Le pin TZ garde la même intention : la borne
+        // basse (12:00 Paris - 8h = 04:00 PARIS-LOCAL) doit être bindée en Paris-local.
         $this->assertStringContainsString(
-            '2026-01-15 00:00:00',
+            '2026-01-15 04:00:00',
             $bindingsBlob,
-            'KitchenDisplaySystemOrderService::list MUST bind Paris-local '
-            . 'today-start "2026-01-15 00:00:00". KDS-T-R5-01.'
+            'KitchenDisplaySystemOrderService::list MUST bind the Paris-local sliding '
+            . 'floor "2026-01-15 04:00:00" (now-8h). KDS-T-R5-01 / MINUIT-STRADDLE.'
         );
 
-        // UTC-converted Paris-day-start (winter = 23:00 prior day) MUST NOT
-        // appear — that was the Wave 2b/3b bug.
+        // UTC-converted floor (winter: 12:00 Paris = 11:00 UTC → -8h = 03:00) MUST NOT
+        // appear — a re-introduced `->setTimezone('UTC')` would shift the window by 1-2h.
         $this->assertStringNotContainsString(
-            '2026-01-14 23:00:00',
+            '2026-01-15 03:00:00',
             $bindingsBlob,
             'KitchenDisplaySystemOrderService::list MUST NOT re-introduce '
-            . '`->setTimezone(\'UTC\')` on Paris day bounds. The bug shifted '
-            . 'the window backward by 2h under session_tz=Paris. '
-            . 'KDS-T-R5-01.'
+            . '`->setTimezone(\'UTC\')` on the sliding floor. KDS-T-R5-01.'
+        );
+
+        // La borne haute anti-futur (< demain 00:00 Paris) reste bindée Paris-local,
+        // et sa variante UTC (23:00 la veille) reste interdite (bug Wave 2b/3b d origine).
+        $this->assertStringContainsString(
+            '2026-01-16 00:00:00',
+            $bindingsBlob,
+            'list MUST bind Paris-local tomorrow-start "2026-01-16 00:00:00". KDS-T-R5-01.'
+        );
+        $this->assertStringNotContainsString(
+            '2026-01-15 23:00:00',
+            $bindingsBlob,
+            'list MUST NOT bind the UTC-shifted tomorrow bound. KDS-T-R5-01.'
         );
     }
 

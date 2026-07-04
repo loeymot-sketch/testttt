@@ -123,10 +123,23 @@ class KitchenDisplaySystemOrderService
             $todayEnd = Carbon::today($appTz)->endOfDay();
             $tomorrowStart = Carbon::tomorrow($appTz);
 
-            $orders = $query->where(function ($query) use ($todayStart, $todayEnd, $tomorrowStart) {
-                // Standard orders: placed today (non-advance)
-                $query->where(function ($subQuery) use ($todayStart, $todayEnd) {
-                    $subQuery->whereBetween('order_datetime', [$todayStart, $todayEnd])
+            // [ULTRA MINUIT-STRADDLE 2026-07-04] La branche non-advance filtrait par jour CIVIL
+            // ([todayStart, todayEnd]) : à 00h00, une commande de 23h30 encore ACCEPT/PREPARING
+            // disparaissait du board alors qu'elle n'avait que 30 min — or Le Cayenne opère après
+            // minuit (commandes réelles 23h-02h, DB-prouvé). Borne basse = fenêtre GLISSANTE
+            // partagée OSS↔KDS (`oss.stale_window_hours`, défaut 8h — même clé que le prune du mur
+            // client, pour que « visible cuisine » et « visible client » restent cohérents) ;
+            // borne haute = < demain (anti-futur, préservée). La branche advance-overdue reste
+            // INCHANGÉE (contrat AUDIT-52-BUG1 « show ALL overdue advance orders »). Même fenêtre
+            // appliquée à KdsSyncService::sync + OSS list/listForBranch (parité 4 chemins).
+            // Sentinels : OssKdsMidnightStraddleTest + KdsTodayWindowTzSentinelTest (inversé).
+            $staleFloor = now($appTz)->subHours((int) config('oss.stale_window_hours', 8));
+
+            $orders = $query->where(function ($query) use ($staleFloor, $tomorrowStart) {
+                // Standard orders: sliding active window (midnight-safe, non-advance)
+                $query->where(function ($subQuery) use ($staleFloor, $tomorrowStart) {
+                    $subQuery->where('order_datetime', '>=', $staleFloor)
+                             ->where('order_datetime', '<', $tomorrowStart)
                              ->where('is_advance_order', Ask::NO);
                 })
                 // Advance orders: scheduled for today OR overdue from yesterday/past
@@ -542,9 +555,16 @@ class KitchenDisplaySystemOrderService
             $todayEnd = Carbon::today($appTz)->endOfDay();
             $tomorrowStart = Carbon::tomorrow($appTz);
 
-            $orders = $query->where(function ($query) use ($todayStart, $todayEnd, $tomorrowStart) {
-                $query->where(function ($subQuery) use ($todayStart, $todayEnd) {
-                    $subQuery->whereBetween('order_datetime', [$todayStart, $todayEnd])->where('is_advance_order', Ask::NO);
+            // [ULTRA MINUIT-STRADDLE 2026-07-04] Miroir de list() : fenêtre GLISSANTE 8h au lieu
+            // du jour civil, sinon une commande à cheval sur minuit serait visible en CARTE mais
+            // absente de l'AGRÉGAT items (« combien à préparer ») — incohérence cross-chemin.
+            $staleFloor = now($appTz)->subHours((int) config('oss.stale_window_hours', 8));
+
+            $orders = $query->where(function ($query) use ($staleFloor, $tomorrowStart) {
+                $query->where(function ($subQuery) use ($staleFloor, $tomorrowStart) {
+                    $subQuery->where('order_datetime', '>=', $staleFloor)
+                             ->where('order_datetime', '<', $tomorrowStart)
+                             ->where('is_advance_order', Ask::NO);
                 })->orWhere(function ($subQuery) use ($tomorrowStart) {
                     $subQuery->where('is_advance_order', Ask::YES)
                              ->where('order_datetime', '<', $tomorrowStart)

@@ -93,12 +93,20 @@ class KdsSyncService
             $todayEnd = Carbon::today($appTz)->endOfDay();
             $tomorrowStart = Carbon::tomorrow($appTz);
 
+            // [ULTRA MINUIT-STRADDLE 2026-07-04] Miroir EXACT de la fenêtre de
+            // KitchenDisplaySystemOrderService::list (leçon Wave 1 : sync doit refléter list) :
+            // branche non-advance = fenêtre GLISSANTE `oss.stale_window_hours` (8h) au lieu du
+            // jour civil, pour qu'une commande active à cheval sur minuit reste dans le delta.
+            // Branche advance-overdue inchangée. Sentinel : OssKdsMidnightStraddleTest.
+            $staleFloor = now($appTz)->subHours((int) config('oss.stale_window_hours', 8));
+
             $ordersQuery = Order::with(['orderItems', 'address', 'user'])
                 ->whereIn('status', $activeStatuses)
                 ->where('updated_at', '>=', $sinceForDb)
-                ->where(function ($q) use ($todayStart, $todayEnd, $tomorrowStart) {
-                    $q->where(function ($s) use ($todayStart, $todayEnd) {
-                        $s->whereBetween('order_datetime', [$todayStart, $todayEnd])
+                ->where(function ($q) use ($staleFloor, $tomorrowStart) {
+                    $q->where(function ($s) use ($staleFloor, $tomorrowStart) {
+                        $s->where('order_datetime', '>=', $staleFloor)
+                          ->where('order_datetime', '<', $tomorrowStart)
                           ->where('is_advance_order', Ask::NO);
                     })->orWhere(function ($s) use ($tomorrowStart) {
                         $s->where('is_advance_order', Ask::YES)
