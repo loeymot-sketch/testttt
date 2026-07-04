@@ -44,7 +44,9 @@ class UberClient
                 return null;
             }
             $token = (string) ($res->json('access_token') ?? '');
-            $ttl = (int) ($res->json('expires_in') ?? 2592000);
+            // [GO-LIVE UBER 2026-07-04] Défaut 1h (au lieu de 30 j) quand expires_in est absent :
+            // un token invalide ne peut plus rester collé en cache un mois.
+            $ttl = (int) ($res->json('expires_in') ?? 3600);
             if ($token === '') {
                 return null;
             }
@@ -89,7 +91,11 @@ class UberClient
         return rtrim((string) config('uber.api_base'), '/') . $path;
     }
 
-    private function authedGet(string $url): ?array
+    // [GO-LIVE UBER 2026-07-04] 401 = token révoqué/rotaté côté Uber AVANT son TTL local :
+    // on invalide le cache, on re-authentifie et on retente UNE fois. Avant : le token mort
+    // restait en cache (aucun Cache::forget) → chaque fetchOrder 401→null → commandes payées
+    // perdues pendant toute la fenêtre de cache.
+    private function authedGet(string $url, bool $retried = false): ?array
     {
         $token = $this->accessToken();
         if (! $token) {
@@ -97,6 +103,11 @@ class UberClient
         }
         try {
             $res = Http::withToken($token)->acceptJson()->get($url);
+            if ($res->status() === 401 && ! $retried) {
+                Cache::forget(self::TOKEN_CACHE_KEY);
+                Log::warning('[Uber] 401 — token invalidé, refresh + retry.');
+                return $this->authedGet($url, true);
+            }
             return $res->successful() ? (array) $res->json() : null;
         } catch (\Throwable $e) {
             Log::warning('[Uber] GET exception: ' . $e->getMessage());
@@ -104,14 +115,20 @@ class UberClient
         }
     }
 
-    private function authedPost(string $url, array $body): bool
+    private function authedPost(string $url, array $body, bool $retried = false): bool
     {
         $token = $this->accessToken();
         if (! $token) {
             return false;
         }
         try {
-            return Http::withToken($token)->acceptJson()->post($url, $body)->successful();
+            $res = Http::withToken($token)->acceptJson()->post($url, $body);
+            if ($res->status() === 401 && ! $retried) {
+                Cache::forget(self::TOKEN_CACHE_KEY);
+                Log::warning('[Uber] 401 — token invalidé, refresh + retry.');
+                return $this->authedPost($url, $body, true);
+            }
+            return $res->successful();
         } catch (\Throwable $e) {
             Log::warning('[Uber] POST exception: ' . $e->getMessage());
             return false;

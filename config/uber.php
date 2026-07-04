@@ -46,4 +46,10 @@ return [
 
     // Branche cible (V1 = single restaurant).
     'branch_id' => (int) env('UBER_BRANCH_ID', 1),
+
+    // [GO-LIVE UBER 2026-07-04] Item d'ancrage pour les lignes NON MAPPÉES (dégradation
+    // gracieuse — une commande payée ne se perd JAMAIS). 0/absent = le mapper crée/réutilise
+    // un placeholder technique inactif hors canaux ('uber-article-non-mappe'). L'owner peut
+    // pointer un item dédié existant ici s'il préfère.
+    'fallback_item_id' => (int) env('UBER_FALLBACK_ITEM_ID', 0),
 ];

@@ -46,6 +46,17 @@ class UberOrderMapper
 
         $itemId = $this->resolveItemId($title, $uberId);
 
+        // [GO-LIVE UBER 2026-07-04] Dégradation gracieuse : un titre non mappé renvoyait item_id
+        // NULL → violation NOT NULL à l'insert → rollback TOTAL → 5×503 → 200 give-up → la
+        // commande PAYÉE était PERDUE (invisible cuisine, Uber ne rejoue plus). On ancre la ligne
+        // sur un item placeholder TECHNIQUE (inactif, hors canaux — pas un produit menu, §3bis
+        // respecté) ; le titre Uber réel reste visible cuisine via instruction + snapshot.uber_title,
+        // et les montants Uber scellés sont conservés. Une commande payée ne se perd JAMAIS.
+        $unmapped = ($itemId === null);
+        if ($unmapped) {
+            $itemId = $this->fallbackItemId();
+        }
+
         // Modificateurs Uber (sauces / suppléments / options) → extras du snapshot.
         $extras = [];
         foreach (($line['selected_modifier_groups'] ?? $line['modifier_groups'] ?? []) as $group) {
@@ -64,7 +75,7 @@ class UberOrderMapper
             'quantity'   => max(1, $qty),
             'unit_price' => (float) (($line['price']['unit_price']['amount'] ?? 0) / 100),
             'total'      => (float) (($line['price']['total_price']['amount'] ?? 0) / 100),
-            'instruction'=> (string) ($line['special_instructions'] ?? ''),
+            'instruction'=> trim(($unmapped ? '[UBER NON MAPPÉ: ' . $title . '] ' : '') . (string) ($line['special_instructions'] ?? '')),
             'composition_snapshot' => [
                 'schema_version' => 1,
                 'source'         => 'uber_eats',
@@ -99,6 +110,40 @@ class UberOrderMapper
         $item = Item::query()->whereRaw('LOWER(name) LIKE ?', ['%' . mb_strtolower(trim($title)) . '%'])->first(['id']);
 
         return $item ? (int) $item->id : null;
+    }
+
+    /**
+     * [GO-LIVE UBER 2026-07-04] Item placeholder TECHNIQUE pour les lignes non mappées :
+     * inactif + hors canaux + catégorie technique inactive → n'apparaît JAMAIS sur borne/POS
+     * (pas un produit menu — §3bis anti-invention respecté). Sert uniquement d'ancre FK pour
+     * que la commande PAYÉE soit toujours créée ; le vrai titre vit dans instruction/snapshot.
+     * Configurable via uber.fallback_item_id si l'owner préfère un item dédié existant.
+     */
+    public function fallbackItemId(): int
+    {
+        $configured = (int) config('uber.fallback_item_id', 0);
+        if ($configured > 0 && Item::query()->whereKey($configured)->exists()) {
+            return $configured;
+        }
+
+        $category = \App\Models\ItemCategory::query()->firstOrCreate(
+            ['slug' => 'uber-technique'],
+            ['name' => 'Uber (technique)', 'status' => \App\Enums\Status::INACTIVE, 'channels' => []]
+        );
+
+        $item = Item::query()->firstOrCreate(
+            ['slug' => 'uber-article-non-mappe'],
+            [
+                'name'             => 'Article Uber (non mappé)',
+                'item_category_id' => $category->id,
+                'price'            => 0,
+                'status'           => \App\Enums\Status::INACTIVE,
+                'channels'         => [],
+                'is_available'     => false,
+            ]
+        );
+
+        return (int) $item->id;
     }
 
     private function shortDisplay(array $uberOrder): ?string
