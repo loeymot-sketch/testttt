@@ -327,7 +327,7 @@ Un test technique vert ne prouve PAS que l'UI est OK.
 - `http://127.0.0.1:8000/admin/pos` — POS Caisse
 - `http://127.0.0.1:8000/login` — Admin login
 - `http://127.0.0.1:8000/admin/items` — Catalogue
-- `http://127.0.0.1:8000/admin/stock-rupture-dashboard` — Stock dashboard
+- `http://127.0.0.1:8000/admin/stock/rupture` — Stock dashboard (« Gestion Produits & Stock » ; corrigé 2026-07-04, l'ancien `/admin/stock-rupture-dashboard` 404 → route SPA réelle `admin.stock.rupture`)
 - `http://127.0.0.1:8000/kds` — Kitchen Display System
 - `http://127.0.0.1:8000/admin/order-status-screen` — OSS
 
