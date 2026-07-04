@@ -8,7 +8,7 @@
   "resources/js/components/frontend/kiosk/KioskWizardComponent.vue": "8ef016fbe2bc7e411f1461c87508547cda1aac3c0b24dce51676b759e4714be6",
   "resources/js/components/frontend/kiosk/KioskAppComponent.vue": "b3afbf982b744e39e573b6d368ec63da788a4d374e67433a8f46956ac7be6dc1",
   "resources/js/components/frontend/kiosk/KioskUpsellComponent.vue": "696fc36d8f1ce92f5e4f0246efc6fa60ef936c7848a03a10c3d8d7094439ffe7",
-  "resources/js/components/admin/pos/PaymentComponent.vue": "50fa9635018355fd0916a0ad9fe4ae1c9a1aa173aec4aa3f75a6ca3be63de00a",
+  "resources/js/components/admin/pos/PaymentComponent.vue": "6bfaadcdb9865a6b51ebbd4c5c47d631e20eaad15815913d3816d2a37640c084",
   "resources/js/components/admin/pos/v5/PosV5TrancheRow.vue": "1a23064ef92b42550fbf98210347818daf58b3fa35360e647eaf87e25dc5303c",
   "public/js/pos-wizard.js": "8a943ee5af10958316bf515498ade876f8164303b33854209465e8869845c769",
   "public/css/pos-wizard.css": "126223abc1b8137be740b6588c85db1634ea81037d4df7c37194a0ca554a9f1e",

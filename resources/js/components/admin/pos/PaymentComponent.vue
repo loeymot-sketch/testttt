@@ -723,7 +723,25 @@ export default {
             return JSON.stringify(normalizeCartForApi(itemsArray));
         },
         refreshQuote: function (form) {
-            return axios.post('admin/pos/quote', form).then((res) => {
+            // [FIX 2026-07-04 « Order quote expired » au paiement caisse]
+            // Ne JAMAIS réexpédier un quote_token/quote_signature déjà en main :
+            // côté serveur, TOUTE requête porteuse d'un token est routée vers le
+            // chemin "replay" (resolveReplay) qui renvoie 410 dès que le TTL (300s)
+            // du devis est dépassé — contrat volontaire, verrouillé par
+            // QuoteExpirationTest. Or un token périmé peut traîner dans le form
+            // (devis initial ouvert >5min, commande garée restaurée, tentative de
+            // confirm précédente, timer keepalive). En OMETTANT le token, la requête
+            // exprime sa vraie intention (« donne-moi un devis COURANT pour ce
+            // panier ») : le serveur RÉUTILISE un devis ouvert de même intention ou
+            // en FORGE un neuf (findOpenQuote → create) — jamais un replay périmé.
+            // Le token/signature FRAIS renvoyés sont ensuite portés par saveForm →
+            // sealForCommit (devis non expiré, à la milliseconde près). Cas
+            // discount=0 (courant) : comportement identique ; seul le cas EXPIRÉ
+            // passe de « 410 bloquant » à « devis neuf → encaissement OK ».
+            const freshRequest = { ...(form || {}) };
+            delete freshRequest.quote_token;
+            delete freshRequest.quote_signature;
+            return axios.post('admin/pos/quote', freshRequest).then((res) => {
                 const quote = res?.data?.data;
                 if (!quote || quote.total_ttc === undefined || !quote.quote_token || !quote.signature) {
                     throw new Error('Réponse quote invalide.');

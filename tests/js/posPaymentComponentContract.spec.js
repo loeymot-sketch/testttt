@@ -30,6 +30,22 @@ describe('POS payment component parent-state contract', () => {
         expect(methodSource).toContain('...patch');
     });
 
+    it('refreshQuote never re-forwards a stale quote_token/signature (fixes "Order quote expired")', () => {
+        // [FIX 2026-07-04] A forwarded token routes the server into resolveReplay,
+        // which 410s once the 300s TTL elapses. refreshQuote must strip the token
+        // so the request mints/reuses a CURRENT quote instead of replaying a dead one.
+        const paymentSource = readFileSync(paymentComponentPath, 'utf8');
+        const start = paymentSource.indexOf('refreshQuote: function');
+        const end = paymentSource.indexOf('alignCashReceivedWithQuotedTotal', start);
+        const refreshSource = paymentSource.slice(start, end);
+
+        expect(refreshSource).toContain('delete freshRequest.quote_token');
+        expect(refreshSource).toContain('delete freshRequest.quote_signature');
+        // The POST must send the stripped copy, not the raw form that still holds the token.
+        expect(refreshSource).toContain("axios.post('admin/pos/quote', freshRequest)");
+        expect(refreshSource).not.toContain("axios.post('admin/pos/quote', form)");
+    });
+
     it('centralizes successful payment reset in PosComponent instead of PaymentComponent props', () => {
         const posSource = readFileSync(posComponentPath, 'utf8');
         const paymentSource = readFileSync(paymentComponentPath, 'utf8');
