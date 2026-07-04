@@ -107,6 +107,13 @@ class KdsSyncService
                     });
                 });
 
+            // [ULTRA-AUDIT 2026-07-04 — P2 SSOT board-release] Applique le MÊME filtre de release que
+            // KitchenDisplaySystemOrderService::list() + le guard de changeStatus (SSOT partagé
+            // KitchenReleaseRule) : une commande en statut actif mais NON released par le paiement
+            // (UNPAID non-cash) fuyait dans le flux delta sync alors qu'elle est ABSENTE du board
+            // autoritaire — incohérence entre chemins d'une fonction partagée. sync() rejoint list().
+            \App\Domain\Kds\KitchenReleaseRule::applyBoardReleaseFilter($ordersQuery);
+
             if ($branchId > 0) {
                 $ordersQuery->where('branch_id', $branchId);
             }
