@@ -61,6 +61,16 @@ exécutée live sur 4 variantes (rollback-wrappé) → valide les DEUX moitiés 
 | kiosk PAID | absente | ✅ OUT |
 + test `CounterCollectQueueRobustTest` 3/3 vert.
 
+## 2ter. Système LIVRAISON — validé LIVE (fee SSOT + caisse livreur + cycle commande)
+Corner explicitement demandé (Wave 3 y avait trouvé la garde-variance). Validé service-layer (rollback-wrappé) :
+| Sous-fonction | Attendu | Live |
+|---|---|---|
+| **Fee `DeliveryFeeService`** (règle owner 4€ ≤5km, +1€/km entamé) | d=3→4 · d=5→4 · d=5,1→5 · d=6→5 · d=7,5→7 · d=10→9 | ✅ **6/6 exact** |
+| **Caisse livreur** (open→close→reconcile) | open(100)→closed(130)→reconciled, expected=100, variance=+30 | ✅ math juste + statut open→closed→reconciled + **audit trail** présent |
+| **Garde variance** (finding Wave 3) | variance auditée mais pas de gate d'approbation | ✅ confirmé (design admin-only, documenté) |
+| **Cycle commande livraison** | ACCEPT→PREPARING→PREPARED→OUT_FOR_DELIVERY→DELIVERED | ✅ + **cascade timing Wave 1** (accepted/preparing/prepared posés jusqu'au terminal DELIVERED) |
+| Contrainte fiscale | unique (branch, fiscal_seq) empêche le doublon | ✅ prouvé (collision 777 rejetée) |
+
 ## 3. GATES
 - Chaîne LIVE borne verte (1 test, 3 itérations) · heals service-layer 5/5 verts live · **NF525 CHAIN OK** (4 branches) après les runs · 0 pageerror.
 - Le nettoyage e2e supprime la commande fixture + son order → 1 gap de fiscal_seq sur la base DEV (artefact de test attendu, pas de prod ; la chaîne HMAC audit_logs/z_reports reste intacte).
