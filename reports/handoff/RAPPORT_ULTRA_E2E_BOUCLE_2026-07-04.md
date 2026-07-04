@@ -71,6 +71,22 @@ Corner explicitement demandé (Wave 3 y avait trouvé la garde-variance). Valid�
 | **Cycle commande livraison** | ACCEPT→PREPARING→PREPARED→OUT_FOR_DELIVERY→DELIVERED | ✅ + **cascade timing Wave 1** (accepted/preparing/prepared posés jusqu'au terminal DELIVERED) |
 | Contrainte fiscale | unique (branch, fiscal_seq) empêche le doublon | ✅ prouvé (collision 777 rejetée) |
 
+## 2quater. Système REMBOURSEMENT (counter-entry NF525) — validé LIVE
+Corner fiscal-critique. `RefundWithCounterEntryService` = pattern NF525 correct : parent IMMUABLE + mirror
+RETURN_OF (parent_order_id, status RETURNED, payment REFUNDED, **fiscal_sequence_no FRAIS distinct**, totaux
+négatifs, audit `order.refund.counter_entry`), gardé (parent doit être scellé Z clos + `assertSealed`, reason requis).
+| Contrôle (sur 22 refunds réels) | Live |
+|---|---|
+| Double-refund bloqué (UNIQUE parent_order_id) | ✅ **0 doublon** |
+| Mirror = fiscal_seq distinct du parent | ✅ 6/6 counter-entries |
+| Dual-path (pré-Z RETURNED direct + post-Z counter-entry) | ✅ 16 pré-Z + 6 post-Z |
+| Audit trail counter-entry | ✅ présent |
+| Code service ne mute JAMAIS le parent | ✅ vérifié (immutabilité) |
+
+**1 observation (non-bug)** : parent#4225 (fiscal 2023) est lui-même REFUNDED avec mirror#4226 (fiscal 2024) —
+NON reproductible via le service (qui n'écrit jamais le parent) → manipulation test-DB probable, pas un défaut de
+code. Flaggé pour vérif owner de la chaîne Z (est-ce un double-comptage dans un vieux Z de test ?), pas un heal.
+
 ## 3. GATES
 - Chaîne LIVE borne verte (1 test, 3 itérations) · heals service-layer 5/5 verts live · **NF525 CHAIN OK** (4 branches) après les runs · 0 pageerror.
 - Le nettoyage e2e supprime la commande fixture + son order → 1 gap de fiscal_seq sur la base DEV (artefact de test attendu, pas de prod ; la chaîne HMAC audit_logs/z_reports reste intacte).
