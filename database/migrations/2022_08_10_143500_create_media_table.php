@@ -29,4 +29,11 @@ return new class extends Migration {
             $table->nullableTimestamps();
         });
     }
+
+    // [WAVE5 GÉRANCE 2026-07-04] Seule migration sur 178 sans down() → rollback impossible.
+    // Réverse exacte du up() (drop de la table media). Sûr : down() ne s'exécute qu'au rollback explicite.
+    public function down()
+    {
+        Schema::dropIfExists('media');
+    }
 };
