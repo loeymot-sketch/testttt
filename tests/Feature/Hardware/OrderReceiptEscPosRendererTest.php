@@ -240,8 +240,13 @@ class OrderReceiptEscPosRendererTest extends TestCase
     {
         $bytes = (new OrderReceiptEscPosRenderer)->renderKitchenTicket($this->makeOrder());
         $this->assertStringContainsString('CUISINE', $bytes);
-        // [KITCHEN-SYMBOLS 2026-06-28 / T3-CUISINE 2026-07-05] Tacos L → code 3 lettres « TAC ».
-        $this->assertStringContainsString('G | TAC | L | Cordon Frec | SAM', $bytes);
+        // [KITCHEN-SYMBOLS 2026-06-28 / T2+T3-CUISINE 2026-07-05] Tacos L → code 3 lettres « TAC ».
+        // La ligne produit est en DOUBLE TAILLE : une compo longue (2 viandes) s'enroule
+        // proprement sur 2 lignes (jamais coupée au milieu d'un symbole) → on vérifie les
+        // SEGMENTS (robuste à l'enroulement) plutôt que la chaîne contiguë.
+        $this->assertStringContainsString('TAC', $bytes);
+        $this->assertStringContainsString('Cordon Frec', $bytes);
+        $this->assertStringContainsString('SAM', $bytes);
         // [T3-CUISINE] Suppléments payants en GRAS + étoile « * » (accent doit survivre CP858).
         $this->assertStringContainsString('* Cheddar', $bytes);
         $this->assertStringContainsString('* Viande suppl', $bytes);
