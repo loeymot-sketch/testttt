@@ -201,14 +201,14 @@ describe('G2-HEAL-03 / G5-F-002 P1 — Receipt addons rendering', () => {
             expect(addonText).not.toMatch(/3,00/);
         });
 
-        it('renders the SYMBOLIC kitchen format (owner spec): product in full + MENU, no prices', () => {
-            // [KITCHEN-SYMBOLS 2026-06-28] Owner spec replaces the prose addon list on
-            // the kitchen ticket with the 3-line symbolic format: line 3 = "MENU"/"F"
-            // (a menu_* addon → MENU), NOT the addon names. The CLIENT ticket still
-            // lists addons (tests above) — only the kitchen prep ticket is symbolic.
+        it('renders the SYMBOLIC kitchen format (owner spec): product 3-letter code + MENU, no prices', () => {
+            // [KITCHEN-SYMBOLS 2026-06-28 / T3-CUISINE 2026-07-05] Owner spec : ticket cuisine
+            // en format symbolique + le NOM PRODUIT en CODE 3 LETTRES (« Big Burger » → « BIG »,
+            // Cayenne → CAY…) pour un ticket compact/grand. Ligne MENU pour une formule. Le
+            // ticket CLIENT garde les noms complets (tests ci-dessus) — seul le prep cuisine est symbolique.
             const wrapper = mountReceipt();
             const kitchenText = wrapper.find('#print-receipt-kitchen').text();
-            expect(kitchenText).toContain('BIG BURGER'); // produit écrit en entier
+            expect(kitchenText).toContain('BIG'); // « Big Burger » → code 3 lettres « BIG »
             expect(kitchenText).toContain('MENU');        // ligne 3 = formule
             // Kitchen prep ticket carries no prices.
             expect(kitchenText).not.toMatch(/1[.,]20/);
