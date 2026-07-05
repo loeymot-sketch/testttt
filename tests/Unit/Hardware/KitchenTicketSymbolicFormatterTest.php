@@ -34,7 +34,7 @@ class KitchenTicketSymbolicFormatterTest extends TestCase
                 ['extra_name' => 'Oignon'],
             ],
         ];
-        $this->assertSame('G | SANDWICH | P | STO | SAM', $this->f->mainLine('Sandwich', $snap));
+        $this->assertSame('G | SAN | P | STO | SAM', $this->f->mainLine('Sandwich', $snap));
     }
 
     public function test_tacos_main_line_with_default_support(): void
@@ -45,7 +45,7 @@ class KitchenTicketSymbolicFormatterTest extends TestCase
                 ['attribute_name' => 'Sauce', 'variation_name' => 'Mayonnaise'],
             ],
         ];
-        $this->assertSame('G | TACOS | M | K | MAY', $this->f->mainLine('Tacos M', $snap));
+        $this->assertSame('G | TAC | M | K | MAY', $this->f->mainLine('Tacos M', $snap));
     }
 
     public function test_two_meats_space_joined(): void
@@ -57,7 +57,7 @@ class KitchenTicketSymbolicFormatterTest extends TestCase
                 ['attribute_name' => 'Sauce', 'variation_name' => 'Curry'],
             ],
         ];
-        $this->assertSame('G | TACOS | L | K P | CURY', $this->f->mainLine('Tacos L', $snap));
+        $this->assertSame('G | TAC | L | K P | CURY', $this->f->mainLine('Tacos L', $snap));
     }
 
     public function test_crudites_canonical_order(): void
@@ -66,7 +66,7 @@ class KitchenTicketSymbolicFormatterTest extends TestCase
             'lines' => [['attribute_name' => 'Sauce', 'variation_name' => 'Blanche']],
             'extras' => [['extra_name' => 'Oignon'], ['extra_name' => 'Salade']],
         ];
-        $this->assertSame('SANDWICH | SO | BL', $this->f->mainLine('Sandwich', $snap));
+        $this->assertSame('SAN | SO | BL', $this->f->mainLine('Sandwich', $snap));
     }
 
     public function test_meat_not_dropped_when_attribute_name_null(): void
@@ -77,12 +77,12 @@ class KitchenTicketSymbolicFormatterTest extends TestCase
                 ['attribute_name' => 'Sauce', 'variation_name' => 'Mayonnaise'],
             ],
         ];
-        $this->assertSame('G | TACOS | M | P | MAY', $this->f->mainLine('Tacos M', $snap));
+        $this->assertSame('G | TAC | M | P | MAY', $this->f->mainLine('Tacos M', $snap));
     }
 
     public function test_drink_is_just_the_name(): void
     {
-        $this->assertSame('COCA 33CL', $this->f->mainLine('Coca 33cl', []));
+        $this->assertSame('COC', $this->f->mainLine('Coca 33cl', []));
     }
 
     public function test_supplement_lines_exclude_crudites(): void
@@ -148,7 +148,7 @@ class KitchenTicketSymbolicFormatterTest extends TestCase
             ],
         ];
         // crudités = S + O (free garnitures only), NOT a 2nd O from "Oignons frits".
-        $this->assertSame('SANDWICH | SO | MAY', $this->f->mainLine('Sandwich', $snap));
+        $this->assertSame('SAN | SO | MAY', $this->f->mainLine('Sandwich', $snap));
         $this->assertSame(['+ Oignons frits'], $this->f->supplementLines($snap));
     }
 

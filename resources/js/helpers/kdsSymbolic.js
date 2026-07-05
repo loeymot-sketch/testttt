@@ -156,14 +156,30 @@ function classifyVariation(group, value) {
     return 'other';
 }
 
-/** Split "Tacos M" → { produit: "TACOS", taille: "M" }. Only M/L/XL trailing tokens. */
+/**
+ * [T3-CUISINE 2026-07-05] Code produit 3 lettres (Cayenne→CAY, Terminator→TER). 3 lettres du
+ * DERNIER mot significatif → distingue « Menu Enfant Burger » (BUR) de « ... Nuggets » (NUG).
+ * PARITÉ STRICTE avec le PHP KitchenTicketSymbolicFormatter::produitCode() (ticket == écran).
+ */
+const CODE_GENERIC_WORDS = ['menu', 'enfant', 'formule', 'grande', 'grand', 'petite', 'petit', 'mini', 'maxi', 'moyenne', 'moyen', 'box'];
+function produitCode(produit) {
+    const n = normalize(produit).replace(/[^a-z0-9 ]+/g, ' ').trim();
+    if (!n) return '';
+    const words = n.split(' ').filter(Boolean);
+    // Premier mot SIGNIFICATIF : saute prefixes generiques + tailles/volumes (parite PHP).
+    const significant = words.filter((w) => !CODE_GENERIC_WORDS.includes(w) && !/^\d+(cl|ml|l|g|kg)?$/.test(w));
+    const base = significant[0] || words[0] || n;
+    return base.slice(0, 3).toUpperCase();
+}
+
+/** Split "Tacos M" → { produit: "TAC", taille: "M" }. Only M/L/XL trailing tokens. */
 function produitAndSize(itemName) {
     const raw = String(itemName || '').trim();
     const m = raw.match(/\s+(XL|L|M)\s*$/i);
     if (m) {
-        return { produit: raw.slice(0, m.index).trim().toUpperCase(), taille: m[1].toUpperCase() };
+        return { produit: produitCode(raw.slice(0, m.index).trim()), taille: m[1].toUpperCase() };
     }
-    return { produit: raw.toUpperCase(), taille: '' };
+    return { produit: produitCode(raw), taille: '' };
 }
 
 /**

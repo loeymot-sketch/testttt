@@ -341,11 +341,41 @@ final class KitchenTicketSymbolicFormatter
     {
         $raw = trim($itemName);
         if (preg_match('/\s+(XL|L|M)\s*$/i', $raw, $m, PREG_OFFSET_CAPTURE)) {
-            $produit = mb_strtoupper(trim(mb_substr($raw, 0, $m[0][1])));
+            $produit = trim(mb_substr($raw, 0, $m[0][1]));
 
-            return [$produit, mb_strtoupper($m[1][0])];
+            return [$this->produitCode($produit), mb_strtoupper($m[1][0])];
         }
 
-        return [mb_strtoupper($raw), ''];
+        return [$this->produitCode($raw), ''];
+    }
+
+    /**
+     * [T3-CUISINE 2026-07-05] Code produit 3 lettres pour la cuisine (owner : « Cayenne → CAY,
+     * Terminator → TER »). Rend le ticket cuisine COMPACT (→ police plus grande possible) et
+     * l'écran KDS lisible. On prend les 3 lettres du DERNIER mot significatif pour ne PAS
+     * confondre « Menu Enfant Burger » (BUR) et « Menu Enfant Nuggets » (NUG). Parité stricte
+     * avec le JS `kdsSymbolic.js produitCode()` (ticket == écran).
+     */
+    private const CODE_GENERIC_WORDS = ['menu', 'enfant', 'formule', 'grande', 'grand', 'petite', 'petit', 'mini', 'maxi', 'moyenne', 'moyen', 'box'];
+
+    private function produitCode(string $produit): string
+    {
+        $n = trim(preg_replace('/[^a-z0-9 ]+/', ' ', $this->norm($produit)));
+        if ($n === '') {
+            return '';
+        }
+        $words = array_values(array_filter(explode(' ', $n), static fn ($x): bool => $x !== ''));
+        // Premier mot SIGNIFICATIF : on saute les préfixes génériques (Menu/Enfant/Grande…) et
+        // les tailles/volumes (33cl, 50cl, 1l) → « Coca 33cl »→COC, « Menu Enfant Burger »→BUR.
+        $significant = array_values(array_filter($words, static function (string $w): bool {
+            if (in_array($w, self::CODE_GENERIC_WORDS, true)) {
+                return false;
+            }
+
+            return ! preg_match('/^\d+(cl|ml|l|g|kg)?$/', $w);
+        }));
+        $base = $significant[0] ?? ($words[0] ?? $n);
+
+        return mb_strtoupper(mb_substr($base, 0, 3));
     }
 }

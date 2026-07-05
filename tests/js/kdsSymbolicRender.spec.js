@@ -32,7 +32,7 @@ describe('KdsOrderLine — symbolic line types paint to the DOM', () => {
         };
         const texts = renderLines(item);
         expect(texts[0]).toContain('2');
-        expect(texts[0]).toContain('G | TACOS | M | K | SAM');
+        expect(texts[0]).toContain('G | TAC | M | K | SAM');
         // Owner order: MENU (ligne 2) PUIS suppléments.
         expect(texts[1]).toContain('MENU');
         expect(texts[2]).toContain('+ Cheddar');

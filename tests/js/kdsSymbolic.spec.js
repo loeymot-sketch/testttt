@@ -69,7 +69,7 @@ describe('couverture EXHAUSTIVE du vrai menu (parité avec le ticket imprimé)',
 });
 
 describe('symbolicMainLine — owner examples', () => {
-    it('sandwich galette / poulet / salade tomate oignon / samouraï → "G | SANDWICH | P | STO | SAM"', () => {
+    it('sandwich galette / poulet / salade tomate oignon / samouraï → "G | SAN | P | STO | SAM"', () => {
         const item = {
             item_name: 'Sandwich',
             composition_snapshot: {
@@ -85,10 +85,10 @@ describe('symbolicMainLine — owner examples', () => {
                 ],
             },
         };
-        expect(symbolicMainLine(item)).toBe('G | SANDWICH | P | STO | SAM');
+        expect(symbolicMainLine(item)).toBe('G | SAN | P | STO | SAM');
     });
 
-    it('tacos M / viande hachée / mayonnaise (no crudités) → "G | TACOS | M | K | MAY"', () => {
+    it('tacos M / viande hachée / mayonnaise (no crudités) → "G | TAC | M | K | MAY"', () => {
         const item = {
             item_name: 'Tacos M',
             composition_snapshot: {
@@ -98,7 +98,7 @@ describe('symbolicMainLine — owner examples', () => {
                 ],
             },
         };
-        expect(symbolicMainLine(item)).toBe('G | TACOS | M | K | MAY');
+        expect(symbolicMainLine(item)).toBe('G | TAC | M | K | MAY');
     });
 
     it('crudités are concatenated in canonical S,T,O order regardless of input order', () => {
@@ -113,7 +113,7 @@ describe('symbolicMainLine — owner examples', () => {
             },
         };
         // support omitted (no pain choice, not tacos), no taille, no viande
-        expect(symbolicMainLine(item)).toBe('SANDWICH | SO | BL');
+        expect(symbolicMainLine(item)).toBe('SAN | SO | BL');
     });
 
     it('two meats (Tacos L) are space-joined', () => {
@@ -127,7 +127,7 @@ describe('symbolicMainLine — owner examples', () => {
                 ],
             },
         };
-        expect(symbolicMainLine(item)).toBe('G | TACOS | L | K P | CURY');
+        expect(symbolicMainLine(item)).toBe('G | TAC | L | K P | CURY');
     });
 
     it('never drops a meat when attribute_name is null (malformed snapshot)', () => {
@@ -141,11 +141,11 @@ describe('symbolicMainLine — owner examples', () => {
             },
         };
         // The meat must still surface (P), not vanish.
-        expect(symbolicMainLine(item)).toBe('G | TACOS | M | P | MAY');
+        expect(symbolicMainLine(item)).toBe('G | TAC | M | P | MAY');
     });
 
     it('a drink renders just the product name (no slots)', () => {
-        expect(symbolicMainLine({ item_name: 'Coca 33cl' })).toBe('COCA 33CL');
+        expect(symbolicMainLine({ item_name: 'Coca 33cl' })).toBe('COC');
     });
 });
 
@@ -177,7 +177,7 @@ describe('renderItemSymbolic — line list for the KDS card', () => {
         expect(out.lines[0]).toMatchObject({
             type: 'symbolic-main',
             qty: 2,
-            label: 'G | TACOS | M | K | SAM',
+            label: 'G | TAC | M | K | SAM',
             hasAllergen: true,
         });
         expect(out.lines[2]).toMatchObject({ type: 'supplement', label: '+ Cheddar' });
@@ -212,7 +212,7 @@ describe('renderItemSymbolic — line list for the KDS card', () => {
         };
         const out = renderItemSymbolic(item);
         // crudités = SO (free only); Oignons frits stays a paid supplement line.
-        expect(out.lines[0].label).toBe('SANDWICH | SO | MAY');
+        expect(out.lines[0].label).toBe('SAN | SO | MAY');
         const sup = out.lines.filter((l) => l.type === 'supplement').map((l) => l.label);
         expect(sup).toEqual(['+ Oignons frits']);
     });
@@ -237,8 +237,8 @@ describe('renderItemSymbolic — line list for the KDS card', () => {
         expect(burger.lines[0].label).not.toBe('MENU');
         expect(nuggets.lines[0].label).not.toBe('MENU');
         expect(burger.lines[0].label).not.toBe(nuggets.lines[0].label);
-        expect(burger.lines[0].label.toUpperCase()).toContain('BURGER');
-        expect(nuggets.lines[0].label.toUpperCase()).toContain('NUGGETS');
+        expect(burger.lines[0].label.toUpperCase()).toContain('BUR');
+        expect(nuggets.lines[0].label.toUpperCase()).toContain('NUG');
     });
 
     it('crudité extras never leak into the supplement lines', () => {
