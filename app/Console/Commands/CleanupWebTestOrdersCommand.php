@@ -36,7 +36,17 @@ class CleanupWebTestOrdersCommand extends Command
         // keep the SoftDeletingScope so already soft-deleted orders are not re-listed/re-touched.
         $query = Order::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
             ->where('source', Source::WEB)
-            ->whereNull('fiscal_sequence_no'); // hard NF525 guard: never touch fiscalised orders
+            ->whereNull('fiscal_sequence_no') // hard NF525 guard: never touch fiscalised orders
+            // [SELF-AUDIT D 2026-07-05 — perte de commande PAYÉE Uber] Le canal Uber réutilise
+            // source=WEB (collision). Une commande Uber LIVE est source=WEB + fiscal_sequence_no NULL
+            // → elle matchait cette purge de commandes de TEST web → soft-delete → le dédup Uber
+            // (createFromUber, plural withoutGlobalScopes) retrouve le tombstone et REFUSE de recréer
+            // → perte DÉFINITIVE d'une commande aggregateur PAYÉE. Un vrai invité e2e web est NON payé
+            // et sans source_surface 'uber_eats'. On exclut les DEUX signatures (défense en profondeur).
+            ->where('payment_status', '!=', \App\Enums\PaymentStatus::PAID)
+            ->where(function ($q) {
+                $q->whereNull('source_surface')->orWhere('source_surface', '!=', 'uber_eats');
+            });
 
         if ($phone) {
             $query->whereHas('user', fn ($q) => $q->withoutGlobalScopes()->where('phone', $phone));
@@ -49,10 +59,11 @@ class CleanupWebTestOrdersCommand extends Command
 
         if ($orders->isEmpty()) {
             $this->info('No matching non-fiscalised WEB orders found.');
+
             return self::SUCCESS;
         }
 
-        $this->info(($confirm ? 'DELETING' : 'DRY-RUN — would delete') . " {$orders->count()} WEB order(s):");
+        $this->info(($confirm ? 'DELETING' : 'DRY-RUN — would delete')." {$orders->count()} WEB order(s):");
         $deleted = 0;
         $skipped = 0;
         foreach ($orders as $order) {
@@ -60,6 +71,7 @@ class CleanupWebTestOrdersCommand extends Command
             if (! is_null($order->fiscal_sequence_no)) {
                 $this->warn("  SKIP order #{$order->id} — fiscalised (sealed, NF525).");
                 $skipped++;
+
                 continue;
             }
             $line = "  order #{$order->id} branch={$order->branch_id} total={$order->total} status={$order->status} @{$order->created_at}";
@@ -69,7 +81,7 @@ class CleanupWebTestOrdersCommand extends Command
                     'order_id' => $order->id, 'branch_id' => $order->branch_id, 'source' => Source::WEB,
                 ]);
                 $deleted++;
-                $this->line($line . '  → DELETED');
+                $this->line($line.'  → DELETED');
             } else {
                 $this->line($line);
             }

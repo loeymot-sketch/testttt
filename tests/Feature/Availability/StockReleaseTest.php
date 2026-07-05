@@ -50,53 +50,54 @@ class StockReleaseTest extends TestCase
         int $orderItemQty,
         int $dailyConsumedQty,
         int $maxDailyQty,
-        bool $isAvailable = true
+        bool $isAvailable = true,
+        ?string $unavailableReason = null
     ): array {
         $branch = Branch::factory()->create();
         $category = ItemCategory::factory()->create();
         $tax = Tax::factory()->create();
         $item = Item::factory()->create([
             'item_category_id' => $category->id,
-            'tax_id'           => $tax->id,
-            'price'            => 12.50,
+            'tax_id' => $tax->id,
+            'price' => 12.50,
         ]);
 
         $user = User::factory()->create(['branch_id' => $branch->id]);
 
         $order = Order::factory()->create([
             'branch_id' => $branch->id,
-            'user_id'   => $user->id,
+            'user_id' => $user->id,
         ]);
 
         $orderItem = OrderItem::forceCreate([
-            'order_id'             => $order->id,
-            'branch_id'            => $branch->id,
-            'item_id'              => $item->id,
-            'quantity'             => $orderItemQty,
-            'discount'             => 0,
-            'tax_name'             => null,
-            'tax_rate'             => 0,
-            'tax_type'             => 1,
-            'tax_amount'           => 0,
-            'price'                => 12.50,
+            'order_id' => $order->id,
+            'branch_id' => $branch->id,
+            'item_id' => $item->id,
+            'quantity' => $orderItemQty,
+            'discount' => 0,
+            'tax_name' => null,
+            'tax_rate' => 0,
+            'tax_type' => 1,
+            'tax_amount' => 0,
+            'price' => 12.50,
             'item_variation_total' => 0,
-            'item_extra_total'     => 0,
-            'total_price'          => 12.50 * $orderItemQty,
-            'released_qty'         => 0,
-            'released_at'          => null,
+            'item_extra_total' => 0,
+            'total_price' => 12.50 * $orderItemQty,
+            'released_qty' => 0,
+            'released_at' => null,
         ]);
 
         DB::table('item_branch_availability')->insert([
-            'branch_id'          => $branch->id,
-            'item_id'            => $item->id,
-            'is_available'       => $isAvailable,
-            'unavailable_reason' => $isAvailable ? null : 'out_of_stock',
-            'unavailable_since'  => $isAvailable ? null : now(),
-            'max_daily_qty'      => $maxDailyQty,
+            'branch_id' => $branch->id,
+            'item_id' => $item->id,
+            'is_available' => $isAvailable,
+            'unavailable_reason' => $isAvailable ? null : ($unavailableReason ?? 'out_of_stock'),
+            'unavailable_since' => $isAvailable ? null : now(),
+            'max_daily_qty' => $maxDailyQty,
             'daily_consumed_qty' => $dailyConsumedQty,
-            'daily_reset_at'     => now()->toDateString(),
-            'created_at'         => now(),
-            'updated_at'         => now(),
+            'daily_reset_at' => now()->toDateString(),
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
         return compact('branch', 'item', 'order', 'orderItem');
@@ -109,16 +110,43 @@ class StockReleaseTest extends TestCase
         OrderCanceled::dispatch($f['order']->fresh('orderItems'));
 
         $this->assertDatabaseHas('item_branch_availability', [
-            'branch_id'          => $f['branch']->id,
-            'item_id'            => $f['item']->id,
+            'branch_id' => $f['branch']->id,
+            'item_id' => $f['item']->id,
             'daily_consumed_qty' => 0,
-            'is_available'       => 1,
+            'is_available' => 1,
         ]);
         $this->assertDatabaseHas('order_items', [
-            'id'           => $f['orderItem']->id,
+            'id' => $f['orderItem']->id,
             'released_qty' => 5,
         ]);
         $this->assertNotNull($f['orderItem']->fresh()->released_at);
+    }
+
+    /**
+     * @test — [SELF-AUDIT R4 P2 2026-07-05] Un 86 MANUEL (supplier_issue) — ou le 86 préventif du cron
+     * ('stock_rupture') — sur un article qui a AUSSI un plafond journalier NE DOIT PAS être levé par une
+     * annulation/remboursement d'une commande sans rapport. Seul le 86 auto-quota ('out_of_stock') se
+     * lève automatiquement (miroir setMaxDailyQty). Avant le fix, l'annulation remettait l'article en
+     * vente en silence → la cuisine recevait des commandes qu'elle ne pouvait honorer.
+     */
+    public function manual_86_survives_an_unrelated_cancel_release(): void
+    {
+        Event::fake([ItemAvailabilityChanged::class]);
+
+        $f = $this->makeOrderFixture(orderItemQty: 5, dailyConsumedQty: 5, maxDailyQty: 10, isAvailable: false, unavailableReason: 'supplier_issue');
+
+        OrderCanceled::dispatch($f['order']->fresh('orderItems'));
+
+        // Le compteur redescend (arithmétique correcte) MAIS l'article reste 86'd manuellement.
+        $this->assertDatabaseHas('item_branch_availability', [
+            'branch_id' => $f['branch']->id,
+            'item_id' => $f['item']->id,
+            'daily_consumed_qty' => 0,
+            'is_available' => 0,
+            'unavailable_reason' => 'supplier_issue',
+        ]);
+        // Pas de remise en vente → aucun événement de disponibilité.
+        Event::assertNotDispatched(ItemAvailabilityChanged::class);
     }
 
     public function test_full_cancel_flips_unavailable_item_back_to_available_and_dispatches_event(): void
@@ -130,10 +158,10 @@ class StockReleaseTest extends TestCase
         OrderCanceled::dispatch($f['order']->fresh('orderItems'));
 
         $this->assertDatabaseHas('item_branch_availability', [
-            'branch_id'          => $f['branch']->id,
-            'item_id'            => $f['item']->id,
+            'branch_id' => $f['branch']->id,
+            'item_id' => $f['item']->id,
             'daily_consumed_qty' => 0,
-            'is_available'       => 1,
+            'is_available' => 1,
             'unavailable_reason' => null,
         ]);
 
@@ -155,12 +183,12 @@ class StockReleaseTest extends TestCase
         ]);
 
         $this->assertDatabaseHas('order_items', [
-            'id'           => $f['orderItem']->id,
+            'id' => $f['orderItem']->id,
             'released_qty' => 2,
         ]);
         $this->assertDatabaseHas('item_branch_availability', [
-            'branch_id'          => $f['branch']->id,
-            'item_id'            => $f['item']->id,
+            'branch_id' => $f['branch']->id,
+            'item_id' => $f['item']->id,
             'daily_consumed_qty' => 3,
         ]);
     }
@@ -176,14 +204,14 @@ class StockReleaseTest extends TestCase
         OrderCanceled::dispatch($f['order']->fresh('orderItems'));
 
         $this->assertDatabaseHas('order_items', [
-            'id'           => $f['orderItem']->id,
+            'id' => $f['orderItem']->id,
             'released_qty' => 5,
         ]);
         $this->assertDatabaseHas('item_branch_availability', [
-            'branch_id'          => $f['branch']->id,
-            'item_id'            => $f['item']->id,
+            'branch_id' => $f['branch']->id,
+            'item_id' => $f['item']->id,
             'daily_consumed_qty' => 0,
-            'is_available'       => 1,
+            'is_available' => 1,
         ]);
 
         Event::assertDispatched(ItemAvailabilityChanged::class, 1);
@@ -197,12 +225,12 @@ class StockReleaseTest extends TestCase
         RefundCreated::dispatch($f['order']->fresh('orderItems'), []);
 
         $this->assertDatabaseHas('order_items', [
-            'id'           => $f['orderItem']->id,
+            'id' => $f['orderItem']->id,
             'released_qty' => 5,
         ]);
         $this->assertDatabaseHas('item_branch_availability', [
-            'branch_id'          => $f['branch']->id,
-            'item_id'            => $f['item']->id,
+            'branch_id' => $f['branch']->id,
+            'item_id' => $f['item']->id,
             'daily_consumed_qty' => 0,
         ]);
     }

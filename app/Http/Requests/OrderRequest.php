@@ -195,6 +195,18 @@ class OrderRequest extends FormRequest
             // allowed regardless of order_setup_takeaway setting. The kiosk is a physical machine in
             // the restaurant — it must offer "à emporter" independently of the web ordering settings.
             $isKioskToken = $this->isKioskOrderToken();
+
+            // [WEB-WIREUP guard 2026-06-27] order_type=KIOSK (25) est RÉSERVÉ à une
+            // borne physique enregistrée. Le wireup web (gating par présence de machine)
+            // a fait tomber l'invariant : un token guest/web (kiosk:order, SANS machine)
+            // pouvait se prétendre KIOSK et passer. On le rejette ici — les commandes
+            // web/app utilisent TAKEAWAY/DELIVERY, jamais KIOSK. Restaure
+            // KioskSecurityTest::test_kiosk_order_rejects_token_without_registered_machine.
+            if ($orderTypeInt === OrderType::KIOSK && ! $isKioskToken) {
+                $validator->errors()->add('order_type', 'Le service borne nécessite une machine enregistrée.');
+                return;
+            }
+
             if ($isKioskToken) {
                 $kiosk = $this->kioskMachineForToken();
                 if (! $kiosk) {

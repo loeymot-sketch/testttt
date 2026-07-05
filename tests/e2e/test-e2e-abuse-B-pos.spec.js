@@ -27,10 +27,10 @@
  *   - cash session:     [data-testid="pos-cash-session-open"] → PosCashDrawerSessionDialog
  *   - delivery type:    label[for="delivery"] → inline form (geocode = ENV-gated)
  *
- * Delivery fee (branch_id=1, resolved via tinker on DeliveryFeeService 2026-06-01):
- *   delivery_fee_free_km=5, base=5, per_km=1, min=5
- *   → fee@3km = 5.00€ (within free radius) ; fee@7.2km = 8.00€ (5 + 1*ceil(2.2)=5+3)
- *   This is the owner whole-km rule "5€ ≤5km, +1€/km ceil". We OBSERVE the rendered
+ * Delivery fee (branch_id=1, DeliveryFeeService; base lowered 5€→4€ on 2026-06-27):
+ *   delivery_fee_free_km=5, base=4, per_km=1, min=4
+ *   → fee@3km = 4.00€ (within free radius) ; fee@7.2km = 7.00€ (4 + 1*ceil(2.2)=4+3)
+ *   This is the owner whole-km rule "4€ ≤5km, +1€/km ceil". We OBSERVE the rendered
  *   delivery_charge if geocode resolves; we do NOT hard-assert a guessed number when
  *   geocode is unavailable in dev (environmental).
  */
@@ -511,7 +511,7 @@ test.describe.serial('Wave B — POS caisse full register (frozen wizard observe
       await snap('12-cash-session-MISSING');
     }
 
-    // ── 13 — delivery order → fee = Hénin-Beaumont whole-km 5€+1€/km ceil ───
+    // ── 13 — delivery order → fee = Hénin-Beaumont whole-km 4€+1€/km ceil ───
     // Select Delivery type → inline form. Geocode (Google Places) is the
     // environmental boundary in dev; we OBSERVE whether a delivery_charge renders
     // and report the rule, never fake-asserting a fee.

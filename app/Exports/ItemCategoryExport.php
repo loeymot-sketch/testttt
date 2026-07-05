@@ -9,28 +9,29 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 
 class ItemCategoryExport implements FromCollection, WithHeadings
 {
-
     public ItemCategoryService $itemCategoryService;
+
     public PaginateRequest $request;
 
     public function __construct(ItemCategoryService $itemCategoryService, $request)
     {
         $this->itemCategoryService = $itemCategoryService;
-        $this->request            = $request;
+        $this->request = $request;
     }
 
     public function collection(): \Illuminate\Support\Collection
     {
         $itemCategoryArray = [];
-        $categories     = $this->itemCategoryService->list($this->request);
+        $categories = $this->itemCategoryService->list($this->request);
 
         foreach ($categories as $category) {
             $itemCategoryArray[] = [
                 $category->name,
-                trans('statuse.' . $category->status),
-                $category->description
+                trans('statuse.'.$category->status),
+                $category->description,
             ];
         }
+
         return collect($itemCategoryArray);
     }
 

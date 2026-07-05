@@ -2,25 +2,23 @@
 
 namespace App\Services;
 
-
-use Exception;
+use App\Enums\OrderType;
+use App\Enums\PaymentStatus;
 use App\Events\OrderTableChanged;
+use App\Http\Requests\DiningTableRequest;
+use App\Http\Requests\PaginateRequest;
+use App\Libraries\QueryExceptionLibrary;
 use App\Models\Branch;
 use App\Models\DiningTable;
 use App\Models\DiningTableAuditLog;
 use App\Models\Order;
-use App\Enums\OrderType;
-use App\Enums\PaymentStatus;
-use Illuminate\Support\Str;
+use Dipokhalder\EnvEditor\EnvEditor;
+use Exception;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
-use Illuminate\Support\Facades\DB;
-use Dipokhalder\EnvEditor\EnvEditor;
-use Illuminate\Support\Facades\File;
-use App\Http\Requests\PaginateRequest;
-use App\Libraries\QueryExceptionLibrary;
-use Smartisan\Settings\Facades\Settings;
-use App\Http\Requests\DiningTableRequest;
+use Illuminate\Support\Str;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class DiningTableService
@@ -29,9 +27,8 @@ class DiningTableService
         'name',
         'size',
         'branch_id',
-        'status'
+        'status',
     ];
-
 
     public $envService;
 
@@ -46,16 +43,16 @@ class DiningTableService
     public function list(PaginateRequest $request)
     {
         try {
-            $requests    = $request->all();
-            $method      = $request->get('paginate', 0) == 1 ? 'paginate' : 'get';
+            $requests = $request->all();
+            $method = $request->get('paginate', 0) == 1 ? 'paginate' : 'get';
             $methodValue = $request->get('paginate', 0) == 1 ? $request->get('per_page', 10) : '*';
             $orderColumn = $request->get('order_column') ?? 'id';
-            $orderType   = $request->get('order_type') ?? 'desc';
+            $orderType = $request->get('order_type') ?? 'desc';
 
             return DiningTable::with('branch')->where(function ($query) use ($requests) {
                 foreach ($requests as $key => $request) {
                     if (in_array($key, $this->diningTableFilter)) {
-                        if ($key == "except") {
+                        if ($key == 'except') {
                             $explodes = explode('|', $request);
                             if (count($explodes)) {
                                 foreach ($explodes as $explode) {
@@ -63,10 +60,10 @@ class DiningTableService
                                 }
                             }
                         } else {
-                            if ($key == "branch_id") {
+                            if ($key == 'branch_id') {
                                 $query->where($key, $request);
                             } else {
-                                $query->where($key, 'like', '%' . $request . '%');
+                                $query->where($key, 'like', '%'.$request.'%');
                             }
                         }
                     }
@@ -86,22 +83,22 @@ class DiningTableService
     public function store(DiningTableRequest $request)
     {
         try {
-            $branch      = Branch::find($request->branch_id);           
-            $branch_name = $branch ? $branch->name : "";
+            $branch = Branch::find($request->branch_id);
+            $branch_name = $branch ? $branch->name : '';
 
-            $filename = Str::random(10) . '.png';
-            $slug     = Str::slug($branch_name.'-'.$request->name);
-            $url      = URL::to('/') . "/menu/" . $slug;
+            $filename = Str::random(10).'.png';
+            $slug = Str::slug($branch_name.'-'.$request->name);
+            $url = URL::to('/').'/menu/'.$slug;
             $qrCodePath = null;
 
             try {
-                if (!File::exists(storage_path('app/public/qr_codes/'))) {
+                if (! File::exists(storage_path('app/public/qr_codes/'))) {
                     File::makeDirectory(storage_path('app/public/qr_codes/'));
                 }
-                QrCode::format('png')->size(200)->generate($url, storage_path('app/public/qr_codes/' . $filename));
-                $qrCodePath = 'storage/qr_codes/' . $filename;
+                QrCode::format('png')->size(200)->generate($url, storage_path('app/public/qr_codes/'.$filename));
+                $qrCodePath = 'storage/qr_codes/'.$filename;
             } catch (\Throwable $qrException) {
-                Log::warning('[DiningTableService] QR code generation failed on store: ' . $qrException->getMessage());
+                Log::warning('[DiningTableService] QR code generation failed on store: '.$qrException->getMessage());
             }
 
             return DiningTable::create($request->validated() + ['qr_code' => $qrCodePath, 'slug' => $slug]);
@@ -117,27 +114,27 @@ class DiningTableService
     public function update(DiningTableRequest $request, DiningTable $diningTable)
     {
         try {
-            $branch      = Branch::find($request->branch_id);           
-            $branch_name = $branch ? $branch->name : "";
+            $branch = Branch::find($request->branch_id);
+            $branch_name = $branch ? $branch->name : '';
 
-            $filename = Str::random(10) . '.png';
-            $slug     = Str::slug($branch_name.'-'.$request->name);
-            $url      = URL::to('/') . "/menu/" . $slug;
+            $filename = Str::random(10).'.png';
+            $slug = Str::slug($branch_name.'-'.$request->name);
+            $url = URL::to('/').'/menu/'.$slug;
             $qrCodePath = $diningTable->qr_code;
 
             try {
-                if (!File::exists(storage_path('app/public/qr_codes/'))) {
+                if (! File::exists(storage_path('app/public/qr_codes/'))) {
                     File::makeDirectory(storage_path('app/public/qr_codes/'));
                 }
 
-                if(File::exists($diningTable->qr_code) && !$this->envService->getValue('DEMO')){
+                if (File::exists($diningTable->qr_code) && ! $this->envService->getValue('DEMO')) {
                     File::delete($diningTable->qr_code);
                 }
 
-                QrCode::format('png')->size(200)->generate($url, storage_path('app/public/qr_codes/' . $filename));
-                $qrCodePath = 'storage/qr_codes/' . $filename;
+                QrCode::format('png')->size(200)->generate($url, storage_path('app/public/qr_codes/'.$filename));
+                $qrCodePath = 'storage/qr_codes/'.$filename;
             } catch (\Throwable $qrException) {
-                Log::warning('[DiningTableService] QR code generation failed on update: ' . $qrException->getMessage());
+                Log::warning('[DiningTableService] QR code generation failed on update: '.$qrException->getMessage());
             }
 
             return tap($diningTable)->update($request->validated() + ['qr_code' => $qrCodePath, 'slug' => $slug]);
@@ -153,7 +150,7 @@ class DiningTableService
     public function destroy(DiningTable $diningTable): void
     {
         try {
-            if(File::exists($diningTable->qr_code) && !$this->envService->getValue('DEMO')){
+            if (File::exists($diningTable->qr_code) && ! $this->envService->getValue('DEMO')) {
                 File::delete($diningTable->qr_code);
             }
             $diningTable->delete();
@@ -231,6 +228,24 @@ class DiningTableService
                 ->first();
 
             $previousTableId = $order ? (int) ($order->dining_table_id ?? 0) ?: null : null;
+
+            // [SELF-AUDIT R2 P2 2026-07-05 — double occupation table] occupy() rebinde la commande sur la
+            // nouvelle table mais NE libérait PAS l'ancienne (contrairement à transfer()) → la commande
+            // apparaissait « occupied » sur DEUX tables (floorplanState la montrait sur A ET B) → verrou
+            // fantôme permanent (tryReleaseTableAfterPosOrderPaid ne libère que la table COURANTE). On
+            // libère l'ancienne dans la MÊME tx verrouillée, gardée sur occupied_order_id=$orderId pour ne
+            // JAMAIS libérer une table déjà reprise par une autre commande.
+            if ($previousTableId !== null && $previousTableId !== $tableId) {
+                DiningTable::query()
+                    ->where('id', $previousTableId)
+                    ->where('branch_id', $branchId)
+                    ->where('occupied_order_id', $orderId)
+                    ->update([
+                        'occupancy_status' => 'free',
+                        'occupied_order_id' => null,
+                        'occupied_at' => null,
+                    ]);
+            }
 
             Order::query()
                 ->where('id', $orderId)
@@ -345,7 +360,7 @@ class DiningTableService
             // Two operators doing concurrent transfers (1→2 and 2→1) can
             // deadlock if locks are taken in business order. Always lock
             // by ASCENDING id, then resolve which is source / target.
-            $firstId  = min($sourceTableId, $targetTableId);
+            $firstId = min($sourceTableId, $targetTableId);
             $secondId = max($sourceTableId, $targetTableId);
 
             $first = DiningTable::query()

@@ -27,6 +27,7 @@ class CleanupTestFixturesCommand extends Command
         $prefix = trim((string) $this->option('prefix'));
         if ($prefix === '' || strlen($prefix) < 3) {
             $this->error('Prefix must be at least 3 characters.');
+
             return 2;
         }
 
@@ -40,11 +41,13 @@ class CleanupTestFixturesCommand extends Command
         if ($apply) {
             if ($confirm !== 'PW-FIXTURES') {
                 $this->error('Refusing apply mode without --confirm=PW-FIXTURES.');
+
                 return 2;
             }
 
             if (app()->environment('production')) {
                 $this->error('Refusing to delete test fixtures in production.');
+
                 return 2;
             }
 
@@ -65,12 +68,13 @@ class CleanupTestFixturesCommand extends Command
 
         if ($this->option('json')) {
             $this->line(json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+
             return 0;
         }
 
         $this->info($apply ? 'FoodKing test fixtures cleanup applied.' : 'FoodKing test fixtures cleanup dry-run.');
         foreach ($before as $key => $count) {
-            $this->line(str_pad($key, 34) . ': ' . $count);
+            $this->line(str_pad($key, 34).': '.$count);
         }
 
         return 0;
@@ -115,6 +119,12 @@ class CleanupTestFixturesCommand extends Command
             $deleted['domain_events'] = $this->deleteWhereIn('domain_events', 'aggregate_id', $ids['order_ids']);
             $deleted['audit_logs'] = 0;
             $deleted['order_items'] = $this->deleteWhereIn('order_items', 'id', $ids['order_item_ids']);
+            // [SELF-AUDIT C 2026-07-05] Cascade des enfants RESTRICT-FK SANS trigger (order_addresses +
+            // order_coupons) AVANT le delete orders : sinon la FK RESTRICT throw → rollback de tout le
+            // sweep. Les enfants immuables (order_payments/cash_movements, trigger 45000) sont déjà exclus
+            // en amont via le retrait des ordres protégés dans collectIds().
+            $deleted['order_addresses'] = $this->deleteWhereIn('order_addresses', 'order_id', $ids['order_ids']);
+            $deleted['order_coupons'] = $this->deleteWhereIn('order_coupons', 'order_id', $ids['order_ids']);
             $deleted['orders'] = $this->deleteWhereIn('orders', 'id', $ids['order_ids']);
             $deleted['stock_movements'] = $this->deleteWhereIn('stock_movements', 'id', $ids['stock_movement_ids']);
             $deleted['stock_levels'] = $this->deleteWhereIn('stock_levels', 'id', $ids['stock_level_ids']);
@@ -160,8 +170,8 @@ class CleanupTestFixturesCommand extends Command
         $orderIds = collect();
         if (Schema::hasTable('orders')) {
             $orderIds = DB::table('orders')
-                ->where('order_serial_no', 'like', $prefix . '%')
-                ->orWhere('token', 'like', $prefix . '%')
+                ->where('order_serial_no', 'like', $prefix.'%')
+                ->orWhere('token', 'like', $prefix.'%')
                 ->pluck('id');
         }
         if (Schema::hasTable('order_items')) {
@@ -169,10 +179,31 @@ class CleanupTestFixturesCommand extends Command
                 $orderIds = $orderIds->merge(DB::table('order_items')->whereIn('item_id', $itemIds)->pluck('order_id'));
             }
             if (Schema::hasColumn('order_items', 'instruction')) {
-                $orderIds = $orderIds->merge(DB::table('order_items')->where('instruction', 'like', $prefix . '%')->pluck('order_id'));
+                $orderIds = $orderIds->merge(DB::table('order_items')->where('instruction', 'like', $prefix.'%')->pluck('order_id'));
             }
         }
         $orderIds = $orderIds->unique()->values();
+
+        // [SELF-AUDIT C 2026-07-05] Ne JAMAIS hard-deleter (a) un ordre FISCALISÉ — retirer physiquement
+        // un n° de séquence casse le gap-free NF525 (ZReportService ne survit qu'au SOFT-delete via
+        // withTrashed) — ni (b) un ordre portant une ligne IMMUABLE order_payments / cash_movements :
+        // order_payments a une FK RESTRICT + un trigger BEFORE DELETE SIGNAL 45000, et cash_movements un
+        // trigger identique ; tenter la suppression throw → rollback de TOUT le sweep (all-or-nothing,
+        // ligne 109). On retire ces ordres protégés du set AVANT de calculer les enfants et de supprimer
+        // (miroir du garde fiscal du frère Iter15CleanupTestOrdersCommand, durci today 2026-07-05).
+        if ($orderIds->isNotEmpty() && Schema::hasTable('orders')) {
+            $protected = DB::table('orders')->whereIn('id', $orderIds)->whereNotNull('fiscal_sequence_no')->pluck('id');
+            foreach (['order_payments', 'cash_movements'] as $immutableTable) {
+                if (Schema::hasTable($immutableTable) && Schema::hasColumn($immutableTable, 'order_id')) {
+                    $protected = $protected->merge(DB::table($immutableTable)->whereIn('order_id', $orderIds)->pluck('order_id'));
+                }
+            }
+            $protected = $protected->unique();
+            if ($protected->isNotEmpty()) {
+                $orderIds = $orderIds->reject(fn ($id) => $protected->contains($id))->values();
+            }
+        }
+
         $orderItemIds = $this->childIds('order_items', 'order_id', $orderIds);
 
         $stockLevelIds = $this->stockLevelIds($itemIds, $variationIds, $extraIds);
@@ -185,7 +216,7 @@ class CleanupTestFixturesCommand extends Command
                 $stockMovementIds = $stockMovementIds->merge(DB::table('stock_movements')->whereIn('reference_id', $orderIds)->pluck('id'));
             }
             if (Schema::hasColumn('stock_movements', 'idempotency_key')) {
-                $stockMovementIds = $stockMovementIds->merge(DB::table('stock_movements')->where('idempotency_key', 'like', $prefix . '%')->pluck('id'));
+                $stockMovementIds = $stockMovementIds->merge(DB::table('stock_movements')->where('idempotency_key', 'like', $prefix.'%')->pluck('id'));
             }
         }
 
@@ -222,10 +253,10 @@ class CleanupTestFixturesCommand extends Command
         return DB::table($table)
             ->where(function ($query) use ($prefix, $hasName, $hasSlug): void {
                 if ($hasName) {
-                    $query->where('name', 'like', $prefix . '%');
+                    $query->where('name', 'like', $prefix.'%');
                 }
                 if ($hasSlug) {
-                    $query->orWhere('slug', 'like', strtolower($prefix) . '%');
+                    $query->orWhere('slug', 'like', strtolower($prefix).'%');
                 }
             })
             ->pluck('id')
@@ -234,7 +265,7 @@ class CleanupTestFixturesCommand extends Command
     }
 
     /**
-     * @param Collection<int,int> $ids
+     * @param  Collection<int,int>  $ids
      * @return Collection<int,int>
      */
     private function childIds(string $table, string $column, Collection $ids): Collection
@@ -247,9 +278,9 @@ class CleanupTestFixturesCommand extends Command
     }
 
     /**
-     * @param Collection<int,int> $itemIds
-     * @param Collection<int,int> $variationIds
-     * @param Collection<int,int> $extraIds
+     * @param  Collection<int,int>  $itemIds
+     * @param  Collection<int,int>  $variationIds
+     * @param  Collection<int,int>  $extraIds
      * @return Collection<int,int>
      */
     private function stockLevelIds(Collection $itemIds, Collection $variationIds, Collection $extraIds): Collection
@@ -282,7 +313,7 @@ class CleanupTestFixturesCommand extends Command
     }
 
     /**
-     * @param Collection<int,int> $ids
+     * @param  Collection<int,int>  $ids
      */
     private function countWhereIn(string $table, string $column, Collection $ids): int
     {
@@ -294,7 +325,7 @@ class CleanupTestFixturesCommand extends Command
     }
 
     /**
-     * @param Collection<int,int> $ids
+     * @param  Collection<int,int>  $ids
      */
     private function deleteWhereIn(string $table, string $column, Collection $ids): int
     {
@@ -304,5 +335,4 @@ class CleanupTestFixturesCommand extends Command
 
         return (int) DB::table($table)->whereIn($column, $ids)->delete();
     }
-
 }

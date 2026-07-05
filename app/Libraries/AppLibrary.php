@@ -446,7 +446,13 @@ class AppLibrary
                     return "Now";
                 } else {
                     if (!$pattern) {
-                        $pattern = env('TIME_FORMAT', 'h:i A');
+                        // [KDS-FR-TIME HEAL 2026-06-27] Align with sibling methods time():40 /
+                        // deliveryTime():68 — `env('TIME_FORMAT') ?: 'H:i'` (24h FR). The old
+                        // `env('TIME_FORMAT', 'h:i A')` leaked a 12h en-US default ("08:30 PM")
+                        // into the KDS delivery slot after `config:cache` (env() returns its 2nd
+                        // arg when the cached config strips the var) — the documented env-null /
+                        // flatAmountFormat trap, an ADR-007 FR violation in prod.
+                        $pattern = env('TIME_FORMAT') ?: 'H:i';
                     }
                     $explode = explode('-', $dateTime);
                     if (count($explode) == 2) {

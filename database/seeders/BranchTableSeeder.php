@@ -20,8 +20,12 @@ class BranchTableSeeder extends Seeder
         // Real restaurant: 437 Rue Élie Gruyelle, 62110 Hénin-Beaumont
         // (geocoded rooftop lat 50.4215667 / lng 2.9549060). The previous Paris
         // coords made every delivery distance compute from the wrong city.
-        // Delivery fee config encodes the owner rule "5€ ≤5km, +1€/km beyond"
-        // ≡ max(minimum, base + per_km*d) with base=0 / per_km=1 / minimum=5.
+        // Delivery fee config encodes the owner rule (updated 2026-06-27):
+        // "4€ ≤5km, +1€/km beyond, livraison OFFERTE dès 30€ de sous-total"
+        // ≡ max(minimum, base + per_km*ceil(max(0,d-free_km))) with base=4 /
+        // per_km=1 / minimum=4 / free_km=5. Le seuil de gratuité (≥30€) vit dans
+        // Settings delivery.free_delivery_above (voir DeliveryConfigSeeder), appliqué
+        // par FrontendOrderService (hors PricingService frozen).
         Branch::create([
             'name'      => 'Le Cayenne (principal)',
             'email'     => 'contact@lecayenne.fr',
@@ -33,11 +37,11 @@ class BranchTableSeeder extends Seeder
             'state'     => 'Hauts-de-France',
             'zip_code'  => '62110',
             'address'   => '437 Rue Élie Gruyelle, 62110 Hénin-Beaumont',
-            // Owner rule (whole-km): 5€ covers the first 5km, +1€ per started km beyond.
+            // Owner rule (whole-km, 2026-06-27): 4€ covers the first 5km, +1€ per started km beyond.
             // max(minimum, base + per_km * ceil(max(0, d - free_km))).
-            'delivery_fee_base'    => 5,
+            'delivery_fee_base'    => 4,
             'delivery_fee_per_km'  => 1,
-            'delivery_fee_minimum' => 5,
+            'delivery_fee_minimum' => 4,
             'delivery_fee_free_km' => 5,
             'status'    => Status::ACTIVE,
         ]);
@@ -55,9 +59,9 @@ class BranchTableSeeder extends Seeder
                 'state'     => 'Hauts-de-France',
                 'zip_code'  => '62110',
                 'address'   => 'Hénin-Beaumont (démo)',
-                'delivery_fee_base'    => 5,
+                'delivery_fee_base'    => 4,
                 'delivery_fee_per_km'  => 1,
-                'delivery_fee_minimum' => 5,
+                'delivery_fee_minimum' => 4,
                 'delivery_fee_free_km' => 5,
                 'status'    => Status::ACTIVE,
             ]);

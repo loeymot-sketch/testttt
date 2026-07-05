@@ -125,18 +125,21 @@ class KdsSyncSargableTest extends TestCase
             . 'whereDate emits this non-sargable form on SQLite (Wave 1 P1).'
         );
 
-        // ASSERT-B (positive): use a sargable range predicate. Accept either
-        // BETWEEN (non-advance branch in Wave 5F pattern) or "order_datetime <"
-        // (advance overdue branch in Wave 5F pattern).
-        $hasBetween = str_contains($joined, 'order_datetime between');
-        $hasRange = str_contains($joined, 'order_datetime <')
-            || str_contains($joined, 'order_datetime >=');
+        // ASSERT-B (positive): use sargable range predicates.
+        // [MINUIT-STRADDLE 2026-07-04] La branche non-advance est passée du BETWEEN
+        // jour-civil à la paire `>= floor AND < tomorrow` (fenêtre glissante 8h) —
+        // forme canonique de range, STRICTEMENT équivalente pour idx_orders_datetime.
+        // On exige donc : borne basse (>=) ET borne haute (<) présentes, toutes deux
+        // sargables (l'intention Wave 5F est préservée ; seul le shape a changé).
+        $hasLowerBound = str_contains($joined, 'order_datetime >=')
+            || str_contains($joined, 'order_datetime between');
+        $hasUpperBound = str_contains($joined, 'order_datetime <');
         $this->assertTrue(
-            $hasBetween && $hasRange,
-            'KdsSyncService MUST use sargable range predicates on '
-            . 'order_datetime (BETWEEN for non-advance + < comparator for '
-            . 'advance overdue) so idx_orders_datetime is usable. '
-            . "Mirror Wave 5F pattern in KitchenDisplaySystemOrderService::list:91-102.\n"
+            $hasLowerBound && $hasUpperBound,
+            'KdsSyncService MUST use sargable range predicates on order_datetime '
+            . '(">= floor" or BETWEEN for the lower bound + "<" for the upper/advance '
+            . 'bound) so idx_orders_datetime is usable (Wave 5F intent, '
+            . "MINUIT-STRADDLE shape).\n"
             . 'Captured SQL: ' . $joined
         );
     }

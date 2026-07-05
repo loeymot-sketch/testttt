@@ -89,7 +89,16 @@ class OrderDetailsResource extends JsonResource
             'user' => new OrderUserResource($this->user?->load('roles', 'media')),
             'order_address' => new AddressResource($this->address),
             'branch' => new BranchResource($this->branch),
-            'delivery_boy' => new OrderUserResource($this->deliveryBoy?->load('roles', 'media')),
+            // [SELF-AUDIT R7 P2 2026-07-05 — fuite PII cross-frontière client↔staff] OrderUserResource
+            // exposait l'email, le username ET le SOLDE PORTEFEUILLE (users.balance, colonne financière) du
+            // LIVREUR. Cette ressource est renvoyée au CLIENT sur /api/frontend/order/show (suivi de sa
+            // propre commande) → un client récupérait les données staff du livreur assigné. Un client n'a
+            // besoin QUE du nom + téléphone (masqué) pour coordonner la livraison. Miroir de la
+            // minimisation déjà appliquée dans KDSOrderDetailsResource.
+            'delivery_boy' => $this->deliveryBoy ? [
+                'name' => $this->deliveryBoy->name,
+                'phone' => \App\Support\PhoneDisplay::safe($this->deliveryBoy->phone),
+            ] : null,
             'coupon' => new CouponResource($this->coupon),
             'transaction' => new TransactionResource($this->transaction),
             'order_items' => OrderItemResource::collection($this->orderItems->load('orderItem')),

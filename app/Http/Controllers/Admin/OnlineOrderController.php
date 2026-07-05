@@ -93,8 +93,23 @@ class OnlineOrderController extends AdminController
 
     public function changeStatus(Order $order, OrderStatusRequest $request): \Illuminate\Http\Response | OrderDetailsResource | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
+        // [REFUND-BYPASS-GUARD TWIN 2026-06-27 / P1 defense-in-depth] Mirror of
+        // PosOrderController::changeStatus (commit 10e462149). RETURNED (22) is the refund
+        // transition (cashBack + loyalty refund). Gate it on `pos-refund` here too so the
+        // online-orders route can never become a refund-bypass if that permission is ever
+        // granted to a non-refund role. Only status=RETURNED is gated; authz at the controller.
+        if ((int) $request->status === \App\Enums\OrderStatus::RETURNED) {
+            abort_unless(
+                auth()->user()?->can('pos-refund') ?? false,
+                403,
+                'Permission insuffisante pour effectuer un remboursement.'
+            );
+        }
+
         try {
             return new OrderDetailsResource($this->orderService->changeStatus($order, $request));
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $http) {
+            throw $http; // 403 must reach the client intact.
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

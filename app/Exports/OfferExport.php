@@ -2,30 +2,27 @@
 
 namespace App\Exports;
 
-use App\Enums\DiscountType;
 use App\Http\Requests\PaginateRequest;
 use App\Libraries\AppLibrary;
-use App\Services\CouponService;
-use App\Services\DeliveryBoyService;
 use App\Services\OfferService;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 
 class OfferExport implements FromCollection, WithHeadings
 {
-
     public OfferService $offerService;
+
     public PaginateRequest $request;
 
     public function __construct(OfferService $offerService, $request)
     {
         $this->offerService = $offerService;
-        $this->request      = $request;
+        $this->request = $request;
     }
 
-    public function collection() : \Illuminate\Support\Collection
+    public function collection(): \Illuminate\Support\Collection
     {
-        $offerArray  = [];
+        $offerArray = [];
         $offersArray = $this->offerService->list($this->request);
 
         foreach ($offersArray as $offer) {
@@ -34,13 +31,14 @@ class OfferExport implements FromCollection, WithHeadings
                 $offer->amount,
                 AppLibrary::datetime($offer->start_date),
                 AppLibrary::datetime($offer->end_date),
-                trans('statuse.' . $offer->status),
+                trans('statuse.'.$offer->status),
             ];
         }
+
         return collect($offerArray);
     }
 
-    public function headings() : array
+    public function headings(): array
     {
         return [
             trans('all.label.name'),

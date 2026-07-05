@@ -6,8 +6,11 @@ use Tests\TestCase;
 
 /**
  * @FK-ID Z6-P1-WGS — withoutGlobalScopes() plural audit sentinel (Wave M)
+ *
  * @source RED-Z6-branchscope.md P1-Z6-03 — 17×→25 sites audit + heal
+ *
  * @sprint Wave M Z6 P1 2026-05-19
+ *
  * @severity P1 — Plural `withoutGlobalScopes()` kills BOTH BranchScope AND
  *               SoftDeletingScope. Each site must declare intent.
  *
@@ -83,10 +86,10 @@ class WithoutGlobalScopesAuditSentinelTest extends TestCase
      * @var array<string,array<int,int>> file path (relative to app/) → line numbers
      */
     private const ALLOWLIST = [
-        'Console/Commands/EnsureAdminLoginCommand.php'        => [56, 63, 70, 99],
-        'Console/Commands/EnsurePosOperatorLoginCommand.php'  => [55],
-        'Console/Commands/EnsureChefLoginCommand.php'         => [53],
-        'Http/Controllers/Auth/GuestSignupController.php'     => [98],
+        'Console/Commands/EnsureAdminLoginCommand.php' => [56, 63, 70, 99],
+        'Console/Commands/EnsurePosOperatorLoginCommand.php' => [55],
+        'Console/Commands/EnsureChefLoginCommand.php' => [53],
+        'Http/Controllers/Auth/GuestSignupController.php' => [98],
         // [ULTRA-AUDIT 2026-07-02] Cat A additions (legit both-scopes-off) :
         //   - UberWebhookController:113 — dédup idempotente du webhook Uber :
         //     `Order::withoutGlobalScopes()->where('transaction_id','uber:'.$id)` DOIT trouver
@@ -99,11 +102,21 @@ class WithoutGlobalScopesAuditSentinelTest extends TestCase
         // au-dessus). Reste PLURIEL par design : le dédup au REJEU doit trouver la commande
         // MÊME soft-deleted (sinon doublon). Les 2 nouveaux sites (cancel/system-user) sont en
         // SINGULIER (withoutGlobalScope(BranchScope)) → hors compte pluriel.
-        'Http/Controllers/Webhook/UberWebhookController.php'  => [124],
-        'Console/Commands/CleanupWebTestOrdersCommand.php'    => [42],
+        // [SELF-AUDIT 2026-07-05] 124→141 : boucle de récupération anti-collision queue_number
+        // insérée dans createFromUber (hoist branchId/userId/baseQueue + for+try). La récupération
+        // (a) utilise withoutGlobalScope(BranchScope) SINGULIER → hors compte pluriel. Le seul
+        // pluriel reste le dédup d'entrée (soft-deleted inclus by design). Pint a normalisé
+        // l'indentation → ligne 146.
+        // [SELF-AUDIT R3 2026-07-05] 146→158 : createFromUber a reçu la garde « annulation-avant-création »
+        // (check pierre tombale webhook_events) au-dessus du dédup pluriel. Reste PLURIEL par design.
+        'Http/Controllers/Webhook/UberWebhookController.php' => [158],
+        // [SELF-AUDIT D 2026-07-05] 42→52 : garde anti-perte Uber (source_surface!='uber_eats' +
+        // payment_status!=PAID) insérée au-dessus du whereHas('user') plural. Reste PLURIEL par design :
+        // le lookup du téléphone invité doit trouver le user cross-branch même soft-deleted.
+        'Console/Commands/CleanupWebTestOrdersCommand.php' => [52],
     ];
 
-    public function test_no_unannotated_plural_withoutGlobalScopes_in_app(): void
+    public function test_no_unannotated_plural_without_global_scopes_in_app(): void
     {
         $appPath = base_path('app');
         $this->assertTrue(is_dir($appPath), "app/ directory missing at {$appPath}");
@@ -116,7 +129,7 @@ class WithoutGlobalScopesAuditSentinelTest extends TestCase
         $hits = [];
 
         foreach ($rii as $file) {
-            if (!$file->isFile() || !str_ends_with((string) $file->getFilename(), '.php')) {
+            if (! $file->isFile() || ! str_ends_with((string) $file->getFilename(), '.php')) {
                 continue;
             }
 
@@ -132,7 +145,7 @@ class WithoutGlobalScopesAuditSentinelTest extends TestCase
                 // Excludes:
                 //   - `withoutGlobalScopes([X::class, ...])` (explicit array arg)
                 //   - `withoutGlobalScope(X::class)` (singular)
-                if (!preg_match('/withoutGlobalScopes\(\)/', $line)) {
+                if (! preg_match('/withoutGlobalScopes\(\)/', $line)) {
                     continue;
                 }
 
@@ -158,7 +171,7 @@ class WithoutGlobalScopesAuditSentinelTest extends TestCase
         $allowedSet = [];
         foreach (self::ALLOWLIST as $relFile => $lineNumbers) {
             foreach ($lineNumbers as $lineNum) {
-                $allowedSet[$relFile . ':' . $lineNum] = true;
+                $allowedSet[$relFile.':'.$lineNum] = true;
             }
         }
 
@@ -166,7 +179,7 @@ class WithoutGlobalScopesAuditSentinelTest extends TestCase
         $offAllowlistButAnnotated = [];
 
         foreach ($hits as $hit) {
-            $key = $hit['file'] . ':' . $hit['line'];
+            $key = $hit['file'].':'.$hit['line'];
             $hasInlineMarker = str_contains($hit['code'], '[GlobalScopes:keep-both]');
 
             if (isset($allowedSet[$key])) {
@@ -178,6 +191,7 @@ class WithoutGlobalScopesAuditSentinelTest extends TestCase
                 // Off-allowlist but explicitly annotated — accept but track for
                 // visibility. Future tightening could require allowlist-only.
                 $offAllowlistButAnnotated[] = $key;
+
                 continue;
             }
 
@@ -191,19 +205,19 @@ class WithoutGlobalScopesAuditSentinelTest extends TestCase
             );
 
             $this->fail(
-                "Z6-P1-WGS — Found "
-                . count($unannotated)
-                . " unannotated plural `withoutGlobalScopes()` call site(s).\n\n"
-                . "Each must EITHER be added to ALLOWLIST in this sentinel\n"
-                . "(with reason documented in the class docblock) OR carry an\n"
-                . "inline `// [GlobalScopes:keep-both]` marker explaining why\n"
-                . "BOTH BranchScope and SoftDeletingScope must be bypassed.\n\n"
-                . "Preferred heal: replace with\n"
-                . "    withoutGlobalScope(\\App\\Models\\Scopes\\BranchScope::class)\n"
-                . "or, if soft-deleted rows are genuinely needed:\n"
-                . "    withoutGlobalScope(\\App\\Models\\Scopes\\BranchScope::class)->withTrashed()\n\n"
-                . "Offenders:\n"
-                . implode("\n", $lines)
+                'Z6-P1-WGS — Found '
+                .count($unannotated)
+                ." unannotated plural `withoutGlobalScopes()` call site(s).\n\n"
+                ."Each must EITHER be added to ALLOWLIST in this sentinel\n"
+                ."(with reason documented in the class docblock) OR carry an\n"
+                ."inline `// [GlobalScopes:keep-both]` marker explaining why\n"
+                ."BOTH BranchScope and SoftDeletingScope must be bypassed.\n\n"
+                ."Preferred heal: replace with\n"
+                ."    withoutGlobalScope(\\App\\Models\\Scopes\\BranchScope::class)\n"
+                ."or, if soft-deleted rows are genuinely needed:\n"
+                ."    withoutGlobalScope(\\App\\Models\\Scopes\\BranchScope::class)->withTrashed()\n\n"
+                ."Offenders:\n"
+                .implode("\n", $lines)
             );
         }
     }
@@ -223,7 +237,7 @@ class WithoutGlobalScopesAuditSentinelTest extends TestCase
         $actual = 0;
         $found = [];
         foreach ($rii as $file) {
-            if (!$file->isFile() || !str_ends_with((string) $file->getFilename(), '.php')) {
+            if (! $file->isFile() || ! str_ends_with((string) $file->getFilename(), '.php')) {
                 continue;
             }
             $contents = file_get_contents((string) $file->getRealPath());
@@ -232,7 +246,7 @@ class WithoutGlobalScopesAuditSentinelTest extends TestCase
             }
             $lines = preg_split('/\r\n|\r|\n/', $contents);
             foreach ($lines as $idx => $line) {
-                if (!preg_match('/withoutGlobalScopes\(\)/', $line)) {
+                if (! preg_match('/withoutGlobalScopes\(\)/', $line)) {
                     continue;
                 }
                 $trim = ltrim($line);
@@ -246,7 +260,7 @@ class WithoutGlobalScopesAuditSentinelTest extends TestCase
                 // Count actual code occurrences (annotated and allowlisted).
                 $actual++;
                 $rel = ltrim(str_replace($appPath, '', (string) $file->getRealPath()), DIRECTORY_SEPARATOR);
-                $found[] = $rel . ':' . ($idx + 1);
+                $found[] = $rel.':'.($idx + 1);
             }
         }
 
@@ -260,8 +274,8 @@ class WithoutGlobalScopesAuditSentinelTest extends TestCase
             $expectedTotal,
             $actual,
             "Z6-P1-WGS count drift — expected {$expectedTotal} plural occurrences "
-            . "(all allowlisted Cat A), found {$actual}. Sites found:\n  - "
-            . implode("\n  - ", $found)
+            ."(all allowlisted Cat A), found {$actual}. Sites found:\n  - "
+            .implode("\n  - ", $found)
         );
     }
 }

@@ -17,6 +17,7 @@ use App\Models\StockLevel;
 use App\Models\Tax;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
 use Tests\Feature\Concerns\HasPosQuoteBinding;
 use Tests\TestCase;
 
@@ -38,8 +39,12 @@ class StockDecrementFrontendOrderServiceTest extends TestCase
             'reserved' => 0,
         ]);
 
-        $response = $this->actingAs($kioskUser, 'sanctum')
-            ->withHeader('x-api-key', 'test-api-key')
+        // [WEB-WIREUP guard 2026-06-27] order_type=KIOSK exige une borne enregistrée
+        // résolue depuis le token. Laravel actingAs(…, 'sanctum') ne pose pas de
+        // currentAccessToken → kioskMachineForToken()=null → 422. On utilise
+        // Sanctum::actingAs (token résoluble) comme les tests kiosk valides.
+        Sanctum::actingAs($kioskUser, ['kiosk:order']);
+        $response = $this->withHeader('x-api-key', 'test-api-key')
             ->postJson('/api/frontend/order', $this->payloadWithKioskQuote($kioskUser, $payload));
 
         $this->assertContains($response->status(), [200, 201], $response->getContent());

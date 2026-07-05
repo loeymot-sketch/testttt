@@ -63,6 +63,7 @@ class Iter15CleanupTestOrdersCommand extends Command
 
         if ($apply && app()->environment('production')) {
             $this->error('Refusing to delete orders in production.');
+
             return 2;
         }
 
@@ -76,7 +77,7 @@ class Iter15CleanupTestOrdersCommand extends Command
         $tokenPrefixes = (array) $this->option('token-prefix');
         $patterns = empty($tokenPrefixes)
             ? self::DEFAULT_TOKEN_PATTERNS
-            : array_values(array_map(static fn (string $p): string => $p . '%', $tokenPrefixes));
+            : array_values(array_map(static fn (string $p): string => $p.'%', $tokenPrefixes));
 
         $matchedIds = $this->matchingOrderIds($patterns);
         $beforeCount = $matchedIds->count();
@@ -84,23 +85,45 @@ class Iter15CleanupTestOrdersCommand extends Command
 
         if ($apply && $beforeCount > 0) {
             $deletedCount = DB::transaction(function () use ($matchedIds): int {
+                // [SELF-AUDIT P3 2026-07-05 — TOCTOU NF525] matchingOrderIds() évalue le garde
+                // whereNull(fiscal_sequence_no) HORS transaction. Un encaissement concurrent peut
+                // fiscaliser un ordre entre le match et la suppression → risque de supprimer un ordre
+                // fiscalisé (violation NF525) OU d'orpheliner ses enfants si on ne le supprimait que
+                // lui. On RE-VALIDE ici sous verrou et on cascade/supprime UNIQUEMENT ce set sûr.
+                $safeIds = collect(
+                    DB::table('orders')
+                        ->whereIn('id', $matchedIds)
+                        ->whereNull('fiscal_sequence_no')
+                        ->lockForUpdate()
+                        ->pluck('id')
+                        ->all()
+                );
+                if ($safeIds->isEmpty()) {
+                    return 0;
+                }
+
                 // [iter15-mega-fix B-004 round-7 2026-05-10] — delete the
                 // dependent rows first so FK constraints don't bite. We
                 // touch only the tables that reference orders.id and exist.
-                $this->deleteWhereIn('order_status_transitions', 'order_id', $matchedIds);
-                $this->deleteWhereIn('transactions', 'order_id', $matchedIds);
-                $this->deleteWhereIn('domain_events', 'aggregate_id', $matchedIds);
-                $this->deleteWhereIn('order_addresses', 'order_id', $matchedIds);
+                $this->deleteWhereIn('order_status_transitions', 'order_id', $safeIds);
+                $this->deleteWhereIn('transactions', 'order_id', $safeIds);
+                $this->deleteWhereIn('domain_events', 'aggregate_id', $safeIds);
+                $this->deleteWhereIn('order_addresses', 'order_id', $safeIds);
                 // [WAVE5 GÉRANCE 2026-07-04] cash_movements (référence order_id SANS FK → orphelinait
                 // le trail caisse) + order_payments (FK RESTRICT → un ordre matché avec tranche faisait
                 // rollback TOUT le nettoyage). On les cascade avant le delete orders. Le garde fiscal
                 // ci-dessus exclut déjà les ordres fiscalisés, mais on cascade par robustesse.
-                $this->deleteWhereIn('cash_movements', 'order_id', $matchedIds);
-                $this->deleteWhereIn('order_payments', 'order_id', $matchedIds);
-                $this->deleteWhereIn('order_items', 'order_id', $matchedIds);
+                $this->deleteWhereIn('cash_movements', 'order_id', $safeIds);
+                $this->deleteWhereIn('order_payments', 'order_id', $safeIds);
+                // [SELF-AUDIT P3 2026-07-05 — FK bloquante manquée] order_coupons.order_id est
+                // constrained('orders') = ON DELETE RESTRICT → un ordre matché portant un coupon
+                // faisait throw le delete final → ROLLBACK de TOUT le nettoyage (rien supprimé, échec
+                // silencieux en --apply). On cascade avant le delete orders.
+                $this->deleteWhereIn('order_coupons', 'order_id', $safeIds);
+                $this->deleteWhereIn('order_items', 'order_id', $safeIds);
 
                 // hard delete (not soft) — these are fixtures, no audit trail kept.
-                return DB::table('orders')->whereIn('id', $matchedIds)->delete();
+                return DB::table('orders')->whereIn('id', $safeIds)->delete();
             });
         }
 
@@ -116,6 +139,7 @@ class Iter15CleanupTestOrdersCommand extends Command
 
         if ($this->option('json')) {
             $this->line(json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+
             return 0;
         }
 

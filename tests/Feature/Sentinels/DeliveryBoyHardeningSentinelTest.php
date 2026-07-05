@@ -20,6 +20,7 @@ use Tests\TestCase;
 
 /**
  * @FK-ID GOAL-2026-05-18 Impl E — Livreur P0 heal sentinel.
+ *
  * @source reports/test-e2e/goal-2026-05-18/round-1/agent-7-livreur.md
  *         findings F-6.1.2 (P0), F-6.2.1 (P0), F-6.2.3 (P0), F-6.1.1 (P1).
  *
@@ -94,30 +95,32 @@ class DeliveryBoyHardeningSentinelTest extends TestCase
     private function makeDeliveryBoy(int $branchId): User
     {
         $user = User::forceCreate([
-            'name'              => 'Driver ' . uniqid(),
-            'email'             => 'driver-' . uniqid() . '@sentinel.test',
-            'username'          => 'driver_' . uniqid(),
-            'password'          => bcrypt('secret-passwd'),
-            'branch_id'         => $branchId,
+            'name' => 'Driver '.uniqid(),
+            'email' => 'driver-'.uniqid().'@sentinel.test',
+            'username' => 'driver_'.uniqid(),
+            'password' => bcrypt('secret-passwd'),
+            'branch_id' => $branchId,
             'email_verified_at' => now(),
-            'status'            => 1,
+            'status' => 1,
         ]);
         $user->assignRole(EnumRole::DELIVERY_BOY);
+
         return $user->fresh();
     }
 
     private function makeNonDeliveryBoy(int $branchId, int $roleId = EnumRole::CHEF): User
     {
         $user = User::forceCreate([
-            'name'              => 'NotDriver ' . uniqid(),
-            'email'             => 'notdriver-' . uniqid() . '@sentinel.test',
-            'username'          => 'notdriver_' . uniqid(),
-            'password'          => bcrypt('secret-passwd'),
-            'branch_id'         => $branchId,
+            'name' => 'NotDriver '.uniqid(),
+            'email' => 'notdriver-'.uniqid().'@sentinel.test',
+            'username' => 'notdriver_'.uniqid(),
+            'password' => bcrypt('secret-passwd'),
+            'branch_id' => $branchId,
             'email_verified_at' => now(),
-            'status'            => 1,
+            'status' => 1,
         ]);
         $user->assignRole($roleId);
+
         return $user->fresh();
     }
 
@@ -130,13 +133,13 @@ class DeliveryBoyHardeningSentinelTest extends TestCase
         $branchA = Branch::factory()->create();
         $branchB = Branch::factory()->create();
         $orderInA = Order::factory()->create([
-            'branch_id'      => $branchA->id,
-            'order_type'     => OrderType::DELIVERY,
+            'branch_id' => $branchA->id,
+            'order_type' => OrderType::DELIVERY,
             'payment_method' => 1, // CASH_ON_DELIVERY
         ]);
         $driverInB = $this->makeDeliveryBoy($branchB->id);
 
-        $request = Request::create('/api/admin/pos-order/select-delivery-boy/' . $orderInA->id, 'POST', [
+        $request = Request::create('/api/admin/pos-order/select-delivery-boy/'.$orderInA->id, 'POST', [
             'delivery_boy_id' => $driverInB->id,
         ]);
 
@@ -155,13 +158,13 @@ class DeliveryBoyHardeningSentinelTest extends TestCase
     {
         $branch = Branch::factory()->create();
         $order = Order::factory()->create([
-            'branch_id'      => $branch->id,
-            'order_type'     => OrderType::DELIVERY,
+            'branch_id' => $branch->id,
+            'order_type' => OrderType::DELIVERY,
             'payment_method' => 1,
         ]);
         $chef = $this->makeNonDeliveryBoy($branch->id, EnumRole::CHEF);
 
-        $request = Request::create('/api/admin/pos-order/select-delivery-boy/' . $order->id, 'POST', [
+        $request = Request::create('/api/admin/pos-order/select-delivery-boy/'.$order->id, 'POST', [
             'delivery_boy_id' => $chef->id,
         ]);
 
@@ -179,13 +182,13 @@ class DeliveryBoyHardeningSentinelTest extends TestCase
     {
         $branch = Branch::factory()->create();
         $order = Order::factory()->create([
-            'branch_id'      => $branch->id,
-            'order_type'     => OrderType::DELIVERY,
+            'branch_id' => $branch->id,
+            'order_type' => OrderType::DELIVERY,
             'payment_method' => 1,
         ]);
         $driver = $this->makeDeliveryBoy($branch->id);
 
-        $request = Request::create('/api/admin/pos-order/select-delivery-boy/' . $order->id, 'POST', [
+        $request = Request::create('/api/admin/pos-order/select-delivery-boy/'.$order->id, 'POST', [
             'delivery_boy_id' => $driver->id,
         ]);
 
@@ -217,16 +220,16 @@ class DeliveryBoyHardeningSentinelTest extends TestCase
         $branch = Branch::factory()->create();
         $customer = $this->makeNonDeliveryBoy($branch->id, EnumRole::CUSTOMER);
         $order = Order::factory()->create([
-            'branch_id'      => $branch->id,
-            'user_id'        => $customer->id, // ownership check applies in $auth=true path
-            'order_type'     => OrderType::DELIVERY,
+            'branch_id' => $branch->id,
+            'user_id' => $customer->id, // ownership check applies in $auth=true path
+            'order_type' => OrderType::DELIVERY,
             'payment_method' => 1,
         ]);
         $driver = $this->makeDeliveryBoy($branch->id);
 
         $this->actingAs($customer, 'sanctum');
 
-        $request = Request::create('/api/customer/order/' . $order->id . '/select-delivery-boy', 'POST', [
+        $request = Request::create('/api/customer/order/'.$order->id.'/select-delivery-boy', 'POST', [
             'delivery_boy_id' => $driver->id,
         ]);
 
@@ -253,16 +256,16 @@ class DeliveryBoyHardeningSentinelTest extends TestCase
         $owner = $this->makeNonDeliveryBoy($branch->id, EnumRole::CUSTOMER);
         $attacker = $this->makeNonDeliveryBoy($branch->id, EnumRole::CUSTOMER);
         $order = Order::factory()->create([
-            'branch_id'      => $branch->id,
-            'user_id'        => $owner->id,
-            'order_type'     => OrderType::DELIVERY,
+            'branch_id' => $branch->id,
+            'user_id' => $owner->id,
+            'order_type' => OrderType::DELIVERY,
             'payment_method' => 1,
         ]);
         $driver = $this->makeDeliveryBoy($branch->id);
 
         $this->actingAs($attacker, 'sanctum');
 
-        $request = Request::create('/api/customer/order/' . $order->id . '/select-delivery-boy', 'POST', [
+        $request = Request::create('/api/customer/order/'.$order->id.'/select-delivery-boy', 'POST', [
             'delivery_boy_id' => $driver->id,
         ]);
 
@@ -279,11 +282,11 @@ class DeliveryBoyHardeningSentinelTest extends TestCase
     {
         $branch = Branch::factory()->create();
         $order = Order::factory()->create([
-            'branch_id'      => $branch->id,
-            'order_type'     => OrderType::DELIVERY,
+            'branch_id' => $branch->id,
+            'order_type' => OrderType::DELIVERY,
             'payment_method' => 1,
         ]);
-        $request = Request::create('/api/admin/pos-order/select-delivery-boy/' . $order->id, 'POST', [
+        $request = Request::create('/api/admin/pos-order/select-delivery-boy/'.$order->id, 'POST', [
             // delivery_boy_id absent on purpose — must abort, not silently null-out the FK.
         ]);
 
@@ -311,13 +314,13 @@ class DeliveryBoyHardeningSentinelTest extends TestCase
         $driver = $this->makeDeliveryBoy($branch->id);
 
         $order = Order::factory()->create([
-            'branch_id'       => $branch->id,
-            'order_type'      => OrderType::DELIVERY,
+            'branch_id' => $branch->id,
+            'order_type' => OrderType::DELIVERY,
             'delivery_boy_id' => $driver->id,
-            'status'          => OrderStatus::OUT_FOR_DELIVERY,
-            'payment_method'  => 1, // CASH_ON_DELIVERY
-            'payment_status'  => PaymentStatus::UNPAID,
-            'total'           => 27.50,
+            'status' => OrderStatus::OUT_FOR_DELIVERY,
+            'payment_method' => 1, // CASH_ON_DELIVERY
+            'payment_status' => PaymentStatus::UNPAID,
+            'total' => 27.50,
         ]);
 
         // Audit baseline BEFORE the transition.
@@ -327,7 +330,7 @@ class DeliveryBoyHardeningSentinelTest extends TestCase
 
         $this->actingAs($driver, 'sanctum');
 
-        $request = Request::create('/api/frontend/delivery-boy-order/change-status/' . $order->id, 'POST', [
+        $request = Request::create('/api/frontend/delivery-boy-order/change-status/'.$order->id, 'POST', [
             'status' => OrderStatus::DELIVERED,
         ]);
 
@@ -363,19 +366,57 @@ class DeliveryBoyHardeningSentinelTest extends TestCase
         $this->assertSame(PaymentStatus::PAID, (int) $fresh->payment_status);
     }
 
+    /**
+     * [SELF-AUDIT R2 P1 2026-07-05 — vente livraison COD off-book NF525] Le flip UNPAID→PAID au doorstep
+     * (deliveryBoyOrderChangeStatus) scellait la commande en PAID SANS allouer de fiscal_sequence_no →
+     * vente PAYÉE hors chaîne NF525 (exclue du Z signé, jamais rattrapée). Miroir du fix Wave-2. Ce test
+     * verrouille : une commande COD arrivée à DELIVERED reçoit un numéro fiscal (scellage).
+     */
+    public function test_cod_delivery_at_delivered_seals_fiscal_sequence_nf525(): void
+    {
+        $branch = Branch::factory()->create();
+        $driver = $this->makeDeliveryBoy($branch->id);
+
+        $order = Order::factory()->create([
+            'branch_id' => $branch->id,
+            'order_type' => OrderType::DELIVERY,
+            'delivery_boy_id' => $driver->id,
+            'status' => OrderStatus::OUT_FOR_DELIVERY,
+            'payment_method' => 1, // CASH_ON_DELIVERY
+            'payment_status' => PaymentStatus::UNPAID,
+            'fiscal_sequence_no' => null,
+            'total' => 27.50,
+        ]);
+        $this->assertNull($order->fiscal_sequence_no, 'Précondition : commande COD non scellée avant livraison.');
+
+        $this->actingAs($driver, 'sanctum');
+        $request = Request::create('/api/frontend/delivery-boy-order/change-status/'.$order->id, 'POST', [
+            'status' => OrderStatus::DELIVERED,
+        ]);
+        app(OrderService::class)->deliveryBoyOrderChangeStatus($order, $request);
+
+        $fresh = $order->fresh();
+        $this->assertSame(PaymentStatus::PAID, (int) $fresh->payment_status, 'Cash encaissé au doorstep.');
+        $this->assertNotNull(
+            $fresh->fiscal_sequence_no,
+            'Une vente COD PAYÉE DOIT être scellée dans la chaîne NF525 (fiscal_sequence_no alloué) — sinon vente hors Z signé.'
+        );
+        $this->assertGreaterThan(0, (int) $fresh->fiscal_sequence_no);
+    }
+
     public function test_p0_liv_02_no_escrow_when_already_paid_app_prepaid(): void
     {
         $branch = Branch::factory()->create();
         $driver = $this->makeDeliveryBoy($branch->id);
 
         $order = Order::factory()->create([
-            'branch_id'       => $branch->id,
-            'order_type'      => OrderType::DELIVERY,
+            'branch_id' => $branch->id,
+            'order_type' => OrderType::DELIVERY,
             'delivery_boy_id' => $driver->id,
-            'status'          => OrderStatus::OUT_FOR_DELIVERY,
-            'payment_method'  => 4, // CARD (app pre-paid via Stripe)
-            'payment_status'  => PaymentStatus::PAID,
-            'total'           => 19.90,
+            'status' => OrderStatus::OUT_FOR_DELIVERY,
+            'payment_method' => 4, // CARD (app pre-paid via Stripe)
+            'payment_status' => PaymentStatus::PAID,
+            'total' => 19.90,
         ]);
 
         $before = AuditLog::query()
@@ -384,7 +425,7 @@ class DeliveryBoyHardeningSentinelTest extends TestCase
 
         $this->actingAs($driver, 'sanctum');
 
-        $request = Request::create('/api/frontend/delivery-boy-order/change-status/' . $order->id, 'POST', [
+        $request = Request::create('/api/frontend/delivery-boy-order/change-status/'.$order->id, 'POST', [
             'status' => OrderStatus::DELIVERED,
         ]);
 
@@ -411,17 +452,17 @@ class DeliveryBoyHardeningSentinelTest extends TestCase
 
         // Corrupt payment_method = 99 (out of PaymentGateway enum range 1..5).
         $order = Order::factory()->create([
-            'branch_id'       => $branch->id,
-            'order_type'      => OrderType::DELIVERY,
+            'branch_id' => $branch->id,
+            'order_type' => OrderType::DELIVERY,
             'delivery_boy_id' => $driver->id,
-            'status'          => OrderStatus::OUT_FOR_DELIVERY,
-            'payment_method'  => 99,
-            'payment_status'  => PaymentStatus::UNPAID,
-            'total'           => 15.00,
+            'status' => OrderStatus::OUT_FOR_DELIVERY,
+            'payment_method' => 99,
+            'payment_status' => PaymentStatus::UNPAID,
+            'total' => 15.00,
         ]);
 
         $this->actingAs($driver, 'sanctum');
-        $request = Request::create('/api/frontend/delivery-boy-order/change-status/' . $order->id, 'POST', [
+        $request = Request::create('/api/frontend/delivery-boy-order/change-status/'.$order->id, 'POST', [
             'status' => OrderStatus::DELIVERED,
         ]);
 
@@ -451,17 +492,17 @@ class DeliveryBoyHardeningSentinelTest extends TestCase
         // orders.payment_method column has a non-null default, a corrupted client
         // could still POST zero / negative integers — guard must reject.
         $order = Order::factory()->create([
-            'branch_id'       => $branch->id,
-            'order_type'      => OrderType::DELIVERY,
+            'branch_id' => $branch->id,
+            'order_type' => OrderType::DELIVERY,
             'delivery_boy_id' => $driver->id,
-            'status'          => OrderStatus::OUT_FOR_DELIVERY,
-            'payment_method'  => 0,
-            'payment_status'  => PaymentStatus::UNPAID,
-            'total'           => 15.00,
+            'status' => OrderStatus::OUT_FOR_DELIVERY,
+            'payment_method' => 0,
+            'payment_status' => PaymentStatus::UNPAID,
+            'total' => 15.00,
         ]);
 
         $this->actingAs($driver, 'sanctum');
-        $request = Request::create('/api/frontend/delivery-boy-order/change-status/' . $order->id, 'POST', [
+        $request = Request::create('/api/frontend/delivery-boy-order/change-status/'.$order->id, 'POST', [
             'status' => OrderStatus::DELIVERED,
         ]);
 
@@ -489,40 +530,40 @@ class DeliveryBoyHardeningSentinelTest extends TestCase
         $driver = $this->makeDeliveryBoy($branch->id);
 
         $order = Order::factory()->create([
-            'branch_id'       => $branch->id,
-            'order_type'      => OrderType::DELIVERY,
+            'branch_id' => $branch->id,
+            'order_type' => OrderType::DELIVERY,
             'delivery_boy_id' => $driver->id,
-            'status'          => OrderStatus::OUT_FOR_DELIVERY,
-            'payment_method'  => 1,
-            'payment_status'  => PaymentStatus::UNPAID,
+            'status' => OrderStatus::OUT_FOR_DELIVERY,
+            'payment_method' => 1,
+            'payment_status' => PaymentStatus::UNPAID,
         ]);
 
         // Seed 2 real items (FK item_id → items) + their order_items rows.
         $burger = \App\Models\Item::factory()->create(['name' => 'Burger Test']);
-        $fries  = \App\Models\Item::factory()->create(['name' => 'Frites Test']);
+        $fries = \App\Models\Item::factory()->create(['name' => 'Frites Test']);
 
         \App\Models\OrderItem::query()->insert([
             [
-                'order_id'      => $order->id,
-                'item_id'       => $burger->id,
-                'branch_id'     => $branch->id,
-                'price'         => 5.0,
-                'quantity'      => 2,
-                'discount'      => 0.0,
-                'total_price'   => 10.0,
-                'created_at'    => now(),
-                'updated_at'    => now(),
+                'order_id' => $order->id,
+                'item_id' => $burger->id,
+                'branch_id' => $branch->id,
+                'price' => 5.0,
+                'quantity' => 2,
+                'discount' => 0.0,
+                'total_price' => 10.0,
+                'created_at' => now(),
+                'updated_at' => now(),
             ],
             [
-                'order_id'      => $order->id,
-                'item_id'       => $fries->id,
-                'branch_id'     => $branch->id,
-                'price'         => 7.5,
-                'quantity'      => 1,
-                'discount'      => 0.0,
-                'total_price'   => 7.5,
-                'created_at'    => now(),
-                'updated_at'    => now(),
+                'order_id' => $order->id,
+                'item_id' => $fries->id,
+                'branch_id' => $branch->id,
+                'price' => 7.5,
+                'quantity' => 1,
+                'discount' => 0.0,
+                'total_price' => 7.5,
+                'created_at' => now(),
+                'updated_at' => now(),
             ],
         ]);
 

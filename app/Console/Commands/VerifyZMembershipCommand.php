@@ -48,7 +48,16 @@ class VerifyZMembershipCommand extends Command
 
         foreach ($branchIds as $bid) {
             // Orders that MUST appear in a Z: numbered + settled + non-terminal.
+            // [SELF-AUDIT B 2026-07-05 — faux-vert NF525] `withoutGlobalScope(BranchScope)` (singulier)
+            // laisse le SoftDeletingScope actif → deleted_at IS NULL exclut les commandes fiscalisées
+            // SOFT-DELETÉES. Or ZReportService::aggregate() les INCLUT via ->withTrashed() (ZReportService:338,
+            // P0-FIX-1/2 : soft-delete post-allocation = archivage/correction/rétention). Sans withTrashed
+            // ici, une commande fiscalisée soft-deletée tombée dans un GAP de Z (OrderService::destroy la
+            // soft-delete quand aucun Z clos ne scelle son created_at) est INVISIBLE à ce contrôle → « Z
+            // OK » à tort alors qu'un reçu numéroté n'est dans aucun Z signé. On aligne la population sur
+            // l'agrégateur (miroir exact).
             $orders = Order::withoutGlobalScope(BranchScope::class)
+                ->withTrashed()
                 ->where('branch_id', $bid)
                 ->whereNotNull('fiscal_sequence_no')
                 ->where('payment_status', '!=', PaymentStatus::UNPAID)
@@ -88,13 +97,14 @@ class VerifyZMembershipCommand extends Command
                     }
 
                     $candidates[] = [
-                        'branch'      => $bid,
-                        'order'       => (string) ($o->order_serial_no ?? $o->id),
-                        'seq'         => (int) $o->fiscal_sequence_no,
-                        'total'       => number_format((float) $o->total, 2),
-                        'created_at'  => (string) $o->created_at,
+                        'branch' => $bid,
+                        'order' => (string) ($o->order_serial_no ?? $o->id),
+                        'seq' => (int) $o->fiscal_sequence_no,
+                        'total' => number_format((float) $o->total, 2),
+                        'created_at' => (string) $o->created_at,
                         'Z_closed_at' => 'TROU — aucun Z ne couvre cette vente',
                     ];
+
                     continue;
                 }
 
@@ -103,11 +113,11 @@ class VerifyZMembershipCommand extends Command
                 // includes it → orphan candidate.
                 if ($o->updated_at && $o->updated_at->gt($coveringZ->closed_at)) {
                     $candidates[] = [
-                        'branch'      => $bid,
-                        'order'       => (string) ($o->order_serial_no ?? $o->id),
-                        'seq'         => (int) $o->fiscal_sequence_no,
-                        'total'       => number_format((float) $o->total, 2),
-                        'created_at'  => (string) $o->created_at,
+                        'branch' => $bid,
+                        'order' => (string) ($o->order_serial_no ?? $o->id),
+                        'seq' => (int) $o->fiscal_sequence_no,
+                        'total' => number_format((float) $o->total, 2),
+                        'created_at' => (string) $o->created_at,
                         'Z_closed_at' => (string) $coveringZ->closed_at,
                     ];
                 }
@@ -116,10 +126,11 @@ class VerifyZMembershipCommand extends Command
 
         if (empty($candidates)) {
             $this->info('Z-membership OK — no numbered order flagged as a cross-Z-window orphan candidate.');
+
             return self::SUCCESS;
         }
 
-        $this->warn(count($candidates) . ' numbered order(s) flagged as cross-Z-window orphan CANDIDATE(s) — review (heuristic may include legitimately-counted orders modified post-Z):');
+        $this->warn(count($candidates).' numbered order(s) flagged as cross-Z-window orphan CANDIDATE(s) — review (heuristic may include legitimately-counted orders modified post-Z):');
         $this->table(
             ['branch', 'order', 'seq', 'total', 'created_at', 'sealed/updated after Z closed_at'],
             array_map('array_values', $candidates)

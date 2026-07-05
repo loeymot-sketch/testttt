@@ -2,27 +2,27 @@
 
 namespace App\Exports;
 
+use App\Http\Requests\PaginateRequest;
 use App\Libraries\AppLibrary;
 use App\Services\UserService;
-use App\Http\Requests\PaginateRequest;
-use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithHeadings;
 
 class CreditBalanceReportExport implements FromCollection, WithHeadings
 {
-
     public UserService $userService;
+
     public PaginateRequest $request;
 
     public function __construct(UserService $userService, $request)
     {
         $this->userService = $userService;
-        $this->request      = $request;
+        $this->request = $request;
     }
 
     public function collection(): \Illuminate\Support\Collection
     {
-        $creditBalanceReportArray  = [];
+        $creditBalanceReportArray = [];
         // [CREDBAL-NET-01 heal 2026-06-01] Force a non-paginated fetch. The UI
         // sends paginate=1 / per_page=10; UserService::list would otherwise
         // return only the first page, silently truncating the store-credit
@@ -34,10 +34,11 @@ class CreditBalanceReportExport implements FromCollection, WithHeadings
             $creditBalanceReportArray[] = [
                 $user->name,
                 $user->email,
-                $user->country_code . '' . $user->phone,
+                $user->country_code.''.$user->phone,
                 AppLibrary::flatAmountFormat($user->balance),
             ];
         }
+
         return collect($creditBalanceReportArray);
     }
 
@@ -47,7 +48,7 @@ class CreditBalanceReportExport implements FromCollection, WithHeadings
             trans('all.label.name'),
             trans('all.label.email'),
             trans('all.label.phone'),
-            trans('all.label.balance')
+            trans('all.label.balance'),
         ];
     }
 }

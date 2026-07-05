@@ -35,7 +35,7 @@ From `app/Http/Resources/KDSOrderDetailsResource.php:21+` (header fields) + `KDS
 | CAISSE (POS) | `OrderCreated` / `OrderStatusChanged` (collect, status) | KDS, OSS, customer tracker | WS push |
 | KDS | `OrderStatusChanged` (bump/recall) | OSS, customer tracker | WS push |
 | **KDS screen** | — | subscribes `branch.{id}` (chef `branch_id=1`) | Echo private |
-| **OSS public wall** | — | **POLLS, no push** | `OssSyncService.js:9` `intervalMsWhenConnected: 60_000` |
+| **OSS public wall** | — | **POLLS, no push** | **5 s** — public-wall override `intervalMsWhenConnected: 5_000` (`PreparingAndReadyComponent.vue:266-270`, `isPublicWall = authBranchId()<=0`). Authed staff OSS (branchId>0) reste à 60 s (`OssSyncService.js:9`). *[corrigé 2026-07-02 : doc disait 60s pour le mur public]* |
 | Customer web/app tracker | — | subscribes `branch.{id}` | Echo private |
 | CENTRAL dashboard | — | passive poll (~60s by design) | REST |
 
@@ -43,10 +43,10 @@ From `app/Http/Resources/KDSOrderDetailsResource.php:21+` (header fields) + `KDS
 - WS push: **~6 ms** (chef channel, living-sync 2026-05-29).
 - End-to-end status change (PREPARING→PREPARED → chef screen): **~512 ms**.
 - Cold first-paint after fix: **2292 → 269 ms** (sync heal F-LAT-01, `block_for=5`).
-- OSS public wall: **up to ~60 s stale** (poll, no push — §5; flagged as a customer-experience weak point).
+- OSS public wall: **~5 s** (poll-only, override public-wall `intervalMsWhenConnected: 5_000`, `PreparingAndReadyComponent.vue:266-270` ; tient le budget SYNC-2 POS→OSS ≤8s). *[corrigé 2026-07-02 : n'est plus « ~60s stale »]*
 
 ## 7. Degradation behavior (no data loss is the invariant)
-- **queue:work dies** → broadcasts stop; screens fall back to **poll** (KDS ~30s, admin ~60s) reading `orders` directly → **no data loss**, only latency. `domain_events` pile `dispatched_at=NULL`; `MonitorOutboxStaleness` detects (but only `Log::error` — alerting gap).
+- **queue:work dies** → broadcasts stop; screens fall back to **poll** — **KDS 5 s quand WS down** (`KitchenDisplaySystemComponent.vue:1899` `wsConnected ? 60000 : 5000`), OSS public 5 s, admin ~60 s — lisant `orders` directement → **no data loss**, only latency. `domain_events` pile `dispatched_at=NULL`; `MonitorOutboxStaleness` détecte (mais seulement `Log::error` — alerting gap). ⚠️ **Ops (2026-07-02)** : `DispatchDomainEventsJob->onQueue('high')` — le worker prod DOIT écouter la file `high` (`queue:work --queue=high,default`), sinon les broadcasts ne partent jamais même avec un worker vivant. *[corrigé 2026-07-02 : doc disait KDS ~30s]*
 - **soketi dies** → `WebSocketService` flips to UNAVAILABLE (reconnect circuit-breaker) → poll fallback. ⚠️ KDS "polling mode" banner is **suppressed when `APP_ENV=local`** (`KitchenDisplaySystemComponent.vue:1314-1321`) → on the local box the kitchen gets no visual cue.
 - **Outbox** durably persists broadcast intents; crash-claimed orphans detected (`MonitorOutboxStaleness.php:49-102`).
 

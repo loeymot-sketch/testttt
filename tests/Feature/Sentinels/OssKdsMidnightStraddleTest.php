@@ -50,18 +50,18 @@ class OssKdsMidnightStraddleTest extends TestCase
         parent::tearDown();
     }
 
-    private function makeOrder(Branch $branch, Carbon $when, int $status = OrderStatus::PREPARING): Order
+    private function makeOrder(Branch $branch, Carbon $when, int $status = OrderStatus::PREPARING, int $advance = Ask::NO): Order
     {
         $order = Order::factory()->create([
-            'branch_id'        => $branch->id,
-            'status'           => $status,
-            'payment_status'   => PaymentStatus::PAID,
-            'order_type'       => \App\Enums\OrderType::TAKEAWAY,
-            'order_datetime'   => $when,
-            'is_advance_order' => Ask::NO,
+            'branch_id' => $branch->id,
+            'status' => $status,
+            'payment_status' => PaymentStatus::PAID,
+            'order_type' => \App\Enums\OrderType::TAKEAWAY,
+            'order_datetime' => $when,
+            'is_advance_order' => $advance,
             // Le mur OSS n'affiche que les commandes numérotées (token OU KIOSK OU TAKEAWAY+queue_number).
-            'queue_number'     => 'A' . $when->format('Hi'),
-            'business_date'    => $when->toDateString(),
+            'queue_number' => 'A'.$when->format('Hi'),
+            'business_date' => $when->toDateString(),
         ]);
         $order->forceFill(['updated_at' => $when])->saveQuietly();
 
@@ -114,5 +114,61 @@ class OssKdsMidnightStraddleTest extends TestCase
             ->pluck('id')->all();
         $this->assertContains($straddle->id, $wallIds, 'OSS listForBranch : parité avec list().');
         $this->assertNotContains($zombie->id, $wallIds, 'OSS listForBranch : zombie > 8h exclu.');
+    }
+
+    /**
+     * @test — [SELF-AUDIT A 2026-07-05] Une PRÉCOMMANDE en retard (>8h, toujours en préparation) doit
+     * rester visible sur les 4 chemins. Avant le fix, OSS appliquait le plancher 8h en AND top-level qui
+     * contraignait AUSSI la branche advance → le KDS la gardait (contrat AUDIT-52-BUG1) mais le mur client
+     * OSS la PRUNEAIT → le client ne voyait plus sa commande encore en cuisine. Le plancher vit désormais
+     * dans la seule sous-clause non-advance (parité KDS exacte). Ce cas manquait au sentinel (il ne testait
+     * que des commandes non-advance).
+     */
+    public function precommande_en_retard_reste_visible_sur_les_quatre_chemins(): void
+    {
+        // « Maintenant » = 14:00 Paris. La précommande programmée à 05:00 (9h de retard) est toujours
+        // PREPARING → au-delà du plancher 8h (floor = 06:00 > 05:00).
+        $parisNow = CarbonImmutable::parse('2026-01-16 14:00:00', 'Europe/Paris');
+        Carbon::setTestNow($parisNow);
+        CarbonImmutable::setTestNow($parisNow);
+
+        $branch = Branch::factory()->create();
+        $admin = User::factory()->create(['branch_id' => 0]);
+        $admin->assignRole('Admin');
+
+        $overdueAdvance = $this->makeOrder(
+            $branch,
+            Carbon::parse('2026-01-16 05:00:00', 'Europe/Paris'),
+            OrderStatus::PREPARING,
+            Ask::YES
+        );
+
+        $this->actingAs($admin);
+
+        // === 1. KDS list — garde la précommande en retard (AUDIT-52-BUG1) ===
+        $kdsIds = app(KitchenDisplaySystemOrderService::class)
+            ->list(new Request(['branch_id' => $branch->id]))
+            ->pluck('id')->all();
+        $this->assertContains($overdueAdvance->id, $kdsIds, 'KDS list : précommande en retard gardée (branche advance sans plancher).');
+
+        // === 2. KDS sync (delta) ===
+        Cache::flush();
+        $syncIds = array_map(
+            fn ($o) => (int) ($o['id'] ?? 0),
+            app(KdsSyncService::class)->sync($branch->id, new DateTimeImmutable('2000-01-01T00:00:00'), true)['orders']
+        );
+        $this->assertContains($overdueAdvance->id, $syncIds, 'KDS sync : précommande en retard dans le delta.');
+
+        // === 3. OSS list — DOIT désormais la garder aussi (le bug A la pruneait ici) ===
+        $ossIds = app(OrderStatusScreenOrderService::class)
+            ->list()
+            ->pluck('id')->all();
+        $this->assertContains($overdueAdvance->id, $ossIds, 'OSS list : le client DOIT voir sa précommande en retard encore en préparation (parité KDS — régression bug A).');
+
+        // === 4. OSS listForBranch — parité ===
+        $wallIds = app(OrderStatusScreenOrderService::class)
+            ->listForBranch($branch->id)
+            ->pluck('id')->all();
+        $this->assertContains($overdueAdvance->id, $wallIds, 'OSS listForBranch : parité avec les 3 chemins cuisine.');
     }
 }

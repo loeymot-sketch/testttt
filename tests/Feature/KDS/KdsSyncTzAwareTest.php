@@ -81,14 +81,17 @@ class KdsSyncTzAwareTest extends TestCase
         Carbon::setTestNow($now);
         CarbonImmutable::setTestNow($now);
 
-        // Expected Paris-local literals for day bounds (matching the heal).
+        // Expected Paris-local literals for the window bounds (matching the heal).
+        // [MINUIT-STRADDLE 2026-07-04] Borne basse = fenêtre GLISSANTE now-8h (Paris-
+        // local), plus le jour civil : 12:00 UTC = 13:00 Paris (hiver) → floor 05:00.
+        // L'intention TZ du pin est inchangée (le bug UTC donnerait 04:00).
         $appTz = config('app.timezone'); // 'Europe/Paris'
-        $expectedStart = Carbon::today($appTz)->format('Y-m-d H:i:s');
+        $expectedStart = now($appTz)->subHours((int) config('oss.stale_window_hours', 8))->format('Y-m-d H:i:s');
         $expectedEnd = Carbon::today($appTz)->endOfDay()->format('Y-m-d H:i:s');
         $expectedTomorrow = Carbon::tomorrow($appTz)->format('Y-m-d H:i:s');
 
-        // Sanity: confirm test-date math (Paris-local midnight, NOT UTC).
-        $this->assertSame('2026-01-15 00:00:00', $expectedStart);
+        // Sanity: confirm test-date math (Paris-local, NOT UTC).
+        $this->assertSame('2026-01-15 05:00:00', $expectedStart);
         $this->assertSame('2026-01-15 23:59:59', $expectedEnd);
         $this->assertSame('2026-01-16 00:00:00', $expectedTomorrow);
 

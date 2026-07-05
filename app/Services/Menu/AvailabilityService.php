@@ -2,10 +2,10 @@
 
 namespace App\Services\Menu;
 
+use App\Enums\Status;
 use App\Events\ItemAvailabilityChanged;
 use App\Events\ItemExtraAvailabilityChanged;
 use App\Events\ItemVariationAvailabilityChanged;
-use App\Enums\Status;
 use App\Models\Branch;
 use App\Models\Item;
 use App\Models\ItemBranchAvailability;
@@ -348,7 +348,7 @@ final class AvailabilityService
                 ->update([
                     'daily_consumed_qty' => DB::raw(
                         "CASE WHEN daily_consumed_qty + {$qty} > max_daily_qty "
-                        . "THEN max_daily_qty ELSE daily_consumed_qty + {$qty} END"
+                        ."THEN max_daily_qty ELSE daily_consumed_qty + {$qty} END"
                     ),
                     'updated_at' => now(),
                 ]);
@@ -614,6 +614,7 @@ final class AvailabilityService
                     isAvailable: $available,
                     reason: $reason
                 ));
+
                 return;
             }
 
@@ -624,6 +625,7 @@ final class AvailabilityService
                     isAvailable: $available,
                     reason: $reason
                 ));
+
                 return;
             }
         });
@@ -645,7 +647,7 @@ final class AvailabilityService
      * flip are queued and dispatched via DB::afterCommit (commit-before-dispatch
      * invariant — gate C9 / KI-001).
      *
-     * @param array<int, array{order_item_id:int, item_id:int, branch_id:int, qty:int}> $lineItems
+     * @param  array<int, array{order_item_id:int, item_id:int, branch_id:int, qty:int}>  $lineItems
      */
     public function releaseForOrderItems(array $lineItems): void
     {
@@ -657,9 +659,9 @@ final class AvailabilityService
 
         DB::transaction(function () use ($lineItems, &$eventsToDispatch): void {
             foreach ($lineItems as $lineItem) {
-                $orderItemId  = (int) ($lineItem['order_item_id'] ?? 0);
-                $itemId       = (int) ($lineItem['item_id'] ?? 0);
-                $branchId     = (int) ($lineItem['branch_id'] ?? 0);
+                $orderItemId = (int) ($lineItem['order_item_id'] ?? 0);
+                $itemId = (int) ($lineItem['item_id'] ?? 0);
+                $branchId = (int) ($lineItem['branch_id'] ?? 0);
                 $requestedQty = max(0, (int) ($lineItem['qty'] ?? 0));
 
                 if ($orderItemId <= 0 || $itemId <= 0 || $branchId <= 0 || $requestedQty <= 0) {
@@ -674,21 +676,23 @@ final class AvailabilityService
                 if (! $orderItem) {
                     Log::warning('availability release skipped (order item missing)', [
                         'order_item_id' => $orderItemId,
-                        'item_id'       => $itemId,
-                        'branch_id'     => $branchId,
+                        'item_id' => $itemId,
+                        'branch_id' => $branchId,
                     ]);
+
                     continue;
                 }
 
                 if ((int) $orderItem->item_id !== $itemId
                     || (int) $orderItem->branch_id !== $branchId) {
                     Log::warning('availability release skipped (line item mismatch)', [
-                        'order_item_id'      => $orderItemId,
-                        'expected_item_id'   => $itemId,
-                        'actual_item_id'     => (int) $orderItem->item_id,
+                        'order_item_id' => $orderItemId,
+                        'expected_item_id' => $itemId,
+                        'actual_item_id' => (int) $orderItem->item_id,
                         'expected_branch_id' => $branchId,
-                        'actual_branch_id'   => (int) $orderItem->branch_id,
+                        'actual_branch_id' => (int) $orderItem->branch_id,
                     ]);
+
                     continue;
                 }
 
@@ -697,13 +701,14 @@ final class AvailabilityService
 
                 if ($delta <= 0) {
                     Log::info('availability release skipped (already released)', [
-                        'order_item_id'  => $orderItemId,
-                        'item_id'        => $itemId,
-                        'branch_id'      => $branchId,
-                        'requested_qty'  => $requestedQty,
-                        'released_qty'   => (int) $orderItem->released_qty,
-                        'quantity'       => (int) $orderItem->quantity,
+                        'order_item_id' => $orderItemId,
+                        'item_id' => $itemId,
+                        'branch_id' => $branchId,
+                        'requested_qty' => $requestedQty,
+                        'released_qty' => (int) $orderItem->released_qty,
+                        'quantity' => (int) $orderItem->quantity,
                     ]);
+
                     continue;
                 }
 
@@ -722,24 +727,32 @@ final class AvailabilityService
 
                 if ($availability) {
                     $currentConsumed = max(0, (int) $availability->daily_consumed_qty);
-                    $newConsumed     = max(0, $currentConsumed - $delta);
-                    $wasUnavailable  = ! (bool) $availability->is_available;
-                    $shouldFlip      = $wasUnavailable
+                    $newConsumed = max(0, $currentConsumed - $delta);
+                    $wasUnavailable = ! (bool) $availability->is_available;
+                    // [SELF-AUDIT R4 P2 2026-07-05 — 86 manuel/cron écrasé par une annulation] La remise
+                    // en vente auto ne doit concerner QUE les articles 86'd par le QUOTA journalier
+                    // (unavailable_reason='out_of_stock'). Sans ce garde, une annulation/remboursement d'une
+                    // commande contenant un article 86'd MANUELLEMENT (seasonal/supplier_issue/quality…) ou
+                    // par le cron préventif ('stock_rupture') le remettait EN VENTE en silence → la cuisine
+                    // reçoit des commandes qu'elle ne peut honorer. Miroir EXACT du garde de setMaxDailyQty
+                    // (AvailabilityService:150, `$previousReason === 'out_of_stock'`).
+                    $shouldFlip = $wasUnavailable
+                        && $availability->unavailable_reason === 'out_of_stock'
                         && $availability->max_daily_qty !== null
                         && $newConsumed < (int) $availability->max_daily_qty;
 
                     $update = ['daily_consumed_qty' => $newConsumed];
 
                     if ($shouldFlip) {
-                        $update['is_available']       = true;
+                        $update['is_available'] = true;
                         $update['unavailable_reason'] = null;
-                        $update['unavailable_since']  = null;
+                        $update['unavailable_since'] = null;
 
                         $eventsToDispatch[] = [
-                            'item_id'      => $itemId,
-                            'branch_id'    => $branchId,
+                            'item_id' => $itemId,
+                            'branch_id' => $branchId,
                             'is_available' => true,
-                            'reason'       => 'released_after_cancel_or_refund',
+                            'reason' => 'released_after_cancel_or_refund',
                         ];
                     }
 
@@ -753,7 +766,7 @@ final class AvailabilityService
                     ->where('id', $orderItemId)
                     ->update([
                         'released_qty' => (int) $orderItem->released_qty + $delta,
-                        'released_at'  => Carbon::now(),
+                        'released_at' => Carbon::now(),
                     ]);
             }
 

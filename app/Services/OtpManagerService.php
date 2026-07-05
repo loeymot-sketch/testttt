@@ -2,26 +2,25 @@
 
 namespace App\Services;
 
-use Exception;
-use Carbon\Carbon;
-use App\Models\Otp;
 use App\Enums\OtpType;
 use App\Events\SendSmsCode;
+use App\Http\Requests\VerifyPhoneRequest;
+use App\Libraries\QueryExceptionLibrary;
+use App\Models\Otp;
+use Carbon\Carbon;
+use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
-use App\Libraries\QueryExceptionLibrary;
 use Smartisan\Settings\Facades\Settings;
-use App\Http\Requests\VerifyPhoneRequest;
 
 class OtpManagerService
 {
-
     /**
      * @throws Exception
      */
-    public function otp(Request $request) : bool
+    public function otp(Request $request): bool
     {
         try {
             // [GAP-20-1] Delete ALL previous OTPs for this phone number regardless of country code.
@@ -38,11 +37,11 @@ class OtpManagerService
 
             // [GAP-32-5] Use random_int() (CSPRNG) instead of rand() for OTP generation.
             // rand() is not cryptographically secure; random_int() uses OS entropy.
-            if (OtpType::SMS == Settings::group('otp')->get('otp_type') || OtpType::BOTH == Settings::group('otp')->get(
-                    'otp_type'
-                )) {
+            if (Settings::group('otp')->get('otp_type') == OtpType::SMS || Settings::group('otp')->get(
+                'otp_type'
+            ) == OtpType::BOTH) {
                 $digits = max(4, (int) Settings::group('otp')->get('otp_digit_limit'));
-                $token  = random_int((int) pow(10, $digits - 1), (int) pow(10, $digits) - 1);
+                $token = random_int((int) pow(10, $digits - 1), (int) pow(10, $digits) - 1);
             } else {
                 $token = random_int(1000, 9999);
             }
@@ -54,7 +53,7 @@ class OtpManagerService
                 'created_at' => now(),
             ]);
 
-            if (!blank($otp)) {
+            if (! blank($otp)) {
                 SendSmsCode::dispatch(
                     ['phone' => $request->post('phone'), 'code' => $request->post('code'), 'token' => $token]
                 );
@@ -70,7 +69,7 @@ class OtpManagerService
     /**
      * @throws Exception
      */
-    public function verify(VerifyPhoneRequest $request) : bool
+    public function verify(VerifyPhoneRequest $request): bool
     {
         try {
             // env('DEMO') === 'false' est truthy en PHP — utiliser un booléen réel
@@ -86,7 +85,7 @@ class OtpManagerService
             // d'IP). Ici : au-delà de N échecs pour CE téléphone, on BRÛLE le(s) OTP vivant(s) et on force une
             // nouvelle demande (throttlée côté /otp). Compteur en Cache (TTL = fenêtre d'expiration) →
             // fail-open si cache indisponible (repli propre sur le throttle existant, jamais de blocage dur).
-            $failKey = 'otp_verify_fail:' . $phone;
+            $failKey = 'otp_verify_fail:'.$phone;
             $maxAttempts = 5;
             $ttlMinutes = max(1, (int) Settings::group('otp')->get('otp_expire_time') ?: 5);
             if ((int) Cache::get($failKey, 0) >= $maxAttempts) {
@@ -101,7 +100,7 @@ class OtpManagerService
             ])->first();
             if ($otp) {
                 $difference = Carbon::now()->diffInSeconds($otp->created_at);
-                if ($difference > (int)Settings::group('otp')->get('otp_expire_time') * 60) {
+                if ($difference > (int) Settings::group('otp')->get('otp_expire_time') * 60) {
                     throw new Exception(trans('all.message.code_is_expired'), 422);
                 } else {
                     DB::table('otps')->where([
@@ -109,6 +108,13 @@ class OtpManagerService
                         ['token', $request->post('token')],
                     ])->delete();
                     Cache::forget($failKey); // succès → réinitialise le compteur d'échecs par identité
+                    // [SELF-AUDIT R5 P1 SÉCURITÉ 2026-07-05] Marqueur de vérification RÉELLE (one-time,
+                    // courte durée). L'OTP étant consommé (supprimé) au succès, « pas de ligne otp » est
+                    // AMBIGU (vérifié VS jamais demandé) — SignupController::register l'utilisait pour
+                    // autoriser un merge dans un compte invité existant → hijack. Ce marqueur donne une
+                    // PREUVE positive de possession du téléphone, consommée (pull) par register().
+                    Cache::put('phone_verified:'.$phone, true, now()->addMinutes($ttlMinutes));
+
                     return true;
                 }
             } else {

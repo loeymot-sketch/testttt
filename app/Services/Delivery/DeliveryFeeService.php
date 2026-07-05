@@ -36,10 +36,10 @@ class DeliveryFeeService
             $minimum = $branch->delivery_fee_minimum !== null ? (float) $branch->delivery_fee_minimum : null;
 
             if ($base !== null && $perKm !== null && $minimum !== null) {
-                // [DEL-FEE whole-km 2026-06-01, owner decision] When a free radius
-                // is configured, `base` covers the first `free_km` and each STARTED
-                // km beyond adds `per_km` (rounded UP) — the owner's "5€ ≤5km, +1€/km"
-                // rule. NULL free_km keeps the original linear `base + per_km*d`.
+                // [DEL-FEE whole-km, owner decision; base 5€→4€ on 2026-06-27] When a
+                // free radius is configured, `base` covers the first `free_km` and each
+                // STARTED km beyond adds `per_km` (rounded UP) — the owner's "4€ ≤5km,
+                // +1€/km" rule. NULL free_km keeps the original linear `base + per_km*d`.
                 $freeKm = $branch->delivery_fee_free_km !== null ? (float) $branch->delivery_fee_free_km : null;
                 if ($freeKm !== null) {
                     $chargeableKm = (int) ceil(max(0.0, $distance - $freeKm));

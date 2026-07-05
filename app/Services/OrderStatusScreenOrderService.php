@@ -2,33 +2,33 @@
 
 namespace App\Services;
 
-use Exception;
 use App\Enums\Ask;
-use Carbon\Carbon;
-use App\Models\Item;
-use App\Enums\Source;
-use App\Enums\Status;
-use App\Models\Order;
 use App\Enums\OrderStatus;
-use Illuminate\Support\Facades\Log;
+use App\Enums\Status;
 use App\Libraries\QueryExceptionLibrary;
+use App\Models\Item;
+use App\Models\Order;
 use App\Models\User;
+use Carbon\Carbon;
+use Exception;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class OrderStatusScreenOrderService
 {
     public object $order;
+
     protected array $orderFilter = [
         'order_serial_no',
         'branch_id',
         'order_type',
         'status',
         'kitchen_status',
-        'source'
+        'source',
     ];
 
     protected array $exceptFilter = [
-        'excepts'
+        'excepts',
     ];
 
     /**
@@ -43,13 +43,13 @@ class OrderStatusScreenOrderService
             // Previously only KIOSK (25=sur place) and token-bearing orders were shown.
             // Kiosk "à emporter" orders use order_type=TAKEAWAY but still have queue_number and must appear on OSS.
             $query = Order::where(function ($q) {
-                    $q->whereNotNull('token')
-                      ->orWhere('order_type', \App\Enums\OrderType::KIOSK)
-                      ->orWhere(function ($sub) {
-                          $sub->where('order_type', \App\Enums\OrderType::TAKEAWAY)
-                              ->whereNotNull('queue_number');
-                      });
-                })
+                $q->whereNotNull('token')
+                    ->orWhere('order_type', \App\Enums\OrderType::KIOSK)
+                    ->orWhere(function ($sub) {
+                        $sub->where('order_type', \App\Enums\OrderType::TAKEAWAY)
+                            ->whereNotNull('queue_number');
+                    });
+            })
                 // [2026-05-18 RED R-3 heal] Fail-closed allowlist — only KIOSK
                 // and TAKEAWAY ever reach the customer wall. The previous
                 // `!= DELIVERY` blacklist still let POS=15 / DINING_TABLE=20
@@ -57,9 +57,9 @@ class OrderStatusScreenOrderService
                 // if they ever happened to carry a token. Sister coverage:
                 // tests/Feature/OSS/OssCustomerScreenFilterTest.php.
                 ->whereIn('order_type', [
-                    \App\Enums\OrderType::KIOSK,
-                    \App\Enums\OrderType::TAKEAWAY,
-                ])
+                \App\Enums\OrderType::KIOSK,
+                \App\Enums\OrderType::TAKEAWAY,
+            ])
                 ->whereIn('status', [OrderStatus::PREPARING, OrderStatus::PREPARED]);
 
             // [ULTRA PARITÉ BOARD-RELEASE 2026-07-04] Même SSOT que TOUTES les surfaces cuisine
@@ -96,53 +96,34 @@ class OrderStatusScreenOrderService
             $todayEnd = Carbon::today($appTz)->endOfDay();
             $tomorrowStart = Carbon::tomorrow($appTz);
 
-            $query->where(function ($q) use ($tomorrowStart) {
-                    $q->where(function ($sub) use ($tomorrowStart) {
-                        // [ULTRA MINUIT-STRADDLE 2026-07-04] Ex-jour-civil ([todayStart, todayEnd]) :
-                        // à 00h00 le mur client perdait une commande de 23h30 encore en préparation
-                        // (Le Cayenne opère après minuit, commandes réelles 23h-02h). La borne BASSE
-                        // est le prune glissant 8h global ci-dessous (déjà en AND) ; ici on ne garde
-                        // que la borne haute anti-futur. Miroir fenêtre KDS (parité 4 chemins).
-                        // Sentinel : OssKdsMidnightStraddleTest.
-                        $sub->where('order_datetime', '<', $tomorrowStart)->where('is_advance_order', Ask::NO);
-                    })->orWhere(function ($sub) use ($tomorrowStart) {
-                        // [AUDIT-52-BUG1] Mirror KDS fix: show ALL overdue advance orders (not just yesterday)
-                        // that are still active (not DELIVERED or CANCELED). Prevents zombie disappearance.
-                        $sub->where('is_advance_order', Ask::YES)
-                            ->where('order_datetime', '<', $tomorrowStart)
-                            ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED]);
-                    });
-                })
-                // [Sprint H5-B Z4-P2-03 2026-05-17] Stale prune: orders older
-                // than config('oss.stale_window_hours') drop off the wall
-                // regardless of status (would otherwise linger as zombies
-                // until midnight rollover or manual bump). Combined with the
-                // sibling whereDate(today()) filter the effective TTL is
-                // min(today, N hours from order_datetime).
-                //
-                // [GOAL-G2-HEAL-04 2026-05-23] TZ-generation alignment to
-                // Wave T R5 Paris bounds (commit 27d95e066). The Wave 3c
-                // heal (commit 4905138fa, 2026-05-18) instantiated now() in
-                // UTC ASSUMING MySQL session_tz=UTC — empirically FALSE on
-                // this deployment (`SELECT @@session.time_zone` returns
-                // 'SYSTEM' = Europe/Paris because config/database.php
-                // connections.mysql.timezone is NULL and PDO inherits OS
-                // local). UTC bind literals are then re-interpreted as
-                // Paris-local under session_tz=Paris, shifting the prune
-                // window forward by 2h (winter) → orders 6-7h old were
-                // already pruned instead of 8h. The two prune-window heals
-                // CANCELLED each other in the wrong direction.
-                //
-                // Correct heal: instantiate now() in app.timezone (Paris)
-                // so the bound literal matches MySQL session_tz=Paris face-
-                // value interpretation. Mirrors KitchenDisplaySystemOrderService::list
-                // pattern (line 122-125). Sentinel: SisterServicesTzAwareV2Test
-                // (inverted to assert Paris-local literal).
-                //
-                // INVARIANT DEPENDENCY: this heal assumes session_tz=
-                // OS-local (Paris). Any future
-                // connections.mysql.timezone => '+00:00' MUST re-evaluate.
-                ->where('order_datetime', '>=', now(config('app.timezone'))->subHours((int) config('oss.stale_window_hours', 8)));
+            // [SELF-AUDIT A 2026-07-05 — divergence fenêtre OSS↔KDS] Le plancher glissant 8h est hoisté
+            // ICI et injecté DANS la seule sous-clause non-advance (exactement comme KDS), et NON plus en
+            // AND top-level. En top-level il contraignait AUSSI la branche advance → une précommande en
+            // retard (>8h, order_datetime < now-8h) DISPARAISSAIT du mur client alors que les 3 chemins
+            // cuisine (KDS list/orderItems, KdsSync) la GARDENT (leur branche advance est sans plancher,
+            // contrat AUDIT-52-BUG1). Résultat : le chef prépare, le client ne voit plus sa commande. Le
+            // commentaire d'origine revendiquait « Miroir fenêtre KDS (parité 4 chemins) » — c'était faux.
+            // now($appTz) = Paris-local (session_tz MySQL = SYSTEM = Paris ; voir KDS::list). INVARIANT :
+            // si connections.mysql.timezone passe à '+00:00', ré-évaluer.
+            $staleFloor = now($appTz)->subHours((int) config('oss.stale_window_hours', 8));
+
+            $query->where(function ($q) use ($tomorrowStart, $staleFloor) {
+                $q->where(function ($sub) use ($tomorrowStart, $staleFloor) {
+                    // Non-advance : fenêtre glissante active [staleFloor, tomorrow) — plancher ICI
+                    // (borne basse) + borne haute anti-futur. Le Cayenne opère après minuit (23h-02h).
+                    // Miroir EXACT KDS::list L140-144. Sentinel : OssKdsMidnightStraddleTest.
+                    $sub->where('order_datetime', '>=', $staleFloor)
+                        ->where('order_datetime', '<', $tomorrowStart)
+                        ->where('is_advance_order', Ask::NO);
+                })->orWhere(function ($sub) use ($tomorrowStart) {
+                    // [AUDIT-52-BUG1] Mirror KDS fix: show ALL overdue advance orders (SANS plancher 8h,
+                    // comme KDS::list L146-150) tant qu'actives (ni DELIVERED ni CANCELED). Empêche la
+                    // disparition zombie d'une précommande en retard encore en préparation.
+                    $sub->where('is_advance_order', Ask::YES)
+                        ->where('order_datetime', '<', $tomorrowStart)
+                        ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED]);
+                });
+            });
 
             // [M-09] Branch filter: only global Admin may request branch_id=0/global OSS.
             if ($branchScope !== null) {
@@ -220,20 +201,20 @@ class OrderStatusScreenOrderService
     {
         try {
             $query = Order::where(function ($q) {
-                    $q->whereNotNull('token')
-                      ->orWhere('order_type', \App\Enums\OrderType::KIOSK)
-                      ->orWhere(function ($sub) {
-                          $sub->where('order_type', \App\Enums\OrderType::TAKEAWAY)
-                              ->whereNotNull('queue_number');
-                      });
-                })
+                $q->whereNotNull('token')
+                    ->orWhere('order_type', \App\Enums\OrderType::KIOSK)
+                    ->orWhere(function ($sub) {
+                        $sub->where('order_type', \App\Enums\OrderType::TAKEAWAY)
+                            ->whereNotNull('queue_number');
+                    });
+            })
                 // [2026-05-18 RED R-3 heal] Sister of list() — keep query body
                 // byte-identical per service docstring (line 144). Fail-closed
                 // allowlist excludes POS / DELIVERY / DINING_TABLE.
                 ->whereIn('order_type', [
-                    \App\Enums\OrderType::KIOSK,
-                    \App\Enums\OrderType::TAKEAWAY,
-                ])
+                \App\Enums\OrderType::KIOSK,
+                \App\Enums\OrderType::TAKEAWAY,
+            ])
                 ->whereIn('status', [OrderStatus::PREPARING, OrderStatus::PREPARED]);
 
             // [ULTRA PARITÉ BOARD-RELEASE 2026-07-04] Même SSOT que TOUTES les surfaces cuisine
@@ -257,27 +238,24 @@ class OrderStatusScreenOrderService
             $todayEnd = Carbon::today($appTz)->endOfDay();
             $tomorrowStart = Carbon::tomorrow($appTz);
 
-            $query->where(function ($q) use ($tomorrowStart) {
-                    $q->where(function ($sub) use ($tomorrowStart) {
-                        // [ULTRA MINUIT-STRADDLE 2026-07-04] Sister-of list() — byte-identical
-                        // (voir le commentaire du sibling) : jour civil → borne haute anti-futur
-                        // seule, le prune glissant 8h ci-dessous fait la borne basse.
-                        $sub->where('order_datetime', '<', $tomorrowStart)->where('is_advance_order', Ask::NO);
-                    })->orWhere(function ($sub) use ($tomorrowStart) {
-                        $sub->where('is_advance_order', Ask::YES)
-                            ->where('order_datetime', '<', $tomorrowStart)
-                            ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED]);
-                    });
-                })
-                // [Sprint H5-B Z4-P2-03 2026-05-17] Stale prune mirror — see
-                // sibling list() comment. Keeps the public customer wall
-                // identical to the admin dashboard in shape AND in TTL.
-                //
-                // [GOAL-G2-HEAL-04 2026-05-23] TZ-generation alignment to
-                // Wave T R5 Paris bounds (commit 27d95e066). Sister-of
-                // list() — keep byte-identical per service docstring. See
-                // sibling list() comment for full rationale.
-                ->where('order_datetime', '>=', now(config('app.timezone'))->subHours((int) config('oss.stale_window_hours', 8)));
+            // [SELF-AUDIT A 2026-07-05] Sister-of list() — MÊME correction : plancher 8h dans la seule
+            // sous-clause non-advance (parité KDS), plus en AND top-level (qui pruneait à tort la branche
+            // advance → précommande en retard disparue du mur client mais gardée en cuisine). Voir list().
+            $staleFloor = now($appTz)->subHours((int) config('oss.stale_window_hours', 8));
+
+            $query->where(function ($q) use ($tomorrowStart, $staleFloor) {
+                $q->where(function ($sub) use ($tomorrowStart, $staleFloor) {
+                    // Non-advance : fenêtre glissante [staleFloor, tomorrow) — miroir EXACT KDS.
+                    $sub->where('order_datetime', '>=', $staleFloor)
+                        ->where('order_datetime', '<', $tomorrowStart)
+                        ->where('is_advance_order', Ask::NO);
+                })->orWhere(function ($sub) use ($tomorrowStart) {
+                    // Advance : SANS plancher (comme KDS) tant qu'actives — pas de disparition zombie.
+                    $sub->where('is_advance_order', Ask::YES)
+                        ->where('order_datetime', '<', $tomorrowStart)
+                        ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED]);
+                });
+            });
 
             if ($branchId > 0) {
                 $query->where('branch_id', $branchId);

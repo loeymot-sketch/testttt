@@ -85,4 +85,39 @@ class DiningTableReleaseAfterPosOrderTest extends TestCase
             'occupied_order_id' => $other->id,
         ]);
     }
+
+    /**
+     * [SELF-AUDIT R2 P2 2026-07-05 — double occupation table] occupy() rebindait la commande sur la
+     * nouvelle table sans libérer l'ancienne → la commande occupait DEUX tables → verrou fantôme. Ce test
+     * verrouille : ré-asseoir une commande libère sa table précédente.
+     */
+    public function test_occupy_frees_the_previous_table_no_double_occupancy(): void
+    {
+        $this->seedSpatieRoles();
+        $this->seedMinimalSettings();
+
+        $branch = Branch::factory()->create();
+        $operator = User::factory()->create(['branch_id' => $branch->id]);
+        $operator->assignRole('POS Operator');
+        $tableA = DiningTable::factory()->create(['branch_id' => $branch->id]);
+        $tableB = DiningTable::factory()->create(['branch_id' => $branch->id]);
+        $order = Order::factory()->create([
+            'branch_id' => $branch->id,
+            'user_id' => $operator->id,
+            'order_type' => OrderType::DINING_TABLE,
+        ]);
+
+        $this->actingAs($operator);
+        $svc = app(DiningTableService::class);
+
+        // Seat at A.
+        $svc->occupy($operator->id, $branch->id, $tableA->id, $order->id);
+        $this->assertDatabaseHas('dining_tables', ['id' => $tableA->id, 'occupancy_status' => 'occupied', 'occupied_order_id' => $order->id]);
+
+        // Re-seat the SAME order at B → A must be freed (no double-occupancy).
+        $svc->occupy($operator->id, $branch->id, $tableB->id, $order->id);
+
+        $this->assertDatabaseHas('dining_tables', ['id' => $tableB->id, 'occupancy_status' => 'occupied', 'occupied_order_id' => $order->id]);
+        $this->assertDatabaseHas('dining_tables', ['id' => $tableA->id, 'occupancy_status' => 'free', 'occupied_order_id' => null]);
+    }
 }

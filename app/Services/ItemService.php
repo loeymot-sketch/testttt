@@ -2,33 +2,33 @@
 
 namespace App\Services;
 
-
-use Exception;
 use App\Enums\Ask;
-use App\Models\Item;
 use App\Enums\Status;
-use Illuminate\Support\Str;
+use App\Events\ItemAvailabilityChanged;
 use App\Events\ItemCreated;
 use App\Events\ItemDeleted;
 use App\Events\ItemUpdated;
-use App\Models\ItemBranchAvailability;
-use App\Models\ItemVariation;
-use App\Models\ItemExtra;
-use App\Models\ItemAddon;
-use App\Models\ItemWizardProfile;
-use App\Models\OrderItem;
+use App\Http\Requests\ChangeImageRequest;
 use App\Http\Requests\ItemRequest;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use App\Http\Requests\PaginateRequest;
 use App\Libraries\QueryExceptionLibrary;
-use App\Http\Requests\ChangeImageRequest;
-use App\Events\ItemAvailabilityChanged;
+use App\Models\Item;
+use App\Models\ItemAddon;
+use App\Models\ItemBranchAvailability;
+use App\Models\ItemExtra;
+use App\Models\ItemVariation;
+use App\Models\ItemWizardProfile;
+use App\Models\OrderItem;
+use Exception;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class ItemService
 {
     public $item;
+
     protected $itemFilter = [
         'name',
         'slug',
@@ -40,7 +40,7 @@ class ItemService
         'status',
         'order',
         'description',
-        'except'
+        'except',
     ];
 
     /**
@@ -58,7 +58,7 @@ class ItemService
             return Item::with('media', 'category', 'tax')->where(function ($query) use ($requests) {
                 foreach ($requests as $key => $request) {
                     if (in_array($key, $this->itemFilter)) {
-                        if ($key == "except") {
+                        if ($key == 'except') {
                             $explodes = explode('|', $request);
                             if (count($explodes)) {
                                 foreach ($explodes as $explode) {
@@ -66,17 +66,17 @@ class ItemService
                                 }
                             }
                         } else {
-                            if ($key == "item_category_id") {
+                            if ($key == 'item_category_id') {
                                 $query->where($key, $request);
                             } else {
-                                $query->where($key, 'like', '%' . $request . '%');
+                                $query->where($key, 'like', '%'.$request.'%');
                             }
                         }
                     }
                 }
             })->orderBy($orderColumn, $orderType)->$method(
-                    $methodValue
-                );
+                $methodValue
+            );
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -95,7 +95,7 @@ class ItemService
             $query = Item::with('media', 'category', 'offer')->where(function ($query) use ($requests) {
                 foreach ($requests as $key => $request) {
                     if (in_array($key, $this->itemFilter)) {
-                        if ($key == "except") {
+                        if ($key == 'except') {
                             $explodes = explode('|', $request);
                             if (count($explodes)) {
                                 foreach ($explodes as $explode) {
@@ -103,15 +103,22 @@ class ItemService
                                 }
                             }
                         } else {
-                            if ($key == "item_category_id") {
+                            if ($key == 'item_category_id') {
                                 $query->where($key, $request);
                             } else {
-                                $query->where($key, 'like', '%' . $request . '%');
+                                $query->where($key, 'like', '%'.$request.'%');
                             }
                         }
                     }
                 }
             });
+
+            // [SELF-AUDIT R6 P3 2026-07-05 — fuite d'articles INACTIFS sur le catalogue PUBLIC] simpleList
+            // sert /api/frontend/item (borne/web/mobile, x-api-key public). Le filtre par requête laissait
+            // un `?status=10` (ou l'absence de filtre) exposer les articles INACTIFS (désactivés par
+            // l'admin) — nom/prix/media. On force la visibilité ACTIVE côté serveur (les surfaces
+            // featured/popular le font déjà). L'admin utilise list() (visibilité complète), pas simpleList.
+            $query->where('status', \App\Enums\Status::ACTIVE);
 
             // [AUDIT 2026-04-17 R1] Channels SSOT parity (POS/Kiosk/Web).
             // Gate visibility only when the caller declares a surface; legacy
@@ -145,13 +152,14 @@ class ItemService
             return;
         }
         $surface = strtolower(trim($surface));
-        if (!in_array($surface, ['pos', 'kiosk', 'web'], true)) {
+        if (! in_array($surface, ['pos', 'kiosk', 'web'], true)) {
             return;
         }
         $query->where(function ($q) use ($surface) {
             $q->whereNull('channels');
             if (DB::connection()->getDriverName() === 'sqlite') {
-                $q->orWhere('channels', 'like', '%"' . $surface . '"%');
+                $q->orWhere('channels', 'like', '%"'.$surface.'"%');
+
                 return;
             }
             $q->orWhereJsonContains('channels', $surface);
@@ -183,8 +191,9 @@ class ItemService
                     $q->where('is_available', false)->orWhere('is_available', 0);
                 })
                 ->count();
+
             return [
-                'available_count'   => max(0, $totalActive - $globallyUnavailable),
+                'available_count' => max(0, $totalActive - $globallyUnavailable),
                 'unavailable_count' => $globallyUnavailable,
             ];
         }
@@ -213,7 +222,7 @@ class ItemService
             ->count();
 
         return [
-            'available_count'   => max(0, $totalActive - (int) $unavailableActiveIds),
+            'available_count' => max(0, $totalActive - (int) $unavailableActiveIds),
             'unavailable_count' => (int) $unavailableActiveIds,
         ];
     }
@@ -277,9 +286,9 @@ class ItemService
                         foreach ($extras as $extra) {
                             \App\Models\ItemExtra::create([
                                 'item_id' => $this->item->id,
-                                'name'    => $extra['name'],
-                                'price'   => $extra['price'] ?? 0,
-                                'status'  => $extra['status'] ?? \App\Enums\Status::ACTIVE,
+                                'name' => $extra['name'],
+                                'price' => $extra['price'] ?? 0,
+                                'status' => $extra['status'] ?? \App\Enums\Status::ACTIVE,
                             ]);
                         }
                     }
@@ -337,7 +346,7 @@ class ItemService
 
                     if ($variationIdsArray) {
                         foreach ($oldVariations as $oldVariation) {
-                            if (!in_array($oldVariation, $variationIdsArray)) {
+                            if (! in_array($oldVariation, $variationIdsArray)) {
                                 $variationDeleteArray[] = $oldVariation;
                             }
                         }
@@ -357,8 +366,8 @@ class ItemService
                             if (isset($extra['id'])) {
                                 $extraId = (int) $extra['id'];
                                 $updated = $item->extras()->whereKey($extraId)->update([
-                                    'name'   => $extra['name'],
-                                    'price'  => $extra['price'] ?? 0,
+                                    'name' => $extra['name'],
+                                    'price' => $extra['price'] ?? 0,
                                     'status' => $extra['status'] ?? \App\Enums\Status::ACTIVE,
                                 ]);
                                 if ($updated === 0) {
@@ -369,9 +378,9 @@ class ItemService
                                 // Créer un nouvel extra
                                 $newExtra = ItemExtra::create([
                                     'item_id' => $item->id,
-                                    'name'    => $extra['name'],
-                                    'price'   => $extra['price'] ?? 0,
-                                    'status'  => $extra['status'] ?? \App\Enums\Status::ACTIVE,
+                                    'name' => $extra['name'],
+                                    'price' => $extra['price'] ?? 0,
+                                    'status' => $extra['status'] ?? \App\Enums\Status::ACTIVE,
                                 ]);
                                 $extraIdsToKeep[] = $newExtra->id;
                             }
@@ -411,7 +420,7 @@ class ItemService
                 );
             } catch (\Throwable $e) {
                 // Non-blocking: broadcast failure must not break the admin save
-                Log::warning('[C3] ItemAvailabilityChanged broadcast failed: ' . $e->getMessage());
+                Log::warning('[C3] ItemAvailabilityChanged broadcast failed: '.$e->getMessage());
             }
 
             return $refreshed;
@@ -497,7 +506,7 @@ class ItemService
         try {
             $copy = DB::transaction(function () use ($item): Item {
                 $copy = $item->replicate();
-                $copy->name = $item->name . ' (copie)';
+                $copy->name = $item->name.' (copie)';
                 $copy->slug = Str::slug($copy->name);
                 $copy->status = Status::INACTIVE;
                 $copy->is_featured = Ask::NO;
@@ -568,7 +577,7 @@ class ItemService
                     'full'
                 );
             } catch (\Throwable $e) {
-                Log::warning('[C3] ItemAvailabilityChanged broadcast failed after image change: ' . $e->getMessage());
+                Log::warning('[C3] ItemAvailabilityChanged broadcast failed after image change: '.$e->getMessage());
             }
 
             return $refreshed;
@@ -622,26 +631,26 @@ class ItemService
                         $o->realizedRevenue();
                         if ($from && $toExclusive) {
                             $o->where('order_datetime', '>=', $from)
-                              ->where('order_datetime', '<', $toExclusive);
+                                ->where('order_datetime', '<', $toExclusive);
                         }
                     });
                 }], 'quantity')
                 ->where(function ($query) use ($requests) {
-                foreach ($requests as $key => $request) {
-                    if (in_array($key, $this->itemFilter)) {
-                        if ($key == "except") {
-                            $explodes = explode('|', $request);
-                            if (count($explodes)) {
-                                foreach ($explodes as $explode) {
-                                    $query->where('id', '!=', $explode);
+                    foreach ($requests as $key => $request) {
+                        if (in_array($key, $this->itemFilter)) {
+                            if ($key == 'except') {
+                                $explodes = explode('|', $request);
+                                if (count($explodes)) {
+                                    foreach ($explodes as $explode) {
+                                        $query->where('id', '!=', $explode);
+                                    }
                                 }
+                            } else {
+                                $query->where($key, 'like', '%'.$request.'%');
                             }
-                        } else {
-                            $query->where($key, 'like', '%' . $request . '%');
                         }
                     }
-                }
-            })->orderByRaw('units_sold IS NULL, units_sold DESC')->$method(
+                })->orderByRaw('units_sold IS NULL, units_sold DESC')->$method(
                     $methodValue
                 );
         } catch (Exception $exception) {
@@ -685,6 +694,7 @@ class ItemService
 
         if (method_exists($media, 'copy')) {
             $media->copy($copy, 'item');
+
             return;
         }
 
@@ -745,6 +755,7 @@ class ItemService
             return $assoc ? [] : null;
         }
         $decoded = json_decode($json, $assoc);
+
         return json_last_error() === JSON_ERROR_NONE ? $decoded : ($assoc ? [] : null);
     }
 
@@ -760,10 +771,10 @@ class ItemService
             return;
         }
         Log::warning('[catalog.channels-null]', [
-            'item_id'   => (int) $item->id,
-            'user_id'   => auth()->id(),
+            'item_id' => (int) $item->id,
+            'user_id' => auth()->id(),
             'tenant_id' => auth()->user()?->getAttribute('tenant_id'),
-            'action'    => $action,
+            'action' => $action,
         ]);
     }
 }

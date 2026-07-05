@@ -81,6 +81,57 @@ class DeliveryFeeForgeWebTest extends TestCase
         $this->assertSame(15.0, (float) $order->total);
     }
 
+    /**
+     * [DELIVERY hardening 2026-06-27] A NON-delivery order (takeaway/web pickup) must
+     * never carry a delivery charge, even if the client forges one — delivery_charge is
+     * `nullable` for non-delivery in OrderRequest, so without the FrontendOrderService
+     * force-zero a crafted payload would mass-assign a phantom charge into the total.
+     */
+    public function test_takeaway_order_drops_forged_delivery_charge(): void
+    {
+        $this->seedMinimalSettings();
+        config(['app.api_key' => 'test-api-key']);
+        Settings::group('order_setup')->set([
+            'order_setup_food_preparation_time' => 30,
+            'order_setup_delivery' => 5,
+            'order_setup_takeaway' => 5,
+        ]);
+
+        $branch = Branch::factory()->create();
+        $customer = User::factory()->create([
+            'branch_id' => $branch->id,
+            'status' => Status::ACTIVE,
+        ]);
+        $item = $this->activeItem();
+
+        $response = $this
+            ->actingAs($customer, 'sanctum')
+            ->withHeader('x-api-key', 'test-api-key')
+            ->postJson('/api/frontend/order', [
+                'branch_id' => $branch->id,
+                'subtotal' => 10,
+                'discount' => 0,
+                'delivery_charge' => 99, // forged on a non-delivery order
+                'total' => 109,
+                'order_type' => (string) OrderType::TAKEAWAY,
+                'is_advance_order' => Ask::NO,
+                'source' => Source::WEB,
+                'payment_method' => PaymentGateway::CARD,
+                'items' => json_encode([[
+                    'item_id' => $item->id,
+                    'quantity' => 1,
+                    'item_variations' => [],
+                    'item_extras' => [],
+                ]]),
+            ]);
+
+        $this->assertContains($response->status(), [200, 201], $response->getContent());
+
+        $order = FrontendOrder::withoutGlobalScopes()->findOrFail((int) $response->json('data.id'));
+        $this->assertSame(0.0, (float) $order->delivery_charge, 'Takeaway order must drop the forged delivery charge.');
+        $this->assertSame(10.0, (float) $order->total, 'Takeaway total must exclude any delivery charge.');
+    }
+
     private function activeItem(): Item
     {
         $tax = Tax::factory()->create([

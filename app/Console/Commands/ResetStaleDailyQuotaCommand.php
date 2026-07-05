@@ -75,15 +75,40 @@ class ResetStaleDailyQuotaCommand extends Command
             return self::SUCCESS;
         }
 
-        $updated = $query->update([
+        // [SELF-AUDIT R5 P2 2026-07-05 — article 86'd à VIE] Le reset zéro-tait daily_consumed_qty mais ne
+        // REMETTAIT PAS is_available=true → un article auto-86'd par le quota (is_available=false,
+        // unavailable_reason='out_of_stock') restait EN RUPTURE chaque jour APRÈS le premier (le compteur
+        // repart de 0 mais l'article reste marqué indisponible). On ré-active UNIQUEMENT les 86 auto-quota
+        // ('out_of_stock') du set périmé — les 86 MANUELS (supplier_issue…) et cron ('stock_rupture') sont
+        // préservés (miroir du garde AvailabilityService). Fait AVANT le reset du compteur (le scope stale
+        // dépend de daily_reset_at < today, que le reset va justement changer).
+        $staleScope = fn () => DB::table('item_branch_availability')
+            ->whereDate('daily_reset_at', '<', $today)
+            ->whereNotNull('daily_reset_at');
+
+        $reenabled = $staleScope()
+            ->where('is_available', false)
+            ->where('unavailable_reason', 'out_of_stock')
+            ->update([
+                'is_available' => true,
+                'unavailable_reason' => null,
+                'unavailable_since' => null,
+                'updated_at' => now(),
+            ]);
+
+        $updated = $staleScope()->update([
             'daily_consumed_qty' => 0,
-            'daily_reset_at'     => $today,
-            'updated_at'         => now(),
+            'daily_reset_at' => $today,
+            'updated_at' => now(),
         ]);
+
+        if ($reenabled > 0) {
+            Log::info('foodking.availability.reset_reenabled_quota_86', ['rows_reenabled' => $reenabled, 'reset_at' => $today]);
+        }
 
         Log::info('foodking.availability.reset_stale_quota', [
             'rows_reset' => $updated,
-            'reset_at'   => $today,
+            'reset_at' => $today,
         ]);
 
         $this->info("Reset {$updated} stale daily quota rows.");
