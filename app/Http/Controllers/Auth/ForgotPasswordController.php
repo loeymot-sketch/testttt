@@ -8,6 +8,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -16,11 +17,11 @@ use Smartisan\Settings\Facades\Settings;
 
 class ForgotPasswordController extends Controller
 {
-
     public int $pin;
+
     public string $token = '';
 
-    public function forgotPassword(Request $request) : JsonResponse
+    public function forgotPassword(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'email' => ['required', 'string', 'email', 'max:255'],
@@ -34,7 +35,7 @@ class ForgotPasswordController extends Controller
 
         if ($verify) {
             $verify = DB::table('password_resets')->where([
-                ['email', $request->post('email')]
+                ['email', $request->post('email')],
             ]);
 
             if ($verify->exists()) {
@@ -44,41 +45,58 @@ class ForgotPasswordController extends Controller
             $this->pin = random_int(100000, 999999);
 
             $password_reset = DB::table('password_resets')->insert([
-                'email'      => $request->post('email'),
-                'token'      => $this->pin,
-                'created_at' => Carbon::now()
+                'email' => $request->post('email'),
+                'token' => $this->pin,
+                'created_at' => Carbon::now(),
             ]);
 
             if ($password_reset) {
                 SendResetPassword::dispatch(['email' => $request->post('email'), 'pin' => $this->pin]);
+
                 return new JsonResponse([
-                    'message' => trans('all.message.check_your_email_for_code')
+                    'message' => trans('all.message.check_your_email_for_code'),
                 ], 200);
             } else {
                 return new JsonResponse([
-                    'errors' => ['email' => [trans('all.message.token_created_fail')]]
+                    'errors' => ['email' => [trans('all.message.token_created_fail')]],
                 ], 400);
             }
         } else {
             return new JsonResponse([
-                'errors' => ['email' => [trans('all.message.email_does_not_exist')]]
+                'errors' => ['email' => [trans('all.message.email_does_not_exist')]],
             ], 400);
         }
     }
 
-    public function verifyCode(Request $request) : JsonResponse
+    public function verifyCode(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'email' => ['required', 'string', 'email', 'max:255'],
-            'code'  => ['required'],
+            'code' => ['required'],
         ]);
 
         if ($validator->fails()) {
             return new JsonResponse(['errors' => $validator->errors()], 422);
         }
 
+        // [SELF-AUDIT R6 P2 SÉCURITÉ 2026-07-05 — brute-force du code de reset] Verrou par IDENTITÉ (email)
+        // contre la devinette du code 6 chiffres dans la fenêtre d'expiration (le throttle par-IP est
+        // contournable par rotation d'IP, l'x-api-key est public). Au-delà de N échecs pour CET email, on
+        // BRÛLE le code et on force une nouvelle demande (send-throttlée). Miroir d'OtpManagerService::
+        // verify. Fail-open si cache indisponible (repli propre sur le throttle par-IP, jamais de blocage dur).
+        $email = (string) $request->post('email');
+        $failKey = 'pwreset_verify_fail:'.$email;
+        $maxAttempts = 5;
+        $ttlMinutes = max(1, (int) Settings::group('otp')->get('otp_expire_time') ?: 10);
+        if ((int) Cache::get($failKey, 0) >= $maxAttempts) {
+            DB::table('password_resets')->where('email', $email)->delete(); // consume-on-abuse : code brûlé
+            Cache::forget($failKey);
+
+            return new JsonResponse(['errors' => ['code' => [trans('all.message.code_is_invalid')]]], 422);
+        }
+
         $check = DB::table('password_resets')->where([
-            ['email', $request->post('email')],
+            ['email', $email],
             ['token', $request->post('code')],
         ]);
 
@@ -86,9 +104,9 @@ class ForgotPasswordController extends Controller
         if ($checkRecord) {
             $difference = Carbon::now()->diffInSeconds(Carbon::parse($checkRecord->created_at));
 
-            if ($difference > (int)Settings::group('otp')->get('otp_expire_time') * 60) {
+            if ($difference > (int) Settings::group('otp')->get('otp_expire_time') * 60) {
                 return new JsonResponse([
-                    'errors' => ['code' => [trans('all.message.code_is_expired')]]
+                    'errors' => ['code' => [trans('all.message.code_is_expired')]],
                 ], 400);
             }
 
@@ -98,34 +116,39 @@ class ForgotPasswordController extends Controller
                 $this->token = Str::random(64);
 
                 DB::table('password_resets')->insert([
-                    'email'      => $request->post('email'),
-                    'token'      => $this->token,
+                    'email' => $request->post('email'),
+                    'token' => $this->token,
                     'created_at' => Carbon::now(),
                 ]);
             });
 
+            Cache::forget($failKey); // succès → réinitialise le compteur d'échecs par identité
+
             return new JsonResponse([
-                'message'     => trans('all.message.you_can_reset_your_password'),
+                'message' => trans('all.message.you_can_reset_your_password'),
                 'reset_token' => $this->token,
             ], 200);
         } else {
+            // Code faux → incrémente le compteur d'échecs de CET email (fenêtre = expiration du code).
+            Cache::put($failKey, ((int) Cache::get($failKey, 0)) + 1, now()->addMinutes($ttlMinutes));
+
             return new JsonResponse([
-                'errors' => ['code' => [trans('all.message.code_is_invalid')]]
+                'errors' => ['code' => [trans('all.message.code_is_invalid')]],
             ], 400);
         }
     }
 
-    public function resetPassword(Request $request) : JsonResponse
+    public function resetPassword(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'email'                 => ['required', 'string', 'email', 'max:255'],
-            'reset_token'           => ['required', 'string', 'size:64'],
+            'email' => ['required', 'string', 'email', 'max:255'],
+            'reset_token' => ['required', 'string', 'size:64'],
             // [F-2 AUTH R1 V1.0.1 quick win — 2026-05-19]
             // Bumped min:6 -> min:12 for parity with staff create/update and the
             // bcrypt-rounds-12 hardening shipped in Wave 5G. Sentinel:
             // tests/Feature/Sentinels/PasswordResetMinLengthSentinelTest.php
             // Source: reports/audit/foundation-2026-05-18/round-1/F-2-AUTH/STATUS.md §5.1 R1
-            'password'              => ['required', 'string', 'min:12', 'confirmed'],
+            'password' => ['required', 'string', 'min:12', 'confirmed'],
             'password_confirmation' => ['required', 'string', 'min:12'],
         ]);
 
@@ -134,9 +157,9 @@ class ForgotPasswordController extends Controller
         }
 
         $user = User::where('email', $request->post('email'))->first();
-        if (!$user) {
+        if (! $user) {
             return new JsonResponse([
-                'errors' => ['email' => [trans('all.message.user_match')]]
+                'errors' => ['email' => [trans('all.message.user_match')]],
             ], 404);
         }
 
@@ -145,18 +168,18 @@ class ForgotPasswordController extends Controller
             ['token', $request->post('reset_token')],
         ])->first();
 
-        if (!$resetRecord) {
+        if (! $resetRecord) {
             return new JsonResponse([
-                'errors' => ['reset_token' => [trans('all.message.token_is_invalid')]]
+                'errors' => ['reset_token' => [trans('all.message.token_is_invalid')]],
             ], 422);
         }
 
         $difference = Carbon::now()->diffInSeconds(Carbon::parse($resetRecord->created_at));
-        if ($difference > (int)Settings::group('otp')->get('otp_expire_time') * 60) {
+        if ($difference > (int) Settings::group('otp')->get('otp_expire_time') * 60) {
             DB::table('password_resets')->where('email', $request->post('email'))->delete();
 
             return new JsonResponse([
-                'errors' => ['reset_token' => [trans('all.message.code_is_expired')]]
+                'errors' => ['reset_token' => [trans('all.message.code_is_expired')]],
             ], 400);
         }
 
@@ -164,7 +187,7 @@ class ForgotPasswordController extends Controller
             DB::table('password_resets')->where('email', $request->post('email'))->delete();
 
             $user->update([
-                'password' => Hash::make($request->post('password'))
+                'password' => Hash::make($request->post('password')),
             ]);
 
             // [WJ-3 WI-5 SEC-RST-01 V1.0.1 P1 — 2026-05-19]
@@ -188,8 +211,8 @@ class ForgotPasswordController extends Controller
         });
 
         return new JsonResponse([
-            'message' => "Your password has been reset",
-            'token'   => $this->token
+            'message' => 'Your password has been reset',
+            'token' => $this->token,
         ], 200);
     }
 }
