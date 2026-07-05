@@ -180,7 +180,7 @@ describe('renderItemSymbolic — line list for the KDS card', () => {
             label: 'G | TAC | M | K | SAM',
             hasAllergen: true,
         });
-        expect(out.lines[2]).toMatchObject({ type: 'supplement', label: '+ Cheddar' });
+        expect(out.lines[2]).toMatchObject({ type: 'supplement', label: '⭐ Cheddar' });
         expect(out.hasAllergen).toBe(true);
     });
 
@@ -214,7 +214,7 @@ describe('renderItemSymbolic — line list for the KDS card', () => {
         // crudités = SO (free only); Oignons frits stays a paid supplement line.
         expect(out.lines[0].label).toBe('SAN | SO | MAY');
         const sup = out.lines.filter((l) => l.type === 'supplement').map((l) => l.label);
-        expect(sup).toEqual(['+ Oignons frits']);
+        expect(sup).toEqual(['⭐ Oignons frits']);
     });
 
     it('a menu/formule item renders just "MENU : <sauce frites symbol>" (no price, no verbose)', () => {
@@ -253,7 +253,7 @@ describe('renderItemSymbolic — line list for the KDS card', () => {
         const out = renderItemSymbolic(item);
         const supplements = out.lines.filter((l) => l.type === 'supplement');
         expect(supplements).toHaveLength(1);
-        expect(supplements[0].label).toBe('+ Cheddar');
+        expect(supplements[0].label).toBe('⭐ Cheddar');
         expect(out.lines[0].label).toContain('S'); // Salade folded into crudités slot
     });
 });

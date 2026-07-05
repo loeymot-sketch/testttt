@@ -241,8 +241,8 @@ export default {
 .kds-line__supplement {
   color: #CA8A04;
   font-size: 16px;
-  font-style: italic;
-  font-weight: 600;
+  font-style: normal;
+  font-weight: 800; /* [K2-KDS 2026-07-05] supplément en GRAS + étoile ⭐ (owner) */
   padding-inline-start: 56px;
   margin-top: 4px;
   line-height: 1.3;

@@ -324,7 +324,9 @@ export function renderItemSymbolic(orderItem) {
     }
 
     for (const sup of s.supplements) {
-        lines.push({ type: 'supplement', label: sup });
+        // [K2-KDS 2026-07-05] Supplément payant signalé par une ÉTOILE ⭐ (écran → emoji OK)
+        // + affiché en gras jaune (CSS) → repérage immédiat par le cuisinier.
+        lines.push({ type: 'supplement', label: String(sup).replace(/^\+\s*/, '⭐ ') });
     }
 
     if (hasAllergen) {

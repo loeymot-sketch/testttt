@@ -324,7 +324,22 @@ export default {
                 'kds-card--critical': this.bucket === 'critical',
                 'kds-card--ready': this.kdsState === 'READY',
                 'kds-card--cancelled': this.kdsState === 'CANCELLED',
+                // [K2-KDS 2026-07-05] Owner : fiche en JAUNE dès qu'il y a un supplément payant
+                // → le cuisinier repère immédiatement les commandes « à extra ».
+                'kds-card--has-supplements': this.hasSupplements,
             };
+        },
+        // [K2-KDS 2026-07-05] Vrai si au moins un article de la commande porte un supplément
+        // payant (ligne symbolique de type « supplement »). Pilote le fond jaune de la fiche.
+        hasSupplements() {
+            const items = (this.order && this.order.order_items) || [];
+            return items.some((item) => {
+                try {
+                    return this.renderItemLines(item).some((l) => l && l.type === 'supplement');
+                } catch (e) {
+                    return false;
+                }
+            });
         },
         elapsedFormatted() {
             const s = this.elapsedSeconds;
@@ -791,6 +806,12 @@ export default {
 }
 .kds-card--cancelled {
     background: rgba(254, 226, 226, 0.5);
+}
+/* [K2-KDS 2026-07-05] Owner : fiche JAUNE dès qu'il y a un supplément payant → repérable
+   immédiatement par le cuisinier. Liseré ambre + fond jaune clair (n'écrase pas le stripe/état). */
+.kds-card--has-supplements {
+    background: #FEF9C3;
+    box-shadow: inset 0 0 0 3px #F59E0B;
 }
 
 @media (prefers-reduced-motion: reduce) {
