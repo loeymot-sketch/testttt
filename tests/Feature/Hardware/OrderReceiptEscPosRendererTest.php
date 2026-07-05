@@ -240,11 +240,11 @@ class OrderReceiptEscPosRendererTest extends TestCase
     {
         $bytes = (new OrderReceiptEscPosRenderer)->renderKitchenTicket($this->makeOrder());
         $this->assertStringContainsString('CUISINE', $bytes);
-        // [KITCHEN-SYMBOLS 2026-06-28] Tacos L, Cordon Bleu + Fricadelle, Samouraï.
-        $this->assertStringContainsString('G | TACOS | L | Cordon Frec | SAM', $bytes);
-        // Paid supplement kept full-name on its own line (accent must survive CP858).
-        $this->assertStringContainsString('+ Cheddar', $bytes);
-        $this->assertStringContainsString('+ Viande suppl', $bytes);
+        // [KITCHEN-SYMBOLS 2026-06-28 / T3-CUISINE 2026-07-05] Tacos L → code 3 lettres « TAC ».
+        $this->assertStringContainsString('G | TAC | L | Cordon Frec | SAM', $bytes);
+        // [T3-CUISINE] Suppléments payants en GRAS + étoile « * » (accent doit survivre CP858).
+        $this->assertStringContainsString('* Cheddar', $bytes);
+        $this->assertStringContainsString('* Viande suppl', $bytes);
         // No prices on the kitchen ticket.
         $this->assertStringNotContainsString('EUR', $bytes, 'kitchen ticket must not show prices');
         // [AUDIT F1] Same call number as the client ticket (queue, not the long serial).
