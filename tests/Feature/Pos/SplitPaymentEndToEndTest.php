@@ -34,13 +34,17 @@ use Tests\TestCase;
  */
 class SplitPaymentEndToEndTest extends TestCase
 {
-    use RefreshDatabase;
     use HasPosQuoteBinding;
+    use RefreshDatabase;
 
     protected Branch $branch;
+
     protected User $customer;
+
     protected User $operator;
+
     protected Item $item;
+
     protected PaymentTerminal $terminal;
 
     protected function setUp(): void
@@ -51,7 +55,7 @@ class SplitPaymentEndToEndTest extends TestCase
 
         Config::set('split_payment.enabled', true);
         Config::set('split_payment.max_tranches', 12);
-        Config::set('fiscal.audit_secret', 'test-fiscal-secret-' . str_repeat('a', 40));
+        Config::set('fiscal.audit_secret', 'test-fiscal-secret-'.str_repeat('a', 40));
 
         $this->branch = Branch::factory()->create();
 
@@ -102,12 +106,12 @@ class SplitPaymentEndToEndTest extends TestCase
         // [F-SPLIT-PHANTOM-CARD-001 2026-05-17] CARD tranches now require an
         // ACTIVE terminal_id scoped to the order's branch — see PosOrderRequest.
         $this->terminal = PaymentTerminal::create([
-            'branch_id'    => $this->branch->id,
-            'name'         => 'TPE E2E',
+            'branch_id' => $this->branch->id,
+            'name' => 'TPE E2E',
             'gateway_type' => PaymentTerminal::GATEWAY_MANUAL,
-            'fee_percent'  => 0,
-            'fee_fixed'    => 0,
-            'status'       => PaymentTerminal::STATUS_ACTIVE,
+            'fee_percent' => 0,
+            'fee_fixed' => 0,
+            'status' => PaymentTerminal::STATUS_ACTIVE,
         ]);
     }
 
@@ -233,7 +237,7 @@ class SplitPaymentEndToEndTest extends TestCase
 
         // GET show
         $showResp = $this->withHeader('x-api-key', config('app.api_key'))
-            ->getJson('/api/admin/pos-order/show/' . $orderId);
+            ->getJson('/api/admin/pos-order/show/'.$orderId);
 
         $showResp->assertStatus(200);
         $breakdown = $showResp->json('data.payments_breakdown');
@@ -259,9 +263,9 @@ class SplitPaymentEndToEndTest extends TestCase
         $this->actingAs($this->operator, 'sanctum');
 
         $payload = $this->basePayload([
-            'pos_payment_method'  => PosPaymentMethod::CASH,
+            'pos_payment_method' => PosPaymentMethod::CASH,
             'pos_received_amount' => 15.00, // tendered PARTIEL de la tranche cash, pas le total
-            'payment_breakdown'   => [
+            'payment_breakdown' => [
                 ['mode' => PosPaymentMethod::CASH, 'amount' => 15.00, 'tendered' => 15.00, 'change' => 0],
                 ['mode' => PosPaymentMethod::CARD, 'amount' => 10.00, 'reference' => '4242', 'terminal_id' => $this->terminal->id],
             ],
@@ -285,10 +289,10 @@ class SplitPaymentEndToEndTest extends TestCase
         $this->actingAs($this->operator, 'sanctum');
 
         $payload = $this->basePayload([
-            'pos_payment_method'  => PosPaymentMethod::CARD,
-            'pos_payment_note'    => 'multi-tender',
+            'pos_payment_method' => PosPaymentMethod::CARD,
+            'pos_payment_note' => 'multi-tender',
             'pos_received_amount' => 10.00,
-            'payment_breakdown'   => [
+            'payment_breakdown' => [
                 ['mode' => PosPaymentMethod::CARD, 'amount' => 15.00, 'reference' => '4242', 'terminal_id' => $this->terminal->id],
                 ['mode' => PosPaymentMethod::CASH, 'amount' => 10.00, 'tendered' => 10.00, 'change' => 0],
             ],
@@ -301,6 +305,34 @@ class SplitPaymentEndToEndTest extends TestCase
         $orderId = $response->json('data.id');
         $this->assertCount(2, OrderPayment::where('order_id', $orderId)->get(),
             'Un split card-dominant valide doit aboutir et persister 2 tranches.');
+    }
+
+    /**
+     * [SELF-AUDIT P1 2026-07-05 — double cash-in NF525] Un split multi-tender sur une commande
+     * DIFFÉRÉE au comptoir (defer_to_counter) est rejeté fail-closed AVANT toute persistance.
+     * confirmCounterPayment est mono-tender : laisser passer un split différé armait un double
+     * cash-in (tranches cash écrites à la création PUIS total réécrit à l'encaissement). Mon unblock
+     * Wave 3 (cesser de 422 les splits) avait rouvert ce chemin → cette garde le referme.
+     */
+    public function test_split_payment_with_defer_to_counter_is_rejected_422(): void
+    {
+        $this->actingAs($this->operator, 'sanctum');
+
+        $payload = $this->basePayload([
+            'defer_to_counter' => true,
+            'payment_breakdown' => [
+                ['mode' => PosPaymentMethod::CASH, 'amount' => 10.00, 'tendered' => 10.00, 'change' => 0],
+                ['mode' => PosPaymentMethod::CARD, 'amount' => 15.00, 'reference' => '4242', 'terminal_id' => $this->terminal->id],
+            ],
+        ]);
+
+        $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload));
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('payment_breakdown');
+        $this->assertSame(0, OrderPayment::count(),
+            'Aucune tranche persistée : le rejet précède la création (fail-closed anti double cash-in).');
     }
 
     public function test_pos_create_with_breakdown_when_flag_off_falls_back_legacy(): void

@@ -83,9 +83,13 @@ class RefundWithCounterEntryService
         // is now enforced at DB level; this guard remains belt-and-suspenders
         // for the status-flip case covered by RefundMirrorSplitPaymentTest:189
         // and RefundCounterEntryRequiresSealedParentSentinelTest:115.
-        if ((int) $parent->status === OrderStatus::RETURNED) {
+        // [SELF-AUDIT R6 P1 2026-07-05] Refuser un parent dans TOUT état terminal (pas seulement RETURNED)
+        // : un parent déjà CANCELED/REJECTED en place a déjà été retranché du Z (postZAdjustment) → un
+        // miroir en plus double-négative le total signé. Ceinture+bretelles avec le garde de scellage
+        // élargi de changeStatus (OrderService).
+        if (in_array((int) $parent->status, [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED], true)) {
             throw new InvalidArgumentException(
-                'Parent order is already RETURNED — refusing duplicate mirror.',
+                'Parent order is already in a terminal state — refusing duplicate mirror.',
                 422
             );
         }
@@ -106,22 +110,26 @@ class RefundWithCounterEntryService
             //    fillable contains parent_order_id (added in migration).
             //    Other "non-fillable" fields are set via property assignment then save().
             $mirror = Order::create([
-                'branch_id'        => $branchId,
-                'user_id'          => $parent->user_id,
-                'order_type'       => $parent->order_type,
-                'parent_order_id'  => $parent->id,
-                'status'           => OrderStatus::RETURNED,
-                'payment_status'   => PaymentStatus::REFUNDED,
-                'subtotal'         => -1 * (float) ($parent->subtotal ?? 0),
-                'total_tax'        => -1 * (float) ($parent->total_tax ?? 0),
-                'total'            => -1 * (float) ($parent->total ?? 0),
-                'discount'         => 0,
-                'order_serial_no'  => 'RTN-' . ($parent->order_serial_no ?? $parent->id),
-                'order_datetime'   => date('Y-m-d H:i:s'),
+                'branch_id' => $branchId,
+                'user_id' => $parent->user_id,
+                'order_type' => $parent->order_type,
+                'parent_order_id' => $parent->id,
+                'status' => OrderStatus::RETURNED,
+                'payment_status' => PaymentStatus::REFUNDED,
+                'subtotal' => -1 * (float) ($parent->subtotal ?? 0),
+                'total_tax' => -1 * (float) ($parent->total_tax ?? 0),
+                'total' => -1 * (float) ($parent->total ?? 0),
+                'discount' => 0,
+                'order_serial_no' => 'RTN-'.($parent->order_serial_no ?? $parent->id),
+                'order_datetime' => date('Y-m-d H:i:s'),
                 'preparation_time' => 0,
                 'pos_payment_method' => $parent->pos_payment_method,
-                'payment_method'   => $parent->payment_method,
-                'source_surface'   => $parent->source_surface ?? 'pos',
+                'payment_method' => $parent->payment_method,
+                'source_surface' => $parent->source_surface ?? 'pos',
+                // [SELF-AUDIT R3 P3 2026-07-05 — canal EOD faux] Le miroir copiait source_surface mais PAS
+                // source (int) → un remboursement POS post-Z (source=POS) tombait dans le bucket Web/App de
+                // la synthèse EOD (bucketChannels clé POS sur source===Source::POS). On copie source.
+                'source' => $parent->source,
             ]);
 
             // 3) Set fiscal_sequence_no + reason via property + save (not in fillable).
@@ -148,24 +156,24 @@ class RefundWithCounterEntryService
             foreach ($parent->orderItems as $item) {
                 /** @var OrderItem $item */
                 OrderItem::create([
-                    'order_id'             => $mirror->id,
-                    'branch_id'            => $branchId,
-                    'item_id'              => $item->item_id,
-                    'quantity'             => -1 * (int) $item->quantity,
-                    'discount'             => $item->discount,
-                    'tax_name'             => $item->tax_name,
-                    'tax_rate'             => $item->tax_rate,
-                    'tax_type'             => $item->tax_type,
-                    'tax_amount'           => -1 * (float) ($item->tax_amount ?? 0) * $parentRatio,
-                    'price'                => $item->price,
-                    'item_variations'      => $item->item_variations,
-                    'item_extras'          => $item->item_extras,
+                    'order_id' => $mirror->id,
+                    'branch_id' => $branchId,
+                    'item_id' => $item->item_id,
+                    'quantity' => -1 * (int) $item->quantity,
+                    'discount' => $item->discount,
+                    'tax_name' => $item->tax_name,
+                    'tax_rate' => $item->tax_rate,
+                    'tax_type' => $item->tax_type,
+                    'tax_amount' => -1 * (float) ($item->tax_amount ?? 0) * $parentRatio,
+                    'price' => $item->price,
+                    'item_variations' => $item->item_variations,
+                    'item_extras' => $item->item_extras,
                     'composition_snapshot' => $item->composition_snapshot,
                     'item_variation_total' => $item->item_variation_total,
-                    'item_extra_total'     => $item->item_extra_total,
-                    'total_price'          => -1 * (float) ($item->total_price ?? 0),
-                    'instruction'          => 'RTN: ' . ($item->instruction ?? ''),
-                    'allergens_snapshot'   => $item->allergens_snapshot,
+                    'item_extra_total' => $item->item_extra_total,
+                    'total_price' => -1 * (float) ($item->total_price ?? 0),
+                    'instruction' => 'RTN: '.($item->instruction ?? ''),
+                    'allergens_snapshot' => $item->allergens_snapshot,
                 ]);
             }
 
@@ -202,21 +210,21 @@ class RefundWithCounterEntryService
                 // on the same terminal bucket). NULL parent_id stays NULL on the
                 // mirror — preserves legacy / COUNTER_DEFERRED contract.
                 OrderPayment::create([
-                    'order_id'      => $mirror->id,
-                    'branch_id'     => $branchId,
-                    'mode'          => (int) $payment->mode,
-                    'terminal_id'   => $payment->terminal_id !== null
+                    'order_id' => $mirror->id,
+                    'branch_id' => $branchId,
+                    'mode' => (int) $payment->mode,
+                    'terminal_id' => $payment->terminal_id !== null
                         ? (int) $payment->terminal_id
                         : null,
-                    'amount'        => -1 * (float) ($payment->amount ?? 0),
-                    'tendered'      => $payment->tendered !== null
+                    'amount' => -1 * (float) ($payment->amount ?? 0),
+                    'tendered' => $payment->tendered !== null
                         ? -1 * (float) $payment->tendered
                         : null,
                     'change_amount' => -1 * (float) ($payment->change_amount ?? 0),
-                    'reference'     => $payment->reference !== null
-                        ? ((string) $payment->reference) . '-REFUND'
+                    'reference' => $payment->reference !== null
+                        ? ((string) $payment->reference).'-REFUND'
                         : null,
-                    'paid_at'       => now(),
+                    'paid_at' => now(),
                 ]);
             }
 
@@ -271,8 +279,9 @@ class RefundWithCounterEntryService
                         Log::info('[GOAL-K2-HEAL-07] cash_movement skipped — no auth context', [
                             'parent_order_id' => $parent->id,
                             'mirror_order_id' => $mirror->id,
-                            'payment_id'      => $payment->id,
+                            'payment_id' => $payment->id,
                         ]);
+
                         continue;
                     }
 
@@ -281,10 +290,11 @@ class RefundWithCounterEntryService
                         Log::info('[GOAL-K2-HEAL-07] cash_movement skipped — no open cash drawer session', [
                             'parent_order_id' => $parent->id,
                             'mirror_order_id' => $mirror->id,
-                            'payment_id'      => $payment->id,
-                            'branch_id'       => $branchId,
-                            'user_id'         => Auth::id(),
+                            'payment_id' => $payment->id,
+                            'branch_id' => $branchId,
+                            'user_id' => Auth::id(),
                         ]);
+
                         continue;
                     }
 
@@ -305,27 +315,67 @@ class RefundWithCounterEntryService
                     Log::warning('[GOAL-K2-HEAL-07] cash_movement record failed', [
                         'parent_order_id' => $parent->id,
                         'mirror_order_id' => $mirror->id,
-                        'payment_id'      => $payment->id,
-                        'error'           => $e->getMessage(),
+                        'payment_id' => $payment->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            // 4-quater) [SELF-AUDIT R2 P1 2026-07-05 — trou ledger tiroir sur le chemin cash PRIMAIRE]
+            // La boucle 4-ter n'itère QUE les order_payments du parent. Or le chemin cash le plus courant
+            // — counter-collect single-tender (PaymentService::confirmCounterPayment) ET POS walk-in cash
+            // direct — n'écrit AUCUNE ligne order_payments (seul SplitPaymentService en écrit). Donc pour
+            // ces ventes, la boucle 4-ter ne posait JAMAIS de CASHBACK OUT → au rapprochement, expected =
+            // opening + Σ signedAmount restait trop HAUT du montant remboursé → variance fantôme
+            // (« manquant » inexpliqué) pour le caissier qui a pourtant rendu l'argent. Le Z reste juste
+            // (le miroir à total négaté équilibre la chaîne) ; c'est UNIQUEMENT la surface tiroir qui
+            // manquait. Fix : quand aucune tranche n'existe ET que la vente d'origine était CASH (jamais
+            // pour CARTE — un remboursement carte ne sort pas du tiroir), on pose UNE ligne CASHBACK/OUT =
+            // total, sur la session ouverte courante (le cash sort AUJOURD'HUI même si la vente datait
+            // d'un Z antérieur). Même discipline que 4-ter : strict=false, best-effort, attachée au miroir.
+            if ($parentPayments->isEmpty() && (int) $parent->pos_payment_method === PosPaymentMethod::CASH) {
+                try {
+                    if (! Auth::check()) {
+                        Log::info('[SELF-AUDIT R2 P1] single-tender cashback OUT skipped — no auth context', [
+                            'parent_order_id' => $parent->id, 'mirror_order_id' => $mirror->id,
+                        ]);
+                    } elseif (! ($session = $cashService->findOpenSessionForUser($branchId, (int) Auth::id()))) {
+                        Log::info('[SELF-AUDIT R2 P1] single-tender cashback OUT skipped — no open session', [
+                            'parent_order_id' => $parent->id, 'mirror_order_id' => $mirror->id, 'branch_id' => $branchId,
+                        ]);
+                    } else {
+                        $cashService->recordMovement(
+                            sessionId: (int) $session->id,
+                            type: CashMovement::TYPE_CASHBACK,
+                            amount: round((float) ($parent->total ?? 0), 2),
+                            direction: CashMovement::DIRECTION_OUT,
+                            orderId: (int) $mirror->id,
+                            notes: 'RTN: refund counter-entry (single-tender cash)',
+                            strict: false,
+                        );
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning('[SELF-AUDIT R2 P1] single-tender cashback OUT record failed', [
+                        'parent_order_id' => $parent->id, 'mirror_order_id' => $mirror->id, 'error' => $e->getMessage(),
                     ]);
                 }
             }
 
             // 5) Audit trail — immutable forensic link parent ↔ mirror.
             $this->audit->write([
-                'branch_id'   => $branchId,
-                'user_id'     => $userId,
-                'action'      => 'order.refund.counter_entry',
-                'resource'    => 'order',
+                'branch_id' => $branchId,
+                'user_id' => $userId,
+                'action' => 'order.refund.counter_entry',
+                'resource' => 'order',
                 'resource_id' => (int) $mirror->id,
-                'payload'     => [
-                    'parent_order_id'           => (int) $parent->id,
-                    'parent_serial_no'          => (string) ($parent->order_serial_no ?? ''),
+                'payload' => [
+                    'parent_order_id' => (int) $parent->id,
+                    'parent_serial_no' => (string) ($parent->order_serial_no ?? ''),
                     'parent_fiscal_sequence_no' => (int) $parent->fiscal_sequence_no,
                     'mirror_fiscal_sequence_no' => (int) $mirrorSeq,
-                    'mirror_total'              => round(-1 * (float) ($parent->total ?? 0), 2),
-                    'mirror_payments_count'     => $parentPayments->count(),
-                    'reason'                    => $reason,
+                    'mirror_total' => round(-1 * (float) ($parent->total ?? 0), 2),
+                    'mirror_payments_count' => $parentPayments->count(),
+                    'reason' => $reason,
                 ],
             ]);
 
@@ -333,9 +383,9 @@ class RefundWithCounterEntryService
                 Log::channel('fiscal')->info('order.refund.counter_entry', [
                     'parent_order_id' => $parent->id,
                     'mirror_order_id' => $mirror->id,
-                    'branch_id'       => $branchId,
-                    'user_id'         => $userId,
-                    'mirror_total'    => $mirror->total,
+                    'branch_id' => $branchId,
+                    'user_id' => $userId,
+                    'mirror_total' => $mirror->total,
                 ]);
             } catch (\Throwable) {
                 // best-effort log
@@ -397,13 +447,13 @@ class RefundWithCounterEntryService
                 app(\App\Services\LoyaltyService::class)->refundPoints($parent, 'pos');
             } catch (\Throwable $loyaltyException) {
                 Log::error('[RefundWithCounterEntryService] loyalty refundPoints failed (isolated, fiscal refund preserved)', [
-                    'gate'             => 'GOAL-K2-HEAL-03',
-                    'parent_order_id'  => $parent->id,
-                    'mirror_order_id'  => $mirror->id,
-                    'branch_id'        => $branchId,
-                    'user_id'          => $userId,
-                    'error'            => $loyaltyException->getMessage(),
-                    'exception'        => $loyaltyException,
+                    'gate' => 'GOAL-K2-HEAL-03',
+                    'parent_order_id' => $parent->id,
+                    'mirror_order_id' => $mirror->id,
+                    'branch_id' => $branchId,
+                    'user_id' => $userId,
+                    'error' => $loyaltyException->getMessage(),
+                    'exception' => $loyaltyException,
                 ]);
             }
 

@@ -66,10 +66,18 @@ class FiscalSealedZSentinelTest extends TestCase
             $source,
             'OrderService must reference SealedOrderGuard'
         );
+        // [SELF-AUDIT R6 P1 2026-07-05] Le garde de scellage couvre DÉSORMAIS TOUT état terminal
+        // (RETURNED + CANCELED + REJECTED), plus seulement RETURNED : une vente scellée ne peut être
+        // annulée/rejetée EN PLACE (sinon double-négatif du Z signé — cf. SealedOrderTerminalVoidGuardTest).
         $this->assertStringContainsString(
-            "'changeStatus → RETURNED'",
+            "'changeStatus → terminal(",
             $source,
-            'OrderService::changeStatus RETURNED branch must call SealedOrderGuard'
+            'OrderService::changeStatus terminal branch must call SealedOrderGuard'
+        );
+        $this->assertStringContainsString(
+            '[OrderStatus::RETURNED, OrderStatus::CANCELED, OrderStatus::REJECTED]',
+            $source,
+            'Le garde de scellage doit couvrir RETURNED + CANCELED + REJECTED (self-audit R6 P1 double-négatif Z).'
         );
         $this->assertStringContainsString(
             "'changePaymentStatus → REFUNDED'",

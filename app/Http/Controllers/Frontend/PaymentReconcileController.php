@@ -55,18 +55,18 @@ class PaymentReconcileController extends Controller
     public function reconcile(Request $request): \Illuminate\Http\JsonResponse
     {
         $validated = $request->validate([
-            'entries'                 => ['required', 'array', 'min:1', 'max:50'],
-            'entries.*.order_id'      => ['required', 'integer', 'min:1'],
+            'entries' => ['required', 'array', 'min:1', 'max:50'],
+            'entries.*.order_id' => ['required', 'integer', 'min:1'],
             'entries.*.transaction_id' => ['required', 'string', 'max:255'],
-            'entries.*.amount_cents'  => ['required', 'integer', 'min:1'],
-            'entries.*.card_type'     => ['nullable', 'string', 'max:50'],
+            'entries.*.amount_cents' => ['required', 'integer', 'min:1'],
+            'entries.*.card_type' => ['nullable', 'string', 'max:50'],
             'entries.*.payment_method' => ['required', 'integer'],
         ]);
 
         $authenticatedUser = $request->user('sanctum') ?? $request->user();
         $authenticatedUserId = $authenticatedUser?->id ?? Auth::id();
 
-        if (!$authenticatedUserId) {
+        if (! $authenticatedUserId) {
             return response()->json(['status' => false, 'message' => 'Unauthenticated'], 401);
         }
         $authenticatedUserId = (int) $authenticatedUserId;
@@ -86,7 +86,7 @@ class PaymentReconcileController extends Controller
         $hasKioskAbility = $token
             ? $authenticatedUser->tokenCan('kiosk:order')
             : app()->runningUnitTests(); // session-auth tolerance for fixtures
-        if (!$hasKioskAbility) {
+        if (! $hasKioskAbility) {
             return response()->json(['status' => false, 'message' => 'Forbidden'], 403);
         }
 
@@ -94,7 +94,7 @@ class PaymentReconcileController extends Controller
             ->where('user_id', $authenticatedUserId)
             ->first();
 
-        if (!$kioskMachine) {
+        if (! $kioskMachine) {
             return response()->json(['status' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -115,14 +115,14 @@ class PaymentReconcileController extends Controller
      */
     private function reconcileEntry(array $entry, int $userId, int $branchId): array
     {
-        $orderId       = (int) $entry['order_id'];
+        $orderId = (int) $entry['order_id'];
         $transactionId = (string) $entry['transaction_id'];
-        $amountCents   = (int) $entry['amount_cents'];
-        $cardType      = $entry['card_type'] ?? null;
+        $amountCents = (int) $entry['amount_cents'];
+        $cardType = $entry['card_type'] ?? null;
         $paymentMethod = (int) $entry['payment_method'];
 
         $base = [
-            'order_id'       => $orderId,
+            'order_id' => $orderId,
             'transaction_id' => $transactionId,
         ];
 
@@ -130,8 +130,8 @@ class PaymentReconcileController extends Controller
         // as paymentConfirm (mode bypass payment doit logger ici aussi).
         try {
             \App\Services\Bypass\BypassAuditLogger::paymentBypassed([
-                'controller'     => 'Frontend\\PaymentReconcileController::reconcile',
-                'order_id'       => $orderId,
+                'controller' => 'Frontend\\PaymentReconcileController::reconcile',
+                'order_id' => $orderId,
                 'transaction_id' => $transactionId,
             ]);
         } catch (Throwable $e) {
@@ -144,18 +144,19 @@ class PaymentReconcileController extends Controller
             ->where('id', $orderId)
             ->first();
 
-        if (!$order) {
+        if (! $order) {
             return $base + ['status' => 'order_not_found'];
         }
 
         if ((int) $order->branch_id !== $branchId) {
             // Cross-branch reconcile attempt → log + reject (audit row NOT written).
             Log::warning('[AUDIT-F-008] reconcile cross-branch rejected', [
-                'order_id'        => $orderId,
-                'order_branch'    => $order->branch_id,
-                'kiosk_branch'    => $branchId,
-                'transaction_id'  => $transactionId,
+                'order_id' => $orderId,
+                'order_branch' => $order->branch_id,
+                'kiosk_branch' => $branchId,
+                'transaction_id' => $transactionId,
             ]);
+
             return $base + ['status' => 'unauthorized'];
         }
 
@@ -165,7 +166,7 @@ class PaymentReconcileController extends Controller
         $lock = Cache::lock($lockKey, 10);
 
         try {
-            if (!$lock->block(5)) {
+            if (! $lock->block(5)) {
                 return $base + ['status' => 'lock_timeout'];
             }
 
@@ -173,30 +174,33 @@ class PaymentReconcileController extends Controller
             $expectedCents = (int) round((float) $order->total * 100);
             if (abs($amountCents - $expectedCents) > 1) {
                 Log::warning('[AUDIT-F-008] reconcile amount echo mismatch', [
-                    'order_id'       => $orderId,
+                    'order_id' => $orderId,
                     'expected_cents' => $expectedCents,
                     'provided_cents' => $amountCents,
                     'transaction_id' => $transactionId,
-                    'gate'           => 'AUDIT-F-008+F-002',
+                    'gate' => 'AUDIT-F-008+F-002',
                 ]);
                 $this->upsertAudit($branchId, $orderId, $transactionId, $amountCents, $cardType, $paymentMethod, PendingPaymentConfirmation::STATUS_FAILED, 'amount_mismatch');
+
                 return $base + ['status' => 'amount_mismatch'];
             }
 
             // Already paid? → idempotent no-op.
             if ((int) $order->payment_status === PaymentStatus::PAID) {
                 $this->upsertAudit($branchId, $orderId, $transactionId, $amountCents, $cardType, $paymentMethod, PendingPaymentConfirmation::STATUS_RESOLVED, null);
+
                 return $base + ['status' => 'already_paid'];
             }
 
             // Promote to PAID under transaction + lockForUpdate.
-            DB::transaction(function () use ($order, $transactionId, $cardType, $paymentMethod) {
+            $txConflict = false;
+            DB::transaction(function () use ($order, $transactionId, $cardType, &$txConflict) {
                 $locked = FrontendOrder::withoutGlobalScope(BranchScope::class)
                     ->where('id', $order->id)
                     ->lockForUpdate()
                     ->first();
 
-                if (!$locked) {
+                if (! $locked) {
                     return;
                 }
 
@@ -204,7 +208,20 @@ class PaymentReconcileController extends Controller
                     return;
                 }
 
-                if (!in_array((int) $locked->payment_method, [PaymentGateway::CARD, PaymentGateway::TICKET_RESTAURANT], true)) {
+                if (! in_array((int) $locked->payment_method, [PaymentGateway::CARD, PaymentGateway::TICKET_RESTAURANT], true)) {
+                    return;
+                }
+
+                // [SELF-AUDIT R3 P2 2026-07-05 — double scellage fiscal depuis 1 transaction_id] orders.transaction_id
+                // n'a PAS d'index UNIQUE → deux commandes réconciliées avec le MÊME transaction_id TPE étaient TOUTES
+                // DEUX scellées PAID + fiscal (2 numéros fiscaux pour 1 encaissement réel). On refuse la 2e, miroir
+                // exact de la garde /payment-confirm (OrderController:220-225). Dédup sur tx NON vide uniquement.
+                if ($transactionId !== '' && FrontendOrder::withoutGlobalScope(BranchScope::class)
+                    ->where('transaction_id', $transactionId)
+                    ->where('id', '!=', (int) $locked->id)
+                    ->exists()) {
+                    $txConflict = true;
+
                     return;
                 }
 
@@ -215,6 +232,17 @@ class PaymentReconcileController extends Controller
                 }
                 $locked->save();
             });
+
+            if ($txConflict) {
+                // NE PAS upsertAudit ici : la ligne d'audit pending_payment_confirmations est keyée sur
+                // transaction_id (UNIQUE) et appartient DÉJÀ à la commande légitime qui a scellé ce tx —
+                // l'écraser en FAILED corromprait son audit. On journalise seulement et on refuse.
+                Log::warning('[SELF-AUDIT R3 P2] reconcile refusé — transaction_id déjà rattaché à une autre commande', [
+                    'order_id' => $orderId, 'transaction_id' => $transactionId, 'branch_id' => $branchId,
+                ]);
+
+                return $base + ['status' => 'tx_conflict'];
+            }
 
             // Delegate fiscal_sequence_no allocation + status promotion to the
             // single source of truth. F-001 invariant preserved : the flag
@@ -238,7 +266,7 @@ class PaymentReconcileController extends Controller
                 } catch (Throwable $e) {
                     Log::warning('[AUDIT-F-008] finalizePaidKioskOrder threw during reconcile (side-effect or fiscal alloc)', [
                         'order_id' => $order->id,
-                        'error'    => $e->getMessage(),
+                        'error' => $e->getMessage(),
                     ]);
                     // Re-read DB state : if fiscal_sequence_no got allocated and
                     // status reached ACCEPT, the failure was a side-effect (FCM,
@@ -250,8 +278,9 @@ class PaymentReconcileController extends Controller
                     $sideEffectOnly = $afterFail
                         && (int) $afterFail->payment_status === PaymentStatus::PAID
                         && $afterFail->fiscal_sequence_no !== null;
-                    if (!$sideEffectOnly) {
+                    if (! $sideEffectOnly) {
                         $this->upsertAudit($branchId, $orderId, $transactionId, $amountCents, $cardType, $paymentMethod, PendingPaymentConfirmation::STATUS_FAILED, $e->getMessage());
+
                         return $base + ['status' => 'failed', 'error' => 'finalize_failed'];
                     }
                     // Fall through : reconcile succeeded materially, side-effect
@@ -260,18 +289,20 @@ class PaymentReconcileController extends Controller
             }
 
             $this->upsertAudit($branchId, $orderId, $transactionId, $amountCents, $cardType, $paymentMethod, PendingPaymentConfirmation::STATUS_RESOLVED, null);
+
             return $base + ['status' => 'reconciled'];
         } catch (Throwable $e) {
             Log::error('[AUDIT-F-008] reconcile entry failed', [
-                'order_id'       => $orderId,
+                'order_id' => $orderId,
                 'transaction_id' => $transactionId,
-                'error'          => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
             try {
                 $this->upsertAudit($branchId, $orderId, $transactionId, $amountCents, $cardType, $paymentMethod, PendingPaymentConfirmation::STATUS_FAILED, substr($e->getMessage(), 0, 500));
             } catch (Throwable $_) {
                 // Audit write failure must not propagate.
             }
+
             return $base + ['status' => 'failed', 'error' => 'internal_error'];
         } finally {
             optional($lock)->release();
@@ -290,28 +321,29 @@ class PaymentReconcileController extends Controller
             ->first();
 
         if ($existing) {
-            $existing->status     = $status;
+            $existing->status = $status;
             $existing->last_error = $lastError;
             $existing->retry_count = (int) $existing->retry_count + 1;
             if ($status === PendingPaymentConfirmation::STATUS_RESOLVED && $existing->resolved_at === null) {
                 $existing->resolved_at = $now;
             }
             $existing->save();
+
             return;
         }
 
         PendingPaymentConfirmation::query()->create([
-            'branch_id'      => $branchId,
-            'order_id'       => $orderId,
+            'branch_id' => $branchId,
+            'order_id' => $orderId,
             'transaction_id' => $transactionId,
-            'amount_cents'   => $amountCents,
-            'card_type'      => $cardType,
+            'amount_cents' => $amountCents,
+            'card_type' => $cardType,
             'payment_method' => $paymentMethod,
-            'attempted_at'   => $now,
-            'resolved_at'    => $status === PendingPaymentConfirmation::STATUS_RESOLVED ? $now : null,
-            'status'         => $status,
-            'retry_count'    => 0,
-            'last_error'     => $lastError,
+            'attempted_at' => $now,
+            'resolved_at' => $status === PendingPaymentConfirmation::STATUS_RESOLVED ? $now : null,
+            'status' => $status,
+            'retry_count' => 0,
+            'last_error' => $lastError,
         ]);
     }
 }

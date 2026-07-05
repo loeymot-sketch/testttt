@@ -2,27 +2,29 @@
 
 namespace App\Exports;
 
+use App\Http\Requests\PaginateRequest;
 use App\Libraries\AppLibrary;
 use App\Services\TransactionService;
-use App\Http\Requests\PaginateRequest;
-use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithHeadings;
 
 class TransactionExport implements FromCollection, WithHeadings
 {
-
     public TransactionService $transactionService;
+
     public PaginateRequest $request;
 
     public function __construct(TransactionService $transactionService, $request)
     {
         $this->transactionService = $transactionService;
-        $this->request            = $request;
+        $this->request = $request;
     }
 
-    public function collection() : \Illuminate\Support\Collection
+    public function collection(): \Illuminate\Support\Collection
     {
-        $transactionArray  = [];
+        // [SELF-AUDIT R4 P1 2026-07-05 — export tronqué à 10 lignes] Full fetch (voir SalesReportExport).
+        $this->request->merge(['paginate' => 0]);
+        $transactionArray = [];
         $transactionsArray = $this->transactionService->list($this->request);
 
         foreach ($transactionsArray as $transaction) {
@@ -31,13 +33,14 @@ class TransactionExport implements FromCollection, WithHeadings
                 AppLibrary::datetime($transaction->created_at),
                 $transaction->payment_method,
                 optional($transaction->order)->order_serial_no,
-                $transaction->sign . " " . AppLibrary::flatAmountFormat($transaction->amount),
+                $transaction->sign.' '.AppLibrary::flatAmountFormat($transaction->amount),
             ];
         }
+
         return collect($transactionArray);
     }
 
-    public function headings() : array
+    public function headings(): array
     {
         return [
             trans('all.label.transaction_id'),

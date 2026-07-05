@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Domain\Order\AutoPrepareOnPaidPolicy;
-use App\Domain\Order\PaymentStateMachine;
 use App\Domain\Order\OrderStateMachine;
+use App\Domain\Order\PaymentStateMachine;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\PosPaymentMethod;
@@ -49,20 +49,21 @@ class PaymentService
         $this->assertPilotPaymentMethodAllowed($order, (string) $gatewaySlug, 'payment');
 
         $transaction = Transaction::where(['order_id' => $order->id])->first();
-        if (!$transaction) {
+        if (! $transaction) {
             $this->assertTransactionReferenceAvailable($order, (string) $transactionNo);
 
             $transaction = Transaction::create([
-                'order_id'       => $order->id,
+                'order_id' => $order->id,
                 'transaction_no' => $transactionNo,
-                'amount'         => $order->total,
+                'amount' => $order->total,
                 'payment_method' => $gatewaySlug,
-                'sign'           => '+',
-                'type'           => 'payment'
+                'sign' => '+',
+                'type' => 'payment',
             ]);
         }
         $order->payment_status = PaymentStatus::PAID;
         $order->save();
+
         return $transaction;
     }
 
@@ -134,12 +135,12 @@ class PaymentService
             }
 
             $transaction = Transaction::create([
-                'order_id'       => $order->id,
+                'order_id' => $order->id,
                 'transaction_no' => $transactionNo,
-                'amount'         => $order->total,
+                'amount' => $order->total,
                 'payment_method' => $gatewaySlug,
-                'sign'           => '-',
-                'type'           => 'cash_back'
+                'sign' => '-',
+                'type' => 'cash_back',
             ]);
 
             $user = User::find($order->user_id);
@@ -153,18 +154,18 @@ class PaymentService
             // record on the HMAC chain so a fraudulent cashier can be
             // detected even if the Transaction row is later mutated.
             app(AuditLogService::class)->write([
-                'branch_id'   => (int) ($order->branch_id ?? 0),
-                'user_id'     => Auth::check() ? (int) Auth::id() : null,
-                'action'      => 'payment.cash_back_issued',
-                'resource'    => 'order',
+                'branch_id' => (int) ($order->branch_id ?? 0),
+                'user_id' => Auth::check() ? (int) Auth::id() : null,
+                'action' => 'payment.cash_back_issued',
+                'resource' => 'order',
                 'resource_id' => (int) $order->id,
-                'payload'     => [
-                    'order_serial_no'     => $order->order_serial_no,
-                    'transaction_id'      => $transaction?->id,
-                    'transaction_no'      => $transactionNo,
-                    'payment_method'      => $gatewaySlug,
-                    'amount'              => round((float) $order->total, 2),
-                    'fiscal_sequence_no'  => $order->fiscal_sequence_no,
+                'payload' => [
+                    'order_serial_no' => $order->order_serial_no,
+                    'transaction_id' => $transaction?->id,
+                    'transaction_no' => $transactionNo,
+                    'payment_method' => $gatewaySlug,
+                    'amount' => round((float) $order->total, 2),
+                    'fiscal_sequence_no' => $order->fiscal_sequence_no,
                 ],
             ]);
 
@@ -294,6 +295,7 @@ class PaymentService
                     && $collectorUserId !== null
                     && $currentUserId === $collectorUserId) {
                     $order->setRawAttributes($locked->getAttributes(), true);
+
                     return;
                 }
 
@@ -393,7 +395,7 @@ class PaymentService
                     'type' => 'payment',
                 ],
                 [
-                    'transaction_no' => 'COUNTER-' . $locked->id . '-' . now()->format('YmdHis'),
+                    'transaction_no' => 'COUNTER-'.$locked->id.'-'.now()->format('YmdHis'),
                     'amount' => $locked->total,
                     'payment_method' => $this->counterPaymentMethodLabel($mode),
                     'sign' => '+',
@@ -422,6 +424,20 @@ class PaymentService
         if ($paid) {
             OrderPaidAtCounter::dispatch($order, $mode);
 
+            // [SELF-AUDIT R2 P3 2026-07-05 — table dine-in jamais libérée en encaissement différé]
+            // tryReleaseTableAfterPosOrderPaid n'était appelée QUE sur le chemin synchrone create-and-pay
+            // (OrderService::posOrderStore) — no-op pour les commandes différées (PENDING_COUNTER). Une
+            // commande DINING_TABLE en walkin_route_to_counter=true est différée puis scellée ICI → sans
+            // cet appel, la table restait « occupied » à vie. La méthode s'auto-garde (DINING_TABLE + PAID),
+            // donc l'appel est sûr pour tous les modes ; symétrie avec le chemin inline.
+            try {
+                app(\App\Services\DiningTableService::class)->tryReleaseTableAfterPosOrderPaid($order);
+            } catch (\Throwable $e) {
+                Log::warning('[SELF-AUDIT R2 P3] table release on counter-collect failed', [
+                    'order_id' => $order->id, 'error' => $e->getMessage(),
+                ]);
+            }
+
             // [Wave S-1 — P-OWNER 2026-05-20] When the auto-prepare policy
             // promoted the locked row to PREPARING inside the transaction,
             // surface the ACCEPT→PREPARING transition on the OrderStatusChanged
@@ -440,7 +456,7 @@ class PaymentService
                         OrderStatus::PREPARING
                     );
                 } catch (\Throwable $e) {
-                    Log::warning('[PaymentService] OrderStatusChanged broadcast (auto-prepare Wave S-1) failed: ' . $e->getMessage(), [
+                    Log::warning('[PaymentService] OrderStatusChanged broadcast (auto-prepare Wave S-1) failed: '.$e->getMessage(), [
                         'order_id' => (int) $order->id,
                         'mode' => $mode,
                     ]);
@@ -488,8 +504,7 @@ class PaymentService
         ?string $note = null,
         bool $strict = false,
         ?float $amountOverride = null,
-    ): void
-    {
+    ): void {
         // [2026-05-18] Hardware simulation: downgrade strict→soft when the
         // physical drawer is not connected. NF525 invariants unchanged.
         if ($strict && config('pos.simulation_hardware') === true) {
@@ -498,18 +513,20 @@ class PaymentService
         try {
             if (! Auth::check()) {
                 if ($strict) {
-                    throw new \App\Exceptions\CashDrawerSessionNotOpenException();
+                    throw new \App\Exceptions\CashDrawerSessionNotOpenException;
                 }
                 $this->flagCashMovementSkipped($order);
+
                 return;
             }
             $userId = (int) Auth::id();
             $branchId = (int) ($order->branch_id ?? 0);
             if ($branchId <= 0) {
                 if ($strict) {
-                    throw new \App\Exceptions\CashDrawerSessionNotOpenException();
+                    throw new \App\Exceptions\CashDrawerSessionNotOpenException;
                 }
                 $this->flagCashMovementSkipped($order);
+
                 return;
             }
 
@@ -519,18 +536,19 @@ class PaymentService
             if (! $session) {
                 if ($strict) {
                     Log::warning('[Sprint 1B] POS cash sale blocked — no open cash drawer session', [
-                        'order_id'  => $order->id,
+                        'order_id' => $order->id,
                         'branch_id' => $branchId,
-                        'user_id'   => $userId,
+                        'user_id' => $userId,
                     ]);
-                    throw new \App\Exceptions\CashDrawerSessionNotOpenException();
+                    throw new \App\Exceptions\CashDrawerSessionNotOpenException;
                 }
                 Log::info('[F-003] No open cash drawer session — order paid cash without session linkage', [
-                    'order_id'  => $order->id,
+                    'order_id' => $order->id,
                     'branch_id' => $branchId,
-                    'user_id'   => $userId,
+                    'user_id' => $userId,
                 ]);
                 $this->flagCashMovementSkipped($order);
+
                 return;
             }
 
@@ -556,7 +574,7 @@ class PaymentService
             }
             Log::warning('[F-003] recordCashOrderMovement failed (non-blocking)', [
                 'order_id' => $order->id,
-                'error'    => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -593,6 +611,18 @@ class PaymentService
      * [AUDIT-F-003] Hook side-effect : enregistre le cashback comme movement
      * direction=out sur la session OPEN du caissier (si elle existe). Best-effort.
      */
+    /**
+     * [SELF-AUDIT R2 P2 2026-07-05] Point d'entrée PUBLIC pour poser la sortie tiroir compensatoire d'un
+     * remboursement dont la commande n'a PAS de ligne Transaction (vente POS cash DIRECTE / counter-collect
+     * single-tender) : le chemin cashBack() est gardé sur $order->transaction et saute ces ventes, laissant
+     * un trou au rapprochement tiroir. Réutilise l'unique writer recordCashBackMovement (DRY, même
+     * CASHBACK/OUT + session ouverte courante + best-effort).
+     */
+    public function recordCashRefundMovement(Order $order, float $amount): void
+    {
+        $this->recordCashBackMovement($order, $amount);
+    }
+
     private function recordCashBackMovement(Order $order, float $amount): void
     {
         try {
@@ -610,10 +640,11 @@ class PaymentService
 
             if (! $session) {
                 Log::info('[F-003] No open cash drawer session — cashback without session linkage', [
-                    'order_id'  => $order->id,
+                    'order_id' => $order->id,
                     'branch_id' => $branchId,
-                    'user_id'   => $userId,
+                    'user_id' => $userId,
                 ]);
+
                 return;
             }
 
@@ -627,7 +658,7 @@ class PaymentService
         } catch (\Throwable $e) {
             Log::warning('[F-003] recordCashBackMovement failed (non-blocking)', [
                 'order_id' => $order->id,
-                'error'    => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -647,6 +678,7 @@ class PaymentService
 
             if ((int) $locked->payment_status === PaymentStatus::REFUNDED) {
                 $order->setRawAttributes($locked->getAttributes(), true);
+
                 return;
             }
 
@@ -837,6 +869,7 @@ class PaymentService
         if (app()->bound('payment.service.allow_direct_call')
             && app('payment.service.allow_direct_call') === true) {
             app()->forgetInstance('payment.service.allow_direct_call');
+
             return;
         }
 
@@ -853,7 +886,7 @@ class PaymentService
 
         Log::warning('[P0-POS-02] PaymentService::payment called outside gateway context — rejected', [
             'top_caller_class' => $trace[1]['class'] ?? null,
-            'top_caller_func'  => $trace[1]['function'] ?? null,
+            'top_caller_func' => $trace[1]['function'] ?? null,
         ]);
 
         throw new HttpException(

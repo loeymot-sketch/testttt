@@ -41,35 +41,35 @@ class RefundCounterEntryNettedInZTest extends TestCase
     {
         $branch = Branch::factory()->create();
         $from = Carbon::parse('2026-04-25 08:00:00');
-        $to   = Carbon::parse('2026-04-25 20:00:00');
+        $to = Carbon::parse('2026-04-25 20:00:00');
 
         // Parent sold + sealed in a PRIOR window (counted in that window's Z).
         $parent = Order::factory()->create([
-            'branch_id'          => $branch->id,
-            'status'             => OrderStatus::DELIVERED,
-            'payment_status'     => PaymentStatus::PAID,
-            'total'              => 55.00,
-            'subtotal'           => 55.00,
-            'total_tax'          => 0,
+            'branch_id' => $branch->id,
+            'status' => OrderStatus::DELIVERED,
+            'payment_status' => PaymentStatus::PAID,
+            'total' => 55.00,
+            'subtotal' => 55.00,
+            'total_tax' => 0,
             'fiscal_sequence_no' => 1,
-            'created_at'         => $from->copy()->subDay(),
-            'updated_at'         => $from->copy()->subDay(),
+            'created_at' => $from->copy()->subDay(),
+            'updated_at' => $from->copy()->subDay(),
         ]);
 
         // Counter-entry refund MIRROR created IN the current window (faithful to
         // RefundWithCounterEntryService: pre-negated total, parent_order_id,
         // fresh seq, REFUNDED/RETURNED, created_at in (from, to]).
         Order::factory()->create([
-            'branch_id'          => $branch->id,
-            'parent_order_id'    => $parent->id,
-            'status'             => OrderStatus::RETURNED,
-            'payment_status'     => PaymentStatus::REFUNDED,
-            'total'              => -55.00,
-            'subtotal'           => -55.00,
-            'total_tax'          => 0,
+            'branch_id' => $branch->id,
+            'parent_order_id' => $parent->id,
+            'status' => OrderStatus::RETURNED,
+            'payment_status' => PaymentStatus::REFUNDED,
+            'total' => -55.00,
+            'subtotal' => -55.00,
+            'total_tax' => 0,
             'fiscal_sequence_no' => 2,
-            'created_at'         => $from->copy()->addHour(),
-            'updated_at'         => $from->copy()->addHour(),
+            'created_at' => $from->copy()->addHour(),
+            'updated_at' => $from->copy()->addHour(),
         ]);
 
         $aggregate = app(ZReportService::class)->aggregate($branch->id, $from, $to);
@@ -103,20 +103,20 @@ class RefundCounterEntryNettedInZTest extends TestCase
         $opened = Carbon::parse('2026-05-01 08:00:00');
         $closed = Carbon::parse('2026-05-01 20:00:00');
         ZReport::create([
-            'branch_id'   => $branch->id,
+            'branch_id' => $branch->id,
             'sequence_no' => 1,
-            'opened_at'   => $opened,
-            'closed_at'   => $closed,
-            'status'      => ZReport::STATUS_CLOSED,
+            'opened_at' => $opened,
+            'closed_at' => $closed,
+            'status' => ZReport::STATUS_CLOSED,
         ]);
         $parent = Order::factory()->create([
-            'branch_id'      => $branch->id,
-            'status'         => OrderStatus::ACCEPT,
+            'branch_id' => $branch->id,
+            'status' => OrderStatus::ACCEPT,
             'payment_status' => PaymentStatus::PAID,
-            'subtotal'       => 50.00,
-            'total'          => 50.00,
-            'total_tax'      => 0,
-            'created_at'     => $opened->copy()->addHours(2),
+            'subtotal' => 50.00,
+            'total' => 50.00,
+            'total_tax' => 0,
+            'created_at' => $opened->copy()->addHours(2),
         ]);
         $parent->fiscal_sequence_no = 10;
         $parent->save();
@@ -146,5 +146,87 @@ class RefundCounterEntryNettedInZTest extends TestCase
         );
         $this->assertSame(0, (int) $aggregate['order_count']);
         $this->assertSame(1, (int) $aggregate['refund_count']);
+    }
+
+    /**
+     * [SELF-AUDIT R2 P1 2026-07-05 — trou ledger tiroir sur le chemin cash PRIMAIRE] Un remboursement
+     * post-Z d'une commande CASH single-tender (counter-collect / POS walk-in — AUCUNE ligne
+     * order_payments) ne posait AUCUN CASHBACK OUT (la boucle 4-ter n'itère que les order_payments) →
+     * variance fantôme au rapprochement. Ce test verrouille : le remboursement pose une ligne CASHBACK OUT.
+     */
+    public function test_single_tender_cash_refund_records_cashback_out_movement(): void
+    {
+        $branch = Branch::factory()->create();
+        $user = User::factory()->create(['branch_id' => $branch->id]);
+        Auth::setUser($user);
+        $session = app(\App\Services\Cash\CashDrawerService::class)->openSession($branch->id, $user->id, 100.00);
+
+        $opened = Carbon::parse('2026-05-01 08:00:00');
+        $closed = Carbon::parse('2026-05-01 20:00:00');
+        ZReport::create([
+            'branch_id' => $branch->id, 'sequence_no' => 1,
+            'opened_at' => $opened, 'closed_at' => $closed, 'status' => ZReport::STATUS_CLOSED,
+        ]);
+        $parent = Order::factory()->create([
+            'branch_id' => $branch->id,
+            'status' => OrderStatus::ACCEPT,
+            'payment_status' => PaymentStatus::PAID,
+            'pos_payment_method' => \App\Enums\PosPaymentMethod::CASH,
+            'subtotal' => 40.00,
+            'total' => 40.00,
+            'total_tax' => 0,
+            'created_at' => $opened->copy()->addHours(2),
+        ]);
+        $parent->fiscal_sequence_no = 10;
+        $parent->save();
+
+        // Single-tender cash → NO order_payments rows (the exact gap).
+        $this->assertSame(0, \App\Models\OrderPayment::where('order_id', $parent->id)->count());
+
+        $mirror = app(RefundWithCounterEntryService::class)->execute($parent, 'single-tender cash refund');
+
+        $out = \App\Models\CashMovement::where('order_id', $mirror->id)
+            ->where('type', \App\Models\CashMovement::TYPE_CASHBACK)
+            ->where('direction', \App\Models\CashMovement::DIRECTION_OUT)
+            ->first();
+        $this->assertNotNull($out, 'Un remboursement cash single-tender DOIT poser une ligne CASHBACK OUT (sinon variance fantôme au tiroir).');
+        $this->assertEqualsWithDelta(40.00, (float) $out->amount, 0.01, 'Le CASHBACK OUT vaut le total de la vente d\'origine.');
+        $this->assertSame((int) $session->id, (int) $out->cash_drawer_session_id, 'La sortie va sur la session ouverte du caissier.');
+    }
+
+    /** @test — garde : un remboursement d'une vente CARTE ne sort JAMAIS d'argent du tiroir. */
+    public function test_single_tender_card_refund_records_no_cashback_out(): void
+    {
+        $branch = Branch::factory()->create();
+        $user = User::factory()->create(['branch_id' => $branch->id]);
+        Auth::setUser($user);
+        app(\App\Services\Cash\CashDrawerService::class)->openSession($branch->id, $user->id, 100.00);
+
+        $opened = Carbon::parse('2026-05-01 08:00:00');
+        $closed = Carbon::parse('2026-05-01 20:00:00');
+        ZReport::create([
+            'branch_id' => $branch->id, 'sequence_no' => 1,
+            'opened_at' => $opened, 'closed_at' => $closed, 'status' => ZReport::STATUS_CLOSED,
+        ]);
+        $parent = Order::factory()->create([
+            'branch_id' => $branch->id,
+            'status' => OrderStatus::ACCEPT,
+            'payment_status' => PaymentStatus::PAID,
+            'pos_payment_method' => \App\Enums\PosPaymentMethod::CARD,
+            'subtotal' => 40.00,
+            'total' => 40.00,
+            'total_tax' => 0,
+            'created_at' => $opened->copy()->addHours(2),
+        ]);
+        $parent->fiscal_sequence_no = 11;
+        $parent->save();
+
+        $mirror = app(RefundWithCounterEntryService::class)->execute($parent, 'card refund — no drawer OUT');
+
+        $this->assertSame(
+            0,
+            \App\Models\CashMovement::where('order_id', $mirror->id)->where('direction', \App\Models\CashMovement::DIRECTION_OUT)->count(),
+            'Un remboursement CARTE ne doit JAMAIS poser de sortie tiroir (l\'argent ne sort pas du tiroir).'
+        );
     }
 }

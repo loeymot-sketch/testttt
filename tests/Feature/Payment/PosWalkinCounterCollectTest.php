@@ -8,6 +8,7 @@ use App\Enums\PaymentGateway;
 use App\Enums\PaymentStatus;
 use App\Enums\PosPaymentMethod;
 use App\Models\Branch;
+use App\Models\DiningTable;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -89,6 +90,37 @@ class PosWalkinCounterCollectTest extends TestCase
         $this->assertSame(PosPaymentMethod::CARD, (int) $fresh->pos_payment_method);
         $this->assertNotNull($fresh->fiscal_sequence_no, 'fiscal seq MUST be allocated at collection');
         $this->assertGreaterThan(0, (int) $fresh->fiscal_sequence_no);
+    }
+
+    /**
+     * [SELF-AUDIT R2 P3 2026-07-05 — table dine-in jamais libérée en encaissement différé] Une commande
+     * DINING_TABLE différée (walkin_route_to_counter) scellée par le comptoir laissait la table « occupied »
+     * à vie (tryReleaseTableAfterPosOrderPaid n'était appelée que sur le chemin inline). Ce test verrouille :
+     * l'encaissement comptoir d'une commande dine-in libère sa table.
+     */
+    public function test_counter_collect_seal_releases_dining_table(): void
+    {
+        Queue::fake();
+        [$branch, $operator] = $this->branchOperator();
+        $table = DiningTable::factory()->create(['branch_id' => $branch->id]);
+        $order = $this->posDeferredOrder($branch, [
+            'order_type' => OrderType::DINING_TABLE,
+            'dining_table_id' => $table->id,
+        ]);
+        $table->update(['occupancy_status' => 'occupied', 'occupied_order_id' => $order->id, 'occupied_at' => now()]);
+
+        $this->actingAs($operator, 'sanctum')
+            ->postJson("/api/admin/pos/counter-collect/{$order->id}/confirm", [
+                'mode' => PosPaymentMethod::CASH,
+                'received' => 9.00,
+            ])
+            ->assertOk();
+
+        $this->assertDatabaseHas('dining_tables', [
+            'id' => $table->id,
+            'occupancy_status' => 'free',
+            'occupied_order_id' => null,
+        ]);
     }
 
     public function test_pos_deferred_order_surfaces_in_unified_pending_queue(): void
