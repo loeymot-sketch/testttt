@@ -8,9 +8,10 @@ export function calculateDeliveryChargeFromDistance(distanceKm) {
         return 0;
     }
 
-    // [DEL-FEE whole-km 2026-06-01, owner decision] Le Cayenne rule: 5 EUR covers
-    // the first 5 km, then +1 EUR per STARTED km beyond (rounded up). Mirrors the
-    // authoritative backend DeliveryFeeService (base=5/per_km=1/min=5/free_km=5).
-    // Preview UI only; the backend recompute on the order remains authoritative.
-    return Math.max(5, 5 + Math.ceil(Math.max(0, distance - 5)));
+    // [DEL-FEE whole-km — owner rule, base lowered 5€→4€ on 2026-06-27] Le Cayenne:
+    // 4 EUR covers the first 5 km, then +1 EUR per STARTED km beyond (rounded up).
+    // Mirrors the authoritative backend DeliveryFeeService (base=4/per_km=1/min=4/
+    // free_km=5). Preview UI only; the backend recompute on the order remains
+    // authoritative (and applies the separate ≥30€ free-delivery gate).
+    return Math.max(4, 4 + Math.ceil(Math.max(0, distance - 5)));
 }
