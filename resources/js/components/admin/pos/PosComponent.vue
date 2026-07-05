@@ -802,6 +802,47 @@
                                     <span class="leading-tight">{{ s.description }}</span>
                                 </li>
                             </ul>
+                            <!-- [C3 2026-07-05] Repli SANS Google Maps : dès qu'une adresse
+                                 est tapée sans suggestion/confirmation, l'opérateur saisit la
+                                 distance (km) et confirme en texte libre. Le tarif se calcule
+                                 via la même règle SSOT (base + km au-delà du seuil offert). -->
+                            <div
+                                v-if="!deliveryInline.confirmed && deliveryInline.suggestions.length === 0 && deliveryInline.addressText.trim().length >= 3"
+                                class="mt-2 rounded-lg border border-[#FFD8C6] bg-[#FFF6F1] px-3 py-2.5"
+                            >
+                                <div class="flex items-center gap-2 text-xs font-semibold text-[#9A3412] mb-1.5">
+                                    <i class="fa-solid fa-ruler-horizontal"></i>
+                                    <span>Saisie manuelle (sans carte)</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <div class="relative flex-1">
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.1"
+                                            inputmode="decimal"
+                                            v-model="deliveryInline.manualDistanceKm"
+                                            @keydown.enter.prevent="confirmDeliveryManual"
+                                            placeholder="Distance en km"
+                                            data-testid="pos-delivery-manual-km"
+                                            class="w-full h-9 text-sm rounded-lg border pl-3 pr-9 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none"
+                                        />
+                                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">km</span>
+                                    </div>
+                                    <button
+                                        @click.prevent="confirmDeliveryManual"
+                                        type="button"
+                                        data-testid="pos-delivery-manual-confirm"
+                                        class="h-9 px-3 flex items-center gap-1.5 rounded-lg bg-primary text-white text-xs font-bold hover:opacity-90 transition flex-shrink-0"
+                                    >
+                                        <i class="fa-solid fa-check"></i>
+                                        Confirmer
+                                    </button>
+                                </div>
+                                <p class="mt-1.5 text-[11px] text-gray-500 leading-tight">
+                                    Le tarif de livraison sera calculé automatiquement à partir de la distance.
+                                </p>
+                            </div>
                             <div
                                 v-if="deliveryGeocodeError"
                                 class="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700"
@@ -1865,6 +1906,11 @@ export default {
                 confirmed: false,
                 loading: false,
                 activeIdx: -1,
+                // [C3 2026-07-05] Repli sans Google Maps : l'opérateur saisit
+                // la distance à la main, on confirme l'adresse en texte libre
+                // et on calcule le tarif via la MÊME règle SSOT (base+km).
+                manual: false,
+                manualDistanceKm: '',
             },
             _deliveryAcTimer: null,
             _deliveryAcService: null,
@@ -4332,6 +4378,13 @@ export default {
             }
         },
         deliveryChargeCalculation: function () {
+            // [C3 2026-07-05] Adresse confirmée manuellement (sans Google) : garder
+            // le tarif déjà calculé depuis la distance saisie, ne pas le clobber.
+            if (this.deliveryInline && this.deliveryInline.manual && this.deliveryInline.confirmed) {
+                this.checkoutProps.form.delivery_charge = calculateDeliveryChargeFromDistance(this.checkoutProps.form.delivery_distance_km);
+                this.clearDeliveryGeocodeError();
+                return;
+            }
             if (this.checkoutProps.form.order_type === orderTypeEnum.DELIVERY && (typeof this.selectedAddress.latitude !== 'undefined' && this.selectedAddress.latitude !== '')) {
                 this.applyDeliveryChargeFromCoordinates(this.selectedAddress.latitude, this.selectedAddress.longitude)
                     .catch(() => {});
@@ -4409,6 +4462,7 @@ export default {
         onDeliveryAddressInput() {
             this.clearDeliveryGeocodeError();
             this.deliveryInline.confirmed = false;
+            this.deliveryInline.manual = false;
             this.deliveryInline.latitude = '';
             this.deliveryInline.longitude = '';
             this.checkoutProps.form.address_id = null;
@@ -4480,6 +4534,31 @@ export default {
             }
         },
 
+        // [C3 2026-07-05] Confirme une adresse SANS géocodage Google : texte libre
+        // + distance saisie manuellement. Le tarif suit la règle SSOT
+        // (calculateDeliveryChargeFromDistance = miroir du DeliveryFeeService backend).
+        confirmDeliveryManual() {
+            const addr = (this.deliveryInline.addressText || '').trim();
+            if (addr.length < 3) {
+                alertService.error('Veuillez saisir une adresse de livraison.');
+                return;
+            }
+            const km = parseFloat(this.deliveryInline.manualDistanceKm);
+            if (!Number.isFinite(km) || km < 0) {
+                alertService.error('Veuillez saisir une distance valide (en km).');
+                return;
+            }
+            this.deliveryInline.suggestions = [];
+            this.deliveryInline.address = addr;
+            this.deliveryInline.latitude = '';
+            this.deliveryInline.longitude = '';
+            this.deliveryInline.manual = true;
+            this.deliveryInline.confirmed = true;
+            this.checkoutProps.form.delivery_distance_km = km;
+            this.checkoutProps.form.delivery_charge = calculateDeliveryChargeFromDistance(km);
+            this.clearDeliveryGeocodeError();
+        },
+
         deliveryNavDown() {
             if (this.deliveryInline.suggestions.length === 0) return;
             this.deliveryInline.activeIdx = Math.min(
@@ -4506,6 +4585,8 @@ export default {
             this.deliveryInline.longitude = '';
             this.deliveryInline.suggestions = [];
             this.deliveryInline.confirmed = false;
+            this.deliveryInline.manual = false;
+            this.deliveryInline.manualDistanceKm = '';
             this.deliveryInline.loading = false;
             this.deliveryInline.activeIdx = -1;
             this.checkoutProps.form.address_id = null;
@@ -4523,7 +4604,9 @@ export default {
                 alertService.error('Veuillez saisir une adresse de livraison.');
                 return false;
             }
-            if (!this.deliveryInline.latitude || !this.deliveryInline.longitude) {
+            // [C3 2026-07-05] En mode manuel (sans Google Maps), on n'exige PAS de
+            // lat/lng : l'adresse texte libre + la distance saisie suffisent.
+            if (!this.deliveryInline.manual && (!this.deliveryInline.latitude || !this.deliveryInline.longitude)) {
                 this.showDeliveryGeocodeError();
                 alertService.error(this.deliveryGeocodeError);
                 return false;
@@ -4546,11 +4629,17 @@ export default {
                     this.checkoutProps.form.customer_id = customerId;
                 }
                 // 2. Save address under that customer
+                // [C3 2026-07-05] En mode manuel il n'y a pas de géocodage : l'endpoint
+                // adresse exige lat/lng (required). On envoie un pin cosmétique (coords
+                // de la branche, sinon '0') pour passer la validation — SANS impact sur
+                // la facturation, car le fee est recalculé serveur depuis la distance.
+                const addrLat = this.deliveryInline.latitude || (this.location && this.location.lat) || '0';
+                const addrLng = this.deliveryInline.longitude || (this.location && this.location.lng) || '0';
                 const addrRes = await axios.post(`/admin/users/address/${customerId}`, {
                     address: deliveryAddress,
                     apartment: '',
-                    latitude: this.deliveryInline.latitude || '',
-                    longitude: this.deliveryInline.longitude || '',
+                    latitude: addrLat,
+                    longitude: addrLng,
                     label: 'Livraison',
                 });
                 this.checkoutProps.form.address_id = addrRes.data.data.id;
@@ -4561,6 +4650,13 @@ export default {
                     latitude: this.deliveryInline.latitude,
                     longitude: this.deliveryInline.longitude,
                 };
+                // [C3 2026-07-05] Mode manuel : le tarif est déjà calculé depuis la
+                // distance saisie (confirmDeliveryManual). On ne re-géocode pas.
+                if (this.deliveryInline.manual) {
+                    this.checkoutProps.form.delivery_charge = calculateDeliveryChargeFromDistance(this.checkoutProps.form.delivery_distance_km);
+                    this.loading.isActive = false;
+                    return true;
+                }
                 if (! await this.applyDeliveryChargeFromCoordinates(this.deliveryInline.latitude, this.deliveryInline.longitude)) {
                     this.loading.isActive = false;
                     return false;
