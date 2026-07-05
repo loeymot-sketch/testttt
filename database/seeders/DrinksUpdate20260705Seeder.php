@@ -19,8 +19,9 @@ use Illuminate\Support\Facades\DB;
  *   Run :  php artisan db:seed --class=DrinksUpdate20260705Seeder
  *
  * Images cablees dans config/menu_images.php (slug → fichier). Prix aligne au canon sodas 1,90
- * (l'owner peut ajuster dans l'admin). Boissons SANS image encore : Fuze Tea, Fanta Hawai,
- * Perrier → a ajouter des reception des visuels.
+ * (l'owner peut ajuster dans l'admin). Fuze Tea / Fanta Hawai / Perrier ajoutees avec une
+ * image de REPLI distincte (owner n'a pas fourni le visuel dedie) — a swap 1 ligne des
+ * reception de fuze-tea.png / fanta-hawai.png / perrier.png.
  */
 class DrinksUpdate20260705Seeder extends Seeder
 {
@@ -39,6 +40,13 @@ class DrinksUpdate20260705Seeder extends Seeder
             ['slug' => 'tropico',      'name' => 'Tropico 33cl',        'price' => 1.90, 'description' => 'Tropico'],
             ['slug' => 'ice-tea',      'name' => 'Ice Tea Pêche 33cl',  'price' => 1.90, 'description' => 'Ice Tea saveur pêche'],
             ['slug' => 'fanta-citron', 'name' => 'Fanta Citron 33cl',   'price' => 1.90, 'description' => 'Fanta Citron'],
+            // [2026-07-05] 3 boissons demandées par l'owner SANS visuel dédié dans le
+            // dossier fourni → image de repli DISTINCTE (config/menu_images.php), à
+            // remplacer dès réception de fuze-tea.png / fanta-hawai.png / perrier.png.
+            // Elles sont dès maintenant commandables + gérables en stock (SSOT items).
+            ['slug' => 'fuze-tea',     'name' => 'Fuze Tea 33cl',       'price' => 1.90, 'description' => 'Fuze Tea'],
+            ['slug' => 'fanta-hawai',  'name' => 'Fanta Hawai 33cl',    'price' => 1.90, 'description' => 'Fanta Hawai'],
+            ['slug' => 'perrier',      'name' => 'Perrier 33cl',        'price' => 1.90, 'description' => 'Perrier (eau gazeuse)'],
         ];
 
         $created = 0;

@@ -156,6 +156,11 @@ return [
         'tropico'     => 'tropico.png',
         'ice-tea'     => 'lipton-peche.png',
         'fanta-citron' => 'fanta-citron.png',
+        // [2026-07-05] Repli DISTINCT en attendant les vrais visuels owner
+        // (fuze-tea.png / fanta-hawai.png / perrier.png). Swap 1 ligne à réception.
+        'fuze-tea'    => 'lipton-framboise.png', // thé framboise ≠ ice-tea (pêche)
+        'fanta-hawai' => 'fanta-fraise.png',     // Fanta rose ≠ orange/citron
+        'perrier'     => 'eau.png',              // eau gazeuse (repli eau)
 
         // ── Menu enfant (cat 11)
         'menu-nuggets' => 'nuggets.png',
