@@ -50,9 +50,9 @@ final class OrderReceiptEscPosRenderer
         // celle-ci débordait le papier 58mm → ré-enroulement). Toutes les lignes sont
         // word-wrappées à la largeur pour ne JAMAIS être coupées par l'imprimante.
         $b .= EscPosCommandBuilder::alignCenter();
-        $b .= EscPosCommandBuilder::doubleHeight(true) . EscPosCommandBuilder::bold(true);
+        $b .= EscPosCommandBuilder::doubleHeight(true).EscPosCommandBuilder::bold(true);
         $b .= EscPosCommandBuilder::textWrap(optional($branch)->name ?: 'LE CAYENNE', $w);
-        $b .= EscPosCommandBuilder::doubleHeight(false) . EscPosCommandBuilder::bold(false);
+        $b .= EscPosCommandBuilder::doubleHeight(false).EscPosCommandBuilder::bold(false);
         // [TICKET-ADRESSE 2026-07-03] Adresse = branche si renseignée, SINON défaut config
         // (`printing.receipt.address`) → design pro (nom/adresse/tél) même sans adresse en base.
         $address = (string) (optional($branch)->address ?: config('printing.receipt.address', ''));
@@ -64,17 +64,17 @@ final class OrderReceiptEscPosRenderer
         // ticket même quand la branche V1 n'a pas de téléphone en base.
         $phone = (string) (optional($branch)->phone ?: config('printing.receipt.phone', ''));
         if (trim($phone) !== '') {
-            $b .= EscPosCommandBuilder::textWrap('Tél : ' . $this->formatPhone($phone), $w);
+            $b .= EscPosCommandBuilder::textWrap('Tél : '.$this->formatPhone($phone), $w);
         }
         if (optional($branch)->email) {
-            $b .= EscPosCommandBuilder::textWrap('E-mail : ' . $branch->email, $w);
+            $b .= EscPosCommandBuilder::textWrap('E-mail : '.$branch->email, $w);
         }
         $website = (string) config('printing.receipt.website', '');
         if ($website !== '') {
-            $b .= EscPosCommandBuilder::textWrap('Web : ' . $website, $w);
+            $b .= EscPosCommandBuilder::textWrap('Web : '.$website, $w);
         }
         if (! empty($head['pos_siret'])) {
-            $b .= EscPosCommandBuilder::textWrap('SIRET ' . $head['pos_siret'], $w);
+            $b .= EscPosCommandBuilder::textWrap('SIRET '.$head['pos_siret'], $w);
         }
         $b .= EscPosCommandBuilder::separator('-', $w);
 
@@ -84,13 +84,13 @@ final class OrderReceiptEscPosRenderer
         // Le n° de file (« A0004 ») est court → double taille OK s'il tient en largeur/2,
         // sinon double HAUTEUR (jamais de débordement largeur).
         if (mb_strlen($ticketNo) <= max(1, (int) floor($w / 2))) {
-            $b .= EscPosCommandBuilder::doubleSize(true) . EscPosCommandBuilder::bold(true);
+            $b .= EscPosCommandBuilder::doubleSize(true).EscPosCommandBuilder::bold(true);
             $b .= EscPosCommandBuilder::textLine($ticketNo);
-            $b .= EscPosCommandBuilder::doubleSize(false) . EscPosCommandBuilder::bold(false);
+            $b .= EscPosCommandBuilder::doubleSize(false).EscPosCommandBuilder::bold(false);
         } else {
-            $b .= EscPosCommandBuilder::doubleHeight(true) . EscPosCommandBuilder::bold(true);
+            $b .= EscPosCommandBuilder::doubleHeight(true).EscPosCommandBuilder::bold(true);
             $b .= EscPosCommandBuilder::textWrap($ticketNo, $w);
-            $b .= EscPosCommandBuilder::doubleHeight(false) . EscPosCommandBuilder::bold(false);
+            $b .= EscPosCommandBuilder::doubleHeight(false).EscPosCommandBuilder::bold(false);
         }
         $dt = $order->order_datetime ?? $order->created_at;
         if ($dt) {
@@ -101,15 +101,15 @@ final class OrderReceiptEscPosRenderer
         // ── Bannière type de commande (double HAUTEUR + gras, pas double largeur) ──
         $orderType = $this->orderTypeLabel($order);
         if ($orderType !== '') {
-            $b .= EscPosCommandBuilder::doubleHeight(true) . EscPosCommandBuilder::bold(true);
-            $b .= EscPosCommandBuilder::textWrap('*** ' . mb_strtoupper($orderType) . ' ***', $w);
-            $b .= EscPosCommandBuilder::doubleHeight(false) . EscPosCommandBuilder::bold(false);
+            $b .= EscPosCommandBuilder::doubleHeight(true).EscPosCommandBuilder::bold(true);
+            $b .= EscPosCommandBuilder::textWrap('*** '.mb_strtoupper($orderType).' ***', $w);
+            $b .= EscPosCommandBuilder::doubleHeight(false).EscPosCommandBuilder::bold(false);
         }
         if ($counterCopy) {
-            $b .= EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::textLine('*** COMMANDE BORNE - COPIE CAISSE ***') . EscPosCommandBuilder::bold(false);
+            $b .= EscPosCommandBuilder::bold(true).EscPosCommandBuilder::textLine('*** COMMANDE BORNE - COPIE CAISSE ***').EscPosCommandBuilder::bold(false);
         }
         if ($isDuplicata) {
-            $b .= EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::textLine('*** DUPLICATA ***') . EscPosCommandBuilder::bold(false);
+            $b .= EscPosCommandBuilder::bold(true).EscPosCommandBuilder::textLine('*** DUPLICATA ***').EscPosCommandBuilder::bold(false);
         }
 
         // ── Articles ────────────────────────────────────────────────────────
@@ -126,7 +126,7 @@ final class OrderReceiptEscPosRenderer
         // ── Totaux ──────────────────────────────────────────────────────────
         $b .= EscPosCommandBuilder::lineKV('SOUS-TOTAL :', $this->money((float) ($order->subtotal ?? 0)), $w);
         $discount = (float) ($order->discount ?? 0);
-        $b .= EscPosCommandBuilder::lineKV('REDUCTION :', ($discount > 0 ? '-' : '') . $this->money($discount), $w);
+        $b .= EscPosCommandBuilder::lineKV('REDUCTION :', ($discount > 0 ? '-' : '').$this->money($discount), $w);
         $delivery = (float) ($order->delivery_charge ?? 0);
         if ($delivery > 0) {
             $b .= EscPosCommandBuilder::lineKV('LIVRAISON :', $this->money($delivery), $w);
@@ -134,7 +134,7 @@ final class OrderReceiptEscPosRenderer
         $b .= EscPosCommandBuilder::separator('-', $w);
         // [TICKET-WIDTHSAFE] Total en double HAUTEUR + gras (pas double largeur), montant
         // atomique aligné à droite sur toute la largeur → jamais coupé.
-        $b .= EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::doubleHeight(true);
+        $b .= EscPosCommandBuilder::bold(true).EscPosCommandBuilder::doubleHeight(true);
         $b .= EscPosCommandBuilder::lineItemKV('MONTANT TOTAL', $this->money((float) ($order->total ?? 0)), $w);
         $b .= EscPosCommandBuilder::bold(false);
         $b .= EscPosCommandBuilder::separator('-', $w);
@@ -144,7 +144,7 @@ final class OrderReceiptEscPosRenderer
         if (! empty($taxLines)) {
             foreach ($taxLines as $tl) {
                 $rate = rtrim(rtrim(number_format((float) $tl['rate'], 2, ',', ''), '0'), ',');
-                $b .= EscPosCommandBuilder::lineKV('TVA ' . $rate . '% :', $this->money($tl['tax']), $w);
+                $b .= EscPosCommandBuilder::lineKV('TVA '.$rate.'% :', $this->money($tl['tax']), $w);
             }
         } elseif ((float) ($order->total_tax ?? 0) > 0) {
             $b .= EscPosCommandBuilder::lineKV('TVA :', $this->money((float) $order->total_tax), $w);
@@ -154,7 +154,7 @@ final class OrderReceiptEscPosRenderer
         $payments = $this->payments($order);
         if (! empty($payments)) {
             foreach ($payments as $p) {
-                $b .= EscPosCommandBuilder::lineKV(mb_strtoupper($p['label']) . ' :', $this->money($p['amount']), $w);
+                $b .= EscPosCommandBuilder::lineKV(mb_strtoupper($p['label']).' :', $this->money($p['amount']), $w);
                 if (($p['change'] ?? 0) > 0) {
                     $b .= EscPosCommandBuilder::lineKV('RENDU :', $this->money($p['change']), $w);
                 }
@@ -163,26 +163,26 @@ final class OrderReceiptEscPosRenderer
             // Paid outside the POS tender flow (e.g. online/web order) — never tell the
             // customer to pay again; just confirm it is settled.
             $b .= EscPosCommandBuilder::alignCenter();
-            $b .= EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::textLine('*** PAYÉ ***') . EscPosCommandBuilder::bold(false);
+            $b .= EscPosCommandBuilder::bold(true).EscPosCommandBuilder::textLine('*** PAYÉ ***').EscPosCommandBuilder::bold(false);
             $b .= EscPosCommandBuilder::alignLeft();
         } elseif ((float) ($order->total ?? 0) > 0) {
             $b .= EscPosCommandBuilder::lineKV('A REGLER TTC :', $this->money((float) $order->total), $w);
             $b .= EscPosCommandBuilder::alignCenter();
-            $b .= EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::textLine('** A REGLER EN CAISSE **') . EscPosCommandBuilder::bold(false);
+            $b .= EscPosCommandBuilder::bold(true).EscPosCommandBuilder::textLine('** A REGLER EN CAISSE **').EscPosCommandBuilder::bold(false);
             $b .= EscPosCommandBuilder::alignLeft();
         }
 
         // ── Pied : remerciement + mentions fiscales (centré) ────────────────
         $b .= EscPosCommandBuilder::separator('-', $w);
         $b .= EscPosCommandBuilder::alignCenter();
-        $b .= EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::textWrap('BON APPÉTIT ET À BIENTÔT !', $w) . EscPosCommandBuilder::bold(false);
+        $b .= EscPosCommandBuilder::bold(true).EscPosCommandBuilder::textWrap('BON APPÉTIT ET À BIENTÔT !', $w).EscPosCommandBuilder::bold(false);
         $b .= EscPosCommandBuilder::doubleHeight(false); // mentions légales en taille normale (fine print)
         $b .= EscPosCommandBuilder::feed(1);
         if (! empty($head['fiscal_sequence_no'])) {
-            $b .= EscPosCommandBuilder::textWrap('Ticket fiscal N ' . $head['fiscal_sequence_no'], $w);
+            $b .= EscPosCommandBuilder::textWrap('Ticket fiscal N '.$head['fiscal_sequence_no'], $w);
         }
         if (! empty($head['pos_vat_intra'])) {
-            $b .= EscPosCommandBuilder::textWrap('TVA ' . $head['pos_vat_intra'], $w);
+            $b .= EscPosCommandBuilder::textWrap('TVA '.$head['pos_vat_intra'], $w);
         }
         if (! empty($head['pos_legal_footer'])) {
             $b .= EscPosCommandBuilder::textWrap((string) $head['pos_legal_footer'], $w);
@@ -194,9 +194,9 @@ final class OrderReceiptEscPosRenderer
         $b .= EscPosCommandBuilder::alignLeft();
         $b .= EscPosCommandBuilder::textWrap('Operation : VENTE', $w);
         if (! empty($head['operator_name'])) {
-            $b .= EscPosCommandBuilder::textWrap('Caissier : ' . $head['operator_name'], $w);
+            $b .= EscPosCommandBuilder::textWrap('Caissier : '.$head['operator_name'], $w);
         }
-        $b .= EscPosCommandBuilder::textWrap('Ticket : ' . $serial, $w);
+        $b .= EscPosCommandBuilder::textWrap('Ticket : '.$serial, $w);
         if ($dt) {
             $b .= EscPosCommandBuilder::textWrap($this->frenchDateTime($dt), $w);
         }
@@ -237,18 +237,18 @@ final class OrderReceiptEscPosRenderer
         $callNo = (string) ($order->queue_number ?: ($order->order_serial_no ?? $order->id));
         // [TICKET-WIDTHSAFE] n° court → double taille ; sinon double hauteur (jamais déborder).
         if (mb_strlen($callNo) <= max(1, (int) floor($w / 2))) {
-            $b .= EscPosCommandBuilder::doubleSize(true) . EscPosCommandBuilder::bold(true);
+            $b .= EscPosCommandBuilder::doubleSize(true).EscPosCommandBuilder::bold(true);
             $b .= EscPosCommandBuilder::textLine($callNo);
-            $b .= EscPosCommandBuilder::doubleSize(false) . EscPosCommandBuilder::bold(false);
+            $b .= EscPosCommandBuilder::doubleSize(false).EscPosCommandBuilder::bold(false);
         } else {
-            $b .= EscPosCommandBuilder::doubleHeight(true) . EscPosCommandBuilder::bold(true);
+            $b .= EscPosCommandBuilder::doubleHeight(true).EscPosCommandBuilder::bold(true);
             $b .= EscPosCommandBuilder::textWrap($callNo, $w);
-            $b .= EscPosCommandBuilder::doubleHeight(false) . EscPosCommandBuilder::bold(false);
+            $b .= EscPosCommandBuilder::doubleHeight(false).EscPosCommandBuilder::bold(false);
         }
         // [AUDIT F2] Order type — packaging/prep differs (sur place / à emporter / livraison).
         $orderType = $this->orderTypeLabel($order);
         if ($orderType !== '') {
-            $b .= EscPosCommandBuilder::bold(true) . EscPosCommandBuilder::textWrap('*** ' . mb_strtoupper($orderType) . ' ***', $w) . EscPosCommandBuilder::bold(false);
+            $b .= EscPosCommandBuilder::bold(true).EscPosCommandBuilder::textWrap('*** '.mb_strtoupper($orderType).' ***', $w).EscPosCommandBuilder::bold(false);
         }
         $dt = $order->order_datetime ?? $order->created_at;
         if ($dt) {
@@ -276,8 +276,8 @@ final class OrderReceiptEscPosRenderer
                 // « N x MENU : <sauce frites> », jamais le détail « Frites + Boisson » ni un prix.
                 // (Pas de fusion devinée : le menu n'est pas forcément adjacent à son produit.)
                 $sym = $this->symbolic->fritesSauceSymbol($instruction);
-                $menuLine = $sym !== '' ? 'MENU : ' . $sym : 'MENU';
-                $blocks[] = ['head' => $qty . ' x ' . $menuLine, 'menu' => null, 'supps' => [], 'notes' => []];
+                $menuLine = $sym !== '' ? 'MENU : '.$sym : 'MENU';
+                $blocks[] = ['head' => $qty.' x '.$menuLine, 'menu' => null, 'supps' => [], 'notes' => []];
 
                 continue;
             }
@@ -285,41 +285,49 @@ final class OrderReceiptEscPosRenderer
             $menu = $this->symbolic->menuLine($snap);
             if ($menu === 'MENU') {
                 $sym = $this->symbolic->fritesSauceSymbol($instruction);
-                $menu = $sym !== '' ? 'MENU : ' . $sym : 'MENU';
+                $menu = $sym !== '' ? 'MENU : '.$sym : 'MENU';
             }
             $note = $this->symbolic->cleanInstruction($instruction, $name);
             $blocks[] = [
-                'head' => $qty . ' x ' . $this->symbolic->mainLine($name, $snap),
+                'head' => $qty.' x '.$this->symbolic->mainLine($name, $snap),
                 'menu' => $menu !== '' ? $menu : null,
                 'supps' => $this->symbolic->supplementLines($snap),
                 'notes' => array_values(array_filter(array_map('trim', explode("\n", $note)))),
             ];
         }
 
+        $halfW = (int) max(8, floor($w / 2));
         foreach ($blocks as $blk) {
-            // [TICKET-WIDTHSAFE] La ligne symbolique (ex. « 1 x S | TERMINATOR | Mex Cordon |
-            // STO | AND ») dépasse 32 col sur une 58mm → on l'enroule proprement (indent) au
-            // lieu de laisser l'imprimante la couper au milieu d'un symbole.
-            $b .= EscPosCommandBuilder::bold(true);
-            foreach (EscPosCommandBuilder::wrapIndented($blk['head'], $w, '    ') as $headLine) {
+            // [T2-CUISINE 2026-07-05] Ligne produit en DOUBLE TAILLE (2×2) → grosse & lisible de
+            // loin (owner : « ça sort trop petit »). Avec les codes 3 lettres (CAY/TER) elle tient
+            // en général sur une ligne. Enroulée à la MOITIÉ de la largeur (double-largeur = 2 col
+            // physiques/caractère) → JAMAIS coupée par l'imprimante, elle passe à la ligne proprement.
+            $b .= EscPosCommandBuilder::doubleSize(true).EscPosCommandBuilder::bold(true);
+            foreach (EscPosCommandBuilder::wrapIndented($blk['head'], $halfW, '  ') as $headLine) {
                 $b .= EscPosCommandBuilder::textLine($headLine);
             }
-            $b .= EscPosCommandBuilder::bold(false);
+            // Retour en double HAUTEUR (grand mais pleine largeur) pour le détail menu/suppléments.
+            $b .= EscPosCommandBuilder::bold(false).EscPosCommandBuilder::doubleSize(false).EscPosCommandBuilder::doubleHeight(true);
             if ($blk['menu'] !== null) {
                 $b .= EscPosCommandBuilder::bold(true);
                 foreach (EscPosCommandBuilder::wrapIndented($blk['menu'], $w - 2, '  ') as $menuLine) {
-                    $b .= EscPosCommandBuilder::textLine('  ' . $menuLine);
+                    $b .= EscPosCommandBuilder::textLine('  '.$menuLine);
                 }
                 $b .= EscPosCommandBuilder::bold(false);
             }
+            // [T3-CUISINE 2026-07-05] Suppléments en GRAS + étoile « * » → le cuisinier voit tout
+            // de suite qu'il y a un extra (owner). Étoile ASCII (les emojis ne s'encodent pas CP858).
             foreach ($blk['supps'] as $sup) {
-                foreach (EscPosCommandBuilder::wrapIndented($sup, $w - 2, '  ') as $supLine) {
-                    $b .= EscPosCommandBuilder::textLine('  ' . $supLine);
+                $star = preg_replace('/^\+\s*/', '* ', (string) $sup);
+                $b .= EscPosCommandBuilder::bold(true);
+                foreach (EscPosCommandBuilder::wrapIndented($star, $w - 2, '  ') as $supLine) {
+                    $b .= EscPosCommandBuilder::textLine('  '.$supLine);
                 }
+                $b .= EscPosCommandBuilder::bold(false);
             }
             foreach ($blk['notes'] as $n) {
-                foreach (EscPosCommandBuilder::wrapIndented('** ' . $n, $w - 2, '  ') as $noteLine) {
-                    $b .= EscPosCommandBuilder::textLine('  ' . $noteLine);
+                foreach (EscPosCommandBuilder::wrapIndented('** '.$n, $w - 2, '  ') as $noteLine) {
+                    $b .= EscPosCommandBuilder::textLine('  '.$noteLine);
                 }
             }
             $b .= EscPosCommandBuilder::textLine('');
@@ -407,11 +415,11 @@ final class OrderReceiptEscPosRenderer
         $qty = (int) $line['qty'];
         $b = EscPosCommandBuilder::bold(true);
         // [TICKET-WIDTHSAFE] nom long → enroulé sous le prix (jamais tronqué), prix atomique.
-        $b .= EscPosCommandBuilder::lineItemKV($qty . '  ' . $line['name'], $this->money((float) $line['total']), $w);
+        $b .= EscPosCommandBuilder::lineItemKV($qty.'  '.$line['name'], $this->money((float) $line['total']), $w);
         $b .= EscPosCommandBuilder::bold(false);
         if ($qty > 1 && (float) $line['total'] > 0) {
             $unit = round((float) $line['total'] / $qty, 2);
-            $b .= EscPosCommandBuilder::textLine('   (' . $qty . ' x ' . $this->money($unit) . ')');
+            $b .= EscPosCommandBuilder::textLine('   ('.$qty.' x '.$this->money($unit).')');
         }
 
         // Compo values (strip the "Group: " prefix) + free (0-price) extras → one compact line.
@@ -436,13 +444,13 @@ final class OrderReceiptEscPosRenderer
             }
         }
         foreach ($paid as $e) {
-            $b .= EscPosCommandBuilder::lineItemKV('   + ' . $e['name'], $this->money((float) $e['amount']), $w);
+            $b .= EscPosCommandBuilder::lineItemKV('   + '.$e['name'], $this->money((float) $e['amount']), $w);
         }
         foreach ($line['addons'] as $a) {
             if (($a['amount'] ?? 0) > 0) {
-                $b .= EscPosCommandBuilder::lineItemKV('   + ' . $a['name'], $this->money((float) $a['amount']), $w);
+                $b .= EscPosCommandBuilder::lineItemKV('   + '.$a['name'], $this->money((float) $a['amount']), $w);
             } else {
-                foreach (EscPosCommandBuilder::wrapIndented('+ ' . $a['name'], $w, '   ') as $addonLine) {
+                foreach (EscPosCommandBuilder::wrapIndented('+ '.$a['name'], $w, '   ') as $addonLine) {
                     $b .= EscPosCommandBuilder::textLine($addonLine);
                 }
             }
@@ -453,8 +461,8 @@ final class OrderReceiptEscPosRenderer
         foreach (array_filter(explode("\n", $note)) as $noteLine) {
             // [TICKET-WIDTHSAFE 2026-07-01] Wrap la note client (miroir de la cuisine) — une note
             // libre longue débordait la largeur (asymétrie client/cuisine relevée à l'audit).
-            foreach (EscPosCommandBuilder::wrapIndented('** ' . trim($noteLine), $w - 3, '   ') as $wrapped) {
-                $b .= EscPosCommandBuilder::textLine('   ' . $wrapped);
+            foreach (EscPosCommandBuilder::wrapIndented('** '.trim($noteLine), $w - 3, '   ') as $wrapped) {
+                $b .= EscPosCommandBuilder::textLine('   '.$wrapped);
             }
         }
 
@@ -481,13 +489,17 @@ final class OrderReceiptEscPosRenderer
         $months = [1 => 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
         $m = (int) $dt->format('n');
 
-        return (int) $dt->format('j') . ' ' . ($months[$m] ?? '') . ' ' . $dt->format('Y') . ' ' . $dt->format('H:i');
+        return (int) $dt->format('j').' '.($months[$m] ?? '').' '.$dt->format('Y').' '.$dt->format('H:i');
     }
 
     /** @return array<int, array{label:string, amount:float, change:float}> */
     private function payments(BroadcastableOrder $order): array
     {
-        $labels = [1 => 'Espèces', 2 => 'Carte', 3 => 'Mixte', 4 => 'Carte', 5 => 'Ticket Resto'];
+        // [SELF-AUDIT R3 P3 2026-07-05 — libellé tender faux sur ticket fiscal] La map était périmée :
+        // PosPaymentMethod définit MOBILE_BANKING=3 et OTHER=4, mais le ticket imprimait 3='Mixte'
+        // (valeur enum inexistante) et 4='Carte' — un tender NON-carte annoncé CARTE sur un document
+        // fiscal NF525. Alignement sur l'enum + le reçu à l'écran (ReceiptComponent).
+        $labels = [1 => 'Espèces', 2 => 'Carte', 3 => 'Mobile banking', 4 => 'Autre', 5 => 'Ticket Resto'];
         $method = $order->pos_payment_method ?? null;
         if ($method === null || $method === '') {
             return [];
@@ -505,7 +517,7 @@ final class OrderReceiptEscPosRenderer
             : (float) ($order->total ?? 0);
 
         return [[
-            'label' => $labels[(int) $method] ?? ('Paiement ' . $method),
+            'label' => $labels[(int) $method] ?? ('Paiement '.$method),
             'amount' => $amount,
             'change' => (float) ($order->cash_back_amount ?? 0),
         ]];
@@ -536,7 +548,7 @@ final class OrderReceiptEscPosRenderer
             $rate = (string) (0 + (float) ($oi->tax_rate ?? 0));
             $name = (string) ($oi->tax_name ?? 'TVA');
             $type = (int) ($oi->tax_type ?? 0);
-            $key = $type . '|' . $rate . '|' . $name;
+            $key = $type.'|'.$rate.'|'.$name;
             if (! isset($groups[$key])) {
                 $groups[$key] = ['name' => $name, 'rate' => $rate, 'ht' => 0.0, 'tax' => 0.0];
             }
@@ -572,7 +584,7 @@ final class OrderReceiptEscPosRenderer
     {
         // Owner: symbole € (pas « EUR »). CP858 (code page 19) contient € → encodé
         // correctement par encodeForPrinter en fin de flux.
-        return number_format(round($v, 2), 2, ',', ' ') . ' €';
+        return number_format(round($v, 2), 2, ',', ' ').' €';
     }
 
     private function encodingFor(int $codePage): string

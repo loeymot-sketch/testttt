@@ -195,6 +195,31 @@ class TicketWidthSafeTest extends TestCase
         $this->assertNoLineExceeds($bytes, 42, 'CLIENT largeur-config @42 (sans opts)');
     }
 
+    public function test_kitchen_supplement_starred_and_product_line_double_size(): void
+    {
+        // [T2+T3 2026-07-05] Cuisine : ligne produit en DOUBLE TAILLE (grande) + suppléments
+        // en GRAS avec étoile « * » (owner). Le tout SANS jamais dépasser la largeur physique.
+        $order = $this->makeOrder(
+            ['lines' => [], 'extras' => [['extra_name' => 'Cheddar', 'line_total' => 1.00]], 'addons' => []],
+            'Tacos'
+        );
+        $bytes = (new OrderReceiptEscPosRenderer)->renderKitchenTicket($order, ['width_chars' => 42]);
+        $this->assertNoLineExceeds($bytes, 42, 'CUISINE grande @42');
+
+        $lines = $this->decodeLines($bytes);
+        $joined = implode("\n", array_map(static fn ($l) => $l['text'], $lines));
+        $this->assertStringContainsString('* Cheddar', $joined, 'supplément doit porter une étoile « * »');
+        $this->assertStringNotContainsString('+ Cheddar', $joined, 'plus de « + » : c\'est « * » maintenant');
+
+        $headDoubleSize = false;
+        foreach ($lines as $l) {
+            if (str_contains($l['text'], 'TAC') && $l['width'] === mb_strlen($l['text']) * 2) {
+                $headDoubleSize = true;
+            }
+        }
+        $this->assertTrue($headDoubleSize, 'la ligne produit cuisine (TAC) doit être en double taille (2×)');
+    }
+
     public function test_price_stays_atomic_on_one_line(): void
     {
         $order = $this->makeOrder(self::orderProvider()['cayenne + menu'][0], 'Cayenne');
