@@ -129,6 +129,7 @@
         "demo_wizard_advanced": "উন্নত উইজার্ড ডেমো"
     },
     "label": {
+        "pos_customer_name_placeholder": "Nom du client (optionnel)",
         "monday_short": "Lun",
         "tuesday_short": "Mar",
         "wednesday_short": "Mer",

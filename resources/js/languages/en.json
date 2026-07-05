@@ -432,6 +432,7 @@
         "demo_wizard_advanced": "Advanced Wizard Demo"
     },
     "label": {
+        "pos_customer_name_placeholder": "Nom du client (optionnel)",
         "monday_short": "Mon",
         "tuesday_short": "Tue",
         "wednesday_short": "Wed",

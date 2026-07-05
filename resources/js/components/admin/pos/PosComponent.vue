@@ -719,6 +719,19 @@
                         <span>{{ $t('label.delivery') }}</span>
                     </label>
                 </div>
+                <!-- [C2-CAISSE 2026-07-05] Nom du client (optionnel) pour emporter / sur place.
+                     Masqué en livraison (la livraison a déjà son propre champ Nom). Imprimé sur le ticket. -->
+                <div v-if="checkoutProps.form.order_type !== orderTypeEnums.delivery" class="mt-3">
+                    <input
+                        type="text"
+                        v-model="checkoutProps.form.pos_customer_name"
+                        maxlength="60"
+                        :placeholder="$t('label.pos_customer_name_placeholder')"
+                        data-testid="pos-customer-name"
+                        class="w-full h-10 text-sm rounded-lg border px-3 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none"
+                    />
+                </div>
+
                 <!-- [P4] Inline delivery form — no separate modal, no map tab -->
                 <div ref="deliveryOrderDiv" id="orderdelivery" class="h-auto hidden transition">
                     <div class="mt-3 flex flex-col gap-2">
@@ -1748,6 +1761,7 @@ export default {
                     is_advance_order: isAdvanceOrderEnum.NO,
                     pos_payment_method: posPaymentMethodEnum.CASH,
                     pos_payment_note: '',
+                    pos_customer_name: '',
                     source: sourceEnum.POS,
                     address_id: null,
                     coupon_id: null,
@@ -3533,6 +3547,7 @@ export default {
                     loyalty_customer_code: this.checkoutProps.form.loyalty_customer_code,
                     pos_payment_method: this.checkoutProps.form.pos_payment_method,
                     pos_payment_note: this.checkoutProps.form.pos_payment_note,
+                    pos_customer_name: this.checkoutProps.form.pos_customer_name,
                     source: this.checkoutProps.form.source,
                 },
                 selected_address: this.selectedAddress,
@@ -3569,6 +3584,7 @@ export default {
                 items: [],
                 pos_payment_method: posPaymentMethodEnum.CASH,
                 pos_payment_note: null,
+                pos_customer_name: null,
                 pos_received_amount: null,
                 quote_token: null,
                 quote_signature: null,

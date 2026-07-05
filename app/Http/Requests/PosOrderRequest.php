@@ -104,6 +104,8 @@ class PosOrderRequest extends FormRequest
             'discount' => ['nullable', 'numeric', 'min:0'],
             // [POS-9.1.1] Mandatory motif for any discount above 0
             'discount_reason' => ['nullable', 'string', 'max:191'],
+            // [C2-CAISSE 2026-07-05] Nom du client (optionnel) — imprimé sur le ticket.
+            'pos_customer_name' => ['nullable', 'string', 'max:60'],
             'dining_table_id' => ($orderTypeInt === OrderType::DINING_TABLE && $dineInEnabled) ? [
                 'required',
                 'numeric',
@@ -150,7 +152,7 @@ class PosOrderRequest extends FormRequest
                 // Single-tender CARD exige un terminal_id top-level (attribution TPE au Z). En split,
                 // le terminal_id vit dans chaque tranche CARD (payment_breakdown.*.terminal_id) → ne pas
                 // l'exiger au niveau top, sinon tout split card-dominant est rejeté 422.
-                $hasBreakdown ? [] : ['required_if:pos_payment_method,' . PosPaymentMethod::CARD],
+                $hasBreakdown ? [] : ['required_if:pos_payment_method,'.PosPaymentMethod::CARD],
             ),
             'loyalty_customer_code' => ['nullable', 'string', 'min:4', 'max:25'],
             // [F-SPLIT-PAYMENT-001] Optional multi-tender breakdown — see SplitPaymentService.
@@ -177,6 +179,20 @@ class PosOrderRequest extends FormRequest
     public function withValidator($validator)
     {
         $validator->after(function ($validator) {
+            // [SELF-AUDIT P1 2026-07-05] Split (payment_breakdown) sur commande DIFFÉRÉE au comptoir
+            // = invalide : confirmCounterPayment (encaissement) est MONO-tender et ne peut pas honorer
+            // un split ; persister les tranches à la création double-compte le tiroir (NF525 §8).
+            // Fail-closed : on rejette la combinaison (miroir de la garde service posOrderStore:1246).
+            $deferred = config('pos.walkin_route_to_counter') === true || $this->boolean('defer_to_counter');
+            if ($deferred
+                && config('split_payment.enabled', false)
+                && ! empty($this->input('payment_breakdown'))) {
+                $validator->errors()->add(
+                    'payment_breakdown',
+                    'Le paiement multi-tender n\'est pas supporté pour une commande différée au comptoir (encaissement mono-mode).'
+                );
+            }
+
             // [POS-9-H.1.5] F-A5: Server-side dine-in feature gate.
             // The UI hides dine-in when `pos_dine_in_enabled` is off, but nothing
             // was enforcing it server-side. An attacker posting order_type=15
@@ -246,6 +262,7 @@ class PosOrderRequest extends FormRequest
                         "payment_breakdown.{$idx}.terminal_id",
                         'A valid payment terminal is required for every CARD tranche.'
                     );
+
                     continue;
                 }
                 // [Z6-P1-WGS 2026-05-19] singular form — PaymentTerminal has no

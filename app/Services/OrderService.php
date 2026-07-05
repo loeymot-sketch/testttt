@@ -2,72 +2,74 @@
 
 namespace App\Services;
 
-use Exception;
-use Carbon\Carbon;
-use App\Models\Tax;
-use App\Models\Item;
-use App\Models\User;
-use App\Models\Order;
-use App\Enums\TaxType;
-use App\Enums\Source;
-use App\Models\Address;
-use App\Enums\OrderType;
-use App\Models\OrderDiscountLog;
-use App\Models\OrderItem;
-use App\Enums\OrderStatus;
-use App\Models\OrderCoupon;
-use App\Models\Transaction;
-use App\Enums\PaymentStatus;
-use App\Events\OrderCanceled; // allow: domain event class import — audit log written by ActionLog/AuditLogService at call sites.
-use App\Events\OrderCreated;
-use App\Events\OrderStatusChanged;
-use App\Events\SendOrderSms;
-use App\Models\OrderAddress;
-use Illuminate\Http\Request;
-use Illuminate\Contracts\Cache\LockTimeoutException;
-use Illuminate\Database\QueryException;
-use App\Events\SendOrderMail;
-use App\Events\SendOrderPush;
-use App\Libraries\AppLibrary;
-use App\Models\FrontendOrder;
-use App\Models\PaymentGateway;
-use App\Events\SendOrderGotSms;
-use App\Events\SendOrderGotMail;
-use App\Events\SendOrderGotPush;
-use Illuminate\Support\Facades\DB;
-use App\Http\Requests\OrderRequest;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Auth;
-use App\Http\Requests\PaginateRequest;
-use App\Http\Requests\PosOrderRequest;
-use App\Events\SendOrderDeliveryBoySms;
-use App\Events\SendOrderDeliveryBoyMail;
-use App\Events\SendOrderDeliveryBoyPush;
-use App\Http\Requests\TableOrderRequest;
-use App\Libraries\QueryExceptionLibrary;
-use Smartisan\Settings\Facades\Settings;
-use App\Http\Requests\OrderStatusRequest;
-use App\Http\Requests\PaymentStatusRequest;
 use App\Domain\Order\AutoPrepareOnPaidPolicy;
 use App\Domain\Order\OrderStateMachine;
+use App\Enums\OrderStatus;
+use App\Enums\OrderType;
+use App\Enums\PaymentStatus;
+use App\Enums\Source;
+use App\Enums\TaxType;
+use App\Events\OrderCanceled;
+use App\Events\OrderCreated;
+use App\Events\OrderStatusChanged;
+use App\Events\SendOrderDeliveryBoyMail;
+use App\Events\SendOrderDeliveryBoyPush;
+use App\Events\SendOrderDeliveryBoySms;
+use App\Events\SendOrderGotMail;
+use App\Events\SendOrderGotPush;
+use App\Events\SendOrderGotSms;
+use App\Events\SendOrderMail; // allow: domain event class import — audit log written by ActionLog/AuditLogService at call sites.
+use App\Events\SendOrderPush;
+use App\Events\SendOrderSms;
+use App\Http\Requests\OrderRequest;
+use App\Http\Requests\OrderStatusRequest;
+use App\Http\Requests\PaginateRequest;
+use App\Http\Requests\PaymentStatusRequest;
+use App\Http\Requests\PosOrderRequest;
+use App\Http\Requests\TableOrderRequest;
 use App\Http\Requests\TableOrderTokenRequest;
+use App\Libraries\AppLibrary;
+use App\Libraries\QueryExceptionLibrary;
+use App\Models\Address;
+use App\Models\FrontendOrder;
+use App\Models\Item;
+use App\Models\Order;
+use App\Models\OrderAddress;
+use App\Models\OrderCoupon;
+use App\Models\OrderDiscountLog;
+use App\Models\OrderItem;
+use App\Models\PaymentGateway;
+use App\Models\Tax;
+use App\Models\Transaction;
+use App\Models\User;
 use App\Services\Fiscal\AuditLogService;
 use App\Services\Fiscal\FiscalSequenceService;
+use App\Services\Menu\AvailabilityService;
 use App\Services\Order\OrderQuoteService;
 use App\Services\Orders\OrderItemAllergenSnapshot;
 use App\Services\Pricing\PricingRequest;
 use App\Services\Pricing\PricingResult;
 use App\Services\Pricing\PricingService;
-use App\Services\Menu\AvailabilityService;
-use App\Services\DiningTableService;
+use Carbon\Carbon;
+use Exception;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Database\QueryException;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Smartisan\Settings\Facades\Settings;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class OrderService
 {
     public object $order;
+
     protected CouponService $couponService;
+
     protected PricingService $pricingService;
+
     protected array $orderFilter = [
         'order_serial_no',
         'user_id',
@@ -86,11 +88,11 @@ class OrderService
         // this deployment, e.g. 30/4, and kiosk orders are TAKEAWAY-typed). Read
         // path only; applied via applyOrderFilter (LIKE) — surfaces are distinct
         // substrings so no cross-match. No write/business-rule change.
-        'source_surface'
+        'source_surface',
     ];
 
     protected array $exceptFilter = [
-        'excepts'
+        'excepts',
     ];
 
     protected array $allowedOrderColumns = [
@@ -136,9 +138,9 @@ class OrderService
                 'orderItems.orderItem.media',
                 'orderItems.orderItem.category',
                 'branch',
-                'user'
+                'user',
             ])->where(function ($query) use ($requests) {
-                if (!empty($requests['from_date']) && !empty($requests['to_date'])) {
+                if (! empty($requests['from_date']) && ! empty($requests['to_date'])) {
                     // [GOAL-G2-HEAL-04 2026-05-23] TZ-generation alignment to
                     // Wave T R5 Paris bounds (commit 27d95e066). User-input
                     // dates are Y-m-d Paris-local (front-end picker). The
@@ -165,13 +167,13 @@ class OrderService
                         ->addDay()
                         ->startOfDay();
                     $query->where('order_datetime', '>=', $fromParis)
-                          ->where('order_datetime', '<', $toParisExclusive);
+                        ->where('order_datetime', '<', $toParisExclusive);
                 }
                 foreach ($requests as $key => $request) {
                     if (in_array($key, $this->orderFilter)) {
-                        if ($key === "status") {
+                        if ($key === 'status') {
                             $query->where($key, (int) $request);
-                        } else if ($key === 'payment_method') {
+                        } elseif ($key === 'payment_method') {
                             if ((int) $request > 0) {
                                 if ((int) $request === 1) {
                                     $query->where('payment_method', 1)->where('pos_payment_method', null)->whereDoesntHave('transaction');
@@ -184,12 +186,12 @@ class OrderService
                             } else {
                                 $query->where('pos_payment_method', abs((int) $request));
                             }
-                        } else if ($key === 'source') {
+                        } elseif ($key === 'source') {
                             // [SALES-PAR-03 heal 2026-06-01] `source` is an int enum — EXACT match
                             // (parity with salesReportOverview), NOT the generic LIKE which would
                             // over-match (e.g. '%5%' matching 5 and 15/50). source_surface stays LIKE.
                             $query->where('source', (int) $request);
-                        } else if ($key === 'source_surface' && (string) $request === 'web') {
+                        } elseif ($key === 'source_surface' && (string) $request === 'web') {
                             // [TRAP-1 HIST-04 heal 2026-06-04] source_surface=web is the online
                             // sentinel the Historique "En ligne" filter emits — the ONLY value the
                             // UI sends for that button (HistoriqueListComponent.vue:337; 'app'/'mobile'
@@ -205,10 +207,10 @@ class OrderService
                             // En-ligne. kiosk/pos surfaces (non-NULL, not online tokens) are excluded.
                             $query->where(function ($q) {
                                 $q->whereIn('source_surface', ['web', 'app', 'mobile'])
-                                  ->orWhere(function ($qq) {
-                                      $qq->whereNull('source_surface')
-                                         ->whereIn('source', [Source::WEB, Source::APP]);
-                                  });
+                                    ->orWhere(function ($qq) {
+                                        $qq->whereNull('source_surface')
+                                            ->whereIn('source', [Source::WEB, Source::APP]);
+                                    });
                             });
                         } else {
                             $this->applyOrderFilter($query, $key, $request);
@@ -230,8 +232,8 @@ class OrderService
                     $query->where('source', '!=', $requests['exceptSource']);
                 }
             })->orderBy($orderColumn, $orderType)->$method(
-                    $methodValue
-                );
+                $methodValue
+            );
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -250,7 +252,7 @@ class OrderService
             $orderColumn = $this->sanitizeOrderColumn((string) ($request->get('order_column') ?? 'id'));
             $orderType = $this->sanitizeOrderDirection((string) ($request->get('order_by') ?? 'desc'));
 
-            return Order::with('transaction', 'orderItems', 'branch', 'user')->where('order_type', "!=", OrderType::POS)->where(function ($query) use ($requests, $user) {
+            return Order::with('transaction', 'orderItems', 'branch', 'user')->where('order_type', '!=', OrderType::POS)->where(function ($query) use ($requests, $user) {
                 $query->where('user_id', $user->id);
                 foreach ($requests as $key => $request) {
                     if (in_array($key, $this->orderFilter)) {
@@ -266,8 +268,8 @@ class OrderService
                     }
                 }
             })->orderBy($orderColumn, $orderType)->$method(
-                    $methodValue
-                );
+                $methodValue
+            );
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -286,25 +288,25 @@ class OrderService
             $orderColumn = $this->sanitizeOrderColumn((string) ($request->get('order_column') ?? 'id'));
             $orderType = $this->sanitizeOrderDirection((string) ($request->get('order_by') ?? 'desc'));
 
-            return Order::with('transaction', 'orderItems', 'branch', 'user')->where('delivery_boy_id', $user->id)->where('order_type', "!=", OrderType::POS)->where(
-                        function ($query) use ($requests) {
-                            foreach ($requests as $key => $request) {
-                                if (in_array($key, $this->orderFilter)) {
-                                    $this->applyOrderFilter($query, $key, $request);
-                                }
-                                if (in_array($key, $this->exceptFilter)) {
-                                    $explodes = explode('|', $request);
-                                    if (is_array($explodes)) {
-                                        foreach ($explodes as $explode) {
-                                            $query->where('status', '!=', $explode);
-                                        }
-                                    }
+            return Order::with('transaction', 'orderItems', 'branch', 'user')->where('delivery_boy_id', $user->id)->where('order_type', '!=', OrderType::POS)->where(
+                function ($query) use ($requests) {
+                    foreach ($requests as $key => $request) {
+                        if (in_array($key, $this->orderFilter)) {
+                            $this->applyOrderFilter($query, $key, $request);
+                        }
+                        if (in_array($key, $this->exceptFilter)) {
+                            $explodes = explode('|', $request);
+                            if (is_array($explodes)) {
+                                foreach ($explodes as $explode) {
+                                    $query->where('status', '!=', $explode);
                                 }
                             }
                         }
-                    )->orderBy($orderColumn, $orderType)->$method(
-                    $methodValue
-                );
+                    }
+                }
+            )->orderBy($orderColumn, $orderType)->$method(
+                $methodValue
+            );
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -333,26 +335,26 @@ class OrderService
             // produced ~50 extra queries per 10-order × 5-item index page.
             // Guarded by tests/Feature/Sentinels/DeliveryBoyOrderIndexNoN1SentinelTest.
             return Order::with(['transaction', 'orderItems.orderItem', 'branch', 'user'])
-                    ->where('order_type', "!=", OrderType::POS)
-                    ->where('delivery_boy_id', Auth::user()->id)
-                    ->when($branchId > 0, fn ($query) => $query->where('branch_id', $branchId))
-                    ->where(
-                        function ($query) use ($requests) {
-                            foreach ($requests as $key => $request) {
-                                if (in_array($key, $this->orderFilter)) {
-                                    $this->applyOrderFilter($query, $key, $request);
-                                }
-                                if (in_array($key, $this->exceptFilter)) {
-                                    $explodes = explode('|', $request);
-                                    if (is_array($explodes)) {
-                                        foreach ($explodes as $explode) {
-                                            $query->where('status', '!=', $explode);
-                                        }
+                ->where('order_type', '!=', OrderType::POS)
+                ->where('delivery_boy_id', Auth::user()->id)
+                ->when($branchId > 0, fn ($query) => $query->where('branch_id', $branchId))
+                ->where(
+                    function ($query) use ($requests) {
+                        foreach ($requests as $key => $request) {
+                            if (in_array($key, $this->orderFilter)) {
+                                $this->applyOrderFilter($query, $key, $request);
+                            }
+                            if (in_array($key, $this->exceptFilter)) {
+                                $explodes = explode('|', $request);
+                                if (is_array($explodes)) {
+                                    foreach ($explodes as $explode) {
+                                        $query->where('status', '!=', $explode);
                                     }
                                 }
                             }
                         }
-                    )->orderBy($orderColumn, $orderType)->$method(
+                    }
+                )->orderBy($orderColumn, $orderType)->$method(
                     $methodValue
                 );
         } catch (Exception $exception) {
@@ -375,13 +377,13 @@ class OrderService
 
                 $this->order = Order::create(
                     $validated + [
-                        'user_id'          => Auth::user()->id,
-                        'status'           => OrderStatus::PENDING,
-                        'order_datetime'   => date('Y-m-d H:i:s'),
+                        'user_id' => Auth::user()->id,
+                        'status' => OrderStatus::PENDING,
+                        'order_datetime' => date('Y-m-d H:i:s'),
                         'preparation_time' => (int) (Settings::group('order_setup')->get('order_setup_food_preparation_time') ?? 15),
-                        'total'            => 0,
-                        'subtotal'         => 0,
-                        'discount'         => 0,
+                        'total' => 0,
+                        'subtotal' => 0,
+                        'discount' => 0,
                     ]
                 );
 
@@ -412,13 +414,13 @@ class OrderService
                     // fiscally-incorrect NF525 Z at 10% VAT (frozen F1 split). Mirrors
                     // posOrderStore's in-SSOT gate (~813). [round-4 bypass-hunt P0]
                     $this->assertDiscretionaryDiscountAllowed((float) $calculatedDiscount);
-                    if (!blank($itemsArray)) {
+                    if (! blank($itemsArray)) {
                         OrderItem::insert($itemsArray);
                     }
                 } else {
-                    $i            = 0;
-                    $totalTax     = 0;
-                    $itemsArray   = [];
+                    $i = 0;
+                    $totalTax = 0;
+                    $itemsArray = [];
                     $realSubtotal = 0;
 
                     // [AUDIT-FIX P0 + P1-1] Single Tax::get() — previous code called it twice (dead query).
@@ -429,17 +431,17 @@ class OrderService
                         ->get()
                         ->keyBy('id');
                     $taxCollection = Tax::get();
-                    $taxes         = AppLibrary::pluck($taxCollection, 'obj', 'id');
+                    $taxes = AppLibrary::pluck($taxCollection, 'obj', 'id');
 
                     // [PERF-02] Bulk-load variations and extras before the loop.
                     // Legacy reference kept for audit/tests: ItemVariation::find / ItemExtra::find
                     // used to run inside the loop before the bulk-loaded keyed collections replaced it.
                     $variationIds = collect($requestItems)->pluck('item_variations')->flatten(1)->pluck('id')->filter()->unique()->toArray();
-                    $extraIds     = collect($requestItems)->pluck('item_extras')->flatten(1)->pluck('id')->filter()->unique()->toArray();
-                    $dbVariations = !empty($variationIds)
+                    $extraIds = collect($requestItems)->pluck('item_extras')->flatten(1)->pluck('id')->filter()->unique()->toArray();
+                    $dbVariations = ! empty($variationIds)
                         ? \App\Models\ItemVariation::whereIn('id', $variationIds)->get()->keyBy('id')
                         : collect();
-                    $dbExtras = !empty($extraIds)
+                    $dbExtras = ! empty($extraIds)
                         ? \App\Models\ItemExtra::whereIn('id', $extraIds)->get()->keyBy('id')
                         : collect();
 
@@ -449,10 +451,10 @@ class OrderService
                         true
                     );
 
-                    if (!blank($requestItems)) {
+                    if (! blank($requestItems)) {
                         foreach ($requestItems as $item) {
                             $dbItem = $dbItems[$item->item_id] ?? null;
-                            if (!$dbItem) {
+                            if (! $dbItem) {
                                 throw new \InvalidArgumentException(
                                     "Item ID {$item->item_id} introuvable. Commande rejetée.",
                                     422
@@ -465,9 +467,11 @@ class OrderService
                             if (isset($item->item_variations) && is_array($item->item_variations)) {
                                 foreach ($item->item_variations as $variation) {
                                     $varId = $variation->id ?? null;
-                                    if (!$varId) continue;
+                                    if (! $varId) {
+                                        continue;
+                                    }
                                     $dbVar = $dbVariations[$varId] ?? null;
-                                    if (!$dbVar) {
+                                    if (! $dbVar) {
                                         throw new \InvalidArgumentException("Variation ID {$varId} introuvable.", 422);
                                     }
                                     $varQuantity = max(1, (int) ($variation->quantity ?? 1));
@@ -480,9 +484,11 @@ class OrderService
                             if (isset($item->item_extras) && is_array($item->item_extras)) {
                                 foreach ($item->item_extras as $extra) {
                                     $extraId = $extra->id ?? null;
-                                    if (!$extraId) continue;
+                                    if (! $extraId) {
+                                        continue;
+                                    }
                                     $dbExt = $dbExtras[$extraId] ?? null;
-                                    if (!$dbExt) {
+                                    if (! $dbExt) {
                                         throw new \InvalidArgumentException("Extra ID {$extraId} introuvable.", 422);
                                     }
                                     $extraQuantity = max(1, (int) ($extra->quantity ?? 1));
@@ -492,51 +498,51 @@ class OrderService
 
                             $verifiedQuantity = max(1, (int) ($item->quantity ?? 1));
                             $verifiedTotalPrice = ($itemPrice + $variationTotal + $extraTotal) * $verifiedQuantity;
-                            $realSubtotal      += $verifiedTotalPrice;
+                            $realSubtotal += $verifiedTotalPrice;
 
                             // [AUDIT-FIX P0] tax_id now correctly read from DB item record
-                            $taxId    = $dbItem->tax_id ?? 0;
-                            $taxName  = isset($taxes[$taxId]) ? $taxes[$taxId]->name : null;
-                            $taxRate  = isset($taxes[$taxId]) ? $taxes[$taxId]->tax_rate : 0;
-                            $taxType  = isset($taxes[$taxId]) ? $taxes[$taxId]->type : TaxType::FIXED;
+                            $taxId = $dbItem->tax_id ?? 0;
+                            $taxName = isset($taxes[$taxId]) ? $taxes[$taxId]->name : null;
+                            $taxRate = isset($taxes[$taxId]) ? $taxes[$taxId]->tax_rate : 0;
+                            $taxType = isset($taxes[$taxId]) ? $taxes[$taxId]->type : TaxType::FIXED;
                             // [TTC-MODE] config('pricing.tax_inclusive_prices')=true → extract tax from TTC line total.
                             if ((bool) config('pricing.tax_inclusive_prices', false)) {
-                                $taxPrice = (new \App\Services\Pricing\TaxCalculator())
+                                $taxPrice = (new \App\Services\Pricing\TaxCalculator)
                                     ->lineTaxAmountFromTTC((float) $verifiedTotalPrice, (int) $taxType, (float) $taxRate, true);
                             } else {
                                 $taxPrice = round($taxType === TaxType::FIXED ? $taxRate : ($verifiedTotalPrice * $taxRate) / 100, 2);
                             }
 
                             // [T07] NF525 immutable composition snapshot — written in same transaction as insert.
-                            $compositionSnapshot = (new \App\Services\Pricing\CompositionSnapshotBuilder())->build($item, $dbVariations, $dbExtras);
+                            $compositionSnapshot = (new \App\Services\Pricing\CompositionSnapshotBuilder)->build($item, $dbVariations, $dbExtras);
 
                             $itemsArray[$i] = [
-                                'order_id'             => $this->order->id,
-                                'branch_id'            => $this->order->branch_id,
-                                'item_id'              => $item->item_id,
-                                'quantity'             => $verifiedQuantity,
-                                'discount'             => 0,
-                                'tax_name'             => $taxName,
-                                'tax_rate'             => $taxRate,
-                                'tax_type'             => $taxType,
-                                'tax_amount'           => $taxPrice,
-                                'price'                => $itemPrice,
-                                'item_variations'      => json_encode($item->item_variations ?? []),
-                                'item_extras'          => json_encode($item->item_extras ?? []),
+                                'order_id' => $this->order->id,
+                                'branch_id' => $this->order->branch_id,
+                                'item_id' => $item->item_id,
+                                'quantity' => $verifiedQuantity,
+                                'discount' => 0,
+                                'tax_name' => $taxName,
+                                'tax_rate' => $taxRate,
+                                'tax_type' => $taxType,
+                                'tax_amount' => $taxPrice,
+                                'price' => $itemPrice,
+                                'item_variations' => json_encode($item->item_variations ?? []),
+                                'item_extras' => json_encode($item->item_extras ?? []),
                                 'composition_snapshot' => json_encode($compositionSnapshot),
-                                'instruction'          => $item->instruction ?? null,
+                                'instruction' => $item->instruction ?? null,
                                 'item_variation_total' => $variationTotal,
-                                'item_extra_total'     => $extraTotal,
-                                'total_price'          => $verifiedTotalPrice,
-                                'created_at'           => now(),
-                                'updated_at'           => now(),
+                                'item_extra_total' => $extraTotal,
+                                'total_price' => $verifiedTotalPrice,
+                                'created_at' => now(),
+                                'updated_at' => now(),
                             ];
                             $totalTax += $taxPrice;
                             $i++;
                         }
                     }
 
-                    if (!blank($itemsArray)) {
+                    if (! blank($itemsArray)) {
                         OrderItem::insert($itemsArray);
                     }
 
@@ -557,10 +563,10 @@ class OrderService
 
                 $this->saveOrderWithQueueNumber(function () use ($realSubtotal, $totalTax, $calculatedDiscount): void {
                     // [AUDIT-FIX P0] Overwrite all financial fields with server-recalculated values.
-                    $this->order->order_serial_no = date('dmy') . $this->order->id;
-                    $this->order->subtotal        = $realSubtotal;
-                    $this->order->total_tax       = $totalTax;
-                    $this->order->discount        = $calculatedDiscount;
+                    $this->order->order_serial_no = date('dmy').$this->order->id;
+                    $this->order->subtotal = $realSubtotal;
+                    $this->order->total_tax = $totalTax;
+                    $this->order->discount = $calculatedDiscount;
                     // [TTC-MODE] In TTC mode, $realSubtotal already contains tax (sum of TTC lines).
                     // Adding $totalTax again would double-count → produce the user-visible
                     // "3€ display becomes 3.60€ payment" bug.
@@ -575,12 +581,12 @@ class OrderService
                     $address = Address::find($request->address_id);
                     if ($address) {
                         OrderAddress::create([
-                            'order_id'  => $this->order->id,
-                            'user_id'   => Auth::user()->id,
-                            'label'     => $address->label,
-                            'address'   => $address->address,
+                            'order_id' => $this->order->id,
+                            'user_id' => Auth::user()->id,
+                            'label' => $address->label,
+                            'address' => $address->address,
                             'apartment' => $address->apartment,
-                            'latitude'  => $address->latitude,
+                            'latitude' => $address->latitude,
                             'longitude' => $address->longitude,
                         ]);
                     }
@@ -589,10 +595,10 @@ class OrderService
                 // [AUDIT-FIX P0-1] OrderCoupon stores the SERVER-recalculated discount, not the client value
                 if ($request->coupon_id > 0 && $calculatedDiscount > 0) {
                     OrderCoupon::create([
-                        'order_id'  => $this->order->id,
+                        'order_id' => $this->order->id,
                         'coupon_id' => $request->coupon_id,
-                        'user_id'   => Auth::user()->id,
-                        'discount'  => $calculatedDiscount,
+                        'user_id' => Auth::user()->id,
+                        'discount' => $calculatedDiscount,
                     ]);
                 }
 
@@ -603,10 +609,10 @@ class OrderService
                 // Source: reports/audit/foundation-2026-05-18/round-1/F-9-OBS/STATUS.md §HEAL RED-RED1
                 // Sentinel: tests/Feature/Sentinels/ActionLogPiiRedactionSentinelTest.php
                 \App\Models\ActionLog::create([
-                    'user_id'  => Auth::check() ? Auth::id() : null,
-                    'action'   => 'Nouvelle commande Web/App',
-                    'resource' => 'Commande #' . $this->order->order_serial_no,
-                    'details'  => sprintf(
+                    'user_id' => Auth::check() ? Auth::id() : null,
+                    'action' => 'Nouvelle commande Web/App',
+                    'resource' => 'Commande #'.$this->order->order_serial_no,
+                    'details' => sprintf(
                         'Total: %s€ | Taxe: %s€ | Remise: %s€',
                         number_format($this->order->total, 2),
                         number_format($totalTax, 2),
@@ -641,7 +647,7 @@ class OrderService
                 SendOrderGotSms::dispatch(['order_id' => $this->order->id]);
                 SendOrderGotPush::dispatch(['order_id' => $this->order->id]);
             } catch (\Exception $e) {
-                Log::warning('Notifications post-commande Web/App échouées pour order #' . $this->order->id . ': ' . $e->getMessage());
+                Log::warning('Notifications post-commande Web/App échouées pour order #'.$this->order->id.': '.$e->getMessage());
             }
 
             return $this->order;
@@ -679,7 +685,7 @@ class OrderService
             // churn DB. Avec le lock, 1 INSERT + N-1 retournent l'existing depuis
             // findExistingOrderForIdempotencyRecovery. Mirror Kiosk myOrderStore:141-145.
             $idempotencyLock = Cache::lock(
-                'pos_order_idempotency_' . sha1($targetBranchId . '|' . $idempotencyKey),
+                'pos_order_idempotency_'.sha1($targetBranchId.'|'.$idempotencyKey),
                 10
             );
             $idempotencyLock->block(5);
@@ -690,6 +696,7 @@ class OrderService
             $existing = $this->findExistingOrderForIdempotencyRecovery($idempotencyKey, $targetBranchId, $recoveryCustomerId);
             if ($existing) {
                 $idempotencyLock?->release();
+
                 return $existing;
             }
         }
@@ -777,13 +784,17 @@ class OrderService
                         'creator_id' => Auth::check() ? (int) Auth::id() : null,
                         'status' => $posInitialStatus,
                         'token' => $request->token,
+                        // [C2-CAISSE 2026-07-05] Nom du client (optionnel) → imprimé sur le ticket.
+                        'pos_customer_name' => $request->filled('pos_customer_name')
+                            ? mb_substr(trim((string) $request->input('pos_customer_name')), 0, 60)
+                            : null,
                         // [GOAL-CAISSE-UNIFIED delta-(B)] PENDING_COUNTER when the
                         // walk-in is routed to the unified collection queue; PAID
                         // for the legacy inline-paid-at-creation flow (default).
                         'payment_status' => $deferToCounter ? PaymentStatus::PENDING_COUNTER : PaymentStatus::PAID,
                         'order_datetime' => date('Y-m-d H:i:s'),
                         'preparation_time' => (int) (Settings::group('order_setup')->get('order_setup_food_preparation_time') ?? 15),
-                        'total'    => 0,
+                        'total' => 0,
                         'subtotal' => 0,
                         'discount' => 0,
                     ]
@@ -828,6 +839,33 @@ class OrderService
                         ),
                         $this->couponService
                     );
+
+                    // [SELF-AUDIT R6 P2 2026-07-05 — « livraison offerte ≥ seuil » non appliquée en POS] La
+                    // règle owner (Settings delivery.free_delivery_above, défaut 30€) vivait UNIQUEMENT dans
+                    // FrontendOrderService → une commande POS DELIVERY facturait les frais même au-dessus du
+                    // seuil (client surfacturé, puis collectés en COD). On l'applique sur le MÊME moteur SSOT :
+                    // si DELIVERY + sous-total serveur ≥ seuil + frais > 0 → frais=0 + RE-CALCUL du total sans
+                    // frais (le sous-total vient du SSOT, jamais du client → pas de contournement).
+                    $freeAbove = (float) (\Smartisan\Settings\Facades\Settings::group('delivery')->get('free_delivery_above', 30) ?? 30);
+                    if ((int) $this->order->order_type === \App\Enums\OrderType::DELIVERY
+                        && $freeAbove > 0
+                        && (float) $posSsotPricingResult->accumulatedSubtotal >= $freeAbove
+                        && (float) ($this->order->delivery_charge ?? 0) > 0) {
+                        $this->order->delivery_charge = 0;
+                        $posSsotPricingResult = $this->pricingService->calculateOrder(
+                            PricingRequest::forPos(
+                                $this->order->id,
+                                (int) $this->order->branch_id,
+                                $requestItems,
+                                (int) $request->coupon_id,
+                                (int) ($request->customer_id ?? 0),
+                                (float) $request->discount,
+                                0.0
+                            ),
+                            $this->couponService
+                        );
+                    }
+
                     $itemsArray = $posSsotPricingResult->orderItemInsertRows;
                     $realSubtotal = $posSsotPricingResult->accumulatedSubtotal;
                     $totalTax = $posSsotPricingResult->totalTax;
@@ -850,7 +888,7 @@ class OrderService
                     // order_item row for NF525 fiscal traceability (must be frozen
                     // at order time, not read through a live FK join later).
                     $itemsArray = OrderItemAllergenSnapshot::hydrate($itemsArray);
-                    if (!blank($itemsArray)) {
+                    if (! blank($itemsArray)) {
                         OrderItem::insert($itemsArray);
                     }
                 } else {
@@ -870,10 +908,10 @@ class OrderService
                     $variationIds = collect($requestItems)->pluck('item_variations')->flatten(1)->pluck('id')->filter()->unique()->toArray();
                     $extraIds = collect($requestItems)->pluck('item_extras')->flatten(1)->pluck('id')->filter()->unique()->toArray();
 
-                    $dbVariations = !empty($variationIds)
+                    $dbVariations = ! empty($variationIds)
                         ? \App\Models\ItemVariation::whereIn('id', $variationIds)->get()->keyBy('id')
                         : collect();
-                    $dbExtras = !empty($extraIds)
+                    $dbExtras = ! empty($extraIds)
                         ? \App\Models\ItemExtra::whereIn('id', $extraIds)->get()->keyBy('id')
                         : collect();
 
@@ -887,10 +925,10 @@ class OrderService
                     $taxes = AppLibrary::pluck(Tax::get(), 'obj', 'id');
                     $realSubtotal = 0;
 
-                    if (!blank($requestItems)) {
+                    if (! blank($requestItems)) {
                         foreach ($requestItems as $item) {
                             // [PLAN_01 D-001] REJETER ITEM INEXISTANT - Pas de fallback sur prix client
-                            if (!isset($dbItems[$item->item_id])) {
+                            if (! isset($dbItems[$item->item_id])) {
                                 throw new \InvalidArgumentException(
                                     "Item ID {$item->item_id} introuvable. Commande rejetée.",
                                     422
@@ -905,24 +943,26 @@ class OrderService
                             if (isset($item->item_variations) && is_array($item->item_variations)) {
                                 foreach ($item->item_variations as $variation) {
                                     $varId = $variation->id ?? null;
-                                    if (!$varId) continue;
+                                    if (! $varId) {
+                                        continue;
+                                    }
 
-                            $dbVar = $dbVariations[$varId] ?? null;
-                            if (!$dbVar) {
-                                throw new \InvalidArgumentException(
-                                    "Variation ID {$varId} introuvable.",
-                                    422
-                                );
-                            }
-                            // [P2-1 FIX] Cross-item injection guard: variation must belong to this item
-                            if ((int) $dbVar->item_id !== (int) $item->item_id) {
-                                throw new \InvalidArgumentException(
-                                    "Variation ID {$varId} n'appartient pas à l'article {$item->item_id}.",
-                                    422
-                                );
-                            }
-                            $varQuantity = max(1, (int) ($variation->quantity ?? 1));
-                            $variationTotal += (float) $dbVar->price * $varQuantity;
+                                    $dbVar = $dbVariations[$varId] ?? null;
+                                    if (! $dbVar) {
+                                        throw new \InvalidArgumentException(
+                                            "Variation ID {$varId} introuvable.",
+                                            422
+                                        );
+                                    }
+                                    // [P2-1 FIX] Cross-item injection guard: variation must belong to this item
+                                    if ((int) $dbVar->item_id !== (int) $item->item_id) {
+                                        throw new \InvalidArgumentException(
+                                            "Variation ID {$varId} n'appartient pas à l'article {$item->item_id}.",
+                                            422
+                                        );
+                                    }
+                                    $varQuantity = max(1, (int) ($variation->quantity ?? 1));
+                                    $variationTotal += (float) $dbVar->price * $varQuantity;
                                 }
                             }
 
@@ -933,67 +973,69 @@ class OrderService
                             if (isset($item->item_extras) && is_array($item->item_extras)) {
                                 foreach ($item->item_extras as $extra) {
                                     $extraId = $extra->id ?? null;
-                                    if (!$extraId) continue;
+                                    if (! $extraId) {
+                                        continue;
+                                    }
 
-                            $dbExt = $dbExtras[$extraId] ?? null;
-                            if (!$dbExt) {
-                                throw new \InvalidArgumentException(
-                                    "Extra ID {$extraId} introuvable.",
-                                    422
-                                );
-                            }
-                            // [P2-1 FIX] Cross-item injection guard: extra must belong to this item
-                            if ((int) $dbExt->item_id !== (int) $item->item_id) {
-                                throw new \InvalidArgumentException(
-                                    "Extra ID {$extraId} n'appartient pas à l'article {$item->item_id}.",
-                                    422
-                                );
-                            }
-                            $extraQuantity = max(1, (int) ($extra->quantity ?? 1));
-                            $extraTotal += (float) $dbExt->price * $extraQuantity;
+                                    $dbExt = $dbExtras[$extraId] ?? null;
+                                    if (! $dbExt) {
+                                        throw new \InvalidArgumentException(
+                                            "Extra ID {$extraId} introuvable.",
+                                            422
+                                        );
+                                    }
+                                    // [P2-1 FIX] Cross-item injection guard: extra must belong to this item
+                                    if ((int) $dbExt->item_id !== (int) $item->item_id) {
+                                        throw new \InvalidArgumentException(
+                                            "Extra ID {$extraId} n'appartient pas à l'article {$item->item_id}.",
+                                            422
+                                        );
+                                    }
+                                    $extraQuantity = max(1, (int) ($extra->quantity ?? 1));
+                                    $extraTotal += (float) $dbExt->price * $extraQuantity;
                                 }
                             }
-                            
+
                             // Prix vérifié depuis DB
                             $verifiedQuantity = max(1, (int) ($item->quantity ?? 1));
                             $verifiedUnitPrice = $itemPrice + $variationTotal + $extraTotal;
                             $verifiedTotalPrice = round($verifiedUnitPrice * $verifiedQuantity, 2);
-                            
+
                             $taxId = isset($dbItems[$item->item_id]) ? ($dbItems[$item->item_id]->tax_id ?? 0) : 0;
                             $taxName = isset($taxes[$taxId]) ? $taxes[$taxId]->name : null;
                             $taxRate = isset($taxes[$taxId]) ? $taxes[$taxId]->tax_rate : 0;
                             $taxType = isset($taxes[$taxId]) ? $taxes[$taxId]->type : TaxType::FIXED;
                             // [TTC-MODE] config('pricing.tax_inclusive_prices')=true → extract tax from TTC line total.
                             if ((bool) config('pricing.tax_inclusive_prices', false)) {
-                                $taxPrice = (new \App\Services\Pricing\TaxCalculator())
+                                $taxPrice = (new \App\Services\Pricing\TaxCalculator)
                                     ->lineTaxAmountFromTTC((float) $verifiedTotalPrice, (int) $taxType, (float) $taxRate, true);
                             } else {
                                 $taxPrice = round($taxType === TaxType::FIXED ? $taxRate : ($verifiedTotalPrice * $taxRate) / 100, 2);
                             }
-                            
+
                             // [T07] NF525 immutable composition snapshot — written in same transaction as insert.
-                            $compositionSnapshot = (new \App\Services\Pricing\CompositionSnapshotBuilder())->build($item, $dbVariations, $dbExtras);
+                            $compositionSnapshot = (new \App\Services\Pricing\CompositionSnapshotBuilder)->build($item, $dbVariations, $dbExtras);
 
                             $itemsArray[$i] = [
-                                'order_id'             => $this->order->id,
-                                'branch_id'            => $this->order->branch_id,
-                                'item_id'              => $item->item_id,
-                                'quantity'             => $verifiedQuantity,
-                                'discount'             => 0,
-                                'tax_name'             => $taxName,
-                                'tax_rate'             => $taxRate,
-                                'tax_type'             => $taxType,
-                                'tax_amount'           => $taxPrice,
-                                'price'                => $itemPrice,
-                                'item_variations'      => json_encode($item->item_variations ?? []),
-                                'item_extras'          => json_encode($item->item_extras ?? []),
+                                'order_id' => $this->order->id,
+                                'branch_id' => $this->order->branch_id,
+                                'item_id' => $item->item_id,
+                                'quantity' => $verifiedQuantity,
+                                'discount' => 0,
+                                'tax_name' => $taxName,
+                                'tax_rate' => $taxRate,
+                                'tax_type' => $taxType,
+                                'tax_amount' => $taxPrice,
+                                'price' => $itemPrice,
+                                'item_variations' => json_encode($item->item_variations ?? []),
+                                'item_extras' => json_encode($item->item_extras ?? []),
                                 'composition_snapshot' => json_encode($compositionSnapshot),
-                                'instruction'          => $item->instruction ?? null,
+                                'instruction' => $item->instruction ?? null,
                                 'item_variation_total' => $variationTotal,
-                                'item_extra_total'     => $extraTotal,
-                                'total_price'          => $verifiedTotalPrice,
-                                'created_at'           => now(),
-                                'updated_at'           => now(),
+                                'item_extra_total' => $extraTotal,
+                                'total_price' => $verifiedTotalPrice,
+                                'created_at' => now(),
+                                'updated_at' => now(),
                             ];
                             $realSubtotal += $verifiedTotalPrice;
                             $totalTax = $totalTax + $taxPrice;
@@ -1004,7 +1046,7 @@ class OrderService
                     // [POS-9.4.BL.1] Same NF525 allergen snapshot hydration for the
                     // non-SSOT legacy path (feature flag `pricing.use_ssot_service=false`).
                     $itemsArray = OrderItemAllergenSnapshot::hydrate($itemsArray);
-                    if (!blank($itemsArray)) {
+                    if (! blank($itemsArray)) {
                         OrderItem::insert($itemsArray);
                     }
 
@@ -1038,7 +1080,7 @@ class OrderService
                 }
 
                 $this->saveOrderWithQueueNumber(function () use ($request, $posSsotPricingResult, $totalTax, $realSubtotal, $calculatedDiscount, $idempotencyKey): void {
-                    $this->order->order_serial_no = date('dmy') . $this->order->id;
+                    $this->order->order_serial_no = date('dmy').$this->order->id;
                     if ($posSsotPricingResult instanceof PricingResult) {
                         $this->order->total_tax = $posSsotPricingResult->totalTax;
                         $this->order->subtotal = $posSsotPricingResult->subtotal;
@@ -1078,7 +1120,7 @@ class OrderService
                         && $request->pos_received_amount !== null
                         && (float) $request->pos_received_amount < $this->order->total) {
                         throw new \InvalidArgumentException(
-                            'Le montant reçu (' . $request->pos_received_amount . '€) est inférieur au total réel (' . $this->order->total . '€).',
+                            'Le montant reçu ('.$request->pos_received_amount.'€) est inférieur au total réel ('.$this->order->total.'€).',
                             422
                         );
                     }
@@ -1128,14 +1170,14 @@ class OrderService
                 // [BUG-C3 FIX] Create OrderCoupon record for POS orders — tracks coupon usage per order
                 if ($request->coupon_id > 0 && $calculatedDiscount > 0) {
                     OrderCoupon::create([
-                        'order_id'  => $this->order->id,
+                        'order_id' => $this->order->id,
                         'coupon_id' => $request->coupon_id,
-                        'user_id'   => $request->customer_id,
-                        'discount'  => $calculatedDiscount,
+                        'user_id' => $request->customer_id,
+                        'discount' => $calculatedDiscount,
                     ]);
                 }
 
-                //storing order address
+                // storing order address
                 if ($request->address_id) {
                     // [V3 FIX] Ownership check: address must belong to the customer on this order.
                     // Prevents IDOR where a manipulated payload could copy another customer's address.
@@ -1144,18 +1186,18 @@ class OrderService
                         ->first();
                     if ($address) {
                         OrderAddress::create([
-                            'order_id'  => $this->order->id,
-                            'user_id'   => $request->customer_id,
-                            'label'     => $address->label,
-                            'address'   => $address->address,
+                            'order_id' => $this->order->id,
+                            'user_id' => $request->customer_id,
+                            'label' => $address->label,
+                            'address' => $address->address,
                             'apartment' => $address->apartment,
-                            'latitude'  => $address->latitude,
+                            'latitude' => $address->latitude,
                             'longitude' => $address->longitude,
                         ]);
                     } else {
                         // [Y5 FIX] Address not found or doesn't belong to customer — fail explicitly
                         // for delivery orders so the order is not created without a valid address.
-                        throw new \Exception('Adresse #' . $request->address_id . ' introuvable ou n\'appartient pas au client.', 422);
+                        throw new \Exception('Adresse #'.$request->address_id.' introuvable ou n\'appartient pas au client.', 422);
                     }
                 }
 
@@ -1167,10 +1209,10 @@ class OrderService
                     : 'Aucune remise';
 
                 \App\Models\ActionLog::create([
-                    'user_id'  => Auth::check() ? Auth::id() : null,
-                    'action'   => 'Nouvelle commande POS',
-                    'resource' => 'Commande #' . $this->order->order_serial_no,
-                    'details'  => sprintf('Créée via Point de Vente | Total: %s€ | %s', number_format($this->order->total, 2), $discountDetail),
+                    'user_id' => Auth::check() ? Auth::id() : null,
+                    'action' => 'Nouvelle commande POS',
+                    'resource' => 'Commande #'.$this->order->order_serial_no,
+                    'details' => sprintf('Créée via Point de Vente | Total: %s€ | %s', number_format($this->order->total, 2), $discountDetail),
                 ]);
 
                 // [POS-9.4.BL.2] NF525 audit trail: any manual or coupon discount
@@ -1180,22 +1222,22 @@ class OrderService
                 // events.
                 if ($calculatedDiscount > 0) {
                     app(AuditLogService::class)->write([
-                        'branch_id'   => (int) $this->order->branch_id,
-                        'user_id'     => Auth::check() ? (int) Auth::id() : null,
-                        'action'      => OrderDiscountLog::ACTION,
-                        'resource'    => 'order',
+                        'branch_id' => (int) $this->order->branch_id,
+                        'user_id' => Auth::check() ? (int) Auth::id() : null,
+                        'action' => OrderDiscountLog::ACTION,
+                        'resource' => 'order',
                         'resource_id' => (int) $this->order->id,
-                        'payload'     => [
-                            'order_serial_no'    => $this->order->order_serial_no,
-                            'actor_id'           => Auth::check() ? (int) Auth::id() : null,
-                            'coupon_id'          => $request->coupon_id > 0 ? (int) $request->coupon_id : null,
-                            'discount_reason'    => $request->coupon_id > 0 ? null : trim((string) $request->discount_reason),
+                        'payload' => [
+                            'order_serial_no' => $this->order->order_serial_no,
+                            'actor_id' => Auth::check() ? (int) Auth::id() : null,
+                            'coupon_id' => $request->coupon_id > 0 ? (int) $request->coupon_id : null,
+                            'discount_reason' => $request->coupon_id > 0 ? null : trim((string) $request->discount_reason),
                             'requested_discount' => round((float) $request->discount, 2),
-                            'discount_amount'    => round((float) $calculatedDiscount, 2),
-                            'discount_type'      => $request->coupon_id > 0 ? 'coupon' : 'manual_cashier',
-                            'subtotal_before'    => round((float) $realSubtotal, 2),
-                            'backend_subtotal'   => round((float) $realSubtotal, 2),
-                            'total_after'        => round((float) $this->order->total, 2),
+                            'discount_amount' => round((float) $calculatedDiscount, 2),
+                            'discount_type' => $request->coupon_id > 0 ? 'coupon' : 'manual_cashier',
+                            'subtotal_before' => round((float) $realSubtotal, 2),
+                            'backend_subtotal' => round((float) $realSubtotal, 2),
+                            'total_after' => round((float) $this->order->total, 2),
                         ],
                     ]);
                 }
@@ -1210,25 +1252,25 @@ class OrderService
                 // call-site shape as the discount audit above. Frozen AuditLogService
                 // is called via the public write() API — its code is unchanged.
                 app(AuditLogService::class)->write([
-                    'branch_id'   => (int) $this->order->branch_id,
-                    'user_id'     => Auth::check() ? (int) Auth::id() : null,
-                    'action'      => 'order.created.pos',
-                    'resource'    => 'order',
+                    'branch_id' => (int) $this->order->branch_id,
+                    'user_id' => Auth::check() ? (int) Auth::id() : null,
+                    'action' => 'order.created.pos',
+                    'resource' => 'order',
                     'resource_id' => (int) $this->order->id,
-                    'payload'     => [
-                        'order_id'           => (int) $this->order->id,
-                        'order_serial_no'    => (string) $this->order->order_serial_no,
-                        'cashier_id'         => Auth::check() ? (int) Auth::id() : null,
-                        'cashier_name'       => Auth::check() ? (string) (Auth::user()->name ?? '') : null,
-                        'branch_id'          => (int) $this->order->branch_id,
-                        'customer_id'        => (int) ($this->order->user_id ?? 0),
-                        'order_type'         => (int) $this->order->order_type,
+                    'payload' => [
+                        'order_id' => (int) $this->order->id,
+                        'order_serial_no' => (string) $this->order->order_serial_no,
+                        'cashier_id' => Auth::check() ? (int) Auth::id() : null,
+                        'cashier_name' => Auth::check() ? (string) (Auth::user()->name ?? '') : null,
+                        'branch_id' => (int) $this->order->branch_id,
+                        'customer_id' => (int) ($this->order->user_id ?? 0),
+                        'order_type' => (int) $this->order->order_type,
                         'pos_payment_method' => (int) ($this->order->pos_payment_method ?? 0),
-                        'payment_status'     => (int) $this->order->payment_status,
-                        'status'             => (int) $this->order->status,
-                        'total'              => round((float) $this->order->total, 2),
-                        'subtotal'           => round((float) $this->order->subtotal, 2),
-                        'discount'           => round((float) $this->order->discount, 2),
+                        'payment_status' => (int) $this->order->payment_status,
+                        'status' => (int) $this->order->status,
+                        'total' => round((float) $this->order->total, 2),
+                        'subtotal' => round((float) $this->order->subtotal, 2),
+                        'discount' => round((float) $this->order->discount, 2),
                     ],
                 ]);
 
@@ -1243,7 +1285,15 @@ class OrderService
                 //   serveur), JAMAIS la valeur client.
                 $breakdown = (array) $request->input('payment_breakdown', []);
                 $splitActive = ! empty($breakdown) && config('split_payment.enabled', false);
-                if ($splitActive) {
+                // [SELF-AUDIT P1 2026-07-05 — double cash-in NF525] Gate `! $deferToCounter`, MIROIR
+                // du sibling legacy-cash (l.1274). Une commande DIFFÉRÉE (PENDING_COUNTER, non payée)
+                // ne doit persister AUCUN paiement à la création : sinon SplitPaymentService écrit un
+                // cash_movement par tranche cash À LA CRÉATION, puis confirmCounterPayment en écrit un
+                // 2e (total) à l'encaissement → double cash-in / tiroir corrompu (piste NF525 §8).
+                // confirmCounterPayment est mono-tender → un split différé est de toute façon
+                // sémantiquement invalide (rejeté au niveau requête, PosOrderRequest). Mon unblock
+                // Wave 3 (3184e5768) a armé ce chemin en cessant de 422 les splits.
+                if ($splitActive && ! $deferToCounter) {
                     app(\App\Services\Payments\SplitPaymentService::class)
                         ->persistTranches($this->order, $breakdown);
                 }
@@ -1301,7 +1351,7 @@ class OrderService
                     SendOrderGotSms::dispatch(['order_id' => $order->id]);
                     SendOrderGotPush::dispatch(['order_id' => $order->id]);
                 } catch (\Exception $e) {
-                    Log::warning('Notification KDS échouée pour order #' . $order->id . ': ' . $e->getMessage());
+                    Log::warning('Notification KDS échouée pour order #'.$order->id.': '.$e->getMessage());
                 }
                 // [MEGA 2.J / F-16] Dine-in: free floorplan table when this order is paid
                 // and still holds the table. SYMMETRY_NOTE: kiosk has no parallel dine-in
@@ -1309,10 +1359,10 @@ class OrderService
                 try {
                     app(DiningTableService::class)->tryReleaseTableAfterPosOrderPaid($order);
                 } catch (\Throwable $e) {
-                    Log::warning('[posOrderStore] floorplan table release: ' . $e->getMessage());
+                    Log::warning('[posOrderStore] floorplan table release: '.$e->getMessage());
                 }
             }
-            
+
             return $this->order;
         } catch (\Illuminate\Validation\ValidationException $exception) {
             throw $exception;
@@ -1332,7 +1382,8 @@ class OrderService
                 $recoveryCustomerId = ((int) ($request->customer_id ?? 0)) ?: null;
                 $existing = $this->findExistingOrderForIdempotencyRecovery($idempotencyKey, $targetBranchId, $recoveryCustomerId);
                 if ($existing) {
-                    Log::info('[POS Idempotency] Duplicate key caught at DB level — returning existing order #' . $existing->id);
+                    Log::info('[POS Idempotency] Duplicate key caught at DB level — returning existing order #'.$existing->id);
+
                     return $existing;
                 }
             }
@@ -1343,7 +1394,6 @@ class OrderService
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
     }
-
 
     /**
      * @throws Exception
@@ -1408,7 +1458,7 @@ class OrderService
                     // it so a coupon-discounted table order cannot sign a fiscally-
                     // incorrect Z. Mirrors posOrderStore's in-SSOT gate (~813). [round-4 P0]
                     $this->assertDiscretionaryDiscountAllowed((float) $calculatedDiscount);
-                    if (!blank($itemsArray)) {
+                    if (! blank($itemsArray)) {
                         OrderItem::insert($itemsArray);
                     }
                 } else {
@@ -1428,10 +1478,10 @@ class OrderService
                     $variationIds = collect($requestItems)->pluck('item_variations')->flatten(1)->pluck('id')->filter()->unique()->toArray();
                     $extraIds = collect($requestItems)->pluck('item_extras')->flatten(1)->pluck('id')->filter()->unique()->toArray();
 
-                    $dbVariations = !empty($variationIds)
+                    $dbVariations = ! empty($variationIds)
                         ? \App\Models\ItemVariation::whereIn('id', $variationIds)->get()->keyBy('id')
                         : collect();
-                    $dbExtras = !empty($extraIds)
+                    $dbExtras = ! empty($extraIds)
                         ? \App\Models\ItemExtra::whereIn('id', $extraIds)->get()->keyBy('id')
                         : collect();
 
@@ -1444,13 +1494,13 @@ class OrderService
                     $taxes = AppLibrary::pluck(Tax::get(), 'obj', 'id');
                     $realSubtotal = 0;
 
-                    if (!blank($requestItems)) {
+                    if (! blank($requestItems)) {
                         foreach ($requestItems as $item) {
 
                             // [PLAN_01 D-001] REJETER ITEM INEXISTANT - Pas de fallback sur prix client
                             // [BUG-CRIT-2 FIX] Utiliser $dbItems déjà bulk-loadé
                             $dbItem = $dbItems[$item->item_id] ?? null;
-                            if (!$dbItem) {
+                            if (! $dbItem) {
                                 throw new \InvalidArgumentException(
                                     "Item ID {$item->item_id} introuvable. Commande rejetée.",
                                     422
@@ -1462,11 +1512,11 @@ class OrderService
                             // [AUDIT-2026-03] isset avant empty : json_decode sans clés évite stdClass::$prop sur PHP 8.2+
                             // [T05] Multi-quantity support: variations may carry optional `quantity` (default 1).
                             $calcVariationTotal = 0;
-                            if (isset($item->item_variations) && !empty($item->item_variations)) {
+                            if (isset($item->item_variations) && ! empty($item->item_variations)) {
                                 foreach ($item->item_variations as $var) {
                                     $varId = $var->id ?? 0;
                                     $dbVar = $dbVariations[$varId] ?? null;
-                                    if (!$dbVar) {
+                                    if (! $dbVar) {
                                         throw new \InvalidArgumentException(
                                             "Variation ID {$varId} introuvable pour l'article {$item->item_id}.",
                                             422
@@ -1486,11 +1536,11 @@ class OrderService
                             // [BUG-CRIT-2 FIX] Utiliser $dbExtras bulk-loadé au lieu de find() dans la boucle
                             // [T05] Multi-quantity support: extras may carry optional `quantity` (default 1).
                             $calcExtraTotal = 0;
-                            if (isset($item->item_extras) && !empty($item->item_extras)) {
+                            if (isset($item->item_extras) && ! empty($item->item_extras)) {
                                 foreach ($item->item_extras as $ext) {
                                     $extId = $ext->id ?? 0;
                                     $dbExt = $dbExtras[$extId] ?? null;
-                                    if (!$dbExt) {
+                                    if (! $dbExt) {
                                         throw new \InvalidArgumentException(
                                             "Extra ID {$extId} introuvable pour l'article {$item->item_id}.",
                                             422
@@ -1517,42 +1567,42 @@ class OrderService
                             $taxType = isset($taxes[$taxId]) ? $taxes[$taxId]->type : TaxType::FIXED;
                             // [TTC-MODE] config('pricing.tax_inclusive_prices')=true → extract tax from TTC line total.
                             if ((bool) config('pricing.tax_inclusive_prices', false)) {
-                                $taxPrice = (new \App\Services\Pricing\TaxCalculator())
+                                $taxPrice = (new \App\Services\Pricing\TaxCalculator)
                                     ->lineTaxAmountFromTTC((float) $verifiedTotalPrice, (int) $taxType, (float) $taxRate, true);
                             } else {
                                 $taxPrice = round($taxType === TaxType::FIXED ? $taxRate : ($verifiedTotalPrice * $taxRate) / 100, 2);
                             }
 
                             // [T07] NF525 immutable composition snapshot — written in same transaction as insert.
-                            $compositionSnapshot = (new \App\Services\Pricing\CompositionSnapshotBuilder())->build($item, $dbVariations, $dbExtras);
+                            $compositionSnapshot = (new \App\Services\Pricing\CompositionSnapshotBuilder)->build($item, $dbVariations, $dbExtras);
 
                             $itemsArray[$i] = [
-                                'order_id'             => $this->order->id,
-                                'branch_id'            => $this->order->branch_id, // [AUDIT-P47-BUG3] always use order's branch, never client payload
-                                'item_id'              => $item->item_id,
-                                'quantity'             => $verifiedQuantity,
-                                'discount'             => 0,
-                                'tax_name'             => $taxName,
-                                'tax_rate'             => $taxRate,
-                                'tax_type'             => $taxType,
-                                'tax_amount'           => $taxPrice,
-                                'price'                => $itemPrice,
-                                'item_variations'      => json_encode($item->item_variations ?? []),
-                                'item_extras'          => json_encode($item->item_extras ?? []),
+                                'order_id' => $this->order->id,
+                                'branch_id' => $this->order->branch_id, // [AUDIT-P47-BUG3] always use order's branch, never client payload
+                                'item_id' => $item->item_id,
+                                'quantity' => $verifiedQuantity,
+                                'discount' => 0,
+                                'tax_name' => $taxName,
+                                'tax_rate' => $taxRate,
+                                'tax_type' => $taxType,
+                                'tax_amount' => $taxPrice,
+                                'price' => $itemPrice,
+                                'item_variations' => json_encode($item->item_variations ?? []),
+                                'item_extras' => json_encode($item->item_extras ?? []),
                                 'composition_snapshot' => json_encode($compositionSnapshot),
-                                'instruction'          => $item->instruction ?? null,
+                                'instruction' => $item->instruction ?? null,
                                 'item_variation_total' => $calcVariationTotal,
-                                'item_extra_total'     => $calcExtraTotal,
-                                'total_price'          => $verifiedTotalPrice,
-                                'created_at'           => now(),
-                                'updated_at'           => now(),
+                                'item_extra_total' => $calcExtraTotal,
+                                'total_price' => $verifiedTotalPrice,
+                                'created_at' => now(),
+                                'updated_at' => now(),
                             ];
                             $totalTax = $totalTax + $taxPrice;
                             $i++;
                         }
                     }
 
-                    if (!blank($itemsArray)) {
+                    if (! blank($itemsArray)) {
                         OrderItem::insert($itemsArray);
                     }
 
@@ -1580,7 +1630,7 @@ class OrderService
                 }
 
                 $this->saveOrderWithQueueNumber(function () use ($tableSsotPricingResult, $totalTax, $realSubtotal, $calculatedDiscount): void {
-                    $this->order->order_serial_no = date('dmy') . $this->order->id;
+                    $this->order->order_serial_no = date('dmy').$this->order->id;
                     if ($tableSsotPricingResult instanceof PricingResult) {
                         $this->order->total_tax = $tableSsotPricingResult->totalTax;
                         $this->order->subtotal = $tableSsotPricingResult->subtotal;
@@ -1609,10 +1659,10 @@ class OrderService
                 // [BUG-C3 FIX] Create OrderCoupon record for table orders — tracks coupon usage
                 if ($request->coupon_id > 0 && $calculatedDiscount > 0) {
                     OrderCoupon::create([
-                        'order_id'  => $this->order->id,
+                        'order_id' => $this->order->id,
                         'coupon_id' => $request->coupon_id,
-                        'user_id'   => $request->customer_id,
-                        'discount'  => $calculatedDiscount,
+                        'user_id' => $request->customer_id,
+                        'discount' => $calculatedDiscount,
                     ]);
                 }
 
@@ -1624,10 +1674,10 @@ class OrderService
                     : 'Aucune remise';
 
                 \App\Models\ActionLog::create([
-                    'user_id'  => Auth::check() ? Auth::id() : null,
-                    'action'   => 'Nouvelle commande sur Table',
-                    'resource' => 'Commande #' . $this->order->order_serial_no,
-                    'details'  => sprintf('Créée via QR Code Dine-in | Total: %s€ | %s', number_format($this->order->total, 2), $discountDetail),
+                    'user_id' => Auth::check() ? Auth::id() : null,
+                    'action' => 'Nouvelle commande sur Table',
+                    'resource' => 'Commande #'.$this->order->order_serial_no,
+                    'details' => sprintf('Créée via QR Code Dine-in | Total: %s€ | %s', number_format($this->order->total, 2), $discountDetail),
                 ]);
 
                 // [Wave M / Heal Z2 P1 — 2026-05-19] OrderCreated::dispatch moved
@@ -1647,7 +1697,7 @@ class OrderService
                 SendOrderGotSms::dispatch(['order_id' => $this->order->id]);
                 SendOrderGotPush::dispatch(['order_id' => $this->order->id]);
             } catch (\Exception $e) {
-                Log::warning('Notifications post-commande Table échouées pour order #' . $this->order->id . ': ' . $e->getMessage());
+                Log::warning('Notifications post-commande Table échouées pour order #'.$this->order->id.': '.$e->getMessage());
             }
 
             return $this->order;
@@ -1671,6 +1721,7 @@ class OrderService
                 }
             } else {
                 $this->assertOrderBranchVisible($order);
+
                 return $order;
             }
         } catch (HttpException $exception) {
@@ -1782,12 +1833,12 @@ class OrderService
             }
 
             // [FIX-54-1] Enforce valid state machine transitions
-            if (!(new \App\Rules\ValidStatusTransition($order->status))->passes('status', $request->status)) {
+            if (! (new \App\Rules\ValidStatusTransition($order->status))->passes('status', $request->status)) {
                 throw new Exception(trans('all.message.invalid_status_transition'), 422);
             }
 
-            $oldStatus  = (int) $order->status;
-            $newStatus  = (int) $request->status;
+            $oldStatus = (int) $order->status;
+            $newStatus = (int) $request->status;
 
             // [POS-9.1.7] Wrap mutations in DB::transaction so a partial failure
             // (save / state-machine / payment_status flip) rolls back atomically.
@@ -1807,7 +1858,7 @@ class OrderService
             // so the row read is the truth-of-record and the audit row commits
             // atomically with the status mutation.
             $cashEscrowWritten = false;
-            $cashEscrowMeta    = null;
+            $cashEscrowMeta = null;
             DB::transaction(function () use (&$order, $oldStatus, $newStatus, &$cashEscrowWritten, &$cashEscrowMeta) {
                 $locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
 
@@ -1815,6 +1866,7 @@ class OrderService
                 // target status, exit silently (no double recordTransition).
                 if ((int) $locked->status === (int) $newStatus) {
                     $order = $locked;
+
                     return;
                 }
 
@@ -1822,7 +1874,7 @@ class OrderService
                 // the FRESH locked status. The pre-lock check (line 1670) used the
                 // possibly-stale $order->status; a concurrent transition could have
                 // moved the row, making the originally-valid edge illegal.
-                if (!(new \App\Rules\ValidStatusTransition((int) $locked->status))->passes('status', $newStatus)) {
+                if (! (new \App\Rules\ValidStatusTransition((int) $locked->status))->passes('status', $newStatus)) {
                     throw new Exception(trans('all.message.invalid_status_transition'), 422);
                 }
 
@@ -1893,10 +1945,10 @@ class OrderService
                             $cashEscrowWritten = true;
                             $cashEscrowMeta = [
                                 'branch_id' => (int) $locked->branch_id,
-                                'order_id'  => (int) $locked->id,
+                                'order_id' => (int) $locked->id,
                                 'driver_id' => Auth::check() ? (int) Auth::id() : null,
-                                'amount'    => round((float) $locked->total, 2),
-                                'serial'    => $locked->order_serial_no,
+                                'amount' => round((float) $locked->total, 2),
+                                'serial' => $locked->order_serial_no,
                             ];
                         }
                         // CASH_ON_DELIVERY at OFD: leave payment_status =
@@ -1911,6 +1963,24 @@ class OrderService
                 }
 
                 $locked->status = $newStatus;
+
+                // [SELF-AUDIT R2 P1 2026-07-05 — vente livraison COD off-book NF525] Miroir EXACT du fix
+                // Wave-2 (changePaymentStatus, OrderService:2492-2497) : l'arête UNPAID→PAID de CE chemin
+                // (flip au doorstep livraison — l.1908 COD@DELIVERED / l.1930 non-COD) scellait la commande
+                // en PAID SANS allouer de fiscal_sequence_no → vente PAYÉE hors chaîne NF525 (exclue du Z
+                // signé car ZReportService filtre whereNotNull(fiscal_sequence_no), jamais rattrapée par
+                // RetryFiscalAllocCommand car fiscal_alloc_error_at reste NULL). On alloue si le flip a bien
+                // eu lieu (payment_status===PAID) + fiscal null + statut non terminal + hors Uber. next() est
+                // nested dans CETTE tx (Cache::lock+lockForUpdate = savepoint) ; l'unique
+                // orders_branch_fiscal_seq garantit gap-free/no-double. Le cash_movement doorstep reste géré
+                // par le bloc cashEscrow (l.1949) — ceci ne touche QUE le scellage fiscal.
+                if ((int) $locked->payment_status === PaymentStatus::PAID
+                    && $locked->fiscal_sequence_no === null
+                    && ! in_array((int) $locked->status, [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED], true)
+                    && $locked->source_surface !== 'uber_eats') {
+                    $locked->fiscal_sequence_no = app(FiscalSequenceService::class)->next((int) $locked->branch_id);
+                }
+
                 $locked->save();
 
                 OrderStateMachine::recordTransition(
@@ -1933,19 +2003,19 @@ class OrderService
                 // keeps the HMAC chain ordering deterministic.
                 try {
                     app(AuditLogService::class)->write([
-                        'branch_id'   => $cashEscrowMeta['branch_id'],
-                        'user_id'     => $cashEscrowMeta['driver_id'],
-                        'action'      => 'delivery.cash_collected_escrow',
-                        'resource'    => 'order',
+                        'branch_id' => $cashEscrowMeta['branch_id'],
+                        'user_id' => $cashEscrowMeta['driver_id'],
+                        'action' => 'delivery.cash_collected_escrow',
+                        'resource' => 'order',
                         'resource_id' => $cashEscrowMeta['order_id'],
-                        'payload'     => [
-                            'order_id'           => $cashEscrowMeta['order_id'],
-                            'order_serial_no'    => $cashEscrowMeta['serial'],
-                            'amount_collected'   => $cashEscrowMeta['amount'],
-                            'delivery_boy_id'    => $cashEscrowMeta['driver_id'],
-                            'payment_method'     => (int) \App\Enums\PaymentGateway::CASH_ON_DELIVERY,
-                            'collected_at'       => now()->toIso8601String(),
-                            'event'              => 'doorstep_cash_collection',
+                        'payload' => [
+                            'order_id' => $cashEscrowMeta['order_id'],
+                            'order_serial_no' => $cashEscrowMeta['serial'],
+                            'amount_collected' => $cashEscrowMeta['amount'],
+                            'delivery_boy_id' => $cashEscrowMeta['driver_id'],
+                            'payment_method' => (int) \App\Enums\PaymentGateway::CASH_ON_DELIVERY,
+                            'collected_at' => now()->toIso8601String(),
+                            'event' => 'doorstep_cash_collection',
                         ],
                     ]);
                 } catch (\Throwable $auditError) {
@@ -1953,7 +2023,7 @@ class OrderService
                     // rollback — NF525 chain breakage is surfaced via
                     // verifyChain() + ops alerting, not via a customer-facing
                     // 5xx mid-delivery. Log + continue.
-                    Log::warning('[DeliveryBoy] cash-collection audit_log write failed: ' . $auditError->getMessage(), [
+                    Log::warning('[DeliveryBoy] cash-collection audit_log write failed: '.$auditError->getMessage(), [
                         'order_id' => $cashEscrowMeta['order_id'],
                     ]);
                 }
@@ -1992,11 +2062,11 @@ class OrderService
                     // delivery_boy_cash_movements. ZReportCashEnrichmentService
                     // cross-check surfaces it end-of-day; error log + payload
                     // give ops earlier signal without blocking DELIVERED.
-                    Log::error('[DeliveryBoy] cash-session recordMovement drift (non-blocking): ' . $movementError->getMessage(), [
-                        'order_id'  => $cashEscrowMeta['order_id'],
+                    Log::error('[DeliveryBoy] cash-session recordMovement drift (non-blocking): '.$movementError->getMessage(), [
+                        'order_id' => $cashEscrowMeta['order_id'],
                         'driver_id' => $cashEscrowMeta['driver_id'],
                         'branch_id' => $cashEscrowMeta['branch_id'],
-                        'amount'    => $cashEscrowMeta['amount'],
+                        'amount' => $cashEscrowMeta['amount'],
                     ]);
                 }
             }
@@ -2011,7 +2081,7 @@ class OrderService
             try {
                 \App\Events\OrderStatusChanged::dispatch($order, $oldStatus, $newStatus);
             } catch (\Exception $e) {
-                Log::warning('[DeliveryBoy] OrderStatusChanged broadcast failed: ' . $e->getMessage());
+                Log::warning('[DeliveryBoy] OrderStatusChanged broadcast failed: '.$e->getMessage());
             }
 
             return $order;
@@ -2029,7 +2099,7 @@ class OrderService
     public function changeStatus(Order $order, OrderStatusRequest $request, bool $auth = false): Order|array
     {
         try {
-            if (!(new \App\Rules\ValidStatusTransition($order->status))->passes('status', $request->status)) {
+            if (! (new \App\Rules\ValidStatusTransition($order->status))->passes('status', $request->status)) {
                 throw new Exception(trans('all.message.invalid_status_transition'), 422);
             }
 
@@ -2057,7 +2127,7 @@ class OrderService
                         // 1909 used the possibly-stale route-bound $order->status; a
                         // concurrent transition could have moved the row, making the
                         // originally-valid edge illegal — e.g. DELIVERED->CANCELED).
-                        if (!(new \App\Rules\ValidStatusTransition($previousStatus))->passes('status', $targetStatus)) {
+                        if (! (new \App\Rules\ValidStatusTransition($previousStatus))->passes('status', $targetStatus)) {
                             throw new Exception(trans('all.message.invalid_status_transition'), 422);
                         }
                         if ($request->reason) {
@@ -2068,7 +2138,7 @@ class OrderService
                                 app(PaymentService::class)->cashBack(
                                     $locked,
                                     'credit',
-                                    'TXN-' . \Illuminate\Support\Str::random(12)
+                                    'TXN-'.\Illuminate\Support\Str::random(12)
                                 );
                             }
                             app(LoyaltyService::class)->refundPoints($locked, 'pos');
@@ -2083,6 +2153,7 @@ class OrderService
                             Auth::check() ? (int) Auth::id() : null,
                             $request->reason ?? null
                         );
+
                         return [$locked, $previousStatus, false];
                     });
                     if ($skipped) {
@@ -2094,7 +2165,7 @@ class OrderService
                     try {
                         \App\Events\OrderStatusChanged::dispatch($order, $oldStatus, (int) $request->status);
                     } catch (\Exception $e) {
-                        Log::warning('[OrderService] OrderStatusChanged on self-cancel failed: ' . $e->getMessage());
+                        Log::warning('[OrderService] OrderStatusChanged on self-cancel failed: '.$e->getMessage());
                     }
                     // [F-01] Compensating release of branch-scoped stock counters when an order
                     // is cancelled (self-cancel path). Idempotent via the `released_qty` ledger
@@ -2103,7 +2174,7 @@ class OrderService
                         try {
                             OrderCanceled::dispatch($order); // allow: stock-release dispatch; ActionLog already recorded by self-cancel branch caller.
                         } catch (\Exception $e) {
-                            Log::warning('[OrderService] OrderCanceled on self-cancel failed: ' . $e->getMessage()); // allow: warning only
+                            Log::warning('[OrderService] OrderCanceled on self-cancel failed: '.$e->getMessage()); // allow: warning only
                         }
                     }
                 } else {
@@ -2134,7 +2205,7 @@ class OrderService
 
                     // [AUDIT-FIX P0-2 / POS-9-H.1.1] Branch isolation: non-Admin staff can only modify orders of their branch.
                     // Use abort() so the 403 is a real HttpException and bubbles untouched through the generic catch below.
-                    if (Auth::check() && !Auth::user()->hasRole('Admin')) {
+                    if (Auth::check() && ! Auth::user()->hasRole('Admin')) {
                         $userBranch = Auth::user()->branch_id ?? null;
                         if ($userBranch && (int) $userBranch !== (int) $locked->branch_id) {
                             abort(403, 'Accès refusé : cette commande appartient à une autre succursale.');
@@ -2148,6 +2219,7 @@ class OrderService
                         // already-persisted state and post-tx code short-
                         // circuits via the $oldStatusForBroadcast===null guard.
                         $order->setRawAttributes($locked->getAttributes(), true);
+
                         return;
                     }
 
@@ -2157,7 +2229,7 @@ class OrderService
                     // have superseded it before we acquired the lock — persisting the
                     // originally-valid transition could write an illegal state-machine
                     // edge (e.g. CANCELED->DELIVERED, DELIVERED->OUT_FOR_DELIVERY).
-                    if (!(new \App\Rules\ValidStatusTransition((int) $locked->status))->passes('status', $toStatus)) {
+                    if (! (new \App\Rules\ValidStatusTransition((int) $locked->status))->passes('status', $toStatus)) {
                         throw new Exception(trans('all.message.invalid_status_transition'), 422);
                     }
 
@@ -2167,27 +2239,32 @@ class OrderService
                             'reason' => 'required|max:700',
                         ]);
 
-                        // [P11-FZH / F-VERIFY-08-02] Sealed-Z guard for RETURNED only.
-                        // RETURNED is the fiscal counter-entry transition (CANCELED
-                        // & REJECTED are operational pre-payment). Refuse if order
-                        // is contained in closed Z window — caller must use
-                        // POST /api/admin/pos-order/{order}/refund-with-counter-entry.
-                        if ($toStatus === OrderStatus::RETURNED) {
+                        // [P11-FZH / F-VERIFY-08-02] + [SELF-AUDIT R6 P1 2026-07-05] Sealed-Z guard pour TOUT
+                        // état terminal (RETURNED, CANCELED, REJECTED). L'ancien commentaire « CANCELED &
+                        // REJECTED = opérationnel pré-paiement » était FAUX pour une vente SCELLÉE PAYÉE :
+                        // une commande fiscalisée dans un Z clos pouvait être (a) remboursée via le miroir
+                        // counter-entry (qui laisse le parent ACCEPT par design) PUIS (b) annulée en place
+                        // (CANCELED non gardé) → ZReportService retranchait le total DEUX FOIS (bloc miroir
+                        // + bloc postZAdjustment) → total signé sous-évalué d'un total complet + double
+                        // cashBack possible. assertMutable ne bloque QUE les commandes fiscalisées
+                        // (fiscal_sequence_no != null) dans un Z clos → les brouillons/non-fiscalisés
+                        // passent (pas de régression). Un void post-Z DOIT passer par le miroir counter-entry.
+                        if (in_array($toStatus, [OrderStatus::RETURNED, OrderStatus::CANCELED, OrderStatus::REJECTED], true)) {
                             try {
                                 app(\App\Services\Order\SealedOrderGuard::class)
-                                    ->assertMutable($locked, 'changeStatus → RETURNED');
+                                    ->assertMutable($locked, 'changeStatus → terminal('.$toStatus.')');
                             } catch (\App\Exceptions\OrderSealedException $sealedEx) {
                                 try {
                                     app(\App\Services\Fiscal\AuditLogService::class)->write([
-                                        'branch_id'   => (int) $locked->branch_id,
-                                        'user_id'     => Auth::check() ? (int) Auth::id() : null,
-                                        'action'      => 'pos.refund.post_z_blocked',
-                                        'resource'    => 'order',
+                                        'branch_id' => (int) $locked->branch_id,
+                                        'user_id' => Auth::check() ? (int) Auth::id() : null,
+                                        'action' => 'pos.refund.post_z_blocked',
+                                        'resource' => 'order',
                                         'resource_id' => (int) $locked->id,
-                                        'payload'     => [
-                                            'attempted_transition' => 'RETURNED',
-                                            'sealed_by_z_id'       => $sealedEx->sealedByZReportId,
-                                            'reason_supplied'      => (string) $request->input('reason'),
+                                        'payload' => [
+                                            'attempted_transition' => (int) $toStatus,
+                                            'sealed_by_z_id' => $sealedEx->sealedByZReportId,
+                                            'reason_supplied' => (string) $request->input('reason'),
                                         ],
                                     ]);
                                 } catch (\Throwable) {
@@ -2204,8 +2281,29 @@ class OrderService
                             app(PaymentService::class)->cashBack(
                                 $locked,
                                 'credit',
-                                'TXN-' . \Illuminate\Support\Str::random(12)
+                                'TXN-'.\Illuminate\Support\Str::random(12)
                             );
+                        } elseif ((int) $locked->pos_payment_method === \App\Enums\PosPaymentMethod::CASH
+                            && (int) $locked->payment_status === PaymentStatus::PAID) {
+                            // [SELF-AUDIT R2 P2 2026-07-05 — pas de sortie tiroir sur remboursement cash
+                            // DIRECT pré-Z] Une vente POS cash directe (posOrderStore) est PAYÉE + a une
+                            // entrée tiroir mais AUCUNE ligne Transaction → le cashBack ci-dessus (gardé sur
+                            // $locked->transaction) était sauté → aucune sortie tiroir au retour → variance
+                            // fantôme au rapprochement. On pose la CASHBACK OUT = total. Gardé sur PAID pour
+                            // ne JAMAIS sortir d'argent d'une commande qui n'a jamais encaissé (ex. RETURNED
+                            // d'un UNPAID → géré par la libération stock, pas par une sortie tiroir).
+                            app(PaymentService::class)->recordCashRefundMovement($locked, round((float) $locked->total, 2));
+
+                            // [SELF-AUDIT R4 P1 2026-07-05 — double-dip fidélité cash+points] Le chemin
+                            // cashBack (avec Transaction) dispatch RefundCreated → ClawbackLoyaltyPointsOnRefund
+                            // (reprise des points GAGNÉS) + payment_status=REFUNDED. Le chemin cash DIRECT
+                            // (sans Transaction, ci-dessus) ne le faisait PAS → un client gardait ses points
+                            // gagnés sur une vente cash remboursée (double-dip). refundPoints (l.2261) ne
+                            // reverse que les points UTILISÉS (type=redeem), pas les points GAGNÉS. On dispatch
+                            // RefundCreated (after-commit via DispatchableAfterCommit) UNIQUEMENT sur ce chemin
+                            // PAID (jamais UNPAID → pas de REFUNDED erroné). Clawback idempotent
+                            // (user+order+manual_deduct) ; release stock idempotent (released_qty).
+                            \App\Events\RefundCreated::dispatch($locked);
                         }
                         app(LoyaltyService::class)->refundPoints($locked, 'pos');
                     }
@@ -2227,12 +2325,12 @@ class OrderService
                     );
 
                     \App\Models\ActionLog::create([
-                        'user_id'  => Auth::check() ? Auth::user()->id : null,
-                        'action'   => 'Changement de statut',
-                        'resource' => 'Commande #' . $locked->order_serial_no,
-                        'details'  => sprintf(
+                        'user_id' => Auth::check() ? Auth::user()->id : null,
+                        'action' => 'Changement de statut',
+                        'resource' => 'Commande #'.$locked->order_serial_no,
+                        'details' => sprintf(
                             'Nouveau statut: %s | Par: %s (branch_id=%s)',
-                            trans('all.order.status.' . $request->status),
+                            trans('all.order.status.'.$request->status),
                             Auth::check() ? Auth::user()->name : 'Système',
                             Auth::check() ? (Auth::user()->branch_id ?? 'admin') : '?'
                         ),
@@ -2246,18 +2344,18 @@ class OrderService
                                 ? 'order.rejected'
                                 : 'order.returned');
                         app(AuditLogService::class)->write([
-                            'branch_id'   => (int) $locked->branch_id,
-                            'user_id'     => Auth::check() ? (int) Auth::id() : null,
-                            'action'      => $action,
-                            'resource'    => 'order',
+                            'branch_id' => (int) $locked->branch_id,
+                            'user_id' => Auth::check() ? (int) Auth::id() : null,
+                            'action' => $action,
+                            'resource' => 'order',
                             'resource_id' => (int) $locked->id,
-                            'payload'     => [
+                            'payload' => [
                                 'order_serial_no' => $locked->order_serial_no,
-                                'from_status'     => (int) $oldStatusForBroadcast,
-                                'to_status'       => (int) $request->status,
-                                'reason'          => $request->reason,
-                                'total'           => round((float) $locked->total, 2),
-                                'payment_status'  => (int) $locked->payment_status,
+                                'from_status' => (int) $oldStatusForBroadcast,
+                                'to_status' => (int) $request->status,
+                                'reason' => $request->reason,
+                                'total' => round((float) $locked->total, 2),
+                                'payment_status' => (int) $locked->payment_status,
                                 'fiscal_sequence_no' => $locked->fiscal_sequence_no,
                             ],
                         ]);
@@ -2282,19 +2380,27 @@ class OrderService
                 try {
                     \App\Events\OrderStatusChanged::dispatch($order, $oldStatusForBroadcast, $targetStatus);
                 } catch (\Exception $e) {
-                    Log::warning('OrderStatusChanged broadcast failed: ' . $e->getMessage());
+                    Log::warning('OrderStatusChanged broadcast failed: '.$e->getMessage());
                 }
                 // [F-01] Compensating release of branch-scoped stock counters when an order
                 // is cancelled or rejected by admin / POS / branch staff. Idempotent ledger
                 // (order_items.released_qty) makes this safe to dispatch unconditionally.
-                if (in_array($targetStatus, [OrderStatus::CANCELED, OrderStatus::REJECTED], true)) {
+                // [SELF-AUDIT R2 P3 2026-07-05 — fuite stock sur RETURNED non payé] RETURNED était
+                // ABSENT de cette liste : sa seule libération passait par cashBack→RefundCreated (gardé
+                // sur $locked->transaction). Une commande décrémentée à la création puis RETURNED en étant
+                // UNPAID/sans Transaction (retour staff) ne libérait NI stock NI disponibilité → déplétion
+                // fantôme (faux 86). Le ledger released_qty rend un double-release inoffensif (prouvé
+                // StockReleaseTest::test_order_canceled_then_full_refund_second_delivery_is_no_op), donc
+                // ajouter RETURNED ne double-compte pas pour les commandes payées.
+                if (in_array($targetStatus, [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED], true)) {
                     try {
                         OrderCanceled::dispatch($order); // allow: stock-release dispatch; AuditLogService::write already called above for order.cancelled / order.rejected.
                     } catch (\Exception $e) {
-                        Log::warning('[OrderService] OrderCanceled on admin cancel failed: ' . $e->getMessage()); // allow: warning only
+                        Log::warning('[OrderService] OrderCanceled on admin cancel failed: '.$e->getMessage()); // allow: warning only
                     }
                 }
             }
+
             return $order;
         } catch (\Symfony\Component\HttpKernel\Exception\HttpException $http) {
             throw $http;
@@ -2328,6 +2434,7 @@ class OrderService
                         }
                         $locked->payment_status = $request->payment_status;
                         $locked->save();
+
                         return $locked;
                     });
                 } else {
@@ -2338,7 +2445,7 @@ class OrderService
             // [AUDIT-FIX P0-2 / POS-9-H.1.1] Branch isolation: non-Admin staff
             // can only modify their branch's orders. abort() so the 403 bubbles
             // through the generic catch as a real HttpException.
-            if (Auth::check() && !Auth::user()->hasRole('Admin')) {
+            if (Auth::check() && ! Auth::user()->hasRole('Admin')) {
                 $userBranch = Auth::user()->branch_id ?? null;
                 if ($userBranch && (int) $userBranch !== (int) $order->branch_id) {
                     abort(403, 'Accès refusé : cette commande appartient à une autre succursale.');
@@ -2351,7 +2458,7 @@ class OrderService
             // level cache covers the flag=false rollout window without
             // re-applying ActionLog / AuditLog / domain-event side effects.
             $idempotencyKey = request()?->header('X-Idempotency-Key');
-            $cacheKey       = null;
+            $cacheKey = null;
             if (is_string($idempotencyKey) && $idempotencyKey !== '') {
                 $cacheKey = sprintf(
                     'change_payment_status:%d:%d:%s',
@@ -2379,14 +2486,14 @@ class OrderService
                 } catch (\App\Exceptions\OrderSealedException $sealedEx) {
                     try {
                         app(\App\Services\Fiscal\AuditLogService::class)->write([
-                            'branch_id'   => (int) $order->branch_id,
-                            'user_id'     => Auth::check() ? (int) Auth::id() : null,
-                            'action'      => 'pos.refund.post_z_blocked',
-                            'resource'    => 'order',
+                            'branch_id' => (int) $order->branch_id,
+                            'user_id' => Auth::check() ? (int) Auth::id() : null,
+                            'action' => 'pos.refund.post_z_blocked',
+                            'resource' => 'order',
                             'resource_id' => (int) $order->id,
-                            'payload'     => [
+                            'payload' => [
                                 'attempted_transition' => 'REFUNDED',
-                                'sealed_by_z_id'       => $sealedEx->sealedByZReportId,
+                                'sealed_by_z_id' => $sealedEx->sealedByZReportId,
                             ],
                         ]);
                     } catch (\Throwable) {
@@ -2427,6 +2534,7 @@ class OrderService
                 // (already-emitted) side effects — no double log/audit/dispatch.
                 if ($freshOld === $targetPaymentStatus) {
                     $order->setRawAttributes($locked->getAttributes(), true);
+
                     return;
                 }
 
@@ -2474,10 +2582,10 @@ class OrderService
                 $locked->save();
 
                 \App\Models\ActionLog::create([
-                    'user_id'  => Auth::check() ? Auth::id() : null,
-                    'action'   => 'Statut paiement modifié',
-                    'resource' => 'Commande #' . $locked->order_serial_no,
-                    'details'  => sprintf(
+                    'user_id' => Auth::check() ? Auth::id() : null,
+                    'action' => 'Statut paiement modifié',
+                    'resource' => 'Commande #'.$locked->order_serial_no,
+                    'details' => sprintf(
                         'Statut paiement: %d → %d | Par: %s (branch_id=%s)',
                         $freshOld,
                         $targetPaymentStatus,
@@ -2491,17 +2599,17 @@ class OrderService
                 // impact Z report totals — but blocked under Option B by the
                 // state machine guard above).
                 app(AuditLogService::class)->write([
-                    'branch_id'   => (int) $locked->branch_id,
-                    'user_id'     => Auth::check() ? (int) Auth::id() : null,
-                    'action'      => 'order.payment_status_changed',
-                    'resource'    => 'order',
+                    'branch_id' => (int) $locked->branch_id,
+                    'user_id' => Auth::check() ? (int) Auth::id() : null,
+                    'action' => 'order.payment_status_changed',
+                    'resource' => 'order',
                     'resource_id' => (int) $locked->id,
-                    'payload'     => [
-                        'order_serial_no'      => $locked->order_serial_no,
-                        'from_payment_status'  => $freshOld,
-                        'to_payment_status'    => $targetPaymentStatus,
-                        'total'                => round((float) $locked->total, 2),
-                        'fiscal_sequence_no'   => $locked->fiscal_sequence_no,
+                    'payload' => [
+                        'order_serial_no' => $locked->order_serial_no,
+                        'from_payment_status' => $freshOld,
+                        'to_payment_status' => $targetPaymentStatus,
+                        'total' => round((float) $locked->total, 2),
+                        'fiscal_sequence_no' => $locked->fiscal_sequence_no,
                     ],
                 ]);
 
@@ -2537,7 +2645,6 @@ class OrderService
         }
     }
 
-
     public function tokenCreate(Order $order, TableOrderTokenRequest $request, bool $auth = false): Order|array
     {
         try {
@@ -2545,6 +2652,7 @@ class OrderService
                 if ($order->user_id == Auth::user()->id) {
                     $order->token = $request->token;
                     $order->save();
+
                     return $order;
                 } else {
                     abort(403, 'Access denied: you do not have permission to modify this order.');
@@ -2552,6 +2660,7 @@ class OrderService
             } else {
                 $order->token = $request->token;
                 $order->save();
+
                 return $order;
             }
         } catch (\Symfony\Component\HttpKernel\Exception\HttpException $http) {
@@ -2640,23 +2749,23 @@ class OrderService
             // audit failure into a 5xx for the operator.
             try {
                 app(AuditLogService::class)->write([
-                    'branch_id'   => (int) $order->branch_id,
-                    'user_id'     => Auth::check() ? (int) Auth::id() : null,
-                    'action'      => 'order.delivery_boy_assigned',
-                    'resource'    => 'order',
+                    'branch_id' => (int) $order->branch_id,
+                    'user_id' => Auth::check() ? (int) Auth::id() : null,
+                    'action' => 'order.delivery_boy_assigned',
+                    'resource' => 'order',
                     'resource_id' => (int) $order->id,
-                    'payload'     => [
-                        'order_id'        => (int) $order->id,
+                    'payload' => [
+                        'order_id' => (int) $order->id,
                         'order_serial_no' => $order->order_serial_no,
                         'delivery_boy_id' => (int) $targetId,
                         'order_branch_id' => (int) $order->branch_id,
-                        'actor_id'        => Auth::check() ? (int) Auth::id() : null,
-                        'path'            => $auth ? 'customer_self_service' : 'admin_assign',
-                        'assigned_at'     => now()->toIso8601String(),
+                        'actor_id' => Auth::check() ? (int) Auth::id() : null,
+                        'path' => $auth ? 'customer_self_service' : 'admin_assign',
+                        'assigned_at' => now()->toIso8601String(),
                     ],
                 ]);
             } catch (\Throwable $auditError) {
-                Log::warning('[DeliveryBoy] driver-assignment audit_log write failed: ' . $auditError->getMessage(), [
+                Log::warning('[DeliveryBoy] driver-assignment audit_log write failed: '.$auditError->getMessage(), [
                     'order_id' => $order->id,
                 ]);
             }
@@ -2664,6 +2773,7 @@ class OrderService
             SendOrderDeliveryBoyMail::dispatch(['order_id' => $order->id, 'status' => 101]);
             SendOrderDeliveryBoySms::dispatch(['order_id' => $order->id, 'status' => 101]);
             SendOrderDeliveryBoyPush::dispatch(['order_id' => $order->id, 'status' => 101]);
+
             return $order;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
@@ -2691,7 +2801,7 @@ class OrderService
 
         // Block PAID orders unless the actor carries the dedicated permission.
         if ((int) $order->payment_status === PaymentStatus::PAID
-            && $actor && !$actor->can('pos-destroy-paid')) {
+            && $actor && ! $actor->can('pos-destroy-paid')) {
             abort(403, 'Paid orders cannot be destroyed without elevated permission.');
         }
 
@@ -2720,6 +2830,23 @@ class OrderService
         try {
             $reason = trim((string) request('destroy_reason', ''));
 
+            // [SELF-AUDIT R5 P2 2026-07-05 — fuite quota/stock à la destruction] destroy soft-supprime la
+            // commande + ses lignes SANS dispatcher OrderCanceled/RefundCreated → le décrément
+            // stock/disponibilité posé à la création (OrderCreated) n'était JAMAIS compensé → faux auto-86
+            // (article marqué épuisé sans vente, jusqu'au reset du lendemain). Asymétrique avec le chemin
+            // CANCEL qui, lui, libère. On dispatche la libération compensatoire AVANT le soft-delete (les
+            // lignes doivent encore exister pour que releaseForOrderItems lise qty/item_id). Idempotent via
+            // released_qty (double-release avec un cancel antérieur = no-op). On saute les états déjà
+            // terminaux (déjà libérés + hors KDS) pour éviter un broadcast d'annulation parasite.
+            if (! in_array((int) $order->status, [\App\Enums\OrderStatus::CANCELED, \App\Enums\OrderStatus::REJECTED, \App\Enums\OrderStatus::RETURNED], true)) {
+                $order->loadMissing('orderItems');
+                try {
+                    OrderCanceled::dispatch($order);
+                } catch (\Throwable $e) {
+                    Log::warning('[SELF-AUDIT R5 P2] release-on-destroy failed (isolated)', ['order_id' => $order->id, 'error' => $e->getMessage()]);
+                }
+            }
+
             DB::transaction(function () use ($order, $actor, $reason) {
                 $order->address()?->delete();
                 $order->coupon()?->delete();
@@ -2728,19 +2855,19 @@ class OrderService
                 $order->delete();
 
                 \App\Models\ActionLog::create([
-                    'user_id'  => $actor?->id,
-                    'action'   => 'order.destroyed',
-                    'resource' => 'Order #' . $order->id,
-                    'details'  => json_encode([
-                        'order_id'       => $order->id,
-                        'branch_id'      => $order->branch_id,
-                        'order_type'     => $order->order_type,
-                        'status'         => $order->status,
+                    'user_id' => $actor?->id,
+                    'action' => 'order.destroyed',
+                    'resource' => 'Order #'.$order->id,
+                    'details' => json_encode([
+                        'order_id' => $order->id,
+                        'branch_id' => $order->branch_id,
+                        'order_type' => $order->order_type,
+                        'status' => $order->status,
                         'payment_status' => $order->payment_status,
-                        'total'          => $order->total,
-                        'reason'         => $reason ?: null,
-                        'actor_id'       => $actor?->id,
-                        'actor_branch'   => $actor?->branch_id,
+                        'total' => $order->total,
+                        'reason' => $reason ?: null,
+                        'actor_id' => $actor?->id,
+                        'actor_branch' => $actor?->branch_id,
                     ]),
                 ]);
 
@@ -2749,19 +2876,19 @@ class OrderService
                 // above (one-way), so the audit chain is the ONLY surviving
                 // canonical record of what was on this order at destroy time.
                 app(AuditLogService::class)->write([
-                    'branch_id'   => (int) $order->branch_id,
-                    'user_id'     => $actor?->id,
-                    'action'      => 'order.destroyed',
-                    'resource'    => 'order',
+                    'branch_id' => (int) $order->branch_id,
+                    'user_id' => $actor?->id,
+                    'action' => 'order.destroyed',
+                    'resource' => 'order',
                     'resource_id' => (int) $order->id,
-                    'payload'     => [
-                        'order_serial_no'    => $order->order_serial_no,
-                        'order_type'         => (int) $order->order_type,
-                        'status_at_destroy'  => (int) $order->status,
+                    'payload' => [
+                        'order_serial_no' => $order->order_serial_no,
+                        'order_type' => (int) $order->order_type,
+                        'status_at_destroy' => (int) $order->status,
                         'payment_status_at_destroy' => (int) $order->payment_status,
-                        'total'              => round((float) $order->total, 2),
+                        'total' => round((float) $order->total, 2),
                         'fiscal_sequence_no' => $order->fiscal_sequence_no,
-                        'reason'             => $reason ?: null,
+                        'reason' => $reason ?: null,
                     ],
                 ]);
             });
@@ -2782,7 +2909,7 @@ class OrderService
             $orderType = $this->sanitizeOrderDirection((string) ($request->get('order_by') ?? 'desc'));
 
             $orders = Order::with('transaction', 'orderItems')->where(function ($query) use ($requests) {
-                if (!empty($requests['from_date']) && !empty($requests['to_date'])) {
+                if (! empty($requests['from_date']) && ! empty($requests['to_date'])) {
                     // [GOAL-G2-HEAL-04 2026-05-23] TZ-generation alignment to
                     // Wave T R5 Paris bounds — sibling of list() above, keep
                     // byte-identical. See list() comment for full rationale.
@@ -2793,13 +2920,13 @@ class OrderService
                         ->addDay()
                         ->startOfDay();
                     $query->where('order_datetime', '>=', $fromParis)
-                          ->where('order_datetime', '<', $toParisExclusive);
+                        ->where('order_datetime', '<', $toParisExclusive);
                 }
                 foreach ($requests as $key => $request) {
                     if (in_array($key, $this->orderFilter)) {
-                        if ($key === "status") {
+                        if ($key === 'status') {
                             $query->where($key, (int) $request);
-                        } else if ($key === 'payment_method') {
+                        } elseif ($key === 'payment_method') {
                             if ((int) $request > 0) {
                                 if ((int) $request === 1) {
                                     $query->where('payment_method', 1)->where('pos_payment_method', null)->whereDoesntHave('transaction');
@@ -2812,7 +2939,7 @@ class OrderService
                             } else {
                                 $query->where('pos_payment_method', abs((int) $request));
                             }
-                        } else if ($key === 'source') {
+                        } elseif ($key === 'source') {
                             $query->where($key, $request);
                         } else {
                             $this->applyOrderFilter($query, $key, $request);
@@ -2848,7 +2975,11 @@ class OrderService
             // agrees with the dashboard (scopeRealizedRevenue) and the signed Z. total_orders stays
             // the placed-volume count.
             $paidOrders = $orders->filter(fn ($o) => \App\Models\Order::isRealizedRevenueRow($o));
-            $salesReportArray['total_orders'] = $orders->count();
+            // [SELF-AUDIT R3 P2 2026-07-05 — double comptage des miroirs de remboursement] total_orders =
+            // « placed-volume » (cf. commentaire ci-dessus), mais comptait AUSSI les miroirs RETURNED
+            // (parent_order_id non nul) → une vente + son remboursement post-Z = 2, alors que TOUS les
+            // compteurs Dashboard excluent les miroirs via whereNull('parent_order_id'). On aligne.
+            $salesReportArray['total_orders'] = $orders->reject(fn ($o) => $o->parent_order_id !== null)->count();
             $salesReportArray['total_earnings'] = AppLibrary::currencyAmountFormat($paidOrders->sum('total'));
             $salesReportArray['total_discounts'] = AppLibrary::currencyAmountFormat($paidOrders->sum('discount'));
             $salesReportArray['total_delivery_charges'] = AppLibrary::currencyAmountFormat($paidOrders->sum('delivery_charge'));
@@ -2876,10 +3007,11 @@ class OrderService
     {
         if ($key === 'branch_id') {
             $query->where('branch_id', '=', (int) $value);
+
             return;
         }
 
-        $query->where($key, 'like', '%' . $this->escapeLike((string) $value) . '%');
+        $query->where($key, 'like', '%'.$this->escapeLike((string) $value).'%');
     }
 
     private function isGlobalAdmin(?User $user): bool
@@ -2918,7 +3050,7 @@ class OrderService
     {
         if ($discount > 0.0 && config('pos.manual_discount_enabled') !== true) {
             throw \Illuminate\Validation\ValidationException::withMessages([
-                'discount' => "Les remises (manuelle, coupon, fidélité) sont désactivées en V1 (correction fiscale TVA/HT en attente). Contactez le responsable.",
+                'discount' => 'Les remises (manuelle, coupon, fidélité) sont désactivées en V1 (correction fiscale TVA/HT en attente). Contactez le responsable.',
             ]);
         }
     }
@@ -2941,7 +3073,7 @@ class OrderService
         // discounted-order TVA is computed on the NET base.
         if (config('pos.manual_discount_enabled') !== true) {
             throw \Illuminate\Validation\ValidationException::withMessages([
-                'discount' => "Les remises manuelles sont désactivées en V1 (correction fiscale TVA/HT en attente). Contactez le responsable.",
+                'discount' => 'Les remises manuelles sont désactivées en V1 (correction fiscale TVA/HT en attente). Contactez le responsable.',
             ]);
         }
 
@@ -2957,7 +3089,7 @@ class OrderService
             ]);
         }
 
-        if (!$user) {
+        if (! $user) {
             throw \Illuminate\Validation\ValidationException::withMessages([
                 'discount' => 'Authentication required to apply a discount.',
             ]);
@@ -2965,23 +3097,23 @@ class OrderService
 
         $pct = ($discount / $backendSubtotal) * 100.0;
 
-        if ($pct > 50.0 && !$user->can('pos-discount-unlimited')) {
+        if ($pct > 50.0 && ! $user->can('pos-discount-unlimited')) {
             throw \Illuminate\Validation\ValidationException::withMessages([
                 'discount' => 'Only an owner can apply a discount above 50%.',
             ]);
         }
 
         if ($pct > 10.0
-            && !$user->can('pos-discount-over-10-requires-manager')
-            && !$user->can('pos-discount-unlimited')) {
+            && ! $user->can('pos-discount-over-10-requires-manager')
+            && ! $user->can('pos-discount-unlimited')) {
             throw \Illuminate\Validation\ValidationException::withMessages([
                 'discount' => 'Discount above 10% requires manager approval.',
             ]);
         }
 
-        if (!$user->can('pos-discount-up-to-10')
-            && !$user->can('pos-discount-over-10-requires-manager')
-            && !$user->can('pos-discount-unlimited')) {
+        if (! $user->can('pos-discount-up-to-10')
+            && ! $user->can('pos-discount-over-10-requires-manager')
+            && ! $user->can('pos-discount-unlimited')) {
             throw \Illuminate\Validation\ValidationException::withMessages([
                 'discount' => 'You do not have permission to apply POS discounts.',
             ]);
@@ -3005,9 +3137,10 @@ class OrderService
 
             try {
                 $this->order->save();
+
                 return;
             } catch (QueryException $exception) {
-                if (!$this->isQueueNumberUniqueViolation($exception) || $attempt >= $maxAttempts) {
+                if (! $this->isQueueNumberUniqueViolation($exception) || $attempt >= $maxAttempts) {
                     throw $exception;
                 }
 
@@ -3024,7 +3157,7 @@ class OrderService
 
     private function allocateQueueNumber(int $branchId, string $businessDate, string $context): string
     {
-        $lockKey = 'queue_lock_' . $branchId . '_' . $businessDate;
+        $lockKey = 'queue_lock_'.$branchId.'_'.$businessDate;
         $lock = Cache::lock($lockKey, 30);
         $acquired = false;
 
@@ -3044,7 +3177,7 @@ class OrderService
                 ->map(static fn ($queueNumber): int => (int) substr((string) $queueNumber, 1))
                 ->max();
 
-            return 'A' . str_pad($maxQueueNum + 1, 4, '0', STR_PAD_LEFT);
+            return 'A'.str_pad($maxQueueNum + 1, 4, '0', STR_PAD_LEFT);
         } catch (LockTimeoutException $exception) {
             Log::warning(sprintf(
                 '[Queue] Lock timeout for branch %s on business_date %s during %s order creation; queue number fallback disabled by D-M13.',
@@ -3144,6 +3277,7 @@ class OrderService
             return [];
         }
         $decoded = json_decode($json);
+
         return json_last_error() === JSON_ERROR_NONE ? $decoded : [];
     }
 }

@@ -318,6 +318,7 @@
         "demo_wizard_advanced": "عرض المعالج المتقدم"
     },
     "label": {
+        "pos_customer_name_placeholder": "Nom du client (optionnel)",
         "encaisser": "تحصيل",
         "encaisser_queue_subtitle": "طلبات بانتظار التحصيل",
         "encaisser_queue_empty": "لا توجد طلبات للتحصيل",

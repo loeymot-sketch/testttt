@@ -12,11 +12,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Order extends Model implements BroadcastableOrder
 {
-    use HasFactory;
     use HasDomainEvents;
+    use HasFactory;
     use SoftDeletes;
 
-    protected $table = "orders";
+    protected $table = 'orders';
+
     protected $fillable = [
         'order_serial_no',
         'queue_number',
@@ -42,6 +43,7 @@ class Order extends Model implements BroadcastableOrder
         'source',
         'pos_payment_method',
         'pos_payment_note',
+        'pos_customer_name',
         'pos_received_amount',
         'loyalty_customer_code',
         'source_surface',
@@ -124,7 +126,7 @@ class Order extends Model implements BroadcastableOrder
     protected static function boot(): void
     {
         parent::boot();
-        static::addGlobalScope(new BranchScope());
+        static::addGlobalScope(new BranchScope);
 
         // [POS-9-H.3.5 / F-A7]
         // OrderService::destroy() soft-deletes the Order itself but
@@ -143,10 +145,10 @@ class Order extends Model implements BroadcastableOrder
         static::restoring(function (self $order) {
             throw new \RuntimeException(
                 'Order::restore() is disabled — OrderService::destroy() performs '
-                . 'hard deletes on child rows (address, coupon) that cannot be '
-                . 'rebuilt. A soft-deleted order is kept for audit only. '
-                . 'To reopen an order, create a new one and reference the '
-                . 'soft-deleted id in its notes.'
+                .'hard deletes on child rows (address, coupon) that cannot be '
+                .'rebuilt. A soft-deleted order is kept for audit only. '
+                .'To reopen an order, create a new one and reference the '
+                .'soft-deleted id in its notes.'
             );
         });
 
@@ -310,8 +312,19 @@ class Order extends Model implements BroadcastableOrder
     {
         return $query->where(function ($q) {
             $q->where(function ($paid) {
+                // [SELF-AUDIT R3 P1 2026-07-05 — CA gonflé vs Z signé] Ce scope est DOCUMENTÉ « mirrors the
+                // signed ZReportService netting » ; or une commande Uber (PAID, non-terminale, mais
+                // fiscal_sequence_no NULL car uber.fiscalize=false, facturée SÉPARÉMENT par l'agrégateur)
+                // COMPTAIT dans le CA management alors que le Z l'EXCLUT → dashboard/sales-report/EOD >
+                // Z signé. Fix CIBLÉ : exclure le SEUL canal non-fiscalisé par design (source_surface=
+                // 'uber_eats'), sans casser le contrat « PAID = CA réalisé » des ventes POS/kiosk/livraison
+                // (toutes fiscalisées en prod). NULL source_surface conservé (ventes internes). Les miroirs
+                // de remboursement (branche ci-dessous) restent comptés (total négaté).
                 $paid->where('payment_status', \App\Enums\PaymentStatus::PAID)
-                    ->whereNotIn('status', [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED]);
+                    ->whereNotIn('status', [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED])
+                    ->where(function ($src) {
+                        $src->whereNull('source_surface')->orWhere('source_surface', '!=', 'uber_eats');
+                    });
             })->orWhere(function ($mirror) {
                 $mirror->where('status', OrderStatus::RETURNED)
                     ->whereNotNull('parent_order_id');
@@ -328,8 +341,11 @@ class Order extends Model implements BroadcastableOrder
     public static function isRealizedRevenueRow($o): bool
     {
         $terminal = [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED];
+        // [SELF-AUDIT R3 P1 2026-07-05] Miroir EXACT du scope : une vente live compte dans le CA
+        // « réconcilié Z » SAUF le canal Uber (source_surface='uber_eats', non fiscalisé par design).
         $isLivePaidSale = (int) $o->payment_status === \App\Enums\PaymentStatus::PAID
-            && ! in_array((int) $o->status, $terminal, true);
+            && ! in_array((int) $o->status, $terminal, true)
+            && $o->source_surface !== 'uber_eats';
         $isRefundMirror = (int) $o->status === OrderStatus::RETURNED
             && $o->parent_order_id !== null;
 

@@ -105,6 +105,11 @@ final class OrderReceiptEscPosRenderer
             $b .= EscPosCommandBuilder::textWrap('*** '.mb_strtoupper($orderType).' ***', $w);
             $b .= EscPosCommandBuilder::doubleHeight(false).EscPosCommandBuilder::bold(false);
         }
+        // [C2-CAISSE 2026-07-05] Nom du client (optionnel) → appeler la commande par le nom.
+        $clientName = trim((string) ($order->pos_customer_name ?? ''));
+        if ($clientName !== '') {
+            $b .= EscPosCommandBuilder::bold(true).EscPosCommandBuilder::textWrap('Client : '.$clientName, $w).EscPosCommandBuilder::bold(false);
+        }
         if ($counterCopy) {
             $b .= EscPosCommandBuilder::bold(true).EscPosCommandBuilder::textLine('*** COMMANDE BORNE - COPIE CAISSE ***').EscPosCommandBuilder::bold(false);
         }
@@ -249,6 +254,11 @@ final class OrderReceiptEscPosRenderer
         $orderType = $this->orderTypeLabel($order);
         if ($orderType !== '') {
             $b .= EscPosCommandBuilder::bold(true).EscPosCommandBuilder::textWrap('*** '.mb_strtoupper($orderType).' ***', $w).EscPosCommandBuilder::bold(false);
+        }
+        // [C2-CAISSE 2026-07-05] Nom du client aussi en cuisine (appel de commande).
+        $kClientName = trim((string) ($order->pos_customer_name ?? ''));
+        if ($kClientName !== '') {
+            $b .= EscPosCommandBuilder::bold(true).EscPosCommandBuilder::textWrap('Client : '.$kClientName, $w).EscPosCommandBuilder::bold(false);
         }
         $dt = $order->order_datetime ?? $order->created_at;
         if ($dt) {

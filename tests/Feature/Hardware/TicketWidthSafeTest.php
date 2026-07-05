@@ -220,6 +220,26 @@ class TicketWidthSafeTest extends TestCase
         $this->assertTrue($headDoubleSize, 'la ligne produit cuisine (TAC) doit être en double taille (2×)');
     }
 
+    public function test_client_name_printed_on_client_and_kitchen_tickets_when_set(): void
+    {
+        // [C2-CAISSE 2026-07-05] Nom du client (optionnel) imprimé sur le ticket client ET cuisine.
+        $order = $this->makeOrder(['lines' => [], 'extras' => [], 'addons' => []], 'Tacos');
+        $order->pos_customer_name = 'Marc';
+
+        foreach (['renderClientTicket', 'renderKitchenTicket'] as $method) {
+            $bytes = (new OrderReceiptEscPosRenderer)->{$method}($order, ['width_chars' => 42]);
+            $this->assertNoLineExceeds($bytes, 42, "C2 {$method} @42");
+            $decoded = iconv('CP858', 'UTF-8//IGNORE', preg_replace('/[\x00-\x09\x0B-\x1F]/', '', $bytes));
+            $this->assertStringContainsString('Client : Marc', $decoded, "{$method} doit afficher le nom client");
+        }
+
+        // Sans nom → aucune ligne « Client : ».
+        $order2 = $this->makeOrder(['lines' => [], 'extras' => [], 'addons' => []], 'Tacos');
+        $bytes2 = (new OrderReceiptEscPosRenderer)->renderClientTicket($order2, ['width_chars' => 42]);
+        $decoded2 = iconv('CP858', 'UTF-8//IGNORE', preg_replace('/[\x00-\x09\x0B-\x1F]/', '', $bytes2));
+        $this->assertStringNotContainsString('Client :', $decoded2, 'pas de ligne Client si nom vide');
+    }
+
     public function test_price_stays_atomic_on_one_line(): void
     {
         $order = $this->makeOrder(self::orderProvider()['cayenne + menu'][0], 'Cayenne');
