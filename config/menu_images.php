@@ -95,7 +95,7 @@ return [
 
         // ── Tacos (cat 5)
         'tacos-1-viande'        => 'tacos.png',
-        'big-tacos-2-viandes'   => 'tacos.png',
+        'big-tacos-2-viandes'   => 'tacos-cayenne.png',
 
         // ── Bols Gourmands (cat 6)
         'bol-marine'             => 'bol-frites.png',
@@ -151,6 +151,11 @@ return [
         'orangina'  => 'tropico.png',
         'eau-plate' => 'eau.png',
         'capri-sun' => 'capri-sun.png',
+        // [BOISSONS-UPDATE 2026-07-05] Owner : nouvelles boissons (images fournies).
+        'coca-cherry' => 'coca-cherry.png',
+        'tropico'     => 'tropico.png',
+        'ice-tea'     => 'lipton-peche.png',
+        'fanta-citron' => 'fanta-citron.png',
 
         // ── Menu enfant (cat 11)
         'menu-nuggets' => 'nuggets.png',
@@ -204,11 +209,15 @@ return [
         'bol-frites'                          => 'bol-frites.png',
         'bol-riz'                             => 'bol-riz.png',
         'menu-enfant-nuggets'                 => 'nuggets.png',
-        'menu-enfant-burger'                  => 'chicken_burger.png',
-        'petite-frites-cheddar-fondu'         => 'frites.png',
-        'petite-frites-cheddar-oignons-frits' => 'frites.png',
-        'grande-frites-cheddar-fondu'         => 'frites.png',
-        'grande-frites-cheddar-oignons-frits' => 'frites.png',
+        // [IMG-HEAL 2026-06-27] Use the NEW kebab-case asset pack (owner: "use all the
+        // borne+caisse images, some old remain"). Kids burger off the deprecated underscore
+        // chicken_burger.png → new cheese-burger.png ; frites-style SKUs off the generic
+        // frites.png → their dedicated cheddar / cheddar+oignons photos.
+        'menu-enfant-burger'                  => 'cheese-burger.png',
+        'petite-frites-cheddar-fondu'         => 'frites-cheddar.png',
+        'petite-frites-cheddar-oignons-frits' => 'frites-cheddar-oignons.png',
+        'grande-frites-cheddar-fondu'         => 'frites-cheddar.png',
+        'grande-frites-cheddar-oignons-frits' => 'frites-cheddar-oignons.png',
     ],
 
     /*
@@ -253,6 +262,8 @@ return [
         'Fromagère Maison'        => 'sauce-fromagere-maison.png',
         'Spicy Maison'            => 'sauce-spicy-maison.png',
         'Spicy'                   => 'sauce-spicy-maison.png',
+        'Sauce spicy'             => 'sauce-spicy-maison.png', // [IMG-HEAL 2026-06-27] exact bol-sauce (attr8) name → was default
+        'Sauce Spicy'             => 'sauce-spicy-maison.png',
         'Sauce fromagère maison'  => 'sauce-fromagere-maison.png',
         'Sauce fromagere maison'  => 'sauce-fromagere-maison.png',
         'BBQ'                     => 'sauce-barbecue.png',
@@ -288,6 +299,15 @@ return [
         'Emmental'                => 'fromage.png',
         'Boule gratinée'          => 'bol-frites-gratine.png',
         'Galette pommes de terre' => 'galette.png',
+
+        // [IMG-HEAL 2026-06-27] Live extras that resolved to item-default.svg (placeholder)
+        // — now keyed to the matching NEW asset so borne+caisse show a real image.
+        'Viande supplémentaire'   => 'viande-marine.png',
+        'Option Gratiné'          => 'bol-frites-gratine.png',
+        'Cheddar Fondu'           => 'cheddar.png',
+        'Cheddar fondu'           => 'cheddar.png',
+        'Cheddar + Oignons frits' => 'oignons-frits.png',
+        'Grande Portion'          => 'frites.png',
 
         // Legacy display variants
         'Supplément Cheddar'      => 'cheddar.png',
