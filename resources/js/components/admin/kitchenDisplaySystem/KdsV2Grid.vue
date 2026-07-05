@@ -56,9 +56,12 @@
          (plus de plafond 8 qui cachait les 9+). Grille multi-colonnes qui DÉFILE ; chaque
          carte prend la hauteur de son contenu → tous les produits d'une commande sont
          visibles, une grosse commande prend plus de hauteur. Ordre FIFO préservé. -->
-    <div v-else class="kds-v2__grid">
+    <!-- [KDS-3CARDS 2026-07-05] Owner : l'écran affiche 3 commandes MAX à la fois, chacune
+         prenant TOUTE la hauteur (fini les cartes du bas écrasées / l'espace vide). Les
+         commandes 4+ attendent leur tour (pastille « +N en attente » ci-dessous). -->
+    <div v-else class="kds-v2__grid" :data-count="visibleActiveOrders.length">
       <KdsOrderCard
-        v-for="(o, idx) in activeOrders"
+        v-for="(o, idx) in visibleActiveOrders"
         :key="o.id"
         :order="o"
         :now="now"
@@ -66,6 +69,10 @@
         :recall-active="isRecallActive(o)"
         @ready="onCtaTap(o.id, o.queue_number)"
       />
+    </div>
+    <div v-if="overflowActiveCount > 0" class="kds-overflow-chip" role="status">
+      <span class="kds-overflow-chip__icon">+{{ overflowActiveCount }}</span>
+      <span>en attente</span>
     </div>
 
     <!-- [Wave U 2026-05-21] Récemment servies — compact archive strip.
@@ -235,13 +242,15 @@ export default {
             });
             return prepared.slice(0, 4);
         },
-        // [KDS-SHOW-ALL 2026-07-01] La grille affiche désormais TOUTES les commandes
-        // actives (flux défilable, plus de plafond 8) → il n'y a plus de commande cachée,
-        // donc plus de « backlog invisible » : le compteur d'overflow est structurellement 0
-        // (la pastille de sécurité et le gutter réservé sont neutralisés). L'ancien filet de
-        // sécurité (chip +N) est remplacé par la garantie « aucune commande n'est jamais masquée ».
+        // [KDS-3CARDS 2026-07-05] Owner : 3 commandes MAX affichées à la fois, chacune plein
+        // écran (grande + lisible). Les commandes 4+ attendent (FIFO préservé) et sont
+        // signalées par la pastille « +N en attente » → le chef sait qu'il y a du backlog
+        // sans que les cartes du bas soient écrasées/illisibles.
+        visibleActiveOrders() {
+            return this.activeOrders.slice(0, 3);
+        },
         overflowActiveCount() {
-            return 0;
+            return Math.max(0, this.activeOrders.length - 3);
         },
     },
     watch: {
@@ -408,24 +417,20 @@ export default {
        overflow-y:auto → si la file dépasse l'écran, on défile au lieu de cacher les 9+. */
     flex: 1;
     display: grid;
-    /* [KDS-COMPACT 2026-07-04] Owner : 3 commandes par ligne (cartes ~+33% plus larges)
-       → la ligne symbolique tient sans se replier en 5 lignes. Écran 16". Espaces resserrés
-       (gap/padding 10px) pour récupérer l'espace perdu entre les cartes. */
+    /* [KDS-3CARDS 2026-07-05] Owner : 3 commandes MAX, chacune sur TOUTE la hauteur (grande +
+       lisible). Une SEULE rangée qui remplit la hauteur (grid-template-rows:1fr + stretch) →
+       fini les cartes du bas écrasées et l'espace vide. Pas de scroll : les 4+ attendent. */
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    grid-auto-rows: min-content;
-    align-items: start;
+    grid-template-rows: 1fr;
+    align-items: stretch;
     gap: 10px;
     padding: 10px;
     min-height: 0;
-    overflow-y: auto;
+    overflow: hidden;
 }
-
-/* Très grand écran (≥ 2560px) : 4 colonnes, sinon les cartes deviennent trop larges. */
-@media (min-width: 2560px) {
-    .kds-v2__grid {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-}
+/* 1 ou 2 commandes → elles remplissent la largeur (pas de colonnes vides à droite). */
+.kds-v2__grid[data-count="1"] { grid-template-columns: minmax(0, 1fr); }
+.kds-v2__grid[data-count="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
 .kds-v2__placeholder {
     border: 2px dashed #E5E7EB;

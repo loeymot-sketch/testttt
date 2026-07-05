@@ -74,7 +74,11 @@ final class EscPosTicketBytesService
         // [TICKET-BORNE-LONG 2026-07-02] Ticket CLIENT imprimé par la BORNE : queue longue +
         // coupe partielle (ne tombe pas). N'affecte QUE la borne (le caissier tend le ticket).
         if ($kioskClient && $ticket === 'client') {
-            $opts['feed_lines'] = max(1, (int) config('printing.cut.kiosk_client_feed_lines', 30));
+            // [TICKET-BORNE-WHITE 2026-07-05] Défaut de repli 8 (≈27 mm) et non 30 (≈10 cm) :
+            // 30 lignes laissaient une longue queue BLANCHE si la config manquait. 8 dégage la
+            // barre de coupe (partielle) sans marge blanche. Le pont bridge.js applique aussi
+            // son propre défaut compact (8).
+            $opts['feed_lines'] = max(1, min(12, (int) config('printing.cut.kiosk_client_feed_lines', 8)));
             $opts['cut_partial'] = strtolower((string) config('printing.cut.kiosk_client_mode', 'partial')) === 'partial';
         }
 

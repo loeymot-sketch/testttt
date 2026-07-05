@@ -180,22 +180,23 @@ export default {
   overflow: hidden;
 }
 
-/* SYMBOLIC MAIN — qty + pipe-delimited shorthand, big & bold for the line cook */
+/* SYMBOLIC MAIN — qty + pipe-delimited shorthand. [KDS-COMPACT 2026-07-05] Owner : texte
+   plus PETIT (18px) → 1 seule ligne par produit (code 3 lettres) au lieu de 2-3. */
 .kds-line--symbolic-main {
-  padding: 0.5rem 0 0.25rem;
+  padding: 0.2rem 0 0.1rem;
 }
 .kds-line__symbolic {
   display: flex;
   align-items: baseline;
-  gap: 10px;
+  gap: 8px;
 }
 .kds-line__symbolic-text {
   flex: 1;
   color: #111827;
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 800;
   line-height: 1.2;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   font-variant-numeric: tabular-nums;
   word-break: break-word;
 }
@@ -237,19 +238,24 @@ export default {
   color: #4B5563;
 }
 
-/* SUPPLEMENT — yellow italic */
+/* SUPPLEMENT — jaune gras, EN LIGNE (côte à côte). [KDS-INLINE-SUPP 2026-07-05] Owner :
+   les suppléments s'affichent l'un À CÔTÉ de l'autre (pas chacun sur sa ligne), en jaune. */
+.kds-line--supplement {
+  display: inline-block;
+  vertical-align: top;
+}
+.kds-line--supplement:first-of-type {
+  padding-inline-start: 44px; /* aligne le groupe suppléments sous le produit */
+}
 .kds-line__supplement {
+  display: inline;
   color: #CA8A04;
-  font-size: 16px;
+  font-size: 15px;
   font-style: normal;
   font-weight: 800; /* [K2-KDS 2026-07-05] supplément en GRAS + étoile ⭐ (owner) */
-  padding-inline-start: 56px;
-  margin-top: 4px;
+  margin-inline-end: 12px;
   line-height: 1.3;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  white-space: nowrap;
 }
 
 /* MENU CHILD — formule member */

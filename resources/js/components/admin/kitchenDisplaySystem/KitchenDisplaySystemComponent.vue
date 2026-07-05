@@ -2473,23 +2473,29 @@ export default {
 </script>
 
 <style scoped>
-/* [Wave X3 2026-05-21] KDS Historique du jour trigger. */
+/* [Wave X3 2026-05-21] KDS Historique du jour trigger.
+   [KDS-TOPBAR 2026-07-05] Owner : ne PAS gâcher l'espace des commandes avec un gros bouton
+   dans une bande épaisse → bande FINE (hauteur mini) + bouton compact aligné à droite, tout
+   en haut. La grille récupère la hauteur gaspillée. */
 .kds-history-trigger-row {
   display: flex;
   justify-content: flex-end;
-  padding: 8px 12px 0 12px;
+  align-items: center;
+  padding: 2px 12px;
   width: 100%;
+  min-height: 0;
+  flex-shrink: 0;
 }
 .kds-history-trigger {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   background: #111111;
   color: #ffffff;
   border: none;
-  border-radius: 8px;
-  padding: 8px 14px;
-  font-size: 0.9rem;
+  border-radius: 7px;
+  padding: 4px 12px;
+  font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
   transition: background 120ms ease, outline 120ms ease;
