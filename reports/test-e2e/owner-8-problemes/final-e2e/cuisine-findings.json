@@ -1,0 +1,82 @@
+{
+  "surface": "cuisine",
+  "meta": {
+    "head": "febe73b15",
+    "server": "http://127.0.0.1:8766",
+    "date": "2026-07-06",
+    "kitchen_ticket_width_cols": 32,
+    "width_source": "printing.receipt.width_chars=0 -> Printer.width_chars=32 (fallback)",
+    "board_orders_visible": ["A0012 (#5533 kiosk)", "A0013 (#5534 pos)", "A0014 (#5535 pos)"],
+    "fixture_used": "#5536 A9001 (created status=4 to demo clean multi-line note + dessert + standalone drink on a VISIBLE card; DELETED after capture, board restored)",
+    "captures": [
+      "reports/test-e2e/owner-8-problemes/final-e2e/cuisine/kds-landscape-1920x1080.png",
+      "reports/test-e2e/owner-8-problemes/final-e2e/cuisine/kds-portrait-1080x1920.png",
+      "reports/test-e2e/owner-8-problemes/final-e2e/cuisine/kds-fixture-card-zoom.png"
+    ],
+    "method": "Live KDS board (/kds) DOM + PNG read; kitchen-ticket ESC/POS bytes rendered server-side via EscPosTicketBytesService::render(1,orderId,'kitchen') and decoded byte-by-byte at width 32 (ESC/GS command stripping, CP858->UTF8, per-line column width, underline-region tracking)."
+  },
+  "findings": [
+    {
+      "point": 1,
+      "title": "Notes client sur ecran KDS (multi-ligne, nettoyee, pre-line)",
+      "status": "GREEN",
+      "evidence": {
+        "screen": "Fixture card A9001 renders note in 3 lines: '[Sans oignon cru — BIEN CUIT svp' / 'Allergie arachide & œufs' / 'Merci beaucoup l'equipe]'. CSS white-space=pre-line (confirmed getComputedStyle on .kds-line__instruction-text). œ + em-dash render natively. The 'CAYENNE' uppercase echo AND the 'Pain - Salade, Tomate, Oignons cuits Sauce : Algerienne' compo blob are STRIPPED (not shown) => clean, no compo echo.",
+        "real_orders": "Board also carries real free notes: #5528 rich multi-line bracket note, #5501 'oignons cuits'. #5535 shows a multi-line bracket note rendered with pre-line (line breaks respected).",
+        "ticket": "Fixture #5536 kitchen ticket keeps ONLY the note (wrapped at 32): '** [Sans oignon cru - BIEN' / 'CUIT svp' / '** Allergie arachide & oeufs' / '** Merci beaucoup l'equipe]'; CAYENNE echo + compo blob stripped by cleanInstruction (PHP twin).",
+        "layout": "Card no-overflow (scrollHeight==clientHeight) landscape + portrait."
+      }
+    },
+    {
+      "point": 2,
+      "title": "Boissons visibles cuisine (nom complet) + dessert jamais classe boisson",
+      "status": "GREEN",
+      "evidence": {
+        "drinks_full_name_screen": "A0012/A0013 'BOISSON: Hawaï 33cl'; A0014 'BOISSON: Fuze Tea 33cl', standalone 'Coca-Cola 33cl', 'Sprite 33cl', '4× Coca-Cola 33cl'; fixture '2× Coca-Cola 33cl'. Full names, never 'HAW'/'FUZ'/'COC'.",
+        "drinks_full_name_ticket": "Decoded bytes: '** BOISSON: Hawaï 33cl' (Hawaï ï preserved CP858), '** BOISSON: Fuze Tea 33cl', '1 x Coca-Cola 33cl', '1 x Sprite 33cl', '4 x Coca-Cola 33cl' (standalone + menu-boisson).",
+        "standalone_and_menu": "menu-boisson channel ('BOISSON: X' from formule) AND standalone drink items both render full name on screen + ticket.",
+        "dessert_not_drink": "KitchenTicketSymbolicFormatter::isDrinkItem twin (parity with kdsCustomization.categorize): 13 real drinks (Coca/Hawaï/Sprite/Fanta/Orangina/Perrier/Fuze Tea/Oasis/Ice Tea/Capri-Sun/Tropico/Eau/Jus) => DRINK; 3 desserts (Tarte Daim, Glace, Tiramisu) => NOT drink. Fixture Tarte Daim renders as food item '1× TAR' (screen) / '1 x TAR' (ticket) via the symbolic-main path, NEVER the drink full-name path."
+      }
+    },
+    {
+      "point": 3,
+      "title": "Symbole O̲ (oignons cuits) - souligne ecran, ESC-1/ESC-0 ticket",
+      "status": "GREEN",
+      "evidence": {
+        "screen": "DOM contains 'STO̲' with U+0332 combining low line on the O (regex /O̲/ matches; hasUnderlineO=true). Renders as underlined O natively. Order S T O̲ (canonical CRUDITE_ORDER S,T,O,O̲).",
+        "ticket_bytes": "Decoded region: 'S','T', then ESC(1B) '-' 01, 'O'(4F), ESC(1B) '-' 00 => hardware underline on the O ONLY. Each ticket with oignon cuit = exactly 1 ESC-1 (ON) + 1 ESC-0 (OFF). Confirmed on #5533, #5534, fixture #5536.",
+        "width": "Underline consumes 0 columns (EscPosCommandBuilder::visibleWidth strips U+0332); all ticket lines <= 32 cols."
+      }
+    },
+    {
+      "point": 4,
+      "title": "Layout 3-cartes plein-ecran intact (pastille +N, codes 3 lettres, inline)",
+      "status": "GREEN",
+      "evidence": {
+        "grid": "KdsV2Grid visibleActiveOrders = activeOrders.slice(0,3). Exactly 3 full-height cards. Landscape: w=595, h=1544. Portrait: w=1253, h=1920. All no-overflow.",
+        "overflow_badge": "'+1 en attente' orange badge shown when a 4th active order queued (A0014 displaced during fixture demo) => pastille +N exacte.",
+        "codes": "3-letter product codes CAY (Cayenne), TAC (Tacos), TAR (Tarte Daim); size M; MENU / 'MENU : ALG' badges inline. New lines (note, boisson) did NOT break the card (no truncation/overflow/scroll break)."
+      }
+    },
+    {
+      "point": 5,
+      "title": "Parite ticket <-> ecran (symboles identiques)",
+      "status": "GREEN",
+      "evidence": {
+        "A0012": "screen 'S | CAY | STO̲ | ALG' + 'MENU : ALG' + 'BOISSON: Hawaï 33cl'  ==  ticket '1 x S | CAY | STO | ALG'(O underlined) + 'MENU : ALG' + '** BOISSON: Hawaï 33cl'.",
+        "note": "Identical symbol content on both surfaces. Differences are decoration only: screen prefix '·' + native combining underline; ticket prefix '**' + ESC-hardware underline; ticket wraps line-1 to 2 rows at 32 cols. PHP KitchenTicketSymbolicFormatter is a strict twin of JS kdsSymbolic.js (documented lockstep + parity spec tests/js/kdsSymbolic.spec.js)."
+      }
+    },
+    {
+      "point": 6,
+      "title": "Console KDS propre (0 erreur Vue nouvelle, 0 fuite i18n)",
+      "status": "GREEN",
+      "evidence": {
+        "vue_errors": "0 new Vue errors across all board loads.",
+        "i18n": "0 raw label leaks. All labels resolved FR (NOUVELLE, EN COURS, BORNE, CAISSE, ATTENTE, Pret, EN ATTENTE ENCAISSEMENT, RECEMMENT SERVIES). No 'label.x' / 'kds.x' / undefined / NaN.",
+        "out_of_scope_observation": "1 console error: 403 GET /api/admin/kds-order/sync (Cross-branch guard in KdsSyncController::sync, the degraded-poll fallback). Orthogonal to cuisine rendering (auth/branch-scope, not Vue/i18n). Board still renders via /kds index endpoint. Pre-existing / environmental (session appended branch_id=1 on the poll); NOT introduced by kitchen-symbolic work. Logged as P3 note, not a cuisine blocker."
+      }
+    }
+  ],
+  "verdict": "GREEN"
+}
