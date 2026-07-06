@@ -1,0 +1,42 @@
+{
+  "role": "SUPERVISEUR ADVERSAIRE — attaque des 2 fixes synchro, aucun code corrigé",
+  "head": "c9fe66be4d84c9d2ae9715a6d88d7724f75f3c6e",
+  "date": "2026-07-07",
+  "fixes": [
+    {
+      "id": "c9fe66be4 — Echo.leave refcount (resources/js/services/eventContract.js)",
+      "verdict": "HOLDS",
+      "evidence": {
+        "refcount_correct": "retainChannel(+1) appelé dans onEvents() APRÈS window.Echo.private(name) (eventContract.js:401) ; releaseChannel(-1) dans unsubscribe() ; Echo.leave(name) UNIQUEMENT quand releaseChannel retourne true (refcount tombe <=1 → delete clé, retourne true). Logique vérifiée lignes 358-374, 444-466.",
+        "idempotent_double_unsubscribe": "Flag de closure `released` (eventContract.js:442,446-449) : 2e appel = return immédiat, pas de 2e release. Prouvé par spec 'double unsubscribe is idempotent' (refcount reste 1, pas de leave prématuré pour le co-abonné).",
+        "bug_premise_confirmed_vs_real_echo": "node_modules/laravel-echo/dist/echo.js:498 private('branch.1') renvoie le MÊME objet canal par nom ; echo.js:540 leave()→leaveChannel = unsubscribe()+delete pour TOUS. L'ancien code Echo.leave au démontage de l'écran d'attente détruisait donc la souscription du shell KioskApp encore monté. Fix justifié et corrige exactement ce vecteur.",
+        "critical_2subscribers_scenario": "2 abonnés branch.1, l'un part → l'AUTRE garde ses listeners. Vérifié (a) par TDD spec 'first unsubscribe does NOT leave the channel and keeps the co-subscriber listeners intact' ; (b) par usage RÉEL : KioskAppComponent écoute {ItemAvailabilityChanged, CatalogChanged, ComposerProfileChanged, CouponChanged} et KioskWaitingComponent écoute {OrderCreated, OrderStatusChanged} → noms d'événements DISJOINTS, donc stopListening des events de l'un ne touche pas les bindings de l'autre.",
+        "reconnect_after_full_leave": "releaseChannel supprime la clé à 0 ; onEvents suivant → Echo.private recrée le canal, retain → refcount=1. Prouvé par spec 're-subscribe after a full leave rebuilds the channel cleanly'.",
+        "staff_realtime_non_regression": "POS/KDS/OSS + un seul écran KDS s'abonnent via onEvents ; subscribe→unsubscribe amène refcount 1→0 → Echo.leave déclenché → canal libéré (0 fuite) et réabonnement propre. 58 tests ws/echo/kiosk/broadcast/posEcho VERTS.",
+        "retain_release_balance": "retain uniquement après le guard (window.Echo && branchId && bindings valides) ; le handle no-op du guard échoué a un unsubscribe() vide (aucun release) → le compteur ne peut pas être corrompu/négatif. Les 2 composants réels appellent `this._eventSub?.unsubscribe()` puis `_eventSub=null`, et unsubscribe-avant-resubscribe → pas de double-retain.",
+        "tests": "npx vitest run (eventContract kioskWaiting posEcho realtimeBroadcast wsAuth wsReconnect) = 12 fichiers / 58 tests VERTS, dont eventContractChannelRefcount.spec.js 8/8."
+      },
+      "caveat_latent_non_bloquant_P3": "stopListening(`.${broadcastAs}`) est appelé SANS le callback rawHandler stocké (eventContract.js:453) ; d'après echo.js:99 cela unbind TOUS les callbacks de cet événement sur le canal partagé. Inoffensif aujourd'hui (co-abonnés à events disjoints) et strictement meilleur que l'ancien Echo.leave-tout. Durcissement futur possible : passer rawHandler à stopListening pour un unbind chirurgical, au cas où deux co-abonnés du même branch.{id} écouteraient un jour le MÊME broadcastAs. N'affecte PAS la correction actuelle ni le temps-réel staff — NON régression, NON bloquant."
+    },
+    {
+      "id": "dadd0f2c0 — Polling suivi web (OrderDetailsComponent.vue)",
+      "verdict": "HOLDS",
+      "evidence": {
+        "single_interval_after_first_fetch": "setInterval(15s) démarré dans startStatusPolling(), appelé UNE fois dans le .then() du premier fetch au mounted() ; guard `pollIntervalId !== null` empêche tout doublon. Prouvé par spec 're-dispatch toutes les 15s après le premier fetch' (1 fetch initial, puis +1 par tick).",
+        "clearInterval_beforeUnmount": "beforeUnmount() → stopStatusPolling() → clearInterval + pollIntervalId=null. Prouvé par spec 'clearInterval au beforeUnmount — aucune fuite ni fetch après démontage' (0 fetch après unmount).",
+        "stop_on_terminal": "isTerminalStatus couvre DELIVERED/CANCELED/REJECTED/RETURNED ; arrêt (a) au montage si déjà terminal (spec 'ne démarre pas de polling si la commande est déjà terminale au montage'), (b) en cours de poll dès transition terminale (spec 'arrête le polling dès que le statut devient terminal (DELIVERED)').",
+        "defensive_no_id": "guard `!this.$route.params.id` → pas de polling. Prouvé par spec 'ne démarre pas de polling sans ID de commande'.",
+        "read_only_zero_fiscal": "frontendOrder/show = axios.get('frontend/order/show/{id}') (store/modules/frontend/frontendOrder.js:97) → lecture seule, commit vers state uniquement. Aucun impact fiscal/stock/argent. Claim du commit VRAI.",
+        "tests": "npx vitest run orderDetails = orderDetailsClientPolling.spec.js 5/5 VERTS (cadence, cleanup unmount, arrêt terminal, terminal-au-montage, no-ID)."
+      }
+    }
+  ],
+  "interaction_entre_fixes": "AUCUNE. Fichiers et chemins de code disjoints : OrderDetailsComponent.vue n'importe/n'utilise ni Echo ni eventContract (grep=0) ; eventContract.js n'a aucun couplage polling/OrderDetails (seul match setInterval = un commentaire ligne 87).",
+  "regressions": [],
+  "gates": {
+    "vitest_full": "2273 passed | 3 skipped (2276) — 323 fichiers passed. Conforme à l'attendu 2273/0. 1 'error' = artefact bénin de teardown timer post-environnement dans kioskWizardNavigation.spec.js (setTimeout root.focus de KioskWizardComponent frozen) ; le fichier passe 9/9 en isolation ; orthogonal aux 2 fixes (aucun ne touche ce composant) — NON régression.",
+    "frozen_diff_24e8a09c3_HEAD": "OK — sur les 14 fichiers frozen §7, seuls public/js/pos-wizard.js + KioskWizardComponent.vue diffèrent (issus d'AUTRES commits de la plage ; les 2 fixes synchro ne touchent AUCUN frozen : fix1=eventContract.js, fix2=OrderDetailsComponent.vue). Conforme au mandat.",
+    "fiscal_verify_chain_all": "CHAIN OK ×4 (branches 1, 7, 8, 9) — SWEEP COMPLETE."
+  },
+  "verdict": "CLEAN"
+}

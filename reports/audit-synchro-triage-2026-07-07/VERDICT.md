@@ -33,3 +33,10 @@ Triage : 8 spécialistes par axe vs code HEAD `70dbc36f1` + contexte V1 + réfut
 
 ## Conclusion
 L'audit synchro est ~90%+ bruit (statique, famille 85%-fausse, cite du code inexistant). Le temps-réel STAFF (POS↔KDS↔OSS) et la FIDÉLITÉ sont solides au HEAD. Résidu réel = 2 P3 frontend fixables + 1 P3 différé. Aucun « BLOCK ».
+
+---
+## RÉSOLUTION (2026-07-07)
+- Echo.leave refcount `c9fe66be4` — validé adversaire HOLDS (refcount par canal, leave à 0, events KioskApp/KioskWaiting disjoints, 58 tests ws/echo/kiosk verts). Caveat P3 noté : stopListening sans rawHandler stocké (inoffensif events disjoints, mieux que l'ancien).
+- Polling suivi web `dadd0f2c0` — validé adversaire HOLDS (15s, arrêt terminal+beforeUnmount, lecture seule, 5 tests).
+- Clé idempotence POS — DIFFÉRÉ (retry in-modal protégé 409, non repro, chemin attesté).
+- Validation adversaire CLEAN. Gates : Vitest 2273/0, PHPUnit 3182/0 (fixes frontend), frozen 0 hors LOCK, CHAIN OK ×4.
