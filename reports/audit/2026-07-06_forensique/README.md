@@ -24,6 +24,7 @@ Audit en profondeur du monorepo, produit par **orchestration multi-agents advers
 | 06 | `06_SCORECARD_ET_CARTE.md` | Scores/verdicts des 13 systèmes + graphe de dépendances + forces |
 | 07 | `07_FEUILLE_DE_ROUTE.md` | Remédiation P0→P3 séquencée par cause racine + critères de sortie |
 | 08 | `08_DEEP_DIVE_TECHNIQUE_SECURITE.md` | **Deep-dive technique & sécurité** : code réel + PoC + patchs proposés (diffs, non appliqués) |
+| 09 | `09_PERFORMANCE_POS_BORNE.md` | **Audit de performance POS/borne** : causes du ralentissement + plan chiffré vers 5×–10× + garde-fous sécurité |
 
 ## Méthode
 
