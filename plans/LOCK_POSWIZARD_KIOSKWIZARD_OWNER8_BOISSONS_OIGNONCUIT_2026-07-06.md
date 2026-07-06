@@ -25,6 +25,7 @@
 1. pos-wizard.js (a) : dans l'IIFE `boissonItems`, si le filtre addons rend vide ET `data-pos-drinks-catalog` non-vide → construire `boissonItems` depuis `catalogList` avec `price: 0`, libellé « Incluse ». Aucun autre chemin touché ; la sélection alimente le canal existant `BOISSON: <nom>` (pos-wizard:2581-2588) ; facturation inchangée (matching par nom → no-op, modèle borne).
 2. pos-wizard.js (b) : extra « Oignons cuits » (matché `isCruditeName`) → défaut NON-inclus + exclusivité mutuelle avec « Oignons » (sélection de l'un désélectionne l'autre) ; défaut global = cru.
 3. KioskWizardComponent.vue : même exclusivité cru↔cuit côté borne, défaut cru.
+4. pos-wizard.js (c) : cartes viande = image réelle si disponible (URL par variation/asset inventorié) au lieu de la pastille couleur seule — mandat owner goal 2026-07-06 (« Mets-moi des images réelles ») ; repli = pastille actuelle si asset absent (gate G2).
 
 ## §5. Files
 Modifiés : les 2 frozen ci-dessus uniquement. Contexte (lus, non modifiés) : `PosComponent.vue` (drinksCatalog persistant — non-frozen, hors LOCK), `kdsSymbolic.js`/`KitchenTicketSymbolicFormatter.php` (symbole O̲ — non-frozen, hors LOCK), seeder boissons (renommage Hawaï — hors LOCK). NON touchés : `PricingService.php` (frozen, zéro changement — prix formule inchangé par construction), `KioskAppComponent.vue`, `KioskUpsellComponent.vue`, `PaymentComponent.vue`.
