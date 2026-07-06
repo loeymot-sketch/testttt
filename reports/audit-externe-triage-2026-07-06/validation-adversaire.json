@@ -1,0 +1,107 @@
+{
+  "meta": {
+    "role": "adversarial supervisor validation of external-audit triage fixes",
+    "head": "7e59c461a8ccbda1504e4a8745a297a51a84bace",
+    "commits_validated": {
+      "C09": "6ecc093b2",
+      "C36": "a55812152",
+      "C39": "7e59c461a"
+    },
+    "date": "2026-07-06",
+    "servers": { "admin": "127.0.0.1:8000", "kiosk_same_origin": "127.0.0.1:8766" },
+    "method": "verify-before-report — every verdict backed by a concrete repro (HTTP / DB / live browser capture)"
+  },
+  "fixes": [
+    {
+      "id": "C09",
+      "title": "Permission gate on GET /api/admin/users (PII enumeration leak)",
+      "verdict": "HOLDS",
+      "evidence": {
+        "live_http_matrix": {
+          "anonymous_no_token": "401",
+          "chef_role_no_gate_perm": "403 (was 200 PII leak before fix)",
+          "pos_operator_permission_pos": "200 (returns user/name+email list — POS customer selector flow intact)",
+          "admin_gate_before_bypass": "200"
+        },
+        "route": "GET api/admin/users -> SimpleUserController@index, middleware permission:pos|pos-orders|table-orders|online-orders|push-notifications|settings ->only('index')",
+        "sibling_pii_index_routes_probed_with_chef_token": {
+          "customer": "403", "transaction": "403", "administrator": "403",
+          "employee": "403", "delivery-boy": "403", "chef": "403",
+          "waiter": "403", "subscriber": "403"
+        },
+        "sibling_conclusion": "/users was the sole open PII index; all siblings independently guarded — no residual enumeration surface",
+        "live_pos_regression": "POS on :8000 loads and consumes GET /api/admin/users -> 200 (customer selector populated); page renders fully, no broken state",
+        "tests": "AdminRoutePermissionFloorTest 6/6 pass; Permission|Security|SimpleUser green; Pos|Table|User 827 pass"
+      }
+    },
+    {
+      "id": "C36",
+      "title": "Loyalty-point refund in CleanupStalePendingKioskOrders purge job",
+      "verdict": "HOLDS",
+      "evidence": {
+        "unit_tests_real_handle": "CleanupStaleLoyaltyRefundTest 3/3 pass — refund+CANCELED, no-op without loyalty, idempotent on rerun (runs the real job handle())",
+        "live_mysql_repro_of_added_line": {
+          "driver": "mysql (not sqlite) — closes the SQLite-masks-MySQL gap",
+          "case_A_redeem_refund": "balance 100 -> 150 (+50 restored), exactly 1 manual_add ledger row",
+          "case_A_idempotence_second_call": "balance stays 150, manual_add rows stays 1 (real UNIQUE (user_id,order_id,type) index + early-detect no-op)",
+          "case_B_no_loyalty": "0 loyalty txns created, balance unchanged (42) — no parasitic movement",
+          "cleanup": "test order+txns+users force-deleted after repro"
+        },
+        "wiring": "refundPoints($locked,'kiosk') called before terminal apply inside the locked DB::transaction; refundPoints has 5 early-return guards (no code / no redeem row / points<=0 / user missing / already-refunded)",
+        "note": "Full job NOT run against live DB to avoid a destructive 96-stale-order sweep + ~384 queued events; job wiring proven by the green real-handle() unit test, refund behaviour proven on live MySQL"
+      }
+    },
+    {
+      "id": "C39",
+      "title": "Kiosk loyalty redeem/display gated behind kioskPromoEnabled (phantom discount)",
+      "verdict": "HOLDS",
+      "evidence": {
+        "served_config_is_vulnerable_shape": "discountsEnabled=true (POS/web) AND kioskPromoEnabled=false (kiosk) — the exact config under which the OLD code showed the redeem UI",
+        "bundle_active": "fresh kiosk-shell.js (built 23:45, contains effectiveLoyaltyDiscount/displayTotal/kiosk-loyalty-redeem-options) lazy-loaded at /kiosk/loyalty (network 200) — the running kiosk uses the fixed compiled code",
+        "case_a_real_loyalty_code": "code LIVE2TAB1 (350 pts) verified -> account shows read-only balance + earn message only; kiosk-loyalty-redeem-options ABSENT, kiosk-loyalty-points-equiv ABSENT, no 'utiliser mes points', no 'de réduction' text (DOM-queried)",
+        "case_b_no_phantom_in_payload": "order 5541 created via full borne flow: DB total=1.00, discount=0.00, 0 loyalty txns -> backend charged full price, no discount reached server; final cash-instruction URL total=1",
+        "case_c_persisted_discount_edge": "injected kioskCart.loyaltyDiscount=0.50 into vuex-persistedstate; store rehydrated 0.5 BUT cart shows Sous-total 1.00 == Total 1.00, no kiosk-cart-loyalty-discount line, checkout button 1.00 — displayTotal neutralizes it (fix at display layer)",
+        "borne_regression": "full kiosk order completed -> order 5541 PENDING_COUNTER (201-class), no crash"
+      },
+      "residual_observation_non_blocking": {
+        "what": "KioskPaymentComponent.vue:328 cartTotal()=this._lastQuote?.total_ttc ?? this.total falls back to store getter 'total' (subtotal - loyaltyDiscount); with the injected persisted discount the /kiosk/payment screen briefly showed 'Total a regler 0,50' while cart + cash-instruction + DB + charge are all 1.00",
+        "severity": "P3 informational — NOT a regression (KioskPayment was out of C39 scope and unchanged), NOT reachable in normal prod (flag OFF => applyLoyalty gated => loyaltyDiscount always 0), server quote SSOT and the created order are correct (1.00)",
+        "not_counted_against_verdict": "the three mandate checks (a/b/c on cart + redeem gating) all PASS; this is an incomplete closure of the broader 'borne affiche=facture' theme at the payment screen for an artificially-injected/flag-flip edge state"
+      }
+    }
+  ],
+  "regressions": [
+    {
+      "area": "caisse cash flow -> PAID",
+      "result": "PASS",
+      "evidence": "live POS: Eau Plate 50cl -> pos-wizard -> cart 1.00 -> Especes 1.00 -> Confirmer -> order 5542 total=1.00 pos_payment_method=CASH payment_status=PAID(5) status=7 fiscal_sequence_no=2633"
+    },
+    {
+      "area": "borne order flow -> 201",
+      "result": "PASS",
+      "evidence": "kiosk order 5541 created PENDING_COUNTER, full price 1.00, no phantom discount"
+    },
+    {
+      "area": "promo W2 still gated",
+      "result": "PASS",
+      "evidence": "KioskCartComponent promo block v-if=discountsEnabled && kioskPromoEnabled (kioskPromoEnabled=false live) -> promo entry hidden"
+    },
+    {
+      "area": "fix interactions C36 refund x C39 gate x C09 permission",
+      "result": "PASS — disjoint",
+      "evidence": "three fixes touch disjoint files (SimpleUserController / CleanupStalePendingKioskOrders / KioskCart+KioskLoyalty), no shared code or state; C39 keeps prod loyaltyDiscount=0 so C36 refund is a benign no-op for kiosk orders; complementary not conflicting"
+    }
+  ],
+  "gates": {
+    "frozen_zone_diff_24e8a09c3_to_HEAD": "only public/js/pos-wizard.js + KioskWizardComponent.vue (both allowed by mandate); the 3 fix commits themselves touch ZERO frozen files",
+    "vitest_full": "320 files, 2258 passed | 3 skipped (0 fail)",
+    "fiscal_verify_chain_all": "CHAIN OK on all 4 active branches (before AND after the live cash order 5542/seq 2633)"
+  },
+  "test_data_left": {
+    "order_5541": "kiosk PENDING_COUNTER 1.00 (harmless — cleanup job will purge; used for C39 case-b proof)",
+    "order_5542": "POS cash PAID 1.00 fiscal_seq=2633 (fiscally sealed, NF525 — must NOT be deleted)",
+    "probe_tokens": "revoked",
+    "kiosk_localStorage_injection": "browser-session only (loyaltyDiscount=0.5), non-persistent server-side"
+  },
+  "verdict": "CLEAN"
+}

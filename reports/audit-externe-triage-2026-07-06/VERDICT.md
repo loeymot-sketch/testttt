@@ -31,3 +31,12 @@ Exemples : C03/C22 scellement (SealedOrderGuard sur RETURNED/CANCELED/REJECTED +
 
 ## Conclusion
 L'audit externe est ~85% périmé/faux. **Le vrai résidu = 3 P2 non-frozen (fixables tout de suite) + 1 P2 fiscal frozen (gate owner).** Aucun P0/P1 réel. Cohérent avec l'état GO V1 LOCAL déjà attesté.
+
+---
+## RÉSOLUTION (2026-07-06, HEAD 6832c6694)
+- C09 corrigé `6ecc093b2` — validé adversaire HOLDS (403 Chef / 200 POS, 8 autres index déjà gardés)
+- C36 corrigé `a55812152` — validé adversaire HOLDS (refund idempotent prouvé MySQL réel)
+- C39 corrigé `7e59c461a` + P3 résiduel écran paiement `6832c6694` — validé adversaire HOLDS (0 discount fantôme)
+- C33/C04 = LOCK DRAFT `plans/LOCK_ZREPORT_C33_DEAD_WINDOW_CONTINUITY_2026-07-06.md` — GATE OWNER (frozen NF525)
+- Validation adversaire CLEAN, gates : Vitest 2260/0, PHPUnit 3182/0, frozen 0 hors LOCK, CHAIN OK ×4.
+- Rapport adversaire : `validation-adversaire.json`.
