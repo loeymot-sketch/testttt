@@ -17,7 +17,8 @@
  * lockstep with this table so the printed ticket and the screen match exactly.
  */
 
-import { categorize, kdsVariationGroupValue } from './kdsCustomization.js';
+import { categorize, kdsVariationGroupValue, sanitizeKdsInstruction } from './kdsCustomization.js';
+import { kdsInstructionVisualClass } from './kdsLineSemantics.js';
 
 /** lowercase, strip diacritics, collapse spaces — for keyword matching. */
 function normalize(s) {
@@ -276,6 +277,41 @@ export function symbolicMainLine(orderItem) {
 }
 
 /**
+ * [W3-FIX-C 2026-07-06] Addon boisson (role 'drink' / 'menu_boisson' / *boisson*) —
+ * le cuisinier PRÉPARE les boissons : elles doivent être visibles écran + ticket.
+ * Jumeau STRICT du PHP KitchenTicketSymbolicFormatter::drinkLines().
+ */
+function isDrinkAddonRole(role) {
+    const r = String(role || '').toLowerCase();
+    return r === 'drink' || r === 'menu_boisson' || r.includes('boisson');
+}
+
+/** Lignes boisson d'un item ("1× Coca-Cola 33cl") depuis ses addons. */
+function drinkAddonLabels(orderItem) {
+    const out = [];
+    for (const a of readAddons(orderItem)) {
+        if (!isDrinkAddonRole(a?.role)) continue;
+        const name = addonName(a);
+        if (!name) continue;
+        const q = parseInt(a?.quantity, 10);
+        const qty = Number.isFinite(q) && q > 0 ? q : 1;
+        out.push(`${qty}× ${name}`);
+    }
+    return out;
+}
+
+/**
+ * [W3-FIX-A 2026-07-06] Note client sanitisée → ligne type:'instruction' (rendue par
+ * KdsOrderLine.vue). sanitizeKdsInstruction garde les notes libres (« oignons cuits »,
+ * « BOISSON: Coca-Cola 33cl » du wizard caisse) et strip l'écho compo du wizard.
+ */
+function instructionLine(orderItem) {
+    const note = sanitizeKdsInstruction(orderItem?.instruction, orderItem?.item_name);
+    if (note.length === 0) return null;
+    return { type: 'instruction', label: note, visualClass: kdsInstructionVisualClass(note) };
+}
+
+/**
  * Render an order item into the typed line list consumed by <KdsOrderLine>.
  * Mirrors the shape of kdsCustomization.renderItem() but uses the symbolic format.
  */
@@ -302,6 +338,15 @@ export function renderItemSymbolic(orderItem) {
             category: s.category,
             hasAllergen,
         });
+        // [W3-FIX-C] Boisson de la formule visible sous le badge MENU.
+        for (const d of drinkAddonLabels(orderItem)) {
+            lines.push({ type: 'menu_child', label: d });
+        }
+        // [W3-FIX-A] Note client visible aussi sur un item Menu/Formule.
+        const menuNote = instructionLine(orderItem);
+        if (menuNote) {
+            lines.push(menuNote);
+        }
         if (hasAllergen) {
             lines.push({ type: 'allergen', codes: allergenCodes });
         }
@@ -311,7 +356,12 @@ export function renderItemSymbolic(orderItem) {
     lines.push({
         type: 'symbolic-main',
         qty: orderItem?.quantity ?? 1,
-        label: symbolicMainLine(orderItem),
+        // [W3-FIX-C 2026-07-06] Item BOISSON (Coca standalone #5456) → nom COMPLET :
+        // « COC » cryptique ne dit pas au cuisinier QUELLE boisson préparer.
+        // Jumeau PHP : OrderReceiptEscPosRenderer::renderKitchenTicket (isDrinkItem).
+        label: s.category === 'drink'
+            ? String(orderItem?.item_name || '').trim()
+            : symbolicMainLine(orderItem),
         category: s.category,
         hasAllergen,
     });
@@ -327,6 +377,19 @@ export function renderItemSymbolic(orderItem) {
         // [K2-KDS 2026-07-05] Supplément payant signalé par une ÉTOILE ⭐ (écran → emoji OK)
         // + affiché en gras jaune (CSS) → repérage immédiat par le cuisinier.
         lines.push({ type: 'supplement', label: String(sup).replace(/^\+\s*/, '⭐ ') });
+    }
+
+    // [W3-FIX-C 2026-07-06] Addons boisson (role drink / menu_boisson) → lignes visibles
+    // « 1× Boisson Seule » (type menu_child, déjà rendu par KdsOrderLine.vue).
+    for (const d of drinkAddonLabels(orderItem)) {
+        lines.push({ type: 'menu_child', label: d });
+    }
+
+    // [W3-FIX-A 2026-07-06] Note client (« oignons cuits », « BOISSON: X » du POS) après
+    // les suppléments — le ticket imprimé l'avait (** note), l'écran V2 la perdait.
+    const note = instructionLine(orderItem);
+    if (note) {
+        lines.push(note);
     }
 
     if (hasAllergen) {

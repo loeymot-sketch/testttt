@@ -287,7 +287,9 @@ final class OrderReceiptEscPosRenderer
                 // (Pas de fusion devinée : le menu n'est pas forcément adjacent à son produit.)
                 $sym = $this->symbolic->fritesSauceSymbol($instruction);
                 $menuLine = $sym !== '' ? 'MENU : '.$sym : 'MENU';
-                $blocks[] = ['head' => $qty.' x '.$menuLine, 'menu' => null, 'supps' => [], 'notes' => []];
+                // [W3-FIX-C 2026-07-06] La boisson de la formule sort AUSSI en cuisine
+                // (owner : le cuisinier prépare les boissons).
+                $blocks[] = ['head' => $qty.' x '.$menuLine, 'menu' => null, 'supps' => [], 'drinks' => $this->symbolic->drinkLines($snap), 'notes' => []];
 
                 continue;
             }
@@ -298,10 +300,17 @@ final class OrderReceiptEscPosRenderer
                 $menu = $sym !== '' ? 'MENU : '.$sym : 'MENU';
             }
             $note = $this->symbolic->cleanInstruction($instruction, $name);
+            // [W3-FIX-C 2026-07-06] Item BOISSON (Coca standalone) → NOM COMPLET :
+            // « 1 x COC » ne dit pas au cuisinier QUELLE boisson préparer. Jumeau
+            // écran : kdsSymbolic.js renderItemSymbolic (categorize==='drink').
+            $head = $this->symbolic->isDrinkItem($name)
+                ? $qty.' x '.trim($name)
+                : $qty.' x '.$this->symbolic->mainLine($name, $snap);
             $blocks[] = [
-                'head' => $qty.' x '.$this->symbolic->mainLine($name, $snap),
+                'head' => $head,
                 'menu' => $menu !== '' ? $menu : null,
                 'supps' => $this->symbolic->supplementLines($snap),
+                'drinks' => $this->symbolic->drinkLines($snap),
                 'notes' => array_values(array_filter(array_map('trim', explode("\n", $note)))),
             ];
         }
@@ -332,6 +341,15 @@ final class OrderReceiptEscPosRenderer
                 $b .= EscPosCommandBuilder::bold(true);
                 foreach (EscPosCommandBuilder::wrapIndented($star, $w - 2, '  ') as $supLine) {
                     $b .= EscPosCommandBuilder::textLine('  '.$supLine);
+                }
+                $b .= EscPosCommandBuilder::bold(false);
+            }
+            // [W3-FIX-C 2026-07-06] Boissons (addon drink / menu_boisson) en GRAS,
+            // même gabarit width-safe que menu/suppléments (jamais coupées à 32 col).
+            foreach (($blk['drinks'] ?? []) as $drink) {
+                $b .= EscPosCommandBuilder::bold(true);
+                foreach (EscPosCommandBuilder::wrapIndented((string) $drink, $w - 2, '  ') as $drinkLine) {
+                    $b .= EscPosCommandBuilder::textLine('  '.$drinkLine);
                 }
                 $b .= EscPosCommandBuilder::bold(false);
             }

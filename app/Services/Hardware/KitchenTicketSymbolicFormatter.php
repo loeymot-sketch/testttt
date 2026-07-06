@@ -263,6 +263,63 @@ final class KitchenTicketSymbolicFormatter
     }
 
     /**
+     * [W3-FIX-C 2026-07-06] Item BOISSON ? Jumeau STRICT du JS categorize()==='drink'
+     * (kdsCustomization.js) : mêmes regex, même ORDRE (un nom qui matche une catégorie
+     * antérieure — menu/sandwich/taco/…/dessert — n'est JAMAIS une boisson ; garde
+     * dessert-avant-drink : « Gâteau » contient « eau » mais reste un dessert).
+     * NB : lowercase SANS translit (le JS ne strip pas les diacritiques ici).
+     */
+    public function isDrinkItem(string $name): bool
+    {
+        $n = mb_strtolower(trim($name));
+        $before = [
+            '/menu|formule/u',                       // menu_formule
+            '/sandwich|kafteji|brick/u',             // sandwich
+            '/\btacos?\b/u',                         // taco
+            '/burger|cheeseburger|double cheese/u',  // burger
+            '/assiette|couscous|ojja|lablabi/u',     // assiette
+            '/frite|onion ring/u',                   // side
+            '/dessert|crepe|crêpe|gateau|gâteau|glace|tiramisu/u', // dessert (AVANT drink)
+        ];
+        foreach ($before as $re) {
+            if (preg_match($re, $n)) {
+                return false;
+            }
+        }
+
+        return (bool) preg_match('/coca|fanta|sprite|\beau\b|coke|water|\bjus\b|\bthé?\b|menthe|caf[eé]/u', $n);
+    }
+
+    /**
+     * [W3-FIX-C 2026-07-06] Lignes boisson d'un item ("1 Coca-Cola 33cl") depuis ses
+     * addons (role 'drink' / 'menu_boisson' / *boisson*) — le cuisinier PRÉPARE les
+     * boissons, elles doivent sortir sur le ticket ET l'écran. Jumeau du JS
+     * kdsSymbolic.js drinkAddonLabels() (écran : « 1× … », ticket : « 1 … »).
+     *
+     * @param  array<string,mixed>  $snapshot
+     * @return list<string>
+     */
+    public function drinkLines(array $snapshot): array
+    {
+        $out = [];
+        foreach (($snapshot['addons'] ?? []) as $a) {
+            $role = strtolower((string) ($a['role'] ?? ''));
+            if (! ($role === 'drink' || $role === 'menu_boisson' || str_contains($role, 'boisson'))) {
+                continue;
+            }
+            $name = trim((string) ($a['addon_name'] ?? $a['name'] ?? ''));
+            if ($name === '') {
+                continue;
+            }
+            $q = (int) ($a['quantity'] ?? 1);
+            $q = $q > 0 ? $q : 1;
+            $out[] = "{$q} {$name}";
+        }
+
+        return $out;
+    }
+
+    /**
      * Strip the echoed product-name line and the duplicate composition blob the
      * frozen pos-wizard writes into `instruction`; keep only free client notes
      * and bracketed notes. PHP twin of kdsSymbolic / sanitizeKdsInstruction.
