@@ -160,11 +160,14 @@
           </div>
         </div>
 
-        <!-- Points disponibles -->
+        <!-- Points disponibles — le solde brut reste toujours affiché (consultation
+             lecture seule). [C39 heal 2026-07-06] L'équivalence « = X € de réduction sur
+             cette commande » est une PROMESSE de remise : gatée par kioskPromoEnabled,
+             sinon elle annonce une réduction que la borne n'applique jamais (flag OFF). -->
         <div class="kiosk-loyalty-points-badge">
           <span class="kiosk-loyalty-points-value">{{ customer.loyalty_point }}</span>
           <span class="kiosk-loyalty-points-label">{{ $t('kiosk.loyalty_screen.points_label') }}</span>
-          <span v-if="discountValue > 0" class="kiosk-loyalty-points-equiv">
+          <span v-if="discountValue > 0 && discountsEnabled && kioskPromoEnabled" class="kiosk-loyalty-points-equiv" data-testid="kiosk-loyalty-points-equiv">
             {{ $t('kiosk.loyalty_screen.points_equiv', { amount: formatPrice(Math.min(discountValue, total)) }) }}
           </span>
         </div>
@@ -184,8 +187,12 @@
 
         <!-- Options : utiliser ou pas — [FIX P2 audit 2026-06-28] uniquement si les
              remises sont activées (sinon /loyalty/redeem renvoie 422 → cul-de-sac).
-             En V1 earn-only (remises OFF), on n'affiche PAS l'option « utiliser ». -->
-        <div v-if="canRedeem && discountsEnabled" class="kiosk-loyalty-options">
+             En V1 earn-only (remises OFF), on n'affiche PAS l'option « utiliser ».
+             [C39 heal 2026-07-06] + gate borne dédié kioskPromoEnabled : la borne
+             n'envoie jamais le discount au payload (loyalty_code seul), donc afficher
+             « utiliser mes points » = promesse « -X € » jamais tenue (client débité
+             plein tarif). Même couple de flags que le bloc promo du panier. -->
+        <div v-if="canRedeem && discountsEnabled && kioskPromoEnabled" class="kiosk-loyalty-options" data-testid="kiosk-loyalty-redeem-options">
           <button type="button"
             class="kiosk-loyalty-option"
             :class="{ selected: redeemChoice === 'yes' }"
@@ -234,7 +241,7 @@
         <button type="button"
           class="kiosk-btn-primary full"
           @click="applyLoyalty"
-          :disabled="canRedeem && discountsEnabled && !redeemChoice"
+          :disabled="canRedeem && discountsEnabled && kioskPromoEnabled && !redeemChoice"
         >
           {{ $t('kiosk.loyalty_screen.confirm') }}
         </button>
@@ -384,6 +391,27 @@ export default {
         && window.foodkingConfig
         && window.foodkingConfig.discountsEnabled === true;
     },
+    /**
+     * [C39 heal 2026-07-06] Gate DÉDIÉ borne (mirror EXACT de
+     * KioskCartComponent.kioskPromoEnabled). Le W2 audit (2026-06-26) avait gaté
+     * le bloc PROMO + le bouton fidélité DU PANIER derrière ce flag, mais PAS
+     * l'écran de redeem fidélité atteignable via « Mon compte »
+     * (KioskCategoriesComponent → kiosk.loyalty). Résultat : `discountsEnabled`
+     * seul reste TRUE en prod (il pilote la remise manuelle POS + le web), donc
+     * l'option « utiliser mes points » s'affichait, posait `loyaltyDiscount` dans
+     * le store → panier « -X € » MAIS le payload borne n'envoie jamais ce discount
+     * (buildKioskQuotePayload → loyalty_code seul, le serveur early-return) → le
+     * client était débité PLEIN TARIF. On aligne donc le redeem fidélité sur le
+     * MÊME couple de flags que la promo : `discountsEnabled && kioskPromoEnabled`.
+     * Défaut FALSE (config kiosk.promo_enabled) → caché = aucune promesse non tenue.
+     * La consultation du solde de points reste (lecture seule) ; seul le redeem
+     * qui affiche une remise non appliquée est gaté.
+     */
+    kioskPromoEnabled() {
+      return (typeof window !== 'undefined' && window.foodkingConfig)
+        ? window.foodkingConfig.kioskPromoEnabled === true
+        : false;
+    },
 
     nextTierPoints() {
       if (!this.customer) return 0;
@@ -528,7 +556,9 @@ export default {
 
     async applyLoyalty() {
       // [FIX P2 audit] redeem seulement si activé (sinon le backend 422 rejette la commande).
-      if (this.canRedeem && this.discountsEnabled && this.redeemChoice === 'yes') {
+      // [C39 heal 2026-07-06] + gate borne dédié kioskPromoEnabled : sans lui, la remise
+      // était posée dans le store mais jamais envoyée au payload → client débité plein tarif.
+      if (this.canRedeem && this.discountsEnabled && this.kioskPromoEnabled && this.redeemChoice === 'yes') {
         this.appliedDiscount = Math.min(this.discountValue, this.total);
         await this.setLoyalty({ customer: this.customer, discount: this.appliedDiscount });
         this.showToast(

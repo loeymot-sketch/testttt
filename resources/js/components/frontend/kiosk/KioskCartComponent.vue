@@ -255,21 +255,24 @@
           <span>{{ $t('kiosk.subtotal') }}</span>
           <span data-testid="kiosk-cart-subtotal">{{ formatPrice(cartSubtotal) }}</span>
         </div>
-        <div class="kiosk-cart-summary-row loyalty" v-if="loyaltyDiscount > 0">
+        <!-- [C39 heal 2026-07-06] Gaté par effectiveLoyaltyDiscount (kioskPromoEnabled) :
+             ne jamais afficher une remise fidélité que le payload borne n'enverra pas. -->
+        <div class="kiosk-cart-summary-row loyalty" v-if="effectiveLoyaltyDiscount > 0">
           <span><span aria-hidden="true">🎁</span> {{ $t('kiosk.discount_loyalty') }}</span>
-          <span class="green" data-testid="kiosk-cart-loyalty-discount">-{{ formatPrice(loyaltyDiscount) }}</span>
+          <span class="green" data-testid="kiosk-cart-loyalty-discount">-{{ formatPrice(effectiveLoyaltyDiscount) }}</span>
         </div>
-        <!-- Kiosk Phase 9.1.6 — Ligne discount promo, ne s'affiche que si appliquée. -->
-        <div class="kiosk-cart-summary-row promo" v-if="promoDiscount > 0">
+        <!-- Kiosk Phase 9.1.6 — Ligne discount promo, ne s'affiche que si appliquée.
+             [C39 heal 2026-07-06] Gaté par effectivePromoDiscount pour la même raison. -->
+        <div class="kiosk-cart-summary-row promo" v-if="effectivePromoDiscount > 0">
           <span><span aria-hidden="true">🏷️</span> {{ $t('kiosk.discount_promo', { code: promoCode }) }}</span>
-          <span class="green" data-testid="kiosk-cart-promo-discount">-{{ formatPrice(promoDiscount) }}</span>
+          <span class="green" data-testid="kiosk-cart-promo-discount">-{{ formatPrice(effectivePromoDiscount) }}</span>
         </div>
         <div class="kiosk-cart-summary-row total">
           <span>{{ $t('kiosk.total') }}</span>
           <span
             class="kiosk-cart-grand-total"
             data-testid="kiosk-cart-total"
-          >{{ formatPrice(cartTotal) }}</span>
+          >{{ formatPrice(displayTotal) }}</span>
         </div>
       </div>
 
@@ -351,7 +354,7 @@
           data-testid="kiosk-cart-checkout"
         >
           <span>{{ $t('kiosk.validate_order') }}</span>
-          <span class="kiosk-btn-price">{{ formatPrice(cartTotal) }}</span>
+          <span class="kiosk-btn-price">{{ formatPrice(displayTotal) }}</span>
         </button>
         <p
           v-if="quoteError"
@@ -476,6 +479,43 @@ export default {
     /** Phase A — skip upsell when all lines are in "skip after cart" categories */
     shouldSkipKioskUpsell() {
       return shouldSkipKioskUpsellScreen(this.cartItems, this.categories);
+    },
+    /**
+     * [C39 heal 2026-07-06] Remise fidélité EFFECTIVE (affichable). Le store peut
+     * détenir un `loyaltyDiscount > 0` (redeem d'une session flag-ON, valeur
+     * persistée via vuex-persistedstate `kioskCart.loyaltyDiscount`), mais si le
+     * gate borne `kioskPromoEnabled` est OFF le payload borne n'enverra JAMAIS ce
+     * discount (buildKioskQuotePayload → loyalty_code seul). Afficher « -X € » dans
+     * ce cas = mensonge (client débité plein tarif). On neutralise donc l'affichage
+     * quand le flag est OFF, en miroir du bloc promo (déjà gaté au W2). Le redeem
+     * lui-même est aussi gaté dans KioskLoyaltyComponent → en flux normal ce
+     * computed = loyaltyDiscount ; la neutralisation ne joue que sur l'edge-case
+     * d'un discount persisté avant flip du flag.
+     */
+    effectiveLoyaltyDiscount() {
+      return this.kioskPromoEnabled ? (parseFloat(this.loyaltyDiscount) || 0) : 0;
+    },
+    /**
+     * [C39 heal 2026-07-06] Remise promo EFFECTIVE (affichable) — même logique.
+     * Quand le flag est OFF le champ promo est masqué donc promoDiscount reste 0 ;
+     * la neutralisation ne fait que verrouiller la cohérence total affiché/facturé.
+     */
+    effectivePromoDiscount() {
+      return this.kioskPromoEnabled ? (parseFloat(this.promoDiscount) || 0) : 0;
+    },
+    /**
+     * [C39 heal 2026-07-06] Total AFFICHÉ = sous-total moins les seules remises
+     * réellement transmises/appliquées côté serveur. Reproduit la formule du getter
+     * store `total` quand le flag est ON (subtotal - loyalty - promo), et retombe
+     * sur le sous-total plein quand le flag est OFF → « total affiché == total
+     * facturé » dans tous les cas (fin de la divergence C39). Le SSOT prix reste le
+     * backend ; ce total est purement d'affichage.
+     */
+    displayTotal() {
+      return Math.max(
+        0,
+        (parseFloat(this.cartSubtotal) || 0) - this.effectiveLoyaltyDiscount - this.effectivePromoDiscount,
+      );
     },
   },
   watch: {
