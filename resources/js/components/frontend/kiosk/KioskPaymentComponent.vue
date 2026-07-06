@@ -324,8 +324,22 @@ export default {
   MAX_PAYMENT_FAILURES: 2,
   computed: {
     // [GAP-22-4] Also read orderType so it's passed to submitOrder
-    ...mapGetters('kioskCart', ['total', 'branchId', 'orderType']),
-    cartTotal() { return this._lastQuote?.total_ttc ?? this.total; },
+    ...mapGetters('kioskCart', ['total', 'subtotal', 'loyaltyDiscount', 'promoDiscount', 'branchId', 'orderType']),
+    // [C39 heal 2026-07-06] Miroir du gate borne du panier : une remise fidélité/promo
+    // n'est réellement facturée que si le flag kioskPromoEnabled est ON (sinon le payload
+    // borne ne la transmet jamais — cf. KioskCartComponent.displayTotal / effectiveLoyaltyDiscount).
+    kioskPromoEnabled() {
+      try { return window?.foodkingConfig?.kioskPromoEnabled === true; } catch (_) { return false; }
+    },
+    // [C39 heal 2026-07-06] Total de repli AVANT la quote serveur : ignore les remises
+    // non transmises quand le flag est OFF → « affiché == facturé » aussi sur l'écran
+    // paiement (fin du dernier angle de divergence relevé par l'adversaire). SSOT prix = backend.
+    displayFallbackTotal() {
+      const loyalty = this.kioskPromoEnabled ? (parseFloat(this.loyaltyDiscount) || 0) : 0;
+      const promo = this.kioskPromoEnabled ? (parseFloat(this.promoDiscount) || 0) : 0;
+      return Math.max(0, (parseFloat(this.subtotal) || 0) - loyalty - promo);
+    },
+    cartTotal() { return this._lastQuote?.total_ttc ?? this.displayFallbackTotal; },
     // [SUPERVISOR WAVE C Z1 2026-05-28] Plan B: route all kiosk payments to counter.
     // Read from window.foodkingConfig.kiosk.paymentRouteAllToCounter (config/kiosk.php +
     // master.blade.php injection). When true, KioskPaymentComponent hides method
