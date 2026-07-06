@@ -8,7 +8,7 @@ Audit en profondeur du monorepo, produit par **orchestration multi-agents advers
 ## Comment lire cet audit
 
 **Pressé ?** → `00_RESUME_EXECUTIF.md` (Top 6 + 5 causes racines + réponse « repo bien structuré ? »).
-**Technique ?** → commence par `03_INVARIANTS_FULLSTACK.md` (la cause de tout), puis `04` et `05`.
+**Technique ?** → commence par `03_INVARIANTS_FULLSTACK.md` (la cause de tout), puis `04`, `05`, et le **`08` deep-dive (code réel + PoC + patchs en diff)**.
 **Chef de projet ?** → `07_FEUILLE_DE_ROUTE.md` (plan P0→P3 séquencé).
 
 ## Sommaire
@@ -23,6 +23,7 @@ Audit en profondeur du monorepo, produit par **orchestration multi-agents advers
 | 05 | `05_SECURITE_RED_TEAM.md` | 6 chaînes d'attaque détaillées + inventaire des secrets committés |
 | 06 | `06_SCORECARD_ET_CARTE.md` | Scores/verdicts des 13 systèmes + graphe de dépendances + forces |
 | 07 | `07_FEUILLE_DE_ROUTE.md` | Remédiation P0→P3 séquencée par cause racine + critères de sortie |
+| 08 | `08_DEEP_DIVE_TECHNIQUE_SECURITE.md` | **Deep-dive technique & sécurité** : code réel + PoC + patchs proposés (diffs, non appliqués) |
 
 ## Méthode
 
