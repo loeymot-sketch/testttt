@@ -97,6 +97,12 @@ class ItemCategory extends Model implements HasMedia
         $filename = $images[$this->slug] ?? $defaultFile;
         $fullPath = public_path("{$basePath}/{$filename}");
         if (file_exists($fullPath)) {
+            // [W5-PERF #1 2026-07-06] Vignette WebP ≤320px pré-générée servie en
+            // priorité (les 11 tuiles cat-*.png plein format = ~2,9 Mo au hub POS).
+            // Fallback plein format inchangé si la vignette manque.
+            if ($thumbUrl = \App\Support\MenuImageThumb::url($basePath, $filename)) {
+                return $thumbUrl;
+            }
             // Cache-bust: filemtime suffix forces browsers to refetch when the file changes.
             $hash = @filemtime($fullPath) ?: 0;
             return asset("{$basePath}/{$filename}") . "?v={$hash}";

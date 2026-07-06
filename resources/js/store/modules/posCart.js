@@ -347,6 +347,13 @@ export const posCart = {
             const userId   = payload && payload.userId   != null ? payload.userId   : null;
             const saved = _applyPosCartScope(branchId, userId);
             context.commit('hydrateFromScope', saved);
+            // [W5-PERF B1 2026-07-06] Recalcule les totaux de lignes après
+            // restore : shapePosListItem (via hydrateFromScope) ne préserve
+            // pas le champ dérivé `total` → sans recompute, chaque ligne
+            // restaurée affichait « 0,00 € » jusqu'à la mutation suivante.
+            // (Latent depuis POS-9.1.9 : jamais exercé car le scope ne se
+            // posait jamais — cf. bugfix userId PosComponent.applyPosBranchScope.)
+            context.commit('subtotal');
         },
         /**
          * Optimistic POS add: push a shaped line immediately; caller runs `lists` next,

@@ -51,7 +51,10 @@
     <!-- CUSTOM STYLE -->
     <link rel="stylesheet" href="{{ asset('themes/default/css/custom.css') }}">
     <link rel="stylesheet" href="{{ mix('css/app.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/pos-wizard.css') }}?v=2-{{ time() }}">
+    {{-- [W5-PERF A2 2026-07-06] filemtime au lieu de time() : l'URL ne change QUE quand le
+         fichier change → le navigateur peut enfin cacher les 41 Ko (avant : re-téléchargés à
+         CHAQUE reload du POS). Le busting réel au déploiement est préservé (mtime bouge). --}}
+    <link rel="stylesheet" href="{{ asset('css/pos-wizard.css') }}?v=2-{{ @filemtime(public_path('css/pos-wizard.css')) ?: 2 }}">
     <!-- PAGE TITLE -->
     <title>{{ trim((string) Settings::group('company')->get('company_name')) ?: (config('app.name') ?: 'Le Cayenne') }}</title>
 
@@ -320,7 +323,10 @@
             fritesCheddarPrice: {{ (float) (\Smartisan\Settings\Facades\Settings::group('order_setup')->get('order_setup_frites_cheddar_price') ?? 1.00) }}
         };
     </script>
-    <script src="{{ asset('js/pos-wizard.js') }}?v=9-{{ time() }}"></script>
+    {{-- [W5-PERF A2 2026-07-06] filemtime au lieu de time() — voir <head> : fin des ~300 Ko
+         de pos-wizard.js re-téléchargés à chaque reload (URL stable tant que le fichier ne
+         change pas). NE PAS répliquer sur admin-pos-v4.blade.php (FROZEN §7). --}}
+    <script src="{{ asset('js/pos-wizard.js') }}?v=9-{{ @filemtime(public_path('js/pos-wizard.js')) ?: 9 }}"></script>
 
     <!-- Masquer Dine-In dans le POS : uniquement Emporter et Livraison -->
     <style>

@@ -2339,6 +2339,11 @@ export default {
         if (this._debouncedListRefresh && this._debouncedListRefresh.cancel) {
             this._debouncedListRefresh.cancel();
         }
+        // [W5-PERF D3 2026-07-06] Annule le refresh de panneaux coalescé en vol
+        // (un trailing call post-unmount muterait l'état d'un composant démonté).
+        if (this._schedulePanelsRefresh && this._schedulePanelsRefresh.cancel) {
+            this._schedulePanelsRefresh.cancel();
+        }
         if (this._stopBarcode) {
             this._stopBarcode();
         }
@@ -2400,6 +2405,21 @@ export default {
         this._debouncedListRefresh = debounce(() => {
             this.itemList(1, { overlay: false });
         }, 150);
+        // [W5-PERF D3 2026-07-06] Coalesce des 3 refreshs de panneaux commandes
+        // (file borne à encaisser + badge tracker + « Prêt à livrer »). Avant :
+        // CHAQUE événement Echo (OrderCreated / OrderStatusChanged /
+        // OrderPaidAtCounter) déclenchait immédiatement 3 GET complets → en rush
+        // (rafale de N événements), N×3 requêtes dont N-1 rafraîchissements
+        // identiques. Désormais une rafale entière ne déclenche qu'UN refresh
+        // groupé 400 ms après le dernier événement (trailing debounce lodash) —
+        // dans la fourchette 300-500 ms validée par verdicts.md D3. Le polling
+        // de secours (_startKioskPolling) reste inchangé.
+        this._schedulePanelsRefresh = debounce(() => {
+            if (this._destroyed) return;
+            this.loadKioskCashOrders();
+            this.loadActiveOrdersStats();
+            this.loadReadyOrders();
+        }, 400);
         // [POS-OFFLINE-WIRE 2026-05-17] Bind axios.post as the replay transport
         // and run an opportunistic flush every 30s while the page is open. The
         // composable also auto-flushes on the `online` event — interval covers
@@ -2762,10 +2782,30 @@ export default {
             this.props.search.branch_id = value;
 
             try {
-                const authInfo = this.$store.getters['auth/authInfo'] || {};
+                // [W5-PERF B1 2026-07-06] BUGFIX restore panier : le module
+                // `auth` n'est PAS namespacé → `getters['auth/authInfo']`
+                // renvoyait TOUJOURS undefined → setScope recevait
+                // `userId: null` → la clé scopée pos_cart_v3 n'était JAMAIS
+                // écrite ni relue (la persistence POS-9.1.9 était morte, le
+                // panier ne survivait que via le path vuex-persistedstate
+                // retiré par W5). Résolution en cascade — même pattern
+                // défensif que authBranchId() ci-dessus.
+                const authInfoCandidates = [
+                    this.$store.getters['auth/authInfo'],
+                    this.$store.getters.authInfo,
+                    this.$store.state?.auth?.authInfo,
+                ];
+                let userId = null;
+                for (const candidate of authInfoCandidates) {
+                    const id = parseInt(candidate && candidate.id, 10);
+                    if (Number.isFinite(id) && id > 0) {
+                        userId = id;
+                        break;
+                    }
+                }
                 this.$store.dispatch('posCart/setScope', {
                     branchId: value,
-                    userId: authInfo.id || null,
+                    userId,
                 });
             } catch (e) { /* defensive: never block POS bootstrap */ }
 
@@ -2829,7 +2869,21 @@ export default {
 
         async ensureWalkInCustomer() {
             if (this.checkoutProps.form.customer_id) return true;
+            // [W5-PERF bonus 2026-07-06] Single-flight : au mount, user/lists
+            // resolve → ensureWalkInCustomer() (ligne walkingCustomer absent)
+            // PUIS le garde-fou `!customer_id` re-appelait ensureWalkInCustomer()
+            // pendant que le 1er GET était encore en vol → 2× GET
+            // /admin/pos/walk-in-customer mesurés à chaque mount (349-589 ms
+            // chacun). On partage la promesse en vol ; chaque appelant garde
+            // exactement la même sémantique de retour.
+            if (this._ensureWalkInInflight) return this._ensureWalkInInflight;
+            this._ensureWalkInInflight = this._ensureWalkInCustomerInner().finally(() => {
+                this._ensureWalkInInflight = null;
+            });
+            return this._ensureWalkInInflight;
+        },
 
+        async _ensureWalkInCustomerInner() {
             const existing = this.findWalkInCustomer(this.customers);
             if (this.assignWalkInCustomer(existing)) return true;
 
@@ -2985,39 +3039,33 @@ export default {
                             // [POS-9.1.11] Audible + visual notification for new POS orders.
                             // Audit POS-GA-F-55 — cashier had zero feedback on new
                             // kiosk-cash / online orders, only a silent list refresh.
+                            // La notification reste IMMÉDIATE ; seul le refresh des
+                            // listes est coalescé (W5-PERF D3).
                             this._notifyNewOrder(event);
-                            this.loadKioskCashOrders();
-                            // [POS-V4-ORDERS-TRACKER 2026-05-02] sync badge tracker
-                            this.loadActiveOrdersStats();
-                            // [Wave X X2 2026-05-21] OrderCreated rarely lands in
-                            // PREPARED state directly, but defensive refresh keeps
-                            // the X2 panel coherent on rapid create→bump cycles.
-                            this.loadReadyOrders();
+                            this._schedulePanelsRefresh();
                         },
                     },
                     {
                         broadcastAs: 'OrderStatusChanged',
                         handler: () => {
                             if (this._destroyed) return;
-                            this.loadKioskCashOrders();
-                            this.loadActiveOrdersStats();
                             // [Wave X X2 P-OWNER 2026-05-21] OrderStatusChanged is the
                             // primary trigger for a row appearing in / disappearing
                             // from the "Prêt à livrer" shortcut (KDS bumped, cashier
                             // marked Livré, refund returned, …).
-                            this.loadReadyOrders();
+                            // [W5-PERF D3] Refresh groupé (fin des 3 GET par événement).
+                            this._schedulePanelsRefresh();
                         },
                     },
                     {
                         broadcastAs: 'OrderPaidAtCounter',
                         handler: () => {
                             if (this._destroyed) return;
-                            this.loadKioskCashOrders();
-                            this.loadActiveOrdersStats();
                             // [Wave X X2] Counter-collect may auto-promote ACCEPT→PREPARING
                             // (Wave S-1). Refresh in case the order skips straight to
                             // PREPARED via KDS soon after.
-                            this.loadReadyOrders();
+                            // [W5-PERF D3] Refresh groupé (fin des 3 GET par événement).
+                            this._schedulePanelsRefresh();
                         },
                     },
                     // [POS-9.1.10] React live to admin 86 (item availability change)
@@ -3853,8 +3901,23 @@ export default {
         // `item:added` event — the single add funnel for BOTH simple items and
         // the (frozen) Vanilla wizard. Edits (replaceCartLine) do NOT emit, so
         // editing a line keeps the cashier in place.
+        //
+        // [W5-PERF §5.2 2026-07-06] SANS refetch systématique : l'ancien
+        // `allCategory()` re-GETait `/api/admin/item` COMPLET après CHAQUE
+        // article ajouté (mesuré 1 GET + re-render par ajout) alors que le hub
+        // n'affiche que les tuiles catégories (`posCategory/lists`) — les items
+        // sont déjà dans le store et chaque drill-in de catégorie refetch de
+        // toute façon (setCategory). On ne garde qu'un refetch de resync AU
+        // PLUS 1/60 s ; les événements stock réels restent servis en push par
+        // _onCatalogChanged / _onItemAvailabilityChanged (inchangés).
         onProductAddedReturnToCategories: function () {
-            this.allCategory();
+            this.props.search.name = "";
+            this.props.search.item_category_id = "";
+            const now = Date.now();
+            if (now - (this._lastPostAddCatalogRefetchAt || 0) >= 60000) {
+                this._lastPostAddCatalogRefetchAt = now;
+                this.itemList(1, { overlay: false });
+            }
         },
         cartQuantityUp: function (id, e) {
             // [V4 FIX] e.target.value is always a string from DOM input; parseInt before storing

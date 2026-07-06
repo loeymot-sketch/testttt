@@ -266,18 +266,42 @@ export default new createStore({
                     if (parsed && parsed.auth && parsed.auth.authInfo) {
                         parsed.auth.authInfo = sanitizePendingPhone(parsed.auth.authInfo);
                     }
+                    // [W5-PERF B1 2026-07-06] posCart n'est plus persisté ici
+                    // (voir paths + filter ci-dessous) — on purge aussi un
+                    // éventuel snapshot legacy de la clé `vuex` pour qu'un
+                    // panier NON scopé caissier ne soit jamais réhydraté au
+                    // boot (le module posCart réhydrate depuis SA clé scopée
+                    // `pos_cart_v3:b<branch>:u<user>` via posCart/setScope).
+                    if (parsed && parsed.posCart) {
+                        delete parsed.posCart;
+                    }
                     return parsed;
                 } catch (err) {
                     return undefined;
                 }
             },
+            // [W5-PERF B1 2026-07-06] vuex-persistedstate sérialise TOUT l'état
+            // persisté (~19 Ko JSON) à CHAQUE mutation — mesuré ~9-12 écritures
+            // localStorage ≈ 135-228 Ko par AJOUT PANIER caisse, car chaque
+            // action posCart enchaîne lists/subtotal/discount. posCart étant
+            // retiré des paths (le module gère SA propre persistence scopée +
+            // TTL 2 h, posCart.js [POS-9.1.9]), ses mutations ne changent plus
+            // RIEN au snapshot persisté → on les filtre pour supprimer ces
+            // écritures redondantes. Toute autre mutation persiste comme avant.
+            filter: (mutation) => !String(mutation && mutation.type || '').startsWith('posCart/'),
             paths: [
                 "auth",
                 "globalState",
                 "frontendCart",
                 "frontendSignup",
                 "GuestSignup",
-                "posCart",
+                // [W5-PERF B1 2026-07-06] "posCart" RETIRÉ : le module posCart
+                // persiste déjà lui-même chaque mutation sous sa clé scopée
+                // caissier `pos_cart_v3:b<branch>:u<user>` (TTL 2 h) et se
+                // réhydrate via posCart/setScope au mount du POS
+                // (PosComponent.applyPosBranchScope). Le persister AUSSI dans
+                // la clé `vuex` doublait chaque écriture ET réhydratait un
+                // panier non scopé au boot (fuite inter-caissier théorique).
                 "tableCart",
                 // Kiosk: persist enough to survive a page refresh on the waiting screen
                 "kioskCart.branchId",

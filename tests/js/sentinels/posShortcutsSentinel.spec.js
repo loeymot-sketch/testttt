@@ -126,15 +126,25 @@ describe('PosComponent shortcuts — Wave X X2 main-page notifications', () => {
         expect(pollMatch[0]).toMatch(/this\.loadReadyOrders\(\)/);
     });
 
-    it('Echo OrderStatusChanged handler triggers loadReadyOrders', () => {
-        // The OrderStatusChanged handler block must include loadReadyOrders
-        // alongside loadKioskCashOrders / loadActiveOrdersStats. We grab a
-        // 1.5 KB window — generous so the inline comments above
-        // loadReadyOrders() do not push the call out of the slice.
+    it('Echo OrderStatusChanged handler triggers loadReadyOrders (via refresh coalescé W5)', () => {
+        // [W5-PERF D3 2026-07-06] Baseline update — la PROMESSE X2 est inchangée
+        // (OrderStatusChanged ⇒ readyOrders rafraîchi) mais le mécanisme est
+        // désormais coalescé : le handler appelle _schedulePanelsRefresh()
+        // (debounce trailing 400 ms) dont le corps regroupe les 3 loads —
+        // fin des 3 GET complets PAR événement en rafale (verdicts.md D3).
+        // Le contrat est verrouillé en 2 maillons : handler → scheduler, et
+        // scheduler → loadReadyOrders. Voir tests/js/posEchoDebounce.spec.js
+        // pour le contrat complet (3 handlers + comportement de rafale).
         const idx = source.indexOf("broadcastAs: 'OrderStatusChanged'");
         expect(idx).toBeGreaterThan(-1);
         const slice = source.slice(idx, idx + 1500);
-        expect(slice).toMatch(/this\.loadReadyOrders\(\)/);
+        expect(slice).toMatch(/this\._schedulePanelsRefresh\(\)/);
+
+        const scheduler = source.match(
+            /this\._schedulePanelsRefresh = debounce\(\(\) => \{([\s\S]*?)\}, \d+\);/,
+        );
+        expect(scheduler).not.toBeNull();
+        expect(scheduler[1]).toMatch(/this\.loadReadyOrders\(\)/);
     });
 
     it('mounts the SSOT PosCounterCollectModal sibling component', () => {

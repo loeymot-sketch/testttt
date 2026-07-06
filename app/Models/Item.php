@@ -98,6 +98,13 @@ class Item extends Model implements HasMedia
         $filename = $images[$this->slug] ?? $defaultFile;
         $fullPath = public_path("{$basePath}/{$filename}");
         if (file_exists($fullPath)) {
+            // [W5-PERF #1 2026-07-06] Vignette WebP ≤320px pré-générée
+            // (php artisan images:generate-pos-thumbs) servie en priorité —
+            // le PNG plein format (jusqu'à 2,9 Mo) reste le fallback si la
+            // vignette n'existe pas (comportement antérieur préservé).
+            if ($thumbUrl = \App\Support\MenuImageThumb::url($basePath, $filename)) {
+                return $thumbUrl;
+            }
             // Cache-bust: filemtime suffix forces browsers to refetch when the file changes.
             $hash = @filemtime($fullPath) ?: 0;
             return asset("{$basePath}/{$filename}") . "?v={$hash}";
