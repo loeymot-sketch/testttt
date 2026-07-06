@@ -430,6 +430,78 @@
         return false;
     }
 
+    /**
+     * [LOCK_POSWIZARD_KIOSKWIZARD_OWNER8 2026-07-06] La formule sélectionnée
+     * inclut-elle une boisson ? Couvre le single-page ('addon_<id>', résolu par
+     * nom d'addon comme showSF) ET le legacy multi-step ('full'/'boisson').
+     * Pilote la visibilité de la section .boisson-inline + le gate de la ligne
+     * « BOISSON: <nom> » dans buildTicketInstruction (anti-fantôme).
+     */
+    function formuleIncludesBoisson() {
+        if (hasBoissonSelected()) return true;
+        if (!selections.menuChoice || selections.menuChoice === 'none') return false;
+        var bMatch = String(selections.menuChoice).match(/^addon_(\d+)$/);
+        if (bMatch && lastItemData && lastItemData.addons) {
+            var bAddon = lastItemData.addons.find(function (a) { return a.id === parseInt(bMatch[1]); });
+            if (bAddon) {
+                var bName = normalizeStr(bAddon.addon_item_name || bAddon.name || '');
+                return bName.indexOf('boisson') !== -1 || bName.indexOf('menu') !== -1;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * [LOCK_POSWIZARD_KIOSKWIZARD_OWNER8 2026-07-06] Boissons du CATALOGUE
+     * (data-pos-drinks-catalog, alimenté par PosComponent.drinksCatalog) au format
+     * boissonItems — price:0 / « Incluse » : la boisson d'une formule voyage en
+     * TEXTE (« BOISSON: <nom> », modèle borne), JAMAIS facturée.
+     */
+    function buildCatalogBoissonItems() {
+        var modalEl = document.getElementById('item-variation-modal');
+        var list = [];
+        if (modalEl) {
+            var raw = modalEl.getAttribute('data-pos-drinks-catalog');
+            if (raw) {
+                try { list = JSON.parse(raw) || []; } catch (e) { list = []; }
+            }
+        }
+        var out = [];
+        for (var i = 0; i < list.length; i++) {
+            var d = list[i];
+            if (!d || d.id == null || !d.name) continue;
+            if (d.is_available === false) continue; // rupture stock → pas proposée
+            out.push({ id: d.id, name: String(d.name), price: 0, currencyPrice: 'Incluse', thumb: d.thumb || d.image || '' });
+        }
+        return out;
+    }
+
+    /**
+     * [LOCK_POSWIZARD_KIOSKWIZARD_OWNER8 2026-07-06] Garantit un step boisson_choice
+     * quand l'item a des addons formule et que le catalogue offre des boissons.
+     * Nécessaire au chemin COMPOSER-AWARE (buildStepsFromComposerProfile early-return
+     * → le bloc legacy qui pousse boisson_choice ne tourne jamais) ; no-op si le
+     * step existe déjà (chemin legacy). Step inline + showCondition hasBoisson →
+     * invisible de la barre de progression, aucune validation ajoutée.
+     */
+    function ensureBoissonChoiceStep() {
+        var st = steps.find(function (s) { return s.type === 'boisson_choice'; });
+        if (st) return st;
+        if (!lastItemData || !lastItemData.addons || lastItemData.addons.length === 0) return null;
+        var items = buildCatalogBoissonItems();
+        if (items.length === 0) return null;
+        st = {
+            type: 'boisson_choice',
+            label: 'Boisson',
+            subtitle: 'Choisissez votre boisson',
+            showCondition: 'hasBoisson',
+            inline: true,
+            boissonItems: items
+        };
+        steps.push(st);
+        return st;
+    }
+
     /* ==============================
        COMPOSER-AWARE PATH (T-WC-POS-RUNTIME-01)
        ============================== */
@@ -744,7 +816,8 @@
                 paidItems: paidExtras
             });
             selections.garnitures = {};
-            freeExtras.forEach(function (g) { selections.garnitures['c_' + g.id] = true; });
+            // [LOCK_POSWIZARD_KIOSKWIZARD_OWNER8] défaut name-aware : oignons cuits = OFF
+            freeExtras.forEach(function (g) { selections.garnitures['c_' + g.id] = cruditeDefaultIncluded(g.name); });
             selections.supplements = {};
             // Viandes supplémentaires : { 'v_123': count } — per-viande tracking
             selections.viandeSupplItems = {};
@@ -763,7 +836,8 @@
             selections.sauceOrder = [];
             selections.sauceAttrId = null;
             selections.garnitures = {};
-            freeExtras.forEach(function (g) { selections.garnitures['c_' + g.id] = true; });
+            // [LOCK_POSWIZARD_KIOSKWIZARD_OWNER8] défaut name-aware : oignons cuits = OFF
+            freeExtras.forEach(function (g) { selections.garnitures['c_' + g.id] = cruditeDefaultIncluded(g.name); });
         }
 
         // === Step: Suppléments + Menu (Sandwich/Burger - combined) ===
@@ -955,7 +1029,7 @@
                 var FOOD_LIKE_REGEX = /frite|patate|nugget|tender|onion|oignon|mozzarella|accompagn|snack|dessert|glace|wrap|cornet|potato|boulette|stick|ring|douille|corbeille|panier|barquette|salade/i;
                 var GENERIC_OPTION_REGEX = /^\s*(?:\+?\s*)?(boisson|drink)(?:\s+(seule?|only))?\s*$/i;
 
-                return addonItems.filter(function (a) {
+                var filteredDrinkAddons = addonItems.filter(function (a) {
                     var name = String(a.name || '').toLowerCase().trim();
                     if (!name) return false;
                     if (GENERIC_OPTION_REGEX.test(name)) return false;
@@ -971,6 +1045,18 @@
 
                     return DRINK_LIKE_REGEX.test(name);
                 });
+
+                // [LOCK_POSWIZARD_KIOSKWIZARD_OWNER8 2026-07-06] Repli CATALOGUE : les items
+                // V1 n'ont que 3 addons formule génériques (Menu / Frites Seules / Boisson
+                // Seule) tous exclus ci-dessus → la caisse n'offrait AUCUN choix de boisson.
+                // Modèle borne : la boisson choisie voyage en TEXTE (« BOISSON: <nom> » via
+                // buildTicketInstruction), price:0 / « Incluse » → le sync-to-Vue par nom ne
+                // matche aucun addon → AUCUNE facturation (prix formule inchangé).
+                if (filteredDrinkAddons.length === 0) {
+                    filteredDrinkAddons = buildCatalogBoissonItems();
+                }
+
+                return filteredDrinkAddons;
             })();
             if (boissonItems.length > 0) {
                 s.push({
@@ -2496,6 +2582,13 @@
                 var cKey = 'c_' + g.id;
                 var cVal = selections.garnitures[cKey];
                 var numVal = selections.garnitures[g.id];
+                // [LOCK_POSWIZARD_KIOSKWIZARD_OWNER8] crudité opt-in (« Oignons cuits ») :
+                // listée seulement si explicitement cochée ; JAMAIS dans SANS (elle n'est
+                // pas « retirée », elle est simplement à son défaut OFF).
+                if (!cruditeDefaultIncluded(g.name)) {
+                    if (cVal === true || numVal === true) garnIncluded.push(g.name);
+                    return;
+                }
                 // Explicitly excluded if any key is false
                 var isExcluded = cVal === false || numVal === false;
                 // Included = not excluded (matches buildTicketInstruction semantics)
@@ -2732,6 +2825,12 @@
                 var cKey = 'c_' + g.id;
                 var cVal = selections.garnitures[cKey];
                 var numVal = selections.garnitures[g.id];
+                // [LOCK_POSWIZARD_KIOSKWIZARD_OWNER8] opt-in (« Oignons cuits ») : listée
+                // seulement si cochée, jamais en « Sans: » quand elle est à son défaut OFF.
+                if (!cruditeDefaultIncluded(g.name)) {
+                    if (cVal === true || numVal === true) garnIncluded.push(g.name);
+                    return;
+                }
                 if (cVal === false || numVal === false) garnExcluded.push(g.name);
                 else garnIncluded.push(g.name);
             });
@@ -2961,6 +3060,21 @@
             return sh;
         }
 
+        // [LOCK_POSWIZARD_KIOSKWIZARD_OWNER8 2026-07-06] Visuel viande : image RÉELLE de la
+        // variation si disponible (ItemVariation::thumb → config/menu_images.viandes, visuels
+        // owner) ; repli = pastille emoji existante. onerror → retombe sur la pastille.
+        function _renderViandeVisual(variation, emoji) {
+            var vThumb = variation && variation.thumb;
+            if (vThumb && typeof vThumb === 'string' && vThumb.length > 0) {
+                return '<span class="viande-emoji has-img">'
+                    + '<img class="viande-img" src="' + vThumb + '" alt="" loading="lazy"'
+                    + ' onerror="this.parentNode.classList.remove(\'has-img\')">'
+                    + '<span class="viande-fallback">' + emoji + '</span>'
+                    + '</span>';
+            }
+            return '<span class="viande-emoji">' + emoji + '</span>';
+        }
+
         // === SECTION VIANDES (pleine largeur) ===
         if (hasViandes) {
             // Deduplicate by id AND normalized name (API sends "Viande 1" + "Viande 2" with same list)
@@ -2996,7 +3110,7 @@
                 var emoji = getEmoji(VIANDE_EMOJIS, variation.name);
                 h += '<div class="wizard-viande-row' + (count > 0 ? ' active' : '') + '">';
                 h += '<div class="viande-info">';
-                h += '<span class="viande-emoji">' + emoji + '</span>';
+                h += _renderViandeVisual(variation, emoji);
                 h += '<span class="viande-name">' + variation.name + '</span>';
                 h += '</div>';
                 h += '<div class="viande-controls">';
@@ -3025,7 +3139,7 @@
                 var emoji = getEmoji(VIANDE_EMOJIS, variation.name);
                 h += '<div class="wizard-viande-suppl-row' + (sc > 0 ? ' active' : '') + '" data-suppl-id="' + key + '">';
                 h += '<div class="viande-info">';
-                h += '<span class="viande-emoji">' + emoji + '</span>';
+                h += _renderViandeVisual(variation, emoji);
                 h += '<span class="viande-name">' + variation.name + '</span>';
                 h += '</div>';
                 h += '<div class="viande-controls">';
@@ -3052,8 +3166,10 @@
                 crudites.forEach(function (c) {
                     var key = 'c_' + c.id;
                     var isIncluded = selections.garnitures && selections.garnitures[key];
-                    if (selections.garnitures && selections.garnitures[key] === undefined) {
-                        isIncluded = true;
+                    // [LOCK_POSWIZARD_KIOSKWIZARD_OWNER8] non-initialisée → défaut name-aware
+                    // (crudités classiques incluses, « Oignons cuits » NON inclus)
+                    if (!selections.garnitures || selections.garnitures[key] === undefined) {
+                        isIncluded = cruditeDefaultIncluded(c.name);
                     }
                     var stateClass = isIncluded ? ' included' : ' removed';
                     var label = isIncluded ? ('✓ ' + c.name) : ('✕ Sans ' + c.name);
@@ -3186,6 +3302,18 @@
                 h += '</div>';
             }
 
+            // [LOCK_POSWIZARD_KIOSKWIZARD_OWNER8 2026-07-06] Choix de boisson single-page
+            // (le mode étapes rendait boisson_choice via renderWizard — jamais appelé en
+            // prod S25-SinglePage). Réutilise le markup existant renderBoissonChoiceStep ;
+            // visible seulement quand la formule inclut une boisson (Menu / Boisson Seule).
+            // ensureBoissonChoiceStep couvre AUSSI le chemin composer-aware (Cayenne prod).
+            var boissonStepSP = ensureBoissonChoiceStep();
+            if (boissonStepSP) {
+                h += '<div class="boisson-inline' + (formuleIncludesBoisson() ? ' visible' : '') + '">';
+                h += renderBoissonChoiceStep(boissonStepSP);
+                h += '</div>';
+            }
+
             h += '</div>';
         }
 
@@ -3230,6 +3358,53 @@
                n.includes('mais') || n.includes('carotte') || n.includes('poivron') ||
                n.includes('laitue') || n.includes('roquette') || n.includes('epinard') ||
                n.includes('betterave') || n.includes('radis') || n.includes('celeri');
+    }
+
+    // [LOCK_POSWIZARD_KIOSKWIZARD_OWNER8 2026-07-06] « Oignons cuits » = crudité
+    // OPTIONNELLE : défaut NON inclus + exclusivité mutuelle avec l'oignon CRU
+    // (cocher l'un décoche l'autre ; défaut global = cru). Symbole cuisine O̲.
+    function isCruditeCuitName(name) {
+        var n = normalizeStr(name);
+        return n.includes('oignon') && n.includes('cuit');
+    }
+
+    /** true = incluse par défaut (crudités classiques) ; false = opt-in (oignons cuits). */
+    function cruditeDefaultIncluded(name) {
+        return !isCruditeCuitName(name);
+    }
+
+    /** Variante par clé 'c_<id>' / id : résout le nom depuis lastItemData.extras. */
+    function cruditeDefaultIncludedByKey(garnKey) {
+        var m = String(garnKey).match(/(\d+)$/);
+        var gid = m ? parseInt(m[1]) : NaN;
+        if (!isNaN(gid) && lastItemData && lastItemData.extras) {
+            var ex = lastItemData.extras.find(function (e) { return e && e.id === gid; });
+            if (ex) return cruditeDefaultIncluded(ex.name);
+        }
+        return true;
+    }
+
+    /**
+     * Applique l'exclusivité oignon cru↔cuit après qu'une garniture vient d'être
+     * COCHÉE : toute crudité gratuite « oignon » de cuisson OPPOSÉE est décochée.
+     * key = 'c_<id>' (unifié) ou id numérique.
+     */
+    function applyOnionExclusivity(garnKey) {
+        if (!lastItemData || !lastItemData.extras || !selections.garnitures) return;
+        var m = String(garnKey).match(/(\d+)$/);
+        var gid = m ? parseInt(m[1]) : NaN;
+        if (isNaN(gid)) return;
+        var me = lastItemData.extras.find(function (e) { return e && e.id === gid; });
+        if (!me || me.convert_price !== 0) return;
+        if (normalizeStr(me.name).indexOf('oignon') === -1) return;
+        var meCuit = isCruditeCuitName(me.name);
+        lastItemData.extras.forEach(function (e) {
+            if (!e || e.id === gid || e.convert_price !== 0) return;
+            if (normalizeStr(e.name).indexOf('oignon') === -1) return;
+            if (isCruditeCuitName(e.name) !== meCuit) {
+                selections.garnitures['c_' + e.id] = false;
+            }
+        });
     }
 
     // Helper to check if name is a paid supplement (not a sauce extra, not a crudite)
@@ -3325,9 +3500,6 @@
         // Update garniture toggles
         wizardEl.querySelectorAll('.garniture-toggle-btn').forEach(function (btn) {
             var garnId = btn.getAttribute('data-garniture');
-            // Included by default (undefined or true); only false means removed
-            var isIncluded = !selections.garnitures || selections.garnitures[garnId] !== false;
-            btn.className = 'garniture-toggle-btn ' + (isIncluded ? 'included' : 'removed');
             // Get the crudite name from lastItemData.extras using the 'c_123' key
             var displayName = garnId;
             if (lastItemData && lastItemData.extras) {
@@ -3337,6 +3509,13 @@
                     if (garnExtra) displayName = garnExtra.name;
                 }
             }
+            // [LOCK_POSWIZARD_KIOSKWIZARD_OWNER8] état stocké sinon défaut name-aware
+            // (crudités classiques incluses par défaut ; « Oignons cuits » = opt-in)
+            var storedGarn = selections.garnitures ? selections.garnitures[garnId] : undefined;
+            var isIncluded = storedGarn === undefined
+                ? cruditeDefaultIncluded(displayName)
+                : storedGarn !== false;
+            btn.className = 'garniture-toggle-btn ' + (isIncluded ? 'included' : 'removed');
             // [V6 FIX] Use spread to extract first grapheme cluster — charAt(0) returns only the
             // first UTF-16 code unit, leaving a lone surrogate for multi-unit emojis (🥬, 🧅, etc.)
             var emojiChars = Array.from(btn.textContent.trim());
@@ -3424,6 +3603,21 @@
             wizardEl.querySelectorAll('.frites-upgrade-opt').forEach(function (opt) {
                 var upgrade = opt.getAttribute('data-upgrade');
                 opt.classList.toggle('selected', !!selections[upgrade]);
+            });
+        }
+
+        // [LOCK_POSWIZARD_KIOSKWIZARD_OWNER8 2026-07-06] Boisson inline : visibilité
+        // (formule avec boisson) + état sélectionné des cartes.
+        var boissonInlineEl = wizardEl.querySelector('.boisson-inline');
+        if (boissonInlineEl) {
+            boissonInlineEl.classList.toggle('visible', formuleIncludesBoisson());
+            wizardEl.querySelectorAll('.boisson-opt').forEach(function (opt) {
+                var bVal = opt.getAttribute('data-value');
+                var bId = parseInt(opt.getAttribute('data-id'));
+                var bSel = bVal === 'none'
+                    ? selections.boissonChoice === 'none'
+                    : (!isNaN(bId) && selections.boissonChoice === bId);
+                opt.classList.toggle('selected', !!bSel);
             });
         }
 
@@ -3573,7 +3767,12 @@
                 var cruditeNames = [];
                 cruditesTkt.forEach(function (c) {
                     var key = 'c_' + c.id;
-                    var isIncluded = !selections.garnitures || selections.garnitures[key] !== false;
+                    // [LOCK_POSWIZARD_KIOSKWIZARD_OWNER8] état stocké sinon défaut name-aware
+                    // (« Oignons cuits » = OFF tant que non coché → jamais listé par défaut)
+                    var storedTkt = selections.garnitures ? selections.garnitures[key] : undefined;
+                    var isIncluded = storedTkt === undefined
+                        ? cruditeDefaultIncluded(c.name)
+                        : storedTkt !== false;
                     if (isIncluded) {
                         cruditeNames.push(c.name);
                     }
@@ -3697,6 +3896,21 @@
             });
             if (sfNames.length > 0) {
                 extraLines.push('\u21b3 Sauce frites: ' + sfNames.join(', '));
+            }
+        }
+
+        // [LOCK_POSWIZARD_KIOSKWIZARD_OWNER8 2026-07-06] Boisson de la formule (repli
+        // catalogue, 0 €) → ligne « BOISSON: <nom> » dans l'instruction soumise.
+        // Gate formuleIncludesBoisson() : jamais de boisson fantôme si la formule
+        // sélectionnée n'en contient pas. Format conservé par les sanitizers
+        // cuisine (PHP cleanInstruction + JS sanitizeKdsInstruction).
+        if (selections.boissonChoice && selections.boissonChoice !== 'none' && formuleIncludesBoisson()) {
+            var boissonStepTkt = steps.find(function (s) { return s.type === 'boisson_choice'; });
+            if (boissonStepTkt && boissonStepTkt.boissonItems) {
+                var boissonItemTkt = boissonStepTkt.boissonItems.find(function (b) { return b.id === selections.boissonChoice; });
+                if (boissonItemTkt) {
+                    extraLines.push('BOISSON: ' + boissonItemTkt.name);
+                }
             }
         }
 
@@ -3836,11 +4050,16 @@
         var extraCheckboxes = originalBody.querySelectorAll('.extra .custom-checkbox-field');
         var allSelectedExtras = {};
 
-        // Collect all crudité IDs from item data (free extras that are crudités)
+        // Collect all crudités from item data (free extras that are crudités)
+        // [LOCK_POSWIZARD_KIOSKWIZARD_OWNER8] on garde id + name : le défaut de
+        // sérialisation dépend du NOM (« Oignons cuits » = opt-in, jamais coché
+        // tant que l'owner ne l'a pas explicitement sélectionné).
+        var allCrudites = [];
         var allCruditeIds = [];
         if (lastItemData && lastItemData.extras) {
             lastItemData.extras.forEach(function (e) {
                 if (e.convert_price === 0 && isCruditeName(e.name)) {
+                    allCrudites.push(e);
                     allCruditeIds.push(e.id);
                 }
             });
@@ -3854,13 +4073,17 @@
             }
         });
 
-        // Cocher les crudités incluses: default = all included unless explicitly set to false
+        // Cocher les crudités incluses: default = included unless explicitly set to false
+        // (name-aware: opt-in crudités default to NOT included)
         // This ensures default-included crudités appear in item_extras.names
-        allCruditeIds.forEach(function (cid) {
-            var key = 'c_' + cid;
-            var isIncluded = !selections.garnitures || selections.garnitures[key] !== false;
+        allCrudites.forEach(function (ce) {
+            var key = 'c_' + ce.id;
+            var storedSer = selections.garnitures ? selections.garnitures[key] : undefined;
+            var isIncluded = storedSer === undefined
+                ? cruditeDefaultIncluded(ce.name)
+                : storedSer !== false;
             if (isIncluded) {
-                allSelectedExtras[cid] = true;
+                allSelectedExtras[ce.id] = true;
             }
         });
 
@@ -4404,6 +4627,18 @@
                 /* [Sprint 4] Sauce frites inline */
                 .sauce-frites-inline { display: none; margin-top: 16px; padding-top: 16px; border-top: 2px dashed #EFF0F6; }
                 .sauce-frites-inline.visible { display: block; animation: slideDown 0.3s ease; }
+
+                /* [LOCK_POSWIZARD_KIOSKWIZARD_OWNER8 2026-07-06] Choix boisson single-page */
+                .boisson-inline { display: none; margin-top: 16px; padding-top: 16px; border-top: 2px dashed #EFF0F6; }
+                .boisson-inline.visible { display: block; animation: slideDown 0.3s ease; }
+                .boisson-inline .boisson-title { font-size: 14px; font-weight: 700; margin-bottom: 8px; color: #1B1B3A; font-family: 'Rubik', sans-serif; }
+                .boisson-inline .boisson-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+                .boisson-inline .option-icon.has-img img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; display: block; }
+
+                /* [LOCK_POSWIZARD_KIOSKWIZARD_OWNER8 2026-07-06] Image réelle des viandes (repli pastille emoji) */
+                .viande-emoji.has-img { position: relative; display: inline-flex; align-items: center; justify-content: center; }
+                .viande-emoji.has-img .viande-img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; display: block; }
+                .viande-emoji.has-img .viande-fallback { display: none; }
                 .frites-options-inline { display: none; margin-top: 12px; padding: 12px; border-radius: 12px; background: #FAFAFF; border: 1px solid #EFF0F6; }
                 .frites-options-inline.visible { display: block; animation: slideDown 0.3s ease; }
                 /* [S25] Frites upgrade options */
@@ -5438,7 +5673,12 @@
                 var id = parseInt(rawId);
                 if (!selections.garnitures) selections.garnitures = {};
                 var key = isNaN(id) ? rawId : ('c_' + id);
-                selections.garnitures[key] = !selections.garnitures[key];
+                // [LOCK_POSWIZARD_KIOSKWIZARD_OWNER8] toggle name-aware (opt-in = OFF par
+                // défaut) + exclusivité oignon cru↔cuit quand on vient de COCHER.
+                var storedMs = selections.garnitures[key];
+                var wasIncludedMs = storedMs === undefined ? cruditeDefaultIncludedByKey(key) : storedMs !== false;
+                selections.garnitures[key] = !wasIncludedMs;
+                if (!wasIncludedMs) applyOnionExclusivity(key);
                 updateWizardUI();
             });
         });
@@ -5785,13 +6025,16 @@
         });
 
         // Crudites toggle — default is included (true), click to remove (false), click again to restore (true)
+        // [LOCK_POSWIZARD_KIOSKWIZARD_OWNER8] défaut name-aware (« Oignons cuits » = opt-in
+        // OFF → 1er clic COCHE) + exclusivité oignon cru↔cuit quand on vient de cocher.
         wizardEl.querySelectorAll('.garniture-toggle-btn').forEach(function (btn) {
             btn.addEventListener('click', function () {
                 var garnId = this.getAttribute('data-garniture');
                 if (!selections.garnitures) selections.garnitures = {};
-                // undefined or true = included; toggle to false (removed) and back
                 var current = selections.garnitures[garnId];
-                selections.garnitures[garnId] = (current === false) ? true : false;
+                var wasIncluded = current === undefined ? cruditeDefaultIncludedByKey(garnId) : current !== false;
+                selections.garnitures[garnId] = !wasIncluded;
+                if (!wasIncluded) applyOnionExclusivity(garnId);
                 updateSinglePageUI();
             });
         });
@@ -5858,6 +6101,22 @@
             card.addEventListener('click', function () {
                 var value = this.getAttribute('data-value');
                 selections.menuChoice = value;
+                // [LOCK_POSWIZARD_KIOSKWIZARD_OWNER8 2026-07-06] Formule sans boisson →
+                // purge du choix boisson (anti-fantôme, miroir borne KioskWizard C12).
+                if (!formuleIncludesBoisson()) {
+                    selections.boissonChoice = null;
+                }
+                updateSinglePageUI();
+            });
+        });
+
+        // [LOCK_POSWIZARD_KIOSKWIZARD_OWNER8 2026-07-06] Boisson (single-page) — même
+        // canal selections.boissonChoice que le mode étapes (instruction BOISSON:).
+        wizardEl.querySelectorAll('[data-action="boisson-choice"]').forEach(function (opt) {
+            opt.addEventListener('click', function () {
+                var bValue = this.getAttribute('data-value');
+                var bId = parseInt(this.getAttribute('data-id'));
+                selections.boissonChoice = bValue === 'none' ? 'none' : (!isNaN(bId) ? bId : null);
                 updateSinglePageUI();
             });
         });

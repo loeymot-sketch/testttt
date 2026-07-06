@@ -1286,6 +1286,11 @@ export default {
     },
     updateSelection(key, value, meta) {
       this.serverPreviewTotal = null;
+      // [LOCK_POSWIZARD_KIOSKWIZARD_OWNER8 2026-07-06] Exclusivité oignon cru↔cuit
+      // appliquée sur la map émise par le step Garnitures (défaut = cru coché).
+      if (key === 'garnitures' && value && typeof value === 'object') {
+        value = this.applyOnionCruCuitExclusivity(this.selections.garnitures || {}, value);
+      }
       this.selections[key] = value;
       if (key === 'pain' && meta) {
         this.selections._painMeta = meta;
@@ -1648,11 +1653,38 @@ export default {
         const garnitures = {};
         item.extras.forEach(extra => {
           if (parseFloat(extra.convert_price || extra.price || 0) === 0) {
-            garnitures[extra.id] = true;
+            // [LOCK_POSWIZARD_KIOSKWIZARD_OWNER8 2026-07-06] « Oignons cuits » =
+            // crudité opt-in : défaut NON inclus (défaut global = oignon cru).
+            garnitures[extra.id] = !this.isOnionCuitExtraName(extra.name);
           }
         });
         this.selections.garnitures = garnitures;
       }
+    },
+    // [LOCK_POSWIZARD_KIOSKWIZARD_OWNER8 2026-07-06] Oignon cru↔cuit exclusifs.
+    isOnionCuitExtraName(name) {
+      const n = String(name || '').toLowerCase();
+      return n.includes('oignon') && n.includes('cuit');
+    },
+    /**
+     * Cocher un oignon (cru OU cuit) décoche son opposé — miroir du wizard
+     * caisse (applyOnionExclusivity). Ne touche que les extras GRATUITS nommés
+     * « oignon » ; s'applique sur la map garnitures émise par le step.
+     */
+    applyOnionCruCuitExclusivity(prev, next) {
+      const extras = this.resolvedItem?.extras || [];
+      const onions = extras.filter(e => e && parseFloat(e.convert_price || e.price || 0) === 0
+        && String(e.name || '').toLowerCase().includes('oignon'));
+      const turnedOn = onions.find(e => next[e.id] && !prev[e.id]);
+      if (!turnedOn) return next;
+      const cuit = this.isOnionCuitExtraName(turnedOn.name);
+      const out = { ...next };
+      onions.forEach(e => {
+        if (e.id !== turnedOn.id && this.isOnionCuitExtraName(e.name) !== cuit) {
+          out[e.id] = false;
+        }
+      });
+      return out;
     },
     resetSelections() {
       this.currentStepIndex = 0;
