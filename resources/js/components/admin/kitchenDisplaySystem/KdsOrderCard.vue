@@ -314,9 +314,13 @@ export default {
             return AGE_BORDER[this.bucket];
         },
         cardStyle() {
+            // [KDS-A-01 2026-07-06] Plus de height inline hardcodée (462px, héritage grille
+            // 4×2 sprint-2) : elle bloquait `align-items: stretch` de .kds-v2__grid → les 3
+            // cartes plafonnaient à 462px sur 2160 (grand vide sous les cartes). La hauteur
+            // vient désormais de la rangée 1fr pleine hauteur (KDS-3CARDS) ; le corps interne
+            // est déjà flex (kds-card__body flex:1) donc le CTA reste collé en bas.
             return {
                 border: `3px solid ${this.borderColor}`,
-                height: '462px',
             };
         },
         cardClass() {

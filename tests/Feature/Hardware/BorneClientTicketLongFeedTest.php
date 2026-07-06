@@ -13,10 +13,14 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * [TICKET-BORNE-LONG 2026-07-02] Le ticket CLIENT imprimé par la BORNE doit être LONG
- * (queue de papier ~12 cm pour qu'il ressorte et ne tombe pas) + coupe PARTIELLE (il
- * reste accroché, ne tombe jamais). La CAISSE garde son ticket court (le caissier le tend).
- * Owner : « le ticket borne est trop court, il tombe par terre ».
+ * [TICKET-BORNE-LONG 2026-07-02] Le ticket CLIENT imprimé par la BORNE doit avoir une
+ * queue de papier suffisante (il ressort, ne tombe pas) + coupe PARTIELLE (il reste
+ * accroché). La CAISSE garde son ticket court (le caissier le tend).
+ *
+ * [TICKET-BORNE-WHITE 2026-07-05 / c70b1e518] Nouveau contrat EscPosTicketBytesService:81 :
+ * la queue borne est CLAMPÉE `max(1, min(12, config))`, défaut 8 — fini l'ère « queue 30 »
+ * (30 lignes ≈ 10 cm de BLANC si config orpheline). Ce test verrouille le clamp (30 → 12)
+ * et le défaut (8), plus les modes de coupe borne=PARTIELLE / caisse=TOTALE.
  */
 class BorneClientTicketLongFeedTest extends TestCase
 {
@@ -66,8 +70,9 @@ class BorneClientTicketLongFeedTest extends TestCase
     }
 
     /** @test */
-    public function borne_client_ticket_est_long_et_coupe_partielle(): void
+    public function borne_client_config_excessive_est_clampee_a_12_et_coupe_partielle(): void
     {
+        // Config héritée de l'ère « queue 30 » → le service doit la CLAMPER à 12 (cap).
         config()->set('printing.cut.kiosk_client_feed_lines', 30);
         config()->set('printing.cut.kiosk_client_mode', 'partial');
 
@@ -76,10 +81,25 @@ class BorneClientTicketLongFeedTest extends TestCase
 
         $borne = $svc->render((int) $order->branch_id, (int) $order->id, 'client', false, true);
         $this->assertNotNull($borne);
-        // Queue de papier longue (>= 20 lignes ≈ 8 cm au minimum).
-        $this->assertGreaterThanOrEqual(20, $this->tailFeedLines($borne), 'ticket borne trop court (queue insuffisante)');
+        // Clamp max(1, min(12, 30)) → exactement 12 lignes de queue, jamais 30.
+        $this->assertSame(12, $this->tailFeedLines($borne), 'config 30 doit être clampée à 12 lignes de queue');
         // Coupe PARTIELLE (GS V 1) → ne tombe pas.
         $this->assertStringContainsString("\x1DV\x01", $borne, 'la borne doit couper en PARTIEL (ticket reste accroché)');
+    }
+
+    /** @test */
+    public function borne_client_sans_override_utilise_le_defaut_8(): void
+    {
+        // Pas d'override : le défaut livré (config/printing.php:134 + repli service :81)
+        // = 8 lignes compactes (≈27 mm : dégage la barre de coupe, zéro blanc).
+        $order = $this->makeOrder();
+        $svc = app(EscPosTicketBytesService::class);
+
+        $borne = $svc->render((int) $order->branch_id, (int) $order->id, 'client', false, true);
+        $this->assertNotNull($borne);
+        $this->assertSame(8, $this->tailFeedLines($borne), 'défaut borne = 8 lignes de queue');
+        // Défaut de mode = partial.
+        $this->assertStringContainsString("\x1DV\x01", $borne, 'défaut borne = coupe PARTIELLE');
     }
 
     /** @test */

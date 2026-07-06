@@ -74,10 +74,13 @@ describe('KDS Wave U — Prêt archive partition (FK-WAVE-U-KDS-ARCHIVE-001)', (
     });
 
     it('grid template renders activeOrders (ACTIVE only) — never visibleOrders directly', () => {
-        // [KDS-SHOW-ALL 2026-07-01] La grille rend activeOrders EN ENTIER (plus de slice(0,8)
-        // qui cachait les 9+). L'invariant clé de CE sentinel reste : la source est activeOrders
+        // [KDS-3CARDS c70b1e518 2026-07-05] La grille rend visibleActiveOrders =
+        // activeOrders.slice(0, 3) (3 cartes plein écran max, les 4+ attendent derrière la
+        // pastille +N). L'invariant clé de CE sentinel reste : la source est activeOrders
         // (ACCEPT|PREPARING), JAMAIS visibleOrders directement (qui inclurait les PREPARED archivés).
-        expect(gridSource).toMatch(/v-for="\(o,\s*idx\)\s+in\s+activeOrders"/);
+        expect(gridSource).toMatch(/v-for="\(o,\s*idx\)\s+in\s+visibleActiveOrders"/);
+        // visibleActiveOrders DOIT dériver de activeOrders (cap 3), pas de visibleOrders.
+        expect(gridSource).toMatch(/visibleActiveOrders\s*\(\s*\)\s*\{[^}]*this\.activeOrders\.slice\(\s*0\s*,\s*3\s*\)/);
         // Le v-for des cartes ne doit pas itérer visibleOrders (les PREPARED vont dans la bande servie).
         expect(gridSource).not.toMatch(/v-for="\(o,\s*idx\)\s+in\s+visibleOrders/);
     });

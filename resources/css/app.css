@@ -319,6 +319,12 @@ body { @apply text-base font-normal font-rubik scroll-smooth text-paragraph bg-w
     /* MAIN CONTENT */
     .db-main { @apply font-public px-3 sm:px-4 pb-4 xh:pt-[170px] pt-[80px] lg:pt-[84px] ltr:lg:pl-[280px] rtl:lg:pr-[280px] ltr:lg:pr-5 rtl:lg:pl-5 lg:pb-5 h-screen overflow-auto transition bg-[#f7f7fc] }
     .db-main.expand { @apply ltr:lg:pl-5 rtl:lg:pr-5 }
+    /* [KDS-A-01 2026-07-06] Route-scoped (classe posée/retirée par KitchenDisplaySystemComponent
+       mounted/beforeUnmount, même pattern que `.expand`) : db-main est display:block, donc le
+       `flex:1` de .kds-v2 était inerte → la grille prenait la hauteur de son contenu (~514px)
+       au lieu du viewport. En flex-column, .kds-v2 remplit toute la hauteur restante (h-screen
+       - paddings - bande historique) → 3 cartes plein écran, zéro vide en dessous. */
+    .db-main.db-main--kds { @apply flex flex-col }
 
     /* BACKLDROP */
     .backdrop { @apply w-full h-full fixed top-0 left-0 z-40 invisible opacity-0 bg-black/60 transition }

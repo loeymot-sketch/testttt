@@ -1469,6 +1469,16 @@ export default {
   },
   mounted() {
     this.closeSidebar();
+    // [KDS-A-01 2026-07-06] Le layout admin partagé `.db-main` est display:block →
+    // le `flex:1` de .kds-v2 (KdsV2Grid) était inerte et la grille ne prenait que la
+    // hauteur de son contenu au lieu du viewport (owner : 3 cartes PLEIN ÉCRAN en
+    // hauteur). Fix route-scoped, même pattern que `.expand` (OSS/POS) : on pose la
+    // classe `db-main--kds` (flex-column, cf. resources/css/app.css) uniquement quand
+    // le layout V2 est actif, et on la retire en beforeUnmount — zéro impact sur les
+    // autres pages admin.
+    if (this.useV2Layout) {
+      document?.querySelector('.db-main')?.classList?.add('db-main--kds');
+    }
     this.refreshOrderList();
     this.startAutoRefresh();
     window.addEventListener('realtime-order-update', this.refreshOrderList);
@@ -2454,6 +2464,8 @@ export default {
       }
     } catch (_e) { /* defensive */ }
     this._kdsStatusInterceptorId = null;
+    // [KDS-A-01 2026-07-06] Retire l'override flex-column route-scoped (cf. mounted).
+    document?.querySelector('.db-main')?.classList?.remove('db-main--kds');
     this.openSidebar();
     window.removeEventListener('realtime-order-update', this.refreshOrderList);
     this.unsubscribeEcho();
