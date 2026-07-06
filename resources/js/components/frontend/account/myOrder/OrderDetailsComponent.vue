@@ -275,6 +275,10 @@ export default {
                 },
             },
             activeOrder: {},
+            // Synchro affichage client (fraîcheur seulement — backend = source de vérité).
+            // Polling léger pour refléter PENDING→PREPARED→DELIVERED sans rechargement manuel.
+            pollIntervalId: null,
+            pollIntervalMs: 15000,
         };
     },
     computed: {
@@ -298,19 +302,60 @@ export default {
         },
     },
     mounted() {
-        this.loading.isActive = true;
         if (this.$route.params.id) {
             this.loading.isActive = true;
             this.$store.dispatch("frontendOrder/show", this.$route.params.id).then(res => {
                 this.loading.isActive = false;
+                // Démarre le rafraîchissement de statut après le premier affichage.
+                this.startStatusPolling();
             }).catch((error) => {
                 this.loading.isActive = false;
             });
         }
     },
+    beforeUnmount() {
+        // Pas de fuite d'interval : on arrête le polling au démontage.
+        this.stopStatusPolling();
+    },
     methods: {
         orderStatusClass: function (status) {
             return appService.orderStatusClass(status);
+        },
+        isTerminalStatus: function (status) {
+            const terminal = [
+                this.enums.orderStatusEnum.DELIVERED,
+                this.enums.orderStatusEnum.CANCELED,
+                this.enums.orderStatusEnum.REJECTED,
+                this.enums.orderStatusEnum.RETURNED,
+            ];
+            return terminal.includes(parseInt(status));
+        },
+        startStatusPolling: function () {
+            // Défensif : pas d'ID ou interval déjà actif => on ne (re)démarre pas.
+            if (!this.$route.params.id || this.pollIntervalId !== null) {
+                return;
+            }
+            // Commande déjà dans un état terminal (livrée/annulée/rejetée/retournée)
+            // => inutile de rafraîchir, le statut ne changera plus.
+            if (this.isTerminalStatus(this.order.status)) {
+                return;
+            }
+            this.pollIntervalId = setInterval(() => {
+                this.$store.dispatch("frontendOrder/show", this.$route.params.id).then(() => {
+                    if (this.isTerminalStatus(this.order.status)) {
+                        this.stopStatusPolling();
+                    }
+                }).catch(() => {
+                    // Fraîcheur d'affichage uniquement : on ignore une erreur transitoire,
+                    // le prochain tick réessaiera. Aucun impact fiscal/stock/argent.
+                });
+            }, this.pollIntervalMs);
+        },
+        stopStatusPolling: function () {
+            if (this.pollIntervalId !== null) {
+                clearInterval(this.pollIntervalId);
+                this.pollIntervalId = null;
+            }
         },
         changeStatus: function (status) {
             appService.cancelOrder().then((res) => {
