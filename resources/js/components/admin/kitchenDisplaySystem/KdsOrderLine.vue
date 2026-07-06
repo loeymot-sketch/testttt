@@ -82,7 +82,7 @@
     <template v-else-if="line.type === 'instruction'">
       <div :class="['kds-line__instruction', line.visualClass]">
         <span class="kds-line__instruction-prefix">·</span>
-        <span>{{ line.label }}</span>
+        <span class="kds-line__instruction-text">{{ line.label }}</span>
       </div>
     </template>
 
@@ -291,6 +291,12 @@ export default {
 .kds-line__instruction-prefix {
   opacity: 0.55;
   font-style: normal;
+}
+/* [W6-ADV B-3 2026-07-06] Note multi-lignes (« BOISSON: Hawaï 33cl\n[bien cuit svp] ») :
+   respecter les sauts de ligne comme le ticket (lignes ** séparées) — sans pre-line,
+   2 notes distinctes se lisaient d'un seul bloc à l'écran. */
+.kds-line__instruction-text {
+  white-space: pre-line;
 }
 .kds-instruction--note {
   color: #4B5563;

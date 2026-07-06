@@ -1,0 +1,26 @@
+{
+  "generated_at": "2026-07-06",
+  "source": "DB items — catégorie Boissons (id 10, slug boissons) status ACTIVE + desserts réels (cat 9). Dump tinker 2026-07-06. Jumelé : PHP KitchenTicketDrinkVisibilityTest (set-equality contre les seeders canoniques RestoreLeCayenneDessertsAndDrinksSeeder + DrinksUpdate20260705Seeder) ↔ JS kdsSymbolicDrinks.spec.js. Si une 16e boisson sort du filet ou change de nom, régénérer CE fichier + vérifier isDrinkItem/isDrinkName.",
+  "drinks": [
+    "Coca-Cola 33cl",
+    "Coca-Cola Zero 33cl",
+    "Fanta Orange 33cl",
+    "Sprite 33cl",
+    "Oasis Tropical 33cl",
+    "Orangina 33cl",
+    "Eau Plate 50cl",
+    "Capri-Sun",
+    "Coca Cherry 33cl",
+    "Tropico 33cl",
+    "Ice Tea Pêche 33cl",
+    "Fanta Citron 33cl",
+    "Fuze Tea 33cl",
+    "Hawaï 33cl",
+    "Perrier 33cl"
+  ],
+  "desserts": [
+    "Glace",
+    "Tarte Daim",
+    "Tiramisu"
+  ]
+}

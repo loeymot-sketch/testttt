@@ -40,6 +40,43 @@ function classifyGroup(variationName, attributeName) {
     return 'other';
 }
 
+// [W6-ADV B-1 2026-07-06] Détection boisson robuste — le match noms ratait 8/15
+// boissons actives DB (« Hawaï 33cl » — régression du renommage Fanta Hawai —,
+// Orangina, Capri-Sun, Tropico, Ice Tea, Fuze Tea, Perrier, Oasis) → codes
+// cryptiques « 1× HAW » en cuisine. Couverture : marques réelles de la carte +
+// « boisson » générique + token VOLUMÉTRIQUE (« 33cl », « 50 cl », « 1L »,
+// « 1,5l » — seuls les liquides sont nommés au volume sur la carte).
+// Jumeau STRICT : KitchenTicketSymbolicFormatter::isDrinkItem (PHP).
+const DRINK_NAME_RE = /coca|fanta|sprite|\beau\b|coke|water|\bjus\b|\bthé?\b|menthe|caf[eé]|boisson|oasis|orangina|capri|tropico|ice[ -]?tea|fuze|perrier|hawa[iï]/;
+const DRINK_VOLUME_RE = /\b\d{1,2} ?cl\b|\b\d(?:[.,]\d)? ?l\b/;
+
+/**
+ * Nom de produit = BOISSON ? Applique la MÊME chaîne de gardes que categorize()
+ * (un nom qui matche une catégorie antérieure — menu/sandwich/…/dessert — n'est
+ * JAMAIS une boisson : « Gâteau » contient « eau », « Menu (Frites + Boisson) »
+ * contient « boisson », « frites + boisson » est un libellé de formule, et
+ * /glace/ ne matche PAS « glaçons » (ç≠c)). Jumeau STRICT du PHP
+ * KitchenTicketSymbolicFormatter::isDrinkItem.
+ *
+ * @param {string} rawName
+ * @returns {boolean}
+ */
+export function isDrinkName(rawName) {
+    const n = String(rawName || '').toLowerCase().trim();
+    if (
+        /menu|formule/.test(n) ||
+        /sandwich|kafteji|brick/.test(n) ||
+        /\btacos?\b/.test(n) ||
+        /burger|cheeseburger|double cheese/.test(n) ||
+        /assiette|couscous|ojja|lablabi/.test(n) ||
+        /frite|onion ring/.test(n) ||
+        /dessert|crepe|crêpe|gateau|gâteau|glace|tiramisu/.test(n)
+    ) {
+        return false;
+    }
+    return DRINK_NAME_RE.test(n) || DRINK_VOLUME_RE.test(n);
+}
+
 /**
  * Classify an item into a category. Server can override this by populating
  * a future `items.kds_category` column; until then, name-based fallback.
@@ -89,7 +126,9 @@ export function categorize(orderItem) {
     if (/dessert|crepe|crêpe|gateau|gâteau|glace|tiramisu/.test(name)) {
         return 'dessert';
     }
-    if (/coca|fanta|sprite|\beau\b|coke|water|\bjus\b|\bthé?\b|menthe|caf[eé]/.test(name)) {
+    // [W6-ADV B-1] isDrinkName rejoue les gardes ci-dessus (mêmes regex, même ordre)
+    // puis matche marques + volumes — factorisé pour l'extraction boisson-de-formule.
+    if (isDrinkName(name)) {
         return 'drink';
     }
     return 'other';
@@ -182,6 +221,34 @@ function addonLabel(a) {
 const KDS_COMPO_LINE_RE = /(^|\s)(Viandes?|Sauce|Suppl[ée]ment|Pain|Galette)\s*:/i;
 
 /**
+ * [W6-ADV C-P1-1 2026-07-06] La BORNE écrit la boisson de formule DANS la ligne
+ * « Pain : Pain. Formule : Menu complet (frites + boisson) (Hawaï 33cl). Sauce
+ * frites : Algérienne » (UNE seule ligne — shape réel #5533) que le sanitizer
+ * droppe entière (anti double-menu / compo) → la boisson mourait avec (ni KDS ni
+ * ticket, le cuisinier ne savait pas quelle boisson préparer). On EXTRAIT le(s)
+ * segment(s) entre parenthèses validés boisson (isDrinkName — la garde rejette
+ * « (frites + boisson) », libellé de formule) et on les émet au format CAISSE
+ * « BOISSON: X », canal déjà préservé par le sanitize et affiché KDS + ticket.
+ * Jumeau STRICT : KitchenTicketSymbolicFormatter::extractFormuleDrinkLines.
+ *
+ * @param {string} raw
+ * @returns {string[]} lignes « BOISSON: X » (peut être vide)
+ */
+function extractFormuleDrinkLines(raw) {
+    const out = [];
+    for (const ln of String(raw).split('\n')) {
+        if (!/formule\s*:/i.test(ln)) continue;
+        for (const m of ln.matchAll(/\(([^()]+)\)/g)) {
+            const seg = m[1].trim();
+            if (seg !== '' && isDrinkName(seg)) {
+                out.push(`BOISSON: ${seg}`);
+            }
+        }
+    }
+    return out;
+}
+
+/**
  * Sanitize the free-text `instruction` for KDS / kitchen-ticket display.
  *
  * The FROZEN pos-wizard.js (buildTicketInstruction) writes the FULL composition
@@ -239,10 +306,17 @@ export function sanitizeKdsInstruction(raw, itemName) {
     });
     // [KITCHEN-NOPRICE 2026-06-30] Cuisine sans prix : retire « (+2,00 €) » / « (+2,50) »
     // des notes conservées (parité avec KitchenTicketSymbolicFormatter::cleanInstruction).
-    return kept
-        .map((l) => l.replace(/\s*\(\s*\+?\s*(?:€|EUR)?\s*\d+[.,]\d{1,2}\s*(?:€|EUR)?\s*\)/g, '').trim())
-        .join('\n')
-        .trim();
+    const cleaned = kept.map((l) =>
+        l.replace(/\s*\(\s*\+?\s*(?:€|EUR)?\s*\d+[.,]\d{1,2}\s*(?:€|EUR)?\s*\)/g, '').trim()
+    );
+    // [W6-ADV C-P1-1] Boisson de formule borne extraite AVANT le drop de sa ligne —
+    // dédupliquée si la caisse a déjà écrit sa propre ligne « BOISSON: X ».
+    for (const d of extractFormuleDrinkLines(raw)) {
+        if (!cleaned.some((l) => l.toLowerCase() === d.toLowerCase())) {
+            cleaned.push(d);
+        }
+    }
+    return cleaned.join('\n').trim();
 }
 
 /**

@@ -292,7 +292,50 @@ final class KitchenTicketSymbolicFormatter
             }
         }
 
-        return (bool) preg_match('/coca|fanta|sprite|\beau\b|coke|water|\bjus\b|\bthé?\b|menthe|caf[eé]/u', $n);
+        // [W6-ADV B-1 2026-07-06] Le match noms ratait 8/15 boissons actives DB
+        // (« Hawaï 33cl » — régression du renommage Fanta Hawai —, Orangina,
+        // Capri-Sun, Tropico, Ice Tea, Fuze Tea, Perrier, Oasis) → « 1 x HAW »
+        // cryptique en cuisine. Ajouts JUMEAUX (kdsCustomization.js isDrinkName) :
+        // marques réelles + « boisson » générique + token VOLUMÉTRIQUE (« 33cl »,
+        // « 50 cl », « 1L », « 1,5l » — seuls les liquides sont nommés au volume).
+        // Les gardes ci-dessus restent la protection anti faux-positif (desserts,
+        // « frites + boisson », « Menu (Frites + Boisson) »...).
+        return (bool) (
+            preg_match('/coca|fanta|sprite|\beau\b|coke|water|\bjus\b|\bthé?\b|menthe|caf[eé]|boisson|oasis|orangina|capri|tropico|ice[ -]?tea|fuze|perrier|hawa[iï]/u', $n)
+            || preg_match('/\b\d{1,2} ?cl\b|\b\d(?:[.,]\d)? ?l\b/u', $n)
+        );
+    }
+
+    /**
+     * [W6-ADV C-P1-1 2026-07-06] La BORNE écrit la boisson de formule DANS la ligne
+     * « Pain : Pain. Formule : Menu complet (frites + boisson) (Hawaï 33cl). Sauce
+     * frites : Algérienne » (UNE seule ligne — shape réel #5533) que cleanInstruction
+     * droppe entière (anti double-menu / compo) → la boisson mourait avec (ni ticket
+     * ni KDS). Extrait le(s) segment(s) entre parenthèses validés boisson
+     * (isDrinkItem — la garde rejette « (frites + boisson) », libellé de formule)
+     * → ligne au format CAISSE « BOISSON: X », canal déjà préservé + rendu des
+     * 2 côtés. Jumeau STRICT du JS kdsCustomization.js extractFormuleDrinkLines.
+     *
+     * @return list<string>
+     */
+    private function extractFormuleDrinkLines(string $raw): array
+    {
+        $out = [];
+        foreach (preg_split('/\n/', $raw) as $ln) {
+            if (! preg_match('/formule\s*:/iu', $ln)) {
+                continue;
+            }
+            if (preg_match_all('/\(([^()]+)\)/u', $ln, $m)) {
+                foreach ($m[1] as $seg) {
+                    $seg = trim($seg);
+                    if ($seg !== '' && $this->isDrinkItem($seg)) {
+                        $out[] = 'BOISSON: '.$seg;
+                    }
+                }
+            }
+        }
+
+        return $out;
     }
 
     /**
@@ -393,6 +436,16 @@ final class KitchenTicketSymbolicFormatter
         // € avant OU après le nombre, décimale point OU virgule : (+2,00 €) / (+€1.00) / (+2,50).
         $priceRe = '/\s*\(\s*\+?\s*(?:€|EUR)?\s*\d+[.,]\d{1,2}\s*(?:€|EUR)?\s*\)/u';
         $kept = array_map(fn ($l) => trim(preg_replace($priceRe, '', $l)), $kept);
+
+        // [W6-ADV C-P1-1] Boisson de formule borne extraite AVANT le drop de sa ligne —
+        // dédupliquée si la caisse a déjà écrit sa propre ligne « BOISSON: X ».
+        $lower = array_map(static fn ($l) => mb_strtolower((string) $l), $kept);
+        foreach ($this->extractFormuleDrinkLines($raw) as $d) {
+            if (! in_array(mb_strtolower($d), $lower, true)) {
+                $kept[] = $d;
+                $lower[] = mb_strtolower($d);
+            }
+        }
 
         return trim(implode("\n", $kept));
     }

@@ -75,7 +75,7 @@ class UberOrderMapper
             'quantity'   => max(1, $qty),
             'unit_price' => (float) (($line['price']['unit_price']['amount'] ?? 0) / 100),
             'total'      => (float) (($line['price']['total_price']['amount'] ?? 0) / 100),
-            'instruction'=> trim(($unmapped ? '[UBER NON MAPPÉ: ' . $title . '] ' : '') . (string) ($line['special_instructions'] ?? '')),
+            'instruction'=> trim(($unmapped ? '[UBER NON MAPPÉ: ' . $title . '] ' : '') . $this->safeNote((string) ($line['special_instructions'] ?? ''))),
             'composition_snapshot' => [
                 'schema_version' => 1,
                 'source'         => 'uber_eats',
@@ -85,6 +85,25 @@ class UberOrderMapper
                 'uber_title'     => $title,
             ],
         ];
+    }
+
+    /**
+     * [W6-ADV B-4 2026-07-06] Note client Uber → canal SÛR cuisine. Les sanitizers
+     * jumeaux (cleanInstruction PHP / sanitizeKdsInstruction JS) droppent toute ligne
+     * 100% MAJUSCULES (écho du nom produit écrit par le pos-wizard) : une vraie note
+     * Uber en capitales — « SANS OIGNONS SVP », fréquent — serait SILENCIEUSEMENT
+     * perdue en cuisine (latent food-safety). Le wizard caisse bracket ses notes
+     * libres ([...]) et le sanitize les PRÉSERVE → même pattern pour la note Uber
+     * brute (sans double-bracket si Uber/merchant l'a déjà encadrée).
+     */
+    private function safeNote(string $note): string
+    {
+        $note = trim($note);
+        if ($note === '' || str_starts_with($note, '[')) {
+            return $note;
+        }
+
+        return '['.$note.']';
     }
 
     /** Résout l'item_id catalogue : map par titre, par id Uber, puis fallback match nom DB. */
