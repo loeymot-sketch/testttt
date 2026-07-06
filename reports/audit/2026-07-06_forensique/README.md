@@ -30,6 +30,7 @@ Audit en profondeur du monorepo, produit par **orchestration multi-agents advers
 | 12 | `12_REGISTRE_DURCI.md` | **Registre durci** : 33 critiques prouvés (32 avec reproduction+test) + 2 réfutés (C12, C18 requalifiés) + 2 chaînes d'exploitation |
 | 13 | `13_PLAN_MAITRE.md` | **Plan maître** : blueprint de la mission en boucle (Phase 0, cellules, portes 1000 %, streams, e2e+visuel) — *plan, aucune modif* |
 | 14 | `14_DECOMPOSITION_INTERSECTIONS.md` | **Décomposition ultra-profonde** : matrice d'intersections (112 cellules) + 6 arbres de cause racine + **7 points de levier** (1 fix → N findings) |
+| 15 | `15_TEARDOWN_EQUIPE_REDESIGN.md` | **Teardown d'équipe (16 spécialistes)** : décomposition mécanisme + **redesign cible par composant** + revue croisée — 16/16 « à-refondre », 128 défauts |
 | — | `HANDOFF_CLAUDE.md` | **Passation** pour la session de correction : par où commencer, règles d'or, actions ops |
 
 ## Méthode
