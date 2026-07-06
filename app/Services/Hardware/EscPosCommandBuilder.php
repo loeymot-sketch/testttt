@@ -33,6 +33,16 @@ final class EscPosCommandBuilder
         return self::ESC . 'E' . ($on ? "\x01" : "\x00");
     }
 
+    /**
+     * [OWNER8 2026-07-06] ESC - n — soulignement matériel (0=off, 1=on 1 point).
+     * Utilisé pour le symbole crudité « O̲ » (oignons cuits) : CP858 ne connaît
+     * pas U+0332, encodeForPrinter() traduit la séquence X+U+0332 en ESC-1 X ESC-0.
+     */
+    public static function underline(bool $on): string
+    {
+        return self::ESC . '-' . ($on ? "\x01" : "\x00");
+    }
+
     public static function doubleSize(bool $on): string
     {
         return self::GS . '!' . ($on ? "\x11" : "\x00");
@@ -112,6 +122,13 @@ final class EscPosCommandBuilder
     public static function encodeForPrinter(string $text, string $encoding = 'CP858'): string
     {
         if ($text === '') return '';
+        // [OWNER8 2026-07-06] U+0332 (combining low line — symbole crudité « O̲ »
+        // oignons cuits) n'existe pas en CP858 : iconv le TRANSLIT en « _ » séparé
+        // ou le droppe. Traduction ICI (et UNIQUEMENT ici — sanitize() strip les
+        // octets 0x00-0x1F, un ESC injecté via textLine serait détruit) en
+        // soulignement MATÉRIEL : X+U+0332 → ESC - 1, X, ESC - 0. Les octets ESC
+        // (ASCII 0x1B) traversent iconv inchangés.
+        $text = preg_replace('/(.)\x{0332}/u', "\x1B-\x01\$1\x1B-\x00", $text) ?? $text;
         // CP858 lacks the French ligatures Œ/œ/Æ/æ; pre-map to their 2-letter form so
         // the printer shows "Oeuf" (real supplement "Œuf"), not the TRANSLIT "OEuf".
         $text = strtr($text, ['Œ' => 'Oe', 'œ' => 'oe', 'Æ' => 'Ae', 'æ' => 'ae']);
@@ -140,7 +157,7 @@ final class EscPosCommandBuilder
     public static function centerLine(string $text, int $widthChars = 48): string
     {
         $text = self::truncate(self::sanitize($text), $widthChars);
-        $padding = max(0, intdiv($widthChars - mb_strlen($text), 2));
+        $padding = max(0, intdiv($widthChars - self::width($text), 2));
 
         return str_repeat(' ', $padding) . $text . self::LF;
     }
@@ -148,9 +165,9 @@ final class EscPosCommandBuilder
     public static function lineKV(string $label, string $value, int $widthChars = 48): string
     {
         $value = self::truncate(self::sanitize($value), max(1, $widthChars - 2));
-        $maxLabel = max(1, $widthChars - mb_strlen($value) - 1);
+        $maxLabel = max(1, $widthChars - self::width($value) - 1);
         $label = self::truncate(self::sanitize($label), $maxLabel);
-        $padding = max(1, $widthChars - mb_strlen($label) - mb_strlen($value));
+        $padding = max(1, $widthChars - self::width($label) - self::width($value));
 
         return $label . str_repeat(' ', $padding) . $value . self::LF;
     }
@@ -170,12 +187,14 @@ final class EscPosCommandBuilder
         if ($body === '') {
             return [];
         }
-        $avail = max(1, $widthChars - mb_strlen($indent));
+        $avail = max(1, $widthChars - self::width($indent));
         $lines = [];
         $cur = '';
         foreach (explode(' ', $body) as $word) {
             // Hard-split a token longer than the available width.
-            while (mb_strlen($word) > $avail) {
+            // (split par code points — un mot > largeur contenant U+0332 n'existe pas
+            // en pratique : le segment crudités « STOO̲ » fait 4 colonnes visibles)
+            while (self::width($word) > $avail) {
                 if ($cur !== '') {
                     $lines[] = $indent . $cur;
                     $cur = '';
@@ -184,7 +203,7 @@ final class EscPosCommandBuilder
                 $word = mb_substr($word, $avail);
             }
             $candidate = $cur === '' ? $word : $cur . ' ' . $word;
-            if (mb_strlen($candidate) > $avail) {
+            if (self::width($candidate) > $avail) {
                 $lines[] = $indent . $cur;
                 $cur = $word;
             } else {
@@ -224,16 +243,16 @@ final class EscPosCommandBuilder
         $w = max(8, $widthChars);
         $value = self::sanitize($value);
         $left = self::sanitize($left);
-        $vlen = mb_strlen($value);
+        $vlen = self::width($value);
         $firstAvail = max(1, $w - $vlen - 1);
-        $contAvail = max(1, $w - mb_strlen($indent));
+        $contAvail = max(1, $w - self::width($indent));
 
         $segments = [];
         $cur = '';
         $avail = $firstAvail;
         $indentFor = '';
         foreach (explode(' ', trim($left)) as $word) {
-            while (mb_strlen($word) > $avail) {
+            while (self::width($word) > $avail) {
                 if ($cur !== '') {
                     $segments[] = [$indentFor, $cur];
                     $cur = '';
@@ -247,7 +266,7 @@ final class EscPosCommandBuilder
                 $avail = $contAvail;
             }
             $cand = $cur === '' ? $word : $cur . ' ' . $word;
-            if (mb_strlen($cand) > $avail) {
+            if (self::width($cand) > $avail) {
                 $segments[] = [$indentFor, $cur];
                 $cur = $word;
                 $indentFor = $indent;
@@ -264,7 +283,7 @@ final class EscPosCommandBuilder
         foreach ($segments as $i => [$ind, $seg]) {
             $text = $ind . $seg;
             if ($i === 0) {
-                $pad = max(1, $w - mb_strlen($text) - $vlen);
+                $pad = max(1, $w - self::width($text) - $vlen);
                 $out .= $text . str_repeat(' ', $pad) . $value . self::LF;
             } else {
                 $out .= $text . self::LF;
@@ -285,7 +304,7 @@ final class EscPosCommandBuilder
         $lines = [];
         $cur = '';
         foreach (explode(' ', $text) as $word) {
-            while (mb_strlen($word) > $w) {
+            while (self::width($word) > $w) {
                 if ($cur !== '') {
                     $lines[] = $cur;
                     $cur = '';
@@ -294,7 +313,7 @@ final class EscPosCommandBuilder
                 $word = mb_substr($word, $w);
             }
             $cand = $cur === '' ? $word : $cur . ' ' . $word;
-            if (mb_strlen($cand) > $w) {
+            if (self::width($cand) > $w) {
                 $lines[] = $cur;
                 $cur = $word;
             } else {
@@ -317,6 +336,17 @@ final class EscPosCommandBuilder
         $text = strtr($text, ['Œ' => 'Oe', 'œ' => 'oe', 'Æ' => 'Ae', 'æ' => 'ae']);
 
         return preg_replace('/[\x00-\x08\x0B-\x1F\x7F]/u', '', $text) ?? '';
+    }
+
+    /**
+     * [OWNER8 2026-07-06] Largeur VISIBLE (colonnes imprimées) : U+0332 (combining
+     * low line — « O̲ » oignons cuits) compte 0 colonne, il devient un soulignement
+     * ESC - n à l'encodage (encodeForPrinter) et ne consomme aucune colonne papier.
+     * Utilisée par TOUS les calculs wrap/pad (mb_strlen compterait 1 de trop).
+     */
+    private static function width(string $text): int
+    {
+        return mb_strlen($text) - mb_substr_count($text, "\u{0332}");
     }
 
     private static function truncate(string $text, int $widthChars): string

@@ -48,10 +48,15 @@ final class KitchenTicketSymbolicFormatter
     private const CRUDITE_TABLE = [
         ['/salade/', 'S'],
         ['/tomate/', 'T'],
+        // [OWNER8 2026-07-06] Oignons CUITS → O̲ (O + U+0332) — AVANT /oignon/
+        // (sinon le cru matcherait d'abord). Jumeau STRICT de kdsSymbolic.js
+        // (même string O+U+0332 → parité écran↔ticket). Le soulignement matériel
+        // ESC - n est appliqué par EscPosCommandBuilder::encodeForPrinter.
+        ['/oignon.*cuit|cuit.*oignon/', "O\u{0332}"],
         ['/oignon/', 'O'],
     ];
 
-    private const CRUDITE_ORDER = ['S', 'T', 'O'];
+    private const CRUDITE_ORDER = ['S', 'T', 'O', "O\u{0332}"];
 
     /** lowercase, strip diacritics, trim — for keyword matching. */
     private function norm(?string $s): string

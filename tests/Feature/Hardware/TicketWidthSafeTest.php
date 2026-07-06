@@ -39,7 +39,8 @@ class TicketWidthSafeTest extends TestCase
                 $i += 2; if ($i < $len) $i++;
                 continue;
             }
-            if ($c === "\x1B" && $i + 1 < $len && in_array($bytes[$i + 1], ['a', 'E', 't', 'd', '!'], true)) { $i += 3; continue; }
+            // [OWNER8 2026-07-06] '-' = ESC - n (soulignement O̲ oignons cuits) : 3 octets, 0 colonne.
+            if ($c === "\x1B" && $i + 1 < $len && in_array($bytes[$i + 1], ['a', 'E', 't', 'd', '!', '-'], true)) { $i += 3; continue; }
             if ($c === "\x1B" && $i + 1 < $len && $bytes[$i + 1] === '@') { $i += 2; continue; }
             if ($c === "\x0A") { $lines[] = [$cur, $wmul]; $cur = ''; $i++; continue; }
             if (ord($c) < 0x20) { $i++; continue; }

@@ -19,9 +19,11 @@ use Illuminate\Support\Facades\DB;
  *   Run :  php artisan db:seed --class=DrinksUpdate20260705Seeder
  *
  * Images cablees dans config/menu_images.php (slug → fichier). Prix aligne au canon sodas 1,90
- * (l'owner peut ajuster dans l'admin). Fuze Tea / Fanta Hawai / Perrier ajoutees avec une
+ * (l'owner peut ajuster dans l'admin). Fuze Tea / Hawaï / Perrier ajoutees avec une
  * image de REPLI distincte (owner n'a pas fourni le visuel dedie) — a swap 1 ligne des
- * reception de fuze-tea.png / fanta-hawai.png / perrier.png.
+ * reception de fuze-tea.png / hawai.png / perrier.png.
+ * [OWNER8 2026-07-06] « Fanta Hawai 33cl » renomme « Hawaï 33cl » (slug hawai,
+ * migration en place via legacy_slugs — pas de doublon, id conserve).
  */
 class DrinksUpdate20260705Seeder extends Seeder
 {
@@ -42,10 +44,13 @@ class DrinksUpdate20260705Seeder extends Seeder
             ['slug' => 'fanta-citron', 'name' => 'Fanta Citron 33cl',   'price' => 1.90, 'description' => 'Fanta Citron'],
             // [2026-07-05] 3 boissons demandées par l'owner SANS visuel dédié dans le
             // dossier fourni → image de repli DISTINCTE (config/menu_images.php), à
-            // remplacer dès réception de fuze-tea.png / fanta-hawai.png / perrier.png.
+            // remplacer dès réception de fuze-tea.png / hawai.png / perrier.png.
             // Elles sont dès maintenant commandables + gérables en stock (SSOT items).
             ['slug' => 'fuze-tea',     'name' => 'Fuze Tea 33cl',       'price' => 1.90, 'description' => 'Fuze Tea'],
-            ['slug' => 'fanta-hawai',  'name' => 'Fanta Hawai 33cl',    'price' => 1.90, 'description' => 'Fanta Hawai'],
+            // [OWNER8 2026-07-06] Renommage owner : « Fanta Hawai 33cl » → « Hawaï 33cl ».
+            // legacy_slugs migre la ligne existante EN PLACE (slug + nom ; id conservé →
+            // stock, commandes et disponibilité intacts ; jamais de doublon).
+            ['slug' => 'hawai',        'name' => 'Hawaï 33cl',          'price' => 1.90, 'description' => 'Hawaï', 'legacy_slugs' => ['fanta-hawai']],
             ['slug' => 'perrier',      'name' => 'Perrier 33cl',        'price' => 1.90, 'description' => 'Perrier (eau gazeuse)'],
         ];
 
@@ -53,12 +58,18 @@ class DrinksUpdate20260705Seeder extends Seeder
         DB::transaction(function () use ($drinks, $cat, &$created) {
             foreach ($drinks as $d) {
                 $row = Item::where('slug', $d['slug'])->withTrashed()->first();
+                // [OWNER8 2026-07-06] Migration renommage : retrouve la ligne sous son
+                // slug LEGACY (ex. fanta-hawai) et la renomme en place (slug + nom).
+                if (! $row && ! empty($d['legacy_slugs'])) {
+                    $row = Item::whereIn('slug', $d['legacy_slugs'])->withTrashed()->first();
+                }
                 if ($row) {
                     if ($row->deleted_at) {
                         $row->restore();
                     }
                     $row->fill([
                         'item_category_id' => $cat->id,
+                        'slug'             => $d['slug'],
                         'name'             => $d['name'],
                         'price'            => $d['price'],
                         'description'      => $d['description'],

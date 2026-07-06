@@ -64,10 +64,16 @@ const SAUCE_TABLE = [
 const CRUDITE_TABLE = [
     [/salade/, 'S'],
     [/tomate/, 'T'],
+    // [OWNER8 2026-07-06] Oignons CUITS → O̲ (O + U+0332 combining low line) —
+    // AVANT /oignon/ (sinon le cru matcherait d'abord). Écran : rendu natif dans
+    // {{ line.label }}. Ticket : EscPosCommandBuilder::encodeForPrinter traduit
+    // X+U+0332 en soulignement matériel ESC - 1 X ESC - 0 (CP858 sans combining).
+    // Jumeau STRICT : KitchenTicketSymbolicFormatter::CRUDITE_TABLE (même string).
+    [/oignon.*cuit|cuit.*oignon/, 'O̲'],
     [/oignon/, 'O'],
 ];
-/** Canonical print order of crudités → "STO". */
-const CRUDITE_ORDER = ['S', 'T', 'O'];
+/** Canonical print order of crudités → "STOO̲". */
+const CRUDITE_ORDER = ['S', 'T', 'O', 'O̲'];
 
 export function meatSymbol(name) {
     const n = normalize(name);

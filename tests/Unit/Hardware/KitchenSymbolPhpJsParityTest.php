@@ -81,10 +81,11 @@ class KitchenSymbolPhpJsParityTest extends TestCase
 
         $js = file_get_contents(base_path('resources/js/helpers/kdsSymbolic.js'));
         $this->assertSame(1, preg_match('/const\s+CRUDITE_ORDER\s*=\s*\[(.*?)\];/s', $js, $m), 'CRUDITE_ORDER JS introuvable');
-        preg_match_all('/[\'"]([A-Z]+)[\'"]/', $m[1], $jsOrder);
+        // [OWNER8 2026-07-06] O̲ (oignons cuits) = O + U+0332 → la classe accepte le combining.
+        preg_match_all('/[\'"]([A-Z\x{0332}]+)[\'"]/u', $m[1], $jsOrder);
 
-        $this->assertSame($phpOrder, $jsOrder[1], 'Ordre des crudités (STO) divergent PHP/JS.');
-        $this->assertSame(['S', 'T', 'O'], $phpOrder, 'Ordre crudités canonique attendu = S,T,O.');
+        $this->assertSame($phpOrder, $jsOrder[1], 'Ordre des crudités (STOO̲) divergent PHP/JS.');
+        $this->assertSame(['S', 'T', 'O', "O\u{0332}"], $phpOrder, 'Ordre crudités canonique attendu = S,T,O,O̲.');
     }
 
     public function test_tables_are_non_empty(): void

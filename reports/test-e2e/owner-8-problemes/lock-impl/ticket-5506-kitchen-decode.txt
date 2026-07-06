@@ -1,0 +1,15 @@
+TICKET CUISINE réel #5506 (A0005) — décodage octets ESC/POS 32 col
+<u>…</u> = soulignement MATÉRIEL ESC - n (symbole O̲ oignons cuits)
+==============================================
+ 7| CUISINE
+10| A0005
+18| *** À EMPORTER ***
+ 5| 19:39
+32| ================================
+30|   1 x S | CAY |
+22|   ST<u>O</u> | ALG
+26|     ** BOISSON: Hawaï 33cl
+20|   1 x MENU
+==============================================
+lignes > 32 col : 0
+octets \x1B\x2D\x01 O \x1B\x2D\x00 présents : True

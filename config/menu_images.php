@@ -157,9 +157,12 @@ return [
         'ice-tea'     => 'lipton-peche.png',
         'fanta-citron' => 'fanta-citron.png',
         // [2026-07-05] Repli DISTINCT en attendant les vrais visuels owner
-        // (fuze-tea.png / fanta-hawai.png / perrier.png). Swap 1 ligne à réception.
+        // (fuze-tea.png / hawai.png / perrier.png). Swap 1 ligne à réception.
         'fuze-tea'    => 'lipton-framboise.png', // thé framboise ≠ ice-tea (pêche)
-        'fanta-hawai' => 'fanta-fraise.png',     // Fanta rose ≠ orange/citron
+        // [OWNER8 2026-07-06] renommage « Fanta Hawai 33cl » → « Hawaï 33cl » (slug hawai) ;
+        // clé legacy conservée pour un VPS pas encore migré par le seeder.
+        'hawai'       => 'fanta-fraise.png',     // Hawaï rose ≠ orange/citron
+        'fanta-hawai' => 'fanta-fraise.png',     // legacy slug (pré-migration)
         'perrier'     => 'eau.png',              // eau gazeuse (repli eau)
 
         // ── Menu enfant (cat 11)

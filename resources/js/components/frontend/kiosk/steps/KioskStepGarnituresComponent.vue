@@ -176,6 +176,18 @@ export default {
       this.userInteracted = true;
       const newSelections = { ...this.localSelections };
       newSelections[id] = !newSelections[id];
+      // [OWNER8 2026-07-06] Exclusivité oignon cru↔cuit (miroir du parent frozen
+      // KioskWizardComponent.applyOnionCruCuitExclusivity) : cocher l'un décoche
+      // l'autre — appliqué localement pour que l'UI du step reflète tout de suite.
+      if (newSelections[id] && g && String(g.name || '').toLowerCase().includes('oignon')) {
+        const cuit = String(g.name || '').toLowerCase().includes('cuit');
+        this.garnitureList.forEach((o) => {
+          const on = String(o.name || '').toLowerCase();
+          if (o.id !== id && on.includes('oignon') && on.includes('cuit') !== cuit) {
+            newSelections[o.id] = false;
+          }
+        });
+      }
       this.localSelections = newSelections;
       this.$emit('update', 'garnitures', newSelections);
     }
