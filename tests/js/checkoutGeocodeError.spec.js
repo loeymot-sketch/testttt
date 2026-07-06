@@ -25,7 +25,10 @@ describe('delivery geocode failure UI contracts', () => {
         expect(source).toContain('deliveryGeocodeError');
         expect(source).toContain('Adresse non reconnue');
         expect(source).toContain('focusDeliveryAddressField');
-        expect(source).toContain('if (!this.deliveryInline.latitude || !this.deliveryInline.longitude)');
+        // C3 (c27e0d16e): le garde coordonnées ne s'applique qu'en mode Google Maps —
+        // le repli distance-manuelle (deliveryInline.manual) passe sans lat/lng.
+        expect(source).toContain('if (!this.deliveryInline.manual && (!this.deliveryInline.latitude || !this.deliveryInline.longitude))');
+        expect(source).toContain('manualDistanceKm');
         expect(source).not.toContain('Frais de livraison appliqués au tarif minimum.');
     });
 });

@@ -57,14 +57,13 @@ final class KitchenTicketSymbolicFormatter
     private function norm(?string $s): string
     {
         $s = (string) $s;
-        // [TICKET-WIDTHSAFE 2026-07-01] Pré-mapper les ligatures AVANT iconv : selon la libc,
-        // iconv//IGNORE peut SUPPRIMER « Œ » → « Œuf » devient « uf » → symbole « UF » (bizarre,
-        // vu par l'owner). En forçant « Œ→Oe », « Œuf » → « oeuf » → symbole clair « OEU ».
+        // [TICKET-WIDTHSAFE 2026-07-01] Pré-mapper les ligatures AVANT translit : « Œuf » doit
+        // donner « oeuf » → symbole « OEU », jamais « UF » (vu par l'owner).
+        // [PARITY 2026-07-06] iconv//TRANSLIT dépend de la libc (macOS : « é » → « 'e » →
+        // « Méga » devenait « M » au lieu de « MEG », divergence ticket↔écran). Str::ascii
+        // (portable-ascii) est déterministe sur tous les OS — parité stricte avec le JS.
         $s = strtr($s, ['Œ' => 'Oe', 'œ' => 'oe', 'Æ' => 'Ae', 'æ' => 'ae']);
-        $ascii = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $s);
-        if ($ascii !== false) {
-            $s = $ascii;
-        }
+        $s = \Illuminate\Support\Str::ascii($s);
 
         return trim(mb_strtolower($s));
     }

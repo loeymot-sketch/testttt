@@ -1,12 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'fs';
+import path from 'path';
 import { symbolicMainLine, buildSymbolic } from '../../resources/js/helpers/kdsSymbolic.js';
 
 // [PARITY-REAL 2026-06-30] Cross-engine parity on REAL composition_snapshots.
 // The PHP renderer (printed ticket) and the JS engine (board/KDS) MUST produce the
 // IDENTICAL symbolic Line-1. This proves the owner's "absolutely the same as the
 // board" requirement on production data, not just hand-written fixtures.
-const FIXTURE = '/private/tmp/claude-501/-Users-1millnonstop-Downloads-projet-foodking-web-web-testttt/59443ca5-9115-4b4e-8cd4-8ea1d104a612/scratchpad/parity_php.json';
+// Corpus durable dans le repo (régénéré depuis la DB réelle le 2026-07-06 —
+// 391 (name, snapshot, php) rows via KitchenTicketSymbolicFormatter::mainLine).
+const FIXTURE = path.join(process.cwd(), 'tests/fixtures/parity_php.json');
 
 describe('kitchen symbolic parity — PHP (print) vs JS (board) on real data', () => {
   const rows = JSON.parse(fs.readFileSync(FIXTURE, 'utf8'));
