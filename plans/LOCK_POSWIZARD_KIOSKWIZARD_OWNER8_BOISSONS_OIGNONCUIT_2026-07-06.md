@@ -8,7 +8,7 @@
 - **Créé** : 2026-07-06
 - **Cycle** : GOAL owner-8-problemes (`plans/GOAL_OWNER_8_PROBLEMES_POS_KDS_PRINT_2026-07-06.md`)
 - **Phase** : EXECUTE (Wave 2/3-B)
-- **Status** : `APPLIED` 2026-07-06 — patch frozen = commit `a3376397c` (pos-wizard.js + KioskWizardComponent.vue + baseline SHA, message cite ce LOCK) ; support non-frozen = `b4969bb99`. Acceptance §6 toutes vertes (preuve live #5506 : 15 boissons, Hawaï, 9,90 € inchangé, O̲ ticket décodé, exclusivité cru↔cuit, images viandes 7/7). Passage à CLOSED après convergence W6.
+- **Status** : `CLOSED` 2026-07-06 — patch frozen = commit `a3376397c` (pos-wizard.js + KioskWizardComponent.vue + baseline SHA, message cite ce LOCK) ; support non-frozen = `b4969bb99`. Acceptance §6 toutes vertes (preuve live #5506 : 15 boissons, Hawaï, 9,90 € inchangé, O̲ ticket décodé, exclusivité cru↔cuit, images viandes 7/7). Convergence adversariale round 2 CLEAN (reports/test-e2e/owner-8-problemes/CONVERGENCE_FINAL.md). Frozen diff = ces 2 fichiers uniquement, 0 ligne ailleurs.
   (Gate G1 PRE-APPROVED : mandat explicite owner dans le goal du 2026-07-06.)
 
 ## §2. Fichiers frozen ciblés
