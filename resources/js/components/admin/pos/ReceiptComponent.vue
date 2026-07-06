@@ -25,8 +25,8 @@
                 <button
                     type="button"
                     @click="handlePrintKitchenClick"
-                    :disabled="isPrinting"
-                    :aria-busy="isPrinting"
+                    :disabled="printingKitchen"
+                    :aria-busy="printingKitchen"
                     data-testid="receipt-print-kitchen"
                     class="pos-v5-receipt-btn pos-v5-receipt-btn--kitchen">
                     <span aria-hidden="true">👨‍🍳</span>
@@ -35,13 +35,35 @@
                 <button
                     type="button"
                     @click="handlePrintClientClick"
-                    :disabled="isPrinting"
-                    :aria-busy="isPrinting"
+                    :disabled="printingClient"
+                    :aria-busy="printingClient"
                     data-testid="receipt-print-client"
                     class="pos-v5-receipt-btn pos-v5-receipt-btn--client">
                     <span aria-hidden="true">🧾</span>
                     <span class="text-xs leading-5 capitalize">{{ $t('pos.print_ticket_client') }}</span>
                 </button>
+                <!-- [PRINT-INSTANT 2026-07-06] Fallback navigateur = BOUTONS MANUELS explicites.
+                     window.print() n'est plus JAMAIS déclenché automatiquement (fini l'écran gris
+                     surprise) : ces boutons n'apparaissent que si le pont d'impression est
+                     injoignable, et c'est le caissier qui choisit d'imprimer via le navigateur. -->
+                <div v-if="showBrowserPrintFallback" class="hidden-print w-full flex flex-wrap items-center justify-end gap-2">
+                    <button
+                        type="button"
+                        @click="manualBrowserPrint('kitchen')"
+                        data-testid="receipt-browser-print-kitchen"
+                        class="pos-v5-receipt-btn pos-v5-receipt-btn--ghost">
+                        <span aria-hidden="true">🖨️</span>
+                        <span class="text-xs leading-5">{{ $t('pos.print_browser_manual') }} — {{ $t('pos.print_ticket_kitchen') }}</span>
+                    </button>
+                    <button
+                        type="button"
+                        @click="manualBrowserPrint('client')"
+                        data-testid="receipt-browser-print-client"
+                        class="pos-v5-receipt-btn pos-v5-receipt-btn--ghost">
+                        <span aria-hidden="true">🖨️</span>
+                        <span class="text-xs leading-5">{{ $t('pos.print_browser_manual') }} — {{ $t('pos.print_ticket_client') }}</span>
+                    </button>
+                </div>
                 <button
                     ref="hiddenPrintClientButton"
                     type="button"
@@ -365,7 +387,13 @@ export default {
     data() {
         return {
             localPrintCount: null,
-            isPrinting: false,
+            // [PRINT-INSTANT 2026-07-06] Verrous PAR ticket (client / cuisine) : les deux
+            // pipelines peuvent tourner EN PARALLÈLE (plus de série 10-25 s) et un
+            // double-clic sur le même bouton reste dédupliqué.
+            printingClient: false,
+            printingKitchen: false,
+            // Fallback navigateur = bouton MANUEL (jamais window.print auto).
+            showBrowserPrintFallback: false,
             printObjClient: {
                 id: "print-receipt-client",
                 popTitle: "Ticket client",
@@ -392,11 +420,9 @@ export default {
         }
     },
     computed: {
-        // [1000%-NO-POPUP 2026-07-03] Caisse silencieuse : quand true, JAMAIS window.print()
-        // (= le popup gris du navigateur). Injecté par master.blade → config printing.pos_silent_only.
-        silentPrintOnly: function () {
-            return !!(typeof window !== 'undefined' && window.foodkingConfig && window.foodkingConfig.posSilentPrintOnly);
-        },
+        // [PRINT-INSTANT 2026-07-06] L'ancien computed `silentPrintOnly` a disparu :
+        // window.print() n'est plus JAMAIS automatique (quel que soit le flag), le
+        // fallback navigateur est un bouton MANUEL explicite (manualBrowserPrint).
         // [BYPASS-P3] Lit window.foodkingConfig.bypassMode injecté par master.blade.php.
         bypassPrintingActive: function () {
             return !!(typeof window !== 'undefined' && window.foodkingConfig?.bypassMode?.printing);
@@ -549,7 +575,7 @@ export default {
          * FRAIS (clearCartOnClose=true, posé par PaymentComponent) — les re-prints
          * depuis le tracker restent à clearCartOnClose=false → pas d'auto-print.
          * Garde anti-double : une seule fois par order id ; en plus
-         * handlePrintClientClick a son verrou isPrinting et le POST /print-receipt
+         * handlePrintClientClick a son verrou printingClient et le POST /print-receipt
          * est idempotency-keyed → aucun double-incrément NF525 receipt_print_count.
          */
         maybeAutoPrintClient: function (orderId) {
@@ -566,14 +592,29 @@ export default {
         },
         /**
          * Ticket client : incrément NF525 + audit via POST print-receipt.
+         *
+         * [PRINT-INSTANT 2026-07-06] FIRE-AND-FORGET : le clic toast immédiatement
+         * « Ticket envoyé » et rend la main (0 await dans le handler) ; le pipeline
+         * réel (POST fiscal → pont ESC/POS) tourne en async et toast son résultat.
+         * L'UI n'est JAMAIS bloquée par l'impression (fini les ~20 s owner).
          */
-        async handlePrintClientClick() {
-            if (this.isPrinting) {
+        handlePrintClientClick() {
+            if (this.printingClient) {
                 return;
             }
-            this.isPrinting = true;
+            this.printingClient = true;
+            alertService.success(this.$t('pos.ticket_sent'));
+            // Volontairement non-await : résultat toasté en async par le pipeline.
+            const p = this._printClientPipeline()
+                .catch((e) => { console.warn('[ReceiptComponent] client print pipeline failed', e); })
+                .finally(() => { this.printingClient = false; });
+            this._lastClientPrintPromise = p; // test hook / observabilité
+            return undefined;
+        },
+        /** Pipeline async du ticket CLIENT (POST fiscal + pont). Jamais window.print auto. */
+        async _printClientPipeline() {
             this._printedThermally = false;
-            try {
+            {
                 if (this.order?.id) {
                     try {
                         // [K-001 abuse-e2e] print-receipt is in idempotency.required_routes
@@ -622,23 +663,28 @@ export default {
                 }
 
                 // [PRINT-SAGA] If the server already printed the ticket directly on
-                // the thermal printer (e.g. USB SAGA), skip browser print to avoid a
-                // double ticket. Otherwise fall back to window.print() (unchanged).
-                if (!this._printedThermally) {
+                // the thermal printer (e.g. USB SAGA), skip the local bridge to avoid a
+                // double ticket.
+                if (this._printedThermally) {
+                    alertService.success(`${this.$t('pos.print_ticket_client')} ✓`);
+                } else {
                     // [CAISSE-BRIDGE 2026-06-28] Pont local caisse (SILENCIEUX, sans
-                    // fenêtre) AVANT window.print : le serveur cloud ne joint pas l'USB
-                    // SAGA, donc on récupère les octets ESC/POS rendus serveur et on les
-                    // POSTe au pont local. window.print reste le fallback ultime.
+                    // fenêtre) : le serveur cloud ne joint pas l'USB SAGA, donc on
+                    // récupère les octets ESC/POS rendus serveur et on les POSTe au pont.
+                    // [PRINT-INSTANT 2026-07-06] window.print n'est PLUS un fallback auto :
+                    // pont absent/échec → erreur claire + bouton navigateur MANUEL.
                     const bridgeRes = await this.tryCaisseBridge('client');
-                    if (bridgeRes === 'no-bridge') {
-                        await this._browserPrintFallback('hiddenPrintClientButton');
-                    } else if (bridgeRes === 'failed') {
-                        // Pont présent mais échec → erreur claire, JAMAIS la page grise.
+                    if (bridgeRes === 'printed') {
+                        alertService.success(`${this.$t('pos.print_ticket_client')} ✓`);
+                    } else if (bridgeRes === 'no-bridge') {
+                        alertService.error(this.$t('pos.print_bridge_offline'));
+                        this.showBrowserPrintFallback = true;
+                    } else {
+                        // Pont présent mais échec → erreur claire, JAMAIS la page grise auto.
                         alertService.error(this.$t('pos.reprint_error'));
+                        this.showBrowserPrintFallback = true;
                     }
                 }
-            } finally {
-                this.isPrinting = false;
             }
         },
         /**
@@ -672,18 +718,14 @@ export default {
             }
         },
         /**
-         * [1000%-NO-POPUP 2026-07-03] Repli quand AUCUN pont n'est détecté.
-         * En mode CAISSE SILENCIEUSE (config `printing.pos_silent_only` → window.foodkingConfig
-         * .posSilentPrintOnly), on NE déclenche JAMAIS window.print() = le « popup gris » du
-         * navigateur qui imprime la page web (URL + zéros + paragraphe). On affiche une ERREUR
-         * claire à la place. window.print reste réservé au dev/navigateur (flag OFF).
+         * [PRINT-INSTANT 2026-07-06] Fallback navigateur = action MANUELLE explicite
+         * (bouton visible quand le pont est injoignable). window.print() n'est plus
+         * JAMAIS déclenché automatiquement — plus d'écran gris surprise. Le caissier
+         * clique lui-même s'il veut l'aperçu navigateur.
          */
-        async _browserPrintFallback(refName) {
-            if (this.silentPrintOnly) {
-                alertService.error(this.$t('pos.print_bridge_offline'));
-                return;
-            }
+        async manualBrowserPrint(ticket) {
             await this.$nextTick();
+            const refName = ticket === 'kitchen' ? 'hiddenPrintKitchenButton' : 'hiddenPrintClientButton';
             const trigger = this.$refs[refName];
             if (trigger && typeof trigger.click === 'function') {
                 trigger.click();
@@ -693,39 +735,52 @@ export default {
         },
         /**
          * Ticket cuisine : pas d’appel fiscal — bon de préparation uniquement.
+         * [PRINT-INSTANT 2026-07-06] Fire-and-forget, en PARALLÈLE du ticket client
+         * (verrou séparé) — plus de série 10-25 s.
          */
-        async handlePrintKitchenClick() {
-            if (this.isPrinting) {
+        handlePrintKitchenClick() {
+            if (this.printingKitchen) {
                 return;
             }
-            this.isPrinting = true;
+            this.printingKitchen = true;
+            alertService.success(this.$t('pos.ticket_sent'));
+            const p = this._printKitchenPipeline()
+                .catch((e) => { console.warn('[ReceiptComponent] kitchen print pipeline failed', e); })
+                .finally(() => { this.printingKitchen = false; });
+            this._lastKitchenPrintPromise = p; // test hook / observabilité
+            return undefined;
+        },
+        /** Pipeline async du ticket CUISINE. Jamais window.print auto. */
+        async _printKitchenPipeline() {
             let printedThermally = false;
-            try {
-                if (this.order?.id) {
-                    try {
-                        const idempotencyKey = `pos-print-kitchen-${this.order.id}-${Date.now()}`;
-                        const { data } = await axios.post(
-                            `admin/pos/orders/${this.order.id}/print-kitchen`,
-                            {},
-                            { headers: { 'X-Idempotency-Key': idempotencyKey } }
-                        );
-                        printedThermally = data?.printed_escpos === true;
-                    } catch (e) {
-                        console.warn('[ReceiptComponent] kitchen thermal print failed, printing anyway', e);
-                    }
+            if (this.order?.id) {
+                try {
+                    const idempotencyKey = `pos-print-kitchen-${this.order.id}-${Date.now()}`;
+                    const { data } = await axios.post(
+                        `admin/pos/orders/${this.order.id}/print-kitchen`,
+                        {},
+                        { headers: { 'X-Idempotency-Key': idempotencyKey } }
+                    );
+                    printedThermally = data?.printed_escpos === true;
+                } catch (e) {
+                    console.warn('[ReceiptComponent] kitchen thermal print failed, printing anyway', e);
                 }
-                if (!printedThermally) {
-                    // [CAISSE-BRIDGE 2026-06-28] pont local silencieux avant window.print
-                    const bridgeRes = await this.tryCaisseBridge('kitchen');
-                    if (bridgeRes === 'no-bridge') {
-                        await this._browserPrintFallback('hiddenPrintKitchenButton');
-                    } else if (bridgeRes === 'failed') {
-                        // [HARDWARE-HARDENING 2026-07-03] Pont là mais échec → erreur, pas de page grise.
-                        alertService.error(this.$t('pos.reprint_error'));
-                    }
+            }
+            if (printedThermally) {
+                alertService.success(`${this.$t('pos.print_ticket_kitchen')} ✓`);
+            } else {
+                // [CAISSE-BRIDGE 2026-06-28] pont local silencieux — jamais window.print auto.
+                const bridgeRes = await this.tryCaisseBridge('kitchen');
+                if (bridgeRes === 'printed') {
+                    alertService.success(`${this.$t('pos.print_ticket_kitchen')} ✓`);
+                } else if (bridgeRes === 'no-bridge') {
+                    alertService.error(this.$t('pos.print_bridge_offline'));
+                    this.showBrowserPrintFallback = true;
+                } else {
+                    // [HARDWARE-HARDENING 2026-07-03] Pont là mais échec → erreur, pas de page grise.
+                    alertService.error(this.$t('pos.reprint_error'));
+                    this.showBrowserPrintFallback = true;
                 }
-            } finally {
-                this.isPrinting = false;
             }
         },
     },

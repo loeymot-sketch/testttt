@@ -331,7 +331,9 @@
             "error_server": "Erreur serveur — réessayez ou contactez l'administrateur.",
             "error_generic": "Impossible d'émettre le remboursement."
         },
-        "print_bridge_offline": "Imprimante caisse injoignable (pont d'impression non lancé) — ticket NON imprimé. Vérifiez le pont, puis réimprimez."
+        "print_bridge_offline": "Imprimante caisse injoignable (pont d'impression non lancé) — ticket NON imprimé. Vérifiez le pont, puis réimprimez.",
+        "ticket_sent": "Ticket envoyé à l'impression…",
+        "print_browser_manual": "Imprimer via le navigateur"
     },
     "menu": {
         "historique": "Historique",

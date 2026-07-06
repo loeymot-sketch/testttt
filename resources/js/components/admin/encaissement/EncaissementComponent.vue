@@ -191,18 +191,20 @@ export default {
         async onEncaisseConfirmed(payload) {
             this.encaisseOrder = null;
             alertService.success(this.$t('label.encaisser_success', { order: '' }));
-            this.fetchPending();
-            // [ENCAISSEMENT-TICKET 2026-07-01] Imprimer le TICKET CLIENT via le pont ESC/POS
-            // (octets serveur SSOT = même rendu que l'aperçu). Best-effort — page unifiée caisse+borne.
+            // [ENCAISSEMENT-TICKET 2026-07-01][PRINT-INSTANT 2026-07-06] Imprimer le TICKET
+            // CLIENT via le pont ESC/POS — lancé AVANT/EN PARALLÈLE du refresh de la liste
+            // (fire-and-forget, plus d'await en série). Best-effort — pont 202 immédiat.
             const orderId = payload?.orderId ?? payload?.order_id ?? null;
-            if (!orderId) return;
-            try {
-                const res = await axios.get(`admin/pos/orders/${orderId}/escpos`, { params: { ticket: 'client' } });
-                const b64 = res?.data?.escpos_b64;
-                if (b64) {
-                    await printEscPosViaCaisseBridge(b64);
-                }
-            } catch (_) { /* pont indisponible : ignoré (l'encaissement a réussi) */ }
+            if (orderId) {
+                this._lastEncaissePrint = axios
+                    .get(`admin/pos/orders/${orderId}/escpos`, { params: { ticket: 'client' } })
+                    .then((res) => {
+                        const b64 = res?.data?.escpos_b64;
+                        return b64 ? printEscPosViaCaisseBridge(b64) : null;
+                    })
+                    .catch(() => null); /* pont indisponible : ignoré (l'encaissement a réussi) */
+            }
+            this.fetchPending();
         },
     },
 };

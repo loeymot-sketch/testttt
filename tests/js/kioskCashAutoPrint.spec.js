@@ -15,6 +15,8 @@ vi.mock('../../resources/js/helpers/kioskPrinter', () => ({
   reportPrinterFailure: vi.fn(),
   isLocalBridgeAvailable: vi.fn(() => Promise.resolve(true)),
   markPrintedOnce: markSpy,
+  // [TICKET-BORNE-SERVEUR 2026-07-06] pas d'orderId dans ces tests → jamais appelé.
+  printServerTicketsViaBridge: vi.fn(() => Promise.resolve(false)),
 }));
 vi.mock('../../resources/js/services/kioskHardware', () => ({ default: { isKioskBridge: () => false } }));
 
@@ -28,6 +30,8 @@ describe('KioskCashInstruction — auto-print ticket caisse', () => {
     // méthodes réelles du composant (le `this` simulé doit les porter)
     printGuardKey: Comp.methods.printGuardKey,
     buildTicketReceipt: Comp.methods.buildTicketReceipt,
+    _printCounterTicket: Comp.methods._printCounterTicket,
+    orderId: null, // pas d'orderId → chemin legacy (builder client)
     ...over,
   });
 

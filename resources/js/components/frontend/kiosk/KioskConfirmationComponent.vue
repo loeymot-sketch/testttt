@@ -138,8 +138,7 @@
 </template>
 
 <script>
-import { printReceipt as escPosPrint, buildReceiptData, reportPrinterFailure, isLocalBridgeAvailable, markPrintedOnce } from '../../../helpers/kioskPrinter';
-import { printEscPosViaCaisseBridge } from '../../../helpers/posLocalPrinter';
+import { printReceipt as escPosPrint, buildReceiptData, reportPrinterFailure, isLocalBridgeAvailable, markPrintedOnce, printServerTicketsViaBridge } from '../../../helpers/kioskPrinter';
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
 import { sanitizeKioskCustomerFacingText } from '../../../helpers/kioskDisplayText';
 import kioskHardware from '../../../services/kioskHardware';
@@ -399,30 +398,15 @@ export default {
     // [TICKET-UNIFY 2026-07-01] Imprime le ticket borne via les MÊMES octets serveur que la
     // caisse (renderer SSOT width-safe). Fetch client + cuisine, POST au pont local /raw.
     // Renvoie true si au moins le ticket client a été imprimé, false sinon (→ fallback appelant).
+    // [TICKET-BORNE-SERVEUR 2026-07-06] Logique extraite dans le helper PARTAGÉ
+    // kioskPrinter.printServerTicketsViaBridge (réutilisé par KioskCashInstruction) —
+    // ordre cuisine→client conservé (coupe partielle du client = ne tombe pas).
     async printServerUnifiedTicket() {
       try {
         // [TICKET-BORNE-LONG 2026-07-02] Priorité à l'id capturé avant le reset du panier
         // (mounted), sinon le store (déjà vidé → null) rendait ce chemin serveur inatteignable.
         const orderId = this._orderIdForPrint ?? this.$store?.state?.kioskCart?.orderRef;
-        if (!orderId || String(orderId).startsWith('local-')) return false;
-        const ax = (typeof window !== 'undefined' && window.axios) ? window.axios : null;
-        if (!ax) return false;
-        let clientPrinted = false;
-        // [TICKET-BORNE-LONG 2026-07-02] Imprimer la CUISINE d'ABORD, le CLIENT en DERNIER : le
-        // ticket client sort avec une coupe PARTIELLE (reste accroché → ne tombe pas). S'il était
-        // imprimé avant la cuisine, la coupe TOTALE de la cuisine (juste après, même rouleau)
-        // détacherait tout → le client tomberait quand même. Ordre = cuisine puis client.
-        for (const ticket of ['kitchen', 'client']) {
-          let b64 = null;
-          try {
-            const res = await ax.get(`frontend/order/show/${orderId}/escpos`, { params: { ticket } });
-            b64 = res?.data?.escpos_b64 || null;
-          } catch (_) { b64 = null; }
-          if (!b64) continue;
-          const r = await printEscPosViaCaisseBridge(b64);
-          if (r?.ok && ticket === 'client') clientPrinted = true;
-        }
-        return clientPrinted;
+        return await printServerTicketsViaBridge(orderId, { tickets: ['kitchen', 'client'] });
       } catch (_) {
         return false;
       }

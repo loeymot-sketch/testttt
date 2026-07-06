@@ -444,11 +444,21 @@ export default {
     // à encaisser, via le pont RAW (octets ESC/POS fiscaux rendus serveur → SAGA). Lecture
     // seule côté fiscal (endpoint /escpos n'incrémente pas le compteur NF525 : ce n'est pas
     // le reçu officiel de clôture, juste une copie de service avant encaissement).
-    async printTicket(type) {
+    printTicket(type) {
       const ticket = type === 'kitchen' ? 'kitchen' : 'client';
       const id = this.order && this.order.id;
       if (!id || this.submitting || this.printingTicket) return;
       this.printingTicket = ticket;
+      // [PRINT-INSTANT 2026-07-06] FIRE-AND-FORGET : toast immédiat, le pipeline réel
+      // (health mémoïsé + GET escpos + POST pont 202) toaste son résultat en async.
+      // Le modal reste 100% utilisable pendant l'impression.
+      alertService.success(this.$t('pos.ticket_sent'));
+      this._lastPrintTicketPromise = this._printTicketPipeline(ticket, id)
+        .catch(() => { alertService.error(this.$t('pos.reprint_error')); })
+        .finally(() => { this.printingTicket = null; });
+      return undefined;
+    },
+    async _printTicketPipeline(ticket, id) {
       try {
         // Pont requis : impression SILENCIEUSE. Pas de pont → message clair, JAMAIS window.print
         // (sinon page grise Windows + URL du serveur = le ticket « nul » signalé par l'owner).
@@ -474,8 +484,6 @@ export default {
         }
       } catch (e) {
         alertService.error(this.$t('pos.reprint_error'));
-      } finally {
-        this.printingTicket = null;
       }
     },
     onlyFloat(e) {

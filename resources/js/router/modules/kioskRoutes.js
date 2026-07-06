@@ -258,6 +258,10 @@ export default [
                     autoRedirectSeconds: route.query.timeout !== undefined
                         ? parseInt(route.query.timeout, 10) || 45
                         : 45,
+                    // [TICKET-BORNE-SERVEUR 2026-07-06] id backend de la commande : permet
+                    // à l'écran d'imprimer via le renderer SERVEUR (design caisse) au lieu
+                    // du builder client legacy. Absent (deep-link/offline) → fallback legacy.
+                    orderId: route.query.orderId ? String(route.query.orderId) : null,
                 }),
             },
             {

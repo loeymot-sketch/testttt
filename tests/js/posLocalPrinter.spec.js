@@ -5,6 +5,7 @@ import {
   printEscPosViaCaisseBridge,
   markPrintedOnceCaisse,
   _resetPrintedCaisse,
+  _resetCaisseBridgeHealthCache,
   CAISSE_BRIDGE_URL,
 } from '../../resources/js/helpers/posLocalPrinter';
 
@@ -25,7 +26,8 @@ describe('b64ToBytes', () => {
 });
 
 describe('isCaisseBridgeAvailable', () => {
-  afterEach(() => vi.restoreAllMocks());
+  // [PRINT-INSTANT 2026-07-06] Le health est MÉMOÏSÉ (TTL) → purge entre les tests.
+  afterEach(() => { vi.restoreAllMocks(); _resetCaisseBridgeHealthCache(); });
   it('true quand /health → UP', async () => {
     global.fetch = vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve('UP') });
     expect(await isCaisseBridgeAvailable()).toBe(true);
@@ -34,6 +36,19 @@ describe('isCaisseBridgeAvailable', () => {
   it('false si pont injoignable', async () => {
     global.fetch = vi.fn().mockRejectedValue(new Error('ECONNREFUSED'));
     expect(await isCaisseBridgeAvailable()).toBe(false);
+  });
+  it('MÉMOÏSÉ : 2 appels rapprochés = 1 seul fetch /health (TTL 20 s)', async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve('UP') });
+    expect(await isCaisseBridgeAvailable()).toBe(true);
+    expect(await isCaisseBridgeAvailable()).toBe(true);
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+  it('force:true bypass le cache (re-print manuel après relance du pont)', async () => {
+    global.fetch = vi.fn().mockRejectedValue(new Error('ECONNREFUSED'));
+    expect(await isCaisseBridgeAvailable()).toBe(false);
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve('UP') });
+    expect(await isCaisseBridgeAvailable(800, { force: true })).toBe(true);
+    expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 });
 

@@ -18,6 +18,48 @@
  */
 import { KIOSK_HARDWARE } from '../config/kioskHardware';
 import kioskHardware from '../services/kioskHardware';
+import { printEscPosViaCaisseBridge } from './posLocalPrinter';
+
+/**
+ * [TICKET-BORNE-SERVEUR 2026-07-06] Helper PARTAGÉ borne : imprime le(s) ticket(s)
+ * d'une commande via le RENDERER SERVEUR (GET frontend/order/show/{id}/escpos →
+ * octets ESC/POS SSOT NF525 = design caisse : accents/€ réels, width-safe,
+ * « ** A REGLER EN CAISSE ** » tant que non encaissée) POSTés au pont local /raw.
+ *
+ * Extrait de KioskConfirmationComponent.printServerUnifiedTicket pour être réutilisé
+ * par KioskCashInstructionComponent (flux Plan B réel) — déduplication.
+ *
+ * @param {string|number} orderId  id backend (les ids `local-`/`offline_` sont ignorés)
+ * @param {{tickets?: string[], axios?: object}} opts
+ *   tickets : ordre d'impression. Défaut ['kitchen','client'] — la CUISINE d'abord :
+ *   le ticket client sort en coupe PARTIELLE (reste accroché, ne tombe pas) ; imprimé
+ *   avant la cuisine, la coupe TOTALE de celle-ci détacherait tout.
+ * @returns {Promise<boolean>} true si le ticket CLIENT a été imprimé.
+ */
+export async function printServerTicketsViaBridge(orderId, opts = {}) {
+  try {
+    if (orderId == null || orderId === '') return false;
+    const id = String(orderId);
+    if (id.startsWith('local-') || id.startsWith('offline_')) return false;
+    const ax = opts.axios || ((typeof window !== 'undefined' && window.axios) ? window.axios : null);
+    if (!ax) return false;
+    const tickets = Array.isArray(opts.tickets) && opts.tickets.length ? opts.tickets : ['kitchen', 'client'];
+    let clientPrinted = false;
+    for (const ticket of tickets) {
+      let b64 = null;
+      try {
+        const res = await ax.get(`frontend/order/show/${id}/escpos`, { params: { ticket } });
+        b64 = res?.data?.escpos_b64 || null;
+      } catch (_) { b64 = null; }
+      if (!b64) continue;
+      const r = await printEscPosViaCaisseBridge(b64);
+      if (r?.ok && ticket === 'client') clientPrinted = true;
+    }
+    return clientPrinted;
+  } catch (_) {
+    return false;
+  }
+}
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));

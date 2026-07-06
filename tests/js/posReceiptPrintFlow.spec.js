@@ -128,7 +128,7 @@ describe('ReceiptComponent print policy (W9.D)', () => {
         expect(wrapper.vm.effectiveOrder.receipt_print_count).toBe(2);
     });
 
-    it('still triggers the print even if the increment endpoint fails (operational continuity)', async () => {
+    it('still counts the print locally even if the increment endpoint fails — SANS window.print auto', async () => {
         axios.post = vi.fn(() => Promise.reject(new Error('network down')));
 
         const wrapper = mountReceipt(0);
@@ -140,7 +140,16 @@ describe('ReceiptComponent print policy (W9.D)', () => {
 
         // Optimistic local bump even when the API rejects
         expect(wrapper.vm.localPrintCount).toBe(1);
-        // Hidden v-print button still receives a programmatic click
+        // [PRINT-INSTANT 2026-07-06] Plus JAMAIS de window.print automatique : pont
+        // injoignable → erreur claire + le fallback navigateur devient un BOUTON manuel.
+        expect(clickSpy).not.toHaveBeenCalled();
+        expect(wrapper.vm.showBrowserPrintFallback).toBe(true);
+        await wrapper.vm.$nextTick();
+        const manualBtn = wrapper.find('[data-testid="receipt-browser-print-client"]');
+        expect(manualBtn.exists()).toBe(true);
+        // Le clic MANUEL, lui, déclenche bien l'aperçu navigateur (v-print caché).
+        await manualBtn.trigger('click');
+        await flushPromises();
         expect(clickSpy).toHaveBeenCalled();
     });
 

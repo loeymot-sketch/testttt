@@ -58,29 +58,33 @@ describe('ReceiptComponent.tryCaisseBridge — statut (pas de page grise si pont
   });
 });
 
-// [1000%-NO-POPUP 2026-07-03] En mode CAISSE SILENCIEUSE, aucun pont ne doit JAMAIS déclencher
-// window.print() (= le popup gris qui imprime la page web). On montre une erreur claire à la place.
-describe('ReceiptComponent._browserPrintFallback — jamais de popup gris en caisse silencieuse', () => {
-  const fallback = Receipt.methods._browserPrintFallback;
-  const mkCtx = (silent, refs = {}) => ({ silentPrintOnly: silent, $t: (k) => k, $nextTick: () => Promise.resolve(), $refs: refs });
+// [PRINT-INSTANT 2026-07-06] window.print() n'est plus JAMAIS automatique : le fallback
+// navigateur est un bouton MANUEL explicite (manualBrowserPrint). Plus d'écran gris surprise.
+describe('ReceiptComponent.manualBrowserPrint — fallback navigateur MANUEL uniquement', () => {
+  const manual = Receipt.methods.manualBrowserPrint;
+  const mkCtx = (refs = {}) => ({ $t: (k) => k, $nextTick: () => Promise.resolve(), $refs: refs });
   let printSpy;
   beforeEach(() => { vi.clearAllMocks(); printSpy = vi.fn(); global.window = global.window || {}; window.print = printSpy; });
 
-  it('silentPrintOnly=true → ERREUR claire, window.print JAMAIS appelé', async () => {
-    await fallback.call(mkCtx(true), 'hiddenPrintClientButton');
-    expect(alertService.error).toHaveBeenCalled();
+  it("l'ancien fallback AUTOMATIQUE _browserPrintFallback n'existe plus", () => {
+    expect(Receipt.methods._browserPrintFallback).toBeUndefined();
+  });
+
+  it('clic manuel client + bouton caché présent → click du v-print (aperçu navigateur)', async () => {
+    const clickSpy = vi.fn();
+    await manual.call(mkCtx({ hiddenPrintClientButton: { click: clickSpy } }), 'client');
+    expect(clickSpy).toHaveBeenCalled();
     expect(printSpy).not.toHaveBeenCalled();
   });
 
-  it('silentPrintOnly=false + bouton présent → click du bouton (aperçu dev), pas d\'erreur', async () => {
+  it('clic manuel kitchen → cible le bouton cuisine', async () => {
     const clickSpy = vi.fn();
-    await fallback.call(mkCtx(false, { hiddenPrintClientButton: { click: clickSpy } }), 'hiddenPrintClientButton');
+    await manual.call(mkCtx({ hiddenPrintKitchenButton: { click: clickSpy } }), 'kitchen');
     expect(clickSpy).toHaveBeenCalled();
-    expect(alertService.error).not.toHaveBeenCalled();
   });
 
-  it('silentPrintOnly=false + aucun bouton → window.print (fallback dev historique)', async () => {
-    await fallback.call(mkCtx(false, {}), 'hiddenPrintClientButton');
+  it('aucun bouton caché → window.print (mais uniquement suite au CLIC manuel)', async () => {
+    await manual.call(mkCtx({}), 'client');
     expect(printSpy).toHaveBeenCalled();
   });
 });

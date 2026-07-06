@@ -18,8 +18,18 @@ import { isCaisseBridgeAvailable, printEscPosViaCaisseBridge } from '../../resou
 import Modal from '../../resources/js/components/admin/pos/PosCounterCollectModal.vue';
 
 const printTicket = Modal.methods.printTicket;
+// [PRINT-INSTANT 2026-07-06] printTicket est désormais FIRE-AND-FORGET : le clic toast
+// immédiatement « Ticket envoyé » et rend la main ; le pipeline async toaste le résultat.
+// Les tests awaitent le hook `_lastPrintTicketPromise` pour observer la fin réelle.
+async function callAndSettle(c, type) {
+  printTicket.call(c, type);
+  await (c._lastPrintTicketPromise || Promise.resolve());
+}
 function ctx(order = { id: 42 }) {
-  return { order, submitting: false, printingTicket: null, $t: (k) => k };
+  return {
+    order, submitting: false, printingTicket: null, $t: (k) => k,
+    _printTicketPipeline: Modal.methods._printTicketPipeline,
+  };
 }
 
 describe('PosCounterCollectModal.printTicket — impression via pont RAW', () => {
@@ -30,47 +40,51 @@ describe('PosCounterCollectModal.printTicket — impression via pont RAW', () =>
     printEscPosViaCaisseBridge.mockResolvedValue({ ok: true });
   });
 
-  it('CLIENT : GET /escpos?ticket=client → POST au pont → succès (jamais window.print)', async () => {
+  it('CLIENT : toast IMMÉDIAT « ticket envoyé » puis GET /escpos → POST au pont → succès (jamais window.print)', async () => {
     const c = ctx();
-    await printTicket.call(c, 'client');
+    printTicket.call(c, 'client');
+    // Toast immédiat, AVANT toute résolution async (fire-and-forget).
+    expect(alertService.success).toHaveBeenCalledWith('pos.ticket_sent');
+    await c._lastPrintTicketPromise;
     expect(axios.get).toHaveBeenCalledWith('admin/pos/orders/42/escpos', { params: { ticket: 'client' } });
     expect(printEscPosViaCaisseBridge).toHaveBeenCalledWith('QUJD', { orderRef: 42 });
-    expect(alertService.success).toHaveBeenCalled();
+    // Résultat réel toasté en async (label ✓).
+    expect(alertService.success).toHaveBeenCalledWith(expect.stringContaining('✓'));
     expect(alertService.error).not.toHaveBeenCalled();
     expect(c.printingTicket).toBe(null); // réinitialisé
   });
 
   it('CUISINE : ticket=kitchen', async () => {
-    await printTicket.call(ctx(), 'kitchen');
+    await callAndSettle(ctx(), 'kitchen');
     expect(axios.get).toHaveBeenCalledWith('admin/pos/orders/42/escpos', { params: { ticket: 'kitchen' } });
     expect(printEscPosViaCaisseBridge).toHaveBeenCalled();
   });
 
   it('PONT ABSENT : message d\'erreur, aucun fetch, JAMAIS window.print', async () => {
     isCaisseBridgeAvailable.mockResolvedValue(false);
-    await printTicket.call(ctx(), 'client');
+    await callAndSettle(ctx(), 'client');
     expect(axios.get).not.toHaveBeenCalled();
     expect(printEscPosViaCaisseBridge).not.toHaveBeenCalled();
     expect(alertService.error).toHaveBeenCalled();
   });
 
-  it('ÉCHEC pont (retour null) : message d\'erreur', async () => {
+  it('ÉCHEC pont (retour null) : message d\'erreur async, pas de faux « ✓ »', async () => {
     printEscPosViaCaisseBridge.mockResolvedValue(null);
-    await printTicket.call(ctx(), 'client');
+    await callAndSettle(ctx(), 'client');
     expect(alertService.error).toHaveBeenCalled();
-    expect(alertService.success).not.toHaveBeenCalled();
+    expect(alertService.success).not.toHaveBeenCalledWith(expect.stringContaining('✓'));
   });
 
   it('octets serveur absents (escpos_b64 null) : erreur, pas d\'appel pont', async () => {
     axios.get.mockResolvedValue({ data: { escpos_b64: null } });
-    await printTicket.call(ctx(), 'client');
+    await callAndSettle(ctx(), 'client');
     expect(printEscPosViaCaisseBridge).not.toHaveBeenCalled();
     expect(alertService.error).toHaveBeenCalled();
   });
 
   it('pas de commande / déjà en impression → no-op', async () => {
-    await printTicket.call(ctx(null), 'client');
-    await printTicket.call({ ...ctx(), printingTicket: 'client' }, 'client');
+    await callAndSettle(ctx(null), 'client');
+    await callAndSettle({ ...ctx(), printingTicket: 'client' }, 'client');
     expect(isCaisseBridgeAvailable).not.toHaveBeenCalled();
   });
 });

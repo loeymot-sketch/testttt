@@ -45,20 +45,53 @@ export function b64ToBytes(b64) {
   return out;
 }
 
+// [PRINT-INSTANT 2026-07-06] Health check MÉMOÏSÉ : le health frappait le pont à
+// CHAQUE impression (jusqu'à 800 ms de latence ajoutée par ticket). On met le
+// résultat en cache TTL court : positif 20 s (pont stable), négatif 5 s (un pont
+// qui démarre redevient visible vite). `force:true` bypass le cache (re-print manuel).
+const HEALTH_TTL_OK_MS = 20000;
+const HEALTH_TTL_KO_MS = 5000;
+let _healthCache = { ok: false, at: 0 };
+/** Test-only : purge le cache health. */
+export function _resetCaisseBridgeHealthCache() { _healthCache = { ok: false, at: 0 }; }
+
 /** True si le pont caisse répond /health → "UP". Timeout court, jamais throw. */
-export async function isCaisseBridgeAvailable(timeoutMs = 800) {
+export async function isCaisseBridgeAvailable(timeoutMs = 800, opts = {}) {
+  const now = Date.now();
+  const ttl = _healthCache.ok ? HEALTH_TTL_OK_MS : HEALTH_TTL_KO_MS;
+  if (!opts.force && _healthCache.at && (now - _healthCache.at) < ttl) {
+    return _healthCache.ok;
+  }
+  let ok = false;
   try {
     const res = await fetchWithTimeout(caisseBridgeUrl() + '/health', {}, timeoutMs);
-    if (!res || !res.ok) return false;
-    const txt = await res.text();
-    return /UP/i.test(txt);
-  } catch (_) { return false; }
+    if (res && res.ok) {
+      const txt = await res.text();
+      ok = /UP/i.test(txt);
+    }
+  } catch (_) { ok = false; }
+  _healthCache = { ok, at: Date.now() };
+  return ok;
 }
 
 /**
  * POSTe les octets ESC/POS (depuis le base64 serveur) au pont local en passthrough RAW.
  * Renvoie {ok:true} si imprimé, sinon null (le caller retombe sur window.print). Jamais throw.
  */
+// [PRINT-INSTANT 2026-07-06] Timeout /raw configurable (window.foodkingConfig
+// .caisseBridgeRawTimeoutMs), défaut 3000 ms : le pont répond désormais 202
+// {queued:true} DÈS réception (impression async côté pont) → 3 s suffisent
+// largement, et un abort tardif ne fabrique plus de faux « échec » alors que
+// le papier sort (l'ancien timeout 5 s couvrait la compile winspool à chaque job).
+function rawTimeoutMs(opts = {}) {
+  if (Number.isFinite(opts.timeoutMs) && opts.timeoutMs > 0) return opts.timeoutMs;
+  try {
+    const t = window.foodkingConfig && window.foodkingConfig.caisseBridgeRawTimeoutMs;
+    if (Number.isFinite(t) && t > 0) return t;
+  } catch (_) { /* défaut ci-dessous */ }
+  return 3000;
+}
+
 export async function printEscPosViaCaisseBridge(escposB64, opts = {}) {
   try {
     if (!escposB64) return null;
@@ -67,7 +100,7 @@ export async function printEscPosViaCaisseBridge(escposB64, opts = {}) {
       method: 'POST',
       headers: { 'Content-Type': 'application/octet-stream' },
       body: bytes,
-    }, opts.timeoutMs || 5000);
+    }, rawTimeoutMs(opts));
     return res && res.ok ? { ok: true, method: 'caisse-bridge' } : null;
   } catch (_) { return null; }
 }

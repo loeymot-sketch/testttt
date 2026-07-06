@@ -69,7 +69,7 @@
 <script>
 import axios from 'axios';
 import kioskHardware from '../../../services/kioskHardware';
-import { printReceipt as escPosPrint, buildReceiptData, reportPrinterFailure, isLocalBridgeAvailable, markPrintedOnce } from '../../../helpers/kioskPrinter';
+import { printReceipt as escPosPrint, buildReceiptData, reportPrinterFailure, isLocalBridgeAvailable, markPrintedOnce, printServerTicketsViaBridge } from '../../../helpers/kioskPrinter';
 
 /**
  * KioskCashInstructionComponent — Kiosk Design V1 Phase 3.1
@@ -95,6 +95,10 @@ export default {
         orderNumber: { type: [String, Number], default: '' },
         orderTotal: { type: Number, default: null },
         autoRedirectSeconds: { type: Number, default: 45 },
+        // [TICKET-BORNE-SERVEUR 2026-07-06] id backend de la commande (query orderId,
+        // posé par KioskPaymentComponent). Présent → impression via le RENDERER SERVEUR
+        // (design caisse, « A REGLER EN CAISSE ») ; absent → fallback builder legacy.
+        orderId: { type: [String, Number], default: null },
     },
     emits: ['acknowledged'],
     data() {
@@ -190,11 +194,14 @@ export default {
         autoPrintCounterTicket() {
             // [G3] Garde persistée (survit au F5) + datée. 1 ticket max/commande.
             if (!markPrintedOnce(this.printGuardKey())) return;
-            // [G5] allowBrowserPrint:false → pas de window.print() en auto ; [G2] result-check.
-            escPosPrint(this.buildTicketReceipt(), 'kiosk-print-receipt', { allowBrowserPrint: false })
-                .then((result) => {
-                    if (!result || result.method === 'none') {
-                        reportPrinterFailure(this.orderNumber, (result && result.error) || 'cash-print-none');
+            // [TICKET-BORNE-SERVEUR 2026-07-06] PRIMAIRE = renderer SERVEUR (même design
+            // que la caisse : accents/€ réels, width-safe, « ** A REGLER EN CAISSE ** »
+            // rendu serveur pour COUNTER_DEFERRED) quand l'orderId est présent ; le
+            // builder client legacy (ASCII-fold) ne sert plus que de FALLBACK.
+            return this._printCounterTicket()
+                .then((printed) => {
+                    if (!printed) {
+                        reportPrinterFailure(this.orderNumber, 'cash-print-none');
                         this.printFailed = true;
                     } else {
                         this.printFailed = false;
@@ -204,9 +211,27 @@ export default {
         },
         // [G2] Réimpression manuelle (filet écran) : ré-attaque le pont sans la garde.
         reprintTicket() {
-            escPosPrint(this.buildTicketReceipt(), 'kiosk-print-receipt', { allowBrowserPrint: false })
-                .then((result) => { this.printFailed = !result || result.method === 'none'; })
+            return this._printCounterTicket()
+                .then((printed) => { this.printFailed = !printed; })
                 .catch(() => { this.printFailed = true; });
+        },
+        /**
+         * Pipeline d'impression du ticket « à régler en caisse ».
+         * 1. Serveur (ticket CLIENT seul — pas de bon cuisine avant encaissement ici,
+         *    parité avec le flux legacy qui n'imprimait que le reçu client).
+         * 2. Fallback legacy : builder client ASCII-fold (aucun orderId / échec serveur).
+         * @returns {Promise<boolean>} true si un ticket est sorti.
+         */
+        async _printCounterTicket() {
+            if (this.orderId) {
+                try {
+                    const printed = await printServerTicketsViaBridge(this.orderId, { tickets: ['client'] });
+                    if (printed) return true;
+                } catch (_) { /* fallback legacy ci-dessous */ }
+            }
+            // [G5] allowBrowserPrint:false → pas de window.print() en auto ; [G2] result-check.
+            const result = await escPosPrint(this.buildTicketReceipt(), 'kiosk-print-receipt', { allowBrowserPrint: false });
+            return !!(result && result.method !== 'none');
         },
     },
 };

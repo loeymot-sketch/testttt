@@ -427,6 +427,27 @@ export default {
       return this.confirmPayment();
     },
 
+    /**
+     * [TICKET-BORNE-SERVEUR 2026-07-06] Cible de navigation post-commande.
+     * Mode CASH (Plan B caisse) → kiosk.cash-instruction AVEC `orderId` en query :
+     * l'écran cash-instruction peut alors imprimer le ticket via le RENDERER SERVEUR
+     * (GET frontend/order/show/{id}/escpos = design caisse, « A REGLER EN CAISSE »)
+     * au lieu du builder client legacy (ASCII-fold). Les commandes offline (id
+     * `offline_…`) n'existent pas côté serveur → pas d'orderId (fallback legacy).
+     */
+    buildPaymentNavTarget({ orderId, queueNum, total, isOfflineId }) {
+      if (this.method === 'cash') {
+        const query = { number: queueNum, total, timeout: 45 };
+        if (orderId && !isOfflineId) query.orderId = String(orderId);
+        return { name: 'kiosk.cash-instruction', query };
+      }
+      return {
+        name:   'kiosk.waiting',
+        params: { orderId: String(orderId) },
+        query:  { queue: queueNum, total },
+      };
+    },
+
     async confirmPayment() {
       if (!this.method || this.submitting) return;
       if (this.isElectronicMethodBlocked(this.method)) {
@@ -489,14 +510,7 @@ export default {
 
         // [Lot 2.H / F-13] Keep submitting=true through TPE/cash so the confirm
         // control cannot re-fire; clear only after payment path completes or in catch.
-        const navTarget = this.method === 'cash' ? {
-          name:  'kiosk.cash-instruction',
-          query: { number: queueNum, total, timeout: 45 },
-        } : {
-          name:   'kiosk.waiting',
-          params: { orderId: String(orderId) },
-          query:  { queue: queueNum, total },
-        };
+        const navTarget = this.buildPaymentNavTarget({ orderId, queueNum, total, isOfflineId });
 
         // Step 2 — Payment processing
         if (this.method === 'card' || this.method === 'tr') {

@@ -40,10 +40,13 @@ return [
     | VRAIE caisse, mettre `POS_PRINT_SILENT_ONLY=true` : le front NE retombe JAMAIS sur
     | window.print — il n'imprime QUE via le pont local (octets ESC/POS serveur = ticket
     | == écran) ; si le pont est absent → message d'erreur clair, PAS de popup gris.
-    | Laisser `false` en dev/navigateur (où window.print sert d'aperçu).
+    | [PRINT-INSTANT 2026-07-06] Défaut FLIPPÉ à TRUE : window.print n'est plus
+    | JAMAIS automatique côté front (le fallback navigateur est un BOUTON manuel
+    | explicite dans ReceiptComponent). Mettre `POS_PRINT_SILENT_ONLY=false`
+    | uniquement si un environnement legacy en dépend encore.
     |
     */
-    'pos_silent_only' => (bool) env('POS_PRINT_SILENT_ONLY', false),
+    'pos_silent_only' => (bool) env('POS_PRINT_SILENT_ONLY', true),
 
     /*
     |--------------------------------------------------------------------------

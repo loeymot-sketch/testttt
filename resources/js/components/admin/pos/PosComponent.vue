@@ -3382,27 +3382,28 @@ export default {
             // disappears from both the slide-in panel and the X2
             // shortcut block (both bound to kioskCashOrders).
             this.counterCollectOrder = null;
+
+            // [ENCAISSEMENT-TICKET 2026-07-01][PRINT-INSTANT 2026-07-06] Imprimer le TICKET
+            // CLIENT à l'encaissement — LANCÉ EN PREMIER, en PARALLÈLE des reloads (avant, le
+            // print attendait 3 awaits de refresh → +1-3 s de latence papier). Fire-and-forget :
+            // octets ESC/POS serveur (SSOT NF525) POSTés au pont local (réponse 202 immédiate).
+            // Best-effort : ne bloque jamais l'encaissement (déjà persisté) si le pont est absent.
+            const orderId = payload?.orderId ?? payload?.order_id ?? null;
+            const printPromise = orderId
+                ? axios.get(`admin/pos/orders/${orderId}/escpos`, { params: { ticket: 'client' } })
+                    .then((res) => {
+                        const b64 = res?.data?.escpos_b64;
+                        return b64 ? printEscPosViaCaisseBridge(b64) : null;
+                    })
+                    .catch(() => null) /* pont d'impression indisponible : ignoré (l'encaissement a réussi) */
+                : Promise.resolve(null);
+            this._lastCounterCollectPrint = printPromise; // observabilité/test
+
             try {
                 await this.loadKioskCashOrders();
                 await this.loadActiveOrdersStats();
                 await this.loadReadyOrders();
             } catch (_) { /* silent — toast already raised */ }
-
-            // [ENCAISSEMENT-TICKET 2026-07-01] Imprimer le TICKET CLIENT à l'encaissement.
-            // Avant ce fix, « Confirmer & Imprimer ticket » n'imprimait RIEN. On récupère les octets
-            // ESC/POS du serveur (SSOT NF525, endpoint escpos → même rendu que l'aperçu écran) et on les
-            // POSTe au pont local 127.0.0.1:9100 → le SAGA imprime le ticket client, sans fenêtre.
-            // Best-effort : ne bloque jamais l'encaissement (déjà persisté) si le pont est absent.
-            const orderId = payload?.orderId ?? payload?.order_id ?? null;
-            if (orderId) {
-                try {
-                    const res = await axios.get(`admin/pos/orders/${orderId}/escpos`, { params: { ticket: 'client' } });
-                    const b64 = res?.data?.escpos_b64;
-                    if (b64) {
-                        await printEscPosViaCaisseBridge(b64);
-                    }
-                } catch (_) { /* pont d'impression indisponible : ignoré (l'encaissement a réussi) */ }
-            }
         },
         onCounterCollectCancel() {
             // Reset per-row guard so the cashier can re-open the modal on

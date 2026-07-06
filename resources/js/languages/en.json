@@ -330,7 +330,9 @@
             "error_server": "Server error — try again or contact the administrator.",
             "error_generic": "Unable to issue the refund."
         },
-        "print_bridge_offline": "Counter printer unreachable (print bridge not running) — ticket NOT printed. Check the bridge, then reprint."
+        "print_bridge_offline": "Counter printer unreachable (print bridge not running) — ticket NOT printed. Check the bridge, then reprint.",
+        "ticket_sent": "Ticket sent to the printer…",
+        "print_browser_manual": "Print via browser"
     },
     "menu": {
         "historique": "History",

@@ -195,7 +195,8 @@
             },
             // [1000%-NO-POPUP 2026-07-03] Caisse silencieuse : true → JAMAIS window.print (popup gris).
             // Le ticket ne sort QUE via le pont RAW (octets serveur = ticket == écran). POS_PRINT_SILENT_ONLY.
-            posSilentPrintOnly: @json((bool) config('printing.pos_silent_only', false)),
+            // [PRINT-INSTANT 2026-07-06] Défaut flippé à TRUE (window.print = bouton manuel only).
+            posSilentPrintOnly: @json((bool) config('printing.pos_silent_only', true)),
             // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-31 Q2] Discretionary-discount
             // master flag, exposed so the customer UI hides coupon + loyalty-redeem
             // entries while discounts are disabled — otherwise a customer who uses them
