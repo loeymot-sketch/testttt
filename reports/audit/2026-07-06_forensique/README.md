@@ -27,6 +27,8 @@ Audit en profondeur du monorepo, produit par **orchestration multi-agents advers
 | 09 | `09_PERFORMANCE_POS_BORNE.md` | **Audit de performance POS/borne** : causes du ralentissement + plan chiffré vers 5×–10× + garde-fous sécurité |
 | 10 | `10_AUDIT_CAISSE_KIOSK.md` | **Audit fonctionnel dédié caisse + borne** : 11 dimensions, flux réels, 32 findings confirmés, verdict caisse (HEAL→BLOCK fiscal) / borne (BLOCK) |
 | 11 | `11_PAQUET_P0_CORRECTIFS.md` | **Correctifs P0 prêts à appliquer** : 8 patchs ancrés (AVANT/APRÈS) + tests + ordre d'application + 2 rejetés |
+| 12 | `12_REGISTRE_DURCI.md` | **Registre durci** : re-vérification stricte des 40 critiques (3 sceptiques + juge/finding) + reproductions *(en cours d'ajout)* |
+| 13 | `13_PLAN_MAITRE.md` | **Plan maître** : blueprint de la mission en boucle (Phase 0, cellules, portes 1000 %, streams, e2e+visuel) — *plan, aucune modif* |
 | — | `HANDOFF_CLAUDE.md` | **Passation** pour la session de correction : par où commencer, règles d'or, actions ops |
 
 ## Méthode
