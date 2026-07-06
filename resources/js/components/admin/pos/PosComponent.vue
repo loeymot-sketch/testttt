@@ -807,7 +807,7 @@
                                  distance (km) et confirme en texte libre. Le tarif se calcule
                                  via la même règle SSOT (base + km au-delà du seuil offert). -->
                             <div
-                                v-if="!deliveryInline.confirmed && deliveryInline.suggestions.length === 0 && deliveryInline.addressText.trim().length >= 3"
+                                v-if="!deliveryInline.confirmed && deliveryInline.suggestions.length === 0 && (deliveryInline.addressText || '').trim().length >= 3"
                                 class="mt-2 rounded-lg border border-[#FFD8C6] bg-[#FFF6F1] px-3 py-2.5"
                             >
                                 <div class="flex items-center gap-2 text-xs font-semibold text-[#9A3412] mb-1.5">
@@ -4542,7 +4542,7 @@ export default {
             this.deliveryInline.longitude = '';
             this.checkoutProps.form.address_id = null;
             clearTimeout(this._deliveryAcTimer);
-            const q = this.deliveryInline.addressText.trim();
+            const q = (this.deliveryInline.addressText || '').trim();
             if (q.length < 3) { this.deliveryInline.suggestions = []; return; }
             this._deliveryAcTimer = setTimeout(() => this._fetchDeliverySuggestions(q), 300);
         },
