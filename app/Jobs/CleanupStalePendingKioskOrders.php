@@ -91,6 +91,25 @@ class CleanupStalePendingKioskOrders
 
                     $oldStatus = (int) $locked->status;
 
+                    // [C36 2026-07-06] Symétrie remboursement fidélité. Une commande borne
+                    // créée avec un loyalty_code débite les points à la création
+                    // (LoyaltyTransaction type=redeem, points<0). Les chemins d'annulation
+                    // « normaux » (OrderService::changeStatus:2144,2308 + FrontendOrderService
+                    // ::changeStatus:782) remboursent déjà via LoyaltyService::refundPoints,
+                    // mais CE job de purge ne le faisait PAS → une commande abandonnée
+                    // (PENDING_COUNTER jamais encaissée) annulée ici perdait les points du
+                    // client DÉFINITIVEMENT (vecteur de griefing avec le loyalty_code d'une
+                    // victime). On rembourse ici, sur la commande verrouillée, DANS la
+                    // transaction, avant l'apply terminal — exactement comme changeStatus.
+                    // refundPoints est idempotent + no-op : return immédiat si
+                    // loyalty_customer_code est nul (commande sans fidélité), si aucune ligne
+                    // redeem n'existe, ou si le remboursement (type=manual_add) a déjà été
+                    // écrit → zéro régression sur les commandes sans fidélité et pas de
+                    // double-crédit sur un re-run du cron. source_surface='kiosk' (aligné
+                    // FrontendOrderService::changeStatus). Aucun audit log dédié : le chemin
+                    // changeStatus n'en émet pas non plus (refundPoints logue via Log::info).
+                    app(\App\Services\LoyaltyService::class)->refundPoints($locked, 'kiosk');
+
                     // From-status-aware terminal state, both legal per
                     // OrderStateMachine.allows() with no frozen-zone edit:
                     //   PENDING → REJECTED (legacy kiosk card/TR path, tested)
