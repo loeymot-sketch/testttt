@@ -8,7 +8,8 @@
 - **Créé** : 2026-07-06
 - **Cycle** : GOAL owner-8-problemes (`plans/GOAL_OWNER_8_PROBLEMES_POS_KDS_PRINT_2026-07-06.md`)
 - **Phase** : EXECUTE (Wave 2/3-B)
-- **Status** : `APPROVED` — gate G1 PRE-APPROVED : mandat explicite owner dans le goal du 2026-07-06 (« l'owner a tranché : il VEUT les vraies boissons » + « ajoute l'option oignon cuit […] au lieu de l'écrire ») ; le présent LOCK documente le périmètre exact de ce mandat.
+- **Status** : `APPLIED` 2026-07-06 — patch frozen = commit `a3376397c` (pos-wizard.js + KioskWizardComponent.vue + baseline SHA, message cite ce LOCK) ; support non-frozen = `b4969bb99`. Acceptance §6 toutes vertes (preuve live #5506 : 15 boissons, Hawaï, 9,90 € inchangé, O̲ ticket décodé, exclusivité cru↔cuit, images viandes 7/7). Passage à CLOSED après convergence W6.
+  (Gate G1 PRE-APPROVED : mandat explicite owner dans le goal du 2026-07-06.)
 
 ## §2. Fichiers frozen ciblés
 | Path | Pourquoi frozen | Lignes ciblées |
