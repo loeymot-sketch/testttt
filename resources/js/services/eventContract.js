@@ -339,6 +339,50 @@ export function __flushCorrelationDedupePersistence() {
     flushCorrelationDedupeNow();
 }
 
+// [SYNC-BROADCAST-2026-07-07] Reference count per Echo channel name.
+//
+// laravel-echo shares a single channel object per name (connector.channels
+// registry keyed by `private-<name>`): every `Echo.private('branch.1')` call
+// returns the SAME object, and `Echo.leave('branch.1')` unsubscribes + deletes
+// it for ALL subscribers. In the kiosk shell, KioskAppComponent stays mounted
+// and subscribes to `branch.{id}` for live availability/menu updates while
+// KioskWaitingComponent transiently subscribes to the SAME channel for order
+// status. Before this fix, unmounting the waiting screen called
+// `Echo.leave('branch.{id}')`, destroying the shell's still-active subscription
+// → the kiosk stopped receiving real-time availability until a refetch/reconnect.
+//
+// Fix: each subscriber removes only ITS OWN event bindings via `stopListening`,
+// and we only call `Echo.leave(name)` once the LAST subscriber releases the
+// channel (refcount → 0). This keeps the shared channel alive for the remaining
+// subscribers while still freeing it (no leak) when nobody is listening.
+const channelRefCounts = new Map();
+
+function retainChannel(channelName) {
+    channelRefCounts.set(channelName, (channelRefCounts.get(channelName) || 0) + 1);
+}
+
+// Decrement the refcount for `channelName`. Returns true when the count reached
+// zero (i.e. the caller is the last subscriber and should now `Echo.leave`).
+function releaseChannel(channelName) {
+    const current = channelRefCounts.get(channelName) || 0;
+    if (current <= 1) {
+        channelRefCounts.delete(channelName);
+        return true;
+    }
+    channelRefCounts.set(channelName, current - 1);
+    return false;
+}
+
+// Test hook : observe the live refcount for a channel (0 when absent).
+export function __getChannelRefCount(channelName) {
+    return channelRefCounts.get(channelName) || 0;
+}
+
+// Test hook : reset all channel refcounts between specs.
+export function __resetChannelRefCounts() {
+    channelRefCounts.clear();
+}
+
 export function onEvent(branchId, broadcastAs, handler) {
     return onEvents(branchId, [{ broadcastAs, handler }]);
 }
@@ -352,6 +396,9 @@ export function onEvents(branchId, bindings) {
 
     const channelName = `branch.${branchId}`;
     const channel = window.Echo.private(channelName);
+    // [SYNC-BROADCAST-2026-07-07] Register this subscriber against the shared
+    // channel so a co-subscriber unsubscribing later cannot tear it down.
+    retainChannel(channelName);
     const listeners = [];
 
     bindings.forEach(({ broadcastAs, handler }) => {
@@ -389,17 +436,32 @@ export function onEvents(branchId, bindings) {
         listeners.push({ broadcastAs, rawHandler });
     });
 
+    // [SYNC-BROADCAST-2026-07-07] Idempotent — a double unsubscribe() must not
+    // decrement the shared refcount twice (which would prematurely leave the
+    // channel for a still-active co-subscriber).
+    let released = false;
+
     return {
         unsubscribe() {
+            if (released) {
+                return;
+            }
+            released = true;
+
+            // Remove ONLY this subscriber's own event bindings; the underlying
+            // Pusher channel object stays alive for any co-subscribers.
             listeners.forEach(({ broadcastAs }) => {
                 try {
                     channel.stopListening(`.${broadcastAs}`);
                 } catch (_) {}
             });
 
-            try {
-                window.Echo.leave(channelName);
-            } catch (_) {}
+            // Only tear the shared channel down once the last subscriber leaves.
+            if (releaseChannel(channelName)) {
+                try {
+                    window.Echo.leave(channelName);
+                } catch (_) {}
+            }
         },
     };
 }
