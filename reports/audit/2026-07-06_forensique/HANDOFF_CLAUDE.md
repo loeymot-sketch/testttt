@@ -39,7 +39,7 @@ Audit multi-agents adversarial **100 % statique** (dépôt cloné sans `vendor/`
 | `07_FEUILLE_DE_ROUTE.md` | Remédiation P0→P3 séquencée |
 | `08_DEEP_DIVE_TECHNIQUE_SECURITE.md` | Code réel + PoC + patchs sécurité (diffs) |
 | `09_PERFORMANCE_POS_BORNE.md` | Causes de lenteur POS/borne + plan 5-10× + garde-fous |
-| `10_AUDIT_CAISSE_KIOSK.md` | Audit fonctionnel dédié caisse + borne *(en cours d'ajout)* |
+| `10_AUDIT_CAISSE_KIOSK.md` | Audit fonctionnel dédié caisse + borne (32 findings confirmés, verdict caisse HEAL→BLOCK fiscal / borne BLOCK) |
 | **`11_PAQUET_P0_CORRECTIFS.md`** | **Correctifs P0 prêts à appliquer (ton plan d'action)** |
 | `dashboard.html` | Tableau de bord visuel de l'audit |
 | `README.md` | Index de navigation |
