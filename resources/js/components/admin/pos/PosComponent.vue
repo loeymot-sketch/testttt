@@ -1679,6 +1679,8 @@ export default {
             loading: {
                 isActive: false,
             },
+            // [OWNER8-W2 2026-07-06] Dernier catalogue boissons non-vide (cf. computed drinksCatalog).
+            drinksCatalogCache: [],
             company: {},
             order: {},
             discount: null,
@@ -2187,6 +2189,15 @@ export default {
          * - Pas de mutation, lecture-only.
          */
         drinksCatalog: function () {
+            // [OWNER8-W2 2026-07-06] Persistance : `item/lists` est re-fetché PAR CATÉGORIE
+            // (clic « Sandwichs » → 0 boisson dans le store) → le catalogue dérivé devenait
+            // vide au moment exact où le wizard s'ouvre. On sert le dernier snapshot non-vide
+            // (alimenté au landing, rafraîchi à chaque passage sur une catégorie boissons).
+            const live = this.drinksCatalogLive;
+            if (live.length > 0) return live;
+            return this.drinksCatalogCache;
+        },
+        drinksCatalogLive: function () {
             const allCats = this.$store.getters["posCategory/lists"] || [];
             const drinkCatRegex = /\b(boisson|boissons|drink|drinks|soda|sodas|beverage|beverages)\b/i;
             const drinkCategoryIds = new Set(
@@ -4676,6 +4687,13 @@ export default {
     watch: {
         "customerProps.form.password"(newValue) {
             this.customerProps.form.password_confirmation = newValue;
+        },
+        // [OWNER8-W2 2026-07-06] Capture chaque snapshot non-vide du catalogue boissons
+        // pour survivre aux re-fetch par catégorie (lecture seule, aucun prix).
+        drinksCatalogLive(list) {
+            if (Array.isArray(list) && list.length > 0) {
+                this.drinksCatalogCache = list;
+            }
         },
         // [CUSTOMER-DISPLAY 2026-06-28] Refléter le total sur l'afficheur client
         // SAGA à chaque changement (ajout/retrait/remise). Empties -> accueil.
