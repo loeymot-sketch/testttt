@@ -193,8 +193,10 @@ class KitchenDisplaySystemOrderService
             // SQLite (green ≠ prod-safe). La correctness du board prime sur la perf.
             // BACKLOG : refaire l'optim SANS toucher l'identifiant FROM (restructurer
             // le prédicat de fenêtre pour qu'il soit sargable, l'optimiseur choisira
-            // idx_orders_branch_status naturellement) + test HTTP MySQL actingAs(staff).
-            // Garde de régression : tests/Feature/KDS/KdsBoardHttpBranchScopeTest.php.
+            // idx_orders_branch_status naturellement) + un tier CI MySQL réel (le
+            // test SQLite ne peut PAS attraper un FROM-raw re-introduit gaté-MySQL).
+            // Garde de régression : tests/Feature/KDS/KdsBoardQueryPlanTest.php
+            // (test_board_runs_under_branchscope_and_returns_expected_set).
 
             $orders = $query->limit(51)->get();
 
