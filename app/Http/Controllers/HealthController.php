@@ -149,9 +149,22 @@ class HealthController extends Controller
     private function checkQueueWorker(): array
     {
         try {
+            // [Outbox dead-letter fix — 2026-07-07] Exclude terminal CONTRACT
+            // VIOLATIONS from the worker-lag signal. DispatchDomainEventsJob
+            // short-circuits PayloadMismatchException via $this->fail() on the
+            // first failure (app/Jobs/DispatchDomainEventsJob.php:168-187): the
+            // row freezes at dispatched_at=NULL and is NEVER retried, so it is
+            // NOT evidence of a down/lagging worker. Counting it made
+            // /health/ready flap to a FALSE 503 once poison rows accumulated
+            // (17 immortal rows observed on prod). Genuinely-pending rows
+            // (last_error NULL) and retrying runtime failures still count.
             $staleCount = (int) DB::table('domain_events')
                 ->where('created_at', '<', now()->subSeconds(30))
                 ->whereNull('dispatched_at')
+                ->where(function ($q) {
+                    $q->whereNull('last_error')
+                        ->orWhere('last_error', 'not like', 'contract_violation%');
+                })
                 ->count();
 
             if ($staleCount > 10) {
