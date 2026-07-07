@@ -10,79 +10,72 @@ use App\Models\Scopes\BranchScope;
 use App\Models\ZReport;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Schema;
 
 /**
- * [P0 #1 — NF525 Z-membership reconciliation — AUTHORITATIVE re-aggregation 2026-07-07]
+ * [P0 #1 — NF525 Z-membership reconciliation — HONEST per-Z re-aggregation
+ *  2026-07-07 / LOCK_ZREPORT_FISCAL_C33_DELIVERY_VAT P2]
  *
  * Proves the NF525 gap-free invariant: "every fiscally-numbered receipt appears
  * in exactly one signed Z (or is pending in the current open window)." READ-ONLY.
  * No behaviour change to signing, no frozen-zone touch, no writes.
  *
  * ─────────────────────────────────────────────────────────────────────────────
- * WHY THIS WAS REWRITTEN (was a HEURISTIC, over-signalled ~2507 false positives)
+ * WHY THIS WAS REWRITTEN AGAIN (P2 — the C33-only detector MASKED historical
+ * orphans → false negatives on the very class of bug it exists to catch)
  * ─────────────────────────────────────────────────────────────────────────────
- * The previous detector used a proxy (created_at inside (opened_at, closed_at]
- * PLUS an updated_at > closed_at "sealed after the Z closed" test). After C33
- * (LOCK_ZREPORT_FISCAL_C33_DELIVERY_VAT, ZReportService::close, 2026-07-07) that
- * proxy is WRONG in two ways and produced a flood of false positives:
- *
- *   1. It bounded the Z window by `opened_at`, leaving a "dead window" between a
- *      Z's close and the next Z's open. C33 made close() aggregate from the
- *      PREVIOUS closed Z's `closed_at` — so those dead windows no longer exist;
- *      a sale created there IS now sealed by the next Z. The old detector still
- *      flagged them → false "TROU".
- *   2. The `updated_at > closed_at` test flagged any order legitimately counted
- *      in its Z that later had a benign status change (updated_at bumps) → false
- *      "cross-window orphan".
+ * The previous rewrite reconstructed EVERY window with C33 continuous-partition
+ * semantics ((closed_{n-1}, closed_n]). But Z reports signed BEFORE the C33 fix
+ * went live were signed with the LEGACY window (opened_at, closed_at] on
+ * created_at. A sale that fell in the "dead window" between a legacy Z's close
+ * and the next legacy Z's OPEN was NEVER aggregated into any signed Z — yet the
+ * C33-only detector reconstructed a continuous window that "covered" it and
+ * declared 0 orphan = a FALSE NEGATIVE (e.g. branch 1 seq=2467, created
+ * 2026-06-07 00:04 in the dead window Z5.closed → Z6.opened).
  *
  * ─────────────────────────────────────────────────────────────────────────────
- * AUTHORITATIVE MODEL — re-aggregate by the REAL C33 window
+ * HONEST MODEL — reconstruct what each Z ACTUALLY sealed (legacy vs C33)
  * ─────────────────────────────────────────────────────────────────────────────
- * Mirror EXACTLY the window ZReportService::aggregate() signs (C33 continuous
- * partition). For a branch, list the signed (CLOSED) Z reports sorted by
- * `closed_at` ascending: c_1 < c_2 < … < c_k. The windows tile the timeline with
- * NO gap and NO overlap:
- *     Z_1 : (−∞, c_1]        (first Z has $from = null → absorbs the whole prior history)
- *     Z_n : (c_{n-1}, c_n]   (lower STRICT, upper INCLUSIVE — identical to aggregate())
- * Their union is (−∞, c_k]. The CURRENT OPEN window is (c_k, +∞): the next close
- * will aggregate from $from = c_k (C33), so any sale created after the last close
- * is guaranteed to be sealed by the next Z → pending, NOT an orphan.
+ * Z reports are split by the C33 cutover (config fiscal.c33_cutover_at, the
+ * deploy instant of the C33 fix). For a branch, list CLOSED Z sorted by
+ * (closed_at, id) ascending; walking them, each Z's REAL sealed window is:
  *
- * A fiscally-numbered order is a REAL ORPHAN only if BOTH hold:
- *   (a) its created_at falls in NO signed window (c_{n-1}, c_n], AND
- *   (b) it is NOT in the current open window — i.e. there is no OPEN Z on the
- *       branch to eventually seal it.
- * Given the tiling, (a) ⟺ created_at > c_k (or the branch has no closed Z at
- * all). Combined with (b): an orphan is a numbered, settled, non-terminal order
- * created after the last closed Z on a branch that has NO open Z pending — a
- * numbered receipt genuinely outside every Z with nothing queued to seal it.
+ *   - Z closed  >= cutover (POST-C33):  (closed_{prev}, closed_n]   keyed on the
+ *       FISCAL date COALESCE(fiscal_dated_at, created_at) — identical to
+ *       ZReportService::aggregate() today (continuous partition + deferred
+ *       fiscal_dated_at membership). $prev is the previous Z's closed_at in this
+ *       ordering (null → −∞ for the first Z ever).
+ *   - Z closed  <  cutover (PRE-C33, LEGACY):  (opened_n, closed_n]  keyed on
+ *       created_at — exactly what aggregate() signed at the time. This LEAVES the
+ *       dead window (closed_{prev}, opened_n) uncovered, as it genuinely was.
+ *
+ * A numbered order is COVERED iff its date (per each window's own semantics)
+ * falls in at least one such real window. It is a REAL ORPHAN iff it is covered
+ * by NO signed window AND it is not pending in the current open window (an OPEN
+ * Z whose future — post-C33 — close will seal every sale with fiscal date after
+ * the last close). Historical dead-window orphans (pre-C33) are reported
+ * HONESTLY as orphans — the detector never claims 0 while the mixed history
+ * still holds genuinely-unsealed numbered receipts.
  *
  * Population mirrors aggregate()'s positive-revenue set exactly: numbered
  * (fiscal_sequence_no NOT NULL), settled (payment_status != UNPAID), non-terminal
- * (not CANCELED/REJECTED/RETURNED — those are counted as cancel/refund counts,
- * not positive revenue), no refund mirror (parent_order_id NULL), and
+ * (not CANCELED/REJECTED/RETURNED), no refund mirror (parent_order_id NULL), and
  * withTrashed()+withoutGlobalScope(BranchScope) so soft-deleted post-allocation
- * orders are visible exactly as the aggregator sees them (SELF-AUDIT B 2026-07-05).
- *
- * NOTE on the "numbered-after-close" class: an order created inside a prior Z's
- * window but whose fiscal_sequence_no was allocated AFTER that Z closed is, by
- * created_at, treated as covered here (the authoritative model keys on
- * created_at, matching aggregate()). That residual class is caught by OTHER
- * controls: ZReportService::warnOnOrphanedPaidOrders() warns at close time, and
- * RetryFiscalAllocCommand backfills the sequence — there is no per-order
- * "sequence_allocated_at" column to distinguish it here, and using updated_at as
- * a proxy is precisely what produced the false positives above.
+ * orders are visible exactly as the aggregator sees them.
  */
 class VerifyZMembershipCommand extends Command
 {
     protected $signature = 'fiscal:verify-z-membership {--branch= : limit to a single branch_id}';
 
-    protected $description = 'NF525 read-only detector (AUTHORITATIVE, C33 continuous-partition re-aggregation): flag fiscally-numbered orders present in NO signed Z and not pending in the current open window (real gap-free orphans, 0 false positives).';
+    protected $description = 'NF525 read-only detector (HONEST per-Z re-aggregation, pre/post-C33 aware): flag fiscally-numbered orders sealed in NO signed Z and not pending in the current open window — including historical dead-window orphans (0 false positive, 0 false negative).';
 
     public function handle(): int
     {
         $terminal = [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED];
+
+        $cutover = $this->c33Cutover();
+        $hasFiscalDatedAt = Schema::hasColumn('orders', 'fiscal_dated_at');
 
         $branchIds = $this->option('branch')
             ? [(int) $this->option('branch')]
@@ -91,26 +84,58 @@ class VerifyZMembershipCommand extends Command
         $candidates = [];
 
         foreach ($branchIds as $bid) {
-            // Signed-Z window boundaries (C33 continuous partition): closed_at of
-            // every CLOSED Z, ascending. Windows tile (−∞, c_k] as (c_{n-1}, c_n].
-            $boundaries = ZReport::query()
+            // CLOSED Z sorted by (closed_at, id) ascending. Walk them to build the
+            // REAL sealed window of each Z (legacy vs C33 semantics).
+            $closedZ = ZReport::query()
                 ->where('branch_id', $bid)
                 ->where('status', ZReport::STATUS_CLOSED)
                 ->whereNotNull('closed_at')
                 ->orderBy('closed_at')
-                ->pluck('closed_at'); // Collection<Carbon> ascending
+                ->orderBy('id')
+                ->get(['id', 'opened_at', 'closed_at']);
 
-            $lastClosedAt = $boundaries->isNotEmpty() ? $boundaries->last() : null;
+            $windows = [];
+            $prevClosed = null; // Carbon|null — previous Z's closed_at in ascending order
+            $lastClosedAt = null;
+            foreach ($closedZ as $z) {
+                $closedAt = $z->closed_at instanceof Carbon ? $z->closed_at : Carbon::parse($z->closed_at);
 
-            // The current open window exists iff an OPEN Z is present. Its close
-            // will aggregate from $from = $lastClosedAt (C33) → it seals every
-            // sale created after the last close.
+                if ($closedAt->gte($cutover)) {
+                    // POST-C33: continuous partition keyed on the fiscal date.
+                    $windows[] = [
+                        'lower' => $prevClosed,          // null → −∞
+                        'upper' => $closedAt,            // inclusive
+                        'date'  => 'fiscal',
+                    ];
+                } else {
+                    // PRE-C33 (legacy): (opened_at, closed_at] keyed on created_at.
+                    $openedAt = $z->opened_at
+                        ? ($z->opened_at instanceof Carbon ? $z->opened_at : Carbon::parse($z->opened_at))
+                        : null;
+                    $windows[] = [
+                        'lower' => $openedAt,            // null → −∞ (defensive)
+                        'upper' => $closedAt,            // inclusive
+                        'date'  => 'created',
+                    ];
+                }
+
+                $prevClosed = $closedAt;
+                $lastClosedAt = $closedAt;
+            }
+
+            // The current open window exists iff an OPEN Z is present. Its close is
+            // post-C33 → aggregates from $lastClosedAt keyed on the fiscal date.
             $hasOpenZ = ZReport::query()
                 ->where('branch_id', $bid)
                 ->where('status', ZReport::STATUS_OPEN)
                 ->exists();
 
             // Population = aggregate()'s positive-revenue set (mirror exact).
+            $columns = ['id', 'order_serial_no', 'fiscal_sequence_no', 'created_at', 'total', 'branch_id'];
+            if ($hasFiscalDatedAt) {
+                $columns[] = 'fiscal_dated_at';
+            }
+
             $orders = Order::withoutGlobalScope(BranchScope::class)
                 ->withTrashed()
                 ->where('branch_id', $bid)
@@ -118,83 +143,90 @@ class VerifyZMembershipCommand extends Command
                 ->where('payment_status', '!=', PaymentStatus::UNPAID)
                 ->whereNotIn('status', $terminal)
                 ->whereNull('parent_order_id')
-                ->get(['id', 'order_serial_no', 'fiscal_sequence_no', 'created_at', 'total', 'branch_id']);
+                ->get($columns);
 
             foreach ($orders as $o) {
-                $createdAt = $o->created_at;
+                $createdAt = $o->created_at instanceof Carbon ? $o->created_at : Carbon::parse($o->created_at);
+                $fiscalDate = ($hasFiscalDatedAt && $o->fiscal_dated_at)
+                    ? ($o->fiscal_dated_at instanceof Carbon ? $o->fiscal_dated_at : Carbon::parse($o->fiscal_dated_at))
+                    : $createdAt;
 
-                // (a) Covered by a signed Z continuous window (c_{n-1}, c_n] ?
-                if ($lastClosedAt !== null && $createdAt->lte($lastClosedAt)) {
-                    if ($this->fallsInSignedWindow($createdAt, $boundaries)) {
-                        continue; // sealed in exactly one signed Z → OK
-                    }
-
-                    // created_at <= c_k yet in no reconstructed window: the
-                    // partition is not continuous (a signed Z is missing/skewed).
-                    // Structural anomaly — surface it (defensive; tiling normally
-                    // makes this unreachable).
-                    $candidates[] = $this->candidate(
-                        $bid,
-                        $o,
-                        'ANOMALIE: partition Z non-continue — aucune fenetre signee ne couvre cette vente'
-                    );
-                    continue;
+                if ($this->fallsInAnySignedWindow($windows, $createdAt, $fiscalDate)) {
+                    continue; // sealed in a signed Z → OK
                 }
 
-                // (b) After the last closed Z (or no closed Z at all). If an OPEN
-                // Z is pending, the next close seals it → pending, not an orphan.
-                if ($hasOpenZ) {
-                    continue;
+                // Not covered by any signed window. Pending iff an OPEN Z will seal
+                // it (fiscal date strictly after the last close, or no close yet).
+                if ($hasOpenZ && ($lastClosedAt === null || $fiscalDate->gt($lastClosedAt))) {
+                    continue; // pending in the current open window
                 }
 
-                // No signed window covers it AND no open Z pending → REAL orphan:
-                // a numbered receipt in zero Z with nothing queued to seal it.
-                $candidates[] = $this->candidate(
-                    $bid,
-                    $o,
-                    $lastClosedAt === null
-                        ? 'aucun Z (ni clos ni ouvert) sur cette branche'
-                        : 'apres le dernier Z clos ('.$lastClosedAt.'), aucun Z ouvert pour la sceller'
-                );
+                // Real orphan — report honestly with a precise motif.
+                if ($lastClosedAt === null) {
+                    $motif = 'aucun Z (ni clos ni ouvert) sur cette branche';
+                } elseif ($fiscalDate->lte($lastClosedAt)) {
+                    $motif = 'fenetre-morte pre-C33 (entre cloture Z precedent et ouverture Z suivant) — jamais agregee (semantique opened_at d\'alors) = orphelin historique';
+                } else {
+                    $motif = 'apres le dernier Z clos ('.$lastClosedAt.'), aucun Z ouvert pour la sceller';
+                }
+
+                $candidates[] = $this->candidate($bid, $o, $motif);
             }
         }
 
         if (empty($candidates)) {
-            $this->info('Z-membership OK — chaque commande numerotee est dans un Z signe ou en attente dans la fenetre ouverte courante (aucun orphelin).');
+            $this->info('Z-membership OK — chaque commande numerotee est dans un Z signe (fenetre reelle pre/post-C33) ou en attente dans la fenetre ouverte courante (aucun orphelin).');
 
             return self::SUCCESS;
         }
 
-        $this->warn(count($candidates).' commande(s) numerotee(s) REELLEMENT hors de tout Z signe (detecteur autoritaire C33, 0 faux positif) :');
+        $this->warn(count($candidates).' commande(s) numerotee(s) REELLEMENT hors de tout Z signe (detecteur honnete pre/post-C33) :');
         $this->table(
             ['branch', 'order', 'seq', 'total', 'created_at', 'motif'],
             array_map('array_values', $candidates)
         );
-        $this->line('Un recu numerote absent de tout Z signe est une violation NF525 gap-free. Remediation : ouvrir puis cloturer un Z sur la branche concernee — la partition continue C33 (aggregate from = closed_at du Z precedent) scellera alors toute vente non couverte. Voir reports/audit/massive-validation-2026-05-29/ESCALATION_NO_GO.md (P0 #1).');
+        $this->line('Un recu numerote absent de tout Z signe est une violation NF525 gap-free. Les orphelins « fenetre-morte pre-C33 » sont des ventes historiques jamais scellees sous l\'ancienne semantique (opened_at) — a rescellage manuel/documentation. Les orphelins « apres le dernier Z clos » se scellent en ouvrant puis cloturant un Z (partition continue C33). Voir reports/audit/massive-validation-2026-05-29/ESCALATION_NO_GO.md (P0 #1).');
 
         return self::FAILURE;
     }
 
     /**
-     * True iff $createdAt falls in one signed continuous window: window_1 is
-     * (−∞, c_1] (first Z absorbs prior history), window_n is (c_{n-1}, c_n] —
-     * lower STRICT, upper INCLUSIVE, identical to ZReportService::aggregate().
-     *
-     * @param  Collection<int, Carbon>  $boundaries  ascending closed_at instants
+     * The C33 cutover instant: Z reports closed on/after it were signed with the
+     * C33 continuous-partition + fiscal_dated_at semantics; those closed before
+     * it were signed with the legacy (opened_at, closed_at] window on created_at.
      */
-    private function fallsInSignedWindow(Carbon $createdAt, Collection $boundaries): bool
+    private function c33Cutover(): Carbon
     {
-        $lower = null; // −∞ for the first window
+        $raw = Config::get('fiscal.c33_cutover_at', '2026-07-07 00:00:00');
 
-        foreach ($boundaries as $upper) {
-            $upper = $upper instanceof Carbon ? $upper : Carbon::parse($upper);
+        try {
+            return $raw instanceof Carbon ? $raw : Carbon::parse((string) $raw);
+        } catch (\Throwable $e) {
+            // Malformed override → default cutover (never crash the detector).
+            return Carbon::parse('2026-07-07 00:00:00');
+        }
+    }
 
-            $aboveLower = $lower === null || $createdAt->gt($lower);
-            if ($aboveLower && $createdAt->lte($upper)) {
+    /**
+     * True iff the order falls in at least one Z's REAL sealed window. Each
+     * window carries its own date semantics:
+     *   - 'fiscal'  (post-C33) → compare COALESCE(fiscal_dated_at, created_at);
+     *   - 'created' (pre-C33 legacy) → compare created_at.
+     * Bounds: lower STRICT (null → −∞), upper INCLUSIVE — identical to the
+     * window ZReportService::aggregate() actually signed.
+     *
+     * @param  array<int, array{lower: ?Carbon, upper: Carbon, date: string}>  $windows
+     */
+    private function fallsInAnySignedWindow(array $windows, Carbon $createdAt, Carbon $fiscalDate): bool
+    {
+        foreach ($windows as $w) {
+            $cmp = $w['date'] === 'fiscal' ? $fiscalDate : $createdAt;
+            $lower = $w['lower'];
+
+            $aboveLower = $lower === null || $cmp->gt($lower);
+            if ($aboveLower && $cmp->lte($w['upper'])) {
                 return true;
             }
-
-            $lower = $upper;
         }
 
         return false;

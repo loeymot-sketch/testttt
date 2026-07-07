@@ -1995,6 +1995,15 @@ class OrderService
                     && ! in_array((int) $locked->status, [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED], true)
                     && $locked->source_surface !== 'uber_eats') {
                     $locked->fiscal_sequence_no = app(FiscalSequenceService::class)->next((int) $locked->branch_id);
+                    // [P1 fiscal_dated_at — LOCK_ZREPORT_FISCAL_C33_DELIVERY_VAT 2026-07-07]
+                    // DEFERRED seal: this UNPAID→PAID edge (delivery COD@doorstep) fires
+                    // LATER than creation, possibly in a subsequent Z. Stamp the fiscal
+                    // allocation instant so ZReportService keys Z-membership on it (not
+                    // created_at) → the sale lands in the Z open at settlement, never
+                    // outside every signed Z.
+                    if (\Illuminate\Support\Facades\Schema::hasColumn('orders', 'fiscal_dated_at')) {
+                        $locked->fiscal_dated_at = now();
+                    }
                 }
 
                 $locked->save();
@@ -2592,6 +2601,13 @@ class OrderService
                     && ! in_array((int) $locked->status, [\App\Enums\OrderStatus::CANCELED, \App\Enums\OrderStatus::REJECTED, \App\Enums\OrderStatus::RETURNED], true)
                     && $locked->source_surface !== 'uber_eats') {
                     $locked->fiscal_sequence_no = app(\App\Services\Fiscal\FiscalSequenceService::class)->next((int) $locked->branch_id);
+                    // [P1 fiscal_dated_at — LOCK_ZREPORT_FISCAL_C33_DELIVERY_VAT 2026-07-07]
+                    // DEFERRED seal: "marquer payé" (delivery/online/table) fires later
+                    // than creation → same gap risk. Stamp the allocation instant so the
+                    // Z window keys on it, sealing the sale in the Z open at settlement.
+                    if (\Illuminate\Support\Facades\Schema::hasColumn('orders', 'fiscal_dated_at')) {
+                        $locked->fiscal_dated_at = now();
+                    }
                 }
 
                 $locked->payment_status = $request->payment_status;

@@ -59,6 +59,12 @@ class Order extends Model implements BroadcastableOrder
         // alloc fails inside finalizePaidKioskOrder so a retry cron can pick
         // the order up without losing its PAID+PENDING state.
         'fiscal_alloc_error_at',
+        // [LOCK_ZREPORT_FISCAL_C33_DELIVERY_VAT — P1 2026-07-07] Instant the NF525
+        // fiscal_sequence_no was allocated. For DEFERRED orders (encaissement
+        // after creation) this differs from created_at and is the correct
+        // Z-membership anchor (ZReportService::aggregate keys the window on
+        // COALESCE(fiscal_dated_at, created_at)).
+        'fiscal_dated_at',
         // [H.1 P1 AMBER 2026-05-24 / H2-HEAL-02] NF525 6-year traceability:
         // cashier attribution on POS-created orders. orders.user_id stores the
         // CUSTOMER (Walking Customer id=2 for anonymous POS sales), not the
@@ -96,6 +102,8 @@ class Order extends Model implements BroadcastableOrder
         'pos_received_amount' => 'decimal:6',
         // [iter14 SPECIALIST-3 / FISCAL-ORPHAN-RETRY]
         'fiscal_alloc_error_at' => 'datetime',
+        // [LOCK_ZREPORT_FISCAL_C33_DELIVERY_VAT — P1 2026-07-07] fiscal allocation instant
+        'fiscal_dated_at' => 'datetime',
         // [H.1 P1 AMBER 2026-05-24 / H2-HEAL-02] cashier attribution
         'creator_id' => 'integer',
         // [KITCHEN-TIMING 2026-07-03] horodatages du temps réel de préparation cuisine

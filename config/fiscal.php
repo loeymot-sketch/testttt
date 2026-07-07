@@ -56,6 +56,28 @@ return [
 
     /*
     |----------------------------------------------------------------------
+    | [LOCK_ZREPORT_FISCAL_C33_DELIVERY_VAT — 2026-07-07] C33 cutover instant
+    |----------------------------------------------------------------------
+    |
+    | Timestamp at which the C33 continuous-partition semantics went live in
+    | ZReportService::close(). Z reports CLOSED on/after this instant were
+    | signed with the C33 window (lower bound = previous Z's closed_at, keyed
+    | on COALESCE(fiscal_dated_at, created_at)). Z reports closed BEFORE it were
+    | signed with the LEGACY window (lower bound = this Z's opened_at, keyed on
+    | created_at) and therefore left a "dead window" gap between a close and the
+    | next open.
+    |
+    | fiscal:verify-z-membership uses this boundary to reconstruct what each Z
+    | ACTUALLY sealed (legacy vs C33 window) so it reports HISTORICAL dead-window
+    | orphans honestly instead of masking them behind the C33 tiling.
+    |
+    | Set FISCAL_C33_CUTOVER_AT to the real production deploy instant of the C33
+    | fix (Europe/Paris). Default = the LOCK approval date (2026-07-07 00:00:00).
+    */
+    'c33_cutover_at' => env('FISCAL_C33_CUTOVER_AT', '2026-07-07 00:00:00'),
+
+    /*
+    |----------------------------------------------------------------------
     | [W9.A / G2] verifyChain pre-archive (defense in depth)
     |----------------------------------------------------------------------
     |
