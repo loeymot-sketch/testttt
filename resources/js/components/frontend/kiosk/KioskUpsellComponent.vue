@@ -380,7 +380,10 @@ export default {
 .kiosk-upsell-img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  /* [LOCK_KIOSKUPSELL_IMG_CONTAIN 2026-07-07] `cover` recadrait les visuels
+     verticaux (canettes) → produit tronqué haut/bas. `contain` = produit ENTIER
+     visible, letterboxé sur --kiosk-product-media-bg (owner : « images coupées »). */
+  object-fit: contain;
   transition: transform 0.3s ease;
 }
 
