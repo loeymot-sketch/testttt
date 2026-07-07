@@ -32,6 +32,7 @@ ssh -o ConnectTimeout=25 lecayenne "cd /var/www/lecayenne && \
   php artisan config:clear >/dev/null 2>&1 && php artisan config:cache >/dev/null 2>&1 && php artisan cache:clear >/dev/null 2>&1 && \
   php artisan db:seed --class=TacosCruditesRestore20260707Seeder --force 2>&1 | tail -1 && \
   php artisan db:seed --class=MenuEnfantChickenBurger20260707Seeder --force 2>&1 | tail -1 && \
+  php artisan db:seed --class=SimulatedTpeTerminal20260708Seeder --force 2>&1 | tail -1 && \
   php artisan db:seed --class=OnionCuitExtra20260706Seeder --force 2>&1 | tail -1 && \
   php artisan db:seed --class=DrinksUpdate20260705Seeder --force 2>&1 | tail -1 && \
   echo '--- attestation NF525 + hashes bundles ---' && \
