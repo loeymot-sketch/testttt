@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 
 <head>
     <meta charset="UTF-8">
@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap"
         rel="stylesheet">
-    <title>Online Orders</title>
+    <title>{{ trans('all.label.sales_report') }}</title>
     <style>
         body {
             font-family: "Urbanist", sans-serif;
@@ -88,36 +88,70 @@
 </head>
 
 <body>
-    @php 
+    @php
          $total = 0;
          $total_discount = 0;
          $total_delivery_charge = 0;
-         function getPaymentMethod($order)
-         {
-            if($order->order_type === App\Enums\OrderType::POS){
-            return trans('pos_payment_method.' . $order->pos_payment_method) != "pos_payment_method." ? trans('pos_payment_method.' . $order->pos_payment_method) : "";
-        }
+         // [ULTRA-LOOP R2 2026-07-07] function_exists guards : un rendu répété du blade
+         // (worker long / tests) ne doit pas fataliser sur « Cannot redeclare ».
+         if (! function_exists('getPaymentMethod')) {
+             function getPaymentMethod($order)
+             {
+                if($order->order_type === App\Enums\OrderType::POS){
+                return trans('pos_payment_method.' . $order->pos_payment_method) != "pos_payment_method." ? trans('pos_payment_method.' . $order->pos_payment_method) : "";
+            }
 
-        return trans(
-            'payment_gateway.' . $order->payment_method
-        );
+            return trans(
+                'payment_gateway.' . $order->payment_method
+            );
+             }
          }
-    @endphp 
+         // [ULTRA-LOOP R2 P3 2026-07-07 — fin de la fuite d'enum brut « COUNTER_CASH »]
+         // Le chemin PDF affichait strtoupper($order->transaction->payment_method) → slug
+         // machine (COUNTER_CASH/COUNTER_CARD/CREDIT/SPLIT…). Miroir FR de la map de
+         // TransactionListComponent.vue:283 (paymentMethodLabel) : les modes encaissés au
+         // comptoir portent le qualificatif « (Caisse) », tout slug inconnu est humanisé.
+         if (! function_exists('paymentTypeLabel')) {
+             function paymentTypeLabel($order)
+             {
+                if ($order->transaction && $order->transaction->payment_method) {
+                    $slug = strtolower((string) $order->transaction->payment_method);
+                    $map = [
+                        'counter_cash'              => 'Espèces (Caisse)',
+                        'counter_card'              => 'Carte (Caisse)',
+                        'counter_mobile_banking'    => 'Paiement mobile (Caisse)',
+                        'counter_ticket_restaurant' => 'Titre-restaurant (Caisse)',
+                        'counter_other'             => 'Autre (Caisse)',
+                        'cash'                      => 'Espèces',
+                        'card'                      => 'Carte',
+                        'credit'                    => 'Carte',
+                        'ticket_restaurant'         => 'Titre-restaurant',
+                        'mobile_banking'            => 'Paiement mobile',
+                        'split'                     => 'Mixte',
+                        'other'                     => 'Autre',
+                        'cash_on_delivery'          => 'Espèces',
+                    ];
+                    return $map[$slug] ?? ucwords(str_replace('_', ' ', $slug));
+                }
+                return getPaymentMethod($order);
+             }
+         }
+    @endphp
     <div class="container">
         <div class="report">
             <p style="margin: 0px 0px 8px 0px;font-size: 16px;font-weight: bold">{{ App\Libraries\AppLibrary::textShortener($company['company_name'] ?? 'Le Cayenne', 60) }}</p>
             <p>{{ App\Libraries\AppLibrary::textShortener($company['company_address'] ?? '', 60) }}</p>
-            <p  style="color: #ff006b;margin: 0px 0px 8px 0px;font-size: 16px;font-weight: bold;">{{ trans('all.label.sales_report', [], 'en') }}</p>
+            <p  style="color: #ff006b;margin: 0px 0px 8px 0px;font-size: 16px;font-weight: bold;">{{ trans('all.label.sales_report') }}</p>
             <table>
                 <thead>
                     <tr>
-                        <th>{{ trans('all.label.order_serial_no', [], 'en') }}</th>
-                        <th>{{ trans('all.label.date', [], 'en') }}</th>
-                        <th>{{ trans('all.label.payment_type', [], 'en') }}</th>
-                        <th>{{ trans('all.label.payment_status', [], 'en') }}</th>
-                        <th>{{ trans('all.label.discount', [], 'en') }}</th>
-                        <th>{{ trans('all.label.delivery_charge', [], 'en') }}</th>
-                        <th>{{ trans('all.label.total', [], 'en') }}</th>
+                        <th>{{ trans('all.label.order_serial_no') }}</th>
+                        <th>{{ trans('all.label.date') }}</th>
+                        <th>{{ trans('all.label.payment_type') }}</th>
+                        <th>{{ trans('all.label.payment_status') }}</th>
+                        <th>{{ trans('all.label.discount') }}</th>
+                        <th>{{ trans('all.label.delivery_charge') }}</th>
+                        <th>{{ trans('all.label.total') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -136,8 +170,7 @@
                         <tr>
                             <td>{{$order->order_serial_no}}</td>
                             <td>{{ App\Libraries\AppLibrary::datetime($order->order_datetime) }}</td>
-                            <td>{{  $order->transaction ? strtoupper($order->transaction->payment_method) 
-                : getPaymentMethod($order)}}</td>
+                            <td>{{ paymentTypeLabel($order) }}</td>
                             <td>{{ trans('payment_status.'. $order->payment_status) }}</td>
                             <td>{{ App\Libraries\AppLibrary::reportCurrencyAmountFormat($order->discount) }}</td>
                             <td>{{ App\Libraries\AppLibrary::reportCurrencyAmountFormat($order->delivery_charge) }}</td>
@@ -145,7 +178,7 @@
                         </tr>
                     @endforeach
                     <tr class="total">
-                        <td colspan="4">{{ trans('all.label.total', [], 'en') }}</td>
+                        <td colspan="4">{{ trans('all.label.total') }}</td>
                         <td>{{ App\Libraries\AppLibrary::reportCurrencyAmountFormat($total_discount) }}</td>
                         <td>{{ App\Libraries\AppLibrary::reportCurrencyAmountFormat($total_delivery_charge) }}</td>
                         <td>{{ App\Libraries\AppLibrary::reportCurrencyAmountFormat($total) }}</td>

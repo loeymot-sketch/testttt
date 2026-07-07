@@ -72,6 +72,18 @@ class SalesReportController extends AdminController
             $copyright   = Settings::group('site')->get('site_copyright');
             $orders = $this->orderService->list($request);
 
+            // [ULTRA-LOOP R2 P2 2026-07-07 — garde anti-OOM] Régression du fix R1 : paginate=0
+            // sans filtre de date force le rendu de ~2850 commandes → dompdf épuise la mémoire
+            // (PHP Error fatale non attrapée par catch(Exception) → 500 brut). On coupe AVANT
+            // le rendu ; les rapports datés (usage normal) passent, le total reste exact.
+            $maxRows = (int) config('report.pdf_max_rows', 2000);
+            if ($orders->count() > $maxRows) {
+                return response([
+                    'status' => false,
+                    'message' => 'Trop de lignes pour un export PDF ('.$orders->count().' lignes). '
+                        .'Affinez la période avec un filtre de date.',
+                ], 422);
+            }
 
             $pdf = Pdf::loadView('pdf.sales_report', compact('company', 'theme_logo', 'orders', 'copyright'))
                 ->setPaper('a4');

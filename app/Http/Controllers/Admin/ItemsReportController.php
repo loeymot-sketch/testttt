@@ -63,6 +63,17 @@ class ItemsReportController extends AdminController
            $copyright   = Settings::group('site')->get('site_copyright');
            $items = $this->itemService->itemReport($request);
 
+           // [ULTRA-LOOP R2 P2 2026-07-07 — garde anti-OOM] Cohérence avec les 2 autres PDF :
+           // au-delà d'un plafond raisonnable on refuse proprement (422) plutôt qu'un 500 dompdf.
+           // Le catalogue V1 (~55 items) ne l'atteint jamais ; garde de défense en profondeur.
+           $maxRows = (int) config('report.pdf_max_rows', 2000);
+           if ($items->count() > $maxRows) {
+               return response([
+                   'status' => false,
+                   'message' => 'Trop de lignes pour un export PDF ('.$items->count().' lignes). '
+                       .'Affinez la période avec un filtre de date.',
+               ], 422);
+           }
 
            $pdf = Pdf::loadView('pdf.items_report', compact('company', 'theme_logo', 'items', 'copyright') )
            ->setPaper('a4');

@@ -71,10 +71,31 @@ class OnlineOrderController extends AdminController
     public function pdf(PaginateRequest $request): mixed
     {
         try {
+            // [ULTRA-LOOP R2 P1 2026-07-07 — 3e jumeau de troncature PDF, raté au R1]
+            // L'UI envoie paginate=1&per_page=10 ; OrderService::list voit paginate==1 →
+            // ->paginate(10), donc le blade n'itérait QUE la 1re page ET le "Total"
+            // (agrégé dans @foreach) sous-déclarait massivement le CA (DB : 3129 commandes,
+            // SUM(total)=745 633,62 € réels, mais le Total du PDF tronqué=58,20 €).
+            // Miroir exact des 2 PDF déjà guéris (Sales/Items) + du jumeau Excel OrderExport:28.
+            $request->merge(['paginate' => 0]);
             $company = $this->companyService->list();
             $theme_logo   = ThemeSetting::where(['key' => 'theme_logo'])->first()?->logo;
             $copyright   = Settings::group('site')->get('site_copyright');
             $orders = $this->orderService->list($request);
+
+            // [ULTRA-LOOP R2 P2 2026-07-07 — garde anti-OOM] paginate=0 sans filtre de date
+            // force le rendu de TOUTES les commandes ; dompdf épuise la mémoire/le temps sur
+            // ~3129 lignes → PHP Error fatale (500 non attrapé par catch(Exception)). On coupe
+            // proprement AVANT le rendu : les rapports datés (jour/semaine/mois) passent ; seul
+            // l'export intégral non filtré pathologique est refusé avec un message clair.
+            $maxRows = (int) config('report.pdf_max_rows', 2000);
+            if ($orders->count() > $maxRows) {
+                return response([
+                    'status' => false,
+                    'message' => 'Trop de lignes pour un export PDF ('.$orders->count().' lignes). '
+                        .'Affinez la période avec un filtre de date.',
+                ], 422);
+            }
 
             $pdf = Pdf::loadView('pdf.online_orders', compact('company', 'theme_logo', 'orders', 'copyright'))
                 ->setPaper('a4');
