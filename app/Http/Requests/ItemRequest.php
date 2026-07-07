@@ -99,7 +99,49 @@ class ItemRequest extends FormRequest
         $validator->after(function (Validator $validator): void {
             $this->validateNestedModifierSurfaces($validator, 'variations');
             $this->validateNestedModifierSurfaces($validator, 'extras');
+            $this->validateNestedModifierPrices($validator, 'variations');
+            $this->validateNestedModifierPrices($validator, 'extras');
         });
+    }
+
+    /**
+     * [P3 heal 2026-07-07] Prix des variations/extras non validés à l'édition item.
+     *
+     * `variations` / `extras` sont postés comme blobs JSON et n'étaient validés que
+     * par la règle `json` (structure) — jamais le prix de chaque ligne. Un prix
+     * négatif ou non-numérique traversait la validation et était persisté tel quel
+     * par ItemService (createMany / update), corrompant le pricing catalogue (SSOT).
+     * On refuse ici toute ligne dont `price` est présent mais non-numérique ou < 0.
+     * 0 reste légitime (supplément/variation gratuit — cohérent avec IniAmount(true)
+     * appliqué aux variations unitaires).
+     */
+    private function validateNestedModifierPrices(Validator $validator, string $field): void
+    {
+        $raw = $this->input($field);
+        if ($raw === null || $raw === '') {
+            return;
+        }
+
+        $rows = is_string($raw) ? json_decode($raw, true) : $raw;
+        if (! is_array($rows)) {
+            return;
+        }
+
+        foreach ($rows as $index => $row) {
+            if (! is_array($row) || ! array_key_exists('price', $row)) {
+                continue;
+            }
+
+            $price = $row['price'];
+            if ($price === null || ! is_numeric($price)) {
+                $validator->errors()->add("{$field}.{$index}.price", 'The price must be a number.');
+                continue;
+            }
+
+            if ((float) $price < 0) {
+                $validator->errors()->add("{$field}.{$index}.price", 'The price must be at least 0.');
+            }
+        }
     }
 
     private function validateNestedModifierSurfaces(Validator $validator, string $field): void

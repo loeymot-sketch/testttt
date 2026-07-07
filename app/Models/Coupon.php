@@ -7,12 +7,16 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
 class Coupon extends Model implements HasMedia
 {
-    use HasFactory, InteractsWithMedia;
+    // [P3 heal 2026-07-07] SoftDeletes préserve l'historique NF525 : une commande
+    // passée (order_coupons.coupon_id, sans FK) garde une référence résolvable via
+    // withTrashed() au lieu de pointer dans le vide après suppression du coupon.
+    use HasFactory, InteractsWithMedia, SoftDeletes;
 
     protected $table = "coupons";
 

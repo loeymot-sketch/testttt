@@ -41,10 +41,13 @@ class CouponRequest extends FormRequest
                 'required',
                 'string',
                 'max:190',
-                Rule::unique("coupons", "name")->ignore($this->route('coupon.id'))
+                // [P3 heal 2026-07-07] whereNull('deleted_at') : depuis l'ajout de
+                // SoftDeletes sur Coupon, un coupon supprimé ne doit plus bloquer la
+                // re-création d'un coupon avec le même nom/code.
+                Rule::unique("coupons", "name")->whereNull('deleted_at')->ignore($this->route('coupon.id'))
             ],
             'description'      => ['nullable', 'string', 'max:900'],
-            'code'             => ['required', 'string', 'max:24', Rule::unique("coupons", "code")->ignore($this->route('coupon.id'))],
+            'code'             => ['required', 'string', 'max:24', Rule::unique("coupons", "code")->whereNull('deleted_at')->ignore($this->route('coupon.id'))],
             // [P9] Non-negative monetary / cap fields (symmetry with P5–P8).
             'discount'         => ['required', 'numeric', 'min:0'],
             // discount_type est cast en integer (cf. App\Enums\DiscountType: FIXED=5, PERCENTAGE=10).
