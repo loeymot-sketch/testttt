@@ -22,6 +22,9 @@ class OfferExport implements FromCollection, WithHeadings
 
     public function collection(): \Illuminate\Support\Collection
     {
+        // [ULTRA-LOOP R3 2026-07-07 — export tronqué à 10 lignes] Le front envoie paginate=1
+        // (payload de la liste) ; l'export DOIT tout renvoyer. Miroir de CustomerExport:25.
+        $this->request->merge(['paginate' => 0]);
         $offerArray = [];
         $offersArray = $this->offerService->list($this->request);
 

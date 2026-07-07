@@ -21,6 +21,9 @@ class PushNotificationExport implements FromCollection, WithHeadings
 
     public function collection(
     ): \Vanilla\Support\Collection|\IlluminateAgnostic\Str\Support\Collection|\IlluminateAgnostic\StrAgnostic\Str\Support\Collection|\IlluminateAgnostic\Collection\Support\Collection|\IlluminateAgnostic\ArrAgnostic\Arr\Support\Collection|\Illuminate\Support\Collection|\IlluminateAgnostic\Arr\Support\Collection {
+        // [ULTRA-LOOP R3 2026-07-07 — export tronqué à 10 lignes] Le front envoie paginate=1
+        // (payload de la liste) ; l'export DOIT tout renvoyer. Miroir de CustomerExport:25.
+        $this->request->merge(['paginate' => 0]);
         $pushNotificationArray = [];
         $pushNotifications = $this->pushNotificationService->list($this->request);
 
