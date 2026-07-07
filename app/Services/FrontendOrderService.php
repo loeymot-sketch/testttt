@@ -1078,7 +1078,11 @@ class FrontendOrderService
                 ->map(static fn ($queueNumber): int => (int) substr((string) $queueNumber, 1))
                 ->max();
 
-            return 'A' . str_pad($maxQueueNum + 1, 4, '0', STR_PAD_LEFT);
+            // [owner 2026-07-07] Le compteur quotidien démarre à kiosk.queue_start_number
+            // (32 par défaut) : 1er ordre du jour = A0032, puis suit le max existant.
+            $startNumber = max(1, (int) config('kiosk.queue_start_number', 1));
+
+            return 'A' . str_pad(max($maxQueueNum + 1, $startNumber), 4, '0', STR_PAD_LEFT);
         } catch (LockTimeoutException $exception) {
             Log::warning(sprintf(
                 '[Queue] Lock timeout for branch %s on business_date %s during %s order creation; queue number fallback disabled by D-M13.',

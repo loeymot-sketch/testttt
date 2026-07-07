@@ -140,37 +140,42 @@ export default {
 }
 
 /* ---------- Variants ---------- */
+/* [owner 2026-07-07] Fallbacks EXPLICITES sur chaque couleur : si les tokens
+   thème `--kiosk-*` ne sont pas résolus (CSS partielle/stale, contexte hors
+   thème), un bouton ne doit JAMAIS devenir illisible (« blanc sur blanc / rouge
+   sur rouge » signalé sur l'écran d'inactivité). Sans effet quand les tokens
+   sont définis (cas normal) — le fallback n'est utilisé que si la var manque. */
 .ks-btn--primary {
-    background: var(--kiosk-primary);
-    color: var(--kiosk-text-on-red);
-    box-shadow: var(--kiosk-shadow-cta);
+    background: var(--kiosk-primary, #F4501E);
+    color: var(--kiosk-text-on-red, #FFFFFF);
+    box-shadow: var(--kiosk-shadow-cta, 0 6px 18px rgba(244, 80, 30, 0.28));
 }
 .ks-btn--primary:hover:not(:disabled) {
-    background: var(--kiosk-primary-dark);
+    background: var(--kiosk-primary-dark, #D63E12);
 }
 
 .ks-btn--secondary {
-    background: var(--kiosk-surface);
-    color: var(--kiosk-text);
-    border: 2px solid var(--kiosk-border);
+    background: var(--kiosk-surface, #FFFFFF);
+    color: var(--kiosk-text, #1A1A1A);
+    border: 2px solid var(--kiosk-border, #E5E5E5);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
 }
 
 .ks-btn--ghost {
     background: transparent;
-    color: var(--kiosk-text-muted);
-    border: 2px solid var(--kiosk-border);
+    color: var(--kiosk-text-muted, #5A5A5A);
+    border: 2px solid var(--kiosk-border, #E5E5E5);
 }
 
 .ks-btn--danger {
-    background: var(--kiosk-surface);
-    color: var(--kiosk-error);
-    border: 2px solid var(--kiosk-error);
+    background: var(--kiosk-surface, #FFFFFF);
+    color: var(--kiosk-error, #C1121F);
+    border: 2px solid var(--kiosk-error, #C1121F);
 }
 
 .ks-btn--dark {
-    background: var(--kiosk-text);
-    color: var(--kiosk-text-on-red);
+    background: var(--kiosk-text, #1A1A1A);
+    color: var(--kiosk-text-on-red, #FFFFFF);
 }
 
 /* ---------- Bold Appétissant variants (V1.5) ---------- */

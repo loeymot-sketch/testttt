@@ -115,6 +115,11 @@ class QueueNumberConcurrencyTest extends TestCase
 
     public function test_pos_and_kiosk_allocators_share_gapless_sequence_across_50_creations(): void
     {
+        // [owner 2026-07-07] Ce test vérifie la propriété SANS-TROU / SANS-DOUBLON
+        // du partage POS↔kiosk — orthogonale à l'offset métier kiosk.queue_start_number
+        // (32 en prod). On épingle le départ à 1 pour asserter la séquence pure A0001…A0050.
+        config(['kiosk.queue_start_number' => 1]);
+
         $branch = Branch::factory()->create();
         $user = User::factory()->create(['branch_id' => $branch->id]);
         $businessDate = '2026-04-28';
@@ -147,6 +152,35 @@ class QueueNumberConcurrencyTest extends TestCase
             ->all();
 
         $this->assertSame($expected, $actual);
+    }
+
+    /**
+     * [owner 2026-07-07] Le compteur quotidien démarre à kiosk.queue_start_number.
+     * Jour vierge → 1er ordre = A0032 (POS ET kiosk), puis suit le max (33, 34…).
+     */
+    public function test_daily_queue_starts_at_configured_start_number_both_surfaces(): void
+    {
+        config(['kiosk.queue_start_number' => 32]);
+
+        $branch = Branch::factory()->create();
+        $user = User::factory()->create(['branch_id' => $branch->id]);
+        $businessDate = '2026-07-07';
+
+        // 1er ordre du jour via le POS (caisse) = A0032.
+        $first = $this->allocateQueueNumber(app(OrderService::class), $branch->id, $businessDate, 'pos');
+        $this->assertSame('A0032', $first, 'le 1er ordre du jour doit être A0032');
+        Order::factory()->create([
+            'user_id' => $user->id, 'branch_id' => $branch->id,
+            'business_date' => $businessDate, 'queue_number' => $first,
+        ]);
+
+        // 2e ordre via la borne (kiosk) = A0033 (suit le max, pas de re-saut à 32).
+        $second = $this->allocateQueueNumber(app(FrontendOrderService::class), $branch->id, $businessDate, 'kiosk');
+        $this->assertSame('A0033', $second, 'le 2e ordre suit A0033');
+
+        // Un AUTRE jour repart à A0032 (reset quotidien).
+        $otherDay = $this->allocateQueueNumber(app(OrderService::class), $branch->id, '2026-07-08', 'pos');
+        $this->assertSame('A0032', $otherDay, 'chaque jour repart à A0032');
     }
 
     private function allocateQueueNumber(object $service, int $branchId, string $businessDate, string $context): string

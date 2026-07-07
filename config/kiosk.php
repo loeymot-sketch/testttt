@@ -273,6 +273,12 @@ return [
     ],
     'max_item_qty' => (int) env('KIOSK_MAX_ITEM_QTY', 20),
     'order_rate_limit' => (int) env('KIOSK_ORDER_RATE_LIMIT', 5),
+    // [owner 2026-07-07] Numéro de file (queue_number "A00NN") de départ du jour.
+    // L'owner veut que le compteur quotidien commence à 32 (au lieu de 1). Partagé
+    // par toutes les surfaces (borne + caisse) via allocateQueueNumber (OrderService
+    // + FrontendOrderService) : le 1er ordre du jour = A0032, puis 33, 34…
+    // N'affecte PAS le fiscal_sequence_no NF525 (séquence distincte, gap-free).
+    'queue_start_number' => (int) env('KIOSK_QUEUE_START_NUMBER', 32),
     // [iter15-mega-fix D-001 2026-05-10] Hardware credential, not a brute-force surface.
     'login_rate_limit' => (int) env('KIOSK_LOGIN_RATE_LIMIT', 30),
     'confirmation_auto_return_seconds' => (int) env('KIOSK_CONFIRMATION_AUTO_RETURN_SECONDS', 30),
