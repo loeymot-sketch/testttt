@@ -96,13 +96,13 @@ class OwnerMenuUpdate20260623Seeder extends Seeder
         $tacosM = $this->upsertItem(26, 'Tacos M', 6.90, 5, 'Galette de blé, 1 viande au choix, frites maison et sauce.');
         $this->wireMeatChoice($tacosM, 1);      // 1 viande
         $this->wireSauces($tacosM);
-        $this->clearGarnitures($tacosM);        // owner : tacos SANS crudités (« on n'en propose même pas »)
+        $this->wireGarnitures($tacosM);         // [owner 2026-07-07] tacos AVEC crudités (revert du « sans crudités » 2026-06-23) : la borne n'affichait aucun choix de crudité → aligné sur sandwichs/burgers (Salade/Tomate/Oignon + Oignons cuits via OnionCuitExtra20260706Seeder)
         $this->wireSupplements($tacosM);
 
         $tacosL = $this->upsertItem(null, 'Tacos L', 7.90, 5, 'Galette de blé, 2 viandes au choix, frites maison et sauce.');
         $this->wireMeatChoice($tacosL, 2);      // 2 viandes
         $this->wireSauces($tacosL);
-        $this->clearGarnitures($tacosL);        // owner : tacos SANS crudités
+        $this->wireGarnitures($tacosL);         // [owner 2026-07-07] tacos AVEC crudités (revert du « sans crudités » 2026-06-23)
         $this->wireSupplements($tacosL);
 
         // 4) BURGERS (cat 4) — compositions fixes, PAS de choix de viande.
@@ -637,7 +637,13 @@ class OwnerMenuUpdate20260623Seeder extends Seeder
         ItemAddon::withoutGlobalScopes()->where('item_id', $itemId)->delete();
     }
 
-    /** Retire les crudités (group 'crudite') d'un item (owner : tacos sans crudités). */
+    /**
+     * Retire les crudités (group 'crudite') d'un item. Conservé comme helper de
+     * réversion (les tacos ont porté « sans crudités » du 2026-06-23 au 2026-07-07 ;
+     * si l'owner re-décide « tacos sans crudités », rappeler clearGarnitures ici).
+     *
+     * @noinspection PhpUnusedPrivateMethodInspection
+     */
     private function clearGarnitures(Item $item): void
     {
         $this->syncExtras($item->id, 'crudite', []);
