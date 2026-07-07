@@ -725,8 +725,14 @@ class OrderService
                 // /admin/encaissement queue and is sealed (PAID + fiscal_sequence_no
                 // allocated, gap-free) ONLY via PaymentService::confirmCounterPayment
                 // at collection — NEVER here. Default OFF preserves inline-paid POS.
+                // [C4-CAISSE-TELEPHONE 2026-07-07] Une « commande téléphone » (phone_order) est,
+                // par définition owner, prise à l'avance et encaissée SEULEMENT à l'arrivée du
+                // client → elle emprunte le MÊME chemin différé que le walk-in routé au comptoir
+                // (COUNTER_DEFERRED + PENDING_COUNTER, fiscal alloué à l'encaissement). Le seul
+                // delta est le tag source_surface='phone' (voir plus bas) pour la file/historique/KDS.
                 $deferToCounter = config('pos.walkin_route_to_counter') === true
-                    || $request->boolean('defer_to_counter');
+                    || $request->boolean('defer_to_counter')
+                    || $request->boolean('phone_order');
                 if ($deferToCounter) {
                     $validated['payment_method'] = \App\Enums\PaymentGateway::CASH_ON_DELIVERY;
                     $validated['pos_payment_method'] = \App\Enums\PosPaymentMethod::COUNTER_DEFERRED;
@@ -787,6 +793,11 @@ class OrderService
                         // [C2-CAISSE 2026-07-05] Nom du client (optionnel) → imprimé sur le ticket.
                         'pos_customer_name' => $request->filled('pos_customer_name')
                             ? mb_substr(trim((string) $request->input('pos_customer_name')), 0, 60)
+                            : null,
+                        // [C4-CAISSE-TELEPHONE 2026-07-07] Téléphone du client (optionnel) → noté sur
+                        // la commande téléphone pour la rappeler/reconnaître, imprimé sur le ticket.
+                        'pos_customer_phone' => $request->filled('pos_customer_phone')
+                            ? mb_substr(trim((string) $request->input('pos_customer_phone')), 0, 30)
                             : null,
                         // [GOAL-CAISSE-UNIFIED delta-(B)] PENDING_COUNTER when the
                         // walk-in is routed to the unified collection queue; PAID
@@ -1135,7 +1146,11 @@ class OrderService
                             $this->order->loyalty_customer_code = $customer->loyalty_code;
                         }
                     }
-                    $this->order->source_surface = 'pos';
+                    // [C4-CAISSE-TELEPHONE 2026-07-07] Distingue le canal « commande téléphone »
+                    // ('phone') du walk-in caisse standard ('pos') pour la file d'encaissement, le
+                    // KDS (badge « Tél ») et l'historique. Les deux passent par le sceau
+                    // counter-collect (assertCounterDeferredOrder accepte 'phone' aussi).
+                    $this->order->source_surface = $request->boolean('phone_order') ? 'phone' : 'pos';
 
                     $currentTime = Carbon::now();
                     $endTime = $currentTime->copy()->addMinutes(Settings::group('order_setup')->get('order_setup_schedule_order_slot_duration'));
@@ -1160,7 +1175,8 @@ class OrderService
                     // cancelled before payment → NF525 gap. Recomputed locally from
                     // the same config/request signal used above (inner closure).
                     $deferToCounterFiscal = config('pos.walkin_route_to_counter') === true
-                        || $request->boolean('defer_to_counter');
+                        || $request->boolean('defer_to_counter')
+                        || $request->boolean('phone_order');
                     if (! $deferToCounterFiscal) {
                         $this->order->fiscal_sequence_no = app(FiscalSequenceService::class)
                             ->next((int) $this->order->branch_id);

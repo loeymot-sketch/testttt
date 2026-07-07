@@ -92,3 +92,23 @@ describe('kdsSource — UBER EATS aggregator', () => {
         expect(KDS_SOURCE_I18N_KEYS.UBER).toBe('label.kds_source_uber');
     });
 });
+
+// [C4-CAISSE-TELEPHONE 2026-07-07] Commande téléphone caisse (paiement différé, encaissée à
+// l'arrivée du client). La cuisine la voit avec un badge « Tél » distinct.
+describe('kdsSource — PHONE (commande téléphone caisse)', () => {
+    it('"phone" → PHONE', () => {
+        expect(kdsSourceFromSurface('phone')).toBe('PHONE');
+        expect(kdsSourceFromSurface('PHONE')).toBe('PHONE'); // case-insensitive
+    });
+    it('PHONE has a distinct theme (bg/text/icon)', () => {
+        expect(KDS_SOURCE.PHONE).toBe('PHONE');
+        expect(KDS_SOURCE_THEME.PHONE).toHaveProperty('bg');
+        expect(KDS_SOURCE_THEME.PHONE).toHaveProperty('text');
+        expect(KDS_SOURCE_THEME.PHONE.icon).toBe('phone');
+        // Distinct de la caisse standard (POS) — le cuisinier doit voir « à retirer par tel ».
+        expect(KDS_SOURCE_THEME.PHONE.bg).not.toBe(KDS_SOURCE_THEME.POS.bg);
+    });
+    it('PHONE has an i18n key', () => {
+        expect(KDS_SOURCE_I18N_KEYS.PHONE).toBe('label.kds_source_phone');
+    });
+});

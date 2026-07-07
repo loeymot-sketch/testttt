@@ -105,6 +105,11 @@ class OrderDetailsResource extends JsonResource
             'table_name' => $this->diningTable?->name,
             'pos_payment_method' => $this->pos_payment_method,
             'pos_payment_note' => $this->pos_payment_note,
+            // [C2/C4-CAISSE 2026-07-07] Nom + téléphone client saisis en caisse (commande
+            // téléphone différée surtout) — affichés dans la file d'encaissement pour rappeler
+            // le client, et imprimés sur le ticket. Projection pure de colonnes nullables.
+            'pos_customer_name' => $this->pos_customer_name,
+            'pos_customer_phone' => $this->pos_customer_phone,
             'source' => $this->source,
             // [GOAL-CAISSE-UNIFIED W-ENC 2026-05-30] Origin signal for the
             // unified /admin/encaissement queue badge (Borne='kiosk',

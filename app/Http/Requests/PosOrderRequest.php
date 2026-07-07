@@ -106,6 +106,13 @@ class PosOrderRequest extends FormRequest
             'discount_reason' => ['nullable', 'string', 'max:191'],
             // [C2-CAISSE 2026-07-05] Nom du client (optionnel) — imprimé sur le ticket.
             'pos_customer_name' => ['nullable', 'string', 'max:60'],
+            // [C4-CAISSE-TELEPHONE 2026-07-07] Téléphone du client (optionnel) pour une commande
+            // téléphone différée — noté sur la commande, imprimé sur le ticket.
+            'pos_customer_phone' => ['nullable', 'string', 'max:30'],
+            // [C4-CAISSE-TELEPHONE 2026-07-07] Mode « Commande téléphone » : la commande est
+            // enregistrée + envoyée en cuisine mais PAS encaissée (paiement différé au comptoir).
+            // Implique le routage counter-collect (COUNTER_DEFERRED + PENDING_COUNTER) côté service.
+            'phone_order' => ['nullable', 'boolean'],
             'dining_table_id' => ($orderTypeInt === OrderType::DINING_TABLE && $dineInEnabled) ? [
                 'required',
                 'numeric',
@@ -183,7 +190,11 @@ class PosOrderRequest extends FormRequest
             // = invalide : confirmCounterPayment (encaissement) est MONO-tender et ne peut pas honorer
             // un split ; persister les tranches à la création double-compte le tiroir (NF525 §8).
             // Fail-closed : on rejette la combinaison (miroir de la garde service posOrderStore:1246).
-            $deferred = config('pos.walkin_route_to_counter') === true || $this->boolean('defer_to_counter');
+            // [C4-CAISSE-TELEPHONE 2026-07-07] phone_order implique aussi le différé (miroir de
+            // OrderService::posOrderStore) : une commande téléphone est encaissée à l'arrivée.
+            $deferred = config('pos.walkin_route_to_counter') === true
+                || $this->boolean('defer_to_counter')
+                || $this->boolean('phone_order');
             if ($deferred
                 && config('split_payment.enabled', false)
                 && ! empty($this->input('payment_breakdown'))) {

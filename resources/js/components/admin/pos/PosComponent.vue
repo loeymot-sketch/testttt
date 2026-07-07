@@ -357,6 +357,14 @@
                 :data-testid="`pos-shortcut-cash-${o.id}`"
               >
                 <span class="pos-shortcuts__num">N°{{ o.queue_number || o.order_serial_no || o.id }}</span>
+                <!-- [C4-CAISSE-TELEPHONE 2026-07-07] Libellé « Tél » distinct pour une commande
+                     téléphone (source_surface='phone') dans la file « à encaisser ». -->
+                <span
+                  v-if="o.source_surface === 'phone'"
+                  class="pos-shortcuts__badge-phone"
+                  :data-testid="`pos-shortcut-phone-badge-${o.id}`"
+                  :title="o.pos_customer_phone || ''"
+                >📞 {{ $t('label.pos_phone_order_badge') }}</span>
                 <span class="pos-shortcuts__price">{{ formatKioskPrice(o.total ?? o.order_amount) }}</span>
                 <button
                   type="button"
@@ -720,15 +728,25 @@
                     </label>
                 </div>
                 <!-- [C2-CAISSE 2026-07-05] Nom du client (optionnel) pour emporter / sur place.
-                     Masqué en livraison (la livraison a déjà son propre champ Nom). Imprimé sur le ticket. -->
-                <div v-if="checkoutProps.form.order_type !== orderTypeEnums.delivery" class="mt-3">
+                     Masqué en livraison (la livraison a déjà son propre champ Nom). Imprimé sur le ticket.
+                     [C4-CAISSE-TELEPHONE 2026-07-07] Téléphone client ajouté à côté du nom — utile
+                     surtout pour la « commande téléphone » (rappeler le client). -->
+                <div v-if="checkoutProps.form.order_type !== orderTypeEnums.delivery" class="mt-3 flex gap-2">
                     <input
                         type="text"
                         v-model="checkoutProps.form.pos_customer_name"
                         maxlength="60"
                         :placeholder="$t('label.pos_customer_name_placeholder')"
                         data-testid="pos-customer-name"
-                        class="w-full h-10 text-sm rounded-lg border px-3 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none"
+                        class="flex-1 h-10 text-sm rounded-lg border px-3 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none"
+                    />
+                    <input
+                        type="tel"
+                        v-model="checkoutProps.form.pos_customer_phone"
+                        maxlength="30"
+                        :placeholder="$t('label.pos_customer_phone_placeholder')"
+                        data-testid="pos-customer-phone"
+                        class="w-40 h-10 text-sm rounded-lg border px-3 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none"
                     />
                 </div>
 
@@ -1103,6 +1121,22 @@
                     <template #icon>💳</template>
                     {{ $t('button.order') }} · {{ grandTotalDisplay }}
                 </PosV5Button>
+                <!-- [C4-CAISSE-TELEPHONE 2026-07-07] Commande prise par téléphone : enregistrée +
+                     envoyée en cuisine à l'avance, PAS encaissée maintenant (paiement différé au
+                     comptoir à l'arrivée du client). Passe par le chemin counter-collect existant. -->
+                <button
+                    type="button"
+                    class="pos-phone-order-cta"
+                    :disabled="phoneOrderSubmitting"
+                    data-testid="pos-phone-order"
+                    @click.prevent="phoneOrderSubmit"
+                >
+                    <span aria-hidden="true">📞</span>
+                    <span class="pos-phone-order-cta__label">
+                        {{ phoneOrderSubmitting ? '…' : $t('label.pos_phone_order_cta') }}
+                    </span>
+                    <span class="pos-phone-order-cta__hint">{{ $t('label.pos_phone_order_hint') }}</span>
+                </button>
                 <PosV5Button
                     variant="danger-ghost"
                     size="sm"
@@ -1690,6 +1724,8 @@ export default {
             kioskCashOrders: [],
             kioskCashLoading: false,
             showKioskCashPanel: false,
+            // [C4-CAISSE-TELEPHONE 2026-07-07] Anti double-submit du bouton « Commande téléphone ».
+            phoneOrderSubmitting: false,
             // [HEAL B2-P6-F01 2026-05-26] Confirm-before-cancel dialog
             // state for kiosk-cash (counter-collect) orders. Mirrors the
             // PosOrdersTrackerComponent cancelDialog pattern so any
@@ -1805,6 +1841,10 @@ export default {
                     pos_payment_method: posPaymentMethodEnum.CASH,
                     pos_payment_note: '',
                     pos_customer_name: '',
+                    // [C4-CAISSE-TELEPHONE 2026-07-07] Téléphone client + flag « commande téléphone »
+                    // (paiement différé au comptoir). Envoyés tels quels au backend via saveForm.
+                    pos_customer_phone: '',
+                    phone_order: false,
                     source: sourceEnum.POS,
                     address_id: null,
                     coupon_id: null,
@@ -3654,6 +3694,7 @@ export default {
                     pos_payment_method: this.checkoutProps.form.pos_payment_method,
                     pos_payment_note: this.checkoutProps.form.pos_payment_note,
                     pos_customer_name: this.checkoutProps.form.pos_customer_name,
+                    pos_customer_phone: this.checkoutProps.form.pos_customer_phone,
                     source: this.checkoutProps.form.source,
                 },
                 selected_address: this.selectedAddress,
@@ -3691,6 +3732,9 @@ export default {
                 pos_payment_method: posPaymentMethodEnum.CASH,
                 pos_payment_note: null,
                 pos_customer_name: null,
+                // [C4-CAISSE-TELEPHONE 2026-07-07] Réinitialise les champs commande téléphone.
+                pos_customer_phone: null,
+                phone_order: false,
                 pos_received_amount: null,
                 quote_token: null,
                 quote_signature: null,
@@ -4092,6 +4136,145 @@ export default {
                 item_extras: item_extras,
             };
         },
+        /**
+         * [C4-CAISSE-TELEPHONE 2026-07-07] Sérialise le panier (principaux + addons bundle) au
+         * format JSON attendu par POST /admin/pos. Extrait d'orderSubmit pour être réutilisé par
+         * phoneOrderSubmit sans dupliquer la logique de construction des lignes.
+         */
+        buildFormItemsJson: function () {
+            const rows = [];
+            _.forEach(this.carts, (item) => {
+                const mainQty = parsePositiveInt(item.quantity, 1);
+                const mainLineTotal = mainOrderLineTotal(item, mainQty);
+                rows.push(this.buildPosCheckoutOrderRow(item, mainQty, mainLineTotal));
+
+                const addons = Array.isArray(item.pos_line_addons) ? item.pos_line_addons : [];
+                _.forEach(addons, (b) => {
+                    // [C2 FIX] Skip bundled addons with no resolvable item_id to avoid backend 422
+                    if (b.item_id == null) {
+                        console.warn('[POS] Bundled addon skipped — item_id is null/undefined:', b);
+                        return;
+                    }
+                    const { orderQty, lineTotal } = bundledOrderQuantityAndTotal(b, mainQty);
+                    rows.push(this.buildPosCheckoutOrderRow(b, orderQty, lineTotal));
+                });
+            });
+            return JSON.stringify(rows);
+        },
+        /**
+         * [C4-CAISSE-TELEPHONE 2026-07-07] Mode « Commande téléphone ».
+         *
+         * Le caissier prend une commande par téléphone : elle est ENREGISTRÉE + envoyée en cuisine
+         * à l'avance, mais N'EST PAS encaissée maintenant. Le paiement est DIFFÉRÉ jusqu'à ce que le
+         * client vienne la chercher (encaissement au comptoir via la file « à encaisser » existante).
+         *
+         * Contrairement à orderSubmit (qui ouvre la modale de paiement PaymentComponent frozen), on
+         * soumet DIRECTEMENT au backend avec les marqueurs différés — aucune saisie de paiement :
+         *   - pos_payment_method = COUNTER_DEFERRED (le serveur le confirme de toute façon)
+         *   - phone_order = 1  → OrderService pose PENDING_COUNTER + COUNTER_DEFERRED + CASH_ON_DELIVERY,
+         *                        source_surface='phone', auto-accept + board-release cuisine, PAS de
+         *                        fiscal_sequence_no (alloué à l'encaissement, NF525 §8).
+         * Le total/subtotal/discount sont retirés du payload (SSOT serveur, cf. PaymentComponent:896).
+         */
+        phoneOrderSubmit: async function () {
+            if (this.phoneOrderSubmitting) return;
+            if (!this.carts || this.carts.length === 0) {
+                return alertService.error(this.$t("message.cart_is_empty") || "Le panier est vide.");
+            }
+
+            this.phoneOrderSubmitting = true;
+            this.loading.isActive = true;
+            try {
+                // Client comptoir (walk-in) requis comme pour un emporter caisse.
+                if (!this.checkoutProps.form.customer_id) {
+                    await this.ensureCustomersHydratedForCheckout();
+                    const walkInReady = await this.ensureWalkInCustomer();
+                    if (!walkInReady) {
+                        return alertService.error('Client comptoir indisponible. Rechargez la caisse puis réessayez.');
+                    }
+                }
+
+                const _branchId = this.checkoutProps.form.branch_id;
+                if (_branchId == null || _branchId === '' || _branchId === 0) {
+                    return alertService.error(this.$t("message.branch_required") || "Branche requise pour valider la commande.");
+                }
+
+                // Une commande téléphone est un retrait (emporter) : jamais sur-place/livraison.
+                const token = this.checkoutProps.form.token || this.nextDailySequenceToken();
+                const itemsJson = this.buildFormItemsJson();
+                const discount = Number(this.posDiscount) || 0;
+                const couponId = this.checkoutProps.form.coupon_id || null;
+
+                // [SSOT] Un ordre POS DOIT porter un devis scellé (OrderQuoteService::sealForCommit
+                // exige quote_token + quote_signature pour la surface 'pos', sinon 401). On demande
+                // un devis COURANT pour ce panier (le serveur reste seul maître du prix).
+                const quoteRes = await axios.post('admin/pos/quote', {
+                    branch_id: _branchId,
+                    customer_id: this.checkoutProps.form.customer_id,
+                    coupon_id: couponId,
+                    discount,
+                    order_type: orderTypeEnum.TAKEAWAY,
+                    source: sourceEnum.POS,
+                    pos_payment_method: posPaymentMethodEnum.COUNTER_DEFERRED,
+                    items: itemsJson,
+                });
+                const quote = quoteRes?.data?.data;
+                if (!quote || !quote.quote_token || !quote.signature) {
+                    return alertService.error('Impossible de calculer le tarif de la commande. Réessayez.');
+                }
+
+                const payload = {
+                    token,
+                    customer_id: this.checkoutProps.form.customer_id,
+                    branch_id: _branchId,
+                    discount,
+                    discount_reason: this.checkoutProps.form.discount_reason || null,
+                    order_type: orderTypeEnum.TAKEAWAY,
+                    is_advance_order: isAdvanceOrderEnum.NO,
+                    source: sourceEnum.POS,
+                    coupon_id: couponId,
+                    items: itemsJson,
+                    // Différé : aucune saisie paiement. Le serveur force COUNTER_DEFERRED.
+                    pos_payment_method: posPaymentMethodEnum.COUNTER_DEFERRED,
+                    pos_received_amount: null,
+                    pos_customer_name: (this.checkoutProps.form.pos_customer_name || '').trim() || null,
+                    pos_customer_phone: (this.checkoutProps.form.pos_customer_phone || '').trim() || null,
+                    // Devis scellé (SSOT serveur — total recalculé et comparé au devis).
+                    quote_token: quote.quote_token,
+                    quote_signature: quote.signature,
+                    // Signaux de différé côté serveur (double ceinture).
+                    phone_order: true,
+                    defer_to_counter: true,
+                    idempotency_key: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${_branchId}`,
+                };
+
+                await this.$store.dispatch('posOrder/save', payload);
+
+                // Succès : vider le panier + rafraîchir la file « à encaisser » (la commande y apparaît).
+                alertService.success(this.$t('label.pos_phone_order_success'));
+                try { await this.$store.dispatch('posCart/resetCart'); } catch (_e) { /* defensive */ }
+                this.checkoutProps.form.pos_customer_name = '';
+                this.checkoutProps.form.pos_customer_phone = '';
+                this.checkoutProps.form.token = '';
+                await this.loadKioskCashOrders();
+            } catch (err) {
+                const msg = err?.response?.data?.message
+                    || err?.message
+                    || 'Erreur lors de l\'enregistrement de la commande téléphone.';
+                alertService.error(msg);
+            } finally {
+                this.phoneOrderSubmitting = false;
+                this.loading.isActive = false;
+            }
+        },
+        /** [C4-CAISSE-TELEPHONE] Compteur séquentiel quotidien N°1, N°2… (reset à minuit), comme orderSubmit. */
+        nextDailySequenceToken: function () {
+            const today = new Date().toISOString().slice(0, 10);
+            const seqKey = 'pos_order_seq_' + today;
+            const seq = (parseInt(localStorage.getItem(seqKey) || '0') + 1);
+            localStorage.setItem(seqKey, String(seq));
+            return String(seq);
+        },
         orderSubmit: async function () {
             // [P5-3] Guard: prevent opening payment modal with empty cart
             if (!this.carts || this.carts.length === 0) {
@@ -4119,24 +4302,7 @@ export default {
             this.checkoutProps.form.delivery_charge = Number(this.checkoutProps.form.delivery_charge) || 0;
             this.checkoutProps.form.total = Number(this.grandTotal).toFixed(this.setting.site_digit_after_decimal_point);
             // @pricing-allowed-block end
-            this.checkoutProps.form.items = [];
-            _.forEach(this.carts, (item) => {
-                const mainQty = parsePositiveInt(item.quantity, 1);
-                const mainLineTotal = mainOrderLineTotal(item, mainQty);
-                this.checkoutProps.form.items.push(this.buildPosCheckoutOrderRow(item, mainQty, mainLineTotal));
-
-                const addons = Array.isArray(item.pos_line_addons) ? item.pos_line_addons : [];
-                _.forEach(addons, (b) => {
-                    // [C2 FIX] Skip bundled addons with no resolvable item_id to avoid backend 422
-                    if (b.item_id == null) {
-                        console.warn('[POS] Bundled addon skipped — item_id is null/undefined:', b);
-                        return;
-                    }
-                    const { orderQty, lineTotal } = bundledOrderQuantityAndTotal(b, mainQty);
-                    this.checkoutProps.form.items.push(this.buildPosCheckoutOrderRow(b, orderQty, lineTotal));
-                });
-            });
-            this.checkoutProps.form.items = JSON.stringify(this.checkoutProps.form.items);
+            this.checkoutProps.form.items = this.buildFormItemsJson();
 
             // Auto-generate order token (like a fast-food: sequential number for on-site, customer name for delivery)
             if (!this.checkoutProps.form.token) {
@@ -4985,6 +5151,41 @@ export default {
   text-align: right;
   white-space: nowrap;
 }
+/* [C4-CAISSE-TELEPHONE 2026-07-07] Badge « Tél » dans la file à encaisser (indigo, distinct). */
+.pos-shortcuts__badge-phone {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+/* [C4-CAISSE-TELEPHONE 2026-07-07] Bouton « Commande téléphone » (secondaire, sous le CTA payer). */
+.pos-phone-order-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #c7d2fe;
+  border-radius: 12px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 120ms ease, transform 80ms ease;
+}
+.pos-phone-order-cta:hover:not(:disabled) { background: #e0e7ff; transform: translateY(-1px); }
+.pos-phone-order-cta:active:not(:disabled) { transform: translateY(0); }
+.pos-phone-order-cta:disabled { opacity: 0.6; cursor: not-allowed; }
+.pos-phone-order-cta__label { font-size: 14px; font-weight: 800; }
+.pos-phone-order-cta__hint { font-size: 10px; font-weight: 600; opacity: 0.8; line-height: 1.2; text-align: center; }
 .pos-shortcuts__cta {
   padding: 6px 12px;
   border: 0;

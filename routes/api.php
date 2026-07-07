@@ -827,6 +827,13 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
                     })->orWhere(function ($p) {
                         $p->where('source_surface', 'pos')
                           ->where('pos_payment_method', \App\Enums\PosPaymentMethod::COUNTER_DEFERRED);
+                    })->orWhere(function ($tel) {
+                        // [C4-CAISSE-TELEPHONE 2026-07-07] Commande téléphone caisse (paiement différé)
+                        // → source_surface='phone' + COUNTER_DEFERRED. Sans cette clause, la commande
+                        // téléphone serait INVISIBLE en caisse donc INENCAISSABLE (même famille de bug
+                        // que le filet anti-NULL ci-dessous). Miroir de la garde assertCounterDeferredOrder.
+                        $tel->where('source_surface', 'phone')
+                          ->where('pos_payment_method', \App\Enums\PosPaymentMethod::COUNTER_DEFERRED);
                     })->orWhere(function ($n) {
                         // [ENCAISSEMENT-ROBUSTE 2026-07-01] Filet anti-NULL : une commande borne
                         // PENDING_COUNTER dont le tag source_surface manque (donnée héritée) resterait

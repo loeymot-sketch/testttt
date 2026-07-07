@@ -44,6 +44,8 @@ class Order extends Model implements BroadcastableOrder
         'pos_payment_method',
         'pos_payment_note',
         'pos_customer_name',
+        // [C4-CAISSE-TELEPHONE 2026-07-07] Téléphone du client sur une commande téléphone (différée).
+        'pos_customer_phone',
         'pos_received_amount',
         'loyalty_customer_code',
         'source_surface',

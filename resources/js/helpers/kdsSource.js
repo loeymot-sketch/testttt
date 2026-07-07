@@ -18,6 +18,10 @@ export const KDS_SOURCE = Object.freeze({
     // [UBER-EATS 2026-06-28] Aggregator channel — Uber injects orders via webhook;
     // they must surface on the KDS in line with native orders but plainly marked UBER.
     UBER: 'UBER',
+    // [C4-CAISSE-TELEPHONE 2026-07-07] Commande prise par téléphone à la caisse (paiement
+    // différé, encaissée à l'arrivée). La cuisine la traite comme une commande comptoir mais
+    // le badge « Tél » signale qu'un client va venir la chercher.
+    PHONE: 'PHONE',
 });
 
 // Reverse map: source_surface (DB lowercase) → KDS_SOURCE.
@@ -39,6 +43,8 @@ const SURFACE_TO_SOURCE = {
     uber: KDS_SOURCE.UBER,
     uber_eats: KDS_SOURCE.UBER,
     ubereats: KDS_SOURCE.UBER,
+    // [C4-CAISSE-TELEPHONE 2026-07-07] Commande téléphone caisse.
+    phone: KDS_SOURCE.PHONE,
 };
 
 /**
@@ -66,6 +72,9 @@ export const KDS_SOURCE_THEME = Object.freeze({
     // [UBER-EATS 2026-06-28] Uber Eats brand green (#06C167) on white text — the
     // most saturated chip on the board so the cook instantly spots an Uber order.
     UBER: { bg: '#06C167', text: '#FFFFFF', icon: 'uber' },
+    // [C4-CAISSE-TELEPHONE 2026-07-07] Indigo distinct — commande téléphone (le client
+    // passera la chercher, paiement à l'arrivée).
+    PHONE: { bg: '#EEF2FF', text: '#4338CA', icon: 'phone' },
 });
 
 export const KDS_SOURCE_I18N_KEYS = Object.freeze({
@@ -76,4 +85,5 @@ export const KDS_SOURCE_I18N_KEYS = Object.freeze({
     APP: 'label.kds_source_app',
     DINE_IN: 'label.kds_type_dinein',
     UBER: 'label.kds_source_uber',
+    PHONE: 'label.kds_source_phone',
 });

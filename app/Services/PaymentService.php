@@ -754,8 +754,13 @@ class PaymentService
         // OrderService::posOrderStore (pos). source_surface is restricted to the
         // two collection origins so a regular paid POS/online order can never be
         // routed through the counter-collect seal.
+        // [C4-CAISSE-TELEPHONE 2026-07-07] 'phone' rejoint 'kiosk'/'pos' : une commande téléphone
+        // est une 3e origine LÉGITIME de counter-collect (créée différée par OrderService::posOrderStore
+        // avec le MÊME marqueur triple). Sans 'phone' ici, confirmCounterPayment rejetterait 422 la
+        // commande téléphone → INENCAISSABLE (garde asymétrique). Miroir strict de la clause ajoutée
+        // dans la file /counter-collect/pending (routes/api.php).
         $surface = (string) ($order->source_surface ?? '');
-        $isCounterDeferred = in_array($surface, ['kiosk', 'pos'], true)
+        $isCounterDeferred = in_array($surface, ['kiosk', 'pos', 'phone'], true)
             && (int) $order->payment_method === \App\Enums\PaymentGateway::CASH_ON_DELIVERY
             && (int) $order->pos_payment_method === PosPaymentMethod::COUNTER_DEFERRED;
 
