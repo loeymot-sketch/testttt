@@ -61,6 +61,12 @@ class SalesReportController extends AdminController
     public function pdf(PaginateRequest $request): mixed
     {
         try {
+            // [ULTRA-LOOP R1 P1 2026-07-07 — PDF tronqué à 10 lignes] L'UI envoie
+            // paginate=1&per_page=10 ; OrderService::list voit paginate==1 → ->paginate(10),
+            // donc le blade n'itérait QUE la 1re page ET le "Total" (agrégé dans la boucle
+            // @foreach) sous-déclarait massivement le CA (ex. 38 522,62 € réels affichés
+            // 6,70 €). On force un fetch complet — miroir exact de SalesReportExport:30.
+            $request->merge(['paginate' => 0]);
             $company = $this->companyService->list();
             $theme_logo   = ThemeSetting::where(['key' => 'theme_logo'])->first()?->logo;
             $copyright   = Settings::group('site')->get('site_copyright');

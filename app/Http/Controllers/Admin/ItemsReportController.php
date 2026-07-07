@@ -52,6 +52,12 @@ class ItemsReportController extends AdminController
     public function pdf(PaginateRequest $request):mixed
     {
         try {
+           // [ULTRA-LOOP R1 P2 2026-07-07 — PDF articles tronqué à 10 items] L'UI envoie
+           // paginate=1&per_page=10 ; itemReport voit paginate==1 → ->paginate(10), donc le
+           // PDF n'affichait que 10 des 45 items du catalogue et le "Total" (agrégé dans la
+           // boucle @foreach) sous-comptait les unités vendues. On force un fetch complet —
+           // miroir exact de ItemsReportExport:27.
+           $request->merge(['paginate' => 0]);
            $company = $this->companyService->list();
            $theme_logo   = ThemeSetting::where(['key' => 'theme_logo'])->first()?->logo;
            $copyright   = Settings::group('site')->get('site_copyright');
