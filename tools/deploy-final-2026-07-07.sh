@@ -21,6 +21,9 @@ ssh -o ConnectTimeout=25 lecayenne "cd /var/www/lecayenne && \
   php artisan images:generate-pos-thumbs 2>&1 | tail -2 && \
   echo '--- ponts locaux (borne + caisse) publiés ---' && \
   mkdir -p public/dl && cp -f tools/borne/bridge.js public/dl/bridge.js && cp -f tools/caisse-bridge/caisse-bridge.js public/dl/caisse-bridge.js && \
+  cp -f tools/bridge-service/start-borne-bridge-hidden.vbs public/dl/start-borne-bridge-hidden.vbs && cp -f tools/bridge-service/start-caisse-bridge-hidden.vbs public/dl/start-caisse-bridge-hidden.vbs && \
+  cp -f tools/bridge-service/install-borne-service.ps1 public/dl/install-borne-service.ps1 && cp -f tools/bridge-service/install-caisse-service.ps1 public/dl/install-caisse-service.ps1 && \
+  echo '--- lanceurs anti-flash (VBS window-0 + service NSSM) publies ---' && \
   echo 'bridge md5='\$(md5sum public/dl/bridge.js|cut -d' ' -f1)' caisse md5='\$(md5sum public/dl/caisse-bridge.js|cut -d' ' -f1) && \
   echo '--- impression silencieuse (0 écran gris) ---' && \
   ( grep -q '^POS_PRINT_SILENT_ONLY=' .env && sed -i 's/^POS_PRINT_SILENT_ONLY=.*/POS_PRINT_SILENT_ONLY=true/' .env || echo 'POS_PRINT_SILENT_ONLY=true' >> .env ) && \
