@@ -143,7 +143,7 @@
                             </tr>
                             <tr v-else>
                                 <td class="pt-1 pb-1 pr-1">{{ $t('label.payment_type') }}:</td>
-                                <td v-if="order.transaction" class="pt-1 pb-1">{{ order.transaction.payment_method }}</td>
+                                <td v-if="order.transaction" class="pt-1 pb-1">{{ paymentMethodLabel(order.transaction.payment_method) }}</td>
                                 <td v-else class="pt-1 pb-1">{{ enums.paymentTypeEnumArray[order.payment_method] }}</td>
                             </tr>
                             <tr>
@@ -209,9 +209,11 @@ import sourceEnum from "../../../../enums/modules/sourceEnum";
 import posPaymentMethodEnum from "../../../../enums/modules/posPaymentMethodEnum";
 // [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT — mirrors App\Support\PhoneDisplay::safe
 import { safePhone } from "../../../../helpers/phoneDisplay";
+import { paymentMethodLabelMixin } from "../../../../helpers/paymentMethodLabel";
 
 export default {
     name: "FrontendOrderReceiptComponent",
+    mixins: [paymentMethodLabelMixin],
     props: {
         order: Object,
         orderItems: Object,
