@@ -44,16 +44,62 @@ class MenuImageThumb
     }
 
     /**
-     * URL asset versionnée (?v=filemtime) de la vignette générée, ou null si
-     * elle n'existe pas — l'appelant sert alors l'original (comportement
-     * pré-W5 préservé à l'identique).
+     * [WEBP-MIGRATION 2026-07-07] Chemin relatif public du jumeau WebP plein
+     * format posé À CÔTÉ du PNG source (`<base>/<name>.webp`), sans test
+     * d'existence. Null si la source est déjà `.webp` (le jumeau serait
+     * elle-même) ou non-raster. Sert de repli quand aucune vignette `thumbs/`
+     * n'a été générée : le PNG lourd est alors remplacé par un WebP visuellement
+     * sans perte (`cwebp -q 90`), tout en gardant le PNG comme ultime repli
+     * navigateur.
+     */
+    public static function siblingPath(string $basePath, string $filename): ?string
+    {
+        if ($filename === '' || !preg_match(self::RASTER_PATTERN, $filename)) {
+            return null;
+        }
+        // Une source déjà WebP n'a pas de jumeau distinct à préférer.
+        if (preg_match('/\.webp$/i', $filename)) {
+            return null;
+        }
+        $webpName = preg_replace(self::RASTER_PATTERN, '.webp', $filename);
+
+        return trim($basePath, '/') . "/{$webpName}";
+    }
+
+    /**
+     * URL asset versionnée (?v=filemtime) du meilleur WebP disponible pour la
+     * source, ou null si aucun n'existe — l'appelant sert alors le PNG/JPG
+     * original (comportement pré-WebP préservé à l'identique, 0 régression).
+     *
+     * Ordre de préférence :
+     *   1. Vignette ≤320px `thumbs/<name>.webp` (poids minimal pour les grilles).
+     *   2. Jumeau plein format `<base>/<name>.webp` (repli si aucune vignette).
      */
     public static function url(string $basePath, string $filename): ?string
     {
-        $relative = self::relativePath($basePath, $filename);
-        if ($relative === null) {
-            return null;
+        // 1. Vignette pré-générée (la plus légère) si présente.
+        if (($relative = self::relativePath($basePath, $filename)) !== null) {
+            if (($versioned = self::versionedIfExists($relative)) !== null) {
+                return $versioned;
+            }
         }
+
+        // 2. Jumeau WebP plein format à côté du PNG si présent.
+        if (($sibling = self::siblingPath($basePath, $filename)) !== null) {
+            if (($versioned = self::versionedIfExists($sibling)) !== null) {
+                return $versioned;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * URL asset versionnée (?v=filemtime) d'un chemin relatif public s'il existe
+     * physiquement, sinon null.
+     */
+    private static function versionedIfExists(string $relative): ?string
+    {
         $absolute = public_path($relative);
         if (!file_exists($absolute)) {
             return null;

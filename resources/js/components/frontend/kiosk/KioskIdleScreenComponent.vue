@@ -93,6 +93,7 @@
             class="kiosk-idle-logo"
             alt=""
             data-testid="kiosk-idle-logo"
+            @error="onAttractImgError"
           />
           <h1 v-else class="kiosk-idle-brand" data-testid="kiosk-idle-brand">
             {{ restaurantName }}
@@ -117,7 +118,7 @@
             class="cay-hero-slide"
             :class="{ 'is-active': i === heroIdx }"
           >
-            <img :src="p.img" :alt="p.name" class="cay-hero-img" />
+            <img :src="p.img" :alt="p.name" class="cay-hero-img" @error="onAttractImgError" />
           </div>
 
           <!-- légeretés visuelles -->
@@ -160,7 +161,8 @@
       <div class="kiosk-idle-headline">
         <h2 class="kiosk-idle-title" data-testid="kiosk-idle-title">
           <transition name="cay-line" mode="out-in">
-            <span :key="lineIdx" v-html="headlines[lineIdx]"></span>
+            <!-- eslint-disable-next-line vue/no-v-html -->
+            <span :key="lineIdx" v-html="safeHtml(headlines[lineIdx])"></span>
           </transition>
         </h2>
         <div class="cay-underline"></div>
@@ -256,6 +258,11 @@
 // [ADR-007 / iter15-P1a] `setLocale` retiré : kiosk runtime FR-immutable.
 // Seul `getCurrentLocale` reste utilisé pour l'affichage `aria-pressed`.
 import { getCurrentLocale } from '../../../i18n';
+// [ULTRA-AUDIT 2026-07-02] Sanitizer XSS pour les headlines statiques (contenu contrôlé,
+// mais VHtmlStaticGuard exige un wrap safeHtml). Config locale : autorise `class` (cay-accent)
+// que le safeHtml partagé (utils/safeHtml, ALLOWED_ATTR=['href']) strip — sinon l'accent orange
+// des titres attract disparaîtrait. DOMPurify bloque script/handlers dans tous les cas.
+import DOMPurify from 'dompurify';
 // [PHASE-4.4] A11y drawer (lang/AAA/PMR/audio).
 import KsA11ySettings from './ds/KsA11ySettings.vue';
 import { KIOSK_ORDER_TYPES } from '../../../store/modules/kioskCart';
@@ -286,16 +293,20 @@ export default {
       tapHint: '',
       settingsOpen: false,
       orderTypes: KIOSK_ORDER_TYPES,
-      brandLogo: ATTRACT_BASE + 'logo.png',
+      // [WEBP-MIGRATION 2026-07-07] Visuels attract servis en WebP (-64% de
+      // poids réseau vs PNG, ~8 Mo → ~2,9 Mo sur l'écran d'accueil). Le PNG
+      // reste sur disque : `onAttractImgError` y retombe si le navigateur ne
+      // décode pas le WebP (repli automatique, 0 régression).
+      brandLogo: ATTRACT_BASE + 'logo.webp',
       products: [
-        { name: 'Le Terminator', img: ATTRACT_BASE + 'terminator.png' },
-        { name: 'Double Cheese', img: ATTRACT_BASE + 'double-cheese.png' },
-        { name: 'Le Cayenne',    img: ATTRACT_BASE + 'cayenne.png' },
-        { name: 'Grill Burger',  img: ATTRACT_BASE + 'grill-burger.png' },
-        { name: 'Le Suprême',    img: ATTRACT_BASE + 'supreme.png' },
-        { name: 'Menu Maxi',     img: ATTRACT_BASE + 'menu-maxi.png' },
-        { name: 'Bol de riz',    img: ATTRACT_BASE + 'bol-riz.png' },
-        { name: 'Bol de frites', img: ATTRACT_BASE + 'bol-frites.png' },
+        { name: 'Le Terminator', img: ATTRACT_BASE + 'terminator.webp' },
+        { name: 'Double Cheese', img: ATTRACT_BASE + 'double-cheese.webp' },
+        { name: 'Le Cayenne',    img: ATTRACT_BASE + 'cayenne.webp' },
+        { name: 'Grill Burger',  img: ATTRACT_BASE + 'grill-burger.webp' },
+        { name: 'Le Suprême',    img: ATTRACT_BASE + 'supreme.webp' },
+        { name: 'Menu Maxi',     img: ATTRACT_BASE + 'menu-maxi.webp' },
+        { name: 'Bol de riz',    img: ATTRACT_BASE + 'bol-riz.webp' },
+        { name: 'Bol de frites', img: ATTRACT_BASE + 'bol-frites.webp' },
       ],
       enabledLanguages: ['fr', 'en'], // Default, will be overridden by settings
       languageLabels: {
@@ -384,6 +395,16 @@ export default {
     }
   },
   methods: {
+    // [ULTRA-AUDIT 2026-07-02] Wrap exigé par VHtmlStaticGuard. Headlines = HTML statique
+    // contrôlé (<span class="cay-accent">, <br>) ; DOMPurify neutralise tout vecteur XSS et
+    // on autorise `class` pour préserver le style accent (le safeHtml partagé le strip).
+    safeHtml(raw) {
+      if (raw == null) return '';
+      return DOMPurify.sanitize(String(raw), {
+        ALLOWED_TAGS: ['span', 'br', 'b', 'strong', 'em', 'i'],
+        ALLOWED_ATTR: ['class'],
+      });
+    },
     applyLocalizedDefaults() {
       this.restaurantName = this.$t('kiosk.idle_screen.default_restaurant_name');
       this.welcomeTitle = this.$t('kiosk.idle_screen.default_title');
@@ -393,6 +414,20 @@ export default {
     text(key, fallback) {
       const value = this.$t(key);
       return value && value !== key ? value : fallback;
+    },
+    /**
+     * [WEBP-MIGRATION 2026-07-07] Repli automatique WebP → PNG. Si un navigateur
+     * (très ancien) ne décode pas le `.webp`, on bascule une seule fois sur le
+     * jumeau `.png` resté sur disque. Le drapeau dataset évite toute boucle si
+     * le PNG échoue aussi.
+     */
+    onAttractImgError(event) {
+      const el = event && event.target;
+      if (!el || el.dataset.pngFallback === '1') return;
+      const src = el.getAttribute('src') || '';
+      if (!/\.webp(\?.*)?$/i.test(src)) return;
+      el.dataset.pngFallback = '1';
+      el.setAttribute('src', src.replace(/\.webp(\?.*)?$/i, '.png$1'));
     },
     computeStageScale() {
       const w = (typeof window !== 'undefined' && window.innerWidth) || 1080;
