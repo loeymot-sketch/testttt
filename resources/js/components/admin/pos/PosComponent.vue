@@ -366,6 +366,27 @@
                   :title="o.pos_customer_phone || ''"
                 >📞 {{ $t('label.pos_phone_order_badge') }}</span>
                 <span class="pos-shortcuts__price">{{ formatKioskPrice(o.total ?? o.order_amount) }}</span>
+                <!-- [owner 2026-07-08 #2b] Imprimer AVANT encaissement : le caissier
+                     choisit le ticket CUISINE (lancer la prépa) OU CLIENT, sans avoir
+                     à encaisser. Réutilise le même endpoint /escpos + pont caisse. -->
+                <span class="pos-shortcuts__print-group" role="group" :aria-label="$t('pos.print_ticket_kitchen') + ' / ' + $t('pos.print_ticket_client')">
+                  <button
+                    type="button"
+                    class="pos-shortcuts__print-btn"
+                    :disabled="!!o._printing || o._collecting"
+                    :data-testid="`pos-shortcut-print-kitchen-${o.id}`"
+                    :title="$t('pos.print_ticket_kitchen')"
+                    @click="printAEncaisserTicket(o, 'kitchen')"
+                  >{{ o._printing === 'kitchen' ? '…' : '🖨️ Cuisine' }}</button>
+                  <button
+                    type="button"
+                    class="pos-shortcuts__print-btn"
+                    :disabled="!!o._printing || o._collecting"
+                    :data-testid="`pos-shortcut-print-client-${o.id}`"
+                    :title="$t('pos.print_ticket_client')"
+                    @click="printAEncaisserTicket(o, 'client')"
+                  >{{ o._printing === 'client' ? '…' : '🖨️ Client' }}</button>
+                </span>
                 <button
                   type="button"
                   class="pos-shortcuts__cta pos-shortcuts__cta--cash"
@@ -3504,6 +3525,30 @@ export default {
                 await this.loadReadyOrders();
             } catch (_) { /* silent — toast already raised */ }
         },
+        // [owner 2026-07-08 #2b] Imprimer le ticket CUISINE ou CLIENT d'une commande
+        // « à encaisser » SANS l'encaisser (lancer la prépa avant que le client paie).
+        // Même endpoint /escpos (SSOT NF525, n'incrémente PAS le compteur fiscal) + pont
+        // caisse que le modal d'encaissement. Best-effort : toast le résultat, ne bloque rien.
+        async printAEncaisserTicket(o, type) {
+            if (!o || o._printing) return;
+            const ticket = type === 'kitchen' ? 'kitchen' : 'client';
+            const label = ticket === 'kitchen'
+                ? (this.$t('pos.print_ticket_kitchen') || 'Ticket cuisine')
+                : (this.$t('pos.print_ticket_client') || 'Ticket client');
+            o._printing = ticket;
+            try {
+                const { data } = await axios.get(`admin/pos/orders/${o.id}/escpos`, { params: { ticket } });
+                const b64 = data && data.escpos_b64;
+                if (!b64) { alertService.warning(label + ' — indisponible'); return; }
+                const r = await printEscPosViaCaisseBridge(b64, { orderRef: o.id });
+                if (r && r.ok === false) alertService.warning(label + ' — pont d\'impression indisponible');
+                else alertService.success(label + ' envoyé à l\'imprimante');
+            } catch (_e) {
+                alertService.warning(label + ' — impression impossible (pont ?)');
+            } finally {
+                o._printing = null;
+            }
+        },
         onCounterCollectCancel() {
             // Reset per-row guard so the cashier can re-open the modal on
             // the same row if they changed their mind (mid-flow cancel,
@@ -5159,15 +5204,40 @@ export default {
   gap: 4px;
 }
 .pos-shortcuts__item {
-  display: grid;
-  grid-template-columns: minmax(0, auto) minmax(0, auto) auto;
+  /* [owner 2026-07-08 #2b] flex-wrap au lieu d'une grille 3-col rigide : la ligne
+     accueille désormais N°/badge/prix + 2 boutons Imprimer + Encaisser, et passe
+     proprement à la ligne si l'espace manque. */
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 6px 8px;
   padding: 4px 6px;
   border-radius: 6px;
   background: var(--pos-v5-surface-2, #faf6f1);
   font-size: 13px;
 }
+.pos-shortcuts__price { margin-inline-start: auto; }
+/* [owner 2026-07-08 #2b] Boutons « Imprimer » (cuisine/client) dans la ligne à encaisser. */
+.pos-shortcuts__print-group {
+  display: inline-flex;
+  gap: 4px;
+}
+.pos-shortcuts__print-btn {
+  padding: 5px 8px;
+  border: 1px solid var(--pos-v5-border, #e3d9cc);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--pos-v5-text, #1a1a1a);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 120ms ease, transform 80ms ease;
+}
+.pos-shortcuts__print-btn:hover:not(:disabled) { background: #f4efe8; transform: translateY(-1px); }
+.pos-shortcuts__print-btn:active:not(:disabled) { transform: translateY(0); }
+.pos-shortcuts__print-btn:disabled { opacity: 0.55; cursor: not-allowed; }
 .pos-shortcuts__num {
   font-weight: 700;
   color: var(--pos-v5-text, #1a1a1a);
