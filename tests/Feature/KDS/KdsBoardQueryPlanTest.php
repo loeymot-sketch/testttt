@@ -203,76 +203,31 @@ class KdsBoardQueryPlanTest extends TestCase
     }
 
     /**
-     * Contract (b) — SQLite: le gate driver saute le FORCE INDEX (sinon syntax
-     * error sur SQLite). On capture le SQL compilé et on prouve l'absence du
-     * hint sur SQLite (et sa présence sur MySQL).
+     * [REGRESSION cycle-2 2026-07-07] Le board DOIT s'exécuter SANS erreur SQL et
+     * retourner le bon ensemble quand BranchScope (frozen) est actif (chemin réel
+     * staff de branche). L'optim FORCE INDEX via `->from(DB::raw(...))` cassait
+     * exactement ça : BranchScope qualifiait `branch_id` avec la chaîne FROM
+     * modifiée → SQL invalide → board VIDE en HTTP (mais tests verts car FORCE
+     * INDEX était MySQL-gated et la CI est SQLite). Ce test verrouille l'invariant :
+     * ne jamais réécrire l'identifiant FROM tant que BranchScope est actif.
      */
-    public function test_force_index_hint_matches_driver(): void
+    public function test_board_runs_under_branchscope_and_returns_expected_set(): void
     {
         $mix = $this->seedBoardMix();
-        $this->actingAs($this->chef($mix['branch']), 'sanctum');
-
-        $captured = [];
-        DB::listen(function ($q) use (&$captured) {
-            $captured[] = strtolower($q->sql);
-        });
+        $staff = $this->chef($mix['branch']); // branch_id > 0 → BranchScope actif
+        $this->actingAs($staff, 'sanctum');
 
         $service = app(KitchenDisplaySystemOrderService::class);
-        $service->list(Request::create('/api/admin/kds-order', 'GET'));
+        // Ne DOIT PAS jeter (l'ancien FORCE INDEX + BranchScope = QueryException).
+        $orders = $service->list(Request::create('/api/admin/kds-order', 'GET'));
 
-        $boardSql = collect($captured)->first(fn (string $sql) => str_contains($sql, 'from `orders`')
-            || str_contains($sql, 'from "orders"'));
-        $this->assertNotNull($boardSql, 'La requête board sur `orders` doit être capturée.');
-
-        $driver = DB::connection()->getDriverName();
-        if ($driver === 'mysql') {
-            $this->assertStringContainsString('force index', $boardSql,
-                'Sur MySQL le board DOIT porter le hint FORCE INDEX (anti full-scan).');
-        } else {
-            $this->assertStringNotContainsString('force index', $boardSql,
-                'Sur SQLite (driver CI) le hint FORCE INDEX DOIT être absent — '
-                . 'sinon syntax error, le gate driver protège les tests.');
+        $this->assertNotEmpty($orders, 'Le board ne doit pas être VIDE sous BranchScope '
+            . '(régression cycle-2 : FORCE INDEX via ->from(raw) cassait la qualification '
+            . 'de colonne de BranchScope → 0 commande en HTTP).');
+        // Toutes les commandes retournées appartiennent à la branche du staff (scope respecté).
+        foreach ($orders as $o) {
+            $this->assertSame((int) $mix['branch']->id, (int) $o->branch_id,
+                'BranchScope doit rester appliqué (isolation de branche).');
         }
-    }
-
-    /**
-     * Contract (b) — MySQL: la requête board n'est plus un full scan. type=range
-     * sur un index de l'ensemble actif (idx_orders_branch_status pour un staff).
-     * Skippé sur SQLite (pas d'EXPLAIN exploitable / pas de piège optimiseur).
-     */
-    public function test_board_query_is_a_range_scan_not_full_scan_on_mysql(): void
-    {
-        if (DB::connection()->getDriverName() !== 'mysql') {
-            $this->markTestSkipped('Assertion de plan MySQL-only (driver de test = SQLite).');
-        }
-
-        $mix = $this->seedBoardMix();
-        $this->actingAs($this->chef($mix['branch']), 'sanctum');
-
-        $captured = [];
-        DB::listen(function ($q) use (&$captured) {
-            if (str_contains(strtolower($q->sql), 'force index')) {
-                $captured[] = ['sql' => $q->sql, 'bindings' => $q->bindings];
-            }
-        });
-
-        $service = app(KitchenDisplaySystemOrderService::class);
-        $service->list(Request::create('/api/admin/kds-order', 'GET'));
-
-        $this->assertNotEmpty($captured, 'La requête board FORCE INDEX doit être capturée.');
-        $board = $captured[0];
-
-        $rows = DB::select('EXPLAIN FORMAT=TRADITIONAL ' . $board['sql'], $board['bindings']);
-        $plan = (array) $rows[0];
-
-        $this->assertNotSame('ALL', $plan['type'] ?? null,
-            'Le board NE DOIT PAS être un full table scan (type=ALL).');
-        $this->assertNotSame('index', $plan['type'] ?? null,
-            'Le board NE DOIT PAS être un full index scan (type=index / PRIMARY reverse).');
-        $this->assertSame('range', $plan['type'] ?? null,
-            'Le board DOIT être un index range scan sur l\'ensemble actif.');
-        $this->assertStringStartsWith('idx_orders_', (string) ($plan['key'] ?? ''),
-            'Le board DOIT utiliser un index de l\'ensemble actif (idx_orders_*), '
-            . 'pas la clé PRIMARY.');
     }
 }
