@@ -12,6 +12,12 @@
 .env.backup-*
 .env.backup.*
 .env.testing
+# [SECU 2026-07-07] Catch-all anti dérive-de-nommage : .env.bak-*, .env.dashe2e, .env.e2e...
+# contenaient de vraies clés AWS + secrets HMAC NF525 (forge de chaîne) non couverts par
+# .env.backup-*. On ignore TOUT .env.* sauf les *.example (trackés).
+.env.*
+!.env.example
+!.env.*.example
 .env.anthropic.local
 .env.orcai
 .env.local
@@ -76,3 +82,4 @@ missions/**/output_codex.json
 /public/file/*.ppk
 # Allow .htaccess inside public/file/ (defense-in-depth deny rule).
 !/public/file/.htaccess
+.env.e2e
