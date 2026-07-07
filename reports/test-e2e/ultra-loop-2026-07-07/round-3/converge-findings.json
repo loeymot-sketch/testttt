@@ -1,0 +1,83 @@
+{
+  "round": 3,
+  "head": "cad495deb",
+  "role": "adversarial-supervisor / convergence (attack-only, no fix applied)",
+  "mandate": "Confirmer la CONVERGENCE du bloc gérance/DB/historique/intersections/UI : (A) heals R2 TIENNENT, (B) balayage frais final = 0 nouveau P0/P1.",
+  "heals_hold": [
+    {
+      "id": 1,
+      "title": "OnlineOrderController::pdf — merge(paginate=0) => Total PDF = somme complète",
+      "verdict": "HOLDS",
+      "proof": "OnlineOrderController.php:80 $request->merge(['paginate'=>0]) AVANT orderService->list() (l.84). OrderService::list:131 paginate!=1 => 'get' (collection complète). REPRO TINKER LIVE : chemin tronqué (paginate=1,per_page=10) => 10 lignes, blade_total=46,20 € ; chemin guéri (paginate=0) => 2854 lignes, blade_total=743 872,92 € (= SUM(orders.total)). Écart ~99,99% supprimé, mécanisme identique aux 2 PDF déjà guéris (Sales/Items) + jumeau Excel OrderExport:28. Sentinelle ReportPdfNoTruncationTest::'online order pdf is not truncated to ten rows' verte. (Note: 2854/743 872,92 € vs R2 3129/745 633,62 € = churn E2E de la DB entre rounds ; le mécanisme est identique.)"
+    },
+    {
+      "id": 2,
+      "title": "Garde anti-500 (>cap => 422 propre, pas 500 dompdf) sur les 3 PDF ; rapports datés passent",
+      "verdict": "HOLDS",
+      "proof": "SalesReportController.php:79-86 + OnlineOrderController.php:91-98 + ItemsReportController.php:69-76 : $maxRows=(int)config('report.pdf_max_rows',2000) ; if(count>maxRows) return response([...'Trop de lignes pour un export PDF ('.count.' lignes). Affinez la période avec un filtre de date.'],422) AVANT Pdf::loadView. Garde placée avant le rendu => le catch(Exception) (qui n'attrape PAS un PHP fatal Error/OOM dompdf) n'est jamais atteint sur le cas pathologique. REPRO TINKER LIVE : UNFILTERED 2854 lignes > 2000 => 422 GUARD FIRES ; DATÉ 1-jour 23 lignes => renders OK ; DATÉ semaine 94 lignes => renders OK. Sentinelle 'pdf export over row cap returns clean 422 not fatal 500' verte."
+    },
+    {
+      "id": 3,
+      "title": "Labels blade PDF FR (counter_cash => « Espèces (Caisse) », en-têtes FR, title/lang FR)",
+      "verdict": "HOLDS",
+      "proof": "sales_report.blade.php:2 <html lang=\"fr\">, :11 <title> trans(all.label.sales_report), :114-137 paymentTypeLabel() map slug->FR (counter_cash=>'Espèces (Caisse)', counter_card=>'Carte (Caisse)', credit=>'Carte', split=>'Mixte', slug inconnu ucwords humanisé), :148-154 en-têtes via trans(). function_exists guard (l.97/114) => pas de « Cannot redeclare » sur rendu répété. Miroir de TransactionListComponent.paymentMethodLabel. Sentinelle 'sales report pdf blade localizes counter payment enum and headers' verte."
+    },
+    {
+      "id": 4,
+      "title": "KDS sync token — _authHeaders() surface-aware (staff prioritaire hors /kiosk, comme axios)",
+      "verdict": "HOLDS",
+      "proof": "KdsSyncService.js:449 token = isKioskSurface ? (kioskToken||userToken) : (userToken||kioskToken) — BYTE-IDENTIQUE à axios selectSurfaceBearerToken (axios-setup.js:39-40). E2E BACKEND LIVE (:8000) : GET /api/admin/kds-order/sync avec Bearer token STAFF (admin@lecayenne.fr, branch=0) => HTTP 200 ; sans token (contrôle) => HTTP 401. Donc dès que le front envoie le token staff hors /kiosk (KDS = surface admin), le poll passe 200 (avant : token kiosk périmé => 401 KDS aveugle). x-api-key/version-gate/backoff inchangés, prod même-origine non affecté. Sentinelle kdsSyncBaseUrl.spec.js 5/5 verte."
+    }
+  ],
+  "new_findings": [
+    {
+      "severity": "P3",
+      "verdict": "CONFIRMED (disclosable, NON bloquant — non-fiscal, hors périmètre R1/R2)",
+      "title": "~11 exports Excel de gestion d'entités tronqués à 10 lignes (paginate=1 front, pas de merge(paginate=0) serveur)",
+      "proof": "Le fix R1/R2 (merge paginate=0) couvre les 7 exports monétaires/fiscaux (OrderExport, SalesReportExport, ItemsReportExport, TransactionExport, CustomerExport, CouponExport, CreditBalanceReportExport). Les exports d'ENTITÉS ne le font PAS : AdministratorExport, ChefExport, DeliveryBoyExport, WaiterExport, EmployeeExport, DiningTableExport, ItemCategoryExport, ItemExport, OfferExport, PushNotificationExport, SubscriberExport. Chaîne : composant (ex EmployeeListComponent.vue:390 dispatch('employee/export', this.props.search) avec props.search.paginate=1 l.320) -> service list() => paginate(10). REPRO TINKER LIVE : ItemExport 10 lignes / 66 items, EmployeeExport 10 lignes / 128 users ; contrôle CustomerExport (mergé) = 15 lignes (toutes). IMPACT : le .xlsx d'une liste de gestion ne contient que la 1re page (10 lignes). NON fiscal (aucun total agrégé sous-déclaré, pas de misstatement CA) => P3 data-completeness, pré-existant, hors scope monétaire R1/R2. Ne bloque PAS la convergence."
+    },
+    {
+      "severity": "P3",
+      "verdict": "CONFIRMED (disclosable, cosmétique i18n — NON bloquant)",
+      "title": "Slug brut transaction.payment_method affiché dans 5 composants show/receipt (même classe que le fix blade R2 #3, non couvert)",
+      "proof": "DB transactions.payment_method = slugs bruts (counter_cash/counter_card/credit/split/cash/card/ticket_restaurant...). Rendu RAW sans map FR : OrderDetailsComponent.vue:54, OnlineOrderShowComponent.vue:36, OnlineOrderReceiptComponent.vue:140, TableOrderReceiptComponent.vue:133, TableOrderShowComponent.vue:37 => affiche « counter_cash » au lieu de « Espèces (Caisse) ». Même classe d'enum-leak que le fix blade PDF R2 #3 (calibré P3 par le healer R2) mais dans les vues Vue show/receipt, non couvertes par la réfutation R2 (qui n'a vérifié QUE les composants LIST). Trivial associé : LastZReportWidget.vue:18 rend resolvedReport.status ('closed'/'open' EN, statut string non-int). Aucun impact fiscal/financier/sécurité. status_name RÉSOLU serveur (trans('orderStatus...') dans 6 resources) = CLEAN, pas un leak."
+    }
+  ],
+  "refuted_or_bydesign": [
+    {
+      "title": "4e export/rapport FISCAL tronqué (creditBalance pdf, cashSession pdf, items autres formats, sales CSV)",
+      "verdict": "AUCUN",
+      "proof": "grep 'function pdf(' = 4 contrôleurs : Sales/Items/OnlineOrder (les 3 guéris) + ZReportController::pdf (entité unique 1 ZReport, non tronquable). CashSessionReportController = JSON API paginée avec meta{current_page,last_page,per_page,total} (per_page cap 200), montants (float), status string — pas de PDF, pas d'agrégat, pas de troncature-sous-déclaration. CreditBalanceReportController = Excel seul, CreditBalanceReportExport mergé paginate=0 (CREDBAL-NET-01). Items/Sales CSV = ItemsReportExport/SalesReportExport mergés paginate=0. Aucun rapport MONÉTAIRE tronqué restant."
+    },
+    {
+      "title": "Export lourd non gardé => OOM (Excel sur ~3000 lignes)",
+      "verdict": "PAS P0/P1",
+      "proof": "Les exports Excel (FromCollection) chargent la collection complète (OrderExport ~2854 lignes) ; PhpSpreadsheet sur ~3000 lignes x ~10 colonnes reste dans les limites mémoire (contrairement à dompdf qui construisait un DOM HTML lourd => le PHP fatal Error 500 spécifique au PDF, cible du fix R2). La garde anti-OOM R2 est PDF-only par design ; l'Excel V1 (single-resto, ~3000 lignes) n'OOM pas. Pas de nouveau P0/P1."
+    },
+    {
+      "title": "Intersection annulation × remboursement × Z (double comptage)",
+      "verdict": "REFUTED (bien gardé, LOCK_ZREPORT_REFUND_NETTING)",
+      "proof": "ZReportService::aggregate:355-357 positive loop whereNotIn('status',[CANCELED,REJECTED,RETURNED]) ; :381-387 miroirs contre-passation RETURNED+parent_order_id appliqués UNE fois (+1, total déjà négatif) — dédoublement impossible car le bloc post-Z exige created_at<=$from (miroir in-window) ; :404-420 ajustements post-Z (created<=from, updated in-window) appliqués -1 ; commentaire l.377 documente explicitement « No double-count ». byTaxRate symétrique (mirrors +1, adjustments -1). isRealizedRevenueRow (Order.php:341) miroir exact pour blade/écran. Enregistrement fiscal correct."
+    },
+    {
+      "title": "Intersection split × remboursement",
+      "verdict": "REFUTED (bien gardé, iter15-P0-10)",
+      "proof": "RefundWithCounterEntryService.php:180-223 miroir de CHAQUE tranche order_payments avec amount ×-1 et change_amount ×-1 (même mode+tendered) => Z décompose correctement par tranche ; :332-336 fallback CASH quand aucune tranche + vente d'origine CASH ; :395 reversal loyalty companion. Split refund correctement crédité."
+    },
+    {
+      "title": "status_name / autres accesseurs affichés (show components)",
+      "verdict": "CLEAN",
+      "proof": "order.status_name résolu serveur via trans('orderStatus.'.status) dans SimpleOrderResource:74, OrderDetailsResource:87, OrderResource:40, KDSOrderDetailsResource:55, UserOrderResource:38, SimpleDeliveryBoyOrderResource:35. Pas d'entier enum brut. order.payment_method (gateway online) mappé via paymentTypeEnumArray dans les mêmes vues (OrderDetailsComponent:57, OnlineOrderShow:39)."
+    }
+  ],
+  "gates": {
+    "vitest": "2289 passed | 3 skipped | 0 failed (326 files) — les « 3 errors » = bruit env test (Vue warns router-link/vue-select non résolus + ECONNREFUSED ::1:3000 sur mock fetch), exit 0, aucune assertion échouée",
+    "phpunit": "3209 passed | 2 incomplete | 32 skipped | 0 failed (520,65s)",
+    "frozen_diff_24e8a09c3_HEAD": "2 fichiers : pos-wizard.js (+299) + KioskWizardComponent.vue (+34/-21) — exactement les 2 attendus, 0 autre frozen §7 touché",
+    "fiscal_verify_chain": "CHAIN OK x4 (branches 1,7,8,9) — SWEEP COMPLETE",
+    "audit_logs_count": "4917 (>= 4912)",
+    "sentinels_replayed": "ReportPdfNoTruncationTest 5/5 + kdsSyncBaseUrl.spec.js 5/5 verts au HEAD"
+  },
+  "verdict": "CONVERGED",
+  "convergence": "OUI — 4 heals R2 HOLD (online-order PDF paginate=0, garde anti-500 422, labels blade FR, KDS token surface-aware, tous prouvés code + repro live) ET balayage frais final = 0 nouveau P0/P1. 2 P3 disclosables (exports d'entités tronqués non-fiscaux ; slug payment_method brut dans 5 vues show/receipt) — non bloquants par mandat. Intersections fiscales (annulation×remboursement×Z, split×refund) bien gardées. Bloc CONVERGÉ."
+}
