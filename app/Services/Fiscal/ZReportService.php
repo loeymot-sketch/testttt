@@ -36,6 +36,14 @@ class ZReportService
     private FiscalSealingService $sealing;
     private ?FiscalChainValidator $chainValidator = null;
 
+    /**
+     * [P1 fiscal_dated_at — LOCK_ZREPORT_FISCAL_C33_DELIVERY_VAT 2026-07-07]
+     * Memoized presence of the additive orders.fiscal_dated_at column so a Z
+     * close never crashes on an un-migrated schema (graceful degradation to
+     * created_at = legacy behaviour). Resolved once per service instance.
+     */
+    private ?bool $hasFiscalDatedAt = null;
+
     public function __construct(
         private ?ConnectionInterface $connection = null,
         ?FiscalSealingService $sealing = null
@@ -229,14 +237,27 @@ class ZReportService
                     // whole history up to $closedAt is absorbed (no earlier Z to
                     // hold pre-open sales). This mirrors XReportService::
                     // defaultFrom so the intraday-X and close-Z windows are
-                    // identical. `closed_at < $closedAt` guards against a
-                    // future-dated / clock-skewed close being mistaken for the
-                    // predecessor.
+                    // identical.
+                    //
+                    // [P3 tie-break — LOCK_ZREPORT_FISCAL_C33_DELIVERY_VAT 2026-07-07]
+                    // Deterministic predecessor selection ordered by (closed_at, id).
+                    // The previous CLOSED Z is the one with the greatest closed_at,
+                    // and among equal closed_at (two closes sharing the same
+                    // second-resolution instant — clock granularity or two rapid
+                    // closes) the greatest id. A STRICT `closed_at < $closedAt`
+                    // alone DROPPED a same-instant predecessor → $from fell back to
+                    // the Z BEFORE it → this Z re-aggregated the dropped Z's window
+                    // = DOUBLE-COUNT. `closed_at <= $closedAt` + `id` tie-break
+                    // selects Z_{n-1} unambiguously: $open is still OPEN here so the
+                    // STATUS_CLOSED filter already excludes self, and under the
+                    // single-open-Z invariant (open() refuses a 2nd OPEN) every
+                    // CLOSED row is a genuine predecessor with id < $open->id.
                     $previousClosedZ = ZReport::query()
                         ->where('branch_id', $branchId)
                         ->where('status', ZReport::STATUS_CLOSED)
-                        ->where('closed_at', '<', $closedAt)
+                        ->where('closed_at', '<=', $closedAt)
                         ->orderByDesc('closed_at')
+                        ->orderByDesc('id')
                         ->first();
                     $from = $previousClosedZ?->closed_at;
 
@@ -313,6 +334,37 @@ class ZReportService
     }
 
     /**
+     * [P1 fiscal_dated_at — LOCK_ZREPORT_FISCAL_C33_DELIVERY_VAT 2026-07-07]
+     * SQL expression used to date an order for Z-membership.
+     *
+     * COALESCE(fiscal_dated_at, created_at):
+     *   - DEFERRED orders (kiosk Plan B / walk-in / phone) get fiscal_dated_at
+     *     stamped at ENCAISSEMENT (the instant the fiscal_sequence_no is
+     *     allocated), which is the NF525-correct anchor — the receipt became a
+     *     numbered fiscal event then, NOT at created_at. Keying the Z window on
+     *     fiscal_dated_at seals such an order in the Z open at encaissement time,
+     *     closing the silent gap where an order created in Z_n but settled in
+     *     Z_{n+1} landed in NEITHER (fiscal NULL at Z_n close → excluded; then
+     *     created_at <= from at Z_{n+1} → excluded).
+     *   - NON-deferred orders have fiscal_dated_at NULL → COALESCE falls back to
+     *     created_at → behaviour is byte-for-byte unchanged (historical rows,
+     *     kiosk direct-TPE, synchronous POS create).
+     *
+     * Degrades to plain `created_at` if the additive column is absent (fresh
+     * env that skipped the migration) so a Z close can never crash on schema.
+     */
+    private function fiscalDateExpr(): string
+    {
+        if ($this->hasFiscalDatedAt === null) {
+            $this->hasFiscalDatedAt = \Illuminate\Support\Facades\Schema::hasColumn('orders', 'fiscal_dated_at');
+        }
+
+        return $this->hasFiscalDatedAt
+            ? 'COALESCE(fiscal_dated_at, created_at)'
+            : 'created_at';
+    }
+
+    /**
      * Recompute aggregates for the period. Exposed so XReport (POS-9.4.8)
      * can reuse exactly the same algorithm without drift.
      *
@@ -361,16 +413,24 @@ class ZReportService
         //     bound will be >$to).
         // When $from is null (first Z ever for this branch), the lower
         // bound is open (we accept the entire history up to $to).
+        //
+        // [P1 fiscal_dated_at 2026-07-07] The window is keyed on the fiscal
+        // date COALESCE(fiscal_dated_at, created_at) — see fiscalDateExpr() —
+        // so DEFERRED orders belong to the Z whose window contains their
+        // ALLOCATION instant (encaissement), not created_at. Non-deferred
+        // orders (fiscal_dated_at NULL) fall back to created_at unchanged.
         $baseQuery = Order::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
             ->withTrashed() // [P0-FIX-1/2] include soft-deleted post-allocation orders for NF525 fiscal continuity
             ->where('branch_id', $branchId)
             ->whereNotNull('fiscal_sequence_no')
             ->where('payment_status', '!=', PaymentStatus::UNPAID);
 
+        $fiscalDate = $this->fiscalDateExpr();
+
         $windowQuery = (clone $baseQuery)
-            ->where('created_at', '<=', $to);
+            ->whereRaw($fiscalDate.' <= ?', [$to]);
         if ($from) {
-            $windowQuery->where('created_at', '>', $from);
+            $windowQuery->whereRaw($fiscalDate.' > ?', [$from]);
         }
 
         $terminalStatuses = [
@@ -426,11 +486,19 @@ class ZReportService
             ->where('status', OrderStatus::RETURNED)
             ->count();
 
+        // [P1 fiscal_dated_at 2026-07-07] The "belonged to a PRIOR Z" lower bound
+        // is keyed on the SAME fiscal date as the positive window (fiscalDateExpr)
+        // so the negative adjustment is symmetric: an order is subtracted here
+        // only if its POSITIVE-counting window (its fiscal date) was in a prior Z
+        // — never an order whose fiscal date is in THIS window (which is handled
+        // as a positive/terminal exclusion, not a post-Z reversal). For
+        // non-deferred orders (fiscal_dated_at NULL) this is identical to the
+        // former created_at <= from bound.
         $postZCanceled = collect();
         $postZReturned = collect();
         if ($from) {
             $postZAdjustmentQuery = (clone $baseQuery)
-                ->where('created_at', '<=', $from)
+                ->whereRaw($fiscalDate.' <= ?', [$from])
                 ->where('updated_at', '>', $from)
                 ->where('updated_at', '<=', $to);
 
@@ -662,14 +730,21 @@ class ZReportService
     private function warnOnOrphanedPaidOrders(int $branchId, ?Carbon $from, Carbon $to): void
     {
         try {
+            // [P1 fiscal_dated_at 2026-07-07] Same fiscal-date window as aggregate()
+            // for symmetry. These rows have fiscal_sequence_no NULL → fiscal_dated_at
+            // is also NULL → COALESCE resolves to created_at, so the window is
+            // identical in value; the shared expression just keeps the two queries
+            // provably aligned.
+            $fiscalDate = $this->fiscalDateExpr();
+
             $query = Order::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
                 ->where('branch_id', $branchId)
                 ->where('payment_status', PaymentStatus::PAID)
                 ->whereNull('fiscal_sequence_no')
-                ->where('created_at', '<=', $to);
+                ->whereRaw($fiscalDate.' <= ?', [$to]);
 
             if ($from) {
-                $query->where('created_at', '>', $from);
+                $query->whereRaw($fiscalDate.' > ?', [$from]);
             }
 
             $count = (int) $query->count();
