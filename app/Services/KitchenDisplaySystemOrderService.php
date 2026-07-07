@@ -135,7 +135,7 @@ class KitchenDisplaySystemOrderService
             // Sentinels : OssKdsMidnightStraddleTest + KdsTodayWindowTzSentinelTest (inversé).
             $staleFloor = now($appTz)->subHours((int) config('oss.stale_window_hours', 8));
 
-            $orders = $query->where(function ($query) use ($staleFloor, $tomorrowStart) {
+            $query->where(function ($query) use ($staleFloor, $tomorrowStart) {
                 // Standard orders: sliding active window (midnight-safe, non-advance)
                 $query->where(function ($subQuery) use ($staleFloor, $tomorrowStart) {
                     $subQuery->where('order_datetime', '>=', $staleFloor)
@@ -181,9 +181,45 @@ class KitchenDisplaySystemOrderService
                         }
                     }
                 }
-            })->orderBy($orderColumn, $orderType)
-            ->limit(51)
-            ->get();
+            })->orderBy($orderColumn, $orderType);
+
+            // [PERF-KDS-BOARD 2026-07-07] Évite le piège d'optimiseur « ORDER BY id
+            // + LIMIT » qui provoquait un FULL SCAN de la table orders.
+            //
+            // SANS ce hint, MySQL voit `ORDER BY id DESC LIMIT 51` et choisit un scan
+            // INVERSE de la clé PRIMARY en espérant s'arrêter après 51 lignes qui
+            // matchent. Mais le WHERE du board (statuts actifs + release paiement +
+            // fenêtre du jour) ne matche que quelques dizaines de lignes sur toute la
+            // table : le scan n'atteint jamais 51 et parcourt la table ENTIÈRE
+            // (Handler_read_prev == taille table ; EXPLAIN : « Index scan on orders
+            // using PRIMARY (reverse) »). Mesuré sur données prod-shape : table de
+            // 3128 lignes => 3128 lignes scannées, et ça CROÎT avec la table.
+            //
+            // Le board ne s'intéresse qu'à l'ensemble ACTIF (ACCEPT/PREPARING/PREPARED),
+            // déjà clé de l'index composite. FORCE INDEX force un range scan sur ces
+            // statuts (Handler_read_next == 534 == ensemble actif) + un filesort peu
+            // coûteux des lignes retenues pour le ORDER BY. La croissance est désormais
+            // BORNÉE à l'ensemble actif, plus à l'historique complet. Le jeu de
+            // résultats ET l'ordre sont IDENTIQUES — c'est une optim de PLAN seulement
+            // (vérifié : mêmes ids, même ordre, admin ET branch-scoped).
+            //
+            // Choix d'index calqué sur la forme du WHERE :
+            //  - staff de branche (prédicat branch_id présent) => idx_orders_branch_status
+            //    (branch_id, status) — range sur (branch=N, status IN ...).
+            //  - admin (pas de prédicat branch) => idx_orders_status (status) — range sur
+            //    status IN ... ; idx_orders_branch_status DÉGRADERAIT en full scan pour
+            //    l'admin car sa colonne de tête (branch_id) est non contrainte.
+            //
+            // MySQL uniquement : SQLite (driver de test) n'a pas la syntaxe FORCE INDEX
+            // et son planner ne tombe pas dans ce piège, donc le hint est ignoré là.
+            // Sentinelle : tests/Feature/Kds/KdsBoardQueryPlanTest.php (contrat de jeu
+            // de résultats identique + plan non-full-scan sur MySQL).
+            if (DB::connection()->getDriverName() === 'mysql') {
+                $boardIndex = $userBranchId > 0 ? 'idx_orders_branch_status' : 'idx_orders_status';
+                $query->from(DB::raw('`orders` force index (`' . $boardIndex . '`)'));
+            }
+
+            $orders = $query->limit(51)->get();
 
             $this->lastListOverflow = $orders->count() > 50;
 
