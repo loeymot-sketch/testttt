@@ -72,7 +72,7 @@
                             :data-testid="`delivery-cash-session-row-${session.id}`"
                         >
                             <td class="db-table-body-td">#{{ session.id }}</td>
-                            <td class="db-table-body-td">{{ session.delivery_boy_id }}</td>
+                            <td class="db-table-body-td">{{ deliveryBoyName(session.delivery_boy_id) }}</td>
                             <td class="db-table-body-td">{{ session.branch_id }}</td>
                             <td class="db-table-body-td">{{ formatMoney(session.opening_amount) }}</td>
                             <td class="db-table-body-td">
@@ -171,6 +171,11 @@ export default {
             loading: { isActive: false },
             showOpenForm: false,
             sessions: [],
+            // [visual-round-1 P3 fix 2026-07-07] id -> livreur name lookup so the
+            // LIVREUR column shows the person's name, not the raw user id. The
+            // cash-session resource only exposes delivery_boy_id, so we resolve
+            // names client-side from the delivery-boy directory (frontend scope).
+            deliveryBoyMap: {},
             pagination: {
                 total: 0,
                 per_page: 20,
@@ -185,9 +190,32 @@ export default {
         };
     },
     mounted() {
+        this.loadDeliveryBoys();
         this.list();
     },
     methods: {
+        // [visual-round-1 P3 fix 2026-07-07] Build the id -> name lookup from the
+        // delivery-boy directory (same endpoint the Sales Report filter uses).
+        loadDeliveryBoys() {
+            return axios
+                .get('admin/delivery-boy', { params: { order_column: 'id', order_type: 'asc' } })
+                .then((res) => {
+                    const map = {};
+                    (res.data.data || []).forEach((boy) => {
+                        if (boy && boy.id != null) {
+                            map[boy.id] = boy.name;
+                        }
+                    });
+                    this.deliveryBoyMap = map;
+                })
+                .catch(() => { /* directory unavailable — fall back to #id below */ });
+        },
+        deliveryBoyName(id) {
+            if (id === null || id === undefined) {
+                return '—';
+            }
+            return this.deliveryBoyMap[id] || `#${id}`;
+        },
         // [GOAL-2026-05-29 BTN-P1] Was $emit('view') to a non-existent parent (dead button).
         viewSession(id) {
             this.$router.push({ name: 'admin.delivery-boy-cash-sessions.show', params: { id } });

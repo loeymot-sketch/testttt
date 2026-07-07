@@ -142,7 +142,16 @@ export class KdsSyncService {
             if (!headers.Authorization) {
                 return null;
             }
-            const response = await this.fetchFn(`/api/admin/kds-order/sync?since=${encodeURIComponent(this._lastSince)}${branchQuery}&include_deleted=true`, {
+            // [visual-round-1 P2 fix 2026-07-07] Build the poll URL on the SAME
+            // origin the rest of the admin app uses (axios baseURL = ENV.API_URL
+            // + '/api', see shared/axios-setup.js). Previously this used a bare
+            // relative `/api/...` which resolves against window.location.origin.
+            // In a split-host dev setup (page on one port, API on another) that
+            // sends the Bearer poll to the wrong origin → 401 and a silently
+            // blind KDS. In same-origin prod ENV.API_URL === window origin, so
+            // this is a no-op there; it only realigns the split-host case.
+            const apiBase = (ENV.API_URL || '').replace(/\/$/, '');
+            const response = await this.fetchFn(`${apiBase}/api/admin/kds-order/sync?since=${encodeURIComponent(this._lastSince)}${branchQuery}&include_deleted=true`, {
                 method: 'GET',
                 credentials: 'same-origin',
                 headers,
