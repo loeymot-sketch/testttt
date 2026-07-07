@@ -110,9 +110,9 @@
   // there is NO server-side reward_id audit chain.
   // ───────────────────────────────────────────────────────────────────────
   // [ANTI-FICTION HEAL 2026-05-18 — Impl D Round 2] payload item_id/category_id
-  // values now point to canonical menu.js. Removed fictional ids 2001 (Box Solo) +
-  // 2003 (Box Familiale) + 7001 (Frites M variation). Fixed reward 5 category_id
-  // mismatch (2=Galette ≠ Burger label → 4=Burgers).
+  // values now point to canonical menu.js. All fictional pre-reset ids were purged
+  // and replaced with canon ones. Fixed reward 5 category_id mismatch
+  // (2=Galette ≠ Burger label → 4=Burgers).
   const REWARDS = Object.freeze([
     { id: 1, name: 'Petite Frites offerte',      points_cost: 100,  type: 'free_item',         payload: { item_id: 701 },                       icon: '🍟' },
     { id: 2, name: '−1 € de réduction',          points_cost: 100,  type: 'discount',          payload: { amount: 1.00 },                       icon: '🎁' },
@@ -144,16 +144,18 @@
 
   // [ANTI-FICTION HEAL 2026-05-18 — Impl D Round 2] descriptions now reference
   // canonical menu.js item names matching the order summaries in mobile/data/orders.js.
-  // Removed fictional refs: Box Nashville, Wrap Poulet, Smash Cheese, Le Gourmet,
-  // "Box Nashville −50%".
+  // All previously fictional product references were purged.
+  // [LOYALTY-RATIO COHERENCE 2026-07-07] order-linked `earn` entries derived from the
+  // matching order total in orders.js at earn_ratio 10 pt/€ (CONFIG.earn_ratio) so the
+  // loyalty history tab and the orders list agree. Flat/bonus + redeem rows unchanged.
   const DEFAULT_HISTORY = [
-    { id: 1001, date: '2026-05-08', type: 'earn',       points: +30,  description: 'Suprême · Tacos L · Bol Riz',          order_id: 'C-1234', source_surface: 'mobile' },
-    { id: 1002, date: '2026-05-05', type: 'earn',       points: +13,  description: 'Sandwich Cayenne · Grande Frites',     order_id: 'C-1212', source_surface: 'mobile' },
+    { id: 1001, date: '2026-05-08', type: 'earn',       points: +247,  description: 'Suprême · Tacos L · Bol Riz',          order_id: 'C-1234', source_surface: 'mobile' },
+    { id: 1002, date: '2026-05-05', type: 'earn',       points: +133,  description: 'Cayenne · Grande Frites',              order_id: 'C-1212', source_surface: 'mobile' },
     { id: 1003, date: '2026-05-02', type: 'redeem',     points: -1000, description: 'Burger gratuit (Chicken Burger)',      order_id: null,     source_surface: 'mobile', reward_id: 5 },
-    { id: 1004, date: '2026-04-30', type: 'earn',       points: +17,  description: 'Galette Cayenne · Bol Riz',            order_id: 'C-1190', source_surface: 'kiosk' },
-    { id: 1005, date: '2026-04-28', type: 'earn',       points: +15,  description: 'Suprême',                              order_id: 'C-1180', source_surface: 'pos' },
-    { id: 1006, date: '2026-04-24', type: 'earn',       points: +9,   description: 'Cayenne · Coca-Cola',                  order_id: 'C-1142', source_surface: 'kiosk' },
-    { id: 1007, date: '2026-04-20', type: 'manual_add', points: +25,  description: 'Bienvenue · Bonus inscription',        order_id: null,     source_surface: 'mobile_welcome' },
+    { id: 1004, date: '2026-04-30', type: 'earn',       points: +168,  description: 'Galette Cayenne · Bol Riz',            order_id: 'C-1190', source_surface: 'kiosk' },
+    { id: 1005, date: '2026-04-28', type: 'earn',       points: +70,   description: 'Suprême',                              order_id: 'C-1180', source_surface: 'pos' },
+    { id: 1006, date: '2026-04-24', type: 'earn',       points: +93,   description: 'Cayenne · Coca-Cola',                  order_id: 'C-1142', source_surface: 'kiosk' },
+    { id: 1007, date: '2026-04-20', type: 'manual_add', points: +25,   description: 'Bienvenue · Bonus inscription',        order_id: null,     source_surface: 'mobile_welcome' },
   ];
 
   // ───────────────────────────────────────────────────────────────────────

@@ -7,10 +7,10 @@
 
 ## §0 — TL;DR
 
-L'app mobile actuelle est **100% fonctionnelle en standalone** et **alignée 1:1 avec le kiosk Le Cayenne** (cf. `config/menu.php` SSOT) :
-- 13 catégories réelles + 60 produits + 9 viandes + 15 sauces + 3 crudités + 7 suppléments + 3 formules
-- Logique de prise de commande **identique au kiosk** : pick viandes selon item.viandes, sauce 1 gratuite (sup 0,50 €), crudités toggle (default ON), suppléments à 1 €, formule menu/frites/boisson en addon
-- **Aucune box inventée** : items réels Tacos M/L/XL/XXL, Sandwichs Méga/Terminator/Suprême/Cayenne, Burgers Cheese/Fish/Double/Big/Grill, Assiettes, Ojja, Omelettes, Salades, Wings/Tenders, Menus enfants, Frites, Desserts, Boissons
+L'app mobile actuelle est **100% fonctionnelle en standalone** et **alignée sur le canon Le Cayenne** (SSOT = `database/seeders/OwnerMenuUpdate20260623Seeder.php`, miroir `mobile/data/menu.js`) :
+- 9 catégories réelles + 31 produits + 7 viandes + 12 sauces + 3 crudités + 9 suppléments + 3 formules
+- Logique de prise de commande **identique au kiosk** : pick viandes selon item.viandes, sauce 1 gratuite (sup 0,50 €), crudités toggle (default ON), suppléments à 0,90 €, formule menu (frites + boisson) +2,50 €
+- **Aucun produit inventé** : items réels = Sandwichs (Cayenne, Suprême, Méga, Terminator), Galette (Normale, Cayenne), Burgers (Chicken, Cheese, Double Cheese, Fish, Big, Grill), Tacos (M, L), Bols (Frites, Riz), Frites (Petite, Grande), Desserts (Glace, Tarte Daim, Tiramisu), Boissons, Menu enfant (Nuggets, Burger)
 
 **Deux chemins possibles** :
 - **Chemin A — Supabase** (recommandé pour mobile B2C).
@@ -25,8 +25,8 @@ Les deux sont compatibles avec la data layer actuelle (même schéma).
 ### Fichiers data (à remplacer par appels API)
 | Fichier | Contenu | Endpoint cible |
 |---|---|---|
-| `mobile/data/menu.js` | branch + 13 catégories Le Cayenne + 60 items + meats[9] + sauces[15] + crudites[3] + supplements[7] + formules[3] (cf. `config/menu.php` SSOT) | `GET /menu` |
-| `mobile/data/loyalty.js` | config + 6 rewards + balance + 7 history | `GET /loyalty/balance`, `/history`, `/rewards` |
+| `mobile/data/menu.js` | branch + 9 catégories Le Cayenne + 31 items + meats[7] + sauces[12] + crudites[3] + supplements[9] + formules[3] (SSOT = `OwnerMenuUpdate20260623Seeder.php`) | `GET /menu` |
+| `mobile/data/loyalty.js` | config + 8 rewards + balance + 7 history | `GET /loyalty/balance`, `/history`, `/rewards` |
 | `mobile/data/orders.js` | 1 active + 5 history | `GET /order?status=...` |
 | `mobile/data/user.js` | profil mock | `GET /profile` |
 | `mobile/api/storage.js` | localStorage helpers (auth/cart/onboarding) | **conserve** (cache local + offline) |
@@ -39,7 +39,7 @@ Le schéma JSON utilisé par la mobile app **est aligné 1:1 avec le kiosk** (cf
   id, slug, category_id, name, description, price, time, kiosk_emoji, tags,
   is_featured, is_new, is_spicy, is_halal, is_vegetarian,
   // Composition flags (cf. config/menu.php)
-  viandes,            // 0-4 → si > 0, étape "Choisis N viandes" obligatoire
+  viandes,            // 0-2 → si > 0, étape "Choisis N viandes" obligatoire
   has_sauce,          // bool → étape "Sauce" (1 gratuite, sup 0,50 €/sauce additionnelle)
   has_crudites,       // bool → étape "Crudités" (Salade/Tomate/Oignon toggle, default ON)
   has_supplements,    // bool → suppléments toggleable (jambon/œuf/raclette/galette/etc.)
@@ -398,11 +398,11 @@ Avant de lancer Phase 6, l'owner doit trancher :
 ## §7 — État actuel V0 (vérifié 2026-05-10)
 
 ✅ **15 écrans rendus pixel-perfect** :
-splash, onb1-4, login, OTP, home, menu, item-detail (3 variantes : simple/variations/wizard-box), cart, pay-choice modal, confirm, +25-points modal, orders (active+historique), order-detail, profile, loyalty (3 tabs), redeem modal, card-link modal, stripe placeholder.
+splash, onb1-4, login, OTP, home, menu, item-detail (2 variantes : simple / wizard composition — viandes/sauce/crudités/suppléments/formule), cart, pay-choice modal, confirm, +25-points modal, orders (active+historique), order-detail, profile, loyalty (3 tabs), redeem modal, card-link modal, stripe placeholder.
 
-✅ **Wizard composition box** : 8 étapes pour Box Familiale (4 burgers × 6 options + 4 boissons × 7 options = 240 combinaisons possibles), validation min_select bloque le bouton.
+✅ **Wizard composition** : étapes viandes (0-2 selon l'item) → sauce (1 gratuite, +0,50 €/sauce sup) → crudités (toggle, default ON) → suppléments (+0,90 €) → formule menu (frites + boisson +2,50 €) ; validation min_select bloque le bouton.
 
-✅ **Variations + addons** : Tacos M/L/XL + choix viande, Frites M/L/XXL + topping, Wings BBQ/Nashville, etc.
+✅ **Variations + addons** : Tacos M (1 viande) / Tacos L (2 viandes), Frites Petite/Grande + style (Nature / Cheddar fondu +1 € / Cheddar + Oignons +2 €), Bols Frites/Riz + viande au choix.
 
 ✅ **Extras groupés** : Garniture/Fromage/Charcuterie/Épicé/Sauce avec defaults pre-toggled.
 
@@ -412,7 +412,7 @@ splash, onb1-4, login, OTP, home, menu, item-detail (3 variantes : simple/variat
 
 ✅ **localStorage state** : auth persistant, cart persistant, onboarding-seen flag.
 
-✅ **35 produits / 9 catégories Le Cayenne** alignés sur design (Hénin-Beaumont 62210, Abdoullah en cuisine, "du peuple, pour le peuple").
+✅ **31 produits / 9 catégories Le Cayenne** alignés sur design (Hénin-Beaumont 62210, Abdoullah en cuisine, "du peuple, pour le peuple").
 
 ✅ **Schéma data layer = schéma backend FoodKing** (Item, Variation, Extra, Addon, Wizard*) → migration mécanique, pas de rewrite.
 
@@ -430,8 +430,8 @@ preview_start name=mobile
 
 ```js
 // Console DevTools mobile :
-window.LC.menu.items                  // 35 items
-window.LC.menu.findItem('box-familiale')   // wizard 8 steps
+window.LC.menu.items                  // 31 items
+window.LC.menu.findItem('mega')            // wizard composition (2 viandes)
 window.LC.loyalty.account.balance     // 347
 window.LC.user.current.first_name     // "Ikyes"
 window.LC.storage.clearAuth()         // reset → splash au reload

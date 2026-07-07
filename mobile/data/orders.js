@@ -9,13 +9,14 @@
 //
 // Status values alignés App\Enums\OrderStatus : in_progress, ready, delivered, cancelled.
 //
-// [ANTI-FICTION HEAL 2026-05-18 — Impl D Round 2] All `item_id` values are now
-// canonical members of `mobile/data/menu.js` (101/102/202/301/302/401/501/502/
-// 602/608/701/702/902/1001/1002). Pre-MENU-RESET fictional ids 1001/2001/2002/
-// 2003/4001/5001/7001/8001/9002 + product names (Box Nashville/Familiale/Solo,
-// Le Cheese Smash, Bowl Cheesy, Wrap Poulet, Cookie XL, Frites M, Coca-Cola)
-// purged. `line_total` arithmetic now matches the canonical unit price from
-// menu.js; `total` recomputed for each order. Sentinel test enforces parity.
+// [ANTI-FICTION HEAL 2026-05-18 · MENU-CANON 2026-06-26] All `item_id` values and
+// names are canonical members of `mobile/data/menu.js` (Le Cayenne canon — 31 items,
+// SSOT = database/seeders/OwnerMenuUpdate20260623Seeder.php). Every fictional pre-reset
+// product name/id has been purged. Invariants enforced by tests/ordersParity.spec.js :
+//   • item name === canon menu.js name for that item_id
+//   • line_total === canon unit price × qty
+//   • total === sum(line_total)
+//   • points === Math.round(total × loyalty.config.earn_ratio)  (10 pt / €)
 
 (function () {
   'use strict';
@@ -33,19 +34,19 @@
       branch_id: 1,
       branch_name: 'Le Cayenne',
       branch_city: 'Hénin-Beaumont',
-      total: 26.80,                   // 9.50 + 7.90 + 7.90 + 1.50
+      total: 24.70,                   // 7.00 + 7.90 + 7.90 + 1.90 (canon menu.js)
       payment_status: 'pending',      // pending | paid
       payment_method: 'cash_at_counter', // cash_at_counter | card_at_counter | stripe
       pickup_code: 'C-1234',
       qr_value: 'LECAY-ORDER-1234-abc123',
       items_summary: 'Suprême · Tacos L · Bol Riz · Coca-Cola',
       items: [
-        { id: 1, item_id: 102,  name: 'Suprême',                  qty: 1, line_total: 9.50,  extras_summary: 'Cheddar · Œuf · Jambon' },
+        { id: 1, item_id: 102,  name: 'Suprême',                  qty: 1, line_total: 7.00,  extras_summary: 'Cordon bleu · Cheddar · Sauce algérienne' },
         { id: 2, item_id: 502,  name: 'Tacos L',                  qty: 1, line_total: 7.90,  extras_summary: '2 viandes · Sauce fromagère' },
         { id: 3, item_id: 602,  name: 'Bol Riz',                  qty: 1, line_total: 7.90,  extras_summary: 'Viande au choix · Sauce fromagère' },
-        { id: 4, item_id: 1001, name: 'Coca-Cola 33cl',           qty: 1, line_total: 1.50,  extras_summary: '' },
+        { id: 4, item_id: 1001, name: 'Coca-Cola 33cl',           qty: 1, line_total: 1.90,  extras_summary: '' },
       ],
-      points_earned_estimate: 33,
+      points_earned_estimate: 247,    // Math.round(24.70 × 10) — earn_ratio 10 pt/€
     },
   ];
 
@@ -54,63 +55,63 @@
       id: 'C-1212', number: 1212, status: 'delivered', status_label: 'Récupérée',
       created_at: '2026-05-09T19:47:00+02:00',
       branch_id: 1, branch_name: 'Le Cayenne', branch_city: 'Hénin-Beaumont',
-      total: 13.00, payment_status: 'paid', payment_method: 'cash_at_counter',
-      items_summary: 'Sandwich Cayenne · Grande Frites · Coca-Cola',
+      total: 13.30, payment_status: 'paid', payment_method: 'cash_at_counter',
+      items_summary: 'Cayenne · Grande Frites · Coca-Cola',
       items: [
-        { id: 1, item_id: 101,  name: 'Sandwich Cayenne',  qty: 1, line_total: 7.50, extras_summary: 'Poulet mariné · Sauce Cayenne' },
+        { id: 1, item_id: 101,  name: 'Cayenne',           qty: 1, line_total: 7.40, extras_summary: 'Poulet mariné · Sauce fromagère maison' },
         { id: 2, item_id: 702,  name: 'Grande Frites',     qty: 1, line_total: 4.00, extras_summary: 'Nature' },
-        { id: 3, item_id: 1001, name: 'Coca-Cola 33cl',    qty: 1, line_total: 1.50, extras_summary: '' },
+        { id: 3, item_id: 1001, name: 'Coca-Cola 33cl',    qty: 1, line_total: 1.90, extras_summary: '' },
       ],
-      points_earned: 13,
+      points_earned: 133,   // Math.round(13.30 × 10)
     },
     {
       id: 'C-1208', number: 1208, status: 'delivered', status_label: 'Récupérée',
       created_at: '2026-05-09T13:21:00+02:00',
       branch_id: 1, branch_name: 'Le Cayenne', branch_city: 'Hénin-Beaumont',
-      total: 16.30, payment_status: 'paid', payment_method: 'card_at_counter',
+      total: 12.30, payment_status: 'paid', payment_method: 'card_at_counter',
       items_summary: 'Chicken Burger × 2 · Petite Frites',
       items: [
-        { id: 1, item_id: 401, name: 'Chicken Burger', qty: 2, line_total: 13.80, extras_summary: '' },
-        { id: 2, item_id: 701, name: 'Petite Frites',  qty: 1, line_total: 2.50,  extras_summary: 'Nature' },
+        { id: 1, item_id: 401, name: 'Chicken Burger', qty: 2, line_total: 9.80, extras_summary: '' },
+        { id: 2, item_id: 701, name: 'Petite Frites',  qty: 1, line_total: 2.50, extras_summary: 'Nature' },
       ],
-      points_earned: 16,
+      points_earned: 123,   // Math.round(12.30 × 10)
     },
     {
       id: 'C-1190', number: 1190, status: 'delivered', status_label: 'Récupérée',
       created_at: '2026-04-30T18:05:00+02:00',
       branch_id: 1, branch_name: 'Le Cayenne', branch_city: 'Hénin-Beaumont',
-      total: 16.40, payment_status: 'paid', payment_method: 'cash_at_counter',
+      total: 16.80, payment_status: 'paid', payment_method: 'cash_at_counter',
       items_summary: 'Galette Cayenne · Bol Riz · Coca Zero',
       items: [
-        { id: 1, item_id: 202,  name: 'Galette Cayenne',          qty: 1, line_total: 7.00, extras_summary: 'Poulet mariné · Sauce Cayenne' },
+        { id: 1, item_id: 202,  name: 'Galette Cayenne',          qty: 1, line_total: 7.00, extras_summary: 'Poulet mariné · Sauce fromagère maison' },
         { id: 2, item_id: 602,  name: 'Bol Riz',                  qty: 1, line_total: 7.90, extras_summary: 'Viande au choix · Sauce fromagère' },
-        { id: 3, item_id: 1002, name: 'Coca-Cola Zero 33cl',      qty: 1, line_total: 1.50, extras_summary: '' },
+        { id: 3, item_id: 1002, name: 'Coca-Cola Zero 33cl',      qty: 1, line_total: 1.90, extras_summary: '' },
       ],
-      points_earned: 17,
+      points_earned: 168,   // Math.round(16.80 × 10)
     },
     {
       id: 'C-1142', number: 1142, status: 'delivered', status_label: 'Récupérée',
       created_at: '2026-04-24T20:12:00+02:00',
       branch_id: 1, branch_name: 'Le Cayenne', branch_city: 'Hénin-Beaumont',
-      total: 8.90, payment_status: 'paid', payment_method: 'cash_at_counter',
+      total: 9.30, payment_status: 'paid', payment_method: 'cash_at_counter',
       items_summary: 'Cayenne · Coca-Cola',
       items: [
         { id: 1, item_id: 101,  name: 'Cayenne',            qty: 1, line_total: 7.40, extras_summary: 'Pain · Sauce fromagère maison' },
-        { id: 2, item_id: 1001, name: 'Coca-Cola 33cl',     qty: 1, line_total: 1.50, extras_summary: '' },
+        { id: 2, item_id: 1001, name: 'Coca-Cola 33cl',     qty: 1, line_total: 1.90, extras_summary: '' },
       ],
-      points_earned: 9,
+      points_earned: 93,   // Math.round(9.30 × 10)
     },
     {
       id: 'C-1100', number: 1100, status: 'delivered', status_label: 'Récupérée',
       created_at: '2026-04-20T14:30:00+02:00',
       branch_id: 1, branch_name: 'Le Cayenne', branch_city: 'Hénin-Beaumont',
-      total: 12.80, payment_status: 'paid', payment_method: 'card_at_counter',
+      total: 12.50, payment_status: 'paid', payment_method: 'card_at_counter',
       items_summary: 'Terminator · Tarte Daim',
       items: [
         { id: 1, item_id: 104, name: 'Terminator', qty: 1, line_total: 9.00, extras_summary: '2 viandes au choix · Sauce algérienne' },
-        { id: 2, item_id: 902, name: 'Tarte Daim',    qty: 1, line_total: 3.80, extras_summary: '' },
+        { id: 2, item_id: 902, name: 'Tarte Daim',    qty: 1, line_total: 3.50, extras_summary: '' },
       ],
-      points_earned: 38,  // 13 + welcome bonus 25
+      points_earned: 125,  // Math.round(12.50 × 10)
     },
   ];
 

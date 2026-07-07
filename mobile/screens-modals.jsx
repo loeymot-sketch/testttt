@@ -212,6 +212,14 @@ function ScreenOrderDetail({ go, orderId = 'C-1234' }) {
   const branch = real ? real.branch_city : '';
   const status = real ? real.status_label : '';
   const isDelivered = !!real && real.status === 'delivered';
+  // [LOYALTY-RATIO COHERENCE 2026-07-07] points crédités dérivés du montant × earn_ratio
+  // (10 pt/€) au lieu de 1 pt/€. [FISCAL GATE 2026-07-07] le reçu fiscal NF525 ne
+  // s'affiche que si la commande est réglée (payment_status === 'paid').
+  const isPaid = !!real && real.payment_status === 'paid';
+  const earnRatio = (window.LC && window.LC.loyalty && window.LC.loyalty.config && window.LC.loyalty.config.earn_ratio) || 10;
+  const pointsCredited = real
+    ? (Number(real.points_earned != null ? real.points_earned : real.points_earned_estimate) || Math.round((Number(total) || 0) * earnRatio))
+    : 0;
 
   return (
     <div data-screen-label="12b Order detail" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
@@ -246,13 +254,15 @@ function ScreenOrderDetail({ go, orderId = 'C-1234' }) {
             <div style={{ margin: '14px 20px 0', background: 'var(--ink)', color: '#fff', borderRadius: 18, padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
                 <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--orange)' }}>+ Loyalty</div>
-                <div style={{ fontSize: 14, fontWeight: 700, marginTop: 4 }}>+{Math.round(total)} pts crédités</div>
+                <div style={{ fontSize: 14, fontWeight: 700, marginTop: 4 }}>+{pointsCredited} pts {isPaid ? 'crédités' : 'à créditer'}</div>
               </div>
-              <div className="lc-display" style={{ fontSize: 26, color: 'var(--yellow)' }}>+{Math.round(total)}</div>
+              <div className="lc-display" style={{ fontSize: 26, color: 'var(--yellow)' }}>+{pointsCredited}</div>
             </div>
-            <div style={{ margin: '14px 20px 0', fontSize: 12, color: 'var(--gray-3)', textAlign: 'center' }}>
-              Payé en caisse · Reçu fiscal NF525 #{orderId}-R
-            </div>
+            {isPaid && (
+              <div style={{ margin: '14px 20px 0', fontSize: 12, color: 'var(--gray-3)', textAlign: 'center' }}>
+                Payé en caisse · Reçu fiscal NF525 #{orderId}-R
+              </div>
+            )}
           </>
         ) : (
           <div role="status" data-testid="order-detail-empty" style={{ padding: 32, textAlign: 'center', color: 'var(--gray-4)', marginTop: 40 }}>

@@ -599,6 +599,14 @@ function ScreenCart({ go, cart, setCart }) {
   const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
   const discount = promoCode ? Math.round(subtotal * 10) / 100 : 0; // -10%, arrondi 2 décimales
   const total = Math.max(0, subtotal - discount);
+  // [LOYALTY-RATIO COHERENCE 2026-07-07] points gagnés + "manque pour la prochaine
+  // récompense" dérivés de LC.loyalty (config.earn_ratio = 10 pt/€ + progressToNext)
+  // au lieu d'un 1 pt/€ et d'un "153 pts / burger gratuit" codés en dur.
+  const loyalty = (window.LC && window.LC.loyalty) || null;
+  const earnRatio = (loyalty && loyalty.config && loyalty.config.earn_ratio) || 10;
+  const loyaltyBalance = (loyalty && loyalty.account) ? loyalty.account.balance : 0;
+  const nextProg = (loyalty && loyalty.progressToNext) ? loyalty.progressToNext(loyaltyBalance) : null;
+  const pointsForCart = Math.round((total || 0) * earnRatio);
   const updateQty = (idx, d) => setCart(c => c.map((it, i) => i === idx ? { ...it, qty: Math.max(1, it.qty + d) } : it));
   const remove = (idx) => setCart(c => c.filter((_, i) => i !== idx));
   return (
@@ -654,12 +662,14 @@ function ScreenCart({ go, cart, setCart }) {
             </div>
           ))}
         </div>
-        {/* loyalty banner */}
+        {/* loyalty banner — points + prochaine récompense dérivés de LC.loyalty */}
         <div style={{ margin: '20px 20px 0', padding: 16, background: 'var(--yellow)', borderRadius: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--ink)', color: 'var(--orange)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><I.Gift size={20}/></div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 700 }}>+{Math.round(total || 0)} pts gagnés sur cette commande</div>
-            <div style={{ fontSize: 11, color: 'var(--gray-4)', marginTop: 2 }}>Plus que 153 pts pour ton burger gratuit</div>
+            <div style={{ fontSize: 13, fontWeight: 700 }}>+{pointsForCart} pts gagnés sur cette commande</div>
+            {nextProg && nextProg.target && nextProg.remaining > 0 && (
+              <div style={{ fontSize: 11, color: 'var(--gray-4)', marginTop: 2 }}>Plus que {nextProg.remaining} pts pour « {nextProg.target.name} »</div>
+            )}
           </div>
         </div>
         {/* upsell */}
@@ -797,6 +807,9 @@ function ScreenOrders({ go }) {
   const balancePts = (window.LC && window.LC.loyalty && window.LC.loyalty.account)
     ? window.LC.loyalty.account.balance
     : 0;
+  // [LOYALTY-RATIO COHERENCE 2026-07-07] fallback points par commande dérivés de
+  // config.earn_ratio (10 pt/€) quand une commande n'a pas de points_earned stocké.
+  const earnRatio = (window.LC && window.LC.loyalty && window.LC.loyalty.config && window.LC.loyalty.config.earn_ratio) || 10;
   const fmtEur = (n) => (Number(n) || 0).toFixed(2).replace('.', ',') + ' €';
 
   return (
@@ -880,7 +893,7 @@ function ScreenOrders({ go }) {
                 <div style={{ display: 'grid', gap: 8 }}>
                   {g.items.map(o => {
                     const summary = o.items_summary || (Array.isArray(o.items) ? o.items.map(i => i.name).join(' · ') : '');
-                    const points = Number(o.points_earned) || Math.round(Number(o.total) || 0);
+                    const points = Number(o.points_earned) || Math.round((Number(o.total) || 0) * earnRatio);
                     const statusLabel = o.status_label || 'Récupérée';
                     return (
                       <div key={o.id} data-testid={'orders-history-card-' + o.id} onClick={() => go('orderDetail', o.id)} style={{ background: 'var(--cream)', borderRadius: 14, padding: 14, position: 'relative', cursor: 'pointer' }}>
