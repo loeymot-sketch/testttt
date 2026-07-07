@@ -336,6 +336,15 @@ class PaymentService
 
             if ($locked->fiscal_sequence_no === null) {
                 $locked->fiscal_sequence_no = app(FiscalSequenceService::class)->next((int) $locked->branch_id);
+                // [P1 fiscal_dated_at — LOCK_ZREPORT_FISCAL_C33_DELIVERY_VAT 2026-07-07]
+                // This is a DEFERRED order (COUNTER_DEFERRED: kiosk Plan B, walk-in,
+                // phone): the fiscal sequence is allocated HERE at encaissement, not
+                // at creation. Stamp the allocation instant so ZReportService::aggregate
+                // seals it in the Z open NOW (fiscal-date window) instead of leaking it
+                // out of every Z when created_at falls in a prior, already-closed Z.
+                if (\Illuminate\Support\Facades\Schema::hasColumn('orders', 'fiscal_dated_at')) {
+                    $locked->fiscal_dated_at = now();
+                }
             }
 
             $locked->payment_status = PaymentStatus::PAID;
@@ -695,6 +704,28 @@ class PaymentService
             // of prep-before-pay). NF525: no fiscal-seq was allocated (never collected), so nothing
             // enters the signed Z.
             $oldStatus = (int) $locked->status;
+
+            // [C4-CAISSE-TELEPHONE FIX-1 / P2 2026-07-07] Symétrie remboursement fidélité sur
+            // l'annulation INTERACTIVE d'une commande différée (borne Plan B / téléphone / walk-in).
+            // Une commande différée créée avec un loyalty_code débite les points à la création
+            // (LoyaltyTransaction type=redeem, points<0). Les chemins d'annulation « normaux »
+            // (OrderService::changeStatus:2160,2324 + FrontendOrderService::changeStatus:782 + le
+            // cron de purge CleanupStalePendingKioskOrders) remboursent déjà via
+            // LoyaltyService::refundPoints, mais CE chemin counter-collect cancel ne le faisait PAS
+            // → les points redeem d'une commande différée annulée au comptoir étaient BRÛLÉS
+            // définitivement (même forme d'asymétrie que C36, sur le chemin interactif cette fois).
+            // On rembourse ICI, sur la commande verrouillée, DANS la même transaction que le save
+            // REFUNDED, avant la mutation terminale — exactement comme changeStatus. refundPoints
+            // est idempotent + no-op : return immédiat si loyalty_customer_code est nul (commande
+            // sans fidélité), si aucune ligne redeem n'existe, ou si le remboursement (manual_add)
+            // a déjà été écrit → zéro régression sur les commandes sans fidélité, pas de double-
+            // crédit sur un rejeu. source_surface='kiosk' garde son canal, tout le reste ('pos',
+            // 'phone', null) tombe sur 'pos' (aligné OrderService::changeStatus).
+            app(LoyaltyService::class)->refundPoints(
+                $locked,
+                (string) $locked->source_surface === 'kiosk' ? 'kiosk' : 'pos'
+            );
+
             $locked->payment_status = PaymentStatus::REFUNDED;
             $locked->status = OrderStatus::CANCELED;
             $locked->pos_payment_note = $reason;

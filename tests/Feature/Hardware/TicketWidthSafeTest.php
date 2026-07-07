@@ -241,6 +241,39 @@ class TicketWidthSafeTest extends TestCase
         $this->assertStringNotContainsString('Client :', $decoded2, 'pas de ligne Client si nom vide');
     }
 
+    public function test_client_phone_printed_on_client_and_kitchen_tickets_when_set(): void
+    {
+        // [C4-CAISSE-TELEPHONE FIX-3 2026-07-07] Téléphone client (commande téléphone
+        // différée) imprimé sur le ticket client ET cuisine, à côté du nom, pour rappeler
+        // le client au comptoir. Width-safe à 32/42/48 col, et 0 régression quand absent.
+        $order = $this->makeOrder(['lines' => [], 'extras' => [], 'addons' => []], 'Tacos');
+        $order->pos_customer_name = 'Madame Durand';
+        $order->pos_customer_phone = '06 12 34 56 78';
+
+        foreach (['renderClientTicket', 'renderKitchenTicket'] as $method) {
+            foreach ([32, 42, 48] as $w) {
+                $bytes = (new OrderReceiptEscPosRenderer)->{$method}($order, ['width_chars' => $w]);
+                $this->assertNoLineExceeds($bytes, $w, "C4 {$method} @{$w}");
+                $decoded = iconv('CP858', 'UTF-8//IGNORE', preg_replace('/[\x00-\x09\x0B-\x1F]/', '', $bytes));
+                $this->assertStringContainsString('Client : Madame Durand', $decoded, "{$method} doit afficher le nom client");
+                $this->assertStringContainsString('Tel : 06 12 34 56 78', $decoded, "{$method} doit afficher le téléphone client");
+            }
+        }
+
+        // Téléphone seul (sans nom) → la ligne « Tel : » s'imprime quand même.
+        $orderPhoneOnly = $this->makeOrder(['lines' => [], 'extras' => [], 'addons' => []], 'Tacos');
+        $orderPhoneOnly->pos_customer_phone = '0102030405';
+        $bytesPhoneOnly = (new OrderReceiptEscPosRenderer)->renderClientTicket($orderPhoneOnly, ['width_chars' => 32]);
+        $decodedPhoneOnly = iconv('CP858', 'UTF-8//IGNORE', preg_replace('/[\x00-\x09\x0B-\x1F]/', '', $bytesPhoneOnly));
+        $this->assertStringContainsString('Tel : 0102030405', $decodedPhoneOnly, 'téléphone seul doit s\'imprimer même sans nom');
+
+        // Sans téléphone → aucune ligne « Tel : » (0 régression ticket normal).
+        $orderNoPhone = $this->makeOrder(['lines' => [], 'extras' => [], 'addons' => []], 'Tacos');
+        $bytesNoPhone = (new OrderReceiptEscPosRenderer)->renderClientTicket($orderNoPhone, ['width_chars' => 42]);
+        $decodedNoPhone = iconv('CP858', 'UTF-8//IGNORE', preg_replace('/[\x00-\x09\x0B-\x1F]/', '', $bytesNoPhone));
+        $this->assertStringNotContainsString('Tel :', $decodedNoPhone, 'pas de ligne Tel si téléphone vide');
+    }
+
     public function test_price_stays_atomic_on_one_line(): void
     {
         $order = $this->makeOrder(self::orderProvider()['cayenne + menu'][0], 'Cayenne');

@@ -110,6 +110,13 @@ final class OrderReceiptEscPosRenderer
         if ($clientName !== '') {
             $b .= EscPosCommandBuilder::bold(true).EscPosCommandBuilder::textWrap('Client : '.$clientName, $w).EscPosCommandBuilder::bold(false);
         }
+        // [C4-CAISSE-TELEPHONE FIX-3 2026-07-07] Téléphone du client (commande téléphone
+        // différée surtout) → rappeler/reconnaître le client au comptoir. Ligne propre
+        // width-safe (textWrap ≤ $w) ; champ absent = aucune ligne (0 régression ticket normal).
+        $clientPhone = trim((string) ($order->pos_customer_phone ?? ''));
+        if ($clientPhone !== '') {
+            $b .= EscPosCommandBuilder::bold(true).EscPosCommandBuilder::textWrap('Tel : '.$clientPhone, $w).EscPosCommandBuilder::bold(false);
+        }
         if ($counterCopy) {
             $b .= EscPosCommandBuilder::bold(true).EscPosCommandBuilder::textLine('*** COMMANDE BORNE - COPIE CAISSE ***').EscPosCommandBuilder::bold(false);
         }
@@ -259,6 +266,12 @@ final class OrderReceiptEscPosRenderer
         $kClientName = trim((string) ($order->pos_customer_name ?? ''));
         if ($kClientName !== '') {
             $b .= EscPosCommandBuilder::bold(true).EscPosCommandBuilder::textWrap('Client : '.$kClientName, $w).EscPosCommandBuilder::bold(false);
+        }
+        // [C4-CAISSE-TELEPHONE FIX-3 2026-07-07] Téléphone client aussi en cuisine (rappel/
+        // reconnaissance d'une commande téléphone). Width-safe ; absent = rien.
+        $kClientPhone = trim((string) ($order->pos_customer_phone ?? ''));
+        if ($kClientPhone !== '') {
+            $b .= EscPosCommandBuilder::bold(true).EscPosCommandBuilder::textWrap('Tel : '.$kClientPhone, $w).EscPosCommandBuilder::bold(false);
         }
         $dt = $order->order_datetime ?? $order->created_at;
         if ($dt) {

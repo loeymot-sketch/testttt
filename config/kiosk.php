@@ -83,6 +83,13 @@ $promoEnabled = filter_var(env('KIOSK_PROMO_ENABLED', false), FILTER_VALIDATE_BO
 */
 $staleCollectTtlMinutes = max(1, (int) env('KIOSK_STALE_COLLECT_TTL_MINUTES', 180));
 
+// [C4-CAISSE-TELEPHONE FIX-2 2026-07-07] TTL distinct pour les COMMANDES TÉLÉPHONE
+// abandonnées (source_surface='phone'). Volontairement plus généreux (défaut 360 min /
+// 6 h) qu'une borne : une commande téléphone est prise « à l'avance » (« je passe ce
+// soir »), on ne l'auto-annule qu'après un délai large ET après son créneau prévu.
+// Override via KIOSK_STALE_PHONE_COLLECT_TTL_MINUTES.
+$stalePhoneCollectTtlMinutes = max(1, (int) env('KIOSK_STALE_PHONE_COLLECT_TTL_MINUTES', 360));
+
 /*
 | [MENU-RESET 2026-05-13] Sandwich-split DISABLED — new structure has 3 separate
 | sandwich categories (sandwich-cayenne, galette, sandwich-classique) so no need
@@ -179,6 +186,8 @@ if ($requireForm) {
         'promo_enabled' => $promoEnabled,
         // [TRAP-2 2026-06-04] Stale counter-collect cleanup TTL (minutes) — see top of file.
         'stale_collect_ttl_minutes' => $staleCollectTtlMinutes,
+        // [C4-CAISSE-TELEPHONE FIX-2 2026-07-07] TTL distinct pour la purge des commandes téléphone.
+        'stale_phone_collect_ttl_minutes' => $stalePhoneCollectTtlMinutes,
         // [Sprint H1 K-003 2026-05-17] Externalized FRITES_INCLUDED_CATS — see top of file.
         'frites_included_category_ids' => $fritesIncludedCategoryIds,
         // [Sprint H1 K-004 2026-05-17] Wizard template aliases — see top of file.
@@ -281,4 +290,6 @@ return [
     'promo_enabled' => $promoEnabled,
     // [TRAP-2 2026-06-04] Stale counter-collect cleanup TTL (minutes) — see top of file.
     'stale_collect_ttl_minutes' => $staleCollectTtlMinutes,
+    // [C4-CAISSE-TELEPHONE FIX-2 2026-07-07] TTL distinct pour la purge des commandes téléphone.
+    'stale_phone_collect_ttl_minutes' => $stalePhoneCollectTtlMinutes,
 ];
