@@ -15,6 +15,8 @@ ssh -o ConnectTimeout=25 lecayenne "cd /var/www/lecayenne && \
   npm ci >/dev/null 2>&1 ; npm run production 2>&1 | tail -3 && \
   echo '--- migrations (coupon soft-delete + pos_customer_phone + triggers) ---' && \
   php artisan migrate --force 2>&1 | tail -5 && \
+  echo '--- NF525 : (RE)INSTALLE les triggers immutabilité (idempotent — répare le gap dump-sans-triggers que migrate ne voit pas) ---' && \
+  php artisan fiscal:install-immutability-triggers 2>&1 | tail -4 && \
   echo '--- NF525 : triggers immutabilité présents ? (audit_logs/z_reports hard-delete protégé) ---' && \
   php artisan fiscal:verify-immutability-triggers 2>&1 | tail -4 && \
   echo '--- vignettes WebP POS (grille légère) ---' && \
@@ -38,10 +40,11 @@ rc=$?
 echo ""
 if [ $rc -ne 0 ]; then echo "Échec (code $rc). Colle-moi la sortie."; exit $rc; fi
 echo "======================================================================"
-echo "==> VPS à jour. ⚠️ Si 'fiscal:verify-immutability-triggers' signale des"
-echo "    triggers MANQUANTS : la base a été provisionnée par un dump sans triggers."
-echo "    Remédiation : php artisan migrate:refresh --path=... des migrations triggers"
-echo "    OU réinstaller les triggers manuellement, puis relancer le check."
+echo "==> VPS à jour. Les triggers d'immutabilité NF525 sont (ré)installés"
+echo "    automatiquement (fiscal:install-immutability-triggers, idempotent) puis"
+echo "    vérifiés (fiscal:verify-immutability-triggers = 8/8). Si le VERIFY signale"
+echo "    encore un trigger MANQUANT après l'install : une table de base est absente"
+echo "    (schéma incomplet) — corriger le schéma puis relancer le déploiement."
 echo ""
 echo "    Sur les MACHINES (borne + écran cuisine + caisse) :"
 echo "    - HARD-RELOAD (Ctrl+Maj+R) → boissons/oignon cuit/notes/prix corrects,"

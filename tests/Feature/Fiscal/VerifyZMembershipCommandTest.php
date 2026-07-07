@@ -12,115 +12,161 @@ use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 /**
- * [P0 #1 detect-only — owner decision 2026-05-29] Read-only Z-membership detector.
- * Flags numbered, settled, non-terminal orders whose created_at is in an already-
- * CLOSED Z window but which were sealed/modified AFTER that Z closed — the
- * cross-Z-window settlement orphan class (a numbered receipt in no signed Z).
+ * [P0 #1 — AUTHORITATIVE C33 re-aggregation detector 2026-07-07]
+ *
+ * `fiscal:verify-z-membership` proves the NF525 gap-free invariant: every
+ * numbered receipt is in exactly one signed Z (or pending in the current open
+ * window). The detector was rewritten from a created_at+updated_at HEURISTIC
+ * (which over-signalled ~2507 false positives after C33) to an AUTHORITATIVE
+ * re-aggregation using the REAL C33 continuous-partition window:
+ *     Z_1 : (−∞, c_1]        Z_n : (c_{n-1}, c_n]      open : (c_k, +∞)
+ * A numbered order is a REAL orphan only if its created_at is in NO signed
+ * window AND there is no open Z to seal it.
+ *
+ * These tests lock: (1) a sale in the old "dead window" but covered by the next
+ * signed Z is NOT flagged (false-positive elimination), and (2) a genuine
+ * orphan (numbered, after the last close, no open Z) IS flagged.
  */
 class VerifyZMembershipCommandTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function sealedZ(int $branchId): array
+    private const D1_OPEN  = '2026-05-01 08:00:00';
+    private const D1_CLOSE = '2026-05-01 20:00:00';
+    private const D2_OPEN  = '2026-05-02 08:00:00';
+    private const D2_CLOSE = '2026-05-02 20:00:00';
+
+    private function zReport(int $branchId, int $seq, string $status, ?string $openedAt, ?string $closedAt): void
     {
-        $opened = Carbon::parse('2026-05-01 08:00:00');
-        $closed = Carbon::parse('2026-05-01 20:00:00');
         ZReport::create([
             'branch_id'   => $branchId,
-            'sequence_no' => 1,
-            'opened_at'   => $opened,
-            'closed_at'   => $closed,
-            'status'      => ZReport::STATUS_CLOSED,
+            'sequence_no' => $seq,
+            'opened_at'   => $openedAt ? Carbon::parse($openedAt) : null,
+            'closed_at'   => $closedAt ? Carbon::parse($closedAt) : null,
+            'status'      => $status,
         ]);
-        return [$opened, $closed];
     }
 
-    // Set seq + updated_at via query builder (bypasses mass-assignment guard + the
-    // timestamp bump a normal ->save() would cause).
-    private function numberOrder(int $id, int $seq, Carbon $updatedAt): void
+    private function numberedOrder(int $branchId, string $serial, string $createdAt, ?string $updatedAt = null): Order
     {
-        Order::withoutGlobalScopes()->where('id', $id)
-            ->update(['fiscal_sequence_no' => $seq, 'updated_at' => $updatedAt]);
+        $order = Order::factory()->create([
+            'branch_id'       => $branchId,
+            'status'          => OrderStatus::ACCEPT,   // non-terminal
+            'payment_status'  => PaymentStatus::PAID,
+            'total'           => 50.00,
+            'order_serial_no' => $serial,
+            'fiscal_sequence_no' => 42,
+            'parent_order_id' => null,
+            'created_at'      => Carbon::parse($createdAt),
+        ]);
+
+        if ($updatedAt) {
+            // Set updated_at without bumping timestamps — proves the detector
+            // no longer keys on updated_at (the old heuristic's false-positive source).
+            Order::withoutGlobalScopes()->where('id', $order->id)
+                ->update(['updated_at' => Carbon::parse($updatedAt)]);
+        }
+
+        return $order;
     }
 
-    public function test_order_sealed_inside_its_open_window_is_not_flagged(): void
+    // ── Covered cases (exit 0) ────────────────────────────────────────────────
+
+    public function test_order_inside_a_signed_Z_window_is_not_flagged(): void
     {
         $branch = Branch::factory()->create();
-        [$opened, $closed] = $this->sealedZ($branch->id);
+        $this->zReport($branch->id, 1, ZReport::STATUS_CLOSED, self::D1_OPEN, self::D1_CLOSE);
 
-        $order = Order::factory()->create([
-            'branch_id'      => $branch->id,
-            'status'         => OrderStatus::ACCEPT,
-            'payment_status' => PaymentStatus::PAID,
-            'total'          => 50.00,
-            'created_at'     => $opened->copy()->addHours(2),  // 10:00, in window
-        ]);
-        // Sealed at 10:05 — BEFORE the Z closed → legitimately in that Z.
-        $this->numberOrder($order->id, 5, $opened->copy()->addHours(2)->addMinutes(5));
+        // Created 12:00, inside (−∞, 20:00] → sealed in Z_1.
+        $this->numberedOrder($branch->id, 'IN0001', '2026-05-01 12:00:00');
 
         $this->artisan('fiscal:verify-z-membership', ['--branch' => $branch->id])
             ->assertExitCode(0);
     }
 
-    public function test_cross_window_settled_order_is_flagged(): void
+    /**
+     * The KEY false-positive-elimination case. A sale created in the "dead
+     * window" between Z_1's close (day1 20:00) and Z_2's open (day2 08:00) was
+     * flagged as a "TROU" by the old heuristic (which bounded windows by
+     * opened_at). Under C33 the next Z aggregates from the PREVIOUS closed_at,
+     * so Z_2's real window (day1 20:00, day2 20:00] COVERS it → NOT an orphan.
+     */
+    public function test_order_in_dead_window_but_covered_by_next_signed_Z_is_not_flagged(): void
     {
         $branch = Branch::factory()->create();
-        [$opened, $closed] = $this->sealedZ($branch->id);
+        $this->zReport($branch->id, 1, ZReport::STATUS_CLOSED, self::D1_OPEN, self::D1_CLOSE);
+        $this->zReport($branch->id, 2, ZReport::STATUS_CLOSED, self::D2_OPEN, self::D2_CLOSE);
 
-        $order = Order::factory()->create([
-            'branch_id'      => $branch->id,
-            'status'         => OrderStatus::ACCEPT,
-            'payment_status' => PaymentStatus::PAID,
-            'total'          => 50.00,
-            'order_serial_no' => 'A9999',
-            'created_at'     => $opened->copy()->addHours(2),  // 10:00, in window
-        ]);
-        // Numbered the NEXT day — AFTER the Z closed → orphan (no Z contains it).
-        $this->numberOrder($order->id, 5, $closed->copy()->addDay());
+        // Created day1 22:00 — in the old dead window, covered by Z_2's C33 window.
+        $this->numberedOrder($branch->id, 'DEAD01', '2026-05-01 22:00:00');
 
         $this->artisan('fiscal:verify-z-membership', ['--branch' => $branch->id])
-            ->expectsOutputToContain('A9999')
-            ->assertExitCode(1);
+            ->assertExitCode(0);
     }
 
     /**
-     * [GAP-ORPHAN 2026-06-25] Point aveugle : une vente numérotée créée dans le TROU
-     * entre un Z fermé et le PROCHAIN Z ouvert n'est dans AUCUN Z (le Z suivant
-     * n'agrège que depuis SON opened_at, fenêtre (opened_at, closed_at]). Le
-     * détecteur la ratait (`continue` → faux-vert). Il doit la flaguer.
+     * Documents the DELIBERATE model change: an order created inside a signed
+     * window but whose sequence was allocated AFTER that Z closed (updated_at in
+     * the future) is treated as COVERED by created_at — the old heuristic
+     * false-flagged it via updated_at > closed_at. That residual class is caught
+     * by warnOnOrphanedPaidOrders() at close + the retry cron, not here.
      */
-    public function test_order_in_gap_between_closed_Z_and_next_open_Z_is_flagged(): void
+    public function test_order_created_in_window_but_numbered_after_close_is_covered(): void
     {
         $branch = Branch::factory()->create();
-        // Z fermé jour 1 : 08:00 → 20:00
-        ZReport::create([
-            'branch_id'   => $branch->id,
-            'sequence_no' => 1,
-            'opened_at'   => Carbon::parse('2026-05-01 08:00:00'),
-            'closed_at'   => Carbon::parse('2026-05-01 20:00:00'),
-            'status'      => ZReport::STATUS_CLOSED,
-        ]);
-        // Z ouvert jour 2 08:00 → TROU entre jour1 20:00 et jour2 08:00.
-        ZReport::create([
-            'branch_id'   => $branch->id,
-            'sequence_no' => 2,
-            'opened_at'   => Carbon::parse('2026-05-02 08:00:00'),
-            'closed_at'   => null,
-            'status'      => ZReport::STATUS_OPEN,
-        ]);
-        // Vente payée+numérotée créée dans le TROU (jour1 22:00) → dans aucun Z.
-        $order = Order::factory()->create([
-            'branch_id'       => $branch->id,
-            'status'          => OrderStatus::ACCEPT,
-            'payment_status'  => PaymentStatus::PAID,
-            'total'           => 13.00,
-            'order_serial_no' => 'GAP777',
-            'created_at'      => Carbon::parse('2026-05-01 22:00:00'),
-        ]);
-        $this->numberOrder($order->id, 7, Carbon::parse('2026-05-01 22:01:00'));
+        $this->zReport($branch->id, 1, ZReport::STATUS_CLOSED, self::D1_OPEN, self::D1_CLOSE);
+
+        // Created 10:00 (in window) but touched the next day (after the Z closed).
+        $this->numberedOrder($branch->id, 'LATE01', '2026-05-01 10:00:00', '2026-05-02 09:00:00');
 
         $this->artisan('fiscal:verify-z-membership', ['--branch' => $branch->id])
-            ->expectsOutputToContain('GAP777')
+            ->assertExitCode(0);
+    }
+
+    public function test_order_pending_in_current_open_window_is_not_flagged(): void
+    {
+        $branch = Branch::factory()->create();
+        $this->zReport($branch->id, 1, ZReport::STATUS_CLOSED, self::D1_OPEN, self::D1_CLOSE);
+        // An OPEN Z is pending → the next close (from = day1 20:00) will seal day2 sales.
+        $this->zReport($branch->id, 2, ZReport::STATUS_OPEN, self::D2_OPEN, null);
+
+        // Created day2 10:00 — after the last close, but an open Z will seal it.
+        $this->numberedOrder($branch->id, 'PEND01', '2026-05-02 10:00:00');
+
+        $this->artisan('fiscal:verify-z-membership', ['--branch' => $branch->id])
+            ->assertExitCode(0);
+    }
+
+    // ── Real orphan (exit 1) ──────────────────────────────────────────────────
+
+    /**
+     * A genuine gap-free orphan: numbered, settled, created AFTER the last
+     * closed Z, on a branch with NO open Z to seal it → in zero Z with nothing
+     * queued. MUST be flagged (exit 1).
+     */
+    public function test_true_orphan_after_last_close_with_no_open_Z_is_flagged(): void
+    {
+        $branch = Branch::factory()->create();
+        $this->zReport($branch->id, 1, ZReport::STATUS_CLOSED, self::D1_OPEN, self::D1_CLOSE);
+        // No open Z.
+
+        // Created day2 10:00 — after the last close, nothing pending to seal it.
+        $this->numberedOrder($branch->id, 'ORPH01', '2026-05-02 10:00:00');
+
+        $this->artisan('fiscal:verify-z-membership', ['--branch' => $branch->id])
+            ->expectsOutputToContain('ORPH01')
+            ->assertExitCode(1);
+    }
+
+    public function test_numbered_order_on_branch_with_no_Z_at_all_is_flagged(): void
+    {
+        $branch = Branch::factory()->create();
+        // No Z reports whatsoever on this branch.
+
+        $this->numberedOrder($branch->id, 'NOZ001', '2026-05-01 10:00:00');
+
+        $this->artisan('fiscal:verify-z-membership', ['--branch' => $branch->id])
+            ->expectsOutputToContain('NOZ001')
             ->assertExitCode(1);
     }
 }
