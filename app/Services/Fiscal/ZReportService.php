@@ -213,6 +213,33 @@ class ZReportService
 
                     $closedAt   = Carbon::now();
 
+                    // [C33 / LOCK_ZREPORT_FISCAL_C33_DELIVERY_VAT — 2026-07-07]
+                    // CONTINUOUS PARTITION. The aggregation lower bound is the
+                    // closed_at of the PREVIOUS closed Z for this branch — NOT
+                    // this Z's opened_at. Using opened_at left a "dead window"
+                    // between the previous close and this open: a sale created
+                    // in that gap (delivery/Uber taken while no Z was open, or a
+                    // forgotten open) fell into NO signed Z → a numbered receipt
+                    // in zero Z = an NF525 gap-free violation (surfaced by
+                    // fiscal:verify-z-membership as "TROU"). With the previous
+                    // close as the lower bound the windows tile exactly:
+                    // (closed_{n-1}, closed_n] — every euro in exactly one Z.
+                    //
+                    // $from is null for the FIRST Z ever on the branch → the
+                    // whole history up to $closedAt is absorbed (no earlier Z to
+                    // hold pre-open sales). This mirrors XReportService::
+                    // defaultFrom so the intraday-X and close-Z windows are
+                    // identical. `closed_at < $closedAt` guards against a
+                    // future-dated / clock-skewed close being mistaken for the
+                    // predecessor.
+                    $previousClosedZ = ZReport::query()
+                        ->where('branch_id', $branchId)
+                        ->where('status', ZReport::STATUS_CLOSED)
+                        ->where('closed_at', '<', $closedAt)
+                        ->orderByDesc('closed_at')
+                        ->first();
+                    $from = $previousClosedZ?->closed_at;
+
                     // [iter14 SPECIALIST-3 / FISCAL-ORPHAN-RETRY]
                     // Pre-check: warn the operator if any kiosk-paid order in
                     // the closing window is still missing its NF525 fiscal
@@ -223,12 +250,12 @@ class ZReportService
                     // flagged. Surfacing it here gives ops a chance to delay
                     // the close until the retry succeeds.
                     //
-                    // Bound to (opened_at, closedAt] to match the aggregate's
-                    // half-open window so we don't re-warn forever about
-                    // historical orphans that predate the retry mechanism.
-                    $this->warnOnOrphanedPaidOrders($branchId, $open->opened_at, $closedAt);
+                    // Bound to (previousClose, closedAt] to match the aggregate's
+                    // half-open window (C33 continuous partition) so the warn
+                    // covers the same rows the signed Z will.
+                    $this->warnOnOrphanedPaidOrders($branchId, $from, $closedAt);
 
-                    $aggregates = $this->aggregate($branchId, $open->opened_at, $closedAt);
+                    $aggregates = $this->aggregate($branchId, $from, $closedAt);
 
                     $prevHash = (string) (ZReport::query()
                         ->where('branch_id', $branchId)
@@ -436,6 +463,30 @@ class ZReportService
         $byTaxRate = $this->taxBreakdownForOrders($counterEntryRefundMirrors, 1, $byTaxRate);
         $adjustmentOrders = $postZCanceled->concat($postZReturned);
         $byTaxRate = $this->taxBreakdownForOrders($adjustmentOrders, -1, $byTaxRate);
+
+        // [C33 / LOCK_ZREPORT_FISCAL_C33_DELIVERY_VAT — 2026-07-07] Delivery-fee VAT.
+        // delivery_charge is embedded in order->total (OrderService total formula:
+        // subtotal [+tax] + delivery_charge − discount), so it ALREADY flows into
+        // total_ttc via applyOrderToTotals. But it never reached the per-rate SSOT
+        // (byTaxRate is built from order_items.tax_amount only, and the fee is not an
+        // order_item) → the fee sat at an implicit 0 % VAT. Owner decision: the delivery
+        // fee carries the food VAT rate (config menu.settings.tax_rate = 10 %), treated
+        // as TTC (customer pays the same). We add its VAT share
+        // round(delivery_charge × rate/(100+rate), 2) to the food-rate bucket; the HT
+        // share follows by construction (total_ht = total_ttc − total_tva) and total_ttc
+        // is UNCHANGED. Applied to the SAME three collections as applyOrderToTotals so the
+        // delivery VAT nets exactly like the delivery TTC (no double-count, no orphan):
+        //   - positive window orders : +VAT(delivery_charge)
+        //   - counter-entry mirrors  : −VAT(parent.delivery_charge)  (the mirror row
+        //     carries no delivery_charge, but its negated total already removed the parent
+        //     delivery from total_ttc — reverse the matching VAT via the parent)
+        //   - post-Z terminal adjustments : −VAT(delivery_charge)    (same row, sign −1)
+        // The fee is NOT discount-scaled (a discount nets the item base, not the fee), so
+        // this composes with F1 discount-netting without double-counting.
+        $byTaxRate = $this->applyDeliveryVat($orders, 1, $byTaxRate);
+        $byTaxRate = $this->applyDeliveryVatForMirrors($counterEntryRefundMirrors, $byTaxRate);
+        $byTaxRate = $this->applyDeliveryVat($adjustmentOrders, -1, $byTaxRate);
+
         $byTaxRate = array_map(fn ($v) => round((float) $v, 2), $byTaxRate);
         ksort($byTaxRate);
 
@@ -719,9 +770,108 @@ class ZReportService
             // inconsistent precision ("10", "10.00", "5.5"), so we
             // cast through float to canonicalise and then back to
             // string for a stable JSON-encoded signed payload.
-            $key   = rtrim(rtrim(number_format((float) $r->tax_rate, 2, '.', ''), '0'), '.');
+            $key   = $this->normalizeTaxRateKey((float) $r->tax_rate);
             $ratio = $ratios[(int) $r->order_id] ?? 1.0;
             $byTaxRate[$key] = ($byTaxRate[$key] ?? 0.0) + ($sign * (float) $r->total_tax_for_rate * $ratio);
+        }
+
+        return $byTaxRate;
+    }
+
+    /**
+     * [C33 / LOCK_ZREPORT_FISCAL_C33_DELIVERY_VAT] Food VAT rate applied to the delivery
+     * fee (config menu.settings.tax_rate, default 10 %). The fee is treated as TTC — the
+     * VAT is EXTRACTED, not added on top — so total_ttc is unchanged and the fee no longer
+     * sits at an implicit 0 %.
+     */
+    private function deliveryVatRate(): float
+    {
+        return (float) Config::get('menu.settings.tax_rate', 10.0);
+    }
+
+    /**
+     * [C33] Canonical per-rate bucket key. Mirrors the normalisation applied to
+     * order_items.tax_rate in taxBreakdownForOrders so the delivery VAT lands in the SAME
+     * bucket as the food items ("10", "10.00" → "10"; "5.5" → "5.5").
+     */
+    private function normalizeTaxRateKey(float $rate): string
+    {
+        return rtrim(rtrim(number_format($rate, 2, '.', ''), '0'), '.');
+    }
+
+    /**
+     * [C33] Add (sign × VAT-share-of-delivery_charge) to the food-rate bucket for each
+     * order. The VAT share of a TTC fee is fee × rate/(100+rate). Orders without a fee
+     * contribute nothing → non-delivery aggregates are byte-identical.
+     *
+     * @param iterable<\App\Models\Order> $orders
+     * @param array<string, float> $byTaxRate
+     * @return array<string, float>
+     */
+    private function applyDeliveryVat(iterable $orders, int $sign, array $byTaxRate): array
+    {
+        $rate = $this->deliveryVatRate();
+        if ($rate <= 0.0) {
+            return $byTaxRate;
+        }
+        $key = $this->normalizeTaxRateKey($rate);
+
+        foreach ($orders as $o) {
+            $delivery = (float) ($o->delivery_charge ?? 0);
+            if ($delivery === 0.0) {
+                continue;
+            }
+            $vat = round($delivery * $rate / (100 + $rate), 2);
+            $byTaxRate[$key] = ($byTaxRate[$key] ?? 0.0) + ($sign * $vat);
+        }
+
+        return $byTaxRate;
+    }
+
+    /**
+     * [C33] Counter-entry refund mirrors carry NO delivery_charge of their own (the mirror
+     * negates parent.total, which already embeds the fee) so applyDeliveryVat would see 0
+     * and leave the fee's VAT un-reversed. To net the delivery VAT symmetrically we read
+     * the PARENT's delivery_charge and SUBTRACT its VAT share. Parents may be soft-deleted
+     * (archive workflow) → withTrashed, and cross-branch tooling requires dropping
+     * BranchScope. Non-delivery parents (fee 0) contribute nothing.
+     *
+     * @param \Illuminate\Support\Collection<int, \App\Models\Order> $mirrors
+     * @param array<string, float> $byTaxRate
+     * @return array<string, float>
+     */
+    private function applyDeliveryVatForMirrors($mirrors, array $byTaxRate): array
+    {
+        $rate = $this->deliveryVatRate();
+        if ($rate <= 0.0) {
+            return $byTaxRate;
+        }
+
+        $parentIds = collect($mirrors)
+            ->pluck('parent_order_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+        if ($parentIds === []) {
+            return $byTaxRate;
+        }
+
+        $parentDeliveries = Order::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+            ->withTrashed()
+            ->whereIn('id', $parentIds)
+            ->pluck('delivery_charge', 'id');
+
+        $key = $this->normalizeTaxRateKey($rate);
+
+        foreach ($mirrors as $mirror) {
+            $parentDelivery = (float) ($parentDeliveries[$mirror->parent_order_id] ?? 0);
+            if ($parentDelivery === 0.0) {
+                continue;
+            }
+            $vat = round($parentDelivery * $rate / (100 + $rate), 2);
+            // Mirror REVERSES the parent's delivery VAT.
+            $byTaxRate[$key] = ($byTaxRate[$key] ?? 0.0) - $vat;
         }
 
         return $byTaxRate;
