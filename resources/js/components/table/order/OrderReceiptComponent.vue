@@ -125,7 +125,7 @@
                             </tr>
                             <tr>
                                 <td class="pt-1 pb-1 pr-1">{{ $t('label.payment_type') }}:</td>
-                                <td v-if="order.transaction" class="pt-1 pb-1">{{ order.transaction.payment_method }}
+                                <td v-if="order.transaction" class="pt-1 pb-1">{{ paymentMethodLabel(order.transaction.payment_method) }}
                                 </td>
                                 <td v-else class="pt-1 pb-1">{{ enums.paymentTypeEnumArray[order.payment_method] }}</td>
                             </tr>
@@ -157,9 +157,11 @@ import print from "vue3-print-nb";
 import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
 import paymentTypeEnum from "../../../enums/modules/paymentTypeEnum";
 import displayModeEnum from "../../../enums/modules/displayModeEnum";
+import { paymentMethodLabelMixin } from "../../../helpers/paymentMethodLabel";
 
 export default {
     name: "OrderReceiptComponent",
+    mixins: [paymentMethodLabelMixin],
     props: {
         order: Object,
         orderItems: Object,

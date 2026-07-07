@@ -53,7 +53,7 @@
                             <li class="flex items-center gap-2">
                                 <span class="capitalize text-sm leading-6">{{ $t("label.method") }}:</span>
                                 <span v-if="order.transaction" class="capitalize text-sm leading-6 text-heading">
-                                    {{ order.transaction.payment_method }} ({{ order.transaction.transaction_no }})
+                                    {{ paymentMethodLabel(order.transaction.payment_method) }} ({{ order.transaction.transaction_no }})
                                 </span>
                                 <span v-else-if="paymentMethod === 'digitalPayment'"
                                     class="capitalize text-sm leading-6 text-heading">
@@ -166,9 +166,11 @@ import paymentStatusEnum from "../../../enums/modules/paymentStatusEnum";
 import paymentTypeEnum from "../../../enums/modules/paymentTypeEnum";
 import activityEnum from "../../../enums/modules/activityEnum";
 import router from "../../../router";
+import { paymentMethodLabelMixin } from "../../../helpers/paymentMethodLabel";
 
 export default {
     name: "OrderDetailsComponent",
+    mixins: [paymentMethodLabelMixin],
     components: { OrderReceiptComponent, OrderStatusComponent, LoadingComponent },
     data() {
         return {

@@ -33,7 +33,7 @@
                         <li class="text-xs">
                             {{ $t('label.payment_type') }}:
                             <span class="text-heading" v-if="order.transaction">
-                                {{ order.transaction.payment_method }}
+                                {{ paymentMethodLabel(order.transaction.payment_method) }}
                             </span>
                             <span v-else class="text-heading">
                                 {{ paymentTypeEnumArray[order.payment_method] }}
@@ -321,9 +321,11 @@ import OnlineOrderMapComponent from "./OnlineOrderMapComponent";
 import alertService from "../../../services/alertService";
 import OnlineOrderReasonComponent from "./OnlineOrderReasonComponent";
 import OnlineOrderReceiptComponent from "./OnlineOrderReceiptComponent";
+import { paymentMethodLabelMixin } from "../../../helpers/paymentMethodLabel";
 
 export default {
     name: "OnlineOrderShowComponent",
+    mixins: [paymentMethodLabelMixin],
     components: {
         OnlineOrderReceiptComponent,
         OnlineOrderMapComponent,

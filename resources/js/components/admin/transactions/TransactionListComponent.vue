@@ -165,6 +165,7 @@ import statusEnum from "../../../enums/modules/statusEnum";
 import displayModeEnum from "../../../enums/modules/displayModeEnum";
 import ENV from "../../../config/env";
 import { formatPrice } from "../../../helpers/formatPrice";
+import { paymentMethodLabel } from "../../../helpers/paymentMethodLabel";
 
 export default {
     name: "TransactionListComponent",
@@ -267,36 +268,11 @@ export default {
         },
     },
     methods: {
-        // [visual-round-1 P3 fix 2026-07-07] Map raw backend payment-method
-        // slugs (uppercased by TransactionResource, e.g. COUNTER_CASH /
-        // COUNTER_CARD from PaymentService::counterPaymentMethodLabel + payment
-        // gateway slugs) to human FR labels. Counter-collect (borne) methods get
-        // a "(Caisse)" qualifier; unknown gateway slugs are humanised so nothing
-        // renders as a raw machine constant.
+        // [visual-round-3 P3 fix 2026-07-07] Map raw backend payment-method slugs
+        // to human FR labels via the shared helper (single source of truth reused
+        // by the receipt/detail surfaces — resources/js/helpers/paymentMethodLabel.js).
         paymentMethodLabel: function (raw) {
-            if (raw === null || raw === undefined || raw === '') {
-                return '—';
-            }
-            const key = String(raw).toUpperCase();
-            const caisse = this.$t('label.caisse');
-            const map = {
-                COUNTER_CASH: `${this.$t('label.cash')} (${caisse})`,
-                COUNTER_CARD: `${this.$t('label.card')} (${caisse})`,
-                COUNTER_MOBILE_BANKING: `${this.$t('label.mobile_banking')} (${caisse})`,
-                COUNTER_TICKET_RESTAURANT: `${this.$t('label.ticket_restaurant')} (${caisse})`,
-                COUNTER_OTHER: `${this.$t('label.other')} (${caisse})`,
-                CASH: this.$t('label.cash'),
-                CARD: this.$t('label.card'),
-                CREDIT: this.$t('label.card'),
-                TICKET_RESTAURANT: this.$t('label.ticket_restaurant'),
-                MOBILE_BANKING: this.$t('label.mobile_banking'),
-                CASH_ON_DELIVERY: this.$t('label.cash_on_delivery'),
-            };
-            if (map[key]) {
-                return map[key];
-            }
-            // Humanise any other gateway slug: STRIPE -> Stripe, MY_GATEWAY -> My Gateway
-            return key.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+            return paymentMethodLabel(raw, (k) => this.$t(k));
         },
         // [visual-round-1 P3 fix 2026-07-07] Render the amount with the canonical
         // FR EUR formatter ("6,90 €") instead of the raw dot-decimal string
