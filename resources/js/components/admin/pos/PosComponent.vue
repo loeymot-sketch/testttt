@@ -4102,8 +4102,39 @@ export default {
         },
         editCartLine: function (index) {
             const line = this.carts[index];
-            if (!line || !this.$refs.posItemComponent) return;
-            this.$refs.posItemComponent.openEditFromCart(line, index);
+            if (!line) return;
+            const doEdit = () => {
+                const host = this.$refs.posItemComponent;
+                if (host && typeof host.openEditFromCart === 'function') {
+                    host.openEditFromCart(line, index);
+                    return true;
+                }
+                return false;
+            };
+            // Chemin rapide : le wizard-host (ItemComponent) est déjà monté (vue produits).
+            if (doEdit()) return;
+            // [owner 2026-07-07 FIX #8] Après un ajout, la caisse revient au HUB
+            // catégories (onProductAddedReturnToCategories) où ItemComponent n'est PAS
+            // monté (showCategoryGrid). `$refs.posItemComponent` était alors undefined →
+            // l'ancien editCartLine faisait un `return` silencieux → le bouton « Modifier »
+            // « ne faisait rien ». On rebascule sur la catégorie de l'article (ou une
+            // recherche par nom en repli) pour MONTER le host, puis on édite dès qu'il
+            // est prêt (poll — tolère le fetch itemList / le SkeletonGrid transitoire).
+            const catalog = this.$store.getters['item/lists'] || [];
+            const item = catalog.find((i) => String(i.id) === String(line.item_id));
+            if (item && item.item_category_id) {
+                this.setCategory(item.item_category_id);
+            } else {
+                this.props.search.name = line.name || '';
+                this.itemList(1, { overlay: false });
+            }
+            let tries = 0;
+            const tick = () => {
+                if (doEdit()) return;
+                if (tries++ >= 50) return; // ~5 s garde-fou
+                setTimeout(tick, 100);
+            };
+            this.$nextTick(tick);
         },
         /** Construit un item commande POS (principal ou addon) pour le JSON checkout */
         buildPosCheckoutOrderRow: function (row, quantity, lineTotal) {

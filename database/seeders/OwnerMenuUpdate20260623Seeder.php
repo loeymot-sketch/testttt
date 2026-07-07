@@ -191,7 +191,8 @@ class OwnerMenuUpdate20260623Seeder extends Seeder
         $this->clearAllVariations($meNuggets->id);
         $this->clearAddons($meNuggets->id);
         $this->unpublishProfiles([40]);
-        $meBurger = $this->upsertItem(null, 'Menu Enfant Burger', 4.90, 11, 'Burger, frites et Capri-Sun.');
+        // [owner 2026-07-07] 2e menu enfant = Chicken Burger (id 106 fixé pour éviter tout doublon au reseed).
+        $meBurger = $this->upsertItem(106, 'Menu Enfant Chicken Burger', 4.90, 11, 'Chicken burger, frites et Capri-Sun.');
         $this->clearMeatChoice($meBurger);
         $this->clearAllVariations($meBurger->id);
         $this->clearAddons($meBurger->id);
