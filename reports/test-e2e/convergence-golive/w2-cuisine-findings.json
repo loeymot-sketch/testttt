@@ -1,0 +1,82 @@
+{
+  "surface": "cuisine",
+  "cycle": 1,
+  "head": "16ee95d1129cc6fbcc5e1243d52522de80ab4352 (wip baselines on consolidated fd6193215)",
+  "server": "http://127.0.0.1:8766",
+  "captures_dir": "reports/test-e2e/convergence-golive/w2-cuisine/",
+  "captures": [
+    "01-kds-landscape-1920x1080.png",
+    "03-kds-portrait-1080x1920.png"
+  ],
+  "gates": {
+    "phpunit_ticket_symbolic_kitchen": "105 passed (php artisan test --filter 'Ticket|Symbolic|Kitchen')",
+    "vitest_kitchen_parity_real_data": "7 passed / 220 real rows (npx vitest run tests/js/kitchenParityRealData.spec.js)",
+    "frozen_cuisine_diff": "0 lines (KitchenTicketSymbolicFormatter, OrderReceiptEscPosRenderer, EscPosCommandBuilder, kdsSymbolic.js, kdsCustomization.js, KdsOrderLine.vue all clean)",
+    "code_changes_this_session": 0
+  },
+  "method": "Drove real /kds board (operator S-SYNC E2E, branch 1) at 1920x1080 + 1080x1920; decoded raw ESC/POS kitchen-ticket bytes at 32-col via EscPosTicketBytesService; DOM-measured computed styles + codepoints + overflow; same-order screen-vs-ticket parity on order 5535. Verify-before-report: every claim backed by bytes/codepoints/screenshot/gate.",
+  "findings": [
+    {
+      "id": "S3-1-notes-client",
+      "spec": "Notes client sur ecran KDS (compo strip, multi-lignes pre-line, 3-cartes non deborde)",
+      "verdict": "GREEN",
+      "evidence": [
+        "cleanInstruction strips compo echo: card A ticket keeps ONLY the bracketed client note; the wizard echo lines 'CAYENNE' + 'Pain - Salade, Tomate, Oignons cuits Sauce: Algerienne' are dropped (decoded bytes).",
+        "Multi-line note respects breaks BOTH engines: order 5535 note '[COCA-COLA 33CL\\n[COCA-COLA 33CL]]' renders as 2 lines on screen (computed white-space: pre-line) AND on ticket (two '  ** ...' lines).",
+        "3-card layout not overflown: portrait DOM scrollHeight==clientHeight (overflow:false) on all 3 cards; screenshots 01 + 03 show content anchored top, cards full-height.",
+        "OE ligature safe: 'oeufs' rendered (not 'UF') in card A allergen note."
+      ]
+    },
+    {
+      "id": "S3-2-boissons-nom-complet",
+      "spec": "Boissons NOM COMPLET ecran + ticket; dessert Tarte Daim jamais classe boisson",
+      "verdict": "GREEN",
+      "evidence": [
+        "Screen symbolic-main heads full names: 'Coca-Cola 33cl', 'Sprite 33cl', 'Coca-Cola 33cl' (x4 qty); note lines 'BOISSON: Hawai 33cl', 'BOISSON: Fuze Tea 33cl' full — no 'COC'/'HAW'/'SPR' cryptic codes.",
+        "Ticket decoded: '1 x Coca-Cola 33cl', '1 x Sprite 33cl', '4 x Coca-Cola 33cl', '** BOISSON: Fuze Tea 33cl', '** BOISSON: Hawai 33cl' — full names.",
+        "Classify attest (PHP KitchenTicketSymbolicFormatter): isDrinkItem('Coca-Cola 33cl')=true, isDrinkItem('Hawai 33cl')=true, isDrinkItem('Tarte Daim')=FALSE -> Tarte Daim renders symbolic 'TAR' (ticket '1 x TAR'), never on the drink full-name path.",
+        "Parity gate proves PHP isDrinkItem == JS categorize()==='drink' over 220 real rows."
+      ]
+    },
+    {
+      "id": "S3-3-symbole-oignons-cuits",
+      "spec": "Oignons cuits -> STO_underlined ecran, ticket bytes 1B 2D 01 4F 1B 2D 00, ordre S T O_, <=32 col",
+      "verdict": "GREEN",
+      "evidence": [
+        "Screen: symbolic-text 'S | CAY | STO̲ | ALG' codepoints [...53(S) 54(T) 4f(O) 332(U+0332 combining low line)...] -> native underlined O.",
+        "Ticket bytes EXACT: crudites sequence '53 54 1b 2d 01 4f 1b 2d 00' = S, T, ESC '-' 01 (underline on), 4F ('O'), ESC '-' 00 (underline off). Matches spec 1B 2D 01 4F 1B 2D 00.",
+        "Order S T O_ preserved (CRUDITE_ORDER ['S','T','O','O_']).",
+        "<=32 col: rendered at width_chars=32; separator = exactly 32 '='; longest wrapped note line = exactly 32 cols; TicketWidthSafeTest (in gate) proves 0 lines > width at 32 AND 48. encodeForPrinter counts U+0332 as 0 visible col."
+      ]
+    },
+    {
+      "id": "S3-4-layout-3-cartes",
+      "spec": "3-cartes plein-ecran, pastille +N exacte, codes 3 lettres, supplements jaunes inline, nouvelles lignes (note/boisson) ne cassent rien",
+      "verdict": "GREEN",
+      "evidence": [
+        "3 full-height cards [A][B][C] side-by-side, landscape 1920x1080 (01) + portrait 1080x1920 (03); status chips (NOUVELLE/EN COURS) + source (BORNE/CAISSE) + ATTENTE timer + 'Pret' bump + 'EN ATTENTE ENCAISSEMENT' banner (PENDING_COUNTER).",
+        "Overflow pastille present + dynamic: '+7 en attente' (landscape) / '+4 en attente' (portrait) top-right.",
+        "3-letter product codes: CAY (Cayenne), TAC (Tacos); size token M kept.",
+        "note + boisson lines add cleanly without breaking layout: no card overflow at either orientation (DOM scrollHeight==clientHeight).",
+        "Supplements jaunes inline: validated via ticket ('* Oignons frits' bold, order 5545) + KdsOrderLine.vue CSS (.kds-line__supplement color #CA8A04 amber, display:inline cote-a-cote, font-weight 800, star prefix) + parity gate structure. NOTE: not surfaced on the LIVE 3-card board because the board sorts by id ASC (FIFO) and parallel-wave orders (5533/34/35) occupied the 3 visible slots; my supplement card (5545) stayed in overflow. Non-visual evidence is conclusive."
+      ]
+    },
+    {
+      "id": "S3-5-parite-ticket-ecran",
+      "spec": "Parite ticket <-> ecran identique",
+      "verdict": "GREEN",
+      "evidence": [
+        "Same-order 5535 line-by-line parity: screen '1x G | TAC | M | P | ALG' / 'BOISSON: Fuze Tea 33cl' / '1x MENU' / '1x Coca-Cola 33cl' / '[COCA-COLA 33CL / [COCA-COLA 33CL]]' / '1x Sprite 33cl' / '4x Coca-Cola 33cl'  ==  ticket '1 x G | TAC | M | P | ALG' / '** BOISSON: Fuze Tea 33cl' / '1 x MENU' / '1 x Coca-Cola 33cl' / '** [COCA-COLA 33CL' + '** [COCA-COLA 33CL]]' / '1 x Sprite 33cl' / '4 x Coca-Cola 33cl'. Only cosmetic prefix diff (screen x/dot vs ticket x/**).",
+        "Cards A/B: screen 'S | CAY | STO_ | ALG' == ticket 'S | CAY | ST O_ | ALG' (same O_ underline, same order).",
+        "vitest kitchenParityRealData 7/7 over 220 real snapshots: PHP mainLine == JS symbolicMainLine, supps, menu, notes, drink detection, drink lines all identical."
+      ]
+    }
+  ],
+  "adversarial_notes": [
+    "Doubled note '[COCA-COLA 33CL [COCA-COLA 33CL]]' on order 5535 is GARBAGE SOURCE DATA (nested brackets injected in the raw instruction), NOT a render defect — renderer faithfully preserves client bracket notes on both engines; parity holds.",
+    "NF525 immutability guard confirmed live: attempt to mutate composition_snapshot after creation threw RuntimeException (correct invariant).",
+    "Board window is midnight-straddle (staleFloor..tomorrow) + sort id ASC — noted to explain why re-dated test cards did not jump the queue."
+  ],
+  "teardown": "3 seeded test orders (5543/5544/5545) + 6 items soft-deleted after capture; DB left clean.",
+  "verdict": "GREEN"
+}
