@@ -926,6 +926,7 @@
         "cash_session_closed_at": "Fermée le",
         "cash_session_reconcile": "Réconcilier",
         "direction": "Sens",
+        "note": "Note",
         "notes": "Notes",
         "delivery_cash_mvt_order_collect": "Encaissement commande livrée",
         "delivery_cash_mvt_change_given": "Rendu de monnaie",
