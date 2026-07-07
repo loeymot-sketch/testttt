@@ -30,40 +30,42 @@
 > Il n'y a **AUCUN** dossier `~/testttt` à trouver sur ton Mac. Le déploiement se fait **sur le VPS
 > en SSH**, pas dans un dossier local. Si tu veux quand même une copie locale des fichiers :
 > `git clone git@github.com:loeymot-sketch/testttt.git` (n'importe où), ou télécharge juste les
-> ponts depuis `<DOMAINE>/dl/bridge.js` et `<DOMAINE>/dl/caisse-bridge.js`.
+> ponts depuis `https://lecayenne.fr/dl/bridge.js` et `https://lecayenne.fr/dl/caisse-bridge.js`.
 
 ---
 
-## 1. À DEMANDER À L'OWNER AVANT DE COMMENCER (3 infos)
-1. **VPS** : l'hôte/IP SSH **et** le chemin du projet sur le VPS (ex. `/var/www/lecayenne`). Astuce :
-   sur le VPS, dans le dossier de déploiement habituel, `pwd` donne le chemin exact.
-2. **`<DOMAINE>`** : l'URL cloud (ex. `https://caisse.lecayenne.fr`) — sert aux téléchargements `/dl/…`
-   et à l'URL kiosque de la borne.
-3. **AnyDesk** : confirme que **cette session cowork tourne sur le Mac où AnyDesk est ouvert** vers la
-   borne (sinon, la voir/piloter est impossible — voir §Dépannage AnyDesk).
+## 1. INFOS DE DÉPLOIEMENT (FOURNIES — plus rien à demander)
+1. **VPS** : alias SSH **`lecayenne`** (déjà configuré dans `~/.ssh/config` de ce Mac →
+   `ubuntu@51.210.111.124`, clé `~/.ssh/lecayenne_prod`). Projet sur le VPS : **`/var/www/lecayenne`**.
+   → tu peux tester : `ssh lecayenne "cd /var/www/lecayenne && git rev-parse --short HEAD"`.
+2. **Domaine cloud** : **`https://lecayenne.fr`** (téléchargements `/dl/…` + URL kiosque de la borne).
+3. **AnyDesk** : ✅ confirmé — la borne est ouverte via AnyDesk sur CE Mac.
 
-Sur chaque **PC Windows** : Node.js installé (`node -v` répond), droits **administrateur**, et pour
-l'option service : [NSSM](https://nssm.cc/download) (`nssm.exe`).
+**Clone local (sur ce Mac)** : `/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt`
+(c'est de là qu'on lance le script de déploiement — voir §2). Sur chaque **PC Windows** :
+Node.js (`node -v`), droits **administrateur**, et pour l'option service NSSM : `nssm.exe`.
 
 ---
 
-## 2. PARTIE A — DÉPLOYER (VPS, SSH, ~5 min) — pas besoin d'AnyDesk
+## 2. PARTIE A — DÉPLOYER (~5 min) — pas besoin d'AnyDesk
+
+⚠️ **`deploy-final-2026-07-07.sh` fait le SSH LUI-MÊME** (`ssh lecayenne` → `/var/www/lecayenne`).
+Donc on le lance **depuis le clone local sur ce Mac**, PAS en se connectant d'abord au VPS.
 
 ```bash
-ssh <user>@<hote-VPS>
-cd <dossier-projet-VPS>                 # celui que l'owner t'a donné (PAS ~/testttt)
-git fetch origin
-git reset --hard origin/pos/category-first-caisse-2026-06-23   # → HEAD 17d65e435
-bash tools/deploy-final-2026-07-07.sh
+cd /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt
+git pull origin pos/category-first-caisse-2026-06-23     # récupère le script à jour (HEAD ≥ 17d65e435)
+bash tools/deploy-final-2026-07-07.sh                    # SSH → VPS → reset+build+migrate+seed+chaîne
 ```
-Le script (idempotent) : `npm ci` + **`npm run production`** (rebuild de TOUS les bundles),
+Le script se connecte en SSH au VPS et y exécute (idempotent) : `git reset --hard origin/BRANCH`,
+`npm ci` + **`npm run production`** (rebuild de TOUS les bundles),
 `migrate --force`, triggers NF525 (install+verify **8/8**), vignettes WebP, **seeders**
 (TacosCrudités, **MenuEnfantChickenBurger**, **SimulatedTpeTerminal**, OnionCuit, DrinksUpdate),
 publication des ponts dans `public/dl`, `POS_PRINT_SILENT_ONLY=true`, `fiscal:verify-chain --all`
 (= **CHAIN OK ×4**), `queue:restart`.
 
 ✅ **Vérif A** : la sortie finit par `CHAIN OK`. Dans un navigateur **rechargé sans cache** (Ctrl+Maj+R)
-sur `<DOMAINE>`, la caisse doit montrer : catégorie **Menu enfant → « Menu Enfant Chicken Burger »**,
+sur `https://lecayenne.fr`, la caisse doit montrer : catégorie **Menu enfant → « Menu Enfant Chicken Burger »**,
 un **Tacos** avec étape **crudités**, le **n° du jour = A0032**, et au paiement carte le TPE
 **« TPE Le Cayenne #1 · simulation »** (plus de « Aucun TPE »).
 
@@ -99,7 +101,7 @@ Passe **1 commande de test** à la caisse et note le **titre** de la fenêtre qu
 ### B.2 Mettre à jour le pont
 ```powershell
 New-Item -ItemType Directory -Force -Path C:\caisse-bridge | Out-Null
-Invoke-WebRequest "<DOMAINE>/dl/caisse-bridge.js" -OutFile C:\caisse-bridge\caisse-bridge.js
+Invoke-WebRequest "https://lecayenne.fr/dl/caisse-bridge.js" -OutFile C:\caisse-bridge\caisse-bridge.js
 ```
 
 ### B.3 Lanceur SANS fenêtre (choisir **A** ou **B**)
@@ -159,7 +161,7 @@ explorer shell:startup
 ### C.2 Mettre à jour le pont
 ```powershell
 New-Item -ItemType Directory -Force -Path C:\borne-print | Out-Null
-Invoke-WebRequest "<DOMAINE>/dl/bridge.js" -OutFile C:\borne-print\bridge.js
+Invoke-WebRequest "https://lecayenne.fr/dl/bridge.js" -OutFile C:\borne-print\bridge.js
 ```
 
 ### C.3 Lanceur SANS fenêtre (VBS window-0 recommandé)
@@ -197,10 +199,10 @@ start "" "C:\Program Files\Google\Chrome\Application\chrome.exe" ^
   --disk-cache-dir="%TEMP%\borne-cache" --disk-cache-size=1 --aggressive-cache-discard ^
   --noerrdialogs --disable-session-crashed-bubble --disable-features=Translate ^
   --disable-pinch --overscroll-history-navigation=0 --autoplay-policy=no-user-gesture-required ^
-  "<DOMAINE>/kiosk"
+  "https://lecayenne.fr/kiosk"
 ```
 Mettre un **raccourci de ce .bat dans `shell:startup`** (à la place de l'ancien lancement Chrome).
-Vérifier que l'URL `<DOMAINE>/kiosk` est la **courante** (pas une vieille IP/URL).
+Vérifier que l'URL `https://lecayenne.fr/kiosk` est la **courante** (pas une vieille IP/URL).
 
 ### ✅ Vérif BORNE
 - `Invoke-WebRequest http://127.0.0.1:9100/health` → **`UP`** ; `/test` imprime un ticket démo.
