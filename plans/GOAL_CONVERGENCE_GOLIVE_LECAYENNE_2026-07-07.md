@@ -100,3 +100,46 @@ Interrupt-resume : commit WIP `wip(golive-wN)` + `reports/test-e2e/convergence-g
 
 ## §F Règle finale
 DONE = les 4 surfaces ré-attestées P0+P1=0 sur 2 cycles identiques + preuve (captures+bytes+DB+CHAIN) ; C33 tranché (appliqué-prouvé OU différé-documenté) ; frozen diff 0 hors LOCK ; Vitest+PHPUnit verts ; CHAIN OK ×4 ; puis gate owner déploiement. **Production-perfect prouvé, pas « presque ». Aucun retour tant que tout n'est pas vert-prouvé.**
+
+---
+# EXTENSION DEEP (2026-07-07) — ultra-décomposition du reste + mobile + web + DB
+
+## §9 — S7 Mobile app (STANDALONE React/JSX — AUDIT autorisé, câblage INTERDIT sans gate)
+### Contract : app cliente autonome `mobile/` (components/, hooks/, api/, data/) — prototype React JSX + `mobile/tests/*.spec.js`. NON câblée backend (mandat §3bis). « Valider » = cohérence interne + ses propres tests + adversaire, PAS intégration.
+### Ancres vérifiées : `mobile/` (design-canvas.jsx, ios-frame.jsx, icons.jsx, components/, hooks/useCountdown.js, api/, data/menu.js, tests/menu.spec.js, CONNECTION_PLAN.md, HOW_TO_RESUME.md).
+### Sous-systèmes
+- **Sub 7.1 — Data/menu SSOT mirror**. Tasks : T-9.1.1 `mobile/data/menu.js` = miroir canonical DB items (45 items, 0 produit inventé) ; T-9.1.2 palette NOIR/ORANGE/JAUNE/BLANC (pas #F4501E Cayenne). Acceptance : grep noms items vs DB + `mobile/tests/menu.spec.js` PASS.
+- **Sub 7.2 — Flows client (funnel/loyalty/orders)**. Tasks : T-9.2.1 parcours commande cohérent ; T-9.2.2 fidélité affichage. Acceptance : ses tests + audit adversaire (0 raw label, layout, a11y).
+- **Sub 7.3 — Intégrité prototype**. Task T-9.3.1 : 0 lien mort, 0 asset 404, CONNECTION_PLAN cohérent. Acceptance : audit statique + capture visuelle si rendable.
+
+## §10 — S8 Web site (STANDALONE React/JSX — AUDIT autorisé, câblage INTERDIT sans gate)
+### Contract : site client autonome `/Users/1millnonstop/Downloads/web/` (account-v2.jsx, loyalty-v2.jsx, orders.jsx, funnel.jsx, flows.jsx, api.js, apiContract.js) + `pw.validation.config.js` (Playwright propre). NON câblé backend.
+### Ancres vérifiées : `/Users/1millnonstop/Downloads/web/` (les .jsx ci-dessus + reports/ + legal/).
+### Sous-systèmes
+- **Sub 8.1 — Parcours commande+compte**. Tasks : T-10.1.1 funnel/flows cohérents ; T-10.1.2 account-v2 + loyalty-v2. Acceptance : `pw.validation.config.js` suite PASS + audit adversaire.
+- **Sub 8.2 — apiContract mirror**. Task T-10.2.1 : apiContract.js cohérent (miroir pour futur câblage mécanique, pattern accepté §3bis). Acceptance : audit statique cohérence.
+- **Sub 8.3 — Legal/UX/a11y**. Task T-10.3.1 : legal/ présent, 0 raw label, responsive. Acceptance : audit adversaire visuel.
+
+## §11 — S9 DB (deep — 180 migrations, 88 tables)
+### Contract : schéma intègre, indexes, FK, 0 orphelin, BranchScope couvert, triggers NF525.
+### Ancres vérifiées : `database/migrations/` (180), 88 tables live.
+### Sous-systèmes
+- **Sub 9.1 — Intégrité schéma**. Tasks : T-11.1.1 FK cohérentes / 0 orphelin sur tables clés (order_items, orders, items, variations, extras) ; T-11.1.2 indexes sur colonnes chaudes (branch_id, status, created_at, fiscal_sequence_no). Acceptance : requêtes d'intégrité (0 orphelin) + EXPLAIN chemins chauds. (test TO BE CREATED tests/Feature/Db/SchemaIntegrityTest.php)
+- **Sub 9.2 — BranchScope + NF525 triggers**. Tasks : T-11.2.1 sentinelle BranchScope 20 modèles verte ; T-11.2.2 triggers audit_logs/z_reports BEFORE DELETE présents (MySQL). Acceptance : `tests/Feature/Branch/BranchScopeCoverageSentinelTest.php` PASS + grep triggers.
+- **Sub 9.3 — Data hygiene**. Task T-11.3.1 : 0 produit orphelin/dupliqué (variations status5+deleted_at normalisées), composition_snapshot cohérent. Acceptance : requêtes de comptage + verify-before-report.
+
+## §12 — S1/S2 DEEP internals (indirect/edge — POS+kiosk)
+### Sous-systèmes
+- **Sub 1.5 — POS edge/race single-box**. Tasks : T-12.1.1 OrderStateMachine transitions terminales gardées ; T-12.1.2 idempotence double-clic/replay ; T-12.1.3 chemins d'ERREUR (422/409/5xx) propres. Acceptance : `tests/Feature/Pos/*` + audit adversaire chemins d'échec.
+- **Sub 2.4 — Kiosk edge/offline deep**. Tasks : T-12.2.1 offline queue réconciliation ; T-12.2.2 fausse confirmation ; T-12.2.3 wizard états dégradés. Acceptance : `tests/js/kiosk*` + audit adversaire.
+
+## Vagues EXTENSION (checkpoint 6-pts chacune)
+| Wave | Scope | Parallélisme | Gate |
+|---|---|---|---|
+| W7 | AUDIT profond MOBILE (S7) — multi-lentilles + adversaire + ses tests | ∥ (tree disjoint) | — |
+| W8 | AUDIT profond WEB (S8) — multi-lentilles + adversaire + son Playwright | ∥ (tree disjoint) | — |
+| W9 | AUDIT profond DB (S9) — intégrité/index/FK/orphelins/BranchScope/triggers | ∥ (read-only) | — |
+| W10 | DEEP POS+kiosk internals (S1.5/S2.4) — race/edge/error paths adversaire | séquentiel | — |
+| W11 | Triage verify-before-trust de TOUS les findings W7-W10 → fix réels → adversaire | selon findings | LOCK si frozen |
+| W12 | Convergence 1000% : re-run tout + 2 cycles identiques + tag | fan-out ∥ | — |
+Note : W7/W8/W9 sont des AUDITS read-only, lançables en parallèle de W2. Mobile/web « validés » = standalone (leurs tests + cohérence), PAS câblage backend (gate séparé requis).
