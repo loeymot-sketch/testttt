@@ -1237,6 +1237,16 @@ class FrontendOrderService
                         ->next((int) $locked->branch_id);
                     $locked->fiscal_sequence_no = $newSeq;
 
+                    // [P1 fiscal_dated_at — LOCK_ZREPORT_FISCAL_C33_DELIVERY_VAT 2026-07-07 · NF-01]
+                    // Chemin kiosk-payé (y compris ALLOCATION DIFFÉRÉE via RetryFiscalAllocCommand
+                    // / PaymentReconcile) : si l'alloc a échoué à T0 puis est rattrapée dans un Z
+                    // ULTÉRIEUR, sans ce stamp aggregate() fenêtre par created_at (=T0, Z déjà clos)
+                    // → reçu numéroté hors de TOUT Z signé (le P1 exact, oublié au 1er fix). Stamper
+                    // l'instant d'allocation réel → la commande appartient au Z d'allocation.
+                    if (\Illuminate\Support\Facades\Schema::hasColumn('orders', 'fiscal_dated_at')) {
+                        $locked->fiscal_dated_at = now();
+                    }
+
                     // [iter14 SPECIALIST-3 / FISCAL-ORPHAN-RETRY]
                     // Clear the error flag — a previous failed attempt may
                     // have set it, and a successful retry brings the row
