@@ -429,7 +429,24 @@ export class KdsSyncService {
 
         try {
             const vuex = JSON.parse(localStorage.getItem('vuex') || '{}');
-            const token = vuex.kioskCart?.kioskToken || vuex.auth?.authToken || '';
+            // [visual-round-2 N3 fix 2026-07-07] Pick the Bearer token with the
+            // EXACT same surface-aware precedence the shared axios interceptor
+            // uses (shared/axios-setup.js `selectSurfaceBearerToken`): OFF the
+            // /kiosk surface the STAFF/admin token wins, on /kiosk the kiosk
+            // token wins. The KDS board is an ADMIN surface
+            // (/admin/kitchen-display-system, /kds) so it MUST send the staff
+            // token. The previous kiosk-token-first order
+            // (kioskCart.kioskToken || auth.authToken) diverged from axios: when
+            // a prior kiosk session left a `kiosk:order` token in localStorage,
+            // this poll shipped that token to /api/admin/kds-order/sync and got
+            // 401 (silently-blind KDS) while every other admin axios call sent
+            // the right token and got 200. Same-origin prod is unaffected — the
+            // selection is identical to what axios already resolves.
+            const kioskToken = vuex.kioskCart?.kioskToken || '';
+            const userToken = vuex.auth?.authToken || '';
+            const path = (typeof window !== 'undefined' && window.location) ? (window.location.pathname || '') : '';
+            const isKioskSurface = path.startsWith('/kiosk');
+            const token = isKioskSurface ? (kioskToken || userToken) : (userToken || kioskToken);
             const language = vuex.globalState?.lists?.language_code || null;
 
             if (token) {
