@@ -1,0 +1,84 @@
+{
+  "round": 1,
+  "surface": "admin-gerance",
+  "auditor": "visual-adversarial",
+  "date": "2026-07-07",
+  "viewport": "1440x900",
+  "login": "admin@lecayenne.fr (ok, redirect /admin/dashboard)",
+  "screens_audited": [
+    "dashboard", "catalogue-items", "stock-rupture", "sales-report",
+    "items-report", "transactions", "encaissement", "cash-overview",
+    "historique", "cash-sessions-report", "delivery-boy-cash",
+    "oss", "kds"
+  ],
+  "findings": [
+    {
+      "screen": "kds",
+      "severity": "P2",
+      "summary": "KDS delta-sync poll returns 401. GET http://127.0.0.1:8000/api/admin/kds-order/sync?since=...&branch_id=0&include_deleted=true => 401 Unauthorized. Every other authenticated admin API call in the app goes to host :8766 and succeeds; this KDS sync hits :8000 (wrong origin, no Sanctum auth context) so it 401s. Board INITIAL load works (cards A0015/A0016/A0001 render), but the advertised 'rafraichissement automatique toutes les 60 s' will fail -> no real-time pickup of new/updated tickets in this environment. Env-scoped (split-host dev: app :8000 vs API :8766); verify it resolves under same-origin prod, but as-audited it is broken. Needs code-auditor confirmation of the URL base used by the KDS sync client.",
+      "evidence_capture": "reports/test-e2e/ultra-loop-2026-07-07/round-1/visual/13-kds.png",
+      "evidence_network": "GET :8000/api/admin/kds-order/sync => 401 (console error + network request #45); contrast: dashboard/items/report data calls to :8766 => 200",
+      "confidence": "high (401 reproduced + host mismatch verified)"
+    },
+    {
+      "screen": "dashboard (global header, all admin pages)",
+      "severity": "P3",
+      "summary": "Broken admin avatar image in the top-right header. GET http://127.0.0.1:8766/storage/18/clean.jpg fails net::ERR_BLOCKED_BY_ORB (naturalWidth/Height = 0x0), rendering a broken-image glyph (looked like stray 'eatz' text) immediately left of 'Bonjour Admin Le Cayenne'. Present on every admin screen. Cosmetic only.",
+      "evidence_capture": "reports/test-e2e/ultra-loop-2026-07-07/round-1/visual/01b-header.png",
+      "confidence": "high (DOM 0x0 + network ERR_BLOCKED_BY_ORB verified)"
+    },
+    {
+      "screen": "transactions",
+      "severity": "P3",
+      "summary": "Raw enum labels + non-FR amount format. MODE DE PAIEMENT column shows machine constants 'COUNTER_CASH' / 'COUNTER_CARD' instead of human labels (e.g. 'Especes (caisse)' / 'Carte (caisse)'). MONTANT shows '+ 6.90' with a DOT decimal and no euro symbol, inconsistent with the FR-localized '6,90 EUR' used on Sales Report / Encaissement / Historique.",
+      "evidence_capture": "reports/test-e2e/ultra-loop-2026-07-07/round-1/visual/06-transactions.png",
+      "confidence": "high (DOM text extracted: modes=['COUNTER_CASH','COUNTER_CARD'], amount='+ 6.90')"
+    },
+    {
+      "screen": "sales-report",
+      "severity": "P3",
+      "summary": "Empty/unlabeled payment-status badge for unpaid orders. Non-paid rows render '<span class=\"db-table-badge text-red-800 bg-red-100\"></span>' -- a bare red pill with NO text -- while paid rows show a green 'Paye' badge. Ambiguous in a financial report. The label mapping exists (Historique shows 'A encaisser'/'Paye' correctly), so it just is not applied here.",
+      "evidence_capture": "reports/test-e2e/ultra-loop-2026-07-07/round-1/visual/04-sales-report-vp.png",
+      "confidence": "high (badge innerHTML confirmed empty via DOM)"
+    },
+    {
+      "screen": "delivery-boy-cash",
+      "severity": "P3",
+      "summary": "LIVREUR column shows a raw numeric user id ('10') instead of the delivery person's name. Header 'Caisses livreur' is correct. Compare cash-sessions-report which resolves the Caissier column to real names ('Admin Le Cayenne', 'S-SYNC E2E Operator'). Admin cannot identify who the livreur is.",
+      "evidence_capture": "reports/test-e2e/ultra-loop-2026-07-07/round-1/visual/11-delivery-cash.png",
+      "confidence": "medium (value '10' is a user_id-shaped bare number in a name column)"
+    },
+    {
+      "screen": "historique",
+      "severity": "P3",
+      "summary": "STATUT badge uses the infinitive 'Accepter' (the action/verb) as a state label, instead of a state form like 'Acceptee'/'Accepte'. Reads like a button label used as a status. Minor grammar/i18n nit.",
+      "evidence_capture": "reports/test-e2e/ultra-loop-2026-07-07/round-1/visual/09-historique.png",
+      "confidence": "high (DOM statuts=['Accepter','En preparation'])"
+    },
+    {
+      "screen": "dashboard",
+      "severity": "P3",
+      "summary": "Live-cards do not reconcile arithmetically: 'Chiffre d'Affaires du Jour' 6,70 EUR divided by 'Commandes du Jour' 8 = 0,84 EUR, but 'Ticket Moyen' shows 1,68 EUR (= 6,70 / 4). Likely different denominators (ticket moyen = CA / paid orders, commandes = all orders incl. unpaid), which is defensible, but the three cards presented side-by-side do not visually add up and can confuse an operator. Low confidence it is a bug vs intentional metric definition.",
+      "evidence_capture": "reports/test-e2e/ultra-loop-2026-07-07/round-1/visual/01-dashboard-top.png",
+      "confidence": "low (cannot confirm bug vs definitional difference without backend)"
+    },
+    {
+      "screen": "sales-report",
+      "severity": "P3",
+      "summary": "Count mismatch within the same report: footer 'Affichage de 1 a 10 sur 2850 entrees' vs summary KPI 'Total Commandes 2844' (also the dashboard value). 6-order delta. Probably different filter criteria (e.g. table includes canceled). Low confidence.",
+      "evidence_capture": "reports/test-e2e/ultra-loop-2026-07-07/round-1/visual/04-sales-report-vp.png",
+      "confidence": "low"
+    }
+  ],
+  "non_findings_verified": [
+    "Login page 39 console 401s -> pre-auth SPA firing dashboard/setting calls to :8766 before token exists; all clear after login (dashboard renders real data). Benign, not reported.",
+    "Sidebar 'Caisse livreur' and 'Bols' category are correctly spelled (render blur only) -- verified via DOM text.",
+    "Catalogue thumbnails: 10/10 load (0 broken).",
+    "Cash-overview empty state is legitimate: default filter is today-only (07/07) with genuinely 0 cash transactions (caisse opened 20:56, fond 50 EUR, 0 encaisse). Not a false-empty.",
+    "Dashboard '66 articles menu' vs catalogue '55 produits': not a bug -- 66 = all sellable items incl. internal technique/upsell items (Menu, Frites Seules, Boisson Seule...), 55 = catalogue products. Confirmed via items-report (66 entrees).",
+    "OSS 'Pret' column empty and only 1 order 'En preparation' -> board-release only shows paid+preparing orders; most orders are 'A encaisser'. Consistent, not a false-empty.",
+    "KDS ATTENTE timers (400:08 etc.) and dashboard SLA '294 Alertes / 26j 5h' are old test-data artifacts, not UI defects."
+  ],
+  "verdict": "ISSUES",
+  "verdict_detail": "No P0/P1. 1 P2 (env-scoped KDS delta-sync 401) + 6 P3 (cosmetic/label/localization) + 1 low-confidence P3 count-mismatch. Gerance screens are visually solid and correctly localized overall; layout intact on all 13 screens, no broken product images, amounts/badges/tables render coherently."
+}

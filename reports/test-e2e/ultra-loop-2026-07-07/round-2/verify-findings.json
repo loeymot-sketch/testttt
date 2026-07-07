@@ -1,0 +1,105 @@
+{
+  "round": 2,
+  "head": "feefec089",
+  "role": "adversarial-supervisor (attack-only, no fix applied)",
+  "fixes_hold": [
+    {
+      "id": 1,
+      "title": "PDF ventes/articles paginate=0 (total = somme complète)",
+      "verdict": "HOLDS",
+      "proof": "SalesReportController.php:69 $request->merge(['paginate'=>0]) AVANT orderService->list() (l.73). ItemsReportController.php:60 idem AVANT itemReport() (l.64). Blade pdf/sales_report.blade.php:124-151 @foreach($orders) + $total+=$order->total sur collection complète. Sentinelle ReportPdfNoTruncationTest 2/2 verte au HEAD."
+    },
+    {
+      "id": 2,
+      "title": "fiscal:verify-immutability-triggers (exit != 0 si manquant, skip SQLite)",
+      "verdict": "HOLDS",
+      "proof": "php artisan fiscal:verify-immutability-triggers => 'NF525 IMMUTABILITY BREACH: 8/8 trigger(s) MISSING' + REAL_EXIT=1 (le premier EXIT=0 mesuré était l'exit de head via le pipe, artefact shell). Liste les 8 triggers attendus (audit_logs x2, z_reports, cash_movements, cash_drawer_sessions, order_payments, stock_movements x2). Skip propre sur SQLite (test skip)."
+    },
+    {
+      "id": 3,
+      "title": "Validation prix variations/extras (numeric/min:0)",
+      "verdict": "HOLDS",
+      "proof": "ItemRequest.php:97 withValidator() -> validateNestedModifierPrices() (l.118). l.136 rejette non-numeric ('The price must be a number'), l.141 rejette < 0 ('at least 0'), 0 légitime. Sentinelle ItemModifierPriceValidationTest 3/3 verte (rejects negative variation, rejects non-numeric extra, accepts 0)."
+    },
+    {
+      "id": 4,
+      "title": "Coupon soft-delete (historique order_coupons résolvable)",
+      "verdict": "HOLDS",
+      "proof": "Coupon.php:19 use SoftDeletes. Migration 2026_07_07_090000_add_soft_deletes_to_coupons présente. CouponRequest.php:47/50 Rule::unique->whereNull('deleted_at') (re-création OK). Sentinelle CouponSoftDeleteHistoryTest verte (dans le batch 21 passed)."
+    },
+    {
+      "id": 5,
+      "title": "Outbox prune capture les contract-violation terminaux",
+      "verdict": "HOLDS",
+      "proof": "PruneOutboxCommand.php:74-77 clause (C) whereNull('dispatched_at')->where('last_error','like','contract_violation%')->where('created_at','<',cutoff). Sentinelle PruneOutboxContractViolationTest 4/4 verte."
+    },
+    {
+      "id": 6,
+      "title": "Health 503 exclut les poison terminaux du worker-lag",
+      "verdict": "HOLDS",
+      "proof": "HealthController.php:163-166 checkQueueWorker whereNull('dispatched_at') + (last_error NULL OR NOT LIKE 'contract_violation%'). Sentinelle HealthQueueWorkerContractViolationTest 4/4 verte."
+    },
+    {
+      "id": 7,
+      "title": "KDS sync baseURL préfixe ENV.API_URL (no-op prod)",
+      "verdict": "HOLDS",
+      "proof": "KdsSyncService.js:153 const apiBase=(ENV.API_URL||'').replace(/\\/$/,'') ; l.154 fetch(`${apiBase}/api/admin/kds-order/sync...`). apiBase réellement utilisé dans l'URL. Sentinelle kdsSyncBaseUrl.spec.js 2/2 verte."
+    },
+    {
+      "id": 8,
+      "title": "Labels transactions €/FR, badge À encaisser, nom livreur, Acceptée/Accepter",
+      "verdict": "HOLDS",
+      "proof": "fr.json:837 label.accept='Acceptée', :1344 button.accept='Accepter'. TransactionListComponent.vue:283-284 COUNTER_CASH/CARD -> 'Espèces/Carte (Caisse)' + formatPrice (l.305). SalesReportListComponent.vue:331-332 PENDING_COUNTER/REFUNDED badges (fr.json:447 'À encaisser', :448 'Remboursé'). DeliveryBoyCashSessionListComponent.vue:213-217 deliveryBoyName(id) via deliveryBoyMap. Sentinelle geranceDisplayLabels.spec.js 8/8 verte."
+    }
+  ],
+  "new_findings": [
+    {
+      "severity": "P1",
+      "verdict": "CONFIRMED",
+      "title": "OnlineOrderController::pdf — MÊME troncature paginate que Fix 1, NON corrigée (Round 1 a raté le 3e jumeau)",
+      "proof": "app/Http/Controllers/Admin/OnlineOrderController.php:71-92 pdf() n'appelle PAS $request->merge(['paginate'=>0]) avant orderService->list() (l.77). Le jumeau Excel OrderExport.php:28 le fait DÉJÀ (self-audit R4 2026-07-05) ; les 2 PDF rapports le font (Fix 1). Chaîne prouvée : route routes/api.php:1039 onlineOrder.pdf -> frontend OnlineOrderListComponent.vue:386 dispatch('onlineOrder/pdf', this.props.search) avec props.search.paginate=1 & per_page=10 (l.270-272) -> store onlineOrder.js:154-156 forwarde les params -> OrderService::list:131 paginate==1 => ->paginate(10). Blade pdf/online_orders.blade.php:111-124 @foreach($orders) + $total+=$order->total PUIS rend $total => Total agrégé sur 10 lignes seulement. IMPACT RÉEL (DB) : 3129 commandes, SUM(total) vrai=745 633,62 €, mais le Total du PDF tronqué (10 premières)=58,20 € => sous-déclaration ~99,99% sur un rapport imprimable, mécanisme identique au P1 R1 (38 522€->6,70€). Fix attendu = miroir exact (merge paginate=0 en tête de pdf())."
+    },
+    {
+      "severity": "P3",
+      "verdict": "CONFIRMED (owner/comptable calibration)",
+      "title": "Frais de livraison enregistrés à 0% TVA (HT pur) dans le Z-report",
+      "proof": "ZReportService::applyOrderToTotals:663 total_ttc += order->total (INCLUT delivery_charge). taxBreakdownForOrders:710-724 ne somme QUE order_items.tax_amount (delivery n'est pas un order_item, aucune ligne TVA). Donc total_tva exclut toute TVA sur livraison et total_ht=total_ttc-total_tva absorbe delivery_charge en HT à 0% TVA. DB : 32 commandes delivery_charge>0. Aucune gestion de TVA livraison dans PricingService (l.346 $delivery=$req->deliveryCharge, ajouté brut) ni ZReportService. Direction RISQUÉE (sous-déclare TVA si la livraison doit porter TVA au taux resto/20%). Calibré P3 : V1 takeaway-primary, livraison=repli manuel secondaire ; traiter la livraison en HP/exonéré est un choix fiscal défendable => décision owner+comptable, pas bug de code évident. Total CA correct, chaîne intacte."
+    }
+  ],
+  "refuted_or_bydesign": [
+    {
+      "title": "Intersection discount/remise × fiscal — assiette HT post-remise",
+      "verdict": "REFUTED (by-design, déjà scellé)",
+      "proof": "Le total_tva SIGNÉ du Z-report EST netté de la remise via LOCK_ZREPORT_F1_DISCOUNT_NETTING (2026-05-31). ZReportService::orderDiscountRatio:677-686 = (subtotal-discount)/subtotal ; taxBreakdownForOrders:717-724 scale chaque tax_amount par ce ratio ; l.435-444 total_tva=array_sum(byTaxRate) + total_ht=total_ttc-total_tva. Preuve DB order#5494 : subtotal=7,90 discount=1,00 total=6,90 total_tax(colonne, pré-remise)=0,72 ; contribution Z = 0,72 × (6,90/7,90=0,8734) = 0,63 = TVA post-remise correcte (6,90×10/110). La colonne order.total_tax reste pré-remise mais N'EST PAS consommée par l'agrégation fiscale (getTotalHtAttribute non utilisé par le chemin de signature). Enregistrement fiscal CORRECT."
+    },
+    {
+      "title": "Autres FormRequest gérance sans validation prix/montant (offers, ingredients)",
+      "verdict": "NO GAP",
+      "proof": "OfferRequest:45 amount numeric+max:100+IniAmount (rejette <0 / <=0 en %). CouponRequest:52-60 discount/minimum_order/maximum_discount/limit_per_user min:0. ItemExtraRequest:35 price IniAmount. ItemVariationRequest:40 price IniAmount(true). LoyaltySetupRequest:17-19 integer+min. Pas de modèle 'Ingredient' price-bearing exposé. IniAmount.php:36/41 rejette négatif."
+    },
+    {
+      "title": "Autres hard-delete laissant orphelins (offers, customers, dining tables, tax)",
+      "verdict": "NO FISCAL ORPHAN",
+      "proof": "TVA snapshotée dans order_items (tax_name/rate/type/amount, migration 2023_07_20) + discount snapshoté dans orders.discount => Tax/Offer hard-delete n'orphelinent aucun enregistrement fiscal. offers n'ont pas de table order_offers (seulement offer_items->items), pas de lien par-commande. Customer = User (SoftDeletes) + orders.user_id FK constrained('users') RESTRICT (pas de cascade). dining_table_id = integer non-FK non-fiscal + V1 takeaway (dine-in désactivé)."
+    },
+    {
+      "title": "Autres enums bruts affichés (composants admin)",
+      "verdict": "CLEAN",
+      "proof": "PosOrderListComponent:130 & OnlineOrderListComponent:125 orderStatusEnumArray[order.status] (label map). CustomerListComponent:98 statusEnumArray[customer.status]. PaymentTerminals:41 ternaire label.active/archived. Aucune fuite d'entier enum brut."
+    },
+    {
+      "title": "Autres rapports/exports PDF tronqués (creditBalance, cashSession, autres formats)",
+      "verdict": "SEUL OnlineOrder::pdf touché",
+      "proof": "grep 'function pdf(' => 4 contrôleurs. SalesReport+Items = fixés (Fix 1). ZReportController::pdf = entité unique (1 ZReport), non tronquable. OnlineOrderController::pdf = SEUL trou restant (finding P1). Jumeaux Excel (OrderExport/SalesReportExport/ItemsReportExport) déjà à paginate=0."
+    }
+  ],
+  "gates": {
+    "vitest": "2286 passed | 3 skipped | 0 failed (326 files)",
+    "phpunit": "3206 passed | 2 incomplete | 32 skipped | 0 failed (515s)",
+    "frozen_diff_24e8a09c3_HEAD": "2 files: KioskWizardComponent.vue (+33/-1), pos-wizard.js (+279/-20) — exactement les 2 attendus, 0 autre frozen §7 touché ; aucun des 8 fixes R1 ne touche une zone frozen",
+    "fiscal_verify_chain": "CHAIN OK x4 (branches 1,7,8,9)",
+    "r1_sentinels_replayed": "21 PHP (2 MySQL-skip) + 10 JS = tous verts au HEAD"
+  },
+  "verdict": "ISSUES",
+  "convergence": "NON — 8/8 fixes HOLD mais 1 NOUVEAU P1 (OnlineOrderController::pdf, même classe que Fix 1, raté par Round 1). Convergence du bloc exige 0 nouveau P0/P1 => bloc NON convergé. Le P3 livraison×TVA est une décision owner, non bloquant."
+}
