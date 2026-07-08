@@ -1,0 +1,488 @@
+{
+  "tacos-m": {
+    "name": "Tacos M",
+    "opened": true,
+    "err": "next disabled at step 0",
+    "steps": [
+      {
+        "title": "Choisis 1 viande",
+        "sub": "Sélection obligatoire",
+        "choices": [
+          {
+            "name": "Mexicanos",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Cordon Bleu",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Viande Hachée",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Nuggets",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Tenders",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Fricadelle",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Poulet mariné",
+            "price": "",
+            "selected": false
+          }
+        ],
+        "total": "6,90 €",
+        "nextLabel": "Continuer",
+        "nextDisabled": true
+      }
+    ]
+  },
+  "cayenne": {
+    "name": "Cayenne",
+    "opened": true,
+    "err": "next disabled at step 5",
+    "steps": [
+      {
+        "title": "Pain ou galette ?",
+        "sub": "Choisis ta base",
+        "choices": [
+          {
+            "name": "Pain",
+            "price": "",
+            "selected": true
+          },
+          {
+            "name": "Galette",
+            "price": "",
+            "selected": false
+          }
+        ],
+        "total": "7,40 €",
+        "nextLabel": "Continuer",
+        "nextDisabled": false
+      },
+      {
+        "title": "Sauce",
+        "sub": "1 sauce incluse",
+        "choices": [
+          {
+            "name": "Mayonnaise",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Ketchup",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Blanche",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Hannibal🌶",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Samouraï🌶",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Algérienne",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Andalouse",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Curry",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Barbecue",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Harissa🌶",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Fromagère maison",
+            "price": "",
+            "selected": true
+          },
+          {
+            "name": "Spicy maison🌶",
+            "price": "",
+            "selected": false
+          }
+        ],
+        "total": "7,40 €",
+        "nextLabel": "Continuer",
+        "nextDisabled": false
+      },
+      {
+        "title": "Crudités",
+        "sub": "Tu peux retirer ce que tu ne veux pas",
+        "choices": [
+          {
+            "name": "Salade",
+            "price": "",
+            "selected": true
+          },
+          {
+            "name": "Tomate",
+            "price": "",
+            "selected": true
+          },
+          {
+            "name": "Oignon",
+            "price": "",
+            "selected": true
+          },
+          {
+            "name": "Oignons cuits",
+            "price": "",
+            "selected": false
+          }
+        ],
+        "total": "7,40 €",
+        "nextLabel": "Continuer",
+        "nextDisabled": false
+      },
+      {
+        "title": "Suppléments gourmands",
+        "sub": "Optionnel · ajoute ce que tu veux",
+        "choices": [
+          {
+            "name": "Oignons frits",
+            "price": "+0,90 €",
+            "selected": false
+          },
+          {
+            "name": "Champignons",
+            "price": "+0,90 €",
+            "selected": false
+          },
+          {
+            "name": "Jambon",
+            "price": "+0,90 €",
+            "selected": false
+          },
+          {
+            "name": "Cheddar",
+            "price": "+0,90 €",
+            "selected": false
+          },
+          {
+            "name": "Raclette",
+            "price": "+0,90 €",
+            "selected": false
+          },
+          {
+            "name": "Emmental",
+            "price": "+0,90 €",
+            "selected": false
+          },
+          {
+            "name": "Boursin",
+            "price": "+0,90 €",
+            "selected": false
+          },
+          {
+            "name": "Œuf",
+            "price": "+0,90 €",
+            "selected": false
+          },
+          {
+            "name": "Légumes sautés",
+            "price": "+0,90 €",
+            "selected": false
+          },
+          {
+            "name": "Boule gratinée",
+            "price": "+1,00 €",
+            "selected": false
+          }
+        ],
+        "total": "7,40 €",
+        "nextLabel": "Continuer",
+        "nextDisabled": false
+      },
+      {
+        "title": "Viande supplémentaire ?",
+        "sub": "Optionnel · +2,50 € par viande",
+        "choices": [
+          {
+            "name": "Mexicanos",
+            "price": "+2,50 €",
+            "selected": false
+          },
+          {
+            "name": "Cordon Bleu",
+            "price": "+2,50 €",
+            "selected": false
+          },
+          {
+            "name": "Viande Hachée",
+            "price": "+2,50 €",
+            "selected": false
+          },
+          {
+            "name": "Nuggets",
+            "price": "+2,50 €",
+            "selected": false
+          },
+          {
+            "name": "Tenders",
+            "price": "+2,50 €",
+            "selected": false
+          },
+          {
+            "name": "Fricadelle",
+            "price": "+2,50 €",
+            "selected": false
+          },
+          {
+            "name": "Poulet mariné",
+            "price": "+2,50 €",
+            "selected": false
+          }
+        ],
+        "total": "7,40 €",
+        "nextLabel": "Continuer",
+        "nextDisabled": false
+      },
+      {
+        "title": "Faire un menu ?",
+        "sub": "Ajoute frites et/ou boisson",
+        "choices": [
+          {
+            "name": "Menu complet",
+            "price": "+2,50 €",
+            "selected": false
+          },
+          {
+            "name": "Ajouter Frites",
+            "price": "+2,00 €",
+            "selected": false
+          },
+          {
+            "name": "Ajouter Boisson",
+            "price": "+2,00 €",
+            "selected": false
+          },
+          {
+            "name": "Sans formule",
+            "price": "",
+            "selected": false
+          }
+        ],
+        "total": "7,40 €",
+        "nextLabel": "Voir récap",
+        "nextDisabled": true
+      }
+    ]
+  },
+  "cheese-burger": {
+    "name": "Cheese Burger",
+    "opened": true,
+    "err": "next disabled at step 0",
+    "steps": [
+      {
+        "title": "Sauce",
+        "sub": "1 sauce incluse",
+        "choices": [
+          {
+            "name": "Mayonnaise",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Ketchup",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Blanche",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Hannibal🌶",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Samouraï🌶",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Algérienne",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Andalouse",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Curry",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Barbecue",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Harissa🌶",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Fromagère maison",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Spicy maison🌶",
+            "price": "",
+            "selected": false
+          }
+        ],
+        "total": "6,00 €",
+        "nextLabel": "Continuer",
+        "nextDisabled": true
+      }
+    ]
+  },
+  "bol-riz": {
+    "name": "Bol Riz",
+    "opened": true,
+    "err": "next disabled at step 0",
+    "steps": [
+      {
+        "title": "Choisis 1 viande",
+        "sub": "Sélection obligatoire",
+        "choices": [
+          {
+            "name": "Mexicanos",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Cordon Bleu",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Viande Hachée",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Nuggets",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Tenders",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Fricadelle",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Poulet mariné",
+            "price": "",
+            "selected": false
+          }
+        ],
+        "total": "7,90 €",
+        "nextLabel": "Continuer",
+        "nextDisabled": true
+      }
+    ]
+  },
+  "bol-frites": {
+    "name": "Bol Frites",
+    "opened": true,
+    "err": "next disabled at step 0",
+    "steps": [
+      {
+        "title": "Choisis 1 viande",
+        "sub": "Sélection obligatoire",
+        "choices": [
+          {
+            "name": "Mexicanos",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Cordon Bleu",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Viande Hachée",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Nuggets",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Tenders",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Fricadelle",
+            "price": "",
+            "selected": false
+          },
+          {
+            "name": "Poulet mariné",
+            "price": "",
+            "selected": false
+          }
+        ],
+        "total": "7,90 €",
+        "nextLabel": "Continuer",
+        "nextDisabled": true
+      }
+    ]
+  },
+  "_consoleErrors": []
+}

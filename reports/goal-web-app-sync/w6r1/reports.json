@@ -1,0 +1,677 @@
+[
+ {
+  "scope": "Mission SÉCURITÉ — secrets & PII dans le code web (/Users/1millnonstop/Downloads/web) + mobile (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile). Grep secrets exhaustif, décodage payload QR fidélité (lqr.*), audit localStorage/XSS, revue git log du jour pour .env/clés.",
+  "verdict": "PASS",
+  "summary": "Aucun secret serveur sensible exposé dans les deux repos livrés. Grep exhaustif (sk_live/sk_test/whsec_/AKIA/aws_secret/-----BEGIN/private_key/client_secret/postgres:// etc.) = ZÉRO match. La seule clé en dur est la X-API-Key app-wide front CONNUE (b6d68vy2-…, identique sur kiosk/mobile/web) = clé de gate front, pas un secret serveur → P3 documenté, PAS P0. Le token QR fidélité lqr.* décodé en exécution réelle : payload = {v, cust:189, code:'99B874AD', nonce, iat, exp} + signature HMAC — AUCUN téléphone ni nom → claim PII CONFIRMÉ OK (cust = id interne, loyalty_code = identifiant public). localStorage stocke token Sanctum kiosk:order (30j) + phone : pattern token-auth standard ; le seul sink dangerouslySetInnerHTML (web components.jsx:83) rend un SVG QR généré par la lib locale à partir du token signé (contenu encodé en modules QR, pas d'injection texte) → pas de vecteur XSS. Aucun .env / .pem / .key / credential committé aujourd'hui (2026-07-08) ni tracké dans git. Verdict global : PASS, aucun P0/P1 sécu.",
+  "findings": [
+   {
+    "severity": "P3",
+    "title": "X-API-Key front app-wide en dur (connue, non-secret serveur)",
+    "file": "/Users/1millnonstop/Downloads/web/api.js",
+    "line": 21,
+    "proof": "grep -rEn 'apiKey' : web api.js:21 `apiKey: metaContent('api-key', 'b6d68vy2-m7g5-20r0-5275-h103w73453q120')` ; mobile index.html:71 `apiKey: 'b6d68vy2-m7g5-20r0-5275-h103w73453q120'` ; mobile api/client.js:25 même fallback ; mobile 'Le Cayenne - Prototype.html':41. Identique sur les 3 fronts (kiosk/mobile/web) → clé de gate front-embarquée (config('app.api_key')), pas un secret. Mission le classe explicitement non-P0.",
+    "recommendation": "Aucune action bloquante. Documenter comme clé publique front (déjà le cas dans les commentaires api.js:7). Rotation possible côté backend si jamais exigé, mais hors périmètre V1 LOCAL."
+   },
+   {
+    "severity": "P3",
+    "title": "Token Sanctum 30j stocké en localStorage (exposition théorique si XSS futur introduit)",
+    "file": "/Users/1millnonstop/Downloads/web/api.js",
+    "line": 102,
+    "proof": "grep localStorage : api.js:102-105 getToken/setToken/getPhone/setPhone → localStorage ; mobile api/storage.js:setAuth persiste {token,phone,user_id}. Token = Sanctum kiosk:order scoped, TTL 30j. Seul sink HTML: web components.jsx:83 dangerouslySetInnerHTML={{__html: svgHtml}} où svgHtml = window.qrcode(...).createSvgTag() généré LOCALEMENT depuis qr.token signé (vérifié sed 60-90) — token encodé en modules QR, PAS interpolé comme texte → aucun vecteur XSS actuel. React échappe le reste par défaut.",
+    "recommendation": "Acceptable en V1 LOCAL mono-poste (pas de sink XSS actif). Si wireup cloud futur : envisager httpOnly cookie ou réduire TTL (déjà backlog V1.0.1 TTL 8h→1h). Aucune action requise maintenant."
+   }
+  ],
+  "evidence": [
+   "grep -rEn 'sk_live|sk_test|whsec_|rk_live|pk_live|AKIA|aws_secret|-----BEGIN|passwd|Bearer [A-Za-z0-9]{20,}' sur /Users/1millnonstop/Downloads/web → 0 match (hors node_modules/.git). Idem mobile → 0 match.",
+   "grep -rEn 'client_secret|private_key|mongodb://|postgres://|mysql://.*:.*@|firebase|SUPABASE_.*KEY|service_role' web+mobile → 0 match code (seules occurrences = docs plans .md, exclues).",
+   "Décodage QR RÉEL: curl -X POST :8766/api/frontend/loyalty/qr -H 'Bearer 6625|…' → data.token=lqr.eyJ2IjoxLCJjdXN0IjoxODksImNvZGUiOiI5OUI4NzRBRCІ…. Payload part[1] base64url décodé (python3) = {'v':1,'cust':189,'code':'99B874AD','nonce':'DnFqgG4mrtdJjhGRuDWbmg','iat':1783526901,'exp':1783527201} ; part[2] = signature HMAC binaire. AUCUN phone/nom → PII claim confirmé.",
+   "git -C /Users/1millnonstop/Downloads/web log --since='2026-07-08' --name-status → commit 31a4d71: uniquement .jsx/.js/.md/.png/spec, AUCUN .env/.key/.pem. git ls-files | grep -iE '\\.env|\\.pem|\\.key|credential|secret' → vide (web + mobile/).",
+   "ls -la /Users/1millnonstop/Downloads/web/.env* et mobile/.env* → aucun fichier .env sur disque ni tracké.",
+   "git log testttt --since='2026-07-08' → commits 7470535a6/0dac15973/faf10c537 (goal web-app-sync) : aucun fichier secret/env.",
+   "Sinks HTML: grep dangerouslySetInnerHTML|innerHTML|eval → web components.jsx:83 (SVG QR lib-généré depuis token signé, sûr) ; mobile LoyaltyQR.jsx:45-54 + image-slot.js:235 (contenu contrôlé). eval( → 0 match."
+  ]
+ },
+ {
+  "scope": "e2e RÉEL WEB via API — reproduction du flux placeOrder de /Users/1millnonstop/Downloads/web/api.js (résolution nom→id + POST /api/frontend/order) pour items composés/simples, contre l'API borne :8766 (fixture catalog-canonical.json 9 cat/42 items). Serveurs UP vérifiés (borne8766:200, web8096:200, mobile8087:200).",
+  "verdict": "PASS",
+  "summary": "Le flux placeOrder du web converge à 100%. Reproduction fidèle du pipeline api.js (norm(), buildItemIndex byName, itemDetails, indexDetails, resolveLine, POST /api/frontend/order) : 3 commandes RÉELLES créées (HTTP 201) sur 3 catégories différentes, prix recalculés serveur (PricingService SSOT) STRICTEMENT égaux à la fixture — Tacos M composé (viande+sauce+2 crudités) = 6,90 €, Coca Cherry 33cl (nouvelle boisson) = 1,90 €, Bol Riz composé (viande+sauce) = 7,90 €. Toutes les compositions envoyées (résolution nom→id) matchent des ids RÉELS (aucun orphelin). Le catalogue COMPLET (42/42 items) résout par nom avec 0 orphelin et 0 divergence prix. Les 2 cas négatifs échouent proprement : item inexistant → throw {kind:'resolve'} côté web ; item_id bidon → 422 backend « Article introuvable ». Aucun P0/P1 : ni résolution cassée, ni prix divergent. Note P3 : la réponse POST /order ne porte pas total_amount (null) mais /order/show expose subtotal correct — n'affecte pas le flux (le web relit la commande).",
+  "findings": [],
+  "evidence": [
+   "TEST1 Tacos M composé — resolveLine('Tacos M', viandes=['Poulet mariné'], sauces=['Andalouse'], crudites=['Salade','Tomate']) → {item_id:26, item_variations:[{id:43},{id:312}], item_extras:[{id:244},{id:245}]} (ids RÉELS confirmés via GET /api/frontend/item/details/26 : var43=Poulet mariné attr1, var312=Andalouse attr5, extra244=Salade/245=Tomate grp crudite). POST /api/frontend/order → HTTP 201, order_id=5565. GET /order/show/5565 → subtotal=6.9 == fixture Tacos M base 6,90 €.",
+   "TEST2 Coca Cherry 33cl (nouvelle boisson, item simple sans variations) — resolveItemId('Coca Cherry 33cl')→119 (variations=[] confirmé). POST → HTTP 201, order_id=5566. GET /order/show/5566 → subtotal=1.9 == fixture 1,90 €.",
+   "TEST3 Bol Riz composé — resolveLine('Bol Riz', viandes=['Nuggets'], sauces=['Sauce fromagère maison']) → {item_id:45, item_variations:[{id:557},{id:246}]} (var557=Nuggets attr1, var246=Sauce fromagère maison attr8 'Sauce bol', ids RÉELS via /details/45). POST → HTTP 201, order_id=5567. GET /order/show/5567 → subtotal=7.9 == fixture 7,90 €.",
+   "TEST4 négatif résolution web — resolveLine('Box Familiale XXL') (produit inventé, absent fixture) → throw Exception 'resolve: Article introuvable côté caisse: Box Familiale XXL' (correspond à api.js resolveLine: throw {kind:'resolve'} ligne ~/Downloads/web/api.js resolveItemId==null). Échec propre, pas de POST.",
+   "TEST5 négatif backend — POST /api/frontend/order items=[{item_id:999999}] → HTTP 422 {status:false, message:'Article 999999 introuvable. Commande rejetée.'}. Backend rejette proprement un id orphelin.",
+   "Catalogue complet — script Python (norm() portée d'api.js) : GET /api/frontend/item byName + fixture catalog-canonical.json → 'catalog items: 42 resolvable: 42 / MISSING: [] / PRICE DIVERGENCE: []'. Les 42 items commandables par résolution nom, aucun prix divergent vs borne.",
+   "Résolution noms→ids confirmée live : curl /api/frontend/item byName → Tacos M->26@6.90, Tacos L->97@7.90, Coca Cherry 33cl->119@1.90, Bol Riz->45@7.90, Cayenne->22@7.40 ; aucun nom dupliqué dans l'index (70 rows dont seeds garbage mais 0 collision sur les 42 canoniques).",
+   "Harness jetable : /private/tmp/web_placeorder_e2e.py (port fidèle norm/buildItemIndex/indexDetails/resolveLine/placeOrder d'api.js). Token client Sanctum kiosk:order fixtures e2e-fixtures.json (user_id 189)."
+  ]
+ },
+ {
+  "scope": "e2e RÉEL fidélité QR signé + scan kiosk + anti-replay (POST /api/frontend/loyalty/qr et /scan sur API live :8766). Client fixture user_id=189 (loyalty_code 99B874AD), token machine kiosk minté via tinker (KioskMachine premier = user_id=3, branch_id=1, ability kiosk:order).",
+  "verdict": "PASS",
+  "summary": "Les 6 étapes prouvées par exécution réelle. (1) mint → token lqr.* + ttl_seconds:300 + loyalty_code 99B874AD. (2) scan machine kiosk → ok:true, customer_token lt_*, balance 500. (3) replay même token → ok:false error_code:qr_replay (nonce UNIQUE consommé). (4) token muté 1 char sur le HMAC → ok:false qr_invalid_signature (HMAC constant-time hash_equals). (5) token forgé exp -100s (>leeway 30s) → ok:false qr_expired. (6) legacy 'FK:99B874AD' ET bare '99B874AD' → ok:false qr_legacy_rejected (accept_legacy_plaintext effectif=false, env non défini). Aucun replay accepté, aucune signature non vérifiée, aucun legacy accepté. Tous les échecs restent HTTP 200 (invariant §12, parcours client non bloqué). Aucun P0/P1.",
+  "findings": [
+   {
+    "severity": "P3",
+    "title": "Fallback défensif Config::get(...,true) au controller diverge du défaut sécurisé config (false)",
+    "proof": "app/Http/Controllers/Frontend/LoyaltyController.php:724 → `Config::get('loyalty.qr.accept_legacy_plaintext', true)` : le 2e argument (valeur si clé absente) est `true`. Le défaut RÉEL vient de config/loyalty.php:68 `env('LOYALTY_QR_ACCEPT_LEGACY_PLAINTEXT', false)` → effectif=false, prouvé par `php artisan tinker` → config('loyalty.qr') = {...,\"accept_legacy_plaintext\":false} et par le scan live retournant qr_legacy_rejected. Non exploitable en l'état (le fichier config existe toujours), mais si config/loyalty.php était supprimé/vidé le fallback réactiverait silencieusement le legacy plaintext (vecteur harvest PII documenté en commentaire config). Recommandation : aligner le fallback controller sur `false`.",
+    "recommendation": "Remplacer le fallback `true` par `false` au controller ligne 724 pour cohérence fail-safe.",
+    "file": "app/Http/Controllers/Frontend/LoyaltyController.php",
+    "line": 724
+   }
+  ],
+  "evidence": [
+   "Serveur :8766 up — GET /api/frontend/loyalty/config sans x-api-key → 400 'Clé API invalide' (ApiKeyMiddleware.php:28, header x-api-key requis). Fixture apiKey utilisée pour toutes les requêtes suivantes.",
+   "Token machine kiosk minté : php artisan tinker → KioskMachine::orderBy(id)->first() user_id=3 branch_id=1 ; User(3)->createToken('e2e-kiosk-scan',['kiosk:order']) → 6631|bSZ7...04dc7bed",
+   "STEP 1 mint : curl POST /loyalty/qr (Bearer client 189) → {\"status\":true,\"data\":{\"token\":\"lqr.eyJ2IjoxLCJjdXN0IjoxODksImNvZGUiOiI5OUI4NzRBRC... .Lb0HRAc7...\",\"expires_at\":1783527226,\"ttl_seconds\":300,\"loyalty_code\":\"99B874AD\"}} — token lqr.* + ttl 300 + loyalty_code confirmés",
+   "STEP 2 scan (première fois, Bearer machine kiosk) : curl POST /loyalty/scan {method:qr,raw_data:<token>} → {\"status\":true,\"data\":{\"ok\":true,\"customer_token\":\"lt_00a2c7ce...\",\"display_name\":\"Guest\",\"loyalty_balance_points\":500,\"error_code\":null}}",
+   "STEP 3 replay (même token) → {\"status\":true,\"data\":{\"ok\":false,\"error_code\":\"qr_replay\",\"customer_token\":null}} — nonce déjà consommé (LoyaltyQrSigner.php:154, INSERT loyalty_qr_nonces_consumed → UNIQUE violation)",
+   "STEP 4 tampered (dernier char HMAC Y→A) → {\"status\":true,\"data\":{\"ok\":false,\"error_code\":\"qr_invalid_signature\"}} (LoyaltyQrSigner.php:120, hash_equals constant-time)",
+   "STEP 5 expired : php artisan tinker sign(189,'99B874AD', Carbon::now()->subSeconds(400)) → exp=1783526891 vs now=1783526991 delta=-100s (>leeway 30s). curl scan → {\"status\":true,\"data\":{\"ok\":false,\"error_code\":\"qr_expired\"}} (LoyaltyQrSigner.php:137)",
+   "STEP 6 legacy : curl scan {raw_data:'FK:99B874AD'} → {\"ok\":false,\"error_code\":\"qr_legacy_rejected\"} ; {raw_data:'99B874AD'} → idem qr_legacy_rejected (LoyaltyController.php:724-731, accept_legacy_plaintext=false)",
+   "Config effectif : php artisan tinker echo config('loyalty.qr') → {\"secret\":\"5485...\",\"ttl_seconds\":300,\"leeway_seconds\":30,\"accept_legacy_plaintext\":false} ; .env n'a pas LOYALTY_QR_ACCEPT_LEGACY_PLAINTEXT (grep vide), seul LOYALTY_QR_SECRET défini",
+   "Tous les rejets renvoient HTTP 200 avec ok:false + error_code (parcours client non bloqué, invariant §12 LoyaltyController)"
+  ]
+ },
+ {
+  "scope": "Gate de parité web+mobile (tools/parity/check-parity.mjs --surface=all) : exécution VERT, contestation anti-complaisance (lecture du gate + 3 mutations injectées sur copie /tmp) + échantillonnage manuel 5 items fixture↔web↔mobile.",
+  "verdict": "PASS",
+  "summary": "Le gate de parité est VERT (0 divergence, exit 0) sur les 2 surfaces, et il n'est PAS complaisant : il compare les 42 items PAR NOM normalisé + prix au centime + disponibilité + halal/spicy + pools (7 viandes / 12 sauces / 4 crudités / pains) + suppléments (9×0,90 + Boule gratinée galette_only + Option Gratiné bol riz_only) + bol_sauces noms exacts + has_extra_meat/has_pain_choice/has_crudites + sauce_default Cayenne + formule f-menu 2,50 + priceForDrinkAddon sur 15 saveurs + nom exact « Menu Enfant Chicken Burger » + atteignabilité prix frites (base×style). Les 3 mutations injectées (Coca 1,90→2,50 ; Perrier retiré ; d-capri 1,50→1,90) ont TOUTES été détectées (GATE ROUGE exit 1) avec le bon check et le bon libellé. L'échantillonnage manuel de 5 items (Coca Cherry, Fuze Tea, Tacos L, Bol Riz, Cayenne) converge parfaitement fixture↔web↔mobile sur prix ET structure wizard. Aucun P0/P1 : aucune divergence prix/produit réelle masquée par un gate vert.",
+  "findings": [],
+  "evidence": [
+   "node tools/parity/check-parity.mjs --surface=all → WEB VERT 0 div, MOBILE VERT 0 div, TOTAL 0 divergence — GATE VERT (exit 0). Mirrors: /Users/1millnonstop/Downloads/web/data/menu.js + mobile/data/menu.js. Aucun AVERTISSEMENT fixture => 42 items confirmés (garde check-parity.mjs:542).",
+   "Lecture check-parity.mjs (560 lignes) : compareSurface() fait 13 blocs de checks structurels PAR NOM (norm() ligne 76, copie exacte de web/api.js:158) + prix en centimes (cents() ligne 83). Détecte item_manquant/item_invente/item_mauvaise_categorie/item_prix/item_disponibilite/item_halal (ligne 231-268), pools via checkPoolSet() égalité stricte (ligne 481), supplements/supplements_bols/bol_sauces/has_extra_meat/has_pain_choice/tacos_crudites/cayenne_sauce/formule/formule_drinks/price_drink_addon/menu_enfant_nom_exact. Ce n'est PAS un simple count.",
+   "MUT1 (sed Coca-Cola 1.90→2.50 sur /tmp/menu-mut-price.js) : node ...--mirror=/tmp/menu-mut-price.js → ROUGE 1 div : [item_prix] Coca-Cola 33cl — attendu 1,90 € | constaté 2,50 € — GATE ROUGE (exit 1).",
+   "MUT2 (sed suppression ligne mkItem Perrier sur /tmp/menu-mut-removed.js) : → ROUGE 1 div : [item_manquant] Perrier 33cl — attendu présent dans « boissons » à 1,90 € | constaté absent — GATE ROUGE (exit 1).",
+   "MUT3 (sed d-capri 1.50→1.90 dans FORMULE_DRINKS pricing sur /tmp/menu-mut-capri.js) : → ROUGE 1 div : [price_drink_addon] Capri-Sun (d-capri) — attendu 1,50 € | constaté 1,90 € — GATE ROUGE (exit 1). Prouve la détection du prix addon boisson formule.",
+   "Échantillon manuel fixture (catalog-canonical.json) : Coca Cherry=1.90, Fuze Tea=1.90, Tacos L=7.90(cat5), Bol Riz=7.90(cat6), Cayenne=7.40(cat1), tous is_available=true.",
+   "Échantillon WEB+MOBILE (eval IIFE via vm) IDENTIQUES à la fixture : Coca Cherry 1.9/has_sauce=false, Fuze Tea 1.9, Tacos L 7.9 has_sauce=true has_crudites=true has_extra_meat=true, Bol Riz 7.9 has_sauce=true has_crudites=false has_extra_meat=true, Cayenne 7.4 has_sauce=true has_pain_choice=true has_crudites=true sauce_default='Sauce fromagère maison'. Structure wizard convergente sur les 3 sources."
+  ]
+ },
+ {
+  "scope": "Non-régression caisse/borne (W6R1) — frozen diff, NF525, parité payload borne, suites Loyalty+Stripe. HEAD=0c53782b5.",
+  "verdict": "PASS",
+  "summary": "Aucune régression caisse/borne détectée. Le diff committé des 11 chemins frozen entre 58e852697 et HEAD est VIDE. NF525 intact (audit_logs 4930/max 4941/min 1, z_reports 25 — aucune suppression). Le payload borne re-extrait est structurellement IDENTIQUE à la fixture canonique (hors server_time/is_rush). Loyalty 83/83 et Stripe 34/34 100% verts. Unique écart : garde $te non-committée dans KioskIdleScreenComponent.vue (+6 lignes) — hors périmètre goal, pré-existante d'une autre session, bénigne (suppression de warnings i18n, repli FR identique) → P2. Aucun P0/P1.",
+  "findings": [
+   {
+    "severity": "P2",
+    "title": "Garde $te non-committée dans KioskIdleScreenComponent.vue (frozen-zone, hors périmètre goal)",
+    "file": "resources/js/components/frontend/kiosk/KioskIdleScreenComponent.vue",
+    "line": 415,
+    "proof": "git status --porcelain -- <11 chemins frozen> → ' M resources/js/components/frontend/kiosk/KioskIdleScreenComponent.vue' (SEUL fichier modifié, non-committé). git diff --stat → '1 file changed, 6 insertions(+)'. Diff réel : ajout dans text(key,fallback) de `if (!this.$te || !this.$te(key)) return fallback;` avant `const value = this.$t(key);`. Commentaire code : '[i18n-clean 2026-07-08] Ne consulter $t QUE si la clé existe (via $te)… 194 warnings observés sur l'idle'. NOTE : le diff COMMITTÉ 58e852697..HEAD de ce fichier est VIDE — cette garde est une modif working-tree pré-existante d'une autre session, pas une régression de ce goal.",
+    "recommendation": "Aucune action de ce goal. La garde est un superset défensif (retourne le fallback FR quand la clé i18n est absente — comportement identique à l'ancien `value !== key ? value : fallback`), sans changement de logique métier. Owner à décider : committer via gate frozen-zone OU stash/revert. Ne casse ni la borne ni la caisse."
+   }
+  ],
+  "evidence": [
+   "FROZEN DIFF: `git diff --stat 58e852697..HEAD -- public/js/pos-wizard.js public/css/pos-wizard.css resources/views/admin-pos-v4.blade.php resources/js/components/admin/pos/PaymentComponent.vue resources/js/components/admin/pos/v5/PosV5TrancheRow.vue resources/js/components/frontend/kiosk app/Services/Fiscal app/Services/Pricing/PricingService.php app/Models/Scopes/BranchScope.php app/Http/Middleware/IdempotencyKeyMiddleware.php app/Domain/Order/OrderStateMachine.php` → sortie VIDE (0 ligne). HEAD=0c53782b5947e26504b9bcf250688e8e7a7b23a7",
+   "PORCELAIN: `git status --porcelain -- <mêmes 11 chemins>` → ' M resources/js/components/frontend/kiosk/KioskIdleScreenComponent.vue' (unique entrée, working-tree, documentée P2)",
+   "NF525 tinker: audit_count=4930 (≥4930 ✓), audit_max=4941 (≥4941 ✓), audit_min=1 (=1 ✓ aucune suppression), zrep_count=25 (≥25 ✓)",
+   "PARITÉ PAYLOAD: `bash tools/parity/extract-canonical.sh /tmp/catalog-reextract.json` → 'Payload OK : 9 catégories, 42 items.' puis diff Python normalisé (server_time/is_rush retirés, tri récursif clés) vs reports/goal-web-app-sync/catalog-canonical.json → 'IDENTICAL'",
+   "LOYALTY: `php artisan test --filter=Loyalty` → 'Tests: 83 passed' (LoyaltyCheckIdorTest, LoyaltyRegisterNoLeakTest, LoyaltyQrSigningSentinelTest incl. boot guard secret vide, replay/tamper HMAC) — 15.81s",
+   "STRIPE: `php artisan test --filter=Stripe` → 'Tests: 34 passed' (StripeWebhookUnconfigured 503-not-500, ChargeRefundedCascade idempotent, WebhookIdempotency signature invalide=400, CSRF bare-route excepté, throttle 60/min) — 4.05s"
+  ]
+ },
+ {
+  "scope": "e2e RÉEL couche client mobile (mobile/api/client.js) chargée dans node — stub window/localStorage/fetch, window.LC.config (apiBase :8766, apiKey .env, branchId 1), token client authed (Sanctum kiosk:order, user 189). buildItemIndex + resolveOrderItems/resolveLine + placeOrder contre l'API réelle :8766. Cas testés : (1) sandwich composé Méga 2-viandes, (2) Bol Frites avec bolDrinkId→ligne séparée, (3) boisson standalone Fanta, + edge : les 15 formuleDrinks comme bolDrink. Harness jetable: reports/goal-web-app-sync/w6r1/mobile-e2e-harness.js + edge-drinks.js.",
+  "verdict": "PASS",
+  "summary": "La couche client.js mobile résout correctement le shape buildLineItem vers les VRAIS ids DB de la caisse, l'API accepte la commande, et les prix serveur (SSOT) sont exacts et identiques au catalogue borne. Aucun P0/P1. CASE1 Méga (2 viandes) → item_id 104 avec item_variations [469 Mexicanos(attr1), 478 Viande Hachée(attr2), 483 Pain(attr6), 489 Samouraï(attr5)] + extras [343 Salade, 345 Oignon (Tomate retirée = sémantique négative OK), 349 Cheddar supplément] — tous ids vérifiés valides contre /item/details/104. CASE2 Bol Frites → item_id 41 [550 Tenders(attr1), 553 Sauce spicy(attr8 sauce bol), extra 375 Cheddar supplement_bol] ET bolDrinkId 'd-coca' génère une 2e ligne séparée item_id 52 (facturée). CASE3 Fanta → item_id 54. placeOrder → order id 5569 créé, subtotal=total=21.50 €, payment_method=1 (comptoir, Stripe OFF respecté), source=5, 4 lignes. Prix serveur = prix borne exacts: Méga 8.00, Bol 7.90, Coca 1.90, Fanta 1.90 (catalog-canonical id 104/41/52/54 identiques) ; total 21.50 = 19.70 base + 2×0.90 suppléments cheddar. Les 15 formuleDrinks résolvent tous comme bolDrink (0 échec).",
+  "findings": [
+   {
+    "severity": "P3",
+    "title": "DRINK_ID_TO_SLUG['d-ice-tea-peche'] pointe vers un slug mort 'ice-tea-peche' (backend = 'ice-tea') — actuellement rattrapé par le fallback par nom, non bloquant",
+    "proof": "client.js:265 `'d-ice-tea-peche': 'ice-tea-peche'` mais l'API expose slug 'ice-tea' (id 121, name 'Ice Tea Pêche 33cl'). menu.js:521 mkItem(1011,'ice-tea-peche',...). Exécution edge-drinks.js: la ligne bolDrink d-ice-tea-peche résout quand même à item_id=121 UNIQUEMENT via resolveItemId name-fallback (byName[norm('Ice Tea Pêche 33cl')]=121), car bySlug['ice-tea-peche'] est absent. Preuve: `ICE-TEA edge resolveOrderItems: [...,{\"item_id\":121,\"quantity\":1}]` et `ALL formuleDrinks as bolDrink -> failures: NONE`. Fragilité latente: si le libellé backend du produit change, la ligne boisson serait silencieusement omise (bySlug ET byName rateraient). Recommandation: aligner DRINK_ID_TO_SLUG et menu.js item 1011 sur le slug canonique 'ice-tea'.",
+    "file": "mobile/api/client.js",
+    "line": 265,
+    "recommendation": "Corriger le mapping 'd-ice-tea-peche' → 'ice-tea' et le slug de l'item mobile 1011 pour retirer la dépendance au fallback par nom."
+   }
+  ],
+  "evidence": [
+   "node reports/goal-web-app-sync/w6r1/mobile-e2e-harness.js → isAuthed:true user 189; buildItemIndex rows:70 bySlug:70; mega->104 bol-frites->41 coca->52",
+   "CASE1 Méga resolveLine → {\"item_id\":104,\"item_variations\":[{\"id\":469},{\"id\":478},{\"id\":483},{\"id\":489}],\"item_extras\":[{\"id\":343},{\"id\":345},{\"id\":349}]} — ids validés contre curl /api/frontend/item/details/104 (attr1 469=Mexicanos, attr2 478=Viande Hachée, attr6 483=Pain, attr5 489=Samouraï, crudite 343 Salade/345 Oignon, supplement 349 Cheddar)",
+   "CASE2 Bol resolveOrderItems → [{\"item_id\":41,\"item_variations\":[{\"id\":550},{\"id\":553}],\"item_extras\":[{\"id\":375}]},{\"item_id\":52}] — 2 lignes (bolDrink coca séparée), ids validés contre /item/details/41 (550 Tenders attr1, 553 Sauce spicy attr8, 375 Cheddar supplement_bol)",
+   "CASE3 Fanta resolveLine → {\"item_id\":54,\"quantity\":1}",
+   "placeOrder → ORDER id=5569 total=21.5 payment_method=1 ; getOrder 5569 → 4 order_items: 104 Méga 8,00€ / 41 Bol Frites 7,90€ / 52 Coca 1,90€ / 54 Fanta 1,90€",
+   "curl /api/frontend/order/show/5569 → subtotal 21.5 total 21.5 discount 0 payment_method 1 source 5 items 4 (= 19.70 base + 2×0.90 supp = 21.50, exact)",
+   "catalog-canonical.json (borne) data.items: mega id=104 price=8, bol-frites id=41 price=7.9, coca id=52 price=1.9, fanta id=54 price=1.9 — ids+prix IDENTIQUES à ce que la couche mobile résout (0 divergence borne↔mobile)",
+   "node reports/goal-web-app-sync/w6r1/edge-drinks.js → ICE-TEA bolDrink résout item_id=121 via name-fallback ; ALL 15 formuleDrinks as bolDrink → failures: NONE",
+   "Stripe OFF: placeOrder envoie payment_method:1 en dur (client.js ~ligne 'payment_method: 1 // comptoir — jamais 4 tant que flag OFF'), confirmé par order 5569 payment_method=1"
+  ]
+ },
+ {
+  "scope": "MISSION SÉCURITÉ authz/IDOR — endpoints loyalty + order consommés par web/mobile, testés en curl réel contre l'API :8766 avec 2 clients distincts (A=user189/token 6625, B=user190/token 6626, C=user191/token 6627) de e2e-fixtures.json. 6 vecteurs demandés couverts + lecture code file:line.",
+  "verdict": "PASS",
+  "summary": "Aucune fuite cross-compte reproductible. Les 3 IDOR principaux (balance/check, redeem, order/show) sont fermés et prouvés par exécution : A ne peut PAS lire ni le code/solde ni la commande de B (404 / 422 access-denied / 403), lecture de son propre compte OK (200). add-points refusé pour un token client. Les 3 throttles mordent EXACTEMENT (register→429, check=10/min pile, qr=30/min pile). Un seul point d'attention P2 latent (défense en profondeur, NON exploitable avec la config livrée) : /loyalty/scan ne vérifie que l'ability kiosk:order — qu'un token guest possède — et PAS l'existence d'une KioskMachine (contrairement à /check et /redeem qui ont été durcis sur ce point). La seule voie de fuite (plaintext legacy) est fermée par défaut (LOYALTY_QR_ACCEPT_LEGACY_PLAINTEXT=false, vérifié en live → error_code qr_legacy_rejected), donc aucun leak actuel. Si un opérateur repasse ce flag à true, tout token client redeviendrait un outil de moisson PII. Aucun P0/P1.",
+  "findings": [
+   {
+    "severity": "P2",
+    "title": "/loyalty/scan gate n'exige que l'ability kiosk:order (portée par tout token guest), pas une KioskMachine réelle — incohérent avec le durcissement /check et /redeem",
+    "proof": "CODE: app/Http/Controllers/Frontend/LoyaltyController.php:649 `if (!$user || !$user->tokenCan('kiosk:order')) return 403` — AUCUN check KioskMachine, alors que check():89-92 et redeem():324-328 exigent `KioskMachine::...->where('user_id',$caller->id)->exists()`. PREUVE EXÉCUTION que le token guest passe ce gate : `curl -X POST :8766/api/frontend/loyalty/scan -H 'Authorization: Bearer <A>' -d '{\"code\":\"55DC3ED1\"}'` → HTTP 422 {\"message\":\"Paramètres invalides\",\"errors\":{\"method\":[...],\"raw_data\":[...]}}  (validation, PAS 403 'Accès kiosk requis' → le gate ability a été franchi par un simple guest). Confirmé NO-KioskMachine: `php artisan tinker` KioskMachine::...where('user_id',189)->exists() = 'NO-guest'. Voie de fuite plaintext fermée en live: `curl scan -d '{\"method\":\"qr\",\"raw_data\":\"55DC3ED1\"}'` → HTTP 200 error_code=qr_legacy_rejected (accept_legacy_plaintext=FALSE vérifié via config()). Le path signé ne permet PAS le cross-compte (A ne peut minter le QR de B). Donc latent uniquement.",
+    "recommendation": "Aligner scan() sur check()/redeem() : exiger une vraie KioskMachine (KioskMachine::withoutGlobalScope(BranchScope)->where('user_id',$user->id)->exists()) en plus de tokenCan('kiosk:order'), pour que le flag LOYALTY_QR_ACCEPT_LEGACY_PLAINTEXT ne puisse jamais transformer un token client en moissonneur PII (display_name+points+allergènes+customer_token via LoyaltyController.php:799-813). Défense en profondeur, non bloquant V1.",
+    "file": "app/Http/Controllers/Frontend/LoyaltyController.php",
+    "line": 649
+   }
+  ],
+  "evidence": [
+   "T1 IDOR balance/check FERMÉ — A lit code B: `curl :8766/api/frontend/loyalty/balance?code=55DC3ED1 -H 'Bearer <A>'` → HTTP 404 {\"message\":\"Non trouvé\"} ; A lit SON code 99B874AD → HTTP 200 {points:500} ; A lit B via POST /check code=55DC3ED1 → 404 ; A lit B par TÉLÉPHONE 0697285033 → 404. Garde code: LoyaltyController.php:88-97 (isKiosk=KioskMachine, isStaff, sinon owner-only).",
+   "T2 redeem cross-compte REFUSÉ — `curl -X POST /loyalty/redeem -H 'Bearer <A>' -H 'X-Idempotency-Key: web-lr-<uuid>' -d '{\"code\":\"55DC3ED1\",\"points\":100}'` → HTTP 422 MISSING_IDEMPOTENCY_KEY (middleware idempotency bloque le token guest branch_id non résolu) ; en plus kill-switch V1 config('pos.manual_discount_enabled')!==true → 422 (LoyaltyController.php:305-310) ; owner-check présent LoyaltyController.php:324-352.",
+   "T3 order/show IDOR FERMÉ — `curl /api/frontend/order/show/5570 -H 'Bearer <A>'` (5570 appartient à u194) → HTTP 422 {\"message\":\"Access denied: you do not own this order.\"} ; own order 5569 (u189) → HTTP 200 avec data ; non-authentifié → redirect /api/login (401) ; escpos cross-user /show/5570/escpos → HTTP 403 Unauthorized. Garde: FrontendOrderService.php:710 `if user_id===Auth::id() return; abort(403)` ; escpos OrderController.php:94-101 (KioskMachine+user_id+branch_id).",
+   "T4 add-points depuis token client REFUSÉ — `curl -X POST /loyalty/add-points -H 'Bearer <A>' -d '{\"code\":\"55DC3ED1\",\"points\":1000}'` → HTTP 422 (middleware idempotency bloque avant le contrôleur) ; garde staff-only présente LoyaltyController.php:230 hasAnyRole(Admin/Branch Manager/POS Operator/Stuff) sinon 403.",
+   "T5 scan — token client FRANCHIT le gate ability (guest a kiosk:order) mais legacy plaintext OFF → aucun leak (voir finding P2). accept_legacy_plaintext=FALSE (config live), default config/loyalty.php:68-72 = false.",
+   "T6 throttles MORDANT (exécution): /register 5/min → req4=429 (`for i in 1..8`) ; /check 10/min → 10×200 puis req11-13=429 PILE ; /qr 30/min → 30×200 puis req31-33=429 PILE (client C). Routes: api.php:1446 (check 10,1), :1447 (register 5,1), :1475 (qr 30,1)."
+  ]
+ },
+ {
+  "scope": "e2e RÉEL cycle EARN fidélité bout-en-bout via API :8766 — commande frontend Coca-Cola 33cl (id 52) → PREPARED → earn → profile/history/ledger + idempotence. Client 194 (token 6630, fixture e2e-fixtures.json).",
+  "verdict": "PASS",
+  "summary": "Le cycle EARN est CORRECT et prouvé par exécution réelle. Commande réelle passée (POST /api/frontend/order → id 5570, queue A0041, total recalculé serveur 1,90 € via PricingService SSOT). L'earn se déclenche au statut PREPARED (listener AwardLoyaltyPointsOnDelivery, sync/non-queued), attribue floor(1,90 × 1)=1 point au user 194 (0→1), visible via GET /api/profile (points=1) et GET /api/frontend/loyalty/history (type=earn, points=1, balance_after=1, surface=web, desc='Commande #0807265570'). loyalty_transactions = exactement 1 ligne earn (id 56), IDEMPOTENTE : re-dispatch PREPARED puis DELIVERED ne double PAS (points restent 1, sentinel loyalty_points_awarded=1). Maillon manquant côté client documenté (P2, by-design) : aucun endpoint client ne promeut la commande à PREPARED/DELIVERED — OrderStatusRequest::authorize n'autorise que CANCELED pour un token kiosk:order ; l'avancement est réservé au staff (POS/KDS), ce qui est un contrôle anti-fraude correct. Contournement utilisé = replay fidèle de OrderStatusChanged (exact chemin production).",
+  "findings": [
+   {
+    "severity": "P2",
+    "title": "Aucun endpoint client pour promouvoir la commande vers PREPARED/DELIVERED (déclencheur earn) — by-design, pas un défaut",
+    "file": "app/Http/Requests/OrderStatusRequest.php",
+    "line": 31,
+    "proof": "OrderStatusRequest.php:31-32 : `if ($user->tokenCan('kiosk:order') && (int)$this->input('status') === OrderStatus::CANCELED) return true;` sinon `return false;` (L35). Curl réel avec token client sur POST /api/frontend/order/change-status/5570 {status:8}: HTTP 422 (bloqué en amont par idempotency middleware faute de branch_id résoluble ; et de toute façon authorize()=false pour status≠CANCELED). Conséquence : un client ne peut JAMAIS auto-déclencher son earn — l'avancement PREPARED/DELIVERED vient du staff POS/KDS. Contournement e2e = replay fidèle OrderStatusChanged::dispatch(order, old, PREPARED) (même chemin que FrontendOrderService.php:812).",
+    "recommendation": "Aucune correction requise — contrôle anti-fraude correct (le client ne doit pas s'auto-créditer). À documenter dans CONTRACTS.md pour les testeurs : l'earn se prouve via le chemin staff/KDS ou replay d'événement, pas via un endpoint client."
+   }
+  ],
+  "evidence": [
+   "GET /api/frontend/loyalty/config → {points_per_euro:1, points_for_1_euro_discount:100, min_redeem_points:100}",
+   "POST /api/frontend/loyalty/qr (client 194) → loyalty_code AC2F6FB5 ; profile AVANT=0 pts, APRÈS mint=0 pts (le mint N'attribue PAS de points — vérifié aussi contre client 189)",
+   "POST /api/frontend/order {branch_id:1,order_type:10,source:5,payment_method:1,is_advance_order:0,loyalty_code:AC2F6FB5,items:[{item_id:52,quantity:1}]} X-Idempotency-Key=earn-e2e-… → 200 {id:5570, order_serial_no:0807265570, queue_number:A0041, subtotal:1.9, total:1.9, total_tax:0.17, order_type:10, status:1}",
+   "tinker orders#5570 : order_type=10 total=1.900000 status=1 loyalty_customer_code=AC2F6FB5 awarded=NULL source_surface=web ; user194 points BEFORE=0 ; txn count=0",
+   "curl client change-status→PREPARED(8) : HTTP 422 MISSING_IDEMPOTENCY_KEY (pas d'accès client à l'avancement de statut) — maillon client absent by-design",
+   "tinker OrderStatusChanged::dispatch(order5570, old=1, PREPARED=8) → awarded=1 ; order status=8 ; user194 points AFTER=1 = floor(1.90 × 1)",
+   "GET /api/profile (194) → loyalty_points=1, loyalty_code=AC2F6FB5 ; GET /loyalty/history → {type:earn, points:1, balance_after:1, source_surface:web, description:'Commande #0807265570', date:2026-07-08 18:12:01}",
+   "IDEMPOTENCE : re-dispatch PREPARED + set DELIVERED + re-dispatch DELIVERED → user194 points RESTE 1 ; loyalty_transactions earn rows pour order 5570 = 1 (id 56, pts=1, bal=1) ; sentinel loyalty_points_awarded=1 (verrou atomique -1→valeur finale efficace)",
+   "Observation (NON remontée faute de repro attribuable) : client 189 affichait 500 pts SANS ligne loyalty_transactions ; vérifié que POST /loyalty/qr n'attribue rien (client 194 reste 0) → très probablement mutation par un agent e2e concurrent sur le fixture partagé, pas un chemin code identifié.",
+   "Fichier preuve : reports/goal-web-app-sync/w6r1/earn-cycle-e2e.txt"
+  ]
+ },
+ {
+  "scope": "e2e REDEEM fidélité — POST /api/frontend/loyalty/redeem (état V1, config pos.manual_discount_enabled). Battery: kill-switch state, non-multiple→400, double-POST idempotency, IDOR, + gestion 422 côté UI web (screens.jsx) et mobile (screens-main.jsx). Serveur API :8766, 6 clients Sanctum kiosk:order.",
+  "verdict": "PARTIAL",
+  "summary": "État exact du kill-switch : ACTIVÉ (config('pos.manual_discount_enabled')===true ; env POS_MANUAL_DISCOUNT_ENABLED=NULL → défaut true, vérifié via tinker). Le noyau backend du redeem est CORRECT et prouvé par curl : non-multiple 150→400 avec message FR (« multiple de 100 »), double-POST même X-Idempotency-Key→débit UNIQUE (400→300, pas 200), IDOR (client 189 redeem le code d'autrui)→403 « Non autorisé ». MAIS un P1 réel : le redeem initié par un CLIENT (web/mobile) est TOTALEMENT cassé — loyaltyRedeem envoie {code,points} SANS branch_id, or IdempotencyKeyMiddleware ne sait pas résoudre le branch_id d'un rôle Customer (branch_id=0, ni Admin ni KioskMachine) et rejette en 422 MISSING_IDEMPOTENCY_KEY AVANT le controller, avec le message ANGLAIS « Idempotency requires authenticated user with resolvable branch_id. ». Ce message anglais brut est affiché tel quel à l'utilisateur (le fallback FR d'api.js/client.js ne se déclenche pas car msg non-vide). Résultat : la fidélité redeem ne marche JAMAIS pour un client même quand elle est activée, et l'UI montre un message technique anglais (pas de crash, mais pas « FR propre »). Le kill-switch 422 du controller (message FR) n'est en pratique JAMAIS atteint par un client car le middleware bloque d'abord.",
+  "findings": [
+   {
+    "severity": "P1",
+    "title": "Redeem fidélité client (web+mobile) DOA : middleware idempotency 422 avant controller + fuite message anglais",
+    "file": "/Users/1millnonstop/Downloads/web/api.js",
+    "line": 493,
+    "proof": "Repro exacte du body client (code+points, clé web-lr, SANS branch_id) : curl -X POST -H 'Authorization: Bearer 6625|...' -H 'x-api-key: b6d68...' -H 'X-Idempotency-Key: web-lr-abc123def456' -d '{\"code\":\"99B874AD\",\"points\":300}' http://127.0.0.1:8766/api/frontend/loyalty/redeem → HTTP 422 {\"success\":false,\"message\":\"Idempotency requires authenticated user with resolvable branch_id.\",\"code\":\"MISSING_IDEMPOTENCY_KEY\"}. Preuve que branch_id résout : même appel + '\"branch_id\":1' → HTTP 200 {\"status\":true,\"message\":\"100 points utilisés\"}. Cause: web/api.js:493 et mobile/api/client.js:127 construisent le body {code,points} sans branch_id (alors que placeOrder api.js:424 et coupon api.js:522 envoient branch_id:CFG.branchId). IdempotencyKeyMiddleware.php:70-73 lève 422 quand resolveBranchId()==-1 ; resolveBranchId (L182-219) ne gère pas le rôle Customer (branch_id=0) → retombe sur input('branch_id',-1)=-1. tinker: User 189/190 branch_id=0 roles=Customer. Fuite message: api.js:139 met json.message (anglais) dans e.message ; loyaltyRedeem api.js:500 n'applique le fallback FR que si msg vide ou /^Erreur \\d+$/ — faux ici → screens.jsx:639 (setRedeemUi error:e.message) et mobile screens-main.jsx:1183 (setErr e.message) affichent l'anglais brut.",
+    "recommendation": "Ajouter branch_id:CFG.branchId au body de loyaltyRedeem dans web/api.js:493 ET mobile/api/client.js:127 (comme placeOrder/coupon). Alternativement, faire résoudre au middleware le branch_id d'un Customer (branch=1 mono-branche V1). Et durcir le fallback FR client pour mapper TOUT status 422 sur un message FR sans dépendre du corps serveur."
+   }
+  ],
+  "evidence": [
+   "ÉTAT KILL-SWITCH = ACTIVÉ : `php artisan tinker` → config('pos.manual_discount_enabled')=bool(true) ; env('POS_MANUAL_DISCOUNT_ENABLED')=NULL (défaut true via config/pos.php:172-177).",
+   "NON-MULTIPLE→400 (OK) : curl redeem points:150 (+branch_id:1) → HTTP 400 {\"status\":false,\"message\":\"Les points doivent être un multiple de 100. Montant valide le plus proche : 100.\"} — message FR propre. Code: LoyaltyController.php:364-367.",
+   "DOUBLE-POST idempotency→débit unique (OK) : solde 189 avant=400 ; POST#1 clé t3-double-XYZ (+branch_id:1)→200 points:300 ; POST#2 même clé→200 points:300 (replay) ; solde après=300 (−100 seulement, pas −200). Middleware IdempotencyKeyMiddleware.php:84-96 replay. Ledger LoyaltyTransaction créé une fois.",
+   "IDOR→403 (OK, sécurité solide) : client 189 (token 6625) redeem code d'autrui 55DC3ED1 (user 190) +branch_id:1 → HTTP 403 {\"status\":false,\"message\":\"Non autorisé\"}. Contrôle owner LoyaltyController.php:350-352 (+ garde kiosk réel L324-328 anti-IDOR).",
+   "CUSTOMER PATH 422 (bug) : body {code,points} sans branch_id → HTTP 422 MISSING_IDEMPOTENCY_KEY message anglais ; reproduit 3× (points 100/150/300).",
+   "KILL-SWITCH controller (FR, non atteignable par client) : LoyaltyController.php:305-310 renvoie 422 message FR « La fidélité (remise) est désactivée en V1... » UNIQUEMENT si config false — mais le middleware idempotency (frozen) rejette le client avant d'atteindre ce code.",
+   "UI ne crashe PAS : screens.jsx:637-640 et screens-main.jsx:1182-1185 catch l'erreur et affichent e.message (dégradation douce, pas de crash) — mais message anglais pour le 422 réellement reçu.",
+   "Données test restaurées : loyalty_points remis à 0 pour users 189/190/191 après tests."
+  ]
+ },
+ {
+  "scope": "Sanity backend élargi — filtres PHPUnit sur zones potentiellement impactées par l'unique fichier backend applicatif modifié (app/Http/PaymentGateways/Gateways/Stripe.php, +66 lignes : constructeur lazy-init du StripeClient si stripe_secret non-vide + gardes isStripeConfigured()→503 sur payment() et handleWebhook()). Filtres exécutés : Payment, Webhook, Frontend, Order + le nouveau StripeWebhookUnconfiguredTest.",
+  "verdict": "PASS",
+  "summary": "Zéro test rouge sur les 4 zones impactées + la suite dédiée au changement. Totaux : Payment 232 passed / 1 incomplete ; Webhook 49 passed ; Frontend 63 passed / 10 skipped ; Order 811 passed / 1 skipped / 1 incomplete ; StripeWebhookUnconfiguredTest (nouveau) 3 passed. Soit 1158 passed, 11 skipped, 2 incomplete, 0 failed. Les 2 « incomplete » sont un seul et même cas (RushMidiSimulationTest::s72, marqué markTestIncomplete « Owner-finalize… ») — baseline pré-existant, sans aucun lien avec Stripe.php (touche le flux fiscal kiosk-card via HTTP /payment-confirm, pas la passerelle). Les skipped sont des skips conditionnels de suite (Frontend/Order) non liés au changement. Le lint php -l est clean, imports JsonResponse (l.18) + Log (l.21) présents, et le nouveau test prouve directement le comportement voulu : secret vide → 503 JSON (au lieu du 500 crash constructeur d'avant) et secret non-vide → la garde n'intercepte pas. Aucune régression attribuable à notre changement.",
+  "findings": [],
+  "evidence": [
+   "cd testttt ; php artisan test --filter=Payment → 'Tests: 1 incomplete, 232 passed' (35.95s). L'incomplete = RushMidiSimulationTest s72 'Owner-finalize' (pré-existant).",
+   "php artisan test --filter=Webhook → 'Tests: 49 passed' (7.83s). Inclut StripeWebhookIdempotencyTest, WebhookCsrfBareRouteExceptionTest (stripe bare+wildcard csrf-excepted), WebhookRouteHardeningTest (stripe throttle 60/min), et 'missing webhook secret returns 500' (chemin config services.stripe.webhook_secret, distinct du DB stripe_secret — toujours vert).",
+   "php artisan test --filter=Frontend → 'Tests: 10 skipped, 63 passed' (10.10s). Inclut Zone5PricingSsotConvergenceSentinel (backend rereads DB price), StockSymmetryDiff, OrderCreatedDispatchPlacementSentinel.",
+   "php artisan test --filter=Order → 'Tests: 1 incomplete, 1 skipped, 811 passed' (113.98s). Inclut StripeChargeRefundedCascadeSentinel (2 vert), Uber mappers, RushMidi (même incomplete s72). Aucun rouge.",
+   "php artisan test --filter=StripeWebhookUnconfigured → 'Tests: 3 passed' (0.67s) : 'webhook with empty stripe secret returns 503 json not 500', 'webhook with missing stripe secret option returns 503 json', 'webhook with non empty secret does not hit unconfigured guard'. Prouve directement le fix.",
+   "php -l app/Http/PaymentGateways/Gateways/Stripe.php → 'No syntax errors detected'. grep imports → l.18 use Illuminate\\Http\\JsonResponse ; l.21 use Illuminate\\Support\\Facades\\Log (les symboles utilisés par le nouveau code existent).",
+   "git diff HEAD~2 -- app/Http/PaymentGateways/Gateways/Stripe.php : seul fichier backend applicatif modifié (+66/-? lignes), plus le test Stripe/StripeWebhookUnconfiguredTest.php (+166) et le rapport JSON w1/by-spec/backend_stripe-gateway.json (+95)."
+  ]
+ },
+ {
+  "function": "StructuredOutput",
+  "scope": "Sécurité/conformité Stripe « paiement en ligne » — WEB (:8096) + MOBILE (:8087) flag OFF invisible/inerte mais testable ON ; verrou serveur (config/payment.php triple gate + PaymentController + Stripe gateway + webhook 503 + payment_gateways id=4).",
+  "verdict": "PASS",
+  "summary": "Stripe est correctement INVISIBLE et INERTE flag OFF, et redevient VISIBLE (testable) flag ON, avec un verrou serveur qui refuse toute vraie tentative — prouvé par exécution réelle des deux surfaces + backend. (1) WEB OFF : au checkout, le DOM ne contient qu'UNE méthode (« Payer sur place »/comptoir), 0 option Carte/Apple Pay/Google Pay, 0 copy « Stripe/3D-Secure » (spec Playwright verte + dump DOM brut + capture). (2) MOBILE OFF : ModalPayChoice n'affiche PAS « Payer maintenant » (micro-copy « Le paiement en ligne arrive bientôt »), ScreenStripe rend l'état garde « Paiement en ligne indisponible » sans formulaire carte (rendu composant réel + captures). (3) Flag ON simulé (override runtime onlineCardEnabled=true) : l'option carte RÉAPPARAÎT sur les 2 surfaces (web 2 méthodes, mobile « Payer maintenant » CB) → flux présent/testable. (4) Verrou serveur confirmé : config web_payment_v1.enabled=false + activation_guard.enabled=true + gate_cleared=false ; GET payment/1/pay → 404 (guardWebPaymentV1) ; POST webhook stripe → 503 « Stripe non configuré » ; row payment_gateways id=4 (Stripe) status=10 inchangée ; aucun débit possible. AUCUN finding P0/P1/P2 : implémentation honnête et conforme au CONTRACTS.md §4. (NB hors-scope : le mobile prototype charge React/Babel via unpkg CDN — pattern pré-existant, non lié à cette mission Stripe.)",
+  "findings": [],
+  "evidence": [
+   "WEB flag servi OFF: `curl :8096/index.html | grep feature-online-card` → `<meta name=\"feature-online-card\" content=\"0\">`",
+   "WEB code gate: funnel.jsx:452-457 methods=[counter]; push card SEULEMENT si `onlineCard` (=api.config.onlineCardEnabled, api.js:26 lit meta='0'→false). funnel.jsx:377 payment_method=1 quand OFF.",
+   "WEB spec Playwright RÉELLE verte (drive complet menu→wizard→checkout→paiement) : `playwright test stripe-flag-adv.spec.js` → `1 passed (15.6s)`. Assertions: Carte bancaire/Apple Pay/Google Pay/Stripe|3D-Secure toHaveCount(0); LC.api.config.onlineCardEnabled===false.",
+   "WEB dump DOM brut OFF (log spec): ADV_METHOD_COUNT_OFF=1 — `.lcf-paymethods` contient un SEUL bouton « Payer sur place / Espèces ou carte au comptoir ». Fichier: reports/goal-web-app-sync/w6r1/adv-dom-OFF.html + capture adv-01-paiement-OFF.png (vue: 1 méthode, badge « Paiement au comptoir », copy « Commande envoyée en direct à la caisse · RGPD » — aucune mention Stripe).",
+   "WEB flag ON simulé (override runtime `window.LC.api.config.onlineCardEnabled=true` puis re-render): ADV_METHOD_COUNT_ON=2, DOM ajoute bouton « Carte bancaire (en ligne) / Parcours de test — aucun débit réel ». Fichier adv-dom-ON.html + capture adv-02-paiement-ON-override.png.",
+   "MOBILE flag servi OFF: `curl :8087/index.html | grep onlineCardEnabled` → `onlineCardEnabled: false` (index.html:73). go('stripe') redirige vers 'pay' si OFF (index.html:178) ; ScreenStripe garde interne (screens-modals.jsx:82).",
+   "MOBILE spec composant RÉELLE verte: `playwright test mobile-stripe-adv.spec.js` → `1 passed`. Logs: MOB_DEFAULT_FLAG=false ; MOB_MODAL_OFF hasPayNow=false hasCardBtn=false hasSoon=true ; MOB_STRIPE_OFF guarded=true hasCardForm=false ; MOB_MODAL_ON hasPayNow=true hasCardBtn=true ; MOB_ERRS=[] (0 pageerror).",
+   "MOBILE captures: mob-01-modal-OFF.png (pas de « Payer maintenant »), mob-02-stripe-OFF-guard.png (« PAIEMENT EN LIGNE INDISPONIBLE » + Retour au panier, aucun champ carte/3D-Secure), mob-03-modal-ON.png (« PAYER MAINTENANT » CB en ligne réapparaît). Capture flow réel pré-existante: captures-mobile/14-pay-choice.png (OFF, « Le paiement en ligne arrive bientôt »).",
+   "BACKEND triple gate (tinker runtime): config('payment.web_payment_v1.enabled')=false, activation_guard.enabled=true, activation_gate_cleared=false. config/payment.php:15/51/52.",
+   "BACKEND guard live: `curl GET :8766/payment/1/pay` → status=404 (PaymentController::guardWebPaymentV1 abort(404), ligne 133-135) ; `curl GET :8766/payment/stripe/1/success` → 404. POST payment/1/pay → 419 (CSRF, jamais de débit).",
+   "BACKEND webhook guard live: `curl -X POST :8766/payment/stripe-webhook/` → HTTP 503 body `{\"status\":false,\"message\":\"Stripe non configuré.\"}` (Stripe.php:70-90 unconfiguredResponse ; client non instancié car stripe_secret vide).",
+   "BACKEND row inchangée (tinker): DB payment_gateways id=4 → {\"id\":4,\"name\":\"Stripe\",\"status\":10}.",
+   "WEB anti-copy-mensongère: grep funnel.jsx/screens.jsx pour 'Apple Pay|Google Pay|3D-Secure|Stripe' hors-commentaires → 0 occurrence rendue (seules lignes 448/450 = commentaires)."
+  ]
+ },
+ {
+  "scope": "Mission visuelle WEB fidélité (:8096, Playwright réel, client token Sanctum user_id=189 phone 0697222388 injecté en localStorage). Vérification : rendu QR réel, loyalty_code réel, compte à rebours, onglet Historique, onglet Réductions (modèle 100pts=1€ sans catalogue rewards), absence de résidus démo (Ikyes Benzaid / LECAY-347-A9F2C / DÉMO V1 / Visa ····4242).",
+  "verdict": "PARTIAL",
+  "summary": "La page fidélité web est très majoritairement RÉELLE et conforme : le QR rend un vrai SVG (viewBox 171x171, path-based, 43 KB) avec loyalty_code réel 99B874AD (identique à /api/profile), compte à rebours \"Expire dans 5:00\" + bouton ACTUALISER ; l'onglet Historique affiche les vraies lignes backend (2 redeem -100 pts, 8 juil. 18h11/18h09, solde 300/400 — identiques à /api/frontend/loyalty/history) ; l'onglet Réductions applique le modèle continu 100 pts = 1 € SANS catalogue de récompenses mock. AUCUN 'DÉMO V1', AUCUN 'LECAY-347-A9F2C', AUCUN 'Benzaid', AUCUN 'Visa ····4242' visible. UN résidu démo subsiste et est VISIBLE sur la page fidélité : le header de navigation affiche en dur l'avatar \"IB\" + le prénom \"Ikyes\" (components.jsx:137-138), alors que le profil réel est \"Guest User\" / 0697222388 → P1. Mineur : deux trophées (Premier pas, Habitué \"5 commandes\") sont codés un:true en dur et s'affichent débloqués pour un compte neuf à 0 pt → \"2 débloqués sur 6\" partiellement faux (P2). QR ne rend PAS un P0 (il rend correctement ; ma 1re capture à 2,5 s était trop tôt pour le mint async, confirmé re-test à 3 s).",
+  "findings": [
+   {
+    "severity": "P1",
+    "title": "Résidu démo 'Ikyes' + avatar 'IB' codés en dur dans le header nav, visibles sur la page fidélité",
+    "file": "/Users/1millnonstop/Downloads/web/components.jsx",
+    "line": 138,
+    "proof": "Source: components.jsx:137-138 => `<span className=\"ava\">IB</span><span className=\"lc-hide-mobile\">Ikyes</span>` (JSX statique, aucune dérivation du profil). Preuve exécution Playwright (:8096, token user_id=189 injecté localStorage): facts.json navHeaderText = 'IB\\nIkyes' ; residue.Ikyes = true. Capture web/10-fidelite-viewport.png : bouton compte en haut à droite affiche pastille orange 'IB' + 'Ikyes'. Or /api/profile (X-API-Key + Bearer) renvoie name='Guest User', phone='0697222388', loyalty_code='99B874AD'. Le header devrait dériver initiales/nom du profil réel, pas afficher le persona démo 'Ikyes'. Mission interdit explicitement tout 'Ikyes Benzaid' visible.",
+    "recommendation": "Dériver l'avatar (initiales) et le libellé du header depuis api.profile()/api.getPhone() (ex. initiales du name, ou téléphone masqué). Supprimer les littéraux 'IB' et 'Ikyes' de components.jsx:137-138."
+   },
+   {
+    "severity": "P2",
+    "title": "Trophées 'Premier pas' et 'Habitué (5 commandes)' codés un:true → 2/6 débloqués faux pour un compte à 0 pt",
+    "file": "/Users/1millnonstop/Downloads/web/screens.jsx",
+    "line": 496,
+    "proof": "screens.jsx:496-497 => achievements a1 'Premier pas' et a2 'Habitué'/'5 commandes' ont `un: true` en dur ; screens.jsx:654 ne recalcule que les paliers `tier` (points>=seuil) et garde `!!a.un` pour les autres. Exécution : client user_id=189 a loyalty_points=0 (/api/profile) et pourtant captures web/12-historique.png & web/13-reductions.png montrent '2 débloqués sur 6' avec 'Habitué — 5 commandes' présenté déverrouillé (état factuellement faux pour un nouveau compte). Résidu de données mock, pas de source réelle de compteur de commandes câblée.",
+    "recommendation": "Dériver a1/a2 d'un compteur réel (nombre de commandes du client via /api/orders ou champ profil) au lieu de un:true en dur, ou masquer ces badges tant qu'aucune source réelle n'est câblée en V1."
+   }
+  ],
+  "evidence": [
+   "curl GET http://127.0.0.1:8766/api/frontend/loyalty/config (X-API-Key) => {points_per_euro:1, points_for_1_euro_discount:100, min_redeem_points:100, ...} — modèle 100pts=1€ confirmé backend",
+   "curl GET /api/profile (X-API-Key + Bearer 6625|...) => name='Guest User', phone='0697222388', loyalty_code='99B874AD', loyalty_points:0 — profil réel (PAS Ikyes/Benzaid)",
+   "curl POST /api/frontend/loyalty/qr => {token:'lqr.eyJ...', ttl_seconds:300, loyalty_code:'99B874AD'} — QR minté réel",
+   "curl GET /api/frontend/loyalty/history => 2 lignes redeem -100 (balance_after 300 puis 400, dates 2026-07-08 18:11:05 / 18:09:45) — historique réel",
+   "Playwright réel :8096 token injecté localStorage lecayenne.authToken/authPhone : QR container '.lc-wallet-code-qr' contient un vrai SVG viewBox '0 0 171 171' path-based (innerHTML 43242 chars), qrcodeLibType='function', 0 erreur console, 0 requête réseau échouée (qr-info.json)",
+   "Capture /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/goal-web-app-sync/w6r1/web/10-fidelite-viewport.png : QR affiché, identifiant 99B874AD, 'Expire dans 5:00', bouton ACTUALISER, 'Vos points : 0 → utilisable : 0,00 € · 100 pts = 1 €' ; header top-right affiche 'Ikyes' (résidu)",
+   "Capture web/12-historique.png : onglet Historique = 2 'Réduction fidélité appliquée' -100 (8 juil. 18h11 solde 300 / 18h09 solde 400) — identique à l'API",
+   "Capture web/13-reductions.png : onglet 'Mes réductions' = modèle continu 'Minimum 100 pts — encore 100 pts pour débloquer 1,00 € de réduction', AUCUN catalogue rewards mock",
+   "facts.json residue: {Ikyes:true, Benzaid:false, LECAY347:false, DEMO_V1:false, visa4242:false} — seul 'Ikyes' persiste",
+   "Specs jetables exécutées puis conservées dans reports/goal-web-app-sync/w6r1/ (capture.spec.js, qr-inspect.spec.js, final-shot.spec.js) ; fichiers écrits par erreur dans le dossier source web supprimés (read-only respecté)"
+  ]
+ },
+ {
+  "scope": "Vérification visuelle + technique adversaire du site web standalone Le Cayenne (:8096) — mission W6R1 : accueil, menu (9 catégories), nouvelles boissons, fiche produit, sur desktop 1280x800 et mobile 390x844. READ-ONLY (aucun fichier applicatif modifié ; scripts jetables dans scratchpad + captures dans reports/goal-web-app-sync/w6r1/web/).",
+  "verdict": "PASS",
+  "summary": "Le site web (:8096) est visuellement et techniquement propre. Les 9 catégories s'affichent (sidebar : Sandwichs 4, Galette 2, Burgers 6, Tacos 2, Bols 2, Frites 2, Desserts 3, Boissons 15, Menu enfant 2 = 38 cartes). Les 15 boissons sont présentes dont les 7 nouvelles (Coca Cherry, Tropico, Ice Tea Pêche, Fanta Citron, Fuze Tea, Hawaï, Perrier), toutes à 1,90 € en format FR, avec des images produit distinctes qui décodent correctement. Fiche produit propre (desktop + mobile). ZÉRO label brut (undefined/NaN/€0/Label.), ZÉRO prix format US (aucun 'X.XX €'), ZÉRO erreur console, ZÉRO requête réseau échouée. L'écart apparent 38 (web) vs 42 (borne) est un choix de modélisation des Frites (2 items base + option 'style' au wizard) et NON une divergence : les 6 combinaisons frites de la borne sont toutes reproductibles au prix exact (2,50/3,50/4,50/4,00/5,00/6,00) et la parity gate rapporte 0 divergence. Aucun P0/P1/P2 trouvé. 2 observations cosmétiques P3 documentées/intentionnelles.",
+  "findings": [
+   {
+    "severity": "P3",
+    "title": "Modélisation Frites : web=38 items vs borne=42 (4 SKU Frites composés via wizard, pas de divergence prix/produit)",
+    "proof": "python3 sur catalog-canonical.json → Frites borne = 6 SKU (Petite 2.5, Grande 4, Petite Cheddar fondu 3.5, Petite Cheddar+Oignons 4.5, Grande Cheddar fondu 5, Grande Cheddar+Oignons 6). /Users/1millnonstop/Downloads/web/data/menu.js:442-449 → web FRITES = 2 items (Petite 2,50 / Grande 4,00) avec has_frites_style:true + option 'Cheddar fondu +1€ / Cheddar+Oignons +2€'. Reconciliation : 2,50+1=3,50 ; 2,50+2=4,50 ; 4,00+1=5,00 ; 4,00+2=6,00 → EXACT. parity-report-web.json : divergence_count 0, ok:true. Capture reports/goal-web-app-sync/w6r1/web/desktop-02-menu.png montre en-tête '9 catégories · 38 créations'.",
+    "recommendation": "Aucune action bloquante (prix/produit alignés, parity=0). Recommandation optionnelle : piloter le wizard frites en e2e pour confirmer que les 6 combinaisons s'affichent et facturent bien 2,50/3,50/4,50/4,00/5,00/6,00 dans l'UI (ici prouvé par config, pas par clic).",
+    "file": "data/menu.js",
+    "line": 442
+   },
+   {
+    "severity": "P3",
+    "title": "Quirks images boissons intentionnels (Orangina→canette Tropico, Fuze Tea→Lipton framboise, Hawaï→Fanta fraise, Perrier→bouteille eau plate)",
+    "proof": "data/menu.js:88-100 mappe 'orangina':'tropico.png', 'fuze-tea':'lipton-framboise.png', 'hawai':'fanta-fraise.png', 'perrier':'eau.png' avec commentaire '(quirks canoniques assumés)'. Visible sur capture reports/goal-web-app-sync/w6r1/web/desktop-06-drinks-search.png : la carte Orangina montre une canette Tropico, Fuze Tea une canette Lipton framboise, Hawaï une Fanta fraise, Perrier une bouteille d'eau plate. Ces filenames sont alignés sur les thumbs backend/caisse → la borne affiche EXACTEMENT les mêmes images (pas de divergence cross-surface).",
+    "recommendation": "Cosmétique, identique à la borne (mêmes assets API). À corriger seulement si l'owner fournit des visuels dédiés pour ces 4 références.",
+    "file": "data/menu.js",
+    "line": 88
+   }
+  ],
+  "evidence": [
+   "Ports UP vérifiés : lsof :8096 (Python static), :8766 (php API 8 workers), :8087 (php mobile) tous LISTEN. curl :8096/ → HTTP 200 len=12836.",
+   "Images boissons API OK : curl :8766/images/menu/{coca,coca-cherry,tropico,lipton-framboise,fanta-fraise,eau,fanta-citron,lipton-peche}.png → tous HTTP 200.",
+   "Scan technique Playwright (chrome headless, node scratchpad/capweb2.js) desktop 1280x800 + mobile 390x844 : consoleErrs=[] (0), failedReq=[] (0), scan.rawLabels=[] sur les 2 viewports (aucun undefined/NaN/€0/Label./null), scan.dotPrices=[] (aucun prix format US), priceSample = uniquement 'X,XX €'/'X€' FR. drinkScan.found = [Coca Cherry, Tropico, Perrier, Ice Tea Pêche, Fanta Citron, Fuze Tea, Hawaï] (7/7 nouvelles boissons présentes), hasBoissons=true. Résultat JSON : reports/goal-web-app-sync/w6r1/web/scan-results.json",
+   "Capture + analyse desktop-01-home.png : accueil branded (nav Accueil/Menu/Commandes/Fidélité/L'enseigne, hero sandwich image API chargée, '1€ = 1pt', CTA Commander/Fidélité) — propre.",
+   "Capture + analyse desktop-02-menu.png : sidebar 9 catégories avec compteurs (Boissons=15), en-tête '9 catégories · 38 créations · prêts en 8 à 20 minutes', '38 résultats', cartes produit avec vraies photos, prix FR.",
+   "Capture + analyse desktop-06-drinks-search.png (recherche '33cl' → '13 résultats') : les 13 boissons canettes affichées avec images distinctes qui décodent (Coca, Coca Zero, Fanta, Sprite, Oasis, Orangina, Coca Cherry, Tropico, Ice Tea Pêche, Fanta Citron, Fuze Tea, Hawaï, Perrier), toutes 1,90 €.",
+   "Capture + analyse desktop-04-fiche.png + mobile-04-fiche.png : fiche Coca Cherry 33cl — '// BOISSONS', titre, sous-titre 'Coca-Cola Cherry', 'Prêt en 0 min · Retrait Hénin-Beaumont', allergènes, 1,90 €, CTA 'Ajouter au panier', image canette réelle. Layout mobile empilé responsive OK.",
+   "Capture + analyse mobile-01-home.png : accueil mobile 390x844 responsive (hamburger, hero, CTAs, '1€ = 1pt') — propre, aucun débordement.",
+   "Reconciliation Frites via python3 sur catalog-canonical.json vs data/menu.js:442-449 : 6 SKU borne = 2 items web + option style, prix exacts. parity-report-web.json divergence_count=0 ok=true.",
+   "meta feature-online-card=0 dans index.html:14 (flag paiement carte en ligne OFF par défaut) — cohérent avec l'exigence Stripe flag OFF (vérif approfondie déléguée à w6r1/stripe-flag-adv.spec.js)."
+  ]
+ },
+ {
+  "description": "test",
+  "scope": "Node tests web/mobile — menu-pricing, loyalty-redeem, mobile menu.spec, ordersParity.spec (canon 42 borne/38 mirror, capri 1,50, 15 boissons, earn 1pt/€ floor)",
+  "verdict": "PASS",
+  "summary": "Les 4 fichiers de test passent au vert par exécution réelle (EXIT=0 chacun, 0 failure). Ils vérifient bien le NOUVEAU canon et non l'ancien : menu-pricing (8/8) assert formule menu +2,50 explicitement « pas +3,00 », sauces jamais facturées « +0,50 supprimé », viande suppl +2,50. loyalty-redeem (8/8) assert earn 1 pt/€ FLOOR + 100 pts = 1 € min 100. menu.spec assert « 38 items mirror », « 9 catégories », Capri-Sun 1,50€ (20cl ≠ canette) marqué « FIX P0 », « 15 boissons », priceForDrinkAddon capri=1,50. ordersParity assert earn_ratio=1 pt/€, points=floor(total×1), items phantom-free. Assertions anti-régression présentes (fantômes « Big Cayenne/Big Chicken/Bowl… » absents, Tacos L 7,90 « PAS 8,90 », Chicken Burger 4,90 « PAS 6,90 »). Aucun test rouge, aucune assertion périmée laissée verte à tort. Note : la fixture borne = 42 items ; les mirrors web/mobile = 38 (écart canonique attendu, boissons/variants non-mirrorés), ces tests couvrent le mirror 38 pas le catalogue 42 borne.",
+  "findings": [],
+  "evidence": [
+   "cd testttt && node /Users/1millnonstop/Downloads/web/tests/node/menu-pricing.test.mjs → TAP: # pass 8 # fail 0, EXIT=0 (assert 'Formule menu = +2,50 (canon, pas +3,00)', 'Sauces jamais facturées (canon 1 sauce max, +0,50 supprimé)')",
+   "node /Users/1millnonstop/Downloads/web/tests/node/loyalty-redeem.test.mjs → TAP: # pass 8 # fail 0, EXIT=0 (assert 'earn : 1 pt / € en FLOOR, parité backend', '100 pts = 1 €, min 100')",
+   "node mobile/tests/menu.spec.js → 'ALL CHECKS PASSED (0 failures)', EXIT=0 ; MOBILE et WEB tous deux → '38 produits, 9 catégories' ; 'ok 15 boissons (got 15)' ; 'ok Capri-Sun 1,50€ (20cl, ≠ canette)' ; 'ok priceForDrinkAddon capri = 1,50€ (FIX P0)' ; 'ok Tacos L 7,90€ (PAS 8,90)' ; 'ok fantôme absent: Big Cayenne'",
+   "node mobile/tests/ordersParity.spec.js → 'ALL PARITY CHECKS PASSED (0 failures)', EXIT=0 ; 'ok earn_ratio = 1 pt/€ (got 1)' ; 'ok points_per_euro = 1 (alias API backend)' ; 'ok order C-1234 points = floor(total × 1) = 24'"
+  ]
+ },
+ {
+  "scope": "Audit visuel + parité MOBILE standalone (php -S 127.0.0.1:8087) vs catalogue borne canonique (catalog-canonical.json, 9 cat / 42 items). Playwright headless viewport 390x844 isMobile, auth injectée via token fixture Sanctum (localStorage lecayenne.auth). Écrans capturés : splash/onboarding, home authed, menu (TOUT), boissons filtré. Captures dans reports/goal-web-app-sync/w6r1/mobile/.",
+  "verdict": "PARTIAL",
+  "summary": "Le VISUEL mobile est propre et conforme : palette NOIR/ORANGE/JAUNE/BLANC strictement respectée (aucun #F4501E dans le codebase ni au rendu ; orange = #FF5A1F, jaune = #FFD93D), aucun label brut / undefined / NaN sur splash+onboarding+home+menu+boissons, layout intact, console sans erreur applicative. Les 15 boissons (dont les 7 nouvelles : Coca Cherry, Tropico, Ice Tea Pêche, Fanta Citron, Fuze Tea, Hawaï, Perrier) sont TOUTES présentes avec prix EXACTS = borne (13×1,90 € / Eau 1,00 € / Capri-Sun 1,50 €). MAIS une divergence de catalogue produit vs borne subsiste : le mobile expose 38 produits alors que la borne en a 42 — la catégorie Frites n'a que 2 items sur mobile contre 6 sur la borne (4 variantes Cheddar manquantes). Le header du menu affiche d'ailleurs « 9 catégories · 38 produits ». C'est le seul écart bloquant ; tout le reste du parcours visuel est vert.",
+  "findings": [
+   {
+    "severity": "P0",
+    "title": "Divergence catalogue produit mobile vs borne : Frites 2 items au lieu de 6 (38 produits mobile vs 42 borne)",
+    "file": "mobile/data/menu.js",
+    "line": 493,
+    "proof": "Comptage canonique (catalog-canonical.json) : Frites=6 items [Petite Frites 2.5, Grande Frites 4, Petite Frites Cheddar fondu 3.5, Petite Frites Cheddar+Oignons frits 4.5, Grande Frites Cheddar fondu 5, Grande Frites Cheddar+Oignons frits 6], TOTAL 42. Comptage mobile menu.js : grep 'mkItem(...,7,' => 2 items seulement (mkItem(701,'petite-frites',7,'Petite Frites',2.50) ligne 493 ; mkItem(702,'grande-frites',7,'Grande Frites',4.00) ligne 496). Rendu confirmé Playwright : le header MENU affiche 'MENU | 9 catégories · 38 produits' (screenshot 10-menu-list.png + DOM innerText). Les 4 variantes Frites Cheddar de la borne sont donc INCOMMANDABLES sur mobile. Note : le commit GOAL-SYNC 2026-07-08 a réaligné les boissons mais PAS les frites.",
+    "recommendation": "Ajouter les 4 items Frites Cheddar manquants (Petite Cheddar fondu 3,50 ; Petite Cheddar+Oignons frits 4,50 ; Grande Cheddar fondu 5,00 ; Grande Cheddar+Oignons frits 6,00) dans DRINKS/FRITES de menu.js (cat 7), noms/prix EXACTS du canon. Re-vérifier ensuite que le header affiche '42 produits'."
+   },
+   {
+    "severity": "P3",
+    "title": "Orangina 33cl affiche le visuel canette Tropico (image mutualisée)",
+    "file": "mobile/data/menu.js",
+    "line": 105,
+    "proof": "ITEM_IMG mappe 'orangina':'tropico.png' (menu.js:105) et 'tropico':'tropico.png' (menu.js:111) ; DRINKS ligne 515 mkItem(1006,'orangina',...) hérite donc de tropico.png. Rendu confirmé screenshot 12-boissons-filtered.png : la carte 'Orangina 33cl' montre une canette Tropico. Cosmétique, sans impact prix/commande.",
+    "recommendation": "Utiliser un asset Orangina dédié si disponible dans mobile/assets/menu, sinon fallback boisson.png générique plutôt que la canette Tropico (évite la confusion produit)."
+   }
+  ],
+  "evidence": [
+   "grep -c 'F4501E' sur styles.css/redesigns-styles.css/*.jsx/data/*.js => 0 occurrence (rouge borne interdit ABSENT). Tokens confirmés : --orange #FF5A1F (styles.css:7), --yellow #FFD93D (styles.css:11).",
+   "Couleurs rendues (audit-01.json) : rgb(255,90,31)=orange, rgb(255,217,61)=jaune, rgb(0,0,0)/rgb(10,10,10)=noir, rgb(255,255,255)=blanc. Aucune couleur rouge.",
+   "Boissons filtrées (script mobcap6.js, MENU tab + chip BOISSONS) : 15/15 présentes, prix DOM = ['1,90 €'×6,'1,00 €','1,50 €','1,90 €'×7] EXACTEMENT le canon. Header '15 CRÉATIONS'. Capture 12-boissons-filtered.png.",
+   "Raw-label scan (regex Label.X / .foo / undefined / NaN / {{}} ) sur splash, home authed, menu, boissons => [] (aucun) sur tous les écrans.",
+   "Auth réelle via token fixture (e2e-fixtures clients[0] 6625|...) injecté localStorage 'lecayenne.auth' => home authed 'BONJOUR, INVITÉ !' + COMMANDES tab montre 4 commandes live (#0807265569 etc) => backend orders wired OK.",
+   "Console mobile (console-log-3.txt) : 0 erreur applicative (seuls blocages fonts googleapis dus à l'environnement offline, non-bug).",
+   "Captures : reports/goal-web-app-sync/w6r1/mobile/ (01-splash-or-home.png, 05-home-authed.png, 10-menu-list.png, 12-boissons-filtered.png + full-page variants + JSON audits)."
+  ]
+ },
+ {
+  "scope": "Vérification visuelle adversaire des wizards de composition WEB (:8096, served from /Users/1millnonstop/Downloads/web, données data/menu.js) vs fixture borne catalog-canonical.json. Cibles : Tacos M, Sandwich Cayenne, Cheese Burger, Bol Riz, Bol Frites. Pilote Playwright (testttt/node_modules/playwright-core), captures + extraction DOM structurée par étape (titre/options/prix/total) + test comportemental single-sauce + lecture visuelle des captures clés. Captures : reports/goal-web-app-sync/w6r1/web/.",
+  "verdict": "PASS",
+  "summary": "Les 5 wizards WEB sont conformes à la borne/fixture — aucune divergence P0/P1. (1) Tacos M : l'étape CRUDITÉS RÉAPPARAÎT (3/7, Salade/Tomate/Oignon pré-cochés + Oignons cuits opt-in) confirmant le revert 05e5cacd0, et la sauce est en sélection unique (12 sauces, toutes +0, max 1 vérifié par code + comportement). (2) Cayenne : choix PAIN présent (Pain pré-sélectionné), sauce « Fromagère maison » pré-sélectionnée (Min:1 Sélection:1/1), aucun badge épicé (is_spicy:false), viande suppl. +2,50 présente. (3) Cheese Burger : étape « Viande supplémentaire ? » à +2,50 €/viande (max 2) présente. (4) Bol Riz : 2 sauces bol (fromagère + spicy) + « Option Gratiné +2,00 € » présent avec sub « gratiné +2,00 € ». (5) Bol Frites : mêmes 2 sauces bol, mais Option Gratiné ABSENTE (9 suppléments, sub « +0,90 € chacun ») — le garde-fou P0 réclamé (pas de gratiné sur bol frites) PASSE. Prix de base 100% alignés fixture (6,90/7,40/6,00/7,90/7,90). 0 erreur console sur tous les runs. Seule réserve : quirk UX P3 (sauce en multi-plafonné max 1 → clic d'une 2e sauce affiche « Maximum 1 sélections » au lieu de basculer le choix comme un radio).",
+  "findings": [
+   {
+    "severity": "P3",
+    "title": "Étape sauce = multi-plafonné (max 1) au lieu d'un vrai radio — clic sur une 2e sauce affiche une erreur au lieu de basculer",
+    "proof": "Code wizard-v2.jsx:96-98 sauce step {required:true,min:1,max:1} rendu en kind 'multi'. set() wizard-v2.jsx (bloc else): `if (!isOn && step.max && cur.length >= step.max) { setError('Maximum ${step.max} sélections'); return s; }`. Test comportemental (sauce-check2.js sur Tacos M) : afterMayo=['Mayonnaise'], puis clic Ketchup → afterKetchup=['Mayonnaise'] (inchangé). Le garde-fou « 1 seule sauce » tient (aucune multi-sauce, aucune sauce payante, toutes +0) mais l'UX force un dé-sélection manuelle pour changer de sauce. Non-bloquant, cosmétique.",
+    "recommendation": "Facultatif : rendre l'étape sauce (min1/max1) en kind 'radio' pour un basculement direct, ou faire remplacer la sélection au lieu d'afficher l'erreur « Maximum 1 sélections ».",
+    "file": "resources../wizard-v2.jsx",
+    "line": 97
+   }
+  ],
+  "evidence": [
+   "Serveurs: curl :8096 → 200 ; :8766 → 302 ; lsof confirme :8096 = python http.server -d /Users/1millnonstop/Downloads/web",
+   "Fixture parity base prices (python cmp) : Tacos M 6.9=6.9, Cayenne 7.4=7.4, Cheese Burger 6=6.0, Bol Riz 7.9=7.9, Bol Frites 7.9=7.9 — tous match=True",
+   "Extraction DOM par étape (wiz-driver3.js → _wizard-report3.json) : Tacos M steps=[viande, Sauce '1 sauce incluse' 12 opts, CRUDITÉS 3/7, Suppléments, Viande supplémentaire +2,50, Menu] ; Bol Riz supplements inclut 'Option Gratiné +2,00 €' ; Bol Frites supplements = 9 opts SANS gratiné",
+   "Fixture composer_profile item 45 (Bol Riz) step 'supplements' choices INCLUENT 'Option Gratiné' ; item 41 (Bol Frites) step 'supplements' l'EXCLUENT — cohérent avec le WEB. Filtre code wizard-v2.jsx:47-48 suppBolsOptions(allowGratine).filter(s=>allowGratine||!s.riz_only)",
+   "Capture lue wiz3-bol-riz-s2.png : 'SUPPLÉMENTS DU BOL' avec 'Option Gratiné +2,00 €' (badge POPULAIRE), preview Bol Riz — layout intact, aucun label brut",
+   "Capture lue wiz3-bol-frites-s2.png : 'SUPPLÉMENTS DU BOL', sub 'Optionnel · +0,90 € chacun', 9 suppléments, AUCUN gratiné",
+   "Capture lue wiz3-tacos-m-s2.png : étape 3/7 'CRUDITÉS' (Salade/Tomate/Oignon cochés, Oignons cuits opt-in), preview 'Crudités: Salade, Tomate, Oignon'",
+   "Capture lue wiz-cayenne-s1.png : étape 2/7 'SAUCE' Min:1 Sélection:1/1, 'Fromagère maison' pré-sélectionnée (orange), preview Pain=Pain + Sauce=Fromagère maison",
+   "Capture lue wiz3-cheese-burger-s3.png : étape 4/6 'VIANDE SUPPLÉMENTAIRE ?' 7 viandes à +2,50 € chacune, max 2, TOTAL 6,00 €",
+   "0 erreur console : _wizard-report2.json et _wizard-report3.json consoleErrors=0 ; 26 captures produites dans reports/goal-web-app-sync/w6r1/web/"
+  ]
+ },
+ {
+  "scope": "Mobile standalone (:8087, 390×844) — parcours paiement/commande : panier→upsell→ModalPayChoice (flag onlineCardEnabled OFF)→Payer sur place→ScreenConfirm (queue backend réelle). Preuve par exécution Playwright chromium isolé + inspection DOM + captures.",
+  "verdict": "PASS",
+  "summary": "Le parcours mobile paiement/commande est CONFORME au contrat §4/§7. Flag onlineCardEnabled servi OFF ; ModalPayChoice n'affiche QUE « Payer sur place » (aucun bouton CB dans le DOM : data-testid pay-card-online ABSENT, hasCardOnline=false) + micro-copy FR « Le paiement en ligne arrive bientôt. » — aucun P0. Défense en profondeur présente aussi côté ScreenStripe (garde early-return si flag OFF). Upsell « Pour accompagner ? » NON vide et correctement mixé frites+boissons+desserts (Petite Frites, Grande Frites, Coca-Cola 33cl, Coca Zero, Fanta, Glace, Tarte Daim) — aucun P1. « Payer sur place » déclenche une COMMANDE RÉELLE (placeCounterOrder→API :8766) qui aboutit à ScreenConfirm « Commande #A0042 envoyée », n° d'appel A0042, total 7,40 €, +7 pts. Le chemin de dégradation douce existe (erreur réseau→toast FR « Hors ligne — commande de démonstration » + snapshot local ; erreur métier→toast FR, panier intact, on reste sur l'écran — observé). Aucun P0/P1. Seul défaut : un 404 sur un asset statique de dev non lié au paiement.",
+  "findings": [
+   {
+    "severity": "P3",
+    "title": "404 asset statique dev non lié au paiement (.image-slots.state.json) sur l'hôte mobile :8087",
+    "file": "mobile/image-slot.js",
+    "line": 1,
+    "proof": "net404.js (Playwright, capture des réponses ≥400 sur tout le parcours panier→pay→confirm) → seule ligne : `404 GET http://127.0.0.1:8087/.image-slots.state.json`. Aucun 4xx/5xx sur les appels API :8766 ; la commande aboutit (queue A0042). Fichier de state d'éditeur d'images (design-canvas), absent en prod-lite ; sans impact sur le flux client ni le paiement.",
+    "recommendation": "Cosmétique/dev only : ignorer ou fournir un fichier vide `{}` pour supprimer le 404 console. Non bloquant go-live."
+   }
+  ],
+  "evidence": [
+   "FLAG OFF servi : `curl -s http://127.0.0.1:8087/index.html | sed -n 64,78p` → `onlineCardEnabled: false` (bloc window.LC.config).",
+   "ModalPayChoice OFF (inspection DOM data-modal-kind=pay) : {present:true, hasCounter:true, hasCardOnline:FALSE, hasSoonNote:true, text:'COMMENT TU PAIES ? | Total 7,40 € | ★ RECOMMANDÉ | PAYER SUR PLACE | Cash ou CB à la caisse | Le paiement en ligne arrive bientôt.'} — aucun bouton CB. Script : reports/goal-web-app-sync/w6r1/mob-visual-run.js.",
+   "Capture modal : reports/goal-web-app-sync/w6r1/mobile/v06-modal-pay.png — visuel : sheet ne montre QUE « PAYER SUR PLACE » + note « Le paiement en ligne arrive bientôt. », pas d'option carte.",
+   "Upsell non vide (snippet cart innerText) : 'POUR ACCOMPAGNER ? | Petite Frites 2,50€ | Grande Frites 4,00€ | Coca-Cola 33cl 1,90€ | Coca-Cola Zero 33cl 1,90€ | Fanta Orange 33cl 1,90€ | Glace 3,50€ | Tarte Daim 3,50€' (mix frites+boissons+desserts). Code source : mobile/screens-main.jsx:706-709.",
+   "ScreenConfirm après « Payer sur place » (commande RÉELLE) : 'LE CAYENNE — C'EST PARTI ! Commande #A0042 envoyée — N° D'APPEL EN CAISSE A0042 — TOTAL 7,40 € — EN PRÉPARATION ~12 MIN' + modal fidélité '+7 POINTS GAGNÉS'. hasQueue=true, hasOffline=false. Capture : reports/goal-web-app-sync/w6r1/mobile/v07-confirm.png.",
+   "Câblage flux (revue code, non-frozen) : index.html:169 go('pay')→snapshotOrder+setModal('pay') ; index.html:317 ModalPayChoice flag={window.LC.config.onlineCardEnabled}, onPickCounter→placeCounterOrder()→confirm ; index.html:178 garde 'stripe' inaccessible si flag OFF→redirige vers modal pay ; screens-modals.jsx:60-71 rendu conditionnel du bouton CB derrière cardOnline ; screens-modals.jsx:82-90 garde ScreenStripe (état FR 'Paiement en ligne indisponible').",
+   "Dégradation douce (revue code index.html:210-250 placeCounterOrder) : erreur réseau→toast 'Hors ligne — commande de démonstration' + fallback snapshot local ; erreur métier 4xx→toast FR + panier intact (observé accidentellement avec une ligne panier volontairement non résolvable : toast 'Article introuvable côté caisse', on reste sur le panier — dégradation correcte).",
+   "Anti-hallucination : le 1er run montrait 'Article introuvable' = artefact de MON seed synthétique (slug 'sandwich-cayenne' inexistant) ; l'item mobile RÉEL Cayenne = mkItem(101,'cayenne',...) (data/menu.js:404), slug 'cayenne' → backend id 22 (`curl /api/frontend/item` → '22 | cayenne | Cayenne'), résolution OK → NON remonté comme bug.",
+   "Aucun 4xx/5xx API sur tout le parcours (net404.js) ; commande aboutie côté backend (queue A0042)."
+  ]
+ },
+ {
+  "scope": "Test visuel adversaire MOBILE wizards (:8087, 390×844) — 5 produits ciblés vs fixture borne catalog-canonical.json (data.items[].extras). Captures: reports/goal-web-app-sync/w6r1/mobile/. Pilotage Playwright headless (seed auth+onboarding localStorage → boot home → tab Menu → ouverture item → parcours pas-à-pas de chaque étape wizard avec dump innerText + screenshot fullPage par étape).",
+  "verdict": "PASS",
+  "summary": "Les 5 wizards mobiles rendent une composition IDENTIQUE à la borne (fixture). (1) Tacos M : crudités présentes (Salade/Tomate/Oignon ON + Oignons cuits OFF = 4 crudités, exact fixture extras group 'crudite'×4), étape Sauce « 1 sauce incluse » (12 sauces), base 6,90 €, 1 viande. (2) Sandwich Cayenne : étape 1 « Pain ou galette » (choix pain), étape Sauce avec « Fromagère maison » PRÉSÉLECTIONNÉE (bordure orange), base 7,40 €. (3) Chicken Burger : section « Viande supplémentaire +2,50 € · max 2 » (7 viandes @ +2,50), pas d'étape viande (compo fixe, viande_count 0), base 4,90 €. (4) Bol Riz vs Bol Frites : Bol Riz étape « Suppléments du bol » contient « Option Gratiné POPULAIRE +2,00 € » ; Bol Frites NE la contient PAS (filtre riz_only OK) ; les DEUX ont exactement 2 sauces bol (Sauce fromagère maison / Sauce spicy = attr 8 fixture), base 7,90 €. (5) Formule menu affichée « Menu complet Frites + Boisson +2,50€ » partout (Tacos/Cayenne/Burger) — JAMAIS +3,00. Comparaison structurée fixture data.items[26/22/38/41/45].extras = mobile : sets crudité/supplément/gratiné/sauce/viande identiques (l'ordre des suppléments optionnels diffère par item côté fixture mais le SET est identique — cosmétique P3, non remonté). Aucune divergence composition/prix P0/P1. Note info (hors périmètre compo) : requêtes API loyalty/profile renvoient 401 car token e2e factice — le wizard rend depuis menu.js local, sans impact ; non-défaut.",
+  "findings": [],
+  "evidence": [
+   "Fixture borne (source de vérité) extras Tacos M (id26): `python3` sur catalog-canonical.json → GROUP 'crudite'(4)=Salade,Tomate,Oignon,Oignons cuits ; GROUP 'supplement'(10)=9×0,90€ + Viande supplémentaire 2,50€",
+   "Fixture Bol Frites(41) 'supplement_bol'(10) SANS Option Gratiné ; Bol Riz(45) 'supplement_bol'(11) AVEC 'Option Gratiné' 2,00€ — prouve le filtre riz_only attendu",
+   "Mobile Tacos M parcours réel (stepper.js) : STEP 3/6 Crudités = '✓ Salade / ✓ Tomate / ✓ Oignon / ✕ Oignons cuits' ; STEP 2/6 Sauce = '1 sauce incluse' (12 sauces) — capture mobile/tacosM-s3-Crudits.png (vue Read: 4 cartes crudités, images réelles, 3 vertes sélectionnées, layout intact, 0 label brut)",
+   "Mobile Cayenne : STEP 1/6 'Pain ou galette' (Pain/Galette) ; STEP 2/6 Sauce sans hint 'choisis' → Suivant actif = sauce préselect — capture mobile/cayenne-s2-Sauce.png (vue Read: 'Fromagère maison' encadrée orange = présélectionnée)",
+   "Mobile Chicken Burger STEP 3/5 Suppléments : bloc 'Viande supplémentaire +2,50 € · max 2' avec 7 viandes @ +2,50 € ; aucune étape viande (compo fixe) — dump innerText stepper.js",
+   "Mobile Bol Riz STEP 3/5 'Suppléments du bol' contient 'Option GratinéPOPULAIRE +2,00 €' ; Mobile Bol Frites STEP 3/5 même étape SANS Option Gratiné — dumps innerText comparés (bolRiz vs bolFrites) ; captures mobile/bolRiz-s3-Supplmentsdubol.png & mobile/bolFrites-s3-Supplmentsdubol.png",
+   "Mobile sauces bol = 2 options exactes (Sauce fromagère maison / Sauce spicy) sur les 2 bols — STEP 2/5 Sauce des deux bols",
+   "Formule menu +2,50€ (PAS +3,00) : capture mobile/cayenne-s5-Faireunmenu.png (vue Read: 'Menu complet Frites + Boisson +2,50€', 'Ajouter Frites +2,00€', 'Ajouter Boisson +2,00€', 'Sans formule') ; idem tacosM-s5 & burger-s4",
+   "Prix bases mobiles = fixture : Tacos M 6,90 € / Cayenne 7,40 € / Chicken Burger 4,90 € / Bol Riz 7,90 € / Bol Frites 7,90 € (affichés dans les CTA Suivant de chaque wizard)",
+   "Artefacts jetables + captures: /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/goal-web-app-sync/w6r1/{stepper.js,master.js,mobile/*.png,mobile/_stepper.json}"
+  ]
+ },
+ {
+  "scope": "Relance suite mobile-e2e (npx playwright test --config=tests/mobile-e2e/playwright.config.js) + audit anti-faux-vert des specs fidélité (QR réel, points→€, mocks 347/rewards/FK: supprimés).",
+  "verdict": "PARTIAL",
+  "summary": "Audit statique CONCLUANT : les specs mobile-e2e verrouillent le NOUVEL état, pas des mocks supprimés — aucun faux-vert détecté. S03 exige un QR réel 'lqr.…' minté serveur et REJETTE explicitement le legacy 'FK:' (expect(payload).not.toMatch(/^FK:/)) via auth Sanctum réelle (seedRealAuth→POST /guest-signup/verify :8766). S01 verrouille désormais earn_ratio=1 / points_per_euro=1 (valeur backend réelle), l'ancien drift 10 pt/€ retiré. S04 remplace le catalogue mock 8 rewards + WizardRedeem par le modèle CONTINU points→€ (redeem-rule '100 pts = 1 €', POST réel /api/frontend/loyalty/redeem avec X-Idempotency-Key, zéro débit client, redeems=0). Le catalogue REWARDS mobile est un stub gelé vide (mobile/data/loyalty.js:199 const REWARDS = Object.freeze([])) et la sentinelle red-d itère dessus à vide. Les occurrences de '347' restantes sont des SEED de test choisis par la spec (seedAccount{balance:347} via LC.dev.seedAccount, helper offline V0 toujours défini mobile/data/dev-helpers.js:238) puis ré-assertés — PAS l'assertion d'un défaut de mock supprimé. RESERVE HONNÊTE : au moment du rapport, l'exécution réelle de la suite était TOUJOURS EN COURS (suite large : loyalty + design-full waves + real-e2e page-by-page + ultraudit-visual, workers:1, timeout 90s/spec ; 3 procs playwright encore actifs, fichier de sortie tail à 0 octet). Je ne peux donc PAS citer honnêtement le compte final X passed / Y failed — il n'est pas encore produit. Aucun P0/P1 : aucune spec ne vérifie un mock supprimé.",
+  "findings": [],
+  "evidence": [
+   "cat tests/mobile-e2e/loyalty-03-qr-refresh.spec.js → expect(payload1).toMatch(/^lqr\\./); expect(payload1).not.toMatch(/^FK:/); // legacy interdit (rejeté backend) — QR réel minté via seedRealAuth (POST /api/auth/guest-signup/verify sur :8766, token Sanctum kiosk:order réel)",
+   "cat tests/mobile-e2e/utils/realAuth.js → getRealToken() fait un vrai guest-signup OTP+verify contre API_BASE=http://127.0.0.1:8766, retry 429 ; seedRealAuth pose le VRAI token via LC.storage.setAuth — pas de token 'test' pour les specs QR",
+   "cat tests/mobile-e2e/loyalty-01-earn-order-app.spec.js → expect(earnRatio).toBe(1); expect(ppe).toBe(1) ; commentaire: « L'ancien 10 pt/€ était un drift mock : le verrou pointe désormais sur la valeur RÉELLE du backend »",
+   "cat tests/mobile-e2e/loyalty-04-redeem-wizard.spec.js → redeem-rule contient '100 pts = 1 €' ; exactement 1 POST /api/frontend/loyalty/redeem ; balance reste 347 (seed) et redeems===0 (client ne débite jamais, backend=SSOT). Ancien WizardRedeem/LC.dev.redeemReward retiré",
+   "grep -n 'REWARDS' mobile/data/loyalty.js → :199 const REWARDS = Object.freeze([]) ; :15 « Catalogue REWARDS (8 récompenses fictives) SUPPRIMÉ »",
+   "grep 'seedAccount' mobile/data/dev-helpers.js → :238 function seedAccount(partial) toujours défini (helper offline V0) ; les '347' des specs sont des seeds fournis par le test (waitForLoyaltyReady({seedAccount:{balance:347}})), ré-assertés — pas un défaut de mock",
+   "sed -n '120,140p' red-d-mobile-fictional-purge → « [GOAL-SYNC 2026-07-08] catalogue rewards SUPPRIMÉ (modèle continu points→€) — stub [] gardé » ; boucle sur window.LC.loyalty.rewards (=[]) → aucune assertion sur un ancien reward fictif",
+   "grep 'redeem-panel|redeem-rule|100 pts = 1' mobile/screens-main.jsx → :1190 data-testid='redeem-panel', :1193 data-testid='redeem-rule' rend `${redeemRatio} pts = 1 €` — l'UI réelle testée par S04 existe bien",
+   "EXECUTION SUITE : npx playwright test --config=tests/mobile-e2e/playwright.config.js lancé en arrière-plan ; à l'heure du rapport pgrep -fl 'playwright test' = 3 procs actifs, fichier sortie = 0 octet (tail bufferise jusqu'à sortie process) → compte X passed/Y failed NON encore disponible, non inventé"
+  ]
+ },
+ {
+  "scope": "Vérification visuelle adversaire WEB standalone (:8096) — page paiement (flag Stripe OFF), page compte « Mon compte » (profil/cartes/déconnexion), mot de passe oublié. Reproduction Playwright indépendante + inspection DOM + console. READ-ONLY (aucun fichier applicatif modifié ; specs jetables dans w6r1/).",
+  "verdict": "PASS",
+  "summary": "Les 3 surfaces sont HONNÊTES et conformes au contrat §4. PAIEMENT (flag OFF) : une SEULE méthode « Payer sur place » dans le DOM (methodCount=1), AUCUNE option carte-en-ligne / Apple Pay / Google Pay / Stripe / 3D-Secure / pré-autorisation ; runtime onlineCardEnabled=false, meta content=0. COMPTE (authed via token fixture) : profil réel (Guest User / tél réel / email « Non renseigné » honnête), « Aucune carte enregistrée » (fini la Visa ····4242 fictive), bouton « Se déconnecter » présent, pas de bouton suppression inerte. MOT DE PASSE OUBLIÉ : message honnête « pas de mot de passe → Recevoir un code » (SMS), aucun faux « lien envoyé ». 0 erreur console non gérée sur les 3 pages. Aucun P0/P1. Une seule observation P3 (toggles notifications purement locaux localStorage, sans infra push V1 — n'émet aucune allégation mensongère). Captures : reports/goal-web-app-sync/w6r1/web/REPRO-payment.png, REPRO-account-moncompte.png, REPRO-forgot.png, REPRO-paymethods-OFF.html.",
+  "findings": [
+   {
+    "severity": "P3",
+    "title": "Toggles « Notifications » du compte purement locaux (localStorage), sans infra push/SMS V1",
+    "proof": "loyalty-v2.jsx:74-77 toggle() → localStorage.setItem(LV_NOTIF_KEY,...) uniquement ; aucun endpoint de préférences dans CONTRACTS.md. Capture REPRO-account-moncompte.png montre 5 switches (Statut commande, Points gagnés, Nouveautés menu, Promos, SMS de retrait). Ils persistent en local mais aucune notification backend n'est réellement envoyée en V1.",
+    "recommendation": "Non bloquant. Optionnel : ajouter une micro-mention « préférences enregistrées sur cet appareil » ou masquer le panneau tant que l'infra push n'existe pas. N'affirme rien de mensonger (pas de « on t'enverra un SMS » garanti), donc acceptable en l'état.",
+    "file": "loyalty-v2.jsx",
+    "line": 74
+   }
+  ],
+  "evidence": [
+   "PAIEMENT repro indépendante (verif-pay.spec.js, chrome headless 1360×900) → PAY2 {\"methodCount\":1,\"dom\":{\"methods\":[\"Payer sur place\"],\"stripe\":false,\"applePay\":false,\"googlePay\":false,\"threeDS\":false,\"preauth\":false,\"payerSurPlace\":true,\"comptoir\":true,\"onlineCardEnabled\":false}} ; PAY2ERR [] ; 1 passed",
+   "REPRO-paymethods-OFF.html (dump DOM brut du bloc .lcf-paymethods) = 1 seul bouton <div class=\"lcf-paymethod-name\">Payer sur place</div> — aucun bouton carte",
+   "meta[name=feature-online-card] content=\"0\" + window.LC.api.config.onlineCardEnabled=false (double verrou confirmé au runtime)",
+   "COMPTE Mon compte repro (verif-web2.spec.js, token fixture client[0] injecté localStorage) → ACCT2 {\"dom\":{\"logout\":true,\"fakeCard\":false,\"aucuneCarte\":true,\"stripe\":false,\"deleteInert\":false,\"profilName\":\"Guest User\"}} ; ACCT2ERR [] ; 1 passed",
+   "FORGOT repro (verif-forgot.spec.js) → FORGOT2 {\"opened\":true,\"modalCount\":2,\"forgotClicked\":true,\"dom\":{\"honestNoPassword\":true,\"fakeLinkSent\":false,\"recevoirUnCode\":true}} ; FORGOT2ERR [] ; 1 passed",
+   "Analyse visuelle capture paiement REPRO-payment.png : « Payer sur place · Espèces ou carte au comptoir » (★ Conseillé), badge « PAIEMENT AU COMPTOIR », « Commande envoyée en direct à la caisse · RGPD », earn « Cumule +7 pts » = floor(7,40×1) correct, CTA « Confirmer la commande 7,40 € » — aucune promesse Stripe/débit en ligne",
+   "Analyse visuelle capture compte REPRO-account-moncompte.png : EMAIL « Non renseigné » (vide honnête), « CARTES ENREGISTRÉES → Aucune carte enregistrée · Le paiement en ligne arrive bientôt », « ZONE DANGEREUSE → SE DÉCONNECTER » + « Pour supprimer ton compte, demande en caisse » (pas de bouton delete inerte), QR wallet réel identifiant 99B874AD solde 0 pts",
+   "Analyse visuelle capture forgot FORGOT-01.png/REPRO-forgot.png : « // MOT DE PASSE OUBLIÉ ? PAS DE PANIQUE. Chez Le Cayenne il n'y a pas de mot de passe : connexion par téléphone + code — Recevoir un code » — aucun faux « lien envoyé »",
+   "Source confirmée file:line : funnel.jsx:452-457 (methods=[counter] ; card poussé seulement si onlineCard) ; loyalty-v2.jsx:105-116 SavedCards état vide honnête ; loyalty-v2.jsx:118-137 doLogout purge token+reload ; account-v2.jsx:215-238 forgot message SMS honnête ; api.js:26 onlineCardEnabled=metaContent('feature-online-card','0')==='1'",
+   "Specs/artefacts jetables créés uniquement dans reports/goal-web-app-sync/w6r1/ (verif-pay.spec.js, verif-forgot.spec.js, verif-web2.spec.js, pw-*.config.js) ; AUCUN fichier applicatif WEB modifié"
+  ]
+ },
+ {
+  "scope": "RED-TEAM Stripe / paiement en ligne — flag « online-card » OFF. Cibles : web statique :8096, mobile :8087, API/borne :8766. 4 vecteurs : (1) fuite option carte dans un état UI, (2) POST commande payment_method=4 → vrai traitement Stripe, (3) /payment/{order}/pay + webhook actifs, (4) flip gateway/config sans owner.",
+  "verdict": "PASS",
+  "summary": "Aucun chemin Stripe actif trouvé. Le paiement en ligne est verrouillé en profondeur (5 couches indépendantes) et chaque couche a été prouvée par exécution réelle : (a) routes web de paiement 404 via guardWebPaymentV1 (web_payment_v1.enabled=false, config code-owned) ; (b) une commande API payment_method=4 crée un ordre payment_status=UNPAID, transaction_id=NULL, aucune instanciation StripeClient ; (c) le webhook /payment/stripe-webhook répond 503 « Stripe non configuré » (stripe_secret DB vide + services.stripe.webhook_secret vide) ; (d) même si la row gateway stripe (status=10 désactivé) était flippée, assertGatewayActivationAllowed bloque stripe (activation_gate_cleared=false) ET pilot_restrict n'autorise que 'credit' — le tout en config PHP code-owned, non pilotable par env/DB ; (e) côté UI, web (meta feature-online-card=0) et mobile (onlineCardEnabled=false) n'exposent l'option carte dans AUCUN état — le flag est lu une seule fois d'un meta statique, aucun deep-link/état panier ne peut le flipper, et le mobile redirige go('stripe')→pay. Aucun débit possible. 1 observation P3 non-bloquante (étiquetage) ci-dessous.",
+  "findings": [
+   {
+    "severity": "P3",
+    "title": "L'API accepte payment_method=4 d'un token guest (non-borne) et persiste une commande UNPAID étiquetée « carte » — aucun débit, aucun Stripe, mais label DB trompeur",
+    "file": "app/Services/FrontendOrderService.php",
+    "line": 290,
+    "proof": "curl POST /api/frontend/order (token guest 6625, non KioskMachine) payment_method=4 → HTTP 201. DB: FrontendOrder::find(5578) → ps=10 (UNPAID) pm=4 txid=NULL transaction_rel=NULL. Le code met payment_status=UNPAID pour tout ce qui n'est pas kiosk-cash-counter-deferred ; aucun appel Stripe/PricingService-carte. Les clients légitimes envoient déjà pm=1 quand flag OFF (web funnel.jsx:377 `const pm = (onlineCard && ctx.method==='card') ? 4 : 1`). Un client forgé peut envoyer 4 mais n'obtient qu'un ordre UNPAID (aucun encaissement, aucune préparation cuisine — le flux carte-borne exige une KioskMachine + payment-confirm avec transaction_id). Impact = pollution d'étiquette DB uniquement, pas de faille paiement.",
+    "recommendation": "Optionnel (non-bloquant V1) : côté API store, forcer payment_method=CASH_ON_DELIVERY (1) quand le token n'a pas de KioskMachine ET config('payment.web_payment_v1.enabled')=false, pour que la DB ne contienne jamais d'ordre non-borne étiqueté « carte ». N'affecte ni la sécurité ni le parcours client actuel."
+   }
+  ],
+  "evidence": [
+   "config/payment.php:15 web_payment_v1.enabled=false | payment.php:52 stripe.activation_guard.enabled=true, activation_gate_cleared=false | payment.php:33 pilot_restrict.allowed_methods=['credit'] — confirmé runtime: `php artisan tinker` → web_payment_v1.enabled=false, stripe.activation_guard.enabled=true, gate_cleared=false, pilot_allowed=['credit']",
+   "Routes web paiement 404 (guardWebPaymentV1, PaymentController.php:131-136 abort 404) : `curl GET :8766/payment/1/pay` → HTTP 404 ; `curl GET :8766/payment/successful/1` → HTTP 404. (GET /payment/1 renvoie 200 = catch-all SPA, PAS la route paiement — la vraie route est /payment/{order}/pay.)",
+   "POST commande carte inerte : `curl POST :8766/api/frontend/order payment_method=4` (token guest 6625) → HTTP 201 ; `php artisan tinker` FrontendOrder::find(5578) → payment_status=10 (UNPAID), payment_method=4, transaction_id=NULL, transaction_rel=NULL. Aucun Stripe.",
+   "Webhook inerte : `curl POST :8766/payment/stripe-webhook` → HTTP 503 {\"message\":\"Stripe non configuré.\"} (Stripe.php:67-75 garde isStripeConfigured + secret vide). Runtime: services.stripe.secret=NULL, services.stripe.webhook_secret=''.",
+   "Défense config code-owned : PaymentController.php:150-164 isGatewayActivationAllowed → stripe bloqué tant que activation_gate_cleared=false ; PaymentService.php:813-844 assertPilotPaymentMethodAllowed → seul 'credit' passe, throw ValidationException sinon. Row DB stripe (id=4) status=10 (désactivé) ; paypal status=10 ; seuls cash-on-delivery(1) et credit(2) status=5. Config non pilotable par .env (pas de env() sur ces clés).",
+   "UI flag OFF, aucune option carte : WEB `curl :8096/index.html` → <meta name=\"feature-online-card\" content=\"0\"> ; `curl :8096/api.js:26` onlineCardEnabled = metaContent(...) === '1' ; `curl :8096/funnel.jsx:455` methods.push({card}) sous `if (onlineCard)` seulement, ctx.method jamais 'card' → pm=1. MOBILE `curl :8087/index.html` onlineCardEnabled:false ; index.html:178 go('stripe') redirige setModal('pay') si !flag ; :300 case 'stripe' rend ScreenCart si !flag ; :317 onPickCard return si !flag. Flag lu d'un meta/const statique → insensible aux états panier/deep-link."
+  ]
+ },
+ {
+  "scope": "RED-TEAM complétude du GOAL_WEB_APP_SYNC_BORNE_2026-07-08 : pour chaque livrable §F (catalogue zéro-divergence web+mobile, Stripe flag OFF/ON testable, fidélité phone→QR→scan→points→soldes synchrones web ET app), vérification qu'il existe une PREUVE d'exécution réelle et non seulement du code. Exécution réelle des gates/tests/captures + inspection du disque (specs promises, rounds W6, STATE).",
+  "verdict": "PARTIAL",
+  "summary": "Le socle est réel et prouvé par exécution : gate parity web+mobile VERT (0 divergence) ET détecteur de mutation (prix Cayenne 7,40→9,99 ⇒ exit 1) ; fidélité MOBILE e2e sur backend réel :8766 (3 specs loyalty PASS) ; QR signé mint→scan→anti-replay→signature falsifiée prouvés en curl ; earn 1pt/€ prouvé (commande #5570 → +1 pt, idempotent) ; Stripe OFF (option absente) ET ON (option VISA « parcours de test ») prouvés en captures ; webhook Stripe non-configuré → 503 (3 tests PASS) ; row payment_gateways id4 Stripe status=10 (OFF) intacte ; frozen-zone diff 58e852697..HEAD = 0 ligne ; NF525 append-only (audit_logs 4930→4937 append, z_reports 25=25). MAIS le GOAL n'est PAS « DONE » au sens §F/§0.5 : (1) le claim central « soldes SYNCHRONES web ET app » n'a AUCUNE preuve cross-surface — web et mobile sont testés isolément avec des comptes aléatoires DIFFÉRENTS, jamais un même compte affichant le même solde sur les deux UIs ; le fichier d'evidence l'inscrit lui-même en « Reste (W6) ». (2) Convergence non atteinte : 1 seul cycle W6 sur 2 requis (w6r1 seul, pas de w6r2 ; STATE : W6-cycle-1/2 et W7 non cochés). (3) 8 specs d'acceptance NOMMÉES dans le GOAL sont absentes — côté WEB en particulier ZÉRO suite goal-sync committée : les preuves web viennent de scripts JETABLES one-shot dans reports/w6r1/, donc « suite goal-sync verte 2 runs consécutifs » (Sub 3.4/4.4) est insatisfaisable. Verdict : implémentation fonctionne, GOAL inachevé — la prochaine vague doit fermer sync cross-surface + suites rerunnables + 2e cycle.",
+  "findings": [
+   {
+    "severity": "P1",
+    "title": "« Soldes synchrones web ET app » — livrable §F central SANS preuve cross-surface",
+    "file": "reports/goal-web-app-sync/evidence-scan-qr-api-2026-07-08.md",
+    "line": 13,
+    "proof": "Le fichier d'evidence conclut lui-même : « Reste (W6) : earn e2e … soldes synchrones web/app ». grep 'synchrone|same balance|web ET app' sur tout reports/goal-web-app-sync/ ne retourne AUCUN test ni capture montrant UN SEUL compte avec solde identique sur web UI ET app UI. Les preuves existantes utilisent des comptes DIFFÉRENTS : web capture 04-fidelite-wallet-qr.png = compte 'Ikyes' solde 0 pts / id C6A2AF34 ; mobile realAuth.js:34 génère un phone ALÉATOIRE ('0699'+random) par worker ; earn-cycle = client 194/AC2F6FB5. Aucun flux register(phone X)→GET /profile côté web == GET /profile côté mobile.",
+    "recommendation": "Écrire un e2e cross-surface : 1 compte (phone unique) → mint QR → scan → +points → asserter GET /profile identique consommé par la fidélité web ET l'écran wallet mobile (même solde/historique). C'est la définition littérale de « synchrones web ET app »."
+   },
+   {
+    "severity": "P1",
+    "title": "Convergence §0.5 non atteinte : 1 seul cycle W6 sur 2 requis",
+    "file": "reports/goal-web-app-sync/STATE.md",
+    "line": 22,
+    "proof": "§0.5 GOAL : « CONVERGÉ = 2 cycles W6 consécutifs avec P0+P1=0 ET ensembles de findings identiques ». Disque : `ls -d reports/goal-web-app-sync/w6*` ⇒ w6r1 SEULEMENT (pas de w6r2). STATE.md:22-23 : « [ ] W6 cycle 1 propre · [ ] W6 cycle 2 propre (convergence) » et « [ ] W7 » NON cochés. Le GOAL est, selon sa propre règle, non convergé.",
+    "recommendation": "Exécuter un 2e cycle W6 complet (w6r2) et prouver P0+P1=0 avec findings identiques à w6r1 avant de déclarer DONE."
+   },
+   {
+    "severity": "P1",
+    "title": "8 specs d'acceptance NOMMÉES absentes ; côté WEB aucune suite goal-sync rerunnable committée",
+    "file": "plans/GOAL_WEB_APP_SYNC_BORNE_2026-07-08.md",
+    "line": 79,
+    "proof": "Test d'existence : MISSING /Users/1millnonstop/Downloads/web/tests/goal-sync/{parity-web,loyalty-web,stripe-flag}.spec.js ; MISSING mobile/tests/goal-sync/{parity-mobile,loyalty-mobile,stripe-flag-mobile}.spec.js ; MISSING tests/Feature/Payment/StripePrepayFlagTest.php ; MISSING tests/Feature/Loyalty/LoyaltyQrWebAppFlowTest.php. `ls /Users/1millnonstop/Downloads/web/tests/` = 'node/' seulement (aucun goal-sync). Les preuves WEB (captures 01..13) proviennent de scripts JETABLES reports/goal-web-app-sync/w6r1/{capture.spec.js,verif-web.spec.js,drive1.js} — one-shot, non committés en suite. Acceptance Sub 3.4/4.4 = « suite goal-sync verte 2 runs consécutifs » ⇒ insatisfaisable sans suite. (Note : MOBILE a bien des specs committées tests/mobile-e2e/loyalty-*.spec.js réelles+vertes, et StripeWebhookUnconfiguredTest.php existe — donc le trou est surtout WEB + backend Loyalty cross-flow.)",
+    "recommendation": "Matérialiser au minimum les suites WEB goal-sync (parity/loyalty/stripe) en specs assertion-based committées dans le repo web, + le test backend cross-flow LoyaltyQrWebAppFlow, pour que le gate '2 runs' soit exécutable et anti-régression."
+   },
+   {
+    "severity": "P2",
+    "title": "EARN prouvé uniquement par replay d'événement simulé, pas par transition opérateur réelle",
+    "file": "reports/goal-web-app-sync/w6r1/earn-cycle-e2e.txt",
+    "line": 4,
+    "proof": "earn-cycle-e2e.txt étape 4 : « POST change-status ->PREPARED(8) DENIED (kiosk:order token: OrderStatusRequest.php:31 only CANCELED) ». étape 5 : « earn triggered via OrderStatusChanged(->PREPARED) faithful replay: awarded=1 ». Le crédit de points a été déclenché par dispatch DIRECT de l'événement domaine, pas par le vrai parcours (opérateur POS/KDS avance la commande). La surface de déclenchement réelle n'est donc pas exercée e2e.",
+    "recommendation": "Ajouter un e2e qui avance le statut via le vrai chemin autorisé (token/ability opérateur POS ou KDS) jusqu'à PREPARED et observe l'earn, pour prouver le trigger de production (pas seulement le handler)."
+   },
+   {
+    "severity": "P3",
+    "title": "Fixture canonique committée non byte-identique à une ré-extraction live de la borne (T-5.4.4 hash)",
+    "file": "tools/parity/extract-canonical.sh",
+    "line": 24,
+    "proof": "Ré-extraction live (`bash tools/parity/extract-canonical.sh` → 9 cat/42 items OK) ⇒ `git status` marque reports/goal-web-app-sync/catalog-canonical.json comme MODIFIED. Le parity reste VERT contre la ré-extraction (0 divergence, équivalence sémantique), donc pas de dérive produit/prix — mais T-5.4.4 « payload identique avant/après (hash) » n'est littéralement pas tenu (probable champ horodatage). Le gate parity compare le mirror à la fixture STATIQUE committée, pas à la borne live au runtime : la fraîcheur n'est garantie que si extract-canonical.sh est relancé avant. (Fixture restaurée via git checkout après vérif.)",
+    "recommendation": "Soit figer un hash stable (exclure timestamp de la fixture) et l'asserter en W6, soit faire que check-parity ré-extraie de :8766 avant de comparer, pour éliminer toute fenêtre de staleness."
+   }
+  ],
+  "evidence": [
+   "node tools/parity/check-parity.mjs --surface=all → 'TOTAL : 0 divergence(s) sur 2 surface(s) — GATE VERT (exit 0)' ; exit réel vérifié : mutated=1, real=0",
+   "Auto-test mutation (copie jetable) : perl s/'Cayenne', 7.40/'Cayenne', 9.99/ → 'WEB — ROUGE ❌ — 1 divergence(s) [item_prix] Cayenne attendu 7,40 € constaté 9,99 €' (node exit 1)",
+   "php artisan test tests/Feature/Stripe/StripeWebhookUnconfiguredTest.php → '3 passed' (503 not 500 sur secret vide/absent + guard sauté si secret présent)",
+   "npx playwright --config=tests/mobile-e2e/playwright.config.js loyalty-01/03/04 → '3 passed (21.3s)' contre backend réel :8766 (realAuth.js guest-signup OTP réel)",
+   "evidence-scan-qr-api : POST /loyalty/qr → lqr.… ttl 300s ; /loyalty/scan ok:true ; REPLAY → qr_replay ; token muté → qr_invalid_signature",
+   "earn-cycle-e2e.txt : commande #5570 loyalty_code AC2F6FB5 total 1,90 → PREPARED replay → +1 pt (floor 1,90) ; re-dispatch PREPARED+DELIVERED → reste 1 (idempotent, 1 txn)",
+   "Read capture web 04-fidelite-wallet-qr.png : QR réel rendu, identifiant C6A2AF34, 'Expire dans 5:00', bouton ACTUALISER, 'MON SOLDE 0 pts', '100 pts = 1 €'",
+   "Read captures web adv-01 (OFF : seule option 'Payer sur place') vs adv-02 (ON : ajoute 'Carte bancaire (en ligne) — Parcours de test — aucun débit réel')",
+   "git diff --stat 58e852697..HEAD -- <frozen §7> → sortie VIDE (0 ligne frozen)",
+   "php artisan tinker count : audit_logs 4930→4937 (append, last_id 4948), z_reports 25=25 (append-only respecté) ; payment_gateways id4 Stripe status=10 (OFF) intacte",
+   "Existence specs : MISSING web/tests/goal-sync/*.spec.js ×3, mobile/tests/goal-sync/*.spec.js ×3, StripePrepayFlagTest.php, LoyaltyQrWebAppFlowTest.php ; ls reports/goal-web-app-sync/w6* → w6r1 seul",
+   "STATE.md : W6 cycle 1/2 + W7 non cochés ; ré-extraction live borne → catalog-canonical.json git-MODIFIED (restauré via git checkout)"
+  ]
+ },
+ {
+  "scope": "RED-TEAM fidélité (web/mobile/borne) — endpoints /api/frontend/loyalty/{config,redeem,add-points,qr,scan} sur API :8766. 6 vecteurs d'attaque exécutés par curl réel contre tokens clients Sanctum kiosk:order (users 189-194) + user réel 64 (406 pts). Preuves reproductibles.",
+  "verdict": "PARTIAL",
+  "summary": "SÉCURITÉ FIDÉLITÉ = SOLIDE : les 6 attaques ont TOUTES échoué (PASS argumenté par curl). Impossible de créditer des points sans commande (add-points role-gated 403), de rejouer un QR (nonce qr_replay), de forger un QR (qr_invalid_signature HMAC), de redeem > solde / négatif / non-multiple (400/422), de voler les points d'autrui (IDOR 403, solde inchangé), de doubler un redeem en course (lockForUpdate sérialise + idempotency dédup 1 débit), ni de manipuler le ratio earn côté client (earn = floor(total_backend × rate_serveur), le client n'envoie que item_id/qty/options+loyalty_code). MAIS un défaut FONCTIONNEL réel (P1, fail-safe) : le redeem client web ET mobile est TOTALEMENT NON-FONCTIONNEL — le client envoie {code,points} sans branch_id, IdempotencyKeyMiddleware.resolveBranchId() renvoie -1 pour un guest → HTTP 422 systématique, que le client affiche à tort « La remise fidélité est désactivée ». Or manual_discount_enabled=true (redeem serveur ACTIVÉ) : aucun client ≥100 pts ne peut jamais utiliser ses points via l'app. Plus un affaiblissement latent P2 de la partition idempotency (branch_id du payload contrôlé par l'attaquant, non exploité ici grâce au verrou DB).",
+  "findings": [
+   {
+    "severity": "P1",
+    "title": "Redeem fidélité web+mobile 100% cassé : client omet branch_id → IdempotencyKeyMiddleware renvoie 422, affiché à tort « fidélité désactivée » alors que le redeem serveur est ACTIVÉ",
+    "file": "app/Http/Middleware/IdempotencyKeyMiddleware.php",
+    "line": 219,
+    "proof": "Runtime: config('pos.manual_discount_enabled')=true (tinker) ⇒ redeem serveur ACTIVÉ. Payload EXACT du client web (web/api.js:493 body={code,points}) et mobile (mobile/api/client.js:127 idem), SANS branch_id, contre user 189 (300 pts):\n$ curl -XPOST .../loyalty/redeem -H 'Authorization: Bearer 6625|...' -d '{\"code\":\"99B874AD\",\"points\":100}'\n→ {\"success\":false,\"message\":\"Idempotency requires authenticated user with resolvable branch_id.\",\"code\":\"MISSING_IDEMPOTENCY_KEY\"} HTTP 422\nCause: resolveBranchId() (L182-220) pour un guest (branch_id=0, pas Admin, pas KioskMachine) tombe sur `return $request->input('branch_id', -1)` = -1 → L67-72 rejette (branchId<=0). Le handler client (api.js:503 / client.js:136) mappe 422→« La remise fidélité est désactivée pour le moment. » Résultat: aucun client ne peut JAMAIS dépenser ses points via l'app ; message mensonger. Preuve inverse: le MÊME appel AVEC '\"branch_id\":1' passe le middleware et atteint la logique métier ({\"message\":\"Points insuffisants\"} HTTP 400 pour 500>300).",
+    "recommendation": "Le client web/mobile doit envoyer branch_id:CFG.branchId dans le body de loyaltyRedeem() (comme placeOrder le fait déjà, api.js:424) — OU la route /loyalty/redeem doit résoudre le branch_id sans exiger qu'un guest le fournisse. Décider aussi si le redeem doit rester actif en V1 (contrat §2 dit « kill-switch V1 » mais config default+runtime = true : contradiction à trancher)."
+   },
+   {
+    "severity": "P2",
+    "title": "IdempotencyKeyMiddleware : la clé de partition branch_id est contrôlée par le payload pour tout user non-Admin/non-kiosk (affaiblit la déduplication ; non exploité sur redeem grâce au verrou DB)",
+    "file": "app/Http/Middleware/IdempotencyKeyMiddleware.php",
+    "line": 219,
+    "proof": "resolveBranchId() finit par `return (int)$request->input('branch_id', -1)` : un guest peut fixer arbitrairement le branch_id du scope idempotency (branch_id,user_id,key). Deux requêtes SAME-key mais branch_id différents tomberaient dans 2 buckets ⇒ dédup HTTP contournée. Sur /loyalty/redeem c'est SANS effet grâce au lockForUpdate+contrôle de solde (prouvé — Race A: 2×redeem 200 // solde 300, clés différentes ⇒ 1 succès (300→100) + 1 « Points insuffisants », solde final 100, aucun surtirage). Latent car aucune route loyalty testée ne dépend de l'idempotency comme seule barrière.",
+    "recommendation": "Fiche frozen §7 : ne PAS dériver la clé de partition idempotency d'un champ contrôlé par le client pour un token non privilégié ; exiger un branch_id fiable (token) ou rejeter, plutôt que fallback payload. Backlog cloud-prep — pas d'exploit V1 démontré."
+   }
+  ],
+  "evidence": [
+   "ATTACK1 forge earn: curl POST /loyalty/add-points (token guest user 189) -d '{\"code\":\"99B874AD\",\"points\":9999,\"branch_id\":1}' → {\"status\":false,\"message\":\"Non autorisé\"} HTTP 403 (contrôleur L230 hasAnyRole). Sans branch_id: bloqué encore plus tôt par middleware 422. PASS.",
+   "ATTACK2 QR replay: POST /loyalty/qr (user 189) → token lqr.…; scan#1 → {ok:true, loyalty_balance_points:300}; scan#2 MÊME token → {ok:false, error_code:\"qr_replay\"} (nonce UNIQUE loyalty_qr_nonces_consumed, LoyaltyQrSigner.php:143-154). Forge HMAC (payload retaillé vers cust:64) → error_code:\"qr_invalid_signature\". Legacy FK:00597EDE → qr_legacy_rejected (accept_legacy_plaintext=false). PASS.",
+   "ATTACK3 redeem bornes (user 189, 300 pts, via branch_id:1): points 500(>solde)→400 «Points insuffisants»; points 150(non-multiple)→400 «doivent être un multiple de 100»; points -100→422 validation «at least 1». Solde inchangé 300. PASS (contrôleur L354-369).",
+   "ATTACK4 double-redeem race: (A) clés DIFFÉRENTES 2×redeem 200 // solde 300 → 1×HTTP200(300→100)+1×HTTP400 «Points insuffisants», solde final 100, aucun surtirage (lockForUpdate L343). (B) MÊME clé 3×redeem 100 // solde 300 → 3×HTTP200 réponse identique {points:200}, solde 300→200 (UN seul débit), ledger = 1 ligne redeem #58 pts=-100 bal_after=200. Idempotency dédup OK. PASS.",
+   "ATTACK5 IDOR: user 189 tente redeem code 00597EDE (user 64, 406 pts) via branch_id:1 → {\"status\":false,\"message\":\"Non autorisé\"} HTTP 403 (L348 caller.id!==user.id). Solde user 64 vérifié inchangé=406 (tinker). PASS.",
+   "ATTACK6 earn ratio: AwardLoyaltyPointsOnDelivery.php:102 pointsToAward=(int)floor(order.total × rate), order.total=SSOT backend (PricingService), rate=Settings loyalty_points_per_euro (serveur). Client n'envoie jamais total ni points, seulement item_id/qty/options+loyalty_code. Config endpoint points_per_euro=1 == clé Settings lue par l'earn (cohérent, pas de divergence estimation/crédit). PASS.",
+   "Données de test restaurées: user 189 loyalty_points remis à 0 (état initial du profil). Aucune modification de fichier applicatif.",
+   "Config vérifiée: config/idempotency.php:85-88 required_routes inclut loyalty/redeem + loyalty/add-points ; config/pos.php:172 manual_discount_enabled default true (env non surchargé) ; config/loyalty.php:68 accept_legacy_plaintext default false."
+  ]
+ },
+ {
+  "scope": "RED-TEAM résilience hors-ligne du client mobile (mobile/ servi via php -S :8087). Méthode : Playwright + page.route('**') abort de toute requête vers :8766 (backend injoignable), CDN unpkg laissé passer (React/Babel chargent). Token Sanctum réel injecté (fixtures client 189) + cart pré-seedé pour atteindre le checkout. Écrans couverts : boot/onboarding, login OTP, home/menu, fidélité (QR+historique), commandes, profil, checkout « Payer à la caisse » → confirmation. Sniffers : console errors, pageerror, window.unhandledrejection, bandeaux data-testid, toasts.",
+  "verdict": "PARTIAL",
+  "summary": "La dégradation douce fonctionne sur la MAJORITÉ des écrans : aucun écran blanc, aucune promesse rejetée non gérée (window.__UNH vide partout), le menu s'affiche depuis la data locale, l'OTP échoue proprement (toast FR + on reste sur l'écran), et l'écran fidélité affiche un bandeau « Hors ligne — données locales » + « nécessite une connexion ». MAIS un trou réel : le checkout hors-ligne FABRIQUE une confirmation de commande complète (n° C-XXXX, ticket QR retrait, « EN PRÉPARATION ~12 MIN », modale « +2 POINTS GAGNÉS ») alors que RIEN n'a atteint le backend/caisse, sans aucun indicateur persistant — seul un toast « démonstration » transitoire (~2 s) le signale avant d'être masqué par la modale de points. C'est exactement « données mock affichées comme réelles sans bandeau » ⇒ P1 (parcours client trompé : le client croit sa commande passée + points gagnés, la cuisine n'a rien reçu). Secondaire : offline, un code fidélité mock A1B2C3D4 est présenté comme utilisable en caisse (P2).",
+  "findings": [
+   {
+    "severity": "P1",
+    "title": "Checkout hors-ligne : commande de démonstration présentée comme confirmée (n° d'appel + ticket + '+2 points gagnés') sans bandeau persistant",
+    "file": "mobile/index.html",
+    "line": 210,
+    "proof": "placeCounterOrder() (index.html:210-249) : sur échec réseau (e.kind==='network') fait `setToast({m:'Hors ligne — commande de démonstration',k:'info'}); return true;` (l.241-244) ⇒ le flux avance vers l'écran 'confirm'. ScreenConfirm (screens-main.jsx:757-794) ne reçoit AUCUN flag démo/offline et rend un ticket réaliste. Repro Playwright (redteam-checkout2.js, backend :8766 abort, token client 189, cart Coca 2,50€) : clic « En caisse » → +700ms toasts=[\"Hors ligne — commande de démonstration×\"], screen=\"11 Confirmation\" ; +3,5s → toast DISPARU, banners=[], snippet=\"C'EST PARTI ! | Commande #C-2937 envoyée | TICKET RETRAIT | HÉNIN-BEAUMONT | C-2937 | PRÊT À 19h29 | TOTAL 2,50 € | EN PRÉPARATION ~12 MIN | +2 POINTS GAGNÉS | Bienvenue au club\". Capture: reports/goal-web-app-sync/w6r1/redteam-offline/CO-4-confirm-final.png (modale « +2 POINTS GAGNÉS » par-dessus « C'EST PARTI ! Commande #C-2937 envoyée »). window.__UNH=[] (pas de crash) — le problème n'est pas un plantage mais un mensonge : commande jamais transmise au backend/caisse, points jamais réellement crédités.",
+    "recommendation": "Propager un flag `demo/offline` de placeCounterOrder() vers ScreenConfirm et afficher un bandeau PERSISTANT (ex. « Commande non transmise — hors ligne. Reprends la commande en caisse ») + supprimer/neutraliser la modale « +X points gagnés » et le n° d'appel factice quand r n'est pas une vraie réponse serveur (placed.id/queue_number absents)."
+   },
+   {
+    "severity": "P2",
+    "title": "Fidélité hors-ligne : code mock A1B2C3D4 présenté comme utilisable en caisse pour un utilisateur réel connecté",
+    "file": "data/loyalty.js",
+    "line": 213,
+    "proof": "Offline, remoteProfile=null (profile() échoue), donc LoyaltyQR reçoit account.loyalty_code qui retombe sur le mock `loyalty_code:'A1B2C3D4'` (data/loyalty.js:213). Repro (redteam2.js, écran fidélité offline) snippet=\"...A1B2C3D4 | RÉESSAYER | Présente ce code à la caisse pour ajouter ou utiliser tes points | 62 POINTS...\" — la légende « Présente ce code à la caisse pour ajouter ou utiliser tes points » (screens-main.jsx:1405) reste affichée sous le code mock, qui n'est PAS le vrai code du compte. Atténué (mais pas résolu) par le bandeau « Hors ligne — données locales affichées » (data-testid=loyalty-offline-banner) et le message tuile « Le QR fidélité nécessite une connexion. Tu peux dicter ton numéro en caisse » (components/LoyaltyQR.jsx:103). Capture: reports/goal-web-app-sync/w6r1/redteam-offline/A-loyalty-qr.png",
+    "recommendation": "Hors-ligne, masquer le code mock A1B2C3D4 et la légende « Présente ce code… » ; ne montrer que le message « connexion requise / dicte ton numéro », pour ne jamais afficher un code fidélité qui ne correspond pas au compte réel."
+   }
+  ],
+  "evidence": [
+   "Serveurs vérifiés UP avant test : `curl -sw '%{http_code}' :8766`→302, `:8096`→200, `:8087`→200",
+   "Méthode coupe-réseau : Playwright `page.route('**', r => r.request().url().includes(':8766') ? r.abort('failed') : r.continue())` — seul le backend est coupé, CDN unpkg laissé passer pour que React/Babel bootent",
+   "PASS boot authed offline (redteam-offline.js) : [A] HOME rootLen=983, blank=false, snippet catégories menu local rendues ('SAUCE CAYENNE MAISON / SANDWICHS FALUCHE / TACOS M & L...') — aucun écran blanc, unhandledrejection sniffés=[]",
+   "PASS OTP hors-ligne (redteam2.js scénario B) : clic « Recevoir le code » → toast=\"Réseau indisponible — impossible d'envoyer le code. Réessaie.\" à +900ms ; à +4s onPhoneScreen=true (reste sur l'écran, n'avance PAS vers OTP), window.__UNH=[]. Capture B-otp-toast.png",
+   "PASS fidélité hors-ligne (redteam2.js) : bandeau data-testid=loyalty-offline-banner=\"📡 Hors ligne — données locales affichées\" + tuile QR \"Le QR fidélité nécessite une connexion. Tu peux dicter ton numéro en caisse\" + bouton RÉESSAYER. Capture A-loyalty-qr.png",
+   "PROOF P1 (redteam-checkout2.js) : sortie console — +700ms `toasts=[\"Hors ligne — commande de démonstration×\"] demoWords=true screen=\"11 Confirmation\"` ; +3,5s `demoWords(persistent)=false banners=[] toasts=[]` avec snippet \"C'EST PARTI ! | Commande #C-2937 envoyée | ... | EN PRÉPARATION ~12 MIN | +2 POINTS GAGNÉS\". Captures CO-3-confirm-early.png / CO-4-confirm-final.png",
+   "Aucune exception non catchée / promesse rejetée sur AUCUN écran testé : window.__UNH=[] partout ; seules erreurs console = 'Failed to load resource: net::ERR_FAILED' (les fetch backend avortés, correctement transformés en {kind:'network'} par api/client.js:68-70)",
+   "Scripts jetables : /private/tmp/.../scratchpad/redteam-offline.js, redteam2.js, redteam-checkout2.js ; captures : reports/goal-web-app-sync/w6r1/redteam-offline/"
+  ]
+ },
+ {
+  "scope": "Red-team divergence catalogue web/mobile vs borne malgré gate parity VERT. Vérif fixture(42 items/9 cat) ↔ mirrors menu.js (web+mobile) ↔ prix serveur réels via POST /api/frontend/order (borne :8766, tokens clients kiosk:order). Focus : variantes/addons/formule/drink addons/frites cheddar.",
+  "verdict": "FAIL",
+  "summary": "Le gate parity-B3 est VERT (0 divergence web+mobile) mais il a un ANGLE MORT sur la formule menu : il ne valide QUE f-menu=2,50 € (check-parity.mjs:427-433) et jamais f-frites / f-boisson. En plaçant de vraies commandes contre la borne j'ai prouvé 2 divergences P0 réelles, présentes sur les DEUX surfaces (web + mobile), affectant les 14 sandwichs/burgers porteurs d'un addon menu_component. (1) Les options « Ajouter Frites uniquement » et « Ajouter Boisson uniquement » CASSENT le checkout (HTTP 422) car le client attache le rôle payload menu_frites/menu_boisson au mauvais addon (side/drink) au lieu de l'addon menu_component. (2) Prix affiché ≠ prix borne : web/mobile affichent +2,00 € pour frites-seules et +2,00 € pour boisson-seule, alors que la borne/caisse facture +1,50 € (frites) et +1,00 € (boisson) — prouvé sur 2 items de base. Le reste du catalogue (42 items, prix flat, menu complet +2,50, viandes/sauces/crudités/suppléments/bols/pains/drink addons, atteignabilité des 6 SKU frites) est cohérent : items flat et menu_full facturés exactement comme affiché.",
+  "findings": [
+   {
+    "severity": "P0",
+    "title": "Checkout CASSÉ (422) : formule « Ajouter Frites » / « Ajouter Boisson » — mauvais addon ciblé (web + mobile)",
+    "file": "/Users/1millnonstop/Downloads/web/api.js",
+    "line": 344,
+    "proof": "api.js:344 `role = ... st.menu==='frites' ? 'side' : st.menu==='boisson' ? 'drink'` puis api.js:347 `sentRole = ... 'menu_frites' : 'menu_boisson'` → le client envoie {id: addon SIDE(82)/DRINK(83), role:'menu_frites'/'menu_boisson'}. Le backend ValidatesAddonRoles.php:187-194 exige que menu_frites/menu_boisson soient portés par un addon DB `menu_component`. Reproduit par POST /api/frontend/order (token client kiosk:order, item Cheese Burger 98) : payload EXACT du web `[{item_id:98,item_variations:[{id:390}],item_addons:[{id:82,role:'menu_frites'}]}]` → REJECT: « Ce rôle menu est réservé aux addons \"menu_component\" (rejet HEAL-D.1 / Z4 P0-01). » ; idem addon 83 role=menu_boisson → REJECT. Preuve que le bon addon marche : {id:81(menu_component),role:'menu_frites'} → OK order 5585, {id:81,role:'menu_boisson'} → OK order 5586. Mirror mobile IDENTIQUE : mobile/api/client.js:371 `sentRole = ... 'menu_frites' : 'menu_boisson'`. Option offerte à l'utilisateur : web/wizard-v2.jsx:132-133 (« Ajouter Frites »/« Ajouter Boisson » radio) → tout client qui choisit frites-seule ou boisson-seule ne peut PAS commander.",
+    "recommendation": "web api.js:345 et mobile api/client.js:369 : cibler addonByRole['menu_component'] pour les 3 variantes (full/frites/boisson), le rôle payload menu_full/menu_frites/menu_boisson discriminant le contenu — c'est le contrat backend (un seul addon menu_component par item porte les 3 rôles)."
+   },
+   {
+    "severity": "P0",
+    "title": "Prix affiché ≠ prix borne : frites-seule +2,00 € (borne +1,50 €) et boisson-seule +2,00 € (borne +1,00 €) — angle mort du gate",
+    "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+    "line": 237,
+    "proof": "Mirrors : WEB /Users/1millnonstop/Downloads/web/data/menu.js formules f-frites price:2.00 / f-boisson price:2.00 ; MOBILE mobile/data/menu.js:237-238 IDENTIQUE (2.00/2.00) ; affichage web wizard-v2.jsx:132-133 = +2,00 €. Prix RÉEL borne prouvé par POST /api/frontend/order sur l'addon menu_component : Cheese Burger 98 base=6,00 (order 5580) ; +menu_frites → total 7,50 (order 5585, soit +1,50 €) ; +menu_boisson → total 7,00 (order 5586, soit +1,00 €). Confirmé sur 2e base Cayenne 22 (7,40) : menu_frites → 8,90 (order 5589, +1,50) ; menu_boisson → 8,40 (order 5590, +1,00). Donc affiché +2,00 vs borne +1,50 (frites) et +2,00 vs +1,00 (boisson). Le menu complet, lui, concorde (+2,50 : orders 5584 CheeseB=8,50 / 5588 Cayenne=9,90).",
+    "recommendation": "Corriger f-frites=1,50 € et f-boisson=1,00 € dans les 2 mirrors (source de vérité = addon menu_component borne) ET aligner wizard-v2.jsx:132-133 + mobile. Idéalement piloter ces montants depuis la fixture, pas en dur."
+   },
+   {
+    "severity": "P1",
+    "title": "Gate parity-B3 : angle mort structurel — ne valide que f-menu, jamais f-frites/f-boisson",
+    "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tools/parity/check-parity.mjs",
+    "line": 431,
+    "proof": "check-parity.mjs section 11 (l.427-433) ne vérifie QUE `fmenu = formules.find(f=>f.id==='f-menu')` et `cents(fmenu.price)!==250`. Aucune assertion sur f-frites ni f-boisson. Résultat : `node tools/parity/check-parity.mjs --surface=all` → « WEB VERT 0 divergence / MOBILE VERT 0 divergence » alors que f-frites=2,00 et f-boisson=2,00 divergent de la borne (1,50/1,00, prouvé ci-dessus). C'est précisément pourquoi la divergence prix passe le gate.",
+    "recommendation": "Étendre le gate : valider les 3 upcharges de formule contre les prix réels des rôles menu_full/menu_frites/menu_boisson de l'addon menu_component (extraits de la fixture ou d'un placeOrder de référence), et vérifier que le rôle payload est bien porté par l'addon menu_component."
+   }
+  ],
+  "evidence": [
+   "node tools/parity/check-parity.mjs --surface=all → WEB VERT 0 div / MOBILE VERT 0 div (gate menteur sur formule)",
+   "POST /api/frontend/order (borne :8766, token client 6626 kiosk:order) Coca 52 → total 1,90 (order 5579) : items flat OK",
+   "CheeseBurger 98 base(sauce390) → total 6,00 (order 5580)",
+   "CheeseB + addon81(menu_component) role=menu_full → 8,50 (order 5584) : menu complet CONCORDE affichage +2,50",
+   "CheeseB + addon81 role=menu_frites → 7,50 (order 5585) => borne frites-seule = +1,50 € (affiché +2,00)",
+   "CheeseB + addon81 role=menu_boisson → 7,00 (order 5586) => borne boisson-seule = +1,00 € (affiché +2,00)",
+   "Cayenne 22 base → 7,40 (5587) ; +menu_full → 9,90 (5588) ; +menu_frites → 8,90 (5589, +1,50) ; +menu_boisson → 8,40 (5590, +1,00) : deltas confirmés sur 2e item",
+   "PAYLOAD EXACT DU WEB {item_addons:[{id:82(side),role:menu_frites}]} → REJECT 422 « Ce rôle menu est réservé aux addons menu_component » ; {id:83(drink),role:menu_boisson} → REJECT 422 (checkout cassé)",
+   "Contrôle : {id:82,role:side} → OK 8,00 (5582) ; {id:83,role:drink} → OK 8,00 (5583) : les addons side/drink n'acceptent QUE leur rôle natif, pas menu_*",
+   "Source bug : web api.js:344-348 + mobile api/client.js:369-372 (sentRole menu_frites/menu_boisson sur addon side/drink) ; backend app/Http/Requests/Concerns/ValidatesAddonRoles.php:187-194",
+   "Mirrors identiques web+mobile (node vm eval) : 38 items, extraMeatPrice 2.5, fritesStyles Nature0/Cheddar1/Cheddar+Oignons2 (6 SKU frites atteignables exactement), formules f-menu2.5/f-frites2/f-boisson2"
+  ]
+ }
+]

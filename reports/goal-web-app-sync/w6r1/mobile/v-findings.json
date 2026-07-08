@@ -1,0 +1,26 @@
+{
+  "errors": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "flag": false,
+  "onCart": true,
+  "upsell": {
+    "present": false,
+    "seg": null,
+    "cardCount": 0,
+    "cards": []
+  },
+  "payModal": {
+    "present": true,
+    "hasCounter": true,
+    "hasCardOnline": false,
+    "hasSoonNote": true,
+    "text": "COMMENT | TU PAIES ? | Total 7,40 € · TVA incluse | ★ RECOMMANDÉ | → | PAYER SUR PLACE | Cash ou CB à la caisse. Ton plat t'attend. | Le paiement en ligne arrive bientôt."
+  },
+  "confirm": {
+    "snippet": "LE\nCAYENNE\nC'EST PARTI !\n\nCommande #A0042 envoyée\n\nTICKET RETRAIT\nHÉNIN-BEAUMONT · 62210\nN° D'APPEL EN CAISSE\nA0042\nPRÊT À\n18h36\nTOTAL\n7,40 €\nEN PRÉPARATION\n~12 MIN\nACCUEIL\nSUIVRE →\n// BIENVENUE AU CLUB\n+7\nPOINTS GAGNÉS\n\nTu fais partie du club Le Cayenne. Continue à commander pour débloquer des récompenses gratuites.\n\nVOIR MA CARTEPLUS TARD",
+    "hasQueue": true,
+    "hasOffline": false,
+    "isConfirmScreen": true
+  }
+}

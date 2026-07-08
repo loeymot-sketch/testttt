@@ -1,0 +1,11 @@
+{
+  "report": {
+    "forgotClicked": "EmailMot de passeOublié ?",
+    "forgotDom": {
+      "honestNoPassword": false,
+      "fakeLinkSent": false,
+      "mentionsSMS": false
+    }
+  },
+  "errors": []
+}

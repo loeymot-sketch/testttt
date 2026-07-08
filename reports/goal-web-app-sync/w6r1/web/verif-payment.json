@@ -1,0 +1,19 @@
+{
+  "report": {
+    "onlineCardEnabled": false,
+    "metaFlag": "0",
+    "addRes": "add-class",
+    "payDom": {
+      "isPayment": false,
+      "methods": [],
+      "mentionsStripe": false,
+      "mentionsApplePay": false,
+      "mentionsGooglePay": false,
+      "mentions3DS": false,
+      "mentionsPayerSurPlace": false,
+      "mentionsComptoir": false,
+      "hasCardForm": false
+    }
+  },
+  "errors": []
+}

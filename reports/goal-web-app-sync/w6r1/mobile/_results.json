@@ -1,0 +1,56 @@
+{
+ "results": {
+  "tacos-m": {
+   "heads": [
+    "Viandes"
+   ],
+   "txt": "1 / 6\nViandes\n\nChoisis 1 viande\n\n0/1\nMexicanos\nCordon Bleu\nViande Hachée\nNuggets\nTenders\nFricadelle\nPoulet mariné\nEncore 1 viande à choisir\nSuivant\n6,90 €"
+  },
+  "cayenne": {
+   "heads": [
+    "Pain ou galette"
+   ],
+   "txt": "1 / 6\nPain ou galette\n\nGratuit · choisis ta base\n\nPain\nGalette\nSuivant\n7,40 €"
+  },
+  "chicken-burger": {
+   "heads": [
+    "Sauce"
+   ],
+   "txt": "1 / 5\nSauce\n\n1 sauce incluse · choisis ta sauce\n\nMayonnaise\nKetchup\nBlanche\nHannibal 🌶️\nSamouraï 🌶️\nAlgérienne\nAndalouse\nCurry\nBarbecue\nHarissa 🌶️\nFromagère maison\nSpicy maison 🌶️\nChoisis ta sauce\nSuivant\n4,90 €"
+  },
+  "bol-riz": {
+   "heads": [
+    "Viandes"
+   ],
+   "txt": "1 / 5\nViandes\n\nChoisis 1 viande\n\n0/1\nMexicanos\nCordon Bleu\nViande Hachée\nNuggets\nTenders\nFricadelle\nPoulet mariné\nEncore 1 viande à choisir\nSuivant\n7,90 €"
+  },
+  "bol-frites": {
+   "heads": [
+    "Viandes"
+   ],
+   "txt": "1 / 5\nViandes\n\nChoisis 1 viande\n\n0/1\nMexicanos\nCordon Bleu\nViande Hachée\nNuggets\nTenders\nFricadelle\nPoulet mariné\nEncore 1 viande à choisir\nSuivant\n7,90 €"
+  }
+ },
+ "errs": [
+  "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+  "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+  "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+  "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+  "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+  "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+  "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+  "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+  "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+  "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+  "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+  "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+  "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+  "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+  "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+  "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+  "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+  "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+  "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+  "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+ ]
+}
