@@ -2,11 +2,9 @@
 > Manifest de reprise. Toute session qui reprend : lire ce fichier + plans/GOAL_WEB_APP_SYNC_BORNE_2026-07-08.md.
 
 ## Position
-- Wave courante : **W3/W4/W5 IMPLÉMENTATION** (workflow `wf_85802218-5ea`, 14 implémenteurs + 3 intégrateurs, en cours)
-- W1 TERMINÉE : 29/29 agents, 235 findings (15 P0 = boissons manquantes + capri 1.50 ; 64 P1) → `w1/SYNTHESIS.md` + `w1/by-spec/*.json`
-- Contrat implémenteurs : `CONTRACTS.md` (flags normatifs, endpoints, QR mint-on-display, OTP bypass vérifié)
-- Décisions révisées post-advisor : GOAL doc §0.4bis (patchs chirurgicaux + gate par NOM ; points→€ sans rewards ; scan = G4 futur)
-- Prochaine étape : synthèse WF-2 → W6 intégrité/e2e (~50 agents) → boucle convergence
+- **CONVERGÉ 2026-07-08** — GOAL terminé. Rapport `CONVERGENCE.md`. Toutes vagues W0-W7 done.
+- W6 e2e : R1 (25 agents, 8 réels healés wf_fbf30d83) + R2 (10 agents, 10/10 PASS wf_236ef5f2) = 2 cycles propres P0+P1=0.
+- Restes : gates owner §10 (push testttt+web, deploy VPS) · P2 routes/api.php churn pré-existant (ne pas committer) · G4 scan physique borne (futur).
 
 ## Baselines
 - testttt HEAD départ : `58e852697` (branche `pos/category-first-caisse-2026-06-23`)
