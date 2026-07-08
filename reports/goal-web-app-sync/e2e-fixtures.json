@@ -1,0 +1,43 @@
+{
+ "apiKey": "b6d68vy2-m7g5-20r0-5275-h103w73453q120",
+ "base": "http://127.0.0.1:8766",
+ "clients": [
+  {
+   "phone": "0697222388",
+   "token": "6625|U2sYzBULk802OTteFA6IkmYtWA6Z5OSKYcF8Jvz3fac5b35e",
+   "user_id": 189
+  },
+  {
+   "phone": "0697285033",
+   "token": "6626|mGgnWhPlvWtt4XVfIsFIzzJrvYk9gTch44xh1MhI51218a9c",
+   "user_id": 190
+  },
+  {
+   "phone": "0697180955",
+   "token": "6627|vinlU8BDHEWIT2LJ19PAITP5UpqzCRWQjr0CCweofff58d10",
+   "user_id": 191
+  },
+  {
+   "phone": "0697269731",
+   "token": "6628|M0AnU19s9tmP02D9gUoA9u3sxlVvd7Nt4MMexqL1439cd38a",
+   "user_id": 192
+  },
+  {
+   "phone": "0697143909",
+   "token": "6629|MvO8Dkvknm52Et7aJiEX0o8g2x6MHdLkasjvXJTeb5219534",
+   "user_id": 193
+  },
+  {
+   "phone": "0697927202",
+   "token": "6630|jyGq4wikPqcUBtETmt0nEGBcWJ1HMZkEI3AvZMvsce15624c",
+   "user_id": 194
+  }
+ ],
+ "accounts": {
+  "admin": "admin@lecayenne.fr/123456",
+  "pos": "pos@lecayenne.fr/123456",
+  "chef": "chef@lecayenne.fr/123456",
+  "kioskLogin": "kiosk-lecayenne/kiosk123"
+ },
+ "note": "tokens Sanctum kiosk:order 30j; kiosk MACHINE token \u00e0 minter via tinker (voir tools/parity/extract-canonical.sh)"
+}
