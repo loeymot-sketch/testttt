@@ -1,24 +1,33 @@
-// Adversarial A1 — Clipboard QR replay (Agent-6 §4)
-// V0 has no clipboard copy UI (good). We verify the QR card has no
-// user-select that would let attacker silently OCR/copy the payload via
-// a long-press.
+// Adversarial A1 — Replay presse-papiers du QR (Agent-6 §4)
+//
+// [GOAL-SYNC 2026-07-08] adapté au QR RÉEL (contrat §3) : le payload est le
+// token signé 'lqr.…' (TTL 300 s) rendu en SVG — il ne doit JAMAIS apparaître
+// comme texte sélectionnable dans le DOM (pas de copie silencieuse par
+// long-press). Le loyalty_code humain (8 alphanum) est VOLONTAIREMENT affiché
+// en clair (« dictez votre numéro en caisse ») — c'est le token signé qui est
+// la donnée sensible, pas le code.
 
 const { test, expect } = require('@playwright/test');
 const { waitForLoyaltyReady, gotoLoyaltyScreen } = require('./utils/waitForLoyaltyReady');
+const { seedRealAuth } = require('./utils/realAuth');
 
-test('A1 — QR card does not expose user-select-text path for silent copy', async ({ page }) => {
+test('A1 — Le token QR lqr. n\'apparaît jamais en texte sélectionnable', async ({ page, request }) => {
   await waitForLoyaltyReady(page);
+  await seedRealAuth(page, request);
   await gotoLoyaltyScreen(page);
 
   await page.waitForSelector('[data-testid="loyalty-qr"]');
+  await page.waitForSelector('[data-testid="loyalty-qr-svg"] svg', { timeout: 15000 });
 
-  // Verify QR payload is rendered as data attribute (not selectable text).
+  // Payload = attribut data (pas du texte)
   const payload = await page.locator('[data-testid="loyalty-qr"]').getAttribute('data-payload');
-  expect(payload).toMatch(/^FK:/);
+  expect(payload).toMatch(/^lqr\./);
 
-  // The member number IS visible as text — but is it the QR payload?
-  // Member number = "FK-12345" ; QR payload = "FK:<loyalty_code>". Different.
+  // Le token signé n'est PAS dans le texte du body (aucune copie silencieuse possible)
   const bodyText = await page.evaluate(() => document.body.innerText);
-  // Loyalty_code should NOT appear in body text in V0 (only member_number does)
-  expect(bodyText).not.toMatch(/FK:A1B2C3D4/);  // raw QR payload not visible
+  expect(bodyText).not.toContain(payload);
+  expect(bodyText).not.toMatch(/lqr\.[A-Za-z0-9_\-\.]{20,}/);
+
+  // Le loyalty_code humain, lui, EST affiché (design contrat §3)
+  await expect(page.locator('[data-testid="loyalty-code-text"]')).toBeVisible();
 });

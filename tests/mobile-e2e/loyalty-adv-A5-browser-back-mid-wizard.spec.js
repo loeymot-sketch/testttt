@@ -1,33 +1,34 @@
-// Adversarial A5 — Browser back during wizard step 2 (Agent-6 §4)
-// Verify back navigation in wizard doesn't double-debit.
+// Adversarial A5 — Annuler en phase confirmation : retour sans AUCUN appel réseau
+//
+// [GOAL-SYNC 2026-07-08] réécrit pour LoyaltyRedeemPanel : « Annuler » pendant
+// la phase de confirmation revient à la sélection SANS POST /loyalty/redeem et
+// sans débit (l'ancien wizard mock 3-steps LC.dev.redeemReward est retiré).
 
 const { test, expect } = require('@playwright/test');
 const { waitForLoyaltyReady, gotoLoyaltyScreen } = require('./utils/waitForLoyaltyReady');
 
-test('A5 — Back during wizard step 2 returns to step 1 without debit', async ({ page }) => {
+test('A5 — Annuler en confirmation ⇒ retour sélection, zéro POST, zéro débit', async ({ page }) => {
   await waitForLoyaltyReady(page, { seedAccount: { balance: 347 }, seedHistory: [] });
   await gotoLoyaltyScreen(page);
 
   await page.click('[data-testid="loyalty-tab-rewards"]');
-  await page.waitForTimeout(150);
-  await page.click('[data-testid="reward-redeem-btn-1"]');
+  await page.waitForSelector('[data-testid="redeem-panel"]', { timeout: 5000 });
 
-  await page.waitForSelector('[data-testid="redeem-wizard"][data-step="1"]');
-  await page.click('[data-testid="redeem-next-btn"]');
-  await page.waitForSelector('[data-testid="redeem-wizard"][data-step="2"]');
+  const redeemPosts = [];
+  page.on('request', r => { if (/\/api\/frontend\/loyalty\/redeem/.test(r.url()) && r.method() === 'POST') redeemPosts.push(r.url()); });
 
-  // Click Retour
-  await page.click('[data-testid="redeem-back-btn"]');
-  await page.waitForTimeout(200);
+  // CTA → phase confirmation
+  await page.click('[data-testid="redeem-cta"]');
+  await page.waitForSelector('[data-testid="redeem-confirm-btn"]', { timeout: 5000 });
 
-  // Back at step 1
-  await expect(page.locator('[data-testid="redeem-wizard"]')).toHaveAttribute('data-step', '1');
+  // Annuler → retour à la sélection (CTA visible à nouveau), AUCUN réseau parti
+  await page.click('button:has-text("Annuler")');
+  await page.waitForSelector('[data-testid="redeem-cta"]', { timeout: 5000 });
+  expect(redeemPosts.length).toBe(0);
 
-  // Balance NOT debited
+  // Solde intact + aucune entrée historique
   const balance = await page.evaluate(() => window.LC.loyalty.account.balance);
   expect(balance).toBe(347);
-
-  // No history entry
   const redeems = await page.evaluate(() => window.LC.loyalty.history.filter(h => h.type === 'redeem').length);
   expect(redeems).toBe(0);
 });

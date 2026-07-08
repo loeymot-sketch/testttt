@@ -1,23 +1,35 @@
-// Le Cayenne — LoyaltyQR component (V0)
+// Le Cayenne — LoyaltyQR component
 //
-// Memoized child of ScreenLoyalty per DEC-19 (99_VERDICT.md §2). The QR refresh
-// every 5min via useLoyaltyQR re-renders THIS component only, not the parent
-// ScreenLoyalty — which avoids jank when scrolling history during refresh tick.
+// [GOAL-SYNC 2026-07-08] QR RÉEL (contrat §3) : rendu du token serveur
+// 'lqr.…' (POST /api/frontend/loyalty/qr via useLoyaltyQR) avec la lib
+// vendorisée LOCALE `window.qrcode` (vendor/qrcode.js) —
+// createSvgTag({cellSize:3, margin:0, scalable:true}). Le QRMock décoratif
+// est SUPPRIMÉ de ce composant (il ne scannait rien ; le format legacy
+// 'FK:<code>' est REJETÉ backend).
 //
-// ARIA: role="img" + aria-label with TTL announcement (Agent-4 §6.3). Throttled
-// live region: announce only on regen + at 60s remaining + at 10s.
+// UX : compte à rebours FR « Expire dans Xs » + bouton « Actualiser » +
+// loyalty_code en clair sous le QR + « Présentez ce QR ou dictez votre
+// numéro en caisse ». États propres FR : hors-ligne / connexion requise.
 //
-// data-testid: loyalty-qr, loyalty-qr-payload (data-payload attr),
-// loyalty-qr-countdown — per Agent-6 §1.4.
+// Memoized child of ScreenLoyalty per DEC-19 : le tick 1 s re-rend CE
+// composant uniquement, pas le parent (pas de jank au scroll historique).
+//
+// data-testid conservés : loyalty-qr (data-payload = token réel),
+// loyalty-qr-countdown, loyalty-member-number + nouveaux loyalty-qr-svg /
+// loyalty-qr-refresh / loyalty-code-text / loyalty-qr-error.
 
 (function () {
   'use strict';
   const { memo, useEffect, useRef } = React;
 
   function LoyaltyQRImpl({ loyaltyCode, memberNumber, name, mode }) {
-    const { qr, refresh, remainingMs, isInflight } = window.useLoyaltyQR(loyaltyCode);
+    const { token, secondsLeft, loading, error, refresh, loyaltyCode: serverCode } = window.useLoyaltyQR();
+    const svgHostRef = useRef(null);
     const liveRegionRef = useRef(null);
     const lastAnnouncementRef = useRef('init');
+
+    // loyalty_code affiché : celui minté par le serveur prime (source de vérité).
+    const displayCode = serverCode || loyaltyCode || '';
 
     // Render-counter hook for perf tests (Agent-6 §6.3)
     useEffect(() => {
@@ -26,54 +38,125 @@
       }
     });
 
-    // Throttled SR live region announcement
+    // [GOAL-SYNC 2026-07-08] Rendu SVG réel du token (lib locale, contrat §3).
+    useEffect(() => {
+      if (!svgHostRef.current) return;
+      if (!token || typeof window.qrcode !== 'function') {
+        svgHostRef.current.innerHTML = '';
+        return;
+      }
+      try {
+        const q = window.qrcode(0, 'M');
+        q.addData(token);
+        q.make();
+        svgHostRef.current.innerHTML = q.createSvgTag({ cellSize: 3, margin: 0, scalable: true });
+      } catch (e) {
+        svgHostRef.current.innerHTML = '';
+      }
+    }, [token]);
+
+    // Annonces SR throttlées (chargé / 60 s / 10 s / rafraîchi)
     useEffect(() => {
       if (!liveRegionRef.current) return;
-      const s = Math.floor(remainingMs / 1000);
       let msg = null;
-      if (lastAnnouncementRef.current === 'init' && qr) {
+      if (lastAnnouncementRef.current === 'init' && token) {
         msg = 'Code QR fidélité chargé, valable 5 minutes.';
         lastAnnouncementRef.current = 'loaded';
-      } else if (s === 60 && lastAnnouncementRef.current !== 'warn60') {
+      } else if (secondsLeft === 60 && lastAnnouncementRef.current !== 'warn60') {
         msg = 'Code QR expire dans 1 minute.';
         lastAnnouncementRef.current = 'warn60';
-      } else if (s === 10 && lastAnnouncementRef.current !== 'warn10') {
+      } else if (secondsLeft === 10 && lastAnnouncementRef.current !== 'warn10') {
         msg = 'Code QR expire dans 10 secondes.';
         lastAnnouncementRef.current = 'warn10';
-      } else if (lastAnnouncementRef.current === 'warn10' && s > 200) {
-        // Refreshed past warning threshold — reset for next cycle.
+      } else if (lastAnnouncementRef.current === 'warn10' && secondsLeft > 200) {
         lastAnnouncementRef.current = 'loaded';
         msg = 'Code QR rafraîchi.';
       }
       if (msg) liveRegionRef.current.textContent = msg;
-    }, [remainingMs, qr]);
+    }, [secondsLeft, token]);
 
-    const payload = qr ? qr.payload : ('FK:' + (loyaltyCode || ''));
-    const countdownText = window.formatRemaining(remainingMs);
-    const expiringSoon = remainingMs < 60000;
+    const countdownText = secondsLeft >= 60
+      ? Math.floor(secondsLeft / 60) + ' min ' + (secondsLeft % 60) + ' s'
+      : secondsLeft + ' s';
+    const expiringSoon = secondsLeft > 0 && secondsLeft < 60;
+
+    // ── États d'erreur propres (FR) ──────────────────────────────────────
+    if (error === 'auth_required') {
+      return (
+        <div data-testid="loyalty-qr" data-qr-state="auth" role="status" style={{ width: 224, textAlign: 'center', padding: '24px 8px' }}>
+          <div style={{ fontSize: 32 }} aria-hidden="true">🔒</div>
+          <div style={{ marginTop: 8, fontWeight: 700, fontSize: 14 }}>Connexion requise</div>
+          <div data-testid="loyalty-qr-error" style={{ marginTop: 4, fontSize: 12, color: 'var(--gray-3)' }}>
+            Connecte-toi pour afficher ton QR fidélité et cumuler des points en caisse.
+          </div>
+        </div>
+      );
+    }
+
+    if (error === 'network' || (error && !token)) {
+      return (
+        <div data-testid="loyalty-qr" data-qr-state="offline" role="status" style={{ width: 224, textAlign: 'center', padding: '24px 8px' }}>
+          <div style={{ fontSize: 32 }} aria-hidden="true">📡</div>
+          <div style={{ marginTop: 8, fontWeight: 700, fontSize: 14 }}>Hors ligne</div>
+          <div data-testid="loyalty-qr-error" style={{ marginTop: 4, fontSize: 12, color: 'var(--gray-3)' }}>
+            {error === 'network'
+              ? 'Le QR fidélité nécessite une connexion. Tu peux dicter ton numéro en caisse.'
+              : 'Impossible de générer le code pour le moment. Réessaie dans un instant.'}
+          </div>
+          {displayCode ? (
+            <div data-testid="loyalty-code-text" style={{ marginTop: 10, fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 700, letterSpacing: '0.14em' }}>{displayCode}</div>
+          ) : null}
+          <button
+            data-testid="loyalty-qr-refresh"
+            onClick={() => refresh()}
+            disabled={loading}
+            className="lc-btn lc-btn--ink"
+            style={{ marginTop: 12, height: 40, fontSize: 12 }}
+          >
+            {loading ? 'Nouvelle tentative…' : 'Réessayer'}
+          </button>
+        </div>
+      );
+    }
 
     return (
-      <div data-testid="loyalty-qr" data-payload={payload} role="img" aria-label={'Code QR fidélité ' + payload + ', expire dans ' + countdownText}>
+      <div data-testid="loyalty-qr" data-qr-state={token ? 'ready' : 'loading'} data-payload={token || ''} role="img" aria-label={'Code QR fidélité, expire dans ' + countdownText}>
         {/* SR-only live region for QR refresh announcements */}
         <div ref={liveRegionRef} role="status" aria-live="polite" aria-atomic="true" style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0 }} />
         {/* The actual QR/Barcode visual */}
         {mode === 'barcode' ? (
-          <window.BarcodeMock value={payload} width={264} height={88} />
+          <window.BarcodeMock value={displayCode || 'LECAYENNE'} width={264} height={88} />
         ) : (
-          <div className={remainingMs > 0 && !expiringSoon ? 'lc-pulse' : ''} style={{ borderRadius: 12, padding: 4, display: 'inline-block' }}>
-            <window.QRMock size={208} value={payload} />
+          <div className={token && !expiringSoon ? 'lc-pulse' : ''} style={{ borderRadius: 12, padding: 4, display: 'inline-block', background: '#fff', position: 'relative' }}>
+            {/* Conteneur du SVG réel (remplace la grille décorative .rdl-qr-art) */}
+            <div
+              ref={svgHostRef}
+              data-testid="loyalty-qr-svg"
+              style={{ width: 208, height: 208, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            />
+            {!token && (
+              <div role="status" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', fontSize: 12, color: 'var(--gray-3)', fontWeight: 600 }}>
+                Génération du code…
+              </div>
+            )}
           </div>
         )}
-        {/* Member badge */}
+        {/* loyalty_code en clair + consigne caisse (contrat §3) */}
         <div style={{ marginTop: 10, textAlign: 'center' }}>
-          <div className="lc-eyebrow" style={{ color: 'var(--gray-4)' }} data-testid="loyalty-member-number">
+          {displayCode ? (
+            <div data-testid="loyalty-code-text" style={{ fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 700, letterSpacing: '0.16em', color: 'var(--ink)' }}>{displayCode}</div>
+          ) : null}
+          <div style={{ marginTop: 4, fontSize: 11, color: 'var(--gray-3)', fontWeight: 600 }}>
+            Présentez ce QR ou dictez votre numéro en caisse
+          </div>
+          <div className="lc-eyebrow" style={{ color: 'var(--gray-4)', marginTop: 8 }} data-testid="loyalty-member-number">
             LE CAYENNE FIDÉLITÉ
           </div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--gray-4)', marginTop: 2 }}>
-            #{memberNumber} {name ? '· ' + name : ''}
+            {memberNumber ? '#' + memberNumber : ''} {name ? '· ' + name : ''}
           </div>
         </div>
-        {/* TTL countdown chip */}
+        {/* TTL countdown + Actualiser */}
         <div
           data-testid="loyalty-qr-countdown"
           role="timer"
@@ -85,8 +168,8 @@
             justifyContent: 'center',
             gap: 8,
             padding: '6px 12px',
-            background: expiringSoon ? 'var(--orange-soft)' : 'var(--gray-1)',
-            color: expiringSoon ? 'var(--orange-dark)' : 'var(--ink)',
+            background: expiringSoon ? 'var(--yellow-soft)' : 'var(--cream)',
+            color: expiringSoon ? 'var(--orange-text)' : 'var(--ink)',
             borderRadius: 999,
             fontSize: 11,
             fontWeight: 700,
@@ -94,31 +177,34 @@
           }}
         >
           <span aria-hidden="true">⏱</span>
-          <span>Expire dans {countdownText}</span>
+          <span>{token ? 'Expire dans ' + countdownText : 'Génération…'}</span>
           <button
+            data-testid="loyalty-qr-refresh"
             onClick={() => refresh()}
-            disabled={isInflight}
-            aria-label="Régénérer le code"
+            disabled={loading}
+            aria-label="Actualiser le code"
             style={{
               background: 'transparent',
               border: 0,
               color: 'inherit',
-              fontSize: 13,
-              cursor: isInflight ? 'wait' : 'pointer',
+              fontSize: 11,
+              cursor: loading ? 'wait' : 'pointer',
               fontWeight: 700,
               padding: 0,
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              textDecoration: 'underline',
             }}
           >
-            ↻
+            {loading ? '…' : 'Actualiser'}
           </button>
         </div>
       </div>
     );
   }
 
-  // memo with always-equal comparator: this component manages its OWN refresh
-  // state internally. Parent re-renders are ignored unless props (loyaltyCode/
-  // memberNumber/name/mode) actually change.
+  // memo with props comparator: this component manages its OWN refresh state
+  // internally. Parent re-renders are ignored unless props actually change.
   const LoyaltyQR = memo(LoyaltyQRImpl, (prev, next) => {
     return prev.loyaltyCode === next.loyaltyCode
       && prev.memberNumber === next.memberNumber

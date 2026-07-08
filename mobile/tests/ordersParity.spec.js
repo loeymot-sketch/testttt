@@ -8,7 +8,8 @@
 //   • item.name === canon menu.js name for that item_id (kills "Sandwich Cayenne" phantoms)
 //   • line_total === canon unit price × qty
 //   • order.total === sum(line_total)
-//   • points (points_earned | points_earned_estimate) === Math.round(total × earn_ratio)
+//   • points (points_earned | points_earned_estimate) === Math.floor(total × earn_ratio)
+//     [GOAL-SYNC 2026-07-08] canon backend = 1 pt/€ FLOOR du total TTC (AwardLoyaltyPointsOnDelivery)
 //   • no fictional product name appears anywhere in the order data
 //
 // Run:  node mobile/tests/ordersParity.spec.js
@@ -53,8 +54,10 @@ check(!!O, 'window.LC.orders populated');
 check(!!L && !!L.config, 'window.LC.loyalty.config populated');
 
 if (M && O && L) {
+  // [GOAL-SYNC 2026-07-08] nouveau canon : 1 pt/€ (backend points_per_euro=1), plus 10.
   const ratio = L.config.earn_ratio;
-  check(ratio === 10, 'earn_ratio = 10 pt/€ (got ' + ratio + ')');
+  check(ratio === 1, 'earn_ratio = 1 pt/€ (got ' + ratio + ')');
+  check(L.config.points_per_euro === 1, 'points_per_euro = 1 (alias API backend, got ' + L.config.points_per_euro + ')');
 
   const allOrders = [].concat(O.active || [], O.history || []);
   check(allOrders.length > 0, 'orders present (got ' + allOrders.length + ')');
@@ -87,9 +90,10 @@ if (M && O && L) {
     const points = o.points_earned != null ? o.points_earned : o.points_earned_estimate;
     check(points != null, tag + ' has a points figure (points_earned | points_earned_estimate)');
     if (points != null) {
-      const expPoints = Math.round((o.total || 0) * ratio);
+      // [GOAL-SYNC 2026-07-08] floor, pas round — sémantique backend NF525 (12,50 € → 12 pts).
+      const expPoints = Math.floor((o.total || 0) * ratio);
       check(points === expPoints,
-        tag + ' points = round(total × ' + ratio + ') = ' + expPoints + ' (got ' + points + ')');
+        tag + ' points = floor(total × ' + ratio + ') = ' + expPoints + ' (got ' + points + ')');
     }
   });
 }

@@ -36,12 +36,59 @@ class Stripe extends PaymentAbstract
         $this->paymentGateway = PaymentGateway::with('gatewayOptions')->where(['slug' => 'stripe'])->first();
         if (!blank($this->paymentGateway)) {
             $this->paymentGatewayOption = $this->paymentGateway->gatewayOptions->pluck('value', 'option');
-            $this->gateway              = new StripeClient\StripeClient($this->paymentGatewayOption['stripe_secret']);
+
+            // [GOAL-SYNC 2026-07-08] Fix défensif P1 (w1/by-spec/backend_stripe-gateway.json) :
+            // stripe_secret DB est VIDE en V1 « Stripe OFF » et StripeClient jette
+            // « api_key cannot be the empty string » dès le constructeur — donc tout
+            // POST /payment/stripe-webhook/ crashait 500 AVANT la vérification de
+            // signature. On n'instancie le client QUE si la clé est non-vide.
+            // `$this->gateway` reste NON-initialisée sinon (PaymentAbstract la type
+            // `object` non-nullable — null impossible) ; les points d'entrée publics
+            // gardent via isStripeConfigured() et répondent 503 proprement.
+            $stripeSecret = (string) ($this->paymentGatewayOption['stripe_secret'] ?? '');
+            if ($stripeSecret !== '') {
+                $this->gateway = new StripeClient\StripeClient($stripeSecret);
+            }
         }
     }
 
-    public function payment($order, $request) : \Illuminate\Http\RedirectResponse
+    /**
+     * [GOAL-SYNC 2026-07-08] Le client Stripe n'est instancié par le
+     * constructeur que si la clé secrète DB est non-vide. `isset()` sur la
+     * propriété typée non-initialisée retourne false — c'est le « client
+     * null » de facto (PaymentAbstract::$gateway est `object` non-nullable).
+     */
+    private function isStripeConfigured(): bool
     {
+        return isset($this->gateway);
+    }
+
+    /**
+     * [GOAL-SYNC 2026-07-08] Réponse propre 503 (Service Unavailable) quand
+     * la passerelle Stripe n'est pas configurée — jamais de 500 crash.
+     */
+    private function unconfiguredResponse(): JsonResponse
+    {
+        return response()->json([
+            'status'  => false,
+            'message' => 'Stripe non configuré.',
+        ], 503);
+    }
+
+    public function payment($order, $request) : \Illuminate\Http\RedirectResponse|JsonResponse
+    {
+        // [GOAL-SYNC 2026-07-08] Garde défensive : clé stripe_secret vide →
+        // client jamais instancié → répondre 503 JSON propre au lieu de
+        // laisser un accès à une propriété non-initialisée crasher en 500.
+        if (!$this->isStripeConfigured()) {
+            Log::channel('fiscal')->error('stripe.payment.unconfigured', [
+                'event'    => 'stripe_gateway_secret_missing',
+                'order_id' => $order->id ?? null,
+            ]);
+
+            return $this->unconfiguredResponse();
+        }
+
         try {
             $currencyCode = 'USD';
             $currencyId   = Settings::group('site')->get('site_default_currency');
@@ -201,6 +248,21 @@ class Stripe extends PaymentAbstract
      */
     public function handleWebhook(Request $request) : JsonResponse
     {
+        // [GOAL-SYNC 2026-07-08] Fix P1 : avant ce garde, stripe_secret DB
+        // vide faisait crasher le CONSTRUCTEUR (StripeClient refuse une
+        // api_key vide) → 500 avant toute vérification de signature. Le
+        // constructeur est désormais lazy ; gateway non configurée → 503
+        // JSON propre. La vérification de signature + idempotence + DLQ
+        // ci-dessous restent STRICTEMENT inchangées.
+        if (!$this->isStripeConfigured()) {
+            Log::channel('fiscal')->error('stripe.webhook.unconfigured', [
+                'event' => 'stripe_gateway_secret_missing',
+                'ip'    => $request->ip(),
+            ]);
+
+            return $this->unconfiguredResponse();
+        }
+
         $secret = (string) config('services.stripe.webhook_secret', '');
         if ($secret === '') {
             Log::channel('fiscal')->error('stripe.webhook.misconfigured', [

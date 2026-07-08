@@ -196,9 +196,29 @@ function ScreenOnb4({ onNext, onSkip }) {
 }
 
 // LOGIN — phone
+// [GOAL-SYNC 2026-07-08] onNext(phone) remonte LE STRING téléphone normalisé ('06…')
+// au parent (index.html appelle guestOtp) ; CTA désactivé si numéro FR invalide
+// (9-10 chiffres) ; état loading pendant l'appel réseau.
 function ScreenLogin({ onNext, onBack }) {
   const [phone, setPhone] = useState_o('06 ');
-  const valid = phone.replace(/\s/g, '').length >= 10;
+  const [loading, setLoading] = useState_o(false);
+  const [error, setError] = useState_o('');
+  const digits = phone.replace(/\D/g, '');
+  const valid = /^\d{9,10}$/.test(digits);
+  const submit = async () => {
+    if (!valid || loading) return;
+    // Normalisation FR simple : 9 chiffres saisis sans le 0 → '0' + reste ('6…' → '06…')
+    const normalized = digits.length === 9 ? '0' + digits : digits;
+    setLoading(true); setError('');
+    try {
+      await onNext(normalized);
+    } catch (e) {
+      // Défense en profondeur — le parent gère déjà ses erreurs (toast FR)
+      setError((e && e.message) || 'Envoi du code impossible. Réessaie.');
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <div data-screen-label="05 Login" style={{ position: 'absolute', inset: 0, background: '#FFFFFF', display: 'flex', flexDirection: 'column', paddingTop: 'var(--ios-safe-top)' }}>
       <ScreenHeader left={<IconBtn onClick={onBack} ariaLabel="Retour"><I.Back size={20}/></IconBtn>} center={<Logo size={14}/>}/>
@@ -231,11 +251,12 @@ function ScreenLogin({ onNext, onBack }) {
           ))}
         </div>
       </div>
-      {/* Sticky CTA */}
+      {/* Sticky CTA — [GOAL-SYNC 2026-07-08] désactivé si numéro invalide + loading pendant l'appel */}
       <div style={{ padding: '12px 24px 32px' }}>
-        <button onClick={onNext} className="lc-btn" style={{ background: 'var(--ink)', color: '#fff', width: '100%', height: 60, fontSize: 14 }}>
-          Recevoir le code <I.Arrow size={18} stroke="var(--orange)"/>
+        <button onClick={submit} disabled={!valid || loading} aria-busy={loading} className="lc-btn" style={{ background: 'var(--ink)', color: '#fff', width: '100%', height: 60, fontSize: 14, opacity: (!valid || loading) ? 0.45 : 1, cursor: (!valid || loading) ? 'not-allowed' : 'pointer' }}>
+          {loading ? 'Envoi du code…' : <>Recevoir le code <I.Arrow size={18} stroke="var(--orange)"/></>}
         </button>
+        {error && !loading && <div role="alert" style={{ marginTop: 10, textAlign: 'center', fontSize: 12, fontWeight: 700, color: 'var(--red)' }}>{error}</div>}
         <div style={{ marginTop: 12, textAlign: 'center', fontSize: 11, color: 'var(--gray-3)' }}>En continuant, tu acceptes nos <u>CGU</u> · <u>Confidentialité</u></div>
       </div>
     </div>
@@ -243,15 +264,38 @@ function ScreenLogin({ onNext, onBack }) {
 }
 
 // OTP code entry
-function ScreenOTP({ onNext, onBack }) {
+// [GOAL-SYNC 2026-07-08] props {phone, onNext} : affiche LE VRAI numéro saisi (plus de
+// '+33 6 12 34 56 78' hardcodé) ; onNext(otp) remonte le code saisi au parent (index.html
+// appelle guestVerify) ; état loading + erreur FR si la vérification échoue.
+function ScreenOTP({ phone, onNext, onBack }) {
   const [code, setCode] = useState_o(['', '', '', '']);
+  const [loading, setLoading] = useState_o(false);
+  const [error, setError] = useState_o('');
   const refs = [useRef_o(), useRef_o(), useRef_o(), useRef_o()];
+  // Affichage FR par paires : '0612345678' → '06 12 34 56 78'
+  const phoneDigits = String(phone || '').replace(/\D/g, '');
+  const displayPhone = phoneDigits ? phoneDigits.replace(/(\d{2})(?=\d)/g, '$1 ') : 'ton numéro';
+  const submit = async (otp) => {
+    if (loading) return;
+    setLoading(true); setError('');
+    try {
+      await onNext(otp);
+    } catch (e) {
+      // Défense en profondeur — le parent gère déjà ses erreurs (toast FR)
+      setError((e && e.message) || 'Code invalide ou vérification impossible. Réessaie.');
+      setCode(['', '', '', '']);
+      setTimeout(() => refs[0].current?.focus(), 0);
+    } finally {
+      setLoading(false);
+    }
+  };
   const set = (i, v) => {
+    if (loading) return;
     if (v.length > 1) v = v.slice(-1);
     if (!/^\d?$/.test(v)) return;
     const next = [...code]; next[i] = v; setCode(next);
     if (v && i < 3) refs[i+1].current?.focus();
-    if (next.join('').length === 4) setTimeout(onNext, 400);
+    if (next.join('').length === 4) setTimeout(() => submit(next.join('')), 250);
   };
   useEffect_o(() => { refs[0].current?.focus(); }, []);
   return (
@@ -260,7 +304,8 @@ function ScreenOTP({ onNext, onBack }) {
       <div style={{ flex: 1, padding: '12px 28px' }}>
         <div className="lc-eyebrow" style={{ color: 'var(--orange)', marginBottom: 10 }}>// Étape 2 sur 2</div>
         <h1 className="lc-display" style={{ margin: 0, fontSize: 52, lineHeight: 0.92 }}>Entre<br/>ton code.</h1>
-        <p style={{ marginTop: 14, fontSize: 14, lineHeight: 1.55, color: 'var(--gray-4)' }}>Code envoyé au <b style={{ color: 'var(--ink)' }}>+33 6 12 34 56 78</b> · <span style={{ color: 'var(--orange)' }}>Modifier</span></p>
+        {/* [GOAL-SYNC 2026-07-08] numéro RÉEL saisi à l'étape 1 + « Modifier » actif (retour login) */}
+        <p style={{ marginTop: 14, fontSize: 14, lineHeight: 1.55, color: 'var(--gray-4)' }}>Code envoyé au <b data-testid="otp-phone" style={{ color: 'var(--ink)' }}>{displayPhone}</b> · <button onClick={onBack} style={{ background: 'transparent', border: 0, padding: 0, fontSize: 14, color: 'var(--orange)', cursor: 'pointer' }}>Modifier</button></p>
         {/* code boxes — A11-005 P1 round-2 2026-05-11 : fieldset+legend
             group + per-input aria-label so screen-readers can identify
             which digit position the user is on. */}
@@ -276,6 +321,7 @@ function ScreenOTP({ onNext, onBack }) {
                 onKeyDown={e => { if (e.key === 'Backspace' && !c && i > 0) refs[i-1].current?.focus(); }}
                 maxLength={1}
                 inputMode="numeric"
+                disabled={loading}
                 autoComplete={i === 0 ? 'one-time-code' : 'off'}
                 aria-label={`Chiffre ${i + 1} sur 4 du code de validation`}
                 style={{
@@ -291,6 +337,9 @@ function ScreenOTP({ onNext, onBack }) {
             ))}
           </div>
         </fieldset>
+        {/* [GOAL-SYNC 2026-07-08] états loading / erreur FR de la vérification */}
+        {loading && <div role="status" data-testid="otp-loading" style={{ marginTop: 14, fontSize: 12, fontWeight: 700, color: 'var(--gray-4)' }}>Vérification du code…</div>}
+        {error && !loading && <div role="alert" data-testid="otp-error" style={{ marginTop: 14, fontSize: 12, fontWeight: 700, color: 'var(--red)' }}>{error}</div>}
         <div style={{ marginTop: 22, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           {/* [test-e2e fix A-001 round-2 2026-05-11] gate dev affordance — hide demo code from prod-facing users */}
           {window.LC && window.LC.isDev

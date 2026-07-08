@@ -13,6 +13,18 @@
 //   Catégories purgées : "Sandwich Classique" (cat3), "Suppléments" vendable (cat8).
 //   Catégories renommées : "Sandwich Cayenne"→"Sandwichs", "Bols Gourmands"→"Bols".
 //   ⛔ STANDALONE — aucun wireup API V1.
+// [GOAL-SYNC 2026-07-08] Rattrapage complet du mirror mobile sur le canon borne
+//   (fixture reports/goal-web-app-sync/catalog-canonical.json + CONTRACTS.md §5) —
+//   le mobile n'avait jamais reçu les fixes web WEB-SYNC-CAISSE 2026-06-26/27 :
+//   +7 boissons (ids 1009-1015 @ 1,90€) + FORMULE_DRINKS 15 saveurs, Capri-Sun addon 1,50€ (FIX P0),
+//   CRUDITES 4 (+Oignons cuits), PAINS (Pain/Galette) + has_pain_choice sandwichs,
+//   EXTRA_MEAT_PRICE 2,50€ + has_extra_meat (16 items) + priceFor extraMeatIds,
+//   SUPPLEMENTS +Boule gratinée 1,00€ (galette_only) / Boursin galette_excluded,
+//   SUPPLEMENTS_BOLS 5→10 (9×0,90€ + Gratiné 2,00€ riz_only), BOL_SAUCES (2, pool bol),
+//   cat 6 wizard_template 'bol', Tacos M/L crudités restaurées (revert backend 05e5cacd0),
+//   Cayenne sauce au choix (défaut Sauce fromagère maison) + is_spicy:false,
+//   multi-sauces +0,50€ SUPPRIMÉE (canon = 1 sauce max), 'Menu Enfant Chicken Burger',
+//   is_halal défaut false (canon), desserts is_vegetarian:true, images viandes distinctes.
 //
 // SSOT (source of truth) = system central :
 //   - database/seeders/OwnerMenuUpdate20260623Seeder.php (2026-06-23/24) — menu canon
@@ -24,9 +36,9 @@
 // Viandes (7) : Mexicanos, Cordon Bleu, Viande Hachée, Nuggets, Tenders, Fricadelle, Poulet mariné.
 // Sauces (12) : Mayonnaise, Ketchup, Blanche, Hannibal, Samouraï, Algérienne, Andalouse,
 //               Curry, Barbecue, Harissa, Fromagère maison, Spicy maison.
-// Crudités (3) : Salade, Tomate, Oignon.
-// Suppléments (9 @ 0.90€) : Oignons frits, Champignons, Jambon, Cheddar, Raclette,
-//                            Emmental, Boursin, Œuf, Légumes sautés.
+// Crudités (4) : Salade, Tomate, Oignon, Oignons cuits.
+// Suppléments (9 @ 0.90€ + Boule gratinée 1,00€ galette-only) : Oignons frits, Champignons,
+//                            Jambon, Cheddar, Raclette, Emmental, Boursin, Œuf, Légumes sautés.
 // Formule menu (frites + boisson) +2,50€. Viande supplémentaire +2,50€.
 
 (function () {
@@ -93,6 +105,15 @@
     'orangina': 'tropico.png',
     'eau-plate': 'eau.png',
     'capri-sun': 'capri-sun.png',
+    // [GOAL-SYNC 2026-07-08] +7 boissons canon — assets EXISTANTS vérifiés (ls assets/menu),
+    // fallback générique boisson.png quand aucun visuel dédié n'existe (jamais d'asset inventé).
+    'coca-cherry':   'coca.png',
+    'tropico':       'tropico.png',
+    'ice-tea-peche': 'boisson.png',
+    'fanta-citron':  'fanta.png',
+    'fuze-tea':      'boisson.png',
+    'hawai':         'boisson.png',
+    'perrier':       'eau_gazeuse.png',
     // Menu enfant (cat 11)
     'menu-enfant-nuggets': 'nuggets.png',
     'menu-enfant-burger':  'burger-cheese.png',
@@ -120,14 +141,17 @@
   // -------------------------------------------------------------------------
 
   // 7 viandes au choix (seeder MEATS) — viandes mixtes, plus poulet-only.
+  // [GOAL-SYNC 2026-07-08] image DISTINCTE par viande (parité IMG-SYNC-CAISSE 2026-06-27 du web),
+  //   limitée aux assets PRÉSENTS dans mobile/assets/menu (vérifié ls — les fichiers web
+  //   viande-mexicanos.png etc. n'existent pas côté mobile ; équivalents locaux utilisés).
   const MEATS = [
-    { id: 'm-mexicanos',    name: 'Mexicanos',     price: 0, emoji: '🌶️', image: ASSET_BASE + 'viande-marine.png' },
-    { id: 'm-cordon-bleu',  name: 'Cordon Bleu',   price: 0, emoji: '🍗', image: ASSET_BASE + 'viande-crispy.png' },
-    { id: 'm-viande-hachee', name: 'Viande Hachée', price: 0, emoji: '🥩', image: ASSET_BASE + 'viande-tandoori.png' },
-    { id: 'm-nuggets',      name: 'Nuggets',       price: 0, emoji: '🍗', image: ASSET_BASE + 'viande-crispy.png' },
-    { id: 'm-tenders',      name: 'Tenders',       price: 0, emoji: '🍗', image: ASSET_BASE + 'viande-marine.png' },
-    { id: 'm-fricadelle',   name: 'Fricadelle',    price: 0, emoji: '🌭', image: ASSET_BASE + 'viande-curry.png' },
-    { id: 'm-poulet-marine', name: 'Poulet mariné', price: 0, emoji: '🍗', image: ASSET_BASE + 'viande-marine.png' },
+    { id: 'm-mexicanos',    name: 'Mexicanos',     price: 0, emoji: '🌶️', image: ASSET_BASE + 'viande_mexicain.png' },
+    { id: 'm-cordon-bleu',  name: 'Cordon Bleu',   price: 0, emoji: '🍗', image: ASSET_BASE + 'viande_cordon.png' },
+    { id: 'm-viande-hachee', name: 'Viande Hachée', price: 0, emoji: '🥩', image: ASSET_BASE + 'viande_hachee.png' },
+    { id: 'm-nuggets',      name: 'Nuggets',       price: 0, emoji: '🍗', image: ASSET_BASE + 'viande_nuggets.png' },
+    { id: 'm-tenders',      name: 'Tenders',       price: 0, emoji: '🍗', image: ASSET_BASE + 'viande_tenders.png' },
+    { id: 'm-fricadelle',   name: 'Fricadelle',    price: 0, emoji: '🌭', image: ASSET_BASE + 'viande_fricandelle.png' },
+    { id: 'm-poulet-marine', name: 'Poulet mariné', price: 0, emoji: '🍗', image: ASSET_BASE + 'viande_poulet.png' },
   ];
 
   // 12 sauces incluses (seeder SAUCES) — 1ère gratuite, +0,50€ chacune au-delà.
@@ -146,11 +170,13 @@
     { id: 's-spicy',      name: 'Spicy maison',      price: 0, is_spicy: true, image: ASSET_BASE + 'sauce-spicy-maison.png' },
   ];
 
-  // 3 crudités (seeder GARNITURES — Salade/Tomate/Oignon ; Cornichon supprimé).
+  // 4 crudités — [GOAL-SYNC 2026-07-08] +Oignons cuits (canon extras group_label='crudite' ×4,
+  //   fixture items 22/26/97…). Non incluse par défaut (ajout optionnel gratuit).
   const CRUDITES = [
-    { id: 'c-salade', name: 'Salade', default: true, image: ASSET_BASE + 'salade.png' },
-    { id: 'c-tomate', name: 'Tomate', default: true, image: ASSET_BASE + 'tomate.png' },
-    { id: 'c-oignon', name: 'Oignon', default: true, image: ASSET_BASE + 'oignon.png' },
+    { id: 'c-salade',        name: 'Salade',        default: true, image: ASSET_BASE + 'salade.png' },
+    { id: 'c-tomate',        name: 'Tomate',        default: true, image: ASSET_BASE + 'tomate.png' },
+    { id: 'c-oignon',        name: 'Oignon',        default: true, image: ASSET_BASE + 'oignon.png' },
+    { id: 'c-oignons-cuits', name: 'Oignons cuits', price: 0,      image: ASSET_BASE + 'oignon.png' },
   ];
 
   // 9 suppléments payants +0,90€ (seeder SUPPLEMENTS ; "Oignon frais"→"Oignons frits").
@@ -162,18 +188,47 @@
     { id: 'sup-cheddar',        name: 'Cheddar',        price: 0.90, image: ASSET_BASE + 'cheddar.png',           allergens: ['lactose'] },
     { id: 'sup-raclette',       name: 'Raclette',       price: 0.90, image: ASSET_BASE + 'raclette.png',          allergens: ['lactose'] },
     { id: 'sup-emmental',       name: 'Emmental',       price: 0.90, image: ASSET_BASE + 'fromage.png',           allergens: ['lactose'] },
-    { id: 'sup-boursin',        name: 'Boursin',        price: 0.90, image: ASSET_BASE + 'boursin.png',           allergens: ['lactose'] },
+    // [GOAL-SYNC 2026-07-08] Boursin ABSENT des galettes au canon → galette_excluded (filtre wizard).
+    { id: 'sup-boursin',        name: 'Boursin',        price: 0.90, image: ASSET_BASE + 'boursin.png',           allergens: ['lactose'], galette_excluded: true },
     { id: 'sup-oeuf',           name: 'Œuf',            price: 0.90, image: ASSET_BASE + 'oeuf.png',              allergens: ['oeuf'] },
     { id: 'sup-legumes-sautes', name: 'Légumes sautés', price: 0.90, image: ASSET_BASE + 'legumes-sautes.png',    allergens: [] },
+    // [GOAL-SYNC 2026-07-08] Boule gratinée 1,00€ — réservée aux galettes (canon).
+    { id: 'sup-boule-gratinee', name: 'Boule gratinée', price: 1.00, image: ASSET_BASE + 'supplement_galette.png', allergens: ['lactose'], galette_only: true },
   ];
 
-  // Suppléments spécifiques aux bols (seeder SUPP_GROUP_BOL : 9 suppléments + gratiné +2€ sur riz).
+  // Suppléments spécifiques aux bols (seeder SUPP_GROUP_BOL).
+  // [GOAL-SYNC 2026-07-08] complété 5→10 (parité WEB-SYNC-CAISSE 2026-06-26 F1) :
+  //   9 suppléments ×0,90€ + Gratiné 2,00€ réservé au Bol Riz (riz_only, filtré par le wizard).
   const SUPPLEMENTS_BOLS = [
     { id: 'sb-oignons-frits',  name: 'Oignons frits',  price: 0.90, image: ASSET_BASE + 'oignons-frits.png' },
     { id: 'sb-champignons',    name: 'Champignons',    price: 0.90, image: ASSET_BASE + 'champignons.png' },
     { id: 'sb-jambon',         name: 'Jambon',         price: 0.90, image: ASSET_BASE + 'jambon-dinde.png' },
     { id: 'sb-cheddar',        name: 'Cheddar',        price: 0.90, image: ASSET_BASE + 'cheddar.png' },
-    { id: 'sb-gratine',        name: 'Option Gratiné', price: 2.00, image: ASSET_BASE + 'bol-frites-gratine.png' },
+    { id: 'sb-raclette',       name: 'Raclette',       price: 0.90, image: ASSET_BASE + 'raclette.png' },
+    { id: 'sb-emmental',       name: 'Emmental',       price: 0.90, image: ASSET_BASE + 'fromage.png' },
+    { id: 'sb-boursin',        name: 'Boursin',        price: 0.90, image: ASSET_BASE + 'boursin.png' },
+    { id: 'sb-oeuf',           name: 'Œuf',            price: 0.90, image: ASSET_BASE + 'oeuf.png' },
+    { id: 'sb-legumes-sautes', name: 'Légumes sautés', price: 0.90, image: ASSET_BASE + 'legumes-sautes.png' },
+    { id: 'sb-gratine',        name: 'Option Gratiné', price: 2.00, image: ASSET_BASE + 'bol-frites-gratine.png', riz_only: true },
+  ];
+
+  // [GOAL-SYNC 2026-07-08] Choix du pain (canon attr 6 Pain/Galette, gratuit) —
+  //   exposé sur les 4 Sandwichs via has_pain_choice (parité WEB-SYNC-CAISSE 2026-06-26 L4).
+  const PAINS = [
+    { id: 'pain-classique', name: 'Pain',    price: 0, is_default: true, image: ASSET_BASE + 'sandwich-classique.png' },
+    { id: 'pain-galette',   name: 'Galette', price: 0,                   image: ASSET_BASE + 'galette.png' },
+  ];
+
+  // [GOAL-SYNC 2026-07-08] Viande supplémentaire (canon extra +2,50€) — sandwichs, galettes,
+  //   burgers, tacos, bols (has_extra_meat). Chiffrée via opts.extraMeatIds dans priceFor.
+  const EXTRA_MEAT_PRICE = 2.50;
+
+  // [GOAL-SYNC 2026-07-08] Sauces du BOL = attribut canon « Sauce bol » (attr 8) : SEULEMENT
+  //   2 options (≠ les 12 sauces sandwich). Les bols (has_sauce) sont servis par CE pool.
+  //   Noms EXACTS backend pour que la résolution par nom matche au wireup.
+  const BOL_SAUCES = [
+    { id: 'bs-fromagere', name: 'Sauce fromagère maison', price: 0, image: ASSET_BASE + 'sauce-fromagere-maison.png' },
+    { id: 'bs-spicy',     name: 'Sauce spicy',            price: 0, is_spicy: true, image: ASSET_BASE + 'sauce-spicy-maison.png' },
   ];
 
   // Formule menu (seeder : Option Menu frites + boisson +2,50€).
@@ -196,16 +251,23 @@
     { id: 'bb-riz',    name: 'Riz',    price: 0, image: ASSET_BASE + 'bol-riz.png' },
   ];
 
-  // Boissons formule menu
+  // Boissons formule menu — [GOAL-SYNC 2026-07-08] étendu 8→15 saveurs (canon boissons 33cl).
   const FORMULE_DRINKS = [
-    { id: 'd-coca',      name: 'Coca-Cola 33cl',      emoji: '🥤', image: ASSET_BASE + 'coca.png' },
-    { id: 'd-coca-zero', name: 'Coca-Cola Zero 33cl', emoji: '🥤', image: ASSET_BASE + 'coca-zero.png' },
-    { id: 'd-fanta',     name: 'Fanta Orange 33cl',   emoji: '🍊', image: ASSET_BASE + 'fanta-orange.png' },
-    { id: 'd-sprite',    name: 'Sprite 33cl',         emoji: '🍋', image: ASSET_BASE + 'sprite.png' },
-    { id: 'd-oasis',     name: 'Oasis Tropical 33cl', emoji: '🌴', image: ASSET_BASE + 'oasis.png' },
-    { id: 'd-orangina',  name: 'Orangina 33cl',       emoji: '🍊', image: ASSET_BASE + 'tropico.png' },
-    { id: 'd-eau',       name: 'Eau Plate 50cl',      emoji: '💧', image: ASSET_BASE + 'eau.png' },
-    { id: 'd-capri',     name: 'Capri-Sun',           emoji: '🧃', image: ASSET_BASE + 'capri-sun.png' },
+    { id: 'd-coca',          name: 'Coca-Cola 33cl',      emoji: '🥤', image: ASSET_BASE + 'coca.png' },
+    { id: 'd-coca-zero',     name: 'Coca-Cola Zero 33cl', emoji: '🥤', image: ASSET_BASE + 'coca-zero.png' },
+    { id: 'd-fanta',         name: 'Fanta Orange 33cl',   emoji: '🍊', image: ASSET_BASE + 'fanta-orange.png' },
+    { id: 'd-sprite',        name: 'Sprite 33cl',         emoji: '🍋', image: ASSET_BASE + 'sprite.png' },
+    { id: 'd-oasis',         name: 'Oasis Tropical 33cl', emoji: '🌴', image: ASSET_BASE + 'oasis.png' },
+    { id: 'd-orangina',      name: 'Orangina 33cl',       emoji: '🍊', image: ASSET_BASE + 'tropico.png' },
+    { id: 'd-eau',           name: 'Eau Plate 50cl',      emoji: '💧', image: ASSET_BASE + 'eau.png' },
+    { id: 'd-capri',         name: 'Capri-Sun',           emoji: '🧃', image: ASSET_BASE + 'capri-sun.png' },
+    { id: 'd-coca-cherry',   name: 'Coca Cherry 33cl',    emoji: '🥤', image: ASSET_BASE + 'coca.png' },
+    { id: 'd-tropico',       name: 'Tropico 33cl',        emoji: '🌴', image: ASSET_BASE + 'tropico.png' },
+    { id: 'd-ice-tea-peche', name: 'Ice Tea Pêche 33cl',  emoji: '🥤', image: ASSET_BASE + 'boisson.png' },
+    { id: 'd-fanta-citron',  name: 'Fanta Citron 33cl',   emoji: '🍋', image: ASSET_BASE + 'fanta.png' },
+    { id: 'd-fuze-tea',      name: 'Fuze Tea 33cl',       emoji: '🥤', image: ASSET_BASE + 'boisson.png' },
+    { id: 'd-hawai',         name: 'Hawaï 33cl',          emoji: '🌴', image: ASSET_BASE + 'boisson.png' },
+    { id: 'd-perrier',       name: 'Perrier 33cl',        emoji: '💧', image: ASSET_BASE + 'eau_gazeuse.png' },
   ];
 
   // -------------------------------------------------------------------------
@@ -219,7 +281,8 @@
     { id: 2,  slug: 'galette',      name: 'Galette',     icon: '🌯', sort: 2,  wizard_template: 'sandwich', has_menu: true,  description: 'Galette traditionnelle ou Cayenne',              image: ASSET_BASE + 'cat-galette.png' },
     { id: 4,  slug: 'burgers',      name: 'Burgers',     icon: '🍔', sort: 3,  wizard_template: 'burger',   has_menu: true,  description: 'Chicken, Cheese, Double Cheese, Fish, Big, Grill', image: ASSET_BASE + 'cat-burgers.png' },
     { id: 5,  slug: 'tacos',        name: 'Tacos',       icon: '🌮', sort: 4,  wizard_template: 'tacos',    has_menu: true,  description: 'Tacos M (1 viande) ou Tacos L (2 viandes)',       image: ASSET_BASE + 'cat-tacos.png' },
-    { id: 6,  slug: 'bols',         name: 'Bols',        icon: '🥣', sort: 5,  wizard_template: 'tacos',    has_menu: false, description: 'Bol Frites ou Bol Riz, viande au choix',          image: ASSET_BASE + 'cat-bols-gourmands.png' },
+    // [GOAL-SYNC 2026-07-08] wizard_template 'tacos'→'bol' (aligné web — sauces servies par BOL_SAUCES).
+    { id: 6,  slug: 'bols',         name: 'Bols',        icon: '🥣', sort: 5,  wizard_template: 'bol',      has_menu: false, description: 'Bol Frites ou Bol Riz, viande au choix',          image: ASSET_BASE + 'cat-bols-gourmands.png' },
     { id: 7,  slug: 'frites',       name: 'Frites',      icon: '🍟', sort: 6,  wizard_template: 'custom',   has_menu: false, description: 'Petite ou Grande, style au choix',               image: ASSET_BASE + 'cat-frites.png' },
     { id: 9,  slug: 'desserts',     name: 'Desserts',    icon: '🍰', sort: 7,  wizard_template: 'simple',   has_menu: false, description: 'Desserts gourmands',                             image: ASSET_BASE + 'cat-desserts.png' },
     { id: 10, slug: 'boissons',     name: 'Boissons',    icon: '🥤', sort: 8,  wizard_template: 'simple',   has_menu: false, description: 'Boissons fraîches',                              image: ASSET_BASE + 'cat-boissons.png' },
@@ -258,7 +321,9 @@
       is_featured: !!opts.is_featured,
       is_new: !!opts.is_new,
       is_spicy: !!opts.is_spicy,
-      is_halal: opts.is_halal !== false,
+      // [GOAL-SYNC 2026-07-08] défaut halal true→false (canon is_halal:false partout —
+      // allégation réglementaire, jamais affirmée par défaut).
+      is_halal: !!opts.is_halal,
       is_vegetarian: !!opts.is_vegetarian,
       viandes: opts.viandes ?? 0,
       viande_count: opts.viandes ?? 0, // canonical field name (kiosk parity)
@@ -268,6 +333,11 @@
       has_menu_addon: !!opts.has_menu_addon,
       has_frites_style: !!opts.has_frites_style,
       has_bol_wizard: !!opts.has_bol_wizard,
+      // [GOAL-SYNC 2026-07-08] parité web : choix du pain (pool PAINS) + viande supplémentaire
+      // (+2,50€ EXTRA_MEAT_PRICE) + sauce pré-sélectionnée mais modifiable (Cayenne).
+      has_pain_choice: !!opts.has_pain_choice,
+      has_extra_meat: !!opts.has_extra_meat,
+      sauce_default: opts.sauce_default || null,
       sauce_locked: opts.sauce_locked || null,
       bol_meat_fixed: opts.bol_meat_fixed || null,
       bol_sauce_default: opts.bol_sauce_default || null,
@@ -313,31 +383,42 @@
 
   // Drink prices for bol addon — read from Boissons catalogue (cat 10) by slug match.
   // (e.g. d-coca → 1.90€, d-eau → 1.00€). Same drink slugs as FORMULE_DRINKS.
+  // [GOAL-SYNC 2026-07-08] FIX P0 : d-capri 1,90→1,50€ (prix catalogue Capri-Sun canon)
+  //   + 7 nouvelles saveurs @ 1,90€.
   function priceForDrinkAddon(formuleDrinkId) {
     const drinkPriceMap = {
       'd-coca': 1.90, 'd-coca-zero': 1.90, 'd-fanta': 1.90, 'd-sprite': 1.90,
-      'd-oasis': 1.90, 'd-orangina': 1.90, 'd-eau': 1.00, 'd-capri': 1.90,
+      'd-oasis': 1.90, 'd-orangina': 1.90, 'd-eau': 1.00, 'd-capri': 1.50,
+      'd-coca-cherry': 1.90, 'd-tropico': 1.90, 'd-ice-tea-peche': 1.90,
+      'd-fanta-citron': 1.90, 'd-fuze-tea': 1.90, 'd-hawai': 1.90, 'd-perrier': 1.90,
     };
     return drinkPriceMap[formuleDrinkId] !== undefined ? drinkPriceMap[formuleDrinkId] : 1.90;
   }
 
   // ====== SANDWICHS (cat 1) — seeder : Cayenne 7,40 / Suprême 7,00 / Méga 8,00 / Terminator 9,00
-  //   Pain au choix (Pain/Galette) ; Méga & Terminator = 2 viandes au choix. Formule menu +2,50€. ======
+  //   Pain au choix (Pain/Galette, has_pain_choice) ; Méga & Terminator = 2 viandes au choix.
+  //   Formule menu +2,50€ ; viande supplémentaire +2,50€ (has_extra_meat).
+  //   [GOAL-SYNC 2026-07-08] Cayenne : sauce AU CHOIX (12) pré-sélectionnée « Sauce fromagère
+  //   maison » (sauce_default, canon attr 5 complet) — sauce_locked retiré ; is_spicy:false (canon). ======
   const SANDWICHS = [
     mkItem(101, 'cayenne', 1, 'Cayenne', 7.40,
       'Poulet mariné · Cheddar · Jambon · Oignons rouges · Tomates · Salade · Sauce fromagère maison',
-      { viandes: 0, has_crudites: true, has_menu_addon: true, sauce_locked: 'Sauce fromagère maison', has_sauce: false,
-        is_featured: true, tags: ['SIGNATURE'], emoji: '🌶️', is_spicy: true, time: 10 }),
+      { viandes: 0, has_crudites: true, has_menu_addon: true, has_sauce: true,
+        sauce_default: 'Sauce fromagère maison', has_pain_choice: true, has_extra_meat: true,
+        is_featured: true, tags: ['SIGNATURE'], emoji: '🌶️', time: 10 }),
     mkItem(102, 'supreme', 1, 'Suprême', 7.00,
       'Steak haché · Cordon bleu · Cheddar · Oignons rouges · Tomates · Salade · Sauce au choix',
-      { viandes: 0, has_crudites: true, has_menu_addon: true, has_sauce: true, time: 10, emoji: '🥖' }),
+      { viandes: 0, has_crudites: true, has_menu_addon: true, has_sauce: true,
+        has_pain_choice: true, has_extra_meat: true, time: 10, emoji: '🥖' }),
     mkItem(103, 'mega', 1, 'Méga', 8.00,
       '2 viandes au choix · Cheddar · Œuf · Oignons rouges · Tomates · Salade · Sauce au choix',
       { viandes: 2, has_crudites: true, has_menu_addon: true, has_sauce: true,
+        has_pain_choice: true, has_extra_meat: true,
         is_featured: true, tags: ['XL'], time: 12, emoji: '🥖' }),
     mkItem(104, 'terminator', 1, 'Terminator', 9.00,
       '2 viandes au choix · 2 cheddars · Œuf · Jambon de dinde · Oignons rouges · Tomates · Salade · Sauce au choix',
       { viandes: 2, has_crudites: true, has_menu_addon: true, has_sauce: true,
+        has_pain_choice: true, has_extra_meat: true,
         is_featured: true, tags: ['XL'], time: 12, emoji: '🥖' }),
   ];
 
@@ -345,45 +426,48 @@
   const GALETTE = [
     mkItem(201, 'galette-normale', 2, 'Galette Normale', 6.50,
       'Galette traditionnelle · 1 viande au choix · Sauce au choix · Crudités · Suppléments optionnels',
-      { viandes: 1, has_crudites: true, has_menu_addon: true, has_sauce: true, time: 8, emoji: '🌯' }),
+      { viandes: 1, has_crudites: true, has_menu_addon: true, has_sauce: true, has_extra_meat: true, time: 8, emoji: '🌯' }),
     mkItem(202, 'galette-cayenne', 2, 'Galette Cayenne', 7.00,
       'Galette signature · 1 viande au choix · Sauce au choix · Crudités · Suppléments optionnels',
-      { viandes: 1, has_crudites: true, has_menu_addon: true, has_sauce: true,
-        is_featured: true, tags: ['SIGNATURE'], emoji: '🌶️', is_spicy: true, time: 8 }),
+      { viandes: 1, has_crudites: true, has_menu_addon: true, has_sauce: true, has_extra_meat: true,
+        // [GOAL-SYNC 2026-07-08] is_spicy retiré — canon Galette Cayenne is_spicy:false (gate parity).
+        is_featured: true, tags: ['SIGNATURE'], emoji: '🌶️', time: 8 }),
   ];
 
   // ====== BURGERS (cat 4) — seeder : 6 burgers, compositions fixes (PAS de choix viande). ======
   const BURGERS = [
     mkItem(401, 'chicken-burger', 4, 'Chicken Burger', 4.90,
       'Salade · Tomate · Oignon · Sauce',
-      { viandes: 0, has_crudites: true, has_menu_addon: true, has_sauce: true, emoji: '🍔', time: 10 }),
+      { viandes: 0, has_crudites: true, has_menu_addon: true, has_sauce: true, has_extra_meat: true, emoji: '🍔', time: 10 }),
     mkItem(402, 'cheese-burger', 4, 'Cheese Burger', 6.00,
       'Steak · Cheddar · Salade · Tomate · Oignon · Sauce',
-      { viandes: 0, has_crudites: true, has_menu_addon: true, has_sauce: true, emoji: '🍔', time: 10 }),
+      { viandes: 0, has_crudites: true, has_menu_addon: true, has_sauce: true, has_extra_meat: true, emoji: '🍔', time: 10 }),
     mkItem(403, 'double-cheese', 4, 'Double Cheese', 7.00,
       '2 steaks · 2 cheddars · Salade · Tomate · Oignon · Sauce',
-      { viandes: 0, has_crudites: true, has_menu_addon: true, has_sauce: true, is_featured: true, emoji: '🍔', time: 11 }),
+      { viandes: 0, has_crudites: true, has_menu_addon: true, has_sauce: true, has_extra_meat: true, is_featured: true, emoji: '🍔', time: 11 }),
     mkItem(404, 'fish-burger', 4, 'Fish Burger', 6.00,
       'Poisson pané · Cheddar · Salade · Tomate · Oignon · Sauce',
-      { viandes: 0, has_crudites: true, has_menu_addon: true, has_sauce: true, emoji: '🐟', time: 10 }),
+      { viandes: 0, has_crudites: true, has_menu_addon: true, has_sauce: true, has_extra_meat: true, emoji: '🐟', time: 10 }),
     mkItem(405, 'big-burger', 4, 'Big Burger', 9.00,
       '3 steaks · 3 cheddars · 2 jambons de dinde · Salade · Tomate · Oignon · Sauce',
-      { viandes: 0, has_crudites: true, has_menu_addon: true, has_sauce: true, is_featured: true, tags: ['XL'], emoji: '🍔', time: 13 }),
+      { viandes: 0, has_crudites: true, has_menu_addon: true, has_sauce: true, has_extra_meat: true, is_featured: true, tags: ['XL'], emoji: '🍔', time: 13 }),
     mkItem(406, 'grill-burger', 4, 'Grill Burger', 8.00,
       '2 steaks · 2 cheddars · Jambon de dinde · Salade · Tomate · Oignon · Sauce',
-      { viandes: 0, has_crudites: true, has_menu_addon: true, has_sauce: true, emoji: '🍔', time: 12 }),
+      { viandes: 0, has_crudites: true, has_menu_addon: true, has_sauce: true, has_extra_meat: true, emoji: '🍔', time: 12 }),
   ];
 
   // ====== TACOS (cat 5) — seeder : Tacos M 6,90 (1 viande) / Tacos L 7,90 (2 viandes).
-  //   Galette de blé · frites maison · sauce. SANS crudités (owner). Formule menu +2,50€. ======
+  //   Galette de blé · frites maison · sauce. Formule menu +2,50€.
+  //   [GOAL-SYNC 2026-07-08] crudités RESTAURÉES (revert backend 05e5cacd0 2026-07-07 —
+  //   fixture canon : extras group_label='crudite' ×4 sur items 26/97). ======
   const TACOS = [
     mkItem(501, 'tacos-m', 5, 'Tacos M', 6.90,
       'Galette de blé · 1 viande au choix · Frites maison · Sauce',
-      { viandes: 1, has_crudites: false, has_menu_addon: true, has_sauce: true,
+      { viandes: 1, has_crudites: true, has_menu_addon: true, has_sauce: true, has_extra_meat: true,
         is_featured: true, tags: ['SIGNATURE'], emoji: '🌮', time: 10 }),
     mkItem(502, 'tacos-l', 5, 'Tacos L', 7.90,
       'Galette de blé · 2 viandes au choix · Frites maison · Sauce',
-      { viandes: 2, has_crudites: false, has_menu_addon: true, has_sauce: true,
+      { viandes: 2, has_crudites: true, has_menu_addon: true, has_sauce: true, has_extra_meat: true,
         is_featured: true, tags: ['TOP'], emoji: '🌮', time: 12 }),
   ];
 
@@ -391,13 +475,17 @@
   //   Bol Riz : option gratiné (+2€, dans les suppléments du bol). Bol Frites : pas de gratiné.
   //   Note standalone : viande rendue via l'étape VIANDES du template 'tacos' (le renderer
   //   custom ne sait pas afficher un choix de viande) — choix parmi les 7 MEATS, requis. ======
+  // [GOAL-SYNC 2026-07-08] has_sauce des bols servi par le pool BOL_SAUCES (2 options, attr 8
+  //   canon) — PAS par les 12 sauces sandwich. has_extra_meat +2,50€ (canon).
   const BOLS = [
     mkItem(601, 'bol-frites', 6, 'Bol Frites', 7.90,
       'Frites maison · 1 viande au choix · Sauce · Suppléments optionnels',
-      { viandes: 1, has_crudites: false, has_menu_addon: false, has_sauce: true, has_supplements: true, emoji: '🥣', time: 10 }),
+      { viandes: 1, has_crudites: false, has_menu_addon: false, has_sauce: true, has_supplements: true,
+        has_extra_meat: true, emoji: '🥣', time: 10 }),
     mkItem(602, 'bol-riz', 6, 'Bol Riz', 7.90,
       'Riz · 1 viande au choix · Sauce · Suppléments optionnels · Option gratiné',
-      { viandes: 1, has_crudites: false, has_menu_addon: false, has_sauce: true, has_supplements: true, emoji: '🥣', time: 10 }),
+      { viandes: 1, has_crudites: false, has_menu_addon: false, has_sauce: true, has_supplements: true,
+        has_extra_meat: true, emoji: '🥣', time: 10 }),
   ];
 
   // ====== FRITES (cat 7) — Petite/Grande, style au choix (option client standalone). ======
@@ -410,11 +498,11 @@
       { has_sauce: false, has_crudites: false, has_supplements: false, has_menu_addon: false, has_frites_style: true, time: 5, emoji: '🍟', is_vegetarian: true }),
   ];
 
-  // ====== DESSERTS (cat 9) — seeder : 3,50€. ======
+  // ====== DESSERTS (cat 9) — seeder : 3,50€. [GOAL-SYNC 2026-07-08] is_vegetarian:true (canon). ======
   const DESSERTS = [
-    mkItem(901, 'glace',      9, 'Glace',      3.50, 'Glace artisanale', { has_sauce: false, has_crudites: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🍦', allergens: ['lactose'] }),
-    mkItem(902, 'tarte-daim', 9, 'Tarte Daim', 3.50, 'Tarte au Daim',    { has_sauce: false, has_crudites: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🍰', allergens: ['gluten', 'lactose'] }),
-    mkItem(903, 'tiramisu',   9, 'Tiramisu',   3.50, 'Tiramisu maison',  { has_sauce: false, has_crudites: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🍰', allergens: ['gluten', 'lactose', 'oeuf'] }),
+    mkItem(901, 'glace',      9, 'Glace',      3.50, 'Glace artisanale', { has_sauce: false, has_crudites: false, has_supplements: false, has_menu_addon: false, is_vegetarian: true, time: 0, emoji: '🍦', allergens: ['lactose'] }),
+    mkItem(902, 'tarte-daim', 9, 'Tarte Daim', 3.50, 'Tarte au Daim',    { has_sauce: false, has_crudites: false, has_supplements: false, has_menu_addon: false, is_vegetarian: true, time: 0, emoji: '🍰', allergens: ['gluten', 'lactose'] }),
+    mkItem(903, 'tiramisu',   9, 'Tiramisu',   3.50, 'Tiramisu maison',  { has_sauce: false, has_crudites: false, has_supplements: false, has_menu_addon: false, is_vegetarian: true, time: 0, emoji: '🍰', allergens: ['gluten', 'lactose', 'oeuf'] }),
   ];
 
   // ====== BOISSONS (cat 10) — seeder : canettes 1,90€ ; Eau 1,00€ (Capri-Sun inchangé). ======
@@ -427,6 +515,14 @@
     mkItem(1006, 'orangina',    10, 'Orangina 33cl',       1.90, 'Orangina',             { has_sauce: false, has_crudites: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🍊' }),
     mkItem(1007, 'eau-plate',   10, 'Eau Plate 50cl',      1.00, 'Eau minérale',         { has_sauce: false, has_crudites: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '💧' }),
     mkItem(1008, 'capri-sun',   10, 'Capri-Sun',           1.50, 'Capri-Sun 20cl',       { has_sauce: false, has_crudites: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🧃' }),
+    // [GOAL-SYNC 2026-07-08] +7 boissons canon (fixture ids 119-125) @ 1,90€ — noms/desc EXACTS.
+    mkItem(1009, 'coca-cherry',   10, 'Coca Cherry 33cl',   1.90, 'Coca-Cola Cherry',     { has_sauce: false, has_crudites: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🥤' }),
+    mkItem(1010, 'tropico',       10, 'Tropico 33cl',       1.90, 'Tropico',              { has_sauce: false, has_crudites: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🌴' }),
+    mkItem(1011, 'ice-tea-peche', 10, 'Ice Tea Pêche 33cl', 1.90, 'Ice Tea saveur pêche', { has_sauce: false, has_crudites: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🥤' }),
+    mkItem(1012, 'fanta-citron',  10, 'Fanta Citron 33cl',  1.90, 'Fanta Citron',         { has_sauce: false, has_crudites: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🍋' }),
+    mkItem(1013, 'fuze-tea',      10, 'Fuze Tea 33cl',      1.90, 'Fuze Tea',             { has_sauce: false, has_crudites: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🥤' }),
+    mkItem(1014, 'hawai',         10, 'Hawaï 33cl',         1.90, 'Hawaï',                { has_sauce: false, has_crudites: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🌴' }),
+    mkItem(1015, 'perrier',       10, 'Perrier 33cl',       1.90, 'Perrier (eau gazeuse)', { has_sauce: false, has_crudites: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '💧' }),
   ];
 
   // ====== MENU ENFANT (cat 11) — seeder : 2 SKU @ 4,90€ (Nuggets / Burger), frites + Capri-Sun inclus. ======
@@ -434,13 +530,17 @@
     mkItem(1101, 'menu-enfant-nuggets', 11, 'Menu Enfant Nuggets', 4.90,
       '6 nuggets · Frites · Capri-Sun',
       { has_sauce: false, has_crudites: false, has_supplements: false, has_menu_addon: false, time: 8, emoji: '🧒', tags: ['ENFANT'] }),
-    mkItem(1102, 'menu-enfant-burger', 11, 'Menu Enfant Burger', 4.90,
-      'Burger · Frites · Capri-Sun',
+    // [GOAL-SYNC 2026-07-08] renommé 'Menu Enfant Burger'→'Menu Enfant Chicken Burger'
+    // (nom canonique EXACT — la résolution API au wireup se fait PAR NOM ; slug conservé).
+    mkItem(1102, 'menu-enfant-burger', 11, 'Menu Enfant Chicken Burger', 4.90,
+      'Chicken burger · Frites · Capri-Sun',
       { has_sauce: false, has_crudites: false, has_supplements: false, has_menu_addon: false, time: 8, emoji: '🧒', tags: ['ENFANT'] }),
   ];
 
   // -------------------------------------------------------------------------
-  // ALL ITEMS ([MENU-CANON 2026-06-26] — 31 produits sur 9 catégories)
+  // ALL ITEMS ([GOAL-SYNC 2026-07-08] — 38 produits sur 9 catégories ; les 4 SKU
+  //   « Frites Cheddar » canoniques restent servis par le wizard frites_style —
+  //   divergence STRUCTURELLE ACCEPTÉE, prix atteignables au centime, cf. CONTRACTS.md §5)
   // -------------------------------------------------------------------------
   const ITEMS = [
     ...SANDWICHS, ...GALETTE, ...BURGERS, ...TACOS,
@@ -453,15 +553,17 @@
   function priceFor(item, opts) {
     opts = opts || {};
     let total = item.price;
-    // Sauces : 1 gratuite, sup 0.50€ chacune au-delà
-    if (Array.isArray(opts.sauceIds) && opts.sauceIds.length > 1) {
-      total += (opts.sauceIds.length - 1) * 0.50;
-    }
+    // [GOAL-SYNC 2026-07-08] Multi-sauces +0,50€ SUPPRIMÉE : canon = 1 sauce max
+    // (min1/max1) sur sandwich/tacos/burger — aucun template ne la prévoit.
     // Suppléments génériques
     (opts.supplementIds || []).forEach(id => {
       const s = SUPPLEMENTS.find(x => x.id === id);
       if (s) total += s.price;
     });
+    // [GOAL-SYNC 2026-07-08] Viande supplémentaire +2,50€ par viande ajoutée (canon).
+    if (Array.isArray(opts.extraMeatIds)) {
+      total += opts.extraMeatIds.length * EXTRA_MEAT_PRICE;
+    }
     // Suppléments bols (gratiné +2€)
     (opts.bolSupplementIds || []).forEach(id => {
       const s = SUPPLEMENTS_BOLS.find(x => x.id === id);
@@ -481,10 +583,8 @@
       const fs = FRITES_STYLES.find(x => x.id === opts.fritesStyleId);
       if (fs) total += fs.price;
     }
-    // Sauce frites cascade
-    if (Array.isArray(opts.fritesSauceIds) && opts.fritesSauceIds.length > 1) {
-      total += (opts.fritesSauceIds.length - 1) * 0.50;
-    }
+    // [GOAL-SYNC 2026-07-08] Cascade sauce des frites du menu = instruction GRATUITE
+    // (canon) — l'ancienne surtaxe +0,50€/sauce supplémentaire est retirée.
     return total * (opts.qty || 1);
   }
 
@@ -509,6 +609,10 @@
     crudites: CRUDITES,
     supplements: SUPPLEMENTS,
     supplementsBols: SUPPLEMENTS_BOLS,
+    // [GOAL-SYNC 2026-07-08] nouveaux pools canon (mêmes noms d'export que le web).
+    bolSauces: BOL_SAUCES,
+    pains: PAINS,
+    extraMeatPrice: EXTRA_MEAT_PRICE,
     bolBases: BOL_BASES,
     formules: FORMULES,
     fritesStyles: FRITES_STYLES,

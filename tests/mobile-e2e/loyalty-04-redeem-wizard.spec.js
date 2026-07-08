@@ -1,52 +1,53 @@
-// Scenario 04 — Redeem unlocked reward via WizardRedeem 3-step
+// Scenario 04 — Redeem CONTINU points→€ (LoyaltyRedeemPanel, contrat §2)
+//
+// [GOAL-SYNC 2026-07-08] réécrit : le catalogue mock 8 rewards + WizardRedeem
+// (LC.dev.redeemReward) est REMPLACÉ par le modèle continu 100 pts = 1 €
+// (multiples de 100, POST /api/frontend/loyalty/redeem RÉEL, X-Idempotency-Key).
+// Invariants verrouillés ici (fallback local hors-ligne token invalide) :
+//   • règle « 100 pts = 1 € » affichée ; sélection par pas de 100, clampée au solde
+//   • CTA → phase confirmation → POST réel /loyalty/redeem (1 seul appel)
+//   • réponse non-2xx (session invalide / kill-switch 422 V1) ⇒ erreur FR propre
+//   • le client NE DÉBITE JAMAIS le solde localement (le backend est le SSOT)
 
 const { test, expect } = require('@playwright/test');
 const { waitForLoyaltyReady, gotoLoyaltyScreen } = require('./utils/waitForLoyaltyReady');
 
-test('S04 — Wizard 3-step redeem flow debits balance and writes history', async ({ page }) => {
+test('S04 — Panel redeem continu : pas de 100, confirm → POST réel, erreur FR, zéro débit client', async ({ page }) => {
   await waitForLoyaltyReady(page, { seedAccount: { balance: 347 } });
   await gotoLoyaltyScreen(page);
 
   await page.click('[data-testid="loyalty-tab-rewards"]');
-  await page.waitForTimeout(150);
+  await page.waitForSelector('[data-testid="redeem-panel"]', { timeout: 5000 });
 
-  // Reward id=1 (Frites M, 100 pts) — unlocked at balance 347
-  await page.click('[data-testid="reward-redeem-btn-1"]');
+  // Règle du modèle continu affichée
+  await expect(page.locator('[data-testid="redeem-rule"]')).toContainText('100 pts = 1 €');
 
-  // Wizard step 1
-  await page.waitForSelector('[data-testid="redeem-wizard"]', { timeout: 5_000 });
-  const wizardStep1 = page.locator('[data-testid="redeem-wizard"]');
-  await expect(wizardStep1).toHaveAttribute('data-step', '1');
-  await expect(page.getByText(/Tu reçois|Solde après/i).first()).toBeVisible();
-  await page.screenshot({ path: 'tests/e2e/__screenshots__/mobile-loyalty/04-wizard-step1.png' });
+  // Sélection par multiples de 100, clampée au solde (347 → max 300)
+  await expect(page.locator('[data-testid="redeem-points-value"]')).toContainText('100 pts');
+  await page.click('button[aria-label="Ajouter 100 points"]');
+  await page.click('button[aria-label="Ajouter 100 points"]');
+  await expect(page.locator('[data-testid="redeem-points-value"]')).toContainText('300 pts');
+  await expect(page.locator('button[aria-label="Ajouter 100 points"]')).toBeDisabled(); // plafond solde
+  await expect(page.locator('[data-testid="redeem-euro-value"]')).toContainText('3,00');
 
-  // Continuer → step 2
-  await page.click('[data-testid="redeem-next-btn"]');
-  await page.waitForTimeout(150);
-  await expect(wizardStep1).toHaveAttribute('data-step', '2');
-  await expect(page.getByText(/Appliquer maintenant/i)).toBeVisible();
-  await page.screenshot({ path: 'tests/e2e/__screenshots__/mobile-loyalty/04-wizard-step2.png' });
+  // CTA → confirmation → submit = exactement 1 POST /loyalty/redeem
+  const redeemPosts = [];
+  page.on('request', r => { if (/\/api\/frontend\/loyalty\/redeem/.test(r.url()) && r.method() === 'POST') redeemPosts.push(r.url()); });
+  await page.click('[data-testid="redeem-cta"]');
+  await page.click('[data-testid="redeem-confirm-btn"]');
+  await page.waitForSelector('[data-testid="redeem-error"]', { timeout: 15000 });
+  expect(redeemPosts.length).toBe(1);
 
-  // Apply now → step 3
-  await page.click('[data-testid="redeem-apply-now-btn"]');
-  await page.waitForTimeout(300);
-  await expect(wizardStep1).toHaveAttribute('data-step', '3');
-  await expect(page.locator('[data-testid="redeem-success"]')).toBeVisible();
-  await expect(page.locator('[data-testid="redeem-success-code"]')).toContainText(/^LCY-/);
-  await page.screenshot({ path: 'tests/e2e/__screenshots__/mobile-loyalty/04-wizard-step3.png' });
+  // Erreur FR propre (session mock invalide → non-2xx géré, pas de crash EN)
+  const errText = await page.locator('[data-testid="redeem-error"]').innerText();
+  expect(errText).not.toMatch(/Too Many|Unauthenticated|error|undefined/i);
+  expect(errText.length).toBeGreaterThan(8);
 
-  // Verify balance debited
+  // Le client n'a RIEN débité localement (backend = SSOT des points)
   const balance = await page.evaluate(() => window.LC.loyalty.account.balance);
-  expect(balance).toBe(247);
+  expect(balance).toBe(347);
+  const redeems = await page.evaluate(() => window.LC.loyalty.history.filter(h => h.type === 'redeem').length);
+  expect(redeems).toBe(0);
 
-  // History entry written
-  const lastEntry = await page.evaluate(() => window.LC.loyalty.history[0]);
-  expect(lastEntry.type).toBe('redeem');
-  expect(lastEntry.points).toBe(-100);
-  expect(lastEntry.reward_id).toBe(1);
-
-  // Close wizard
-  await page.click('[data-testid="redeem-close-btn"]');
-  await page.waitForTimeout(150);
-  await expect(page.locator('[data-testid="redeem-wizard"]')).toHaveCount(0);
+  await page.screenshot({ path: 'tests/e2e/__screenshots__/mobile-loyalty/04-redeem-panel.png' });
 });

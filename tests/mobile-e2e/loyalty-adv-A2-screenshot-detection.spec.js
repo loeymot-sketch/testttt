@@ -1,21 +1,25 @@
-// Adversarial A2 — iOS screenshot detection (Phase 11 native only)
-// PWA cannot detect screenshots. This test documents the limitation rather
-// than verifying mitigation — mitigation = short QR TTL (Phase 6 backend).
+// Adversarial A2 — détection screenshot impossible en PWA ; TTL = mitigation
+//
+// [GOAL-SYNC 2026-07-08] adapté au QR réel : le compte à rebours FR
+// (« Expire dans X min Y s ») est la mitigation visible — TTL serveur 300 s
+// (un screenshot du QR devient inutilisable après expiration du token signé).
 
 const { test, expect } = require('@playwright/test');
 const { waitForLoyaltyReady, gotoLoyaltyScreen } = require('./utils/waitForLoyaltyReady');
+const { seedRealAuth } = require('./utils/realAuth');
 
-test('A2 — V0 cannot detect screenshot; TTL countdown is the mitigation', async ({ page }) => {
+test('A2 — V0 ne détecte pas le screenshot ; le compte à rebours TTL est la mitigation', async ({ page, request }) => {
   await waitForLoyaltyReady(page);
+  await seedRealAuth(page, request);
   await gotoLoyaltyScreen(page);
 
-  // Verify countdown chip exists — shows TTL to user
+  // Countdown FR visible avec TTL serveur
   const countdown = page.locator('[data-testid="loyalty-qr-countdown"]');
   await expect(countdown).toBeVisible();
-  await expect(countdown).toContainText(/\d+:\d{2}/);
+  await expect(countdown).toContainText(/Expire dans/i);
+  await expect(countdown).toContainText(/min|s/);
 
-  // Document expectation : Phase 11 native build adds Capacitor App listener
-  // 'screenshotTaken' (iOS 14+). Until then, the 5-min TTL is the only defense.
+  // Le TTL vient du serveur (~300 s) — jamais un QR permanent
   const text = await countdown.innerText();
-  expect(text).toMatch(/Expire/i);
+  expect(text).toMatch(/Expire dans [0-5] min|Expire dans \d+ s/i);
 });

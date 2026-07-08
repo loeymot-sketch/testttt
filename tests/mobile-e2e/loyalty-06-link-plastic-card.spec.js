@@ -9,7 +9,10 @@ test('S06 — Plastic card link persists localStorage flag + shows badge', async
 
   // Initial state — "Lier carte plastique" CTA
   const linkBtn = page.locator('[data-testid="link-plastic-card-btn"]');
-  await expect(linkBtn).toContainText(/Lier carte plastique/i);
+  // [GOAL-SYNC 2026-07-08] le label contient un <br/> (« Lier carte<br/>plastique ») —
+  // innerText normalisé = « Lier carteplastique » : on matche sans exiger l'espace.
+  await expect(linkBtn).toContainText(/Lier carte\s*plastique/i);
+  await expect(linkBtn).toHaveAttribute('aria-label', /Lier carte plastique/i);
 
   await linkBtn.click();
   // ModalCardLink visible
@@ -34,5 +37,5 @@ test('S06 — Plastic card link persists localStorage flag + shows badge', async
 
   // After modal closes, CTA changes
   await page.waitForTimeout(500);
-  await expect(linkBtn).toContainText(/Carte liée/i);
+  await expect(linkBtn).toContainText(/Carte\s*liée/i);
 });

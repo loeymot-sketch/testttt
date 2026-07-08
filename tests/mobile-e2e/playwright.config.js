@@ -18,6 +18,10 @@ module.exports = defineConfig({
   // outside this dir for capture-dir parity with the rest of the test-e2e skill
   // — is reachable via this config (still :8081, still no globalSetup).
   testDir: path.resolve(__dirname, '../..'),
+  // [GOAL-SYNC 2026-07-08] testDir = racine repo ⇒ la découverte descendait dans
+  // .claude/worktrees/* (clones avec leur PROPRE node_modules → « Requiring
+  // @playwright/test second time »). Clones + deps explicitement ignorés.
+  testIgnore: ['**/.claude/**', '**/node_modules/**', '**/vendor/**'],
   testMatch: [
     'tests/mobile-e2e/*.spec.js',
     'tests/e2e/test-e2e-mobile-design-full-wave-*.spec.js',

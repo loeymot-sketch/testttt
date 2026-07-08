@@ -1,95 +1,115 @@
-// Le Cayenne — Loyalty data layer (V0 standalone)
+// Le Cayenne — Loyalty data layer
 //
 // ─────────────────────────────────────────────────────────────────────────
-// ⚠️  MOCK ONLY — alignment with backend SSOT
-// ─────────────────────────────────────────────────────────────────────────
-// This file aligns 1:1 with the backend LoyaltyController + LoyaltyTransaction
-// schema as it exists at HEAD 2026-05-10, with HONEST gaps documented:
+// [GOAL-SYNC 2026-07-08] Passage V0 mock → RÉEL fetch-first (contrat
+// reports/goal-web-app-sync/CONTRACTS.md §2) :
 //
-//   • REWARDS array : NO `loyalty_rewards` table or `/loyalty/rewards` route
-//     exists backend. This is pure mock. Phase 6 requires backend migration
-//     (B-11 in reports/review/mobile-loyalty-audit-2026-05-10/99_VERDICT.md §6).
+//   • CONFIG n'est PLUS hardcodée à 10 pt/€ : défauts = valeurs backend LIVE
+//     (points_per_euro=1, points_for_1_euro_discount=100, min_redeem_points=100)
+//     puis resynchronisée au chargement via LC.mobileApi.loyaltyConfig()
+//     (GET /api/frontend/loyalty/config, PUBLIC). Event 'lc:loyalty-changed'
+//     émis après sync → les écrans re-rendent.
+//   • balance/history : fetch-first (LC.mobileApi.profile() + loyaltyHistory())
+//     quand authentifié ; le mock ci-dessous ne sert QUE de fallback HORS LIGNE
+//     (bandeau « hors ligne » géré par les écrans via LC.loyalty.offline).
+//   • Catalogue REWARDS (8 récompenses fictives) SUPPRIMÉ — remplacé par le
+//     modèle CONTINU points→€ du backend (100 pts = 1 €, décision D6=A,
+//     aucune route /loyalty/rewards). Helpers : pointsToEuros / eurosToPoints /
+//     minRedeem / estimateEarn (FLOOR, aligné AwardLoyaltyPointsOnDelivery).
+//   • Mint QR mock ('FK:'+code + fausse signature SHA-256 locale) SUPPRIMÉ —
+//     le format legacy est REJETÉ backend (accept_legacy_plaintext=false).
+//     Le QR réel vient de POST /api/frontend/loyalty/qr via hooks/useLoyaltyQR.
 //
-//   • CONFIG.welcome_bonus, expires_after_days : NOT implemented backend.
-//     V0 mocks the granting client-side via `LC.dev.earnPoints`. Phase 6 needs
-//     listener on User::created or birthday cron.
-//
-//   • ACCOUNT.lifetime_earned/redeemed/next_threshold/progress_to_next/
-//     plastic_card_linked : these columns DO NOT exist on backend `users`
-//     table. They are derived/mock. Phase 6 computes lifetime_* from
-//     `/loyalty/history` aggregations.
-//
-//   • Idempotency : V0 dedupes per-device via localStorage Map
-//     (`LC.storage.idempotency`). Backend Phase 6 needs server-side
-//     `Idempotency-Key` header on `/loyalty/redeem` (B-02 in 99_VERDICT.md).
-//
-//   • QR format : V0 emits `FK:<loyalty_code>` (D-A per 99_VERDICT.md §1) +
-//     a separate `signature` field that is a SHA-256 mock (no HMAC secret).
-//     Phase 6 backend `/loyalty/qr/sign` will return HMAC-keyed signature
-//     (B-09 in 99_VERDICT.md §6).
-//
-// Backend endpoint mapping (cf. CONNECTION_PLAN.md §3) :
-//   config       ↔ GET  /api/v1/frontend/loyalty/config
-//   balance      ↔ GET  /api/v1/frontend/loyalty/balance
-//   history      ↔ GET  /api/v1/frontend/loyalty/history (paginated)
-//   redeem       ↔ POST /api/v1/frontend/loyalty/redeem (+ Idempotency-Key)
-//   rewards      ↔ GET  /api/v1/frontend/loyalty/rewards (DOES NOT EXIST yet)
-//   scan         ↔ POST /api/v1/frontend/loyalty/scan (kiosk:order ability)
+// Endpoints (vérifiés w1/by-spec/backend_loyalty-endpoints.json) :
+//   config   ↔ GET  /api/frontend/loyalty/config          (public)
+//   solde    ↔ GET  /api/profile (loyalty_points + loyalty_code — PAS /balance)
+//   history  ↔ GET  /api/frontend/loyalty/history?page=   (auth)
+//   qr       ↔ POST /api/frontend/loyalty/qr               (auth, token 'lqr.…')
+//   redeem   ↔ POST /api/frontend/loyalty/redeem           (auth + X-Idempotency-Key)
 // ─────────────────────────────────────────────────────────────────────────
 
 (function () {
   'use strict';
 
   // ───────────────────────────────────────────────────────────────────────
-  // CONFIG — backend defaults (admin-editable via Smartisan\Settings 'loyalty_setup')
-  // Phase 6 : fetch from GET /loyalty/config + cache 1h; for V0 we hardcode the
-  // backend defaults so the UI shows the correct numbers immediately.
+  // CONFIG — MUTABLE. Défauts = valeurs backend LIVE 2026-07-08 (settings
+  // group loyalty_setup vérifiées tinker : 1 / 100 / 100). Resynchronisée au
+  // runtime via refreshConfig() — plus jamais de taux hardcodé divergent.
   // ───────────────────────────────────────────────────────────────────────
   const CONFIG = {
-    earn_ratio: 10,              // 1 € spent = 10 points (backend default; admin-editable)
-    redeem_ratio: 100,           // 100 points = 1 € discount (backend default)
-    min_redeem_points: 100,      // backend kiosk default; controller default is 50 (drift documented)
-    expires_after_days: 365,     // V0 mock — backend has no expiry cron yet
-    welcome_bonus: 25,           // V0 mock — backend has no granting trigger yet
-    tiers: [100, 250, 500, 1000, 2000],   // matches KioskLoyaltyComponent line 336
+    earn_ratio: 1,               // 1 € dépensé = 1 pt (backend points_per_euro — LIVE)
+    points_per_euro: 1,          // alias nom API backend (consommé par screens-modals)
+    redeem_ratio: 100,           // 100 points = 1 € (backend points_for_1_euro_discount)
+    points_for_1_euro_discount: 100, // alias nom API backend
+    min_redeem_points: 100,      // minimum pour utiliser (valeur LIVE DB)
+    tiers: [100, 250, 500, 1000, 2000], // jalons d'affichage (backend loyalty_tiers)
+    // [GOAL-SYNC 2026-07-08] welcome_bonus : AUCUN trigger backend n'existe —
+    // 0 honnête (l'ancien 25 était un mensonge client-side). Champ conservé
+    // pour compat écrans ; à retirer avec la copy « pts offerts ».
+    welcome_bonus: 0,
   };
 
-  // ───────────────────────────────────────────────────────────────────────
-  // EARN_METHODS — catalog of 10 ways points can be credited
-  //
-  // V0 reality :
-  //   • 6 methods are partially wired backend (listener-driven on order
-  //     status change via AwardLoyaltyPointsOnDelivery.php).
-  //   • 4 methods (welcome, referral, birthday, plastic_card_scan as link
-  //     event) require backend triggers that do NOT exist yet (B-13 in
-  //     99_VERDICT.md §6).
-  //
-  // Schema mapping (cf. 99_VERDICT.md §1 DEC-03) :
-  //   • Order-rattached earns : type='earn', order_id set, source_surface variant.
-  //   • Account-level earns (welcome/birthday) : type='manual_add', order_id=NULL,
-  //     source_surface variant. Uses 'manual_add' because enum is fixed at
-  //     ['earn','redeem','manual_add','manual_deduct','expire'] and we cannot
-  //     add 'welcome_bonus' without an ALTER TABLE migration.
-  // ───────────────────────────────────────────────────────────────────────
-  /** @typedef {object} EarnMethod
-   *  @property {string} code             Stable client-side identifier
-   *  @property {'earn'|'manual_add'} type  loyalty_transactions.type enum value
-   *  @property {string} source_surface   loyalty_transactions.source_surface
-   *  @property {boolean} requires_order  true → order_id set; false → order_id=NULL
-   *  @property {'wired'|'mock'|'planned'} status  wiring status backend
-   *  @property {string} description_template  String used for transactions.description
+  /** [GOAL-SYNC 2026-07-08] Applique une réponse GET /loyalty/config (clés backend). */
+  function applyBackendConfig(c) {
+    if (!c || typeof c !== 'object') return CONFIG;
+    const per = Number(c.points_per_euro);
+    const ratio = Number(c.points_for_1_euro_discount);
+    const min = Number(c.min_redeem_points);
+    if (isFinite(per) && per > 0) { CONFIG.earn_ratio = per; CONFIG.points_per_euro = per; }
+    if (isFinite(ratio) && ratio > 0) { CONFIG.redeem_ratio = ratio; CONFIG.points_for_1_euro_discount = ratio; }
+    if (isFinite(min) && min >= 0) CONFIG.min_redeem_points = min;
+    // tiers backend = '100,250,500,1000,2000' (string) ou array
+    let tiers = c.tiers;
+    if (typeof tiers === 'string') tiers = tiers.split(',').map(function (t) { return parseInt(t, 10); });
+    if (Array.isArray(tiers)) {
+      tiers = tiers.filter(function (t) { return isFinite(t) && t > 0; });
+      if (tiers.length) CONFIG.tiers = tiers;
+    }
+    return CONFIG;
+  }
+
+  // Event notifier — no-op dans les sandbox Node (tests vm sans CustomEvent).
+  function emitChanged(detail) {
+    try {
+      if (typeof window !== 'undefined' && window.dispatchEvent && typeof CustomEvent === 'function') {
+        window.dispatchEvent(new CustomEvent('lc:loyalty-changed', { detail: detail || {} }));
+      }
+    } catch (e) { /* environnement sans events — silencieux */ }
+  }
+
+  function api() {
+    return (window.LC && window.LC.mobileApi) || null;
+  }
+
+  /**
+   * [GOAL-SYNC 2026-07-08] Resynchronise CONFIG depuis le backend (endpoint
+   * PUBLIC). Jamais bloquant : en cas d'échec réseau on garde les défauts LIVE.
    */
+  function refreshConfig() {
+    const a = api();
+    if (!a || typeof a.loyaltyConfig !== 'function') return Promise.resolve(CONFIG);
+    return a.loyaltyConfig()
+      .then(function (c) {
+        applyBackendConfig(c);
+        emitChanged({ type: 'config' });
+        return CONFIG;
+      })
+      .catch(function () { return CONFIG; });
+  }
+
+  // ───────────────────────────────────────────────────────────────────────
+  // EARN_METHODS — documentation des surfaces de crédit (inchangé, informatif).
+  // EARN réel = 100% backend (floor(total TTC × rate) au statut PREPARED/
+  // DELIVERED — AwardLoyaltyPointsOnDelivery). Le client N'AJOUTE JAMAIS de
+  // points ; il envoie loyalty_code dans placeOrder.
+  // ───────────────────────────────────────────────────────────────────────
   const EARN_METHODS = Object.freeze([
-    { code: 'purchase_app',         type: 'earn',        source_surface: 'mobile',                 requires_order: true,  status: 'wired',   description_template: 'Commande #{serial}' },
-    { code: 'purchase_kiosk_phone', type: 'earn',        source_surface: 'kiosk',                  requires_order: true,  status: 'wired',   description_template: 'Commande #{serial}' },
-    { code: 'purchase_pos_phone',   type: 'earn',        source_surface: 'pos',                    requires_order: true,  status: 'wired',   description_template: 'Commande #{serial}' },
-    { code: 'qr_scan_kiosk',        type: 'earn',        source_surface: 'kiosk',                  requires_order: true,  status: 'wired',   description_template: 'Commande #{serial}' },
-    { code: 'qr_scan_pos',          type: 'earn',        source_surface: 'pos',                    requires_order: true,  status: 'wired',   description_template: 'Commande #{serial}' },
-    { code: 'plastic_card_scan',    type: 'earn',        source_surface: 'kiosk',                  requires_order: true,  status: 'wired',   description_template: 'Commande #{serial} (carte)' },
-    { code: 'welcome_bonus',        type: 'manual_add',  source_surface: 'mobile_welcome',         requires_order: false, status: 'mock',    description_template: 'Bienvenue · Bonus inscription' },
-    { code: 'manual_cashier',       type: 'manual_add',  source_surface: 'admin',                  requires_order: false, status: 'wired',   description_template: 'Ajout manuel par staff' },
-    { code: 'referral',             type: 'earn',        source_surface: 'mobile_referral_giver', requires_order: true,  status: 'planned', description_template: 'Parrainage · {referee_first_name}' },
-    { code: 'birthday',             type: 'manual_add',  source_surface: 'mobile_birthday',        requires_order: false, status: 'planned', description_template: 'Anniversaire · +{N} pts' },
+    { code: 'purchase_app',         type: 'earn',        source_surface: 'mobile', requires_order: true,  status: 'wired',   description_template: 'Commande #{serial}' },
+    { code: 'purchase_kiosk_phone', type: 'earn',        source_surface: 'kiosk',  requires_order: true,  status: 'wired',   description_template: 'Commande #{serial}' },
+    { code: 'purchase_pos_phone',   type: 'earn',        source_surface: 'pos',    requires_order: true,  status: 'wired',   description_template: 'Commande #{serial}' },
+    { code: 'qr_scan_kiosk',        type: 'earn',        source_surface: 'kiosk',  requires_order: true,  status: 'wired',   description_template: 'Commande #{serial}' },
+    { code: 'qr_scan_pos',          type: 'earn',        source_surface: 'pos',    requires_order: true,  status: 'wired',   description_template: 'Commande #{serial}' },
+    { code: 'manual_cashier',       type: 'manual_add',  source_surface: 'admin',  requires_order: false, status: 'wired',   description_template: 'Ajout manuel par staff' },
   ]);
 
   function findEarnMethod(code) {
@@ -97,141 +117,121 @@
   }
 
   // ───────────────────────────────────────────────────────────────────────
-  // REWARDS — V0 MOCK CATALOG
-  //
-  // ⚠️ NO `loyalty_rewards` TABLE OR `/loyalty/rewards` ROUTE EXISTS BACKEND.
-  // Mobile rewards array is 100% mock. Redeem flow calls POST /loyalty/redeem
-  // with `{code, points}` — backend has no awareness of which "reward" was
-  // chosen, just decrements the points. Reward catalog must be re-enforceable
-  // server-side in Phase 6 (B-11 in 99_VERDICT.md §6).
-  //
-  // Until then : reward_id is local-state only. POS operator who honors the
-  // reward must visually check the redemption screen displays a reward name —
-  // there is NO server-side reward_id audit chain.
+  // Modèle points→€ — helpers PURS (contrat §2 : 100 pts = 1 €, min 100,
+  // redeem = multiple de 100 obligatoire sur POST /loyalty/redeem).
   // ───────────────────────────────────────────────────────────────────────
-  // [ANTI-FICTION HEAL 2026-05-18 — Impl D Round 2] payload item_id/category_id
-  // values now point to canonical menu.js. All fictional pre-reset ids were purged
-  // and replaced with canon ones. Fixed reward 5 category_id mismatch
-  // (2=Galette ≠ Burger label → 4=Burgers).
-  const REWARDS = Object.freeze([
-    { id: 1, name: 'Petite Frites offerte',      points_cost: 100,  type: 'free_item',         payload: { item_id: 701 },                       icon: '🍟' },
-    { id: 2, name: '−1 € de réduction',          points_cost: 100,  type: 'discount',          payload: { amount: 1.00 },                       icon: '🎁' },
-    { id: 3, name: '−2,50 € sur ta commande',    points_cost: 250,  type: 'discount',          payload: { amount: 2.50 },                       icon: '🎁' },
-    { id: 4, name: '−5 € sur ta commande',       points_cost: 500,  type: 'discount',          payload: { amount: 5.00 },                       icon: '🎁' },
-    { id: 5, name: 'Burger gratuit (au choix)',  points_cost: 1000, type: 'free_item',         payload: { category_id: 4 },                     icon: '🍔' },
-    { id: 6, name: 'Tacos M offert',             points_cost: 1500, type: 'free_item',         payload: { item_id: 501 },                       icon: '🌮' },
-    { id: 7, name: 'Cayenne −50 %',              points_cost: 2000, type: 'percent_discount',  payload: { item_id: 101, percent: 50 },          icon: '🌶️' },
-    { id: 8, name: 'Repas complet à 1 €',        points_cost: 3000, type: 'flat_price',        payload: { amount: 1.00 },                       icon: '🎉' },
-  ]);
+
+  /** € équivalents d'un solde de points (affichage : 347 → 3.47). */
+  function pointsToEuros(points) {
+    if (!isFinite(points) || points <= 0) return 0;
+    return Math.round((points / CONFIG.redeem_ratio) * 100) / 100;
+  }
+
+  /** Points nécessaires pour un montant € (2,00 € → 200 pts). */
+  function eurosToPoints(euros) {
+    if (!isFinite(euros) || euros <= 0) return 0;
+    return Math.round(euros * CONFIG.redeem_ratio);
+  }
+
+  /** Minimum de points pour utiliser (valeur config backend). */
+  function minRedeem() {
+    return CONFIG.min_redeem_points;
+  }
+
+  /**
+   * Points échangeables MAINTENANT : plus grand multiple de redeem_ratio ≤ solde,
+   * 0 sous le minimum (le backend REJETTE tout montant non multiple — 400).
+   */
+  function redeemablePoints(balance) {
+    if (!isFinite(balance) || balance < CONFIG.min_redeem_points) return 0;
+    return Math.floor(balance / CONFIG.redeem_ratio) * CONFIG.redeem_ratio;
+  }
+
+  /**
+   * Estimation earn pour un total € — FLOOR, aligné backend
+   * (AwardLoyaltyPointsOnDelivery : floor(total × rate) ; 12,50 € → 12 pts).
+   * ⚠ Estimation d'affichage : le crédit RÉEL arrive au statut PREPARED/DELIVERED.
+   */
+  function estimateEarn(euros) {
+    if (!isFinite(euros) || euros <= 0) return 0;
+    return Math.floor(euros * CONFIG.earn_ratio);
+  }
+
+  // Compat : anciens appels pointsToDiscount → même sémantique que pointsToEuros.
+  function pointsToDiscount(points) {
+    return pointsToEuros(points);
+  }
+
+  /**
+   * Progression vers le prochain jalon (CONFIG.tiers) — remplace l'ancien
+   * progressToNext basé sur le catalogue REWARDS supprimé. target garde la
+   * shape {points_cost, name, icon} consommée par les écrans.
+   */
+  function tierTarget(tier) {
+    return {
+      points_cost: tier,
+      name: '−' + (tier / CONFIG.redeem_ratio).toFixed(2).replace('.', ',') + ' € en caisse',
+      icon: '🎁',
+    };
+  }
+
+  function progressToNext(balance) {
+    const tiers = CONFIG.tiers || [];
+    const bal = isFinite(balance) ? balance : 0;
+    for (let i = 0; i < tiers.length; i++) {
+      if (bal < tiers[i]) {
+        return {
+          pct: Math.round((bal / tiers[i]) * 100),
+          remaining: tiers[i] - bal,
+          target: tierTarget(tiers[i]),
+        };
+      }
+    }
+    const last = tiers.length ? tiers[tiers.length - 1] : CONFIG.min_redeem_points;
+    return { pct: 100, remaining: 0, target: tierTarget(last) };
+  }
 
   // ───────────────────────────────────────────────────────────────────────
-  // ACCOUNT — V0 mock; Phase 6 reads from `users.loyalty_points` + history aggregates
-  //
-  // Fields with MOCK ONLY comments are NOT in the backend `users` schema.
+  // [GOAL-SYNC 2026-07-08] Compat REWARDS — catalogue SUPPRIMÉ (aucune table
+  // loyalty_rewards backend, modèle points→€ fait foi). Stubs conservés le
+  // temps que les écrans migrent (WizardRedeem/dev-helpers null-guardent déjà).
+  // ───────────────────────────────────────────────────────────────────────
+  const REWARDS = Object.freeze([]);
+  function rewardById() { return null; }
+  function unlockedRewards() { return []; }
+  function nextRewardForBalance() { return null; }
+
+  // ───────────────────────────────────────────────────────────────────────
+  // ACCOUNT/HISTORY — fallback HORS LIGNE UNIQUEMENT.
+  // [GOAL-SYNC 2026-07-08] re-dérivé à 1 pt/€ FLOOR (parité backend) sur les
+  // commandes livrées de orders.js. Plus de welcome bonus (+25) ni de redeem
+  // fictif « Burger gratuit » — triggers/catalogue inexistants backend.
   // ───────────────────────────────────────────────────────────────────────
   const DEFAULT_ACCOUNT = {
     user_id: 12345,
     member_number: 'FK-12345',
-    loyalty_code: 'A1B2C3D4',         // 8 alphanum — matches users.loyalty_code shape
-    balance: 347,                      // ↔ users.loyalty_points
-    lifetime_earned: 1247,             // MOCK ONLY — compute from history Phase 6
-    lifetime_redeemed: 900,            // MOCK ONLY — compute from history Phase 6
-    plastic_card_linked: false,        // MOCK ONLY — no backend mechanism
-    consent_status: 'opted_in',        // ↔ loyalty_consents (per-user audit trail)
-    member_since: '2026-04-20',        // MOCK ONLY — derive from users.created_at Phase 6
-    last_qr_preference: 'qr',          // 'qr' | 'barcode' — UI preference, persisted localStorage
+    loyalty_code: 'A1B2C3D4',         // 8 alphanum — shape users.loyalty_code
+    balance: 62,                       // Σ earns ci-dessous (floor 1 pt/€)
+    lifetime_earned: 62,               // dérivé de l'historique
+    lifetime_redeemed: 0,
+    plastic_card_linked: false,
+    consent_status: 'opted_in',
+    member_since: '2026-04-20',
+    last_qr_preference: 'qr',
   };
 
-  // [ANTI-FICTION HEAL 2026-05-18 — Impl D Round 2] descriptions now reference
-  // canonical menu.js item names matching the order summaries in mobile/data/orders.js.
-  // All previously fictional product references were purged.
-  // [LOYALTY-RATIO COHERENCE 2026-07-07] order-linked `earn` entries derived from the
-  // matching order total in orders.js at earn_ratio 10 pt/€ (CONFIG.earn_ratio) so the
-  // loyalty history tab and the orders list agree. Flat/bonus + redeem rows unchanged.
   const DEFAULT_HISTORY = [
-    { id: 1001, date: '2026-05-08', type: 'earn',       points: +247,  description: 'Suprême · Tacos L · Bol Riz',          order_id: 'C-1234', source_surface: 'mobile' },
-    { id: 1002, date: '2026-05-05', type: 'earn',       points: +133,  description: 'Cayenne · Grande Frites',              order_id: 'C-1212', source_surface: 'mobile' },
-    { id: 1003, date: '2026-05-02', type: 'redeem',     points: -1000, description: 'Burger gratuit (Chicken Burger)',      order_id: null,     source_surface: 'mobile', reward_id: 5 },
-    { id: 1004, date: '2026-04-30', type: 'earn',       points: +168,  description: 'Galette Cayenne · Bol Riz',            order_id: 'C-1190', source_surface: 'kiosk' },
-    { id: 1005, date: '2026-04-28', type: 'earn',       points: +70,   description: 'Suprême',                              order_id: 'C-1180', source_surface: 'pos' },
-    { id: 1006, date: '2026-04-24', type: 'earn',       points: +93,   description: 'Cayenne · Coca-Cola',                  order_id: 'C-1142', source_surface: 'kiosk' },
-    { id: 1007, date: '2026-04-20', type: 'manual_add', points: +25,   description: 'Bienvenue · Bonus inscription',        order_id: null,     source_surface: 'mobile_welcome' },
+    { id: 1001, date: '2026-05-09', type: 'earn', points: +13, description: 'Cayenne · Grande Frites',        order_id: 'C-1212', source_surface: 'mobile' },
+    { id: 1002, date: '2026-05-09', type: 'earn', points: +12, description: 'Chicken Burger × 2 · Frites',    order_id: 'C-1208', source_surface: 'mobile' },
+    { id: 1003, date: '2026-04-30', type: 'earn', points: +16, description: 'Galette Cayenne · Bol Riz',      order_id: 'C-1190', source_surface: 'kiosk' },
+    { id: 1004, date: '2026-04-24', type: 'earn', points: +9,  description: 'Cayenne · Coca-Cola',            order_id: 'C-1142', source_surface: 'kiosk' },
+    { id: 1005, date: '2026-04-20', type: 'earn', points: +12, description: 'Terminator · Tarte Daim',        order_id: 'C-1100', source_surface: 'pos' },
   ];
 
   // ───────────────────────────────────────────────────────────────────────
-  // QR SIGNING — V0 mock with forward-compatible structure
-  //
-  // V0 returns `{ payload, signature, expires_at }` where:
-  //   - payload = "FK:<loyalty_code>"    (the actual QR rendered string)
-  //   - signature = SHA-256(payload|expires_at) hex truncated  (mock, no HMAC secret)
-  //   - expires_at = unix seconds, now+300 (5min TTL)
-  //
-  // V0 backend `scan()` strips the `FK:` prefix and matches loyalty_code — IGNORES
-  // signature. Phase 6 backend `/loyalty/qr/sign` returns HMAC keyed by app.key
-  // (B-09 in 99_VERDICT.md §6). The wire shape stays identical.
-  //
-  // The async crypto.subtle vs btoa choice (per Agent-2 §4) is intentional:
-  // forward-compat with the eventual real HMAC (also async via fetch).
-  // ───────────────────────────────────────────────────────────────────────
-  async function generateSignedQR(loyaltyCode) {
-    const code = (loyaltyCode || DEFAULT_ACCOUNT.loyalty_code || '').toUpperCase();
-    const ts = Math.floor(Date.now() / 1000);
-    const exp = ts + 300; // 5 min TTL
-    const payload = 'FK:' + code;
-
-    // V0 mock signature — NOT cryptographically secure (no secret key).
-    // Only exercises the wire format. Phase 6 backend signs with HMAC(app.key).
-    const data = new TextEncoder().encode(code + '|' + exp);
-    let signature;
-    try {
-      const buf = await crypto.subtle.digest('SHA-256', data);
-      signature = Array.from(new Uint8Array(buf))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('')
-        .slice(0, 32);  // 128-bit truncated for shorter QR payload (mock-only)
-    } catch (e) {
-      // Fallback for environments without crypto.subtle (very old browsers, ssr)
-      signature = String(code.length * exp).padStart(32, '0').slice(0, 32);
-    }
-
-    return { payload, signature, expires_at: exp };
-  }
-
-  // ───────────────────────────────────────────────────────────────────────
-  // Helpers
-  // ───────────────────────────────────────────────────────────────────────
-  function nextRewardForBalance(balance) {
-    return REWARDS.find(r => r.points_cost > balance) || REWARDS[REWARDS.length - 1];
-  }
-
-  function unlockedRewards(balance) {
-    return REWARDS.filter(r => balance >= r.points_cost);
-  }
-
-  function rewardById(id) {
-    return REWARDS.find(r => r.id === id) || null;
-  }
-
-  function pointsToDiscount(points) {
-    return points / CONFIG.redeem_ratio;
-  }
-
-  function progressToNext(balance) {
-    const next = nextRewardForBalance(balance);
-    if (!next || balance >= next.points_cost) return { pct: 100, remaining: 0, target: next };
-    return {
-      pct: Math.round((balance / next.points_cost) * 100),
-      remaining: next.points_cost - balance,
-      target: next,
-    };
-  }
-
-  // ───────────────────────────────────────────────────────────────────────
-  // Live state — hydrated from localStorage if present, otherwise defaults
-  //
-  // Mobile components read `LC.loyalty.account` and `LC.loyalty.history`.
-  // Mutations go through `LC.storage.setLoyalty(...)` (storage.js) which
-  // updates this in-memory live state.
+  // Live state — hydraté localStorage puis ÉCRASÉ par le serveur dès que
+  // possible (fetch-first). live.offline=true ⇒ les écrans affichent le
+  // bandeau hors-ligne et les données ci-dessus (fallback).
   // ───────────────────────────────────────────────────────────────────────
   function hydrate() {
     const persisted = window.LC && window.LC.storage && window.LC.storage.getLoyalty
@@ -250,6 +250,64 @@
   }
 
   const live = hydrate();
+  live.offline = false;      // true après un échec réseau (fallback mock affiché)
+  live.source = 'mock';      // 'mock' | 'server'
+
+  /**
+   * [GOAL-SYNC 2026-07-08] Fetch-first RÉEL : GET /api/profile (solde +
+   * loyalty_code) + GET /loyalty/history. Fallback mock UNIQUEMENT hors ligne.
+   * Émet 'lc:loyalty-changed' dans tous les cas (les écrans re-rendent).
+   */
+  function refreshFromServer() {
+    const a = api();
+    if (!a || typeof a.profile !== 'function' || !a.isAuthed || !a.isAuthed()) {
+      return Promise.resolve(live); // non connecté : état local, pas un mode offline
+    }
+    return Promise.all([
+      a.profile(),
+      (typeof a.loyaltyHistory === 'function' ? a.loyaltyHistory(1).catch(function () { return null; }) : Promise.resolve(null)),
+    ]).then(function (results) {
+      const p = results[0] || {};
+      const h = results[1];
+      const rows = (h && (h.data || h.rows)) || (Array.isArray(h) ? h : []);
+      const history = (Array.isArray(rows) ? rows : []).map(function (row, i) {
+        return {
+          id: row.id != null ? row.id : (9000 + i),
+          date: String(row.date || row.created_at || '').slice(0, 10),
+          type: row.type || 'earn',
+          points: Number(row.points) || 0,
+          description: row.description || '',
+          order_id: row.order_id != null ? row.order_id : null,
+          source_surface: row.source_surface || 'mobile',
+          balance_after: row.balance_after != null ? Number(row.balance_after) : undefined,
+        };
+      });
+      const earned = history.reduce(function (s, r) { return s + (r.points > 0 ? r.points : 0); }, 0);
+      const redeemed = history.reduce(function (s, r) { return s + (r.points < 0 ? -r.points : 0); }, 0);
+      live.account = Object.assign({}, live.account, {
+        user_id: p.id != null ? p.id : live.account.user_id,
+        member_number: p.id != null ? ('FK-' + p.id) : live.account.member_number,
+        loyalty_code: p.loyalty_code || live.account.loyalty_code,
+        balance: p.loyalty_points != null ? Number(p.loyalty_points) : live.account.balance,
+        lifetime_earned: earned,     // dérivé de la page d'historique (approx. serveur)
+        lifetime_redeemed: redeemed,
+        member_since: (p.created_at ? String(p.created_at).slice(0, 10) : live.account.member_since),
+      });
+      if (history.length) live.history = history;
+      live.offline = false;
+      live.source = 'server';
+      if (window.LC.storage && window.LC.storage.setLoyalty) {
+        window.LC.storage.setLoyalty({ account: live.account, history: live.history });
+      }
+      emitChanged({ type: 'server-sync' });
+      return live;
+    }).catch(function (e) {
+      // HORS LIGNE (ou API down) : on garde le fallback local, flag pour bandeau.
+      live.offline = true;
+      emitChanged({ type: 'offline', error: (e && e.kind) || 'network' });
+      return live;
+    });
+  }
 
   // -------------------------------------------------------------------------
   // EXPORT
@@ -257,13 +315,29 @@
   window.LC = window.LC || {};
   window.LC.loyalty = {
     config: CONFIG,
-    rewards: REWARDS,
+    applyBackendConfig,
+    refreshConfig,
+    refreshFromServer,
     earnMethods: EARN_METHODS,
     findEarnMethod,
+    // Modèle points→€ (contrat §2) :
+    pointsToEuros,
+    eurosToPoints,
+    minRedeem,
+    redeemablePoints,
+    estimateEarn,
+    pointsToDiscount,       // alias compat
+    progressToNext,         // jalons CONFIG.tiers
+    // Compat REWARDS supprimé (stubs vides — cf. bloc ci-dessus) :
+    rewards: REWARDS,
     rewardById,
+    unlockedRewards,
+    nextRewardForBalance,
     // Live state — bind components to these:
     get account() { return live.account; },
     get history() { return live.history; },
+    get offline() { return live.offline; },
+    get source() { return live.source; },
     // Mutations — go through these to ensure persistence:
     _replaceAccount(newAccount) {
       live.account = Object.assign({}, live.account, newAccount);
@@ -281,21 +355,28 @@
       const fresh = hydrate();
       live.account = fresh.account;
       live.history = fresh.history;
+      live.source = 'mock';
     },
-    // Defaults exposed for tests + dev-helpers reset:
+    // Defaults exposés pour tests + dev-helpers reset:
     _defaultAccount: DEFAULT_ACCOUNT,
     _defaultHistory: DEFAULT_HISTORY,
-    // QR + helpers:
-    generateSignedQR,
-    nextRewardForBalance,
-    unlockedRewards,
-    pointsToDiscount,
-    progressToNext,
   };
+  // [GOAL-SYNC 2026-07-08] generateSignedQR / generateMockQR SUPPRIMÉS —
+  // format 'FK:<code>' REJETÉ backend. QR réel = hooks/useLoyaltyQR
+  // (POST /api/frontend/loyalty/qr → token 'lqr.…' TTL 300 s).
 
-  // Backward-compat alias (some older callers still use this name) — emits the
-  // new shape but as a string (legacy callers won't care about the signature).
-  window.LC.loyalty.generateMockQR = function legacyGenerateMockQR(userIdIgnored) {
-    return 'FK:' + (live.account.loyalty_code || DEFAULT_ACCOUNT.loyalty_code);
-  };
+  // [GOAL-SYNC 2026-07-08] Fetch-first au chargement navigateur (jamais dans
+  // les sandbox de test Node : window.document absent). Config = public ;
+  // solde/historique seulement si connecté.
+  if (typeof window !== 'undefined' && window.document && typeof fetch === 'function') {
+    const kick = function () {
+      refreshConfig();
+      refreshFromServer();
+    };
+    if (window.document.readyState === 'loading') {
+      window.document.addEventListener('DOMContentLoaded', kick);
+    } else {
+      setTimeout(kick, 0);
+    }
+  }
 })();

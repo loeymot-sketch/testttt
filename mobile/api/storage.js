@@ -53,6 +53,11 @@
     const a = getAuth();
     return !!(a && a.token);
   }
+  // [GOAL-SYNC 2026-07-08] Helper token — consommé par api/client.js (Bearer Sanctum kiosk:order).
+  function getToken() {
+    const a = getAuth();
+    return (a && a.token) || null;
+  }
 
   // ---- Cart ----
   function getCart() {
@@ -191,7 +196,7 @@
   window.LC = window.LC || {};
   window.LC.storage = {
     set, get, remove,
-    setAuth, getAuth, clearAuth, isAuthenticated,
+    setAuth, getAuth, clearAuth, isAuthenticated, getToken,
     getCart, setCart, clearCart,
     markOnboardingSeen, hasSeenOnboarding,
     // Loyalty:

@@ -1,38 +1,37 @@
-// Scenario 02 — Earn via phone at kiosk → ModalPointsGain
-// Status : testable-now (partial) — ModalPointsGain exists in screens-modals.jsx
-// but the auto-trigger via CustomEvent 'lc:kiosk-earn' is not wired in App
-// component yet. We verify the modal renders correctly when invoked via go('gain').
+// Scenario 02 — Earn via phone at kiosk (fallback local hors-ligne)
+//
+// [GOAL-SYNC 2026-07-08] réécrit pour le modèle RÉEL : `welcome_bonus` a été
+// RETIRÉ des EARN_METHODS (aucun trigger backend n'existe — contrat §2, earn
+// = floor(total × 1 pt/€) crédité par le backend au statut PREPARED/DELIVERED).
+// Ce spec verrouille la mécanique EARN LOCALE hors-ligne (source kiosk wired
+// 'purchase_kiosk_phone') : crédit + entrée d'historique avec la bonne surface.
+// L'earn réel bout-en-bout est couvert par la commande réelle du smoke
+// (reports/goal-web-app-sync/captures-mobile).
 
 const { test, expect } = require('@playwright/test');
 const { waitForLoyaltyReady } = require('./utils/waitForLoyaltyReady');
 
-test('S02 — ModalPointsGain renders confetti + balance gain CTA', async ({ page }) => {
+test('S02 — Earn kiosk (source wired) crédite le solde local + entrée historique kiosk', async ({ page }) => {
   await waitForLoyaltyReady(page);
-  // Trigger ModalPointsGain by dispatching a click on something that opens it.
-  // App component listens on go('gain') via the cart→pay→gain flow. For test
-  // simplicity we synthesize directly via React state if exposed, OR we navigate
-  // through cart. Simplest: emit the gain via timed dispatch through global hook.
-  // Verify modal renders correctly when forced into the gain state.
+
+  // welcome_bonus n'existe PLUS — earnPoints doit le refuser proprement (null).
+  const welcomeRejected = await page.evaluate(() => window.LC.dev.earnPoints(25, 'welcome_bonus') === null);
+  expect(welcomeRejected).toBe(true);
+
+  const before = await page.evaluate(() => window.LC.loyalty.account.balance);
   await page.evaluate(() => {
-    // Force-set the modal state by simulating the pay→gain flow tail.
-    // Since App.state isn't exposed externally, we trigger by clicking the
-    // ModalPointsGain trigger if present, or skip the modal assertion and
-    // verify the home greeting + welcome bonus seed.
-    if (window.LC.dev) {
-      window.LC.dev.earnPoints(25, 'welcome_bonus');
-    }
+    window.LC.dev.earnPoints(12, 'purchase_kiosk_phone', { order_id: 'C-9012', serial: 9012 });
   });
   await page.waitForTimeout(150);
 
   const balance = await page.evaluate(() => window.LC.loyalty.account.balance);
-  // Initial seed 347 + 25 welcome = 372
-  expect(balance).toBeGreaterThanOrEqual(372);
+  expect(balance).toBe(before + 12);
 
-  // Welcome bonus history entry exists
-  const hasWelcome = await page.evaluate(() => {
-    return window.LC.loyalty.history.some(h => (h.source_surface || '').includes('welcome'));
+  // Entrée d'historique avec la surface kiosk
+  const hasKioskEntry = await page.evaluate(() => {
+    return window.LC.loyalty.history.some(h => h.type === 'earn' && h.points === 12 && h.source_surface === 'kiosk');
   });
-  expect(hasWelcome).toBe(true);
+  expect(hasKioskEntry).toBe(true);
 
-  await page.screenshot({ path: 'tests/e2e/__screenshots__/mobile-loyalty/02-welcome-bonus-applied.png' });
+  await page.screenshot({ path: 'tests/e2e/__screenshots__/mobile-loyalty/02-kiosk-earn-applied.png' });
 });

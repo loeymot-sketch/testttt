@@ -1,26 +1,31 @@
-// Le Cayenne — Orders mock data (V0 standalone)
+// Le Cayenne — Orders data layer
 //
-// Mapping backend (cf. CONNECTION_PLAN.md) :
-//   active orders   ↔ GET  /api/v1/frontend/order?status=in-progress
-//   history         ↔ GET  /api/v1/frontend/order?status=delivered
-//   detail          ↔ GET  /api/v1/frontend/order/show/{id}
-//   create          ↔ POST /api/v1/frontend/order (idempotency-key header)
-//   reorder         ↔ POST /api/v1/frontend/order avec composition_snapshot
+// [GOAL-SYNC 2026-07-08] Passage V0 mock → RÉEL fetch-first (contrat §7) :
+//   • active/history réels via LC.mobileApi.orderHistory() (GET /api/frontend/order,
+//     Bearer) quand connecté ; mapping OrderResource backend → shape mobile.
+//   • Le mock ci-dessous ne sert QUE de fallback HORS LIGNE / non connecté
+//     (bandeau géré par les écrans via LC.orders.offline).
+//   • Points re-dérivés à 1 pt/€ FLOOR (parité backend AwardLoyaltyPointsOnDelivery,
+//     valeur LIVE points_per_euro=1) — fini le 10 pt/€ fantôme.
 //
-// Status values alignés App\Enums\OrderStatus : in_progress, ready, delivered, cancelled.
+// Mapping backend :
+//   liste   ↔ GET  /api/frontend/order            (OrderResource : status numérique)
+//   detail  ↔ GET  /api/frontend/order/show/{id}
+//   create  ↔ POST /api/frontend/order            (via LC.mobileApi.placeOrder)
+//
+// Statuts backend (App\Enums\OrderStatus) : 1 PENDING, 4 ACCEPT, 7 PREPARING,
+// 8 PREPARED, 10 OUT_FOR_DELIVERY, 13 DELIVERED, 16 CANCELED, 19 REJECTED, 22 RETURNED.
 //
 // [ANTI-FICTION HEAL 2026-05-18 · MENU-CANON 2026-06-26] All `item_id` values and
-// names are canonical members of `mobile/data/menu.js` (Le Cayenne canon — 31 items,
-// SSOT = database/seeders/OwnerMenuUpdate20260623Seeder.php). Every fictional pre-reset
-// product name/id has been purged. Invariants enforced by tests/ordersParity.spec.js :
-//   • item name === canon menu.js name for that item_id
-//   • line_total === canon unit price × qty
-//   • total === sum(line_total)
-//   • points === Math.round(total × loyalty.config.earn_ratio)  (10 pt / €)
+// names are canonical members of `mobile/data/menu.js`. Invariants enforced by
+// tests/ordersParity.spec.js (points = FLOOR(total × 1) depuis GOAL-SYNC 2026-07-08).
 
 (function () {
   'use strict';
 
+  // ───────────────────────────────────────────────────────────────────────
+  // Fallback HORS LIGNE — points à 1 pt/€ FLOOR (backend LIVE).
+  // ───────────────────────────────────────────────────────────────────────
   const ORDERS_ACTIVE = [
     {
       id: 'C-1234',
@@ -46,7 +51,7 @@
         { id: 3, item_id: 602,  name: 'Bol Riz',                  qty: 1, line_total: 7.90,  extras_summary: 'Viande au choix · Sauce fromagère' },
         { id: 4, item_id: 1001, name: 'Coca-Cola 33cl',           qty: 1, line_total: 1.90,  extras_summary: '' },
       ],
-      points_earned_estimate: 247,    // Math.round(24.70 × 10) — earn_ratio 10 pt/€
+      points_earned_estimate: 24,     // Math.floor(24.70 × 1) — 1 pt/€ FLOOR (backend)
     },
   ];
 
@@ -62,7 +67,7 @@
         { id: 2, item_id: 702,  name: 'Grande Frites',     qty: 1, line_total: 4.00, extras_summary: 'Nature' },
         { id: 3, item_id: 1001, name: 'Coca-Cola 33cl',    qty: 1, line_total: 1.90, extras_summary: '' },
       ],
-      points_earned: 133,   // Math.round(13.30 × 10)
+      points_earned: 13,   // Math.floor(13.30 × 1)
     },
     {
       id: 'C-1208', number: 1208, status: 'delivered', status_label: 'Récupérée',
@@ -74,7 +79,7 @@
         { id: 1, item_id: 401, name: 'Chicken Burger', qty: 2, line_total: 9.80, extras_summary: '' },
         { id: 2, item_id: 701, name: 'Petite Frites',  qty: 1, line_total: 2.50, extras_summary: 'Nature' },
       ],
-      points_earned: 123,   // Math.round(12.30 × 10)
+      points_earned: 12,   // Math.floor(12.30 × 1)
     },
     {
       id: 'C-1190', number: 1190, status: 'delivered', status_label: 'Récupérée',
@@ -87,7 +92,7 @@
         { id: 2, item_id: 602,  name: 'Bol Riz',                  qty: 1, line_total: 7.90, extras_summary: 'Viande au choix · Sauce fromagère' },
         { id: 3, item_id: 1002, name: 'Coca-Cola Zero 33cl',      qty: 1, line_total: 1.90, extras_summary: '' },
       ],
-      points_earned: 168,   // Math.round(16.80 × 10)
+      points_earned: 16,   // Math.floor(16.80 × 1)
     },
     {
       id: 'C-1142', number: 1142, status: 'delivered', status_label: 'Récupérée',
@@ -99,7 +104,7 @@
         { id: 1, item_id: 101,  name: 'Cayenne',            qty: 1, line_total: 7.40, extras_summary: 'Pain · Sauce fromagère maison' },
         { id: 2, item_id: 1001, name: 'Coca-Cola 33cl',     qty: 1, line_total: 1.90, extras_summary: '' },
       ],
-      points_earned: 93,   // Math.round(9.30 × 10)
+      points_earned: 9,   // Math.floor(9.30 × 1)
     },
     {
       id: 'C-1100', number: 1100, status: 'delivered', status_label: 'Récupérée',
@@ -111,18 +116,111 @@
         { id: 1, item_id: 104, name: 'Terminator', qty: 1, line_total: 9.00, extras_summary: '2 viandes au choix · Sauce algérienne' },
         { id: 2, item_id: 902, name: 'Tarte Daim',    qty: 1, line_total: 3.50, extras_summary: '' },
       ],
-      points_earned: 125,  // Math.round(12.50 × 10)
+      points_earned: 12,  // Math.floor(12.50 × 1)
     },
   ];
 
+  // ───────────────────────────────────────────────────────────────────────
+  // Live state — écrasé par le serveur dès que possible (fetch-first).
+  // ───────────────────────────────────────────────────────────────────────
+  const live = {
+    active: ORDERS_ACTIVE,
+    history: ORDERS_HISTORY,
+    offline: false,   // true après échec réseau (les écrans affichent le bandeau)
+    source: 'mock',   // 'mock' | 'server'
+  };
+
+  function api() {
+    return (window.LC && window.LC.mobileApi) || null;
+  }
+
+  function emitChanged(detail) {
+    try {
+      if (typeof window !== 'undefined' && window.dispatchEvent && typeof CustomEvent === 'function') {
+        window.dispatchEvent(new CustomEvent('lc:orders-changed', { detail: detail || {} }));
+      }
+    } catch (e) { /* sandbox sans events */ }
+  }
+
+  // Statut backend numérique → shape mobile {status, status_label} (FR).
+  function mapStatus(s) {
+    switch (Number(s)) {
+      case 1:  return { status: 'in_progress', status_label: 'En attente' };
+      case 4:  return { status: 'in_progress', status_label: 'Acceptée' };
+      case 7:  return { status: 'in_progress', status_label: 'En préparation' };
+      case 8:  return { status: 'ready',       status_label: 'Prête' };
+      case 10: return { status: 'in_progress', status_label: 'En livraison' };
+      case 13: return { status: 'delivered',   status_label: 'Récupérée' };
+      case 16:
+      case 19:
+      case 22: return { status: 'cancelled',   status_label: 'Annulée' };
+      default: return { status: 'in_progress', status_label: 'En cours' };
+    }
+  }
+
+  // OrderResource backend → shape mobile consommée par les écrans.
+  function mapOrder(o) {
+    o = o || {};
+    const st = mapStatus(o.status);
+    const total = Number(o.total_amount_price != null ? o.total_amount_price : o.total) || 0;
+    const serial = o.order_serial_no || String(o.id || '');
+    const count = Number(o.order_items) || 0;
+    const est = (window.LC && window.LC.loyalty && window.LC.loyalty.estimateEarn)
+      ? window.LC.loyalty.estimateEarn(total)
+      : Math.floor(total); // 1 pt/€ FLOOR par défaut
+    return {
+      id: serial,
+      backend_id: o.id,
+      number: o.queue_number != null ? o.queue_number : serial,
+      status: st.status,
+      status_label: o.status_name || st.status_label,
+      created_at: o.order_datetime || o.created_at || '',
+      branch_id: o.branch_id != null ? o.branch_id : 1,
+      branch_name: o.branch_name || 'Le Cayenne',
+      branch_city: 'Hénin-Beaumont',
+      total: total,
+      payment_status: Number(o.payment_status) === 5 ? 'paid' : 'pending', // PaymentStatus::PAID = 5
+      payment_method: Number(o.payment_method) === 1 ? 'cash_at_counter' : 'card_at_counter',
+      pickup_code: serial,
+      items_summary: count ? (count + ' article' + (count > 1 ? 's' : '')) : '',
+      items: [],   // liste backend = compte seulement ; détail via getOrder(id)
+      points_earned_estimate: est,   // le crédit RÉEL est visible dans LC.loyalty.history
+    };
+  }
+
+  /**
+   * [GOAL-SYNC 2026-07-08] Fetch-first RÉEL : GET /api/frontend/order (Bearer).
+   * Répartit actives (pending/preparing/ready) vs historique (delivered/cancelled).
+   * Fallback mock UNIQUEMENT hors ligne / non connecté.
+   */
+  function refresh() {
+    const a = api();
+    if (!a || typeof a.orderHistory !== 'function' || !a.isAuthed || !a.isAuthed()) {
+      return Promise.resolve(live); // non connecté : mock local (démo)
+    }
+    return a.orderHistory().then(function (rows) {
+      const list = (Array.isArray(rows) ? rows : (rows && rows.data) || []).map(mapOrder);
+      live.active = list.filter(function (o) { return o.status === 'in_progress' || o.status === 'ready'; });
+      live.history = list.filter(function (o) { return o.status === 'delivered' || o.status === 'cancelled'; });
+      live.offline = false;
+      live.source = 'server';
+      emitChanged({ type: 'server-sync', count: list.length });
+      return live;
+    }).catch(function (e) {
+      live.offline = true;
+      emitChanged({ type: 'offline', error: (e && e.kind) || 'network' });
+      return live;
+    });
+  }
+
   function totalSpent() {
-    return ORDERS_HISTORY.reduce((s, o) => s + o.total, 0);
+    return live.history.reduce((s, o) => s + o.total, 0);
   }
   function totalCount() {
-    return ORDERS_HISTORY.length + ORDERS_ACTIVE.length;
+    return live.history.length + live.active.length;
   }
   function totalPointsEarned() {
-    return ORDERS_HISTORY.reduce((s, o) => s + (o.points_earned || 0), 0);
+    return live.history.reduce((s, o) => s + (o.points_earned || 0), 0);
   }
 
   function groupByDate(list) {
@@ -152,15 +250,31 @@
   // -------------------------------------------------------------------------
   window.LC = window.LC || {};
   window.LC.orders = {
-    active: ORDERS_ACTIVE,
-    history: ORDERS_HISTORY,
+    get active() { return live.active; },
+    get history() { return live.history; },
+    get offline() { return live.offline; },
+    get source() { return live.source; },
+    refresh,
     totalSpent,
     totalCount,
     totalPointsEarned,
     groupByDate,
     dateLabel,
     findById(id) {
-      return ORDERS_ACTIVE.find(o => o.id === id) || ORDERS_HISTORY.find(o => o.id === id) || null;
+      return live.active.find(o => o.id === id) || live.history.find(o => o.id === id) || null;
     },
+    _mockActive: ORDERS_ACTIVE,
+    _mockHistory: ORDERS_HISTORY,
   };
+
+  // [GOAL-SYNC 2026-07-08] Fetch-first au chargement navigateur (skippé dans
+  // les sandbox Node de test — pas de document/fetch).
+  if (typeof window !== 'undefined' && window.document && typeof fetch === 'function') {
+    const kick = function () { refresh(); };
+    if (window.document.readyState === 'loading') {
+      window.document.addEventListener('DOMContentLoaded', kick);
+    } else {
+      setTimeout(kick, 0);
+    }
+  }
 })();

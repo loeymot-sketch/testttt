@@ -19,6 +19,7 @@
   --red: #E5341A;
   --green: #1FA653;
   --green-dark: #168842;       /* WCAG AA-compliant 4.7:1 for white-on-green buttons */
+  --green-light: #ECFDF5;      /* [GOAL-SYNC 2026-07-08] fond succès doux (bandeau promo panier) — token défini, plus seulement fallback inline */
 
   /* Typography — overridden by Tweaks */
   --font-display: 'Anton', 'Bebas Neue', 'Archivo Black', sans-serif;

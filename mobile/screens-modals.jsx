@@ -37,35 +37,58 @@ function ModalShell({ children, onClose, height = 'auto', labelledBy, dataModalK
 }
 
 // ---------- F.2  Payment choice ----------
-function ModalPayChoice({ onClose, onPickCounter, onPickCard, total = 33 }) {
+// [GOAL-SYNC 2026-07-08] Flag « paiement en ligne » (contrat §4) : prop onlineCardEnabled
+// (nom normatif ; alias 'flag' accepté — index.html passe flag={window.LC.config.onlineCardEnabled}).
+// OFF ⇒ le bouton « Payer maintenant (CB) » est ABSENT du DOM + micro-copy FR.
+function ModalPayChoice({ onClose, onPickCounter, onPickCard, total = 33, onlineCardEnabled, flag }) {
+  const cardOnline = onlineCardEnabled !== undefined ? !!onlineCardEnabled
+    : (flag !== undefined ? !!flag : !!(window.LC && window.LC.config && window.LC.config.onlineCardEnabled));
   return (
     <ModalShell onClose={onClose} labelledBy="modal-pay-title" dataModalKind="pay">
       <h2 id="modal-pay-title" className="lc-display" style={{ margin: 0, fontSize: 36, lineHeight: 0.92, color: 'var(--ink)' }}>Comment<br/>tu paies ?</h2>
       <p style={{ margin: '8px 0 18px', color: 'var(--gray-3)', fontSize: 13 }}>Total {total.toFixed(2).replace('.', ',')} € · TVA incluse</p>
 
-      <button onClick={onPickCounter} style={{ display: 'block', width: '100%', textAlign: 'left', background: 'var(--ink)', color: '#fff', borderRadius: 18, padding: 18, border: 0, marginBottom: 12, cursor: 'pointer' }}>
+      <button data-testid="pay-counter" onClick={onPickCounter} style={{ display: 'block', width: '100%', textAlign: 'left', background: 'var(--ink)', color: '#fff', borderRadius: 18, padding: 18, border: 0, marginBottom: 12, cursor: 'pointer' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
           <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--orange)' }}>★ Recommandé</span>
           <span style={{ fontSize: 22, color: 'var(--orange)' }}>→</span>
         </div>
-        <div className="lc-display" style={{ fontSize: 26, lineHeight: 1, color: '#fff' }}>Payer à la caisse</div>
-        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 6 }}>Cash ou CB sur place. Ton plat t'attend.</div>
+        <div className="lc-display" style={{ fontSize: 26, lineHeight: 1, color: '#fff' }}>Payer sur place</div>
+        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 6 }}>Cash ou CB à la caisse. Ton plat t'attend.</div>
       </button>
 
-      <button onClick={onPickCard} style={{ display: 'block', width: '100%', textAlign: 'left', background: 'var(--cream)', color: 'var(--ink)', borderRadius: 18, padding: 18, border: 0, cursor: 'pointer' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--gray-3)' }}>CB sécurisée Stripe</span>
-          <span style={{ fontSize: 22, color: 'var(--ink)' }}>→</span>
-        </div>
-        <div className="lc-display" style={{ fontSize: 26, lineHeight: 1, color: 'var(--ink)' }}>Payer maintenant</div>
-        <div style={{ fontSize: 12, color: 'var(--gray-4)', marginTop: 6 }}>Visa · Mastercard · Apple Pay</div>
-      </button>
+      {cardOnline ? (
+        <button data-testid="pay-card-online" onClick={onPickCard} style={{ display: 'block', width: '100%', textAlign: 'left', background: 'var(--cream)', color: 'var(--ink)', borderRadius: 18, padding: 18, border: 0, cursor: 'pointer' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--gray-3)' }}>CB en ligne</span>
+            <span style={{ fontSize: 22, color: 'var(--ink)' }}>→</span>
+          </div>
+          <div className="lc-display" style={{ fontSize: 26, lineHeight: 1, color: 'var(--ink)' }}>Payer maintenant</div>
+          <div style={{ fontSize: 12, color: 'var(--gray-4)', marginTop: 6 }}>Visa · Mastercard · Apple Pay</div>
+        </button>
+      ) : (
+        <p data-testid="pay-online-soon" style={{ margin: '4px 2px 0', fontSize: 12, color: 'var(--gray-3)' }}>Le paiement en ligne arrive bientôt.</p>
+      )}
     </ModalShell>
   );
 }
 
 // ---------- Stripe placeholder ----------
+// [GOAL-SYNC 2026-07-08] Garde en tête (défense en profondeur, contrat §4) : si le flag
+// window.LC.config.onlineCardEnabled est OFF, cet écran ne rend JAMAIS le formulaire —
+// état FR « Paiement en ligne indisponible » + retour panier. (index.html redirige déjà
+// en amont ; ce garde protège tout rendu direct du composant.)
 function ScreenStripe({ go, total = 33 }) {
+  if (!(window.LC && window.LC.config && window.LC.config.onlineCardEnabled)) {
+    return (
+      <div data-screen-label="11b Stripe" data-testid="stripe-unavailable" style={{ position: 'absolute', inset: 0, background: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 32, textAlign: 'center' }}>
+        <div style={{ fontSize: 40, marginBottom: 14 }} aria-hidden="true">💳</div>
+        <div className="lc-display" style={{ fontSize: 30, lineHeight: 0.95, color: 'var(--ink)' }}>Paiement en ligne<br/>indisponible</div>
+        <p style={{ marginTop: 14, fontSize: 13, lineHeight: 1.5, color: 'var(--gray-4)', maxWidth: 280 }}>Le paiement en ligne arrive bientôt. Tu peux régler ta commande sur place, en CB ou en espèces.</p>
+        <button onClick={() => go('cart')} className="lc-btn" style={{ marginTop: 20, background: 'var(--ink)', color: '#fff', height: 52, padding: '0 28px' }}>← Retour au panier</button>
+      </div>
+    );
+  }
   return (
     <div data-screen-label="11b Stripe" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
       <div className="lc-screen" style={{ paddingBottom: 120 }}>
@@ -108,8 +131,14 @@ function ScreenStripe({ go, total = 33 }) {
   );
 }
 
-// ---------- I.2 +25 points confetti ----------
-function ModalPointsGain({ onClose, onSee, gain = 25 }) {
+// ---------- I.2 points gagnés confetti ----------
+// [GOAL-SYNC 2026-07-08] Points RÉELS passés en prop (contrat §2 : Math.floor(total ×
+// points_per_euro) calculé par l'appelant) — prop normative `points`, alias `gain`
+// conservé (index.html passe gain={Math.floor(lastOrder.total)}) ; fallback 25 (story
+// standalone) en dernier recours. Plus de « +25 » fixe.
+function ModalPointsGain({ onClose, onSee, points, gain }) {
+  const shownGain = Number.isFinite(Number(points)) && points != null ? Math.floor(Number(points))
+    : (Number.isFinite(Number(gain)) && gain != null ? Math.floor(Number(gain)) : 25);
   // A11-007 P2 closed round-3 : confetti spans aria-hidden + container
   // role=dialog + ESC keydown. A11-014 : skip confetti DOM nodes entirely
   // when prefers-reduced-motion (cosmetic, no visual loss).
@@ -131,7 +160,7 @@ function ModalPointsGain({ onClose, onSee, gain = 25 }) {
       })}
       <div style={{ position: 'relative', background: 'var(--yellow)', borderRadius: 28, padding: '32px 24px', textAlign: 'center', maxWidth: 320, boxShadow: '8px 8px 0 var(--ink)' }}>
         <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--ink)' }}>// Bienvenue au club</div>
-        <div id="modal-points-gain-title" className="lc-display" style={{ fontSize: 88, lineHeight: 0.85, color: 'var(--ink)', margin: '6px 0 4px' }}>+{gain}</div>
+        <div id="modal-points-gain-title" className="lc-display" style={{ fontSize: 88, lineHeight: 0.85, color: 'var(--ink)', margin: '6px 0 4px' }}>+{shownGain}</div>
         <div className="lc-display" style={{ fontSize: 24, lineHeight: 0.9, color: 'var(--orange)' }}>points gagnés</div>
         <p style={{ fontSize: 12.5, color: 'var(--gray-4)', margin: '14px 0 18px', lineHeight: 1.45 }}>Tu fais partie du club Le Cayenne. Continue à commander pour débloquer des récompenses gratuites.</p>
         <button onClick={onSee} className="lc-btn" style={{ background: 'var(--ink)', color: '#fff', width: '100%', height: 50, marginBottom: 8 }}>Voir ma carte</button>
@@ -212,13 +241,17 @@ function ScreenOrderDetail({ go, orderId = 'C-1234' }) {
   const branch = real ? real.branch_city : '';
   const status = real ? real.status_label : '';
   const isDelivered = !!real && real.status === 'delivered';
-  // [LOYALTY-RATIO COHERENCE 2026-07-07] points crédités dérivés du montant × earn_ratio
-  // (10 pt/€) au lieu de 1 pt/€. [FISCAL GATE 2026-07-07] le reçu fiscal NF525 ne
-  // s'affiche que si la commande est réglée (payment_status === 'paid').
+  // [GOAL-SYNC 2026-07-08] earn ratio 100% via config (contrat §2) : points_per_euro
+  // (nom API backend GET /api/frontend/loyalty/config) prioritaire, sinon earn_ratio
+  // (couche data locale), sinon 1 pt/€ (défaut backend) — plus de 10 pt/€ hardcodé.
+  // Estimation = Math.floor(total × ratio) (FLOOR, aligné backend ; l'EARN réel est
+  // crédité côté backend au statut PREPARED/DELIVERED). [FISCAL GATE 2026-07-07] le reçu
+  // fiscal NF525 ne s'affiche que si la commande est réglée (payment_status === 'paid').
   const isPaid = !!real && real.payment_status === 'paid';
-  const earnRatio = (window.LC && window.LC.loyalty && window.LC.loyalty.config && window.LC.loyalty.config.earn_ratio) || 10;
+  const loyCfg = (window.LC && window.LC.loyalty && window.LC.loyalty.config) || {};
+  const earnRatio = Number(loyCfg.points_per_euro != null ? loyCfg.points_per_euro : loyCfg.earn_ratio) || 1;
   const pointsCredited = real
-    ? (Number(real.points_earned != null ? real.points_earned : real.points_earned_estimate) || Math.round((Number(total) || 0) * earnRatio))
+    ? (Number(real.points_earned != null ? real.points_earned : real.points_earned_estimate) || Math.floor((Number(total) || 0) * earnRatio))
     : 0;
 
   return (

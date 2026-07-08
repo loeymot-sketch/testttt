@@ -1,34 +1,52 @@
-// Scenario 03 — QR refresh after TTL expiry
-// useLoyaltyQR uses Date.now() (stubbed via LC.dev.advanceTime) + chained
-// setTimeout. We verify the QR payload changes after TTL elapse.
+// Scenario 03 — QR fidélité RÉEL : mint-on-display + rotation via « Actualiser »
+//
+// [GOAL-SYNC 2026-07-08] réécrit pour le modèle RÉEL (contrat §3) : le QR n'est
+// plus un mock 'FK:<code>' (format REJETÉ backend) mais un token signé serveur
+// 'lqr.…' minté par POST /api/frontend/loyalty/qr (TTL 300 s). On vérifie :
+//   • payload initial = token 'lqr.…' réel (auth réelle guest-signup)
+//   • bouton « Actualiser » re-mint → le payload CHANGE (signature/timestamp)
+//   • compte à rebours FR affiché et re-anchoré après refresh
+// L'ancien mock offline n'existe plus par design : sans réseau le composant
+// affiche l'état hors-ligne FR (JAMAIS de QR legacy) — couvert par A2/A1.
 
 const { test, expect } = require('@playwright/test');
 const { waitForLoyaltyReady, gotoLoyaltyScreen } = require('./utils/waitForLoyaltyReady');
+const { seedRealAuth } = require('./utils/realAuth');
 
-test('S03 — QR refresh : payload changes after 5min TTL advance', async ({ page }) => {
+test('S03 — QR réel lqr. : mint-on-display + rotation payload via Actualiser', async ({ page, request }) => {
   await waitForLoyaltyReady(page);
+  await seedRealAuth(page, request);
   await gotoLoyaltyScreen(page);
 
-  // Wait for initial QR
+  // QR réel rendu (lib vendorisée locale) + payload token serveur
   await page.waitForSelector('[data-testid="loyalty-qr"]');
-  await page.waitForTimeout(300);  // allow async generateSignedQR to settle
-
+  await page.waitForSelector('[data-testid="loyalty-qr-svg"] svg', { timeout: 15000 });
   const payload1 = await page.locator('[data-testid="loyalty-qr"]').getAttribute('data-payload');
-  expect(payload1).toMatch(/^FK:/);
+  expect(payload1).toMatch(/^lqr\./);
+  expect(payload1).not.toMatch(/^FK:/); // legacy interdit (rejeté backend)
 
-  // Advance time past TTL (5 min + buffer)
-  await page.evaluate(() => window.LC.dev.advanceTime(360));
-  await page.waitForTimeout(1500);  // hook's setTimeout chain re-schedules + refresh
+  // Compte à rebours FR visible
+  const countdown = page.locator('[data-testid="loyalty-qr-countdown"]');
+  await expect(countdown).toBeVisible();
+  await expect(countdown).toContainText(/Expire dans/i);
 
+  // « Actualiser » re-mint un token — le payload change (nouvelle signature serveur).
+  // Click via JS : un div décoratif (hero) intercepte le pointer en headless.
+  await page.evaluate(() => document.querySelector('[data-testid="loyalty-qr-refresh"]').click());
+  await page.waitForFunction(
+    (p1) => {
+      const el = document.querySelector('[data-testid="loyalty-qr"]');
+      return el && el.getAttribute('data-payload') && el.getAttribute('data-payload') !== p1;
+    },
+    payload1,
+    { timeout: 15000 }
+  );
   const payload2 = await page.locator('[data-testid="loyalty-qr"]').getAttribute('data-payload');
-  expect(payload2).toMatch(/^FK:/);
-  // Format same but underlying signature differs (timestamps differ — visible
-  // only via internal qr state, not the data-payload attribute which is the
-  // public FK:<code> string). The countdown should reset.
+  expect(payload2).toMatch(/^lqr\./);
+  expect(payload2).not.toBe(payload1);
 
-  // Countdown should be far from 0
-  const countdown = await page.locator('[data-testid="loyalty-qr-countdown"]').innerText();
-  expect(countdown).toMatch(/\d+:\d\d/);
+  // Countdown re-anchoré proche du TTL plein (≥ 4 min)
+  await expect(countdown).toContainText(/Expire dans [45] min/i);
 
   await page.screenshot({ path: 'tests/e2e/__screenshots__/mobile-loyalty/03-qr-refresh.png' });
 });

@@ -61,9 +61,25 @@
 <body>
 <div id="root"></div>
 
+<!-- [GOAL-SYNC 2026-07-08] Config runtime — DOIT être définie AVANT tout autre script (contrat §4).
+     Consommée par api/client.js (base API, clé, branche) et par les écrans (flag Stripe).
+     onlineCardEnabled=false ⇒ AUCUNE option carte-en-ligne dans le DOM (verrou final = serveur config/payment.php). -->
+<script>
+  window.LC = window.LC || {};
+  window.LC.config = {
+    apiBase: 'http://127.0.0.1:8766',
+    apiKey: 'b6d68vy2-m7g5-20r0-5275-h103w73453q120',
+    branchId: 1,
+    onlineCardEnabled: false
+  };
+</script>
+
 <!-- Data layer (vanilla JS, attaches to window.LC.*) -->
 <!-- storage.js first: loyalty.js hydrates from LC.storage.getLoyalty(). -->
 <script src="api/storage.js"></script>
+<!-- [GOAL-SYNC 2026-07-08] Couche réseau RÉELLE (window.LC.mobileApi) — auth OTP, résolution
+     par NOM canonique, commandes, fidélité. Chargée juste après storage.js (setAuth). -->
+<script src="api/client.js"></script>
 <script src="data/menu.js"></script>
 <script src="data/loyalty.js"></script>
 <script src="data/loyaltyRewardState.js"></script>
@@ -82,6 +98,9 @@
 <script src="image-slot.js"></script>
 <script type="text/babel" src="icons.jsx"></script>
 <script type="text/babel" src="shared.jsx"></script>
+
+<!-- [GOAL-SYNC 2026-07-08] Lib QR vendorisée LOCALE (globale `qrcode`, contrat §3) — AVANT les composants. -->
+<script src="vendor/qrcode.js"></script>
 
 <!-- Hooks & components (must load BEFORE screens that consume them) -->
 <script src="hooks/useCountdown.js"></script>
@@ -123,6 +142,9 @@ function App() {
   const [toast, setToast] = useState(null);
   // [test-e2e fix C-001 round-2 2026-05-11] bind to cart order — last placed order snapshot
   const [lastOrder, setLastOrder] = useState(null);
+  // [GOAL-SYNC 2026-07-08] AUTH RÉELLE — téléphone hoisté dans App : saisi sur ScreenLogin,
+  // affiché sur ScreenOTP, envoyé à guest-signup /otp puis /verify (plus de mock).
+  const [authPhone, setAuthPhone] = useState('');
 
   // Persist cart on change
   useEffect(() => { storage.setCart(cart); }, [cart]);
@@ -152,8 +174,13 @@ function App() {
     if (s === 'walletGoogle') { setModal('walletGoogle'); return; }
     if (s === 'optOut') { setModal('optOut'); return; }
     if (s === 'toast')  { setToast({ m: ext?.msg || 'OK', k: ext?.kind || 'info' }); return; }
+    // [GOAL-SYNC 2026-07-08] Flag Stripe OFF ⇒ 'stripe' inaccessible : redirection vers le choix de paiement.
+    if (s === 'stripe' && !window.LC.config.onlineCardEnabled) { setModal('pay'); return; }
     if (s === 'logout') {
+      // [GOAL-SYNC 2026-07-08] Déconnexion réelle (révocation token côté client.js) puis purge locale.
+      try { if (window.LC.mobileApi && window.LC.mobileApi.logout) window.LC.mobileApi.logout(); } catch (e) { /* purge locale quand même */ }
       storage.clearAuth();
+      setAuthPhone('');
       setCart([]);
       setHistory(['login']);
       setScreen('login');
@@ -172,9 +199,54 @@ function App() {
     setCart(c => [...c, { ...it, sups: it.sups || it.extraIds || [], qty: it.qty || 1 }]);
   };
 
-  const onLogin = () => {
-    storage.setAuth({ token: 'mock-v0-token', phone: '+33642799884', user_id: 12345 });
-    storage.markOnboardingSeen();
+  // [GOAL-SYNC 2026-07-08] onLogin mock SUPPRIMÉ (token 'mock-v0-token' + téléphone hardcodé).
+  // L'auth réelle passe par window.LC.mobileApi.guestOtp/guestVerify (api/client.js, contrat §1/§7) ;
+  // guestVerify fait le storage.setAuth({token réel Sanctum kiosk:order, phone, user_id}).
+
+  // [GOAL-SYNC 2026-07-08] COMMANDE RÉELLE au choix « Payer à la caisse » (contrat §4/§7) :
+  // résolution des lignes du panier PAR NOM canonique puis POST commande (payment_method=1,
+  // loyalty_code du profil si connecté). Échec RÉSEAU ⇒ dégradation douce : on garde le
+  // snapshot local V0 (id 'C-XXXX' déjà posé par snapshotOrder) + bandeau « Hors ligne ».
+  const placeCounterOrder = async () => {
+    const api = window.LC.mobileApi;
+    if (!(api && api.isAuthed && api.isAuthed() && api.resolveOrderItems && api.placeOrder)) {
+      // Couche API absente ou non connecté ⇒ mode local V0 (dégradation douce contrat §7)
+      setToast({ m: 'Hors ligne — commande de démonstration', k: 'info' });
+      return true;
+    }
+    try {
+      // loyalty_code du profil (fidélité optionnelle : un échec ici ne bloque PAS la commande)
+      let loyaltyCode = null;
+      try {
+        const prof = await api.profile();
+        loyaltyCode = (prof && prof.loyalty_code) || null;
+      } catch (e) { /* profil indisponible — on commande sans code fidélité */ }
+      const items = await api.resolveOrderItems(cart);
+      const r = await api.placeOrder({
+        cart: cart, items: items, paymentMethod: 1,
+        loyaltyCode: loyaltyCode, loyalty_code: loyaltyCode,
+      });
+      const placed = r || {};
+      const eta = new Date(Date.now() + 12 * 60 * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', 'h');
+      const realTotal = (typeof placed.total === 'number') ? placed.total
+        : cart.reduce((s, i) => s + (i.lineTotal || i.price * i.qty), 0);
+      setLastOrder({
+        id: String(placed.queue_number || placed.order_serial_no || placed.id || 'C-0000'),
+        orderDbId: placed.id || placed.orderDbId || null,
+        queue_number: placed.queue_number || null,
+        total: realTotal, eta, items: cart,
+      });
+      return true;
+    } catch (e) {
+      if (e && e.kind === 'network') {
+        // API injoignable ⇒ fallback local V0 (lastOrder démo déjà snapshotté au go('pay'))
+        setToast({ m: 'Hors ligne — commande de démonstration', k: 'info' });
+        return true;
+      }
+      // Erreur métier (résolution produit, 4xx…) ⇒ message FR, panier intact, on reste là.
+      setToast({ m: (e && e.message) || 'Commande refusée par le serveur. Réessaie.', k: 'error' });
+      return false;
+    }
   };
 
   const showTab = !NO_TAB_SCREENS.includes(screen);
@@ -187,13 +259,45 @@ function App() {
     case 'onb2':    body = <ScreenOnb2 onNext={() => go('onb3')} onSkip={() => { storage.markOnboardingSeen(); go('login'); }}/>; break;
     case 'onb3':    body = <ScreenOnb3 onNext={() => go('onb4')} onSkip={() => { storage.markOnboardingSeen(); go('login'); }}/>; break;
     case 'onb4':    body = <ScreenOnb4 onNext={() => { storage.markOnboardingSeen(); go('login'); }} onSkip={() => { storage.markOnboardingSeen(); go('login'); }}/>; break;
-    case 'login':   body = <ScreenLogin onNext={() => go('otp')} onBack={() => go('back')}/>; break;
-    case 'otp':     body = <ScreenOTP onNext={() => { onLogin(); setHistory(['home']); setScreen('home'); }} onBack={() => go('back')}/>; break;
+    // [GOAL-SYNC 2026-07-08] AUTH RÉELLE guest-signup OTP (contrat §1). Erreur réseau ⇒ toast FR + on RESTE sur l'écran.
+    case 'login':   body = <ScreenLogin onNext={async (phone) => {
+                      // Signature cible : onNext(phone:string) (ScreenLogin remonte la saisie).
+                      // Repli défensif si l'écran appelle encore onNext(event) : on lit l'input tel du DOM.
+                      let p = (typeof phone === 'string' && phone.trim()) ? phone.trim() : '';
+                      if (!p) { const el = document.querySelector('.lc-device input[inputmode="tel"]'); p = (el && el.value || '').trim(); }
+                      if (!p) p = authPhone;
+                      p = p.replace(/\s/g, '');
+                      if (!p) { setToast({ m: 'Saisis ton numéro pour recevoir le code.', k: 'error' }); return; }
+                      setAuthPhone(p);
+                      const api = window.LC.mobileApi;
+                      if (!(api && api.guestOtp)) { setToast({ m: 'Service momentanément indisponible. Réessaie dans un instant.', k: 'error' }); return; }
+                      try {
+                        await api.guestOtp(p);
+                        go('otp');
+                      } catch (e) {
+                        setToast({ m: (e && e.kind === 'network') ? 'Réseau indisponible — impossible d’envoyer le code. Réessaie.' : ((e && e.message) || 'Envoi du code impossible. Réessaie.'), k: 'error' });
+                      }
+                    }} onBack={() => go('back')}/>; break;
+    case 'otp':     body = <ScreenOTP phone={authPhone} onNext={async (otp) => {
+                      const api = window.LC.mobileApi;
+                      if (!(api && api.guestVerify)) { setToast({ m: 'Service momentanément indisponible. Réessaie dans un instant.', k: 'error' }); return; }
+                      try {
+                        // guestVerify fait storage.setAuth({token, phone, user_id}) — client.js (contrat §7)
+                        await api.guestVerify(authPhone, (typeof otp === 'string') ? otp : (otp == null ? '' : String(otp)));
+                        storage.markOnboardingSeen();
+                        setHistory(['home']); setScreen('home');
+                      } catch (e) {
+                        setToast({ m: (e && e.kind === 'network') ? 'Réseau indisponible — vérification impossible. Réessaie.' : ((e && e.message) || 'Code invalide. Réessaie.'), k: 'error' });
+                      }
+                    }} onBack={() => go('back')}/>; break;
     case 'home':    body = <ScreenHome go={go} name={(window.LC.user.current.first_name)}/>; break;
     case 'menu':    body = <ScreenMenu go={go} cart={cart} addToCart={addToCart}/>; break;
     case 'item':    body = <ScreenItem go={go} itemId={itemId} addToCart={addToCart}/>; break;
     case 'cart':    body = <ScreenCart go={(s)=> s==='confirm' ? go('pay') : go(s)} cart={cart} setCart={setCart}/>; break;
-    case 'stripe':  body = <ScreenStripe go={go} total={cart.reduce((s,i)=>s+i.price*i.qty,0)}/>; break;
+    // [GOAL-SYNC 2026-07-08] Flag OFF ⇒ ScreenStripe JAMAIS rendu (défense en profondeur : go() redirige déjà vers 'pay').
+    case 'stripe':  body = window.LC.config.onlineCardEnabled
+                      ? <ScreenStripe go={go} total={cart.reduce((s,i)=>s+i.price*i.qty,0)}/>
+                      : <ScreenCart go={(s)=> s==='confirm' ? go('pay') : go(s)} cart={cart} setCart={setCart}/>; break;
     case 'confirm': body = <ScreenConfirm go={go} order={lastOrder}/>; break;
     case 'orders':  body = <ScreenOrders go={go}/>; break;
     case 'orderDetail': body = <ScreenOrderDetail go={go} orderId={itemId || 'C-1234'}/>; break;
@@ -208,14 +312,14 @@ function App() {
     <div className="lc-device">
       {body}
       {showTab && <TabBar active={activeTab} onChange={(t) => go(t)}/>}
-      {modal === 'pay' && <ModalPayChoice total={total} onClose={()=>setModal(null)} onPickCounter={()=>{ setModal(null); setHistory(h=>[...h,'confirm']); setScreen('confirm'); setCart([]); setTimeout(()=>setModal('gain'), 900); }} onPickCard={()=>{ setModal(null); setHistory(h=>[...h,'stripe']); setScreen('stripe'); }}/>}
-      {/* [test-e2e fix C-003 round-2 2026-05-11] derive pointsEarned from the snapshotted
-          order total (1 pt / €, Math.round to match ScreenCart loyalty preview line 586
-          "+{Math.round(total)} pts gagnés sur cette commande"). Replaces the previous
-          hardcoded "+25 pts" literal. Falls back to 25 only if no order was snapshotted
-          (defensive — should never happen in the pay flow but keeps the welcome bonus
-          default for the modal's standalone story rendering). */}
-      {modal === 'gain' && <ModalPointsGain gain={lastOrder ? Math.round(lastOrder.total) : 25} onClose={()=>setModal(null)} onSee={()=>{ setModal(null); setHistory(h=>[...h,'loyalty']); setScreen('loyalty'); }}/>}
+      {/* [GOAL-SYNC 2026-07-08] flag={onlineCardEnabled} : la modale masque « Payer maintenant » quand OFF (contrat §4).
+          onPickCounter = COMMANDE RÉELLE (placeCounterOrder) ; onPickCard gardé derrière le flag (défense en profondeur). */}
+      {modal === 'pay' && <ModalPayChoice total={total} flag={window.LC.config.onlineCardEnabled} onClose={()=>setModal(null)} onPickCounter={async ()=>{ setModal(null); const ok = await placeCounterOrder(); if (!ok) return; setHistory(h=>[...h,'confirm']); setScreen('confirm'); setCart([]); setTimeout(()=>setModal('gain'), 900); }} onPickCard={()=>{ if (!window.LC.config.onlineCardEnabled) return; setModal(null); setHistory(h=>[...h,'stripe']); setScreen('stripe'); }}/>}
+      {/* [test-e2e fix C-003 round-2 2026-05-11] derive pointsEarned from the snapshotted order total.
+          [GOAL-SYNC 2026-07-08] Estimation earn alignée backend (contrat §2) : 1 pt/€ FLOOR du total TTC
+          (Math.floor(total × points_per_euro=1)) — l'EARN réel est crédité par le backend au statut
+          PREPARED/DELIVERED, le client n'ajoute jamais de points. Fallback 25 conservé (story standalone). */}
+      {modal === 'gain' && <ModalPointsGain gain={lastOrder ? Math.floor(lastOrder.total) : 25} onClose={()=>setModal(null)} onSee={()=>{ setModal(null); setHistory(h=>[...h,'loyalty']); setScreen('loyalty'); }}/>}
       {modal === 'redeem' && <WizardRedeem ctx={modalCtx} onClose={()=>{ setModal(null); setModalCtx(null); }} onSuccess={(r)=>{ /* WizardRedeem handles toast internally via step3 success state */ }}/>}
       {modal === 'optOut' && <ModalOptOutConfirm onClose={()=>setModal(null)} onConfirm={()=>{
         setModal(null);

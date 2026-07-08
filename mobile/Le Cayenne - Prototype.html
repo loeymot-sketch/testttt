@@ -29,6 +29,30 @@
 <body>
 <div id="root"></div>
 
+<!-- [GOAL-SYNC 2026-07-08] Prototype réparé : les écrans actuels (screens-main/…)
+     exigent la config LC.config + la couche data (LC.menu/loyalty/orders/user) +
+     la lib QR vendorisée + les hooks/components — le prototype ne chargeait plus
+     rien de tout ça depuis la refonte data-layer (LC.menu jamais peuplé = page vide).
+     Bloc aligné sur index.html. -->
+<script>
+  window.LC = window.LC || {};
+  window.LC.config = {
+    apiBase: 'http://127.0.0.1:8766',
+    apiKey: 'b6d68vy2-m7g5-20r0-5275-h103w73453q120',
+    branchId: 1,
+    onlineCardEnabled: false
+  };
+</script>
+<script src="api/storage.js"></script>
+<script src="api/client.js"></script>
+<script src="data/menu.js"></script>
+<script src="data/loyalty.js"></script>
+<script src="data/loyaltyRewardState.js"></script>
+<script src="data/orders.js"></script>
+<script src="data/user.js"></script>
+<script src="data/wallet-spec.js"></script>
+<script src="data/dev-helpers.js"></script>
+
 <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
@@ -38,7 +62,15 @@
 <script type="text/babel" src="tweaks-panel.jsx"></script>
 <script type="text/babel" src="icons.jsx"></script>
 <script type="text/babel" src="shared.jsx"></script>
+<!-- [GOAL-SYNC 2026-07-08] QR local + hooks/components requis par screens-main -->
+<script src="vendor/qrcode.js"></script>
+<script src="hooks/useCountdown.js"></script>
+<script type="text/babel" src="hooks/useLoyaltyQR.js"></script>
+<script type="text/babel" src="components/BarcodeMock.jsx"></script>
+<script type="text/babel" src="components/LoyaltyQR.jsx"></script>
+<script type="text/babel" src="components/WizardRedeem.jsx"></script>
 <script type="text/babel" src="screens-onboarding.jsx"></script>
+<script type="text/babel" src="screens-item-steps.jsx"></script>
 <script type="text/babel" src="screens-main.jsx"></script>
 <script type="text/babel" src="screens-modals.jsx"></script>
 

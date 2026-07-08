@@ -19,8 +19,10 @@ const fs = require('fs');
 const path = require('path');
 
 const OUT_DIR = '/tmp/foodking-goal-round3/red-d-mobile';
-const MOBILE_URL = 'http://127.0.0.1:8081/index.html';
-const PROTOTYPE_URL = 'http://127.0.0.1:8081/Le%20Cayenne%20-%20Prototype.html';
+// [GOAL-SYNC 2026-07-08] port 8081 → 8087 (8081 hijacké par un autre projet ;
+// 8087 = port dédié Cayenne mobile, aligné playwright.config.js).
+const MOBILE_URL = 'http://127.0.0.1:8087/index.html';
+const PROTOTYPE_URL = 'http://127.0.0.1:8087/Le%20Cayenne%20-%20Prototype.html';
 
 if (!fs.existsSync(OUT_DIR)) fs.mkdirSync(OUT_DIR, { recursive: true });
 
@@ -120,7 +122,8 @@ test.describe('RED-D mobile fictional purge visual gate', () => {
       allOrders.forEach(o => (o.items || []).forEach(l => orderIds.push({
         order: o.id, item_id: l.item_id, name: l.name, canonical: canon.has(l.item_id)
       })));
-      const rewardIds = window.LC.loyalty.rewards.map(r => ({
+      // [GOAL-SYNC 2026-07-08] catalogue rewards SUPPRIMÉ (modèle continu points→€) — stub [] gardé.
+      const rewardIds = (window.LC.loyalty.rewards || []).map(r => ({
         id: r.id, name: r.name,
         item_id: r.payload && r.payload.item_id,
         category_id: r.payload && r.payload.category_id,

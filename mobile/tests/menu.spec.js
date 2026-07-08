@@ -46,12 +46,45 @@ function verify(label, file) {
   const expMeats = ['Cordon Bleu','Fricadelle','Mexicanos','Nuggets','Poulet mariné','Tenders','Viande Hachée'];
   check(JSON.stringify(meatNames) === JSON.stringify(expMeats), '7 viandes exactes = ' + JSON.stringify(expMeats));
   check(M.sauces.length === 12, '12 sauces (got ' + M.sauces.length + ')');
-  check(M.crudites.length === 3, '3 crudités (got ' + M.crudites.length + ')');
+  check(M.crudites.length === 4, '4 crudités (got ' + M.crudites.length + ')');
   check(!M.crudites.find(c => c.name === 'Cornichon'), 'Cornichon supprimé des crudités');
-  check(M.supplements.length === 9, '9 suppléments (got ' + M.supplements.length + ')');
+  check(!!M.crudites.find(c => c.name === 'Oignons cuits'), 'Crudité "Oignons cuits" présente (sync 2026-07-08)');
+  check(M.supplements.length === 10, '10 suppléments (got ' + M.supplements.length + ')');
   check(!!M.supplements.find(s => s.name === 'Oignons frits'), 'Supplément "Oignons frits" présent');
   check(!M.supplements.find(s => s.name === 'Oignon frais'), '"Oignon frais" renommé (absent)');
-  check(M.supplements.every(s => s.price === 0.90), 'Suppléments tous à 0,90€');
+  // 9 suppléments à 0,90€ + "Boule gratinée" à 1,00€ (ajoutée sync 2026-07-08)
+  check(M.supplements.filter(s => s.name !== 'Boule gratinée').every(s => s.price === 0.90), 'Suppléments (hors Boule gratinée) tous à 0,90€');
+  check(!!M.supplements.find(s => s.name === 'Boule gratinée' && s.price === 1.00), 'Supplément "Boule gratinée" 1,00€');
+
+  // --- [GOAL-SYNC 2026-07-08] nouveaux pools normatifs (CONTRACTS.md §5, mêmes noms web & mobile) ---
+  check(Array.isArray(M.pains) && M.pains.length === 2, 'PAINS = 2 entrées (got ' + (M.pains && M.pains.length) + ')');
+  check(!!(M.pains || []).find(p => p.id === 'pain-classique' && p.name === 'Pain'), 'PAINS: pain-classique "Pain"');
+  check(!!(M.pains || []).find(p => p.id === 'pain-galette' && p.name === 'Galette'), 'PAINS: pain-galette "Galette"');
+  check(M.extraMeatPrice === 2.50, 'EXTRA_MEAT_PRICE = 2,50€ (got ' + M.extraMeatPrice + ')');
+  check(Array.isArray(M.bolSauces) && M.bolSauces.length === 2, 'BOL_SAUCES = 2 sauces bol (got ' + (M.bolSauces && M.bolSauces.length) + ')');
+  check(!!(M.bolSauces || []).find(s => s.name === 'Sauce fromagère maison') && !!(M.bolSauces || []).find(s => s.name === 'Sauce spicy'), 'BOL_SAUCES = fromagère maison + spicy');
+  check(Array.isArray(M.supplementsBols) && M.supplementsBols.length === 10, 'SUPPLEMENTS_BOLS = 10 (9×0,90€ + Gratiné, got ' + (M.supplementsBols && M.supplementsBols.length) + ')');
+  check((M.supplementsBols || []).filter(s => s.id !== 'sb-gratine').every(s => s.price === 0.90), 'Suppléments bols (hors Gratiné) tous à 0,90€');
+  const sbGratine = (M.supplementsBols || []).find(s => s.id === 'sb-gratine');
+  check(!!sbGratine && sbGratine.price === 2.00 && sbGratine.riz_only === true, 'Option Gratiné 2,00€ riz_only (Bol Riz uniquement)');
+  const boursin = M.supplements.find(s => s.id === 'sup-boursin');
+  check(!!boursin && boursin.galette_excluded === true, 'Boursin galette_excluded (pas offert sur galettes)');
+  const bouleG = M.supplements.find(s => s.id === 'sup-boule-gratinee');
+  check(!!bouleG && bouleG.galette_only === true, 'Boule gratinée galette_only');
+  // 4 sandwichs = choix du pain ; 16 items = viande supplémentaire possible
+  const sandwichs = items.filter(i => i.category_id === 1);
+  check(sandwichs.length === 4 && sandwichs.every(s => s.has_pain_choice === true), '4 sandwichs has_pain_choice');
+  check(items.filter(i => i.has_extra_meat === true).length === 16, '16 items has_extra_meat (4 sandwichs + 2 galettes + 6 burgers + 2 tacos + 2 bols)');
+  // Tacos M/L : crudités restaurées (REVERT 05e5cacd0)
+  check(byName('Tacos M') && byName('Tacos M').has_crudites === true, 'Tacos M has_crudites (revert crudités)');
+  check(byName('Tacos L') && byName('Tacos L').has_crudites === true, 'Tacos L has_crudites (revert crudités)');
+  // Cayenne : sauce pré-sélectionnée fromagère, pas verrouillée ; is_spicy false partout au canon
+  const cay = byName('Cayenne');
+  check(!!cay && cay.sauce_default === 'Sauce fromagère maison' && !cay.sauce_locked, 'Cayenne sauce_default fromagère, non verrouillée');
+  check(byName('Galette Cayenne') && byName('Galette Cayenne').is_spicy === false, 'Galette Cayenne is_spicy=false (canon)');
+  check(items.every(i => i.is_halal === false), 'is_halal=false partout (allégation réglementaire, canon)');
+  // Catégorie 6 (Bols) = wizard_template 'bol'
+  check(M.findCategory(6) && M.findCategory(6).wizard_template === 'bol', 'cat 6 Bols wizard_template=bol');
 
   // --- formule ---
   const fMenu = M.formules.find(f => f.id === 'f-menu');
@@ -107,12 +140,23 @@ function verify(label, file) {
   check(drinks.filter(d => d.slug !== 'eau-plate' && d.slug !== 'capri-sun').every(d => d.price === 1.90), 'Canettes 1,90€');
   check(byName('Eau Plate 50cl') && byName('Eau Plate 50cl').price === 1.00, 'Eau 1,00€ (inchangée)');
   check(byName('Capri-Sun') && byName('Capri-Sun').price === 1.50, 'Capri-Sun 1,50€ (20cl, ≠ canette)');
+  // [GOAL-SYNC 2026-07-08] 15 boissons (8 historiques + 7 nouvelles ids 1009-1015 @ 1,90€)
+  check(drinks.length === 15, '15 boissons (got ' + drinks.length + ')');
+  [['Coca Cherry 33cl', 1009], ['Tropico 33cl', 1010], ['Ice Tea Pêche 33cl', 1011],
+   ['Fanta Citron 33cl', 1012], ['Fuze Tea 33cl', 1013], ['Hawaï 33cl', 1014],
+   ['Perrier 33cl', 1015]].forEach(([n, id]) => {
+    const d = byName(n);
+    check(!!d && d.id === id && d.price === 1.90, 'boisson "' + n + '" id ' + id + ' @ 1,90€');
+  });
+  check(M.formuleDrinks && M.formuleDrinks.length === 15, 'FORMULE_DRINKS = 15 saveurs (got ' + (M.formuleDrinks && M.formuleDrinks.length) + ')');
+  check(M.priceForDrinkAddon('d-capri') === 1.50, 'priceForDrinkAddon capri = 1,50€ (FIX P0)');
+  check(M.priceForDrinkAddon('d-coca-cherry') === 1.90, 'priceForDrinkAddon coca-cherry = 1,90€');
 
   // --- MENU ENFANT (2 SKU @ 4,90) ---
   const enfant = items.filter(i => i.category_id === 11);
   check(enfant.length === 2, '2 SKU menu enfant (got ' + enfant.length + ')');
   check(enfant.every(e => e.price === 4.90), 'Menu enfant 4,90€');
-  check(!!byName('Menu Enfant Nuggets') && !!byName('Menu Enfant Burger'), 'Menu Enfant Nuggets + Burger');
+  check(!!byName('Menu Enfant Nuggets') && !!byName('Menu Enfant Chicken Burger'), 'Menu Enfant Nuggets + Chicken Burger');
 
   // --- PHANTOMS (must be absent) ---
   ['Big Cayenne','Big Chicken','Big Tacos','Big Classique','Sandwich Classique',
@@ -132,6 +176,11 @@ function verify(label, file) {
   // --- helpers resolve ---
   check(typeof M.findItem === 'function' && !!M.findItem('tacos-m'), 'findItem(slug) ok');
   check(typeof M.priceForDrinkAddon === 'function' && M.priceForDrinkAddon('d-coca') === 1.90, 'priceForDrinkAddon coca = 1,90€');
+
+  // [GOAL-SYNC 2026-07-08] verrou volumétrie mirror : 38 items (42 canoniques − 6 SKU frites
+  // consolidés en 2 wizards frites_style, divergence structurelle acceptée CONTRACTS.md §5).
+  check(items.length === 38, '38 items mirror (got ' + items.length + ')');
+  check(M.categories.length === 9, '9 catégories (got ' + M.categories.length + ')');
 
   console.log('  -> ' + items.length + ' produits, ' + M.categories.length + ' catégories');
 }

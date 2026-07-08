@@ -21,6 +21,26 @@ if (!window.LC || !window.LC.menu) {
 const CATS = window.CATS;
 const ITEMS = window.ITEMS;
 
+// [GOAL-SYNC 2026-07-08] Config fidélité RÉELLE (contrat §2) — les taux viennent de la data
+// layer alignée sur GET /api/frontend/loyalty/config (points_per_euro=1, points_for_1_euro_
+// discount=100). Plus AUCUN ratio hardcodé dans les écrans. Supporte les deux formes de
+// LC.loyalty.config (objet legacy / fonction) ; fallback = vérité backend (1 pt/€, 100 pts = 1 €).
+function lcLoyaltyCfg() {
+  const L = (window.LC && window.LC.loyalty) || null;
+  const c = L ? (typeof L.config === 'function' ? L.config() : L.config) : null;
+  return c || {};
+}
+function lcEarnRatio() {
+  const c = lcLoyaltyCfg();
+  const r = Number(c.earn_ratio != null ? c.earn_ratio : c.points_per_euro);
+  return (isFinite(r) && r > 0) ? r : 1;
+}
+function lcRedeemRatio() {
+  const c = lcLoyaltyCfg();
+  const r = Number(c.points_for_1_euro_discount != null ? c.points_for_1_euro_discount : c.redeem_ratio);
+  return (isFinite(r) && r > 0) ? r : 100;
+}
+
 // Tag pill
 const Tag = ({ t }) => {
   const map = {
@@ -77,13 +97,17 @@ function AllergenBadge({ allergens, size = 'sm' }) {
 }
 
 // HOME
-function ScreenHome({ go, name = 'Ikyes' }) {
+// [GOAL-SYNC 2026-07-08] Plus de « Ikyes B. » hardcodé : avatar + aria-label dérivés du prop
+// name (posé par index.html depuis le profil réel / storage). Fallback neutre FR si absent.
+function ScreenHome({ go, name = '' }) {
+  const safeName = String(name || '').trim();
+  const avatarInitial = (safeName ? safeName.charAt(0) : 'C').toUpperCase();
   return (
     <div data-screen-label="07 Home" style={{ position: 'absolute', inset: 0, background: '#fff', overflow: 'hidden' }}>
       <div className="lc-screen" style={{ paddingBottom: 96, paddingTop: 'calc(var(--ios-safe-top) + 8px)' }}>
         {/* header — centered logo, avatar L, bell R */}
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px 2px', minHeight: 40 }}>
-          <button onClick={() => go('profile')} aria-label="Profil — Ikyes B." style={{ width: 40, height: 40, borderRadius: 999, background: 'var(--orange)', border: 0, color: 'var(--ink)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 800, cursor: 'pointer' }}>IB</button>
+          <button onClick={() => go('profile')} aria-label={safeName ? `Profil — ${safeName}` : 'Profil'} style={{ width: 40, height: 40, borderRadius: 999, background: 'var(--orange)', border: 0, color: 'var(--ink)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 800, cursor: 'pointer' }}>{avatarInitial}</button>
           <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
             <Logo size={14}/>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 8.5, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--gray-4)' }}>
@@ -95,7 +119,7 @@ function ScreenHome({ go, name = 'Ikyes' }) {
 
         {/* greeting */}
         <div style={{ padding: '6px 20px 14px' }}>
-          <h1 className="lc-display" style={{ margin: 0, fontSize: 52, lineHeight: 0.9, color: 'var(--ink)' }}>{(new Date().getHours() < 20 && new Date().getHours() >= 5) ? 'Bonjour,' : 'Bonsoir,'}<br/><span style={{ color: 'var(--orange)' }}>{name}</span> !</h1>
+          <h1 className="lc-display" style={{ margin: 0, fontSize: 52, lineHeight: 0.9, color: 'var(--ink)' }}>{(new Date().getHours() < 20 && new Date().getHours() >= 5) ? 'Bonjour,' : 'Bonsoir,'}<br/><span style={{ color: 'var(--orange)' }}>{safeName || 'bienvenue'}</span> !</h1>
           <p style={{ margin: '10px 0 0', color: 'var(--gray-4)', fontSize: 14 }}>Qu'est-ce qui te fait envie ce soir ?</p>
         </div>
 
@@ -599,14 +623,12 @@ function ScreenCart({ go, cart, setCart }) {
   const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
   const discount = promoCode ? Math.round(subtotal * 10) / 100 : 0; // -10%, arrondi 2 décimales
   const total = Math.max(0, subtotal - discount);
-  // [LOYALTY-RATIO COHERENCE 2026-07-07] points gagnés + "manque pour la prochaine
-  // récompense" dérivés de LC.loyalty (config.earn_ratio = 10 pt/€ + progressToNext)
-  // au lieu d'un 1 pt/€ et d'un "153 pts / burger gratuit" codés en dur.
-  const loyalty = (window.LC && window.LC.loyalty) || null;
-  const earnRatio = (loyalty && loyalty.config && loyalty.config.earn_ratio) || 10;
-  const loyaltyBalance = (loyalty && loyalty.account) ? loyalty.account.balance : 0;
-  const nextProg = (loyalty && loyalty.progressToNext) ? loyalty.progressToNext(loyaltyBalance) : null;
-  const pointsForCart = Math.round((total || 0) * earnRatio);
+  // [GOAL-SYNC 2026-07-08] Earn RÉEL (contrat §2) : 1 pt/€ FLOOR du total TTC, ratio lu depuis
+  // la config alignée backend (lcEarnRatio, plus de 10 pt/€ hardcodé). La « prochaine
+  // récompense » du catalogue mock est remplacée par le modèle continu points→€.
+  const earnRatio = lcEarnRatio();
+  const redeemRatio = lcRedeemRatio();
+  const pointsForCart = Math.floor((total || 0) * earnRatio);
   const updateQty = (idx, d) => setCart(c => c.map((it, i) => i === idx ? { ...it, qty: Math.max(1, it.qty + d) } : it));
   const remove = (idx) => setCart(c => c.filter((_, i) => i !== idx));
   return (
@@ -667,9 +689,8 @@ function ScreenCart({ go, cart, setCart }) {
           <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--ink)', color: 'var(--orange)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><I.Gift size={20}/></div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 13, fontWeight: 700 }}>+{pointsForCart} pts gagnés sur cette commande</div>
-            {nextProg && nextProg.target && nextProg.remaining > 0 && (
-              <div style={{ fontSize: 11, color: 'var(--gray-4)', marginTop: 2 }}>Plus que {nextProg.remaining} pts pour « {nextProg.target.name} »</div>
-            )}
+            {/* [GOAL-SYNC 2026-07-08] Modèle continu points→€ (contrat §2) — plus de nom de récompense mock */}
+            <div style={{ fontSize: 11, color: 'var(--gray-4)', marginTop: 2 }}>{redeemRatio} pts = 1 € de réduction en caisse</div>
           </div>
         </div>
         {/* upsell */}
@@ -679,7 +700,14 @@ function ScreenCart({ go, cart, setCart }) {
             <span className="more">Notre conseil</span>
           </div>
           <div style={{ display: 'flex', gap: 10, padding: '0 20px', overflowX: 'auto' }}>
-            {ITEMS.filter(i => i.cat === 'sides' || i.cat === 'drinks' || i.cat === 'desserts').slice(0, 5).map(it => (
+            {/* [GOAL-SYNC 2026-07-08] FIX P1 : slugs 'sides'/'drinks' inexistants (les slugs réels
+                de data/menu.js sont 'frites'/'boissons'/'desserts') → l'upsell n'affichait que les
+                desserts. Mix garanti frites + boissons + desserts (fixture canonique = loi). */}
+            {[
+              ...ITEMS.filter(i => i.cat === 'frites').slice(0, 2),
+              ...ITEMS.filter(i => i.cat === 'boissons').slice(0, 3),
+              ...ITEMS.filter(i => i.cat === 'desserts').slice(0, 2),
+            ].map(it => (
               <div key={it.id} onClick={() => go('item', it.id)} style={{ flex: '0 0 130px', background: 'var(--cream)', borderRadius: 12, padding: 8, cursor: 'pointer' }}>
                 <div style={{ height: 80, borderRadius: 8, overflow: 'hidden', background: 'var(--ink)' }}>
                   <Slot id={it.slot} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name} fit="contain"/>
@@ -731,6 +759,9 @@ function ScreenConfirm({ go, order }) {
   const orderId = (order && order.id) || 'C-0000';
   const orderTotal = (order && typeof order.total === 'number') ? order.total : 0;
   const orderEta = (order && order.eta) || '—';
+  // [GOAL-SYNC 2026-07-08] N° d'appel RÉEL : queue_number posé par index.html (placeCounterOrder,
+  // commande réelle caisse). Présent → affiché en grand ; absent → comportement local V0 inchangé.
+  const queueNo = (order && order.queue_number != null && String(order.queue_number).trim()) ? String(order.queue_number).trim() : null;
   return (
     <div data-screen-label="11 Confirmation" style={{ position: 'absolute', inset: 0, background: '#FFD93D', display: 'flex', flexDirection: 'column', paddingTop: 'var(--ios-safe-top)' }}>
       <ScreenHeader left={<IconBtn bg="var(--ink)" color="#fff" onClick={() => go('home')} ariaLabel="Fermer la confirmation"><I.Close size={18}/></IconBtn>} center={<Logo size={12}/>}/>
@@ -753,7 +784,14 @@ function ScreenConfirm({ go, order }) {
           <div style={{ borderTop: '1.2px dashed var(--gray-2)', paddingTop: 10, display: 'flex', justifyContent: 'center' }}>
             <QRMock size={150} value={`LECAY-ORDER-${orderId.replace(/^C-/, '')}`}/>
           </div>
-          <div style={{ textAlign: 'center', fontFamily: 'var(--font-display)', fontSize: 24, letterSpacing: '0.1em', marginTop: 6 }}>{orderId}</div>
+          {/* [GOAL-SYNC 2026-07-08] queue_number réel (commande caisse) affiché en grand */}
+          {queueNo && (
+            <div style={{ textAlign: 'center', fontSize: 9, color: 'var(--gray-3)', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', marginTop: 6 }}>N° d'appel en caisse</div>
+          )}
+          <div data-testid="confirm-queue-number" style={{ textAlign: 'center', fontFamily: 'var(--font-display)', fontSize: 24, letterSpacing: '0.1em', marginTop: queueNo ? 2 : 6 }}>{queueNo || orderId}</div>
+          {queueNo && queueNo !== orderId && (
+            <div style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--gray-3)', marginTop: 2 }}>Commande #{orderId}</div>
+          )}
           <div style={{ borderTop: '1.2px dashed var(--gray-2)', marginTop: 10, paddingTop: 8, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
             <div>
               <div style={{ fontSize: 9, color: 'var(--gray-3)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Prêt à</div>
@@ -791,13 +829,62 @@ function ScreenConfirm({ go, order }) {
 // window.LC.orders data layer — removed hardcoded {8, 184€, 4 cards}
 // that drifted from underlying 5-entry history array.
 // (D-004 active-card → orderDetail routing preserved from prior fix.)
+// [GOAL-SYNC 2026-07-08] Mapping ligne backend GET /api/frontend/order → shape d'affichage
+// mobile. Sémantique regex statuts FR PORTÉE du web (orders.jsx:14-28) :
+// annul* → annulée · terminé/livré/récupéré/complet/prêt/servi → livrée · sinon → en cours.
+function mapRemoteOrderRow(o) {
+  o = o || {};
+  const sn = String(o.status_name || '').toLowerCase();
+  const status = /annul/.test(sn) ? 'cancelled'
+    : /(termin|livr|récup|recup|complet|prêt|pret|servi)/.test(sn) ? 'delivered'
+    : 'pending';
+  const count = Number(o.order_items) || 0;
+  return {
+    id: o.order_serial_no || ('#' + (o.id != null ? o.id : '—')),
+    dbId: o.id != null ? o.id : null,
+    date: o.order_datetime || '',
+    total: parseFloat(o.total_amount_price || 0) || 0,
+    status,
+    status_label: o.status_name || (status === 'delivered' ? 'Récupérée' : status === 'cancelled' ? 'Annulée' : 'En préparation'),
+    items_summary: count > 0 ? (count + ' article' + (count > 1 ? 's' : '')) : '',
+    remote: true,
+  };
+}
+
 function ScreenOrders({ go }) {
   const [tab, setTab] = uS('current');
+  // [GOAL-SYNC 2026-07-08] Historique RÉEL : si connecté → LC.mobileApi.orderHistory(50) ;
+  // réseau down → fallback data layer locale + bandeau hors-ligne ; erreur métier → message FR.
+  const api = (window.LC && window.LC.mobileApi) || null;
+  const authed = !!(api && api.isAuthed && api.isAuthed() && api.orderHistory);
+  const [remote, setRemote] = uS(authed ? 'loading' : null); // 'loading' | {active,history} | null = mode local
+  const [offline, setOffline] = uS(false);
+  const [remoteErr, setRemoteErr] = uS(null);
+  uE(() => {
+    if (!authed) return;
+    let alive = true;
+    api.orderHistory(50).then(rows => {
+      if (!alive) return;
+      const mapped = (Array.isArray(rows) ? rows : []).map(mapRemoteOrderRow);
+      setRemote({
+        active: mapped.filter(o => o.status === 'pending'),
+        history: mapped.filter(o => o.status !== 'pending'),
+      });
+    }).catch(e => {
+      if (!alive) return;
+      setRemote(null);
+      if (e && e.kind === 'network') setOffline(true);
+      else setRemoteErr((e && e.message) || 'Chargement des commandes impossible.');
+    });
+    return () => { alive = false; };
+  }, []);
+  const remoteMode = remote !== null && remote !== 'loading';
+  const loading = remote === 'loading';
   const ordersApi = (window.LC && window.LC.orders) ? window.LC.orders : { active: [], history: [] };
-  const active = Array.isArray(ordersApi.active) ? ordersApi.active : [];
-  const history = Array.isArray(ordersApi.history) ? ordersApi.history : [];
+  const active = remoteMode ? remote.active : (Array.isArray(ordersApi.active) ? ordersApi.active : []);
+  const history = remoteMode ? remote.history : (Array.isArray(ordersApi.history) ? ordersApi.history : []);
   const histTotal = history.reduce((s, o) => s + (Number(o.total) || 0), 0);
-  const groupByDate = (ordersApi.groupByDate && typeof ordersApi.groupByDate === 'function')
+  const groupByDate = (!remoteMode && ordersApi.groupByDate && typeof ordersApi.groupByDate === 'function')
     ? ordersApi.groupByDate
     : null;
   const dateLabel = (ordersApi.dateLabel && typeof ordersApi.dateLabel === 'function')
@@ -807,9 +894,9 @@ function ScreenOrders({ go }) {
   const balancePts = (window.LC && window.LC.loyalty && window.LC.loyalty.account)
     ? window.LC.loyalty.account.balance
     : 0;
-  // [LOYALTY-RATIO COHERENCE 2026-07-07] fallback points par commande dérivés de
-  // config.earn_ratio (10 pt/€) quand une commande n'a pas de points_earned stocké.
-  const earnRatio = (window.LC && window.LC.loyalty && window.LC.loyalty.config && window.LC.loyalty.config.earn_ratio) || 10;
+  // [GOAL-SYNC 2026-07-08] Estimation points par commande = Math.floor(total × ratio config
+  // réelle) — contrat §2 (earn backend = floor du total TTC), plus de 10 pt/€ hardcodé.
+  const earnRatio = lcEarnRatio();
   const fmtEur = (n) => (Number(n) || 0).toFixed(2).replace('.', ',') + ' €';
 
   return (
@@ -830,7 +917,23 @@ function ScreenOrders({ go }) {
             );
           })}
         </div>
-        {tab === 'current' ? (
+        {/* [GOAL-SYNC 2026-07-08] États réseau FR : chargement / hors-ligne / erreur */}
+        {loading && (
+          <div role="status" style={{ margin: '20px 20px 0', background: 'var(--cream)', borderRadius: 16, padding: 24, textAlign: 'center', color: 'var(--gray-4)', fontSize: 13 }}>
+            Chargement de tes commandes…
+          </div>
+        )}
+        {offline && (
+          <div role="status" data-testid="orders-offline-banner" style={{ margin: '14px 20px 0', background: 'var(--yellow)', borderRadius: 12, padding: '10px 14px', fontSize: 12, fontWeight: 700, color: 'var(--ink)' }}>
+            📡 Hors ligne — historique local affiché
+          </div>
+        )}
+        {remoteErr && (
+          <div role="alert" style={{ margin: '14px 20px 0', background: 'var(--cream)', border: '1.5px solid var(--red)', borderRadius: 12, padding: '10px 14px', fontSize: 12, fontWeight: 600, color: 'var(--red)' }}>
+            {remoteErr} — historique local affiché.
+          </div>
+        )}
+        {!loading && (tab === 'current' ? (
           <div style={{ padding: '20px 20px 0' }}>
             {active.length === 0 && (
               <div role="status" style={{ background: 'var(--cream)', borderRadius: 16, padding: 24, textAlign: 'center', color: 'var(--gray-4)', fontSize: 13 }}>
@@ -842,9 +945,11 @@ function ScreenOrders({ go }) {
               const statusLabel = (o.status_label || 'En préparation').toUpperCase();
               const eta = Number(o.eta_minutes) || 12;
               const progressSteps = Math.max(1, Math.round((Number(o.progress_pct) || 50) / 25));
+              // [GOAL-SYNC 2026-07-08] commandes API : pas de fiche détail locale → carte non cliquable
+              const openDetail = o.remote ? undefined : (() => go('orderDetail', o.id));
               return (
                 /* [test-e2e fix D-004 round-2 2026-05-11] active order routes to detail, not confirm */
-                <div key={o.id} role="button" tabIndex={0} aria-label={`Commande ${o.id} en cours — voir détails`} className="lc-tap" onClick={() => go('orderDetail', o.id)} onKeyDown={window.lcTapKey(() => go('orderDetail', o.id))} style={{ background: 'var(--ink)', color: '#fff', borderRadius: 20, padding: 20, position: 'relative', overflow: 'hidden', cursor: 'pointer', marginBottom: 12 }}>
+                <div key={o.id} role={openDetail ? 'button' : undefined} tabIndex={openDetail ? 0 : undefined} aria-label={openDetail ? `Commande ${o.id} en cours — voir détails` : `Commande ${o.id} en cours`} className="lc-tap" onClick={openDetail} onKeyDown={openDetail ? window.lcTapKey(openDetail) : undefined} style={{ background: 'var(--ink)', color: '#fff', borderRadius: 20, padding: 20, position: 'relative', overflow: 'hidden', cursor: openDetail ? 'pointer' : 'default', marginBottom: 12 }}>
                   <div style={{ position: 'absolute', top: -20, right: -20, width: 140, height: 140, opacity: 0.06 }}><I.Pepper size={140} stroke="#FF5A1F"/></div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span className="lc-pill" style={{ background: 'var(--orange)', color: '#fff' }}><span className="lc-status-dot" style={{ background: '#fff' }}/> {statusLabel}</span>
@@ -858,7 +963,7 @@ function ScreenOrders({ go }) {
                     ))}
                   </div>
                   <div style={{ marginTop: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--yellow)' }}>Voir le QR de retrait →</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--yellow)' }}>{o.remote ? (o.date || 'Commande en cours') : 'Voir le QR de retrait →'}</span>
                     <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{fmtEur(o.total)}</span>
                   </div>
                 </div>
@@ -889,20 +994,25 @@ function ScreenOrders({ go }) {
             )}
             {groups.map((g, gi) => (
               <div key={(g.date || '') + '-' + gi} style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--orange)', letterSpacing: '0.22em', marginBottom: 8, paddingLeft: 4 }}>● {dateLabel(g.date)}</div>
+                {/* [GOAL-SYNC 2026-07-08] header de groupe masqué en mode API (date portée par chaque carte) */}
+                {g.date ? <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--orange)', letterSpacing: '0.22em', marginBottom: 8, paddingLeft: 4 }}>● {dateLabel(g.date)}</div> : null}
                 <div style={{ display: 'grid', gap: 8 }}>
                   {g.items.map(o => {
                     const summary = o.items_summary || (Array.isArray(o.items) ? o.items.map(i => i.name).join(' · ') : '');
-                    const points = Number(o.points_earned) || Math.round((Number(o.total) || 0) * earnRatio);
+                    // [GOAL-SYNC 2026-07-08] estimation FLOOR (contrat §2), ratio config réelle
+                    const points = Number(o.points_earned) || Math.floor((Number(o.total) || 0) * earnRatio);
                     const statusLabel = o.status_label || 'Récupérée';
+                    const isCancelled = o.status === 'cancelled';
+                    const openDetail = o.remote ? undefined : (() => go('orderDetail', o.id));
                     return (
-                      <div key={o.id} data-testid={'orders-history-card-' + o.id} onClick={() => go('orderDetail', o.id)} style={{ background: 'var(--cream)', borderRadius: 14, padding: 14, position: 'relative', cursor: 'pointer' }}>
+                      <div key={o.id} data-testid={'orders-history-card-' + o.id} onClick={openDetail} style={{ background: 'var(--cream)', borderRadius: 14, padding: 14, position: 'relative', cursor: openDetail ? 'pointer' : 'default' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
                               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--gray-3)' }}>#{o.id}</span>
                               <span style={{ width: 4, height: 4, borderRadius: 999, background: 'var(--gray-2)' }}/>
-                              <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--green)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>✓ {statusLabel}</span>
+                              <span style={{ fontSize: 10, fontWeight: 700, color: isCancelled ? 'var(--red)' : 'var(--green)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{isCancelled ? '✕' : '✓'} {statusLabel}</span>
+                              {o.remote && o.date ? <span style={{ fontSize: 10, color: 'var(--gray-3)' }}>{o.date}</span> : null}
                             </div>
                             <div style={{ fontSize: 14, fontWeight: 700, lineHeight: 1.3 }}>{summary}</div>
                             <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -919,14 +1029,31 @@ function ScreenOrders({ go }) {
               </div>
             ))}
           </div>
-        )}
+        ))}
       </div>
     </div>
   );
 }
 
 // PROFILE
+// [GOAL-SYNC 2026-07-08] Identité RÉELLE : nom/téléphone via LC.mobileApi.profile() (GET
+// /api/profile, contrat §2) quand connecté ; fallback storage.getAuth().phone sinon.
+// Le « Ikyes B. / +33 6 42 79 98 84 » hardcodé est SUPPRIMÉ.
 function ScreenProfile({ go }) {
+  const api = (window.LC && window.LC.mobileApi) || null;
+  const authed = !!(api && api.isAuthed && api.isAuthed());
+  const storedAuth = (window.LC && window.LC.storage && window.LC.storage.getAuth) ? (window.LC.storage.getAuth() || {}) : {};
+  const [prof, setProf] = uS(null);
+  uE(() => {
+    if (!authed || !api.profile) return;
+    let alive = true;
+    api.profile().then(p => { if (alive) setProf(p || null); }).catch(() => { /* fallback storage silencieux */ });
+    return () => { alive = false; };
+  }, []);
+  const rawName = (prof && (prof.name || [prof.first_name, prof.last_name].filter(Boolean).join(' '))) || '';
+  const displayName = String(rawName).trim() || 'Client Le Cayenne';
+  const displayPhone = (prof && prof.phone) || storedAuth.phone || '—';
+  const initials = displayName.split(/\s+/).slice(0, 2).map(w => w.charAt(0)).join('').toUpperCase() || 'LC';
   return (
     <div data-screen-label="13 Profile" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
       <div className="lc-screen" style={{ paddingBottom: 100 }}>
@@ -936,36 +1063,38 @@ function ScreenProfile({ go }) {
         {/* user card */}
         <div style={{ padding: '20px 20px 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: 16, background: 'var(--cream)', borderRadius: 16 }}>
-            <div style={{ width: 56, height: 56, borderRadius: 999, background: 'var(--orange)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontSize: 24 }}>IB</div>
+            <div style={{ width: 56, height: 56, borderRadius: 999, background: 'var(--orange)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontSize: 24 }}>{initials}</div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 17, fontWeight: 700 }}>Ikyes B.</div>
-              <div style={{ fontSize: 12, color: 'var(--gray-3)', fontFamily: 'var(--font-mono)' }}>+33 6 42 79 98 84</div>
+              <div data-testid="profile-name" style={{ fontSize: 17, fontWeight: 700 }}>{displayName}</div>
+              <div data-testid="profile-phone" style={{ fontSize: 12, color: 'var(--gray-3)', fontFamily: 'var(--font-mono)' }}>{displayPhone}</div>
             </div>
             <button onClick={() => go('toast', { msg: 'Édition profil — bientôt disponible', kind: 'info' })} style={{ background: 'var(--ink)', border: 0, padding: '8px 14px', borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: 'pointer', color: 'var(--yellow)', letterSpacing: '0.08em' }}>MODIFIER</button>
           </div>
         </div>
-        {/* loyalty preview card — bound to LC.loyalty per DEC-11 */}
+        {/* loyalty preview card — [GOAL-SYNC 2026-07-08] modèle CONTINU points→€ (contrat §2) :
+            plus de « prochaine récompense » du catalogue mock. Solde réel du profil si dispo. */}
         {(() => {
-          const lAcc = window.LC.loyalty.account;
-          const lProg = window.LC.loyalty.progressToNext(lAcc.balance);
-          const lProgPct = lProg.target ? lProg.pct : 100;
+          const lAcc = (window.LC.loyalty && window.LC.loyalty.account) || { balance: 0 };
+          const lBalance = (prof && prof.loyalty_points != null) ? (Number(prof.loyalty_points) || 0) : (Number(lAcc.balance) || 0);
+          const lRatio = lcRedeemRatio();
+          const lEuros = Math.floor(lBalance / lRatio);
+          const lMod = lBalance % lRatio;
+          const lProgPct = Math.round((lMod / lRatio) * 100);
           return (
             <div style={{ padding: '14px 20px 0' }}>
-              <div role="button" tabIndex={0} aria-label={`Carte fidélité — ${lAcc.balance} points, voir détails`} className="lc-tap" onClick={() => go('loyalty')} onKeyDown={window.lcTapKey(() => go('loyalty'))} style={{ position: 'relative', background: 'var(--ink)', color: '#fff', borderRadius: 20, padding: 20, overflow: 'hidden', cursor: 'pointer' }}>
+              <div role="button" tabIndex={0} aria-label={`Carte fidélité — ${lBalance} points, voir détails`} className="lc-tap" onClick={() => go('loyalty')} onKeyDown={window.lcTapKey(() => go('loyalty'))} style={{ position: 'relative', background: 'var(--ink)', color: '#fff', borderRadius: 20, padding: 20, overflow: 'hidden', cursor: 'pointer' }}>
                 <div style={{ position: 'absolute', top: -30, right: -30, width: 180, height: 180, borderRadius: 999, background: 'var(--orange)', opacity: 0.42 }}/>
                 <div style={{ position: 'absolute', top: -10, right: -10, width: 100, height: 100, borderRadius: 999, background: 'var(--yellow)', opacity: 0.30 }}/>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                   <I.Gift size={18} stroke="var(--yellow)"/>
                   <span className="lc-eyebrow" style={{ color: 'var(--yellow)' }}>Carte fidélité</span>
                 </div>
-                <div className="lc-display" style={{ fontSize: 56, lineHeight: 0.9 }}>{lAcc.balance}<span style={{ fontSize: 18, color: 'var(--orange)' }}> PTS</span></div>
-                {lProg.target && lProg.remaining > 0 ? (
-                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 6 }}>
-                    Plus que <b style={{ color: 'var(--orange)' }}>{lProg.remaining} pts</b> pour <b style={{ color: 'var(--yellow)' }}>{lProg.target.name}</b> {lProg.target.icon}
-                  </div>
-                ) : (
-                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 6 }}>🎉 Toutes les récompenses débloquées</div>
-                )}
+                <div className="lc-display" style={{ fontSize: 56, lineHeight: 0.9 }}>{lBalance}<span style={{ fontSize: 18, color: 'var(--orange)' }}> PTS</span></div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 6 }}>
+                  {lEuros > 0
+                    ? <>Soit <b style={{ color: 'var(--yellow)' }}>{lEuros} €</b> de réduction en caisse · {lRatio} pts = 1 €</>
+                    : <>Plus que <b style={{ color: 'var(--orange)' }}>{lRatio - lMod} pts</b> pour 1 € de réduction ({lRatio} pts = 1 €)</>}
+                </div>
                 <div style={{ marginTop: 14, height: 6, background: 'rgba(255,255,255,0.15)', borderRadius: 999, overflow: 'hidden' }}>
                   <div style={{ width: lProgPct + '%', height: '100%', background: 'linear-gradient(90deg, var(--yellow), var(--orange))' }}/>
                 </div>
@@ -982,7 +1111,8 @@ function ScreenProfile({ go }) {
           <div style={{ background: 'var(--cream)', borderRadius: 18, overflow: 'hidden' }}>
             {[
               { i: I.Gift, t: 'Ma carte fidélité', d: (window.LC.loyalty.account.balance + ' pts'), go: 'loyalty', accent: 'var(--orange)' },
-              { i: I.Card, t: 'Moyens de paiement', d: 'Visa ····4242' },
+              // [GOAL-SYNC 2026-07-08] Flag carte-en-ligne OFF (contrat §4) — plus de fausse « Visa ····4242 »
+              { i: I.Card, t: 'Moyens de paiement', d: 'En caisse (CB ou espèces)' },
               { i: I.Bell, t: 'Notifications', d: 'Activées' },
               { i: I.Pepper, t: 'Allergènes & préférences', d: '2 actives' },
               { i: I.Globe, t: 'Langue', d: 'Français' },
@@ -1006,6 +1136,138 @@ function ScreenProfile({ go }) {
   );
 }
 
+// [GOAL-SYNC 2026-07-08] Panneau RÉDUCTIONS — modèle CONTINU points→€ (contrat §2, décision D6=A).
+// Remplace le catalogue mock 8 rewards : 100 pts = 1 €, sélection par multiples de 100
+// (min_redeem_points) jusqu'à min(solde, plafond = solde arrondi au multiple inférieur).
+// CTA « Utiliser en caisse » → confirmation → POST /api/frontend/loyalty/redeem RÉEL via
+// LC.mobileApi.loyaltyRedeem (X-Idempotency-Key auto ; 400/422 remappés FR par api/client.js).
+function LoyaltyRedeemPanel({ balance, authed, preset, loyaltyCode, go, onRedeemed }) {
+  const redeemRatio = lcRedeemRatio();
+  const cfg = lcLoyaltyCfg();
+  const minPts = Math.max(redeemRatio, Number(cfg.min_redeem_points) || redeemRatio);
+  const safeBalance = Number(balance) || 0;
+  const maxPts = Math.floor(safeBalance / redeemRatio) * redeemRatio; // plafond = solde
+  const canRedeem = maxPts >= minPts;
+  const clampPts = (v) => {
+    let p = Math.round((Number(v) || minPts) / redeemRatio) * redeemRatio;
+    if (p < minPts) p = minPts;
+    if (canRedeem && p > maxPts) p = maxPts;
+    return p;
+  };
+  const [pts, setPts] = uS(clampPts(preset || minPts));
+  const [phase, setPhase] = uS('pick'); // pick | confirm | busy | done
+  const [err, setErr] = uS(null);
+  const [doneEuros, setDoneEuros] = uS(null);
+  uE(() => { setPts(clampPts(preset || minPts)); }, [preset, balance]);
+  const fmtE = (n) => (Number(n) || 0).toFixed(2).replace('.', ',');
+  const euros = pts / redeemRatio;
+
+  const submit = async () => {
+    const api = (window.LC && window.LC.mobileApi) || null;
+    if (!(api && api.loyaltyRedeem && authed)) {
+      setPhase('pick');
+      setErr('Connecte-toi pour utiliser tes points en caisse.');
+      return;
+    }
+    setPhase('busy'); setErr(null);
+    try {
+      let code = String(loyaltyCode || '').trim();
+      if (!code && api.profile) {
+        try { const p = await api.profile(); code = (p && p.loyalty_code) || ''; } catch (e) { /* géré ci-dessous */ }
+      }
+      if (!code) throw { kind: 'http', message: 'Carte fidélité introuvable. Réessaie dans un instant.' };
+      await api.loyaltyRedeem(code, pts);
+      setDoneEuros(euros);
+      setPhase('done');
+      if (typeof onRedeemed === 'function') onRedeemed();
+    } catch (e) {
+      setPhase('pick');
+      setErr((e && e.message) || 'Utilisation des points impossible. Réessaie.');
+    }
+  };
+
+  return (
+    <div data-testid="redeem-panel" className="rdl-rewards" style={{ padding: 0 }}>
+      {/* Règle du modèle continu — toujours visible */}
+      <div style={{ background: 'var(--ink)', color: '#fff', borderRadius: 16, padding: 16, textAlign: 'center' }}>
+        <div className="lc-display" data-testid="redeem-rule" style={{ fontSize: 28, color: 'var(--yellow)' }}>{redeemRatio} pts = 1 €</div>
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 4 }}>Utilise tes points par tranche de {redeemRatio} pts, dans la limite de ton solde.</div>
+      </div>
+
+      {phase === 'done' ? (
+        <div role="status" style={{ marginTop: 10, background: '#E8F8ED', border: '1.5px solid var(--green)', borderRadius: 16, padding: 18, textAlign: 'center' }}>
+          <div style={{ fontSize: 32 }}>✅</div>
+          <div className="lc-display" style={{ fontSize: 22, marginTop: 6 }}>−{fmtE(doneEuros)} € enregistrés</div>
+          <div style={{ fontSize: 12, color: 'var(--gray-4)', marginTop: 6 }}>Présente ton QR ou dicte ton numéro de carte en caisse pour en profiter.</div>
+          <button onClick={() => setPhase('pick')} className="lc-btn lc-btn--ink" style={{ height: 44, marginTop: 12 }}>OK</button>
+        </div>
+      ) : !authed ? (
+        <div style={{ marginTop: 10, background: 'var(--cream)', borderRadius: 16, padding: 18, textAlign: 'center', fontSize: 13, color: 'var(--gray-4)' }}>
+          Connecte-toi pour utiliser tes points en caisse.
+        </div>
+      ) : !canRedeem ? (
+        <div data-testid="redeem-locked" style={{ marginTop: 10, background: 'var(--cream)', borderRadius: 16, padding: 18, textAlign: 'center', fontSize: 13, color: 'var(--gray-4)' }}>
+          🔒 Il te manque <b style={{ color: 'var(--ink)' }}>{minPts - safeBalance} pts</b> pour ta première réduction (minimum {minPts} pts).
+        </div>
+      ) : (
+        <div style={{ marginTop: 10, background: 'var(--cream)', borderRadius: 16, padding: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+            <button aria-label={'Retirer ' + redeemRatio + ' points'} disabled={pts <= minPts || phase === 'busy'} onClick={() => setPts(p => clampPts(p - redeemRatio))} style={{ width: 40, height: 40, borderRadius: 999, border: 0, background: pts <= minPts ? 'var(--gray-1)' : 'var(--ink)', color: pts <= minPts ? 'var(--gray-3)' : 'var(--yellow)', fontSize: 18, fontWeight: 800, cursor: pts <= minPts ? 'not-allowed' : 'pointer' }}>−</button>
+            <div style={{ textAlign: 'center' }}>
+              <div className="lc-display" data-testid="redeem-points-value" style={{ fontSize: 34, lineHeight: 1 }}>{pts} pts</div>
+              <div data-testid="redeem-euro-value" style={{ fontSize: 13, fontWeight: 700, color: 'var(--orange)', marginTop: 2 }}>= −{fmtE(euros)} € en caisse</div>
+            </div>
+            <button aria-label={'Ajouter ' + redeemRatio + ' points'} disabled={pts >= maxPts || phase === 'busy'} onClick={() => setPts(p => clampPts(p + redeemRatio))} style={{ width: 40, height: 40, borderRadius: 999, border: 0, background: pts >= maxPts ? 'var(--gray-1)' : 'var(--orange)', color: pts >= maxPts ? 'var(--gray-3)' : '#fff', fontSize: 18, fontWeight: 800, cursor: pts >= maxPts ? 'not-allowed' : 'pointer' }}>+</button>
+          </div>
+          <input
+            data-testid="redeem-slider"
+            type="range"
+            min={minPts}
+            max={maxPts}
+            step={redeemRatio}
+            value={pts}
+            disabled={phase === 'busy'}
+            onChange={(e) => setPts(clampPts(e.target.value))}
+            aria-label="Points à utiliser"
+            style={{ width: '100%', marginTop: 14, accentColor: 'var(--orange)' }}
+          />
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--gray-3)', fontWeight: 700 }}>
+            <span>{minPts} pts</span>
+            <span>{maxPts} pts (solde {safeBalance})</span>
+          </div>
+          {phase === 'confirm' ? (
+            <div style={{ marginTop: 14 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, textAlign: 'center' }}>Confirmer : utiliser {pts} pts pour −{fmtE(euros)} € en caisse ?</div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                <button onClick={() => setPhase('pick')} style={{ flex: 1, height: 48, borderRadius: 999, border: '1.5px solid var(--gray-2)', background: '#fff', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', cursor: 'pointer' }}>Annuler</button>
+                <button data-testid="redeem-confirm-btn" onClick={submit} className="lc-btn lc-btn--orange" style={{ flex: 1.4, height: 48, fontSize: 12 }}>Confirmer</button>
+              </div>
+            </div>
+          ) : (
+            <button
+              data-testid="redeem-cta"
+              onClick={() => setPhase('confirm')}
+              disabled={phase === 'busy'}
+              className="lc-btn lc-btn--ink"
+              style={{ width: '100%', height: 52, marginTop: 14, fontSize: 13 }}
+            >
+              {phase === 'busy' ? 'Validation…' : 'Utiliser en caisse'}
+            </button>
+          )}
+        </div>
+      )}
+      {err && (
+        <div role="alert" data-testid="redeem-error" style={{ marginTop: 8, padding: '10px 12px', background: '#FDECEA', border: '1.5px solid var(--red)', borderRadius: 12, fontSize: 12, fontWeight: 600, color: 'var(--red)' }}>
+          {err}
+        </div>
+      )}
+      <div style={{ fontSize: 10, color: 'var(--gray-4)', textAlign: 'center', marginTop: 8, padding: '0 12px' }}>
+        ⓘ La réduction est appliquée par l'équipe en caisse au moment de payer.
+      </div>
+    </div>
+  );
+}
+
 // LOYALTY DETAIL
 // LOYALTY — multi-section refactor (DEC-11 in 99_VERDICT.md §2)
 // Sections : HERO (LoyaltyQR + member badge + countdown + toggle) →
@@ -1016,6 +1278,44 @@ function ScreenLoyalty({ go }) {
   const [qrMode, setQrMode] = uS((window.LC.storage && window.LC.storage.getQRPreference) ? window.LC.storage.getQRPreference() : 'qr');
   const [filterSource, setFilterSource] = uS('all');
   const [, force] = uS(0);
+  // [GOAL-SYNC 2026-07-08] Données RÉELLES si connecté (contrat §2) : solde via GET /api/profile
+  // (loyalty_points — PAS de /balance), historique via GET /loyalty/history. Réseau down ⇒
+  // fallback data layer locale + bandeau hors-ligne. refreshSeq relance le fetch post-redeem.
+  const api = (window.LC && window.LC.mobileApi) || null;
+  const authed = !!(api && api.isAuthed && api.isAuthed());
+  const [remoteProfile, setRemoteProfile] = uS(null);
+  const [remoteHist, setRemoteHist] = uS(authed && api.loyaltyHistory ? 'loading' : null); // 'loading' | rows[] | null = local
+  const [netOffline, setNetOffline] = uS(false);
+  const [refreshSeq, setRefreshSeq] = uS(0);
+  const [redeemPreset, setRedeemPreset] = uS(null);
+  uE(() => {
+    if (!authed) return;
+    let alive = true;
+    if (api.profile) {
+      api.profile()
+        .then(p => { if (alive) { setRemoteProfile(p || null); setNetOffline(false); } })
+        .catch(e => { if (alive && e && e.kind === 'network') setNetOffline(true); });
+    }
+    if (api.loyaltyHistory) {
+      api.loyaltyHistory(1).then(r => {
+        if (!alive) return;
+        const rows = (r && (r.data || r)) || [];
+        setRemoteHist(Array.isArray(rows) ? rows.map((h, i) => ({
+          id: 'api-' + i,
+          date: (h && h.date) || '',
+          type: (h && h.type) || 'earn',
+          points: Number(h && h.points) || 0,
+          description: (h && h.description) || ((Number(h && h.points) || 0) >= 0 ? 'Points gagnés' : 'Points utilisés'),
+          source_surface: (h && h.source_surface) || '',
+        })) : []);
+      }).catch(e => {
+        if (!alive) return;
+        setRemoteHist(null);
+        if (e && e.kind === 'network') setNetOffline(true);
+      });
+    }
+    return () => { alive = false; };
+  }, [refreshSeq]);
 
   // Re-render on data layer changes (earn / redeem / refund / consent)
   uE(() => {
@@ -1031,21 +1331,29 @@ function ScreenLoyalty({ go }) {
     }
   });
 
-  // Bind to data layer — zero hardcoded values
+  // Bind to data layer — zero hardcoded values ; ratios via config RÉELLE (lcLoyaltyCfg)
   const account = window.LC.loyalty.account;
-  const historyAll = window.LC.loyalty.history;
-  const config = window.LC.loyalty.config;
-  const rewards = window.LC.loyalty.rewards;
+  const historyLoading = remoteHist === 'loading';
+  const historyAll = Array.isArray(remoteHist) ? remoteHist : window.LC.loyalty.history;
+  const config = lcLoyaltyCfg();
+  const earnRatio = lcEarnRatio();
+  const redeemRatio = lcRedeemRatio();
   const consent = (window.LC.storage && window.LC.storage.getConsent) ? window.LC.storage.getConsent() : 'opted_in';
   const isOptedOut = consent === 'opted_out';
   const userFirstName = (window.LC.user && window.LC.user.current && window.LC.user.current.first_name) || '';
   const userLastInit = (window.LC.user && window.LC.user.current && window.LC.user.current.last_name) || '';
   const memberDisplayName = (userFirstName + (userLastInit ? ' ' + userLastInit : '')).toUpperCase().trim();
 
-  const balance = account.balance;
-  const isEmpty = balance === 0 && (account.lifetime_earned || 0) === 0;
-  const discountValue = window.LC.loyalty.pointsToDiscount(balance);
-  const progress = window.LC.loyalty.progressToNext(balance);
+  // Solde RÉEL (profil API) prioritaire ; fallback data layer locale
+  const balance = (remoteProfile && remoteProfile.loyalty_points != null)
+    ? (Number(remoteProfile.loyalty_points) || 0)
+    : (Number(account.balance) || 0);
+  const isEmpty = balance === 0 && (Array.isArray(remoteHist) ? remoteHist.length === 0 : (account.lifetime_earned || 0) === 0);
+  const discountValue = balance / redeemRatio;
+  // [GOAL-SYNC 2026-07-08] Progression CONTINUE vers le prochain € (plus de catalogue mock)
+  const progressMod = balance % redeemRatio;
+  const progressRemaining = progressMod === 0 ? 0 : (redeemRatio - progressMod);
+  const progressPct = Math.round((progressMod / redeemRatio) * 100);
 
   const onQRToggle = () => {
     const newMode = qrMode === 'qr' ? 'barcode' : 'qr';
@@ -1088,7 +1396,9 @@ function ScreenLoyalty({ go }) {
               {/* LoyaltyQR card — centered, memoized */}
               <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 20px 0' }}>
                 <div style={{ background: '#fff', borderRadius: 22, padding: 18, boxShadow: '0 12px 32px rgba(0,0,0,0.14)' }}>
-                  <window.LoyaltyQR loyaltyCode={account.loyalty_code} memberNumber={account.member_number} name={memberDisplayName} mode={qrMode}/>
+                  {/* [GOAL-SYNC 2026-07-08] membre RÉEL si profil API chargé (client-N°id) — le
+                      mock FK-12345 ne reste QUE comme fallback hors-ligne (pas de faux n° en ligne). */}
+                  <window.LoyaltyQR loyaltyCode={(remoteProfile && remoteProfile.loyalty_code) || account.loyalty_code} memberNumber={remoteProfile ? (remoteProfile.id != null ? 'CLIENT-' + remoteProfile.id : '') : account.member_number} name={memberDisplayName} mode={qrMode}/>
                 </div>
               </div>
               <div style={{ marginTop: 14, textAlign: 'center', fontSize: 12, color: 'var(--ink)', fontWeight: 600 }}>
@@ -1110,23 +1420,24 @@ function ScreenLoyalty({ go }) {
             <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 4 }}>
               Soit {discountValue.toFixed(2).replace('.', ',')} € de réduction disponible
             </div>
-            {progress.target && progress.remaining > 0 && (
+            {/* [GOAL-SYNC 2026-07-08] Progression CONTINUE vers le prochain € (contrat §2) */}
+            {progressRemaining > 0 && (
               <div style={{ marginTop: 16 }}>
                 <div data-testid="loyalty-progress-text" style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'rgba(255,255,255,0.7)', marginBottom: 6 }}>
-                  <span>{balance} / {progress.target.points_cost} pts</span>
-                  <span style={{ color: 'var(--yellow)' }}>{progress.target.name.toUpperCase()}</span>
+                  <span>{progressMod} / {redeemRatio} pts</span>
+                  <span style={{ color: 'var(--yellow)' }}>+1 € DE RÉDUCTION</span>
                 </div>
-                <div role="progressbar" aria-valuenow={balance} aria-valuemax={progress.target.points_cost} aria-valuetext={balance + ' sur ' + progress.target.points_cost + ' points'} style={{ height: 8, background: 'rgba(255,255,255,0.12)', borderRadius: 999, overflow: 'hidden', position: 'relative' }}>
-                  <div style={{ width: progress.pct + '%', height: '100%', background: 'linear-gradient(90deg, var(--yellow), var(--orange))' }}/>
+                <div role="progressbar" aria-valuenow={progressMod} aria-valuemax={redeemRatio} aria-valuetext={progressMod + ' sur ' + redeemRatio + ' points vers le prochain euro'} style={{ height: 8, background: 'rgba(255,255,255,0.12)', borderRadius: 999, overflow: 'hidden', position: 'relative' }}>
+                  <div style={{ width: progressPct + '%', height: '100%', background: 'linear-gradient(90deg, var(--yellow), var(--orange))' }}/>
                 </div>
                 <div style={{ marginTop: 8, fontSize: 12, fontWeight: 600 }}>
-                  Plus que <span style={{ color: 'var(--orange)', fontWeight: 800 }}>{progress.remaining} pts</span> pour <b style={{ color: 'var(--yellow)' }}>{progress.target.name}</b> {progress.target.icon}
+                  Plus que <span style={{ color: 'var(--orange)', fontWeight: 800 }}>{progressRemaining} pts</span> pour <b style={{ color: 'var(--yellow)' }}>1 € de réduction</b> supplémentaire 🎁
                 </div>
               </div>
             )}
-            {progress.remaining === 0 && progress.target && (
+            {progressRemaining === 0 && balance > 0 && (
               <div style={{ marginTop: 16, padding: 10, background: 'rgba(31,166,83,0.15)', borderRadius: 10, fontSize: 12, fontWeight: 700, color: 'var(--yellow)', textAlign: 'center' }}>
-                🎉 Tu as débloqué toutes les récompenses
+                🎉 {balance / redeemRatio} € de réduction prêts à être utilisés en caisse
               </div>
             )}
           </div>
@@ -1173,10 +1484,18 @@ function ScreenLoyalty({ go }) {
           </div>
         )}
 
-        {/* TABS — Cycle C Wave 4 : rdl-tabs avec bottom indicator on active */}
+        {/* [GOAL-SYNC 2026-07-08] Bandeau hors-ligne (fallback data locale) */}
+        {!isOptedOut && authed && netOffline && (
+          <div role="status" data-testid="loyalty-offline-banner" style={{ margin: '14px 20px 0', background: 'var(--yellow)', borderRadius: 12, padding: '10px 14px', fontSize: 12, fontWeight: 700, color: 'var(--ink)' }}>
+            📡 Hors ligne — données locales affichées
+          </div>
+        )}
+
+        {/* TABS — Cycle C Wave 4 : rdl-tabs avec bottom indicator on active
+            [GOAL-SYNC 2026-07-08] « Récompenses » (catalogue mock) → « Réductions » (points→€ continu) */}
         {!isOptedOut && (
           <div className="rdl-tabs" role="tablist" aria-label="Sections fidélité">
-            {[{ id: 'points', label: 'Mes points' }, { id: 'rewards', label: 'Récompenses' }, { id: 'history', label: 'Historique' }].map(t => {
+            {[{ id: 'points', label: 'Mes points' }, { id: 'rewards', label: 'Réductions' }, { id: 'history', label: 'Historique' }].map(t => {
               const a = tab === t.id;
               return (
                 <button
@@ -1203,36 +1522,39 @@ function ScreenLoyalty({ go }) {
               <div data-testid="loyalty-empty-state" style={{ padding: 24, background: 'var(--cream)', borderRadius: 16, textAlign: 'center' }}>
                 <div style={{ fontSize: 40, marginBottom: 8 }}>🎉</div>
                 <div className="lc-display" style={{ fontSize: 26, marginBottom: 4 }}>Bienvenue dans le club</div>
-                <div style={{ fontSize: 13, color: 'var(--gray-4)', marginBottom: 16 }}>Tu n'as pas encore de points. Commande pour la 1ʳᵉ fois et reçois <b>{config.welcome_bonus} pts offerts</b>.</div>
+                {/* [GOAL-SYNC 2026-07-08] earn réel : 1 pt/€ (config backend), plus de bonus mock imposé */}
+                <div style={{ fontSize: 13, color: 'var(--gray-4)', marginBottom: 16 }}>Tu n'as pas encore de points. Chaque euro dépensé te rapporte <b>{earnRatio} pt{earnRatio > 1 ? 's' : ''}</b>.</div>
                 <button data-testid="cta-first-order" onClick={() => go('menu')} className="lc-btn lc-btn--orange" style={{ height: 48 }}>Commencer ma commande →</button>
                 <div style={{ marginTop: 20, fontSize: 11, color: 'var(--gray-4)', textAlign: 'left' }}>
-                  <div className="lc-eyebrow" style={{ marginBottom: 6, color: 'var(--ink)' }}>Aperçu des récompenses</div>
-                  {rewards.slice(0, 3).map(r => (
-                    <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--gray-1)' }}>
-                      <span>{r.icon} {r.name}</span>
-                      <span style={{ fontWeight: 700, color: 'var(--ink)' }}>{r.points_cost} pts</span>
+                  <div className="lc-eyebrow" style={{ marginBottom: 6, color: 'var(--ink)' }}>Aperçu des réductions</div>
+                  {[1, 3, 5].map(n => (
+                    <div key={n} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--gray-1)' }}>
+                      <span>🎁 −{n},00 € en caisse</span>
+                      <span style={{ fontWeight: 700, color: 'var(--ink)' }}>{n * redeemRatio} pts</span>
                     </div>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Mes points — tier progression */}
+            {/* Mes points — paliers indicatifs dérivés de la config RÉELLE (contrat §2 :
+                modèle continu points→€, plus AUCUN nom de récompense mock). UTILISER bascule
+                sur l'onglet Réductions avec le montant présélectionné. */}
             {tab === 'points' && !isEmpty && (
               <div id="loyalty-tabpanel-points" role="tabpanel" style={{ display: 'grid', gap: 8 }}>
-                {config.tiers.map(tier => {
-                  const matchingReward = rewards.find(r => r.points_cost === tier) || { name: '−' + (tier / config.redeem_ratio).toFixed(2).replace('.', ',') + ' €', icon: '🎁', points_cost: tier };
+                {(Array.isArray(config.tiers) && config.tiers.length ? config.tiers : [100, 250, 500, 1000, 2000]).map(tier => {
+                  const tierEuros = (tier / redeemRatio).toFixed(2).replace('.', ',');
                   const unlocked = balance >= tier;
                   const missing = unlocked ? 0 : tier - balance;
                   return (
                     <div key={tier} data-testid={'reward-row-' + tier} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 14, background: unlocked ? '#E8F8ED' : 'var(--cream)', borderRadius: 14, border: unlocked ? '1.5px solid var(--green)' : '1.5px solid transparent' }}>
                       <div style={{ width: 44, height: 44, borderRadius: 10, background: unlocked ? 'var(--green)' : 'var(--ink)', color: unlocked ? '#fff' : 'var(--yellow)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontSize: 14, flexShrink: 0 }}>{tier}</div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700 }}>{matchingReward.icon} {matchingReward.name}</div>
+                        <div style={{ fontSize: 13, fontWeight: 700 }}>🎁 −{tierEuros} € en caisse</div>
                         <div style={{ fontSize: 11, color: 'var(--gray-4)', marginTop: 2 }}>{unlocked ? '✓ Disponible' : missing + ' pts manquants'}</div>
                       </div>
                       {unlocked && (
-                        <button onClick={() => go('redeem', { reward: matchingReward.id || tier })} data-testid={'reward-redeem-btn-' + tier} style={{ background: 'var(--green)', color: '#fff', border: 0, padding: '8px 14px', borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>UTILISER</button>
+                        <button onClick={() => { setRedeemPreset(tier); setTab('rewards'); }} data-testid={'reward-redeem-btn-' + tier} style={{ background: 'var(--green)', color: '#fff', border: 0, padding: '8px 14px', borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>UTILISER</button>
                       )}
                     </div>
                   );
@@ -1240,39 +1562,19 @@ function ScreenLoyalty({ go }) {
               </div>
             )}
 
-            {/* Récompenses — catalog with locked state (Cycle C Wave 4 : rdl-reward design horizontal thumb+body+cta) */}
+            {/* [GOAL-SYNC 2026-07-08] Réductions — le catalogue mock (8 rewards) est REMPLACÉ
+                par le modèle CONTINU points→€ (contrat §2 : 100 pts = 1 €, multiples de 100,
+                redeem réel via POST /loyalty/redeem avec gestion 400/422 FR). */}
             {tab === 'rewards' && (
-              <div id="loyalty-tabpanel-rewards" role="tabpanel" className="rdl-rewards" style={{ padding: 0 }}>
-                {rewards.map(r => {
-                  const locked = balance < r.points_cost;
-                  const missing = locked ? r.points_cost - balance : 0;
-                  return (
-                    <div key={r.id} className={'rdl-reward' + (locked ? ' is-locked' : '')} data-testid={'reward-row-' + r.id}>
-                      <div className="rdl-reward-thumb">{r.icon}</div>
-                      <div className="rdl-reward-body">
-                        <div className="rdl-reward-name">{r.name}</div>
-                        <div className="rdl-reward-meta">
-                          {locked
-                            ? <span data-testid={'reward-locked-tooltip-' + r.id}>🔒 −{missing} pts manquants</span>
-                            : <span>{r.points_cost} pts</span>}
-                        </div>
-                      </div>
-                      <button
-                        className={'rdl-reward-cta' + (locked ? ' rdl-reward-cta--locked' : '')}
-                        data-testid={'reward-redeem-btn-' + r.id}
-                        onClick={() => !locked && go('redeem', { reward: r.id })}
-                        disabled={locked}
-                        aria-disabled={locked}
-                        aria-label={locked ? r.name + ' verrouillé, ' + missing + ' points manquants' : 'Échanger ' + r.name + ' contre ' + r.points_cost + ' points'}
-                      >
-                        {locked ? 'Verrouillé' : 'Échanger'}
-                      </button>
-                    </div>
-                  );
-                })}
-                <div style={{ fontSize: 10, color: 'var(--gray-4)', textAlign: 'center', marginTop: 4, padding: '0 12px' }}>
-                  ⓘ Récompenses indicatives — confirmation à la caisse
-                </div>
+              <div id="loyalty-tabpanel-rewards" role="tabpanel">
+                <LoyaltyRedeemPanel
+                  balance={balance}
+                  authed={authed}
+                  preset={redeemPreset}
+                  loyaltyCode={(remoteProfile && remoteProfile.loyalty_code) || account.loyalty_code || ''}
+                  go={go}
+                  onRedeemed={() => setRefreshSeq(s => s + 1)}
+                />
               </div>
             )}
 
@@ -1302,10 +1604,14 @@ function ScreenLoyalty({ go }) {
                   })}
                 </div>
                 <div data-testid="history-list">
-                  {filteredHistory.length === 0 && (
+                  {/* [GOAL-SYNC 2026-07-08] états FR : chargement / vide */}
+                  {historyLoading && (
+                    <div role="status" style={{ padding: 18, textAlign: 'center', color: 'var(--gray-4)', fontSize: 12 }}>Chargement de l'historique…</div>
+                  )}
+                  {!historyLoading && filteredHistory.length === 0 && (
                     <div style={{ padding: 18, textAlign: 'center', color: 'var(--gray-4)', fontSize: 12 }}>Aucune transaction pour ce filtre</div>
                   )}
-                  {filteredHistory.map(h => {
+                  {!historyLoading && filteredHistory.map(h => {
                     const positive = h.points > 0;
                     return (
                       <div key={h.id} className="rdl-hist" data-testid={'history-entry-' + h.id}>
@@ -1328,8 +1634,9 @@ function ScreenLoyalty({ go }) {
         {!isOptedOut && (
           <div style={{ padding: '24px 20px 0' }}>
             <div className="lc-eyebrow" style={{ color: 'var(--gray-4)', marginBottom: 8 }}>Programme fidélité</div>
+            {/* [GOAL-SYNC 2026-07-08] Taux dérivés de la config RÉELLE (1 pt/€ · 100 pts = 1 €) */}
             <div style={{ background: 'var(--cream)', borderRadius: 14, padding: 14, fontSize: 12, color: 'var(--ink)', marginBottom: 8 }}>
-              {config.earn_ratio} pt par € dépensé · {config.redeem_ratio} pts = 1 € de réduction · Validité {config.expires_after_days} jours
+              {earnRatio} pt{earnRatio > 1 ? 's' : ''} par € dépensé · {redeemRatio} pts = 1 € de réduction{config.expires_after_days ? ' · Validité ' + config.expires_after_days + ' jours' : ''}
             </div>
             <button
               data-testid="loyalty-opt-out-btn"
@@ -1400,4 +1707,4 @@ function PromoCodeRow({ onApply }) {
   );
 }
 
-Object.assign(window, { ScreenHome, ScreenMenu, ScreenItem, ScreenCart, ScreenConfirm, ScreenOrders, ScreenProfile, ScreenLoyalty, ITEMS, CATS, AllergenBadge, PromoCodeRow });
+Object.assign(window, { ScreenHome, ScreenMenu, ScreenItem, ScreenCart, ScreenConfirm, ScreenOrders, ScreenProfile, ScreenLoyalty, LoyaltyRedeemPanel, ITEMS, CATS, AllergenBadge, PromoCodeRow });

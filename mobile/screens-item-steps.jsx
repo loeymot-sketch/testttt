@@ -20,6 +20,19 @@
 //   menu='frites'  → fritesStyle + fritesSauce
 //   menu='boisson' → drink
 //   menu='none'    → (no cascade)
+//
+// [GOAL-SYNC 2026-07-08] Alignement canon borne (CONTRACTS.md §5 + fixture
+// catalog-canonical.json) — le wizard consomme les nouveaux flags data :
+//   - item.has_pain_choice  → étape PAIN radio (pool lcMenu.pains, défaut Pain) avant viandes
+//   - item.has_extra_meat   → section « Viande supplémentaire +2,50 € » (multi 0..2)
+//                             dans l'étape suppléments → selections.extraMeatIds
+//   - template 'bol' (cat 6)→ viande (1/1) → sauce (1/1, pool lcMenu.bolSauces)
+//                             → suppléments bols (0/5, sb-gratine riz_only=Bol Riz seul)
+//                             → boisson optionnelle (0/1)
+//   - sauces tacos/sandwich/burger/bol = 1 max (radio-like), plus AUCUN +0,50 multi-sauce
+//   - item.sauce_default    → sauce pré-sélectionnée (ex. Cayenne → Sauce fromagère maison)
+//   - suppléments filtrés : galette_only visible seulement cat 2 ; galette_excluded masqué cat 2
+//   - prix formule lu depuis FORMULES (f-menu 2,50 €) — une seule source
 
 const { useState: useState_w, useEffect: useEffect_w, useRef: useRef_w } = React;
 
@@ -27,6 +40,7 @@ const { useState: useState_w, useEffect: useEffect_w, useRef: useRef_w } = React
 // Step keys (canonical kiosk vocabulary, cf. KW.vue STEP_KEY_REGISTRY:301-325)
 // ============================================================================
 const STEP = {
+  PAIN: 'pain',                      // [GOAL-SYNC 2026-07-08] Pain/Galette (has_pain_choice)
   VIANDES: 'viandes',
   SAUCE: 'sauce',
   CRUDITES: 'crudites',
@@ -41,6 +55,7 @@ const STEP = {
 };
 
 const STEP_LABELS = {
+  pain: 'Pain ou galette',
   viandes: 'Viandes',
   sauce: 'Sauce',
   crudites: 'Crudités',
@@ -57,18 +72,26 @@ const STEP_LABELS = {
 // ============================================================================
 // Active-steps computation (mirrors KW.vue computeActiveSteps + V3.8 templates)
 // ============================================================================
-function computeActiveSteps(item, selections) {
-  if (!item) return [STEP.RECAP];
+// [GOAL-SYNC 2026-07-08] Résolution du template partagée (wizard + steps sauce/supp).
+function wizardTemplateFor(item) {
+  if (!item) return 'simple';
   const cat = window.LC.menu.findCategory(item.category_id);
   // [MOBILE-REALIGNMENT 2026-05-16] item.wizard_template priority over category
   // (kiosk parity: KW.vue:890-895 — item override allowed for special items).
-  const template = item.wizard_template || (cat && cat.wizard_template) || 'simple';
+  return item.wizard_template || (cat && cat.wizard_template) || 'simple';
+}
+
+function computeActiveSteps(item, selections) {
+  if (!item) return [STEP.RECAP];
+  const template = wizardTemplateFor(item);
   const steps = [];
 
   // Per-template canonical sequence, filtered by item flags
   switch (template) {
     case 'tacos':
     case 'sandwich':
+      // [GOAL-SYNC 2026-07-08] Pain/Galette AVANT viandes (parité web wizard-v2.jsx:68-73)
+      if (item.has_pain_choice) steps.push(STEP.PAIN);
       if ((item.viande_count || item.viandes) > 0) steps.push(STEP.VIANDES);
       if (item.has_sauce) steps.push(STEP.SAUCE);
       if (item.has_crudites) steps.push(STEP.CRUDITES);
@@ -76,10 +99,20 @@ function computeActiveSteps(item, selections) {
       if (item.has_menu_addon) steps.push(STEP.MENU);
       break;
     case 'burger':
+      if (item.has_pain_choice) steps.push(STEP.PAIN); // parité web (case partagé)
       if (item.has_sauce) steps.push(STEP.SAUCE);
       if (item.has_crudites) steps.push(STEP.CRUDITES);
       if (item.has_supplements !== false) steps.push(STEP.SUPPLEMENTS);
       if (item.has_menu_addon) steps.push(STEP.MENU);
+      break;
+    case 'bol':
+      // [GOAL-SYNC 2026-07-08] Template BOL (cat 6) — canon fixture Bol Frites/Bol Riz :
+      // viande (1/1, MEATS) → sauce (1/1, pool BOL_SAUCES) → suppléments bols (0/5,
+      // sb-gratine riz_only) → boisson optionnelle (0/1). PAS de formule menu.
+      if ((item.viande_count || item.viandes) > 0) steps.push(STEP.VIANDES);
+      if (item.has_sauce !== false) steps.push(STEP.SAUCE);
+      steps.push(STEP.BOL_SUPPLEMENTS);
+      steps.push(STEP.BOL_DRINK);
       break;
     case 'assiette':
       if (item.has_sauce) steps.push(STEP.SAUCE);
@@ -156,6 +189,9 @@ function computeActiveSteps(item, selections) {
 // ============================================================================
 function canAdvance(stepKey, selections, item) {
   switch (stepKey) {
+    case STEP.PAIN:
+      // [GOAL-SYNC 2026-07-08] défaut Pain pré-sélectionné à l'init → toujours valide en pratique
+      return !!selections.painId;
     case STEP.VIANDES:
       return (selections.meatIds || []).length === (item.viande_count || item.viandes);
     case STEP.SAUCE:
@@ -192,6 +228,8 @@ function computeTotal(item, selections) {
   return lcMenu.priceFor(item, {
     sauceIds: selections.sauceIds,
     supplementIds: selections.supplementIds,
+    // [GOAL-SYNC 2026-07-08] viandes supplémentaires +2,50 € chacune (priceFor canon)
+    extraMeatIds: selections.extraMeatIds,
     bolSupplementIds: selections.bolSupplementIds,
     bolDrinkId: selections.bolDrinkId,
     formuleId: selections.menuChoice && selections.menuChoice !== 'none'
@@ -314,6 +352,59 @@ function ChoiceCard({ on, onPick, ariaRole = 'radio', children, accent = 'orange
 }
 
 // ============================================================================
+// Helpers pools — [GOAL-SYNC 2026-07-08]
+// ============================================================================
+// Recherche du nom d'une sauce dans TOUS les pools (SAUCES génériques + BOL_SAUCES
+// 'bs-*') — le recap/panier des bols doit résoudre les ids du pool bol.
+function sauceNameFor(lcMenu, id) {
+  const pools = [lcMenu.sauces || [], lcMenu.bolSauces || []];
+  for (let p = 0; p < pools.length; p++) {
+    const found = pools[p].find(s => s.id === id);
+    if (found) return found.name;
+  }
+  return null;
+}
+
+// Prix « Viande supplémentaire » — lit lcMenu.extraMeatPrice (canon 2,50 €).
+function extraMeatPriceOf(lcMenu) {
+  return typeof lcMenu.extraMeatPrice === 'number' ? lcMenu.extraMeatPrice : 2.50;
+}
+
+// ============================================================================
+// STEP 0 — Pain ou galette ([GOAL-SYNC 2026-07-08] has_pain_choice, pool PAINS,
+// défaut Pain — parité web wizard-v2.jsx:68-73, gratuit)
+// ============================================================================
+function ScreenStepPain({ item, selections, setSelections, headingRef }) {
+  const lcMenu = window.LC.menu;
+  const pains = lcMenu.pains || [];
+  const painId = selections.painId;
+  const pick = (id) => setSelections(s => ({ ...s, painId: id }));
+  return (
+    <div style={{ padding: '20px 20px 120px' }}>
+      <p style={{ margin: '0 0 14px', fontSize: 14, color: 'var(--gray-4)' }}>
+        Gratuit · choisis ta base
+      </p>
+      <div role="radiogroup" aria-label="Pain ou galette" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+        {pains.map(p => {
+          const on = painId === p.id;
+          return (
+            <ChoiceCard key={p.id} on={on} onPick={() => pick(p.id)} ariaRole="radio">
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, width: '100%', padding: '4px 0' }}>
+                {p.image
+                  ? <img src={p.image} alt="" aria-hidden="true" style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 8, flexShrink: 0 }} onError={(e) => { e.target.style.display = 'none'; }}/>
+                  : <span aria-hidden="true" style={{ fontSize: 26 }}>{p.id === 'pain-galette' ? '🌯' : '🥖'}</span>}
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', textAlign: 'center' }}>{p.name}</span>
+                <span aria-hidden="true" style={{ width: 18, height: 18, borderRadius: 999, border: on ? '5px solid var(--orange)' : '2px solid var(--gray-2)', background: '#fff' }}/>
+              </div>
+            </ChoiceCard>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
 // STEP 1 — Viandes
 // ============================================================================
 function ScreenStepViandes({ item, selections, setSelections, headingRef }) {
@@ -363,15 +454,29 @@ function ScreenStepViandes({ item, selections, setSelections, headingRef }) {
 }
 
 // ============================================================================
-// STEP 2 — Sauce (1 gratuite, +0.50€/sauce additionnelle)
+// STEP 2 — Sauce
+// [GOAL-SYNC 2026-07-08] Canon borne (fixture min_select=1/max_select=1) :
+//   - templates tacos/sandwich/burger/bol → 1 sauce max, sélection radio-like,
+//     plus AUCUNE tarification +0,50 € multi-sauce (supprimée du canon).
+//   - bols → pool BOL_SAUCES (2 sauces) au lieu des 12 génériques.
+//   - cascade frites (sauceField='fritesSauceIds') → multi conservé, gratuit
+//     (instruction cuisine, cf. CONTRACTS.md §5).
 // ============================================================================
 function ScreenStepSauce({ item, selections, setSelections, headingRef, sauceField = 'sauceIds' }) {
   const lcMenu = window.LC.menu;
   const sauceIds = selections[sauceField] || [];
   const SANS_SAUCE = 's-sans';
+  const isMainSauce = sauceField === 'sauceIds';
+  const template = wizardTemplateFor(item);
+  const maxOne = isMainSauce && (template === 'tacos' || template === 'sandwich' || template === 'burger' || template === 'bol');
+  const pool = (isMainSauce && template === 'bol' && (lcMenu.bolSauces || []).length > 0)
+    ? lcMenu.bolSauces
+    : lcMenu.sauces;
   const toggle = (id) => {
     setSelections(s => {
       const arr = s[sauceField] || [];
+      // Radio-like : 1 sauce max (canon min1/max1) — re-tap garde la sélection
+      if (maxOne) return { ...s, [sauceField]: [id] };
       // "Sans Sauce" exclusivity (kiosk: KioskStepSauceComponent.vue:65-78)
       if (id === SANS_SAUCE) return { ...s, [sauceField]: [SANS_SAUCE] };
       const nextArr = arr.includes(id) ? arr.filter(x => x !== id) : [...arr.filter(x => x !== SANS_SAUCE), id];
@@ -381,25 +486,20 @@ function ScreenStepSauce({ item, selections, setSelections, headingRef, sauceFie
   return (
     <div style={{ padding: '20px 20px 120px' }}>
       <p style={{ margin: '0 0 14px', fontSize: 14, color: 'var(--gray-4)' }}>
-        1 gratuite · sup <strong>0,50 €</strong> par sauce additionnelle
+        {maxOne ? <span><strong>1 sauce incluse</strong> · choisis ta sauce</span> : 'Sauces pour les frites · incluses'}
       </p>
-      <div role="group" aria-label="Sauces" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 6 }}>
-        {lcMenu.sauces.map(s => {
+      <div role={maxOne ? 'radiogroup' : 'group'} aria-label="Sauces" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 6 }}>
+        {pool.map(s => {
           const on = sauceIds.includes(s.id);
-          const idx = sauceIds.indexOf(s.id);
-          const free = idx === 0;
           return (
-            <ChoiceCard key={s.id} on={on} onPick={() => toggle(s.id)} ariaRole="checkbox">
+            <ChoiceCard key={s.id} on={on} onPick={() => toggle(s.id)} ariaRole={maxOne ? 'radio' : 'checkbox'}>
               <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 6 }}>
                 {/* Phase 6.A real-asset color swatch (kiosk generated sauce_*.svg) */}
                 {s.image
-                  ? <img src={s.image} alt="" aria-hidden="true" style={{ width: 18, height: 18, objectFit: 'cover', borderRadius: 999, flexShrink: 0, border: '1px solid var(--gray-2)' }}/>
+                  ? <img src={s.image} alt="" aria-hidden="true" style={{ width: 18, height: 18, objectFit: 'cover', borderRadius: 999, flexShrink: 0, border: '1px solid var(--gray-2)' }} onError={(e) => { e.target.style.display = 'none'; }}/>
                   : (s.is_spicy && <span aria-hidden="true">🌶️</span>)}
                 <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}{s.is_spicy && s.image ? ' 🌶️' : ''}</span>
               </span>
-              {on && !free && (
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink)', fontWeight: 700, flexShrink: 0 }}>+0,50€</span>
-              )}
             </ChoiceCard>
           );
         })}
@@ -449,11 +549,82 @@ function ScreenStepCrudites({ item, selections, setSelections, headingRef }) {
 }
 
 // ============================================================================
+// Section partagée — Viande supplémentaire (+2,50 € · multi 0..2)
+// [GOAL-SYNC 2026-07-08] item.has_extra_meat → rendue dans l'étape suppléments
+// (et suppléments bols) — parité web wizard-v2.jsx viande_extra (max 2).
+// ============================================================================
+function ExtraMeatSection({ item, selections, setSelections }) {
+  const lcMenu = window.LC.menu;
+  if (!item.has_extra_meat) return null;
+  const emPrice = extraMeatPriceOf(lcMenu);
+  const extraMeatIds = selections.extraMeatIds || [];
+  const toggle = (id) => {
+    setSelections(s => {
+      const arr = s.extraMeatIds || [];
+      if (arr.includes(id)) return { ...s, extraMeatIds: arr.filter(x => x !== id) };
+      if (arr.length >= 2) return s; // max 2 (canon)
+      return { ...s, extraMeatIds: [...arr, id] };
+    });
+  };
+  const priceLabel = emPrice.toFixed(2).replace('.', ',');
+  return (
+    <div style={{ marginTop: 18 }} data-testid="extra-meat-section">
+      <p style={{ margin: '0 0 10px', fontSize: 14, color: 'var(--gray-4)' }}>
+        Viande supplémentaire <strong>+{priceLabel} €</strong> · max 2
+      </p>
+      <div role="group" aria-label={`Viande supplémentaire +${priceLabel} €`} style={{ background: 'var(--cream)', borderRadius: 14, overflow: 'hidden' }}>
+        {lcMenu.meats.map(m => {
+          const on = extraMeatIds.includes(m.id);
+          const blocked = !on && extraMeatIds.length >= 2;
+          const handleKey = (e) => {
+            if (blocked) return;
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(m.id); }
+          };
+          return (
+            <div
+              key={m.id}
+              role="checkbox"
+              aria-checked={on ? 'true' : 'false'}
+              aria-disabled={blocked ? 'true' : undefined}
+              tabIndex={blocked ? -1 : 0}
+              onClick={blocked ? undefined : () => toggle(m.id)}
+              onKeyDown={handleKey}
+              className="lc-toggle-row"
+              data-testid={`extra-meat-${m.id}`}
+              style={{ outline: 'none', opacity: blocked ? 0.4 : 1, cursor: blocked ? 'not-allowed' : 'pointer' }}
+            >
+              {m.image
+                ? <img src={m.image} alt="" aria-hidden="true" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 8, flexShrink: 0, marginRight: 10 }} onError={(e) => { e.target.style.display = 'none'; }}/>
+                : <span aria-hidden="true" style={{ fontSize: 24, marginRight: 10 }}>{m.emoji}</span>}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>{m.name}</div>
+                <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--ink)', fontWeight: 700, marginTop: 2 }}>+ {priceLabel} €</div>
+              </div>
+              <div aria-hidden="true" className={`lc-checkbox ${on ? 'lc-checkbox--on' : ''}`}>
+                {on && <I.Check size={12} stroke="#fff" sw={3}/>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
 // STEP 4 — Suppléments (optionnel)
+// [GOAL-SYNC 2026-07-08] Filtres canon : galette_only visible SEULEMENT cat 2 ;
+// galette_excluded masqué en cat 2. + section Viande supplémentaire (has_extra_meat).
 // ============================================================================
 function ScreenStepSupplements({ item, selections, setSelections, headingRef }) {
   const lcMenu = window.LC.menu;
   const supplementIds = selections.supplementIds || [];
+  const isGalette = item.category_id === 2;
+  const pool = lcMenu.supplements.filter(s => {
+    if (s.galette_only && !isGalette) return false;
+    if (s.galette_excluded && isGalette) return false;
+    return true;
+  });
   const toggle = (id) => {
     setSelections(s => {
       const arr = s.supplementIds || [];
@@ -464,7 +635,7 @@ function ScreenStepSupplements({ item, selections, setSelections, headingRef }) 
     <div style={{ padding: '20px 20px 120px' }}>
       <p style={{ margin: '0 0 14px', fontSize: 14, color: 'var(--gray-4)' }}>Optionnel · ajoute ce que tu veux</p>
       <div role="group" aria-label="Suppléments" style={{ background: 'var(--cream)', borderRadius: 14, overflow: 'hidden' }}>
-        {lcMenu.supplements.map(s => {
+        {pool.map(s => {
           const on = supplementIds.includes(s.id);
           const handleKey = (e) => {
             if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(s.id); }
@@ -495,6 +666,8 @@ function ScreenStepSupplements({ item, selections, setSelections, headingRef }) 
           );
         })}
       </div>
+      {/* [GOAL-SYNC 2026-07-08] Viande supplémentaire +2,50 € (has_extra_meat, multi 0..2) */}
+      <ExtraMeatSection item={item} selections={selections} setSelections={setSelections}/>
     </div>
   );
 }
@@ -521,10 +694,17 @@ function ScreenStepMenu({ item, selections, setSelections, headingRef }) {
       return next;
     });
   };
+  // [GOAL-SYNC 2026-07-08] FIX P1 : prix lus depuis FORMULES (une seule source —
+  // l'étape affichait +3,00 € alors que priceFor facturait f-menu 2,50 €).
+  const formules = (window.LC.menu && window.LC.menu.formules) || [];
+  const formulePrice = (id, fallback) => {
+    const f = formules.find(x => x.id === id);
+    return f ? f.price : fallback;
+  };
   const options = [
-    { id: 'full',    name: 'Menu complet',  desc: 'Frites + Boisson', price: 3.00, emoji: '🍟🥤' },
-    { id: 'frites',  name: 'Ajouter Frites', desc: 'Frites uniquement', price: 2.00, emoji: '🍟' },
-    { id: 'boisson', name: 'Ajouter Boisson', desc: 'Boisson uniquement', price: 2.00, emoji: '🥤' },
+    { id: 'full',    name: 'Menu complet',  desc: 'Frites + Boisson', price: formulePrice('f-menu', 2.50), emoji: '🍟🥤' },
+    { id: 'frites',  name: 'Ajouter Frites', desc: 'Frites uniquement', price: formulePrice('f-frites', 2.00), emoji: '🍟' },
+    { id: 'boisson', name: 'Ajouter Boisson', desc: 'Boisson uniquement', price: formulePrice('f-boisson', 2.00), emoji: '🥤' },
     { id: 'none',    name: 'Sans formule',   desc: 'Plat seul',         price: 0,    emoji: '🚫' },
   ];
   return (
@@ -647,23 +827,32 @@ function ScreenStepFritesSauce(props) {
 // ============================================================================
 function ScreenStepBolSupplements({ item, selections, setSelections, headingRef }) {
   const lcMenu = window.LC.menu;
-  const supplementsBols = lcMenu.supplementsBols || [];
+  // [GOAL-SYNC 2026-07-08] Canon fixture : 0..5 suppléments ; « Option Gratiné »
+  // (sb-gratine, riz_only) visible UNIQUEMENT sur le Bol Riz (slug 'bol-riz').
+  const isBolRiz = item.slug === 'bol-riz';
+  const supplementsBols = (lcMenu.supplementsBols || []).filter(s => {
+    if ((s.riz_only || s.id === 'sb-gratine') && !isBolRiz) return false;
+    return true;
+  });
   const bolSupplementIds = selections.bolSupplementIds || [];
+  const MAX_BOL_SUPPLEMENTS = 5;
   const toggle = (id) => {
     setSelections(s => {
       const arr = s.bolSupplementIds || [];
-      return { ...s, bolSupplementIds: arr.includes(id) ? arr.filter(x => x !== id) : [...arr, id] };
+      if (arr.includes(id)) return { ...s, bolSupplementIds: arr.filter(x => x !== id) };
+      if (arr.length >= MAX_BOL_SUPPLEMENTS) return s; // max 5 (canon)
+      return { ...s, bolSupplementIds: [...arr, id] };
     });
   };
   return (
     <div style={{ padding: '20px 20px 120px' }}>
       <p style={{ margin: '0 0 14px', fontSize: 14, color: 'var(--gray-4)' }}>
-        Optionnel · personnalise ton bol
+        Optionnel · personnalise ton bol · max {MAX_BOL_SUPPLEMENTS}
       </p>
       <div role="group" aria-label="Suppléments bol" style={{ background: 'var(--cream)', borderRadius: 14, overflow: 'hidden' }}>
         {supplementsBols.map(s => {
           const on = bolSupplementIds.includes(s.id);
-          const isGratine = s.id === 'sb-boule-gratinee';
+          const isGratine = s.id === 'sb-gratine' || s.id === 'sb-boule-gratinee';
           const handleKey = (e) => {
             if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(s.id); }
           };
@@ -699,6 +888,8 @@ function ScreenStepBolSupplements({ item, selections, setSelections, headingRef 
           );
         })}
       </div>
+      {/* [GOAL-SYNC 2026-07-08] Viande supplémentaire +2,50 € aussi sur les bols (has_extra_meat) */}
+      <ExtraMeatSection item={item} selections={selections} setSelections={setSelections}/>
     </div>
   );
 }
@@ -753,7 +944,11 @@ function ScreenStepBolDrink({ item, selections, setSelections, headingRef }) {
 function ScreenStepRecap({ item, selections, setSelections, headingRef }) {
   const lcMenu = window.LC.menu;
   const meatLabels = (selections.meatIds || []).map(id => (lcMenu.meats.find(m => m.id === id) || {}).name).filter(Boolean);
-  const sauceLabels = (selections.sauceIds || []).map(id => (lcMenu.sauces.find(s => s.id === id) || {}).name).filter(Boolean);
+  // [GOAL-SYNC 2026-07-08] lookup multi-pools (sauces génériques + bolSauces 'bs-*')
+  const sauceLabels = (selections.sauceIds || []).map(id => sauceNameFor(lcMenu, id)).filter(Boolean);
+  // [GOAL-SYNC 2026-07-08] pain + viandes supplémentaires
+  const painLabel = selections.painId ? ((lcMenu.pains || []).find(p => p.id === selections.painId) || {}).name : null;
+  const extraMeatLabels = (selections.extraMeatIds || []).map(id => (lcMenu.meats.find(m => m.id === id) || {}).name).filter(Boolean);
   const cruditeIds = selections.cruditeIds || lcMenu.defaultCruditeIds();
   const cruditeAll = lcMenu.crudites.map(c => c.id);
   const cruditeRemoved = cruditeAll.filter(id => !cruditeIds.includes(id)).map(id => (lcMenu.crudites.find(c => c.id === id) || {}).name).filter(Boolean);
@@ -767,7 +962,7 @@ function ScreenStepRecap({ item, selections, setSelections, headingRef }) {
   const styleLabel = selections.fritesStyleId !== undefined
     ? (lcMenu.fritesStyles.find(fs => fs.id === selections.fritesStyleId) || {}).name
     : null;
-  const fritesSauceLabels = (selections.fritesSauceIds || []).map(id => (lcMenu.sauces.find(s => s.id === id) || {}).name).filter(Boolean);
+  const fritesSauceLabels = (selections.fritesSauceIds || []).map(id => sauceNameFor(lcMenu, id)).filter(Boolean);
   // [MOBILE-REALIGNMENT 2026-05-16] Show locked sauce for items with sauce_locked
   // (e.g. Cayenne → "Sauce fromagère maison (incluse)").
   const sauceLockedLabel = item.sauce_locked ? `Sauce ${item.sauce_locked} maison (incluse)` : null;
@@ -778,12 +973,16 @@ function ScreenStepRecap({ item, selections, setSelections, headingRef }) {
        item.slug && item.slug.indexOf('bowl-riz-') === 0 ? 'Riz basmati' : null)
     : null;
   const menuLabel = (() => {
-    // [CAISSE-SYNC 2026-05-30] price read from canonical FORMULES (was hardcoded 2,50€; DB caisse = 3,00€)
-    const _fMenu = ((window.LC && window.LC.menu && window.LC.menu.formules) || []).find(function (f) { return f.id === 'f-menu'; });
-    const _fMenuPrice = (_fMenu ? _fMenu.price : 3).toFixed(2).replace('.', ',').replace(',00', '');
-    if (selections.menuChoice === 'full') return 'Menu (Frites + Boisson) +' + _fMenuPrice + '€';
-    if (selections.menuChoice === 'frites') return 'Ajouter Frites +2€';
-    if (selections.menuChoice === 'boisson') return 'Ajouter Boisson +2€';
+    // [GOAL-SYNC 2026-07-08] TOUS les prix formule lus depuis FORMULES (une seule
+    // source — fallback aligné canon f-menu 2,50 €, plus jamais 3 €).
+    const _formules = ((window.LC && window.LC.menu && window.LC.menu.formules) || []);
+    const _fPrice = function (id, fallback) {
+      const f = _formules.find(function (x) { return x.id === id; });
+      return ((f ? f.price : fallback)).toFixed(2).replace('.', ',').replace(',00', '');
+    };
+    if (selections.menuChoice === 'full') return 'Menu (Frites + Boisson) +' + _fPrice('f-menu', 2.50) + '€';
+    if (selections.menuChoice === 'frites') return 'Ajouter Frites +' + _fPrice('f-frites', 2.00) + '€';
+    if (selections.menuChoice === 'boisson') return 'Ajouter Boisson +' + _fPrice('f-boisson', 2.00) + '€';
     // [test-e2e fix B-002/B-003 round-2 2026-05-11] surface "Sans formule" explicitly so
     // the user can confirm the no-formule choice on the recap.
     if (selections.menuChoice === 'none') return 'Sans formule';
@@ -857,6 +1056,8 @@ function ScreenStepRecap({ item, selections, setSelections, headingRef }) {
         {bolBaseLabel && <Row label="Base" value={bolBaseLabel}/>}
         {bolMeatLabel && <Row label="Viande" value={bolMeatLabel}/>}
         {sauceLockedLabel && !has(STEP.SAUCE) && <Row label="Sauce" value={sauceLockedLabel}/>}
+        {/* [GOAL-SYNC 2026-07-08] rangée Pain/Galette */}
+        {has(STEP.PAIN) && <Row label="Pain" value={painLabel || '—'}/>}
         {has(STEP.VIANDES) && <Row label="Viandes" value={meatLabels.length ? meatLabels.join(' · ') : '—'}/>}
         {has(STEP.SAUCE) && <Row label="Sauce" value={sauceLabels.length ? sauceLabels.join(' / ') : '—'}/>}
         {has(STEP.CRUDITES) && (
@@ -865,6 +1066,8 @@ function ScreenStepRecap({ item, selections, setSelections, headingRef }) {
             : <Row label="Crudités" value={cruditeKept.length ? 'Toutes (' + cruditeKept.join(' · ') + ')' : 'Toutes'}/>
         )}
         {has(STEP.SUPPLEMENTS) && <Row label="Suppléments" value={supLabels.length ? supLabels.join(' + ') : 'Aucun'}/>}
+        {/* [GOAL-SYNC 2026-07-08] rangée viandes supplémentaires (+2,50 € chacune) */}
+        {item.has_extra_meat && extraMeatLabels.length > 0 && <Row label="Viande suppl." value={extraMeatLabels.join(' + ')}/>}
         {has(STEP.BOL_SUPPLEMENTS) && <Row label="Suppléments bol" value={bolSupLabels.length ? bolSupLabels.join(' + ') : 'Aucun'}/>}
         {has(STEP.BOL_DRINK) && <Row label="Boisson bol" value={bolDrinkLabel || 'Aucune'}/>}
         {has(STEP.MENU) && <Row label="Formule" value={menuLabel || 'Sans formule'}/>}
@@ -916,7 +1119,11 @@ function ScreenStepRecap({ item, selections, setSelections, headingRef }) {
 function buildLineItem(item, selections) {
   const lcMenu = window.LC.menu;
   const meatLabels = (selections.meatIds || []).map(id => (lcMenu.meats.find(m => m.id === id) || {}).name).filter(Boolean);
-  const sauceLabels = (selections.sauceIds || []).map(id => (lcMenu.sauces.find(s => s.id === id) || {}).name).filter(Boolean);
+  // [GOAL-SYNC 2026-07-08] lookup multi-pools (sauces génériques + bolSauces 'bs-*')
+  const sauceLabels = (selections.sauceIds || []).map(id => sauceNameFor(lcMenu, id)).filter(Boolean);
+  // [GOAL-SYNC 2026-07-08] pain (has_pain_choice) + viandes supplémentaires (has_extra_meat)
+  const painLabel = selections.painId ? ((lcMenu.pains || []).find(p => p.id === selections.painId) || {}).name || null : null;
+  const extraMeatLabels = (selections.extraMeatIds || []).map(id => (lcMenu.meats.find(m => m.id === id) || {}).name).filter(Boolean);
   const cruditeIds = selections.cruditeIds || lcMenu.defaultCruditeIds();
   const cruditeRemoved = lcMenu.crudites.filter(c => !cruditeIds.includes(c.id)).map(c => c.name);
   const supLabels = (selections.supplementIds || []).map(id => (lcMenu.supplements.find(s => s.id === id) || {}).name).filter(Boolean);
@@ -928,8 +1135,10 @@ function buildLineItem(item, selections) {
   const styleLabel = selections.fritesStyleId !== undefined
     ? (lcMenu.fritesStyles.find(fs => fs.id === selections.fritesStyleId) || {}).name
     : null;
-  const fritesSauceLabels = (selections.fritesSauceIds || []).map(id => (lcMenu.sauces.find(s => s.id === id) || {}).name).filter(Boolean);
+  const fritesSauceLabels = (selections.fritesSauceIds || []).map(id => sauceNameFor(lcMenu, id)).filter(Boolean);
   const summary = [];
+  // [GOAL-SYNC 2026-07-08] pain en tête de résumé (base du sandwich)
+  if (painLabel) summary.push(painLabel);
   // [MOBILE-REALIGNMENT 2026-05-16] Bol pre-filled context (base + viande fixed)
   if (item.has_bol_wizard) {
     const baseLabel = item.slug && item.slug.indexOf('bowl-frites-') === 0 ? 'Frites' :
@@ -941,6 +1150,8 @@ function buildLineItem(item, selections) {
   if (sauceLabels.length) summary.push('Sauce ' + sauceLabels.join('/'));
   if (cruditeRemoved.length) summary.push('Sans ' + cruditeRemoved.map(s => s.toLowerCase()).join('/'));
   if (supLabels.length) summary.push('+ ' + supLabels.join(' + '));
+  // [GOAL-SYNC 2026-07-08] viandes supplémentaires (+2,50 € chacune) dans le résumé cuisine
+  if (extraMeatLabels.length) summary.push('Viande suppl. ' + extraMeatLabels.join(' + '));
   if (bolSupLabels.length) summary.push('+ ' + bolSupLabels.join(' + '));
   if (bolDrinkLabel) summary.push('🥤 ' + bolDrinkLabel);
   if (selections.menuChoice && selections.menuChoice !== 'none') {
@@ -957,6 +1168,11 @@ function buildLineItem(item, selections) {
 
   return {
     ...item,
+    // [GOAL-SYNC 2026-07-08] pain + viandes supplémentaires (compat : champs ADDITIFS)
+    painId: selections.painId || null,
+    painLabel: painLabel || null,
+    extraMeatIds: selections.extraMeatIds || [],
+    extraMeatLabels,
     meatIds: selections.meatIds || [],
     meatLabels,
     sauceIds: selections.sauceIds || [],
@@ -999,8 +1215,10 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
     // [MOBILE-REALIGNMENT 2026-05-16] Pre-fill defaults from composer profile + item flags
     // (kiosk parity: KW.vue initSelections — sauce default + bol context).
     const init = {
+      painId: undefined,        // [GOAL-SYNC 2026-07-08] Pain/Galette (has_pain_choice)
       meatIds: [],
       sauceIds: [],
+      extraMeatIds: [],         // [GOAL-SYNC 2026-07-08] viandes supplémentaires +2,50 €
       cruditeIds: lcMenu.defaultCruditeIds(),
       supplementIds: [],
       bolSupplementIds: [],     // Bols custom composer
@@ -1011,9 +1229,29 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
       fritesSauceIds: [],
       qty: 1,
     };
+    // [GOAL-SYNC 2026-07-08] Pain par défaut = Pain (pain-classique), parité web
+    // wizard-v2.jsx:72 defaultValue:'pain-classique'.
+    if (item && item.has_pain_choice) {
+      const pains = lcMenu.pains || [];
+      const defaultPain = pains.find(p => p.is_default) || pains.find(p => p.id === 'pain-classique') || pains[0];
+      if (defaultPain) init.painId = defaultPain.id;
+    }
     // Bol sauce default (e.g. bowl-frites-curry → 'Curry' sauce pre-selected)
     if (item && item.bol_sauce_default) {
       const defaultSauce = lcMenu.sauces.find(s => s.name === item.bol_sauce_default);
+      if (defaultSauce) init.sauceIds = [defaultSauce.id];
+    }
+    // [GOAL-SYNC 2026-07-08] sauce_default pré-sélectionnée (ex. Cayenne →
+    // 'Sauce fromagère maison'). Recherche dans le pool DU template (bol →
+    // bolSauces, sinon sauces génériques) — match exact PUIS inclusion insensible
+    // à la casse (pool 'Fromagère maison' vs canon 'Sauce fromagère maison').
+    if (item && item.sauce_default && !init.sauceIds.length) {
+      const pool = wizardTemplateFor(item) === 'bol'
+        ? (lcMenu.bolSauces || [])
+        : (lcMenu.sauces || []);
+      const wanted = String(item.sauce_default).toLowerCase();
+      const defaultSauce = pool.find(s => s.name === item.sauce_default)
+        || pool.find(s => wanted.indexOf(String(s.name).toLowerCase()) !== -1 || String(s.name).toLowerCase().indexOf(wanted) !== -1);
       if (defaultSauce) init.sauceIds = [defaultSauce.id];
     }
     // [MOBILE-REALIGNMENT 2026-05-16 RED heal P1-6] Pre-select "Nature" (id=null) for
@@ -1089,7 +1327,8 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
       const remain = required - (selections.meatIds || []).length;
       return `Encore ${remain} viande${remain > 1 ? 's' : ''} à choisir`;
     }
-    if (currentKey === STEP.SAUCE) return 'Choisis au moins une sauce (ou Sans Sauce)';
+    if (currentKey === STEP.PAIN) return 'Choisis Pain ou Galette';
+    if (currentKey === STEP.SAUCE) return 'Choisis ta sauce';
     if (currentKey === STEP.MENU) return 'Choisis ta formule pour continuer';
     if (currentKey === STEP.DRINK) return 'Choisis ta boisson';
     if (currentKey === STEP.FRITES_STYLE) return 'Choisis ton style de frites';
@@ -1100,6 +1339,7 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
   // Render step body
   let body;
   switch (currentKey) {
+    case STEP.PAIN:              body = <ScreenStepPain item={item} selections={selections} setSelections={setSelections} headingRef={headingRef}/>; break;
     case STEP.VIANDES:           body = <ScreenStepViandes item={item} selections={selections} setSelections={setSelections} headingRef={headingRef}/>; break;
     case STEP.SAUCE:             body = <ScreenStepSauce item={item} selections={selections} setSelections={setSelections} headingRef={headingRef}/>; break;
     case STEP.CRUDITES:          body = <ScreenStepCrudites item={item} selections={selections} setSelections={setSelections} headingRef={headingRef}/>; break;
@@ -1207,4 +1447,7 @@ Object.assign(window, {
   // [MOBILE-REALIGNMENT 2026-05-16] expose bol/frites step components for e2e tests
   ScreenStepBolSupplements,
   ScreenStepBolDrink,
+  // [GOAL-SYNC 2026-07-08] expose pain step + template resolver for e2e tests
+  ScreenStepPain,
+  wizardTemplateFor,
 });

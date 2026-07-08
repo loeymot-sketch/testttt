@@ -1,35 +1,44 @@
-// Scenario 05 — Redeem locked reward (insufficient points → disabled CTA + tooltip)
-// Status : testable-now per Agent-6 §2 ; verifies disabled state + missing-points text.
+// Scenario 05 — Paliers verrouillés (modèle continu, contrat §2)
+//
+// [GOAL-SYNC 2026-07-08] réécrit : plus de « Burger gratuit 1000 pts » (catalogue
+// mock supprimé — aucune table backend). Les paliers indicatifs (tiers config
+// 100/250/500/1000/2000) remplacent les récompenses : déverrouillé = solde ≥ palier,
+// verrouillé = « X pts manquants » SANS bouton UTILISER (pas de CTA à force-cliquer).
 
 const { test, expect } = require('@playwright/test');
 const { waitForLoyaltyReady, gotoLoyaltyScreen } = require('./utils/waitForLoyaltyReady');
 
-test('S05 — Locked reward shows disabled CTA + missing-points tooltip', async ({ page }) => {
+test('S05 — Paliers : déverrouillés ≤ solde avec UTILISER, verrouillés = pts manquants sans CTA', async ({ page }) => {
   await waitForLoyaltyReady(page, { seedAccount: { balance: 347, lifetime_earned: 1247 } });
   await gotoLoyaltyScreen(page);
 
-  // Switch to Récompenses tab
-  await page.click('[data-testid="loyalty-tab-rewards"]');
-  await page.waitForSelector('#loyalty-tabpanel-rewards', { timeout: 5_000 });
+  // Onglet « Mes points » (défaut) : rows de paliers dérivés de la config réelle
+  await page.waitForSelector('[data-testid="reward-row-100"]', { timeout: 5000 });
 
-  // Reward id 5 = "Burger gratuit", points_cost=1000 — locked at balance 347
-  const lockedTooltip = page.locator('[data-testid="reward-locked-tooltip-5"]');
-  await expect(lockedTooltip).toBeVisible();
-  await expect(lockedTooltip).toContainText('653 pts manquants');
+  // 100 / 250 déverrouillés à 347 pts → bouton UTILISER présent
+  await expect(page.locator('[data-testid="reward-redeem-btn-100"]')).toBeVisible();
+  await expect(page.locator('[data-testid="reward-redeem-btn-250"]')).toBeVisible();
+  await expect(page.locator('[data-testid="reward-row-100"]')).toContainText('Disponible');
 
-  const lockedBtn = page.locator('[data-testid="reward-redeem-btn-5"]');
-  await expect(lockedBtn).toBeDisabled();
-  await expect(lockedBtn).toContainText('Verrouillé');
+  // 500 verrouillé → « 153 pts manquants », AUCUN bouton UTILISER
+  const locked = page.locator('[data-testid="reward-row-500"]');
+  await expect(locked).toContainText('153 pts manquants');
+  await expect(page.locator('[data-testid="reward-redeem-btn-500"]')).toHaveCount(0);
 
-  await page.screenshot({ path: 'tests/e2e/__screenshots__/mobile-loyalty/05-reward-locked.png' });
+  await page.screenshot({ path: 'tests/e2e/__screenshots__/mobile-loyalty/05-tier-locked.png' });
 
-  // Defensive : even if user force-clicks via JS, balance must not change
+  // Défense : même en force-cliquant la row verrouillée, aucun débit local
   const before = await page.evaluate(() => window.LC.loyalty.account.balance);
   await page.evaluate(() => {
-    const btn = document.querySelector('[data-testid="reward-redeem-btn-5"]');
-    if (btn) btn.click();
+    const row = document.querySelector('[data-testid="reward-row-500"]');
+    if (row) row.click();
   });
   await page.waitForTimeout(100);
   const after = await page.evaluate(() => window.LC.loyalty.account.balance);
   expect(after).toBe(before);
+
+  // UTILISER (100) bascule sur l'onglet Réductions avec le montant présélectionné
+  await page.click('[data-testid="reward-redeem-btn-100"]');
+  await page.waitForSelector('[data-testid="redeem-panel"]', { timeout: 5000 });
+  await expect(page.locator('[data-testid="redeem-points-value"]')).toContainText('100 pts');
 });

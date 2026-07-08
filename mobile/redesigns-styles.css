@@ -24,6 +24,19 @@
   --dur-base:        220ms;
   --dur-slow:        360ms;
   --ios-safe-bottom: 28px;
+
+  /* [GOAL-SYNC 2026-07-08] Tokens consommés par les classes rdw-/rdl- (et
+     screens-item-steps.jsx) mais JAMAIS redéfinis depuis le retrait du bloc
+     :root d'origine (cycle C 2026-05-11) — ombres perdues + font-size héritées
+     (bug latent, finding mobile:styles+ios-frame P2). Valeurs cohérentes avec
+     --shadow-card/--shadow-cta ci-dessus et l'échelle typo de mobile/styles.css. */
+  --shadow-1:        0 1px 3px rgba(10,10,10,0.08), 0 4px 12px -4px rgba(10,10,10,0.10);
+  --shadow-selected: 0 0 0 2px var(--orange), 0 6px 16px -6px rgba(255,90,31,0.35);
+  --fs-micro:        10px;
+  --fs-caption:      12px;
+  --fs-body:         14px;
+  --fs-base:         15px;
+  --fs-h3:           18px;
 }
 
 
