@@ -1,0 +1,76 @@
+{
+ "spec": "infra:e2e-harness",
+ "scope": "Cartographie READ-ONLY de l'infra e2e existante : specs/configs Playwright du backend testttt (:8000/:8766), du web standalone (/Users/1millnonstop/Downloads/web, :8096), du prototype mobile (mobile/, :8087), + recettes auth API (admin + kiosk tokens) et pièges connus.",
+ "summary": "Toute l'infra e2e existe déjà et 3 serveurs tournent : Laravel :8000 (php artisan serve), Laravel :8766 (php -S, la « borne »), python http.server :8096 servant /Users/1millnonstop/Downloads/web. Web standalone : config dédiée pw.validation.config.js (baseURL :8096, channel chrome) exécutée avec le node_modules du repo testttt. Mobile : config dédiée tests/mobile-e2e/playwright.config.js qui boote elle-même `php -S 127.0.0.1:8087 -t mobile/` (reuseExistingServer). API backend : helpers admin-auth.js/kiosk-auth.js fournissent tokens Bearer + X-API-KEY (MIX_API_KEY lu de l'env ou du .env). Risques principaux : la config racine lance son propre `php artisan serve :8000` si mal utilisée, throttle kiosk-login 30/min et login-lockout admin forcent workers:1, port 8081 historiquement hijacké par un autre projet (migré :8087), et le web standalone pointe api-base-url par défaut sur :8766.",
+ "findings": [
+  {
+   "severity": "P2",
+   "title": "Config racine Playwright auto-lance `php artisan serve :8000` — collision possible avec le serveur déjà en cours",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/playwright.config.js",
+   "line": 33,
+   "evidence": "buildWebServer(): command 'php artisan serve --host=127.0.0.1 --port=8000', reuseExistingServer: true ; désactivable par PLAYWRIGHT_NO_WEB_SERVER=1 (ligne 28). :8000 tourne déjà (pid 34991).",
+   "recommendation": "Pour tester la borne :8766, TOUJOURS passer PLAYWRIGHT_BASE_URL=http://127.0.0.1:8766 (et éventuellement PLAYWRIGHT_NO_WEB_SERVER=1) sinon la sonde webServer vise :8000 et reuse l'existant — comportement OK mais base URL fausse par défaut."
+  },
+  {
+   "severity": "P2",
+   "title": "Throttle kiosk-login 30/min par IP + lockout /api/auth/login → workers:1 obligatoire",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/kiosk-auth.js",
+   "line": 18,
+   "evidence": "« Throttle: throttle:kiosk-login (30/min by IP) — clear via helpers/rate-limit.js#clearFoodKingRateLimits() ». playwright.config.js:52 commente : workers>1 → throttle:login-lockout / 429 → SPA reste sur /login.",
+   "recommendation": "Garder workers:1 et appeler clearFoodKingRateLimits() (helpers/rate-limit.js) avant les vagues de login kiosk, comme le fait loginAsKiosk (helpers/login.js:127)."
+  },
+  {
+   "severity": "P2",
+   "title": "Piège port : 8081 historiquement hijacké par un autre projet — mobile migré sur 8087",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/mobile-e2e/playwright.config.js",
+   "line": 38,
+   "evidence": "« moved 8081 -> 8087: port 8081 was hijacked by another project's `serve dist -l 8081` (pregnancy-app) and reuseExistingServer:true would silently reuse the WRONG app. 8087 is Cayenne-mobile-dedicated. » (HOW_TO_RESUME.md:154 mentionne encore 8081 — obsolète).",
+   "recommendation": "Utiliser exclusivement :8087 via la config mobile-e2e ; ignorer l'instruction 8081 de HOW_TO_RESUME.md. Vérifier `lsof -iTCP:8087 -sTCP:LISTEN` avant reuse."
+  },
+  {
+   "severity": "P2",
+   "title": "Chunks lazy STALE = écran blanc borne (bundle partiel) — smoke spec anti-régression existant",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/borne-idle-smoke.spec.js",
+   "line": 1,
+   "evidence": "En-tête : « Protège contre les régressions 'idle cassé / écran blanc' (cf. historique : bundle stale, Vue NOT_MOUNTED, raw labels) ». Mémoire projet : chunk lazy `kiosk-shell` stale (deploy partiel) = page blanche paiement, leçon lesson_deploy_full_bundle_set : déployer le JEU COMPLET de bundles.",
+   "recommendation": "Après tout `npm run prod`, re-run borne-idle-smoke.spec.js sur :8766 et vérifier absence de labels bruts / body >40 chars ; ne jamais copier un sous-ensemble de public/js."
+  },
+  {
+   "severity": "P3",
+   "title": "Le web standalone appelle par défaut l'API :8766 avec une API key hardcodée dans api.js",
+   "file": "/Users/1millnonstop/Downloads/web/api.js",
+   "line": 20,
+   "evidence": "CFG = { base: metaContent('api-base-url', 'http://127.0.0.1:8766'), apiKey: metaContent('api-key', 'b6d68vy2-...'), branchId: 1 } — surchargeables via <meta name=\"api-base-url\"> dans index.html.",
+   "recommendation": "Pour tester le web contre :8000, injecter/patcher les meta tags plutôt que le JS ; sinon les tests web dépendent de la santé du serveur :8766."
+  },
+  {
+   "severity": "P3",
+   "title": "Le run web standalone dépend du node_modules du repo testttt (pas de node_modules dans /Downloads/web)",
+   "file": "/Users/1millnonstop/Downloads/web/web-validation-profonde-2026-06-10.spec.js",
+   "line": 11,
+   "evidence": "« Run (depuis testttt, NODE_PATH=testttt/node_modules) : PLAYWRIGHT_BASE_URL=http://127.0.0.1:8096 node_modules/.bin/playwright test /Users/1millnonstop/Downloads/web/web-validation-profonde-2026-06-10.spec.js --config=/Users/1millnonstop/Downloads/web/pw.validation.config.js ». Le spec require '@axe-core/playwright' (ligne 18) — résolu via testttt.",
+   "recommendation": "Lancer toute commande Playwright web-standalone avec cwd=/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt ; ne pas npm-install dans /Downloads/web."
+  },
+  {
+   "severity": "P3",
+   "title": "globalSetup racine exécute des seeders DB (reseed comptes+permissions) seulement si E2E_BACKEND_AVAILABLE=1",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Playwright/global-setup.js",
+   "line": 9,
+   "evidence": "`const backend = /^(1|true|yes)$/i.test(process.env.E2E_BACKEND_AVAILABLE || ''); if (!backend) return;` puis foodking:ensure-admin (admin@lecayenne.fr/123456), ensure-pos-operator, ensure-chef-operator, KioskMachineTableSeeder, seeders permissions, permission:cache-reset.",
+   "recommendation": "Ne PAS exporter E2E_BACKEND_AVAILABLE=1 contre la DB live sans le vouloir : ça reseed les mots de passe et la kiosk machine. Par défaut (var absente) le setup est no-op — sûr."
+  }
+ ],
+ "facts": [
+  "SERVEURS DÉJÀ UP (lsof vérifié) : php artisan serve :8000 (pid 34991, repo testttt), php -S 127.0.0.1:8766 servant testttt via vendor/laravel/.../server.php (pids 92295+, = la « borne »), python3 -m http.server -d /Users/1millnonstop/Downloads/web 8096 --bind 127.0.0.1 (pid 60760, = web standalone).",
+  "(a) WEB STANDALONE — servir : `python3 -m http.server -d /Users/1millnonstop/Downloads/web 8096 --bind 127.0.0.1` (déjà up). Tester : depuis cwd=/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt → `PLAYWRIGHT_BASE_URL=http://127.0.0.1:8096 node_modules/.bin/playwright test /Users/1millnonstop/Downloads/web/web-validation-profonde-2026-06-10.spec.js --config=/Users/1millnonstop/Downloads/web/pw.validation.config.js --reporter=list` (recette exacte en tête du spec :10-14). Config pw.validation.config.js : baseURL :8096, channel 'chrome', workers 1, timeout 300s, headless. Captures écrites dans /Users/1millnonstop/Downloads/web/reports/validation-profonde-2026-06-10/<VALID_CYCLE> (spec :23-24).",
+  "(b) MOBILE — servir+tester en UNE commande : depuis testttt → `npx playwright test --config=tests/mobile-e2e/playwright.config.js` ; la config (tests/mobile-e2e/playwright.config.js:50-56) boote elle-même `php -S 127.0.0.1:8087 -t mobile/` (webServer, url probe /index.html, reuseExistingServer:true, cwd=repo racine). use: baseURL http://127.0.0.1:8087, viewport 390x844 iPhone 13, isMobile+hasTouch, workers 1. testMatch inclut tests/mobile-e2e/*.spec.js + familles tests/e2e/test-e2e-mobile-*/test-real-e2e-*/test-ultraudit-visual-*. 20 specs loyalty existants (loyalty-01..15 + adv A1-A5) + utils/ dans tests/mobile-e2e/.",
+  "(b-bis) Tests data mobile pure-Node sans serveur : `node mobile/tests/menu.spec.js` (vérifie window.LC.menu canon sur mobile/data/menu.js ET /Users/1millnonstop/Downloads/web/data/menu.js — 7 viandes, 12 sauces, 3 crudités, 9 suppléments 0,90€, formule +2,50€) et `node mobile/tests/ordersParity.spec.js` (charge menu.js+loyalty.js+orders.js, parité prix/points). Exit 0 = vert. Équivalents web-standalone : /Users/1millnonstop/Downloads/web/tests/node/{menu-pricing,loyalty-redeem}.test.mjs.",
+  "(c) API BACKEND — token ADMIN : helper tests/e2e/helpers/admin-auth.js — POST /api/auth/login avec header X-API-KEY:<MIX_API_KEY> ; resolveApiKey() lit process.env.MIX_API_KEY sinon parse REPO_ROOT/.env (admin-auth.js:41-57). Comptes e2e : admin@lecayenne.fr/123456, pos@lecayenne.fr/123456, chef@lecayenne.fr/123456 (global-setup.js:23-48). Alternative in-browser : token pompé du Vuex après loginAsAdmin (`vuex.auth?.authToken`, wave-y-rate-limit-validation.spec.js:84-102) puis `Authorization: Bearer <token>`.",
+  "(c-bis) API BACKEND — token KIOSK : helper tests/e2e/helpers/kiosk-auth.js `loginKiosk({ baseURL })` — POST /api/auth/kiosk-login (routes/api.php:166), headers X-API-KEY, body {username:'kiosk-lecayenne', password:'kiosk123'} → HTTP 201 {token:'<id>|<plain>', kiosk:{...}} ; ability `kiosk:order` UNIQUEMENT, pas de scope admin (kiosk-auth.js:11-23). Retourne aussi un apiContext Playwright pré-câblé Bearer+X-API-KEY.",
+  "BORNE UI :8766 — pattern canonique : `PLAYWRIGHT_BASE_URL=http://127.0.0.1:8766 npx playwright test tests/e2e/borne-idle-smoke.spec.js` (spec :3). Autologin UI via helpers/login.js:123 `loginAsKiosk(page)` : clearFoodKingRateLimits() puis goto /kiosk/login — si la machine a is_login=1 le kiosk auto-login (redirect hors /kiosk/login), sinon fill username/password kiosk-lecayenne/kiosk123. Viewport borne réel = portrait 1080x1920 (borne-idle-smoke.spec.js:9).",
+  "Config racine testttt/playwright.config.js : baseURL par défaut http://localhost:8000 (override PLAYWRIGHT_BASE_URL), testMatch e2e/**+playwright/**+Playwright/**, workers:1 (anti login-lockout, :52), timeout 600s, retries 1, globalSetup tests/Playwright/global-setup.js (no-op sauf E2E_BACKEND_AVAILABLE=1), webServer php artisan serve :8000 avec reuseExistingServer:true, désactivable PLAYWRIGHT_NO_WEB_SERVER=1 (:28-33). Reporter JSON → reports/antigravity/playwright-latest.json.",
+  "Helpers e2e réutilisables (tests/e2e/helpers/) : admin-auth.js, kiosk-auth.js, kiosk-order.js (drive window.axios in-page), login.js (login/loginAsKiosk/loginAsPosOperator/loginAsChefOperator/loginAsAdmin/cleanupOrphanTestOrders), rate-limit.js (clearFoodKingRateLimits), place-order.js, idempotency-key.js, pos-tacos-fixture.js, seed-kiosk-cash-pending.js, sync-journey-trace.js, mega-audit-snap.js, example-using-helpers.spec.js.",
+  "Fixture catalogue canonique borne : /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/goal-web-app-sync/catalog-canonical.json (data.categories[9], data.items[42], data.branch) — SSOT pour parity checks web/mobile.",
+  "Web standalone api.js : lecayenne.authToken/authPhone en localStorage (api.js:97-98), config par meta tags api-base-url/api-key/api-branch-id avec fallback :8766 + key hardcodée (api.js:19-23) — le web est DÉJÀ câblé à l'API borne :8766 par défaut."
+ ]
+}

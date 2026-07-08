@@ -1,0 +1,52 @@
+{
+ "spec": "web:wizard-v2",
+ "scope": "Web standalone wizard (/Users/1millnonstop/Downloads/web/wizard-v2.jsx + upsell.jsx), source de données data/menu.js, encodage panier → API order (api.js resolveLine), gestion Tacos M/L vs fixture composer_profile canonique — READ-ONLY, aucun fichier modifié.",
+ "summary": "Le wizard web est data-driven : buildSteps(item) (wizard-v2.jsx:13-218) lit window.LC.menu (data/menu.js, hardcoded mirror — AUCUN appel API pour construire les steps) et route sur 4+1 templates (sandwich/tacos/burger partagent le même case, bol, custom via item.composer_profile local, simple=DirectAddView). Les steps sont pilotés par des flags item (viandes count, has_sauce, has_crudites, has_supplements, has_extra_meat, has_menu_addon). Pour les Tacos : menu.js déclare has_crudites:false sur Tacos M (ligne 377) et Tacos L (ligne 381) avec le commentaire « SANS crudités » (ligne 373) → le wizard n'affiche AUCUNE étape crudités pour les Tacos, ce qui est CONVERGENT avec le revert backend 2026-07-07 et avec la fixture canonique (items 26/97 : itemAttributes = Viande 1 [+ Viande 2 pour L] + Sauce uniquement, composer_profile=null). L'encodage panier→API se fait au checkout dans api.js resolveLine (résolution PAR NOM vers les vrais ids DB via itemDetails), avec un top-up automatique des attributs required (api.js:365-374). Seul point d'attention mineur : la fixture expose encore Salade/Tomate/Oignon (0€) dans extras[] des Tacos, mais le web ne les enverra jamais (state.crudites jamais peuplé pour Tacos).",
+ "findings": [
+  {
+   "severity": "INFO",
+   "title": "Tacos web = déjà aligné sur le revert crudités backend 2026-07-07 (aucun fix requis)",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 377,
+   "evidence": "menu.js:373 « // TACOS (cat 5) — seeder : Tacos M 6,90 (1 viande) / Tacos L 7,90 (2 viandes). SANS crudités. » ; ligne 377 Tacos M `{ viandes: 1, has_crudites: false, ... }` ; ligne 381 Tacos L `{ viandes: 2, has_crudites: false, ... }`. wizard-v2.jsx:97 `if (item.has_crudites)` gate l'étape crudités → jamais rendue pour Tacos. Fixture canonique items 26/97 : itemAttributes = [(1,'Viande 1',min1,max1),(2,'Viande 2' L seulement),(5,'Sauce (1ère Gratuite)',min1,max1)] — aucun attribut crudités, composer_profile=null.",
+   "recommendation": "Rien à changer côté wizard Tacos. Garder ce point dans le parity gate W6 (vérifier qu'aucun régression ne réintroduit has_crudites:true sur 501/502)."
+  },
+  {
+   "severity": "P3",
+   "title": "Fixture Tacos expose encore les crudités gratuites en extras[] (Salade/Tomate/Oignon 0€) — divergence latente si la caisse les accepte",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/goal-web-app-sync/catalog-canonical.json",
+   "line": 1,
+   "evidence": "Fixture item 26 (Tacos M) extras: [('Salade',0),('Tomate',0),('Oignon',0),('Oignons frits',0.9),...] idem item 97 (Tacos L, ids extras 256-258). Le revert a retiré l'ÉTAPE crudités (attribut wizard) mais pas les lignes extras crudités du payload. Web : inoffensif car state.crudites n'existe jamais pour Tacos (has_crudites:false) donc api.js:310-314 n'émet rien.",
+   "recommendation": "Confirmer avec l'owner si les extras crudités des Tacos doivent aussi disparaître du backend, ou si c'est voulu (retrait possible en caisse mais pas proposé). Aucun changement web nécessaire."
+  },
+  {
+   "severity": "P3",
+   "title": "Top-up silencieux des attributs required dans resolveLine peut envoyer des choix jamais vus par le client",
+   "file": "/Users/1millnonstop/Downloads/web/api.js",
+   "line": 365,
+   "evidence": "api.js:361-374 : « Satisfy REQUIRED attributes (min_select) the web composition didn't fill... We only TOP UP to min_select using the attribute's first option(s) ». Si le pool web diverge du backend (nom non matché par pickVariation), la 1ère option backend est injectée sans que le client l'ait choisie.",
+   "recommendation": "Comportement assumé (commentaire WEB-WIREUP 2026-06-26) mais à surveiller au parity gate : tout renommage d'option backend (viande/sauce) casse le match par nom et déclenche ce top-up silencieux. Ajouter un test e2e de parité de noms pool web ↔ attributs fixture."
+  },
+  {
+   "severity": "INFO",
+   "title": "Upsell web n'offre jamais de composables (tacos/sandwich/burger/bol exclus) — pas d'impact crudités",
+   "file": "/Users/1millnonstop/Downloads/web/upsell.jsx",
+   "line": 29,
+   "evidence": "upsell.jsx:29-38 `COMPOSABLE_TPL = ['sandwich','burger','tacos','bol']` + `.filter(i => !inCart.has(i.id) && !isComposable(i))` — un Tacos ne peut pas être ajouté en direct-add via l'upsell, donc aucun défaut silencieux de compo.",
+   "recommendation": "Aucune action."
+  }
+ ],
+ "facts": [
+  "STRUCTURE WIZARD — buildSteps(item) à wizard-v2.jsx:13-218 : templates 'sandwich'|'tacos'|'burger' (même case, lignes 60-135) → steps dans l'ordre : pain (si item.has_pain_choice, radio, défaut 'pain-classique'), viandes (multi min=max=item.viande_count||item.viandes, options M.meats), sauce (si !sauce_locked && has_sauce, multi min1 max1, M.sauces), crudites (si has_crudites, multi, M.crudites défauts pré-cochés dflt), supplements (si has_supplements!==false, multi max6, M.supplements), viande_extra (si has_extra_meat, multi max2, +2,50€/pièce M.extraMeatPrice), menu (si has_menu_addon, radio full+2,50/frites+2,00/boisson+2,00/none), puis step 'recap' toujours ajouté (ligne 216).",
+  "TEMPLATE — le template vient de item.wizard_template || category.wizard_template || 'simple' (wizard-v2.jsx:19) ; catégorie Tacos id 5 = wizard_template:'tacos' (data/menu.js:228). 'simple' = 0 steps → DirectAddView (wizard-v2.jsx:342-343, qty stepper seul).",
+  "SOURCE DE DONNÉES — 100% window.LC.menu = /Users/1millnonstop/Downloads/web/data/menu.js (mirror hardcodé, wizard-v2.jsx:15). buildSteps ne fait AUCUN appel réseau ; l'API n'intervient qu'au checkout via api.js (itemDetails par vrai id DB résolu par nom).",
+  "CASCADE FORMULE — getActiveSteps (wizard-v2.jsx:223-262) insère dynamiquement après le step 'menu' : cascade_drink (si full|boisson), cascade_frites_style + cascade_frites_sauce (si full|frites). Ces choix cascade ne sont PAS pricés (bundle flat backend) et partent en instruction texte, pas en options (api.js:347-358, computeWizardTotal wizard-v2.jsx:279-287).",
+  "ENCODAGE PANIER — au recap, onAdd({item, state, total, summary, optionCount}) (wizard-v2.jsx:583) ; state = { pain:id, viandes:[ids], sauce:[ids], crudites:[ids], supplements:[ids], viande_extra:[ids], menu:'full'|'frites'|'boisson'|'none', cascade_drink:id, cascade_frites_style:id, cascade_frites_sauce:[ids], bol_supplements:[ids], bol_drink:id|'__none', frites_style:id|'__nature' }. Prix affiché = M.priceFor via computeWizardTotal (wizard-v2.jsx:267-294).",
+  "MAPPING wizard→API (api.js resolveLine:256-383) : state.viandes → item_variations sur attributs '1','2' (Viande 1/Viande 2, pick par nom, api.js:278-286) ; state.pain → item_variations attr '6' (api.js:288-293) ; state.sauce → item_variations attrs '5' ou '8' (bol) (api.js:295-302) ; sauce_locked → top-up attr5 (api.js:303-307) ; state.crudites → item_extras group 'crudite' (api.js:309-314) ; state.supplements → item_extras group 'supplement' (api.js:316-321) ; state.bol_supplements → item_extras group 'supplement_bol' (api.js:323-328) ; state.viande_extra → item_extras extra « Viande supplémentaire » quantity=count (api.js:330-336) ; state.menu → item_addons par role (menu_component/side/drink, envoyé role menu_full/menu_frites/menu_boisson) (api.js:338-346) ; cascade drink/frites → out.instruction texte ≤500 chars (api.js:350-358,380-381) ; payload final = { item_id, quantity, item_variations?, item_extras?, item_addons?, instruction? } (api.js:376-382). Groups extras matchés via e.group_label (api.js:212).",
+  "TACOS M/L — pas de « taille » : ce sont DEUX items distincts. Web : ids locaux 501 'tacos-m' 6,90€ viandes:1 / 502 'tacos-l' 7,90€ viandes:2 (data/menu.js:375-382), tous deux has_crudites:false, has_sauce:true, has_extra_meat:true, has_menu_addon:true. Fixture canonique : id 26 Tacos M 6.9 viande_count=1, id 97 Tacos L 7.9 viande_count=2. La résolution web→DB se fait PAR NOM au checkout (api.js resolveItemId), pas par id.",
+  "FIXTURE TACOS (catalog-canonical.json) — composer_profile=null pour items 26/97 ; itemAttributes Tacos M = [Viande 1 (min1/max1, 7 choix attr 1), Sauce 1ère Gratuite (min1/max1, 12 choix attr 5)] ; Tacos L ajoute Viande 2 (attr 2, 7 choix). AUCUN attribut crudités → revert crudités backend 2026-07-07 reflété dans la fixture. Extras Tacos gardent Salade/Tomate/Oignon 0€ + suppléments 0,90€ (ids 244-255 M, 256+ L).",
+  "BOL DRINK — state.bol_drink ≠ '__none' devient une LIGNE de commande séparée au prix catalogue (api.js:396-402 resolveOrderItems + DRINK_ID_TO_SLUG api.js:387-389), pas une option de l'item bol.",
+  "UPSELL (upsell.jsx:11-119) — funnel 3 pages avant checkout : boissons cat 10 (sautée si déjà au panier), desserts cat 9 (idem), suggestions (frites cat 7 + featured NON-composables, max 6). Ajouts = direct-add qty 1 unit price (onAdd({...it, price, qty:1}) ligne 66). Composables (sandwich/burger/tacos/bol) exclus par garde COMPOSABLE_TPL (lignes 29-38). Steps snapshotés à l'ouverture ([open] only, ligne 51-56) ; 0 step → onProceed() direct.",
+  "DirectAddView (wizard-v2.jsx:637-677) passe le prix UNITAIRE (total: item.price, ligne 671) — l'App multiplie par qty (heal WIZ-01 anti-quantity²)."
+ ]
+}

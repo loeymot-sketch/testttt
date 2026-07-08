@@ -1,0 +1,85 @@
+{
+ "spec": "mobile:screens-main",
+ "scope": "Cartographie READ-ONLY de l'app mobile prototype (mobile/screens-main.jsx, shared.jsx, index.html, data/menu.js) : écrans, navigation, source catalogue, palette NOIR/ORANGE/JAUNE/BLANC, points d'insertion fidélité/paiement, divergences vs reports/goal-web-app-sync/catalog-canonical.json.",
+ "summary": "L'app mobile est un prototype navigateur React 18 UMD + Babel standalone (index.html charge les .jsx en text/babel, React via CDN unpkg). 8 écrans principaux dans screens-main.jsx (Home, Menu, Item, Cart, Confirm, Orders, Profile, Loyalty) orchestrés par un routeur switch maison dans index.html (fonction go + history stack), atomes UI dans shared.jsx. Le catalogue vient de data/menu.js (window.LC.menu → window.ITEMS/window.CATS), standalone sans wireup API. La palette owner NOIR(#0A0A0A)/ORANGE(#FF5A1F)/JAUNE(#FFD93D)/BLANC est respectée — zéro occurrence de #F4501E dans mobile/. Risques principaux : catalogue mobile désynchronisé du canonical (8 boissons au lieu de 15 — 7 canettes manquantes ; « Menu Enfant Burger » vs « Menu Enfant Chicken Burger »), upsell panier cassé (filtre sur slugs inexistants 'sides'/'drinks'), et incohérence de ratio fidélité entre le panier (10 pt/€) et la modale de gain (1 pt/€).",
+ "findings": [
+  {
+   "severity": "P1",
+   "title": "Catalogue mobile désynchronisé : 7 boissons du canonical absentes (31 items vs 42)",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js",
+   "line": 421,
+   "evidence": "data/menu.js DRINKS (lignes 421-430) = 8 items (coca, coca-zero, fanta, sprite, oasis, orangina, eau-plate, capri-sun). catalog-canonical.json cat 10 contient 15 boissons dont Coca Cherry 33cl (id 119), Tropico 33cl (120), Ice Tea Pêche 33cl (121), Fanta Citron 33cl (122), Fuze Tea 33cl (123), Hawaï 33cl (124), Perrier 33cl (125) — grep 'Tropico|Cherry|Perrier|Hawaï|Fuze' dans data/menu.js = 0 hit côté items (tropico.png n'apparaît que comme image d'Orangina, ligne 93).",
+   "recommendation": "Ajouter les 7 canettes @1,90€ dans le tableau DRINKS de data/menu.js pour réaligner sur la borne (SSOT). Corriger au passage l'image d'Orangina (mappée sur tropico.png ligne 93 alors que Tropico est un produit distinct au canonical)."
+  },
+  {
+   "severity": "P1",
+   "title": "Upsell panier « Pour accompagner ? » filtre sur des slugs inexistants ('sides','drinks') — seuls les desserts s'affichent",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/screens-main.jsx",
+   "line": 682,
+   "evidence": "screens-main.jsx:682 : ITEMS.filter(i => i.cat === 'sides' || i.cat === 'drinks' || i.cat === 'desserts'). Or window.ITEMS.cat = slug de CATEGORIES (data/menu.js:535-540) et les slugs réels sont : sandwichs, galette, burgers, tacos, bols, frites, desserts, boissons, menu-enfant (data/menu.js:218-226). 'sides' et 'drinks' ne matchent jamais → l'upsell ne montre que les 3 desserts, jamais frites ni boissons.",
+   "recommendation": "Remplacer par i.cat === 'frites' || i.cat === 'boissons' || i.cat === 'desserts'."
+  },
+  {
+   "severity": "P2",
+   "title": "Incohérence ratio fidélité : panier affiche 10 pt/€, modale de gain post-paiement crédite 1 pt/€",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/index.html",
+   "line": 218,
+   "evidence": "index.html:218 : <ModalPointsGain gain={lastOrder ? Math.round(lastOrder.total) : 25}> (1 pt/€, commentaire lignes 212-217 dit « 1 pt / € »). Mais screens-main.jsx:606-609 : earnRatio = LC.loyalty.config.earn_ratio || 10 ; pointsForCart = Math.round(total * earnRatio) — et data/loyalty.js:49 : earn_ratio: 10. Le client voit « +79 pts gagnés » au panier puis la modale annonce ~8 pts.",
+   "recommendation": "Dans index.html, dériver gain de earn_ratio : Math.round(lastOrder.total * (window.LC.loyalty.config.earn_ratio || 10))."
+  },
+  {
+   "severity": "P2",
+   "title": "Nom SKU divergent : « Menu Enfant Burger » (mobile) vs « Menu Enfant Chicken Burger » (canonical id 106)",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js",
+   "line": 437,
+   "evidence": "data/menu.js:437 : mkItem(1102, 'menu-enfant-burger', 11, 'Menu Enfant Burger', 4.90, 'Burger · Frites · Capri-Sun'). catalog-canonical.json item 106 = « Menu Enfant Chicken Burger » 4.9.",
+   "recommendation": "Renommer en « Menu Enfant Chicken Burger » pour parité borne."
+  },
+  {
+   "severity": "P3",
+   "title": "Section Home « Nouveautés » : compteur « 3 plats » codé en dur mais le filtre TOP ne retourne qu'1 item",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/screens-main.jsx",
+   "line": 173,
+   "evidence": "screens-main.jsx:173 : <span className=\"more\">3 plats</span> (littéral) ; ligne 176 filtre ITEMS.filter(i => (i.tags||[]).includes('TOP')) — seul tacos-l porte le tag TOP (data/menu.js:387), aucun item n'a is_new/tag NOUVEAU. La section affiche 1 carte sous un compteur « 3 plats ».",
+   "recommendation": "Dériver le compteur du résultat du filtre et/ou tagger de vrais items NOUVEAU."
+  },
+  {
+   "severity": "P3",
+   "title": "Frites cheddar modélisées en options frites_style (mobile) vs 4 SKUs distincts au canonical — structurel, prix convergents",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js",
+   "line": 187,
+   "evidence": "data/menu.js:187-191 FRITES_STYLES (Nature 0 / Cheddar fondu +1€ / Cheddar+Oignons +2€) appliqués à Petite 2,50 et Grande 4,00 → totaux 3,50/4,50/5,00/6,00 identiques aux SKUs canonical 107-110 (Petite Frites Cheddar fondu 3.5, Petite Cheddar+Oignons 4.5, Grande Cheddar fondu 5, Grande Cheddar+Oignons 6). Divergence de forme, pas de prix.",
+   "recommendation": "Aucun fix prix requis ; documenter le mapping option→SKU pour le futur wireup API (le POST devra traduire fritesStyleId en item_id backend)."
+  },
+  {
+   "severity": "INFO",
+   "title": "React/Babel chargés depuis unpkg CDN — l'app ne boote pas hors-ligne",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/index.html",
+   "line": 77,
+   "evidence": "index.html:77-79 : react@18.3.1 + react-dom + @babel/standalone via https://unpkg.com (avec SRI). Un dossier vendor/ existe (créé 2026-07-08 16:04) mais index.html ne le référence pas.",
+   "recommendation": "Basculer sur ./vendor/ locaux si le prototype doit tourner sur machine restaurant sans internet."
+  },
+  {
+   "severity": "INFO",
+   "title": "Données démo codées en dur : profil « Ikyes B. / +33 6 42 79 98 84 », Visa ····4242, téléphone resto masqué « 06 51 30 XX XX »",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/screens-main.jsx",
+   "line": 941,
+   "evidence": "screens-main.jsx:941-942 (Ikyes B. + numéro), :985 ('Moyens de paiement — Visa ····4242'), :989 et :199 ('06 51 30 XX XX') ; index.html:176 onLogin mock token/phone hardcodés.",
+   "recommendation": "Attendu en V0 standalone ; à brancher sur LC.user/API au wireup."
+  }
+ ],
+ "facts": [
+  "Écrans principaux (screens-main.jsx) : ScreenHome (:80), ScreenMenu (:208), ScreenItem (:304, wrapper qui délègue à window.ScreenItemWizard de screens-item-steps.jsx, fallback single-scroll inline), ScreenCart (:594), ScreenConfirm (:727, ticket QR retrait), ScreenOrders (:794, tabs En cours/Historique), ScreenProfile (:929), ScreenLoyalty (:1014, hero QR + tabs points/récompenses/historique). Exports globaux via Object.assign(window,...) à :1403.",
+  "Écrans annexes : onboarding+login+OTP dans screens-onboarding.jsx (ScreenSplash/Onb1-4/ScreenLogin/ScreenOTP) ; modales+Stripe dans screens-modals.jsx (ModalPayChoice :40, ScreenStripe :68, ModalPointsGain, WizardRedeem via components/WizardRedeem.jsx, ModalOptOutConfirm, ModalCardLink, ModalWalletV0Notice, ScreenOrderDetail, Toast — exports :359).",
+  "Navigation : routeur maison dans index.html:100-241 — App() avec useState screen + history stack ; fonction go(s, ext) (:140-169) gère 'back' (pop), les modales ('pay','gain','redeem','link','walletApple','walletGoogle','optOut','toast'), 'logout', et le switch d'écrans (:184-203). TabBar (shared.jsx:47, 4 onglets Accueil/Menu/Commandes/Profil) masquée sur NO_TAB_SCREENS (index.html:105 : splash,onb*,login,otp,item,cart,stripe,confirm,loyalty).",
+  "Catalogue : data/menu.js (IIFE) expose window.LC.menu {branch, categories[9], items[31], meats[7], sauces[12], crudites[3], supplements[9 @0,90€], supplementsBols, formules[3], fritesStyles[3], priceFor, findItem...} + globals rétro-compat window.ITEMS (avec cat=slug, desc, slot — :535) et window.CATS (id=slug, backendId — :541). ⛔ STANDALONE, aucun appel API (mandat owner, en-tête :15). SSOT déclaré = OwnerMenuUpdate20260623Seeder.php.",
+  "Ordre de chargement (index.html:66-97) : api/storage.js → data/menu.js → data/loyalty.js → loyaltyRewardState.js → orders.js → user.js → wallet-spec.js → dev-helpers.js → React/Babel CDN → image-slot.js → icons.jsx → shared.jsx → hooks → components (BarcodeMock, LoyaltyQR, WizardRedeem) → screens-onboarding → screens-item-steps → screens-main → screens-modals → App root inline.",
+  "Palette CONFORME au mandat NOIR/ORANGE/JAUNE/BLANC : styles.css:4-21 → --ink #0A0A0A, --orange #FF5A1F (+ --orange-text #C2410C pour WCAG AA texte), --yellow #FFD93D, --red #E5341A, --green #1FA653, fond blanc. grep 'F4501E' dans mobile/ (jsx/css/html/js) = 0 résultat — le rouge Cayenne kiosk n'est PAS utilisé.",
+  "Points d'insertion PAIEMENT : ScreenCart bouton 'Valider ma commande' → go('confirm') remappé en go('pay') (index.html:195) → snapshotOrder() (index.html:131-138, id 'C-XXXX' aléatoire, total, eta +12min) → ModalPayChoice (index.html:211) avec onPickCounter (→ confirm + vide panier + modal 'gain' après 900ms) et onPickCard (→ ScreenStripe, screens-modals.jsx:68, mock). C'est le point de branchement futur POST /api/v1/frontend/orders.",
+  "Points d'insertion FIDÉLITÉ : data layer window.LC.loyalty (data/loyalty.js — config.earn_ratio=10 pt/€ :49, account.balance, progressToNext, pointsToDiscount, rewards, history) ; consommé par ScreenCart banner (screens-main.jsx:605-609, 666-674), ScreenOrders stats (:807-812), ScreenProfile carte (:948-979), ScreenLoyalty (:1014-1346, re-render sur event 'lc:loyalty-changed' :1021-1025), ModalPointsGain (index.html:218), WizardRedeem (modal 'redeem'), opt-out RGPD (index.html:220-232 efface balance+history). QR membre = components/LoyaltyQR.jsx (screens-main.jsx:1091).",
+  "Persistance locale : api/storage.js (LC.storage) — cart (index.html:120,128), auth mock (onLogin index.html:175-178, token 'mock-v0-token'), onboarding vu, préférence QR/barcode, consent fidélité. Boot screen conditionnel index.html:111-115 (auth→home, onboarding vu→login, sinon splash).",
+  "Promo codes mock V0 : PromoCodeRow (screens-main.jsx:1352-1401) accepte WELCOME10/CAYENNE/CAYENNE10 → -10% calculé dans ScreenCart (:598-601). Backend wireup prévu en commentaire :1351 (POST /api/v1/frontend/cart/promo).",
+  "Prix vérifiés alignés canonical (échantillon) : Cayenne 7,40 · Suprême 7,00 · Méga 8,00 · Terminator 9,00 · Tacos M 6,90 · Tacos L 7,90 · Bols 7,90 · Chicken Burger 4,90 · Big Burger 9,00 · Desserts 3,50 · canettes 1,90 · Eau 1,00 · Capri-Sun 1,50 · Menus enfant 4,90 (data/menu.js:326-440 vs catalog-canonical.json). Aucun produit inventé détecté.",
+  "IDs items mobile = locaux (101, 201, 401... data/menu.js) ≠ IDs backend canonical (22, 97, 103...) ; seuls les IDs de catégories backend sont préservés (1,2,4,5,6,7,9,10,11 — data/menu.js:215). Le futur wireup devra mapper par slug."
+ ]
+}

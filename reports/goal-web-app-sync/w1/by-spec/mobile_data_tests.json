@@ -1,0 +1,84 @@
+{
+ "spec": "mobile:data+tests",
+ "scope": "Cartographie READ-ONLY du prototype mobile in-repo (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile) : data démo (menu.js, loyalty.js, orders.js, user.js, loyaltyRewardState.js, wallet-spec.js, dev-helpers.js), tests (mobile/tests/ + tests/mobile-e2e/), debug/, comment servir et tester l'app, et diff vs la payload canonique borne (catalog-canonical.json).",
+ "summary": "Le prototype mobile est un app React 18 + Babel-standalone sans build, 100% standalone : toutes les données (fidélité, commandes, user) sont des mocks IIFE exposés sur window.LC.* avec hydratation localStorage. La balance fidélité (347 pts), l'historique (7 transactions), les 8 rewards, le compte 'Ikyes B.' et les 6 commandes sont fake mais chaque mock documente honnêtement son mapping endpoint backend (CONNECTION_PLAN.md) et ses gaps (pas de table loyalty_rewards, pas de welcome_bonus backend, signature QR SHA-256 sans secret). Les 2 tests Node standalone passent (0 failures) et une suite Playwright de 20+ specs existe sous tests/mobile-e2e/ (port dédié 8087, php -S). Risque principal pour W4 : le menu mobile (31 items) a dérivé de la borne canonique (42 items) — 12 items canon absents (7 boissons, Menu Enfant Chicken Burger vs 'Menu Enfant Burger', 4 frites cheddar) ; menu.spec.js verrouille l'ANCIEN canon 31-items (assert enfant.length===2 avec 'Menu Enfant Burger') et devra être mis à jour en même temps que menu.js. debug/ ne contient que 3 PNG historiques, rien d'actif.",
+ "findings": [
+  {
+   "severity": "P1",
+   "title": "Dérive catalogue mobile vs borne canonique : 12 items canon absents + 1 nom divergent",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js",
+   "line": 445,
+   "evidence": "Diff VM réel (node, IIFE évaluée) : mobile=31 items, canon=42. canon-only = ['Coca Cherry 33cl','Tropico 33cl','Ice Tea Pêche 33cl','Fanta Citron 33cl','Fuze Tea 33cl','Hawaï 33cl','Perrier 33cl','Menu Enfant Chicken Burger','Petite Frites Cheddar fondu','Petite Frites Cheddar + Oignons frits','Grande Frites Cheddar fondu','Grande Frites Cheddar + Oignons frits'] ; mobile-only = ['Menu Enfant Burger']. Header menu.js ligne 443 : « 31 produits sur 9 catégories ».",
+   "recommendation": "W4 : ajouter les 7 boissons + 4 frites cheddar, renommer 'Menu Enfant Burger'→'Menu Enfant Chicken Burger' (ou confirmer le canon), ET mettre à jour mobile/tests/menu.spec.js en même temps (il verrouille l'ancien canon 31 items). Répliquer sur le miroir web /Users/1millnonstop/Downloads/web/data/menu.js (menu.spec.js vérifie les DEUX)."
+  },
+  {
+   "severity": "P1",
+   "title": "Balance et historique fidélité 100% fake (347 pts, 7 transactions hardcodées) — persistés localStorage",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/loyalty.js",
+   "line": 132,
+   "evidence": "DEFAULT_ACCOUNT = { user_id: 12345, member_number: 'FK-12345', loyalty_code: 'A1B2C3D4', balance: 347, lifetime_earned: 1247 /* MOCK ONLY */, lifetime_redeemed: 900 /* MOCK ONLY */, ... } ; DEFAULT_HISTORY (l.151-159) = 7 lignes fake datées 2026-04/05, cohérentes 10 pt/€ avec orders.js. hydrate() (l.236) lit localStorage via LC.storage.getLoyalty.",
+   "recommendation": "W4 wireup : balance ↔ GET /api/v1/frontend/loyalty/balance, history ↔ GET /loyalty/history (mapping déjà écrit l.31-37). lifetime_earned/redeemed/member_since n'existent PAS backend — à dériver ou dropper."
+  },
+  {
+   "severity": "P1",
+   "title": "Catalogue REWARDS (8 récompenses) purement client-side — aucune table/route backend",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/loyalty.js",
+   "line": 116,
+   "evidence": "Commentaire l.102 : « NO loyalty_rewards TABLE OR /loyalty/rewards ROUTE EXISTS BACKEND » ; REWARDS = 8 entrées (100→3000 pts) avec payload item_id/category_id pointant sur le canon menu.js. POST /loyalty/redeem ne reçoit que {code, points} — pas de reward_id serveur.",
+   "recommendation": "Pour W4/W5 : soit garder le catalogue client-side (V1 acceptable, POS vérifie visuellement), soit créer la table backend (backlog B-11). Décision owner requise avant de le présenter comme « réel »."
+  },
+  {
+   "severity": "P2",
+   "title": "Signature QR fidélité = SHA-256 sans secret (mock, non authentifiante) — backend ignore la signature",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/loyalty.js",
+   "line": 176,
+   "evidence": "generateSignedQR : payload='FK:'+code, signature=SHA-256(code+'|'+exp) tronquée 32 hex, « NOT cryptographically secure (no secret key) » (l.182). « V0 backend scan() strips the FK: prefix and matches loyalty_code — IGNORES signature » (l.169-170).",
+   "recommendation": "Le wire-shape est déjà forward-compatible ; W5 si voulu : endpoint /loyalty/qr/sign HMAC(app.key) (backlog B-09). Sinon documenter que le QR reste un simple identifiant."
+  },
+  {
+   "severity": "P2",
+   "title": "dev-helpers.js chargé en prod-prototype : stub Date.now global + mutation de points côté client",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/dev-helpers.js",
+   "line": 28,
+   "evidence": "« ⚠️ This file is loaded in production V0 app. It is intentionally not behind a if (DEBUG) flag » (l.11-12) ; Date.now = _stubbedNow (l.28) ; earnPoints() crédite des points client-side avec persistance localStorage. Chargé par index.html l.74.",
+   "recommendation": "Au wireup réel (W4), gater window.LC.dev derrière un flag ou le retirer du chargement — sinon n'importe qui peut se créditer des points depuis la console (acceptable tant que tout est mock, plus après)."
+  },
+  {
+   "severity": "P2",
+   "title": "L'app dépend de CDN unpkg (React/ReactDOM/Babel) — pas 100% offline-servable",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/index.html",
+   "line": 77,
+   "evidence": "<script src=\"https://unpkg.com/react@18.3.1/umd/react.development.js\" ...> + react-dom 18.3.1 + @babel/standalone@7.29.0 (l.77-79) + Google Fonts preconnect (l.12-13). Seul vendor/qrcode.js est local.",
+   "recommendation": "Tester/servir nécessite Internet. Si un jour hébergé derrière la CSP artifacts ou offline, vendoriser les 3 UMD dans mobile/vendor/."
+  },
+  {
+   "severity": "INFO",
+   "title": "Commandes actives/historique = 6 commandes fake mais parity-locked sur le canon (test vert)",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/orders.js",
+   "line": 24,
+   "evidence": "ORDERS_ACTIVE = 1 commande C-1234 in_progress (24,70 €, 247 pts) ; ORDERS_HISTORY = 5 commandes delivered. tests/ordersParity.spec.js vérifie item_id→nom canon, line_total=prix×qty, total=Σ, points=round(total×10) — exécuté : ALL PARITY CHECKS PASSED (0 failures).",
+   "recommendation": "W4 : remplacer par GET /api/v1/frontend/order?status=... (mapping en tête de fichier l.4-8). Garder ordersParity.spec.js comme gate tant que le mock existe."
+  },
+  {
+   "severity": "INFO",
+   "title": "Wallet Apple/Google = stub V0 assumé (v0_mock=true, modal d'attente)",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/wallet-spec.js",
+   "line": 1,
+   "evidence": "« V0 (today) : v0_mock = true — buttons open ModalWalletV0Notice explaining that the wallet integration is pending » ; Phase 6 = certs Apple/Google + endpoints /loyalty/wallet/{apple,google} (WALLET_PLAN.md, backlog B-14).",
+   "recommendation": "Hors scope W4 sauf mandat owner (coûts certs $99/an Apple). Laisser en stub."
+  }
+ ],
+ "facts": [
+  "Servir l'app : `php -S 127.0.0.1:8087 -t mobile/` depuis la racine repo (ou tout static server) puis ouvrir http://127.0.0.1:8087/index.html — aucun npm install ni build (React 18 + Babel-standalone compilent in-browser). Port 8087 dédié Cayenne-mobile (8081 hijacké par un autre projet — commentaire tests/mobile-e2e/playwright.config.js:38-40).",
+  "Tests unitaires data (purs Node, 0 dépendance) : `node mobile/tests/menu.spec.js` (vérifie mobile/data/menu.js ET le miroir /Users/1millnonstop/Downloads/web/data/menu.js) et `node mobile/tests/ordersParity.spec.js` — les DEUX passent aujourd'hui (0 failures, vérifié 2026-07-08).",
+  "Tests Playwright : `npx playwright test --config=tests/mobile-e2e/playwright.config.js` — le webServer lance automatiquement `php -S 127.0.0.1:8087 -t mobile/` (config:51-56, reuseExistingServer:true). 20 specs loyalty (15 fonctionnels + 5 adversariaux A1-A5) + specs visual-wave sous tests/e2e/ matchés par testMatch (config:21-29). Viewport iPhone 13 390×844, workers:1, retries:0.",
+  "Ordre de chargement des data (index.html:66-74) : api/storage.js → data/menu.js → loyalty.js → loyaltyRewardState.js → orders.js → user.js → wallet-spec.js → dev-helpers.js. Tout expose window.LC.{menu,loyalty,loyaltyRewardState,orders,user,walletSpec,dev,storage}.",
+  "DOIT DEVENIR RÉEL (mapping endpoints déjà documenté dans chaque fichier + CONNECTION_PLAN.md) : loyalty balance/history/config/redeem (loyalty.js:31-37), orders active/history/detail/create (orders.js:4-8), profile user (user.js:4-7). PEUT RESTER DÉMO V1 : REWARDS catalog (pas de table backend), wallet (stub assumé), welcome_bonus/birthday (triggers backend inexistants), lifetime_earned/redeemed (colonnes inexistantes).",
+  "Données fake exactes : balance=347 pts, loyalty_code='A1B2C3D4', user='Ikyes B.' id 12345 tel +33 6 42 79 98 84 avec carte Visa •4242 fake (user.js:28), 7 transactions d'historique fidélité (loyalty.js:151-159), 1 commande active C-1234 + 5 historiques C-1212/1208/1190/1142/1100 (orders.js:24-116). Cohérence croisée orders↔loyalty à 10 pt/€ enforced par ordersParity.spec.js.",
+  "DÉRIVE CANON (à corriger en W4) : mobile/data/menu.js = 31 items / catalog-canonical.json = 42 items. Manquent : 7 boissons (Coca Cherry, Tropico, Ice Tea Pêche, Fanta Citron, Fuze Tea, Hawaï, Perrier 33cl), 4 frites cheddar (Petite/Grande × Cheddar fondu / Cheddar+Oignons frits), et 'Menu Enfant Burger' (mobile) ≠ 'Menu Enfant Chicken Burger' (canon). Toute correction de menu.js doit mettre à jour mobile/tests/menu.spec.js (asserte l'ancien canon, ex. ligne 115 'Menu Enfant Burger') + le miroir web.",
+  "mobile/debug/ = 3 screenshots PNG datés 10 mai (login.png, login2.png, login3.png) — artefacts historiques, aucun code actif.",
+  "dev-helpers.js expose window.LC.dev (earnPoints, time-travel via stub Date.now global ligne 28) utilisé par les specs e2e — chargé inconditionnellement en 'prod' prototype (assumé V0, à gater au wireup).",
+  "Dépendances CDN requises au runtime : unpkg react@18.3.1, react-dom@18.3.1, @babel/standalone@7.29.0 + Google Fonts (index.html:12-13,77-79) — les tests Playwright nécessitent donc Internet ; seul vendor/qrcode.js est local.",
+  "Rapport JSON des runs Playwright écrit dans reports/antigravity/mobile-loyalty-latest.json (playwright.config.js:35)."
+ ]
+}

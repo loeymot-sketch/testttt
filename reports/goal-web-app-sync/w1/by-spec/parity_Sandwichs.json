@@ -1,0 +1,106 @@
+{
+ "spec": "parity:Sandwichs",
+ "scope": "Parity catégorie \"Sandwichs\" (id=1) : fixture canonique borne (reports/goal-web-app-sync/catalog-canonical.json) VS mirror WEB (/Users/1millnonstop/Downloads/web/data/menu.js) VS mirror MOBILE (mobile/data/menu.js)",
+ "summary": "Les 4 sandwichs canoniques (Cayenne 7,40 / Suprême 7,00 / Méga 8,00 / Terminator 9,00) existent dans les deux mirrors avec les MÊMES noms et MÊMES prix — aucun P0 prix/item. Le mirror WEB est structurellement quasi aligné (pain, viande suppl. +2,50, 9 suppléments 0,90, formule menu 2,50). Le mirror MOBILE a 2 trous wizard majeurs : aucun choix de pain (Pain/Galette) et aucune \"Viande supplémentaire\" +2,50 (présents dans la borne sur les 4 items). Divergence commune P1 : la borne offre les 12 sauces au choix sur le Cayenne alors que les 2 mirrors verrouillent la sauce (\"Sauce fromagère maison\", has_sauce:false), et la crudité gratuite \"Oignons cuits\" (extra id 408) manque partout. Divergences mineures : Cayenne marqué épicé dans les mirrors (faux en canonique), images viandes génériques côté mobile, ids items décalés (collision 103/104 avec le canonique).",
+ "findings": [
+  {
+   "severity": "P1",
+   "title": "Cayenne — sauce verrouillée dans les 2 mirrors alors que la borne offre 12 sauces au choix",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 321,
+   "evidence": "Canonique item id=22 Cayenne : variations attr 5 « Sauce (1ère Gratuite) » = 12 sauces disponibles (Algérienne, Andalouse, Blanche, Curry, Hannibal, Harissa, Ketchup, Mayonnaise, Samouraï, Barbecue, Fromagère maison, Spicy maison — toutes is_available:true). WEB menu.js:321 « sauce_locked: 'Sauce fromagère maison', has_sauce: false » ; MOBILE mobile/data/menu.js:329 identique. Le client borne peut changer la sauce du Cayenne, le client web/mobile ne peut pas.",
+   "recommendation": "Aligner sur la borne : has_sauce:true + retirer sauce_locked sur Cayenne dans les 2 mirrors (ou faire de la fromagère la sauce par défaut pré-sélectionnée), sinon confirmer avec l'owner que le lock est un mandat produit et corriger la borne."
+  },
+  {
+   "severity": "P1",
+   "title": "MOBILE — choix de pain (Pain/Galette) totalement absent sur les 4 sandwichs",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js",
+   "line": 327,
+   "evidence": "Canonique : les 4 items (22,103,104,105) ont l'attribut 6 « Type de Pain » = [Pain 0€, Galette 0€]. WEB l'a (PAINS menu.js:173-176 + has_pain_choice:true lignes 322/327/331/336). MOBILE : grep « PAIN|pain-|has_pain_choice » = 0 hit dans mobile/data/menu.js — aucun pool PAINS, aucun flag sur les items 327-341 ; mkItem (245-284) n'expose même pas le champ.",
+   "recommendation": "Porter le pattern WEB [WEB-SYNC-CAISSE L4] dans mobile/data/menu.js : pool PAINS + has_pain_choice sur les 4 sandwichs + rendu dans le wizard mobile."
+  },
+  {
+   "severity": "P1",
+   "title": "MOBILE — extra « Viande supplémentaire » +2,50 € absent (data + pricing)",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js",
+   "line": 453,
+   "evidence": "Canonique : extra « Viande supplémentaire » price 2.5 présent dans extras des 4 sandwichs. WEB : EXTRA_MEAT_PRICE=2.50 (menu.js:180), has_extra_meat:true sur les 4 items, priceFor l.452 « opts.extraMeatIds.length * EXTRA_MEAT_PRICE ». MOBILE : « Viande supplémentaire » n'apparaît QUE dans des commentaires (l.12 et l.30) ; grep « EXTRA_MEAT|extraMeat|has_extra_meat » = 0 hit ; priceFor (l.453-486) ne compte que sauces +0,50 et supplementIds.",
+   "recommendation": "Ajouter EXTRA_MEAT_PRICE=2.50 + has_extra_meat + prise en compte extraMeatIds dans priceFor mobile, à l'identique du web."
+  },
+  {
+   "severity": "P1",
+   "title": "Crudité gratuite « Oignons cuits » (canonique, 0 €) manquante dans les DEUX mirrors",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 135,
+   "evidence": "Canonique : extra id 408 {name:'Oignons cuits', price:0, group_label:'crudite', is_available:true} présent sur les 4 sandwichs. WEB CRUDITES (menu.js:135-139) = Salade/Tomate/Oignon seulement ; MOBILE CRUDITES (mobile/data/menu.js:150-154) idem — grep « Oignons cuits » = 0 hit dans les deux fichiers.",
+   "recommendation": "Ajouter « Oignons cuits » (0 €) au pool CRUDITES des deux mirrors (4e crudité), ou confirmer que c'est un ajout borne récent non voulu côté web/mobile."
+  },
+  {
+   "severity": "P2",
+   "title": "Cayenne marqué is_spicy dans les 2 mirrors alors que le canonique dit non-épicé",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 323,
+   "evidence": "Canonique id=22 Cayenne : is_spicy:false. WEB menu.js:323 « is_spicy: true » (+ emoji 🌶️) ; MOBILE mobile/data/menu.js:330 « is_spicy: true ». Badge épicé faux affiché au client web/mobile.",
+   "recommendation": "Retirer is_spicy:true du Cayenne dans les 2 mirrors (la sauce fromagère n'est pas épicée en canonique)."
+  },
+  {
+   "severity": "P2",
+   "title": "MOBILE — images de viandes génériques réutilisées ≠ thumbs distincts de la borne",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js",
+   "line": 124,
+   "evidence": "Canonique (Méga attr 1) : thumbs distincts viande-mexicanos.webp / viande-cordon-bleu.webp / viande-hachee.webp / viande-nuggets.webp / viande-tenders.webp / viande-fricadelle.webp / viande-poulet.webp. MOBILE MEATS l.124-130 recycle 4 images (viande-marine.png ×3, viande-crispy.png ×2, viande-tandoori.png, viande-curry.png) — ex. « Viande Hachée » affichée avec image tandoori. WEB déjà corrigé ([IMG-SYNC-CAISSE 2026-06-27], menu.js:109-115).",
+   "recommendation": "Porter le fix IMG-SYNC-CAISSE du web vers mobile : une image distincte par viande alignée sur les thumbs backend."
+  },
+  {
+   "severity": "P2",
+   "title": "is_halal:true par défaut dans les 2 mirrors alors que canonique is_halal:false",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 263,
+   "evidence": "Canonique : is_halal:false sur les 4 sandwichs (22/103/104/105). WEB mkItem menu.js:263 « is_halal: opts.is_halal !== false » → true par défaut ; MOBILE mobile/data/menu.js:261 idem. Les mirrors peuvent afficher un badge halal que la borne n'affirme pas — allégation réglementaire sensible.",
+   "recommendation": "Vérifier auprès de l'owner le statut halal réel ; soit setter is_halal côté DB/borne, soit passer le défaut mirror à false."
+  },
+  {
+   "severity": "P3",
+   "title": "Ordre des sauces du Cayenne : alphabétique en canonique vs Mayonnaise-first dans les mirrors",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 120,
+   "evidence": "Canonique Cayenne (id 22) : sauces triées Algérienne→Spicy maison (alphabétique) alors que Suprême/Méga/Terminator sont Mayonnaise-first. Les 2 mirrors utilisent le pool SAUCES unique Mayonnaise-first (web l.120-131, mobile l.135-146) pour tous les items.",
+   "recommendation": "Cosmétique — ignorer ou uniformiser l'ordre côté borne (l'incohérence est aussi interne au canonique)."
+  },
+  {
+   "severity": "P3",
+   "title": "Badges featured divergents : canonique is_featured=1 (Cayenne) vs 5 (les 3 autres) ; web marque Méga/Terminator featured mais pas Suprême",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 324,
+   "evidence": "Canonique : Cayenne is_featured:1, Suprême/Méga/Terminator is_featured:5 (sémantique enum ambiguë dans la fixture). WEB : Cayenne is_featured+badge SIGNATURE (l.323), Méga/Terminator is_featured+badge XL (l.332/337), Suprême rien (l.324-327). MOBILE idem sans champ badge.",
+   "recommendation": "Clarifier la sémantique is_featured (1 vs 5) côté backend avant d'aligner les badges mirrors."
+  },
+  {
+   "severity": "INFO",
+   "title": "IDs items divergents avec collision : mirrors 101-104 vs canonique 22/103/104/105",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 319,
+   "evidence": "Canonique : Cayenne=22, Suprême=103, Méga=104, Terminator=105. Mirrors (web l.319-333, mobile l.327-338) : Cayenne=101, Suprême=102, Méga=103, Terminator=104. « Méga » mirror id=103 = id canonique du Suprême ; « Terminator » mirror id=104 = id canonique du Méga. Risque de mauvais mapping au futur wireup API si mapping par id au lieu de slug (les slugs, eux, matchent : cayenne/supreme/mega/terminator).",
+   "recommendation": "Au wireup, mapper par slug (identiques) et jamais par id local."
+  },
+  {
+   "severity": "INFO",
+   "title": "Sauce supplémentaire +0,50 € et prix Frites/Boisson seules (2,00 €) non vérifiables dans la fixture",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js",
+   "line": 458,
+   "evidence": "Mirrors : 2e sauce +0,50 (mobile priceFor l.458, web commentaire l.118) et FORMULES f-frites/f-boisson à 2,00 € (web l.185-186, mobile l.182-183). Canonique : toutes les variations sauce à price 0 et les addons (Menu id 25 role menu_component / Frites Seules id 26 role side / Boisson Seule id 27 role drink) référencent addon_item_id 1/2/3 qui ne figurent PAS dans data.items[42] — leurs prix sont donc invérifiables depuis cette fixture (le +2,50 menu matche le mandat owner connu).",
+   "recommendation": "Vérifier les prix des items addon 1/2/3 en DB (items table) lors du gate de parité W6 pour clore ces deux points."
+  }
+ ],
+ "facts": [
+  "Fixture canonique : /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/goal-web-app-sync/catalog-canonical.json — category_id=1 'Sandwichs' (sort 1, wizard_template 'sandwich', has_menu true) contient exactement 4 items : Cayenne id=22 (7,40 €), Suprême id=103 (7,00 €), Méga id=104 (8,00 €), Terminator id=105 (9,00 €), tous is_available:true",
+  "Prix : PARITÉ TOTALE sur les 3 surfaces — web menu.js:319/324/328/333 et mobile menu.js:327/331/334/338 portent 7.40/7.00/8.00/9.00 identiques au canonique. Aucun P0.",
+  "Structure canonique des 4 sandwichs : composer_profile=null pour les 4 (wizard piloté par itemAttributes+extras+addons, pas de profil composer publié) ; attr 5 'Sauce (1ère Gratuite)' 12 sauces 0€ ; attr 6 'Type de Pain' Pain/Galette 0€ ; Méga+Terminator ont en plus attr 1 'Viande 1' + attr 2 'Viande 2' (7 viandes chacun : Mexicanos, Cordon Bleu, Viande Hachée, Nuggets, Tenders, Fricadelle, Poulet mariné) et viande_count=2 ; Cayenne/Suprême viande_count=0",
+  "viande_count : PARITÉ — web/mobile viandes:0/0/2/2 (web l.321/326/330/335, mobile l.329/333/336/340) = canonique 0/0/2/2 ; les 7 noms de viandes des pools MEATS (web l.108-116, mobile l.123-131) matchent exactement les 7 variations canoniques attr1/attr2",
+  "Extras canoniques par sandwich (14) : Salade/Tomate/Oignon/Oignons cuits à 0€ (group crudite) + 9 suppléments à 0,90€ (Cheddar, Raclette, Emmental, Œuf, Légumes sautés, Jambon, Champignons, Oignons frits, Boursin) + Viande supplémentaire 2,50€ — les 9 suppléments 0,90€ et les 3 crudités matchent les pools SUPPLEMENTS/CRUDITES des 2 mirrors (web l.135-153, mobile l.150-168)",
+  "Addons canoniques (les 4 sandwichs, ids 25/26/27) : 'Menu (Frites + Boisson)' role menu_component, 'Frites Seules' role side, 'Boisson Seule' role drink → addon_item_id 1/2/3 ABSENTS de data.items (prix non exposés par la fixture) ; formule menu mirrors = 2,50 € (web l.184, mobile l.181) conforme au mandat +2,50",
+  "WEB mirror déjà porteur des fixes L2/L4 (2026-06-26) : PAINS l.173-176, EXTRA_MEAT_PRICE=2.50 l.180, has_pain_choice/has_extra_meat sur les 4 sandwichs l.319-337, priceFor extraMeatIds l.452 — le MOBILE ne les a JAMAIS reçus (0 hit grep)",
+  "MOBILE SUPPLEMENTS_BOLS tronqué à 4+gratiné (mobile l.171-177) vs web 9+gratiné (web l.158-169) — hors scope Sandwichs mais trou de parité connexe repéré au passage",
+  "Images : canonique en .webp (sandwich-cayenne.webp etc. + cat-sandwich-cayenne.webp), mirrors en .png de même nom de base via imgFor (web l.56-59) — équivalence de nommage OK côté items"
+ ]
+}

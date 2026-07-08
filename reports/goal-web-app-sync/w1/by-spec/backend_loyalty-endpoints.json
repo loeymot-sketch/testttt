@@ -1,0 +1,95 @@
+{
+ "spec": "backend:loyalty-endpoints",
+ "scope": "Contrat API loyalty complet : app/Http/Controllers/Frontend/LoyaltyController.php (967 lignes, 8 méthodes publiques + optIn/scan), config/loyalty.php, routes/api.php:1441-1477 + 1513-1523 (opt-in/scan hors plage donnée), config/idempotency.php required_routes.",
+ "summary": "Le module loyalty expose 10 endpoints sous /api/frontend/loyalty. Public : /register, /opt-in, /config. Auth sanctum : /check, /balance, /history, /qr, /add-points (staff only), /redeem, /scan (kiosk:order + vraie KioskMachine). Risques majeurs pour le goal web+mobile : (1) /redeem est HARD-DISABLED en V1 (422 tant que pos.manual_discount_enabled !== true) ; (2) /check et /balance appliquent un owner-check strict — un token guest kiosk:order NE peut consulter QUE son propre compte (caller.id === user.id), donc un client web anonyme ne peut PAS consulter des points fidélité par code/téléphone ; (3) les comptes créés via /register ont username aléatoire + password bcrypt(uniqid()) → aucun chemin de login documenté ici pour obtenir le token sanctum requis par balance/history/qr ; (4) le QR legacy plaintext FK:<code> est refusé par défaut (accept_legacy_plaintext=false) — le web/mobile DOIT passer par POST /loyalty/qr signé.",
+ "findings": [
+  {
+   "severity": "P1",
+   "title": "/redeem désactivé en V1 — 422 inconditionnel tant que pos.manual_discount_enabled !== true",
+   "file": "app/Http/Controllers/Frontend/LoyaltyController.php",
+   "line": 305,
+   "evidence": "if (config('pos.manual_discount_enabled') !== true) { return response()->json(['status' => false, 'message' => \"La fidélité (remise) est désactivée en V1 (correction fiscale TVA/HT en attente).\"], 422); }",
+   "recommendation": "Le goal web+mobile ne doit PAS câbler de bouton « utiliser mes points » actif : afficher le solde seulement, ou feature-flag la redemption sur GET /loyalty/config (qui n'expose pas ce flag — envisager de l'y ajouter)."
+  },
+  {
+   "severity": "P1",
+   "title": "Un client web avec token kiosk:order guest NE peut PAS consulter le solde d'un code fidélité — owner-check strict sur /check et /balance",
+   "file": "app/Http/Controllers/Frontend/LoyaltyController.php",
+   "line": 94,
+   "evidence": "if (! $isKiosk && ! $isStaff && (! $caller || (int) $caller->id !== (int) $user->id)) { return response()->json(['status' => false, 'message' => 'Non trouvé'], 404); } — $isKiosk exige tokenCan('kiosk:order') ET une ligne KioskMachine::where('user_id', $caller->id)->exists() (L89-92). Un token guest GuestSignupController (ability kiosk:order, pas de KioskMachine) tombe dans le 404.",
+   "recommendation": "Pour le web : le solde n'est consultable QUE si le token sanctum appartient au User fidélité lui-même. Il faut un flux d'auth client (login/OTP) qui identifie le compte loyalty, pas juste un guest token."
+  },
+  {
+   "severity": "P1",
+   "title": "Comptes /register inutilisables pour les endpoints auth — password aléatoire, aucun login path dans ce module",
+   "file": "app/Http/Controllers/Frontend/LoyaltyController.php",
+   "line": 172,
+   "evidence": "$user->username = uniqid('kiosk_'); $user->password = bcrypt(uniqid()); — /balance, /history, /qr exigent auth:sanctum avec CE user (history filtre where('user_id', $user->id) L551 ; qr signe $user->id L871-874). Le commentaire L198-199 renvoie vers « /loyalty/check (auth:sanctum) ou l'OTP » sans route OTP dans ce contrôleur.",
+   "recommendation": "Le goal doit identifier/créer le chemin d'auth client (OTP/login existant du backend) avant de promettre balance/history/QR dans web+mobile ; sinon seul /register + /config sont réellement consommables sans session."
+  },
+  {
+   "severity": "P2",
+   "title": "QR plaintext FK:<code> rejeté par défaut — mobile/web doivent utiliser POST /loyalty/qr (token signé lqr.*)",
+   "file": "config/loyalty.php",
+   "line": 68,
+   "evidence": "'accept_legacy_plaintext' => filter_var(env('LOYALTY_QR_ACCEPT_LEGACY_PLAINTEXT', false), ...) ?? false — et LoyaltyController.php:724-732 renvoie 200 ok=false error_code=qr_legacy_rejected si flag off.",
+   "recommendation": "Le composant QR web/mobile doit appeler POST /api/frontend/loyalty/qr (auth:sanctum, throttle 30/min) toutes les ~5 min (ttl_seconds=300, config/loyalty.php:39) et afficher data.token ; ne jamais générer FK:<code> côté client."
+  },
+  {
+   "severity": "P2",
+   "title": "/register renvoie 200 status:true SANS data pour un téléphone existant (code=PHONE_EXISTS) — piège de parsing client",
+   "file": "app/Http/Controllers/Frontend/LoyaltyController.php",
+   "line": 200,
+   "evidence": "if (! $user->wasRecentlyCreated) { return response()->json(['status' => true, 'code' => 'PHONE_EXISTS', 'message' => 'Un compte fidélité existe déjà pour ce numéro.']); } — pas de champ data ; le loyalty_code n'est renvoyé QUE pour un compte créé par cette requête (L208-215).",
+   "recommendation": "Le client web/mobile doit brancher sur response.code === 'PHONE_EXISTS' (pas sur status) et NE PAS attendre data.loyalty_code dans ce cas."
+  },
+  {
+   "severity": "P2",
+   "title": "GET /loyalty/balance est un alias de check() et exige un paramètre 'code' même authentifié",
+   "file": "app/Http/Controllers/Frontend/LoyaltyController.php",
+   "line": 411,
+   "evidence": "public function balance(Request $request) { return $this->check($request); } — check() valide 'code' => required (L29) ; un GET /balance sans ?code=... renvoie 422 « Code invalide » même avec un token du propriétaire.",
+   "recommendation": "Contrat réel : GET /api/frontend/loyalty/balance?code=<son propre loyalty_code ou téléphone> avec Bearer token du même user. UX web : stocker le loyalty_code renvoyé par /register."
+  },
+  {
+   "severity": "P3",
+   "title": "GET /loyalty/config public et sans throttle",
+   "file": "routes/api.php",
+   "line": 1449,
+   "evidence": "Route::get('/config', [...LoyaltyController::class, 'config']); — seul endpoint loyalty sans middleware du tout (ni auth ni throttle), contrairement à /check (throttle:10,1) et /register (throttle:5,1).",
+   "recommendation": "Acceptable (données non sensibles : taux de conversion), mais ajouter throttle:60,1 par cohérence serait sain. Pour le goal : c'est l'endpoint idéal à appeler côté web/mobile sans session."
+  },
+  {
+   "severity": "P3",
+   "title": "/scan protégé kiosk-only — inutilisable par web/mobile comme lecteur",
+   "file": "routes/api.php",
+   "line": 1521,
+   "evidence": "Route::post('/loyalty/scan', ...)->middleware(['auth:sanctum', 'throttle:20,1']) + contrôleur L649 : if (!$user || !$user->tokenCan('kiosk:order')) → 403 'Accès kiosk requis.' — le mobile/web GÉNÈRE le QR (/qr), c'est la borne qui le SCANNE.",
+   "recommendation": "Ne pas prévoir de flux « scan » côté web/mobile ; leur rôle = afficher le QR signé de /qr."
+  },
+  {
+   "severity": "INFO",
+   "title": "Idempotence : /redeem et /add-points sous middleware idempotency + required_routes",
+   "file": "routes/api.php",
+   "line": 1458,
+   "evidence": "Route::post('/add-points', ...)->middleware('idempotency') (L1458-1459) et Route::post('/redeem', ...)->middleware('idempotency') (L1464-1465) ; config/idempotency.php:85 'api/frontend/loyalty/redeem' et :88 'api/frontend/loyalty/add-points' dans required_routes.",
+   "recommendation": "Tout POST redeem/add-points depuis web/mobile DOIT envoyer le header X-Idempotency-Key (UUID par tentative logique, réutilisé au retry réseau)."
+  }
+ ],
+ "facts": [
+  "POST /api/frontend/loyalty/register — PUBLIC, throttle:5,1 (routes/api.php:1447). Body: {phone: string 8-20 requis, name?: string 2-100, email?: email max100} (LoyaltyController.php:36-43). 200 création: {status:true, data:{name, loyalty_code (8 hex maj, md5(uniqid()) L187), points:0}} ; téléphone existant: 200 {status:true, code:'PHONE_EXISTS', message} SANS data (L200-206) ; email pris par un autre compte: 409 {status:false, code:'EMAIL_EXISTS'} (L155-162) ; 422 validation. curl: curl -X POST http://127.0.0.1:8000/api/frontend/loyalty/register -H 'Content-Type: application/json' -d '{\"phone\":\"+33612345678\",\"name\":\"Test\"}'",
+  "POST /api/frontend/loyalty/check — auth:sanctum + throttle:10,1 (routes/api.php:1446). Body: {code: string 4-25, regex alphanum/+/espace/tiret — accepte loyalty_code OU téléphone} (L28-31). Autorisé : vraie borne (kiosk:order + ligne KioskMachine), staff (Admin/Branch Manager/POS Operator/Stuff), ou propriétaire du compte (caller.id===user.id) — sinon 404 'Non trouvé' indistinguable (L88-97). 200: {status:true, data:{name, points, discount_value (points/rate arrondi 2déc, L957-966), loyalty_code}}. curl: curl -X POST .../loyalty/check -H 'Authorization: Bearer <token>' -d '{\"code\":\"A1B2C3D4\"}'",
+  "GET /api/frontend/loyalty/balance — auth:sanctum (routes/api.php:1466), strict alias de check() (LoyaltyController.php:411-414) : exige ?code=<loyalty_code|phone> en query, mêmes règles d'autorisation et même réponse que /check. curl: curl '.../loyalty/balance?code=A1B2C3D4' -H 'Authorization: Bearer <token>'",
+  "GET /api/frontend/loyalty/config — PUBLIC, aucun middleware (routes/api.php:1449). 200: {status:true, data:{points_per_euro (déf 10), points_for_1_euro_discount (déf 100), min_redeem_points (déf 50), tiers:[100,250,500,1000,2000] déf, label:'Dépensez N points = 1€ de remise'}} — lu depuis Settings group 'loyalty_setup' (L483-486). curl: curl http://127.0.0.1:8000/api/frontend/loyalty/config",
+  "POST /api/frontend/loyalty/add-points — auth:sanctum + idempotency (routes/api.php:1458-1459). STAFF ONLY : 403 sans rôle Admin/Branch Manager/POS Operator/Stuff (L229-232). Body: {code: 4-20, points: int 1-10000} (L48-54). 200: {status:true, message:'N points ajoutés', data:{points:<nouveau solde>}}. Écrit ledger loyalty_transactions type='manual_add' si la table existe (L260-273). Header X-Idempotency-Key requis (config/idempotency.php:88).",
+  "POST /api/frontend/loyalty/redeem — auth:sanctum + idempotency (routes/api.php:1464-1465, config/idempotency.php:85). BLOQUÉ V1 : 422 immédiat si config('pos.manual_discount_enabled') !== true (L305-310). Sinon: body {code, points int≥1 multiple du rate loyalty_points_for_1_euro_discount (400 sinon, L364-367)}; autorisé borne réelle/staff/propriétaire (L350) ; débits atomiques lockForUpdate + ledger type='redeem' points négatifs (L343-393). 200: {status:true, message:'N points utilisés', data:{points:<solde restant>}}. Erreurs: 404 code introuvable, 403, 400 points insuffisants.",
+  "GET /api/frontend/loyalty/history — auth:sanctum (routes/api.php:1467). Query: {page?≥1, per_page? 1-100, déf 20} (L525-528). Toujours scopé au user du token (where user_id = $user->id, L551) — pas de paramètre code. 200: {status:true, data:[{type, points, balance_after, source_surface, description, date}], meta:{current_page,last_page,total,per_page}} depuis loyalty_transactions ; fallback table orders (type:'earn', balance_after:null) si ledger absent (L578-613). 401 si non authentifié.",
+  "POST /api/frontend/loyalty/qr — auth:sanctum + throttle:30,1, route name loyalty.auth.qr.generate (routes/api.php:1474-1476). Aucun body. Mint le loyalty_code à la volée si absent (L862-869). 200: {status:true, data:{token:'lqr.<payload>.<hmac>', expires_at, ttl_seconds:300 (config/loyalty.php:39), loyalty_code}}. Client mobile/web : régénérer toutes les 5 min et présenter data.token tel quel comme raw_data au scan borne.",
+  "POST /api/frontend/loyalty/scan — auth:sanctum + throttle:20,1 (routes/api.php:1521-1522) + contrôle contrôleur tokenCan('kiosk:order') sinon 403 (L649-654). Body: {method:'qr'|'nfc', raw_data: string 1-512}. TOUJOURS 200 même en échec (invariant §12) avec data:{ok:false, error_code} ; succès: {ok:true, customer_token:'lt_<hmac256>', display_name:<prénom max40>, declared_allergens:[], loyalty_balance_points, last_order:null, error_code:null} + header X-Loyalty-QR-Status: signed|legacy-plaintext (L802-824). NFC → ok:false nfc_not_provisioned (L672-677). Plaintext FK:<code> rejeté par défaut (qr_legacy_rejected) car accept_legacy_plaintext=false (config/loyalty.php:68-72).",
+  "POST /api/frontend/loyalty/opt-in — PUBLIC, throttle:5,1 (routes/api.php:1514-1515). Validé par LoyaltyOptInRequest (app/Http/Requests/Kiosk/LoyaltyOptInRequest.php) : exige consent_accepted (accepted) + privacy_notice_version ; délègue à register() puis écrit loyalty_consents avec ip/UA hashés sha256 (L431-474). Réponse = celle de register().",
+  "Secrets/flags : LOYALTY_QR_SECRET (env, requis en prod, ≥32 chars, boot guard AppServiceProvider — config/loyalty.php:32,98) ; fallback dev = app.key (LoyaltyController.php:788). LOYALTY_QR_TTL_SECONDS=300, LOYALTY_QR_LEEWAY_SECONDS=30, LOYALTY_QR_ACCEPT_LEGACY_PLAINTEXT=false par défaut.",
+  "Statuts client acceptés : status==1 OU Status::ACTIVE(5) via isCustomerActive() (LoyaltyController.php:922-926) — appliqué sur /check et /scan.",
+  "Discriminateur borne partout : tokenCan('kiosk:order') NE suffit PAS — il faut aussi une ligne KioskMachine.user_id (LoyaltyController.php:89-92 pour /check, :324-328 pour /redeem), car GuestSignupController mint des guest tokens avec l'ability kiosk:order (commentaire L313-323).",
+  "Endpoint POS séparé hors scope frontend : POST /api/admin/pos-order/{order}/redeem-loyalty via PosLoyaltyController (routes/api.php:1036, idempotency required config/idempotency.php:93)."
+ ]
+}

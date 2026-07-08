@@ -1,0 +1,73 @@
+{
+ "spec": "parity:Menu enfant",
+ "scope": "Parity catégorie \"Menu enfant\" (category_id=11) : fixture canonique reports/goal-web-app-sync/catalog-canonical.json VS mirror web /Users/1millnonstop/Downloads/web/data/menu.js VS mirror mobile /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js",
+ "summary": "La catégorie Menu enfant est en très bonne parité : 2 items canoniques (Menu Enfant Nuggets id=40, Menu Enfant Chicken Burger id=106), tous deux 4,90 €, composer_profile=null, extras/addons/variations vides — et les deux mirrors contiennent exactement 2 SKU à 4.90 avec tous les flags wizard désactivés (has_sauce/has_crudites/has_supplements/has_menu_addon=false), même ordre (nuggets puis burger). Aucun P0 (prix exacts, aucun item manquant/en trop) ni P1 (structure wizard identique : item simple sans wizard des deux côtés). Divergences restantes : nom du 2e item (\"Menu Enfant Burger\" dans les 2 mirrors vs \"Menu Enfant Chicken Burger\" canonique), allergènes ['gluten'] injectés par les mirrors alors que le canonique publie allergens=[], descriptions reformulées, images burger différentes, badge is_featured perdu.",
+ "findings": [
+  {
+   "severity": "P2",
+   "title": "Nom du 2e item divergent dans les DEUX mirrors : « Menu Enfant Burger » vs canonique « Menu Enfant Chicken Burger »",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 432,
+   "evidence": "Canonique (item id=106, slug menu-enfant-burger) : \"name\": \"Menu Enfant Chicken Burger\". Web menu.js:432 : mkItem(1102, 'menu-enfant-burger', 11, 'Menu Enfant Burger', 4.90, ...). Mobile menu.js:437 : mkItem(1102, 'menu-enfant-burger', 11, 'Menu Enfant Burger', 4.90, ...).",
+   "recommendation": "Renommer en « Menu Enfant Chicken Burger » dans web/data/menu.js:432 et mobile/data/menu.js:437 pour aligner sur la borne (le client doit voir le même nom sur les 3 surfaces)."
+  },
+  {
+   "severity": "P2",
+   "title": "Allergènes divergents : mirrors affichent ['gluten'] alors que le canonique publie allergens=[] pour les 2 items",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 245,
+   "evidence": "Canonique : \"allergens\": [] pour id=40 et id=106. Web menu.js:245 (defaultAllergensFor) : `case 10: return []; case 11: return ['gluten'];`. Mobile menu.js:240 : `case 11: return ['gluten'];  // Menu enfant (Nuggets/burger pané)`. Aucun override opts.allergens sur les items cat 11 → les 2 items mirrors exposent ['gluten'].",
+   "recommendation": "Décider de la SSOT : soit renseigner gluten côté DB/borne (probablement correct pour nuggets panés + pain burger), soit vider le default cat 11 des mirrors. En l'état, info client incohérente entre surfaces."
+  },
+  {
+   "severity": "P2",
+   "title": "Descriptions reformulées dans les mirrors (contenu équivalent, texte différent)",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 430,
+   "evidence": "Canonique id=40 : \"6 nuggets, frites et Capri-Sun.\" ; id=106 : \"Chicken burger, frites et Capri-Sun.\" — Web menu.js:430 : '6 nuggets · Frites · Capri-Sun' et :433 'Burger · Frites · Capri-Sun'. Mobile menu.js:435 : '6 nuggets · Frites · Capri-Sun' et :438 'Burger · Frites · Capri-Sun'.",
+   "recommendation": "Aligner le wording sur la borne (« 6 nuggets, frites et Capri-Sun. » / « Chicken burger, frites et Capri-Sun. ») ou acter la variante « · » comme style standalone assumé."
+  },
+  {
+   "severity": "P3",
+   "title": "Image du Menu Enfant Burger : 3 assets différents selon la surface",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 86,
+   "evidence": "Canonique id=106 thumb : images/menu/thumbs/cheese-burger.webp. Web menu.js:86 : 'menu-enfant-burger': 'chicken_burger.png'. Mobile menu.js:98 : 'menu-enfant-burger':  'burger-cheese.png'.",
+   "recommendation": "Cosmétique : harmoniser vers le visuel cheese-burger utilisé par la borne (le mobile 'burger-cheese.png' est le plus proche ; le web pointe un asset chicken différent)."
+  },
+  {
+   "severity": "P3",
+   "title": "is_featured perdu : le burger canonique est featured (is_featured=5), aucun badge dans les mirrors",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 283,
+   "evidence": "Canonique id=106 : \"is_featured\": 5 (truthy → badge). Web menu.js:432-434 et mobile menu.js:437-439 : opts sans is_featured → mkItem produit is_featured:false (web menu.js:260, mobile menu.js:258) donc badge:null (web menu.js:283 : `opts.is_featured ? 'TOP' : null`).",
+   "recommendation": "Ajouter is_featured:true sur menu-enfant-burger dans les 2 mirrors si la parité de mise en avant compte pour V1."
+  },
+  {
+   "severity": "INFO",
+   "title": "Commentaire d'en-tête mobile obsolète : mentionne un extra « Viande supplémentaire +2,50 » pour le menu enfant, absent du canonique ET des items du mirror",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js",
+   "line": 12,
+   "evidence": "Mobile menu.js:12 : `// Menu enfant 1→2 SKU @ 4,90, extra \"Viande supplémentaire\" +2,50.` — mais les items cat 11 (menu.js:434-439) ont has_supplements:false et le canonique a extras:[], addons:[] pour id=40/106. Code correct, commentaire seul est faux.",
+   "recommendation": "Nettoyer le commentaire lors du prochain passage (aucun impact runtime)."
+  },
+  {
+   "severity": "INFO",
+   "title": "IDs internes différents (pattern standalone accepté) : canonique 40/106 vs mirrors 1101/1102",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 429,
+   "evidence": "Canonique : id=40 (nuggets), id=106 (burger). Web menu.js:429/:432 et mobile menu.js:434/:437 : ids 1101/1102, mêmes slugs menu-enfant-nuggets / menu-enfant-burger.",
+   "recommendation": "Aucune action V1 : les mirrors sont standalone (mandate owner NO API wireup) ; les slugs identiques suffisent pour le futur wireup mécanique."
+  }
+ ],
+ "facts": [
+  "Canonique catalog-canonical.json : category 11 « Menu enfant » contient EXACTEMENT 2 items : id=40 « Menu Enfant Nuggets » et id=106 « Menu Enfant Chicken Burger », tous deux flat_price 4.90 / currency_price « 4,90 € », is_available=true, composer_profile=null, extras=[], addons=[], variations=[], viande_count=0, allergens=[]",
+  "Ordre canonique : nuggets order=0, burger order=1 — respecté dans les 2 mirrors (nuggets déclaré avant burger : web menu.js:429-434, mobile menu.js:434-439)",
+  "Web mirror /Users/1millnonstop/Downloads/web/data/menu.js:428-435 (const MENU_ENFANT) : 2 SKU à 4.90 avec has_sauce:false, has_crudites:false, has_supplements:false, has_menu_addon:false → aucun wizard (composer_profile n'est construit que pour cat 7 frites, menu.js:285-287) — structure PARITAIRE avec composer_profile=null canonique",
+  "Mobile mirror /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js:433-440 : identique au web (mêmes 2 SKU, mêmes flags false, 4.90, composer_profile seulement pour cat 7 menu.js:280)",
+  "AUCUN item manquant, en trop ou inventé dans les mirrors pour la cat 11 ; AUCUNE divergence de prix (0 P0) ; AUCUNE divergence de structure wizard (0 P1) — les items menu enfant sont des items simples sans étapes sur les 3 surfaces",
+  "Catégorie 11 déclarée : web menu.js:233 et mobile menu.js:226 — { id: 11, slug: 'menu-enfant', name: 'Menu enfant', wizard_template: 'simple', has_menu: false } ; nom de catégorie identique au canonique « Menu enfant »",
+  "La « formule menu +2,50 » ne s'applique PAS au menu enfant : canonique addons=[] et mirrors has_menu_addon:false — cohérent des deux côtés",
+  "defaultAllergensFor : web menu.js:239-248, mobile menu.js équivalent ligne ~234-243 (case 11 → ['gluten'] à la ligne web:245 / mobile:240) — seule source de la divergence allergènes"
+ ]
+}

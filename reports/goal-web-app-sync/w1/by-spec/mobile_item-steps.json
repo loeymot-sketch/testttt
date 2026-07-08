@@ -1,0 +1,82 @@
+{
+ "spec": "mobile:item-steps",
+ "scope": "Audit read-only du wizard composition mobile (/mobile/screens-item-steps.jsx + son SSOT local /mobile/data/menu.js) comparé à la payload borne canonique reports/goal-web-app-sync/catalog-canonical.json (fixture du 2026-07-08 15:57, post-commit 05e5cacd0).",
+ "summary": "Le wizard mobile est un state-machine template-driven (computeActiveSteps) fidèle au kiosk sur les viandes (7/7 identiques), les 12 sauces, les tailles Tacos M/L (1 vs 2 viandes, 6,90/7,90 €) et l'encodage panier label-based (standalone, aucun option_id backend — conforme au mandat no-wireup). ATTENTION : la prémisse de la mission est INVERSÉE — le commit backend 05e5cacd0 du 2026-07-07 a RESTAURÉ les crudités sur Tacos M/L (revert de la décision « tacos sans crudités »), et la fixture le confirme (4 extras group_label=crudite sur items 26/97). Le mobile, avec has_crudites:false sur les deux Tacos, saute l'étape crudités → divergence P1 avec la borne. Autres risques : prix formule menu incohérent en interne (affiché +3,00 €, facturé +2,50 €), pool crudités 3/4 (Oignons cuits manquant), suppléments sans « Viande supplémentaire » 2,50 €, wizard Bols non aligné sur le composer_profile custom de la fixture.",
+ "findings": [
+  {
+   "severity": "P1",
+   "title": "Tacos M/L : étape crudités SUPPRIMÉE côté mobile alors que la borne l'a RESTAURÉE (commit 05e5cacd0 2026-07-07) — prémisse de la mission inversée",
+   "file": "mobile/data/menu.js",
+   "line": 382,
+   "evidence": "menu.js:382 `{ viandes: 1, has_crudites: false, ... }` (Tacos M) et :386 idem Tacos L ; screens-item-steps.jsx:74 `if (item.has_crudites) steps.push(STEP.CRUDITES)` → étape sautée. Fixture : Tacos M (id 26) et Tacos L (id 97) portent chacun 4 extras group_label='crudite' (Salade, Tomate, Oignon, Oignons cuits). git show 05e5cacd0 : « fix(borne): crudités affichées sur les Tacos (M/L)... Réalignement des tacos sur les sandwichs » — c'est le revert DE « tacos sans crudités », pas l'inverse.",
+   "recommendation": "W4 : passer has_crudites:true sur tacos-m/tacos-l dans mobile/data/menu.js pour parité borne. Signaler à l'orchestrateur que l'énoncé de mission (« Tacos ne doit plus proposer AUCUN choix crudités ») contredit la fixture ET le commit — la fixture prime."
+  },
+  {
+   "severity": "P1",
+   "title": "Prix formule « Menu complet » incohérent : étape affiche +3,00 €, le panier facture +2,50 €",
+   "file": "mobile/screens-item-steps.jsx",
+   "line": 525,
+   "evidence": "screens-item-steps.jsx:525 `{ id: 'full', name: 'Menu complet', desc: 'Frites + Boisson', price: 3.00 ... }` (affichage) vs menu.js:181 `{ id: 'f-menu', name: 'Menu (Frites + Boisson)', price: 2.50 ... }` utilisé par priceFor (menu.js:475-478) et par le recap (screens-item-steps.jsx:782-784, commentaire « DB caisse = 3,00€ » jamais appliqué à FORMULES).",
+   "recommendation": "Unifier : une seule source (FORMULES) lue par ScreenStepMenu et le recap ; vérifier le prix canonique caisse (3,00 € selon commentaire CAISSE-SYNC 2026-05-30) et corriger menu.js:181 en conséquence."
+  },
+  {
+   "severity": "P2",
+   "title": "Pool crudités mobile incomplet : 3 choix vs 4 dans la fixture (« Oignons cuits » manquant)",
+   "file": "mobile/data/menu.js",
+   "line": 150,
+   "evidence": "menu.js:150-155 CRUDITES = Salade/Tomate/Oignon uniquement. Fixture Tacos M et Cheese Burger : crudite extras = ['Salade','Tomate','Oignon','Oignons cuits'].",
+   "recommendation": "Ajouter « Oignons cuits » (default:true) au pool CRUDITES."
+  },
+  {
+   "severity": "P2",
+   "title": "Sauce : mobile autorise multi-sélection illimitée (+0,50 €/sauce) alors que la fixture impose min 1 / max 1",
+   "file": "mobile/screens-item-steps.jsx",
+   "line": 368,
+   "evidence": "ScreenStepSauce (368-408) = checkboxes multi + menu.js:456-459 `if (opts.sauceIds.length > 1) total += (len-1)*0.50`. Fixture Tacos M itemAttributes: {'name':'Sauce (1ère Gratuite)','min_select':1,'max_select':1,'allow_repeat':False}.",
+   "recommendation": "Vérifier le comportement réel borne (le libellé « 1ère Gratuite » suggère des sauces additionnelles via un autre canal) ; si la borne est bien mono-sauce, passer l'étape en radio max 1."
+  },
+  {
+   "severity": "P2",
+   "title": "Bols : wizard mobile (template 'tacos' générique) diverge du composer_profile custom de la fixture (sauce 2 choix, suppléments 10 dont Viande suppl. 2,50 €, étape boisson 0/1)",
+   "file": "mobile/data/menu.js",
+   "line": 396,
+   "evidence": "menu.js:222 cat 6 `wizard_template: 'tacos'` + items 396-400 (has_bol_wizard absent → STEP.BOL_SUPPLEMENTS/BOL_DRINK morts, screens-item-steps.jsx:113-118 jamais atteints). Fixture Bol Frites composer_profile.steps : viande(1/1, 7 choix), sauce(1/1, SEULEMENT 'Sauce fromagère maison'/'Sauce spicy'), supplements(0-5, 10 choix dont 'Viande supplémentaire'), boisson(addon_role='drink', 0/1). Mobile offre les 12 sauces génériques, le pool SUPPLEMENTS générique (9 à 0,90 €) et aucune étape boisson.",
+   "recommendation": "W4 : restreindre la sauce des bols aux 2 choix fixture, brancher le pool supplement_bol (max 5) et ajouter l'étape boisson optionnelle (le code BOL_DRINK existe déjà, il suffit de l'activer via has_bol_wizard)."
+  },
+  {
+   "severity": "P2",
+   "title": "Suppléments : « Viande supplémentaire » (2,50 €) absente du pool mobile",
+   "file": "mobile/data/menu.js",
+   "line": 157,
+   "evidence": "menu.js:157-169 SUPPLEMENTS = 9 entrées à 0,90 €. Fixture Tacos M supplement extras = 10 entrées dont ('Viande supplémentaire', 2.5).",
+   "recommendation": "Ajouter l'entrée à 2,50 € au pool SUPPLEMENTS."
+  },
+  {
+   "severity": "P2",
+   "title": "Boissons formule : 8 choix mobile vs 16 boissons au catalogue fixture (Coca Cherry, Tropico, Ice Tea Pêche, Fanta Citron, Fuze Tea, Hawaï, Perrier absents)",
+   "file": "mobile/data/menu.js",
+   "line": 203,
+   "evidence": "menu.js:203-212 FORMULE_DRINKS = 8 entrées. Fixture data.items contient 16 boissons (ids 52-59, 119-125), ex. 'Coca Cherry 33cl' (119), 'Perrier 33cl' (125).",
+   "recommendation": "Aligner FORMULE_DRINKS sur le pool boissons réel de la borne (à confronter au step drink kiosk qui peut être restreint — cf. A1 upsell restreint 2026-07-05)."
+  },
+  {
+   "severity": "P3",
+   "title": "Option « Sans Sauce » (id 's-sans') référencée mais inexistante dans le pool — code mort, impossible de refuser la sauce",
+   "file": "mobile/screens-item-steps.jsx",
+   "line": 371,
+   "evidence": "screens-item-steps.jsx:371 `const SANS_SAUCE = 's-sans'` + logique d'exclusivité 376-377, mais menu.js:134-147 SAUCES ne contient aucun id 's-sans' → l'option n'est jamais rendue ; hint ligne 1092 « Choisis au moins une sauce (ou Sans Sauce) » ment.",
+   "recommendation": "Soit ajouter l'entrée 's-sans' au pool, soit retirer la logique et corriger le hint (fixture min_select=1 → l'obligation d'1 sauce est, elle, conforme)."
+  }
+ ],
+ "facts": [
+  "Mapping wizard mobile → commande : computeActiveSteps (screens-item-steps.jsx:60-152) construit la séquence depuis category.wizard_template (mobile/data/menu.js:218-226) + flags item (viandes, has_sauce, has_crudites, has_supplements, has_menu_addon, has_bol_wizard, has_frites_style) ; templates tacos/sandwich = viandes→sauce→crudites→supplements→menu, burger = sans viandes, cascade menu full/frites/boisson insérée après MENU (lignes 136-147)",
+  "Encodage panier : buildLineItem (screens-item-steps.jsx:916-988) produit une ligne {meatIds/meatLabels, sauceIds/sauceLabels, cruditeIds, cruditeRemoved, supplementIds, bolSupplementIds, bolDrinkId, menuChoice, drinkId, fritesStyleId, fritesSauceIds, instruction (≤190 chars), composition_summary (string), qty, unitPrice, lineTotal} — ids LOCAUX ('m-*','s-*','sup-*','c-*'), AUCUN option_id backend (conforme mandat standalone no-wireup ; wireup futur nécessitera un mapping vers les choice ids fixture ex. viande 546-552)",
+  "Prix calculé 100% localement par priceFor (mobile/data/menu.js:454-489) : base item + (sauces-1)×0,50 + suppléments + formule FORMULES + frites style + (sauces frites-1)×0,50 — pas d'appel PricingService (normal en V1 standalone)",
+  "Tailles Tacos : mobile = 2 items séparés tacos-m (viandes:1, 6,90€, menu.js:380) / tacos-l (viandes:2, 7,90€, menu.js:384) — cohérent fixture Tacos M id 26 viande_count=1 price 6.9 / Tacos L id 97 viande_count=2 price 7.9 (la borne rend la taille via tacosSizeLabel dans KioskWizardComponent.vue:275/1075, équivalence fonctionnelle)",
+  "Parité exacte vérifiée : 7 viandes mobile (menu.js:122-131) = 7 choix fixture (Mexicanos, Cordon Bleu, Viande Hachée, Nuggets, Tenders, Fricadelle, Poulet mariné) ; 12 sauces mobile (menu.js:134-147) = 12 variations fixture attr 5 ; 9 catégories mobile ids 1,2,4,5,6,7,9,10,11 = 9 catégories fixture",
+  "Fixture (2026-07-08 15:57) : composer_profile est null pour TOUS les items sauf Bol Frites (41) et Bol Riz (45) (template 'custom', 4 steps : viande 1/1, sauce 1/1 [2 choix], supplements 0/5 [10 choix], boisson addon_role=drink 0/1) — les Tacos/burgers/sandwichs passent par le legacy (itemAttributes + extras + addons)",
+  "CONTRE-PREUVE prémisse mission : git show 05e5cacd0 (2026-07-07) = « fix(borne): crudités affichées sur les Tacos (M/L) » — wireGarnitures sur Tacos 26/97 ; fixture Tacos M/L contiennent chacun 4 extras group_label='crudite' → la borne PROPOSE les crudités sur Tacos ; c'est le mobile (has_crudites:false, menu.js:382/386) qui est en retard d'un revert",
+  "Crudités mobile : toggle default-ON, encodées en NÉGATIF dans le panier (cruditeRemoved = noms retirés, buildLineItem screens-item-steps.jsx:920-921, summary 'Sans salade/tomate' :942) — même sémantique que la borne (retrait, pas ajout)",
+  "Étape crudités toujours valide (canAdvance screens-item-steps.jsx:163-164 return true) et viandes gate stricte length === viande_count (:159-160) — cohérent min/max fixture Viande 1 (1/1)"
+ ]
+}

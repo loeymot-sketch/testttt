@@ -1,0 +1,115 @@
+{
+ "spec": "web:account+orders",
+ "scope": "Cartographie READ-ONLY du compte client + suivi commandes du web standalone (/Users/1millnonstop/Downloads/web) : account-v2.jsx, orders.jsx, plus les surfaces réellement affichées comme « compte » (screens.jsx WebLoyalty, loyalty-v2.jsx LoyaltyProfileTab), le câblage api.js et le polling de suivi dans funnel.jsx.",
+ "summary": "L'authentification est RÉELLE (téléphone + OTP guest-signup → token Sanctum via window.LC.api, api.js:143-150), l'historique commandes est RÉEL (GET /api/frontend/order via api.history, orders.jsx:41) et le suivi de commande post-achat est un polling RÉEL toutes les 20 s dans funnel.jsx TrackingPage (getOrder, arrêt aux statuts 13/16/19/22). En revanche, la page « Mon compte » authentifiée (route loyalty) reste largement démo : profil hardcodé « Ikyes Benzaid », carte Visa ····4242 fictive, préférences/allergènes fictifs, QR fidélité avec identifiant figé « LECAY-347-A9F2C » badgé DÉMO V1, et bouton « Se déconnecter » branché sur un no-op. Le point d'insertion naturel du QR fidélité réel est le bloc lc-wallet-code (screens.jsx:588-597) : api.profile() expose déjà loyalty_code (api.js:456-460), il suffit de l'injecter dans WebQR + la ligne identifiant et retirer les 2 badges DÉMO. Aucun carnet d'adresses n'existe : l'adresse de livraison est un champ libre géocodé dans funnel.jsx.",
+ "findings": [
+  {
+   "severity": "P1",
+   "title": "Profil compte 100% démo hardcodé visible par tout client connecté",
+   "file": "/Users/1millnonstop/Downloads/web/loyalty-v2.jsx",
+   "line": 10,
+   "evidence": "<div className=\"lc-profile-name\">Ikyes Benzaid</div> / <div className=\"lc-profile-mail\">ikyes@lecayenne.fr</div> + rows figées lignes 16-21 ({ l: 'Téléphone', v: '+33 6 12 34 56 78' }, { l: 'Date de naissance', v: '14 mai 1998' }) — ProfileEditor ne lit jamais api.profile()",
+   "recommendation": "Câbler ProfileEditor sur api.profile() (déjà exposé api.js:457, retourne name/loyalty_points/loyalty_code) et sur api.getPhone() ; masquer les champs sans donnée backend"
+  },
+  {
+   "severity": "P1",
+   "title": "Bouton « Se déconnecter » ne fait rien (no-op)",
+   "file": "/Users/1millnonstop/Downloads/web/screens.jsx",
+   "line": 758,
+   "evidence": "{tab === 'profile' && <LoyaltyProfileTab onLogout={()=>{}}/>} — le bouton loyalty-v2.jsx:120 appelle onLogout qui est vide ; api.logout() existe (api.js:152 function logout() { setToken(null); setPhone(null); })",
+   "recommendation": "Passer onLogout={()=>{ window.LC.api.logout(); setIsAuth(false); }} depuis index.html/WebLoyalty"
+  },
+  {
+   "severity": "P1",
+   "title": "QR fidélité + identifiant wallet hardcodés « LECAY-347-A9F2C » badgés DÉMO V1",
+   "file": "/Users/1millnonstop/Downloads/web/screens.jsx",
+   "line": 588,
+   "evidence": "<div className=\"lc-wallet-code\"><WebQR/> … <div className=\"lc-wallet-code-id\">LECAY-347-A9F2C</div> + span aria-label=\"Mode démonstration version 1 — ce QR code n'est pas connecté à la caisse\" (l.593) et badge DÉMO V1 wallet-head l.572",
+   "recommendation": "Point d'insertion QR réel : alimenter WebQR et lc-wallet-code-id avec u.loyalty_code déjà chargé via api.profile() (le state basePoints est déjà rempli au même endroit screens.jsx:522) ; retirer les 2 badges DÉMO une fois câblé"
+  },
+  {
+   "severity": "P1",
+   "title": "Carte bancaire fictive « Visa ····4242 » affichée comme carte enregistrée par défaut",
+   "file": "/Users/1millnonstop/Downloads/web/loyalty-v2.jsx",
+   "line": 68,
+   "evidence": "<div className=\"lc-addr-name\">Visa ····4242 <span…>Défaut</span></div> · Expire 12 / 2028 · Ikyes Benzaid — aucun backend de cartes n'existe",
+   "recommendation": "Retirer SavedCards ou le remplacer par un empty-state « aucune carte » tant que Stripe est OFF (flag V1)"
+  },
+  {
+   "severity": "P1",
+   "title": "Mot de passe oublié : confirme « Lien envoyé » sans aucun appel API",
+   "file": "/Users/1millnonstop/Downloads/web/account-v2.jsx",
+   "line": 247,
+   "evidence": "onClick={()=>{ if (!form.email.includes('@') …) { setErrors({ email: 'Email invalide' }); return; } setErrors({}); setSent(true); }} — setSent(true) local uniquement, aucun endpoint appelé ; l'écran affiche « tu vas recevoir un lien » (l.228)",
+   "recommendation": "Supprimer le flow forgot/password (l'auth réelle est phone+OTP, il n'y a pas de mot de passe backend) au lieu de promettre un email jamais envoyé"
+  },
+  {
+   "severity": "P2",
+   "title": "Onglet Connexion collecte email+mot de passe jamais envoyés au backend",
+   "file": "/Users/1millnonstop/Downloads/web/account-v2.jsx",
+   "line": 61,
+   "evidence": "if (mode === 'login') { … setAuthNotice('La connexion se fait par SMS…'); setMode('signup'); return; } — le password validé l.52 n'est jamais transmis ; commentaire l.57-58 : « The backend has no guest email/password path »",
+   "recommendation": "Retirer le champ mot de passe de l'onglet login (garder le notice SMS) pour ne pas collecter une donnée sans usage"
+  },
+  {
+   "severity": "P2",
+   "title": "Préférences compte fictives (allergènes « Gluten, Lactose », sauce, cuisson) non persistées",
+   "file": "/Users/1millnonstop/Downloads/web/loyalty-v2.jsx",
+   "line": 87,
+   "evidence": "<div className=\"lc-profile-row-val\">Gluten, Lactose</div> … « À point », « Sauce Cayenne 🌶 » — valeurs statiques, boutons « Gérer/Changer » sans handler ; NotificationSettings (l.36-38) est un state local jamais sauvegardé",
+   "recommendation": "Masquer PreferencesCard en V1 ou brancher un stockage local explicite ; les allergènes fictifs affichés à un vrai client sont trompeurs"
+  },
+  {
+   "severity": "P2",
+   "title": "« +33 pts gagnés ces 7 derniers jours » hardcodé sur le wallet réel",
+   "file": "/Users/1millnonstop/Downloads/web/screens.jsx",
+   "line": 582,
+   "evidence": "<div className=\"lc-wallet-bal-sub\">+33 pts gagnés ces 7 derniers jours</div> — statique alors que basePoints est réel (api.profile)",
+   "recommendation": "Supprimer la ligne ou la dériver de api.history()"
+  },
+  {
+   "severity": "P2",
+   "title": "« Commander à nouveau » ne re-commande pas : simple redirection menu",
+   "file": "/Users/1millnonstop/Downloads/web/orders.jsx",
+   "line": 123,
+   "evidence": "<button onClick={()=>{ if (onRoute) onRoute('menu'); }} …>↻ Commander à nouveau</button> — le détail de la commande (order/show) n'est jamais rechargé dans le panier",
+   "recommendation": "Acceptable V1 mais renommer « Voir le menu » ou implémenter le vrai reorder via api.getOrder(id)"
+  },
+  {
+   "severity": "P2",
+   "title": "« Supprimer mon compte » sans handler ni endpoint",
+   "file": "/Users/1millnonstop/Downloads/web/loyalty-v2.jsx",
+   "line": 121,
+   "evidence": "<button style={…}>Supprimer mon compte</button> — aucun onClick",
+   "recommendation": "Retirer ou brancher (RGPD : un bouton de suppression inerte est pire qu'absent)"
+  },
+  {
+   "severity": "P3",
+   "title": "PAST_ORDERS démo mort (défini, jamais rendu)",
+   "file": "/Users/1millnonstop/Downloads/web/orders.jsx",
+   "line": 5,
+   "evidence": "const PAST_ORDERS = [ { id: 'C-1234', … } ] — grep : seule occurrence dans le repo, la liste rendue vient de api.history (l.41-43)",
+   "recommendation": "Supprimer le tableau mort pour éviter une résurrection accidentelle de données démo"
+  },
+  {
+   "severity": "P3",
+   "title": "Commandes « pending » invisibles dans les filtres dédiés",
+   "file": "/Users/1millnonstop/Downloads/web/orders.jsx",
+   "line": 78,
+   "evidence": "filtres [{id:'all'},{id:'delivered'},{id:'cancelled'}] alors que mapOrderRow (l.16-18) produit aussi status='pending' — une commande en cours n'apparaît que sous « Tout »",
+   "recommendation": "Ajouter un onglet « En cours » ou fusionner pending dans le rendu par pastille (déjà stylée l.106)"
+  }
+ ],
+ "facts": [
+  "AUTH RÉELLE — account-v2.jsx:59-101 : AccountFlow utilise window.LC.api ; api.guestOtp → POST /api/auth/guest-signup/otp (api.js:143-145), api.guestVerify → POST /api/auth/guest-signup/verify avec stockage token Sanctum localStorage (api.js:146-150) ; social login Google/Apple = mock badgé « Démo V1 » (account-v2.jsx:107-114)",
+  "L'onglet « Connexion » n'a pas de backend email/password : submit() bascule vers le flow phone/OTP avec notice explicative (account-v2.jsx:60-68) ; le flow « forgot » est purement cosmétique (account-v2.jsx:244-249)",
+  "HISTORIQUE RÉEL — orders.jsx:35-45 : fetch unique (pas de polling) au montage/isAuth via api.history(50) → GET /api/frontend/order?limit=50 auth:true (api.js:445-448) ; mapOrderRow (orders.jsx:14-28) catégorise par regex sur status_name (annul→cancelled ; termin/livr/récup/prêt/servi→delivered ; sinon pending) ; états loading/empty/erreur gérés (orders.jsx:84-98)",
+  "SUIVI COMMANDE RÉEL (hors orders.jsx) — funnel.jsx TrackingPage:661-685 : polling api.getOrder(ctx.orderDbId) → GET /api/frontend/order/show/:id (api.js:440-442) toutes les 20 s, arrêt sur status 13 (delivered) et 16/19/22 (annulé), backoff 30 s et abandon après 3 échecs consécutifs",
+  "PAGE COMPTE = route 'loyalty' : index.html:125 (onAccount → si isAuth setRoute('loyalty') sinon modal AccountFlow) et index.html:150-153 (onAuthed → setIsAuth(true) + setRoute('loyalty')) ; WebLoyalty est défini screens.jsx:506, l'onglet profil rend LoyaltyProfileTab (screens.jsx:758) exporté par loyalty-v2.jsx:142",
+  "POINTS FIDÉLITÉ RÉELS — screens.jsx:517-524 : api.profile() → GET /api/profile (api.js:456-460, UserResource inclut loyalty_points ET loyalty_code) alimente basePoints ; tiers/progression dérivés (screens.jsx:526-540)",
+  "POINT D'INSERTION QR FIDÉLITÉ — screens.jsx:588-597 bloc .lc-wallet-code : <WebQR/> + id figé « LECAY-347-A9F2C » + badge DÉMO V1 (l.593) ; second badge DÉMO wallet-head screens.jsx:572 ; le loyalty_code réel est déjà disponible dans la réponse api.profile() consommée 3 lignes plus haut — câblage = étendre le setState de screens.jsx:522 pour garder u.loyalty_code, le passer à WebQR et à lc-wallet-code-id, retirer les 2 badges. Le checkout envoie déjà loyalty_code au placeOrder si fourni (api.js:434)",
+  "ADRESSES : AUCUN carnet d'adresses n'existe dans le compte (loyalty-v2.jsx n'a que SavedCards, classe .lc-addr réutilisée pour les cartes) ; l'adresse de livraison est un input libre géocodé à la volée (funnel.jsx:212-214, geocode api.js:65-71), rien de sauvegardé côté profil",
+  "Config loyalty publique disponible : api.loyaltyConfig() → GET /api/frontend/loyalty/config (api.js:451-454) ; helpers window.LC.loyalty.redeemableEuros/formatEuros consommés screens.jsx:581",
+  "flows.jsx:143 confirme que l'ancien AccountFlow est mort : « Dead AccountFlow + WizardFlow + W_WIZ removed (superseded by account-v2.jsx + wizard-v2.jsx) »"
+ ]
+}

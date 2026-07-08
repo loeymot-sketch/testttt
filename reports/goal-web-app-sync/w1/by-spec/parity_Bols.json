@@ -1,0 +1,105 @@
+{
+ "spec": "parity:Bols",
+ "scope": "Parity catégorie \"Bols\" (id=6, 2 items : Bol Frites #41, Bol Riz #45) — fixture canonique reports/goal-web-app-sync/catalog-canonical.json VS mirror WEB /Users/1millnonstop/Downloads/web/data/menu.js VS mirror MOBILE /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js",
+ "summary": "Les 2 items Bols (Bol Frites, Bol Riz) existent dans les 3 sources au bon prix de base 7,90 € avec les 7 viandes exactes — aucun item vendable manquant. Le mirror WEB est quasi-parfait (BOL_SAUCES 2 sauces exactes, 9 suppléments 0,90 + gratiné 2,00 riz_only, viande suppl +2,50 via has_extra_meat). Le mirror MOBILE est nettement divergent : 5 suppléments bols sur 10 seulement (Raclette/Emmental/Boursin/Œuf/Légumes sautés absents), pas de « Viande supplémentaire » +2,50, gratiné non restreint au Bol Riz, et sauces bol = les 12 sauces sandwich génériques au lieu des 2 sauces canoniques (bug documenté comme corrigé côté web mais jamais reporté sur mobile). Un P0 prix commun aux deux mirrors : Capri-Sun facturé 1,90 € en addon boisson de bol alors que son prix catalogue (fixture + mirrors eux-mêmes) est 1,50 €.",
+ "findings": [
+  {
+   "severity": "P0",
+   "title": "Capri-Sun facturé 1,90 € au lieu de 1,50 € comme boisson de bol (WEB + MOBILE)",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 309,
+   "evidence": "Canonique : item 59 « Capri-Sun » flat_price 1.50 (fixture cat 10) ; les mirrors eux-mêmes listent mkItem(1008,'capri-sun',…,1.50) (web:424, mobile:429). MAIS priceForDrinkAddon mappe 'd-capri': 1.90 (web/data/menu.js:309 et mobile/data/menu.js:319), et 'd-capri' EST sélectionnable comme boisson (FORMULE_DRINKS web:216, mobile:208). Le fallback par défaut est aussi 1.90.",
+   "recommendation": "Corriger le map 'd-capri': 1.50 dans les deux mirrors (web:309, mobile:319)."
+  },
+  {
+   "severity": "P1",
+   "title": "MOBILE — 5 suppléments bols manquants sur 10 (Raclette, Emmental, Boursin, Œuf, Légumes sautés)",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js",
+   "line": 171,
+   "evidence": "Canonique Bol Frites/Riz extras (group supplement_bol) = 9 suppléments @0,90 € (Jambon, Champignons, Oignons frits, Cheddar, Raclette, Emmental, Boursin, Œuf, Légumes sautés) + Viande suppl 2,50 (+ Gratiné 2,00 riz). Mobile SUPPLEMENTS_BOLS (lignes 171-177) = 5 entrées seulement : sb-oignons-frits, sb-champignons, sb-jambon, sb-cheddar, sb-gratine. Le web a été complété 5→9 le 2026-06-26 (web:156 commentaire « [WEB-SYNC-CAISSE 2026-06-26 F1] complété 5→9 ») mais le mobile jamais.",
+   "recommendation": "Reporter le fix F1 web sur mobile : ajouter sb-raclette, sb-emmental, sb-boursin, sb-oeuf, sb-legumes-sautes @0,90 €."
+  },
+  {
+   "severity": "P1",
+   "title": "MOBILE — « Viande supplémentaire » +2,50 € absente des bols (option vendable non commandable)",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js",
+   "line": 394,
+   "evidence": "Canonique : extra id 396/397 « Viande supplémentaire » 2,50 € dans le step supplements des deux bols. Web : has_extra_meat:true sur les 2 bols (web:391,394) + EXTRA_MEAT_PRICE=2.50 (web:180) + priceFor extraMeatIds (web:452). Mobile : grep 'EXTRA_MEAT|extraMeat' = 0 résultat dans mobile/data/menu.js ; les mkItem BOLS (lignes 395-400) n'ont ni has_extra_meat ni équivalent.",
+   "recommendation": "Ajouter le concept extra-meat +2,50 € aux bols mobile (aligner sur web L2 2026-06-26)."
+  },
+  {
+   "severity": "P1",
+   "title": "MOBILE — sauces des bols = 12 sauces sandwich génériques au lieu des 2 sauces bol canoniques",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js",
+   "line": 135,
+   "evidence": "Canonique step sauce (min 1/max 1) = 2 choix exacts : « Sauce fromagère maison » (id 202/246) et « Sauce spicy » (id 553/561). Mobile n'a PAS de BOL_SAUCES (grep=0) ; les bols ont has_sauce:true (mobile:399-400) → wizard servi par SAUCES générique 12 entrées (mobile:135-148) aux noms différents (« Fromagère maison », « Spicy maison »). Le web documente ce bug exact et l'a corrigé : web:200-202 « [WEB-WIREUP 2026-06-26] Sauces du BOL = attribut backend “Sauce bol” (attr 8) qui n'a QUE 2 options (≠ les 12 sauces sandwich). Noms alignés exactement… sinon le choix client s'effondrait sur la 1ère via min_select » + BOL_SAUCES web:203-206.",
+   "recommendation": "Porter BOL_SAUCES (2 entrées, noms exacts backend) sur mobile et l'utiliser pour cat 6."
+  },
+  {
+   "severity": "P1",
+   "title": "MOBILE — « Option Gratiné » +2,00 € non restreinte au Bol Riz (sélectionnable sur Bol Frites)",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js",
+   "line": 176,
+   "evidence": "Canonique : « Option Gratiné » (id 201, 2,00 €) existe UNIQUEMENT dans les extras du Bol Riz #45 ; les extras du Bol Frites #41 ne le contiennent pas. Web : sb-gratine porte riz_only:true (web:168) + has_gratine:true seulement sur bol-riz (web:395). Mobile : sb-gratine (mobile:176) sans riz_only, aucun has_gratine dans le fichier (grep=0) — le supplément est dans la liste commune des 2 bols, contredisant même son propre commentaire mobile:391 « Bol Frites : pas de gratiné ».",
+   "recommendation": "Ajouter riz_only/has_gratine côté mobile comme sur web."
+  },
+  {
+   "severity": "P1",
+   "title": "MOBILE — wizard bols template 'tacos' : risque multi-sauces (+0,50/sauce) alors que canonique = 1 sauce exactement",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js",
+   "line": 222,
+   "evidence": "Canonique step sauce : min_select 1, max_select 1, allow_repeat false. Mobile cat 6 wizard_template:'tacos' (mobile:222) + priceFor ajoute (sauceIds.length-1)*0.50 sans cap (logique sandwich, mobile ~460). Web utilise wizard_template:'bol' dédié (web:229). Aucun cap max 1 sauce encodé dans la donnée mobile.",
+   "recommendation": "Forcer max 1 sauce (gratuite) pour cat 6 sur mobile."
+  },
+  {
+   "severity": "P2",
+   "title": "WEB + MOBILE — cap suppléments max_select=5 du step canonique non encodé",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 158,
+   "evidence": "Canonique step supplements : min_select 0, max_select 5 (les 2 bols). Ni web SUPPLEMENTS_BOLS (web:158-169) ni mobile (mobile:171-177) ne portent de max ; priceFor additionne sans limite. De plus, côté web la « Viande supplémentaire » est comptée hors groupe (extraMeatIds) alors que le canonique la compte DANS le cap de 5.",
+   "recommendation": "Encoder max 5 sélections sur le step suppléments bols (viande suppl incluse)."
+  },
+  {
+   "severity": "P2",
+   "title": "MOBILE — images viandes génériques réutilisées ≠ thumbs canoniques distincts",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js",
+   "line": 123,
+   "evidence": "Canonique : 1 thumb distinct par viande (viande-mexicanos.webp, viande-cordon-bleu.webp, viande-hachee.webp, viande-nuggets.webp, viande-tenders.webp, viande-fricadelle.webp, viande-poulet.webp). Mobile MEATS (123-131) réutilise 4 images génériques : Mexicanos→viande-marine.png, Cordon Bleu→viande-crispy.png, Viande Hachée→viande-tandoori.png, Nuggets→viande-crispy.png, Tenders→viande-marine.png, Fricadelle→viande-curry.png, Poulet mariné→viande-marine.png. Web déjà aligné (web:105-116, commentaire IMG-SYNC-CAISSE 2026-06-27).",
+   "recommendation": "Aligner les images MEATS mobile sur les 7 thumbs backend comme le web."
+  },
+  {
+   "severity": "P2",
+   "title": "WEB + MOBILE — descriptions bols réécrites vs canonique",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 388,
+   "evidence": "Canonique #41 : « Frites maison, viande au choix, sauce et suppléments. » / #45 : « Riz, viande au choix, sauce et suppléments. Option gratiné. ». Web (388-395) et mobile (395-400) : « Frites maison · 1 viande au choix · Sauce · Suppléments optionnels » / « Riz · 1 viande au choix · Sauce · Suppléments optionnels · Option gratiné ». Même sens, texte différent.",
+   "recommendation": "Cosmétique — aligner si l'on vise le byte-parity des fiches produit."
+  },
+  {
+   "severity": "P3",
+   "title": "WEB — image Orangina du sélecteur boisson = tropico.png",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 214,
+   "evidence": "web:214 { id: 'd-orangina', name: 'Orangina 33cl', …, image: ASSET_BASE + 'tropico.png' } (idem mobile:207). La fixture a un item « Tropico 33cl » (id 120) distinct d'« Orangina 33cl » (id 57) — mauvaise vignette sur le choix boisson du bol.",
+   "recommendation": "Pointer vers l'asset orangina."
+  },
+  {
+   "severity": "INFO",
+   "title": "Ids items divergents par convention de mirror (41/45 vs 601/602) + addon « Boisson Seule » (item 3) absent de la fixture",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 388,
+   "evidence": "Canonique : Bol Frites id 41, Bol Riz id 45 ; mirrors : 601/602 (web:388,392 ; mobile:395,398) — mapping par slug, assumé. L'addon boisson canonique référence addon_item_id 3 « Boisson Seule » (addons id 99/100) qui n'est PAS dans les 42 items de la fixture ; les mirrors modélisent ce step par les prix catalogue Boissons (1,90/1,00) — cohérent, sauf le cas Capri-Sun (P0 ci-dessus).",
+   "recommendation": "Aucune action requise hors P0 Capri-Sun ; documenter le mapping slug↔id."
+  }
+ ],
+ "facts": [
+  "Canonique — cat 6 « Bols » contient exactement 2 items : Bol Frites (id 41, slug bol-frites) et Bol Riz (id 45, slug bol-riz), tous deux flat_price 7.90 / « 7,90 € », is_available true (reports/goal-web-app-sync/catalog-canonical.json, data.items category_id=6)",
+  "Canonique — wizard identique pour les 2 bols : step viande (min1/max1, 7 choix : Mexicanos, Cordon Bleu, Viande Hachée, Nuggets, Tenders, Fricadelle, Poulet mariné) ; step sauce (min1/max1, 2 choix : Sauce fromagère maison, Sauce spicy) ; step supplements (min0/max5, extra_group supplement_bol) ; step boisson addon drink (min0/max1, Boisson Seule addon_item_id 3)",
+  "Canonique — suppléments Bol Frites : 9 @0,90 € + Viande supplémentaire 2,50 € (10 choix) ; Bol Riz : 9 @0,90 € + Option Gratiné 2,00 € + Viande supplémentaire 2,50 € (11 choix)",
+  "Canonique — pas de step crudités ni de formule menu +2,50 sur les bols (has_menu addon inexistant dans le profil) ; mirrors alignés : has_crudites:false, has_menu_addon:false (web:390-395, mobile:397-400)",
+  "WEB mirror — items 601/602 @7,90 web/data/menu.js:388-395 ; SUPPLEMENTS_BOLS 9 @0,90 + gratiné 2,00 riz_only:true web:158-169 ; BOL_SAUCES 2 noms exacts web:203-206 ; viande suppl EXTRA_MEAT_PRICE=2.50 web:180 + has_extra_meat:true ; 7 MEATS noms exacts web:108-116",
+  "MOBILE mirror — items 601/602 @7,90 mobile/data/menu.js:395-400 ; SUPPLEMENTS_BOLS 5 entrées seulement mobile:171-177 ; PAS de BOL_SAUCES, PAS de EXTRA_MEAT, PAS de has_gratine/riz_only (greps = 0 résultat) ; 7 MEATS noms exacts mobile:123-131 mais images génériques",
+  "Boissons fixture (cat 10) : canettes 33cl 1,90 €, Eau Plate 50cl 1,00 €, Capri-Sun 1,50 € (item 59) — les maps priceForDrinkAddon des 2 mirrors facturent d-capri 1,90 € (web:309, mobile:319)",
+  "Le fichier web/data/menu.js contient les commentaires de fix 2026-06-26 (F1 suppléments 5→9, L2 viande suppl, WIREUP BOL_SAUCES) et 2026-06-27 (IMG-SYNC viandes) qui n'ont JAMAIS été portés sur mobile/data/menu.js — le mobile est resté à l'état pré-fix pour la catégorie Bols"
+ ]
+}

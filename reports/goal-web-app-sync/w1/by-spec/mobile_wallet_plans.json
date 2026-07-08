@@ -1,0 +1,69 @@
+{
+ "spec": "mobile:wallet+plans",
+ "scope": "Lecture intégrale de mobile/WALLET_PLAN.md, mobile/CONNECTION_PLAN.md, mobile/HOW_TO_RESUME.md + vérification routes/api.php:1444-1477 et LoyaltyController réel (backend testttt). READ-ONLY, aucun fichier modifié.",
+ "summary": "Les 3 plans mobile décrivent un V0 standalone 100% fonctionnel (15 écrans, loyalty complet, 20/20 e2e, wallet mock) avec un wireup backend en phases 6-11 selon deux chemins (A=Supabase recommandé par le plan, B=backend FoodKing Laravel/Sanctum). Le plan wallet (WALLET_PLAN.md) est un pipeline Phase 6 complet Apple .pkpass + Google Wallet JWT, hard-bloqué sur owner-gate D4 (certs Apple/Google). Depuis la rédaction (2026-05-10/11), le backend réel a AVANCÉ au-delà du plan Chemin B : routes loyalty existent toutes (register public, check/add-points/redeem/balance/history/qr sous auth:sanctum), B-02 (idempotency redeem) est fermé (LCS-S-002), et le QR est passé d'un format client-side FK:<code> à un token signé serveur `lqr.<payload>.<hmac>` via POST /loyalty/qr (LCS-S-001) — ce qui périme le format QR figé dans WALLET_PLAN.md §3 et la note DEC-01. Restent absents du backend : /loyalty/rewards, /menu/customer, ability mobile:order, toutes routes wallet.",
+ "findings": [
+  {
+   "severity": "P1",
+   "title": "Delta QR : WALLET_PLAN.md fige le format barcode 'FK:<loyalty_code>' mais le backend réel mint désormais un token signé 'lqr.<payload>.<hmac>' (POST /loyalty/qr)",
+   "evidence": "mobile/WALLET_PLAN.md:51 `\"message\": \"FK:<loyalty_code>\"` + :65 « Tout autre format est rejeté » VS routes/api.php:1469-1476 « [LCS-S-001] Signed QR generation — mints a fresh `lqr.<payload>.<hmac>` token (5-min TTL + anti-replay nonce). Replaces the unsigned plaintext FK:<code> previously generated client-side » — Route::post('/qr', [...LoyaltyController::class, 'generateQr'])->middleware('throttle:30,1')",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/WALLET_PLAN.md",
+   "line": 51,
+   "recommendation": "Avant toute implémentation wallet Phase 6, vérifier si LoyaltyController::scan() accepte encore FK:<code> ou seulement lqr.* ; si le pass wallet doit embarquer un QR longue durée, décider owner-side quel format le scanner kiosk validera (le TTL 5 min du lqr est incompatible avec un pass statique)."
+  },
+  {
+   "severity": "P1",
+   "title": "Delta méthode HTTP : CONNECTION_PLAN.md prévoit GET /loyalty/qr, le backend réel expose POST /loyalty/qr",
+   "evidence": "mobile/CONNECTION_PLAN.md:297 `Route::get('/loyalty/qr', [Frontend\\LoyaltyController::class, 'generateQr']); // HMAC signé` VS routes/api.php:1474 `Route::post('/qr', ...)` sous prefix('loyalty') auth:sanctum",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/CONNECTION_PLAN.md",
+   "line": 297,
+   "recommendation": "Le wrapper mobile api.js (Phase 9) doit appeler POST /api/v1/frontend/loyalty/qr, pas GET ; mettre à jour le plan au moment du wireup."
+  },
+  {
+   "severity": "P2",
+   "title": "Delta routes manquantes : /loyalty/rewards, POST /loyalty/redeem 'rewards catalogue', /menu/customer, ability mobile:order, routes wallet — AUCUNE n'existe dans le backend réel",
+   "evidence": "grep -n 'menu/customer|mobile:order|loyalty/rewards|wallet' routes/api.php → 0 résultat. CONNECTION_PLAN.md:283 prévoit `Route::get('/menu/customer/{branch}', ...)`, :295 `/loyalty/rewards`, :306 channel 'mobile_app'. HOW_TO_RESUME.md:104 confirme le banner mock « no loyalty_rewards table or /loyalty/rewards route exists backend »",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/CONNECTION_PLAN.md",
+   "line": 283,
+   "recommendation": "Le catalogue REWARDS mobile reste 100% mock ; tout Chemin B doit d'abord créer /menu/customer (ou ability mobile:order) et éventuellement loyalty_rewards. Note : /loyalty/redeem existe mais côté backend il débite des points (routes/api.php:1464), pas un catalogue de récompenses."
+  },
+  {
+   "severity": "P2",
+   "title": "Delta auth : le plan Chemin B place tout le groupe loyalty sous auth:sanctum ; le backend réel garde /register PUBLIC (throttle 5,1) et /check et /config à part",
+   "evidence": "routes/api.php:1441-1450 « /register is kept public (no auth) as it creates a new loyalty account » — Route::post('/register', ...)->middleware('throttle:5,1') ; /check → auth:sanctum+throttle:10,1 ; /config public ; groupe auth:sanctum séparé lignes 1451-1477",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/routes/api.php",
+   "line": 1444,
+   "recommendation": "Le wireup mobile doit gérer le flow register SANS token puis les autres appels AVEC token Sanctum ; ne pas supposer le schéma uniforme du plan."
+  },
+  {
+   "severity": "P3",
+   "title": "Ligne périmée : WALLET_PLAN.md cite LoyaltyController::scan() à la ligne 611, la méthode est aujourd'hui à la ligne 645",
+   "evidence": "mobile/WALLET_PLAN.md:65 « LoyaltyController.php:611 » VS grep réel : `645:    public function scan(Request $request): JsonResponse`",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/WALLET_PLAN.md",
+   "line": 65,
+   "recommendation": "Drift documentaire mineur — re-vérifier la logique scan() actuelle plutôt que se fier au plan."
+  },
+  {
+   "severity": "INFO",
+   "title": "Backlog B-02 du plan est FERMÉ côté backend (idempotency sur /loyalty/redeem) et un miroir /add-points idempotent a été ajouté",
+   "evidence": "HOW_TO_RESUME.md:128 « B-02 P0 Idempotency-Key middleware sur /loyalty/redeem (manquant route api.php:1212) » VS routes/api.php:1460-1465 « [LCS-S-002 / 2026-05-19] Idempotency middleware on loyalty redeem... per B-02 spec » + :1452-1459 « [ULTRA-AUDIT Wave 2 2026-07-04] Idempotence sur le CRÉDIT de points » Route::post('/add-points')->middleware('idempotency')",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/routes/api.php",
+   "line": 1464,
+   "recommendation": "Ne pas re-implémenter B-02 ; re-vérifier individuellement l'état des autres B-01..B-08 avant Phase 6 (le fichier HOW_TO_RESUME date de 2026-05-11 et le backend a bougé depuis)."
+  }
+ ],
+ "facts": [
+  "DÉCISION OWNER (WALLET_PLAN.md:3) : wallet V0 = mock uniquement (stubs SVG + ModalWalletV0Notice) ; le pipeline réel Apple/Google est Phase 6, hard-bloqué sur owner-gate D4 (Apple Developer $99/an + Pass Type ID pass.fr.lecayenne.loyalty + Google Pay Console Issuer ID + service account) — WALLET_PLAN.md:22-28,247-253",
+  "DÉCISION ACTÉE (WALLET_PLAN.md:266-275) : contenu verbatim du modal V0 wallet à ne PAS paraphraser (« Cette fonctionnalité sera disponible lors du déploiement en production... » + CTA « Voir mon QR »)",
+  "DÉCISION ACTÉE (WALLET_PLAN.md:190-221) : layout backend Phase 6 = app/Services/Wallet/{AppleWalletPassService,GoogleWalletService,WalletUpdateService}.php + WalletController + WalletWebServiceController + migration wallet_apple_registrations AVEC branch_id/BranchScope + ability Sanctum dédiée 'wallet:loyalty' séparée de 'mobile:order' + config/wallet.php + storage/certs/",
+  "DÉCISION ACTÉE (WALLET_PLAN.md:166-186, RGPD) : PII autorisée dans le pass = member_number + prénom+initiale + solde points UNIQUEMENT ; interdits = téléphone/email/historique/CB/adresse ; opt-out → Apple voided:true, Google state INACTIVE",
+  "PLAN CHEMIN B (CONNECTION_PLAN.md:268-312) : recommandation = créer un endpoint /api/v1/frontend/menu/customer/{branch} SANS ability kiosk:order (option 1) plutôt qu'une ability mobile:order ; channel 'mobile_app' dans Item.channels ; pricing SSOT — la mobile envoie seulement {item_id, variation_id, extra_ids[], wizard_selections, qty}, total recalculé via PricingService::calculateOrder ; X-Idempotency-Key sur POST /order",
+  "PLAN PHASES (CONNECTION_PLAN.md:315-356) : Phase 6 auth OTP (1-2j) → 7 catalogue (1-2j) → 8 commandes (2j) → 9 loyalty (1-2j) → 10 Stripe (1-2j) → 11 natif Capacitor (2-3 sem) ; total ~3-4 semaines ; décisions owner ouvertes D1 (Supabase vs FoodKing) à D5 (cartes plastiques) — CONNECTION_PLAN.md:386-395",
+  "ÉTAT V0 (HOW_TO_RESUME.md:3-6,25-35) : branche feature/mobile-app-le-cayenne-2026-05-10, 16 commits, 15 écrans pixel-perfect, loyalty complet (QR+barcode, WizardRedeem 3-step, FSM 7 états, idempotency 10min client), 20/20 specs e2e GREEN (tests/mobile-e2e/, baseURL 127.0.0.1:8081), 0 modif frozen-zone/backend ; stack React 18 + Babel-standalone sans build, servi par `php -S 127.0.0.1:8081 -t mobile/`",
+  "PRÉ-REQUIS PHASE 6 (HOW_TO_RESUME.md:123-134) : 8 P0/P1 backend B-01..B-08 listés à fermer avant wireup — MAIS liste datée 2026-05-11 : B-02 est déjà fermé dans le backend réel (routes/api.php:1464 idempotency /redeem, LCS-S-002 2026-05-19) ; re-auditer B-01,B-03..B-08 avant de s'y fier",
+  "BACKEND RÉEL loyalty (routes/api.php:1444-1477) : /check POST auth+throttle:10,1 ; /register POST PUBLIC throttle:5,1 ; /config GET public ; sous auth:sanctum → /add-points POST idempotency, /redeem POST idempotency, /balance GET, /history GET, /qr POST throttle:30,1 (token signé lqr.*, TTL 5 min, anti-replay). Méthodes contrôleur vérifiées : check:60, register:130, addPoints:226, redeem:296, balance:411, config:480, history:523, scan:645, generateQr:850 (app/Http/Controllers/Frontend/LoyaltyController.php)",
+  "ABSENT DU BACKEND RÉEL (grep routes/api.php = 0 hit) : /loyalty/rewards, /menu/customer, ability mobile:order, toute route wallet — le catalogue REWARDS mobile et les boutons wallet restent mock, conformément au plan",
+  "FORMAT QR : le plan wallet exige barcode 'FK:<loyalty_code>' (WALLET_PLAN.md:51,65 — DEC-01 cross-validé 3 agents) mais le backend a depuis remplacé le QR client par un token serveur signé 'lqr.<payload>.<hmac>' TTL 5 min (routes/api.php:1469-1476) — conflit à trancher owner avant Phase 6 wallet (pass statique vs TTL 5 min)",
+  "MIROIRS DATA V0 à remplacer au wireup (CONNECTION_PLAN.md:25-33) : mobile/data/menu.js (SSOT=OwnerMenuUpdate20260623Seeder), loyalty.js, orders.js, user.js ; mobile/api/storage.js CONSERVÉ (cache local/offline)"
+ ]
+}

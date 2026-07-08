@@ -28,6 +28,15 @@ Chaque tâche d'implémentation suit `ultra-audit-profond` (audit → implement 
 - **D7 — Palette** : mobile = NOIR/ORANGE/JAUNE/BLANC (mandat owner, PAS `#F4501E`). Web = design v3/v4/v5 existant inchangé sauf insertions.
 - **D8 — FR partout** : tout texte user-facing en français (ADR-007).
 
+### §0.4bis Révisions post-cartographie W1 (advisor + 29 agents, 2026-07-08)
+- **D2 RÉVISÉ** : mirrors NON régénérables mécaniquement (2/42 items ont composer_profile ; couche artisanale à slugs). Livrable = **patchs chirurgicaux + gate parity PAR NOM** (`tools/parity/check-parity.mjs`). Frites : wizard mirror ≠ 6 SKU canoniques mais équivalence prix au centime — **divergence structurelle ACCEPTÉE**, gate vérifie l'atteignabilité des 6 prix.
+- **D-REWARDS (Option A tranchée)** : AUCUNE route `/loyalty/rewards` backend ; modèle réel = points→€ continu (100 pts = 1 €, multiples de 100 au redeem, décision historique D6=A). Les UI « catalogue de récompenses » mock (mobile 8 rewards, web paliers) sont REMPLACÉES par ce modèle. Pas de nouvel endpoint.
+- **D-QR RÉVISÉ** : token signé TTL 300 s ⇒ **mint-on-display** (POST /qr à l'affichage + compte à rebours + re-mint), pas de QR persistant offline. Legacy `FK:<code>` rejeté backend (accept_legacy_plaintext=false) — abandonné partout.
+- **D-OTP (vérité terrain curl 2026-07-08)** : `site_phone_verification` ≠ ENABLE ⇒ verify accepte N'IMPORTE QUEL code et retourne le token Sanctum (user créé par phone). UX V1 locale assumée ; e2e n'a pas besoin de lire la DB.
+- **D-SCAN précisé** : `POST /frontend/loyalty/scan` existe (durci, anti-replay) mais AUCUNE UI ne l'appelle (endpoint orphelin) et la borne identifie par SAISIE (`/loyalty/check`). Le flux points RÉEL passe par `loyalty_code` attaché à la commande → earn auto à PREPARED/DELIVERED. E2E valide : (a) /scan niveau API (simulateur wedge) + anti-replay ; (b) parcours réel check→order→earn. **Câblage physique scanner→borne = G4 owner-gate futur** (borne frozen — hors périmètre de ce goal).
+- **D-STRIPE précisé** : backend DÉJÀ triple-verrouillé OFF (`config/payment.php` web_payment_v1/pilot_restrict/activation_guard) — aucun code serveur Stripe à ajouter ; travail = flag CLIENT (meta/config, OFF) + guard défensif webhook (crash 500 → 503 propre, P1 réel) + tests. Flux Stripe legacy Charges (pas SCA) documenté comme prérequis G1 avant toute activation réelle.
+- **W5 reclassé CERTAIN mais minimal** : webhook guard + parity tooling. Pas d'endpoint config public nécessaire (pattern meta/const local suffit).
+
 ### §0.5 Critères de convergence (rejection rules — Axis 6)
 REJET si : raw label visible · layout cassé sur viewport testé · erreur console · diff frozen-zone ≠ 0 · P0 RED non traité · test rouge non documenté · prix/produit divergent de la fixture · option Stripe visible flag OFF · QR non scannable/replay accepté · claim « presque bon ».
 **CONVERGÉ = 2 cycles W6 consécutifs avec P0+P1=0 ET ensembles de findings identiques.**
@@ -164,6 +173,7 @@ Discipline : implémenteurs JAMAIS en parallèle sur un même fichier ; QA-Visua
 | G1 | Activer Stripe en prod (flag ON + clés live + status=5) | Owner physique | clés Stripe + ordre explicite | .env prod + payment_gateways | **HORS GOAL — jamais fait ici** |
 | G2 | Push remote des commits | Owner (CLAUDE.md §10) | ordre push | — | PENDING fin de GOAL |
 | G3 | Déploiement VPS des surfaces | Owner (script deploy) | ordre deploy | docs cowork | HORS GOAL |
+| G4 | Câblage physique scanner QR → borne (listener wedge → /loyalty/scan) | Owner (borne frozen = LOCK+gate) | LOCK doc + test matériel | plans/LOCK futur | FUTUR — endpoint+QR prêts |
 
 Aucune wave n'est bloquée par G1-G3 (tout le GOAL est local + flag OFF).
 

@@ -1,0 +1,88 @@
+{
+ "spec": "parity:Frites",
+ "scope": "Parity catégorie \"Frites\" (id=7) : fixture canonique reports/goal-web-app-sync/catalog-canonical.json VS mirror WEB /Users/1millnonstop/Downloads/web/data/menu.js VS mirror MOBILE /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js. READ-ONLY, aucun fichier modifié.",
+ "summary": "La borne (canonique) modélise la catégorie Frites en 6 SKU plats sans wizard (Petite 2,50 / Grande 4,00 / Petite Cheddar 3,50 / Petite Cheddar+Oignons 4,50 / Grande Cheddar 5,00 / Grande Cheddar+Oignons 6,00 ; composer_profile=null, extras/addons/variations vides). Les deux mirrors (web et mobile, identiques entre eux) modélisent 2 items (Petite 2,50 / Grande 4,00) + un wizard 'frites_style' (Nature 0 / Cheddar +1,00 / Cheddar+Oignons +2,00). Chaque combinaison canonique est atteignable au CENTIME près via le wizard (2,50+1=3,50 ; 2,50+2=4,50 ; 4+1=5 ; 4+2=6) — aucun prix faux, aucune vente perdue — mais la structure diverge (4 SKU absents en tant qu'items, wizard inexistant côté borne). Divergences secondaires : cascade sauces frites +0,50€ présente uniquement côté mirrors, descriptions réécrites, is_vegetarian=true côté mirrors vs false canonique, sort catégorie 6 vs 7, assets .png vs .webp. Aucune divergence web↔mobile sur cette catégorie.",
+ "findings": [
+  {
+   "severity": "P1",
+   "title": "4 SKU canoniques absents des mirrors (107/108/109/110) — remplacés par un wizard frites_style prix-équivalent",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 399,
+   "evidence": "Canonique cat 7 = 6 items : id 33 'Petite Frites' 2,50€ ; id 34 'Grande Frites' 4,00€ ; id 107 'Petite Frites Cheddar fondu' 3,50€ ; id 108 'Petite Frites Cheddar + Oignons frits' 4,50€ ; id 109 'Grande Frites Cheddar fondu' 5,00€ ; id 110 'Grande Frites Cheddar + Oignons frits' 6,00€ (tous is_available=true, composer_profile=null). Mirror WEB menu.js:399-406 ne définit QUE 2 items (mkItem 701 'Petite Frites' 2.50 ligne 400, mkItem 702 'Grande Frites' 4.00 ligne 403) ; mirror MOBILE idem lignes 405/408. Les 4 SKU cheddar n'existent pas comme items, mais FRITES_STYLES (web:189-193, mobile:187-191) porte Cheddar fondu +1.00 et Cheddar + Oignons frits +2.00 → tous les prix canoniques atteignables exactement (2,50+1,00=3,50 ; 2,50+2,00=4,50 ; 4,00+1,00=5,00 ; 4,00+2,00=6,00). Classé P1 (structure divergente) et non P0 car aucun point de prix n'est faux ni invendable ; à requalifier P0 seulement si la règle stricte 'item manquant' prime.",
+   "recommendation": "Décision owner : soit aligner les mirrors sur le modèle 6-SKU de la borne (supprimer le wizard frites_style, ajouter les 4 items 107-110), soit documenter la divergence comme équivalence délibérée dans SYNC_CONTRACT/rapport parity."
+  },
+  {
+   "severity": "P1",
+   "title": "Structure wizard divergente : borne = composer_profile NULL sur les 6 items ; mirrors injectent un wizard 1-step 'frites_style'",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 294,
+   "evidence": "Canonique : les 6 items cat 7 ont \"composer_profile\": null, \"extras\": [], \"addons\": [], \"variations\": [] (aucun wizard sur la borne — clic direct). Mirror WEB buildFritesComposerProfile menu.js:294-304 construit {template:'frites', steps:[{step_key:'frites_style', min_select:1, max_select:1, choices: Nature 0 / Cheddar fondu 1.00 / Cheddar + Oignons frits 2.00}]}, attaché quand category_id===7 (web:285-286). Mirror MOBILE identique lignes 289-313 (attach lignes 280-281). Un client mirror passe donc par un écran de choix qui n'existe pas sur la borne.",
+   "recommendation": "Si l'alignement 6-SKU est retenu, retirer has_frites_style/buildFritesComposerProfile des deux mirrors ; sinon acter le wizard comme UX standalone acceptée."
+  },
+  {
+   "severity": "P2",
+   "title": "Cascade sauces frites (+0,50€/sauce au-delà de la 1re) présente uniquement côté mirrors — inexistante sur la borne",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 456,
+   "evidence": "WEB menu.js:456 : if (Array.isArray(opts.fritesSauceIds) && opts.fritesSauceIds.length > 1) total += (opts.fritesSauceIds.length - 1) * 0.50; — MOBILE lignes 484-486 identiques. Canonique : items cat 7 sans aucune option sauce (composer_profile=null, extras=[]). Les items mirrors ont has_sauce:false et le wizard n'a qu'un step frites_style, donc chemin probablement mort, mais le hook de pricing existe : si un flux passe fritesSauceIds, le total mirror divergerait du prix borne.",
+   "recommendation": "Vérifier qu'aucune UI mirror n'alimente fritesSauceIds pour cat 7 ; supprimer le hook mort ou le documenter."
+  },
+  {
+   "severity": "P2",
+   "title": "Descriptions item réécrites dans les mirrors (Petite et Grande Frites)",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 401,
+   "evidence": "Canonique id 33 : \"Frites maison croustillantes. Nature, ou avec cheddar fondant et oignons.\" ; id 34 : \"Grandes frites maison croustillantes. Nature, ou cheddar fondant et oignons.\" Mirrors (WEB:401/404, MOBILE:406/409) : 'Portion petite · Style au choix (Nature / Cheddar fondu +1€ / Cheddar+Oignons +2€)' et 'Portion grande · Style au choix (…)'.",
+   "recommendation": "Aligner le copy sur la borne ou accepter le copy standalone (cohérent avec le wizard mirror)."
+  },
+  {
+   "severity": "P2",
+   "title": "Sort catégorie divergent : canonique sort=7, mirrors sort=6",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 230,
+   "evidence": "Canonique cat 7 : \"sort\": 7. WEB menu.js:230 et MOBILE menu.js:223 : { id: 7, slug: 'frites', … sort: 6 }. L'ordre relatif dans la nav peut différer selon les sorts voisins.",
+   "recommendation": "Recaler les sorts mirrors sur la séquence canonique complète des 9 catégories (audit cross-catégorie)."
+  },
+  {
+   "severity": "P3",
+   "title": "is_vegetarian=true dans les mirrors vs false dans la fixture canonique",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 402,
+   "evidence": "Canonique id 33 et 34 : \"is_vegetarian\": false. Mirrors WEB:402/405 et MOBILE:407/410 : is_vegetarian: true. Badge diététique affiché en plus côté mirrors.",
+   "recommendation": "Trancher la vérité (frites nature = végétarien plausible) puis aligner la DB borne OU retirer le flag mirror — même valeur des deux côtés."
+  },
+  {
+   "severity": "P3",
+   "title": "Assets divergents : thumbs .webp versionnés (borne) vs .png locaux (mirrors)",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 72,
+   "evidence": "Canonique : thumb 'images/menu/thumbs/frites.webp?v=…', 'frites-cheddar.webp', 'frites-cheddar-oignons.webp' ; cover 'images/item/cover.png'. Mirrors : WEB:72-73 'petite-frites'/'grande-frites' → 'frites.png' ; styles → 'frites-cheddar.png' / 'frites-cheddar-oignons.png' (WEB:190-192, MOBILE:188-190) ; cat image 'cat-frites.png' (WEB:230) vs canonique cover 'cat-frites.png' + thumb 'cat-frites.webp'. Visuels équivalents, formats/chemins différents — attendu pour standalone.",
+   "recommendation": "Aucune action V1 ; noter comme cosmétique attendu (mirrors auto-hébergent leurs assets)."
+  },
+  {
+   "severity": "INFO",
+   "title": "IDs internes divergents (33/34/107-110 vs 701/702) — attendu pour mirrors standalone non câblés API",
+   "file": "/Users/1millnonstop/Downloads/web/data/menu.js",
+   "line": 400,
+   "evidence": "Canonique ids DB 33, 34, 107, 108, 109, 110. Mirrors ids locaux 701/702 (WEB:400/403, MOBILE:405/408). Mandat owner : standalone NO API wireup V1 — pas un défaut, mais mapping id requis au futur câblage.",
+   "recommendation": "Prévoir une table de mapping slug→item_id DB au moment du wireup (slugs 'petite-frites'/'grande-frites' déjà identiques)."
+  },
+  {
+   "severity": "INFO",
+   "title": "Parity WEB↔MOBILE parfaite sur la catégorie Frites (aucune divergence entre les deux mirrors)",
+   "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js",
+   "line": 404,
+   "evidence": "Items (MOBILE:404-411 vs WEB:399-406), FRITES_STYLES (MOBILE:187-191 vs WEB:189-193), buildFritesComposerProfile (MOBILE:289-313 vs WEB:294-304), cascade sauces (MOBILE:484-486 vs WEB:456), catégorie (MOBILE:223 vs WEB:230) : mêmes ids, noms, prix, flags, descriptions.",
+   "recommendation": "Rien à faire — toute correction devra être appliquée aux deux mirrors en jumeau."
+  }
+ ],
+ "facts": [
+  "Fixture canonique : /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/goal-web-app-sync/catalog-canonical.json — catégorie id=7 slug 'frites', wizard_template 'custom', has_menu=false, sort=7",
+  "Canonique cat 7 = 6 items, tous is_available=true, composer_profile=null, extras=[], addons=[], variations=[], tax_id=3 : id33 Petite Frites 2,50€ ; id34 Grande Frites 4,00€ ; id107 Petite Frites Cheddar fondu 3,50€ ; id108 Petite Frites Cheddar + Oignons frits 4,50€ ; id109 Grande Frites Cheddar fondu 5,00€ ; id110 Grande Frites Cheddar + Oignons frits 6,00€",
+  "Mirror WEB /Users/1millnonstop/Downloads/web/data/menu.js : items cat 7 lignes 399-406 (701 Petite 2.50, 702 Grande 4.00) ; FRITES_STYLES lignes 189-193 (Nature 0 / fs-cheddar 1.00 / fs-cheddar-oignon 2.00) ; buildFritesComposerProfile lignes 294-304 attaché via lignes 285-286 ; cascade sauces frites ligne 456 ; catégorie ligne 230 (sort 6)",
+  "Mirror MOBILE /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/mobile/data/menu.js : items cat 7 lignes 404-411 ; FRITES_STYLES lignes 187-191 ; buildFritesComposerProfile lignes 289-313 attaché lignes 280-281 ; cascade sauces lignes 484-486 ; catégorie ligne 223 (sort 6) — contenu identique au mirror WEB",
+  "Équivalence prix totale : chaque SKU canonique = base mirror + style mirror au centime près (3,50 = 2,50+1,00 ; 4,50 = 2,50+2,00 ; 5,00 = 4,00+1,00 ; 6,00 = 4,00+2,00) — aucun prix faux, aucune combinaison invendable",
+  "Noms des styles mirrors ('Cheddar fondu', 'Cheddar + Oignons frits') identiques aux suffixes des noms SKU canoniques 107-110",
+  "Cat 7 : has_menu_addon=false dans les mirrors et addons=[] canonique — pas de formule menu +2,50€ sur les frites des deux côtés (parité OK sur ce point)"
+ ]
+}

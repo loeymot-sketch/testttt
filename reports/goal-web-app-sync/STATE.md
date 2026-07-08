@@ -2,9 +2,11 @@
 > Manifest de reprise. Toute session qui reprend : lire ce fichier + plans/GOAL_WEB_APP_SYNC_BORNE_2026-07-08.md.
 
 ## Position
-- Wave courante : **W1 cartographie** (workflow `wf_99239829-ced`, 29 agents read-only, en cours)
-- Dernier checkpoint : W0+W2 (fixture + GOAL doc + baselines)
-- Prochaine étape : synthèse W1 → lancer W3 (web) + W4 (mobile) + W5 (backend) selon findings
+- Wave courante : **W3/W4/W5 IMPLÉMENTATION** (workflow `wf_85802218-5ea`, 14 implémenteurs + 3 intégrateurs, en cours)
+- W1 TERMINÉE : 29/29 agents, 235 findings (15 P0 = boissons manquantes + capri 1.50 ; 64 P1) → `w1/SYNTHESIS.md` + `w1/by-spec/*.json`
+- Contrat implémenteurs : `CONTRACTS.md` (flags normatifs, endpoints, QR mint-on-display, OTP bypass vérifié)
+- Décisions révisées post-advisor : GOAL doc §0.4bis (patchs chirurgicaux + gate par NOM ; points→€ sans rewards ; scan = G4 futur)
+- Prochaine étape : synthèse WF-2 → W6 intégrité/e2e (~50 agents) → boucle convergence
 
 ## Baselines
 - testttt HEAD départ : `58e852697` (branche `pos/category-first-caisse-2026-06-23`)
