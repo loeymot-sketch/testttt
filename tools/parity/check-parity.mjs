@@ -79,6 +79,22 @@ function norm(s) {
     .replace(/^sauce\s+/, '').replace(/\s+/g, ' ').trim();
 }
 
+// ---------------------------------------------------------------------------
+// [GOAL-SYNC-HEAL 2026-07-08] Deltas CANONIQUES de la formule menu (en euros).
+// La formule menu est portée par l'addon `menu_component` de l'item borne, avec
+// 3 rôles qui pricent différemment côté backend (PricingService SSOT, garde
+// ValidatesAddonRoles) — PROUVÉ e2e réel W6, orders 5584-5590 :
+//   • role menu_full    = +2,50 €  (menu complet : frites + boisson)
+//   • role menu_frites  = +1,50 €
+//   • role menu_boisson = +1,00 €
+// Le backend REJETTE (422) menu_frites/menu_boisson s'ils ne ciblent pas l'addon
+// menu_component. La fixture catalog-canonical.json n'expose PAS ces deltas
+// d'addon → on les encode ici en constantes (source de vérité = e2e ci-dessus).
+// Angle mort corrigé : le gate ne validait que f-menu et laissait passer
+// f-frites/f-boisson faux (mirrors observés à 2,00/2,00 au lieu de 1,50/1,00).
+// ---------------------------------------------------------------------------
+const CANONICAL_FORMULA = { 'f-menu': 2.50, 'f-frites': 1.50, 'f-boisson': 1.00 };
+
 // Prix en centimes (comparaison au centime, jamais en float)
 function cents(v) {
   const n = Number(v);
@@ -424,12 +440,22 @@ function compareSurface(surface, mirrorPath, canon) {
     }
   }
 
-  // --- 11) Formule menu : f-menu à 2,50 € -----------------------------------
+  // --- 11) Formule menu : deltas addon menu_component (f-menu / f-frites /
+  //         f-boisson) — CANONICAL_FORMULA prouvé e2e orders 5584-5590 --------
   {
     const formules = Array.isArray(lc.formules) ? lc.formules : [];
-    const fmenu = formules.find((f) => f.id === 'f-menu');
-    if (!fmenu) div('formule_menu', 'f-menu', 'présent à 2,50 €', 'absent');
-    else if (cents(fmenu.price) !== 250) div('formule_menu', 'f-menu', '2,50 €', eur(cents(fmenu.price)));
+    for (const [id, eurDelta] of Object.entries(CANONICAL_FORMULA)) {
+      const expected = cents(eurDelta);
+      const f = formules.find((x) => x.id === id);
+      if (!f) {
+        div('formule_prix', id, `présent à ${eur(expected)}`, 'absent');
+        continue;
+      }
+      const got = cents(f.price);
+      if (got !== expected) {
+        div('formule_prix', id, eur(expected), Number.isNaN(got) ? `prix invalide (${f.price})` : eur(got));
+      }
+    }
   }
 
   // --- 12) Boissons formule : couverture 15 saveurs + priceForDrinkAddon ----

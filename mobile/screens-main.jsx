@@ -762,16 +762,25 @@ function ScreenConfirm({ go, order }) {
   // [GOAL-SYNC 2026-07-08] N° d'appel RÉEL : queue_number posé par index.html (placeCounterOrder,
   // commande réelle caisse). Présent → affiché en grand ; absent → comportement local V0 inchangé.
   const queueNo = (order && order.queue_number != null && String(order.queue_number).trim()) ? String(order.queue_number).trim() : null;
+  // [GOAL-SYNC-HEAL 2026-07-08] Honnêteté hors-ligne : quand placeCounterOrder (index.html) est
+  // tombé en dégradation locale, l'order porte offline:true (queue_number:null). On ne présente
+  // alors PAS la commande comme transmise à la cuisine — bandeau clair + libellé qualifié.
+  const isOffline = !!(order && order.offline);
   return (
     <div data-screen-label="11 Confirmation" style={{ position: 'absolute', inset: 0, background: '#FFD93D', display: 'flex', flexDirection: 'column', paddingTop: 'var(--ios-safe-top)' }}>
       <ScreenHeader left={<IconBtn bg="var(--ink)" color="#fff" onClick={() => go('home')} ariaLabel="Fermer la confirmation"><I.Close size={18}/></IconBtn>} center={<Logo size={12}/>}/>
       <div style={{ flex: 1, padding: '4px 20px 20px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {isOffline && (
+          <div role="status" data-testid="confirm-offline-banner" style={{ margin: '0 0 10px', background: 'var(--red)', color: '#fff', borderRadius: 12, padding: '10px 14px', fontSize: 12, fontWeight: 700, textAlign: 'center' }}>
+            Hors ligne — commande NON transmise. À repasser sur place.
+          </div>
+        )}
         <div style={{ textAlign: 'center' }}>
           <div style={{ width: 56, height: 56, borderRadius: 999, background: 'var(--ink)', color: 'var(--orange)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '4px 4px 0 var(--paper)' }}>
             <I.Check size={28} sw={3}/>
           </div>
-          <h1 className="lc-display" style={{ margin: '8px 0 0', fontSize: 36, lineHeight: 0.9 }}>C'est parti !</h1>
-          <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--ink)' }}>Commande <b>#{orderId}</b> envoyée</p>
+          <h1 className="lc-display" style={{ margin: '8px 0 0', fontSize: 36, lineHeight: 0.9 }}>{isOffline ? 'Presque !' : "C'est parti !"}</h1>
+          <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--ink)' }}>{isOffline ? <>Brouillon <b>#{orderId}</b> — à finaliser en caisse</> : <>Commande <b>#{orderId}</b> envoyée</>}</p>
         </div>
         {/* QR ticket card */}
         <div style={{ marginTop: 12, background: '#fff', borderRadius: 18, padding: 14, position: 'relative' }}>

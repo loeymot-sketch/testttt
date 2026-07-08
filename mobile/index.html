@@ -211,8 +211,12 @@ function App() {
     const api = window.LC.mobileApi;
     if (!(api && api.isAuthed && api.isAuthed() && api.resolveOrderItems && api.placeOrder)) {
       // Couche API absente ou non connecté ⇒ mode local V0 (dégradation douce contrat §7)
-      setToast({ m: 'Hors ligne — commande de démonstration', k: 'info' });
-      return true;
+      // [GOAL-SYNC-HEAL 2026-07-08] Honnêteté hors-ligne : on marque l'order local offline:true
+      // (jamais de queue_number réel) pour que ScreenConfirm PUISSE afficher un bandeau clair
+      // « commande NON transmise ». Le snapshot garde son id 'C-XXXX' démo (aucun faux 'A####').
+      setLastOrder(o => o ? { ...o, offline: true, queue_number: null } : o);
+      setToast({ m: 'Hors ligne — commande NON transmise. À repasser sur place.', k: 'error' });
+      return 'offline'; // truthy (l'appelant enchaîne) mais distinct de true → PAS de modale « points gagnés » fictifs
     }
     try {
       // loyalty_code du profil (fidélité optionnelle : un échec ici ne bloque PAS la commande)
@@ -240,8 +244,10 @@ function App() {
     } catch (e) {
       if (e && e.kind === 'network') {
         // API injoignable ⇒ fallback local V0 (lastOrder démo déjà snapshotté au go('pay'))
-        setToast({ m: 'Hors ligne — commande de démonstration', k: 'info' });
-        return true;
+        // [GOAL-SYNC-HEAL 2026-07-08] Idem : order marqué offline:true, aucun faux n° d'appel réel.
+        setLastOrder(o => o ? { ...o, offline: true, queue_number: null } : o);
+        setToast({ m: 'Hors ligne — commande NON transmise. À repasser sur place.', k: 'error' });
+        return 'offline'; // idem : distinct de true → pas de modale « points gagnés » fictifs
       }
       // Erreur métier (résolution produit, 4xx…) ⇒ message FR, panier intact, on reste là.
       setToast({ m: (e && e.message) || 'Commande refusée par le serveur. Réessaie.', k: 'error' });
@@ -314,7 +320,7 @@ function App() {
       {showTab && <TabBar active={activeTab} onChange={(t) => go(t)}/>}
       {/* [GOAL-SYNC 2026-07-08] flag={onlineCardEnabled} : la modale masque « Payer maintenant » quand OFF (contrat §4).
           onPickCounter = COMMANDE RÉELLE (placeCounterOrder) ; onPickCard gardé derrière le flag (défense en profondeur). */}
-      {modal === 'pay' && <ModalPayChoice total={total} flag={window.LC.config.onlineCardEnabled} onClose={()=>setModal(null)} onPickCounter={async ()=>{ setModal(null); const ok = await placeCounterOrder(); if (!ok) return; setHistory(h=>[...h,'confirm']); setScreen('confirm'); setCart([]); setTimeout(()=>setModal('gain'), 900); }} onPickCard={()=>{ if (!window.LC.config.onlineCardEnabled) return; setModal(null); setHistory(h=>[...h,'stripe']); setScreen('stripe'); }}/>}
+      {modal === 'pay' && <ModalPayChoice total={total} flag={window.LC.config.onlineCardEnabled} onClose={()=>setModal(null)} onPickCounter={async ()=>{ setModal(null); const ok = await placeCounterOrder(); if (!ok) return; setHistory(h=>[...h,'confirm']); setScreen('confirm'); setCart([]); /* [GOAL-SYNC-HEAL 2026-07-08] Honnêteté : PAS de « +points gagnés » quand la commande n'a PAS été transmise (mode hors-ligne) */ if (ok !== 'offline') setTimeout(()=>setModal('gain'), 900); }} onPickCard={()=>{ if (!window.LC.config.onlineCardEnabled) return; setModal(null); setHistory(h=>[...h,'stripe']); setScreen('stripe'); }}/>}
       {/* [test-e2e fix C-003 round-2 2026-05-11] derive pointsEarned from the snapshotted order total.
           [GOAL-SYNC 2026-07-08] Estimation earn alignée backend (contrat §2) : 1 pt/€ FLOOR du total TTC
           (Math.floor(total × points_per_euro=1)) — l'EARN réel est crédité par le backend au statut

@@ -703,8 +703,8 @@ function ScreenStepMenu({ item, selections, setSelections, headingRef }) {
   };
   const options = [
     { id: 'full',    name: 'Menu complet',  desc: 'Frites + Boisson', price: formulePrice('f-menu', 2.50), emoji: '🍟🥤' },
-    { id: 'frites',  name: 'Ajouter Frites', desc: 'Frites uniquement', price: formulePrice('f-frites', 2.00), emoji: '🍟' },
-    { id: 'boisson', name: 'Ajouter Boisson', desc: 'Boisson uniquement', price: formulePrice('f-boisson', 2.00), emoji: '🥤' },
+    { id: 'frites',  name: 'Ajouter Frites', desc: 'Frites uniquement', price: formulePrice('f-frites', 1.50), emoji: '🍟' }, // [GOAL-SYNC-HEAL 2026-07-08] fallback aligné canon menu_frites +1,50 €
+    { id: 'boisson', name: 'Ajouter Boisson', desc: 'Boisson uniquement', price: formulePrice('f-boisson', 1.00), emoji: '🥤' }, // [GOAL-SYNC-HEAL 2026-07-08] fallback aligné canon menu_boisson +1,00 €
     { id: 'none',    name: 'Sans formule',   desc: 'Plat seul',         price: 0,    emoji: '🚫' },
   ];
   return (
@@ -981,8 +981,8 @@ function ScreenStepRecap({ item, selections, setSelections, headingRef }) {
       return ((f ? f.price : fallback)).toFixed(2).replace('.', ',').replace(',00', '');
     };
     if (selections.menuChoice === 'full') return 'Menu (Frites + Boisson) +' + _fPrice('f-menu', 2.50) + '€';
-    if (selections.menuChoice === 'frites') return 'Ajouter Frites +' + _fPrice('f-frites', 2.00) + '€';
-    if (selections.menuChoice === 'boisson') return 'Ajouter Boisson +' + _fPrice('f-boisson', 2.00) + '€';
+    if (selections.menuChoice === 'frites') return 'Ajouter Frites +' + _fPrice('f-frites', 1.50) + '€'; // [GOAL-SYNC-HEAL 2026-07-08] fallback aligné canon menu_frites +1,50 €
+    if (selections.menuChoice === 'boisson') return 'Ajouter Boisson +' + _fPrice('f-boisson', 1.00) + '€'; // [GOAL-SYNC-HEAL 2026-07-08] fallback aligné canon menu_boisson +1,00 €
     // [test-e2e fix B-002/B-003 round-2 2026-05-11] surface "Sans formule" explicitly so
     // the user can confirm the no-formule choice on the recap.
     if (selections.menuChoice === 'none') return 'Sans formule';

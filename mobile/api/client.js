@@ -124,7 +124,9 @@
     try {
       var r = await req('POST', '/api/frontend/loyalty/redeem', {
         auth: true,
-        body: { code: String(code || '').trim(), points: parseInt(points, 10) || 0 },
+        // [GOAL-SYNC-HEAL 2026-07-08] branch_id requis par le backend (parité placeOrder) —
+        // son absence provoquait un 422 de validation avant tout traitement fidélité.
+        body: { branch_id: CFG.branchId, code: String(code || '').trim(), points: parseInt(points, 10) || 0 },
         idempotencyKey: 'mob-lr' + uuid(),
       });
       return (r && r.data) || r;
@@ -363,10 +365,15 @@
     // Formule menu (menuChoice full|frites|boisson) → addon backend par role.
     // Le drink/style choisis dans la cascade ne sont PAS des variations d'addon backend →
     // relayés à la cuisine via l'instruction de ligne (parité web, prix = addon seul).
+    // [GOAL-SYNC-HEAL 2026-07-08] La formule est PORTÉE par l'unique addon role
+    // 'menu_component' de l'item ; le rôle ENVOYÉ (menu_full/menu_frites/menu_boisson)
+    // décide du prix backend (PricingService SSOT : +2,50 / +1,50 / +1,00). Le backend
+    // (ValidatesAddonRoles) REJETTE 422 menu_frites/menu_boisson s'ils ne ciblent PAS
+    // 'menu_component' → on ne cible donc PLUS les addons side/drink.
     var menuNoteParts = [];
     if (inMenu) {
-      var role = line.menuChoice === 'full' ? 'menu_component' : line.menuChoice === 'frites' ? 'side' : line.menuChoice === 'boisson' ? 'drink' : null;
-      var addonId = role ? dIdx.addonByRole[role] : null;
+      var isMenu = line.menuChoice === 'full' || line.menuChoice === 'frites' || line.menuChoice === 'boisson';
+      var addonId = isMenu ? dIdx.addonByRole['menu_component'] : null;
       if (addonId != null) {
         var sentRole = line.menuChoice === 'full' ? 'menu_full' : line.menuChoice === 'frites' ? 'menu_frites' : 'menu_boisson';
         item_addons.push({ id: addonId, quantity: 1, role: sentRole });
