@@ -8,6 +8,11 @@
 > **Chaque bloc = 1 seul copier-coller.** Les blocs **créent les fichiers tout seuls** (pas
 > de Notepad, pas de clic). Fais-les **dans l'ordre**. Après chaque bloc, je dis le **résultat attendu**.
 
+> **🔑 ARCHITECTURE URL (règle owner, à ne JAMAIS confondre)** :
+> - **`https://vps-418872ac.vps.ovh.net`** = **serveur privé** = l'app **borne / caisse / KDS / admin**. Les machines restent **là-dessus**.
+> - **`lecayenne.fr`** = **UNIQUEMENT le site web public** (commande client standalone), séparé. **On n'y pointe JAMAIS la borne/caisse.**
+> - URL borne exacte = `https://vps-418872ac.vps.ovh.net/kiosk?machine_key=…` (le `machine_key` = identité de CETTE borne, à garder verbatim).
+
 ---
 
 ## ÉTAPE 0 — Ouvrir PowerShell EN ADMIN sur la borne (via AnyDesk)
@@ -41,7 +46,7 @@ Get-Process node,powershell,chrome -ErrorAction SilentlyContinue | Select Id,Pro
 ## ÉTAPE 2 — Télécharger le PONT d'impression à jour
 ```powershell
 New-Item -ItemType Directory -Force -Path C:\borne-print | Out-Null
-Invoke-WebRequest "https://lecayenne.fr/dl/bridge.js" -OutFile C:\borne-print\bridge.js
+Invoke-WebRequest "https://vps-418872ac.vps.ovh.net/dl/bridge.js" -OutFile C:\borne-print\bridge.js
 Write-Host "pont telecharge : $((Get-Item C:\borne-print\bridge.js).Length) octets" -ForegroundColor Green
 ```
 **Résultat attendu** : `pont telecharge : ~11000 octets` (en vert). Si erreur/HTML → le
@@ -77,7 +82,7 @@ Write-Host "lanceur VBS cree." -ForegroundColor Green
 @echo off
 rmdir /S /Q "%LOCALAPPDATA%\BorneKiosk\Default\Cache" 2>nul
 rmdir /S /Q "%LOCALAPPDATA%\BorneKiosk\Default\Code Cache" 2>nul
-start "" "C:\Program Files\Google\Chrome\Application\chrome.exe" --kiosk --user-data-dir="%LOCALAPPDATA%\BorneKiosk" --disk-cache-dir="%TEMP%\borne-cache" --disk-cache-size=1 --aggressive-cache-discard --noerrdialogs --disable-session-crashed-bubble --disable-pinch --overscroll-history-navigation=0 --autoplay-policy=no-user-gesture-required "https://lecayenne.fr/kiosk"
+start "" "C:\Program Files\Google\Chrome\Application\chrome.exe" --kiosk --user-data-dir="%LOCALAPPDATA%\BorneKiosk" --disk-cache-dir="%TEMP%\borne-cache" --disk-cache-size=1 --aggressive-cache-discard --noerrdialogs --disable-session-crashed-bubble --disable-pinch --overscroll-history-navigation=0 --autoplay-policy=no-user-gesture-required "https://vps-418872ac.vps.ovh.net/kiosk"
 '@ | Set-Content -Encoding ASCII C:\borne-print\start-borne-kiosk.bat
 Write-Host "lanceur Chrome cache-propre cree." -ForegroundColor Green
 ```

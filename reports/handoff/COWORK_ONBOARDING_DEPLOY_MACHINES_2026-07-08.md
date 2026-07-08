@@ -30,7 +30,7 @@
 > Il n'y a **AUCUN** dossier `~/testttt` à trouver sur ton Mac. Le déploiement se fait **sur le VPS
 > en SSH**, pas dans un dossier local. Si tu veux quand même une copie locale des fichiers :
 > `git clone git@github.com:loeymot-sketch/testttt.git` (n'importe où), ou télécharge juste les
-> ponts depuis `https://lecayenne.fr/dl/bridge.js` et `https://lecayenne.fr/dl/caisse-bridge.js`.
+> ponts depuis `https://vps-418872ac.vps.ovh.net/dl/bridge.js` et `https://vps-418872ac.vps.ovh.net/dl/caisse-bridge.js`.
 
 ---
 
@@ -38,7 +38,7 @@
 1. **VPS** : alias SSH **`lecayenne`** (déjà configuré dans `~/.ssh/config` de ce Mac →
    `ubuntu@51.210.111.124`, clé `~/.ssh/lecayenne_prod`). Projet sur le VPS : **`/var/www/lecayenne`**.
    → tu peux tester : `ssh lecayenne "cd /var/www/lecayenne && git rev-parse --short HEAD"`.
-2. **Domaine cloud** : **`https://lecayenne.fr`** (téléchargements `/dl/…` + URL kiosque de la borne).
+2. **Domaine cloud** : **`https://vps-418872ac.vps.ovh.net`** (téléchargements `/dl/…` + URL kiosque de la borne).
 3. **AnyDesk** : ✅ confirmé — la borne est ouverte via AnyDesk sur CE Mac.
 
 **Clone local (sur ce Mac)** : `/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt`
@@ -65,7 +65,7 @@ publication des ponts dans `public/dl`, `POS_PRINT_SILENT_ONLY=true`, `fiscal:ve
 (= **CHAIN OK ×4**), `queue:restart`.
 
 ✅ **Vérif A** : la sortie finit par `CHAIN OK`. Dans un navigateur **rechargé sans cache** (Ctrl+Maj+R)
-sur `https://lecayenne.fr`, la caisse doit montrer : catégorie **Menu enfant → « Menu Enfant Chicken Burger »**,
+sur `https://vps-418872ac.vps.ovh.net`, la caisse doit montrer : catégorie **Menu enfant → « Menu Enfant Chicken Burger »**,
 un **Tacos** avec étape **crudités**, le **n° du jour = A0032**, et au paiement carte le TPE
 **« TPE Le Cayenne #1 · simulation »** (plus de « Aucun TPE »).
 
@@ -101,7 +101,7 @@ Passe **1 commande de test** à la caisse et note le **titre** de la fenêtre qu
 ### B.2 Mettre à jour le pont
 ```powershell
 New-Item -ItemType Directory -Force -Path C:\caisse-bridge | Out-Null
-Invoke-WebRequest "https://lecayenne.fr/dl/caisse-bridge.js" -OutFile C:\caisse-bridge\caisse-bridge.js
+Invoke-WebRequest "https://vps-418872ac.vps.ovh.net/dl/caisse-bridge.js" -OutFile C:\caisse-bridge\caisse-bridge.js
 ```
 
 ### B.3 Lanceur SANS fenêtre (choisir **A** ou **B**)
@@ -161,7 +161,7 @@ explorer shell:startup
 ### C.2 Mettre à jour le pont
 ```powershell
 New-Item -ItemType Directory -Force -Path C:\borne-print | Out-Null
-Invoke-WebRequest "https://lecayenne.fr/dl/bridge.js" -OutFile C:\borne-print\bridge.js
+Invoke-WebRequest "https://vps-418872ac.vps.ovh.net/dl/bridge.js" -OutFile C:\borne-print\bridge.js
 ```
 
 ### C.3 Lanceur SANS fenêtre (VBS window-0 recommandé)
@@ -199,10 +199,10 @@ start "" "C:\Program Files\Google\Chrome\Application\chrome.exe" ^
   --disk-cache-dir="%TEMP%\borne-cache" --disk-cache-size=1 --aggressive-cache-discard ^
   --noerrdialogs --disable-session-crashed-bubble --disable-features=Translate ^
   --disable-pinch --overscroll-history-navigation=0 --autoplay-policy=no-user-gesture-required ^
-  "https://lecayenne.fr/kiosk"
+  "https://vps-418872ac.vps.ovh.net/kiosk"
 ```
 Mettre un **raccourci de ce .bat dans `shell:startup`** (à la place de l'ancien lancement Chrome).
-Vérifier que l'URL `https://lecayenne.fr/kiosk` est la **courante** (pas une vieille IP/URL).
+Vérifier que l'URL `https://vps-418872ac.vps.ovh.net/kiosk` est la **courante** (pas une vieille IP/URL).
 
 ### ✅ Vérif BORNE
 - `Invoke-WebRequest http://127.0.0.1:9100/health` → **`UP`** ; `/test` imprime un ticket démo.
