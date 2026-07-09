@@ -1,0 +1,268 @@
+- main [ref=f1e5]:
+  - generic [ref=f1e6]:
+    - link "logo" [ref=f1e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=f1e8]
+    - generic [ref=f1e9]:
+      - generic [ref=f1e12]:
+        - button "flag" [ref=f1e14] [cursor=pointer]:
+          - img "flag" [ref=f1e15]
+        - link "POS" [ref=f1e16] [cursor=pointer]:
+          - /url: /admin/pos
+          - generic [ref=f1e17]: 
+      - button "Menu" [ref=f1e18] [cursor=pointer]: 
+      - generic [ref=f1e19]:
+        - button "avatar Bonjour S-SYNC E2E Operator" [ref=f1e20] [cursor=pointer]:
+          - img "avatar" [ref=f1e21]
+          - heading "Bonjour S-SYNC E2E Operator" [level=3] [ref=f1e22]:
+            - text: Bonjour
+            - generic "S-SYNC E2E Operator" [ref=f1e23]
+          - generic [ref=f1e24]: 
+        - menu "avatar Bonjour S-SYNC E2E Operator":
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "S-SYNC E2E Operator" [level=3]
+            - paragraph: ssync.e2e@lecayenne.test
+            - paragraph: "0600000777"
+            - heading "0,00 €" [level=3]
+          - menuitem "Modifier le profil":
+            - text: 
+            - generic: Modifier le profil
+          - menuitem "Changer le mot de passe":
+            - text: 
+            - generic: Changer le mot de passe
+          - menuitem "Déconnexion":
+            - text: 
+            - generic: Déconnexion
+  - complementary [ref=f1e25]:
+    - text: 
+    - navigation [ref=f1e26]:
+      - list [ref=f1e27]:
+        - listitem [ref=f1e28]:
+          - link " Tableau de bord" [ref=f1e29] [cursor=pointer]:
+            - /url: /admin/dashboard
+            - generic [ref=f1e30]: 
+            - generic [ref=f1e31]: Tableau de bord
+      - list [ref=f1e32]:
+        - listitem [ref=f1e33]:
+          - link " POS" [ref=f1e34] [cursor=pointer]:
+            - /url: /admin/pos
+            - generic [ref=f1e35]: 
+            - generic [ref=f1e36]: POS
+      - list [ref=f1e37]:
+        - listitem [ref=f1e38]:
+          - link " Ingrédients" [ref=f1e39] [cursor=pointer]:
+            - /url: /admin/ingredients
+            - generic [ref=f1e40]: 
+            - generic [ref=f1e41]: Ingrédients
+      - list [ref=f1e42]:
+        - listitem [ref=f1e43]:
+          - link " Commandes caisse" [ref=f1e44] [cursor=pointer]:
+            - /url: /admin/pos-orders
+            - generic [ref=f1e45]: 
+            - generic [ref=f1e46]: Commandes caisse
+      - list [ref=f1e47]:
+        - listitem [ref=f1e48]:
+          - link " Historique" [ref=f1e49] [cursor=pointer]:
+            - /url: /admin/historique
+            - generic [ref=f1e50]: 
+            - generic [ref=f1e51]: Historique
+      - list [ref=f1e52]:
+        - listitem [ref=f1e53]:
+          - link " Encaissement" [ref=f1e54] [cursor=pointer]:
+            - /url: /admin/encaissement
+            - generic [ref=f1e55]: 
+            - generic [ref=f1e56]: Encaissement
+      - list [ref=f1e57]:
+        - listitem [ref=f1e58]:
+          - link " Vue caisse unifiée" [ref=f1e59] [cursor=pointer]:
+            - /url: /admin/cash-overview
+            - generic [ref=f1e60]: 
+            - generic [ref=f1e61]: Vue caisse unifiée
+      - list [ref=f1e62]:
+        - listitem [ref=f1e63]:
+          - link " Caisse livreur" [ref=f1e64] [cursor=pointer]:
+            - /url: /admin/delivery-boy-cash-sessions
+            - generic [ref=f1e65]: 
+            - generic [ref=f1e66]: Caisse livreur
+      - list [ref=f1e67]:
+        - listitem [ref=f1e68]:
+          - button "Caisse et commandes" [ref=f1e69] [cursor=pointer]
+        - listitem [ref=f1e70]:
+          - link " Écran cuisine" [ref=f1e71] [cursor=pointer]:
+            - /url: /admin/kitchen-display-system
+            - generic [ref=f1e72]: 
+            - generic [ref=f1e73]: Écran cuisine
+        - listitem [ref=f1e74]:
+          - link " Suivi client" [ref=f1e75] [cursor=pointer]:
+            - /url: /admin/order-status-screen
+            - generic [ref=f1e76]: 
+            - generic [ref=f1e77]: Suivi client
+  - generic [ref=f1e78]:
+    - link "Aller au panier" [ref=f1e79] [cursor=pointer]:
+      - /url: "#pos-cart"
+    - generic [ref=f1e87]:
+      - banner [ref=f1e88]:
+        - generic [ref=f1e89]:
+          - generic [ref=f1e90]: 👑
+          - generic [ref=f1e91]:
+            - paragraph [ref=f1e92]: Caisse Le Cayenne
+            - heading "Commande rapide" [level=1] [ref=f1e93]
+            - generic [ref=f1e94]:
+              - generic [ref=f1e95]:
+                - generic [ref=f1e96]: Filiale
+                - generic [ref=f1e97]: "#1"
+              - generic [ref=f1e98]:
+                - generic [ref=f1e99]: Articles
+                - generic [ref=f1e100]: "0"
+        - navigation "Actions caisse" [ref=f1e101]:
+          - button "À encaisser 28" [ref=f1e102] [cursor=pointer]:
+            - generic [ref=f1e103]: 🖥️
+            - generic [ref=f1e105]: À encaisser
+            - generic [ref=f1e106]: "28"
+          - generic "Voir les commandes en attente, en préparation et prêtes à servir. Le bouton devient vert quand une commande est prête." [ref=f1e107] [cursor=pointer]:
+            - generic [ref=f1e108]: 📋
+            - generic [ref=f1e110]: Suivi commandes
+            - generic [ref=f1e111]: "14"
+          - generic "Ouvre l'écran d'affichage client (statuts en grand, prêt à montrer aux clients)." [ref=f1e112] [cursor=pointer]:
+            - generic [ref=f1e113]: 🖥️
+            - generic [ref=f1e115]: Écran client
+          - button "Créez d'abord une commande pour appliquer une réduction fidélité" [disabled]:
+            - generic: 🎁
+            - generic:
+              - generic: Appliquer une réduction fidélité
+          - button "Ouvrir tiroir" [ref=f1e116] [cursor=pointer]:
+            - generic [ref=f1e117]: 💵
+            - generic [ref=f1e119]: Ouvrir tiroir
+          - button "Caisse" [ref=f1e120] [cursor=pointer]:
+            - generic [ref=f1e121]: 🏦
+            - generic [ref=f1e123]: Caisse
+      - generic [ref=f1e124]:
+        - region "Prêt à livrer (12)" [ref=f1e125]:
+          - heading "Prêt à livrer (12)" [level=2] [ref=f1e127]:
+            - generic [ref=f1e128]: 🛎️
+            - text: Prêt à livrer (12)
+          - list [ref=f1e129]:
+            - listitem [ref=f1e130]:
+              - generic [ref=f1e131]: N°CARDTEST-1782949449
+              - generic [ref=f1e132]: 9,40 €
+              - button "✓ Livré" [ref=f1e133] [cursor=pointer]
+            - listitem [ref=f1e134]:
+              - generic [ref=f1e135]: N°A0001
+              - generic [ref=f1e136]: 1,90 €
+              - button "✓ Livré" [ref=f1e137] [cursor=pointer]
+            - listitem [ref=f1e138]:
+              - generic [ref=f1e139]: N°A0002
+              - generic [ref=f1e140]: 24,70 €
+              - button "✓ Livré" [ref=f1e141] [cursor=pointer]
+            - listitem [ref=f1e142]:
+              - generic [ref=f1e143]: N°A0003
+              - generic [ref=f1e144]: 1,90 €
+              - button "✓ Livré" [ref=f1e145] [cursor=pointer]
+          - link "Voir plus (8) →" [ref=f1e146] [cursor=pointer]:
+            - /url: /admin/pos-orders-tracker
+          - paragraph [ref=f1e147]: Mis à jour à l'instant
+        - region "À encaisser borne (28)" [ref=f1e148]:
+          - heading "À encaisser borne (28)" [level=2] [ref=f1e150]:
+            - generic [ref=f1e151]: 💰
+            - text: À encaisser borne (28)
+          - list [ref=f1e152]:
+            - listitem [ref=f1e153]:
+              - generic [ref=f1e154]: N°A0017
+              - generic [ref=f1e155]: 6,90 €
+              - button "💳 Encaisser" [ref=f1e156] [cursor=pointer]
+            - listitem [ref=f1e157]:
+              - generic [ref=f1e158]: N°A0020
+              - generic [ref=f1e159]: 6,90 €
+              - button "💳 Encaisser" [ref=f1e160] [cursor=pointer]
+            - listitem [ref=f1e161]:
+              - generic [ref=f1e162]: N°A0021
+              - generic [ref=f1e163]: 6,90 €
+              - button "💳 Encaisser" [ref=f1e164] [cursor=pointer]
+            - listitem [ref=f1e165]:
+              - generic [ref=f1e166]: N°A0022
+              - generic [ref=f1e167]: 6,90 €
+              - button "💳 Encaisser" [ref=f1e168] [cursor=pointer]
+          - button "Voir plus (24) →" [ref=f1e169] [cursor=pointer]
+          - paragraph [ref=f1e170]: Mis à jour à l'instant
+      - search [ref=f1e171]:
+        - generic [ref=f1e172]: 🔍
+        - searchbox "Rechercher un article du menu" [ref=f1e173]
+      - region "Catégories" [ref=f1e174]:
+        - list [ref=f1e175]:
+          - listitem "Sandwichs" [ref=f1e176] [cursor=pointer]:
+            - img "Sandwichs" [ref=f1e178]
+            - generic [ref=f1e179]: Sandwichs
+          - listitem "Galette" [ref=f1e180] [cursor=pointer]:
+            - img "Galette" [ref=f1e182]
+            - generic [ref=f1e183]: Galette
+          - listitem "Burgers" [ref=f1e184] [cursor=pointer]:
+            - img "Burgers" [ref=f1e186]
+            - generic [ref=f1e187]: Burgers
+          - listitem "Tacos" [ref=f1e188] [cursor=pointer]:
+            - img "Tacos" [ref=f1e190]
+            - generic [ref=f1e191]: Tacos
+          - listitem "Bols" [ref=f1e192] [cursor=pointer]:
+            - img "Bols" [ref=f1e194]
+            - generic [ref=f1e195]: Bols
+          - listitem "Frites" [ref=f1e196] [cursor=pointer]:
+            - img "Frites" [ref=f1e198]
+            - generic [ref=f1e199]: Frites
+          - listitem "Desserts" [ref=f1e200] [cursor=pointer]:
+            - img "Desserts" [ref=f1e202]
+            - generic [ref=f1e203]: Desserts
+          - listitem "Boissons" [ref=f1e204] [cursor=pointer]:
+            - img "Boissons" [ref=f1e206]
+            - generic [ref=f1e207]: Boissons
+          - listitem "Menu enfant" [ref=f1e208] [cursor=pointer]:
+            - img "Menu enfant" [ref=f1e210]
+            - generic [ref=f1e211]: Menu enfant
+    - region "Panier commande" [ref=f1e212]:
+      - generic [ref=f1e213]:
+        - generic [ref=f1e214]:
+          - paragraph [ref=f1e215]: Ticket caisse
+          - heading "Commande en cours" [level=2] [ref=f1e216]
+        - generic [ref=f1e217]:
+          - generic [ref=f1e218]:
+            - combobox [ref=f1e220]:
+              - textbox [ref=f1e223]:
+                - /placeholder: Client passage
+            - button "Ajouter un client" [ref=f1e225] [cursor=pointer]:
+              - generic [ref=f1e226]: +
+          - generic [ref=f1e227]:
+            - button "Mettre en attente" [ref=f1e228] [cursor=pointer]:
+              - generic [ref=f1e229]: ⏸
+              - generic [ref=f1e230]: Mettre en attente
+            - button "Commandes en attente" [ref=f1e231] [cursor=pointer]:
+              - generic [ref=f1e232]: 📦
+              - generic [ref=f1e233]: En attente
+              - generic [ref=f1e234]: "0"
+        - group "Sélectionner le type de commande" [ref=f1e235]:
+          - generic [ref=f1e236]: Sélectionner le type de commande
+          - radiogroup [ref=f1e237]:
+            - generic [ref=f1e238] [cursor=pointer]:
+              - radio "À emporter" [checked] [active]
+              - generic [ref=f1e239]: 🥡
+              - generic [ref=f1e240]: À emporter
+            - generic [ref=f1e241] [cursor=pointer]:
+              - radio "Livraison"
+              - generic [ref=f1e242]: 🛵
+              - generic [ref=f1e243]: Livraison
+          - textbox "Nom du client (optionnel)" [ref=f1e245]
+          - text: 
+      - region "Panier commande" [ref=f1e246]:
+        - generic [ref=f1e247]:
+          - generic [ref=f1e248]: 🍽️
+          - paragraph [ref=f1e249]: Aucun article. Sélectionnez un produit dans la grille.
+      - status [ref=f1e251]:
+        - generic [ref=f1e252]:
+          - generic [ref=f1e253]: Sous-total
+          - generic [ref=f1e255]: 0,00 €
+        - generic [ref=f1e256]:
+          - generic [ref=f1e257]: Total
+          - generic [ref=f1e259]: 0,00 €
+    - text: 

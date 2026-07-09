@@ -1,0 +1,46 @@
+- generic [ref=e1]:
+  - generic [ref=e799]:
+    - generic [ref=e800]:
+      - heading "Et pour terminer ?" [level=1] [ref=e801]
+      - paragraph [ref=e802]: Ajoutez quelque chose à votre commande
+    - list "Et pour terminer ?" [ref=e803]:
+      - listitem "Eau Plate 50cl — €1,00" [ref=e804] [cursor=pointer]:
+        - img [ref=e806]
+        - generic [ref=e807]:
+          - heading "Eau Plate 50cl" [level=3] [ref=e808]
+          - generic [ref=e809]: €1,00
+        - generic [ref=e811]: +
+      - listitem "Menu Enfant Nuggets — €4,90" [ref=e812] [cursor=pointer]:
+        - img [ref=e814]
+        - generic [ref=e815]:
+          - heading "Menu Enfant Nuggets" [level=3] [ref=e816]
+          - generic [ref=e817]: €4,90
+        - generic [ref=e819]: +
+      - listitem "Tarte Daim — €3,50" [ref=e820] [cursor=pointer]:
+        - img [ref=e822]
+        - generic [ref=e823]:
+          - heading "Tarte Daim" [level=3] [ref=e824]
+          - generic [ref=e825]: €3,50
+        - generic [ref=e827]: +
+      - listitem "Fanta Orange 33cl — €1,90" [ref=e828] [cursor=pointer]:
+        - img [ref=e830]
+        - generic [ref=e831]:
+          - heading "Fanta Orange 33cl" [level=3] [ref=e832]
+          - generic [ref=e833]: €1,90
+        - generic [ref=e835]: +
+      - listitem "Tiramisu — €3,50" [ref=e836] [cursor=pointer]:
+        - img [ref=e838]
+        - generic [ref=e839]:
+          - heading "Tiramisu" [level=3] [ref=e840]
+          - generic [ref=e841]: €3,50
+        - generic [ref=e843]: +
+      - listitem "Oasis Tropical 33cl — €1,90" [ref=e844] [cursor=pointer]:
+        - img [ref=e846]
+        - generic [ref=e847]:
+          - heading "Oasis Tropical 33cl" [level=3] [ref=e848]
+          - generic [ref=e849]: €1,90
+        - generic [ref=e851]: +
+    - generic [ref=e852]:
+      - button "Non merci, continuer sans" [ref=e853] [cursor=pointer]
+      - progressbar "(30s)" [ref=e854]
+  - status

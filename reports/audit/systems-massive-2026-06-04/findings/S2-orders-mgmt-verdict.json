@@ -1,0 +1,70 @@
+{
+  "micro_system": "S2-orders-mgmt",
+  "verdicts": [
+    {
+      "id": "S2-01",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "Confirmed full chain. PosOrderShowComponent.vue:577-582 paymentStatusObject returns BOTH {PAID, UNPAID} unconditionally; dropdown :143 wires @click=changePaymentStatus. PaymentStateMachine.php:17 PaymentStatus::PAID => [] so PAID->UNPAID throws InvalidArgumentException(422) at :32. OrderService.php:783 sets payment_status=PAID for default POS orders (unless deferToCounter). changePaymentStatus routes through assertCanTransition at OrderService.php:2384/2417, and the no-op early-return is at :2350-2351. So on a normal paid POS order the only non-current option (Impayé) always 422s. REAL UX defect on a money control. Downgrade P1->P2: backend is correct/safe (no fiscal or data risk), the no-op/422 are contained, and impact is a confusing-but-harmless dropdown option, not a broken flow."
+    },
+    {
+      "id": "S2-02",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "Confirmed. PosOrderShowComponent.vue:553-565 orderStatusObject returns a FLAT forward list [ACCEPT,PREPARING,PREPARED,(OUT_FOR_DELIVERY),DELIVERED] independent of order.status; OnlineOrderShowComponent.vue:385-397 identical. Dropdown :163 wires orderStatus(value) -> change-status -> OrderService.php:2017 ValidStatusTransition.php:35 -> OrderStateMachine::allows() (only a forward ladder; backward/earlier states return false). So picking e.g. ACCEPT on a PREPARED order yields invalid_status_transition (422). REAL: the UI leaks the state machine through error toasts on the most-used action. Backend is correct/safe. Downgrade P1->P2: no data/fiscal risk, only counter-time waste + buggy appearance; same class/impact as S2-01."
+    },
+    {
+      "id": "S2-03",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "Confirmed. HistoriqueListComponent.vue:33-38 status options = [ACCEPT(4),PREPARING(7),PREPARED(8),DELIVERED(13)] only; CANCELED(16)/REJECTED(19)/RETURNED(22) omitted. Payment filter :45-50 DOES offer REFUNDED, and the table renders a refund tag :116-118 + Retourné label. Backend OrderService.php:172-173 applies status as exact where((int)$request), so it already supports the missing terminal statuses; pure frontend options array gap, no backend change needed. Inconsistent with the 'see everything from one page' Historique mandate. P2 stands."
+    },
+    {
+      "id": "S2-04",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "Confirmed. OnlineOrderListComponent.vue:119 binds {{ order.total_amount_price }}. SimpleOrderResource.php:49 maps total_amount_price => AppLibrary::flatAmountFormat => number_format(amount, decimals, '.', '') (AppLibrary.php:306-308) = e.g. '19.00', dot decimal, NO euro symbol. Sibling PosOrderListComponent.vue:126 and HistoriqueListComponent.vue:111 render formatPrice(order.total) => '19,00 EUR'. SimpleOrderResource.php:42 already ships raw numeric total (round((float)$this->total,2)), so the canonical data is present and unused. Real visible FR/NF525 inconsistency, trivial one-line fix. Auditor labeled visual; P2 stands (cross-surface money-format divergence on a fiscal product is more than P3 cosmetic)."
+    },
+    {
+      "id": "S2-05",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "Both layers confirmed. (1) OnlineOrderController.php:48 feeds the online list via SimpleOrderResource::collection; grep confirms SimpleOrderResource.php has NO is_advance_order key (it exists only in OrderResource/OrderDetailsResource/UserOrderResource/KDSOrderDetailsResource/SimpleDeliveryBoyOrderResource). So order.is_advance_order is undefined on every online-list row; the v-if at OnlineOrderListComponent.vue:127-128 (=== isAdvanceOrderEnum.YES=5) is never true -> Avance chip is dead. (2) :class=orderStatusClass(order.is_advance_order) would pass 5 (YES) into appService.orderStatusClass (appService.js:206); orderStatusEnum has ACCEPT=4/PREPARING=7/PREPARED=8/OUT=10/DELIVERED=13/PENDING=1 (none=5), so 5 falls into the else -> text-red-900 bg-red-100 (red danger pill). Genuine dead/mis-styled element. Low impact (advance online orders are edge-case); P3 stands."
+    },
+    {
+      "id": "S2-06",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "Confirmed. TransactionListComponent.vue:187-198 preset labels are literal English ('Today','This month','Last month','This year','This year (slot)') and the Datepicker :58-60 has no :aria-labels. Sibling lists use French + aria-labels: OnlineOrderListComponent.vue:215-223 ('Aujourd hui','Ce mois','Mois dernier','Cette annee') + :66 :aria-labels; PosOrderListComponent.vue:217-225 + :60 :aria-labels; HistoriqueListComponent.vue:59 :aria-labels. FR locale is an ADR-007 immutable mandate, and '(slot)' leaks an internal slot-name. Cosmetic/i18n, P3 stands."
+    },
+    {
+      "id": "S2-07",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "Confirmed precisely. Mount data() OnlineOrderListComponent.vue:277 excepts: orderTypeEnum.DINING_TABLE (20), :278 exceptSource: SourceEnum.POS (15). clear() :351 sets excepts = orderTypeEnum.POS + '|' + orderTypeEnum.DINING_TABLE ('15|20') and does NOT reset exceptSource (it persists as '15'; no exceptSource line in clear lines 346-355). So Effacer does not restore the pristine mount filter expression and mixes two POS-exclusion signals. Observable result set is similar (POS stays excluded both ways) so user-visible impact is minimal — but a real logic inconsistency / maintenance trap. P3 + medium confidence appropriate; stands."
+    }
+  ],
+  "coverage_gaps": [
+    "confirmCashPayment() (PosOrderShowComponent) — the NF525 counter cash-collection mutation that flips PENDING_COUNTER->PAID was NOT examined; far higher money/fiscal impact than the P3 formatting findings.",
+    "openRefundModal / PosRefundModal refund-with-counter-entry flow + the quick changeStatus(ACCEPT) accept button on PosOrderShowComponent were not audited — the legitimate refund path that S2-01/S2-02 point users toward is itself unverified here.",
+    "destroy(order.id) delete action present on order list/detail — no audit of permission gating, branch isolation, or NF525 implications of deleting a fiscal order.",
+    "selectDeliveryBoy(deliveryBoy.id) assignment mutation (POS + Online detail) — state/branch-isolation correctness unexamined.",
+    "OnlineOrderReasonComponent cancel/reject reason modal (reasonModal) — the CANCELED/REJECTED path with required reason (OrderStateMachine::requiresReason) and its 422 behavior was not examined.",
+    "loyaltyRedeemOpen redemption control on POS order detail — money-adjacent, unaudited.",
+    "Export/PDF/Excel actions on all four lists (ExportComponent/PdfComponent/ExcelComponent) — no check that exported money columns use canonical FR format, which is the very inconsistency S2-04 flags."
+  ]
+}

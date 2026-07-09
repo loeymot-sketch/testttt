@@ -1,0 +1,35 @@
+{
+  "icon_only_buttons": [
+    {
+      "text": "",
+      "ariaLabel": "Notifications",
+      "hasSvg": true,
+      "hasIcon": true
+    },
+    {
+      "text": "",
+      "ariaLabel": null,
+      "hasSvg": true,
+      "hasIcon": true
+    },
+    {
+      "text": "",
+      "ariaLabel": null,
+      "hasSvg": true,
+      "hasIcon": true
+    },
+    {
+      "text": "",
+      "ariaLabel": null,
+      "hasSvg": true,
+      "hasIcon": true
+    },
+    {
+      "text": "",
+      "ariaLabel": null,
+      "hasSvg": true,
+      "hasIcon": true
+    }
+  ],
+  "all_labelled": false
+}

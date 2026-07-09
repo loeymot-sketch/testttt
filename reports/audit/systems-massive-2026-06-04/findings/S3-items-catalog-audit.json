@@ -1,0 +1,126 @@
+{
+  "micro_system": "S3-items-catalog",
+  "files_examined": [
+    "resources/js/components/admin/items/CatalogStudioComponent.vue",
+    "resources/js/components/admin/items/ItemListComponent.vue",
+    "resources/js/components/admin/items/ItemCreateComponent.vue",
+    "resources/js/components/admin/items/composer/ProductComposerEditorComponent.vue",
+    "resources/js/components/admin/items/variation/ItemVariationListComponent.vue",
+    "app/Http/Controllers/Admin/ItemController.php",
+    "app/Http/Controllers/Admin/ComposerProfileController.php",
+    "app/Http/Controllers/Admin/ComposerStepController.php",
+    "app/Services/ItemService.php",
+    "app/Services/Composer/ComposerProfileService.php",
+    "app/Services/Composer/ComposerStepService.php",
+    "app/Services/Composer/ComposerProfileProjection.php",
+    "app/Services/Kiosk/KioskMenuService.php",
+    "app/Services/Menu/MenuProjectionService.php",
+    "app/Services/Pricing/PricingService.php",
+    "app/Http/Requests/ItemRequest.php",
+    "public/js/pos-wizard.js",
+    "config/catalog_v15.php",
+    "routes/api.php"
+  ],
+  "findings": [
+    {
+      "id": "S3-L1",
+      "severity": "P2",
+      "category": "logic",
+      "title": "Item update with only NEW variations orphans the old ones (variations diff never runs when no id present)",
+      "file_line": "app/Services/ItemService.php:314-349 (guard at 338)",
+      "evidence": "In ItemService::update the variations sync builds $variationIdsArray only from rows that carry an 'id' (line 322-336). The stale-deletion loop is gated by `if ($variationIdsArray) {` at line 338. If the submitted `variations` JSON contains ONLY new rows (no 'id' keys), $variationIdsArray stays []=falsy, so $variationDeleteArray is never populated and `ItemVariation::whereIn('id',$variationDeleteArray)->delete()` (line 346) never runs. The old DB variations survive alongside the freshly created ones. Proof of intent vs defect: the EXTRAS block right below (lines 352-383) always diff-deletes via `whereNotIn($extraIdsToKeep)` (line 380-382) and pushes both updated and new ids into the keep-set (367,376) — variations do neither. Reachability: the live admin catalog editor (ItemCreateComponent.vue:374-397) does NOT post a `variations` field — variations are CRUDed one-by-one through ItemVariationController (routes/api.php:734-738) — and ItemImport does not route through this path, so this is latent backend SSOT fragility reachable via direct API or any future bulk caller, not a current-UI regression.",
+      "why_it_matters": "Variations carry their own price (each ItemVariation has name+price). Orphaned old variations re-surface on POS/kiosk/web menu as duplicate or stale-priced size options, which is exactly an SSOT-pricing hazard: a customer could pick a variation the admin believed was removed/repriced, charging the wrong amount on a real shift. The asymmetry with the correct extras path makes it a clear latent defect waiting for the first non-UI caller.",
+      "reproduction": "Create an item with variations V1,V2 (ids 10,11). PUT /api/admin/item/{id} with variations=[{name:'Petit',price:5},{name:'Grand',price:8}] (NO id fields). Expect: only the 2 new variations remain. Actual: V1,V2 (10,11) persist plus the 2 new rows = 4 variations on the item.",
+      "recommended_correction": "Mirror the extras diff pattern: collect ALL surviving ids (both updated-with-id AND newly-created ids) into $variationIdsArray, then unconditionally delete `whereNotIn('item_id'=$item->id, 'id', $variationIdsArray)`. Drop the `if ($variationIdsArray)` gate so an all-new payload still removes the old rows.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S3-L2",
+      "severity": "P2",
+      "category": "logic",
+      "title": "Reordering steps on a PUBLISHED composer profile leaves editor version stale -> spurious 409 conflict on next save/publish",
+      "file_line": "resources/js/components/admin/items/composer/ProductComposerEditorComponent.vue:737-745 + app/Services/Composer/ComposerStepService.php:109-118",
+      "evidence": "onStepsReordered (editor 737-745) persists a reorder by firing one `axios.patch(admin/composer/steps/{id})` per step and `await Promise.all(requests)` — it never re-hydrates the profile and never refreshes `this.version`. On the backend, ComposerStepService::update -> dispatchProfileChanged (109-118) increments the profile version by 1 and broadcasts ComposerProfileChanged for EACH patched step WHEN the profile is published (guard line 111: `if (!$emitSync || !$profile || !$profile->is_published) return;`). So an N-step drag bumps the server version by N. The editor's only version setter is hydrateProfile (sets this.version = profile.version, confirmed sole setter); there is NO Echo/ComposerProfileChanged listener in the component (grep for Echo|listen|ComposerProfileChanged returned nothing). saveDraft/publish send `version: this.version` (saveDraft line 803) which ComposerProfileService::assertVersionMatches (266-275) compares and aborts 409 on mismatch.",
+      "why_it_matters": "Real admin trap on a published wizard (the live state on POS+kiosk): drag to reorder a page, then click Save/Publish -> 409 'Profile version conflict' banner forces a reload (reloadProfile), discarding any unsaved field edits the admin made in the same session. It makes the composer feel broken precisely on the items that are already serving customers, and silently lost edits are a data-quality risk.",
+      "reproduction": "Open a PUBLISHED composer profile (admin/composer/items/{id}). Drag-reorder two steps (fires PATCHes, server version goes from v to v+2). Without leaving, edit a step label and click 'Sauvegarder le brouillon'. Expect: save succeeds. Actual: 409, conflict banner appears, edits not saved until reload.",
+      "recommended_correction": "After the Promise.all in onStepsReordered, re-hydrate from the last PATCH response (it returns the fresh profile/version) or call reloadProfile-without-resetting-edits; simplest: have the step PATCH responses return the profile version and set this.version to the max returned. Alternatively route reorder through saveDraft (single profile PUT) so only one version bump occurs and the editor re-hydrates via hydrateProfile.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S3-L3",
+      "severity": "P3",
+      "category": "logic",
+      "title": "ComposerProfileProjection emits inactive steps (no is_active filter) — defense-in-depth only; every live caller pre-filters",
+      "file_line": "app/Services/Composer/ComposerProfileProjection.php:29-48",
+      "evidence": "project() filters steps only by stepVisibleOn (line 30) and never by is_active, yet it copies is_active into the payload (line 44). In isolation an inactive step would be projected. HOWEVER both real runtime callers pre-filter the steps relation to active: KioskMenuService::publishedComposerProfiles loads `with(['steps' => fn($q)=>$q->where('is_active',true)->orderBy('position')])` (KioskMenuService.php:434) and MenuProjectionService does the same (MenuProjectionService.php:295). PricingService also loads only active steps (PricingService.php:565). So no current caller ever feeds an inactive step to the projection. Consumers that would render an unfiltered payload — pos-wizard.js buildStepsFromComposerProfile (495-535) and normalizeComposerStep (477-490) — drop neither carry is_active, and the kiosk Vue filters client-side (KioskWizardComponent.vue:781). The leak is therefore latent, contingent on a future caller loading steps unfiltered.",
+      "why_it_matters": "Not a live defect today, but a fragile SSOT seam: the is_active filter lives in 3 separate caller load-clauses instead of in the projection (the single point that builds the runtime contract). A new consumer that loads $profile->steps without the where('is_active',true) clause would silently render deactivated steps on POS/web (the POS wizard has no is_active guard), causing a divergence with PricingService which DOES drop them — operator sees a page the backend won't validate.",
+      "reproduction": "Static: ComposerProfileProjection::project(profile-with-inactive-step) returns that step in 'steps'. No live repro path exists with current callers (all pre-filter).",
+      "recommended_correction": "Add `->reject(fn($s)=>!$s->is_active)` (or `->where('is_active', ...)`) inside project() at line 29-30 so the projection is self-consistent regardless of how the caller loaded the relation; keep the caller-side filters as a fast path.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S3-F1",
+      "severity": "P3",
+      "category": "logic",
+      "title": "Catalog Studio quick-create hardcodes item_type = VEG for every product (chicken/beef saved as vegetarian)",
+      "file_line": "resources/js/components/admin/items/CatalogStudioComponent.vue:488",
+      "evidence": "buildQuickProductPayload appends `fd.append('item_type', String(itemTypeEnum.VEG))` (line 488) with no UI control to choose veg/non-veg — every product created from the Catalog Studio quick form is classified VEG (enum value 5; NON_VEG=10 per app/Enums/ItemType.php). item_type drives a frontend veg/non-veg filter (resources/js/components/frontend/components/ItemComponent.vue:3 `v-show=type===item.item_type`). NOTE this mirrors the existing full editor default (ItemCreateComponent.vue:337 also defaults item_type:VEG), so it is a pre-existing convention, not a regression introduced by the quick form.",
+      "why_it_matters": "Data-quality blur the owner flagged ('unnecessary things / not good'): a quick-created Chicken sandwich is tagged vegetarian until someone edits it in the full form, so any veg/non-veg menu filter shows meat items as veg. Low blast radius in V1 Le Cayenne (dietary truth is carried by is_vegetarian/is_halal/allergen_flags booleans, not this legacy item_type), hence P3 — but it is a silent misclassification.",
+      "reproduction": "Catalog Studio -> '+ Produit' quick form -> create 'Chicken Burger'. Inspect items table: item_type = 5 (VEG). Frontend veg filter will list it.",
+      "recommended_correction": "Either expose a veg/non-veg toggle in the quick form, or default to NON_VEG (safer for a meat-forward menu), or drop item_type from the quick payload and let the backend default apply. Best: align with the menu reality and remove the silent VEG assumption.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S3-D1",
+      "severity": "P3",
+      "category": "deadcode",
+      "title": "Dead env('DEMO') branch in ItemController::store — both arms identical",
+      "file_line": "app/Http/Controllers/Admin/ItemController.php:137-141",
+      "evidence": "store() wraps the create in `if (env('DEMO')) { return new ItemResource($this->itemService->store($request)); } else { return new ItemResource($this->itemService->store($request)); }` — both branches call the exact same code. The conditional is inert. Also a CLAUDE.md anti-pattern (env() read at runtime instead of config()).",
+      "why_it_matters": "No functional impact, but it is precisely the 'flou / unnecessary thing' the owner called out: dead conditional that misleads a reader into thinking DEMO mode changes item creation behavior (it does not), and reading env() at request time bypasses config caching.",
+      "reproduction": "Read lines 137-141; both branches are textually identical.",
+      "recommended_correction": "Replace the whole if/else with a single `return new ItemResource($this->itemService->store($request));`.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S3-X1",
+      "severity": "P3",
+      "category": "logic",
+      "title": "Item update only patches variation name+price for existing rows — item_attribute_id / visible_on silently ignored",
+      "file_line": "app/Services/ItemService.php:326-329",
+      "evidence": "When a submitted variation carries an 'id', ItemService::update applies `->update(['name'=>..., 'price'=>...])` only (lines 326-329). Any other editable variation field present in the payload (e.g. item_attribute_id grouping, visible_on surface array, status) is dropped on the update path, even though the CREATE path (line 334 `$item->variations()->create($variation)`) persists the full row. Same caveat as S3-L1 on reachability (admin UI uses the dedicated ItemVariationController, not this blob).",
+      "why_it_matters": "Latent SSOT inconsistency: a bulk/API caller that re-submits an existing variation expecting to move it to a different attribute group or change its visibility surface will see only name/price take effect, with no error — a silent partial save. Confined to the same non-UI path as S3-L1 so P3.",
+      "reproduction": "PUT /api/admin/item/{id} with variations=[{id:10,name:'Grand',price:8,visible_on:['kiosk']}]. visible_on is ignored; row keeps old visible_on.",
+      "recommended_correction": "Update the full set of editable variation columns for id-bearing rows (mirror the create payload), or document/enforce that the blob path only accepts name+price.",
+      "evidence_type": "code",
+      "confidence": "medium"
+    }
+  ],
+  "solids": [
+    {
+      "title": "Order-line pricing/composition is genuinely backend-SSOT and never trusts client choices blindly",
+      "file_line": "app/Services/Pricing/PricingService.php:602-660",
+      "note": "At checkout the composer is re-projected server-side (project(), 607), every selection is re-validated against the PUBLISHED active profile: source_type whitelist (609), min/max per step (617-630), allow_repeat dedupe (632-642), and per-choice live availability with a hard 422 if a choice is unavailable (645-655). assertComposerSelectionsBelongToPublishedProfile blocks selections not in the published projection. The catalog editor sets base prices (correct — catalog is the price source), but the ORDER path computes everything from the snapshot, satisfying the NF525 SSOT mandate."
+    },
+    {
+      "title": "Runtime menu correctly serves only PUBLISHED profiles with branch-scope resolution",
+      "file_line": "app/Services/Kiosk/KioskMenuService.php:433-447 / app/Services/Menu/MenuProjectionService.php:294-307",
+      "note": "Both menu builders filter is_published=true, eager-load only active steps ordered by position, and resolve branch_id_scope (branch override beats global null) via a deterministic compareComposerProfiles tie-break. Draft/unpublished composer work never leaks to customers — the publish gate is real."
+    },
+    {
+      "title": "Item deletion guards order history (no NF525 data-loss via force delete)",
+      "file_line": "app/Services/ItemService.php:428-490 + app/Http/Controllers/Admin/ItemController.php:166-184",
+      "note": "Force-delete is refused with a 409 (translated message + error code) when the item is referenced by OrderItem history (config-gated), FK relax is restricted to the testing environment only, soft-delete cascades children, and ItemDeleted is dispatched afterCommit. This protects historical fiscal lines from being orphaned."
+    },
+    {
+      "title": "ItemRequest unique-name ignore-on-update works correctly (verified empirically)",
+      "file_line": "app/Http/Requests/ItemRequest.php:47",
+      "note": "Rule::unique('items','name')->ignore($this->route('item.id')) initially looked broken (no literal 'item.id' route param), but Laravel's Route::parameter dotted-resolution drills the bound Item model's id — tinker confirmed route('item.id')===42, and test_admin_can_update_item_price (same-name reprice) passes. No false-positive 422 on save. Flagging as a SOLID so a future reader does not 'fix' a working rule."
+    }
+  ]
+}

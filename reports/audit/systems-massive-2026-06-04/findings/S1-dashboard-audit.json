@@ -1,0 +1,147 @@
+{
+  "micro_system": "S1-dashboard",
+  "files_examined": [
+    "resources/js/components/admin/dashboard/DashboardComponent.vue",
+    "resources/js/components/admin/dashboard/OverviewComponent.vue",
+    "resources/js/components/admin/dashboard/OrderStatisticsComponent.vue",
+    "resources/js/components/admin/dashboard/SalesSummaryComponent.vue",
+    "resources/js/components/admin/dashboard/OrderSummaryComponent.vue",
+    "resources/js/components/admin/dashboard/CustomerStatsComponent.vue",
+    "resources/js/components/admin/dashboard/RealtimeReportComponent.vue",
+    "resources/js/components/admin/dashboard/ChannelStatsComponent.vue",
+    "resources/js/components/admin/dashboard/SlaAlertsComponent.vue",
+    "resources/js/components/admin/dashboard/LastZReportWidget.vue",
+    "resources/js/components/admin/dashboard/TopCustomersComponent.vue",
+    "resources/js/store/modules/dashboard.js",
+    "resources/js/services/appService.js",
+    "app/Http/Controllers/Admin/DashboardController.php",
+    "app/Services/DashboardService.php",
+    "app/Models/Order.php",
+    "app/Http/Resources/SalesSummaryResource.php",
+    "app/Http/Resources/TopCustomerResource.php",
+    "app/Libraries/AppLibrary.php",
+    "routes/api.php",
+    "tests/Feature/Dashboard/DashboardRevenueNettingSentinelTest.php",
+    "tests/Feature/Dashboard/SalesSummaryAvgPerDayDivisorSentinelTest.php"
+  ],
+  "findings": [
+    {
+      "id": "S1-DASH-01",
+      "severity": "P1",
+      "category": "logic",
+      "title": "Date-range filters silently broken: datepicker sends raw JS Date toString (GMT+0200 ...) which Carbon cannot parse -> backend 422 -> chart keeps showing the STALE previous range with no error",
+      "file_line": "resources/js/services/appService.js:243-263 (requestHandler) + SalesSummaryComponent.vue:88-91 + OrderSummaryComponent.vue:105-110 + OrderStatisticsComponent.vue:186-194 + CustomerStatsComponent.vue:75-80 ; consumed by app/Services/DashboardService.php:135-137 (Carbon::parse($request->first_date))",
+      "evidence": "The 4 filterable widgets push the datepicker raw Date objects into the Vuex payload: SalesSummaryComponent.vue:89 date.first_date = e[0] (e[0] is a JS Date, picker has utc=false). dashboard.js:156-169 builds the URL via appService.requestHandler(payload). requestHandler (appService.js:253) does naive concat: response += request + '=' + requests[request]. A JS Date coerced by + yields e.g. 'Fri May 01 2026 00:00:00 GMT+0200 (heure ete...)' (reproduced via node String(new Date)). Per WHATWG/PHP a literal + in a query value decodes to a SPACE at PHP input, giving '...GMT 0200...'. DashboardService.php:136 then runs Carbon::parse('...GMT 0200 (...)'). Reproduced with php -r: Carbon throws 'Could not parse ... Double timezone specification' -> service catch rethrows Exception(422), controller returns HTTP 422. Front-end .catch (SalesSummaryComponent.vue:126-128) only sets loading=false; does NOT reset total_sales/options, so the widget keeps the previously-loaded default-month numbers. WHY it survived every GOAL-G2/Wave-T TZ heal: grep tests/ shows every dashboard test passes clean strings (DashboardRevenueNettingSentinelTest.php:81 'first_date'=>'2026-03-01'), bypassing the datepicker the real UI uses.",
+      "why_it_matters": "This is the owner exact flou: the period filter LOOKS like it works (no error) but selecting Mois dernier / a custom range leaves the chart and KPI cards showing the DEFAULT current-month figures. The owner makes decisions (which day was strong, average ticket) on numbers that do not match the period he picked, with zero signal the request failed. Hits the 4 most-used analytical widgets.",
+      "reproduction": "Open /admin/dashboard. In Resume des ventes (SalesSummary) pick a non-default range (preset Mois dernier). Network: GET admin/dashboard/sales-summary?first_date=<unencoded JS Date string> returns 422 {message:'Double timezone specification ...'}. UI shows no error, chart/KPIs stay on previously-loaded current-month data. Code-proven: node String(new Date) shape + URLSearchParams (+ ->space) + php -r Carbon::parse(mangled) throws.",
+      "recommended_correction": "Format dates to Y-m-d before dispatch. (a) in each handler convert e[0] to a local YYYY-MM-DD string, OR (b) harden appService.requestHandler to URL-encode values and convert Date instances to YYYY-MM-DD -- option (b) fixes every caller at once with smallest blast radius. Add a test that feeds a real Date-derived string (with spaces) through the controller; current sentinels only feed clean Y-m-d and miss this.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S1-DASH-02",
+      "severity": "P2",
+      "category": "ux",
+      "title": "Two cards both labelled Total des ventes show different scopes (all-time net vs selected-period net) with no scope hint",
+      "file_line": "OverviewComponent.vue:12-13 + app/Services/DashboardService.php:347-356 (totalSales, all-time) vs SalesSummaryComponent.vue:24-26 + app/Services/DashboardService.php:228-234 (salesSummary, date-ranged)",
+      "evidence": "OverviewComponent.vue:12 renders label.total_sales bound to DashboardService::totalSales() = orderQuery()->realizedRevenue()->sum('total') (DashboardService.php:351) with NO date bound = lifetime CA. SalesSummaryComponent.vue:26 renders the SAME i18n key label.total_sales bound to salesSummary() total_sales which IS date-bounded (DashboardService.php:228-234, default current month). Two on-screen numbers, identical label, very different magnitudes.",
+      "why_it_matters": "On one screen the owner sees Total des ventes = (e.g.) 250000 EUR in the Overview banner and Total des ventes = 8000 EUR in the Sales-summary card. Same words, 30x apart. This unexplained discrepancy makes the owner distrust the whole dashboard. A one-word qualifier removes it.",
+      "reproduction": "Load /admin/dashboard with >1 month of orders. Compare the Overview Total des ventes tile against the Total des ventes figure inside Resume des ventes. They differ (lifetime vs current month).",
+      "recommended_correction": "Relabel: Overview tile -> CA total / Total des ventes (cumul); SalesSummary figure -> CA de la periode (or show the active range under it). No backend change; add distinct i18n keys.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S1-DASH-03",
+      "severity": "P2",
+      "category": "logic",
+      "title": "CustomerStats hour-of-day chart buckets by Paris-local hour but whereTime runs on a TIMESTAMP in MySQL session tz -> known-wrong by 2h, shipped to owner as Statistiques clients",
+      "file_line": "app/Services/DashboardService.php:305-314 (whereTime on order_datetime) + CustomerStatsComponent.vue:84-110",
+      "evidence": "DashboardService.php:312-313 filters ->whereTime('order_datetime','>=',Carbon::parse($first_time)) per hour bucket. The inline comment (DashboardService.php:305-308) admits this is NOT tz-converted and would surface time-of-day in MySQL session UTC, a known V1.0.2 backlog item KDS-ADV3C-12. The surrounding day-window heal (GOAL-G2-HEAL-04) corrected order_datetime range binding but explicitly left whereTime mis-aligned. The component (CustomerStatsComponent.vue:110) plots res.data.times (06:00..23:00 Paris labels) against counts bucketed by an un-converted clock.",
+      "why_it_matters": "The rush-hour bar chart the owner uses to plan staffing is offset by the session-tz delta (2h CEST). A 19h dinner peak can render as 17h, leading to wrong shift planning. It is self-documented wrong-but-deferred; flagged because it is a user-facing analytics number.",
+      "reproduction": "Seed orders all created 20:00 Paris. Load CustomerStats: the bar peak lands ~2 buckets earlier than 20:00 because whereTime reads the stored timestamp under the session timezone, not Paris wall clock.",
+      "recommended_correction": "Bucket via a tz-explicit expression e.g. CONVERT_TZ(order_datetime,@@session.time_zone,'Europe/Paris') HOUR, or derive the hour in PHP from each order Paris-local Carbon. Then axis and counts agree. Promote KDS-ADV3C-12 since it is owner-facing.",
+      "evidence_type": "code",
+      "confidence": "medium"
+    },
+    {
+      "id": "S1-DASH-04",
+      "severity": "P2",
+      "category": "logic",
+      "title": "ChannelStats card Repartition par Canal (Aujourdhui) buckets do not partition the order set -> the three percentages can sum to >100 or <100",
+      "file_line": "app/Services/DashboardService.php:520-543 (channelStatistics bucketing)",
+      "evidence": "kioskCount (DashboardService.php:520-526) counts source_surface=='kiosk' OR source==APP. webCount (528-536) correctly EXCLUDES kiosk-tagged rows. BUT posCount (538) is $orders->where('source', Source::POS)->count() with NO exclusion of kiosk-tagged rows, so a kiosk row whose legacy source is POS counts in BOTH kiosk and pos -> sum >100. Also the three buckets are computed independently against $total (483) with no completeness guard: an order whose source is none of WEB/APP/POS and source_surface!=kiosk is counted in NONE -> sum <100. No assertion the buckets partition the set. Contrast eodSynthesis bucketChannels (DashboardService.php:721-737) which classifies each order exactly once and is correct.",
+      "why_it_matters": "A channel-mix where slices do not sum to 100% is an immediate credibility hit and can mislead the owner about borne vs comptoir share. The kiosk-vs-web bucketing was already re-patched twice (WG-3 WF-3); the POS branch never got the same kiosk-exclusion guard.",
+      "reproduction": "Construct today orders incl. one with source=Source::POS AND source_surface='kiosk'. channelStatistics counts it in kioskCount and again in posCount -> sum of the three percentages >100. ChannelStatsComponent renders each as an independent bar so it is visible.",
+      "recommended_correction": "Make the buckets a true partition: classify each order exactly once (kiosk first, then POS only if not kiosk, then web) -- reuse the single-pass bucketChannels logic already correct in eodSynthesis.",
+      "evidence_type": "code",
+      "confidence": "medium"
+    },
+    {
+      "id": "S1-DASH-05",
+      "severity": "P2",
+      "category": "ux",
+      "title": "All four date-filtered widgets swallow API errors (.catch only flips loading=false) -> no empty/error state, failures invisible; RealtimeReport has no .catch at all",
+      "file_line": "SalesSummaryComponent.vue:126-128 + OrderSummaryComponent.vue:155-157 + OrderStatisticsComponent.vue:206-208,230-232 + CustomerStatsComponent.vue:128-130 + RealtimeReportComponent.vue:45-49",
+      "evidence": "Every widget promise-rejection handler is .catch((err)=>{ this.loading.isActive=false; }) with no user-facing error state and no reset of displayed values. RealtimeReportComponent.vue:46-48 has NO .catch, so a failed poll throws an unhandled rejection and the 30s interval (line 39) keeps firing. No loading skeleton beyond the global LoadingComponent and no donnees indisponibles state on these cards (only LastZReportWidget.vue:9-11 and ChannelStats empty arrays handle emptiness).",
+      "why_it_matters": "Combined with S1-DASH-01 this is why the broken date filter is invisible: the API 422s, the catch hides it, stale numbers remain. Even independently, a backend hiccup shows the owner old data dressed as current. An error/empty state turns silent-wrong into visible-degraded, which the owner can trust.",
+      "reproduction": "Force any dashboard endpoint to 500/422 (revoke permission:dashboard). Widgets show no error -- they keep last values or render blank charts with no message. RealtimeReport logs an unhandled promise rejection.",
+      "recommended_correction": "Add a per-widget error flag (set in .catch) rendering Donnees indisponibles, reessayer, and reset displayed KPI values on failure so stale numbers are not presented as live. Add a .catch to RealtimeReportComponent.fetchData.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S1-DASH-06",
+      "severity": "P3",
+      "category": "perf",
+      "title": "customerStates fires 18 separate queries per load and hydrates full Order models just to count (->get()->count())",
+      "file_line": "app/Services/DashboardService.php:301-316",
+      "evidence": "The loop runs once per hour bucket (18 iterations, DashboardService.php:295 timeArray) and each iteration executes (clone $order)->where(...)->whereTime(...)->whereTime(...)->get()->count() (DashboardService.php:309-314). ->get()->count() SELECTs and hydrates every matching Order into memory then counts the collection, instead of ->count() which issues a single COUNT(*). On a busy month that is 18 full range hydrations on every dashboard load + datepicker change.",
+      "why_it_matters": "On V1-local single box the dataset is modest so impact is bounded, but this widget re-runs on every date change and the hydrate-to-count x18 pattern is needless DB + memory churn growing linearly with order volume. Trivial fix, real waste.",
+      "reproduction": "Enable query log, load /admin/dashboard. customerStates emits 18 SELECT * queries (one per hour bucket) each materialising rows before counting, versus the 1-COUNT-each it should.",
+      "recommended_correction": "Replace ->get()->count() with ->count() (single COUNT(*) per bucket), or better collapse all 18 buckets into one GROUP BY hour query so the whole widget is a single round-trip.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S1-DASH-07",
+      "severity": "P3",
+      "category": "ux",
+      "title": "TopCustomers ranks by LIFETIME order count ignoring the dashboard date filters -> top clients never reflects the period the owner is looking at",
+      "file_line": "app/Services/DashboardService.php:324-345 (topCustomers) + TopCustomersComponent.vue:40-52",
+      "evidence": "topCustomers() (DashboardService.php:329-340) does withCount(['orders']) with only a parent_order_id/branch filter and orderBy orders_count desc limit 8 -- NO date bound at all. TopCustomersComponent.vue:40 fetches once on mount and exposes no datepicker. Every other analytics widget on the page is period-scoped; this one is lifetime, with no label saying so.",
+      "why_it_matters": "Sitting among period-filtered cards, a lifetime Meilleurs clients silently answers a different question. Lower severity (data is real and internally consistent), but it is another scope blur for the owner.",
+      "reproduction": "Change the SalesSummary range to last month; TopCustomers does not change because it is lifetime and has no filter control.",
+      "recommended_correction": "Either label it explicitly (Meilleurs clients - tout lhistorique) or wire it to the shared period like the other widgets. Cheapest: relabel.",
+      "evidence_type": "code",
+      "confidence": "high"
+    }
+  ],
+  "solids": [
+    {
+      "title": "Net realized-revenue scope is centralized and Z-aligned",
+      "file_line": "app/Models/Order.php:267-295 (scopeRealizedRevenue + isRealizedRevenueRow)",
+      "note": "Revenue netting (drop cancelled-but-paid, include negated refund mirrors so a refunded sale nets to ~0) is defined ONCE as an Eloquent scope plus a collection-side twin kept in lock-step, reused by totalSales/salesSummary/realtimeReport/eodSynthesis. Right SSOT discipline -- dashboard CA agrees with ZReport netting by construction, not copy-paste."
+    },
+    {
+      "title": "EOD PDF endpoint is correctly permission-segregated from the dashboard",
+      "file_line": "app/Http/Controllers/Admin/DashboardController.php:38-60 + 212-244",
+      "note": "Fiscal EOD synthesis is gated by a SEPARATE middleware line (permission:pos-manage-fiscal) deliberately not merged into permission:dashboard, with a clear comment that a :dashboard-only user must not pull a fiscal synthesis. Input date is regex-validated (Y-m-d) before Carbon, handler documented read-only (no fiscal sequence / no audit-log write). Frontend button v-if gated to match (DashboardComponent.vue:118-125). Defense-in-depth done right."
+    },
+    {
+      "title": "Branch scoping for the dashboard is explicit and role-aware",
+      "file_line": "app/Services/DashboardService.php:43-54 (dashboardBranchId) + 19-41",
+      "note": "Admin/Tenant Admin -> null (cross-branch), branch staff -> pinned branch_id, applied consistently through orderQuery()/customerQuery(). auditTrail() additionally hand-filters AuditLog (an EXEMPTED_MODELS fiscal model) with the same admin-vs-branch rule (DashboardService.php:809-815) rather than leaking cross-branch fiscal rows -- correct given AuditLog has no global BranchScope."
+    },
+    {
+      "title": "Per-widget ErrorBoundary isolation",
+      "file_line": "resources/js/components/admin/dashboard/DashboardComponent.vue:48-64",
+      "note": "Every widget is wrapped in its own ErrorBoundary, so a render-time crash in one card does not blank the whole dashboard. Good resilience pattern; complements (not replaces) the missing per-widget API-error states flagged in S1-DASH-05."
+    },
+    {
+      "title": "Kiosk-vs-Web channel bucketing root-caused and fixed via source_surface",
+      "file_line": "app/Services/DashboardService.php:493-536",
+      "note": "The long-standing kiosk-orders-mis-bucket-as-Web issue was correctly root-caused (kiosk runs the web shell so source=WEB) and fixed by promoting source_surface='kiosk' as the canonical marker, legacy source int kept for back-compat -- a surgical migration-free fix. Remaining gap is only the POS branch lacking the same exclusion guard (see S1-DASH-04)."
+    }
+  ]
+}

@@ -1,0 +1,621 @@
+- main [ref=f25e5]:
+  - generic [ref=f25e6]:
+    - link "logo" [ref=f25e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=f25e8]
+    - generic [ref=f25e9]:
+      - generic [ref=f25e10]:
+        - generic [ref=f25e11]:
+          - button " Filiale Le Cayenne (principal) " [ref=f25e12] [cursor=pointer]:
+            - generic [ref=f25e13]: 
+            - heading "Filiale Le Cayenne (principal)" [level=3] [ref=f25e14]:
+              - generic [ref=f25e15]: Filiale
+              - text: Le Cayenne (principal)
+            - generic [ref=f25e16]: 
+          - list:
+            - listitem:
+              - radio "Le Cayenne (principal)" [checked]
+              - generic: Le Cayenne (principal)
+        - generic [ref=f25e18]:
+          - button "flag" [ref=f25e20] [cursor=pointer]:
+            - img "flag" [ref=f25e21]
+          - link "POS" [ref=f25e22] [cursor=pointer]:
+            - /url: /admin/pos
+            - generic [ref=f25e23]: 
+      - button "Fermer" [ref=f25e24] [cursor=pointer]: 
+      - generic [ref=f25e25]:
+        - button "avatar Bonjour Admin Le Cayenne" [ref=f25e26] [cursor=pointer]:
+          - img "avatar" [ref=f25e27]
+          - heading "Bonjour Admin Le Cayenne" [level=3] [ref=f25e28]:
+            - text: Bonjour
+            - generic "Admin Le Cayenne" [ref=f25e29]
+          - generic [ref=f25e30]: 
+        - menu "avatar Bonjour Admin Le Cayenne":
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "Admin Le Cayenne" [level=3]
+            - paragraph: admin@lecayenne.fr
+            - paragraph: "+330600000000"
+            - heading "2,00 €" [level=3]
+          - menuitem "Modifier le profil":
+            - text: 
+            - generic: Modifier le profil
+          - menuitem "Changer le mot de passe":
+            - text: 
+            - generic: Changer le mot de passe
+          - menuitem "Déconnexion":
+            - text: 
+            - generic: Déconnexion
+  - complementary [ref=f25e31]:
+    - text: 
+    - navigation [ref=f25e32]:
+      - list [ref=f25e33]:
+        - listitem [ref=f25e34]:
+          - link " Tableau de bord" [ref=f25e35] [cursor=pointer]:
+            - /url: /admin/dashboard
+            - generic [ref=f25e36]: 
+            - generic [ref=f25e37]: Tableau de bord
+      - list [ref=f25e38]:
+        - listitem [ref=f25e39]:
+          - link " POS" [ref=f25e40] [cursor=pointer]:
+            - /url: /admin/pos
+            - generic [ref=f25e41]: 
+            - generic [ref=f25e42]: POS
+      - list [ref=f25e43]:
+        - listitem [ref=f25e44]:
+          - link "Produits & Stock" [ref=f25e45] [cursor=pointer]:
+            - /url: /admin/stock/rupture
+            - generic [ref=f25e46]: Produits & Stock
+      - list [ref=f25e47]:
+        - listitem [ref=f25e48]:
+          - link " Catalogue" [ref=f25e49] [cursor=pointer]:
+            - /url: /admin/items/studio
+            - generic [ref=f25e50]: 
+            - generic [ref=f25e51]: Catalogue
+        - listitem [ref=f25e52]:
+          - link " Attribut d’articles" [ref=f25e53] [cursor=pointer]:
+            - /url: /admin/settings/item-attributes/list
+            - generic [ref=f25e54]: 
+            - generic [ref=f25e55]: Attribut d’articles
+      - list [ref=f25e56]:
+        - listitem [ref=f25e57]:
+          - link " Ingrédients" [ref=f25e58] [cursor=pointer]:
+            - /url: /admin/ingredients
+            - generic [ref=f25e59]: 
+            - generic [ref=f25e60]: Ingrédients
+      - list [ref=f25e61]:
+        - listitem [ref=f25e62]:
+          - link " Commandes caisse" [ref=f25e63] [cursor=pointer]:
+            - /url: /admin/pos-orders
+            - generic [ref=f25e64]: 
+            - generic [ref=f25e65]: Commandes caisse
+      - list [ref=f25e66]:
+        - listitem [ref=f25e67]:
+          - link " Historique" [ref=f25e68] [cursor=pointer]:
+            - /url: /admin/historique
+            - generic [ref=f25e69]: 
+            - generic [ref=f25e70]: Historique
+      - list [ref=f25e71]:
+        - listitem [ref=f25e72]:
+          - link " Encaissement" [ref=f25e73] [cursor=pointer]:
+            - /url: /admin/encaissement
+            - generic [ref=f25e74]: 
+            - generic [ref=f25e75]: Encaissement
+      - list [ref=f25e76]:
+        - listitem [ref=f25e77]:
+          - link " Vue caisse unifiée" [ref=f25e78] [cursor=pointer]:
+            - /url: /admin/cash-overview
+            - generic [ref=f25e79]: 
+            - generic [ref=f25e80]: Vue caisse unifiée
+      - list [ref=f25e81]:
+        - listitem [ref=f25e82]:
+          - link " Caisse livreur" [ref=f25e83] [cursor=pointer]:
+            - /url: /admin/delivery-boy-cash-sessions
+            - generic [ref=f25e84]: 
+            - generic [ref=f25e85]: Caisse livreur
+      - list [ref=f25e86]:
+        - listitem [ref=f25e87]:
+          - button "Caisse et commandes" [ref=f25e88] [cursor=pointer]
+        - listitem [ref=f25e89]:
+          - link " Écran cuisine" [ref=f25e90] [cursor=pointer]:
+            - /url: /admin/kitchen-display-system
+            - generic [ref=f25e91]: 
+            - generic [ref=f25e92]: Écran cuisine
+        - listitem [ref=f25e93]:
+          - link " Suivi client" [ref=f25e94] [cursor=pointer]:
+            - /url: /admin/order-status-screen
+            - generic [ref=f25e95]: 
+            - generic [ref=f25e96]: Suivi client
+      - list [ref=f25e97]:
+        - listitem [ref=f25e98]:
+          - button "Communications" [ref=f25e99] [cursor=pointer]
+        - listitem [ref=f25e100]:
+          - link " Notification pushs" [ref=f25e101] [cursor=pointer]:
+            - /url: /admin/push-notifications
+            - generic [ref=f25e102]: 
+            - generic [ref=f25e103]: Notification pushs
+        - listitem [ref=f25e104]:
+          - link " Messages" [ref=f25e105] [cursor=pointer]:
+            - /url: /admin/messages
+            - generic [ref=f25e106]: 
+            - generic [ref=f25e107]: Messages
+        - listitem [ref=f25e108]:
+          - link " Abonnés" [ref=f25e109] [cursor=pointer]:
+            - /url: /admin/subscribers
+            - generic [ref=f25e110]: 
+            - generic [ref=f25e111]: Abonnés
+      - list [ref=f25e112]:
+        - listitem [ref=f25e113]:
+          - button "Utilisateurs" [ref=f25e114] [cursor=pointer]
+        - listitem [ref=f25e115]:
+          - link " Administrateurs" [ref=f25e116] [cursor=pointer]:
+            - /url: /admin/administrators
+            - generic [ref=f25e117]: 
+            - generic [ref=f25e118]: Administrateurs
+        - listitem [ref=f25e119]:
+          - link " Employés" [ref=f25e120] [cursor=pointer]:
+            - /url: /admin/employees
+            - generic [ref=f25e121]: 
+            - generic [ref=f25e122]: Employés
+        - listitem [ref=f25e123]:
+          - link " Chefs" [ref=f25e124] [cursor=pointer]:
+            - /url: /admin/chefs
+            - generic [ref=f25e125]: 
+            - generic [ref=f25e126]: Chefs
+      - list [ref=f25e127]:
+        - listitem [ref=f25e128]:
+          - button "Comptes" [ref=f25e129] [cursor=pointer]
+        - listitem [ref=f25e130]:
+          - link " Transactions" [ref=f25e131] [cursor=pointer]:
+            - /url: /admin/transactions
+            - generic [ref=f25e132]: 
+            - generic [ref=f25e133]: Transactions
+      - list [ref=f25e134]:
+        - listitem [ref=f25e135]:
+          - button "Rapports" [ref=f25e136] [cursor=pointer]
+        - listitem [ref=f25e137]:
+          - link " Rapport des ventes" [ref=f25e138] [cursor=pointer]:
+            - /url: /admin/sales-report
+            - generic [ref=f25e139]: 
+            - generic [ref=f25e140]: Rapport des ventes
+        - listitem [ref=f25e141]:
+          - link " Rapport articles" [ref=f25e142] [cursor=pointer]:
+            - /url: /admin/items-report
+            - generic [ref=f25e143]: 
+            - generic [ref=f25e144]: Rapport articles
+      - list [ref=f25e145]:
+        - listitem [ref=f25e146]:
+          - button "Configuration" [ref=f25e147] [cursor=pointer]
+        - listitem [ref=f25e148]:
+          - link " Paramètres" [ref=f25e149] [cursor=pointer]:
+            - /url: /admin/settings
+            - generic [ref=f25e150]: 
+            - generic [ref=f25e151]: Paramètres
+  - generic [ref=f25e152]:
+    - list [ref=f25e155]:
+      - listitem [ref=f25e156]:
+        - link "Tableau de bord/" [ref=f25e157] [cursor=pointer]:
+          - /url: /admin/dashboard
+      - listitem [ref=f25e158]:
+        - generic [ref=f25e159]: Articles
+    - img [ref=f25e162]
+    - generic [ref=f25e166]:
+      - generic [ref=f25e167]:
+        - generic [ref=f25e168]:
+          - generic [ref=f25e169]: Pilotage catalogue
+          - generic [ref=f25e170]:
+            - heading "Produits, catégories, offres et disponibilités" [level=2] [ref=f25e171]
+            - generic [ref=f25e172]: POS / borne
+        - generic "Résumé catalogue" [ref=f25e173]:
+          - button "Filtrer 55 produits" [ref=f25e174] [cursor=pointer]:
+            - generic [ref=f25e175]: "55"
+            - generic [ref=f25e176]: produits
+          - link "Voir 13 catégories" [ref=f25e177] [cursor=pointer]:
+            - /url: /admin/settings/item-categories/list
+            - generic [ref=f25e178]: "13"
+            - generic [ref=f25e179]: catégories
+          - button "Filtrer 55 actifs" [ref=f25e180] [cursor=pointer]:
+            - generic [ref=f25e181]: "55"
+            - generic [ref=f25e182]: actifs
+          - button "Filtrer 0 indisponibles" [ref=f25e183] [cursor=pointer]:
+            - generic [ref=f25e184]: "0"
+            - generic [ref=f25e185]: indisponibles
+        - generic "Actions catalogue" [ref=f25e186]:
+          - link " Produits" [ref=f25e187] [cursor=pointer]:
+            - /url: /admin/items
+            - generic [ref=f25e188]: 
+            - text: Produits
+          - link "Catégories" [ref=f25e189] [cursor=pointer]:
+            - /url: /admin/settings/item-categories/list
+            - text: Catégories
+          - link "Offres" [ref=f25e190] [cursor=pointer]:
+            - /url: /admin/offers
+            - text: Offres
+          - button "Disponibilités" [ref=f25e191] [cursor=pointer]: Disponibilités
+      - generic [ref=f25e192]:
+        - generic [ref=f25e193]:
+          - heading "Articles" [level=3] [ref=f25e194]
+          - generic [ref=f25e195]:
+            - generic [ref=f25e196]:
+              - button "10 " [ref=f25e197] [cursor=pointer]:
+                - generic [ref=f25e198]: "10"
+                - generic [ref=f25e199]: 
+              - list:
+                - listitem:
+                  - generic: "10"
+                - listitem:
+                  - generic: "25"
+                - listitem:
+                  - generic: "50"
+                - listitem:
+                  - generic: "100"
+                - listitem:
+                  - generic: "500"
+                - listitem:
+                  - generic: "1000"
+            - button " Filtrer " [ref=f25e200] [cursor=pointer]:
+              - generic [ref=f25e201]: 
+              - generic [ref=f25e202]: Filtrer
+              - generic [ref=f25e203]: 
+            - generic [ref=f25e204]:
+              - button " Exporter " [ref=f25e205] [cursor=pointer]:
+                - generic [ref=f25e206]: 
+                - generic [ref=f25e207]: Exporter
+                - generic [ref=f25e208]: 
+              - generic:
+                - button " Imprimer":
+                  - generic: 
+                  - text: Imprimer
+                - link " XLS":
+                  - /url: "#"
+                  - generic: 
+                  - text: XLS
+            - generic [ref=f25e209]:
+              - button " Importer " [ref=f25e210] [cursor=pointer]:
+                - generic [ref=f25e211]: 
+                - generic [ref=f25e212]: Importer
+                - generic [ref=f25e213]: 
+              - generic:
+                - button " Fichier exemple":
+                  - generic: 
+                  - text: Fichier exemple
+                - button " Téléverser le fichier":
+                  - generic: 
+                  - text: Téléverser le fichier
+            - generic [ref=f25e214]:
+              - button " Ajouter un article" [ref=f25e215] [cursor=pointer]:
+                - generic [ref=f25e216]: 
+                - generic [ref=f25e217]: Ajouter un article
+              - generic [ref=f25e218]:
+                - generic [ref=f25e219]:
+                  - heading "Articles" [level=3] [ref=f25e220]
+                  - button "" [ref=f25e221] [cursor=pointer]
+                - generic [ref=f25e224]:
+                  - generic [ref=f25e225]:
+                    - generic [ref=f25e226]: Nom*
+                    - textbox "Nom* Nom" [ref=f25e227]
+                  - generic [ref=f25e228]:
+                    - generic [ref=f25e229]: Prix*
+                    - textbox "Prix* Prix" [ref=f25e230]
+                  - generic [ref=f25e231]:
+                    - generic [ref=f25e232]: Catégorie*
+                    - combobox [ref=f25e233]:
+                      - textbox [ref=f25e236]:
+                        - /placeholder: "--"
+                  - generic [ref=f25e238]:
+                    - generic [ref=f25e239]: Taxe (Incluant)
+                    - combobox [ref=f25e240]:
+                      - textbox [ref=f25e243]:
+                        - /placeholder: "--"
+                  - generic [ref=f25e245]:
+                    - generic [ref=f25e246]: Image
+                    - button "Choose File" [ref=f25e247]
+                  - generic [ref=f25e248]:
+                    - generic [ref=f25e249]: Type
+                    - generic [ref=f25e250]:
+                      - generic [ref=f25e251] [cursor=pointer]:
+                        - radio "Type Veg" [checked] [ref=f25e253]
+                        - generic [ref=f25e255]: Veg
+                      - generic [ref=f25e256] [cursor=pointer]:
+                        - radio "Non végétarien" [ref=f25e258]
+                        - generic [ref=f25e260]: Non végétarien
+                  - generic [ref=f25e261]:
+                    - generic [ref=f25e262]: Mis en avant
+                    - generic [ref=f25e263]:
+                      - generic [ref=f25e264] [cursor=pointer]:
+                        - radio "Mis en avant Oui" [checked] [ref=f25e266]
+                        - generic [ref=f25e268]: Oui
+                      - generic [ref=f25e269] [cursor=pointer]:
+                        - radio "N°" [ref=f25e271]
+                        - generic [ref=f25e273]: N°
+                  - generic [ref=f25e274]:
+                    - generic [ref=f25e275]: Suggestion caisse
+                    - generic [ref=f25e276]:
+                      - generic [ref=f25e277] [cursor=pointer]:
+                        - radio "Suggestion caisse Oui" [ref=f25e279]
+                        - generic [ref=f25e281]: Oui
+                      - generic [ref=f25e282] [cursor=pointer]:
+                        - radio "N°" [checked] [ref=f25e284]
+                        - generic [ref=f25e286]: N°
+                    - paragraph [ref=f25e287]: Afficher cet article comme suggestion au paiement sur la borne
+                  - generic [ref=f25e288]:
+                    - generic [ref=f25e289]: Statut
+                    - generic [ref=f25e290]:
+                      - generic [ref=f25e291] [cursor=pointer]:
+                        - radio "Actif" [checked] [ref=f25e293]
+                        - generic [ref=f25e295]: Actif
+                      - generic [ref=f25e296] [cursor=pointer]:
+                        - radio "Inactif" [ref=f25e298]
+                        - generic [ref=f25e300]: Inactif
+                  - generic [ref=f25e301]:
+                    - generic [ref=f25e302]: Attention
+                    - textbox "Attention" [ref=f25e303]
+                  - generic [ref=f25e304]:
+                    - generic [ref=f25e305]: Canaux de diffusion
+                    - generic [ref=f25e306]:
+                      - generic [ref=f25e307] [cursor=pointer]:
+                        - checkbox "Canaux de diffusion Borne" [ref=f25e309]
+                        - generic [ref=f25e311]: Borne
+                      - generic [ref=f25e312] [cursor=pointer]:
+                        - checkbox "Caisse" [ref=f25e314]
+                        - generic [ref=f25e316]: Caisse
+                      - generic [ref=f25e317] [cursor=pointer]:
+                        - checkbox "Site web" [ref=f25e319]
+                        - generic [ref=f25e321]: Site web
+                    - paragraph [ref=f25e322]: Sélectionnez où cet article apparaît. Laisser vide = visible partout.
+                  - generic [ref=f25e323]:
+                    - generic [ref=f25e324]: Description
+                    - textbox "Description" [ref=f25e325]
+                  - generic [ref=f25e327]:
+                    - button " Enregistrer" [ref=f25e328] [cursor=pointer]:
+                      - generic [ref=f25e329]: 
+                      - generic [ref=f25e330]: Enregistrer
+                    - button "Fermer" [ref=f25e331] [cursor=pointer]:
+                      - generic [ref=f25e332]: 
+                      - generic [ref=f25e333]: Fermer
+        - generic [ref=f25e335]:
+          - generic [ref=f25e336]:
+            - generic [ref=f25e337]: Nom
+            - textbox [ref=f25e338]
+          - generic [ref=f25e339]:
+            - generic [ref=f25e340]: Prix
+            - textbox [ref=f25e341]
+          - generic [ref=f25e342]:
+            - generic [ref=f25e343]: Catégorie
+            - combobox [ref=f25e344]:
+              - textbox [ref=f25e347]:
+                - /placeholder: "--"
+          - generic [ref=f25e349]:
+            - generic [ref=f25e350]: Taxe
+            - combobox [ref=f25e351]:
+              - textbox [ref=f25e354]:
+                - /placeholder: "--"
+          - generic [ref=f25e356]:
+            - generic [ref=f25e357]: Type
+            - combobox [ref=f25e358]:
+              - textbox [ref=f25e361]:
+                - /placeholder: "--"
+          - generic [ref=f25e363]:
+            - generic [ref=f25e364]: Mis en avant
+            - combobox [ref=f25e365]:
+              - textbox [ref=f25e368]:
+                - /placeholder: "--"
+          - generic [ref=f25e370]:
+            - generic [ref=f25e371]: Statut
+            - combobox [ref=f25e372]:
+              - textbox [ref=f25e375]:
+                - /placeholder: "--"
+          - generic [ref=f25e378]:
+            - button " Rechercher" [ref=f25e379] [cursor=pointer]:
+              - generic [ref=f25e380]: 
+              - generic [ref=f25e381]: Rechercher
+            - button " Effacer" [ref=f25e382] [cursor=pointer]:
+              - generic [ref=f25e383]: 
+              - generic [ref=f25e384]: Effacer
+        - table [ref=f25e386]:
+          - rowgroup [ref=f25e387]:
+            - row "Image Nom Catégorie Prix Statut Action" [ref=f25e388]:
+              - columnheader "Image" [ref=f25e389]
+              - columnheader "Nom" [ref=f25e390]
+              - columnheader "Catégorie" [ref=f25e391]
+              - columnheader "Prix" [ref=f25e392]
+              - columnheader "Statut" [ref=f25e393]
+              - columnheader "Action" [ref=f25e394]
+          - rowgroup [ref=f25e395]:
+            - row "Perrier 33cl Perrier 33cl Boissons 1,90 € Actif Voir  Dupliquer Supprimer" [ref=f25e396]:
+              - cell "Perrier 33cl" [ref=f25e397]:
+                - img "Perrier 33cl" [ref=f25e399]
+              - cell "Perrier 33cl" [ref=f25e400]
+              - cell "Boissons" [ref=f25e401]
+              - cell "1,90 €" [ref=f25e402]
+              - cell "Actif" [ref=f25e403]:
+                - generic [ref=f25e404]: Actif
+              - cell "Voir  Dupliquer Supprimer" [ref=f25e405]:
+                - generic [ref=f25e406]:
+                  - link "Voir" [ref=f25e408] [cursor=pointer]:
+                    - /url: /admin/items/show/125
+                    - generic [ref=f25e409]: 
+                  - button "" [ref=f25e411] [cursor=pointer]:
+                    - generic [ref=f25e412]: 
+                  - button "Dupliquer" [ref=f25e414] [cursor=pointer]
+                  - button "Supprimer" [ref=f25e417] [cursor=pointer]:
+                    - generic [ref=f25e418]: 
+            - row "Fanta Hawai 33cl Fanta Hawai 33cl Boissons 1,90 € Actif Voir  Dupliquer Supprimer" [ref=f25e419]:
+              - cell "Fanta Hawai 33cl" [ref=f25e420]:
+                - img "Fanta Hawai 33cl" [ref=f25e422]
+              - cell "Fanta Hawai 33cl" [ref=f25e423]
+              - cell "Boissons" [ref=f25e424]
+              - cell "1,90 €" [ref=f25e425]
+              - cell "Actif" [ref=f25e426]:
+                - generic [ref=f25e427]: Actif
+              - cell "Voir  Dupliquer Supprimer" [ref=f25e428]:
+                - generic [ref=f25e429]:
+                  - link "Voir" [ref=f25e431] [cursor=pointer]:
+                    - /url: /admin/items/show/124
+                    - generic [ref=f25e432]: 
+                  - button "" [ref=f25e434] [cursor=pointer]:
+                    - generic [ref=f25e435]: 
+                  - button "Dupliquer" [ref=f25e437] [cursor=pointer]
+                  - button "Supprimer" [ref=f25e440] [cursor=pointer]:
+                    - generic [ref=f25e441]: 
+            - row "Fuze Tea 33cl Fuze Tea 33cl Boissons 1,90 € Actif Voir  Dupliquer Supprimer" [ref=f25e442]:
+              - cell "Fuze Tea 33cl" [ref=f25e443]:
+                - img "Fuze Tea 33cl" [ref=f25e445]
+              - cell "Fuze Tea 33cl" [ref=f25e446]
+              - cell "Boissons" [ref=f25e447]
+              - cell "1,90 €" [ref=f25e448]
+              - cell "Actif" [ref=f25e449]:
+                - generic [ref=f25e450]: Actif
+              - cell "Voir  Dupliquer Supprimer" [ref=f25e451]:
+                - generic [ref=f25e452]:
+                  - link "Voir" [ref=f25e454] [cursor=pointer]:
+                    - /url: /admin/items/show/123
+                    - generic [ref=f25e455]: 
+                  - button "" [ref=f25e457] [cursor=pointer]:
+                    - generic [ref=f25e458]: 
+                  - button "Dupliquer" [ref=f25e460] [cursor=pointer]
+                  - button "Supprimer" [ref=f25e463] [cursor=pointer]:
+                    - generic [ref=f25e464]: 
+            - row "Fanta Citron 33cl Fanta Citron 33cl Boissons 1,90 € Actif Voir  Dupliquer Supprimer" [ref=f25e465]:
+              - cell "Fanta Citron 33cl" [ref=f25e466]:
+                - img "Fanta Citron 33cl" [ref=f25e468]
+              - cell "Fanta Citron 33cl" [ref=f25e469]
+              - cell "Boissons" [ref=f25e470]
+              - cell "1,90 €" [ref=f25e471]
+              - cell "Actif" [ref=f25e472]:
+                - generic [ref=f25e473]: Actif
+              - cell "Voir  Dupliquer Supprimer" [ref=f25e474]:
+                - generic [ref=f25e475]:
+                  - link "Voir" [ref=f25e477] [cursor=pointer]:
+                    - /url: /admin/items/show/122
+                    - generic [ref=f25e478]: 
+                  - button "" [ref=f25e480] [cursor=pointer]:
+                    - generic [ref=f25e481]: 
+                  - button "Dupliquer" [ref=f25e483] [cursor=pointer]
+                  - button "Supprimer" [ref=f25e486] [cursor=pointer]:
+                    - generic [ref=f25e487]: 
+            - row "Ice Tea Pêche 33cl Ice Tea Pêche 33cl Boissons 1,90 € Actif Voir  Dupliquer Supprimer" [ref=f25e488]:
+              - cell "Ice Tea Pêche 33cl" [ref=f25e489]:
+                - img "Ice Tea Pêche 33cl" [ref=f25e491]
+              - cell "Ice Tea Pêche 33cl" [ref=f25e492]
+              - cell "Boissons" [ref=f25e493]
+              - cell "1,90 €" [ref=f25e494]
+              - cell "Actif" [ref=f25e495]:
+                - generic [ref=f25e496]: Actif
+              - cell "Voir  Dupliquer Supprimer" [ref=f25e497]:
+                - generic [ref=f25e498]:
+                  - link "Voir" [ref=f25e500] [cursor=pointer]:
+                    - /url: /admin/items/show/121
+                    - generic [ref=f25e501]: 
+                  - button "" [ref=f25e503] [cursor=pointer]:
+                    - generic [ref=f25e504]: 
+                  - button "Dupliquer" [ref=f25e506] [cursor=pointer]
+                  - button "Supprimer" [ref=f25e509] [cursor=pointer]:
+                    - generic [ref=f25e510]: 
+            - row "Tropico 33cl Tropico 33cl Boissons 1,90 € Actif Voir  Dupliquer Supprimer" [ref=f25e511]:
+              - cell "Tropico 33cl" [ref=f25e512]:
+                - img "Tropico 33cl" [ref=f25e514]
+              - cell "Tropico 33cl" [ref=f25e515]
+              - cell "Boissons" [ref=f25e516]
+              - cell "1,90 €" [ref=f25e517]
+              - cell "Actif" [ref=f25e518]:
+                - generic [ref=f25e519]: Actif
+              - cell "Voir  Dupliquer Supprimer" [ref=f25e520]:
+                - generic [ref=f25e521]:
+                  - link "Voir" [ref=f25e523] [cursor=pointer]:
+                    - /url: /admin/items/show/120
+                    - generic [ref=f25e524]: 
+                  - button "" [ref=f25e526] [cursor=pointer]:
+                    - generic [ref=f25e527]: 
+                  - button "Dupliquer" [ref=f25e529] [cursor=pointer]
+                  - button "Supprimer" [ref=f25e532] [cursor=pointer]:
+                    - generic [ref=f25e533]: 
+            - row "Coca Cherry 33cl Coca Cherry 33cl Boissons 1,90 € Actif Voir  Dupliquer Supprimer" [ref=f25e534]:
+              - cell "Coca Cherry 33cl" [ref=f25e535]:
+                - img "Coca Cherry 33cl" [ref=f25e537]
+              - cell "Coca Cherry 33cl" [ref=f25e538]
+              - cell "Boissons" [ref=f25e539]
+              - cell "1,90 €" [ref=f25e540]
+              - cell "Actif" [ref=f25e541]:
+                - generic [ref=f25e542]: Actif
+              - cell "Voir  Dupliquer Supprimer" [ref=f25e543]:
+                - generic [ref=f25e544]:
+                  - link "Voir" [ref=f25e546] [cursor=pointer]:
+                    - /url: /admin/items/show/119
+                    - generic [ref=f25e547]: 
+                  - button "" [ref=f25e549] [cursor=pointer]:
+                    - generic [ref=f25e550]: 
+                  - button "Dupliquer" [ref=f25e552] [cursor=pointer]
+                  - button "Supprimer" [ref=f25e555] [cursor=pointer]:
+                    - generic [ref=f25e556]: 
+            - row "Grande Frites Cheddar + Oignons frits Grande Frites Cheddar + Oignons frits Frites 6,00 € Actif Voir  Dupliquer Supprimer" [ref=f25e557]:
+              - cell "Grande Frites Cheddar + Oignons frits" [ref=f25e558]:
+                - img "Grande Frites Cheddar + Oignons frits" [ref=f25e560]
+              - cell "Grande Frites Cheddar + Oignons frits" [ref=f25e561]
+              - cell "Frites" [ref=f25e562]
+              - cell "6,00 €" [ref=f25e563]
+              - cell "Actif" [ref=f25e564]:
+                - generic [ref=f25e565]: Actif
+              - cell "Voir  Dupliquer Supprimer" [ref=f25e566]:
+                - generic [ref=f25e567]:
+                  - link "Voir" [ref=f25e569] [cursor=pointer]:
+                    - /url: /admin/items/show/110
+                    - generic [ref=f25e570]: 
+                  - button "" [ref=f25e572] [cursor=pointer]:
+                    - generic [ref=f25e573]: 
+                  - button "Dupliquer" [ref=f25e575] [cursor=pointer]
+                  - button "Supprimer" [ref=f25e578] [cursor=pointer]:
+                    - generic [ref=f25e579]: 
+            - row "Grande Frites Cheddar fondu Grande Frites Cheddar fondu Frites 5,00 € Actif Voir  Dupliquer Supprimer" [ref=f25e580]:
+              - cell "Grande Frites Cheddar fondu" [ref=f25e581]:
+                - img "Grande Frites Cheddar fondu" [ref=f25e583]
+              - cell "Grande Frites Cheddar fondu" [ref=f25e584]
+              - cell "Frites" [ref=f25e585]
+              - cell "5,00 €" [ref=f25e586]
+              - cell "Actif" [ref=f25e587]:
+                - generic [ref=f25e588]: Actif
+              - cell "Voir  Dupliquer Supprimer" [ref=f25e589]:
+                - generic [ref=f25e590]:
+                  - link "Voir" [ref=f25e592] [cursor=pointer]:
+                    - /url: /admin/items/show/109
+                    - generic [ref=f25e593]: 
+                  - button "" [ref=f25e595] [cursor=pointer]:
+                    - generic [ref=f25e596]: 
+                  - button "Dupliquer" [ref=f25e598] [cursor=pointer]
+                  - button "Supprimer" [ref=f25e601] [cursor=pointer]:
+                    - generic [ref=f25e602]: 
+            - row "Petite Frites Cheddar + Oignons frits Petite Frites Cheddar + Oignons frits Frites 4,50 € Actif Voir  Dupliquer Supprimer" [ref=f25e603]:
+              - cell "Petite Frites Cheddar + Oignons frits" [ref=f25e604]:
+                - img "Petite Frites Cheddar + Oignons frits" [ref=f25e606]
+              - cell "Petite Frites Cheddar + Oignons frits" [ref=f25e607]
+              - cell "Frites" [ref=f25e608]
+              - cell "4,50 €" [ref=f25e609]
+              - cell "Actif" [ref=f25e610]:
+                - generic [ref=f25e611]: Actif
+              - cell "Voir  Dupliquer Supprimer" [ref=f25e612]:
+                - generic [ref=f25e613]:
+                  - link "Voir" [ref=f25e615] [cursor=pointer]:
+                    - /url: /admin/items/show/108
+                    - generic [ref=f25e616]: 
+                  - button "" [ref=f25e618] [cursor=pointer]:
+                    - generic [ref=f25e619]: 
+                  - button "Dupliquer" [ref=f25e621] [cursor=pointer]
+                  - button "Supprimer" [ref=f25e624] [cursor=pointer]:
+                    - generic [ref=f25e625]: 
+        - generic [ref=f25e627]:
+          - paragraph [ref=f25e629]: Affichage de 1 à 10 sur 55 entrées
+          - navigation "Pagination" [ref=f25e631]:
+            - button "Previous" [disabled] [ref=f25e632]:
+              - generic [ref=f25e633]: Previous
+              - img [ref=f25e634]
+            - button "1" [disabled] [ref=f25e636]
+            - button "2" [ref=f25e637] [cursor=pointer]
+            - button "..." [ref=f25e638] [cursor=pointer]
+            - button "6" [ref=f25e639] [cursor=pointer]
+            - button "Next" [ref=f25e640] [cursor=pointer]:
+              - generic [ref=f25e641]: Next
+              - img [ref=f25e642]

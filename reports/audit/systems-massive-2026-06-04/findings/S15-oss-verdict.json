@@ -1,0 +1,58 @@
+{
+  "micro_system": "S15-oss",
+  "verdicts": [
+    {
+      "id": "S15-oss-01",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "VERIFIED. OrderStatusScreenOrderService.php:59-62 and :220-223 hard-restrict to whereIn order_type [KIOSK(25), TAKEAWAY(10)] (OrderType.php:8-11 confirms values). POS=15 orders DO carry a queue_number (saveOrderWithQueueNumber unconditional at OrderService.php:2937-2950) and ARE kitchen-prepared (posInitialStatus auto-promotes to PREPARING via AutoPrepareOnPaidPolicy at OrderService.php:763-781; KDS service line 79 explicitly includes OrderType::POS+CASH). So a POS order reaches PREPARED in KDS but is filtered out of OSS. REAL inconsistency. BUT severity overstated as P1: (1) the whereIn allowlist is the deliberate [2026-05-18 RED R-3 heal] (lines 53-58) with a sister lock test OssCustomerScreenFilterTest.php — adding POS reverts a tested security/scoping decision; (2) the auditor's 'customer is given a N°' citation PosComponent.vue:295/359 is the cashier shortcut widget (class pos-shortcuts__num), NOT the customer-facing display, so that part of the evidence is unsupported. This is an owner product-model question (is the wall the universal pickup signal, or are counter orders hand-delivered?), not a clear code defect. Downgrade to P2; is_necessary=true only in the sense that the rationale must be confirmed/documented next to the allowlist."
+    },
+    {
+      "id": "S15-oss-02",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "PARTIALLY VERIFIED — visual storm REAL, chime storm OVERSTATED. _hydrateFromRows (line 385-402) computes prevPreparedIds from current this.preparedItems (386); on first mount preparedItems=[] (data line 90), so every already-PREPARED order hits _markNewReady (393-397). No hasHydratedOnce guard exists — confirmed. The VISUAL flash/pulse storm (newReadyFlash + per-card oss-pulse-ready) is real and matters because on the public wall (authBranchId<=0) the flash is the ONLY signal. HOWEVER the auditor's 'up to 8 overlapping chimes' claim is NOT reproducible: _audioCtx starts null (line 105) and is created only on the first pointerdown/keydown gesture AFTER mount (lines 142-147, {once:true}). On a fresh load/refresh, mounted()->list()->_hydrateFromRows runs BEFORE any gesture, so _playReadySound hits `if(!ctx) return` at line 363 — no chime. Correct the evidence: chime cannot storm on load; the visual-only first-load storm justifies P2."
+    },
+    {
+      "id": "S15-oss-03",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "VERIFIED. The advance-order OR-branch (lines 98-101) intentionally has no lower datetime bound ('show ALL overdue advance orders ... Prevents zombie disappearance', [AUDIT-52-BUG1]) and claims to 'Mirror KDS fix'. But that group is ANDed with the top-level stale prune at line 132 (order_datetime >= now()->subHours(stale_window_hours,8); config/oss.php:29 confirms default 8). CONFIRMED CONTRADICTION via sister-service comparison: KitchenDisplaySystemOrderService::list (lines 130-141) has the IDENTICAL advance branch but NO subHours stale prune — KDS retains overdue advance orders that OSS line 132 silently drops. So OSS does NOT mirror KDS for >8h advance orders, directly contradicting its own comment. Real comment-vs-code ambiguity. Mirror present in listForBranch (:243-245 vs :256). Severity P3 not P2 — the finding itself concedes 'low frequency on a fast-food single-shift'; it is a latent ambiguity, not an active fast-food defect."
+    },
+    {
+      "id": "S15-oss-04",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "VERIFIED and the dead-code claim is STRONGER than stated. OrderStatusScreenComponent.vue mounts ONLY <PreparingAndReadyComponent /> (line 27); [Wave Q-3] comment (11-21) confirms PopularItemComponent removed. grep across resources/js: admin/orderStatusScreen/PopularItemComponent.vue has ZERO import statements (only the unrelated frontend/home/PopularItemComponent is imported by HomeComponent). The OrderStatusScreenComponent.vue comment claim 'still referenced by OssSyncService + admin PosComponent dashboard widget' is FALSE — grep of OssSyncService.js and PosComponent.vue returns no PopularItemComponent/mostPopularItems reference. Store getter mostPopularItems (orderStatusScreenOrder.js:13-14) returns state.mostPopularItems, but state only declares {lists:[]} (line 6) — getter returns undefined (latent bug confirmed). Controller methods mostPopularItems/publicMostPopularItems exist (OrderStatusScreenController.php:40,116); routes api.php:1218 & :1291-1293 exist; service mostPopularItems exists (:169-195). Dead chain fully confirmed. P3 appropriate — owner-gated cleanup, latent not active."
+    },
+    {
+      "id": "S15-oss-05",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "VERIFIED. wsConnected declared (line 93), written in _onWsConnected/_onWsDisconnected (222,226) and ossSync ws_state handler (245). grep of template (lines 1-67) and computed ({} empty, line 112) confirms ZERO reads — no {{wsConnected}}, no :class/v-if. Connection status is owned by parent ConnectionStatusBanner (OrderStatusScreenComponent.vue:9). Dead reactive flag confirmed. NOTE: the finding correctly scopes the cleanup — _onWsConnected ALSO calls this.list() on reconnect (line 223), which is load-bearing, so only the wsConnected flag and its writes are dead, not the whole _bindWsService binding. P3 cosmetic/maintainability cleanup, harmless."
+    },
+    {
+      "id": "S15-oss-06",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": false,
+      "severity_adjusted": "DROP",
+      "reason": "EXISTS but DORMANT/UNREACHABLE in V1 flow — DROP. Template lines 37/62 do render `{{ item.queue_number ? 'N°'+item.queue_number : item.token }}`, and the migration 2022_11_17_110810_create_orders_table.php:23 confirms `$table->string('token')->nullable()` with no length cap. HOWEVER the else-branch (raw token) is unreachable for the allowlisted types: only KIOSK/TAKEAWAY pass the OSS whereIn (service :59-62/:220-223), and BOTH kiosk-originated types ALWAYS get a queue_number — FrontendOrderService::saveFrontendOrderWithQueueNumber assigns queue_number UNCONDITIONALLY (line 984) before save with no nullable path, and the frontend path is restricted to [KIOSK,TAKEAWAY] (FrontendOrderService.php:196). So for every allowed-type order queue_number is non-null and the N° branch always wins; the token else-branch is defensive dead code on this surface. The finding itself rates it P3/medium-confidence/needs-live-verify and concedes 'queue_number is always allocated so this is an edge/latent case'. No reachable defect in V1 — DROP (at most a 1-line defensive-hardening nice-to-have, not worth flagging)."
+    }
+  ],
+  "coverage_gaps": [
+    "Sync-cadence divergence (TRAP-4, PreparingAndReadyComponent.vue:248-264): the public customer wall (authBranchId<=0) is poll-only and overrides intervalMsWhenConnected to 5000ms, while authed staff OSS (branchId>0) stays at the default 60000ms poll because it relies on Echo push. The auditor did not examine whether the authed staff OSS surface actually receives timely push (subscribeEcho joins branch.{id} OrderStatusChanged/OrderCreated at :280-301) or silently lags up to 60s if Echo push is dropped/degraded — no fallback fast-poll on the authed surface.",
+    "Public-wall chime is structurally dead by design (authBranchId<=0 early-returns in _playReadySound :354 and skips audio-unlock listener wiring :142). The auditor did not flag that the ENTIRE 4-tone chime feature (lines 344-384) plus the wakeLock/AudioContext plumbing is inert on the only unattended surface that the comment (:73-77) says it exists for — i.e. the wall a customer watches. Visual flash is the sole cue; worth an owner note that audible pickup-call is intentionally absent.",
+    "OSS surface confirmed fully read-only: grep of resources/js/components/admin/orderStatusScreen/ found ZERO @click/@change/v-on/button/<a> handlers, so there are no unaudited interactive buttons/flows — the auditor's behavioral coverage of the display itself is complete on that axis."
+  ]
+}

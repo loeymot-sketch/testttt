@@ -1,0 +1,86 @@
+[
+  {
+    "url": "http://127.0.0.1:8766/api/profile",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1783528288829
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/frontend/loyalty/history?page=1&per_page=20",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1783528288829
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/frontend/order",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1783528288829
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/profile",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1783528288829
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/profile",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1783528289671
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/frontend/loyalty/history?page=1&per_page=20",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1783528289671
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/profile",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1783528289672
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/frontend/order",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1783528289672
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/profile",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1783528289742
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/profile",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1783528290263
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/frontend/loyalty/history?page=1&per_page=20",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1783528290264
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/frontend/loyalty/qr",
+    "method": "POST",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1783528290264
+  }
+]

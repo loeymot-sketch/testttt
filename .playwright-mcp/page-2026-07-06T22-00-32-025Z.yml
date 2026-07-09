@@ -1,0 +1,23 @@
+- generic [ref=f17e1]:
+  - generic [ref=f17e394]:
+    - generic [ref=f17e395]:
+      - button [ref=f17e396] [cursor=pointer]:
+        - img [ref=f17e397]
+      - img [ref=f17e400]
+      - heading "Programme fidélité" [level=1] [ref=f17e402]
+    - generic [ref=f17e429]:
+      - generic [ref=f17e430]:
+        - generic [ref=f17e431]: WS
+        - generic [ref=f17e432]:
+          - heading "WVAL Shared RED" [level=2] [ref=f17e433]
+          - paragraph [ref=f17e434]: Membre fidélité
+      - generic [ref=f17e435]:
+        - generic [ref=f17e436]: "350"
+        - generic [ref=f17e437]: points disponibles
+      - paragraph [ref=f17e441]: Plus que 150 points pour le prochain palier
+      - generic [ref=f17e442]:
+        - paragraph [ref=f17e443]: Vous avez 350 points fidélité 🎉
+        - paragraph [ref=f17e444]: Vous gagnerez des points sur cette commande !
+      - button "Confirmer" [ref=f17e445] [cursor=pointer]
+      - button "Annuler" [ref=f17e446] [cursor=pointer]
+  - status

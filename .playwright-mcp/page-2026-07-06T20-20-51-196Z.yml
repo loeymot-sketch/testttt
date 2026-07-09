@@ -1,0 +1,44 @@
+- generic [ref=f2e1]:
+  - generic [ref=f2e3] [cursor=pointer]:
+    - button "Paramètres d'accessibilité" [ref=f2e5]:
+      - img [ref=f2e6]
+    - generic [ref=f2e15]: Nos incontournables
+    - generic [ref=f2e19]:
+      - img "Le Terminator" [ref=f2e21]
+      - img "Double Cheese" [ref=f2e23]
+      - img "Le Cayenne" [ref=f2e25]
+      - img "Grill Burger" [ref=f2e27]
+      - img "Le Suprême" [ref=f2e29]
+      - img "Menu Maxi" [ref=f2e31]
+      - img "Bol de riz" [ref=f2e33]
+      - img "Bol de frites" [ref=f2e35]
+      - generic:
+        - generic [ref=f2e38]: Le Terminator
+        - generic [ref=f2e41]: Double Cheese
+        - generic [ref=f2e44]: Le Cayenne
+        - generic [ref=f2e47]: Grill Burger
+        - generic [ref=f2e50]: Le Suprême
+        - generic [ref=f2e53]: Menu Maxi
+        - generic [ref=f2e56]: Bol de riz
+        - generic [ref=f2e59]: Bol de frites
+      - generic [ref=f2e69]:
+        - generic [ref=f2e70]: 100%
+        - generic [ref=f2e71]: Halal
+    - generic [ref=f2e72]:
+      - heading "Bienvenue ! Le Cayenne" [level=2] [ref=f2e73]:
+        - generic [ref=f2e74]:
+          - text: Bienvenue !
+          - generic [ref=f2e75]: Le Cayenne
+      - paragraph [ref=f2e77]: Commandez en quelques touches
+    - generic [ref=f2e78]:
+      - generic [ref=f2e79]: Ultra gourmand
+      - generic [ref=f2e81]: Frais du jour
+      - generic [ref=f2e83]: Préparé minute
+    - group "Choisir le mode de commande" [ref=f2e85]:
+      - button "Touchez l'écran pour commander" [ref=f2e86]:
+        - img [ref=f2e91]
+        - generic [ref=f2e93]:
+          - generic [ref=f2e94]: Touchez l'écran
+          - generic [ref=f2e95]: pour commander
+    - paragraph [ref=f2e96]: Choisissez une option pour commencer
+  - status

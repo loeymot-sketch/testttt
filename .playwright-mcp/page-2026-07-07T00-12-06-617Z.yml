@@ -1,0 +1,194 @@
+- main [ref=e5]:
+  - generic [ref=e6]:
+    - link "logo" [ref=e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=e8]
+    - generic [ref=e9]:
+      - generic [ref=e11]:
+        - link " Tableau de bord" [ref=e13] [cursor=pointer]:
+          - /url: /admin/dashboard
+          - generic [ref=e14]: 
+          - generic [ref=e15]: Tableau de bord
+        - button "flag" [ref=e18] [cursor=pointer]:
+          - img "flag" [ref=e19]
+      - generic [ref=e20]:
+        - button "avatar Bonjour S-SYNC E2E Operator" [ref=e21] [cursor=pointer]:
+          - img "avatar" [ref=e22]
+          - heading "Bonjour S-SYNC E2E Operator" [level=3] [ref=e23]:
+            - text: Bonjour
+            - generic "S-SYNC E2E Operator" [ref=e24]
+          - generic [ref=e25]: 
+        - menu "avatar Bonjour S-SYNC E2E Operator":
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "S-SYNC E2E Operator" [level=3]
+            - paragraph: ssync.e2e@lecayenne.test
+            - paragraph: "0600000777"
+            - heading "0,00 €" [level=3]
+          - menuitem "Modifier le profil":
+            - text: 
+            - generic: Modifier le profil
+          - menuitem "Changer le mot de passe":
+            - text: 
+            - generic: Changer le mot de passe
+          - menuitem "Déconnexion":
+            - text: 
+            - generic: Déconnexion
+  - text:           
+  - button "Ouvrir l'historique des commandes du jour" [ref=e27] [cursor=pointer]:
+    - generic [ref=e28]: 📚
+    - generic [ref=e29]: Historique
+  - generic [ref=e30]:
+    - status [ref=e31]:
+      - generic [ref=e32]:
+        - img [ref=e34]
+        - generic [ref=e36]: Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS.
+      - generic [ref=e37]: LOCAL
+    - generic [ref=e38]:
+      - region "Commande A0012, source Borne, Nouvelle, attente 351 minutes 20 secondes" [ref=e39]:
+        - generic [ref=e41]:
+          - generic [ref=e42]:
+            - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=e43]: "[A]"
+            - generic [ref=e44]:
+              - generic [ref=e45]: Nouvelle
+              - generic [ref=e48]: Borne
+          - generic [ref=e49]:
+            - generic [ref=e50]:
+              - generic [ref=e51]: N°
+              - text: A0012
+            - generic [ref=e52]:
+              - generic [ref=e53]: Attente
+              - generic [ref=e54]: 351:20
+        - region "Détails de la commande A0012, défilable au clavier" [ref=e55]:
+          - generic [ref=e56]:
+            - generic [ref=e58]:
+              - generic [ref=e59]:
+                - text: "1"
+                - generic [ref=e60]: ×
+              - generic [ref=e61]: S | CAY | STO̲ | ALG
+            - generic [ref=e63]: "MENU : ALG"
+            - generic [ref=e65]:
+              - generic [ref=e66]: ·
+              - generic [ref=e67]: "BOISSON: Hawaï 33cl"
+        - status "Commande en attente d'encaissement par le caissier — préparation en attente" [ref=e68]:
+          - img [ref=e69]
+          - generic [ref=e72]: En attente encaissement
+        - button "Prêt" [ref=e73] [cursor=pointer]:
+          - img [ref=e74]
+          - generic [ref=e76]: Prêt
+      - region "Commande A0013, source Caisse, En cours, attente 346 minutes 29 secondes" [ref=e77]:
+        - generic [ref=e79]:
+          - generic [ref=e80]:
+            - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=e81]: "[B]"
+            - generic [ref=e82]:
+              - generic [ref=e83]: En cours
+              - generic [ref=e86]: Caisse
+          - generic [ref=e87]:
+            - generic [ref=e88]:
+              - generic [ref=e89]: N°
+              - text: A0013
+            - generic [ref=e90]:
+              - generic [ref=e91]: Attente
+              - generic [ref=e92]: 346:29
+        - region "Détails de la commande A0013, défilable au clavier" [ref=e93]:
+          - generic [ref=e94]:
+            - generic [ref=e96]:
+              - generic [ref=e97]:
+                - text: "1"
+                - generic [ref=e98]: ×
+              - generic [ref=e99]: S | CAY | STO̲ | ALG
+            - generic [ref=e101]:
+              - generic [ref=e102]: ·
+              - generic [ref=e103]: "BOISSON: Hawaï 33cl"
+          - generic [ref=e106]:
+            - generic [ref=e107]:
+              - text: "1"
+              - generic [ref=e108]: ×
+            - generic [ref=e109]: MENU
+        - button "Prêt" [ref=e110] [cursor=pointer]:
+          - img [ref=e111]
+          - generic [ref=e113]: Prêt
+      - region "Commande A0014, source Caisse, En cours, attente 322 minutes 44 secondes" [ref=e114]:
+        - generic [ref=e116]:
+          - generic [ref=e117]:
+            - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=e118]: "[C]"
+            - generic [ref=e119]:
+              - generic [ref=e120]: En cours
+              - generic [ref=e123]: Caisse
+          - generic [ref=e124]:
+            - generic [ref=e125]:
+              - generic [ref=e126]: N°
+              - text: A0014
+            - generic [ref=e127]:
+              - generic [ref=e128]: Attente
+              - generic [ref=e129]: 322:44
+        - region "Détails de la commande A0014, défilable au clavier" [ref=e130]:
+          - generic [ref=e131]:
+            - generic [ref=e132]:
+              - generic [ref=e133]: 📍
+              - generic [ref=e134]: 12 rue des Tests, 62110 Hénin-Beaumont
+            - generic [ref=e135]:
+              - generic [ref=e136]: 👤
+              - generic [ref=e137]: Client passage
+            - link "Appeler Client passage 0600000001" [ref=e138] [cursor=pointer]:
+              - /url: tel:0600000001
+              - generic [ref=e139]: 📱
+              - generic [ref=e140]: "0600000001"
+          - generic [ref=e141]:
+            - generic [ref=e143]:
+              - generic [ref=e144]:
+                - text: "1"
+                - generic [ref=e145]: ×
+              - generic [ref=e146]: G | TAC | M | P | ALG
+            - generic [ref=e148]:
+              - generic [ref=e149]: ·
+              - generic [ref=e150]: "BOISSON: Fuze Tea 33cl"
+          - generic [ref=e153]:
+            - generic [ref=e154]:
+              - text: "1"
+              - generic [ref=e155]: ×
+            - generic [ref=e156]: MENU
+          - generic [ref=e157]:
+            - generic [ref=e159]:
+              - generic [ref=e160]:
+                - text: "1"
+                - generic [ref=e161]: ×
+              - generic [ref=e162]: Coca-Cola 33cl
+            - generic [ref=e164]:
+              - generic [ref=e165]: ·
+              - generic [ref=e166]: "[COCA-COLA 33CL [COCA-COLA 33CL]]"
+          - generic [ref=e169]:
+            - generic [ref=e170]:
+              - text: "1"
+              - generic [ref=e171]: ×
+            - generic [ref=e172]: Sprite 33cl
+          - generic [ref=e175]:
+            - generic [ref=e176]:
+              - text: "4"
+              - generic [ref=e177]: ×
+            - generic [ref=e178]: Coca-Cola 33cl
+        - button "Prêt" [ref=e179] [cursor=pointer]:
+          - img [ref=e180]
+          - generic [ref=e182]: Prêt
+    - status [ref=e183]:
+      - generic [ref=e184]: "+7"
+      - generic [ref=e185]: en attente
+    - region "Récemment servies" [ref=e186]:
+      - generic [ref=e187]: Récemment servies
+      - generic [ref=e188]:
+        - generic "Commande N°A0009 servie" [ref=e189]:
+          - generic [ref=e190]: N°A0009
+          - generic [ref=e191]: il y a 345 min
+        - generic "Commande N°A0010 servie" [ref=e192]:
+          - generic [ref=e193]: N°A0010
+          - generic [ref=e194]: il y a 345 min
+        - generic "Commande N°A0011 servie" [ref=e195]:
+          - generic [ref=e196]: N°A0011
+          - generic [ref=e197]: il y a 345 min
+        - generic "Commande N°A0007 servie" [ref=e198]:
+          - generic [ref=e199]: N°A0007
+          - generic [ref=e200]: il y a 351 min

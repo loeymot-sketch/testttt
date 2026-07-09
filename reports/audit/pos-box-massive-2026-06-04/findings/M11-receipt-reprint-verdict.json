@@ -1,0 +1,61 @@
+{
+  "micro_system": "M11-receipt-reprint (Receipt + reprint, operator field NF525)",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "ad29e787583edcbecaf98c83593f2f4848b94bfe",
+  "verdicts": [
+    {
+      "id": "M11-01",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P1",
+      "reason": "ReceiptDataService.php:70 reads optional($order->user)->name. Order.php:174 user() is BelongsTo(User) = customer. OrderService.php:768 sets user_id=customer_id, :777 creator_id=Auth::id(). git merge-base --is-ancestor 6b26e1be3 HEAD = NOT ancestor (heal absent). Live: order #4214 user_id=2 'Client passage', creator_id=1 'Admin Le Cayenne'; receipt prints customer not cashier. No creator() relation on Order. Real NF525 display defect, persisted record correct => P1 confirmed."
+    },
+    {
+      "id": "M11-02",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P1",
+      "reason": "ReceiptComponent.vue:67 gates fiscal header on pos_siret||pos_vat_intra||pos_register_id||operator_name, each line individually v-if (lines 69-72). Mapped from branch columns ReceiptDataService.php:66-69. Live: Branch(1) siret/vat/legal/reg all NULL. grep seeders for siret/vat_intra/legal_footer/register_id = 0 hits. posReceiptBuilder.js:121 legal_mentions also suppressed when pos_legal_footer empty. Real conformity gap; owner-DATA fix (rendering path correct) => P1 confirmed."
+    },
+    {
+      "id": "M11-03",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "ReceiptComponent.vue:578 in catch block bumps this.localPrintCount +1 on 403/404/409/500, then falls through to trigger.click() (lines 585-586) printing paper. POST /print-receipt failure means PosReceiptPrintController.increment (no run) => no server receipt_print_count increment, no emitAudit (controller:73) row. effectiveOrder (:444-453) Math.max means duplicata marker can desync. Real fiscal-trace gap; behavior-change fix needs owner gate => P2 confirmed."
+    },
+    {
+      "id": "M11-04",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "routes/api.php:911 print-receipt route carries ONLY ->middleware('idempotency'), no permission:pos. The 4 sibling pos-prefix routes inline abort_unless(auth()->user()?->can('pos'),403) at lines 801/839/881/901. pos group (api.php:792) inherits outer admin middleware only (no permission:pos). Controller increment() (PosReceiptPrintController.php:35-82) does branch-scope + audit but NO can() check. Real authz inconsistency; gated behind valid branch admin token + counter-only impact => P2 confirmed."
+    },
+    {
+      "id": "M11-05",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "ReceiptDataServiceWireInTest.php:55-58 creates user named 'Jane Operator', :60-61 sets order user_id=$user->id (SAME user as operator), :91 asserts operator_name==='Jane Operator'. Because user_id IS the operator in the fixture, the buggy ->user read (ReceiptDataService.php:70) passes. Production user_id=customer != creator_id=cashier (live #4214). Test cannot fail on M11-01 defect = false green. Real test-quality gap; land new case with M11-01 fix => P2 confirmed."
+    },
+    {
+      "id": "M11-06",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "ReceiptComponent.vue:444-453 effectiveOrder = Math.max(server receipt_print_count, localPrintCount); duplicata marker keys off receipt_print_count incremented by both post-payment print and tracker reprints, and bumps locally on API error (M11-03 line 578). POST fires before browser print so counter is intent-based not paper-confirmed. Genuine 'flous' clarity blur, low risk, acceptable V1 single-box, document-only => P3 confirmed (kept, not dropped)."
+    }
+  ],
+  "coverage_gaps": [
+    "handlePrintKitchenClick (ReceiptComponent.vue:597) was NOT examined by auditor — VERIFIED works-as-intended: kitchen ticket print is non-fiscal, hits no print-receipt endpoint, correctly does NOT increment receipt_print_count nor emit audit. Not a defect, but auditor should have stated this explicitly to close the second print path.",
+    "reset() @click handler (ReceiptComponent.vue:19 -> :470) that resets localPrintCount on modal close was not examined — relevant to M11-06 duplicata-state lifecycle (does closing/reopening the receipt reset local count and re-diverge from server?).",
+    "emitAudit() chain-failure path (PosReceiptPrintController.php:83) returns audit_emitted=false and HTTP still 200 — the success branch where server records print but audit chain silently fails was not audited as a distinct NF525 trace risk (related to but narrower than M11-03's client-side failure path).",
+    "Admin (branch_id=0) cross-branch reprint bypass (controller:48-50 'when($branchId>0)') lets admin increment ANY branch order's fiscal counter — auditor did not assess whether this cross-branch reprint is itself an NF525/authz concern beyond the missing can('pos') gate of M11-04."
+  ]
+}

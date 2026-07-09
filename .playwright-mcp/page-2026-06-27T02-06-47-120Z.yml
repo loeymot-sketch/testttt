@@ -1,0 +1,263 @@
+- main [ref=e5]:
+  - generic [ref=e6]:
+    - link "logo":
+      - /url: /home
+      - img "logo"
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - generic [ref=e9]:
+          - button " Filiale " [ref=e10] [cursor=pointer]:
+            - generic [ref=e11]: 
+            - heading "Filiale" [level=3] [ref=e12]:
+              - generic [ref=e13]: Filiale
+            - generic [ref=e14]: 
+          - list:
+            - listitem:
+              - radio "Le Cayenne (principal)" [checked]
+              - generic: Le Cayenne (principal)
+        - generic [ref=e16]:
+          - button "flag" [ref=e18] [cursor=pointer]:
+            - img "flag" [ref=e19]
+          - link "POS" [ref=e20] [cursor=pointer]:
+            - /url: /admin/pos
+            - generic [ref=e21]: 
+      - button "Fermer" [ref=e22] [cursor=pointer]: 
+      - generic [ref=e23]:
+        - button "avatar Bonjour Admin Le Cayenne" [ref=e24] [cursor=pointer]:
+          - img "avatar" [ref=e25]
+          - heading "Bonjour Admin Le Cayenne" [level=3] [ref=e26]:
+            - text: Bonjour
+            - generic "Admin Le Cayenne" [ref=e27]
+          - generic [ref=e28]: 
+        - menu "avatar Bonjour Admin Le Cayenne":
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "Admin Le Cayenne" [level=3]
+            - paragraph: admin@lecayenne.fr
+            - paragraph: "+330600000000"
+            - heading "2,00 €" [level=3]
+          - menuitem "Modifier le profil":
+            - text: 
+            - generic: Modifier le profil
+          - menuitem "Changer le mot de passe":
+            - text: 
+            - generic: Changer le mot de passe
+          - menuitem "Déconnexion":
+            - text: 
+            - generic: Déconnexion
+  - complementary [ref=e29]:
+    - text: 
+    - navigation [ref=e30]:
+      - list [ref=e31]:
+        - listitem [ref=e32]:
+          - link " Tableau de bord" [ref=e33] [cursor=pointer]:
+            - /url: /admin/dashboard
+            - generic [ref=e34]: 
+            - generic [ref=e35]: Tableau de bord
+      - list [ref=e36]:
+        - listitem [ref=e37]:
+          - link " POS" [ref=e38] [cursor=pointer]:
+            - /url: /admin/pos
+            - generic [ref=e39]: 
+            - generic [ref=e40]: POS
+      - list [ref=e41]:
+        - listitem [ref=e42]:
+          - link "Produits & Stock" [ref=e43] [cursor=pointer]:
+            - /url: /admin/stock/rupture
+            - generic [ref=e44]: Produits & Stock
+      - list [ref=e45]:
+        - listitem [ref=e46]:
+          - link " Catalogue" [ref=e47] [cursor=pointer]:
+            - /url: /admin/items/studio
+            - generic [ref=e48]: 
+            - generic [ref=e49]: Catalogue
+        - listitem [ref=e50]:
+          - link " Attribut d’articles" [ref=e51] [cursor=pointer]:
+            - /url: /admin/settings/item-attributes/list
+            - generic [ref=e52]: 
+            - generic [ref=e53]: Attribut d’articles
+      - list [ref=e54]:
+        - listitem [ref=e55]:
+          - link " Ingrédients" [ref=e56] [cursor=pointer]:
+            - /url: /admin/ingredients
+            - generic [ref=e57]: 
+            - generic [ref=e58]: Ingrédients
+      - list [ref=e59]:
+        - listitem [ref=e60]:
+          - link " Commandes caisse" [ref=e61] [cursor=pointer]:
+            - /url: /admin/pos-orders
+            - generic [ref=e62]: 
+            - generic [ref=e63]: Commandes caisse
+      - list [ref=e64]:
+        - listitem [ref=e65]:
+          - link " Historique" [ref=e66] [cursor=pointer]:
+            - /url: /admin/historique
+            - generic [ref=e67]: 
+            - generic [ref=e68]: Historique
+      - list [ref=e69]:
+        - listitem [ref=e70]:
+          - link " Encaissement" [ref=e71] [cursor=pointer]:
+            - /url: /admin/encaissement
+            - generic [ref=e72]: 
+            - generic [ref=e73]: Encaissement
+      - list [ref=e74]:
+        - listitem [ref=e75]:
+          - link " Vue caisse unifiée" [ref=e76] [cursor=pointer]:
+            - /url: /admin/cash-overview
+            - generic [ref=e77]: 
+            - generic [ref=e78]: Vue caisse unifiée
+      - list [ref=e79]:
+        - listitem [ref=e80]:
+          - link " Caisse livreur" [ref=e81] [cursor=pointer]:
+            - /url: /admin/delivery-boy-cash-sessions
+            - generic [ref=e82]: 
+            - generic [ref=e83]: Caisse livreur
+      - list [ref=e84]:
+        - listitem [ref=e85]:
+          - button "Caisse et commandes" [ref=e86] [cursor=pointer]
+        - listitem [ref=e87]:
+          - link " Écran cuisine" [ref=e88] [cursor=pointer]:
+            - /url: /admin/kitchen-display-system
+            - generic [ref=e89]: 
+            - generic [ref=e90]: Écran cuisine
+        - listitem [ref=e91]:
+          - link " Suivi client" [ref=e92] [cursor=pointer]:
+            - /url: /admin/order-status-screen
+            - generic [ref=e93]: 
+            - generic [ref=e94]: Suivi client
+      - list [ref=e95]:
+        - listitem [ref=e96]:
+          - button "Communications" [ref=e97] [cursor=pointer]
+        - listitem [ref=e98]:
+          - link " Notification pushs" [ref=e99] [cursor=pointer]:
+            - /url: /admin/push-notifications
+            - generic [ref=e100]: 
+            - generic [ref=e101]: Notification pushs
+        - listitem [ref=e102]:
+          - link " Messages" [ref=e103] [cursor=pointer]:
+            - /url: /admin/messages
+            - generic [ref=e104]: 
+            - generic [ref=e105]: Messages
+        - listitem [ref=e106]:
+          - link " Abonnés" [ref=e107] [cursor=pointer]:
+            - /url: /admin/subscribers
+            - generic [ref=e108]: 
+            - generic [ref=e109]: Abonnés
+      - list [ref=e110]:
+        - listitem [ref=e111]:
+          - button "Utilisateurs" [ref=e112] [cursor=pointer]
+        - listitem [ref=e113]:
+          - link " Administrateurs" [ref=e114] [cursor=pointer]:
+            - /url: /admin/administrators
+            - generic [ref=e115]: 
+            - generic [ref=e116]: Administrateurs
+        - listitem [ref=e117]:
+          - link " Employés" [ref=e118] [cursor=pointer]:
+            - /url: /admin/employees
+            - generic [ref=e119]: 
+            - generic [ref=e120]: Employés
+        - listitem [ref=e121]:
+          - link " Chefs" [ref=e122] [cursor=pointer]:
+            - /url: /admin/chefs
+            - generic [ref=e123]: 
+            - generic [ref=e124]: Chefs
+      - list [ref=e125]:
+        - listitem [ref=e126]:
+          - button "Comptes" [ref=e127] [cursor=pointer]
+        - listitem [ref=e128]:
+          - link " Transactions" [ref=e129] [cursor=pointer]:
+            - /url: /admin/transactions
+            - generic [ref=e130]: 
+            - generic [ref=e131]: Transactions
+      - list [ref=e132]:
+        - listitem [ref=e133]:
+          - button "Rapports" [ref=e134] [cursor=pointer]
+        - listitem [ref=e135]:
+          - link " Rapport des ventes" [ref=e136] [cursor=pointer]:
+            - /url: /admin/sales-report
+            - generic [ref=e137]: 
+            - generic [ref=e138]: Rapport des ventes
+        - listitem [ref=e139]:
+          - link " Rapport articles" [ref=e140] [cursor=pointer]:
+            - /url: /admin/items-report
+            - generic [ref=e141]: 
+            - generic [ref=e142]: Rapport articles
+      - list [ref=e143]:
+        - listitem [ref=e144]:
+          - button "Configuration" [ref=e145] [cursor=pointer]
+        - listitem [ref=e146]:
+          - link " Paramètres" [ref=e147] [cursor=pointer]:
+            - /url: /admin/settings
+            - generic [ref=e148]: 
+            - generic [ref=e149]: Paramètres
+  - generic [ref=e150]:
+    - list [ref=e153]:
+      - listitem [ref=e154]:
+        - link "Tableau de bord/" [ref=e155] [cursor=pointer]:
+          - /url: /admin/dashboard
+      - listitem [ref=e156]:
+        - link "Paramètres/" [ref=e158] [cursor=pointer]:
+          - /url: /admin/settings
+      - listitem [ref=e159]:
+        - generic [ref=e160]: Terminaux de paiement (TPE)
+    - generic [ref=e161]:
+      - text: 
+      - navigation [ref=e163]:
+        - link " Entreprise" [ref=e164] [cursor=pointer]:
+          - /url: /admin/settings/company
+          - generic [ref=e165]: 
+          - text: Entreprise
+        - link " Site" [ref=e166] [cursor=pointer]:
+          - /url: /admin/settings/site
+          - generic [ref=e167]: 
+          - text: Site
+        - link " Filiales" [ref=e168] [cursor=pointer]:
+          - /url: /admin/settings/branches
+          - generic [ref=e169]: 
+          - text: Filiales
+        - link " Bornes" [ref=e170] [cursor=pointer]:
+          - /url: /admin/settings/kiosk-machines
+          - generic [ref=e171]: 
+          - text: Bornes
+        - link " Configuration des commandes" [ref=e172] [cursor=pointer]:
+          - /url: /admin/settings/order-setup
+          - generic [ref=e173]: 
+          - text: Configuration des commandes
+        - link " Configuration borne" [ref=e174] [cursor=pointer]:
+          - /url: /admin/settings/kiosk-setup
+          - generic [ref=e175]: 
+          - text: Configuration borne
+        - link " Devises" [ref=e176] [cursor=pointer]:
+          - /url: /admin/settings/currencies
+          - generic [ref=e177]: 
+          - text: Devises
+    - generic [ref=e178]:
+      - img [ref=e181]
+      - generic [ref=e185]:
+        - generic [ref=e186]:
+          - heading "Terminaux de paiement (TPE)" [level=3] [ref=e187]
+          - button "Ajouter" [ref=e189] [cursor=pointer]:
+            - generic [ref=e190]: Ajouter
+        - table [ref=e192]:
+          - rowgroup [ref=e193]:
+            - row "Nom Filiale Passerelle Frais (%) Frais fixes (€) N° de série Statut Action" [ref=e194]:
+              - columnheader "Nom" [ref=e195]
+              - columnheader "Filiale" [ref=e196]
+              - columnheader "Passerelle" [ref=e197]
+              - columnheader "Frais (%)" [ref=e198]
+              - columnheader "Frais fixes (€)" [ref=e199]
+              - columnheader "N° de série" [ref=e200]
+              - columnheader "Statut" [ref=e201]
+              - columnheader "Action" [ref=e202]
+          - rowgroup [ref=e203]:
+            - row "Aucune donnée" [ref=e204]:
+              - cell "Aucune donnée" [ref=e205]
+      - option "Ingenico" [selected]
+      - option "Verifone"
+      - option "Stripe"
+      - option "Senangpay"
+      - option "Manual"

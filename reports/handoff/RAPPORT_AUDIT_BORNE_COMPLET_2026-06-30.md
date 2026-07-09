@@ -137,3 +137,41 @@ DB : `composition_snapshot` = Viande 1 Mexicanos + **Viande 2 Cordon Bleu** + Sa
 
 Déploiement : `npx mix` puis SCP du jeu **complet** des bundles (`public/js/*.js` + `mix-manifest.json`,
 `app.js` gitignoré) vers le VPS + vérif md5 (cf. leçon déploiement bundle complet).
+
+---
+
+## 7. Corrélation avec le rapport cowork (test sur la VRAIE borne production VPS)
+
+Le cowork a testé la borne en ligne (`vps-418872ac.vps.ovh.net`) et documenté 4 bugs.
+Corrélation avec mes findings :
+
+| Cowork | = | Mon fix | Statut |
+|---|---|---|---|
+| **#1 CRITIQUE** Tacos L/Méga/Terminator impossibles (Viande 2 manquante → 422, 100% échec) | = | **BUG 1** (2e viande perdue au panier) | ✅ Corrigé local, **PAS encore déployé** |
+| **#4** pricing/preview 422 sur Tacos L | = | conséquence du BUG 1 | ✅ Résolu avec BUG 1 |
+| **#2 mineur** token kiosk « ~30s » → boucle 401 visible | ≈ | BUG 2+3 (toast/déconnexion masqués) | ✅ symptômes masqués ; racine = 401 cosmétique sur `kiosk-event` (TTL réel = **480 min**, pas 30s) |
+| **#3 mineur** rate-limit 429 sur `order/quote` | — | non reproduit | ⚠️ Artefact des quotes rapides du cowork (throttle API global). Vrai client = 1 quote/checkout, pas de 429. Reco : debounce si besoin. |
+
+> Note : le cowork pense que l'UI « n'affiche qu'un sélecteur de viande ». En réalité l'UI
+> affiche bien « 0/2 » et le client peut sélectionner 2 viandes — c'est `buildCartItem` qui
+> droppait la 2e à l'assemblage de l'article panier. Même symptôme, fix identique.
+
+## 8. ⚠️ Le bug critique est LIVE sur la borne en ligne — déploiement requis
+
+Preuve : VPS `app.js` = md5 `bca5e5c2` (ancien, sans le fix viande) ; local = `f3ba9543`
+(avec `Object.values(item.variations).flat()`). **Tant que ce n'est pas déployé, les
+sandwichs multi-viandes restent incommandables sur la vraie borne.**
+
+Bundles à déployer (SEULEMENT les bundles kiosk modifiés — POS/KDS intouchés) :
+- `public/js/app.js` (f3ba9543) + `public/js/kiosk-wizard.js` (31edc81f) + `public/mix-manifest.json` (589828b2)
+- `resources/views/master.blade.php` (affordance scroll) + `php artisan view:clear` sur le VPS
+
+Commande (à lancer avec ton accord) :
+```bash
+KEY=~/.ssh/lecayenne_ovh ; HOST=ubuntu@51.210.111.124
+scp -i "$KEY" public/js/app.js public/js/kiosk-wizard.js "$HOST:/var/www/lecayenne/public/js/"
+scp -i "$KEY" public/mix-manifest.json "$HOST:/var/www/lecayenne/public/"
+scp -i "$KEY" resources/views/master.blade.php "$HOST:/var/www/lecayenne/resources/views/"
+ssh -i "$KEY" "$HOST" "cd /var/www/lecayenne && php artisan view:clear"
+# vérif : md5sum public/js/app.js doit == f3ba9543... ; tester un Méga sur la borne
+```

@@ -1,0 +1,29 @@
+- generic [ref=f66e4]:
+  - img [ref=f66e7]
+  - banner [ref=f66e11]:
+    - generic [ref=f66e12]:
+      - link "logo" [ref=f66e14] [cursor=pointer]:
+        - /url: /login
+        - img "logo" [ref=f66e15]
+      - link " Connexion" [ref=f66e17] [cursor=pointer]:
+        - /url: /login
+        - generic [ref=f66e18]: 
+        - generic [ref=f66e19]: Connexion
+  - generic [ref=f66e21]:
+    - heading "Bon retour" [level=2] [ref=f66e22]
+    - generic [ref=f66e23]:
+      - generic [ref=f66e24]:
+        - generic [ref=f66e25]: Email
+        - textbox "Email" [ref=f66e26]: ssync.e2e@lecayenne.test
+      - generic [ref=f66e27]:
+        - generic [ref=f66e28]: Mot de passe
+        - textbox "Mot de passe" [ref=f66e29]: w6adv2026!
+      - generic [ref=f66e30]:
+        - generic [ref=f66e31] [cursor=pointer]:
+          - generic [ref=f66e32]:
+            - checkbox "Se souvenir de moi" [ref=f66e33]
+            - generic [ref=f66e34]: 
+          - generic [ref=f66e35]: Se souvenir de moi
+        - link "Mot de passe oublié" [ref=f66e36] [cursor=pointer]:
+          - /url: /forget-password
+      - button "Connexion" [ref=f66e37] [cursor=pointer]

@@ -1,0 +1,58 @@
+- main [ref=f5e5]:
+  - generic [ref=f5e6]:
+    - link "logo" [ref=f5e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=f5e8]
+    - generic [ref=f5e9]:
+      - generic [ref=f5e10]:
+        - button "Plein écran" [ref=f5e11] [cursor=pointer]:
+          - generic [ref=f5e12]: 
+        - button " Filiale " [ref=f5e14] [cursor=pointer]:
+          - generic [ref=f5e15]: 
+          - heading "Filiale" [level=3] [ref=f5e16]:
+            - generic [ref=f5e17]: Filiale
+          - generic [ref=f5e18]: 
+        - link " Tableau de bord" [ref=f5e21] [cursor=pointer]:
+          - /url: /admin/dashboard
+          - generic [ref=f5e22]: 
+          - generic [ref=f5e23]: Tableau de bord
+      - generic [ref=f5e24]:
+        - button "avatar Bonjour Admin Le Cayenne" [ref=f5e25] [cursor=pointer]:
+          - img "avatar" [ref=f5e26]
+          - heading "Bonjour Admin Le Cayenne" [level=3] [ref=f5e27]:
+            - text: Bonjour
+            - generic "Admin Le Cayenne" [ref=f5e28]
+          - generic [ref=f5e29]: 
+        - menu "avatar Bonjour Admin Le Cayenne":
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "Admin Le Cayenne" [level=3]
+            - paragraph: admin@lecayenne.fr
+            - paragraph: "+330600000000"
+            - heading "2,00 €" [level=3]
+          - menuitem "Modifier le profil":
+            - text: 
+            - generic: Modifier le profil
+          - menuitem "Changer le mot de passe":
+            - text: 
+            - generic: Changer le mot de passe
+          - menuitem "Déconnexion":
+            - text: 
+            - generic: Déconnexion
+  - text:                       
+  - main "Écran de statut des commandes" [ref=f5e30]:
+    - img [ref=f5e33]
+    - region "En préparation" [ref=f5e37]:
+      - heading "En préparation" [level=3] [ref=f5e38]
+      - generic [ref=f5e39]:
+        - list
+        - paragraph [ref=f5e40]: —
+    - region "Prêt" [ref=f5e41]:
+      - heading "Prêt" [level=3] [ref=f5e42]
+      - generic [ref=f5e43]:
+        - status "Prêt"
+        - paragraph [ref=f5e44]: —

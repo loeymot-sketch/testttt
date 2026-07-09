@@ -1,0 +1,41 @@
+- generic [ref=f41e4]:
+  - img [ref=f41e7]
+  - banner [ref=f41e11]:
+    - generic [ref=f41e12]:
+      - link "logo" [ref=f41e14] [cursor=pointer]:
+        - /url: /login
+        - img "logo" [ref=f41e15]
+      - generic [ref=f41e16]:
+        - generic [ref=f41e17]:
+          - button "flag Français" [ref=f41e18] [cursor=pointer]:
+            - img "flag" [ref=f41e19]
+            - generic [ref=f41e20]: Français
+          - list:
+            - listitem:
+              - img "flag"
+              - generic: Anglais
+            - listitem:
+              - img "flag"
+              - generic: Français
+        - link " Connexion" [ref=f41e21] [cursor=pointer]:
+          - /url: /login
+          - generic [ref=f41e22]: 
+          - generic [ref=f41e23]: Connexion
+  - generic [ref=f41e25]:
+    - heading "Bon retour" [level=2] [ref=f41e26]
+    - generic [ref=f41e27]:
+      - generic [ref=f41e28]:
+        - generic [ref=f41e29]: Email
+        - textbox "Email" [ref=f41e30]
+      - generic [ref=f41e31]:
+        - generic [ref=f41e32]: Mot de passe
+        - textbox "Mot de passe" [ref=f41e33]
+      - generic [ref=f41e34]:
+        - generic [ref=f41e35] [cursor=pointer]:
+          - generic [ref=f41e36]:
+            - checkbox "Se souvenir de moi" [ref=f41e37]
+            - generic [ref=f41e38]: 
+          - generic [ref=f41e39]: Se souvenir de moi
+        - link "Mot de passe oublié" [ref=f41e40] [cursor=pointer]:
+          - /url: /forget-password
+      - button "Connexion" [ref=f41e41] [cursor=pointer]

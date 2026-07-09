@@ -1,0 +1,214 @@
+- main [ref=f35e5]:
+  - generic [ref=f35e6]:
+    - link "logo" [ref=f35e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=f35e8]
+    - generic [ref=f35e9]:
+      - generic [ref=f35e10]:
+        - generic [ref=f35e11]:
+          - button " Filiale Le Cayenne (principal) " [ref=f35e12] [cursor=pointer]:
+            - generic [ref=f35e13]: 
+            - heading "Filiale Le Cayenne (principal)" [level=3] [ref=f35e14]:
+              - generic [ref=f35e15]: Filiale
+              - text: Le Cayenne (principal)
+            - generic [ref=f35e16]: 
+          - list:
+            - listitem:
+              - radio "Le Cayenne (principal)" [checked]
+              - generic: Le Cayenne (principal)
+        - generic [ref=f35e18]:
+          - button "flag" [ref=f35e20] [cursor=pointer]:
+            - img "flag" [ref=f35e21]
+          - link "POS" [ref=f35e22] [cursor=pointer]:
+            - /url: /admin/pos
+            - generic [ref=f35e23]: 
+      - button "Fermer" [ref=f35e24] [cursor=pointer]: 
+      - generic [ref=f35e25]:
+        - button "avatar Bonjour Admin Le Cayenne" [ref=f35e26] [cursor=pointer]:
+          - img "avatar" [ref=f35e27]
+          - heading "Bonjour Admin Le Cayenne" [level=3] [ref=f35e28]:
+            - text: Bonjour
+            - generic "Admin Le Cayenne" [ref=f35e29]
+          - generic [ref=f35e30]: 
+        - menu "avatar Bonjour Admin Le Cayenne":
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "Admin Le Cayenne" [level=3]
+            - paragraph: admin@lecayenne.fr
+            - paragraph: "+330600000000"
+            - heading "2,00 €" [level=3]
+          - menuitem "Modifier le profil":
+            - text: 
+            - generic: Modifier le profil
+          - menuitem "Changer le mot de passe":
+            - text: 
+            - generic: Changer le mot de passe
+          - menuitem "Déconnexion":
+            - text: 
+            - generic: Déconnexion
+  - complementary [ref=f35e31]:
+    - text: 
+    - navigation [ref=f35e32]:
+      - list [ref=f35e33]:
+        - listitem [ref=f35e34]:
+          - link " Tableau de bord" [ref=f35e35] [cursor=pointer]:
+            - /url: /admin/dashboard
+            - generic [ref=f35e36]: 
+            - generic [ref=f35e37]: Tableau de bord
+      - list [ref=f35e38]:
+        - listitem [ref=f35e39]:
+          - link " POS" [ref=f35e40] [cursor=pointer]:
+            - /url: /admin/pos
+            - generic [ref=f35e41]: 
+            - generic [ref=f35e42]: POS
+      - list [ref=f35e43]:
+        - listitem [ref=f35e44]:
+          - link "Produits & Stock" [ref=f35e45] [cursor=pointer]:
+            - /url: /admin/stock/rupture
+            - generic [ref=f35e46]: Produits & Stock
+      - list [ref=f35e47]:
+        - listitem [ref=f35e48]:
+          - link " Catalogue" [ref=f35e49] [cursor=pointer]:
+            - /url: /admin/items/studio
+            - generic [ref=f35e50]: 
+            - generic [ref=f35e51]: Catalogue
+        - listitem [ref=f35e52]:
+          - link " Attribut d’articles" [ref=f35e53] [cursor=pointer]:
+            - /url: /admin/settings/item-attributes/list
+            - generic [ref=f35e54]: 
+            - generic [ref=f35e55]: Attribut d’articles
+      - list [ref=f35e56]:
+        - listitem [ref=f35e57]:
+          - link " Ingrédients" [ref=f35e58] [cursor=pointer]:
+            - /url: /admin/ingredients
+            - generic [ref=f35e59]: 
+            - generic [ref=f35e60]: Ingrédients
+      - list [ref=f35e61]:
+        - listitem [ref=f35e62]:
+          - link " Commandes caisse" [ref=f35e63] [cursor=pointer]:
+            - /url: /admin/pos-orders
+            - generic [ref=f35e64]: 
+            - generic [ref=f35e65]: Commandes caisse
+      - list [ref=f35e66]:
+        - listitem [ref=f35e67]:
+          - link " Historique" [ref=f35e68] [cursor=pointer]:
+            - /url: /admin/historique
+            - generic [ref=f35e69]: 
+            - generic [ref=f35e70]: Historique
+      - list [ref=f35e71]:
+        - listitem [ref=f35e72]:
+          - link " Encaissement" [ref=f35e73] [cursor=pointer]:
+            - /url: /admin/encaissement
+            - generic [ref=f35e74]: 
+            - generic [ref=f35e75]: Encaissement
+      - list [ref=f35e76]:
+        - listitem [ref=f35e77]:
+          - link " Vue caisse unifiée" [ref=f35e78] [cursor=pointer]:
+            - /url: /admin/cash-overview
+            - generic [ref=f35e79]: 
+            - generic [ref=f35e80]: Vue caisse unifiée
+      - list [ref=f35e81]:
+        - listitem [ref=f35e82]:
+          - link " Caisse livreur" [ref=f35e83] [cursor=pointer]:
+            - /url: /admin/delivery-boy-cash-sessions
+            - generic [ref=f35e84]: 
+            - generic [ref=f35e85]: Caisse livreur
+      - list [ref=f35e86]:
+        - listitem [ref=f35e87]:
+          - button "Caisse et commandes" [ref=f35e88] [cursor=pointer]
+        - listitem [ref=f35e89]:
+          - link " Écran cuisine" [ref=f35e90] [cursor=pointer]:
+            - /url: /admin/kitchen-display-system
+            - generic [ref=f35e91]: 
+            - generic [ref=f35e92]: Écran cuisine
+        - listitem [ref=f35e93]:
+          - link " Suivi client" [ref=f35e94] [cursor=pointer]:
+            - /url: /admin/order-status-screen
+            - generic [ref=f35e95]: 
+            - generic [ref=f35e96]: Suivi client
+      - list [ref=f35e97]:
+        - listitem [ref=f35e98]:
+          - button "Communications" [ref=f35e99] [cursor=pointer]
+        - listitem [ref=f35e100]:
+          - link " Notification pushs" [ref=f35e101] [cursor=pointer]:
+            - /url: /admin/push-notifications
+            - generic [ref=f35e102]: 
+            - generic [ref=f35e103]: Notification pushs
+        - listitem [ref=f35e104]:
+          - link " Messages" [ref=f35e105] [cursor=pointer]:
+            - /url: /admin/messages
+            - generic [ref=f35e106]: 
+            - generic [ref=f35e107]: Messages
+        - listitem [ref=f35e108]:
+          - link " Abonnés" [ref=f35e109] [cursor=pointer]:
+            - /url: /admin/subscribers
+            - generic [ref=f35e110]: 
+            - generic [ref=f35e111]: Abonnés
+      - list [ref=f35e112]:
+        - listitem [ref=f35e113]:
+          - button "Utilisateurs" [ref=f35e114] [cursor=pointer]
+        - listitem [ref=f35e115]:
+          - link " Administrateurs" [ref=f35e116] [cursor=pointer]:
+            - /url: /admin/administrators
+            - generic [ref=f35e117]: 
+            - generic [ref=f35e118]: Administrateurs
+        - listitem [ref=f35e119]:
+          - link " Employés" [ref=f35e120] [cursor=pointer]:
+            - /url: /admin/employees
+            - generic [ref=f35e121]: 
+            - generic [ref=f35e122]: Employés
+        - listitem [ref=f35e123]:
+          - link " Chefs" [ref=f35e124] [cursor=pointer]:
+            - /url: /admin/chefs
+            - generic [ref=f35e125]: 
+            - generic [ref=f35e126]: Chefs
+      - list [ref=f35e127]:
+        - listitem [ref=f35e128]:
+          - button "Comptes" [ref=f35e129] [cursor=pointer]
+        - listitem [ref=f35e130]:
+          - link " Transactions" [ref=f35e131] [cursor=pointer]:
+            - /url: /admin/transactions
+            - generic [ref=f35e132]: 
+            - generic [ref=f35e133]: Transactions
+      - list [ref=f35e134]:
+        - listitem [ref=f35e135]:
+          - button "Rapports" [ref=f35e136] [cursor=pointer]
+        - listitem [ref=f35e137]:
+          - link " Rapport des ventes" [ref=f35e138] [cursor=pointer]:
+            - /url: /admin/sales-report
+            - generic [ref=f35e139]: 
+            - generic [ref=f35e140]: Rapport des ventes
+        - listitem [ref=f35e141]:
+          - link " Rapport articles" [ref=f35e142] [cursor=pointer]:
+            - /url: /admin/items-report
+            - generic [ref=f35e143]: 
+            - generic [ref=f35e144]: Rapport articles
+      - list [ref=f35e145]:
+        - listitem [ref=f35e146]:
+          - button "Configuration" [ref=f35e147] [cursor=pointer]
+        - listitem [ref=f35e148]:
+          - link " Paramètres" [ref=f35e149] [cursor=pointer]:
+            - /url: /admin/settings
+            - generic [ref=f35e150]: 
+            - generic [ref=f35e151]: Paramètres
+  - generic [ref=f35e153]:
+    - heading "Rapport caisses quotidien" [level=3] [ref=f35e155]
+    - generic [ref=f35e156]:
+      - generic [ref=f35e157]:
+        - generic [ref=f35e158]:
+          - generic [ref=f35e159]: Du
+          - textbox "Du" [ref=f35e160]
+        - generic [ref=f35e161]:
+          - generic [ref=f35e162]: Au
+          - textbox "Au" [ref=f35e163]
+        - button " Rechercher" [ref=f35e164] [cursor=pointer]:
+          - generic [ref=f35e165]: 
+          - generic [ref=f35e166]: Rechercher
+        - button " Effacer" [ref=f35e167] [cursor=pointer]:
+          - generic [ref=f35e168]: 
+          - generic [ref=f35e169]: Effacer
+      - generic [ref=f35e170]: Chargement……

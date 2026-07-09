@@ -1,0 +1,68 @@
+{
+  "micro_system": "S4-stock-ingredients",
+  "verdicts": [
+    {
+      "id": "S4-01",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P1",
+      "reason": "VERIFIED. catalogOverview() builds extra availability ONLY from manual_unavailable_reason: extras fetched via ->get(['id','name','group_label']) (StockRuptureDashboardController.php:379) and extraStockLevels filtered whereNotNull('manual_unavailable_reason') (L391); buildGroupedPayload sets is_available = unavailableCount===0 where unavailableCount counts only ids present in that filtered set (L551-555). Variations identical: variationStockLevels also whereNotNull('manual_unavailable_reason') (L451) and the variation builder computes unavailableCount from $variationStockLevels only (L466-471) while ->with(['itemAttribute:id,name']) loads only id+name, so attribute->is_available is not even available. Customer path differs: ChoiceAvailabilityResolver::availabilityForExtra reads extra->getRawOriginal('is_available') FIRST and returns ingredient_rupture when false (L296-301), availabilityForVariation same on the attribute (L312-318). IngredientAvailabilityService::toggle writes item_extra.is_available / item_attribute.is_available cascade-by-name (L34-62). So an ingredient 86'd via the Ingredients admin (item_extra.is_available=0, no stock_levels row) shows green on the dashboard while correctly hidden on kiosk/POS. Two admin truth surfaces contradict during a rush. P1 kept: genuine operator-confusing contradiction. Calibration note: admin-only display inconsistency, no customer oversell (customer surfaces correctly hide), single-box V1 admin-only — defensibly P2, but two contradicting admin boards justify P1."
+    },
+    {
+      "id": "S4-02",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "VERIFIED. Two divergent write mechanisms for the same 'extra rupture' concept confirmed. Dashboard toggleProduct kind='extra' fans out one POST per extra_id to admin/menu/availability/extra/toggle (StockRuptureDashboardComponent.vue:547-554) -> AvailabilityService::toggleStockable writes stock_levels.manual_unavailable_reason for one (branch,type,id) tuple with NO name cascade (AvailabilityService.php:524-571). Ingredients admin instead cascades by name across sibling ItemExtra rows on item_extra.is_available (IngredientAvailabilityService.php:41-62, name+group_label scoped). State split across two columns with no reconciliation; this is the root cause of S4-01. P2 correct: real architectural blur, not a customer-facing fault. Necessary to unify per owner anti-blur mandate, but lower urgency than the visible contradiction in S4-01."
+    },
+    {
+      "id": "S4-03",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "VERIFIED but DOWNGRADED P2->P3. Dead-code claim is accurate: max_daily_qty is nullable with no DB default (migration L22), grep of resources/js for max-daily-qty|max_daily_qty|setMaxDailyQty|maxDailyQty returns ZERO callers, and grep of database/ shows max_daily_qty only in the migration (no seeder/factory writes it). So setMaxDailyQty route (routes/api.php:305) is UI-orphaned, decrementForOrder's quota flip is gated whereNotNull('max_daily_qty') (AvailabilityService.php:347) and the out_of_stock auto-86 (L360-379) never fire, and releaseForOrderItems auto-restore (L727-744, gated max_daily_qty !== null) never fires. Code is real and correct. BUT severity is over-rated: dormant, well-gated, fiscally inert (daily_consumed_qty is a UX counter not NF525), causes no wrong behavior in V1 — it is latent surface, not a defect. P3 'decide+quarantine-or-expose' is the right weight, not P2."
+    },
+    {
+      "id": "S4-04",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "VERIFIED, DOWNGRADED P2->P3, and STRENGTHENED on one point. run() (StockRuptureDashboardController.php:207-239) and lastSummary (L50-85) exist and are fully implemented; routes present (routes/api.php:313,323). grep resources/js for scan-rupture|lastSummary|scanRupture|last-summary returns ZERO axios callers (the Vue dashboard only calls catalog-overview + the 3 toggles + low-alerts). Cron is gated by config('catalog_v15.auto_86_preventive_cron.enabled') which env-defaults false (config/catalog_v15.php:137) and Kernel.php:258 ->when(...) honors it. EXTRA finding: even run()'s Artisan::call('stock:scan-rupture') would no-op because StockScanRupture::handle() early-returns when the same flag is false (StockScanRupture.php:58-61) — so wiring a button alone wouldn't help without also flipping the flag. Real functional gap but severity over-rated: preventive auto-86 is a convenience, V1 single-box operator can 86 manually via the live toggles; nothing breaks. P3."
+    },
+    {
+      "id": "S4-05",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "VERIFIED, DOWNGRADED P2->P3. sendBulkToggle fans out N independent POSTs in batches of 2 via Promise.allSettled, records firstError, throws AFTER the full loop (StockRuptureDashboardComponent.vue:618-635); each toggleStockable commits its own stock_levels row in its own DB.transaction per id (AvailabilityService.php:525) with no group transaction; toggleProduct catch only reverts the single optimistic product.is_available (L566-568) and sends no compensating re-toggles. The 'All-or-nothing semantics' docstring (L601-602) is misleading — implementation is best-effort with UI-only rollback. Real partial-write divergence. BUT severity over-rated: requires a mid-batch network failure on a multi-id bucket; blast radius is a small partial-86 that errs SAFE (some siblings unavailable) and is self-healing on next full toggle; confidence is correctly 'medium' (live-verify). The most-defensible concrete fix is the cheap docstring correction. P3."
+    },
+    {
+      "id": "S4-06",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "VERIFIED, DOWNGRADED P2->P3. Four distinct reason strings for '86' confirmed: dashboard manual -> 'out_of_stock_manual' (StockRuptureDashboardComponent.vue:248); quota auto-86 -> 'out_of_stock' (AvailabilityService.php:143,360); preventive cron -> 'stock_rupture' (StockScanRupture.php:130); release -> 'released_after_cancel_or_refund' (AvailabilityService.php:742). lastSummary hard-filters where('unavailable_reason','stock_rupture') (StockRuptureDashboardController.php:58), excluding manual/quota 86s. No shared enum; magic strings scattered. BUT severity over-rated: the only concrete observable consumer (lastSummary) is itself UI-orphaned per S4-04, so the under-report harms nobody in V1; the rest is a maintainability/consistency blur, not a behavioral defect. P3, contingent (becomes more relevant if lastSummary is ever wired)."
+    },
+    {
+      "id": "S4-07",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": false,
+      "severity_adjusted": "DROP",
+      "reason": "VERIFIED real inconsistency but DROP for V1. releaseForOrderItems shouldFlip checks only wasUnavailable && max_daily_qty !== null && newConsumed < max_daily_qty (AvailabilityService.php:726-729) and does NOT gate on unavailable_reason === 'out_of_stock', whereas setMaxDailyQty's auto-restore DOES gate previousReason === 'out_of_stock' (L150). So a refund could resurrect a manually-86'd item IF a cap were set. The asymmetry is genuine and the recommended one-line gate is correct. HOWEVER it is is_necessary:false for V1: it is doubly-dormant — gated by max_daily_qty !== null which S4-03 proves is ALWAYS null (no UI/seeder/factory ever sets a cap), so shouldFlip can never be true. Zero reachable wrong-result in V1. The auditor itself rates P3 'dormant'. As a standalone fix with no reachable trigger, DROP (or fold into the S4-03 quota decision); only becomes live (then P1) if/when the quota subsystem from S4-03 is enabled. Confidence 'medium' acknowledged."
+    }
+  ],
+  "coverage_gaps": [
+    "GET admin/stock/low-alerts is LIVE-wired (StockLowAlertsWidget.vue:91 + StockRuptureDashboardController::lowAlerts, routes/api.php:316) and feeds the admin dashboard low-stock widget, but no S4 finding audits its data source / threshold logic / N+1 (a dedicated test StockRuptureDashboardLowAlertsN1Test.php exists, implying past N+1 concern). The auditor examined run/last-summary (orphaned) but not the one scan-adjacent endpoint that IS consumed.",
+    "Ingredients admin write path beyond the toggle: PUT admin/ingredients/{globalId}/availability accepts a free-text reason via window.prompt (IngredientAvailabilityToggleComponent.vue:74) that is persisted into item_extra.unavailable_reason / item_attribute.unavailable_reason with no validation/enum — compounds S4-06's vocabulary blur and is unaudited (operator can type arbitrary reason strings into a column some queries filter on).",
+    "ItemAttribute cascade-by-name in IngredientAvailabilityService updates EVERY ItemAttribute sharing a name with NO group_label scoping (IngredientAvailabilityService.php:34-42), unlike the ItemExtra path which scopes by name+group_label (L47-58). A variation attribute name collision across unrelated items would over-86. Unaudited asymmetry between the two cascade branches.",
+    "decrementForOrder daily_consumed_qty raw UPDATE path (AvailabilityService.php:333-379) and its OrderCreated listener wiring were not exercised for correctness of the Paris-local daily reset (whereDate daily_reset_at < today, L336) — dormant in V1 (S4-03) but unaudited if quota is later enabled.",
+    "No S4 finding checks BranchScope behavior on the catalog-overview StockLevel reads: the controller explicitly withoutGlobalScope(BranchScope) and manually where('branch_id',$branchId) (L385-391) — correct for admin branch_id=0 selection, but the manual scoping vs global-scope bypass on a multi-tenant-sensitive table was not validated for cross-branch leakage in a staff (branch_id>0) context."
+  ]
+}

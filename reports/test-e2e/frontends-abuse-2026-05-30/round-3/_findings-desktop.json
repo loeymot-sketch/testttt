@@ -1,9 +1,16 @@
 [
   {
-    "severity": "INFO",
+    "severity": "P2",
     "viewport": "desktop",
-    "state": "cascade-recap",
-    "png": "web-desktop-cascade-recap.png",
-    "observed": "cascade recap total \"10,00 €\" (cascadeFired=true)"
+    "state": "item-detail",
+    "png": "-",
+    "observed": "no product card found to open detail modal"
+  },
+  {
+    "severity": "P2",
+    "viewport": "desktop",
+    "state": "cascade",
+    "png": "-",
+    "observed": "menu-formule step not reached / full formule not selected — cascade not exercised"
   }
 ]

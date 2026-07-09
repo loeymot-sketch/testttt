@@ -1,0 +1,698 @@
+[
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/styles.css",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919166
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/redesigns-styles.css",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919166
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/api/storage.js",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919168
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/api/client.js",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919168
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/data/menu.js",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919168
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/data/loyalty.js",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919169
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/data/loyaltyRewardState.js",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919170
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/data/orders.js",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919170
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/data/user.js",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919171
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/data/wallet-spec.js",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919171
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/data/dev-helpers.js",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919171
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/image-slot.js",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919171
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/vendor/qrcode.js",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919172
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/hooks/useCountdown.js",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919172
+  },
+  {
+    "level": "info",
+    "text": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold",
+    "location": {
+      "url": "https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js",
+      "lineNumber": 29904,
+      "columnNumber": 18
+    },
+    "ts": 1783527919363
+  },
+  {
+    "level": "warning",
+    "text": "You are using the in-browser Babel transformer. Be sure to precompile your scripts for production - https://babeljs.io/docs/setup/",
+    "location": {
+      "url": "https://unpkg.com/@babel/standalone@7.29.0/babel.min.js",
+      "lineNumber": 2,
+      "columnNumber": 3132940
+    },
+    "ts": 1783527919557
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/icons.jsx",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919561
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/shared.jsx",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919561
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/hooks/useLoyaltyQR.js",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919561
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/components/BarcodeMock.jsx",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919561
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/components/LoyaltyQR.jsx",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919562
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/components/WizardRedeem.jsx",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919565
+  },
+  {
+    "level": "pageerror",
+    "text": "Could not load http://127.0.0.1:8087/kiosk/icons.jsx",
+    "stack": "Error: Could not load http://127.0.0.1:8087/kiosk/icons.jsx\n    at d.src.i.onreadystatechange (https://unpkg.com/@babel/standalone@7.29.0/babel.min.js:3:3129264)",
+    "ts": 1783527919565
+  },
+  {
+    "level": "pageerror",
+    "text": "Could not load http://127.0.0.1:8087/kiosk/shared.jsx",
+    "stack": "Error: Could not load http://127.0.0.1:8087/kiosk/shared.jsx\n    at d.src.i.onreadystatechange (https://unpkg.com/@babel/standalone@7.29.0/babel.min.js:3:3129264)",
+    "ts": 1783527919565
+  },
+  {
+    "level": "pageerror",
+    "text": "Could not load http://127.0.0.1:8087/kiosk/hooks/useLoyaltyQR.js",
+    "stack": "Error: Could not load http://127.0.0.1:8087/kiosk/hooks/useLoyaltyQR.js\n    at d.src.i.onreadystatechange (https://unpkg.com/@babel/standalone@7.29.0/babel.min.js:3:3129264)",
+    "ts": 1783527919565
+  },
+  {
+    "level": "pageerror",
+    "text": "Could not load http://127.0.0.1:8087/kiosk/components/BarcodeMock.jsx",
+    "stack": "Error: Could not load http://127.0.0.1:8087/kiosk/components/BarcodeMock.jsx\n    at d.src.i.onreadystatechange (https://unpkg.com/@babel/standalone@7.29.0/babel.min.js:3:3129264)",
+    "ts": 1783527919565
+  },
+  {
+    "level": "pageerror",
+    "text": "Could not load http://127.0.0.1:8087/kiosk/components/LoyaltyQR.jsx",
+    "stack": "Error: Could not load http://127.0.0.1:8087/kiosk/components/LoyaltyQR.jsx\n    at d.src.i.onreadystatechange (https://unpkg.com/@babel/standalone@7.29.0/babel.min.js:3:3129264)",
+    "ts": 1783527919566
+  },
+  {
+    "level": "pageerror",
+    "text": "Could not load http://127.0.0.1:8087/kiosk/components/WizardRedeem.jsx",
+    "stack": "Error: Could not load http://127.0.0.1:8087/kiosk/components/WizardRedeem.jsx\n    at d.src.i.onreadystatechange (https://unpkg.com/@babel/standalone@7.29.0/babel.min.js:3:3129264)",
+    "ts": 1783527919566
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/screens-onboarding.jsx",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919568
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/screens-item-steps.jsx",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919568
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/screens-main.jsx",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919568
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/screens-modals.jsx",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919570
+  },
+  {
+    "level": "pageerror",
+    "text": "Could not load http://127.0.0.1:8087/kiosk/screens-onboarding.jsx",
+    "stack": "Error: Could not load http://127.0.0.1:8087/kiosk/screens-onboarding.jsx\n    at d.src.i.onreadystatechange (https://unpkg.com/@babel/standalone@7.29.0/babel.min.js:3:3129264)",
+    "ts": 1783527919570
+  },
+  {
+    "level": "pageerror",
+    "text": "Could not load http://127.0.0.1:8087/kiosk/screens-item-steps.jsx",
+    "stack": "Error: Could not load http://127.0.0.1:8087/kiosk/screens-item-steps.jsx\n    at d.src.i.onreadystatechange (https://unpkg.com/@babel/standalone@7.29.0/babel.min.js:3:3129264)",
+    "ts": 1783527919570
+  },
+  {
+    "level": "pageerror",
+    "text": "Could not load http://127.0.0.1:8087/kiosk/screens-main.jsx",
+    "stack": "Error: Could not load http://127.0.0.1:8087/kiosk/screens-main.jsx\n    at d.src.i.onreadystatechange (https://unpkg.com/@babel/standalone@7.29.0/babel.min.js:3:3129264)",
+    "ts": 1783527919570
+  },
+  {
+    "level": "pageerror",
+    "text": "Could not load http://127.0.0.1:8087/kiosk/screens-modals.jsx",
+    "stack": "Error: Could not load http://127.0.0.1:8087/kiosk/screens-modals.jsx\n    at d.src.i.onreadystatechange (https://unpkg.com/@babel/standalone@7.29.0/babel.min.js:3:3129264)",
+    "ts": 1783527919653
+  },
+  {
+    "level": "pageerror",
+    "text": "Cannot read properties of undefined (reading 'isAuthenticated')",
+    "stack": "TypeError: Cannot read properties of undefined (reading 'isAuthenticated')\n    at <anonymous>:42:17\n    at App (<anonymous>:45:4)\n    at renderWithHooks (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:15496:20)\n    at mountIndeterminateComponent (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:20113:15)\n    at beginWork (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:21636:18)\n    at HTMLUnknownElement.callCallback (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:4151:16)\n    at Object.invokeGuardedCallbackDev (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:4200:18)\n    at invokeGuardedCallback (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:4264:33)\n    at beginWork$1 (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:27500:9)\n    at performUnitOfWork (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:26609:14)\n    at workLoopSync (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:26515:7)\n    at renderRootSync (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:26483:9)\n    at performConcurrentWorkOnRoot (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:25787:76)\n    at workLoop (https://unpkg.com/react@18.3.1/umd/react.development.js:2653:36)\n    at flushWork (https://unpkg.com/react@18.3.1/umd/react.development.js:2626:16)\n    at MessagePort.performWorkUntilDeadline (https://unpkg.com/react@18.3.1/umd/react.development.js:2920:23)",
+    "ts": 1783527919658
+  },
+  {
+    "level": "pageerror",
+    "text": "Cannot read properties of undefined (reading 'isAuthenticated')",
+    "stack": "TypeError: Cannot read properties of undefined (reading 'isAuthenticated')\n    at <anonymous>:42:17\n    at App (<anonymous>:45:4)\n    at renderWithHooks (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:15496:20)\n    at mountIndeterminateComponent (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:20113:15)\n    at beginWork (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:21636:18)\n    at HTMLUnknownElement.callCallback (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:4151:16)\n    at Object.invokeGuardedCallbackDev (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:4200:18)\n    at invokeGuardedCallback (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:4264:33)\n    at beginWork$1 (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:27500:9)\n    at performUnitOfWork (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:26609:14)\n    at workLoopSync (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:26515:7)\n    at renderRootSync (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:26483:9)\n    at recoverFromConcurrentError (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:25899:22)\n    at performConcurrentWorkOnRoot (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:25799:24)\n    at workLoop (https://unpkg.com/react@18.3.1/umd/react.development.js:2653:36)\n    at flushWork (https://unpkg.com/react@18.3.1/umd/react.development.js:2626:16)\n    at MessagePort.performWorkUntilDeadline (https://unpkg.com/react@18.3.1/umd/react.development.js:2920:23)",
+    "ts": 1783527919659
+  },
+  {
+    "level": "error",
+    "text": "The above error occurred in the <App> component:\n\n    at App (<anonymous>:45:4)\n\nConsider adding an error boundary to your tree to customize error handling behavior.\nVisit https://reactjs.org/link/error-boundaries to learn more about error boundaries.",
+    "location": {
+      "url": "https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js",
+      "lineNumber": 18713,
+      "columnNumber": 24
+    },
+    "ts": 1783527919659
+  },
+  {
+    "level": "pageerror",
+    "text": "Cannot read properties of undefined (reading 'isAuthenticated')",
+    "stack": "TypeError: Cannot read properties of undefined (reading 'isAuthenticated')\n    at <anonymous>:42:17\n    at App (<anonymous>:45:4)\n    at renderWithHooks (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:15496:20)\n    at mountIndeterminateComponent (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:20113:15)\n    at beginWork (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:21636:18)\n    at beginWork$1 (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:27475:16)\n    at performUnitOfWork (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:26609:14)\n    at workLoopSync (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:26515:7)\n    at renderRootSync (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:26483:9)\n    at recoverFromConcurrentError (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:25899:22)\n    at performConcurrentWorkOnRoot (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:25799:24)\n    at workLoop (https://unpkg.com/react@18.3.1/umd/react.development.js:2653:36)\n    at flushWork (https://unpkg.com/react@18.3.1/umd/react.development.js:2626:16)\n    at MessagePort.performWorkUntilDeadline (https://unpkg.com/react@18.3.1/umd/react.development.js:2920:23)",
+    "ts": 1783527919660
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/styles.css",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919687
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/redesigns-styles.css",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919687
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/api/storage.js",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919688
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/api/client.js",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919688
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/data/menu.js",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919689
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/data/loyalty.js",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919689
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/data/loyaltyRewardState.js",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919689
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/data/orders.js",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919689
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/data/wallet-spec.js",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919713
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/data/user.js",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919713
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/data/dev-helpers.js",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919713
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/image-slot.js",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919730
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/vendor/qrcode.js",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919730
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/hooks/useCountdown.js",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919730
+  },
+  {
+    "level": "info",
+    "text": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold",
+    "location": {
+      "url": "https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js",
+      "lineNumber": 29904,
+      "columnNumber": 18
+    },
+    "ts": 1783527919731
+  },
+  {
+    "level": "warning",
+    "text": "You are using the in-browser Babel transformer. Be sure to precompile your scripts for production - https://babeljs.io/docs/setup/",
+    "location": {
+      "url": "https://unpkg.com/@babel/standalone@7.29.0/babel.min.js",
+      "lineNumber": 2,
+      "columnNumber": 3132940
+    },
+    "ts": 1783527919757
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/icons.jsx",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919761
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/shared.jsx",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919761
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/hooks/useLoyaltyQR.js",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919763
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/components/BarcodeMock.jsx",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919763
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/components/LoyaltyQR.jsx",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919768
+  },
+  {
+    "level": "pageerror",
+    "text": "Could not load http://127.0.0.1:8087/kiosk/components/LoyaltyQR.jsx",
+    "stack": "Error: Could not load http://127.0.0.1:8087/kiosk/components/LoyaltyQR.jsx\n    at d.src.i.onreadystatechange (https://unpkg.com/@babel/standalone@7.29.0/babel.min.js:3:3129264)",
+    "ts": 1783527919768
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/components/WizardRedeem.jsx",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919772
+  },
+  {
+    "level": "pageerror",
+    "text": "Could not load http://127.0.0.1:8087/kiosk/components/WizardRedeem.jsx",
+    "stack": "Error: Could not load http://127.0.0.1:8087/kiosk/components/WizardRedeem.jsx\n    at d.src.i.onreadystatechange (https://unpkg.com/@babel/standalone@7.29.0/babel.min.js:3:3129264)",
+    "ts": 1783527919772
+  },
+  {
+    "level": "pageerror",
+    "text": "Could not load http://127.0.0.1:8087/kiosk/icons.jsx",
+    "stack": "Error: Could not load http://127.0.0.1:8087/kiosk/icons.jsx\n    at d.src.i.onreadystatechange (https://unpkg.com/@babel/standalone@7.29.0/babel.min.js:3:3129264)",
+    "ts": 1783527919772
+  },
+  {
+    "level": "pageerror",
+    "text": "Could not load http://127.0.0.1:8087/kiosk/shared.jsx",
+    "stack": "Error: Could not load http://127.0.0.1:8087/kiosk/shared.jsx\n    at d.src.i.onreadystatechange (https://unpkg.com/@babel/standalone@7.29.0/babel.min.js:3:3129264)",
+    "ts": 1783527919772
+  },
+  {
+    "level": "pageerror",
+    "text": "Could not load http://127.0.0.1:8087/kiosk/hooks/useLoyaltyQR.js",
+    "stack": "Error: Could not load http://127.0.0.1:8087/kiosk/hooks/useLoyaltyQR.js\n    at d.src.i.onreadystatechange (https://unpkg.com/@babel/standalone@7.29.0/babel.min.js:3:3129264)",
+    "ts": 1783527919772
+  },
+  {
+    "level": "pageerror",
+    "text": "Could not load http://127.0.0.1:8087/kiosk/components/BarcodeMock.jsx",
+    "stack": "Error: Could not load http://127.0.0.1:8087/kiosk/components/BarcodeMock.jsx\n    at d.src.i.onreadystatechange (https://unpkg.com/@babel/standalone@7.29.0/babel.min.js:3:3129264)",
+    "ts": 1783527919779
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/screens-onboarding.jsx",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919779
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/screens-item-steps.jsx",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919780
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/screens-main.jsx",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919781
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8087/kiosk/screens-modals.jsx",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527919781
+  },
+  {
+    "level": "pageerror",
+    "text": "Could not load http://127.0.0.1:8087/kiosk/screens-onboarding.jsx",
+    "stack": "Error: Could not load http://127.0.0.1:8087/kiosk/screens-onboarding.jsx\n    at d.src.i.onreadystatechange (https://unpkg.com/@babel/standalone@7.29.0/babel.min.js:3:3129264)",
+    "ts": 1783527919781
+  },
+  {
+    "level": "pageerror",
+    "text": "Could not load http://127.0.0.1:8087/kiosk/screens-item-steps.jsx",
+    "stack": "Error: Could not load http://127.0.0.1:8087/kiosk/screens-item-steps.jsx\n    at d.src.i.onreadystatechange (https://unpkg.com/@babel/standalone@7.29.0/babel.min.js:3:3129264)",
+    "ts": 1783527919781
+  },
+  {
+    "level": "pageerror",
+    "text": "Could not load http://127.0.0.1:8087/kiosk/screens-main.jsx",
+    "stack": "Error: Could not load http://127.0.0.1:8087/kiosk/screens-main.jsx\n    at d.src.i.onreadystatechange (https://unpkg.com/@babel/standalone@7.29.0/babel.min.js:3:3129264)",
+    "ts": 1783527919782
+  },
+  {
+    "level": "pageerror",
+    "text": "Could not load http://127.0.0.1:8087/kiosk/screens-modals.jsx",
+    "stack": "Error: Could not load http://127.0.0.1:8087/kiosk/screens-modals.jsx\n    at d.src.i.onreadystatechange (https://unpkg.com/@babel/standalone@7.29.0/babel.min.js:3:3129264)",
+    "ts": 1783527919847
+  },
+  {
+    "level": "pageerror",
+    "text": "Cannot read properties of undefined (reading 'isAuthenticated')",
+    "stack": "TypeError: Cannot read properties of undefined (reading 'isAuthenticated')\n    at <anonymous>:42:17\n    at App (<anonymous>:45:4)\n    at renderWithHooks (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:15496:20)\n    at mountIndeterminateComponent (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:20113:15)\n    at beginWork (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:21636:18)\n    at HTMLUnknownElement.callCallback (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:4151:16)\n    at Object.invokeGuardedCallbackDev (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:4200:18)\n    at invokeGuardedCallback (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:4264:33)\n    at beginWork$1 (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:27500:9)\n    at performUnitOfWork (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:26609:14)\n    at workLoopSync (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:26515:7)\n    at renderRootSync (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:26483:9)\n    at performConcurrentWorkOnRoot (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:25787:76)\n    at workLoop (https://unpkg.com/react@18.3.1/umd/react.development.js:2653:36)\n    at flushWork (https://unpkg.com/react@18.3.1/umd/react.development.js:2626:16)\n    at MessagePort.performWorkUntilDeadline (https://unpkg.com/react@18.3.1/umd/react.development.js:2920:23)",
+    "ts": 1783527919849
+  },
+  {
+    "level": "pageerror",
+    "text": "Cannot read properties of undefined (reading 'isAuthenticated')",
+    "stack": "TypeError: Cannot read properties of undefined (reading 'isAuthenticated')\n    at <anonymous>:42:17\n    at App (<anonymous>:45:4)\n    at renderWithHooks (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:15496:20)\n    at mountIndeterminateComponent (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:20113:15)\n    at beginWork (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:21636:18)\n    at HTMLUnknownElement.callCallback (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:4151:16)\n    at Object.invokeGuardedCallbackDev (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:4200:18)\n    at invokeGuardedCallback (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:4264:33)\n    at beginWork$1 (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:27500:9)\n    at performUnitOfWork (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:26609:14)\n    at workLoopSync (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:26515:7)\n    at renderRootSync (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:26483:9)\n    at recoverFromConcurrentError (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:25899:22)\n    at performConcurrentWorkOnRoot (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:25799:24)\n    at workLoop (https://unpkg.com/react@18.3.1/umd/react.development.js:2653:36)\n    at flushWork (https://unpkg.com/react@18.3.1/umd/react.development.js:2626:16)\n    at MessagePort.performWorkUntilDeadline (https://unpkg.com/react@18.3.1/umd/react.development.js:2920:23)",
+    "ts": 1783527919849
+  },
+  {
+    "level": "error",
+    "text": "The above error occurred in the <App> component:\n\n    at App (<anonymous>:45:4)\n\nConsider adding an error boundary to your tree to customize error handling behavior.\nVisit https://reactjs.org/link/error-boundaries to learn more about error boundaries.",
+    "location": {
+      "url": "https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js",
+      "lineNumber": 18713,
+      "columnNumber": 24
+    },
+    "ts": 1783527919849
+  },
+  {
+    "level": "pageerror",
+    "text": "Cannot read properties of undefined (reading 'isAuthenticated')",
+    "stack": "TypeError: Cannot read properties of undefined (reading 'isAuthenticated')\n    at <anonymous>:42:17\n    at App (<anonymous>:45:4)\n    at renderWithHooks (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:15496:20)\n    at mountIndeterminateComponent (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:20113:15)\n    at beginWork (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:21636:18)\n    at beginWork$1 (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:27475:16)\n    at performUnitOfWork (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:26609:14)\n    at workLoopSync (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:26515:7)\n    at renderRootSync (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:26483:9)\n    at recoverFromConcurrentError (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:25899:22)\n    at performConcurrentWorkOnRoot (https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js:25799:24)\n    at workLoop (https://unpkg.com/react@18.3.1/umd/react.development.js:2653:36)\n    at flushWork (https://unpkg.com/react@18.3.1/umd/react.development.js:2626:16)\n    at MessagePort.performWorkUntilDeadline (https://unpkg.com/react@18.3.1/umd/react.development.js:2920:23)",
+    "ts": 1783527919850
+  }
+]

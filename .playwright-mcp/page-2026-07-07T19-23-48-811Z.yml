@@ -1,0 +1,46 @@
+- generic [ref=f72e1]:
+  - generic [ref=f72e440]:
+    - generic [ref=f72e441]:
+      - heading "Et pour terminer ?" [level=1] [ref=f72e442]
+      - paragraph [ref=f72e443]: Ajoutez quelque chose à votre commande
+    - list "Et pour terminer ?" [ref=f72e444]:
+      - listitem "Coca-Cola Zero 33cl — €1,90" [ref=f72e445] [cursor=pointer]:
+        - img [ref=f72e447]
+        - generic [ref=f72e448]:
+          - heading "Coca-Cola Zero 33cl" [level=3] [ref=f72e449]
+          - generic [ref=f72e450]: €1,90
+        - generic [ref=f72e452]: +
+      - listitem "Tiramisu — €3,50" [ref=f72e453] [cursor=pointer]:
+        - img [ref=f72e455]
+        - generic [ref=f72e456]:
+          - heading "Tiramisu" [level=3] [ref=f72e457]
+          - generic [ref=f72e458]: €3,50
+        - generic [ref=f72e460]: +
+      - listitem "Oasis Tropical 33cl — €1,90" [ref=f72e461] [cursor=pointer]:
+        - img [ref=f72e463]
+        - generic [ref=f72e464]:
+          - heading "Oasis Tropical 33cl" [level=3] [ref=f72e465]
+          - generic [ref=f72e466]: €1,90
+        - generic [ref=f72e468]: +
+      - listitem "Capri-Sun — €1,50" [ref=f72e469] [cursor=pointer]:
+        - img [ref=f72e471]
+        - generic [ref=f72e472]:
+          - heading "Capri-Sun" [level=3] [ref=f72e473]
+          - generic [ref=f72e474]: €1,50
+        - generic [ref=f72e476]: +
+      - listitem "Eau Plate 50cl — €1,00" [ref=f72e477] [cursor=pointer]:
+        - img [ref=f72e479]
+        - generic [ref=f72e480]:
+          - heading "Eau Plate 50cl" [level=3] [ref=f72e481]
+          - generic [ref=f72e482]: €1,00
+        - generic [ref=f72e484]: +
+      - listitem "Glace — €3,50" [ref=f72e485] [cursor=pointer]:
+        - img [ref=f72e487]
+        - generic [ref=f72e488]:
+          - heading "Glace" [level=3] [ref=f72e489]
+          - generic [ref=f72e490]: €3,50
+        - generic [ref=f72e492]: +
+    - generic [ref=f72e493]:
+      - button "Non merci, continuer sans" [ref=f72e494] [cursor=pointer]
+      - progressbar "(30s)" [ref=f72e495]
+  - status

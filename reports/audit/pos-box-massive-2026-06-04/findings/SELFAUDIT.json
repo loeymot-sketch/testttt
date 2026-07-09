@@ -1,0 +1,124 @@
+{
+  "verdict": "SUBSTANTIALLY SOUND after corrections. 4 independent hostile reviewers re-opened every cited file:line. P0=0 is CORRECT — the only P0-candidate (the discount->VAT claim) was DISPROVED by running the F1 test (ZReportDiscountNettingTest 5/5 green). The P1 cluster is airtight at the mechanism level (two NF525 P1s backed by live DB queries). Net self-audit effect: 1 duplicate dropped, 1 over-claimed escalation reframed (fiscal->doc), 4 severity re-ratings, ~10 evidence/wording corrections. Safe to deliver.",
+  "drop_ids": [],
+  "severity_overrides": {
+    "M10-01": "P1",
+    "M12-001": "P2",
+    "M4-01": "P2",
+    "M11-04": "P3"
+  },
+  "category_overrides": {
+    "LV-03": "visual"
+  },
+  "additions": [],
+  "annotations": {
+    "M10-01": "Self-audit (reword + upgrade): a Transaction + audit_log row DO exist, but there is NO CashMovement / cash-drawer-session linkage — flagCashMovementSkipped sets only a transient, never-persisted property. Restored P2->P1 as an NF525 cash-trail/drawer-linkage breach (cash physically received, order PAID, no queryable drawer movement).",
+    "M12-001": "Self-audit re-rating P1->P2: all three sub-defects are real (no created_at/updated_at/user in SimpleOrderResource -> blank time badges + inverted sort + dead name-search), but the customer name still renders via the customer_name fallback and there is no money/fiscal/sale-blocking impact -> display/triage defect, not P1.",
+    "M4-01": "Self-audit re-rating P1->P2: total charged == total displayed (the Remise footer line disappears with the cleared discount), so no money loss and not sale-blocking; residual harm is only the stale discount input field. (Contrast M4-02, a real 422-blocking flow, which stays P1.)",
+    "M4-02": "Self-audit caveat: this whole M4 discount cluster is live-reachable only because POS_MANUAL_DISCOUNT_ENABLED is unset (config default true) — see ESC-01. If the owner sets it false, M4-01/02/03/05 become unreachable.",
+    "M11-04": "Self-audit re-rating P2->P3: exploitation requires an already-authenticated admin-area session; it is a gate-consistency gap vs its 4 sibling POS routes (missing permission:pos), not an unauthenticated hole.",
+    "M11-02": "Self-audit reword: root cause is that branch fiscal-identity columns (SIRET / TVA intra / register / legal_footer) are never populated (no seeder, no admin UI); the Vue receipt template is the render-omission symptom, not the cause.",
+    "M3-01": "Self-audit evidence correction: the dead completeness guard lives in the never-invoked bindEvents() (pos-wizard.js:5288) bound to renderNav()'s [data-nav] buttons (emitted only inside the also-dead renderWizard()); the ACTIVE add-to-cart handler is 5851-5854 -> syncAndSubmit() with no viande/sauce/pain gating. Conclusion unchanged (a 0-viande/0-sauce Tacos can be added). LIVE-VERIFIED post-self-audit: opened the Tacos wizard, clicked Ajouter au panier (data-action=add-to-cart, handler pos-wizard.js:5850-5854 -> syncAndSubmit() with no gate) with ZERO viande/sauce selected -> cart 0->1 article, total 6,90 EUR, wizard closed. The red 0/1 badge is purely cosmetic; the button is enabled and adds. Capture: 40-wizard-add-zero-viande.png.",
+    "M6-002": "Self-audit example correction: the Z mis-bucketing is reachable only via a CARD-(non-cash-)dominant split (e.g. card 20 + cash 10 -> pos_payment_method=CARD -> full 30 buckets under CARD, the cash leg mis-attributed). The cash-dominant variant is hard-rejected upstream by M6-001's single-tender guard and never reaches the Z. NF525 P1 stands.",
+    "M9-01": "Self-audit: correct citation to resources/js/components/admin/posOrders/PosOrderShowComponent.vue:354-357. LATENT today because the live loyalty rate IS 100 (the hardcoded preview matches by coincidence); becomes wrong the moment the admin configures a non-100 rate.",
+    "M9-04": "Self-audit: correct citation to resources/js/components/admin/posOrders/PosOrderShowComponent.vue:626-627. Deadcode P3 stands.",
+    "M10-04": "Self-audit framing: this is a cashier-action footgun (the 'Livrer' shortcut can mark a still-unpaid PENDING_COUNTER kiosk order DELIVERED under Plan B kiosk.payment_route_all_to_counter=true), NOT silent/automatic money loss.",
+    "LV-02": "Self-audit re-scope: the Tacos category + item images EXIST on disk (config/menu_images.php maps cat-tacos.png / tacos.png, files present). The grey/placeholder render is a DB items.thumb mapping mismatch on THIS instance (owner data-ops), made visible by the missing @error fallback (M2-06) — not a code defect.",
+    "LV-03": "Self-audit: re-categorised logic->visual; shares the same non-FR fmtPrice root as M3-05 (cosmetic FR-locale violation on the frozen pos-wizard.js surface).",
+    "LV-04": "Self-audit reword: the per-sauce surcharge ('+0,50 €') IS rendered once a sauce is selected (pos-wizard.js:1233-1240); it is absent only in the pristine empty-sauce state. Minor P3 UX nuance, not a 'surcharge never shown' defect.",
+    "LV-05": "Self-audit: this is a UX/clarity opinion (the 0/1 badge + per-viande stepper + supplement expander coexist and are functional), not a functional defect."
+  },
+  "applied_corrections": [
+    "Dropped MC-01 as a duplicate of M11-01 (the SAME app/Services/Receipt/ReceiptDataService.php:70 buildForOrderModel path — my 'distinct service-path' framing was wrong). The receipt-operator=customer P1 is now counted ONCE.",
+    "Reframed ESC-01 from 'P1 NF525 — every discounted Z is wrong' to 'P3 config/doc drift' after INDEPENDENTLY verifying F1 is fixed: ZReportDiscountNettingTest passes 5/5 and ZReportService carries [LOCK_ZREPORT_F1_DISCOUNT_NETTING] post-discount proportional VAT allocation. The P0 count correctly stays 0.",
+    "Upgraded M10-01 P2->P1 (counter-collect cash with no drawer-session/CashMovement linkage = NF525 cash-trail breach), with reworded evidence.",
+    "Downgraded M12-001 P1->P2 (tracker display/triage) and M4-01 P1->P2 (total charged==displayed, not blocking).",
+    "Downgraded M11-04 P2->P3 (gate-consistency; requires an authenticated admin session).",
+    "Corrected evidence/citations on M3-01, M6-002, M9-01, M9-04, M11-02; re-scoped LV-02 (DB-thumb data-ops), LV-03 (logic->visual), reworded LV-04/LV-05 as state-dependent / UX-opinion.",
+    "Live-verified P1 #3 (M3-01) post-self-audit per advisor: the Tacos wizard add button is enabled and adds a 0-viande/0-sauce item to the cart (0->1, 6,90 EUR) despite the 0/1 badge -> upgraded code->live-verified."
+  ],
+  "standing_caveats": [
+    "GAP-37 (surfaced by self-audit, NOT yet finding-grade): a pos-orders-only operator may trigger a RETURNED (refund) transition via OrderService::changeStatus without the pos-refund capability the dedicated refund endpoint enforces (pre-Z path). Recommend confirming the exact authz on the changeStatus RETURNED transition and tightening it.",
+    "No physical/printed thermal receipt could be E2E fiscal-verified on this branch: no ESC/POS fiscal renderer exists here (the printer-saga branch is unmerged). M11 receipt findings are code-path verified against ReceiptDataService / ReceiptComponent, not a printed ticket.",
+    "M1-06 (public POS Blade shell) was correctly DROPPED by the primary adversarial pass: zero data exposure (Bearer-token SPA + permission-gated cash APIs); the Blade shell carries no sensitive data.",
+    "LV-06 (landing 'thin product strip' layout) was re-verified only at template/CSS level; the proportion judgment rests on captured screenshots 01/33, not a re-measured render.",
+    "The DROPPED (23) and SOLIDS (60) lists were spot-checked, not exhaustively re-audited by every reviewer; all backend confirmations are static (file:line + control-flow), per the worktree vendor-shadow note in project memory."
+  ],
+  "reviewers": [
+    {
+      "reviewer": "RED re-verify M1-M6 + MAIN/LIVE",
+      "reverified_ok": [
+        "32 findings"
+      ],
+      "challenges": [
+        "M3-01 evidence",
+        "M6-002 example",
+        "LV-02 DB-data",
+        "LV-03 visual",
+        "LV-04 state-dep",
+        "LV-05 opinion",
+        "M4-02 caveat"
+      ],
+      "missing_coverage": [
+        "LV-06 template-only",
+        "static-only confirmations"
+      ],
+      "overall_verdict": "SUBSTANTIALLY SOUND, line/severity hygiene gaps; 32 re-confirmed real with correct mechanics."
+    },
+    {
+      "reviewer": "RED re-verify M7-M12 + MAIN",
+      "reverified_ok": [
+        "30 of 32"
+      ],
+      "challenges": [
+        "M9-01/M9-04 paths",
+        "M11-04 over-severity",
+        "M10-01 reword",
+        "M11-02 root cause"
+      ],
+      "missing_coverage": [
+        "M10-05 metric READ verified (strengthens)",
+        "heal-commit ancestry reconfirmed: 6b26e1be3 NOT ancestor of HEAD"
+      ],
+      "overall_verdict": "STRONG / mostly upheld; the four NF525-critical findings are airtight, two backed by live DB queries."
+    },
+    {
+      "reviewer": "RED completeness + dropped + F1",
+      "reverified_ok": [
+        "12"
+      ],
+      "challenges": [
+        "ESC-01 fiscal premise STRUCK (F1 fixed, ZReportDiscountNettingTest 5 green)",
+        "GAP-37 authz coverage-gap raised",
+        "GAP-27 no-thermal-renderer downgrade",
+        "M1-06 drop framing"
+      ],
+      "missing_coverage": [
+        "gap16/17 fiscal premise contradicted M9-07 — reconciled in favour of F1-fixed"
+      ],
+      "overall_verdict": "SUBSTANTIALLY SOUND with required corrections; P0:0 is CORRECT — independently disproved the only P0-candidate by running the F1 test."
+    },
+    {
+      "reviewer": "RED severity + reasoning",
+      "reverified_ok": [
+        "10"
+      ],
+      "challenges": [
+        "MC-01 duplicate of M11-01",
+        "M8-02 sub-facet of M8-01",
+        "M10-01 under-severity->P1",
+        "M12-001 over->P2",
+        "M4-01 over->P2",
+        "M10-04 weak-reasoning"
+      ],
+      "missing_coverage": [
+        "P2/P3 not inverted for noise",
+        "dropped/gaps not reviewed"
+      ],
+      "overall_verdict": "Well-founded but should not ship with the duplicate-inflated P1 count and misrated M10-01/M12-001/M4-01 — all corrected."
+    }
+  ],
+  "evidence_overrides": {
+    "M3-01": "live-verified"
+  }
+}

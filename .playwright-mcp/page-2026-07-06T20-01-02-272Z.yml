@@ -1,0 +1,54 @@
+- main [ref=f68e5]:
+  - generic [ref=f68e6]:
+    - link "logo":
+      - /url: /home
+      - img "logo"
+    - generic [ref=f68e7]:
+      - generic [ref=f68e9]:
+        - link " Tableau de bord" [ref=f68e11] [cursor=pointer]:
+          - /url: /admin/dashboard
+          - generic [ref=f68e12]: 
+          - generic [ref=f68e13]: Tableau de bord
+        - button "flag" [ref=f68e16] [cursor=pointer]:
+          - img "flag" [ref=f68e17]
+      - generic [ref=f68e18]:
+        - button "avatar Bonjour S-SYNC E2E Operator" [ref=f68e19] [cursor=pointer]:
+          - img "avatar" [ref=f68e20]
+          - heading "Bonjour S-SYNC E2E Operator" [level=3] [ref=f68e21]:
+            - text: Bonjour
+            - generic "S-SYNC E2E Operator" [ref=f68e22]
+          - generic [ref=f68e23]: 
+        - menu "avatar Bonjour S-SYNC E2E Operator":
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "S-SYNC E2E Operator" [level=3]
+            - paragraph: ssync.e2e@lecayenne.test
+            - paragraph: "0600000777"
+            - heading "0,00 €" [level=3]
+          - menuitem "Modifier le profil":
+            - text: 
+            - generic: Modifier le profil
+          - menuitem "Changer le mot de passe":
+            - text: 
+            - generic: Changer le mot de passe
+          - menuitem "Déconnexion":
+            - text: 
+            - generic: Déconnexion
+  - text:           
+  - button "Ouvrir l'historique des commandes du jour" [ref=f68e25] [cursor=pointer]:
+    - generic [ref=f68e26]: 📚
+    - generic [ref=f68e27]: Historique
+  - generic [ref=f68e28]:
+    - status [ref=f68e29]:
+      - generic [ref=f68e30]:
+        - img [ref=f68e32]
+        - generic [ref=f68e34]: Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS.
+      - generic [ref=f68e35]: LOCAL
+    - generic [ref=f68e36]:
+      - img [ref=f68e39]
+      - generic [ref=f68e46]: Aucune commande en cours
+      - generic [ref=f68e47]: Les nouvelles commandes apparaîtront ici

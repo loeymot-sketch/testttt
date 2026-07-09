@@ -1,0 +1,199 @@
+- generic [ref=e1]:
+  - generic [ref=e106]:
+    - generic [ref=e107]:
+      - generic [ref=e108]:
+        - img [ref=e110]
+        - generic [ref=e111]:
+          - generic [ref=e112]: Nos
+          - generic [ref=e113]: Tacos
+      - button "Mon compte" [ref=e115] [cursor=pointer]:
+        - generic [ref=e116]: 👤
+        - text: Mon compte
+    - generic [ref=e117]:
+      - navigation "Navigation catégories" [ref=e118]:
+        - button "Sandwichs" [ref=e119] [cursor=pointer]:
+          - generic [ref=e120]: Sandwichs
+        - button "Galette" [ref=e122] [cursor=pointer]:
+          - generic [ref=e123]: Galette
+        - button "Burgers" [ref=e125] [cursor=pointer]:
+          - generic [ref=e126]: Burgers
+        - button "Tacos" [ref=e128] [cursor=pointer]:
+          - generic [ref=e129]: Tacos
+        - button "Bols" [ref=e131] [cursor=pointer]:
+          - generic [ref=e132]: Bols
+        - button "Menu enfant" [ref=e134] [cursor=pointer]:
+          - generic [ref=e135]: Menu enfant
+        - button "Frites" [ref=e137] [cursor=pointer]:
+          - generic [ref=e138]: Frites
+        - button "Desserts" [ref=e140] [cursor=pointer]:
+          - generic [ref=e141]: Desserts
+        - button "Boissons" [ref=e143] [cursor=pointer]:
+          - generic [ref=e144]: Boissons
+      - main [ref=e146]:
+        - generic [ref=e375]:
+          - generic [ref=e376]:
+            - heading "Tacos" [level=1] [ref=e377]
+            - paragraph [ref=e378]: 2 produits
+          - list [ref=e379]:
+            - listitem [ref=e380] [cursor=pointer]:
+              - generic [ref=e381]:
+                - img [ref=e382]
+                - generic [ref=e383]: Nouveau
+                - button "Ajouter Tacos L" [ref=e384]:
+                  - generic [ref=e385]: +
+              - generic [ref=e386]:
+                - heading "Tacos L" [level=2] [ref=e387]
+                - paragraph [ref=e388]: Galette de blé, 2 viandes au choix, frites maison et sauce.
+                - generic [ref=e389]: €7,90
+            - listitem [ref=e390] [cursor=pointer]:
+              - generic [ref=e391]:
+                - img [ref=e392]
+                - generic [ref=e393]: Personnaliser
+                - button "Ajouter Tacos M" [ref=e394]:
+                  - generic [ref=e400]: +
+              - generic [ref=e396]:
+                - heading "Tacos M" [level=2] [ref=e397]
+                - paragraph [ref=e398]: Galette de blé, 1 viande au choix, frites maison et sauce.
+                - generic [ref=e399]: €6,90
+    - region "Panier et paiement" [ref=e362]:
+      - generic [ref=e363]:
+        - button "Ouvrir le panier — 0 articles" [disabled] [ref=e364]:
+          - img [ref=e366]
+          - generic [ref=e370]: 0 article
+        - generic [ref=e371]: €0,00
+      - generic [ref=e372]:
+        - button "Abandonner ma commande" [ref=e373] [cursor=pointer]
+        - button "Payer" [disabled] [ref=e374]
+    - dialog "Tacos M" [ref=e402]:
+      - heading "Tacos M" [level=1] [ref=e403]
+      - generic [ref=e404]:
+        - generic [ref=e405]:
+          - text: Vous composez
+          - heading "Tacos M" [level=2] [ref=e406]
+        - button "Fermer la personnalisation" [ref=e407] [cursor=pointer]: ×
+      - generic [ref=e408]:
+        - generic [ref=e409]:
+          - generic [ref=e410]:
+            - img "QUELLE VIANDE ?" [ref=e411]
+            - generic [ref=e509]: ✓ 1
+          - generic [ref=e412]: QUELLE VIANDE ?
+        - generic [ref=e413]:
+          - generic [ref=e414]:
+            - img "QUELLE SAUCE ?" [ref=e415]
+            - generic [ref=e582]: ✓ 2
+          - generic [ref=e416]: QUELLE SAUCE ?
+        - generic [ref=e417]:
+          - generic [ref=e418]:
+            - img "QUEL SUPPLÉMENT ?" [ref=e419]
+            - text: ✓
+          - generic [ref=e420]: QUEL SUPPLÉMENT ?
+        - generic [ref=e421]:
+          - generic [ref=e422]:
+            - img "QUEL MENU ?" [ref=e423]
+            - text: ✓
+          - generic [ref=e424]: QUEL MENU ?
+        - generic [ref=e425]:
+          - generic [ref=e426]:
+            - img "RÉCAP" [ref=e427]
+            - text: ✓
+          - generic [ref=e428]: RÉCAP
+      - generic [ref=e429]:
+        - button "PRÉCÉDENT" [ref=e430] [cursor=pointer]: ‹
+        - generic [ref=e431]:
+          - generic [ref=e433]: "1"
+          - generic [ref=e435]: "2"
+          - generic [ref=e437]: "3"
+          - generic [ref=e439]: "4"
+          - generic [ref=e441]: "5"
+        - button "SUIVANT" [ref=e442] [cursor=pointer]: ›
+      - region "Composition en direct" [ref=e443]:
+        - generic [ref=e444]: Votre composition
+        - generic [ref=e445]:
+          - generic [ref=e499]:
+            - generic [ref=e500]: Viandes
+            - generic [ref=e501]: Poulet mariné
+          - generic [ref=e577]:
+            - generic [ref=e578]: Sauces
+            - generic [ref=e579]: Algérienne
+      - generic [ref=e447]: QUEL SUPPLÉMENT ?
+      - generic [ref=e583]:
+        - generic [ref=e585]: Options payantes
+        - generic [ref=e586]:
+          - group "Quantité pour Oignons frits €0,90 0" [ref=e587] [cursor=pointer]:
+            - img "Oignons frits" [ref=e589]
+            - generic [ref=e590]:
+              - generic [ref=e591]: Oignons frits
+              - generic [ref=e592]: Supplément
+            - generic [ref=e593]: €0,90
+            - generic [ref=e594]: Choisir
+          - group "Quantité pour Champignons €0,90 0" [ref=e595] [cursor=pointer]:
+            - img "Champignons" [ref=e597]
+            - generic [ref=e598]:
+              - generic [ref=e599]: Champignons
+              - generic [ref=e600]: Supplément
+            - generic [ref=e601]: €0,90
+            - generic [ref=e602]: Choisir
+          - group "Quantité pour Jambon €0,90 0" [ref=e603] [cursor=pointer]:
+            - img "Jambon" [ref=e605]
+            - generic [ref=e606]:
+              - generic [ref=e607]: Jambon
+              - generic [ref=e608]: Supplément
+            - generic [ref=e609]: €0,90
+            - generic [ref=e610]: Choisir
+          - group "Quantité pour Cheddar €0,90 0" [ref=e611] [cursor=pointer]:
+            - img "Cheddar" [ref=e613]
+            - generic [ref=e614]:
+              - generic [ref=e615]: Cheddar
+              - generic [ref=e616]: Supplément
+            - generic [ref=e617]: €0,90
+            - generic [ref=e618]: Choisir
+          - group "Quantité pour Raclette €0,90 0" [ref=e619] [cursor=pointer]:
+            - img "Raclette" [ref=e621]
+            - generic [ref=e622]:
+              - generic [ref=e623]: Raclette
+              - generic [ref=e624]: Supplément
+            - generic [ref=e625]: €0,90
+            - generic [ref=e626]: Choisir
+          - group "Quantité pour Emmental €0,90 0" [ref=e627] [cursor=pointer]:
+            - img "Emmental" [ref=e629]
+            - generic [ref=e630]:
+              - generic [ref=e631]: Emmental
+              - generic [ref=e632]: Supplément
+            - generic [ref=e633]: €0,90
+            - generic [ref=e634]: Choisir
+          - group "Quantité pour Boursin €0,90 0" [ref=e635] [cursor=pointer]:
+            - img "Boursin" [ref=e637]
+            - generic [ref=e638]:
+              - generic [ref=e639]: Boursin
+              - generic [ref=e640]: Supplément
+            - generic [ref=e641]: €0,90
+            - generic [ref=e642]: Choisir
+          - group "Quantité pour Œuf €0,90 0" [ref=e643] [cursor=pointer]:
+            - img "Œuf" [ref=e645]
+            - generic [ref=e646]:
+              - generic [ref=e647]: Œuf
+              - generic [ref=e648]: Supplément
+            - generic [ref=e649]: €0,90
+            - generic [ref=e650]: Choisir
+          - group "Quantité pour Légumes sautés €0,90 0" [ref=e651] [cursor=pointer]:
+            - img "Légumes sautés" [ref=e653]
+            - generic [ref=e654]:
+              - generic [ref=e655]: Légumes sautés
+              - generic [ref=e656]: Supplément
+            - generic [ref=e657]: €0,90
+            - generic [ref=e658]: Choisir
+          - group "Quantité pour Viande supplémentaire €2,50 0" [ref=e659] [cursor=pointer]:
+            - img "Viande supplémentaire" [ref=e661]
+            - generic [ref=e662]:
+              - generic [ref=e663]: Viande supplémentaire
+              - generic [ref=e664]: Supplément
+            - generic [ref=e665]: €2,50
+            - generic [ref=e666]: Choisir
+      - generic [ref=e490]:
+        - generic [ref=e491]:
+          - button "ABANDONNER L'ARTICLE" [ref=e492] [cursor=pointer]
+          - button "PRÉCÉDENT" [ref=e493] [cursor=pointer]
+          - button "SUIVANT" [active] [ref=e494] [cursor=pointer]:
+            - generic [ref=e495]: SUIVANT
+        - generic [ref=e496]: Total €6,90
+  - status

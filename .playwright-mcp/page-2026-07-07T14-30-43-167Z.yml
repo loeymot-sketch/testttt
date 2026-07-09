@@ -1,0 +1,478 @@
+- main [ref=f67e5]:
+  - generic [ref=f67e6]:
+    - link "logo" [ref=f67e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=f67e8]
+    - generic [ref=f67e9]:
+      - generic [ref=f67e10]:
+        - generic [ref=f67e11]:
+          - button " Filiale Le Cayenne (principal) " [ref=f67e12] [cursor=pointer]:
+            - generic [ref=f67e13]: 
+            - heading "Filiale Le Cayenne (principal)" [level=3] [ref=f67e14]:
+              - generic [ref=f67e15]: Filiale
+              - text: Le Cayenne (principal)
+            - generic [ref=f67e16]: 
+          - list:
+            - listitem:
+              - radio "Le Cayenne (principal)" [checked]
+              - generic: Le Cayenne (principal)
+        - generic [ref=f67e18]:
+          - button "flag" [ref=f67e20] [cursor=pointer]:
+            - img "flag" [ref=f67e21]
+          - link "POS" [ref=f67e22] [cursor=pointer]:
+            - /url: /admin/pos
+            - generic [ref=f67e23]: 
+      - button "Menu" [ref=f67e24] [cursor=pointer]: 
+      - generic [ref=f67e25]:
+        - button "avatar Bonjour Admin Le Cayenne" [ref=f67e26] [cursor=pointer]:
+          - img "avatar" [ref=f67e27]
+          - heading "Bonjour Admin Le Cayenne" [level=3] [ref=f67e28]:
+            - text: Bonjour
+            - generic "Admin Le Cayenne" [ref=f67e29]
+          - generic [ref=f67e30]: 
+        - menu "avatar Bonjour Admin Le Cayenne":
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "Admin Le Cayenne" [level=3]
+            - paragraph: admin@lecayenne.fr
+            - paragraph: "+330600000000"
+            - heading "2,00 €" [level=3]
+          - menuitem "Modifier le profil":
+            - text: 
+            - generic: Modifier le profil
+          - menuitem "Changer le mot de passe":
+            - text: 
+            - generic: Changer le mot de passe
+          - menuitem "Déconnexion":
+            - text: 
+            - generic: Déconnexion
+  - complementary [ref=f67e31]:
+    - text: 
+    - navigation [ref=f67e32]:
+      - list [ref=f67e33]:
+        - listitem [ref=f67e34]:
+          - link " Tableau de bord" [ref=f67e35] [cursor=pointer]:
+            - /url: /admin/dashboard
+            - generic [ref=f67e36]: 
+            - generic [ref=f67e37]: Tableau de bord
+      - list [ref=f67e38]:
+        - listitem [ref=f67e39]:
+          - link " POS" [ref=f67e40] [cursor=pointer]:
+            - /url: /admin/pos
+            - generic [ref=f67e41]: 
+            - generic [ref=f67e42]: POS
+      - list [ref=f67e43]:
+        - listitem [ref=f67e44]:
+          - link "Produits & Stock" [ref=f67e45] [cursor=pointer]:
+            - /url: /admin/stock/rupture
+            - generic [ref=f67e46]: Produits & Stock
+      - list [ref=f67e47]:
+        - listitem [ref=f67e48]:
+          - link " Catalogue" [ref=f67e49] [cursor=pointer]:
+            - /url: /admin/items/studio
+            - generic [ref=f67e50]: 
+            - generic [ref=f67e51]: Catalogue
+        - listitem [ref=f67e52]:
+          - link " Attribut d’articles" [ref=f67e53] [cursor=pointer]:
+            - /url: /admin/settings/item-attributes/list
+            - generic [ref=f67e54]: 
+            - generic [ref=f67e55]: Attribut d’articles
+      - list [ref=f67e56]:
+        - listitem [ref=f67e57]:
+          - link " Ingrédients" [ref=f67e58] [cursor=pointer]:
+            - /url: /admin/ingredients
+            - generic [ref=f67e59]: 
+            - generic [ref=f67e60]: Ingrédients
+      - list [ref=f67e61]:
+        - listitem [ref=f67e62]:
+          - link " Commandes caisse" [ref=f67e63] [cursor=pointer]:
+            - /url: /admin/pos-orders
+            - generic [ref=f67e64]: 
+            - generic [ref=f67e65]: Commandes caisse
+      - list [ref=f67e66]:
+        - listitem [ref=f67e67]:
+          - link " Historique" [ref=f67e68] [cursor=pointer]:
+            - /url: /admin/historique
+            - generic [ref=f67e69]: 
+            - generic [ref=f67e70]: Historique
+      - list [ref=f67e71]:
+        - listitem [ref=f67e72]:
+          - link " Encaissement" [ref=f67e73] [cursor=pointer]:
+            - /url: /admin/encaissement
+            - generic [ref=f67e74]: 
+            - generic [ref=f67e75]: Encaissement
+      - list [ref=f67e76]:
+        - listitem [ref=f67e77]:
+          - link " Vue caisse unifiée" [ref=f67e78] [cursor=pointer]:
+            - /url: /admin/cash-overview
+            - generic [ref=f67e79]: 
+            - generic [ref=f67e80]: Vue caisse unifiée
+      - list [ref=f67e81]:
+        - listitem [ref=f67e82]:
+          - link " Caisse livreur" [ref=f67e83] [cursor=pointer]:
+            - /url: /admin/delivery-boy-cash-sessions
+            - generic [ref=f67e84]: 
+            - generic [ref=f67e85]: Caisse livreur
+      - list [ref=f67e86]:
+        - listitem [ref=f67e87]:
+          - button "Caisse et commandes" [ref=f67e88] [cursor=pointer]
+        - listitem [ref=f67e89]:
+          - link " Écran cuisine" [ref=f67e90] [cursor=pointer]:
+            - /url: /admin/kitchen-display-system
+            - generic [ref=f67e91]: 
+            - generic [ref=f67e92]: Écran cuisine
+        - listitem [ref=f67e93]:
+          - link " Suivi client" [ref=f67e94] [cursor=pointer]:
+            - /url: /admin/order-status-screen
+            - generic [ref=f67e95]: 
+            - generic [ref=f67e96]: Suivi client
+      - list [ref=f67e97]:
+        - listitem [ref=f67e98]:
+          - button "Communications" [ref=f67e99] [cursor=pointer]
+        - listitem [ref=f67e100]:
+          - link " Notification pushs" [ref=f67e101] [cursor=pointer]:
+            - /url: /admin/push-notifications
+            - generic [ref=f67e102]: 
+            - generic [ref=f67e103]: Notification pushs
+        - listitem [ref=f67e104]:
+          - link " Messages" [ref=f67e105] [cursor=pointer]:
+            - /url: /admin/messages
+            - generic [ref=f67e106]: 
+            - generic [ref=f67e107]: Messages
+        - listitem [ref=f67e108]:
+          - link " Abonnés" [ref=f67e109] [cursor=pointer]:
+            - /url: /admin/subscribers
+            - generic [ref=f67e110]: 
+            - generic [ref=f67e111]: Abonnés
+      - list [ref=f67e112]:
+        - listitem [ref=f67e113]:
+          - button "Utilisateurs" [ref=f67e114] [cursor=pointer]
+        - listitem [ref=f67e115]:
+          - link " Administrateurs" [ref=f67e116] [cursor=pointer]:
+            - /url: /admin/administrators
+            - generic [ref=f67e117]: 
+            - generic [ref=f67e118]: Administrateurs
+        - listitem [ref=f67e119]:
+          - link " Employés" [ref=f67e120] [cursor=pointer]:
+            - /url: /admin/employees
+            - generic [ref=f67e121]: 
+            - generic [ref=f67e122]: Employés
+        - listitem [ref=f67e123]:
+          - link " Chefs" [ref=f67e124] [cursor=pointer]:
+            - /url: /admin/chefs
+            - generic [ref=f67e125]: 
+            - generic [ref=f67e126]: Chefs
+      - list [ref=f67e127]:
+        - listitem [ref=f67e128]:
+          - button "Comptes" [ref=f67e129] [cursor=pointer]
+        - listitem [ref=f67e130]:
+          - link " Transactions" [ref=f67e131] [cursor=pointer]:
+            - /url: /admin/transactions
+            - generic [ref=f67e132]: 
+            - generic [ref=f67e133]: Transactions
+      - list [ref=f67e134]:
+        - listitem [ref=f67e135]:
+          - button "Rapports" [ref=f67e136] [cursor=pointer]
+        - listitem [ref=f67e137]:
+          - link " Rapport des ventes" [ref=f67e138] [cursor=pointer]:
+            - /url: /admin/sales-report
+            - generic [ref=f67e139]: 
+            - generic [ref=f67e140]: Rapport des ventes
+        - listitem [ref=f67e141]:
+          - link " Rapport articles" [ref=f67e142] [cursor=pointer]:
+            - /url: /admin/items-report
+            - generic [ref=f67e143]: 
+            - generic [ref=f67e144]: Rapport articles
+      - list [ref=f67e145]:
+        - listitem [ref=f67e146]:
+          - button "Configuration" [ref=f67e147] [cursor=pointer]
+        - listitem [ref=f67e148]:
+          - link " Paramètres" [ref=f67e149] [cursor=pointer]:
+            - /url: /admin/settings
+            - generic [ref=f67e150]: 
+            - generic [ref=f67e151]: Paramètres
+  - generic [ref=f67e152]:
+    - link "Aller au panier" [ref=f67e153] [cursor=pointer]:
+      - /url: "#pos-cart"
+    - generic [ref=f67e161]:
+      - banner [ref=f67e162]:
+        - generic [ref=f67e163]:
+          - generic [ref=f67e164]: 👑
+          - generic [ref=f67e165]:
+            - paragraph [ref=f67e166]: Caisse Le Cayenne
+            - heading "Commande rapide" [level=1] [ref=f67e167]
+            - generic [ref=f67e168]:
+              - generic [ref=f67e169]:
+                - generic [ref=f67e170]: Filiale
+                - generic [ref=f67e171]: "#1"
+              - generic [ref=f67e172]:
+                - generic [ref=f67e173]: Articles
+                - generic [ref=f67e174]: "0"
+        - navigation "Actions caisse" [ref=f67e175]:
+          - button "À encaisser 29" [ref=f67e176] [cursor=pointer]:
+            - generic [ref=f67e177]: 🖥️
+            - generic [ref=f67e179]: À encaisser
+            - generic [ref=f67e180]: "29"
+          - generic "Voir les commandes en attente, en préparation et prêtes à servir. Le bouton devient vert quand une commande est prête." [ref=f67e181] [cursor=pointer]:
+            - generic [ref=f67e182]: 📋
+            - generic [ref=f67e184]: Suivi commandes
+            - generic [ref=f67e185]: "2"
+          - generic "Ouvre l'écran d'affichage client (statuts en grand, prêt à montrer aux clients)." [ref=f67e186] [cursor=pointer]:
+            - generic [ref=f67e187]: 🖥️
+            - generic [ref=f67e189]: Écran client
+          - button "Créez d'abord une commande pour appliquer une réduction fidélité" [disabled]:
+            - generic: 🎁
+            - generic:
+              - generic: Appliquer une réduction fidélité
+          - button "Ouvrir tiroir" [ref=f67e190] [cursor=pointer]:
+            - generic [ref=f67e191]: 💵
+            - generic [ref=f67e193]: Ouvrir tiroir
+          - button "Caisse" [ref=f67e194] [cursor=pointer]:
+            - generic [ref=f67e195]: 🏦
+            - generic [ref=f67e197]: Caisse
+      - generic [ref=f67e198]:
+        - region "Prêt à livrer (1)" [ref=f67e199]:
+          - heading "Prêt à livrer (1)" [level=2] [ref=f67e201]:
+            - generic [ref=f67e202]: 🛎️
+            - text: Prêt à livrer (1)
+          - list [ref=f67e203]:
+            - listitem [ref=f67e204]:
+              - generic [ref=f67e205]: N°CARDTEST-1782949449
+              - generic [ref=f67e206]: 9,40 €
+              - button "✓ Livré" [ref=f67e207] [cursor=pointer]
+          - paragraph [ref=f67e208]: Mis à jour il y a 9s
+        - region "À encaisser borne (29)" [ref=f67e209]:
+          - heading "À encaisser borne (29)" [level=2] [ref=f67e211]:
+            - generic [ref=f67e212]: 💰
+            - text: À encaisser borne (29)
+          - list [ref=f67e213]:
+            - listitem [ref=f67e214]:
+              - generic [ref=f67e215]: N°A0017
+              - generic [ref=f67e216]: 6,90 €
+              - button "💳 Encaisser" [ref=f67e217] [cursor=pointer]
+            - listitem [ref=f67e218]:
+              - generic [ref=f67e219]: N°A0020
+              - generic [ref=f67e220]: 6,90 €
+              - button "💳 Encaisser" [ref=f67e221] [cursor=pointer]
+            - listitem [ref=f67e222]:
+              - generic [ref=f67e223]: N°A0021
+              - generic [ref=f67e224]: 6,90 €
+              - button "💳 Encaisser" [ref=f67e225] [cursor=pointer]
+            - listitem [ref=f67e226]:
+              - generic [ref=f67e227]: N°A0022
+              - generic [ref=f67e228]: 6,90 €
+              - button "💳 Encaisser" [ref=f67e229] [cursor=pointer]
+          - button "Voir plus (25) →" [ref=f67e230] [cursor=pointer]
+          - paragraph [ref=f67e231]: Mis à jour il y a 9s
+      - search [ref=f67e232]:
+        - generic [ref=f67e233]: 🔍
+        - searchbox "Rechercher un article du menu" [ref=f67e234]
+      - tablist "Catégories" [ref=f67e322]:
+        - tab "Toutes les catégories" [ref=f67e323] [cursor=pointer]:
+          - img "Toutes les catégories" [ref=f67e325]
+          - generic [ref=f67e326]: Toutes les catégories
+        - tab "Sandwichs" [ref=f67e327] [cursor=pointer]:
+          - img "Sandwichs" [ref=f67e329]
+          - generic [ref=f67e330]: Sandwichs
+        - tab "Galette" [ref=f67e331] [cursor=pointer]:
+          - img "Galette" [ref=f67e333]
+          - generic [ref=f67e334]: Galette
+        - tab "Burgers" [ref=f67e335] [cursor=pointer]:
+          - img "Burgers" [ref=f67e337]
+          - generic [ref=f67e338]: Burgers
+        - tab "Tacos" [ref=f67e339] [cursor=pointer]:
+          - img "Tacos" [ref=f67e341]
+          - generic [ref=f67e342]: Tacos
+        - tab "Bols" [ref=f67e343] [cursor=pointer]:
+          - img "Bols" [ref=f67e345]
+          - generic [ref=f67e346]: Bols
+        - tab "Frites" [ref=f67e347] [cursor=pointer]:
+          - img "Frites" [ref=f67e349]
+          - generic [ref=f67e350]: Frites
+        - tab "Desserts" [ref=f67e351] [cursor=pointer]:
+          - img "Desserts" [ref=f67e353]
+          - generic [ref=f67e354]: Desserts
+        - tab "Boissons" [selected] [ref=f67e355] [cursor=pointer]:
+          - img "Boissons" [ref=f67e357]
+          - generic [ref=f67e358]: Boissons
+        - tab "Menu enfant" [ref=f67e359] [cursor=pointer]:
+          - img "Menu enfant" [ref=f67e361]
+          - generic [ref=f67e362]: Menu enfant
+      - generic [ref=f67e363]:
+        - generic [ref=f67e364]:
+          - button "Toutes les catégories" [ref=f67e365] [cursor=pointer]:
+            - generic [ref=f67e366]: ←
+            - generic [ref=f67e367]: Toutes les catégories
+          - generic [ref=f67e368]: Boissons
+        - generic [ref=f67e369]:
+          - button "Ajouter Coca-Cola 33cl, 1,90 €" [ref=f67e370] [cursor=pointer]:
+            - img "Coca-Cola 33cl" [ref=f67e372]
+            - generic [ref=f67e373]:
+              - heading "Coca-Cola 33cl" [level=3] [ref=f67e374]
+              - paragraph [ref=f67e375]: Coca-Cola original
+              - generic [ref=f67e376]:
+                - heading "1,90 €" [level=4] [ref=f67e377]
+                - generic [ref=f67e379]: 
+          - button "Ajouter Coca-Cola Zero 33cl, 1,90 €" [ref=f67e380] [cursor=pointer]:
+            - img "Coca-Cola Zero 33cl" [ref=f67e382]
+            - generic [ref=f67e383]:
+              - heading "Coca-Cola Zero 33cl" [level=3] [ref=f67e384]
+              - paragraph [ref=f67e385]: Coca-Cola sans sucre
+              - generic [ref=f67e386]:
+                - heading "1,90 €" [level=4] [ref=f67e387]
+                - generic [ref=f67e389]: 
+          - button "Ajouter Fanta Orange 33cl, 1,90 €" [ref=f67e390] [cursor=pointer]:
+            - img "Fanta Orange 33cl" [ref=f67e392]
+            - generic [ref=f67e393]:
+              - heading "Fanta Orange 33cl" [level=3] [ref=f67e394]
+              - paragraph [ref=f67e395]: Fanta Orange
+              - generic [ref=f67e396]:
+                - heading "1,90 €" [level=4] [ref=f67e397]
+                - generic [ref=f67e399]: 
+          - button "Ajouter Sprite 33cl, 1,90 €" [ref=f67e400] [cursor=pointer]:
+            - img "Sprite 33cl" [ref=f67e402]
+            - generic [ref=f67e403]:
+              - heading "Sprite 33cl" [level=3] [ref=f67e404]
+              - paragraph [ref=f67e405]: Sprite
+              - generic [ref=f67e406]:
+                - heading "1,90 €" [level=4] [ref=f67e407]
+                - generic [ref=f67e409]: 
+          - button "Ajouter Oasis Tropical 33cl, 1,90 €" [ref=f67e410] [cursor=pointer]:
+            - img "Oasis Tropical 33cl" [ref=f67e412]
+            - generic [ref=f67e413]:
+              - heading "Oasis Tropical 33cl" [level=3] [ref=f67e414]
+              - paragraph [ref=f67e415]: Oasis Tropical
+              - generic [ref=f67e416]:
+                - heading "1,90 €" [level=4] [ref=f67e417]
+                - generic [ref=f67e419]: 
+          - button "Ajouter Orangina 33cl, 1,90 €" [ref=f67e420] [cursor=pointer]:
+            - img "Orangina 33cl" [ref=f67e422]
+            - generic [ref=f67e423]:
+              - heading "Orangina 33cl" [level=3] [ref=f67e424]
+              - paragraph [ref=f67e425]: Orangina
+              - generic [ref=f67e426]:
+                - heading "1,90 €" [level=4] [ref=f67e427]
+                - generic [ref=f67e429]: 
+          - button "Ajouter Eau Plate 50cl, 1,00 €" [ref=f67e430] [cursor=pointer]:
+            - img "Eau Plate 50cl" [ref=f67e432]
+            - generic [ref=f67e433]:
+              - heading "Eau Plate 50cl" [level=3] [ref=f67e434]
+              - paragraph [ref=f67e435]: Eau minérale
+              - generic [ref=f67e436]:
+                - heading "1,00 €" [level=4] [ref=f67e437]
+                - generic [ref=f67e439]: 
+          - button "Ajouter Capri-Sun, 1,50 €" [ref=f67e440] [cursor=pointer]:
+            - img "Capri-Sun" [ref=f67e442]
+            - generic [ref=f67e443]:
+              - heading "Capri-Sun" [level=3] [ref=f67e444]
+              - paragraph [ref=f67e445]: Capri-Sun 20cl
+              - generic [ref=f67e446]:
+                - heading "1,50 €" [level=4] [ref=f67e447]
+                - generic [ref=f67e449]: 
+          - button "Ajouter Coca Cherry 33cl, 1,90 €" [ref=f67e450] [cursor=pointer]:
+            - img "Coca Cherry 33cl" [ref=f67e452]
+            - generic [ref=f67e453]:
+              - heading "Coca Cherry 33cl" [level=3] [ref=f67e454]
+              - paragraph [ref=f67e455]: Coca-Cola Cherry
+              - generic [ref=f67e456]:
+                - heading "1,90 €" [level=4] [ref=f67e457]
+                - generic [ref=f67e459]: 
+          - button "Ajouter Tropico 33cl, 1,90 €" [ref=f67e460] [cursor=pointer]:
+            - img "Tropico 33cl" [ref=f67e462]
+            - generic [ref=f67e463]:
+              - heading "Tropico 33cl" [level=3] [ref=f67e464]
+              - paragraph [ref=f67e465]: Tropico
+              - generic [ref=f67e466]:
+                - heading "1,90 €" [level=4] [ref=f67e467]
+                - generic [ref=f67e469]: 
+          - button "Ajouter Ice Tea Pêche 33cl, 1,90 €" [ref=f67e470] [cursor=pointer]:
+            - img "Ice Tea Pêche 33cl" [ref=f67e472]
+            - generic [ref=f67e473]:
+              - heading "Ice Tea Pêche 33cl" [level=3] [ref=f67e474]
+              - paragraph [ref=f67e475]: Ice Tea saveur pêche
+              - generic [ref=f67e476]:
+                - heading "1,90 €" [level=4] [ref=f67e477]
+                - generic [ref=f67e479]: 
+          - button "Ajouter Fanta Citron 33cl, 1,90 €" [ref=f67e480] [cursor=pointer]:
+            - img "Fanta Citron 33cl" [ref=f67e482]
+            - generic [ref=f67e483]:
+              - heading "Fanta Citron 33cl" [level=3] [ref=f67e484]
+              - paragraph [ref=f67e485]: Fanta Citron
+              - generic [ref=f67e486]:
+                - heading "1,90 €" [level=4] [ref=f67e487]
+                - generic [ref=f67e489]: 
+          - button "Ajouter Fuze Tea 33cl, 1,90 €" [ref=f67e490] [cursor=pointer]:
+            - img "Fuze Tea 33cl" [ref=f67e492]
+            - generic [ref=f67e493]:
+              - heading "Fuze Tea 33cl" [level=3] [ref=f67e494]
+              - paragraph [ref=f67e495]: Fuze Tea
+              - generic [ref=f67e496]:
+                - heading "1,90 €" [level=4] [ref=f67e497]
+                - generic [ref=f67e499]: 
+          - button "Ajouter Hawaï 33cl, 1,90 €" [ref=f67e500] [cursor=pointer]:
+            - img "Hawaï 33cl" [ref=f67e502]
+            - generic [ref=f67e503]:
+              - heading "Hawaï 33cl" [level=3] [ref=f67e504]
+              - paragraph [ref=f67e505]: Hawaï
+              - generic [ref=f67e506]:
+                - heading "1,90 €" [level=4] [ref=f67e507]
+                - generic [ref=f67e509]: 
+          - button "Ajouter Perrier 33cl, 1,90 €" [ref=f67e510] [cursor=pointer]:
+            - img "Perrier 33cl" [ref=f67e512]
+            - generic [ref=f67e513]:
+              - heading "Perrier 33cl" [level=3] [ref=f67e514]
+              - paragraph [ref=f67e515]: Perrier (eau gazeuse)
+              - generic [ref=f67e516]:
+                - heading "1,90 €" [level=4] [ref=f67e517]
+                - generic [ref=f67e519]: 
+    - region "Panier commande" [ref=f67e273]:
+      - generic [ref=f67e274]:
+        - generic [ref=f67e275]:
+          - paragraph [ref=f67e276]: Ticket caisse
+          - heading "Commande en cours" [level=2] [ref=f67e277]
+        - generic [ref=f67e278]:
+          - generic [ref=f67e279]:
+            - combobox [ref=f67e281]:
+              - textbox [ref=f67e284]:
+                - /placeholder: Client passage
+            - button "Ajouter un client" [ref=f67e286] [cursor=pointer]:
+              - generic [ref=f67e287]: +
+          - generic [ref=f67e288]:
+            - button "Mettre en attente" [ref=f67e289] [cursor=pointer]:
+              - generic [ref=f67e290]: ⏸
+              - generic [ref=f67e291]: Mettre en attente
+            - button "Commandes en attente" [ref=f67e292] [cursor=pointer]:
+              - generic [ref=f67e293]: 📦
+              - generic [ref=f67e294]: En attente
+              - generic [ref=f67e295]: "0"
+        - group "Sélectionner le type de commande" [ref=f67e296]:
+          - generic [ref=f67e297]: Sélectionner le type de commande
+          - radiogroup [ref=f67e298]:
+            - generic [ref=f67e299] [cursor=pointer]:
+              - radio "À emporter" [checked]
+              - generic [ref=f67e300]: 🥡
+              - generic [ref=f67e301]: À emporter
+            - generic [ref=f67e302] [cursor=pointer]:
+              - radio "Livraison"
+              - generic [ref=f67e303]: 🛵
+              - generic [ref=f67e304]: Livraison
+          - generic [ref=f67e305]:
+            - textbox "Nom du client (optionnel)" [ref=f67e306]
+            - textbox "Téléphone (optionnel)" [ref=f67e307]
+          - text: 
+      - region "Panier commande" [ref=f67e308]:
+        - generic [ref=f67e309]:
+          - generic [ref=f67e310]: 🍽️
+          - paragraph [ref=f67e311]: Aucun article. Sélectionnez un produit dans la grille.
+      - status [ref=f67e313]:
+        - generic [ref=f67e314]:
+          - generic [ref=f67e315]: Sous-total
+          - generic [ref=f67e317]: 0,00 €
+        - generic [ref=f67e318]:
+          - generic [ref=f67e319]: Total
+          - generic [ref=f67e321]: 0,00 €
+    - text: 

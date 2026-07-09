@@ -1,0 +1,350 @@
+- main [ref=f29e5]:
+  - generic [ref=f29e6]:
+    - link "logo" [ref=f29e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=f29e8]
+    - generic [ref=f29e9]:
+      - generic [ref=f29e10]:
+        - generic [ref=f29e11]:
+          - button " Filiale Le Cayenne (principal) " [ref=f29e12] [cursor=pointer]:
+            - generic [ref=f29e13]: 
+            - heading "Filiale Le Cayenne (principal)" [level=3] [ref=f29e14]:
+              - generic [ref=f29e15]: Filiale
+              - text: Le Cayenne (principal)
+            - generic [ref=f29e16]: 
+          - list:
+            - listitem:
+              - radio "Le Cayenne (principal)" [checked]
+              - generic: Le Cayenne (principal)
+        - generic [ref=f29e18]:
+          - button "flag" [ref=f29e20] [cursor=pointer]:
+            - img "flag" [ref=f29e21]
+          - link "POS" [ref=f29e22] [cursor=pointer]:
+            - /url: /admin/pos
+            - generic [ref=f29e23]: 
+      - button "Fermer" [ref=f29e24] [cursor=pointer]: 
+      - generic [ref=f29e25]:
+        - button "avatar Bonjour Admin Le Cayenne" [ref=f29e26] [cursor=pointer]:
+          - img "avatar" [ref=f29e27]
+          - heading "Bonjour Admin Le Cayenne" [level=3] [ref=f29e28]:
+            - text: Bonjour
+            - generic "Admin Le Cayenne" [ref=f29e29]
+          - generic [ref=f29e30]: 
+        - menu "avatar Bonjour Admin Le Cayenne":
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "Admin Le Cayenne" [level=3]
+            - paragraph: admin@lecayenne.fr
+            - paragraph: "+330600000000"
+            - heading "2,00 €" [level=3]
+          - menuitem "Modifier le profil":
+            - text: 
+            - generic: Modifier le profil
+          - menuitem "Changer le mot de passe":
+            - text: 
+            - generic: Changer le mot de passe
+          - menuitem "Déconnexion":
+            - text: 
+            - generic: Déconnexion
+  - complementary [ref=f29e31]:
+    - text: 
+    - navigation [ref=f29e32]:
+      - list [ref=f29e33]:
+        - listitem [ref=f29e34]:
+          - link " Tableau de bord" [ref=f29e35] [cursor=pointer]:
+            - /url: /admin/dashboard
+            - generic [ref=f29e36]: 
+            - generic [ref=f29e37]: Tableau de bord
+      - list [ref=f29e38]:
+        - listitem [ref=f29e39]:
+          - link " POS" [ref=f29e40] [cursor=pointer]:
+            - /url: /admin/pos
+            - generic [ref=f29e41]: 
+            - generic [ref=f29e42]: POS
+      - list [ref=f29e43]:
+        - listitem [ref=f29e44]:
+          - link "Produits & Stock" [ref=f29e45] [cursor=pointer]:
+            - /url: /admin/stock/rupture
+            - generic [ref=f29e46]: Produits & Stock
+      - list [ref=f29e47]:
+        - listitem [ref=f29e48]:
+          - link " Catalogue" [ref=f29e49] [cursor=pointer]:
+            - /url: /admin/items/studio
+            - generic [ref=f29e50]: 
+            - generic [ref=f29e51]: Catalogue
+        - listitem [ref=f29e52]:
+          - link " Attribut d’articles" [ref=f29e53] [cursor=pointer]:
+            - /url: /admin/settings/item-attributes/list
+            - generic [ref=f29e54]: 
+            - generic [ref=f29e55]: Attribut d’articles
+      - list [ref=f29e56]:
+        - listitem [ref=f29e57]:
+          - link " Ingrédients" [ref=f29e58] [cursor=pointer]:
+            - /url: /admin/ingredients
+            - generic [ref=f29e59]: 
+            - generic [ref=f29e60]: Ingrédients
+      - list [ref=f29e61]:
+        - listitem [ref=f29e62]:
+          - link " Commandes caisse" [ref=f29e63] [cursor=pointer]:
+            - /url: /admin/pos-orders
+            - generic [ref=f29e64]: 
+            - generic [ref=f29e65]: Commandes caisse
+      - list [ref=f29e66]:
+        - listitem [ref=f29e67]:
+          - link " Historique" [ref=f29e68] [cursor=pointer]:
+            - /url: /admin/historique
+            - generic [ref=f29e69]: 
+            - generic [ref=f29e70]: Historique
+      - list [ref=f29e71]:
+        - listitem [ref=f29e72]:
+          - link " Encaissement" [ref=f29e73] [cursor=pointer]:
+            - /url: /admin/encaissement
+            - generic [ref=f29e74]: 
+            - generic [ref=f29e75]: Encaissement
+      - list [ref=f29e76]:
+        - listitem [ref=f29e77]:
+          - link " Vue caisse unifiée" [ref=f29e78] [cursor=pointer]:
+            - /url: /admin/cash-overview
+            - generic [ref=f29e79]: 
+            - generic [ref=f29e80]: Vue caisse unifiée
+      - list [ref=f29e81]:
+        - listitem [ref=f29e82]:
+          - link " Caisse livreur" [ref=f29e83] [cursor=pointer]:
+            - /url: /admin/delivery-boy-cash-sessions
+            - generic [ref=f29e84]: 
+            - generic [ref=f29e85]: Caisse livreur
+      - list [ref=f29e86]:
+        - listitem [ref=f29e87]:
+          - button "Caisse et commandes" [ref=f29e88] [cursor=pointer]
+        - listitem [ref=f29e89]:
+          - link " Écran cuisine" [ref=f29e90] [cursor=pointer]:
+            - /url: /admin/kitchen-display-system
+            - generic [ref=f29e91]: 
+            - generic [ref=f29e92]: Écran cuisine
+        - listitem [ref=f29e93]:
+          - link " Suivi client" [ref=f29e94] [cursor=pointer]:
+            - /url: /admin/order-status-screen
+            - generic [ref=f29e95]: 
+            - generic [ref=f29e96]: Suivi client
+      - list [ref=f29e97]:
+        - listitem [ref=f29e98]:
+          - button "Communications" [ref=f29e99] [cursor=pointer]
+        - listitem [ref=f29e100]:
+          - link " Notification pushs" [ref=f29e101] [cursor=pointer]:
+            - /url: /admin/push-notifications
+            - generic [ref=f29e102]: 
+            - generic [ref=f29e103]: Notification pushs
+        - listitem [ref=f29e104]:
+          - link " Messages" [ref=f29e105] [cursor=pointer]:
+            - /url: /admin/messages
+            - generic [ref=f29e106]: 
+            - generic [ref=f29e107]: Messages
+        - listitem [ref=f29e108]:
+          - link " Abonnés" [ref=f29e109] [cursor=pointer]:
+            - /url: /admin/subscribers
+            - generic [ref=f29e110]: 
+            - generic [ref=f29e111]: Abonnés
+      - list [ref=f29e112]:
+        - listitem [ref=f29e113]:
+          - button "Utilisateurs" [ref=f29e114] [cursor=pointer]
+        - listitem [ref=f29e115]:
+          - link " Administrateurs" [ref=f29e116] [cursor=pointer]:
+            - /url: /admin/administrators
+            - generic [ref=f29e117]: 
+            - generic [ref=f29e118]: Administrateurs
+        - listitem [ref=f29e119]:
+          - link " Employés" [ref=f29e120] [cursor=pointer]:
+            - /url: /admin/employees
+            - generic [ref=f29e121]: 
+            - generic [ref=f29e122]: Employés
+        - listitem [ref=f29e123]:
+          - link " Chefs" [ref=f29e124] [cursor=pointer]:
+            - /url: /admin/chefs
+            - generic [ref=f29e125]: 
+            - generic [ref=f29e126]: Chefs
+      - list [ref=f29e127]:
+        - listitem [ref=f29e128]:
+          - button "Comptes" [ref=f29e129] [cursor=pointer]
+        - listitem [ref=f29e130]:
+          - link " Transactions" [ref=f29e131] [cursor=pointer]:
+            - /url: /admin/transactions
+            - generic [ref=f29e132]: 
+            - generic [ref=f29e133]: Transactions
+      - list [ref=f29e134]:
+        - listitem [ref=f29e135]:
+          - button "Rapports" [ref=f29e136] [cursor=pointer]
+        - listitem [ref=f29e137]:
+          - link " Rapport des ventes" [ref=f29e138] [cursor=pointer]:
+            - /url: /admin/sales-report
+            - generic [ref=f29e139]: 
+            - generic [ref=f29e140]: Rapport des ventes
+        - listitem [ref=f29e141]:
+          - link " Rapport articles" [ref=f29e142] [cursor=pointer]:
+            - /url: /admin/items-report
+            - generic [ref=f29e143]: 
+            - generic [ref=f29e144]: Rapport articles
+      - list [ref=f29e145]:
+        - listitem [ref=f29e146]:
+          - button "Configuration" [ref=f29e147] [cursor=pointer]
+        - listitem [ref=f29e148]:
+          - link " Paramètres" [ref=f29e149] [cursor=pointer]:
+            - /url: /admin/settings
+            - generic [ref=f29e150]: 
+            - generic [ref=f29e151]: Paramètres
+  - generic [ref=f29e152]:
+    - list [ref=f29e155]:
+      - listitem [ref=f29e156]:
+        - link "Tableau de bord/" [ref=f29e157] [cursor=pointer]:
+          - /url: /admin/dashboard
+      - listitem [ref=f29e158]:
+        - generic [ref=f29e159]: Rapport articles
+    - generic [ref=f29e167]:
+      - generic [ref=f29e168]:
+        - heading "Rapport articles" [level=3] [ref=f29e169]
+        - generic [ref=f29e170]:
+          - generic [ref=f29e232]:
+            - button "10 " [ref=f29e233] [cursor=pointer]:
+              - generic [ref=f29e234]: "10"
+              - generic [ref=f29e235]: 
+            - list:
+              - listitem:
+                - generic: "10"
+              - listitem:
+                - generic: "25"
+              - listitem:
+                - generic: "50"
+              - listitem:
+                - generic: "100"
+              - listitem:
+                - generic: "500"
+              - listitem:
+                - generic: "1000"
+          - button " Filtrer " [ref=f29e171] [cursor=pointer]:
+            - generic [ref=f29e172]: 
+            - generic [ref=f29e173]: Filtrer
+            - generic [ref=f29e174]: 
+          - generic [ref=f29e175]:
+            - button " Exporter " [ref=f29e176] [cursor=pointer]:
+              - generic [ref=f29e177]: 
+              - generic [ref=f29e178]: Exporter
+              - generic [ref=f29e179]: 
+            - generic:
+              - button " Imprimer":
+                - generic: 
+                - text: Imprimer
+              - link " XLS":
+                - /url: "#"
+                - generic: 
+                - text: XLS
+              - link " PDF":
+                - /url: "#"
+                - generic: 
+                - text: PDF
+      - generic [ref=f29e181]:
+        - generic [ref=f29e182]:
+          - generic [ref=f29e183]: Catégorie
+          - combobox [ref=f29e184]:
+            - textbox [ref=f29e187]:
+              - /placeholder: "--"
+        - generic [ref=f29e189]:
+          - generic [ref=f29e190]: Type
+          - combobox [ref=f29e191]:
+            - textbox [ref=f29e194]:
+              - /placeholder: "--"
+        - generic [ref=f29e196]:
+          - generic [ref=f29e197]: Nom
+          - combobox [ref=f29e198]:
+            - textbox [ref=f29e201]:
+              - /placeholder: "--"
+        - generic [ref=f29e203]:
+          - generic [ref=f29e204]: Date
+          - textbox "Datepicker input" [ref=f29e206]:
+            - textbox [ref=f29e208] [cursor=pointer]
+        - generic [ref=f29e210]:
+          - button " Rechercher" [ref=f29e211] [cursor=pointer]:
+            - generic [ref=f29e212]: 
+            - generic [ref=f29e213]: Rechercher
+          - button " Effacer" [ref=f29e214] [cursor=pointer]:
+            - generic [ref=f29e215]: 
+            - generic [ref=f29e216]: Effacer
+      - table [ref=f29e218]:
+        - rowgroup [ref=f29e219]:
+          - row "Nom Catégorie Type Quantité" [ref=f29e220]:
+            - columnheader "Nom" [ref=f29e221]
+            - columnheader "Catégorie" [ref=f29e222]
+            - columnheader "Type" [ref=f29e223]
+            - columnheader "Quantité" [ref=f29e224]
+        - rowgroup [ref=f29e236]:
+          - row "Menu (Frites + Boisson) Technique (interne — upsell) Veg 11233" [ref=f29e237]:
+            - cell "Menu (Frites + Boisson)" [ref=f29e238]
+            - cell "Technique (interne — upsell)" [ref=f29e239]
+            - cell "Veg" [ref=f29e240]
+            - cell "11233" [ref=f29e241]
+          - row "Frites Seules Technique (interne — upsell) Veg 126" [ref=f29e242]:
+            - cell "Frites Seules" [ref=f29e243]
+            - cell "Technique (interne — upsell)" [ref=f29e244]
+            - cell "Veg" [ref=f29e245]
+            - cell "126" [ref=f29e246]
+          - row "Boisson Seule Technique (interne — upsell) Veg 83" [ref=f29e247]:
+            - cell "Boisson Seule" [ref=f29e248]
+            - cell "Technique (interne — upsell)" [ref=f29e249]
+            - cell "Veg" [ref=f29e250]
+            - cell "83" [ref=f29e251]
+          - row "Coca-Cola 33cl Boissons Veg 83" [ref=f29e252]:
+            - cell "Coca-Cola 33cl" [ref=f29e253]
+            - cell "Boissons" [ref=f29e254]
+            - cell "Veg" [ref=f29e255]
+            - cell "83" [ref=f29e256]
+          - row "Cayenne Sandwichs Non végétarien 73" [ref=f29e257]:
+            - cell "Cayenne" [ref=f29e258]
+            - cell "Sandwichs" [ref=f29e259]
+            - cell "Non végétarien" [ref=f29e260]
+            - cell "73" [ref=f29e261]
+          - row "Tacos M Tacos Non végétarien 55" [ref=f29e262]:
+            - cell "Tacos M" [ref=f29e263]
+            - cell "Tacos" [ref=f29e264]
+            - cell "Non végétarien" [ref=f29e265]
+            - cell "55" [ref=f29e266]
+          - row "Galette Normale Galette Non végétarien 53" [ref=f29e267]:
+            - cell "Galette Normale" [ref=f29e268]
+            - cell "Galette" [ref=f29e269]
+            - cell "Non végétarien" [ref=f29e270]
+            - cell "53" [ref=f29e271]
+          - row "Sandwich Classique Sandwich Classique Non végétarien 50" [ref=f29e272]:
+            - cell "Sandwich Classique" [ref=f29e273]
+            - cell "Sandwich Classique" [ref=f29e274]
+            - cell "Non végétarien" [ref=f29e275]
+            - cell "50" [ref=f29e276]
+          - row "Eau Plate 50cl Boissons Veg 50" [ref=f29e277]:
+            - cell "Eau Plate 50cl" [ref=f29e278]
+            - cell "Boissons" [ref=f29e279]
+            - cell "Veg" [ref=f29e280]
+            - cell "50" [ref=f29e281]
+          - row "Grande Frites Frites Veg 27" [ref=f29e282]:
+            - cell "Grande Frites" [ref=f29e283]
+            - cell "Frites" [ref=f29e284]
+            - cell "Veg" [ref=f29e285]
+            - cell "27" [ref=f29e286]
+        - rowgroup [ref=f29e287]:
+          - row "Total 11833" [ref=f29e288]:
+            - cell "Total" [ref=f29e289]
+            - cell [ref=f29e290]
+            - cell [ref=f29e291]
+            - cell "11833" [ref=f29e292]
+      - generic [ref=f29e294]:
+        - paragraph [ref=f29e296]: Affichage de 1 à 10 sur 66 entrées
+        - navigation "Pagination" [ref=f29e298]:
+          - button "Previous" [disabled] [ref=f29e299]:
+            - generic [ref=f29e300]: Previous
+            - img [ref=f29e301]
+          - button "1" [disabled] [ref=f29e303]
+          - button "2" [ref=f29e304] [cursor=pointer]
+          - button "..." [ref=f29e305] [cursor=pointer]
+          - button "7" [ref=f29e306] [cursor=pointer]
+          - button "Next" [ref=f29e307] [cursor=pointer]:
+            - generic [ref=f29e308]: Next
+            - img [ref=f29e309]

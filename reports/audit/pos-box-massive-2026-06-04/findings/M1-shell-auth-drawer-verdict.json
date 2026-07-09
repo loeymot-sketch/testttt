@@ -1,0 +1,83 @@
+{
+  "micro_system": "M1-shell-auth-drawer",
+  "verdicts": [
+    {
+      "id": "M1-01",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P1",
+      "reason": "CONFIRMED at all cited lines. PosComponent.vue:1423 imports openDrawer as kioskHardwareOpenDrawer; :3669-3686 triggerNoSaleOpenDrawer calls only that helper. kioskHardware.js:259-262 export openDrawer -> getBridge(); in a plain browser getBridge() (line 40-42, isBridgeAvailable=!!window.borne) returns buildStub() whose openDrawer:okAsync (line 70) resolves {ok:true} -> success toast pos.no_sale_done='Tiroir ouvert.'. Backend route routes/api.php:924 POST /cash-drawer/open -> CashDrawerController::open writes TYPE_DRAWER_OPEN CashMovement into the open session (CashDrawerController.php:50-58) for the NF525 forensic chain. grep cash-drawer/open across resources/js = ZERO callers. fr.json:202 no_sale_hint literally says 'Action tracee.' which is false. STRONGER than the finding states: this Le Cayenne box runs the web POS with NO Electron bridge (window.borne never present), so the button is ALWAYS a placebo, not just in dev. Real P1: no drawer pop + no NF525 trail despite documented traceability promise.",
+      "file_line": "resources/js/components/admin/pos/PosComponent.vue:3669-3686, kioskHardware.js:259-262 + :70, routes/api.php:924, CashDrawerController.php:50-58, fr.json:202"
+    },
+    {
+      "id": "M1-02",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P1",
+      "reason": "CONFIRMED. PosComponent.vue:3894 offline gate (navigator.onLine===false) enqueues {...this.checkoutProps.form} at :3896. Form defaults: pos_payment_method=CASH (:1672), pos_received_amount=null (:1679). PosOrderRequest.php:118 requires pos_received_amount=['required','numeric','min:0'] when method===CASH -> null fails -> 422. usePosOfflineState.js:51 tryFlush POSTs to admin/pos; on error -> markFailed (helper posOfflineQueue.js:97-103 only bumps attempts, NEVER removes; listPending :81-83 returns all entries regardless of status) -> entry loops forever, never markSynced (:88-94 removes only on success). purgeExpired (:108) drops by TTL = silent loss anyway. CORRECTION to finding: 'items' is NOT missing - it IS built and JSON.stringified at :3827-3844 BEFORE the offline gate, so the recommended_correction's 'stringified items JSON' aside is inaccurate; the load-bearing defect (pos_received_amount=null) is fully correct. Real P1 lost-revenue/NF525 missing-ticket: a queued offline CASH sale can never be created on reconnect.",
+      "file_line": "resources/js/components/admin/pos/PosComponent.vue:3894-3896 + :1672/:1679 + :3844, usePosOfflineState.js:51-54, posOfflineQueue.js:81-103, PosOrderRequest.php:118"
+    },
+    {
+      "id": "M1-03",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "CONFIRMED but title OVERSTATED. PosCashDrawerSessionDialog.vue:400-402 varianceRequiresReason() returns true for Math.abs(liveVariance)>0.005 (ANY non-zero ecart); :403-407 varianceReasonMissing blocks submit (template :256 :disabled). Backend CashDrawerService.php:276 only requires reason when abs(variance)>threshold (config/cash.php:31 default 2.00). So a 0.50EUR variance: backend reconciles reason-free, UI demands a >=3 char reason. is_real:true. BUT it does NOT 'block legitimate closes' (title) - it adds a required field = friction, not a hard block (cashier types a reason and proceeds). DOWNGRADE P2->P3: end-of-day friction, not a correctness defect. CAVEAT the finding missed: above threshold the backend ALSO requires manager-approval permission (CashDrawerService.php:277+ actorCanOverrideVariance, CODE_MANAGER_APPROVAL), which the UI does NOT gate - so the recommended fix (sync UI threshold to 2EUR) makes the UI UNDER-strict for the above-threshold manager-approval case. Any threshold-sync fix must also surface the manager-approval gate.",
+      "file_line": "resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue:400-407 + :256, CashDrawerService.php:266/:276-296, config/cash.php:31"
+    },
+    {
+      "id": "M1-04",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "CONFIRMED mechanism, DOWNGRADE P2->P3. CashDrawerService.js:116-136 closeSession() fires POST /{id}/close (:122), awaits, then POST /{id}/reconcile (:130) as a SEPARATE request. If reconcile fails after close, session is STATUS_CLOSED (CashDrawerService.php:183) but not RECONCILED (:325 sets expected_closing_amount/variance). Standalone reconcile() export exists (CashDrawerService.js:148) but grep shows it is NEVER called by store or dialog. Store cashDrawer.js:121-149 clears session only on full success, keeps stale OPEN ref on failure. HOWEVER recovery is NOT broken as the title claims: backend close-when-already-closed (CashDrawerService.php:177-179) returns transitioned:false (no-op, does NOT throw), so re-clicking the dialog's 'Confirmer la cloture' (submitClose->closeSession->/close no-op then /reconcile runs) DOES finish reconciliation. So 'no UI path to finish it' is too strong - the same button recovers. Real robustness gap (relies on user re-click after error toast, store holds stale state) but self-healing -> P3 not P2.",
+      "file_line": "resources/js/services/CashDrawerService.js:116-136 + :148, store/modules/cashDrawer.js:121-149, CashDrawerService.php:177-189/:325"
+    },
+    {
+      "id": "M1-05",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "CONFIRMED. CashDrawerService.php:475-482 findOpenSessionForUser filters on branch_id AND opened_by_user_id AND status=OPEN - per-USER scoping is real. PosComponent.vue:2400-2422 autoLoadCashSession -> loadCurrentSession({branchId}); if null -> cashSessionInitialMode='open' + dialog auto-pops (:2410-2413). On a V1 single box, cashiers log in under their own accounts; cashier B taking over A's still-open till is prompted to open a SECOND session, fragmenting the physical drawer's cash across two accounting sessions -> guaranteed variance for both. The finding correctly flags this owner-gated (changes the accounting model) and rates medium confidence. Valid P2 logic/accounting concern; one physical drawer should map to one open session. Severity appropriate - not blind-healed, surfaced to owner.",
+      "file_line": "app/Services/Cash/CashDrawerService.php:475-482, resources/js/components/admin/pos/PosComponent.vue:2400-2422, store/modules/cashDrawer.js:26"
+    },
+    {
+      "id": "M1-06",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": false,
+      "severity_adjusted": "DROP",
+      "reason": "Observation true but recommended_correction is INFEASIBLE -> DROP. AdminPosV4Controller.php:16-20 docblock states 'NO auth middleware - the Blade is publicly servable'; web.php:53-56 route /admin/pos-v4/{any?} has only ['installed'] middleware; the catch-all web.php:62 RootController@index (also only ['installed']) serves the ENTIRE admin SPA incl. /admin/pos unauthenticated. Cash APIs ARE gated (CashDrawerController.php:22 + CashDrawerSessionController.php:31 permission:pos) = zero data exposure. DECISIVE: the SPA authenticates via Bearer token in localStorage, NOT cookie session - app.js:210 'SPA is Bearer-[based]', bootstrap.js:310 'this SPA uses Bearer tokens', pos-app.js:195 Bearer per axios call, and Kernel.php:52 EnsureFrontendRequestsAreStateful is COMMENTED OUT (Sanctum stateful disabled). A full-page browser GET to the shell route carries NO Authorization header (token only attached by the axios interceptor on XHR), so adding server-side 'auth' middleware would 302 legitimately-authenticated cashiers to /login - it breaks the real flow. The fix 'really must NOT be done' as written. is_necessary:false, DROP. (Defense-in-depth concern is theoretically valid but the proposed correction is not actionable under this auth architecture.)",
+      "file_line": "app/Http/Controllers/Admin/AdminPosV4Controller.php:16-20, routes/web.php:53-56 + :62, app/Http/Kernel.php:52, resources/js/app.js:210, bootstrap.js:310, pos-app.js:195"
+    },
+    {
+      "id": "M1-07",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "CONFIRMED. PosComponent.vue:3916-3930 tryManualFlush only toasts when res.synced>0 (success) or res.failed>0 (warning); the {synced:0,failed:0,skipped:false} branch (usePosOfflineState.js:39-63 returns this when queue already drained by 30s auto-flush) produces NO toast. Button @click=tryManualFlush at template :36 is disabled only when queueDepth===0 (:34), so it is clickable in the race where the queue just emptied. Real low-severity UX gap: a silent button at a busy counter erodes trust in degraded-mode recovery. P3 ux accurate; the proposed else-branch info toast is a clean minimal fix.",
+      "file_line": "resources/js/components/admin/pos/PosComponent.vue:3916-3930 + template :34/:36, usePosOfflineState.js:39-63"
+    },
+    {
+      "id": "M1-08",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "CONFIRMED. PosComponent.vue:2430-2434 onCashSessionOpened(session) has an aspirational comment ('leave dialog open in active view so cashier sees the live stats') but an EMPTY body - the session param is unused and the method does nothing. The actual mode switch to 'active' happens inside the dialog's own submitOpen (PosCashDrawerSessionDialog.vue:502 this.mode='active'), and the badge updates because the Vuex action mutated the store, NOT because of this handler. Genuinely dead/empty handler - exactly the 'flou' (misleading empty handler) the owner called out, and NOT a NO-OP false-positive like the prior editor_id case (this one IS real dead code, just harmless today). P3 deadcode accurate. Smallest fix: delete the method + @session-opened binding.",
+      "file_line": "resources/js/components/admin/pos/PosComponent.vue:2430-2434, PosCashDrawerSessionDialog.vue:493-509"
+    }
+  ],
+  "coverage_gaps": [
+    "NO cash-in / cash-out (apport/prelevement) UI affordance: the cash dialog 'movements' view (PosCashDrawerSessionDialog.vue:268-300) is READ-ONLY (loadMovements only). Backend CashDrawerService.recordMovement supports TYPE_CASH_IN/TYPE_CASH_OUT and only a GET /{session}/movements route exists (api.php:937) - no POST write path in routes/api.php or CashDrawerService.js. Mid-shift manual deposits/withdrawals (a standard NF525 cash-drawer operation) cannot be recorded by the operator -> the only operator-side cash_movements writes are auto order-cash hooks + the never-wired drawer-open. Real gap the M1 auditor (cash drawer/shift scope) did not surface.",
+    "openCounterCollect (PosComponent.vue @click :366/:1268) and confirmCancelKioskCashOrder (:1377) are kiosk-cash counter-collection / cancellation flows in the POS shell that mutate the cash trail and are cash-drawer-adjacent but were NOT examined by the M1 auditor. Possibly M6 (payment) / M8 (refund) scope, but flagged here as cash-trail-adjacent and unexamined.",
+    "submitOpen opening-amount validation (PosCashDrawerSessionDialog.vue:493-509, canOpen :408 only checks >=0 and isFinite) was not audited for the negative/NaN/huge-float edge or whether a second OPEN attempt while a session is already OPEN is rejected client-side vs only server-side.",
+    "openMovements (PosCashDrawerSessionDialog.vue:510-518) and the movements-list rendering (:287 v-for) error/empty states were not visually or technically examined by the auditor."
+  ]
+}

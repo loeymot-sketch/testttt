@@ -1,0 +1,29 @@
+- generic [ref=f9e4]:
+  - img [ref=f9e7]
+  - banner [ref=f9e11]:
+    - generic [ref=f9e12]:
+      - link "logo" [ref=f9e14] [cursor=pointer]:
+        - /url: /login
+        - img "logo" [ref=f9e15]
+      - link " Connexion" [ref=f9e17] [cursor=pointer]:
+        - /url: /login
+        - generic [ref=f9e18]: 
+        - generic [ref=f9e19]: Connexion
+  - generic [ref=f9e21]:
+    - heading "Bon retour" [level=2] [ref=f9e22]
+    - generic [ref=f9e23]:
+      - generic [ref=f9e24]:
+        - generic [ref=f9e25]: Email
+        - textbox "Email" [ref=f9e26]
+      - generic [ref=f9e27]:
+        - generic [ref=f9e28]: Mot de passe
+        - textbox "Mot de passe" [ref=f9e29]
+      - generic [ref=f9e30]:
+        - generic [ref=f9e31] [cursor=pointer]:
+          - generic [ref=f9e32]:
+            - checkbox "Se souvenir de moi" [ref=f9e33]
+            - generic [ref=f9e34]: 
+          - generic [ref=f9e35]: Se souvenir de moi
+        - link "Mot de passe oublié" [ref=f9e36] [cursor=pointer]:
+          - /url: /forget-password
+      - button "Connexion" [ref=f9e37] [cursor=pointer]

@@ -1,0 +1,68 @@
+{
+  "micro_system": "M9-loyalty (Loyalty redeem at POS)",
+  "verdicts": [
+    {
+      "id": "M9-01",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "VERIFIED. Both mounts omit :rate — PosOrderShowComponent.vue:354-358 (no :rate) and PosComponent.vue:1117-1121 (no :rate); modal prop default=100 (PosLoyaltyRedeemModal.vue:187-189); rateHint=Number(rate)||100 (modal:206-208); previewDiscountEur=round(pts/rateHint*100)/100 (modal:210-213); step=rateHint||100 (modal:90). Backend reads real rate from Settings::group('loyalty_setup')->get('loyalty_points_for_1_euro_discount',100) (PosRedemptionService.php:96) and rejects non-multiples with POINTS_NOT_MULTIPLE (PosRedemptionService.php:100-106). Rate is admin-editable min:1 max:10000 (LoyaltySetupComponent.vue:39-43). LATENT today (rate=100 default → no live symptom) but real divergence the moment owner changes the rate: wrong euro preview to customer's face + wrong +/- step + UI shows a value the server rejects. FIX WRINKLE found: the loyaltySetup store getter returns 'lists' (an object, store/modules/loyaltySetup.js:9), so :rate cannot bind directly — it must extract the loyalty_points_for_1_euro_discount field. Keep P2: latent-but-real cashier-facing logic divergence."
+    },
+    {
+      "id": "M9-02",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "VERIFIED with corrected rationale. Guard compares only the increment: if($discountEur > $subtotal) throw DISCOUNT_EXCEEDS_SUBTOTAL (PosRedemptionService.php:145-151) — it ignores $order->discount. Balance is then drained by FULL points (lines 168-174), newDiscount=currentDiscount+discountEur (line 206), newTotal=round(max(0, subtotal-newDiscount+delivery),2) (line 224). PRECONDITION CONFIRMED reachable: POS orders carry a pre-existing coupon discount — OrderService.php:563 writes order->discount=calculatedDiscount (coupon path) and POS SSOT path OrderService.php:1045 writes order->discount=posSsotPricingResult->discount. So an order can arrive at redeem with discount>0. Worked example holds: subtotal=10, discount=8, redeem 500pts(=5€): 5>10 false → proceeds; 500 pts drained; newTotal=max(0,10-13)=0; ~300 pts silently burned by the max(0,..) clamp for zero extra benefit. CORRECTION to finding's claim: kiosk does NOT 'get this for free via PricingService' — DiscountCalculator.php:38-39 FORBIDS coupon+loyalty together (returns early if both present) and :49 also only does min(requestedDiscount, realSubtotal) against subtotal, not subtotal-minus-coupon. The POS defect is real but for a DIFFERENT reason: POS uniquely lets coupon-at-create + loyalty-post-create coexist, a combination the kiosk structurally prevents. clamp-to-headroom fix is sound. Keep P2 (real points loss, no cashier warning, but requires the coupon+loyalty combo to trigger)."
+    },
+    {
+      "id": "M9-03",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "DOWNGRADE P2→P3. Mechanism verified: currentLoyaltyOrder is only set in triggerSuccessFlash (PosComponent.vue:2483) bound to @order:confirmed (PosComponent.vue:1109), which PaymentComponent emits AFTER confirmOrderWithAuthRetry() resolves (PaymentComponent.vue:990-995) i.e. post-creation/post-PAID; canShowLoyaltyMainCta hides the CTA when paymentStatus==PAID (posLoyaltyMainCta.js:84-87). Code comment AND STATUS.md document this as INTENTIONAL ('For CASH-via-wizard flows the order arrives PAID and canShowLoyaltyMainCta will hide the CTA — that's intentional', PosComponent.vue:2477-2481). A WORKING alternate surface exists: PosOrderShowComponent canonical modal (PosOrderShowComponent.vue:354-358). So this is works-as-intended-but-confusing, not a P2 defect. The genuinely fixable bug is narrower: the disabled tooltip says disabled_hint='Create an order first to apply a loyalty discount' (fr.json:289/en.json:288) which is WRONG for the PAID-cash case (the order DOES exist, it is just paid). Recommend P3: correct the tooltip to explain 'already paid', or drop the misleading main-page CTA — not the P2 architectural rework the finding implies."
+    },
+    {
+      "id": "M9-04",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "VERIFIED dead code. submitApply sets successMessage then synchronously emits 'applied' (modal:312-316). Both parents close the modal as their FIRST statement in the handler, no delay: PosOrderShowComponent.onLoyaltyRedeemApplied sets loyaltyRedeemOpen=false (line 626-627) then dispatches refresh; PosComponent.onLoyaltyMainApplied sets loyaltyRedeemMainOpen=false (line 2506-2507). Confirmed no setTimeout/nextTick in either applied handler. v-if='open' wraps the whole dialog (modal:4), so the success band (modal:42-49) unmounts the same tick successMessage is populated → never renders. Genuine unreachable dead code (success band + successMessage state). P3 deadcode correct: not money-impacting, but real cleanup (either delay close ~1s to show it, or delete the band+state). Owner explicitly asked to flag unnecessary things."
+    },
+    {
+      "id": "M9-05",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "VERIFIED, partially mitigated. watch.open(newVal) resets errorMessage/successMessage/loading/lastResponse on fresh open (modal:226-231) but does NOT reset loyaltyCode/pointsToRedeem/customerBalance (data defaults modal:195-200). Same component instance reused across both mounts. MITIGATION found: onCodeInput (modal:251-258) DOES reset customerBalance and errorMessage when the user edits the code — so stale code is cleared the moment the cashier retypes; and customerBalance is ONLY ever populated post-apply (modal:308-310), there is no pre-apply lookup endpoint, so a stale balance only shows briefly after a prior successful redeem until the code is touched. Real residual risk: if a cashier opens, types A's code+points, cancels, reopens for the NEXT order without retyping and just clicks elsewhere, A's code+points remain pre-filled → potential redeem against wrong customer/amount, server-caught by CUSTOMER_NOT_FOUND/INSUFFICIENT_BALANCE only if lucky. P3 correct: real cross-customer hygiene defect, low frequency, cheap one-line fix (reset the three fields in watch.open(true))."
+    },
+    {
+      "id": "M9-06",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": false,
+      "severity_adjusted": "DROP",
+      "reason": "REAL-but-NO-ACTION → DROP per hostile-RED necessity bar (cf editor_id-dormant no-op precedent). Asymmetry verified: PosRedemptionService looks the customer up by plaintext code User::where('loyalty_code',$loyaltyCode) (lines 114,123); FormRequest only validates shape regex/min:4/max:25 (PosLoyaltyRedeemRequest.php:31); LoyaltyQrSigner.verifyAndConsume (HMAC+nonce+replay) is wired ONLY into Frontend/LoyaltyController kiosk path (LoyaltyController.php:652-658, sign at :833) and is NEVER referenced in the POS chain (grep clean). BUT the finding itself states 'No change required for V1 cashier-keyed flow (trusted operator)' and its recommendation is documentation only, contingent on a hypothetical future scan-QR-at-POS path that does not exist. A finding that requires no code action against current behavior is exactly what a RED-team destroys. is_real:true (the asymmetry exists, correctly described, defensible-by-design), is_necessary:false → DROP. If a future customer-presented-QR-at-POS path is ever added, re-open then."
+    },
+    {
+      "id": "M9-07",
+      "file_line_exists": true,
+      "is_real": false,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "STALE-COMMENT, NOT a fiscal defect — refuted by live evidence, NOT by date-ordering. The service comment (PosRedemptionService.php:66-78, dated 2026-05-30) claims redeem signs a 'fiscally-incorrect Z' because it updates order.discount+order.total but not order.total_tax/order_items.tax_amount. DECISIVE counter-evidence in ZReportService.php: orderDiscountNettingRatio()=(subtotal-discount)/subtotal clamped [0,1] (lines 671-685), and taxBreakdownForOrders() GROUP BY (order_id,tax_rate) then SCALES each order's per-line tax_amount by that ratio (lines 694-722), with total_tva derived as array_sum(total_by_tax_rate) and the NF525 identity total_tva==Σ total_by_tax_rate holding by construction (lines 425-455). So the Z RE-DERIVES post-discount TVA from order.discount AT CLOSE — it does NOT trust stored order.total_tax. The redeem only needs to update order.discount (which it does, line 238) for the Z to be correct. EMPIRICALLY PROVEN: ran `php artisan test --filter=ZReportDiscountNettingTest` → 5 passed including 'total tva exactly equals sum of total by tax rate' and 'discounted z close signs and chain verifies'. Config note config/pos.php:161-176 (LOCK_ZREPORT_F1_DISCOUNT_NETTING 2026-05-31) corroborates F1 is FIXED. is_real:false (the asserted fiscal defect does not exist — the F1 split was fixed one day after the stale comment was written). is_necessary:true ONLY as P3 doc cleanup: update/remove the stale PosRedemptionService.php:66-78 comment so it stops claiming a defect that is fixed. Do NOT touch fiscal behavior (frozen NF525). The auditor's needs-live-verify P3 framing was honest and correctly predicted this outcome."
+    }
+  ],
+  "coverage_gaps": [
+    "translateErrorCode (PosLoyaltyRedeemModal.vue:274-281) maps only 6 codes (INSUFFICIENT_BALANCE, CUSTOMER_NOT_FOUND, ALREADY_REDEEMED, ORDER_ALREADY_FINALIZED, POINTS_NOT_MULTIPLE, DISCOUNT_EXCEEDS_SUBTOTAL) but PosRedemptionService throws THREE more that are UNMAPPED: DISCOUNTS_DISABLED_V1 (service:73-77 — fires whenever the V1 kill-switch POS_MANUAL_DISCOUNT_ENABLED=false is set), INVALID_POINTS (service:86), INVALID_LOYALTY_CODE (service:91). When any of these fires the cashier gets the generic fallback 'errors.generic' with no specific explanation — on the kill-switch path this is the DEFAULT-relevant case in a discounts-disabled config. Auditor did not surface this error-vocabulary mismatch.",
+    "DISCOUNTS_DISABLED_V1 master-gate interaction not audited: config('pos.manual_discount_enabled') defaults true today (config/pos.php:174) so redeem is LIVE, but the entire feature is one .env flag (POS_MANUAL_DISCOUNT_ENABLED=false) away from refusing every redeem with a generic-mapped error (see gap above). No finding examined the disabled-state UX (the main-page CTA + PosOrderShowComponent button still render and open the modal; failure only surfaces on Apply).",
+    "Refund-on-cancel of a redeemed POS order — VERIFIED HANDLED (not an open gap, but unexamined by the auditor): OrderService.php:2059 and :2195 call LoyaltyService::refundPoints($locked,'pos') on cancel, which locates the customer via order.loyalty_customer_code (LoyaltyService.php:40) — the exact field PosRedemptionService sets at line 240. So burned points ARE refunded on cancel. Worth a regression test to lock this, but no defect.",
+    "No pre-apply balance lookup: the modal renders a 'Customer balance (after lookup)' block (modal:52-64) but customerBalance is only ever populated from the apply response (modal:308-310) — there is no GET endpoint to show the customer's balance BEFORE committing the redeem. Cashier cannot verify the customer has enough points until they click Apply and the server may reject with INSUFFICIENT_BALANCE. Minor UX gap unaddressed by any finding.",
+    "Idempotency-key minute-bucket collision (buildIdempotencyKey, modal:266-271): key = pos-redeem-{orderId}-{code}-{points}-{minuteBucket}. Two distinct legitimate redeems with identical order/code/points within the same minute would collide on the idempotency cache. Edge, but the per-minute bucket is a design choice no finding examined for the double-redeem-same-minute case (also note UNIQUE(user_id,order_id,type) already blocks a genuine second redeem on the same order, so impact is bounded)."
+  ]
+}

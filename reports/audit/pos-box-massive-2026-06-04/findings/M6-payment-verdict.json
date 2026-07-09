@@ -1,0 +1,60 @@
+{
+  "micro_system": "M6-payment (Payment / PaymentComponent FROZEN-read-only + split/tranche)",
+  "verdicts": [
+    {
+      "id": "M6-001",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P1",
+      "reason": "VERIFIED REAL end-to-end. Guard confirmed at OrderService.php:1071-1075 (CASH && pos_received_amount!==null && received<order->total -> InvalidArgumentException 422), unconditional on split and running BEFORE split persistence (OrderService.php:1238-1242). Payload confirmed at PaymentComponent.vue:832-841: multiPatch sets pos_payment_method=dominantMode, pos_received_amount=cashTranche.tendered (the CASH slice only). For dominant=CASH the rescue does NOT fire: I read the full alignCashReceivedWithQuotedTotal body (PaymentComponent.vue:753-783) — it proceeds past the CASH check, then line 766 `if (received+0.001 < shownTotal) return quotedForm;` early-returns WITHOUT bumping when received(20) < shownTotal(30). So 20 is sent, 20<30 -> hard 422 on a fully-covered split (20 cash + 10 card = 30). validateBreakdown (SplitPaymentService.php:147-155) passes (sum 30 == total 30), canConfirmMulti passes client-side. Blocks a valid common split at the register. Fix target OrderService.php:1071 is NOT frozen; correct scope-minimal fix is to skip the single-tender cash guard when $splitActive (breakdown present), since validateBreakdown already enforces sum>=server total. P1 confirmed (broken core flow with distorting workaround)."
+    },
+    {
+      "id": "M6-002",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P1",
+      "reason": "VERIFIED REAL. ZReportService::applyOrderToTotals (ZReportService.php:661-668) computes $method=$order->pos_payment_method and $byMethod[$method] += $sign*$ttc using the WHOLE order TTC under the single stored method; it never reads order_payments. For a split, pos_payment_method is collapsed to the dominant tranche (PaymentComponent.vue:837). $byMethod flows into $aggregates -> signZReport (ZReportService.php:651-652), so total_by_method IS part of the HMAC-signed daily close. I checked the candidate mitigation ZReportCashEnrichmentService: its by_terminal cash_total/card_total per-tranche breakdown is explicitly 'calculé runtime, JAMAIS persisté... n'altère pas la chaîne HMAC' (decorator, unsigned, view-time only) and cash_movements/cash_variance are drawer-correct — none of these correct the SIGNED total_by_method. So every split corrupts method-attribution on the signed fiscal Z (grand total + drawer correct, but cash-vs-card legal split wrong). ZReportService is FROZEN NF525 — fix requires owner gate/LOCK + triple-green regression. Held at P1 (signed-document reporting fidelity defect), not downgraded."
+    },
+    {
+      "id": "M6-003",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "VERIFIED REAL. autoBalanceTranches (posSplitPayment.js:275-301) computes remainderCents = totalCents - editedAmountCents (subtracts ONLY the one edited tranche) and writes that whole remainder into a single absorber; all other non-edited tranches keep their amounts — correct only for exactly 2 tranches. autoBalanceFromIndex (PaymentComponent.vue:678-685) calls it with no policy arg so policy defaults to 'auto-pair' (line 286: absorber=(editedIndex+1)%length). Button rendered at PaymentComponent.vue:254 when tranches.length>=2, @click=autoBalanceFromIndex(0). Trace [10,10,10] total 30, edit idx0 -> absorber=1 -> t1=20, t2 stays 10 -> sum 40 (overpay 10). The 'last-tranche' branch has the identical single-absorber flaw. Helper not frozen; fix = remainder as total minus sum of ALL non-absorber tranches + 3-tranche unit test. Severity P2 confirmed: the common outcome is a BLOCKED confirm (canConfirm rejects at -10 overpay, beyond -100 tolerance), occasionally a mis-booked breakdown if it lands inside the 1EUR overpay slack — P2 is the correct ceiling."
+    },
+    {
+      "id": "M6-004",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "VERIFIED REAL. canConfirm (posSplitPayment.js:144-151) returns true when `remaining <= 1 && remaining >= -100` where remaining=totalCents-coveredCents; remaining==1 means tranches cover ONE CENT LESS than total, yet UI enables Confirm. Backend SplitPaymentService::validateBreakdown (SplitPaymentService.php:147-155) rejects ANY underpay with zero slack: `if ($totalCents < $serverTotalCents) throw ValidationException('Somme des tranches (..) < total (..)')`. So a 1-cent-short split passes the client gate and 422s server-side — a real client/server contract mismatch yielding an undiagnosable hard error after a green UI. Rare under splitEqually (exact parts) but reachable via manual amount entry. Helper not frozen; fix = change `remaining <= 1` to `remaining <= 0` so the client gate is a true subset of the server contract. P2 confirmed."
+    },
+    {
+      "id": "M6-005",
+      "file_line_exists": true,
+      "is_real": false,
+      "is_necessary": false,
+      "severity_adjusted": "DROP",
+      "reason": "DISPROVEN. The finding cited only ReceiptDataService.php and concluded the receipt 'prints as a single dominant method' omitting the split. ReceiptDataService is verified to assemble ONLY the 6 fiscal header fields (its docblock explicitly delegates payment-line rendering to resources/js/helpers/posReceiptBuilder.js) — it was never the payment-line renderer, so citing it does not support the claim. The ACTUAL receipt path DOES render the per-tranche multi-tender breakdown: OrderDetailsResource.php:123 exposes payments_breakdown via buildPaymentsBreakdown() (OrderDetailsResource.php:150) which reads order->payments (order_payments rows) and emits {method,amount,change_amount,reference} per tranche; ReceiptComponent.vue:439 calls buildPaymentLines(this.order) -> posReceiptBuilder.formatPaymentsBreakdown (posReceiptBuilder.js:33-57) which renders one line per tranche when payments_breakdown is non-empty (with tendered/change), falling back to single method only when empty. So the on-screen/HTML receipt correctly shows the split. The separate thermal ESC/POS path (EscPosPrinterService.php) renders NO payment-method block at all (single OR multi) — a different pre-existing limitation, not the 'single dominant method' the finding describes. Finding misidentified the renderer and its core claim is false. DROP."
+    },
+    {
+      "id": "M6-006",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "VERIFIED REAL (low severity). floatNumber (appService.js:65-69) validates only the SINGLE new char `String.fromCharCode(e.keyCode)` against /^[.]?[0-9]*$/, so a second '.' is itself a valid char and '12.3.4' is typable; it never validates the resulting field value. The PosV5Numpad '.' and '00' keys (PosV5Numpad.vue:62,64 emit '00'/'.') route through numpadInput (PaymentComponent.vue:544-547) which does `el.value += val` + dispatches input, bypassing the floatNumber keypress filter entirely. cashChange (PaymentComponent.vue:411-415) and cashReceivedRaw use parseFloat which truncates '12.3.4'->12.3 (guarded by ||0, no NaN), so the on-screen 'Monnaie à rendre' can diverge from typed intent. NOT a money bug at persist: backend recomputes total via PricingService and the cash guard validates received>=total, so underpay cannot slip through. Pure input-validation/display blur. floatNumber not frozen (fixable to reject >1 '.'), but the numpad path is inside FROZEN PaymentComponent.vue so routing numpadInput through the guard is owner-gated — prefer fixing appService.floatNumber or document numpad path as backlog. P3 confirmed (cosmetic display only)."
+    }
+  ],
+  "coverage_gaps": [
+    "Physical/thermal receipt: EscPosPrinterService.php + EscPosCommandBuilder.php render fiscal header + items but NO payment-method block at all (single OR multi) — neither the dominant method nor the per-tranche split appears on the printed ticket, unlike the HTML ReceiptComponent. Auditor examined neither the thermal renderer nor PosReceiptPrintController; the thermal payment-omission is unaudited and arguably a real (separate) gap.",
+    "suggestCashTendered / suggestTenderedForCashTranches (posSplitPayment.js:329-342, button PaymentComponent.vue:267): only fills CASH tranches with null/0 tendered, rounding amount UP to next 5EUR. Unaudited interactions: a user-set tendered below amount is never corrected (validateTranche flags tendered_below_amount but suggest won't touch it), and the rounded-up tendered is NOT reflected in coveredCents/canConfirm (which use amount, not tendered) — overshoot semantics vs change display unexamined.",
+    "addTranche 1-cent pre-fill (PaymentComponent.vue:630-644): when remaining==0 a new tranche is pre-filled with 1 cent (defaultAmountCents=1). A dangling un-edited 1-cent tranche pushes covered to total+0.01 (overpay) — within the 1EUR tolerance it books a 1-cent-wrong breakdown, otherwise it sits as noise. removeTranche (PaymentComponent.vue:645-648) just splices with no remaining recompute. Neither the add 1-cent-prefill nor remove-without-rebalance was audited.",
+    "confirmOrder gating (@click confirmOrder, :disabled canConfirmMulti at PaymentComponent.vue:309-313, canConfirmMulti at :439): the multi confirm-enable gate and its relation to per-tranche terminal_id validity / quote-expiry retry (confirmOrderWithAuthRetry, refreshPaymentAuth) were not examined — auth-retry + re-quote drift on a multi payload is an unaudited failure surface.",
+    "Per-tranche CARD terminal binding: updateTranche (PaymentComponent.vue:670-685) auto-attaches selectedTerminalId when a tranche flips to CARD; SplitPaymentService.validateBreakdown (SplitPaymentService.php:120-138) hard-rejects CARD tranches whose terminal_id is missing/inactive/wrong-branch. The branch-isolation + active-status enforcement on per-tranche terminal_id (a security-relevant path) was not covered by the payment findings."
+  ]
+}

@@ -1,0 +1,71 @@
+- generic [ref=e1]:
+  - generic [ref=e43]:
+    - generic [ref=e44]:
+      - generic [ref=e45]:
+        - img [ref=e47]
+        - generic [ref=e48]:
+          - generic [ref=e49]: Nos
+          - generic [ref=e50]: Boissons
+      - button "Mon compte" [ref=e52] [cursor=pointer]:
+        - generic [ref=e53]: 👤
+        - text: Mon compte
+    - generic [ref=e54]:
+      - navigation "Navigation catégories" [ref=e55]:
+        - button "Sandwichs" [ref=e56] [cursor=pointer]:
+          - generic [ref=e57]: Sandwichs
+        - button "Galette" [ref=e59] [cursor=pointer]:
+          - generic [ref=e60]: Galette
+        - button "Burgers" [ref=e62] [cursor=pointer]:
+          - generic [ref=e63]: Burgers
+        - button "Tacos" [ref=e65] [cursor=pointer]:
+          - generic [ref=e66]: Tacos
+        - button "Bols" [ref=e68] [cursor=pointer]:
+          - generic [ref=e69]: Bols
+        - button "Menu enfant" [ref=e71] [cursor=pointer]:
+          - generic [ref=e72]: Menu enfant
+        - button "Frites" [ref=e74] [cursor=pointer]:
+          - generic [ref=e75]: Frites
+        - button "Desserts" [ref=e77] [cursor=pointer]:
+          - generic [ref=e78]: Desserts
+        - button "Boissons" [ref=e80] [cursor=pointer]:
+          - generic [ref=e81]: Boissons
+      - main [ref=e83]:
+        - generic [ref=e84]:
+          - generic [ref=e85]:
+            - heading "Boissons" [level=1] [ref=e86]
+            - paragraph [ref=e87]: 8 produits
+          - list [ref=e88]:
+            - listitem [ref=e89] [cursor=pointer]:
+              - generic [ref=e90]
+              - generic [ref=e94]
+            - listitem [ref=e103] [cursor=pointer]:
+              - generic [ref=e104]
+              - generic [ref=e108]
+            - listitem [ref=e117] [cursor=pointer]:
+              - generic [ref=e118]
+              - generic [ref=e122]
+            - listitem [ref=e131] [cursor=pointer]:
+              - generic [ref=e132]
+              - generic [ref=e136]
+            - listitem [ref=e145] [cursor=pointer]:
+              - generic [ref=e146]
+              - generic [ref=e150]
+            - listitem [ref=e159] [cursor=pointer]:
+              - generic [ref=e160]
+              - generic [ref=e164]
+            - listitem [ref=e173] [cursor=pointer]:
+              - generic [ref=e174]
+              - generic [ref=e178]
+            - listitem [ref=e187] [cursor=pointer]:
+              - generic [ref=e188]
+              - generic [ref=e192]
+    - region "Panier et paiement" [ref=e201]:
+      - generic [ref=e202]:
+        - button "Ouvrir le panier — 0 articles" [disabled] [ref=e203]:
+          - img [ref=e205]
+          - generic [ref=e209]: 0 article
+        - generic [ref=e210]: €0,00
+      - generic [ref=e211]:
+        - button "Abandonner ma commande" [ref=e212] [cursor=pointer]
+        - button "Payer" [disabled] [ref=e213]
+  - status

@@ -1,0 +1,115 @@
+- main [ref=f68e5]:
+  - generic [ref=f68e6]:
+    - link "logo" [ref=f68e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=f68e8]
+    - generic [ref=f68e9]:
+      - generic [ref=f68e10]:
+        - generic [ref=f68e11]:
+          - button " Filiale Le Cayenne (principal) " [ref=f68e53] [cursor=pointer]:
+            - generic [ref=f68e13]: 
+            - heading "Filiale Le Cayenne (principal)" [level=3] [ref=f68e54]:
+              - generic [ref=f68e15]: Filiale
+              - text: Le Cayenne (principal)
+            - generic [ref=f68e16]: 
+          - list:
+            - listitem:
+              - radio "Le Cayenne (principal)" [checked]
+              - generic: Le Cayenne (principal)
+        - generic [ref=f68e17]:
+          - link " Tableau de bord" [ref=f68e19] [cursor=pointer]:
+            - /url: /admin/dashboard
+            - generic [ref=f68e20]: 
+            - generic [ref=f68e21]: Tableau de bord
+          - button "flag" [ref=f68e57] [cursor=pointer]:
+            - img "flag" [ref=f68e58]
+      - generic [ref=f68e22]:
+        - button "avatar Bonjour Admin Le Cayenne" [ref=f68e23] [cursor=pointer]:
+          - img "avatar" [ref=f68e24]
+          - heading "Bonjour Admin Le Cayenne" [level=3] [ref=f68e25]:
+            - text: Bonjour
+            - generic "Admin Le Cayenne" [ref=f68e26]
+          - generic [ref=f68e27]: 
+        - menu "avatar Bonjour Admin Le Cayenne":
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "Admin Le Cayenne" [level=3]
+            - paragraph: admin@lecayenne.fr
+            - paragraph: "+330600000000"
+            - heading "2,00 €" [level=3]
+          - menuitem "Modifier le profil":
+            - text: 
+            - generic: Modifier le profil
+          - menuitem "Changer le mot de passe":
+            - text: 
+            - generic: Changer le mot de passe
+          - menuitem "Déconnexion":
+            - text: 
+            - generic: Déconnexion
+  - text:                       
+  - button "Ouvrir l'historique des commandes du jour" [ref=f68e29] [cursor=pointer]:
+    - generic [ref=f68e30]: 📚
+    - generic [ref=f68e31]: Historique
+  - generic [ref=f68e32]:
+    - status [ref=f68e33]:
+      - generic [ref=f68e34]:
+        - img [ref=f68e36]
+        - generic [ref=f68e38]: "Mode admin centralisé : rafraîchissement automatique toutes les 60 s."
+      - generic [ref=f68e39]: SYNC · ADMIN
+    - generic [ref=f68e59]:
+      - region "Commande A0009, source Tél, En cours, attente 208 minutes 41 secondes" [ref=f68e60]:
+        - generic [ref=f68e62]:
+          - generic [ref=f68e63]:
+            - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=f68e64]: "[A]"
+            - generic [ref=f68e65]:
+              - generic [ref=f68e66]: En cours
+              - generic [ref=f68e69]: Tél
+          - generic [ref=f68e70]:
+            - generic [ref=f68e71]:
+              - generic [ref=f68e72]: N°
+              - text: A0009
+            - generic [ref=f68e73]:
+              - generic [ref=f68e74]: Attente
+              - generic [ref=f68e75]: 208:41
+        - region "Détails de la commande A0009, défilable au clavier" [ref=f68e76]:
+          - generic [ref=f68e79]:
+            - generic [ref=f68e80]:
+              - text: "1"
+              - generic [ref=f68e81]: ×
+            - generic [ref=f68e82]: Coca-Cola 33cl
+        - status "Commande en attente d'encaissement par le caissier — préparation en attente" [ref=f68e83]:
+          - img [ref=f68e84]
+          - generic [ref=f68e87]: En attente encaissement
+        - button "Prêt" [ref=f68e88] [cursor=pointer]:
+          - img [ref=f68e89]
+          - generic [ref=f68e91]: Prêt
+      - region "Commande A0010, source Tél, En cours, attente 5 minutes 45 secondes" [ref=f68e92]:
+        - generic [ref=f68e94]:
+          - generic [ref=f68e95]:
+            - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=f68e96]: "[B]"
+            - generic [ref=f68e97]:
+              - generic [ref=f68e98]: En cours
+              - generic [ref=f68e101]: Tél
+          - generic [ref=f68e102]:
+            - generic [ref=f68e103]:
+              - generic [ref=f68e104]: N°
+              - text: A0010
+            - generic [ref=f68e105]:
+              - generic [ref=f68e106]: Attente
+              - generic [ref=f68e107]: 05:45
+        - region "Détails de la commande A0010, défilable au clavier" [ref=f68e108]:
+          - generic [ref=f68e111]:
+            - generic [ref=f68e112]:
+              - text: "1"
+              - generic [ref=f68e113]: ×
+            - generic [ref=f68e114]: Coca-Cola 33cl
+        - status "Commande en attente d'encaissement par le caissier — préparation en attente" [ref=f68e115]:
+          - img [ref=f68e116]
+          - generic [ref=f68e119]: En attente encaissement
+        - button "Prêt" [ref=f68e120] [cursor=pointer]:
+          - img [ref=f68e121]
+          - generic [ref=f68e123]: Prêt

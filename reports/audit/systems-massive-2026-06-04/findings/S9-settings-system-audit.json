@@ -1,0 +1,123 @@
+{
+  "micro_system": "S9-settings-system",
+  "files_examined": [
+    "app/Http/Controllers/Admin/RoleController.php",
+    "app/Http/Controllers/Admin/PermissionController.php",
+    "app/Http/Controllers/Admin/LanguageController.php",
+    "app/Http/Controllers/Admin/ThemeController.php",
+    "app/Http/Controllers/Admin/NotificationController.php",
+    "app/Http/Controllers/Admin/MailController.php",
+    "app/Http/Controllers/Admin/SmsGatewayController.php",
+    "app/Http/Controllers/Admin/PageController.php",
+    "app/Http/Controllers/Admin/SliderController.php",
+    "app/Http/Controllers/Admin/CookiesController.php",
+    "app/Http/Controllers/Admin/OtpController.php",
+    "app/Http/Controllers/Admin/SocialMediaController.php",
+    "app/Http/Controllers/Admin/LicenseController.php",
+    "app/Http/Controllers/Admin/NotificationAlertController.php",
+    "app/Services/RoleService.php",
+    "app/Services/PermissionService.php",
+    "app/Services/LanguageService.php",
+    "app/Services/PageService.php",
+    "app/Http/Requests/RoleRequest.php",
+    "app/Http/Requests/PermissionRequest.php",
+    "app/Http/Requests/PageRequest.php",
+    "app/Http/Resources/NotificationResource.php",
+    "app/Http/Resources/LicenseResource.php",
+    "app/Http/Resources/SmsGatewayResource.php",
+    "app/Http/Resources/GatewayOptionsResource.php",
+    "app/Http/Resources/OtpResource.php",
+    "app/Http/Resources/SocialMediaResource.php",
+    "resources/js/components/admin/settings/Role/RoleShowComponent.vue",
+    "routes/api.php"
+  ],
+  "findings": [
+    {
+      "id": "S9-01",
+      "severity": "P2",
+      "category": "security",
+      "title": "NotificationController::index leaks FCM API key to any non-kiosk staff token (ungated index)",
+      "file_line": "app/Http/Controllers/Admin/NotificationController.php:18",
+      "evidence": "Constructor gates only `update`: `$this->middleware(['permission:settings'])->only('update');` (line 18). The route group at routes/api.php:295 wraps GET /admin/setting/notification with only ['auth:sanctum','block_kiosk_token_admin',...] — NO group-level permission:settings. NotificationResource (app/Http/Resources/NotificationResource.php:29) returns `notification_fcm_api_key` (a Firebase Cloud Messaging server secret) plus vapid key, project id, app id. So any authenticated non-kiosk staff (Chef, POS Operator, Waiter — roles WITHOUT the `settings` permission) can GET /admin/setting/notification and exfiltrate the FCM credentials. Sibling controllers Mail (MailController.php:22 ->only('index','update')) and SmsGateway (SmsGatewayController.php:26, SET-01 heal) deliberately gate their index precisely because their resources carry secrets — Notification is the same class of leak but was missed.",
+      "why_it_matters": "FCM API key allows an attacker to send arbitrary push notifications to all app/kiosk devices (phishing, spam) and abuse the project's FCM quota. It is a credential leak to under-privileged authenticated principals, the exact bug class the PermissionController heal comment (PermissionController.php:27-33) and the SmsGateway SET-01 heal already enumerate.",
+      "evidence_type": "code",
+      "confidence": "high",
+      "reproduction": "As a staff user whose role lacks `settings` (e.g. seeded Chef/POS Operator), obtain a sanctum token, then GET /api/admin/setting/notification. Expect 200 with notification_fcm_api_key in body (should be 403). needs-live-verify to confirm a default low role truly lacks `settings` and that no group middleware intercepts.",
+      "recommended_correction": "Mirror Mail/SmsGateway: change NotificationController.php:18 to `$this->middleware(['permission:settings'])->only('index', 'update');`."
+    },
+    {
+      "id": "S9-02",
+      "severity": "P3",
+      "category": "security",
+      "title": "LicenseController::index exposes product license_key to non-settings staff (ungated index)",
+      "file_line": "app/Http/Controllers/Admin/LicenseController.php:18",
+      "evidence": "Constructor gates only `update`: `->only('update')` (LicenseController.php:18). GET /admin/setting/license sits in the same group (routes/api.php:295) with no group-level settings gate. LicenseService::list returns `Settings::group('license')->all()` (app/Services/LicenseService.php:29) and LicenseResource (app/Http/Resources/LicenseResource.php) returns `license_key`. The same value is pushed to env as MIX_API_KEY (LicenseService.php:45). So any non-settings authenticated staff can read the license/MIX_API_KEY.",
+      "why_it_matters": "The license key is the product activation/MIX_API_KEY secret; leaking it to under-privileged staff undermines the secrets boundary the codebase otherwise enforces (Mail/SmsGateway gate their index). Lower severity than S9-01 because impact is licensing abuse rather than direct push/SMS/mail control.",
+      "evidence_type": "code",
+      "confidence": "high",
+      "reproduction": "As a staff user lacking `settings`, GET /api/admin/setting/license → 200 with license_key (should be 403). needs-live-verify for the role-permission assumption.",
+      "recommended_correction": "Change LicenseController.php:18 to `->only('index', 'update')` to gate the read, matching Mail/SmsGateway."
+    },
+    {
+      "id": "S9-03",
+      "severity": "P3",
+      "category": "logic",
+      "title": "LanguageController::fileText guards with `$explodeName > 0` (array compared to int) — always-true, dead/incorrect branch guard",
+      "file_line": "app/Http/Controllers/Admin/LanguageController.php:89",
+      "evidence": "Line 89-90: `$explodeName = explode('.', $request->name); if ($explodeName > 0) {`. `explode()` returns an array; comparing an array `> 0` in PHP coerces and is effectively always true for a non-empty array, so the intent (guard that the name actually contains a dot before indexing `$explodeName[1]`) is not achieved. The same pattern is duplicated in LanguageService::fileText (app/Services/LanguageService.php:253). If `$request->name` has no dot, `$explodeName[1]` raises an undefined-index notice and the json-vs-other routing is wrong.",
+      "why_it_matters": "Latent correctness bug in the language-file editor: a name without an extension dot mis-routes the include() branch and emits notices. Gated behind permission:settings so it is admin-only and not a security escalation, hence P3.",
+      "evidence_type": "code",
+      "confidence": "high",
+      "reproduction": "Call the file-text editor with a `name` lacking a `.` — observe the always-true guard and an undefined-index on `$explodeName[1]`. Static/code-level; needs-live-verify for the notice.",
+      "recommended_correction": "Replace `if ($explodeName > 0)` with `if (count($explodeName) > 1)` (or `isset($explodeName[1])`) in both LanguageController.php:90 and LanguageService.php:253."
+    },
+    {
+      "id": "S9-04",
+      "severity": "P3",
+      "category": "security",
+      "title": "LanguageService::fileTextStore allows arbitrary value injection into .php lang files (RCE-adjacent, admin-gated)",
+      "file_line": "app/Services/LanguageService.php:279",
+      "evidence": "After validateLangFilePath() (line 275) correctly contains the path to lang/*.php or resources/js/languages/*.json, fileTextStore writes user-supplied `$value` verbatim into the file via str_replace into the existing translation array and file_put_contents (lines 279-290). The replacement wraps values in double quotes (`\"{$value}\"`) but does not escape `\"` or PHP syntax, so a crafted value can break out of the string literal in a .php translation file and inject PHP, which is then executable because fileText() does `include($resolvedPath)` (line 255/257).",
+      "why_it_matters": "Content-injection-to-RCE gadget in the language editor. Mitigated to P3 because it is gated behind permission:settings (top-admin only, LanguageController.php:27) and the path containment heal (validateLangFilePath) blocks writing outside lang dirs — but writing executable PHP into an includable lang file remains a defense-in-depth gap.",
+      "evidence_type": "code",
+      "confidence": "medium",
+      "reproduction": "As settings-admin, POST /admin/setting/language/file-text/store targeting a .php lang file with a value containing a double-quote + PHP payload; then trigger fileText include of the same file. needs-live-verify to confirm the str_replace breakout actually yields valid injected PHP.",
+      "recommended_correction": "Escape values before writing (addslashes / var_export the string), or restrict fileTextStore to .json files only and never write into includable .php files; alternatively persist translations to DB rather than rewriting PHP source."
+    },
+    {
+      "id": "S9-05",
+      "severity": "P3",
+      "category": "logic",
+      "title": "RoleShowComponent permission toggle removes ids via splice without index fix-up (potential skipped element)",
+      "file_line": "resources/js/components/admin/settings/Role/RoleShowComponent.vue:140",
+      "evidence": "In enable(), the un-check branches splice from this.form inside a forward for-loop without decrementing j after splice (lines 140-144 and 160-164). If a permission id were ever duplicated in this.form, the second occurrence is skipped, leaving a stale permission id that gets POSTed to permission/save. Also there is no break after the unique splice. Currently low-impact because ids are normally unique, but the parent/child toggle can push the same child id twice (lines 137 and 157) on rapid parent+child interaction.",
+      "why_it_matters": "Could submit an unintended permission set on save (RBAC drift) under specific toggle sequences. Backend PermissionService::update authoritatively syncs whatever array is sent, so a wrong client array directly mis-grants/mis-revokes — but the self-role guard and settings gate bound the blast radius, hence P3.",
+      "evidence_type": "code",
+      "confidence": "low",
+      "reproduction": "Toggle a parent then its child rapidly so a child id is appended twice, then untoggle — observe a residual id in this.form. needs-live-verify in the browser.",
+      "recommended_correction": "Use a Set for this.form, or filter (`this.form = this.form.filter(id => id !== permission.id)`) instead of in-place splice loops; add `break` after the matching splice."
+    }
+  ],
+  "solids": [
+    {
+      "title": "PermissionService self-role privilege-escalation guard (already healed)",
+      "file_line": "app/Services/PermissionService.php:48-66",
+      "note": "update() forbids syncing permissions on a role the caller holds (`$caller->roles->contains('id', $role->id)` -> 403), blocking a settings-admin from granting themselves the full permission set. M-R3-P0-D heal. Strong invariant."
+    },
+    {
+      "title": "RoleRequest reserves 'Tenant Admin' name + permission:settings authorize (already healed)",
+      "file_line": "app/Http/Requests/RoleRequest.php:21,42",
+      "note": "authorize() returns user can('settings'); rules() Rule::notIn(['Tenant Admin']) prevents API-created shadow super-admin role that 9 files dual-gate on. Defense-in-depth on top of controller middleware (RoleController.php:21-22)."
+    },
+    {
+      "title": "LanguageService::validateLangFilePath LFI/RCE containment (already healed)",
+      "file_line": "app/Services/LanguageService.php:205-240",
+      "note": "realpath() + allowed-base-dir prefix check + extension allowlist (.php/.json) defeats stream-wrapper (php://, data://, phar://) and ../ traversal before include()/file_put_contents. fileText/fileTextStore also gated permission:settings (LanguageController.php:27). Solid containment of the original RCE primitive."
+    },
+    {
+      "title": "RoleService protects system roles from deletion",
+      "file_line": "app/Services/RoleService.php:90-101",
+      "note": "destroy() refuses to delete the seeded role set (ADMIN/CUSTOMER/DELIVERY_BOY/WAITER/CHEF via $roleArray) — prevents bricking RBAC by removing core roles. PermissionController index/update both gated permission:settings (PermissionController.php:33) closing the earlier ungated enumeration."
+    }
+  ]
+}

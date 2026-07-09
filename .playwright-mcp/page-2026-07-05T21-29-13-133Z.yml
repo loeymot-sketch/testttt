@@ -1,0 +1,11 @@
+- generic [ref=e1]:
+  - status [ref=e857]:
+    - img [ref=e859]
+    - heading "Paiement à la caisse" [level=1] [ref=e864]
+    - paragraph [ref=e865]: Veuillez payer à la caisse
+    - generic [ref=e866]:
+      - generic [ref=e867]: "Total à régler :"
+      - strong [ref=e868]: €6,90
+    - button "Confirmer ma commande" [ref=e869] [cursor=pointer]:
+      - generic [ref=e870]: Confirmer ma commande
+  - status

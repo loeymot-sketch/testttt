@@ -1,0 +1,69 @@
+{
+  "micro_system": "M4-cart-ticket",
+  "verdicts": [
+    {
+      "id": "M4-01",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P1",
+      "reason": "VERIFIED. Action quantity commits discount=0 (posCart.js:298), deleteCartItem (:304), mutation pruneUnavailable (:516) and quantity-decrement-to-0 (:495) all reset state.discount=0. Footer Remise line is v-if=posDiscount (PosComponent.vue:957) bound to getter posCart/discount (:2079). The carts watcher (:4409-4434) only nulls this.discount/discountType/discountReason when newCarts.length===0 (:4424) -> on a +1 tap with items still present the input keeps '10' + reason while the footer Remise line vanishes and grandTotal (:2096, uses Number(posDiscount)||0) jumps back to full price. Strong half: silent loss on a routine quantity tap, and the only visual feedback on increment is triggerTotalFlash (:4419) which fires on count INCREASE -> it masks rather than signals the discount drop. No toast. P1 confirmed (UX/logic; total sent == total displayed so no fiscal leak from THIS path)."
+    },
+    {
+      "id": "M4-02",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P1",
+      "reason": "VERIFIED, strongest of the set. saveCartToStorage persists {lists,subtotal,discount,...} with NO discount_reason (posCart.js:38-45). hydrateFromScope restores state.discount=saved.discount||0 (:545) so footer Remise reappears post-reload. form.discount_reason is written ONLY in applyDiscount (PosComponent.vue:3695/3697); orderSubmit sets form.discount=Number(posDiscount)||0 (:3823) but NEVER repopulates form.discount_reason, which stays at its init null (:1682). Backend assertPosManualDiscountAllowed (OrderService.php:2872) throws 422 discount_reason when strlen(trim)<3 for any discount>0, called at POS chokepoints :836 and :1027. Runtime config('pos.manual_discount_enabled')===true (resolved via tinker; env default true, no .env override) so the gate is LIVE and the path is reachable. Result: post-reload restored discount with empty/null reason -> Encaisser -> 422 with no visible missing-field cue. Real broken core flow. P1 confirmed."
+    },
+    {
+      "id": "M4-03",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "VERIFIED. Asymmetry confirmed: quantity (:298), deleteCartItem (:304), pruneUnavailable (:516) reset discount=0, but replaceCartLine action (:318-321) and setItemVariations action (:322-325) commit ONLY subtotal; the replaceCartLine mutation (posCart.js:468-474) and setItemVariations mutation never touch state.discount. Edit path is real: pencil @click editCartLine (PosComponent.vue:785) -> openEditFromCart -> ItemComponent dispatch posCart/replaceCartLine (ItemComponent.vue:1435). applyDiscount stores a RESOLVED EUR amount once ((subtotal*discount)/100 toFixed, :3713); editing a line changes subtotal but leaves the frozen EUR discount stale, and orderSubmit sends that stale EUR (form.discount=Number(posDiscount), :3823) -> client under/over-remised. Magnitude = centimes, backend re-validates discount<=subtotal, so P2 (P3 also defensible). Keep at P2."
+    },
+    {
+      "id": "M4-04",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "VERIFIED including simultaneity. appService.currencyFormat = parseFloat(amount).toFixed(decimal)+currency (appService.js:73-75); with seeded site_currency_position=RIGHT(10) and symbol '€' (SiteTableSeeder.php:31-33) it yields '12.50€' (period decimal, glued, no space). Cart totals route through this via subtotalDisplay/posDiscountDisplay/grandTotalDisplay (PosComponent.vue:2101-2125) and the CTA grandTotalDisplay (:989). formatKioskPrice = Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}) (:3347) yields '12,50 €' (comma + NBSP). The ready/cash shortcut chips at :296 and :360 are in the always-visible pos-shortcuts strip on the SAME main POS page as the cart footer -> both formats render simultaneously. Confirmed P2. CAVEAT on the recommended fix: currencyFormat is the app-wide SSOT formatter (kiosk + receipts + NF525 paths); globally delegating it to Intl has large blast radius into frozen receipt rendering -> a fix must be scoped/regression-tested, not a one-line global swap."
+    },
+    {
+      "id": "M4-05",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "VERIFIED by code + JS coercion test. isDiscountApplyable returns true when discountAmountValue<=0 (PosComponent.vue:1889-1891), and discountAmountValue maps ''/null -> 0 (:1876-1881), so Apply is enabled on an empty input. applyDiscount: hasDiscount false (:3688), discountType defaults PERCENTAGE -> computes parseFloat((subtotal*'')/100).toFixed(2). Verified in node: subtotal*'' === 0, parseFloat(0).toFixed(2) === the STRING '0.00', and Boolean('0.00') === true. Dispatched to store (posCart.js:520 stores raw), getter returns '0.00', v-if=posDiscount (:957) is truthy -> phantom 'Remise -0,00 €' line. Cosmetic, total unaffected. P3 confirmed."
+    },
+    {
+      "id": "M4-06",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "VERIFIED dead code. grep over PosComponent.vue: cartQuantityUp appears only at its definition (:3627) with zero template @-binding; deleteCartItem (component method, :3641) appears only at its definition and a comment (:3645) with no template handler. The live V5 stepper emits @increment/@decrement/@remove -> cartQuantityIncrement/Decrement (:848-850) and line cancel goes through cancelLastCartLine (:593). Note cancelLastCartLine dispatches the STORE action posCart/deleteCartItem (:3653), which is distinct from the unused COMPONENT method deleteCartItem at :3641 -- so the component method really is dead. Trivial cleanup, scope-minimal, hors frozen-zone. P3 confirmed (or DROP-eligible as pure noise; kept as a real-but-minor cleanup)."
+    },
+    {
+      "id": "M4-07",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": false,
+      "severity_adjusted": "DROP",
+      "reason": "EXISTENCE TRUE but NECESSITY FALSE -> DROP. Confirmed: cart footer (PosComponent.vue:954-975) renders only sub_total/discount/delivery/total, no TVA/HT/TTC (grep: 0 tax token in footer); tax_inclusive_prices default true (pricing.php:31); backend extracts per-line TVA (PricingService.php:250-264). BUT the cart is a non-fiscal PREVIEW -- the NF525 document is the printed receipt, which DOES carry TVA (the finding itself admits this). Adding a JS-computed 'dont TVA' line would either duplicate/risk the backend pricing-SSOT invariant or require a new preview endpoint. The finding's own recommended_correction is 'optionnel selon owner / a trancher' = a feature request, not a defect. Works-as-intended for a preview. DROP."
+    }
+  ],
+  "coverage_gaps": [
+    "HEADLINE / P0-class fiscal gap the M4 auditor entirely missed: manual POS discounts are LIVE in the running app. config('pos.manual_discount_enabled') resolves to TRUE at runtime (env default true in config/pos.php:172-176, no .env override; confirmed via artisan tinker), DESPITE the OrderService.php:2884 comment 'Default OFF for V1' and the F1-dormancy doctrine (config/pos.php:155-171, OrderService.php:2877-2888) which require discounts OFF because at 10% VAT the discount->HT/TVA split in the FROZEN ZReportService/PricingService is computed on the PRE-discount base -> a discounted order signs a fiscally-INCORRECT NF525 Z. DB confirms items carry real 10% VAT (distinct item tax_rates = {0.0, 10.0}). The protecting sentinel tests/Feature/Fiscal/ManualDiscountDisabledV1SentinelTest.php FORCES Config::set('pos.manual_discount_enabled', false) inside every test (:87,:95,:107,:121,:141) -> it validates the kill-switch behavior when off but NEVER asserts the runtime DEFAULT is off, so it stays green while production accepts discounts. Net: every discounted POS order on a 10%-VAT item signs a wrong Z. This dwarfs M4-01..06 and must be escalated to owner (re-confirm intended V1 flag state).",
+    "Coupon and loyalty-redeem discount sources (assertDiscretionaryDiscountAllowed, OrderService.php:2863-2870) share the SAME manual_discount_enabled flag and the SAME F1 TVA defect, yet are out of the M4 cart-ticket audit scope -- they reach the same incorrect-Z path when the flag is true at 10% VAT.",
+    "Backend FIXED-discount clamp vs frontend: applyDiscount guards FIXED only with this.subtotal < this.discount (JS subtotal, :3701) and PERCENTAGE only with >100 (:3709); no negative-value guard. Auditor did not test negative/NaN discount input or a fixed discount that exactly equals subtotal (-> grandTotal 0). assertPosManualDiscountAllowed checks discount>backendSubtotal (:2900) but the auditor never reproduced the boundary.",
+    "delivery_charge string-coercion in totals: orderSubmit coerces Number(form.delivery_charge)||0 (:3824) but the footer PosV5TotalRow uses deliveryChargeDisplay = currencyFormat(...delivery_charge||0) (:2117); a string delivery_charge could format oddly. Unaudited @click selectDiscount (:891) and discountType toggle interaction with an already-applied EUR discount also not exercised.",
+    "resetCart (:984 @click) and cancelLastCartLine (:593 @click) clear discount in the store but their effect on checkoutProps.form.discount_reason / form.discount persistence (and the localStorage scoped key) was not verified by the auditor end-to-end.",
+    "No live HTTP reproduction was performed for M4-02's 422 (finding itself flags needs-live-verify); the backend rejection is proven by code (OrderService.php:2896) but the exact 422 payload/UX on the POS modal after reload-restore was not captured."
+  ]
+}

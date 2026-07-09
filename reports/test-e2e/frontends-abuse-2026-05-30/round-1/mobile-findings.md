@@ -4,8 +4,8 @@ Date: 2026-05-30  ·  Spec: tests/e2e/test-real-e2e-pagebypage-abuse-mobile-2026
 Screenshots: reports/test-e2e/frontends-abuse-2026-05-30/screenshots/mobile/
 
 ## Summary
-- States captured: 76
-- P0: 0  ·  P1: 0  ·  P2: 3  ·  P3: 1
+- States captured: 3
+- P0: 3  ·  P1: 3  ·  P2: 2  ·  P3: 1
 
 ## Spec-detected findings (technical sweeps)
 
@@ -34,91 +34,53 @@ Screenshots: reports/test-e2e/frontends-abuse-2026-05-30/screenshots/mobile/
   },
   {
     "id": "M-004",
-    "severity": "P2",
-    "state": "19-abuse-double-tap",
-    "observed": "double-tap added 2 lines (no debounce on addToCart). before=0 after=2",
-    "evidence": "mobile/index.html:171 addToCart setCart([...c, item])"
+    "severity": "P0",
+    "state": "02-menu-top",
+    "observed": "blank/near-empty screen (innerText len=0)",
+    "evidence": "PNG 02-menu-top.png"
+  },
+  {
+    "id": "M-005",
+    "severity": "P1",
+    "state": "02-menu-top",
+    "observed": "expected anchor not visible: button[aria-pressed]:has-text(\"Tout\")",
+    "evidence": "PNG 02-menu-top.png"
+  },
+  {
+    "id": "M-006",
+    "severity": "P1",
+    "state": "02-menu-top",
+    "observed": "category chips missing from DOM: SANDWICH CAYENNE, GALETTE, SANDWICH CLASSIQUE, BURGERS, TACOS, BOLS GOURMANDS, FRITES, SUPPLÉMENTS, DESSERTS, BOISSONS, MENU ENFANT",
+    "evidence": "document.body.textContent"
+  },
+  {
+    "id": "M-007",
+    "severity": "P0",
+    "state": "03-menu-scrolled-mid",
+    "observed": "blank/near-empty screen (innerText len=0)",
+    "evidence": "PNG 03-menu-scrolled-mid.png"
+  },
+  {
+    "id": "M-008",
+    "severity": "P0",
+    "state": "04-menu-scrolled-bottom",
+    "observed": "blank/near-empty screen (innerText len=0)",
+    "evidence": "PNG 04-menu-scrolled-bottom.png"
+  },
+  {
+    "id": "M-009",
+    "severity": "P1",
+    "state": "wiz-sandwich",
+    "observed": "could not open Sandwich Cayenne wizard",
+    "evidence": "card not visible"
   }
 ]
 ```
 
 ## Captured states
-- 01-home.png
 - 02-menu-top.png
 - 03-menu-scrolled-mid.png
 - 04-menu-scrolled-bottom.png
-- 05-cat-00-tout.png
-- 05-cat-01-sandwich-cayenne.png
-- 05-cat-02-galette.png
-- 05-cat-03-sandwich-classique.png
-- 05-cat-04-burgers.png
-- 05-cat-05-tacos.png
-- 05-cat-06-bols-gourmands.png
-- 05-cat-07-frites.png
-- 05-cat-08-suppl-ments.png
-- 05-cat-09-desserts.png
-- 05-cat-10-boissons.png
-- 05-cat-11-menu-enfant.png
-- 06-wiz-sandwich-step0.png
-- 06-wiz-sandwich-step1.png
-- 06-wiz-sandwich-step2.png
-- 06-wiz-sandwich-step3.png
-- 06-wiz-sandwich-step4.png
-- 06-wiz-sandwich-step5.png
-- 06-wiz-sandwich-step6.png
-- 06-wiz-sandwich-step7.png
-- 06-wiz-sandwich-recap.png
-- 07-wiz-tacos-step0.png
-- 07-wiz-tacos-step1.png
-- 07-wiz-tacos-step2.png
-- 07-wiz-tacos-step3.png
-- 07-wiz-tacos-step4.png
-- 07-wiz-tacos-step5.png
-- 07-wiz-tacos-step6.png
-- 07-wiz-tacos-recap.png
-- 08-wiz-bol-step0.png
-- 08-wiz-bol-step1.png
-- 08-wiz-bol-step2.png
-- 08-wiz-bol-step3.png
-- 08-wiz-bol-recap.png
-- 09-wiz-frites-step0.png
-- 09-wiz-frites-step1.png
-- 09-wiz-frites-recap.png
-- 10-direct-add-simple.png
-- 11-wiz-menu-cascade-step0.png
-- 11-wiz-menu-cascade-step1.png
-- 11-wiz-menu-cascade-step2.png
-- 11-wiz-menu-cascade-step3.png
-- 11-wiz-menu-cascade-step4.png
-- 11-wiz-menu-cascade-step5.png
-- 11-wiz-menu-cascade-step6.png
-- 11-wiz-menu-cascade-step7.png
-- 11-wiz-menu-cascade-step8.png
-- 12-abuse-qty-walk-step0.png
-- 12-abuse-qty-walk-step1.png
-- 12-abuse-qty-walk-step2.png
-- 12-abuse-qty-walk-step3.png
-- 12-abuse-qty-walk-step4.png
-- 12-abuse-qty-walk-step5.png
-- 12-abuse-qty-walk-step6.png
-- 12-abuse-qty-walk-step7.png
-- 12-abuse-qty-walk-recap.png
-- 12-abuse-qty-floor.png
-- 12-abuse-qty-incr.png
-- 13-abuse-combo-step0.png
-- 13-abuse-combo-step1.png
-- 13-abuse-combo-step2.png
-- 13-abuse-combo-step3.png
-- 13-abuse-combo-step4.png
-- 13-abuse-combo-step5.png
-- 14-cart-full-multi-line.png
-- 15-cart-empty-state.png
-- 17-abuse-mid-wizard.png
-- 18-abuse-after-back.png
-- 19-abuse-double-tap.png
-- 21-cart-recap-composition.png
-- 22-modal-pay-choice.png
-- 23-confirm-counter-payment.png
 
 ## Vision-pass findings (from human multimodal Read of the PNGs)
 Vision findings (palette / overflow / truncation / button overlap / wrong-image / empty-state) are

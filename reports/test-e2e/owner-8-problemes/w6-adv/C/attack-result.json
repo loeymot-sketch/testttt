@@ -1,0 +1,231 @@
+{
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "Failed to load resource: the server responded with a status of 422 (Unprocessable Content)",
+    "Failed to load resource: the server responded with a status of 422 (Unprocessable Content)",
+    "Failed to load resource: the server responded with a status of 422 (Unprocessable Content)",
+    "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+  ],
+  "pageErrors": [],
+  "dialogs": [],
+  "toasts": [],
+  "pricingPreview": [
+    {
+      "status": 422
+    },
+    {
+      "status": 422
+    },
+    {
+      "status": 200
+    },
+    {
+      "status": 200
+    },
+    {
+      "status": 200
+    },
+    {
+      "status": 200
+    },
+    {
+      "status": 200
+    },
+    {
+      "status": 422
+    }
+  ],
+  "escposCalls": [],
+  "keyRequests": [
+    {
+      "m": "POST",
+      "url": "/api/auth/kiosk-login",
+      "status": 201
+    },
+    {
+      "m": "POST",
+      "url": "/api/frontend/order/quote",
+      "status": 200
+    },
+    {
+      "m": "POST",
+      "url": "/api/frontend/order/quote",
+      "status": 200
+    },
+    {
+      "m": "POST",
+      "url": "/api/frontend/order",
+      "status": 201
+    }
+  ],
+  "steps": [
+    {
+      "phase": "start",
+      "url": "http://127.0.0.1:8000/kiosk/categories?cat=10"
+    },
+    {
+      "phase": "garnitures-title",
+      "title": "QUELLE CRUDITÉ ?"
+    },
+    {
+      "phase": "garnitures-tiles-default",
+      "tiles": [
+        {
+          "name": "Salade",
+          "checked": "true"
+        },
+        {
+          "name": "Tomate",
+          "checked": "true"
+        },
+        {
+          "name": "Oignon",
+          "checked": "true"
+        },
+        {
+          "name": "Oignons cuits",
+          "checked": "false"
+        }
+      ]
+    },
+    {
+      "phase": "garnitures-exclusivity",
+      "afterCuitOn": {
+        "cuit": {
+          "found": true,
+          "checked": "true"
+        },
+        "cru": {
+          "found": true,
+          "checked": "false"
+        }
+      },
+      "afterCruOn": {
+        "cuit": {
+          "found": true,
+          "checked": "false"
+        },
+        "cru": {
+          "found": true,
+          "checked": "true"
+        }
+      },
+      "afterRapid": {
+        "all": [
+          {
+            "name": "Salade",
+            "checked": "true"
+          },
+          {
+            "name": "Tomate",
+            "checked": "true"
+          },
+          {
+            "name": "Oignon",
+            "checked": "true"
+          },
+          {
+            "name": "Oignons cuits",
+            "checked": "false"
+          }
+        ]
+      },
+      "finalState": {
+        "cuit": {
+          "found": true,
+          "checked": "true"
+        },
+        "cru": {
+          "found": true,
+          "checked": "false"
+        }
+      }
+    },
+    {
+      "phase": "garnitures-after-backforward",
+      "tiles": [
+        {
+          "name": "Salade",
+          "checked": "true"
+        },
+        {
+          "name": "Tomate",
+          "checked": "true"
+        },
+        {
+          "name": "Oignon",
+          "checked": "false"
+        },
+        {
+          "name": "Oignons cuits",
+          "checked": "true"
+        }
+      ]
+    },
+    {
+      "phase": "menu-drinks-list",
+      "drinks": [
+        "Coca-Cola 33cl+",
+        "Coca-Cola Zero 33cl+",
+        "Fanta Orange 33cl+",
+        "Sprite 33cl+",
+        "Oasis Tropical 33cl+",
+        "Orangina 33cl+",
+        "Eau Plate 50cl+",
+        "Capri-Sun+",
+        "Coca Cherry 33cl+",
+        "Tropico 33cl+",
+        "Ice Tea Pêche 33cl+",
+        "Fanta Citron 33cl+",
+        "Fuze Tea 33cl+",
+        "Hawaï 33cl+",
+        "Perrier 33cl+",
+        "Algérienne +",
+        "Andalouse +",
+        "Blanche +",
+        "Curry +",
+        "Hannibal +",
+        "Harissa +",
+        "Ketchup +",
+        "Mayonnaise +",
+        "Samouraï +",
+        "Barbecue +",
+        "Fromagère maison +",
+        "Spicy maison +",
+        "🚫Sans sauce +"
+      ]
+    },
+    {
+      "phase": "after-add",
+      "url": "http://127.0.0.1:8000/kiosk/categories?cat=1"
+    },
+    {
+      "phase": "reopen-fresh",
+      "zeroOfOne": true,
+      "mexSelected": false
+    },
+    {
+      "phase": "after-payer",
+      "url": "http://127.0.0.1:8000/kiosk/cart",
+      "buttons": [
+        "Vider le panier",
+        "🥡À emporter",
+        "Valider ma commande€9,90",
+        "+ Ajouter des articles"
+      ]
+    },
+    {
+      "phase": "final",
+      "url": "http://127.0.0.1:8000/kiosk/cash-instruction?number=A0012&total=9.9&timeout=45&orderId=5533"
+    }
+  ],
+  "findings": [],
+  "finalText": "💶\nRendez-vous en caisse\n\nPrésentez votre numéro à un membre de l'équipe\n\nNuméro de commande\n#A0012\nMontant à régler\n9,90 €\n\nRéglez votre commande à la caisse : espèces, carte bleue ou titres-restaurant.\n\nRetour à l'accueil dans 40 s\n\n🖨️ RÉIMPRIMER LE TICKET\nJ'AI COMPRIS",
+  "localStorageKeys": {
+    "kiosk_menu_snapshot_v1": "{\"categories\":[{\"id\":1,\"parent_id\":null,\"slug\":\"sandwichs\",\"name\":\"Sandwichs\",\"thumb\":\"http://127.0.0.1:8766/images/menu/thumbs/cat-sandwich-cayenne.webp?v=1783357678\",\"cover\":\"http://127.0.0.1:8766/images/menu/cat-sandwich-cayenne.png?v=1779329809\",\"image\":\"http://127.0.0.1:8766/images/menu/thumbs/cat-sandwich-cayenne.webp?v=1783357678\",\"image_full_path\":\"http://127.0.0.1:8766/images/menu/cat-sandwich-cayenne.png?v=1779329809\",\"kiosk_label\":null,\"sort\":1,\"wizard_template\":\"sandwich\",\"has_menu\":",
+    "foodking:kiosk-theme": "light"
+  },
+  "fantaHawaiInFinalDom": false
+}

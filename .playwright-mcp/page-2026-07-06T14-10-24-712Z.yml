@@ -1,0 +1,144 @@
+- main [ref=f15e5]:
+  - generic [ref=f15e6]:
+    - link "logo" [ref=f15e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=f15e8]
+    - generic [ref=f15e9]:
+      - generic [ref=f15e10]:
+        - generic [ref=f15e11]:
+          - button " Filiale Le Cayenne (principal) " [ref=f15e12] [cursor=pointer]:
+            - generic [ref=f15e13]: 
+            - heading "Filiale Le Cayenne (principal)" [level=3] [ref=f15e14]:
+              - generic [ref=f15e15]: Filiale
+              - text: Le Cayenne (principal)
+            - generic [ref=f15e16]: 
+          - list:
+            - listitem:
+              - radio "Le Cayenne (principal)" [checked]
+              - generic: Le Cayenne (principal)
+        - generic [ref=f15e17]:
+          - link " Tableau de bord" [ref=f15e19] [cursor=pointer]:
+            - /url: /admin/dashboard
+            - generic [ref=f15e20]: 
+            - generic [ref=f15e21]: Tableau de bord
+          - button "flag" [ref=f15e24] [cursor=pointer]:
+            - img "flag" [ref=f15e25]
+      - generic [ref=f15e26]:
+        - button "avatar Bonjour Admin Le Cayenne" [ref=f15e27] [cursor=pointer]:
+          - img "avatar" [ref=f15e28]
+          - heading "Bonjour Admin Le Cayenne" [level=3] [ref=f15e29]:
+            - text: Bonjour
+            - generic "Admin Le Cayenne" [ref=f15e30]
+          - generic [ref=f15e31]: 
+        - menu "avatar Bonjour Admin Le Cayenne":
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "Admin Le Cayenne" [level=3]
+            - paragraph: admin@lecayenne.fr
+            - paragraph: "+330600000000"
+            - heading "2,00 €" [level=3]
+          - menuitem "Modifier le profil":
+            - text: 
+            - generic: Modifier le profil
+          - menuitem "Changer le mot de passe":
+            - text: 
+            - generic: Changer le mot de passe
+          - menuitem "Déconnexion":
+            - text: 
+            - generic: Déconnexion
+  - text:                       
+  - button "Ouvrir l'historique des commandes du jour" [ref=f15e33] [cursor=pointer]:
+    - generic [ref=f15e34]: 📚
+    - generic [ref=f15e35]: Historique
+  - generic [ref=f15e36]:
+    - status [ref=f15e37]:
+      - generic [ref=f15e38]:
+        - img [ref=f15e40]
+        - generic [ref=f15e42]: "Mode admin centralisé : rafraîchissement automatique toutes les 60 s."
+      - generic [ref=f15e43]: SYNC · ADMIN
+    - generic [ref=f15e57]:
+      - region "Commande E006, source Borne, Nouvelle, attente 5 minutes 18 secondes" [ref=f15e58]:
+        - generic [ref=f15e60]:
+          - generic [ref=f15e61]:
+            - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=f15e62]: "[A]"
+            - generic [ref=f15e63]:
+              - generic [ref=f15e64]: Nouvelle
+              - generic [ref=f15e67]: Borne
+          - generic [ref=f15e68]:
+            - generic [ref=f15e69]:
+              - generic [ref=f15e70]: N°
+              - text: E006
+            - generic [ref=f15e71]:
+              - generic [ref=f15e72]: Attente
+              - generic [ref=f15e73]: 05:18
+        - region "Détails de la commande E006, défilable au clavier" [ref=f15e74]:
+          - generic [ref=f15e77]:
+            - generic [ref=f15e78]:
+              - text: "2"
+              - generic [ref=f15e79]: ×
+            - generic [ref=f15e80]: CAY | ST
+        - status "Commande en attente d'encaissement par le caissier — préparation en attente" [ref=f15e81]:
+          - img [ref=f15e82]
+          - generic [ref=f15e85]: En attente encaissement
+        - button "Prêt" [ref=f15e86] [cursor=pointer]:
+          - img [ref=f15e87]
+          - generic [ref=f15e89]: Prêt
+      - region "Commande E001, source Borne, Nouvelle, attente 4 minutes 18 secondes" [ref=f15e90]:
+        - generic [ref=f15e92]:
+          - generic [ref=f15e93]:
+            - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=f15e94]: "[B]"
+            - generic [ref=f15e95]:
+              - generic [ref=f15e96]: Nouvelle
+              - generic [ref=f15e99]: Borne
+          - generic [ref=f15e100]:
+            - generic [ref=f15e101]:
+              - generic [ref=f15e102]: N°
+              - text: E001
+            - generic [ref=f15e103]:
+              - generic [ref=f15e104]: Attente
+              - generic [ref=f15e105]: 04:18
+        - region "Détails de la commande E001, défilable au clavier" [ref=f15e106]:
+          - generic [ref=f15e107]:
+            - generic [ref=f15e109]:
+              - generic [ref=f15e110]:
+                - text: "1"
+                - generic [ref=f15e111]: ×
+              - generic [ref=f15e112]: S | TER | Mex Cordon | STO | AND
+            - generic [ref=f15e113]: ⭐ Champignons
+            - generic [ref=f15e114]: ⭐ Jambon
+        - button "Prêt" [ref=f15e115] [cursor=pointer]:
+          - img [ref=f15e116]
+          - generic [ref=f15e118]: Prêt
+      - region "Commande E002, source Borne, En cours, attente 3 minutes 48 secondes" [ref=f15e119]:
+        - generic [ref=f15e121]:
+          - generic [ref=f15e122]:
+            - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=f15e123]: "[C]"
+            - generic [ref=f15e124]:
+              - generic [ref=f15e125]: En cours
+              - generic [ref=f15e128]: Borne
+          - generic [ref=f15e129]:
+            - generic [ref=f15e130]:
+              - generic [ref=f15e131]: N°
+              - text: E002
+            - generic [ref=f15e132]:
+              - generic [ref=f15e133]: Attente
+              - generic [ref=f15e134]: 03:48
+        - region "Détails de la commande E002, défilable au clavier" [ref=f15e135]:
+          - generic [ref=f15e138]:
+            - generic [ref=f15e139]:
+              - text: "1"
+              - generic [ref=f15e140]: ×
+            - generic [ref=f15e141]: G | TAC | L | K Mex | MAY
+        - status "Commande en attente d'encaissement par le caissier — préparation en attente" [ref=f15e142]:
+          - img [ref=f15e143]
+          - generic [ref=f15e146]: En attente encaissement
+        - button "Prêt" [ref=f15e147] [cursor=pointer]:
+          - img [ref=f15e148]
+          - generic [ref=f15e150]: Prêt
+    - status [ref=f15e151]:
+      - generic [ref=f15e152]: "+3"
+      - generic [ref=f15e153]: en attente

@@ -1,0 +1,66 @@
+{
+  "cycle": "2-redo",
+  "role": "adversarial-supervisor",
+  "head": "f959e813bdeb5ebc99371532c70de8cbd6fb3ab3",
+  "server": "http://127.0.0.1:8766",
+  "db": { "driver": "mysql", "name": "foodking_e2e", "total_orders": 3129 },
+  "board_kds": {
+    "verdict": "HEALED-CONFIRMED",
+    "evidence": {
+      "live_http_admin_board": "GET /api/admin/kds-order (SPA, real token) => 200; board rendered 3 full-screen cards (A0012 BORNE, A0013 CAISSE, A0014 CAISSE) + orange badge '+30 en attente' + 'recemment servies' feed; NO 'Aucune commande' empty state. Screenshot: reports/test-e2e/convergence-golive/cycle2-redo/01-kds-board-live.png",
+      "live_http_branchscope_active": "curl GET /api/admin/kds-order as branch-1 staff (pos@lecayenne.fr, Bearer token + x-api-key) => HTTP 200, 40 orders (paginated data). THIS IS THE EXACT BUG PATH: original FORCE INDEX collided with BranchScope (frozen) column qualification -> 0 orders / 422 SQLSTATE. Now clean on real MySQL.",
+      "service_level_branchscope": "KitchenDisplaySystemOrderService::list() acting as branch-1 chef under active BranchScope on MySQL => 40 orders, NO exception thrown.",
+      "query_logic_vs_baseline": "Executable diff ca5629658^..HEAD on KitchenDisplaySystemOrderService = only a cosmetic statement split (limit(51)->get() moved to own line). Board query logic identical to pre-optim baseline; FORCE INDEX / ->from(DB::raw()) fully removed.",
+      "regression_test": "tests/Feature/KDS/KdsBoardQueryPlanTest.php::test_board_runs_under_branchscope_and_returns_expected_set exercises branch-staff BranchScope path, asserts board non-empty + branch isolation. Part of the 172 Kds|Board green."
+    }
+  },
+  "fixes_hold": [
+    {
+      "fix": "label.note i18n",
+      "verdict": "HOLD",
+      "evidence": "resources/js/languages/fr.json has label.note='Note'; built public/js/app.js bundle contains note\":\"Note\" adjacent to \"direction\":\"Sens\" (rebuilt); vitest guard tests/js/kioskNoteLabelI18n.spec.js (3 assertions) green. KioskWizardComponent.vue:2161 builds ${$t('label.note')}: ${manualNote} client-side. NOTE: PHP trans('label.note') returns raw key but is a red herring (Laravel translator != vue-i18n; ticket note is built client-side)."
+    },
+    {
+      "fix": "mobile standalone",
+      "verdict": "HOLD",
+      "evidence": "Commit 89cf0ec8e touches only mobile/ files (data/orders.js, loyalty.js, screens, tests). Zero app/ routes/ config/ database/ impact. Matches owner mandate (mobile STANDALONE, no API wireup)."
+    },
+    {
+      "fix": "web standalone",
+      "verdict": "HOLD",
+      "evidence": "Web standalone lives in separate repo (/Users/1millnonstop/Downloads/web). Backend runtime diff 227fb760b..HEAD on app/ routes/ config/ database/ = ONLY app/Services/KitchenDisplaySystemOrderService.php (the KDS board). Zero backend impact from web/mobile work."
+    }
+  ],
+  "non_regression_4_surfaces": {
+    "verdict": "SPOT-GREEN",
+    "evidence": {
+      "caisse_encaissement_fiscal": "php artisan fiscal:verify-chain --all => CHAIN OK on every active branch (1,7,8,9). NF525 chain intact; heal did not touch fiscal/pricing/encaissement code.",
+      "borne_and_caisse_to_kds": "Live board renders BORNE (A0012) + CAISSE (A0013, A0014) + delivery (A0014 has address) orders => borne/caisse order flow to KDS intact.",
+      "cuisine_symbols_boisson": "KDS cards show kitchen symbol format (S|CAY|STO|ALG, G|TAC|M|P|ALG, MENU/ALG) and boissons (BOISSON Hawaii 33cl, Coca-Cola 33cl, Sprite 33cl) => cuisine ticket rendering intact.",
+      "sync_latency": "GET /api/admin/kds-order/sync?since=...&branch_id=0 => 200 (live polling). SyncComprehensiveTest (5 tests: kiosk/pos/table order appears in kds, kds->oss) green within 172 Kds|Board.",
+      "note": "Heal is surgical (KDS board query revert to baseline + 1 test file); structurally cannot regress caisse/borne/fiscal paths."
+    }
+  },
+  "gates": {
+    "vitest_full": { "expected": "2276/0, 3 skip", "actual": "2276 passed, 3 skipped, 324 files, exit 0", "pass": true },
+    "phpunit_kds_board": { "expected": "172 verts incl regression", "actual": "172 passed (incl test_board_runs_under_branchscope_and_returns_expected_set)", "pass": true },
+    "frozen_diff_24e8a09c3_HEAD": { "expected": "only pos-wizard.js + KioskWizardComponent.vue", "actual": "public/js/pos-wizard.js (+299/-... ) + KioskWizardComponent.vue (34); no other §7 file", "pass": true },
+    "fiscal_verify_chain": { "expected": "CHAIN OK x4", "actual": "CHAIN OK on every active branch (4 total)", "pass": true },
+    "audit_logs_count": { "expected": ">=4912", "actual": 4916, "pass": true }
+  },
+  "minor_findings_non_blocking": [
+    {
+      "id": "DOC-1",
+      "severity": "P3",
+      "desc": "Heal commit comment + KDS service comment reference tests/Feature/KDS/KdsBoardHttpBranchScopeTest.php as the regression guard, but that file does NOT exist. The actual regression coverage lives in KdsBoardQueryPlanTest.php::test_board_runs_under_branchscope_and_returns_expected_set. Cosmetic doc-reference mismatch; coverage exists.",
+      "blocker": false
+    },
+    {
+      "id": "TEST-1",
+      "severity": "P3",
+      "desc": "Regression test runs on SQLite (CI driver). It locks 'board non-empty under BranchScope' but would NOT catch a re-introduced MySQL-gated ->from(DB::raw()) hint (same blind spot that let the original bug through). Explicitly acknowledged as backlog in the commit ('test HTTP MySQL actingAs(staff)'). The heal itself (full FORCE INDEX removal) is what fixes prod; live MySQL HTTP 200 (verified this cycle) is the real proof.",
+      "blocker": false
+    }
+  ],
+  "verdict": "CLEAN"
+}

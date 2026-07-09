@@ -1,0 +1,76 @@
+{
+  "micro_system": "S8-settings-payments",
+  "verdicts": [
+    {
+      "id": "S8-01",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P1",
+      "reason": "CONFIRMED end-to-end. PaymentTerminalsComponent.vue defaultForm (L203-211) and openEdit (L228-241) carry NO branch_id field -> store payload omits branch_id. PaymentTerminalController.php resolveBranchId (L96-105) returns (int)validated('branch_id')=0 for admin (User branch_id=0 verified via tinker). Created terminal => branch_id=0 (live DB: existing 'TPE Le Cayenne #1' is branch=1, all 3484 orders branch=1). POS order branch_id comes from defaultAccess/show which falls back to site_default_branch=1 (LoginController L75-88, DefaultAccessService L63+, Settings site_default_branch=1 verified). PosOrderRequest.php L215-243 validates CARD tranche terminal where('branch_id',orderBranchId=1) -> a branch_id=0 terminal is REJECTED ('not available for this branch'). PaymentTerminal uses BranchScope (model L69) so staff cashier (branch=1) never even sees branch_id=0 row in index. Card encashment blocked for any Settings-created terminal. KioskMachineCreateComponent.vue L64-69 correctly exposes a branch selector -> the fix pattern already exists in the sibling module. Real P1 blocking card payment + secondary Z-report fee misattribution risk."
+    },
+    {
+      "id": "S8-02",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P1",
+      "reason": "CONFIRMED. KioskMachineService.php logout() L176-191 only update(['is_login'=>Ask::NO]) at L190; destroy() L108-124 only kioskMachine->delete() at L122; changeStatus() L147-167 only update(['status'=>...]) at L152 — none call User->tokens()->delete(). KioskMachineLoginController.php createToken('kiosk-token',['kiosk:order'], 8h) L97-101 and only re-login revokes (L96 user->tokens()->where('name','kiosk-token')->delete()). Kiosk order route routes/api.php L1315 (FrontendOrderController store) enforces only tokenCan('kiosk:order') — NO runtime is_login/status check. Login-time status!==ACTIVE check (LoginController L65) does not affect an already-issued token. So after admin Logout/Disable/Delete, the existing token stays valid up to 8h and can keep POSTing fiscalized orders attributed to the old user. Security-control illusion + NF525 operator-attribution risk. Real P1."
+    },
+    {
+      "id": "S8-03",
+      "file_line_exists": false,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "Underlying claim REAL but cited line is WRONG. Finding cites KioskMachineListComponent.vue:206 and 'edit() (L198-208)'. Actual edit() is at L176-190; the 'password: kioskMachine.password' line is L185 (not 206 — L206 is inside the destroy confirmation block). KioskMachineResource.php toArray (L18-28) confirmed returns NO password key -> kioskMachine.password === undefined -> field blank. This is secure-by-accident dead code (backend treats password as nullable=keep-current). Genuine maintainability smell worth tidying (set password:'' + 'leave blank to keep' hint) but a pure no-op with zero runtime defect. Downgrade P2->P3; file_line_exists:false due to the ~20-line misattribution and wrong method range."
+    },
+    {
+      "id": "S8-04",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "CONFIRMED. PaymentTerminalRequest.php authorize() L11-14 returns true (vs KioskMachineRequest.php L19-22 returns user()?->can('settings')??false). PaymentTerminalController.php __construct L26-27 middleware permission:settings ->only(['store','update','destroy']) — index/show NOT gated (routes/api.php L955 index, L957 show). PaymentTerminalResource exposes fee_percent/fee_fixed/serial_number. Any authenticated staff without 'settings' (e.g. POS Operator) can GET /admin/payment-terminals and read negotiated fees + serials. Mutations are correctly 403 (middleware). Caveat is correct: gating index would break PaymentComponent.vue fetchPaymentTerminals (L509+) for non-settings cashiers, so the right fix is authorize() on mutations + a restricted cashier resource. Info-disclosure, V1 mono-poste low blast radius. P2 stands."
+    },
+    {
+      "id": "S8-05",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "REAL but over-rated. KioskMachineController.php changeStatus(KioskMachine,Request) L81 takes raw Illuminate Request (not KioskMachineRequest); KioskMachineService.php L150-152 update(['status'=>request->input('status')]) with NO Rule::in. KioskMachineRequest status numeric|max:24 is not applied on change-status (route routes/api.php L531). HOWEVER changeStatus IS gated by permission:settings (controller __construct L22 ->only(...,'changeStatus')) so it is admin-only, NOT an external hole — the finding acknowledges this. UI toggle only emits ACTIVE/INACTIVE. Impact is an internal-only data-integrity hardening (an arbitrary status could lock a kiosk out of login). Defensive-validation nicety, not a user-facing or external-security defect. Downgrade P2->P3."
+    },
+    {
+      "id": "S8-06",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "CONFIRMED. KioskMachineListComponent.vue L31 tbody v-if='kioskMachines.length > 0', closes L71, with NO v-else / no_data (grep: zero v-else or no_data in file). PaymentTerminalsComponent.vue L58-64 has the v-else 'no_data' empty-state to mirror. Real UX inconsistency: empty kiosk list shows headers + silent void. Pure cosmetic/UX polish, no functional or data risk. Severity P2 is too high for a missing empty-state row — downgrade to P3."
+    },
+    {
+      "id": "S8-07",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": false,
+      "severity_adjusted": "P3",
+      "reason": "REAL and accurately described but marginal. PaymentTerminalsComponent.vue destroy/archive button is v-if='terminal.status === 1' (L51) so it hides on archived rows; Edit (L47/openEdit L228) stays visible and the modal radio Active(1)/Archived(5) (L127-140) lets you flip status=1 to reactivate; destroy() (L267+) DELETE -> backend soft-archive status=5 (PaymentTerminalController.php destroy L89-94). The reactivation path exists and is functional, just not labeled 'Reactivate'. Finding itself flags it optional/contournable. Discoverability nit only — is_necessary:false (works-as-intended with a workaround), keep informational at P3."
+    },
+    {
+      "id": "S8-08",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "CONFIRMED. PaymentGatewayComponent.vue L47-48 renders TEXT options as <input type='text' :value='paymentGatewayOption.value'> with no masking for secrets (no type=password anywhere in file). GatewayOptionsResource.php L22 returns raw 'value' => $this->value. Access IS gated: PaymentGatewayController.php __construct L26 middleware permission:settings ->only('index','update') (SET-01 heal 2026-06-01), so only authorized admin reaches the page — but once open the secret is shown in clear (shoulder-surfing / screen-share). Legitimate secret-hygiene fix (type=password + masked API value) deferrable pre-cloud. V1 mono-poste, no network exposure. P3 + medium confidence as stated is correct."
+    }
+  ],
+  "coverage_gaps": [
+    "S8-01 secondary blast radius NOT examined by auditor: a branch_id=0 terminal also breaks fiscal fee attribution — ZReportCashEnrichmentService.php L99-170 groups order_payments by terminal_id for the Z-report by_terminal/fees_total breakdown; a terminal whose branch_id mismatches the order branch falls into the synthetic 'Sans TPE' (NULL) bucket, silently dropping per-TPE fee reporting.",
+    "No test coverage asserted for kiosk token revocation on admin logout/disable/delete (S8-02): tests exist for re-login revocation (RefreshTokenAbilityPreserveTest, PasswordResetRevokesTokensSentinelTest) but none for KioskMachineService::logout/destroy/changeStatus revoking 'kiosk-token' — the regression would ship undetected.",
+    "PaymentGateway save() (PaymentGatewayComponent.vue L135 @submit save(index)) and the gateway activate toggle (selectActive L5/L22) were not audited for whether toggling a gateway active/inactive validates an acquirer is actually configured — risk of activating a card gateway with empty secret fields.",
+    "KioskMachineCreate save() (KioskMachineCreateComponent.vue L187) password handling on UPDATE not audited: confirm a blank password field on edit does NOT overwrite the stored hash with an empty/hashed-empty value (the S8-03 dead-prefill implies edit reuses the create form).",
+    "PaymentTerminal index BranchScope behavior for admin (branch_id=0) cashier not surfaced: admin bypass returns ALL terminals incl. branch_id=0 rows, so the admin sees the broken terminal in the POS dropdown and can SELECT it, only to hit the L215-243 422 — a confusing dead option, not just an invisible one."
+  ]
+}

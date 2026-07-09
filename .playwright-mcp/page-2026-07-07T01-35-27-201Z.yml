@@ -1,0 +1,51 @@
+- main [ref=f18e5]:
+  - generic [ref=f18e6]:
+    - link "logo" [ref=f18e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=f18e8]
+    - generic [ref=f18e9]:
+      - link " Tableau de bord" [ref=f18e13] [cursor=pointer]:
+        - /url: /admin/dashboard
+        - generic [ref=f18e14]: 
+        - generic [ref=f18e15]: Tableau de bord
+      - generic [ref=f18e16]:
+        - button "avatar Bonjour S-SYNC E2E Operator" [ref=f18e17] [cursor=pointer]:
+          - img "avatar" [ref=f18e18]
+          - heading "Bonjour S-SYNC E2E Operator" [level=3] [ref=f18e19]:
+            - text: Bonjour
+            - generic "S-SYNC E2E Operator" [ref=f18e20]
+          - generic [ref=f18e21]: 
+        - menu "avatar Bonjour S-SYNC E2E Operator":
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "S-SYNC E2E Operator" [level=3]
+            - paragraph: ssync.e2e@lecayenne.test
+            - paragraph: "0600000777"
+            - heading "0,00 €" [level=3]
+          - menuitem "Modifier le profil":
+            - text: 
+            - generic: Modifier le profil
+          - menuitem "Changer le mot de passe":
+            - text: 
+            - generic: Changer le mot de passe
+          - menuitem "Déconnexion":
+            - text: 
+            - generic: Déconnexion
+  - text:           
+  - button "Ouvrir l'historique des commandes du jour" [ref=f18e23] [cursor=pointer]:
+    - generic [ref=f18e24]: 📚
+    - generic [ref=f18e25]: Historique
+  - generic [ref=f18e26]:
+    - status [ref=f18e27]:
+      - generic [ref=f18e28]:
+        - img [ref=f18e30]
+        - generic [ref=f18e32]: Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS.
+      - generic [ref=f18e33]: LOCAL
+    - generic [ref=f18e34]:
+      - img [ref=f18e37]
+      - generic [ref=f18e44]: Aucune commande en cours
+      - generic [ref=f18e45]: Les nouvelles commandes apparaîtront ici

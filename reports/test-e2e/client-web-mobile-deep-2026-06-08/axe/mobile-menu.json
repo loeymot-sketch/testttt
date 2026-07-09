@@ -1,0 +1,14 @@
+[
+  {
+    "id": "color-contrast",
+    "impact": "serious",
+    "nodes": 3,
+    "help": "Elements must meet minimum color contrast ratio thresholds"
+  },
+  {
+    "id": "nested-interactive",
+    "impact": "serious",
+    "nodes": 41,
+    "help": "Interactive controls must not be nested"
+  }
+]

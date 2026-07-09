@@ -1,0 +1,214 @@
+{
+  "config": {
+    "configFile": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/mobile-e2e/playwright.config.js",
+    "rootDir": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt",
+        "testIgnore": [
+          "**/.claude/**",
+          "**/node_modules/**",
+          "**/vendor/**"
+        ],
+        "testMatch": [
+          "tests/mobile-e2e/*.spec.js",
+          "tests/e2e/test-e2e-mobile-design-full-wave-*.spec.js",
+          "tests/e2e/test-e2e-mobile-design-perfect-wave-*.spec.js",
+          "tests/e2e/test-e2e-mobile-realignment-*.spec.js",
+          "tests/e2e/test-real-e2e-pagebypage-*.spec.js",
+          "tests/e2e/test-real-e2e-round2-*.spec.js",
+          "tests/e2e/test-ultraudit-visual-*.spec.js"
+        ],
+        "timeout": 90000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "../../reports/antigravity/mobile-loyalty-latest.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "runAgents": "none",
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.58.2",
+    "workers": 1,
+    "webServer": {
+      "command": "php -S 127.0.0.1:8087 -t mobile/",
+      "url": "http://127.0.0.1:8087/index.html",
+      "reuseExistingServer": true,
+      "timeout": 30000,
+      "cwd": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt"
+    }
+  },
+  "suites": [
+    {
+      "title": "tests/mobile-e2e/loyalty-01-earn-order-app.spec.js",
+      "file": "tests/mobile-e2e/loyalty-01-earn-order-app.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "S01 — Earn via purchase_app updates balance + history entry visible",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2910,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-08T17:14:25.377Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ac0b940bc7e37f93917e-f73ef230321c28757d7d",
+          "file": "tests/mobile-e2e/loyalty-01-earn-order-app.spec.js",
+          "line": 6,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "tests/mobile-e2e/loyalty-03-qr-refresh.spec.js",
+      "file": "tests/mobile-e2e/loyalty-03-qr-refresh.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "S03 — QR réel lqr. : mint-on-display + rotation payload via Actualiser",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3877,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-08T17:14:28.799Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "df270cb300f236e42ed6-e83ad11965d34265153d",
+          "file": "tests/mobile-e2e/loyalty-03-qr-refresh.spec.js",
+          "line": 16,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "tests/mobile-e2e/loyalty-04-redeem-wizard.spec.js",
+      "file": "tests/mobile-e2e/loyalty-04-redeem-wizard.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "S04 — Panel redeem continu : pas de 100, confirm → POST réel, erreur FR, zéro débit client",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2797,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-08T17:14:32.687Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "eb46fb319b5d207f5d2d-9d4166785cbf4151c93b",
+          "file": "tests/mobile-e2e/loyalty-04-redeem-wizard.spec.js",
+          "line": 15,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-07-08T17:14:14.251Z",
+    "duration": 21299.402000000002,
+    "expected": 3,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

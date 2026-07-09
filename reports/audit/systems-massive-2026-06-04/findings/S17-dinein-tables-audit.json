@@ -1,0 +1,112 @@
+{
+  "micro_system": "S17-dinein-tables",
+  "files_examined": [
+    "resources/js/components/admin/diningTable/DiningTableListComponent.vue",
+    "resources/js/components/admin/diningTable/DiningTableShowComponent.vue",
+    "resources/js/components/admin/tableOrders/TableOrderListComponent.vue",
+    "resources/js/components/layouts/backend/BackendMenuComponent.vue",
+    "resources/js/config/v1-hidden-modules.js",
+    "resources/js/router/modules/diningTableRoutes.js",
+    "resources/js/router/modules/adminTableOrderRoutes.js",
+    "resources/js/router/modules/tableOrderRoutes.js",
+    "routes/api.php",
+    "routes/web.php",
+    "app/Http/Controllers/Table/OrderController.php",
+    "app/Http/Controllers/Table/DiningTableController.php",
+    "app/Http/Controllers/Admin/TableOrderController.php",
+    "app/Http/Requests/TableOrderRequest.php",
+    "app/Http/Requests/OrderRequest.php",
+    "app/Http/Requests/PosOrderRequest.php",
+    "app/Services/OrderService.php",
+    "app/Services/DiningTableService.php",
+    "app/Models/FrontendDiningTable.php",
+    "app/Models/DiningTable.php",
+    "app/Http/Middleware/ApiKeyMiddleware.php",
+    "app/Enums/OrderType.php",
+    "tests/Feature/Branch/BranchScopeCoverageSentinelTest.php"
+  ],
+  "findings": [
+    {
+      "id": "S17-01",
+      "severity": "P1",
+      "category": "logic",
+      "title": "Public QR table-order endpoint has NO pos_dine_in_enabled gate — dine-in is supposed to be OFF in V1 but anyone can still create a DINING_TABLE order",
+      "file_line": "app/Http/Requests/TableOrderRequest.php:54-72 (withValidator) vs app/Http/Requests/PosOrderRequest.php:163-170 and app/Http/Requests/OrderRequest.php:218-230",
+      "evidence": "TableOrderRequest::withValidator (L54-72) only rejects DELIVERY/TAKEAWAY when those order types are disabled and rejects a blank order_type; it NEVER checks Settings::group('pos')->get('pos_dine_in_enabled'). The POS path DOES: PosOrderRequest L164 `if ($orderTypeInt === OrderType::DINING_TABLE && ! pos_dine_in_enabled) errors->add(...)`. The kiosk path DOES: OrderRequest L218-222 rejects KIOSK+DINING_TABLE when pos_dine_in_enabled is off. The public route routes/api.php:1521 `POST dining-order/` -> Table\\OrderController::store -> OrderService::tableOrderStore (OrderService.php:1336) creates a FrontendOrder with the submitted order_type (DINING_TABLE=20 per app/Enums/OrderType.php:10) regardless of the flag. routes/web.php:62 serves the SPA for /menu/:slug so the QR flow is reachable by any browser.",
+      "why_it_matters": "V1 ships in 'a emporter only' mode (pos_dine_in_enabled=false, memory feedback_v1_dine_in_disabled). Two of the three order-entry surfaces enforce that server-side; the public QR surface is the only hole. A scanned/guessed table slug + the publicly-exposed x-api-key (MIX_API_KEY is baked into the browser bundle, config/app.php:63, ApiKeyMiddleware.php:24) lets a customer create a real DINING_TABLE FrontendOrder that lands in KDS and the admin table-orders list — a workflow the owner has explicitly disabled. It is an inconsistent invariant: the same 'dine-in off' rule is true on POS+kiosk but silently false on QR. In single-resto V1 this is low-frequency (no printed QR codes deployed), hence P1 not P0, but it is a genuine server-authoritative gap.",
+      "reproduction": "POST /api/table/dining-order/ with header x-api-key=<MIX_API_KEY from window runtime>, body {dining_table_id, customer_id, branch_id:1, order_type:20, items:[...valid item...], subtotal, total, is_advance_order:0, source}. Order is created (200/Resource) even with pos_dine_in_enabled=0. Compare: same order_type=20 on POST /api/pos-order returns 'Dine-in is disabled for this branch.'",
+      "recommended_correction": "In TableOrderRequest::withValidator, mirror PosOrderRequest L163-170: if (int)request('order_type')===OrderType::DINING_TABLE && ! (bool) Settings::group('pos')->get('pos_dine_in_enabled', false) -> $validator->errors()->add('order_type', 'Le service a table est desactive.'); This is a non-frozen FormRequest, scope-minimal, symmetric with the two existing gates.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S17-02",
+      "severity": "P2",
+      "category": "logic",
+      "title": "Admin dining-tables & table-orders pages are hidden from the sidebar but fully reachable by direct URL with no dine-in feature check",
+      "file_line": "resources/js/config/v1-hidden-modules.js:20-22, resources/js/router/modules/diningTableRoutes.js:24-35, resources/js/router/modules/adminTableOrderRoutes.js:24-39",
+      "evidence": "v1-hidden-modules.js lists 'tableOrders' (L20) and 'diningTables' (L22); BackendMenuComponent.vue:59-69 maps them to URLs 'table-orders'/'dining-tables' and hiddenMenuUrls (L165-171) filters them out of the sidebar. BUT the Vue routes still register: diningTableRoutes.js:24 name 'admin.diningTable.list' and adminTableOrderRoutes.js:24 name 'admin.table.order.list'. Neither route nor DiningTableListComponent.vue / TableOrderListComponent.vue reads pos_dine_in_enabled — they have no v-if/guard on the feature flag (verified: grep dine_in on both returns nothing). The comment in v1-hidden-modules.js:7 explicitly says 'Restent accessibles par URL directe.'",
+      "why_it_matters": "An admin who bookmarks /admin/dining-tables or /admin/table-orders (or lands there via an old link) gets a fully-working CRUD: they can create dining tables (generating QR codes that point at the disabled /menu flow) and browse table orders — operating a feature the owner turned off. It is a 'blur' (flou): the feature looks decommissioned (no menu) but is actually live. Low blast radius (admin-only, branch isolation intact) so P2, but it contradicts the 'dine-in disabled' product decision and can confuse a real shift.",
+      "reproduction": "Log in as admin, navigate the URL bar to /admin/dining-tables -> the list + 'Create' drawer render and work; /admin/table-orders -> list renders. No 'feature disabled' guard anywhere.",
+      "recommended_correction": "Add a router beforeEnter guard (or a top-level v-if on a 'dine-in disabled' notice) on diningTableRoutes + adminTableOrderRoutes that redirects to dashboard when the frontend settings store pos_dine_in_enabled is falsy — reuse the exact dineInEnabledFrom() helper already unit-tested in tests/js/posDineInFlag.spec.js. Keeps code/routes intact (V2 re-enable) while making the V1 'off' state honest.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S17-03",
+      "severity": "P2",
+      "category": "logic",
+      "title": "Two models (DiningTable scoped, FrontendDiningTable unscoped) share the same dining_tables table — the public read path returns ALL branches' tables; intentional-but-fragile for V2",
+      "file_line": "app/Models/FrontendDiningTable.php:11 vs app/Models/DiningTable.php:27-30, tests/Feature/Branch/BranchScopeCoverageSentinelTest.php:56",
+      "evidence": "DiningTable.php:28 `static::addGlobalScope(new BranchScope())`; FrontendDiningTable.php has NO boot()/scope and protected $table='dining_tables' (L11). The public Table\\DiningTableController::index (DiningTableController.php:24) calls DiningTableService::list which queries DiningTable (scoped) — but show() (L31) binds FrontendDiningTable (unscoped) and the route-model-binding {frontendDiningTable:slug} (api.php:1515) resolves across ALL branches. The exemption is intentional: BranchScopeCoverageSentinelTest.php:56 lists 'App\\\\Models\\\\FrontendDiningTable' => 'BASELINE_V1_2026-05-18 — V1.0.2 heal C-P0-D'.",
+      "why_it_matters": "In V1 there is exactly one branch (branch_id=1) so an unscoped read cannot leak another tenant's data — safe today, correctly exempted. The risk is purely V2/SaaS: the day a second branch exists, a QR scan from branch A could resolve a branch-B table slug (no branch filter on the slug binding) and a public order could be attached to the wrong branch. This is a latent multi-tenant boundary erosion, already flagged as a V1.0.2 baseline item. P2 because the exemption is documented and harmless in single-tenant V1, but it should not silently outlive the single-branch assumption.",
+      "reproduction": "Code-level: FrontendDiningTable has no global scope; GET /api/table/dining-table/show/{slug} matches any branch's slug. No reproduction harm in V1 (one branch).",
+      "recommended_correction": "Keep the exemption for V1 (correct), but the sentinel reason should carry a hard V2 gate: before enabling a 2nd branch, either give FrontendDiningTable a branch-aware scope or filter the slug binding by the request's branch_id. No V1 code change needed; document the V2 precondition next to the sentinel entry so it is not forgotten at cloud cutover.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S17-04",
+      "severity": "P3",
+      "category": "deadcode",
+      "title": "DiningTable occupancy columns (occupancy_status / occupied_order_id / occupied_at) are written by no V1 flow and never displayed — dormant schema cost",
+      "file_line": "app/Models/DiningTable.php:12-24 and :46-54 (isFree/isOccupied), resources/js/components/admin/diningTable/DiningTableShowComponent.vue (no occupancy field), resources/js/components/admin/diningTable/DiningTableListComponent.vue:70-89 (status only)",
+      "evidence": "DiningTable.php fillable (L12) and casts (L20-22) expose occupancy_status/occupied_order_id/occupied_at, and helpers isFree()/isOccupied() exist (L46-54). But the admin List (DiningTableListComponent.vue:70-89) shows only name/size/status, the Show component imports only statusEnum (DiningTableShowComponent.vue:39,59-62) and renders no occupancy. With dine-in disabled (S17-01/02) nothing in V1 sets these columns.",
+      "why_it_matters": "Pure dead surface in V1: schema columns + model helpers maintained for a UI path that does not exist. No correctness or money impact — flagged because the owner mandate calls out 'unnecessary things'. It is also a small trap: a future reviewer may assume occupancy is tracked when it is not. P3 / cleanup only; safe to leave until dine-in is re-enabled in V2.",
+      "reproduction": "Open /admin/dining-tables/show/{id} — only name/size/status shown; occupancy_status never surfaces. grep occupancy in both admin diningTable components returns nothing.",
+      "recommended_correction": "No V1 action required. When dine-in is re-enabled (V2) wire occupancy into the Show/List UI; until then leave columns as documented dormant schema. Optionally add a one-line code comment on the model that occupancy is V2-only so it is not mistaken for live state.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S17-05",
+      "severity": "P2",
+      "category": "ux",
+      "title": "Table-orders list filter is hard-locked to order_type=DINING_TABLE while the order-type dropdown maps 4 types — and the page itself is for a disabled feature (empty list with no explanation)",
+      "file_line": "resources/js/components/admin/tableOrders/TableOrderListComponent.vue:275 and :251-256, :343-355",
+      "evidence": "props.search.order_type is fixed to orderTypeEnum.DINING_TABLE at init (L275) and reset to it on clear() (L349); the table renders orderTypeEnumArray with DELIVERY/TAKEAWAY/DINING_TABLE/KIOSK labels (L251-256) even though only DINING_TABLE rows can ever return. With dine-in disabled (no table orders created), the list is permanently empty and shows the generic 'no_data_available' not-found image (L137-145) with zero hint that the feature is off.",
+      "why_it_matters": "If an admin reaches this page (reachable by URL per S17-02) they see a broken-looking empty screen with order-type labels that can never appear — a UX 'flou'. They cannot tell whether there are simply no table orders or whether the feature is disabled. Minor (admin-only, hidden page) so P2; it compounds S17-02 by making the orphan page look like a bug rather than an intentionally-off module.",
+      "reproduction": "Navigate to /admin/table-orders with dine-in disabled -> empty not-found state, dropdown offers Delivery/Takeaway/Kiosk types that the query (order_type pinned to DINING_TABLE) will never match.",
+      "recommended_correction": "Tie this to the S17-02 fix: guard the route so the page is unreachable while pos_dine_in_enabled is false. If the page must stay reachable, replace the empty not-found image with an explicit 'Service a table desactive en V1' empty state, and drop the non-DINING_TABLE entries from the order-type dropdown since the query is pinned.",
+      "evidence_type": "code",
+      "confidence": "high"
+    }
+  ],
+  "solids": [
+    {
+      "title": "Public QR table-order pricing is SSOT-locked and discount-gated — strong NF525 defense",
+      "file_line": "app/Services/OrderService.php:1336-1400 (tableOrderStore) + assertDiscretionaryDiscountAllowed",
+      "note": "tableOrderStore force-zeroes the request-supplied manual discount at entry (`$request->merge(['discount' => 0])`, documented SEC-P1 QR-DISCOUNT), recomputes everything via PricingService::calculateOrder(PricingRequest::forTable), and then runs assertDiscretionaryDiscountAllowed on the coupon discount so a coupon cannot sign a fiscally-incorrect Z when manual_discount_enabled!==true. subtotal/total/discount from the client are unset before persist. This is exactly the right pattern: client sends only item refs, backend is authoritative. Good defense-in-depth even though the dine-in gate itself is missing (S17-01)."
+    },
+    {
+      "title": "Sidebar V1-hidden-modules mechanism is clean, declarative, and reversible",
+      "file_line": "resources/js/config/v1-hidden-modules.js:11-47 + resources/js/components/layouts/backend/BackendMenuComponent.vue:165-188",
+      "note": "Hidden modules are a single frozen array; BackendMenuComponent builds a Set and filters both parent rows and children, with a documented 'remove the key to re-show' contract. tableOrders + diningTables are correctly listed, so the nav surface is honest about V1 scope. The only gap is that route-level guards were not added alongside the nav filter (S17-02) — but the menu layer itself is well-engineered."
+    },
+    {
+      "title": "Dine-in feature flag is enforced server-side on the two primary surfaces with a shared, unit-tested parser",
+      "file_line": "app/Http/Requests/PosOrderRequest.php:163-170, app/Http/Requests/OrderRequest.php:218-230, tests/js/posDineInFlag.spec.js",
+      "note": "Both POS and kiosk paths reject DINING_TABLE server-authoritatively (not just UI hiding), with clear FR error strings and explicit comments explaining the UI-bypass/replay threat model. The frontend parser dineInEnabledFrom() is unit-tested against int/string/bool/dotted-key variants. This is solid invariant engineering — the QR path (S17-01) is the lone surface that was missed, and the fix is a 4-line copy of the existing PosOrderRequest gate."
+    }
+  ]
+}

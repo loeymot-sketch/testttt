@@ -1,0 +1,262 @@
+- main [ref=f40e5]:
+  - generic [ref=f40e6]:
+    - link "logo" [ref=f40e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=f40e8]
+    - generic [ref=f40e9]:
+      - generic [ref=f40e10]:
+        - generic [ref=f40e11]:
+          - button " Filiale Le Cayenne (principal) " [ref=f40e12] [cursor=pointer]:
+            - generic [ref=f40e13]: 
+            - heading "Filiale Le Cayenne (principal)" [level=3] [ref=f40e14]:
+              - generic [ref=f40e15]: Filiale
+              - text: Le Cayenne (principal)
+            - generic [ref=f40e16]: 
+          - list:
+            - listitem:
+              - radio "Le Cayenne (principal)" [checked]
+              - generic: Le Cayenne (principal)
+        - generic [ref=f40e18]:
+          - button "flag" [ref=f40e20] [cursor=pointer]:
+            - img "flag" [ref=f40e21]
+          - link "POS" [ref=f40e22] [cursor=pointer]:
+            - /url: /admin/pos
+            - generic [ref=f40e23]: 
+      - button "Fermer" [ref=f40e24] [cursor=pointer]: 
+      - generic [ref=f40e25]:
+        - button "avatar Bonjour Admin Le Cayenne" [ref=f40e26] [cursor=pointer]:
+          - img "avatar" [ref=f40e27]
+          - heading "Bonjour Admin Le Cayenne" [level=3] [ref=f40e28]:
+            - text: Bonjour
+            - generic "Admin Le Cayenne" [ref=f40e29]
+          - generic [ref=f40e30]: 
+        - menu "avatar Bonjour Admin Le Cayenne":
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "Admin Le Cayenne" [level=3]
+            - paragraph: admin@lecayenne.fr
+            - paragraph: "+330600000000"
+            - heading "2,00 €" [level=3]
+          - menuitem "Modifier le profil":
+            - text: 
+            - generic: Modifier le profil
+          - menuitem "Changer le mot de passe":
+            - text: 
+            - generic: Changer le mot de passe
+          - menuitem "Déconnexion":
+            - text: 
+            - generic: Déconnexion
+  - complementary [ref=f40e31]:
+    - text: 
+    - navigation [ref=f40e32]:
+      - list [ref=f40e33]:
+        - listitem [ref=f40e34]:
+          - link " Tableau de bord" [ref=f40e35] [cursor=pointer]:
+            - /url: /admin/dashboard
+            - generic [ref=f40e36]: 
+            - generic [ref=f40e37]: Tableau de bord
+      - list [ref=f40e38]:
+        - listitem [ref=f40e39]:
+          - link " POS" [ref=f40e40] [cursor=pointer]:
+            - /url: /admin/pos
+            - generic [ref=f40e41]: 
+            - generic [ref=f40e42]: POS
+      - list [ref=f40e43]:
+        - listitem [ref=f40e44]:
+          - link "Produits & Stock" [ref=f40e45] [cursor=pointer]:
+            - /url: /admin/stock/rupture
+            - generic [ref=f40e46]: Produits & Stock
+      - list [ref=f40e47]:
+        - listitem [ref=f40e48]:
+          - link " Catalogue" [ref=f40e49] [cursor=pointer]:
+            - /url: /admin/items/studio
+            - generic [ref=f40e50]: 
+            - generic [ref=f40e51]: Catalogue
+        - listitem [ref=f40e52]:
+          - link " Attribut d’articles" [ref=f40e53] [cursor=pointer]:
+            - /url: /admin/settings/item-attributes/list
+            - generic [ref=f40e54]: 
+            - generic [ref=f40e55]: Attribut d’articles
+      - list [ref=f40e56]:
+        - listitem [ref=f40e57]:
+          - link " Ingrédients" [ref=f40e58] [cursor=pointer]:
+            - /url: /admin/ingredients
+            - generic [ref=f40e59]: 
+            - generic [ref=f40e60]: Ingrédients
+      - list [ref=f40e61]:
+        - listitem [ref=f40e62]:
+          - link " Commandes caisse" [ref=f40e63] [cursor=pointer]:
+            - /url: /admin/pos-orders
+            - generic [ref=f40e64]: 
+            - generic [ref=f40e65]: Commandes caisse
+      - list [ref=f40e66]:
+        - listitem [ref=f40e67]:
+          - link " Historique" [ref=f40e68] [cursor=pointer]:
+            - /url: /admin/historique
+            - generic [ref=f40e69]: 
+            - generic [ref=f40e70]: Historique
+      - list [ref=f40e71]:
+        - listitem [ref=f40e72]:
+          - link " Encaissement" [ref=f40e73] [cursor=pointer]:
+            - /url: /admin/encaissement
+            - generic [ref=f40e74]: 
+            - generic [ref=f40e75]: Encaissement
+      - list [ref=f40e76]:
+        - listitem [ref=f40e77]:
+          - link " Vue caisse unifiée" [ref=f40e78] [cursor=pointer]:
+            - /url: /admin/cash-overview
+            - generic [ref=f40e79]: 
+            - generic [ref=f40e80]: Vue caisse unifiée
+      - list [ref=f40e81]:
+        - listitem [ref=f40e82]:
+          - link " Caisse livreur" [ref=f40e83] [cursor=pointer]:
+            - /url: /admin/delivery-boy-cash-sessions
+            - generic [ref=f40e84]: 
+            - generic [ref=f40e85]: Caisse livreur
+      - list [ref=f40e86]:
+        - listitem [ref=f40e87]:
+          - button "Caisse et commandes" [ref=f40e88] [cursor=pointer]
+        - listitem [ref=f40e89]:
+          - link " Écran cuisine" [ref=f40e90] [cursor=pointer]:
+            - /url: /admin/kitchen-display-system
+            - generic [ref=f40e91]: 
+            - generic [ref=f40e92]: Écran cuisine
+        - listitem [ref=f40e93]:
+          - link " Suivi client" [ref=f40e94] [cursor=pointer]:
+            - /url: /admin/order-status-screen
+            - generic [ref=f40e95]: 
+            - generic [ref=f40e96]: Suivi client
+      - list [ref=f40e97]:
+        - listitem [ref=f40e98]:
+          - button "Communications" [ref=f40e99] [cursor=pointer]
+        - listitem [ref=f40e100]:
+          - link " Notification pushs" [ref=f40e101] [cursor=pointer]:
+            - /url: /admin/push-notifications
+            - generic [ref=f40e102]: 
+            - generic [ref=f40e103]: Notification pushs
+        - listitem [ref=f40e104]:
+          - link " Messages" [ref=f40e105] [cursor=pointer]:
+            - /url: /admin/messages
+            - generic [ref=f40e106]: 
+            - generic [ref=f40e107]: Messages
+        - listitem [ref=f40e108]:
+          - link " Abonnés" [ref=f40e109] [cursor=pointer]:
+            - /url: /admin/subscribers
+            - generic [ref=f40e110]: 
+            - generic [ref=f40e111]: Abonnés
+      - list [ref=f40e112]:
+        - listitem [ref=f40e113]:
+          - button "Utilisateurs" [ref=f40e114] [cursor=pointer]
+        - listitem [ref=f40e115]:
+          - link " Administrateurs" [ref=f40e116] [cursor=pointer]:
+            - /url: /admin/administrators
+            - generic [ref=f40e117]: 
+            - generic [ref=f40e118]: Administrateurs
+        - listitem [ref=f40e119]:
+          - link " Employés" [ref=f40e120] [cursor=pointer]:
+            - /url: /admin/employees
+            - generic [ref=f40e121]: 
+            - generic [ref=f40e122]: Employés
+        - listitem [ref=f40e123]:
+          - link " Chefs" [ref=f40e124] [cursor=pointer]:
+            - /url: /admin/chefs
+            - generic [ref=f40e125]: 
+            - generic [ref=f40e126]: Chefs
+      - list [ref=f40e127]:
+        - listitem [ref=f40e128]:
+          - button "Comptes" [ref=f40e129] [cursor=pointer]
+        - listitem [ref=f40e130]:
+          - link " Transactions" [ref=f40e131] [cursor=pointer]:
+            - /url: /admin/transactions
+            - generic [ref=f40e132]: 
+            - generic [ref=f40e133]: Transactions
+      - list [ref=f40e134]:
+        - listitem [ref=f40e135]:
+          - button "Rapports" [ref=f40e136] [cursor=pointer]
+        - listitem [ref=f40e137]:
+          - link " Rapport des ventes" [ref=f40e138] [cursor=pointer]:
+            - /url: /admin/sales-report
+            - generic [ref=f40e139]: 
+            - generic [ref=f40e140]: Rapport des ventes
+        - listitem [ref=f40e141]:
+          - link " Rapport articles" [ref=f40e142] [cursor=pointer]:
+            - /url: /admin/items-report
+            - generic [ref=f40e143]: 
+            - generic [ref=f40e144]: Rapport articles
+      - list [ref=f40e145]:
+        - listitem [ref=f40e146]:
+          - button "Configuration" [ref=f40e147] [cursor=pointer]
+        - listitem [ref=f40e148]:
+          - link " Paramètres" [ref=f40e149] [cursor=pointer]:
+            - /url: /admin/settings
+            - generic [ref=f40e150]: 
+            - generic [ref=f40e151]: Paramètres
+  - generic [ref=f40e152]:
+    - list [ref=f40e155]:
+      - listitem [ref=f40e156]:
+        - link "Tableau de bord/" [ref=f40e157] [cursor=pointer]:
+          - /url: /admin/dashboard
+      - listitem [ref=f40e158]:
+        - generic [ref=f40e159]: Transactions
+    - generic [ref=f40e161]:
+      - generic [ref=f40e162]:
+        - heading "Transactions" [level=3] [ref=f40e163]
+        - generic [ref=f40e164]:
+          - button " Filtrer " [ref=f40e165] [cursor=pointer]:
+            - generic [ref=f40e166]: 
+            - generic [ref=f40e167]: Filtrer
+            - generic [ref=f40e168]: 
+          - generic [ref=f40e169]:
+            - button " Exporter " [ref=f40e170] [cursor=pointer]:
+              - generic [ref=f40e171]: 
+              - generic [ref=f40e172]: Exporter
+              - generic [ref=f40e173]: 
+            - generic:
+              - button " Imprimer":
+                - generic: 
+                - text: Imprimer
+              - link " XLS":
+                - /url: "#"
+                - generic: 
+                - text: XLS
+      - generic [ref=f40e175]:
+        - generic [ref=f40e176]:
+          - generic [ref=f40e177]: ID de transaction
+          - textbox "ID de transaction" [ref=f40e178]
+        - generic [ref=f40e179]:
+          - generic [ref=f40e180]: N° de commande
+          - textbox "N° de commande" [ref=f40e181]
+        - generic [ref=f40e182]:
+          - generic [ref=f40e183]: Mode de paiement
+          - combobox [ref=f40e184]:
+            - textbox [ref=f40e187]:
+              - /placeholder: "--"
+        - generic [ref=f40e189]:
+          - generic [ref=f40e190]: Date
+          - textbox "Datepicker input" [ref=f40e192]:
+            - textbox [ref=f40e194] [cursor=pointer]
+        - generic [ref=f40e196]:
+          - button " Rechercher" [ref=f40e197] [cursor=pointer]:
+            - generic [ref=f40e198]: 
+            - generic [ref=f40e199]: Rechercher
+          - button " Effacer" [ref=f40e200] [cursor=pointer]:
+            - generic [ref=f40e201]: 
+            - generic [ref=f40e202]: Effacer
+      - table [ref=f40e204]:
+        - rowgroup [ref=f40e205]:
+          - row "ID de transaction Date Mode de paiement N° de commande Montant" [ref=f40e206]:
+            - columnheader "ID de transaction" [ref=f40e207]
+            - columnheader "Date" [ref=f40e208]
+            - columnheader "Mode de paiement" [ref=f40e209]
+            - columnheader "N° de commande" [ref=f40e210]
+            - columnheader "Montant" [ref=f40e211]
+        - rowgroup [ref=f40e212]:
+          - row "Not Found Aucune donnée disponible." [ref=f40e213]:
+            - cell "Not Found Aucune donnée disponible." [ref=f40e214]:
+              - generic [ref=f40e215]:
+                - img "Not Found" [ref=f40e217]
+                - generic [ref=f40e218]: Aucune donnée disponible.

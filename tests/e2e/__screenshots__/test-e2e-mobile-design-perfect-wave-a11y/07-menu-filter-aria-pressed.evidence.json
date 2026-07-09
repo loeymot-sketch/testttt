@@ -1,0 +1,44 @@
+{
+  "chips": [
+    {
+      "text": "",
+      "ariaPressed": null,
+      "ariaCurrent": null
+    },
+    {
+      "text": "Tout",
+      "ariaPressed": "true",
+      "ariaCurrent": null
+    },
+    {
+      "text": "🥖 Sandwichs",
+      "ariaPressed": "false",
+      "ariaCurrent": null
+    },
+    {
+      "text": "🌯 Galette",
+      "ariaPressed": "false",
+      "ariaCurrent": null
+    },
+    {
+      "text": "🍔 Burgers",
+      "ariaPressed": "false",
+      "ariaCurrent": null
+    },
+    {
+      "text": "🌮 Tacos",
+      "ariaPressed": "false",
+      "ariaCurrent": null
+    },
+    {
+      "text": "🥣 Bols",
+      "ariaPressed": "false",
+      "ariaCurrent": null
+    },
+    {
+      "text": "🍟 Frites",
+      "ariaPressed": "false",
+      "ariaCurrent": null
+    }
+  ]
+}

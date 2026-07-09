@@ -49,3 +49,7 @@ Commande 5179 pilotée à travers les 3 acteurs sur endpoints réels (:8766 food
 - Symptôme : serveur :8766 500 sur tout (« Unknown column branches.deleted_at ») après un restart qui a perdu l'env-override → fallback sur `.env DB_DATABASE=foodking` (coquille abandonnée SANS deleted_at, BRAIN).
 - Fix : `.env DB_DATABASE=foodking → foodking_e2e` (la DB canonique réelle : 2812 orders, fiscal, schéma complet ; backup `.env.bak-dbfix-2026-06-27`). Aligne la config sur la DB que l'owner utilise vraiment. PAS une migration (foodking intouchée, footgun BRAIN respecté).
 - Owner : valider ce pointage .env (le .env pointait historiquement vers la coquille ; le canonique est foodking_e2e). APP_DEBUG re-mis à false après diagnostic.
+
+## [P3-deploy] APP_URL doit = host servi (sinon SPA full-load échoue + avatar 404)
+- Symptôme : navigation directe /admin/settings/payment-terminals → 9 erreurs console (API appelée sur localhost:8000 au lieu du host servi). Cause : `window.foodkingConfig.apiUrl` = `config('app.url')` = `.env APP_URL=http://localhost:8000` (placeholder dev) ≠ host réel. Aussi : avatar/images 404.
+- Fix test : `.env APP_URL → http://127.0.0.1:8766` (host servi). Owner deploy : APP_URL doit pointer le vrai host de la boîte mono-poste. PAS un défaut de page (les pages sont OK ; seul apiUrl est mal pointé). Backup `.env.bak-*`.

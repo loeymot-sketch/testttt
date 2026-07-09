@@ -1,0 +1,62 @@
+{
+  "wave": "C",
+  "head": "c70b1e518",
+  "order_under_test": {
+    "id": 5499,
+    "queue_number": "A0001",
+    "item": "Tacos M (item_id 26) — Poulet mariné + Algérienne, sans menu",
+    "totals": {
+      "kiosk_cart": 6.90,
+      "kiosk_confirmation": 6.90,
+      "pos_counter_collect_panel": 6.90,
+      "pos_encaissement_modal": 6.90,
+      "db_order_total": 6.90,
+      "db_order_items_sum": 6.90,
+      "integrity": "MATCH — 0 mismatch (P0 check passed)"
+    },
+    "lifecycle": {
+      "created": "2026-07-05 23:29:26 local — kiosk Plan B route_to_counter: status=4 ACCEPT, payment_status=15 PENDING_COUNTER, pos_payment_method=6 COUNTER_DEFERRED, source_surface=kiosk, fiscal_sequence_no=null",
+      "encashed": "2026-07-06 16:13:10 local — POS 'Commandes borne — à encaisser' → Encaisser → Espèce (simulation) 6,90 → Confirmer & Imprimer ticket [data-testid=pos-counter-collect-confirm]",
+      "final_db_state": "payment_status=5 PAID, pos_payment_method=1 CASH, fiscal_sequence_no=2624 (unique: count(fiscal_sequence_no=2624, branch=1)=1), audit_logs id=4832 action=cash.movement.recorded",
+      "fiscal_chain": "php artisan fiscal:verify-chain --branch=1 → CHAIN OK (audit_logs + z_reports)"
+    }
+  },
+  "findings": [
+    {
+      "id": "WC-01",
+      "severity": "P3",
+      "category": "kds-admin-sync",
+      "summary": "KDS en mode admin (branch_id=0) : l'appel GET /api/admin/kds-order/sync?since=...&branch_id=0&include_deleted=true repond 403 Forbidden (erreur console silencieuse). Le KDS retombe sur le polling 60s ('Mode admin centralise') donc fonctionnel, mais le canal sync incremental est mort pour l'admin. KdsSyncController.php:55-66 n'emet un 403 que pour le cross-branch staff ; le 403 observe pour admin+branch_id=0 merite investigation (probable interaction resolvedBranchId=0 avec la couche permission).",
+      "evidence": ".playwright-mcp/console-2026-07-05T21-31-07-407Z.log — '[ERROR] 403 (Forbidden) @ http://127.0.0.1:8000/api/admin/kds-order/sync?since=2026-07-05T21:31:10.668Z&branch_id=0&include_deleted=true' ; code lu app/Http/Controllers/Admin/KdsSyncController.php:45-75"
+    },
+    {
+      "id": "WC-02",
+      "severity": "P3",
+      "category": "kiosk-console-noise",
+      "summary": "Au boot du kiosk (contexte navigateur neuf), 3 requetes partent avant l'auth machine et loggent des 401 en console (kiosk-event, frontend/menu, api/login). Artefact connu contexte-neuf (memoire projet 2026-07-01) ; la vraie borne mono-session n'en voit qu'un. Pas bloquant mais bruit console non nul sur la surface kiosk.",
+      "evidence": "console kiosk: '401 @ /api/frontend/kiosk-event', '401 @ /api/frontend/menu', '401 @ /api/login' (.playwright-mcp/console-2026-07-05T21-26-06-463Z.log)"
+    },
+    {
+      "id": "WC-03",
+      "severity": "P3",
+      "category": "test-environment",
+      "summary": "NON-BUG documente : pendant l'audit, l'onglet Playwright partage a ete re-navige plusieurs fois vers /admin/kitchen-display-system en plein encaissement (modal detruit 2x). Aucun chemin de code produit trouve (grep router.push/location.assign/reload dans KDS+POS = rien) — attribue a la contention d'onglet entre agents de vagues paralleles. A re-verifier en session isolee avant de blamer le produit.",
+      "evidence": "3 occurrences tracees (14:09, 14:11, 14:13) ; grep resources/js: aucun redirect programmatique vers kitchen-display-system hors router /kds"
+    },
+    {
+      "id": "WC-04",
+      "severity": "P3",
+      "category": "kds-window-behavior",
+      "summary": "NON-BUG verifie : apres encaissement, la commande 5499 a disparu du feed KDS — cause = fenetre glissante 8h (order_datetime >= now-8h, oss.stale_window_hours) car la commande datait de la veille 23:29 et l'encaissement a eu lieu le lendemain 16:13 (session d'audit interrompue). Comportement conforme au design MINUIT-STRADDLE 2026-07-04. En exploitation reelle (encaissement dans la foulee), la commande reste sur le KDS.",
+      "evidence": "app/Services/KitchenDisplaySystemOrderService.php:136-145 ; feed API avant paiement contient 5499 (payment_status 15), apres paiement 5499 absent mais status DB toujours 4/PAID"
+    },
+    {
+      "id": "WC-05",
+      "severity": "P3",
+      "category": "dev-environment",
+      "summary": "Console POS/kiosk : ERR_CONNECTION_REFUSED sur http://127.0.0.1:9100/health (pont d'impression ESC/POS absent en dev local) — attendu, fallback silencieux OK. Egalement 422 sur pricing/preview pendant compo incomplete = comportement attendu (silencieux, aucun toast, conforme fix c325a8610).",
+      "evidence": "console logs kiosk 21:26 (1x 422 preview, 1x 9100 refused), aucun toast visible sur les captures 01/02"
+    }
+  ],
+  "pass_summary": "FLUX BORNE->KDS->CAISSE PROUVE DE BOUT EN BOUT EN LOCAL (HEAD c70b1e518). (1) Commande borne reelle via UI kiosk Playwright : idle -> emporter -> Tacos M wizard complet (viande Poulet marine, sauce Algerienne, sans menu) -> panier 6,90 EUR -> upsell skip (pool desserts/boissons/menu-enfant conforme A1) -> paiement caisse Plan B -> confirmation #A0001 (capture 02). (2) KDS : commande presente dans le feed (id 5499, A0001, status 4, payment_status 15) ; l'ecran distingue visuellement a-encaisser (bandeau 'EN ATTENTE ENCAISSEMENT') du regle (capture 03 et 06). (3) Caisse : A0001 dans 'A encaisser borne' / counter-collect/pending (captures 04-05), encaissement especes simule -> payment_status=5 PAID + fiscal_sequence_no=2624 alloue et unique + audit cash.movement.recorded + CHAIN OK branch 1 ; A0001 disparue de la file apres (capture 07). (4) Integrite numerique : 6,90 identique sur borne/panier/confirmation/caisse/modal/DB (total=subtotal=somme items), composition_snapshot exacte (Poulet marine + Algerienne). (5) Consoles : 0 4xx/5xx produit inattendu — 422 preview attendu, 401 boot kiosk = artefact contexte-neuf, 9100 = pont impression absent en dev ; 1 finding P3 reel (403 kds-order/sync admin). VERDICT : PASS, 0 P0/P1/P2, 5 P3 (dont 3 non-bugs documentes)."
+}

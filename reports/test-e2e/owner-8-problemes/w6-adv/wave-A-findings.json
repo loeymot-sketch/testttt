@@ -1,0 +1,83 @@
+{
+  "wave": "A",
+  "surface": "CAISSE (POS)",
+  "range_attacked": "ae621546e..c65aa6582 (7 commits observes: feb7ec2ee, e44a3178f, 701bca335, b4969bb99, a3376397c, 29cc6e68c, c65aa6582)",
+  "date": "2026-07-06",
+  "supervisor": "W6 adversaire fresh-eyes",
+  "gates": {
+    "vitest_full": "318 files passed / 2214 tests passed / 3 skipped / 0 failed",
+    "phpunit_filter_Pos_Menu_Drink_OnionCuit": "753 passed / 13 skipped / 2 incomplete / 0 failed",
+    "frozen_diff_24e8a09c3_HEAD": "SEULS public/js/pos-wizard.js (+299) et KioskWizardComponent.vue (+34) touches - LOCK_POSWIZARD_KIOSKWIZARD_OWNER8 APPLIED present (plans/LOCK_POSWIZARD_KIOSKWIZARD_OWNER8_BOISSONS_OIGNONCUIT_2026-07-06.md) - 0 ligne frozen non autorisee = PASS"
+  },
+  "findings": [
+    {
+      "id": "W6A-P1-01",
+      "severity": "P1",
+      "category": "regression-latente / parked-orders / crash-rendu",
+      "in_range": false,
+      "introduced_by": "c27e0d16e (C3 livraison repli manuel, 2026-07-05, PRE-range) - git blame PosComponent.vue:810",
+      "summary": "Restaurer une commande parkee met la caisse en boucle d'erreurs de rendu Vue permanente : le POST park envoie delivery_inline.addressText='' , le middleware Laravel ConvertEmptyStringsToNull le stocke NULL, et au restore le template PosComponent.vue:810 fait deliveryInline.addressText.trim() SANS garde null -> TypeError 'Cannot read properties of null (reading trim)' a CHAQUE render/update (32+ occurrences en ~2 min, console 37 errors/103 warnings et ca monte). Touche TOUT park->restore d'un panier a-emporter (flux par defaut, pas un edge case) + tout parked pre-C3 (payload sans cle addressText). Le panier revient (donnees OK) mais le composant reste en etat de rendu degrade jusqu'au reload.",
+      "evidence": "e2e reel u70 (POS Operator b1) : park POST #1244 body delivery_inline.addressText='' -> GET /api/admin/pos/parked-orders/33 response delivery_inline{name:null,phone:null,addressText:null,manualDistanceKm:null} -> console .playwright-mcp/console-2026-07-06T18-13-34-808Z.log L244+ 'TypeError: Cannot read properties of null (reading trim) at Proxy.render (pos-shell.js:14116)' x32, grep -c =32 puis 37 errors. Code: resources/js/components/admin/pos/PosComponent.vue:810 (v-if ... deliveryInline.addressText.trim().length >= 3, blame c27e0d16e) + :3785 (this.deliveryInline = savedDeliveryInline, blame 90a66f4a4). Capture A/25-parked-panel.png.",
+      "note": "PAS cause par les 7 commits du range - mais la mission du range incluait la verif regressions latentes parked orders : rate par les implementeurs. Fix trivial hors frozen: garde (deliveryInline.addressText || '') ligne 810 + normalisation des null au restore (3785)."
+    },
+    {
+      "id": "W6A-P3-02",
+      "severity": "P3",
+      "category": "parked-orders / bruit reseau",
+      "in_range": false,
+      "summary": "Au restore d'une commande parkee avec client walk-in, _loadCustomerLoyalty declenche GET /api/frontend/loyalty/balance?code= (code VIDE) -> 422 en console a chaque restore.",
+      "evidence": "console L264: 422 @ /api/frontend/loyalty/balance?code= ; PosComponent.vue _loadCustomerLoyalty (blame 90a66f4a4, pre-range)."
+    },
+    {
+      "id": "W6A-P3-03",
+      "severity": "P3",
+      "category": "copy / oignons cuits (in-range)",
+      "in_range": true,
+      "summary": "La crudite opt-in 'Oignons cuits' non cochee affiche par defaut le label '✕ Sans Oignons cuits' - semantiquement faux pour une option jamais incluse (le client n'a rien retire). La serialisation ticket est correcte (jamais dans SANS), seul le libelle bouton wizard est trompeur.",
+      "evidence": "e2e: etat initial garniture c_408 = 'removed' avec texte '🧅 ✕ Sans Oignons cuits' (dump DOM garniture-toggle-btn) ; pos-wizard.js label = isIncluded ? '✓ name' : '✕ Sans name' (binaire, pas de 3e etat opt-in)."
+    },
+    {
+      "id": "W6A-P3-04",
+      "severity": "P3",
+      "category": "drinks catalog cache / peremption dispo (in-range)",
+      "in_range": true,
+      "summary": "drinksCatalogCache (W2 701bca335 + computed PosComponent:2191) ne se rafraichit que quand drinksCatalogLive est NON vide. Si une boisson passe en rupture (86) pendant que la caissiere est sur une categorie nourriture (live=vide car item/lists ne contient que la categorie courante), le wizard continue de proposer la boisson 86'd (is_available fige a true dans le cache) jusqu'au prochain passage sur une liste contenant les boissons. Impact limite : boisson de formule = texte cuisine 0 EUR, aucun impact prix/stock.",
+      "evidence": "code: PosComponent.vue:2191-2199 (live.length>0 sinon cache), watcher :4756 (maj cache seulement si list.length>0) ; _onItemAvailabilityChanged patch item/lists courant seulement. Non reproduit e2e (necessite 86 concurrent), raisonnement code verifie sur c65aa6582."
+    },
+    {
+      "id": "W6A-P3-05",
+      "severity": "P3",
+      "category": "i18n / paiement (pre-existant)",
+      "in_range": false,
+      "summary": "Toast de validation paiement en anglais brut sur POS FR : 'The received amount field is required' (montant recu vide + Confirmer).",
+      "evidence": "e2e: toast capture a 228ms apres clic Confirmer sans montant (payment modal, ordre 5534 flow)."
+    },
+    {
+      "id": "W6A-OBS-06",
+      "severity": "OBS",
+      "category": "parked-orders / admin branch 0 (pre-existant, deliberate)",
+      "in_range": false,
+      "summary": "POST parked-orders = 403 pour un user branch_id=0 (admin@lecayenne.fr inclus) - garde deliberee P0-POS-04 (2026-05-18). MAIS l'UI ne montre AUCUN feedback : le clic 'Mettre en attente' echoue en silence (panier intact, badge a 0, 3x403 console). UX de l'echec a ameliorer, hors range.",
+      "evidence": "e2e u143 (Admin b0): POST #914 403 + reponse guard 'Parked orders require a branch-scoped user' (app/Http/Controllers/Admin/Pos/ParkedOrderController.php:94-99) ; aucun toast observe. Flux valide ensuite avec u70 (POS Operator b1) = park/restore OK."
+    },
+    {
+      "id": "W6A-OBS-07",
+      "severity": "OBS",
+      "category": "environnement",
+      "in_range": false,
+      "summary": "APP_URL/MIX_HOST = http://127.0.0.1:8766 (bake dans le bundle axios) alors que la consigne dit serveur 8000. Les deux ports servent la meme app ; tester sur 8000 fonctionne par cookie port-agnostique mais melange les origines (CSP report-only violations + assets cross-port). Les e2e de cette vague ont ete faits sur 8766 (canonique). En env partage, un re-login parallele du meme user revoque le token (auth_token unique) -> 401 cascade + auto-logout : utiliser des users dedies pour les e2e paralleles.",
+      "evidence": ".env APP_URL=8766, MIX_HOST=${APP_URL} ; lsof 8000+8766 ; console 401 storm sessions admin partagees ; personal_access_tokens uniques par user."
+    }
+  ],
+  "passes_attested": {
+    "1_boissons_menu_wizard": "Cayenne: catalogue modal data-pos-drinks-catalog=15 boissons DB exactes dont 'Hawaï 33cl' (AUCUN 'Fanta Hawai'), toutes 'Incluse' price:0. Menu(+2,50) -> section visible, selection Hawaï -> total fige 9,90 (UI wizard footer + cart subtotal + SERVEUR order 5534 total=9.90 fiscal=2631). Instruction 'BOISSON: Hawaï 33cl' presente panier+DB+ticket cuisine. AUCUNE ligne facturee boisson (items DB = Cayenne 7.40 + Menu 2.50). Anti-fantome: switch Menu->Frites Seules purge boissonChoice + cache la section (verifie DOM les 2 sens), retour Menu = rien de preselectionne, Boisson Seule = section visible, item sans addon (boisson seche) = pas de step. 2e produit Tacos M: menu+Fuze Tea, 9,40 fige, instruction BOISSON: Fuze Tea 33cl. Captures 05/06/07.",
+    "2_oignons_cuits": "Defauts: Salade/Tomate/Oignon=ON, Oignons cuits=OFF (name-aware). Exclusivite stricte 2 sens (cuits ON->cru OFF ; cru ON->cuits OFF), 6 toggles rapides -> etat coherent (both-off legal). Serialisation: extras {49 Salade,50 Tomate,408 Oignons cuits} + 'Sans: Oignon', snapshot serveur unit_price=0. Ticket cuisine ESC/POS decode (EscPosTicketBytesService order 5534): 'ST' + ESC-1 'O' ESC-0 = O SOULIGNE, O cru absent, '** BOISSON: Hawaï 33cl' present. Controle negatif: Tacos M sans section crudites (items oignons-cuits = 22-25/36-39/98-105 sandwichs+burgers, par design).",
+    "3_images_viandes": "Tacos M: 7/7 viandes liste principale = vraies photos webp (viande-poulet/mexicanos/cordon-bleu/hachee/nuggets/tenders/fricadelle.webp) naturalWidth>0, pastille fallback presente mais dormante; 7/7 supplements charges apres expansion accordeon; resize 1100px: 7/7 chargees, 0 overflow horizontal. 0x404 sur 184 requetes /images/menu (183 thumbs webp + 1 item-default.svg). Captures 10/11/12.",
+    "4_impression_non_bloquante": "Encaissement cash 5534: toast 'Ticket envoye a l'impression...' a 358ms, window.print instrumente = 0 appel, 0 exception JS, UI vivante. Reprint client+cuisine simultanes: verrous par-ticket (disabled puis re-enabled), pipelines paralleles, toasts 'Ticket envoye' puis 'Ticket client OK'. Env: printed_escpos=true (mode bypass/simu serveur) -> chemin no-bridge (boutons manuels) non atteignable live ici, couvert par tests/js/pos/receiptNonBlockingPrint.spec.js (vert dans le run complet).",
+    "5_perf": "Tuiles categorie/produit = /images/menu/thumbs/*.webp 6-23KB (cat-tacos.webp etc). 4 ajouts consecutifs: 4 GET item?item_category_id=10 (drill-in preexistant) + 1 GET resync sans categorie (quota 1/60s) = 0 refetch complet par ajout. Cycle ajout ~460ms (drill 210 / modal 48 / add 205). localStorage: pos_cart_v3:b1:uX ~1.5KB scope par caissier, vuex 17.8KB SANS posCart (filter W5 verifie), kiosk_menu_snapshot 191KB = cle borne preexistante. Echo: CatalogChanged -> itemList immediat (PosComponent:3081, non coalesce), ItemAvailabilityChanged -> patch in-place, D3 coalesce 400ms trailing limite aux 3 panneaux commandes avec cancel unmount (:2342-2346) + garde _destroyed.",
+    "6_regressions": "Reload -> panier restaure 4 lignes totaux recalcules identiques (20,80) cle pos_cart_v3:b1:u143 (u1/u3 intacts = isolation caissier). Livraison C3 manuelle: adresse texte libre + 'Distance en km'=3 + Confirmer -> 'Frais de livraison +4,00' total 24,80 -> ordre 5535 serveur total=24.80 delivery_charge=4.00 type=5 fiscal=2632 adresse conservee. Parked (u70 b1): park -> badge 'En attente 1' -> Restaurer -> panier revenu 1,90 (MAIS voir W6A-P1-01)."
+  },
+  "captures": "reports/test-e2e/owner-8-problemes/w6-adv/A/ (01-25 png + 02/03 snapshots md + network-images.txt)",
+  "verdict": "BLOCKED",
+  "verdict_note": "Le diff du range lui-meme est CLEAN (0 P0/P1 attribuable aux 7 commits ; gates vertes ; frozen 0 hors LOCK ; les 6 promesses owner tiennent e2e). BLOCKED a cause de W6A-P1-01 : crash de rendu permanent au restore d'une commande parkee (latent C3 c27e0d16e du 2026-07-05), decouvert par le balayage regressions explicitement demande a cette vague - flux caisse coeur, fix 1 ligne hors frozen requis avant livraison."
+}

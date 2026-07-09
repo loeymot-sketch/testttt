@@ -2,50 +2,8 @@
   {
     "severity": "INFO",
     "viewport": "desktop",
-    "state": "menu-images",
+    "state": "checkout",
     "png": "-",
-    "observed": "image audit: 41 items, 0 broken, 0 emoji-only"
-  },
-  {
-    "severity": "INFO",
-    "viewport": "desktop",
-    "state": "wizard-sandwich-recap",
-    "png": "web-desktop-wizard-sandwich-recap.png",
-    "observed": "recap reached; footer total \"10,00 €\""
-  },
-  {
-    "severity": "INFO",
-    "viewport": "desktop",
-    "state": "wizard-galette-recap",
-    "png": "web-desktop-wizard-galette-recap.png",
-    "observed": "recap reached; footer total \"9,00 €\""
-  },
-  {
-    "severity": "INFO",
-    "viewport": "desktop",
-    "state": "wizard-tacos-recap",
-    "png": "web-desktop-wizard-tacos-recap.png",
-    "observed": "recap reached; footer total \"9,40 €\""
-  },
-  {
-    "severity": "INFO",
-    "viewport": "desktop",
-    "state": "wizard-bols-recap",
-    "png": "web-desktop-wizard-bols-recap.png",
-    "observed": "recap reached; footer total \"8,90 €\""
-  },
-  {
-    "severity": "INFO",
-    "viewport": "desktop",
-    "state": "wizard-frites-recap",
-    "png": "web-desktop-wizard-frites-recap.png",
-    "observed": "recap reached; footer total \"2,50 €\""
-  },
-  {
-    "severity": "INFO",
-    "viewport": "desktop",
-    "state": "direct-coca",
-    "png": "web-desktop-detail-coca.png",
-    "observed": "coca wizard:false → direct \"Ajouter au panier\" (no qty stepper in detail; DirectAddView only for wizard-templated simple items)"
+    "observed": "Passer commande button not visible (cart may be empty)"
   }
 ]

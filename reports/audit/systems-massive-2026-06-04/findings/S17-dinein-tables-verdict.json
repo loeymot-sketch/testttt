@@ -1,0 +1,52 @@
+{
+  "micro_system": "S17-dinein-tables",
+  "verdicts": [
+    {
+      "id": "S17-01",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P1",
+      "reason": "VERIFIED. TableOrderRequest::withValidator (app/Http/Requests/TableOrderRequest.php:54-72) gates only DELIVERY/TAKEAWAY/blank order_type and never reads pos_dine_in_enabled (grep dine_in|DINING_TABLE|pos_dine in that file = 0 hits). POS path DOES gate it (PosOrderRequest.php:163-170, 'F-A5: Server-side dine-in feature gate', msg 'Dine-in is disabled for this branch.'); kiosk path DOES (OrderRequest.php:218-231). Public route confirmed: routes/api.php:1521 POST table/dining-order/ (apiKey only, unauthenticated, throttle:20,1) -> Table\\OrderController::store (OrderController.php:24) -> OrderService::tableOrderStore (OrderService.php:1336) which creates a FrontendOrder from validated() with no dine-in check. DINING_TABLE=20 confirmed app/Enums/OrderType.php:10. PREMISE VERIFIED LIVE: settings table (smartisan/laravel-settings, cols group/key/payload) has ZERO rows in group 'pos' (distinct groups list excludes 'pos'), so Settings::group('pos')->get('pos_dine_in_enabled', false) returns default false everywhere -> dine-in genuinely OFF. QR is the only ungated order-entry surface. P1 confirmed."
+    },
+    {
+      "id": "S17-02",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "VERIFIED. v1-hidden-modules.js lists 'tableOrders'(L20)+'diningTables'(L22), comment L7 'Restent accessibles par URL directe.' diningTableRoutes.js + adminTableOrderRoutes.js register routes with NO beforeEnter and NO dine_in guard (grep dine_in|beforeEnter|pos_dine both files = exit 1). Routes carry only permissionUrl (Spatie permission, NOT feature-flag), so any admin reaches working CRUD. PRECISION FLAW in recommended fix (kept for implementer): dineInEnabledFrom() is NOT a shared helper — grep -rn dineInEnabledFrom resources/js = 0 hits; it exists ONLY as a local function inside tests/js/posDineInFlag.spec.js:9. Fix must extract/define it, not 'reuse'. Defect stands. P2: admin-only, isolation intact, contradicts documented 'dine-in disabled' decision."
+    },
+    {
+      "id": "S17-03",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": false,
+      "severity_adjusted": "P3",
+      "reason": "CODE VERIFIED but ALREADY-HANDLED. DiningTable.php:27-30 adds BranchScope; FrontendDiningTable.php:9-22 has no boot/scope, $table='dining_tables'. show() binds unscoped FrontendDiningTable (Table\\DiningTableController.php:31); binding {frontendDiningTable:slug} (api.php:1515) resolves cross-branch; list uses scoped DiningTable (DiningTableService::list:55). Exemption EXPLICITLY documented BranchScopeCoverageSentinelTest.php:56 ('FrontendDiningTable' => 'BASELINE_V1_2026-05-18 — V1.0.2 heal C-P0-D'). Harmless single-branch V1. Finding's OWN recommended_correction says 'No V1 code change needed.' = documented exemption, not a V1 defect to fix. P2->P3, is_necessary:false for V1; only nit is annotating the sentinel with a hard V2 precondition."
+    },
+    {
+      "id": "S17-04",
+      "file_line_exists": true,
+      "is_real": false,
+      "is_necessary": false,
+      "severity_adjusted": "DROP",
+      "reason": "FALSE HEADLINE — auditor misread. Claim 'occupancy columns written by NO V1 flow' is DISPROVEN: DiningTableService WRITES them in occupy()(L218-220), release()(L282-284), transfer()(L378-386); floorplanState() READS them (L184). LIVE-WIRED: FloorplanController.php:36 ->occupy, :50 ->release, exposed routes/api.php:918-922 (floorplan state/transfer/assign/release, middleware permission:pos); OrderService.php:1295 calls tryReleaseTableAfterPosOrderPaid on POS order paid (DiningTableService.php:307). isFree()/isOccupied() (DiningTable.php:46-54) used by that live logic. The auditor's narrow true sub-claim (admin List/Show CRUD components omit an occupancy column) is cosmetic and misframed as 'never written.' DROP: core assertion factually wrong; residual is a non-issue, not deadcode."
+    },
+    {
+      "id": "S17-05",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": false,
+      "severity_adjusted": "P3",
+      "reason": "PARTLY REAL, PARTLY MISREAD; P2->P3. TRUE: search.order_type pinned to DINING_TABLE at init (TableOrderListComponent.vue:275) and in clear() (L349); with dine-in off list is permanently empty showing generic not-found.png + message.no_data_available (L136-145), no 'feature disabled' hint. MISREAD: orderTypeEnumArray (L251-256) is NOT a filter dropdown — it is a column-LABEL map used at L107-108 to render each row's badge; no v-model binds search.order_type to a <select> in the template. So 'dropdown offers Delivery/Takeaway/Kiosk' is unsubstantiated. Residual = generic empty state on a hidden admin page = minor UX, subsumed by S17-02's route guard. is_necessary:false standalone; fix as rider on S17-02. P3."
+    }
+  ],
+  "coverage_gaps": [
+    "HEADLINE GAP — POS floorplan dine-in feature ENTIRELY unaudited and itself an ungated dine-in surface. routes/api.php:918-922 expose POST floorplan/transfer, POST floorplan/{tableId}/assign, POST floorplan/{tableId}/release, GET floorplan/state, gated ONLY by middleware permission:pos (FloorplanController.php:16) with NO pos_dine_in_enabled check (grep dine_in in FloorplanController = 0). These mutate occupancy_status/occupied_order_id/occupied_at and sync orders.dining_table_id (DiningTableService::occupy). With dine-in OFF this is a larger server-authoritative dine-in gap than S17-01's QR path and is why S17-04 is false. S17 mandate is 'verify dine-in is gated'; auditor checked 3 order-entry surfaces and missed this whole table-management surface. Warrants its own P1/P2 finding.",
+    "OrderService.php:1295 tryReleaseTableAfterPosOrderPaid runs on every POS order paid regardless of dine-in flag — unaudited side-effect touching dining_tables occupancy on the normal POS cash flow.",
+    "FloorplanController assign/release/transfer write across DiningTable + Order via resolveOperatorContext (L69); multi-tenant correctness of orders.dining_table_id writes for the V2 two-branch case (the very risk S17-03 flags) was not examined.",
+    "Unauthenticated public reads GET table/dining-table/ index and table/item-category/ (api.php ~1508-1513) not exercised for cross-branch scope in V2; S17-03 covers model scope but not these index/category reads.",
+    "TableOrderListComponent search carries exceptSource: SourceEnum.POS (L276) which silently filters POS-sourced dining orders out of the admin table-orders list — unaudited interaction with the floorplan flow; could hide legitimately-created dine-in orders from this page."
+  ]
+}

@@ -1,0 +1,23 @@
+- generic [ref=f72e1]:
+  - generic [ref=f72e514]:
+    - generic [ref=f72e515]:
+      - generic [ref=f72e516]:
+        - generic [ref=f72e517]: 💶
+        - heading "Rendez-vous en caisse" [level=1] [ref=f72e518]
+        - paragraph [ref=f72e519]: Présentez votre numéro à un membre de l'équipe
+      - group "Rendez-vous en caisse" [ref=f72e520]:
+        - generic [ref=f72e522]:
+          - generic [ref=f72e523]:
+            - generic [ref=f72e524]: Numéro de commande
+            - strong [ref=f72e525]: "#A0011"
+          - generic [ref=f72e527]:
+            - generic [ref=f72e528]: Montant à régler
+            - generic [ref=f72e530]: 1,90 €
+        - paragraph [ref=f72e531]: "Réglez votre commande à la caisse : espèces, carte bleue ou titres-restaurant."
+    - generic [ref=f72e532]:
+      - paragraph [ref=f72e533]: Retour à l'accueil dans 45 s
+      - button "🖨️ Réimprimer le ticket" [ref=f72e534] [cursor=pointer]:
+        - generic [ref=f72e535]: 🖨️ Réimprimer le ticket
+      - button "J'ai compris" [ref=f72e536] [cursor=pointer]:
+        - generic [ref=f72e537]: J'ai compris
+  - status

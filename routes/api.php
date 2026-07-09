@@ -1,130 +1,128 @@
 <?php
 
-
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\AdministratorAddressController;
+use App\Http\Controllers\Admin\AdministratorController;
+use App\Http\Controllers\Admin\AnalyticController;
+use App\Http\Controllers\Admin\AnalyticSectionController;
+use App\Http\Controllers\Admin\AvailabilityController;
+use App\Http\Controllers\Admin\BranchController;
+use App\Http\Controllers\Admin\ChefAddressController;
+use App\Http\Controllers\Admin\ChefController;
+use App\Http\Controllers\Admin\CompanyController;
+use App\Http\Controllers\Admin\ComposerProfileController;
+use App\Http\Controllers\Admin\ComposerStepController;
+use App\Http\Controllers\Admin\CookiesController;
+use App\Http\Controllers\Admin\CountryCodeController;
+use App\Http\Controllers\Admin\CouponController;
+use App\Http\Controllers\Admin\CreditBalanceReportController;
+use App\Http\Controllers\Admin\CurrencyController;
+use App\Http\Controllers\Admin\CustomerAddressController;
+use App\Http\Controllers\Admin\CustomerController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\DefaultAccessController;
+use App\Http\Controllers\Admin\DeliveryBoyAddressController;
+use App\Http\Controllers\Admin\DeliveryBoyCashSessionController;
+use App\Http\Controllers\Admin\DeliveryBoyController;
+use App\Http\Controllers\Admin\DeliveryBoyOrderController;
+use App\Http\Controllers\Admin\DiningTableController;
+use App\Http\Controllers\Admin\EmployeeAddressController;
+use App\Http\Controllers\Admin\EmployeeController;
+use App\Http\Controllers\Admin\IngredientController;
+use App\Http\Controllers\Admin\ItemAddonController;
+use App\Http\Controllers\Admin\ItemAttributeController;
+use App\Http\Controllers\Admin\ItemCategoryController;
+use App\Http\Controllers\Admin\ItemController;
+use App\Http\Controllers\Admin\ItemExtraController;
+use App\Http\Controllers\Admin\ItemPhotoController;
+use App\Http\Controllers\Admin\ItemsReportController;
+use App\Http\Controllers\Admin\ItemVariationController;
+use App\Http\Controllers\Admin\KdsSyncController;
+use App\Http\Controllers\Admin\KioskMachineController;
+use App\Http\Controllers\Admin\KioskSetupController;
+use App\Http\Controllers\Admin\KitchenDisplaySystemController;
+use App\Http\Controllers\Admin\LanguageController;
+use App\Http\Controllers\Admin\LicenseController;
+use App\Http\Controllers\Admin\LoyaltySetupController;
+use App\Http\Controllers\Admin\MailController;
+use App\Http\Controllers\Admin\MenuProjectionController;
+use App\Http\Controllers\Admin\MenuSectionController;
+use App\Http\Controllers\Admin\MenuTemplateController;
+use App\Http\Controllers\Admin\MessageController;
+use App\Http\Controllers\Admin\MyOrderDetailsController;
+use App\Http\Controllers\Admin\NotificationAlertController;
+use App\Http\Controllers\Admin\NotificationController;
+use App\Http\Controllers\Admin\Observability\SyncOverviewController;
+use App\Http\Controllers\Admin\OfferController;
+use App\Http\Controllers\Admin\OfferItemController;
+use App\Http\Controllers\Admin\OnlineOrderController;
+use App\Http\Controllers\Admin\OrderHistoryController;
+use App\Http\Controllers\Admin\OrderSetupController;
+use App\Http\Controllers\Admin\OrderStatusScreenController;
 use App\Http\Controllers\Admin\OtpController;
-use App\Http\Controllers\Admin\PosController;
+use App\Http\Controllers\Admin\PageController;
+use App\Http\Controllers\Admin\PaymentGatewayController;
+use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\Pos\CashDrawerController;
 use App\Http\Controllers\Admin\Pos\CashDrawerSessionController;
 use App\Http\Controllers\Admin\Pos\CustomerNfcLookupController;
 use App\Http\Controllers\Admin\Pos\FloorplanController;
 use App\Http\Controllers\Admin\Pos\ParkedOrderController;
 use App\Http\Controllers\Admin\Pos\PosReceiptPrintController;
-use App\Http\Controllers\Admin\PrinterController;
-use App\Http\Controllers\Admin\TaxController;
-use App\Http\Controllers\Admin\ChefController;
-use App\Http\Controllers\Admin\ItemController;
-use App\Http\Controllers\Admin\ItemPhotoController;
-use App\Http\Controllers\Admin\MailController;
-use App\Http\Controllers\Admin\PageController;
-use App\Http\Controllers\Admin\RoleController;
-use App\Http\Controllers\Admin\SiteController;
-use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\Admin\OfferController;
-use App\Http\Controllers\Admin\ThemeController;
-use App\Http\Controllers\Auth\SignupController;
-use App\Http\Controllers\Admin\BranchController;
-use App\Http\Controllers\Admin\CouponController;
-use App\Http\Controllers\Admin\SliderController;
-use App\Http\Controllers\Admin\WaiterController;
-use App\Http\Controllers\Admin\CompanyController;
-use App\Http\Controllers\Admin\ComposerProfileController;
-use App\Http\Controllers\Admin\ComposerStepController;
-use App\Http\Controllers\Admin\CookiesController;
-use App\Http\Controllers\Admin\IngredientController;
-use App\Http\Controllers\Admin\LicenseController;
-use App\Http\Controllers\Admin\MessageController;
-use App\Http\Controllers\Admin\AnalyticController;
-use App\Http\Controllers\Admin\CurrencyController;
-use App\Http\Controllers\Admin\CustomerController;
-use App\Http\Controllers\Admin\EmployeeController;
-use App\Http\Controllers\Admin\LanguageController;
+use App\Http\Controllers\Admin\PosCategoryController;
+use App\Http\Controllers\Admin\PosController;
 use App\Http\Controllers\Admin\PosOrderController;
-use App\Http\Controllers\Admin\OrderHistoryController;
+use App\Http\Controllers\Admin\PrinterController;
+use App\Http\Controllers\Admin\PushNotificationController;
+use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\SalesReportController;
+use App\Http\Controllers\Admin\SimpleUserController;
+use App\Http\Controllers\Admin\SiteController;
+use App\Http\Controllers\Admin\SliderController;
+use App\Http\Controllers\Admin\SmsGatewayController;
+use App\Http\Controllers\Admin\SocialMediaController;
+use App\Http\Controllers\Admin\StockRuptureDashboardController;
+use App\Http\Controllers\Admin\SubscriberController;
+use App\Http\Controllers\Admin\TableOrderController as AdminTableOrderController;
+use App\Http\Controllers\Admin\TaxController;
+use App\Http\Controllers\Admin\ThemeController;
 use App\Http\Controllers\Admin\TimeSlotController;
 use App\Http\Controllers\Admin\TimezoneController;
-use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\ItemAddonController;
-use App\Http\Controllers\Admin\ItemExtraController;
-use App\Http\Controllers\Admin\OfferItemController;
-use App\Http\Controllers\Auth\DeactivateController;
-use App\Http\Controllers\Admin\OrderSetupController;
-use App\Http\Controllers\Admin\KioskSetupController;
-use App\Http\Controllers\Admin\LoyaltySetupController;
-use App\Http\Controllers\Admin\PermissionController;
-use App\Http\Controllers\Admin\SimpleUserController;
-use App\Http\Controllers\Admin\SmsGatewayController;
-use App\Http\Controllers\Admin\SubscriberController;
-use App\Http\Controllers\Auth\GuestSignupController;
-use App\Http\Controllers\Frontend\ProfileController;
-use App\Http\Controllers\Frontend\SettingController;
-use App\Http\Controllers\Admin\ChefAddressController;
-use App\Http\Controllers\Admin\CountryCodeController;
-use App\Http\Controllers\Admin\DeliveryBoyCashSessionController;
-use App\Http\Controllers\Admin\DeliveryBoyController;
-use App\Http\Controllers\Admin\DiningTableController;
-use App\Http\Controllers\Admin\AvailabilityController;
-use App\Http\Controllers\Admin\ItemsReportController;
-use App\Http\Controllers\Admin\MenuProjectionController;
-use App\Http\Controllers\Admin\MenuSectionController;
-use App\Http\Controllers\Admin\OnlineOrderController;
-use App\Http\Controllers\Admin\PosCategoryController;
-use App\Http\Controllers\Admin\SalesReportController;
-use App\Http\Controllers\Admin\SocialMediaController;
 use App\Http\Controllers\Admin\TransactionController;
-use App\Http\Controllers\Auth\RefreshTokenController;
-use App\Http\Controllers\Admin\ItemCategoryController;
-use App\Http\Controllers\Admin\KioskMachineController;
-use App\Http\Controllers\Admin\MenuTemplateController;
-use App\Http\Controllers\Admin\NotificationController;
-use App\Http\Controllers\Admin\AdministratorController;
-use App\Http\Controllers\Admin\DefaultAccessController;
-use App\Http\Controllers\Admin\ItemAttributeController;
-use App\Http\Controllers\Admin\ItemVariationController;
 use App\Http\Controllers\Admin\WaiterAddressController;
+use App\Http\Controllers\Admin\WaiterController;
+use App\Http\Controllers\Auth\DeactivateController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
-use App\Http\Controllers\Frontend\TokenStoreController;
-use App\Http\Controllers\Admin\MyOrderDetailsController;
-use App\Http\Controllers\Admin\PaymentGatewayController;
-use App\Http\Controllers\Admin\AnalyticSectionController;
-use App\Http\Controllers\Admin\CustomerAddressController;
-use App\Http\Controllers\Admin\EmployeeAddressController;
-use App\Http\Controllers\Admin\DeliveryBoyOrderController;
-use App\Http\Controllers\Admin\PushNotificationController;
+use App\Http\Controllers\Auth\GuestSignupController;
 use App\Http\Controllers\Auth\KioskMachineLoginController;
-use App\Http\Controllers\Admin\NotificationAlertController;
-use App\Http\Controllers\Admin\OrderStatusScreenController;
-use App\Http\Controllers\Admin\StockRuptureDashboardController;
-use App\Http\Controllers\Admin\DeliveryBoyAddressController;
-use App\Http\Controllers\Admin\CreditBalanceReportController;
-use App\Http\Controllers\Admin\AdministratorAddressController;
-use App\Http\Controllers\Admin\KitchenDisplaySystemController;
-use App\Http\Controllers\Admin\KdsSyncController;
-use App\Http\Controllers\Admin\Observability\SyncOverviewController;
-use App\Http\Controllers\Table\OrderController as TableOrderController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\RefreshTokenController;
+use App\Http\Controllers\Auth\SignupController;
+use App\Http\Controllers\Frontend\AddressController as FrontendAddressController;
+use App\Http\Controllers\Frontend\BranchController as FrontendBranchController;
+use App\Http\Controllers\Frontend\CookiesController as FrontendCookiesController;
+use App\Http\Controllers\Frontend\CountryCodeController as FrontendCountryCodeController;
+use App\Http\Controllers\Frontend\CouponController as FrontendCouponController;
+use App\Http\Controllers\Frontend\DeliveryBoyOrderController as FrontendDeliveryBoyOrderController;
+use App\Http\Controllers\Frontend\ItemCategoryController as FrontendItemCategoryController;
 use App\Http\Controllers\Frontend\ItemController as FrontendItemController;
-use App\Http\Controllers\Frontend\PageController as FrontendPageController;
+use App\Http\Controllers\Frontend\LanguageController as FrontendLanguageController;
+use App\Http\Controllers\Frontend\MessageController as FrontendMessageController;
 use App\Http\Controllers\Frontend\OfferController as FrontendOfferController;
 use App\Http\Controllers\Frontend\OrderController as FrontendOrderController;
-use App\Http\Controllers\Frontend\BranchController as FrontendBranchController;
-use App\Http\Controllers\Frontend\CouponController as FrontendCouponController;
+use App\Http\Controllers\Frontend\PageController as FrontendPageController;
+use App\Http\Controllers\Frontend\ProfileController;
+use App\Http\Controllers\Frontend\SettingController;
 use App\Http\Controllers\Frontend\SliderController as FrontendSliderController;
-use App\Http\Controllers\Admin\TableOrderController as AdminTableOrderController;
-use App\Http\Controllers\Frontend\AddressController as FrontendAddressController;
-use App\Http\Controllers\Frontend\CookiesController as FrontendCookiesController;
-use App\Http\Controllers\Frontend\MessageController as FrontendMessageController;
-use App\Http\Controllers\Frontend\LanguageController as FrontendLanguageController;
-use App\Http\Controllers\Frontend\TimeSlotController as FrontendTimeSlotController;
-use App\Http\Controllers\Table\DiningTableController as TableDiningTableController;
-use App\Http\Controllers\Table\ItemCategoryController as TableItemCategoryController;
 use App\Http\Controllers\Frontend\SubscriberController as FrontendSubscriberController;
-use App\Http\Controllers\Frontend\CountryCodeController as FrontendCountryCodeController;
-use App\Http\Controllers\Frontend\ItemCategoryController as FrontendItemCategoryController;
-use App\Http\Controllers\Frontend\DeliveryBoyOrderController as FrontendDeliveryBoyOrderController;
+use App\Http\Controllers\Frontend\TimeSlotController as FrontendTimeSlotController;
+use App\Http\Controllers\Frontend\TokenStoreController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\HealthzController;
-
+use App\Http\Controllers\Table\DiningTableController as TableDiningTableController;
+use App\Http\Controllers\Table\ItemCategoryController as TableItemCategoryController;
+use App\Http\Controllers\Table\OrderController as TableOrderController;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -218,41 +216,41 @@ Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name
         if (Auth::check()) {
             $user = Auth::user();
             $role = $user->roles[0] ?? null;
-            if (!$role) {
+            if (! $role) {
                 return response()->json(['status' => true]);
             }
 
-            $menuService       = app(\App\Services\MenuService::class);
+            $menuService = app(\App\Services\MenuService::class);
             $permissionService = app(\App\Services\PermissionService::class);
 
-            $permission        = \App\Http\Resources\PermissionResource::collection($permissionService->permission($role));
-            $menus             = \App\Http\Resources\MenuResource::collection(collect($menuService->menu($role)));
+            $permission = \App\Http\Resources\PermissionResource::collection($permissionService->permission($role));
+            $menus = \App\Http\Resources\MenuResource::collection(collect($menuService->menu($role)));
             $defaultPermission = \App\Libraries\AppLibrary::defaultPermission($permission);
-            $defaultMenu       = (object) \App\Libraries\AppLibrary::defaultMenu($menuService->menu($role), $defaultPermission);
+            $defaultMenu = (object) \App\Libraries\AppLibrary::defaultMenu($menuService->menu($role), $defaultPermission);
 
             // [BUG-AUTH FIX] Apply landing_url override — same logic as LoginController lines 82-85
             // Without this, POS Operator loses their correct redirect URL after a page refresh
-            if (!empty($role->landing_url)) {
+            if (! empty($role->landing_url)) {
                 $defaultPermission->url = $role->landing_url;
             }
 
             return response()->json([
-                'status'            => true,
-                'token'             => null,
-                'branch_id'         => (int) $user->branch_id,
-                'user'              => new \App\Http\Resources\UserResource($user),
-                'menu'              => $menus,
-                'permission'        => $permission,
+                'status' => true,
+                'token' => null,
+                'branch_id' => (int) $user->branch_id,
+                'user' => new \App\Http\Resources\UserResource($user),
+                'menu' => $menus,
+                'permission' => $permission,
                 'defaultPermission' => $defaultPermission,
-                'defaultMenu'       => $defaultMenu,
+                'defaultMenu' => $defaultMenu,
             ]);
         }
+
         return response()->json(['status' => false]);
     });
 });
 
-
-/* all routes must be singular word*/
+/* all routes must be singular word */
 Route::prefix('profile')->name('profile.')->middleware(['installed', 'apiKey', 'auth:sanctum', 'localization'])->group(function () {
     Route::get('/', [ProfileController::class, 'profile']);
     Route::match(['put', 'patch'], '/', [ProfileController::class, 'update']);
@@ -737,7 +735,6 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::post('/import/file', [ItemController::class, 'import']);
         Route::get('/details/{item}', [ItemController::class, 'itemDetails']);
 
-
         Route::get('/variation/{item}', [ItemVariationController::class, 'index']);
         Route::get('/variation/group-by-attribute/{item}', [ItemVariationController::class, 'listGroupByAttribute']);
         Route::post('/variation/{item}', [ItemVariationController::class, 'store']);
@@ -819,27 +816,32 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
                 ->where('payment_status', \App\Enums\PaymentStatus::PENDING_COUNTER)
                 // [ENCAISSEMENT-ROBUSTE 2026-07-01] Une commande ANNULÉE ne doit jamais rester
                 // dans la file d'encaissement (sinon « fantôme » qui 422 à l'encaissement).
-                ->where('status', '!=', \App\Enums\OrderStatus::CANCELED)
+                // [SELF-AUDIT R3 P2 2026-07-05 — fantôme incaissable] La file d'encaissement excluait
+                // seulement CANCELED, mais confirmCounterPayment REFUSE aussi REJECTED/RETURNED
+                // (PaymentService:325). Un remboursement pré-Z (RETURNED) d'une commande Plan-B non
+                // encaissée laissait payment_status=PENDING_COUNTER → la commande restait à VIE dans la
+                // file /admin/encaissement, non encaissable. On aligne sur le set terminal du sceau.
+                ->whereNotIn('status', [\App\Enums\OrderStatus::CANCELED, \App\Enums\OrderStatus::REJECTED, \App\Enums\OrderStatus::RETURNED])
                 ->where(function ($q) {
                     $q->where(function ($k) {
                         $k->where('source_surface', 'kiosk')
-                          ->whereIn('order_type', [\App\Enums\OrderType::KIOSK, \App\Enums\OrderType::TAKEAWAY]);
+                            ->whereIn('order_type', [\App\Enums\OrderType::KIOSK, \App\Enums\OrderType::TAKEAWAY]);
                     })->orWhere(function ($p) {
                         $p->where('source_surface', 'pos')
-                          ->where('pos_payment_method', \App\Enums\PosPaymentMethod::COUNTER_DEFERRED);
+                            ->where('pos_payment_method', \App\Enums\PosPaymentMethod::COUNTER_DEFERRED);
                     })->orWhere(function ($tel) {
                         // [C4-CAISSE-TELEPHONE 2026-07-07] Commande téléphone caisse (paiement différé)
                         // → source_surface='phone' + COUNTER_DEFERRED. Sans cette clause, la commande
                         // téléphone serait INVISIBLE en caisse donc INENCAISSABLE (même famille de bug
                         // que le filet anti-NULL ci-dessous). Miroir de la garde assertCounterDeferredOrder.
                         $tel->where('source_surface', 'phone')
-                          ->where('pos_payment_method', \App\Enums\PosPaymentMethod::COUNTER_DEFERRED);
+                            ->where('pos_payment_method', \App\Enums\PosPaymentMethod::COUNTER_DEFERRED);
                     })->orWhere(function ($n) {
                         // [ENCAISSEMENT-ROBUSTE 2026-07-01] Filet anti-NULL : une commande borne
                         // PENDING_COUNTER dont le tag source_surface manque (donnée héritée) resterait
                         // INVISIBLE en caisse donc INENCAISSABLE. On la rattrape par le type kiosk/emporter.
                         $n->whereNull('source_surface')
-                          ->whereIn('order_type', [\App\Enums\OrderType::KIOSK, \App\Enums\OrderType::TAKEAWAY]);
+                            ->whereIn('order_type', [\App\Enums\OrderType::KIOSK, \App\Enums\OrderType::TAKEAWAY]);
                     });
                 })
                 ->orderBy('created_at');
@@ -931,9 +933,13 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
                 return response(['status' => false, 'message' => $exception->getMessage()], 422);
             }
         })->middleware(['throttle:pos-order-update', 'idempotency'])->name('collect-kiosk-cash');
-        Route::post('/orders/{order}/print-receipt', [PosReceiptPrintController::class, 'increment'])->middleware('idempotency')->name('orders.print-receipt');
+        // [SELF-AUDIT R3 P3 2026-07-05 — dérive d'autorisation] print-receipt écrit une trace NF525
+        // (audit) + incrémente le compteur d'impression, print-kitchen déclenche une impression : ces
+        // routes n'avaient AUCUNE garde permission (seul `idempotency` + groupe admin) → un Chef sans
+        // `pos`/`pos-orders` pouvait les appeler. On les aligne sur les opérations POS sœurs.
+        Route::post('/orders/{order}/print-receipt', [PosReceiptPrintController::class, 'increment'])->middleware(['permission:pos-orders|pos', 'idempotency'])->name('orders.print-receipt');
         // [PRINT-SAGA 2026-06-24] Kitchen production ticket → best-effort ESC/POS (no fiscal audit).
-        Route::post('/orders/{order}/print-kitchen', [PosReceiptPrintController::class, 'kitchen'])->middleware('idempotency')->name('orders.print-kitchen');
+        Route::post('/orders/{order}/print-kitchen', [PosReceiptPrintController::class, 'kitchen'])->middleware(['permission:pos-orders|pos', 'idempotency'])->name('orders.print-kitchen');
         // [CAISSE-BRIDGE 2026-06-28] Octets ESC/POS rendus serveur (base64) → le frontend les POSTe
         // au pont local caisse pour une impression SILENCIEUSE (le cloud Linux ne joint pas l'USB). Lecture seule.
         Route::get('/orders/{order}/escpos', [\App\Http\Controllers\Admin\Pos\PosTicketBytesController::class, 'show'])->name('orders.escpos-bytes');
@@ -1258,10 +1264,10 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     // a permanent accounting artefact).
     Route::prefix('fiscal')->name('fiscal.')->group(function () {
         Route::prefix('z-report')->name('zReport.')->group(function () {
-            Route::get('/',          [\App\Http\Controllers\Admin\Fiscal\ZReportController::class, 'index']);
-            Route::post('/open',     [\App\Http\Controllers\Admin\Fiscal\ZReportController::class, 'open'])
+            Route::get('/', [\App\Http\Controllers\Admin\Fiscal\ZReportController::class, 'index']);
+            Route::post('/open', [\App\Http\Controllers\Admin\Fiscal\ZReportController::class, 'open'])
                 ->middleware('throttle:10,1');
-            Route::post('/close',    [\App\Http\Controllers\Admin\Fiscal\ZReportController::class, 'close'])
+            Route::post('/close', [\App\Http\Controllers\Admin\Fiscal\ZReportController::class, 'close'])
                 ->middleware('throttle:10,1');
             Route::get('/{zReport}', [\App\Http\Controllers\Admin\Fiscal\ZReportController::class, 'show']);
             Route::get('/{zReport}/pdf', [\App\Http\Controllers\Admin\Fiscal\ZReportController::class, 'pdf']);

@@ -1,0 +1,104 @@
+{
+  "wave": "B",
+  "surface": "CUISINE — écran /kds + ticket cuisine",
+  "range": "ae621546e..c65aa6582 (HEAD=c65aa6582, base feature ae621546e note+boissons incluse dans l'attaque)",
+  "date": "2026-07-06",
+  "method": "e2e réel : 5 commandes POS créées via API (quote signé + defer_to_counter), bytes ESC/POS cuisine tirés de GET /api/admin/pos/orders/{id}/escpos?ticket=kitchen (largeur réelle Printer=32) et décodés octet par octet ; écran KDS capturé en 1920×1080 ET 1080×1920 (Playwright isolé, captures LUES + mesures DOM scrollHeight/clientHeight) ; gates re-exécutés.",
+  "orders_created": {
+    "5528": "A1 note longue accents/tirets/œ + Oignons cuits (S,T,O̲)",
+    "5529": "A2 écho compo pur, note vide attendue",
+    "5530": "A3 menu + note BOISSON: Hawaï 33cl + [bien cuit svp] (miroir #5506 réel)",
+    "5531": "B1 boissons standalone : Coca-Cola x2, Hawaï 33cl, Oasis Tropical, Tarte Daim",
+    "5532": "C1 crudités S,T,Oignon(cru),Oignons cuits + Oignons frits PAYANT"
+  },
+  "findings": [
+    {
+      "id": "B-1",
+      "severity": "P2",
+      "title": "FIX C « boisson en NOM COMPLET » ne couvre que 7/15 boissons actives — Hawaï 33cl RÉGRESSÉE par le range lui-même",
+      "detail": "La détection boisson est un match regex sur le NOM (JS kdsCustomization.js:92 categorize() /coca|fanta|sprite|\\beau\\b|coke|water|\\bjus\\b|\\bthé?\\b|menthe|caf[eé]/ ; jumeau PHP KitchenTicketSymbolicFormatter.php:277-296 isDrinkItem). items.kds_category n'est produit par AUCUN backend (grep: seul kdsCustomization.js le lit) → le fallback nom est le SEUL chemin. 8 des 15 boissons actives DB (cat 10) ne matchent pas : Oasis Tropical 33cl (#56), Orangina 33cl (#57), Capri-Sun (#59), Tropico 33cl (#120), Ice Tea Pêche 33cl (#121), Fuze Tea 33cl (#123), Hawaï 33cl (#124), Perrier 33cl (#125) → elles sortent en code cryptique 3 lettres, exactement le défaut que FIX C prétend corriger. AGGRAVANT : b4969bb99 (DrinksUpdate20260705Seeder, DANS le range) renomme « Fanta Hawai 33cl » → « Hawaï 33cl », la sortant du match /fanta/ → régression interne au range. Le test de parité tests/Feature/Hardware/KitchenTicketDrinkVisibilityTest.php:252 épingle encore l'ANCIEN nom ('Fanta Hawai 33cl' => true) → vert trompeur.",
+      "evidence": "e2e commande 5531 : ticket cuisine décodé (bytes réels, w=32) = « 2 x Coca-Cola / 33cl » (OK) MAIS « 1 x HAW » et « 1 x OAS » ; écran KDS carte A0010 (capture kds-landscape-drinks.png LUE) = « 2× Coca-Cola 33cl » / « 1× HAW » / « 1× OAS ». Parité écran↔ticket conservée (bug commun aux 2 jumeaux, donc invisible aux tests de parité par construction).",
+      "files": [
+        "resources/js/helpers/kdsCustomization.js:92",
+        "app/Services/Hardware/KitchenTicketSymbolicFormatter.php:295",
+        "tests/Feature/Hardware/KitchenTicketDrinkVisibilityTest.php:252",
+        "database/seeders/DrinksUpdate20260705Seeder.php"
+      ],
+      "repro": "POS: ajouter « Hawaï 33cl » ou « Oasis Tropical 33cl » seul → KDS affiche HAW/OAS ; GET /orders/{id}/escpos?ticket=kitchen → « 1 x HAW ».",
+      "suggested_direction": "source de vérité = catégorie DB (item_category_id=10 → kds_category='drink' exposé par les resources KDS + résolu par item au rendu ticket), OU élargir la table de match aux 15 noms réels — dans les DEUX jumeaux + retester avec les noms DB courants."
+    },
+    {
+      "id": "B-2",
+      "severity": "P2",
+      "title": "Fixture parité réelle (parity_php.json, 165 rows) ne couvre AUCUN des nouveaux shapes du range : 0 O̲, 0 note/instruction, détection boisson non exercée",
+      "detail": "kitchenParityRealData.spec.js (3/3 vert) ne compare que mainLine + supplements + MENU. Audit du fixture : 165 rows, 0 row contenant « cuit » (extra Oignons cuits), 0 row avec U+0332 dans la sortie PHP, 0 champ instruction/note (cleanInstruction↔sanitizeKdsInstruction n'ont AUCUN test de parité data réelle), 1 seul row addon role=drink, et le choix tête-de-bloc boisson (isDrinkItem↔categorize) n'est pas comparé (le spec appelle symbolicMainLine, pas le rendu réel). Les 3 nouveautés du range (note, boisson, O̲) reposent donc uniquement sur des tests unitaires jumeaux écrits à la main — dont un déjà périmé (B-1, nom Hawaï).",
+      "evidence": "python audit du fixture (rows=165, cuit=0, U+0332=0, instruction=0, drink-role addons=1) + lecture tests/js/kitchenParityRealData.spec.js:1-60.",
+      "files": [
+        "tests/fixtures/parity_php.json",
+        "tests/js/kitchenParityRealData.spec.js"
+      ],
+      "suggested_direction": "régénérer le corpus depuis la DB (les commandes 5528-5532 + 5506 portent maintenant O̲/notes/boissons réelles) et étendre le spec aux champs note + drink-head + drink-lines."
+    },
+    {
+      "id": "B-3",
+      "severity": "P3",
+      "title": "Note multi-lignes APLATIE en une seule ligne sur la carte KDS (le ticket la sépare en lignes ** distinctes)",
+      "detail": "sanitizeKdsInstruction retourne les lignes conservées jointes par \\n ; KdsOrderLine.vue rend {{ line.label }} dans un <span> sans white-space:pre-line (.kds-line__instruction n'a pas de règle white-space) → « BOISSON: Hawaï 33cl\\n[bien cuit svp] » s'affiche « BOISSON: Hawaï 33cl [bien cuit svp] » d'un bloc. Le ticket imprime lui 2 lignes « ** » séparées. Divergence de lisibilité écran↔ticket ; 2 notes distinctes se lisent comme une seule.",
+      "evidence": "carte A0009 (captures kds-landscape.png / kds-landscape-drinks.png LUES + innerText DOM) vs ticket 5530 décodé (« ** BOISSON: Hawaï 33cl » puis « ** [bien cuit svp] »).",
+      "files": [
+        "resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue:85",
+        "resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue:281-290"
+      ],
+      "suggested_direction": "white-space:pre-line sur .kds-line__instruction > span, ou émettre une ligne instruction par ligne de note."
+    },
+    {
+      "id": "B-4",
+      "severity": "P3",
+      "title": "Note libre 100% MAJUSCULES non-bracketée SILENCIEUSEMENT SUPPRIMÉE (écran + ticket) — latent food-safety via Uber",
+      "detail": "La règle anti-écho produit (ligne toute en majuscules = nom produit du wizard → drop) avale AUSSI une vraie note client en capitales : « SANS OIGNONS SVP », « NO ONIONS », « BIEN CUIT » → 0 trace cuisine (les 2 jumeaux, régression impossible à voir en parité). Le pos-wizard bracket ses notes ([...]) donc le chemin caisse est protégé, MAIS UberOrderMapper.php:78 écrit special_instructions BRUT (non bracketé) → une note Uber en capitales (fréquent) sera perdue quand Uber passera en prod. Règle pré-existante (2026-06-30), rendue plus sensible par FIX A qui affiche désormais les notes à l'écran.",
+      "evidence": "node regex check : /^[A-ZÀ-Ÿ][A-ZÀ-Ÿ '\\-]*$/.test('SANS OIGNONS SVP')===true (dropped) ; kdsCustomization.js:223 + KitchenTicketSymbolicFormatter.php:353 ; UberOrderMapper.php:78 (instruction = special_instructions brut).",
+      "files": [
+        "resources/js/helpers/kdsCustomization.js:223",
+        "app/Services/Hardware/KitchenTicketSymbolicFormatter.php:353",
+        "app/Services/Uber/UberOrderMapper.php:78"
+      ],
+      "suggested_direction": "au branchement Uber : bracketer les special_instructions côté mapper ([...] les fait survivre), ou restreindre le drop MAJUSCULES aux lignes ≈ égales au nom produit."
+    },
+    {
+      "id": "B-5",
+      "severity": "P4",
+      "title": "Pastille « +N en attente » recouvre partiellement le bandeau admin (SYNC · ADMIN) en haut à droite",
+      "detail": "Position absolute top-right : en 1920×1080 et surtout 1080×1920 la pastille orange chevauche le texte du bandeau info admin (élément admin-only, pas critique cuisine). Maths de la pastille VÉRIFIÉES justes (5 actives → « +2 » ; 4 actives dont 1 créée par une vague parallèle → « +1 »).",
+      "evidence": "captures kds-landscape.png / kds-portrait.png LUES ; comptage DB des actives du jour au moment de chaque capture.",
+      "files": [
+        "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue"
+      ]
+    }
+  ],
+  "attacks_refuted": [
+    "Note longue accents/spéciaux (œ, —, &, !!!, ') : wrap propre carte (2-4 lignes selon orientation, innerOverflow=false partout, aucune troncature) ET ticket (4 lignes ≤32 col, Œ→oe, —→-, é conservé CP858) — PAS de débordement.",
+    "Écho compo pur (5529) : 0 ligne note à l'écran, 0 ligne ** au ticket — strip OK ; la ligne « Pain - Salade… Sauce : Algérienne » de 5528/5530 est bien droppée des 2 côtés.",
+    "Note « BOISSON: Hawaï 33cl » : PRÉSERVÉE écran (carte A0009) + ticket (« ** BOISSON: Hawaï 33cl ») — le canal POS boisson-menu survit au sanitize.",
+    "O̲ : écran STO̲/STOO̲ rendu avec soulignement visible (captures lues) ; ticket bytes contiennent EXACTEMENT \\x1B\\x2D\\x01 O \\x1B\\x2D\\x00 (1 occurrence, sur le bon O) ; ordre canonique S,T,O(cru),O̲(cuits) respecté avec cru+cuits ensemble ; « Oignons frits » payant RESTE en supplément (⭐ jaune écran, « * Oignons frits » gras ticket) et ne pollue pas le slot crudités.",
+    "Largeur 32 col : MAX_PHYS_WIDTH=32 sur les 5 tickets décodés (tête double-largeur wrappée à 16, prix absents cuisine, U+0332 compté 0 colonne).",
+    "Layout 3-cartes (056581cf9) : cartes pleine hauteur 840px (paysage) / 1680px (portrait), 0 débordement horizontal body, innerOverflow=false toutes cartes, codes 3 lettres, fond jaune carte = design voulu kds-card--has-supplements (KdsOrderCard.vue:333-342, PAS un détournement du signal allergène), classes note/exclusion/allergène correctes (note allergie arachide rendue orange gras).",
+    "Pastille +N : off-by-one apparent RÉFUTÉ — la 4e commande (5533/A0012, 20:20:46) venait d'une vague parallèle ; le compte est juste.",
+    "Dessert piège : « Tarte Daim » (réel DB) → TAR (code produit standard, jamais classé boisson) ; garde dessert-avant-drink saine (Gâteau/Tiramisu → dessert).",
+    "Addon role=drink réel (borne #5171 « Boisson Seule ») : ticket décodé « 1 Boisson Seule » en gras — chemin addon vivant.",
+    "Boisson qté>1 : « 2 x Coca-Cola 33cl » ticket / « 2× Coca-Cola 33cl » écran."
+  ],
+  "gates": {
+    "phpunit_ticket_symbolic_kitchen": "100 passed / 0 fail",
+    "vitest_kds_kitchen": "29 fichiers, 221 passed / 0 fail",
+    "vitest_parity_real_data": "3/3 passed",
+    "fiscal_verify_chain_all": "CHAIN OK ×4 branches (1,7,8,9)",
+    "console_errors_kds": "0 pendant les captures"
+  },
+  "captures": [
+    "reports/test-e2e/owner-8-problemes/w6-adv/B/kds-landscape.png",
+    "reports/test-e2e/owner-8-problemes/w6-adv/B/kds-portrait.png",
+    "reports/test-e2e/owner-8-problemes/w6-adv/B/kds-landscape-drinks.png"
+  ],
+  "side_effects_disclosed": "Pour rendre les cartes attaquables, 13 commandes de test périmées du jour (5493-5507, résidus lock-impl) + mes 5 commandes ont été passées PREPARED via l'API KDS réelle (change-status, flux chef normal). Aucune donnée modifiée en direct DB. Les 5 commandes adversariales restent en PENDING_COUNTER (file encaissement).",
+  "verdict": "BLOCKED"
+}

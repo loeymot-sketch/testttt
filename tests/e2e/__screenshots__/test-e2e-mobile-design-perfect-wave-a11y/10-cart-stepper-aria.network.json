@@ -1,0 +1,65 @@
+[
+  {
+    "url": "http://127.0.0.1:8766/api/profile",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1783528196291
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/frontend/loyalty/history?page=1&per_page=20",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1783528196291
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/frontend/order",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1783528196291
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/profile",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1783528196291
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/frontend/order",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1783528197179
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/frontend/loyalty/history?page=1&per_page=20",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1783528197179
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/profile",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1783528197179
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/profile",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1783528197179
+  },
+  {
+    "url": "http://127.0.0.1:8087/.image-slots.state.json",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783528197546
+  }
+]

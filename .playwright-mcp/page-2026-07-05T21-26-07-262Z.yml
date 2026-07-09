@@ -1,0 +1,45 @@
+- generic [ref=e1]:
+  - paragraph [ref=e4]: Démarrage en cours…
+  - generic [ref=e6] [cursor=pointer]:
+    - button "Paramètres d'accessibilité" [ref=e8]:
+      - img [ref=e9]
+    - generic [ref=e18]: Nos incontournables
+    - generic [ref=e22]:
+      - img "Le Terminator" [ref=e24]
+      - img "Double Cheese" [ref=e26]
+      - img "Le Cayenne" [ref=e28]
+      - img "Grill Burger" [ref=e30]
+      - img "Le Suprême" [ref=e32]
+      - img "Menu Maxi" [ref=e34]
+      - img "Bol de riz" [ref=e36]
+      - img "Bol de frites" [ref=e38]
+      - generic:
+        - generic [ref=e41]: Le Terminator
+        - generic [ref=e44]: Double Cheese
+        - generic [ref=e47]: Le Cayenne
+        - generic [ref=e50]: Grill Burger
+        - generic [ref=e53]: Le Suprême
+        - generic [ref=e56]: Menu Maxi
+        - generic [ref=e59]: Bol de riz
+        - generic [ref=e62]: Bol de frites
+      - generic [ref=e72]:
+        - generic [ref=e73]: 100%
+        - generic [ref=e74]: Halal
+    - generic [ref=e75]:
+      - heading "Bienvenue ! Le Cayenne" [level=2] [ref=e76]:
+        - generic [ref=e77]:
+          - text: Bienvenue !
+          - generic [ref=e78]: Le Cayenne
+      - paragraph [ref=e80]: Commandez en quelques touches
+    - generic [ref=e81]:
+      - generic [ref=e82]: Ultra gourmand
+      - generic [ref=e84]: Frais du jour
+      - generic [ref=e86]: Préparé minute
+    - group "Choisir le mode de commande" [ref=e88]:
+      - button "Touchez l'écran pour commander" [ref=e89]:
+        - img [ref=e94]
+        - generic [ref=e96]:
+          - generic [ref=e97]: Touchez l'écran
+          - generic [ref=e98]: pour commander
+    - paragraph [ref=e99]: Choisissez une option pour commencer
+  - status

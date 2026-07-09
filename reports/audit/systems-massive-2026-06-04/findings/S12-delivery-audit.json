@@ -1,0 +1,136 @@
+{
+  "micro_system": "S12-delivery",
+  "files_examined": [
+    "resources/js/components/admin/deliveryBoys/DeliveryBoyListComponent.vue",
+    "resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionFormComponent.vue",
+    "resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionListComponent.vue",
+    "resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionShowComponent.vue",
+    "resources/js/router/modules/deliveryBoyCashSessionRoutes.js",
+    "app/Http/Controllers/Admin/DeliveryBoyController.php",
+    "app/Http/Controllers/Admin/DeliveryBoyCashSessionController.php",
+    "app/Http/Controllers/Frontend/DeliveryBoyOrderController.php",
+    "app/Services/DeliveryBoyService.php",
+    "app/Services/Delivery/DeliveryBoyCashSessionService.php",
+    "app/Services/OrderService.php",
+    "app/Services/Fiscal/ZReportCashEnrichmentService.php",
+    "app/Models/DeliveryBoyCashMovement.php",
+    "app/Models/DeliveryBoyCashSession.php",
+    "app/Enums/Role.php",
+    "routes/api.php"
+  ],
+  "findings": [
+    {
+      "id": "S12-01",
+      "severity": "P2",
+      "category": "logic",
+      "title": "Tautological role guard !in_array(DELIVERY_BOY, blockRoles) is always true — dead else-branches across 5 methods",
+      "file_line": "app/Services/DeliveryBoyService.php:28,103,134,152,202,224",
+      "evidence": "blockRoles=[EnumRole::ADMIN] (line 28). Role.php: ADMIN=1, DELIVERY_BOY=3. Guards do `if (!in_array(EnumRole::DELIVERY_BOY, $this->blockRoles))` in update():103, show():134, destroy():152, changePassword():202, changeImage():224. in_array(3,[1]) is always false, so the negation is always true — the guard NEVER blocks and every `else { throw permission_denied }` is unreachable dead code. The real role check is assertTargetRole() (line 183) which is already called separately.",
+      "why_it_matters": "Exactly the kind of 'flou / unnecessary thing' the owner flagged: a guard that LOOKS like an authorization control but is a compile-time constant comparing a constant to a constant array. It checks the literal DELIVERY_BOY constant (never the route-bound user's actual role), so it gives a false sense of protection while doing nothing; the dead else-branches mislead any future maintainer into thinking permission_denied is reachable. Pure noise in 5 methods of a money-adjacent service.",
+      "reproduction": "Read app/Services/DeliveryBoyService.php line 28 then any guard (e.g. 152); cross-check app/Enums/Role.php lines 7 & 9. in_array(3,[1])===false for all inputs.",
+      "recommended_correction": "Delete the `if (!in_array(EnumRole::DELIVERY_BOY,$this->blockRoles))` wrappers and their unreachable else-branches; rely on assertTargetRole() (already the genuine guard). If a future need is to block self-mutation of Admins, compare the TARGET user's role, not the DELIVERY_BOY constant.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S12-02",
+      "severity": "P2",
+      "category": "nf525",
+      "title": "COD doorstep cash collected with NO open driver session is never mirrored into any cash session — reconciliation-completeness gap",
+      "file_line": "app/Services/OrderService.php:1919-1986",
+      "evidence": "On every COD DELIVERED the escrow audit row `delivery.cash_collected_escrow` is written unconditionally (line 1919-1935). The mirror into a DeliveryBoyCashSession movement (recordMovement TYPE_ORDER_COLLECT) is wrapped in `if ($openSession)` (1961) using findOpenSessionForDeliveryBoy(), best-effort non-strict (false at 1969). Nothing in deliveryBoyOrderChangeStatus() / the state machine requires the driver to have an OPEN session before OFD/DELIVERED. So a driver with no open shift collects real cash, an escrow audit row exists, but the cash enters NO session, hits NO reconciliation, and is invisible to ZReportCashEnrichmentService session aggregation.",
+      "why_it_matters": "Cash trail completeness is the whole point of the livreur cash-session feature (NF525 mirror of the POS drawer). If the open-session step is optional and ungated, the reconciliation surface only covers drivers who remembered to open a shift — the manager's variance figure is silently partial and real money can move with no session-level accountability. The escrow audit row alone is not a reconciliation; it is not summed against opening/closing.",
+      "reproduction": "Code trace: deliveryBoyOrderChangeStatus has no open-session precondition; OrderService.php:1955 gates the movement on a found open session, 1961 skips silently otherwise. A COD DELIVERED by a driver with no open DeliveryBoyCashSession writes the escrow row (1919) but no delivery_boy_cash_movements row.",
+      "recommended_correction": "Either (a) require an open driver cash session before allowing OFD→DELIVERED on COD orders (strict mode 422 LIVREUR_SHIFT_NOT_OPEN, which recordMovement already supports), or (b) auto-open a session / route the orphan collection into a dedicated unassigned-cash bucket surfaced in the Z report so no collected COD cash is invisible to reconciliation.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S12-03",
+      "severity": "P2",
+      "category": "logic",
+      "title": "destroy() soft-deletes a livreur without checking open cash session or active assigned orders",
+      "file_line": "app/Services/DeliveryBoyService.php:149-169",
+      "evidence": "destroy() only deletes addresses then soft-deletes the User (User uses SoftDeletes, User.php:30). It does NOT check for a DeliveryBoyCashSession with status=OPEN for that driver, nor for orders with delivery_boy_id=this user still in OUT_FOR_DELIVERY / not yet DELIVERED. openSession() at DeliveryBoyCashSessionService.php:136 does preserve SoftDeletingScope so a new session can't be opened on a deleted livreur, but an ALREADY-open session and in-flight orders are left dangling.",
+      "why_it_matters": "Deleting a driver mid-shift orphans an OPEN cash session (money still tracked against a now-soft-deleted user that the admin can no longer load/close/reconcile via the role-scoped queries) and strands assigned active deliveries with no owner. That breaks end-of-day reconciliation and order operations — the kind of state corruption the locked-session NF525 design exists to prevent.",
+      "reproduction": "Read destroy() 149-169 — no query against delivery_boy_cash_sessions(status=open) or orders(delivery_boy_id, status in OFD). Soft delete proceeds regardless.",
+      "recommended_correction": "Before delete, abort 409 if an OPEN DeliveryBoyCashSession exists for the driver, or if active (non-terminal) orders are assigned. Force close+reconcile / reassign first.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S12-04",
+      "severity": "P2",
+      "category": "deadcode",
+      "title": "change_given / adjustment / drawer_open / drawer_close movement types are whitelisted but never recorded — Z-report change-given total permanently 0.0, comment mislabels net as gross",
+      "file_line": "app/Services/Delivery/DeliveryBoyCashSessionService.php:295-301",
+      "evidence": "recordMovement whitelist (295-301) allows 5 types but the ONLY caller in the codebase is OrderService.php:1962 which always passes TYPE_ORDER_COLLECT (grep -rn recordMovement shows no other delivery caller; no route, no UI posts movements — ShowComponent only READS session.movements). So change_given/adjustment/drawer_open/drawer_close are dead. Consequently ZReportCashEnrichmentService.php:413 `delivery_cash_change_given_total` is permanently 0.0, and its comment at :364 labels order_collect as 'gross collected' though OrderService.php:1883 records order TOTAL (net of change), not gross.",
+      "why_it_matters": "Dead enum surface plus a misleading fiscal label. The Z report exposes a 'change given' bucket the owner may believe is real (it can never be non-zero), and the 'gross collected' wording invites a future maintainer to also subtract change_given — which would DOUBLE-net and understate cash. Note: there is NO money error today precisely because order_collect already records the net order total (OrderService.php:1883); the defect is dead code + a label that lies, not a wrong number.",
+      "reproduction": "grep -rn 'TYPE_CHANGE_GIVEN|change_given|TYPE_ADJUSTMENT' app/ shows only definitions + the Z aggregation that can never receive a row. No movement-record endpoint in routes/api.php for delivery.",
+      "recommended_correction": "Either wire a real 'record movement (change given / adjustment)' admin action and drawer_open/close audit movements, or remove the unused types and the always-0 change_given bucket. At minimum fix the :364 comment to say 'net order total' not 'gross'.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S12-05",
+      "severity": "P3",
+      "category": "logic",
+      "title": "selectDeliveryBoy has no order-status gate and no target-status check — a DELIVERED order can be reassigned to another driver",
+      "file_line": "app/Services/OrderService.php:2535-2581",
+      "evidence": "selectDeliveryBoy validates target is positive int (2547), is a 'Delivery Boy' role (2564-2571) and same branch (2573), then sets delivery_boy_id and saves (2580). There is NO check on $order->status (e.g. block reassignment once DELIVERED/RETURNED) and NO check that the target livreur's $target->status is active. So a finished order can be silently reassigned, and an inactive/disabled driver can be assigned new deliveries.",
+      "why_it_matters": "Reassigning a DELIVERED order rewrites the doorstep-cash accountability after the fact (the escrow row already credited the original driver) and notifies a new driver for a finished job — operational confusion and a weakened cash trail. Assigning an inactive driver hands deliveries to someone who shouldn't be on shift.",
+      "reproduction": "Read 2535-2581: no `$order->status` guard, no `$target->status` guard before save.",
+      "recommended_correction": "Reject (422) reassignment when order is in a terminal status (DELIVERED/RETURNED/CANCELLED) and reject assignment to a target whose status is inactive.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S12-06",
+      "severity": "P3",
+      "category": "deadcode",
+      "title": "Reconcile controller catches CashVarianceRequiresApprovalException the service can never throw — the POS variance-approval control is absent for delivery",
+      "file_line": "app/Http/Controllers/Admin/DeliveryBoyCashSessionController.php:220-227",
+      "evidence": "reconcile() catches CashVarianceRequiresApprovalException (220) and serializes variance/threshold. But DeliveryBoyCashSessionService::reconcileSession (service 193-273) never throws it — the docblock at :183-187 admits 'currently service is lenient' and the variance gate is deferred to a 'future Wave'. So the catch is dead, and unlike the POS drawer there is no manager-approval gate on an over-threshold delivery cash variance.",
+      "why_it_matters": "The catch block reads like an enforced control but is unreachable; the actual control (manager sign-off when a driver's cash is short/over beyond cash.variance_threshold_eur, which POS enforces) does not exist for delivery cash. A large unexplained shortage reconciles freely with just an optional free-text reason. Misleading dead code + a missing money control.",
+      "reproduction": "Service reconcileSession 193-273 throws only HttpException(404/422); never CashVarianceRequiresApprovalException. Controller catch at 220 therefore never fires.",
+      "recommended_correction": "Either implement the variance-approval gate in reconcileSession (mirror CashDrawerService threshold check) and keep the catch, or remove the dead catch and document that delivery cash has no variance gate.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S12-07",
+      "severity": "P3",
+      "category": "ux",
+      "title": "Delivery cash-session list route requires full 'delivery-boys' mutation permission; backend index only needs read permission",
+      "file_line": "resources/js/router/modules/deliveryBoyCashSessionRoutes.js:24",
+      "evidence": "List route meta permissionUrl='delivery-boys' (line 24) and Show route also 'delivery-boys' (line 36). Backend DeliveryBoyCashSessionController.__construct gates index/show with `permission:delivery-boys_show` (controller 42) and only mutations (open/close/reconcile) with `permission:delivery-boys` (43). So a user with read-only delivery-boys_show can call the API but the SPA route guard hides the page from them.",
+      "why_it_matters": "Read-only supervisors (delivery-boys_show) are blocked from even VIEWING the cash-session list/detail in the UI despite the backend allowing it — an over-restrictive front gate that contradicts the backend contract and the route file's own comment ('Permissions: delivery-boys_show (read)').",
+      "reproduction": "Compare deliveryBoyCashSessionRoutes.js:24/36 (permissionUrl 'delivery-boys') with DeliveryBoyCashSessionController.php:42 (index/show require delivery-boys_show).",
+      "recommended_correction": "Set the list/show route permissionUrl to 'delivery-boys_show' (or the read variant) to match the backend read gate; keep mutation buttons gated by the mutation permission.",
+      "evidence_type": "code",
+      "confidence": "medium"
+    }
+  ],
+  "solids": [
+    {
+      "title": "openSession triple-defense against concurrent double-open",
+      "file_line": "app/Services/Delivery/DeliveryBoyCashSessionService.php:79-107",
+      "note": "Cache::lock per (branch,driver) + DB::transaction with lockForUpdate on the existing-OPEN probe + UNIQUE partial index (migration 120200). Mirrors the POS cash-drawer NF525 pattern; LockTimeout degrades to a clean 409, not a crash. Correct defense-in-depth for the 'one open shift per driver' invariant."
+    },
+    {
+      "title": "COD PAID-flip deferred to DELIVERED so the escrow audit row fires exactly once",
+      "file_line": "app/Services/OrderService.php:1838-1896",
+      "note": "Careful NF525 reasoning: on the 2-step driver flow (PREPARED->OFD->DELIVERED) the prior code flipped payment_status to PAID at OFD, skipping the escrow capture on DELIVERED. The fix delays the COD PAID flip until newStatus===DELIVERED so the cash-collection audit row is emitted exactly once on both single-jump and 2-step paths, on the same locked transaction. Genuinely subtle and correct."
+    },
+    {
+      "title": "selectDeliveryBoy branch fence + role lookup by NAME + audit trail",
+      "file_line": "app/Services/OrderService.php:2564-2603",
+      "note": "Uses role('Delivery Boy','sanctum') by stable NAME (avoids the AUTO_INCREMENT role-id drift bug), enforces same-branch assignment (403 cross-branch), and writes an order.delivery_boy_assigned audit row capturing who assigned which driver to which order. Solid isolation + traceability (only missing the status gate noted in S12-05)."
+    },
+    {
+      "title": "Stable per-mount idempotency key on the cash-session form",
+      "file_line": "resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionFormComponent.vue:177",
+      "note": "Builds one stable X-Idempotency-Key per form mount (mode+sessionId+timestamp) so an accidental double-click on open/close/reconcile dedupes server-side, while a fresh operation gets a fresh key. Correctly satisfies the idempotency middleware the routes carry."
+    }
+  ]
+}

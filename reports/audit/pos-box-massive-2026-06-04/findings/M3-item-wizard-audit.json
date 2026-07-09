@@ -1,0 +1,147 @@
+{
+  "micro_system": "M3-item-wizard (POS composition wizard — public/js/pos-wizard.js single-page popup; FROZEN read-only)",
+  "files_examined": [
+    "public/js/pos-wizard.js",
+    "public/css/pos-wizard.css",
+    "resources/js/components/admin/pos/ItemComponent.vue",
+    "resources/js/store/modules/posCart.js",
+    "resources/js/components/admin/pos/PaymentComponent.vue",
+    "app/Http/Controllers/Admin/PosController.php",
+    "app/Http/Resources/ItemAddonResource.php",
+    "config/catalog_v15.php",
+    "resources/views/admin-pos-v4.blade.php"
+  ],
+  "findings": [
+    {
+      "id": "M3-01",
+      "severity": "P1",
+      "category": "logic",
+      "title": "Aucune validation des étapes obligatoires dans le flux actif (single-page) : on peut ajouter un Tacos 0 viande / 0 sauce au panier",
+      "file_line": "public/js/pos-wizard.js:5850-5855 (handler add-to-cart) + 4773/5135 (renderSinglePage = seul renderer) ; canProceedFromStep défini 5149-5226 mais jamais appelé dans le chemin actif",
+      "evidence": "Le bouton « Ajouter au panier » du single-page appelle directement syncAndSubmit() sans aucun garde : `addBtn.addEventListener('click', function(){ syncAndSubmit(); })`. La fonction canProceedFromStep() (qui exige 'Sélectionnez N viandes' / 'Sélectionnez au moins une sauce' / 'Sélectionnez Pain ou Galette') n'est invoquée que dans la navigation multi-étapes (ligne 5457, dans le bloc renderWizard) — or renderWizard() n'est JAMAIS appelé (grep: 0 call site). refreshWizard()/openWizard rendent toujours renderSinglePage(). Le single-page affiche toutes les sections d'un coup et n'applique aucun gating de complétude avant submit.",
+      "why_it_matters": "Sur un vrai service, une caisse peut envoyer en cuisine (KDS) un Tacos L sans viande, un sandwich sans pain, ou un produit sans la sauce requise — l'instruction ticket omet alors le bloc viande (buildTicketInstruction gate sur totalViandes>0) et le cuisinier reçoit une commande incomplète/ambiguë, ce qui provoque erreurs de prépa, refaire le plat, et ralentit le rush. C'est exactement la classe de défaut 'logique pas bonne' visée par l'owner : la garde existe dans le code mais est morte.",
+      "reproduction": "Sur /admin/pos, ouvrir un Tacos (catégorie tacos → viandeCount>0). Ne sélectionner aucune viande ni sauce, cliquer 'Ajouter au panier'. La ligne part au panier (syncAndSubmit dispatch wizard:add-to-cart, ItemComponent.addToCart). Aucun message 'Sélectionnez 1 viande supplémentaire'.",
+      "recommended_correction": "FROZEN : ne pas modifier sans gate owner. Correction décrite : appeler une validation de complétude (équivalent canProceedFromStep agrégé sur viandes requises + sauce requise + pain) dans le handler add-to-cart single-page avant syncAndSubmit ; bloquer + showValidationError si incomplet. Réutiliser les messages déjà présents (5156-5208).",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M3-02",
+      "severity": "P1",
+      "category": "logic",
+      "title": "Suppléments frites (Grande Portion +1,00 / Cheddar +1,00) comptés dans l'aperçu mais envoyés seulement en TEXTE — non re-tarifés par le quote serveur → sous-facturation vs aperçu",
+      "file_line": "public/js/pos-wizard.js:1324-1326 (calculateRunningTotal ajoute FRITES_GRANDE_PRICE/FRITES_CHEDDAR_PRICE) ; 4084-4159 (buildMenuExtras/addonToPayload : extras frites poussés uniquement dans instruction/menu_extras, convert_price=base addon) ; quote serveur PosController.php:196 OrderQuoteService::quote",
+      "evidence": "calculateRunningTotal additionne +1,00 Grande et +1,00 Cheddar au total aperçu (1325-1326). Mais ces upcharges ne deviennent jamais une option/variation tarifée : addonToPayload (4143-4159) fixe convert_price = ad.addon_item_convert_price (prix du menu/frites de base) et place 'Grande Portion (+1.00€)' / 'Cheddar Fondu (+1.00€)' uniquement dans instruction (menu_extras, texte). Le panier POS est client-side (posCart.js: lists ne POST rien). Au paiement, PaymentComponent (lignes 748-782) montre qu'un QUOTE SSOT serveur recalcule form.total ('The server total changed at checkout') — confirmé par PosController::quote → OrderQuoteService. Le serveur re-tarife depuis item_id+variations+extras DB ; or 'Grande Portion'/'Cheddar' ne sont pas des extras DB tarifés → ils sont ignorés → le total facturé est < total affiché dans le wizard.",
+      "why_it_matters": "Le wizard affiche au client/caissier un total incluant +2,00 € (frites grande + cheddar) que le système ne facture pas réellement (le quote serveur, SSOT NF525, ne connaît pas ces lignes). Sur le volume d'un service fast-food, c'est de la marge perdue silencieuse + une incohérence aperçu/ticket/encaissement qui sape la confiance caisse. Inversement, si un jour le backend venait à faire confiance au total client, ce serait une faille de prix. Aujourd'hui le risque réel = sous-facturation systématique des options frites.",
+      "reproduction": "Composer un sandwich + Menu Complet, activer Grande Portion + Cheddar. Aperçu wizard total = base + menu + 2,00. Aller au paiement : le quote serveur renvoie un total inférieur (sans les 2,00). Vérifier via Network: réponse /api/admin/pos/quote total < data-wizard-total.",
+      "recommended_correction": "FROZEN : décrire seulement. Soit (a) créer de vrais addon-items DB tarifés 'Grande Portion' / 'Cheddar' et les envoyer comme lignes pos_line_addons tarifées (le quote les reprendra), soit (b) retirer ces upcharges de l'aperçu tant qu'ils ne sont pas des options DB, pour que l'aperçu = montant facturé. Gate owner + alignement OrderQuoteService.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M3-03",
+      "severity": "P2",
+      "category": "logic",
+      "title": "Viande supplémentaire tarifée à un prix FORFAITAIRE (VIANDE_SUPPL_PRICE €2,50) quelle que soit la viande, et synchronisée comme extra binaire (×N perdu côté Vue)",
+      "file_line": "public/js/pos-wizard.js:1287-1293 (calculateRunningTotal: supplTotal*VIANDE_SUPPL_PRICE) ; 3886-3894 (syncAndSubmit: allSelectedExtras[id]=true binaire) ; prix injecté 89",
+      "evidence": "calculateRunningTotal facture chaque viande extra au forfait VIANDE_SUPPL_PRICE (€2,50 par défaut, configurable via POS_WIZARD_CONFIG) — aucune lecture du prix DB de la viande concernée. De plus syncAndSubmit (3886-3894) marque la viande extra comme un extra binaire `allSelectedExtras[parseInt(match[1])] = true` (présent/absent) : la quantité N>1 n'est pas reflétée dans les item_extras Vue. La quantité n'apparaît que dans l'instruction texte. Combiné à M3-02, le quote serveur re-tarife depuis les extras DB cochés : un même extra coché une fois ≠ ×2 forfait wizard.",
+      "why_it_matters": "Deux incohérences : (1) toutes les viandes extra coûtent pareil même si en DB une 'Cordon Bleu' vaut plus qu'une 'Merguez' → tarification fausse vs catalogue ; (2) ajouter 2× la même viande extra affiche +5,00 dans l'aperçu mais ne transmet qu'un seul extra binaire au modèle Vue/serveur → écart aperçu/facturé. Sur une caisse, cela génère des litiges prix et de la perte de marge non traçable.",
+      "reproduction": "Composer un produit avec viandes, déplier 'Viande supplémentaire', mettre +2 sur la même viande. Aperçu = +5,00. Vérifier item_extras envoyés : l'extra n'est coché qu'une fois (binaire). Comparer au total quote serveur.",
+      "recommended_correction": "FROZEN : décrire. Lire le prix DB réel de chaque viande extra (variation/extra convert_price) au lieu du forfait, et transmettre la quantité réelle (item_extras avec quantité) pour que le quote serveur reprenne le bon montant. Gate owner.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M3-04",
+      "severity": "P2",
+      "category": "deadcode",
+      "title": "Tout le moteur multi-étapes est mort : renderWizard / renderViandeStep / renderSauceStep / renderPersoStep / canProceedFromStep / goToNext|PrevActiveStep jamais exécutés",
+      "file_line": "public/js/pos-wizard.js:1046-1260 (renderWizard+renderViandeStep+renderSauceStep) ; 1683 renderPersoStep ; 5149-5282 canProceedFromStep + goToNext/PrevActiveStep ; barre de progression 1068-1130",
+      "evidence": "renderWizard() (1046) n'a aucun call site (grep '\\.renderWizard|renderWizard()' = définition seule ; pas non plus exposé sur window). Le rendu actif est exclusivement renderSinglePage() (appelé 4773 et 5135). De ce fait : renderPersoStep (qui lit step.viandeVariations — jamais peuplé sur le step 'perso' construit en 738-751), la barre de progression/badge d'étape, la navigation goToNextActiveStep/goToPrevActiveStep et le gating canProceedFromStep sont du code mort. Plusieurs 'FIX' historiques (T4/W-7/S24) portent sur ce chemin mort.",
+      "why_it_matters": "C'est précisément 'unnecessary things' de l'owner : ~250+ lignes maintenues, testées et 'corrigées' au fil des sprints alors qu'elles ne s'exécutent jamais. Cela trompe les audits (la garde de validation M3-01 'existe' mais est morte), augmente la surface de maintenance et la confusion sur le comportement réel du wizard.",
+      "reproduction": "grep -n 'renderWizard()' public/js/pos-wizard.js → 0 résultat hors définition. Tracer openWizard/refreshWizard → renderSinglePage() uniquement.",
+      "recommended_correction": "FROZEN : décrire. Supprimer (ou marquer @deprecated et exclure du build) le moteur multi-étapes mort, OU — si la garde de validation est jugée nécessaire — porter canProceedFromStep dans le chemin single-page (cf. M3-01). Gate owner avant suppression.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M3-05",
+      "severity": "P3",
+      "category": "visual",
+      "title": "Format monétaire non-FR dans tout l'aperçu wizard : « €3.00 » au lieu de « 3,00 € » (symbole avant + point décimal)",
+      "file_line": "public/js/pos-wizard.js:218-221 (fmtPrice) + 666 ('€'+toFixed(2)) ; utilisé partout (badges sauce, formule, frites, recap, total sticky)",
+      "evidence": "fmtPrice retourne `'€' + num.toFixed(2)` → '€3.00'. Convention FR (locale immuable ADR-007) = '3,00 €' (symbole après, séparateur virgule). Tous les prix de l'aperçu/ticket wizard (total sticky 3198, badges sauce 3344, formule 1411/1420/1430, frites 1467/1487, recap 2260-2264) utilisent ce format anglo-saxon. Note : c'est local à l'aperçu wizard ; le ticket/reçu fiscal a été aligné FR dans une campagne antérieure (cf. mémoire).",
+      "why_it_matters": "Incohérence de présentation FR sur l'écran caisse face client : '€3.00' jure avec le reste de l'app (PaymentComponent.currencyFormat respecte la position FR). Cosmétique mais visible en permanence sur le total sticky et chaque badge — l'owner cible 'les flous'.",
+      "reproduction": "Ouvrir le wizard sur un produit avec menu : observer 'Total €X.XX' sticky et badges '+€0.50'. Comparer au format PaymentComponent ('X,XX €').",
+      "recommended_correction": "FROZEN : décrire. fmtPrice devrait déléguer à appService.currencyFormat (decimal=',', position=after) ou formater 'N,NN €'. Aligner sur la locale FR. Gate owner (frozen file).",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M3-06",
+      "severity": "P3",
+      "category": "deadcode",
+      "title": "Chemin composer-aware (admin-defined wizard / profils type Bols) inerte sur le rendu : flag OFF par défaut ET renderSinglePage ignore les steps composer",
+      "file_line": "public/js/pos-wizard.js:436-540 (isComposerAwareEnabled + buildStepsFromComposerProfile, type 'generic_choices') ; config/catalog_v15.php:99-105 (enabled default false) ; renderSinglePage 2790+ n'utilise pas steps composer",
+      "evidence": "isComposerAwareEnabled() lit window.foodkingConfig.posWizardComposerAware.enabled, alimenté par catalog_v15.php 'pos_wizard_composer_aware.enabled' = env('FK_POS_WIZARD_COMPOSER_AWARE_ENABLED', false) → OFF par défaut en V1. Même activé, buildStepsFromComposerProfile produit des steps de type 'generic_choices' / 'menu' etc., mais le renderer actif renderSinglePage() construit ses sections directement depuis itemAttributes/extras/addons et ne consomme pas la majorité des steps composer (pas de renderer 'generic_choices'). Le profil composer ne pilote donc pas réellement l'UI POS single-page.",
+      "why_it_matters": "Latent en V1 (flag OFF) donc pas un bug actif aujourd'hui — mais c'est un piège : l'admin peut croire qu'un profil composer (ex. Bols) redéfinit le wizard POS, alors qu'à l'activation le single-page ignorerait ces steps. À documenter avant tout flip du flag (passage cloud / V2). Pas de catégorie 'bols' dans detectCategory non plus (fallback générique sauce_garnitures).",
+      "reproduction": "config/catalog_v15.php:103 → default false. Lire renderSinglePage : aucune branche `if isComposerAwareEnabled()` ni rendu de step.type 'generic_choices'.",
+      "recommended_correction": "FROZEN : décrire/documenter. Si le composer-aware doit piloter le POS, renderSinglePage doit consommer steps composer (renderer generic_choices). Tant que le flag est OFF, marquer comme latent V1.0.X. Gate owner.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M3-07",
+      "severity": "P3",
+      "category": "ux",
+      "title": "Aucune information allergènes dans le wizard de composition POS",
+      "file_line": "public/js/pos-wizard.js (grep allerg|allergen = 0 occurrence)",
+      "evidence": "Aucune référence allergène dans pos-wizard.js. Les suppléments/garnitures/viandes/sauces sont présentés sans badge allergène ni agrégation. (Observation scoping : l'affichage allergènes peut être volontairement hors périmètre d'un wizard caisse — surface KDS / client-facing — donc pas un défaut confirmé.)",
+      "why_it_matters": "Si une exigence allergènes existe côté caisse (info-conseil au client lors d'une demande), elle n'est pas couverte ici. À confirmer avec l'owner si c'est attendu sur le POS ou seulement KDS/borne. Faible impact V1 si by-design.",
+      "reproduction": "grep -in 'allerg' public/js/pos-wizard.js → vide.",
+      "recommended_correction": "Clarifier l'attente owner. Si requis POS : afficher les allergènes agrégés des composants sélectionnés (pattern déjà discuté côté KDS). Sinon documenter 'allergènes hors-scope wizard POS'. Aucun changement frozen sans décision.",
+      "evidence_type": "needs-live-verify",
+      "confidence": "medium"
+    },
+    {
+      "id": "M3-08",
+      "severity": "P3",
+      "category": "logic",
+      "title": "Tarif des sauces extra forfaitaire SAUCE_EXTRA_PRICE (€0,50) en aperçu, non garanti aligné avec le re-tarif serveur des sauces supplémentaires",
+      "file_line": "public/js/pos-wizard.js:1270-1272 (extra sauces) + 3776-3818 (syncAndSubmit coche 'Sauce supplémentaire: X' checkboxes)",
+      "evidence": "L'aperçu facture (sauceOrder.length-1)*SAUCE_EXTRA_PRICE forfait (1271). Au submit, les sauces 2+ sont mappées vers des checkboxes Vue 'Sauce supplémentaire: <nom>' (3801-3814) — donc côté serveur le re-tarif dépend du prix DB de ces extras 'Sauce supplémentaire', pas du forfait wizard. Si le prix DB de la sauce suppl ≠ €0,50, l'aperçu ment vs facturé. (Forfait configurable via POS_WIZARD_CONFIG ; alignement non prouvé sans échantillon DB.)",
+      "why_it_matters": "Même classe que M3-02/M3-03 : risque d'écart aperçu/facturé sur les sauces supplémentaires si le prix forfaitaire injecté ne suit pas le prix DB. À confirmer en live (comparer SAUCE_EXTRA_PRICE config vs prix DB 'Sauce supplémentaire').",
+      "reproduction": "Sélectionner 3 sauces. Aperçu = +1,00 (2×0,50). Au paiement, comparer total quote serveur (basé extras DB 'Sauce supplémentaire') au total wizard.",
+      "recommended_correction": "FROZEN : décrire. Garantir que SAUCE_EXTRA_PRICE (POS_WIZARD_CONFIG) = prix DB des extras 'Sauce supplémentaire', ou lire le prix DB par sauce. Vérification owner/data-ops.",
+      "evidence_type": "needs-live-verify",
+      "confidence": "medium"
+    }
+  ],
+  "solids": [
+    {
+      "title": "Backend SSOT re-pricing au checkout — l'aperçu wizard n'est jamais facturé tel quel",
+      "file_line": "resources/js/components/admin/pos/PaymentComponent.vue:748-782 + app/Http/Controllers/Admin/PosController.php:196 (OrderQuoteService::quote)",
+      "note": "Architecture saine et conforme CLAUDE.md §8 : le total wizard est un APERÇU client ; un quote serveur recalcule le total (form.total) et la caisse réaligne le reçu cash dessus ('The server total changed at checkout'). Cela cantonne les défauts de tarif wizard à des écarts aperçu/facturé (gênants) plutôt qu'à des fraudes de prix réelles. Bonne défense en profondeur."
+    },
+    {
+      "title": "Détection viande robuste et anti-faux-positifs (patterns ancrés sur 'tacos')",
+      "file_line": "public/js/pos-wizard.js:227-282 (detectViandeCount + detectViandeCountFromData)",
+      "note": "Bonne logique : extraction du nombre via regex parenthèses, patterns ancrés `tacos\\s*l\\b` pour éviter que 'Tacos Légumes' matche la taille L (commentaire [T2 FIX]), puis cascade nom→description→attributs→max_select. Comportement métier précis et défensif."
+    },
+    {
+      "title": "Détection boisson catalogue-aware multi-priorité, symétrique POS↔borne",
+      "file_line": "public/js/pos-wizard.js:921-974 (boissonItems IIFE)",
+      "note": "Très bon : priorité catalogue Vue (id/nom) > group_label > regex legacy, avec exclusions explicites food-like (frites/nuggets) et option générique. Aligné sur kioskIsDrinkAddon pour cohérence POS/kiosk et stock partagé. Évite de classer une 'Frites' comme boisson — logique solide et bien commentée."
+    },
+    {
+      "title": "Re-attache MutationObserver résiliente au cycle de vie SPA (Vue Router remonte le modal)",
+      "file_line": "public/js/pos-wizard.js:5892-5944 (_attachModalObserver + _watchBodyForModal)",
+      "note": "Gestion correcte du fait que le script est chargé une fois pour toute la SPA : observer body-level qui ré-attache au nouveau noeud modal après navigation, reset de lastItemData pour éviter d'ouvrir le wizard avec les données d'un produit précédent. Évite la classe de bug 'wizard ne s'ouvre jamais après navigation'."
+    },
+    {
+      "title": "Produits simples court-circuitent le wizard vers le modal Vue natif",
+      "file_line": "public/js/pos-wizard.js:4701-4728 (isSimpleProduct fallback)",
+      "note": "Bon réflexe UX/perf : si aucun step + pas d'extras/addons/variations (boisson seule, dessert), le wizard se retire et restaure le modal Vue natif (header + footer + CTA) au lieu d'afficher un wizard vide et déroutant. Nettoie aussi les data-attributes stale."
+    }
+  ]
+}

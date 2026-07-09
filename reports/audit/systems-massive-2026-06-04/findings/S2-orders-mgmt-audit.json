@@ -1,0 +1,138 @@
+{
+  "micro_system": "S2-orders-mgmt",
+  "files_examined": [
+    "resources/js/components/admin/onlineOrders/OnlineOrderListComponent.vue",
+    "resources/js/components/admin/onlineOrders/OnlineOrderShowComponent.vue",
+    "resources/js/components/admin/posOrders/PosOrderListComponent.vue",
+    "resources/js/components/admin/posOrders/PosOrderShowComponent.vue",
+    "resources/js/components/admin/orderHistory/HistoriqueListComponent.vue",
+    "resources/js/components/admin/transactions/TransactionListComponent.vue",
+    "app/Http/Controllers/Admin/OnlineOrderController.php",
+    "app/Http/Controllers/Admin/PosOrderController.php",
+    "app/Http/Controllers/Admin/OrderHistoryController.php",
+    "app/Http/Controllers/Admin/TransactionController.php",
+    "app/Services/OrderService.php",
+    "app/Domain/Order/OrderStateMachine.php",
+    "app/Domain/Order/PaymentStateMachine.php",
+    "app/Rules/ValidStatusTransition.php",
+    "app/Http/Requests/OrderStatusRequest.php",
+    "app/Http/Resources/SimpleOrderResource.php",
+    "app/Libraries/AppLibrary.php",
+    "routes/api.php"
+  ],
+  "findings": [
+    {
+      "id": "S2-01",
+      "severity": "P1",
+      "category": "logic",
+      "title": "POS order detail: payment-status dropdown offers an option (Impayé) that the backend ALWAYS rejects — every default POS order is created PAID and PaymentStateMachine has no PAID->UNPAID edge",
+      "file_line": "resources/js/components/admin/posOrders/PosOrderShowComponent.vue:577-582 (paymentStatusObject) + :139-150 (dropdown) ; app/Domain/Order/PaymentStateMachine.php:17 (PAID => []) ; app/Services/OrderService.php:783 (payment_status => PaymentStatus::PAID at POS creation)",
+      "evidence": "paymentStatusObject() returns BOTH {Payé, PAID} and {Impayé, UNPAID} unconditionally. The dropdown @click='changePaymentStatus(paymentStatus.value)' POSTs to changePaymentStatus -> OrderService::changePaymentStatus -> PaymentStateMachine::assertCanTransition. PaymentStateMachine::TRANSITIONS defines PaymentStatus::PAID => [] (line 17), so PAID->UNPAID throws InvalidArgumentException('Invalid payment_status transition 5 -> 10', 422). Default inline POS orders are persisted with 'payment_status' => PaymentStatus::PAID (OrderService.php:783). Therefore on the overwhelming majority of POS orders the 'Impayé' menu entry is a live, clickable control that can only ever produce a red 422 error toast; clicking 'Payé' on a PAID order is a silent no-op early-return (changePaymentStatus.php:2350). The dropdown is effectively dead for its visible default state.",
+      "why_it_matters": "Owner explicitly flagged 'flous / unnecessary things that are not good'. A cashier opening a normal paid POS order sees a payment dropdown whose only non-current option (Impayé) throws an error every single time. It looks like a broken feature on a money-bearing control, erodes trust during a live shift, and trains staff to ignore error toasts. There is no legitimate PAID->UNPAID path in V1, so the option should not be offered.",
+      "reproduction": "POS detail of any normally-paid POS order -> click the payment-status dropdown -> choose 'Impayé' -> 422 toast 'Invalid payment_status transition 5 -> 10' (message surfaced via PosOrderController::changePaymentStatus catch -> err.response.data.message). Re-select 'Payé' -> nothing happens (no-op).",
+      "recommended_correction": "Make paymentStatusObject status-aware like a transition list: when order.payment_status === PAID, render no actionable options (or a disabled/read-only badge); only when payment_status is UNPAID/PENDING_COUNTER expose the {PAID} option. Mirror the state machine (PaymentStateMachine::TRANSITIONS) so the UI never offers an edge the backend forbids.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S2-02",
+      "severity": "P1",
+      "category": "logic",
+      "title": "Order-status dropdown (POS + Online detail) lists ALL forward statuses regardless of current state — illegal/backward transitions are offered as clickable and fail with a 422 toast instead of being hidden",
+      "file_line": "resources/js/components/admin/posOrders/PosOrderShowComponent.vue:535-566 (orderStatusObject) + :159-170 ; resources/js/components/admin/onlineOrders/OnlineOrderShowComponent.vue:370-398 + :145-162 ; guarded by app/Domain/Order/OrderStateMachine.php:30-92 (allows())",
+      "evidence": "orderStatusObject() returns a FLAT list [ACCEPT, PREPARING, PREPARED, (OUT_FOR_DELIVERY), DELIVERED] independent of order.status. Each @click='orderStatus(status.value)' POSTs change-status -> OrderService::changeStatus -> ValidStatusTransition -> OrderStateMachine::allows(). allows() only permits a forward ladder (e.g. PREPARING -> {PREPARED, CANCELED} or DELIVERED w/ pos perm; PREPARED -> {OUT_FOR_DELIVERY, DELIVERED}; DELIVERED -> {RETURNED only}). So selecting e.g. 'Accepté' on an order already PREPARED, or any backward move, hits 'invalid_status_transition' (422) — the dropdown shows the current status highlighted but still lets you pick illegal earlier/forward states.",
+      "why_it_matters": "This is the core 'blur' on the most-used action of the screen during service. Staff see 5 status choices on every order with no indication of which are reachable; picking the wrong one yields a generic error toast rather than the UI simply not offering it. Wastes time at the counter, looks buggy, and makes the legitimate path (advance one step) harder to find. The backend is correct (safe), but the UX leaks the state machine through error toasts.",
+      "reproduction": "Open a POS order whose status = Prepared. Open the status dropdown -> pick 'Accepté' or 'En préparation' -> toast 'invalid_status_transition'. Only PREPARED -> Livré / Out-for-delivery actually succeed.",
+      "recommended_correction": "Derive orderStatusObject from OrderStateMachine::allows() for the current order.status (expose an allowed-next-states list via the resource, or replicate the small transition table client-side). Render only the legal next states (advance-one-step + permitted terminals); disable/grey the rest. Keep the full enum only for the display label map.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S2-03",
+      "severity": "P2",
+      "category": "logic",
+      "title": "Unified Historique status filter cannot find Annulé / Rejeté / Retourné orders — dropdown omits all terminal states while the page advertises full history + a REFUNDED payment filter",
+      "file_line": "resources/js/components/admin/orderHistory/HistoriqueListComponent.vue:33-40 (status options) vs :44-52 (payment offers REFUNDED) ; backend exact-match at app/Services/OrderService.php:172-173 ($query->where('status',(int)$request))",
+      "evidence": "The Historique status <vue-select> offers exactly [ACCEPT, PREPARING, PREPARED, DELIVERED]. It omits CANCELED(16), REJECTED(19), RETURNED(22). OrderService::list applies status as an EXACT where (line 172-173), so there is no way to filter the unified history to cancelled/rejected/refunded orders by status. Yet the same form's PAYMENT filter does offer REFUNDED (line 49), and the table renders a refund tag (↩ #parent) + a Retourné status label (enums.orderStatusEnumArray includes RETURNED at :220). The page header/menu is 'Historique' (see one-page-see-everything mandate in OrderHistoryController docblock).",
+      "why_it_matters": "Owner mandate for /admin/historique is 'see EVERYTHING from one page'. A manager reconciling the day cannot isolate cancelled or refunded orders by status on the one screen built for that — the most audit-relevant rows (cancellations, returns/refunds) are unreachable via the status filter. Inconsistent with the payment filter exposing REFUNDED, so the UI implies these orders are filterable when they are not.",
+      "reproduction": "/admin/historique -> Filtres -> Statut dropdown shows only Accepté/En préparation/Préparé/Livré. There is no Annulé/Rejeté/Retourné entry, so a refunded (Retourné) order can never be status-filtered even though it appears in the list with a Retourné badge.",
+      "recommended_correction": "Add CANCELED, REJECTED, RETURNED to the Historique status options array (they already exist in orderStatusEnum and the orderStatusClass helper). No backend change needed (exact-match already supports them).",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S2-04",
+      "severity": "P2",
+      "category": "visual",
+      "title": "Online-orders list 'Montant' column renders raw '19.00' (US format, no € symbol) while POS list + Historique render canonical '19,00 €' — money column formatting diverges across the three order screens",
+      "file_line": "resources/js/components/admin/onlineOrders/OnlineOrderListComponent.vue:119 ({{ order.total_amount_price }}) vs resources/js/components/admin/posOrders/PosOrderListComponent.vue:126 ({{ formatPrice(order.total) }}) ; app/Libraries/AppLibrary.php:306-308 (flatAmountFormat = number_format(amount, decimals, '.', '') )",
+      "evidence": "OnlineOrderList binds order.total_amount_price for the amount cell. SimpleOrderResource maps total_amount_price => AppLibrary::flatAmountFormat($this->total) (SimpleOrderResource.php), and flatAmountFormat returns number_format(amount, CURRENCY_DECIMAL_POINT, '.', '') = e.g. '19.00' — dot decimal, NO currency symbol, NO thousands sep. The sibling PosOrderListComponent (:126) and HistoriqueListComponent (:111) were migrated by the WT-D-R1-F4 heal to formatPrice(order.total) -> '19,00 €'. The raw numeric total is already shipped by SimpleOrderResource (total => round(float)), so the data for the canonical render is present and unused here.",
+      "why_it_matters": "Same caisse, three different money formats for the same value across Online / POS / Historique. On a French NF525 deployment the amount column on the online-orders screen shows '19.00' with no euro sign — looks unfinished/foreign and is inconsistent with every other order surface that was already canonicalised. Pure formatting, no fiscal impact, but it is exactly the kind of visible inconsistency the owner notices.",
+      "reproduction": "Open /admin/online-orders -> Montant column shows e.g. '19.00'. Open /admin/pos-orders or /admin/historique -> same-priced order shows '19,00 €'.",
+      "recommended_correction": "In OnlineOrderListComponent, import adminPriceMixin (already used by PosOrderList/Historique) and render {{ formatPrice(order.total) }} instead of {{ order.total_amount_price }} (total is already exposed raw by SimpleOrderResource).",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S2-05",
+      "severity": "P3",
+      "category": "visual",
+      "title": "Online-orders list 'Avance' badge is styled with the order-status colour helper fed a boolean enum, so it renders as a RED (cancelled/error-coloured) pill instead of an informative tag",
+      "file_line": "resources/js/components/admin/onlineOrders/OnlineOrderListComponent.vue:127-130 (:class=\"orderStatusClass(order.is_advance_order)\") ; helper resources/js/services/appService.js orderStatusClass() else-branch -> red ; isAdvanceOrderEnum.YES = 5",
+      "evidence": "The advance badge does :class='orderStatusClass(order.is_advance_order)' where is_advance_order === isAdvanceOrderEnum.YES (5). orderStatusClass() matches on orderStatusEnum values (ACCEPT=4, PREPARING=7, ...); 5 matches none, so it falls into the final else branch which returns the RED pill (text-red-900 bg-red-100) — the same class used for CANCELED/REJECTED. The 'Avance' (advance/scheduled order) marker thus looks like an error/cancelled state.",
+      "why_it_matters": "Misleading colour semantics: a perfectly normal advance/scheduled online order gets a red 'danger' badge next to its status, which on a glance reads like a problem order. It is a misuse of a status-colour helper on a non-status boolean. Low impact (cosmetic), but it is a genuine logic/visual smell on the online list.",
+      "reproduction": "Place/seed an advance (scheduled) online order, open /admin/online-orders -> the 'Avance' chip in the Statut column is red like a cancelled order.",
+      "recommended_correction": "Use a dedicated neutral/info class for the advance marker (e.g. an amber/blue 'Avance' chip) rather than passing a boolean enum to orderStatusClass(). The status pill itself already uses orderStatusClass(order.status) correctly on the adjacent span.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S2-06",
+      "severity": "P3",
+      "category": "ux",
+      "title": "Transactions list date-range presets are hardcoded English ('Today', 'This month', 'This year (slot)') and the datepicker lacks the aria-label present on the other order screens",
+      "file_line": "resources/js/components/admin/transactions/TransactionListComponent.vue:186-199 (preset labels) + :58-60 (Datepicker, no :aria-labels) vs OnlineOrderListComponent.vue:214-227 (French presets) + :64-66 (aria-labels)",
+      "evidence": "TransactionListComponent presetRanges labels are literal English strings: 'Today', 'This month', 'Last month', 'This year', 'This year (slot)'. Every sibling order list (OnlineOrderList:214-227, PosOrderList:216-229, Historique:199-205) uses French labels ('Aujourd'hui', 'Ce mois', 'Mois dernier', 'Cette année'). Additionally the Transactions <Datepicker> (:58) omits the :aria-labels='{ input: $t(...) }' that the other lists pass for a11y.",
+      "why_it_matters": "FR locale is an immutable V1 mandate (ADR-007). The Transactions screen shows English-only date presets in an otherwise fully-French back office — inconsistent and unprofessional on a French fiscal product. The 'This year (slot)' label even leaks an internal implementation word ('slot'). a11y label gap is a minor regression vs the other three lists.",
+      "reproduction": "/admin/transactions -> open the date filter -> preset chips read 'Today / This month / Last month / This year / This year (slot)' in English, unlike every other order list which reads French.",
+      "recommended_correction": "Translate the Transactions preset labels to French (or i18n keys) matching the sibling lists, drop the '(slot)' debug suffix, and add :aria-labels='{ input: $t(\"label.date\") }' to the Datepicker for parity.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S2-07",
+      "severity": "P3",
+      "category": "logic",
+      "title": "Online-orders list clear() resets filters to a state that differs from the initial mount filters (excepts and exceptSource drift), so 'Effacer' does not restore the pristine view",
+      "file_line": "resources/js/components/admin/onlineOrders/OnlineOrderListComponent.vue:277-278 (mount: excepts=DINING_TABLE, exceptSource=POS) vs :345-356 (clear(): excepts=POS|DINING_TABLE, exceptSource left untouched, never reset)",
+      "evidence": "Initial search payload (data()) sets excepts: orderTypeEnum.DINING_TABLE (20) and exceptSource: SourceEnum.POS (15). clear() instead sets this.props.search.excepts = orderTypeEnum.POS + '|' + orderTypeEnum.DINING_TABLE ('15|20') and never resets exceptSource (it persists). So after Effacer the list excludes POS via BOTH order_type!=15 AND source!=15 plus order_type!=20 — a strictly different filter expression than on mount. The observable result set is similar (POS still excluded) but the filter state is inconsistent and the code reveals confusion about which signal excludes POS.",
+      "why_it_matters": "Low user-visible impact (POS stays excluded either way) but it is a real logic blur: the Clear button does not return the screen to its mount state, and two different exclusion mechanisms are mixed. It is the kind of 'unnecessary / not-clean' inconsistency the owner called out, and it is a maintenance trap (future change to one path won't match the other).",
+      "reproduction": "Inspect props.search after mount vs after clicking 'Effacer' on /admin/online-orders: excepts goes from '20' to '15|20', exceptSource stays '15'. Filter expression differs.",
+      "recommended_correction": "Make clear() reset to the exact mount defaults: excepts = orderTypeEnum.DINING_TABLE and re-assert exceptSource = SourceEnum.POS (or pick ONE consistent exclusion signal). Align mount + clear so 'Effacer' restores the pristine view.",
+      "evidence_type": "code",
+      "confidence": "medium"
+    }
+  ],
+  "solids": [
+    {
+      "title": "Order soft-delete (POS) is correctly fenced for NF525 + branch + paid-order escalation",
+      "file_line": "app/Services/OrderService.php:2623-2664",
+      "note": "destroy() runs guards OUTSIDE the try/catch so abort() codes survive: branch isolation (403 unless global Admin or own branch), PAID orders blocked unless 'pos-destroy-paid' permission, and a closed-Z seal check (409 'NF525 immutability') when fiscal_sequence_no is set and the order falls in a closed Z window. Soft-delete + dual audit (ActionLog + tamper-evident AuditLogService) preserve the canonical record. This is exactly how a fiscal delete should be gated."
+    },
+    {
+      "title": "Status / payment changes are race-safe and re-validated under lock",
+      "file_line": "app/Services/OrderService.php:2117-2253 (changeStatus) + :2392-2466 (changePaymentStatus)",
+      "note": "Both mutate inside DB::transaction with Order::lockForUpdate()->firstOrFail(), idempotent early-return if another request already reached the target, and RE-validate the transition against the FRESH locked status (not the stale route-bound model) before saving. Prevents the multi-cashier double-deliver / double-PAID class of bugs. Domain events use DispatchableAfterCommit so a rollback drops side-effects. Solid concurrency engineering."
+    },
+    {
+      "title": "RETURNED removed from the status selector to force NF525 counter-entry refund path",
+      "file_line": "resources/js/components/admin/posOrders/PosOrderShowComponent.vue:535-563 + onlineOrders/OnlineOrderShowComponent.vue:370-398",
+      "note": "Both detail dropdowns deliberately EXCLUDE RETURNED so staff cannot cosmetically 'refund' an order by flipping status without emitting the NF525 mirror counter-entry. Refunds are routed through the dedicated PosRefundModal -> /refund-with-counter-entry (single endpoint that server-side picks pre-Z status=RETURNED+cashBack vs post-Z immutable mirror via SealedOrderGuard). RETURNED is kept only in the display map so historical refunds still render 'Retourné'. Correct fiscal discipline."
+    },
+    {
+      "title": "Cross-branch order access is unified to 403 with no existence enumeration",
+      "file_line": "app/Http/Controllers/Admin/PosOrderController.php:261-285 + OrderHistoryController.php:64-99",
+      "note": "show() loads withoutGlobalScope(BranchScope) then catches ModelNotFoundException and a foreign branch_id under a SINGLE 403 'Cross-branch access denied'. A non-existent id and a foreign-branch id return the same response shape, closing the timing/existence-enumeration leak. Backed by OrderShowBranchGuardSentinelTest. Good multi-tenant hygiene."
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "system": "S16-kiosk-borne",
+  "verifier": "hostile-red-team",
+  "verified_at": "2026-06-04",
+  "micro_system": "Kiosk/Borne payment+upsell+login. Live V1 path = Plan B route-all-to-counter (config/kiosk.php:54 KIOSK_PAYMENT_ROUTE_ALL_TO_COUNTER default TRUE). Kiosk order created via FrontendOrderService::store as FrontendOrder (user_id=KioskMachine user; creator_id/editor_id NULL). FrontendOrder + Order BOTH map to SAME 'orders' table (no create_frontend_orders_table migration; orders table has creator_id line42 + editor_id line44). Cashier encaisses via PaymentService::confirmCounterPayment(Order) writing collector ONLY to an audit_logs row. ReceiptDataService::buildForOrderModel:70 operator_name = optional(order->user)->name = machine account. Global axios timeout=30000ms (bootstrap.js:23); KioskAppComponent inactivity idleTimer (KioskAppComponent.vue:898) recovers any screen. Counter-route view (template 5-49) has NO back button (back control 54-66 is inside v-if=!paymentRouteAllToCounter).",
+  "verdicts": [
+    {
+      "id": "S16-01",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P1",
+      "reason": "VERIFIED REAL. FrontendOrderService.php:262 creates kiosk order 'user_id => Auth::user()->id' (machine), no creator_id/editor_id. PaymentService.php:193 confirmCounterPayment(Order) writes collector ONLY to audit_logs (user_id=>Auth::id()), never on the order. ReceiptDataService.php:70 operator_name=optional(order->user)->name; FrontendOrder.php:113 has only user()->User (machine), no creator()/editor(). KEY clarification the auditor missed but which STRENGTHENS the fix: no create_frontend_orders_table migration exists; FrontendOrder+Order share the 'orders' table which HAS creator_id (create_orders_table:42) AND editor_id (:44) nullable, so the recommended fix (set $locked->editor_id in confirmCounterPayment + resolve operator from editor_id/creator_id) is trivially applicable and the receipt-read row already has the column. Documented NF525 operator gap (memory: partial heal 6b26e1be3 POS-only) root-caused on the LIVE Plan B path. Keep P1 (CLAUDE.md §8 receipt must identify operator). CAVEAT: root cause+fix live in frozen fiscal backend (fiscal-adjacent), NOT the kiosk Vue surface — finding correctly flags gate-required. Scope-tangential but genuine."
+    },
+    {
+      "id": "S16-02",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": false,
+      "severity_adjusted": "P3",
+      "reason": "EXISTS & accurate but WORKS-AS-INTENDED. config/kiosk.php:54 default true; KioskPaymentComponent.vue:333 reads injected flag (master.blade.php:154); when true only counter-route renders, confirmCounterRoute (:421) forces cash; card/TR/_invokeTpe/reconcile branch is dormant — all confirmed. BUT CLAUDE.md §3bis documents the card/TR path as the deliberately-retained Plan A future-wire path, and the finding itself concedes 'Not a bug today' and recommends annotation-only ('Do not delete'). Dormant-by-design + annotation = clarity nit, not a P2 deadcode defect. is_necessary:false; P2->P3."
+    },
+    {
+      "id": "S16-03",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": false,
+      "severity_adjusted": "P3",
+      "reason": "MECHANISM EXISTS, HARM OVERSTATED; P2->P3, is_necessary:false. KioskUpsellComponent.vue:220/254 push to payment without re-quote; kioskCart.js:257 ADD_ITEM sets orderQuote=null; cart proceedToUpsell (KioskCartComponent.vue:685) awaits quoteOrder, upsell does not — confirmed. BUT the wrong-charge framing is DISPROVEN: confirmPayment line 443 does 'await refreshQuote()' (POST /frontend/order/quote :576) BEFORE submitOrder, so the CHARGE is always a fresh server quote — no mischarge. Only a transient DISPLAY gap: cartTotal() (:328)=_lastQuote?.total_ttc ?? this.total, _lastQuote (data:309) null on entry until pay-tap, so the card briefly shows component-local this.total (NOT Vuex getters.total as finding states — minor misattribution). On live Plan B the customer pays at a human counter showing the real total, muting even display-trust harm. Cosmetic hardening; P3."
+    },
+    {
+      "id": "S16-04",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": false,
+      "severity_adjusted": "P3",
+      "reason": "REAL but harm blunted; P2->P3, is_necessary:false (non-blocking). KioskUpsellComponent.vue:254 (addAndContinue) & :267 (skip) push to payment; counter-route back button (KioskPaymentComponent.vue:54-66) is inside v-if=!paymentRouteAllToCounter, so counter-route screen (5-49) has NO back control — a mistaken upsell can't be de-selected in-flow. BUT on the live Plan B borne the customer immediately faces a human cashier who can remove the item before encaissement, and the inactivity reset clears it. Genuine UX flag, but human-in-loop mitigation makes it P3 not a P2 revenue-trust issue."
+    },
+    {
+      "id": "S16-05",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "VERIFIED, P3 unchanged. KioskLoginComponent.vue:150 background linear-gradient(160deg,#0f0f1a,#1a1a2e) dark navy white-on-dark; :294 hover #c0001a non-palette red. KioskIdleScreenComponent.vue:337 uses light var(--kiosk-idle-bg,#FFFFFF). CLAUDE.md §3bis mandates light-mode 100% on kiosk. Real brand/light-mode inconsistency but a transient boot/diagnostic screen (rare, low impact). is_necessary:true legit cosmetic fix at P3."
+    },
+    {
+      "id": "S16-06",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": false,
+      "severity_adjusted": "P3",
+      "reason": "EXISTS & accurate, DORMANT, keep P3 is_necessary:false for V1. KioskPaymentComponent.vue:466 'total = isFinite(quote.total_ttc) ? quote.total_ttc : n' — client quote wins over server total n; :601 amountEuros=this._lastOrder.total charges TPE that figure. SSOT-backwards as claimed. BUT (a) dormant under Plan B (processCardPayment never runs per S16-02), (b) both derive from the same signed quote so they match, (c) F-002 backend echo-verify catches >1c divergence. Pre-Plan-A cleanup, not a V1 defect. P3."
+    },
+    {
+      "id": "S16-07",
+      "file_line_exists": true,
+      "is_real": false,
+      "is_necessary": false,
+      "severity_adjusted": "DROP",
+      "reason": "PREMISE DISPROVEN — DROP. Core claim 'perpetual spinner forever, no timeout' is FALSE: bootstrap.js:23 sets window.axios.defaults.timeout=30000, so a hung POST /frontend/order REJECTS after 30s into confirmPayment's catch which clears submitting and surfaces error — NOT perpetual. The finding self-defeats by admitting 'no escape except the inactivity reset' — that reset exists (KioskAppComponent.vue:898 idleTimer fires regardless of screen), so recovery is guaranteed. Cited lines (30-48 spinner, 421, 770) exist (file_line_exists:true) but the 'stuck forever' defect does not. At most a P3 nit about a 30s wait lacking a progress hint — but as written (perpetual, no escape) is_real:false, DROP."
+    }
+  ],
+  "coverage_gaps": [
+    "applyPromo / applyLoyalty (KioskCart/KioskLoyalty @click) — discount+loyalty application is NF525/pricing-SSOT-adjacent, examined by NONE of the 7 findings; highest-value unaudited kiosk flow (coupon/loyalty VAT-10 has prior P0 history per memory).",
+    "Wizard step availability handlers — increment/decrement, incrementSupplement/decrementSupplement, viande increment (steps/*.vue) gate add-to-cart on stock; no finding checked runtime stock-rupture mid-wizard before add.",
+    "printReceipt on confirmation screen — unaudited; directly relevant since the S16-01 operator-attribution gap surfaces on the printed receipt.",
+    "callStaff (frontend/kiosk-event), openOfflineConflictModal, openMyAccount — unaudited side endpoints; offline-conflict path touches the dormant reconcile queue (S16-02) but was not reasoned about for the LIVE path.",
+    "abandonOrder / onAbandonConfirm reset path — the recovery mechanism S16-04 and S16-07 lean on for mitigation was itself never verified to fully clear cart + revoke partial state."
+  ]
+}

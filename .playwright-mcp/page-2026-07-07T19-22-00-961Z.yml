@@ -1,0 +1,49 @@
+- generic [ref=f71e1]:
+  - paragraph [ref=f71e4]: Démarrage en cours…
+  - generic [ref=f71e6] [cursor=pointer]:
+    - generic [ref=f71e7]:
+      - group "Choisissez votre langue" [ref=f71e8]:
+        - button "FR" [pressed] [ref=f71e9]
+        - button "EN" [ref=f71e10]
+      - button "Paramètres d'accessibilité" [ref=f71e11]:
+        - img [ref=f71e12]
+    - generic [ref=f71e21]: Nos incontournables
+    - generic [ref=f71e25]:
+      - img "Le Terminator" [ref=f71e27]
+      - img "Double Cheese" [ref=f71e29]
+      - img "Le Cayenne" [ref=f71e31]
+      - img "Grill Burger" [ref=f71e33]
+      - img "Le Suprême" [ref=f71e35]
+      - img "Menu Maxi" [ref=f71e37]
+      - img "Bol de riz" [ref=f71e39]
+      - img "Bol de frites" [ref=f71e41]
+      - generic:
+        - generic [ref=f71e44]: Le Terminator
+        - generic [ref=f71e47]: Double Cheese
+        - generic [ref=f71e50]: Le Cayenne
+        - generic [ref=f71e53]: Grill Burger
+        - generic [ref=f71e56]: Le Suprême
+        - generic [ref=f71e59]: Menu Maxi
+        - generic [ref=f71e62]: Bol de riz
+        - generic [ref=f71e65]: Bol de frites
+      - generic [ref=f71e75]:
+        - generic [ref=f71e76]: 100%
+        - generic [ref=f71e77]: Halal
+    - generic [ref=f71e78]:
+      - heading "Bienvenue ! Le Cayenne" [level=2] [ref=f71e79]:
+        - generic [ref=f71e80]:
+          - text: Bienvenue !
+          - generic [ref=f71e81]: Le Cayenne
+      - paragraph [ref=f71e83]: Commandez en quelques touches
+    - generic [ref=f71e84]:
+      - generic [ref=f71e85]: Ultra gourmand
+      - generic [ref=f71e87]: Frais du jour
+      - generic [ref=f71e89]: Préparé minute
+    - group "Choisir le mode de commande" [ref=f71e91]:
+      - button "Touchez l'écran pour commander" [ref=f71e92]:
+        - img [ref=f71e97]
+        - generic [ref=f71e99]:
+          - generic [ref=f71e100]: Touchez l'écran
+          - generic [ref=f71e101]: pour commander
+    - paragraph [ref=f71e102]: Choisissez une option pour commencer
+  - status

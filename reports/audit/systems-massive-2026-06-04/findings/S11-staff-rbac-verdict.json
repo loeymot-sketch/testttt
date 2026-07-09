@@ -1,0 +1,67 @@
+{
+  "micro_system": "S11-staff-rbac",
+  "verdicts": [
+    {
+      "id": "S11-01",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P1",
+      "reason": "CONFIRMED. AdministratorService::update (app/Services/AdministratorService.php:87-110) has NO hasRole/id!=1/self guard, while destroy (l.118-119), changePassword (l.162) and changeImage (l.181) all guard with hasRole(EnumRole::ADMIN) and destroy adds id!=1. Sibling WaiterService::update (WaiterService.php:99) and ChefService::update (ChefService.php:98) call assertTargetRole BEFORE try/catch; AdministratorService::update is the lone gap. Route Route::match(['post','put','patch'],'/{administrator}',update) (routes/api.php:1044) binds User by PK with NO custom Route::bind, and BranchScope EXEMPTS User (app/Models/Scopes/BranchScope.php:20-22 'Never branch-filter the authenticatable model') so a branch>0 staff with administrators_edit CAN bind User id=1 (the branch_id=0 super-admin). AdministratorRequest::authorize (AdministratorRequest.php:27) only needs administrators_create||administrators_edit; bug_011 branch_id guard (l.95) satisfied with attacker own non-zero branch_id. update() writes Hash::make(password) (l.99-101) onto id=1 with no role/id check = super-admin takeover. P1 on impact. LATENCY: no DEFAULT seed role holds administrators_edit without being Admin; reachable only via custom role, but the guard gap is real and fix warranted."
+    },
+    {
+      "id": "S11-02",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P1",
+      "reason": "CONFIRMED. ReceiptDataService::buildForOrderModel (app/Services/Receipt/ReceiptDataService.php:70) sets operator_name => optional($order->user)->name, and Order::user() (app/Models/Order.php:173-175) is the CUSTOMER belongsTo. OrderDetailsResource.php:122 re-exposes it; the POS thermal receipt renders it at resources/js/components/admin/pos/ReceiptComponent.vue:72 and :287. The cashier IS persisted: OrderService.php:777 writes creator_id=>Auth::id(), creator_id fillable (Order.php:65) — but grep confirms NO creator() relation on Order (only user/branch/deliveryBoy/diningTable at l.173/183/190/304), so ReceiptDataService cannot/does not read it. NF525 operator-on-ticket = customer/Client passage not cashier. NOTE: finding cites JS path components/admin/orders/ReceiptComponent.vue but actual path is components/admin/pos/ReceiptComponent.vue; file_line_exists true because cited PHP SSOT line 70 is exact and render behavior exists at corrected path. One-line SSOT fix appropriate, NF525-adjacent."
+    },
+    {
+      "id": "S11-03",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "CONFIRMED. EmployeeController.php:28 gates changePassword/changeImage under permission:employees (read cap) while update is employees_edit (l.30); AdministratorController.php:31 identical. Both FormRequests fail open: UserChangePasswordRequest::authorize true (l.18), ChangeImageRequest::authorize true (l.16). A view-only role can rotate a target password / replace avatar (write behind read perm) = real authz blur. Correctly LATENT: Branch Manager holds both employees+employees_edit (RolePermissionTableSeeder.php:58-62); POS Operator/Chef/Stuff/Waiter hold neither family, so only a custom view-only role reaches it. Fix (move into _edit middleware group) warranted; P2 given latency."
+    },
+    {
+      "id": "S11-04",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "EXISTS but OVER-RATED. EmployeeCreateComponent.vue:227 excepts:'1|2|3|4|5' verified; backend did switch to role NAMES (AdministratorService.php:46, WaiterService.php:47). BUT on THIS seed enum IDs ARE 1-5 (app/Enums/Role.php:7-11 ADMIN=1..CHEF=5), so the filter is CORRECT TODAY. Bug only fires on AUTO_INCREMENT-drifted reseed — the multi-env/reseed cloud-prep scenario CLAUDE.md/MEMORY explicitly defer as NON-blocker for V1 LOCAL single-box. EmployeeService::blockRoles (l.29) is the enum backstop so no security impact even on drift (worst case wrong dropdown). Downgraded P2->P3: cosmetic consistency / cloud-prep backlog. is_necessary:true as low-priority cleanup but defer-to-cloud, not actionable now."
+    },
+    {
+      "id": "S11-05",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "PARTIALLY CONFIRMED — finding OVER-CLAIMS destroy(). Negative-list guard !in_array(optional($employee->roles[0])->id, blockRoles) fails open for a role-less user (null not in [1..5]) at show (EmployeeService.php:181), changePassword (l.230), changeImage (l.249) — genuinely reachable, unlike WaiterService/ChefService positive assertTargetRole (WaiterService.php:181-189). HOWEVER destroy (l.199) is NOT vulnerable: l.200 adds a SECOND gate hasRole(optional($employee->roles[0])->id)=hasRole(null), which Spatie returns false for (null name matches nothing) => permission_denied (and try/catch would 422 anyway). Finding lists destroy() at l.199 among vulnerable methods = incorrect. Real defect (role-less password reset/avatar/show on non-employee) stands at P2; bounded to orphaned/role-stripped accounts. assertTargetRole fix correct for the THREE unguarded methods."
+    },
+    {
+      "id": "S11-06",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": false,
+      "severity_adjusted": "P3",
+      "reason": "EXISTS but WORKS-AS-INTENDED. EmployeeRequest.php:67 validates branch_id only ['nullable','numeric'] with no withValidator guard vs AdministratorRequest.php:92-101 bug_011 mint guard. BUT finding ITSELF concedes (verified) exposure is fully contained: EmployeeService::store (l.115)/update (l.153) call effectiveBranchId which for a non-settings caller FORCES (int)caller->branch_id and IGNORES the request value (EnforcesOwnBranchScope.php:21-22). A Branch Manager CANNOT mint branch_id=0 super-staff via employee endpoint. Purely 'a future refactor might drop effectiveBranchId' — defense-in-depth asymmetry, not an active hole. Speculative future-refactor parity is not a V1 blocker per CLAUDE.md/MEMORY. Downgraded P2->P3, is_necessary:false: at most add a regression test, no behavior change needed."
+    },
+    {
+      "id": "S11-07",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "CONFIRMED. EmployeeCreateComponent.vue:307 catch does this.errors=err.response.data.errors unconditionally. EmployeeService throws permission/business 422 with {status:false,message:...} and NO 'errors' key (callerMayGrantRole gate EmployeeService.php:106, store permission_denied). FormRequest validation DOES return {errors} so field errors render, but permission_denied sets this.errors=undefined, no alert, silent dead-end. Real but minor UX gap; P3. Fix (fall back to alertService.error(err.response?.data?.message) like AdministratorList destroy) sensible. is_necessary:true."
+    }
+  ],
+  "coverage_gaps": [
+    "AdministratorService::store (app/Services/AdministratorService.php:58-82) calls assignRole(EnumRole::ADMIN) at l.74 with NO callerMayGrantRole/entitlement gate, whereas EmployeeService::store (EmployeeService.php:105) DOES gate role grants. Anyone holding administrators_create can mint a brand-new full Admin-role superuser (Admin carries Permission::all() regardless of branch; bug_011 only forces a non-zero branch_id, not the Admin role powers). This superuser-mint escalation is arguably larger than the flagged S11-01 update() gap and was missed — only update() asymmetry was examined, not store().",
+    "EmployeeListComponent.vue:283 carries the IDENTICAL stale excepts:'1|2|3|4|5' integer-ID role filter that S11-04 flagged only in EmployeeCreateComponent.vue:227. The auditor examined the Create twin but not the List twin — any role-NAME fix must touch both.",
+    "Waiter/Chef route groups (routes/api.php:565-573 waiter + chef group) expose the same change-password/{waiter} and change-image/{waiter} POST routes; auditor verified the SERVICES carry assertTargetRole but did NOT check whether WaiterController/ChefController gate changePassword/changeImage under the bare view permission (waiters/chefs) vs *_edit — the same S11-03 view-vs-edit blur should be confirmed/denied on these two sibling controllers.",
+    "ChangeImageRequest::authorize() and UserChangePasswordRequest::authorize() both return true (verified) and are shared across employee/administrator/waiter/chef/delivery-boy change-password/change-image endpoints. S11-03 flagged only employee+admin paths; the full blast radius across all five staff controllers consuming these two always-true FormRequests was not enumerated."
+  ]
+}

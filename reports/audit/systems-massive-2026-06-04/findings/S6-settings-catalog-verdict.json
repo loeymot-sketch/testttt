@@ -1,0 +1,68 @@
+{
+  "micro_system": "S6 catalog verified",
+  "verdicts": [
+    {
+      "id": "S6-01",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P1",
+      "reason": "TaxRequest and CurrencyRequest ignore route tax dot id but routes bind tax and currency so ignore null never excludes self and edit keeping code or name fails"
+    },
+    {
+      "id": "S6-02",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "Tax orphan real ItemCategory neutralized by soft deletes narrow trigger"
+    },
+    {
+      "id": "S6-03",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "no upper bound but history snapshot immutable latent"
+    },
+    {
+      "id": "S6-04",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "sort collides across pages never reaches second page latent"
+    },
+    {
+      "id": "S6-05",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "import skips event slug subclaim wrong latent"
+    },
+    {
+      "id": "S6-06",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "authorize returns true but middleware protects defense in depth only"
+    },
+    {
+      "id": "S6-07",
+      "file_line_exists": true,
+      "is_real": false,
+      "is_necessary": false,
+      "severity_adjusted": "DROP",
+      "reason": "UX wish not corruption snapshotted drop"
+    }
+  ],
+  "coverage_gaps": [
+    "antipattern is systemic across many form requests",
+    "ItemAttribute request has same bug and was unfindinged",
+    "ItemCategory request also self collides on name",
+    "no authorization check examined on global catalog reads",
+    "loyalty bounds not probed against redemption math"
+  ]
+}

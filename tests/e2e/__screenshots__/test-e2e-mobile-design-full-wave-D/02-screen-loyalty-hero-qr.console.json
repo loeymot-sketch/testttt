@@ -1,0 +1,32 @@
+[
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://127.0.0.1:8766/api/profile",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527628951
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://127.0.0.1:8766/api/frontend/loyalty/qr",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527628965
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://127.0.0.1:8766/api/frontend/loyalty/history?page=1&per_page=20",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1783527628973
+  }
+]

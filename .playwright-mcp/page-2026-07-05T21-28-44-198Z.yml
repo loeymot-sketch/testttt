@@ -1,0 +1,47 @@
+- generic [ref=e1]:
+  - generic [ref=e748]:
+    - generic [ref=e749]:
+      - button "Retour" [ref=e750] [cursor=pointer]:
+        - img [ref=e751]
+      - generic [ref=e753]:
+        - heading "Votre panier" [level=1] [ref=e754]
+        - paragraph [ref=e755]: 1 article
+      - button "Vider le panier" [ref=e756] [cursor=pointer]
+    - radiogroup "Type de commande" [ref=e757]:
+      - radio "À emporter" [checked] [ref=e758] [cursor=pointer]:
+        - generic [ref=e759]: 🥡
+        - generic [ref=e760]: À emporter
+    - generic [ref=e761]:
+      - list [ref=e762]:
+        - listitem [ref=e763]:
+          - generic [ref=e765]:
+            - generic [ref=e766]:
+              - heading "Tacos M" [level=3] [ref=e767]
+              - button "Modifier cet article" [ref=e768] [cursor=pointer]:
+                - img [ref=e769]
+            - generic [ref=e771]: Poulet mariné, Algérienne
+            - paragraph [ref=e772]: "Viandes : Poulet mariné ×1"
+            - generic [ref=e773]: €6,90 par unité
+          - generic [ref=e774]:
+            - group "Quantité de Tacos M" [ref=e775]:
+              - button "Diminuer la quantité" [ref=e776] [cursor=pointer]:
+                - img [ref=e777]
+              - generic [ref=e778]: "1"
+              - button "Augmenter la quantité" [ref=e779] [cursor=pointer]:
+                - img [ref=e780]
+            - button "Retirer" [ref=e782] [cursor=pointer]:
+              - img [ref=e783]
+            - generic [ref=e786]: €6,90
+      - region "Sous-total" [ref=e787]:
+        - generic [ref=e788]:
+          - generic [ref=e789]: Sous-total
+          - generic [ref=e790]: €6,90
+        - generic [ref=e791]:
+          - generic [ref=e792]: Total
+          - generic [ref=e793]: €6,90
+      - generic [ref=e794]:
+        - button "Valider ma commande €6,90" [ref=e795] [cursor=pointer]:
+          - generic [ref=e796]: Valider ma commande
+          - generic [ref=e797]: €6,90
+        - button "+ Ajouter des articles" [ref=e798] [cursor=pointer]
+  - status

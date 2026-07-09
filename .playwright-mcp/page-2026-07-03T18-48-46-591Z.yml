@@ -1,0 +1,54 @@
+- main [ref=f4e5]:
+  - generic [ref=f4e6]:
+    - link "logo" [ref=f4e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=f4e8]
+    - generic [ref=f4e9]:
+      - generic [ref=f4e11]:
+        - link " Tableau de bord" [ref=f4e13] [cursor=pointer]:
+          - /url: /admin/dashboard
+          - generic [ref=f4e14]: 
+          - generic [ref=f4e15]: Tableau de bord
+        - button "flag" [ref=f4e18] [cursor=pointer]:
+          - img "flag" [ref=f4e19]
+      - generic [ref=f4e20]:
+        - button "avatar Bonjour Caissier Le Cayenne" [ref=f4e21] [cursor=pointer]:
+          - img "avatar" [ref=f4e22]
+          - heading "Bonjour Caissier Le Cayenne" [level=3] [ref=f4e23]:
+            - text: Bonjour
+            - generic "Caissier Le Cayenne" [ref=f4e24]
+          - generic [ref=f4e25]: 
+        - menu "avatar Bonjour Caissier Le Cayenne":
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "Caissier Le Cayenne" [level=3]
+            - paragraph: pos@lecayenne.fr
+            - paragraph: "+330600000002"
+            - heading "0,00 €" [level=3]
+          - menuitem "Modifier le profil":
+            - text: 
+            - generic: Modifier le profil
+          - menuitem "Changer le mot de passe":
+            - text: 
+            - generic: Changer le mot de passe
+          - menuitem "Déconnexion":
+            - text: 
+            - generic: Déconnexion
+  - text:           
+  - button "Ouvrir l'historique des commandes du jour" [ref=f4e27] [cursor=pointer]:
+    - generic [ref=f4e28]: 📚
+    - generic [ref=f4e29]: Historique
+  - generic [ref=f4e30]:
+    - status [ref=f4e31]:
+      - generic [ref=f4e32]:
+        - img [ref=f4e34]
+        - generic [ref=f4e36]: Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS.
+      - generic [ref=f4e37]: LOCAL
+    - generic [ref=f4e38]:
+      - img [ref=f4e41]
+      - generic [ref=f4e48]: Aucune commande en cours
+      - generic [ref=f4e49]: Les nouvelles commandes apparaîtront ici

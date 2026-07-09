@@ -1,0 +1,298 @@
+{
+  "started": "2026-06-04T17:10:08.112Z",
+  "pages": [
+    {
+      "label": "dashboard",
+      "url": "/admin/dashboard",
+      "screenshot": "01-dashboard.png",
+      "h1": "",
+      "console_errors": 0,
+      "raw_labels": [],
+      "note": ""
+    },
+    {
+      "label": "/admin/pos",
+      "url": "/admin/pos",
+      "screenshot": "02--admin-pos.png",
+      "h1": "Commande rapide",
+      "console_errors": 0,
+      "raw_labels": [],
+      "note": ""
+    },
+    {
+      "label": "Modifier le profil",
+      "url": "/admin/profile/edit-profile",
+      "screenshot": "03-modifier-le-profil.png",
+      "h1": "",
+      "console_errors": 0,
+      "raw_labels": [],
+      "note": ""
+    },
+    {
+      "label": "Changer le mot de passe",
+      "url": "/admin/profile/change-password",
+      "screenshot": "04-changer-le-mot-de-passe.png",
+      "h1": "",
+      "console_errors": 0,
+      "raw_labels": [],
+      "note": ""
+    },
+    {
+      "label": "Produits & Stock",
+      "url": "/admin/stock/rupture",
+      "screenshot": "05-produits-stock.png",
+      "h1": "Gestion Produits & Stock",
+      "console_errors": 0,
+      "raw_labels": [],
+      "note": ""
+    },
+    {
+      "label": "Catalogue",
+      "url": "/admin/items/studio",
+      "screenshot": "06-catalogue.png",
+      "h1": "Catalogue",
+      "console_errors": 0,
+      "raw_labels": [],
+      "note": ""
+    },
+    {
+      "label": "Attribut d’articles",
+      "url": "/admin/settings/item-attributes/list",
+      "screenshot": "07-attribut-d-articles.png",
+      "h1": "",
+      "console_errors": 0,
+      "raw_labels": [],
+      "note": ""
+    },
+    {
+      "label": "Ingrédients",
+      "url": "/admin/ingredients",
+      "screenshot": "08-ingr-dients.png",
+      "h1": "Ingrédients",
+      "console_errors": 0,
+      "raw_labels": [],
+      "note": ""
+    },
+    {
+      "label": "Commandes caisse",
+      "url": "/admin/pos-orders",
+      "screenshot": "09-commandes-caisse.png",
+      "h1": "",
+      "console_errors": 0,
+      "raw_labels": [],
+      "note": ""
+    },
+    {
+      "label": "Historique",
+      "url": "/admin/historique",
+      "screenshot": "10-historique.png",
+      "h1": "",
+      "console_errors": 0,
+      "raw_labels": [],
+      "note": ""
+    },
+    {
+      "label": "Encaissement",
+      "url": "/admin/encaissement",
+      "screenshot": "11-encaissement.png",
+      "h1": "",
+      "console_errors": 0,
+      "raw_labels": [],
+      "note": ""
+    },
+    {
+      "label": "Vue caisse unifiée",
+      "url": "/admin/cash-overview",
+      "screenshot": "12-vue-caisse-unifi-e.png",
+      "h1": "",
+      "console_errors": 0,
+      "raw_labels": [],
+      "note": ""
+    },
+    {
+      "label": "Caisse livreur",
+      "url": "/admin/delivery-boy-cash-sessions",
+      "screenshot": "13-caisse-livreur.png",
+      "h1": "",
+      "console_errors": 0,
+      "raw_labels": [],
+      "note": ""
+    },
+    {
+      "label": "Écran cuisine",
+      "url": "/admin/kitchen-display-system",
+      "screenshot": "14--cran-cuisine.png",
+      "h1": "",
+      "console_errors": 0,
+      "raw_labels": [],
+      "note": ""
+    },
+    {
+      "label": "Suivi client",
+      "url": "/admin/order-status-screen",
+      "screenshot": "15-suivi-client.png",
+      "h1": "",
+      "console_errors": 0,
+      "raw_labels": [],
+      "note": ""
+    },
+    {
+      "label": "Notification pushs",
+      "url": "/admin/push-notifications",
+      "screenshot": "16-notification-pushs.png",
+      "h1": "",
+      "console_errors": 0,
+      "raw_labels": [],
+      "note": ""
+    },
+    {
+      "label": "Messages",
+      "url": "/admin/messages",
+      "screenshot": "17-messages.png",
+      "h1": "",
+      "console_errors": 0,
+      "raw_labels": [],
+      "note": ""
+    },
+    {
+      "label": "Abonnés",
+      "url": "/admin/subscribers",
+      "screenshot": "18-abonn-s.png",
+      "h1": "",
+      "console_errors": 0,
+      "raw_labels": [],
+      "note": ""
+    },
+    {
+      "label": "Administrateurs",
+      "url": "/admin/administrators",
+      "screenshot": "19-administrateurs.png",
+      "h1": "",
+      "console_errors": 0,
+      "raw_labels": [],
+      "note": ""
+    },
+    {
+      "label": "Employés",
+      "url": "/admin/employees",
+      "screenshot": "20-employ-s.png",
+      "h1": "",
+      "console_errors": 0,
+      "raw_labels": [],
+      "note": ""
+    },
+    {
+      "label": "Chefs",
+      "url": "/admin/chefs",
+      "screenshot": "21-chefs.png",
+      "h1": "",
+      "console_errors": 0,
+      "raw_labels": [],
+      "note": ""
+    },
+    {
+      "label": "Transactions",
+      "url": "/admin/transactions",
+      "screenshot": "22-transactions.png",
+      "h1": "",
+      "console_errors": 0,
+      "raw_labels": [],
+      "note": ""
+    },
+    {
+      "label": "Rapport des ventes",
+      "url": "/admin/sales-report",
+      "screenshot": "23-rapport-des-ventes.png",
+      "h1": "",
+      "console_errors": 0,
+      "raw_labels": [],
+      "note": ""
+    },
+    {
+      "label": "Rapport articles",
+      "url": "/admin/items-report",
+      "screenshot": "24-rapport-articles.png",
+      "h1": "",
+      "console_errors": 0,
+      "raw_labels": [],
+      "note": ""
+    },
+    {
+      "label": "Paramètres",
+      "url": "/admin/settings",
+      "screenshot": "25-param-tres.png",
+      "h1": "",
+      "console_errors": 0,
+      "raw_labels": [],
+      "note": ""
+    },
+    {
+      "label": "Suivi caisse (kanban)",
+      "url": "/admin/pos-orders-tracker",
+      "screenshot": "26-suivi-caisse-kanban-.png",
+      "h1": "Suivi commandes",
+      "console_errors": 0,
+      "raw_labels": [],
+      "note": ""
+    },
+    {
+      "label": "Rapport caisses quotidien",
+      "url": "/admin/cash-sessions-report",
+      "screenshot": "27-rapport-caisses-quotidien.png",
+      "h1": "",
+      "console_errors": 0,
+      "raw_labels": [],
+      "note": ""
+    },
+    {
+      "label": "observability-outbox",
+      "url": "/admin/observability/outbox",
+      "screenshot": "28-observability-outbox.png",
+      "h1": "Pipeline outbox & événements",
+      "console_errors": 0,
+      "raw_labels": [],
+      "note": ""
+    },
+    {
+      "label": "stock-rupture",
+      "url": "/admin/stock-rupture-dashboard",
+      "screenshot": "29-stock-rupture.png",
+      "h1": "",
+      "console_errors": 0,
+      "raw_labels": [],
+      "note": ""
+    }
+  ],
+  "console_by_page": {},
+  "discovered": [
+    "/admin/pos",
+    "/admin/profile/edit-profile",
+    "/admin/profile/change-password",
+    "/admin/dashboard",
+    "/admin/stock/rupture",
+    "/admin/items/studio",
+    "/admin/settings/item-attributes/list",
+    "/admin/ingredients",
+    "/admin/pos-orders",
+    "/admin/historique",
+    "/admin/encaissement",
+    "/admin/cash-overview",
+    "/admin/delivery-boy-cash-sessions",
+    "/admin/kitchen-display-system",
+    "/admin/order-status-screen",
+    "/admin/push-notifications",
+    "/admin/messages",
+    "/admin/subscribers",
+    "/admin/administrators",
+    "/admin/employees",
+    "/admin/chefs",
+    "/admin/transactions",
+    "/admin/sales-report",
+    "/admin/items-report",
+    "/admin/settings",
+    "/admin/pos-orders-tracker",
+    "/admin/cash-sessions-report"
+  ],
+  "finished": "2026-06-04T17:14:34.237Z",
+  "total": 29
+}

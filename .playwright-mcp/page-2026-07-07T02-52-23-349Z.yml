@@ -1,0 +1,1829 @@
+- main [ref=f24e44]:
+  - generic [ref=f24e45]:
+    - link "logo" [ref=f24e46] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=f24e47]
+    - generic [ref=f24e48]:
+      - generic [ref=f24e49]:
+        - generic [ref=f24e50]:
+          - button " Filiale Le Cayenne (principal) " [ref=f24e51] [cursor=pointer]:
+            - generic [ref=f24e52]: 
+            - heading "Filiale Le Cayenne (principal)" [level=3] [ref=f24e53]:
+              - generic [ref=f24e54]: Filiale
+              - text: Le Cayenne (principal)
+            - generic [ref=f24e55]: 
+          - list:
+            - listitem:
+              - radio "Le Cayenne (principal)" [checked]
+              - generic: Le Cayenne (principal)
+        - generic [ref=f24e57]:
+          - generic [ref=f24e58]:
+            - button "flag Français" [ref=f24e59] [cursor=pointer]:
+              - img "flag" [ref=f24e60]
+              - generic [ref=f24e61]: Français
+            - list:
+              - listitem:
+                - img "flag"
+                - generic: Anglais
+              - listitem:
+                - img "flag"
+                - generic: Français
+          - link "POS" [ref=f24e62] [cursor=pointer]:
+            - /url: /admin/pos
+            - generic [ref=f24e63]: 
+      - button "Fermer" [ref=f24e64] [cursor=pointer]: 
+      - generic [ref=f24e65]:
+        - button "avatar Bonjour Admin Le Cayenne" [ref=f24e66] [cursor=pointer]:
+          - img "avatar" [ref=f24e67]
+          - heading "Bonjour Admin Le Cayenne" [level=3] [ref=f24e68]:
+            - text: Bonjour
+            - generic "Admin Le Cayenne" [ref=f24e69]
+          - generic [ref=f24e70]: 
+        - menu "avatar Bonjour Admin Le Cayenne":
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "Admin Le Cayenne" [level=3]
+            - paragraph: admin@lecayenne.fr
+            - paragraph: "+330600000000"
+            - heading "2,00 €" [level=3]
+          - menuitem "Modifier le profil":
+            - text: 
+            - generic: Modifier le profil
+          - menuitem "Changer le mot de passe":
+            - text: 
+            - generic: Changer le mot de passe
+          - menuitem "Déconnexion":
+            - text: 
+            - generic: Déconnexion
+  - complementary [ref=f24e71]:
+    - text: 
+    - navigation [ref=f24e72]:
+      - list [ref=f24e73]:
+        - listitem [ref=f24e74]:
+          - link " Tableau de bord" [ref=f24e75] [cursor=pointer]:
+            - /url: /admin/dashboard
+            - generic [ref=f24e76]: 
+            - generic [ref=f24e77]: Tableau de bord
+      - list [ref=f24e78]:
+        - listitem [ref=f24e79]:
+          - link " POS" [ref=f24e80] [cursor=pointer]:
+            - /url: /admin/pos
+            - generic [ref=f24e81]: 
+            - generic [ref=f24e82]: POS
+      - list [ref=f24e83]:
+        - listitem [ref=f24e84]:
+          - link "Produits & Stock" [ref=f24e85] [cursor=pointer]:
+            - /url: /admin/stock/rupture
+            - generic [ref=f24e86]: Produits & Stock
+      - list [ref=f24e87]:
+        - listitem [ref=f24e88]:
+          - link " Catalogue" [ref=f24e89] [cursor=pointer]:
+            - /url: /admin/items/studio
+            - generic [ref=f24e90]: 
+            - generic [ref=f24e91]: Catalogue
+        - listitem [ref=f24e92]:
+          - link " Attribut d’articles" [ref=f24e93] [cursor=pointer]:
+            - /url: /admin/settings/item-attributes/list
+            - generic [ref=f24e94]: 
+            - generic [ref=f24e95]: Attribut d’articles
+      - list [ref=f24e96]:
+        - listitem [ref=f24e97]:
+          - link " Ingrédients" [ref=f24e98] [cursor=pointer]:
+            - /url: /admin/ingredients
+            - generic [ref=f24e99]: 
+            - generic [ref=f24e100]: Ingrédients
+      - list [ref=f24e101]:
+        - listitem [ref=f24e102]:
+          - link " Commandes caisse" [ref=f24e103] [cursor=pointer]:
+            - /url: /admin/pos-orders
+            - generic [ref=f24e104]: 
+            - generic [ref=f24e105]: Commandes caisse
+      - list [ref=f24e106]:
+        - listitem [ref=f24e107]:
+          - link " Historique" [ref=f24e108] [cursor=pointer]:
+            - /url: /admin/historique
+            - generic [ref=f24e109]: 
+            - generic [ref=f24e110]: Historique
+      - list [ref=f24e111]:
+        - listitem [ref=f24e112]:
+          - link " Encaissement" [ref=f24e113] [cursor=pointer]:
+            - /url: /admin/encaissement
+            - generic [ref=f24e114]: 
+            - generic [ref=f24e115]: Encaissement
+      - list [ref=f24e116]:
+        - listitem [ref=f24e117]:
+          - link " Vue caisse unifiée" [ref=f24e118] [cursor=pointer]:
+            - /url: /admin/cash-overview
+            - generic [ref=f24e119]: 
+            - generic [ref=f24e120]: Vue caisse unifiée
+      - list [ref=f24e121]:
+        - listitem [ref=f24e122]:
+          - link " Caisse livreur" [ref=f24e123] [cursor=pointer]:
+            - /url: /admin/delivery-boy-cash-sessions
+            - generic [ref=f24e124]: 
+            - generic [ref=f24e125]: Caisse livreur
+      - list [ref=f24e126]:
+        - listitem [ref=f24e127]:
+          - button "Caisse et commandes" [ref=f24e128] [cursor=pointer]
+        - listitem [ref=f24e129]:
+          - link " Écran cuisine" [ref=f24e130] [cursor=pointer]:
+            - /url: /admin/kitchen-display-system
+            - generic [ref=f24e131]: 
+            - generic [ref=f24e132]: Écran cuisine
+        - listitem [ref=f24e133]:
+          - link " Suivi client" [ref=f24e134] [cursor=pointer]:
+            - /url: /admin/order-status-screen
+            - generic [ref=f24e135]: 
+            - generic [ref=f24e136]: Suivi client
+      - list [ref=f24e137]:
+        - listitem [ref=f24e138]:
+          - button "Communications" [ref=f24e139] [cursor=pointer]
+        - listitem [ref=f24e140]:
+          - link " Notification pushs" [ref=f24e141] [cursor=pointer]:
+            - /url: /admin/push-notifications
+            - generic [ref=f24e142]: 
+            - generic [ref=f24e143]: Notification pushs
+        - listitem [ref=f24e144]:
+          - link " Messages" [ref=f24e145] [cursor=pointer]:
+            - /url: /admin/messages
+            - generic [ref=f24e146]: 
+            - generic [ref=f24e147]: Messages
+        - listitem [ref=f24e148]:
+          - link " Abonnés" [ref=f24e149] [cursor=pointer]:
+            - /url: /admin/subscribers
+            - generic [ref=f24e150]: 
+            - generic [ref=f24e151]: Abonnés
+      - list [ref=f24e152]:
+        - listitem [ref=f24e153]:
+          - button "Utilisateurs" [ref=f24e154] [cursor=pointer]
+        - listitem [ref=f24e155]:
+          - link " Administrateurs" [ref=f24e156] [cursor=pointer]:
+            - /url: /admin/administrators
+            - generic [ref=f24e157]: 
+            - generic [ref=f24e158]: Administrateurs
+        - listitem [ref=f24e159]:
+          - link " Employés" [ref=f24e160] [cursor=pointer]:
+            - /url: /admin/employees
+            - generic [ref=f24e161]: 
+            - generic [ref=f24e162]: Employés
+        - listitem [ref=f24e163]:
+          - link " Chefs" [ref=f24e164] [cursor=pointer]:
+            - /url: /admin/chefs
+            - generic [ref=f24e165]: 
+            - generic [ref=f24e166]: Chefs
+      - list [ref=f24e167]:
+        - listitem [ref=f24e168]:
+          - button "Comptes" [ref=f24e169] [cursor=pointer]
+        - listitem [ref=f24e170]:
+          - link " Transactions" [ref=f24e171] [cursor=pointer]:
+            - /url: /admin/transactions
+            - generic [ref=f24e172]: 
+            - generic [ref=f24e173]: Transactions
+      - list [ref=f24e174]:
+        - listitem [ref=f24e175]:
+          - button "Rapports" [ref=f24e176] [cursor=pointer]
+        - listitem [ref=f24e177]:
+          - link " Rapport des ventes" [ref=f24e178] [cursor=pointer]:
+            - /url: /admin/sales-report
+            - generic [ref=f24e179]: 
+            - generic [ref=f24e180]: Rapport des ventes
+        - listitem [ref=f24e181]:
+          - link " Rapport articles" [ref=f24e182] [cursor=pointer]:
+            - /url: /admin/items-report
+            - generic [ref=f24e183]: 
+            - generic [ref=f24e184]: Rapport articles
+      - list [ref=f24e185]:
+        - listitem [ref=f24e186]:
+          - button "Configuration" [ref=f24e187] [cursor=pointer]
+        - listitem [ref=f24e188]:
+          - link " Paramètres" [ref=f24e189] [cursor=pointer]:
+            - /url: /admin/settings
+            - generic [ref=f24e190]: 
+            - generic [ref=f24e191]: Paramètres
+  - generic [ref=f24e192]:
+    - generic [ref=f24e193]:
+      - heading "Bonjour !" [level=3] [ref=f24e194]
+      - heading "Admin Le Cayenne" [level=4] [ref=f24e195]
+    - button "PDF Clôture du jour" [ref=f24e196] [cursor=pointer]:
+      - generic [ref=f24e197]: 
+      - generic [ref=f24e198]: PDF Clôture du jour
+  - navigation "Accès rapides" [ref=f24e199]:
+    - heading "Accès rapides" [level=3] [ref=f24e200]
+    - generic [ref=f24e201]:
+      - link "POS" [ref=f24e202] [cursor=pointer]:
+        - /url: /admin/pos
+        - generic [ref=f24e203]: 
+        - generic [ref=f24e204]: POS
+      - link "Commandes caisse" [ref=f24e205] [cursor=pointer]:
+        - /url: /admin/pos-orders
+        - generic [ref=f24e206]: 
+        - generic [ref=f24e207]: Commandes caisse
+      - link "Suivi caisse (kanban)" [ref=f24e208] [cursor=pointer]:
+        - /url: /admin/pos-orders-tracker
+        - generic [ref=f24e209]: 
+        - generic [ref=f24e210]: Suivi caisse (kanban)
+      - link "Encaissement" [ref=f24e211] [cursor=pointer]:
+        - /url: /admin/encaissement
+        - generic [ref=f24e212]: 
+        - generic [ref=f24e213]: Encaissement
+      - link "Historique" [ref=f24e214] [cursor=pointer]:
+        - /url: /admin/historique
+        - generic [ref=f24e215]: 
+        - generic [ref=f24e216]: Historique
+      - link "Écran cuisine" [ref=f24e217] [cursor=pointer]:
+        - /url: /admin/kitchen-display-system
+        - generic [ref=f24e218]: 
+        - generic [ref=f24e219]: Écran cuisine
+      - link "Suivi client" [ref=f24e220] [cursor=pointer]:
+        - /url: /admin/order-status-screen
+        - generic [ref=f24e221]: 
+        - generic [ref=f24e222]: Suivi client
+      - link "Catalogue" [ref=f24e223] [cursor=pointer]:
+        - /url: /admin/items/studio
+        - generic [ref=f24e224]: 
+        - generic [ref=f24e225]: Catalogue
+      - link "Ingrédients" [ref=f24e226] [cursor=pointer]:
+        - /url: /admin/ingredients
+        - generic [ref=f24e227]: 
+        - generic [ref=f24e228]: Ingrédients
+      - link "Produits & Stock" [ref=f24e229] [cursor=pointer]:
+        - /url: /admin/stock/rupture
+        - generic [ref=f24e230]: Produits & Stock
+      - link "Rapport caisses quotidien" [ref=f24e231] [cursor=pointer]:
+        - /url: /admin/cash-sessions-report
+        - generic [ref=f24e232]: 
+        - generic [ref=f24e233]: Rapport caisses quotidien
+      - link "Vue caisse unifiée" [ref=f24e234] [cursor=pointer]:
+        - /url: /admin/cash-overview
+        - generic [ref=f24e235]: 
+        - generic [ref=f24e236]: Vue caisse unifiée
+  - generic [ref=f24e237]:
+    - heading "Vue d’ensemble" [level=4] [ref=f24e238]
+    - generic [ref=f24e239]:
+      - generic [ref=f24e241]:
+        - generic [ref=f24e243]: 
+        - generic [ref=f24e244]:
+          - heading "Total ventes" [level=3] [ref=f24e245]
+          - heading "38 467,62 €" [level=4] [ref=f24e246]
+      - generic [ref=f24e248]:
+        - generic [ref=f24e250]: 
+        - generic [ref=f24e251]:
+          - heading "Total commandes" [level=3] [ref=f24e252]
+          - heading "2844" [level=4] [ref=f24e253]
+      - generic [ref=f24e255]:
+        - generic [ref=f24e257]: 
+        - generic [ref=f24e258]:
+          - heading "Total articles menu" [level=3] [ref=f24e259]
+          - heading "66" [level=4] [ref=f24e260]
+  - generic [ref=f24e261]:
+    - heading "Suivi en direct" [level=4] [ref=f24e262]
+    - generic [ref=f24e263]:
+      - generic [ref=f24e265]:
+        - heading "Chiffre d'Affaires du Jour" [level=3] [ref=f24e266]
+        - heading "6,70 €" [level=4] [ref=f24e267]
+      - generic [ref=f24e269]:
+        - heading "Commandes du Jour" [level=3] [ref=f24e270]
+        - heading "8" [level=4] [ref=f24e271]
+      - generic [ref=f24e273]:
+        - heading "Ticket Moyen" [level=3] [ref=f24e274]
+        - heading "1,68 €" [level=4] [ref=f24e275]
+  - generic [ref=f24e276]:
+    - generic [ref=f24e278]:
+      - generic [ref=f24e279]:
+        - heading "Alertes SLA (Cuisine > 15min)" [level=4] [ref=f24e280]: Alertes SLA (Cuisine > 15min)
+        - generic [ref=f24e284]: 294 Alerte(s)
+      - generic [ref=f24e285]:
+        - generic [ref=f24e287]:
+          - 'heading "Ticket #A0140 (1006264497)" [level=5] [ref=f24e288]'
+          - paragraph [ref=f24e289]: En attente depuis 26 j 5 h
+        - generic [ref=f24e292]:
+          - 'heading "Ticket #A0142 (1006264500)" [level=5] [ref=f24e293]'
+          - paragraph [ref=f24e294]: En attente depuis 26 j 5 h
+        - generic [ref=f24e297]:
+          - 'heading "Ticket #A0143 (1006264501)" [level=5] [ref=f24e298]'
+          - paragraph [ref=f24e299]: En attente depuis 26 j 5 h
+        - generic [ref=f24e302]:
+          - 'heading "Ticket #A0144 (1006264503)" [level=5] [ref=f24e303]'
+          - paragraph [ref=f24e304]: En attente depuis 26 j 5 h
+        - generic [ref=f24e307]:
+          - 'heading "Ticket #A0145 (1006264504)" [level=5] [ref=f24e308]'
+          - paragraph [ref=f24e309]: En attente depuis 26 j 5 h
+        - generic [ref=f24e312]:
+          - 'heading "Ticket #A0146 (1006264505)" [level=5] [ref=f24e313]'
+          - paragraph [ref=f24e314]: En attente depuis 26 j 5 h
+        - generic [ref=f24e317]:
+          - 'heading "Ticket #A0147 (1006264506)" [level=5] [ref=f24e318]'
+          - paragraph [ref=f24e319]: En attente depuis 26 j 5 h
+        - generic [ref=f24e322]:
+          - 'heading "Ticket #A0148 (1006264507)" [level=5] [ref=f24e323]'
+          - paragraph [ref=f24e324]: En attente depuis 26 j 5 h
+        - generic [ref=f24e327]:
+          - 'heading "Ticket #A0149 (1006264509)" [level=5] [ref=f24e328]'
+          - paragraph [ref=f24e329]: En attente depuis 26 j 5 h
+        - generic [ref=f24e332]:
+          - 'heading "Ticket #A0150 (1006264510)" [level=5] [ref=f24e333]'
+          - paragraph [ref=f24e334]: En attente depuis 26 j 5 h
+        - generic [ref=f24e337]:
+          - 'heading "Ticket #A0001 (1206264512)" [level=5] [ref=f24e338]'
+          - paragraph [ref=f24e339]: En attente depuis 24 j 15 h
+        - generic [ref=f24e342]:
+          - 'heading "Ticket #A0003 (1206264514)" [level=5] [ref=f24e343]'
+          - paragraph [ref=f24e344]: En attente depuis 24 j 15 h
+        - generic [ref=f24e347]:
+          - 'heading "Ticket #A0010 (1206264523)" [level=5] [ref=f24e348]'
+          - paragraph [ref=f24e349]: En attente depuis 24 j 15 h
+        - generic [ref=f24e352]:
+          - 'heading "Ticket #A0012 (1206264525)" [level=5] [ref=f24e353]'
+          - paragraph [ref=f24e354]: En attente depuis 24 j 15 h
+        - generic [ref=f24e357]:
+          - 'heading "Ticket #A0009 (1206264520)" [level=5] [ref=f24e358]'
+          - paragraph [ref=f24e359]: En attente depuis 24 j 15 h
+        - generic [ref=f24e362]:
+          - 'heading "Ticket #A0013 (1206264526)" [level=5] [ref=f24e363]'
+          - paragraph [ref=f24e364]: En attente depuis 24 j 15 h
+        - generic [ref=f24e367]:
+          - 'heading "Ticket #A0015 (1206264528)" [level=5] [ref=f24e368]'
+          - paragraph [ref=f24e369]: En attente depuis 24 j 15 h
+        - generic [ref=f24e372]:
+          - 'heading "Ticket #A0017 (1206264530)" [level=5] [ref=f24e373]'
+          - paragraph [ref=f24e374]: En attente depuis 24 j 15 h
+        - generic [ref=f24e377]:
+          - 'heading "Ticket #A0021 (1206264534)" [level=5] [ref=f24e378]'
+          - paragraph [ref=f24e379]: En attente depuis 24 j 12 h
+        - generic [ref=f24e382]:
+          - 'heading "Ticket #A0024 (1206264538)" [level=5] [ref=f24e383]'
+          - paragraph [ref=f24e384]: En attente depuis 24 j 12 h
+        - generic [ref=f24e387]:
+          - 'heading "Ticket #A0034 (1206264552)" [level=5] [ref=f24e388]'
+          - paragraph [ref=f24e389]: En attente depuis 24 j 9 h
+        - generic [ref=f24e392]:
+          - 'heading "Ticket #A0036 (1206264554)" [level=5] [ref=f24e393]'
+          - paragraph [ref=f24e394]: En attente depuis 24 j 9 h
+        - generic [ref=f24e397]:
+          - 'heading "Ticket #A0038 (1206264556)" [level=5] [ref=f24e398]'
+          - paragraph [ref=f24e399]: En attente depuis 24 j 9 h
+        - generic [ref=f24e402]:
+          - 'heading "Ticket #A0041 (1206264560)" [level=5] [ref=f24e403]'
+          - paragraph [ref=f24e404]: En attente depuis 24 j 9 h
+        - generic [ref=f24e407]:
+          - 'heading "Ticket #A0042 (1206264562)" [level=5] [ref=f24e408]'
+          - paragraph [ref=f24e409]: En attente depuis 24 j 8 h
+        - generic [ref=f24e412]:
+          - 'heading "Ticket #A0043 (1206264563)" [level=5] [ref=f24e413]'
+          - paragraph [ref=f24e414]: En attente depuis 24 j 8 h
+        - generic [ref=f24e417]:
+          - 'heading "Ticket #A0044 (1206264564)" [level=5] [ref=f24e418]'
+          - paragraph [ref=f24e419]: En attente depuis 24 j 8 h
+        - generic [ref=f24e422]:
+          - 'heading "Ticket #A0045 (1206264565)" [level=5] [ref=f24e423]'
+          - paragraph [ref=f24e424]: En attente depuis 24 j 8 h
+        - generic [ref=f24e427]:
+          - 'heading "Ticket #A0046 (1206264566)" [level=5] [ref=f24e428]'
+          - paragraph [ref=f24e429]: En attente depuis 24 j 8 h
+        - generic [ref=f24e432]:
+          - 'heading "Ticket #A0047 (1206264567)" [level=5] [ref=f24e433]'
+          - paragraph [ref=f24e434]: En attente depuis 24 j 8 h
+        - generic [ref=f24e437]:
+          - 'heading "Ticket #A0048 (1206264568)" [level=5] [ref=f24e438]'
+          - paragraph [ref=f24e439]: En attente depuis 24 j 8 h
+        - generic [ref=f24e442]:
+          - 'heading "Ticket #A0049 (1206264569)" [level=5] [ref=f24e443]'
+          - paragraph [ref=f24e444]: En attente depuis 24 j 8 h
+        - generic [ref=f24e447]:
+          - 'heading "Ticket #A0050 (1206264570)" [level=5] [ref=f24e448]'
+          - paragraph [ref=f24e449]: En attente depuis 24 j 8 h
+        - generic [ref=f24e452]:
+          - 'heading "Ticket #A0051 (1206264571)" [level=5] [ref=f24e453]'
+          - paragraph [ref=f24e454]: En attente depuis 24 j 8 h
+        - generic [ref=f24e457]:
+          - 'heading "Ticket #A0052 (1206264572)" [level=5] [ref=f24e458]'
+          - paragraph [ref=f24e459]: En attente depuis 24 j 8 h
+        - generic [ref=f24e462]:
+          - 'heading "Ticket #A0053 (1206264573)" [level=5] [ref=f24e463]'
+          - paragraph [ref=f24e464]: En attente depuis 24 j 8 h
+        - generic [ref=f24e467]:
+          - 'heading "Ticket #A0054 (1206264574)" [level=5] [ref=f24e468]'
+          - paragraph [ref=f24e469]: En attente depuis 24 j 8 h
+        - generic [ref=f24e472]:
+          - 'heading "Ticket #A0055 (1206264575)" [level=5] [ref=f24e473]'
+          - paragraph [ref=f24e474]: En attente depuis 24 j 8 h
+        - generic [ref=f24e477]:
+          - 'heading "Ticket #A0056 (1206264576)" [level=5] [ref=f24e478]'
+          - paragraph [ref=f24e479]: En attente depuis 24 j 8 h
+        - generic [ref=f24e482]:
+          - 'heading "Ticket #A0057 (1206264577)" [level=5] [ref=f24e483]'
+          - paragraph [ref=f24e484]: En attente depuis 24 j 8 h
+        - generic [ref=f24e487]:
+          - 'heading "Ticket #A0058 (1206264578)" [level=5] [ref=f24e488]'
+          - paragraph [ref=f24e489]: En attente depuis 24 j 8 h
+        - generic [ref=f24e492]:
+          - 'heading "Ticket #A0059 (1206264579)" [level=5] [ref=f24e493]'
+          - paragraph [ref=f24e494]: En attente depuis 24 j 8 h
+        - generic [ref=f24e497]:
+          - 'heading "Ticket #A0060 (1206264580)" [level=5] [ref=f24e498]'
+          - paragraph [ref=f24e499]: En attente depuis 24 j 8 h
+        - generic [ref=f24e502]:
+          - 'heading "Ticket #A0061 (1206264581)" [level=5] [ref=f24e503]'
+          - paragraph [ref=f24e504]: En attente depuis 24 j 8 h
+        - generic [ref=f24e507]:
+          - 'heading "Ticket #A0062 (1206264582)" [level=5] [ref=f24e508]'
+          - paragraph [ref=f24e509]: En attente depuis 24 j 8 h
+        - generic [ref=f24e512]:
+          - 'heading "Ticket #A0063 (1206264583)" [level=5] [ref=f24e513]'
+          - paragraph [ref=f24e514]: En attente depuis 24 j 8 h
+        - generic [ref=f24e517]:
+          - 'heading "Ticket #A0064 (1206264584)" [level=5] [ref=f24e518]'
+          - paragraph [ref=f24e519]: En attente depuis 24 j 8 h
+        - generic [ref=f24e522]:
+          - 'heading "Ticket #A0065 (1206264585)" [level=5] [ref=f24e523]'
+          - paragraph [ref=f24e524]: En attente depuis 24 j 8 h
+        - generic [ref=f24e527]:
+          - 'heading "Ticket #A0066 (1206264586)" [level=5] [ref=f24e528]'
+          - paragraph [ref=f24e529]: En attente depuis 24 j 8 h
+        - generic [ref=f24e532]:
+          - 'heading "Ticket #A0067 (1206264587)" [level=5] [ref=f24e533]'
+          - paragraph [ref=f24e534]: En attente depuis 24 j 8 h
+        - generic [ref=f24e537]:
+          - 'heading "Ticket #A0068 (1206264588)" [level=5] [ref=f24e538]'
+          - paragraph [ref=f24e539]: En attente depuis 24 j 8 h
+        - generic [ref=f24e542]:
+          - 'heading "Ticket #A0069 (1206264589)" [level=5] [ref=f24e543]'
+          - paragraph [ref=f24e544]: En attente depuis 24 j 8 h
+        - generic [ref=f24e547]:
+          - 'heading "Ticket #A0070 (1206264590)" [level=5] [ref=f24e548]'
+          - paragraph [ref=f24e549]: En attente depuis 24 j 8 h
+        - generic [ref=f24e552]:
+          - 'heading "Ticket #A0071 (1206264591)" [level=5] [ref=f24e553]'
+          - paragraph [ref=f24e554]: En attente depuis 24 j 8 h
+        - generic [ref=f24e557]:
+          - 'heading "Ticket #A0072 (1206264592)" [level=5] [ref=f24e558]'
+          - paragraph [ref=f24e559]: En attente depuis 24 j 8 h
+        - generic [ref=f24e562]:
+          - 'heading "Ticket #A0073 (1206264593)" [level=5] [ref=f24e563]'
+          - paragraph [ref=f24e564]: En attente depuis 24 j 8 h
+        - generic [ref=f24e567]:
+          - 'heading "Ticket #A0074 (1206264594)" [level=5] [ref=f24e568]'
+          - paragraph [ref=f24e569]: En attente depuis 24 j 8 h
+        - generic [ref=f24e572]:
+          - 'heading "Ticket #A0075 (1206264595)" [level=5] [ref=f24e573]'
+          - paragraph [ref=f24e574]: En attente depuis 24 j 8 h
+        - generic [ref=f24e577]:
+          - 'heading "Ticket #A0076 (1206264596)" [level=5] [ref=f24e578]'
+          - paragraph [ref=f24e579]: En attente depuis 24 j 8 h
+        - generic [ref=f24e582]:
+          - 'heading "Ticket #A0077 (1206264597)" [level=5] [ref=f24e583]'
+          - paragraph [ref=f24e584]: En attente depuis 24 j 8 h
+        - generic [ref=f24e587]:
+          - 'heading "Ticket #A0078 (1206264598)" [level=5] [ref=f24e588]'
+          - paragraph [ref=f24e589]: En attente depuis 24 j 8 h
+        - generic [ref=f24e592]:
+          - 'heading "Ticket #A0088 (1206264609)" [level=5] [ref=f24e593]'
+          - paragraph [ref=f24e594]: En attente depuis 24 j 5 h
+        - generic [ref=f24e597]:
+          - 'heading "Ticket #A0087 (1206264608)" [level=5] [ref=f24e598]'
+          - paragraph [ref=f24e599]: En attente depuis 24 j 5 h
+        - generic [ref=f24e602]:
+          - 'heading "Ticket #A0007 (1306264623)" [level=5] [ref=f24e603]'
+          - paragraph [ref=f24e604]: En attente depuis 23 j 14 h
+        - generic [ref=f24e607]:
+          - 'heading "Ticket #A0008 (1306264624)" [level=5] [ref=f24e608]'
+          - paragraph [ref=f24e609]: En attente depuis 23 j 14 h
+        - generic [ref=f24e612]:
+          - 'heading "Ticket #A0009 (1306264625)" [level=5] [ref=f24e613]'
+          - paragraph [ref=f24e614]: En attente depuis 23 j 14 h
+        - generic [ref=f24e617]:
+          - 'heading "Ticket #A0010 (1306264626)" [level=5] [ref=f24e618]'
+          - paragraph [ref=f24e619]: En attente depuis 23 j 14 h
+        - generic [ref=f24e622]:
+          - 'heading "Ticket #A0011 (1306264627)" [level=5] [ref=f24e623]'
+          - paragraph [ref=f24e624]: En attente depuis 23 j 14 h
+        - generic [ref=f24e627]:
+          - 'heading "Ticket #A0012 (1306264628)" [level=5] [ref=f24e628]'
+          - paragraph [ref=f24e629]: En attente depuis 23 j 14 h
+        - generic [ref=f24e632]:
+          - 'heading "Ticket #A0013 (1306264629)" [level=5] [ref=f24e633]'
+          - paragraph [ref=f24e634]: En attente depuis 23 j 14 h
+        - generic [ref=f24e637]:
+          - 'heading "Ticket #A0014 (1306264630)" [level=5] [ref=f24e638]'
+          - paragraph [ref=f24e639]: En attente depuis 23 j 14 h
+        - generic [ref=f24e642]:
+          - 'heading "Ticket #A0015 (1306264631)" [level=5] [ref=f24e643]'
+          - paragraph [ref=f24e644]: En attente depuis 23 j 14 h
+        - generic [ref=f24e647]:
+          - 'heading "Ticket #A0016 (1306264632)" [level=5] [ref=f24e648]'
+          - paragraph [ref=f24e649]: En attente depuis 23 j 14 h
+        - generic [ref=f24e652]:
+          - 'heading "Ticket #A0017 (1306264633)" [level=5] [ref=f24e653]'
+          - paragraph [ref=f24e654]: En attente depuis 23 j 14 h
+        - generic [ref=f24e657]:
+          - 'heading "Ticket #A0018 (1306264634)" [level=5] [ref=f24e658]'
+          - paragraph [ref=f24e659]: En attente depuis 23 j 14 h
+        - generic [ref=f24e662]:
+          - 'heading "Ticket #A0019 (1306264635)" [level=5] [ref=f24e663]'
+          - paragraph [ref=f24e664]: En attente depuis 23 j 14 h
+        - generic [ref=f24e667]:
+          - 'heading "Ticket #A0020 (1306264636)" [level=5] [ref=f24e668]'
+          - paragraph [ref=f24e669]: En attente depuis 23 j 14 h
+        - generic [ref=f24e672]:
+          - 'heading "Ticket #A0021 (1306264637)" [level=5] [ref=f24e673]'
+          - paragraph [ref=f24e674]: En attente depuis 23 j 14 h
+        - generic [ref=f24e677]:
+          - 'heading "Ticket #A0022 (1306264638)" [level=5] [ref=f24e678]'
+          - paragraph [ref=f24e679]: En attente depuis 23 j 14 h
+        - generic [ref=f24e682]:
+          - 'heading "Ticket #A0023 (1306264639)" [level=5] [ref=f24e683]'
+          - paragraph [ref=f24e684]: En attente depuis 23 j 14 h
+        - generic [ref=f24e687]:
+          - 'heading "Ticket #A0024 (1306264640)" [level=5] [ref=f24e688]'
+          - paragraph [ref=f24e689]: En attente depuis 23 j 14 h
+        - generic [ref=f24e692]:
+          - 'heading "Ticket #A0025 (1306264641)" [level=5] [ref=f24e693]'
+          - paragraph [ref=f24e694]: En attente depuis 23 j 14 h
+        - generic [ref=f24e697]:
+          - 'heading "Ticket #A0026 (1306264642)" [level=5] [ref=f24e698]'
+          - paragraph [ref=f24e699]: En attente depuis 23 j 14 h
+        - generic [ref=f24e702]:
+          - 'heading "Ticket #A0027 (1306264643)" [level=5] [ref=f24e703]'
+          - paragraph [ref=f24e704]: En attente depuis 23 j 14 h
+        - generic [ref=f24e707]:
+          - 'heading "Ticket #A0028 (1306264644)" [level=5] [ref=f24e708]'
+          - paragraph [ref=f24e709]: En attente depuis 23 j 14 h
+        - generic [ref=f24e712]:
+          - 'heading "Ticket #A0029 (1306264645)" [level=5] [ref=f24e713]'
+          - paragraph [ref=f24e714]: En attente depuis 23 j 14 h
+        - generic [ref=f24e717]:
+          - 'heading "Ticket #A0030 (1306264646)" [level=5] [ref=f24e718]'
+          - paragraph [ref=f24e719]: En attente depuis 23 j 14 h
+        - generic [ref=f24e722]:
+          - 'heading "Ticket #A0031 (1306264647)" [level=5] [ref=f24e723]'
+          - paragraph [ref=f24e724]: En attente depuis 23 j 14 h
+        - generic [ref=f24e727]:
+          - 'heading "Ticket #A0032 (1306264648)" [level=5] [ref=f24e728]'
+          - paragraph [ref=f24e729]: En attente depuis 23 j 14 h
+        - generic [ref=f24e732]:
+          - 'heading "Ticket #A0033 (1306264649)" [level=5] [ref=f24e733]'
+          - paragraph [ref=f24e734]: En attente depuis 23 j 14 h
+        - generic [ref=f24e737]:
+          - 'heading "Ticket #A0034 (1306264650)" [level=5] [ref=f24e738]'
+          - paragraph [ref=f24e739]: En attente depuis 23 j 14 h
+        - generic [ref=f24e742]:
+          - 'heading "Ticket #A0035 (1306264651)" [level=5] [ref=f24e743]'
+          - paragraph [ref=f24e744]: En attente depuis 23 j 14 h
+        - generic [ref=f24e747]:
+          - 'heading "Ticket #A0036 (1306264652)" [level=5] [ref=f24e748]'
+          - paragraph [ref=f24e749]: En attente depuis 23 j 14 h
+        - generic [ref=f24e752]:
+          - 'heading "Ticket #A0037 (1306264653)" [level=5] [ref=f24e753]'
+          - paragraph [ref=f24e754]: En attente depuis 23 j 14 h
+        - generic [ref=f24e757]:
+          - 'heading "Ticket #A0038 (1306264654)" [level=5] [ref=f24e758]'
+          - paragraph [ref=f24e759]: En attente depuis 23 j 14 h
+        - generic [ref=f24e762]:
+          - 'heading "Ticket #A0039 (1306264655)" [level=5] [ref=f24e763]'
+          - paragraph [ref=f24e764]: En attente depuis 23 j 14 h
+        - generic [ref=f24e767]:
+          - 'heading "Ticket #A0040 (1306264656)" [level=5] [ref=f24e768]'
+          - paragraph [ref=f24e769]: En attente depuis 23 j 14 h
+        - generic [ref=f24e772]:
+          - 'heading "Ticket #A0041 (1306264657)" [level=5] [ref=f24e773]'
+          - paragraph [ref=f24e774]: En attente depuis 23 j 14 h
+        - generic [ref=f24e777]:
+          - 'heading "Ticket #A0042 (1306264658)" [level=5] [ref=f24e778]'
+          - paragraph [ref=f24e779]: En attente depuis 23 j 14 h
+        - generic [ref=f24e782]:
+          - 'heading "Ticket #A0043 (1306264659)" [level=5] [ref=f24e783]'
+          - paragraph [ref=f24e784]: En attente depuis 23 j 14 h
+        - generic [ref=f24e787]:
+          - 'heading "Ticket #A0044 (1306264660)" [level=5] [ref=f24e788]'
+          - paragraph [ref=f24e789]: En attente depuis 23 j 14 h
+        - generic [ref=f24e792]:
+          - 'heading "Ticket #A0045 (1306264661)" [level=5] [ref=f24e793]'
+          - paragraph [ref=f24e794]: En attente depuis 23 j 14 h
+        - generic [ref=f24e797]:
+          - 'heading "Ticket #A0046 (1306264662)" [level=5] [ref=f24e798]'
+          - paragraph [ref=f24e799]: En attente depuis 23 j 14 h
+        - generic [ref=f24e802]:
+          - 'heading "Ticket #A0047 (1306264663)" [level=5] [ref=f24e803]'
+          - paragraph [ref=f24e804]: En attente depuis 23 j 14 h
+        - generic [ref=f24e807]:
+          - 'heading "Ticket #A0048 (1306264664)" [level=5] [ref=f24e808]'
+          - paragraph [ref=f24e809]: En attente depuis 23 j 14 h
+        - generic [ref=f24e812]:
+          - 'heading "Ticket #A0049 (1306264665)" [level=5] [ref=f24e813]'
+          - paragraph [ref=f24e814]: En attente depuis 23 j 14 h
+        - generic [ref=f24e817]:
+          - 'heading "Ticket #A0050 (1306264666)" [level=5] [ref=f24e818]'
+          - paragraph [ref=f24e819]: En attente depuis 23 j 14 h
+        - generic [ref=f24e822]:
+          - 'heading "Ticket #A0051 (1306264671)" [level=5] [ref=f24e823]'
+          - paragraph [ref=f24e824]: En attente depuis 23 j 14 h
+        - generic [ref=f24e827]:
+          - 'heading "Ticket #A0052 (1306264672)" [level=5] [ref=f24e828]'
+          - paragraph [ref=f24e829]: En attente depuis 23 j 14 h
+        - generic [ref=f24e832]:
+          - 'heading "Ticket #A0053 (1306264673)" [level=5] [ref=f24e833]'
+          - paragraph [ref=f24e834]: En attente depuis 23 j 14 h
+        - generic [ref=f24e837]:
+          - 'heading "Ticket #A0054 (1306264674)" [level=5] [ref=f24e838]'
+          - paragraph [ref=f24e839]: En attente depuis 23 j 14 h
+        - generic [ref=f24e842]:
+          - 'heading "Ticket #A0055 (1306264675)" [level=5] [ref=f24e843]'
+          - paragraph [ref=f24e844]: En attente depuis 23 j 14 h
+        - generic [ref=f24e847]:
+          - 'heading "Ticket #A0056 (1306264676)" [level=5] [ref=f24e848]'
+          - paragraph [ref=f24e849]: En attente depuis 23 j 14 h
+        - generic [ref=f24e852]:
+          - 'heading "Ticket #A0058 (1306264681)" [level=5] [ref=f24e853]'
+          - paragraph [ref=f24e854]: En attente depuis 23 j 14 h
+        - generic [ref=f24e857]:
+          - 'heading "Ticket #A0062 (1306264699)" [level=5] [ref=f24e858]'
+          - paragraph [ref=f24e859]: En attente depuis 23 j 14 h
+        - generic [ref=f24e862]:
+          - 'heading "Ticket #A0063 (1306264704)" [level=5] [ref=f24e863]'
+          - paragraph [ref=f24e864]: En attente depuis 23 j 14 h
+        - generic [ref=f24e867]:
+          - 'heading "Ticket #A0064 (1306264708)" [level=5] [ref=f24e868]'
+          - paragraph [ref=f24e869]: En attente depuis 23 j 14 h
+        - generic [ref=f24e872]:
+          - 'heading "Ticket #A0066 (1306264710)" [level=5] [ref=f24e873]'
+          - paragraph [ref=f24e874]: En attente depuis 23 j 14 h
+        - generic [ref=f24e877]:
+          - 'heading "Ticket #A0068 (1306264712)" [level=5] [ref=f24e878]'
+          - paragraph [ref=f24e879]: En attente depuis 23 j 14 h
+        - generic [ref=f24e882]:
+          - 'heading "Ticket #A0070 (1306264714)" [level=5] [ref=f24e883]'
+          - paragraph [ref=f24e884]: En attente depuis 23 j 14 h
+        - generic [ref=f24e887]:
+          - 'heading "Ticket #A0072 (1306264716)" [level=5] [ref=f24e888]'
+          - paragraph [ref=f24e889]: En attente depuis 23 j 14 h
+        - generic [ref=f24e892]:
+          - 'heading "Ticket #A0074 (1306264718)" [level=5] [ref=f24e893]'
+          - paragraph [ref=f24e894]: En attente depuis 23 j 14 h
+        - generic [ref=f24e897]:
+          - 'heading "Ticket #A0076 (1306264720)" [level=5] [ref=f24e898]'
+          - paragraph [ref=f24e899]: En attente depuis 23 j 14 h
+        - generic [ref=f24e902]:
+          - 'heading "Ticket #A0078 (1306264722)" [level=5] [ref=f24e903]'
+          - paragraph [ref=f24e904]: En attente depuis 23 j 14 h
+        - generic [ref=f24e907]:
+          - 'heading "Ticket #A0080 (1306264724)" [level=5] [ref=f24e908]'
+          - paragraph [ref=f24e909]: En attente depuis 23 j 14 h
+        - generic [ref=f24e912]:
+          - 'heading "Ticket #A0082 (1306264726)" [level=5] [ref=f24e913]'
+          - paragraph [ref=f24e914]: En attente depuis 23 j 14 h
+        - generic [ref=f24e917]:
+          - 'heading "Ticket #A0084 (1306264728)" [level=5] [ref=f24e918]'
+          - paragraph [ref=f24e919]: En attente depuis 23 j 14 h
+        - generic [ref=f24e922]:
+          - 'heading "Ticket #A0086 (1306264730)" [level=5] [ref=f24e923]'
+          - paragraph [ref=f24e924]: En attente depuis 23 j 14 h
+        - generic [ref=f24e927]:
+          - 'heading "Ticket #A0087 (1306264731)" [level=5] [ref=f24e928]'
+          - paragraph [ref=f24e929]: En attente depuis 23 j 14 h
+        - generic [ref=f24e932]:
+          - 'heading "Ticket #A0093 (1306264755)" [level=5] [ref=f24e933]'
+          - paragraph [ref=f24e934]: En attente depuis 23 j 14 h
+        - generic [ref=f24e937]:
+          - 'heading "Ticket #A0094 (1306264758)" [level=5] [ref=f24e938]'
+          - paragraph [ref=f24e939]: En attente depuis 23 j 14 h
+        - generic [ref=f24e942]:
+          - 'heading "Ticket #A0095 (1306264759)" [level=5] [ref=f24e943]'
+          - paragraph [ref=f24e944]: En attente depuis 23 j 14 h
+        - generic [ref=f24e947]:
+          - 'heading "Ticket #A0096 (1306264760)" [level=5] [ref=f24e948]'
+          - paragraph [ref=f24e949]: En attente depuis 23 j 14 h
+        - generic [ref=f24e952]:
+          - 'heading "Ticket #A0097 (1306264761)" [level=5] [ref=f24e953]'
+          - paragraph [ref=f24e954]: En attente depuis 23 j 14 h
+        - generic [ref=f24e957]:
+          - 'heading "Ticket #A0099 (1306264766)" [level=5] [ref=f24e958]'
+          - paragraph [ref=f24e959]: En attente depuis 23 j 13 h
+        - generic [ref=f24e962]:
+          - 'heading "Ticket #A0103 (1306264771)" [level=5] [ref=f24e963]'
+          - paragraph [ref=f24e964]: En attente depuis 23 j 12 h
+        - generic [ref=f24e967]:
+          - 'heading "Ticket #A0104 (1306264774)" [level=5] [ref=f24e968]'
+          - paragraph [ref=f24e969]: En attente depuis 23 j 12 h
+        - generic [ref=f24e972]:
+          - 'heading "Ticket #A0105 (1306264775)" [level=5] [ref=f24e973]'
+          - paragraph [ref=f24e974]: En attente depuis 23 j 12 h
+        - generic [ref=f24e977]:
+          - 'heading "Ticket #A0106 (1306264776)" [level=5] [ref=f24e978]'
+          - paragraph [ref=f24e979]: En attente depuis 23 j 12 h
+        - generic [ref=f24e982]:
+          - 'heading "Ticket #A0107 (1306264777)" [level=5] [ref=f24e983]'
+          - paragraph [ref=f24e984]: En attente depuis 23 j 12 h
+        - generic [ref=f24e987]:
+          - 'heading "Ticket #A0108 (1306264778)" [level=5] [ref=f24e988]'
+          - paragraph [ref=f24e989]: En attente depuis 23 j 12 h
+        - generic [ref=f24e992]:
+          - 'heading "Ticket #A0109 (1306264779)" [level=5] [ref=f24e993]'
+          - paragraph [ref=f24e994]: En attente depuis 23 j 12 h
+        - generic [ref=f24e997]:
+          - 'heading "Ticket #A0110 (1306264780)" [level=5] [ref=f24e998]'
+          - paragraph [ref=f24e999]: En attente depuis 23 j 12 h
+        - generic [ref=f24e1002]:
+          - 'heading "Ticket #A0111 (1306264781)" [level=5] [ref=f24e1003]'
+          - paragraph [ref=f24e1004]: En attente depuis 23 j 12 h
+        - generic [ref=f24e1007]:
+          - 'heading "Ticket #A0112 (1306264782)" [level=5] [ref=f24e1008]'
+          - paragraph [ref=f24e1009]: En attente depuis 23 j 12 h
+        - generic [ref=f24e1012]:
+          - 'heading "Ticket #A0113 (1306264783)" [level=5] [ref=f24e1013]'
+          - paragraph [ref=f24e1014]: En attente depuis 23 j 12 h
+        - generic [ref=f24e1017]:
+          - 'heading "Ticket #A0114 (1306264784)" [level=5] [ref=f24e1018]'
+          - paragraph [ref=f24e1019]: En attente depuis 23 j 12 h
+        - generic [ref=f24e1022]:
+          - 'heading "Ticket #A0115 (1306264785)" [level=5] [ref=f24e1023]'
+          - paragraph [ref=f24e1024]: En attente depuis 23 j 12 h
+        - generic [ref=f24e1027]:
+          - 'heading "Ticket #A0116 (1306264786)" [level=5] [ref=f24e1028]'
+          - paragraph [ref=f24e1029]: En attente depuis 23 j 12 h
+        - generic [ref=f24e1032]:
+          - 'heading "Ticket #A0117 (1306264787)" [level=5] [ref=f24e1033]'
+          - paragraph [ref=f24e1034]: En attente depuis 23 j 12 h
+        - generic [ref=f24e1037]:
+          - 'heading "Ticket #A0118 (1306264788)" [level=5] [ref=f24e1038]'
+          - paragraph [ref=f24e1039]: En attente depuis 23 j 12 h
+        - generic [ref=f24e1042]:
+          - 'heading "Ticket #A0119 (1306264789)" [level=5] [ref=f24e1043]'
+          - paragraph [ref=f24e1044]: En attente depuis 23 j 12 h
+        - generic [ref=f24e1047]:
+          - 'heading "Ticket #A0120 (1306264790)" [level=5] [ref=f24e1048]'
+          - paragraph [ref=f24e1049]: En attente depuis 23 j 12 h
+        - generic [ref=f24e1052]:
+          - 'heading "Ticket #A0121 (1306264791)" [level=5] [ref=f24e1053]'
+          - paragraph [ref=f24e1054]: En attente depuis 23 j 12 h
+        - generic [ref=f24e1057]:
+          - 'heading "Ticket #A0122 (1306264792)" [level=5] [ref=f24e1058]'
+          - paragraph [ref=f24e1059]: En attente depuis 23 j 12 h
+        - generic [ref=f24e1062]:
+          - 'heading "Ticket #A0123 (1306264793)" [level=5] [ref=f24e1063]'
+          - paragraph [ref=f24e1064]: En attente depuis 23 j 12 h
+        - generic [ref=f24e1067]:
+          - 'heading "Ticket #A0124 (1306264794)" [level=5] [ref=f24e1068]'
+          - paragraph [ref=f24e1069]: En attente depuis 23 j 12 h
+        - generic [ref=f24e1072]:
+          - 'heading "Ticket #A0125 (1306264795)" [level=5] [ref=f24e1073]'
+          - paragraph [ref=f24e1074]: En attente depuis 23 j 12 h
+        - generic [ref=f24e1077]:
+          - 'heading "Ticket #A0126 (1306264796)" [level=5] [ref=f24e1078]'
+          - paragraph [ref=f24e1079]: En attente depuis 23 j 12 h
+        - generic [ref=f24e1082]:
+          - 'heading "Ticket #A0127 (1306264797)" [level=5] [ref=f24e1083]'
+          - paragraph [ref=f24e1084]: En attente depuis 23 j 12 h
+        - generic [ref=f24e1087]:
+          - 'heading "Ticket #A0128 (1306264800)" [level=5] [ref=f24e1088]'
+          - paragraph [ref=f24e1089]: En attente depuis 23 j 12 h
+        - generic [ref=f24e1092]:
+          - 'heading "Ticket #A0129 (1306264801)" [level=5] [ref=f24e1093]'
+          - paragraph [ref=f24e1094]: En attente depuis 23 j 12 h
+        - generic [ref=f24e1097]:
+          - 'heading "Ticket #A0130 (1306264802)" [level=5] [ref=f24e1098]'
+          - paragraph [ref=f24e1099]: En attente depuis 23 j 12 h
+        - generic [ref=f24e1102]:
+          - 'heading "Ticket #A0131 (1306264803)" [level=5] [ref=f24e1103]'
+          - paragraph [ref=f24e1104]: En attente depuis 23 j 12 h
+        - generic [ref=f24e1107]:
+          - 'heading "Ticket #A0132 (1306264804)" [level=5] [ref=f24e1108]'
+          - paragraph [ref=f24e1109]: En attente depuis 23 j 12 h
+        - generic [ref=f24e1112]:
+          - 'heading "Ticket #A0133 (1306264805)" [level=5] [ref=f24e1113]'
+          - paragraph [ref=f24e1114]: En attente depuis 23 j 12 h
+        - generic [ref=f24e1117]:
+          - 'heading "Ticket #A0134 (1306264806)" [level=5] [ref=f24e1118]'
+          - paragraph [ref=f24e1119]: En attente depuis 23 j 12 h
+        - generic [ref=f24e1122]:
+          - 'heading "Ticket #A0135 (1306264817)" [level=5] [ref=f24e1123]'
+          - paragraph [ref=f24e1124]: En attente depuis 23 j 12 h
+        - generic [ref=f24e1127]:
+          - 'heading "Ticket #A9005 (1306264827)" [level=5] [ref=f24e1128]'
+          - paragraph [ref=f24e1129]: En attente depuis 23 j 12 h
+        - generic [ref=f24e1132]:
+          - 'heading "Ticket #A9007 (1306264838)" [level=5] [ref=f24e1133]'
+          - paragraph [ref=f24e1134]: En attente depuis 23 j 5 h
+        - generic [ref=f24e1137]:
+          - 'heading "Ticket #A9008 (1306264843)" [level=5] [ref=f24e1138]'
+          - paragraph [ref=f24e1139]: En attente depuis 23 j 5 h
+        - generic [ref=f24e1142]:
+          - 'heading "Ticket #A9009 (1306264844)" [level=5] [ref=f24e1143]'
+          - paragraph [ref=f24e1144]: En attente depuis 23 j 5 h
+        - generic [ref=f24e1147]:
+          - 'heading "Ticket #A9010 (1306264845)" [level=5] [ref=f24e1148]'
+          - paragraph [ref=f24e1149]: En attente depuis 23 j 5 h
+        - generic [ref=f24e1152]:
+          - 'heading "Ticket #A9011 (1306264846)" [level=5] [ref=f24e1153]'
+          - paragraph [ref=f24e1154]: En attente depuis 23 j 5 h
+        - generic [ref=f24e1157]:
+          - 'heading "Ticket #A9012 (1306264847)" [level=5] [ref=f24e1158]'
+          - paragraph [ref=f24e1159]: En attente depuis 23 j 5 h
+        - generic [ref=f24e1162]:
+          - 'heading "Ticket #A9013 (1306264848)" [level=5] [ref=f24e1163]'
+          - paragraph [ref=f24e1164]: En attente depuis 23 j 5 h
+        - generic [ref=f24e1167]:
+          - 'heading "Ticket #A9014 (1306264849)" [level=5] [ref=f24e1168]'
+          - paragraph [ref=f24e1169]: En attente depuis 23 j 5 h
+        - generic [ref=f24e1172]:
+          - 'heading "Ticket #A9015 (1306264850)" [level=5] [ref=f24e1173]'
+          - paragraph [ref=f24e1174]: En attente depuis 23 j 5 h
+        - generic [ref=f24e1177]:
+          - 'heading "Ticket #A9016 (1306264851)" [level=5] [ref=f24e1178]'
+          - paragraph [ref=f24e1179]: En attente depuis 23 j 5 h
+        - generic [ref=f24e1182]:
+          - 'heading "Ticket #A9017 (1306264852)" [level=5] [ref=f24e1183]'
+          - paragraph [ref=f24e1184]: En attente depuis 23 j 5 h
+        - generic [ref=f24e1187]:
+          - 'heading "Ticket #A9018 (1306264853)" [level=5] [ref=f24e1188]'
+          - paragraph [ref=f24e1189]: En attente depuis 23 j 5 h
+        - generic [ref=f24e1192]:
+          - 'heading "Ticket #A9019 (1306264854)" [level=5] [ref=f24e1193]'
+          - paragraph [ref=f24e1194]: En attente depuis 23 j 5 h
+        - generic [ref=f24e1197]:
+          - 'heading "Ticket #A9020 (1306264857)" [level=5] [ref=f24e1198]'
+          - paragraph [ref=f24e1199]: En attente depuis 23 j 5 h
+        - generic [ref=f24e1202]:
+          - 'heading "Ticket #A9021 (1306264858)" [level=5] [ref=f24e1203]'
+          - paragraph [ref=f24e1204]: En attente depuis 23 j 5 h
+        - generic [ref=f24e1207]:
+          - 'heading "Ticket #A9022 (1306264859)" [level=5] [ref=f24e1208]'
+          - paragraph [ref=f24e1209]: En attente depuis 23 j 5 h
+        - generic [ref=f24e1212]:
+          - 'heading "Ticket #A9023 (1306264860)" [level=5] [ref=f24e1213]'
+          - paragraph [ref=f24e1214]: En attente depuis 23 j 5 h
+        - generic [ref=f24e1217]:
+          - 'heading "Ticket #A9024 (1306264861)" [level=5] [ref=f24e1218]'
+          - paragraph [ref=f24e1219]: En attente depuis 23 j 5 h
+        - generic [ref=f24e1222]:
+          - 'heading "Ticket #A9025 (1306264862)" [level=5] [ref=f24e1223]'
+          - paragraph [ref=f24e1224]: En attente depuis 23 j 5 h
+        - generic [ref=f24e1227]:
+          - 'heading "Ticket #A9026 (1306264863)" [level=5] [ref=f24e1228]'
+          - paragraph [ref=f24e1229]: En attente depuis 23 j 5 h
+        - generic [ref=f24e1232]:
+          - 'heading "Ticket #A9027 (1306264864)" [level=5] [ref=f24e1233]'
+          - paragraph [ref=f24e1234]: En attente depuis 23 j 5 h
+        - generic [ref=f24e1237]:
+          - 'heading "Ticket #A9028 (1306264865)" [level=5] [ref=f24e1238]'
+          - paragraph [ref=f24e1239]: En attente depuis 23 j 5 h
+        - generic [ref=f24e1242]:
+          - 'heading "Ticket #A9029 (1306264866)" [level=5] [ref=f24e1243]'
+          - paragraph [ref=f24e1244]: En attente depuis 23 j 5 h
+        - generic [ref=f24e1247]:
+          - 'heading "Ticket #A9030 (1306264867)" [level=5] [ref=f24e1248]'
+          - paragraph [ref=f24e1249]: En attente depuis 23 j 5 h
+        - generic [ref=f24e1252]:
+          - 'heading "Ticket #A9031 (1306264868)" [level=5] [ref=f24e1253]'
+          - paragraph [ref=f24e1254]: En attente depuis 23 j 5 h
+        - generic [ref=f24e1257]:
+          - 'heading "Ticket #A9032 (1306264869)" [level=5] [ref=f24e1258]'
+          - paragraph [ref=f24e1259]: En attente depuis 23 j 5 h
+        - generic [ref=f24e1262]:
+          - 'heading "Ticket #A9033 (1306264870)" [level=5] [ref=f24e1263]'
+          - paragraph [ref=f24e1264]: En attente depuis 23 j 5 h
+        - generic [ref=f24e1267]:
+          - 'heading "Ticket #A9034 (1306264872)" [level=5] [ref=f24e1268]'
+          - paragraph [ref=f24e1269]: En attente depuis 23 j 4 h
+        - generic [ref=f24e1272]:
+          - 'heading "Ticket #A0001 (1406264874)" [level=5] [ref=f24e1273]'
+          - paragraph [ref=f24e1274]: En attente depuis 23 j 4 h
+        - generic [ref=f24e1277]:
+          - 'heading "Ticket #A0007 (1406264892)" [level=5] [ref=f24e1278]'
+          - paragraph [ref=f24e1279]: En attente depuis 23 j 2 h
+        - generic [ref=f24e1282]:
+          - 'heading "Ticket #A0008 (1406264899)" [level=5] [ref=f24e1283]'
+          - paragraph [ref=f24e1284]: En attente depuis 23 j 2 h
+        - generic [ref=f24e1287]:
+          - 'heading "Ticket #A0009 (1406264904)" [level=5] [ref=f24e1288]'
+          - paragraph [ref=f24e1289]: En attente depuis 23 j 2 h
+        - generic [ref=f24e1292]:
+          - 'heading "Ticket #A0010 (1406264906)" [level=5] [ref=f24e1293]'
+          - paragraph [ref=f24e1294]: En attente depuis 23 j 2 h
+        - generic [ref=f24e1297]:
+          - 'heading "Ticket #A0006 (1406264890)" [level=5] [ref=f24e1298]'
+          - paragraph [ref=f24e1299]: En attente depuis 23 j 2 h
+        - generic [ref=f24e1302]:
+          - 'heading "Ticket #A0032 (1406264935)" [level=5] [ref=f24e1303]'
+          - paragraph [ref=f24e1304]: En attente depuis 23 j 2 h
+        - generic [ref=f24e1307]:
+          - 'heading "Ticket #A0033 (1406264936)" [level=5] [ref=f24e1308]'
+          - paragraph [ref=f24e1309]: En attente depuis 23 j 2 h
+        - generic [ref=f24e1312]:
+          - 'heading "Ticket #A0034 (1406264937)" [level=5] [ref=f24e1313]'
+          - paragraph [ref=f24e1314]: En attente depuis 23 j 2 h
+        - generic [ref=f24e1317]:
+          - 'heading "Ticket #A0035 (1406264938)" [level=5] [ref=f24e1318]'
+          - paragraph [ref=f24e1319]: En attente depuis 18 j 18 h
+        - generic [ref=f24e1322]:
+          - 'heading "Ticket #A0008 (1906264976)" [level=5] [ref=f24e1323]'
+          - paragraph [ref=f24e1324]: En attente depuis 18 j 4 h
+        - generic [ref=f24e1327]:
+          - 'heading "Ticket #A0009 (1906264977)" [level=5] [ref=f24e1328]'
+          - paragraph [ref=f24e1329]: En attente depuis 18 j 4 h
+        - generic [ref=f24e1332]:
+          - 'heading "Ticket #A0007 (2006265034)" [level=5] [ref=f24e1333]'
+          - paragraph [ref=f24e1334]: En attente depuis 17 j 3 h
+        - generic [ref=f24e1337]:
+          - 'heading "Ticket #A0008 (2006265036)" [level=5] [ref=f24e1338]'
+          - paragraph [ref=f24e1339]: En attente depuis 17 j 3 h
+        - generic [ref=f24e1342]:
+          - 'heading "Ticket #A0009 (2006265042)" [level=5] [ref=f24e1343]'
+          - paragraph [ref=f24e1344]: En attente depuis 17 j 3 h
+        - generic [ref=f24e1347]:
+          - 'heading "Ticket #A0017 (2006265057)" [level=5] [ref=f24e1348]'
+          - paragraph [ref=f24e1349]: En attente depuis 17 j 2 h
+        - generic [ref=f24e1352]:
+          - 'heading "Ticket #A0033 (2006265088)" [level=5] [ref=f24e1353]'
+          - paragraph [ref=f24e1354]: En attente depuis 16 j 13 h
+        - generic [ref=f24e1357]:
+          - 'heading "Ticket #A0043 (2006265108)" [level=5] [ref=f24e1358]'
+          - paragraph [ref=f24e1359]: En attente depuis 16 j 13 h
+        - generic [ref=f24e1362]:
+          - 'heading "Ticket #A0004 (2206265112)" [level=5] [ref=f24e1363]'
+          - paragraph [ref=f24e1364]: En attente depuis 14 j 12 h
+        - generic [ref=f24e1367]:
+          - 'heading "Ticket #A0001 (2306265113)" [level=5] [ref=f24e1368]'
+          - paragraph [ref=f24e1369]: En attente depuis 13 j 5 h
+        - generic [ref=f24e1372]:
+          - 'heading "Ticket #A0001 (2406265119)" [level=5] [ref=f24e1373]'
+          - paragraph [ref=f24e1374]: En attente depuis 13 j 1 h
+        - generic [ref=f24e1377]:
+          - 'heading "Ticket #A0002 (2406265120)" [level=5] [ref=f24e1378]'
+          - paragraph [ref=f24e1379]: En attente depuis 13 j 1 h
+        - generic [ref=f24e1382]:
+          - 'heading "Ticket #A0003 (2406265121)" [level=5] [ref=f24e1383]'
+          - paragraph [ref=f24e1384]: En attente depuis 13 j 1 h
+        - generic [ref=f24e1387]:
+          - 'heading "Ticket #A0004 (2406265122)" [level=5] [ref=f24e1388]'
+          - paragraph [ref=f24e1389]: En attente depuis 13 j 1 h
+        - generic [ref=f24e1392]:
+          - 'heading "Ticket #A0005 (2406265123)" [level=5] [ref=f24e1393]'
+          - paragraph [ref=f24e1394]: En attente depuis 13 j
+        - generic [ref=f24e1397]:
+          - 'heading "Ticket #A0006 (2406265124)" [level=5] [ref=f24e1398]'
+          - paragraph [ref=f24e1399]: En attente depuis 13 j
+        - generic [ref=f24e1402]:
+          - 'heading "Ticket #A0007 (2406265125)" [level=5] [ref=f24e1403]'
+          - paragraph [ref=f24e1404]: En attente depuis 13 j
+        - generic [ref=f24e1407]:
+          - 'heading "Ticket #A0008 (2406265126)" [level=5] [ref=f24e1408]'
+          - paragraph [ref=f24e1409]: En attente depuis 13 j
+        - generic [ref=f24e1412]:
+          - 'heading "Ticket #A0009 (2406265127)" [level=5] [ref=f24e1413]'
+          - paragraph [ref=f24e1414]: En attente depuis 13 j
+        - generic [ref=f24e1417]:
+          - 'heading "Ticket #A0010 (2406265128)" [level=5] [ref=f24e1418]'
+          - paragraph [ref=f24e1419]: En attente depuis 13 j
+        - generic [ref=f24e1422]:
+          - 'heading "Ticket #A0011 (2406265129)" [level=5] [ref=f24e1423]'
+          - paragraph [ref=f24e1424]: En attente depuis 13 j
+        - generic [ref=f24e1427]:
+          - 'heading "Ticket #A0012 (2406265130)" [level=5] [ref=f24e1428]'
+          - paragraph [ref=f24e1429]: En attente depuis 13 j
+        - generic [ref=f24e1432]:
+          - 'heading "Ticket #A0013 (2406265131)" [level=5] [ref=f24e1433]'
+          - paragraph [ref=f24e1434]: En attente depuis 13 j
+        - generic [ref=f24e1437]:
+          - 'heading "Ticket #A0014 (2406265132)" [level=5] [ref=f24e1438]'
+          - paragraph [ref=f24e1439]: En attente depuis 13 j
+        - generic [ref=f24e1442]:
+          - 'heading "Ticket #A0015 (2406265133)" [level=5] [ref=f24e1443]'
+          - paragraph [ref=f24e1444]: En attente depuis 13 j
+        - generic [ref=f24e1447]:
+          - 'heading "Ticket #A0016 (2406265134)" [level=5] [ref=f24e1448]'
+          - paragraph [ref=f24e1449]: En attente depuis 13 j
+        - generic [ref=f24e1452]:
+          - 'heading "Ticket #A0017 (2406265135)" [level=5] [ref=f24e1453]'
+          - paragraph [ref=f24e1454]: En attente depuis 13 j
+        - generic [ref=f24e1457]:
+          - 'heading "Ticket #A0018 (2406265136)" [level=5] [ref=f24e1458]'
+          - paragraph [ref=f24e1459]: En attente depuis 13 j
+        - generic [ref=f24e1462]:
+          - 'heading "Ticket #A0019 (2406265137)" [level=5] [ref=f24e1463]'
+          - paragraph [ref=f24e1464]: En attente depuis 13 j
+        - generic [ref=f24e1467]:
+          - 'heading "Ticket #A0020 (2406265138)" [level=5] [ref=f24e1468]'
+          - paragraph [ref=f24e1469]: En attente depuis 12 j 16 h
+        - generic [ref=f24e1472]:
+          - 'heading "Ticket #A0021 (2406265139)" [level=5] [ref=f24e1473]'
+          - paragraph [ref=f24e1474]: En attente depuis 12 j 16 h
+        - generic [ref=f24e1477]:
+          - 'heading "Ticket #A0022 (2406265140)" [level=5] [ref=f24e1478]'
+          - paragraph [ref=f24e1479]: En attente depuis 12 j 16 h
+        - generic [ref=f24e1482]:
+          - 'heading "Ticket #A0023 (2406265141)" [level=5] [ref=f24e1483]'
+          - paragraph [ref=f24e1484]: En attente depuis 12 j 16 h
+        - generic [ref=f24e1487]:
+          - 'heading "Ticket #A0024 (2406265142)" [level=5] [ref=f24e1488]'
+          - paragraph [ref=f24e1489]: En attente depuis 12 j 16 h
+        - generic [ref=f24e1492]:
+          - 'heading "Ticket #A0025 (2406265143)" [level=5] [ref=f24e1493]'
+          - paragraph [ref=f24e1494]: En attente depuis 12 j 16 h
+        - generic [ref=f24e1497]:
+          - 'heading "Ticket #A0026 (2406265154)" [level=5] [ref=f24e1498]'
+          - paragraph [ref=f24e1499]: En attente depuis 12 j 11 h
+        - generic [ref=f24e1502]:
+          - 'heading "Ticket #A0028 (2406265156)" [level=5] [ref=f24e1503]'
+          - paragraph [ref=f24e1504]: En attente depuis 12 j 11 h
+        - generic [ref=f24e1507]:
+          - 'heading "Ticket #A0029 (2406265157)" [level=5] [ref=f24e1508]'
+          - paragraph [ref=f24e1509]: En attente depuis 12 j 11 h
+        - generic [ref=f24e1512]:
+          - 'heading "Ticket #A0030 (2406265158)" [level=5] [ref=f24e1513]'
+          - paragraph [ref=f24e1514]: En attente depuis 12 j 11 h
+        - generic [ref=f24e1517]:
+          - 'heading "Ticket #A0031 (2406265159)" [level=5] [ref=f24e1518]'
+          - paragraph [ref=f24e1519]: En attente depuis 12 j 11 h
+        - generic [ref=f24e1522]:
+          - 'heading "Ticket #A0032 (2406265160)" [level=5] [ref=f24e1523]'
+          - paragraph [ref=f24e1524]: En attente depuis 12 j 11 h
+        - generic [ref=f24e1527]:
+          - 'heading "Ticket #A0033 (2406265161)" [level=5] [ref=f24e1528]'
+          - paragraph [ref=f24e1529]: En attente depuis 12 j 11 h
+        - generic [ref=f24e1532]:
+          - 'heading "Ticket #A0034 (2406265162)" [level=5] [ref=f24e1533]'
+          - paragraph [ref=f24e1534]: En attente depuis 12 j 11 h
+        - generic [ref=f24e1537]:
+          - 'heading "Ticket #A0035 (2406265163)" [level=5] [ref=f24e1538]'
+          - paragraph [ref=f24e1539]: En attente depuis 12 j 11 h
+        - generic [ref=f24e1542]:
+          - 'heading "Ticket #A0036 (2406265164)" [level=5] [ref=f24e1543]'
+          - paragraph [ref=f24e1544]: En attente depuis 12 j 11 h
+        - generic [ref=f24e1547]:
+          - 'heading "Ticket #A0037 (2406265165)" [level=5] [ref=f24e1548]'
+          - paragraph [ref=f24e1549]: En attente depuis 12 j 11 h
+        - generic [ref=f24e1552]:
+          - 'heading "Ticket #A0038 (2406265166)" [level=5] [ref=f24e1553]'
+          - paragraph [ref=f24e1554]: En attente depuis 12 j 11 h
+        - generic [ref=f24e1557]:
+          - 'heading "Ticket #A0039 (2406265167)" [level=5] [ref=f24e1558]'
+          - paragraph [ref=f24e1559]: En attente depuis 12 j 11 h
+        - generic [ref=f24e1562]:
+          - 'heading "Ticket #A0040 (2406265168)" [level=5] [ref=f24e1563]'
+          - paragraph [ref=f24e1564]: En attente depuis 12 j 11 h
+        - generic [ref=f24e1567]:
+          - 'heading "Ticket #A0041 (2406265169)" [level=5] [ref=f24e1568]'
+          - paragraph [ref=f24e1569]: En attente depuis 12 j 11 h
+        - generic [ref=f24e1572]:
+          - 'heading "Ticket #A0042 (2406265170)" [level=5] [ref=f24e1573]'
+          - paragraph [ref=f24e1574]: En attente depuis 12 j 10 h
+        - generic [ref=f24e1577]:
+          - 'heading "Ticket #A0043 (2406265171)" [level=5] [ref=f24e1578]'
+          - paragraph [ref=f24e1579]: En attente depuis 12 j 10 h
+        - generic [ref=f24e1582]:
+          - 'heading "Ticket #A0044 (2406265172)" [level=5] [ref=f24e1583]'
+          - paragraph [ref=f24e1584]: En attente depuis 12 j 10 h
+        - generic [ref=f24e1587]:
+          - 'heading "Ticket #A0045 (2406265173)" [level=5] [ref=f24e1588]'
+          - paragraph [ref=f24e1589]: En attente depuis 12 j 10 h
+        - generic [ref=f24e1592]:
+          - 'heading "Ticket #A0046 (2406265174)" [level=5] [ref=f24e1593]'
+          - paragraph [ref=f24e1594]: En attente depuis 12 j 10 h
+        - generic [ref=f24e1597]:
+          - 'heading "Ticket #A0047 (2406265175)" [level=5] [ref=f24e1598]'
+          - paragraph [ref=f24e1599]: En attente depuis 12 j 10 h
+        - generic [ref=f24e1602]:
+          - 'heading "Ticket #A0027 (2406265155)" [level=5] [ref=f24e1603]'
+          - paragraph [ref=f24e1604]: En attente depuis 12 j 7 h
+        - generic [ref=f24e1607]:
+          - 'heading "Ticket #A0001 (2506265176)" [level=5] [ref=f24e1608]'
+          - paragraph [ref=f24e1609]: En attente depuis 11 j 14 h
+        - generic [ref=f24e1612]:
+          - 'heading "Ticket #A0002 (2506265177)" [level=5] [ref=f24e1613]'
+          - paragraph [ref=f24e1614]: En attente depuis 11 j 11 h
+        - generic [ref=f24e1617]:
+          - 'heading "Ticket #A0003 (2506265178)" [level=5] [ref=f24e1618]'
+          - paragraph [ref=f24e1619]: En attente depuis 11 j 11 h
+        - generic [ref=f24e1622]:
+          - 'heading "Ticket #A0041 (0107265370)" [level=5] [ref=f24e1623]'
+          - paragraph [ref=f24e1624]: En attente depuis 5 j 18 h
+        - generic [ref=f24e1627]:
+          - 'heading "Ticket #A0039 (0107265368)" [level=5] [ref=f24e1628]'
+          - paragraph [ref=f24e1629]: En attente depuis 5 j 8 h
+        - generic [ref=f24e1632]:
+          - 'heading "Ticket #A0042 (0107265372)" [level=5] [ref=f24e1633]'
+          - paragraph [ref=f24e1634]: En attente depuis 5 j 8 h
+        - generic [ref=f24e1637]:
+          - 'heading "Ticket #A0043 (0107265388)" [level=5] [ref=f24e1638]'
+          - paragraph [ref=f24e1639]: En attente depuis 5 j 8 h
+        - generic [ref=f24e1642]:
+          - 'heading "Ticket #A0044 (0107265389)" [level=5] [ref=f24e1643]'
+          - paragraph [ref=f24e1644]: En attente depuis 5 j 8 h
+        - generic [ref=f24e1647]:
+          - 'heading "Ticket #A0045 (0107265390)" [level=5] [ref=f24e1648]'
+          - paragraph [ref=f24e1649]: En attente depuis 5 j 8 h
+        - generic [ref=f24e1652]:
+          - 'heading "Ticket #A0038 (0107265367)" [level=5] [ref=f24e1653]'
+          - paragraph [ref=f24e1654]: En attente depuis 5 j 8 h
+        - generic [ref=f24e1657]:
+          - 'heading "Ticket #A0046 (0107265392)" [level=5] [ref=f24e1658]'
+          - paragraph [ref=f24e1659]: En attente depuis 5 j 5 h
+        - generic [ref=f24e1662]:
+          - 'heading "Ticket #A0047 (0107265395)" [level=5] [ref=f24e1663]'
+          - paragraph [ref=f24e1664]: En attente depuis 5 j 5 h
+        - generic [ref=f24e1667]:
+          - 'heading "Ticket #A0048 (0107265396)" [level=5] [ref=f24e1668]'
+          - paragraph [ref=f24e1669]: En attente depuis 5 j 5 h
+        - generic [ref=f24e1672]:
+          - 'heading "Ticket #A0001 (0407265459)" [level=5] [ref=f24e1673]'
+          - paragraph [ref=f24e1674]: En attente depuis 3 j 2 h
+        - generic [ref=f24e1677]:
+          - 'heading "Ticket #A0003 (0407265462)" [level=5] [ref=f24e1678]'
+          - paragraph [ref=f24e1679]: En attente depuis 3 j 2 h
+        - generic [ref=f24e1682]:
+          - 'heading "Ticket #A0004 (0407265463)" [level=5] [ref=f24e1683]'
+          - paragraph [ref=f24e1684]: En attente depuis 3 j 2 h
+        - generic [ref=f24e1687]:
+          - 'heading "Ticket #A0005 (0407265466)" [level=5] [ref=f24e1688]'
+          - paragraph [ref=f24e1689]: En attente depuis 3 j 2 h
+        - generic [ref=f24e1692]:
+          - 'heading "Ticket #A0006 (0407265467)" [level=5] [ref=f24e1693]'
+          - paragraph [ref=f24e1694]: En attente depuis 3 j 2 h
+        - generic [ref=f24e1697]:
+          - 'heading "Ticket #A0007 (0407265468)" [level=5] [ref=f24e1698]'
+          - paragraph [ref=f24e1699]: En attente depuis 3 j 2 h
+        - generic [ref=f24e1702]:
+          - 'heading "Ticket #A0008 (0407265469)" [level=5] [ref=f24e1703]'
+          - paragraph [ref=f24e1704]: En attente depuis 3 j 2 h
+        - generic [ref=f24e1707]:
+          - 'heading "Ticket #A0010 (0407265471)" [level=5] [ref=f24e1708]'
+          - paragraph [ref=f24e1709]: En attente depuis 3 j 2 h
+        - generic [ref=f24e1712]:
+          - 'heading "Ticket #A0011 (0407265472)" [level=5] [ref=f24e1713]'
+          - paragraph [ref=f24e1714]: En attente depuis 3 j 2 h
+        - generic [ref=f24e1717]:
+          - 'heading "Ticket #A0012 (0407265473)" [level=5] [ref=f24e1718]'
+          - paragraph [ref=f24e1719]: En attente depuis 3 j 2 h
+        - generic [ref=f24e1722]:
+          - 'heading "Ticket #A0013 (0407265474)" [level=5] [ref=f24e1723]'
+          - paragraph [ref=f24e1724]: En attente depuis 3 j 2 h
+        - generic [ref=f24e1727]:
+          - 'heading "Ticket #A0013 (0607265534)" [level=5] [ref=f24e1728]'
+          - paragraph [ref=f24e1729]: En attente depuis 8 h 24 min
+        - generic [ref=f24e1732]:
+          - 'heading "Ticket #A0014 (0607265535)" [level=5] [ref=f24e1733]'
+          - paragraph [ref=f24e1734]: En attente depuis 8 h 2 min
+        - generic [ref=f24e1737]:
+          - 'heading "Ticket #A0002 (0707265542)" [level=5] [ref=f24e1738]'
+          - paragraph [ref=f24e1739]: En attente depuis 4 h 41 min
+        - generic [ref=f24e1742]:
+          - 'heading "Ticket #A0004 (0707265548)" [level=5] [ref=f24e1743]'
+          - paragraph [ref=f24e1744]: En attente depuis 2 h 27 min
+        - generic [ref=f24e1747]:
+          - 'heading "Ticket #A0005 (0707265549)" [level=5] [ref=f24e1748]'
+          - paragraph [ref=f24e1749]: En attente depuis 2 h 25 min
+        - generic [ref=f24e1752]:
+          - 'heading "Ticket #A0007 (0707265551)" [level=5] [ref=f24e1753]'
+          - paragraph [ref=f24e1754]: En attente depuis 2 h 21 min
+    - generic [ref=f24e1757]:
+      - heading "Répartition par Canal (Aujourd'hui)" [level=4] [ref=f24e1758]
+      - generic [ref=f24e1759]:
+        - generic [ref=f24e1761]:
+          - generic [ref=f24e1762]: Web
+          - generic [ref=f24e1763]: 0%
+        - generic [ref=f24e1766]:
+          - generic [ref=f24e1767]: Kiosk/App
+          - generic [ref=f24e1768]: 50%
+        - generic [ref=f24e1772]:
+          - generic [ref=f24e1773]: POS
+          - generic [ref=f24e1774]: 50%
+  - generic [ref=f24e1778]:
+    - heading "Audit Trail NF525 (Journal Inviolable)" [level=4] [ref=f24e1779]: Audit Trail NF525 (Journal Inviolable)
+    - paragraph [ref=f24e1780]:
+      - text: "Source :"
+      - code [ref=f24e1781]: audit_logs
+      - text: (INSERT-only, HMAC SHA-256 chain-signed). Le préfixe de hash atteste l'intégrité de la chaîne.
+    - table [ref=f24e1783]:
+      - rowgroup [ref=f24e1784]:
+        - row "Utilisateur Action Ressource Hash Temps" [ref=f24e1785]:
+          - columnheader "Utilisateur" [ref=f24e1786]
+          - columnheader "Action" [ref=f24e1787]
+          - columnheader "Ressource" [ref=f24e1788]
+          - columnheader "Hash" [ref=f24e1789]
+          - columnheader "Temps" [ref=f24e1790]
+      - rowgroup [ref=f24e1791]:
+        - row "Admin Le Cayenne Connexion utilisateur user#1 836bd455 il y a 1 seconde" [ref=f24e1792]:
+          - cell "Admin Le Cayenne" [ref=f24e1793]
+          - cell "Connexion utilisateur" [ref=f24e1794]:
+            - generic [ref=f24e1795]: Connexion utilisateur
+          - cell "user#1" [ref=f24e1796]
+          - cell "836bd455" [ref=f24e1797]:
+            - code [ref=f24e1798]: 836bd455
+          - cell "il y a 1 seconde" [ref=f24e1799]
+        - row "Admin Le Cayenne Connexion utilisateur user#1 0b691aae il y a 1 heure" [ref=f24e1800]:
+          - cell "Admin Le Cayenne" [ref=f24e1801]
+          - cell "Connexion utilisateur" [ref=f24e1802]:
+            - generic [ref=f24e1803]: Connexion utilisateur
+          - cell "user#1" [ref=f24e1804]
+          - cell "0b691aae" [ref=f24e1805]:
+            - code [ref=f24e1806]: 0b691aae
+          - cell "il y a 1 heure" [ref=f24e1807]
+        - row "S-SYNC E2E Operator Commande créée (caisse) order#5551 e85d3b9a il y a 2 heures" [ref=f24e1808]:
+          - cell "S-SYNC E2E Operator" [ref=f24e1809]
+          - cell "Commande créée (caisse)" [ref=f24e1810]:
+            - generic [ref=f24e1811]: Commande créée (caisse)
+          - cell "order#5551" [ref=f24e1812]
+          - cell "e85d3b9a" [ref=f24e1813]:
+            - code [ref=f24e1814]: e85d3b9a
+          - cell "il y a 2 heures" [ref=f24e1815]
+        - row "S-SYNC E2E Operator Commande créée (caisse) order#5549 7ba9621b il y a 2 heures" [ref=f24e1816]:
+          - cell "S-SYNC E2E Operator" [ref=f24e1817]
+          - cell "Commande créée (caisse)" [ref=f24e1818]:
+            - generic [ref=f24e1819]: Commande créée (caisse)
+          - cell "order#5549" [ref=f24e1820]
+          - cell "7ba9621b" [ref=f24e1821]:
+            - code [ref=f24e1822]: 7ba9621b
+          - cell "il y a 2 heures" [ref=f24e1823]
+        - row "S-SYNC E2E Operator Commande créée (caisse) order#5548 22dcdf29 il y a 2 heures" [ref=f24e1824]:
+          - cell "S-SYNC E2E Operator" [ref=f24e1825]
+          - cell "Commande créée (caisse)" [ref=f24e1826]:
+            - generic [ref=f24e1827]: Commande créée (caisse)
+          - cell "order#5548" [ref=f24e1828]
+          - cell "22dcdf29" [ref=f24e1829]:
+            - code [ref=f24e1830]: 22dcdf29
+          - cell "il y a 2 heures" [ref=f24e1831]
+        - row "Admin Le Cayenne Ticket imprimé order#5542 2bd451d5 il y a 4 heures" [ref=f24e1832]:
+          - cell "Admin Le Cayenne" [ref=f24e1833]
+          - cell "Ticket imprimé" [ref=f24e1834]:
+            - generic [ref=f24e1835]: Ticket imprimé
+          - cell "order#5542" [ref=f24e1836]
+          - cell "2bd451d5" [ref=f24e1837]:
+            - code [ref=f24e1838]: 2bd451d5
+          - cell "il y a 4 heures" [ref=f24e1839]
+        - row "Admin Le Cayenne Mouvement de caisse enregistré cash_drawer_session#32 c974c7e4 il y a 4 heures" [ref=f24e1840]:
+          - cell "Admin Le Cayenne" [ref=f24e1841]
+          - cell "Mouvement de caisse enregistré" [ref=f24e1842]:
+            - generic [ref=f24e1843]: Mouvement de caisse enregistré
+          - cell "cash_drawer_session#32" [ref=f24e1844]
+          - cell "c974c7e4" [ref=f24e1845]:
+            - code [ref=f24e1846]: c974c7e4
+          - cell "il y a 4 heures" [ref=f24e1847]
+        - row "Admin Le Cayenne Commande créée (caisse) order#5542 c45ea28a il y a 4 heures" [ref=f24e1848]:
+          - cell "Admin Le Cayenne" [ref=f24e1849]
+          - cell "Commande créée (caisse)" [ref=f24e1850]:
+            - generic [ref=f24e1851]: Commande créée (caisse)
+          - cell "order#5542" [ref=f24e1852]
+          - cell "c45ea28a" [ref=f24e1853]:
+            - code [ref=f24e1854]: c45ea28a
+          - cell "il y a 4 heures" [ref=f24e1855]
+        - row "Admin Le Cayenne Connexion utilisateur user#1 d78efed0 il y a 7 heures" [ref=f24e1856]:
+          - cell "Admin Le Cayenne" [ref=f24e1857]
+          - cell "Connexion utilisateur" [ref=f24e1858]:
+            - generic [ref=f24e1859]: Connexion utilisateur
+          - cell "user#1" [ref=f24e1860]
+          - cell "d78efed0" [ref=f24e1861]:
+            - code [ref=f24e1862]: d78efed0
+          - cell "il y a 7 heures" [ref=f24e1863]
+        - row "Admin Le Cayenne Connexion utilisateur user#1 0863b3e7 il y a 7 heures" [ref=f24e1864]:
+          - cell "Admin Le Cayenne" [ref=f24e1865]
+          - cell "Connexion utilisateur" [ref=f24e1866]:
+            - generic [ref=f24e1867]: Connexion utilisateur
+          - cell "user#1" [ref=f24e1868]
+          - cell "0863b3e7" [ref=f24e1869]:
+            - code [ref=f24e1870]: 0863b3e7
+          - cell "il y a 7 heures" [ref=f24e1871]
+        - row "S-SYNC E2E Operator Ouverture de caisse cash_drawer_session#38 f08b6dd5 il y a 7 heures" [ref=f24e1872]:
+          - cell "S-SYNC E2E Operator" [ref=f24e1873]
+          - cell "Ouverture de caisse" [ref=f24e1874]:
+            - generic [ref=f24e1875]: Ouverture de caisse
+          - cell "cash_drawer_session#38" [ref=f24e1876]
+          - cell "f08b6dd5" [ref=f24e1877]:
+            - code [ref=f24e1878]: f08b6dd5
+          - cell "il y a 7 heures" [ref=f24e1879]
+        - row "S-SYNC E2E Operator Connexion utilisateur user#70 06fca9f2 il y a 7 heures" [ref=f24e1880]:
+          - cell "S-SYNC E2E Operator" [ref=f24e1881]
+          - cell "Connexion utilisateur" [ref=f24e1882]:
+            - generic [ref=f24e1883]: Connexion utilisateur
+          - cell "user#70" [ref=f24e1884]
+          - cell "06fca9f2" [ref=f24e1885]:
+            - code [ref=f24e1886]: 06fca9f2
+          - cell "il y a 7 heures" [ref=f24e1887]
+        - row "Admin Le Cayenne Connexion utilisateur user#1 92b9ef24 il y a 7 heures" [ref=f24e1888]:
+          - cell "Admin Le Cayenne" [ref=f24e1889]
+          - cell "Connexion utilisateur" [ref=f24e1890]:
+            - generic [ref=f24e1891]: Connexion utilisateur
+          - cell "user#1" [ref=f24e1892]
+          - cell "92b9ef24" [ref=f24e1893]:
+            - code [ref=f24e1894]: 92b9ef24
+          - cell "il y a 7 heures" [ref=f24e1895]
+        - row "E2E Audit Admin Ticket imprimé order#5535 bd24815d il y a 8 heures" [ref=f24e1896]:
+          - cell "E2E Audit Admin" [ref=f24e1897]
+          - cell "Ticket imprimé" [ref=f24e1898]:
+            - generic [ref=f24e1899]: Ticket imprimé
+          - cell "order#5535" [ref=f24e1900]
+          - cell "bd24815d" [ref=f24e1901]:
+            - code [ref=f24e1902]: bd24815d
+          - cell "il y a 8 heures" [ref=f24e1903]
+        - row "E2E Audit Admin Mouvement de caisse enregistré cash_drawer_session#37 3d4c248d il y a 8 heures" [ref=f24e1904]:
+          - cell "E2E Audit Admin" [ref=f24e1905]
+          - cell "Mouvement de caisse enregistré" [ref=f24e1906]:
+            - generic [ref=f24e1907]: Mouvement de caisse enregistré
+          - cell "cash_drawer_session#37" [ref=f24e1908]
+          - cell "3d4c248d" [ref=f24e1909]:
+            - code [ref=f24e1910]: 3d4c248d
+          - cell "il y a 8 heures" [ref=f24e1911]
+        - row "E2E Audit Admin Commande créée (caisse) order#5535 6eeeaa1a il y a 8 heures" [ref=f24e1912]:
+          - cell "E2E Audit Admin" [ref=f24e1913]
+          - cell "Commande créée (caisse)" [ref=f24e1914]:
+            - generic [ref=f24e1915]: Commande créée (caisse)
+          - cell "order#5535" [ref=f24e1916]
+          - cell "6eeeaa1a" [ref=f24e1917]:
+            - code [ref=f24e1918]: 6eeeaa1a
+          - cell "il y a 8 heures" [ref=f24e1919]
+        - row "Chef Le Cayenne Connexion utilisateur user#4 b700b499 il y a 8 heures" [ref=f24e1920]:
+          - cell "Chef Le Cayenne" [ref=f24e1921]
+          - cell "Connexion utilisateur" [ref=f24e1922]:
+            - generic [ref=f24e1923]: Connexion utilisateur
+          - cell "user#4" [ref=f24e1924]
+          - cell "b700b499" [ref=f24e1925]:
+            - code [ref=f24e1926]: b700b499
+          - cell "il y a 8 heures" [ref=f24e1927]
+        - row "E2E Audit Admin Ticket réimprimé (duplicata) order#5534 3b1e015b il y a 8 heures" [ref=f24e1928]:
+          - cell "E2E Audit Admin" [ref=f24e1929]
+          - cell "Ticket réimprimé (duplicata)" [ref=f24e1930]:
+            - generic [ref=f24e1931]: Ticket réimprimé (duplicata)
+          - cell "order#5534" [ref=f24e1932]
+          - cell "3b1e015b" [ref=f24e1933]:
+            - code [ref=f24e1934]: 3b1e015b
+          - cell "il y a 8 heures" [ref=f24e1935]
+        - row "E2E Audit Admin Ticket réimprimé (duplicata) order#5534 28a40a4f il y a 8 heures" [ref=f24e1936]:
+          - cell "E2E Audit Admin" [ref=f24e1937]
+          - cell "Ticket réimprimé (duplicata)" [ref=f24e1938]:
+            - generic [ref=f24e1939]: Ticket réimprimé (duplicata)
+          - cell "order#5534" [ref=f24e1940]
+          - cell "28a40a4f" [ref=f24e1941]:
+            - code [ref=f24e1942]: 28a40a4f
+          - cell "il y a 8 heures" [ref=f24e1943]
+        - row "Admin Le Cayenne Connexion utilisateur user#1 dfed0d21 il y a 8 heures" [ref=f24e1944]:
+          - cell "Admin Le Cayenne" [ref=f24e1945]
+          - cell "Connexion utilisateur" [ref=f24e1946]:
+            - generic [ref=f24e1947]: Connexion utilisateur
+          - cell "user#1" [ref=f24e1948]
+          - cell "dfed0d21" [ref=f24e1949]:
+            - code [ref=f24e1950]: dfed0d21
+          - cell "il y a 8 heures" [ref=f24e1951]
+        - row "E2E Audit Admin Ticket imprimé order#5534 1cc50045 il y a 8 heures" [ref=f24e1952]:
+          - cell "E2E Audit Admin" [ref=f24e1953]
+          - cell "Ticket imprimé" [ref=f24e1954]:
+            - generic [ref=f24e1955]: Ticket imprimé
+          - cell "order#5534" [ref=f24e1956]
+          - cell "1cc50045" [ref=f24e1957]:
+            - code [ref=f24e1958]: 1cc50045
+          - cell "il y a 8 heures" [ref=f24e1959]
+        - row "E2E Audit Admin Mouvement de caisse enregistré cash_drawer_session#37 92c16e92 il y a 8 heures" [ref=f24e1960]:
+          - cell "E2E Audit Admin" [ref=f24e1961]
+          - cell "Mouvement de caisse enregistré" [ref=f24e1962]:
+            - generic [ref=f24e1963]: Mouvement de caisse enregistré
+          - cell "cash_drawer_session#37" [ref=f24e1964]
+          - cell "92c16e92" [ref=f24e1965]:
+            - code [ref=f24e1966]: 92c16e92
+          - cell "il y a 8 heures" [ref=f24e1967]
+        - row "E2E Audit Admin Commande créée (caisse) order#5534 e7b6a0d0 il y a 8 heures" [ref=f24e1968]:
+          - cell "E2E Audit Admin" [ref=f24e1969]
+          - cell "Commande créée (caisse)" [ref=f24e1970]:
+            - generic [ref=f24e1971]: Commande créée (caisse)
+          - cell "order#5534" [ref=f24e1972]
+          - cell "e7b6a0d0" [ref=f24e1973]:
+            - code [ref=f24e1974]: e7b6a0d0
+          - cell "il y a 8 heures" [ref=f24e1975]
+        - row "Admin Le Cayenne Connexion utilisateur user#1 77d5da64 il y a 8 heures" [ref=f24e1976]:
+          - cell "Admin Le Cayenne" [ref=f24e1977]
+          - cell "Connexion utilisateur" [ref=f24e1978]:
+            - generic [ref=f24e1979]: Connexion utilisateur
+          - cell "user#1" [ref=f24e1980]
+          - cell "77d5da64" [ref=f24e1981]:
+            - code [ref=f24e1982]: 77d5da64
+          - cell "il y a 8 heures" [ref=f24e1983]
+        - row "Admin Le Cayenne Connexion utilisateur user#1 0909edcd il y a 8 heures" [ref=f24e1984]:
+          - cell "Admin Le Cayenne" [ref=f24e1985]
+          - cell "Connexion utilisateur" [ref=f24e1986]:
+            - generic [ref=f24e1987]: Connexion utilisateur
+          - cell "user#1" [ref=f24e1988]
+          - cell "0909edcd" [ref=f24e1989]:
+            - code [ref=f24e1990]: 0909edcd
+          - cell "il y a 8 heures" [ref=f24e1991]
+        - row "E2E Audit Admin Ouverture de caisse cash_drawer_session#37 dc2ff306 il y a 8 heures" [ref=f24e1992]:
+          - cell "E2E Audit Admin" [ref=f24e1993]
+          - cell "Ouverture de caisse" [ref=f24e1994]:
+            - generic [ref=f24e1995]: Ouverture de caisse
+          - cell "cash_drawer_session#37" [ref=f24e1996]
+          - cell "dc2ff306" [ref=f24e1997]:
+            - code [ref=f24e1998]: dc2ff306
+          - cell "il y a 8 heures" [ref=f24e1999]
+        - row "Admin Le Cayenne Connexion utilisateur user#1 397e17f7 il y a 8 heures" [ref=f24e2000]:
+          - cell "Admin Le Cayenne" [ref=f24e2001]
+          - cell "Connexion utilisateur" [ref=f24e2002]:
+            - generic [ref=f24e2003]: Connexion utilisateur
+          - cell "user#1" [ref=f24e2004]
+          - cell "397e17f7" [ref=f24e2005]:
+            - code [ref=f24e2006]: 397e17f7
+          - cell "il y a 8 heures" [ref=f24e2007]
+        - row "Admin Le Cayenne Connexion utilisateur user#1 fc6babf4 il y a 8 heures" [ref=f24e2008]:
+          - cell "Admin Le Cayenne" [ref=f24e2009]
+          - cell "Connexion utilisateur" [ref=f24e2010]:
+            - generic [ref=f24e2011]: Connexion utilisateur
+          - cell "user#1" [ref=f24e2012]
+          - cell "fc6babf4" [ref=f24e2013]:
+            - code [ref=f24e2014]: fc6babf4
+          - cell "il y a 8 heures" [ref=f24e2015]
+        - row "E2E Audit Admin Connexion utilisateur user#143 5ddf930d il y a 8 heures" [ref=f24e2016]:
+          - cell "E2E Audit Admin" [ref=f24e2017]
+          - cell "Connexion utilisateur" [ref=f24e2018]:
+            - generic [ref=f24e2019]: Connexion utilisateur
+          - cell "user#143" [ref=f24e2020]
+          - cell "5ddf930d" [ref=f24e2021]:
+            - code [ref=f24e2022]: 5ddf930d
+          - cell "il y a 8 heures" [ref=f24e2023]
+        - row "Admin Le Cayenne Connexion utilisateur user#1 4d71ce69 il y a 8 heures" [ref=f24e2024]:
+          - cell "Admin Le Cayenne" [ref=f24e2025]
+          - cell "Connexion utilisateur" [ref=f24e2026]:
+            - generic [ref=f24e2027]: Connexion utilisateur
+          - cell "user#1" [ref=f24e2028]
+          - cell "4d71ce69" [ref=f24e2029]:
+            - code [ref=f24e2030]: 4d71ce69
+          - cell "il y a 8 heures" [ref=f24e2031]
+        - row "Admin Le Cayenne Connexion utilisateur user#1 25595d8b il y a 8 heures" [ref=f24e2032]:
+          - cell "Admin Le Cayenne" [ref=f24e2033]
+          - cell "Connexion utilisateur" [ref=f24e2034]:
+            - generic [ref=f24e2035]: Connexion utilisateur
+          - cell "user#1" [ref=f24e2036]
+          - cell "25595d8b" [ref=f24e2037]:
+            - code [ref=f24e2038]: 25595d8b
+          - cell "il y a 8 heures" [ref=f24e2039]
+        - row "Admin Le Cayenne Connexion utilisateur user#1 4db11e89 il y a 8 heures" [ref=f24e2040]:
+          - cell "Admin Le Cayenne" [ref=f24e2041]
+          - cell "Connexion utilisateur" [ref=f24e2042]:
+            - generic [ref=f24e2043]: Connexion utilisateur
+          - cell "user#1" [ref=f24e2044]
+          - cell "4db11e89" [ref=f24e2045]:
+            - code [ref=f24e2046]: 4db11e89
+          - cell "il y a 8 heures" [ref=f24e2047]
+        - row "Admin Le Cayenne Connexion utilisateur user#1 2732a7cc il y a 8 heures" [ref=f24e2048]:
+          - cell "Admin Le Cayenne" [ref=f24e2049]
+          - cell "Connexion utilisateur" [ref=f24e2050]:
+            - generic [ref=f24e2051]: Connexion utilisateur
+          - cell "user#1" [ref=f24e2052]
+          - cell "2732a7cc" [ref=f24e2053]:
+            - code [ref=f24e2054]: 2732a7cc
+          - cell "il y a 8 heures" [ref=f24e2055]
+        - row "Admin Le Cayenne Connexion utilisateur user#1 ef9e6e87 il y a 8 heures" [ref=f24e2056]:
+          - cell "Admin Le Cayenne" [ref=f24e2057]
+          - cell "Connexion utilisateur" [ref=f24e2058]:
+            - generic [ref=f24e2059]: Connexion utilisateur
+          - cell "user#1" [ref=f24e2060]
+          - cell "ef9e6e87" [ref=f24e2061]:
+            - code [ref=f24e2062]: ef9e6e87
+          - cell "il y a 8 heures" [ref=f24e2063]
+        - row "Admin Le Cayenne Commande créée (caisse) order#5532 33e5e023 il y a 8 heures" [ref=f24e2064]:
+          - cell "Admin Le Cayenne" [ref=f24e2065]
+          - cell "Commande créée (caisse)" [ref=f24e2066]:
+            - generic [ref=f24e2067]: Commande créée (caisse)
+          - cell "order#5532" [ref=f24e2068]
+          - cell "33e5e023" [ref=f24e2069]:
+            - code [ref=f24e2070]: 33e5e023
+          - cell "il y a 8 heures" [ref=f24e2071]
+        - row "Admin Le Cayenne Commande créée (caisse) order#5531 8e120b2e il y a 8 heures" [ref=f24e2072]:
+          - cell "Admin Le Cayenne" [ref=f24e2073]
+          - cell "Commande créée (caisse)" [ref=f24e2074]:
+            - generic [ref=f24e2075]: Commande créée (caisse)
+          - cell "order#5531" [ref=f24e2076]
+          - cell "8e120b2e" [ref=f24e2077]:
+            - code [ref=f24e2078]: 8e120b2e
+          - cell "il y a 8 heures" [ref=f24e2079]
+        - row "Admin Le Cayenne Commande créée (caisse) order#5530 b8341e9f il y a 8 heures" [ref=f24e2080]:
+          - cell "Admin Le Cayenne" [ref=f24e2081]
+          - cell "Commande créée (caisse)" [ref=f24e2082]:
+            - generic [ref=f24e2083]: Commande créée (caisse)
+          - cell "order#5530" [ref=f24e2084]
+          - cell "b8341e9f" [ref=f24e2085]:
+            - code [ref=f24e2086]: b8341e9f
+          - cell "il y a 8 heures" [ref=f24e2087]
+        - row "Admin Le Cayenne Commande créée (caisse) order#5529 2a304305 il y a 8 heures" [ref=f24e2088]:
+          - cell "Admin Le Cayenne" [ref=f24e2089]
+          - cell "Commande créée (caisse)" [ref=f24e2090]:
+            - generic [ref=f24e2091]: Commande créée (caisse)
+          - cell "order#5529" [ref=f24e2092]
+          - cell "2a304305" [ref=f24e2093]:
+            - code [ref=f24e2094]: 2a304305
+          - cell "il y a 8 heures" [ref=f24e2095]
+        - row "Admin Le Cayenne Commande créée (caisse) order#5528 fd078bd8 il y a 8 heures" [ref=f24e2096]:
+          - cell "Admin Le Cayenne" [ref=f24e2097]
+          - cell "Commande créée (caisse)" [ref=f24e2098]:
+            - generic [ref=f24e2099]: Commande créée (caisse)
+          - cell "order#5528" [ref=f24e2100]
+          - cell "fd078bd8" [ref=f24e2101]:
+            - code [ref=f24e2102]: fd078bd8
+          - cell "il y a 8 heures" [ref=f24e2103]
+        - row "Admin Le Cayenne Connexion utilisateur user#1 7b7c318b il y a 8 heures" [ref=f24e2104]:
+          - cell "Admin Le Cayenne" [ref=f24e2105]
+          - cell "Connexion utilisateur" [ref=f24e2106]:
+            - generic [ref=f24e2107]: Connexion utilisateur
+          - cell "user#1" [ref=f24e2108]
+          - cell "7b7c318b" [ref=f24e2109]:
+            - code [ref=f24e2110]: 7b7c318b
+          - cell "il y a 8 heures" [ref=f24e2111]
+        - row "Admin Le Cayenne Connexion utilisateur user#1 d7133d5d il y a 8 heures" [ref=f24e2112]:
+          - cell "Admin Le Cayenne" [ref=f24e2113]
+          - cell "Connexion utilisateur" [ref=f24e2114]:
+            - generic [ref=f24e2115]: Connexion utilisateur
+          - cell "user#1" [ref=f24e2116]
+          - cell "d7133d5d" [ref=f24e2117]:
+            - code [ref=f24e2118]: d7133d5d
+          - cell "il y a 8 heures" [ref=f24e2119]
+        - row "Admin Le Cayenne Connexion utilisateur user#1 c4261d82 il y a 8 heures" [ref=f24e2120]:
+          - cell "Admin Le Cayenne" [ref=f24e2121]
+          - cell "Connexion utilisateur" [ref=f24e2122]:
+            - generic [ref=f24e2123]: Connexion utilisateur
+          - cell "user#1" [ref=f24e2124]
+          - cell "c4261d82" [ref=f24e2125]:
+            - code [ref=f24e2126]: c4261d82
+          - cell "il y a 8 heures" [ref=f24e2127]
+        - row "Admin Le Cayenne Connexion utilisateur user#1 01bf2938 il y a 8 heures" [ref=f24e2128]:
+          - cell "Admin Le Cayenne" [ref=f24e2129]
+          - cell "Connexion utilisateur" [ref=f24e2130]:
+            - generic [ref=f24e2131]: Connexion utilisateur
+          - cell "user#1" [ref=f24e2132]
+          - cell "01bf2938" [ref=f24e2133]:
+            - code [ref=f24e2134]: 01bf2938
+          - cell "il y a 8 heures" [ref=f24e2135]
+        - row "Admin Le Cayenne Connexion utilisateur user#1 482c0ecc il y a 8 heures" [ref=f24e2136]:
+          - cell "Admin Le Cayenne" [ref=f24e2137]
+          - cell "Connexion utilisateur" [ref=f24e2138]:
+            - generic [ref=f24e2139]: Connexion utilisateur
+          - cell "user#1" [ref=f24e2140]
+          - cell "482c0ecc" [ref=f24e2141]:
+            - code [ref=f24e2142]: 482c0ecc
+          - cell "il y a 8 heures" [ref=f24e2143]
+        - row "Admin Le Cayenne Connexion utilisateur user#1 87dd2385 il y a 9 heures" [ref=f24e2144]:
+          - cell "Admin Le Cayenne" [ref=f24e2145]
+          - cell "Connexion utilisateur" [ref=f24e2146]:
+            - generic [ref=f24e2147]: Connexion utilisateur
+          - cell "user#1" [ref=f24e2148]
+          - cell "87dd2385" [ref=f24e2149]:
+            - code [ref=f24e2150]: 87dd2385
+          - cell "il y a 9 heures" [ref=f24e2151]
+        - row "Admin Le Cayenne Connexion utilisateur user#1 81f1d2f1 il y a 9 heures" [ref=f24e2152]:
+          - cell "Admin Le Cayenne" [ref=f24e2153]
+          - cell "Connexion utilisateur" [ref=f24e2154]:
+            - generic [ref=f24e2155]: Connexion utilisateur
+          - cell "user#1" [ref=f24e2156]
+          - cell "81f1d2f1" [ref=f24e2157]:
+            - code [ref=f24e2158]: 81f1d2f1
+          - cell "il y a 9 heures" [ref=f24e2159]
+        - row "Caissier Le Cayenne Ticket imprimé order#5507 edf7b6c6 il y a 9 heures" [ref=f24e2160]:
+          - cell "Caissier Le Cayenne" [ref=f24e2161]
+          - cell "Ticket imprimé" [ref=f24e2162]:
+            - generic [ref=f24e2163]: Ticket imprimé
+          - cell "order#5507" [ref=f24e2164]
+          - cell "edf7b6c6" [ref=f24e2165]:
+            - code [ref=f24e2166]: edf7b6c6
+          - cell "il y a 9 heures" [ref=f24e2167]
+        - row "Caissier Le Cayenne Mouvement de caisse enregistré cash_drawer_session#36 1c6ba0e9 il y a 9 heures" [ref=f24e2168]:
+          - cell "Caissier Le Cayenne" [ref=f24e2169]
+          - cell "Mouvement de caisse enregistré" [ref=f24e2170]:
+            - generic [ref=f24e2171]: Mouvement de caisse enregistré
+          - cell "cash_drawer_session#36" [ref=f24e2172]
+          - cell "1c6ba0e9" [ref=f24e2173]:
+            - code [ref=f24e2174]: 1c6ba0e9
+          - cell "il y a 9 heures" [ref=f24e2175]
+        - row "Caissier Le Cayenne Commande créée (caisse) order#5507 5d0fd8a2 il y a 9 heures" [ref=f24e2176]:
+          - cell "Caissier Le Cayenne" [ref=f24e2177]
+          - cell "Commande créée (caisse)" [ref=f24e2178]:
+            - generic [ref=f24e2179]: Commande créée (caisse)
+          - cell "order#5507" [ref=f24e2180]
+          - cell "5d0fd8a2" [ref=f24e2181]:
+            - code [ref=f24e2182]: 5d0fd8a2
+          - cell "il y a 9 heures" [ref=f24e2183]
+        - row "Caissier Le Cayenne Connexion utilisateur user#3 fcfb1685 il y a 9 heures" [ref=f24e2184]:
+          - cell "Caissier Le Cayenne" [ref=f24e2185]
+          - cell "Connexion utilisateur" [ref=f24e2186]:
+            - generic [ref=f24e2187]: Connexion utilisateur
+          - cell "user#3" [ref=f24e2188]
+          - cell "fcfb1685" [ref=f24e2189]:
+            - code [ref=f24e2190]: fcfb1685
+          - cell "il y a 9 heures" [ref=f24e2191]
+  - generic [ref=f24e2192]:
+    - heading "Statistiques des commandes" [level=4] [ref=f24e2193]
+    - generic [ref=f24e2194] [cursor=pointer]:
+      - generic [ref=f24e2195]: Date
+      - textbox "Date" [ref=f24e2197]:
+        - generic [ref=f24e2198]:
+          - textbox "Date" [ref=f24e2199]:
+            - /placeholder: ""
+            - text: 07/07/2026 - 07/07/2026
+          - img [ref=f24e2200]
+  - generic [ref=f24e2203]:
+    - generic [ref=f24e2205]:
+      - generic [ref=f24e2207]: 
+      - generic [ref=f24e2208]:
+        - heading "Total commandes" [level=3] [ref=f24e2209]
+        - heading "8" [level=4] [ref=f24e2210]
+    - generic [ref=f24e2212]:
+      - generic [ref=f24e2214]: 
+      - generic [ref=f24e2215]:
+        - heading "En attente" [level=3] [ref=f24e2216]
+        - heading "0" [level=4] [ref=f24e2217]
+    - generic [ref=f24e2219]:
+      - generic [ref=f24e2221]: 
+      - generic [ref=f24e2222]:
+        - heading "Accepter" [level=3] [ref=f24e2223]
+        - heading "4" [level=4] [ref=f24e2224]
+    - generic [ref=f24e2226]:
+      - generic [ref=f24e2228]: 
+      - generic [ref=f24e2229]:
+        - heading "En préparation" [level=3] [ref=f24e2230]
+        - heading "4" [level=4] [ref=f24e2231]
+    - generic [ref=f24e2233]:
+      - generic [ref=f24e2235]: 
+      - generic [ref=f24e2236]:
+        - heading "Préparée" [level=3] [ref=f24e2237]
+        - heading "0" [level=4] [ref=f24e2238]
+    - generic [ref=f24e2240]:
+      - generic [ref=f24e2242]: 
+      - generic [ref=f24e2243]:
+        - heading "En livraison" [level=3] [ref=f24e2244]
+        - heading "0" [level=4] [ref=f24e2245]
+    - generic [ref=f24e2247]:
+      - generic [ref=f24e2249]: 
+      - generic [ref=f24e2250]:
+        - heading "Livré" [level=3] [ref=f24e2251]
+        - heading "0" [level=4] [ref=f24e2252]
+    - generic [ref=f24e2254]:
+      - generic [ref=f24e2256]: 
+      - generic [ref=f24e2257]:
+        - heading "Annulé" [level=3] [ref=f24e2258]
+        - heading "0" [level=4] [ref=f24e2259]
+    - generic [ref=f24e2261]:
+      - generic [ref=f24e2263]: 
+      - generic [ref=f24e2264]:
+        - heading "Retournée" [level=3] [ref=f24e2265]
+        - heading "0" [level=4] [ref=f24e2266]
+    - generic [ref=f24e2268]:
+      - generic [ref=f24e2270]: 
+      - generic [ref=f24e2271]:
+        - heading "Refusée" [level=3] [ref=f24e2272]
+        - heading "0" [level=4] [ref=f24e2273]
+  - generic [ref=f24e2274]:
+    - generic [ref=f24e2276]:
+      - generic [ref=f24e2277]:
+        - heading "Résumé des ventes" [level=3] [ref=f24e2278]
+        - generic [ref=f24e2279] [cursor=pointer]:
+          - generic [ref=f24e2280]: Date
+          - textbox "Date" [ref=f24e2282]:
+            - generic [ref=f24e2283]:
+              - textbox "Date" [ref=f24e2284]:
+                - /placeholder: ""
+                - text: 07/01/2026 - 07/31/2026
+              - img [ref=f24e2285]
+          - generic [ref=f24e2288]: 
+      - generic [ref=f24e2289]:
+        - list [ref=f24e2290]:
+          - listitem [ref=f24e2291]:
+            - generic [ref=f24e2292]:
+              - generic [ref=f24e2293]: 
+              - heading "356,00 €" [level=3] [ref=f24e2294]
+            - paragraph [ref=f24e2295]: Total ventes
+          - listitem [ref=f24e2296]:
+            - generic [ref=f24e2297]:
+              - generic [ref=f24e2298]: 
+              - heading "11,48 €" [level=3] [ref=f24e2299]
+            - paragraph [ref=f24e2300]: Ventes moyennes par jour
+        - generic [ref=f24e2302]:
+          - img [ref=f24e2303]:
+            - generic [ref=f24e2310]:
+              - generic "1" [ref=f24e2311]
+              - generic "2" [ref=f24e2312]
+              - generic "3" [ref=f24e2313]
+              - generic "4" [ref=f24e2314]
+              - generic "5" [ref=f24e2315]
+              - generic "6" [ref=f24e2316]
+              - generic "7" [ref=f24e2317]
+              - generic "8" [ref=f24e2318]
+              - generic "9" [ref=f24e2319]
+              - generic "10" [ref=f24e2320]
+              - generic "11" [ref=f24e2321]
+              - generic "12" [ref=f24e2322]
+              - generic "13" [ref=f24e2323]
+              - generic "14" [ref=f24e2324]
+              - generic "15" [ref=f24e2325]
+              - generic "16" [ref=f24e2326]
+              - generic "17" [ref=f24e2327]
+              - generic "18" [ref=f24e2328]
+              - generic "19" [ref=f24e2329]
+              - generic "20" [ref=f24e2330]
+              - generic "21" [ref=f24e2331]
+              - generic "22" [ref=f24e2332]
+              - generic "23" [ref=f24e2333]
+              - generic "24" [ref=f24e2334]
+              - generic "25" [ref=f24e2335]
+              - generic "26" [ref=f24e2336]
+              - generic "27" [ref=f24e2337]
+              - generic "28" [ref=f24e2338]
+              - generic "29" [ref=f24e2339]
+              - generic "30" [ref=f24e2340]
+              - generic "31" [ref=f24e2341]
+          - generic: ●
+    - generic [ref=f24e2343]:
+      - generic [ref=f24e2344]:
+        - heading "Résumé des commandes" [level=3] [ref=f24e2345]
+        - generic [ref=f24e2346] [cursor=pointer]:
+          - generic [ref=f24e2347]: Date
+          - textbox "Date" [ref=f24e2349]:
+            - generic [ref=f24e2350]:
+              - textbox "Date" [ref=f24e2351]:
+                - /placeholder: ""
+                - text: 07/01/2026 - 07/31/2026
+              - img [ref=f24e2352]
+          - generic [ref=f24e2355]: 
+      - generic [ref=f24e2357]:
+        - img [ref=f24e2360]:
+          - generic [ref=f24e2378]:
+            - generic: Total
+            - generic: "1"
+        - list [ref=f24e2379]:
+          - listitem [ref=f24e2380]:
+            - generic [ref=f24e2381]: Livré (0%)
+          - listitem [ref=f24e2383]:
+            - generic [ref=f24e2384]: Retournée (0%)
+          - listitem [ref=f24e2386]:
+            - generic [ref=f24e2387]: Annulé (1%)
+          - listitem [ref=f24e2389]:
+            - generic [ref=f24e2390]: Refusée (0%)
+    - generic [ref=f24e2393]:
+      - heading "Dernier rapport Z" [level=3] [ref=f24e2395]
+      - generic [ref=f24e2396]:
+        - paragraph [ref=f24e2397]: "Dernier rapport Z #23"
+        - paragraph [ref=f24e2398]: closed
+        - paragraph [ref=f24e2399]: 19/06/2026 12:34:58
+        - link "Voir toutes" [ref=f24e2400] [cursor=pointer]:
+          - /url: /admin/transactions
+    - generic [ref=f24e2402]:
+      - generic [ref=f24e2404]: Articles mis en avant
+      - list [ref=f24e2406]:
+        - listitem [ref=f24e2407]:
+          - img "product" [ref=f24e2408]
+          - heading "Double Cheese" [level=4] [ref=f24e2409]
+        - listitem [ref=f24e2410]:
+          - img "product" [ref=f24e2411]
+          - heading "Fish Burger" [level=4] [ref=f24e2412]
+        - listitem [ref=f24e2413]:
+          - img "product" [ref=f24e2414]
+          - heading "Petite Frites Cheddar + Oignons frits" [level=4] [ref=f24e2415]
+        - listitem [ref=f24e2416]:
+          - img "product" [ref=f24e2417]
+          - heading "Big Burger" [level=4] [ref=f24e2418]
+        - listitem [ref=f24e2419]:
+          - img "product" [ref=f24e2420]
+          - heading "Grill Burger" [level=4] [ref=f24e2421]
+        - listitem [ref=f24e2422]:
+          - img "product" [ref=f24e2423]
+          - heading "Grande Frites Cheddar fondu" [level=4] [ref=f24e2424]
+        - listitem [ref=f24e2425]:
+          - img "product" [ref=f24e2426]
+          - heading "Petite Frites Cheddar fondu" [level=4] [ref=f24e2427]
+        - listitem [ref=f24e2428]:
+          - img "product" [ref=f24e2429]
+          - heading "Méga" [level=4] [ref=f24e2430]
+    - generic [ref=f24e2432]:
+      - generic [ref=f24e2434]: Articles les plus populaires
+      - list [ref=f24e2436]:
+        - listitem [ref=f24e2437]:
+          - img "product" [ref=f24e2438]
+          - generic [ref=f24e2439]:
+            - heading "Menu (Frites + Boisson)" [level=4] [ref=f24e2440]
+            - heading "Technique (interne — upsell)" [level=5] [ref=f24e2441]
+            - heading "2,50 €" [level=6] [ref=f24e2442]
+        - listitem [ref=f24e2443]:
+          - img "product" [ref=f24e2444]
+          - generic [ref=f24e2445]:
+            - heading "Frites Seules" [level=4] [ref=f24e2446]
+            - heading "Technique (interne — upsell)" [level=5] [ref=f24e2447]
+            - heading "2,00 €" [level=6] [ref=f24e2448]
+        - listitem [ref=f24e2449]:
+          - img "product" [ref=f24e2450]
+          - generic [ref=f24e2451]:
+            - heading "Coca-Cola 33cl" [level=4] [ref=f24e2452]
+            - heading "Boissons" [level=5] [ref=f24e2453]
+            - heading "1,90 €" [level=6] [ref=f24e2454]
+        - listitem [ref=f24e2455]:
+          - img "product" [ref=f24e2456]
+          - generic [ref=f24e2457]:
+            - heading "Cayenne" [level=4] [ref=f24e2458]
+            - heading "Sandwichs" [level=5] [ref=f24e2459]
+            - heading "7,40 €" [level=6] [ref=f24e2460]
+        - listitem [ref=f24e2461]:
+          - img "product" [ref=f24e2462]
+          - generic [ref=f24e2463]:
+            - heading "Tacos M" [level=4] [ref=f24e2464]
+            - heading "Tacos" [level=5] [ref=f24e2465]
+            - heading "6,90 €" [level=6] [ref=f24e2466]
+        - listitem [ref=f24e2467]:
+          - img "product" [ref=f24e2468]
+          - generic [ref=f24e2469]:
+            - heading "Eau Plate 50cl" [level=4] [ref=f24e2470]
+            - heading "Boissons" [level=5] [ref=f24e2471]
+            - heading "1,00 €" [level=6] [ref=f24e2472]

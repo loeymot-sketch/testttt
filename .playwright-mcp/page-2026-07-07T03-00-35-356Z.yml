@@ -1,0 +1,495 @@
+- main [ref=f31e5]:
+  - generic [ref=f31e6]:
+    - link "logo" [ref=f31e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=f31e8]
+    - generic [ref=f31e9]:
+      - generic [ref=f31e10]:
+        - generic [ref=f31e11]:
+          - button " Filiale Le Cayenne (principal) " [ref=f31e12] [cursor=pointer]:
+            - generic [ref=f31e13]: 
+            - heading "Filiale Le Cayenne (principal)" [level=3] [ref=f31e14]:
+              - generic [ref=f31e15]: Filiale
+              - text: Le Cayenne (principal)
+            - generic [ref=f31e16]: 
+          - list:
+            - listitem:
+              - radio "Le Cayenne (principal)" [checked]
+              - generic: Le Cayenne (principal)
+        - generic [ref=f31e18]:
+          - button "flag" [ref=f31e20] [cursor=pointer]:
+            - img "flag" [ref=f31e21]
+          - link "POS" [ref=f31e22] [cursor=pointer]:
+            - /url: /admin/pos
+            - generic [ref=f31e23]: 
+      - button "Fermer" [ref=f31e24] [cursor=pointer]: 
+      - generic [ref=f31e25]:
+        - button "avatar Bonjour Admin Le Cayenne" [ref=f31e26] [cursor=pointer]:
+          - img "avatar" [ref=f31e27]
+          - heading "Bonjour Admin Le Cayenne" [level=3] [ref=f31e28]:
+            - text: Bonjour
+            - generic "Admin Le Cayenne" [ref=f31e29]
+          - generic [ref=f31e30]: 
+        - menu "avatar Bonjour Admin Le Cayenne":
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "Admin Le Cayenne" [level=3]
+            - paragraph: admin@lecayenne.fr
+            - paragraph: "+330600000000"
+            - heading "2,00 €" [level=3]
+          - menuitem "Modifier le profil":
+            - text: 
+            - generic: Modifier le profil
+          - menuitem "Changer le mot de passe":
+            - text: 
+            - generic: Changer le mot de passe
+          - menuitem "Déconnexion":
+            - text: 
+            - generic: Déconnexion
+  - complementary [ref=f31e31]:
+    - text: 
+    - navigation [ref=f31e32]:
+      - list [ref=f31e33]:
+        - listitem [ref=f31e34]:
+          - link " Tableau de bord" [ref=f31e35] [cursor=pointer]:
+            - /url: /admin/dashboard
+            - generic [ref=f31e36]: 
+            - generic [ref=f31e37]: Tableau de bord
+      - list [ref=f31e38]:
+        - listitem [ref=f31e39]:
+          - link " POS" [ref=f31e40] [cursor=pointer]:
+            - /url: /admin/pos
+            - generic [ref=f31e41]: 
+            - generic [ref=f31e42]: POS
+      - list [ref=f31e43]:
+        - listitem [ref=f31e44]:
+          - link "Produits & Stock" [ref=f31e45] [cursor=pointer]:
+            - /url: /admin/stock/rupture
+            - generic [ref=f31e46]: Produits & Stock
+      - list [ref=f31e47]:
+        - listitem [ref=f31e48]:
+          - link " Catalogue" [ref=f31e49] [cursor=pointer]:
+            - /url: /admin/items/studio
+            - generic [ref=f31e50]: 
+            - generic [ref=f31e51]: Catalogue
+        - listitem [ref=f31e52]:
+          - link " Attribut d’articles" [ref=f31e53] [cursor=pointer]:
+            - /url: /admin/settings/item-attributes/list
+            - generic [ref=f31e54]: 
+            - generic [ref=f31e55]: Attribut d’articles
+      - list [ref=f31e56]:
+        - listitem [ref=f31e57]:
+          - link " Ingrédients" [ref=f31e58] [cursor=pointer]:
+            - /url: /admin/ingredients
+            - generic [ref=f31e59]: 
+            - generic [ref=f31e60]: Ingrédients
+      - list [ref=f31e61]:
+        - listitem [ref=f31e62]:
+          - link " Commandes caisse" [ref=f31e63] [cursor=pointer]:
+            - /url: /admin/pos-orders
+            - generic [ref=f31e64]: 
+            - generic [ref=f31e65]: Commandes caisse
+      - list [ref=f31e66]:
+        - listitem [ref=f31e67]:
+          - link " Historique" [ref=f31e68] [cursor=pointer]:
+            - /url: /admin/historique
+            - generic [ref=f31e69]: 
+            - generic [ref=f31e70]: Historique
+      - list [ref=f31e71]:
+        - listitem [ref=f31e72]:
+          - link " Encaissement" [ref=f31e73] [cursor=pointer]:
+            - /url: /admin/encaissement
+            - generic [ref=f31e74]: 
+            - generic [ref=f31e75]: Encaissement
+      - list [ref=f31e76]:
+        - listitem [ref=f31e77]:
+          - link " Vue caisse unifiée" [ref=f31e78] [cursor=pointer]:
+            - /url: /admin/cash-overview
+            - generic [ref=f31e79]: 
+            - generic [ref=f31e80]: Vue caisse unifiée
+      - list [ref=f31e81]:
+        - listitem [ref=f31e82]:
+          - link " Caisse livreur" [ref=f31e83] [cursor=pointer]:
+            - /url: /admin/delivery-boy-cash-sessions
+            - generic [ref=f31e84]: 
+            - generic [ref=f31e85]: Caisse livreur
+      - list [ref=f31e86]:
+        - listitem [ref=f31e87]:
+          - button "Caisse et commandes" [ref=f31e88] [cursor=pointer]
+        - listitem [ref=f31e89]:
+          - link " Écran cuisine" [ref=f31e90] [cursor=pointer]:
+            - /url: /admin/kitchen-display-system
+            - generic [ref=f31e91]: 
+            - generic [ref=f31e92]: Écran cuisine
+        - listitem [ref=f31e93]:
+          - link " Suivi client" [ref=f31e94] [cursor=pointer]:
+            - /url: /admin/order-status-screen
+            - generic [ref=f31e95]: 
+            - generic [ref=f31e96]: Suivi client
+      - list [ref=f31e97]:
+        - listitem [ref=f31e98]:
+          - button "Communications" [ref=f31e99] [cursor=pointer]
+        - listitem [ref=f31e100]:
+          - link " Notification pushs" [ref=f31e101] [cursor=pointer]:
+            - /url: /admin/push-notifications
+            - generic [ref=f31e102]: 
+            - generic [ref=f31e103]: Notification pushs
+        - listitem [ref=f31e104]:
+          - link " Messages" [ref=f31e105] [cursor=pointer]:
+            - /url: /admin/messages
+            - generic [ref=f31e106]: 
+            - generic [ref=f31e107]: Messages
+        - listitem [ref=f31e108]:
+          - link " Abonnés" [ref=f31e109] [cursor=pointer]:
+            - /url: /admin/subscribers
+            - generic [ref=f31e110]: 
+            - generic [ref=f31e111]: Abonnés
+      - list [ref=f31e112]:
+        - listitem [ref=f31e113]:
+          - button "Utilisateurs" [ref=f31e114] [cursor=pointer]
+        - listitem [ref=f31e115]:
+          - link " Administrateurs" [ref=f31e116] [cursor=pointer]:
+            - /url: /admin/administrators
+            - generic [ref=f31e117]: 
+            - generic [ref=f31e118]: Administrateurs
+        - listitem [ref=f31e119]:
+          - link " Employés" [ref=f31e120] [cursor=pointer]:
+            - /url: /admin/employees
+            - generic [ref=f31e121]: 
+            - generic [ref=f31e122]: Employés
+        - listitem [ref=f31e123]:
+          - link " Chefs" [ref=f31e124] [cursor=pointer]:
+            - /url: /admin/chefs
+            - generic [ref=f31e125]: 
+            - generic [ref=f31e126]: Chefs
+      - list [ref=f31e127]:
+        - listitem [ref=f31e128]:
+          - button "Comptes" [ref=f31e129] [cursor=pointer]
+        - listitem [ref=f31e130]:
+          - link " Transactions" [ref=f31e131] [cursor=pointer]:
+            - /url: /admin/transactions
+            - generic [ref=f31e132]: 
+            - generic [ref=f31e133]: Transactions
+      - list [ref=f31e134]:
+        - listitem [ref=f31e135]:
+          - button "Rapports" [ref=f31e136] [cursor=pointer]
+        - listitem [ref=f31e137]:
+          - link " Rapport des ventes" [ref=f31e138] [cursor=pointer]:
+            - /url: /admin/sales-report
+            - generic [ref=f31e139]: 
+            - generic [ref=f31e140]: Rapport des ventes
+        - listitem [ref=f31e141]:
+          - link " Rapport articles" [ref=f31e142] [cursor=pointer]:
+            - /url: /admin/items-report
+            - generic [ref=f31e143]: 
+            - generic [ref=f31e144]: Rapport articles
+      - list [ref=f31e145]:
+        - listitem [ref=f31e146]:
+          - button "Configuration" [ref=f31e147] [cursor=pointer]
+        - listitem [ref=f31e148]:
+          - link " Paramètres" [ref=f31e149] [cursor=pointer]:
+            - /url: /admin/settings
+            - generic [ref=f31e150]: 
+            - generic [ref=f31e151]: Paramètres
+  - generic [ref=f31e158]:
+    - list [ref=f31e161]:
+      - listitem [ref=f31e162]:
+        - link "Tableau de bord/" [ref=f31e163] [cursor=pointer]:
+          - /url: /admin/dashboard
+      - listitem [ref=f31e164]:
+        - generic [ref=f31e165]: Encaissement
+    - generic [ref=f31e167]:
+      - generic [ref=f31e168]:
+        - generic [ref=f31e169]:
+          - heading "Encaissement" [level=3] [ref=f31e170]
+          - paragraph [ref=f31e171]: Commandes en attente d’encaissement
+        - generic [ref=f31e172]:
+          - generic [ref=f31e173]: "28"
+          - button "Actualiser" [ref=f31e174] [cursor=pointer]:
+            - generic [ref=f31e175]: Actualiser
+      - generic [ref=f31e180]:
+        - generic [ref=f31e181]:
+          - generic [ref=f31e182]:
+            - generic [ref=f31e183]: Borne
+            - generic [ref=f31e184]: N°A0017
+          - generic [ref=f31e185]: Admin Le Cayenne
+          - list [ref=f31e186]:
+            - listitem [ref=f31e187]: 1× Tacos M
+          - generic [ref=f31e188]:
+            - generic [ref=f31e189]: 6,90 €
+            - button "Encaisser" [ref=f31e190] [cursor=pointer]
+        - generic [ref=f31e191]:
+          - generic [ref=f31e192]:
+            - generic [ref=f31e193]: Borne
+            - generic [ref=f31e194]: N°A0020
+          - generic [ref=f31e195]: Admin Le Cayenne
+          - list [ref=f31e196]:
+            - listitem [ref=f31e197]: 1× Tacos M
+          - generic [ref=f31e198]:
+            - generic [ref=f31e199]: 6,90 €
+            - button "Encaisser" [ref=f31e200] [cursor=pointer]
+        - generic [ref=f31e201]:
+          - generic [ref=f31e202]:
+            - generic [ref=f31e203]: Borne
+            - generic [ref=f31e204]: N°A0021
+          - generic [ref=f31e205]: Admin Le Cayenne
+          - list [ref=f31e206]:
+            - listitem [ref=f31e207]: 1× Tacos M
+          - generic [ref=f31e208]:
+            - generic [ref=f31e209]: 6,90 €
+            - button "Encaisser" [ref=f31e210] [cursor=pointer]
+        - generic [ref=f31e211]:
+          - generic [ref=f31e212]:
+            - generic [ref=f31e213]: Borne
+            - generic [ref=f31e214]: N°A0022
+          - generic [ref=f31e215]: Admin Le Cayenne
+          - list [ref=f31e216]:
+            - listitem [ref=f31e217]: 1× Tacos M
+          - generic [ref=f31e218]:
+            - generic [ref=f31e219]: 6,90 €
+            - button "Encaisser" [ref=f31e220] [cursor=pointer]
+        - generic [ref=f31e221]:
+          - generic [ref=f31e222]:
+            - generic [ref=f31e223]: Borne
+            - generic [ref=f31e224]: N°A0025
+          - generic [ref=f31e225]: Admin Le Cayenne
+          - list [ref=f31e226]:
+            - listitem [ref=f31e227]: 1× Coca-Cola 33cl
+          - generic [ref=f31e228]:
+            - generic [ref=f31e229]: 1,90 €
+            - button "Encaisser" [ref=f31e230] [cursor=pointer]
+        - generic [ref=f31e231]:
+          - generic [ref=f31e232]:
+            - generic [ref=f31e233]: Borne
+            - generic [ref=f31e234]: N°A0027
+          - generic [ref=f31e235]: Admin Le Cayenne
+          - list [ref=f31e236]:
+            - listitem [ref=f31e237]: 1× Tacos L
+          - generic [ref=f31e238]:
+            - generic [ref=f31e239]: 7,90 €
+            - button "Encaisser" [ref=f31e240] [cursor=pointer]
+        - generic [ref=f31e241]:
+          - generic [ref=f31e242]:
+            - generic [ref=f31e243]: Borne
+            - generic [ref=f31e244]: N°A0028
+          - generic [ref=f31e245]: Admin Le Cayenne
+          - list [ref=f31e246]:
+            - listitem [ref=f31e247]: 1× Tacos M
+          - generic [ref=f31e248]:
+            - generic [ref=f31e249]: 6,90 €
+            - button "Encaisser" [ref=f31e250] [cursor=pointer]
+        - generic [ref=f31e251]:
+          - generic [ref=f31e252]:
+            - generic [ref=f31e253]: Borne
+            - generic [ref=f31e254]: N°A0002
+          - generic [ref=f31e255]: Admin Le Cayenne
+          - list [ref=f31e256]:
+            - listitem [ref=f31e257]: 1× Tacos L
+          - generic [ref=f31e258]:
+            - generic [ref=f31e259]: 7,90 €
+            - button "Encaisser" [ref=f31e260] [cursor=pointer]
+        - generic [ref=f31e261]:
+          - generic [ref=f31e262]:
+            - generic [ref=f31e263]: Borne
+            - generic [ref=f31e264]: N°A0009
+          - generic [ref=f31e265]: Admin Le Cayenne
+          - list [ref=f31e266]:
+            - listitem [ref=f31e267]: 1× Tacos L
+          - generic [ref=f31e268]:
+            - generic [ref=f31e269]: 6,90 €
+            - button "Encaisser" [ref=f31e270] [cursor=pointer]
+        - generic [ref=f31e271]:
+          - generic [ref=f31e272]:
+            - generic [ref=f31e273]: Borne
+            - generic [ref=f31e274]: N°K87D
+          - generic [ref=f31e275]: Caissier Le Cayenne
+          - generic [ref=f31e276]:
+            - generic [ref=f31e277]: 9,00 €
+            - button "Encaisser" [ref=f31e278] [cursor=pointer]
+        - generic [ref=f31e279]:
+          - generic [ref=f31e280]:
+            - generic [ref=f31e281]: Borne
+            - generic [ref=f31e282]: N°K2DC
+          - generic [ref=f31e283]: Caissier Le Cayenne
+          - generic [ref=f31e284]:
+            - generic [ref=f31e285]: 9,00 €
+            - button "Encaisser" [ref=f31e286] [cursor=pointer]
+        - generic [ref=f31e287]:
+          - generic [ref=f31e288]:
+            - generic [ref=f31e289]: Borne
+            - generic [ref=f31e290]: N°E006
+          - generic [ref=f31e291]: Admin Le Cayenne
+          - list [ref=f31e292]:
+            - listitem [ref=f31e293]: 2× Cayenne
+          - generic [ref=f31e294]:
+            - generic [ref=f31e295]: 7,40 €
+            - button "Encaisser" [ref=f31e296] [cursor=pointer]
+        - generic [ref=f31e297]:
+          - generic [ref=f31e298]:
+            - generic [ref=f31e299]: Borne
+            - generic [ref=f31e300]: N°E002
+          - generic [ref=f31e301]: Admin Le Cayenne
+          - list [ref=f31e302]:
+            - listitem [ref=f31e303]: 1× Tacos L
+          - generic [ref=f31e304]:
+            - generic [ref=f31e305]: 6,90 €
+            - button "Encaisser" [ref=f31e306] [cursor=pointer]
+        - generic [ref=f31e307]:
+          - generic [ref=f31e308]:
+            - generic [ref=f31e309]: Borne
+            - generic [ref=f31e310]: N°E003
+          - generic [ref=f31e311]: Admin Le Cayenne
+          - list [ref=f31e312]:
+            - listitem [ref=f31e313]: 1× Tacos L
+          - generic [ref=f31e314]:
+            - generic [ref=f31e315]: 7,90 €
+            - button "Encaisser" [ref=f31e316] [cursor=pointer]
+        - generic [ref=f31e317]:
+          - generic [ref=f31e318]:
+            - generic [ref=f31e319]: Borne
+            - generic [ref=f31e320]: N°E004
+          - generic [ref=f31e321]: Client passage
+          - list [ref=f31e322]:
+            - listitem [ref=f31e323]: 1× Frites Seules
+          - generic [ref=f31e324]:
+            - generic [ref=f31e325]: 2,00 €
+            - button "Encaisser" [ref=f31e326] [cursor=pointer]
+        - generic [ref=f31e327]:
+          - generic [ref=f31e328]:
+            - generic [ref=f31e329]: Borne
+            - generic [ref=f31e330]: N°E005
+          - generic [ref=f31e331]: Admin Le Cayenne
+          - list [ref=f31e332]:
+            - listitem [ref=f31e333]: 1× Menu Enfant Nuggets
+          - generic [ref=f31e334]:
+            - generic [ref=f31e335]: 4,90 €
+            - button "Encaisser" [ref=f31e336] [cursor=pointer]
+        - generic [ref=f31e337]:
+          - generic [ref=f31e338]:
+            - generic [ref=f31e339]: Caisse
+            - generic [ref=f31e340]: N°A0007
+          - generic [ref=f31e341]: Client passage
+          - list [ref=f31e342]:
+            - listitem [ref=f31e343]: 1× Cayenne
+          - generic [ref=f31e344]:
+            - generic [ref=f31e345]: 7,40 €
+            - button "Encaisser" [ref=f31e346] [cursor=pointer]
+        - generic [ref=f31e347]:
+          - generic [ref=f31e348]:
+            - generic [ref=f31e349]: Caisse
+            - generic [ref=f31e350]: N°A0008
+          - generic [ref=f31e351]: Client passage
+          - list [ref=f31e352]:
+            - listitem [ref=f31e353]: 1× Cayenne
+          - generic [ref=f31e354]:
+            - generic [ref=f31e355]: 7,40 €
+            - button "Encaisser" [ref=f31e356] [cursor=pointer]
+        - generic [ref=f31e357]:
+          - generic [ref=f31e358]:
+            - generic [ref=f31e359]: Caisse
+            - generic [ref=f31e360]: N°A0009
+          - generic [ref=f31e361]: Client passage
+          - list [ref=f31e362]:
+            - listitem [ref=f31e363]: 1× Cayenne
+            - listitem [ref=f31e364]: 1× Menu (Frites + Boisson)
+          - generic [ref=f31e365]:
+            - generic [ref=f31e366]: 9,90 €
+            - button "Encaisser" [ref=f31e367] [cursor=pointer]
+        - generic [ref=f31e368]:
+          - generic [ref=f31e369]:
+            - generic [ref=f31e370]: Caisse
+            - generic [ref=f31e371]: N°A0010
+          - generic [ref=f31e372]: Client passage
+          - list [ref=f31e373]:
+            - listitem [ref=f31e374]: 2× Coca-Cola 33cl
+            - listitem [ref=f31e375]: 1× Hawaï 33cl
+            - listitem [ref=f31e376]: 1× Oasis Tropical 33cl
+            - listitem [ref=f31e377]: 1× Tarte Daim
+          - generic [ref=f31e378]:
+            - generic [ref=f31e379]: 11,10 €
+            - button "Encaisser" [ref=f31e380] [cursor=pointer]
+        - generic [ref=f31e381]:
+          - generic [ref=f31e382]:
+            - generic [ref=f31e383]: Caisse
+            - generic [ref=f31e384]: N°A0011
+          - generic [ref=f31e385]: Client passage
+          - list [ref=f31e386]:
+            - listitem [ref=f31e387]: 1× Cayenne
+          - generic [ref=f31e388]:
+            - generic [ref=f31e389]: 8,30 €
+            - button "Encaisser" [ref=f31e390] [cursor=pointer]
+        - generic [ref=f31e391]:
+          - generic [ref=f31e392]:
+            - generic [ref=f31e393]: Borne
+            - generic [ref=f31e394]: N°A0012
+          - generic [ref=f31e395]: Caissier Le Cayenne
+          - list [ref=f31e396]:
+            - listitem [ref=f31e397]: 1× Cayenne
+          - generic [ref=f31e398]:
+            - generic [ref=f31e399]: 9,90 €
+            - button "Encaisser" [ref=f31e400] [cursor=pointer]
+        - generic [ref=f31e401]:
+          - generic [ref=f31e402]:
+            - generic [ref=f31e403]: Borne
+            - generic [ref=f31e404]: N°A0015
+          - generic [ref=f31e405]: Caissier Le Cayenne
+          - list [ref=f31e406]:
+            - listitem [ref=f31e407]: 1× Tacos M
+          - generic [ref=f31e408]:
+            - generic [ref=f31e409]: 9,40 €
+            - button "Encaisser" [ref=f31e410] [cursor=pointer]
+        - generic [ref=f31e411]:
+          - generic [ref=f31e412]:
+            - generic [ref=f31e413]: Borne
+            - generic [ref=f31e414]: N°A0016
+          - generic [ref=f31e415]: Caissier Le Cayenne
+          - list [ref=f31e416]:
+            - listitem [ref=f31e417]: 1× Cheese Burger
+          - generic [ref=f31e418]:
+            - generic [ref=f31e419]: 6,00 €
+            - button "Encaisser" [ref=f31e420] [cursor=pointer]
+        - generic [ref=f31e421]:
+          - generic [ref=f31e422]:
+            - generic [ref=f31e423]: Borne
+            - generic [ref=f31e424]: N°A0001
+          - generic [ref=f31e425]: Caissier Le Cayenne
+          - list [ref=f31e426]:
+            - listitem [ref=f31e427]: 1× Eau Plate 50cl
+          - generic [ref=f31e428]:
+            - generic [ref=f31e429]: 1,00 €
+            - button "Encaisser" [ref=f31e430] [cursor=pointer]
+        - generic [ref=f31e431]:
+          - generic [ref=f31e432]:
+            - generic [ref=f31e433]: Borne
+            - generic [ref=f31e434]: N°A0003
+          - generic [ref=f31e435]: Caissier Le Cayenne
+          - list [ref=f31e436]:
+            - listitem [ref=f31e437]: 1× Tacos M
+            - listitem [ref=f31e438]: 1× Hawaï 33cl
+          - generic [ref=f31e439]:
+            - generic [ref=f31e440]: 8,80 €
+            - button "Encaisser" [ref=f31e441] [cursor=pointer]
+        - generic [ref=f31e442]:
+          - generic [ref=f31e443]:
+            - generic [ref=f31e444]: Borne
+            - generic [ref=f31e445]: N°A0006
+          - generic [ref=f31e446]: Caissier Le Cayenne
+          - list [ref=f31e447]:
+            - listitem [ref=f31e448]: 1× Cayenne
+          - generic [ref=f31e449]:
+            - generic [ref=f31e450]: 7,40 €
+            - button "Encaisser" [ref=f31e451] [cursor=pointer]
+        - generic [ref=f31e452]:
+          - generic [ref=f31e453]:
+            - generic [ref=f31e454]: Borne
+            - generic [ref=f31e455]: N°A0008
+          - generic [ref=f31e456]: Caissier Le Cayenne
+          - list [ref=f31e457]:
+            - listitem [ref=f31e458]: 1× Tacos M
+          - generic [ref=f31e459]:
+            - generic [ref=f31e460]: 6,90 €
+            - button "Encaisser" [ref=f31e461] [cursor=pointer]

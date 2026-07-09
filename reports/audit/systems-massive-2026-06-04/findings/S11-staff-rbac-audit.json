@@ -1,0 +1,147 @@
+{
+  "micro_system": "S11-staff-rbac",
+  "files_examined": [
+    "app/Http/Controllers/Admin/EmployeeController.php",
+    "app/Http/Controllers/Admin/AdministratorController.php",
+    "app/Http/Controllers/Admin/Pos/PosReceiptPrintController.php",
+    "app/Http/Controllers/Admin/AdminController.php",
+    "app/Services/EmployeeService.php",
+    "app/Services/AdministratorService.php",
+    "app/Services/WaiterService.php",
+    "app/Services/ChefService.php",
+    "app/Services/Concerns/EnforcesOwnBranchScope.php",
+    "app/Services/Receipt/ReceiptDataService.php",
+    "app/Http/Requests/EmployeeRequest.php",
+    "app/Http/Requests/AdministratorRequest.php",
+    "app/Http/Requests/UserChangePasswordRequest.php",
+    "app/Http/Requests/ChangeImageRequest.php",
+    "app/Http/Resources/OrderDetailsResource.php",
+    "app/Models/Order.php",
+    "app/Enums/Role.php",
+    "routes/api.php",
+    "database/seeders/RolePermissionTableSeeder.php",
+    "resources/js/components/admin/employees/EmployeeCreateComponent.vue",
+    "resources/js/components/admin/administrators/AdministratorListComponent.vue",
+    "resources/js/components/admin/pos/ReceiptComponent.vue"
+  ],
+  "findings": [
+    {
+      "id": "S11-01",
+      "severity": "P1",
+      "category": "logic",
+      "title": "AdministratorService::update() missing target/self/super-admin guards present on every sibling method — id=1 super-admin protection bypassable via update",
+      "file_line": "app/Services/AdministratorService.php:87-110",
+      "evidence": "destroy() (l.115-130) guards with `Auth::user()->id != $administrator->id && $administrator->id != 1` AND `hasRole(EnumRole::ADMIN)`; changePassword() (l.162) and changeImage() (l.181) both guard with `hasRole(EnumRole::ADMIN)`. update() (l.87-110) has NONE: no hasRole check, no `id != 1`, no self-guard — confirmed by grep over lines 87-110 returning zero matches. Route `Route::match(['post','put','patch'],'/{administrator}', update)` (routes/api.php:1044) binds ANY User via route-model-binding. The sibling Waiter/Chef services carry the explicit WAVE5-SEC-001 `assertTargetRole()` guard (WaiterService.php:99, ChefService.php:98); AdministratorService::update is the one place the pattern was not applied.",
+      "why_it_matters": "An `administrators_edit` holder can POST to /administrator/1 (or any non-Admin user's id) and overwrite name/email/branch_id and reset the password (l.99-101 `if($request->password) password=Hash::make`). The id=1 root-admin that destroy() deliberately protects from deletion can have its credentials rotated through update() — a full account takeover of the super-admin, and a way to mutate non-Admin Users (e.g. a Customer) through the admin endpoint since no role is asserted. On a single-box Le Cayenne this is the owner's own root account.",
+      "reproduction": "As a user holding only `administrators_edit` (not Admin by default seed, but any custom role granted it): POST /api/admin/administrator/1 with {name,email,password:'NewPass123456',password_confirmation:'NewPass123456',status:1,country_code:'+33',branch_id:<their branch>}. AdministratorRequest passes (caller need only hold administrators_edit; branch_id guard satisfied with own non-zero branch). update() writes the new password hash to user id=1 with no role/self/id-1 check. Login as id=1 with the new password.",
+      "recommended_correction": "Add the same guard destroy() uses at the top of update(): assert `$administrator->hasRole(EnumRole::ADMIN)` (reject mutating non-admins through this endpoint) and `$administrator->id != 1` / self-id checks consistent with destroy(), mirroring the WAVE5-SEC-001 assertTargetRole pattern used in WaiterService/ChefService. Place the assertion BEFORE the try/catch so it surfaces as 403 rather than being rewritten to 422 (per the existing WAVE5-SEC-001 rationale comments).",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S11-02",
+      "severity": "P1",
+      "category": "nf525",
+      "title": "POS printed receipt 'Opérateur' shows the CUSTOMER name, not the cashier — operator identity wrong on the fiscal ticket while creator_id (cashier) is captured but unused",
+      "file_line": "app/Services/Receipt/ReceiptDataService.php:70",
+      "evidence": "buildForOrderModel() sets `'operator_name' => optional($order->user)->name` where Order::user() (app/Models/Order.php:173-175) is the CUSTOMER belongsTo. OrderDetailsResource.php:122 exposes `'operator_name' => $receipt['operator_name']`, and the POS receipt ReceiptComponent.vue:72 and :287 (80mm thermal block) render `label.operator + ': ' + order.operator_name`. Meanwhile OrderService.php:777 now persists the real cashier on `creator_id` ('creator_id' => Auth::id()), and Order.php:65 lists creator_id as fillable — but no `creator()` relation exists (grep: only user/branch/deliveryBoy belongsTo) and ReceiptDataService never reads it.",
+      "why_it_matters": "NF525 / Article 286 requires the operator who issued the ticket be identifiable on the fiscal document. The printed POS ticket attributes the sale to the customer (or 'Client passage' when no customer is attached) instead of the cashier on shift — an audit/inspection defect and a real shift-accountability gap. The correct value is already stored (creator_id) but the receipt SSOT ignores it, so the captured cashier identity is wasted.",
+      "reproduction": "Place a POS cash order as a logged-in cashier, then print/reprint the receipt (ReceiptComponent). The 'Opérateur:' line shows the attached customer's name (or blank/Client passage), not the cashier who is authenticated. Confirmed in code: line 70 reads order->user (customer), not order->creator.",
+      "recommended_correction": "Add a `creator()` belongsTo(User::class,'creator_id') relation on Order, then in ReceiptDataService:70 use `optional($order->creator)->name ?? optional($order->user)->name` (fallback to user only for kiosk/online orders that have no cashier). Eager-load creator in OrderDetailsResource's hydration to avoid an extra SELECT. Note ReceiptDataService is NF525-adjacent — change is a one-line SSOT fix, no fiscal-chain logic touched, but keep it covered by ReceiptDataServiceWireInTest.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S11-03",
+      "severity": "P2",
+      "category": "security",
+      "title": "Password reset and image change gated only by the base VIEW permission (employees / administrators), not by *_edit — FormRequest authorize() returns true",
+      "file_line": "app/Http/Controllers/Admin/EmployeeController.php:28",
+      "evidence": "EmployeeController.php:28 `$this->middleware(['permission:employees'])->only('index','export','changePassword','changeImage','myOrder')` — changePassword/changeImage are gated by the read permission `employees`, while update is separately gated by `employees_edit` (l.30). AdministratorController.php:31 has the identical pattern (`permission:administrators` gates changePassword/changeImage). The FormRequests provide no extra gate: UserChangePasswordRequest::authorize() returns true (l.18) and ChangeImageRequest::authorize() returns true (l.16).",
+      "why_it_matters": "A role with read-only access to staff (the `employees`/`administrators` view capability) can reset any in-scope staff member's password and replace their avatar — privilege the owner almost certainly intends to require edit rights. It is a real authz blur (view permission grants a write/account-takeover action). LATENT: by default seed no role holds the view permission without _edit (Branch Manager holds both employees + employees_edit per RolePermissionTableSeeder.php:58-62; POS Operator/Chef/Stuff/Waiter hold neither), so only a custom view-only role reaches it today.",
+      "reproduction": "Grant a custom role only `employees` (no employees_edit). As that user, POST /api/admin/employee/change-password/{id} with a valid 12-char password — the request passes the `permission:employees` middleware and the authorize()=true FormRequest, and EmployeeService::changePassword rotates the target's password.",
+      "recommended_correction": "Move changePassword and changeImage out of the `permission:employees` .only(...) group into a `permission:employees_edit` group (and `administrators_edit` for the admin controller). Optionally tighten the two FormRequests' authorize() to check `$this->user()?->can('employees_edit')` for defense-in-depth, mirroring EmployeeRequest::authorize().",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S11-04",
+      "severity": "P2",
+      "category": "logic",
+      "title": "Employee role dropdown filters by hardcoded integer role IDs '1|2|3|4|5' while the backend was deliberately healed OFF integer IDs onto role NAMES — stale on fresh seeds",
+      "file_line": "resources/js/components/admin/employees/EmployeeCreateComponent.vue:227",
+      "evidence": "The role dropdown loads `role/lists` with `excepts: '1|2|3|4|5'` (l.227) to hide Admin/Customer/DeliveryBoy/Waiter/Chef. But AdministratorService.php:43-46, WaiterService.php:44-47, ChefService.php:43-46 all carry the heal comment '[GOAL-pageby-V1.0.2] Spatie ->role(int) breaks whenever roles.id AUTO_INCREMENT skipped past it (fresh seed lands at 73-80). Stable identity = role NAME' and switched to ->role('Admin'/'Waiter'/'Chef'). The frontend filter still trusts integer IDs 1-5.",
+      "why_it_matters": "On a reseed where role AUTO_INCREMENT shifts (the exact scenario the backend heal documents), the dropdown would hide the wrong roles (e.g. exclude whatever now occupies ids 1-5 and expose Waiter/Chef which now sit at 73-80). The backend EmployeeService::blockRoles still rejects ADMIN/CUSTOMER/DELIVERY_BOY/WAITER/CHEF by enum, so it is not a security hole — but it is exactly the integer-vs-name 'flou' the codebase already chose to eliminate everywhere else, surviving in the UI.",
+      "reproduction": "Inspect EmployeeCreateComponent.vue:224-228: `excepts:'1|2|3|4|5'`. Compare with the role-NAME heal in AdministratorService.php:46 `->role('Admin','sanctum')`. On a fresh seed where Admin is no longer id=1, the dropdown's exclusion no longer corresponds to the same roles.",
+      "recommended_correction": "Filter the role list by NAME (exclude 'Admin','Customer','Delivery Boy','Waiter','Chef') or expose a backend-driven assignable-roles endpoint, consistent with the role-NAME identity the backend services already adopted. Keep EmployeeService::blockRoles as the authoritative backstop.",
+      "evidence_type": "needs-live-verify",
+      "confidence": "medium"
+    },
+    {
+      "id": "S11-05",
+      "severity": "P2",
+      "category": "logic",
+      "title": "EmployeeService show/changePassword/changeImage guard via optional($employee->roles[0])->id — a role-less User bypasses the block-roles gate (no assertTargetRole like Waiter/Chef)",
+      "file_line": "app/Services/EmployeeService.php:230",
+      "evidence": "changePassword (l.230), changeImage (l.249), show (l.181), destroy (l.199) all test `!in_array(optional($employee->roles[0])->id, $this->blockRoles)`. When a User has no roles, `$employee->roles[0]` is null, `optional(...)->id` is null, and `in_array(null, [1,2,3,4,5])` is false, so `!false === true` → the guard PASSES for a role-less user. WaiterService/ChefService instead use a dedicated assertTargetRole() that requires `hasRole(WAITER/CHEF)` (WaiterService.php:181-189) before mutation; EmployeeService has no such positive role assertion.",
+      "why_it_matters": "Route-model-binding resolves {employee} to any User. A role-less User (orphaned account, mid-migration, or a deliberately role-stripped record) can have its password reset / image changed / be deleted through the employee endpoint, even though it is not an employee. Admin/Customer/etc. targets are still correctly blocked (their role id IS in blockRoles), so impact is bounded to role-less accounts — but the guard is a negative-list that fails open on the empty case, unlike the positive assertTargetRole used by the sibling services.",
+      "reproduction": "Pass a User id that has zero role rows to POST /api/admin/employee/change-password/{id}. optional($employee->roles[0])->id evaluates null, the blockRoles in_array check returns false, the negated guard passes, and the password is rotated on a non-employee account.",
+      "recommended_correction": "Adopt the WAVE5-SEC-001 positive guard: add an assertTargetRole($employee) that requires the user to actually hold one of the employee roles (BRANCH_MANAGER/POS_OPERATOR/STUFF or any non-blocked role) before mutation, mirroring WaiterService::assertTargetRole. Treat a null roles[0] as a 403, not a pass.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S11-06",
+      "severity": "P2",
+      "category": "logic",
+      "title": "EmployeeRequest lacks the super-admin branch_id mint guard that AdministratorRequest carries — defense-in-depth asymmetry on branch assignment",
+      "file_line": "app/Http/Requests/EmployeeRequest.php:74",
+      "evidence": "AdministratorRequest::withValidator (l. with bug_011/R3 comment) blocks `branch_id===null || (int)branch_id===0` for non-(Admin/Tenant Admin) callers, explicitly because DefaultAccessModelTrait::branch() treats `(int)null===0` as super-admin (BranchScope skipped). EmployeeRequest.php:74 only validates `'branch_id' => ['nullable','numeric']` with no equivalent withValidator guard. The runtime protection for the employee path is instead EnforcesOwnBranchScope::effectiveBranchId (EmployeeService.php:115/153), which for a non-settings caller forces `$caller->branch_id` and ignores the request value.",
+      "why_it_matters": "The actual exposure is contained at the service layer (effectiveBranchId overrides request branch_id for non-settings callers, so a Branch Manager cannot mint a branch_id=0 super-staff via the employee endpoint). But the two near-identical staff-create request validators diverge: one validates branch_id authority, the other relies entirely on a downstream service. If a future refactor moves the write off effectiveBranchId (as the comment warns AdministratorService::update line 96 does NOT use the trait), the employee path would silently lose the guard. This is the kind of inconsistency that becomes a hole later.",
+      "reproduction": "Compare EmployeeRequest.php (no branch_id withValidator guard) against AdministratorRequest.php (has the bug_011 branch_id===0/null super-admin guard). Both are staff-creation FormRequests; only one validates branch authority at the request layer.",
+      "recommended_correction": "Either document explicitly that EmployeeService::effectiveBranchId is the SSOT branch guard for this path (and add a regression test asserting a non-settings caller cannot create branch_id=0 staff), or mirror AdministratorRequest's withValidator branch_id guard into EmployeeRequest for defense-in-depth parity across the four staff-create validators.",
+      "evidence_type": "code",
+      "confidence": "medium"
+    },
+    {
+      "id": "S11-07",
+      "severity": "P3",
+      "category": "functional",
+      "title": "EmployeeCreateComponent.save catch reads err.response.data.errors unconditionally — 422 responses that return {status,message} (not {errors}) leave the form with no error feedback",
+      "file_line": "resources/js/components/admin/employees/EmployeeCreateComponent.vue:307",
+      "evidence": "save()'s catch does `this.errors = err.response.data.errors` (l.307). The service throws via QueryExceptionLibrary returning `response(['status'=>false,'message'=>...],422)` for business/permission errors (EmployeeService::store l.106 permission_denied, l.126/131), which has no `errors` key. Validation failures DO return `errors` (FormRequest), so field errors work; but a permission_denied or query exception sets this.errors = undefined and surfaces nothing to the user.",
+      "why_it_matters": "When a Branch Manager hits the callerMayGrantRole gate (l.105) trying to assign a role outside their subset, the 422 carries {message:'permission denied'} with no `errors` map — the form shows no message, the spinner stops, and the manager sees a silent no-op with no explanation of why the save failed. A confusing dead-end during a real shift.",
+      "reproduction": "As a Branch Manager, attempt to create an employee with a role whose permissions are not a strict subset of yours. Backend returns 422 {status:false,message:'...'}; save()'s catch sets this.errors = undefined, no alert is shown, form just resets the loading state.",
+      "recommended_correction": "In the catch, fall back to alertService.error(err.response?.data?.message) when err.response.data.errors is absent (the AdministratorList destroy() already uses alertService.error(err.response.data.message) for this exact shape). Guard against undefined response.",
+      "evidence_type": "needs-live-verify",
+      "confidence": "medium"
+    }
+  ],
+  "solids": [
+    {
+      "title": "callerMayGrantRole strict-subset entitlement gate blocks privilege escalation and peer-cloning on the employee endpoint",
+      "file_line": "app/Services/EmployeeService.php:82-99",
+      "note": "USR-RBAC-01 heal: a non-settings caller (Branch Manager) may grant ONLY a role whose permission set is a STRICT SUBSET of their own (targetPerms.diff(callerPerms).isEmpty() AND targetPerms.count() < callerPerms.count()). Correctly prevents a manager from granting a permission they lack or cloning a same-level peer. settings-holders keep full discretion. This is the real defense for the staff-create surface and it is well-reasoned."
+    },
+    {
+      "title": "EnforcesOwnBranchScope forces non-settings callers to their own branch_id, ignoring request-supplied branch",
+      "file_line": "app/Services/Concerns/EnforcesOwnBranchScope.php:19-26",
+      "note": "USR-RBAC-02 heal shared across Employee/Chef/Waiter/DeliveryBoy services. effectiveBranchId returns the caller's own branch_id for non-settings users, ignoring the request value — a clean, single-responsibility guard against cross-branch staff assignment that a Branch Manager could otherwise attempt by posting an arbitrary branch_id."
+    },
+    {
+      "title": "syncRoles moved inside the DB transaction in EmployeeService::update (atomicity heal)",
+      "file_line": "app/Services/EmployeeService.php:148-163",
+      "note": "USR-RBAC-03 heal: the role sync is now atomic with the user update — a failed sync rolls back the user mutation too. The comment documents the pre-heal bug (mutated user with stale role) precisely; good transactional discipline."
+    },
+    {
+      "title": "WAVE5-SEC-001 assertTargetRole positive-role guard in Waiter/Chef services (the pattern whose absence is finding S11-01/S11-05)",
+      "file_line": "app/Services/WaiterService.php:181-189",
+      "note": "Waiter and Chef services assert the route-bound User actually holds the expected role BEFORE the try/catch (so it surfaces as 403, not a 422 rewrite), preventing cross-role mutation via route-model-binding. Citing as a SOLID because it is the correct template — its absence on AdministratorService::update and EmployeeService is exactly what makes those findings real."
+    },
+    {
+      "title": "POS receipt reprint writes a hash-chained NF525 audit event with first-print vs DUPLICATA distinction and best-effort non-blocking semantics",
+      "file_line": "app/Http/Controllers/Admin/Pos/PosReceiptPrintController.php:35-110",
+      "note": "Every print/reprint atomically increments receipt_print_count (branch-scoped, concurrency-safe), marks DUPLICATA at count>=2, and emits a distinct audit action (pos.receipt.print vs pos.receipt.reprint) attributed to the order's actual branch. Audit failure is surfaced via audit_emitted=false without blocking the cashier — correct NF525 operational-continuity tradeoff."
+    }
+  ]
+}

@@ -85,6 +85,7 @@ BROADCAST_DRIVER=pusher            # PAS 'log' → sinon aucun temps-réel KDS/c
 APP_URL=https://vps-418872ac.vps.ovh.net
 CACHE_DRIVER=file                  # (ou redis) — jamais array/null
 PRINT_DRIVER=windows_raw           # caisse = USB RAW (ticket fidèle aux octets)
+POS_PRINT_SILENT_ONLY=true         # caisse : JAMAIS window.print → fin du popup gris/paragraphe (ticket == écran)
 RECEIPT_PHONE=03 65 67 82 91       # (optionnel : c'est déjà le défaut ; pose-le pour être explicite)
 # Borne : ticket LONG + coupe partielle (déjà les défauts ; explicites = plus sûr)
 BORNE_CLIENT_FEED_LINES=30

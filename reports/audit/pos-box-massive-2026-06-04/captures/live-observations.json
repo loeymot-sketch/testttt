@@ -1,0 +1,235 @@
+{
+  "started": "2026-06-04T15:33:11.401Z",
+  "role": "pos-operator",
+  "steps": [
+    {
+      "label": "POS landing (pos-v4)",
+      "url": "http://127.0.0.1:8000/admin/pos-v4",
+      "screenshot": "01-pos-landing-pos-v4-.png",
+      "note": "",
+      "ok": true
+    },
+    {
+      "label": "cash session or shift gate",
+      "url": "http://127.0.0.1:8000/admin/pos-v4",
+      "screenshot": "02-cash-session-or-shift-gate.png",
+      "note": "possible gate visible",
+      "ok": true
+    },
+    {
+      "label": "category bar toggle all",
+      "url": "http://127.0.0.1:8000/admin/pos-v4",
+      "screenshot": "03-category-bar-toggle-all.png",
+      "note": " [not-visible Toutes]",
+      "ok": true
+    },
+    {
+      "label": "category Sandwich",
+      "url": "http://127.0.0.1:8000/admin/pos-v4",
+      "screenshot": "04-category-sandwich.png",
+      "note": " [not-visible Sandwich]",
+      "ok": true
+    },
+    {
+      "label": "category Tacos",
+      "url": "http://127.0.0.1:8000/admin/pos-v4",
+      "screenshot": "05-category-tacos.png",
+      "note": " [clicked Tacos]",
+      "ok": true
+    },
+    {
+      "label": "category Bols",
+      "url": "http://127.0.0.1:8000/admin/pos-v4",
+      "screenshot": "06-category-bols.png",
+      "note": " [not-visible Bols]",
+      "ok": true
+    },
+    {
+      "label": "category Burger",
+      "url": "http://127.0.0.1:8000/admin/pos-v4",
+      "screenshot": "07-category-burger.png",
+      "note": " [not-visible Burger]",
+      "ok": true
+    },
+    {
+      "label": "category Menu",
+      "url": "http://127.0.0.1:8000/admin/pos-v4",
+      "screenshot": "08-category-menu.png",
+      "note": " [not-visible Menu]",
+      "ok": true
+    },
+    {
+      "label": "category Boisson",
+      "url": "http://127.0.0.1:8000/admin/pos-v4",
+      "screenshot": "09-category-boisson.png",
+      "note": " [not-visible Boisson]",
+      "ok": true
+    },
+    {
+      "label": "category Frites",
+      "url": "http://127.0.0.1:8000/admin/pos-v4",
+      "screenshot": "10-category-frites.png",
+      "note": " [clicked Frites]",
+      "ok": true
+    },
+    {
+      "label": "category Dessert",
+      "url": "http://127.0.0.1:8000/admin/pos-v4",
+      "screenshot": "11-category-dessert.png",
+      "note": " [not-visible Dessert]",
+      "ok": true
+    },
+    {
+      "label": "search products",
+      "url": "http://127.0.0.1:8000/admin/pos-v4",
+      "screenshot": "12-search-products.png",
+      "note": "typed cha",
+      "ok": true
+    },
+    {
+      "label": "open first product",
+      "url": "http://127.0.0.1:8000/admin/pos-v4",
+      "screenshot": "13-open-first-product.png",
+      "note": "clicked product",
+      "ok": true
+    },
+    {
+      "label": "wizard step 1",
+      "url": "http://127.0.0.1:8000/admin/pos-v4",
+      "screenshot": "14-wizard-step-1.png",
+      "note": "prices: 0,00 € | 42,00 € | 30,00 € | 36,00 € | 42,00 € | 0.00€ [not-visible option] [not-visible next]",
+      "ok": true
+    },
+    {
+      "label": "wizard step 2",
+      "url": "http://127.0.0.1:8000/admin/pos-v4",
+      "screenshot": "15-wizard-step-2.png",
+      "note": "prices: 0,00 € | 42,00 € | 30,00 € | 36,00 € | 42,00 € | 0.00€ [not-visible option] [not-visible next]",
+      "ok": true
+    },
+    {
+      "label": "wizard step 3",
+      "url": "http://127.0.0.1:8000/admin/pos-v4",
+      "screenshot": "16-wizard-step-3.png",
+      "note": "prices: 0,00 € | 42,00 € | 30,00 € | 36,00 € | 42,00 € | 0.00€ [not-visible option] [not-visible next]",
+      "ok": true
+    },
+    {
+      "label": "wizard step 4",
+      "url": "http://127.0.0.1:8000/admin/pos-v4",
+      "screenshot": "17-wizard-step-4.png",
+      "note": "prices: 0,00 € | 42,00 € | 30,00 € | 36,00 € | 42,00 € | 0.00€ [not-visible option] [not-visible next]",
+      "ok": true
+    },
+    {
+      "label": "wizard add to cart",
+      "url": "http://127.0.0.1:8000/admin/pos-v4",
+      "screenshot": "18-wizard-add-to-cart.png",
+      "note": " [not-visible add-to-cart]",
+      "ok": true
+    },
+    {
+      "label": "cart state total",
+      "url": "http://127.0.0.1:8000/admin/pos-v4",
+      "screenshot": "19-cart-state-total.png",
+      "note": "totals: Sous-total | Total |  |  |  | ",
+      "ok": true
+    },
+    {
+      "label": "cart qty increment",
+      "url": "http://127.0.0.1:8000/admin/pos-v4",
+      "screenshot": "20-cart-qty-increment.png",
+      "note": " [not-visible qty+]",
+      "ok": true
+    },
+    {
+      "label": "cart qty decrement",
+      "url": "http://127.0.0.1:8000/admin/pos-v4",
+      "screenshot": "21-cart-qty-decrement.png",
+      "note": " [not-visible qty-]",
+      "ok": true
+    },
+    {
+      "label": "discount panel",
+      "url": "http://127.0.0.1:8000/admin/pos-v4",
+      "screenshot": "22-discount-panel.png",
+      "note": " [not-visible discount]",
+      "ok": true
+    },
+    {
+      "label": "parked orders modal",
+      "url": "http://127.0.0.1:8000/admin/pos-v4",
+      "screenshot": "23-parked-orders-modal.png",
+      "note": " [not-visible parked]",
+      "ok": true
+    },
+    {
+      "label": "close parked esc",
+      "url": "http://127.0.0.1:8000/admin/pos-v4",
+      "screenshot": "24-close-parked-esc.png",
+      "note": "",
+      "ok": true
+    },
+    {
+      "label": "loyalty modal",
+      "url": "http://127.0.0.1:8000/admin/pos-v4",
+      "screenshot": "25-loyalty-modal.png",
+      "note": " [not-visible loyalty]",
+      "ok": true
+    },
+    {
+      "label": "close loyalty esc",
+      "url": "http://127.0.0.1:8000/admin/pos-v4",
+      "screenshot": "26-close-loyalty-esc.png",
+      "note": "",
+      "ok": true
+    },
+    {
+      "label": "cash session dialog",
+      "url": "http://127.0.0.1:8000/admin/pos-v4",
+      "screenshot": "27-cash-session-dialog.png",
+      "note": " [not-visible cash-session]",
+      "ok": true
+    },
+    {
+      "label": "close cash session esc",
+      "url": "http://127.0.0.1:8000/admin/pos-v4",
+      "screenshot": "28-close-cash-session-esc.png",
+      "note": "",
+      "ok": true
+    },
+    {
+      "label": "kiosk cash panel",
+      "url": "http://127.0.0.1:8000/admin/pos-v4",
+      "screenshot": "29-kiosk-cash-panel.png",
+      "note": " [not-visible kiosk-cash]",
+      "ok": true
+    },
+    {
+      "label": "order type takeaway",
+      "url": "http://127.0.0.1:8000/admin/pos-v4",
+      "screenshot": "30-order-type-takeaway.png",
+      "note": " [clicked takeaway]",
+      "ok": true
+    },
+    {
+      "label": "order type delivery",
+      "url": "http://127.0.0.1:8000/admin/pos-v4",
+      "screenshot": "31-order-type-delivery.png",
+      "note": " [clicked delivery]",
+      "ok": true
+    },
+    {
+      "label": "final POS state",
+      "url": "http://127.0.0.1:8000/admin/pos-v4",
+      "screenshot": "32-final-pos-state.png",
+      "note": "",
+      "ok": true
+    }
+  ],
+  "console_errors": [],
+  "raw_labels": [],
+  "finished": "2026-06-04T15:33:35.817Z",
+  "total_screenshots": 32,
+  "total_console_errors": 0
+}

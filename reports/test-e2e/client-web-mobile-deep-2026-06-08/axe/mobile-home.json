@@ -1,0 +1,8 @@
+[
+  {
+    "id": "button-name",
+    "impact": "critical",
+    "nodes": 4,
+    "help": "Buttons must have discernible text"
+  }
+]

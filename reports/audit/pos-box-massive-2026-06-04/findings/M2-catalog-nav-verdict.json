@@ -1,0 +1,60 @@
+{
+  "micro_system": "M2-catalog-nav (Catalog + category navigation + search)",
+  "verdicts": [
+    {
+      "id": "M2-01",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "CONFIRMED REAL. onSearchInput (PosComponent.vue:3536-3539) sets props.search.name only; never clears item_category_id. setCategory (3623-3625) sets item_category_id and clears name; only allCategory (3568-3571) clears both. _debouncedListRefresh (2212-2214) calls itemList(1) which dispatches item/lists with the WHOLE props.search (3616). POS hits ItemController::index->simpleList (ItemController.php:99), which ANDs item_category_id as hard equality (ItemService.php:106-108) with name as LIKE (109-111) in the same where() closure. Search input (PosV5SearchInput template 402-411) emits only @input/@submit/@clear -> no handler clears category; verified NO watcher on props.search.name or item_category_id (watch block 4405 contains none). Net: select Tacos then type 'coca' -> backend query name LIKE %coca% AND item_category_id=tacos -> empty even though Coca exists in Boissons; empty-state 'no items found' renders (template 484). Inline comment at 1958-1961 ('Search input continues to query the full catalogue ... unaffected') is FALSE for the backend round-trip (it only describes the client displayedItems filter). Hottest path on the screen; produces a false out-of-stock impression. P2 fair."
+    },
+    {
+      "id": "M2-02",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": false,
+      "severity_adjusted": "DROP",
+      "reason": "Mechanism confirmed (config/pos.php:104-114 default empty allowlist; POS_FEATURED_CATEGORY_* UNSET in all .env; PosCategoryController.php:145-206 resolvedIds=[] -> featuredSet=null -> every category featured=true; displayedCategories returns all 1940-1947, hasNonFeaturedCategories=false so toggle pill v-if 454 never renders; displayedItems short-circuits featuredIds.size===0 -> allItems 1971-1972). BUT the auditor itself states this is 'a DOCUMENTED, re-enablable decision, not a bug' and the recommended_correction is an owner-gate 'keep as-is acceptable'. config/pos.php:65-99 records the 2026-06-04 P-OWNER-ALL-CATEGORIES decision. Nothing to correct in shipping V1 -> per rubric is_necessary:false => DROP. Informational carrying-cost note, not a defect. (This is exactly the documented-decision trap the finding warns against; the honest move is to DROP, not surface a P3 'fix'.)"
+    },
+    {
+      "id": "M2-03",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": false,
+      "severity_adjusted": "DROP",
+      "reason": "Code matches: grid binds :items=displayedItems (PosComponent.vue:476); empty-state guards test items.length===0 (478, 484) where items is the RAW store list (1952-1954). Desync (displayedItems empty while items>0, no empty-state) is reachable ONLY on landing with featured filter active. UNREACHABLE in default V1 config (M2-02: featuredIds.size===0 -> displayedItems===allItems). Doubly protected: even on re-enable, the backend degraded-fallback (<2 non-empty featured -> featuredSet=null -> all featured, PosCategoryController.php:180-194) forces all-featured so divergence needs a narrow mid-reseed window. Auditor self-labels DORMANT, confidence medium. Cannot fire with empty allowlist / current menu -> is_necessary:false => DROP. Dormant landmine in a feature the owner just disabled 2026-06-04."
+    },
+    {
+      "id": "M2-04",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": false,
+      "severity_adjusted": "DROP",
+      "reason": "Code matches: onFKeyShortcut indexes this.categories?.[idx-1] (PosComponent.vue:3551-3552), categories=full store list (1931-1933); strip renders displayedCategories (template 429); F-keys wired via createFKeyShortcuts (2231-2232, posBarcode.js:72-79, idx 1..12). Divergence requires displayedCategories !== categories, i.e. featured filter active AND reordering/hiding. In default config displayedCategories===categories and both lead with the id=0 'all-items' sentinel, so Fn maps to the correct visible pill. UNREACHABLE in shipping V1 (same inert mechanism as M2-02; further blunted by the <2 degraded-fallback). Auditor self-labels DORMANT, confidence medium. Cannot fire with empty allowlist -> is_necessary:false => DROP."
+    },
+    {
+      "id": "M2-05",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": false,
+      "severity_adjusted": "DROP",
+      "reason": "Coupling confirmed: drinksCatalog (PosComponent.vue:2025-2037) reads $store.getters['item/lists'] which setCategory replaces with category-scoped items (3623-3625 -> simpleList equality 106-108), so after selecting a non-drink category drinksCatalog=[] and the wizard's data-pos-drinks-catalog (ItemComponent.vue:70) is empty, skipping P1/P2. BUT the auditor's own evidence admits graceful degradation, and the kill it missed: pos-wizard.js:966-972 has TWO live signals independent of the catalog -- P3 groupLabel==='boisson'/'drink'/'drinks'/'beverage' (966-968) AND P4 DRINK_LIKE_REGEX (954,972) which covers all 8 current Le Cayenne drinks (coca/fanta/sprite/orangina/oasis/eau/jus...). Detection survives category navigation today via two paths; zero V1 impact (evidence_type needs-live-verify, confidence medium, hypothetical future non-regex-matching drink). Real coupling, no shipping-V1 defect -> is_necessary:false => DROP."
+    },
+    {
+      "id": "M2-06",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "Confirmed: tile img has v-if=item.thumb with v-else 🍴 (ItemComponent.vue:25-30) and cart-line img same pattern (PosComponent.vue:776-777); grep confirms NO @error/onerror anywhere in either component. So a non-empty-but-404 thumb renders the browser broken-image glyph, not 🍴. HOWEVER the finding's cited failure mode and reproduction are PARTLY WRONG: the backend Item::getThumbAttribute (Item.php:88-106) file_exists()-guards both the Spatie thumb path (92) and the config menu_images fallback (100-104), returning the existing hardcoded public/images/item/thumb.png (verified on disk, 8KB) when the mapped file is absent. So a wrong/renamed cat-<slug>.png CANNOT 404 (the finding's reproduction would yield the hardcoded fallback, no broken glyph). The residual REAL 404 vector is narrower: an orphaned Spatie media row whose original file was deleted (Item.php:92 getUrl() is not file_exists-guarded), and notably ItemCategory::getThumbAttribute (ItemCategory.php:91) returns getUrl('thumb') with NO file_exists check -> strip pills are actually more exposed. Narrow but real on a customer-visible counter screen; @error fallback is cheap standard hardening -> is_necessary:true, P3 (severity unchanged; rationale corrected)."
+    }
+  ],
+  "coverage_gaps": [
+    "Verified-and-cleared (NOT a gap): catalog pagination -- POS sends props.search.paginate:0 (PosComponent.vue:1692,1703,1725) so simpleList returns get('*') ALL items unpaginated (ItemService.php:90-91); no scroll-load handler is needed and none is missing.",
+    "onBarcodeScanned/lookupByBarcode (PosComponent.vue:3540-3550, route item/lookup-barcode) is a separate dispatch that bypasses category/search scoping and was not examined -- worth a check that a scanned out-of-active-category SKU still resolves (it likely does, but unverified by the auditor).",
+    "isCatalogTileUnavailable + tile @click / onProductTileClick disabled-state (ItemComponent.vue:712-728, addItem 734) -- the 86/rupture gating on the catalog tile (clickability, aria, overlay badge) is the other hot interaction in this micro-system and was not covered by M2-01..06.",
+    "currentCategoryId active-pill highlight sync (template 432-438) under the M2-01 scenario: after typing search with a category active, the pill stays visually 'active' while results are scoped -- the UX confusion compounds M2-01 but the highlight/selection-state coupling was not separately assessed.",
+    "Echo/broadcast availability refresh into the catalog list (syncItemAvailabilityFromBroadcast ItemComponent.vue:740-746, and parent list mutation) -- live availability updates while a category/search is active were not examined for the catalog grid."
+  ]
+}

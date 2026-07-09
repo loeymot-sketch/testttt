@@ -1,0 +1,76 @@
+{
+  "micro_system": "Marketing micro-system = Coupons (Coupon model / CouponService / CouponController / admin CouponListComponent) + Push notifications (PushNotificationService / Controller / Request / admin PushNotificationCreateComponent / FirebaseService FCM fan-out), with discount enforcement crossing into OrderService + FrontendOrderService (assertDiscretionaryDiscountAllowed kill-switch) and NF525 Z aggregation (ZReportService discount-netting). Central control = config('pos.manual_discount_enabled'): per ManualDiscountDisabledV1SentinelTest docstring + commits 1ff06f171/747204e9c the F1 VAT-netting was declared FIXED 2026-05-31 and the default flipped to ENABLED, so the flag now acts only as a runtime kill-switch (env-absent => default true => discounts LIVE). All 8 findings exist as cited (no misreads). Offers and Messages sub-surfaces were not touched by any finding.",
+  "verdicts": [
+    {
+      "id": "S13-01",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": false,
+      "severity_adjusted": "P3",
+      "reason": "Mechanically accurate: CouponService::couponChecking->resolveCouponByCode->validateCouponForOrder returns a redeemable discount with no kill-switch awareness, while order chokepoints throw via assertDiscretionaryDiscountAllowed (OrderService.php:2863-2870). But the P1 'broken promise to customer' premise is FALSE in both flag states: (1) the recommended fix 'hide coupon entry on customer surfaces' is ALREADY implemented — master.blade.php:161 exposes discountsEnabled=config('pos.manual_discount_enabled'), CheckoutComponent.vue:219 gates <CouponComponent v-if=discountsEnabled>, KioskCartComponent.vue:275,328 gate the kiosk promo; (2) the live default is flag=true (ManualDiscountDisabledV1SentinelTest docstring: 'default is now ENABLED') so coupons redeem end-to-end with no dead-end. Only true residual = raw /coupon-checking API does not honor the flag (defense-in-depth on a UI-unreachable path). Downgrade P1->P3."
+    },
+    {
+      "id": "S13-02",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P1",
+      "reason": "Confirmed and LIVE. OrderService.php:561-562 persists order->total_tax on the full pre-discount base; the discount is subtracted only from order->total (no total_tax netting anywhere in OrderService). The F1 fix (commits 1ff06f171, 747204e9c) netted discount VAT ONLY inside the signed Z (ZReportService.php:677-685 orderDiscountRatio + line 724 scaling). The pre-discount total_tax is surfaced on the receipt/order resource (OrderDetailsResource.php:60). Decisive: ManualDiscountDisabledV1SentinelTest docstring states the default is now ENABLED and the sentinel only tests the kill-switch=false refusal path — it does NOT assert order.total_tax == Z per-rate contribution for a discounted order. With the live default (flag=true) a coupon-discounted order is creatable and its receipt TVA (pre-discount base) diverges from the netted Z bucket -> reachable NF525 receipt-vs-Z divergence. The F1 fix was incomplete (Z side netted, order/receipt side not). Frozen pricing/fiscal zone -> lock-plan. P1 stands."
+    },
+    {
+      "id": "S13-03",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "Real: PushNotificationService::store (PushNotificationService.php:55-116) synchronously fans out to FCM via FirebaseService::sendNotification, and role_id=0 && user_id=0 selects ALL tokened users (lines 83-91, branch filter only when pushBranchId!==0); the create component dispatches save with no confirm/preview gate. But P1 overstates a UX-safety gap: single-branch V1, bounded token set, broadcast is an intended permission-gated admin action. 'No confirmation dialog' is operational-safety polish, not correctness/security. Downgrade P1->P2."
+    },
+    {
+      "id": "S13-04",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "Confirmed exactly. PushNotificationService.php:63 sets branch_id=request->branch_id direct, no clamp. PushNotificationRequest authorize() returns true; branch_id validated only as required|numeric (no Rule::exists). PushNotificationController::store (lines 37-44) never calls branch-scope authz. The 2026-05-18 tenant-isolation heal only filters when pushBranchId!==0, so a branch-scoped sender POSTing branch_id=0 + role/user 0 reaches every tenant's users with no 403. Real branch-isolation weakening, latent in single-branch V1 (UI sources branch_id from sender), exploitable on a second branch. P2 correct."
+    },
+    {
+      "id": "S13-05",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "Confirmed. FirebaseService::sendNotification posts to FCM per token inside try{...}catch(Throwable){} with an EMPTY catch body (FirebaseService.php:70-72) — every per-token HTTP failure is silently discarded; the outer catch only Log::info; method returns void so the controller always responds 200. No dead-token pruning. For a broadcast feature 'did it send and to whom' is unanswerable. Real reliability/observability defect. P2 correct."
+    },
+    {
+      "id": "S13-06",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "Confirmed maintainer-trap, NOT a live exploit. Coupon::isUsableNow (Coupon.php:151-154) gates max_uses_global against usage_count, a dead column (grep across app/+migrations: only fillable/cast Coupon.php:37,59, seed-to-0 CouponService.php:236, resource echo CouponResource.php:57, this check — never incremented). The LIVE HTTP path is SAFE because validateCouponForOrder independently counts OrderCoupon rows for the global cap before calling isUsableNow (CouponService.php:454-458, comment at :450 acknowledges usage_count is dead). Defect = the two enforcement sites disagree and any future reuse of isUsableNow ships an unenforced cap. P2 correct."
+    },
+    {
+      "id": "S13-07",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "Confirmed TOCTOU. Per-user and global caps enforced via plain COUNT (CouponService.php:438-458), then OrderCoupon::create happens later in persistence (OrderService.php:589-595). Verified NO unique constraint: migration 2022_11_17_120625_create_order_coupons_table.php declares no unique(user_id,coupon_id), and there is no Cache::lock / SELECT FOR UPDATE between count and insert. Concurrent redemptions can exceed the cap. Single-box V1 low-risk (acknowledged same non-atomic semantics), real over-discount/money-leak on multi-terminal/cloud. P2 correct."
+    },
+    {
+      "id": "S13-08",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "Confirmed. CouponListComponent.vue:181-188 toggle button -> toggleStatus (lines 382-398) dispatches coupon/toggleStatus immediately with no confirm() (unlike destroy), instant ACTIVE<->INACTIVE flip on a live promo, success toast only. Low blast radius, state-mutating UX polish gap. P3 correct."
+    }
+  ],
+  "coverage_gaps": [
+    "OFFERS sub-surface entirely unaudited — all 8 findings hit only coupons + push-notifications; no finding covers offer model/service/UI, offer scheduling/validity, or offer-vs-coupon interplay.",
+    "MESSAGES sub-surface entirely unaudited — no finding covers Message model/controller, message broadcast/targeting, or message branch-isolation; given S13-04's push branch_id=0 cross-tenant gap, Message broadcast deserves the same Rule::exists/ownership check.",
+    "No sentinel/boot-guard pins order.total_tax == Z per-rate netting for a discounted order (the coherence S13-02 breaks). ManualDiscountDisabledV1SentinelTest only exercises the kill-switch=false refusal path, never the enabled-and-correct path now that the F1 default is ENABLED.",
+    "Raw /coupon-checking + /apply-coupon API endpoints do not honor config('pos.manual_discount_enabled') — only the Vue surfaces are gated via discountsEnabled (master.blade.php:161). Defense-in-depth gap on the API (S13-01 residual): a direct API caller still gets a redeemable preview when the kill-switch is engaged.",
+    "No FCM credential health/preflight check found; a fully misconfigured FCM (expired access token) yields a 'successful' broadcast to zero devices with no error-level log (ties to S13-05's swallowed errors)."
+  ]
+}

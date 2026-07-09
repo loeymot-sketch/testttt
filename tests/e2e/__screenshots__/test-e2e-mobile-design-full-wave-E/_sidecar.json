@@ -1,0 +1,127 @@
+{
+  "meta": {
+    "spec": "tests/e2e/test-e2e-mobile-design-full-wave-E.spec.js",
+    "run_at": "2026-07-08T16:25:17.834Z",
+    "viewport": {
+      "width": 1080,
+      "height": 1920
+    },
+    "cat_assiettes": 309
+  },
+  "states": {
+    "01-kiosk-idle-screen": {
+      "url": "http://127.0.0.1:8087/kiosk/idle",
+      "probe": {
+        "tokens": {
+          "--orange": null,
+          "--yellow": null,
+          "--ink": null,
+          "--paper": null,
+          "--red": null,
+          "--black": null,
+          "--white": null,
+          "--fk-kiosk-primary": null,
+          "--fk-kiosk-accent": null,
+          "--fk-kiosk-text": null,
+          "--fk-kiosk-bg": null,
+          "--fk-kiosk-bg-soft": null,
+          "--fk-kiosk-border": null,
+          "--fk-pos-primary": null,
+          "--fk-pos-accent": null,
+          "--fk-pos-text": null,
+          "--fk-pos-bg": null,
+          "--fk-pos-bg-soft": null,
+          "--fk-pos-border": null
+        },
+        "anton_present": true,
+        "body_font": "Inter, sans-serif",
+        "title_font": null,
+        "total_fonts_loaded": 56,
+        "sample_fonts": [
+          {
+            "family": "Anton",
+            "style": "normal",
+            "weight": "400",
+            "status": "unloaded"
+          },
+          {
+            "family": "Anton",
+            "style": "normal",
+            "weight": "400",
+            "status": "unloaded"
+          },
+          {
+            "family": "Anton",
+            "style": "normal",
+            "weight": "400",
+            "status": "unloaded"
+          },
+          {
+            "family": "Inter",
+            "style": "normal",
+            "weight": "400",
+            "status": "unloaded"
+          },
+          {
+            "family": "Inter",
+            "style": "normal",
+            "weight": "400",
+            "status": "unloaded"
+          },
+          {
+            "family": "Inter",
+            "style": "normal",
+            "weight": "400",
+            "status": "unloaded"
+          },
+          {
+            "family": "Inter",
+            "style": "normal",
+            "weight": "400",
+            "status": "unloaded"
+          },
+          {
+            "family": "Inter",
+            "style": "normal",
+            "weight": "400",
+            "status": "unloaded"
+          },
+          {
+            "family": "Inter",
+            "style": "normal",
+            "weight": "400",
+            "status": "unloaded"
+          },
+          {
+            "family": "Inter",
+            "style": "normal",
+            "weight": "400",
+            "status": "unloaded"
+          },
+          {
+            "family": "Inter",
+            "style": "normal",
+            "weight": "500",
+            "status": "unloaded"
+          },
+          {
+            "family": "Inter",
+            "style": "normal",
+            "weight": "500",
+            "status": "unloaded"
+          }
+        ]
+      }
+    }
+  },
+  "catalog_reachability": {
+    "tacos_xxl_reachable": null,
+    "tacos_xxl_item_id": 366,
+    "fallback_used": null
+  },
+  "loyalty": {
+    "balance_step_reached": null,
+    "balance_value_observed": null,
+    "seed_user": null
+  }
+}

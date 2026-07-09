@@ -1,0 +1,418 @@
+- generic [active] [ref=e1]:
+  - link "Aller au contenu" [ref=e2] [cursor=pointer]:
+    - /url: "#main"
+  - generic [ref=e4]:
+    - banner [ref=e5]:
+      - generic [ref=e6]:
+        - button "LC Le Cayenne" [ref=e7] [cursor=pointer]:
+          - generic [ref=e8]: LC
+          - generic [ref=e9]: Le Cayenne
+        - generic [ref=e10]:
+          - button "Panier" [ref=e11] [cursor=pointer]:
+            - img [ref=e12]
+            - generic [ref=e14]: Panier
+          - button "IB" [ref=e15] [cursor=pointer]:
+            - generic [ref=e16]: IB
+          - button "Menu" [ref=e17] [cursor=pointer]
+    - main [ref=e21]:
+      - generic [ref=e22]:
+        - generic [ref=e23]:
+          - generic [ref=e24]:
+            - generic [ref=e25]:
+              - generic [ref=e26]:
+                - generic [ref=e28]: OUVERT
+                - text: · HÉNIN-BEAUMONT 62210
+              - heading "Sandwich. Tacos. Bols. Galette." [level=1] [ref=e29]:
+                - text: Sandwich. Tacos.
+                - text: Bols.
+                - emphasis [ref=e30]: Galette.
+              - paragraph [ref=e31]: Du peuple, pour le peuple. Fait maison chaque jour à Hénin-Beaumont. Commande en 30 sec, viens chercher, mange. Pas de livraison qui prend 1h — juste de la bonne bouffe quand tu pousses la porte.
+              - generic [ref=e32]:
+                - button "Commander maintenant" [ref=e33] [cursor=pointer]:
+                  - text: Commander maintenant
+                  - img [ref=e34]
+                - button "Programme fidélité" [ref=e36] [cursor=pointer]
+              - generic [ref=e37]:
+                - img [ref=e38]
+                - textbox "Rechercher un plat — ouvre le menu" [ref=e41]:
+                  - /placeholder: Cherche un plat, un ingrédient…
+                - button "Voir" [ref=e42] [cursor=pointer]:
+                  - text: Voir
+                  - img [ref=e43]
+              - generic [ref=e45]:
+                - generic [ref=e46]:
+                  - generic [ref=e47]: 30 sec
+                  - generic [ref=e48]: Pour commander
+                - generic [ref=e49]:
+                  - generic [ref=e50]: 11h–00h
+                  - generic [ref=e51]: 7 jours / 7
+                - generic [ref=e52]:
+                  - generic [ref=e53]: 1€ = 1pt
+                  - generic [ref=e54]: Sur chaque commande
+            - generic [ref=e55]:
+              - generic [ref=e56]: // NOTRE SIGNATURE
+              - img "Sandwich Cayenne signature — Le Cayenne" [ref=e57]
+              - generic [ref=e58]:
+                - generic [ref=e59]: 🔥
+                - text: Fait maison
+                - text: chaque jour
+              - generic [ref=e60]:
+                - generic [ref=e61]: "+25"
+                - text: Points
+                - text: à l'inscription
+          - generic [ref=e64]:
+            - generic [ref=e65]: 🌶 Sauce Cayenne maison
+            - generic [ref=e66]: 🥖 Sandwichs faluche
+            - generic [ref=e67]: 🌮 Tacos M & L
+            - generic [ref=e68]: 🥣 Bols Frites/Riz
+            - generic [ref=e69]: 🍔 Burgers brioché
+            - generic [ref=e70]: 🍟 Frites Cheddar
+            - generic [ref=e71]: 🧒 Menu enfant
+            - generic [ref=e72]: ⚡ Prêt en 8 min
+            - generic [ref=e73]: 🌶 Sauce Cayenne maison
+            - generic [ref=e74]: 🥖 Sandwichs faluche
+            - generic [ref=e75]: 🌮 Tacos M & L
+            - generic [ref=e76]: 🥣 Bols Frites/Riz
+            - generic [ref=e77]: 🍔 Burgers brioché
+            - generic [ref=e78]: 🍟 Frites Cheddar
+            - generic [ref=e79]: 🧒 Menu enfant
+            - generic [ref=e80]: ⚡ Prêt en 8 min
+            - generic [ref=e81]: 🌶 Sauce Cayenne maison
+            - generic [ref=e82]: 🥖 Sandwichs faluche
+            - generic [ref=e83]: 🌮 Tacos M & L
+            - generic [ref=e84]: 🥣 Bols Frites/Riz
+            - generic [ref=e85]: 🍔 Burgers brioché
+            - generic [ref=e86]: 🍟 Frites Cheddar
+            - generic [ref=e87]: 🧒 Menu enfant
+            - generic [ref=e88]: ⚡ Prêt en 8 min
+        - generic [ref=e92]:
+          - generic [ref=e93]:
+            - generic [ref=e94]: ⚡ Du jour · Aujourd'hui seulement
+            - heading "Sandwich Cayenne + Menu à 9,00 €" [level=2] [ref=e95]:
+              - text: Sandwich Cayenne + Menu
+              - text: à 9,00 €
+            - paragraph [ref=e96]: Le Sandwich Cayenne signature en menu complet (Frites + Boisson). Jusqu'à 22h, ou rupture.
+            - generic [ref=e97]:
+              - generic [ref=e98]: 9,00 €
+              - generic [ref=e99]: 10,00 €
+              - generic [ref=e100]: ⏱ Fin dans 4 h 12 min
+            - button "J'en profite" [ref=e102] [cursor=pointer]:
+              - text: J'en profite
+              - img [ref=e103]
+          - generic [ref=e105]: 🔥
+        - generic [ref=e107]:
+          - generic [ref=e109]:
+            - generic [ref=e110]: // Pourquoi Le Cayenne
+            - heading "La promesse en 4 points." [level=2] [ref=e111]
+            - paragraph [ref=e112]: On a 4 obsessions, pas 40. La bouffe doit être bonne, rapide, honnête, et te rapporter.
+          - generic [ref=e113]:
+            - generic [ref=e114]:
+              - generic [ref=e115]: "01"
+              - generic [ref=e116]: 🔥
+              - generic [ref=e117]: Fait maison
+              - generic [ref=e118]: Cuit sur la plancha, jamais sous vide. La viande arrive le matin.
+            - generic [ref=e119]:
+              - generic [ref=e120]: "02"
+              - generic [ref=e121]: ⚡
+              - generic [ref=e122]: 30 sec.
+              - generic [ref=e123]: Commande en 3 taps, paye en caisse ou en ligne. Pas de friction.
+            - generic [ref=e124]:
+              - generic [ref=e125]: "03"
+              - generic [ref=e126]: 🎯
+              - generic [ref=e127]: À emporter
+              - generic [ref=e128]: On te ping quand c'est prêt. Pas de livraison qui prend 1h.
+            - generic [ref=e129]:
+              - generic [ref=e130]: "04"
+              - generic [ref=e131]: 🎁
+              - generic [ref=e132]: 1€ = 1pt
+              - generic [ref=e133]: Programme fidélité automatique. +25 pts à l'inscription.
+        - generic [ref=e135]:
+          - generic [ref=e136]:
+            - generic [ref=e137]:
+              - generic [ref=e138]: ★ Signature
+              - heading "Le Méga XL · 2 viandes" [level=3] [ref=e139]:
+                - text: Le Méga
+                - text: XL · 2 viandes
+              - paragraph [ref=e140]: Sandwich XL · 2 viandes au choix · Cheddar + Œuf · Oignons rouges, tomates, salade · Sauce au choix. Le sandwich qui fait honneur à la faim.
+              - generic [ref=e141]:
+                - generic [ref=e142]: 8,00 €
+                - button "Commander le Méga" [ref=e143] [cursor=pointer]:
+                  - text: Commander le Méga
+                  - img [ref=e144]
+            - img "Méga" [ref=e147]
+          - generic [ref=e148]:
+            - generic [ref=e149]:
+              - generic [ref=e150]: // Menu
+              - heading "Les envies du moment" [level=2] [ref=e151]
+              - paragraph [ref=e152]: Notre sélection de la semaine — fait maison sur la plancha, servi sans chichis.
+            - button "Voir tout le menu" [ref=e153] [cursor=pointer]:
+              - text: Voir tout le menu
+              - img [ref=e154]
+          - generic [ref=e156]:
+            - generic [ref=e158] [cursor=pointer]:
+              - generic [ref=e159]:
+                - img "Cayenne" [ref=e160]
+                - generic [ref=e161]: SIGNATURE
+                - button "Ajouter Cayenne aux favoris" [ref=e162]:
+                  - img [ref=e163]
+              - generic [ref=e165]:
+                - button "Voir Cayenne" [ref=e166]: Cayenne
+                - generic [ref=e167]: Poulet mariné · Cheddar · Jambon · Oignons rouges · Tomates · Salade · Sauce fromagère maison
+                - generic [ref=e168]:
+                  - generic [ref=e169]: 7,40 €
+                  - img [ref=e171]
+            - generic [ref=e174] [cursor=pointer]:
+              - generic [ref=e175]:
+                - img "Suprême" [ref=e176]
+                - button "Ajouter Suprême aux favoris" [ref=e177]:
+                  - img [ref=e178]
+              - generic [ref=e180]:
+                - button "Voir Suprême" [ref=e181]: Suprême
+                - generic [ref=e182]: Steak haché · Cordon bleu · Cheddar · Oignons rouges · Tomates · Salade · Sauce au choix
+                - generic [ref=e183]:
+                  - generic [ref=e184]: 7,00 €
+                  - img [ref=e186]
+            - generic [ref=e189] [cursor=pointer]:
+              - generic [ref=e190]:
+                - img "Méga" [ref=e191]
+                - generic [ref=e192]: XL
+                - button "Ajouter Méga aux favoris" [ref=e193]:
+                  - img [ref=e194]
+              - generic [ref=e196]:
+                - button "Voir Méga" [ref=e197]: Méga
+                - generic [ref=e198]: 2 viandes au choix · Cheddar · Œuf · Oignons rouges · Tomates · Salade · Sauce au choix
+                - generic [ref=e199]:
+                  - generic [ref=e200]: 8,00 €
+                  - img [ref=e202]
+            - generic [ref=e205] [cursor=pointer]:
+              - generic [ref=e206]:
+                - img "Terminator" [ref=e207]
+                - generic [ref=e208]: XL
+                - button "Ajouter Terminator aux favoris" [ref=e209]:
+                  - img [ref=e210]
+              - generic [ref=e212]:
+                - button "Voir Terminator" [ref=e213]: Terminator
+                - generic [ref=e214]: 2 viandes au choix · 2 cheddars · Œuf · Jambon de dinde · Oignons rouges · Tomates · Salade · Sauce au choix
+                - generic [ref=e215]:
+                  - generic [ref=e216]: 9,00 €
+                  - img [ref=e218]
+        - generic [ref=e221]:
+          - generic [ref=e222]:
+            - generic [ref=e223]:
+              - generic [ref=e224]: // Insta
+              - heading "Suis-nous sur @lecayenne_" [level=2] [ref=e225]
+              - paragraph [ref=e226]: Photos du jour, plats du moment, coulisses de la plancha. Tag-nous, on republie les meilleures.
+            - link "@lecayenne_" [ref=e227] [cursor=pointer]:
+              - /url: https://www.instagram.com/lecayenne_/
+              - text: "@lecayenne_"
+              - img [ref=e228]
+          - generic [ref=e230]:
+            - generic [ref=e231] [cursor=pointer]: 🍔
+            - generic [ref=e232] [cursor=pointer]: 🍟
+            - generic [ref=e233] [cursor=pointer]: 🌮
+            - generic [ref=e234] [cursor=pointer]: 🥣
+            - generic [ref=e235] [cursor=pointer]: 🌶
+            - generic [ref=e236] [cursor=pointer]: 🍗
+            - generic [ref=e237] [cursor=pointer]: 🍱
+            - generic [ref=e238] [cursor=pointer]: 🥑
+            - generic [ref=e239] [cursor=pointer]: 🥤
+            - generic [ref=e240] [cursor=pointer]: 🌯
+            - generic [ref=e241] [cursor=pointer]: 🧀
+            - generic [ref=e242] [cursor=pointer]: 🔥
+        - generic [ref=e246]:
+          - generic [ref=e247]:
+            - generic [ref=e248]: Ouvert maintenant
+            - heading "14 rue de la République, 62210." [level=2] [ref=e250]:
+              - text: 14 rue de la
+              - text: République,
+              - text: "62210."
+            - paragraph [ref=e251]: Tu pousses la porte, on te connaît déjà. Parking gratuit à 50m, accessible PMR, click & collect.
+            - generic [ref=e252]:
+              - link "Itinéraire" [ref=e253] [cursor=pointer]:
+                - /url: https://www.google.com/maps/dir/?api=1&destination=14+rue+de+la+R%C3%A9publique+62210+H%C3%A9nin-Beaumont
+                - text: Itinéraire
+                - img [ref=e254]
+              - link "06 51 30 XX XX" [ref=e256] [cursor=pointer]:
+                - /url: tel:0651300000
+          - generic [ref=e257]:
+            - generic [ref=e258]:
+              - generic [ref=e259]: Lundi
+              - generic [ref=e260]: 11h — 00h
+            - generic [ref=e261]:
+              - generic [ref=e262]: Mardi
+              - generic [ref=e263]: 11h — 00h
+            - generic [ref=e264]:
+              - generic [ref=e265]: Mercredi
+              - generic [ref=e266]: 11h — 00h
+            - generic [ref=e267]:
+              - generic [ref=e268]: Jeudi
+              - generic [ref=e269]: 11h — 00h
+            - generic [ref=e270]:
+              - generic [ref=e271]: Vendredi
+              - generic [ref=e272]: 11h — 01h
+            - generic [ref=e273]:
+              - generic [ref=e274]: Samedi · Aujourd'hui
+              - generic [ref=e275]: 11h — 01h
+            - generic [ref=e276]:
+              - generic [ref=e277]: Dimanche
+              - generic [ref=e278]: 12h — 00h
+        - generic [ref=e282]:
+          - generic [ref=e283]:
+            - generic [ref=e284]: // Mobile
+            - heading "L'app Le Cayenne. Toujours dans ta poche." [level=3] [ref=e285]:
+              - text: L'app Le Cayenne.
+              - text: Toujours dans ta poche.
+            - paragraph [ref=e286]: Commande en 3 taps. Reçois les push quand c'est prêt. Ta carte fidélité partout. Suivi des points en temps réel.
+            - generic [ref=e287]:
+              - link "🍎 Télécharger App Store" [ref=e288] [cursor=pointer]:
+                - /url: "#"
+                - generic [ref=e289]: 🍎
+                - generic [ref=e290]:
+                  - generic [ref=e291]: Télécharger
+                  - text: App Store
+              - link "▶ Disponible Google Play" [ref=e292] [cursor=pointer]:
+                - /url: "#"
+                - generic [ref=e293]: ▶
+                - generic [ref=e294]:
+                  - generic [ref=e295]: Disponible
+                  - text: Google Play
+          - generic [ref=e297]:
+            - generic [ref=e298]: LE
+            - generic [ref=e299]: CAYENNE
+            - generic [ref=e300]: "62210"
+        - generic [ref=e304]:
+          - generic [ref=e305]:
+            - generic [ref=e306]:
+              - generic [ref=e307]: "0"
+              - text: +
+            - generic [ref=e308]: Commandes servies
+          - generic [ref=e309]:
+            - generic [ref=e310]:
+              - generic [ref=e311]: "0"
+              - text: +
+            - generic [ref=e312]: Inscrits Pepper Club
+          - generic [ref=e313]:
+            - generic [ref=e315]: "0"
+            - generic [ref=e316]: Plats au menu
+        - generic [ref=e320]:
+          - generic [ref=e321]: // La différence
+          - heading "On n'est pas comme les autres." [level=2] [ref=e322]
+          - paragraph [ref=e323]: Compare. Si tu trouves mieux pour ce prix-là, on rembourse.
+          - generic [ref=e324]:
+            - generic [ref=e325]:
+              - heading "Les chaînes" [level=4] [ref=e326]
+              - list [ref=e327]:
+                - listitem [ref=e328]: ✕ Plats sous vide réchauffés au micro-ondes
+                - listitem [ref=e329]: ✕ Photos retouchées qui ne ressemblent pas au plat
+                - listitem [ref=e330]: ✕ Livraison à 1h, plat froid à l'arrivée
+                - listitem [ref=e331]: ✕ Programme fidélité où tu accumules à vie sans rien
+                - listitem [ref=e332]: ✕ Pâtes en sachet et pain industriel
+            - generic [ref=e333]:
+              - heading "Le Cayenne" [level=4] [ref=e334]
+              - list [ref=e335]:
+                - listitem [ref=e336]: ✓ Tout préparé chaque matin sur la plancha
+                - listitem [ref=e337]: ✓ Photos réelles, pas de filtres marketing
+                - listitem [ref=e338]: ✓ Prêt en 12 min, plat sortant tout chaud
+                - listitem [ref=e339]: ✓ 1 € = 1 pt, 100 pts = 1 € de réduction dès 100 pts
+                - listitem [ref=e340]: ✓ Pain brioché du boulanger d'à côté
+        - generic [ref=e342]:
+          - generic [ref=e344]:
+            - generic [ref=e345]: // FAQ
+            - heading "Tu te poses des questions ?" [level=2] [ref=e346]
+            - paragraph [ref=e347]: Les réponses aux 5 questions qu'on nous pose chaque semaine en caisse.
+          - generic [ref=e349]:
+            - generic [ref=e350]:
+              - button "Vous livrez ?" [ref=e351] [cursor=pointer]:
+                - generic [ref=e352]: Vous livrez ?
+                - img [ref=e354]
+              - paragraph [ref=e357]: Non, on est 100% à emporter à Hénin-Beaumont. Tu commandes en ligne ou en caisse, et tu viens chercher quand c'est prêt. On préfère te servir un plat tout chaud plutôt qu'un plat tiède livré en 1h.
+            - generic [ref=e358]:
+              - button "Comment fonctionne le programme fidélité ?" [ref=e359] [cursor=pointer]:
+                - generic [ref=e360]: Comment fonctionne le programme fidélité ?
+                - img [ref=e362]
+              - paragraph [ref=e364]: "Simple : 1 € dépensé = 1 point. Présente ton QR à la caisse ou utilise l'app/le site, on cumule automatiquement. Dès 100 pts, utilise tes points en réduction directe sur ta commande : 100 points = 1 €, déduits au taux de 100 pts = 1 €."
+            - generic [ref=e365]:
+              - button "Vous avez du végé ?" [ref=e366] [cursor=pointer]:
+                - generic [ref=e367]: Vous avez du végé ?
+                - img [ref=e369]
+              - paragraph [ref=e371]: Oui. Bols Frites/Riz peuvent être commandés sans viande (note dans instructions). Frites Cheddar, Petite Frites, Suppléments Légumes sautés / Boursin / Champignons / Œuf — tout est marqué dans le menu.
+            - generic [ref=e372]:
+              - button "Comment je paie ?" [ref=e373] [cursor=pointer]:
+                - generic [ref=e374]: Comment je paie ?
+                - img [ref=e376]
+              - paragraph [ref=e378]: "En caisse : cash ou CB. En ligne : CB sécurisée Stripe ou Apple/Google Pay. On accepte les tickets restaurants en caisse uniquement."
+            - generic [ref=e379]:
+              - button "Vous avez une carte plastique fidélité ?" [ref=e380] [cursor=pointer]:
+                - generic [ref=e381]: Vous avez une carte plastique fidélité ?
+                - img [ref=e383]
+              - paragraph [ref=e385]: Oui, demande-la en caisse à ta première commande. Elle est gratuite, scannable, et liée au même compte que l'app. Tu peux switcher entre les deux à tout moment.
+    - contentinfo [ref=e386]:
+      - generic [ref=e387]:
+        - generic [ref=e388]:
+          - generic [ref=e389]:
+            - heading "Le Cayenne" [level=3] [ref=e390]
+            - paragraph [ref=e391]: Sandwich Cayenne signature, tacos M & L, bols Frites/Riz, galettes — fait maison à Hénin-Beaumont. Du peuple, pour le peuple. Pas de livraison, juste du fait maison à venir chercher.
+          - generic [ref=e392]:
+            - heading "// Navigation" [level=4] [ref=e393]
+            - list [ref=e394]:
+              - listitem [ref=e395]:
+                - button "Accueil" [ref=e396] [cursor=pointer]
+              - listitem [ref=e397]:
+                - button "Menu complet" [ref=e398] [cursor=pointer]
+              - listitem [ref=e399]:
+                - button "Programme fidélité" [ref=e400] [cursor=pointer]
+              - listitem [ref=e401]:
+                - button "L'enseigne" [ref=e402] [cursor=pointer]
+          - generic [ref=e403]:
+            - heading "// Contact" [level=4] [ref=e404]
+            - list [ref=e405]:
+              - listitem [ref=e406]: 06 51 30 XX XX
+              - listitem [ref=e407]:
+                - link "contact@lecayenne.fr" [ref=e408] [cursor=pointer]:
+                  - /url: mailto:contact@lecayenne.fr
+              - listitem [ref=e409]:
+                - generic [ref=e410]:
+                  - text: 14 rue de la République
+                  - text: 62210 Hénin-Beaumont
+              - listitem [ref=e411]: Ouvert 11h — 00h
+          - generic [ref=e412]:
+            - heading "// Légal" [level=4] [ref=e413]
+            - list [ref=e414]:
+              - listitem [ref=e415]:
+                - link "Mentions légales" [ref=e416] [cursor=pointer]:
+                  - /url: legal/mentions.html
+              - listitem [ref=e417]:
+                - link "CGV" [ref=e418] [cursor=pointer]:
+                  - /url: legal/cgv.html
+              - listitem [ref=e419]:
+                - link "Politique de confidentialité" [ref=e420] [cursor=pointer]:
+                  - /url: legal/privacy.html
+              - listitem [ref=e421]:
+                - link "Politique de cookies" [ref=e422] [cursor=pointer]:
+                  - /url: legal/cookies.html
+              - listitem [ref=e423]:
+                - link "Allergènes" [ref=e424] [cursor=pointer]:
+                  - /url: legal/allergens.html
+        - generic [ref=e425]:
+          - generic [ref=e426]:
+            - text: © 2026 LE CAYENNE ·
+            - link "CGV" [ref=e427] [cursor=pointer]:
+              - /url: legal/cgv.html
+            - text: ·
+            - link "CONFIDENTIALITÉ" [ref=e428] [cursor=pointer]:
+              - /url: legal/privacy.html
+            - text: ·
+            - link "MENTIONS LÉGALES" [ref=e429] [cursor=pointer]:
+              - /url: legal/mentions.html
+          - generic [ref=e430]:
+            - button "📱 iOS" [ref=e431] [cursor=pointer]
+            - button "🤖 Android" [ref=e432] [cursor=pointer]
+    - dialog "Panier" [ref=e433]:
+      - generic [ref=e434]:
+        - generic [ref=e435]: Panier
+        - button "Fermer le panier" [ref=e436] [cursor=pointer]:
+          - img [ref=e437]
+      - generic [ref=e440]:
+        - generic [ref=e441]: 🛒
+        - generic [ref=e442]: Ton panier est vide
+        - generic [ref=e443]: Faim ? Va voir le menu.

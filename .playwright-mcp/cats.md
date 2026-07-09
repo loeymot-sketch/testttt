@@ -1,0 +1,135 @@
+- main [ref=f2e5]:
+  - generic [ref=f2e6]:
+    - link "logo" [ref=f2e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=f2e8]
+    - generic [ref=f2e9]:
+      - generic [ref=f2e11]:
+        - link " Tableau de bord" [ref=f2e13] [cursor=pointer]:
+          - /url: /admin/dashboard
+          - generic [ref=f2e14]: 
+          - generic [ref=f2e15]: Tableau de bord
+        - button "flag" [ref=f2e49] [cursor=pointer]:
+          - img "flag" [ref=f2e50]
+      - generic [ref=f2e16]:
+        - button "avatar Bonjour S-SYNC E2E Operator" [ref=f2e17] [cursor=pointer]:
+          - img "avatar" [ref=f2e18]
+          - heading "Bonjour S-SYNC E2E Operator" [level=3] [ref=f2e19]:
+            - text: Bonjour
+            - generic "S-SYNC E2E Operator" [ref=f2e20]
+          - generic [ref=f2e21]: 
+        - menu "avatar Bonjour S-SYNC E2E Operator":
+          - generic:
+            - figure
+            - generic
+            - heading "S-SYNC E2E Operator" [level=3]
+            - paragraph: ssync.e2e@lecayenne.test
+            - paragraph: "0600000777"
+            - heading "0,00 €" [level=3]
+          - menuitem "Modifier le profil":
+            - text: 
+            - generic: Modifier le profil
+          - menuitem "Changer le mot de passe":
+            - text: 
+            - generic: Changer le mot de passe
+          - menuitem "Déconnexion":
+            - text: 
+            - generic: Déconnexion
+  - text:           
+  - button "Ouvrir l'historique des commandes du jour" [ref=f2e23] [cursor=pointer]:
+    - generic [ref=f2e24]: 📚
+    - generic [ref=f2e25]: Historique
+  - generic [ref=f2e26]:
+    - status [ref=f2e27]:
+      - generic [ref=f2e28]:
+        - img [ref=f2e30]
+        - generic [ref=f2e32]: Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS.
+      - generic [ref=f2e33]: LOCAL
+    - generic [ref=f2e51]:
+      - region "Commande A0012, source Borne, Nouvelle, attente 351 minutes 56 secondes" [ref=f2e214]:
+        - generic [ref=f2e54]:
+          - generic [ref=f2e55]:
+            - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=f2e56]: "[A]"
+            - generic [ref=f2e57]
+          - generic [ref=f2e62]:
+            - generic [ref=f2e63]
+            - generic [ref=f2e65]
+        - region "Détails de la commande A0012, défilable au clavier" [ref=f2e68]:
+          - generic [ref=f2e69]:
+            - generic [ref=f2e71]
+            - generic [ref=f2e76]: "MENU : ALG"
+            - generic [ref=f2e78]
+        - status "Commande en attente d'encaissement par le caissier — préparation en attente" [ref=f2e81]:
+          - img [ref=f2e82]
+          - generic [ref=f2e85]: En attente encaissement
+        - button "Prêt" [ref=f2e86] [cursor=pointer]:
+          - img [ref=f2e87]
+          - generic [ref=f2e89]: Prêt
+      - region "Commande A0013, source Caisse, En cours, attente 347 minutes 5 secondes" [ref=f2e215]:
+        - generic [ref=f2e92]:
+          - generic [ref=f2e93]:
+            - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=f2e94]: "[B]"
+            - generic [ref=f2e95]
+          - generic [ref=f2e100]:
+            - generic [ref=f2e101]
+            - generic [ref=f2e103]
+        - region "Détails de la commande A0013, défilable au clavier" [ref=f2e106]:
+          - generic [ref=f2e107]:
+            - generic [ref=f2e109]
+            - generic [ref=f2e114]
+          - generic [ref=f2e119]:
+            - generic [ref=f2e120]
+            - generic [ref=f2e122]: MENU
+        - button "Prêt" [ref=f2e123] [cursor=pointer]:
+          - img [ref=f2e124]
+          - generic [ref=f2e126]: Prêt
+      - region "Commande A0014, source Caisse, En cours, attente 323 minutes 20 secondes" [ref=f2e216]:
+        - generic [ref=f2e129]:
+          - generic [ref=f2e130]:
+            - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=f2e131]: "[C]"
+            - generic [ref=f2e132]
+          - generic [ref=f2e137]:
+            - generic [ref=f2e138]
+            - generic [ref=f2e140]
+        - region "Détails de la commande A0014, défilable au clavier" [ref=f2e143]:
+          - generic [ref=f2e144]:
+            - generic [ref=f2e145]
+            - generic [ref=f2e148]
+            - link "Appeler Client passage 0600000001" [ref=f2e151] [cursor=pointer]:
+              - /url: tel:0600000001
+          - generic [ref=f2e154]:
+            - generic [ref=f2e156]
+            - generic [ref=f2e161]
+          - generic [ref=f2e166]:
+            - generic [ref=f2e167]
+            - generic [ref=f2e169]: MENU
+          - generic [ref=f2e170]:
+            - generic [ref=f2e172]
+            - generic [ref=f2e177]
+          - generic [ref=f2e182]:
+            - generic [ref=f2e183]
+            - generic [ref=f2e185]: Sprite 33cl
+          - generic [ref=f2e188]:
+            - generic [ref=f2e189]
+            - generic [ref=f2e191]: Coca-Cola 33cl
+        - button "Prêt" [ref=f2e192] [cursor=pointer]:
+          - img [ref=f2e193]
+          - generic [ref=f2e195]: Prêt
+    - status [ref=f2e196]:
+      - generic [ref=f2e197]: "+7"
+      - generic [ref=f2e198]: en attente
+    - region "Récemment servies" [ref=f2e199]:
+      - generic [ref=f2e200]: Récemment servies
+      - generic [ref=f2e201]:
+        - generic "Commande N°A0009 servie" [ref=f2e202]:
+          - generic [ref=f2e203]: N°A0009
+          - generic [ref=f2e204]: il y a 346 min
+        - generic "Commande N°A0010 servie" [ref=f2e205]:
+          - generic [ref=f2e206]: N°A0010
+          - generic [ref=f2e207]: il y a 346 min
+        - generic "Commande N°A0011 servie" [ref=f2e208]:
+          - generic [ref=f2e209]: N°A0011
+          - generic [ref=f2e210]: il y a 346 min
+        - generic "Commande N°A0007 servie" [ref=f2e211]:
+          - generic [ref=f2e212]: N°A0007
+          - generic [ref=f2e213]: il y a 352 min

@@ -1,0 +1,131 @@
+{
+  "micro_system": "S15-oss",
+  "files_examined": [
+    "resources/js/components/admin/orderStatusScreen/OrderStatusScreenComponent.vue",
+    "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue",
+    "resources/js/components/admin/orderStatusScreen/PopularItemComponent.vue",
+    "app/Http/Controllers/Admin/OrderStatusScreenController.php",
+    "app/Services/OrderStatusScreenOrderService.php",
+    "app/Http/Resources/CDSOrderDetailsResource.php",
+    "app/Http/Resources/PosShortcutOrderResource.php",
+    "resources/js/store/modules/orderStatusScreenOrder.js",
+    "resources/js/services/OssSyncService.js",
+    "resources/js/router/modules/orderStatusScreenRoutes.js",
+    "resources/js/router/index.js",
+    "routes/api.php",
+    "config/oss.php",
+    "app/Enums/OrderType.php",
+    "app/Enums/OrderStatus.php",
+    "resources/js/enums/modules/orderStatusEnum.js",
+    "app/Services/OrderService.php (queue_number allocation 2937-3008, POS status 744-808)",
+    "app/Services/KitchenDisplaySystemOrderService.php (POS visibility line 79)",
+    "resources/js/languages/fr.json (label.preparing/ready/oss_main_aria)"
+  ],
+  "findings": [
+    {
+      "id": "S15-oss-01",
+      "severity": "P1",
+      "category": "functional",
+      "title": "POS comptoir orders never reach the PRET wall though they carry a queue number and are prepared in the kitchen",
+      "file_line": "app/Services/OrderStatusScreenOrderService.php:59-62 and :220-223 (whereIn order_type [KIOSK, TAKEAWAY])",
+      "evidence": "list() and listForBranch() both hard-restrict to whereIn('order_type', [OrderType::KIOSK(25), OrderType::TAKEAWAY(10)]) (service lines 59-62 / 220-223). Yet a POS (order_type=15) walk-in order DOES get a queue_number: saveOrderWithQueueNumber()/allocateQueueNumber() at OrderService.php:2937-2993 stamps 'A0001'-style numbers regardless of type, and it IS prepared in the kitchen: posInitialStatus auto-promotes to OrderStatus::PREPARING (OrderService.php:758,778,803) and KitchenDisplaySystemOrderService.php:79 explicitly handles order_type=OrderType::POS. So a POS order transitions PREPARING->PREPARED in KDS but is filtered out of OSS. The customer-facing N°{{queue_number}} chip is shown for POS on PosComponent.vue:295/359, so the counter customer is given a N° but that N° never appears on the PRET wall.",
+      "why_it_matters": "On a single-counter fast-food (V1 Le Cayenne) the OSS wall is the pickup-call signal. A walk-in who paid at the cashier receives a queue number (N°A0001) but their order never lights up the green PRET column when the kitchen bumps it ready, while a kiosk customer with the identical number does. Either the counter staff must hand-call every walk-in verbally (defeating the wall) or the customer waits staring at a wall that will never show their number. This is an inconsistent, confusing pickup experience for half the order volume. If the owner intends counter orders to be hand-delivered directly this is acceptable-by-design, but the current state silently mixes the two models.",
+      "reproduction": "Create a POS counter order at /admin/pos (pay at counter), bump it to PREPARED in KDS. Observe N°A000N appears in KDS/PosComponent but NEVER in the OSS PRET column at /admin/order-status-screen. A kiosk order created the same minute does appear.",
+      "recommended_correction": "Confirm the pickup model with the owner. If the wall is the universal pickup signal, add OrderType::POS to the allowlist in BOTH list() (line 59-62) and listForBranch() (line 220-223), keeping them byte-identical per the service docstring. If counter orders are hand-delivered by design, leave as-is but document the rationale next to the allowlist so future audits don't re-flag it.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S15-oss-02",
+      "severity": "P2",
+      "category": "logic",
+      "title": "First load fires a flash+chime storm: every already-PREPARED order is treated as newly-ready on mount",
+      "file_line": "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue:385-402 (_hydrateFromRows) called from list() at :403-415 on mount :114",
+      "evidence": "_hydrateFromRows computes prevPreparedIds from the CURRENT this.preparedItems (line 386). On the very first mount call (mounted()->list()->_hydrateFromRows), this.preparedItems is still the initial [] (data() line 90), so prevPreparedIds is empty and the loop at 393-397 calls _markNewReady(item.id) for EVERY order already in PREPARED state. _markNewReady (326-343) sets newReadyFlash=true and calls _playReadySound(). There is no first-load / hasHydratedOnce guard.",
+      "why_it_matters": "Open or refresh the wall at lunch rush with 8 orders already in PRET and the column green-flashes and pulses all 8 at once, and on an operator-attended surface (authBranchId>0, audio unlocked) the 4-tone chime fires up to 8 times overlapping. The flash/chime is supposed to mean 'a NEW order just became ready' (the attention signal customers rely on); firing it for the entire backlog on every page load / TV reboot trains customers and staff to ignore it, eroding the one realtime cue the wall exists to provide.",
+      "reproduction": "Have >=2 orders in PREPARED, then load/refresh /admin/order-status-screen. Observe the ready column flashes and (on authed surface) multiple chimes fire simultaneously for pre-existing orders.",
+      "recommended_correction": "Add a one-shot guard: on the first _hydrateFromRows after mount, seed prevPreparedIds from the incoming rows (or set a this._hydratedOnce flag) so _markNewReady only fires for transitions observed AFTER initial load.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S15-oss-03",
+      "severity": "P2",
+      "category": "logic",
+      "title": "Stale-prune window (now-8h) silently drops still-active overdue advance orders, contradicting the documented anti-zombie intent",
+      "file_line": "app/Services/OrderStatusScreenOrderService.php:98-101 vs :132 (and mirror :243-245 vs :256)",
+      "evidence": "The advance-order OR-branch (lines 98-101) is explicitly commented '[AUDIT-52-BUG1] show ALL overdue advance orders ... Prevents zombie disappearance' and intentionally has NO lower datetime bound for active advance orders. But that whole date-window group is ANDed with the top-level stale prune at line 132: ->where('order_datetime', '>=', now(app.timezone)->subHours(config('oss.stale_window_hours',8))). So an advance order placed >8h ago that is still PREPARING/PREPARED is pruned by line 132 regardless, defeating the 'show ALL overdue advance orders' branch. The two documented intents directly contradict each other.",
+      "why_it_matters": "An advance order (commande a l'avance) prepared more than 8h after it was placed will vanish from the wall while still genuinely active and awaiting pickup. The comment promises the opposite ('prevents zombie disappearance'). This is a real flou: a reader cannot tell which behavior is the intended one, and the implemented behavior (prune wins) silently breaks the stated guarantee. Low frequency on a fast-food single-shift, but it is a latent correctness ambiguity the owner flagged ('things that are not good, unnecessary things').",
+      "reproduction": "Create an advance order with order_datetime > 8h in the past, status PREPARED, is_advance_order=YES. It satisfies the advance OR-branch (98-101) but is excluded by line 132 stale prune. Query returns 0 rows for it.",
+      "recommended_correction": "Decide one model and make the code match the comment. Either exempt active advance orders from the stale_window prune (move line 132 to apply only to the non-advance branch), or update the [AUDIT-52-BUG1] comment to state advance orders are also capped at stale_window_hours. Mirror in listForBranch().",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S15-oss-04",
+      "severity": "P3",
+      "category": "deadcode",
+      "title": "Entire popular-items chain is dead on the OSS surface and its store getter reads an uninitialized state key",
+      "file_line": "resources/js/components/admin/orderStatusScreen/OrderStatusScreenComponent.vue:11-21 (PopularItemComponent un-mounted); store getter orderStatusScreenOrder.js:13-14",
+      "evidence": "OrderStatusScreenComponent.vue mounts ONLY <PreparingAndReadyComponent /> (line 27); the [Wave Q-3] comment (11-16) confirms PopularItemComponent was removed from the layout. grep across resources/js shows admin/orderStatusScreen/PopularItemComponent.vue is imported by NOTHING (the only 'PopularItemComponent' imports are the unrelated frontend/home one). The store getter mostPopularItems (orderStatusScreenOrder.js:13-14) returns state.mostPopularItems, but state only declares { lists: [] } (line 6-8) - mostPopularItems is never initialized, so the getter returns undefined. The whole chain is dead on OSS: admin PopularItemComponent.vue + store action/getter/mutation mostPopularItems + OrderStatusScreenController::mostPopularItems & publicMostPopularItems + routes api.php:1218 & :1291-1293 + OrderStatusScreenOrderService::mostPopularItems (169-195).",
+      "why_it_matters": "Dead surface area: a Vue component, 2 controller methods, 2 public routes (throttled, enumerable), a service method with a DB query, and a store module branch all maintained for a panel no longer rendered. It also carries a latent bug (uninitialized getter) that would silently break if re-mounted. Carrying this confuses future auditors (the store comment still claims '4 callers') and is exactly the 'unnecessary things' the owner called out. Note the routes still resolve and could be polled directly.",
+      "reproduction": "grep -rn 'orderStatusScreen/PopularItemComponent' resources/js -> no importer. Read OrderStatusScreenComponent.vue template -> only PreparingAndReadyComponent mounted.",
+      "recommended_correction": "If popular-items is permanently dropped from OSS (owner Wave Q-3 directive), delete admin/orderStatusScreen/PopularItemComponent.vue, the mostPopularItems store action/getter/mutation, controller mostPopularItems/publicMostPopularItems, the 2 routes, and service mostPopularItems. If it may return, at minimum initialize state.mostPopularItems = [] to remove the latent undefined-getter bug and update the stale '4 callers' comment.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S15-oss-05",
+      "severity": "P3",
+      "category": "deadcode",
+      "title": "wsConnected reactive state is maintained but never read by the template or any computed",
+      "file_line": "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue:93 (declared), 222-226 / 244-246 (written), never read",
+      "evidence": "data() declares wsConnected (line 93). It is written in _onWsConnected/_onWsDisconnected (222,226) and in the ossSync ws_state handler (244-246). grep of the template (lines 1-67) shows no {{ wsConnected }}, no :class/v-if referencing it, and no computed consumes it. Connection status is owned by the parent ConnectionStatusBanner (OrderStatusScreenComponent.vue:9).",
+      "why_it_matters": "Two event subscriptions and a Vuex sync handler exist purely to keep a property nothing displays. It is harmless but is exactly the kind of 'flou'/unnecessary plumbing the owner asked to be cleaned: it implies a connection indicator that does not exist on this component, misleading the next maintainer into thinking the wall renders its own WS status.",
+      "reproduction": "grep -n 'wsConnected' on the component: 4 writes, 0 template/computed reads.",
+      "recommended_correction": "Either render wsConnected somewhere intentional (a tiny offline dot) or remove the property and the _bindWsService/ws_state writes that exist only to feed it (keep the list() refresh on reconnect, drop the unused flag).",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S15-oss-06",
+      "severity": "P3",
+      "category": "ux",
+      "title": "Token fallback can render a raw opaque token string on the customer wall (no N° prefix, unbounded length)",
+      "file_line": "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue:37 and :62",
+      "evidence": "Both columns render {{ item.queue_number ? 'N°' + item.queue_number : item.token }}. token is orders.token, a nullable string set from $request->token (OrderService.php:779, 2492, 2499 via tokenCreate) with no length/format guarantee at the DB layer (migration 2022_11_17_110810: $table->string('token')->nullable()). The service's whereNotNull('token') OR-branch (service line 46-52/209-216) means a KIOSK/TAKEAWAY order that has a token but a null queue_number falls through to display the raw token with NO N° prefix and NO formatting.",
+      "why_it_matters": "If any allowed-type order ever lands with token set and queue_number null, the public TV wall shows a bare unformatted string at 56px instead of a friendly N°A0001 - inconsistent with every other surface (POS receipt, kiosk, KDS all show N°queue_number) and potentially a long/ugly value visible to the whole lobby. In current V1 flow queue_number is always allocated so this is an edge/latent case, hence P3, but it is the wall's only un-prefixed/unvalidated render path.",
+      "reproduction": "Code path only (needs a KIOSK/TAKEAWAY order with token!=null and queue_number=null to confirm live). Inspect template lines 37/62 - the else branch prints item.token verbatim.",
+      "recommended_correction": "Make the fallback explicit and safe: show 'N°' + a friendly identifier (order_serial_no) when queue_number is absent, or render an em-dash placeholder rather than a raw token. Never print the raw token on the public wall.",
+      "evidence_type": "needs-live-verify",
+      "confidence": "medium"
+    }
+  ],
+  "solids": [
+    {
+      "title": "PII-free public resource correctly split from total-bearing admin resource",
+      "file_line": "app/Http/Resources/CDSOrderDetailsResource.php:18-25 vs PosShortcutOrderResource.php:36-44",
+      "note": "The public wall (publicIndex -> CDSOrderDetailsResource) exposes only id/order_serial_no/token/queue_number/order_type/status - no name/phone/address/total. The authed POS widget gets a separate PosShortcutOrderResource that adds total. Clean, documented privacy boundary: the amount can never leak onto a lobby TV. Exactly the right resource-per-audience split."
+    },
+    {
+      "title": "Deterministic FIFO ordering stops the customer token from jumping positions between polls",
+      "file_line": "app/Services/OrderStatusScreenOrderService.php:144 (and :264)",
+      "note": "orderBy('queue_number','asc')->orderBy('id','asc') gives a stable, queue-faithful sort so the wall does not reshuffle on every 5-60s poll. The [Sprint 5C] comment shows this was a real bug that was fixed - good attention to the customer-perceived stability of the wall."
+    },
+    {
+      "title": "Robust Echo+poll dedup prevents double chime/flash on the same ready transition",
+      "file_line": "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue:288-292 / 392-399",
+      "note": "Echo's OrderStatusChanged pre-registers the order id in _echoMarkedReady before calling list(); _hydrateFromRows skips ids already in that set and clears it one-shot. This correctly avoids the race where both the push event and the subsequent poll would each fire _markNewReady for the same order. (Note: the steady-state dedup is solid; the gap is only the first-load case in finding 02.)"
+    },
+    {
+      "title": "Public-wall poll cadence override is a correct, in-band fix for the no-push surface",
+      "file_line": "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue:259-264 + OssSyncService _clampCadence",
+      "note": "Because the unauth wall (branchId<=0) never joins the private branch.{id} channel (subscribeEcho early-returns) it gets zero push, yet the WS transport reports 'connected' so the default 60s connected cadence would blow the 8s POS->OSS budget. Overriding intervalMsWhenConnected to 5000 for the public wall only (TRAP-4) is the right targeted fix, and 5000ms is well within the clamp floor/ceiling, so it is safe even though ctx.options bypasses the clamp."
+    },
+    {
+      "title": "Accessibility + TV-wall resilience handled thoughtfully",
+      "file_line": "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue:497-504 (prefers-reduced-motion) and 200-217 (wakeLock)",
+      "note": "All four attention animations are disabled under prefers-reduced-motion, and a screen wakeLock is acquired on mount and re-acquired on visibilitychange with graceful degrade on unsupported browsers - both genuinely needed for an always-on customer TV and implemented defensively (try/catch everywhere, feature-flag ossWakeLockEnabled)."
+    }
+  ]
+}

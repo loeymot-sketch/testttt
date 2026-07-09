@@ -1,0 +1,45 @@
+- generic [ref=e1]:
+  - generic [ref=e5]:
+    - generic [ref=e6]:
+      - button "Retour" [ref=e7] [cursor=pointer]:
+        - img [ref=e8]
+      - generic [ref=e10]:
+        - heading "Votre panier" [level=1] [ref=e11]
+        - paragraph [ref=e12]: 1 article
+      - button "Vider le panier" [ref=e13] [cursor=pointer]
+    - radiogroup "Type de commande" [ref=e14]:
+      - radio "À emporter" [checked] [ref=e15] [cursor=pointer]:
+        - generic [ref=e16]: 🥡
+        - generic [ref=e17]: À emporter
+    - generic [ref=e18]:
+      - list [ref=e19]:
+        - listitem [ref=e20]:
+          - generic [ref=e22]:
+            - generic [ref=e23]:
+              - heading "Coca-Cola 33cl" [level=3] [ref=e24]
+              - button "Modifier cet article" [ref=e25] [cursor=pointer]:
+                - img [ref=e26]
+            - generic [ref=e28]: €1,90 par unité
+          - generic [ref=e29]:
+            - group "Quantité de Coca-Cola 33cl" [ref=e30]:
+              - button "Diminuer la quantité" [ref=e31] [cursor=pointer]:
+                - img [ref=e32]
+              - generic [ref=e33]: "1"
+              - button "Augmenter la quantité" [ref=e34] [cursor=pointer]:
+                - img [ref=e35]
+            - button "Retirer" [ref=e37] [cursor=pointer]:
+              - img [ref=e38]
+            - generic [ref=e41]: €1,90
+      - region "Sous-total" [ref=e42]:
+        - generic [ref=e43]:
+          - generic [ref=e44]: Sous-total
+          - generic [ref=e45]: €1,90
+        - generic [ref=e46]:
+          - generic [ref=e47]: Total
+          - generic [ref=e48]: €1,90
+      - generic [ref=e49]:
+        - button "Valider ma commande €1,90" [ref=e50] [cursor=pointer]:
+          - generic [ref=e51]: Valider ma commande
+          - generic [ref=e52]: €1,90
+        - button "+ Ajouter des articles" [ref=e53] [cursor=pointer]
+  - status

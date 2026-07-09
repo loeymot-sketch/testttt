@@ -1,0 +1,47 @@
+- generic [ref=f13e1]:
+  - paragraph [ref=f13e4]: Démarrage en cours…
+  - generic [ref=f13e5]:
+    - generic [ref=f13e6]:
+      - button "Retour" [ref=f13e7] [cursor=pointer]:
+        - img [ref=f13e8]
+      - generic [ref=f13e10]:
+        - heading "Votre panier" [level=1] [ref=f13e11]
+        - paragraph [ref=f13e12]: 1 article
+      - button "Vider le panier" [ref=f13e13] [cursor=pointer]
+    - radiogroup "Type de commande" [ref=f13e14]:
+      - radio "À emporter" [checked] [ref=f13e15] [cursor=pointer]:
+        - generic [ref=f13e16]: 🥡
+        - generic [ref=f13e17]: À emporter
+    - generic [ref=f13e18]:
+      - list [ref=f13e19]:
+        - listitem [ref=f13e20]:
+          - generic [ref=f13e22]: 🍽️
+          - generic [ref=f13e23]:
+            - generic [ref=f13e24]:
+              - heading "Tacos XL (e2e)" [level=3] [ref=f13e25]
+              - button "Modifier cet article" [ref=f13e26] [cursor=pointer]:
+                - img [ref=f13e27]
+            - generic [ref=f13e29]: €20,00 par unité
+          - generic [ref=f13e30]:
+            - group "Quantité de Tacos XL (e2e)" [ref=f13e31]:
+              - button "Diminuer la quantité" [ref=f13e32] [cursor=pointer]:
+                - img [ref=f13e33]
+              - generic [ref=f13e34]: "1"
+              - button "Augmenter la quantité" [ref=f13e35] [cursor=pointer]:
+                - img [ref=f13e36]
+            - button "Retirer" [ref=f13e38] [cursor=pointer]:
+              - img [ref=f13e39]
+            - generic [ref=f13e42]: €20,00
+      - region "Sous-total" [ref=f13e43]:
+        - generic [ref=f13e44]:
+          - generic [ref=f13e45]: Sous-total
+          - generic [ref=f13e46]: €20,00
+        - generic [ref=f13e47]:
+          - generic [ref=f13e48]: Total
+          - generic [ref=f13e49]: €20,00
+      - generic [ref=f13e50]:
+        - button "Valider ma commande €20,00" [ref=f13e51] [cursor=pointer]:
+          - generic [ref=f13e52]: Valider ma commande
+          - generic [ref=f13e53]: €20,00
+        - button "+ Ajouter des articles" [ref=f13e54] [cursor=pointer]
+  - status

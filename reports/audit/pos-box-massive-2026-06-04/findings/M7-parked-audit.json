@@ -1,0 +1,137 @@
+{
+  "micro_system": "M7-parked: Parked orders (park/resume/delete)",
+  "files_examined": [
+    "resources/js/components/admin/pos/ParkedOrdersComponent.vue",
+    "resources/js/components/admin/pos/PosComponent.vue",
+    "resources/js/store/modules/posParked.js",
+    "resources/js/store/modules/posCart.js",
+    "app/Http/Controllers/Admin/Pos/ParkedOrderController.php",
+    "app/Services/PosParkedOrderService.php",
+    "app/Models/PosParkedOrder.php",
+    "app/Console/Commands/PosPurgeParkedOrders.php",
+    "app/Console/Kernel.php",
+    "routes/api.php",
+    "database/migrations/2026_04_20_200000_create_pos_parked_orders_table.php",
+    "resources/js/languages/fr.json"
+  ],
+  "findings": [
+    {
+      "id": "M7-01",
+      "severity": "P1",
+      "category": "logic",
+      "title": "Recall consumes (deletes) the parked ticket on a GET, before the client cart is rebuilt — a dropped response loses the ticket permanently",
+      "file_line": "app/Services/PosParkedOrderService.php:72-103 (delete at :99); resources/js/store/modules/posParked.js:80-134 (resetCart at :85, populate at :90)",
+      "evidence": "ParkedOrderController::show -> service->recall() runs inside a DB transaction that calls $parked->delete() at line 99 and returns a replicated snapshot. The route is GET /admin/pos/parked-orders/{id}. Client store recall() (posParked.js:81) awaits that GET, then at line 85 dispatches posCart/resetCart (empties the cart) BEFORE line 90 dispatches posCart/lists to repopulate. The server row is already gone the instant the GET returns 200. If the HTTP response is lost (network blip) or any exception fires between server-commit and client populate, the parked ticket is deleted server-side AND the cart is emptied client-side, with no copy anywhere and no undo.",
+      "why_it_matters": "POS registers frequently run on flaky in-store wifi. A cashier parks a 6-line order to take a phone call, taps Restaurer, the server deletes the row and starts streaming the snapshot, the wifi drops mid-response: the ticket is gone, the cart shows empty, and the operator must re-key the entire order from memory in front of a waiting customer. Destructive side-effect on a GET also violates REST idempotency/safety (a browser prefetch, retry, or double-tap can delete a ticket).",
+      "reproduction": "Park an order. In devtools throttle/offline the network, tap Restaurer: the DELETE has effectively happened server-side (row removed at :99) while restoreOrder's catch shows pos.park_restore_error; reopening the drawer shows the ticket gone and the cart empty. Confirmable from code: GET route api.php:914 -> show -> recall -> delete at service:99, with client resetCart at posParked.js:85 preceding populate at :90.",
+      "recommended_correction": "Do not mutate on GET. Either (a) make show() read-only and add an explicit DELETE/POST 'consume' step that the client only fires AFTER the cart is verified restored, or (b) keep recall transactional but soft-delete (consumed_at) and only hard-purge on a confirmed client ack; and on the client, populate the cart fully and validate before issuing the consume, so a failed restore leaves the ticket intact.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M7-02",
+      "severity": "P1",
+      "category": "logic",
+      "title": "Recall silently drops unavailable variations AND unavailable item lines — the cashier is never told the restored cart differs from what was parked",
+      "file_line": "app/Services/PosParkedOrderService.php:86-97 & 113-193 (warnings built, attached to snapshot); resources/js/store/modules/posParked.js:95-133 (_recall_purged_item_ids built); resources/js/components/admin/pos/ParkedOrdersComponent.vue:186-203 (restore path) & PosComponent.vue:3474-3528 (applyParkedSnapshot)",
+      "evidence": "Backend recall() prunes 86'd/trashed variations and attaches warnings.unavailable_variations (service:95-97). Client recall() additionally prunes whole lines whose item became unavailable and stores restoredPayload._recall_purged_item_ids (posParked.js:126). grep across resources/js/components/admin/pos and posParked.js shows ZERO consumers of either 'unavailable_variations' / 'warnings' or '_recall_purged_item_ids' beyond where they are written — restoreOrder (ParkedOrdersComponent.vue:195-197) emits the payload and shows a flat pos.park_restore_success, and applyParkedSnapshot never inspects warnings.",
+      "why_it_matters": "A cashier parks a 'Menu + supplement bacon' ticket; bacon gets 86'd; on restore the bacon variation and/or the whole line silently disappear and the toast still says 'Commande restaurée avec succès'. The operator charges and hands over a different order than the customer asked for, or only discovers the gap at checkout. The system already did the correct safety work (computed the diff) but throws away the one piece of information the operator needs.",
+      "reproduction": "Park a line with a variation, then deactivate that variation/item in the catalog. Restore: code path service:172-185 pushes a warning + the client builds purgedItemIds (posParked.js:111-127), but the UI renders only the generic success toast. No grep hit binds warnings/_recall_purged_item_ids to any template or alert.",
+      "recommended_correction": "Surface the diff: when warnings.unavailable_variations is non-empty or _recall_purged_item_ids has entries, replace the plain success toast with an explicit warning listing the dropped items/variations (alertService.warning) so the cashier can re-offer or re-price before completing the sale.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M7-03",
+      "severity": "P2",
+      "category": "ux",
+      "title": "Park label captured via blocking window.prompt() — unusable on a keyboard-less touchscreen POS",
+      "file_line": "resources/js/components/admin/pos/PosComponent.vue:3449-3454",
+      "evidence": "promptParkOrder() calls window.prompt(this.$t('pos.park_label_prompt'), '') at line 3450 and treats label === null (Cancel) as an abort. This is a native synchronous modal.",
+      "why_it_matters": "The POS is a touchscreen register. window.prompt has no on-screen keyboard binding, blocks the entire JS thread, looks foreign to the V5-designed UI, and on some kiosk-mode/WebView shells is suppressed entirely (returns null) — which here is interpreted as 'cancel', so the park silently does nothing. A cashier in a rush either cannot type a label or thinks the Park button is broken.",
+      "reproduction": "Tap 'Mettre en attente' with no physical keyboard: the browser shows a native prompt; in a WebView where window.prompt is disabled it returns null and promptParkOrder returns at line 3453 without parking. Code-proven at 3450-3454.",
+      "recommended_correction": "Replace window.prompt with an in-app modal/input wired to the existing POS on-screen keyboard component, with the label optional and a clear Park/Cancel; keep the empty-cart guard. Scope-limited to PosComponent (not a frozen file).",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M7-04",
+      "severity": "P2",
+      "category": "ux",
+      "title": "Discard deletes a parked ticket on a single tap with no confirmation, sitting right next to Restore",
+      "file_line": "resources/js/components/admin/pos/ParkedOrdersComponent.vue:84-91 & 204-215",
+      "evidence": "The 'Supprimer' button (template :84-91) calls discardOrder(order.id) directly, which dispatches posParked/discard with no confirm() / dialog (method :204-215). It is rendered in a 2-column grid immediately beside the green 'Restaurer' button (.parked-orders-actions grid-template-columns repeat(2) at CSS :467-471). The backend destroy is a hard DELETE (service discard() :195-202).",
+      "why_it_matters": "A mis-tap on a touchscreen permanently deletes a held customer order — the same gesture distance from the intended Restore. Combined with M7-01 there is no recovery: the row is hard-deleted. During a rush this is a real lost-sale / re-key event.",
+      "reproduction": "Open the parked drawer, tap 'Supprimer': the ticket vanishes immediately, success toast pos.park_discard_success, no confirmation step. Code-proven discardOrder at :204 has no guard.",
+      "recommended_correction": "Add a confirmation (lightweight inline 'confirm?' two-step, or a confirm dialog) before dispatching discard, and/or visually separate the destructive action from Restore. Optionally soft-delete to allow undo.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M7-05",
+      "severity": "P2",
+      "category": "logic",
+      "title": "Parked tickets are scoped to the individual operator (user_id), not the register/branch — a shift change orphans held orders until the nightly purge",
+      "file_line": "app/Services/PosParkedOrderService.php:62-70 (listForOperator filters user_id AND branch_id); recall :77 and discard :199 also require user_id; app/Http/Controllers/Admin/Pos/ParkedOrderController.php:93-100 (context = authId)",
+      "evidence": "listForOperator() filters where user_id = $userId AND branch_id = $branchId (service:65-66). recall() (:77) and discard() (:199) also require user_id match. resolveOperatorContext returns the logged-in user's id as the owner. So only the operator who parked a ticket can see/restore it.",
+      "why_it_matters": "Fast-food 'mettre en attente' is conventionally a register-level workflow: cashier A parks an order, goes on break, cashier B logs into the same till and the customer returns to pay — but cashier B sees an empty parked list and cannot resume A's ticket. The held order then silently ages out at the 03:15 purge. This is a design/ownership question, not a coding bug, but it likely contradicts how the owner expects a single-register Le Cayenne POS to behave.",
+      "reproduction": "Park as user A (branch 1). Log in as user B (same branch 1). Open parked drawer: listForOperator(B,1) returns nothing because user_id != A. Code-proven by the user_id filter at service:65.",
+      "recommended_correction": "Owner decision required: confirm whether parked orders should be per-operator (current) or per-register/branch. If register-level is desired, scope the list/recall/discard by branch_id only (keeping the BranchScope isolation) and drop the user_id equality — while preserving an audit of who parked/resumed.",
+      "evidence_type": "code",
+      "confidence": "medium"
+    },
+    {
+      "id": "M7-06",
+      "severity": "P3",
+      "category": "ux",
+      "title": "Restore is hard-blocked when the current cart is non-empty, but the message offers no one-tap path to resolve it",
+      "file_line": "resources/js/components/admin/pos/ParkedOrdersComponent.vue:186-191",
+      "evidence": "restoreOrder() returns early with an info toast pos.park_restore_requires_empty_cart ('Videz ou parquez le panier courant avant de restaurer une commande.') whenever posCart/lists is non-empty (line 187-190). The guard is correct (prevents merging two orders), but the drawer offers no action to park-or-clear the current cart from here.",
+      "why_it_matters": "Mid-rush the cashier has a half-built cart and wants to resume a held order; the system tells them to go do two manual steps elsewhere, then come back and re-open the drawer. Minor friction but it interrupts the held-order flow the feature exists to serve.",
+      "reproduction": "Add an item to the cart, open parked drawer, tap Restaurer: info toast appears and nothing else happens (code :187-190).",
+      "recommended_correction": "From the restore confirmation, offer 'Park current & restore' / 'Clear current & restore' shortcuts so the operator resolves the conflict in one tap instead of leaving the drawer.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "M7-07",
+      "severity": "P3",
+      "category": "logic",
+      "title": "Idempotency unique key is (user_id, idempotency_token) only — not branch-scoped — and the park duplicate-lookup runs WITHOUT the branch filter",
+      "file_line": "database/migrations/2026_04_20_200000_create_pos_parked_orders_table.php:25 (unique user_id,idempotency_token); app/Services/PosParkedOrderService.php:25-34 & 55-58 (lookup by user_id+token, no branch_id)",
+      "evidence": "The unique constraint is pos_parked_user_idem_uniq on (user_id, idempotency_token) (migration:25). park()'s pre-insert dedupe (service:26-29) and the post-conflict recovery (service:55-58) query by user_id + idempotency_token only, with no branch_id. The BranchScope global scope on the model (PosParkedOrder.php:37-41) does add a branch filter to these reads, so in practice an Admin/staff bound to one branch won't cross branches — but the dedupe correctness relies on that implicit scope rather than the explicit key.",
+      "why_it_matters": "Low risk in V1 single-branch Le Cayenne, but the constraint and the explicit lookups encode 'a token is unique per user across all branches', while the rest of the module treats parked orders as per-branch. If a user legitimately operated two branches (multi-branch V2) the same client-generated token could be deduped across branches via the unique key, returning a parked order from the wrong branch on conflict-recovery (service:55-58 is NOT branch-filtered explicitly; it leans on the global scope being active).",
+      "reproduction": "Code inspection: migration:25 unique omits branch_id; service:27-28 and :56-57 filter user_id+token, no branch_id. Confirmed no explicit branch clause in the dedupe queries.",
+      "recommended_correction": "Make the dedupe explicit and future-proof: include branch_id in the unique index (branch_id, user_id, idempotency_token) and add ->where('branch_id', $branchId) to both dedupe lookups, so correctness does not depend solely on the global scope being applied. Defer to V2 multi-branch prep; harmless in V1.",
+      "evidence_type": "code",
+      "confidence": "medium"
+    }
+  ],
+  "solids": [
+    {
+      "title": "Full composition round-trips intact through park->recall; the order_type re-apply does NOT wipe the restored cart",
+      "file_line": "resources/js/store/modules/posCart.js:218-237 (shapePosListItem) & 410-467 (lists merge); resources/js/components/admin/pos/PosComponent.vue:3492-3528 & 4008-4049",
+      "note": "shapePosListItem preserves item_variations, item_extras, pos_line_addons (with menu_extras/menu_restore), instruction and quantity, so the restored cart line is the same shape as a freshly composed one. Critically verified: applyParkedSnapshot runs takeAwayOrder/deliveryOrder/dineInOrder inside $nextTick AFTER the cart is repopulated, but those three methods (4008-4049) only mutate checkout_form fields and toggle DOM classes — they never touch posCart lists — so the just-restored composition survives. Restore of the cart itself is correct."
+    },
+    {
+      "title": "Branch isolation is defense-in-depth and the Admin (branch_id=0) leak was explicitly closed",
+      "file_line": "app/Models/PosParkedOrder.php:37-41 (BranchScope global) ; app/Http/Controllers/Admin/Pos/ParkedOrderController.php:72-101 (403 guard branch_id>0) ; app/Services/PosParkedOrderService.php:65-66,77,199",
+      "note": "Three layers: BranchScope global scope on the model, an explicit where('branch_id',$branchId) in every list/recall/discard query, and a controller guard that 403s any user with branch_id<=0 (documented P0-POS-04 fix) so an org-wide Admin cannot enumerate all branches' tickets. Identity is also pinned (authId === request user id, 403 otherwise)."
+    },
+    {
+      "title": "Recall is concurrency-safe (lockForUpdate inside a transaction) — no double-restore race",
+      "file_line": "app/Services/PosParkedOrderService.php:72-103",
+      "note": "recall() wraps the read+delete in DB::transaction with ->lockForUpdate() on the row, so two near-simultaneous restore taps (or two devices) cannot both consume the same parked ticket; the second sees it gone and returns 404 cleanly."
+    },
+    {
+      "title": "Idempotent park: token dedupe before insert plus QueryException recovery on the unique constraint",
+      "file_line": "app/Services/PosParkedOrderService.php:16-60; resources/js/store/modules/posParked.js:63-79 (client generates UUID token)",
+      "note": "The client generates a UUID idempotency token (posParked.js:65, crypto.randomUUID with fallback) and park() both pre-checks for an existing (user,token) row and, on a racing unique-violation, recovers by re-fetching firstOrFail instead of throwing a 500. A double-tap on 'Mettre en attente' yields one parked row, not two."
+    },
+    {
+      "title": "Expiry purge exists, is bounded, scheduled, and overlap-protected",
+      "file_line": "app/Services/PosParkedOrderService.php:204-209; app/Console/Commands/PosPurgeParkedOrders.php; app/Console/Kernel.php:128-130",
+      "note": "purgeOlderThanHours floors the window at max(1,$hours) so a misconfigured 0 can never wipe everything, the command defaults to 24h, and Kernel schedules it dailyAt('03:15')->withoutOverlapping(). Stale parked tickets are cleaned without manual intervention and without risk of a 0-hour catastrophe."
+    }
+  ]
+}

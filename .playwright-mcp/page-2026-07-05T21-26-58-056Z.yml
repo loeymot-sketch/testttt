@@ -1,0 +1,153 @@
+- generic [ref=e1]:
+  - generic [ref=e106]:
+    - generic [ref=e107]:
+      - generic [ref=e108]:
+        - img [ref=e110]
+        - generic [ref=e111]:
+          - generic [ref=e112]: Nos
+          - generic [ref=e113]: Tacos
+      - button "Mon compte" [ref=e115] [cursor=pointer]:
+        - generic [ref=e116]: 👤
+        - text: Mon compte
+    - generic [ref=e117]:
+      - navigation "Navigation catégories" [ref=e118]:
+        - button "Sandwichs" [ref=e119] [cursor=pointer]:
+          - generic [ref=e120]: Sandwichs
+        - button "Galette" [ref=e122] [cursor=pointer]:
+          - generic [ref=e123]: Galette
+        - button "Burgers" [ref=e125] [cursor=pointer]:
+          - generic [ref=e126]: Burgers
+        - button "Tacos" [ref=e128] [cursor=pointer]:
+          - generic [ref=e129]: Tacos
+        - button "Bols" [ref=e131] [cursor=pointer]:
+          - generic [ref=e132]: Bols
+        - button "Menu enfant" [ref=e134] [cursor=pointer]:
+          - generic [ref=e135]: Menu enfant
+        - button "Frites" [ref=e137] [cursor=pointer]:
+          - generic [ref=e138]: Frites
+        - button "Desserts" [ref=e140] [cursor=pointer]:
+          - generic [ref=e141]: Desserts
+        - button "Boissons" [ref=e143] [cursor=pointer]:
+          - generic [ref=e144]: Boissons
+      - main [ref=e146]:
+        - generic [ref=e375]:
+          - generic [ref=e376]:
+            - heading "Tacos" [level=1] [ref=e377]
+            - paragraph [ref=e378]: 2 produits
+          - list [ref=e379]:
+            - listitem [ref=e380] [cursor=pointer]:
+              - generic [ref=e381]:
+                - img [ref=e382]
+                - generic [ref=e383]: Nouveau
+                - button "Ajouter Tacos L" [ref=e384]:
+                  - generic [ref=e385]: +
+              - generic [ref=e386]:
+                - heading "Tacos L" [level=2] [ref=e387]
+                - paragraph [ref=e388]: Galette de blé, 2 viandes au choix, frites maison et sauce.
+                - generic [ref=e389]: €7,90
+            - listitem [ref=e390] [cursor=pointer]:
+              - generic [ref=e391]:
+                - img [ref=e392]
+                - generic [ref=e393]: Personnaliser
+                - button "Ajouter Tacos M" [ref=e394]:
+                  - generic [ref=e400]: +
+              - generic [ref=e396]:
+                - heading "Tacos M" [level=2] [ref=e397]
+                - paragraph [ref=e398]: Galette de blé, 1 viande au choix, frites maison et sauce.
+                - generic [ref=e399]: €6,90
+    - region "Panier et paiement" [ref=e362]:
+      - generic [ref=e363]:
+        - button "Ouvrir le panier — 0 articles" [disabled] [ref=e364]:
+          - img [ref=e366]
+          - generic [ref=e370]: 0 article
+        - generic [ref=e371]: €0,00
+      - generic [ref=e372]:
+        - button "Abandonner ma commande" [ref=e373] [cursor=pointer]
+        - button "Payer" [disabled] [ref=e374]
+    - dialog "Tacos M" [active] [ref=e402]:
+      - heading "Tacos M" [level=1] [ref=e403]
+      - generic [ref=e404]:
+        - generic [ref=e405]:
+          - text: Vous composez
+          - heading "Tacos M" [level=2] [ref=e406]
+        - button "Fermer la personnalisation" [ref=e407] [cursor=pointer]: ×
+      - generic [ref=e408]:
+        - generic [ref=e409]:
+          - generic [ref=e410]:
+            - img "QUELLE VIANDE ?" [ref=e411]
+            - text: ✓
+          - generic [ref=e412]: QUELLE VIANDE ?
+        - generic [ref=e413]:
+          - generic [ref=e414]:
+            - img "QUELLE SAUCE ?" [ref=e415]
+            - text: ✓
+          - generic [ref=e416]: QUELLE SAUCE ?
+        - generic [ref=e417]:
+          - generic [ref=e418]:
+            - img "QUEL SUPPLÉMENT ?" [ref=e419]
+            - text: ✓
+          - generic [ref=e420]: QUEL SUPPLÉMENT ?
+        - generic [ref=e421]:
+          - generic [ref=e422]:
+            - img "QUEL MENU ?" [ref=e423]
+            - text: ✓
+          - generic [ref=e424]: QUEL MENU ?
+        - generic [ref=e425]:
+          - generic [ref=e426]:
+            - img "RÉCAP" [ref=e427]
+            - text: ✓
+          - generic [ref=e428]: RÉCAP
+      - generic [ref=e429]:
+        - button "PRÉCÉDENT" [disabled] [ref=e430] [cursor=pointer]: ‹
+        - generic [ref=e431]:
+          - generic [ref=e433]: "1"
+          - generic [ref=e435]: "2"
+          - generic [ref=e437]: "3"
+          - generic [ref=e439]: "4"
+          - generic [ref=e441]: "5"
+        - button "SUIVANT" [disabled] [ref=e442] [cursor=pointer]: ›
+      - region "Composition en direct" [ref=e443]:
+        - generic [ref=e444]: Votre composition
+        - generic [ref=e446]: Vos choix s'ajoutent ici au fur et à mesure.
+      - generic [ref=e447]: QUELLE VIANDE ?
+      - generic [ref=e449]:
+        - generic [ref=e451]: 0 / 1
+        - status [ref=e452]: "Choisissez 1 viande : touchez celle que vous voulez."
+        - generic [ref=e453]:
+          - group "Poulet mariné, 0" [ref=e454] [cursor=pointer]:
+            - img "Poulet mariné" [ref=e456]
+            - generic [ref=e457]: Poulet mariné
+            - generic [ref=e458]: Choisir
+          - group "Mexicanos, 0" [ref=e459] [cursor=pointer]:
+            - img "Mexicanos" [ref=e461]
+            - generic [ref=e462]: Mexicanos
+            - generic [ref=e463]: Choisir
+          - group "Cordon Bleu, 0" [ref=e464] [cursor=pointer]:
+            - img "Cordon Bleu" [ref=e466]
+            - generic [ref=e467]: Cordon Bleu
+            - generic [ref=e468]: Choisir
+          - group "Viande Hachée, 0" [ref=e469] [cursor=pointer]:
+            - img "Viande Hachée" [ref=e471]
+            - generic [ref=e472]: Viande Hachée
+            - generic [ref=e473]: Choisir
+          - group "Nuggets, 0" [ref=e474] [cursor=pointer]:
+            - img "Nuggets" [ref=e476]
+            - generic [ref=e477]: Nuggets
+            - generic [ref=e478]: Choisir
+          - group "Tenders, 0" [ref=e479] [cursor=pointer]:
+            - img "Tenders" [ref=e481]
+            - generic [ref=e482]: Tenders
+            - generic [ref=e483]: Choisir
+          - group "Fricadelle, 0" [ref=e484] [cursor=pointer]:
+            - img "Fricadelle" [ref=e486]
+            - generic [ref=e487]: Fricadelle
+            - generic [ref=e488]: Choisir
+        - status [ref=e489]: Sélectionnez 1 viande pour continuer
+      - generic [ref=e490]:
+        - generic [ref=e491]:
+          - button "ABANDONNER L'ARTICLE" [ref=e492] [cursor=pointer]
+          - button "PRÉCÉDENT" [disabled] [ref=e493]
+          - button "SUIVANT" [disabled] [ref=e494]:
+            - generic [ref=e495]: SUIVANT
+        - generic [ref=e496]: Total €6,90
+  - status

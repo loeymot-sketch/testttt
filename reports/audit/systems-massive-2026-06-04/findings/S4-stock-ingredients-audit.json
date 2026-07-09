@@ -1,0 +1,137 @@
+{
+  "micro_system": "S4-stock-ingredients: Stock + ingredients + rupture dashboard",
+  "files_examined": [
+    "app/Http/Controllers/Admin/AvailabilityController.php",
+    "app/Http/Controllers/Admin/StockRuptureDashboardController.php",
+    "app/Services/Menu/AvailabilityService.php",
+    "app/Services/Stock/ChoiceAvailabilityResolver.php",
+    "app/Services/Ingredients/IngredientAvailabilityService.php",
+    "app/Console/Commands/StockScanRupture.php",
+    "app/Models/StockMovement.php",
+    "resources/js/components/admin/stock/StockRuptureDashboardComponent.vue",
+    "resources/js/components/admin/ingredients/IngredientAvailabilityToggleComponent.vue",
+    "resources/js/components/admin/dashboard/StockLowAlertsWidget.vue",
+    "resources/js/router/modules/stockRoutes.js",
+    "routes/api.php",
+    "config/catalog_v15.php",
+    "app/Console/Kernel.php",
+    "database/migrations/2026_04_15_230100_create_item_branch_availability_table.php",
+    "database/migrations/2026_04_18_130001_add_diet_flags_to_items_table.php",
+    "database/migrations/2026_05_05_000040_add_availability_to_item_extras_table.php"
+  ],
+  "findings": [
+    {
+      "id": "S4-01",
+      "severity": "P1",
+      "category": "logic",
+      "title": "Stock dashboard and customer surfaces disagree about the same ingredient: an extra/variation 86'd via the Ingredients admin still shows IN-STOCK on the Stock-Rupture dashboard",
+      "file_line": "app/Http/Controllers/Admin/StockRuptureDashboardController.php:384-393 + 442-451; app/Services/Stock/ChoiceAvailabilityResolver.php:296-302 + 308-318; app/Services/Ingredients/IngredientAvailabilityService.php:34-62",
+      "evidence": "catalogOverview() resolves extra availability ONLY from stock_levels.manual_unavailable_reason (extraStockLevels query at L384-393 filters whereNotNull('manual_unavailable_reason'); buildGroupedPayload L543-545 sets is_available = (unavailableCount===0)). Same for variations L442-451. It NEVER reads ItemExtra.is_available nor ItemAttribute.is_available (those columns are not even SELECTed). But the customer-facing ChoiceAvailabilityResolver::availabilityForExtra (L296-302) reads extra->getRawOriginal('is_available') FIRST and returns ingredient_rupture when false; availabilityForVariation (L308-318) does the same on the attribute. IngredientAvailabilityService::toggle (L34-62) writes exactly item_extra.is_available / item_attribute.is_available cascade-by-name. So the two write paths target two different columns and the dashboard read path ignores one of them.",
+      "why_it_matters": "Two admin surfaces report opposite truths for the same physical ingredient. A manager who 86'd 'Sauce Algérienne' from the Ingredients page (correctly removing it from kiosk/POS) opens the Stock-Rupture dashboard and sees it green/IN-STOCK, so he believes it is sellable, may toggle it back, or trusts a wrong inventory picture during a rush. The dashboard is the operator's at-a-glance rupture board; it silently lies about every ingredient ruptured through the Ingredients admin.",
+      "reproduction": "Code-proven. (1) Ingredients admin: PUT /api/admin/ingredients/{globalId}/availability isAvailable=false -> item_extra.is_available=0 cascade-by-name. (2) GET /api/admin/stock/catalog-overview -> extra still is_available:true because its stock_levels row has no manual_unavailable_reason. (3) GET kiosk menu -> same extra correctly hidden (ChoiceAvailabilityResolver returns ingredient_rupture). Dashboard vs customer disagree.",
+      "recommended_correction": "Make catalogOverview() the single read model: when building extra/variation payloads, also factor ItemExtra.is_available / ItemAttribute.is_available (ingredient-level rupture), e.g. SELECT those columns and treat is_available=false as out-of-stock with reason 'ingredient_rupture', mirroring ChoiceAvailabilityResolver's precedence (manual ingredient flag wins, then stock_levels.manual_unavailable_reason). Alternatively unify both admin toggles onto one storage column. Either way the dashboard must read every signal the customer surfaces read.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S4-02",
+      "severity": "P2",
+      "category": "logic",
+      "title": "Two parallel, divergent toggle systems for the SAME extras: dashboard toggle writes per-extra-id to stock_levels (no name-cascade); Ingredients admin writes cascade-by-name to item_extra — they do not converge",
+      "file_line": "resources/js/components/admin/stock/StockRuptureDashboardComponent.vue:545-565 + 604-623; app/Services/Menu/AvailabilityService.php:523-571 (toggleStockable); app/Services/Ingredients/IngredientAvailabilityService.php:41-62",
+      "evidence": "Stock dashboard toggleProduct for kind='extra' fans out one POST per extra_id to /menu/availability/extra/toggle (L545-554), which calls AvailabilityService::toggleStockable writing stock_levels.manual_unavailable_reason for that ONE (branch,type,id) tuple (L523-571) — no name cascade. The Ingredients admin instead cascades by name across every sibling ItemExtra row (IngredientAvailabilityService L50-62, deliberately, because 'Jambon de dinde' exists 32x). The dashboard groups extras by name and sends extra_ids[] for the bucket, so it covers the group it loaded — but it persists to a DIFFERENT column (stock_levels) than the Ingredients admin (item_extra.is_available). Toggling in one surface is invisible to the other.",
+      "why_it_matters": "Owner mandate flags 'blurs / unnecessary things'. Two storage mechanisms + two cascade strategies for one concept (extra rupture) is exactly that blur: state is split across stock_levels.manual_unavailable_reason and item_extra.is_available with no reconciliation, so the rupture truth depends on WHICH admin page the manager happened to use. It also doubles the maintenance/test surface and is the root cause of S4-01.",
+      "reproduction": "Code-proven by tracing both write paths to different columns; observable as S4-01's symptom.",
+      "recommended_correction": "Pick ONE SSOT for extra/variation rupture. Recommended: route the Stock dashboard's extra/variation toggles through IngredientAvailabilityService (cascade-by-name on item_extra.is_available) so both admin surfaces and ChoiceAvailabilityResolver agree, and reserve stock_levels.manual_unavailable_reason for true per-branch on-hand rupture. Document the chosen SSOT in CLAUDE.md to prevent re-divergence.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S4-03",
+      "severity": "P2",
+      "category": "deadcode",
+      "title": "Entire daily-quota auto-86 subsystem is unreachable in V1: max_daily_qty is never set by any UI, seeder, or factory, so setMaxDailyQty endpoint + decrementForOrder auto-86 + releaseForOrderItems auto-restore are all dormant",
+      "file_line": "app/Http/Controllers/Admin/AvailabilityController.php:111-147 (setMaxDailyQty); app/Services/Menu/AvailabilityService.php:99-166 + 286-381 + 710-750; database/migrations/2026_04_15_230100_create_item_branch_availability_table.php:22; routes/api.php:305-306",
+      "evidence": "max_daily_qty is nullable with NO DB default (migration L22) and grep across database/migrations + seeders + factories + app shows it is only WRITTEN by AvailabilityService::setMaxDailyQty, which is reachable only via POST /menu/availability/max-daily-qty (routes/api.php:305). grep of resources/js for 'max-daily-qty|max_daily_qty|setMaxDailyQty' returns ZERO callers — the V2 dashboard rewrite dropped the cap UI. Therefore max_daily_qty stays NULL forever, so: decrementForOrder's flip (L347 whereNotNull('max_daily_qty')) never fires, the out_of_stock auto-86 (L360-379) never fires, and releaseForOrderItems auto-restore (L727-744, gated on max_daily_qty !== null) never fires.",
+      "why_it_matters": "Large, intricate, locked-and-after-commit-dispatched logic (quota counters, CAS flip, per-order Cache::add idempotency guard, reset cron, CatalogWarningService 85% warnings) that cannot execute on a real Le Cayenne shift because no operator can ever set a cap. It is dead weight that misleads future readers into believing auto-86-by-quota works, and it inflates the test/maintenance surface — precisely the 'unnecessary things' the owner called out.",
+      "reproduction": "grep -rn 'max-daily-qty|max_daily_qty|setMaxDailyQty' resources/js -> no result. grep max_daily_qty in seeders/factories -> none set it. Column nullable, no default.",
+      "recommended_correction": "Decide explicitly: either (a) re-expose a per-item daily-cap input in the Stock dashboard so the subsystem is reachable, or (b) mark the quota path as V1.x-deferred and remove/quarantine setMaxDailyQty route + the decrement/restore quota branches to shrink the surface. Do not leave it half-wired. Note: NF525 not affected (daily_consumed_qty is a UX counter, not fiscal).",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S4-04",
+      "severity": "P2",
+      "category": "deadcode",
+      "title": "Rupture-scan 'run' endpoint, last-summary endpoint and the whole preventive cron have no UI trigger and the cron ships disabled by default",
+      "file_line": "app/Http/Controllers/Admin/StockRuptureDashboardController.php:207-239 (run) + 50-85 (lastSummary); config/catalog_v15.php:137; app/Console/Kernel.php:253-255; resources/js (no caller)",
+      "evidence": "POST /api/admin/stock/scan-rupture/run and GET /stock/scan-rupture/last-summary exist (routes/api.php:313-324) and the controller is fully implemented, but grep of resources/js for 'scan-rupture/run', 'scan-rupture/last-summary', 'lastSummary', 'scanRupture' returns ZERO callers — the V2 dashboard (StockRuptureDashboardComponent.vue) only calls catalog-overview + the 3 toggles. The automatic cron exists (Kernel L253) but is gated by config('catalog_v15.auto_86_preventive_cron.enabled') which defaults to false (config/catalog_v15.php:137 env FK_CATALOG_AUTO_86_CRON_ENABLED default false), and StockScanRupture::handle() L58-61 early-returns when disabled.",
+      "why_it_matters": "The 'rupture scan run' capability the operator would expect from a Stock-Rupture dashboard is not invocable from the UI at all, and the only automated path is off by default. So preventive auto-86 (the feature's reason to exist: stop selling an item whose every variation is exhausted between orders) does nothing on a default V1 install. An operator cannot manually trigger a scan either. This is a functional gap masquerading as a built feature.",
+      "reproduction": "grep -rn 'scan-rupture' resources/js -> only css/route mentions, no axios call. config default enabled=false. Kernel command guarded by same flag.",
+      "recommended_correction": "If preventive auto-86 is desired for V1, enable the cron (set FK_CATALOG_AUTO_86_CRON_ENABLED=true) and/or add a 'Lancer le scan' button in the dashboard wired to POST /stock/scan-rupture/run with dry-run preview. If not desired for V1, mark run/last-summary/cron as deferred so they are not mistaken for live features.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S4-05",
+      "severity": "P2",
+      "category": "logic",
+      "title": "Dashboard extra/variation toggle is non-atomic: a partial fan-out failure rolls back the UI flip but leaves some extra_ids already persisted out-of-stock in the DB",
+      "file_line": "resources/js/components/admin/stock/StockRuptureDashboardComponent.vue:604-623 (sendBulkToggle) + 567-575 (catch rollback)",
+      "evidence": "sendBulkToggle fans out N independent POSTs in batches of 2 with Promise.allSettled (L610-621); it records firstError and throws AFTER the whole loop (L622). Each successful POST has ALREADY committed its own stock_levels row server-side (toggleStockable is per-id, no group transaction). toggleProduct's catch (L567-570) only reverts the single optimistic product.is_available in the Vue state — it does NOT send compensating re-toggles for the ids that already succeeded. Comment at L601-602 claims 'all-or-nothing semantics' but the implementation is best-effort-with-UI-rollback, not transactional.",
+      "why_it_matters": "For a deduped bucket backed by many sibling extra_ids (e.g. a sauce present in 30 products), if the 7th POST 429s or 500s, the first 6 ids are persisted unavailable in stock_levels while the dashboard shows the product back as IN-STOCK after rollback. The DB and the screen now disagree, and the partially-86'd ids silently affect customer surfaces. The 'all-or-nothing' docstring gives false confidence.",
+      "reproduction": "needs-live-verify: toggle a multi-id bucket, force one POST to fail (throttle/offline mid-batch); observe UI reverts to in-stock while GET catalog-overview shows any_unavailable_count>0 for that product.",
+      "recommended_correction": "Either make the toggle truly atomic server-side (one endpoint accepting extra_ids[] wrapped in a DB transaction) or, on partial failure, fire compensating re-toggles for the ids that already succeeded before reverting the UI, and surface a precise error. At minimum correct the misleading 'all-or-nothing' docstring.",
+      "evidence_type": "code",
+      "confidence": "medium"
+    },
+    {
+      "id": "S4-06",
+      "severity": "P2",
+      "category": "logic",
+      "title": "Dashboard sends reason 'out_of_stock_manual' but stock_levels.unavailable_reason column is 64-char and downstream reasons are inconsistent ('out_of_stock' vs 'out_of_stock_manual' vs 'stock_rupture') — no canonical reason vocabulary",
+      "file_line": "resources/js/components/admin/stock/StockRuptureDashboardComponent.vue:248 (DEFAULT_REASON='out_of_stock_manual'); app/Services/Menu/AvailabilityService.php:141 ('out_of_stock') + 742 ('released_after_cancel_or_refund'); app/Console/Commands/StockScanRupture.php:130 ('stock_rupture'); app/Http/Controllers/Admin/StockRuptureDashboardController.php:59 (filters where unavailable_reason='stock_rupture')",
+      "evidence": "The same logical state 'item is 86' is written with at least 4 distinct reason strings depending on path: dashboard manual toggle -> 'out_of_stock_manual'; quota auto-86 -> 'out_of_stock'; preventive cron -> 'stock_rupture'; release -> 'released_after_cancel_or_refund'. lastSummary's currently_unavailable query (StockRuptureDashboardController L59) hard-filters where('unavailable_reason','stock_rupture'), so an item 86'd manually via the dashboard ('out_of_stock_manual') or by quota ('out_of_stock') is EXCLUDED from that 'currently unavailable' list.",
+      "why_it_matters": "Reason strings are free-form and unaligned, so any report or filter keyed on a specific reason silently omits items 86'd by another path (concretely, lastSummary under-reports). It also means the operator-facing 'why' is inconsistent. This is a textbook 'blur' the owner flagged: no enum, no shared constant, magic strings scattered across JS, service and command.",
+      "reproduction": "Code-proven: grep the four literals; observe lastSummary L59 filter excludes the other reasons. (lastSummary itself is currently UI-orphaned per S4-04, but the divergent vocabulary is the root issue.)",
+      "recommended_correction": "Introduce a single UnavailableReason enum/const shared by JS (i18n-mapped) and PHP; normalize the dashboard manual reason and the lastSummary filter to the same canonical set, or have lastSummary include all manual/auto reasons rather than only 'stock_rupture'.",
+      "evidence_type": "code",
+      "confidence": "high"
+    },
+    {
+      "id": "S4-07",
+      "severity": "P3",
+      "category": "logic",
+      "title": "releaseForOrderItems auto-restore ignores the original unavailable_reason: a quota-flip restore re-enables an item even if it was independently flagged for another reason while a cap was set",
+      "file_line": "app/Services/Menu/AvailabilityService.php:726-744",
+      "evidence": "shouldFlip (L727-729) requires only wasUnavailable && max_daily_qty !== null && newConsumed < max_daily_qty. It does NOT check that the current unavailable_reason is the quota reason ('out_of_stock'). If a row has a cap set AND was manually toggled unavailable for, say, 'supplier_issue', a refund that drops daily_consumed below the cap would flip is_available=true and null the reason (L734-736), silently un-86ing a manually-disabled item.",
+      "why_it_matters": "Wrong-result edge: a refund could resurrect an item the manager deliberately disabled. Severity is P3 today ONLY because the quota subsystem is dormant (S4-03: max_daily_qty is never set), so the gate max_daily_qty !== null is currently always false. If quota is ever enabled (S4-03 remediation), this becomes a live P1.",
+      "reproduction": "Dormant in V1 (gated by unset max_daily_qty). Would reproduce once a cap is set and the item is manually 86'd for a non-quota reason, then a refund lands.",
+      "recommended_correction": "Gate the auto-restore on previousReason === 'out_of_stock' (the quota reason) as decrementForOrder/ setMaxDailyQty already do (AvailabilityService L150), so only quota-caused 86s are auto-restored and manual ruptures are preserved.",
+      "evidence_type": "code",
+      "confidence": "medium"
+    }
+  ],
+  "solids": [
+    {
+      "title": "Per-order idempotency guard on daily-quota decrement is well-reasoned and race-safe",
+      "file_line": "app/Services/Menu/AvailabilityService.php:291-325",
+      "note": "Cache::add() SETNX-first-writer-wins guard keyed per (orderKind,branch,order) prevents OrderCreated re-fires from double-counting toward the quota. The inline comment correctly bounds the blast radius and clarifies daily_consumed_qty is a UX counter not a fiscal one — exactly the kind of honest invariant documentation that prevents future NF525 confusion."
+    },
+    {
+      "title": "All availability mutations dispatch events via DB::afterCommit (commit-before-broadcast invariant honored)",
+      "file_line": "app/Services/Menu/AvailabilityService.php:383-393 + 607-630 + 760-771",
+      "note": "Every event (item/extra/variation availability changed, and the release flip) is wrapped in DB::afterCommit, so the outbox/broadcast pipeline never observes uncommitted state. Combined with lockForUpdate on every toggle, concurrent rupture toggles serialize cleanly with order commit (assertItemsOrderableForBranch L253-259 also row-locks). Solid concurrency discipline."
+    },
+    {
+      "title": "Append-only StockMovement model is correctly enforced at the model layer",
+      "file_line": "app/Models/StockMovement.php:9 + 48-56",
+      "note": "UPDATED_AT=null plus updating()/deleting() hooks throwing LogicException make stock movements tamper-evident in code (independent of DB triggers), and the BranchScope global scope (L20) keeps movement listings tenant-isolated with the documented admin bypass. Good audit hygiene for the stock ledger."
+    },
+    {
+      "title": "Dashboard read endpoints are genuinely N+1-free with documented bulk-query discipline",
+      "file_line": "app/Http/Controllers/Admin/StockRuptureDashboardController.php:135-182 + 294-451",
+      "note": "lowAlerts and catalogOverview bucket polymorphic stockables by type and run one whereIn per type (the heal comment shows a real 1200->3 query reduction), and catalogOverview keeps the full-catalogue read to ~5 queries via keyed override maps. The branch scoping with explicit withoutGlobalScope + where('branch_id') is correct and intentional."
+    }
+  ]
+}

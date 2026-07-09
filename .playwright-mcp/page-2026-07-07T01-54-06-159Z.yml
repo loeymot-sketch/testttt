@@ -1,0 +1,65 @@
+- main [ref=f21e5]:
+  - generic [ref=f21e6]:
+    - link "logo":
+      - /url: /home
+      - img "logo"
+    - generic [ref=f21e7]:
+      - generic [ref=f21e8]:
+        - generic [ref=f21e9]:
+          - button " Filiale " [ref=f21e10] [cursor=pointer]:
+            - generic [ref=f21e11]: 
+            - heading "Filiale" [level=3] [ref=f21e12]:
+              - generic [ref=f21e13]: Filiale
+            - generic [ref=f21e14]: 
+          - list:
+            - listitem:
+              - radio "Le Cayenne (principal)" [checked]
+              - generic: Le Cayenne (principal)
+        - generic [ref=f21e15]:
+          - link " Tableau de bord" [ref=f21e17] [cursor=pointer]:
+            - /url: /admin/dashboard
+            - generic [ref=f21e18]: 
+            - generic [ref=f21e19]: Tableau de bord
+          - button "flag" [ref=f21e22] [cursor=pointer]:
+            - img "flag" [ref=f21e23]
+      - generic [ref=f21e24]:
+        - button "avatar Bonjour Admin Le Cayenne" [ref=f21e25] [cursor=pointer]:
+          - img "avatar" [ref=f21e26]
+          - heading "Bonjour Admin Le Cayenne" [level=3] [ref=f21e27]:
+            - text: Bonjour
+            - generic "Admin Le Cayenne" [ref=f21e28]
+          - generic [ref=f21e29]: 
+        - menu "avatar Bonjour Admin Le Cayenne":
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "Admin Le Cayenne" [level=3]
+            - paragraph: admin@lecayenne.fr
+            - paragraph: "+330600000000"
+            - heading "2,00 €" [level=3]
+          - menuitem "Modifier le profil":
+            - text: 
+            - generic: Modifier le profil
+          - menuitem "Changer le mot de passe":
+            - text: 
+            - generic: Changer le mot de passe
+          - menuitem "Déconnexion":
+            - text: 
+            - generic: Déconnexion
+  - text:                       
+  - button "Ouvrir l'historique des commandes du jour" [ref=f21e31] [cursor=pointer]:
+    - generic [ref=f21e32]: 📚
+    - generic [ref=f21e33]: Historique
+  - generic [ref=f21e34]:
+    - status [ref=f21e35]:
+      - generic [ref=f21e36]:
+        - img [ref=f21e38]
+        - generic [ref=f21e40]: "Mode admin centralisé : rafraîchissement automatique toutes les 60 s."
+      - generic [ref=f21e41]: SYNC · ADMIN
+    - generic [ref=f21e42]:
+      - img [ref=f21e45]
+      - generic [ref=f21e52]: Aucune commande en cours
+      - generic [ref=f21e53]: Les nouvelles commandes apparaîtront ici

@@ -1,0 +1,30 @@
+
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 1 unhandled error during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯⎯ Uncaught Exception ⎯⎯⎯⎯⎯
+ReferenceError: document is not defined
+ ❯ Timeout._onTimeout resources/js/components/frontend/kiosk/KioskWizardComponent.vue:2277:19
+    2275|     setTimeout(() => {
+    2276|       const root = this.$refs.kioskWizardRoot;
+    2277|       if (root && document.contains(root)) {
+       |                   ^
+    2278|         root.focus({ preventScroll: true });
+    2279|       }
+ ❯ listOnTimeout node:internal/timers:569:17
+ ❯ processTimers node:internal/timers:512:7
+
+This error originated in "tests/js/kioskWizardNavigation.spec.js" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+This error was caught after test environment was torn down. Make sure to cancel any running tasks before test finishes:
+- cancel timeouts using clearTimeout and clearInterval
+- wait for promises to resolve using the await keyword
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+ Test Files  324 passed (324)
+      Tests  2276 passed | 3 skipped (2279)
+     Errors  1 error
+   Start at  03:21:56
+   Duration  21.92s (transform 8.67s, setup 4.39s, collect 43.28s, tests 11.39s, environment 79.80s, prepare 21.09s)
+

@@ -1,0 +1,27 @@
+- generic [ref=f18e1]:
+  - generic [ref=f18e128]:
+    - generic [ref=f18e129]:
+      - generic [ref=f18e130]:
+        - generic [ref=f18e131]: 💶
+        - heading "Rendez-vous en caisse" [level=1] [ref=f18e132]
+        - paragraph [ref=f18e133]: Présentez votre numéro à un membre de l'équipe
+      - group "Rendez-vous en caisse" [ref=f18e134]:
+        - generic [ref=f18e136]:
+          - generic [ref=f18e137]:
+            - generic [ref=f18e138]: Numéro de commande
+            - strong [ref=f18e139]: "#A0001"
+          - generic [ref=f18e141]:
+            - generic [ref=f18e142]: Montant à régler
+            - generic [ref=f18e144]: 1,00 €
+        - paragraph [ref=f18e145]: "Réglez votre commande à la caisse : espèces, carte bleue ou titres-restaurant."
+    - generic [ref=f18e146]:
+      - paragraph [ref=f18e147]: Retour à l'accueil dans 45 s
+      - button "🖨️ Réimprimer le ticket" [ref=f18e148] [cursor=pointer]:
+        - generic [ref=f18e149]: 🖨️ Réimprimer le ticket
+      - button "J'ai compris" [ref=f18e150] [cursor=pointer]:
+        - generic [ref=f18e151]: J'ai compris
+  - status:
+    - alert [ref=f18e152] [cursor=pointer]:
+      - generic [ref=f18e153]: ⚠
+      - generic [ref=f18e154]: Votre réduction fidélité n'a pas pu être appliquée (points insuffisants au moment du paiement). Votre commande a été validée sans réduction.
+      - button "Fermer la notification" [ref=f18e155]: ×

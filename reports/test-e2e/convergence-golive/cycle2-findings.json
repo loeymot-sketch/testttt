@@ -1,0 +1,47 @@
+{
+  "cycle": 2,
+  "head": "55a406857",
+  "server": "http://127.0.0.1:8766 (mysql foodking_e2e)",
+  "timestamp": "2026-07-07T03:55:00+02:00",
+  "fixes_hold": [
+    {
+      "id": "1-label.note-i18n-FR",
+      "verdict": "HOLDS",
+      "evidence": "fr.json:929 label.note='Note' (EN parity en.json:1183); bundle public/js/app.js dated 03:10 (AFTER fix commit d4a5877d0 02:47), contains \"note\":\"Note\". LIVE borne order A0008/FrontendOrder 5552 with note 'bien cuit svp': cart line rendered 'Viandes : Poulet marine x1. Note: bien cuit svp'; DB order_items.instruction = 'Viandes : Poulet marine x1. Note: bien cuit svp' (proves $t('label.note') resolved to 'Note', NOT raw key). ESC/POS kitchen bytes (EscPosTicketBytesService::render kitchen) decoded: 'label.note' ABSENT, no raw-key leak. ESC/POS client bytes: 'label.note' ABSENT. NOTE (orthogonal, PRE-EXISTING, not a regression): sanitizeKdsInstruction drops the whole compo-prefixed line via KDS_COMPO_LINE_RE (added 2026-06-30), so the free-text note is NOT shown on the KDS card OR the symbolic kitchen ticket for compo items like Tacos (note-only instruction IS kept -> 'Note: ...'). The label.note fix's core assertion 'never label.note: raw key' holds everywhere."
+    },
+    {
+      "id": "2-DB-KDS-index-force-index",
+      "verdict": "BROKEN",
+      "severity": "P0/P1",
+      "evidence": "REGRESSION introduced by commit ca5629658. Live curl with APP_DEBUG=true against a fresh server reproduced: SQLSTATE[42S22]: Unknown column '`orders` force index (`idx_orders_status`).branch_id' in 'where clause'. ROOT CAUSE: KitchenDisplaySystemOrderService::list() line 219 does $query->from(DB::raw('`orders` force index (`idx_orders_status`)')), replacing the table name with a raw expression. BranchScope::apply() (app/Models/Scopes/BranchScope.php:28) qualifies the branch column as sprintf('%s.%s', $builder->getQuery()->from, 'branch_id') = '`orders` force index (`idx_orders_status`).branch_id' -> invalid SQL -> the ENTIRE KDS board query 422s. CLI-vs-HTTP divergence explained by BranchScope.php:22 which applies ONLY when (!App::runningInConsole() || App::runningUnitTests()) -> OFF in tinker (direct list() returns 42 rows fine), ON over HTTP (collision). Reproduced live in-browser: admin@lecayenne.fr (branch selector 'Le Cayenne Principal' -> branch 1) AND S-SYNC E2E Operator (branch 1) both get 422 on every 5s poll; KDS board shows 'Aucune commande en cours' despite 42 active orders (service list() ground-truth returns 42 incl. order 5552). Data-layer result-set is CORRECT (index exists, query returns right 42 orders/order preserved), but the HTTP path is broken. 172 Kds|Board tests PASS but MASK the bug: FORCE INDEX is MySQL-gated (line 217) and result-set assertions run on SQLite CI (FORCE INDEX skipped), plan assertion is the '1 skipped' MySQL-only test -> the ->from(raw) + BranchScope collision path is NEVER exercised in CI (green != prod-safe).",
+      "screenshot": "reports/test-e2e/convergence-golive/cycle2/02-kds-board-EMPTY-422-regression.png"
+    },
+    {
+      "id": "3-mobile-standalone",
+      "verdict": "HOLDS",
+      "evidence": "Commit 89cf0ec8e touches ONLY mobile/ files (CONNECTION_PLAN.md, data/dev-helpers.js, data/loyalty.js, data/orders.js, screens-main.jsx, screens-modals.jsx, tests/ordersParity.spec.js). Standalone codebase, no backend/API wireup (per CLAUDE.md 3bis). HEAD 55a406857 touched 0 backend source files. No impact on the running backend; not independently drive-tested (standalone RN prototype, out of live-attack scope)."
+    },
+    {
+      "id": "4-web-standalone",
+      "verdict": "HOLDS",
+      "evidence": "HEAD commit 55a406857 touched NO backend source files (grep for non mobile/web/lang/test paths = empty). Standalone codebase (/Users/1millnonstop/Downloads/web/), no API wireup. Frozen-zone diff clean. No backend regression."
+    }
+  ],
+  "surfaces": [
+    {"id": "3a-caisse-especes", "verdict": "PASS", "evidence": "Data-level: recent PAID orders 5551/5549/5548/5542/5535 all status=7 pay=5 (PAID) with monotonic fiscal_sequence_no 2636/2635/2634/2633/2632, methods 6 (counter-deferred) + 1 (cash). fiscal:verify-chain CHAIN OK x4. Fiscal allocation on encaissement working. (Full POS UI drive not performed given the KDS blocker; fiscal integrity attested at data + chain level.)"},
+    {"id": "3b-borne-201", "verdict": "PASS", "evidence": "LIVE borne order placed via wizard (Tacos M + note) -> upsell (desserts/boissons only, A1 restriction holds) -> Plan B counter payment -> Confirmer -> /kiosk/cash-instruction?number=A0008&orderId=5552. FrontendOrder 5552 created in DB (branch 1, status 4, payment_status 15 PENDING_COUNTER)."},
+    {"id": "3c-cuisine-ticket", "verdict": "PARTIAL", "evidence": "ESC/POS kitchen ticket renders correctly (symbolic '1 x G | TAC | M | P | ALG', no label.note leak, width-safe). BUT the KDS kitchen SCREEN is BROKEN (empty board, 422) per fix #2 regression -> chef cannot see orders on-screen. O-barre/boisson-full-name not exercised on this Tacos ticket (no egg/drink item), renderer itself functional."},
+    {"id": "3d-synchro-kds-under-5s", "verdict": "FAIL", "evidence": "Order 5552 reaches the DB in <1s and IS included by the backend board query (service list() = 42 incl. 5552), but the KDS board NEVER displays it: every /api/admin/kds-order poll returns 422 (SQLSTATE 42S22). Real-time sync to the kitchen screen is effectively broken by the fix #2 regression."}
+  ],
+  "gates": {
+    "vitest_full": {"result": "PASS", "detail": "324 files passed, 2276 passed | 3 skipped (2279). Expected 2276/0/3-skip -> match. 1 post-teardown async-timer WARNING in kioskWizardNavigation.spec.js (environment torn down) - not a test failure, all 324 files passed."},
+    "kds_board_phpunit": {"result": "PASS-but-masks-bug", "detail": "php artisan test --filter 'Kds|Board' = 172 passed, 1 skipped (expected 172). The FORCE INDEX + BranchScope collision path is NOT covered (MySQL-gated + SQLite CI + MySQL-only plan test skipped) -> tests green while prod HTTP path 422s."},
+    "frozen_diff_24e8a09c3_HEAD": {"result": "PASS", "detail": "Only public/js/pos-wizard.js (+299) and KioskWizardComponent.vue (+34) changed among the 14 frozen sec.7 files. label.note fix (fr.json) is 0-frozen. Expected pos-wizard.js + KioskWizardComponent.vue -> match."},
+    "fiscal_verify_chain": {"result": "PASS", "detail": "CHAIN OK x4 (branches 1,7,8,9). SWEEP COMPLETE."},
+    "audit_logs_count": {"result": "PASS", "detail": "4915 >= 4912."}
+  },
+  "verdict": "BLOCKED",
+  "convergence": "NOT ACHIEVED (cycle 2 != clean repeat of cycle 1)",
+  "headline": "Fix #2 (DB KDS index, ca5629658) introduced a P0/P1 regression: the KDS board query throws SQLSTATE[42S22] over HTTP because the raw FORCE INDEX FROM expression collides with BranchScope's table-qualified branch_id. The kitchen display shows 'Aucune commande en cours' (0 orders) for every real staff/admin user despite 42 active orders. Tests are green because the FORCE INDEX path is MySQL-gated and unexercised in CI. The other 3 fixes hold and no other surface regressed (caisse/fiscal + borne healthy).",
+  "recommended_fix_direction": "Do NOT replace the table name via ->from(DB::raw(...)) when BranchScope (or any qualified-column predicate) is active. Options: (a) apply the index hint via a raw ORDER BY / from with the SAME identifier 'orders' so qualification still resolves (i.e. ensure BranchScope's $builder->getQuery()->from stays a bare 'orders'); (b) use an index hint mechanism that does not overwrite the from-identifier; (c) add a MySQL-backed feature test with actingAs(branchStaff) that exercises the KDS board endpoint over the real request lifecycle (BranchScope active) so the collision is caught by CI."
+}

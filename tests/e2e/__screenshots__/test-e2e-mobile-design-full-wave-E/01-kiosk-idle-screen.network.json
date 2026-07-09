@@ -1,0 +1,338 @@
+[
+  {
+    "url": "http://127.0.0.1:8087/kiosk/styles.css",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919165
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/redesigns-styles.css",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919166
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/api/storage.js",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919168
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/api/client.js",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919168
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/data/menu.js",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919168
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/data/loyalty.js",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919169
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/data/loyaltyRewardState.js",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919170
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/data/orders.js",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919170
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/data/user.js",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919171
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/data/wallet-spec.js",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919171
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/data/dev-helpers.js",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919171
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/image-slot.js",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919171
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/vendor/qrcode.js",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919172
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/hooks/useCountdown.js",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919172
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/icons.jsx",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919561
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/shared.jsx",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919561
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/hooks/useLoyaltyQR.js",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919561
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/components/BarcodeMock.jsx",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919561
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/components/LoyaltyQR.jsx",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919562
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/components/WizardRedeem.jsx",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919565
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/screens-onboarding.jsx",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919568
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/screens-item-steps.jsx",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919568
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/screens-main.jsx",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919568
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/screens-modals.jsx",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919570
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/styles.css",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919687
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/redesigns-styles.css",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919687
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/api/storage.js",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919688
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/api/client.js",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919688
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/data/menu.js",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919689
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/data/loyalty.js",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919689
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/data/loyaltyRewardState.js",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919689
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/data/orders.js",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919689
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/data/wallet-spec.js",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919713
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/data/user.js",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919713
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/data/dev-helpers.js",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919713
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/image-slot.js",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919730
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/vendor/qrcode.js",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919730
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/hooks/useCountdown.js",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919730
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/icons.jsx",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919761
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/shared.jsx",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919761
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/hooks/useLoyaltyQR.js",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919761
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/components/BarcodeMock.jsx",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919763
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/components/LoyaltyQR.jsx",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919768
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/components/WizardRedeem.jsx",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919772
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/screens-onboarding.jsx",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919779
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/screens-item-steps.jsx",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919779
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/screens-main.jsx",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919781
+  },
+  {
+    "url": "http://127.0.0.1:8087/kiosk/screens-modals.jsx",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1783527919781
+  }
+]

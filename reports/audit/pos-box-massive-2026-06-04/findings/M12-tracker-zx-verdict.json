@@ -1,0 +1,60 @@
+{
+  "micro_system": "M12-tracker-zx (Orders tracker + Z/X report close (FROZEN fiscal-read-only))",
+  "verdicts": [
+    {
+      "id": "M12-001",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P1",
+      "reason": "VERIFIED. SimpleOrderResource::toArray (app/Http/Resources/SimpleOrderResource.php:33-112) emits NO created_at, NO updated_at, NO nested user object — only customer_name => $this->user?->name (line 70). PosOrderController::index returns SimpleOrderResource::collection (confirmed) for GET admin/pos-order, which the tracker's posOrder/lists action hits (store/modules/posOrder.js:179-183). Tracker reads order.created_at at lines 156-157 → elapsedShort/formatTime early-return '' on undefined (PosOrdersTrackerComponent.vue:982-984, 976-979) → every card time pill blank. _tsOf(o)=o.created_at||o.updated_at returns 0 for all (line 740-746) → the oldest-first sorts (lines 553-556) are no-ops; OrderService::list default orderBy('id','desc') (OrderService.php:131-132,232) makes cards newest-first, OPPOSITE of kitchen-queue intent. Name-search hay uses o.user?.name + o.user?.first_name (line 500) → both undefined → matches nothing, yet customerLabel falls back to o.customer_name (line 959) so the name IS visibly rendered while search is dead. All three sub-claims confirmed. Cheap fix exists (add created_at, or repoint to order_datetime which the resource ALREADY ships at line 37; add customer_name to search hay). Keep P1 — on a kitchen/caisse tracker the per-card waiting time and oldest-first triage are the core operational signals."
+    },
+    {
+      "id": "M12-002",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "VERIFIED. fetchOrders (PosOrdersTrackerComponent.vue:751-756) dispatches posOrder/lists with per_page:100 but NEVER sets paginate. OrderService::list (OrderService.php:129-130) picks $method='get' / $methodValue='*' when paginate absent (default 0), so per_page is a dead param and the query returns ALL of today's orders with ->with(['transaction','orderItems.orderItem.media','orderItems.orderItem.category','branch','user']) eager-loaded (OrderService.php:134-139). Confirmed the tracker re-fetches on mount + every Echo event + 8s/60s poll. status IS already in $orderFilter (OrderService.php:71-90, line 80) so the recommended backend status filter is feasible. Real flou — per_page reads as a cap but enforces nothing, full-day graph+media re-pulled each poll grows unbounded. Kept P2: on single-box V1 fast-food this is a responsiveness/efficiency concern not a correctness bug, but the unbounded re-pull + unnecessary media eager-loads (tracker shows only item_name/quantity) is a genuine fix worth doing in unfrozen files."
+    },
+    {
+      "id": "M12-003",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "VERIFIED. OrderStateMachine::allows case PREPARED returns in_array($to,[OUT_FOR_DELIVERY,DELIVERED],true) with NO order_type guard (app/Domain/Order/OrderStateMachine.php:65-71). The tracker renders the green check 'Livre' CTA on EVERY prepared card with v-if=col.id==='prepared' and NO order_type condition (PosOrdersTrackerComponent.vue:270-280); markDelivered POSTs changeStatus(DELIVERED) (lines 772-784). Confirmed the legitimate delivery path is PREPARED->OUT_FOR_DELIVERY->DELIVERED (OrderStateMachine.php:71-74) and the EN LIVRAISON lane only catches OUT_FOR_DELIVERY (tracker lines 549, 610-616). So a DELIVERY order can be marked DELIVERED from the caisse, skipping OUT_FOR_DELIVERY → never enters EN LIVRAISON, corrupting delivery visibility/KPIs and the driver handoff cash expectation. Kept P2. Tracker-side button guard (show 'Livre' only for non-delivery, 'Depart livraison'->OUT_FOR_DELIVERY for delivery) is the safe scope-minimal first fix; tightening the OrderStateMachine edge is FROZEN/domain-critical and owner-gated."
+    },
+    {
+      "id": "M12-004",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P2",
+      "reason": "VERIFIED. ZReportService::close (app/Services/Fiscal/ZReportService.php:180-286) acquires lock, verifyChain, warnOnOrphanedPaidOrders, aggregates orders, signs and closes — grep for drawer/CashDrawerSession/reconcil in the file returns NOTHING, so there is no open-drawer gate. ZReportCashEnrichmentService::aggregateForWindow (ZReportCashEnrichmentService.php:64-71) counts ONLY sessions with status===STATUS_RECONCILED whose closed_at in (from,to], so a drawer still OPEN or closed-but-not-reconciled at close-time is excluded from this Z cash_opening/closing/variance and migrates to a later Z whose window contains its reconcile time. Confirmed the signed order totals (total_ttc/ht/tva) are computed from orders in aggregate() (ZReportService.php:337-366) independent of cash_* enrichment, so the HMAC fiscal chain stays intact and the finding's NF525 framing is correct — this is a cash-reconciliation gap, not a chain break. Real for a cash-heavy single-box. ZReportService is a FROZEN NF525 file (CLAUDE.md section 7) → owner-gated; the recommended (b) emit a fiscal-log warning mirroring warnOnOrphanedPaidOrders is the safe non-payload-changing first step. Kept P2."
+    },
+    {
+      "id": "M12-005",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "VERIFIED. LastZReportWidget.vue is read-only — GET admin/fiscal/z-report (line 96) renders last sequence/status/closed_at with only a transactions link, no open/close/X action. Confirmed grep across resources/js for z-report/close, z-report/open, /x-report returns ZERO matches (only the two read GETs in LastZReportWidget). Close/open drive only via scheduled command + raw API. The auditor itself frames this as 'not a defect per se' for V1's automated-EOD envelope — it is a product decision + a cheap UX clarity fix (label the widget 'Cloture automatique en fin de journee', or add the already-built X-snapshot read view), not a code bug. Kept P3, is_necessary true on the narrow grounds that the label clarification is a genuine cheap improvement and the missing intraday X-read is a real (owner-decidable) operational gap. Surface to owner as decision, do not blind-heal."
+    },
+    {
+      "id": "M12-006",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": false,
+      "severity_adjusted": "DROP",
+      "reason": "EXISTS but DROP. onEncaisseConfirmed (PosOrdersTrackerComponent.vue:933-936) clears encaisseOrder and calls fetchOrders; isCashPending fallback ps===15 && ppm===6 (lines 896-901) is real. BUT the finding is self-defeating cosmetic noise by its own words: 'transient flicker, not a stuck state', 'self-heals' via the OrderPaidAtCounter-driven refetch (line 705), 'Not reliably reproducible on single-box synchronous DB', evidence_type 'needs-live-verify', confidence medium. On the V1 single-box the modal's counter-collect POST commits PAID synchronously before fetchOrders resolves, so the race does not manifest — works-as-intended for the actual deployment envelope. The recommended optimistic removal is pure client polish with no correctness impact. No real defect worth a correction; precedent (editor_id dormant NO-OP) applies. DROP."
+    }
+  ],
+  "coverage_gaps": [
+    "requestReprint (PosOrdersTrackerComponent.vue:249, method ~line where reprintBusyId set): the only @click reprint handler — fetches full order via posOrder/show then opens #receiptModal. Not examined by the auditor. Touches the NF525 receipt/print path (fiscal compteur) — worth confirming a reprint does not re-increment the fiscal sequence and is admin-bypass-aware per the prior admin reprint fix.",
+    "Cancel flow openCancelDialog/confirmCancelOrder (lines 266, 381): POSTs changeStatus(CANCELED, reason) with client-side reason>=3 validation and full 422/403 toast handling — appears correct and NOT flagged, but the auditor did not verify whether CANCELED from the tracker is permitted at every lane (ACCEPT/PREPARING allow CANCELED, but PREPARED does NOT per OrderStateMachine.php:65-71 — the cancel button render condition vs the PREPARED lane should be checked for a dead/rejecting button).",
+    "isCashPending hard-coded magic numbers ps===15 && ppm===6 (lines 899-901) duplicate the backend PaymentStatus::PENDING_COUNTER / PosPaymentMethod::COUNTER_DEFERRED enums — drift risk if the enum values change; not a defect today but an un-audited coupling.",
+    "Echo/realtime listeners (referenced lines ~705, 720, 425-426) that trigger fetchOrders on OrderPaidAtCounter / order events — the auditor examined fetchOrders cost (M12-002) but did not audit the subscription/teardown lifecycle for leaks or duplicate handlers across mount/unmount.",
+    "X-report endpoint GET admin/fiscal/x-report referenced as 'already built' in M12-005 was not opened/verified — its existence and read-only-correctness should be confirmed before recommending a UI wire-up."
+  ]
+}

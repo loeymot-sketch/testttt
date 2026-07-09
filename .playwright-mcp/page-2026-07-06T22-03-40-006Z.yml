@@ -1,0 +1,46 @@
+- generic [ref=f18e1]:
+  - generic [ref=f18e54]:
+    - generic [ref=f18e55]:
+      - heading "Et pour terminer ?" [level=1] [ref=f18e56]
+      - paragraph [ref=f18e57]: Ajoutez quelque chose à votre commande
+    - list "Et pour terminer ?" [ref=f18e58]:
+      - listitem "Tiramisu — €3,50" [ref=f18e59] [cursor=pointer]:
+        - img [ref=f18e61]
+        - generic [ref=f18e62]:
+          - heading "Tiramisu" [level=3] [ref=f18e63]
+          - generic [ref=f18e64]: €3,50
+        - generic [ref=f18e66]: +
+      - listitem "Orangina 33cl — €1,90" [ref=f18e67] [cursor=pointer]:
+        - img [ref=f18e69]
+        - generic [ref=f18e70]:
+          - heading "Orangina 33cl" [level=3] [ref=f18e71]
+          - generic [ref=f18e72]: €1,90
+        - generic [ref=f18e74]: +
+      - listitem "Coca-Cola Zero 33cl — €1,90" [ref=f18e75] [cursor=pointer]:
+        - img [ref=f18e77]
+        - generic [ref=f18e78]:
+          - heading "Coca-Cola Zero 33cl" [level=3] [ref=f18e79]
+          - generic [ref=f18e80]: €1,90
+        - generic [ref=f18e82]: +
+      - listitem "Oasis Tropical 33cl — €1,90" [ref=f18e83] [cursor=pointer]:
+        - img [ref=f18e85]
+        - generic [ref=f18e86]:
+          - heading "Oasis Tropical 33cl" [level=3] [ref=f18e87]
+          - generic [ref=f18e88]: €1,90
+        - generic [ref=f18e90]: +
+      - listitem "Capri-Sun — €1,50" [ref=f18e91] [cursor=pointer]:
+        - img [ref=f18e93]
+        - generic [ref=f18e94]:
+          - heading "Capri-Sun" [level=3] [ref=f18e95]
+          - generic [ref=f18e96]: €1,50
+        - generic [ref=f18e98]: +
+      - listitem "Tarte Daim — €3,50" [ref=f18e99] [cursor=pointer]:
+        - img [ref=f18e101]
+        - generic [ref=f18e102]:
+          - heading "Tarte Daim" [level=3] [ref=f18e103]
+          - generic [ref=f18e104]: €3,50
+        - generic [ref=f18e106]: +
+    - generic [ref=f18e107]:
+      - button "Non merci, continuer sans" [ref=f18e108] [cursor=pointer]
+      - progressbar "(30s)" [ref=f18e109]
+  - status

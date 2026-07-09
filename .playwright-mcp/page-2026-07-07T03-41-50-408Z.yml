@@ -1,0 +1,432 @@
+- main [ref=f47e5]:
+  - generic [ref=f47e6]:
+    - link "logo" [ref=f47e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=f47e8]
+    - generic [ref=f47e9]:
+      - generic [ref=f47e10]:
+        - generic [ref=f47e11]:
+          - button " Filiale Le Cayenne (principal) " [ref=f47e12] [cursor=pointer]:
+            - generic [ref=f47e13]: 
+            - heading "Filiale Le Cayenne (principal)" [level=3] [ref=f47e14]:
+              - generic [ref=f47e15]: Filiale
+              - text: Le Cayenne (principal)
+            - generic [ref=f47e16]: 
+          - list:
+            - listitem:
+              - radio "Le Cayenne (principal)" [checked]
+              - generic: Le Cayenne (principal)
+        - generic [ref=f47e18]:
+          - button "flag" [ref=f47e20] [cursor=pointer]:
+            - img "flag" [ref=f47e21]
+          - link "POS" [ref=f47e22] [cursor=pointer]:
+            - /url: /admin/pos
+            - generic [ref=f47e23]: 
+      - button "Fermer" [ref=f47e24] [cursor=pointer]: 
+      - generic [ref=f47e25]:
+        - button "avatar Bonjour Admin Le Cayenne" [ref=f47e26] [cursor=pointer]:
+          - img "avatar" [ref=f47e27]
+          - heading "Bonjour Admin Le Cayenne" [level=3] [ref=f47e28]:
+            - text: Bonjour
+            - generic "Admin Le Cayenne" [ref=f47e29]
+          - generic [ref=f47e30]: 
+        - menu "avatar Bonjour Admin Le Cayenne":
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "Admin Le Cayenne" [level=3]
+            - paragraph: admin@lecayenne.fr
+            - paragraph: "+330600000000"
+            - heading "2,00 €" [level=3]
+          - menuitem "Modifier le profil":
+            - text: 
+            - generic: Modifier le profil
+          - menuitem "Changer le mot de passe":
+            - text: 
+            - generic: Changer le mot de passe
+          - menuitem "Déconnexion":
+            - text: 
+            - generic: Déconnexion
+  - complementary [ref=f47e31]:
+    - text: 
+    - navigation [ref=f47e32]:
+      - list [ref=f47e33]:
+        - listitem [ref=f47e34]:
+          - link " Tableau de bord" [ref=f47e35] [cursor=pointer]:
+            - /url: /admin/dashboard
+            - generic [ref=f47e36]: 
+            - generic [ref=f47e37]: Tableau de bord
+      - list [ref=f47e38]:
+        - listitem [ref=f47e39]:
+          - link " POS" [ref=f47e40] [cursor=pointer]:
+            - /url: /admin/pos
+            - generic [ref=f47e41]: 
+            - generic [ref=f47e42]: POS
+      - list [ref=f47e43]:
+        - listitem [ref=f47e44]:
+          - link "Produits & Stock" [ref=f47e45] [cursor=pointer]:
+            - /url: /admin/stock/rupture
+            - generic [ref=f47e46]: Produits & Stock
+      - list [ref=f47e47]:
+        - listitem [ref=f47e48]:
+          - link " Catalogue" [ref=f47e49] [cursor=pointer]:
+            - /url: /admin/items/studio
+            - generic [ref=f47e50]: 
+            - generic [ref=f47e51]: Catalogue
+        - listitem [ref=f47e52]:
+          - link " Attribut d’articles" [ref=f47e53] [cursor=pointer]:
+            - /url: /admin/settings/item-attributes/list
+            - generic [ref=f47e54]: 
+            - generic [ref=f47e55]: Attribut d’articles
+      - list [ref=f47e56]:
+        - listitem [ref=f47e57]:
+          - link " Ingrédients" [ref=f47e58] [cursor=pointer]:
+            - /url: /admin/ingredients
+            - generic [ref=f47e59]: 
+            - generic [ref=f47e60]: Ingrédients
+      - list [ref=f47e61]:
+        - listitem [ref=f47e62]:
+          - link " Commandes caisse" [ref=f47e63] [cursor=pointer]:
+            - /url: /admin/pos-orders
+            - generic [ref=f47e64]: 
+            - generic [ref=f47e65]: Commandes caisse
+      - list [ref=f47e66]:
+        - listitem [ref=f47e67]:
+          - link " Historique" [ref=f47e68] [cursor=pointer]:
+            - /url: /admin/historique
+            - generic [ref=f47e69]: 
+            - generic [ref=f47e70]: Historique
+      - list [ref=f47e71]:
+        - listitem [ref=f47e72]:
+          - link " Encaissement" [ref=f47e73] [cursor=pointer]:
+            - /url: /admin/encaissement
+            - generic [ref=f47e74]: 
+            - generic [ref=f47e75]: Encaissement
+      - list [ref=f47e76]:
+        - listitem [ref=f47e77]:
+          - link " Vue caisse unifiée" [ref=f47e78] [cursor=pointer]:
+            - /url: /admin/cash-overview
+            - generic [ref=f47e79]: 
+            - generic [ref=f47e80]: Vue caisse unifiée
+      - list [ref=f47e81]:
+        - listitem [ref=f47e82]:
+          - link " Caisse livreur" [ref=f47e83] [cursor=pointer]:
+            - /url: /admin/delivery-boy-cash-sessions
+            - generic [ref=f47e84]: 
+            - generic [ref=f47e85]: Caisse livreur
+      - list [ref=f47e86]:
+        - listitem [ref=f47e87]:
+          - button "Caisse et commandes" [ref=f47e88] [cursor=pointer]
+        - listitem [ref=f47e89]:
+          - link " Écran cuisine" [ref=f47e90] [cursor=pointer]:
+            - /url: /admin/kitchen-display-system
+            - generic [ref=f47e91]: 
+            - generic [ref=f47e92]: Écran cuisine
+        - listitem [ref=f47e93]:
+          - link " Suivi client" [ref=f47e94] [cursor=pointer]:
+            - /url: /admin/order-status-screen
+            - generic [ref=f47e95]: 
+            - generic [ref=f47e96]: Suivi client
+      - list [ref=f47e97]:
+        - listitem [ref=f47e98]:
+          - button "Communications" [ref=f47e99] [cursor=pointer]
+        - listitem [ref=f47e100]:
+          - link " Notification pushs" [ref=f47e101] [cursor=pointer]:
+            - /url: /admin/push-notifications
+            - generic [ref=f47e102]: 
+            - generic [ref=f47e103]: Notification pushs
+        - listitem [ref=f47e104]:
+          - link " Messages" [ref=f47e105] [cursor=pointer]:
+            - /url: /admin/messages
+            - generic [ref=f47e106]: 
+            - generic [ref=f47e107]: Messages
+        - listitem [ref=f47e108]:
+          - link " Abonnés" [ref=f47e109] [cursor=pointer]:
+            - /url: /admin/subscribers
+            - generic [ref=f47e110]: 
+            - generic [ref=f47e111]: Abonnés
+      - list [ref=f47e112]:
+        - listitem [ref=f47e113]:
+          - button "Utilisateurs" [ref=f47e114] [cursor=pointer]
+        - listitem [ref=f47e115]:
+          - link " Administrateurs" [ref=f47e116] [cursor=pointer]:
+            - /url: /admin/administrators
+            - generic [ref=f47e117]: 
+            - generic [ref=f47e118]: Administrateurs
+        - listitem [ref=f47e119]:
+          - link " Employés" [ref=f47e120] [cursor=pointer]:
+            - /url: /admin/employees
+            - generic [ref=f47e121]: 
+            - generic [ref=f47e122]: Employés
+        - listitem [ref=f47e123]:
+          - link " Chefs" [ref=f47e124] [cursor=pointer]:
+            - /url: /admin/chefs
+            - generic [ref=f47e125]: 
+            - generic [ref=f47e126]: Chefs
+      - list [ref=f47e127]:
+        - listitem [ref=f47e128]:
+          - button "Comptes" [ref=f47e129] [cursor=pointer]
+        - listitem [ref=f47e130]:
+          - link " Transactions" [ref=f47e131] [cursor=pointer]:
+            - /url: /admin/transactions
+            - generic [ref=f47e132]: 
+            - generic [ref=f47e133]: Transactions
+      - list [ref=f47e134]:
+        - listitem [ref=f47e135]:
+          - button "Rapports" [ref=f47e136] [cursor=pointer]
+        - listitem [ref=f47e137]:
+          - link " Rapport des ventes" [ref=f47e138] [cursor=pointer]:
+            - /url: /admin/sales-report
+            - generic [ref=f47e139]: 
+            - generic [ref=f47e140]: Rapport des ventes
+        - listitem [ref=f47e141]:
+          - link " Rapport articles" [ref=f47e142] [cursor=pointer]:
+            - /url: /admin/items-report
+            - generic [ref=f47e143]: 
+            - generic [ref=f47e144]: Rapport articles
+      - list [ref=f47e145]:
+        - listitem [ref=f47e146]:
+          - button "Configuration" [ref=f47e147] [cursor=pointer]
+        - listitem [ref=f47e148]:
+          - link " Paramètres" [ref=f47e149] [cursor=pointer]:
+            - /url: /admin/settings
+            - generic [ref=f47e150]: 
+            - generic [ref=f47e151]: Paramètres
+  - generic [ref=f47e152]:
+    - list [ref=f47e155]:
+      - listitem [ref=f47e156]:
+        - link "Tableau de bord/" [ref=f47e157] [cursor=pointer]:
+          - /url: /admin/dashboard
+      - listitem [ref=f47e158]:
+        - generic [ref=f47e159]: Rapport des ventes
+    - img [ref=f47e162]
+    - generic [ref=f47e167]:
+      - generic [ref=f47e168]:
+        - heading "Rapport des ventes" [level=3] [ref=f47e169]
+        - generic [ref=f47e170]:
+          - generic [ref=f47e171]:
+            - button "10 " [ref=f47e172] [cursor=pointer]:
+              - generic [ref=f47e173]: "10"
+              - generic [ref=f47e174]: 
+            - list:
+              - listitem:
+                - generic: "10"
+              - listitem:
+                - generic: "25"
+              - listitem:
+                - generic: "50"
+              - listitem:
+                - generic: "100"
+              - listitem:
+                - generic: "500"
+              - listitem:
+                - generic: "1000"
+          - button " Filtrer " [ref=f47e175] [cursor=pointer]:
+            - generic [ref=f47e176]: 
+            - generic [ref=f47e177]: Filtrer
+            - generic [ref=f47e178]: 
+          - generic [ref=f47e179]:
+            - button " Exporter " [ref=f47e180] [cursor=pointer]:
+              - generic [ref=f47e181]: 
+              - generic [ref=f47e182]: Exporter
+              - generic [ref=f47e183]: 
+            - generic:
+              - button " Imprimer":
+                - generic: 
+                - text: Imprimer
+              - link " XLS":
+                - /url: "#"
+                - generic: 
+                - text: XLS
+              - link " PDF":
+                - /url: "#"
+                - generic: 
+                - text: PDF
+      - generic [ref=f47e185]:
+        - generic [ref=f47e186]:
+          - generic [ref=f47e187]: N° Commande
+          - textbox "N° Commande" [ref=f47e188]
+        - generic [ref=f47e189]:
+          - generic [ref=f47e190]: Statut
+          - combobox [ref=f47e191]:
+            - textbox [ref=f47e194]:
+              - /placeholder: "--"
+        - generic [ref=f47e196]:
+          - generic [ref=f47e197]: Date
+          - textbox "Datepicker input" [ref=f47e199]:
+            - textbox [ref=f47e201] [cursor=pointer]
+        - generic [ref=f47e202]:
+          - generic [ref=f47e203]: Statut payé
+          - combobox [ref=f47e204]:
+            - textbox [ref=f47e207]:
+              - /placeholder: "--"
+        - generic [ref=f47e209]:
+          - generic [ref=f47e210]: Type de paiement
+          - combobox [ref=f47e211]:
+            - textbox [ref=f47e214]:
+              - /placeholder: "--"
+        - generic [ref=f47e216]:
+          - generic [ref=f47e217]: Livreur
+          - combobox [ref=f47e218]:
+            - textbox [ref=f47e221]:
+              - /placeholder: "--"
+        - generic [ref=f47e223]:
+          - generic [ref=f47e224]: Source
+          - combobox [ref=f47e225]:
+            - textbox [ref=f47e228]:
+              - /placeholder: "--"
+        - generic [ref=f47e231]:
+          - button " Rechercher" [ref=f47e232] [cursor=pointer]:
+            - generic [ref=f47e233]: 
+            - generic [ref=f47e234]: Rechercher
+          - button " Effacer" [ref=f47e235] [cursor=pointer]:
+            - generic [ref=f47e236]: 
+            - generic [ref=f47e237]: Effacer
+      - generic [ref=f47e238]:
+        - generic [ref=f47e240]:
+          - generic [ref=f47e242]: 
+          - generic [ref=f47e243]:
+            - heading "Total commandes" [level=3] [ref=f47e244]
+            - heading "2844" [level=4] [ref=f47e245]
+        - generic [ref=f47e247]:
+          - generic [ref=f47e249]: 
+          - generic [ref=f47e250]:
+            - heading "Total des revenus" [level=3] [ref=f47e251]
+            - heading "38 467,62 €" [level=4] [ref=f47e252]
+        - generic [ref=f47e254]:
+          - generic [ref=f47e256]: 
+          - generic [ref=f47e257]:
+            - heading "Total des remises" [level=3] [ref=f47e258]
+            - heading "18,98 €" [level=4] [ref=f47e259]
+        - generic [ref=f47e261]:
+          - generic [ref=f47e263]: 
+          - generic [ref=f47e264]:
+            - heading "Total des frais de livraison" [level=3] [ref=f47e265]
+            - heading "111,00 €" [level=4] [ref=f47e266]
+      - table [ref=f47e268]:
+        - rowgroup [ref=f47e269]:
+          - row "N° Commande Date Total Remise Frais de livraison Type de paiement Statut paiement" [ref=f47e270]:
+            - columnheader "N° Commande" [ref=f47e271]
+            - columnheader "Date" [ref=f47e272]
+            - columnheader "Total" [ref=f47e273]
+            - columnheader "Remise" [ref=f47e274]
+            - columnheader "Frais de livraison" [ref=f47e275]
+            - columnheader "Type de paiement" [ref=f47e276]
+            - columnheader "Statut paiement" [ref=f47e277]
+        - rowgroup [ref=f47e278]:
+          - row "0707265552 03:27, 07-07-2026 6,90 € 0,00 € 0,00 € Paiement à la livraison À encaisser" [ref=f47e279]:
+            - cell "0707265552" [ref=f47e280]
+            - cell "03:27, 07-07-2026" [ref=f47e281]
+            - cell "6,90 €" [ref=f47e282]
+            - cell "0,00 €" [ref=f47e283]
+            - cell "0,00 €" [ref=f47e284]
+            - cell "Paiement à la livraison" [ref=f47e285]:
+              - generic [ref=f47e286]: Paiement à la livraison
+            - cell "À encaisser" [ref=f47e287]:
+              - generic [ref=f47e288]: À encaisser
+          - row "0707265551 02:30, 07-07-2026 1,90 € 0,00 € 0,00 € Paiement à la livraison Payé" [ref=f47e289]:
+            - cell "0707265551" [ref=f47e290]
+            - cell "02:30, 07-07-2026" [ref=f47e291]
+            - cell "1,90 €" [ref=f47e292]
+            - cell "0,00 €" [ref=f47e293]
+            - cell "0,00 €" [ref=f47e294]
+            - cell "Paiement à la livraison" [ref=f47e295]:
+              - generic [ref=f47e296]: Paiement à la livraison
+            - cell "Payé" [ref=f47e297]:
+              - generic [ref=f47e298]: Payé
+          - row "0707265550 02:30, 07-07-2026 7,40 € 0,00 € 0,00 € Paiement à la livraison À encaisser" [ref=f47e299]:
+            - cell "0707265550" [ref=f47e300]
+            - cell "02:30, 07-07-2026" [ref=f47e301]
+            - cell "7,40 €" [ref=f47e302]
+            - cell "0,00 €" [ref=f47e303]
+            - cell "0,00 €" [ref=f47e304]
+            - cell "Paiement à la livraison" [ref=f47e305]:
+              - generic [ref=f47e306]: Paiement à la livraison
+            - cell "À encaisser" [ref=f47e307]:
+              - generic [ref=f47e308]: À encaisser
+          - row "0707265549 02:26, 07-07-2026 1,90 € 0,00 € 0,00 € Paiement à la livraison Payé" [ref=f47e309]:
+            - cell "0707265549" [ref=f47e310]
+            - cell "02:26, 07-07-2026" [ref=f47e311]
+            - cell "1,90 €" [ref=f47e312]
+            - cell "0,00 €" [ref=f47e313]
+            - cell "0,00 €" [ref=f47e314]
+            - cell "Paiement à la livraison" [ref=f47e315]:
+              - generic [ref=f47e316]: Paiement à la livraison
+            - cell "Payé" [ref=f47e317]:
+              - generic [ref=f47e318]: Payé
+          - row "0707265548 02:24, 07-07-2026 1,90 € 0,00 € 0,00 € Paiement à la livraison Payé" [ref=f47e319]:
+            - cell "0707265548" [ref=f47e320]
+            - cell "02:24, 07-07-2026" [ref=f47e321]
+            - cell "1,90 €" [ref=f47e322]
+            - cell "0,00 €" [ref=f47e323]
+            - cell "0,00 €" [ref=f47e324]
+            - cell "Paiement à la livraison" [ref=f47e325]:
+              - generic [ref=f47e326]: Paiement à la livraison
+            - cell "Payé" [ref=f47e327]:
+              - generic [ref=f47e328]: Payé
+          - row "0707265547 02:23, 07-07-2026 8,80 € 0,00 € 0,00 € Paiement à la livraison À encaisser" [ref=f47e329]:
+            - cell "0707265547" [ref=f47e330]
+            - cell "02:23, 07-07-2026" [ref=f47e331]
+            - cell "8,80 €" [ref=f47e332]
+            - cell "0,00 €" [ref=f47e333]
+            - cell "0,00 €" [ref=f47e334]
+            - cell "Paiement à la livraison" [ref=f47e335]:
+              - generic [ref=f47e336]: Paiement à la livraison
+            - cell "À encaisser" [ref=f47e337]:
+              - generic [ref=f47e338]: À encaisser
+          - row "0707265542 00:10, 07-07-2026 1,00 € 0,00 € 0,00 € Espèces Payé" [ref=f47e339]:
+            - cell "0707265542" [ref=f47e340]
+            - cell "00:10, 07-07-2026" [ref=f47e341]
+            - cell "1,00 €" [ref=f47e342]
+            - cell "0,00 €" [ref=f47e343]
+            - cell "0,00 €" [ref=f47e344]
+            - cell "Espèces" [ref=f47e345]:
+              - generic [ref=f47e346]: Espèces
+            - cell "Payé" [ref=f47e347]:
+              - generic [ref=f47e348]: Payé
+          - row "0707265541 00:05, 07-07-2026 1,00 € 0,00 € 0,00 € Paiement à la livraison À encaisser" [ref=f47e349]:
+            - cell "0707265541" [ref=f47e350]
+            - cell "00:05, 07-07-2026" [ref=f47e351]
+            - cell "1,00 €" [ref=f47e352]
+            - cell "0,00 €" [ref=f47e353]
+            - cell "0,00 €" [ref=f47e354]
+            - cell "Paiement à la livraison" [ref=f47e355]:
+              - generic [ref=f47e356]: Paiement à la livraison
+            - cell "À encaisser" [ref=f47e357]:
+              - generic [ref=f47e358]: À encaisser
+          - row "0607265538 22:34, 06-07-2026 6,00 € 0,00 € 0,00 € Paiement à la livraison À encaisser" [ref=f47e359]:
+            - cell "0607265538" [ref=f47e360]
+            - cell "22:34, 06-07-2026" [ref=f47e361]
+            - cell "6,00 €" [ref=f47e362]
+            - cell "0,00 €" [ref=f47e363]
+            - cell "0,00 €" [ref=f47e364]
+            - cell "Paiement à la livraison" [ref=f47e365]:
+              - generic [ref=f47e366]: Paiement à la livraison
+            - cell "À encaisser" [ref=f47e367]:
+              - generic [ref=f47e368]: À encaisser
+          - row "0607265537 22:25, 06-07-2026 9,40 € 0,00 € 0,00 € Paiement à la livraison À encaisser" [ref=f47e369]:
+            - cell "0607265537" [ref=f47e370]
+            - cell "22:25, 06-07-2026" [ref=f47e371]
+            - cell "9,40 €" [ref=f47e372]
+            - cell "0,00 €" [ref=f47e373]
+            - cell "0,00 €" [ref=f47e374]
+            - cell "Paiement à la livraison" [ref=f47e375]:
+              - generic [ref=f47e376]: Paiement à la livraison
+            - cell "À encaisser" [ref=f47e377]:
+              - generic [ref=f47e378]: À encaisser
+      - generic [ref=f47e380]:
+        - paragraph [ref=f47e382]: Affichage de 1 à 10 sur 2850 entrées
+        - navigation "Pagination" [ref=f47e384]:
+          - button "Previous" [disabled] [ref=f47e385]:
+            - generic [ref=f47e386]: Previous
+            - img [ref=f47e387]
+          - button "1" [disabled] [ref=f47e389]
+          - button "2" [ref=f47e390] [cursor=pointer]
+          - button "..." [ref=f47e391] [cursor=pointer]
+          - button "285" [ref=f47e392] [cursor=pointer]
+          - button "Next" [ref=f47e393] [cursor=pointer]:
+            - generic [ref=f47e394]: Next
+            - img [ref=f47e395]

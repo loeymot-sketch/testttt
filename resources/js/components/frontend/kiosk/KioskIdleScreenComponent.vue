@@ -412,6 +412,12 @@ export default {
       this.tapHint = this.$t('kiosk.idle_screen.default_tap_hint');
     },
     text(key, fallback) {
+      // [i18n-clean 2026-07-08] Ne consulter $t QUE si la clé existe (via $te) :
+      // sinon vue-i18n émet un warning « Not found key » à chaque rendu pour les
+      // libellés purement à-repli (eyebrow/badge_*), inondant la console (194
+      // warnings observés sur l'idle). $te ne loggue pas ; repli FR identique
+      // (clé présente → $t, sinon → fallback).
+      if (!this.$te || !this.$te(key)) return fallback;
       const value = this.$t(key);
       return value && value !== key ? value : fallback;
     },

@@ -1,0 +1,186 @@
+{
+  "summary": "Reconcile the 21 catalog P1 findings against the CURRENT heal branch HEAD (read-only): OPEN / HEALED / PARTIAL / DEFERRED / RESOLVED_BY_DATA",
+  "agentCount": 21,
+  "logs": [],
+  "result": {
+    "totalAnswered": 21,
+    "totalRequested": 21,
+    "OPEN": [
+      "M1-01",
+      "M1-02",
+      "M3-01",
+      "M3-02",
+      "M4-02",
+      "M6-001",
+      "M6-002",
+      "M7-02",
+      "M8-01",
+      "M10-01",
+      "M11-01",
+      "S1-DASH-01",
+      "S6-01",
+      "S7-03",
+      "S8-01",
+      "S10-01",
+      "S11-02",
+      "S13-02",
+      "S16-01",
+      "S17-01"
+    ],
+    "HEALED": [],
+    "PARTIAL": [],
+    "DEFERRED": [],
+    "RESOLVED_BY_DATA": [
+      "M11-02"
+    ],
+    "details": [
+      {
+        "id": "M1-01",
+        "status": "OPEN",
+        "reason": "The no-sale \"Ouvrir tiroir\" button still only calls the Electron hardware bridge function kioskHardwareOpenDrawer() and does not POST to the backend /admin/pos/cash-drawer/open endpoint. The i18n text promises \"Action tracée\" (line 202 of fr.json) but no backend forensic audit is triggered in web/non-Electron environments. The backend endpoint and forensic logging infrastructure (F-7, commit 7e62f7bbc) were added, but the frontend wiring to call it is completely absent.",
+        "evidence": "PosComponent.vue:3675 contains only `const result = await Promise.resolve(kioskHardwareOpenDrawer());` with no axios POST to /admin/pos/cash-drawer/open. kioskHardware.js:261 returns `fail('drawer_unavailable')` when no bridge present, ensuring no backend contact. No grep hits for 'cash-drawer/open' in resources/js/. French i18n at fr.json:202 still states 'Action tracée' unfulfilled.",
+        "proposedCorrectionStillValid": true
+      },
+      {
+        "id": "M1-02",
+        "status": "OPEN",
+        "reason": "Offline CASH orders still enqueue with pos_received_amount=null, causing 422 validation errors on replay. The form initializes pos_received_amount to null (PosComponent.vue:3424), and the offline enqueue branch (lines 3894-3908) bypasses PaymentComponent where it would be populated. Server validation (PosOrderRequest.php:118) requires numeric pos_received_amount for CASH payments, so replay fails.",
+        "evidence": "1. Form initialization: resources/js/components/admin/pos/PosComponent.vue:3424 sets pos_received_amount: null\n2. Offline enqueue path: resources/js/components/admin/pos/PosComponent.vue:3894-3908 directly enqueues form without opening payment modal\n3. Server validation: app/Http/Requests/PosOrderRequest.php:118 shows pos_received_amount is required_if pos_payment_method === CASH (numeric, min:0)\n4. No fix applied: Offline branch is byte-identical to introduction in commit 55edb83ba (2026-05-17) with no subsequent modifications",
+        "proposedCorrectionStillValid": true
+      },
+      {
+        "id": "M3-01",
+        "status": "OPEN",
+        "reason": "The single-page add-to-cart handler at public/js/pos-wizard.js:5850-5854 still calls syncAndSubmit() with no validation. The handler is byte-identical to main branch (git show main:public/js/pos-wizard.js:5655-5660 == current:5850-5854). The canProceedFromStep() validation function exists (line 5149-5226) but is only invoked in multi-step navigation (line 5457), not in the active single-page add-to-cart flow. Additionally, updateSinglePageUI() (lines 3233-3461) never disables the add-to-cart button based on completeness. The defect persists: you can add a Tacos with 0 viande/0 sauce to the cart.",
+        "evidence": "public/js/pos-wizard.js:5850-5854 (current add-to-cart handler):\n    var addBtn = wizardEl.querySelector('[data-action=\"add-to-cart\"]');\n    if (addBtn) {\n        addBtn.addEventListener('click', function () {\n            syncAndSubmit();\n        });\n    }\n\nNo validation call, no disabled logic. canProceedFromStep() exists at 5149-5226 but is only called at 5457 (multi-step nav context), never in the single-page flow.",
+        "proposedCorrectionStillValid": true
+      },
+      {
+        "id": "M3-02",
+        "status": "OPEN",
+        "reason": "Frites upgrades (Grande Portion +1,00€ / Cheddar +1,00€) are counted in the UI preview total (pos-wizard.js:1325-1326) but sent to the server only as instruction text (line 4156), not as priced item_addons. The PricingService only re-invoices actual item_addons from the DB (line 228), so the server bills less than the preview showed — a €1-2€ under-charge per order. The code stores frites choices in menu_restore for cart editing but never sends them as separate tariffed addon records.",
+        "evidence": "pos-wizard.js:1325-1326 (calculateRunningTotal adds FRITES_GRANDE_PRICE/FRITES_CHEDDAR_PRICE to preview); 4136-4172 (addonToPayload sends parent addon's convert_price only, frites upgrades only in instruction text at line 4156); PricingService.php:228 (server addonTotal += unitAddonPrice * quantity from DB addon items only, instruction field ignored for pricing)",
+        "proposedCorrectionStillValid": true
+      },
+      {
+        "id": "M4-02",
+        "status": "OPEN",
+        "reason": "The defect persists entirely. Code review confirms: (1) saveCartToStorage (lines 38-45) persists discount but not discount_reason; (2) posCart module state (lines 245-250) has no discount_reason property; (3) hydrateFromScope (line 542) restores state.discount from localStorage but discount_reason was never saved; (4) orderSubmit (line 3823) sets form.discount from posDiscount but never repopulates form.discount_reason; (5) backend OrderService (lines 2894-2898) enforces discount_reason >= 3 chars. Result: after cart reload with restored discount, form.discount_reason remains null, backend rejects the order with 422.",
+        "evidence": "resources/js/store/modules/posCart.js:38-45 saveCartToStorage persists {lists, subtotal, discount, savedAt, branchId, userId} but NOT discount_reason; resources/js/store/modules/posCart.js:245-250 state has only {lists, subtotal, discount, restoredFromStorage}; resources/js/store/modules/posCart.js:542 hydrateFromScope restores state.discount = saved.discount || 0 but no discount_reason handling; resources/js/components/admin/pos/PosComponent.vue:3823 orderSubmit sets form.discount from this.posDiscount with no discount_reason repopulation; app/Services/OrderService.php:2894-2898 backend enforces if (strlen(trim((string) $reason)) < 3) throw ValidationException with 'discount_reason' message.",
+        "proposedCorrectionStillValid": true
+      },
+      {
+        "id": "M6-001",
+        "status": "OPEN",
+        "reason": "The cash-dominant split payment guard at lines 1071-1078 still unconditionally rejects orders where pos_received_amount < order->total, without checking for the presence of payment_breakdown. The proposed fix (wrap in `if (!$splitActive && ...)`) has not been applied. The defect remains: a split payment with multiple cash tranches would be rejected even if each tranche is correctly balanced per-row.",
+        "evidence": "File: /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/OrderService.php:1071-1078\n```\nif ($request->pos_payment_method == \\App\\Enums\\PosPaymentMethod::CASH\n    && $request->pos_received_amount !== null\n    && (float) $request->pos_received_amount < $this->order->total) {\n    throw new \\InvalidArgumentException(\n        'Le montant reçu (' . $request->pos_received_amount . '€) est inférieur au total réel (' . $this->order->total . '€).',\n        422\n    );\n}\n```\nNo conditional check for split payment is present. The guard applies the single-tender check without considering payment_breakdown (which is checked later at line 1238).",
+        "proposedCorrectionStillValid": true
+      },
+      {
+        "id": "M6-002",
+        "status": "OPEN",
+        "reason": "The applyOrderToTotals method in ZReportService still buckets the entire order total under a single dominant payment method (pos_payment_method) without checking for order_payments rows or distributing across actual payment tranches. For a split order (e.g., card 20 + cash 10), the entire amount gets attributed to whichever method is dominant, not distributed by actual tender amounts.",
+        "evidence": "app/Services/Fiscal/ZReportService.php:661-668. The method reads `$order->pos_payment_method` (line 666) and allocates the entire `$ttc` to that single method (line 667) without iterating through `$order->payments()` relationship to distribute amounts by their actual mode/amount.",
+        "proposedCorrectionStillValid": true
+      },
+      {
+        "id": "M7-02",
+        "status": "OPEN",
+        "reason": "The defect is still present. Backend builds unavailable variation warnings (PosParkedOrderService:95-97) but frontend drops them (posParked.js:83 only uses payload_json). Frontend builds _recall_purged_item_ids but never checks either set of warnings before showing success toast (ParkedOrdersComponent:197). Cashier still receives no notification of dropped items/variations.",
+        "evidence": "ParkedOrdersComponent.vue:186-203 shows restoreOrder never checks payload for warnings before calling alertService.success(). posParked.js:83 extracts only payload_json, ignoring warnings attribute. PosComponent.vue:3474-3528 applyParkedSnapshot never references any warning fields.",
+        "proposedCorrectionStillValid": true
+      },
+      {
+        "id": "M8-01",
+        "status": "OPEN",
+        "reason": "The pre-Z refund path (OrderService::changeStatus with status=RETURNED) does not dispatch RefundCreated, while the post-Z path (RefundWithCounterEntryService) does at line 415. Lines 2272-2278 of OrderService.php show that OrderCanceled is dispatched only for CANCELED/REJECTED statuses, not RETURNED, creating the asymmetric side-effect cascade described in the finding.",
+        "evidence": "OrderService.php:2272-2278 — the event dispatch conditional: if (in_array($targetStatus, [OrderStatus::CANCELED, OrderStatus::REJECTED], true)) { OrderCanceled::dispatch($order); } — RETURNED is excluded from this condition, so no event cascade fires for pre-Z refunds. Contrast with RefundWithCounterEntryService.php:415 which always dispatches RefundCreated::dispatch($parent) for post-Z refunds.",
+        "proposedCorrectionStillValid": true
+      },
+      {
+        "id": "M10-01",
+        "status": "OPEN",
+        "reason": "The flagCashMovementSkipped() method (app/Services/PaymentService.php:573-576) still only sets a transient, non-persisted attribute ($order->cash_movement_skipped = true). No audit_log row is written for the skipped cash movement, and no CashMovement record is persisted. The cash-trail gap is surfaced transiently to the frontend via OrderDetailsResource but remains non-queryable in the database for reconciliation—exactly matching the described defect.",
+        "evidence": "app/Services/PaymentService.php:573-576: `private function flagCashMovementSkipped(Order $order): void { $order->cash_movement_skipped = true; }` — no DB write, no AuditLogService::write call, no CashMovement::create. The only persisted changes on cash-skip are Transaction + order.payment_status PAID + fiscal_sequence_no allocation.",
+        "proposedCorrectionStillValid": true
+      },
+      {
+        "id": "M11-01",
+        "status": "OPEN",
+        "reason": "The current code at app/Services/Receipt/ReceiptDataService.php:70 still reads operator_name from order->user->name, which resolves to the CUSTOMER (Walking Customer id=2), not the CASHIER (stored in creator_id). The fix commit e02a88b2a exists but is not in this branch. No resolveOperatorName() method has been implemented yet.",
+        "evidence": "app/Services/Receipt/ReceiptDataService.php:70 shows: 'operator_name' => optional($order->user)->name, which should instead resolve creator_id first with fallback to user for legacy orders, per commit e02a88b2a that implements private function resolveOperatorName(BroadcastableOrder $order) checking $order->creator_id first.",
+        "proposedCorrectionStillValid": true
+      },
+      {
+        "id": "M11-02",
+        "status": "RESOLVED_BY_DATA",
+        "reason": "The root cause was a data-state problem: branch 1's fiscal identity columns (siret, vat_intra, register_id, legal_footer) were all NULL. The Vue rendering code in ReceiptComponent.vue (lines 67-73) was always correct — it conditionally renders the fiscal header section with `v-if=\"order.pos_siret || order.pos_vat_intra || order.pos_register_id || order.operator_name\"`. The ReceiptDataService (lines 66-69) and OrderDetailsResource (lines 118-122) correctly extract and expose these fields from the branch. Database verification shows branch_id=1 now has real E.DELICE SAS data: siret=10417050100019, vat_intra=FR19104170501, register_id=CAISSE-01, legal_footer populated. The issue is RESOLVED because the data now exists.",
+        "evidence": "Database query result: mysql> SELECT id,name,siret,vat_intra,register_id,legal_footer FROM branches WHERE id=1; → id=1, name='Le Cayenne (principal)', siret='10417050100019', vat_intra='FR19104170501', register_id='CAISSE-01', legal_footer='E.DELICE SAS au capital de 1 000 EUR · SIRET 104 170 501 00019 · TVA FR19104170501 · Merci de votre visite — Le Cayenne'. Also: resources/js/components/admin/pos/ReceiptComponent.vue:67 — `<div v-if=\"order.pos_siret || order.pos_vat_intra || order.pos_register_id || order.operator_name\"` correctly gates the fiscal header rendering.",
+        "proposedCorrectionStillValid": false
+      },
+      {
+        "id": "S1-DASH-01",
+        "status": "OPEN",
+        "reason": "Date-range filter defect remains unfixed. Frontend Vue components (SalesSummaryComponent.vue, OrderSummaryComponent.vue, etc.) pass raw Date objects from the datepicker directly to the store without formatting. appService.requestHandler then converts these Date objects to their default JavaScript toString() representation (e.g. \"Wed Jun 05 2026 14:30:45 GMT+0200...\") rather than the expected Y-m-d format. The backend DashboardService.php attempts to parse these malformed strings with Carbon::parse(), which will silently fail or parse incorrectly, causing the dashboard charts to display stale data with no visible error.",
+        "evidence": "resources/js/components/admin/dashboard/SalesSummaryComponent.vue:89-90: `date.first_date = e[0]; date.last_date = e[1];` (passes raw Date objects); resources/js/services/appService.js:253: `response += request + \"=\" + requests[request];` (converts to toString()); resources/js/store/modules/dashboard.js:159-160: `url = url + appService.requestHandler(payload);` (sends unformatted dates to backend)",
+        "proposedCorrectionStillValid": true
+      },
+      {
+        "id": "S6-01",
+        "status": "OPEN",
+        "reason": "The defect persists in both files. TaxRequest.php line 40 uses `->ignore($this->route('tax.id'))` and CurrencyRequest.php line 35 uses `->ignore($this->route('currency.id'))`, both incorrectly attempting to access nested properties. The catalog correction requires using the model-bound parameter directly: `->ignore($this->route('tax'))` and `->ignore($this->route('currency'))` respectively. This bug prevents proper exclusion of the current record during updates, causing unique constraint self-collisions.",
+        "evidence": "TaxRequest.php:40 — Rule::unique(\"taxes\", \"code\")->ignore($this->route('tax.id')) / CurrencyRequest.php:35 — Rule::unique(\"currencies\", \"name\")->ignore($this->route('currency.id'))",
+        "proposedCorrectionStillValid": true
+      },
+      {
+        "id": "S7-03",
+        "status": "OPEN",
+        "reason": "The App Debug toggle UI (SiteComponent.vue:331-354) is still present and rendering enable/disable radio options. The backend service (SiteService.php:48) continues to write APP_DEBUG to .env based on the admin form input: `'APP_DEBUG' => $request->site_app_debug == Activity::ENABLE ? 'true' : 'false'`. Both UI and persistence remain unmodified, preserving the operational footgun that allows admins to toggle production debug mode.",
+        "evidence": "SiteComponent.vue:331-354 shows active App Debug radio group; SiteService.php:48 shows `'APP_DEBUG' => $request->site_app_debug == Activity::ENABLE ? 'true' : 'false'` in addData() call.",
+        "proposedCorrectionStillValid": true
+      },
+      {
+        "id": "S8-01",
+        "status": "OPEN",
+        "reason": "The defect remains unhealed. The PaymentTerminalsComponent.vue form (lines 203-211) still lacks a branch_id field in its defaultForm() and the template (lines 78-157) has no branch selector input. When an admin creates a terminal without providing branch_id, PaymentTerminalController.php resolveBranchId() (lines 96-105) returns 0 for null input, causing the terminal to be created with branch_id=0 (admin-global) and remain invisible to branch cashiers. This matches exactly the described defect: \"TPE créé via Settings prend branch_id=0 (admin) → invisible/refusé à la caisse de la branche\".",
+        "evidence": "PaymentTerminalsComponent.vue:203-211 defaultForm() returns object WITHOUT branch_id key. PaymentTerminalController.php:96-105 resolveBranchId() returns (int)$request->validated('branch_id') which evaluates to 0 when branch_id is null/not provided. PaymentTerminalRequest.php:22 defines branch_id as 'nullable', allowing it to pass validation as null.",
+        "proposedCorrectionStillValid": true
+      },
+      {
+        "id": "S10-01",
+        "status": "OPEN",
+        "reason": "CustomerService::show() at line 128-140 still lacks the $this->assertTargetRole($customer) guard present in update() (line 98) and changePassword() (line 196). The show() method only checks if CUSTOMER is not in blockRoles, which is always true—it never validates that the route-bound user actually HAS the CUSTOMER role before returning PII. This allows privilege escalation: any admin/manager with customers_show permission can read any user's data by supplying their ID.",
+        "evidence": "app/Services/CustomerService.php:128-140 (show method) — no assertTargetRole call. Compare to app/Services/CustomerService.php:98 (update method) — has assertTargetRole call at line 98 before try block. Also app/Services/CustomerService.php:196 (changePassword) — has assertTargetRole at line 196.",
+        "proposedCorrectionStillValid": true
+      },
+      {
+        "id": "S11-02",
+        "status": "OPEN",
+        "reason": "ReceiptDataService:70 still uses optional($order->user)->name for operator_name, displaying the customer name instead of the cashier. The Order model has creator_id defined but no creator() relation, and ReceiptDataService has no resolveOperatorName() method. The fix exists (commits e02a88b2a and 24ab46870) but is on branch massive-e2e-0604-wt, not merged to current working branch heal/cms-pr1-quickwins-2026-05-18.",
+        "evidence": "File: app/Services/Receipt/ReceiptDataService.php:70 - Current code reads: 'operator_name' => optional($order->user)->name, (returns customer, not cashier). Fix commits show it should call $this->resolveOperatorName($order) which checks creator_id first with fallback to audit_logs for counter-payment-confirmed, then user as last resort.",
+        "proposedCorrectionStillValid": true
+      },
+      {
+        "id": "S13-02",
+        "status": "OPEN",
+        "reason": "The defect remains unfixed. At order creation in OrderService.php (lines 562, 1048, 1575 for web/POS/table paths), the persisted total_tax is set to the pre-discount amount without applying the discount ratio. The Z-report's taxBreakdownForOrders() method (ZReportService.php:724) DOES apply the discount ratio when computing the tax breakdown for the signed payload, creating a persistent disagreement between the receipt/order total_tax and the Z-report TVA per rate. No discount-netting is applied to total_tax at order creation as proposed in the correction.",
+        "evidence": "OrderService.php:562 `$this->order->total_tax = $totalTax;` (web non-SSOT path, no discount adjustment); OrderService.php:1048 and 1043 (POS path, same pattern); OrderService.php:1575 and 1570 (table path, same pattern). The discount-netting ratio is computed in ZReportService.php:677-686 (orderDiscountRatio method) and applied in ZReportService.php:724: `$byTaxRate[$key] += ($sign * $r->total_tax_for_rate * $ratio);` but NOT applied to the persisted order.total_tax field at creation time.",
+        "proposedCorrectionStillValid": true
+      },
+      {
+        "id": "S16-01",
+        "status": "OPEN",
+        "reason": "The kiosk counter-collected order receipt operator field still resolves to the customer instead of the collecting cashier. Current code at app/Services/Receipt/ReceiptDataService.php:70 reads 'operator_name' from optional($order->user)->name, which for anonymous counter sales returns 'Client passage' instead of the cashier. Neither editor_id nor creator_id/audit-log resolution has been implemented on this branch; fixes exist on other branches (massive-e2e-0604-wt) but are not merged here.",
+        "evidence": "app/Services/Receipt/ReceiptDataService.php:70 — 'operator_name' => optional($order->user)->name, — currently directly references the customer user, not the cashier. app/Services/PaymentService.php:325-362 does not set editor_id when payment is confirmed.",
+        "proposedCorrectionStillValid": false
+      },
+      {
+        "id": "S17-01",
+        "status": "OPEN",
+        "reason": "TableOrderRequest::withValidator (lines 54-67) still lacks the DINING_TABLE gate. PosOrderRequest has the proper check at lines 164-170 that validates `$orderTypeInt === OrderType::DINING_TABLE && ! Settings::group('pos')->get('pos_dine_in_enabled', false)`, but TableOrderRequest only checks DELIVERY and TAKEAWAY disabled states. An attacker can still POST order_type=DINING_TABLE to the public QR endpoint and create a dine-in order even when pos_dine_in_enabled is false.",
+        "evidence": "TableOrderRequest.php:54-67 contains no check for OrderType::DINING_TABLE. The withValidator method only validates order_type against DELIVERY and TAKEAWAY disabled states:\n\n```php\npublic function withValidator($validator): void\n{\n    $validator->after(function ($validator) {\n        if (request('order_type') == OrderType::DELIVERY && Settings::group('order_setup')->get(\"order_setup_delivery\") == Activity::DISABLE) {\n            $validator->errors()->add('order_type', 'This order type is disabled...');\n        } else if (request('order_type') == OrderType::TAKEAWAY && Settings::group('order_setup')->get(\"order_setup_takeaway\") == Activity::DISABLE) {\n            $validator->errors()->add('order_type', 'This order type is disabled...');\n        } else if (blank(request('order_type'))) {\n            $validator->errors()->add('order_type', 'This order type is disabled...');\n        }\n        $this->validateOrderItemVariationsAfter($validator);\n    });\n}\n```\n\nContrast with PosOrderRequest.php:164-170 which has the missing check: `if ($orderTypeInt === OrderType::DINING_TABLE && ! (bool) Settings::group('pos')->get('pos_dine_in_enabled', false)) { $validator->errors()->add('order_type', 'Dine-in is disabled for this branch.'); }`",
+        "proposedCorrectionStillValid": true
+      }
+    ]
+  }
+}

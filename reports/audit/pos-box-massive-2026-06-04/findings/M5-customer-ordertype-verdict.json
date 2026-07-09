@@ -1,0 +1,68 @@
+{
+  "micro_system": "M5-customer-ordertype",
+  "verdicts": [
+    {
+      "id": "M5-01",
+      "file_line_exists": true,
+      "is_real": false,
+      "is_necessary": false,
+      "severity_adjusted": "DROP",
+      "reason": "FALSE as described. resetCart() (L3719-3729) indeed does not touch order_type — but it is ONLY bound to the manual 'vider le panier' button (@click.prevent='resetCart' L995), NOT the post-payment path. The auditor audited the wrong method. The real post-payment reset chain: (1) PaymentComponent emits 'payment-form:reset' on success (PaymentComponent.vue:911) -> resetPaymentForm() L3405 explicitly sets order_type: orderTypeEnum.TAKEAWAY (L3415) + address_id:null + dining_table_id:null, so the segmented control's reactive :class is-active (template L627/639/652, bound to order_type) returns to takeaway. (2) Cart reset is deferred to ReceiptComponent.reset() on receipt-close (ReceiptComponent.vue:481 dispatches posCart/resetCart). (3) The carts watcher (L4405-4439, deep+immediate) fires on empty cart and runs this.$refs.takeAway.click() (L4427) -> takeAwayOrder() (L4023) which removes 'block'/adds 'hidden' on deliveryOrderDiv AND calls ensureWalkInCustomer() (L4428). So the delivery box DOES close, order_type DOES revert to takeaway, and walk-in IS restored — automatically, after every order. The same watcher resolves the manual resetCart() button case too (emptying the cart triggers it). Claims 'order_type reste 5', 'bloc adresse encore visible', 'caissier doit re-cliquer A emporter' are all contradicted by L911 + L3415 + L4427-4428. Not real."
+    },
+    {
+      "id": "M5-02",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "CONFIRMED dead code. openAddressModal (L4099), editAddressModal (L4103), updateSelectedAddress (L4152), computed filteredCustomerAddresses (L2137) + customerAddresses (L2143) are defined; grep of template (lines 1-1200) shows ZERO @click/@change/:options bindings to any of them — they appear only in their own definitions and internal chains. CreateCustomerAddressComponent IS mounted (L1133) but has no UI trigger in the POS cart. The live address path is deliveryInline + ensureDeliveryCustomerAndAddress(). Owner explicitly flagged 'unnecessary things' — low severity but is_necessary:true (real cleanup). NOT P2 (no functional/data-integrity impact, pure surface); P3 deadcode is correct. CAVEAT before removal: verify editAddressModal/customerAddresses are not used by a still-live customer-selected-address path (gettingUserAddress) — see coverage gaps."
+    },
+    {
+      "id": "M5-03",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "CONFIRMED at L4359-4372: ensureDeliveryCustomerAndAddress() POSTs /admin/users with email=`delivery_${Date.now()}@pos.local`, password 'delivery123' (hardcoded, identical), only when !customerId. orderSubmit (L3806) does NOT force walk-in for DELIVERY (condition is order_type !== DELIVERY && !customer_id), so anonymous deliveries do create a throwaway User each time. Real defect: account proliferation + shared weak password on real-ish User rows (role_id=2). BUT severity downgraded P2->P3: V1 Le Cayenne is ~95% takeaway (single mono-resto), delivery volume is low, and these are functional pollution not NF525/security-critical (the accounts are internal staff-created, never login surfaces for customers). is_necessary:true — the 'delivery123' constant especially should be a random password, and reuse-by-phone is a reasonable cleanup the owner would want. Worth a correction but not P2-urgent."
+    },
+    {
+      "id": "M5-04",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": false,
+      "severity_adjusted": "P3",
+      "reason": "Partially mis-stated and V1-unreachable. At L3503 order_type=savedOrderType is restored, but L3504 is dining_table_id = savedForm.dining_table_id ?? null — it RESTORES the saved table, not always null as the finding's reproduction implies. The table_field_required block (L3861) only fires for a TABLELESS dine-in snapshot. More importantly: in V1 dine-in is permanently OFF (pos_dine_in_enabled flag, computed L1898), the dine-in radio (L623), table selector (L742) and floorplan button (L168) are all v-if='dineInEnabled' — so NO UI path can create or park a DINING_TABLE order. The only way to reach this state is a forged/imported parked payload or pre-flag-disable history. Real code, real edge logic, but dormant/unreachable in V1 single-box. P3-defensive at most; arguably DROP. Scored consistently with M5-06 (both: real asymmetry, V1-dormant). Confidence medium in finding is appropriate — the bug requires an unreachable precondition."
+    },
+    {
+      "id": "M5-05",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "CONFIRMED no-op. dineInOrder/takeAwayOrder/deliveryOrder (L4015/4031/4042) call classList.add/remove('active') on the dineIn/takeAway/deliveryOrderLabel refs. grep of resources/css/pos-v5.css: the ONLY matching rule is .pos-v5-segmented__item.is-active (L801); there is NO .pos-v5-segmented__item.active rule (verified: grep '\\.active' returns only is-active). The visible highlight is driven by the reactive :class { 'is-active': order_type===... } bindings (template L627/639/652). So the imperative add('active') is purely dead V4-residual DOM manipulation. is_necessary:true — owner-flagged 'flou', and it is genuinely misleading for future devs. P3 cosmetic/deadcode is correct (zero current visual impact)."
+    },
+    {
+      "id": "M5-06",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": false,
+      "severity_adjusted": "P3",
+      "reason": "CONFIRMED asymmetry. dineInOrder() (L4008-4014) accesses this.$refs.dineIn.classList / dineInDiv.classList WITHOUT optional chaining, while takeAwayOrder (L4031-4037) and deliveryOrder (L4042-4048) use ?. throughout. The dineIn/dineInDiv refs render only under v-if='dineInEnabled' (L623, L742). Today dineInOrder is invoked only behind dineInEnabled guards (@click on a v-if='dineInEnabled' label L628, and applyParkedSnapshot L3496 which is itself guarded by '&& this.dineInEnabled'), so NO crash path exists in V1. is_necessary:false (no live defect; the ?. add is ~6 chars of defensive cleanup but fixes nothing reachable). P3-defensive correct — scored identically to M5-04 (both real-but-V1-dormant). Confidence in the asymmetry is high; impact is latent-only."
+    },
+    {
+      "id": "M5-07",
+      "file_line_exists": true,
+      "is_real": true,
+      "is_necessary": true,
+      "severity_adjusted": "P3",
+      "reason": "CONFIRMED waste. mounted() dispatches diningTable/lists unconditionally (L2336), not gated by dineInEnabled. The only consumer of the resulting store getter is computed diningtables (L2134), bound solely to the table <vue-select> (L747) which sits inside <div v-if='dineInEnabled'> (L742). In V1 (dine-in off) that selector never renders, so the network call + store fill are pure waste on every POS open. Real, owner-aligned ('unnecessary things'). P3 perf is correct (marginal cost, single request). is_necessary:true — trivial guard (if (this.dineInEnabled)) is a clean, safe win. Confidence medium in finding is fair; the fix is low-risk."
+    }
+  ],
+  "coverage_gaps": [
+    "CUSTOMER HALF OF M5 UNAUDITED: the micro-system is 'Customer + order type' but 6 of 7 findings are order-type/delivery; the customer-selection flow is barely touched. Unexamined: changingUser (L4138, @change on customer select), ensureWalkInCustomer, ensureCustomersHydratedForCheckout, _loadCustomerLoyalty (L3520), gettingUserAddress, the customer search/select dropdown, and the inline add-customer modal (customerProps + customer save). These are the load-bearing 'customer' paths for the M5 scope.",
+    "ORDER-TYPE BINDING MECHANISM UNDOCUMENTED: takeAwayOrder/deliveryOrder/dineInOrder are bound via @click ONLY (template L628/640/653), NOT @change on the radios. Programmatic v-model writes to order_type (e.g. resetPaymentForm L3415) do NOT fire @click, so the imperative block/hidden toggle on deliveryOrderDiv is NOT driven by order_type — it is reconciled separately by the carts watcher (L4427, this.$refs.takeAway.click() on empty cart). M5-01/05/06 all hinge on this and the auditor never mapped it.",
+    "gettingUserAddress / saved-address path for a SELECTED EXISTING customer (not inline delivery) was not classified: is it live, or part of the M5-02 dead address cluster? Must be resolved BEFORE removing M5-02 code (editAddressModal/customerAddresses/CreateCustomerAddressComponent) to avoid breaking a live selected-customer address flow.",
+    "POST-PAYMENT / RECEIPT-CLOSE RESET CHAIN unexamined by auditor: the deferred cart reset (ReceiptComponent.vue:481) + carts watcher (L4405) is the actual state-reset mechanism for the whole POS; it was never inspected, which is precisely why M5-01 was mis-rated P1. Any future order-type/customer audit must trace this chain.",
+    "DELIVERY CHARGE / GEOCODE path (applyDeliveryChargeFromCoordinates, deliveryChargeCalculation L4160, deliveryGeocodeError) not audited — delivery_charge is sent to backend (orderSubmit) and is pricing-adjacent; worth a separate pass for SSOT integrity."
+  ]
+}
