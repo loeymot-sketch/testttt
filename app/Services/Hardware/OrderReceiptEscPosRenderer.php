@@ -29,6 +29,14 @@ final class OrderReceiptEscPosRenderer
         private readonly KitchenTicketSymbolicFormatter $symbolic = new KitchenTicketSymbolicFormatter,
     ) {}
 
+    /**
+     * [BORNE-EURO 2026-07-09] Suffixe monétaire du ticket, fixé au début de chaque rendu
+     * client. Défaut « €» (symbole, CP858 — SAGA caisse). La BORNE (SK1-31, codepage
+     * imprévisible) peut demander « EUR» en texte via opts['euro_as_text'] pour ne JAMAIS
+     * imprimer « ⌐ » quand aucune page de code € fiable n'est configurée.
+     */
+    private string $moneySuffix = ' €';
+
     /** Client (fiscal) ticket — prices, totals, TVA, payment, NF525 footer. */
     public function renderClientTicket(BroadcastableOrder $order, array $opts = []): string
     {
@@ -39,6 +47,9 @@ final class OrderReceiptEscPosRenderer
         $codePage = (int) ($opts['code_page'] ?? 19); // 19 = CP858 (FR accents + €)
         $isDuplicata = (bool) ($opts['is_duplicata'] ?? false);
         $counterCopy = (bool) ($opts['counter_copy'] ?? false);
+        // [BORNE-EURO 2026-07-09] La borne peut demander « EUR» texte (repli sûr) au lieu du
+        // symbole « €» quand aucune page de code € fiable n'est calée sur la SK1-31.
+        $this->moneySuffix = ($opts['euro_as_text'] ?? false) ? ' EUR' : ' €';
         $head = $this->receiptData->buildForOrderModel($order);
         $branch = $order->branch;
 
@@ -623,9 +634,10 @@ final class OrderReceiptEscPosRenderer
 
     private function money(float $v): string
     {
-        // Owner: symbole € (pas « EUR »). CP858 (code page 19) contient € → encodé
-        // correctement par encodeForPrinter en fin de flux.
-        return number_format(round($v, 2), 2, ',', ' ').' €';
+        // Owner: symbole € (pas « EUR ») sur la CAISSE — CP858 (page 19) contient € → encodé
+        // correctement par encodeForPrinter. La BORNE (SK1-31) bascule sur « EUR » texte via
+        // $this->moneySuffix quand aucune page de code € fiable n'est configurée (jamais de « ⌐ »).
+        return number_format(round($v, 2), 2, ',', ' ').$this->moneySuffix;
     }
 
     private function encodingFor(int $codePage): string

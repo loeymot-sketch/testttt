@@ -69,9 +69,16 @@ return [
         // redéploiement (config:clear) si une autre imprimante a une autre largeur.
         // 0 = « non défini » → on retombe sur Printer.width_chars puis 48. Mettre 42 pour la SAGA.
         'width_chars' => (int) env('RECEIPT_WIDTH_CHARS', 0),
-        // [BORNE 2026-07-05] Largeur PROPRE à la borne (imprimante SK1-31, plus large que la SAGA).
-        // 0 = non défini → Printer.width_chars puis 48 (remplit la largeur, pas de marge blanche).
+        // [BORNE 2026-07-05 → HEAL 2026-07-09] Largeur PROPRE à la borne (SK1-31). 0 = non défini
+        // → largeur CAISSE (RECEIPT_WIDTH_CHARS) puis Printer.width_chars puis 48. (Avant : 48 en
+        // dur, ce qui ré-enroulait « 15,\n00 € » sur la SK1-31 58 mm — photo owner IMG_1729.)
+        // Ne mettre une valeur ici QUE si la borne doit imprimer PLUS LARGE que la caisse.
         'borne_width_chars' => (int) env('RECEIPT_BORNE_WIDTH_CHARS', 0),
+        // [BORNE-EURO 2026-07-09] Page de code ESC/POS PROPRE à la borne (SK1-31). 0 = non défini
+        // → défaut renderer 19 (CP858, € = 0xD5, comme la caisse). Si la SK1-31 imprime « ⌐ » au
+        // lieu de « € », caler ici la page qui affiche € (test : tools/borne/test-euro-codepages.js).
+        // Repères : 16 = WPC1252 (€ = 0x80), 19 = CP858 (€ = 0xD5).
+        'borne_code_page' => (int) env('RECEIPT_BORNE_CODE_PAGE', 0),
         // [TICKET-PHONE 2026-07-03] Owner : le n° de téléphone n'apparaissait pas sur
         // les tickets. Source primaire = `branch->phone` ; ce défaut config est le
         // FALLBACK quand la branche n'a pas de téléphone renseigné (cas V1 Le Cayenne).

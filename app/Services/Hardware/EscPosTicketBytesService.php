@@ -59,8 +59,14 @@ final class EscPosTicketBytesService
         // Appliquer 42 à la borne laissait une MARGE BLANCHE à droite. On choisit donc la config
         // selon la surface : borne → RECEIPT_BORNE_WIDTH_CHARS, caisse → RECEIPT_WIDTH_CHARS ;
         // fallback commun Printer.width_chars → 48. Chaque imprimante remplit sa largeur.
+        // [HEAL 2026-07-09] Fallback borne CORRIGÉ : la borne NON configurée retombe sur la
+        // largeur CAISSE prouvée (RECEIPT_WIDTH_CHARS=42), plus sur 48 en dur. L'hypothèse du
+        // 05/07 (« SK1-31 plus large → 48 ») était FAUSSE : la photo owner (IMG_1729) montre la
+        // SK1-31 58 mm ré-enrouler « 15,\n00 € » à 48. RECEIPT_BORNE_WIDTH_CHARS reste prioritaire
+        // si l'on veut explicitement une largeur borne distincte de la caisse.
         $cfgWidth = $kioskClient
-            ? (int) config('printing.receipt.borne_width_chars', 0)
+            ? ((int) config('printing.receipt.borne_width_chars', 0)
+                ?: (int) config('printing.receipt.width_chars', 0))
             : (int) config('printing.receipt.width_chars', 0);
         $opts = [
             'width_chars'  => $cfgWidth ?: ((int) ($printer->width_chars ?? 0) ?: 48),
@@ -69,6 +75,23 @@ final class EscPosTicketBytesService
         $pOpts = ($printer && is_array($printer->options)) ? $printer->options : [];
         if (! empty($pOpts['code_page'])) {
             $opts['code_page'] = (int) $pOpts['code_page'];
+        }
+        // [TICKET-BORNE-EURO 2026-07-09] La SK1-31 (borne) n'affiche « € » que sur SA page de code
+        // (≠ SAGA caisse, qui rend CP858/0xD5 correctement). Knob dédié RECEIPT_BORNE_CODE_PAGE
+        // (0 = non défini → options imprimante puis défaut renderer 19/CP858). À renseigner après
+        // le test `tools/borne/test-euro-codepages.js`. Ne touche QUE la borne — la caisse garde
+        // son € CP858.
+        if ($kioskClient) {
+            $borneCp = (int) config('printing.receipt.borne_code_page', 0);
+            if ($borneCp > 0) {
+                // Page de code € VÉRIFIÉE sur la SK1-31 → on garde le vrai symbole « € ».
+                $opts['code_page'] = $borneCp;
+            } else {
+                // [BORNE-EURO 2026-07-09] Aucune page € fiable calée → repli « EUR » texte (ASCII,
+                // toujours lisible) plutôt que « ⌐ ». Zéro charabia dès le déploiement ; passer au
+                // vrai « € » = renseigner RECEIPT_BORNE_CODE_PAGE après tools/borne/test-euro-codepages.js.
+                $opts['euro_as_text'] = true;
+            }
         }
 
         // [TICKET-BORNE-LONG 2026-07-02] Ticket CLIENT imprimé par la BORNE : queue longue +

@@ -19,8 +19,10 @@ use Tests\TestCase;
  * largeur caisse (42) à la borne laissait une MARGE BLANCHE à droite. Ce test prouve, via le
  * VRAI chemin (EscPosTicketBytesService, celui que fetchent la caisse ET la borne), que :
  *   - la CAISSE rend à RECEIPT_WIDTH_CHARS (42) ;
- *   - la BORNE rend à RECEIPT_BORNE_WIDTH_CHARS (48) — remplit la largeur, aucune marge ;
- *   - borne non configurée → défaut 48 (jamais 42).
+ *   - la BORNE explicitement configurée rend à RECEIPT_BORNE_WIDTH_CHARS (ex. 48) ;
+ *   - [HEAL 2026-07-09] borne NON configurée → largeur CAISSE (42), plus 48 en dur : la SK1-31
+ *     58 mm ré-enroulait « 15,\n00 € » à 48 (photo owner IMG_1729). RECEIPT_BORNE_CODE_PAGE
+ *     permet de caler la page de code € propre à la SK1-31 sans toucher la caisse.
  */
 class BorneCaisseWidthDecoupledTest extends TestCase
 {
@@ -106,7 +108,7 @@ class BorneCaisseWidthDecoupledTest extends TestCase
     }
 
     /** @test */
-    public function borne_non_configuree_retombe_sur_48(): void
+    public function borne_non_configuree_retombe_sur_la_largeur_caisse(): void
     {
         config()->set('printing.receipt.width_chars', 42);      // caisse configurée
         config()->set('printing.receipt.borne_width_chars', 0); // borne NON configurée
@@ -114,6 +116,65 @@ class BorneCaisseWidthDecoupledTest extends TestCase
 
         $borne = app(EscPosTicketBytesService::class)->render((int) $order->branch_id, (int) $order->id, 'client', false, true);
         $this->assertNotNull($borne);
-        $this->assertSame(48, $this->maxLineWidth($borne), 'borne non configurée → défaut 48 (jamais la largeur caisse 42)');
+        // [HEAL 2026-07-09] borne non configurée → largeur CAISSE (42), plus 48 en dur : la SK1-31
+        // 58 mm ré-enroulait « 15,\n00 € » à 48 (photo owner IMG_1729).
+        $this->assertSame(42, $this->maxLineWidth($borne), 'borne non configurée → largeur caisse (42), jamais 48');
+    }
+
+    /** @test */
+    public function borne_code_page_configurable_sans_toucher_la_caisse(): void
+    {
+        config()->set('printing.receipt.width_chars', 42);
+        config()->set('printing.receipt.borne_code_page', 16); // WPC1252 (€=0x80) propre à la SK1-31
+        $order = $this->makeOrder();
+
+        $borne = app(EscPosTicketBytesService::class)->render((int) $order->branch_id, (int) $order->id, 'client', false, true);
+        $caisse = app(EscPosTicketBytesService::class)->render((int) $order->branch_id, (int) $order->id, 'client', false, false);
+        $this->assertNotNull($borne);
+        $this->assertNotNull($caisse);
+        // ESC t n = 0x1B 0x74 n. La borne sélectionne la page 16 (0x10) ; la caisse garde 19 (0x13, CP858).
+        $this->assertStringContainsString("\x1B\x74\x10", $borne, 'borne : ESC t 16 (page de code SK1-31)');
+        $this->assertStringContainsString("\x1B\x74\x13", $caisse, 'caisse : ESC t 19 (CP858) inchangé');
+    }
+
+    /** @test */
+    public function borne_sans_page_code_utilise_EUR_texte_jamais_le_symbole(): void
+    {
+        config()->set('printing.receipt.width_chars', 42);
+        config()->set('printing.receipt.borne_code_page', 0); // aucune page € fiable calée
+        $order = $this->makeOrder();
+
+        $borne = app(EscPosTicketBytesService::class)->render((int) $order->branch_id, (int) $order->id, 'client', false, true);
+        $this->assertNotNull($borne);
+        // Repli SÛR : « EUR » en toutes lettres, JAMAIS l'octet € CP858 (0xD5 = « ⌐ » sur la SK1-31).
+        $this->assertStringContainsString(' EUR', $borne, 'borne sans page € → montant en « EUR » texte');
+        $this->assertStringNotContainsString("\xD5", $borne, 'borne sans page € → aucun octet € (0xD5) → aucun « ⌐ »');
+    }
+
+    /** @test */
+    public function borne_avec_page_code_garde_le_vrai_symbole_euro(): void
+    {
+        config()->set('printing.receipt.width_chars', 42);
+        config()->set('printing.receipt.borne_code_page', 19); // CP858 (€=0xD5) vérifiée sur la borne
+        $order = $this->makeOrder();
+
+        $borne = app(EscPosTicketBytesService::class)->render((int) $order->branch_id, (int) $order->id, 'client', false, true);
+        $this->assertNotNull($borne);
+        // Page € calée → vrai symbole (octet CP858 0xD5), pas de repli « EUR ».
+        $this->assertStringContainsString("\xD5", $borne, 'borne avec page € → vrai symbole € (0xD5)');
+        $this->assertStringNotContainsString(' EUR', $borne, 'borne avec page € → pas de repli EUR');
+    }
+
+    /** @test */
+    public function caisse_garde_toujours_le_vrai_symbole_euro(): void
+    {
+        config()->set('printing.receipt.width_chars', 42);
+        config()->set('printing.receipt.borne_code_page', 0); // n'affecte QUE la borne
+        $order = $this->makeOrder();
+
+        $caisse = app(EscPosTicketBytesService::class)->render((int) $order->branch_id, (int) $order->id, 'client', false, false);
+        $this->assertNotNull($caisse);
+        $this->assertStringContainsString("\xD5", $caisse, 'caisse → vrai symbole € (CP858 0xD5) inchangé');
+        $this->assertStringNotContainsString(' EUR', $caisse, 'caisse → pas de repli EUR');
     }
 }
