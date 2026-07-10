@@ -80,16 +80,24 @@ class OrderStatusRequest extends FormRequest
     private function actorIsKioskMachine(): bool
     {
         $user = auth()->user();
-        if (!$user) {
+        if (!$user || !method_exists($user, 'currentAccessToken')) {
             return false;
         }
 
-        // Sanctum token actors expose tokenCan(); session-auth admins do not satisfy
-        // the kiosk:order ability scope, so they fall through to the free-text path.
-        if (!method_exists($user, 'tokenCan')) {
+        // [CANCEL-FIX 2026-07-10] Ne PAS se fier à tokenCan('kiosk:order') : un admin en session
+        // SPA porte un TransientToken dont can()/tokenCan() renvoie TRUE pour TOUTE ability, et un
+        // token admin avec l'ability wildcard '*' passe aussi. Résultat (bug caisse) : l'admin qui
+        // annule une commande borne était pris pour une borne → motif libre « Annulée » refusé
+        // (« Reason code is not whitelisted for kiosk-originated transitions »).
+        // Un VRAI acteur borne = PersonalAccessToken scoppé EXACTEMENT sur kiosk:order (createToken
+        // ['kiosk:order']), donc SANS wildcard. Session/admin → free-text conservé.
+        $token = $user->currentAccessToken();
+        if (!$token instanceof \Laravel\Sanctum\PersonalAccessToken) {
             return false;
         }
 
-        return (bool) $user->tokenCan('kiosk:order');
+        $abilities = (array) ($token->abilities ?? []);
+
+        return in_array('kiosk:order', $abilities, true) && !in_array('*', $abilities, true);
     }
 }

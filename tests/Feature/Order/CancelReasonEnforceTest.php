@@ -185,6 +185,37 @@ class CancelReasonEnforceTest extends TestCase
         ]);
     }
 
+    /**
+     * [CANCEL-FIX 2026-07-10] Regression for the real caisse bug (owner screenshot IMG_1753) :
+     * the POS admin authenticates via a Sanctum SPA session → a TransientToken whose can()
+     * returns TRUE for ANY ability. The old actorIsKioskMachine() trusted tokenCan('kiosk:order')
+     * and mislabeled the admin as a kiosk machine, rejecting the free-text reason « Annulée » on a
+     * kiosk-originated order (« Reason code is not whitelisted for kiosk-originated transitions »).
+     * The prior actingAs() (web guard, no token) test never caught it. A TransientToken / wildcard
+     * actor is NOT a kiosk machine → free-text must be accepted.
+     *
+     * @test
+     */
+    public function admin_via_sanctum_session_cancels_with_free_text_reason(): void
+    {
+        $order = $this->makeAdminPosPendingOrder();
+
+        \Laravel\Sanctum\Sanctum::actingAs($this->admin, ['*']); // SPA session → TransientToken
+
+        $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->postJson("/api/admin/pos-order/change-status/{$order->id}", [
+                'status' => OrderStatus::CANCELED,
+                'reason' => 'Annulée', // free-text (the exact reason from the owner's screenshot)
+            ]);
+
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('order_status_transitions', [
+            'order_id'  => $order->id,
+            'to_status' => OrderStatus::CANCELED,
+            'reason'    => 'Annulée',
+        ]);
+    }
+
     /** @test */
     public function admin_pos_cancel_without_reason_is_rejected_422(): void
     {

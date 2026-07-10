@@ -301,7 +301,8 @@ class OrderQuoteService
             return $this->withKioskLoyaltyDiscount($request, $pricing);
         }
 
-        return $this->pricingService->calculateOrder(
+        $deliveryCharge = (float) $request->input('delivery_charge', 0);
+        $pricing = $this->pricingService->calculateOrder(
             PricingRequest::forPos(
                 0,
                 $branchId,
@@ -309,10 +310,36 @@ class OrderQuoteService
                 (int) $request->input('coupon_id', 0),
                 (int) $request->input('customer_id', 0),
                 (float) $request->input('discount', 0),
-                (float) $request->input('delivery_charge', 0)
+                $deliveryCharge
             ),
             $this->couponService
         );
+
+        // [POS-1 HEAL 2026-07-10] Applique « livraison offerte ≥ seuil » AUSSI dans le quote.
+        // Le path commande (OrderService:860-878) l'applique déjà : sans ça, quote.total inclut
+        // les frais mais order.total les exclut → sealForCommit lève 409 « total does not match »
+        // et TOUTE commande POS DELIVERY ≥ seuil est bloquée. Le sous-total vient du SSOT (jamais
+        // du client) → aucun contournement. Re-calcul avec delivery_charge=0 (miroir exact).
+        $freeAbove = (float) (\Smartisan\Settings\Facades\Settings::group('delivery')->get('free_delivery_above', 30) ?? 30);
+        if ((int) $request->input('order_type', 0) === \App\Enums\OrderType::DELIVERY
+            && $freeAbove > 0
+            && (float) $pricing->accumulatedSubtotal >= $freeAbove
+            && $deliveryCharge > 0) {
+            $pricing = $this->pricingService->calculateOrder(
+                PricingRequest::forPos(
+                    0,
+                    $branchId,
+                    $items,
+                    (int) $request->input('coupon_id', 0),
+                    (int) $request->input('customer_id', 0),
+                    (float) $request->input('discount', 0),
+                    0.0
+                ),
+                $this->couponService
+            );
+        }
+
+        return $pricing;
     }
 
     private function withKioskLoyaltyDiscount(Request $request, PricingResult $pricing): PricingResult

@@ -70,6 +70,19 @@ class RouteServiceProvider extends ServiceProvider
             });
         });
 
+        // [RATE-FIX 2026-07-10] /frontend/order/quote a SON PROPRE bucket. Avant, il partageait
+        // celui de /frontend/order (kiosk-orders) : composer une commande déclenche plusieurs
+        // quotes (aperçu tarif / gate panier) qui vidaient le budget de commandes → 2 commandes
+        // d'affilée = « Trop de requêtes » (429). Le quote est un calcul de prix en lecture seule,
+        // donc limite généreuse (défaut 120/min).
+        RateLimiter::for('kiosk-quote', function (Request $request) {
+            $userKey = $request->user()?->id ?? 'guest';
+
+            return Limit::perMinute(
+                (int) config('kiosk.quote_rate_limit', 120)
+            )->by(sprintf('kioskq:%s|%s', $userKey, $request->ip()));
+        });
+
         RateLimiter::for('kiosk-menu', function (Request $request) {
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });

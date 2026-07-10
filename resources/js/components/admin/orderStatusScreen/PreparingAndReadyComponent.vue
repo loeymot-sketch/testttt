@@ -395,9 +395,14 @@ export default {
       } catch (_) { /* never throw from chime */ }
     },
     _hydrateFromRows(rows) {
+      // [OSS-01 HEAL 2026-07-10] Le mur CLIENT n'affiche que les commandes ayant un identifiant
+      // visible (n° de file OU token) : sans ça, une commande à queue_number ET token null peignait
+      // un <li> VIDE et restait « zombie » sur le mur. Le client ne peut de toute façon pas
+      // récupérer une commande sans numéro affiché.
+      const identified = (rows || []).filter(i => i && (i.queue_number || i.token));
       const prevPreparedIds = new Set(this.preparedItems.map(i => i.id));
-      this.preparingItems = rows.filter(i => i.status === orderStatusEnum.PREPARING);
-      const newPrepared = rows.filter(i => i.status === orderStatusEnum.PREPARED);
+      this.preparingItems = identified.filter(i => i.status === orderStatusEnum.PREPARING);
+      const newPrepared = identified.filter(i => i.status === orderStatusEnum.PREPARED);
 
       // Detect orders that just moved to PREPARED (not in previous list).
       // [AUDIT-P1] Skip IDs already marked via Echo to prevent double chime/flash.

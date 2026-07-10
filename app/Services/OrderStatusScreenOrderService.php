@@ -125,6 +125,19 @@ class OrderStatusScreenOrderService
                 });
             });
 
+            // [ZOMBIE HEAL 2026-07-10 backend] Le mur CLIENT n'affiche que les commandes AVEC un
+            // identifiant visible (n° de file OU token) : une commande sans les deux (ex: résidu
+            // test PREPARED sans queue, cf. 5399/4829 CARDTEST) ne peut pas être récupérée par le
+            // client → jamais sur le mur. Défense BACKEND en plus du filtre Vue (OSS-01). Les
+            // commandes IDENTIFIÉES — précommandes en retard incluses — restent visibles.
+            $query->where(function ($q) {
+                $q->where(function ($a) {
+                    $a->whereNotNull('queue_number')->where('queue_number', '!=', '');
+                })->orWhere(function ($b) {
+                    $b->whereNotNull('token')->where('token', '!=', '');
+                });
+            });
+
             // [M-09] Branch filter: only global Admin may request branch_id=0/global OSS.
             if ($branchScope !== null) {
                 $query->where('branch_id', $branchScope);
@@ -254,6 +267,18 @@ class OrderStatusScreenOrderService
                     $sub->where('is_advance_order', Ask::YES)
                         ->where('order_datetime', '<', $tomorrowStart)
                         ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED]);
+                });
+            });
+
+            // [ZOMBIE HEAL 2026-07-10 backend] Sister-of list() — MÊME garde : le mur CLIENT n'affiche
+            // que les commandes AVEC identifiant visible (n° de file OU token). Une commande sans les
+            // deux (résidu test PREPARED sans queue, ex 5399/4829) ne peut pas être récupérée → jamais
+            // sur le mur. Les commandes identifiées (précommandes en retard incluses) restent visibles.
+            $query->where(function ($q) {
+                $q->where(function ($a) {
+                    $a->whereNotNull('queue_number')->where('queue_number', '!=', '');
+                })->orWhere(function ($b) {
+                    $b->whereNotNull('token')->where('token', '!=', '');
                 });
             });
 

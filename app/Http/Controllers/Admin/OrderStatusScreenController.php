@@ -88,6 +88,14 @@ class OrderStatusScreenController extends AdminController
                 $branchId = $defaultBranch?->id ?? 0;
             }
 
+            // [OSS-02 HEAL 2026-07-10] Aucune branche résolue → mur VIDE (jamais « toutes branches »).
+            // V1 = 1 seule branche (jamais atteint) ; garde défensive : un écran PUBLIC non
+            // authentifié ne doit JAMAIS lister toutes les branches si le contexte de branche manque
+            // (prévention fuite cross-branche en préparation V2 SaaS).
+            if ($branchId <= 0) {
+                return CDSOrderDetailsResource::collection(collect());
+            }
+
             // Re-inject the resolved branch_id so the service's existing
             // `request()->query('branch_id')` lookup picks it up. We pass
             // `auth()->user() = null` semantics implicitly because this
