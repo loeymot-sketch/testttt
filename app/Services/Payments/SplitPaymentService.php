@@ -227,8 +227,15 @@ final class SplitPaymentService
                 $amount = (float) $t['amount'];
                 $tenderedRaw = $t['tendered'] ?? null;
                 $tendered = $tenderedRaw !== null && $tenderedRaw !== '' ? (float) $tenderedRaw : null;
-                $changeRaw = $t['change'] ?? ($t['change_amount'] ?? 0);
-                $change = (float) ($changeRaw ?? 0);
+                // [CAISSE-LOGIC-HEAL 2026-07-11 F2] Le rendu est RECALCULÉ côté serveur
+                // (tendered − amount, clampé ≥ 0), JAMAIS pris du client : un change_amount
+                // forgé (ex 99 € pour un rendu réel de 1,50 €) était auparavant persisté tel
+                // quel puis affiché sur le reçu écran (OrderDetailsResource). Le tiroir et le
+                // fiscal s'appuient sur `amount` (déjà corrects) ; seul l'affichage du rendu
+                // dérivait. tendered ≥ amount est déjà garanti (validateBreakdown l.104).
+                $change = ($tendered !== null && $tendered > $amount)
+                    ? round($tendered - $amount, 2)
+                    : 0.0;
                 $reference = $t['reference'] ?? $t['note'] ?? null;
                 if (is_string($reference)) {
                     $reference = substr($reference, 0, 64);

@@ -221,4 +221,43 @@ class PosRedemptionTtcTaxDoubleCountSentinelTest extends TestCase
             . 'If total=15 the fix over-zealously stripped the +tax for HT mode too.'
         );
     }
+
+    /**
+     * [CAISSE-LOGIC-HEAL 2026-07-11] Le garde « remise ≤ sous-total » doit tester la
+     * remise CUMULÉE (préexistante + rachat), pas le rachat seul. Sinon un rachat qui
+     * déborde une remise déjà posée « passait » (total clampé à 0) mais brûlait TOUS
+     * les points pour une valeur nulle. On rejette désormais le sur-rachat SANS débiter.
+     */
+    public function test_redeem_rejected_when_cumulative_discount_exceeds_subtotal(): void
+    {
+        Config::set('pricing.tax_inclusive_prices', true);
+
+        // Sous-total 6,90 avec une remise préexistante 6,00 → 0,90 réellement remisable.
+        $order = $this->makeOrder(subtotal: 6.90, tax: 0.63);
+        DB::table('orders')->where('id', $order->id)->update([
+            'discount' => 6.00,
+            'total'    => 0.90,
+        ]);
+        $order->refresh();
+
+        $pointsBefore = (int) DB::table('users')->where('id', $this->customer->id)->value('loyalty_points');
+
+        /** @var PosRedemptionService $svc */
+        $svc = app(PosRedemptionService::class);
+
+        // Rachat 200 pts = 2,00€ : cumulé 6,00 + 2,00 = 8,00 > 6,90 → doit être REJETÉ.
+        try {
+            $svc->applyToOrder($order, 200, 'SENTCUST', $this->cashier->id);
+            $this->fail('Le sur-rachat cumulatif aurait dû lever DISCOUNT_EXCEEDS_SUBTOTAL.');
+        } catch (\App\Services\Loyalty\PosRedemptionException $e) {
+            $this->assertSame('DISCOUNT_EXCEEDS_SUBTOTAL', $e->errorCode);
+        }
+
+        // Aucun point débité : la valeur des points n'est PAS brûlée.
+        $this->assertSame(
+            $pointsBefore,
+            (int) DB::table('users')->where('id', $this->customer->id)->value('loyalty_points'),
+            'Un sur-rachat rejeté ne doit débiter aucun point'
+        );
+    }
 }

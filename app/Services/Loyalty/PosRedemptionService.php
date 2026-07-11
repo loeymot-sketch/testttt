@@ -141,11 +141,21 @@ final class PosRedemptionService
             }
 
             // [LOCK §6.7] Discount cannot exceed subtotal.
-            $subtotal = (float) ($order->subtotal ?? 0);
-            if ($discountEur > $subtotal) {
+            // [CAISSE-LOGIC-HEAL 2026-07-11] Le garde doit tester la remise CUMULÉE
+            // (remise préexistante + ce rachat), pas le rachat seul : la remise est
+            // appliquée en cumul plus bas (`$newDiscount = $currentDiscount + $discountEur`,
+            // l.206). Tester `$discountEur` seul laissait un rachat déborder une remise
+            // déjà posée (ex sous-total 6,90 avec remise 6,00 → rachat 2,00 « passait »
+            // mais 0,90 de valeur livrée, total clampé à 0), débitant TOUS les points
+            // pour une valeur nulle. On rejette désormais le sur-rachat (le caissier en
+            // rachète moins) — aligné sur l'intention §6.7 (remise TOTALE ≤ sous-total).
+            $subtotal        = (float) ($order->subtotal ?? 0);
+            $existingDiscount = (float) ($order->discount ?? 0);
+            $cumulativeDiscount = round($existingDiscount + $discountEur, 2);
+            if ($cumulativeDiscount > $subtotal) {
                 throw new PosRedemptionException(
                     'DISCOUNT_EXCEEDS_SUBTOTAL',
-                    "Reduction {$discountEur} EUR > sous-total {$subtotal} EUR",
+                    "Reduction cumulee {$cumulativeDiscount} EUR > sous-total {$subtotal} EUR",
                     422
                 );
             }

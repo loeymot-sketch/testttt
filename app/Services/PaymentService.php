@@ -173,7 +173,14 @@ class PaymentService
             // recordCashBackMovement is self-shielded (try/catch + Log::warning)
             // so its failure CANNOT abort the outer tx; the cash drawer
             // movement is intentionally best-effort.
-            if ($order instanceof Order) {
+            // [CAISSE-LOGIC-HEAL 2026-07-11] Le mouvement de tiroir ne doit être écrit
+            // que si le REMBOURSEMENT est émis EN ESPÈCES ($gatewaySlug='cash') — c.-à-d.
+            // des espèces quittent physiquement le tiroir. Un remboursement carte/en-ligne
+            // retourne au moyen d'origine et ne doit PAS mouvementer le tiroir (sinon
+            // `expected` sous-évalué au rapprochement = faux surplus). Le critère est la
+            // MÉTHODE du remboursement (param), pas le pos_payment_method d'origine : une
+            // commande COUNTER_DEFERRED remboursée en espèces mouvemente bien le tiroir.
+            if ($order instanceof Order && strtolower((string) $gatewaySlug) === 'cash') {
                 $this->recordCashBackMovement($order, (float) $order->total);
             }
 

@@ -188,6 +188,39 @@ class SplitPaymentServiceTest extends TestCase
         ]);
     }
 
+    /**
+     * [CAISSE-LOGIC-HEAL 2026-07-11 F2] Le rendu (change_amount) est RECALCULÉ serveur
+     * (tendered − amount), jamais pris du client. Un change forgé (99 €) doit être ignoré
+     * et remplacé par le vrai rendu (12 − 10 = 2 €) ; une tranche non-cash → rendu 0.
+     */
+    public function test_persist_recomputes_change_ignoring_forged_client_value(): void
+    {
+        $this->seedSpatieRoles();
+        $order = $this->createOrder(25.00, branchId: 1);
+        $terminal = $this->createActiveTerminal((int) $order->branch_id);
+
+        $cashier = User::factory()->create([
+            'branch_id' => $order->branch_id,
+            'phone' => fake()->unique()->numerify('06########'),
+        ]);
+        $cashier->assignRole('POS Operator');
+        $this->actingAs($cashier);
+        app(CashDrawerService::class)->openSession((int) $order->branch_id, $cashier->id, 100.00);
+
+        $service = app(SplitPaymentService::class);
+
+        $service->persistTranches($order, [
+            // Client forge un rendu de 99 € ; réel = 12 − 10 = 2 €.
+            ['mode' => PosPaymentMethod::CASH, 'amount' => 10.00, 'tendered' => 12.00, 'change' => 99.00],
+            // Carte : pas de tendered → rendu 0 (un change forgé serait aussi ignoré).
+            ['mode' => PosPaymentMethod::CARD, 'amount' => 15.00, 'reference' => '1234', 'terminal_id' => $terminal->id, 'change' => 50.00],
+        ]);
+
+        $rows = OrderPayment::where('order_id', $order->id)->orderBy('id')->get();
+        $this->assertEquals(2.00, (float) $rows[0]->change_amount, 'rendu cash recalculé, pas le 99 client');
+        $this->assertEquals(0.00, (float) $rows[1]->change_amount, 'tranche carte = rendu 0');
+    }
+
     public function test_persist_returns_empty_when_flag_disabled(): void
     {
         config(['split_payment.enabled' => false]);
