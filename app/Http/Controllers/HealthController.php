@@ -135,9 +135,11 @@ class HealthController extends Controller
     /**
      * [AUDIT-F-015] Detect a stalled outbox pipeline.
      *
-     * If more than 10 `domain_events` rows older than 30s are still
-     * `dispatched_at = NULL`, the queue worker is most likely down or
-     * lagging far behind. Surfacing this at /ready lets supervisors and
+     * If more than 10 `domain_events` rows created in the last 24h and
+     * older than 30s are still `dispatched_at = NULL`, the queue worker is
+     * most likely down or lagging far behind. (The 24h recency floor keeps
+     * ancient orphan rows from a past incident from pinning the gate — see
+     * checkQueueWorker body.) Surfacing this at /ready lets supervisors and
      * load-balancer probes pull the node out of rotation BEFORE the
      * 30s polling fallback masks the silent failure to operators.
      *
@@ -158,8 +160,19 @@ class HealthController extends Controller
             // /health/ready flap to a FALSE 503 once poison rows accumulated
             // (17 immortal rows observed on prod). Genuinely-pending rows
             // (last_error NULL) and retrying runtime failures still count.
+            // [Outbox recency-floor fix — 2026-07-11] Second immortal-row class:
+            // rows stuck at attempts=0 / last_error=NULL (their DispatchDomainEventsJob
+            // was never queued or was lost during a *past* worker-down window) are NOT
+            // evidence the worker is down NOW — yet with no upper age bound they counted
+            // FOREVER, pinning /health/ready to a false 503 long after recovery (20
+            // orphans from a June worker-down incident observed doing exactly this).
+            // Bound the signal to the active retry window (24h, matching
+            // `foodking:outbox:retry-failed --since=24h`): a genuine current outage still
+            // piles >10 rows within 24h, but ancient orphans (handled by outbox:rescue /
+            // :prune, not readiness) no longer flap the gate.
             $staleCount = (int) DB::table('domain_events')
                 ->where('created_at', '<', now()->subSeconds(30))
+                ->where('created_at', '>=', now()->subDay())
                 ->whereNull('dispatched_at')
                 ->where(function ($q) {
                     $q->whereNull('last_error')

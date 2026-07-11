@@ -72,9 +72,39 @@ class HealthQueueWorkerContractViolationTest extends TestCase
         $response->assertJsonPath('subsystems.queue_worker.stale_count', 15);
     }
 
-    private function seedStale(int $count, ?string $lastError): void
+    /**
+     * [Outbox recency-floor fix — 2026-07-11] Second immortal-row class:
+     * ancient orphans (attempts=0 / last_error=NULL) from a PAST worker-down
+     * window must NOT keep tripping /ready once the worker recovered.
+     */
+    public function test_ancient_orphan_rows_do_not_count_as_worker_lag(): void
     {
-        $past = now()->subMinute();
+        // 20 undispatched orphans created 25h ago — outside the 24h active
+        // retry window. The worker is fine NOW; these must not flap the gate.
+        $this->seedStale(20, null, now()->subHours(25));
+
+        $response = $this->getJson('/api/health/ready');
+
+        $response->assertJsonPath('subsystems.queue_worker.status', 'ok');
+        $response->assertJsonPath('subsystems.queue_worker.stale_count', 0);
+    }
+
+    public function test_recent_backlog_counts_even_with_ancient_orphans_present(): void
+    {
+        // 20 ancient orphans (excluded by recency floor) + 15 recent genuine
+        // pending (a real current outage) → only the recent 15 count → 503.
+        $this->seedStale(20, null, now()->subHours(25));
+        $this->seedStale(15, null);
+
+        $response = $this->getJson('/api/health/ready');
+
+        $response->assertJsonPath('subsystems.queue_worker.status', 'error');
+        $response->assertJsonPath('subsystems.queue_worker.stale_count', 15);
+    }
+
+    private function seedStale(int $count, ?string $lastError, ?\Illuminate\Support\Carbon $createdAt = null): void
+    {
+        $past = $createdAt ?? now()->subMinute();
         $rows = [];
         static $seq = 0;
 
