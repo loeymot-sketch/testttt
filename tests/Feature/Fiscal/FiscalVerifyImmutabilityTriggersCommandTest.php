@@ -38,10 +38,13 @@ class FiscalVerifyImmutabilityTriggersCommandTest extends TestCase
     {
         $expected = FiscalVerifyImmutabilityTriggersCommand::EXPECTED_TRIGGERS;
 
+        // [AUDIT-BASELINE-SYNC 2026-07-11] Baseline élargie de 8 → 9 : le HEAL du jour a ajouté
+        // `order_items_composition_snapshot_no_update` (immuabilité NF525 du snapshot de composition,
+        // migration présente + EXPECTED_TRIGGERS mis à jour) mais cette sentinelle hardcodait encore 8.
         $this->assertCount(
-            8,
+            9,
             $expected,
-            'The canonical MySQL immutability set must be exactly 8 triggers.'
+            'The canonical MySQL immutability set must be exactly 9 triggers.'
         );
 
         $this->assertSame(
@@ -54,6 +57,7 @@ class FiscalVerifyImmutabilityTriggersCommandTest extends TestCase
                 'order_payments_no_delete',
                 'stock_movements_no_delete',
                 'stock_movements_no_update',
+                'order_items_composition_snapshot_no_update',
             ],
             array_keys($expected),
             'Expected trigger set drifted — update only after verifying the migration bodies.'
@@ -103,10 +107,11 @@ class FiscalVerifyImmutabilityTriggersCommandTest extends TestCase
         // The exact production catastrophe: SHOW TRIGGERS returns 0 rows.
         $missing = FiscalVerifyImmutabilityTriggersCommand::diffMissing([]);
 
+        // [AUDIT-BASELINE-SYNC 2026-07-11] 9 depuis l'ajout du trigger composition_snapshot.
         $this->assertCount(
-            8,
+            9,
             $missing,
-            'An empty database must report ALL 8 immutability triggers missing — this is the silent-gap detector.'
+            'An empty database must report ALL 9 immutability triggers missing — this is the silent-gap detector.'
         );
     }
 
