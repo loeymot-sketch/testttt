@@ -72,6 +72,7 @@ final class SplitPaymentService
         ];
 
         $totalCents = 0;
+        $hasCashTranche = false;
         foreach ($tranches as $idx => $t) {
             if (! is_array($t)) {
                 throw ValidationException::withMessages([
@@ -94,6 +95,7 @@ final class SplitPaymentService
             }
 
             if ($mode === PosPaymentMethod::CASH) {
+                $hasCashTranche = true;
                 $tenderedRaw = $t['tendered'] ?? null;
                 $tendered = $tenderedRaw !== null && $tenderedRaw !== '' ? (float) $tenderedRaw : null;
                 if ($tendered === null || $tendered <= 0) {
@@ -142,7 +144,14 @@ final class SplitPaymentService
         }
 
         $serverTotalCents = (int) round($orderTotal * 100);
-        $toleranceCents = (int) round(self::TOLERANCE_OVERPAY * 100);
+        // [F-SPLIT-OVERPAY-CASH-ONLY 2026-07-11] La tolérance d'overpay ne
+        // s'applique QUE si au moins une tranche est en ESPÈCES : c'est le
+        // tiroir qui rend la monnaie. Sans tranche cash (carte seule, ou
+        // carte+carte…), il n'y a AUCUN rendu possible — le montant de la
+        // tranche EST débité tel quel → la somme doit égaler EXACTEMENT le
+        // total (tolérance effective = 0), sinon surfacture ≤1€/vente et
+        // SUM(order_payments)/Z dépassent le total encaissable.
+        $toleranceCents = $hasCashTranche ? (int) round(self::TOLERANCE_OVERPAY * 100) : 0;
 
         if ($totalCents < $serverTotalCents) {
             throw ValidationException::withMessages([
@@ -160,7 +169,7 @@ final class SplitPaymentService
                     'Somme des tranches (%.2f €) excède le total (%.2f €) de plus de %.2f €.',
                     $totalCents / 100,
                     $serverTotalCents / 100,
-                    self::TOLERANCE_OVERPAY,
+                    $toleranceCents / 100,
                 ),
             ]);
         }

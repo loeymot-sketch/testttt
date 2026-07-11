@@ -108,6 +108,73 @@ class SplitPaymentServiceTest extends TestCase
         $this->assertTrue(true);
     }
 
+    /**
+     * [F-SPLIT-OVERPAY-CASH-ONLY 2026-07-11] Carte seule : AUCUN rendu possible.
+     * L'overpay (10,80 vs 10,00) DOIT être rejeté (tolérance effective = 0)
+     * sinon la tranche carte est surfacturée de 0,80 €.
+     */
+    public function test_validate_card_only_overpay_rejected(): void
+    {
+        $service = app(SplitPaymentService::class);
+        $branch = Branch::factory()->create(['id' => 1]);
+        $terminal = $this->createActiveTerminal($branch->id);
+
+        $this->expectException(ValidationException::class);
+        $service->validateBreakdown([
+            ['mode' => PosPaymentMethod::CARD, 'amount' => 10.80, 'terminal_id' => $terminal->id],
+        ], orderTotal: 10.00, branchId: 1);
+    }
+
+    /**
+     * [F-SPLIT-OVERPAY-CASH-ONLY 2026-07-11] Cash seul : le tiroir rend la
+     * monnaie → overpay ≤ 1 € accepté (11,00 tendu pour 10,00 dû).
+     */
+    public function test_validate_cash_only_overpay_within_tolerance_accepted(): void
+    {
+        $service = app(SplitPaymentService::class);
+
+        $service->validateBreakdown([
+            ['mode' => PosPaymentMethod::CASH, 'amount' => 11.00, 'tendered' => 15.00],
+        ], orderTotal: 10.00, branchId: 1);
+
+        $this->assertTrue(true);
+    }
+
+    /**
+     * [F-SPLIT-OVERPAY-CASH-ONLY 2026-07-11] Mixte carte+cash : présence d'une
+     * tranche cash → tolérance active, overpay ≤ 1 € accepté.
+     */
+    public function test_validate_mixed_card_cash_overpay_within_tolerance_accepted(): void
+    {
+        $service = app(SplitPaymentService::class);
+        $branch = Branch::factory()->create(['id' => 1]);
+        $terminal = $this->createActiveTerminal($branch->id);
+
+        // 6,00 carte + 4,80 cash = 10,80 pour un total de 10,00 (+0,80 ≤ 1 €).
+        $service->validateBreakdown([
+            ['mode' => PosPaymentMethod::CARD, 'amount' => 6.00, 'terminal_id' => $terminal->id],
+            ['mode' => PosPaymentMethod::CASH, 'amount' => 4.80, 'tendered' => 5.00],
+        ], orderTotal: 10.00, branchId: 1);
+
+        $this->assertTrue(true);
+    }
+
+    /**
+     * [F-SPLIT-OVERPAY-CASH-ONLY 2026-07-11] Le sous-paiement reste rejeté quel
+     * que soit le mode (garde-fou inchangé) — carte seule sous le total.
+     */
+    public function test_validate_card_only_underpay_still_rejected(): void
+    {
+        $service = app(SplitPaymentService::class);
+        $branch = Branch::factory()->create(['id' => 1]);
+        $terminal = $this->createActiveTerminal($branch->id);
+
+        $this->expectException(ValidationException::class);
+        $service->validateBreakdown([
+            ['mode' => PosPaymentMethod::CARD, 'amount' => 9.00, 'terminal_id' => $terminal->id],
+        ], orderTotal: 10.00, branchId: 1);
+    }
+
     public function test_validate_cash_tranche_without_tendered_throws(): void
     {
         $service = app(SplitPaymentService::class);
