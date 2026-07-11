@@ -1067,6 +1067,7 @@ import { ORDER_STATUS } from "../../../helpers/kdsState";
 // no longer invert on the KDS order-cards + kitchen ticket. Legacy items-board
 // shape stays correct through the same helper.
 import { kdsVariationLine, sanitizeKdsInstruction } from "../../../helpers/kdsCustomization";
+import { freshnessBaseMs as kdsFreshnessBaseMs, isSyncStale as kdsIsSyncStale, isSyncUncertain as kdsIsSyncUncertain, humanizeSyncAgo as kdsHumanizeSyncAgo } from "../../../helpers/kdsFreshness";
 // [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT — mirrors App\Support\PhoneDisplay::safe
 import { safePhone } from "../../../helpers/phoneDisplay";
 // [kds/sprint-2 V-5] V2 layout components — feature-flagged single FIFO 4×2 grid.
@@ -1141,6 +1142,13 @@ export default {
       kdsSyncUnsubscribers: [],
       syncNowTick: Date.now(),
       _kdsSyncStampTimer: null,
+      // [CLUSTER-4 P2 2026-07-11] Timestamp (epoch-ms) of the last SUCCESSFUL
+      // board hydrate — Echo broadcast, fallback poll, or list(). Stamped in
+      // _applyOrderBuckets. Distinct from wsConnected (socket state, which lies
+      // about data freshness when the queue worker dies but soketi stays up).
+      // null until the first successful refresh. Combined with the sync-service
+      // poll clock (kdsSyncService.lastSyncAt) to drive the freshness badge.
+      lastDataFreshAt: null,
       // [Lot 2.I / G-4] Non-blocking allergens modal state. Opened from the
       // ⚠ Allergens badge on each order-card. Purely informational — does NOT
       // gate kdsBump / kdsRecall / orderStatus / printKitchenTicket.
@@ -1354,25 +1362,37 @@ export default {
     kdsOrderListAtCap() {
       return this.kdsOverflowDetected === true;
     },
-    // [F-03 / Lot 1.C] Last-sync badge — uses kdsSyncService.lastSyncAt and
-    // re-renders every second via syncNowTick.
+    // [F-03 / Lot 1.C · CLUSTER-4 P2 2026-07-11] Unified data-freshness clock.
+    // The badge is fed by the FRESHEST of two successful-refresh clocks:
+    //   - this.lastDataFreshAt : board hydrated (Echo broadcast / poll / list)
+    //   - kdsSyncService.lastSyncAt : sync-service poll returned 200
+    // wsConnected (socket state) is deliberately NOT used: it stays "connected"
+    // when the queue worker dies, so it lies about data freshness. Touching
+    // this.syncNowTick makes this computed recompute every 1s AND re-read the
+    // non-reactive kdsSyncService.lastSyncAt.
+    kdsFreshnessBaseMs() {
+      void this.syncNowTick; // 1s tick → recompute + re-read external clock
+      return kdsFreshnessBaseMs({
+        lastDataFreshAt: this.lastDataFreshAt,
+        lastSyncAt: kdsSyncService.lastSyncAt,
+      });
+    },
     humanizedSyncAgo() {
-      const stamp = kdsSyncService.lastSyncAt;
-      if (!stamp) return null;
-      const diffMs = Math.max(0, this.syncNowTick - new Date(stamp).getTime());
-      const seconds = Math.floor(diffMs / 1000);
-      if (seconds < 60) return `${seconds}s`;
-      const minutes = Math.floor(seconds / 60);
-      return `${minutes}m`;
+      return kdsHumanizeSyncAgo(this.kdsFreshnessBaseMs, this.syncNowTick);
+    },
+    // [CLUSTER-4 P2] Hard-stall tier: no confirmed refresh for >75s (two missed
+    // 60s poll cycles). The board may be materially behind → say so explicitly
+    // instead of implying the data is live.
+    syncBadgeUncertain() {
+      return kdsIsSyncUncertain(this.kdsFreshnessBaseMs, this.syncNowTick);
     },
     syncBadgeText() {
+      if (this.syncBadgeUncertain) return this.$t("label.kds_sync_uncertain");
       if (!this.humanizedSyncAgo) return this.$t("label.kds_sync_never");
       return this.$t("label.kds_sync_stamp", { ago: this.humanizedSyncAgo });
     },
     syncBadgeIsStale() {
-      const stamp = kdsSyncService.lastSyncAt;
-      if (!stamp) return true;
-      return (this.syncNowTick - new Date(stamp).getTime()) > 30000;
+      return kdsIsSyncStale(this.kdsFreshnessBaseMs, this.syncNowTick);
     },
     orders: function () {
       return this.$store.getters["kitchenDisplaySystemOrder/lists"];
@@ -2059,6 +2079,12 @@ export default {
       this.takeawayOrders = nonKioskRows.filter((item) =>
         item.order_type === orderTypeEnum.TAKEAWAY || item.order_type === orderTypeEnum.POS
       );
+      // [CLUSTER-4 P2 2026-07-11] A successful board hydrate (Echo broadcast,
+      // fallback poll, or list()) is the ground-truth "data is fresh" signal.
+      // Stamp it here — the single chokepoint every success path funnels
+      // through — so the freshness badge tracks REAL refreshes, not just the
+      // socket state or the sync-service poll clock.
+      this.lastDataFreshAt = Date.now();
     },
     _refreshWithCurrentFilter() {
       // [FIX-54-5] Re-fetch orders without modifying props.search.status

@@ -1073,6 +1073,7 @@
         "oss_status_region_aria": "حالة الطلبات",
         "kds_sync_stamp": "تمت المزامنة منذ {ago}",
         "kds_sync_never": "لم تتم المزامنة بعد",
+        "kds_sync_uncertain": "المزامنة غير مؤكدة — حدّث",
         "kds_allergens_badge": "مسببات الحساسية",
         "kds_allergens_badge_aria": "عرض مسببات الحساسية لهذا الطلب",
         "kds_call_customer_aria": "اتصل بـ {name} {phone}",

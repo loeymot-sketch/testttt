@@ -756,6 +756,7 @@
         "oss_status_region_aria": "Statut des commandes",
         "kds_sync_stamp": "Synchronisé il y a {ago}",
         "kds_sync_never": "Pas encore synchronisé",
+        "kds_sync_uncertain": "Synchro incertaine — actualiser",
         "kds_allergens_badge": "Allergènes",
         "kds_allergens_badge_aria": "Voir les allergènes de cette commande",
         "kds_call_customer_aria": "Appeler {name} {phone}",
