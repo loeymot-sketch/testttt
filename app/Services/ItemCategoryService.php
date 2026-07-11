@@ -167,19 +167,27 @@ class ItemCategoryService
         try {
             $categoryId = (int) $itemCategory->id;
             DB::transaction(function () use ($itemCategory, $categoryId): void {
-                $checkItem = $itemCategory->items->whereNull('deleted_at');
-                if (!blank($checkItem)) {
+                // [CAISSE-LOGIC-HEAL 2026-07-11 P1-C] Bloquer la suppression d'une catégorie
+                // qui contient des produits ACTIFS. L'ancienne branche `!blank($checkItem)`
+                // (= a des items actifs) soft-supprimait quand même la catégorie → les items
+                // gardaient `item_category_id` pointant vers une catégorie invisible →
+                // `$item->itemCategory` null → disparition des grilles category-first (caisse/
+                // borne). Le gérant doit d'abord déplacer/désactiver les produits.
+                $activeItems = $itemCategory->items()->whereNull('deleted_at')->count();
+                if ($activeItems > 0) {
+                    throw new Exception(
+                        "Impossible de supprimer cette catégorie : elle contient {$activeItems} produit(s) actif(s). Déplacez-les ou désactivez-les d'abord.",
+                        422
+                    );
+                }
+                if (DB::getDriverName() === 'sqlite') {
+                    DB::statement('PRAGMA foreign_keys=0');
                     $itemCategory->delete();
+                    DB::statement('PRAGMA foreign_keys=1');
                 } else {
-                    if (DB::getDriverName() === 'sqlite') {
-                        DB::statement('PRAGMA foreign_keys=0');
-                        $itemCategory->delete();
-                        DB::statement('PRAGMA foreign_keys=1');
-                    } else {
-                        DB::statement('SET FOREIGN_KEY_CHECKS=0');
-                        $itemCategory->delete();
-                        DB::statement('SET FOREIGN_KEY_CHECKS=1');
-                    }
+                    DB::statement('SET FOREIGN_KEY_CHECKS=0');
+                    $itemCategory->delete();
+                    DB::statement('SET FOREIGN_KEY_CHECKS=1');
                 }
 
                 DB::afterCommit(function () use ($categoryId): void {

@@ -535,16 +535,31 @@ class DashboardService
             })->count();
 
             $webCount = $orders->filter(function ($order) {
-                // Exclude kiosk-tagged rows (they post source=WEB but are not
-                // browser-web channel orders).
-                if ((string) ($order->source_surface ?? '') === 'kiosk') {
+                // Exclude kiosk/pos-tagged rows (kiosk posts source=WEB but is not a
+                // browser-web order; pos-surface must land in POS, see below).
+                $surface = strtolower((string) ($order->source_surface ?? ''));
+                if ($surface === 'kiosk' || $surface === 'pos') {
                     return false;
+                }
+                if ($surface === 'web') {
+                    return true;
                 }
 
                 return (int) $order->source === \App\Enums\Source::WEB;
             })->count();
 
-            $posCount = $orders->where('source', \App\Enums\Source::POS)->count();
+            // [CAISSE-LOGIC-HEAL 2026-07-11 reports-F1] Le canal fiable est `source_surface`,
+            // PAS l'entier `source` : les ventes caisse posent source_surface='pos' mais
+            // source=1 (OrderService ne renseigne jamais l'entier legacy) → l'ancien
+            // `where('source', POS=15)` en ratait ~1356 → répartition ne sommait pas à 100 %
+            // (POS massivement sous-compté). On route sur source_surface, source en repli.
+            $posCount = $orders->filter(function ($order) {
+                if (strtolower((string) ($order->source_surface ?? '')) === 'pos') {
+                    return true;
+                }
+
+                return (int) $order->source === \App\Enums\Source::POS;
+            })->count();
 
             return [
                 ['name' => 'Web', 'value' => round(($webCount / $total) * 100, 2)],
@@ -728,15 +743,18 @@ class DashboardService
         $web   = ['label' => 'Web/App', 'count' => 0, 'total' => 0.0];
 
         foreach ($paid as $order) {
-            // Reuse channelStatistics() discriminator: source_surface='kiosk'
-            // is the canonical kiosk marker (WG-3 WF-3 P1 2026-05-19).
-            if ((string) ($order->source_surface ?? '') === 'kiosk'
-                || (int) $order->source === \App\Enums\Source::APP) {
+            // [CAISSE-LOGIC-HEAL 2026-07-11 reports-F2] Le canal fiable est `source_surface`,
+            // pas l'entier `source`. Avant, une vente caisse (source_surface='pos' mais
+            // source=1) échappait au bucket POS (`source===POS=15`) et tombait dans le
+            // catch-all `web` → ~1356 ventes CAISSE étiquetées « Web/App » dans la synthèse
+            // EOD (PDF owner/comptable, archivé 6 ans NF525). On route sur source_surface.
+            $surface = strtolower((string) ($order->source_surface ?? ''));
+            if ($surface === 'kiosk' || (int) $order->source === \App\Enums\Source::APP) {
                 $kiosk['count']++;
                 $kiosk['total'] += (float) $order->total;
                 continue;
             }
-            if ((int) $order->source === \App\Enums\Source::POS) {
+            if ($surface === 'pos' || (int) $order->source === \App\Enums\Source::POS) {
                 $pos['count']++;
                 $pos['total'] += (float) $order->total;
                 continue;
