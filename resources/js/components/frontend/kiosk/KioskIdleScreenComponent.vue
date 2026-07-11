@@ -10,7 +10,17 @@
   <div
     class="kiosk-idle kiosk-idle--bold kiosk-attract-viewport"
     data-testid="kiosk-idle-root"
+    @click="onScreenTap"
   >
+    <!-- [BORNE-UX 2026-07-11 #4] Ripple « touché pour démarrer » au point de contact. -->
+    <span
+      v-if="tapRipple"
+      :key="tapRipple.key"
+      class="kiosk-tap-ripple"
+      :style="{ left: tapRipple.x + 'px', top: tapRipple.y + 'px' }"
+      aria-hidden="true"
+    ></span>
+
     <KsA11ySettings v-model="settingsOpen" @click.stop />
 
     <!-- Stage 1080×1920 scalée au viewport (fidélité pixel au design) -->
@@ -293,6 +303,9 @@ export default {
       tapHint: '',
       settingsOpen: false,
       orderTypes: KIOSK_ORDER_TYPES,
+      // [BORNE-UX 2026-07-11 #4] Ripple visuel « touché pour démarrer ».
+      tapRipple: null,
+      tapRippleSeq: 0,
       // [WEBP-MIGRATION 2026-07-07] Visuels attract servis en WebP (-64% de
       // poids réseau vs PNG, ~8 Mo → ~2,9 Mo sur l'écran d'accueil). Le PNG
       // reste sur disque : `onAttractImgError` y retombe si le navigateur ne
@@ -447,6 +460,27 @@ export default {
       // vers kiosk.categories (cassait les transitions slide-left / écran noir).
       this.$emit('start-order', orderType);
     },
+
+    // [BORNE-UX 2026-07-11 #4] Toucher N'IMPORTE OÙ sur l'écran démarre la commande
+    // (owner : les clients touchent l'écran au hasard sans trouver le bouton). Les
+    // boutons langue/a11y et les cards sur-place/à-emporter utilisent @click.stop →
+    // ils ne déclenchent PAS ce handler (une card garde son propre type). Le fond
+    // démarre le type primaire (à emporter). Effet ripple au point de contact.
+    onScreenTap(event) {
+      if (this.settingsOpen) return; // drawer a11y ouvert : ne pas démarrer.
+      this.tapRippleSeq += 1;
+      this.tapRipple = {
+        key: this.tapRippleSeq,
+        x: event && event.clientX != null ? event.clientX : window.innerWidth / 2,
+        y: event && event.clientY != null ? event.clientY : window.innerHeight / 2,
+      };
+      const started = this.tapRippleSeq;
+      // Petit délai pour laisser le ripple s'amorcer (feedback « touché »), puis démarrage.
+      window.setTimeout(() => {
+        if (this.tapRipple && this.tapRipple.key === started) this.tapRipple = null;
+      }, 520);
+      this.$emit('start-order', this.orderTypes.TAKEAWAY);
+    },
     changeLanguage(/* lang */) {
       // [ADR-007 / iter15-P1a] FR-lock immutable au runtime kiosk.
       // Le sélecteur de langue reste rendu pour des raisons de continuité
@@ -509,12 +543,32 @@ export default {
    Stage fixe 1080×1920 (design owner) scalée au viewport via transform.
    Palette Cayenne : orange #F4501E / accent jaune #FFB800 / noir #1A1A1A.
    ============================================================================= */
+/* [BORNE-UX 2026-07-11 #4] Ripple « touché pour démarrer » — cercle qui s'étend
+   au point de contact quand on touche n'importe où pour démarrer. */
+.kiosk-tap-ripple {
+  position: fixed;
+  z-index: 9999;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,184,0,0.55) 0%, rgba(244,80,30,0.35) 45%, rgba(244,80,30,0) 72%);
+  pointer-events: none;
+  animation: kiosk-tap-ripple 520ms ease-out forwards;
+}
+@keyframes kiosk-tap-ripple {
+  0%   { transform: scale(1);  opacity: 0.9; }
+  100% { transform: scale(46); opacity: 0; }
+}
+[data-kiosk-reduced-motion='true'] .kiosk-tap-ripple { animation-duration: 1ms; }
+
 .kiosk-attract-viewport {
   position: fixed;
   inset: 0;
   width: 100vw;
   height: 100vh;
   overflow: hidden;
+  cursor: pointer;
   background: #1A1A1A;
   cursor: pointer;
   font-family: 'Hanken Grotesk', system-ui, sans-serif;

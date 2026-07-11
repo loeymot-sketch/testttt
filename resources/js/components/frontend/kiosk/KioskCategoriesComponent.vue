@@ -142,7 +142,7 @@
                 </p>
               </div>
 
-              <div class="kiosk-product-grid" role="list">
+              <div class="kiosk-product-grid" :class="productGridLayoutClass" role="list">
                 <div
                   v-for="product in catalogProducts"
                   :key="product.id"
@@ -164,6 +164,7 @@
                       :src="product.thumb || product.image"
                       :alt="''"
                       class="kiosk-product-image"
+                      :class="productSizeClass(product)"
                       loading="lazy"
                       aria-hidden="true"
                     />
@@ -388,6 +389,15 @@ export default {
     filteredProductCount() {
       return this.catalogProducts.length;
     },
+    // [BORNE-UX 2026-07-11] Layout adaptatif : peu de produits → cartes très
+    // grandes qui remplissent l'espace (2 tacos = empilés ~80%). Owner.
+    productGridLayoutClass() {
+      const n = this.catalogProducts.length;
+      if (n <= 1) return 'kiosk-product-grid--solo';
+      if (n === 2) return 'kiosk-product-grid--duo';
+      if (n <= 4) return 'kiosk-product-grid--quad';
+      return '';
+    },
     customerAllergenCodes() {
       // Alimenté par scan loyalty — sinon vide. Lu depuis le store kioskSettings.
       const cust = this.$store.state.kioskSettings?.customerProfile;
@@ -430,6 +440,21 @@ export default {
   methods: {
     ...mapActions('kioskMenu', ['fetchMenu', 'selectKioskCategory']),
     ...mapActions('kioskCart', ['addItem', 'reset', 'updateQuantity', 'removeItem']),
+
+    // [BORNE-UX 2026-07-11 #3] Variantes de taille : la grande (L/XL) est rendue
+    // ~30 % plus grande que la petite (M/S) pour que la différence saute aux yeux
+    // (ex Tacos M vs Tacos L). Détection par suffixe de taille du nom produit.
+    productSizeClass(product) {
+      const name = String(product?.name || '').trim().toLowerCase();
+      const last = name.split(/\s+/).pop();
+      if (last === 'l' || last === 'xl' || last === 'xxl' || /\b(grande?|large|maxi)$/.test(name)) {
+        return 'kiosk-product-image--size-l';
+      }
+      if (last === 'm' || last === 's' || /\b(petite?|moyen(?:ne)?|small)$/.test(name)) {
+        return 'kiosk-product-image--size-m';
+      }
+      return '';
+    },
 
     hasExplicitOrderType() {
       const getter = this.$store?.getters?.['kioskCart/hasExplicitOrderType'];
@@ -954,7 +979,9 @@ export default {
 .kiosk-catalogue-body {
   flex: 1;
   display: grid;
-  grid-template-columns: clamp(124px, 12vw, 156px) 1fr;
+  /* [BORNE-UX 2026-07-11] Sidebar catégories ≥ doublée (124→256px) : chaque
+     catégorie plus visible + mieux distinguée (owner). */
+  grid-template-columns: clamp(256px, 24vw, 340px) 1fr;
   min-height: 0;
 }
 
@@ -977,14 +1004,17 @@ export default {
 
 .kiosk-sidebar-item {
   width: 100%;
-  border: 2px solid transparent;
-  background: transparent;
+  /* [BORNE-UX 2026-07-11] Chaque catégorie = une carte distincte (fond + bordure)
+     pour bien séparer catégorie de catégorie (owner). */
+  border: 2px solid var(--kiosk-border);
+  background: var(--kiosk-surface-alt);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 9px 6px 10px;
-  border-radius: 18px;
+  gap: 12px;
+  padding: 18px 12px 16px;
+  margin-bottom: 14px;
+  border-radius: 24px;
   cursor: pointer;
   transition: transform 0.16s ease, background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
 }
@@ -1001,8 +1031,9 @@ export default {
 }
 
 .kiosk-sidebar-thumb-wrap {
-  width: clamp(58px, 6.4vw, 74px);
-  height: clamp(58px, 6.4vw, 74px);
+  /* [BORNE-UX 2026-07-11] Miniature catégorie agrandie (~74→120px). */
+  width: clamp(104px, 11vw, 132px);
+  height: clamp(104px, 11vw, 132px);
   border-radius: 50%;
   overflow: hidden;
   background: var(--kiosk-product-media-bg, var(--kiosk-surface-alt));
@@ -1015,7 +1046,9 @@ export default {
 .kiosk-sidebar-thumb {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  /* contain (pas cover) pour respecter les visuels détourés sans arrière-plan. */
+  object-fit: contain;
+  padding: 6px;
 }
 
 .kiosk-sidebar-thumb-fallback {
@@ -1024,10 +1057,11 @@ export default {
 
 .kiosk-sidebar-name {
   width: 100%;
-  font-size: clamp(10px, 0.92vw, 12px);
-  line-height: 1.08;
+  /* [BORNE-UX 2026-07-11] Libellé catégorie agrandi (~12→18px) pour lisibilité. */
+  font-size: clamp(16px, 1.5vw, 20px);
+  line-height: 1.12;
   font-weight: 900;
-  color: var(--kiosk-text-muted);
+  color: var(--kiosk-text);
   text-align: center;
   text-transform: uppercase;
   min-height: 24px;
@@ -1109,6 +1143,31 @@ export default {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 24px;
 }
+
+/* [BORNE-UX 2026-07-11] Layout adaptatif : occuper le MAXIMUM d'espace selon le
+   nombre de produits, sans déborder de la zone allouée (owner). */
+.kiosk-product-grid--solo {
+  grid-template-columns: minmax(0, 1fr);
+}
+.kiosk-product-grid--solo .kiosk-product-card { min-height: min(74vh, 760px); }
+.kiosk-product-grid--solo .kiosk-product-media { height: min(56vh, 580px); }
+
+/* 2 produits (ex Tacos M/L) : empilés haut/bas, très grands (~80% de la zone). */
+.kiosk-product-grid--duo {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 28px;
+}
+.kiosk-product-grid--duo .kiosk-product-card { min-height: min(41vh, 470px); }
+.kiosk-product-grid--duo .kiosk-product-media { height: min(30vh, 360px); }
+
+/* 3-4 produits : 2 colonnes mais cartes agrandies. */
+.kiosk-product-grid--quad .kiosk-product-card { min-height: min(44vh, 470px); }
+.kiosk-product-grid--quad .kiosk-product-media { height: min(30vh, 320px); }
+
+/* [BORNE-UX 2026-07-11 #3] Différence de taille visible entre variantes :
+   l'image L est ~30 % plus grande que la M (owner). */
+.kiosk-product-image--size-l { transform: scale(1.18); }
+.kiosk-product-image--size-m { transform: scale(0.9); }
 
 .kiosk-product-card {
   position: relative;
