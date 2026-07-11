@@ -39,3 +39,11 @@ Web : 38 produits sans fantôme, 78 images présentes, quantités ≥1, panier v
 
 ## Gates
 0 frozen · NF525 chain clean 4 branches · régression Dashboard+Category+Extra+KioskPromo+Coupon VERTE.
+
+## MàJ 2026-07-11 (suite « corrige et valide avec test-e2e »)
+**Sync P1 (SYNC-LOGIC-01) — CORRIGÉ + TESTÉ** : composant de menu en rupture désormais inordonnable.
+Helper `AvailabilityService::componentItemIdsFor()` résout les `addon_item_id` ; les 4 chemins d'écriture
+(FrontendOrderService + OrderService ×3) fusionnent les composants dans la garde. Tests
+`test_menu_component_out_of_stock_blocks_order` + contre-preuve `in_stock_allows_order`. Régression
+Menu+Order+Kiosk+Pos verte. 0 frozen, NF525 clean. Commit `4a1b6648e` (NON poussé — branche porte 3
+commits d'une session parallèle non-poussés). → **8 bugs logique corrigés au total** sur ce round.
