@@ -252,11 +252,34 @@ final class KitchenTicketSymbolicFormatter
     /** @param array<string,mixed> $snapshot */
     public function menuLine(array $snapshot): string
     {
+        // [CLUSTER-2 2026-07-11] Distinguer la formule PARTIELLE : « frites seules »
+        // (ratio frites 0,6) et « boisson seule » (ratio boisson 0,4) ne sont PAS un
+        // menu complet — la cuisine doit voir FRITES/BOISSON, pas « MENU » (sinon elle
+        // sert la formule entière = fuite revenu). menu_full/menu_formule restent MENU.
+        // frites+boisson présents ensemble = la formule complète = MENU.
         $addons = $snapshot['addons'] ?? [];
+        $hasFull = $hasFrites = $hasBoisson = false;
         foreach ($addons as $a) {
-            if (str_starts_with(strtolower((string) ($a['role'] ?? '')), 'menu_')) {
-                return 'MENU';
+            $role = strtolower((string) ($a['role'] ?? ''));
+            if (! str_starts_with($role, 'menu_')) {
+                continue;
             }
+            if ($role === 'menu_frites') {
+                $hasFrites = true;
+            } elseif ($role === 'menu_boisson') {
+                $hasBoisson = true;
+            } else {
+                $hasFull = true; // menu_full / menu_formule / futur menu_*
+            }
+        }
+        if ($hasFull || ($hasFrites && $hasBoisson)) {
+            return 'MENU';
+        }
+        if ($hasFrites) {
+            return 'FRITES';
+        }
+        if ($hasBoisson) {
+            return 'BOISSON';
         }
         foreach ($addons as $a) {
             if (preg_match('/frite/', $this->norm((string) ($a['addon_name'] ?? $a['name'] ?? '')))) {
@@ -357,6 +380,14 @@ final class KitchenTicketSymbolicFormatter
             }
             $name = trim((string) ($a['addon_name'] ?? $a['name'] ?? ''));
             if ($name === '') {
+                continue;
+            }
+            // [CLUSTER-6 2026-07-11] Ne PAS émettre le conteneur de formule comme
+            // boisson : role 'menu_boisson' porte parfois le nom du conteneur
+            // (« Menu (Frites + Boisson) »), qui n'est PAS une boisson. La vraie
+            // boisson vient de extractFormuleDrinkLines (instruction). La garde
+            // isDrinkItem rejette « menu/formule », accepte « Coca 33cl ».
+            if (! $this->isDrinkItem($name)) {
                 continue;
             }
             $q = (int) ($a['quantity'] ?? 1);

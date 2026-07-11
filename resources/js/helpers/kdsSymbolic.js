@@ -17,7 +17,7 @@
  * lockstep with this table so the printed ticket and the screen match exactly.
  */
 
-import { categorize, kdsVariationGroupValue, sanitizeKdsInstruction } from './kdsCustomization.js';
+import { categorize, isDrinkName, kdsVariationGroupValue, sanitizeKdsInstruction } from './kdsCustomization.js';
 import { kdsInstructionVisualClass } from './kdsLineSemantics.js';
 
 /** lowercase, strip diacritics, collapse spaces — for keyword matching. */
@@ -253,11 +253,26 @@ export function buildSymbolic(orderItem) {
         support = 'G';
     }
 
-    // Line 3: a full formule → "MENU"; a lone frites add-on → "F"; nothing otherwise.
+    // Line 3: a full formule → "MENU"; a PARTIAL formule → "FRITES"/"BOISSON" (a lone
+    // frites-only or boisson-only is NOT a full menu — the kitchen must not serve the
+    // whole formule = revenue leak); frites+boisson together = the full menu = "MENU";
+    // a lone frites add-on → "F"; else nothing.
     const addons = readAddons(orderItem);
     let menu = '';
-    if (addons.some((a) => String(a?.role || '').toLowerCase().startsWith('menu_'))) {
+    let hasFull = false, hasFrites = false, hasBoisson = false;
+    for (const a of addons) {
+        const role = String(a?.role || '').toLowerCase();
+        if (!role.startsWith('menu_')) continue;
+        if (role === 'menu_frites') hasFrites = true;
+        else if (role === 'menu_boisson') hasBoisson = true;
+        else hasFull = true; // menu_full / menu_formule / future menu_*
+    }
+    if (hasFull || (hasFrites && hasBoisson)) {
         menu = 'MENU';
+    } else if (hasFrites) {
+        menu = 'FRITES';
+    } else if (hasBoisson) {
+        menu = 'BOISSON';
     } else if (addons.some((a) => /frite/.test(normalize(addonName(a))))) {
         menu = 'F';
     }
@@ -299,6 +314,11 @@ function drinkAddonLabels(orderItem) {
         if (!isDrinkAddonRole(a?.role)) continue;
         const name = addonName(a);
         if (!name) continue;
+        // [CLUSTER-6 2026-07-11] Ne PAS émettre le conteneur de formule : role
+        // 'menu_boisson' porte parfois le nom du conteneur (« Menu (Frites + Boisson) »),
+        // qui n'est PAS une boisson. La garde isDrinkName rejette « menu/formule », la
+        // vraie boisson (« Coca 33cl ») passe. Jumeau PHP drinkLines (isDrinkItem).
+        if (!isDrinkName(name)) continue;
         const q = parseInt(a?.quantity, 10);
         const qty = Number.isFinite(q) && q > 0 ? q : 1;
         out.push(`${qty}× ${name}`);
@@ -375,7 +395,11 @@ export function renderItemSymbolic(orderItem) {
     // [KITCHEN-MENU 2026-06-30] Ordre owner (identique au ticket imprimé) :
     // ligne 2 = MENU (: sauce frites symbole) PUIS les suppléments.
     if (s.menu) {
-        const menuLabel = s.menu === 'MENU' && fritesSym ? `MENU : ${fritesSym}` : s.menu;
+        // [CLUSTER-2 2026-07-11] MENU et FRITES portent une sauce frites → l'annoter en
+        // symbole (« MENU : ALG », « FRITES : ALG »). BOISSON n'a pas de sauce frites.
+        const menuLabel = (s.menu === 'MENU' || s.menu === 'FRITES') && fritesSym
+            ? `${s.menu} : ${fritesSym}`
+            : s.menu;
         lines.push({ type: 'symbolic-menu', label: menuLabel });
     }
 

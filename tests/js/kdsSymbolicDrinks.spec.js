@@ -44,7 +44,7 @@ describe('renderItemSymbolic — boissons visibles cuisine', () => {
     expect(res.lines[0].label).toContain('BOL');
   });
 
-  it('addon role=menu_boisson → badge MENU + menu_child « 1× Coca-Cola 33cl »', () => {
+  it('addons menu_frites + menu_boisson (formule complète) → badge MENU + menu_child « 1× Coca-Cola 33cl »', () => {
     const res = renderItemSymbolic({
       item_name: 'Tacos M',
       quantity: 1,
@@ -57,10 +57,28 @@ describe('renderItemSymbolic — boissons visibles cuisine', () => {
         ],
       },
     });
+    // [CLUSTER-2 2026-07-11] frites + boisson ensemble = la formule COMPLÈTE → badge MENU
+    // (ce n'est pas une formule partielle) ; la vraie boisson reste extraite en menu_child.
     expect(res.lines.some((l) => l.type === 'symbolic-menu' && l.label.startsWith('MENU'))).toBe(true);
     const drinks = res.lines.filter((l) => l.type === 'menu_child');
     expect(drinks).toHaveLength(1);
     expect(drinks[0].label).toBe('1× Coca-Cola 33cl');
+  });
+
+  it('[CLUSTER-6] addon menu_boisson portant le NOM DU CONTENEUR → pas de ligne boisson parasite', () => {
+    const res = renderItemSymbolic({
+      item_name: 'Tacos M',
+      quantity: 1,
+      composition_snapshot: {
+        lines: [],
+        extras: [],
+        addons: [{ role: 'menu_boisson', quantity: 1, addon_name: 'Menu (Frites + Boisson)' }],
+      },
+    });
+    // « Menu (Frites + Boisson) » n'est PAS une boisson → aucune ligne menu_child ;
+    // le badge reflète quand même la formule partielle BOISSON.
+    expect(res.lines.filter((l) => l.type === 'menu_child')).toHaveLength(0);
+    expect(res.lines.some((l) => l.type === 'symbolic-menu' && l.label === 'BOISSON')).toBe(true);
   });
 
   it('branche isMenuItem : addon boisson rendu aussi sous la ligne MENU', () => {

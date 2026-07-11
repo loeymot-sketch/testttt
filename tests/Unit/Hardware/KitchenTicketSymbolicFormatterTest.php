@@ -196,12 +196,39 @@ class KitchenTicketSymbolicFormatterTest extends TestCase
 
     public function test_menu_line(): void
     {
-        $menu = ['addons' => [['addon_name' => 'Frites Moyennes', 'role' => 'menu_frites']]];
-        $this->assertSame('MENU', $this->f->menuLine($menu));
+        // [CLUSTER-2 2026-07-11] Formule complète → MENU ; formule PARTIELLE distinguée :
+        // frites seules → FRITES (+1,50), boisson seule → BOISSON (+1,00). Le cuisinier
+        // ne doit PAS servir la formule entière quand le client n'a payé qu'une partie.
+        $full = ['addons' => [['addon_name' => 'Menu (Frites + Boisson)', 'role' => 'menu_full']]];
+        $this->assertSame('MENU', $this->f->menuLine($full));
+
+        $formule = ['addons' => [['addon_name' => 'Menu', 'role' => 'menu_formule']]];
+        $this->assertSame('MENU', $this->f->menuLine($formule));
+
+        $fritesMenu = ['addons' => [['addon_name' => 'Frites Moyennes', 'role' => 'menu_frites']]];
+        $this->assertSame('FRITES', $this->f->menuLine($fritesMenu));
+
+        $boissonMenu = ['addons' => [['addon_name' => 'Coca 33cl', 'role' => 'menu_boisson']]];
+        $this->assertSame('BOISSON', $this->f->menuLine($boissonMenu));
 
         $frites = ['addons' => [['addon_name' => 'Frites', 'role' => null]]];
         $this->assertSame('F', $this->f->menuLine($frites));
 
         $this->assertSame('', $this->f->menuLine([]));
+    }
+
+    public function test_drink_lines_reject_formule_container_keep_real_drink(): void
+    {
+        // [CLUSTER-6 2026-07-11] role 'menu_boisson' portant le NOM DU CONTENEUR de
+        // formule (« Menu (Frites + Boisson) ») n'est PAS une boisson → aucune ligne.
+        $container = ['addons' => [['addon_name' => 'Menu (Frites + Boisson)', 'role' => 'menu_boisson', 'quantity' => 1]]];
+        $this->assertSame([], $this->f->drinkLines($container));
+
+        // Une vraie boisson (role drink ou menu_boisson) reste émise.
+        $real = ['addons' => [['addon_name' => 'Coca 33cl', 'role' => 'menu_boisson', 'quantity' => 1]]];
+        $this->assertSame(['1 Coca 33cl'], $this->f->drinkLines($real));
+
+        $drink = ['addons' => [['addon_name' => 'Boisson Seule', 'role' => 'drink', 'quantity' => 2]]];
+        $this->assertSame(['2 Boisson Seule'], $this->f->drinkLines($drink));
     }
 }

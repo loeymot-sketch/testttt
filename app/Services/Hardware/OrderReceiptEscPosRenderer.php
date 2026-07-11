@@ -319,9 +319,11 @@ final class OrderReceiptEscPosRenderer
             }
 
             $menu = $this->symbolic->menuLine($snap);
-            if ($menu === 'MENU') {
+            if ($menu === 'MENU' || $menu === 'FRITES') {
                 $sym = $this->symbolic->fritesSauceSymbol($instruction);
-                $menu = $sym !== '' ? 'MENU : '.$sym : 'MENU';
+                if ($sym !== '') {
+                    $menu = $menu.' : '.$sym;
+                }
             }
             $note = $this->symbolic->cleanInstruction($instruction, $name);
             // [W3-FIX-C 2026-07-06] Item BOISSON (Coca standalone) → NOM COMPLET :

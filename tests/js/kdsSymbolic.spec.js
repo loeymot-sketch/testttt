@@ -150,7 +150,7 @@ describe('symbolicMainLine — owner examples', () => {
 });
 
 describe('renderItemSymbolic — line list for the KDS card', () => {
-    it('emits symbolic-main, MENU, supplements, then allergen (owner order)', () => {
+    it('emits symbolic-main, FRITES (partial formule), supplements, then allergen (owner order)', () => {
         const item = {
             item_name: 'Tacos M',
             quantity: 2,
@@ -172,8 +172,9 @@ describe('renderItemSymbolic — line list for the KDS card', () => {
             'supplement',
             'allergen',
         ]);
-        // Menu enrichi de la sauce frites en symbole quand dispo (ici pas d'instruction → MENU).
-        expect(out.lines[1]).toMatchObject({ type: 'symbolic-menu', label: 'MENU' });
+        // [CLUSTER-2 2026-07-11] role menu_frites = frites SEULES (+1,50), pas la formule
+        // complète → « FRITES », pas « MENU » (sinon la cuisine sert tout = fuite revenu).
+        expect(out.lines[1]).toMatchObject({ type: 'symbolic-menu', label: 'FRITES' });
         expect(out.lines[0]).toMatchObject({
             type: 'symbolic-main',
             qty: 2,

@@ -33,8 +33,9 @@ describe('KdsOrderLine — symbolic line types paint to the DOM', () => {
         const texts = renderLines(item);
         expect(texts[0]).toContain('2');
         expect(texts[0]).toContain('G | TAC | M | K | SAM');
-        // Owner order: MENU (ligne 2) PUIS suppléments.
-        expect(texts[1]).toContain('MENU');
+        // [CLUSTER-2 2026-07-11] role menu_frites = frites SEULES → « FRITES » (ligne 2),
+        // pas « MENU » (la cuisine ne doit pas servir la formule complète). PUIS suppléments.
+        expect(texts[1]).toContain('FRITES');
         expect(texts[2]).toContain('⭐ Cheddar');
     });
 });
