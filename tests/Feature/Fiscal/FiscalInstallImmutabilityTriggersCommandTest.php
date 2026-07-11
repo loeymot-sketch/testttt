@@ -32,11 +32,14 @@ class FiscalInstallImmutabilityTriggersCommandTest extends TestCase
 
     // ── Layer 1 — pure logic (every driver incl. SQLite CI default) ───────────
 
-    public function test_installer_targets_exactly_the_eight_verified_triggers(): void
+    public function test_installer_targets_exactly_the_nine_verified_triggers(): void
     {
         $defs = FiscalInstallImmutabilityTriggersCommand::triggerDefinitions();
 
-        $this->assertCount(8, $defs, 'The installer must define exactly the 8 canonical MySQL immutability triggers.');
+        // [HEAL 2026-07-11] 8 → 9 : ajout de order_items_composition_snapshot_no_update (défense
+        // runtime NF525 §8 qui manquait en base — sa migration se marquait exécutée sans créer le
+        // trigger). L'égalité install==verify ci-dessous garantit que les deux commandes ne dérivent pas.
+        $this->assertCount(9, $defs, 'The installer must define exactly the 9 canonical MySQL immutability triggers.');
 
         // The installer's name+table set MUST equal the verifier's expected set
         // (locked together so the two commands never drift).

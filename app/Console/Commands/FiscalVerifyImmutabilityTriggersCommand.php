@@ -72,9 +72,13 @@ class FiscalVerifyImmutabilityTriggersCommand extends Command
      * delivery_boy_cash_sessions_no_delete — their migration
      * (2026_05_18_120300_add_delivery_boy_cash_no_delete_triggers_sqlite.php)
      * is SQLite-ONLY (`if ($driver !== 'sqlite') { return; }`) and creates
-     * NOTHING on MySQL. Asserting them here would be a false failure. Same
-     * for the order_items composition_snapshot triggers (order_items is not
-     * part of the fiscal-cash immutability surface this check guards).
+     * NOTHING on MySQL. Asserting them here would be a false failure.
+     *
+     * [HEAL 2026-07-11] order_items_composition_snapshot_no_update EST désormais vérifié :
+     * c'est la défense runtime NF525 §8 (OrderItem.php:33) qui manquait en base parce que sa
+     * migration se marquait « exécutée » sans créer le trigger ET que ce verify l'excluait —
+     * l'audit a prouvé un UPDATE SQL brut du snapshot fiscal scellé non bloqué. Il est maintenant
+     * installé par FiscalInstallImmutabilityTriggersCommand et asserté ici.
      */
     public const EXPECTED_TRIGGERS = [
         'audit_logs_no_delete' => 'audit_logs',
@@ -85,6 +89,7 @@ class FiscalVerifyImmutabilityTriggersCommand extends Command
         'order_payments_no_delete' => 'order_payments',
         'stock_movements_no_delete' => 'stock_movements',
         'stock_movements_no_update' => 'stock_movements',
+        'order_items_composition_snapshot_no_update' => 'order_items',
     ];
 
     public function handle(): int

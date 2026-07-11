@@ -159,6 +159,30 @@ class FiscalInstallImmutabilityTriggersCommand extends Command
                     SET MESSAGE_TEXT = 'stock_movements is append-only (Foundation F-6 P0 / NF525-aligned) - UPDATE forbidden';
                 END
                 SQL],
+            // [HEAL 2026-07-11] order_items.composition_snapshot immutability — SQL VERBATIM de
+            // 2026_05_24_040211_add_composition_snapshot_immutability_trigger.php. Cette migration
+            // se marquait « exécutée » SANS créer le trigger (early-return hasTable('order_items')
+            // avant que la table existe), et l'installer/verify l'excluaient → défense runtime NF525
+            // §8 absente en base (snapshot fiscal mutable par SQL brut). L'ajouter ici le restaure
+            // idempotemment à chaque `fiscal:install-immutability-triggers` (donc à chaque deploy).
+            'order_items_composition_snapshot_no_update' => ['order_items', <<<'SQL'
+                CREATE TRIGGER order_items_composition_snapshot_no_update
+                BEFORE UPDATE ON order_items
+                FOR EACH ROW
+                BEGIN
+                    IF NEW.composition_snapshot IS NOT NULL
+                       AND OLD.composition_snapshot IS NOT NULL
+                       AND NEW.composition_snapshot != OLD.composition_snapshot THEN
+                        SIGNAL SQLSTATE '45000'
+                            SET MESSAGE_TEXT = 'NF525: composition_snapshot is immutable after creation (J2-HEAL-06)';
+                    END IF;
+                    IF NEW.composition_snapshot IS NULL
+                       AND OLD.composition_snapshot IS NOT NULL THEN
+                        SIGNAL SQLSTATE '45000'
+                            SET MESSAGE_TEXT = 'NF525: composition_snapshot cannot be nulled after creation (J2-HEAL-06)';
+                    END IF;
+                END
+                SQL],
         ];
     }
 
