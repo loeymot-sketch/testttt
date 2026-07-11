@@ -34,16 +34,28 @@ class CleanupStalePendingKioskOrders
          * admin action). Drop only BranchScope (multi-tenant by design) and keep the
          * soft-delete guard intact.
          */
-        // [TRAP-2 2026-06-04] CORRECTED ABANDONED SET. The real walk-away kiosk
-        // order auto-accepts to `status=ACCEPT` (Plan-B cash counter-deferred,
-        // FrontendOrderService:208,590-593), NOT `status=PENDING`. The previous
-        // gate filtered `status=PENDING` only, so it matched ZERO real kiosk
-        // orders — DEAD CODE despite the GAP-C1-002 comment. Two legal entry
-        // statuses are now targeted:
-        //   - PENDING (kiosk card/TR never auto-accepted, UNPAID)   → REJECTED
-        //   - ACCEPT  (kiosk cash auto-accepted, PENDING_COUNTER)   → CANCELED
-        // OrderStateMachine.allows(): PENDING→REJECTED and ACCEPT→CANCELED are
-        // both legal (OrderStateMachine.php:38,52) — no frozen-zone edit needed.
+        // [TRAP-2 2026-06-04 / CLUSTER-5 2026-07-09] CORRECTED ABANDONED SET. The real
+        // walk-away kiosk order auto-accepts to `status=ACCEPT` (Plan-B cash counter-
+        // deferred, FrontendOrderService:208,590-593), NOT `status=PENDING`. The KDS then
+        // bumps it ACCEPT→PREPARING (KitchenReleaseRule) BEFORE the counter collects the
+        // cash, so a genuinely-abandoned kiosk order is frequently found at PREPARING, not
+        // ACCEPT. The lane must therefore be SYMMETRIC to the 'phone' lane below (which
+        // reaps ACCEPT+PREPARING) so an UNPAID/unfiscalized kiosk order is reaped after the
+        // SAME staleness window regardless of its kitchen status. Three legal entry
+        // statuses are targeted:
+        //   - PENDING   (kiosk card/TR never auto-accepted, UNPAID)      → REJECTED
+        //   - ACCEPT    (kiosk cash auto-accepted, PENDING_COUNTER)      → CANCELED
+        //   - PREPARING (kiosk cash bumped on KDS pre-collect)           → CANCELED
+        // OrderStateMachine.allows(): PENDING→REJECTED, ACCEPT→CANCELED and
+        // PREPARING→CANCELED are all legal (OrderStateMachine.php:38,52,63) — no frozen-
+        // zone edit needed.
+        //
+        // PREPARED is DELIBERATELY EXCLUDED (same as the phone lane): PREPARED→CANCELED is
+        // ILLEGAL in the frozen OrderStateMachine (PREPARED only allows OUT_FOR_DELIVERY/
+        // DELIVERED/RETURNED — OrderStateMachine.php:65-71). Reaping a PREPARED kiosk
+        // orphan requires an owner-gated frozen-zone change (add PREPARED→CANCELED); until
+        // then, fetching a PREPARED row here would make OrderStateMachine::apply() throw
+        // and abort the whole janitor run — so it stays out of the query.
         //
         // NF525-safety: only rows with NO fiscal_sequence_no are touched. A
         // collected order has been sealed (payment_status=PAID + a fiscal
@@ -54,7 +66,7 @@ class CleanupStalePendingKioskOrders
         FrontendOrder::withoutGlobalScope(BranchScope::class)
             ->whereNull('deleted_at')
             ->whereNull('fiscal_sequence_no')
-            ->whereIn('status', [OrderStatus::PENDING, OrderStatus::ACCEPT])
+            ->whereIn('status', [OrderStatus::PENDING, OrderStatus::ACCEPT, OrderStatus::PREPARING])
             ->whereIn('payment_status', [PaymentStatus::UNPAID, PaymentStatus::PENDING_COUNTER])
             ->where('source_surface', 'kiosk')
             ->whereIn('order_type', [\App\Enums\OrderType::KIOSK, \App\Enums\OrderType::TAKEAWAY])
@@ -66,7 +78,7 @@ class CleanupStalePendingKioskOrders
             ->get()
             ->each(fn (FrontendOrder $order) => $this->cleanupStaleDeferredOrder(
                 $order,
-                [OrderStatus::PENDING, OrderStatus::ACCEPT],
+                [OrderStatus::PENDING, OrderStatus::ACCEPT, OrderStatus::PREPARING],
                 [PaymentStatus::UNPAID, PaymentStatus::PENDING_COUNTER],
                 'kiosk',
                 $ttlMinutes,

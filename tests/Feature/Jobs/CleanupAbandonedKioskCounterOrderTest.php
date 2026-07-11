@@ -102,6 +102,146 @@ class CleanupAbandonedKioskCounterOrderTest extends TestCase
         });
     }
 
+    /**
+     * [CLUSTER-5 2026-07-09] A kiosk Plan-B cash order is bumped ACCEPT→PREPARING on the
+     * KDS BEFORE the counter collects the cash. The old lane only matched ACCEPT, so an
+     * abandoned order already at PREPARING was NEVER reaped (stuck in "à encaisser" + KDS
+     * forever). The lane is now symmetric to the phone lane: PREPARING is reaped via the
+     * legal PREPARING→CANCELED transition.
+     */
+    public function test_old_abandoned_kiosk_order_in_preparing_is_canceled(): void
+    {
+        Event::fake([
+            SendOrderMail::class,
+            SendOrderSms::class,
+            SendOrderPush::class,
+            OrderStatusChanged::class,
+            OrderCanceled::class,
+        ]);
+
+        $branch = Branch::factory()->create();
+        $customer = User::factory()->create(['branch_id' => $branch->id]);
+
+        // Same abandoned kiosk cash order, but the KDS already bumped it to PREPARING.
+        $abandoned = $this->makeAbandonedKioskCounterOrder(
+            $branch->id,
+            $customer->id,
+            now()->subMinutes(240)
+        );
+        FrontendOrder::withoutGlobalScopes()
+            ->whereKey($abandoned->id)
+            ->update(['status' => OrderStatus::PREPARING]);
+
+        (new CleanupStalePendingKioskOrders())->handle();
+
+        $fresh = $abandoned->fresh();
+
+        $this->assertSame(
+            OrderStatus::CANCELED,
+            (int) $fresh->status,
+            'Abandoned PREPARING/PENDING_COUNTER kiosk order must be auto-canceled (PREPARING→CANCELED legal).'
+        );
+        $this->assertNull(
+            $fresh->pos_payment_method,
+            'COUNTER_DEFERRED marker must be cleared so a late collect is refused (NF525-safe).'
+        );
+        $this->assertNull(
+            $fresh->fiscal_sequence_no,
+            'Canceled abandoned order must carry NO fiscal sequence.'
+        );
+
+        Event::assertDispatched(OrderStatusChanged::class, function (OrderStatusChanged $event) use ($abandoned): bool {
+            return (int) $event->order->id === (int) $abandoned->id
+                && $event->oldStatus === OrderStatus::PREPARING
+                && $event->newStatus === OrderStatus::CANCELED;
+        });
+    }
+
+    /**
+     * [CLUSTER-5 2026-07-09] A collected (PAID) + fiscalized kiosk order that is ALSO
+     * bumped to PREPARING must remain immune: the fiscal_sequence_no guard wins over the
+     * newly-widened status set. Proves the wider lane never reaps a sealed row.
+     */
+    public function test_collected_fiscalized_preparing_kiosk_order_is_never_touched(): void
+    {
+        Event::fake([
+            SendOrderMail::class,
+            SendOrderSms::class,
+            SendOrderPush::class,
+            OrderStatusChanged::class,
+            OrderCanceled::class,
+        ]);
+
+        $branch = Branch::factory()->create();
+        $customer = User::factory()->create(['branch_id' => $branch->id]);
+
+        $collected = $this->makeAbandonedKioskCounterOrder(
+            $branch->id,
+            $customer->id,
+            now()->subMinutes(240)
+        );
+        FrontendOrder::withoutGlobalScopes()
+            ->whereKey($collected->id)
+            ->update([
+                'status'             => OrderStatus::PREPARING,
+                'payment_status'     => PaymentStatus::PAID,
+                'fiscal_sequence_no' => 1,
+                'pos_payment_method' => PosPaymentMethod::CASH,
+            ]);
+
+        (new CleanupStalePendingKioskOrders())->handle();
+
+        $fresh = $collected->fresh();
+
+        $this->assertSame(
+            OrderStatus::PREPARING,
+            (int) $fresh->status,
+            'A collected (PAID+fiscalized) PREPARING order must NEVER be auto-canceled.'
+        );
+        $this->assertSame(1, (int) $fresh->fiscal_sequence_no, 'Fiscalized order sequence untouched.');
+
+        Event::assertNotDispatched(OrderStatusChanged::class);
+        Event::assertNotDispatched(OrderCanceled::class);
+    }
+
+    /**
+     * [CLUSTER-5 2026-07-09] FROZEN-ZONE LIMITATION GUARD. PREPARED→CANCELED is ILLEGAL in
+     * the frozen OrderStateMachine, so a PREPARED kiosk orphan is deliberately NOT fetched
+     * by the janitor (fetching it would make apply() throw and abort the whole run). This
+     * test pins BOTH facts: (1) the transition is illegal, and (2) the job leaves a stale
+     * PREPARED kiosk order untouched WITHOUT throwing. Reaping PREPARED requires an
+     * owner-gated frozen-zone change (add PREPARED→CANCELED).
+     */
+    public function test_prepared_kiosk_orphan_is_left_untouched_and_job_does_not_throw(): void
+    {
+        // The transition the janitor would need is illegal in the frozen state machine.
+        $this->assertFalse(
+            OrderStateMachine::allows(OrderStatus::PREPARED, OrderStatus::CANCELED),
+            'PREPARED→CANCELED must be illegal — reaping PREPARED needs an owner-gated frozen change.'
+        );
+
+        $branch = Branch::factory()->create();
+        $customer = User::factory()->create(['branch_id' => $branch->id]);
+
+        $prepared = $this->makeAbandonedKioskCounterOrder(
+            $branch->id,
+            $customer->id,
+            now()->subMinutes(240)
+        );
+        FrontendOrder::withoutGlobalScopes()
+            ->whereKey($prepared->id)
+            ->update(['status' => OrderStatus::PREPARED]);
+
+        // Must NOT throw an IllegalTransitionException.
+        (new CleanupStalePendingKioskOrders())->handle();
+
+        $this->assertSame(
+            OrderStatus::PREPARED,
+            (int) $prepared->fresh()->status,
+            'PREPARED kiosk orphan is left as-is (documented frozen-zone limitation, no crash).'
+        );
+    }
+
     public function test_collected_fiscalized_kiosk_order_is_never_touched(): void
     {
         Event::fake([
