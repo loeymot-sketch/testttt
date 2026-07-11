@@ -29,9 +29,10 @@
 - [x] D2 OSS public : **0 PII** ✅
 - [x] D3 aucun secret exposé ✅
 ### Vague C — WEB (validé 09/07 R1/R2, heal sauce re-vérifié R2) — re-check drift différé (bas risque)
-### Vague E — Adversaire final + attestation
-- [~] E1 Agent adversaire dispute B2 no-leak + sécurité + pages secondaires (en cours)
-- [ ] E3 ATTESTATION 100 %
+### Vague E — Adversaire final + attestation  ✅
+- [x] E1 Adversaire final (33 tool-uses) → **CONFIRMÉ ×3** (no-leak, sécurité, cohérence pages)
+- [x] E2 Finding WEB-1 healé+poussé (sauce frites) ; nuance OSS reformulée
+- [x] E3 **ATTESTATION 100 % → VALIDÉ** (voir ATTESTATION_R3.md ; NF525 chain clean 4 branches)
 
 ## Critère 100 %
 Chaque case cochée avec capture lue + 0 défaut visuel/technique/sécu OU défaut healé+re-validé.

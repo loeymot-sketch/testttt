@@ -18,3 +18,10 @@ Payload public order-status-screen : 0 match `email|phone|customer_name|address`
 
 ## D3 — pas de secret exposé
 Aucun secret dans les réponses publiques ; endpoints data protégés par Sanctum (401).
+
+## Nuance adversaire (reformulation, PAS une faille)
+`/api/frontend/oss-order` renvoie 200 JSON `{"data":[]}` avec juste `x-api-key` (clé frontend
+publique par design, livrée en clair dans `public/js/pos-app.js` — pattern accepté SPA, ce n'est
+PAS un secret). C'est le board OSS semi-public (mur d'affichage client) : **0 donnée, 0 PII**.
+`dining-order/show/5637` sans/avec clé = 400/404. Aucune fuite total/PII/fiscal. Pas de P0/P1.
+→ Formulation exacte : « 200 non-auth = shell SPA HTML + board OSS public (JSON vide) ».
