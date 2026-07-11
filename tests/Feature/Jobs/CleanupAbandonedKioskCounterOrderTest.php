@@ -16,6 +16,7 @@ use App\Events\SendOrderSms;
 use App\Jobs\CleanupStalePendingKioskOrders;
 use App\Models\Branch;
 use App\Models\FrontendOrder;
+use App\Models\Scopes\BranchScope;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -205,19 +206,19 @@ class CleanupAbandonedKioskCounterOrderTest extends TestCase
     }
 
     /**
-     * [CLUSTER-5 2026-07-09] FROZEN-ZONE LIMITATION GUARD. PREPARED→CANCELED is ILLEGAL in
-     * the frozen OrderStateMachine, so a PREPARED kiosk orphan is deliberately NOT fetched
-     * by the janitor (fetching it would make apply() throw and abort the whole run). This
-     * test pins BOTH facts: (1) the transition is illegal, and (2) the job leaves a stale
-     * PREPARED kiosk order untouched WITHOUT throwing. Reaping PREPARED requires an
-     * owner-gated frozen-zone change (add PREPARED→CANCELED).
+     * [CLUSTER-5-reste 2026-07-11] PHANTOM PREPARED PURGÉ PAR SOFT-DELETE (sans toucher le frozen).
+     * PREPARED→CANCELED reste ILLÉGALE dans le OrderStateMachine FROZEN, donc le janitor ne peut PAS
+     * faire de transition de statut sur un fantôme borne bloqué à PREPARED (cela ferait throw et
+     * avorterait le run). À la place, un fantôme UNPAID + non-fiscalisé + périmé est SOFT-DELETE :
+     * il quitte « à encaisser » + KDS (SoftDeletingScope) sans transition illégale. Ce test épingle :
+     * (1) la transition est toujours illégale, (2) le job ne throw PAS, (3) le fantôme est trashed().
      */
-    public function test_prepared_kiosk_orphan_is_left_untouched_and_job_does_not_throw(): void
+    public function test_stale_prepared_kiosk_phantom_is_soft_deleted_and_job_does_not_throw(): void
     {
-        // The transition the janitor would need is illegal in the frozen state machine.
+        // La transition dont le janitor aurait besoin reste illégale dans le frozen state machine.
         $this->assertFalse(
             OrderStateMachine::allows(OrderStatus::PREPARED, OrderStatus::CANCELED),
-            'PREPARED→CANCELED must be illegal — reaping PREPARED needs an owner-gated frozen change.'
+            'PREPARED→CANCELED must stay illegal — purge is a soft-delete, NOT a status transition.'
         );
 
         $branch = Branch::factory()->create();
@@ -235,11 +236,59 @@ class CleanupAbandonedKioskCounterOrderTest extends TestCase
         // Must NOT throw an IllegalTransitionException.
         (new CleanupStalePendingKioskOrders())->handle();
 
-        $this->assertSame(
-            OrderStatus::PREPARED,
-            (int) $prepared->fresh()->status,
-            'PREPARED kiosk orphan is left as-is (documented frozen-zone limitation, no crash).'
+        // Soft-deleted → invisible to the default (KDS + collect-queue) scope.
+        $this->assertNull(
+            FrontendOrder::withoutGlobalScope(BranchScope::class)->find($prepared->id),
+            'Stale PREPARED kiosk phantom must be soft-deleted (gone from « à encaisser » + KDS).'
         );
+
+        // Still present WITH the soft-delete filter lifted, and marked trashed.
+        $trashed = FrontendOrder::withoutGlobalScope(BranchScope::class)->withTrashed()->find($prepared->id);
+        $this->assertNotNull($trashed, 'Soft-deleted phantom row still exists (deleted_at set, not hard-deleted).');
+        $this->assertTrue($trashed->trashed(), 'Phantom PREPARED order must be trashed() after purge.');
+
+        // NF525: never fiscalized. The counter-deferred marker is broken so a late collect is refused.
+        $this->assertNull($trashed->fiscal_sequence_no, 'Purged phantom carries NO fiscal sequence.');
+        $this->assertNull($trashed->pos_payment_method, 'COUNTER_DEFERRED marker cleared so a late collect is refused.');
+        // Status is left as-is (no illegal transition applied to the frozen state machine).
+        $this->assertSame(OrderStatus::PREPARED, (int) $trashed->status, 'Status untouched — purge is a soft-delete, not a transition.');
+    }
+
+    /**
+     * [CLUSTER-5-reste 2026-07-11] GARDE ABSOLUE NF525. Un fantôme au statut PREPARED qui est
+     * PAYÉ (PAID) ou FISCALISÉ (fiscal_sequence_no non-null) ne doit JAMAIS être soft-deleté :
+     * la garde fiscal_sequence_no + payment_status gagne sur le statut PREPARED périmé.
+     */
+    public function test_paid_or_fiscalized_prepared_kiosk_order_is_never_soft_deleted(): void
+    {
+        $branch = Branch::factory()->create();
+        $customer = User::factory()->create(['branch_id' => $branch->id]);
+
+        // (a) PAID + fiscalisée.
+        $fiscalized = $this->makeAbandonedKioskCounterOrder($branch->id, $customer->id, now()->subMinutes(240));
+        FrontendOrder::withoutGlobalScopes()->whereKey($fiscalized->id)->update([
+            'status'             => OrderStatus::PREPARED,
+            'payment_status'     => PaymentStatus::PAID,
+            'fiscal_sequence_no' => 1,
+            'pos_payment_method' => PosPaymentMethod::CASH,
+        ]);
+
+        // (b) fiscalisée mais toujours PENDING_COUNTER (fiscal_sequence_no seul suffit à immuniser).
+        $sealedOnly = $this->makeAbandonedKioskCounterOrder($branch->id, $customer->id, now()->subMinutes(240));
+        FrontendOrder::withoutGlobalScopes()->whereKey($sealedOnly->id)->update([
+            'status'             => OrderStatus::PREPARED,
+            'fiscal_sequence_no' => 2,
+        ]);
+
+        (new CleanupStalePendingKioskOrders())->handle();
+
+        foreach ([$fiscalized->id, $sealedOnly->id] as $id) {
+            $fresh = FrontendOrder::withoutGlobalScope(BranchScope::class)->find($id);
+            $this->assertNotNull($fresh, 'A PAID/fiscalized PREPARED order must NEVER be soft-deleted.');
+            $this->assertFalse($fresh->trashed(), 'A PAID/fiscalized PREPARED order must NEVER be trashed.');
+            $this->assertSame(OrderStatus::PREPARED, (int) $fresh->status, 'Sealed order status untouched.');
+            $this->assertNotNull($fresh->fiscal_sequence_no, 'Fiscal sequence untouched (NF525 chain).');
+        }
     }
 
     public function test_collected_fiscalized_kiosk_order_is_never_touched(): void

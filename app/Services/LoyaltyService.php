@@ -197,4 +197,137 @@ class LoyaltyService
             ]);
         });
     }
+
+    /**
+     * [CLUSTER-7 / P3 2026-07-11] Re-credit UNCONSUMED self-service pre-redemptions.
+     *
+     * The pre-redeem endpoint (LoyaltyController::redeem) debits points immediately
+     * and writes a PENDING ledger row (type='redeem', order_id=NULL). When an order
+     * is placed, FrontendOrderService backfills that row's order_id (10-min attach
+     * window). If NO order is ever placed / is abandoned, the row stays order_id=NULL
+     * and the order-keyed {@see self::refundPoints} can never re-credit it → points
+     * burned. This reaper closes that gap: it re-credits any pending redeem older than
+     * the configured window (strictly > the 10-min attach window, so it can never race
+     * a legitimate late order attach).
+     *
+     * Mirrors {@see self::refundPoints} (reversal via a NEW type='manual_add' row —
+     * the orphan is left immutable). Idempotent: a per-orphan token `[reap:<id>]` in
+     * the reversal description guards against double-credit across repeated runs.
+     *
+     * @param  int|null  $olderThanMinutes  Override the config window (mainly for tests).
+     * @return int  Number of orphan redemptions re-credited this run.
+     */
+    public function reapOrphanRedemptions(?int $olderThanMinutes = null): int
+    {
+        $olderThanMinutes = $olderThanMinutes ?? (int) config('loyalty.orphan_redeem_reap_minutes', 30);
+        if ($olderThanMinutes < 1) {
+            $olderThanMinutes = 30;
+        }
+        $threshold = now()->subMinutes($olderThanMinutes);
+
+        $orphans = LoyaltyTransaction::query()
+            ->where('type', 'redeem')
+            ->whereNull('order_id')
+            ->where('points', '<', 0)
+            ->where('created_at', '<', $threshold)
+            ->orderBy('id')
+            ->get();
+
+        $reaped = 0;
+        foreach ($orphans as $orphan) {
+            if ($this->reapSingleOrphanRedemption((int) $orphan->id)) {
+                $reaped++;
+            }
+        }
+
+        return $reaped;
+    }
+
+    /**
+     * Re-credit a single orphan pending redeem under a row lock, idempotently.
+     *
+     * @return bool  True if points were re-credited this call, false on NOOP
+     *               (consumed since, already reaped, or customer row gone).
+     */
+    private function reapSingleOrphanRedemption(int $orphanId): bool
+    {
+        return (bool) DB::transaction(function () use ($orphanId) {
+            // Re-fetch under lock. If order_id was backfilled between the outer
+            // select and here (order finally placed), it no longer matches the
+            // whereNull filter → NOOP (never re-credit a consumed redemption).
+            $query = LoyaltyTransaction::query()
+                ->where('id', $orphanId)
+                ->where('type', 'redeem')
+                ->whereNull('order_id');
+            if (DB::connection()->getDriverName() !== 'sqlite') {
+                $query->lockForUpdate();
+            }
+            $orphan = $query->first();
+            if (!$orphan) {
+                return false;
+            }
+
+            $points = abs((int) $orphan->points);
+            if ($points <= 0) {
+                return false;
+            }
+
+            // Idempotency: a prior run already wrote the reversal for THIS orphan.
+            // The (user_id, order_id, type) UNIQUE index does not protect NULL
+            // order_id rows (MySQL treats NULLs as distinct), so guard on the
+            // per-orphan token embedded in the reversal description.
+            $token = '[reap:'.$orphan->id.']';
+            $alreadyReaped = LoyaltyTransaction::query()
+                ->where('type', 'manual_add')
+                ->where('description', 'like', '%'.$token.'%')
+                ->exists();
+            if ($alreadyReaped) {
+                return false;
+            }
+
+            // Re-credit regardless of current account status: these are the
+            // customer's OWN previously-debited points; refusing to return them
+            // to a since-deactivated account would strand them exactly as the
+            // bug this reaper fixes. Only require the row to still exist.
+            $userQuery = User::query()->where('id', $orphan->user_id);
+            if (DB::connection()->getDriverName() !== 'sqlite') {
+                $userQuery->lockForUpdate();
+            }
+            $user = $userQuery->first();
+            if (!$user) {
+                Log::warning('[Loyalty] Orphan redeem reap skipped: customer row missing', [
+                    'txn_id' => $orphan->id,
+                    'user_id' => $orphan->user_id,
+                    'points' => $points,
+                ]);
+                return false;
+            }
+
+            DB::table('users')
+                ->where('id', $user->id)
+                ->increment('loyalty_points', $points);
+
+            $balanceAfter = (int) $user->loyalty_points + $points;
+
+            LoyaltyTransaction::create([
+                'user_id' => $user->id,
+                'loyalty_code' => $user->loyalty_code,
+                'order_id' => null,
+                'type' => 'manual_add',
+                'points' => $points,
+                'balance_after' => $balanceAfter,
+                'source_surface' => $orphan->source_surface ?: 'reaper',
+                'description' => 'Reprise fidelite: reduction non consommee (commande abandonnee) '.$token,
+            ]);
+
+            Log::info('[Loyalty] Orphan pending redeem re-credited', [
+                'txn_id' => $orphan->id,
+                'user_id' => $user->id,
+                'points_refunded' => $points,
+                'new_balance' => $balanceAfter,
+            ]);
+
+            return true;
+        });
+    }
 }

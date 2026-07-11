@@ -96,4 +96,25 @@ return [
     |----------------------------------------------------------------------
     */
     'min_secret_length' => 32,
+
+    /*
+    |----------------------------------------------------------------------
+    | Orphan pending-redeem reaper window (minutes)
+    |----------------------------------------------------------------------
+    |
+    | The self-service pre-redeem endpoint (POST /api/frontend/loyalty/redeem,
+    | LoyaltyController::redeem) debits points immediately and writes a PENDING
+    | ledger row with order_id = NULL. When the customer then places an order,
+    | FrontendOrderService backfills that row's order_id (attach window: 10 min,
+    | FrontendOrderService.php:918). If the order is NEVER placed / is abandoned,
+    | the row stays order_id = NULL forever and LoyaltyService::refundPoints
+    | (keyed on order_id) can never re-credit it → points stranded.
+    |
+    | LoyaltyService::reapOrphanRedemptions() re-credits any such unconsumed
+    | pending redeem older than this window. It MUST be strictly greater than the
+    | 10-minute FrontendOrderService attach window so a legitimate late order can
+    | never race the reaper (an order created after 10 min can no longer attach
+    | the pending row anyway). Default 30 min. Override: LOYALTY_ORPHAN_REDEEM_REAP_MINUTES.
+    */
+    'orphan_redeem_reap_minutes' => (int) env('LOYALTY_ORPHAN_REDEEM_REAP_MINUTES', 30),
 ];

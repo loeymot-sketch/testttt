@@ -14,6 +14,7 @@ use App\Events\SendOrderSms;
 use App\Models\FrontendOrder;
 use App\Models\Scopes\BranchScope;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class CleanupStalePendingKioskOrders
 {
@@ -85,6 +86,37 @@ class CleanupStalePendingKioskOrders
                 'kiosk',
             ));
 
+        // [CLUSTER-5-reste 2026-07-11] PHANTOMS BORNE AU STATUT PREPARED — purge par SOFT-DELETE.
+        // 8/9 des commandes borne UNPAID fantômes observées sont au statut PREPARED (status=8) :
+        // la borne Plan-B cash auto-accepte (ACCEPT), le KDS la fait avancer ACCEPT→PREPARING→
+        // PREPARED avant que la caisse encaisse. Le bloc kiosk ci-dessus ne peut PAS les CANCEL :
+        // PREPARED→CANCELED est ILLÉGALE dans le OrderStateMachine FROZEN (l.65-71, PREPARED
+        // n'autorise que OUT_FOR_DELIVERY/DELIVERED/RETURNED) — les inclure ferait throw
+        // IllegalTransitionException et avorterait tout le job. Donc au lieu d'une transition de
+        // statut interdite, on SOFT-DELETE le fantôme ($order->delete() → deleted_at) : il quitte
+        // « à encaisser » ET le KDS (tous deux filtrés par le SoftDeletingScope) SANS toucher le
+        // frozen state machine ni changer son statut.
+        //
+        // GARDE ABSOLUE NF525 (mirror du bloc kiosk) : whereNull('fiscal_sequence_no') +
+        // payment_status ∈ {UNPAID, PENDING_COUNTER} → une commande encaissée (PAID + séquence
+        // fiscale scellée) n'est JAMAIS soft-deletée. Même fenêtre de staleness que le bloc kiosk
+        // ($staleThreshold / $ttlMinutes). Le comportement CANCELED existant reste inchangé pour
+        // PENDING/ACCEPT/PREPARING (bloc ci-dessus).
+        FrontendOrder::withoutGlobalScope(BranchScope::class)
+            ->whereNull('deleted_at')
+            ->whereNull('fiscal_sequence_no')
+            ->where('status', OrderStatus::PREPARED)
+            ->whereIn('payment_status', [PaymentStatus::UNPAID, PaymentStatus::PENDING_COUNTER])
+            ->where('source_surface', 'kiosk')
+            ->whereIn('order_type', [\App\Enums\OrderType::KIOSK, \App\Enums\OrderType::TAKEAWAY])
+            ->where(function ($query) use ($staleThreshold): void {
+                $query->where('created_at', '<', $staleThreshold)
+                    ->orWhere('order_datetime', '<', $staleThreshold);
+            })
+            ->orderBy('id')
+            ->get()
+            ->each(fn (FrontendOrder $order) => $this->softDeleteStalePreparedPhantom($order, $ttlMinutes));
+
         // [C4-CAISSE-TELEPHONE FIX-2 / P3 2026-07-07] Purge des COMMANDES TÉLÉPHONE
         // abandonnées. Une commande téléphone (source_surface='phone') est prise à
         // l'avance, envoyée en cuisine (auto-accept + board-release → status=ACCEPT ou
@@ -137,6 +169,17 @@ class CleanupStalePendingKioskOrders
                 $phoneTtlMinutes,
                 'phone',
             ));
+
+        // [CLUSTER-7 / P3 2026-07-11] Re-credit ORPHAN self-service pre-redemptions.
+        // The pre-redeem endpoint (LoyaltyController::redeem) debits points and writes a
+        // PENDING ledger row (type='redeem', order_id=NULL). An order backfills that row's
+        // order_id (10-min window, FrontendOrderService); if NO order is ever placed the
+        // row stays order_id=NULL forever and the order-keyed refundPoints can never
+        // re-credit it → points burned. This reaper (window > the 10-min attach window, so
+        // it can never race a legitimate late order) re-credits any unconsumed pending
+        // redeem. Idempotent + isolated (loyalty_transactions + users only, zero order /
+        // NF525 / fiscal_sequence impact) — safe to run alongside the order janitor above.
+        app(\App\Services\LoyaltyService::class)->reapOrphanRedemptions();
     }
 
     /**
@@ -253,6 +296,74 @@ class CleanupStalePendingKioskOrders
         OrderStatusChanged::dispatch($order, $oldStatus, $newStatus);
         // [F-01] Auto-cleaned stale orders must release any branch-scoped counters
         // consumed at OrderCreated time. Idempotent via released_qty.
+        OrderCanceled::dispatch($order);
+    }
+
+    /**
+     * [CLUSTER-5-reste 2026-07-11] Purge par SOFT-DELETE d'un fantôme borne bloqué au statut
+     * PREPARED, dans une transaction verrouillée. Contrairement à cleanupStaleDeferredOrder, on
+     * NE fait PAS de transition de statut : PREPARED→CANCELED est illégale dans le OrderStateMachine
+     * FROZEN et la forcer avorterait le job. On soft-delete la ligne à la place → elle disparaît de
+     * « à encaisser » et du KDS (SoftDeletingScope) sans toucher le frozen ni le statut.
+     *
+     * GARDE ABSOLUE NF525 (re-checkée sous lock) : on ne soft-delete JAMAIS une commande payée
+     * (payment_status PAID) ou fiscalisée (fiscal_sequence_no non-null).
+     */
+    private function softDeleteStalePreparedPhantom(FrontendOrder $order, int $ttlMinutes): void
+    {
+        $purged = false;
+
+        DB::transaction(function () use ($order, $ttlMinutes, &$purged): void {
+            $locked = FrontendOrder::withoutGlobalScope(BranchScope::class)
+                ->whereKey($order->id)
+                ->lockForUpdate()
+                ->first();
+
+            // Re-garde sous lock, miroir de la requête externe. On perd la course gracieusement
+            // contre un encaissement concurrent (confirmCounterPayment scelle fiscal_sequence_no +
+            // PAID sous son propre lock) : garde ABSOLUE fiscal_sequence_no + payment_status.
+            if (!$locked
+                || $locked->fiscal_sequence_no !== null
+                || (int) $locked->status !== OrderStatus::PREPARED
+                || !in_array((int) $locked->payment_status, [PaymentStatus::UNPAID, PaymentStatus::PENDING_COUNTER], true)) {
+                return;
+            }
+
+            // Remboursement fidélité idempotent, exactement comme le chemin d'annulation, AVANT la
+            // purge (refundPoints no-op si pas de loyalty_code / déjà remboursé).
+            app(\App\Services\LoyaltyService::class)->refundPoints($locked, 'kiosk');
+
+            // Casse du marqueur counter-deferred → un encaissement tardif ne peut plus fiscaliser
+            // + PAYER une ligne qu'on vient de purger (assertCounterDeferredOrder throw 422).
+            if ((int) ($locked->pos_payment_method ?? 0) === PosPaymentMethod::COUNTER_DEFERRED) {
+                $locked->pos_payment_method = null;
+                $locked->save();
+            }
+
+            // Soft-delete : deleted_at posé → sort de « à encaisser » + KDS via le SoftDeletingScope,
+            // aucune transition de statut illégale, aucun changement du frozen state machine.
+            $locked->delete();
+
+            // Trace de purge sur le MÊME canal que le reste du job (LoyaltyService logue via Log).
+            Log::info('[CleanupStalePendingKioskOrders] Phantom PREPARED kiosk order soft-deleted', [
+                'order_id'   => $locked->id,
+                'branch_id'  => $locked->branch_id,
+                'status'     => (int) $locked->status,
+                'ttl_min'    => $ttlMinutes,
+                'reason'     => 'PREPARED→CANCELED illegal in frozen state machine; soft-delete purge instead.',
+            ]);
+
+            $locked->refresh();
+            $order->setRawAttributes($locked->getAttributes(), true);
+            $purged = true;
+        });
+
+        if (!$purged) {
+            return;
+        }
+
+        // [F-01] Release des compteurs branch-scoped consommés à la création (idempotent
+        // released_qty). Le fantôme purgé libère sa réservation de dispo/stock comme une annulation.
         OrderCanceled::dispatch($order);
     }
 }
