@@ -275,6 +275,42 @@ final class AvailabilityService
     }
 
     /**
+     * [CAISSE-LOGIC-HEAL SYNC-P1 2026-07-11] Résout les item_id des COMPOSANTS de menu
+     * (addons) référencés par une liste de lignes de commande. La garde d'orderabilité
+     * ne recevait que les item_id de 1er niveau (`pluck('item_id')`) : un composant en
+     * rupture (ex : la boisson d'un menu) restait donc commandable — asymétrie
+     * lecture/écriture, alors que le chemin de lecture (`MenuProjectionService`) filtre
+     * bien les addons. À fusionner dans les $itemIds passés à assertItemsOrderableForBranch.
+     *
+     * @param  iterable<mixed>  $requestItems  lignes de commande portant `item_addons[{id}]`
+     * @return array<int>
+     */
+    public function componentItemIdsFor($requestItems): array
+    {
+        $addonIds = collect($requestItems)
+            ->pluck('item_addons')
+            ->flatten(1)
+            ->pluck('id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($addonIds === []) {
+            return [];
+        }
+
+        return \App\Models\ItemAddon::query()
+            ->whereIn('id', $addonIds)
+            ->pluck('addon_item_id')
+            ->filter()
+            ->map(static fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
      * Apply daily counters after an order is created (no-op if no row exists).
      * Auto-86 once the daily cap is reached.
      *

@@ -156,4 +156,68 @@ class AvailabilityServiceTest extends TestCase
         $this->assertFalse((bool) $payload['is_available']);
         $this->assertSame('out_of_stock', $payload['reason']);
     }
+
+    /**
+     * [CAISSE-LOGIC-HEAL SYNC-P1 2026-07-11] Un composant de menu (addon) en rupture doit
+     * rendre la commande du menu inordonnable : `componentItemIdsFor` résout l'addon_item_id
+     * du composant, et la garde le rejette. Avant, seul l'item de 1er niveau était testé
+     * → survente du composant 86 (asymétrie lecture/écriture).
+     */
+    public function test_menu_component_out_of_stock_blocks_order(): void
+    {
+        $menu      = Item::factory()->create();  // le menu (1er niveau, disponible)
+        $component = Item::factory()->create();  // la boisson composant (en rupture)
+        $branch    = Branch::factory()->create();
+
+        // Lien menu → composant via ItemAddon.
+        $addon = \App\Models\ItemAddon::create([
+            'item_id'       => $menu->id,
+            'addon_item_id' => $component->id,
+            'status'        => 1,
+        ]);
+
+        // Composant marqué en rupture pour la branche.
+        app(AvailabilityService::class)->toggle((int) $component->id, (int) $branch->id, false, 'out_of_stock');
+
+        $service = app(AvailabilityService::class);
+        $requestItems = [ (object) ['item_id' => $menu->id, 'item_addons' => [ (object) ['id' => $addon->id, 'quantity' => 1] ]] ];
+
+        // Le helper résout bien le composant.
+        $this->assertContains((int) $component->id, $service->componentItemIdsFor($requestItems));
+
+        // La garde, alimentée du menu + du composant, doit REJETER (composant en rupture).
+        $this->expectException(\InvalidArgumentException::class);
+        $service->assertItemsOrderableForBranch(
+            (int) $branch->id,
+            array_merge([(int) $menu->id], $service->componentItemIdsFor($requestItems)),
+            false
+        );
+    }
+
+    /**
+     * Contre-preuve : composant DISPONIBLE → la commande passe (pas de faux blocage).
+     */
+    public function test_menu_component_in_stock_allows_order(): void
+    {
+        $menu      = Item::factory()->create();
+        $component = Item::factory()->create();
+        $branch    = Branch::factory()->create();
+
+        $addon = \App\Models\ItemAddon::create([
+            'item_id'       => $menu->id,
+            'addon_item_id' => $component->id,
+            'status'        => 1,
+        ]);
+
+        $service = app(AvailabilityService::class);
+        $requestItems = [ (object) ['item_id' => $menu->id, 'item_addons' => [ (object) ['id' => $addon->id, 'quantity' => 1] ]] ];
+
+        // Aucune rupture → ne throw pas.
+        $service->assertItemsOrderableForBranch(
+            (int) $branch->id,
+            array_merge([(int) $menu->id], $service->componentItemIdsFor($requestItems)),
+            false
+        );
+        $this->assertTrue(true);
+    }
 }

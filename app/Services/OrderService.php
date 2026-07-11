@@ -445,9 +445,12 @@ class OrderService
                         ? \App\Models\ItemExtra::whereIn('id', $extraIds)->get()->keyBy('id')
                         : collect();
 
+                    // [CAISSE-LOGIC-HEAL SYNC-P1 2026-07-11] Inclure les composants de menu
+                    // (addon_item_id) : un composant en rupture restait commandable (seuls les
+                    // item_id de 1er niveau étaient testés — asymétrie avec le chemin de lecture).
                     app(AvailabilityService::class)->assertItemsOrderableForBranch(
                         (int) $this->order->branch_id,
-                        $requestedItemIds,
+                        array_merge($requestedItemIds, app(AvailabilityService::class)->componentItemIdsFor($requestItems)),
                         true
                     );
 
@@ -926,9 +929,12 @@ class OrderService
                         ? \App\Models\ItemExtra::whereIn('id', $extraIds)->get()->keyBy('id')
                         : collect();
 
+                    // [CAISSE-LOGIC-HEAL SYNC-P1 2026-07-11] Inclure les composants de menu
+                    // (addon_item_id) : un composant en rupture restait commandable (seuls les
+                    // item_id de 1er niveau étaient testés — asymétrie avec le chemin de lecture).
                     app(AvailabilityService::class)->assertItemsOrderableForBranch(
                         (int) $this->order->branch_id,
-                        $requestedItemIds,
+                        array_merge($requestedItemIds, app(AvailabilityService::class)->componentItemIdsFor($requestItems)),
                         true
                     );
 
@@ -1501,9 +1507,12 @@ class OrderService
                         ? \App\Models\ItemExtra::whereIn('id', $extraIds)->get()->keyBy('id')
                         : collect();
 
+                    // [CAISSE-LOGIC-HEAL SYNC-P1 2026-07-11] Inclure les composants de menu
+                    // (addon_item_id) : un composant en rupture restait commandable (seuls les
+                    // item_id de 1er niveau étaient testés — asymétrie avec le chemin de lecture).
                     app(AvailabilityService::class)->assertItemsOrderableForBranch(
                         (int) $this->order->branch_id,
-                        $requestedItemIds,
+                        array_merge($requestedItemIds, app(AvailabilityService::class)->componentItemIdsFor($requestItems)),
                         true
                     );
 

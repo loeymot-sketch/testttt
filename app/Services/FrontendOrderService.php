@@ -360,9 +360,13 @@ class FrontendOrderService
                         ? \App\Models\ItemExtra::whereIn('id', $extraIds)->get()->keyBy('id')
                         : collect();
 
-                    app(AvailabilityService::class)->assertItemsOrderableForBranch(
+                    // [CAISSE-LOGIC-HEAL SYNC-P1 2026-07-11] Inclure les composants de menu
+                    // (addon_item_id) dans la garde : un composant en rupture (boisson d'un
+                    // menu) restait commandable car seuls les item_id de 1er niveau étaient testés.
+                    $availabilityService = app(AvailabilityService::class);
+                    $availabilityService->assertItemsOrderableForBranch(
                         (int) $this->frontendOrder->branch_id,
-                        $requestedItemIds,
+                        array_merge($requestedItemIds, $availabilityService->componentItemIdsFor($requestItems)),
                         true
                     );
 
