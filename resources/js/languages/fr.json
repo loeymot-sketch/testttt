@@ -741,6 +741,7 @@
         "kds_cuisine_froide": "Cuisine froide",
         "kds_group_by_table": "Regrouper par table",
         "kds_sound": "Son nouveau ticket",
+        "kds_auto_print": "Impression auto",
         "kds_volume": "Volume",
         "kds_admin_polling_hint": "Mode admin centralisé : rafraîchissement automatique toutes les 60 s.",
         "kds_order_cap_warning": "Charge élevée : {n} commande(s) listée(s) — proche du plafond d'affichage (50). Pensez à clôturer ou filtrer par statut.",

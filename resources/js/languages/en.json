@@ -1267,6 +1267,7 @@
         "kds_cuisine_froide": "Cuisine froide",
         "kds_group_by_table": "Regrouper par table",
         "kds_sound": "Son nouvelle commande",
+        "kds_auto_print": "Auto print",
         "kds_volume": "Volume",
         "kds_admin_polling_hint": "Central admin mode: auto-refresh every 60s.",
         "kds_order_cap_warning": "Charge élevée : {n} commande(s) affichée(s), proche du plafond de l'écran cuisine.",

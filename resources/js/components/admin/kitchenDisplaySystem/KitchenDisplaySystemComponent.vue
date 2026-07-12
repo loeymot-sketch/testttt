@@ -223,6 +223,11 @@
                 :aria-label="$t('label.kds_volume')"
                 class="w-28 accent-primary" />
             </label>
+            <label class="flex items-center gap-2 text-xs font-medium text-heading cursor-pointer"
+              :title="$t('label.kds_auto_print')">
+              <input type="checkbox" v-model="autoPrintKitchen" @change="persistKdsUiPrefs" class="rounded border-[#D9DBE9]" />
+              <span class="whitespace-nowrap">🖨️ {{ $t('label.kds_auto_print') }} {{ autoPrintKitchen ? 'ON' : 'OFF' }}</span>
+            </label>
           </div>
           <audio ref="kdsNewOrderAudio" preload="auto" class="hidden" src="/sounds/kds-new-order.mp3" />
         </div>
@@ -1070,6 +1075,10 @@ import { kdsVariationLine, sanitizeKdsInstruction } from "../../../helpers/kdsCu
 import { freshnessBaseMs as kdsFreshnessBaseMs, isSyncStale as kdsIsSyncStale, isSyncUncertain as kdsIsSyncUncertain, humanizeSyncAgo as kdsHumanizeSyncAgo } from "../../../helpers/kdsFreshness";
 // [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT — mirrors App\Support\PhoneDisplay::safe
 import { safePhone } from "../../../helpers/phoneDisplay";
+// [KITCHEN-BRIDGE 2026-07-09] Auto-impression SILENCIEUSE du ticket cuisine via le
+// pont local (miroir du pont caisse). Dé-dup persistée localStorage (jamais 2× le
+// même ticket au refresh/reconnexion). Best-effort : pont éteint = jamais bloquant.
+import { printEscPosViaKitchenBridge, hasKitchenPrinted, markKitchenPrinted, seedKitchenPrinted } from "../../../helpers/kitchenLocalPrinter";
 // [kds/sprint-2 V-5] V2 layout components — feature-flagged single FIFO 4×2 grid.
 import KdsV2Grid from "./KdsV2Grid.vue";
 // [Wave X3 2026-05-21] KDS Historique du jour — read-only day-history drawer.
@@ -1126,6 +1135,11 @@ export default {
       groupByTable: false,
       soundEnabled: true,
       soundVolume: 80,
+      // [KITCHEN-BRIDGE 2026-07-09] Toggle impression cuisine auto (défaut ON, owner).
+      autoPrintKitchen: true,
+      // Garde de seed du backlog (une seule fois par montage) — évite la ré-impression
+      // massive des commandes déjà présentes au 1er chargement / reconnexion.
+      _kitchenBacklogSeeded: false,
       /** forces border timer class recompute (orange → red) */
       waitTick: 0,
       expandedTableGroups: {},
@@ -1441,6 +1455,8 @@ export default {
       const newOrders = (newVal || []).filter((o) => o && !oldIds.has(o.id));
       if (newOrders.length > 0) {
         this.playKdsNewOrderSound();
+        // [KITCHEN-BRIDGE 2026-07-09] Auto-impression cuisine, exactement 1× / commande.
+        this.autoPrintNewKitchenTickets(newOrders);
       }
     },
   },
@@ -1486,6 +1502,13 @@ export default {
     this.soundEnabled = se !== "0" && se !== "false";
     const sv = parseInt(localStorage.getItem("kds.sound_volume") || "80", 10);
     this.soundVolume = Number.isFinite(sv) ? Math.min(100, Math.max(0, sv)) : 80;
+    // [KITCHEN-BRIDGE 2026-07-09] Toggle impression cuisine auto — défaut ACTIVÉ.
+    try {
+      const ap = localStorage.getItem("kds.autoPrint");
+      this.autoPrintKitchen = ap !== "0" && ap !== "false";
+    } catch (e) {
+      this.autoPrintKitchen = true;
+    }
   },
   mounted() {
     this.closeSidebar();
@@ -1836,6 +1859,7 @@ export default {
       localStorage.setItem("kds.group_by_table", this.groupByTable ? "1" : "0");
       localStorage.setItem("kds.sound_enabled", this.soundEnabled ? "1" : "0");
       localStorage.setItem("kds.sound_volume", String(this.soundVolume));
+      localStorage.setItem("kds.autoPrint", this.autoPrintKitchen ? "1" : "0");
     },
     playKdsNewOrderSound() {
       if (!this.soundEnabled) {
@@ -1854,6 +1878,51 @@ export default {
       el.volume = Math.min(1, Math.max(0, this.soundVolume / 100));
       el.currentTime = 0;
       el.play().catch(() => {});
+    },
+    // [KITCHEN-BRIDGE 2026-07-09] Seed la garde de dé-dup avec les ids des commandes
+    // DÉJÀ présentes (backlog) au 1er chargement / à la reconnexion, SANS imprimer.
+    // Garantit qu'un reload/refresh ne relance pas une impression massive du backlog.
+    _seedKitchenPrintedBacklogOnce() {
+      if (this._kitchenBacklogSeeded) return;
+      this._kitchenBacklogSeeded = true;
+      try {
+        const ids = (this.orders || []).map((o) => o && o.id).filter((id) => id != null);
+        seedKitchenPrinted(ids);
+      } catch (e) {
+        /* best-effort — jamais bloquant pour le KDS */
+      }
+    },
+    // Imprime le ticket cuisine des NOUVELLES commandes, exactement une fois chacune.
+    // Respecte le toggle autoPrintKitchen ; la dé-dup persiste en localStorage.
+    autoPrintNewKitchenTickets(orders) {
+      if (!this.autoPrintKitchen) return;
+      (orders || []).forEach((o) => {
+        if (!o || o.id == null) return;
+        if (hasKitchenPrinted(o.id)) return;
+        // Marque AVANT l'appel async : évite tout double envoi si le watch re-tire
+        // (burst WS) avant la fin du GET. Idempotent, persisté localStorage.
+        markKitchenPrinted(o.id);
+        this.autoPrintKitchenTicket(o);
+      });
+    },
+    // Récupère les octets ESC/POS cuisine (rendu serveur SSOT, width-safe/symbolique)
+    // puis les POSTe au pont cuisine local. Best-effort : jamais throw, jamais bloquant
+    // (pont éteint / réseau KO = log discret, le KDS continue normalement).
+    async autoPrintKitchenTicket(order) {
+      try {
+        const ax = (typeof window !== "undefined" && window.axios) ? window.axios : null;
+        if (!ax || !order || order.id == null) return;
+        const { data } = await ax.get(`admin/pos/orders/${order.id}/escpos`, { params: { ticket: "kitchen" } });
+        const b64 = data && data.escpos_b64;
+        if (!b64) return;
+        await printEscPosViaKitchenBridge(b64, { orderRef: order.id });
+      } catch (e) {
+        try {
+          if (typeof window !== "undefined" && window.console) {
+            window.console.debug("[kds] auto-print cuisine ignoré (best-effort):", e && e.message);
+          }
+        } catch (_) { /* noop */ }
+      }
     },
     isTableGroupOpen(key) {
       return this.expandedTableGroups[key] !== false;
@@ -2098,6 +2167,7 @@ export default {
           this.kdsOverflowDetected = res?.data?.meta?.overflow === true;
           this.loading.isActive = false;
 	          this._kdsOrdersHydrated = true;
+          this._seedKitchenPrintedBacklogOnce();
           // [test-e2e round-2 C-001] Successful poll → dismiss the persistent
           // error banner (kitchen connection restored).
           this._clearKdsErrorBanner();
@@ -2137,6 +2207,7 @@ export default {
 
           this.loading.isActive = false;
           this._kdsOrdersHydrated = true;
+          this._seedKitchenPrintedBacklogOnce();
           // [test-e2e round-2 C-001] Auto-dismiss the persistent banner
           // on next successful /api/admin/kds-order response.
           this._clearKdsErrorBanner();

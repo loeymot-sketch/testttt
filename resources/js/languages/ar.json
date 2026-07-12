@@ -1058,6 +1058,7 @@
         "kds_cuisine_froide": "مطبخ بارد",
         "kds_group_by_table": "تجميع حسب الطاولة",
         "kds_sound": "صوت طلب جديد",
+        "kds_auto_print": "طباعة تلقائية",
         "kds_volume": "مستوى الصوت",
         "kds_admin_polling_hint": "وضع الإدارة المركزية: تحديث تلقائي كل 60 ثانية.",
         "kds_order_cap_warning": "حمل مرتفع: {n} طلب(ات) — قرب الحد (50). أغلق أو رشّح حسب الحالة.",
