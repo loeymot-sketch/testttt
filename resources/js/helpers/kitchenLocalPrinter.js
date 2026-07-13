@@ -152,3 +152,28 @@ export function seedKitchenPrinted(orderIds) {
 
 /** Test-only : réinitialise la garde (mémoire — ne touche pas localStorage). */
 export function _resetPrintedKitchen() { _printed = null; }
+
+// ── Liste d'ÉCHEC persistée ───────────────────────────────────────────────────
+// [SUPERVISOR-HEAL 2026-07-13] Les tickets cuisine dont l'impression a ÉCHOUÉ (pont/
+// imprimante KO) doivent survivre à un reload pendant la panne : sinon le seed du
+// backlog les marquerait « imprimés » et ils seraient PERDUS à vie. On persiste donc
+// la liste d'échec, aussi durable que la dé-dup ; au montage, ces ids sont exclus du
+// seed et restent à réessayer (retry auto) → 0 ticket perdu même après un F5.
+const FAILED_LS_KEY = 'kds.failedKitchenIds';
+const FAILED_MAX = 500;
+
+/** Charge la liste d'ids cuisine en échec persistée (survit au reload). @return {string[]} */
+export function getKitchenFailed() {
+  try {
+    const raw = window.localStorage.getItem(FAILED_LS_KEY);
+    if (raw) { const a = JSON.parse(raw); if (Array.isArray(a)) return a.map((id) => String(id)); }
+  } catch (_) { /* mémoire seule */ }
+  return [];
+}
+
+/** Persiste la liste d'ids cuisine en échec (bornée aux N derniers). */
+export function setKitchenFailed(ids) {
+  try {
+    window.localStorage.setItem(FAILED_LS_KEY, JSON.stringify((ids || []).map((id) => String(id)).slice(-FAILED_MAX)));
+  } catch (_) { /* private mode / quota */ }
+}

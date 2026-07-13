@@ -9,7 +9,7 @@ vi.mock('../../resources/js/services/alertService', () => ({
 import KitchenDisplaySystemComponent from '../../resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue';
 import KdsOrderCard from '../../resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue';
 import KdsV2Grid from '../../resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue';
-import { markKitchenPrinted, hasKitchenPrinted, _resetPrintedKitchen } from '../../resources/js/helpers/kitchenLocalPrinter';
+import { markKitchenPrinted, hasKitchenPrinted, _resetPrintedKitchen, getKitchenFailed, setKitchenFailed } from '../../resources/js/helpers/kitchenLocalPrinter';
 import alertService from '../../resources/js/services/alertService';
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
@@ -25,6 +25,9 @@ function ctx(overrides = {}) {
     return {
         autoPrintKitchen: true,
         autoPrintKitchenTicket: vi.fn().mockResolvedValue(undefined),
+        // [SUPERVISOR-HEAL] la réimpression réussie purge la liste d'échec + marque imprimé.
+        _kitchenFailedPrint: [],
+        _removeKitchenFailed: KitchenDisplaySystemComponent.methods._removeKitchenFailed,
         // stub i18n + toast (retour visuel best-effort)
         $t: (k) => k,
         ...overrides,
@@ -137,6 +140,33 @@ describe('KDS — résilience impression cuisine (jamais perdue en silence)', ()
         expect(c.autoPrintKitchenTicket).toHaveBeenCalledWith(order);
         expect(hasKitchenPrinted(8003)).toBe(true);
         expect(c._kitchenFailedPrint).not.toContain('8003');
+    });
+
+    it('(d) [SUPERVISOR-HEAL] réimpression MANUELLE réussie → purge _kitchenFailedPrint + marque imprimé (pas de doublon au retry auto)', async () => {
+        const order = { id: 8020, queue_number: 'A0040' };
+        const c = rctx({ _kitchenFailedPrint: ['8020'], autoPrintKitchenTicket: vi.fn().mockResolvedValue({ ok: true }) });
+        await reprintM.call(c, order);
+        // Le ticket est sorti → l'id quitte la liste d'échec ET est marqué imprimé, donc le
+        // retry auto (20s) ne ressortira PAS un 2e ticket.
+        expect(c._kitchenFailedPrint).not.toContain('8020');
+        expect(hasKitchenPrinted(8020)).toBe(true);
+    });
+
+    it('(e) [SUPERVISOR-HEAL] échec PERSISTÉ : le seed du backlog n\'imprime PAS un ticket en échec au reload (jamais perdu)', () => {
+        setKitchenFailed(['8021']); // un échec avant le reload (persisté localStorage)
+        const seed = KitchenDisplaySystemComponent.methods._seedKitchenPrintedBacklogOnce;
+        const c = { _kitchenBacklogSeeded: false, _kitchenFailedPrint: [], orders: [{ id: 8021 }, { id: 8022 }] };
+        seed.call(c);
+        // 8022 (imprimé avant) = seedé « imprimé » ; 8021 (en échec) = EXCLU du seed + restauré
+        // dans _kitchenFailedPrint → réessayé par le retry, jamais perdu au reload.
+        expect(hasKitchenPrinted(8022)).toBe(true);
+        expect(hasKitchenPrinted(8021)).toBe(false);
+        expect(c._kitchenFailedPrint).toContain('8021');
+    });
+
+    it('(f) [SUPERVISOR-HEAL] liste d\'échec persistée survit au reload (roundtrip localStorage)', () => {
+        setKitchenFailed(['1', '2', '3']);
+        expect(getKitchenFailed()).toEqual(['1', '2', '3']);
     });
 
     it('(b2) retry purge les ids de commandes disparues du board (jamais réimprimé)', () => {

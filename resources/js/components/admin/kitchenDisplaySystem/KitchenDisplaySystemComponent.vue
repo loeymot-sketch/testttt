@@ -1119,7 +1119,7 @@ import { safePhone } from "../../../helpers/phoneDisplay";
 // [KITCHEN-BRIDGE 2026-07-09] Auto-impression SILENCIEUSE du ticket cuisine via le
 // pont local (miroir du pont caisse). Dé-dup persistée localStorage (jamais 2× le
 // même ticket au refresh/reconnexion). Best-effort : pont éteint = jamais bloquant.
-import { printEscPosViaKitchenBridge, hasKitchenPrinted, markKitchenPrinted, seedKitchenPrinted } from "../../../helpers/kitchenLocalPrinter";
+import { printEscPosViaKitchenBridge, hasKitchenPrinted, markKitchenPrinted, seedKitchenPrinted, getKitchenFailed, setKitchenFailed } from "../../../helpers/kitchenLocalPrinter";
 // [KITCHEN-PRINT-RESILIENCE 2026-07-13] Cadence du retry auto des tickets cuisine
 // en échec (pont/imprimante injoignable). Quand le pont revient, les tickets manqués
 // SORTENT tout seuls sans intervention.
@@ -1951,7 +1951,15 @@ export default {
       if (this._kitchenBacklogSeeded) return;
       this._kitchenBacklogSeeded = true;
       try {
-        const ids = (this.orders || []).map((o) => o && o.id).filter((id) => id != null);
+        // [SUPERVISOR-HEAL 2026-07-13] Restaure la liste d'échec PERSISTÉE (survit au reload
+        // pendant une panne pont) AVANT le seed, et EXCLUT ces ids du marquage « imprimé » :
+        // un ticket en échec ne doit JAMAIS être seedé comme imprimé (sinon perdu à vie au
+        // reload) — il reste dans _kitchenFailedPrint → réessayé par le retry auto.
+        this._kitchenFailedPrint = getKitchenFailed();
+        const failed = new Set(this._kitchenFailedPrint.map((id) => String(id)));
+        const ids = (this.orders || [])
+          .map((o) => o && o.id)
+          .filter((id) => id != null && !failed.has(String(id)));
         seedKitchenPrinted(ids);
       } catch (e) {
         /* best-effort — jamais bloquant pour le KDS */
@@ -2021,13 +2029,19 @@ export default {
     _addKitchenFailed(orderId) {
       if (orderId == null || !Array.isArray(this._kitchenFailedPrint)) return;
       const key = String(orderId);
-      if (!this._kitchenFailedPrint.includes(key)) this._kitchenFailedPrint.push(key);
+      if (!this._kitchenFailedPrint.includes(key)) {
+        this._kitchenFailedPrint.push(key);
+        try { setKitchenFailed(this._kitchenFailedPrint); } catch (_) { /* persist best-effort */ }
+      }
     },
     _removeKitchenFailed(orderId) {
       if (orderId == null || !Array.isArray(this._kitchenFailedPrint)) return;
       const key = String(orderId);
       const i = this._kitchenFailedPrint.indexOf(key);
-      if (i !== -1) this._kitchenFailedPrint.splice(i, 1);
+      if (i !== -1) {
+        this._kitchenFailedPrint.splice(i, 1);
+        try { setKitchenFailed(this._kitchenFailedPrint); } catch (_) { /* persist best-effort */ }
+      }
     },
     // Retry auto : pour chaque ticket en échec ENCORE présent dans les commandes
     // actives, re-tente l'impression. Succès → marque + retire. Purge aussi les ids
@@ -2039,6 +2053,7 @@ export default {
       (this.orders || []).forEach((o) => { if (o && o.id != null) activeById.set(String(o.id), o); });
       // Purge les ids dont la commande a quitté le board.
       this._kitchenFailedPrint = this._kitchenFailedPrint.filter((key) => activeById.has(key));
+      try { setKitchenFailed(this._kitchenFailedPrint); } catch (_) { /* persist best-effort */ }
       this._kitchenFailedPrint.slice().forEach((key) => {
         if (this._kitchenInFlight && this._kitchenInFlight.has(key)) return;
         const order = activeById.get(key);
@@ -2068,6 +2083,11 @@ export default {
       const r = await this.autoPrintKitchenTicket(order);
       try {
         if (r && r.ok) {
+          // [SUPERVISOR-HEAL 2026-07-13] Réimpression sortie : marque imprimé + purge
+          // l'éventuelle entrée en échec → le retry auto ne ressort PAS un doublon 20 s
+          // plus tard, et le badge d'échec se met à jour immédiatement.
+          markKitchenPrinted(order.id);
+          this._removeKitchenFailed(order.id);
           alertService.info(this.$t("message.kds_reprint_sent", { queue: order.queue_number || order.id }));
         } else {
           // Pont/imprimante injoignable : toast ERREUR explicite (le cuisinier voit
