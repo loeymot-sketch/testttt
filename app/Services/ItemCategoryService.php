@@ -180,6 +180,18 @@ class ItemCategoryService
                         422
                     );
                 }
+                // [AUDIT 2026-07-13 P3] Même pattern que la garde items : bloquer aussi la
+                // suppression d'une catégorie qui a des SOUS-CATÉGORIES non-supprimées. Sans
+                // ça, les enfants gardent `parent_id` pointant vers une catégorie soft-deleted
+                // → sous-catégorie orpheline (parent invisible). Le gérant doit d'abord
+                // supprimer/déplacer les sous-catégories.
+                $activeChildren = $itemCategory->children()->whereNull('deleted_at')->count();
+                if ($activeChildren > 0) {
+                    throw new Exception(
+                        "Impossible de supprimer cette catégorie : elle contient {$activeChildren} sous-catégorie(s). Supprimez-les ou déplacez-les d'abord.",
+                        422
+                    );
+                }
                 if (DB::getDriverName() === 'sqlite') {
                     DB::statement('PRAGMA foreign_keys=0');
                     $itemCategory->delete();

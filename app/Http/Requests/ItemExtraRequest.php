@@ -30,7 +30,12 @@ class ItemExtraRequest extends FormRequest
                 'required',
                 'string',
                 'max:190',
-                Rule::unique("item_extras", "name")->whereNull('deleted_at')->ignore($this->route('itemExtra.id'))->where('item_id', $this->route('item.id')),
+                // [AUDIT 2026-07-13 P2] Les params de route sont des MODÈLES liés
+                // (`{item}`→Item, `{itemExtra}`→ItemExtra, cf. ItemExtraController::store/update).
+                // L'ancien `route('itemExtra.id')` / `route('item.id')` (accès pointé) renvoyait
+                // NULL → `ignore(null)` + `where('item_id', null)` (→ whereNull) → la garde
+                // d'unicité par produit ne bloquait JAMAIS un doublon.
+                Rule::unique("item_extras", "name")->whereNull('deleted_at')->ignore(optional($this->route('itemExtra'))->id)->where('item_id', optional($this->route('item'))->id),
             ],
             // [CAISSE-LOGIC-HEAL 2026-07-11 P1-D] `IniAmount()` (défaut $zero=false) rejette
             // price ≤ 0, alors que 78/377 extras réels sont GRATUITS (crudités Salade/Tomate/

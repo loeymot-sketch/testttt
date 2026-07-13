@@ -314,6 +314,102 @@ class KioskEndpointsTest extends TestCase
         $this->assertGreaterThan(0, $r->json('data.discount'));
     }
 
+    /**
+     * [AUDIT 2026-07-13 P3 — Findings 3+4] En mode TTC (`pricing.tax_inclusive_prices=true`,
+     * défaut FR), la preview NE DOIT PAS ré-ajouter la TVA (déjà incluse dans les prix).
+     * Invariants : line_total == line_subtotal (TTC), sum(line_total) == total, total == subtotal.
+     * AVANT fix : line_total = 9.90 + 0.90 = 10.80 (double-compte) → total surfacturé.
+     */
+    public function test_preview_ttc_does_not_double_count_tax(): void
+    {
+        $this->assertTrue((bool) config('pricing.tax_inclusive_prices'), 'Ce test suppose le mode TTC.');
+
+        $r = $this->authed()->postJson('/api/frontend/pricing/preview', [
+            'items' => [['item_id' => $this->cayenne->id, 'quantity' => 1]],
+        ]);
+
+        $r->assertStatus(200);
+        $lineSubtotal = (float) $r->json('data.lines.0.line_subtotal');
+        $lineTotal    = (float) $r->json('data.lines.0.line_total');
+        $subtotal     = (float) $r->json('data.subtotal');
+        $total        = (float) $r->json('data.total');
+
+        $this->assertSame(9.90, $lineSubtotal, 'line_subtotal = prix TTC DB.');
+        $this->assertSame($lineSubtotal, $lineTotal, 'TTC : line_total ne ré-ajoute PAS la TVA.');
+        $this->assertSame($subtotal, $total, 'TTC sans remise : total == subtotal (pas de +tax).');
+        $this->assertSame($lineTotal, $total, 'sum(line_total) == total.');
+    }
+
+    /**
+     * [AUDIT 2026-07-13 P3 — SSOT] La preview DOIT matcher au centime le devis réel calculé
+     * par PricingService (source of truth du chemin de commande).
+     */
+    public function test_preview_total_matches_real_pricing_service_quote(): void
+    {
+        $items = [[
+            'item_id' => $this->cayenne->id,
+            'quantity' => 2,
+            'item_variations' => [['id' => $this->sizeXL->id]],
+            'item_extras' => [['id' => $this->cheddar->id]],
+        ]];
+
+        $r = $this->authed()->postJson('/api/frontend/pricing/preview', ['items' => $items]);
+        $r->assertStatus(200);
+        $previewTotal = (float) $r->json('data.total');
+
+        // Devis réel via le SSOT PricingService (même items, même branche).
+        $requestItems = array_map(fn ($line) => (object) [
+            'item_id' => $line['item_id'],
+            'quantity' => $line['quantity'],
+            'item_variations' => array_map(fn ($v) => (object) ['id' => $v['id'], 'quantity' => 1], $line['item_variations']),
+            'item_extras' => array_map(fn ($e) => (object) ['id' => $e['id'], 'quantity' => 1], $line['item_extras']),
+            'item_addons' => [],
+        ], $items);
+
+        $quote = app(\App\Services\Pricing\PricingService::class)->calculateOrder(
+            \App\Services\Pricing\PricingRequest::forKiosk(
+                orderId: 0,
+                branchId: (int) $this->branch->id,
+                requestItems: $requestItems,
+                couponId: 0,
+                customerUserId: 0,
+                deliveryCharge: 0.0,
+            ),
+            app(\App\Services\CouponService::class),
+        );
+
+        $this->assertSame(round((float) $quote->total, 2), $previewTotal, 'Preview total == devis réel PricingService.');
+    }
+
+    /**
+     * [AUDIT 2026-07-13 P3 — Finding 3] Branche promo en mode TTC :
+     * total == round(subtotal - discount), PAS subtotal + tax - discount.
+     */
+    public function test_preview_promo_total_is_subtotal_minus_discount_ttc(): void
+    {
+        KioskPromo::create([
+            'branch_id' => $this->branch->id,
+            'code' => 'KIOSK10', 'type' => 'percent', 'value' => 10,
+            'active' => true,
+        ]);
+
+        $r = $this->authed()->postJson('/api/frontend/pricing/preview', [
+            'items' => [['item_id' => $this->cayenne->id, 'quantity' => 1]],
+            'kiosk_promo_code' => 'KIOSK10',
+        ]);
+
+        $r->assertStatus(200)->assertJsonPath('data.discount_source', 'kiosk_promo');
+        $subtotal = (float) $r->json('data.subtotal');
+        $discount = (float) $r->json('data.discount');
+        $total    = (float) $r->json('data.total');
+
+        // subtotal 9.90 TTC, remise 10% = 0.99 → total 8.91 (et NON 9.81 = 9.90+0.90-0.99).
+        $this->assertSame(9.90, $subtotal);
+        $this->assertSame(0.99, $discount);
+        $this->assertSame(round($subtotal - $discount, 2), $total, 'TTC : total = subtotal - remise (pas de +tax).');
+        $this->assertSame(8.91, $total);
+    }
+
     // =====================================================================
     //  POST /api/frontend/promo/validate
     // =====================================================================

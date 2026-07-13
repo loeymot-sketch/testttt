@@ -182,6 +182,70 @@ class ItemExtraManagementTest extends TestCase
         ]);
     }
 
+    // =====================================================================
+    //  [AUDIT 2026-07-13 P2 — Finding 1] Unicité du nom d'extra PAR produit.
+    //  Les params de route sont des modèles (`{item}`, `{itemExtra}`) ; l'ancien
+    //  `route('item.id')` renvoyait NULL → la garde ne bloquait jamais un doublon.
+    // =====================================================================
+
+    private function actAsCatalogAdmin(): void
+    {
+        $admin = \Database\Factories\UserFactory::new()->create(['branch_id' => 0]);
+        $admin->assignRole('Admin');
+        $admin->givePermissionTo(['items', 'items_create', 'items_edit', 'items_show']);
+        Sanctum::actingAs($admin, ['*']);
+    }
+
+    public function test_extra_store_rejects_duplicate_name_same_item(): void
+    {
+        $this->actAsCatalogAdmin();
+        $category = ItemCategory::create(['name' => 'Dup Cat', 'slug' => 'dup-cat', 'status' => Status::ACTIVE]);
+        $item = $this->makeScopedItem($category, 'Dup Item');
+        ItemExtra::create(['item_id' => $item->id, 'name' => 'Cheddar', 'price' => 1.00, 'status' => Status::ACTIVE]);
+
+        $response = $this->withHeaders(['x-api-key' => $this->apiKey()])
+            ->postJson("/api/admin/item/extra/{$item->id}", [
+                'name' => 'Cheddar', 'price' => 1.50, 'status' => Status::ACTIVE,
+            ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('name');
+    }
+
+    public function test_extra_store_allows_same_name_on_different_items(): void
+    {
+        $this->actAsCatalogAdmin();
+        $category = ItemCategory::create(['name' => 'Diff Cat', 'slug' => 'diff-cat', 'status' => Status::ACTIVE]);
+        $itemA = $this->makeScopedItem($category, 'Item A');
+        $itemB = $this->makeScopedItem($category, 'Item B');
+        ItemExtra::create(['item_id' => $itemA->id, 'name' => 'Cheddar', 'price' => 1.00, 'status' => Status::ACTIVE]);
+
+        $response = $this->withHeaders(['x-api-key' => $this->apiKey()])
+            ->postJson("/api/admin/item/extra/{$itemB->id}", [
+                'name' => 'Cheddar', 'price' => 1.00, 'status' => Status::ACTIVE,
+            ]);
+
+        $response->assertStatus(201);
+        $this->assertDatabaseHas('item_extras', ['item_id' => $itemB->id, 'name' => 'Cheddar']);
+    }
+
+    public function test_extra_update_allows_editing_current_row(): void
+    {
+        $this->actAsCatalogAdmin();
+        $category = ItemCategory::create(['name' => 'Edit Cat', 'slug' => 'edit-cat', 'status' => Status::ACTIVE]);
+        $item = $this->makeScopedItem($category, 'Edit Item');
+        $extra = ItemExtra::create(['item_id' => $item->id, 'name' => 'Cheddar', 'price' => 1.00, 'status' => Status::ACTIVE]);
+
+        // Ré-enregistre la MÊME ligne (même nom) → doit passer grâce à ignore(id).
+        $response = $this->withHeaders(['x-api-key' => $this->apiKey()])
+            ->putJson("/api/admin/item/extra/{$item->id}/{$extra->id}", [
+                'name' => 'Cheddar', 'price' => 1.20, 'status' => Status::ACTIVE,
+            ]);
+
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('item_extras', ['id' => $extra->id, 'price' => 1.20]);
+    }
+
     private function makeScopedItem(ItemCategory $category, string $name): Item
     {
         return Item::create([
