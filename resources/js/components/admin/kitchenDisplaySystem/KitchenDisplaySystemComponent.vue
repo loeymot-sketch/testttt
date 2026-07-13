@@ -2080,21 +2080,30 @@ export default {
     // autoPrintKitchenTicket est best-effort (try/catch interne, jamais throw).
     async reprintKitchenTicket(order) {
       if (!order || order.id == null) return;
-      const r = await this.autoPrintKitchenTicket(order);
+      // [SUPERVISOR-HEAL round2 2026-07-13] Garde in-flight (comme les 2 chemins auto) :
+      // empêche le retry auto (tick 20 s) OU un 2e clic de RÉ-imprimer le MÊME ticket en
+      // parallèle pendant l'await de cette réimpression → 0 doublon (course fermée).
+      const key = String(order.id);
+      if (this._kitchenInFlight && this._kitchenInFlight.has(key)) return;
+      if (this._kitchenInFlight) this._kitchenInFlight.add(key);
       try {
-        if (r && r.ok) {
-          // [SUPERVISOR-HEAL 2026-07-13] Réimpression sortie : marque imprimé + purge
-          // l'éventuelle entrée en échec → le retry auto ne ressort PAS un doublon 20 s
-          // plus tard, et le badge d'échec se met à jour immédiatement.
-          markKitchenPrinted(order.id);
-          this._removeKitchenFailed(order.id);
-          alertService.info(this.$t("message.kds_reprint_sent", { queue: order.queue_number || order.id }));
-        } else {
-          // Pont/imprimante injoignable : toast ERREUR explicite (le cuisinier voit
-          // que le ticket n'est PAS sorti). Ne marque rien.
-          alertService.error(this.$t("message.kds_reprint_failed"));
-        }
-      } catch (_) { /* retour visuel best-effort, jamais bloquant */ }
+        const r = await this.autoPrintKitchenTicket(order);
+        try {
+          if (r && r.ok) {
+            // Réimpression sortie : marque imprimé + purge l'éventuelle entrée en échec →
+            // le retry auto ne ressort PAS un doublon 20 s plus tard, badge à jour.
+            markKitchenPrinted(order.id);
+            this._removeKitchenFailed(order.id);
+            alertService.info(this.$t("message.kds_reprint_sent", { queue: order.queue_number || order.id }));
+          } else {
+            // Pont/imprimante injoignable : toast ERREUR explicite (le cuisinier voit
+            // que le ticket n'est PAS sorti). Ne marque rien.
+            alertService.error(this.$t("message.kds_reprint_failed"));
+          }
+        } catch (_) { /* retour visuel best-effort, jamais bloquant */ }
+      } finally {
+        if (this._kitchenInFlight) this._kitchenInFlight.delete(key);
+      }
     },
     isTableGroupOpen(key) {
       return this.expandedTableGroups[key] !== false;

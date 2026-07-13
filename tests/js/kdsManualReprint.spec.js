@@ -169,6 +169,14 @@ describe('KDS — résilience impression cuisine (jamais perdue en silence)', ()
         expect(getKitchenFailed()).toEqual(['1', '2', '3']);
     });
 
+    it('(g) [SUPERVISOR-HEAL round2] réimpression NE double PAS avec un retry concurrent (garde in-flight)', async () => {
+        const order = { id: 8030, queue_number: 'A0050' };
+        const c = rctx({ _kitchenInFlight: new Set(['8030']), autoPrintKitchenTicket: vi.fn().mockResolvedValue({ ok: true }) });
+        await reprintM.call(c, order);
+        // id déjà in-flight (auto/retry en cours) → réimpression SAUTÉE → pas de 2e envoi.
+        expect(c.autoPrintKitchenTicket).not.toHaveBeenCalled();
+    });
+
     it('(b2) retry purge les ids de commandes disparues du board (jamais réimprimé)', () => {
         const c = rctx({ orders: [], _kitchenFailedPrint: ['9999'] });
         retryFailed.call(c);
