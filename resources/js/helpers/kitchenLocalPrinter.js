@@ -51,8 +51,13 @@ export function b64ToBytes(b64) {
 
 /**
  * POSTe les octets ESC/POS (depuis le base64 serveur) au pont cuisine local en
- * passthrough RAW. Renvoie {ok:true} si accepté (202), sinon null. Jamais throw
- * (best-effort : un pont éteint ne casse jamais le KDS).
+ * passthrough RAW. Renvoie un résultat DISCRIMINÉ, jamais throw :
+ *   - {ok:true}                        → accepté (202/2xx) : imprimé
+ *   - {ok:false, retriable:true, reason} → pont injoignable / timeout / réseau /
+ *     302 / 401 / 429 / 5xx : PAS imprimé mais à réessayer (le RETRY KDS
+ *     ressortira le ticket quand le pont/imprimante revient)
+ *   - null                             → rien à imprimer (b64 vide) : non-retriable
+ * Backward-compat : les appelants testent `r && r.ok`.
  */
 function rawTimeoutMs(opts = {}) {
   if (Number.isFinite(opts.timeoutMs) && opts.timeoutMs > 0) return opts.timeoutMs;
@@ -60,7 +65,12 @@ function rawTimeoutMs(opts = {}) {
     const t = window.foodkingConfig && window.foodkingConfig.kitchenBridgeRawTimeoutMs;
     if (Number.isFinite(t) && t > 0) return t;
   } catch (_) { /* défaut ci-dessous */ }
-  return 3000;
+  // [KITCHEN-RESILIENCE 2026-07-13] Le pont /raw répond désormais le RÉSULTAT RÉEL de
+  // l'impression (200/500), borné par SON timeout d'impression (KITCHEN_PRINT_TIMEOUT_MS,
+  // défaut 15 s). Le timeout client DOIT être PLUS GRAND (20 s) : sinon on abandonnerait
+  // (abort) pendant que le pont imprime encore → faux « échec » → retry → DOUBLE impression.
+  // Ainsi on obtient toujours le vrai verdict avant d'abandonner.
+  return 20000;
 }
 
 export async function printEscPosViaKitchenBridge(escposB64, opts = {}) {
@@ -72,8 +82,14 @@ export async function printEscPosViaKitchenBridge(escposB64, opts = {}) {
       headers: { 'Content-Type': 'application/octet-stream' },
       body: bytes,
     }, rawTimeoutMs(opts));
-    return res && res.ok ? { ok: true, method: 'kitchen-bridge' } : null;
-  } catch (_) { return null; }
+    if (res && res.ok) return { ok: true, method: 'kitchen-bridge' };
+    // Réponse non-2xx (302 login, 401 session expirée, 429 throttle, 5xx pont) :
+    // ticket NON imprimé → retriable pour que le RETRY le ressorte.
+    return { ok: false, retriable: true, reason: 'http-' + ((res && res.status) || 0) };
+  } catch (_) {
+    // Pont éteint / timeout (abort) / réseau : retriable.
+    return { ok: false, retriable: true, reason: 'network' };
+  }
 }
 
 // ── Dé-dup persistée : un ticket cuisine PAR commande, jamais deux ────────────

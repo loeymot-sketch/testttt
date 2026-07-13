@@ -38,6 +38,16 @@ const { spawn } = require('child_process');
 const PORT = parseInt(process.env.KITCHEN_BRIDGE_PORT || '9101', 10);
 const PRINTER = process.argv[2] || process.env.KITCHEN_PRINTER || 'CUISINE';
 
+// [2026-07-13 CLUSTER B] Anti-trou-noir : un worker VIVANT mais FIGÉ (WritePrinter
+// bloqué sur un port USB coincé/spouleur figé) ne répond jamais sur stdout → sans
+// borne, il gèlerait la file FIFO à vie. On borne donc chaque impression à
+// KITCHEN_PRINT_TIMEOUT_MS ; à expiration on résout en échec (print_timeout), on
+// retire le job et on TUE le worker (il se relance au prochain job → décoince le pipe).
+const PRINT_TIMEOUT_MS = parseInt(process.env.KITCHEN_PRINT_TIMEOUT_MS || '15000', 10);
+// Cap raisonnable sur la profondeur de file (protège la RAM si le worker reste KO) :
+// au-delà, on abandonne le PLUS VIEUX ticket (drop-oldest) en le journalisant.
+const MAX_QUEUE_DEPTH = parseInt(process.env.KITCHEN_PRINT_MAX_QUEUE || '50', 10);
+
 // Win32 RawPrinterHelper (Microsoft KB 322090) — envoie les octets RAW à
 // l'imprimante nommée via le spouleur, SANS rendu pilote (donc accents/€ et coupe
 // fidèles aux octets serveur). Identique à WindowsRawPrinterTransport.php.
@@ -158,32 +168,85 @@ function printRaw(buffer) {
       try { fs.unlinkSync(tmp); } catch (_) {}
       return resolve({ ok: false, error: 'worker_unavailable' });
     }
-    workerState.pending.push({ tmp, resolve });
+    // Job avec resolve idempotent + timer : quel que soit le chemin (OK worker,
+    // mort worker, timeout), on ne résout qu'UNE fois et on annule toujours le timer.
+    const job = {
+      tmp,
+      timer: null,
+      resolve(r) {
+        if (job.timer) { clearTimeout(job.timer); job.timer = null; }
+        resolve(r);
+      },
+    };
+    // TIMEOUT anti-worker-figé : si aucune réponse stdout dans le délai, on retire le
+    // job, on unlink le tmp, on résout en échec, PUIS on tue le worker figé pour
+    // décoincer le pipe (relance paresseuse au prochain job). La chaîne FIFO CONTINUE
+    // (le resolve fait avancer la file), le 202 a déjà été renvoyé côté HTTP.
+    job.timer = setTimeout(() => {
+      job.timer = null; // marque résolu (le resolve wrapper ne re-clear rien)
+      const i = workerState.pending.indexOf(job);
+      if (i !== -1) workerState.pending.splice(i, 1);
+      try { fs.unlinkSync(tmp); } catch (_) {}
+      console.error('[kitchen-bridge] print_timeout (' + PRINT_TIMEOUT_MS + 'ms) — worker figé tué, relance au prochain job');
+      resolve({ ok: false, error: 'print_timeout' });
+      const c = workerState.child;
+      if (c === child) { try { child.kill(); } catch (_) {} } // onGone remettra child=null
+    }, PRINT_TIMEOUT_MS);
+    workerState.pending.push(job);
     try {
       child.stdin.write(String(PRINTER).replace(/[|\r\n]/g, ' ') + '|' + tmp + '\n');
     } catch (e) {
-      const i = workerState.pending.findIndex((j) => j.tmp === tmp);
+      const i = workerState.pending.indexOf(job);
       if (i !== -1) workerState.pending.splice(i, 1);
       try { fs.unlinkSync(tmp); } catch (_) {}
-      resolve({ ok: false, error: 'worker_write_failed: ' + e.message });
+      job.resolve({ ok: false, error: 'worker_write_failed: ' + e.message });
     }
   });
 }
 
 // File FIFO d'impression : les jobs /raw sont sérialisés pour préserver l'ordre
-// papier (les tickets cuisine dans l'ordre d'arrivée), mais la RÉPONSE HTTP 202
-// part immédiatement.
-let printChain = Promise.resolve();
+// papier (les tickets cuisine dans l'ordre d'arrivée). La RÉPONSE HTTP attend
+// désormais le RÉSULTAT RÉEL de l'impression (200 imprimé / 500 échec) — plus de
+// 202 optimiste : sinon un échec APRÈS acceptation (plus de papier, USB débranché,
+// worker figé + timeout) serait cru « imprimé » par le KDS et le ticket PERDU en
+// silence. La file CONTINUE d'avancer même quand un job échoue/timeout (chaque
+// printRaw se résout toujours — jamais de blocage définitif).
+const printQueue = [];
+let draining = false;
+function drainQueue() {
+  if (draining) return;
+  draining = true;
+  const step = () => {
+    const job = printQueue.shift();
+    if (job === undefined) { draining = false; return; }
+    printRaw(job.buffer)
+      .then((r) => {
+        if (r && r.ok) console.log('[kitchen-bridge] imprimé (' + job.buffer.length + ' octets)');
+        else console.error('[kitchen-bridge] print failed:', (r && r.error) || 'unknown');
+        try { job.resolve(r || { ok: false, error: 'unknown' }); } catch (_) { /* réponse déjà partie */ }
+      })
+      .catch((e) => {
+        console.error('[kitchen-bridge] print failed:', e.message);
+        try { job.resolve({ ok: false, error: 'exception: ' + e.message }); } catch (_) { /* idem */ }
+      })
+      .then(step); // le job SUIVANT est toujours tenté (timeout inclus)
+  };
+  step();
+}
+// Renvoie une Promise résolue avec le RÉSULTAT RÉEL de l'impression {ok, error?}.
 function enqueuePrint(buffer) {
-  printChain = printChain
-    .then(() => printRaw(buffer))
-    .then((r) => {
-      if (r && r.ok) console.log('[kitchen-bridge] imprimé (' + buffer.length + ' octets)');
-      else console.error('[kitchen-bridge] print failed:', (r && r.error) || 'unknown');
-      return r;
-    })
-    .catch((e) => { console.error('[kitchen-bridge] print failed:', e.message); return { ok: false, error: e.message }; });
-  return printChain;
+  return new Promise((resolve) => {
+    printQueue.push({ buffer, resolve });
+    // Cap RAM : si la file s'accumule (worker durablement KO), on abandonne le PLUS
+    // VIEUX ticket ET on résout SON job en échec (le KDS le remettra en retry auto)
+    // plutôt que de gonfler la mémoire indéfiniment.
+    while (printQueue.length > MAX_QUEUE_DEPTH) {
+      const dropped = printQueue.shift();
+      console.error('[kitchen-bridge] file pleine (>' + MAX_QUEUE_DEPTH + ') — plus vieux ticket abandonné (drop-oldest)');
+      try { dropped.resolve({ ok: false, error: 'queue_overflow' }); } catch (_) { /* idem */ }
+    }
+    drainQueue();
+  });
 }
 
 function cors(res) {
@@ -209,10 +272,16 @@ function createServer() {
       req.on('end', () => {
         const body = Buffer.concat(chunks);
         if (!body.length) { res.writeHead(400); return res.end('empty'); }
-        // 202 IMMÉDIAT : le navigateur/KDS ne poireaute pas pendant l'impression.
-        enqueuePrint(body);
-        res.writeHead(202, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ queued: true }));
+        // RÉSULTAT RÉEL (borné par le timeout printRaw) : 200 {ok:true} = imprimé,
+        // 500 {ok:false} = échec. Le KDS ne marque « imprimé » que sur 200 ; un 500 le
+        // met en RETRY auto → aucun ticket perdu (plus de papier / USB / worker figé).
+        enqueuePrint(body).then((r) => {
+          const ok = !!(r && r.ok);
+          res.writeHead(ok ? 200 : 500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(r || { ok: false }));
+        }).catch(() => {
+          try { res.writeHead(500, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: false, error: 'internal' })); } catch (_) { /* socket fermée */ }
+        });
       });
       return;
     }
@@ -227,9 +296,9 @@ if (require.main === module) {
   const server = createServer();
   server.listen(PORT, '127.0.0.1', () => {
     console.log('[kitchen-bridge] écoute http://127.0.0.1:' + PORT + ' → imprimante "' + PRINTER + '"');
-    console.log('[kitchen-bridge] GET /health  POST /raw (octets ESC/POS bruts, réponse 202 immédiate)');
+    console.log('[kitchen-bridge] GET /health  POST /raw (octets ESC/POS bruts, réponse = résultat réel 200 imprimé / 500 échec)');
   });
 }
 
 // Export test-only (contrat HTTP + worker unique) — inerte quand lancé en direct.
-module.exports = { createServer, startWorker, printRaw, enqueuePrint, _workerState: workerState, PRINTER };
+module.exports = { createServer, startWorker, printRaw, enqueuePrint, _workerState: workerState, _printQueue: printQueue, PRINT_TIMEOUT_MS, PRINTER };

@@ -1,8 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+// [KITCHEN-PRINT-RESILIENCE 2026-07-13] alertService mocké : on prouve que la
+// réimpression manuelle émet un toast INFO sur succès et ERREUR sur pont injoignable.
+vi.mock('../../resources/js/services/alertService', () => ({
+  default: { info: vi.fn(), error: vi.fn(), success: vi.fn(), warning: vi.fn(), successFlip: vi.fn() },
+}));
+
 import KitchenDisplaySystemComponent from '../../resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue';
 import KdsOrderCard from '../../resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue';
 import KdsV2Grid from '../../resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue';
-import { markKitchenPrinted, hasKitchenPrinted } from '../../resources/js/helpers/kitchenLocalPrinter';
+import { markKitchenPrinted, hasKitchenPrinted, _resetPrintedKitchen } from '../../resources/js/helpers/kitchenLocalPrinter';
+import alertService from '../../resources/js/services/alertService';
+
+const flush = () => new Promise((r) => setTimeout(r, 0));
 
 // [KDS-REPRINT 2026-07-13] La réimpression MANUELLE du ticket cuisine doit TOUJOURS
 // ressortir le ticket : elle appelle autoPrintKitchenTicket() DIRECTEMENT, donc elle
@@ -65,6 +75,102 @@ describe('KDS — réimpression MANUELLE du ticket cuisine (bouton 🖨️)', ()
         const c = ctx({ $t: () => { throw new Error('i18n boom'); } });
         await expect(reprint.call(c, { id: 42, queue_number: 'A0001' })).resolves.toBeUndefined();
         expect(c.autoPrintKitchenTicket).toHaveBeenCalledTimes(1);
+    });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// [KITCHEN-PRINT-RESILIENCE 2026-07-13] Ticket cuisine jamais perdu en silence :
+// échec → NON marqué imprimé + listé en échec ; retry auto ressort le ticket quand
+// le pont revient ; succès direct → marqué ; garde in-flight bloque le double-envoi.
+const retryFailed = KitchenDisplaySystemComponent.methods.retryFailedKitchenTickets;
+const reprintM = KitchenDisplaySystemComponent.methods.reprintKitchenTicket;
+
+function rctx(overrides = {}) {
+    return {
+        autoPrintKitchen: true,
+        _kitchenInFlight: new Set(),
+        _kitchenFailedPrint: [],
+        orders: [],
+        _addKitchenFailed: KitchenDisplaySystemComponent.methods._addKitchenFailed,
+        _removeKitchenFailed: KitchenDisplaySystemComponent.methods._removeKitchenFailed,
+        autoPrintKitchenTicket: vi.fn().mockResolvedValue({ ok: true }),
+        $t: (k) => k,
+        ...overrides,
+    };
+}
+
+describe('KDS — résilience impression cuisine (jamais perdue en silence)', () => {
+    beforeEach(() => {
+        _resetPrintedKitchen();
+        try { window.localStorage.clear(); } catch (_) { /* noop */ }
+        alertService.info.mockClear();
+        alertService.error.mockClear();
+    });
+
+    it('(a) échec auto-print → id NON marqué imprimé + ajouté à _kitchenFailedPrint', async () => {
+        const c = rctx({ autoPrintKitchenTicket: vi.fn().mockResolvedValue({ ok: false, retriable: true }) });
+        autoPrintNew.call(c, [{ id: 8001 }]);
+        await flush();
+        expect(c.autoPrintKitchenTicket).toHaveBeenCalledTimes(1);
+        expect(hasKitchenPrinted(8001)).toBe(false); // PAS marqué → réessayable
+        expect(c._kitchenFailedPrint).toContain('8001');
+        expect(c._kitchenInFlight.has('8001')).toBe(false); // in-flight relâché
+    });
+
+    it('(c) succès direct → id marqué imprimé, absent de _kitchenFailedPrint', async () => {
+        const c = rctx({ autoPrintKitchenTicket: vi.fn().mockResolvedValue({ ok: true }) });
+        autoPrintNew.call(c, [{ id: 8002 }]);
+        await flush();
+        expect(hasKitchenPrinted(8002)).toBe(true);
+        expect(c._kitchenFailedPrint).not.toContain('8002');
+    });
+
+    it('(b) retry qui réussit → marque + retire de _kitchenFailedPrint', async () => {
+        const order = { id: 8003 };
+        const c = rctx({
+            orders: [order],
+            _kitchenFailedPrint: ['8003'],
+            autoPrintKitchenTicket: vi.fn().mockResolvedValue({ ok: true }),
+        });
+        retryFailed.call(c);
+        await flush();
+        expect(c.autoPrintKitchenTicket).toHaveBeenCalledWith(order);
+        expect(hasKitchenPrinted(8003)).toBe(true);
+        expect(c._kitchenFailedPrint).not.toContain('8003');
+    });
+
+    it('(b2) retry purge les ids de commandes disparues du board (jamais réimprimé)', () => {
+        const c = rctx({ orders: [], _kitchenFailedPrint: ['9999'] });
+        retryFailed.call(c);
+        expect(c.autoPrintKitchenTicket).not.toHaveBeenCalled();
+        expect(c._kitchenFailedPrint).not.toContain('9999');
+    });
+
+    it('(d) garde in-flight bloque le double-envoi en burst (watch re-tire pendant l\'await)', async () => {
+        let resolve;
+        const pending = new Promise((r) => { resolve = r; });
+        const c = rctx({ autoPrintKitchenTicket: vi.fn().mockReturnValue(pending) });
+        autoPrintNew.call(c, [{ id: 8004 }]); // 1er envoi (in-flight)
+        autoPrintNew.call(c, [{ id: 8004 }]); // 2e pendant l'await → bloqué
+        expect(c.autoPrintKitchenTicket).toHaveBeenCalledTimes(1);
+        resolve({ ok: true });
+        await flush();
+        expect(hasKitchenPrinted(8004)).toBe(true);
+    });
+
+    it('(e) reprint échec (pont KO) → toast ERREUR, ne marque rien', async () => {
+        const c = ctx({ autoPrintKitchenTicket: vi.fn().mockResolvedValue({ ok: false, retriable: true }) });
+        await reprintM.call(c, { id: 9001, queue_number: 'A0001' });
+        expect(alertService.error).toHaveBeenCalledTimes(1);
+        expect(alertService.info).not.toHaveBeenCalled();
+        expect(hasKitchenPrinted(9001)).toBe(false);
+    });
+
+    it('(e2) reprint succès → toast INFO, pas d\'erreur', async () => {
+        const c = ctx({ autoPrintKitchenTicket: vi.fn().mockResolvedValue({ ok: true }) });
+        await reprintM.call(c, { id: 9002, queue_number: 'A0002' });
+        expect(alertService.info).toHaveBeenCalledTimes(1);
+        expect(alertService.error).not.toHaveBeenCalled();
     });
 });
 

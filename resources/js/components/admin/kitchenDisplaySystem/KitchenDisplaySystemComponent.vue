@@ -225,10 +225,14 @@
                 class="w-28 accent-primary" />
             </label>
             <label class="flex items-center gap-2 text-xs font-medium text-heading cursor-pointer"
-              :title="$t('label.kds_auto_print')">
+              :title="$t('label.kds_auto_print_hint')">
               <input type="checkbox" v-model="autoPrintKitchen" @change="persistKdsUiPrefs" class="rounded border-[#D9DBE9]" />
               <span class="whitespace-nowrap">🖨️ {{ $t('label.kds_auto_print') }} {{ autoPrintKitchen ? 'ON' : 'OFF' }}</span>
             </label>
+            <span v-if="kitchenPrintFailedCount > 0" role="alert"
+              class="flex items-center gap-1 text-xs font-semibold text-red-600 whitespace-nowrap">
+              ⚠️ {{ $t('label.kds_print_failed', { count: kitchenPrintFailedCount }) }}
+            </span>
           </div>
           <audio ref="kdsNewOrderAudio" preload="auto" class="hidden" src="/sounds/kds-new-order.mp3" />
         </div>
@@ -1116,6 +1120,10 @@ import { safePhone } from "../../../helpers/phoneDisplay";
 // pont local (miroir du pont caisse). Dé-dup persistée localStorage (jamais 2× le
 // même ticket au refresh/reconnexion). Best-effort : pont éteint = jamais bloquant.
 import { printEscPosViaKitchenBridge, hasKitchenPrinted, markKitchenPrinted, seedKitchenPrinted } from "../../../helpers/kitchenLocalPrinter";
+// [KITCHEN-PRINT-RESILIENCE 2026-07-13] Cadence du retry auto des tickets cuisine
+// en échec (pont/imprimante injoignable). Quand le pont revient, les tickets manqués
+// SORTENT tout seuls sans intervention.
+const KITCHEN_PRINT_RETRY_MS = 20000;
 // [kds/sprint-2 V-5] V2 layout components — feature-flagged single FIFO 4×2 grid.
 import KdsV2Grid from "./KdsV2Grid.vue";
 // [Wave X3 2026-05-21] KDS Historique du jour — read-only day-history drawer.
@@ -1177,6 +1185,16 @@ export default {
       // Garde de seed du backlog (une seule fois par montage) — évite la ré-impression
       // massive des commandes déjà présentes au 1er chargement / reconnexion.
       _kitchenBacklogSeeded: false,
+      // [KITCHEN-PRINT-RESILIENCE 2026-07-13] Ids (String) des commandes dont le ticket
+      // cuisine a ÉCHOUÉ (pont/imprimante injoignable) → réactif : alimente le badge
+      // d'échec + la boucle de retry. Un id sort d'ici dès qu'il est imprimé (succès
+      // direct ou retry) ou que sa commande disparaît du board.
+      _kitchenFailedPrint: [],
+      // Garde in-flight (mémoire, non persistée) : bloque le double-envoi d'un même
+      // ticket pendant l'await (burst WS ou chevauchement watch/retry).
+      _kitchenInFlight: new Set(),
+      // Interval du retry auto des tickets en échec (nettoyé en beforeUnmount).
+      _kitchenRetryInterval: null,
       /** forces border timer class recompute (orange → red) */
       waitTick: 0,
       expandedTableGroups: {},
@@ -1448,6 +1466,11 @@ export default {
     orders: function () {
       return this.$store.getters["kitchenDisplaySystemOrder/lists"];
     },
+    // [KITCHEN-PRINT-RESILIENCE 2026-07-13] Nombre de tickets cuisine en échec —
+    // pilote le badge d'avertissement en en-tête KDS.
+    kitchenPrintFailedCount() {
+      return Array.isArray(this._kitchenFailedPrint) ? this._kitchenFailedPrint.length : 0;
+    },
     orderItems: function () {
       return this.$store.getters["kitchenDisplaySystemOrder/orderItems"];
     },
@@ -1639,6 +1662,11 @@ export default {
       kdsSyncService.start(this.authBranchId());
     } catch (e) { /* defensive: never break KDS mount because of poller */ }
     this._kdsSyncStampTimer = setInterval(() => { this.syncNowTick = Date.now(); }, 1000);
+    // [KITCHEN-PRINT-RESILIENCE 2026-07-13] Retry auto des tickets cuisine en échec :
+    // quand le pont/imprimante revient, les tickets manqués ressortent seuls.
+    this._kitchenRetryInterval = setInterval(() => {
+      try { this.retryFailedKitchenTickets(); } catch (e) { /* best-effort */ }
+    }, KITCHEN_PRINT_RETRY_MS);
   },
   methods: {
     // [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT proxy for template access.
@@ -1936,30 +1964,96 @@ export default {
       (orders || []).forEach((o) => {
         if (!o || o.id == null) return;
         if (hasKitchenPrinted(o.id)) return;
-        // Marque AVANT l'appel async : évite tout double envoi si le watch re-tire
-        // (burst WS) avant la fin du GET. Idempotent, persisté localStorage.
-        markKitchenPrinted(o.id);
-        this.autoPrintKitchenTicket(o);
+        const key = String(o.id);
+        // [KITCHEN-PRINT-RESILIENCE 2026-07-13] Garde in-flight (remplace l'ancien
+        // mark préventif) : bloque le double-envoi si le watch re-tire (burst WS)
+        // avant la fin du GET, SANS marquer imprimé prématurément (sinon un échec
+        // pont = ticket perdu à vie, jamais réessayé).
+        if (this._kitchenInFlight && this._kitchenInFlight.has(key)) return;
+        if (this._kitchenInFlight) this._kitchenInFlight.add(key);
+        Promise.resolve(this.autoPrintKitchenTicket(o))
+          .then((r) => {
+            if (r && r.ok) {
+              // Imprimé : marque (dé-dup persistée) + sort de la liste d'échec.
+              markKitchenPrinted(o.id);
+              this._removeKitchenFailed(o.id);
+            } else {
+              // Échec (pont/imprimante) : NE PAS marquer → le retry le ressortira.
+              this._addKitchenFailed(o.id);
+            }
+          })
+          .catch(() => { this._addKitchenFailed(o.id); })
+          .finally(() => { if (this._kitchenInFlight) this._kitchenInFlight.delete(key); });
       });
     },
     // Récupère les octets ESC/POS cuisine (rendu serveur SSOT, width-safe/symbolique)
-    // puis les POSTe au pont cuisine local. Best-effort : jamais throw, jamais bloquant
-    // (pont éteint / réseau KO = log discret, le KDS continue normalement).
+    // puis les POSTe au pont cuisine local. Jamais throw. RETOURNE un résultat
+    // DISCRIMINÉ pour que l'appelant sache marquer imprimé / réessayer :
+    //   - {ok:true}                        → imprimé
+    //   - {ok:false, retriable:true}       → GET escpos KO (302/401/429/réseau) OU
+    //     pont injoignable : ticket NON sorti, à réessayer
+    //   - {ok:false, retriable:false}      → contexte invalide / rien à imprimer
     async autoPrintKitchenTicket(order) {
+      const ax = (typeof window !== "undefined" && window.axios) ? window.axios : null;
+      if (!ax || !order || order.id == null) return { ok: false, retriable: false };
+      let data;
       try {
-        const ax = (typeof window !== "undefined" && window.axios) ? window.axios : null;
-        if (!ax || !order || order.id == null) return;
-        const { data } = await ax.get(`admin/pos/orders/${order.id}/escpos`, { params: { ticket: "kitchen" } });
-        const b64 = data && data.escpos_b64;
-        if (!b64) return;
-        await printEscPosViaKitchenBridge(b64, { orderRef: order.id });
+        const resp = await ax.get(`admin/pos/orders/${order.id}/escpos`, { params: { ticket: "kitchen" } });
+        data = resp && resp.data;
       } catch (e) {
+        // GET escpos KO : 302 login / 401 session expirée / 429 throttle / réseau /
+        // 5xx → retriable (le pont ou la session peut revenir).
         try {
           if (typeof window !== "undefined" && window.console) {
-            window.console.debug("[kds] auto-print cuisine ignoré (best-effort):", e && e.message);
+            window.console.debug("[kds] escpos cuisine KO (retriable):", e && e.message);
           }
         } catch (_) { /* noop */ }
+        return { ok: false, retriable: true, reason: "escpos-fetch" };
       }
+      const b64 = data && data.escpos_b64;
+      if (!b64) return { ok: false, retriable: false, reason: "empty" };
+      const r = await printEscPosViaKitchenBridge(b64, { orderRef: order.id });
+      // r = {ok:true} | {ok:false,retriable:true} | null(b64 vide, déjà filtré).
+      return (r && r.ok) ? r : (r || { ok: false, retriable: true, reason: "bridge" });
+    },
+    // [KITCHEN-PRINT-RESILIENCE 2026-07-13] Ajoute/retire un id (String) de la liste
+    // réactive des tickets cuisine en échec (pilote badge + retry).
+    _addKitchenFailed(orderId) {
+      if (orderId == null || !Array.isArray(this._kitchenFailedPrint)) return;
+      const key = String(orderId);
+      if (!this._kitchenFailedPrint.includes(key)) this._kitchenFailedPrint.push(key);
+    },
+    _removeKitchenFailed(orderId) {
+      if (orderId == null || !Array.isArray(this._kitchenFailedPrint)) return;
+      const key = String(orderId);
+      const i = this._kitchenFailedPrint.indexOf(key);
+      if (i !== -1) this._kitchenFailedPrint.splice(i, 1);
+    },
+    // Retry auto : pour chaque ticket en échec ENCORE présent dans les commandes
+    // actives, re-tente l'impression. Succès → marque + retire. Purge aussi les ids
+    // de commandes disparues (bumped/annulées). Quand le pont revient, les tickets
+    // manqués sortent seuls. Non-bloquant, best-effort.
+    retryFailedKitchenTickets() {
+      if (!Array.isArray(this._kitchenFailedPrint) || this._kitchenFailedPrint.length === 0) return;
+      const activeById = new Map();
+      (this.orders || []).forEach((o) => { if (o && o.id != null) activeById.set(String(o.id), o); });
+      // Purge les ids dont la commande a quitté le board.
+      this._kitchenFailedPrint = this._kitchenFailedPrint.filter((key) => activeById.has(key));
+      this._kitchenFailedPrint.slice().forEach((key) => {
+        if (this._kitchenInFlight && this._kitchenInFlight.has(key)) return;
+        const order = activeById.get(key);
+        if (!order) return;
+        if (this._kitchenInFlight) this._kitchenInFlight.add(key);
+        Promise.resolve(this.autoPrintKitchenTicket(order))
+          .then((r) => {
+            if (r && r.ok) {
+              markKitchenPrinted(order.id);
+              this._removeKitchenFailed(order.id);
+            }
+          })
+          .catch(() => { /* reste en échec, re-tenté au prochain tick */ })
+          .finally(() => { if (this._kitchenInFlight) this._kitchenInFlight.delete(key); });
+      });
     },
     // [KDS-REPRINT 2026-07-13] Réimpression MANUELLE du ticket cuisine, déclenchée
     // par le bouton 🖨️ (carte V2 + lanes legacy). Contrairement à l'auto-print
@@ -1971,9 +2065,15 @@ export default {
     // autoPrintKitchenTicket est best-effort (try/catch interne, jamais throw).
     async reprintKitchenTicket(order) {
       if (!order || order.id == null) return;
-      await this.autoPrintKitchenTicket(order);
+      const r = await this.autoPrintKitchenTicket(order);
       try {
-        alertService.info(this.$t("message.kds_reprint_sent", { queue: order.queue_number || order.id }));
+        if (r && r.ok) {
+          alertService.info(this.$t("message.kds_reprint_sent", { queue: order.queue_number || order.id }));
+        } else {
+          // Pont/imprimante injoignable : toast ERREUR explicite (le cuisinier voit
+          // que le ticket n'est PAS sorti). Ne marque rien.
+          alertService.error(this.$t("message.kds_reprint_failed"));
+        }
       } catch (_) { /* retour visuel best-effort, jamais bloquant */ }
     },
     isTableGroupOpen(key) {
@@ -2628,6 +2728,11 @@ export default {
     if (this._kdsSyncStampTimer) {
       clearInterval(this._kdsSyncStampTimer);
       this._kdsSyncStampTimer = null;
+    }
+    // [KITCHEN-PRINT-RESILIENCE 2026-07-13] Stoppe le retry des tickets cuisine.
+    if (this._kitchenRetryInterval) {
+      clearInterval(this._kitchenRetryInterval);
+      this._kitchenRetryInterval = null;
     }
   },
 };

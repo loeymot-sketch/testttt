@@ -44,11 +44,19 @@ describe('printEscPosViaKitchenBridge', () => {
     expect(opts.headers['Content-Type']).toMatch(/octet-stream/);
     expect(opts.body).toBeInstanceOf(Uint8Array); // octets bruts, pas de re-encodage
   });
-  it('null si pont échoue/éteint → best-effort, jamais throw', async () => {
+  it('pont éteint/réseau KO → {ok:false, retriable:true} (jamais throw, à réessayer)', async () => {
     global.fetch = vi.fn().mockRejectedValue(new Error('ECONNREFUSED'));
-    expect(await printEscPosViaKitchenBridge(btoa('x'))).toBeNull();
+    const r = await printEscPosViaKitchenBridge(btoa('x'));
+    expect(r.ok).toBe(false);
+    expect(r.retriable).toBe(true);
+    expect(r.reason).toBe('network');
   });
-  it('null sur b64 vide (rien à imprimer)', async () => {
+  it('réponse non-2xx (302/401/429/5xx) → {ok:false, retriable:true, reason:http-<code>}', async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 401, text: () => Promise.resolve('') });
+    const r = await printEscPosViaKitchenBridge(btoa('x'));
+    expect(r).toEqual({ ok: false, retriable: true, reason: 'http-401' });
+  });
+  it('null sur b64 vide (rien à imprimer, non-retriable)', async () => {
     global.fetch = vi.fn();
     expect(await printEscPosViaKitchenBridge('')).toBeNull();
     expect(global.fetch).not.toHaveBeenCalled();
