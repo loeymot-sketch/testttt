@@ -431,6 +431,7 @@
                Le CTA « Traiter » ouvre la commande dans Commandes en ligne (accept → cuisine →
                encaissement au retrait), sans dupliquer la logique paiement dans le POS. -->
           <section
+            v-if="canProcessWebOrders"
             class="pos-shortcuts__panel pos-shortcuts__panel--web"
             :class="{ 'pos-shortcuts__panel--empty': webOrders.length === 0 }"
             data-testid="pos-shortcuts-web"
@@ -2055,6 +2056,27 @@ export default {
     computed: {
         setting: function () {
             return this.$store.getters['frontendSetting/lists'];
+        },
+        // [WEB-CAISSE-RBAC 2026-07-13] Le panneau « Commandes web à traiter » ne
+        // doit s'afficher qu'aux rôles qui possèdent la permission `online-orders`
+        // (Admin, Branch Manager). Le rôle POS Operator a `pos` mais PAS
+        // `online-orders` : l'endpoint (can('pos')) lui renvoie bien les commandes,
+        // mais le CTA « Traiter » / « Voir les X » redirige vers admin.order.show /
+        // admin.order.list — routes gardées par `online-orders` → le router le
+        // renvoie au dashboard = bouton mort + confusion. On masque donc le panneau
+        // à ces rôles (aucun changement RBAC/seeder — décision owner). Le payload
+        // permission liste TOUTES les permissions avec un flag `access` (cf.
+        // AppLibrary::permissionWithAccess), donc l'entrée existe toujours ; on
+        // exige access===true. Tant que les permissions ne sont pas chargées
+        // (liste vide au cold-boot) → masqué (on ne montre jamais un bouton
+        // potentiellement mort).
+        canProcessWebOrders: function () {
+            const raw = this.$store.getters.authPermission;
+            const perms = Array.isArray(raw)
+                ? raw
+                : (raw && Array.isArray(raw.data) ? raw.data : []);
+            const entry = perms.find((p) => p && p.url === 'online-orders');
+            return !!(entry && entry.access === true);
         },
         // [Q10 P-OWNER 2026-05-21] Localized "Mis à jour il y a Xs" labels
         // for the X2 shortcut panels' empty/idle state. Bound to

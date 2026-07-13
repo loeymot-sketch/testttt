@@ -72,6 +72,8 @@ final class SplitPaymentService
         ];
 
         $totalCents = 0;
+        $cashCents = 0;
+        $nonCashCents = 0;
         $hasCashTranche = false;
         foreach ($tranches as $idx => $t) {
             if (! is_array($t)) {
@@ -140,24 +142,45 @@ final class SplitPaymentService
                 }
             }
 
-            $totalCents += (int) round($amount * 100);
+            $amountCents = (int) round($amount * 100);
+            $totalCents += $amountCents;
+            if ($mode === PosPaymentMethod::CASH) {
+                $cashCents += $amountCents;
+            } else {
+                $nonCashCents += $amountCents;
+            }
         }
 
         $serverTotalCents = (int) round($orderTotal * 100);
-        // [F-SPLIT-OVERPAY-CASH-ONLY 2026-07-11] La tolérance d'overpay ne
-        // s'applique QUE si au moins une tranche est en ESPÈCES : c'est le
-        // tiroir qui rend la monnaie. Sans tranche cash (carte seule, ou
-        // carte+carte…), il n'y a AUCUN rendu possible — le montant de la
-        // tranche EST débité tel quel → la somme doit égaler EXACTEMENT le
-        // total (tolérance effective = 0), sinon surfacture ≤1€/vente et
-        // SUM(order_payments)/Z dépassent le total encaissable.
-        $toleranceCents = $hasCashTranche ? (int) round(self::TOLERANCE_OVERPAY * 100) : 0;
+        // [F-SPLIT-OVERPAY-CASH-ONLY 2026-07-13] La tolérance d'overpay ne peut
+        // absorber QUE la portion ESPÈCES : c'est le tiroir qui rend la monnaie.
+        // Une carte/TR/mobile est débitée EXACTEMENT du montant saisi — elle ne
+        // peut JAMAIS dépasser le total (aucun rendu possible). Deux garde-fous :
+        //  (1) SUM(tranches NON-cash) <= total serveur — sinon une tranche carte
+        //      surfacturée passe (ex. cash 0,01 € « trivial » réactivait avant
+        //      la tolérance 1 € et masquait jusqu'à 0,99 € de sur-paiement CARTE).
+        //  (2) tolérance effective = min(1 €, somme des tranches cash) — l'excédent
+        //      toléré ne peut jamais excéder ce que le tiroir peut réellement rendre.
+        // Sans tranche cash, cashCents=0 → tolérance effective 0 (égalité stricte).
+        $toleranceCents = min((int) round(self::TOLERANCE_OVERPAY * 100), $cashCents);
 
         if ($totalCents < $serverTotalCents) {
             throw ValidationException::withMessages([
                 'payment_breakdown' => sprintf(
                     'Somme des tranches (%.2f €) < total (%.2f €).',
                     $totalCents / 100,
+                    $serverTotalCents / 100,
+                ),
+            ]);
+        }
+
+        // [F-SPLIT-OVERPAY-CASH-ONLY 2026-07-13] Garde-fou (1) : les moyens sans
+        // rendu (carte/TR/mobile) ne peuvent jamais, à eux seuls, dépasser le total.
+        if ($nonCashCents > $serverTotalCents) {
+            throw ValidationException::withMessages([
+                'payment_breakdown' => sprintf(
+                    'Les tranches sans rendu (carte/TR/mobile : %.2f €) dépassent le total (%.2f €).',
+                    $nonCashCents / 100,
                     $serverTotalCents / 100,
                 ),
             ]);

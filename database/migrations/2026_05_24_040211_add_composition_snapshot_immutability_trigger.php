@@ -50,11 +50,12 @@ use Illuminate\Support\Facades\Schema;
  *
  * EDGE CASES
  * ----------
- *   - MySQL JSON column compare via `!=` works on the canonical string form
- *     (Laravel json-cast `composition_snapshot` is stored as TEXT/JSON; the
- *     `!=` operator compares serialized JSON byte-for-byte, which is exactly
- *     what we want: any mutation, even semantic equivalence with reordered
- *     keys, is flagged).
+ *   - MySQL JSON column compare via `!=` is a normalized JSON-VALUE comparison
+ *     (NOT byte-for-byte). MySQL parses both sides and compares by value, so a
+ *     rewrite of an IDENTICAL fiscal content with reordered keys or different
+ *     whitespace is tolerated (same value ⇒ not flagged). This is acceptable:
+ *     the invariant protects any change of VALUE — the fiscal composition
+ *     itself cannot be altered, only its serialized form may differ harmlessly.
  *   - SQLite has no native JSON type — the column is TEXT, `!=` is a string
  *     compare, identical semantics.
  *   - TRUNCATE TABLE order_items bypasses triggers — mitigated by GRANT-level

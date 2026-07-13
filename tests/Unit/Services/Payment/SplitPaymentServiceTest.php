@@ -175,6 +175,62 @@ class SplitPaymentServiceTest extends TestCase
         ], orderTotal: 10.00, branchId: 1);
     }
 
+    /**
+     * [F-SPLIT-OVERPAY-CASH-ONLY 2026-07-13] Une tranche cash TRIVIALE (0,01 €)
+     * ne doit PAS réactiver la tolérance 1 € pour masquer un sur-paiement CARTE.
+     * cash 0,01 € + carte 10,80 € vs total 10,00 € → REJETÉ (portion non-cash
+     * 10,80 € > total 10,00 €).
+     */
+    public function test_validate_trivial_cash_does_not_shield_card_overpay(): void
+    {
+        $service = app(SplitPaymentService::class);
+        $branch = Branch::factory()->create(['id' => 1]);
+        $terminal = $this->createActiveTerminal($branch->id);
+
+        $this->expectException(ValidationException::class);
+        $service->validateBreakdown([
+            ['mode' => PosPaymentMethod::CASH, 'amount' => 0.01, 'tendered' => 0.01],
+            ['mode' => PosPaymentMethod::CARD, 'amount' => 10.80, 'terminal_id' => $terminal->id],
+        ], orderTotal: 10.00, branchId: 1);
+    }
+
+    /**
+     * [F-SPLIT-OVERPAY-CASH-ONLY 2026-07-13] Répartition exacte cash+carte sans
+     * sur-paiement : cash 5 € + carte 5 € vs total 10 € → accepté.
+     */
+    public function test_validate_exact_split_cash_card_accepted(): void
+    {
+        $service = app(SplitPaymentService::class);
+        $branch = Branch::factory()->create(['id' => 1]);
+        $terminal = $this->createActiveTerminal($branch->id);
+
+        $service->validateBreakdown([
+            ['mode' => PosPaymentMethod::CASH, 'amount' => 5.00, 'tendered' => 5.00],
+            ['mode' => PosPaymentMethod::CARD, 'amount' => 5.00, 'terminal_id' => $terminal->id],
+        ], orderTotal: 10.00, branchId: 1);
+
+        $this->assertTrue(true);
+    }
+
+    /**
+     * [F-SPLIT-OVERPAY-CASH-ONLY 2026-07-13] La carte couvre EXACTEMENT le total
+     * (10 € <= 10 €) et le cash (0,50 €) est l'excédent que le tiroir rend :
+     * cash 0,50 € + carte 10 € vs total 10 € → accepté (overpay 0,50 € ≤ cash 0,50 €).
+     */
+    public function test_validate_card_covers_total_cash_makes_change_accepted(): void
+    {
+        $service = app(SplitPaymentService::class);
+        $branch = Branch::factory()->create(['id' => 1]);
+        $terminal = $this->createActiveTerminal($branch->id);
+
+        $service->validateBreakdown([
+            ['mode' => PosPaymentMethod::CASH, 'amount' => 0.50, 'tendered' => 1.00],
+            ['mode' => PosPaymentMethod::CARD, 'amount' => 10.00, 'terminal_id' => $terminal->id],
+        ], orderTotal: 10.00, branchId: 1);
+
+        $this->assertTrue(true);
+    }
+
     public function test_validate_cash_tranche_without_tendered_throws(): void
     {
         $service = app(SplitPaymentService::class);
