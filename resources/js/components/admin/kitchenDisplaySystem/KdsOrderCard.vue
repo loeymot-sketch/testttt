@@ -160,18 +160,38 @@
       </svg>
       <span>{{ $t('label.kds_card_cash_pending') }}</span>
     </div>
-    <button
-      type="button"
-      class="kds-card__cta"
-      @click.prevent="onCta"
-      :aria-label="$t('label.kds_card_cta_ready')"
-      data-testid="kds-card-cta-ready"
-    >
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M5 12l5 5L20 7" />
-      </svg>
-      <span>{{ $t('label.kds_card_cta_ready') }}</span>
-    </button>
+    <!-- FOOTER ROW — Prêt CTA (large) + réimpression ticket cuisine (compact).
+         [KDS-REPRINT 2026-07-13] Le bouton 🖨️ émet 'reprint' (réimpression MANUELLE)
+         indépendamment du CTA : @click.stop empêche le bubbling vers le CTA / la carte,
+         et l'action côté orchestrateur ignore le toggle auto + la dé-dup. -->
+    <div class="kds-card__footer">
+      <button
+        type="button"
+        class="kds-card__cta"
+        @click.prevent="onCta"
+        :aria-label="$t('label.kds_card_cta_ready')"
+        data-testid="kds-card-cta-ready"
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 12l5 5L20 7" />
+        </svg>
+        <span>{{ $t('label.kds_card_cta_ready') }}</span>
+      </button>
+      <button
+        type="button"
+        class="kds-card__reprint"
+        @click.prevent.stop="$emit('reprint')"
+        :aria-label="$t('label.kds_reprint')"
+        :title="$t('label.kds_reprint')"
+        data-testid="kds-card-reprint"
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="6 9 6 2 18 2 18 9" />
+          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+          <rect x="6" y="14" width="12" height="8" />
+        </svg>
+      </button>
+    </div>
   </div>
 </template>
 
@@ -236,7 +256,7 @@ export default {
             default: false,
         },
     },
-    emits: ['ready'],
+    emits: ['ready', 'reprint'],
     computed: {
         kdsState() {
             return kdsStateFromStatus(this.order.status) || 'NEW';
@@ -748,6 +768,45 @@ export default {
     background: linear-gradient(to top, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0));
 }
 
+/* [KDS-REPRINT 2026-07-13] Footer row: le CTA « Prêt » (flex:1) et le bouton
+   compact de réimpression 🖨️ (52×52, gabarit du CTA) côte à côte. Le CTA garde
+   son style/hauteur ; les marges externes passent au conteneur footer. */
+.kds-card__footer {
+    display: flex;
+    align-items: stretch;
+    gap: 6px;
+    margin: 4px 8px 8px;
+}
+.kds-card__footer .kds-card__cta {
+    flex: 1 1 auto;
+    margin: 0;
+}
+.kds-card__reprint {
+    flex: 0 0 auto;
+    width: 52px;
+    height: 52px;
+    background: #FFFFFF;
+    color: #374151;
+    border: 2px solid #D1D5DB;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 100ms ease, background 120ms ease, border-color 120ms ease;
+}
+.kds-card__reprint:hover {
+    background: #F3F4F6;
+    border-color: #9CA3AF;
+}
+.kds-card__reprint:active {
+    transform: translateY(1px);
+}
+.kds-card__reprint:focus-visible {
+    outline: 4px solid #4B5563;
+    outline-offset: 2px;
+}
+
 .kds-card__cta {
     margin: 4px 8px 8px;
     height: 52px;
@@ -821,7 +880,8 @@ export default {
 @media (prefers-reduced-motion: reduce) {
     .kds-card,
     .kds-pulse-digit,
-    .kds-card__cta {
+    .kds-card__cta,
+    .kds-card__reprint {
         transition: none !important;
         animation: none !important;
     }

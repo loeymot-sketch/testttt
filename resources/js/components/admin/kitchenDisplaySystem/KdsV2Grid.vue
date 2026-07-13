@@ -68,6 +68,7 @@
         :shortcut="SHORTCUTS[idx]"
         :recall-active="isRecallActive(o)"
         @ready="onCtaTap(o.id, o.queue_number)"
+        @reprint="$emit('reprint', o)"
       />
     </div>
     <div v-if="overflowActiveCount > 0" class="kds-overflow-chip" role="status">
@@ -150,7 +151,7 @@ export default {
         // to decide whether to render the RAPPELÉ badge overlay.
         recallActiveIds: { type: Array, default: () => [] },
     },
-    emits: ['change-status', 'auto-promote'],
+    emits: ['change-status', 'auto-promote', 'reprint'],
     data() {
         return {
             now: Date.now(),

@@ -44,6 +44,7 @@
     :recall-active-ids="recallActiveIds"
     @change-status="onV2ChangeStatus"
     @auto-promote="onV2AutoPromote"
+    @reprint="reprintKitchenTicket"
   />
   <template v-else>
   <!--
@@ -438,6 +439,15 @@
                           @click.prevent.stop="kdsRecall(dineinOrder, item)">
                           {{ $t('button.kds_recall') }}
                         </button>
+                        <!-- [KDS-REPRINT 2026-07-13] Réimpression manuelle du ticket cuisine (ignore toggle auto + dé-dup). -->
+                        <button type="button"
+                          class="w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-[#6B7280] hover:bg-[#6B7280]/5"
+                          :title="$t('label.kds_reprint')"
+                          :aria-label="`${$t('label.kds_reprint')} — N°${dineinOrder.queue_number || dineinOrder.id}`"
+                          data-testid="kds-legacy-reprint"
+                          @click.prevent.stop="reprintKitchenTicket(dineinOrder)">
+                          <i class="fa-solid fa-print" aria-hidden="true"></i>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -616,6 +626,15 @@
                           @click.prevent.stop="kdsRecall(onlineOrder, item)">
                           {{ $t('button.kds_recall') }}
                         </button>
+                        <!-- [KDS-REPRINT 2026-07-13] Réimpression manuelle du ticket cuisine (ignore toggle auto + dé-dup). -->
+                        <button type="button"
+                          class="w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-[#6B7280] hover:bg-[#6B7280]/5"
+                          :title="$t('label.kds_reprint')"
+                          :aria-label="`${$t('label.kds_reprint')} — N°${onlineOrder.queue_number || onlineOrder.id}`"
+                          data-testid="kds-legacy-reprint"
+                          @click.prevent.stop="reprintKitchenTicket(onlineOrder)">
+                          <i class="fa-solid fa-print" aria-hidden="true"></i>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -783,6 +802,15 @@
                           class="text-[11px] font-semibold text-[#F4501E] underline decoration-[#F4501E]/50"
                           @click.prevent.stop="kdsRecall(takeawayOrder, item)">
                           {{ $t('button.kds_recall') }}
+                        </button>
+                        <!-- [KDS-REPRINT 2026-07-13] Réimpression manuelle du ticket cuisine (ignore toggle auto + dé-dup). -->
+                        <button type="button"
+                          class="w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-[#6B7280] hover:bg-[#6B7280]/5"
+                          :title="$t('label.kds_reprint')"
+                          :aria-label="`${$t('label.kds_reprint')} — N°${takeawayOrder.queue_number || takeawayOrder.id}`"
+                          data-testid="kds-legacy-reprint"
+                          @click.prevent.stop="reprintKitchenTicket(takeawayOrder)">
+                          <i class="fa-solid fa-print" aria-hidden="true"></i>
                         </button>
                       </div>
                     </div>
@@ -954,6 +982,15 @@
                           class="text-[11px] font-semibold text-[#F4501E] underline decoration-[#F4501E]/50"
                           @click.prevent.stop="kdsRecall(kioskOrder, item)">
                           {{ $t('button.kds_recall') }}
+                        </button>
+                        <!-- [KDS-REPRINT 2026-07-13] Réimpression manuelle du ticket cuisine (ignore toggle auto + dé-dup). -->
+                        <button type="button"
+                          class="w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-[#6B7280] hover:bg-[#6B7280]/5"
+                          :title="$t('label.kds_reprint')"
+                          :aria-label="`${$t('label.kds_reprint')} — N°${kioskOrder.queue_number || kioskOrder.id}`"
+                          data-testid="kds-legacy-reprint"
+                          @click.prevent.stop="reprintKitchenTicket(kioskOrder)">
+                          <i class="fa-solid fa-print" aria-hidden="true"></i>
                         </button>
                       </div>
                     </div>
@@ -1923,6 +1960,21 @@ export default {
           }
         } catch (_) { /* noop */ }
       }
+    },
+    // [KDS-REPRINT 2026-07-13] Réimpression MANUELLE du ticket cuisine, déclenchée
+    // par le bouton 🖨️ (carte V2 + lanes legacy). Contrairement à l'auto-print
+    // (autoPrintNewKitchenTickets) :
+    //   - PAS de dé-dup : on appelle autoPrintKitchenTicket() DIRECTEMENT, donc le
+    //     ticket ressort MÊME si l'id est déjà marqué imprimé (hasKitchenPrinted).
+    //   - PAS gaté par le toggle « Impression auto » (autoPrintKitchen) : c'est une
+    //     action explicite du cuisinier (ticket perdu/illisible).
+    // autoPrintKitchenTicket est best-effort (try/catch interne, jamais throw).
+    async reprintKitchenTicket(order) {
+      if (!order || order.id == null) return;
+      await this.autoPrintKitchenTicket(order);
+      try {
+        alertService.info(this.$t("message.kds_reprint_sent", { queue: order.queue_number || order.id }));
+      } catch (_) { /* retour visuel best-effort, jamais bloquant */ }
     },
     isTableGroupOpen(key) {
       return this.expandedTableGroups[key] !== false;
