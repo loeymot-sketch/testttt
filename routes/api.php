@@ -860,6 +860,29 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             // staying bounded.
             return \App\Http\Resources\OrderDetailsResource::collection($query->limit(200)->get());
         })->middleware('throttle:pos-order-update')->name('counter-collect.pending');
+        // [WEB-CAISSE-SYNC 2026-07-13] File des commandes WEB en attente (à traiter en caisse).
+        // Le paiement carte en ligne étant OFF (mandat owner), toute commande web = règlement au
+        // comptoir → créée PENDING/UNPAID + source_surface='web'. Contrairement à la borne (client
+        // sur place → auto-accept + cuisine immédiate), une commande web distante NE DOIT PAS
+        // auto-cuisiner ; l'opérateur l'accepte quand le client arrive. Cette route READ-ONLY la
+        // fait remonter sur l'écran caisse (le panneau borne « à encaisser » filtre kiosk/pos/phone,
+        // PAS web). Aucun changement de statut/paiement ici — l'accept se fait via le flux Commandes
+        // existant. Miroir volontaire de counter-collect/pending (branch-scope, cap 200, FIFO).
+        Route::get('/web-orders/pending', function () {
+            abort_unless(auth()->user()?->can('pos'), 403);
+
+            $query = \App\Models\Order::with(['orderItems.orderItem'])
+                ->where('source_surface', 'web')
+                ->where('status', \App\Enums\OrderStatus::PENDING)
+                ->orderBy('created_at');
+
+            $branchId = (int) (auth()->user()?->branch_id ?? 0);
+            if ($branchId > 0) {
+                $query->where('branch_id', $branchId);
+            }
+
+            return \App\Http\Resources\OrderDetailsResource::collection($query->limit(200)->get());
+        })->middleware('throttle:pos-order-update')->name('web-orders.pending');
         Route::post('/counter-collect/{order}/confirm', function (\App\Models\Order $order, \Illuminate\Http\Request $request) {
             abort_unless(auth()->user()?->can('pos'), 403);
 

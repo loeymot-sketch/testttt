@@ -425,6 +425,69 @@
               {{ cashLastRefreshLabel }}
             </p>
           </section>
+          <!-- [WEB-CAISSE-SYNC 2026-07-13] Panneau « Commandes web à traiter » — rend les
+               commandes du site visibles en temps réel sur l'écran caisse (le paiement en ligne
+               est OFF → elles arrivent PENDING et n'entrent pas dans la file borne « à encaisser »).
+               Le CTA « Traiter » ouvre la commande dans Commandes en ligne (accept → cuisine →
+               encaissement au retrait), sans dupliquer la logique paiement dans le POS. -->
+          <section
+            class="pos-shortcuts__panel pos-shortcuts__panel--web"
+            :class="{ 'pos-shortcuts__panel--empty': webOrders.length === 0 }"
+            data-testid="pos-shortcuts-web"
+            :aria-label="`Commandes web à traiter (${webOrders.length})`"
+          >
+            <header class="pos-shortcuts__head">
+              <h2 class="pos-shortcuts__title">
+                <span aria-hidden="true">🌐</span>
+                Commandes web · {{ webOrders.length }}
+              </h2>
+            </header>
+            <ul
+              v-if="webOrders.length > 0"
+              class="pos-shortcuts__list"
+              role="list"
+            >
+              <li
+                v-for="o in webOrders.slice(0, 4)"
+                :key="o.id"
+                class="pos-shortcuts__item"
+                :data-testid="`pos-shortcut-web-${o.id}`"
+              >
+                <span class="pos-shortcuts__num">N°{{ o.queue_number || o.order_serial_no || o.id }}</span>
+                <span class="pos-shortcuts__price">{{ formatKioskPrice(o.total ?? o.order_amount) }}</span>
+                <button
+                  type="button"
+                  class="pos-shortcuts__cta pos-shortcuts__cta--web"
+                  :data-testid="`pos-shortcut-web-open-${o.id}`"
+                  @click="openWebOrder(o)"
+                >Traiter</button>
+              </li>
+            </ul>
+            <p
+              v-else
+              class="pos-shortcuts__empty"
+              data-testid="pos-shortcuts-web-empty"
+            >
+              Aucune commande web en attente.
+            </p>
+            <button
+              v-if="webOrders.length > 4"
+              type="button"
+              class="pos-shortcuts__more"
+              data-testid="pos-shortcut-web-more"
+              @click="$router.push({ name: 'admin.order.list' })"
+            >
+              Voir les {{ webOrders.length }} commandes web
+            </button>
+            <p
+              v-if="lastWebRefresh"
+              class="pos-shortcuts__refresh"
+              data-testid="pos-shortcuts-web-refresh"
+              aria-live="off"
+            >
+              {{ _formatLastRefresh(lastWebRefresh) }}
+            </p>
+          </section>
         </div>
 
         <!-- [POS-V5] Search V5 — input large unifié, soumission par Enter. -->
@@ -1745,6 +1808,14 @@ export default {
             kioskCashOrders: [],
             kioskCashLoading: false,
             showKioskCashPanel: false,
+            // [WEB-CAISSE-SYNC 2026-07-13] Commandes WEB en attente (à traiter). Le paiement en
+            // ligne étant OFF, les commandes du site arrivent PENDING/UNPAID et ne remontent PAS
+            // dans la file borne « à encaisser ». Ce panneau les rend visibles sur l'écran caisse
+            // en temps réel (Echo + polling), avec lien vers la page Commandes en ligne pour les
+            // traiter (accept via le flux existant — aucun changement de paiement/cuisine ici).
+            webOrders: [],
+            webOrdersLoading: false,
+            lastWebRefresh: null,
             // [C4-CAISSE-TELEPHONE 2026-07-07] Anti double-submit du bouton « Commande téléphone ».
             phoneOrderSubmitting: false,
             // [HEAL B2-P6-F01 2026-05-26] Confirm-before-cancel dialog
@@ -2480,6 +2551,9 @@ export default {
             this.loadKioskCashOrders();
             this.loadActiveOrdersStats();
             this.loadReadyOrders();
+            // [WEB-CAISSE-SYNC 2026-07-13] Rafraîchit aussi la file des commandes web à traiter
+            // sur chaque rafale d'événements Echo (OrderCreated d'une commande site inclus).
+            this.loadWebOrders();
         }, 400);
         // [POS-OFFLINE-WIRE 2026-05-17] Bind axios.post as the replay transport
         // and run an opportunistic flush every 30s while the page is open. The
@@ -2524,6 +2598,8 @@ export default {
         // [Wave X X2 P-OWNER 2026-05-21] Initial fetch for the "Prêt à livrer"
         // shortcut panel above the products grid.
         this.loadReadyOrders();
+        // [WEB-CAISSE-SYNC 2026-07-13] Initial fetch de la file commandes web à traiter.
+        this.loadWebOrders();
         this._subscribeEcho();
         this._startKioskPolling();
         // [Q10 P-OWNER 2026-05-21] 5 s ticker bumps `_lastRefreshTick` so
@@ -3075,6 +3151,9 @@ export default {
                 // the "Prêt à livrer" shortcut so a freshly bumped order
                 // surfaces within ~15s even if the Echo subscription is down.
                 this.loadReadyOrders();
+                // [WEB-CAISSE-SYNC 2026-07-13] Même tick rafraîchit la file commandes web
+                // (secours si Echo tombe — une commande site apparaît en <15s).
+                this.loadWebOrders();
                 const nextIntervalMs = this._kioskPollingInterval();
                 this._kioskPollTimer = setTimeout(tick, nextIntervalMs);
             };
@@ -3446,6 +3525,32 @@ export default {
         },
 
         // ── Kiosk cash orders ──────────────────────────────────────────────
+        // [WEB-CAISSE-SYNC 2026-07-13] Charge les commandes web en attente (read-only) pour
+        // les afficher sur l'écran caisse. Mirror de loadKioskCashOrders : silencieux en cas
+        // d'échec (pas de bruit pour le caissier), stamp du dernier refresh pour le libellé santé.
+        async loadWebOrders() {
+            this.webOrdersLoading = true;
+            try {
+                const res = await axios.get('admin/pos/web-orders/pending');
+                const all = res?.data?.data || [];
+                this.webOrders = all.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+                this.lastWebRefresh = Date.now();
+            } catch (_) {
+                this.webOrders = [];
+            } finally {
+                this.webOrdersLoading = false;
+            }
+        },
+        // [WEB-CAISSE-SYNC 2026-07-13] Ouvre la commande web dans la page Commandes en ligne
+        // (surface de traitement existante : accept → cuisine → encaissement au retrait). On ne
+        // duplique PAS la logique d'acceptation/paiement dans le POS — on y renvoie simplement.
+        openWebOrder(o) {
+            try {
+                this.$router.push({ name: 'admin.order.show', params: { id: o.id } });
+            } catch (_) {
+                window.location.href = '/admin/online-orders';
+            }
+        },
         async loadKioskCashOrders() {
             this.kioskCashLoading = true;
             try {
@@ -5178,6 +5283,10 @@ export default {
 .pos-shortcuts__panel--cash {
   border-left: 4px solid var(--pos-v5-brand-red, #cf3a3a);
 }
+/* [WEB-CAISSE-SYNC 2026-07-13] Panneau commandes web — accent bleu. */
+.pos-shortcuts__panel--web {
+  border-left: 4px solid var(--pos-v5-info, #2563a8);
+}
 .pos-shortcuts__head {
   display: flex;
   align-items: center;
@@ -5317,6 +5426,14 @@ export default {
 }
 .pos-shortcuts__cta--cash:hover:not(:disabled) {
   background: var(--pos-v5-brand-red-dark, #b32f2f);
+}
+/* [WEB-CAISSE-SYNC 2026-07-13] CTA « Traiter » commande web — bleu, distinct de la file borne. */
+.pos-shortcuts__cta--web {
+  background: var(--pos-v5-info, #2563a8);
+  color: #fff;
+}
+.pos-shortcuts__cta--web:hover:not(:disabled) {
+  background: var(--pos-v5-info-dark, #1d4e85);
 }
 .pos-shortcuts__more {
   display: inline-block;
