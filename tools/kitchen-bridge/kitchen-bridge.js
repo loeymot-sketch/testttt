@@ -219,6 +219,15 @@ function drainQueue() {
   const step = () => {
     const job = printQueue.shift();
     if (job === undefined) { draining = false; return; }
+    // [KITCHEN-RESILIENCE 2026-07-13] Le client (KDS) a abandonné (timeout) AVANT que ce
+    // job en file n'ait son tour → on NE l'imprime PAS : le KDS va le retry, l'imprimer
+    // ici aussi ferait un DOUBLE ticket (fenêtre head-of-line blocking). On saute → seul
+    // le retry imprimera, une seule fois.
+    if (job.abortState && job.abortState.aborted) {
+      console.error('[kitchen-bridge] job sauté (client abandonné avant impression) — anti-doublon');
+      try { job.resolve({ ok: false, error: 'client_aborted' }); } catch (_) { /* idem */ }
+      return void Promise.resolve().then(step);
+    }
     printRaw(job.buffer)
       .then((r) => {
         if (r && r.ok) console.log('[kitchen-bridge] imprimé (' + job.buffer.length + ' octets)');
@@ -234,9 +243,11 @@ function drainQueue() {
   step();
 }
 // Renvoie une Promise résolue avec le RÉSULTAT RÉEL de l'impression {ok, error?}.
-function enqueuePrint(buffer) {
+// `abortState` (optionnel {aborted:bool}) : si le client abandonne (timeout) avant que
+// le job soit imprimé, drainQueue le saute (anti-doublon head-of-line).
+function enqueuePrint(buffer, abortState) {
   return new Promise((resolve) => {
-    printQueue.push({ buffer, resolve });
+    printQueue.push({ buffer, resolve, abortState: abortState || null });
     // Cap RAM : si la file s'accumule (worker durablement KO), on abandonne le PLUS
     // VIEUX ticket ET on résout SON job en échec (le KDS le remettra en retry auto)
     // plutôt que de gonfler la mémoire indéfiniment.
@@ -275,12 +286,18 @@ function createServer() {
         // RÉSULTAT RÉEL (borné par le timeout printRaw) : 200 {ok:true} = imprimé,
         // 500 {ok:false} = échec. Le KDS ne marque « imprimé » que sur 200 ; un 500 le
         // met en RETRY auto → aucun ticket perdu (plus de papier / USB / worker figé).
-        enqueuePrint(body).then((r) => {
+        // Anti-doublon : si le client abandonne (timeout) AVANT que le job soit imprimé,
+        // drainQueue le saute (le retry l'imprimera une seule fois).
+        const abortState = { aborted: false };
+        let responded = false;
+        res.on('close', () => { if (!responded) abortState.aborted = true; });
+        enqueuePrint(body, abortState).then((r) => {
+          responded = true;
+          if (abortState.aborted) return; // client parti → rien à répondre
           const ok = !!(r && r.ok);
-          res.writeHead(ok ? 200 : 500, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify(r || { ok: false }));
+          try { res.writeHead(ok ? 200 : 500, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(r || { ok: false })); } catch (_) { /* socket fermée */ }
         }).catch(() => {
-          try { res.writeHead(500, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: false, error: 'internal' })); } catch (_) { /* socket fermée */ }
+          try { if (!abortState.aborted) { res.writeHead(500, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: false, error: 'internal' })); } } catch (_) { /* socket fermée */ }
         });
       });
       return;

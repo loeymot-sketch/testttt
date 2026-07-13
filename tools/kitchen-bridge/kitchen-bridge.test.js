@@ -35,6 +35,7 @@ const cp = require('child_process');
 // timeout borné du pont.
 let workerResponds = true;
 let killCount = 0;
+let writeCount = 0;
 const spawnCalls = [];
 function fakeSpawn(cmd, args, opts) {
   spawnCalls.push({ cmd, args, opts });
@@ -54,6 +55,7 @@ function fakeSpawn(cmd, args, opts) {
   child.stdin = {
     writable: true,
     write(line) {
+      writeCount += 1;
       const file = String(line).trim().split('|')[1];
       // Répond OK avec 40 ms de délai (impression simulée) — la réponse HTTP 202
       // doit partir AVANT. En mode figé, AUCUNE réponse (le pont doit timeout).
@@ -147,8 +149,17 @@ async function main() {
   assert.ok(spawnCalls.length > spawnsBefore, 'le worker doit être RELANCÉ après le kill (spawns ' + spawnsBefore + '→' + spawnCalls.length + ')');
   assert.strictEqual(bridge._workerState.pending.length, 0, 'la file doit avoir consommé le job post-timeout (pipe décoincé)');
 
+  // 7. [KITCHEN-RESILIENCE] Anti-doublon : un job dont le client a ABANDONNÉ (abortState.aborted)
+  // AVANT son tour d'impression est SAUTÉ (jamais envoyé au worker) → seul le retry imprimera.
+  await new Promise((r) => setTimeout(r, 50)); // file au repos
+  const writesBefore = writeCount;
+  const abortedResult = await bridge.enqueuePrint(Buffer.from([0x1b, 0x40, 0x60]), { aborted: true });
+  assert.strictEqual(abortedResult.ok, false, 'un job abandonné doit résoudre {ok:false}');
+  assert.match(String(abortedResult.error || ''), /client_aborted/, 'un job abandonné doit indiquer client_aborted');
+  assert.strictEqual(writeCount, writesBefore, 'un job abandonné ne doit PAS être envoyé au worker (anti-doublon head-of-line)');
+
   await new Promise((r) => server.close(r));
-  console.log('kitchen-bridge.test.js — 6/6 groupes OK (200 résultat réel, compile unique, health, 400 vide, windowsHide, TIMEOUT worker-figé → 500+kill+relance+file continue)');
+  console.log('kitchen-bridge.test.js — 7/7 groupes OK (200 résultat réel, compile unique, health, 400 vide, windowsHide, TIMEOUT worker-figé → 500+kill+relance, anti-doublon client-aborted sauté)');
   process.exit(0);
 }
 
