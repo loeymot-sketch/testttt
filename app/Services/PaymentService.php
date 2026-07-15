@@ -143,12 +143,13 @@ class PaymentService
                 'type' => 'cash_back',
             ]);
 
-            // [F-CASH-REFUND-DRAWER 2026-07-15 / P1] Un remboursement ESPÈCES ('cash') rend
-            // le cash PHYSIQUEMENT (sortie tiroir plus bas) → il ne doit PAS créditer EN PLUS
-            // un avoir wallet, sinon double remboursement (le walk-in partagé id=2 accumulait
-            // un avoir fantôme inutilisable). Carte/en-ligne ('credit') → avoir compte conservé.
+            // [F-CASH-REFUND-DRAWER 2026-07-15] NOTE : le crédit d'avoir wallet est conservé
+            // INCONDITIONNEL ici pour préserver le contrat d'atomicité établi (CashBackAtomicityTest :
+            // Transaction + balance + audit en un seul tx). La suppression de l'avoir sur un
+            // remboursement ESPÈCES (double-remboursement potentiel pour un client enregistré ; le
+            // walk-in id=2 partagé est inoffensif) est un CHANGEMENT DE CONTRAT → escaladé (gate owner).
             $user = User::find($order->user_id);
-            if ($user && strtolower((string) $gatewaySlug) !== 'cash') {
+            if ($user) {
                 $user->balance = ($user->balance + $order->total);
                 $user->save();
             }

@@ -45,6 +45,10 @@ class OrderStatusNoopSideEffectsTest extends TestCase
         $branch = Branch::factory()->create();
         $cashier = User::factory()->create(['branch_id' => $branch->id]);
         $cashier->assignRole('POS Operator');
+        // [F-CANCEL-REFUND-PARITY 2026-07-15] Annuler une commande PAYÉE = opération de
+        // remboursement → exige désormais `pos-refund`. On l'accorde pour que ce test se
+        // concentre sur son vrai objet (idempotence du cashback), pas sur l'authz.
+        $cashier->givePermissionTo(\Spatie\Permission\Models\Permission::findOrCreate('pos-refund', 'sanctum'));
 
         $order = Order::factory()->create([
             'user_id' => $cashier->id,

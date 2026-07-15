@@ -124,6 +124,8 @@ class CancelAuditTrailTest extends TestCase
             'balance' => 0,
         ]);
         $cashier->assignRole('POS Operator');
+        // [F-CANCEL-REFUND-PARITY 2026-07-15] Annuler une commande PAYÉE exige `pos-refund`.
+        $cashier->givePermissionTo(\Spatie\Permission\Models\Permission::findOrCreate('pos-refund', 'sanctum'));
 
         $order = Order::factory()->create([
             'user_id' => $cashier->id,

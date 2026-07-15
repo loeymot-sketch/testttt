@@ -31,11 +31,15 @@ class OrderStatusNoopSideEffectsSentinelTest extends TestCase
 
     public function test_repeated_cancel_invokes_cashback_once_only(): void
     {
-        Event::fake();
-
         $branch = Branch::factory()->create();
         $cashier = User::factory()->create(['branch_id' => $branch->id]);
         $cashier->assignRole('POS Operator');
+        // [F-CANCEL-REFUND-PARITY 2026-07-15] Annuler une commande PAYÉE exige `pos-refund`.
+        // NB : le grant AVANT Event::fake() — la réinitialisation du cache de permissions Spatie
+        // s'appuie sur des events ; Event::fake() posé avant avalait l'invalidation → can() faux → 403.
+        $cashier->givePermissionTo(\Spatie\Permission\Models\Permission::findOrCreate('pos-refund', 'sanctum'));
+
+        Event::fake();
 
         $order = Order::factory()->create([
             'user_id' => $cashier->id,

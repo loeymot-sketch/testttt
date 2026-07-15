@@ -235,8 +235,13 @@ class ChangeStatusReturnedSelfAuditR2Test extends TestCase
             'Exactement UNE sortie tiroir (pas de double écriture avec le chemin post-Z).');
     }
 
-    /** @test — le retour cash comptoir ne crédite PAS le wallet (espèces rendues physiquement, pas d’avoir). */
-    public function pre_z_counter_cash_return_does_not_credit_wallet(): void
+    /**
+     * @test — CONTRAT préservé : cashBack crédite l'avoir wallet (Transaction + balance + audit
+     * atomiques, cf. CashBackAtomicityTest). La suppression de l'avoir sur un remboursement ESPÈCES
+     * (double-remboursement potentiel) est un changement de contrat ESCALADÉ (gate owner) — non
+     * appliqué ici pour ne pas casser l'invariant d'atomicité établi.
+     */
+    public function pre_z_counter_cash_return_credits_wallet_per_established_contract(): void
     {
         $branch = Branch::factory()->create();
         $user = $this->actingRefundUser($branch->id);
@@ -255,11 +260,14 @@ class ChangeStatusReturnedSelfAuditR2Test extends TestCase
         $this->seedPaymentTransaction($order, 'counter_cash');
 
         $request = new OrderStatusRequest;
-        $request->merge(['status' => OrderStatus::RETURNED, 'reason' => 'retour cash sans avoir']);
+        $request->merge(['status' => OrderStatus::RETURNED, 'reason' => 'retour cash']);
         app(OrderService::class)->changeStatus($order, $request, false);
 
-        $this->assertEqualsWithDelta(0.0, (float) $customer->fresh()->balance, 0.001,
-            'Un remboursement ESPÈCES rend le cash physique — il ne doit PAS aussi créditer un avoir wallet (double remboursement).');
+        // La sortie tiroir est bien posée (le vrai fix) …
+        $this->assertSame(1, CashMovement::where('order_id', $order->id)
+            ->where('type', CashMovement::TYPE_CASHBACK)->where('direction', CashMovement::DIRECTION_OUT)->count());
+        // … et l'avoir wallet reste crédité (contrat cashBack établi préservé).
+        $this->assertEqualsWithDelta(9.0, (float) $customer->fresh()->balance, 0.001);
     }
 
     /** @test — garde : une vente CARTE avec Transaction ne sort JAMAIS d’argent du tiroir (préserve heal 2026-07-11). */

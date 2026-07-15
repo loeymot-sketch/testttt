@@ -97,7 +97,9 @@ class OrderServicesContractTest extends TestCase
         $this->assertStringContainsString('return app(PaymentService::class)->confirmCounterPayment(', $orderService);
         $this->assertSourceOrder(
             $paymentService,
-            'DB::transaction(function () use ($order, $mode, $received, $note, &$paid): void',
+            // [F-COUNTER-PHANTOM-TRANSITION 2026-07-15] closure enrichie de &$prePaidStatus
+            // (garde le broadcast ACCEPT→PREPARING sur la transition réelle, pas l'état final).
+            'DB::transaction(function () use ($order, $mode, $received, $note, &$paid, &$prePaidStatus): void',
             'if ($paid) {'
         );
         $this->assertSourceOrder($paymentService, 'if ($paid) {', 'OrderPaidAtCounter::dispatch($order, $mode);');
@@ -130,6 +132,8 @@ class OrderServicesContractTest extends TestCase
         $branch = Branch::factory()->create();
         $cashier = User::factory()->create(['branch_id' => $branch->id]);
         $cashier->assignRole('POS Operator');
+        // [F-CANCEL-REFUND-PARITY 2026-07-15] Annuler une commande PAYÉE exige `pos-refund`.
+        $cashier->givePermissionTo(\Spatie\Permission\Models\Permission::findOrCreate('pos-refund', 'sanctum'));
 
         $order = Order::factory()->create([
             'user_id' => $cashier->id,
