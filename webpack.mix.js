@@ -54,6 +54,12 @@ mix.webpackConfig({
 // Rollback: revert this file (1 line addition) — webpack will skip pos-app.js.
 mix.js('resources/js/pos-app.js', 'public/js').vue();
 
+// [GOAL RUPTURE-CARNET 2026-07-15 / W5] Carnet — mini-app PIN standalone
+// (/carnet). Partage manifest.js + vendor.js (extract global, cf. note D.6
+// ci-dessus) : daily-book.blade.php charge manifest + vendor + daily-book.
+mix.js('resources/js/daily-book/app.js', 'public/js/daily-book.js').vue()
+    .postCss('resources/css/daily-book.css', 'public/css');
+
 mix.js('resources/js/app.js', 'public/js')
     .vue()
     .extract([

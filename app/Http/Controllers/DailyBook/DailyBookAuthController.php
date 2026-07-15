@@ -27,7 +27,14 @@ class DailyBookAuthController extends Controller
         $request->session()->regenerate();
         $request->session()->put(EnsureDailyBookPin::SESSION_KEY, time());
 
-        return response()->json(['message' => 'Carnet déverrouillé.', 'unlocked' => true]);
+        // regenerate() invalide AUSSI le token CSRF embarqué dans la page —
+        // on renvoie le nouveau pour que le client le rafraîchisse (sinon 419
+        // sur le POST suivant, constaté e2e navigateur 2026-07-15).
+        return response()->json([
+            'message' => 'Carnet déverrouillé.',
+            'unlocked' => true,
+            'csrf' => csrf_token(),
+        ]);
     }
 
     public function lock(Request $request): JsonResponse

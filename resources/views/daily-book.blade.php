@@ -10,6 +10,9 @@
 <body>
     {{-- [GOAL RUPTURE-CARNET 2026-07-15 / W5] Carnet — app Vue légère mobile-first. --}}
     <div id="daily-book-app"></div>
+    {{-- Extract global Mix : vendor partagé (cf. webpack.mix.js note D.6). --}}
+    <script src="{{ asset(mix('js/manifest.js')) }}"></script>
+    <script src="{{ asset(mix('js/vendor.js')) }}"></script>
     <script src="{{ asset(mix('js/daily-book.js')) }}"></script>
 </body>
 </html>
