@@ -244,6 +244,23 @@
                     <template #icon>🏦</template>
                     <span class="hidden lg:inline">{{ $t('label.cash_session_header_btn') }}</span>
                 </PosV5Button>
+                <!--
+                  [GOAL RUPTURE-CARNET 2026-07-15 / W2] Bouton « Rupture » — ouvre le
+                  panel 86 partagé caisse+cuisine. Gate serveur authoritaire :
+                  permission `items_edit|availability_toggle` (AvailabilityController).
+                  UI masquée tant que la permission n'est pas chargée/accordée.
+                -->
+                <PosV5Button
+                    v-if="canToggleAvailability"
+                    variant="ghost"
+                    size="md"
+                    data-testid="pos-availability-panel-open"
+                    :title="$t('availability.panel_title')"
+                    @click="showAvailabilityPanel = true"
+                >
+                    <template #icon>🚫</template>
+                    <span class="hidden lg:inline">{{ $t('availability.button_label') }}</span>
+                </PosV5Button>
             </nav>
         </header>
 
@@ -1383,6 +1400,15 @@
         </span>
     </button>
 
+    <!-- [GOAL RUPTURE-CARNET 2026-07-15 / W2] Panel rupture (86). La mise à
+         jour des tuiles POS passe par le listener Stock86 existant (broadcast
+         ItemAvailabilityChanged) — l'événement `changed` ne sert qu'au refetch
+         local du panel, aucun double-traitement des tuiles. -->
+    <AvailabilityTogglePanel
+        :visible="showAvailabilityPanel"
+        @close="showAvailabilityPanel = false"
+    />
+
     <!-- Panel commandes borne cash (ouvert depuis la barre du haut) -->
     <transition name="slide-panel">
       <div v-if="showKioskCashPanel" class="kiosk-cash-panel-overlay" @click.self="showKioskCashPanel = false">
@@ -1689,6 +1715,8 @@ import labelEnum from "../../../enums/modules/labelEnum";
 // terminal/PAID guards remain authoritative; this UI gating only hides the
 // visual entry point for orders where redeem would always 422/409.
 import PosLoyaltyRedeemModal from "./PosLoyaltyRedeemModal.vue";
+// [GOAL RUPTURE-CARNET 2026-07-15 / W2] Panel rupture (86) partagé caisse+cuisine.
+import AvailabilityTogglePanel from "../shared/AvailabilityTogglePanel.vue";
 import {
     extractLoyaltyOrderInfo,
     canShowLoyaltyMainCta as resolveCanShowLoyaltyMainCta,
@@ -1775,6 +1803,8 @@ export default {
         // redeem modal — co-existing with the canonical CTA on
         // PosOrderShowComponent (defense-in-depth, both paths reachable).
         PosLoyaltyRedeemModal,
+        // [GOAL RUPTURE-CARNET 2026-07-15 / W2] Rupture produits (86).
+        AvailabilityTogglePanel,
     },
     // [POS-OFFLINE-WIRE 2026-05-17] Composition-API bridge: expose the offline
     // composable refs (isOnline, queueDepth) and helpers (enqueueOrder,
@@ -1809,6 +1839,8 @@ export default {
             kioskCashOrders: [],
             kioskCashLoading: false,
             showKioskCashPanel: false,
+            // [GOAL RUPTURE-CARNET 2026-07-15 / W2] Panel rupture produits (86).
+            showAvailabilityPanel: false,
             // [WEB-CAISSE-SYNC 2026-07-13] Commandes WEB en attente (à traiter). Le paiement en
             // ligne étant OFF, les commandes du site arrivent PENDING/UNPAID et ne remontent PAS
             // dans la file borne « à encaisser ». Ce panneau les rend visibles sur l'écran caisse
@@ -2077,6 +2109,19 @@ export default {
                 : (raw && Array.isArray(raw.data) ? raw.data : []);
             const entry = perms.find((p) => p && p.url === 'online-orders');
             return !!(entry && entry.access === true);
+        },
+        // [GOAL RUPTURE-CARNET 2026-07-15 / W2] Bouton « Rupture » visible si le
+        // staff porte `availability_toggle` (url availability-toggle) OU
+        // `items_edit` (url items/edit) — miroir du gate serveur
+        // AvailabilityController `permission:items_edit|availability_toggle`.
+        canToggleAvailability: function () {
+            const raw = this.$store.getters.authPermission;
+            const perms = Array.isArray(raw)
+                ? raw
+                : (raw && Array.isArray(raw.data) ? raw.data : []);
+            return perms.some((p) => p
+                && (p.url === 'availability-toggle' || p.url === 'items/edit')
+                && p.access === true);
         },
         // [Q10 P-OWNER 2026-05-21] Localized "Mis à jour il y a Xs" labels
         // for the X2 shortcut panels' empty/idle state. Bound to

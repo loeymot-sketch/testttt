@@ -22,9 +22,15 @@ class AvailabilityTogglePermissionSeeder extends Seeder
     public function run(): void
     {
         foreach (['sanctum', 'web'] as $guard) {
+            // `title`/`url` : colonnes custom du modèle Permission de ce repo —
+            // `url` sert de clé de matching côté UI (AppLibrary::permissionWithAccess,
+            // cf. PosComponent `canProcessWebOrders` qui matche p.url).
             $permission = Permission::firstOrCreate([
                 'name' => 'availability_toggle',
                 'guard_name' => $guard,
+            ], [
+                'title' => 'Rupture produits (86)',
+                'url' => 'availability-toggle',
             ]);
 
             foreach (['Admin', 'Branch Manager', 'POS Operator', 'Chef'] as $roleName) {

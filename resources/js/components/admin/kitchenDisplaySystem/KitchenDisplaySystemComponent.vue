@@ -7,6 +7,19 @@
     recents in active grid vs. full-day history viewer in drawer).
   -->
   <div class="kds-history-trigger-row">
+    <!-- [GOAL RUPTURE-CARNET 2026-07-15 / W3] Bouton « Rupture » cuisine — rendu
+         au-dessus des DEUX layouts (V2 + legacy), comme Historique, pour que le
+         Chef y accède quel que soit le mode de grille actif. -->
+    <button
+      type="button"
+      class="kds-history-trigger kds-rupture-trigger"
+      data-testid="kds-availability-panel-open"
+      :aria-label="$t('availability.panel_title')"
+      @click="showAvailabilityPanel = true"
+    >
+      <span aria-hidden="true">🚫</span>
+      <span class="kds-history-trigger__label">{{ $t('availability.button_label') }}</span>
+    </button>
     <button
       type="button"
       class="kds-history-trigger"
@@ -23,6 +36,12 @@
     :dir="direction"
     @close="historyDrawerOpen = false"
     @recalled="onKdsOrderRecalled"
+  />
+  <!-- [GOAL RUPTURE-CARNET 2026-07-15 / W3] Panel rupture (86) cuisine —
+       propagation borne/caisse/web via ItemAvailabilityChanged + outbox. -->
+  <AvailabilityTogglePanel
+    :visible="showAvailabilityPanel"
+    @close="showAvailabilityPanel = false"
   />
   <!--
     [kds/sprint-2 V-5] Feature-flagged V2 layout. When useV2Layout is true
@@ -1128,6 +1147,8 @@ const KITCHEN_PRINT_RETRY_MS = 20000;
 import KdsV2Grid from "./KdsV2Grid.vue";
 // [Wave X3 2026-05-21] KDS Historique du jour — read-only day-history drawer.
 import KdsHistoryDrawer from "./KdsHistoryDrawer.vue";
+// [GOAL RUPTURE-CARNET 2026-07-15 / W3] Panel rupture (86) partagé caisse+cuisine.
+import AvailabilityTogglePanel from "../shared/AvailabilityTogglePanel.vue";
 
 // [Phase-7 / T13–T14] Fil cuisine : stations, filtre, bump / statut, timers
 // d’attente (kdsDisplay), son — ne pas mélanger avec de la logique de caisse
@@ -1142,12 +1163,16 @@ export default {
     SwiperSlide,
     KdsV2Grid,
     KdsHistoryDrawer,
+    // [GOAL RUPTURE-CARNET 2026-07-15 / W3] Rupture produits (86) cuisine.
+    AvailabilityTogglePanel,
   },
   data() {
     return {
       loading: {
         isActive: false,
       },
+      // [GOAL RUPTURE-CARNET 2026-07-15 / W3] Panel rupture produits (86).
+      showAvailabilityPanel: false,
       props: {
         search: {
           paginate: 0,
