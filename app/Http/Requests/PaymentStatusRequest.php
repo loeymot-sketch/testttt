@@ -39,6 +39,12 @@ class PaymentStatusRequest extends FormRequest
 
         return [
             'payment_status' => ['required', 'integer', Rule::in($allowed)],
+            // [CASH-01 2026-07-15] Booléen d'INTENTION (jamais une valeur tender) : émis
+            // uniquement par le bouton « Encaisser & Valider » online pour signaler un
+            // encaissement espèces-comptoir. Ne peut PAS injecter de tender CARD ni polluer
+            // les endpoints POS/table partageant cette request. Le serveur DÉRIVE CASH sous
+            // garde complète (OrderService::changePaymentStatus).
+            'collect_counter_cash' => ['sometimes', 'boolean'],
         ];
     }
 

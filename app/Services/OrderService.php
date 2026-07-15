@@ -2558,13 +2558,21 @@ class OrderService
                 $targetPaymentStatus
             );
 
+            // [CASH-01 2026-07-15] Flag by-ref remonté hors closure (miroir du pattern
+            // &$paid de confirmCounterPayment) : TRUE seulement si CET encaissement est un
+            // encaissement ESPÈCES-COMPTOIR d'une commande online TAKEAWAY (garde stricte
+            // posée dans la tx). Le mouvement tiroir + pos_payment_method=CASH sont ensuite
+            // écrits POST-COMMIT, conditionnés à l'écriture réelle de la ligne tiroir.
+            $didCounterCash = false;
+
             // [F-VERIFY-09-01 P13] Atomic Order save + ActionLog + AuditLog +
             // domain event dispatch. DispatchableAfterCommit defers the actual
             // event firing until COMMIT (gate C9 — KI-001).
             DB::transaction(function () use (
                 $order,
                 $request,
-                $targetPaymentStatus
+                $targetPaymentStatus,
+                &$didCounterCash
             ): void {
                 // [GOAL-2026-05-29 F2] Re-fetch the row WITH lockForUpdate so two
                 // concurrent staff requests (distinct idempotency keys) cannot BOTH
@@ -2631,6 +2639,30 @@ class OrderService
                         $locked->fiscal_dated_at = now();
                     }
                 }
+
+                // [CASH-01 2026-07-15 / P1 cash-trail] Détermine si CET encaissement est un
+                // encaissement ESPÈCES-COMPTOIR d'une commande ONLINE à emporter — auquel cas
+                // une ligne de tiroir (CashMovement IN) + pos_payment_method=CASH seront écrits
+                // POST-COMMIT (conditionnés à l'écriture réelle du tiroir). Sans ce fix, ce chemin
+                // scellait la vente dans le Z (fiscal_seq) mais n'enregistrait AUCUN mouvement
+                // tiroir → variance de réconciliation + ventilation tender du Z corrompue.
+                // Garde POSITIVE ultra-stricte (allowlist) — plan adversaire durci :
+                //   - booléen d'INTENTION `collect_counter_cash` émis UNIQUEMENT par le bouton
+                //     « Encaisser & Valider » online (jamais le dropdown générique « marquer payé »)
+                //     → aucune valeur tender injectable (contrairement à un champ pos_payment_method brut) ;
+                //   - order_type===TAKEAWAY (exclut DELIVERY=5/légataire/POS=15/table=20 → aucune
+                //     mis-attribution du cash livreur au tiroir comptoir) ;
+                //   - transaction null (exclut toute vente carte/en-ligne) ;
+                //   - UNPAID→PAID (exclut les paiements déjà encaissés / PENDING_COUNTER) ;
+                //   - source ∉ [pos, uber_eats]. On NE touche PAS pos_payment_method ici.
+                $didCounterCash = $targetPaymentStatus === \App\Enums\PaymentStatus::PAID
+                    && $freshOld === \App\Enums\PaymentStatus::UNPAID
+                    && request()?->boolean('collect_counter_cash') === true
+                    && (int) $locked->payment_method === \App\Enums\PaymentGateway::CASH_ON_DELIVERY
+                    && ! $locked->transaction
+                    && $locked->pos_payment_method === null
+                    && (int) $locked->order_type === \App\Enums\OrderType::TAKEAWAY
+                    && ! in_array($locked->source_surface, ['pos', 'uber_eats'], true);
 
                 $locked->payment_status = $request->payment_status;
                 $locked->save();
@@ -2706,6 +2738,43 @@ class OrderService
                 // marker reflect the persisted state.
                 $order->setRawAttributes($locked->getAttributes(), true);
             });
+
+            // [CASH-01 2026-07-15 / P1 cash-trail] Encaissement ESPÈCES-COMPTOIR d'une
+            // commande online à emporter → enregistrer la ligne de TIROIR (CashMovement IN)
+            // POST-COMMIT (miroir de confirmCounterPayment:503). L'ordre est : (1) garde
+            // d'EXISTENCE (recordMovement n'a aucun dédup order_id → anti-double au niveau DB) ;
+            // (2) recordCashOrderMovement best-effort (strict=false → NO-CRASH sans session
+            // tiroir : la ligne est simplement sautée + [F-003] loggé) ; (3) pos_payment_method
+            // =CASH persisté UNIQUEMENT si la ligne IN a RÉELLEMENT été écrite → jamais de
+            // ventilation Espèces sans contrepartie tiroir (zéro variance Z↔tiroir NOUVELLE),
+            // et symétrie refund (OrderService:2333 ne sort du tiroir que si une entrée existe).
+            // Hors tx fiscale (le fiscal_seq est déjà scellé) ; try/catch = totalement non-bloquant.
+            if ($didCounterCash) {
+                try {
+                    $alreadyIn = \App\Models\CashMovement::withoutGlobalScopes()
+                        ->where('order_id', (int) $order->id)
+                        ->where('type', \App\Models\CashMovement::TYPE_ORDER_PAYMENT)
+                        ->where('direction', \App\Models\CashMovement::DIRECTION_IN)
+                        ->exists();
+                    if (! $alreadyIn) {
+                        app(PaymentService::class)->recordCashOrderMovement($order, 'Encaissement comptoir (commande en ligne)');
+                        $writtenIn = \App\Models\CashMovement::withoutGlobalScopes()
+                            ->where('order_id', (int) $order->id)
+                            ->where('type', \App\Models\CashMovement::TYPE_ORDER_PAYMENT)
+                            ->where('direction', \App\Models\CashMovement::DIRECTION_IN)
+                            ->exists();
+                        if ($writtenIn) {
+                            $order->pos_payment_method = \App\Enums\PosPaymentMethod::CASH;
+                            $order->save();
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning('[F-CASH-01] hook tiroir commande en ligne non-bloquant', [
+                        'order_id' => $order->id ?? null,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
 
             // [F-VERIFY-09-01 P13] Persist Idempotency-Key replay marker (TTL 24h).
             if ($cacheKey !== null) {

@@ -494,6 +494,11 @@ export default {
                     this.$store.dispatch("onlineOrder/changePaymentStatus", {
                         id: this.$route.params.id,
                         payment_status: paymentStatusEnum.PAID,
+                        // [CASH-01 2026-07-15] Signale un encaissement ESPÈCES-COMPTOIR →
+                        // le serveur enregistre la ligne de tiroir + pos_payment_method=CASH.
+                        // Booléen d'intention (jamais envoyé par le dropdown générique
+                        // « marquer payé » l.558 → carte/marquage sans mouvement tiroir).
+                        collect_counter_cash: true,
                     }).then((res) => {
                         this.payment_status = res.data.data.payment_status;
                         return this.$store.dispatch("onlineOrder/changeStatus", {
