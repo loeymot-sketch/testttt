@@ -38,6 +38,17 @@ class HealthzCheckCommand extends Command
 
     public function handle(): int
     {
+        // [F-SCHEDULER-DEADMAN 2026-07-15 / P1] Battement de cœur du scheduler : cette lane
+        // tourne toutes les 5 min via schedule:run. Si le scheduler MEURT sur la box (cron/
+        // launchd absent — cas réel : backup NF525 mort 21 j sans alerte), ce timestamp se
+        // fige → HealthController::ready() le détecte (check `scheduler`) et rend la mort
+        // VISIBLE pour UptimeRobot. Cache::forever (pas de TTL) : c'est la fraîcheur qui compte.
+        try {
+            \Illuminate\Support\Facades\Cache::forever('scheduler:last_tick', now()->timestamp);
+        } catch (\Throwable $e) {
+            // best-effort : ne jamais faire échouer la lane santé sur l'écriture du battement.
+        }
+
         $checks = [
             'db'            => $this->checkDb(),
             'redis'         => $this->checkRedis(),

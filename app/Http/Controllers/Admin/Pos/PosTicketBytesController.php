@@ -25,9 +25,21 @@ class PosTicketBytesController extends Controller
 {
     public function show(Request $request, int $order): JsonResponse
     {
-        abort_unless($request->user()?->can('pos'), 403);
-
         $ticket = $request->query('ticket') === 'kitchen' ? 'kitchen' : 'client';
+
+        // [F-KDS-KITCHEN-TICKET-AUTHZ 2026-07-15 / P1] Le ticket CUISINE est lu par
+        // l'auto-impression + la réimpression du KDS, opéré par le rôle Chef (landing_url
+        // 'kitchen-display-system') qui n'a PAS `pos` → 403 en boucle, auto-print/reprint
+        // cassés à 100 %. Ce endpoint est LECTURE SEULE (aucun incrément NF525 — cf. docblock ;
+        // l'incrément vit dans PosReceiptPrintController::increment). On autorise donc la lecture
+        // du ticket 'kitchen' aux détenteurs de `kitchen-display-system`. Le ticket CLIENT (reçu
+        // fiscal) reste gardé sur `pos`. La portée branche reste appliquée plus bas.
+        abort_unless(
+            $request->user()?->can('pos')
+                || ($ticket === 'kitchen' && $request->user()?->can('kitchen-display-system')),
+            403
+        );
+
         $isDuplicata = filter_var($request->query('duplicata', false), FILTER_VALIDATE_BOOLEAN);
 
         $branchId = (int) $request->user()->branch_id;

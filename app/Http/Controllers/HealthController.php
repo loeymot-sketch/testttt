@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Redis;
@@ -55,9 +56,19 @@ class HealthController extends Controller
             'redis' => $this->checkRedis(),
             'queue_worker' => $this->checkQueueWorker(),
             'broadcast_config' => $this->checkBroadcastConfig(),
+            // [F-SCHEDULER-DEADMAN 2026-07-15 / P1] Dead-man runtime du scheduler + fraîcheur
+            // backup NF525. Advisory hors production (les box dev ne lancent pas le daemon
+            // schedule:run) → surfacés dans le rapport mais ne font PAS basculer /ready en 503 ;
+            // en PRODUCTION ils gardent la readiness → UptimeRobot voit 503 si le scheduler meurt
+            // ou si le dernier backup dépasse 26 h (mort silencieuse jusqu'ici invisible des sondes).
+            'scheduler' => $this->checkScheduler(),
+            'backup_age' => $this->checkBackupAge(),
         ];
 
-        $allOk = collect($checks)->every(fn ($c) => $c['status'] === 'ok');
+        $gating = app()->environment('production')
+            ? $checks
+            : array_diff_key($checks, ['scheduler' => 1, 'backup_age' => 1]);
+        $allOk = collect($gating)->every(fn ($c) => $c['status'] === 'ok');
 
         return response()->json([
             'status' => $allOk ? 'ok' : 'degraded',
@@ -148,6 +159,47 @@ class HealthController extends Controller
      * tuneable lives on the `foodking:outbox:monitor` command (--threshold).
      * /ready is a binary "rotate me out" probe, not a tuning surface.
      */
+    /**
+     * [F-SCHEDULER-DEADMAN 2026-07-15 / P1] Le scheduler écrit `scheduler:last_tick` toutes
+     * les 5 min (HealthzCheckCommand). Si le tick est absent ou > 10 min, le daemon schedule:run
+     * est probablement mort → backup NF525 + filets fiscaux (Z-close, retry-alloc, outbox:rescue)
+     * ne tournent plus silencieusement.
+     */
+    private function checkScheduler(): array
+    {
+        try {
+            $lastTick = Cache::get('scheduler:last_tick');
+        } catch (\Throwable $e) {
+            return ['status' => 'degraded', 'detail' => 'cache unavailable for scheduler tick'];
+        }
+        if ($lastTick === null) {
+            return ['status' => 'degraded', 'detail' => 'no scheduler tick recorded yet'];
+        }
+        $ageMin = (now()->timestamp - (int) $lastTick) / 60;
+        return $ageMin > 10
+            ? ['status' => 'degraded', 'detail' => sprintf('scheduler last tick %.0fmin ago (>10)', $ageMin)]
+            : ['status' => 'ok'];
+    }
+
+    /**
+     * [F-SCHEDULER-DEADMAN 2026-07-15 / P1] Fraîcheur du dernier backup quotidien NF525.
+     * Sur la box locale (DB fiscale courante), un backup > 26 h = fenêtre de perte de données
+     * réelle en cas de panne disque. Rend l'oubli du backup visible avant l'incident.
+     */
+    private function checkBackupAge(): array
+    {
+        $dir = storage_path('backups/db-daily');
+        $files = @glob($dir.'/*.sql.gz') ?: [];
+        if (empty($files)) {
+            return ['status' => 'degraded', 'detail' => 'no daily backup found'];
+        }
+        $newest = max(array_map('filemtime', $files));
+        $ageHours = (now()->timestamp - (int) $newest) / 3600;
+        return $ageHours > 26
+            ? ['status' => 'degraded', 'detail' => sprintf('newest backup %.1fh old (>26h)', $ageHours)]
+            : ['status' => 'ok'];
+    }
+
     private function checkQueueWorker(): array
     {
         try {
