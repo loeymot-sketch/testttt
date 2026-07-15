@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────────────────
 # DÉPLOIEMENT PROD — 2026-07-15 (demandé owner : « push et deploy et test-e2e »)
-# Cible : origin/pos/category-first-caisse-2026-06-23 @ 8399ba5c1
+# Cible : origin/pos/category-first-caisse-2026-06-23 @ cef7b7a12
 #
 # Ce que ça déploie (sessions 2026-07-15) :
 #  - RUPTURE 86 caisse+cuisine : permission availability_toggle + panel partagé
@@ -22,7 +22,7 @@
 # ─────────────────────────────────────────────────────────────────────────────
 set -uo pipefail
 BRANCH="pos/category-first-caisse-2026-06-23"
-EXPECTED="8399ba5c1"
+EXPECTED="cef7b7a12"
 
 echo "==> Déploiement prod sur le VPS (lecayenne)…"
 ssh -o ConnectTimeout=25 lecayenne "cd /var/www/lecayenne && \
@@ -44,8 +44,8 @@ ssh -o ConnectTimeout=25 lecayenne "cd /var/www/lecayenne && \
   echo '== CONFIG cache ==' && php artisan config:clear >/dev/null && php artisan config:cache >/dev/null && php artisan cache:clear >/dev/null && echo 'config OK' && \
   echo '== QUEUE restart ==' && php artisan queue:restart >/dev/null && echo 'queue OK' && \
   echo '== NF525 chain ==' && php artisan fiscal:verify-chain --all 2>&1 | tail -1 && \
-  echo '== SMOKE (nginx, Host requis — le port 8766 n existe plus) ==' && \
-  for p in kiosk/idle carnet admin/pos login; do curl -sk -o /dev/null -w "\$p: %{http_code}\n" -H 'Host: vps-418872ac.vps.ovh.net' https://127.0.0.1/\$p; done"
+  echo '== SMOKE (nginx, Host requis) ==' && \
+  for p in kiosk/idle carnet admin/pos login; do code=\$(curl -sk -o /dev/null -w '%{http_code}' -H 'Host: vps-418872ac.vps.ovh.net' https://127.0.0.1/\$p); echo \"\$p: \$code\"; done"
 rc=$?
 echo ""
 if [ $rc -ne 0 ]; then echo "Échec (code $rc)."; exit $rc; fi
