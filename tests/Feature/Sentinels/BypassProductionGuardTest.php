@@ -19,6 +19,7 @@ class BypassProductionGuardTest extends TestCase
     public function test_payment_bypass_throws_in_production(): void
     {
         $this->app['env'] = 'production';
+        config(['daily_book.pin' => '9137']); // [TEST-E2E-HEAL 2026-07-15] guard PIN Carnet ne préempte pas
         config(['payment.bypass.enabled' => true]);
         config(['printing.bypass.enabled' => false]);
 
@@ -32,6 +33,7 @@ class BypassProductionGuardTest extends TestCase
     public function test_printing_bypass_throws_in_production(): void
     {
         $this->app['env'] = 'production';
+        config(['daily_book.pin' => '9137']); // [TEST-E2E-HEAL 2026-07-15] guard PIN Carnet ne préempte pas
         config(['payment.bypass.enabled' => false]);
         config(['printing.bypass.enabled' => true]);
         // Set the other prod-required configs so we hit the printing guard, not the broadcast guard
@@ -49,6 +51,7 @@ class BypassProductionGuardTest extends TestCase
     public function test_both_bypass_disabled_in_production_is_ok_for_bypass_check(): void
     {
         $this->app['env'] = 'production';
+        config(['daily_book.pin' => '9137']); // [TEST-E2E-HEAL 2026-07-15] guard PIN Carnet ne préempte pas
         config(['payment.bypass.enabled' => false]);
         config(['printing.bypass.enabled' => false]);
         // Set required prod configs so the broadcast/queue/cache guards don't throw

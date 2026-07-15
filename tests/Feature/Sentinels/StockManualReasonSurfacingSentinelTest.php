@@ -147,8 +147,12 @@ class StockManualReasonSurfacingSentinelTest extends TestCase
             'manual_unavailable_since' => now(),
         ]);
 
+        // [UX-86 2026-07-15 commit 82be92370] Le message client ne FUITE PLUS le code raison brut
+        // (supplier_issue) — il est nommé/friendly. La raison brute reste surfacée dans le
+        // composition_snapshot (cf. tests _overrides_positive_on_hand). On vérifie ici le BLOCAGE
+        // effectif de l'extra manuellement rupturé, via le message nommé + le nom de l'article.
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('supplier_issue');
+        $this->expectExceptionMessage('Cheddar');
 
         app(ChoiceAvailabilityResolver::class)->assertSelectionsOrderable(
             (int) $branch->id,

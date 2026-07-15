@@ -23,6 +23,7 @@ class CorsAppUrlProductionGuardSentinelTest extends TestCase
     public function test_production_env_with_empty_app_url_throws(): void
     {
         $this->app['env'] = 'production';
+        config(['daily_book.pin' => '9137']); // [TEST-E2E-HEAL 2026-07-15] guard PIN Carnet ne préempte pas
         config(['app.url' => null]);
 
         // Neutralize sibling prod guards so we only test our own.
@@ -48,6 +49,7 @@ class CorsAppUrlProductionGuardSentinelTest extends TestCase
     public function test_production_env_with_app_url_set_does_not_throw_cors_guard(): void
     {
         $this->app['env'] = 'production';
+        config(['daily_book.pin' => '9137']); // [TEST-E2E-HEAL 2026-07-15] guard PIN Carnet ne préempte pas
         config(['app.url' => 'https://lecayenne.example.com']);
 
         config(['idempotency.enabled' => true]);

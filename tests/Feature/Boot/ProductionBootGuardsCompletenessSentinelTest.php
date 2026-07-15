@@ -480,6 +480,11 @@ class ProductionBootGuardsCompletenessSentinelTest extends TestCase
             // [L2-HEAL-04 2026-05-24] Public mail host so the MAIL_HOST
             // boot guard does not trip while another guard is under test.
             'mail.mailers.smtp.host'   => 'smtp.mailgun.org',
+            // [TEST-E2E-HEAL 2026-07-15] Carnet DAILY_BOOK_PIN boot guard (AppServiceProvider,
+            // commit ~82be92370) refuse le boot prod si PIN=2468 (défaut). On pose un PIN valide
+            // ici pour qu'il ne préempte pas le guard sous test (sinon TOUS les datasets échouent
+            // avec le message PIN au lieu du message du guard ciblé).
+            'daily_book.pin'           => '9137',
         ]);
     }
 }

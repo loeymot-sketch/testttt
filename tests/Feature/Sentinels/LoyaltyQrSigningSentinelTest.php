@@ -291,6 +291,9 @@ class LoyaltyQrSigningSentinelTest extends TestCase
         config(['loyalty.qr.secret' => '']);
 
         // Neutralize sibling production guards so we only assert on our own.
+        // [TEST-E2E-HEAL 2026-07-15] inclut le guard Carnet DAILY_BOOK_PIN (défaut 2468) qui
+        // sinon préempte le guard LOYALTY_QR_SECRET sous test.
+        config(['daily_book.pin' => '9137']);
         config(['pos.simulation_hardware' => false]);
         config(['payment.bypass.enabled' => false]);
         config(['printing.bypass.enabled' => false]);

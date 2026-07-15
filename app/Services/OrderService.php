@@ -2751,14 +2751,14 @@ class OrderService
             // Hors tx fiscale (le fiscal_seq est déjà scellé) ; try/catch = totalement non-bloquant.
             if ($didCounterCash) {
                 try {
-                    $alreadyIn = \App\Models\CashMovement::withoutGlobalScopes()
+                    $alreadyIn = \App\Models\CashMovement::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
                         ->where('order_id', (int) $order->id)
                         ->where('type', \App\Models\CashMovement::TYPE_ORDER_PAYMENT)
                         ->where('direction', \App\Models\CashMovement::DIRECTION_IN)
                         ->exists();
                     if (! $alreadyIn) {
                         app(PaymentService::class)->recordCashOrderMovement($order, 'Encaissement comptoir (commande en ligne)');
-                        $writtenIn = \App\Models\CashMovement::withoutGlobalScopes()
+                        $writtenIn = \App\Models\CashMovement::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
                             ->where('order_id', (int) $order->id)
                             ->where('type', \App\Models\CashMovement::TYPE_ORDER_PAYMENT)
                             ->where('direction', \App\Models\CashMovement::DIRECTION_IN)

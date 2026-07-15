@@ -196,7 +196,9 @@ class ComposerStepConstraintTest extends TestCase
         ]);
 
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('indisponible pour cette branche');
+        // [UX-86 2026-07-15 commit 82be92370] Messages d'indispo nommés : « X » n'est plus
+        // disponible — merci de modifier/retirer. Assertion alignée sur le wording nommé livré.
+        $this->expectExceptionMessage("n'est plus disponible");
 
         $this->pricing->calculateOrder(
             PricingRequest::forKiosk(1, $this->branch->id, [$this->line($item->id, [], [], [['id' => $addon->id]])], 0, 0, 0.0),
@@ -295,7 +297,7 @@ class ComposerStepConstraintTest extends TestCase
         ]);
 
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('indisponible');
+        $this->expectExceptionMessage("n'est plus disponible");
 
         $this->pricing->calculateOrder(
             PricingRequest::forKiosk(
@@ -343,7 +345,7 @@ class ComposerStepConstraintTest extends TestCase
         ]);
 
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('indisponible');
+        $this->expectExceptionMessage("n'est plus disponible");
 
         $this->pricing->calculateOrder(
             PricingRequest::forKiosk(1, $this->branch->id, [$this->line($item->id, [], [], [['id' => $addon->id]])], 0, 0, 0.0),

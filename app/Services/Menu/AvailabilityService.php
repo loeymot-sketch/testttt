@@ -266,7 +266,10 @@ final class AvailabilityService
                 // [DEEP-R2 2026-07-15 / UX borne] Nom du produit, pas son ID technique ni
                 // le code brut de raison — le message remonte tel quel à l'écran client
                 // (constaté e2e : « Article 103 indisponible … (stock_rupture) »).
-                $itemName = (string) (\App\Models\Item::withoutGlobalScopes()
+                // [TEST-E2E-HEAL 2026-07-15] Scope précis : Item n'a PAS de BranchScope, seulement
+                // SoftDeletes → on bypasse UNIQUEMENT le soft-delete pour résoudre le nom même si
+                // l'item a été supprimé (message client). Évite le pluriel (sentinelle WGS Z6-P1).
+                $itemName = (string) (\App\Models\Item::withoutGlobalScope(\Illuminate\Database\Eloquent\SoftDeletingScope::class)
                     ->whereKey($itemId)->value('name') ?? "Article {$itemId}");
                 throw new \InvalidArgumentException(
                     "« {$itemName} » n'est plus disponible — merci de le retirer de votre panier.",

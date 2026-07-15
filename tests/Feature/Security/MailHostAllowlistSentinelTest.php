@@ -296,6 +296,9 @@ class MailHostAllowlistSentinelTest extends TestCase
             // trip the guard. Tests that exercise the guard explicitly
             // override this.
             'mail.mailers.smtp.host'   => 'smtp.mailgun.org',
+            // [TEST-E2E-HEAL 2026-07-15] PIN Carnet valide pour que le guard DAILY_BOOK_PIN
+            // (défaut 2468 → refuse boot prod) ne préempte pas le guard MAIL_HOST sous test.
+            'daily_book.pin'           => '9137',
         ]);
     }
 }

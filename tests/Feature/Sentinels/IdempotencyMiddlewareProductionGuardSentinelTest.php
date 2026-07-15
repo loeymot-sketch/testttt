@@ -25,6 +25,7 @@ class IdempotencyMiddlewareProductionGuardSentinelTest extends TestCase
     public function test_production_env_with_idempotency_disabled_throws(): void
     {
         $this->app['env'] = 'production';
+        config(['daily_book.pin' => '9137']); // [TEST-E2E-HEAL 2026-07-15] guard PIN Carnet ne préempte pas
         config(['idempotency.enabled' => false]);
 
         // Neutralize sibling prod guards so we only test our own.
@@ -46,6 +47,7 @@ class IdempotencyMiddlewareProductionGuardSentinelTest extends TestCase
     public function test_production_env_with_idempotency_enabled_does_not_throw_idempotency_guard(): void
     {
         $this->app['env'] = 'production';
+        config(['daily_book.pin' => '9137']); // [TEST-E2E-HEAL 2026-07-15] guard PIN Carnet ne préempte pas
         config(['idempotency.enabled' => true]);
 
         config(['pos.simulation_hardware' => false]);
