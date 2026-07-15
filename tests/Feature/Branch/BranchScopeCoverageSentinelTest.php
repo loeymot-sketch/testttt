@@ -63,6 +63,10 @@ class BranchScopeCoverageSentinelTest extends TestCase
         'App\\Models\\UpsellRule'            => 'BASELINE_V1_2026-05-18 — V1.0.2 heal C-P0-D',
         'App\\Models\\ActionLog'             => 'BASELINE_V1_2026-05-18 — V1.0.2 heal C-P0-D',
         'App\\Models\\DomainEvent'           => 'BASELINE_V1_2026-05-18 — V1.0.2 heal C-P0-D (Round 2 DBA-002)',
+        // [F-DAILYBOOK-EXEMPT 2026-07-15] Mini-app carnet (feat b93c3208c) : le modèle documente
+        // explicitement « PAS de BranchScope : V1 LOCAL mono-branche (branch_id=1 fixe) ». Exemption
+        // déclarée ici comme le sentinel l'exige (l'oubli de cette ligne le rendait rouge). V2-SaaS blocker.
+        'App\\Models\\DailyBookEntry'        => 'BASELINE_V1_2026-07-15 — carnet mono-branche V1 (branch_id fixe), V1.0.2 heal target',
     ];
 
     public function test_every_model_with_branch_id_column_declares_branch_scope(): void
