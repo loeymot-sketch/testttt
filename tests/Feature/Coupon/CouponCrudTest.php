@@ -192,4 +192,27 @@ class CouponCrudTest extends TestCase
         $resp2->assertStatus(200);
         $resp2->assertJsonFragment(['status' => Status::ACTIVE]);
     }
+
+    /**
+     * [F-COUPON-ENDDATE-INCLUSIVE 2026-07-15 / P3] Une date de fin saisie sans heure doit être
+     * bornée à la fin de journée (23:59:59) pour que le dernier jour de validité soit inclusif —
+     * sinon un coupon « valable jusqu'au 31/12 » mourait dès 00:00:01 le 31/12.
+     */
+    public function test_end_date_without_time_is_stored_inclusive_end_of_day(): void
+    {
+        $this->actingAsAdmin();
+
+        $resp = $this->postJson('/api/admin/coupon', $this->validPayload([
+            'code'     => 'ENDDATEINC',
+            'end_date' => '2026-12-31', // date seule, sans heure
+        ]));
+        $resp->assertStatus(201);
+
+        $coupon = Coupon::where('code', 'ENDDATEINC')->first();
+        $this->assertSame(
+            '2026-12-31 23:59:59',
+            Carbon::parse($coupon->end_date)->format('Y-m-d H:i:s'),
+            'La date de fin sans heure doit être bornée à endOfDay (jour final inclusif).'
+        );
+    }
 }

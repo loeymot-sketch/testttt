@@ -176,10 +176,14 @@ class CouponService
                 'Y-m-d H:i:s',
                 strtotime($request->start_date)
             ) : null,
-            'end_date'         => !blank($request->end_date) ? date(
-                'Y-m-d H:i:s',
-                strtotime($request->end_date)
-            ) : null,
+            // [F-COUPON-ENDDATE-INCLUSIVE 2026-07-15 / P3] Une date de fin saisie sans heure
+            // (« valable jusqu'au 31/12 ») était stockée à 00:00:00 → la comparaison stricte
+            // `$now->gt(end_date)` faisait expirer le coupon dès 00:00:01 le 31/12, excluant tout
+            // le dernier jour. On borne à la fin de journée (endOfDay) pour rendre le jour final
+            // inclusif, cohérent avec l'affichage gestion.
+            'end_date'         => !blank($request->end_date)
+                ? Carbon::parse($request->end_date)->endOfDay()->format('Y-m-d H:i:s')
+                : null,
             'minimum_order'    => $request->minimum_order,
             'maximum_discount' => $request->maximum_discount,
             'limit_per_user'   => $request->limit_per_user,
