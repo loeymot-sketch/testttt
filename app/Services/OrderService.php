@@ -1137,7 +1137,9 @@ class OrderService
                         && $request->pos_received_amount !== null
                         && (float) $request->pos_received_amount < $this->order->total) {
                         throw new \InvalidArgumentException(
-                            'Le montant reçu ('.$request->pos_received_amount.'€) est inférieur au total réel ('.$this->order->total.'€).',
+                            // [F-CASH-MSG-FORMAT 2026-07-15 / P3] Montants formatés (le decimal cast
+                            // 6 chiffres affichait « 7.000000€ » au caissier au lieu de « 7,00 € »).
+                            'Le montant reçu ('.number_format((float) $request->pos_received_amount, 2, ',', ' ').' €) est inférieur au total réel ('.number_format((float) $this->order->total, 2, ',', ' ').' €).',
                             422
                         );
                     }

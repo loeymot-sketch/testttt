@@ -46,7 +46,10 @@ class ItemRequest extends FormRequest
                 'max:190',
                 Rule::unique("items", "name")->whereNull('deleted_at')->ignore($this->route('item.id'))
             ],
-            'item_category_id' => ['required', 'numeric', 'not_in:0'],
+            // [F-ITEM-CATEGORY-EXISTS 2026-07-15 / P2] `exists` + non soft-deleted : sans ça
+            // l'update/création acceptait une catégorie INEXISTANTE (422 « erreur base » générique)
+            // ou SOFT-DELETED (produit rattaché à une catégorie invisible → orphelin).
+            'item_category_id' => ['required', 'numeric', 'not_in:0', \Illuminate\Validation\Rule::exists('item_categories', 'id')->whereNull('deleted_at')],
             'tax_id'           => ['nullable', 'numeric', 'not_in:0'],
             'item_type'        => ['required', 'numeric', 'not_in:0'],
             'price'            => ['required', new IniAmount()],
