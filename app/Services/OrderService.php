@@ -2635,6 +2635,32 @@ class OrderService
                 $locked->payment_status = $request->payment_status;
                 $locked->save();
 
+                // [SYNC-WEB-KDS-02 2026-07-15 / P1 parité cuisine] Une commande online/livraison
+                // encaissée au comptoir (UNPAID→PAID via CE chemin) restait en ACCEPT(4) → présente
+                // dans la liste KDS mais JAMAIS rendue comme carte cuisine active (le board rend
+                // PREPARING/PREPARED), alors qu'une commande borne/POS payée passe direct en
+                // PREPARING via AutoPrepareOnPaidPolicy. Ce chemin d'encaissement online était le
+                // 4e site d'intégration MANQUANT. Transition ACCEPT→PREPARING déjà légale (status-only),
+                // fiscal_seq déjà alloué ci-dessus → NF525 inchangé. Résout aussi OSS-01/KDS-01(payé).
+                if ($targetPaymentStatus === \App\Enums\PaymentStatus::PAID
+                    && (int) $locked->status === \App\Enums\OrderStatus::ACCEPT
+                    && \App\Domain\Order\AutoPrepareOnPaidPolicy::shouldPromote(
+                        surface: (string) ($locked->source_surface ?? 'web'),
+                        posPaymentMethod: $locked->pos_payment_method !== null ? (int) $locked->pos_payment_method : null,
+                        isCounterCollect: false,
+                    )) {
+                    $locked->status = \App\Domain\Order\AutoPrepareOnPaidPolicy::nextStatus();
+                    $locked->save();
+                    \App\Domain\Order\OrderStateMachine::recordTransition(
+                        \App\Models\Order::class,
+                        (int) $locked->id,
+                        \App\Enums\OrderStatus::ACCEPT,
+                        \App\Enums\OrderStatus::PREPARING,
+                        Auth::check() ? (int) Auth::id() : null,
+                        'auto_prepare_on_paid (SYNC-WEB-KDS-02 encaissement online)',
+                    );
+                }
+
                 \App\Models\ActionLog::create([
                     'user_id' => Auth::check() ? Auth::id() : null,
                     'action' => 'Statut paiement modifié',
