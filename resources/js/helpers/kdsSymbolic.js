@@ -169,6 +169,8 @@ function classifyVariation(group, value) {
  * PARITÉ STRICTE avec le PHP KitchenTicketSymbolicFormatter::produitCode() (ticket == écran).
  */
 const CODE_GENERIC_WORDS = ['menu', 'enfant', 'formule', 'grande', 'grand', 'petite', 'petit', 'mini', 'maxi', 'moyenne', 'moyen', 'box'];
+// [F-KITCHEN-BOL-BASE 2026-07-15] Mots-catégorie dont la BASE distinctive suit (Bol Frites/Bol Riz).
+const CODE_BASE_WORDS = ['bol'];
 function produitCode(produit) {
     const n = normalize(produit).replace(/[^a-z0-9 ]+/g, ' ').trim();
     if (!n) return '';
@@ -176,7 +178,13 @@ function produitCode(produit) {
     // Premier mot SIGNIFICATIF : saute prefixes generiques + tailles/volumes (parite PHP).
     const significant = words.filter((w) => !CODE_GENERIC_WORDS.includes(w) && !/^\d+(cl|ml|l|g|kg)?$/.test(w));
     const base = significant[0] || words[0] || n;
-    return base.slice(0, 3).toUpperCase();
+    let code = base.slice(0, 3).toUpperCase();
+    // [F-KITCHEN-BOL-BASE 2026-07-15 / P1] « Bol Frites »/« Bol Riz » → « BOL » ambigu pour le
+    // cuisinier. Mot-base (bol) + 2e mot significatif → « BOL FRI »/« BOL RIZ » (parite PHP stricte).
+    if (CODE_BASE_WORDS.includes(base) && significant[1]) {
+        code += ' ' + significant[1].slice(0, 3).toUpperCase();
+    }
+    return code;
 }
 
 /** Split "Tacos M" → { produit: "TAC", taille: "M" }. Only M/L/XL trailing tokens. */

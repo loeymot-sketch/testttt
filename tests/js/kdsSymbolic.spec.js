@@ -242,6 +242,16 @@ describe('renderItemSymbolic — line list for the KDS card', () => {
         expect(nuggets.lines[0].label.toUpperCase()).toContain('NUG');
     });
 
+    it('[F-KITCHEN-BOL-BASE] distingue les bases de bol (BOL FRI vs BOL RIZ) pour le cuisinier', () => {
+        // « Bol Frites » et « Bol Riz » n'ont pas de variation "base" → le nom porte la base.
+        // Avant : les deux réduisaient à « BOL » → plat faux préparé.
+        const frites = renderItemSymbolic({ item_name: 'Bol Frites', quantity: 1, composition_snapshot: { lines: [] } });
+        const riz = renderItemSymbolic({ item_name: 'Bol Riz', quantity: 1, composition_snapshot: { lines: [] } });
+        expect(frites.lines[0].label).not.toBe(riz.lines[0].label);
+        expect(frites.lines[0].label.toUpperCase()).toContain('BOL FRI');
+        expect(riz.lines[0].label.toUpperCase()).toContain('BOL RIZ');
+    });
+
     it('crudité extras never leak into the supplement lines', () => {
         const item = {
             item_name: 'Sandwich',

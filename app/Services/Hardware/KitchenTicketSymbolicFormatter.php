@@ -503,6 +503,10 @@ final class KitchenTicketSymbolicFormatter
      */
     private const CODE_GENERIC_WORDS = ['menu', 'enfant', 'formule', 'grande', 'grand', 'petite', 'petit', 'mini', 'maxi', 'moyenne', 'moyen', 'box'];
 
+    // [F-KITCHEN-BOL-BASE 2026-07-15] Mots-catégorie dont la BASE distinctive suit dans le nom
+    // (« Bol Frites » vs « Bol Riz » — sans variation « base », le nom est le seul porteur).
+    private const CODE_BASE_WORDS = ['bol'];
+
     private function produitCode(string $produit): string
     {
         $n = trim(preg_replace('/[^a-z0-9 ]+/', ' ', $this->norm($produit)));
@@ -520,7 +524,16 @@ final class KitchenTicketSymbolicFormatter
             return ! preg_match('/^\d+(cl|ml|l|g|kg)?$/', $w);
         }));
         $base = $significant[0] ?? ($words[0] ?? $n);
+        $code = mb_strtoupper(mb_substr($base, 0, 3));
 
-        return mb_strtoupper(mb_substr($base, 0, 3));
+        // [F-KITCHEN-BOL-BASE 2026-07-15 / P1] « Bol Frites » et « Bol Riz » réduisaient TOUS
+        // DEUX à « BOL » → le cuisinier ne savait pas quelle base préparer (mauvais plat). Quand
+        // le 1er mot significatif est un mot-base (bol) et qu'un 2e mot significatif existe, on
+        // concatène sa forme 3 lettres (→ « BOL FRI » / « BOL RIZ »). Parité stricte avec le JS.
+        if (in_array($base, self::CODE_BASE_WORDS, true) && isset($significant[1])) {
+            $code .= ' '.mb_strtoupper(mb_substr($significant[1], 0, 3));
+        }
+
+        return $code;
     }
 }

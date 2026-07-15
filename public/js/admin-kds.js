@@ -1,2 +1,9378 @@
-/*! For license information please see admin-kds.js.LICENSE.txt */
-"use strict";(self.webpackChunk=self.webpackChunk||[]).push([[119],{2500(e,t,r){r.d(t,{A:()=>u});var n=r(6314),a=r.n(n)()(function(e){return e[1]});a.push([e.id,".kds-history-drawer[data-v-368a1144]{display:flex;inset:0;justify-content:flex-end;pointer-events:none;position:fixed;z-index:9000}.kds-history-drawer__backdrop[data-v-368a1144]{background:rgba(0,0,0,.45);inset:0;pointer-events:auto;position:absolute}.kds-history-drawer__panel[data-v-368a1144]{background:#fff;box-shadow:-8px 0 32px rgba(0,0,0,.25);display:flex;flex-direction:column;height:100%;overflow:hidden;pointer-events:auto;position:relative;width:min(440px,90vw)}.kds-history-drawer__header[data-v-368a1144]{align-items:center;background:#111;border-bottom:1px solid #eaeaea;color:#fff;display:flex;flex-shrink:0;justify-content:space-between;padding:14px 18px}.kds-history-drawer__title[data-v-368a1144]{align-items:baseline;display:flex;font-size:1.05rem;font-weight:600;gap:8px;margin:0}.kds-history-drawer__count[data-v-368a1144]{font-size:.85rem;font-weight:400;opacity:.85}.kds-history-drawer__close[data-v-368a1144]{background:transparent;border:none;border-radius:4px;color:inherit;cursor:pointer;font-size:1.25rem;padding:6px 10px}.kds-history-drawer__close[data-v-368a1144]:focus,.kds-history-drawer__close[data-v-368a1144]:hover{background:hsla(0,0%,100%,.12);outline:2px solid #ffd400;outline-offset:1px}.kds-history-drawer__empty[data-v-368a1144],.kds-history-drawer__error[data-v-368a1144],.kds-history-drawer__loading[data-v-368a1144]{color:#555;font-size:.95rem;padding:22px 18px}.kds-history-drawer__error[data-v-368a1144]{align-items:flex-start;color:#b00020;display:flex;flex-direction:column;gap:10px}.kds-history-drawer__retry[data-v-368a1144]{background:#111;border:none;border-radius:4px;color:#fff;cursor:pointer;font-size:.85rem;padding:6px 14px}.kds-history-drawer__list[data-v-368a1144]{flex:1;list-style:none;margin:0;overflow-y:auto;padding:12px}.kds-history-drawer__item[data-v-368a1144]{background:#fafafa;border:1px solid #e2e2e2;border-left:4px solid #888;border-radius:6px;margin-bottom:10px;padding:10px 12px}.kds-history-drawer__item.is-prepared[data-v-368a1144]{border-left-color:#1e88e5}.kds-history-drawer__item.is-out[data-v-368a1144]{border-left-color:#fb8c00}.kds-history-drawer__item.is-delivered[data-v-368a1144]{border-left-color:#2e7d32}.kds-history-drawer__head[data-v-368a1144]{align-items:center;display:flex;flex-wrap:wrap;gap:8px}.kds-history-drawer__queue[data-v-368a1144]{font-size:1rem;font-weight:700}.kds-history-drawer__status[data-v-368a1144]{background:#111;border-radius:999px;color:#fff;font-size:.72rem;letter-spacing:.04em;padding:2px 8px;text-transform:uppercase}.kds-history-drawer__times[data-v-368a1144]{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:6px}.kds-history-drawer__time-cell[data-v-368a1144]{align-items:baseline;display:inline-flex;gap:5px}.kds-history-drawer__time-label[data-v-368a1144]{color:#6b7280;font-size:.72rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase}.kds-history-drawer__time[data-v-368a1144]{color:#1f2937;font-size:.9rem;font-variant-numeric:tabular-nums;font-weight:600}.kds-history-drawer__items[data-v-368a1144]{border-top:1px solid #ececec;list-style:none;margin:8px 0 0;padding:8px 0 0}.kds-history-drawer__item-block+.kds-history-drawer__item-block[data-v-368a1144]{border-top:1px dashed #ececec;margin-top:6px;padding-top:4px}.kds-history-drawer__recall-row[data-v-368a1144]{align-items:center;border-top:1px dashed #e2e2e2;display:flex;gap:10px;margin-top:10px;padding-top:8px}.kds-history-drawer__recall-btn[data-v-368a1144]{background:#f4501e;border:none;border-radius:6px;box-shadow:0 2px 4px rgba(244,80,30,.18);color:#1a1a1a;cursor:pointer;font-size:.9rem;font-weight:700;letter-spacing:.02em;padding:8px 14px}.kds-history-drawer__recall-btn[data-v-368a1144]:focus:not(:disabled),.kds-history-drawer__recall-btn[data-v-368a1144]:hover:not(:disabled){background:#dc4615;outline:2px solid #ffd400;outline-offset:1px}.kds-history-drawer__recall-btn[data-v-368a1144]:disabled{cursor:not-allowed;opacity:.55}.kds-history-drawer__recall-hint[data-v-368a1144]{color:#6b7280;font-family:JetBrains Mono,ui-monospace,monospace;font-size:.8rem;font-variant-numeric:tabular-nums;font-weight:600}.kds-history-drawer__recall-row--done[data-v-368a1144]{border-top-color:#f4501e;border-top-style:solid}.kds-history-drawer__recall-badge[data-v-368a1144]{align-items:center;background:#f4501e;border-radius:999px;color:#fff;display:inline-flex;font-size:.72rem;font-weight:800;letter-spacing:.06em;padding:4px 10px;text-transform:uppercase}.kds-history-drawer[dir=rtl] .kds-history-drawer__panel[data-v-368a1144]{box-shadow:8px 0 32px rgba(0,0,0,.25)}",""]);const u=a},4150(e,t,r){r.d(t,{A:()=>u});var n=r(6314),a=r.n(n)()(function(e){return e[1]});a.push([e.id,'.kds-card[data-v-b8143b7c]{background:#fff;border-radius:12px;box-shadow:0 1px 2px rgba(17,24,39,.04);display:flex;flex-direction:column;overflow:hidden;position:relative;transition:transform .25s ease-out,box-shadow .15s ease,opacity .2s ease}.kds-card[data-v-b8143b7c]:hover{box-shadow:0 2px 8px rgba(0,0,0,.04);transform:translateY(-1px)}.kds-card[data-v-b8143b7c]:focus-visible{outline:4px solid #ea580c;outline-offset:4px}.kds-card__stripe[data-v-b8143b7c]{flex-shrink:0;height:6px}.kds-card__recall-badge[data-v-b8143b7c]{animation:kds-recall-pulse-b8143b7c 2s ease-in-out infinite;background:#f4501e;border-radius:999px;box-shadow:0 2px 8px rgba(244,80,30,.35);color:#fff;font-size:12px;font-weight:800;left:50%;letter-spacing:.08em;padding:4px 14px;position:absolute;text-transform:uppercase;top:12px;transform:translateX(-50%);z-index:5}@keyframes kds-recall-pulse-b8143b7c{0%,to{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.05)}}@media (prefers-reduced-motion:reduce){.kds-card__recall-badge[data-v-b8143b7c]{animation:none}}.kds-card__header[data-v-b8143b7c]{border-bottom:1px solid #f3f4f6;display:flex;flex-direction:column}.kds-card__meta[data-v-b8143b7c]{align-items:center;display:flex;height:26px;justify-content:space-between;padding:6px 12px 0}.kds-card__shortcut[data-v-b8143b7c]{align-items:center;background:#f3f4f6;border-radius:4px;color:#1f2937;display:inline-flex;font-family:JetBrains Mono,ui-monospace,monospace;font-size:11px;font-weight:700;height:18px;justify-content:center;letter-spacing:.04em;min-width:22px}.kds-card__allergen-spacer[data-v-b8143b7c],.kds-card__shortcut-spacer[data-v-b8143b7c]{width:22px}.kds-card__state-source[data-v-b8143b7c]{align-items:center;display:flex;gap:6px}.kds-card__state-pill[data-v-b8143b7c]{align-items:center;border-radius:9999px;display:inline-flex;font-size:11px;font-weight:700;gap:6px;height:24px;letter-spacing:.08em;padding:0 8px;text-transform:uppercase}.kds-card__state-dot[data-v-b8143b7c]{border-radius:9999px;display:inline-block;height:6px;width:6px}.kds-card__source-chip[data-v-b8143b7c]{border-radius:6px;font-size:13px;font-weight:700;gap:6px;height:28px;letter-spacing:.1em;padding:0 10px}.kds-card__allergen-pill[data-v-b8143b7c],.kds-card__source-chip[data-v-b8143b7c]{align-items:center;display:inline-flex;text-transform:uppercase}.kds-card__allergen-pill[data-v-b8143b7c]{background:#c2410c;border-radius:4px;box-shadow:0 0 0 2px rgba(194,65,12,.3);color:#fff;font-size:10px;font-weight:800;gap:4px;height:20px;letter-spacing:.08em;padding:0 8px}.kds-card__main[data-v-b8143b7c]{align-items:flex-end;display:flex;gap:8px;justify-content:space-between;padding:2px 12px 10px}.kds-card__elapsed-wrap[data-v-b8143b7c],.kds-card__queue[data-v-b8143b7c]{flex-shrink:0;min-width:0;overflow:visible}.kds-card__queue[data-v-b8143b7c]{color:#111827;font-family:JetBrains Mono,ui-monospace,monospace;font-size:clamp(36px,4.2vw,52px);font-variant-numeric:tabular-nums;font-weight:800;letter-spacing:-.03em;line-height:1}.kds-card__queue-prefix[data-v-b8143b7c]{font-size:clamp(16px,2vw,26px);font-weight:700;margin-inline-end:2px;opacity:.55}.kds-card__elapsed-wrap[data-v-b8143b7c]{align-items:flex-end;display:flex;flex-direction:column;gap:2px;overflow:visible}.kds-card__elapsed-label[data-v-b8143b7c]{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}.kds-card__elapsed[data-v-b8143b7c]{font-family:JetBrains Mono,ui-monospace,monospace;font-size:clamp(22px,2.8vw,34px);font-variant-numeric:tabular-nums;font-weight:800;letter-spacing:-.02em;line-height:1;white-space:nowrap}.kds-card__body[data-v-b8143b7c]{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:4px 16px;position:relative;scrollbar-color:#6b7280 transparent;scrollbar-width:thin}.kds-card__body[data-v-b8143b7c]::-webkit-scrollbar{width:8px}.kds-card__body[data-v-b8143b7c]::-webkit-scrollbar-thumb{background:#6b7280;border-radius:4px}.kds-card__body[data-v-b8143b7c]::-webkit-scrollbar-thumb:hover{background:#4b5563}.kds-card__body[data-v-b8143b7c]::-webkit-scrollbar-track{background:rgba(0,0,0,.04);border-radius:4px}.kds-card__item-block[data-v-b8143b7c]{border-top:1px solid #f3f4f6}.kds-card__item-block[data-v-b8143b7c]:first-child{border-top:none}.kds-card__delivery[data-v-b8143b7c]{background:#f0fdfa;border-left:3px solid #0f766e;border-radius:8px;display:flex;flex-direction:column;gap:4px;margin:4px 0 6px;padding:8px 10px}.kds-card__delivery-row[data-v-b8143b7c]{align-items:center;color:#0f766e;display:flex;font-size:13px;font-weight:600;gap:6px;line-height:1.3;text-decoration:none}.kds-card__delivery-row--muted[data-v-b8143b7c]{color:#115e59;font-weight:500}.kds-card__delivery-icon[data-v-b8143b7c]{align-items:center;display:inline-flex;flex-shrink:0;font-size:14px;justify-content:center;width:16px}.kds-card__delivery-text[data-v-b8143b7c]{min-width:0;overflow-wrap:anywhere}.kds-card__delivery-phone[data-v-b8143b7c]{cursor:pointer;font-family:JetBrains Mono,ui-monospace,monospace;font-weight:700;letter-spacing:.02em}.kds-card__delivery-phone[data-v-b8143b7c]:hover{text-decoration:underline}.kds-card__delivery-phone[data-v-b8143b7c]:focus-visible{border-radius:4px;outline:2px solid #0f766e;outline-offset:2px}.kds-card__body-fade[data-v-b8143b7c]{bottom:0;height:0;pointer-events:none;position:sticky}.kds-card__body-fade[data-v-b8143b7c]:before{background:linear-gradient(0deg,hsla(0,0%,100%,.95),hsla(0,0%,100%,0));bottom:0;content:"";height:8px;left:0;position:absolute;right:0}.kds-card__footer[data-v-b8143b7c]{align-items:stretch;display:flex;gap:6px;margin:4px 8px 8px}.kds-card__footer .kds-card__cta[data-v-b8143b7c]{flex:1 1 auto;margin:0}.kds-card__reprint[data-v-b8143b7c]{align-items:center;background:#fff;border:2px solid #d1d5db;border-radius:12px;color:#374151;cursor:pointer;display:flex;flex:0 0 auto;height:52px;justify-content:center;transition:transform .1s ease,background .12s ease,border-color .12s ease;width:52px}.kds-card__reprint[data-v-b8143b7c]:hover{background:#f3f4f6;border-color:#9ca3af}.kds-card__reprint[data-v-b8143b7c]:active{transform:translateY(1px)}.kds-card__reprint[data-v-b8143b7c]:focus-visible{outline:4px solid #4b5563;outline-offset:2px}.kds-card__cta[data-v-b8143b7c]{align-items:center;background:#1f2937;border:0;border-radius:12px;color:#fff;cursor:pointer;display:flex;font-size:22px;font-weight:700;gap:14px;height:52px;justify-content:center;letter-spacing:.01em;margin:4px 8px 8px;transition:transform .1s ease}.kds-card__cta[data-v-b8143b7c]:active{transform:translateY(1px)}.kds-card__cta[data-v-b8143b7c]:focus-visible{outline:4px solid #4b5563;outline-offset:2px}.kds-card__cash-pending[data-v-b8143b7c]{align-items:center;background:#fef3c7;border:2px dashed #f59e0b;border-radius:12px;color:#92400e;cursor:default;display:flex;font-size:18px;font-weight:700;gap:10px;height:52px;justify-content:center;letter-spacing:.04em;margin:4px 8px 8px;text-transform:uppercase}@keyframes kds-card-pulse-digit-b8143b7c{0%,to{opacity:1}50%{opacity:.55}}.kds-pulse-digit[data-v-b8143b7c]{animation:kds-card-pulse-digit-b8143b7c 1s ease-in-out infinite}.kds-card--ready[data-v-b8143b7c]{opacity:.7}.kds-card--cancelled[data-v-b8143b7c]{background:hsla(0,93%,94%,.5)}.kds-card--has-supplements[data-v-b8143b7c]{background:#fef9c3;box-shadow:inset 0 0 0 3px #f59e0b}@media (prefers-reduced-motion:reduce){.kds-card[data-v-b8143b7c],.kds-card__cta[data-v-b8143b7c],.kds-card__reprint[data-v-b8143b7c],.kds-pulse-digit[data-v-b8143b7c]{animation:none!important;transition:none!important}}',""]);const u=a},4001(e,t,r){r.d(t,{A:()=>u});var n=r(6314),a=r.n(n)()(function(e){return e[1]});a.push([e.id,".kds-line[data-v-29edcf5a]{font-family:Inter,system-ui,sans-serif}.kds-line--header[data-v-29edcf5a]{padding:.625rem 0}.kds-line__header[data-v-29edcf5a]{align-items:baseline;display:flex;gap:10px}.kds-line__qty[data-v-29edcf5a]{color:#111827;display:inline-block;font-size:26px;font-variant-numeric:tabular-nums;font-weight:800;line-height:1;min-width:42px;text-align:end}.kds-line__qty-x[data-v-29edcf5a]{font-size:18px;margin-inline-start:2px;opacity:.55}.kds-line__allergen-icon[data-v-29edcf5a]{color:#f97316;font-size:20px;line-height:1;margin-top:-2px}.kds-line__name[data-v-29edcf5a]{-webkit-line-clamp:2;-webkit-box-orient:vertical;color:#111827;display:-webkit-box;flex:1;font-size:22px;font-weight:500;line-height:1.15;overflow:hidden}.kds-line--symbolic-main[data-v-29edcf5a]{padding:.2rem 0 .1rem}.kds-line__symbolic[data-v-29edcf5a]{align-items:baseline;display:flex;gap:8px}.kds-line__symbolic-text[data-v-29edcf5a]{color:#111827;flex:1;font-size:18px;font-variant-numeric:tabular-nums;font-weight:800;letter-spacing:.3px;line-height:1.2;word-break:break-word}.kds-line__symbolic-menu[data-v-29edcf5a]{background:#111827;border-radius:6px;color:#fff;display:inline-block;font-size:16px;font-weight:800;letter-spacing:1px;margin-top:5px;margin-inline-start:56px;padding:2px 10px}.kds-line__variation[data-v-29edcf5a],.kds-line__variation--flat[data-v-29edcf5a]{color:#4b5563;display:flex;flex-wrap:wrap;font-size:16px;line-height:1.3;margin-top:4px;padding-inline-start:56px}.kds-line__group[data-v-29edcf5a]{color:#374151;font-weight:600;text-transform:capitalize}.kds-line__sep[data-v-29edcf5a]{color:#6b7280}.kds-line__value[data-v-29edcf5a]{color:#4b5563}.kds-line--supplement[data-v-29edcf5a]{display:inline-block;vertical-align:top}.kds-line--supplement[data-v-29edcf5a]:first-of-type{padding-inline-start:44px}.kds-line__supplement[data-v-29edcf5a]{color:#ca8a04;display:inline;font-size:15px;font-style:normal;font-weight:800;line-height:1.3;margin-inline-end:12px;white-space:nowrap}.kds-line__addon[data-v-29edcf5a],.kds-line__menu-child[data-v-29edcf5a]{align-items:baseline;color:#1f2937;display:flex;font-size:16px;font-weight:500;gap:6px;line-height:1.3;margin-top:4px;padding-inline-start:56px}.kds-line__menu-arrow[data-v-29edcf5a]{color:#6b7280;flex-shrink:0;font-weight:700}.kds-line__instruction[data-v-29edcf5a]{align-items:baseline;display:flex;font-size:16px;font-style:italic;gap:6px;line-height:1.3;margin-top:4px;padding-inline-start:56px}.kds-line__instruction-prefix[data-v-29edcf5a]{font-style:normal;opacity:.55}.kds-line__instruction-text[data-v-29edcf5a]{white-space:pre-line}.kds-instruction--note[data-v-29edcf5a]{color:#4b5563}.kds-instruction--exclusion[data-v-29edcf5a]{color:#92400e;font-weight:600}.kds-instruction--allergen[data-v-29edcf5a],.kds-line__allergen-block[data-v-29edcf5a]{color:#c2410c;font-weight:700}.kds-line__allergen-block[data-v-29edcf5a]{align-items:baseline;background:rgba(249,115,22,.06);border-inline-start:4px solid #f97316;border-radius:6px;display:flex;flex-wrap:wrap;font-size:16px;font-style:italic;gap:6px;line-height:1.3;margin-bottom:4px;margin-top:6px;padding-bottom:4px;padding-inline-end:10px;padding-inline-start:40px;padding-top:4px}.kds-line__allergen-label[data-v-29edcf5a]{font-weight:800}.kds-line__allergen-codes[data-v-29edcf5a]{font-weight:600}[dir=rtl] .kds-line__qty[data-v-29edcf5a]{text-align:end}",""]);const u=a},1839(e,t,r){r.d(t,{A:()=>u});var n=r(6314),a=r.n(n)()(function(e){return e[1]});a.push([e.id,".kds-banner[data-v-6e11a481]{align-items:center;border-bottom:1px solid;display:flex;font-family:Inter,system-ui,sans-serif;height:32px;justify-content:space-between;padding:0 24px}.kds-banner--error[data-v-6e11a481]{background:#dc2626;border-color:#b91c1c;color:#fff;height:40px}.kds-banner--warning[data-v-6e11a481]{background:#fffbeb;border-color:#fde68a;color:#92400e}.kds-banner--info[data-v-6e11a481]{background:#eff6ff;border-color:#bfdbfe;color:#1e40af}.kds-banner--neutral[data-v-6e11a481]{background:#f9fafb;border-color:#e5e7eb;color:#4b5563}.kds-banner__main[data-v-6e11a481]{align-items:center;display:flex;gap:8px}.kds-banner__icon[data-v-6e11a481]{align-items:center;border-radius:9999px;color:#fff;display:inline-flex;height:18px;justify-content:center;width:18px}.kds-banner--error .kds-banner__icon[data-v-6e11a481]{background:hsla(0,0%,100%,.18)}.kds-banner__spinner[data-v-6e11a481]{animation:kds-banner-spin-6e11a481 1s linear infinite}@keyframes kds-banner-spin-6e11a481{0%{transform:rotate(0deg)}to{transform:rotate(1turn)}}.kds-banner__text[data-v-6e11a481]{font-size:13px;font-weight:600}.kds-banner--error .kds-banner__text[data-v-6e11a481]{font-size:14px;font-weight:700}.kds-banner__tag[data-v-6e11a481]{font-family:JetBrains Mono,ui-monospace,monospace;font-size:11px;font-weight:700;letter-spacing:.15em;opacity:.85}.kds-banner--reserve-gutter[data-v-6e11a481]{padding-right:152px}@media (prefers-reduced-motion:reduce){.kds-banner__spinner[data-v-6e11a481]{animation:none!important}}",""]);const u=a},5663(e,t,r){r.d(t,{A:()=>u});var n=r(6314),a=r.n(n)()(function(e){return e[1]});a.push([e.id,'.kds-v2[data-v-585b156e]{background:#f9fafb;display:flex;flex:1;flex-direction:column;font-family:Inter,system-ui,sans-serif;min-height:0;position:relative}[dir=rtl] .kds-v2[data-v-585b156e]{font-family:Noto Naskh Arabic,Inter,system-ui,sans-serif}.kds-v2__grid[data-v-585b156e]{align-items:stretch;display:grid;flex:1;gap:10px;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:1fr;min-height:0;overflow:hidden;padding:10px}.kds-v2__grid[data-count="1"][data-v-585b156e]{grid-template-columns:minmax(0,1fr)}.kds-v2__grid[data-count="2"][data-v-585b156e]{grid-template-columns:repeat(2,minmax(0,1fr))}.kds-v2__placeholder[data-v-585b156e]{border:2px dashed #e5e7eb;border-radius:12px;min-height:200px}.kds-overflow-chip[data-v-585b156e]{align-items:center;animation:kds-overflow-pulse-585b156e 2s ease-in-out infinite;background:#f4501e;border-radius:8px;box-shadow:0 4px 8px rgba(0,0,0,.15);color:#1a1a1a;display:flex;font-size:16px;font-weight:700;gap:8px;padding:8px 16px;position:absolute;right:16px;top:16px;z-index:100}.kds-overflow-chip__icon[data-v-585b156e]{font-size:18px;font-weight:900;line-height:1}@keyframes kds-overflow-pulse-585b156e{0%,to{transform:scale(1)}50%{transform:scale(1.05)}}@media (prefers-reduced-motion:reduce){.kds-overflow-chip[data-v-585b156e]{animation:none}}.kds-v2__served[data-v-585b156e]{align-items:center;background:#f9fafb;border-top:1px solid #e5e7eb;display:flex;flex-shrink:0;gap:12px;padding:8px 16px 12px}.kds-v2__served-label[data-v-585b156e]{color:#6b7280;flex-shrink:0;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}.kds-v2__served-list[data-v-585b156e]{display:flex;flex-wrap:nowrap;gap:8px;min-width:0;overflow-x:auto;overscroll-behavior:contain}.kds-v2__served-pill[data-v-585b156e]{align-items:center;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:9999px;color:#065f46;display:inline-flex;flex-shrink:0;font-family:JetBrains Mono,ui-monospace,monospace;font-size:13px;font-weight:700;gap:8px;line-height:1;padding:6px 12px}.kds-v2__served-pill-num[data-v-585b156e]{font-weight:800;letter-spacing:-.02em}.kds-v2__served-pill-ago[data-v-585b156e]{color:#047857;font-family:Inter,system-ui,sans-serif;font-size:11px;font-weight:600;letter-spacing:.02em;opacity:.85}.kds-v2__empty[data-v-585b156e]{color:#9ca3af;flex:1;flex-direction:column;padding:32px}.kds-v2__empty[data-v-585b156e],.kds-v2__empty-illustration[data-v-585b156e]{align-items:center;display:flex;justify-content:center}.kds-v2__empty-illustration[data-v-585b156e]{height:200px;margin-bottom:32px;position:relative;width:200px}.kds-v2__empty-glow[data-v-585b156e]{background:radial-gradient(closest-side,#f3f4f6,transparent 70%);border-radius:9999px;inset:0;position:absolute}.kds-v2__empty-title[data-v-585b156e]{color:#374151;font-size:32px;font-weight:700}.kds-v2__empty-sub[data-v-585b156e]{color:#9ca3af;font-size:16px;margin-top:8px}.sr-only[data-v-585b156e]{clip:rect(0,0,0,0);border:0;height:1px;margin:-1px;overflow:hidden;padding:0;position:absolute;white-space:nowrap;width:1px}',""]);const u=a},1310(e,t,r){r.d(t,{A:()=>u});var n=r(6314),a=r.n(n)()(function(e){return e[1]});a.push([e.id,".kds-history-trigger-row[data-v-0971afb8]{align-items:center;display:flex;flex-shrink:0;justify-content:flex-end;min-height:0;padding:2px 12px;width:100%}.kds-history-trigger[data-v-0971afb8]{align-items:center;background:#111;border:none;border-radius:7px;color:#fff;cursor:pointer;display:inline-flex;font-size:.78rem;font-weight:600;gap:5px;padding:4px 12px;transition:background .12s ease,outline .12s ease}.kds-history-trigger[data-v-0971afb8]:hover{background:#d40000}.kds-history-trigger[data-v-0971afb8]:focus-visible{outline:2px solid #ffd400;outline-offset:2px}.kds-history-trigger__label[data-v-0971afb8]{font-variant-numeric:tabular-nums}.kds-instruction[data-v-0971afb8]{border-left:3px solid #e0e0e0;line-height:1.5;padding-left:.4rem}.kds-instruction--note[data-v-0971afb8]{background:rgba(160,163,189,.08);border-left-color:#a0a3bd;border-radius:0 4px 4px 0;color:#4e4b66;padding:.2rem .35rem .2rem .4rem}.kds-instruction--exclusion[data-v-0971afb8]{background:#fff7ed;border-left-color:#f97316;border-radius:0 4px 4px 0;box-shadow:0 0 0 1px rgba(249,115,22,.2);color:#7c2d12;font-weight:600;padding:.2rem .35rem .2rem .4rem}.kds-instruction--allergen[data-v-0971afb8]{background:#fef2f2;border-left-color:#dc2626;border-radius:0 4px 4px 0;box-shadow:0 0 0 1px rgba(220,38,38,.35);color:#7f1d1d;font-weight:700;padding:.2rem .35rem .2rem .4rem}.kds-hint-banner[data-v-0971afb8]{font-size:.8rem;font-weight:500;line-height:1.35;padding:8px 12px;text-align:center}.kds-hint-banner--info[data-v-0971afb8]{background:#e0f2fe;border-bottom:1px solid #bae6fd;color:#0c4a6e}.kds-hint-banner--warning[data-v-0971afb8]{background:#fffbeb;border-bottom:1px solid #fde68a;color:#78350f}.kds-hint-banner--neutral[data-v-0971afb8]{background:#f4f4f5;border-bottom:1px solid #e4e4e7;color:#3f3f46}.kds-hint-banner--danger[data-v-0971afb8]{background:#fee2e2;border-bottom:1px solid #fecaca;color:#7f1d1d;font-weight:600;position:sticky;top:0;z-index:50}.kds-hint-banner--action[data-v-0971afb8]{align-items:center;display:flex;gap:.75rem;justify-content:center}.kds-hint-link[data-v-0971afb8]{background:transparent;border:0;color:inherit;cursor:pointer;font-size:.78rem;font-weight:800;text-decoration:underline}.kds-sync-footer[data-v-0971afb8]{background:transparent;display:flex;justify-content:flex-end;padding:4px 12px 6px;pointer-events:none}.kds-sync-stamp[data-v-0971afb8]{color:#374151;font-size:.72rem;font-weight:500;letter-spacing:.01em}.kds-sync-stamp--stale[data-v-0971afb8]{color:#92400e;font-weight:600}.ws-reconnect-banner[data-v-0971afb8]{background:#ecfeff;border-bottom:1px solid #a5f3fc;color:#155e75;font-size:.85rem;font-weight:600;padding:6px 12px;text-align:center}.kds-card-header-meta[data-v-0971afb8]{align-items:center;display:flex;flex:1 1 auto;flex-wrap:wrap;gap:.35rem;min-width:0}.kds-card-header-meta>span[data-v-0971afb8]:first-of-type{min-width:0;overflow-wrap:anywhere}.kds-source-pill[data-v-0971afb8]{align-items:center;border-radius:9999px;display:inline-flex;flex:0 0 auto;font-size:.68rem;font-weight:900;letter-spacing:.01em;line-height:1.1;min-height:1.4rem;padding:.22rem .55rem;white-space:nowrap}.kds-source-pill--kiosk[data-v-0971afb8]{background:#4c1a96;color:#fff}.kds-source-pill--queue[data-v-0971afb8]{background:#991b1b;color:#fff}.kds-wait-green[data-v-0971afb8]{border-color:rgba(34,197,94,.55)!important}.kds-wait-orange[data-v-0971afb8]{border-color:rgba(245,158,11,.7)!important}.kds-wait-red[data-v-0971afb8]{border-color:rgba(239,68,68,.85)!important}.kds-wait-red.animate-pulse[data-v-0971afb8]{animation:none!important}.kds-counter-payment-badge[data-v-0971afb8]{align-items:center;background:#b91c1c;border-radius:9999px;color:#fff;display:inline-flex;font-size:.58rem;font-weight:900;letter-spacing:.02em;line-height:1;padding:.28rem .45rem;text-transform:uppercase}@keyframes kds-table-flash-pulse-0971afb8{0%,to{background-color:transparent;box-shadow:0 0 0 0 rgba(0,132,255,0)}20%{background-color:rgba(0,132,255,.08);box-shadow:0 0 0 6px rgba(0,132,255,.45)}60%{background-color:rgba(0,132,255,.04);box-shadow:0 0 0 3px rgba(0,132,255,.25)}}.kds-table-flash[data-v-0971afb8]{animation:kds-table-flash-pulse-0971afb8 2s ease-out 1;border-color:rgba(0,132,255,.7)!important}.kds-allergens-badge[data-v-0971afb8]{background:#b91c1c;border:0;border-radius:9999px;color:#fff;cursor:pointer;font-size:.75rem;font-weight:800;letter-spacing:.08em;line-height:1;padding:.5rem .75rem;position:absolute;right:.5rem;text-transform:uppercase;top:.5rem;z-index:5}.kds-allergens-badge[data-v-0971afb8]:focus-visible,.kds-allergens-badge[data-v-0971afb8]:hover{background:#991b1b;outline:3px solid #fca5a5;outline-offset:2px}.kds-allergens-modal-overlay[data-v-0971afb8]{align-items:center;background:rgba(17,24,39,.72);bottom:0;display:flex;justify-content:center;left:0;padding:1rem;position:fixed;right:0;top:0;z-index:9999}.kds-allergens-modal-content[data-v-0971afb8]{background:#fff;border-radius:1rem;box-shadow:0 25px 50px -12px rgba(0,0,0,.35);color:#111827;max-height:min(80vh,42rem);max-width:42rem;overflow-y:auto;padding:1.5rem;width:100%}.kds-allergens-modal-header[data-v-0971afb8]{align-items:flex-start;display:flex;gap:1rem;justify-content:space-between}.kds-allergens-modal-header h2[data-v-0971afb8]{font-size:1.25rem;font-weight:800;margin:0}.kds-allergens-modal-close[data-v-0971afb8]{background:#f9fafb;border:1px solid #d1d5db;border-radius:.5rem;color:#111827;cursor:pointer;font-weight:700;padding:.5rem .75rem}.kds-allergens-modal-close[data-v-0971afb8]:focus-visible,.kds-allergens-modal-close[data-v-0971afb8]:hover{background:#f3f4f6;outline:3px solid #93c5fd;outline-offset:2px}.kds-allergens-modal-intro[data-v-0971afb8]{color:#374151;margin:1rem 0}.kds-allergens-modal-list[data-v-0971afb8]{display:flex;flex-direction:column;gap:.75rem;list-style:none;margin:0;padding:0}.kds-allergens-modal-list-item[data-v-0971afb8]{border:1px solid #fca5a5;border-radius:.75rem;display:flex;flex-direction:column;gap:.25rem;padding:.75rem}.kds-allergens-modal-list-item span[data-v-0971afb8]{color:#b91c1c;font-weight:800}.sr-only[data-v-0971afb8]{clip:rect(0,0,0,0)!important;border:0!important;height:1px!important;margin:-1px!important;overflow:hidden!important;padding:0!important;position:absolute!important;white-space:nowrap!important;width:1px!important}.kds-oos-warning-badge[data-v-0971afb8]{align-items:center;background:#dc2626;border:0;border-radius:9999px;color:#fff;cursor:help;display:inline-flex;font-size:.7rem;font-weight:800;gap:.25rem;letter-spacing:.05em;line-height:1;padding:.5rem .65rem;position:absolute;right:5.5rem;text-transform:uppercase;top:.5rem;z-index:5}@media (prefers-reduced-motion:reduce){.animate-bounce[data-v-0971afb8],.animate-ping[data-v-0971afb8],.animate-pulse[data-v-0971afb8],.animate-spin[data-v-0971afb8],.kds-table-flash[data-v-0971afb8],.kds-wait-red.animate-pulse[data-v-0971afb8]{animation:none!important}.kds-table-flash[data-v-0971afb8]{border-color:rgba(0,132,255,.7)!important}.swiper-container[data-v-0971afb8],.swiper-slide[data-v-0971afb8],.swiper-wrapper[data-v-0971afb8],[class*=swiper-][data-v-0971afb8]{transition-duration:.001ms!important}}",""]);const u=a},617(e,t,r){r.d(t,{E4:()=>b,Gx:()=>v,HM:()=>F,In:()=>h,Sr:()=>y,W2:()=>m,mR:()=>p});var n=r(4203);function a(e,t){return function(e){if(Array.isArray(e))return e}(e)||function(e,t){var r=null==e?null:"undefined"!=typeof Symbol&&e[Symbol.iterator]||e["@@iterator"];if(null!=r){var n,a,u,i,o=[],l=!0,s=!1;try{if(u=(r=r.call(e)).next,0===t){if(Object(r)!==r)return;l=!1}else for(;!(l=(n=u.call(r)).done)&&(o.push(n.value),o.length!==t);l=!0);}catch(e){s=!0,a=e}finally{try{if(!l&&null!=r.return&&(i=r.return(),Object(i)!==i))return}finally{if(s)throw a}}return o}}(e,t)||o(e,t)||function(){throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")}()}function u(e){return u="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e},u(e)}function i(e,t){var r="undefined"!=typeof Symbol&&e[Symbol.iterator]||e["@@iterator"];if(!r){if(Array.isArray(e)||(r=o(e))||t&&e&&"number"==typeof e.length){r&&(e=r);var n=0,a=function(){};return{s:a,n:function(){return n>=e.length?{done:!0}:{done:!1,value:e[n++]}},e:function(e){throw e},f:a}}throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")}var u,i=!0,l=!1;return{s:function(){r=r.call(e)},n:function(){var e=r.next();return i=e.done,e},e:function(e){l=!0,u=e},f:function(){try{i||null==r.return||r.return()}finally{if(l)throw u}}}}function o(e,t){if(e){if("string"==typeof e)return l(e,t);var r={}.toString.call(e).slice(8,-1);return"Object"===r&&e.constructor&&(r=e.constructor.name),"Map"===r||"Set"===r?Array.from(e):"Arguments"===r||/^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(r)?l(e,t):void 0}}function l(e,t){(null==t||t>e.length)&&(t=e.length);for(var r=0,n=Array(t);r<t;r++)n[r]=e[r];return n}var s=[{key:"bread",re:/\bpain\b|\bbread\b/i},{key:"crudites",re:/crudit|crudity|salade|legum|vegetab/i},{key:"sauce",re:/\bsauce\b/i},{key:"cooking",re:/cuisson|cook|temperature/i},{key:"drink",re:/boisson|drink|beverage/i},{key:"size",re:/\btaille\b|\bsize\b|\bportion\b/i}];function d(e,t){var r,n="".concat(e||""," ").concat(t||""),a=i(s);try{for(a.s();!(r=a.n()).done;){var u=r.value;if(u.re.test(n))return u.key}}catch(e){a.e(e)}finally{a.f()}return"other"}var c=/coca|fanta|sprite|\beau\b|coke|water|\bjus\b|\bthé?\b|menthe|caf[eé]|boisson|oasis|orangina|capri|tropico|ice[ -]?tea|fuze|perrier|hawa[iï]/,D=/\b\d{1,2} ?cl\b|\b\d(?:[.,]\d)? ?l\b/;function p(e){var t=String(e||"").toLowerCase().trim();return!(/menu|formule/.test(t)||/sandwich|kafteji|brick/.test(t)||/\btacos?\b/.test(t)||/burger|cheeseburger|double cheese/.test(t)||/assiette|couscous|ojja|lablabi/.test(t)||/frite|onion ring/.test(t)||/dessert|crepe|crêpe|gateau|gâteau|glace|tiramisu/.test(t))&&(c.test(t)||D.test(t))}function m(e){var t=String((null==e?void 0:e.kds_category)||"").toLowerCase();if(["sandwich","taco","burger","assiette","menu_formule","side","drink","dessert","other"].includes(t))return t;var r=String((null==e?void 0:e.item_name)||"").toLowerCase();return/menu|formule/.test(r)?"menu_formule":/sandwich|kafteji|brick/.test(r)?"sandwich":/\btacos?\b/.test(r)?"taco":/burger|cheeseburger|double cheese/.test(r)?"burger":/assiette|couscous|ojja|lablabi/.test(r)?"assiette":/frite|onion ring/.test(r)?"side":/dessert|crepe|crêpe|gateau|gâteau|glace|tiramisu/.test(r)?"dessert":p(r)?"drink":"other"}function f(e){return(null==e?void 0:e.name)||(null==e?void 0:e.variation_name)||""}function h(e){var t,r;if(!e||"object"!==u(e))return{group:"",value:""};var n,a,i=e.attribute_name;return null!=i&&""!==String(i)?{group:String(i),value:String(null!==(n=null!==(a=e.variation_name)&&void 0!==a?a:e.name)&&void 0!==n?n:"")}:{group:String(null!==(t=e.variation_name)&&void 0!==t?t:""),value:String(null!==(r=e.name)&&void 0!==r?r:"")}}function b(e){var t=h(e),r=t.group,n=t.value;return r&&n?"".concat(r,": ").concat(n):n||r||""}function k(e){return(null==e?void 0:e.name)||(null==e?void 0:e.extra_name)||""}function E(e){return(null==e?void 0:e.addon_name)||(null==e?void 0:e.name)||""}var g=/(^|\s)(Viandes?|Sauce|Suppl[ée]ment|Pain|Galette)\s*:/i;function y(e,t){if("string"!=typeof e)return"";var r,n=String(t||"").trim().toUpperCase(),a=!1,u=e.split("\n").filter(function(e){var t=e.trim();return""!==t&&((!n||t.toUpperCase()!==n)&&(!(!a&&t.length>=2&&/^[A-ZÀ-Ÿ][A-ZÀ-Ÿ '\-]*$/.test(t))&&(a?(t.includes("]")&&(a=!1),!0):/^\[/.test(t)?(t.includes("]")||(a=!0),!0):!/sauce\s*frites|menu\s*\(\s*frites|^\+\s*menu\b/i.test(t)&&(!!/^[+↳]/.test(t)||!/^-\s/.test(t)&&!g.test(t)))))}).map(function(e){return e.replace(/\s*\(\s*\+?\s*(?:€|EUR)?\s*\d+[.,]\d{1,2}\s*(?:€|EUR)?\s*\)/g,"").trim()}),o=i(function(e){var t,r=[],n=i(String(e).split("\n"));try{for(n.s();!(t=n.n()).done;){var a=t.value;if(/formule\s*:/i.test(a)){var u,o=i(a.matchAll(/\(([^()]+)\)/g));try{for(o.s();!(u=o.n()).done;){var l=u.value[1].trim();""!==l&&p(l)&&r.push("BOISSON: ".concat(l))}}catch(e){o.e(e)}finally{o.f()}}}}catch(e){n.e(e)}finally{n.f()}return r}(e));try{var l=function(){var e=r.value;u.some(function(t){return t.toLowerCase()===e.toLowerCase()})||u.push(e)};for(o.s();!(r=o.n()).done;)l()}catch(e){o.e(e)}finally{o.f()}return u.join("\n").trim()}function v(e){var t,r=m(e),u=[],o=Array.isArray(null==e?void 0:e.allergens_snapshot)?e.allergens_snapshot.map(function(e){return null==e?"":String(e)}).filter(function(e){return e.length>0}):[],l=o.length>0;u.push({type:"header",qty:null!==(t=null==e?void 0:e.quantity)&&void 0!==t?t:1,label:(null==e?void 0:e.item_name)||"",category:r,hasAllergen:l});var s=function(e){var t=null==e?void 0:e.composition_snapshot;return t&&Array.isArray(t.lines)&&t.lines.length>0?t.lines:Array.isArray(null==e?void 0:e.item_variations)?e.item_variations:[]}(e);if(s.length>0)if("assiette"===r){var c=s.map(function(e){var t=parseInt(null==e?void 0:e.quantity,10),r=Number.isFinite(t)&&t>1?"".concat(t," "):"";return"".concat(r).concat(f(e))}).filter(function(e){return e.trim().length>0}).join(", ");c.length>0&&u.push({type:"variation-flat",group:"avec",label:c})}else{var D,p=new Map,h=i(s);try{for(h.s();!(D=h.n()).done;){var b=D.value,g=d(null==b?void 0:b.variation_name,null==b?void 0:b.attribute_name);("bread"!==g||"taco"!==r&&"burger"!==r)&&(p.has(g)||p.set(g,[]),p.get(g).push(f(b)))}}catch(e){h.e(e)}finally{h.f()}var v,F=i(p.entries());try{for(F.s();!(v=F.n()).done;){var _=a(v.value,2),A=_[0],C=_[1];u.push({type:"variation",group:A,label:C.filter(function(e){return e.length>0}).join(", ")})}}catch(e){F.e(e)}finally{F.f()}}var B,x=i(function(e){var t=null==e?void 0:e.composition_snapshot;return t&&Array.isArray(t.extras)&&t.extras.length>0?t.extras:Array.isArray(null==e?void 0:e.item_extras)?e.item_extras:[]}(e));try{for(x.s();!(B=x.n()).done;){var w=B.value,S=k(w);if(S){var N=parseInt(null==w?void 0:w.quantity,10),V=Number.isFinite(N)&&N>1?" ×".concat(N):"";u.push({type:"supplement",label:"+ ".concat(S).concat(V)})}}}catch(e){x.e(e)}finally{x.f()}var I,O=i(function(e){var t=null==e?void 0:e.composition_snapshot;return t&&Array.isArray(t.addons)&&t.addons.length>0?t.addons:Array.isArray(null==e?void 0:e.item_addons)?e.item_addons:[]}(e));try{for(O.s();!(I=O.n()).done;){var P=I.value,T=E(P);if(T){var R=String((null==P?void 0:P.role)||"").toLowerCase(),$=R.startsWith("menu_"),M=parseInt(null==P?void 0:P.quantity,10),j=Number.isFinite(M)&&M>1?"".concat(M,"× "):"";u.push({type:$?"menu_child":"addon",label:"".concat(j).concat(T),role:R})}}}catch(e){O.e(e)}finally{O.f()}var L=y(null==e?void 0:e.instruction,null==e?void 0:e.item_name);return L.length>0&&u.push({type:"instruction",label:L,visualClass:(0,n.F)(L)}),l&&u.push({type:"allergen",codes:o}),{category:r,hasAllergen:l,lines:u}}function F(e){if(!Array.isArray(e))return!1;var t,r=i(e);try{for(r.s();!(t=r.n()).done;){var n=t.value;if((Array.isArray(null==n?void 0:n.allergens_snapshot)?n.allergens_snapshot:[]).some(function(e){return null!=e&&String(e).length>0}))return!0}}catch(e){r.e(e)}finally{r.f()}return!1}},4203(e,t,r){function n(e,t){var r="undefined"!=typeof Symbol&&e[Symbol.iterator]||e["@@iterator"];if(!r){if(Array.isArray(e)||(r=function(e,t){if(e){if("string"==typeof e)return a(e,t);var r={}.toString.call(e).slice(8,-1);return"Object"===r&&e.constructor&&(r=e.constructor.name),"Map"===r||"Set"===r?Array.from(e):"Arguments"===r||/^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(r)?a(e,t):void 0}}(e))||t&&e&&"number"==typeof e.length){r&&(e=r);var n=0,u=function(){};return{s:u,n:function(){return n>=e.length?{done:!0}:{done:!1,value:e[n++]}},e:function(e){throw e},f:u}}throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")}var i,o=!0,l=!1;return{s:function(){r=r.call(e)},n:function(){var e=r.next();return o=e.done,e},e:function(e){l=!0,i=e},f:function(){try{o||null==r.return||r.return()}finally{if(l)throw i}}}}function a(e,t){(null==t||t>e.length)&&(t=e.length);for(var r=0,n=Array(t);r<t;r++)n[r]=e[r];return n}r.d(t,{F:()=>s});var u=[/\b([s\u017F]an[s\u017F])[\t-\r \xA0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF]+(?:['\x2D0-9A-Za-z\xAA\xB5\xBA\xC0-\xD6\xD8-\xF6\xF8-\u02C1\u02C6-\u02D1\u02E0-\u02E4\u02EC\u02EE\u0345\u0370-\u0374\u0376\u0377\u037A-\u037D\u037F\u0386\u0388-\u038A\u038C\u038E-\u03A1\u03A3-\u03F5\u03F7-\u0481\u048A-\u052F\u0531-\u0556\u0559\u0560-\u0588\u05D0-\u05EA\u05EF-\u05F2\u0620-\u064A\u066E\u066F\u0671-\u06D3\u06D5\u06E5\u06E6\u06EE\u06EF\u06FA-\u06FC\u06FF\u0710\u0712-\u072F\u074D-\u07A5\u07B1\u07CA-\u07EA\u07F4\u07F5\u07FA\u0800-\u0815\u081A\u0824\u0828\u0840-\u0858\u0860-\u086A\u0870-\u0887\u0889-\u088F\u08A0-\u08C9\u0904-\u0939\u093D\u0950\u0958-\u0961\u0971-\u0980\u0985-\u098C\u098F\u0990\u0993-\u09A8\u09AA-\u09B0\u09B2\u09B6-\u09B9\u09BD\u09CE\u09DC\u09DD\u09DF-\u09E1\u09F0\u09F1\u09FC\u0A05-\u0A0A\u0A0F\u0A10\u0A13-\u0A28\u0A2A-\u0A30\u0A32\u0A33\u0A35\u0A36\u0A38\u0A39\u0A59-\u0A5C\u0A5E\u0A72-\u0A74\u0A85-\u0A8D\u0A8F-\u0A91\u0A93-\u0AA8\u0AAA-\u0AB0\u0AB2\u0AB3\u0AB5-\u0AB9\u0ABD\u0AD0\u0AE0\u0AE1\u0AF9\u0B05-\u0B0C\u0B0F\u0B10\u0B13-\u0B28\u0B2A-\u0B30\u0B32\u0B33\u0B35-\u0B39\u0B3D\u0B5C\u0B5D\u0B5F-\u0B61\u0B71\u0B83\u0B85-\u0B8A\u0B8E-\u0B90\u0B92-\u0B95\u0B99\u0B9A\u0B9C\u0B9E\u0B9F\u0BA3\u0BA4\u0BA8-\u0BAA\u0BAE-\u0BB9\u0BD0\u0C05-\u0C0C\u0C0E-\u0C10\u0C12-\u0C28\u0C2A-\u0C39\u0C3D\u0C58-\u0C5A\u0C5C\u0C5D\u0C60\u0C61\u0C80\u0C85-\u0C8C\u0C8E-\u0C90\u0C92-\u0CA8\u0CAA-\u0CB3\u0CB5-\u0CB9\u0CBD\u0CDC-\u0CDE\u0CE0\u0CE1\u0CF1\u0CF2\u0D04-\u0D0C\u0D0E-\u0D10\u0D12-\u0D3A\u0D3D\u0D4E\u0D54-\u0D56\u0D5F-\u0D61\u0D7A-\u0D7F\u0D85-\u0D96\u0D9A-\u0DB1\u0DB3-\u0DBB\u0DBD\u0DC0-\u0DC6\u0E01-\u0E30\u0E32\u0E33\u0E40-\u0E46\u0E81\u0E82\u0E84\u0E86-\u0E8A\u0E8C-\u0EA3\u0EA5\u0EA7-\u0EB0\u0EB2\u0EB3\u0EBD\u0EC0-\u0EC4\u0EC6\u0EDC-\u0EDF\u0F00\u0F40-\u0F47\u0F49-\u0F6C\u0F88-\u0F8C\u1000-\u102A\u103F\u1050-\u1055\u105A-\u105D\u1061\u1065\u1066\u106E-\u1070\u1075-\u1081\u108E\u10A0-\u10C5\u10C7\u10CD\u10D0-\u10FA\u10FC-\u1248\u124A-\u124D\u1250-\u1256\u1258\u125A-\u125D\u1260-\u1288\u128A-\u128D\u1290-\u12B0\u12B2-\u12B5\u12B8-\u12BE\u12C0\u12C2-\u12C5\u12C8-\u12D6\u12D8-\u1310\u1312-\u1315\u1318-\u135A\u1380-\u138F\u13A0-\u13F5\u13F8-\u13FD\u1401-\u166C\u166F-\u167F\u1681-\u169A\u16A0-\u16EA\u16F1-\u16F8\u1700-\u1711\u171F-\u1731\u1740-\u1751\u1760-\u176C\u176E-\u1770\u1780-\u17B3\u17D7\u17DC\u1820-\u1878\u1880-\u1884\u1887-\u18A8\u18AA\u18B0-\u18F5\u1900-\u191E\u1950-\u196D\u1970-\u1974\u1980-\u19AB\u19B0-\u19C9\u1A00-\u1A16\u1A20-\u1A54\u1AA7\u1B05-\u1B33\u1B45-\u1B4C\u1B83-\u1BA0\u1BAE\u1BAF\u1BBA-\u1BE5\u1C00-\u1C23\u1C4D-\u1C4F\u1C5A-\u1C7D\u1C80-\u1C8A\u1C90-\u1CBA\u1CBD-\u1CBF\u1CE9-\u1CEC\u1CEE-\u1CF3\u1CF5\u1CF6\u1CFA\u1D00-\u1DBF\u1E00-\u1F15\u1F18-\u1F1D\u1F20-\u1F45\u1F48-\u1F4D\u1F50-\u1F57\u1F59\u1F5B\u1F5D\u1F5F-\u1F7D\u1F80-\u1FB4\u1FB6-\u1FBC\u1FBE\u1FC2-\u1FC4\u1FC6-\u1FCC\u1FD0-\u1FD3\u1FD6-\u1FDB\u1FE0-\u1FEC\u1FF2-\u1FF4\u1FF6-\u1FFC\u2019\u2071\u207F\u2090-\u209C\u2102\u2107\u210A-\u2113\u2115\u2119-\u211D\u2124\u2126\u2128\u212A-\u212D\u212F-\u2139\u213C-\u213F\u2145-\u2149\u214E\u2183\u2184\u2C00-\u2CE4\u2CEB-\u2CEE\u2CF2\u2CF3\u2D00-\u2D25\u2D27\u2D2D\u2D30-\u2D67\u2D6F\u2D80-\u2D96\u2DA0-\u2DA6\u2DA8-\u2DAE\u2DB0-\u2DB6\u2DB8-\u2DBE\u2DC0-\u2DC6\u2DC8-\u2DCE\u2DD0-\u2DD6\u2DD8-\u2DDE\u2E2F\u3005\u3006\u3031-\u3035\u303B\u303C\u3041-\u3096\u309D-\u309F\u30A1-\u30FA\u30FC-\u30FF\u3105-\u312F\u3131-\u318E\u31A0-\u31BF\u31F0-\u31FF\u3400-\u4DBF\u4E00-\uA48C\uA4D0-\uA4FD\uA500-\uA60C\uA610-\uA61F\uA62A\uA62B\uA640-\uA66E\uA67F-\uA69D\uA6A0-\uA6E5\uA717-\uA71F\uA722-\uA788\uA78B-\uA7DC\uA7F1-\uA801\uA803-\uA805\uA807-\uA80A\uA80C-\uA822\uA840-\uA873\uA882-\uA8B3\uA8F2-\uA8F7\uA8FB\uA8FD\uA8FE\uA90A-\uA925\uA930-\uA946\uA960-\uA97C\uA984-\uA9B2\uA9CF\uA9E0-\uA9E4\uA9E6-\uA9EF\uA9FA-\uA9FE\uAA00-\uAA28\uAA40-\uAA42\uAA44-\uAA4B\uAA60-\uAA76\uAA7A\uAA7E-\uAAAF\uAAB1\uAAB5\uAAB6\uAAB9-\uAABD\uAAC0\uAAC2\uAADB-\uAADD\uAAE0-\uAAEA\uAAF2-\uAAF4\uAB01-\uAB06\uAB09-\uAB0E\uAB11-\uAB16\uAB20-\uAB26\uAB28-\uAB2E\uAB30-\uAB5A\uAB5C-\uAB69\uAB70-\uABE2\uAC00-\uD7A3\uD7B0-\uD7C6\uD7CB-\uD7FB\uF900-\uFA6D\uFA70-\uFAD9\uFB00-\uFB06\uFB13-\uFB17\uFB1D\uFB1F-\uFB28\uFB2A-\uFB36\uFB38-\uFB3C\uFB3E\uFB40\uFB41\uFB43\uFB44\uFB46-\uFBB1\uFBD3-\uFD3D\uFD50-\uFD8F\uFD92-\uFDC7\uFDF0-\uFDFB\uFE70-\uFE74\uFE76-\uFEFC\uFF21-\uFF3A\uFF41-\uFF5A\uFF66-\uFFBE\uFFC2-\uFFC7\uFFCA-\uFFCF\uFFD2-\uFFD7\uFFDA-\uFFDC]|\uD800[\uDC00-\uDC0B\uDC0D-\uDC26\uDC28-\uDC3A\uDC3C\uDC3D\uDC3F-\uDC4D\uDC50-\uDC5D\uDC80-\uDCFA\uDE80-\uDE9C\uDEA0-\uDED0\uDF00-\uDF1F\uDF2D-\uDF40\uDF42-\uDF49\uDF50-\uDF75\uDF80-\uDF9D\uDFA0-\uDFC3\uDFC8-\uDFCF]|\uD801[\uDC00-\uDC9D\uDCB0-\uDCD3\uDCD8-\uDCFB\uDD00-\uDD27\uDD30-\uDD63\uDD70-\uDD7A\uDD7C-\uDD8A\uDD8C-\uDD92\uDD94\uDD95\uDD97-\uDDA1\uDDA3-\uDDB1\uDDB3-\uDDB9\uDDBB\uDDBC\uDDC0-\uDDF3\uDE00-\uDF36\uDF40-\uDF55\uDF60-\uDF67\uDF80-\uDF85\uDF87-\uDFB0\uDFB2-\uDFBA]|\uD802[\uDC00-\uDC05\uDC08\uDC0A-\uDC35\uDC37\uDC38\uDC3C\uDC3F-\uDC55\uDC60-\uDC76\uDC80-\uDC9E\uDCE0-\uDCF2\uDCF4\uDCF5\uDD00-\uDD15\uDD20-\uDD39\uDD40-\uDD59\uDD80-\uDDB7\uDDBE\uDDBF\uDE00\uDE10-\uDE13\uDE15-\uDE17\uDE19-\uDE35\uDE60-\uDE7C\uDE80-\uDE9C\uDEC0-\uDEC7\uDEC9-\uDEE4\uDF00-\uDF35\uDF40-\uDF55\uDF60-\uDF72\uDF80-\uDF91]|\uD803[\uDC00-\uDC48\uDC80-\uDCB2\uDCC0-\uDCF2\uDD00-\uDD23\uDD4A-\uDD65\uDD6F-\uDD85\uDE80-\uDEA9\uDEB0\uDEB1\uDEC2-\uDEC7\uDF00-\uDF1C\uDF27\uDF30-\uDF45\uDF70-\uDF81\uDFB0-\uDFC4\uDFE0-\uDFF6]|\uD804[\uDC03-\uDC37\uDC71\uDC72\uDC75\uDC83-\uDCAF\uDCD0-\uDCE8\uDD03-\uDD26\uDD44\uDD47\uDD50-\uDD72\uDD76\uDD83-\uDDB2\uDDC1-\uDDC4\uDDDA\uDDDC\uDE00-\uDE11\uDE13-\uDE2B\uDE3F\uDE40\uDE80-\uDE86\uDE88\uDE8A-\uDE8D\uDE8F-\uDE9D\uDE9F-\uDEA8\uDEB0-\uDEDE\uDF05-\uDF0C\uDF0F\uDF10\uDF13-\uDF28\uDF2A-\uDF30\uDF32\uDF33\uDF35-\uDF39\uDF3D\uDF50\uDF5D-\uDF61\uDF80-\uDF89\uDF8B\uDF8E\uDF90-\uDFB5\uDFB7\uDFD1\uDFD3]|\uD805[\uDC00-\uDC34\uDC47-\uDC4A\uDC5F-\uDC61\uDC80-\uDCAF\uDCC4\uDCC5\uDCC7\uDD80-\uDDAE\uDDD8-\uDDDB\uDE00-\uDE2F\uDE44\uDE80-\uDEAA\uDEB8\uDF00-\uDF1A\uDF40-\uDF46]|\uD806[\uDC00-\uDC2B\uDCA0-\uDCDF\uDCFF-\uDD06\uDD09\uDD0C-\uDD13\uDD15\uDD16\uDD18-\uDD2F\uDD3F\uDD41\uDDA0-\uDDA7\uDDAA-\uDDD0\uDDE1\uDDE3\uDE00\uDE0B-\uDE32\uDE3A\uDE50\uDE5C-\uDE89\uDE9D\uDEB0-\uDEF8\uDFC0-\uDFE0]|\uD807[\uDC00-\uDC08\uDC0A-\uDC2E\uDC40\uDC72-\uDC8F\uDD00-\uDD06\uDD08\uDD09\uDD0B-\uDD30\uDD46\uDD60-\uDD65\uDD67\uDD68\uDD6A-\uDD89\uDD98\uDDB0-\uDDDB\uDEE0-\uDEF2\uDF02\uDF04-\uDF10\uDF12-\uDF33\uDFB0]|\uD808[\uDC00-\uDF99]|\uD809[\uDC80-\uDD43]|\uD80B[\uDF90-\uDFF0]|[\uD80C\uD80E\uD80F\uD81C-\uD822\uD840-\uD868\uD86A-\uD86D\uD86F-\uD872\uD874-\uD879\uD880-\uD883\uD885-\uD88C][\uDC00-\uDFFF]|\uD80D[\uDC00-\uDC2F\uDC41-\uDC46\uDC60-\uDFFF]|\uD810[\uDC00-\uDFFA]|\uD811[\uDC00-\uDE46]|\uD818[\uDD00-\uDD1D]|\uD81A[\uDC00-\uDE38\uDE40-\uDE5E\uDE70-\uDEBE\uDED0-\uDEED\uDF00-\uDF2F\uDF40-\uDF43\uDF63-\uDF77\uDF7D-\uDF8F]|\uD81B[\uDD40-\uDD6C\uDE40-\uDE7F\uDEA0-\uDEB8\uDEBB-\uDED3\uDF00-\uDF4A\uDF50\uDF93-\uDF9F\uDFE0\uDFE1\uDFE3\uDFF2\uDFF3]|\uD823[\uDC00-\uDCD5\uDCFF-\uDD1E\uDD80-\uDDF2]|\uD82B[\uDFF0-\uDFF3\uDFF5-\uDFFB\uDFFD\uDFFE]|\uD82C[\uDC00-\uDD22\uDD32\uDD50-\uDD52\uDD55\uDD64-\uDD67\uDD70-\uDEFB]|\uD82F[\uDC00-\uDC6A\uDC70-\uDC7C\uDC80-\uDC88\uDC90-\uDC99]|\uD835[\uDC00-\uDC54\uDC56-\uDC9C\uDC9E\uDC9F\uDCA2\uDCA5\uDCA6\uDCA9-\uDCAC\uDCAE-\uDCB9\uDCBB\uDCBD-\uDCC3\uDCC5-\uDD05\uDD07-\uDD0A\uDD0D-\uDD14\uDD16-\uDD1C\uDD1E-\uDD39\uDD3B-\uDD3E\uDD40-\uDD44\uDD46\uDD4A-\uDD50\uDD52-\uDEA5\uDEA8-\uDEC0\uDEC2-\uDEDA\uDEDC-\uDEFA\uDEFC-\uDF14\uDF16-\uDF34\uDF36-\uDF4E\uDF50-\uDF6E\uDF70-\uDF88\uDF8A-\uDFA8\uDFAA-\uDFC2\uDFC4-\uDFCB]|\uD837[\uDF00-\uDF1E\uDF25-\uDF2A]|\uD838[\uDC30-\uDC6D\uDD00-\uDD2C\uDD37-\uDD3D\uDD4E\uDE90-\uDEAD\uDEC0-\uDEEB]|\uD839[\uDCD0-\uDCEB\uDDD0-\uDDED\uDDF0\uDEC0-\uDEDE\uDEE0-\uDEE2\uDEE4\uDEE5\uDEE7-\uDEED\uDEF0-\uDEF4\uDEFE\uDEFF\uDFE0-\uDFE6\uDFE8-\uDFEB\uDFED\uDFEE\uDFF0-\uDFFE]|\uD83A[\uDC00-\uDCC4\uDD00-\uDD43\uDD4B]|\uD83B[\uDE00-\uDE03\uDE05-\uDE1F\uDE21\uDE22\uDE24\uDE27\uDE29-\uDE32\uDE34-\uDE37\uDE39\uDE3B\uDE42\uDE47\uDE49\uDE4B\uDE4D-\uDE4F\uDE51\uDE52\uDE54\uDE57\uDE59\uDE5B\uDE5D\uDE5F\uDE61\uDE62\uDE64\uDE67-\uDE6A\uDE6C-\uDE72\uDE74-\uDE77\uDE79-\uDE7C\uDE7E\uDE80-\uDE89\uDE8B-\uDE9B\uDEA1-\uDEA3\uDEA5-\uDEA9\uDEAB-\uDEBB]|\uD869[\uDC00-\uDEDF\uDF00-\uDFFF]|\uD86E[\uDC00-\uDC1D\uDC20-\uDFFF]|\uD873[\uDC00-\uDEAD\uDEB0-\uDFFF]|\uD87A[\uDC00-\uDFE0\uDFF0-\uDFFF]|\uD87B[\uDC00-\uDE5D]|\uD87E[\uDC00-\uDE1D]|\uD884[\uDC00-\uDF4A\uDF50-\uDFFF]|\uD88D[\uDC00-\uDC79])+/i,/\b(exclu|retrait|retirer|enlever|enlevez)\b/i,/^[\t-\r \xA0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF]*[s\u017F]an[s\u017F][\t-\r \xA0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF]*[,:]/i,/\bhold\b/i,/\bno[\t-\r \xA0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF]+(?:[A-Za-z\xAA\xB5\xBA\xC0-\xD6\xD8-\xF6\xF8-\u02C1\u02C6-\u02D1\u02E0-\u02E4\u02EC\u02EE\u0345\u0370-\u0374\u0376\u0377\u037A-\u037D\u037F\u0386\u0388-\u038A\u038C\u038E-\u03A1\u03A3-\u03F5\u03F7-\u0481\u048A-\u052F\u0531-\u0556\u0559\u0560-\u0588\u05D0-\u05EA\u05EF-\u05F2\u0620-\u064A\u066E\u066F\u0671-\u06D3\u06D5\u06E5\u06E6\u06EE\u06EF\u06FA-\u06FC\u06FF\u0710\u0712-\u072F\u074D-\u07A5\u07B1\u07CA-\u07EA\u07F4\u07F5\u07FA\u0800-\u0815\u081A\u0824\u0828\u0840-\u0858\u0860-\u086A\u0870-\u0887\u0889-\u088F\u08A0-\u08C9\u0904-\u0939\u093D\u0950\u0958-\u0961\u0971-\u0980\u0985-\u098C\u098F\u0990\u0993-\u09A8\u09AA-\u09B0\u09B2\u09B6-\u09B9\u09BD\u09CE\u09DC\u09DD\u09DF-\u09E1\u09F0\u09F1\u09FC\u0A05-\u0A0A\u0A0F\u0A10\u0A13-\u0A28\u0A2A-\u0A30\u0A32\u0A33\u0A35\u0A36\u0A38\u0A39\u0A59-\u0A5C\u0A5E\u0A72-\u0A74\u0A85-\u0A8D\u0A8F-\u0A91\u0A93-\u0AA8\u0AAA-\u0AB0\u0AB2\u0AB3\u0AB5-\u0AB9\u0ABD\u0AD0\u0AE0\u0AE1\u0AF9\u0B05-\u0B0C\u0B0F\u0B10\u0B13-\u0B28\u0B2A-\u0B30\u0B32\u0B33\u0B35-\u0B39\u0B3D\u0B5C\u0B5D\u0B5F-\u0B61\u0B71\u0B83\u0B85-\u0B8A\u0B8E-\u0B90\u0B92-\u0B95\u0B99\u0B9A\u0B9C\u0B9E\u0B9F\u0BA3\u0BA4\u0BA8-\u0BAA\u0BAE-\u0BB9\u0BD0\u0C05-\u0C0C\u0C0E-\u0C10\u0C12-\u0C28\u0C2A-\u0C39\u0C3D\u0C58-\u0C5A\u0C5C\u0C5D\u0C60\u0C61\u0C80\u0C85-\u0C8C\u0C8E-\u0C90\u0C92-\u0CA8\u0CAA-\u0CB3\u0CB5-\u0CB9\u0CBD\u0CDC-\u0CDE\u0CE0\u0CE1\u0CF1\u0CF2\u0D04-\u0D0C\u0D0E-\u0D10\u0D12-\u0D3A\u0D3D\u0D4E\u0D54-\u0D56\u0D5F-\u0D61\u0D7A-\u0D7F\u0D85-\u0D96\u0D9A-\u0DB1\u0DB3-\u0DBB\u0DBD\u0DC0-\u0DC6\u0E01-\u0E30\u0E32\u0E33\u0E40-\u0E46\u0E81\u0E82\u0E84\u0E86-\u0E8A\u0E8C-\u0EA3\u0EA5\u0EA7-\u0EB0\u0EB2\u0EB3\u0EBD\u0EC0-\u0EC4\u0EC6\u0EDC-\u0EDF\u0F00\u0F40-\u0F47\u0F49-\u0F6C\u0F88-\u0F8C\u1000-\u102A\u103F\u1050-\u1055\u105A-\u105D\u1061\u1065\u1066\u106E-\u1070\u1075-\u1081\u108E\u10A0-\u10C5\u10C7\u10CD\u10D0-\u10FA\u10FC-\u1248\u124A-\u124D\u1250-\u1256\u1258\u125A-\u125D\u1260-\u1288\u128A-\u128D\u1290-\u12B0\u12B2-\u12B5\u12B8-\u12BE\u12C0\u12C2-\u12C5\u12C8-\u12D6\u12D8-\u1310\u1312-\u1315\u1318-\u135A\u1380-\u138F\u13A0-\u13F5\u13F8-\u13FD\u1401-\u166C\u166F-\u167F\u1681-\u169A\u16A0-\u16EA\u16F1-\u16F8\u1700-\u1711\u171F-\u1731\u1740-\u1751\u1760-\u176C\u176E-\u1770\u1780-\u17B3\u17D7\u17DC\u1820-\u1878\u1880-\u1884\u1887-\u18A8\u18AA\u18B0-\u18F5\u1900-\u191E\u1950-\u196D\u1970-\u1974\u1980-\u19AB\u19B0-\u19C9\u1A00-\u1A16\u1A20-\u1A54\u1AA7\u1B05-\u1B33\u1B45-\u1B4C\u1B83-\u1BA0\u1BAE\u1BAF\u1BBA-\u1BE5\u1C00-\u1C23\u1C4D-\u1C4F\u1C5A-\u1C7D\u1C80-\u1C8A\u1C90-\u1CBA\u1CBD-\u1CBF\u1CE9-\u1CEC\u1CEE-\u1CF3\u1CF5\u1CF6\u1CFA\u1D00-\u1DBF\u1E00-\u1F15\u1F18-\u1F1D\u1F20-\u1F45\u1F48-\u1F4D\u1F50-\u1F57\u1F59\u1F5B\u1F5D\u1F5F-\u1F7D\u1F80-\u1FB4\u1FB6-\u1FBC\u1FBE\u1FC2-\u1FC4\u1FC6-\u1FCC\u1FD0-\u1FD3\u1FD6-\u1FDB\u1FE0-\u1FEC\u1FF2-\u1FF4\u1FF6-\u1FFC\u2071\u207F\u2090-\u209C\u2102\u2107\u210A-\u2113\u2115\u2119-\u211D\u2124\u2126\u2128\u212A-\u212D\u212F-\u2139\u213C-\u213F\u2145-\u2149\u214E\u2183\u2184\u2C00-\u2CE4\u2CEB-\u2CEE\u2CF2\u2CF3\u2D00-\u2D25\u2D27\u2D2D\u2D30-\u2D67\u2D6F\u2D80-\u2D96\u2DA0-\u2DA6\u2DA8-\u2DAE\u2DB0-\u2DB6\u2DB8-\u2DBE\u2DC0-\u2DC6\u2DC8-\u2DCE\u2DD0-\u2DD6\u2DD8-\u2DDE\u2E2F\u3005\u3006\u3031-\u3035\u303B\u303C\u3041-\u3096\u309D-\u309F\u30A1-\u30FA\u30FC-\u30FF\u3105-\u312F\u3131-\u318E\u31A0-\u31BF\u31F0-\u31FF\u3400-\u4DBF\u4E00-\uA48C\uA4D0-\uA4FD\uA500-\uA60C\uA610-\uA61F\uA62A\uA62B\uA640-\uA66E\uA67F-\uA69D\uA6A0-\uA6E5\uA717-\uA71F\uA722-\uA788\uA78B-\uA7DC\uA7F1-\uA801\uA803-\uA805\uA807-\uA80A\uA80C-\uA822\uA840-\uA873\uA882-\uA8B3\uA8F2-\uA8F7\uA8FB\uA8FD\uA8FE\uA90A-\uA925\uA930-\uA946\uA960-\uA97C\uA984-\uA9B2\uA9CF\uA9E0-\uA9E4\uA9E6-\uA9EF\uA9FA-\uA9FE\uAA00-\uAA28\uAA40-\uAA42\uAA44-\uAA4B\uAA60-\uAA76\uAA7A\uAA7E-\uAAAF\uAAB1\uAAB5\uAAB6\uAAB9-\uAABD\uAAC0\uAAC2\uAADB-\uAADD\uAAE0-\uAAEA\uAAF2-\uAAF4\uAB01-\uAB06\uAB09-\uAB0E\uAB11-\uAB16\uAB20-\uAB26\uAB28-\uAB2E\uAB30-\uAB5A\uAB5C-\uAB69\uAB70-\uABE2\uAC00-\uD7A3\uD7B0-\uD7C6\uD7CB-\uD7FB\uF900-\uFA6D\uFA70-\uFAD9\uFB00-\uFB06\uFB13-\uFB17\uFB1D\uFB1F-\uFB28\uFB2A-\uFB36\uFB38-\uFB3C\uFB3E\uFB40\uFB41\uFB43\uFB44\uFB46-\uFBB1\uFBD3-\uFD3D\uFD50-\uFD8F\uFD92-\uFDC7\uFDF0-\uFDFB\uFE70-\uFE74\uFE76-\uFEFC\uFF21-\uFF3A\uFF41-\uFF5A\uFF66-\uFFBE\uFFC2-\uFFC7\uFFCA-\uFFCF\uFFD2-\uFFD7\uFFDA-\uFFDC]|\uD800[\uDC00-\uDC0B\uDC0D-\uDC26\uDC28-\uDC3A\uDC3C\uDC3D\uDC3F-\uDC4D\uDC50-\uDC5D\uDC80-\uDCFA\uDE80-\uDE9C\uDEA0-\uDED0\uDF00-\uDF1F\uDF2D-\uDF40\uDF42-\uDF49\uDF50-\uDF75\uDF80-\uDF9D\uDFA0-\uDFC3\uDFC8-\uDFCF]|\uD801[\uDC00-\uDC9D\uDCB0-\uDCD3\uDCD8-\uDCFB\uDD00-\uDD27\uDD30-\uDD63\uDD70-\uDD7A\uDD7C-\uDD8A\uDD8C-\uDD92\uDD94\uDD95\uDD97-\uDDA1\uDDA3-\uDDB1\uDDB3-\uDDB9\uDDBB\uDDBC\uDDC0-\uDDF3\uDE00-\uDF36\uDF40-\uDF55\uDF60-\uDF67\uDF80-\uDF85\uDF87-\uDFB0\uDFB2-\uDFBA]|\uD802[\uDC00-\uDC05\uDC08\uDC0A-\uDC35\uDC37\uDC38\uDC3C\uDC3F-\uDC55\uDC60-\uDC76\uDC80-\uDC9E\uDCE0-\uDCF2\uDCF4\uDCF5\uDD00-\uDD15\uDD20-\uDD39\uDD40-\uDD59\uDD80-\uDDB7\uDDBE\uDDBF\uDE00\uDE10-\uDE13\uDE15-\uDE17\uDE19-\uDE35\uDE60-\uDE7C\uDE80-\uDE9C\uDEC0-\uDEC7\uDEC9-\uDEE4\uDF00-\uDF35\uDF40-\uDF55\uDF60-\uDF72\uDF80-\uDF91]|\uD803[\uDC00-\uDC48\uDC80-\uDCB2\uDCC0-\uDCF2\uDD00-\uDD23\uDD4A-\uDD65\uDD6F-\uDD85\uDE80-\uDEA9\uDEB0\uDEB1\uDEC2-\uDEC7\uDF00-\uDF1C\uDF27\uDF30-\uDF45\uDF70-\uDF81\uDFB0-\uDFC4\uDFE0-\uDFF6]|\uD804[\uDC03-\uDC37\uDC71\uDC72\uDC75\uDC83-\uDCAF\uDCD0-\uDCE8\uDD03-\uDD26\uDD44\uDD47\uDD50-\uDD72\uDD76\uDD83-\uDDB2\uDDC1-\uDDC4\uDDDA\uDDDC\uDE00-\uDE11\uDE13-\uDE2B\uDE3F\uDE40\uDE80-\uDE86\uDE88\uDE8A-\uDE8D\uDE8F-\uDE9D\uDE9F-\uDEA8\uDEB0-\uDEDE\uDF05-\uDF0C\uDF0F\uDF10\uDF13-\uDF28\uDF2A-\uDF30\uDF32\uDF33\uDF35-\uDF39\uDF3D\uDF50\uDF5D-\uDF61\uDF80-\uDF89\uDF8B\uDF8E\uDF90-\uDFB5\uDFB7\uDFD1\uDFD3]|\uD805[\uDC00-\uDC34\uDC47-\uDC4A\uDC5F-\uDC61\uDC80-\uDCAF\uDCC4\uDCC5\uDCC7\uDD80-\uDDAE\uDDD8-\uDDDB\uDE00-\uDE2F\uDE44\uDE80-\uDEAA\uDEB8\uDF00-\uDF1A\uDF40-\uDF46]|\uD806[\uDC00-\uDC2B\uDCA0-\uDCDF\uDCFF-\uDD06\uDD09\uDD0C-\uDD13\uDD15\uDD16\uDD18-\uDD2F\uDD3F\uDD41\uDDA0-\uDDA7\uDDAA-\uDDD0\uDDE1\uDDE3\uDE00\uDE0B-\uDE32\uDE3A\uDE50\uDE5C-\uDE89\uDE9D\uDEB0-\uDEF8\uDFC0-\uDFE0]|\uD807[\uDC00-\uDC08\uDC0A-\uDC2E\uDC40\uDC72-\uDC8F\uDD00-\uDD06\uDD08\uDD09\uDD0B-\uDD30\uDD46\uDD60-\uDD65\uDD67\uDD68\uDD6A-\uDD89\uDD98\uDDB0-\uDDDB\uDEE0-\uDEF2\uDF02\uDF04-\uDF10\uDF12-\uDF33\uDFB0]|\uD808[\uDC00-\uDF99]|\uD809[\uDC80-\uDD43]|\uD80B[\uDF90-\uDFF0]|[\uD80C\uD80E\uD80F\uD81C-\uD822\uD840-\uD868\uD86A-\uD86D\uD86F-\uD872\uD874-\uD879\uD880-\uD883\uD885-\uD88C][\uDC00-\uDFFF]|\uD80D[\uDC00-\uDC2F\uDC41-\uDC46\uDC60-\uDFFF]|\uD810[\uDC00-\uDFFA]|\uD811[\uDC00-\uDE46]|\uD818[\uDD00-\uDD1D]|\uD81A[\uDC00-\uDE38\uDE40-\uDE5E\uDE70-\uDEBE\uDED0-\uDEED\uDF00-\uDF2F\uDF40-\uDF43\uDF63-\uDF77\uDF7D-\uDF8F]|\uD81B[\uDD40-\uDD6C\uDE40-\uDE7F\uDEA0-\uDEB8\uDEBB-\uDED3\uDF00-\uDF4A\uDF50\uDF93-\uDF9F\uDFE0\uDFE1\uDFE3\uDFF2\uDFF3]|\uD823[\uDC00-\uDCD5\uDCFF-\uDD1E\uDD80-\uDDF2]|\uD82B[\uDFF0-\uDFF3\uDFF5-\uDFFB\uDFFD\uDFFE]|\uD82C[\uDC00-\uDD22\uDD32\uDD50-\uDD52\uDD55\uDD64-\uDD67\uDD70-\uDEFB]|\uD82F[\uDC00-\uDC6A\uDC70-\uDC7C\uDC80-\uDC88\uDC90-\uDC99]|\uD835[\uDC00-\uDC54\uDC56-\uDC9C\uDC9E\uDC9F\uDCA2\uDCA5\uDCA6\uDCA9-\uDCAC\uDCAE-\uDCB9\uDCBB\uDCBD-\uDCC3\uDCC5-\uDD05\uDD07-\uDD0A\uDD0D-\uDD14\uDD16-\uDD1C\uDD1E-\uDD39\uDD3B-\uDD3E\uDD40-\uDD44\uDD46\uDD4A-\uDD50\uDD52-\uDEA5\uDEA8-\uDEC0\uDEC2-\uDEDA\uDEDC-\uDEFA\uDEFC-\uDF14\uDF16-\uDF34\uDF36-\uDF4E\uDF50-\uDF6E\uDF70-\uDF88\uDF8A-\uDFA8\uDFAA-\uDFC2\uDFC4-\uDFCB]|\uD837[\uDF00-\uDF1E\uDF25-\uDF2A]|\uD838[\uDC30-\uDC6D\uDD00-\uDD2C\uDD37-\uDD3D\uDD4E\uDE90-\uDEAD\uDEC0-\uDEEB]|\uD839[\uDCD0-\uDCEB\uDDD0-\uDDED\uDDF0\uDEC0-\uDEDE\uDEE0-\uDEE2\uDEE4\uDEE5\uDEE7-\uDEED\uDEF0-\uDEF4\uDEFE\uDEFF\uDFE0-\uDFE6\uDFE8-\uDFEB\uDFED\uDFEE\uDFF0-\uDFFE]|\uD83A[\uDC00-\uDCC4\uDD00-\uDD43\uDD4B]|\uD83B[\uDE00-\uDE03\uDE05-\uDE1F\uDE21\uDE22\uDE24\uDE27\uDE29-\uDE32\uDE34-\uDE37\uDE39\uDE3B\uDE42\uDE47\uDE49\uDE4B\uDE4D-\uDE4F\uDE51\uDE52\uDE54\uDE57\uDE59\uDE5B\uDE5D\uDE5F\uDE61\uDE62\uDE64\uDE67-\uDE6A\uDE6C-\uDE72\uDE74-\uDE77\uDE79-\uDE7C\uDE7E\uDE80-\uDE89\uDE8B-\uDE9B\uDEA1-\uDEA3\uDEA5-\uDEA9\uDEAB-\uDEBB]|\uD869[\uDC00-\uDEDF\uDF00-\uDFFF]|\uD86E[\uDC00-\uDC1D\uDC20-\uDFFF]|\uD873[\uDC00-\uDEAD\uDEB0-\uDFFF]|\uD87A[\uDC00-\uDFE0\uDFF0-\uDFFF]|\uD87B[\uDC00-\uDE5D]|\uD87E[\uDC00-\uDE1D]|\uD884[\uDC00-\uDF4A\uDF50-\uDFFF]|\uD88D[\uDC00-\uDC79])+/i,/\b(without|w\/o|w\/)[\t-\r \xA0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF]+(?:[A-Za-z\xAA\xB5\xBA\xC0-\xD6\xD8-\xF6\xF8-\u02C1\u02C6-\u02D1\u02E0-\u02E4\u02EC\u02EE\u0345\u0370-\u0374\u0376\u0377\u037A-\u037D\u037F\u0386\u0388-\u038A\u038C\u038E-\u03A1\u03A3-\u03F5\u03F7-\u0481\u048A-\u052F\u0531-\u0556\u0559\u0560-\u0588\u05D0-\u05EA\u05EF-\u05F2\u0620-\u064A\u066E\u066F\u0671-\u06D3\u06D5\u06E5\u06E6\u06EE\u06EF\u06FA-\u06FC\u06FF\u0710\u0712-\u072F\u074D-\u07A5\u07B1\u07CA-\u07EA\u07F4\u07F5\u07FA\u0800-\u0815\u081A\u0824\u0828\u0840-\u0858\u0860-\u086A\u0870-\u0887\u0889-\u088F\u08A0-\u08C9\u0904-\u0939\u093D\u0950\u0958-\u0961\u0971-\u0980\u0985-\u098C\u098F\u0990\u0993-\u09A8\u09AA-\u09B0\u09B2\u09B6-\u09B9\u09BD\u09CE\u09DC\u09DD\u09DF-\u09E1\u09F0\u09F1\u09FC\u0A05-\u0A0A\u0A0F\u0A10\u0A13-\u0A28\u0A2A-\u0A30\u0A32\u0A33\u0A35\u0A36\u0A38\u0A39\u0A59-\u0A5C\u0A5E\u0A72-\u0A74\u0A85-\u0A8D\u0A8F-\u0A91\u0A93-\u0AA8\u0AAA-\u0AB0\u0AB2\u0AB3\u0AB5-\u0AB9\u0ABD\u0AD0\u0AE0\u0AE1\u0AF9\u0B05-\u0B0C\u0B0F\u0B10\u0B13-\u0B28\u0B2A-\u0B30\u0B32\u0B33\u0B35-\u0B39\u0B3D\u0B5C\u0B5D\u0B5F-\u0B61\u0B71\u0B83\u0B85-\u0B8A\u0B8E-\u0B90\u0B92-\u0B95\u0B99\u0B9A\u0B9C\u0B9E\u0B9F\u0BA3\u0BA4\u0BA8-\u0BAA\u0BAE-\u0BB9\u0BD0\u0C05-\u0C0C\u0C0E-\u0C10\u0C12-\u0C28\u0C2A-\u0C39\u0C3D\u0C58-\u0C5A\u0C5C\u0C5D\u0C60\u0C61\u0C80\u0C85-\u0C8C\u0C8E-\u0C90\u0C92-\u0CA8\u0CAA-\u0CB3\u0CB5-\u0CB9\u0CBD\u0CDC-\u0CDE\u0CE0\u0CE1\u0CF1\u0CF2\u0D04-\u0D0C\u0D0E-\u0D10\u0D12-\u0D3A\u0D3D\u0D4E\u0D54-\u0D56\u0D5F-\u0D61\u0D7A-\u0D7F\u0D85-\u0D96\u0D9A-\u0DB1\u0DB3-\u0DBB\u0DBD\u0DC0-\u0DC6\u0E01-\u0E30\u0E32\u0E33\u0E40-\u0E46\u0E81\u0E82\u0E84\u0E86-\u0E8A\u0E8C-\u0EA3\u0EA5\u0EA7-\u0EB0\u0EB2\u0EB3\u0EBD\u0EC0-\u0EC4\u0EC6\u0EDC-\u0EDF\u0F00\u0F40-\u0F47\u0F49-\u0F6C\u0F88-\u0F8C\u1000-\u102A\u103F\u1050-\u1055\u105A-\u105D\u1061\u1065\u1066\u106E-\u1070\u1075-\u1081\u108E\u10A0-\u10C5\u10C7\u10CD\u10D0-\u10FA\u10FC-\u1248\u124A-\u124D\u1250-\u1256\u1258\u125A-\u125D\u1260-\u1288\u128A-\u128D\u1290-\u12B0\u12B2-\u12B5\u12B8-\u12BE\u12C0\u12C2-\u12C5\u12C8-\u12D6\u12D8-\u1310\u1312-\u1315\u1318-\u135A\u1380-\u138F\u13A0-\u13F5\u13F8-\u13FD\u1401-\u166C\u166F-\u167F\u1681-\u169A\u16A0-\u16EA\u16F1-\u16F8\u1700-\u1711\u171F-\u1731\u1740-\u1751\u1760-\u176C\u176E-\u1770\u1780-\u17B3\u17D7\u17DC\u1820-\u1878\u1880-\u1884\u1887-\u18A8\u18AA\u18B0-\u18F5\u1900-\u191E\u1950-\u196D\u1970-\u1974\u1980-\u19AB\u19B0-\u19C9\u1A00-\u1A16\u1A20-\u1A54\u1AA7\u1B05-\u1B33\u1B45-\u1B4C\u1B83-\u1BA0\u1BAE\u1BAF\u1BBA-\u1BE5\u1C00-\u1C23\u1C4D-\u1C4F\u1C5A-\u1C7D\u1C80-\u1C8A\u1C90-\u1CBA\u1CBD-\u1CBF\u1CE9-\u1CEC\u1CEE-\u1CF3\u1CF5\u1CF6\u1CFA\u1D00-\u1DBF\u1E00-\u1F15\u1F18-\u1F1D\u1F20-\u1F45\u1F48-\u1F4D\u1F50-\u1F57\u1F59\u1F5B\u1F5D\u1F5F-\u1F7D\u1F80-\u1FB4\u1FB6-\u1FBC\u1FBE\u1FC2-\u1FC4\u1FC6-\u1FCC\u1FD0-\u1FD3\u1FD6-\u1FDB\u1FE0-\u1FEC\u1FF2-\u1FF4\u1FF6-\u1FFC\u2071\u207F\u2090-\u209C\u2102\u2107\u210A-\u2113\u2115\u2119-\u211D\u2124\u2126\u2128\u212A-\u212D\u212F-\u2139\u213C-\u213F\u2145-\u2149\u214E\u2183\u2184\u2C00-\u2CE4\u2CEB-\u2CEE\u2CF2\u2CF3\u2D00-\u2D25\u2D27\u2D2D\u2D30-\u2D67\u2D6F\u2D80-\u2D96\u2DA0-\u2DA6\u2DA8-\u2DAE\u2DB0-\u2DB6\u2DB8-\u2DBE\u2DC0-\u2DC6\u2DC8-\u2DCE\u2DD0-\u2DD6\u2DD8-\u2DDE\u2E2F\u3005\u3006\u3031-\u3035\u303B\u303C\u3041-\u3096\u309D-\u309F\u30A1-\u30FA\u30FC-\u30FF\u3105-\u312F\u3131-\u318E\u31A0-\u31BF\u31F0-\u31FF\u3400-\u4DBF\u4E00-\uA48C\uA4D0-\uA4FD\uA500-\uA60C\uA610-\uA61F\uA62A\uA62B\uA640-\uA66E\uA67F-\uA69D\uA6A0-\uA6E5\uA717-\uA71F\uA722-\uA788\uA78B-\uA7DC\uA7F1-\uA801\uA803-\uA805\uA807-\uA80A\uA80C-\uA822\uA840-\uA873\uA882-\uA8B3\uA8F2-\uA8F7\uA8FB\uA8FD\uA8FE\uA90A-\uA925\uA930-\uA946\uA960-\uA97C\uA984-\uA9B2\uA9CF\uA9E0-\uA9E4\uA9E6-\uA9EF\uA9FA-\uA9FE\uAA00-\uAA28\uAA40-\uAA42\uAA44-\uAA4B\uAA60-\uAA76\uAA7A\uAA7E-\uAAAF\uAAB1\uAAB5\uAAB6\uAAB9-\uAABD\uAAC0\uAAC2\uAADB-\uAADD\uAAE0-\uAAEA\uAAF2-\uAAF4\uAB01-\uAB06\uAB09-\uAB0E\uAB11-\uAB16\uAB20-\uAB26\uAB28-\uAB2E\uAB30-\uAB5A\uAB5C-\uAB69\uAB70-\uABE2\uAC00-\uD7A3\uD7B0-\uD7C6\uD7CB-\uD7FB\uF900-\uFA6D\uFA70-\uFAD9\uFB00-\uFB06\uFB13-\uFB17\uFB1D\uFB1F-\uFB28\uFB2A-\uFB36\uFB38-\uFB3C\uFB3E\uFB40\uFB41\uFB43\uFB44\uFB46-\uFBB1\uFBD3-\uFD3D\uFD50-\uFD8F\uFD92-\uFDC7\uFDF0-\uFDFB\uFE70-\uFE74\uFE76-\uFEFC\uFF21-\uFF3A\uFF41-\uFF5A\uFF66-\uFFBE\uFFC2-\uFFC7\uFFCA-\uFFCF\uFFD2-\uFFD7\uFFDA-\uFFDC]|\uD800[\uDC00-\uDC0B\uDC0D-\uDC26\uDC28-\uDC3A\uDC3C\uDC3D\uDC3F-\uDC4D\uDC50-\uDC5D\uDC80-\uDCFA\uDE80-\uDE9C\uDEA0-\uDED0\uDF00-\uDF1F\uDF2D-\uDF40\uDF42-\uDF49\uDF50-\uDF75\uDF80-\uDF9D\uDFA0-\uDFC3\uDFC8-\uDFCF]|\uD801[\uDC00-\uDC9D\uDCB0-\uDCD3\uDCD8-\uDCFB\uDD00-\uDD27\uDD30-\uDD63\uDD70-\uDD7A\uDD7C-\uDD8A\uDD8C-\uDD92\uDD94\uDD95\uDD97-\uDDA1\uDDA3-\uDDB1\uDDB3-\uDDB9\uDDBB\uDDBC\uDDC0-\uDDF3\uDE00-\uDF36\uDF40-\uDF55\uDF60-\uDF67\uDF80-\uDF85\uDF87-\uDFB0\uDFB2-\uDFBA]|\uD802[\uDC00-\uDC05\uDC08\uDC0A-\uDC35\uDC37\uDC38\uDC3C\uDC3F-\uDC55\uDC60-\uDC76\uDC80-\uDC9E\uDCE0-\uDCF2\uDCF4\uDCF5\uDD00-\uDD15\uDD20-\uDD39\uDD40-\uDD59\uDD80-\uDDB7\uDDBE\uDDBF\uDE00\uDE10-\uDE13\uDE15-\uDE17\uDE19-\uDE35\uDE60-\uDE7C\uDE80-\uDE9C\uDEC0-\uDEC7\uDEC9-\uDEE4\uDF00-\uDF35\uDF40-\uDF55\uDF60-\uDF72\uDF80-\uDF91]|\uD803[\uDC00-\uDC48\uDC80-\uDCB2\uDCC0-\uDCF2\uDD00-\uDD23\uDD4A-\uDD65\uDD6F-\uDD85\uDE80-\uDEA9\uDEB0\uDEB1\uDEC2-\uDEC7\uDF00-\uDF1C\uDF27\uDF30-\uDF45\uDF70-\uDF81\uDFB0-\uDFC4\uDFE0-\uDFF6]|\uD804[\uDC03-\uDC37\uDC71\uDC72\uDC75\uDC83-\uDCAF\uDCD0-\uDCE8\uDD03-\uDD26\uDD44\uDD47\uDD50-\uDD72\uDD76\uDD83-\uDDB2\uDDC1-\uDDC4\uDDDA\uDDDC\uDE00-\uDE11\uDE13-\uDE2B\uDE3F\uDE40\uDE80-\uDE86\uDE88\uDE8A-\uDE8D\uDE8F-\uDE9D\uDE9F-\uDEA8\uDEB0-\uDEDE\uDF05-\uDF0C\uDF0F\uDF10\uDF13-\uDF28\uDF2A-\uDF30\uDF32\uDF33\uDF35-\uDF39\uDF3D\uDF50\uDF5D-\uDF61\uDF80-\uDF89\uDF8B\uDF8E\uDF90-\uDFB5\uDFB7\uDFD1\uDFD3]|\uD805[\uDC00-\uDC34\uDC47-\uDC4A\uDC5F-\uDC61\uDC80-\uDCAF\uDCC4\uDCC5\uDCC7\uDD80-\uDDAE\uDDD8-\uDDDB\uDE00-\uDE2F\uDE44\uDE80-\uDEAA\uDEB8\uDF00-\uDF1A\uDF40-\uDF46]|\uD806[\uDC00-\uDC2B\uDCA0-\uDCDF\uDCFF-\uDD06\uDD09\uDD0C-\uDD13\uDD15\uDD16\uDD18-\uDD2F\uDD3F\uDD41\uDDA0-\uDDA7\uDDAA-\uDDD0\uDDE1\uDDE3\uDE00\uDE0B-\uDE32\uDE3A\uDE50\uDE5C-\uDE89\uDE9D\uDEB0-\uDEF8\uDFC0-\uDFE0]|\uD807[\uDC00-\uDC08\uDC0A-\uDC2E\uDC40\uDC72-\uDC8F\uDD00-\uDD06\uDD08\uDD09\uDD0B-\uDD30\uDD46\uDD60-\uDD65\uDD67\uDD68\uDD6A-\uDD89\uDD98\uDDB0-\uDDDB\uDEE0-\uDEF2\uDF02\uDF04-\uDF10\uDF12-\uDF33\uDFB0]|\uD808[\uDC00-\uDF99]|\uD809[\uDC80-\uDD43]|\uD80B[\uDF90-\uDFF0]|[\uD80C\uD80E\uD80F\uD81C-\uD822\uD840-\uD868\uD86A-\uD86D\uD86F-\uD872\uD874-\uD879\uD880-\uD883\uD885-\uD88C][\uDC00-\uDFFF]|\uD80D[\uDC00-\uDC2F\uDC41-\uDC46\uDC60-\uDFFF]|\uD810[\uDC00-\uDFFA]|\uD811[\uDC00-\uDE46]|\uD818[\uDD00-\uDD1D]|\uD81A[\uDC00-\uDE38\uDE40-\uDE5E\uDE70-\uDEBE\uDED0-\uDEED\uDF00-\uDF2F\uDF40-\uDF43\uDF63-\uDF77\uDF7D-\uDF8F]|\uD81B[\uDD40-\uDD6C\uDE40-\uDE7F\uDEA0-\uDEB8\uDEBB-\uDED3\uDF00-\uDF4A\uDF50\uDF93-\uDF9F\uDFE0\uDFE1\uDFE3\uDFF2\uDFF3]|\uD823[\uDC00-\uDCD5\uDCFF-\uDD1E\uDD80-\uDDF2]|\uD82B[\uDFF0-\uDFF3\uDFF5-\uDFFB\uDFFD\uDFFE]|\uD82C[\uDC00-\uDD22\uDD32\uDD50-\uDD52\uDD55\uDD64-\uDD67\uDD70-\uDEFB]|\uD82F[\uDC00-\uDC6A\uDC70-\uDC7C\uDC80-\uDC88\uDC90-\uDC99]|\uD835[\uDC00-\uDC54\uDC56-\uDC9C\uDC9E\uDC9F\uDCA2\uDCA5\uDCA6\uDCA9-\uDCAC\uDCAE-\uDCB9\uDCBB\uDCBD-\uDCC3\uDCC5-\uDD05\uDD07-\uDD0A\uDD0D-\uDD14\uDD16-\uDD1C\uDD1E-\uDD39\uDD3B-\uDD3E\uDD40-\uDD44\uDD46\uDD4A-\uDD50\uDD52-\uDEA5\uDEA8-\uDEC0\uDEC2-\uDEDA\uDEDC-\uDEFA\uDEFC-\uDF14\uDF16-\uDF34\uDF36-\uDF4E\uDF50-\uDF6E\uDF70-\uDF88\uDF8A-\uDFA8\uDFAA-\uDFC2\uDFC4-\uDFCB]|\uD837[\uDF00-\uDF1E\uDF25-\uDF2A]|\uD838[\uDC30-\uDC6D\uDD00-\uDD2C\uDD37-\uDD3D\uDD4E\uDE90-\uDEAD\uDEC0-\uDEEB]|\uD839[\uDCD0-\uDCEB\uDDD0-\uDDED\uDDF0\uDEC0-\uDEDE\uDEE0-\uDEE2\uDEE4\uDEE5\uDEE7-\uDEED\uDEF0-\uDEF4\uDEFE\uDEFF\uDFE0-\uDFE6\uDFE8-\uDFEB\uDFED\uDFEE\uDFF0-\uDFFE]|\uD83A[\uDC00-\uDCC4\uDD00-\uDD43\uDD4B]|\uD83B[\uDE00-\uDE03\uDE05-\uDE1F\uDE21\uDE22\uDE24\uDE27\uDE29-\uDE32\uDE34-\uDE37\uDE39\uDE3B\uDE42\uDE47\uDE49\uDE4B\uDE4D-\uDE4F\uDE51\uDE52\uDE54\uDE57\uDE59\uDE5B\uDE5D\uDE5F\uDE61\uDE62\uDE64\uDE67-\uDE6A\uDE6C-\uDE72\uDE74-\uDE77\uDE79-\uDE7C\uDE7E\uDE80-\uDE89\uDE8B-\uDE9B\uDEA1-\uDEA3\uDEA5-\uDEA9\uDEAB-\uDEBB]|\uD869[\uDC00-\uDEDF\uDF00-\uDFFF]|\uD86E[\uDC00-\uDC1D\uDC20-\uDFFF]|\uD873[\uDC00-\uDEAD\uDEB0-\uDFFF]|\uD87A[\uDC00-\uDFE0\uDFF0-\uDFFF]|\uD87B[\uDC00-\uDE5D]|\uD87E[\uDC00-\uDE1D]|\uD884[\uDC00-\uDF4A\uDF50-\uDFFF]|\uD88D[\uDC00-\uDC79])+/i],i=[/\ballerg/i,/\bintol/i,/\bgluten/i,/\barach/i,/\bcacahu/i,/\blacto[s\u017F]/i,/\b[s\u017F]oja/i,/\u062D\u0633\u0627\u0633\u064A/,/\u063A\u0644\u0648\u062A\u064A\u0646/,/\u0644\u0627\u0643\u062A\u0648\u0632/,/\b\u0641\u0648\u0644\b/,/\u0645\u0643\u0633\u0631\u0627\u062A/,/\u0635\u0648\u064A\u0627/];function o(e){var t,r=n(i);try{for(r.s();!(t=r.n()).done;){if(t.value.test(e))return!0}}catch(e){r.e(e)}finally{r.f()}return!1}function l(e){var t,r=n(u);try{for(r.s();!(t=r.n()).done;){if(t.value.test(e))return!0}}catch(e){r.e(e)}finally{r.f()}return!1}function s(e){if(null==e||"string"!=typeof e)return"kds-instruction--note";var t=e.trim();return t.length<2?"kds-instruction--note":o(t)?"kds-instruction--allergen":l(t)?"kds-instruction--exclusion":"kds-instruction--note"}},2250(e,t,r){r.d(t,{ko:()=>w});var n=r(617),a=r(4203);function u(e,t){return function(e){if(Array.isArray(e))return e}(e)||function(e,t){var r=null==e?null:"undefined"!=typeof Symbol&&e[Symbol.iterator]||e["@@iterator"];if(null!=r){var n,a,u,i,o=[],l=!0,s=!1;try{if(u=(r=r.call(e)).next,0===t){if(Object(r)!==r)return;l=!1}else for(;!(l=(n=u.call(r)).done)&&(o.push(n.value),o.length!==t);l=!0);}catch(e){s=!0,a=e}finally{try{if(!l&&null!=r.return&&(i=r.return(),Object(i)!==i))return}finally{if(s)throw a}}return o}}(e,t)||o(e,t)||function(){throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")}()}function i(e,t){var r="undefined"!=typeof Symbol&&e[Symbol.iterator]||e["@@iterator"];if(!r){if(Array.isArray(e)||(r=o(e))||t&&e&&"number"==typeof e.length){r&&(e=r);var n=0,a=function(){};return{s:a,n:function(){return n>=e.length?{done:!0}:{done:!1,value:e[n++]}},e:function(e){throw e},f:a}}throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")}var u,i=!0,l=!1;return{s:function(){r=r.call(e)},n:function(){var e=r.next();return i=e.done,e},e:function(e){l=!0,u=e},f:function(){try{i||null==r.return||r.return()}finally{if(l)throw u}}}}function o(e,t){if(e){if("string"==typeof e)return l(e,t);var r={}.toString.call(e).slice(8,-1);return"Object"===r&&e.constructor&&(r=e.constructor.name),"Map"===r||"Set"===r?Array.from(e):"Arguments"===r||/^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(r)?l(e,t):void 0}}function l(e,t){(null==t||t>e.length)&&(t=e.length);for(var r=0,n=Array(t);r<t;r++)n[r]=e[r];return n}function s(e){return String(e||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/œ/g,"oe").replace(/æ/g,"ae").trim()}var d=[[/hach|steak|b[oe]uf/,"K"],[/poulet/,"P"],[/tender/,"Tender"],[/nugget/,"Nug"],[/mexic/,"Mex"],[/fricadelle/,"Frec"],[/cordon/,"Cordon"]],c=[[/mayo/,"MAY"],[/samou/,"SAM"],[/hannibal/,"HAN"],[/curry/,"CURY"],[/andalouse/,"AND"],[/blanche/,"BL"],[/ketchup/,"KTP"],[/burger/,"Burg"],[/algerien/,"ALG"],[/barbecue|bbq/,"BBQ"],[/harissa/,"HAR"],[/fromage/,"FRO"],[/spicy/,"SPI"]],D=[[/salade/,"S"],[/tomate/,"T"],[/oignon.*cuit|cuit.*oignon/,"O̲"],[/oignon/,"O"]],p=["S","T","O","O̲"];function m(e){var t,r=s(e),n=i(d);try{for(n.s();!(t=n.n()).done;){var a=u(t.value,2),o=a[0],l=a[1];if(o.test(r))return l}}catch(e){n.e(e)}finally{n.f()}return""}function f(e){var t,r=s(e),n=i(c);try{for(n.s();!(t=n.n()).done;){var a=u(t.value,2),o=a[0],l=a[1];if(o.test(r))return l}}catch(e){n.e(e)}finally{n.f()}return r.replace(/^sauce\s+/,"").slice(0,3).toUpperCase()}function h(e){var t,r=s(e),n=i(D);try{for(n.s();!(t=n.n()).done;){var a=u(t.value,2),o=a[0],l=a[1];if(o.test(r))return l}}catch(e){n.e(e)}finally{n.f()}return""}function b(e){var t=s(e);return/galette/.test(t)?"G":/pain/.test(t)?"S":""}function k(e){var t=null==e?void 0:e.composition_snapshot;return t&&Array.isArray(t.addons)&&t.addons.length>0?t.addons:Array.isArray(null==e?void 0:e.item_addons)?e.item_addons:[]}function E(e){return(null==e?void 0:e.extra_name)||(null==e?void 0:e.name)||""}function g(e){return(null==e?void 0:e.addon_name)||(null==e?void 0:e.name)||""}function y(e,t){var r=s(e);return/viande|meat/.test(r)?"meat":/sauce/.test(r)?"sauce":/pain|galette|support|bread/.test(r)?"support":/taille|size|portion/.test(r)?"size":m(t)?"meat":"other"}var v=["menu","enfant","formule","grande","grand","petite","petit","mini","maxi","moyenne","moyen","box"];function F(e){var t=s(e).replace(/[^a-z0-9 ]+/g," ").trim();if(!t)return"";var r=t.split(" ").filter(Boolean);return(r.filter(function(e){return!v.includes(e)&&!/^\d+(cl|ml|l|g|kg)?$/.test(e)})[0]||r[0]||t).slice(0,3).toUpperCase()}function _(e){var t,r,a,u,o=(0,n.W2)(e),l=(t=null==e?void 0:e.item_name,r=String(t||"").trim(),(a=r.match(/\s+(XL|L|M)\s*$/i))?{produit:F(r.slice(0,a.index).trim()),taille:a[1].toUpperCase()}:{produit:F(r),taille:""}),d=l.produit,c="",D=l.taille,v=[],_=[],A=new Set,C=[],B=i(function(e){var t=null==e?void 0:e.composition_snapshot;return t&&Array.isArray(t.lines)&&t.lines.length>0?t.lines:Array.isArray(null==e?void 0:e.item_variations)?e.item_variations:[]}(e));try{for(B.s();!(u=B.n()).done;){var x=u.value,w=(0,n.In)(x),S=w.value;if(S||void 0!==(null==x?void 0:x.name)&&null!==(null==x?void 0:x.name)&&""!==(null==x?void 0:x.name)||null==x||!x.variation_name||(S=String(x.variation_name)),S)switch(y(w.group,S)){case"meat":v.push(m(S)||s(S).slice(0,3).toUpperCase());break;case"sauce":_.push(f(S));break;case"support":c=b(S)||c;break;case"size":D=D||String(S).toUpperCase()}}}catch(e){B.e(e)}finally{B.f()}var N,V=i(function(e){var t=null==e?void 0:e.composition_snapshot;return t&&Array.isArray(t.extras)&&t.extras.length>0?t.extras:Array.isArray(null==e?void 0:e.item_extras)?e.item_extras:[]}(e));try{for(V.s();!(N=V.n()).done;){var I,O,P=N.value,T=E(P);if(T){var R=h(T),$=Number(null!==(I=null!==(O=null==P?void 0:P.unit_price)&&void 0!==O?O:null==P?void 0:P.line_total)&&void 0!==I?I:0)||0;if(R&&$<=0)A.add(R);else{var M=parseInt(null==P?void 0:P.quantity,10),j=Number.isFinite(M)&&M>1?" ×".concat(M):"";C.push("+ ".concat(T).concat(j))}}}}catch(e){V.e(e)}finally{V.f()}c||"taco"!==o&&!/galette/.test(s(null==e?void 0:e.item_name))||(c="G");var L,z=k(e),K="",q=!1,U=!1,G=!1,W=i(z);try{for(W.s();!(L=W.n()).done;){var H=L.value,J=String((null==H?void 0:H.role)||"").toLowerCase();J.startsWith("menu_")&&("menu_frites"===J?U=!0:"menu_boisson"===J?G=!0:q=!0)}}catch(e){W.e(e)}finally{W.f()}return q||U&&G?K="MENU":U?K="FRITES":G?K="BOISSON":z.some(function(e){return/frite/.test(s(g(e)))})&&(K="F"),{category:o,support:c,produit:d,taille:D,viandes:v,crudites:p.filter(function(e){return A.has(e)}).join(""),sauces:_,supplements:C,menu:K}}function A(e){var t=_(e);return[t.support,t.produit,t.taille,t.viandes.join(" "),t.crudites,t.sauces.join(" ")].filter(function(e){return e&&e.length>0}).join(" | ")}function C(e){var t=String(e||"").toLowerCase();return"drink"===t||"menu_boisson"===t||t.includes("boisson")}function B(e){var t,r=[],a=i(k(e));try{for(a.s();!(t=a.n()).done;){var u=t.value;if(C(null==u?void 0:u.role)){var o=g(u);if(o&&(0,n.mR)(o)){var l=parseInt(null==u?void 0:u.quantity,10),s=Number.isFinite(l)&&l>0?l:1;r.push("".concat(s,"× ").concat(o))}}}}catch(e){a.e(e)}finally{a.f()}return r}function x(e){var t=(0,n.Sr)(null==e?void 0:e.instruction,null==e?void 0:e.item_name);return 0===t.length?null:{type:"instruction",label:t,visualClass:(0,a.F)(t)}}function w(e){var t,r,n=_(e),a=[],u=Array.isArray(null==e?void 0:e.allergens_snapshot)?e.allergens_snapshot.map(function(e){return null==e?"":String(e)}).filter(function(e){return e.length>0}):[],o=u.length>0,l=function(e){if("string"!=typeof e||""===e)return"";var t=e.match(/sauce\s*frites\s*:\s*([^\n]+)/i);return t?f(t[1].trim()):""}(null==e?void 0:e.instruction);if(r=null==e?void 0:e.item_name,/\bmenu\s*\(|\bformule\b/.test(s(r))){var d;a.push({type:"symbolic-main",qty:null!==(d=null==e?void 0:e.quantity)&&void 0!==d?d:1,label:l?"MENU : ".concat(l):"MENU",category:n.category,hasAllergen:o});var c,D=i(B(e));try{for(D.s();!(c=D.n()).done;){var p=c.value;a.push({type:"menu_child",label:p})}}catch(e){D.e(e)}finally{D.f()}var m=x(e);return m&&a.push(m),o&&a.push({type:"allergen",codes:u}),{category:n.category,hasAllergen:o,lines:a}}if(a.push({type:"symbolic-main",qty:null!==(t=null==e?void 0:e.quantity)&&void 0!==t?t:1,label:"drink"===n.category?String((null==e?void 0:e.item_name)||"").trim():A(e),category:n.category,hasAllergen:o}),n.menu){var h="MENU"!==n.menu&&"FRITES"!==n.menu||!l?n.menu:"".concat(n.menu," : ").concat(l);a.push({type:"symbolic-menu",label:h})}var b,k=i(n.supplements);try{for(k.s();!(b=k.n()).done;){var E=b.value;a.push({type:"supplement",label:String(E).replace(/^\+\s*/,"⭐ ")})}}catch(e){k.e(e)}finally{k.f()}var g,y=i(B(e));try{for(y.s();!(g=y.n()).done;){var v=g.value;a.push({type:"menu_child",label:v})}}catch(e){y.e(e)}finally{y.f()}var F=x(e);return F&&a.push(F),o&&a.push({type:"allergen",codes:u}),{category:n.category,hasAllergen:o,lines:a}}},2856(e,t,r){r.r(t),r.d(t,{default:()=>tl});var n=r(6934);function a(e){return function(e){if(Array.isArray(e))return u(e)}(e)||function(e){if("undefined"!=typeof Symbol&&null!=e[Symbol.iterator]||null!=e["@@iterator"])return Array.from(e)}(e)||function(e,t){if(e){if("string"==typeof e)return u(e,t);var r={}.toString.call(e).slice(8,-1);return"Object"===r&&e.constructor&&(r=e.constructor.name),"Map"===r||"Set"===r?Array.from(e):"Arguments"===r||/^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(r)?u(e,t):void 0}}(e)||function(){throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")}()}function u(e,t){(null==t||t>e.length)&&(t=e.length);for(var r=0,n=Array(t);r<t;r++)n[r]=e[r];return n}var i={class:"kds-history-trigger-row"},o=["aria-label"],l={class:"kds-history-trigger__label"},s={key:0,class:"ws-reconnect-banner","data-testid":"kds-sync-mode-banner"},d={key:1,class:"kds-hint-banner kds-hint-banner--danger kds-hint-banner--action",role:"alert","aria-live":"assertive","data-testid":"kds-error-banner"},c=["aria-label"],D={key:2,class:"kds-hint-banner kds-hint-banner--info",role:"status"},p={key:3,class:"kds-hint-banner kds-hint-banner--warning",role:"alert"},m={key:4,class:"kds-hint-banner kds-hint-banner--danger kds-hint-banner--action",role:"alert"},f={key:5,class:"kds-hint-banner kds-hint-banner--neutral flex flex-wrap items-center justify-between gap-2 text-left",role:"note"},h={class:"min-w-0 flex-1"},b={class:"row md:mt-4 lg:mt-0"},k={class:"lg:hidden flex items-center w-full px-4"},E={class:"kitchen-board db-tab-btn active text-base text-black font-semibold h-[38px] bg-white flex items-center justify-center rounded-l-lg px-7","data-tab":"#item-order"},g={class:"kitchen-board db-tab-btn text-base text-black font-semibold h-[38px] bg-white flex items-center justify-center ro rounded-r-lg px-7","data-tab":"#today-order"},y={id:"item-order",class:"col-12 lg:col-3 db-tab-div active lg:block hidden"},v={class:"db-card rounded-[10px] w-full"},F={class:"h-screen md:h-[calc(100vh-127px)] overflow-hidden"},_={class:"p-3 pb-2 border-b border-[#D9DBE9]"},A={class:"text-lg font-semibold"},C={class:"text-[11px] text-[#4B5563] leading-snug mt-1"},B={class:"h-full thin-scrolling overflow-auto pb-12"},x={class:"text-sm font-medium mb-1"},w={key:0,class:"text-xs font-normal font-client capitalize text-[#6E7191]"},S={key:0},N={key:1,class:"flex gap-1"},V={class:"capitalize text-xs w-fit whitespace-nowrap"},I={class:"text-xs font-normal font-client capitalize text-[#6E7191]"},O={key:0},P={key:2,class:"flex gap-1"},T={class:"capitalize text-xs w-fit whitespace-nowrap"},R={class:"text-xs font-normal font-client capitalize text-[#6E7191]"},$={key:0},M={key:1},j={class:"text-sm font-medium w-6 h-6 rounded-full bg-black text-white flex items-center justify-center"},L={id:"today-order",class:"col-12 lg:col-9 db-tab-div lg:block hidden"},z={class:"ordersTab"},K={class:"db-card px-3 py-3 mb-4 flex flex-col xl:flex-row flex-wrap gap-4 xl:items-center xl:justify-between"},q={class:"flex flex-wrap items-center gap-3"},U={for:"kds-station-filter",class:"text-sm font-medium text-heading shrink-0"},G=["aria-label"],W={value:"all"},H={value:"bar"},J={value:"cuisine_chaude"},Y={value:"cuisine_froide"},X={class:"flex items-center gap-2 text-xs font-medium text-heading cursor-pointer"},Z={class:"flex flex-wrap items-center gap-4"},Q={class:"text-sm font-medium text-heading"},ee={class:"flex items-center gap-2 text-xs text-heading cursor-pointer"},te={class:"sr-only"},re={class:"flex items-center gap-2 text-xs text-heading"},ne={class:"whitespace-nowrap"},ae=["aria-label"],ue=["title"],ie={class:"whitespace-nowrap"},oe={key:0,role:"alert",class:"flex items-center gap-1 text-xs font-semibold text-red-600 whitespace-nowrap"},le={ref:"kdsNewOrderAudio",preload:"auto",class:"hidden",src:"/sounds/kds-new-order.mp3"},se={class:"db-card px-3 py-2.5 mb-4"},de={class:"swiper kitchen-swiper !flex flex-col gap-y-2 xl:flex-row items-start justify-between"},ce={class:"whitespace-nowrap text-sm font-medium"},De={class:"whitespace-nowrap text-sm font-medium"},pe={class:"whitespace-nowrap text-sm font-medium"},me={class:"whitespace-nowrap text-sm font-medium"},fe=["placeholder","aria-label"],he=["aria-label"],be={class:"db-card rounded-[10px] h-fit"},ke={class:"text-lg font-semibold"},Ee={key:0,class:"p-3 text-sm text-[#6E7191]"},ge={key:1,class:"p-3 space-y-3"},ye={key:0,class:"mb-1"},ve=["onClick"],Fe=["aria-labelledby"],_e=["title","aria-label"],Ae=["onClick","aria-label"],Ce={class:"py-2.5 px-3 w-full rounded-t-lg flex items-center justify-between bg-[#F0F8FF]"},Be={class:"flex items-center gap-1 text-[#0084FF]"},xe=["id"],we={key:0,class:"kds-source-pill kds-source-pill--queue"},Se={class:"w-full pt-2 pb-3 px-3"},Ne={class:"text-sm font-normal leading-6 font-client capitalize text-[#6E7191]"},Ve={class:"text-heading font-medium"},Ie={class:"text-sm font-normal leading-6 font-client capitalize text-[#6E7191]"},Oe={class:"text-heading font-medium"},Pe={key:0,class:"mt-1 mb-2 p-2 rounded-lg bg-[#F0FDFA] border-l-[3px] border-[#0F766E]","data-testid":"kds-legacy-delivery"},Te={key:0,class:"text-xs leading-snug text-[#0F766E] font-semibold flex items-start gap-1"},Re={class:"break-words"},$e={key:1,class:"text-xs leading-snug text-[#115E59] flex items-center gap-1"},Me=["href"],je=["aria-label"],Le={style:{height:"0px"},class:"overflow-hidden transition-all duration-500"},ze={class:"text-sm font-medium shrink-0"},Ke={class:"flex-1 min-w-0"},qe={class:"text-sm font-medium mb-1"},Ue={key:0,class:"text-xs font-normal font-client capitalize text-[#6E7191]"},Ge={key:0},We={key:1,class:"flex gap-1"},He={class:"capitalize text-xs w-fit whitespace-nowrap font-medium"},Je={class:"text-xs font-normal font-client capitalize text-[#6E7191]"},Ye={key:0},Xe={key:2,class:"flex gap-1"},Ze={class:"capitalize text-xs w-fit whitespace-nowrap font-medium"},Qe={class:"text-xs font-normal font-client capitalize text-[#6E7191]"},et={key:0},tt={key:1},rt={class:"flex flex-col items-end gap-1 shrink-0 pt-0.5"},nt=["title","aria-label","onClick"],at=["onClick"],ut=["title","aria-label","onClick"],it={class:"kds-card-cta mt-2","data-testid":"kds-card-cta"},ot=["onClick"],lt=["onClick"],st={class:"db-card rounded-[10px] h-fit"},dt={class:"text-lg font-semibold"},ct={key:0,class:"p-3 text-sm text-[#6E7191]"},Dt=["aria-labelledby"],pt=["title","aria-label"],mt=["onClick","aria-label"],ft={class:"py-2.5 px-3 w-full rounded-t-lg flex items-center justify-between bg-[#FFF6EE]"},ht={class:"flex items-center gap-1 text-[#FF8C1A]"},bt=["id"],kt={key:0,class:"kds-source-pill kds-source-pill--queue"},Et={class:"w-full pt-2 pb-3 px-3"},gt={class:"text-sm font-normal leading-6 font-client capitalize text-[#6E7191]"},yt={key:0,class:"text-sm font-normal leading-6 font-client capitalize text-[#6E7191]"},vt={class:"text-heading font-medium"},Ft={key:1,class:"mt-1 mb-2 p-2 rounded-lg bg-[#F0FDFA] border-l-[3px] border-[#0F766E]","data-testid":"kds-legacy-delivery"},_t={key:0,class:"text-xs leading-snug text-[#0F766E] font-semibold flex items-start gap-1"},At={class:"break-words"},Ct={key:1,class:"text-xs leading-snug text-[#115E59] flex items-center gap-1"},Bt=["href"],xt=["aria-label"],wt={style:{height:"0px"},class:"overflow-hidden transition-all duration-500"},St={class:"text-sm font-medium shrink-0"},Nt={class:"flex-1 min-w-0"},Vt={class:"text-sm font-medium mb-1"},It={key:0,class:"text-xs font-normal font-client capitalize text-[#6E7191]"},Ot={key:0},Pt={key:1,class:"flex gap-1"},Tt={class:"capitalize text-xs w-fit whitespace-nowrap font-medium"},Rt={class:"text-xs font-normal font-client capitalize text-[#6E7191]"},$t={key:0},Mt={key:2,class:"flex gap-1"},jt={class:"capitalize text-xs w-fit whitespace-nowrap font-medium"},Lt={class:"text-xs font-normal font-client capitalize text-[#6E7191]"},zt={key:0},Kt={key:1},qt={class:"flex flex-col items-end gap-1 shrink-0 pt-0.5"},Ut=["title","aria-label","onClick"],Gt=["onClick"],Wt=["title","aria-label","onClick"],Ht={class:"kds-card-cta mt-2","data-testid":"kds-card-cta"},Jt=["onClick"],Yt=["onClick"],Xt={class:"db-card rounded-[10px] h-fit"},Zt={class:"text-lg font-semibold"},Qt={key:0,class:"p-3 text-sm text-[#6E7191]"},er=["aria-labelledby"],tr=["title","aria-label"],rr=["onClick","aria-label"],nr={class:"py-2.5 px-3 w-full rounded-t-lg flex items-center justify-between bg-[#F7F0FF]"},ar={class:"kds-card-header-meta text-[#2D1263]"},ur=["id"],ir={key:0,class:"kds-source-pill kds-source-pill--queue"},or={key:1,class:"kds-counter-payment-badge"},lr={class:"w-full pt-2 pb-3 px-3"},sr={class:"text-sm font-normal leading-6 font-client capitalize text-[#6E7191]"},dr={class:"text-heading font-medium"},cr={key:0,class:"text-sm font-normal leading-6 font-client text-[#6E7191]"},Dr={class:"text-heading font-medium"},pr={key:1,class:"mt-1 mb-2 p-2 rounded-lg bg-[#F0FDFA] border-l-[3px] border-[#0F766E]","data-testid":"kds-legacy-delivery"},mr={key:0,class:"text-xs leading-snug text-[#0F766E] font-semibold flex items-start gap-1"},fr={class:"break-words"},hr={key:1,class:"text-xs leading-snug text-[#115E59] flex items-center gap-1"},br=["href"],kr=["aria-label"],Er={style:{height:"0px"},class:"overflow-hidden transition-all duration-500"},gr={class:"text-sm font-medium shrink-0"},yr={class:"flex-1 min-w-0"},vr={class:"text-sm font-medium mb-1"},Fr={key:0,class:"text-xs font-normal font-client capitalize text-[#6E7191]"},_r={key:0},Ar={key:1,class:"flex gap-1"},Cr={class:"capitalize text-xs w-fit whitespace-nowrap font-medium"},Br={class:"text-xs font-normal font-client capitalize text-[#6E7191]"},xr={key:0},wr={key:2,class:"flex gap-1"},Sr={class:"capitalize text-xs w-fit whitespace-nowrap font-medium"},Nr={class:"text-xs font-normal font-client capitalize text-[#6E7191]"},Vr={key:0},Ir={key:1},Or={class:"flex flex-col items-end gap-1 shrink-0 pt-0.5"},Pr=["title","aria-label","onClick"],Tr=["onClick"],Rr=["title","aria-label","onClick"],$r={class:"kds-card-cta mt-2","data-testid":"kds-card-cta"},Mr=["onClick"],jr=["onClick"],Lr={class:"db-card rounded-[10px] h-fit"},zr={key:0,class:"inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#991B1B] text-white text-[11px] font-bold"},Kr={key:0,class:"p-3 text-sm text-[#6E7191]"},qr=["aria-labelledby"],Ur=["title","aria-label"],Gr=["onClick","aria-label"],Wr={class:"py-2.5 px-3 w-full rounded-t-lg flex items-center justify-between bg-[#FFF0EE]"},Hr={class:"kds-card-header-meta text-[#991B1B]"},Jr=["id"],Yr={key:0,class:"kds-source-pill kds-source-pill--queue"},Xr={key:1,class:"kds-counter-payment-badge"},Zr={class:"w-full pt-2 pb-3 px-3"},Qr={key:0,class:"mt-1 mb-2 p-2 rounded-lg bg-[#F0FDFA] border-l-[3px] border-[#0F766E]","data-testid":"kds-legacy-delivery"},en={key:0,class:"text-xs leading-snug text-[#0F766E] font-semibold flex items-start gap-1"},tn={class:"break-words"},rn={key:1,class:"text-xs leading-snug text-[#115E59] flex items-center gap-1"},nn=["href"],an=["aria-label"],un={key:0,class:"text-xs font-medium text-heading"},on={style:{height:"0px"},class:"overflow-hidden transition-all duration-500"},ln={class:"text-sm font-medium shrink-0"},sn={class:"flex-1 min-w-0"},dn={class:"text-sm font-medium mb-1"},cn={key:0,class:"text-xs font-normal font-client capitalize text-[#6E7191]"},Dn={key:0},pn={key:1,class:"flex gap-1"},mn={class:"capitalize text-xs w-fit whitespace-nowrap font-medium"},fn={class:"text-xs font-normal font-client capitalize text-[#6E7191]"},hn={key:0},bn={key:2,class:"flex gap-1"},kn={class:"capitalize text-xs w-fit whitespace-nowrap font-medium"},En={class:"text-xs font-normal font-client capitalize text-[#6E7191]"},gn={key:0},yn={key:1},vn={key:3,class:"mt-2 flex flex-wrap gap-1"},Fn={class:"flex flex-col items-end gap-1 shrink-0 pt-0.5"},_n=["title","aria-label","onClick"],An=["onClick"],Cn=["title","aria-label","onClick"],Bn={class:"kds-card-cta mt-2","data-testid":"kds-card-cta"},xn=["onClick"],wn=["onClick"],Sn={class:"sr-only kds-aria-live","data-testid":"kds-aria-live",role:"status","aria-live":"polite","aria-atomic":"true"},Nn={class:"kds-sync-footer"},Vn=["title"],In=["aria-label"],On={class:"kds-allergens-modal-content"},Pn={class:"kds-allergens-modal-header"},Tn=["aria-label"],Rn={class:"kds-allergens-modal-intro"},$n={class:"kds-allergens-modal-list"};var Mn=r(234),jn=r(1978),Ln=r(6884),zn=r(908),Kn=r(970),qn=r(6719),Un=r(2219),Gn=r(9856),Wn=r(8655),Hn=r(8859),Jn=r(8536);function Yn(e){return Yn="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e},Yn(e)}function Xn(){var e,t,r="function"==typeof Symbol?Symbol:{},n=r.iterator||"@@iterator",a=r.toStringTag||"@@toStringTag";function u(r,n,a,u){var l=n&&n.prototype instanceof o?n:o,s=Object.create(l.prototype);return Zn(s,"_invoke",function(r,n,a){var u,o,l,s=0,d=a||[],c=!1,D={p:0,n:0,v:e,a:p,f:p.bind(e,4),d:function(t,r){return u=t,o=0,l=e,D.n=r,i}};function p(r,n){for(o=r,l=n,t=0;!c&&s&&!a&&t<d.length;t++){var a,u=d[t],p=D.p,m=u[2];r>3?(a=m===n)&&(l=u[(o=u[4])?5:(o=3,3)],u[4]=u[5]=e):u[0]<=p&&((a=r<2&&p<u[1])?(o=0,D.v=n,D.n=u[1]):p<m&&(a=r<3||u[0]>n||n>m)&&(u[4]=r,u[5]=n,D.n=m,o=0))}if(a||r>1)return i;throw c=!0,n}return function(a,d,m){if(s>1)throw TypeError("Generator is already running");for(c&&1===d&&p(d,m),o=d,l=m;(t=o<2?e:l)||!c;){u||(o?o<3?(o>1&&(D.n=-1),p(o,l)):D.n=l:D.v=l);try{if(s=2,u){if(o||(a="next"),t=u[a]){if(!(t=t.call(u,l)))throw TypeError("iterator result is not an object");if(!t.done)return t;l=t.value,o<2&&(o=0)}else 1===o&&(t=u.return)&&t.call(u),o<2&&(l=TypeError("The iterator does not provide a '"+a+"' method"),o=1);u=e}else if((t=(c=D.n<0)?l:r.call(n,D))!==i)break}catch(t){u=e,o=1,l=t}finally{s=1}}return{value:t,done:c}}}(r,a,u),!0),s}var i={};function o(){}function l(){}function s(){}t=Object.getPrototypeOf;var d=[][n]?t(t([][n]())):(Zn(t={},n,function(){return this}),t),c=s.prototype=o.prototype=Object.create(d);function D(e){return Object.setPrototypeOf?Object.setPrototypeOf(e,s):(e.__proto__=s,Zn(e,a,"GeneratorFunction")),e.prototype=Object.create(c),e}return l.prototype=s,Zn(c,"constructor",s),Zn(s,"constructor",l),l.displayName="GeneratorFunction",Zn(s,a,"GeneratorFunction"),Zn(c),Zn(c,a,"Generator"),Zn(c,n,function(){return this}),Zn(c,"toString",function(){return"[object Generator]"}),(Xn=function(){return{w:u,m:D}})()}function Zn(e,t,r,n){var a=Object.defineProperty;try{a({},"",{})}catch(e){a=0}Zn=function(e,t,r,n){function u(t,r){Zn(e,t,function(e){return this._invoke(t,r,e)})}t?a?a(e,t,{value:r,enumerable:!n,configurable:!n,writable:!n}):e[t]=r:(u("next",0),u("throw",1),u("return",2))},Zn(e,t,r,n)}function Qn(e,t){var r=Object.keys(e);if(Object.getOwnPropertySymbols){var n=Object.getOwnPropertySymbols(e);t&&(n=n.filter(function(t){return Object.getOwnPropertyDescriptor(e,t).enumerable})),r.push.apply(r,n)}return r}function ea(e){for(var t=1;t<arguments.length;t++){var r=null!=arguments[t]?arguments[t]:{};t%2?Qn(Object(r),!0).forEach(function(t){ta(e,t,r[t])}):Object.getOwnPropertyDescriptors?Object.defineProperties(e,Object.getOwnPropertyDescriptors(r)):Qn(Object(r)).forEach(function(t){Object.defineProperty(e,t,Object.getOwnPropertyDescriptor(r,t))})}return e}function ta(e,t,r){return(t=ua(t))in e?Object.defineProperty(e,t,{value:r,enumerable:!0,configurable:!0,writable:!0}):e[t]=r,e}function ra(e,t,r,n,a,u,i){try{var o=e[u](i),l=o.value}catch(e){return void r(e)}o.done?t(l):Promise.resolve(l).then(n,a)}function na(e){return function(){var t=this,r=arguments;return new Promise(function(n,a){var u=e.apply(t,r);function i(e){ra(u,n,a,i,o,"next",e)}function o(e){ra(u,n,a,i,o,"throw",e)}i(void 0)})}}function aa(e,t){for(var r=0;r<t.length;r++){var n=t[r];n.enumerable=n.enumerable||!1,n.configurable=!0,"value"in n&&(n.writable=!0),Object.defineProperty(e,ua(n.key),n)}}function ua(e){var t=function(e,t){if("object"!=Yn(e)||!e)return e;var r=e[Symbol.toPrimitive];if(void 0!==r){var n=r.call(e,t||"default");if("object"!=Yn(n))return n;throw new TypeError("@@toPrimitive must return a primitive value.")}return("string"===t?String:Number)(e)}(e,"string");return"symbol"==Yn(t)?t:t+""}var ia="IDLE",oa="ACTIVE",la="BACKOFF",sa="STOPPED",da="CONNECTED",ca="RECONNECTING",Da="DEGRADED",pa="DISCONNECTED",ma="SESSION_INVALID",fa=Object.freeze({highActivityBaseMs:3e3,highActivityJitterMs:1e3,degradedBaseMs:5e3,degradedJitterMs:2e3,disconnectedBaseMs:1e4,disconnectedJitterMs:3e3}),ha=function(){return e=function e(){var t=arguments.length>0&&void 0!==arguments[0]?arguments[0]:{},r=t.wsService,n=void 0===r?"undefined"!=typeof window?window._wsService:null:r,a=t.fetchFn,u=t.now;!function(e,t){if(!(e instanceof t))throw new TypeError("Cannot call a class as a function")}(this,e),this.wsService=n||null,this.fetchFn=a||("undefined"!=typeof window&&window.fetch?window.fetch.bind(window):null),this.now=u||function(){return Date.now()},this._listeners=new Map,this._state=ia,this._started=!1,this._branchId=null,this._lastSyncAt=null,this._currentIntervalMs=1/0,this._timer=null,this._driftTimer=null,this._abortController=null,this._wsUnsubscribers=[],this._lastSince=null,this._versionMap=new Map,this._versionOrder=[],this._maxVersionEntries=256,this._highActivityUntil=0,this._consecutive5xx=0,this._cadenceOptions=this._runtimeCadenceOptions()},t=[{key:"state",get:function(){return this._state}},{key:"lastSyncAt",get:function(){return this._lastSyncAt}},{key:"currentIntervalMs",get:function(){return this._currentIntervalMs}},{key:"on",value:function(e,t){this._listeners.has(e)||this._listeners.set(e,new Set);var r=this._listeners.get(e);return r.add(t),function(){r.delete(t)}}},{key:"start",value:function(e){this._started||(this._started=!0,this._branchId=e,this._lastSince=this._lastSince||new Date(this.now()).toISOString(),this._setState(ia),this._bindWsState(),this._recomputeCadence("initial"))}},{key:"stop",value:function(){(this._started||this._state!==sa)&&(this._started=!1,this._branchId=null,this._clearTimers(),this._abortController&&(this._abortController.abort(),this._abortController=null),this._wsUnsubscribers.forEach(function(e){return e&&e()}),this._wsUnsubscribers=[],this._setState(sa))}},{key:"forceSync",value:(a=na(Xn().m(function e(){var t,r,n,a,u,i,o,l,s,d,c,D=this;return Xn().w(function(e){for(;;)switch(e.p=e.n){case 0:if(this.fetchFn){e.n=1;break}throw new Error("No fetch implementation available.");case 1:if(this._lastSince||(this._lastSince=new Date(this.now()).toISOString()),this._abortController&&this._abortController.abort(),this._abortController=new AbortController,t=this._abortController.signal,e.p=2,r=null!==this._branchId&&void 0!==this._branchId?"&branch_id=".concat(encodeURIComponent(this._branchId)):"",(n=this._authHeaders()).Authorization){e.n=3;break}return e.a(2,null);case 3:return a=(Jn.A.API_URL||"").replace(/\/$/,""),e.n=4,this.fetchFn("".concat(a,"/api/admin/kds-order/sync?since=").concat(encodeURIComponent(this._lastSince)).concat(r,"&include_deleted=true"),{method:"GET",credentials:"same-origin",headers:n,signal:t});case 4:if(u=e.v,!t.aborted&&this._started){e.n=5;break}return e.a(2,null);case 5:if(u.ok){e.n=7;break}return e.n=6,this._handleHttpError(u);case 6:return e.a(2,null);case 7:return e.n=8,u.json();case 8:if(i=e.v,!t.aborted&&this._started){e.n=9;break}return e.a(2,null);case 9:return this._consecutive5xx=0,o=this._state,this._setState(oa),o===la&&this._recomputeCadence("reset_after_200"),l=[],(s=(i.orders||[]).map(function(e){var t=Number(e.version||0),r=D._versionMap.get(e.id);return void 0!==r&&t<=r?(l.push(e.id),ea(ea({},e),{},{versionGated:!0})):(D._rememberVersion(e.id,t),ea(ea({},e),{},{versionGated:!1}))})).filter(function(e){return!e.versionGated}).length>5&&(this._highActivityUntil=this.now()+6e4),this._lastSyncAt=i.server_now||new Date(this.now()).toISOString(),this._lastSince=this._lastSyncAt,d={orders:s,deleted_ids:i.deleted_ids||[],server_now:i.server_now,lastSyncAt:this._lastSyncAt,gatedIds:l},this._emit("sync",d),this._recomputeCadence("post_sync"),e.a(2,i);case 10:if(e.p=10,"AbortError"!==(null==(c=e.v)?void 0:c.name)){e.n=11;break}return e.a(2,null);case 11:this._emit("error",{status:null,message:(null==c?void 0:c.message)||"Sync failed",willRetryInMs:Number.isFinite(this._currentIntervalMs)?this._currentIntervalMs:0});try{this._schedule()}catch(e){}return e.a(2,null)}},e,this,[[2,10]])})),function(){return a.apply(this,arguments)})},{key:"_bindWsState",value:function(){var e=this;if(this.wsService&&"function"==typeof this.wsService.on){var t=this.wsService.on("state_change",function(){var t=arguments.length>0&&void 0!==arguments[0]?arguments[0]:{},r=t.from,n=t.to;e._emit("state_change",{from:r,to:n}),e._recomputeCadence(e._reasonFromWsState(n||e.wsService.state))});this._wsUnsubscribers.push(t);var r=this.wsService.on("reconnect_storm",function(){var t=arguments.length>0&&void 0!==arguments[0]?arguments[0]:{};e._emit("reconnect_storm",t);var r=Math.floor(500*Math.random()),n=function(){try{var t=e.forceSync();t&&"function"==typeof t.catch&&t.catch(function(){})}catch(e){}};r<=0?n():setTimeout(n,r)});this._wsUnsubscribers.push(r)}}},{key:"_reasonFromWsState",value:function(e){return e===da?"ws_connected":e===ca||e===Da?"ws_degraded":"ws_disconnected"}},{key:"_baseCadence",value:function(){var e,t=null===(e=this.wsService)||void 0===e?void 0:e.state,r=this._cadenceOptions;return t===da?{interval:1/0,reason:"ws_connected"}:t===ca||t===Da?this.now()<this._highActivityUntil?{interval:r.highActivityBaseMs+this._jitter(r.highActivityJitterMs),reason:"high_activity"}:{interval:r.degradedBaseMs+this._jitter(r.degradedJitterMs),reason:"ws_degraded"}:(t===pa||t===ma)&&this.now()<this._highActivityUntil?{interval:r.highActivityBaseMs+this._jitter(r.highActivityJitterMs),reason:"high_activity"}:{interval:r.disconnectedBaseMs+this._jitter(r.disconnectedJitterMs),reason:"ws_disconnected"}}},{key:"_recomputeCadence",value:function(){var e=arguments.length>0&&void 0!==arguments[0]?arguments[0]:null;if(this._started){var t=this._currentIntervalMs,r=this._baseCadence(),n=r.interval,a=r.reason,u=this._state===la?Math.min(Number.isFinite(t)?2*t:2*n,3e4):n,i=this._state===la?"backoff_5xx":e&&"post_sync"!==e&&"initial"!==e?e:a;this._currentIntervalMs=u,this._schedule(),t!==u&&this._emit("cadence_change",{from:t,to:u,reason:i})}}},{key:"_schedule",value:function(){var e=this;this._clearTimers(),this._started&&(this._currentIntervalMs!==1/0?this._timer=setTimeout(function(){e._started&&e.forceSync().catch(function(){})},this._currentIntervalMs):this._driftTimer=setTimeout(function(){e._started&&(e.forceSync().catch(function(){}),e._schedule())},6e4))}},{key:"_handleHttpError",value:(n=na(Xn().m(function e(t){var r,n;return Xn().w(function(e){for(;;)switch(e.n){case 0:t.status>=500&&t.status<=599&&(this._consecutive5xx+=1,this._setState(la),r=this._currentIntervalMs,n=Number.isFinite(r)?r:this._baseCadence().interval,this._currentIntervalMs=Math.min(2*n,3e4),this._schedule(),this._emit("cadence_change",{from:r,to:this._currentIntervalMs,reason:"backoff_5xx"})),this._emit("error",{status:t.status,message:"KDS sync failed with status ".concat(t.status),willRetryInMs:Number.isFinite(this._currentIntervalMs)?this._currentIntervalMs:0});case 1:return e.a(2)}},e,this)})),function(e){return n.apply(this,arguments)})},{key:"_rememberVersion",value:function(e,t){for(this._versionMap.has(e)||this._versionOrder.push(e),this._versionMap.set(e,t);this._versionOrder.length>this._maxVersionEntries;){var r=this._versionOrder.shift();void 0!==r&&this._versionMap.delete(r)}}},{key:"_setState",value:function(e){this._state=e}},{key:"_authHeaders",value:function(){var e={Accept:"application/json","x-api-key":Jn.A.API_KEY};try{var t,r,n,a=JSON.parse(localStorage.getItem("vuex")||"{}"),u=(null===(t=a.kioskCart)||void 0===t?void 0:t.kioskToken)||"",i=(null===(r=a.auth)||void 0===r?void 0:r.authToken)||"",o=("undefined"!=typeof window&&window.location&&window.location.pathname||"").startsWith("/kiosk")?u||i:i||u,l=(null===(n=a.globalState)||void 0===n||null===(n=n.lists)||void 0===n?void 0:n.language_code)||null;o&&(e.Authorization="Bearer ".concat(o)),l&&(e["x-localization"]=l,e["Accept-Language"]=l)}catch(e){}return e}},{key:"_clearTimers",value:function(){this._timer&&(clearTimeout(this._timer),this._timer=null),this._driftTimer&&(clearTimeout(this._driftTimer),this._driftTimer=null)}},{key:"_emit",value:function(e,t){var r=this._listeners.get(e);r&&r.forEach(function(e){return e(t)})}},{key:"_jitter",value:function(e){return Math.floor(Math.random()*(e+1))}},{key:"_runtimeCadenceOptions",value:function(){var e,t="undefined"!=typeof window&&null!==(e=window.foodkingConfig)&&void 0!==e&&e.kdsFallbackPolling?window.foodkingConfig.kdsFallbackPolling:{},r=function(e,t){var r=parseInt(e,10),n=Number.isFinite(r)?r:t,a=n>=250?n:250;return a<=6e4?a:6e4},n=function(e,t){var r=parseInt(e,10),n=Number.isFinite(r)?r:t,a=n>=0?n:0;return a<=3e4?a:3e4};return{highActivityBaseMs:r(t.highActivityBaseMs,fa.highActivityBaseMs),highActivityJitterMs:n(t.highActivityJitterMs,fa.highActivityJitterMs),degradedBaseMs:r(t.degradedBaseMs,fa.degradedBaseMs),degradedJitterMs:n(t.degradedJitterMs,fa.degradedJitterMs),disconnectedBaseMs:r(t.disconnectedBaseMs,fa.disconnectedBaseMs),disconnectedJitterMs:n(t.disconnectedJitterMs,fa.disconnectedJitterMs)}}}],t&&aa(e.prototype,t),r&&aa(e,r),Object.defineProperty(e,"prototype",{writable:!1}),e;var e,t,r,n,a}();const ba=new ha;var ka=r(6279),Ea=r(6650),ga=r(4616);var ya="kds.station_filter";function va(e){var t=null==e||""===e?0:parseInt(e,10);return!Number.isFinite(t)||t<=0?ya:"".concat(ya,".u").concat(t)}var Fa=["bar","cuisine_chaude","cuisine_froide","none"];function _a(e,t){return!t||"all"===t||(e.order_items||[]).some(function(e){return r=e.kds_station,n=null==r||""===r?"none":String(r),(Fa.includes(n)?n:"none")===t;var r,n})}function Aa(e,t){return t&&"all"!==t?(e||[]).filter(function(e){return _a(e,t)}):e||[]}function Ca(e){var t=(arguments.length>1&&void 0!==arguments[1]?arguments[1]:Date.now())-e;return t<18e4?"fresh":t<36e4?"warning":"critical"}function Ba(e){if(e.created_at_iso){var t=Date.parse(e.created_at_iso);if(!Number.isNaN(t))return t}if(e.created_at){var r=Date.parse(e.created_at);if(!Number.isNaN(r))return r}if(e.order_datetime){var n=Date.parse(e.order_datetime);if(!Number.isNaN(n))return n}return Date.now()}var xa=r(4203);function wa(e){if(!Array.isArray(e))return[];var t=e.filter(function(e){return null!=e&&""!==e}).map(function(e){return String(e)});return Array.from(new Set(t)).sort()}function Sa(e){return Sa="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e},Sa(e)}function Na(e,t,r){return(t=function(e){var t=function(e,t){if("object"!=Sa(e)||!e)return e;var r=e[Symbol.toPrimitive];if(void 0!==r){var n=r.call(e,t||"default");if("object"!=Sa(n))return n;throw new TypeError("@@toPrimitive must return a primitive value.")}return("string"===t?String:Number)(e)}(e,"string");return"symbol"==Sa(t)?t:t+""}(t))in e?Object.defineProperty(e,t,{value:r,enumerable:!0,configurable:!0,writable:!0}):e[t]=r,e}var Va=Object.freeze({PENDING:1,ACCEPT:4,PREPARING:7,PREPARED:8,OUT_FOR_DELIVERY:10,DELIVERED:13,CANCELED:16,REJECTED:19,RETURNED:22}),Ia=Object.freeze({NEW:"NEW",PREPARING:"PREPARING",READY:"READY",DONE:"DONE",CANCELLED:"CANCELLED"}),Oa=Na(Na(Na(Na(Na(Na(Na(Na(Na({},Va.PENDING,Ia.NEW),Va.ACCEPT,Ia.NEW),Va.PREPARING,Ia.PREPARING),Va.PREPARED,Ia.READY),Va.OUT_FOR_DELIVERY,Ia.DONE),Va.DELIVERED,Ia.DONE),Va.CANCELED,Ia.CANCELLED),Va.REJECTED,Ia.CANCELLED),Va.RETURNED,Ia.CANCELLED);var Pa=Object.freeze({NEW:{bg:"#FFFFFF",border:"#D1D5DB",dot:"#6B7280",text:"#374151"},PREPARING:{bg:"#DBEAFE",border:"#BFDBFE",dot:"#2563EB",text:"#1E3A8A"},READY:{bg:"#DCFCE7",border:"#BBF7D0",dot:"#16A34A",text:"#14532D"},DONE:{bg:"#F3F4F6",border:"#E5E7EB",dot:"#9CA3AF",text:"#374151"},CANCELLED:{bg:"#FEE2E2",border:"#FCA5A5",dot:"#DC2626",text:"#7F1D1D"}}),Ta=Object.freeze({NEW:"label.kds_state_new",PREPARING:"label.kds_state_preparing",READY:"label.kds_state_ready",DONE:"label.kds_state_done",CANCELLED:"label.kds_state_cancelled"}),Ra=r(617);function $a(e){if(null==e||""===e)return 0;if("number"==typeof e)return Number.isFinite(e)?e:0;var t=new Date(e).getTime();return Number.isFinite(t)?t:0}function Ma(e,t){var r=function(e,t){return e?Math.max(0,t-e):null}(e,t);if(null===r)return null;var n=Math.floor(r/1e3);if(n<60)return"".concat(n,"s");var a=Math.floor(n/60);return"".concat(a,"m")}var ja=r(2850),La=r(8287).hp;function za(){var e,t,r="function"==typeof Symbol?Symbol:{},n=r.iterator||"@@iterator",a=r.toStringTag||"@@toStringTag";function u(r,n,a,u){var l=n&&n.prototype instanceof o?n:o,s=Object.create(l.prototype);return Ka(s,"_invoke",function(r,n,a){var u,o,l,s=0,d=a||[],c=!1,D={p:0,n:0,v:e,a:p,f:p.bind(e,4),d:function(t,r){return u=t,o=0,l=e,D.n=r,i}};function p(r,n){for(o=r,l=n,t=0;!c&&s&&!a&&t<d.length;t++){var a,u=d[t],p=D.p,m=u[2];r>3?(a=m===n)&&(l=u[(o=u[4])?5:(o=3,3)],u[4]=u[5]=e):u[0]<=p&&((a=r<2&&p<u[1])?(o=0,D.v=n,D.n=u[1]):p<m&&(a=r<3||u[0]>n||n>m)&&(u[4]=r,u[5]=n,D.n=m,o=0))}if(a||r>1)return i;throw c=!0,n}return function(a,d,m){if(s>1)throw TypeError("Generator is already running");for(c&&1===d&&p(d,m),o=d,l=m;(t=o<2?e:l)||!c;){u||(o?o<3?(o>1&&(D.n=-1),p(o,l)):D.n=l:D.v=l);try{if(s=2,u){if(o||(a="next"),t=u[a]){if(!(t=t.call(u,l)))throw TypeError("iterator result is not an object");if(!t.done)return t;l=t.value,o<2&&(o=0)}else 1===o&&(t=u.return)&&t.call(u),o<2&&(l=TypeError("The iterator does not provide a '"+a+"' method"),o=1);u=e}else if((t=(c=D.n<0)?l:r.call(n,D))!==i)break}catch(t){u=e,o=1,l=t}finally{s=1}}return{value:t,done:c}}}(r,a,u),!0),s}var i={};function o(){}function l(){}function s(){}t=Object.getPrototypeOf;var d=[][n]?t(t([][n]())):(Ka(t={},n,function(){return this}),t),c=s.prototype=o.prototype=Object.create(d);function D(e){return Object.setPrototypeOf?Object.setPrototypeOf(e,s):(e.__proto__=s,Ka(e,a,"GeneratorFunction")),e.prototype=Object.create(c),e}return l.prototype=s,Ka(c,"constructor",s),Ka(s,"constructor",l),l.displayName="GeneratorFunction",Ka(s,a,"GeneratorFunction"),Ka(c),Ka(c,a,"Generator"),Ka(c,n,function(){return this}),Ka(c,"toString",function(){return"[object Generator]"}),(za=function(){return{w:u,m:D}})()}function Ka(e,t,r,n){var a=Object.defineProperty;try{a({},"",{})}catch(e){a=0}Ka=function(e,t,r,n){function u(t,r){Ka(e,t,function(e){return this._invoke(t,r,e)})}t?a?a(e,t,{value:r,enumerable:!n,configurable:!n,writable:!n}):e[t]=r:(u("next",0),u("throw",1),u("return",2))},Ka(e,t,r,n)}function qa(e,t,r,n,a,u,i){try{var o=e[u](i),l=o.value}catch(e){return void r(e)}o.done?t(l):Promise.resolve(l).then(n,a)}function Ua(){try{var e=window.foodkingConfig&&window.foodkingConfig.kitchenBridgeUrl;if("string"==typeof e&&e)return e.replace(/\/+$/,"")}catch(e){}return"http://127.0.0.1:9101"}Ua();function Ga(e,t,r){if("function"!=typeof fetch)return Promise.reject(new Error("no fetch"));var n="function"==typeof AbortController?new AbortController:null,a=n?setTimeout(function(){return n.abort()},r):null,u=Object.assign({},t);return n&&(u.signal=n.signal),fetch(e,u).finally(function(){a&&clearTimeout(a)})}function Wa(e){for(var t="function"==typeof atob?atob(String(e||"")):La.from(String(e||""),"base64").toString("binary"),r=new Uint8Array(t.length),n=0;n<t.length;n++)r[n]=255&t.charCodeAt(n);return r}function Ha(){var e=arguments.length>0&&void 0!==arguments[0]?arguments[0]:{};if(Number.isFinite(e.timeoutMs)&&e.timeoutMs>0)return e.timeoutMs;try{var t=window.foodkingConfig&&window.foodkingConfig.kitchenBridgeRawTimeoutMs;if(Number.isFinite(t)&&t>0)return t}catch(e){}return 2e4}function Ja(e){return Ya.apply(this,arguments)}function Ya(){var e;return e=za().m(function e(t){var r,n,a,u=arguments;return za().w(function(e){for(;;)switch(e.p=e.n){case 0:if(r=u.length>1&&void 0!==u[1]?u[1]:{},e.p=1,t){e.n=2;break}return e.a(2,null);case 2:return n=Wa(t),e.n=3,Ga(Ua()+"/raw",{method:"POST",headers:{"Content-Type":"application/octet-stream"},body:n},Ha(r));case 3:if(!(a=e.v)||!a.ok){e.n=4;break}return e.a(2,{ok:!0,method:"kitchen-bridge"});case 4:return e.a(2,{ok:!1,retriable:!0,reason:"http-"+(a&&a.status||0)});case 5:return e.p=5,e.v,e.a(2,{ok:!1,retriable:!0,reason:"network"})}},e,null,[[1,5]])}),Ya=function(){var t=this,r=arguments;return new Promise(function(n,a){var u=e.apply(t,r);function i(e){qa(u,n,a,i,o,"next",e)}function o(e){qa(u,n,a,i,o,"throw",e)}i(void 0)})},Ya.apply(this,arguments)}var Xa="kds.printedKitchenIds",Za=null;function Qa(){if(Za)return Za;Za=new Set;try{var e=window.localStorage.getItem(Xa);e&&JSON.parse(e).forEach(function(e){return Za.add(String(e))})}catch(e){}return Za}function eu(e){try{window.localStorage.setItem(Xa,JSON.stringify(Array.from(e).slice(-500)))}catch(e){}}function tu(e){if(null==e)return!1;var t=Qa(),r=String(e);return!t.has(r)&&(t.add(r),eu(t),!0)}var ru="kds.failedKitchenIds";function nu(e){try{window.localStorage.setItem(ru,JSON.stringify((e||[]).map(function(e){return String(e)}).slice(-500)))}catch(e){}}var au=["dir"],uu={key:0,class:"kds-v2__empty"},iu={class:"kds-v2__empty-title"},ou={class:"kds-v2__empty-sub"},lu=["data-count"],su={key:2,class:"kds-overflow-chip",role:"status"},du={class:"kds-overflow-chip__icon"},cu=["aria-label"],Du={class:"kds-v2__served-label"},pu={class:"kds-v2__served-list"},mu=["title"],fu={class:"kds-v2__served-pill-num"},hu={class:"kds-v2__served-pill-ago"},bu={class:"sr-only","aria-live":"polite","aria-atomic":"true"};function ku(e){return function(e){if(Array.isArray(e))return Eu(e)}(e)||function(e){if("undefined"!=typeof Symbol&&null!=e[Symbol.iterator]||null!=e["@@iterator"])return Array.from(e)}(e)||function(e,t){if(e){if("string"==typeof e)return Eu(e,t);var r={}.toString.call(e).slice(8,-1);return"Object"===r&&e.constructor&&(r=e.constructor.name),"Map"===r||"Set"===r?Array.from(e):"Arguments"===r||/^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(r)?Eu(e,t):void 0}}(e)||function(){throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")}()}function Eu(e,t){(null==t||t>e.length)&&(t=e.length);for(var r=0,n=Array(t);r<t;r++)n[r]=e[r];return n}var gu=["aria-label","data-order-id"],yu=["aria-label","data-testid"],vu={class:"kds-card__meta"},Fu=["title"],_u={key:1,class:"kds-card__shortcut-spacer"},Au={class:"kds-card__state-source"},Cu={class:"kds-card__source-label"},Bu={key:2,class:"kds-card__allergen-pill",role:"alert","aria-live":"assertive"},xu={key:3,class:"kds-card__allergen-spacer"},wu={class:"kds-card__main"},Su={class:"kds-card__queue keep-latin"},Nu={class:"kds-card__elapsed-wrap"},Vu=["aria-label"],Iu={key:0,class:"kds-card__delivery","data-testid":"kds-card-delivery"},Ou={key:0,class:"kds-card__delivery-row"},Pu={class:"kds-card__delivery-text"},Tu={key:1,class:"kds-card__delivery-row kds-card__delivery-row--muted"},Ru={class:"kds-card__delivery-text"},$u=["href","aria-label"],Mu={class:"kds-card__delivery-text"},ju=["aria-label"],Lu={class:"kds-card__footer"},zu=["aria-label"],Ku=["aria-label","title"];var qu={key:0,class:"kds-line__header"},Uu={class:"kds-line__qty"},Gu=["aria-label"],Wu={class:"kds-line__name"},Hu={key:1,class:"kds-line__symbolic"},Ju={class:"kds-line__qty"},Yu=["aria-label"],Xu={class:"kds-line__symbolic-text"},Zu={key:2,class:"kds-line__symbolic-menu"},Qu={key:3,class:"kds-line__variation"},ei={class:"kds-line__group"},ti={class:"kds-line__value"},ri={key:4,class:"kds-line__variation kds-line__variation--flat"},ni={class:"kds-line__group"},ai={class:"kds-line__value"},ui={key:5,class:"kds-line__supplement"},ii={key:6,class:"kds-line__menu-child"},oi={key:7,class:"kds-line__addon"},li={class:"kds-line__instruction-text"},si={key:9,class:"kds-line__allergen-block",role:"alert"},di={class:"kds-line__allergen-label"},ci={class:"kds-line__allergen-codes"};const Di={name:"KdsOrderLine",props:{line:{type:Object,required:!0}},computed:{groupLabel:function(){var e="label.kds_group_".concat(this.line.group||"other"),t=this.$t(e);return t===e?this.line.group:t},allergenLabel:function(){return this.$t("label.kds_allergen_warning_prefix")},joinedCodes:function(){var e=this;return(Array.isArray(this.line.codes)?this.line.codes:[]).map(function(t){var r="allergens.".concat(t),n=e.$t(r);return n===r?t:n}).join(" · ")}}};var pi=r(5072),mi=r.n(pi),fi=r(4001),hi={insert:"head",singleton:!1};mi()(fi.A,hi);fi.A.locals;var bi=r(6262);const ki=(0,bi.A)(Di,[["render",function(e,t,r,a,u,i){return(0,n.openBlock)(),(0,n.createElementBlock)("div",{class:(0,n.normalizeClass)(["kds-line","kds-line--".concat(r.line.type)])},["header"===r.line.type?((0,n.openBlock)(),(0,n.createElementBlock)("div",qu,[(0,n.createElementVNode)("span",Uu,[(0,n.createTextVNode)((0,n.toDisplayString)(r.line.qty),1),t[0]||(t[0]=(0,n.createElementVNode)("span",{class:"kds-line__qty-x"},"×",-1))]),r.line.hasAllergen?((0,n.openBlock)(),(0,n.createElementBlock)("span",{key:0,class:"kds-line__allergen-icon","aria-label":e.$t("label.kds_line_allergen_icon_aria")},"⚠",8,Gu)):(0,n.createCommentVNode)("",!0),(0,n.createElementVNode)("span",Wu,(0,n.toDisplayString)(r.line.label),1)])):"symbolic-main"===r.line.type?((0,n.openBlock)(),(0,n.createElementBlock)("div",Hu,[(0,n.createElementVNode)("span",Ju,[(0,n.createTextVNode)((0,n.toDisplayString)(r.line.qty),1),t[1]||(t[1]=(0,n.createElementVNode)("span",{class:"kds-line__qty-x"},"×",-1))]),r.line.hasAllergen?((0,n.openBlock)(),(0,n.createElementBlock)("span",{key:0,class:"kds-line__allergen-icon","aria-label":e.$t("label.kds_line_allergen_icon_aria")},"⚠",8,Yu)):(0,n.createCommentVNode)("",!0),(0,n.createElementVNode)("span",Xu,(0,n.toDisplayString)(r.line.label),1)])):"symbolic-menu"===r.line.type?((0,n.openBlock)(),(0,n.createElementBlock)("div",Zu,(0,n.toDisplayString)(r.line.label),1)):"variation"===r.line.type?((0,n.openBlock)(),(0,n.createElementBlock)("div",Qu,[(0,n.createElementVNode)("span",ei,(0,n.toDisplayString)(i.groupLabel),1),t[2]||(t[2]=(0,n.createElementVNode)("span",{class:"kds-line__sep"}," : ",-1)),(0,n.createElementVNode)("span",ti,(0,n.toDisplayString)(r.line.label),1)])):"variation-flat"===r.line.type?((0,n.openBlock)(),(0,n.createElementBlock)("div",ri,[(0,n.createElementVNode)("span",ni,(0,n.toDisplayString)(e.$t("label.kds_group_avec")),1),t[3]||(t[3]=(0,n.createElementVNode)("span",{class:"kds-line__sep"}," : ",-1)),(0,n.createElementVNode)("span",ai,(0,n.toDisplayString)(r.line.label),1)])):"supplement"===r.line.type?((0,n.openBlock)(),(0,n.createElementBlock)("div",ui,(0,n.toDisplayString)(r.line.label),1)):"menu_child"===r.line.type?((0,n.openBlock)(),(0,n.createElementBlock)("div",ii,[t[4]||(t[4]=(0,n.createElementVNode)("span",{class:"kds-line__menu-arrow"},"▸",-1)),(0,n.createElementVNode)("span",null,(0,n.toDisplayString)(r.line.label),1)])):"addon"===r.line.type?((0,n.openBlock)(),(0,n.createElementBlock)("div",oi,[t[5]||(t[5]=(0,n.createElementVNode)("span",{class:"kds-line__menu-arrow"},"▸",-1)),(0,n.createElementVNode)("span",null,(0,n.toDisplayString)(r.line.label),1)])):"instruction"===r.line.type?((0,n.openBlock)(),(0,n.createElementBlock)("div",{key:8,class:(0,n.normalizeClass)(["kds-line__instruction",r.line.visualClass])},[t[6]||(t[6]=(0,n.createElementVNode)("span",{class:"kds-line__instruction-prefix"},"·",-1)),(0,n.createElementVNode)("span",li,(0,n.toDisplayString)(r.line.label),1)],2)):"allergen"===r.line.type?((0,n.openBlock)(),(0,n.createElementBlock)("div",si,[t[7]||(t[7]=(0,n.createElementVNode)("span",{class:"kds-line__allergen-icon"},"⚠",-1)),(0,n.createElementVNode)("span",di,(0,n.toDisplayString)(i.allergenLabel),1),(0,n.createElementVNode)("span",ci,(0,n.toDisplayString)(i.joinedCodes),1)])):(0,n.createCommentVNode)("",!0)],2)}],["__scopeId","data-v-29edcf5a"]]);var Ei=r(2250),gi=Object.freeze({POS:"POS",KIOSK:"KIOSK",DELIVERY:"DELIVERY",ONLINE:"ONLINE",APP:"APP",DINE_IN:"DINE_IN",UBER:"UBER",PHONE:"PHONE"}),yi={pos:gi.POS,admin:gi.POS,kiosk:gi.KIOSK,delivery:gi.DELIVERY,web:gi.ONLINE,online:gi.ONLINE,mobile:gi.APP,app:gi.APP,dinein:gi.DINE_IN,dine_in:gi.DINE_IN,uber:gi.UBER,uber_eats:gi.UBER,ubereats:gi.UBER,phone:gi.PHONE};var vi=Object.freeze({POS:{bg:"#F3F4F6",text:"#374151",icon:"receipt"},KIOSK:{bg:"#EFF6FF",text:"#1E40AF",icon:"tablet"},DELIVERY:{bg:"#F0FDFA",text:"#0F766E",icon:"truck"},ONLINE:{bg:"#ECFDF5",text:"#047857",icon:"globe"},APP:{bg:"#FDF2F8",text:"#BE185D",icon:"phone"},DINE_IN:{bg:"#FEF3C7",text:"#B45309",icon:"chair"},UBER:{bg:"#06C167",text:"#FFFFFF",icon:"uber"},PHONE:{bg:"#EEF2FF",text:"#4338CA",icon:"phone"}}),Fi=Object.freeze({POS:"label.kds_type_pos",KIOSK:"label.kds_type_kiosk",DELIVERY:"label.kds_type_delivery",ONLINE:"label.kds_source_online",APP:"label.kds_source_app",DINE_IN:"label.kds_type_dinein",UBER:"label.kds_source_uber",PHONE:"label.kds_source_phone"}),_i={fresh:"#FFFFFF",warning:"#FFEDD5",critical:"#FEE2E2"},Ai={fresh:"#111827",warning:"#9A3412",critical:"#991B1B"},Ci={fresh:"#E5E7EB",warning:"#EA580C",critical:"#DC2626"};const Bi={name:"KdsOrderCard",components:{KdsOrderLine:ki},props:{order:{type:Object,required:!0},now:{type:Number,default:function(){return Date.now()}},shortcut:{type:String,default:null},recallActive:{type:Boolean,default:!1}},emits:["ready","reprint"],computed:{kdsState:function(){return e=this.order.status,r=parseInt(e,10),(Number.isFinite(r)&&null!==(t=Oa[r])&&void 0!==t?t:null)||"NEW";var e,t,r},kdsSource:function(){return function(e){var t;if(null==e||""===e)return gi.POS;var r=String(e).toLowerCase();return null!==(t=yi[r])&&void 0!==t?t:gi.POS}(this.order.source_surface)},stateTheme:function(){return Pa[this.kdsState]||Pa.NEW},sourceTheme:function(){return vi[this.kdsSource]||vi.POS},stateLabel:function(){var e=Ta[this.kdsState],t=this.$t(e);return t===e?this.kdsState:t},sourceLabel:function(){var e=Fi[this.kdsSource],t=this.$t(e);return t===e?this.kdsSource:t},statePillStyle:function(){return{background:this.stateTheme.bg,color:this.stateTheme.text,border:"NEW"===this.kdsState?"1px solid ".concat(this.stateTheme.border):"none"}},sourceChipStyle:function(){return{background:this.sourceTheme.bg,color:this.sourceTheme.text}},hasAllergen:function(){return(0,Ra.HM)(this.order.order_items||[])},createdMs:function(){return Ba(this.order)},elapsedSeconds:function(){return Math.max(0,Math.floor((this.now-this.createdMs)/1e3))},bucket:function(){return Ca(this.createdMs,this.now)},headerBg:function(){return _i[this.bucket]||_i.fresh},elapsedColor:function(){return Ai[this.bucket]||Ai.fresh},elapsedLabelColor:function(){return"#374151"},borderColor:function(){return this.hasAllergen?"#F97316":Ci[this.bucket]||Ci.fresh},stripeColor:function(){return this.hasAllergen?"#F97316":"fresh"===this.bucket?"PREPARING"===this.kdsState?"#111827":"#E5E7EB":Ci[this.bucket]},cardStyle:function(){return{border:"3px solid ".concat(this.borderColor)}},cardClass:function(){return{"kds-card--critical":"critical"===this.bucket,"kds-card--ready":"READY"===this.kdsState,"kds-card--cancelled":"CANCELLED"===this.kdsState,"kds-card--has-supplements":this.hasSupplements}},hasSupplements:function(){var e=this;return(this.order&&this.order.order_items||[]).some(function(t){try{return e.renderItemLines(t).some(function(e){return e&&"supplement"===e.type})}catch(e){return!1}})},elapsedFormatted:function(){var e=this.elapsedSeconds,t=Math.floor(e/60),r=e%60;return"".concat(String(t).padStart(2,"0"),":").concat(String(r).padStart(2,"0"))},ariaLabel:function(){var e=Math.floor(this.elapsedSeconds/60),t=this.elapsedSeconds%60;return this.$t("label.kds_card_aria",{queue:this.order.queue_number||this.order.id,source:this.sourceLabel,state:this.stateLabel,minutes:e,seconds:t})},isDeliveryOrder:function(){var e,t;return"delivery"===String((null===(e=this.order)||void 0===e?void 0:e.source_surface)||"").toLowerCase()||5===Number(null===(t=this.order)||void 0===t?void 0:t.order_type)},deliveryAddress:function(){var e;return(null===(e=this.order)||void 0===e?void 0:e.order_address)||null},deliveryAddressLine:function(){var e=this.deliveryAddress;if(!e)return"";var t=[];return e.apartment&&t.push(e.apartment),e.address&&t.push(e.address),t.join(" — ")},customerName:function(){var e;return(null===(e=this.order)||void 0===e||null===(e=e.customer)||void 0===e?void 0:e.name)||""},customerPhone:function(){var e;return(0,ja.a)(null===(e=this.order)||void 0===e||null===(e=e.customer)||void 0===e?void 0:e.phone)},isCashPending:function(){var e;return!0===(null===(e=this.order)||void 0===e?void 0:e.payment_pending_counter)}},methods:{renderItemLines:function(e){return(0,Ei.ko)(e).lines},onCta:function(){var e=this;this._ctaInFlight||(this._ctaInFlight=!0,this.$emit("ready",this.order.id),setTimeout(function(){e._ctaInFlight=!1},1200))},onCardKeydownEnter:function(){this.onCta()}}};var xi=r(4150),wi={insert:"head",singleton:!1};mi()(xi.A,wi);xi.A.locals;const Si=(0,bi.A)(Bi,[["render",function(e,t,r,a,u,i){var o=(0,n.resolveComponent)("KdsOrderLine");return(0,n.openBlock)(),(0,n.createElementBlock)("div",{class:(0,n.normalizeClass)(["kds-card",i.cardClass]),style:(0,n.normalizeStyle)(i.cardStyle),tabindex:"0",role:"region","aria-label":i.ariaLabel,"data-order-id":r.order.id,onKeydown:t[2]||(t[2]=(0,n.withKeys)((0,n.withModifiers)(function(){return i.onCardKeydownEnter&&i.onCardKeydownEnter.apply(i,arguments)},["self"]),["enter"]))},[(0,n.createElementVNode)("div",{class:"kds-card__stripe",style:(0,n.normalizeStyle)({background:i.stripeColor})},null,4),r.recallActive?((0,n.openBlock)(),(0,n.createElementBlock)("div",{key:0,class:"kds-card__recall-badge",role:"status","aria-live":"polite","aria-label":e.$t("label.kds_recall_badge_aria",{queue:r.order.queue_number||r.order.id}),"data-testid":"kds-card-recall-badge-".concat(r.order.id)},(0,n.toDisplayString)(e.$t("label.kds_recall_badge")),9,yu)):(0,n.createCommentVNode)("",!0),(0,n.createElementVNode)("div",{class:"kds-card__header",style:(0,n.normalizeStyle)({background:i.headerBg})},[(0,n.createElementVNode)("div",vu,[r.shortcut?((0,n.openBlock)(),(0,n.createElementBlock)("span",{key:0,class:"kds-card__shortcut",title:e.$t("label.kds_bump_local_only_notice")},"["+(0,n.toDisplayString)(r.shortcut)+"]",9,Fu)):((0,n.openBlock)(),(0,n.createElementBlock)("span",_u)),(0,n.createElementVNode)("div",Au,[(0,n.createElementVNode)("span",{class:"kds-card__state-pill",style:(0,n.normalizeStyle)(i.statePillStyle)},[(0,n.createElementVNode)("span",{class:"kds-card__state-dot",style:(0,n.normalizeStyle)({background:i.stateTheme.dot})},null,4),(0,n.createTextVNode)(" "+(0,n.toDisplayString)(i.stateLabel),1)],4),(0,n.createElementVNode)("span",{class:"kds-card__source-chip",style:(0,n.normalizeStyle)(i.sourceChipStyle)},[(0,n.createElementVNode)("span",Cu,(0,n.toDisplayString)(i.sourceLabel),1)],4)]),i.hasAllergen?((0,n.openBlock)(),(0,n.createElementBlock)("span",Bu," ⚠ "+(0,n.toDisplayString)(e.$t("label.kds_allergie")),1)):((0,n.openBlock)(),(0,n.createElementBlock)("span",xu))]),(0,n.createElementVNode)("div",wu,[(0,n.createElementVNode)("div",Su,[t[3]||(t[3]=(0,n.createElementVNode)("span",{class:"kds-card__queue-prefix"},"N°",-1)),(0,n.createTextVNode)((0,n.toDisplayString)(r.order.queue_number||r.order.id),1)]),(0,n.createElementVNode)("div",Nu,[(0,n.createElementVNode)("span",{class:"kds-card__elapsed-label",style:(0,n.normalizeStyle)({color:i.elapsedLabelColor})},(0,n.toDisplayString)(e.$t("label.kds_attente")),5),(0,n.createElementVNode)("div",{class:(0,n.normalizeClass)(["kds-card__elapsed keep-latin","critical"===i.bucket?"kds-pulse-digit":""]),style:(0,n.normalizeStyle)({color:i.elapsedColor})},(0,n.toDisplayString)(i.elapsedFormatted),7)])])],4),(0,n.createElementVNode)("div",{class:"kds-card__body",tabindex:"0",role:"region","aria-label":e.$t("label.kds_card_body_aria",{queue:r.order.queue_number||r.order.id})},[i.isDeliveryOrder?((0,n.openBlock)(),(0,n.createElementBlock)("div",Iu,[i.deliveryAddressLine?((0,n.openBlock)(),(0,n.createElementBlock)("div",Ou,[t[4]||(t[4]=(0,n.createElementVNode)("span",{class:"kds-card__delivery-icon","aria-hidden":"true"},"📍",-1)),(0,n.createElementVNode)("span",Pu,(0,n.toDisplayString)(i.deliveryAddressLine),1)])):(0,n.createCommentVNode)("",!0),i.customerName?((0,n.openBlock)(),(0,n.createElementBlock)("div",Tu,[t[5]||(t[5]=(0,n.createElementVNode)("span",{class:"kds-card__delivery-icon","aria-hidden":"true"},"👤",-1)),(0,n.createElementVNode)("span",Ru,(0,n.toDisplayString)(i.customerName),1)])):(0,n.createCommentVNode)("",!0),i.customerPhone?((0,n.openBlock)(),(0,n.createElementBlock)("a",{key:2,class:"kds-card__delivery-row kds-card__delivery-phone keep-latin",href:"tel:".concat(i.customerPhone),"aria-label":e.$t("label.kds_call_customer_aria",{name:i.customerName||"",phone:i.customerPhone})},[t[6]||(t[6]=(0,n.createElementVNode)("span",{class:"kds-card__delivery-icon","aria-hidden":"true"},"📱",-1)),(0,n.createElementVNode)("span",Mu,(0,n.toDisplayString)(i.customerPhone),1)],8,$u)):(0,n.createCommentVNode)("",!0)])):(0,n.createCommentVNode)("",!0),((0,n.openBlock)(!0),(0,n.createElementBlock)(n.Fragment,null,(0,n.renderList)(r.order.order_items,function(e,t){return(0,n.openBlock)(),(0,n.createElementBlock)("div",{key:e.id||t,class:"kds-card__item-block"},[((0,n.openBlock)(!0),(0,n.createElementBlock)(n.Fragment,null,(0,n.renderList)(i.renderItemLines(e),function(e,t){return(0,n.openBlock)(),(0,n.createBlock)(o,{key:t,line:e},null,8,["line"])}),128))])}),128)),t[7]||(t[7]=(0,n.createElementVNode)("div",{class:"kds-card__body-fade"},null,-1))],8,Vu),i.isCashPending?((0,n.openBlock)(),(0,n.createElementBlock)("div",{key:1,class:"kds-card__cash-pending kds-card__cash-pending--note",role:"status","aria-label":e.$t("label.kds_card_cash_pending_aria"),"data-testid":"kds-card-cash-pending"},[t[8]||(t[8]=(0,n.createElementVNode)("svg",{width:"20",height:"20",viewBox:"0 0 24 24",fill:"none",stroke:"currentColor","stroke-width":"2.5","stroke-linecap":"round","stroke-linejoin":"round","aria-hidden":"true"},[(0,n.createElementVNode)("circle",{cx:"12",cy:"12",r:"10"}),(0,n.createElementVNode)("polyline",{points:"12 6 12 12 16 14"})],-1)),(0,n.createElementVNode)("span",null,(0,n.toDisplayString)(e.$t("label.kds_card_cash_pending")),1)],8,ju)):(0,n.createCommentVNode)("",!0),(0,n.createElementVNode)("div",Lu,[(0,n.createElementVNode)("button",{type:"button",class:"kds-card__cta",onClick:t[0]||(t[0]=(0,n.withModifiers)(function(){return i.onCta&&i.onCta.apply(i,arguments)},["prevent"])),"aria-label":e.$t("label.kds_card_cta_ready"),"data-testid":"kds-card-cta-ready"},[t[9]||(t[9]=(0,n.createElementVNode)("svg",{width:"22",height:"22",viewBox:"0 0 24 24",fill:"none",stroke:"currentColor","stroke-width":"3.5","stroke-linecap":"round","stroke-linejoin":"round","aria-hidden":"true"},[(0,n.createElementVNode)("path",{d:"M5 12l5 5L20 7"})],-1)),(0,n.createElementVNode)("span",null,(0,n.toDisplayString)(e.$t("label.kds_card_cta_ready")),1)],8,zu),(0,n.createElementVNode)("button",{type:"button",class:"kds-card__reprint",onClick:t[1]||(t[1]=(0,n.withModifiers)(function(t){return e.$emit("reprint")},["prevent","stop"])),"aria-label":e.$t("label.kds_reprint"),title:e.$t("label.kds_reprint"),"data-testid":"kds-card-reprint"},ku(t[10]||(t[10]=[(0,n.createElementVNode)("svg",{width:"22",height:"22",viewBox:"0 0 24 24",fill:"none",stroke:"currentColor","stroke-width":"2.5","stroke-linecap":"round","stroke-linejoin":"round","aria-hidden":"true"},[(0,n.createElementVNode)("polyline",{points:"6 9 6 2 18 2 18 9"}),(0,n.createElementVNode)("path",{d:"M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"}),(0,n.createElementVNode)("rect",{x:"6",y:"14",width:"12",height:"8"})],-1)])),8,Ku)])],46,gu)}],["__scopeId","data-v-b8143b7c"]]),Ni=Si;function Vi(e){return function(e){if(Array.isArray(e))return Ii(e)}(e)||function(e){if("undefined"!=typeof Symbol&&null!=e[Symbol.iterator]||null!=e["@@iterator"])return Array.from(e)}(e)||function(e,t){if(e){if("string"==typeof e)return Ii(e,t);var r={}.toString.call(e).slice(8,-1);return"Object"===r&&e.constructor&&(r=e.constructor.name),"Map"===r||"Set"===r?Array.from(e):"Arguments"===r||/^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(r)?Ii(e,t):void 0}}(e)||function(){throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")}()}function Ii(e,t){(null==t||t>e.length)&&(t=e.length);for(var r=0,n=Array(t);r<t;r++)n[r]=e[r];return n}var Oi={class:"kds-banner__main"},Pi={key:0,class:"kds-banner__spinner",width:"14",height:"14",viewBox:"0 0 24 24",fill:"none",stroke:"currentColor","stroke-width":"3","stroke-linecap":"round","aria-hidden":"true"},Ti={key:1,width:"11",height:"11",viewBox:"0 0 24 24",fill:"none",stroke:"currentColor","stroke-width":"3","stroke-linecap":"round","stroke-linejoin":"round","aria-hidden":"true"},Ri={class:"kds-banner__text"},$i={class:"kds-banner__tag keep-latin"};const Mi={name:"KdsStatusBanner",props:{offlineSince:{type:Number,default:null},listAtCap:{type:Boolean,default:!1},nearCap:{type:Number,default:0},fallbackMode:{type:Boolean,default:!1},adminPollingHint:{type:Boolean,default:!1},bumpLocalOnlyNotice:{type:Boolean,default:!1},reserveRightGutter:{type:Boolean,default:!1},now:{type:Number,default:0}},computed:{bannerData:function(){var e="number"==typeof this.now&&this.now>0?this.now:Date.now();if(this.offlineSince&&e-this.offlineSince>6e4){var t=e-this.offlineSince,r=Math.floor(t/6e4),n=Math.floor(t%6e4/1e3);return{level:"error",text:this.$t("label.kds_connection_lost_long",{m:r,s:n}),iconBg:"#FFFFFF",tag:"OFFLINE"}}return this.listAtCap?{level:"warning",text:this.$t("label.kds_order_list_full_warning",{n:this.nearCap}),iconBg:"#F59E0B",tag:"CAP · MAX"}:this.nearCap>=200?{level:"warning",text:this.$t("label.kds_order_cap_warning",{n:this.nearCap}),iconBg:"#F59E0B",tag:"CAP · WARN"}:this.fallbackMode?{level:"warning",text:this.$t("label.kds_fallback_banner"),iconBg:"#F59E0B",tag:"SYNC · LOCAL"}:this.adminPollingHint?{level:"info",text:this.$t("label.kds_admin_polling_hint"),iconBg:"#3B82F6",tag:"SYNC · ADMIN"}:this.bumpLocalOnlyNotice?{level:"neutral",text:this.$t("label.kds_bump_local_only_notice"),iconBg:"#9CA3AF",tag:"LOCAL"}:null}}};var ji=r(1839),Li={insert:"head",singleton:!1};mi()(ji.A,Li);ji.A.locals;function zi(e){return zi="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e},zi(e)}function Ki(e){return function(e){if(Array.isArray(e))return qi(e)}(e)||function(e){if("undefined"!=typeof Symbol&&null!=e[Symbol.iterator]||null!=e["@@iterator"])return Array.from(e)}(e)||function(e,t){if(e){if("string"==typeof e)return qi(e,t);var r={}.toString.call(e).slice(8,-1);return"Object"===r&&e.constructor&&(r=e.constructor.name),"Map"===r||"Set"===r?Array.from(e):"Arguments"===r||/^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(r)?qi(e,t):void 0}}(e)||function(){throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")}()}function qi(e,t){(null==t||t>e.length)&&(t=e.length);for(var r=0,n=Array(t);r<t;r++)n[r]=e[r];return n}var Ui=["A","B","C","D","E","F","G","H"];const Gi={name:"KdsV2Grid",components:{KdsOrderCard:Ni,KdsStatusBanner:(0,bi.A)(Mi,[["render",function(e,t,r,a,u,i){return i.bannerData?((0,n.openBlock)(),(0,n.createElementBlock)("div",{key:0,class:(0,n.normalizeClass)(["kds-banner","kds-banner--".concat(i.bannerData.level),{"kds-banner--reserve-gutter":r.reserveRightGutter}]),role:"status"},[(0,n.createElementVNode)("div",Oi,[(0,n.createElementVNode)("span",{class:"kds-banner__icon",style:(0,n.normalizeStyle)({background:i.bannerData.iconBg})},["error"===i.bannerData.level?((0,n.openBlock)(),(0,n.createElementBlock)("svg",Pi,Vi(t[0]||(t[0]=[(0,n.createElementVNode)("path",{d:"M21 12a9 9 0 1 1-6.219-8.56"},null,-1)])))):((0,n.openBlock)(),(0,n.createElementBlock)("svg",Ti,Vi(t[1]||(t[1]=[(0,n.createElementVNode)("path",{d:"M12 9v4M12 17h.01"},null,-1)]))))],4),(0,n.createElementVNode)("span",Ri,(0,n.toDisplayString)(i.bannerData.text),1)]),(0,n.createElementVNode)("span",$i,(0,n.toDisplayString)(i.bannerData.tag),1)],2)):(0,n.createCommentVNode)("",!0)}],["__scopeId","data-v-6e11a481"]])},props:{orders:{type:Array,default:function(){return[]}},dir:{type:String,default:"ltr"},offlineSince:{type:Number,default:null},listAtCap:{type:Boolean,default:!1},fallbackMode:{type:Boolean,default:!1},adminPollingHint:{type:Boolean,default:!1},bumpLocalOnlyNotice:{type:Boolean,default:!1},autoTransitionEnabled:{type:Boolean,default:!1},recallActiveIds:{type:Array,default:function(){return[]}}},emits:["change-status","auto-promote","reprint"],data:function(){return{now:Date.now(),tickerId:null,liveMessage:""}},computed:{SHORTCUTS:function(){return Ui},visibleOrders:function(){var e=Array.isArray(this.orders)?Ki(this.orders):[];return e.sort(function(e,t){var r=Ba(e),n=Ba(t),a=Number.isFinite(r)?r:1/0,u=Number.isFinite(n)?n:1/0;return a!==u?a-u:(parseInt(null==e?void 0:e.id,10)||0)-(parseInt(null==t?void 0:t.id,10)||0)}),e},activeOrders:function(){var e=new Set(Array.isArray(this.recallActiveIds)?this.recallActiveIds:[]);return this.visibleOrders.filter(function(t){var r,n=parseInt(null!==(r=null==t?void 0:t.status)&&void 0!==r?r:null==t?void 0:t.rawStatus,10);return n===Va.ACCEPT||n===Va.PREPARING||!(n!==Va.PREPARED||!e.has(null==t?void 0:t.id))})},recentlyServed:function(){var e=this.now||Date.parse((new Date).toISOString()),t=this.visibleOrders.filter(function(t){var r;if(parseInt(null!==(r=null==t?void 0:t.status)&&void 0!==r?r:null==t?void 0:t.rawStatus,10)!==Va.PREPARED)return!1;var n=Date.parse((null==t?void 0:t.updated_at)||"")||0;return n>0&&e-n<=288e5});return t.sort(function(e,t){var r=Date.parse((null==e?void 0:e.updated_at)||"")||0;return(Date.parse((null==t?void 0:t.updated_at)||"")||0)-r}),t.slice(0,4)},visibleActiveOrders:function(){return this.activeOrders.slice(0,3)},overflowActiveCount:function(){return Math.max(0,this.activeOrders.length-3)}},watch:{activeOrders:{handler:function(e){if(this.autoTransitionEnabled){var t=function(e){if(!Array.isArray(e)||0===e.length)return null;if(e.some(function(e){return parseInt(null==e?void 0:e.status,10)===Va.PREPARING}))return null;var t=e.filter(function(e){return parseInt(null==e?void 0:e.status,10)===Va.ACCEPT});return 0===t.length?null:(t.sort(function(e,t){var r=(null==e?void 0:e.created_at_iso)||(null==e?void 0:e.created_at)||(null==e?void 0:e.order_datetime)||"",n=(null==t?void 0:t.created_at_iso)||(null==t?void 0:t.created_at)||(null==t?void 0:t.order_datetime)||"";return r!==n?r<n?-1:1:(parseInt(null==e?void 0:e.id,10)||0)-(parseInt(null==t?void 0:t.id,10)||0)}),t[0])}(e);t&&function(e,t){var r;return!(arguments.length>2&&void 0!==arguments[2]&&!arguments[2]||null==e||"object"!==zi(e)||parseInt(null!==(r=e.status)&&void 0!==r?r:e.rawStatus,10)!==Va.ACCEPT||(Array.isArray(t)?t:[]).some(function(e){var t;return parseInt(null!==(t=null==e?void 0:e.status)&&void 0!==t?t:null==e?void 0:e.rawStatus,10)===Va.PREPARING}))}(t,e,!0)&&(this.$emit("auto-promote",t.id),this.liveMessage=this.$t("label.kds_aria_live_preparing",{id:t.queue_number||t.id}))}},deep:!1}},mounted:function(){var e=this;this.tickerId=window.setInterval(function(){e.now=Date.now()},1e3),window.addEventListener("keydown",this.onKey)},beforeUnmount:function(){this.tickerId&&(window.clearInterval(this.tickerId),this.tickerId=null),window.removeEventListener("keydown",this.onKey)},methods:{onKey:function(e){var t=Ui.indexOf(String(e.key||"").toUpperCase());if(t>=0&&t<this.activeOrders.length){var r=this.activeOrders[t];r&&(e.preventDefault(),this.onCtaTap(r.id,r.queue_number))}},onCtaTap:function(e,t){var r,n=this.activeOrders.find(function(t){return t.id===e});if(n){var a=parseInt(null!==(r=null==n?void 0:n.status)&&void 0!==r?r:null==n?void 0:n.rawStatus,10)===Va.ACCEPT?Va.PREPARING:Va.PREPARED,u=a===Va.PREPARED;this.$emit("change-status",{orderId:e,status:a}),this.liveMessage=u?this.$t("label.kds_aria_live_ready",{id:t||e}):this.$t("label.kds_aria_live_preparing",{id:t||e})}},isRecallActive:function(e){return!(!e||!Array.isArray(this.recallActiveIds))&&this.recallActiveIds.includes(e.id)},servedAgoLabel:function(e){var t=Date.parse((null==e?void 0:e.updated_at)||"")||0;if(!t)return"";var r=Math.max(0,Math.floor((this.now-t)/1e3));if(r<60)return this.$t("label.kds_served_just_now");var n=Math.floor(r/60);return this.$t("label.kds_served_ago",{mins:n})}}};var Wi=r(5663),Hi={insert:"head",singleton:!1};mi()(Wi.A,Hi);Wi.A.locals;const Ji=(0,bi.A)(Gi,[["render",function(e,t,r,a,u,i){var o=(0,n.resolveComponent)("KdsStatusBanner"),l=(0,n.resolveComponent)("KdsOrderCard");return(0,n.openBlock)(),(0,n.createElementBlock)("div",{class:"kds-v2",dir:r.dir},[(0,n.createVNode)(o,{"offline-since":r.offlineSince,"list-at-cap":r.listAtCap,"near-cap":i.activeOrders.length,"fallback-mode":r.fallbackMode,"admin-polling-hint":r.adminPollingHint,"bump-local-only-notice":r.bumpLocalOnlyNotice,"reserve-right-gutter":i.overflowActiveCount>0,now:u.now},null,8,["offline-since","list-at-cap","near-cap","fallback-mode","admin-polling-hint","bump-local-only-notice","reserve-right-gutter","now"]),0===i.activeOrders.length?((0,n.openBlock)(),(0,n.createElementBlock)("div",uu,[t[0]||(t[0]=(0,n.createStaticVNode)('<div class="kds-v2__empty-illustration" aria-hidden="true" data-v-585b156e><div class="kds-v2__empty-glow" data-v-585b156e></div><svg width="120" height="120" viewBox="0 0 64 64" fill="none" stroke="#9CA3AF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" data-v-585b156e><ellipse cx="32" cy="42" rx="22" ry="6" fill="#F3F4F6" stroke="#D1D5DB" data-v-585b156e></ellipse><path d="M10 38a22 8 0 0 1 44 0" fill="white" data-v-585b156e></path><path d="M14 30c0-4 6-8 18-8s18 4 18 8" data-v-585b156e></path><circle cx="22" cy="24" r="1.5" fill="#9CA3AF" data-v-585b156e></circle><circle cx="32" cy="22" r="1.5" fill="#9CA3AF" data-v-585b156e></circle><circle cx="42" cy="24" r="1.5" fill="#9CA3AF" data-v-585b156e></circle></svg></div>',1)),(0,n.createElementVNode)("div",iu,(0,n.toDisplayString)(e.$t("label.kds_empty_state")),1),(0,n.createElementVNode)("div",ou,(0,n.toDisplayString)(e.$t("label.kds_empty_state_sub")),1)])):((0,n.openBlock)(),(0,n.createElementBlock)("div",{key:1,class:"kds-v2__grid","data-count":i.visibleActiveOrders.length},[((0,n.openBlock)(!0),(0,n.createElementBlock)(n.Fragment,null,(0,n.renderList)(i.visibleActiveOrders,function(t,r){return(0,n.openBlock)(),(0,n.createBlock)(l,{key:t.id,order:t,now:u.now,shortcut:i.SHORTCUTS[r],"recall-active":i.isRecallActive(t),onReady:function(e){return i.onCtaTap(t.id,t.queue_number)},onReprint:function(r){return e.$emit("reprint",t)}},null,8,["order","now","shortcut","recall-active","onReady","onReprint"])}),128))],8,lu)),i.overflowActiveCount>0?((0,n.openBlock)(),(0,n.createElementBlock)("div",su,[(0,n.createElementVNode)("span",du,"+"+(0,n.toDisplayString)(i.overflowActiveCount),1),t[1]||(t[1]=(0,n.createElementVNode)("span",null,"en attente",-1))])):(0,n.createCommentVNode)("",!0),i.recentlyServed.length>0?((0,n.openBlock)(),(0,n.createElementBlock)("div",{key:3,class:"kds-v2__served",role:"region","aria-label":e.$t("label.kds_recently_served")},[(0,n.createElementVNode)("div",Du,(0,n.toDisplayString)(e.$t("label.kds_recently_served")),1),(0,n.createElementVNode)("div",pu,[((0,n.openBlock)(!0),(0,n.createElementBlock)(n.Fragment,null,(0,n.renderList)(i.recentlyServed,function(t){return(0,n.openBlock)(),(0,n.createElementBlock)("div",{key:"served-".concat(t.id),class:"kds-v2__served-pill keep-latin",title:e.$t("label.kds_served_pill_title",{queue:t.queue_number||t.id})},[(0,n.createElementVNode)("span",fu,"N°"+(0,n.toDisplayString)(t.queue_number||t.id),1),(0,n.createElementVNode)("span",hu,(0,n.toDisplayString)(i.servedAgoLabel(t)),1)],8,mu)}),128))])],8,cu)):(0,n.createCommentVNode)("",!0),(0,n.createElementVNode)("div",bu,(0,n.toDisplayString)(u.liveMessage),1)],8,au)}],["__scopeId","data-v-585b156e"]]);function Yi(e){return function(e){if(Array.isArray(e))return Xi(e)}(e)||function(e){if("undefined"!=typeof Symbol&&null!=e[Symbol.iterator]||null!=e["@@iterator"])return Array.from(e)}(e)||function(e,t){if(e){if("string"==typeof e)return Xi(e,t);var r={}.toString.call(e).slice(8,-1);return"Object"===r&&e.constructor&&(r=e.constructor.name),"Map"===r||"Set"===r?Array.from(e):"Arguments"===r||/^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(r)?Xi(e,t):void 0}}(e)||function(){throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")}()}function Xi(e,t){(null==t||t>e.length)&&(t=e.length);for(var r=0,n=Array(t);r<t;r++)n[r]=e[r];return n}var Zi=["aria-label"],Qi=["dir"],eo={class:"kds-history-drawer__header"},to={class:"kds-history-drawer__title"},ro={key:0,class:"kds-history-drawer__count"},no=["aria-label"],ao={key:0,class:"kds-history-drawer__loading","data-testid":"kds-history-loading",role:"status","aria-live":"polite"},uo={key:1,class:"kds-history-drawer__error","data-testid":"kds-history-error",role:"alert"},io={key:2,class:"kds-history-drawer__empty","data-testid":"kds-history-empty"},oo={key:3,class:"kds-history-drawer__list","data-testid":"kds-history-list"},lo={class:"kds-history-drawer__head"},so={class:"kds-history-drawer__queue"},co=["data-status"],Do={class:"kds-history-drawer__times"},po={key:0,class:"kds-history-drawer__time-cell"},mo={class:"kds-history-drawer__time-label"},fo={class:"kds-history-drawer__time"},ho={key:1,class:"kds-history-drawer__time-cell"},bo={class:"kds-history-drawer__time-label"},ko=["datetime"],Eo={class:"kds-history-drawer__items"},go={key:0,class:"kds-history-drawer__recall-row"},yo=["aria-label","disabled","data-testid","onClick"],vo={class:"kds-history-drawer__recall-hint"},Fo={key:1,class:"kds-history-drawer__recall-row kds-history-drawer__recall-row--done"},_o=["aria-label"];var Ao=r(3041);function Co(e){return Co="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e},Co(e)}function Bo(e,t){var r=Object.keys(e);if(Object.getOwnPropertySymbols){var n=Object.getOwnPropertySymbols(e);t&&(n=n.filter(function(t){return Object.getOwnPropertyDescriptor(e,t).enumerable})),r.push.apply(r,n)}return r}function xo(e){for(var t=1;t<arguments.length;t++){var r=null!=arguments[t]?arguments[t]:{};t%2?Bo(Object(r),!0).forEach(function(t){No(e,t,r[t])}):Object.getOwnPropertyDescriptors?Object.defineProperties(e,Object.getOwnPropertyDescriptors(r)):Bo(Object(r)).forEach(function(t){Object.defineProperty(e,t,Object.getOwnPropertyDescriptor(r,t))})}return e}function wo(e){return function(e){if(Array.isArray(e))return So(e)}(e)||function(e){if("undefined"!=typeof Symbol&&null!=e[Symbol.iterator]||null!=e["@@iterator"])return Array.from(e)}(e)||function(e,t){if(e){if("string"==typeof e)return So(e,t);var r={}.toString.call(e).slice(8,-1);return"Object"===r&&e.constructor&&(r=e.constructor.name),"Map"===r||"Set"===r?Array.from(e):"Arguments"===r||/^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(r)?So(e,t):void 0}}(e)||function(){throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")}()}function So(e,t){(null==t||t>e.length)&&(t=e.length);for(var r=0,n=Array(t);r<t;r++)n[r]=e[r];return n}function No(e,t,r){return(t=function(e){var t=function(e,t){if("object"!=Co(e)||!e)return e;var r=e[Symbol.toPrimitive];if(void 0!==r){var n=r.call(e,t||"default");if("object"!=Co(n))return n;throw new TypeError("@@toPrimitive must return a primitive value.")}return("string"===t?String:Number)(e)}(e,"string");return"symbol"==Co(t)?t:t+""}(t))in e?Object.defineProperty(e,t,{value:r,enumerable:!0,configurable:!0,writable:!0}):e[t]=r,e}function Vo(){var e,t,r="function"==typeof Symbol?Symbol:{},n=r.iterator||"@@iterator",a=r.toStringTag||"@@toStringTag";function u(r,n,a,u){var l=n&&n.prototype instanceof o?n:o,s=Object.create(l.prototype);return Io(s,"_invoke",function(r,n,a){var u,o,l,s=0,d=a||[],c=!1,D={p:0,n:0,v:e,a:p,f:p.bind(e,4),d:function(t,r){return u=t,o=0,l=e,D.n=r,i}};function p(r,n){for(o=r,l=n,t=0;!c&&s&&!a&&t<d.length;t++){var a,u=d[t],p=D.p,m=u[2];r>3?(a=m===n)&&(l=u[(o=u[4])?5:(o=3,3)],u[4]=u[5]=e):u[0]<=p&&((a=r<2&&p<u[1])?(o=0,D.v=n,D.n=u[1]):p<m&&(a=r<3||u[0]>n||n>m)&&(u[4]=r,u[5]=n,D.n=m,o=0))}if(a||r>1)return i;throw c=!0,n}return function(a,d,m){if(s>1)throw TypeError("Generator is already running");for(c&&1===d&&p(d,m),o=d,l=m;(t=o<2?e:l)||!c;){u||(o?o<3?(o>1&&(D.n=-1),p(o,l)):D.n=l:D.v=l);try{if(s=2,u){if(o||(a="next"),t=u[a]){if(!(t=t.call(u,l)))throw TypeError("iterator result is not an object");if(!t.done)return t;l=t.value,o<2&&(o=0)}else 1===o&&(t=u.return)&&t.call(u),o<2&&(l=TypeError("The iterator does not provide a '"+a+"' method"),o=1);u=e}else if((t=(c=D.n<0)?l:r.call(n,D))!==i)break}catch(t){u=e,o=1,l=t}finally{s=1}}return{value:t,done:c}}}(r,a,u),!0),s}var i={};function o(){}function l(){}function s(){}t=Object.getPrototypeOf;var d=[][n]?t(t([][n]())):(Io(t={},n,function(){return this}),t),c=s.prototype=o.prototype=Object.create(d);function D(e){return Object.setPrototypeOf?Object.setPrototypeOf(e,s):(e.__proto__=s,Io(e,a,"GeneratorFunction")),e.prototype=Object.create(c),e}return l.prototype=s,Io(c,"constructor",s),Io(s,"constructor",l),l.displayName="GeneratorFunction",Io(s,a,"GeneratorFunction"),Io(c),Io(c,a,"Generator"),Io(c,n,function(){return this}),Io(c,"toString",function(){return"[object Generator]"}),(Vo=function(){return{w:u,m:D}})()}function Io(e,t,r,n){var a=Object.defineProperty;try{a({},"",{})}catch(e){a=0}Io=function(e,t,r,n){function u(t,r){Io(e,t,function(e){return this._invoke(t,r,e)})}t?a?a(e,t,{value:r,enumerable:!n,configurable:!n,writable:!n}):e[t]=r:(u("next",0),u("throw",1),u("return",2))},Io(e,t,r,n)}function Oo(e,t,r,n,a,u,i){try{var o=e[u](i),l=o.value}catch(e){return void r(e)}o.done?t(l):Promise.resolve(l).then(n,a)}function Po(e){return function(){var t=this,r=arguments;return new Promise(function(n,a){var u=e.apply(t,r);function i(e){Oo(u,n,a,i,o,"next",e)}function o(e){Oo(u,n,a,i,o,"throw",e)}i(void 0)})}}const To={name:"KdsHistoryDrawer",components:{KdsOrderLine:ki},props:{open:{type:Boolean,default:!1},dir:{type:String,default:"ltr"}},emits:["close","recalled"],data:function(){return{orders:[],loading:!1,error:!1,now:Date.now(),tickerId:null,recallingIds:[],recalledMap:{},RECALL_TTL_SECONDS:60,STATUS_PREPARED:8}},watch:{open:function(e){e&&(this.fetch(),this.recalledMap={})}},mounted:function(){var e=this;this._onEsc=function(t){!e.open||"Escape"!==t.key&&"Esc"!==t.key||e.$emit("close")},document.addEventListener("keydown",this._onEsc),this.tickerId=window.setInterval(function(){e.now=Date.now()},1e3)},beforeUnmount:function(){this._onEsc&&(document.removeEventListener("keydown",this._onEsc),this._onEsc=null),this.tickerId&&(window.clearInterval(this.tickerId),this.tickerId=null)},methods:{fetch:function(){var e=this;return Po(Vo().m(function t(){var r,n;return Vo().w(function(t){for(;;)switch(t.p=t.n){case 0:return e.loading=!0,e.error=!1,t.p=1,t.n=2,Ao.A.get("admin/kds-order/history-today");case 2:r=t.v,n=r.data,e.orders=Array.isArray(n)?n:Array.isArray(n&&n.data)?n.data:[],t.n=4;break;case 3:t.p=3,t.v,e.error=!0,e.orders=[];case 4:return t.p=4,e.loading=!1,t.f(4);case 5:return t.a(2)}},t,null,[[1,3,4,5]])}))()},renderItemLines:function(e){return(0,Ra.Gx)(e).lines},placedTime:function(e){var t=null==e?void 0:e.order_time;if("string"==typeof t&&t.trim().length>0)return t.trim();var r=null==e?void 0:e.order_datetime;return"string"==typeof r&&r.trim().length>0?r.trim():""},statusClass:function(e){return{"is-prepared":8===e,"is-out":10===e,"is-delivered":13===e}},statusLabel:function(e){return No(No(No({},8,this.$t("label.kds_state_prepared")),10,this.$t("label.kds_state_out")),13,this.$t("label.kds_state_delivered"))[e]||String(e)},formatTime:function(e){if(!e)return"";try{var t=new Date(e),r=String(t.getHours()).padStart(2,"0"),n=String(t.getMinutes()).padStart(2,"0");return"".concat(r,":").concat(n)}catch(e){return""}},_msSinceUpdated:function(e){var t=Date.parse((null==e?void 0:e.updated_at)||"");return Number.isNaN(t)?-1:Math.max(0,this.now-t)},canRecall:function(e){if(!e||8!==e.status)return!1;if(this.wasRecentlyRecalled(e))return!1;var t=this._msSinceUpdated(e);return!(t<0)&&t<1e3*this.RECALL_TTL_SECONDS},recallSecondsLeft:function(e){var t=this._msSinceUpdated(e);return t<0?0:Math.max(0,this.RECALL_TTL_SECONDS-Math.floor(t/1e3))},wasRecentlyRecalled:function(e){if(!e)return!1;var t=this.recalledMap[e.id];return!!t&&this.now-t<1e3*this.RECALL_TTL_SECONDS},recall:function(e){var t=this;return Po(Vo().m(function r(){var n,a,u,i,o,l,s,d,c;return Vo().w(function(r){for(;;)switch(r.p=r.n){case 0:if(e&&t.canRecall(e)){r.n=1;break}return r.a(2);case 1:if(!t.recallingIds.includes(e.id)){r.n=2;break}return r.a(2);case 2:return t.recallingIds=[].concat(wo(t.recallingIds),[e.id]),r.p=3,n="kds-recall-".concat(e.id,"-").concat(Math.floor(Date.now()/6e4)),r.n=4,Ao.A.post("admin/kds-order/recall/".concat(e.id),null,{headers:{"X-Idempotency-Key":n}});case 4:a=r.v,u=Date.now(),t.recalledMap=xo(xo({},t.recalledMap),{},No({},e.id,u)),t.$emit("recalled",{orderId:e.id,queueNumber:e.queue_number||null,recalledAt:u,payload:(null==a?void 0:a.data)||null}),r.n=6;break;case 5:r.p=5,c=r.v,s=null==c||null===(i=c.response)||void 0===i?void 0:i.status,d=null==c||null===(o=c.response)||void 0===o||null===(o=o.data)||void 0===o?void 0:o.message,409===s&&(t.recalledMap=xo(xo({},t.recalledMap),{},No({},e.id,Date.now()))),null!==(l=window)&&void 0!==l&&null!==(l=l.toastr)&&void 0!==l&&l.error&&d?window.toastr.error(d):console.warn("[KDS recall] failed:",s,d||(null==c?void 0:c.message)),403!==s&&409!==s&&422!==s||t.fetch();case 6:return r.p=6,t.recallingIds=t.recallingIds.filter(function(t){return t!==e.id}),r.f(6);case 7:return r.a(2)}},r,null,[[3,5,6,7]])}))()}}};var Ro=r(2500),$o={insert:"head",singleton:!1};mi()(Ro.A,$o);Ro.A.locals;const Mo=(0,bi.A)(To,[["render",function(e,t,r,a,u,i){var o=(0,n.resolveComponent)("KdsOrderLine");return r.open?((0,n.openBlock)(),(0,n.createElementBlock)("div",{key:0,class:"kds-history-drawer",role:"dialog","aria-modal":"true","aria-label":e.$t("label.kds_history_button_aria"),"data-testid":"kds-history-drawer"},[(0,n.createElementVNode)("div",{class:"kds-history-drawer__backdrop",onClick:t[0]||(t[0]=function(t){return e.$emit("close")})}),(0,n.createElementVNode)("div",{class:"kds-history-drawer__panel",dir:r.dir},[(0,n.createElementVNode)("header",eo,[(0,n.createElementVNode)("h2",to,[t[3]||(t[3]=(0,n.createElementVNode)("span",{"aria-hidden":"true"},"📚",-1)),(0,n.createTextVNode)(" "+(0,n.toDisplayString)(e.$t("label.kds_history_title"))+" ",1),u.loading||u.error?(0,n.createCommentVNode)("",!0):((0,n.openBlock)(),(0,n.createElementBlock)("span",ro," ("+(0,n.toDisplayString)(u.orders.length)+") ",1))]),(0,n.createElementVNode)("button",{type:"button",class:"kds-history-drawer__close","aria-label":e.$t("label.kds_history_close_aria"),"data-testid":"kds-history-close",onClick:t[1]||(t[1]=function(t){return e.$emit("close")})},Yi(t[4]||(t[4]=[(0,n.createElementVNode)("span",{"aria-hidden":"true"},"✕",-1)])),8,no)]),u.loading?((0,n.openBlock)(),(0,n.createElementBlock)("div",ao,(0,n.toDisplayString)(e.$t("label.kds_history_loading")),1)):u.error?((0,n.openBlock)(),(0,n.createElementBlock)("div",uo,[(0,n.createElementVNode)("span",null,(0,n.toDisplayString)(e.$t("label.kds_history_error")),1),(0,n.createElementVNode)("button",{type:"button",class:"kds-history-drawer__retry",onClick:t[2]||(t[2]=function(){return i.fetch&&i.fetch.apply(i,arguments)})},(0,n.toDisplayString)(e.$t("label.kds_history_retry")),1)])):0===u.orders.length?((0,n.openBlock)(),(0,n.createElementBlock)("div",io,(0,n.toDisplayString)(e.$t("label.kds_history_empty")),1)):((0,n.openBlock)(),(0,n.createElementBlock)("ul",oo,[((0,n.openBlock)(!0),(0,n.createElementBlock)(n.Fragment,null,(0,n.renderList)(u.orders,function(t){return(0,n.openBlock)(),(0,n.createElementBlock)("li",{key:t.id,class:(0,n.normalizeClass)(["kds-history-drawer__item",i.statusClass(t.status)]),"data-testid":"kds-history-item"},[(0,n.createElementVNode)("div",lo,[(0,n.createElementVNode)("span",so," N°"+(0,n.toDisplayString)(t.queue_number||t.order_serial_no||t.id),1),(0,n.createElementVNode)("span",{class:"kds-history-drawer__status","data-status":t.status},(0,n.toDisplayString)(i.statusLabel(t.status)),9,co)]),(0,n.createElementVNode)("div",Do,[i.placedTime(t)?((0,n.openBlock)(),(0,n.createElementBlock)("span",po,[(0,n.createElementVNode)("span",mo,(0,n.toDisplayString)(e.$t("label.kds_history_placed_at")),1),(0,n.createElementVNode)("time",fo,(0,n.toDisplayString)(i.placedTime(t)),1)])):(0,n.createCommentVNode)("",!0),i.formatTime(t.updated_at)?((0,n.openBlock)(),(0,n.createElementBlock)("span",ho,[(0,n.createElementVNode)("span",bo,(0,n.toDisplayString)(e.$t("label.kds_history_completed_at")),1),(0,n.createElementVNode)("time",{class:"kds-history-drawer__time",datetime:t.updated_at},(0,n.toDisplayString)(i.formatTime(t.updated_at)),9,ko)])):(0,n.createCommentVNode)("",!0)]),(0,n.createElementVNode)("div",Eo,[((0,n.openBlock)(!0),(0,n.createElementBlock)(n.Fragment,null,(0,n.renderList)(t.order_items||[],function(e,t){return(0,n.openBlock)(),(0,n.createElementBlock)("div",{key:(e.id||t)+"-"+t,class:"kds-history-drawer__item-block"},[((0,n.openBlock)(!0),(0,n.createElementBlock)(n.Fragment,null,(0,n.renderList)(i.renderItemLines(e),function(e,t){return(0,n.openBlock)(),(0,n.createBlock)(o,{key:t,line:e},null,8,["line"])}),128))])}),128))]),i.canRecall(t)?((0,n.openBlock)(),(0,n.createElementBlock)("div",go,[(0,n.createElementVNode)("button",{type:"button",class:"kds-history-drawer__recall-btn","aria-label":e.$t("label.kds_recall_button_aria",{queue:t.queue_number||t.id}),disabled:u.recallingIds.includes(t.id),"data-testid":"kds-recall-".concat(t.id),onClick:function(e){return i.recall(t)}},(0,n.toDisplayString)(e.$t("label.kds_recall_button")),9,yo),(0,n.createElementVNode)("span",vo,(0,n.toDisplayString)(i.recallSecondsLeft(t))+"s ",1)])):t.status===u.STATUS_PREPARED&&i.wasRecentlyRecalled(t)?((0,n.openBlock)(),(0,n.createElementBlock)("div",Fo,[(0,n.createElementVNode)("span",{class:"kds-history-drawer__recall-badge","aria-label":e.$t("label.kds_recall_badge_aria",{queue:t.queue_number||t.id})},(0,n.toDisplayString)(e.$t("label.kds_recall_badge")),9,_o)])):(0,n.createCommentVNode)("",!0)],2)}),128))]))],8,Qi)],8,Zi)):(0,n.createCommentVNode)("",!0)}],["__scopeId","data-v-368a1144"]]),jo=Mo;function Lo(e){return Lo="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e},Lo(e)}function zo(){var e,t,r="function"==typeof Symbol?Symbol:{},n=r.iterator||"@@iterator",a=r.toStringTag||"@@toStringTag";function u(r,n,a,u){var l=n&&n.prototype instanceof o?n:o,s=Object.create(l.prototype);return Ko(s,"_invoke",function(r,n,a){var u,o,l,s=0,d=a||[],c=!1,D={p:0,n:0,v:e,a:p,f:p.bind(e,4),d:function(t,r){return u=t,o=0,l=e,D.n=r,i}};function p(r,n){for(o=r,l=n,t=0;!c&&s&&!a&&t<d.length;t++){var a,u=d[t],p=D.p,m=u[2];r>3?(a=m===n)&&(l=u[(o=u[4])?5:(o=3,3)],u[4]=u[5]=e):u[0]<=p&&((a=r<2&&p<u[1])?(o=0,D.v=n,D.n=u[1]):p<m&&(a=r<3||u[0]>n||n>m)&&(u[4]=r,u[5]=n,D.n=m,o=0))}if(a||r>1)return i;throw c=!0,n}return function(a,d,m){if(s>1)throw TypeError("Generator is already running");for(c&&1===d&&p(d,m),o=d,l=m;(t=o<2?e:l)||!c;){u||(o?o<3?(o>1&&(D.n=-1),p(o,l)):D.n=l:D.v=l);try{if(s=2,u){if(o||(a="next"),t=u[a]){if(!(t=t.call(u,l)))throw TypeError("iterator result is not an object");if(!t.done)return t;l=t.value,o<2&&(o=0)}else 1===o&&(t=u.return)&&t.call(u),o<2&&(l=TypeError("The iterator does not provide a '"+a+"' method"),o=1);u=e}else if((t=(c=D.n<0)?l:r.call(n,D))!==i)break}catch(t){u=e,o=1,l=t}finally{s=1}}return{value:t,done:c}}}(r,a,u),!0),s}var i={};function o(){}function l(){}function s(){}t=Object.getPrototypeOf;var d=[][n]?t(t([][n]())):(Ko(t={},n,function(){return this}),t),c=s.prototype=o.prototype=Object.create(d);function D(e){return Object.setPrototypeOf?Object.setPrototypeOf(e,s):(e.__proto__=s,Ko(e,a,"GeneratorFunction")),e.prototype=Object.create(c),e}return l.prototype=s,Ko(c,"constructor",s),Ko(s,"constructor",l),l.displayName="GeneratorFunction",Ko(s,a,"GeneratorFunction"),Ko(c),Ko(c,a,"Generator"),Ko(c,n,function(){return this}),Ko(c,"toString",function(){return"[object Generator]"}),(zo=function(){return{w:u,m:D}})()}function Ko(e,t,r,n){var a=Object.defineProperty;try{a({},"",{})}catch(e){a=0}Ko=function(e,t,r,n){function u(t,r){Ko(e,t,function(e){return this._invoke(t,r,e)})}t?a?a(e,t,{value:r,enumerable:!n,configurable:!n,writable:!n}):e[t]=r:(u("next",0),u("throw",1),u("return",2))},Ko(e,t,r,n)}function qo(e,t,r,n,a,u,i){try{var o=e[u](i),l=o.value}catch(e){return void r(e)}o.done?t(l):Promise.resolve(l).then(n,a)}function Uo(e){return function(){var t=this,r=arguments;return new Promise(function(n,a){var u=e.apply(t,r);function i(e){qo(u,n,a,i,o,"next",e)}function o(e){qo(u,n,a,i,o,"throw",e)}i(void 0)})}}function Go(e,t){var r=Object.keys(e);if(Object.getOwnPropertySymbols){var n=Object.getOwnPropertySymbols(e);t&&(n=n.filter(function(t){return Object.getOwnPropertyDescriptor(e,t).enumerable})),r.push.apply(r,n)}return r}function Wo(e){for(var t=1;t<arguments.length;t++){var r=null!=arguments[t]?arguments[t]:{};t%2?Go(Object(r),!0).forEach(function(t){Ho(e,t,r[t])}):Object.getOwnPropertyDescriptors?Object.defineProperties(e,Object.getOwnPropertyDescriptors(r)):Go(Object(r)).forEach(function(t){Object.defineProperty(e,t,Object.getOwnPropertyDescriptor(r,t))})}return e}function Ho(e,t,r){return(t=function(e){var t=function(e,t){if("object"!=Lo(e)||!e)return e;var r=e[Symbol.toPrimitive];if(void 0!==r){var n=r.call(e,t||"default");if("object"!=Lo(n))return n;throw new TypeError("@@toPrimitive must return a primitive value.")}return("string"===t?String:Number)(e)}(e,"string");return"symbol"==Lo(t)?t:t+""}(t))in e?Object.defineProperty(e,t,{value:r,enumerable:!0,configurable:!0,writable:!0}):e[t]=r,e}function Jo(e){return function(e){if(Array.isArray(e))return Yo(e)}(e)||function(e){if("undefined"!=typeof Symbol&&null!=e[Symbol.iterator]||null!=e["@@iterator"])return Array.from(e)}(e)||function(e,t){if(e){if("string"==typeof e)return Yo(e,t);var r={}.toString.call(e).slice(8,-1);return"Object"===r&&e.constructor&&(r=e.constructor.name),"Map"===r||"Set"===r?Array.from(e):"Arguments"===r||/^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(r)?Yo(e,t):void 0}}(e)||function(){throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")}()}function Yo(e,t){(null==t||t>e.length)&&(t=e.length);for(var r=0,n=Array(t);r<t;r++)n[r]=e[r];return n}const Xo={name:"KitchenDisplaySystemComponent",components:{ConnectionStatusBanner:Ea.A,LoadingComponent:Mn.A,Swiper:ka.RC,SwiperSlide:ka.qr,KdsV2Grid:Ji,KdsHistoryDrawer:jo},data:function(){var e;return{loading:{isActive:!1},props:{search:{paginate:0,order_column:"id",order_by:"desc",order_serial_no:"",status:""}},dineinOrders:[],onlineOrders:[],takeawayOrders:[],kioskOrders:[],enums:{statusEnum:Ln.A,orderTypeEnum:jn.A,orderStatusEnum:zn.A,paymentStatusEnum:Kn.A,askEnum:qn.A},autoRefreshInterval:null,wsConnected:!(null===(e=window._wsService)||void 0===e||!e.isConnected()),_eventSub:null,flashTableChangeIds:{},_tableFlashTimers:{},stationFilter:"all",groupByTable:!1,soundEnabled:!0,soundVolume:80,autoPrintKitchen:!0,_kitchenBacklogSeeded:!1,_kitchenFailedPrint:[],_kitchenInFlight:new Set,_kitchenRetryInterval:null,waitTick:0,expandedTableGroups:{},_kdsWaitInterval:null,_kdsOrdersHydrated:!1,_kdsStatusInterceptorId:null,kdsHideBumpInfo:!1,kdsSyncUnsubscribers:[],syncNowTick:Date.now(),_kdsSyncStampTimer:null,lastDataFreshAt:null,allergensModal:{open:!1,order:null},allergenModalReturnFocus:null,_kdsLastNewOrderSoundAt:0,kdsOverflowDetected:!1,historyDrawerOpen:!1,kdsRecalledMap:{},_kdsRecallNow:Date.now(),_kdsRecallTickerId:null,kdsAriaLiveMessage:"",kdsErrorBanner:{visible:!1,message:"",lastRetryAt:null},v2OfflineSince:null,v2AutoTransitionEnabled:!1}},computed:{direction:function(){return this.$store.getters["frontendLanguage/show"].display_mode===Un.A.RTL?"rtl":"ltr"},recallActiveIds:function(){for(var e=this._kdsRecallNow,t=[],r=this.kdsRecalledMap||{},n=0,a=Object.keys(r);n<a.length;n++){var u=a[n],i=r[u];"number"==typeof i&&e-i<6e4&&t.push(parseInt(u,10))}return t},useV2Layout:function(){try{var e;if("undefined"==typeof window)return!0;var t=new URLSearchParams(window.location.search||"").get("v2");if("0"===t)return!1;if("1"===t)return!0;var r=null===(e=window.localStorage)||void 0===e?void 0:e.getItem("kds.v2_enabled");return"0"!==r&&("1"===r||("boolean"!=typeof window.FK_KDS_V2_DEFAULT_ENABLED||window.FK_KDS_V2_DEFAULT_ENABLED))}catch(e){return!0}},kdsSuppressFallbackBanner:function(){try{var e;return"local"===("undefined"!=typeof window&&(null===(e=window.foodkingConfig)||void 0===e?void 0:e.appEnv)||"")&&!1===window.FK_KDS_SHOW_FALLBACK_BANNER}catch(e){return!1}},kdsIsCentralAdmin:function(){if(!(this.authBranchId()<=0))return!1;try{var e,t=parseInt("undefined"!=typeof window&&(null===(e=window.foodkingConfig)||void 0===e?void 0:e.branchCount)||0,10);return Number.isFinite(t)&&t>1}catch(e){return!1}},kdsOrderApproachingCap:function(){var e=Array.isArray(this.orders)?this.orders.length:0;return e>=45&&e<50},kdsOrderListAtCap:function(){return!0===this.kdsOverflowDetected},kdsFreshnessBaseMs:function(){return this.syncNowTick,function(){var e=arguments.length>0&&void 0!==arguments[0]?arguments[0]:{},t=e.lastDataFreshAt,r=void 0===t?null:t,n=e.lastSyncAt,a=void 0===n?null:n;return Math.max($a(r),$a(a))}({lastDataFreshAt:this.lastDataFreshAt,lastSyncAt:ba.lastSyncAt})},humanizedSyncAgo:function(){return Ma(this.kdsFreshnessBaseMs,this.syncNowTick)},syncBadgeUncertain:function(){return function(e,t){return!!e&&t-e>(arguments.length>2&&void 0!==arguments[2]?arguments[2]:75e3)}(this.kdsFreshnessBaseMs,this.syncNowTick)},syncBadgeText:function(){return this.syncBadgeUncertain?this.$t("label.kds_sync_uncertain"):this.humanizedSyncAgo?this.$t("label.kds_sync_stamp",{ago:this.humanizedSyncAgo}):this.$t("label.kds_sync_never")},syncBadgeIsStale:function(){return function(e,t){return!e||t-e>(arguments.length>2&&void 0!==arguments[2]?arguments[2]:3e4)}(this.kdsFreshnessBaseMs,this.syncNowTick)},orders:function(){return this.$store.getters["kitchenDisplaySystemOrder/lists"]},kitchenPrintFailedCount:function(){return Array.isArray(this._kitchenFailedPrint)?this._kitchenFailedPrint.length:0},orderItems:function(){return this.$store.getters["kitchenDisplaySystemOrder/orderItems"]},filteredDineinOrders:function(){return Aa(this.dineinOrders,this.stationFilter)},filteredOnlineOrders:function(){return Aa(this.onlineOrders,this.stationFilter)},filteredTakeawayOrders:function(){return Aa(this.takeawayOrders,this.stationFilter)},filteredKioskOrders:function(){return Aa(this.kioskOrders,this.stationFilter)},sortedFilteredDinein:function(){var e=function(e){return e.table_name&&String(e.table_name).trim()||"—"},t=Jo(this.filteredDineinOrders);return this.groupByTable&&t.sort(function(t,r){return e(t).localeCompare(e(r),void 0,{sensitivity:"base"})}),t},allergensModalItems:function(){var e=this.allergensModal.order;return e&&(e.orderItems||e.order_items)||[]}},watch:{orders:function(e,t){if(this._kdsOrdersHydrated&&void 0!==t){var r=new Set((t||[]).map(function(e){return e&&e.id})),n=(e||[]).filter(function(e){return e&&!r.has(e.id)});n.length>0&&(this.playKdsNewOrderSound(),this.autoPrintNewKitchenTickets(n))}}},created:function(){try{this.kdsHideBumpInfo="1"===localStorage.getItem("kds.hide_bump_info")}catch(e){this.kdsHideBumpInfo=!1}var e=this.kdsAuthUserId(),t=va(e),r=null;try{r=localStorage.getItem(t)}catch(e){r=null}if(null==r&&e>0)try{var n=localStorage.getItem("kds.station_filter");"all"!==n&&"bar"!==n&&"cuisine_chaude"!==n&&"cuisine_froide"!==n||(r=n,localStorage.setItem(t,n))}catch(e){}if(null==r)try{r=localStorage.getItem("kds.station_filter")}catch(e){r=null}"all"!==r&&"bar"!==r&&"cuisine_chaude"!==r&&"cuisine_froide"!==r||(this.stationFilter=r);var a=localStorage.getItem("kds.group_by_table");this.groupByTable="1"===a||"true"===a;var u=localStorage.getItem("kds.sound_enabled");this.soundEnabled="0"!==u&&"false"!==u;var i=parseInt(localStorage.getItem("kds.sound_volume")||"80",10);this.soundVolume=Number.isFinite(i)?Math.min(100,Math.max(0,i)):80;try{var o=localStorage.getItem("kds.autoPrint");this.autoPrintKitchen="0"!==o&&"false"!==o}catch(e){this.autoPrintKitchen=!0}},mounted:function(){var e,t=this;(this.closeSidebar(),this.useV2Layout)&&(null===(e=document)||void 0===e||null===(e=e.querySelector(".db-main"))||void 0===e||null===(e=e.classList)||void 0===e||e.add("db-main--kds"));this.refreshOrderList(),this.startAutoRefresh(),window.addEventListener("realtime-order-update",this.refreshOrderList),this.subscribeEcho(),this._bindWsService(),this._kdsRecallTickerId=window.setInterval(function(){t._kdsRecallNow=Date.now()},1e3);try{var r="undefined"!=typeof window&&window.axios?window.axios:null;r&&r.interceptors&&r.interceptors.response&&(this._kdsStatusInterceptorId=r.interceptors.response.use(function(e){try{var r=e&&e.config;r&&/^post$/i.test(r.method||"")&&"string"==typeof r.url&&-1!==r.url.indexOf("admin/kds-order/change-status/")&&e.status>=200&&e.status<300&&(t._refreshWithCurrentFilter(),t.items())}catch(e){}return e},function(e){return Promise.reject(e)}))}catch(e){}this._kdsWaitInterval=setInterval(function(){t.waitTick+=1},3e4),this.kdsSyncUnsubscribers.push(ba.on("sync",function(e){var r=e.gatedIds,n=void 0===r?[]:r,a=e.orders,u=void 0===a?[]:a,i=e.deleted_ids,o=void 0===i?[]:i,l=u.some(function(e){return!n.includes(e.id)}),s=(o||[]).length>0;t.syncNowTick=Date.now(),(l||s)&&t._debouncedRefresh&&t._debouncedRefresh()})),this.kdsSyncUnsubscribers.push(ba.on("error",function(e){t.syncNowTick=Date.now();var r=e&&e.status;401!==r&&403!==r||(t.kdsErrorBanner={visible:!0,message:t.$t("message.kds_sync_forbidden"),lastRetryAt:null})}));try{ba.start(this.authBranchId())}catch(e){}this._kdsSyncStampTimer=setInterval(function(){t.syncNowTick=Date.now()},1e3),this._kitchenRetryInterval=setInterval(function(){try{t.retryFailedKitchenTickets()}catch(e){}},2e4)},methods:{safePhone:function(e){return(0,ja.a)(e)},variationLine:function(e){return(0,Ra.E4)(e)},_statusChangeAffectsKds:function(e){var t=[4,7,8],r=e&&e.payload?e.payload:e||{},n=Number(r.old_status),a=Number(r.new_status);return!Number.isFinite(n)&&!Number.isFinite(a)||(t.includes(n)||t.includes(a))},kdsLegacyShouldShowDelivery:function(e){return!!e&&("delivery"===String(e.source_surface||"").toLowerCase()||5===Number(e.order_type))},kdsLegacyDeliveryAddress:function(e){var t=e&&e.order_address;if(!t)return"";var r=[];return t.apartment&&r.push(t.apartment),t.address&&r.push(t.address),r.join(" — ")},onV2ChangeStatus:function(e){var t=this,r=(this.orders||[]).find(function(t){return t.id===e.orderId});if(r){var n=(0,ga.p)(r,e.status);this.$store.dispatch("kitchenDisplaySystemOrder/changeStatus",Wo({},n)).then(function(){t.kdsAnnounceTransition(r,e.status),t._debouncedRefresh(),window.dispatchEvent(new CustomEvent("realtime-order-update",{detail:{type:"status-change",order_id:n.id,status:e.status}}))}).catch(function(e){var r,n=null==e||null===(r=e.response)||void 0===r?void 0:r.status;409!==n?(422===n&&t._debouncedRefresh(),t.kdsErrorBanner&&(t.kdsErrorBanner.visible=!0,t.kdsErrorBanner.message=t.$t("message.kds_status_conflict"))):t._debouncedRefresh()})}},onV2AutoPromote:function(e){(this.orders||[]).find(function(t){return t.id===e})&&this.onV2ChangeStatus({orderId:e,status:Va.PREPARING})},authBranchId:function(){for(var e,t=0,r=[this.$store.getters["auth/authBranchId"],this.$store.getters.authBranchId,null===(e=this.$store.state)||void 0===e||null===(e=e.auth)||void 0===e?void 0:e.authBranchId];t<r.length;t++){var n=r[t];if(""!==n&&null!=n){var a=parseInt(n,10);if(Number.isFinite(a))return a}}return 0},kdsInstructionClass:function(e){return(0,xa.F)(e)},kdsCleanInstruction:function(e){return(0,Ra.Sr)(null==e?void 0:e.instruction,null==e?void 0:e.item_name)},isPaymentPendingCounter:function(e){return!0===(null==e?void 0:e.payment_pending_counter)||parseInt(null==e?void 0:e.payment_status,10)===Kn.A.PENDING_COUNTER},orderHasAllergens:function(e){return function(e){if(!e)return!1;var t=e.orderItems||e.order_items;if(!Array.isArray(t))return!1;for(var r=0;r<t.length;r++){var n=t[r]&&t[r].allergens_snapshot;if(Array.isArray(n)&&n.length>0)return!0}return!1}(e)},sortedAllergens:function(e){return wa(e)},openAllergensModal:function(e){var t=this;this.allergenModalReturnFocus="undefined"!=typeof document&&document.activeElement?document.activeElement:null,this.allergensModal={open:!0,order:e},this.$nextTick(function(){var e=t.$refs.allergensModalCloseButton;if(e&&"function"==typeof e.focus)try{e.focus()}catch(e){}})},closeAllergensModal:function(){var e=this.allergenModalReturnFocus;this.allergensModal={open:!1,order:null},this.allergenModalReturnFocus=null,this.$nextTick(function(){if(e&&"function"==typeof e.focus)try{e.focus()}catch(e){}})},onAllergensModalKeydown:function(e){if("Tab"===e.key){var t=this.$refs.allergensModalRoot,r=t&&t.querySelector&&t.querySelector(".kds-allergens-modal-content");if(r){var n=Array.from(r.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')).filter(function(e){return null!==e.offsetParent||e===document.activeElement});if(n.length<2)e.preventDefault();else{var a=n[0],u=n[n.length-1];e.shiftKey?document.activeElement===a&&(e.preventDefault(),u.focus()):document.activeElement===u&&(e.preventDefault(),a.focus())}}}},dismissKdsBumpNotice:function(){try{localStorage.setItem("kds.hide_bump_info","1")}catch(e){}this.kdsHideBumpInfo=!0},kdsWaitClass:function(e){return this.waitTick,function(e){var t=Ca(e,arguments.length>1&&void 0!==arguments[1]?arguments[1]:Date.now());return"fresh"===t?"kds-wait-green":"warning"===t?"kds-wait-orange":"kds-wait-red animate-pulse"}(Ba(e),Date.now())},kdsDisplayDateTime:function(e){var t=String(e||"").trim(),r=t.match(/^(\d{1,2}):(\d{2})\s*(AM|PM),?\s*(.*)$/i);if(!r)return t.replace(/\s*\b(AM|PM)\b/gi,"").trim();var n=parseInt(r[1],10),a=r[2],u=r[3].toUpperCase(),i=r[4]?", ".concat(r[4]):"";return"PM"===u&&n<12&&(n+=12),"AM"===u&&12===n&&(n=0),"".concat(String(n).padStart(2,"0"),":").concat(a).concat(i)},orderStatusBadgeClasses:function(e){return e===this.enums.orderStatusEnum.PREPARED?"bg-[#166534] text-white":e===this.enums.orderStatusEnum.ACCEPT?"bg-[#4C1A96] text-white":"bg-[#92400E] text-white"},kdsAuthUserId:function(){var e=this.$store.getters["auth/authInfo"]||{},t=null!=e.id?parseInt(e.id,10):0;return Number.isFinite(t)&&t>0?t:0},persistKdsUiPrefs:function(){try{localStorage.setItem(va(this.kdsAuthUserId()),this.stationFilter)}catch(e){}localStorage.setItem("kds.group_by_table",this.groupByTable?"1":"0"),localStorage.setItem("kds.sound_enabled",this.soundEnabled?"1":"0"),localStorage.setItem("kds.sound_volume",String(this.soundVolume)),localStorage.setItem("kds.autoPrint",this.autoPrintKitchen?"1":"0")},playKdsNewOrderSound:function(){if(this.soundEnabled){var e=Date.now();if(function(e){var t=arguments.length>1&&void 0!==arguments[1]?arguments[1]:Date.now();return null==e||!Number.isFinite(e)||t-e>=2500}(this._kdsLastNewOrderSoundAt,e)){this._kdsLastNewOrderSoundAt=e;var t=this.$refs.kdsNewOrderAudio;t&&(t.volume=Math.min(1,Math.max(0,this.soundVolume/100)),t.currentTime=0,t.play().catch(function(){}))}}},_seedKitchenPrintedBacklogOnce:function(){if(!this._kitchenBacklogSeeded){this._kitchenBacklogSeeded=!0;try{this._kitchenFailedPrint=function(){try{var e=window.localStorage.getItem(ru);if(e){var t=JSON.parse(e);if(Array.isArray(t))return t.map(function(e){return String(e)})}}catch(e){}return[]}();var e=new Set(this._kitchenFailedPrint.map(function(e){return String(e)})),t=(this.orders||[]).map(function(e){return e&&e.id}).filter(function(t){return null!=t&&!e.has(String(t))});r=t,n=Qa(),a=!1,(r||[]).forEach(function(e){if(null!=e){var t=String(e);n.has(t)||(n.add(t),a=!0)}}),a&&eu(n)}catch(e){}var r,n,a}},autoPrintNewKitchenTickets:function(e){var t=this;this.autoPrintKitchen&&(e||[]).forEach(function(e){if(e&&null!=e.id&&null!=(r=e.id)&&!Qa().has(String(r))){var r,n=String(e.id);t._kitchenInFlight&&t._kitchenInFlight.has(n)||(t._kitchenInFlight&&t._kitchenInFlight.add(n),Promise.resolve(t.autoPrintKitchenTicket(e)).then(function(r){r&&r.ok?(tu(e.id),t._removeKitchenFailed(e.id)):t._addKitchenFailed(e.id)}).catch(function(){t._addKitchenFailed(e.id)}).finally(function(){t._kitchenInFlight&&t._kitchenInFlight.delete(n)}))}})},autoPrintKitchenTicket:function(e){return Uo(zo().m(function t(){var r,n,a,u,i,o;return zo().w(function(t){for(;;)switch(t.p=t.n){case 0:if((r="undefined"!=typeof window&&window.axios?window.axios:null)&&e&&null!=e.id){t.n=1;break}return t.a(2,{ok:!1,retriable:!1});case 1:return t.p=1,t.n=2,r.get("admin/pos/orders/".concat(e.id,"/escpos"),{params:{ticket:"kitchen"}});case 2:a=t.v,n=a&&a.data,t.n=4;break;case 3:t.p=3,o=t.v;try{"undefined"!=typeof window&&window.console&&window.console.debug("[kds] escpos cuisine KO (retriable):",o&&o.message)}catch(e){}return t.a(2,{ok:!1,retriable:!0,reason:"escpos-fetch"});case 4:if(u=n&&n.escpos_b64){t.n=5;break}return t.a(2,{ok:!1,retriable:!1,reason:"empty"});case 5:return t.n=6,Ja(u,{orderRef:e.id});case 6:return i=t.v,t.a(2,i&&i.ok?i:i||{ok:!1,retriable:!0,reason:"bridge"})}},t,null,[[1,3]])}))()},_addKitchenFailed:function(e){if(null!=e&&Array.isArray(this._kitchenFailedPrint)){var t=String(e);if(!this._kitchenFailedPrint.includes(t)){this._kitchenFailedPrint.push(t);try{nu(this._kitchenFailedPrint)}catch(e){}}}},_removeKitchenFailed:function(e){if(null!=e&&Array.isArray(this._kitchenFailedPrint)){var t=String(e),r=this._kitchenFailedPrint.indexOf(t);if(-1!==r){this._kitchenFailedPrint.splice(r,1);try{nu(this._kitchenFailedPrint)}catch(e){}}}},retryFailedKitchenTickets:function(){var e=this;if(Array.isArray(this._kitchenFailedPrint)&&0!==this._kitchenFailedPrint.length){var t=new Map;(this.orders||[]).forEach(function(e){e&&null!=e.id&&t.set(String(e.id),e)}),this._kitchenFailedPrint=this._kitchenFailedPrint.filter(function(e){return t.has(e)});try{nu(this._kitchenFailedPrint)}catch(e){}this._kitchenFailedPrint.slice().forEach(function(r){if(!e._kitchenInFlight||!e._kitchenInFlight.has(r)){var n=t.get(r);n&&(e._kitchenInFlight&&e._kitchenInFlight.add(r),Promise.resolve(e.autoPrintKitchenTicket(n)).then(function(t){t&&t.ok&&(tu(n.id),e._removeKitchenFailed(n.id))}).catch(function(){}).finally(function(){e._kitchenInFlight&&e._kitchenInFlight.delete(r)}))}})}},reprintKitchenTicket:function(e){var t=this;return Uo(zo().m(function r(){var n,a;return zo().w(function(r){for(;;)switch(r.p=r.n){case 0:if(e&&null!=e.id){r.n=1;break}return r.a(2);case 1:if(n=String(e.id),!t._kitchenInFlight||!t._kitchenInFlight.has(n)){r.n=2;break}return r.a(2);case 2:return t._kitchenInFlight&&t._kitchenInFlight.add(n),r.p=3,r.n=4,t.autoPrintKitchenTicket(e);case 4:a=r.v;try{a&&a.ok?(tu(e.id),t._removeKitchenFailed(e.id),Gn.default.info(t.$t("message.kds_reprint_sent",{queue:e.queue_number||e.id}))):Gn.default.error(t.$t("message.kds_reprint_failed"))}catch(e){}case 5:return r.p=5,t._kitchenInFlight&&t._kitchenInFlight.delete(n),r.f(5);case 6:return r.a(2)}},r,null,[[3,,5,6]])}))()},isTableGroupOpen:function(e){return!1!==this.expandedTableGroups[e]},toggleTableGroup:function(e){var t=this.isTableGroupOpen(e);this.expandedTableGroups=Wo(Wo({},this.expandedTableGroups),{},Ho({},e,!t))},dineinTableKey:function(e){return e.table_name&&String(e.table_name).trim()||"—"},kdsDineinTableHeaderVisible:function(e,t){if(!this.groupByTable)return!1;var r=this.sortedFilteredDinein,n=function(e){return e.table_name&&String(e.table_name).trim()||"—"};return 0===t||n(e)!==n(r[t-1])},kdsIsBumped:function(e,t){return null!=this.$store.getters["kds/bumpTimestamp"](e,t)},kdsCanRecall:function(e,t){var r=this.$store.getters["kds/bumpTimestamp"](e,t);return null!=r&&Date.now()-r<6e4},kdsBump:function(e,t){var r=this;this.$store.dispatch("kds/bumpItem",{orderId:e.id,itemId:t.id}),this.$nextTick(function(){if(r.$store.getters["kds/isReadyOrder"](e)&&e.status!==r.enums.orderStatusEnum.PREPARED){var t=e.status===r.enums.orderStatusEnum.ACCEPT?r.enums.orderStatusEnum.PREPARING:r.enums.orderStatusEnum.PREPARED;r.orderStatus(e,t)}})},kdsRecall:function(e,t){var r=this;return Uo(zo().m(function n(){var a;return zo().w(function(n){for(;;)switch(n.n){case 0:return n.n=1,r.$store.dispatch("kds/recallItem",{orderId:e.id,itemId:t.id});case 1:(a=n.v)&&!1===a.ok&&"grace_expired"===a.reason&&Gn.default.error(r.$t("message.kds_recall_grace_expired"));case 2:return n.a(2)}},n)}))()},_bindWsService:function(){var e=this,t=window._wsService;t&&(this._onWsConnected=function(){e.wsConnected=!0,e.refreshOrderList(),e._restartPolling()},this._onWsDisconnected=function(){e.wsConnected=!1,e._restartPolling()},t.on("connected",this._onWsConnected),t.on("disconnected",this._onWsDisconnected))},_unbindWsService:function(){var e=window._wsService;e&&(this._onWsConnected&&e.off("connected",this._onWsConnected),this._onWsDisconnected&&e.off("disconnected",this._onWsDisconnected))},_pollingInterval:function(){return this.wsConnected?6e4:5e3},_restartPolling:function(){this.stopAutoRefresh(),this.startAutoRefresh()},startAutoRefresh:function(){var e=this;this.$route.path.includes("kitchen-display-system")&&(this.autoRefreshInterval=setInterval(function(){e.refreshOrderList()},this._pollingInterval()))},subscribeEcho:function(){var e=this;if(window.Echo){var t=this.authBranchId();if(!(t<=0)){this.unsubscribeEcho();try{this._eventSub=(0,Hn.dy)(t,[{broadcastAs:"OrderStatusChanged",handler:function(t){e._statusChangeAffectsKds(t)&&e._debouncedRefresh()}},{broadcastAs:"OrderCreated",handler:function(){e._debouncedRefresh()}},{broadcastAs:"OrderPaidAtCounter",handler:function(){e._debouncedRefresh()}},{broadcastAs:"ItemAvailabilityChanged",handler:function(t){e._onItemAvailabilityChanged(t)}},{broadcastAs:"OrderTableChanged",handler:function(t){e._handleTableChanged(t)}},{broadcastAs:"KdsOrderRecalled",handler:function(t){var r,n,a=(null==t||null===(r=t.payload)||void 0===r?void 0:r.order_id)||(null==t||null===(n=t.payload)||void 0===n?void 0:n.orderId);if(a){var u,i,o,l=(null==t||null===(u=t.payload)||void 0===u?void 0:u.recalled_at)||(null==t||null===(i=t.payload)||void 0===i?void 0:i.recalledAt),s=l?Date.parse(l):NaN;e.onKdsOrderRecalled({orderId:parseInt(a,10),queueNumber:(null==t||null===(o=t.payload)||void 0===o?void 0:o.queue_number)||null,recalledAt:Number.isFinite(s)?s:Date.now(),payload:(null==t?void 0:t.payload)||null})}}}])}catch(e){console.warn("[KDS] Echo subscription failed:",e.message)}}}},unsubscribeEcho:function(){if(!(this.authBranchId()<=0)){try{var e;null===(e=this._eventSub)||void 0===e||e.unsubscribe()}catch(e){console.warn("[KDS] Echo unsubscribe error:",e.message)}this._eventSub=null}},refreshOrderList:function(){this.items(),this._refreshWithCurrentFilter()},_isVisibleInCurrentBoard:function(e){Number(this.props.search.status||0);return!0},_applyOrderBuckets:function(e){var t=this,r=(Array.isArray(e)?e:[]).filter(function(e){return t._isVisibleInCurrentBoard(e)}),n=function(e){var t="string"==typeof e.source_surface?e.source_surface.toLowerCase():"";return"kiosk"===t||!t&&e.order_type===jn.A.KIOSK};this.kioskOrders=r.filter(n);var a=r.filter(function(e){return!n(e)});this.dineinOrders=a.filter(function(e){return e.order_type===jn.A.DINING_TABLE}),this.onlineOrders=a.filter(function(e){return e.order_type===jn.A.DELIVERY}),this.takeawayOrders=a.filter(function(e){return e.order_type===jn.A.TAKEAWAY||e.order_type===jn.A.POS}),this.lastDataFreshAt=Date.now()},_refreshWithCurrentFilter:function(){var e=this;this.loading.isActive=!0,this.$store.dispatch("kitchenDisplaySystemOrder/lists",this.props.search).then(function(t){var r,n;e._applyOrderBuckets((null==t||null===(r=t.data)||void 0===r?void 0:r.data)||[]),e.kdsOverflowDetected=!0===(null==t||null===(n=t.data)||void 0===n||null===(n=n.meta)||void 0===n?void 0:n.overflow),e.loading.isActive=!1,e._kdsOrdersHydrated=!0,e._seedKitchenPrintedBacklogOnce(),e._clearKdsErrorBanner()}).catch(function(t){e.loading.isActive=!1,e._raiseKdsErrorBanner(t)})},openFilterSlide:function(e){return Wn.A.openFilterSlide(e)},closeFilterSlide:function(e){return Wn.A.closeFilterSlide(e)},stopAutoRefresh:function(){this.autoRefreshInterval&&(clearInterval(this.autoRefreshInterval),this.autoRefreshInterval=null)},list:function(){var e=this,t=arguments.length>0&&void 0!==arguments[0]?arguments[0]:"";this.props.search.status=t||"",this.loading.isActive=!0,this.$store.dispatch("kitchenDisplaySystemOrder/lists",this.props.search).then(function(t){var r,n;e._applyOrderBuckets((null==t||null===(r=t.data)||void 0===r?void 0:r.data)||[]),e.kdsOverflowDetected=!0===(null==t||null===(n=t.data)||void 0===n||null===(n=n.meta)||void 0===n?void 0:n.overflow),e.loading.isActive=!1,e._kdsOrdersHydrated=!0,e._seedKitchenPrintedBacklogOnce(),e._clearKdsErrorBanner()}).catch(function(t){e.loading.isActive=!1,e._raiseKdsErrorBanner(t)})},_raiseKdsErrorBanner:function(e){var t,r,n,a=Number((null==e||null===(t=e.response)||void 0===t?void 0:t.status)||0),u=this.$t("error.kds_connection_lost");!a||a>=500||408===a||425===a||429===a?r=u:r=(null==e||null===(n=e.response)||void 0===n||null===(n=n.data)||void 0===n?void 0:n.message)||u;this.kdsErrorBanner={visible:!0,message:r,lastRetryAt:Date.now()}},_clearKdsErrorBanner:function(){this.kdsErrorBanner.visible&&(this.kdsErrorBanner={visible:!1,message:"",lastRetryAt:null})},dismissKdsErrorBanner:function(){this._clearKdsErrorBanner()},items:function(){var e=this;this.loading.isActive=!0,this.$store.dispatch("kitchenDisplaySystemOrder/orderItems").then(function(t){e.loading.isActive=!1}).catch(function(t){var r;e.loading.isActive=!1,Gn.default.error((null==t||null===(r=t.response)||void 0===r||null===(r=r.data)||void 0===r?void 0:r.message)||e.$t("message.something_wrong"))})},openSidebar:function(){var e,t;null===(e=document)||void 0===e||null===(e=e.querySelector(".db-main"))||void 0===e||null===(e=e.classList)||void 0===e||e.remove("expand");var r=document.querySelector(".db-sidebar-nav-item.active");r&&r.classList.remove("active"),null===(t=document)||void 0===t||null===(t=t.querySelector(".router-link-exact-active"))||void 0===t||null===(t=t.parentElement)||void 0===t||null===(t=t.classList)||void 0===t||t.add("active")},closeSidebar:function(){var e;null===(e=document)||void 0===e||null===(e=e.querySelector(".db-main"))||void 0===e||null===(e=e.classList)||void 0===e||e.add("expand")},search:function(){void 0!==this.props.search.order_serial_no&&this.props.search.order_serial_no,this.list()},searchReset:function(){this.props.search.order_serial_no="",this.list()},kdsOverflowSeeMore:function(){this.props.search.order_serial_no="",this.props.search.status="",this.list()},escapeHtml:function(e){return e?String(e).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"):""},kdsAddonDisplayName:function(e){return e&&"object"===Lo(e)?e.addon_name||e.addon_item_name||e.name||e.item_name||"Addon":""},printKitchenTicket:function(){},orderStatus:function(e,t){var r=this;try{this.loading.isActive=!0;var n=(0,ga.p)(e,t);this.$store.dispatch("kitchenDisplaySystemOrder/changeStatus",Wo({},n)).then(function(a){r.loading.isActive=!1,Gn.default.successFlip(1,r.$t("label.status")),r.kdsAnnounceTransition(e,t),r._debouncedRefresh(),window.dispatchEvent(new CustomEvent("realtime-order-update",{detail:{type:"status-change",order_id:n.id,status:t}}))}).catch(function(e){var t,n;if(r.loading.isActive=!1,409===(null==e||null===(t=e.response)||void 0===t?void 0:t.status))return Gn.default.error(r.$t("message.kds_status_conflict")),void r._debouncedRefresh();var a=(null==e||null===(n=e.response)||void 0===n||null===(n=n.data)||void 0===n?void 0:n.message)||(null==e?void 0:e.message)||"Erreur réseau";Gn.default.error(a)})}catch(e){var a;this.loading.isActive=!1;var u=(null==e||null===(a=e.response)||void 0===a||null===(a=a.data)||void 0===a?void 0:a.message)||(null==e?void 0:e.message)||"Erreur réseau";Gn.default.error(u)}},_onItemAvailabilityChanged:function(e){try{var t,r,n,a,u,i,o,l=e&&e.payload?e.payload:{},s=null!==(t=null!==(r=l.item_id)&&void 0!==r?r:l.itemId)&&void 0!==t?t:null,d=null!==(n=null!==(a=l.is_available)&&void 0!==a?a:l.isAvailable)&&void 0!==n?n:null,c=null!==(u=null!==(i=l.branch_id)&&void 0!==i?i:l.branchId)&&void 0!==u?u:null,D=null!==(o=l.reason)&&void 0!==o?o:null;if(null!=s)if(!1===d){this.$store.dispatch("kdsInflight/markDeavailable",{itemId:s,branchId:c,reason:D,kdsBranchId:this.authBranchId()});try{var p,m=l.name||l.item_name||"#"+s;try{p=this.$t("pos.stock_rupture_alert",{name:m})}catch(e){p="Stock épuisé : ".concat(m)}this.kdsAriaLiveMessage=p,Gn.default.warning(p)}catch(e){}}else!0===d&&this.$store.dispatch("kdsInflight/clearItem",s)}catch(e){console.warn("[KDS] _onItemAvailabilityChanged failed:",null==e?void 0:e.message)}this._debouncedRefresh()},kdsHasOosWarning:function(e){if(!e)return!1;var t=Number(e.status);if(!(t===zn.A.ACCEPT||t===zn.A.PREPARING))return!1;var r=this.$store.getters["kdsInflight/orderHasRecentlyDeavailableItem"];return"function"==typeof r&&r(e)},kdsAnnounceTransition:function(e,t){var r,n,a=this;if(e){var u=null!==(r=null!==(n=e.order_serial_no)&&void 0!==n?n:e.id)&&void 0!==r?r:"";if(""!==u&&null!=u){var i="";i=t===zn.A.PREPARING?this.$t?this.$t("label.kds_aria_live_preparing",{id:u}):"Order #".concat(u," preparing"):t===zn.A.PREPARED?this.$t?this.$t("label.kds_aria_live_ready",{id:u}):"Order #".concat(u," ready"):t===zn.A.ACCEPT?this.$t?this.$t("label.kds_aria_live_accepted",{id:u}):"Order #".concat(u," accepted"):"Order #".concat(u),this.kdsAriaLiveMessage="",this.$nextTick(function(){a.kdsAriaLiveMessage=i})}}},_handleTableChanged:function(e){var t=this,r=parseInt((null==e?void 0:e.order_id)||0);r<=0||(this.flashTableChangeIds=Wo(Wo({},this.flashTableChangeIds),{},Ho({},r,!0)),this._tableFlashTimers[r]&&clearTimeout(this._tableFlashTimers[r]),this._tableFlashTimers[r]=setTimeout(function(){var e=Wo({},t.flashTableChangeIds);delete e[r],t.flashTableChangeIds=e,delete t._tableFlashTimers[r]},2e3)),this._debouncedRefresh()},_debouncedRefresh:function(){var e=this;this._refreshTimeout&&clearTimeout(this._refreshTimeout),this._refreshTimeout=setTimeout(function(){e._refreshWithCurrentFilter(),e.items()},300)},toggleFilter:function(e){this.expandedFilter===e?this.expandedFilter=null:this.expandedFilter=e},onKdsOrderRecalled:function(e){if(e&&e.orderId){var t=parseInt(e.orderId,10),r="number"==typeof e.recalledAt?e.recalledAt:Date.now();this.kdsRecalledMap=Wo(Wo({},this.kdsRecalledMap),{},Ho({},t,r)),this.kdsAriaLiveMessage=this.$t("label.kds_recall_badge_aria",{queue:e.queueNumber||t}),this._debouncedRefresh()}}},beforeUnmount:function(){var e;this.stopAutoRefresh(),this._refreshTimeout&&(clearTimeout(this._refreshTimeout),this._refreshTimeout=null),this._kdsRecallTickerId&&(window.clearInterval(this._kdsRecallTickerId),this._kdsRecallTickerId=null),this._kdsWaitInterval&&(clearInterval(this._kdsWaitInterval),this._kdsWaitInterval=null);try{null!==this._kdsStatusInterceptorId&&void 0!==this._kdsStatusInterceptorId&&"undefined"!=typeof window&&window.axios&&window.axios.interceptors&&window.axios.interceptors.response&&window.axios.interceptors.response.eject(this._kdsStatusInterceptorId)}catch(e){}this._kdsStatusInterceptorId=null,null===(e=document)||void 0===e||null===(e=e.querySelector(".db-main"))||void 0===e||null===(e=e.classList)||void 0===e||e.remove("db-main--kds"),this.openSidebar(),window.removeEventListener("realtime-order-update",this.refreshOrderList),this.unsubscribeEcho(),this._unbindWsService(),Object.values(this._tableFlashTimers||{}).forEach(function(e){try{clearTimeout(e)}catch(e){}}),this._tableFlashTimers={};try{ba.stop()}catch(e){}(this.kdsSyncUnsubscribers||[]).forEach(function(e){try{e&&e()}catch(e){}}),this.kdsSyncUnsubscribers=[],this._kdsSyncStampTimer&&(clearInterval(this._kdsSyncStampTimer),this._kdsSyncStampTimer=null),this._kitchenRetryInterval&&(clearInterval(this._kitchenRetryInterval),this._kitchenRetryInterval=null)}};var Zo=r(1310),Qo={insert:"head",singleton:!1};mi()(Zo.A,Qo);Zo.A.locals;const el=(0,bi.A)(Xo,[["render",function(e,t,r,u,Mn,jn){var Ln=(0,n.resolveComponent)("KdsHistoryDrawer"),zn=(0,n.resolveComponent)("KdsV2Grid"),Kn=(0,n.resolveComponent)("ConnectionStatusBanner"),qn=(0,n.resolveComponent)("LoadingComponent"),Un=(0,n.resolveComponent)("SwiperSlide"),Gn=(0,n.resolveComponent)("Swiper");return(0,n.openBlock)(),(0,n.createElementBlock)(n.Fragment,null,[(0,n.createElementVNode)("div",i,[(0,n.createElementVNode)("button",{type:"button",class:"kds-history-trigger","aria-label":e.$t("label.kds_history_button_aria"),"data-testid":"kds-history-button",onClick:t[0]||(t[0]=function(e){return Mn.historyDrawerOpen=!0})},[t[31]||(t[31]=(0,n.createElementVNode)("span",{"aria-hidden":"true"},"📚",-1)),(0,n.createElementVNode)("span",l,(0,n.toDisplayString)(e.$t("label.kds_history_button")),1)],8,o)]),(0,n.createVNode)(Ln,{open:Mn.historyDrawerOpen,dir:jn.direction,onClose:t[1]||(t[1]=function(e){return Mn.historyDrawerOpen=!1}),onRecalled:jn.onKdsOrderRecalled},null,8,["open","dir","onRecalled"]),jn.useV2Layout?((0,n.openBlock)(),(0,n.createBlock)(zn,{key:0,orders:jn.orders,dir:jn.direction,"offline-since":Mn.v2OfflineSince,"list-at-cap":jn.kdsOrderListAtCap,"fallback-mode":!Mn.wsConnected&&!jn.kdsSuppressFallbackBanner,"admin-polling-hint":jn.kdsIsCentralAdmin,"bump-local-only-notice":!Mn.kdsHideBumpInfo,"auto-transition-enabled":Mn.v2AutoTransitionEnabled,"recall-active-ids":jn.recallActiveIds,onChangeStatus:jn.onV2ChangeStatus,onAutoPromote:jn.onV2AutoPromote,onReprint:jn.reprintKitchenTicket},null,8,["orders","dir","offline-since","list-at-cap","fallback-mode","admin-polling-hint","bump-local-only-notice","auto-transition-enabled","recall-active-ids","onChangeStatus","onAutoPromote","onReprint"])):((0,n.openBlock)(),(0,n.createElementBlock)(n.Fragment,{key:1},[(0,n.createVNode)(Kn,{"suppress-transient":""}),(0,n.createVNode)(qn,{props:Mn.loading},null,8,["props"]),Mn.wsConnected||jn.kdsSuppressFallbackBanner?(0,n.createCommentVNode)("",!0):((0,n.openBlock)(),(0,n.createElementBlock)("div",s,(0,n.toDisplayString)(e.$t("label.kds_fallback_banner")),1)),Mn.kdsErrorBanner.visible?((0,n.openBlock)(),(0,n.createElementBlock)("div",d,[(0,n.createElementVNode)("span",null,(0,n.toDisplayString)(Mn.kdsErrorBanner.message),1),(0,n.createElementVNode)("button",{type:"button",class:"kds-hint-link","aria-label":e.$t("label.kds_dismiss_hint"),onClick:t[2]||(t[2]=function(){return jn.dismissKdsErrorBanner&&jn.dismissKdsErrorBanner.apply(jn,arguments)})},"✕",8,c)])):(0,n.createCommentVNode)("",!0),jn.kdsIsCentralAdmin?((0,n.openBlock)(),(0,n.createElementBlock)("div",D,(0,n.toDisplayString)(e.$t("label.kds_admin_polling_hint")),1)):(0,n.createCommentVNode)("",!0),jn.kdsOrderApproachingCap?((0,n.openBlock)(),(0,n.createElementBlock)("div",p,(0,n.toDisplayString)(e.$t("label.kds_order_cap_warning",{n:jn.orders.length})),1)):(0,n.createCommentVNode)("",!0),jn.kdsOrderListAtCap?((0,n.openBlock)(),(0,n.createElementBlock)("div",m,[(0,n.createElementVNode)("span",null,(0,n.toDisplayString)(e.$t("label.kds_order_list_full_warning",{n:jn.orders.length})),1),(0,n.createElementVNode)("button",{type:"button",class:"kds-hint-link",onClick:t[3]||(t[3]=function(){return jn.kdsOverflowSeeMore&&jn.kdsOverflowSeeMore.apply(jn,arguments)})},(0,n.toDisplayString)(e.$t("label.kds_see_more")),1)])):(0,n.createCommentVNode)("",!0),Mn.kdsHideBumpInfo?(0,n.createCommentVNode)("",!0):((0,n.openBlock)(),(0,n.createElementBlock)("div",f,[(0,n.createElementVNode)("span",h,(0,n.toDisplayString)(e.$t("label.kds_bump_local_only_notice")),1),(0,n.createElementVNode)("button",{type:"button",class:"shrink-0 text-xs font-medium underline text-[#4b5563]",onClick:t[4]||(t[4]=function(){return jn.dismissKdsBumpNotice&&jn.dismissKdsBumpNotice.apply(jn,arguments)})},(0,n.toDisplayString)(e.$t("label.kds_dismiss_hint")),1)])),(0,n.createElementVNode)("div",b,[(0,n.createElementVNode)("div",k,[(0,n.createElementVNode)("button",E,(0,n.toDisplayString)(e.$t("label.items_board")),1),(0,n.createElementVNode)("button",g,(0,n.toDisplayString)(e.$t("label.todays_order")),1)]),(0,n.createElementVNode)("div",y,[(0,n.createElementVNode)("div",v,[(0,n.createElementVNode)("div",F,[(0,n.createElementVNode)("div",_,[(0,n.createElementVNode)("h3",A,(0,n.toDisplayString)(e.$t("label.items_board")),1),(0,n.createElementVNode)("p",C,(0,n.toDisplayString)(e.$t("label.kds_items_board_scope")),1)]),(0,n.createElementVNode)("ul",B,[((0,n.openBlock)(!0),(0,n.createElementBlock)(n.Fragment,null,(0,n.renderList)(jn.orderItems,function(t,r){return(0,n.openBlock)(),(0,n.createElementBlock)("li",{key:t.item_id+"-"+r,class:"px-3 py-2 flex items-start justify-between gap-2 border-b border-[#EFF0F6] last:border-none"},[(0,n.createElementVNode)("div",null,[(0,n.createElementVNode)("h5",x,(0,n.toDisplayString)(t.item_name),1),Array.isArray(t.item_variations)&&t.item_variations.length>0?((0,n.openBlock)(),(0,n.createElementBlock)("p",w,[((0,n.openBlock)(!0),(0,n.createElementBlock)(n.Fragment,null,(0,n.renderList)(t.item_variations,function(e,r){return(0,n.openBlock)(),(0,n.createElementBlock)("span",{key:r,class:"text-heading"},[(0,n.createTextVNode)((0,n.toDisplayString)(jn.variationLine(e)),1),r+1<t.item_variations.length?((0,n.openBlock)(),(0,n.createElementBlock)("span",S,", ")):(0,n.createCommentVNode)("",!0)])}),128))])):(0,n.createCommentVNode)("",!0),Array.isArray(t.item_extras)&&t.item_extras.length>0?((0,n.openBlock)(),(0,n.createElementBlock)("span",N,[(0,n.createElementVNode)("h3",V,(0,n.toDisplayString)(e.$t("label.extras"))+": ",1),(0,n.createElementVNode)("p",I,[((0,n.openBlock)(!0),(0,n.createElementBlock)(n.Fragment,null,(0,n.renderList)(t.item_extras,function(e,r){return(0,n.openBlock)(),(0,n.createElementBlock)("span",{key:r,class:"text-heading"},[(0,n.createTextVNode)((0,n.toDisplayString)(e.name),1),r+1<t.item_extras.length?((0,n.openBlock)(),(0,n.createElementBlock)("span",O,", ")):(0,n.createCommentVNode)("",!0)])}),128))])])):(0,n.createCommentVNode)("",!0),Array.isArray(t.item_addons)&&t.item_addons.length>0?((0,n.openBlock)(),(0,n.createElementBlock)("span",P,[(0,n.createElementVNode)("h3",T,(0,n.toDisplayString)(e.$t("label.addons"))+": ",1),(0,n.createElementVNode)("p",R,[((0,n.openBlock)(!0),(0,n.createElementBlock)(n.Fragment,null,(0,n.renderList)(t.item_addons,function(e,r){return(0,n.openBlock)(),(0,n.createElementBlock)("span",{key:r,class:"text-heading"},[(0,n.createTextVNode)((0,n.toDisplayString)(jn.kdsAddonDisplayName(e)),1),Number(e.quantity||1)>1?((0,n.openBlock)(),(0,n.createElementBlock)("span",$," ×"+(0,n.toDisplayString)(Number(e.quantity||1)),1)):(0,n.createCommentVNode)("",!0),r+1<t.item_addons.length?((0,n.openBlock)(),(0,n.createElementBlock)("span",M,", ")):(0,n.createCommentVNode)("",!0)])}),128))])])):(0,n.createCommentVNode)("",!0),jn.kdsCleanInstruction(t)?((0,n.openBlock)(),(0,n.createElementBlock)("div",{key:3,class:(0,n.normalizeClass)([jn.kdsInstructionClass(jn.kdsCleanInstruction(t)),"kds-instruction","mt-1","text-xs","text-heading"]),style:{"white-space":"pre-line"}},(0,n.toDisplayString)(jn.kdsCleanInstruction(t)),3)):(0,n.createCommentVNode)("",!0)]),(0,n.createElementVNode)("div",j,(0,n.toDisplayString)(t.quantity),1)])}),128))])])])]),(0,n.createElementVNode)("div",L,[(0,n.createElementVNode)("div",z,[(0,n.createElementVNode)("div",K,[(0,n.createElementVNode)("div",q,[(0,n.createElementVNode)("label",U,(0,n.toDisplayString)(e.$t("label.kds_station_filter")),1),(0,n.withDirectives)((0,n.createElementVNode)("select",{id:"kds-station-filter","onUpdate:modelValue":t[5]||(t[5]=function(e){return Mn.stationFilter=e}),onChange:t[6]||(t[6]=function(){return jn.persistKdsUiPrefs&&jn.persistKdsUiPrefs.apply(jn,arguments)}),"aria-label":e.$t("label.kds_station_filter"),class:"h-10 rounded-lg border border-[#D9DBE9] px-3 text-xs text-heading min-w-[10rem] bg-white"},[(0,n.createElementVNode)("option",W,(0,n.toDisplayString)(e.$t("label.kds_all_stations")),1),(0,n.createElementVNode)("option",H,(0,n.toDisplayString)(e.$t("label.kds_bar")),1),(0,n.createElementVNode)("option",J,(0,n.toDisplayString)(e.$t("label.kds_cuisine_chaude")),1),(0,n.createElementVNode)("option",Y,(0,n.toDisplayString)(e.$t("label.kds_cuisine_froide")),1)],40,G),[[n.vModelSelect,Mn.stationFilter]]),(0,n.createElementVNode)("label",X,[(0,n.withDirectives)((0,n.createElementVNode)("input",{type:"checkbox","onUpdate:modelValue":t[7]||(t[7]=function(e){return Mn.groupByTable=e}),onChange:t[8]||(t[8]=function(){return jn.persistKdsUiPrefs&&jn.persistKdsUiPrefs.apply(jn,arguments)}),class:"rounded border-[#D9DBE9]"},null,544),[[n.vModelCheckbox,Mn.groupByTable]]),(0,n.createTextVNode)(" "+(0,n.toDisplayString)(e.$t("label.kds_group_by_table")),1)])]),(0,n.createElementVNode)("div",Z,[(0,n.createElementVNode)("span",Q,(0,n.toDisplayString)(e.$t("label.kds_sound")),1),(0,n.createElementVNode)("label",ee,[(0,n.withDirectives)((0,n.createElementVNode)("input",{type:"checkbox","onUpdate:modelValue":t[9]||(t[9]=function(e){return Mn.soundEnabled=e}),onChange:t[10]||(t[10]=function(){return jn.persistKdsUiPrefs&&jn.persistKdsUiPrefs.apply(jn,arguments)}),class:"rounded border-[#D9DBE9]"},null,544),[[n.vModelCheckbox,Mn.soundEnabled]]),(0,n.createElementVNode)("span",te,(0,n.toDisplayString)(e.$t("label.kds_sound")),1)]),(0,n.createElementVNode)("label",re,[(0,n.createElementVNode)("span",ne,(0,n.toDisplayString)(e.$t("label.kds_volume")),1),(0,n.withDirectives)((0,n.createElementVNode)("input",{type:"range",min:"0",max:"100","onUpdate:modelValue":t[11]||(t[11]=function(e){return Mn.soundVolume=e}),onInput:t[12]||(t[12]=function(){return jn.persistKdsUiPrefs&&jn.persistKdsUiPrefs.apply(jn,arguments)}),"aria-label":e.$t("label.kds_volume"),class:"w-28 accent-primary"},null,40,ae),[[n.vModelText,Mn.soundVolume,void 0,{number:!0}]])]),(0,n.createElementVNode)("label",{class:"flex items-center gap-2 text-xs font-medium text-heading cursor-pointer",title:e.$t("label.kds_auto_print_hint")},[(0,n.withDirectives)((0,n.createElementVNode)("input",{type:"checkbox","onUpdate:modelValue":t[13]||(t[13]=function(e){return Mn.autoPrintKitchen=e}),onChange:t[14]||(t[14]=function(){return jn.persistKdsUiPrefs&&jn.persistKdsUiPrefs.apply(jn,arguments)}),class:"rounded border-[#D9DBE9]"},null,544),[[n.vModelCheckbox,Mn.autoPrintKitchen]]),(0,n.createElementVNode)("span",ie,"🖨️ "+(0,n.toDisplayString)(e.$t("label.kds_auto_print"))+" "+(0,n.toDisplayString)(Mn.autoPrintKitchen?"ON":"OFF"),1)],8,ue),jn.kitchenPrintFailedCount>0?((0,n.openBlock)(),(0,n.createElementBlock)("span",oe," ⚠️ "+(0,n.toDisplayString)(e.$t("label.kds_print_failed",{count:jn.kitchenPrintFailedCount})),1)):(0,n.createCommentVNode)("",!0)]),(0,n.createElementVNode)("audio",le,null,512)]),(0,n.createElementVNode)("div",se,[(0,n.createElementVNode)("div",de,[(0,n.createVNode)(Gn,{dir:jn.direction,speed:1e3,slidesPerView:"auto",spaceBetween:12,loop:!1,class:"md:grid sm:grid-cols-2 lg:grid-cols-4 gap-y-2 md:w-fit lg:!w-full w-full"},{default:(0,n.withCtx)(function(){return[(0,n.createVNode)(Un,{class:"!w-fit"},{default:(0,n.withCtx)(function(){return[(0,n.createElementVNode)("button",{type:"button",onClick:t[15]||(t[15]=function(e){return jn.list()}),class:(0,n.normalizeClass)(["db-btn text-heading w-fit flex items-center justify-center gap-3 h-11 px-6 rounded-lg transition bg-white border border-[#D9DBE9] hover:text-[#4C1A96] hover:border-[#4C1A96] hover:bg-[#F8F1FF]",Mn.props.search.status?"":"!bg-[#4C1A96] !text-white !border-[#4C1A96]"])},[(0,n.createElementVNode)("span",ce,(0,n.toDisplayString)(e.$t("label.all_orders")),1)],2)]}),_:1}),(0,n.createVNode)(Un,{class:"!w-fit"},{default:(0,n.withCtx)(function(){return[(0,n.createElementVNode)("button",{type:"button",onClick:t[16]||(t[16]=function(e){return jn.list(Mn.enums.orderStatusEnum.ACCEPT)}),class:(0,n.normalizeClass)([Mn.props.search.status===Mn.enums.orderStatusEnum.ACCEPT?"!bg-[#4C1A96] !text-white !border-[#4C1A96]":"","db-btn text-heading w-fit flex items-center justify-center gap-3 h-11 px-6 rounded-lg transition bg-white border border-[#D9DBE9] hover:text-[#4C1A96] hover:border-[#4C1A96] hover:bg-[#F8F1FF]"])},[(0,n.createElementVNode)("span",De,(0,n.toDisplayString)(e.$t("label.confirmed")),1)],2)]}),_:1}),(0,n.createVNode)(Un,{class:"!w-fit"},{default:(0,n.withCtx)(function(){return[(0,n.createElementVNode)("button",{type:"button",onClick:t[17]||(t[17]=function(e){return jn.list(Mn.enums.orderStatusEnum.PREPARING)}),class:(0,n.normalizeClass)([Mn.props.search.status===Mn.enums.orderStatusEnum.PREPARING?"!bg-[#4C1A96] !text-white !border-[#4C1A96]":"","db-btn text-heading w-fit flex items-center justify-center gap-3 h-11 px-6 rounded-lg transition bg-white border border-[#D9DBE9] hover:text-[#4C1A96] hover:border-[#4C1A96] hover:bg-[#F8F1FF]"])},[(0,n.createElementVNode)("span",pe,(0,n.toDisplayString)(e.$t("label.preparing")),1)],2)]}),_:1}),(0,n.createVNode)(Un,{class:"!w-fit"},{default:(0,n.withCtx)(function(){return[(0,n.createElementVNode)("button",{type:"button",onClick:t[18]||(t[18]=function(e){return jn.list(Mn.enums.orderStatusEnum.PREPARED)}),class:(0,n.normalizeClass)([Mn.props.search.status===Mn.enums.orderStatusEnum.PREPARED?"!bg-[#4C1A96] !text-white !border-[#4C1A96]":"","db-btn text-heading w-fit flex items-center justify-center gap-3 h-11 px-6 rounded-lg transition bg-white border border-[#D9DBE9] hover:text-[#4C1A96] hover:border-[#4C1A96] hover:bg-[#F8F1FF]"])},[(0,n.createElementVNode)("span",me,(0,n.toDisplayString)(e.$t("label.done")),1)],2)]}),_:1})]}),_:1},8,["dir"]),(0,n.createElementVNode)("form",{onSubmit:t[21]||(t[21]=(0,n.withModifiers)(function(){return jn.search&&jn.search.apply(jn,arguments)},["prevent"])),class:"header-search-group group flex items-center justify-center border border-solid gap-2 px-3 xl:!max-w-[305px] w-full h-11 rounded-lg transition border-[#D9DBE9] focus-within:bg-white focus-within:border-primary"},[t[32]||(t[32]=(0,n.createElementVNode)("i",{class:"lab lab-search-normal lab-font-size-16"},null,-1)),(0,n.withDirectives)((0,n.createElementVNode)("input",{type:"text","onUpdate:modelValue":t[19]||(t[19]=function(e){return Mn.props.search.order_serial_no=e}),placeholder:e.$t("label.kds_search_orders"),"aria-label":e.$t("button.search"),class:"header-search-field w-full h-full text-xs appearance-none placeholder:font-normal placeholder:text-paragraph text-heading"},null,8,fe),[[n.vModelText,Mn.props.search.order_serial_no]]),(0,n.createElementVNode)("button",{type:"button",onClick:t[20]||(t[20]=(0,n.withModifiers)(function(){return jn.searchReset&&jn.searchReset.apply(jn,arguments)},["prevent"])),"aria-label":e.$t("button.close"),class:"modal-close lab lab-close-circle-line transition invisible group-focus-within:visible"},null,8,he)],32)])]),(0,n.createElementVNode)("div",{class:"grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-4",onClick:t[26]||(t[26]=function(e){return jn.closeFilterSlide(e)})},[(0,n.createElementVNode)("div",be,[(0,n.createElementVNode)("div",{class:(0,n.normalizeClass)(["p-3 pb-2",jn.filteredDineinOrders.length>0?"border-b border-[#D9DBE9] mb-2":""])},[(0,n.createElementVNode)("h3",ke,(0,n.toDisplayString)(e.$t("label.dinein_orders")),1)],2),0===jn.filteredDineinOrders.length?((0,n.openBlock)(),(0,n.createElementBlock)("div",Ee," Aucune commande sur place en cours. ")):((0,n.openBlock)(),(0,n.createElementBlock)("div",ge,[((0,n.openBlock)(!0),(0,n.createElementBlock)(n.Fragment,null,(0,n.renderList)(jn.sortedFilteredDinein,function(r,u){return(0,n.openBlock)(),(0,n.createElementBlock)(n.Fragment,{key:r.id},[jn.kdsDineinTableHeaderVisible(r,u)?((0,n.openBlock)(),(0,n.createElementBlock)("div",ye,[(0,n.createElementVNode)("button",{type:"button",onClick:function(e){return jn.toggleTableGroup(jn.dineinTableKey(r))},class:"w-full flex items-center justify-between gap-2 px-2 py-2 rounded-lg bg-[#F7F7FC] text-left text-sm font-semibold text-heading"},[(0,n.createElementVNode)("span",null,(0,n.toDisplayString)(jn.dineinTableKey(r)),1),(0,n.createElementVNode)("i",{class:(0,n.normalizeClass)(["fa-solid",jn.isTableGroupOpen(jn.dineinTableKey(r))?"fa-chevron-up":"fa-chevron-down"])},null,2)],8,ve)])):(0,n.createCommentVNode)("",!0),(0,n.withDirectives)((0,n.createElementVNode)("div",null,[(0,n.createElementVNode)("div",{class:(0,n.normalizeClass)(["w-full rounded-lg border transition-colors border-[#EFF0F6] relative",[jn.kdsWaitClass(r),Mn.flashTableChangeIds[r.id]?"kds-table-flash":""]]),role:"article","aria-labelledby":"order-"+r.id+"-title","data-kds-order-card":"dinein"},[jn.kdsHasOosWarning(r)?((0,n.openBlock)(),(0,n.createElementBlock)("span",{key:0,class:"kds-oos-warning-badge","data-testid":"kds-oos-warning-badge",title:e.$t("label.kds_oos_warning_tooltip"),"aria-label":e.$t("label.kds_oos_warning_aria"),role:"img"},"⚠ OOS",8,_e)):(0,n.createCommentVNode)("",!0),jn.orderHasAllergens(r)?((0,n.openBlock)(),(0,n.createElementBlock)("button",{key:1,type:"button",class:"kds-allergens-badge",onClick:(0,n.withModifiers)(function(e){return jn.openAllergensModal(r)},["prevent","stop"]),"aria-label":e.$t("label.kds_allergens_badge_aria")},"⚠ "+(0,n.toDisplayString)(e.$t("label.kds_allergens_badge")),9,Ae)):(0,n.createCommentVNode)("",!0),(0,n.createElementVNode)("div",Ce,[(0,n.createElementVNode)("div",Be,[t[33]||(t[33]=(0,n.createElementVNode)("i",{class:"lab lab-processing lab-font-size-16 text-[#0084FF]"},null,-1)),(0,n.createElementVNode)("span",{id:"order-"+r.id+"-title",class:"text-sm font-normal"},"#"+(0,n.toDisplayString)(r.order_serial_no),9,xe),r.queue_number?((0,n.openBlock)(),(0,n.createElementBlock)("span",we," N°"+(0,n.toDisplayString)(r.queue_number),1)):(0,n.createCommentVNode)("",!0)]),(0,n.createElementVNode)("span",{class:(0,n.normalizeClass)(["py-0.5 px-2 rounded-[4px] text-[10px] font-client leading-4 capitalize",jn.orderStatusBadgeClasses(r.status)])},(0,n.toDisplayString)(r.status===Mn.enums.orderStatusEnum.PREPARED?e.$t("label.done"):r.status===Mn.enums.orderStatusEnum.ACCEPT?e.$t("label.confirmed"):r.status_name),3)]),(0,n.createElementVNode)("div",Se,[(0,n.createElementVNode)("p",Ne,[(0,n.createTextVNode)((0,n.toDisplayString)(e.$t("label.table_no"))+": ",1),(0,n.createElementVNode)("span",Ve,(0,n.toDisplayString)(r.table_name),1)]),(0,n.createElementVNode)("p",Ie,[(0,n.createTextVNode)((0,n.toDisplayString)(e.$t("label.token_no"))+": ",1),(0,n.createElementVNode)("span",Oe,(0,n.toDisplayString)(r.token?r.token:e.$t("label.online")),1)]),jn.kdsLegacyShouldShowDelivery(r)?((0,n.openBlock)(),(0,n.createElementBlock)("div",Pe,[jn.kdsLegacyDeliveryAddress(r)?((0,n.openBlock)(),(0,n.createElementBlock)("p",Te,[t[34]||(t[34]=(0,n.createElementVNode)("span",{"aria-hidden":"true"},"📍",-1)),(0,n.createElementVNode)("span",Re,(0,n.toDisplayString)(jn.kdsLegacyDeliveryAddress(r)),1)])):(0,n.createCommentVNode)("",!0),r.customer&&r.customer.name?((0,n.openBlock)(),(0,n.createElementBlock)("p",$e,[t[35]||(t[35]=(0,n.createElementVNode)("span",{"aria-hidden":"true"},"👤",-1)),(0,n.createElementVNode)("span",null,(0,n.toDisplayString)(r.customer.name),1)])):(0,n.createCommentVNode)("",!0),r.customer&&jn.safePhone(r.customer.phone)?((0,n.openBlock)(),(0,n.createElementBlock)("a",{key:2,href:"tel:".concat(jn.safePhone(r.customer.phone)),class:"text-xs leading-snug text-[#0F766E] font-bold flex items-center gap-1 hover:underline keep-latin"},[t[36]||(t[36]=(0,n.createElementVNode)("span",{"aria-hidden":"true"},"📱",-1)),(0,n.createElementVNode)("span",null,(0,n.toDisplayString)(jn.safePhone(r.customer.phone)),1)],8,Me)):(0,n.createCommentVNode)("",!0)])):(0,n.createCommentVNode)("",!0),(0,n.createElementVNode)("button",{type:"button",onClick:t[22]||(t[22]=function(e){return jn.openFilterSlide(e)}),class:"filter group text-[#6E7191] text-xs font-[300] flex justify-between items-center w-full","aria-expanded":!1,"aria-label":e.$t("label.kds_toggle_items")||"Afficher les articles"},[(0,n.createElementVNode)("span",null,(0,n.toDisplayString)(jn.kdsDisplayDateTime(r.order_datetime)),1),t[37]||(t[37]=(0,n.createElementVNode)("div",{class:"flex items-center justify-center w-6 h-6 rounded-full bg-[#FFE8DD] text-base font-semibold transition-all duration-500 group-hover:text-[#F4501E]"},[(0,n.createElementVNode)("i",{class:"icon text-[#F4501E] fa-solid fa-chevron-down"})],-1))],8,je),(0,n.createElementVNode)("div",Le,[((0,n.openBlock)(!0),(0,n.createElementBlock)(n.Fragment,null,(0,n.renderList)(r.order_items,function(u,i){return(0,n.openBlock)(),(0,n.createElementBlock)("div",{key:u.id||i,class:"flex items-start gap-2 py-3 border-b border-dashed border-[#EFF0F6] last:border-none"},[(0,n.createElementVNode)("h4",ze,(0,n.toDisplayString)(u.quantity)+"x",1),(0,n.createElementVNode)("div",Ke,[(0,n.createElementVNode)("h5",qe,(0,n.toDisplayString)(u.item_name),1),Array.isArray(u.item_variations)&&u.item_variations.length>0?((0,n.openBlock)(),(0,n.createElementBlock)("p",Ue,[((0,n.openBlock)(!0),(0,n.createElementBlock)(n.Fragment,null,(0,n.renderList)(u.item_variations,function(e,t){return(0,n.openBlock)(),(0,n.createElementBlock)("span",{key:t,class:"text-heading"},[(0,n.createTextVNode)((0,n.toDisplayString)(jn.variationLine(e)),1),t+1<u.item_variations.length?((0,n.openBlock)(),(0,n.createElementBlock)("span",Ge,", ")):(0,n.createCommentVNode)("",!0)])}),128))])):(0,n.createCommentVNode)("",!0),Array.isArray(u.item_extras)&&u.item_extras.length>0?((0,n.openBlock)(),(0,n.createElementBlock)("div",We,[(0,n.createElementVNode)("span",He,(0,n.toDisplayString)(e.$t("label.extras"))+":",1),(0,n.createElementVNode)("p",Je,[((0,n.openBlock)(!0),(0,n.createElementBlock)(n.Fragment,null,(0,n.renderList)(u.item_extras,function(e,t){return(0,n.openBlock)(),(0,n.createElementBlock)("span",{key:t,class:"text-heading"},[(0,n.createTextVNode)((0,n.toDisplayString)(e.name),1),t+1<u.item_extras.length?((0,n.openBlock)(),(0,n.createElementBlock)("span",Ye,", ")):(0,n.createCommentVNode)("",!0)])}),128))])])):(0,n.createCommentVNode)("",!0),Array.isArray(u.item_addons)&&u.item_addons.length>0?((0,n.openBlock)(),(0,n.createElementBlock)("div",Xe,[(0,n.createElementVNode)("span",Ze,(0,n.toDisplayString)(e.$t("label.addons"))+":",1),(0,n.createElementVNode)("p",Qe,[((0,n.openBlock)(!0),(0,n.createElementBlock)(n.Fragment,null,(0,n.renderList)(u.item_addons,function(e,t){return(0,n.openBlock)(),(0,n.createElementBlock)("span",{key:t,class:"text-heading"},[(0,n.createTextVNode)((0,n.toDisplayString)(jn.kdsAddonDisplayName(e)),1),Number(e.quantity||1)>1?((0,n.openBlock)(),(0,n.createElementBlock)("span",et," ×"+(0,n.toDisplayString)(Number(e.quantity||1)),1)):(0,n.createCommentVNode)("",!0),t+1<u.item_addons.length?((0,n.openBlock)(),(0,n.createElementBlock)("span",tt,", ")):(0,n.createCommentVNode)("",!0)])}),128))])])):(0,n.createCommentVNode)("",!0),jn.kdsCleanInstruction(u)?((0,n.openBlock)(),(0,n.createElementBlock)("div",{key:3,class:(0,n.normalizeClass)([jn.kdsInstructionClass(jn.kdsCleanInstruction(u)),"kds-instruction","mt-1","text-xs","text-heading"]),style:{"white-space":"pre-line"}},(0,n.toDisplayString)(jn.kdsCleanInstruction(u)),3)):(0,n.createCommentVNode)("",!0)]),(0,n.createElementVNode)("div",rt,[jn.kdsIsBumped(r.id,u.id)?jn.kdsCanRecall(r.id,u.id)?((0,n.openBlock)(),(0,n.createElementBlock)("button",{key:1,type:"button",class:"text-[11px] font-semibold text-[#F4501E] underline decoration-[#F4501E]/50",onClick:(0,n.withModifiers)(function(e){return jn.kdsRecall(r,u)},["prevent","stop"])},(0,n.toDisplayString)(e.$t("button.kds_recall")),9,at)):(0,n.createCommentVNode)("",!0):((0,n.openBlock)(),(0,n.createElementBlock)("button",{key:0,type:"button",class:"w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-[#F4501E] hover:bg-[#F4501E]/5",title:e.$t("button.kds_bump"),"aria-label":"".concat(e.$t("button.kds_bump")," — ").concat(u.item_name),onClick:(0,n.withModifiers)(function(e){return jn.kdsBump(r,u)},["prevent","stop"])},a(t[38]||(t[38]=[(0,n.createElementVNode)("i",{class:"fa-solid fa-arrow-right","aria-hidden":"true"},null,-1)])),8,nt)),(0,n.createElementVNode)("button",{type:"button",class:"w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-[#6B7280] hover:bg-[#6B7280]/5",title:e.$t("label.kds_reprint"),"aria-label":"".concat(e.$t("label.kds_reprint")," — N°").concat(r.queue_number||r.id),"data-testid":"kds-legacy-reprint",onClick:(0,n.withModifiers)(function(e){return jn.reprintKitchenTicket(r)},["prevent","stop"])},a(t[39]||(t[39]=[(0,n.createElementVNode)("i",{class:"fa-solid fa-print","aria-hidden":"true"},null,-1)])),8,ut)])])}),128))]),(0,n.createElementVNode)("div",it,[r.status===Mn.enums.orderStatusEnum.ACCEPT?((0,n.openBlock)(),(0,n.createElementBlock)("button",{key:0,type:"button",onClick:function(e){return jn.orderStatus(r,Mn.enums.orderStatusEnum.PREPARING)},class:"rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#F4501E] text-white"},(0,n.toDisplayString)(e.$t("label.start_preparing")),9,ot)):(0,n.createCommentVNode)("",!0),r.status===Mn.enums.orderStatusEnum.PREPARING?((0,n.openBlock)(),(0,n.createElementBlock)("button",{key:1,type:"button",onClick:function(e){return jn.orderStatus(r,Mn.enums.orderStatusEnum.PREPARED)},class:"rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#1AB759] text-white"},(0,n.toDisplayString)(e.$t("label.mark_done")),9,lt)):(0,n.createCommentVNode)("",!0)])])],10,Fe)],512),[[n.vShow,!Mn.groupByTable||jn.isTableGroupOpen(jn.dineinTableKey(r))]])],64)}),128))]))]),(0,n.createElementVNode)("div",st,[(0,n.createElementVNode)("div",{class:(0,n.normalizeClass)(["p-3 pb-2",jn.filteredOnlineOrders.length>0?"border-b border-[#D9DBE9] mb-2":""])},[(0,n.createElementVNode)("h3",dt,(0,n.toDisplayString)(e.$t("label.online_orders")),1)],2),0===jn.filteredOnlineOrders.length?((0,n.openBlock)(),(0,n.createElementBlock)("div",ct," Aucune commande en ligne en cours. ")):(0,n.createCommentVNode)("",!0),jn.filteredOnlineOrders.length>0?((0,n.openBlock)(!0),(0,n.createElementBlock)(n.Fragment,{key:1},(0,n.renderList)(jn.filteredOnlineOrders,function(r){return(0,n.openBlock)(),(0,n.createElementBlock)("div",{class:"p-3",key:r.id},[(0,n.createElementVNode)("div",{class:(0,n.normalizeClass)(["w-full rounded-lg border transition-colors border-[#EFF0F6] relative",jn.kdsWaitClass(r)]),role:"article","aria-labelledby":"order-"+r.id+"-title","data-kds-order-card":"online"},[jn.kdsHasOosWarning(r)?((0,n.openBlock)(),(0,n.createElementBlock)("span",{key:0,class:"kds-oos-warning-badge","data-testid":"kds-oos-warning-badge",title:e.$t("label.kds_oos_warning_tooltip"),"aria-label":e.$t("label.kds_oos_warning_aria"),role:"img"},"⚠ OOS",8,pt)):(0,n.createCommentVNode)("",!0),jn.orderHasAllergens(r)?((0,n.openBlock)(),(0,n.createElementBlock)("button",{key:1,type:"button",class:"kds-allergens-badge",onClick:(0,n.withModifiers)(function(e){return jn.openAllergensModal(r)},["prevent","stop"]),"aria-label":e.$t("label.kds_allergens_badge_aria")},"⚠ "+(0,n.toDisplayString)(e.$t("label.kds_allergens_badge")),9,mt)):(0,n.createCommentVNode)("",!0),(0,n.createElementVNode)("div",ft,[(0,n.createElementVNode)("div",ht,[t[40]||(t[40]=(0,n.createElementVNode)("i",{class:"lab lab-processing lab-font-size-16 text-[#FF8C1A]"},null,-1)),(0,n.createElementVNode)("span",{id:"order-"+r.id+"-title",class:"text-sm font-normal"},"#"+(0,n.toDisplayString)(r.order_serial_no),9,bt),r.queue_number?((0,n.openBlock)(),(0,n.createElementBlock)("span",kt," N°"+(0,n.toDisplayString)(r.queue_number),1)):(0,n.createCommentVNode)("",!0)]),(0,n.createElementVNode)("span",{class:(0,n.normalizeClass)(["py-0.5 px-2 rounded-[4px] text-[10px] font-client leading-4 capitalize",jn.orderStatusBadgeClasses(r.status)])},(0,n.toDisplayString)(r.status===Mn.enums.orderStatusEnum.PREPARED?e.$t("label.done"):r.status===Mn.enums.orderStatusEnum.ACCEPT?e.$t("label.confirmed"):r.status_name),3)]),(0,n.createElementVNode)("div",Et,[(0,n.createElementVNode)("p",gt,[(0,n.createTextVNode)((0,n.toDisplayString)(e.$t("label.schedule"))+": ",1),(0,n.createElementVNode)("span",{class:(0,n.normalizeClass)(["text-heading font-medium",r.is_advance_order===Mn.enums.askEnum.YES?"!text-[#008BBA]":""])},(0,n.toDisplayString)(r.delivery_time),3)]),r.token?((0,n.openBlock)(),(0,n.createElementBlock)("p",yt,[(0,n.createTextVNode)((0,n.toDisplayString)(e.$t("label.token_no"))+": ",1),(0,n.createElementVNode)("span",vt,(0,n.toDisplayString)(r.token),1)])):(0,n.createCommentVNode)("",!0),jn.kdsLegacyShouldShowDelivery(r)?((0,n.openBlock)(),(0,n.createElementBlock)("div",Ft,[jn.kdsLegacyDeliveryAddress(r)?((0,n.openBlock)(),(0,n.createElementBlock)("p",_t,[t[41]||(t[41]=(0,n.createElementVNode)("span",{"aria-hidden":"true"},"📍",-1)),(0,n.createElementVNode)("span",At,(0,n.toDisplayString)(jn.kdsLegacyDeliveryAddress(r)),1)])):(0,n.createCommentVNode)("",!0),r.customer&&r.customer.name?((0,n.openBlock)(),(0,n.createElementBlock)("p",Ct,[t[42]||(t[42]=(0,n.createElementVNode)("span",{"aria-hidden":"true"},"👤",-1)),(0,n.createElementVNode)("span",null,(0,n.toDisplayString)(r.customer.name),1)])):(0,n.createCommentVNode)("",!0),r.customer&&jn.safePhone(r.customer.phone)?((0,n.openBlock)(),(0,n.createElementBlock)("a",{key:2,href:"tel:".concat(jn.safePhone(r.customer.phone)),class:"text-xs leading-snug text-[#0F766E] font-bold flex items-center gap-1 hover:underline keep-latin"},[t[43]||(t[43]=(0,n.createElementVNode)("span",{"aria-hidden":"true"},"📱",-1)),(0,n.createElementVNode)("span",null,(0,n.toDisplayString)(jn.safePhone(r.customer.phone)),1)],8,Bt)):(0,n.createCommentVNode)("",!0)])):(0,n.createCommentVNode)("",!0),(0,n.createElementVNode)("button",{type:"button",onClick:t[23]||(t[23]=function(e){return jn.openFilterSlide(e)}),class:(0,n.normalizeClass)(["filter group text-xs font-[300] flex justify-between items-center w-full",r.is_advance_order===Mn.enums.askEnum.YES?"text-[#008BBA]":"text-[#6E7191]"]),"aria-expanded":!1,"aria-label":e.$t("label.kds_toggle_items")||"Afficher les articles"},[(0,n.createElementVNode)("span",null,(0,n.toDisplayString)(jn.kdsDisplayDateTime(r.order_datetime)),1),t[44]||(t[44]=(0,n.createElementVNode)("div",{class:"flex items-center justify-center w-6 h-6 rounded-full bg-[#FFE8DD] text-base font-semibold transition-all duration-500 group-hover:text-[#F4501E]"},[(0,n.createElementVNode)("i",{class:"icon text-[#F4501E] fa-solid fa-chevron-down"})],-1))],10,xt),(0,n.createElementVNode)("div",wt,[((0,n.openBlock)(!0),(0,n.createElementBlock)(n.Fragment,null,(0,n.renderList)(r.order_items,function(u,i){return(0,n.openBlock)(),(0,n.createElementBlock)("div",{key:u.id||i,class:"flex items-start gap-2 py-3 border-b border-dashed border-[#EFF0F6] last:border-none"},[(0,n.createElementVNode)("h4",St,(0,n.toDisplayString)(u.quantity)+"x",1),(0,n.createElementVNode)("div",Nt,[(0,n.createElementVNode)("h5",Vt,(0,n.toDisplayString)(u.item_name),1),Array.isArray(u.item_variations)&&u.item_variations.length>0?((0,n.openBlock)(),(0,n.createElementBlock)("p",It,[((0,n.openBlock)(!0),(0,n.createElementBlock)(n.Fragment,null,(0,n.renderList)(u.item_variations,function(e,t){return(0,n.openBlock)(),(0,n.createElementBlock)("span",{key:t,class:"text-heading"},[(0,n.createTextVNode)((0,n.toDisplayString)(jn.variationLine(e)),1),t+1<u.item_variations.length?((0,n.openBlock)(),(0,n.createElementBlock)("span",Ot,", ")):(0,n.createCommentVNode)("",!0)])}),128))])):(0,n.createCommentVNode)("",!0),Array.isArray(u.item_extras)&&u.item_extras.length>0?((0,n.openBlock)(),(0,n.createElementBlock)("div",Pt,[(0,n.createElementVNode)("span",Tt,(0,n.toDisplayString)(e.$t("label.extras"))+":",1),(0,n.createElementVNode)("p",Rt,[((0,n.openBlock)(!0),(0,n.createElementBlock)(n.Fragment,null,(0,n.renderList)(u.item_extras,function(e,t){return(0,n.openBlock)(),(0,n.createElementBlock)("span",{key:t,class:"text-heading"},[(0,n.createTextVNode)((0,n.toDisplayString)(e.name),1),t+1<u.item_extras.length?((0,n.openBlock)(),(0,n.createElementBlock)("span",$t,", ")):(0,n.createCommentVNode)("",!0)])}),128))])])):(0,n.createCommentVNode)("",!0),Array.isArray(u.item_addons)&&u.item_addons.length>0?((0,n.openBlock)(),(0,n.createElementBlock)("div",Mt,[(0,n.createElementVNode)("span",jt,(0,n.toDisplayString)(e.$t("label.addons"))+":",1),(0,n.createElementVNode)("p",Lt,[((0,n.openBlock)(!0),(0,n.createElementBlock)(n.Fragment,null,(0,n.renderList)(u.item_addons,function(e,t){return(0,n.openBlock)(),(0,n.createElementBlock)("span",{key:t,class:"text-heading"},[(0,n.createTextVNode)((0,n.toDisplayString)(jn.kdsAddonDisplayName(e)),1),Number(e.quantity||1)>1?((0,n.openBlock)(),(0,n.createElementBlock)("span",zt," ×"+(0,n.toDisplayString)(Number(e.quantity||1)),1)):(0,n.createCommentVNode)("",!0),t+1<u.item_addons.length?((0,n.openBlock)(),(0,n.createElementBlock)("span",Kt,", ")):(0,n.createCommentVNode)("",!0)])}),128))])])):(0,n.createCommentVNode)("",!0),jn.kdsCleanInstruction(u)?((0,n.openBlock)(),(0,n.createElementBlock)("div",{key:3,class:(0,n.normalizeClass)([jn.kdsInstructionClass(jn.kdsCleanInstruction(u)),"kds-instruction","mt-1","text-xs","text-heading"]),style:{"white-space":"pre-line"}},(0,n.toDisplayString)(jn.kdsCleanInstruction(u)),3)):(0,n.createCommentVNode)("",!0)]),(0,n.createElementVNode)("div",qt,[jn.kdsIsBumped(r.id,u.id)?jn.kdsCanRecall(r.id,u.id)?((0,n.openBlock)(),(0,n.createElementBlock)("button",{key:1,type:"button",class:"text-[11px] font-semibold text-[#F4501E] underline decoration-[#F4501E]/50",onClick:(0,n.withModifiers)(function(e){return jn.kdsRecall(r,u)},["prevent","stop"])},(0,n.toDisplayString)(e.$t("button.kds_recall")),9,Gt)):(0,n.createCommentVNode)("",!0):((0,n.openBlock)(),(0,n.createElementBlock)("button",{key:0,type:"button",class:"w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-[#F4501E] hover:bg-[#F4501E]/5",title:e.$t("button.kds_bump"),"aria-label":"".concat(e.$t("button.kds_bump")," — ").concat(u.item_name),onClick:(0,n.withModifiers)(function(e){return jn.kdsBump(r,u)},["prevent","stop"])},a(t[45]||(t[45]=[(0,n.createElementVNode)("i",{class:"fa-solid fa-arrow-right","aria-hidden":"true"},null,-1)])),8,Ut)),(0,n.createElementVNode)("button",{type:"button",class:"w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-[#6B7280] hover:bg-[#6B7280]/5",title:e.$t("label.kds_reprint"),"aria-label":"".concat(e.$t("label.kds_reprint")," — N°").concat(r.queue_number||r.id),"data-testid":"kds-legacy-reprint",onClick:(0,n.withModifiers)(function(e){return jn.reprintKitchenTicket(r)},["prevent","stop"])},a(t[46]||(t[46]=[(0,n.createElementVNode)("i",{class:"fa-solid fa-print","aria-hidden":"true"},null,-1)])),8,Wt)])])}),128))]),(0,n.createElementVNode)("div",Ht,[r.status===Mn.enums.orderStatusEnum.ACCEPT?((0,n.openBlock)(),(0,n.createElementBlock)("button",{key:0,type:"button",onClick:function(e){return jn.orderStatus(r,Mn.enums.orderStatusEnum.PREPARING)},class:"rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#F4501E] text-white"},(0,n.toDisplayString)(e.$t("label.start_preparing")),9,Jt)):(0,n.createCommentVNode)("",!0),r.status===Mn.enums.orderStatusEnum.PREPARING?((0,n.openBlock)(),(0,n.createElementBlock)("button",{key:1,type:"button",onClick:function(e){return jn.orderStatus(r,Mn.enums.orderStatusEnum.PREPARED)},class:"rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#1AB759] text-white"},(0,n.toDisplayString)(e.$t("label.mark_done")),9,Yt)):(0,n.createCommentVNode)("",!0)])])],10,Dt)])}),128)):(0,n.createCommentVNode)("",!0)]),(0,n.createElementVNode)("div",Xt,[(0,n.createElementVNode)("div",{class:(0,n.normalizeClass)(["p-3 pb-2",jn.filteredTakeawayOrders.length>0?"border-b border-[#D9DBE9] mb-2":""])},[(0,n.createElementVNode)("h3",Zt,(0,n.toDisplayString)(e.$t("label.takeaway")),1)],2),0===jn.filteredTakeawayOrders.length?((0,n.openBlock)(),(0,n.createElementBlock)("div",Qt," Aucune commande à emporter en cours. ")):(0,n.createCommentVNode)("",!0),jn.filteredTakeawayOrders.length>0?((0,n.openBlock)(!0),(0,n.createElementBlock)(n.Fragment,{key:1},(0,n.renderList)(jn.filteredTakeawayOrders,function(r){return(0,n.openBlock)(),(0,n.createElementBlock)("div",{class:"p-3",key:r.id},[(0,n.createElementVNode)("div",{class:(0,n.normalizeClass)(["w-full rounded-lg border transition-colors border-[#EFF0F6] relative",jn.kdsWaitClass(r)]),role:"article","aria-labelledby":"order-"+r.id+"-title","data-kds-order-card":"takeaway"},[jn.kdsHasOosWarning(r)?((0,n.openBlock)(),(0,n.createElementBlock)("span",{key:0,class:"kds-oos-warning-badge","data-testid":"kds-oos-warning-badge",title:e.$t("label.kds_oos_warning_tooltip"),"aria-label":e.$t("label.kds_oos_warning_aria"),role:"img"},"⚠ OOS",8,tr)):(0,n.createCommentVNode)("",!0),jn.orderHasAllergens(r)?((0,n.openBlock)(),(0,n.createElementBlock)("button",{key:1,type:"button",class:"kds-allergens-badge",onClick:(0,n.withModifiers)(function(e){return jn.openAllergensModal(r)},["prevent","stop"]),"aria-label":e.$t("label.kds_allergens_badge_aria")},"⚠ "+(0,n.toDisplayString)(e.$t("label.kds_allergens_badge")),9,rr)):(0,n.createCommentVNode)("",!0),(0,n.createElementVNode)("div",nr,[(0,n.createElementVNode)("div",ar,[t[47]||(t[47]=(0,n.createElementVNode)("i",{class:"lab lab-processing lab-font-size-16 text-[#2D1263]"},null,-1)),(0,n.createElementVNode)("span",{id:"order-"+r.id+"-title",class:"text-sm font-normal"},"#"+(0,n.toDisplayString)(r.order_serial_no),9,ur),r.queue_number?((0,n.openBlock)(),(0,n.createElementBlock)("span",ir," N°"+(0,n.toDisplayString)(r.queue_number),1)):(0,n.createCommentVNode)("",!0),jn.isPaymentPendingCounter(r)?((0,n.openBlock)(),(0,n.createElementBlock)("span",or," PAIEMENT COMPTOIR - NON REGLE ")):(0,n.createCommentVNode)("",!0)]),(0,n.createElementVNode)("span",{class:(0,n.normalizeClass)(["py-0.5 px-2 rounded-[4px] text-[10px] font-client leading-4 capitalize",jn.orderStatusBadgeClasses(r.status)])},(0,n.toDisplayString)(r.status===Mn.enums.orderStatusEnum.PREPARED?e.$t("label.done"):r.status===Mn.enums.orderStatusEnum.ACCEPT?e.$t("label.confirmed"):r.status_name),3)]),(0,n.createElementVNode)("div",lr,[(0,n.createElementVNode)("p",sr,[(0,n.createTextVNode)((0,n.toDisplayString)(e.$t("label.token_no"))+": ",1),(0,n.createElementVNode)("span",dr,(0,n.toDisplayString)(r.token?r.token:e.$t("label.online")),1)]),r.queue_number?((0,n.openBlock)(),(0,n.createElementBlock)("p",cr,[t[48]||(t[48]=(0,n.createTextVNode)(" N° file: ",-1)),(0,n.createElementVNode)("span",Dr,(0,n.toDisplayString)(r.queue_number),1)])):(0,n.createCommentVNode)("",!0),jn.kdsLegacyShouldShowDelivery(r)?((0,n.openBlock)(),(0,n.createElementBlock)("div",pr,[jn.kdsLegacyDeliveryAddress(r)?((0,n.openBlock)(),(0,n.createElementBlock)("p",mr,[t[49]||(t[49]=(0,n.createElementVNode)("span",{"aria-hidden":"true"},"📍",-1)),(0,n.createElementVNode)("span",fr,(0,n.toDisplayString)(jn.kdsLegacyDeliveryAddress(r)),1)])):(0,n.createCommentVNode)("",!0),r.customer&&r.customer.name?((0,n.openBlock)(),(0,n.createElementBlock)("p",hr,[t[50]||(t[50]=(0,n.createElementVNode)("span",{"aria-hidden":"true"},"👤",-1)),(0,n.createElementVNode)("span",null,(0,n.toDisplayString)(r.customer.name),1)])):(0,n.createCommentVNode)("",!0),r.customer&&jn.safePhone(r.customer.phone)?((0,n.openBlock)(),(0,n.createElementBlock)("a",{key:2,href:"tel:".concat(jn.safePhone(r.customer.phone)),class:"text-xs leading-snug text-[#0F766E] font-bold flex items-center gap-1 hover:underline keep-latin"},[t[51]||(t[51]=(0,n.createElementVNode)("span",{"aria-hidden":"true"},"📱",-1)),(0,n.createElementVNode)("span",null,(0,n.toDisplayString)(jn.safePhone(r.customer.phone)),1)],8,br)):(0,n.createCommentVNode)("",!0)])):(0,n.createCommentVNode)("",!0),(0,n.createElementVNode)("button",{type:"button",onClick:t[24]||(t[24]=function(e){return jn.openFilterSlide(e)}),class:"filter group text-[#6E7191] text-xs font-[300] flex justify-between items-center w-full","aria-expanded":!1,"aria-label":e.$t("label.kds_toggle_items")||"Afficher les articles"},[(0,n.createElementVNode)("span",null,(0,n.toDisplayString)(jn.kdsDisplayDateTime(r.order_datetime)),1),t[52]||(t[52]=(0,n.createElementVNode)("div",{class:"flex items-center justify-center w-6 h-6 rounded-full bg-[#FFE8DD] text-base font-semibold transition-all duration-500 group-hover:text-[#F4501E]"},[(0,n.createElementVNode)("i",{class:"icon text-[#F4501E] fa-solid fa-chevron-down"})],-1))],8,kr),(0,n.createElementVNode)("div",Er,[((0,n.openBlock)(!0),(0,n.createElementBlock)(n.Fragment,null,(0,n.renderList)(r.order_items,function(u,i){return(0,n.openBlock)(),(0,n.createElementBlock)("div",{key:u.id||i,class:"flex items-start gap-2 py-3 border-b border-dashed border-[#EFF0F6] last:border-none"},[(0,n.createElementVNode)("h4",gr,(0,n.toDisplayString)(u.quantity)+"x",1),(0,n.createElementVNode)("div",yr,[(0,n.createElementVNode)("h5",vr,(0,n.toDisplayString)(u.item_name),1),Array.isArray(u.item_variations)&&u.item_variations.length>0?((0,n.openBlock)(),(0,n.createElementBlock)("p",Fr,[((0,n.openBlock)(!0),(0,n.createElementBlock)(n.Fragment,null,(0,n.renderList)(u.item_variations,function(e,t){return(0,n.openBlock)(),(0,n.createElementBlock)("span",{key:t,class:"text-heading"},[(0,n.createTextVNode)((0,n.toDisplayString)(jn.variationLine(e)),1),t+1<u.item_variations.length?((0,n.openBlock)(),(0,n.createElementBlock)("span",_r,", ")):(0,n.createCommentVNode)("",!0)])}),128))])):(0,n.createCommentVNode)("",!0),Array.isArray(u.item_extras)&&u.item_extras.length>0?((0,n.openBlock)(),(0,n.createElementBlock)("div",Ar,[(0,n.createElementVNode)("span",Cr,(0,n.toDisplayString)(e.$t("label.extras"))+":",1),(0,n.createElementVNode)("p",Br,[((0,n.openBlock)(!0),(0,n.createElementBlock)(n.Fragment,null,(0,n.renderList)(u.item_extras,function(e,t){return(0,n.openBlock)(),(0,n.createElementBlock)("span",{key:t,class:"text-heading"},[(0,n.createTextVNode)((0,n.toDisplayString)(e.name),1),t+1<u.item_extras.length?((0,n.openBlock)(),(0,n.createElementBlock)("span",xr,", ")):(0,n.createCommentVNode)("",!0)])}),128))])])):(0,n.createCommentVNode)("",!0),Array.isArray(u.item_addons)&&u.item_addons.length>0?((0,n.openBlock)(),(0,n.createElementBlock)("div",wr,[(0,n.createElementVNode)("span",Sr,(0,n.toDisplayString)(e.$t("label.addons"))+":",1),(0,n.createElementVNode)("p",Nr,[((0,n.openBlock)(!0),(0,n.createElementBlock)(n.Fragment,null,(0,n.renderList)(u.item_addons,function(e,t){return(0,n.openBlock)(),(0,n.createElementBlock)("span",{key:t,class:"text-heading"},[(0,n.createTextVNode)((0,n.toDisplayString)(jn.kdsAddonDisplayName(e)),1),Number(e.quantity||1)>1?((0,n.openBlock)(),(0,n.createElementBlock)("span",Vr," ×"+(0,n.toDisplayString)(Number(e.quantity||1)),1)):(0,n.createCommentVNode)("",!0),t+1<u.item_addons.length?((0,n.openBlock)(),(0,n.createElementBlock)("span",Ir,", ")):(0,n.createCommentVNode)("",!0)])}),128))])])):(0,n.createCommentVNode)("",!0),jn.kdsCleanInstruction(u)?((0,n.openBlock)(),(0,n.createElementBlock)("div",{key:3,class:(0,n.normalizeClass)([jn.kdsInstructionClass(jn.kdsCleanInstruction(u)),"kds-instruction","mt-1","text-xs","text-heading"]),style:{"white-space":"pre-line"}},(0,n.toDisplayString)(jn.kdsCleanInstruction(u)),3)):(0,n.createCommentVNode)("",!0)]),(0,n.createElementVNode)("div",Or,[jn.kdsIsBumped(r.id,u.id)?jn.kdsCanRecall(r.id,u.id)?((0,n.openBlock)(),(0,n.createElementBlock)("button",{key:1,type:"button",class:"text-[11px] font-semibold text-[#F4501E] underline decoration-[#F4501E]/50",onClick:(0,n.withModifiers)(function(e){return jn.kdsRecall(r,u)},["prevent","stop"])},(0,n.toDisplayString)(e.$t("button.kds_recall")),9,Tr)):(0,n.createCommentVNode)("",!0):((0,n.openBlock)(),(0,n.createElementBlock)("button",{key:0,type:"button",class:"w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-[#F4501E] hover:bg-[#F4501E]/5",title:e.$t("button.kds_bump"),"aria-label":"".concat(e.$t("button.kds_bump")," — ").concat(u.item_name),onClick:(0,n.withModifiers)(function(e){return jn.kdsBump(r,u)},["prevent","stop"])},a(t[53]||(t[53]=[(0,n.createElementVNode)("i",{class:"fa-solid fa-arrow-right","aria-hidden":"true"},null,-1)])),8,Pr)),(0,n.createElementVNode)("button",{type:"button",class:"w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-[#6B7280] hover:bg-[#6B7280]/5",title:e.$t("label.kds_reprint"),"aria-label":"".concat(e.$t("label.kds_reprint")," — N°").concat(r.queue_number||r.id),"data-testid":"kds-legacy-reprint",onClick:(0,n.withModifiers)(function(e){return jn.reprintKitchenTicket(r)},["prevent","stop"])},a(t[54]||(t[54]=[(0,n.createElementVNode)("i",{class:"fa-solid fa-print","aria-hidden":"true"},null,-1)])),8,Rr)])])}),128))]),(0,n.createElementVNode)("div",$r,[r.status===Mn.enums.orderStatusEnum.ACCEPT?((0,n.openBlock)(),(0,n.createElementBlock)("button",{key:0,type:"button",onClick:function(e){return jn.orderStatus(r,Mn.enums.orderStatusEnum.PREPARING)},class:"rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#F4501E] text-white"},(0,n.toDisplayString)(e.$t("label.start_preparing")),9,Mr)):(0,n.createCommentVNode)("",!0),r.status===Mn.enums.orderStatusEnum.PREPARING?((0,n.openBlock)(),(0,n.createElementBlock)("button",{key:1,type:"button",onClick:function(e){return jn.orderStatus(r,Mn.enums.orderStatusEnum.PREPARED)},class:"rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#1AB759] text-white"},(0,n.toDisplayString)(e.$t("label.mark_done")),9,jr)):(0,n.createCommentVNode)("",!0)])])],10,er)])}),128)):(0,n.createCommentVNode)("",!0)]),(0,n.createElementVNode)("div",Lr,[(0,n.createElementVNode)("div",{class:(0,n.normalizeClass)(["p-3 pb-2 flex items-center gap-2",jn.filteredKioskOrders.length>0?"border-b border-[#D9DBE9] mb-2":""])},[t[55]||(t[55]=(0,n.createElementVNode)("h3",{class:"text-lg font-semibold"},"🖥️ Borne",-1)),jn.filteredKioskOrders.length>0?((0,n.openBlock)(),(0,n.createElementBlock)("span",zr,(0,n.toDisplayString)(jn.filteredKioskOrders.length),1)):(0,n.createCommentVNode)("",!0)],2),0===jn.filteredKioskOrders.length?((0,n.openBlock)(),(0,n.createElementBlock)("div",Kr," Aucune commande borne en cours. ")):(0,n.createCommentVNode)("",!0),jn.filteredKioskOrders.length>0?((0,n.openBlock)(!0),(0,n.createElementBlock)(n.Fragment,{key:1},(0,n.renderList)(jn.filteredKioskOrders,function(r){return(0,n.openBlock)(),(0,n.createElementBlock)("div",{class:"p-3",key:r.id},[(0,n.createElementVNode)("div",{class:(0,n.normalizeClass)(["w-full rounded-lg border transition-colors border-[#EFF0F6] relative",jn.kdsWaitClass(r)]),role:"article","aria-labelledby":"order-"+r.id+"-title","data-kds-order-card":"kiosk"},[jn.kdsHasOosWarning(r)?((0,n.openBlock)(),(0,n.createElementBlock)("span",{key:0,class:"kds-oos-warning-badge","data-testid":"kds-oos-warning-badge",title:e.$t("label.kds_oos_warning_tooltip"),"aria-label":e.$t("label.kds_oos_warning_aria"),role:"img"},"⚠ OOS",8,Ur)):(0,n.createCommentVNode)("",!0),jn.orderHasAllergens(r)?((0,n.openBlock)(),(0,n.createElementBlock)("button",{key:1,type:"button",class:"kds-allergens-badge",onClick:(0,n.withModifiers)(function(e){return jn.openAllergensModal(r)},["prevent","stop"]),"aria-label":e.$t("label.kds_allergens_badge_aria")},"⚠ "+(0,n.toDisplayString)(e.$t("label.kds_allergens_badge")),9,Gr)):(0,n.createCommentVNode)("",!0),(0,n.createElementVNode)("div",Wr,[(0,n.createElementVNode)("div",Hr,[t[56]||(t[56]=(0,n.createElementVNode)("i",{class:"lab lab-processing lab-font-size-16 text-[#991B1B]"},null,-1)),(0,n.createElementVNode)("span",{id:"order-"+r.id+"-title",class:"text-sm font-normal"},"#"+(0,n.toDisplayString)(r.order_serial_no),9,Jr),r.queue_number?((0,n.openBlock)(),(0,n.createElementBlock)("span",Yr," N°"+(0,n.toDisplayString)(r.queue_number),1)):(0,n.createCommentVNode)("",!0),jn.isPaymentPendingCounter(r)?((0,n.openBlock)(),(0,n.createElementBlock)("span",Xr," PAIEMENT COMPTOIR - NON REGLE ")):(0,n.createCommentVNode)("",!0)]),(0,n.createElementVNode)("span",{class:(0,n.normalizeClass)(["py-0.5 px-2 rounded-[4px] text-[10px] font-client leading-4 capitalize",jn.orderStatusBadgeClasses(r.status)])},(0,n.toDisplayString)(r.status===Mn.enums.orderStatusEnum.PREPARED?e.$t("label.done"):r.status===Mn.enums.orderStatusEnum.ACCEPT?e.$t("label.confirmed"):r.status_name),3)]),(0,n.createElementVNode)("div",Zr,[jn.kdsLegacyShouldShowDelivery(r)?((0,n.openBlock)(),(0,n.createElementBlock)("div",Qr,[jn.kdsLegacyDeliveryAddress(r)?((0,n.openBlock)(),(0,n.createElementBlock)("p",en,[t[57]||(t[57]=(0,n.createElementVNode)("span",{"aria-hidden":"true"},"📍",-1)),(0,n.createElementVNode)("span",tn,(0,n.toDisplayString)(jn.kdsLegacyDeliveryAddress(r)),1)])):(0,n.createCommentVNode)("",!0),r.customer&&r.customer.name?((0,n.openBlock)(),(0,n.createElementBlock)("p",rn,[t[58]||(t[58]=(0,n.createElementVNode)("span",{"aria-hidden":"true"},"👤",-1)),(0,n.createElementVNode)("span",null,(0,n.toDisplayString)(r.customer.name),1)])):(0,n.createCommentVNode)("",!0),r.customer&&jn.safePhone(r.customer.phone)?((0,n.openBlock)(),(0,n.createElementBlock)("a",{key:2,href:"tel:".concat(jn.safePhone(r.customer.phone)),class:"text-xs leading-snug text-[#0F766E] font-bold flex items-center gap-1 hover:underline keep-latin"},[t[59]||(t[59]=(0,n.createElementVNode)("span",{"aria-hidden":"true"},"📱",-1)),(0,n.createElementVNode)("span",null,(0,n.toDisplayString)(jn.safePhone(r.customer.phone)),1)],8,nn)):(0,n.createCommentVNode)("",!0)])):(0,n.createCommentVNode)("",!0),(0,n.createElementVNode)("button",{type:"button",onClick:t[25]||(t[25]=function(e){return jn.openFilterSlide(e)}),class:"filter group text-[#6E7191] text-xs font-[300] flex justify-between items-center w-full","aria-expanded":!1,"aria-label":e.$t("label.kds_toggle_items")||"Afficher les articles"},[r.queue_number?((0,n.openBlock)(),(0,n.createElementBlock)("span",un,"N° file: "+(0,n.toDisplayString)(r.queue_number),1)):(0,n.createCommentVNode)("",!0),(0,n.createElementVNode)("span",null,(0,n.toDisplayString)(jn.kdsDisplayDateTime(r.order_datetime)),1),t[60]||(t[60]=(0,n.createElementVNode)("div",{class:"flex items-center justify-center w-6 h-6 rounded-full bg-[#FFE8DD] text-base font-semibold transition-all duration-500 group-hover:text-[#F4501E]"},[(0,n.createElementVNode)("i",{class:"icon text-[#F4501E] fa-solid fa-chevron-down"})],-1))],8,an),(0,n.createElementVNode)("div",on,[((0,n.openBlock)(!0),(0,n.createElementBlock)(n.Fragment,null,(0,n.renderList)(r.order_items,function(u,i){return(0,n.openBlock)(),(0,n.createElementBlock)("div",{key:u.id||i,class:"flex items-start gap-2 py-3 border-b border-dashed border-[#EFF0F6] last:border-none"},[(0,n.createElementVNode)("h4",ln,(0,n.toDisplayString)(u.quantity)+"x",1),(0,n.createElementVNode)("div",sn,[(0,n.createElementVNode)("h5",dn,(0,n.toDisplayString)(u.item_name),1),Array.isArray(u.item_variations)&&u.item_variations.length>0?((0,n.openBlock)(),(0,n.createElementBlock)("p",cn,[((0,n.openBlock)(!0),(0,n.createElementBlock)(n.Fragment,null,(0,n.renderList)(u.item_variations,function(e,t){return(0,n.openBlock)(),(0,n.createElementBlock)("span",{key:t,class:"text-heading"},[(0,n.createTextVNode)((0,n.toDisplayString)(jn.variationLine(e)),1),t+1<u.item_variations.length?((0,n.openBlock)(),(0,n.createElementBlock)("span",Dn,", ")):(0,n.createCommentVNode)("",!0)])}),128))])):(0,n.createCommentVNode)("",!0),Array.isArray(u.item_extras)&&u.item_extras.length>0?((0,n.openBlock)(),(0,n.createElementBlock)("div",pn,[(0,n.createElementVNode)("span",mn,(0,n.toDisplayString)(e.$t("label.extras"))+":",1),(0,n.createElementVNode)("p",fn,[((0,n.openBlock)(!0),(0,n.createElementBlock)(n.Fragment,null,(0,n.renderList)(u.item_extras,function(e,t){return(0,n.openBlock)(),(0,n.createElementBlock)("span",{key:t,class:"text-heading"},[(0,n.createTextVNode)((0,n.toDisplayString)(e.name),1),t+1<u.item_extras.length?((0,n.openBlock)(),(0,n.createElementBlock)("span",hn,", ")):(0,n.createCommentVNode)("",!0)])}),128))])])):(0,n.createCommentVNode)("",!0),Array.isArray(u.item_addons)&&u.item_addons.length>0?((0,n.openBlock)(),(0,n.createElementBlock)("div",bn,[(0,n.createElementVNode)("span",kn,(0,n.toDisplayString)(e.$t("label.addons"))+":",1),(0,n.createElementVNode)("p",En,[((0,n.openBlock)(!0),(0,n.createElementBlock)(n.Fragment,null,(0,n.renderList)(u.item_addons,function(e,t){return(0,n.openBlock)(),(0,n.createElementBlock)("span",{key:t,class:"text-heading"},[(0,n.createTextVNode)((0,n.toDisplayString)(jn.kdsAddonDisplayName(e)),1),Number(e.quantity||1)>1?((0,n.openBlock)(),(0,n.createElementBlock)("span",gn," ×"+(0,n.toDisplayString)(Number(e.quantity||1)),1)):(0,n.createCommentVNode)("",!0),t+1<u.item_addons.length?((0,n.openBlock)(),(0,n.createElementBlock)("span",yn,", ")):(0,n.createCommentVNode)("",!0)])}),128))])])):(0,n.createCommentVNode)("",!0),Array.isArray(u.allergens_snapshot)&&u.allergens_snapshot.length>0?((0,n.openBlock)(),(0,n.createElementBlock)("div",vn,[((0,n.openBlock)(!0),(0,n.createElementBlock)(n.Fragment,null,(0,n.renderList)(u.allergens_snapshot,function(e,t){return(0,n.openBlock)(),(0,n.createElementBlock)("span",{key:"".concat(u.id||i,"-allergen-").concat(t),class:"rounded-full bg-[#FFF3E8] px-2 py-0.5 text-[11px] font-medium uppercase tracking-[0.02em] text-[#C25D1B]"},(0,n.toDisplayString)(e),1)}),128))])):(0,n.createCommentVNode)("",!0),jn.kdsCleanInstruction(u)?((0,n.openBlock)(),(0,n.createElementBlock)("div",{key:4,class:(0,n.normalizeClass)([jn.kdsInstructionClass(jn.kdsCleanInstruction(u)),"kds-instruction","mt-1","text-xs","text-heading"]),style:{"white-space":"pre-line"}},(0,n.toDisplayString)(jn.kdsCleanInstruction(u)),3)):(0,n.createCommentVNode)("",!0)]),(0,n.createElementVNode)("div",Fn,[jn.kdsIsBumped(r.id,u.id)?jn.kdsCanRecall(r.id,u.id)?((0,n.openBlock)(),(0,n.createElementBlock)("button",{key:1,type:"button",class:"text-[11px] font-semibold text-[#F4501E] underline decoration-[#F4501E]/50",onClick:(0,n.withModifiers)(function(e){return jn.kdsRecall(r,u)},["prevent","stop"])},(0,n.toDisplayString)(e.$t("button.kds_recall")),9,An)):(0,n.createCommentVNode)("",!0):((0,n.openBlock)(),(0,n.createElementBlock)("button",{key:0,type:"button",class:"w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-[#F4501E] hover:bg-[#F4501E]/5",title:e.$t("button.kds_bump"),"aria-label":"".concat(e.$t("button.kds_bump")," — ").concat(u.item_name),onClick:(0,n.withModifiers)(function(e){return jn.kdsBump(r,u)},["prevent","stop"])},a(t[61]||(t[61]=[(0,n.createElementVNode)("i",{class:"fa-solid fa-arrow-right","aria-hidden":"true"},null,-1)])),8,_n)),(0,n.createElementVNode)("button",{type:"button",class:"w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-[#6B7280] hover:bg-[#6B7280]/5",title:e.$t("label.kds_reprint"),"aria-label":"".concat(e.$t("label.kds_reprint")," — N°").concat(r.queue_number||r.id),"data-testid":"kds-legacy-reprint",onClick:(0,n.withModifiers)(function(e){return jn.reprintKitchenTicket(r)},["prevent","stop"])},a(t[62]||(t[62]=[(0,n.createElementVNode)("i",{class:"fa-solid fa-print","aria-hidden":"true"},null,-1)])),8,Cn)])])}),128))]),(0,n.createElementVNode)("div",Bn,[r.status===Mn.enums.orderStatusEnum.ACCEPT?((0,n.openBlock)(),(0,n.createElementBlock)("button",{key:0,type:"button",onClick:function(e){return jn.orderStatus(r,Mn.enums.orderStatusEnum.PREPARING)},class:"rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#F4501E] text-white"},(0,n.toDisplayString)(e.$t("label.start_preparing")),9,xn)):(0,n.createCommentVNode)("",!0),r.status===Mn.enums.orderStatusEnum.PREPARING?((0,n.openBlock)(),(0,n.createElementBlock)("button",{key:1,type:"button",onClick:function(e){return jn.orderStatus(r,Mn.enums.orderStatusEnum.PREPARED)},class:"rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#1AB759] text-white"},(0,n.toDisplayString)(e.$t("label.mark_done")),9,wn)):(0,n.createCommentVNode)("",!0)])])],10,qr)])}),128)):(0,n.createCommentVNode)("",!0)])])])]),(0,n.createElementVNode)("div",Sn,(0,n.toDisplayString)(Mn.kdsAriaLiveMessage),1),(0,n.createElementVNode)("div",Nn,[(0,n.createElementVNode)("span",{class:(0,n.normalizeClass)(["kds-sync-stamp",{"kds-sync-stamp--stale":jn.syncBadgeIsStale}]),title:jn.syncBadgeText},(0,n.toDisplayString)(jn.syncBadgeText),11,Vn)]),Mn.allergensModal.open?((0,n.openBlock)(),(0,n.createElementBlock)("div",{key:0,ref:"allergensModalRoot",class:"kds-allergens-modal-overlay",role:"dialog","aria-modal":"true","aria-label":e.$t("label.kds_allergens_modal_title",{order_id:Mn.allergensModal.order&&Mn.allergensModal.order.id?Mn.allergensModal.order.id:""}),tabindex:"-1",onClick:t[28]||(t[28]=(0,n.withModifiers)(function(){return jn.closeAllergensModal&&jn.closeAllergensModal.apply(jn,arguments)},["self"])),onKeydown:[t[29]||(t[29]=(0,n.withKeys)(function(){return jn.closeAllergensModal&&jn.closeAllergensModal.apply(jn,arguments)},["esc"])),t[30]||(t[30]=function(){return jn.onAllergensModalKeydown&&jn.onAllergensModalKeydown.apply(jn,arguments)})]},[(0,n.createElementVNode)("div",On,[(0,n.createElementVNode)("header",Pn,[(0,n.createElementVNode)("h2",null,(0,n.toDisplayString)(e.$t("label.kds_allergens_modal_title",{order_id:Mn.allergensModal.order&&Mn.allergensModal.order.id?Mn.allergensModal.order.id:""})),1),(0,n.createElementVNode)("button",{ref:"allergensModalCloseButton",type:"button",class:"kds-allergens-modal-close","aria-label":e.$t("button.close"),onClick:t[27]||(t[27]=function(){return jn.closeAllergensModal&&jn.closeAllergensModal.apply(jn,arguments)})},(0,n.toDisplayString)(e.$t("button.kds_allergens_modal_close")),9,Tn)]),(0,n.createElementVNode)("p",Rn,(0,n.toDisplayString)(e.$t("label.kds_allergens_modal_intro")),1),(0,n.createElementVNode)("ul",$n,[((0,n.openBlock)(!0),(0,n.createElementBlock)(n.Fragment,null,(0,n.renderList)(jn.allergensModalItems,function(t,r){return(0,n.openBlock)(),(0,n.createElementBlock)("li",{key:(t.id||t.item_id||r)+"-"+r,class:"kds-allergens-modal-list-item"},[(0,n.createElementVNode)("strong",null,(0,n.toDisplayString)(t.item_name||t.name||t.item&&t.item.name||"-"),1),(0,n.createElementVNode)("span",null,(0,n.toDisplayString)(jn.sortedAllergens(t.allergens_snapshot).length?jn.sortedAllergens(t.allergens_snapshot).join(" · "):e.$t("label.kds_allergens_modal_none")),1)])}),128))])])],40,In)):(0,n.createCommentVNode)("",!0)])],64))],64)}],["__scopeId","data-v-0971afb8"]]),tl=el}}]);
+"use strict";
+(self["webpackChunk"] = self["webpackChunk"] || []).push([["admin-kds"],{
+
+/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue?vue&type=style&index=0&id=593d75f2&scoped=true&lang=css"
+/*!**************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue?vue&type=style&index=0&id=593d75f2&scoped=true&lang=css ***!
+  \**************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kds-history-drawer[data-v-593d75f2] {\n  position: fixed;\n  inset: 0;\n  z-index: 9000;\n  display: flex;\n  justify-content: flex-end;\n  pointer-events: none;\n}\n.kds-history-drawer__backdrop[data-v-593d75f2] {\n  position: absolute;\n  inset: 0;\n  background: rgba(0, 0, 0, 0.45);\n  pointer-events: auto;\n}\n.kds-history-drawer__panel[data-v-593d75f2] {\n  position: relative;\n  width: min(440px, 90vw);\n  height: 100%;\n  background: #ffffff;\n  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.25);\n  pointer-events: auto;\n  display: flex;\n  flex-direction: column;\n  overflow: hidden;\n}\n.kds-history-drawer__header[data-v-593d75f2] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding: 14px 18px;\n  border-bottom: 1px solid #eaeaea;\n  background: #111111;\n  color: #ffffff;\n  flex-shrink: 0;\n}\n.kds-history-drawer__title[data-v-593d75f2] {\n  margin: 0;\n  font-size: 1.05rem;\n  font-weight: 600;\n  display: flex;\n  gap: 8px;\n  align-items: baseline;\n}\n.kds-history-drawer__count[data-v-593d75f2] {\n  font-size: 0.85rem;\n  opacity: 0.85;\n  font-weight: 400;\n}\n.kds-history-drawer__close[data-v-593d75f2] {\n  background: transparent;\n  border: none;\n  color: inherit;\n  font-size: 1.25rem;\n  cursor: pointer;\n  padding: 6px 10px;\n  border-radius: 4px;\n}\n.kds-history-drawer__close[data-v-593d75f2]:hover,\n.kds-history-drawer__close[data-v-593d75f2]:focus {\n  background: rgba(255, 255, 255, 0.12);\n  outline: 2px solid #ffd400;\n  outline-offset: 1px;\n}\n.kds-history-drawer__loading[data-v-593d75f2],\n.kds-history-drawer__empty[data-v-593d75f2],\n.kds-history-drawer__error[data-v-593d75f2] {\n  padding: 22px 18px;\n  color: #555;\n  font-size: 0.95rem;\n}\n.kds-history-drawer__error[data-v-593d75f2] {\n  color: #b00020;\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n  align-items: flex-start;\n}\n.kds-history-drawer__retry[data-v-593d75f2] {\n  background: #111;\n  color: #fff;\n  border: none;\n  padding: 6px 14px;\n  border-radius: 4px;\n  cursor: pointer;\n  font-size: 0.85rem;\n}\n.kds-history-drawer__list[data-v-593d75f2] {\n  list-style: none;\n  margin: 0;\n  padding: 12px;\n  overflow-y: auto;\n  flex: 1;\n}\n.kds-history-drawer__item[data-v-593d75f2] {\n  border: 1px solid #e2e2e2;\n  border-left: 4px solid #888;\n  border-radius: 6px;\n  padding: 10px 12px;\n  margin-bottom: 10px;\n  background: #fafafa;\n}\n.kds-history-drawer__item.is-prepared[data-v-593d75f2]  { border-left-color: #1e88e5;\n}\n.kds-history-drawer__item.is-out[data-v-593d75f2]       { border-left-color: #fb8c00;\n}\n.kds-history-drawer__item.is-delivered[data-v-593d75f2] { border-left-color: #2e7d32;\n}\n.kds-history-drawer__head[data-v-593d75f2] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex-wrap: wrap;\n}\n.kds-history-drawer__queue[data-v-593d75f2] {\n  font-weight: 700;\n  font-size: 1rem;\n}\n.kds-history-drawer__status[data-v-593d75f2] {\n  background: #111;\n  color: #fff;\n  padding: 2px 8px;\n  border-radius: 999px;\n  font-size: 0.72rem;\n  text-transform: uppercase;\n  letter-spacing: 0.04em;\n}\n\n/* [KDS history full-detail 2026-06-04] Heure passée / terminée — two labeled\n   cells under the head row so the chef can read both times at a glance. */\n.kds-history-drawer__times[data-v-593d75f2] {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 6px 16px;\n  margin-top: 6px;\n}\n.kds-history-drawer__time-cell[data-v-593d75f2] {\n  display: inline-flex;\n  align-items: baseline;\n  gap: 5px;\n}\n.kds-history-drawer__time-label[data-v-593d75f2] {\n  font-size: 0.72rem;\n  text-transform: uppercase;\n  letter-spacing: 0.04em;\n  color: #6B7280;\n  font-weight: 600;\n}\n.kds-history-drawer__time[data-v-593d75f2] {\n  font-variant-numeric: tabular-nums;\n  font-size: 0.9rem;\n  font-weight: 600;\n  color: #1F2937;\n}\n\n/* [KDS history full-detail 2026-06-04] Full-composition lines rendered by the\n   canonical <KdsOrderLine> (shared with the live board). The wrapper just adds\n   a thin top separator so the composition reads as a block under the header. */\n.kds-history-drawer__items[data-v-593d75f2] {\n  list-style: none;\n  margin: 8px 0 0;\n  padding: 8px 0 0;\n  border-top: 1px solid #ececec;\n}\n.kds-history-drawer__item-block + .kds-history-drawer__item-block[data-v-593d75f2] {\n  border-top: 1px dashed #ececec;\n  margin-top: 6px;\n  padding-top: 4px;\n}\n\n/* [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B] recall row.\n   - Visually grounded under the items list, separated by a thin top border\n     so the chef's eye lands on the orange CTA after reading the order content.\n   - The button uses Cayenne orange #F4501E (matches `.kds-overflow-chip` in\n     KdsV2Grid for brand cohesion) with high contrast white text.\n   - The TTL hint (e.g. \"12s\") is monospace so the countdown ticks visually\n     without layout shift.\n   - The RAPPELÉ badge variant inverts to a quiet success treatment after a\n     successful recall — the chef has the confirmation but the row no longer\n     screams for action. */\n.kds-history-drawer__recall-row[data-v-593d75f2] {\n  margin-top: 10px;\n  padding-top: 8px;\n  border-top: 1px dashed #e2e2e2;\n  display: flex;\n  align-items: center;\n  gap: 10px;\n}\n.kds-history-drawer__recall-btn[data-v-593d75f2] {\n  background: #F4501E;\n  color: #1A1A1A;\n  border: none;\n  padding: 8px 14px;\n  border-radius: 6px;\n  font-weight: 700;\n  font-size: 0.9rem;\n  cursor: pointer;\n  letter-spacing: 0.02em;\n  box-shadow: 0 2px 4px rgba(244, 80, 30, 0.18);\n}\n.kds-history-drawer__recall-btn[data-v-593d75f2]:hover:not(:disabled),\n.kds-history-drawer__recall-btn[data-v-593d75f2]:focus:not(:disabled) {\n  background: #DC4615;\n  outline: 2px solid #ffd400;\n  outline-offset: 1px;\n}\n.kds-history-drawer__recall-btn[data-v-593d75f2]:disabled {\n  opacity: 0.55;\n  cursor: not-allowed;\n}\n.kds-history-drawer__recall-hint[data-v-593d75f2] {\n  font-family: 'JetBrains Mono', ui-monospace, monospace;\n  font-size: 0.8rem;\n  font-weight: 600;\n  color: #6B7280;\n  font-variant-numeric: tabular-nums;\n}\n.kds-history-drawer__recall-row--done[data-v-593d75f2] {\n  border-top-style: solid;\n  border-top-color: #F4501E;\n}\n.kds-history-drawer__recall-badge[data-v-593d75f2] {\n  display: inline-flex;\n  align-items: center;\n  background: #F4501E;\n  color: #ffffff;\n  padding: 4px 10px;\n  border-radius: 999px;\n  font-size: 0.72rem;\n  font-weight: 800;\n  letter-spacing: 0.06em;\n  text-transform: uppercase;\n}\n\n/* RTL */\n.kds-history-drawer[dir=\"rtl\"] .kds-history-drawer__panel[data-v-593d75f2] {\n  box-shadow: 8px 0 32px rgba(0, 0, 0, 0.25);\n}\n", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ },
+
+/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=style&index=0&id=151558cb&scoped=true&lang=css"
+/*!**********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=style&index=0&id=151558cb&scoped=true&lang=css ***!
+  \**********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kds-card[data-v-151558cb] {\n    position: relative;\n    display: flex;\n    flex-direction: column;\n    background: #FFFFFF;\n    border-radius: 12px;\n    overflow: hidden;\n    transition: transform 250ms ease-out, box-shadow 150ms ease, opacity 200ms ease;\n    box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);\n}\n.kds-card[data-v-151558cb]:hover {\n    transform: translateY(-1px);\n    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);\n}\n.kds-card[data-v-151558cb]:focus-visible {\n    outline: 4px solid #EA580C;\n    outline-offset: 4px;\n}\n.kds-card__stripe[data-v-151558cb] {\n    height: 6px;\n    flex-shrink: 0;\n}\n\n/* [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]\n   RAPPELÉ badge — Cayenne orange #F4501E pill positioned over the top stripe\n   so it's the dominant 2-3m signal when a card is re-injected post-recall.\n   Uses absolute positioning + z-index:5 so it sits over the stripe (z-index:1)\n   without disturbing the rest of the card layout. The pulse animation pulls\n   peripheral attention; respects `prefers-reduced-motion`. */\n.kds-card__recall-badge[data-v-151558cb] {\n    position: absolute;\n    top: 12px;\n    left: 50%;\n    transform: translateX(-50%);\n    z-index: 5;\n    background: #F4501E;\n    color: #FFFFFF;\n    padding: 4px 14px;\n    border-radius: 999px;\n    font-size: 12px;\n    font-weight: 800;\n    letter-spacing: 0.08em;\n    text-transform: uppercase;\n    box-shadow: 0 2px 8px rgba(244, 80, 30, 0.35);\n    animation: kds-recall-pulse-151558cb 2s ease-in-out infinite;\n}\n@keyframes kds-recall-pulse-151558cb {\n0%, 100% { transform: translateX(-50%) scale(1);\n}\n50% { transform: translateX(-50%) scale(1.05);\n}\n}\n@media (prefers-reduced-motion: reduce) {\n.kds-card__recall-badge[data-v-151558cb] {\n        animation: none;\n}\n}\n.kds-card__header[data-v-151558cb] {\n    display: flex;\n    flex-direction: column;\n    border-bottom: 1px solid #F3F4F6;\n}\n.kds-card__meta[data-v-151558cb] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    height: 26px;\n    padding: 6px 12px 0;\n}\n.kds-card__shortcut[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    /* KDS-R1-03 heal: stable WCAG AA contrast regardless of bucket-tinted header.\n       Previously #6B7280 on rgba(0,0,0,0.04) gave 3.63:1 on critical bucket (red header)\n       and 4.43:1 on fresh — both FAIL AA for normal text. Now opaque gray-100 bg + gray-800\n       text = ~12.6:1 stable on every bucket. */\n    color: #1F2937;\n    background: #F3F4F6;\n    min-width: 22px;\n    height: 18px;\n    border-radius: 4px;\n    font-family: 'JetBrains Mono', ui-monospace, monospace;\n    font-size: 11px;\n    font-weight: 700;\n    letter-spacing: 0.04em;\n}\n.kds-card__shortcut-spacer[data-v-151558cb],\n.kds-card__allergen-spacer[data-v-151558cb] {\n    width: 22px;\n}\n.kds-card__state-source[data-v-151558cb] {\n    display: flex;\n    align-items: center;\n    gap: 6px;\n}\n.kds-card__state-pill[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    gap: 6px;\n    padding: 0 8px;\n    height: 24px;\n    border-radius: 9999px;\n    font-size: 11px;\n    font-weight: 700;\n    letter-spacing: 0.08em;\n    text-transform: uppercase;\n}\n.kds-card__state-dot[data-v-151558cb] {\n    display: inline-block;\n    width: 6px;\n    height: 6px;\n    border-radius: 9999px;\n}\n.kds-card__source-chip[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    gap: 6px;\n    padding: 0 10px;\n    height: 28px;\n    border-radius: 6px;\n    font-size: 13px;\n    font-weight: 700;\n    letter-spacing: 0.1em;\n    text-transform: uppercase;\n}\n.kds-card__allergen-pill[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    gap: 4px;\n    padding: 0 8px;\n    height: 20px;\n    border-radius: 4px;\n    background: #C2410C;\n    color: #FFFFFF;\n    font-size: 10px;\n    font-weight: 800;\n    letter-spacing: 0.08em;\n    text-transform: uppercase;\n    box-shadow: 0 0 0 2px rgba(194, 65, 12, 0.30);\n}\n\n/* [Wave T R1 F3 WT-B-R1-002 2026-05-20] Responsive type scale with clamp().\n   At 1280px viewport the 4-col grid yields ~300px per card. The previous\n   52px queue + 34px elapsed + 26px prefix + 0.15em letter-spaced ATTENTE\n   label overflowed and `.kds-card { overflow: hidden }` clipped the seconds\n   off the elapsed timer (Wave T R1 evidence: \"14:26\" rendering as \"14:2\",\n   \"ATTENTE\" rendering as \"ATTEN\"). Now sized to fit inside 300px at the\n   tightest breakpoint while preserving 2m-readability at ≥1600px. */\n.kds-card__main[data-v-151558cb] {\n    display: flex;\n    align-items: flex-end;\n    justify-content: space-between;\n    gap: 8px; /* tightened from 12px to recover horizontal budget */\n    padding: 2px 12px 10px; /* tightened from 16px to recover ~8px */\n}\n.kds-card__queue[data-v-151558cb],\n.kds-card__elapsed-wrap[data-v-151558cb] {\n    flex-shrink: 0; /* KDS-R1-01 heal: never compress, never overlap */\n    min-width: 0; /* allow children to participate in the flex shrink calc */\n    overflow: visible; /* ensure timer descenders/digits never clipped */\n}\n.kds-card__queue[data-v-151558cb] {\n    color: #111827;\n    font-family: 'JetBrains Mono', ui-monospace, monospace;\n    font-size: clamp(36px, 4.2vw, 52px);\n    font-weight: 800;\n    line-height: 1;\n    letter-spacing: -0.03em;\n    font-variant-numeric: tabular-nums;\n}\n.kds-card__queue-prefix[data-v-151558cb] {\n    font-size: clamp(16px, 2vw, 26px);\n    font-weight: 700;\n    opacity: 0.55;\n    margin-inline-end: 2px;\n}\n.kds-card__elapsed-wrap[data-v-151558cb] {\n    display: flex;\n    flex-direction: column;\n    align-items: flex-end;\n    gap: 2px;\n    overflow: visible;\n}\n.kds-card__elapsed-label[data-v-151558cb] {\n    font-size: 10px;\n    font-weight: 700;\n    /* [Wave T R1 F3 WT-B-R1-002 2026-05-20] letter-spacing reduced 0.15em→0.06em\n       so \"ATTENTE\" fits the elapsed-wrap column without clipping at 1280px.\n       Still visually distinct as a small-caps eyebrow above the big timer. */\n    letter-spacing: 0.06em;\n    text-transform: uppercase;\n    white-space: nowrap;\n    /* KDS-R1-02 heal: removed opacity:0.75 which dropped contrast below WCAG AA. */\n}\n.kds-card__elapsed[data-v-151558cb] {\n    font-family: 'JetBrains Mono', ui-monospace, monospace;\n    font-size: clamp(22px, 2.8vw, 34px);\n    font-weight: 800;\n    line-height: 1;\n    letter-spacing: -0.02em;\n    font-variant-numeric: tabular-nums;\n    white-space: nowrap;\n}\n.kds-card__body[data-v-151558cb] {\n    flex: 1 1 auto;\n    min-height: 0; /* defensive: keep flex child scrollable if future cardStyle drops fixed height */\n    overflow-y: auto;\n    overscroll-behavior: contain;\n    padding: 4px 16px;\n    position: relative;\n    /* [Wave U 2026-05-21] Owner-reported bug: chef could not discover scroll\n       on long-item orders (Sandwich Cayenne with 4 variations + extras +\n       crudités + sauces + supplements). Firefox thin scrollbar hint +\n       webkit 8px (was 4px) + darker thumb so the cue is visible at 2m\n       chef distance. */\n    scrollbar-width: thin;\n    scrollbar-color: #6B7280 transparent;\n}\n.kds-card__body[data-v-151558cb]::-webkit-scrollbar {\n    width: 8px;\n}\n.kds-card__body[data-v-151558cb]::-webkit-scrollbar-thumb {\n    background: #6B7280;\n    border-radius: 4px;\n}\n.kds-card__body[data-v-151558cb]::-webkit-scrollbar-thumb:hover {\n    background: #4B5563;\n}\n.kds-card__body[data-v-151558cb]::-webkit-scrollbar-track {\n    background: rgba(0, 0, 0, 0.04);\n    border-radius: 4px;\n}\n.kds-card__item-block[data-v-151558cb] {\n    border-top: 1px solid #F3F4F6;\n}\n.kds-card__item-block[data-v-151558cb]:first-child {\n    border-top: none;\n}\n\n/* [Sprint 2A DEL-3 2026-05-16] Delivery block — sits at the top of the\n   card body, quiet teal accent (matches KDS_SOURCE.DELIVERY palette in\n   helpers/kdsSource.js). Never out-screams the queue number or timer. */\n.kds-card__delivery[data-v-151558cb] {\n    display: flex;\n    flex-direction: column;\n    gap: 4px;\n    padding: 8px 10px;\n    margin: 4px 0 6px;\n    border-radius: 8px;\n    background: #F0FDFA;\n    border-left: 3px solid #0F766E;\n}\n.kds-card__delivery-row[data-v-151558cb] {\n    display: flex;\n    align-items: center;\n    gap: 6px;\n    font-size: 13px;\n    line-height: 1.3;\n    color: #0F766E;\n    font-weight: 600;\n    text-decoration: none;\n}\n.kds-card__delivery-row--muted[data-v-151558cb] {\n    color: #115E59;\n    font-weight: 500;\n}\n.kds-card__delivery-icon[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    width: 16px;\n    font-size: 14px;\n    flex-shrink: 0;\n}\n.kds-card__delivery-text[data-v-151558cb] {\n    min-width: 0;\n    overflow-wrap: anywhere;\n}\n.kds-card__delivery-phone[data-v-151558cb] {\n    font-family: 'JetBrains Mono', ui-monospace, monospace;\n    font-weight: 700;\n    letter-spacing: 0.02em;\n    cursor: pointer;\n}\n.kds-card__delivery-phone[data-v-151558cb]:hover {\n    text-decoration: underline;\n}\n.kds-card__delivery-phone[data-v-151558cb]:focus-visible {\n    outline: 2px solid #0F766E;\n    outline-offset: 2px;\n    border-radius: 4px;\n}\n.kds-card__body-fade[data-v-151558cb] {\n    position: sticky;\n    bottom: 0;\n    height: 0;\n    pointer-events: none; /* never intercept scroll wheel / touch */\n}\n.kds-card__body-fade[data-v-151558cb]::before {\n    content: '';\n    position: absolute;\n    bottom: 0;\n    left: 0;\n    right: 0;\n    /* [Wave U 2026-05-21] Reduced 16px → 8px so the fade hints \"more content\n       below\" without masking a full line of text. With the 8px-wide\n       scrollbar now visible, the fade is decorative only. */\n    height: 8px;\n    background: linear-gradient(to top, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0));\n}\n\n/* [KDS-REPRINT 2026-07-13] Footer row: le CTA « Prêt » (flex:1) et le bouton\n   compact de réimpression 🖨️ (52×52, gabarit du CTA) côte à côte. Le CTA garde\n   son style/hauteur ; les marges externes passent au conteneur footer. */\n.kds-card__footer[data-v-151558cb] {\n    display: flex;\n    align-items: stretch;\n    gap: 6px;\n    margin: 4px 8px 8px;\n}\n.kds-card__footer .kds-card__cta[data-v-151558cb] {\n    flex: 1 1 auto;\n    margin: 0;\n}\n.kds-card__reprint[data-v-151558cb] {\n    flex: 0 0 auto;\n    width: 52px;\n    height: 52px;\n    background: #FFFFFF;\n    color: #374151;\n    border: 2px solid #D1D5DB;\n    border-radius: 12px;\n    cursor: pointer;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    transition: transform 100ms ease, background 120ms ease, border-color 120ms ease;\n}\n.kds-card__reprint[data-v-151558cb]:hover {\n    background: #F3F4F6;\n    border-color: #9CA3AF;\n}\n.kds-card__reprint[data-v-151558cb]:active {\n    transform: translateY(1px);\n}\n.kds-card__reprint[data-v-151558cb]:focus-visible {\n    outline: 4px solid #4B5563;\n    outline-offset: 2px;\n}\n.kds-card__cta[data-v-151558cb] {\n    margin: 4px 8px 8px;\n    height: 52px;\n    background: #1F2937;\n    color: #FFFFFF;\n    border: 0;\n    border-radius: 12px;\n    font-size: 22px;\n    font-weight: 700;\n    letter-spacing: 0.01em;\n    cursor: pointer;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    gap: 14px;\n    transition: transform 100ms ease;\n}\n.kds-card__cta[data-v-151558cb]:active {\n    transform: translateY(1px);\n}\n.kds-card__cta[data-v-151558cb]:focus-visible {\n    outline: 4px solid #4B5563;\n    outline-offset: 2px;\n}\n\n/* [Wave S-2 P-OWNER 2026-05-20] Cash-pending passive badge.\n   Replaces the CTA when the order is awaiting cashier encaissement.\n   Visual contract: amber/orange tones signal \"wait\", NEVER green-go.\n   Same vertical footprint as the CTA (52px tall + 8px margin) so the\n   grid card height stays stable. WCAG: #92400E on #FEF3C7 = 7.94:1 AAA. */\n.kds-card__cash-pending[data-v-151558cb] {\n    margin: 4px 8px 8px;\n    height: 52px;\n    background: #FEF3C7;\n    color: #92400E;\n    border: 2px dashed #F59E0B;\n    border-radius: 12px;\n    font-size: 18px;\n    font-weight: 700;\n    letter-spacing: 0.04em;\n    text-transform: uppercase;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    gap: 10px;\n    cursor: default;\n}\n\n/* age critical pulse on time digit (1Hz) */\n@keyframes kds-card-pulse-digit-151558cb {\n0%, 100% { opacity: 1;\n}\n50%      { opacity: 0.55;\n}\n}\n.kds-pulse-digit[data-v-151558cb] {\n    animation: kds-card-pulse-digit-151558cb 1s ease-in-out infinite;\n}\n.kds-card--ready[data-v-151558cb] {\n    opacity: 0.7;\n}\n.kds-card--cancelled[data-v-151558cb] {\n    background: rgba(254, 226, 226, 0.5);\n}\n/* [K2-KDS 2026-07-05] Owner : fiche JAUNE dès qu'il y a un supplément payant → repérable\n   immédiatement par le cuisinier. Liseré ambre + fond jaune clair (n'écrase pas le stripe/état). */\n.kds-card--has-supplements[data-v-151558cb] {\n    background: #FEF9C3;\n    box-shadow: inset 0 0 0 3px #F59E0B;\n}\n@media (prefers-reduced-motion: reduce) {\n.kds-card[data-v-151558cb],\n    .kds-pulse-digit[data-v-151558cb],\n    .kds-card__cta[data-v-151558cb],\n    .kds-card__reprint[data-v-151558cb] {\n        transition: none !important;\n        animation: none !important;\n}\n}\n", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ },
+
+/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=style&index=0&id=5c6c7baf&scoped=true&lang=css"
+/*!**********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=style&index=0&id=5c6c7baf&scoped=true&lang=css ***!
+  \**********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kds-line[data-v-5c6c7baf] {\n  font-family: 'Inter', system-ui, sans-serif;\n}\n\n/* HEADER — qty + allergen icon + name */\n.kds-line--header[data-v-5c6c7baf] {\n  padding: 0.625rem 0;\n}\n.kds-line__header[data-v-5c6c7baf] {\n  display: flex;\n  align-items: baseline;\n  gap: 10px;\n}\n.kds-line__qty[data-v-5c6c7baf] {\n  display: inline-block;\n  min-width: 42px;\n  text-align: end;\n  color: #111827;\n  font-size: 26px;\n  font-weight: 800;\n  font-variant-numeric: tabular-nums;\n  line-height: 1;\n}\n.kds-line__qty-x[data-v-5c6c7baf] {\n  font-size: 18px;\n  opacity: 0.55;\n  margin-inline-start: 2px;\n}\n.kds-line__allergen-icon[data-v-5c6c7baf] {\n  color: #F97316;\n  font-size: 20px;\n  line-height: 1;\n  margin-top: -2px;\n}\n.kds-line__name[data-v-5c6c7baf] {\n  flex: 1;\n  color: #111827;\n  font-size: 22px;\n  font-weight: 500;\n  line-height: 1.15;\n  display: -webkit-box;\n  -webkit-line-clamp: 2;\n  -webkit-box-orient: vertical;\n  overflow: hidden;\n}\n\n/* SYMBOLIC MAIN — qty + pipe-delimited shorthand. [KDS-COMPACT 2026-07-05] Owner : texte\n   plus PETIT (18px) → 1 seule ligne par produit (code 3 lettres) au lieu de 2-3. */\n.kds-line--symbolic-main[data-v-5c6c7baf] {\n  padding: 0.2rem 0 0.1rem;\n}\n.kds-line__symbolic[data-v-5c6c7baf] {\n  display: flex;\n  align-items: baseline;\n  gap: 8px;\n}\n.kds-line__symbolic-text[data-v-5c6c7baf] {\n  flex: 1;\n  color: #111827;\n  font-size: 18px;\n  font-weight: 800;\n  line-height: 1.2;\n  letter-spacing: 0.3px;\n  font-variant-numeric: tabular-nums;\n  word-break: break-word;\n}\n\n/* SYMBOLIC MENU — \"MENU\" / \"F\" badge */\n.kds-line__symbolic-menu[data-v-5c6c7baf] {\n  display: inline-block;\n  margin-top: 5px;\n  margin-inline-start: 56px;\n  padding: 2px 10px;\n  border-radius: 6px;\n  background: #111827;\n  color: #FFFFFF;\n  font-size: 16px;\n  font-weight: 800;\n  letter-spacing: 1px;\n}\n\n/* VARIATION — \"Pain : Baguette\" */\n.kds-line__variation[data-v-5c6c7baf],\n.kds-line__variation--flat[data-v-5c6c7baf] {\n  color: #4B5563;\n  font-size: 16px;\n  line-height: 1.3;\n  padding-inline-start: 56px;\n  margin-top: 4px;\n  display: flex;\n  flex-wrap: wrap;\n}\n.kds-line__group[data-v-5c6c7baf] {\n  font-weight: 600;\n  color: #374151;\n  text-transform: capitalize;\n}\n.kds-line__sep[data-v-5c6c7baf] {\n  color: #6B7280;\n}\n.kds-line__value[data-v-5c6c7baf] {\n  color: #4B5563;\n}\n\n/* SUPPLEMENT — jaune gras, EN LIGNE (côte à côte). [KDS-INLINE-SUPP 2026-07-05] Owner :\n   les suppléments s'affichent l'un À CÔTÉ de l'autre (pas chacun sur sa ligne), en jaune. */\n.kds-line--supplement[data-v-5c6c7baf] {\n  display: inline-block;\n  vertical-align: top;\n}\n.kds-line--supplement[data-v-5c6c7baf]:first-of-type {\n  padding-inline-start: 44px; /* aligne le groupe suppléments sous le produit */\n}\n.kds-line__supplement[data-v-5c6c7baf] {\n  display: inline;\n  color: #CA8A04;\n  font-size: 15px;\n  font-style: normal;\n  font-weight: 800; /* [K2-KDS 2026-07-05] supplément en GRAS + étoile ⭐ (owner) */\n  margin-inline-end: 12px;\n  line-height: 1.3;\n  white-space: nowrap;\n}\n\n/* MENU CHILD — formule member */\n.kds-line__menu-child[data-v-5c6c7baf],\n.kds-line__addon[data-v-5c6c7baf] {\n  display: flex;\n  align-items: baseline;\n  gap: 6px;\n  color: #1F2937;\n  font-size: 16px;\n  font-weight: 500;\n  padding-inline-start: 56px;\n  margin-top: 4px;\n  line-height: 1.3;\n}\n.kds-line__menu-arrow[data-v-5c6c7baf] {\n  color: #6B7280;\n  font-weight: 700;\n  flex-shrink: 0;\n}\n\n/* INSTRUCTION — italic note with class-based emphasis */\n.kds-line__instruction[data-v-5c6c7baf] {\n  display: flex;\n  align-items: baseline;\n  gap: 6px;\n  font-size: 16px;\n  font-style: italic;\n  padding-inline-start: 56px;\n  margin-top: 4px;\n  line-height: 1.3;\n}\n.kds-line__instruction-prefix[data-v-5c6c7baf] {\n  opacity: 0.55;\n  font-style: normal;\n}\n/* [W6-ADV B-3 2026-07-06] Note multi-lignes (« BOISSON: Hawaï 33cl\\n[bien cuit svp] ») :\n   respecter les sauts de ligne comme le ticket (lignes ** séparées) — sans pre-line,\n   2 notes distinctes se lisaient d'un seul bloc à l'écran. */\n.kds-line__instruction-text[data-v-5c6c7baf] {\n  white-space: pre-line;\n}\n.kds-instruction--note[data-v-5c6c7baf] {\n  color: #4B5563;\n}\n.kds-instruction--exclusion[data-v-5c6c7baf] {\n  color: #92400E;\n  font-weight: 600;\n}\n.kds-instruction--allergen[data-v-5c6c7baf] {\n  color: #C2410C;\n  font-weight: 700;\n}\n\n/* ALLERGEN BLOCK — \"⚠ Allergènes : gluten · lait\" */\n.kds-line__allergen-block[data-v-5c6c7baf] {\n  display: flex;\n  align-items: baseline;\n  gap: 6px;\n  flex-wrap: wrap;\n  color: #C2410C;\n  font-size: 16px;\n  font-style: italic;\n  font-weight: 700;\n  padding-inline-start: 40px;\n  margin-top: 6px;\n  margin-bottom: 4px;\n  line-height: 1.3;\n  background: rgba(249, 115, 22, 0.06);\n  border-inline-start: 4px solid #F97316;\n  border-radius: 6px;\n  padding-top: 4px;\n  padding-bottom: 4px;\n  padding-inline-end: 10px;\n}\n.kds-line__allergen-label[data-v-5c6c7baf] {\n  font-weight: 800;\n}\n.kds-line__allergen-codes[data-v-5c6c7baf] {\n  font-weight: 600;\n}\n[dir=\"rtl\"] .kds-line__qty[data-v-5c6c7baf] {\n  text-align: end;\n}\n", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ },
+
+/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=style&index=0&id=665158fe&scoped=true&lang=css"
+/*!*************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=style&index=0&id=665158fe&scoped=true&lang=css ***!
+  \*************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kds-banner[data-v-665158fe] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    padding: 0 24px;\n    height: 32px;\n    border-bottom: 1px solid;\n    font-family: 'Inter', system-ui, sans-serif;\n}\n.kds-banner--error[data-v-665158fe] {\n    height: 40px;\n    background: #DC2626;\n    color: #FFFFFF;\n    border-color: #B91C1C;\n}\n.kds-banner--warning[data-v-665158fe] {\n    background: #FFFBEB;\n    color: #92400E;\n    border-color: #FDE68A;\n}\n.kds-banner--info[data-v-665158fe] {\n    background: #EFF6FF;\n    color: #1E40AF;\n    border-color: #BFDBFE;\n}\n.kds-banner--neutral[data-v-665158fe] {\n    background: #F9FAFB;\n    color: #4B5563;\n    border-color: #E5E7EB;\n}\n.kds-banner__main[data-v-665158fe] {\n    display: flex;\n    align-items: center;\n    gap: 8px;\n}\n.kds-banner__icon[data-v-665158fe] {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    color: #FFFFFF;\n    width: 18px;\n    height: 18px;\n    border-radius: 9999px;\n}\n.kds-banner--error .kds-banner__icon[data-v-665158fe] {\n    background: rgba(255, 255, 255, 0.18);\n}\n.kds-banner__spinner[data-v-665158fe] {\n    animation: kds-banner-spin-665158fe 1s linear infinite;\n}\n@keyframes kds-banner-spin-665158fe {\nfrom { transform: rotate(0deg);\n}\nto   { transform: rotate(360deg);\n}\n}\n.kds-banner__text[data-v-665158fe] {\n    font-size: 13px;\n    font-weight: 600;\n}\n.kds-banner--error .kds-banner__text[data-v-665158fe] {\n    font-size: 14px;\n    font-weight: 700;\n}\n.kds-banner__tag[data-v-665158fe] {\n    font-family: 'JetBrains Mono', ui-monospace, monospace;\n    font-size: 11px;\n    font-weight: 700;\n    letter-spacing: 0.15em;\n    opacity: 0.85;\n}\n/* [FIX-4 C-002 2026-06-02] When the KdsV2Grid overflow chip is active it sits\n   absolute top-right and would overlap this banner's tag (e.g. \"LOCAL\").\n   Reserve a right gutter so the tag clears the chip.\n   NOTE: 152px is an ESTIMATE (chip ~120px + right:16px + gap) and is\n   i18n-dependent — MUST be visually confirmed in the fix-wave capture. */\n.kds-banner--reserve-gutter[data-v-665158fe] {\n    padding-right: 152px;\n}\n@media (prefers-reduced-motion: reduce) {\n.kds-banner__spinner[data-v-665158fe] {\n        animation: none !important;\n}\n}\n", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ },
+
+/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=style&index=0&id=3992cfe5&scoped=true&lang=css"
+/*!*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=style&index=0&id=3992cfe5&scoped=true&lang=css ***!
+  \*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kds-v2[data-v-3992cfe5] {\n    flex: 1;\n    display: flex;\n    flex-direction: column;\n    background: #F9FAFB;\n    position: relative;\n    font-family: 'Inter', system-ui, sans-serif;\n    min-height: 0;\n}\n[dir=\"rtl\"] .kds-v2[data-v-3992cfe5] {\n    font-family: 'Noto Naskh Arabic', 'Inter', system-ui, sans-serif;\n}\n.kds-v2__grid[data-v-3992cfe5] {\n    /* [KDS-SHOW-ALL 2026-07-01] Flux multi-colonnes DÉFILABLE : plus de grille 4×2 figée.\n       grid-auto-rows:min-content + align-items:start → chaque carte prend la hauteur de son\n       contenu (tous les produits visibles), une grosse commande occupe plus de hauteur.\n       overflow-y:auto → si la file dépasse l'écran, on défile au lieu de cacher les 9+. */\n    flex: 1;\n    display: grid;\n    /* [KDS-3CARDS 2026-07-05] Owner : 3 commandes MAX, chacune sur TOUTE la hauteur (grande +\n       lisible). Une SEULE rangée qui remplit la hauteur (grid-template-rows:1fr + stretch) →\n       fini les cartes du bas écrasées et l'espace vide. Pas de scroll : les 4+ attendent. */\n    grid-template-columns: repeat(3, minmax(0, 1fr));\n    grid-template-rows: 1fr;\n    align-items: stretch;\n    gap: 10px;\n    padding: 10px;\n    min-height: 0;\n    overflow: hidden;\n}\n/* 1 ou 2 commandes → elles remplissent la largeur (pas de colonnes vides à droite). */\n.kds-v2__grid[data-count=\"1\"][data-v-3992cfe5] { grid-template-columns: minmax(0, 1fr);\n}\n.kds-v2__grid[data-count=\"2\"][data-v-3992cfe5] { grid-template-columns: repeat(2, minmax(0, 1fr));\n}\n.kds-v2__placeholder[data-v-3992cfe5] {\n    border: 2px dashed #E5E7EB;\n    border-radius: 12px;\n    min-height: 200px;\n}\n\n/* [Wave N M-KDS-6 F1 P0 2026-05-24] Overflow chip — chef visibility safety net.\n   Cayenne red (#F4501E) high-contrast pill, absolute top-right of .kds-v2\n   (which is position:relative). z-index:100 keeps it above grid cards but the\n   parent .kds-v2 stacking context contains the chip below any modal overlay.\n   Pulse keyframe pulls peripheral attention; the `prefers-reduced-motion`\n   media query disables animation for vestibular-sensitive operators. */\n.kds-overflow-chip[data-v-3992cfe5] {\n    position: absolute;\n    top: 16px;\n    right: 16px;\n    padding: 8px 16px;\n    background: #F4501E;\n    color: #1A1A1A;\n    border-radius: 8px;\n    font-weight: 700;\n    font-size: 16px;\n    display: flex;\n    align-items: center;\n    gap: 8px;\n    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);\n    animation: kds-overflow-pulse-3992cfe5 2s ease-in-out infinite;\n    z-index: 100;\n}\n.kds-overflow-chip__icon[data-v-3992cfe5] {\n    font-size: 18px;\n    line-height: 1;\n    font-weight: 900;\n}\n@keyframes kds-overflow-pulse-3992cfe5 {\n0%, 100% { transform: scale(1);\n}\n50% { transform: scale(1.05);\n}\n}\n@media (prefers-reduced-motion: reduce) {\n.kds-overflow-chip[data-v-3992cfe5] {\n        animation: none;\n}\n}\n\n/* [Wave U 2026-05-21] Récemment servies — compact archive strip.\n   Lives below the 4x2 active grid. Single row, small footprint\n   (~60px total) so it never steals vertical budget from the active\n   cards. Pills are read-only (no CTA, no keyboard, no timer-pulse). */\n.kds-v2__served[data-v-3992cfe5] {\n    flex-shrink: 0;\n    display: flex;\n    align-items: center;\n    gap: 12px;\n    padding: 8px 16px 12px;\n    border-top: 1px solid #E5E7EB;\n    background: #F9FAFB;\n}\n.kds-v2__served-label[data-v-3992cfe5] {\n    font-size: 11px;\n    font-weight: 700;\n    letter-spacing: 0.06em;\n    text-transform: uppercase;\n    color: #6B7280;\n    flex-shrink: 0;\n}\n.kds-v2__served-list[data-v-3992cfe5] {\n    display: flex;\n    flex-wrap: nowrap;\n    gap: 8px;\n    overflow-x: auto;\n    overscroll-behavior: contain;\n    min-width: 0;\n}\n.kds-v2__served-pill[data-v-3992cfe5] {\n    display: inline-flex;\n    align-items: center;\n    gap: 8px;\n    padding: 6px 12px;\n    border-radius: 9999px;\n    background: #ECFDF5;\n    color: #065F46;\n    border: 1px solid #A7F3D0;\n    font-family: 'JetBrains Mono', ui-monospace, monospace;\n    font-size: 13px;\n    font-weight: 700;\n    line-height: 1;\n    flex-shrink: 0;\n}\n.kds-v2__served-pill-num[data-v-3992cfe5] {\n    font-weight: 800;\n    letter-spacing: -0.02em;\n}\n.kds-v2__served-pill-ago[data-v-3992cfe5] {\n    font-family: 'Inter', system-ui, sans-serif;\n    font-size: 11px;\n    font-weight: 600;\n    color: #047857;\n    opacity: 0.85;\n    letter-spacing: 0.02em;\n}\n.kds-v2__empty[data-v-3992cfe5] {\n    flex: 1;\n    display: flex;\n    flex-direction: column;\n    align-items: center;\n    justify-content: center;\n    color: #9CA3AF;\n    padding: 32px;\n}\n.kds-v2__empty-illustration[data-v-3992cfe5] {\n    position: relative;\n    width: 200px;\n    height: 200px;\n    margin-bottom: 32px;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n.kds-v2__empty-glow[data-v-3992cfe5] {\n    position: absolute;\n    inset: 0;\n    border-radius: 9999px;\n    background: radial-gradient(closest-side, #F3F4F6, transparent 70%);\n}\n.kds-v2__empty-title[data-v-3992cfe5] {\n    font-size: 32px;\n    font-weight: 700;\n    color: #374151;\n}\n.kds-v2__empty-sub[data-v-3992cfe5] {\n    margin-top: 8px;\n    font-size: 16px;\n    color: #9CA3AF;\n}\n.sr-only[data-v-3992cfe5] {\n    position: absolute;\n    width: 1px;\n    height: 1px;\n    padding: 0;\n    margin: -1px;\n    overflow: hidden;\n    clip: rect(0, 0, 0, 0);\n    white-space: nowrap;\n    border: 0;\n}\n", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ },
+
+/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue?vue&type=style&index=0&id=66aac04e&scoped=true&lang=css"
+/*!***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue?vue&type=style&index=0&id=66aac04e&scoped=true&lang=css ***!
+  \***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, "\n/* [Wave X3 2026-05-21] KDS Historique du jour trigger.\n   [KDS-TOPBAR 2026-07-05] Owner : ne PAS gâcher l'espace des commandes avec un gros bouton\n   dans une bande épaisse → bande FINE (hauteur mini) + bouton compact aligné à droite, tout\n   en haut. La grille récupère la hauteur gaspillée. */\n.kds-history-trigger-row[data-v-66aac04e] {\n  display: flex;\n  justify-content: flex-end;\n  align-items: center;\n  padding: 2px 12px;\n  width: 100%;\n  min-height: 0;\n  flex-shrink: 0;\n}\n.kds-history-trigger[data-v-66aac04e] {\n  display: inline-flex;\n  align-items: center;\n  gap: 5px;\n  background: #111111;\n  color: #ffffff;\n  border: none;\n  border-radius: 7px;\n  padding: 4px 12px;\n  font-size: 0.78rem;\n  font-weight: 600;\n  cursor: pointer;\n  transition: background 120ms ease, outline 120ms ease;\n}\n.kds-history-trigger[data-v-66aac04e]:hover {\n  background: #d40000;\n}\n.kds-history-trigger[data-v-66aac04e]:focus-visible {\n  outline: 2px solid #ffd400;\n  outline-offset: 2px;\n}\n.kds-history-trigger__label[data-v-66aac04e] {\n  font-variant-numeric: tabular-nums;\n}\n.kds-instruction[data-v-66aac04e] {\n  line-height: 1.5;\n  border-left: 3px solid #e0e0e0;\n  padding-left: 0.4rem;\n}\n.kds-instruction--note[data-v-66aac04e] {\n  color: #4e4b66;\n  border-left-color: #a0a3bd;\n  background: rgba(160, 163, 189, 0.08);\n  border-radius: 0 4px 4px 0;\n  padding: 0.2rem 0.35rem 0.2rem 0.4rem;\n}\n.kds-instruction--exclusion[data-v-66aac04e] {\n  color: #7c2d12;\n  border-left-color: #f97316;\n  background: #fff7ed;\n  font-weight: 600;\n  border-radius: 0 4px 4px 0;\n  padding: 0.2rem 0.35rem 0.2rem 0.4rem;\n  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.2);\n}\n.kds-instruction--allergen[data-v-66aac04e] {\n  color: #7f1d1d;\n  border-left-color: #dc2626;\n  background: #fef2f2;\n  font-weight: 700;\n  border-radius: 0 4px 4px 0;\n  padding: 0.2rem 0.35rem 0.2rem 0.4rem;\n  box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.35);\n}\n.kds-hint-banner[data-v-66aac04e] {\n  text-align: center;\n  padding: 8px 12px;\n  font-size: 0.8rem;\n  line-height: 1.35;\n  font-weight: 500;\n}\n.kds-hint-banner--info[data-v-66aac04e] {\n  background: #e0f2fe;\n  color: #0c4a6e;\n  border-bottom: 1px solid #bae6fd;\n}\n.kds-hint-banner--warning[data-v-66aac04e] {\n  background: #fffbeb;\n  color: #78350f;\n  border-bottom: 1px solid #fde68a;\n}\n.kds-hint-banner--neutral[data-v-66aac04e] {\n  background: #f4f4f5;\n  color: #3f3f46;\n  border-bottom: 1px solid #e4e4e7;\n}\n.kds-hint-banner--danger[data-v-66aac04e] {\n  background: #fee2e2;\n  color: #7f1d1d;\n  border-bottom: 1px solid #fecaca;\n  font-weight: 600;\n}\n/* [test-e2e fix C-009 round-3 2026-05-10] Persistent KDS error banner sticky\n   to viewport top so a kitchen operator scrolled into the order list still\n   sees the 503-degraded signal after toast fade. Scoped to --danger to avoid\n   affecting bump-info neutral banner (which is allowed to scroll naturally).\n   The KDS view's scroll container is `<main class=\"db-main\">` with\n   `h-screen overflow-auto` and top-padding accounting for the fixed navbar,\n   so `position: sticky; top: 0` pins at the scrollport's padding edge —\n   right below the fixed `.db-header` (z-30). z-index: 50 keeps it above\n   internal grid panels. */\n.kds-hint-banner--danger[data-v-66aac04e] {\n  position: sticky;\n  top: 0;\n  z-index: 50;\n}\n.kds-hint-banner--action[data-v-66aac04e] {\n  align-items: center;\n  display: flex;\n  gap: 0.75rem;\n  justify-content: center;\n}\n.kds-hint-link[data-v-66aac04e] {\n  background: transparent;\n  border: 0;\n  color: inherit;\n  cursor: pointer;\n  font-size: 0.78rem;\n  font-weight: 800;\n  text-decoration: underline;\n}\n/* [F-03 / Lot 1.C] Sync stamp footer — discrete, never blocks the grid. */\n.kds-sync-footer[data-v-66aac04e] {\n  display: flex;\n  justify-content: flex-end;\n  padding: 4px 12px 6px 12px;\n  background: transparent;\n  pointer-events: none;\n}\n.kds-sync-stamp[data-v-66aac04e] {\n  font-size: 0.72rem;\n  color: #374151;\n  font-weight: 500;\n  letter-spacing: 0.01em;\n}\n.kds-sync-stamp--stale[data-v-66aac04e] {\n  color: #92400e;\n  font-weight: 600;\n}\n.ws-reconnect-banner[data-v-66aac04e] {\n  background: #ecfeff;\n  color: #155e75;\n  border-bottom: 1px solid #a5f3fc;\n  text-align: center;\n  padding: 6px 12px;\n  font-size: 0.85rem;\n  font-weight: 600;\n}\n.kds-card-header-meta[data-v-66aac04e] {\n  align-items: center;\n  display: flex;\n  flex: 1 1 auto;\n  flex-wrap: wrap;\n  gap: 0.35rem;\n  min-width: 0;\n}\n.kds-card-header-meta > span[data-v-66aac04e]:first-of-type {\n  min-width: 0;\n  overflow-wrap: anywhere;\n}\n.kds-source-pill[data-v-66aac04e] {\n  align-items: center;\n  border-radius: 9999px;\n  display: inline-flex;\n  flex: 0 0 auto;\n  font-size: 0.68rem;\n  font-weight: 900;\n  letter-spacing: 0.01em;\n  line-height: 1.1;\n  min-height: 1.4rem;\n  padding: 0.22rem 0.55rem;\n  white-space: nowrap;\n}\n.kds-source-pill--kiosk[data-v-66aac04e] {\n  background: #4C1A96;\n  color: #FFFFFF;\n}\n.kds-source-pill--queue[data-v-66aac04e] {\n  background: #991B1B;\n  color: #FFFFFF;\n}\n.kds-wait-green[data-v-66aac04e] {\n  border-color: rgba(34, 197, 94, 0.55) !important;\n}\n.kds-wait-orange[data-v-66aac04e] {\n  border-color: rgba(245, 158, 11, 0.7) !important;\n}\n.kds-wait-red[data-v-66aac04e] {\n  border-color: rgba(239, 68, 68, 0.85) !important;\n}\n.kds-wait-red.animate-pulse[data-v-66aac04e] {\n  animation: none !important;\n}\n.kds-counter-payment-badge[data-v-66aac04e] {\n  display: inline-flex;\n  align-items: center;\n  border-radius: 9999px;\n  background: #B91C1C;\n  color: #FFFFFF;\n  font-size: 0.58rem;\n  font-weight: 900;\n  letter-spacing: 0.02em;\n  line-height: 1;\n  padding: 0.28rem 0.45rem;\n  text-transform: uppercase;\n}\n\n/* [F-02] Visual cue for in-place table reassignment.\n * Per orchestrator gate G-2 (in_place_with_css_flash):\n *   - 2 second cyan pulse — non-blocking, no sound, no re-print.\n *   - High enough contrast to be noticed mid-rush, low enough not to alarm.\n * The class is removed automatically by _handleTableChanged() after 2 s.\n */\n@keyframes kds-table-flash-pulse-66aac04e {\n0%, 100% {\n    box-shadow: 0 0 0 0 rgba(0, 132, 255, 0.0);\n    background-color: transparent;\n}\n20% {\n    box-shadow: 0 0 0 6px rgba(0, 132, 255, 0.45);\n    background-color: rgba(0, 132, 255, 0.08);\n}\n60% {\n    box-shadow: 0 0 0 3px rgba(0, 132, 255, 0.25);\n    background-color: rgba(0, 132, 255, 0.04);\n}\n}\n.kds-table-flash[data-v-66aac04e] {\n  animation: kds-table-flash-pulse-66aac04e 2s ease-out 1;\n  border-color: rgba(0, 132, 255, 0.7) !important;\n}\n/* [Lot 2.I / G-4] Non-blocking allergens badge + modal. Visual emphasis only;\n   does NOT gate any kitchen action. Designed for visibility at ~2m distance. */\n.kds-allergens-badge[data-v-66aac04e] {\n  position: absolute;\n  top: 0.5rem;\n  right: 0.5rem;\n  z-index: 5;\n  border: 0;\n  border-radius: 9999px;\n  background: #B91C1C;\n  color: #FFFFFF;\n  cursor: pointer;\n  font-size: 0.75rem;\n  font-weight: 800;\n  letter-spacing: 0.08em;\n  line-height: 1;\n  padding: 0.5rem 0.75rem;\n  text-transform: uppercase;\n}\n.kds-allergens-badge[data-v-66aac04e]:hover,\n.kds-allergens-badge[data-v-66aac04e]:focus-visible {\n  background: #991B1B;\n  outline: 3px solid #FCA5A5;\n  outline-offset: 2px;\n}\n.kds-allergens-modal-overlay[data-v-66aac04e] {\n  align-items: center;\n  background: rgba(17, 24, 39, 0.72);\n  bottom: 0;\n  display: flex;\n  justify-content: center;\n  left: 0;\n  padding: 1rem;\n  position: fixed;\n  right: 0;\n  top: 0;\n  z-index: 9999;\n}\n.kds-allergens-modal-content[data-v-66aac04e] {\n  background: #FFFFFF;\n  border-radius: 1rem;\n  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);\n  color: #111827;\n  max-height: min(80vh, 42rem);\n  max-width: 42rem;\n  overflow-y: auto;\n  padding: 1.5rem;\n  width: 100%;\n}\n.kds-allergens-modal-header[data-v-66aac04e] {\n  align-items: flex-start;\n  display: flex;\n  gap: 1rem;\n  justify-content: space-between;\n}\n.kds-allergens-modal-header h2[data-v-66aac04e] {\n  font-size: 1.25rem;\n  font-weight: 800;\n  margin: 0;\n}\n.kds-allergens-modal-close[data-v-66aac04e] {\n  border: 1px solid #D1D5DB;\n  border-radius: 0.5rem;\n  background: #F9FAFB;\n  color: #111827;\n  cursor: pointer;\n  font-weight: 700;\n  padding: 0.5rem 0.75rem;\n}\n.kds-allergens-modal-close[data-v-66aac04e]:hover,\n.kds-allergens-modal-close[data-v-66aac04e]:focus-visible {\n  background: #F3F4F6;\n  outline: 3px solid #93C5FD;\n  outline-offset: 2px;\n}\n.kds-allergens-modal-intro[data-v-66aac04e] {\n  color: #374151;\n  margin: 1rem 0;\n}\n.kds-allergens-modal-list[data-v-66aac04e] {\n  display: flex;\n  flex-direction: column;\n  gap: 0.75rem;\n  list-style: none;\n  margin: 0;\n  padding: 0;\n}\n.kds-allergens-modal-list-item[data-v-66aac04e] {\n  border: 1px solid #FCA5A5;\n  border-radius: 0.75rem;\n  display: flex;\n  flex-direction: column;\n  gap: 0.25rem;\n  padding: 0.75rem;\n}\n.kds-allergens-modal-list-item span[data-v-66aac04e] {\n  color: #B91C1C;\n  font-weight: 800;\n}\n/* [CV1-KDS-A11Y-RICH-001] WCAG 2.4.7 / 4.1.3 — visually hidden but available\n   to assistive technology. Used by the polite aria-live region. */\n.sr-only[data-v-66aac04e] {\n  position: absolute !important;\n  width: 1px !important;\n  height: 1px !important;\n  padding: 0 !important;\n  margin: -1px !important;\n  overflow: hidden !important;\n  clip: rect(0, 0, 0, 0) !important;\n  white-space: nowrap !important;\n  border: 0 !important;\n}\n/* [CV1-KDS-INFLIGHT-OOS-MARKER-001] In-flight OOS warning badge. Sits next\n   to (not on top of) the allergens badge so both can coexist on tickets\n   that have allergens AND a freshly 86'd item. */\n.kds-oos-warning-badge[data-v-66aac04e] {\n  position: absolute;\n  top: 0.5rem;\n  right: 5.5rem;\n  z-index: 5;\n  border: 0;\n  border-radius: 9999px;\n  background: #DC2626;\n  color: #FFFFFF;\n  cursor: help;\n  font-size: 0.7rem;\n  font-weight: 800;\n  letter-spacing: 0.05em;\n  line-height: 1;\n  padding: 0.5rem 0.65rem;\n  text-transform: uppercase;\n  display: inline-flex;\n  align-items: center;\n  gap: 0.25rem;\n}\n@media (prefers-reduced-motion: reduce) {\n.kds-table-flash[data-v-66aac04e],\n  .kds-wait-red.animate-pulse[data-v-66aac04e],\n  .animate-pulse[data-v-66aac04e],\n  .animate-spin[data-v-66aac04e],\n  .animate-bounce[data-v-66aac04e],\n  .animate-ping[data-v-66aac04e] {\n    animation: none !important;\n}\n.kds-table-flash[data-v-66aac04e] {\n    border-color: rgba(0, 132, 255, 0.7) !important;\n}\n.swiper-wrapper[data-v-66aac04e],\n  .swiper-slide[data-v-66aac04e],\n  .swiper-container[data-v-66aac04e],\n  [class*=\"swiper-\"][data-v-66aac04e] {\n    transition-duration: 0.001ms !important;\n}\n}\n", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ },
+
+/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/shared/AvailabilityTogglePanel.vue?vue&type=style&index=0&id=06407ef6&scoped=true&lang=css"
+/*!*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/shared/AvailabilityTogglePanel.vue?vue&type=style&index=0&id=06407ef6&scoped=true&lang=css ***!
+  \*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, "\n.atp-overlay[data-v-06407ef6] {\n    position: fixed;\n    inset: 0;\n    background: rgba(0, 0, 0, 0.55);\n    z-index: 1200;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    padding: 16px;\n}\n.atp-panel[data-v-06407ef6] {\n    background: #fff;\n    border-radius: 14px;\n    width: min(560px, 100%);\n    max-height: min(82dvh, 720px);\n    display: flex;\n    flex-direction: column;\n    overflow: hidden;\n    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);\n}\n.atp-head[data-v-06407ef6] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    padding: 14px 18px;\n    background: #1a1a1a;\n    color: #fff;\n}\n/* color explicite : les styles admin globaux (h2 { color: … }) battent\n   l'héritage du .atp-head — sans ça le titre est illisible sur fond noir. */\n.atp-title[data-v-06407ef6] { font-size: 17px; font-weight: 700; margin: 0; color: #fff;\n}\n.atp-close[data-v-06407ef6] {\n    background: none;\n    border: none;\n    color: #fff;\n    font-size: 26px;\n    line-height: 1;\n    cursor: pointer;\n    padding: 2px 8px;\n}\n.atp-toolbar[data-v-06407ef6] { display: flex; gap: 8px; padding: 12px 18px 4px;\n}\n.atp-search[data-v-06407ef6] {\n    flex: 1;\n    border: 1px solid #d5d5d5;\n    border-radius: 8px;\n    padding: 9px 12px;\n    font-size: 15px;\n}\n.atp-refresh[data-v-06407ef6] {\n    border: 1px solid #d5d5d5;\n    background: #fff;\n    border-radius: 8px;\n    padding: 0 14px;\n    font-size: 17px;\n    cursor: pointer;\n}\n.atp-body[data-v-06407ef6] { overflow-y: auto; padding: 4px 18px 18px;\n}\n.atp-section[data-v-06407ef6] {\n    font-size: 12px;\n    font-weight: 700;\n    text-transform: uppercase;\n    letter-spacing: 0.05em;\n    color: #6b7280;\n    margin: 14px 0 6px;\n}\n.atp-section--rupture[data-v-06407ef6] { color: #dc2626;\n}\n.atp-list[data-v-06407ef6] { list-style: none; margin: 0; padding: 0;\n}\n.atp-row[data-v-06407ef6] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    gap: 12px;\n    padding: 9px 0;\n    border-bottom: 1px solid #f1f1f1;\n}\n.atp-row--rupture .atp-name[data-v-06407ef6] { color: #dc2626; text-decoration: line-through;\n}\n.atp-name[data-v-06407ef6] { font-size: 15px;\n}\n.atp-btn[data-v-06407ef6] {\n    border: none;\n    border-radius: 8px;\n    padding: 8px 14px;\n    font-size: 13px;\n    font-weight: 700;\n    cursor: pointer;\n    white-space: nowrap;\n    min-width: 118px;\n}\n.atp-btn[data-v-06407ef6]:disabled { opacity: 0.55; cursor: wait;\n}\n.atp-btn--disable[data-v-06407ef6] { background: #fee2e2; color: #b91c1c;\n}\n.atp-btn--enable[data-v-06407ef6] { background: #dcfce7; color: #15803d;\n}\n.atp-error[data-v-06407ef6] { color: #b91c1c; padding: 10px 18px;\n}\n.atp-loading[data-v-06407ef6], .atp-empty[data-v-06407ef6] { color: #6b7280; padding: 10px 18px;\n}\n", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue?vue&type=script&lang=js"
+/*!**************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue?vue&type=script&lang=js ***!
+  \**************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! axios */ "./node_modules/axios/lib/axios.js");
+/* harmony import */ var _KdsOrderLine_vue__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./KdsOrderLine.vue */ "./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue");
+/* harmony import */ var _helpers_kdsCustomization_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../../helpers/kdsCustomization.js */ "./resources/js/helpers/kdsCustomization.js");
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
+function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+
+// [KDS history full-detail 2026-06-04] Canonical live-board renderer + line
+// component (same as KdsOrderCard.vue) so history shows the FULL composition.
+
+
+var STATUS_PREPARED = 8;
+var STATUS_OUT_FOR_DELIVERY = 10;
+var STATUS_DELIVERED = 13;
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'KdsHistoryDrawer',
+  components: {
+    KdsOrderLine: _KdsOrderLine_vue__WEBPACK_IMPORTED_MODULE_1__["default"]
+  },
+  props: {
+    open: {
+      type: Boolean,
+      "default": false
+    },
+    dir: {
+      type: String,
+      "default": 'ltr'
+    }
+  },
+  // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B] emits `recalled`
+  // so the parent KitchenDisplaySystemComponent can re-inject the card into
+  // KdsV2Grid with the RAPPELÉ badge for 60s without waiting for the next
+  // polling tick (websocket fan-out covers other stations; the click origin
+  // gets the instant local mirror via this emit).
+  emits: ['close', 'recalled'],
+  data: function data() {
+    return {
+      orders: [],
+      loading: false,
+      error: false,
+      // [Heal-5] Reactive clock — drives the 60s countdown badge so the
+      // "↶ Annuler bump" button auto-hides when the TTL expires without
+      // requiring a fetch round-trip. Single setInterval owned by this
+      // component (cleared on beforeUnmount).
+      now: Date.now(),
+      tickerId: null,
+      // [Heal-5] Ids of orders for which a recall POST is in-flight — used
+      // to disable the button + show a spinner without re-rendering the list.
+      recallingIds: [],
+      // [Heal-5] Local cache of orders the chef has recalled in this session
+      // (orderId → recalledAtMs). Backend remains the source of truth (returns
+      // 409 if a row already exists), but this lets us flip the UI to the
+      // RAPPELÉ badge synchronously on success without waiting for a refetch.
+      recalledMap: {},
+      // [Heal-5] Constant — recall TTL window in seconds. Mirrors the backend
+      // 60s window in KitchenDisplaySystemOrderService::recall.
+      RECALL_TTL_SECONDS: 60,
+      // [Heal-5] Status constant kept on the instance so the template can
+      // reference it via `STATUS_PREPARED` without importing.
+      STATUS_PREPARED: STATUS_PREPARED
+    };
+  },
+  watch: {
+    open: function open(newVal) {
+      if (newVal) {
+        this.fetch();
+        // Reset the local recall cache when the drawer (re-)opens so a
+        // chef who closed + re-opened sees the canonical backend state.
+        this.recalledMap = {};
+      }
+    }
+  },
+  // [W2 audit 2026-05-21] a11y: WAI-ARIA dialog pattern (WCAG 2.1.2) requires
+  // Escape to close. Backdrop click works but keyboard-only operators (chef
+  // with gloves / stylus) were stuck. Handler is gated by `this.open` so it
+  // is a no-op when the drawer is closed; teardown in beforeUnmount avoids
+  // listener leaks if a parent re-mounts during a Vue-router transition.
+  mounted: function mounted() {
+    var _this = this;
+    this._onEsc = function (e) {
+      if (_this.open && (e.key === 'Escape' || e.key === 'Esc')) {
+        _this.$emit('close');
+      }
+    };
+    document.addEventListener('keydown', this._onEsc);
+
+    // [Heal-5] Single 1s ticker for the recall TTL countdown. Cheaper than
+    // a per-button setInterval; the template just reads `this.now` reactively.
+    this.tickerId = window.setInterval(function () {
+      _this.now = Date.now();
+    }, 1000);
+  },
+  beforeUnmount: function beforeUnmount() {
+    if (this._onEsc) {
+      document.removeEventListener('keydown', this._onEsc);
+      this._onEsc = null;
+    }
+    if (this.tickerId) {
+      window.clearInterval(this.tickerId);
+      this.tickerId = null;
+    }
+  },
+  methods: {
+    fetch: function fetch() {
+      var _this2 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
+        var response, payload, _t;
+        return _regenerator().w(function (_context) {
+          while (1) switch (_context.p = _context.n) {
+            case 0:
+              _this2.loading = true;
+              _this2.error = false;
+              _context.p = 1;
+              _context.n = 2;
+              return axios__WEBPACK_IMPORTED_MODULE_0__["default"].get('admin/kds-order/history-today');
+            case 2:
+              response = _context.v;
+              payload = response.data; // Laravel ResourceCollection always nests rows under `.data`, but be
+              // defensive in case any middleware unwraps it.
+              _this2.orders = Array.isArray(payload) ? payload : Array.isArray(payload && payload.data) ? payload.data : [];
+              _context.n = 4;
+              break;
+            case 3:
+              _context.p = 3;
+              _t = _context.v;
+              _this2.error = true;
+              _this2.orders = [];
+            case 4:
+              _context.p = 4;
+              _this2.loading = false;
+              return _context.f(4);
+            case 5:
+              return _context.a(2);
+          }
+        }, _callee, null, [[1, 3, 4, 5]]);
+      }))();
+    },
+    // [KDS history full-detail 2026-06-04] Delegate to the canonical renderer
+    // (single source of truth shared with the live KdsOrderCard) — yields the
+    // full typed line list: header, grouped variations, supplements, menu
+    // children, free-text instruction, allergens. No per-category branching here.
+    renderItemLines: function renderItemLines(item) {
+      return (0,_helpers_kdsCustomization_js__WEBPACK_IMPORTED_MODULE_2__.renderItem)(item).lines;
+    },
+    // [KDS history full-detail 2026-06-04] Heure de prise de commande. The
+    // resource already exposes a pre-formatted HH:MM string via
+    // AppLibrary::time(order_datetime) — it is NOT an ISO date, so it must be
+    // bound raw (NOT passed through formatTime, which would yield Invalid Date
+    // and render blank). `order_datetime` is the fuller formatted fallback.
+    placedTime: function placedTime(order) {
+      var raw = order === null || order === void 0 ? void 0 : order.order_time;
+      if (typeof raw === 'string' && raw.trim().length > 0) {
+        return raw.trim();
+      }
+      // Defensive fallback: derive HH:MM from order_datetime if order_time is
+      // absent. order_datetime is also pre-formatted, so we only reuse it as a
+      // last-resort display string.
+      var dt = order === null || order === void 0 ? void 0 : order.order_datetime;
+      return typeof dt === 'string' && dt.trim().length > 0 ? dt.trim() : '';
+    },
+    statusClass: function statusClass(status) {
+      return {
+        'is-prepared': status === STATUS_PREPARED,
+        'is-out': status === STATUS_OUT_FOR_DELIVERY,
+        'is-delivered': status === STATUS_DELIVERED
+      };
+    },
+    statusLabel: function statusLabel(status) {
+      var map = _defineProperty(_defineProperty(_defineProperty({}, STATUS_PREPARED, this.$t('label.kds_state_prepared')), STATUS_OUT_FOR_DELIVERY, this.$t('label.kds_state_out')), STATUS_DELIVERED, this.$t('label.kds_state_delivered'));
+      return map[status] || String(status);
+    },
+    formatTime: function formatTime(value) {
+      if (!value) return '';
+      try {
+        var d = new Date(value);
+        var hh = String(d.getHours()).padStart(2, '0');
+        var mm = String(d.getMinutes()).padStart(2, '0');
+        return "".concat(hh, ":").concat(mm);
+      } catch (_e) {
+        return '';
+      }
+    },
+    // [Heal-5] Returns ms since the order was last bumped (PREPARED). Returns
+    // -1 if the timestamp is unparseable so the gates below safely fail-closed.
+    _msSinceUpdated: function _msSinceUpdated(order) {
+      var stamp = Date.parse((order === null || order === void 0 ? void 0 : order.updated_at) || '');
+      if (Number.isNaN(stamp)) {
+        return -1;
+      }
+      return Math.max(0, this.now - stamp);
+    },
+    // [Heal-5] Eligibility gate for the "↶ Annuler bump" button. Three rules:
+    //   1. Order must currently be PREPARED (post-bump). OUT/DELIVERED orders
+    //      are out-of-scope — once the customer has picked up the food, the
+    //      compensating action no longer makes sense (the customer can't be
+    //      asked to give it back).
+    //   2. updated_at must be within the last RECALL_TTL_SECONDS. Backend
+    //      enforces the same 60s guard; this mirror keeps the button hidden
+    //      after expiry so chef never sees a clickable button that would 422.
+    //   3. The order has NOT been recalled yet (cap N=1). Local cache short-
+    //      circuits the second click; backend remains source of truth via 409.
+    canRecall: function canRecall(order) {
+      if (!order || order.status !== STATUS_PREPARED) {
+        return false;
+      }
+      if (this.wasRecentlyRecalled(order)) {
+        return false;
+      }
+      var ms = this._msSinceUpdated(order);
+      if (ms < 0) {
+        return false;
+      }
+      return ms < this.RECALL_TTL_SECONDS * 1000;
+    },
+    // [Heal-5] Countdown in seconds shown next to the button — gives the chef
+    // peripheral awareness ("5s left to undo"). Clamped to 0 so a transiently
+    // out-of-window read never displays a negative.
+    recallSecondsLeft: function recallSecondsLeft(order) {
+      var ms = this._msSinceUpdated(order);
+      if (ms < 0) {
+        return 0;
+      }
+      return Math.max(0, this.RECALL_TTL_SECONDS - Math.floor(ms / 1000));
+    },
+    // [Heal-5] Has the chef recalled this order in the current drawer session?
+    // The badge renders when recently recalled even though the button is gone.
+    wasRecentlyRecalled: function wasRecentlyRecalled(order) {
+      if (!order) {
+        return false;
+      }
+      var recalledAt = this.recalledMap[order.id];
+      if (!recalledAt) {
+        return false;
+      }
+      // Badge persists 60s post-recall (same window as the button) so the chef
+      // sees the confirmation even if the drawer scrolls or another order is
+      // added. After 60s the row reverts to the default styling.
+      return this.now - recalledAt < this.RECALL_TTL_SECONDS * 1000;
+    },
+    // [Heal-5] POST to /api/admin/kds-order/recall/{order}. The endpoint
+    // mirrors `change-status` middleware (idempotency + throttle:kds-bump)
+    // so a double-click is absorbed (1 row, not 2). On success we emit
+    // `recalled` so the parent KitchenDisplaySystemComponent can re-inject
+    // the card into KdsV2Grid with the RAPPELÉ badge immediately, without
+    // waiting for the websocket fan-out (which still fires for other
+    // stations of the same branch).
+    recall: function recall(order) {
+      var _this3 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2() {
+        var idempotencyKey, response, recalledAt, _e$response, _e$response2, _window, status, message, _t2;
+        return _regenerator().w(function (_context2) {
+          while (1) switch (_context2.p = _context2.n) {
+            case 0:
+              if (!(!order || !_this3.canRecall(order))) {
+                _context2.n = 1;
+                break;
+              }
+              return _context2.a(2);
+            case 1:
+              if (!_this3.recallingIds.includes(order.id)) {
+                _context2.n = 2;
+                break;
+              }
+              return _context2.a(2);
+            case 2:
+              _this3.recallingIds = [].concat(_toConsumableArray(_this3.recallingIds), [order.id]);
+              _context2.p = 3;
+              // [GOAL-2026-05-29 F6] The /recall route carries the `idempotency`
+              // middleware (routes/api.php:1160) which REQUIRES X-Idempotency-Key —
+              // the POST omitted it, so it ALWAYS 422'd and the catch faked a RAPPELÉ
+              // badge while the order was never recalled. Send a stable per-minute key
+              // (mirrors POS counter-collect): a network retry within the minute
+              // dedupes server-side; the 60s recall window aligns with the bucket.
+              idempotencyKey = "kds-recall-".concat(order.id, "-").concat(Math.floor(Date.now() / 60000));
+              _context2.n = 4;
+              return axios__WEBPACK_IMPORTED_MODULE_0__["default"].post("admin/kds-order/recall/".concat(order.id), null, {
+                headers: {
+                  'X-Idempotency-Key': idempotencyKey
+                }
+              });
+            case 4:
+              response = _context2.v;
+              recalledAt = Date.now();
+              _this3.recalledMap = _objectSpread(_objectSpread({}, _this3.recalledMap), {}, _defineProperty({}, order.id, recalledAt));
+              _this3.$emit('recalled', {
+                orderId: order.id,
+                queueNumber: order.queue_number || null,
+                recalledAt: recalledAt,
+                payload: (response === null || response === void 0 ? void 0 : response.data) || null
+              });
+              _context2.n = 6;
+              break;
+            case 5:
+              _context2.p = 5;
+              _t2 = _context2.v;
+              // 409 → already recalled by another chef on the same branch. Surface
+              // the localized message and refetch so the chef sees the canonical
+              // state. 422 (window expired) likewise triggers a refetch so stale
+              // entries are pruned.
+              status = _t2 === null || _t2 === void 0 || (_e$response = _t2.response) === null || _e$response === void 0 ? void 0 : _e$response.status;
+              message = _t2 === null || _t2 === void 0 || (_e$response2 = _t2.response) === null || _e$response2 === void 0 || (_e$response2 = _e$response2.data) === null || _e$response2 === void 0 ? void 0 : _e$response2.message;
+              if (status === 409) {
+                // 409 = already recalled by another chef on this branch → it genuinely
+                // IS recalled, so mark locally (button hides until the next fetch).
+                _this3.recalledMap = _objectSpread(_objectSpread({}, _this3.recalledMap), {}, _defineProperty({}, order.id, Date.now()));
+              }
+              // [GOAL-2026-05-29 F6] 422 = recall window expired → the recall did NOT
+              // happen, so do NOT fake a RAPPELÉ badge (the old code did, masking the
+              // failure). Just surface the message below; the next fetch prunes the row.
+              // Defensive surfacing via the existing toast helper if available.
+              // Falls back to console.warn so the failure is observable in dev.
+              if ((_window = window) !== null && _window !== void 0 && (_window = _window.toastr) !== null && _window !== void 0 && _window.error && message) {
+                window.toastr.error(message);
+              } else {
+                console.warn('[KDS recall] failed:', status, message || (_t2 === null || _t2 === void 0 ? void 0 : _t2.message));
+              }
+              // [#12] Honor the documented contract: refetch so the chef sees the
+              // canonical state (409 already-recalled, 422 window-expired, 403
+              // cross-branch). Previously the comments promised this but no fetch()
+              // was ever called, so a stale/out-of-window row lingered until reopen.
+              if (status === 403 || status === 409 || status === 422) {
+                _this3.fetch();
+              }
+            case 6:
+              _context2.p = 6;
+              _this3.recallingIds = _this3.recallingIds.filter(function (id) {
+                return id !== order.id;
+              });
+              return _context2.f(6);
+            case 7:
+              return _context2.a(2);
+          }
+        }, _callee2, null, [[3, 5, 6, 7]]);
+      }))();
+    }
+  }
+});
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=script&lang=js"
+/*!**********************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=script&lang=js ***!
+  \**********************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _KdsOrderLine_vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./KdsOrderLine.vue */ "./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue");
+/* harmony import */ var _helpers_kdsCustomization_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../../helpers/kdsCustomization.js */ "./resources/js/helpers/kdsCustomization.js");
+/* harmony import */ var _helpers_kdsSymbolic_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../../helpers/kdsSymbolic.js */ "./resources/js/helpers/kdsSymbolic.js");
+/* harmony import */ var _helpers_kdsDisplay_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../helpers/kdsDisplay.js */ "./resources/js/helpers/kdsDisplay.js");
+/* harmony import */ var _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../../helpers/kdsState.js */ "./resources/js/helpers/kdsState.js");
+/* harmony import */ var _helpers_kdsSource_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../../../helpers/kdsSource.js */ "./resources/js/helpers/kdsSource.js");
+/* harmony import */ var _helpers_phoneDisplay_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../../../helpers/phoneDisplay.js */ "./resources/js/helpers/phoneDisplay.js");
+
+
+
+
+
+
+// [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT — mirrors App\Support\PhoneDisplay::safe
+
+var AGE_HEADER_BG = {
+  fresh: '#FFFFFF',
+  warning: '#FFEDD5',
+  critical: '#FEE2E2'
+};
+var AGE_ELAPSED_COLOR = {
+  fresh: '#111827',
+  warning: '#9A3412',
+  critical: '#991B1B'
+};
+var AGE_BORDER = {
+  fresh: '#E5E7EB',
+  warning: '#EA580C',
+  critical: '#DC2626'
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'KdsOrderCard',
+  components: {
+    KdsOrderLine: _KdsOrderLine_vue__WEBPACK_IMPORTED_MODULE_0__["default"]
+  },
+  props: {
+    order: {
+      type: Object,
+      required: true
+    },
+    now: {
+      type: Number,
+      "default": function _default() {
+        return Date.now();
+      }
+    },
+    shortcut: {
+      type: String,
+      "default": null
+    },
+    // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+    // True when this order is in the 60s RAPPELÉ window after a chef
+    // recall. Drives the orange overlay badge at the top of the card.
+    recallActive: {
+      type: Boolean,
+      "default": false
+    }
+  },
+  emits: ['ready', 'reprint'],
+  computed: {
+    kdsState: function kdsState() {
+      return (0,_helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_4__.kdsStateFromStatus)(this.order.status) || 'NEW';
+    },
+    kdsSource: function kdsSource() {
+      return (0,_helpers_kdsSource_js__WEBPACK_IMPORTED_MODULE_5__.kdsSourceFromSurface)(this.order.source_surface);
+    },
+    stateTheme: function stateTheme() {
+      return _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_4__.KDS_STATE_THEME[this.kdsState] || _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_4__.KDS_STATE_THEME.NEW;
+    },
+    sourceTheme: function sourceTheme() {
+      return _helpers_kdsSource_js__WEBPACK_IMPORTED_MODULE_5__.KDS_SOURCE_THEME[this.kdsSource] || _helpers_kdsSource_js__WEBPACK_IMPORTED_MODULE_5__.KDS_SOURCE_THEME.POS;
+    },
+    stateLabel: function stateLabel() {
+      var k = _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_4__.KDS_STATE_I18N_KEYS[this.kdsState];
+      var t = this.$t(k);
+      return t === k ? this.kdsState : t;
+    },
+    sourceLabel: function sourceLabel() {
+      var k = _helpers_kdsSource_js__WEBPACK_IMPORTED_MODULE_5__.KDS_SOURCE_I18N_KEYS[this.kdsSource];
+      var t = this.$t(k);
+      return t === k ? this.kdsSource : t;
+    },
+    statePillStyle: function statePillStyle() {
+      return {
+        background: this.stateTheme.bg,
+        color: this.stateTheme.text,
+        border: this.kdsState === 'NEW' ? "1px solid ".concat(this.stateTheme.border) : 'none'
+      };
+    },
+    sourceChipStyle: function sourceChipStyle() {
+      return {
+        background: this.sourceTheme.bg,
+        color: this.sourceTheme.text
+      };
+    },
+    hasAllergen: function hasAllergen() {
+      return (0,_helpers_kdsCustomization_js__WEBPACK_IMPORTED_MODULE_1__.orderHasAnyAllergen)(this.order.order_items || []);
+    },
+    createdMs: function createdMs() {
+      return (0,_helpers_kdsDisplay_js__WEBPACK_IMPORTED_MODULE_3__.parseOrderCreatedMs)(this.order);
+    },
+    elapsedSeconds: function elapsedSeconds() {
+      return Math.max(0, Math.floor((this.now - this.createdMs) / 1000));
+    },
+    bucket: function bucket() {
+      return (0,_helpers_kdsDisplay_js__WEBPACK_IMPORTED_MODULE_3__.getKdsAgeBucket)(this.createdMs, this.now);
+    },
+    headerBg: function headerBg() {
+      return AGE_HEADER_BG[this.bucket] || AGE_HEADER_BG.fresh;
+    },
+    elapsedColor: function elapsedColor() {
+      return AGE_ELAPSED_COLOR[this.bucket] || AGE_ELAPSED_COLOR.fresh;
+    },
+    elapsedLabelColor: function elapsedLabelColor() {
+      // KDS-R1-02 heal: fixed dark color always (9.5:1 on white, WCAG AA-large) —
+      // bucket color stays on the BIG elapsed number for visual hierarchy.
+      // Previous bucket-tinted label hit 1.94:1 (axe-confirmed FAIL).
+      return '#374151';
+    },
+    borderColor: function borderColor() {
+      // Allergen overrides age — orange regardless of how old.
+      if (this.hasAllergen) {
+        return '#F97316';
+      }
+      return AGE_BORDER[this.bucket] || AGE_BORDER.fresh;
+    },
+    stripeColor: function stripeColor() {
+      if (this.hasAllergen) {
+        return '#F97316';
+      }
+      if (this.bucket === 'fresh') {
+        return this.kdsState === 'PREPARING' ? '#111827' : '#E5E7EB';
+      }
+      return AGE_BORDER[this.bucket];
+    },
+    cardStyle: function cardStyle() {
+      // [KDS-A-01 2026-07-06] Plus de height inline hardcodée (462px, héritage grille
+      // 4×2 sprint-2) : elle bloquait `align-items: stretch` de .kds-v2__grid → les 3
+      // cartes plafonnaient à 462px sur 2160 (grand vide sous les cartes). La hauteur
+      // vient désormais de la rangée 1fr pleine hauteur (KDS-3CARDS) ; le corps interne
+      // est déjà flex (kds-card__body flex:1) donc le CTA reste collé en bas.
+      return {
+        border: "3px solid ".concat(this.borderColor)
+      };
+    },
+    cardClass: function cardClass() {
+      return {
+        'kds-card--critical': this.bucket === 'critical',
+        'kds-card--ready': this.kdsState === 'READY',
+        'kds-card--cancelled': this.kdsState === 'CANCELLED',
+        // [K2-KDS 2026-07-05] Owner : fiche en JAUNE dès qu'il y a un supplément payant
+        // → le cuisinier repère immédiatement les commandes « à extra ».
+        'kds-card--has-supplements': this.hasSupplements
+      };
+    },
+    // [K2-KDS 2026-07-05] Vrai si au moins un article de la commande porte un supplément
+    // payant (ligne symbolique de type « supplement »). Pilote le fond jaune de la fiche.
+    hasSupplements: function hasSupplements() {
+      var _this = this;
+      var items = this.order && this.order.order_items || [];
+      return items.some(function (item) {
+        try {
+          return _this.renderItemLines(item).some(function (l) {
+            return l && l.type === 'supplement';
+          });
+        } catch (e) {
+          return false;
+        }
+      });
+    },
+    elapsedFormatted: function elapsedFormatted() {
+      var s = this.elapsedSeconds;
+      var m = Math.floor(s / 60);
+      var r = s % 60;
+      return "".concat(String(m).padStart(2, '0'), ":").concat(String(r).padStart(2, '0'));
+    },
+    ariaLabel: function ariaLabel() {
+      var m = Math.floor(this.elapsedSeconds / 60);
+      var r = this.elapsedSeconds % 60;
+      return this.$t('label.kds_card_aria', {
+        queue: this.order.queue_number || this.order.id,
+        source: this.sourceLabel,
+        state: this.stateLabel,
+        minutes: m,
+        seconds: r
+      });
+    },
+    // [Sprint 2A DEL-3 2026-05-16] Delivery-context computeds.
+    // Source-truth precedence: explicit source_surface === 'delivery'
+    // (set by Order.php boot creating hook) OR legacy order_type === 5
+    // (OrderType::DELIVERY) — backwards-compatible with rows created
+    // before the source_surface column was added.
+    isDeliveryOrder: function isDeliveryOrder() {
+      var _this$order, _this$order2;
+      var surface = String(((_this$order = this.order) === null || _this$order === void 0 ? void 0 : _this$order.source_surface) || '').toLowerCase();
+      if (surface === 'delivery') {
+        return true;
+      }
+      // OrderType::DELIVERY === 5 (app/Enums/OrderType.php).
+      return Number((_this$order2 = this.order) === null || _this$order2 === void 0 ? void 0 : _this$order2.order_type) === 5;
+    },
+    deliveryAddress: function deliveryAddress() {
+      var _this$order3;
+      return ((_this$order3 = this.order) === null || _this$order3 === void 0 ? void 0 : _this$order3.order_address) || null;
+    },
+    deliveryAddressLine: function deliveryAddressLine() {
+      var a = this.deliveryAddress;
+      if (!a) {
+        return '';
+      }
+      var parts = [];
+      if (a.apartment) {
+        parts.push(a.apartment);
+      }
+      if (a.address) {
+        parts.push(a.address);
+      }
+      return parts.join(' — ');
+    },
+    customerName: function customerName() {
+      var _this$order4;
+      return ((_this$order4 = this.order) === null || _this$order4 === void 0 || (_this$order4 = _this$order4.customer) === null || _this$order4 === void 0 ? void 0 : _this$order4.name) || '';
+    },
+    customerPhone: function customerPhone() {
+      var _this$order5;
+      // [Sprint 5A Z9-P1-03 + UR1-002 V1.0.2 Wave B1] Hide Sprint 2B
+      // legacy sentinels from the tel: link / on-card display.
+      // `PENDING_<id>` / `PENDING_CREATE_*` are placeholders injected
+      // by User::creating for legacy paths and produce a broken
+      // `tel:PENDING_*` href otherwise. Centralized via phoneDisplay
+      // SSOT (mirrors App\Support\PhoneDisplay::safe).
+      return (0,_helpers_phoneDisplay_js__WEBPACK_IMPORTED_MODULE_6__.safePhone)((_this$order5 = this.order) === null || _this$order5 === void 0 || (_this$order5 = _this$order5.customer) === null || _this$order5 === void 0 ? void 0 : _this$order5.phone);
+    },
+    // [GOAL-2026-05-30 D1] `payment_pending_counter` (KDSOrderDetailsResource:44 =
+    // payment_status === PENDING_COUNTER) now drives only a NON-blocking "non encaissé"
+    // NOTE — NOT a bump gate. Owner reversed the Wave S-2 "must wait for cash" rule: the
+    // kitchen prepares before encashment; the cashier collects later in /admin/encaissement.
+    isCashPending: function isCashPending() {
+      var _this$order6;
+      return ((_this$order6 = this.order) === null || _this$order6 === void 0 ? void 0 : _this$order6.payment_pending_counter) === true;
+    }
+  },
+  methods: {
+    renderItemLines: function renderItemLines(item) {
+      // [KITCHEN-SYMBOLS 2026-06-28] Owner: the kitchen reads symbolic codes
+      // (G | SANDWICH | P | STO | SAM), not full prose. See kdsSymbolic.js.
+      return (0,_helpers_kdsSymbolic_js__WEBPACK_IMPORTED_MODULE_2__.renderItemSymbolic)(item).lines;
+    },
+    onCta: function onCta() {
+      var _this2 = this;
+      // [GOAL-2026-05-30 D1] No payment gate — the chef may bump an unpaid (PENDING_COUNTER)
+      // order; the "non encaissé" note stays visible and the cashier collects it later.
+      // [#5] Coalesce rapid double-activation (double-click, or click+Enter)
+      // into a single 'ready' emit. Non-reactive flag; the parent normally
+      // removes the card on success well before the reset fires.
+      if (this._ctaInFlight) return;
+      this._ctaInFlight = true;
+      this.$emit('ready', this.order.id);
+      setTimeout(function () {
+        _this2._ctaInFlight = false;
+      }, 1200);
+    },
+    onCardKeydownEnter: function onCardKeydownEnter() {
+      this.onCta();
+    }
+  }
+});
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=script&lang=js"
+/*!**********************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=script&lang=js ***!
+  \**********************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'KdsOrderLine',
+  props: {
+    line: {
+      type: Object,
+      required: true
+    }
+  },
+  computed: {
+    groupLabel: function groupLabel() {
+      var key = "label.kds_group_".concat(this.line.group || 'other');
+      // Fallback to raw group key if i18n misses (defensive — i18n parity
+      // CI script enforces presence, but a freshly added category should
+      // not blank the line).
+      var translated = this.$t(key);
+      return translated === key ? this.line.group : translated;
+    },
+    allergenLabel: function allergenLabel() {
+      return this.$t('label.kds_allergen_warning_prefix');
+    },
+    joinedCodes: function joinedCodes() {
+      var _this = this;
+      var codes = Array.isArray(this.line.codes) ? this.line.codes : [];
+      // Translate each code via existing allergens.* keys; fallback to raw code.
+      return codes.map(function (c) {
+        var k = "allergens.".concat(c);
+        var t = _this.$t(k);
+        return t === k ? c : t;
+      }).join(' · ');
+    }
+  }
+});
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=script&lang=js"
+/*!*************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=script&lang=js ***!
+  \*************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'KdsStatusBanner',
+  props: {
+    // explicit signals — orchestrator passes them in
+    offlineSince: {
+      type: Number,
+      "default": null
+    },
+    // ms timestamp or null
+    listAtCap: {
+      type: Boolean,
+      "default": false
+    },
+    nearCap: {
+      type: Number,
+      "default": 0
+    },
+    // n orders, 0 = hide
+    fallbackMode: {
+      type: Boolean,
+      "default": false
+    },
+    // WS down, polling
+    adminPollingHint: {
+      type: Boolean,
+      "default": false
+    },
+    // cross-branch view
+    bumpLocalOnlyNotice: {
+      type: Boolean,
+      "default": false
+    },
+    // [FIX-4 C-002 2026-06-02] reserve a right gutter so the banner tag
+    // (e.g. "LOCAL") does not sit under the overflow chip in KdsV2Grid.
+    reserveRightGutter: {
+      type: Boolean,
+      "default": false
+    },
+    // [#10] Reactive clock injected by the parent's 1s ticker so the offline
+    // elapsed counter actually ticks (Date.now() alone is not a reactive dep).
+    now: {
+      type: Number,
+      "default": 0
+    }
+  },
+  computed: {
+    bannerData: function bannerData() {
+      // [#10] Use the reactive `now` prop when provided so the elapsed
+      // counter re-computes each tick; fall back to Date.now() if a caller
+      // hasn't wired the ticker (preserves prior behavior, just non-live).
+      var nowMs = typeof this.now === 'number' && this.now > 0 ? this.now : Date.now();
+      // Priority: error > cap-full > cap-warning > fallback > sync > bump-notice
+      if (this.offlineSince && nowMs - this.offlineSince > 60000) {
+        var ms = nowMs - this.offlineSince;
+        var m = Math.floor(ms / 60000);
+        var s = Math.floor(ms % 60000 / 1000);
+        return {
+          level: 'error',
+          text: this.$t('label.kds_connection_lost_long', {
+            m: m,
+            s: s
+          }),
+          iconBg: '#FFFFFF',
+          tag: 'OFFLINE'
+        };
+      }
+      if (this.listAtCap) {
+        return {
+          level: 'warning',
+          text: this.$t('label.kds_order_list_full_warning', {
+            n: this.nearCap
+          }),
+          iconBg: '#F59E0B',
+          tag: 'CAP · MAX'
+        };
+      }
+      if (this.nearCap >= 200) {
+        return {
+          level: 'warning',
+          text: this.$t('label.kds_order_cap_warning', {
+            n: this.nearCap
+          }),
+          iconBg: '#F59E0B',
+          tag: 'CAP · WARN'
+        };
+      }
+      if (this.fallbackMode) {
+        return {
+          level: 'warning',
+          text: this.$t('label.kds_fallback_banner'),
+          iconBg: '#F59E0B',
+          tag: 'SYNC · LOCAL'
+        };
+      }
+      if (this.adminPollingHint) {
+        return {
+          level: 'info',
+          text: this.$t('label.kds_admin_polling_hint'),
+          iconBg: '#3B82F6',
+          tag: 'SYNC · ADMIN'
+        };
+      }
+      if (this.bumpLocalOnlyNotice) {
+        return {
+          level: 'neutral',
+          text: this.$t('label.kds_bump_local_only_notice'),
+          iconBg: '#9CA3AF',
+          tag: 'LOCAL'
+        };
+      }
+      return null;
+    }
+  }
+});
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=script&lang=js"
+/*!*******************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=script&lang=js ***!
+  \*******************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _KdsOrderCard_vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./KdsOrderCard.vue */ "./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue");
+/* harmony import */ var _KdsStatusBanner_vue__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./KdsStatusBanner.vue */ "./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue");
+/* harmony import */ var _helpers_kdsDisplay_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../../helpers/kdsDisplay.js */ "./resources/js/helpers/kdsDisplay.js");
+/* harmony import */ var _helpers_kdsAutoTransition_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../helpers/kdsAutoTransition.js */ "./resources/js/helpers/kdsAutoTransition.js");
+/* harmony import */ var _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../../helpers/kdsState.js */ "./resources/js/helpers/kdsState.js");
+function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+
+
+// [Wave V 2026-05-21] KdsUndoToast import removed — see template comment.
+// File kept on disk for instant rollback (git revert single commit restores).
+
+
+
+var _SHORTCUTS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'KdsV2Grid',
+  components: {
+    KdsOrderCard: _KdsOrderCard_vue__WEBPACK_IMPORTED_MODULE_0__["default"],
+    KdsStatusBanner: _KdsStatusBanner_vue__WEBPACK_IMPORTED_MODULE_1__["default"]
+  },
+  props: {
+    orders: {
+      type: Array,
+      "default": function _default() {
+        return [];
+      }
+    },
+    dir: {
+      type: String,
+      "default": 'ltr'
+    },
+    offlineSince: {
+      type: Number,
+      "default": null
+    },
+    listAtCap: {
+      type: Boolean,
+      "default": false
+    },
+    fallbackMode: {
+      type: Boolean,
+      "default": false
+    },
+    adminPollingHint: {
+      type: Boolean,
+      "default": false
+    },
+    bumpLocalOnlyNotice: {
+      type: Boolean,
+      "default": false
+    },
+    // [Wave Q-2 2026-05-20] Default OFF. Owner override of the RESEARCH §4.3
+    // single-chef auto-promote heuristic: cashier needs a consistent
+    // CONFIRMÉE → EN PRÉPARATION → PRÊT flow across all tickets so the POS
+    // suivi screen stays predictable. The parent KitchenDisplaySystemComponent
+    // also pins `v2AutoTransitionEnabled = false` so this stays off
+    // independently of the prop default for any caller that omits the binding.
+    autoTransitionEnabled: {
+      type: Boolean,
+      "default": false
+    },
+    // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+    // Ids of orders that are currently in the RAPPELÉ window (60s after a
+    // chef "Annuler bump" click). Populated by the orchestrator from
+    // `kdsRecalledMap` + the 60s TTL. Each card cross-references this list
+    // to decide whether to render the RAPPELÉ badge overlay.
+    recallActiveIds: {
+      type: Array,
+      "default": function _default() {
+        return [];
+      }
+    }
+  },
+  emits: ['change-status', 'auto-promote', 'reprint'],
+  data: function data() {
+    return {
+      now: Date.now(),
+      tickerId: null,
+      // [Wave V 2026-05-21] activeToast + pendingTimeoutId removed — the
+      // pending bump queue is gone (immediate PATCH). aria-live message
+      // is still emitted via `liveMessage` so screen-reader announcements
+      // remain functional.
+      liveMessage: ''
+    };
+  },
+  computed: {
+    SHORTCUTS: function SHORTCUTS() {
+      return _SHORTCUTS;
+    },
+    // FIFO: oldest first, then by id for stable ties. Includes ALL statuses
+    // the backend feed exposes (ACCEPT + PREPARING + PREPARED) so derived
+    // computeds (activeOrders, recentlyServed) can partition without
+    // re-fetching. Kept as the single sort surface for parity with
+    // pre-Wave-U behavior. Auto-transition watcher and keyboard shortcut
+    // now read activeOrders only — PREPARED orders no longer occupy a
+    // grid slot.
+    visibleOrders: function visibleOrders() {
+      var arr = Array.isArray(this.orders) ? _toConsumableArray(this.orders) : [];
+      arr.sort(function (a, b) {
+        // [#15] Guard against NaN from an unparseable created_at: a NaN
+        // comparator return is treated as 0 by sort, producing unstable
+        // order and bypassing the id tiebreak. Coerce non-finite to
+        // +Infinity (unknown-created sorts last, deterministically).
+        var ra = (0,_helpers_kdsDisplay_js__WEBPACK_IMPORTED_MODULE_2__.parseOrderCreatedMs)(a);
+        var rb = (0,_helpers_kdsDisplay_js__WEBPACK_IMPORTED_MODULE_2__.parseOrderCreatedMs)(b);
+        var ta = Number.isFinite(ra) ? ra : Infinity;
+        var tb = Number.isFinite(rb) ? rb : Infinity;
+        if (ta !== tb) {
+          return ta - tb;
+        }
+        return (parseInt(a === null || a === void 0 ? void 0 : a.id, 10) || 0) - (parseInt(b === null || b === void 0 ? void 0 : b.id, 10) || 0);
+      });
+      return arr;
+    },
+    // [Wave U 2026-05-21] Active grid orders = ACCEPT (4) + PREPARING (7) only.
+    // PREPARED (8) leaves the FIFO grid (was lingering greyed via
+    // kds-card--ready opacity:0.7 with timer still ticking — owner-reported bug).
+    //
+    // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+    // PREPARED orders whose id appears in `recallActiveIds` (i.e. inside the
+    // 60s post-recall window) are RE-INJECTED into the grid so the chef
+    // sees the card with the RAPPELÉ badge alongside the live work. After
+    // 60s the orchestrator drops the id from the prop and the card slides
+    // back to the "Récemment servies" strip via the existing partitioning.
+    activeOrders: function activeOrders() {
+      var recallIds = new Set(Array.isArray(this.recallActiveIds) ? this.recallActiveIds : []);
+      return this.visibleOrders.filter(function (o) {
+        var _o$status;
+        var s = parseInt((_o$status = o === null || o === void 0 ? void 0 : o.status) !== null && _o$status !== void 0 ? _o$status : o === null || o === void 0 ? void 0 : o.rawStatus, 10);
+        if (s === _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_4__.ORDER_STATUS.ACCEPT || s === _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_4__.ORDER_STATUS.PREPARING) {
+          return true;
+        }
+        if (s === _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_4__.ORDER_STATUS.PREPARED && recallIds.has(o === null || o === void 0 ? void 0 : o.id)) {
+          return true;
+        }
+        return false;
+      });
+    },
+    // [Wave U 2026-05-21] Récemment servies — last 4 PREPARED orders by
+    // updated_at desc (updated_at = moment of the PREPARING→PREPARED PATCH
+    // applied server-side, matches "il y a X min depuis Prêt" semantics).
+    // Backend feed still returns PREPARED orders until OSS/POS flips them
+    // to DELIVERED, so this list naturally compacts as orders are picked up.
+    recentlyServed: function recentlyServed() {
+      // [P3 2026-06-26 served-age-clamp] "Récemment servies" must show only the
+      // genuinely-recent. Advance PREPARED orders (is_advance_order) linger in the
+      // TODAY feed for days, so without an age cap they bubble to the top of this
+      // strip and render "il y a 9601 min" (~6.6j). Cap at 8h so the strip reflects
+      // real recent pickups; reads `now` reactively so pills age out live.
+      var maxAgeMs = 8 * 60 * 60 * 1000;
+      var nowTs = this.now || Date.parse(new Date().toISOString());
+      var prepared = this.visibleOrders.filter(function (o) {
+        var _o$status2;
+        var s = parseInt((_o$status2 = o === null || o === void 0 ? void 0 : o.status) !== null && _o$status2 !== void 0 ? _o$status2 : o === null || o === void 0 ? void 0 : o.rawStatus, 10);
+        if (s !== _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_4__.ORDER_STATUS.PREPARED) {
+          return false;
+        }
+        var stamp = Date.parse((o === null || o === void 0 ? void 0 : o.updated_at) || '') || 0;
+        return stamp > 0 && nowTs - stamp <= maxAgeMs;
+      });
+      prepared.sort(function (a, b) {
+        var ta = Date.parse((a === null || a === void 0 ? void 0 : a.updated_at) || '') || 0;
+        var tb = Date.parse((b === null || b === void 0 ? void 0 : b.updated_at) || '') || 0;
+        return tb - ta;
+      });
+      return prepared.slice(0, 4);
+    },
+    // [KDS-3CARDS 2026-07-05] Owner : 3 commandes MAX affichées à la fois, chacune plein
+    // écran (grande + lisible). Les commandes 4+ attendent (FIFO préservé) et sont
+    // signalées par la pastille « +N en attente » → le chef sait qu'il y a du backlog
+    // sans que les cartes du bas soient écrasées/illisibles.
+    visibleActiveOrders: function visibleActiveOrders() {
+      return this.activeOrders.slice(0, 3);
+    },
+    overflowActiveCount: function overflowActiveCount() {
+      return Math.max(0, this.activeOrders.length - 3);
+    }
+  },
+  watch: {
+    // Auto-transition watcher: when the queue updates AND no order is in
+    // PREPARING AND there's a NEW order at the head, promote it.
+    // [Wave U 2026-05-21] Switched from visibleOrders → activeOrders so the
+    // candidate picker never sees PREPARED tickets (which are excluded from
+    // the rendered grid).
+    activeOrders: {
+      handler: function handler(newQ) {
+        if (!this.autoTransitionEnabled) {
+          return;
+        }
+        var candidate = (0,_helpers_kdsAutoTransition_js__WEBPACK_IMPORTED_MODULE_3__.pickOldestAutoPromoteCandidate)(newQ);
+        if (candidate && (0,_helpers_kdsAutoTransition_js__WEBPACK_IMPORTED_MODULE_3__.shouldAutoTransition)(candidate, newQ, true)) {
+          // Emit so the orchestrator can dispatch the PATCH through
+          // the existing store action — no duplicate axios pathway.
+          this.$emit('auto-promote', candidate.id);
+          this.liveMessage = this.$t('label.kds_aria_live_preparing', {
+            id: candidate.queue_number || candidate.id
+          });
+        }
+      },
+      deep: false
+    }
+  },
+  mounted: function mounted() {
+    var _this = this;
+    // Single global ticker — all cards read `this.now` reactively, no
+    // per-card setInterval.
+    this.tickerId = window.setInterval(function () {
+      _this.now = Date.now();
+    }, 1000);
+    window.addEventListener('keydown', this.onKey);
+  },
+  beforeUnmount: function beforeUnmount() {
+    if (this.tickerId) {
+      window.clearInterval(this.tickerId);
+      this.tickerId = null;
+    }
+    // [Wave V 2026-05-21] No pendingTimeoutId to clean — onCtaTap fires
+    // synchronously, no in-flight setTimeout owned by this component.
+    window.removeEventListener('keydown', this.onKey);
+  },
+  methods: {
+    onKey: function onKey(e) {
+      // [A]–[H] bumps the nth slot. Enter/Esc handled by KdsOrderCard.
+      // [Wave U 2026-05-21] Index against activeOrders (the rendered list)
+      // so the shortcut letter matches the on-card [A]–[H] badge after
+      // PREPARED orders are partitioned out of the grid.
+      var idx = _SHORTCUTS.indexOf(String(e.key || '').toUpperCase());
+      if (idx >= 0 && idx < this.activeOrders.length) {
+        var o = this.activeOrders[idx];
+        if (o) {
+          // [GOAL-2026-05-30 D1 — OWNER REVERSAL of Wave S-2] Cash-pending orders
+          // MAY now be bumped (kitchen prepares before encashment); the [A]–[H]
+          // shortcut no longer skips them — it matches the now-always-present CTA.
+          // The "non encaissé" note stays visible on the card (KdsOrderCard).
+          e.preventDefault();
+          this.onCtaTap(o.id, o.queue_number);
+        }
+      }
+    },
+    // [Wave V 2026-05-21 P-OWNER] Chef taps Prêt → IMMEDIATE PATCH dispatch.
+    //
+    // Previous design (Wave Q-2 2026-05-20): optimistic toast 3s window
+    // → PATCH after timer expired. The single-slot serialization (a
+    // shared `pendingTimeoutId`) cancelled any in-flight pending bump
+    // whenever the chef clicked Prêt on a SECOND order within 3s. Net
+    // effect when chef chained 3 tickets back-to-back:
+    //   t=0    click A → pending(A), timer A
+    //   t=500  click B → clearTimeout(A), pending(B), timer B
+    //   t=1000 click C → clearTimeout(B), pending(C), timer C
+    //   t=3000+timer C fires → only C transitions; A & B never PATCHed.
+    // Chef saw A & B still in queue, re-clicked → server pipeline kept
+    // up with the natural cadence (no race when individual clicks),
+    // but UX read "trop de requêtes, réessayer dans 30s" toast because
+    // bootstrap.js maps any incidental 429 from upstream paths to the
+    // generic rate-limited copy.
+    //
+    // Owner mandate: "enlève cette sécurité — je veux valider 3 commandes
+    // en même temps, puis 3 commandes livrées." So we remove the 3s
+    // undo window entirely. Each tap fires a PATCH immediately with
+    // its own X-Idempotency-Key (UUID v4 generated by
+    // buildIdempotencyHeaders), and the backend OrderStateMachine
+    // serialises per-order via lockForUpdate — concurrent PATCHes on
+    // DIFFERENT orders are fully independent. Duplicate PATCH on the
+    // SAME order returns 409 (idempotency conflict OR state machine
+    // InvalidTransition) and is silently swallowed by
+    // KitchenDisplaySystemComponent::onV2ChangeStatus → refresh.
+    //
+    // Step-ladder logic preserved from Wave Q-2: a single tap on a
+    // CONFIRMÉE (ACCEPT=4) ticket advances to EN PRÉPARATION (PREPARING=7);
+    // a second tap advances to PRÊT (PREPARED=8). Matches the server
+    // `OrderStateMachine::allows` rule and the legacy `kdsBump` step
+    // ladder in KitchenDisplaySystemComponent.vue:1716-1728.
+    onCtaTap: function onCtaTap(orderId, queueNo) {
+      var _order$status;
+      var order = this.activeOrders.find(function (o) {
+        return o.id === orderId;
+      });
+      if (!order) {
+        return;
+      }
+      var currentStatus = parseInt((_order$status = order === null || order === void 0 ? void 0 : order.status) !== null && _order$status !== void 0 ? _order$status : order === null || order === void 0 ? void 0 : order.rawStatus, 10);
+      var nextStatus = currentStatus === _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_4__.ORDER_STATUS.ACCEPT ? _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_4__.ORDER_STATUS.PREPARING : _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_4__.ORDER_STATUS.PREPARED;
+      var isFinalStep = nextStatus === _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_4__.ORDER_STATUS.PREPARED;
+
+      // Fire PATCH immediately — no 3s wait, no single-slot serialization.
+      this.$emit('change-status', {
+        orderId: orderId,
+        status: nextStatus
+      });
+
+      // a11y: announce the transition for screen readers via the
+      // existing sr-only aria-live="polite" region. No visual toast.
+      this.liveMessage = isFinalStep ? this.$t('label.kds_aria_live_ready', {
+        id: queueNo || orderId
+      }) : this.$t('label.kds_aria_live_preparing', {
+        id: queueNo || orderId
+      });
+    },
+    // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+    // True if the order is in the RAPPELÉ window (passed down from the
+    // orchestrator via `recallActiveIds`). KdsOrderCard renders the badge
+    // overlay accordingly.
+    isRecallActive: function isRecallActive(order) {
+      if (!order || !Array.isArray(this.recallActiveIds)) {
+        return false;
+      }
+      return this.recallActiveIds.includes(order.id);
+    },
+    // [Wave U 2026-05-21] Compact "il y a Xm" relative label for the
+    // recently-served strip. Reads `now` reactively so each pill updates
+    // every second alongside the active card timers (no per-pill setInterval).
+    servedAgoLabel: function servedAgoLabel(o) {
+      var stamp = Date.parse((o === null || o === void 0 ? void 0 : o.updated_at) || '') || 0;
+      if (!stamp) {
+        return '';
+      }
+      var diffSec = Math.max(0, Math.floor((this.now - stamp) / 1000));
+      if (diffSec < 60) {
+        return this.$t('label.kds_served_just_now');
+      }
+      var mins = Math.floor(diffSec / 60);
+      return this.$t('label.kds_served_ago', {
+        mins: mins
+      });
+    }
+  }
+});
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue?vue&type=script&lang=js"
+/*!***************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue?vue&type=script&lang=js ***!
+  \***************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _components_LoadingComponent_vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../components/LoadingComponent.vue */ "./resources/js/components/admin/components/LoadingComponent.vue");
+/* harmony import */ var _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../../enums/modules/orderTypeEnum */ "./resources/js/enums/modules/orderTypeEnum.js");
+/* harmony import */ var _enums_modules_statusEnum__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../../enums/modules/statusEnum */ "./resources/js/enums/modules/statusEnum.js");
+/* harmony import */ var _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../enums/modules/orderStatusEnum */ "./resources/js/enums/modules/orderStatusEnum.js");
+/* harmony import */ var _enums_modules_paymentStatusEnum__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../../enums/modules/paymentStatusEnum */ "./resources/js/enums/modules/paymentStatusEnum.js");
+/* harmony import */ var _enums_modules_askEnum__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../../../enums/modules/askEnum */ "./resources/js/enums/modules/askEnum.js");
+/* harmony import */ var _enums_modules_displayModeEnum__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../../../enums/modules/displayModeEnum */ "./resources/js/enums/modules/displayModeEnum.js");
+/* harmony import */ var _services_alertService__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../../../services/alertService */ "./resources/js/services/alertService.js");
+/* harmony import */ var _services_appService__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../../../services/appService */ "./resources/js/services/appService.js");
+/* harmony import */ var _services_eventContract__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ../../../services/eventContract */ "./resources/js/services/eventContract.js");
+/* harmony import */ var _services_KdsSyncService__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ../../../services/KdsSyncService */ "./resources/js/services/KdsSyncService.js");
+/* harmony import */ var swiper_vue__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! swiper/vue */ "./node_modules/swiper/swiper-vue.mjs");
+/* harmony import */ var _common_ConnectionStatusBanner_vue__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ../../common/ConnectionStatusBanner.vue */ "./resources/js/components/common/ConnectionStatusBanner.vue");
+/* harmony import */ var _store_modules_kds__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! ../../../store/modules/kds */ "./resources/js/store/modules/kds.js");
+/* harmony import */ var _helpers_kdsDisplay__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! ../../../helpers/kdsDisplay */ "./resources/js/helpers/kdsDisplay.js");
+/* harmony import */ var _helpers_kdsLineSemantics__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! ../../../helpers/kdsLineSemantics */ "./resources/js/helpers/kdsLineSemantics.js");
+/* harmony import */ var _helpers_kdsAllergens__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(/*! ../../../helpers/kdsAllergens */ "./resources/js/helpers/kdsAllergens.js");
+/* harmony import */ var _helpers_kdsState__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(/*! ../../../helpers/kdsState */ "./resources/js/helpers/kdsState.js");
+/* harmony import */ var _helpers_kdsCustomization__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(/*! ../../../helpers/kdsCustomization */ "./resources/js/helpers/kdsCustomization.js");
+/* harmony import */ var _helpers_kdsFreshness__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(/*! ../../../helpers/kdsFreshness */ "./resources/js/helpers/kdsFreshness.js");
+/* harmony import */ var _helpers_phoneDisplay__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(/*! ../../../helpers/phoneDisplay */ "./resources/js/helpers/phoneDisplay.js");
+/* harmony import */ var _helpers_kitchenLocalPrinter__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(/*! ../../../helpers/kitchenLocalPrinter */ "./resources/js/helpers/kitchenLocalPrinter.js");
+/* harmony import */ var _KdsV2Grid_vue__WEBPACK_IMPORTED_MODULE_22__ = __webpack_require__(/*! ./KdsV2Grid.vue */ "./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue");
+/* harmony import */ var _KdsHistoryDrawer_vue__WEBPACK_IMPORTED_MODULE_23__ = __webpack_require__(/*! ./KdsHistoryDrawer.vue */ "./resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue");
+/* harmony import */ var _shared_AvailabilityTogglePanel_vue__WEBPACK_IMPORTED_MODULE_24__ = __webpack_require__(/*! ../shared/AvailabilityTogglePanel.vue */ "./resources/js/components/admin/shared/AvailabilityTogglePanel.vue");
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
+function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// [POS-WIZARD-COMPO-AUDIT 2026-06-23 P2-B] Shape-agnostic GROUP:VALUE render so
+// snapshot-shaped composition lines (attribute_name=GROUP / variation_name=VALUE)
+// no longer invert on the KDS order-cards + kitchen ticket. Legacy items-board
+// shape stays correct through the same helper.
+
+
+// [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT — mirrors App\Support\PhoneDisplay::safe
+
+// [KITCHEN-BRIDGE 2026-07-09] Auto-impression SILENCIEUSE du ticket cuisine via le
+// pont local (miroir du pont caisse). Dé-dup persistée localStorage (jamais 2× le
+// même ticket au refresh/reconnexion). Best-effort : pont éteint = jamais bloquant.
+
+// [KITCHEN-PRINT-RESILIENCE 2026-07-13] Cadence du retry auto des tickets cuisine
+// en échec (pont/imprimante injoignable). Quand le pont revient, les tickets manqués
+// SORTENT tout seuls sans intervention.
+var KITCHEN_PRINT_RETRY_MS = 20000;
+// [kds/sprint-2 V-5] V2 layout components — feature-flagged single FIFO 4×2 grid.
+
+// [Wave X3 2026-05-21] KDS Historique du jour — read-only day-history drawer.
+
+// [GOAL RUPTURE-CARNET 2026-07-15 / W3] Panel rupture (86) partagé caisse+cuisine.
+
+
+// [Phase-7 / T13–T14] Fil cuisine : stations, filtre, bump / statut, timers
+// d’attente (kdsDisplay), son — ne pas mélanger avec de la logique de caisse
+// OrderService ici (GATE plan). Polling 5s si WS down.
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: "KitchenDisplaySystemComponent",
+  components: {
+    ConnectionStatusBanner: _common_ConnectionStatusBanner_vue__WEBPACK_IMPORTED_MODULE_12__["default"],
+    LoadingComponent: _components_LoadingComponent_vue__WEBPACK_IMPORTED_MODULE_0__["default"],
+    Swiper: swiper_vue__WEBPACK_IMPORTED_MODULE_11__.Swiper,
+    SwiperSlide: swiper_vue__WEBPACK_IMPORTED_MODULE_11__.SwiperSlide,
+    KdsV2Grid: _KdsV2Grid_vue__WEBPACK_IMPORTED_MODULE_22__["default"],
+    KdsHistoryDrawer: _KdsHistoryDrawer_vue__WEBPACK_IMPORTED_MODULE_23__["default"],
+    // [GOAL RUPTURE-CARNET 2026-07-15 / W3] Rupture produits (86) cuisine.
+    AvailabilityTogglePanel: _shared_AvailabilityTogglePanel_vue__WEBPACK_IMPORTED_MODULE_24__["default"]
+  },
+  data: function data() {
+    var _window$_wsService;
+    return {
+      loading: {
+        isActive: false
+      },
+      // [GOAL RUPTURE-CARNET 2026-07-15 / W3] Panel rupture produits (86).
+      showAvailabilityPanel: false,
+      props: {
+        search: {
+          paginate: 0,
+          order_column: "id",
+          order_by: "desc",
+          order_serial_no: "",
+          status: ""
+        }
+      },
+      dineinOrders: [],
+      onlineOrders: [],
+      takeawayOrders: [],
+      kioskOrders: [],
+      enums: {
+        statusEnum: _enums_modules_statusEnum__WEBPACK_IMPORTED_MODULE_2__["default"],
+        orderTypeEnum: _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_1__["default"],
+        orderStatusEnum: _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_3__["default"],
+        paymentStatusEnum: _enums_modules_paymentStatusEnum__WEBPACK_IMPORTED_MODULE_4__["default"],
+        askEnum: _enums_modules_askEnum__WEBPACK_IMPORTED_MODULE_5__["default"]
+      },
+      autoRefreshInterval: null,
+      wsConnected: !!((_window$_wsService = window._wsService) !== null && _window$_wsService !== void 0 && _window$_wsService.isConnected()),
+      _eventSub: null,
+      // [F-02] Order ids that just had their dining-table changed; cards in this
+      // set get a 2s CSS flash so the kitchen notices the table moved (gate G-2:
+      // in_place_with_css_flash — never re-print, never play a sound).
+      flashTableChangeIds: {},
+      _tableFlashTimers: {},
+      stationFilter: "all",
+      groupByTable: false,
+      soundEnabled: true,
+      soundVolume: 80,
+      // [KITCHEN-BRIDGE 2026-07-09] Toggle impression cuisine auto (défaut ON, owner).
+      autoPrintKitchen: true,
+      // Garde de seed du backlog (une seule fois par montage) — évite la ré-impression
+      // massive des commandes déjà présentes au 1er chargement / reconnexion.
+      _kitchenBacklogSeeded: false,
+      // [KITCHEN-PRINT-RESILIENCE 2026-07-13] Ids (String) des commandes dont le ticket
+      // cuisine a ÉCHOUÉ (pont/imprimante injoignable) → réactif : alimente le badge
+      // d'échec + la boucle de retry. Un id sort d'ici dès qu'il est imprimé (succès
+      // direct ou retry) ou que sa commande disparaît du board.
+      _kitchenFailedPrint: [],
+      // Garde in-flight (mémoire, non persistée) : bloque le double-envoi d'un même
+      // ticket pendant l'await (burst WS ou chevauchement watch/retry).
+      _kitchenInFlight: new Set(),
+      // Interval du retry auto des tickets en échec (nettoyé en beforeUnmount).
+      _kitchenRetryInterval: null,
+      /** forces border timer class recompute (orange → red) */
+      waitTick: 0,
+      expandedTableGroups: {},
+      _kdsWaitInterval: null,
+      _kdsOrdersHydrated: false,
+      // [iter15-mega-fix C-017 2026-05-10] Axios response interceptor id for
+      // KDS change-status self-heal (see mounted/beforeUnmount).
+      _kdsStatusInterceptorId: null,
+      kdsHideBumpInfo: false,
+      // [F-03 / Lot 1.C] Adaptive polling fallback metadata: keep listener
+      // unsubscribers and the per-second tick used to update the "Synchronized
+      // Xs ago" badge. The KdsSyncService itself manages cadence based on
+      // wsService state — we only consume its `sync` events here.
+      kdsSyncUnsubscribers: [],
+      syncNowTick: Date.now(),
+      _kdsSyncStampTimer: null,
+      // [CLUSTER-4 P2 2026-07-11] Timestamp (epoch-ms) of the last SUCCESSFUL
+      // board hydrate — Echo broadcast, fallback poll, or list(). Stamped in
+      // _applyOrderBuckets. Distinct from wsConnected (socket state, which lies
+      // about data freshness when the queue worker dies but soketi stays up).
+      // null until the first successful refresh. Combined with the sync-service
+      // poll clock (kdsSyncService.lastSyncAt) to drive the freshness badge.
+      lastDataFreshAt: null,
+      // [Lot 2.I / G-4] Non-blocking allergens modal state. Opened from the
+      // ⚠ Allergens badge on each order-card. Purely informational — does NOT
+      // gate kdsBump / kdsRecall / orderStatus / printKitchenTicket.
+      allergensModal: {
+        open: false,
+        order: null
+      },
+      // [Audit 2.I F-02] element to return focus to when modal closes (badge / background).
+      allergenModalReturnFocus: null,
+      // [Lot 2.C / F-07] Throttle new-order chime when many orders land at once.
+      _kdsLastNewOrderSoundAt: 0,
+      kdsOverflowDetected: false,
+      // [Wave X3 2026-05-21] KDS Historique du jour drawer — open state.
+      historyDrawerOpen: false,
+      // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+      // Local cache of orders recalled by this branch in the last 60s. Populated
+      // by the @recalled emit from KdsHistoryDrawer (the chef who clicked) AND
+      // by the `KdsOrderRecalled` Echo handler (other stations of the same branch).
+      // KdsV2Grid reads `recallActiveIds` (a computed array of currently-active
+      // ids) and applies the RAPPELÉ badge accordingly. Entries auto-expire 60s
+      // after `recalledAt` via the computed (no setInterval needed — the global
+      // `now` ticker in KdsV2Grid drives reactivity downstream).
+      kdsRecalledMap: {},
+      // Companion ticker for the 60s recall TTL — independent of the grid's
+      // own ticker so this component can compute `recallActiveIds` without
+      // reading into the child. Cleared in beforeUnmount.
+      _kdsRecallNow: Date.now(),
+      _kdsRecallTickerId: null,
+      // [CV1-KDS-A11Y-RICH-001] Polite aria-live message that announces
+      // ACCEPT → PREPARING → PREPARED transitions to assistive technology.
+      // Updated by `kdsAnnounceTransition`; rendered in the dedicated
+      // `<div role="status" aria-live="polite">` outside the cards.
+      kdsAriaLiveMessage: '',
+      // [test-e2e round-2 cluster-1 C-001 2026-05-10] Persistent error banner
+      // shown when /api/admin/kds-order returns 5xx (or any failure that
+      // would otherwise have raised an ephemeral toast). The previous
+      // alertService.error() Vue-Toastification toast faded within ~500ms
+      // bounce-leave animation; a kitchen operator at 1m+ glance never
+      // saw it. The banner stays visible until the next successful poll
+      // OR until the operator dismisses it manually.
+      kdsErrorBanner: {
+        visible: false,
+        message: '',
+        lastRetryAt: null
+      },
+      // [kds/sprint-2 V-5] Feature-flag scaffolding for the V2 single-FIFO grid.
+      // Owner GO confirmed 2026-05-11. Activation:
+      //   - URL `?v2=1` (per-session preview)
+      //   - localStorage `kds.v2_enabled` = '1' (per-device opt-in)
+      // [Wave Q-2 2026-05-20] Auto-transition forced OFF. Owner override of the
+      // RESEARCH §4.3 single-chef heuristic: when two paid tickets land, the
+      // first auto-promoted to PREPARING and the second stayed in ACCEPT,
+      // creating an inconsistent suivi page (one in PRÉPARATION, one in
+      // CONFIRMÉE). Owner expects ALL tickets to follow CONFIRMÉE → EN
+      // PRÉPARATION → PRÊT under explicit chef action. The chef now taps Prêt
+      // twice on a fresh ticket (advance, then ready) — single-step ladder
+      // matches the server `OrderStateMachine::allows` rule.
+      v2OfflineSince: null,
+      v2AutoTransitionEnabled: false
+    };
+  },
+  computed: {
+    direction: function direction() {
+      return this.$store.getters['frontendLanguage/show'].display_mode === _enums_modules_displayModeEnum__WEBPACK_IMPORTED_MODULE_6__["default"].RTL ? 'rtl' : 'ltr';
+    },
+    // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+    // Currently-active recall ids (RAPPELÉ badge window still open). Derived
+    // from `kdsRecalledMap` + the 60s TTL using `_kdsRecallNow` so the badge
+    // auto-disappears at expiry without an explicit cleanup pass. Passed down
+    // to `KdsV2Grid` via `recall-active-ids` and to the legacy 4-col layout
+    // via the same prop.
+    recallActiveIds: function recallActiveIds() {
+      var ttlMs = 60 * 1000;
+      var now = this._kdsRecallNow;
+      var ids = [];
+      var map = this.kdsRecalledMap || {};
+      for (var _i = 0, _Object$keys = Object.keys(map); _i < _Object$keys.length; _i++) {
+        var key = _Object$keys[_i];
+        var at = map[key];
+        if (typeof at === 'number' && now - at < ttlMs) {
+          ids.push(parseInt(key, 10));
+        }
+      }
+      return ids;
+    },
+    // [kds/sprint-2 V-5 / Sprint 3C 2026-05-16 / Sprint H4 Z3-NEW-006 2026-05-17]
+    // V2 layout = PRODUCTION DEFAULT since 2026-05-16. The original gated rollout
+    // (default false, ?v2=1 opt-in) left the V2 P0 fixes (consolidated banner,
+    // fixed-height card, allergen pill, age stripe, single-FIFO grid) inert in
+    // production — kitchen still saw the legacy 4-column UI with the
+    // accordion-closed-by-default bug + 5 stacked banners eating ~10% screen height.
+    //
+    // Order of precedence (Z3-NEW-006 added the org config layer so operators
+    // can rollback the whole org via KDS_V2_DEFAULT_ENABLED=false in .env
+    // instead of per-tab localStorage flipping each device):
+    //   1. URL param ?v2=0           — emergency rollback to legacy (per-tab)
+    //   2. URL param ?v2=1           — explicit V2 (per-tab)
+    //   3. localStorage kds.v2_enabled === '0' — per-device legacy opt-out
+    //   4. localStorage kds.v2_enabled === '1' — per-device V2 force-on (legacy)
+    //   5. window.FK_KDS_V2_DEFAULT_ENABLED — org config (Blade-injected from
+    //      config('kds.v2_default_enabled') / KDS_V2_DEFAULT_ENABLED env)
+    //   6. Default true              — V2 (Wave Z 5C rollout default)
+    //
+    // The legacy 4-column path remains intact in the v-else branch so
+    // operators in the kitchen can revert in one URL keystroke if a
+    // regression surfaces during the rollout window.
+    useV2Layout: function useV2Layout() {
+      try {
+        var _window$localStorage;
+        if (typeof window === 'undefined') {
+          // SSR or unit tests without window: default to V2 unchanged.
+          return true;
+        }
+        var params = new URLSearchParams(window.location.search || '');
+        var urlV2 = params.get('v2');
+        if (urlV2 === '0') {
+          return false;
+        }
+        if (urlV2 === '1') {
+          return true;
+        }
+        var stored = (_window$localStorage = window.localStorage) === null || _window$localStorage === void 0 ? void 0 : _window$localStorage.getItem('kds.v2_enabled');
+        if (stored === '0') {
+          return false;
+        }
+        if (stored === '1') {
+          return true;
+        }
+        // [Z3-NEW-006] Org-wide config layer between localStorage and hardcoded
+        // fallback. Lets ops flip KDS_V2_DEFAULT_ENABLED=false in .env to
+        // rollback the whole fleet without touching each device.
+        if (typeof window.FK_KDS_V2_DEFAULT_ENABLED === 'boolean') {
+          return window.FK_KDS_V2_DEFAULT_ENABLED;
+        }
+        return true;
+      } catch (_e) {
+        // Fail-safe: if storage is denied, still render the modern UI.
+        return true;
+      }
+    },
+    // [PR-02 core-bulletproof 2026-06-04] Sync degradation must NEVER be silent
+    // (owner mandate "silencieux = grave"). The real Le Cayenne box runs
+    // APP_ENV=local, so the previous "hide whenever appEnv==='local'" gate left
+    // the kitchen with NO visual cue when soketi dropped to ~30-60s polling.
+    //
+    // FAIL-SAFE-TO-VISIBLE opt-out design (NOT opt-in): suppress the fallback
+    // banner ONLY when (a) we are in local dev AND (b) an explicit opt-out flag
+    // window.FK_KDS_SHOW_FALLBACK_BANNER === false is set. The box never sets
+    // the flag → it stays undefined → `=== false` is false → NOT suppressed →
+    // banner VISIBLE. A dev who wants silence (soketi intentionally off in dev)
+    // adds KDS_SHOW_FALLBACK_BANNER=false to .env. The dangerous state (silent
+    // degradation) is opt-out, never opt-in.
+    //
+    // Renamed from kdsHideFallbackBannerInLocalDev → kdsSuppressFallbackBanner:
+    // the old name implied "hide in local dev" which is no longer the contract.
+    //
+    // The `env === 'local'` check stays FIRST so && short-circuits before
+    // touching window.FK_* (SSR-safe). The catch falls back to `false`
+    // (fail-safe-to-visible). 'testing' is intentionally excluded (env !==
+    // 'local') so any CI suite using APP_ENV=testing always renders the banner.
+    //
+    // Config contract documented in config/kds.php ('show_fallback_banner',
+    // default true). NOTE: wiring the config through master.blade.php into
+    // window.FK_KDS_SHOW_FALLBACK_BANNER is deferred to avoid colliding with a
+    // parallel session editing master.blade.php — until then the box default
+    // (flag undefined → VISIBLE) already satisfies the mandate.
+    //
+    // Existing Playwright specs referencing data-testid="kds-sync-mode-banner"
+    // are unaffected: abuse-C-kds:369 toHaveCount(0) runs in V2 (legacy testid
+    // never mounts) AND with WS connected (v-if !wsConnected is false anyway);
+    // all other refs are OR-locators / soft .count() records.
+    kdsSuppressFallbackBanner: function kdsSuppressFallbackBanner() {
+      try {
+        var _window$foodkingConfi;
+        var env = typeof window !== 'undefined' && ((_window$foodkingConfi = window.foodkingConfig) === null || _window$foodkingConfi === void 0 ? void 0 : _window$foodkingConfi.appEnv) || '';
+        return env === 'local' && window.FK_KDS_SHOW_FALLBACK_BANNER === false;
+      } catch (_e) {
+        return false;
+      }
+    },
+    // [Wave T R1 F3 WT-B-R1-007 2026-05-20] Gate the "Compte central" polling
+    // hint on (a) admin/central role (branch_id<=0) AND (b) multi-branch
+    // install (branchCount>1). On single-branch installs like Le Cayenne the
+    // banner copy "Compte central (multi-succursales) : le flux en direct
+    // n'est pas abonné" is misleading — there is no multi-branch context AND
+    // the wording "n'est pas abonné" reads as a real-time sync failure to a
+    // chef. We hide the banner entirely when only one branch exists; the
+    // central admin still sees the standard sync stamp + fallback banner if
+    // the WS is actually down. branchCount is exposed by master.blade.php
+    // (cached 5min) so this is a zero-network check.
+    kdsIsCentralAdmin: function kdsIsCentralAdmin() {
+      var isCentralRole = this.authBranchId() <= 0;
+      if (!isCentralRole) {
+        return false;
+      }
+      try {
+        var _window$foodkingConfi2;
+        var count = parseInt(typeof window !== 'undefined' && ((_window$foodkingConfi2 = window.foodkingConfig) === null || _window$foodkingConfi2 === void 0 ? void 0 : _window$foodkingConfi2.branchCount) || 0, 10);
+        // Multi-branch install only — single-branch (or unknown count) hides.
+        return Number.isFinite(count) && count > 1;
+      } catch (_e) {
+        // Fail-safe: if config probe throws, do NOT show the misleading banner.
+        return false;
+      }
+    },
+    /** 45–49: backend plafond 50 — avertir avant d’atteindre la limite d’affichage */kdsOrderApproachingCap: function kdsOrderApproachingCap() {
+      var n = Array.isArray(this.orders) ? this.orders.length : 0;
+      return n >= 45 && n < 50;
+    },
+    /** Backend probed >50 active rows and returned the capped first page. */kdsOrderListAtCap: function kdsOrderListAtCap() {
+      return this.kdsOverflowDetected === true;
+    },
+    // [F-03 / Lot 1.C · CLUSTER-4 P2 2026-07-11] Unified data-freshness clock.
+    // The badge is fed by the FRESHEST of two successful-refresh clocks:
+    //   - this.lastDataFreshAt : board hydrated (Echo broadcast / poll / list)
+    //   - kdsSyncService.lastSyncAt : sync-service poll returned 200
+    // wsConnected (socket state) is deliberately NOT used: it stays "connected"
+    // when the queue worker dies, so it lies about data freshness. Touching
+    // this.syncNowTick makes this computed recompute every 1s AND re-read the
+    // non-reactive kdsSyncService.lastSyncAt.
+    kdsFreshnessBaseMs: function kdsFreshnessBaseMs() {
+      void this.syncNowTick; // 1s tick → recompute + re-read external clock
+      return (0,_helpers_kdsFreshness__WEBPACK_IMPORTED_MODULE_19__.freshnessBaseMs)({
+        lastDataFreshAt: this.lastDataFreshAt,
+        lastSyncAt: _services_KdsSyncService__WEBPACK_IMPORTED_MODULE_10__["default"].lastSyncAt
+      });
+    },
+    humanizedSyncAgo: function humanizedSyncAgo() {
+      return (0,_helpers_kdsFreshness__WEBPACK_IMPORTED_MODULE_19__.humanizeSyncAgo)(this.kdsFreshnessBaseMs, this.syncNowTick);
+    },
+    // [CLUSTER-4 P2] Hard-stall tier: no confirmed refresh for >75s (two missed
+    // 60s poll cycles). The board may be materially behind → say so explicitly
+    // instead of implying the data is live.
+    syncBadgeUncertain: function syncBadgeUncertain() {
+      return (0,_helpers_kdsFreshness__WEBPACK_IMPORTED_MODULE_19__.isSyncUncertain)(this.kdsFreshnessBaseMs, this.syncNowTick);
+    },
+    syncBadgeText: function syncBadgeText() {
+      if (this.syncBadgeUncertain) return this.$t("label.kds_sync_uncertain");
+      if (!this.humanizedSyncAgo) return this.$t("label.kds_sync_never");
+      return this.$t("label.kds_sync_stamp", {
+        ago: this.humanizedSyncAgo
+      });
+    },
+    syncBadgeIsStale: function syncBadgeIsStale() {
+      return (0,_helpers_kdsFreshness__WEBPACK_IMPORTED_MODULE_19__.isSyncStale)(this.kdsFreshnessBaseMs, this.syncNowTick);
+    },
+    orders: function orders() {
+      return this.$store.getters["kitchenDisplaySystemOrder/lists"];
+    },
+    // [KITCHEN-PRINT-RESILIENCE 2026-07-13] Nombre de tickets cuisine en échec —
+    // pilote le badge d'avertissement en en-tête KDS.
+    kitchenPrintFailedCount: function kitchenPrintFailedCount() {
+      return Array.isArray(this._kitchenFailedPrint) ? this._kitchenFailedPrint.length : 0;
+    },
+    orderItems: function orderItems() {
+      return this.$store.getters["kitchenDisplaySystemOrder/orderItems"];
+    },
+    filteredDineinOrders: function filteredDineinOrders() {
+      return (0,_helpers_kdsDisplay__WEBPACK_IMPORTED_MODULE_14__.filterOrdersByStation)(this.dineinOrders, this.stationFilter);
+    },
+    filteredOnlineOrders: function filteredOnlineOrders() {
+      return (0,_helpers_kdsDisplay__WEBPACK_IMPORTED_MODULE_14__.filterOrdersByStation)(this.onlineOrders, this.stationFilter);
+    },
+    filteredTakeawayOrders: function filteredTakeawayOrders() {
+      return (0,_helpers_kdsDisplay__WEBPACK_IMPORTED_MODULE_14__.filterOrdersByStation)(this.takeawayOrders, this.stationFilter);
+    },
+    filteredKioskOrders: function filteredKioskOrders() {
+      return (0,_helpers_kdsDisplay__WEBPACK_IMPORTED_MODULE_14__.filterOrdersByStation)(this.kioskOrders, this.stationFilter);
+    },
+    sortedFilteredDinein: function sortedFilteredDinein() {
+      var key = function key(o) {
+        return o.table_name && String(o.table_name).trim() || "—";
+      };
+      var rows = _toConsumableArray(this.filteredDineinOrders);
+      if (this.groupByTable) {
+        rows.sort(function (a, b) {
+          return key(a).localeCompare(key(b), undefined, {
+            sensitivity: "base"
+          });
+        });
+      }
+      return rows;
+    },
+    // [Lot 2.I / G-4] Items shown in the allergens modal. Backwards-compatible
+    // with both the new orderItems shape and the legacy order_items shape that
+    // some surfaces still emit.
+    allergensModalItems: function allergensModalItems() {
+      var order = this.allergensModal.order;
+      if (!order) return [];
+      return order.orderItems || order.order_items || [];
+    }
+  },
+  watch: {
+    orders: function orders(newVal, oldVal) {
+      if (!this._kdsOrdersHydrated || oldVal === undefined) {
+        return;
+      }
+      // [RED-R4 BLUE / KD5] ID-based diff (was length-based). Heure de pointe :
+      // 1 commande PREPARED sort du board pendant que 1 nouvelle ACCEPT entre →
+      // length stable → ancien check ratait le chime → commande oubliée.
+      var oldIds = new Set((oldVal || []).map(function (o) {
+        return o && o.id;
+      }));
+      var newOrders = (newVal || []).filter(function (o) {
+        return o && !oldIds.has(o.id);
+      });
+      if (newOrders.length > 0) {
+        this.playKdsNewOrderSound();
+        // [KITCHEN-BRIDGE 2026-07-09] Auto-impression cuisine, exactement 1× / commande.
+        this.autoPrintNewKitchenTickets(newOrders);
+      }
+    }
+  },
+  created: function created() {
+    try {
+      this.kdsHideBumpInfo = localStorage.getItem("kds.hide_bump_info") === "1";
+    } catch (e) {
+      this.kdsHideBumpInfo = false;
+    }
+    // [Lot 2.F / F-10] Per-user storage key; migrate from legacy kds.station_filter once.
+    var uid = this.kdsAuthUserId();
+    var sKey = (0,_helpers_kdsDisplay__WEBPACK_IMPORTED_MODULE_14__.kdsStationFilterStorageKey)(uid);
+    var sf = null;
+    try {
+      sf = localStorage.getItem(sKey);
+    } catch (e) {
+      sf = null;
+    }
+    if (sf == null && uid > 0) {
+      try {
+        var leg = localStorage.getItem("kds.station_filter");
+        if (leg === "all" || leg === "bar" || leg === "cuisine_chaude" || leg === "cuisine_froide") {
+          sf = leg;
+          localStorage.setItem(sKey, leg);
+        }
+      } catch (e) {
+        /* ignore */
+      }
+    }
+    if (sf == null) {
+      try {
+        sf = localStorage.getItem("kds.station_filter");
+      } catch (e) {
+        sf = null;
+      }
+    }
+    if (sf === "all" || sf === "bar" || sf === "cuisine_chaude" || sf === "cuisine_froide") {
+      this.stationFilter = sf;
+    }
+    var gb = localStorage.getItem("kds.group_by_table");
+    this.groupByTable = gb === "1" || gb === "true";
+    var se = localStorage.getItem("kds.sound_enabled");
+    this.soundEnabled = se !== "0" && se !== "false";
+    var sv = parseInt(localStorage.getItem("kds.sound_volume") || "80", 10);
+    this.soundVolume = Number.isFinite(sv) ? Math.min(100, Math.max(0, sv)) : 80;
+    // [KITCHEN-BRIDGE 2026-07-09] Toggle impression cuisine auto — défaut ACTIVÉ.
+    try {
+      var ap = localStorage.getItem("kds.autoPrint");
+      this.autoPrintKitchen = ap !== "0" && ap !== "false";
+    } catch (e) {
+      this.autoPrintKitchen = true;
+    }
+  },
+  mounted: function mounted() {
+    var _this = this;
+    this.closeSidebar();
+    // [KDS-A-01 2026-07-06] Le layout admin partagé `.db-main` est display:block →
+    // le `flex:1` de .kds-v2 (KdsV2Grid) était inerte et la grille ne prenait que la
+    // hauteur de son contenu au lieu du viewport (owner : 3 cartes PLEIN ÉCRAN en
+    // hauteur). Fix route-scoped, même pattern que `.expand` (OSS/POS) : on pose la
+    // classe `db-main--kds` (flex-column, cf. resources/css/app.css) uniquement quand
+    // le layout V2 est actif, et on la retire en beforeUnmount — zéro impact sur les
+    // autres pages admin.
+    if (this.useV2Layout) {
+      var _document;
+      (_document = document) === null || _document === void 0 || (_document = _document.querySelector('.db-main')) === null || _document === void 0 || (_document = _document.classList) === null || _document === void 0 || _document.add('db-main--kds');
+    }
+    this.refreshOrderList();
+    this.startAutoRefresh();
+    window.addEventListener('realtime-order-update', this.refreshOrderList);
+    this.subscribeEcho();
+    this._bindWsService();
+    // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+    // 1s ticker that drives `recallActiveIds` expiry. Independent of
+    // KdsV2Grid's own ticker so this orchestrator owns the SSOT for the
+    // RAPPELÉ-badge lifecycle.
+    this._kdsRecallTickerId = window.setInterval(function () {
+      _this._kdsRecallNow = Date.now();
+    }, 1000);
+    // [iter15-mega-fix C-017 2026-05-10] Self-heal the KDS surface when a
+    // status transition POST succeeds. Production case: Pusher dev WS dies,
+    // chef clicks "prêt", backend persists (202), but no broadcast → board
+    // lies. Test case (iter15-mega-kiosk-roundtrip Wave C state 09): test
+    // bypasses the Vue `orderStatus` method entirely, calling
+    // `window.axios.post('admin/kds-order/change-status/...')` directly,
+    // so the in-method `_debouncedRefresh()` never runs. A response
+    // interceptor catches BOTH paths : it fires on every successful KDS
+    // change-status POST regardless of caller (component method, raw axios,
+    // future tooling). On 2xx we trigger an immediate refresh — bypassing
+    // the 300ms debounce because this is a one-shot reaction, not a burst.
+    try {
+      var ax = typeof window !== 'undefined' && window.axios ? window.axios : null;
+      if (ax && ax.interceptors && ax.interceptors.response) {
+        this._kdsStatusInterceptorId = ax.interceptors.response.use(function (response) {
+          try {
+            var cfg = response && response.config;
+            if (cfg && /^post$/i.test(cfg.method || '') && typeof cfg.url === 'string' && cfg.url.indexOf('admin/kds-order/change-status/') !== -1 && response.status >= 200 && response.status < 300) {
+              // Direct refresh (no debounce) so the 09-kds-prete window
+              // (~1500ms in the spec) catches the transition. Echo+method
+              // paths still funnel through `_debouncedRefresh` elsewhere.
+              _this._refreshWithCurrentFilter();
+              _this.items();
+            }
+          } catch (_e) {/* defensive: never break the response chain */}
+          return response;
+        }, function (error) {
+          return Promise.reject(error);
+        });
+      }
+    } catch (_e) {/* defensive: interceptor is best-effort */}
+    this._kdsWaitInterval = setInterval(function () {
+      _this.waitTick += 1;
+    }, 30000);
+    // [F-03 / Lot 1.C] Adaptive polling fallback. Pauses automatically when
+    // wsService.state === 'CONNECTED'; accelerates when degraded; backoffs on
+    // 5xx. Safe to mount unconditionally — the service no-ops while WS is up.
+    this.kdsSyncUnsubscribers.push(_services_KdsSyncService__WEBPACK_IMPORTED_MODULE_10__["default"].on('sync', function (_ref) {
+      var _ref$gatedIds = _ref.gatedIds,
+        gatedIds = _ref$gatedIds === void 0 ? [] : _ref$gatedIds,
+        _ref$orders = _ref.orders,
+        orders = _ref$orders === void 0 ? [] : _ref$orders,
+        _ref$deleted_ids = _ref.deleted_ids,
+        deleted_ids = _ref$deleted_ids === void 0 ? [] : _ref$deleted_ids;
+      var hasFreshOrders = orders.some(function (o) {
+        return !gatedIds.includes(o.id);
+      });
+      var hasDeletes = (deleted_ids || []).length > 0;
+      _this.syncNowTick = Date.now();
+      if (hasFreshOrders || hasDeletes) {
+        _this._debouncedRefresh && _this._debouncedRefresh();
+      }
+    }));
+    this.kdsSyncUnsubscribers.push(_services_KdsSyncService__WEBPACK_IMPORTED_MODULE_10__["default"].on('error', function (info) {
+      _this.syncNowTick = Date.now();
+      // [HARDWARE-HARDENING 2026-07-03] Un 401/403 sur le poll sync NE se répare pas tout seul
+      // (permission web-guard manquante côté serveur — cf. AdminWebGuardPermissionsSyncSeeder) et
+      // laissait le tableau BLANC en SILENCE → le poste cuisine paraissait « planté » (mène à un
+      // faux diagnostic « bug WebSocket »). On rend l'échec BRUYANT : bannière claire + cause réelle.
+      var st = info && info.status;
+      if (st === 401 || st === 403) {
+        _this.kdsErrorBanner = {
+          visible: true,
+          message: _this.$t('message.kds_sync_forbidden'),
+          lastRetryAt: null
+        };
+      }
+    }));
+    try {
+      _services_KdsSyncService__WEBPACK_IMPORTED_MODULE_10__["default"].start(this.authBranchId());
+    } catch (e) {/* defensive: never break KDS mount because of poller */}
+    this._kdsSyncStampTimer = setInterval(function () {
+      _this.syncNowTick = Date.now();
+    }, 1000);
+    // [KITCHEN-PRINT-RESILIENCE 2026-07-13] Retry auto des tickets cuisine en échec :
+    // quand le pont/imprimante revient, les tickets manqués ressortent seuls.
+    this._kitchenRetryInterval = setInterval(function () {
+      try {
+        _this.retryFailedKitchenTickets();
+      } catch (e) {/* best-effort */}
+    }, KITCHEN_PRINT_RETRY_MS);
+  },
+  methods: {
+    // [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT proxy for template access.
+    safePhone: function safePhone(phone) {
+      return (0,_helpers_phoneDisplay__WEBPACK_IMPORTED_MODULE_20__.safePhone)(phone);
+    },
+    // [POS-WIZARD-COMPO-AUDIT 2026-06-23 P2-B] Shape-agnostic "GROUP: VALUE"
+    // variation render for the order-cards (snapshot-shaped) AND the items-board
+    // (legacy-shaped). Replaces the inline `{{variation_name}}: {{name}}` that
+    // inverted snapshot lines into "Poulet mariné: ".
+    variationLine: function variationLine(v) {
+      return (0,_helpers_kdsCustomization__WEBPACK_IMPORTED_MODULE_18__.kdsVariationLine)(v);
+    },
+    // [2026-05-18 PR-C T2 reframe heal] JS-side filter for OrderStatusChanged.
+    // Mirrors `KitchenReleaseRule::visibleStatuses` (ACCEPT / PREPARING /
+    // PREPARED). A status change affects the KDS board when EITHER the
+    // previous OR the next status is in that set:
+    //   - Entry transitions (PENDING→ACCEPT, ACCEPT→PREPARING, etc.)
+    //   - Exit transitions  (PREPARED→DELIVERED, ACCEPT→CANCELED)
+    //   - Same-board mutations (ACCEPT→PREPARING bump)
+    // Pure transitions outside the KDS board (e.g. DELIVERED→REFUNDED,
+    // CANCELED→RETURNED) no longer trigger an unnecessary debounced refresh.
+    _statusChangeAffectsKds: function _statusChangeAffectsKds(parsed) {
+      var KDS_VISIBLE = [4, 7, 8]; // ACCEPT, PREPARING, PREPARED (mirror KitchenReleaseRule)
+      var payload = parsed && parsed.payload ? parsed.payload : parsed || {};
+      var oldStatus = Number(payload.old_status);
+      var newStatus = Number(payload.new_status);
+      // Missing payload (legacy / unparsed event) → fall back to refresh
+      // rather than risk swallowing a real transition.
+      if (!Number.isFinite(oldStatus) && !Number.isFinite(newStatus)) {
+        return true;
+      }
+      return KDS_VISIBLE.includes(oldStatus) || KDS_VISIBLE.includes(newStatus);
+    },
+    // [Sprint 2A DEL-3 2026-05-16] Legacy template delivery-block helpers.
+    // Mirror the V2 KdsOrderCard `isDeliveryOrder` + `deliveryAddressLine`
+    // computed logic for the rollback path (?v2=0 / kds.v2_enabled='0').
+    // Source-truth precedence identical to V2 to avoid drift between the
+    // two UIs the kitchen could switch between in a single shift.
+    kdsLegacyShouldShowDelivery: function kdsLegacyShouldShowDelivery(order) {
+      if (!order) {
+        return false;
+      }
+      var surface = String(order.source_surface || '').toLowerCase();
+      if (surface === 'delivery') {
+        return true;
+      }
+      // OrderType::DELIVERY === 5 (app/Enums/OrderType.php).
+      return Number(order.order_type) === 5;
+    },
+    kdsLegacyDeliveryAddress: function kdsLegacyDeliveryAddress(order) {
+      var a = order && order.order_address;
+      if (!a) {
+        return '';
+      }
+      var parts = [];
+      if (a.apartment) {
+        parts.push(a.apartment);
+      }
+      if (a.address) {
+        parts.push(a.address);
+      }
+      return parts.join(' — ');
+    },
+    // [kds/sprint-2 V-5] V2 grid event handlers — both delegate to the same
+    // store action `kitchenDisplaySystemOrder/changeStatus` used by the
+    // legacy 4-column layout. KDSOrderStateMachine on the server stays the
+    // single source of truth (apply() lockForUpdate + idempotent early-return).
+    onV2ChangeStatus: function onV2ChangeStatus(event) {
+      var _this2 = this;
+      // event: { orderId, status }
+      var order = (this.orders || []).find(function (o) {
+        return o.id === event.orderId;
+      });
+      if (!order) {
+        return;
+      }
+      var payload = (0,_store_modules_kds__WEBPACK_IMPORTED_MODULE_13__.kdsStatusPayload)(order, event.status);
+      this.$store.dispatch('kitchenDisplaySystemOrder/changeStatus', _objectSpread({}, payload)).then(function () {
+        _this2.kdsAnnounceTransition(order, event.status);
+        _this2._debouncedRefresh();
+        window.dispatchEvent(new CustomEvent('realtime-order-update', {
+          detail: {
+            type: 'status-change',
+            order_id: payload.id,
+            status: event.status
+          }
+        }));
+      })["catch"](function (err) {
+        var _err$response;
+        var httpStatus = err === null || err === void 0 || (_err$response = err.response) === null || _err$response === void 0 ? void 0 : _err$response.status;
+        // [#11] 409 conflict → silent refresh (unchanged behavior). 422
+        // invalid-transition → ALSO refresh so the stale card/CTA self-corrects
+        // instead of waiting for the next passive poll (2-60s), then surface
+        // the banner. Other errors → banner only.
+        if (httpStatus === 409) {
+          _this2._debouncedRefresh();
+          return;
+        }
+        if (httpStatus === 422) {
+          _this2._debouncedRefresh();
+        }
+        if (_this2.kdsErrorBanner) {
+          _this2.kdsErrorBanner.visible = true;
+          // [I18N-FIX 2026-06-27] La clé existe sous `message.` (pas `label.`,
+          // absente partout) → alignée sur l'usage correct en toast l.~2311.
+          _this2.kdsErrorBanner.message = _this2.$t('message.kds_status_conflict');
+        }
+      });
+    },
+    onV2AutoPromote: function onV2AutoPromote(orderId) {
+      // Auto-transition ACCEPT → PREPARING — same path as a manual chef bump.
+      var order = (this.orders || []).find(function (o) {
+        return o.id === orderId;
+      });
+      if (!order) {
+        return;
+      }
+      this.onV2ChangeStatus({
+        orderId: orderId,
+        status: _helpers_kdsState__WEBPACK_IMPORTED_MODULE_17__.ORDER_STATUS.PREPARING
+      });
+    },
+    authBranchId: function authBranchId() {
+      var _this$$store$state;
+      var candidates = [this.$store.getters['auth/authBranchId'], this.$store.getters.authBranchId, (_this$$store$state = this.$store.state) === null || _this$$store$state === void 0 || (_this$$store$state = _this$$store$state.auth) === null || _this$$store$state === void 0 ? void 0 : _this$$store$state.authBranchId];
+      for (var _i2 = 0, _candidates = candidates; _i2 < _candidates.length; _i2++) {
+        var candidate = _candidates[_i2];
+        if (candidate === '' || candidate === null || typeof candidate === 'undefined') {
+          continue;
+        }
+        var value = parseInt(candidate, 10);
+        if (Number.isFinite(value)) {
+          return value;
+        }
+      }
+      return 0;
+    },
+    kdsInstructionClass: function kdsInstructionClass(text) {
+      return (0,_helpers_kdsLineSemantics__WEBPACK_IMPORTED_MODULE_15__.kdsInstructionVisualClass)(text);
+    },
+    // [POS-OUTPUT-AUDIT 2026-06-24 P1-KDS] Strip the compo duplicate the
+    // structured render already shows (frozen pos-wizard.js echoes the full
+    // composition into instruction); keep unique extras (↳ Sauce frites, +Menu,
+    // free notes). Empty result → the v-if hides the line. Display-only.
+    kdsCleanInstruction: function kdsCleanInstruction(item) {
+      return (0,_helpers_kdsCustomization__WEBPACK_IMPORTED_MODULE_18__.sanitizeKdsInstruction)(item === null || item === void 0 ? void 0 : item.instruction, item === null || item === void 0 ? void 0 : item.item_name);
+    },
+    isPaymentPendingCounter: function isPaymentPendingCounter(order) {
+      return (order === null || order === void 0 ? void 0 : order.payment_pending_counter) === true || parseInt(order === null || order === void 0 ? void 0 : order.payment_status, 10) === _enums_modules_paymentStatusEnum__WEBPACK_IMPORTED_MODULE_4__["default"].PENDING_COUNTER;
+    },
+    // [Lot 2.I / G-4] Thin wrappers over pure helpers in kdsAllergens.js so
+    // they remain unit-testable in isolation (see tests/js/kdsAllergens.spec.js).
+    orderHasAllergens: function orderHasAllergens(order) {
+      return (0,_helpers_kdsAllergens__WEBPACK_IMPORTED_MODULE_16__.orderHasAllergens)(order);
+    },
+    sortedAllergens: function sortedAllergens(snapshot) {
+      return (0,_helpers_kdsAllergens__WEBPACK_IMPORTED_MODULE_16__.sortedAllergens)(snapshot);
+    },
+    openAllergensModal: function openAllergensModal(order) {
+      var _this3 = this;
+      this.allergenModalReturnFocus = typeof document !== "undefined" && document.activeElement ? document.activeElement : null;
+      this.allergensModal = {
+        open: true,
+        order: order
+      };
+      this.$nextTick(function () {
+        var el = _this3.$refs.allergensModalCloseButton;
+        if (el && typeof el.focus === "function") {
+          try {
+            el.focus();
+          } catch (_) {/* defensive: focus is best-effort */}
+        }
+      });
+    },
+    closeAllergensModal: function closeAllergensModal() {
+      var returnTo = this.allergenModalReturnFocus;
+      this.allergensModal = {
+        open: false,
+        order: null
+      };
+      this.allergenModalReturnFocus = null;
+      this.$nextTick(function () {
+        if (returnTo && typeof returnTo.focus === "function") {
+          try {
+            returnTo.focus();
+          } catch (_) {/* best-effort */}
+        }
+      });
+    },
+    // [Audit 2.I F-01] Keep Tab / Shift+Tab inside the dialog (simple 2-node cycle).
+    onAllergensModalKeydown: function onAllergensModalKeydown(e) {
+      if (e.key !== "Tab") {
+        return;
+      }
+      var root = this.$refs.allergensModalRoot;
+      var content = root && root.querySelector && root.querySelector(".kds-allergens-modal-content");
+      if (!content) {
+        return;
+      }
+      var focusables = Array.from(content.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')).filter(function (n) {
+        return n.offsetParent !== null || n === document.activeElement;
+      });
+      // One focusable (e.g. only Close): keep Tab from moving focus out of the dialog.
+      if (focusables.length < 2) {
+        e.preventDefault();
+        return;
+      }
+      var first = focusables[0];
+      var last = focusables[focusables.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else if (document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    },
+    dismissKdsBumpNotice: function dismissKdsBumpNotice() {
+      try {
+        localStorage.setItem("kds.hide_bump_info", "1");
+      } catch (e) {
+        /* ignore */
+      }
+      this.kdsHideBumpInfo = true;
+    },
+    kdsWaitClass: function kdsWaitClass(order) {
+      void this.waitTick;
+      var ms = (0,_helpers_kdsDisplay__WEBPACK_IMPORTED_MODULE_14__.parseOrderCreatedMs)(order);
+      return (0,_helpers_kdsDisplay__WEBPACK_IMPORTED_MODULE_14__.getKdsEscalationClass)(ms, Date.now());
+    },
+    kdsDisplayDateTime: function kdsDisplayDateTime(value) {
+      var raw = String(value || "").trim();
+      var match = raw.match(/^(\d{1,2}):(\d{2})\s*(AM|PM),?\s*(.*)$/i);
+      if (!match) {
+        return raw.replace(/\s*\b(AM|PM)\b/gi, "").trim();
+      }
+      var hour = parseInt(match[1], 10);
+      var minute = match[2];
+      var marker = match[3].toUpperCase();
+      var suffix = match[4] ? ", ".concat(match[4]) : "";
+      if (marker === "PM" && hour < 12) hour += 12;
+      if (marker === "AM" && hour === 12) hour = 0;
+      return "".concat(String(hour).padStart(2, "0"), ":").concat(minute).concat(suffix);
+    },
+    orderStatusBadgeClasses: function orderStatusBadgeClasses(status) {
+      return status === this.enums.orderStatusEnum.PREPARED ? "bg-[#166534] text-white" : status === this.enums.orderStatusEnum.ACCEPT ? "bg-[#4C1A96] text-white" : "bg-[#92400E] text-white";
+    },
+    kdsAuthUserId: function kdsAuthUserId() {
+      var u = this.$store.getters["auth/authInfo"] || {};
+      var id = u.id != null ? parseInt(u.id, 10) : 0;
+      return Number.isFinite(id) && id > 0 ? id : 0;
+    },
+    persistKdsUiPrefs: function persistKdsUiPrefs() {
+      try {
+        localStorage.setItem((0,_helpers_kdsDisplay__WEBPACK_IMPORTED_MODULE_14__.kdsStationFilterStorageKey)(this.kdsAuthUserId()), this.stationFilter);
+      } catch (e) {
+        /* private mode / quota */
+      }
+      localStorage.setItem("kds.group_by_table", this.groupByTable ? "1" : "0");
+      localStorage.setItem("kds.sound_enabled", this.soundEnabled ? "1" : "0");
+      localStorage.setItem("kds.sound_volume", String(this.soundVolume));
+      localStorage.setItem("kds.autoPrint", this.autoPrintKitchen ? "1" : "0");
+    },
+    playKdsNewOrderSound: function playKdsNewOrderSound() {
+      if (!this.soundEnabled) {
+        return;
+      }
+      // [Lot 2.C / F-07] Throttle: burst of new orders (WS) must not machine-gun the chime.
+      var now = Date.now();
+      if (!(0,_helpers_kdsDisplay__WEBPACK_IMPORTED_MODULE_14__.shouldPlayKdsNewOrderSound)(this._kdsLastNewOrderSoundAt, now)) {
+        return;
+      }
+      this._kdsLastNewOrderSoundAt = now;
+      var el = this.$refs.kdsNewOrderAudio;
+      if (!el) {
+        return;
+      }
+      el.volume = Math.min(1, Math.max(0, this.soundVolume / 100));
+      el.currentTime = 0;
+      el.play()["catch"](function () {});
+    },
+    // [KITCHEN-BRIDGE 2026-07-09] Seed la garde de dé-dup avec les ids des commandes
+    // DÉJÀ présentes (backlog) au 1er chargement / à la reconnexion, SANS imprimer.
+    // Garantit qu'un reload/refresh ne relance pas une impression massive du backlog.
+    _seedKitchenPrintedBacklogOnce: function _seedKitchenPrintedBacklogOnce() {
+      if (this._kitchenBacklogSeeded) return;
+      this._kitchenBacklogSeeded = true;
+      try {
+        // [SUPERVISOR-HEAL 2026-07-13] Restaure la liste d'échec PERSISTÉE (survit au reload
+        // pendant une panne pont) AVANT le seed, et EXCLUT ces ids du marquage « imprimé » :
+        // un ticket en échec ne doit JAMAIS être seedé comme imprimé (sinon perdu à vie au
+        // reload) — il reste dans _kitchenFailedPrint → réessayé par le retry auto.
+        this._kitchenFailedPrint = (0,_helpers_kitchenLocalPrinter__WEBPACK_IMPORTED_MODULE_21__.getKitchenFailed)();
+        var failed = new Set(this._kitchenFailedPrint.map(function (id) {
+          return String(id);
+        }));
+        var ids = (this.orders || []).map(function (o) {
+          return o && o.id;
+        }).filter(function (id) {
+          return id != null && !failed.has(String(id));
+        });
+        (0,_helpers_kitchenLocalPrinter__WEBPACK_IMPORTED_MODULE_21__.seedKitchenPrinted)(ids);
+      } catch (e) {
+        /* best-effort — jamais bloquant pour le KDS */
+      }
+    },
+    // Imprime le ticket cuisine des NOUVELLES commandes, exactement une fois chacune.
+    // Respecte le toggle autoPrintKitchen ; la dé-dup persiste en localStorage.
+    autoPrintNewKitchenTickets: function autoPrintNewKitchenTickets(orders) {
+      var _this4 = this;
+      if (!this.autoPrintKitchen) return;
+      (orders || []).forEach(function (o) {
+        if (!o || o.id == null) return;
+        if ((0,_helpers_kitchenLocalPrinter__WEBPACK_IMPORTED_MODULE_21__.hasKitchenPrinted)(o.id)) return;
+        var key = String(o.id);
+        // [KITCHEN-PRINT-RESILIENCE 2026-07-13] Garde in-flight (remplace l'ancien
+        // mark préventif) : bloque le double-envoi si le watch re-tire (burst WS)
+        // avant la fin du GET, SANS marquer imprimé prématurément (sinon un échec
+        // pont = ticket perdu à vie, jamais réessayé).
+        if (_this4._kitchenInFlight && _this4._kitchenInFlight.has(key)) return;
+        if (_this4._kitchenInFlight) _this4._kitchenInFlight.add(key);
+        Promise.resolve(_this4.autoPrintKitchenTicket(o)).then(function (r) {
+          if (r && r.ok) {
+            // Imprimé : marque (dé-dup persistée) + sort de la liste d'échec.
+            (0,_helpers_kitchenLocalPrinter__WEBPACK_IMPORTED_MODULE_21__.markKitchenPrinted)(o.id);
+            _this4._removeKitchenFailed(o.id);
+          } else {
+            // Échec (pont/imprimante) : NE PAS marquer → le retry le ressortira.
+            _this4._addKitchenFailed(o.id);
+          }
+        })["catch"](function () {
+          _this4._addKitchenFailed(o.id);
+        })["finally"](function () {
+          if (_this4._kitchenInFlight) _this4._kitchenInFlight["delete"](key);
+        });
+      });
+    },
+    // Récupère les octets ESC/POS cuisine (rendu serveur SSOT, width-safe/symbolique)
+    // puis les POSTe au pont cuisine local. Jamais throw. RETOURNE un résultat
+    // DISCRIMINÉ pour que l'appelant sache marquer imprimé / réessayer :
+    //   - {ok:true}                        → imprimé
+    //   - {ok:false, retriable:true}       → GET escpos KO (302/401/429/réseau) OU
+    //     pont injoignable : ticket NON sorti, à réessayer
+    //   - {ok:false, retriable:false}      → contexte invalide / rien à imprimer
+    autoPrintKitchenTicket: function autoPrintKitchenTicket(order) {
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
+        var ax, data, resp, b64, r, _t2;
+        return _regenerator().w(function (_context) {
+          while (1) switch (_context.p = _context.n) {
+            case 0:
+              ax = typeof window !== "undefined" && window.axios ? window.axios : null;
+              if (!(!ax || !order || order.id == null)) {
+                _context.n = 1;
+                break;
+              }
+              return _context.a(2, {
+                ok: false,
+                retriable: false
+              });
+            case 1:
+              _context.p = 1;
+              _context.n = 2;
+              return ax.get("admin/pos/orders/".concat(order.id, "/escpos"), {
+                params: {
+                  ticket: "kitchen"
+                }
+              });
+            case 2:
+              resp = _context.v;
+              data = resp && resp.data;
+              _context.n = 4;
+              break;
+            case 3:
+              _context.p = 3;
+              _t2 = _context.v;
+              // GET escpos KO : 302 login / 401 session expirée / 429 throttle / réseau /
+              // 5xx → retriable (le pont ou la session peut revenir).
+              try {
+                if (typeof window !== "undefined" && window.console) {
+                  window.console.debug("[kds] escpos cuisine KO (retriable):", _t2 && _t2.message);
+                }
+              } catch (_) {/* noop */}
+              return _context.a(2, {
+                ok: false,
+                retriable: true,
+                reason: "escpos-fetch"
+              });
+            case 4:
+              b64 = data && data.escpos_b64;
+              if (b64) {
+                _context.n = 5;
+                break;
+              }
+              return _context.a(2, {
+                ok: false,
+                retriable: false,
+                reason: "empty"
+              });
+            case 5:
+              _context.n = 6;
+              return (0,_helpers_kitchenLocalPrinter__WEBPACK_IMPORTED_MODULE_21__.printEscPosViaKitchenBridge)(b64, {
+                orderRef: order.id
+              });
+            case 6:
+              r = _context.v;
+              return _context.a(2, r && r.ok ? r : r || {
+                ok: false,
+                retriable: true,
+                reason: "bridge"
+              });
+          }
+        }, _callee, null, [[1, 3]]);
+      }))();
+    },
+    // [KITCHEN-PRINT-RESILIENCE 2026-07-13] Ajoute/retire un id (String) de la liste
+    // réactive des tickets cuisine en échec (pilote badge + retry).
+    _addKitchenFailed: function _addKitchenFailed(orderId) {
+      if (orderId == null || !Array.isArray(this._kitchenFailedPrint)) return;
+      var key = String(orderId);
+      if (!this._kitchenFailedPrint.includes(key)) {
+        this._kitchenFailedPrint.push(key);
+        try {
+          (0,_helpers_kitchenLocalPrinter__WEBPACK_IMPORTED_MODULE_21__.setKitchenFailed)(this._kitchenFailedPrint);
+        } catch (_) {/* persist best-effort */}
+      }
+    },
+    _removeKitchenFailed: function _removeKitchenFailed(orderId) {
+      if (orderId == null || !Array.isArray(this._kitchenFailedPrint)) return;
+      var key = String(orderId);
+      var i = this._kitchenFailedPrint.indexOf(key);
+      if (i !== -1) {
+        this._kitchenFailedPrint.splice(i, 1);
+        try {
+          (0,_helpers_kitchenLocalPrinter__WEBPACK_IMPORTED_MODULE_21__.setKitchenFailed)(this._kitchenFailedPrint);
+        } catch (_) {/* persist best-effort */}
+      }
+    },
+    // Retry auto : pour chaque ticket en échec ENCORE présent dans les commandes
+    // actives, re-tente l'impression. Succès → marque + retire. Purge aussi les ids
+    // de commandes disparues (bumped/annulées). Quand le pont revient, les tickets
+    // manqués sortent seuls. Non-bloquant, best-effort.
+    retryFailedKitchenTickets: function retryFailedKitchenTickets() {
+      var _this5 = this;
+      if (!Array.isArray(this._kitchenFailedPrint) || this._kitchenFailedPrint.length === 0) return;
+      var activeById = new Map();
+      (this.orders || []).forEach(function (o) {
+        if (o && o.id != null) activeById.set(String(o.id), o);
+      });
+      // Purge les ids dont la commande a quitté le board.
+      this._kitchenFailedPrint = this._kitchenFailedPrint.filter(function (key) {
+        return activeById.has(key);
+      });
+      try {
+        (0,_helpers_kitchenLocalPrinter__WEBPACK_IMPORTED_MODULE_21__.setKitchenFailed)(this._kitchenFailedPrint);
+      } catch (_) {/* persist best-effort */}
+      this._kitchenFailedPrint.slice().forEach(function (key) {
+        if (_this5._kitchenInFlight && _this5._kitchenInFlight.has(key)) return;
+        var order = activeById.get(key);
+        if (!order) return;
+        if (_this5._kitchenInFlight) _this5._kitchenInFlight.add(key);
+        Promise.resolve(_this5.autoPrintKitchenTicket(order)).then(function (r) {
+          if (r && r.ok) {
+            (0,_helpers_kitchenLocalPrinter__WEBPACK_IMPORTED_MODULE_21__.markKitchenPrinted)(order.id);
+            _this5._removeKitchenFailed(order.id);
+          }
+        })["catch"](function () {/* reste en échec, re-tenté au prochain tick */})["finally"](function () {
+          if (_this5._kitchenInFlight) _this5._kitchenInFlight["delete"](key);
+        });
+      });
+    },
+    // [KDS-REPRINT 2026-07-13] Réimpression MANUELLE du ticket cuisine, déclenchée
+    // par le bouton 🖨️ (carte V2 + lanes legacy). Contrairement à l'auto-print
+    // (autoPrintNewKitchenTickets) :
+    //   - PAS de dé-dup : on appelle autoPrintKitchenTicket() DIRECTEMENT, donc le
+    //     ticket ressort MÊME si l'id est déjà marqué imprimé (hasKitchenPrinted).
+    //   - PAS gaté par le toggle « Impression auto » (autoPrintKitchen) : c'est une
+    //     action explicite du cuisinier (ticket perdu/illisible).
+    // autoPrintKitchenTicket est best-effort (try/catch interne, jamais throw).
+    reprintKitchenTicket: function reprintKitchenTicket(order) {
+      var _this6 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2() {
+        var key, r;
+        return _regenerator().w(function (_context2) {
+          while (1) switch (_context2.p = _context2.n) {
+            case 0:
+              if (!(!order || order.id == null)) {
+                _context2.n = 1;
+                break;
+              }
+              return _context2.a(2);
+            case 1:
+              // [SUPERVISOR-HEAL round2 2026-07-13] Garde in-flight (comme les 2 chemins auto) :
+              // empêche le retry auto (tick 20 s) OU un 2e clic de RÉ-imprimer le MÊME ticket en
+              // parallèle pendant l'await de cette réimpression → 0 doublon (course fermée).
+              key = String(order.id);
+              if (!(_this6._kitchenInFlight && _this6._kitchenInFlight.has(key))) {
+                _context2.n = 2;
+                break;
+              }
+              return _context2.a(2);
+            case 2:
+              if (_this6._kitchenInFlight) _this6._kitchenInFlight.add(key);
+              _context2.p = 3;
+              _context2.n = 4;
+              return _this6.autoPrintKitchenTicket(order);
+            case 4:
+              r = _context2.v;
+              try {
+                if (r && r.ok) {
+                  // Réimpression sortie : marque imprimé + purge l'éventuelle entrée en échec →
+                  // le retry auto ne ressort PAS un doublon 20 s plus tard, badge à jour.
+                  (0,_helpers_kitchenLocalPrinter__WEBPACK_IMPORTED_MODULE_21__.markKitchenPrinted)(order.id);
+                  _this6._removeKitchenFailed(order.id);
+                  _services_alertService__WEBPACK_IMPORTED_MODULE_7__["default"].info(_this6.$t("message.kds_reprint_sent", {
+                    queue: order.queue_number || order.id
+                  }));
+                } else {
+                  // Pont/imprimante injoignable : toast ERREUR explicite (le cuisinier voit
+                  // que le ticket n'est PAS sorti). Ne marque rien.
+                  _services_alertService__WEBPACK_IMPORTED_MODULE_7__["default"].error(_this6.$t("message.kds_reprint_failed"));
+                }
+              } catch (_) {/* retour visuel best-effort, jamais bloquant */}
+            case 5:
+              _context2.p = 5;
+              if (_this6._kitchenInFlight) _this6._kitchenInFlight["delete"](key);
+              return _context2.f(5);
+            case 6:
+              return _context2.a(2);
+          }
+        }, _callee2, null, [[3,, 5, 6]]);
+      }))();
+    },
+    isTableGroupOpen: function isTableGroupOpen(key) {
+      return this.expandedTableGroups[key] !== false;
+    },
+    toggleTableGroup: function toggleTableGroup(key) {
+      var cur = this.isTableGroupOpen(key);
+      this.expandedTableGroups = _objectSpread(_objectSpread({}, this.expandedTableGroups), {}, _defineProperty({}, key, !cur));
+    },
+    dineinTableKey: function dineinTableKey(order) {
+      return order.table_name && String(order.table_name).trim() || "—";
+    },
+    kdsDineinTableHeaderVisible: function kdsDineinTableHeaderVisible(order, idx) {
+      if (!this.groupByTable) {
+        return false;
+      }
+      var list = this.sortedFilteredDinein;
+      var key = function key(o) {
+        return o.table_name && String(o.table_name).trim() || "—";
+      };
+      if (idx === 0) {
+        return true;
+      }
+      return key(order) !== key(list[idx - 1]);
+    },
+    kdsIsBumped: function kdsIsBumped(orderId, itemId) {
+      return this.$store.getters["kds/bumpTimestamp"](orderId, itemId) != null;
+    },
+    kdsCanRecall: function kdsCanRecall(orderId, itemId) {
+      var ts = this.$store.getters["kds/bumpTimestamp"](orderId, itemId);
+      if (ts == null) {
+        return false;
+      }
+      return Date.now() - ts < 60000;
+    },
+    kdsBump: function kdsBump(order, item) {
+      var _this7 = this;
+      this.$store.dispatch("kds/bumpItem", {
+        orderId: order.id,
+        itemId: item.id
+      });
+      this.$nextTick(function () {
+        if (_this7.$store.getters["kds/isReadyOrder"](order)) {
+          if (order.status !== _this7.enums.orderStatusEnum.PREPARED) {
+            var nextStatus = order.status === _this7.enums.orderStatusEnum.ACCEPT ? _this7.enums.orderStatusEnum.PREPARING : _this7.enums.orderStatusEnum.PREPARED;
+            _this7.orderStatus(order, nextStatus);
+          }
+        }
+      });
+    },
+    kdsRecall: function kdsRecall(order, item) {
+      var _this8 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3() {
+        var r;
+        return _regenerator().w(function (_context3) {
+          while (1) switch (_context3.n) {
+            case 0:
+              _context3.n = 1;
+              return _this8.$store.dispatch("kds/recallItem", {
+                orderId: order.id,
+                itemId: item.id
+              });
+            case 1:
+              r = _context3.v;
+              if (r && r.ok === false && r.reason === "grace_expired") {
+                _services_alertService__WEBPACK_IMPORTED_MODULE_7__["default"].error(_this8.$t("message.kds_recall_grace_expired"));
+              }
+            case 2:
+              return _context3.a(2);
+          }
+        }, _callee3);
+      }))();
+    },
+    _bindWsService: function _bindWsService() {
+      var _this9 = this;
+      var ws = window._wsService;
+      if (!ws) return;
+      this._onWsConnected = function () {
+        _this9.wsConnected = true;
+        _this9.refreshOrderList();
+        _this9._restartPolling();
+      };
+      this._onWsDisconnected = function () {
+        _this9.wsConnected = false;
+        _this9._restartPolling();
+      };
+      ws.on('connected', this._onWsConnected);
+      ws.on('disconnected', this._onWsDisconnected);
+    },
+    _unbindWsService: function _unbindWsService() {
+      var ws = window._wsService;
+      if (!ws) return;
+      if (this._onWsConnected) ws.off('connected', this._onWsConnected);
+      if (this._onWsDisconnected) ws.off('disconnected', this._onWsDisconnected);
+    },
+    _pollingInterval: function _pollingInterval() {
+      // [HEAL B.3 2026-05-19] KDS polling cadence is intentionally hardcoded
+      // per-surface (not config-driven). 5000ms when WS down protects the
+      // kitchen-staleness budget (orders must surface within ~5s of payment).
+      // 60000ms when WS up because Echo handles the live push and polling
+      // becomes a passive sanity-check. NOT a config-read miss — see
+      // config/broadcasting.php for the per-surface SoT note (RED-Z3 §B-6).
+      return this.wsConnected ? 60000 : 5000;
+    },
+    _restartPolling: function _restartPolling() {
+      this.stopAutoRefresh();
+      this.startAutoRefresh();
+    },
+    startAutoRefresh: function startAutoRefresh() {
+      var _this0 = this;
+      if (this.$route.path.includes('kitchen-display-system')) {
+        this.autoRefreshInterval = setInterval(function () {
+          _this0.refreshOrderList();
+        }, this._pollingInterval());
+      }
+    },
+    // [P4-1] Subscribe to branch Echo channel for real-time order updates.
+    // Admin users (branch_id=0) rely on polling; branch staff get sub-second push.
+    subscribeEcho: function subscribeEcho() {
+      var _this1 = this;
+      if (!window.Echo) return;
+      var branchId = this.authBranchId();
+      if (branchId <= 0) return; // Admin: polling fallback is sufficient
+      // [AUDIT-P51-BUG2] Always unsubscribe first to prevent duplicate listeners on re-mount
+      this.unsubscribeEcho();
+      try {
+        this._eventSub = (0,_services_eventContract__WEBPACK_IMPORTED_MODULE_9__.onEvents)(branchId, [
+        // [2026-05-18 PR-C T2 reframe heal] Filter OrderStatusChanged JS-side:
+        // refresh only when from OR to is in the KDS-visible status set
+        // (ACCEPT=4 / PREPARING=7 / PREPARED=8 — mirror KitchenReleaseRule).
+        // Before this guard, every status flip (DELIVERED→REFUNDED, CANCELED,
+        // RETURNED, etc.) triggered a debounced full refresh even though
+        // none of those affect the KDS board → wasted backend calls + flicker.
+        {
+          broadcastAs: 'OrderStatusChanged',
+          handler: function handler(parsed) {
+            if (_this1._statusChangeAffectsKds(parsed)) {
+              _this1._debouncedRefresh();
+            }
+          }
+        }, {
+          broadcastAs: 'OrderCreated',
+          handler: function handler() {
+            _this1._debouncedRefresh();
+          }
+        }, {
+          broadcastAs: 'OrderPaidAtCounter',
+          handler: function handler() {
+            _this1._debouncedRefresh();
+          }
+        },
+        // [SYNC-001 + CV1-KDS-INFLIGHT-OOS-MARKER-001] KDS now also receives
+        // ItemAvailabilityChanged so the station can flag in-flight tickets
+        // that include a freshly 86'd item (rupture stock cuisine).
+        // _onItemAvailabilityChanged dispatches into kdsInflight Vuex module
+        // (lazy-purged 10min TTL), then triggers a debounced refresh.
+        {
+          broadcastAs: 'ItemAvailabilityChanged',
+          handler: function handler(parsed) {
+            _this1._onItemAvailabilityChanged(parsed);
+          }
+        },
+        // [F-02] Floor-plan transfer / occupy → update the table label in place
+        // and flash the card briefly. Refresh re-fetches table_name from the
+        // backend; flash provides the visual cue (gate G-2 decision).
+        {
+          broadcastAs: 'OrderTableChanged',
+          handler: function handler(payload) {
+            _this1._handleTableChanged(payload);
+          }
+        },
+        // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B]
+        // Chef on station A recalls an order → all other stations of the
+        // same branch get the event here and re-inject the card with the
+        // RAPPELÉ badge for 60s without polling. The handler delegates to
+        // onKdsOrderRecalled which sets the local `recallActiveMap` entry;
+        // KdsV2Grid reads it via the `recall-active-ids` prop.
+        {
+          broadcastAs: 'KdsOrderRecalled',
+          handler: function handler(parsed) {
+            var _parsed$payload, _parsed$payload2;
+            var orderId = (parsed === null || parsed === void 0 || (_parsed$payload = parsed.payload) === null || _parsed$payload === void 0 ? void 0 : _parsed$payload.order_id) || (parsed === null || parsed === void 0 || (_parsed$payload2 = parsed.payload) === null || _parsed$payload2 === void 0 ? void 0 : _parsed$payload2.orderId);
+            if (orderId) {
+              var _parsed$payload3, _parsed$payload4, _parsed$payload5;
+              // [#9] Anchor the RAPPELÉ window to the broadcast recall instant,
+              // not message-receipt time, so the 60s window stays aligned across
+              // stations under WS latency. Fall back to now only if absent/bad.
+              var recalledRaw = (parsed === null || parsed === void 0 || (_parsed$payload3 = parsed.payload) === null || _parsed$payload3 === void 0 ? void 0 : _parsed$payload3.recalled_at) || (parsed === null || parsed === void 0 || (_parsed$payload4 = parsed.payload) === null || _parsed$payload4 === void 0 ? void 0 : _parsed$payload4.recalledAt);
+              var recalledMs = recalledRaw ? Date.parse(recalledRaw) : NaN;
+              _this1.onKdsOrderRecalled({
+                orderId: parseInt(orderId, 10),
+                queueNumber: (parsed === null || parsed === void 0 || (_parsed$payload5 = parsed.payload) === null || _parsed$payload5 === void 0 ? void 0 : _parsed$payload5.queue_number) || null,
+                recalledAt: Number.isFinite(recalledMs) ? recalledMs : Date.now(),
+                payload: (parsed === null || parsed === void 0 ? void 0 : parsed.payload) || null
+              });
+            }
+          }
+        }]);
+        // [P13_LOG_HYGIENE] console.log(`[KDS] Echo subscribed to branch.${branchId}`);
+      } catch (e) {
+        // Echo not available or auth failed — polling fallback handles it
+        console.warn('[KDS] Echo subscription failed:', e.message);
+      }
+    },
+    unsubscribeEcho: function unsubscribeEcho() {
+      var branchId = this.authBranchId();
+      if (branchId <= 0) return;
+      try {
+        var _this$_eventSub;
+        (_this$_eventSub = this._eventSub) === null || _this$_eventSub === void 0 || _this$_eventSub.unsubscribe();
+        // [P13_LOG_HYGIENE] console.log(`[KDS] Echo unsubscribed from branch.${branchId}`);
+      } catch (e) {
+        console.warn('[KDS] Echo unsubscribe error:', e.message);
+      }
+      this._eventSub = null;
+    },
+    refreshOrderList: function refreshOrderList() {
+      this.items();
+      // [FIX-54-5] Preserve current filter — use _refreshWithCurrentFilter instead of list()
+      // to avoid falsy value (0) being treated as "no filter" and resetting the status
+      this._refreshWithCurrentFilter();
+    },
+    _isVisibleInCurrentBoard: function _isVisibleInCurrentBoard(item) {
+      var selectedStatus = Number(this.props.search.status || 0);
+      if (selectedStatus > 0) {
+        return true;
+      }
+      // [iter15-mega-fix C-022 run-3 2026-05-10] Previously this filter
+      // excluded PREPARED orders from the default "Toutes Les Commandes"
+      // board. That contradicted the customer-facing reality: the
+      // order-status-screen still announces "Prêt: A0024" so the customer
+      // comes back to the counter, but the chef no longer saw the card on
+      // the default KDS surface and had no way to confirm the hand-over.
+      // The PREPARED visual marker already exists — `orderStatusBadgeClasses`
+      // paints PREPARED cards green (#166534 / "Prête"), and the
+      // ACCEPT/PREPARING action CTAs are status-conditional so PREPARED
+      // cards naturally show no action button. Showing the card on the
+      // default board is therefore non-disruptive and restores
+      // kitchen ↔ customer-screen parity. The dedicated "Prêtes" filter
+      // button (selectedStatus > 0 branch above) keeps its narrow view.
+      return true;
+    },
+    _applyOrderBuckets: function _applyOrderBuckets(rows) {
+      var _this10 = this;
+      var visibleRows = (Array.isArray(rows) ? rows : []).filter(function (item) {
+        return _this10._isVisibleInCurrentBoard(item);
+      });
+      // [test-e2e fix E-003 round-3] V1 dine-in disabled — kiosk orders are TAKEAWAY
+      // (OrderRequest:200 enforces order_type=TAKEAWAY for ALL kiosk orders since
+      // dine-in is gated off via feature flag pos.dine_in_enabled=false). Therefore
+      // bucket by source_surface ('kiosk') first, falling back to order_type for
+      // historical rows that pre-date the source_surface column. Without this fix
+      // the "🖥️ Borne" KDS column is permanently empty in V1.
+      var isKioskSource = function isKioskSource(item) {
+        var surface = typeof item.source_surface === 'string' ? item.source_surface.toLowerCase() : '';
+        if (surface === 'kiosk') return true;
+        // Legacy fallback: orders created before source_surface column existed and
+        // marked as KIOSK type still bucket as kiosk.
+        if (!surface && item.order_type === _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_1__["default"].KIOSK) return true;
+        return false;
+      };
+      this.kioskOrders = visibleRows.filter(isKioskSource);
+      // Non-kiosk rows fan out across the POS / online / dine-in lanes by order_type.
+      var nonKioskRows = visibleRows.filter(function (item) {
+        return !isKioskSource(item);
+      });
+      this.dineinOrders = nonKioskRows.filter(function (item) {
+        return item.order_type === _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_1__["default"].DINING_TABLE;
+      });
+      this.onlineOrders = nonKioskRows.filter(function (item) {
+        return item.order_type === _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_1__["default"].DELIVERY;
+      });
+      // POS (caisse) orders follow the same kitchen lane as takeaway.
+      this.takeawayOrders = nonKioskRows.filter(function (item) {
+        return item.order_type === _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_1__["default"].TAKEAWAY || item.order_type === _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_1__["default"].POS;
+      });
+      // [CLUSTER-4 P2 2026-07-11] A successful board hydrate (Echo broadcast,
+      // fallback poll, or list()) is the ground-truth "data is fresh" signal.
+      // Stamp it here — the single chokepoint every success path funnels
+      // through — so the freshness badge tracks REAL refreshes, not just the
+      // socket state or the sync-service poll clock.
+      this.lastDataFreshAt = Date.now();
+    },
+    _refreshWithCurrentFilter: function _refreshWithCurrentFilter() {
+      var _this11 = this;
+      // [FIX-54-5] Re-fetch orders without modifying props.search.status
+      // This ensures the current filter (e.g., status=7 PREPARING) is preserved
+      // even when the value is 0 (ACCEPT) which is falsy in JavaScript
+      this.loading.isActive = true;
+      this.$store.dispatch("kitchenDisplaySystemOrder/lists", this.props.search).then(function (res) {
+        var _res$data, _res$data2;
+        _this11._applyOrderBuckets((res === null || res === void 0 || (_res$data = res.data) === null || _res$data === void 0 ? void 0 : _res$data.data) || []);
+        _this11.kdsOverflowDetected = (res === null || res === void 0 || (_res$data2 = res.data) === null || _res$data2 === void 0 || (_res$data2 = _res$data2.meta) === null || _res$data2 === void 0 ? void 0 : _res$data2.overflow) === true;
+        _this11.loading.isActive = false;
+        _this11._kdsOrdersHydrated = true;
+        _this11._seedKitchenPrintedBacklogOnce();
+        // [test-e2e round-2 C-001] Successful poll → dismiss the persistent
+        // error banner (kitchen connection restored).
+        _this11._clearKdsErrorBanner();
+      })["catch"](function (err) {
+        _this11.loading.isActive = false;
+        // [test-e2e round-2 C-001] Persistent banner instead of ephemeral
+        // toast — kitchen operator at 1m+ glance must NOT miss this.
+        _this11._raiseKdsErrorBanner(err);
+      });
+    },
+    openFilterSlide: function openFilterSlide(event) {
+      return _services_appService__WEBPACK_IMPORTED_MODULE_8__["default"].openFilterSlide(event);
+    },
+    closeFilterSlide: function closeFilterSlide(event) {
+      return _services_appService__WEBPACK_IMPORTED_MODULE_8__["default"].closeFilterSlide(event);
+    },
+    stopAutoRefresh: function stopAutoRefresh() {
+      if (this.autoRefreshInterval) {
+        clearInterval(this.autoRefreshInterval);
+        this.autoRefreshInterval = null;
+      }
+    },
+    list: function list() {
+      var _this12 = this;
+      var status = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : "";
+      if (status) {
+        this.props.search.status = status;
+      } else {
+        this.props.search.status = "";
+      }
+      this.loading.isActive = true;
+      this.$store.dispatch("kitchenDisplaySystemOrder/lists", this.props.search).then(function (res) {
+        var _res$data3, _res$data4;
+        _this12._applyOrderBuckets((res === null || res === void 0 || (_res$data3 = res.data) === null || _res$data3 === void 0 ? void 0 : _res$data3.data) || []);
+        _this12.kdsOverflowDetected = (res === null || res === void 0 || (_res$data4 = res.data) === null || _res$data4 === void 0 || (_res$data4 = _res$data4.meta) === null || _res$data4 === void 0 ? void 0 : _res$data4.overflow) === true;
+        _this12.loading.isActive = false;
+        _this12._kdsOrdersHydrated = true;
+        _this12._seedKitchenPrintedBacklogOnce();
+        // [test-e2e round-2 C-001] Auto-dismiss the persistent banner
+        // on next successful /api/admin/kds-order response.
+        _this12._clearKdsErrorBanner();
+      })["catch"](function (err) {
+        _this12.loading.isActive = false;
+        // [test-e2e round-2 C-001] Persistent banner instead of ephemeral
+        // toast — see _raiseKdsErrorBanner / kdsErrorBanner data prop.
+        _this12._raiseKdsErrorBanner(err);
+      });
+    },
+    _raiseKdsErrorBanner: function _raiseKdsErrorBanner(err) {
+      var _err$response2;
+      // Build a copy that flags the kind of failure (network/5xx vs 4xx).
+      var status = Number((err === null || err === void 0 || (_err$response2 = err.response) === null || _err$response2 === void 0 ? void 0 : _err$response2.status) || 0);
+      var fallback = this.$t('error.kds_connection_lost');
+      // For server-side messages (e.g. 422 validation), prefer the message
+      // payload — but for 5xx / network drops, the standardized banner copy
+      // is far clearer to a kitchen operator than a stack trace.
+      var message;
+      if (!status || status >= 500 || status === 408 || status === 425 || status === 429) {
+        message = fallback;
+      } else {
+        var _err$response3;
+        message = (err === null || err === void 0 || (_err$response3 = err.response) === null || _err$response3 === void 0 || (_err$response3 = _err$response3.data) === null || _err$response3 === void 0 ? void 0 : _err$response3.message) || fallback;
+      }
+      this.kdsErrorBanner = {
+        visible: true,
+        message: message,
+        lastRetryAt: Date.now()
+      };
+    },
+    _clearKdsErrorBanner: function _clearKdsErrorBanner() {
+      if (this.kdsErrorBanner.visible) {
+        this.kdsErrorBanner = {
+          visible: false,
+          message: '',
+          lastRetryAt: null
+        };
+      }
+    },
+    dismissKdsErrorBanner: function dismissKdsErrorBanner() {
+      // Manual ✕ dismiss. Next successful poll will keep it hidden anyway,
+      // and the next failure will re-raise it.
+      this._clearKdsErrorBanner();
+    },
+    items: function items() {
+      var _this13 = this;
+      this.loading.isActive = true;
+      this.$store.dispatch("kitchenDisplaySystemOrder/orderItems").then(function (res) {
+        _this13.loading.isActive = false;
+      })["catch"](function (err) {
+        var _err$response4;
+        _this13.loading.isActive = false;
+        _services_alertService__WEBPACK_IMPORTED_MODULE_7__["default"].error((err === null || err === void 0 || (_err$response4 = err.response) === null || _err$response4 === void 0 || (_err$response4 = _err$response4.data) === null || _err$response4 === void 0 ? void 0 : _err$response4.message) || _this13.$t('message.something_wrong'));
+      });
+    },
+    openSidebar: function openSidebar() {
+      var _document2, _document3;
+      (_document2 = document) === null || _document2 === void 0 || (_document2 = _document2.querySelector(".db-main")) === null || _document2 === void 0 || (_document2 = _document2.classList) === null || _document2 === void 0 || _document2.remove("expand");
+      var activeMenu = document.querySelector('.db-sidebar-nav-item.active');
+      if (activeMenu) {
+        activeMenu.classList.remove('active');
+      }
+      (_document3 = document) === null || _document3 === void 0 || (_document3 = _document3.querySelector('.router-link-exact-active')) === null || _document3 === void 0 || (_document3 = _document3.parentElement) === null || _document3 === void 0 || (_document3 = _document3.classList) === null || _document3 === void 0 || _document3.add('active');
+    },
+    closeSidebar: function closeSidebar() {
+      var _document4;
+      (_document4 = document) === null || _document4 === void 0 || (_document4 = _document4.querySelector(".db-main")) === null || _document4 === void 0 || (_document4 = _document4.classList) === null || _document4 === void 0 || _document4.add("expand");
+    },
+    search: function search() {
+      if (typeof this.props.search.order_serial_no !== "undefined" && this.props.search.order_serial_no !== "") {
+        this.list();
+      } else {
+        this.list();
+      }
+    },
+    searchReset: function searchReset() {
+      this.props.search.order_serial_no = "";
+      this.list();
+    },
+    kdsOverflowSeeMore: function kdsOverflowSeeMore() {
+      this.props.search.order_serial_no = "";
+      this.props.search.status = "";
+      this.list();
+    },
+    // [AUDIT-P47-BUG4] Escape HTML to prevent XSS when printing kitchen tickets.
+    // Order data comes from DB but could be poisoned if an admin account was compromised.
+    escapeHtml: function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    },
+    kdsAddonDisplayName: function kdsAddonDisplayName(addon) {
+      if (!addon || _typeof(addon) !== 'object') {
+        return '';
+      }
+      return addon.addon_name || addon.addon_item_name || addon.name || addon.item_name || 'Addon';
+    },
+    // [AUDIT-P2] Print a kitchen ticket for a given order using a hidden iframe.
+    // Opens a minimal print window with order ref, items, variations, extras, addons, and instructions.
+    // No external library needed — uses native window.print() on an isolated document.
+    // [AUDIT-P47-BUG4] All dynamic values escaped to prevent stored XSS.
+    printKitchenTicket: function printKitchenTicket() {
+      // [TICKET-UNIFIED 2026-06-30] Owner : l'écran cuisine (board) N'IMPRIME PAS.
+      // Le ticket cuisine sort UNIQUEMENT de la caisse (ReceiptComponent -> pont SAGA),
+      // au format symbolique unifié. Méthode neutralisée (boutons retirés).
+    } /* order */,
+    orderStatus: function orderStatus(order, status) {
+      var _this14 = this;
+      try {
+        this.loading.isActive = true;
+        var payload = (0,_store_modules_kds__WEBPACK_IMPORTED_MODULE_13__.kdsStatusPayload)(order, status);
+        this.$store.dispatch("kitchenDisplaySystemOrder/changeStatus", _objectSpread({}, payload)).then(function (res) {
+          _this14.loading.isActive = false;
+          _services_alertService__WEBPACK_IMPORTED_MODULE_7__["default"].successFlip(1, _this14.$t("label.status"));
+          // [CV1-KDS-A11Y-RICH-001] Announce the transition to screen readers
+          // via the aria-live region (does NOT steal focus, polite politeness).
+          _this14.kdsAnnounceTransition(order, status);
+          // [AUDIT-P49-BUG7] Debounce refresh: list() triggers items update via store,
+          // and Echo broadcast also triggers refresh. Use debounce to prevent triple API calls.
+          _this14._debouncedRefresh();
+          // Propager le changement de statut à tous les composants qui écoutent (OSS, autres KDS)
+          window.dispatchEvent(new CustomEvent('realtime-order-update', {
+            detail: {
+              type: 'status-change',
+              order_id: payload.id,
+              status: status
+            }
+          }));
+        })["catch"](function (err) {
+          var _err$response5, _err$response6;
+          _this14.loading.isActive = false;
+          if ((err === null || err === void 0 || (_err$response5 = err.response) === null || _err$response5 === void 0 ? void 0 : _err$response5.status) === 409) {
+            _services_alertService__WEBPACK_IMPORTED_MODULE_7__["default"].error(_this14.$t("message.kds_status_conflict"));
+            _this14._debouncedRefresh();
+            return;
+          }
+          // [AUDIT-P47-BUG7] Null-safe guard — err.response is undefined on network timeout
+          var msg = (err === null || err === void 0 || (_err$response6 = err.response) === null || _err$response6 === void 0 || (_err$response6 = _err$response6.data) === null || _err$response6 === void 0 ? void 0 : _err$response6.message) || (err === null || err === void 0 ? void 0 : err.message) || 'Erreur réseau';
+          _services_alertService__WEBPACK_IMPORTED_MODULE_7__["default"].error(msg);
+        });
+      } catch (err) {
+        var _err$response7;
+        this.loading.isActive = false;
+        // [AUDIT-P47-BUG7] Null-safe guard — err.response is undefined on network timeout
+        var msg = (err === null || err === void 0 || (_err$response7 = err.response) === null || _err$response7 === void 0 || (_err$response7 = _err$response7.data) === null || _err$response7 === void 0 ? void 0 : _err$response7.message) || (err === null || err === void 0 ? void 0 : err.message) || 'Erreur réseau';
+        _services_alertService__WEBPACK_IMPORTED_MODULE_7__["default"].error(msg);
+      }
+    },
+    /**
+     * [CV1-KDS-INFLIGHT-OOS-MARKER-001] Handle ItemAvailabilityChanged events.
+     *
+     * Per RED-R3 F3 + RED-R4 KD11 :
+     *   - Branch-scoped 86 (is_available === false): mark the item in
+     *     `kdsInflight.recentlyDeavailable` so any in-flight ticket card
+     *     that still contains this item gets a red OOS warning badge.
+     *   - Item became available again (is_available === true): clear the
+     *     flag so the badge disappears.
+     *   - Other event shapes (global price/structural change): just refresh.
+     *
+     * The OOS marker is independent from the existing chime watcher (KD5).
+     * Lazy TTL purge inside the Vuex getter ensures stale flags don't
+     * outlive the rupture window (10 min). No timer leaks across remounts.
+     */
+    _onItemAvailabilityChanged: function _onItemAvailabilityChanged(parsed) {
+      try {
+        var _ref2, _payload$item_id, _ref3, _payload$is_available, _ref4, _payload$branch_id, _payload$reason;
+        var payload = parsed && parsed.payload ? parsed.payload : {};
+        var itemId = (_ref2 = (_payload$item_id = payload.item_id) !== null && _payload$item_id !== void 0 ? _payload$item_id : payload.itemId) !== null && _ref2 !== void 0 ? _ref2 : null;
+        var isAvailable = (_ref3 = (_payload$is_available = payload.is_available) !== null && _payload$is_available !== void 0 ? _payload$is_available : payload.isAvailable) !== null && _ref3 !== void 0 ? _ref3 : null;
+        var branchId = (_ref4 = (_payload$branch_id = payload.branch_id) !== null && _payload$branch_id !== void 0 ? _payload$branch_id : payload.branchId) !== null && _ref4 !== void 0 ? _ref4 : null;
+        var reason = (_payload$reason = payload.reason) !== null && _payload$reason !== void 0 ? _payload$reason : null;
+        if (itemId !== null && itemId !== undefined) {
+          if (isAvailable === false) {
+            this.$store.dispatch('kdsInflight/markDeavailable', {
+              itemId: itemId,
+              branchId: branchId,
+              reason: reason,
+              kdsBranchId: this.authBranchId()
+            });
+            // [iter15-mega-fix D-003 2026-05-10] Surface a visible warning toast
+            // on the KDS surface in addition to the inflight badge — kitchen
+            // staff with hands full + noise need an unmissable cue when an
+            // item used by an in-preparation ticket goes 86. The aria-live
+            // region (kds-aria-live) carries the same message for screen readers.
+            try {
+              var itemName = payload.name || payload.item_name || '#' + itemId;
+              // [HEAL-2 V102-03 2026-05-26] i18n FR/EN/AR via pos.stock_rupture_alert
+              // (was hardcoded FR concat with raw reason enum — caused mixed-locale
+              // labels in EN/AR). reason suffix dropped per owner mission spec
+              // "Stock épuisé : {item_name}".
+              var label;
+              try {
+                label = this.$t('pos.stock_rupture_alert', {
+                  name: itemName
+                });
+              } catch (_t) {
+                label = "Stock \xE9puis\xE9 : ".concat(itemName);
+              }
+              this.kdsAriaLiveMessage = label;
+              _services_alertService__WEBPACK_IMPORTED_MODULE_7__["default"].warning(label);
+            } catch (_e) {/* defensive */}
+          } else if (isAvailable === true) {
+            this.$store.dispatch('kdsInflight/clearItem', itemId);
+          }
+        }
+      } catch (e) {
+        // Defensive: never break KDS refresh because of a malformed payload.
+        console.warn('[KDS] _onItemAvailabilityChanged failed:', e === null || e === void 0 ? void 0 : e.message);
+      }
+      this._debouncedRefresh();
+    },
+    /**
+     * [CV1-KDS-INFLIGHT-OOS-MARKER-001] Card-level helper used by templates :
+     * returns true if the given order is in_preparation (or accepted) AND
+     * still references at least one item flagged in `kdsInflight`.
+     * Cards in PREPARED state are intentionally NOT marked — the warning
+     * is only useful while the cuisinier is still working on the ticket.
+     */
+    kdsHasOosWarning: function kdsHasOosWarning(order) {
+      if (!order) return false;
+      var status = Number(order.status);
+      var isInflight = status === _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_3__["default"].ACCEPT || status === _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_3__["default"].PREPARING;
+      if (!isInflight) return false;
+      var getter = this.$store.getters['kdsInflight/orderHasRecentlyDeavailableItem'];
+      return typeof getter === 'function' ? getter(order) : false;
+    },
+    /**
+     * [CV1-KDS-A11Y-RICH-001] Update the polite aria-live region with a
+     * one-line transition announcement. Screen readers pick it up without
+     * stealing focus. Used from `orderStatus` after a successful change.
+     * Falls back silently if the order has no serial number.
+     */
+    kdsAnnounceTransition: function kdsAnnounceTransition(order, status) {
+      var _ref5,
+        _order$order_serial_n,
+        _this15 = this;
+      if (!order) return;
+      var serial = (_ref5 = (_order$order_serial_n = order.order_serial_no) !== null && _order$order_serial_n !== void 0 ? _order$order_serial_n : order.id) !== null && _ref5 !== void 0 ? _ref5 : '';
+      if (serial === '' || serial === null || serial === undefined) return;
+      var label = '';
+      if (status === _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_3__["default"].PREPARING) {
+        label = this.$t ? this.$t('label.kds_aria_live_preparing', {
+          id: serial
+        }) : "Order #".concat(serial, " preparing");
+      } else if (status === _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_3__["default"].PREPARED) {
+        label = this.$t ? this.$t('label.kds_aria_live_ready', {
+          id: serial
+        }) : "Order #".concat(serial, " ready");
+      } else if (status === _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_3__["default"].ACCEPT) {
+        label = this.$t ? this.$t('label.kds_aria_live_accepted', {
+          id: serial
+        }) : "Order #".concat(serial, " accepted");
+      } else {
+        label = "Order #".concat(serial);
+      }
+      // Vue reactivity : briefly clear before setting so identical successive
+      // transitions still trigger an aria-live announcement.
+      this.kdsAriaLiveMessage = '';
+      this.$nextTick(function () {
+        _this15.kdsAriaLiveMessage = label;
+      });
+    },
+    /**
+     * [F-02] Handle OrderTableChanged events.
+     *
+     * Per orchestrator gate G-2 (in_place_with_css_flash):
+     *   - Refresh the list so the new table_name appears (SSOT = backend).
+     *   - Mark the order id as "freshly moved" for ~2s so the card flashes.
+     *   - NEVER replay a sound and NEVER trigger a re-print — this is a silent,
+     *     visual-only signal that respects the kitchen rush flow.
+     *
+     * Idempotent: receiving the same payload twice resets the 2s timer.
+     */
+    _handleTableChanged: function _handleTableChanged(payload) {
+      var _this16 = this;
+      var orderId = parseInt((payload === null || payload === void 0 ? void 0 : payload.order_id) || 0);
+      if (orderId <= 0) {
+        this._debouncedRefresh();
+        return;
+      }
+      this.flashTableChangeIds = _objectSpread(_objectSpread({}, this.flashTableChangeIds), {}, _defineProperty({}, orderId, true));
+      if (this._tableFlashTimers[orderId]) {
+        clearTimeout(this._tableFlashTimers[orderId]);
+      }
+      this._tableFlashTimers[orderId] = setTimeout(function () {
+        var next = _objectSpread({}, _this16.flashTableChangeIds);
+        delete next[orderId];
+        _this16.flashTableChangeIds = next;
+        delete _this16._tableFlashTimers[orderId];
+      }, 2000);
+      this._debouncedRefresh();
+    },
+    // [AUDIT-P49-BUG7] Debounced refresh: prevents simultaneous list()+items()+Echo refresh.
+    _debouncedRefresh: function _debouncedRefresh() {
+      var _this17 = this;
+      if (this._refreshTimeout) {
+        clearTimeout(this._refreshTimeout);
+      }
+      this._refreshTimeout = setTimeout(function () {
+        _this17._refreshWithCurrentFilter();
+        _this17.items();
+      }, 300); // 300ms debounce — sufficient to absorb Echo broadcast + manual call
+    },
+    toggleFilter: function toggleFilter(index) {
+      if (this.expandedFilter === index) {
+        this.expandedFilter = null;
+      } else {
+        this.expandedFilter = index;
+      }
+    },
+    // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+    // Handler shared by:
+    //   (a) `KdsHistoryDrawer` `@recalled` emit — fires synchronously after the
+    //       chef clicks "↶ Annuler bump" on the originating station (instant
+    //       local feedback);
+    //   (b) `KdsOrderRecalled` Echo broadcast handler — fires on OTHER stations
+    //       of the same branch (cross-poste sync, see subscribeEcho).
+    // We store the timestamp in `kdsRecalledMap` so the computed
+    // `recallActiveIds` exposes the order to KdsV2Grid for the 60s window.
+    // Also bumps an aria-live message for screen-reader users.
+    onKdsOrderRecalled: function onKdsOrderRecalled(payload) {
+      if (!payload || !payload.orderId) {
+        return;
+      }
+      var id = parseInt(payload.orderId, 10);
+      var at = typeof payload.recalledAt === 'number' ? payload.recalledAt : Date.now();
+      this.kdsRecalledMap = _objectSpread(_objectSpread({}, this.kdsRecalledMap), {}, _defineProperty({}, id, at));
+      this.kdsAriaLiveMessage = this.$t('label.kds_recall_badge_aria', {
+        queue: payload.queueNumber || id
+      });
+      // Trigger a debounced list refresh so the card actually re-appears on
+      // the board (the order's `updated_at` may have aged out of the active
+      // grid even though it's still PREPARED). The recall row in the DB
+      // doesn't change `orders.updated_at`, so without a refresh the FIFO
+      // sort would not re-insert it.
+      this._debouncedRefresh();
+    }
+  },
+  beforeUnmount: function beforeUnmount() {
+    var _document5;
+    this.stopAutoRefresh();
+    // [#2] Clear the debounced-refresh timer — without this, a refresh queued
+    // <300ms before navigation fires _refreshWithCurrentFilter()+items() on the
+    // torn-down component (orphan dispatch + reactive writes on a dead instance).
+    if (this._refreshTimeout) {
+      clearTimeout(this._refreshTimeout);
+      this._refreshTimeout = null;
+    }
+    // [Heal-5] Stop the recall TTL ticker.
+    if (this._kdsRecallTickerId) {
+      window.clearInterval(this._kdsRecallTickerId);
+      this._kdsRecallTickerId = null;
+    }
+    if (this._kdsWaitInterval) {
+      clearInterval(this._kdsWaitInterval);
+      this._kdsWaitInterval = null;
+    }
+    // [iter15-mega-fix C-017 2026-05-10] Eject the status-transition response
+    // interceptor — leaks would re-fire `_refreshWithCurrentFilter()` on a
+    // ghost component after the user navigates away from the KDS page.
+    try {
+      if (this._kdsStatusInterceptorId !== null && this._kdsStatusInterceptorId !== undefined && typeof window !== 'undefined' && window.axios && window.axios.interceptors && window.axios.interceptors.response) {
+        window.axios.interceptors.response.eject(this._kdsStatusInterceptorId);
+      }
+    } catch (_e) {/* defensive */}
+    this._kdsStatusInterceptorId = null;
+    // [KDS-A-01 2026-07-06] Retire l'override flex-column route-scoped (cf. mounted).
+    (_document5 = document) === null || _document5 === void 0 || (_document5 = _document5.querySelector('.db-main')) === null || _document5 === void 0 || (_document5 = _document5.classList) === null || _document5 === void 0 || _document5.remove('db-main--kds');
+    this.openSidebar();
+    window.removeEventListener('realtime-order-update', this.refreshOrderList);
+    this.unsubscribeEcho();
+    this._unbindWsService();
+    Object.values(this._tableFlashTimers || {}).forEach(function (t) {
+      try {
+        clearTimeout(t);
+      } catch (e) {}
+    });
+    this._tableFlashTimers = {};
+    // [F-03 / Lot 1.C] Tear down adaptive polling cleanly.
+    try {
+      _services_KdsSyncService__WEBPACK_IMPORTED_MODULE_10__["default"].stop();
+    } catch (e) {/* ignore */}
+    (this.kdsSyncUnsubscribers || []).forEach(function (u) {
+      try {
+        u && u();
+      } catch (e) {}
+    });
+    this.kdsSyncUnsubscribers = [];
+    if (this._kdsSyncStampTimer) {
+      clearInterval(this._kdsSyncStampTimer);
+      this._kdsSyncStampTimer = null;
+    }
+    // [KITCHEN-PRINT-RESILIENCE 2026-07-13] Stoppe le retry des tickets cuisine.
+    if (this._kitchenRetryInterval) {
+      clearInterval(this._kitchenRetryInterval);
+      this._kitchenRetryInterval = null;
+    }
+  }
+});
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/shared/AvailabilityTogglePanel.vue?vue&type=script&lang=js"
+/*!*******************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/shared/AvailabilityTogglePanel.vue?vue&type=script&lang=js ***!
+  \*******************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'AvailabilityTogglePanel',
+  props: {
+    visible: {
+      type: Boolean,
+      "default": false
+    }
+  },
+  emits: ['close', 'changed'],
+  data: function data() {
+    return {
+      items: [],
+      loading: false,
+      error: null,
+      search: '',
+      busy: {}
+    };
+  },
+  computed: {
+    branchId: function branchId() {
+      var _ref, _ref2, _auth$authBranchId, _auth$authInfo, _auth$authUser;
+      var auth = this.$store.state.auth || {};
+      var raw = (_ref = (_ref2 = (_auth$authBranchId = auth.authBranchId) !== null && _auth$authBranchId !== void 0 ? _auth$authBranchId : (_auth$authInfo = auth.authInfo) === null || _auth$authInfo === void 0 ? void 0 : _auth$authInfo.branch_id) !== null && _ref2 !== void 0 ? _ref2 : (_auth$authUser = auth.authUser) === null || _auth$authUser === void 0 ? void 0 : _auth$authUser.branch_id) !== null && _ref !== void 0 ? _ref : null;
+      var n = Number(raw);
+      return Number.isFinite(n) && n > 0 ? n : null;
+    },
+    filteredItems: function filteredItems() {
+      var q = this.search.toLowerCase();
+      if (!q) return this.items;
+      return this.items.filter(function (it) {
+        return String(it.name || '').toLowerCase().includes(q);
+      });
+    },
+    ruptureItems: function ruptureItems() {
+      return this.filteredItems.filter(function (it) {
+        return it.is_available === false;
+      });
+    },
+    availableItems: function availableItems() {
+      return this.filteredItems.filter(function (it) {
+        return it.is_available !== false;
+      });
+    }
+  },
+  watch: {
+    visible: function visible(v) {
+      if (v) this.fetchItems();
+    }
+  },
+  methods: {
+    fetchItems: function fetchItems() {
+      var _this = this;
+      this.loading = true;
+      this.error = null;
+      var payload = {
+        vuex: false,
+        per_page: 500,
+        order_column: 'name',
+        order_type: 'asc'
+      };
+      if (this.branchId) payload.branch_id = this.branchId;
+      this.$store.dispatch('item/lists', payload).then(function (res) {
+        var _res$data;
+        _this.items = ((res === null || res === void 0 || (_res$data = res.data) === null || _res$data === void 0 ? void 0 : _res$data.data) || []).map(function (it) {
+          return {
+            id: it.id,
+            name: it.name,
+            is_available: it.is_available !== false,
+            availability_reason: it.availability_reason || null
+          };
+        });
+      })["catch"](function () {
+        _this.error = _this.$t('availability.load_error');
+      })["finally"](function () {
+        _this.loading = false;
+      });
+    },
+    toggle: function toggle(item, isAvailable) {
+      var _this2 = this;
+      this.busy = _objectSpread(_objectSpread({}, this.busy), {}, _defineProperty({}, item.id, true));
+      this.$store.dispatch('itemAvailability/toggle', {
+        itemId: item.id,
+        branchId: this.branchId,
+        isAvailable: isAvailable,
+        unavailableReason: isAvailable ? null : 'stock_rupture'
+      }).then(function () {
+        var row = _this2.items.find(function (it) {
+          return it.id === item.id;
+        });
+        if (row) {
+          row.is_available = isAvailable;
+          row.availability_reason = isAvailable ? null : 'stock_rupture';
+        }
+        _this2.$emit('changed', {
+          itemId: item.id,
+          isAvailable: isAvailable
+        });
+      })["catch"](function () {
+        _this2.error = _this2.$t('availability.toggle_error');
+      })["finally"](function () {
+        var next = _objectSpread({}, _this2.busy);
+        delete next[item.id];
+        _this2.busy = next;
+      });
+    }
+  }
+});
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue?vue&type=template&id=593d75f2&scoped=true"
+/*!******************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue?vue&type=template&id=593d75f2&scoped=true ***!
+  \******************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* binding */ render)
+/* harmony export */ });
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+
+var _hoisted_1 = ["aria-label"];
+var _hoisted_2 = ["dir"];
+var _hoisted_3 = {
+  "class": "kds-history-drawer__header"
+};
+var _hoisted_4 = {
+  "class": "kds-history-drawer__title"
+};
+var _hoisted_5 = {
+  key: 0,
+  "class": "kds-history-drawer__count"
+};
+var _hoisted_6 = ["aria-label"];
+var _hoisted_7 = {
+  key: 0,
+  "class": "kds-history-drawer__loading",
+  "data-testid": "kds-history-loading",
+  role: "status",
+  "aria-live": "polite"
+};
+var _hoisted_8 = {
+  key: 1,
+  "class": "kds-history-drawer__error",
+  "data-testid": "kds-history-error",
+  role: "alert"
+};
+var _hoisted_9 = {
+  key: 2,
+  "class": "kds-history-drawer__empty",
+  "data-testid": "kds-history-empty"
+};
+var _hoisted_10 = {
+  key: 3,
+  "class": "kds-history-drawer__list",
+  "data-testid": "kds-history-list"
+};
+var _hoisted_11 = {
+  "class": "kds-history-drawer__head"
+};
+var _hoisted_12 = {
+  "class": "kds-history-drawer__queue"
+};
+var _hoisted_13 = ["data-status"];
+var _hoisted_14 = {
+  "class": "kds-history-drawer__times"
+};
+var _hoisted_15 = {
+  key: 0,
+  "class": "kds-history-drawer__time-cell"
+};
+var _hoisted_16 = {
+  "class": "kds-history-drawer__time-label"
+};
+var _hoisted_17 = {
+  "class": "kds-history-drawer__time"
+};
+var _hoisted_18 = {
+  key: 1,
+  "class": "kds-history-drawer__time-cell"
+};
+var _hoisted_19 = {
+  "class": "kds-history-drawer__time-label"
+};
+var _hoisted_20 = ["datetime"];
+var _hoisted_21 = {
+  "class": "kds-history-drawer__items"
+};
+var _hoisted_22 = {
+  key: 0,
+  "class": "kds-history-drawer__recall-row"
+};
+var _hoisted_23 = ["aria-label", "disabled", "data-testid", "onClick"];
+var _hoisted_24 = {
+  "class": "kds-history-drawer__recall-hint"
+};
+var _hoisted_25 = {
+  key: 1,
+  "class": "kds-history-drawer__recall-row kds-history-drawer__recall-row--done"
+};
+var _hoisted_26 = ["aria-label"];
+function render(_ctx, _cache, $props, $setup, $data, $options) {
+  var _component_KdsOrderLine = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("KdsOrderLine");
+  return $props.open ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+    key: 0,
+    "class": "kds-history-drawer",
+    role: "dialog",
+    "aria-modal": "true",
+    "aria-label": _ctx.$t('label.kds_history_button_aria'),
+    "data-testid": "kds-history-drawer"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kds-history-drawer__backdrop",
+    onClick: _cache[0] || (_cache[0] = function ($event) {
+      return _ctx.$emit('close');
+    })
+  }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kds-history-drawer__panel",
+    dir: $props.dir
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("header", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", _hoisted_4, [_cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "aria-hidden": "true"
+  }, "📚", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_history_title')) + " ", 1 /* TEXT */), !$data.loading && !$data.error ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_5, " (" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.orders.length) + ") ", 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "kds-history-drawer__close",
+    "aria-label": _ctx.$t('label.kds_history_close_aria'),
+    "data-testid": "kds-history-close",
+    onClick: _cache[1] || (_cache[1] = function ($event) {
+      return _ctx.$emit('close');
+    })
+  }, _toConsumableArray(_cache[4] || (_cache[4] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "aria-hidden": "true"
+  }, "✕", -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_6)]), $data.loading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_7, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_history_loading')), 1 /* TEXT */)) : $data.error ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_8, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_history_error')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "kds-history-drawer__retry",
+    onClick: _cache[2] || (_cache[2] = function () {
+      return $options.fetch && $options.fetch.apply($options, arguments);
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_history_retry')), 1 /* TEXT */)])) : $data.orders.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_9, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_history_empty')), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("ul", _hoisted_10, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.orders, function (order) {
+    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", {
+      key: order.id,
+      "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(['kds-history-drawer__item', $options.statusClass(order.status)]),
+      "data-testid": "kds-history-item"
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_11, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_12, " N°" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.queue_number || order.order_serial_no || order.id), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "class": "kds-history-drawer__status",
+      "data-status": order.status
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.statusLabel(order.status)), 9 /* TEXT, PROPS */, _hoisted_13)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n            [KDS history full-detail 2026-06-04] Owner ask: each history order\n            must show heure PASSÉE (commande prise) + heure TERMINÉE (bump/livré)\n            so a customer remark can be looked up. `order_time` is already a\n            formatted HH:MM string (AppLibrary::time) — bind it RAW (NOT through\n            formatTime, which expects an ISO8601 date). `updated_at` is ISO8601\n            → formatTime(). "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_14, [$options.placedTime(order) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_15, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_16, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_history_placed_at')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("time", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.placedTime(order)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.formatTime(order.updated_at) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_18, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_history_completed_at')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("time", {
+      "class": "kds-history-drawer__time",
+      datetime: order.updated_at
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatTime(order.updated_at)), 9 /* TEXT, PROPS */, _hoisted_20)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n            [KDS history full-detail 2026-06-04] Reuse the canonical live-board\n            renderer (DRY): renderItem(item).lines + <KdsOrderLine> — identical\n            output to KdsOrderCard.vue (full composition / variations / extras /\n            menu children / instruction / allergens). Replaces the former bare\n            qty+name+variation loop. Data was already complete (history endpoint\n            returns the SAME KDSOrderDetailsResource as the live board). "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_21, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(order.order_items || [], function (item, idx) {
+      return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+        key: (item.id || idx) + '-' + idx,
+        "class": "kds-history-drawer__item-block"
+      }, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.renderItemLines(item), function (line, li) {
+        return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_KdsOrderLine, {
+          key: li,
+          line: line
+        }, null, 8 /* PROPS */, ["line"]);
+      }), 128 /* KEYED_FRAGMENT */))]);
+    }), 128 /* KEYED_FRAGMENT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n            [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]\n            Chef \"Annuler bump\" surfaced ONLY when:\n              - order.status === PREPARED (statuses OUT/DELIVERED can no longer be recalled)\n              - order.updated_at within the last 60s (TTL window matches backend guard)\n              - order.recalled_by_id NOT already set in the local cache (cap N=1 — best-effort,\n                the backend remains the source of truth and returns 409 otherwise)\n\n            V1.0.2 backlog Path C (reverse transition PREPARED → PREPARING) remains\n            deferred — Path B is the V1 ship per owner mandate 2026-05-26.\n          "), $options.canRecall(order) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_22, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+      type: "button",
+      "class": "kds-history-drawer__recall-btn",
+      "aria-label": _ctx.$t('label.kds_recall_button_aria', {
+        queue: order.queue_number || order.id
+      }),
+      disabled: $data.recallingIds.includes(order.id),
+      "data-testid": "kds-recall-".concat(order.id),
+      onClick: function onClick($event) {
+        return $options.recall(order);
+      }
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_recall_button')), 9 /* TEXT, PROPS */, _hoisted_23), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_24, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.recallSecondsLeft(order)) + "s ", 1 /* TEXT */)])) : order.status === $data.STATUS_PREPARED && $options.wasRecentlyRecalled(order) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_25, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "class": "kds-history-drawer__recall-badge",
+      "aria-label": _ctx.$t('label.kds_recall_badge_aria', {
+        queue: order.queue_number || order.id
+      })
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_recall_badge')), 9 /* TEXT, PROPS */, _hoisted_26)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 2 /* CLASS */);
+  }), 128 /* KEYED_FRAGMENT */))]))], 8 /* PROPS */, _hoisted_2)], 8 /* PROPS */, _hoisted_1)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true);
+}
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=template&id=151558cb&scoped=true"
+/*!**************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=template&id=151558cb&scoped=true ***!
+  \**************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* binding */ render)
+/* harmony export */ });
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+
+var _hoisted_1 = ["aria-label", "data-order-id"];
+var _hoisted_2 = ["aria-label", "data-testid"];
+var _hoisted_3 = {
+  "class": "kds-card__meta"
+};
+var _hoisted_4 = ["title"];
+var _hoisted_5 = {
+  key: 1,
+  "class": "kds-card__shortcut-spacer"
+};
+var _hoisted_6 = {
+  "class": "kds-card__state-source"
+};
+var _hoisted_7 = {
+  "class": "kds-card__source-label"
+};
+var _hoisted_8 = {
+  key: 2,
+  "class": "kds-card__allergen-pill",
+  role: "alert",
+  "aria-live": "assertive"
+};
+var _hoisted_9 = {
+  key: 3,
+  "class": "kds-card__allergen-spacer"
+};
+var _hoisted_10 = {
+  "class": "kds-card__main"
+};
+var _hoisted_11 = {
+  "class": "kds-card__queue keep-latin"
+};
+var _hoisted_12 = {
+  "class": "kds-card__elapsed-wrap"
+};
+var _hoisted_13 = ["aria-label"];
+var _hoisted_14 = {
+  key: 0,
+  "class": "kds-card__delivery",
+  "data-testid": "kds-card-delivery"
+};
+var _hoisted_15 = {
+  key: 0,
+  "class": "kds-card__delivery-row"
+};
+var _hoisted_16 = {
+  "class": "kds-card__delivery-text"
+};
+var _hoisted_17 = {
+  key: 1,
+  "class": "kds-card__delivery-row kds-card__delivery-row--muted"
+};
+var _hoisted_18 = {
+  "class": "kds-card__delivery-text"
+};
+var _hoisted_19 = ["href", "aria-label"];
+var _hoisted_20 = {
+  "class": "kds-card__delivery-text"
+};
+var _hoisted_21 = ["aria-label"];
+var _hoisted_22 = {
+  "class": "kds-card__footer"
+};
+var _hoisted_23 = ["aria-label"];
+var _hoisted_24 = ["aria-label", "title"];
+function render(_ctx, _cache, $props, $setup, $data, $options) {
+  var _component_KdsOrderLine = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("KdsOrderLine");
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kds-card", $options.cardClass]),
+    style: (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeStyle)($options.cardStyle),
+    tabindex: "0",
+    role: "region",
+    "aria-label": $options.ariaLabel,
+    "data-order-id": $props.order.id,
+    onKeydown: _cache[2] || (_cache[2] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
+      return $options.onCardKeydownEnter && $options.onCardKeydownEnter.apply($options, arguments);
+    }, ["self"]), ["enter"]))
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" TOP ACCENT STRIPE — dominant 2m signal "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kds-card__stripe",
+    style: (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeStyle)({
+      background: $options.stripeColor
+    })
+  }, null, 4 /* STYLE */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]\n         RAPPELÉ badge — surfaces when the orchestrator marks this order as\n         recalled (chef \"Annuler bump\" on same station, or websocket fan-out\n         from another station of the same branch). Lives ABOVE the header so\n         it's the first thing the chef sees on re-injection. aria-live=polite\n         announces the recall to screen-reader users. "), $props.recallActive ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+    key: 0,
+    "class": "kds-card__recall-badge",
+    role: "status",
+    "aria-live": "polite",
+    "aria-label": _ctx.$t('label.kds_recall_badge_aria', {
+      queue: $props.order.queue_number || $props.order.id
+    }),
+    "data-testid": "kds-card-recall-badge-".concat($props.order.id)
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_recall_badge')), 9 /* TEXT, PROPS */, _hoisted_2)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" HEADER "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kds-card__header",
+    style: (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeStyle)({
+      background: $options.headerBg
+    })
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" meta row: slot + state/source + allergen "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [$props.shortcut ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+    key: 0,
+    "class": "kds-card__shortcut",
+    title: _ctx.$t('label.kds_bump_local_only_notice')
+  }, "[" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.shortcut) + "]", 9 /* TEXT, PROPS */, _hoisted_4)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_5)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_6, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kds-card__state-pill",
+    style: (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeStyle)($options.statePillStyle)
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kds-card__state-dot",
+    style: (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeStyle)({
+      background: $options.stateTheme.dot
+    })
+  }, null, 4 /* STYLE */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.stateLabel), 1 /* TEXT */)], 4 /* STYLE */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kds-card__source-chip",
+    style: (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeStyle)($options.sourceChipStyle)
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_7, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.sourceLabel), 1 /* TEXT */)], 4 /* STYLE */)]), $options.hasAllergen ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_8, " ⚠ " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_allergie')), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_9))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" main row: queue number + elapsed "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_10, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_11, [_cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kds-card__queue-prefix"
+  }, "N°", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.order.queue_number || $props.order.id), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kds-card__elapsed-label",
+    style: (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeStyle)({
+      color: $options.elapsedLabelColor
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_attente')), 5 /* TEXT, STYLE */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kds-card__elapsed keep-latin", $options.bucket === 'critical' ? 'kds-pulse-digit' : '']),
+    style: (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeStyle)({
+      color: $options.elapsedColor
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.elapsedFormatted), 7 /* TEXT, CLASS, STYLE */)])])], 4 /* STYLE */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" BODY "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" KDS-R1-05 heal: tabindex=0 + role=region + aria-label = Safari keyboard accessibility\n         on scrollable overflow:auto region (axe-core 'scrollable-region-focusable' serious). "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kds-card__body",
+    tabindex: "0",
+    role: "region",
+    "aria-label": _ctx.$t('label.kds_card_body_aria', {
+      queue: $props.order.queue_number || $props.order.id
+    })
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Sprint 2A DEL-3 2026-05-16] Delivery block — only renders when\n           the order is destined for delivery AND the backend has populated\n           `order_address` (i.e. the eager-load was applied). Without this,\n           the livreur sees a token + delivery_time and literally cannot\n           deliver. Kept visually quiet (border-left accent, monospace\n           latin digits for the phone) so it never out-screams the queue\n           number or the elapsed timer. "), $options.isDeliveryOrder ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_14, [$options.deliveryAddressLine ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_15, [_cache[4] || (_cache[4] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kds-card__delivery-icon",
+    "aria-hidden": "true"
+  }, "📍", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_16, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.deliveryAddressLine), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.customerName ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_17, [_cache[5] || (_cache[5] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kds-card__delivery-icon",
+    "aria-hidden": "true"
+  }, "👤", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_18, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.customerName), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.customerPhone ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("a", {
+    key: 2,
+    "class": "kds-card__delivery-row kds-card__delivery-phone keep-latin",
+    href: "tel:".concat($options.customerPhone),
+    "aria-label": _ctx.$t('label.kds_call_customer_aria', {
+      name: $options.customerName || '',
+      phone: $options.customerPhone
+    })
+  }, [_cache[6] || (_cache[6] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kds-card__delivery-icon",
+    "aria-hidden": "true"
+  }, "📱", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_20, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.customerPhone), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_19)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($props.order.order_items, function (item, idx) {
+    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+      key: item.id || idx,
+      "class": "kds-card__item-block"
+    }, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.renderItemLines(item), function (line, li) {
+      return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_KdsOrderLine, {
+        key: li,
+        line: line
+      }, null, 8 /* PROPS */, ["line"]);
+    }), 128 /* KEYED_FRAGMENT */))]);
+  }), 128 /* KEYED_FRAGMENT */)), _cache[7] || (_cache[7] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kds-card__body-fade"
+  }, null, -1 /* CACHED */))], 8 /* PROPS */, _hoisted_13), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" FOOTER — bump CTA + (when awaiting counter encashment) a NON-blocking note "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [GOAL-2026-05-30 D1 — OWNER REVERSAL of Wave S-2 2026-05-20] Owner now wants the\n         kitchen to PREPARE an order BEFORE encashment. So for a cash-at-counter order still\n         awaiting collection (payment_pending_counter=true) we show a NON-blocking\n         \"Non encaissé / paiement en attente\" note AND keep the bump CTA enabled — the chef can\n         advance the order; the cashier collects later in /admin/encaissement. (The earlier\n         \"MUST NOT bump\" gate was UI-only — the server never blocked it; comment was inaccurate.)\n         For paid orders the note is hidden and only the CTA shows (unchanged). "), $options.isCashPending ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+    key: 1,
+    "class": "kds-card__cash-pending kds-card__cash-pending--note",
+    role: "status",
+    "aria-label": _ctx.$t('label.kds_card_cash_pending_aria'),
+    "data-testid": "kds-card-cash-pending"
+  }, [_cache[8] || (_cache[8] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+    width: "20",
+    height: "20",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    "stroke-width": "2.5",
+    "stroke-linecap": "round",
+    "stroke-linejoin": "round",
+    "aria-hidden": "true"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("circle", {
+    cx: "12",
+    cy: "12",
+    r: "10"
+  }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("polyline", {
+    points: "12 6 12 12 16 14"
+  })], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_card_cash_pending')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_21)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" FOOTER ROW — Prêt CTA (large) + réimpression ticket cuisine (compact).\n         [KDS-REPRINT 2026-07-13] Le bouton 🖨️ émet 'reprint' (réimpression MANUELLE)\n         indépendamment du CTA : @click.stop empêche le bubbling vers le CTA / la carte,\n         et l'action côté orchestrateur ignore le toggle auto + la dé-dup. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_22, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "kds-card__cta",
+    onClick: _cache[0] || (_cache[0] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
+      return $options.onCta && $options.onCta.apply($options, arguments);
+    }, ["prevent"])),
+    "aria-label": _ctx.$t('label.kds_card_cta_ready'),
+    "data-testid": "kds-card-cta-ready"
+  }, [_cache[9] || (_cache[9] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+    width: "22",
+    height: "22",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    "stroke-width": "3.5",
+    "stroke-linecap": "round",
+    "stroke-linejoin": "round",
+    "aria-hidden": "true"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+    d: "M5 12l5 5L20 7"
+  })], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_card_cta_ready')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_23), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "kds-card__reprint",
+    onClick: _cache[1] || (_cache[1] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+      return _ctx.$emit('reprint');
+    }, ["prevent", "stop"])),
+    "aria-label": _ctx.$t('label.kds_reprint'),
+    title: _ctx.$t('label.kds_reprint'),
+    "data-testid": "kds-card-reprint"
+  }, _toConsumableArray(_cache[10] || (_cache[10] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+    width: "22",
+    height: "22",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    "stroke-width": "2.5",
+    "stroke-linecap": "round",
+    "stroke-linejoin": "round",
+    "aria-hidden": "true"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("polyline", {
+    points: "6 9 6 2 18 2 18 9"
+  }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+    d: "M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"
+  }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("rect", {
+    x: "6",
+    y: "14",
+    width: "12",
+    height: "8"
+  })], -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_24)])], 46 /* CLASS, STYLE, PROPS, NEED_HYDRATION */, _hoisted_1);
+}
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=template&id=5c6c7baf&scoped=true"
+/*!**************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=template&id=5c6c7baf&scoped=true ***!
+  \**************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* binding */ render)
+/* harmony export */ });
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+
+var _hoisted_1 = {
+  key: 0,
+  "class": "kds-line__header"
+};
+var _hoisted_2 = {
+  "class": "kds-line__qty"
+};
+var _hoisted_3 = ["aria-label"];
+var _hoisted_4 = {
+  "class": "kds-line__name"
+};
+var _hoisted_5 = {
+  "class": "kds-line__symbolic"
+};
+var _hoisted_6 = {
+  "class": "kds-line__qty"
+};
+var _hoisted_7 = ["aria-label"];
+var _hoisted_8 = {
+  "class": "kds-line__symbolic-text"
+};
+var _hoisted_9 = {
+  "class": "kds-line__symbolic-menu"
+};
+var _hoisted_10 = {
+  "class": "kds-line__variation"
+};
+var _hoisted_11 = {
+  "class": "kds-line__group"
+};
+var _hoisted_12 = {
+  "class": "kds-line__value"
+};
+var _hoisted_13 = {
+  "class": "kds-line__variation kds-line__variation--flat"
+};
+var _hoisted_14 = {
+  "class": "kds-line__group"
+};
+var _hoisted_15 = {
+  "class": "kds-line__value"
+};
+var _hoisted_16 = {
+  "class": "kds-line__supplement"
+};
+var _hoisted_17 = {
+  "class": "kds-line__menu-child"
+};
+var _hoisted_18 = {
+  "class": "kds-line__addon"
+};
+var _hoisted_19 = {
+  "class": "kds-line__instruction-text"
+};
+var _hoisted_20 = {
+  "class": "kds-line__allergen-block",
+  role: "alert"
+};
+var _hoisted_21 = {
+  "class": "kds-line__allergen-label"
+};
+var _hoisted_22 = {
+  "class": "kds-line__allergen-codes"
+};
+function render(_ctx, _cache, $props, $setup, $data, $options) {
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kds-line", "kds-line--".concat($props.line.type)])
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" header — qty + name + allergen icon "), $props.line.type === 'header' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.line.qty), 1 /* TEXT */), _cache[0] || (_cache[0] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kds-line__qty-x"
+  }, "×", -1 /* CACHED */))]), $props.line.hasAllergen ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+    key: 0,
+    "class": "kds-line__allergen-icon",
+    "aria-label": _ctx.$t('label.kds_line_allergen_icon_aria')
+  }, "⚠", 8 /* PROPS */, _hoisted_3)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.line.label), 1 /* TEXT */)])) : $props.line.type === 'symbolic-main' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 1
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" symbolic-main — qty + \"G | SANDWICH | P | STO | SAM\" (kitchen shorthand) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_5, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_6, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.line.qty), 1 /* TEXT */), _cache[1] || (_cache[1] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kds-line__qty-x"
+  }, "×", -1 /* CACHED */))]), $props.line.hasAllergen ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+    key: 0,
+    "class": "kds-line__allergen-icon",
+    "aria-label": _ctx.$t('label.kds_line_allergen_icon_aria')
+  }, "⚠", 8 /* PROPS */, _hoisted_7)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_8, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.line.label), 1 /* TEXT */)])], 64 /* STABLE_FRAGMENT */)) : $props.line.type === 'symbolic-menu' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 2
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" symbolic-menu — \"MENU\" / \"F\" badge "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_9, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.line.label), 1 /* TEXT */)], 64 /* STABLE_FRAGMENT */)) : $props.line.type === 'variation' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 3
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" grouped variation: \"Pain : Baguette\" "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_10, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_11, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.groupLabel), 1 /* TEXT */), _cache[2] || (_cache[2] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kds-line__sep"
+  }, " : ", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_12, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.line.label), 1 /* TEXT */)])], 64 /* STABLE_FRAGMENT */)) : $props.line.type === 'variation-flat' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 4
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" flat assiette: \"Avec : a, b, c\" "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_13, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_14, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_group_avec')), 1 /* TEXT */), _cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kds-line__sep"
+  }, " : ", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.line.label), 1 /* TEXT */)])], 64 /* STABLE_FRAGMENT */)) : $props.line.type === 'supplement' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 5
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" supplement: \"+ Cheddar\" in yellow italic "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_16, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.line.label), 1 /* TEXT */)], 64 /* STABLE_FRAGMENT */)) : $props.line.type === 'menu_child' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 6
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" menu_child: \"▸ Frites Moyennes\" (formule child) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_17, [_cache[4] || (_cache[4] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kds-line__menu-arrow"
+  }, "▸", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.line.label), 1 /* TEXT */)])], 64 /* STABLE_FRAGMENT */)) : $props.line.type === 'addon' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 7
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" generic addon "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_18, [_cache[5] || (_cache[5] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kds-line__menu-arrow"
+  }, "▸", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.line.label), 1 /* TEXT */)])], 64 /* STABLE_FRAGMENT */)) : $props.line.type === 'instruction' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 8
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" free-text instruction "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(['kds-line__instruction', $props.line.visualClass])
+  }, [_cache[6] || (_cache[6] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kds-line__instruction-prefix"
+  }, "·", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.line.label), 1 /* TEXT */)], 2 /* CLASS */)], 64 /* STABLE_FRAGMENT */)) : $props.line.type === 'allergen' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 9
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" allergen codes block "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_20, [_cache[7] || (_cache[7] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kds-line__allergen-icon"
+  }, "⚠", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_21, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.allergenLabel), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_22, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.joinedCodes), 1 /* TEXT */)])], 64 /* STABLE_FRAGMENT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 2 /* CLASS */);
+}
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=template&id=665158fe&scoped=true"
+/*!*****************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=template&id=665158fe&scoped=true ***!
+  \*****************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* binding */ render)
+/* harmony export */ });
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+
+var _hoisted_1 = {
+  "class": "kds-banner__main"
+};
+var _hoisted_2 = {
+  key: 0,
+  "class": "kds-banner__spinner",
+  width: "14",
+  height: "14",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  "stroke-width": "3",
+  "stroke-linecap": "round",
+  "aria-hidden": "true"
+};
+var _hoisted_3 = {
+  key: 1,
+  width: "11",
+  height: "11",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  "stroke-width": "3",
+  "stroke-linecap": "round",
+  "stroke-linejoin": "round",
+  "aria-hidden": "true"
+};
+var _hoisted_4 = {
+  "class": "kds-banner__text"
+};
+var _hoisted_5 = {
+  "class": "kds-banner__tag keep-latin"
+};
+function render(_ctx, _cache, $props, $setup, $data, $options) {
+  return $options.bannerData ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+    key: 0,
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(['kds-banner', "kds-banner--".concat($options.bannerData.level), {
+      'kds-banner--reserve-gutter': $props.reserveRightGutter
+    }]),
+    role: "status"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kds-banner__icon",
+    style: (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeStyle)({
+      background: $options.bannerData.iconBg
+    })
+  }, [$options.bannerData.level === 'error' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("svg", _hoisted_2, _toConsumableArray(_cache[0] || (_cache[0] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+    d: "M21 12a9 9 0 1 1-6.219-8.56"
+  }, null, -1 /* CACHED */)])))) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("svg", _hoisted_3, _toConsumableArray(_cache[1] || (_cache[1] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+    d: "M12 9v4M12 17h.01"
+  }, null, -1 /* CACHED */)]))))], 4 /* STYLE */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.bannerData.text), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_5, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.bannerData.tag), 1 /* TEXT */)], 2 /* CLASS */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true);
+}
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=template&id=3992cfe5&scoped=true"
+/*!***********************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=template&id=3992cfe5&scoped=true ***!
+  \***********************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* binding */ render)
+/* harmony export */ });
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+
+var _hoisted_1 = ["dir"];
+var _hoisted_2 = {
+  key: 0,
+  "class": "kds-v2__empty"
+};
+var _hoisted_3 = {
+  "class": "kds-v2__empty-title"
+};
+var _hoisted_4 = {
+  "class": "kds-v2__empty-sub"
+};
+var _hoisted_5 = ["data-count"];
+var _hoisted_6 = {
+  key: 2,
+  "class": "kds-overflow-chip",
+  role: "status"
+};
+var _hoisted_7 = {
+  "class": "kds-overflow-chip__icon"
+};
+var _hoisted_8 = ["aria-label"];
+var _hoisted_9 = {
+  "class": "kds-v2__served-label"
+};
+var _hoisted_10 = {
+  "class": "kds-v2__served-list"
+};
+var _hoisted_11 = ["title"];
+var _hoisted_12 = {
+  "class": "kds-v2__served-pill-num"
+};
+var _hoisted_13 = {
+  "class": "kds-v2__served-pill-ago"
+};
+var _hoisted_14 = {
+  "class": "sr-only",
+  "aria-live": "polite",
+  "aria-atomic": "true"
+};
+function render(_ctx, _cache, $props, $setup, $data, $options) {
+  var _component_KdsStatusBanner = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("KdsStatusBanner");
+  var _component_KdsOrderCard = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("KdsOrderCard");
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+    "class": "kds-v2",
+    dir: $props.dir
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Single banner zone "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_KdsStatusBanner, {
+    "offline-since": $props.offlineSince,
+    "list-at-cap": $props.listAtCap,
+    "near-cap": $options.activeOrders.length,
+    "fallback-mode": $props.fallbackMode,
+    "admin-polling-hint": $props.adminPollingHint,
+    "bump-local-only-notice": $props.bumpLocalOnlyNotice,
+    "reserve-right-gutter": $options.overflowActiveCount > 0,
+    now: $data.now
+  }, null, 8 /* PROPS */, ["offline-since", "list-at-cap", "near-cap", "fallback-mode", "admin-polling-hint", "bump-local-only-notice", "reserve-right-gutter", "now"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Empty state (only when NO active orders — served strip below renders independently) "), $options.activeOrders.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_2, [_cache[0] || (_cache[0] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createStaticVNode)("<div class=\"kds-v2__empty-illustration\" aria-hidden=\"true\" data-v-3992cfe5><div class=\"kds-v2__empty-glow\" data-v-3992cfe5></div><svg width=\"120\" height=\"120\" viewBox=\"0 0 64 64\" fill=\"none\" stroke=\"#9CA3AF\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-v-3992cfe5><ellipse cx=\"32\" cy=\"42\" rx=\"22\" ry=\"6\" fill=\"#F3F4F6\" stroke=\"#D1D5DB\" data-v-3992cfe5></ellipse><path d=\"M10 38a22 8 0 0 1 44 0\" fill=\"white\" data-v-3992cfe5></path><path d=\"M14 30c0-4 6-8 18-8s18 4 18 8\" data-v-3992cfe5></path><circle cx=\"22\" cy=\"24\" r=\"1.5\" fill=\"#9CA3AF\" data-v-3992cfe5></circle><circle cx=\"32\" cy=\"22\" r=\"1.5\" fill=\"#9CA3AF\" data-v-3992cfe5></circle><circle cx=\"42\" cy=\"24\" r=\"1.5\" fill=\"#9CA3AF\" data-v-3992cfe5></circle></svg></div>", 1)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_empty_state')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_empty_state_sub')), 1 /* TEXT */)])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 1
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" FIFO Grid 4×2 — ACTIVE only (ACCEPT + PREPARING). PREPARED → served strip below.\n         [Wave U 2026-05-21] Owner-reported bug: PREPARED orders stayed greyed in grid\n         (kds-card--ready opacity:0.7) with the elapsed timer still ticking, occupying\n         a slot. Now they leave the active FIFO entirely and surface in a compact\n         strip at the bottom for ~last 4 served, with elapsed-since-served. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [KDS-SHOW-ALL 2026-07-01] Owner-gate levée : afficher TOUTES les commandes actives\n         (plus de plafond 8 qui cachait les 9+). Grille multi-colonnes qui DÉFILE ; chaque\n         carte prend la hauteur de son contenu → tous les produits d'une commande sont\n         visibles, une grosse commande prend plus de hauteur. Ordre FIFO préservé. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [KDS-3CARDS 2026-07-05] Owner : l'écran affiche 3 commandes MAX à la fois, chacune\n         prenant TOUTE la hauteur (fini les cartes du bas écrasées / l'espace vide). Les\n         commandes 4+ attendent leur tour (pastille « +N en attente » ci-dessous). "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kds-v2__grid",
+    "data-count": $options.visibleActiveOrders.length
+  }, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.visibleActiveOrders, function (o, idx) {
+    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_KdsOrderCard, {
+      key: o.id,
+      order: o,
+      now: $data.now,
+      shortcut: $options.SHORTCUTS[idx],
+      "recall-active": $options.isRecallActive(o),
+      onReady: function onReady($event) {
+        return $options.onCtaTap(o.id, o.queue_number);
+      },
+      onReprint: function onReprint($event) {
+        return _ctx.$emit('reprint', o);
+      }
+    }, null, 8 /* PROPS */, ["order", "now", "shortcut", "recall-active", "onReady", "onReprint"]);
+  }), 128 /* KEYED_FRAGMENT */))], 8 /* PROPS */, _hoisted_5)], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */)), $options.overflowActiveCount > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_6, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_7, "+" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.overflowActiveCount), 1 /* TEXT */), _cache[1] || (_cache[1] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, "en attente", -1 /* CACHED */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Wave U 2026-05-21] Récemment servies — compact archive strip.\n         Renders the 4 most recently PREPARED orders with elapsed-since-served.\n         Small footprint (60px row) so it never steals space from the active grid. "), $options.recentlyServed.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+    key: 3,
+    "class": "kds-v2__served",
+    role: "region",
+    "aria-label": _ctx.$t('label.kds_recently_served')
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_9, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_recently_served')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_10, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.recentlyServed, function (o) {
+    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+      key: "served-".concat(o.id),
+      "class": "kds-v2__served-pill keep-latin",
+      title: _ctx.$t('label.kds_served_pill_title', {
+        queue: o.queue_number || o.id
+      })
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_12, "N°" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(o.queue_number || o.id), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_13, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.servedAgoLabel(o)), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_11);
+  }), 128 /* KEYED_FRAGMENT */))])], 8 /* PROPS */, _hoisted_8)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Wave V 2026-05-21] KdsUndoToast removed — chef Prêt tap now PATCHes\n         immediately. The 3s undo window + single-slot serialization\n         (clearTimeout(pendingTimeoutId)) caused a cross-order race: when chef\n         chained \"Prêt\" on 3+ orders within 3s, the previous order's PATCH\n         was cancelled by the next click → only the LAST order transitioned,\n         the rest stayed EN COURS until chef re-clicked (perceived as a 30s\n         retry-after toast). Per owner mandate \"enlève cette sécurité\".\n         Component file kept for instant rollback. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" aria-live region for screen readers "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_14, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.liveMessage), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_1);
+}
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue?vue&type=template&id=66aac04e&scoped=true"
+/*!*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue?vue&type=template&id=66aac04e&scoped=true ***!
+  \*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* binding */ render)
+/* harmony export */ });
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+
+var _hoisted_1 = {
+  "class": "kds-history-trigger-row"
+};
+var _hoisted_2 = ["aria-label"];
+var _hoisted_3 = {
+  "class": "kds-history-trigger__label"
+};
+var _hoisted_4 = ["aria-label"];
+var _hoisted_5 = {
+  "class": "kds-history-trigger__label"
+};
+var _hoisted_6 = {
+  key: 0,
+  "class": "ws-reconnect-banner",
+  "data-testid": "kds-sync-mode-banner"
+};
+var _hoisted_7 = {
+  key: 1,
+  "class": "kds-hint-banner kds-hint-banner--danger kds-hint-banner--action",
+  role: "alert",
+  "aria-live": "assertive",
+  "data-testid": "kds-error-banner"
+};
+var _hoisted_8 = ["aria-label"];
+var _hoisted_9 = {
+  key: 2,
+  "class": "kds-hint-banner kds-hint-banner--info",
+  role: "status"
+};
+var _hoisted_10 = {
+  key: 3,
+  "class": "kds-hint-banner kds-hint-banner--warning",
+  role: "alert"
+};
+var _hoisted_11 = {
+  key: 4,
+  "class": "kds-hint-banner kds-hint-banner--danger kds-hint-banner--action",
+  role: "alert"
+};
+var _hoisted_12 = {
+  key: 5,
+  "class": "kds-hint-banner kds-hint-banner--neutral flex flex-wrap items-center justify-between gap-2 text-left",
+  role: "note"
+};
+var _hoisted_13 = {
+  "class": "min-w-0 flex-1"
+};
+var _hoisted_14 = {
+  "class": "row md:mt-4 lg:mt-0"
+};
+var _hoisted_15 = {
+  "class": "lg:hidden flex items-center w-full px-4"
+};
+var _hoisted_16 = {
+  "class": "kitchen-board db-tab-btn active text-base text-black font-semibold h-[38px] bg-white flex items-center justify-center rounded-l-lg px-7",
+  "data-tab": "#item-order"
+};
+var _hoisted_17 = {
+  "class": "kitchen-board db-tab-btn text-base text-black font-semibold h-[38px] bg-white flex items-center justify-center ro rounded-r-lg px-7",
+  "data-tab": "#today-order"
+};
+var _hoisted_18 = {
+  id: "item-order",
+  "class": "col-12 lg:col-3 db-tab-div active lg:block hidden"
+};
+var _hoisted_19 = {
+  "class": "db-card rounded-[10px] w-full"
+};
+var _hoisted_20 = {
+  "class": "h-screen md:h-[calc(100vh-127px)] overflow-hidden"
+};
+var _hoisted_21 = {
+  "class": "p-3 pb-2 border-b border-[#D9DBE9]"
+};
+var _hoisted_22 = {
+  "class": "text-lg font-semibold"
+};
+var _hoisted_23 = {
+  "class": "text-[11px] text-[#4B5563] leading-snug mt-1"
+};
+var _hoisted_24 = {
+  "class": "h-full thin-scrolling overflow-auto pb-12"
+};
+var _hoisted_25 = {
+  "class": "text-sm font-medium mb-1"
+};
+var _hoisted_26 = {
+  key: 0,
+  "class": "text-xs font-normal font-client capitalize text-[#6E7191]"
+};
+var _hoisted_27 = {
+  key: 0
+};
+var _hoisted_28 = {
+  key: 1,
+  "class": "flex gap-1"
+};
+var _hoisted_29 = {
+  "class": "capitalize text-xs w-fit whitespace-nowrap"
+};
+var _hoisted_30 = {
+  "class": "text-xs font-normal font-client capitalize text-[#6E7191]"
+};
+var _hoisted_31 = {
+  key: 0
+};
+var _hoisted_32 = {
+  key: 2,
+  "class": "flex gap-1"
+};
+var _hoisted_33 = {
+  "class": "capitalize text-xs w-fit whitespace-nowrap"
+};
+var _hoisted_34 = {
+  "class": "text-xs font-normal font-client capitalize text-[#6E7191]"
+};
+var _hoisted_35 = {
+  key: 0
+};
+var _hoisted_36 = {
+  key: 1
+};
+var _hoisted_37 = {
+  "class": "text-sm font-medium w-6 h-6 rounded-full bg-black text-white flex items-center justify-center"
+};
+var _hoisted_38 = {
+  id: "today-order",
+  "class": "col-12 lg:col-9 db-tab-div lg:block hidden"
+};
+var _hoisted_39 = {
+  "class": "ordersTab"
+};
+var _hoisted_40 = {
+  "class": "db-card px-3 py-3 mb-4 flex flex-col xl:flex-row flex-wrap gap-4 xl:items-center xl:justify-between"
+};
+var _hoisted_41 = {
+  "class": "flex flex-wrap items-center gap-3"
+};
+var _hoisted_42 = {
+  "for": "kds-station-filter",
+  "class": "text-sm font-medium text-heading shrink-0"
+};
+var _hoisted_43 = ["aria-label"];
+var _hoisted_44 = {
+  value: "all"
+};
+var _hoisted_45 = {
+  value: "bar"
+};
+var _hoisted_46 = {
+  value: "cuisine_chaude"
+};
+var _hoisted_47 = {
+  value: "cuisine_froide"
+};
+var _hoisted_48 = {
+  "class": "flex items-center gap-2 text-xs font-medium text-heading cursor-pointer"
+};
+var _hoisted_49 = {
+  "class": "flex flex-wrap items-center gap-4"
+};
+var _hoisted_50 = {
+  "class": "text-sm font-medium text-heading"
+};
+var _hoisted_51 = {
+  "class": "flex items-center gap-2 text-xs text-heading cursor-pointer"
+};
+var _hoisted_52 = {
+  "class": "sr-only"
+};
+var _hoisted_53 = {
+  "class": "flex items-center gap-2 text-xs text-heading"
+};
+var _hoisted_54 = {
+  "class": "whitespace-nowrap"
+};
+var _hoisted_55 = ["aria-label"];
+var _hoisted_56 = ["title"];
+var _hoisted_57 = {
+  "class": "whitespace-nowrap"
+};
+var _hoisted_58 = {
+  key: 0,
+  role: "alert",
+  "class": "flex items-center gap-1 text-xs font-semibold text-red-600 whitespace-nowrap"
+};
+var _hoisted_59 = {
+  ref: "kdsNewOrderAudio",
+  preload: "auto",
+  "class": "hidden",
+  src: "/sounds/kds-new-order.mp3"
+};
+var _hoisted_60 = {
+  "class": "db-card px-3 py-2.5 mb-4"
+};
+var _hoisted_61 = {
+  "class": "swiper kitchen-swiper !flex flex-col gap-y-2 xl:flex-row items-start justify-between"
+};
+var _hoisted_62 = {
+  "class": "whitespace-nowrap text-sm font-medium"
+};
+var _hoisted_63 = {
+  "class": "whitespace-nowrap text-sm font-medium"
+};
+var _hoisted_64 = {
+  "class": "whitespace-nowrap text-sm font-medium"
+};
+var _hoisted_65 = {
+  "class": "whitespace-nowrap text-sm font-medium"
+};
+var _hoisted_66 = ["placeholder", "aria-label"];
+var _hoisted_67 = ["aria-label"];
+var _hoisted_68 = {
+  "class": "db-card rounded-[10px] h-fit"
+};
+var _hoisted_69 = {
+  "class": "text-lg font-semibold"
+};
+var _hoisted_70 = {
+  key: 0,
+  "class": "p-3 text-sm text-[#6E7191]"
+};
+var _hoisted_71 = {
+  key: 1,
+  "class": "p-3 space-y-3"
+};
+var _hoisted_72 = {
+  key: 0,
+  "class": "mb-1"
+};
+var _hoisted_73 = ["onClick"];
+var _hoisted_74 = ["aria-labelledby"];
+var _hoisted_75 = ["title", "aria-label"];
+var _hoisted_76 = ["onClick", "aria-label"];
+var _hoisted_77 = {
+  "class": "py-2.5 px-3 w-full rounded-t-lg flex items-center justify-between bg-[#F0F8FF]"
+};
+var _hoisted_78 = {
+  "class": "flex items-center gap-1 text-[#0084FF]"
+};
+var _hoisted_79 = ["id"];
+var _hoisted_80 = {
+  key: 0,
+  "class": "kds-source-pill kds-source-pill--queue"
+};
+var _hoisted_81 = {
+  "class": "w-full pt-2 pb-3 px-3"
+};
+var _hoisted_82 = {
+  "class": "text-sm font-normal leading-6 font-client capitalize text-[#6E7191]"
+};
+var _hoisted_83 = {
+  "class": "text-heading font-medium"
+};
+var _hoisted_84 = {
+  "class": "text-sm font-normal leading-6 font-client capitalize text-[#6E7191]"
+};
+var _hoisted_85 = {
+  "class": "text-heading font-medium"
+};
+var _hoisted_86 = {
+  key: 0,
+  "class": "mt-1 mb-2 p-2 rounded-lg bg-[#F0FDFA] border-l-[3px] border-[#0F766E]",
+  "data-testid": "kds-legacy-delivery"
+};
+var _hoisted_87 = {
+  key: 0,
+  "class": "text-xs leading-snug text-[#0F766E] font-semibold flex items-start gap-1"
+};
+var _hoisted_88 = {
+  "class": "break-words"
+};
+var _hoisted_89 = {
+  key: 1,
+  "class": "text-xs leading-snug text-[#115E59] flex items-center gap-1"
+};
+var _hoisted_90 = ["href"];
+var _hoisted_91 = ["aria-label"];
+var _hoisted_92 = {
+  style: {
+    "height": "0px"
+  },
+  "class": "overflow-hidden transition-all duration-500"
+};
+var _hoisted_93 = {
+  "class": "text-sm font-medium shrink-0"
+};
+var _hoisted_94 = {
+  "class": "flex-1 min-w-0"
+};
+var _hoisted_95 = {
+  "class": "text-sm font-medium mb-1"
+};
+var _hoisted_96 = {
+  key: 0,
+  "class": "text-xs font-normal font-client capitalize text-[#6E7191]"
+};
+var _hoisted_97 = {
+  key: 0
+};
+var _hoisted_98 = {
+  key: 1,
+  "class": "flex gap-1"
+};
+var _hoisted_99 = {
+  "class": "capitalize text-xs w-fit whitespace-nowrap font-medium"
+};
+var _hoisted_100 = {
+  "class": "text-xs font-normal font-client capitalize text-[#6E7191]"
+};
+var _hoisted_101 = {
+  key: 0
+};
+var _hoisted_102 = {
+  key: 2,
+  "class": "flex gap-1"
+};
+var _hoisted_103 = {
+  "class": "capitalize text-xs w-fit whitespace-nowrap font-medium"
+};
+var _hoisted_104 = {
+  "class": "text-xs font-normal font-client capitalize text-[#6E7191]"
+};
+var _hoisted_105 = {
+  key: 0
+};
+var _hoisted_106 = {
+  key: 1
+};
+var _hoisted_107 = {
+  "class": "flex flex-col items-end gap-1 shrink-0 pt-0.5"
+};
+var _hoisted_108 = ["title", "aria-label", "onClick"];
+var _hoisted_109 = ["onClick"];
+var _hoisted_110 = ["title", "aria-label", "onClick"];
+var _hoisted_111 = {
+  "class": "kds-card-cta mt-2",
+  "data-testid": "kds-card-cta"
+};
+var _hoisted_112 = ["onClick"];
+var _hoisted_113 = ["onClick"];
+var _hoisted_114 = {
+  "class": "db-card rounded-[10px] h-fit"
+};
+var _hoisted_115 = {
+  "class": "text-lg font-semibold"
+};
+var _hoisted_116 = {
+  key: 0,
+  "class": "p-3 text-sm text-[#6E7191]"
+};
+var _hoisted_117 = ["aria-labelledby"];
+var _hoisted_118 = ["title", "aria-label"];
+var _hoisted_119 = ["onClick", "aria-label"];
+var _hoisted_120 = {
+  "class": "py-2.5 px-3 w-full rounded-t-lg flex items-center justify-between bg-[#FFF6EE]"
+};
+var _hoisted_121 = {
+  "class": "flex items-center gap-1 text-[#FF8C1A]"
+};
+var _hoisted_122 = ["id"];
+var _hoisted_123 = {
+  key: 0,
+  "class": "kds-source-pill kds-source-pill--queue"
+};
+var _hoisted_124 = {
+  "class": "w-full pt-2 pb-3 px-3"
+};
+var _hoisted_125 = {
+  "class": "text-sm font-normal leading-6 font-client capitalize text-[#6E7191]"
+};
+var _hoisted_126 = {
+  key: 0,
+  "class": "text-sm font-normal leading-6 font-client capitalize text-[#6E7191]"
+};
+var _hoisted_127 = {
+  "class": "text-heading font-medium"
+};
+var _hoisted_128 = {
+  key: 1,
+  "class": "mt-1 mb-2 p-2 rounded-lg bg-[#F0FDFA] border-l-[3px] border-[#0F766E]",
+  "data-testid": "kds-legacy-delivery"
+};
+var _hoisted_129 = {
+  key: 0,
+  "class": "text-xs leading-snug text-[#0F766E] font-semibold flex items-start gap-1"
+};
+var _hoisted_130 = {
+  "class": "break-words"
+};
+var _hoisted_131 = {
+  key: 1,
+  "class": "text-xs leading-snug text-[#115E59] flex items-center gap-1"
+};
+var _hoisted_132 = ["href"];
+var _hoisted_133 = ["aria-label"];
+var _hoisted_134 = {
+  style: {
+    "height": "0px"
+  },
+  "class": "overflow-hidden transition-all duration-500"
+};
+var _hoisted_135 = {
+  "class": "text-sm font-medium shrink-0"
+};
+var _hoisted_136 = {
+  "class": "flex-1 min-w-0"
+};
+var _hoisted_137 = {
+  "class": "text-sm font-medium mb-1"
+};
+var _hoisted_138 = {
+  key: 0,
+  "class": "text-xs font-normal font-client capitalize text-[#6E7191]"
+};
+var _hoisted_139 = {
+  key: 0
+};
+var _hoisted_140 = {
+  key: 1,
+  "class": "flex gap-1"
+};
+var _hoisted_141 = {
+  "class": "capitalize text-xs w-fit whitespace-nowrap font-medium"
+};
+var _hoisted_142 = {
+  "class": "text-xs font-normal font-client capitalize text-[#6E7191]"
+};
+var _hoisted_143 = {
+  key: 0
+};
+var _hoisted_144 = {
+  key: 2,
+  "class": "flex gap-1"
+};
+var _hoisted_145 = {
+  "class": "capitalize text-xs w-fit whitespace-nowrap font-medium"
+};
+var _hoisted_146 = {
+  "class": "text-xs font-normal font-client capitalize text-[#6E7191]"
+};
+var _hoisted_147 = {
+  key: 0
+};
+var _hoisted_148 = {
+  key: 1
+};
+var _hoisted_149 = {
+  "class": "flex flex-col items-end gap-1 shrink-0 pt-0.5"
+};
+var _hoisted_150 = ["title", "aria-label", "onClick"];
+var _hoisted_151 = ["onClick"];
+var _hoisted_152 = ["title", "aria-label", "onClick"];
+var _hoisted_153 = {
+  "class": "kds-card-cta mt-2",
+  "data-testid": "kds-card-cta"
+};
+var _hoisted_154 = ["onClick"];
+var _hoisted_155 = ["onClick"];
+var _hoisted_156 = {
+  "class": "db-card rounded-[10px] h-fit"
+};
+var _hoisted_157 = {
+  "class": "text-lg font-semibold"
+};
+var _hoisted_158 = {
+  key: 0,
+  "class": "p-3 text-sm text-[#6E7191]"
+};
+var _hoisted_159 = ["aria-labelledby"];
+var _hoisted_160 = ["title", "aria-label"];
+var _hoisted_161 = ["onClick", "aria-label"];
+var _hoisted_162 = {
+  "class": "py-2.5 px-3 w-full rounded-t-lg flex items-center justify-between bg-[#F7F0FF]"
+};
+var _hoisted_163 = {
+  "class": "kds-card-header-meta text-[#2D1263]"
+};
+var _hoisted_164 = ["id"];
+var _hoisted_165 = {
+  key: 0,
+  "class": "kds-source-pill kds-source-pill--queue"
+};
+var _hoisted_166 = {
+  key: 1,
+  "class": "kds-counter-payment-badge"
+};
+var _hoisted_167 = {
+  "class": "w-full pt-2 pb-3 px-3"
+};
+var _hoisted_168 = {
+  "class": "text-sm font-normal leading-6 font-client capitalize text-[#6E7191]"
+};
+var _hoisted_169 = {
+  "class": "text-heading font-medium"
+};
+var _hoisted_170 = {
+  key: 0,
+  "class": "text-sm font-normal leading-6 font-client text-[#6E7191]"
+};
+var _hoisted_171 = {
+  "class": "text-heading font-medium"
+};
+var _hoisted_172 = {
+  key: 1,
+  "class": "mt-1 mb-2 p-2 rounded-lg bg-[#F0FDFA] border-l-[3px] border-[#0F766E]",
+  "data-testid": "kds-legacy-delivery"
+};
+var _hoisted_173 = {
+  key: 0,
+  "class": "text-xs leading-snug text-[#0F766E] font-semibold flex items-start gap-1"
+};
+var _hoisted_174 = {
+  "class": "break-words"
+};
+var _hoisted_175 = {
+  key: 1,
+  "class": "text-xs leading-snug text-[#115E59] flex items-center gap-1"
+};
+var _hoisted_176 = ["href"];
+var _hoisted_177 = ["aria-label"];
+var _hoisted_178 = {
+  style: {
+    "height": "0px"
+  },
+  "class": "overflow-hidden transition-all duration-500"
+};
+var _hoisted_179 = {
+  "class": "text-sm font-medium shrink-0"
+};
+var _hoisted_180 = {
+  "class": "flex-1 min-w-0"
+};
+var _hoisted_181 = {
+  "class": "text-sm font-medium mb-1"
+};
+var _hoisted_182 = {
+  key: 0,
+  "class": "text-xs font-normal font-client capitalize text-[#6E7191]"
+};
+var _hoisted_183 = {
+  key: 0
+};
+var _hoisted_184 = {
+  key: 1,
+  "class": "flex gap-1"
+};
+var _hoisted_185 = {
+  "class": "capitalize text-xs w-fit whitespace-nowrap font-medium"
+};
+var _hoisted_186 = {
+  "class": "text-xs font-normal font-client capitalize text-[#6E7191]"
+};
+var _hoisted_187 = {
+  key: 0
+};
+var _hoisted_188 = {
+  key: 2,
+  "class": "flex gap-1"
+};
+var _hoisted_189 = {
+  "class": "capitalize text-xs w-fit whitespace-nowrap font-medium"
+};
+var _hoisted_190 = {
+  "class": "text-xs font-normal font-client capitalize text-[#6E7191]"
+};
+var _hoisted_191 = {
+  key: 0
+};
+var _hoisted_192 = {
+  key: 1
+};
+var _hoisted_193 = {
+  "class": "flex flex-col items-end gap-1 shrink-0 pt-0.5"
+};
+var _hoisted_194 = ["title", "aria-label", "onClick"];
+var _hoisted_195 = ["onClick"];
+var _hoisted_196 = ["title", "aria-label", "onClick"];
+var _hoisted_197 = {
+  "class": "kds-card-cta mt-2",
+  "data-testid": "kds-card-cta"
+};
+var _hoisted_198 = ["onClick"];
+var _hoisted_199 = ["onClick"];
+var _hoisted_200 = {
+  "class": "db-card rounded-[10px] h-fit"
+};
+var _hoisted_201 = {
+  key: 0,
+  "class": "inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#991B1B] text-white text-[11px] font-bold"
+};
+var _hoisted_202 = {
+  key: 0,
+  "class": "p-3 text-sm text-[#6E7191]"
+};
+var _hoisted_203 = ["aria-labelledby"];
+var _hoisted_204 = ["title", "aria-label"];
+var _hoisted_205 = ["onClick", "aria-label"];
+var _hoisted_206 = {
+  "class": "py-2.5 px-3 w-full rounded-t-lg flex items-center justify-between bg-[#FFF0EE]"
+};
+var _hoisted_207 = {
+  "class": "kds-card-header-meta text-[#991B1B]"
+};
+var _hoisted_208 = ["id"];
+var _hoisted_209 = {
+  key: 0,
+  "class": "kds-source-pill kds-source-pill--queue"
+};
+var _hoisted_210 = {
+  key: 1,
+  "class": "kds-counter-payment-badge"
+};
+var _hoisted_211 = {
+  "class": "w-full pt-2 pb-3 px-3"
+};
+var _hoisted_212 = {
+  key: 0,
+  "class": "mt-1 mb-2 p-2 rounded-lg bg-[#F0FDFA] border-l-[3px] border-[#0F766E]",
+  "data-testid": "kds-legacy-delivery"
+};
+var _hoisted_213 = {
+  key: 0,
+  "class": "text-xs leading-snug text-[#0F766E] font-semibold flex items-start gap-1"
+};
+var _hoisted_214 = {
+  "class": "break-words"
+};
+var _hoisted_215 = {
+  key: 1,
+  "class": "text-xs leading-snug text-[#115E59] flex items-center gap-1"
+};
+var _hoisted_216 = ["href"];
+var _hoisted_217 = ["aria-label"];
+var _hoisted_218 = {
+  key: 0,
+  "class": "text-xs font-medium text-heading"
+};
+var _hoisted_219 = {
+  style: {
+    "height": "0px"
+  },
+  "class": "overflow-hidden transition-all duration-500"
+};
+var _hoisted_220 = {
+  "class": "text-sm font-medium shrink-0"
+};
+var _hoisted_221 = {
+  "class": "flex-1 min-w-0"
+};
+var _hoisted_222 = {
+  "class": "text-sm font-medium mb-1"
+};
+var _hoisted_223 = {
+  key: 0,
+  "class": "text-xs font-normal font-client capitalize text-[#6E7191]"
+};
+var _hoisted_224 = {
+  key: 0
+};
+var _hoisted_225 = {
+  key: 1,
+  "class": "flex gap-1"
+};
+var _hoisted_226 = {
+  "class": "capitalize text-xs w-fit whitespace-nowrap font-medium"
+};
+var _hoisted_227 = {
+  "class": "text-xs font-normal font-client capitalize text-[#6E7191]"
+};
+var _hoisted_228 = {
+  key: 0
+};
+var _hoisted_229 = {
+  key: 2,
+  "class": "flex gap-1"
+};
+var _hoisted_230 = {
+  "class": "capitalize text-xs w-fit whitespace-nowrap font-medium"
+};
+var _hoisted_231 = {
+  "class": "text-xs font-normal font-client capitalize text-[#6E7191]"
+};
+var _hoisted_232 = {
+  key: 0
+};
+var _hoisted_233 = {
+  key: 1
+};
+var _hoisted_234 = {
+  key: 3,
+  "class": "mt-2 flex flex-wrap gap-1"
+};
+var _hoisted_235 = {
+  "class": "flex flex-col items-end gap-1 shrink-0 pt-0.5"
+};
+var _hoisted_236 = ["title", "aria-label", "onClick"];
+var _hoisted_237 = ["onClick"];
+var _hoisted_238 = ["title", "aria-label", "onClick"];
+var _hoisted_239 = {
+  "class": "kds-card-cta mt-2",
+  "data-testid": "kds-card-cta"
+};
+var _hoisted_240 = ["onClick"];
+var _hoisted_241 = ["onClick"];
+var _hoisted_242 = {
+  "class": "sr-only kds-aria-live",
+  "data-testid": "kds-aria-live",
+  role: "status",
+  "aria-live": "polite",
+  "aria-atomic": "true"
+};
+var _hoisted_243 = {
+  "class": "kds-sync-footer"
+};
+var _hoisted_244 = ["title"];
+var _hoisted_245 = ["aria-label"];
+var _hoisted_246 = {
+  "class": "kds-allergens-modal-content"
+};
+var _hoisted_247 = {
+  "class": "kds-allergens-modal-header"
+};
+var _hoisted_248 = ["aria-label"];
+var _hoisted_249 = {
+  "class": "kds-allergens-modal-intro"
+};
+var _hoisted_250 = {
+  "class": "kds-allergens-modal-list"
+};
+function render(_ctx, _cache, $props, $setup, $data, $options) {
+  var _component_KdsHistoryDrawer = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("KdsHistoryDrawer");
+  var _component_AvailabilityTogglePanel = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("AvailabilityTogglePanel");
+  var _component_KdsV2Grid = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("KdsV2Grid");
+  var _component_ConnectionStatusBanner = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("ConnectionStatusBanner");
+  var _component_LoadingComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("LoadingComponent");
+  var _component_SwiperSlide = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("SwiperSlide");
+  var _component_Swiper = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("Swiper");
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n    [Wave X3 2026-05-21] KDS Historique du jour — read-only V1 day-history.\n    Trigger button renders above both V2 and legacy layouts so chef can open\n    the history drawer regardless of which grid mode is active. Wave U\n    \"Récemment servies\" strip in KdsV2Grid remains independent (short-term\n    recents in active grid vs. full-day history viewer in drawer).\n  "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [GOAL RUPTURE-CARNET 2026-07-15 / W3] Bouton « Rupture » cuisine — rendu\n         au-dessus des DEUX layouts (V2 + legacy), comme Historique, pour que le\n         Chef y accède quel que soit le mode de grille actif. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "kds-history-trigger kds-rupture-trigger",
+    "data-testid": "kds-availability-panel-open",
+    "aria-label": _ctx.$t('availability.panel_title'),
+    onClick: _cache[0] || (_cache[0] = function ($event) {
+      return $data.showAvailabilityPanel = true;
+    })
+  }, [_cache[33] || (_cache[33] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "aria-hidden": "true"
+  }, "🚫", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_3, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('availability.button_label')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_2), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "kds-history-trigger",
+    "aria-label": _ctx.$t('label.kds_history_button_aria'),
+    "data-testid": "kds-history-button",
+    onClick: _cache[1] || (_cache[1] = function ($event) {
+      return $data.historyDrawerOpen = true;
+    })
+  }, [_cache[34] || (_cache[34] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "aria-hidden": "true"
+  }, "📚", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_5, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_history_button')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_4)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_KdsHistoryDrawer, {
+    open: $data.historyDrawerOpen,
+    dir: $options.direction,
+    onClose: _cache[2] || (_cache[2] = function ($event) {
+      return $data.historyDrawerOpen = false;
+    }),
+    onRecalled: $options.onKdsOrderRecalled
+  }, null, 8 /* PROPS */, ["open", "dir", "onRecalled"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [GOAL RUPTURE-CARNET 2026-07-15 / W3] Panel rupture (86) cuisine —\n       propagation borne/caisse/web via ItemAvailabilityChanged + outbox. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_AvailabilityTogglePanel, {
+    visible: $data.showAvailabilityPanel,
+    onClose: _cache[3] || (_cache[3] = function ($event) {
+      return $data.showAvailabilityPanel = false;
+    })
+  }, null, 8 /* PROPS */, ["visible"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n    [kds/sprint-2 V-5] Feature-flagged V2 layout. When useV2Layout is true\n    (URL ?v2=1, localStorage 'kds.v2_enabled', or future settings flag), the\n    new single-FIFO 4×2 grid renders. Otherwise the legacy 4-column layout\n    (Dine-in / Online / Takeaway / Kiosk) stays — instant rollback by URL\n    param removal.\n  "), $options.useV2Layout ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_KdsV2Grid, {
+    key: 0,
+    orders: $options.orders,
+    dir: $options.direction,
+    "offline-since": $data.v2OfflineSince,
+    "list-at-cap": $options.kdsOrderListAtCap,
+    "fallback-mode": !$data.wsConnected && !$options.kdsSuppressFallbackBanner,
+    "admin-polling-hint": $options.kdsIsCentralAdmin,
+    "bump-local-only-notice": !$data.kdsHideBumpInfo,
+    "auto-transition-enabled": $data.v2AutoTransitionEnabled,
+    "recall-active-ids": $options.recallActiveIds,
+    onChangeStatus: $options.onV2ChangeStatus,
+    onAutoPromote: $options.onV2AutoPromote,
+    onReprint: $options.reprintKitchenTicket
+  }, null, 8 /* PROPS */, ["orders", "dir", "offline-since", "list-at-cap", "fallback-mode", "admin-polling-hint", "bump-local-only-notice", "auto-transition-enabled", "recall-active-ids", "onChangeStatus", "onAutoPromote", "onReprint"])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 1
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n    [iter15-mega-fix B-003/D-002 2026-05-10] Banner consolidation: suppress the\n    global transient \"Reconnexion en cours…\" banner here because the local\n    kds-sync-mode-banner already conveys fallback polling state to staff.\n    Prevents two banners shouting the same fact (iter15 mega-audit Wave B/D).\n    Terminal session_invalid still surfaces.\n  "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_ConnectionStatusBanner, {
+    "suppress-transient": ""
+  }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_LoadingComponent, {
+    props: $data.loading
+  }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n    [iter15-mega-fix C-008 run-3 2026-05-10] Hide the KDS \"Mode secours actif\"\n    fallback banner in local dev where Pusher/Soketi is not running — it was\n    permanently visible across every KDS view (states 01/07/09 in iter15 mega\n    Wave B + Wave C) and pure noise. Production keeps it: kitchen needs to\n    know they are in fallback polling. Gate strictly on appEnv === 'local'\n    (NOT 'testing') so any CI suite running with APP_ENV=testing still sees\n    the banner. Existing dependent specs (audit-kds-cycle1 D1-05,\n    red-team-r4 R4-12, 04-kds-status) all use OR-fallback locators so they\n    keep passing in CI Playwright (which runs APP_ENV=local) via the sync\n    stamp / aria-live / grid alternatives.\n  "), !$data.wsConnected && !$options.kdsSuppressFallbackBanner ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_6, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_fallback_banner')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n    [test-e2e round-2 cluster-1 C-001 2026-05-10] Persistent error banner.\n    Replaces (and augments) the previous ephemeral toast in\n    _refreshWithCurrentFilter / list() error paths. Visible until the next\n    successful /api/admin/kds-order poll resets it, or the operator dismisses\n    it manually with the ✕ button. data-testid lets E2E specs assert\n    visibility deterministically (no race with toast fade-out).\n  "), $data.kdsErrorBanner.visible ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_7, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.kdsErrorBanner.message), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "kds-hint-link",
+    "aria-label": _ctx.$t('label.kds_dismiss_hint'),
+    onClick: _cache[4] || (_cache[4] = function () {
+      return $options.dismissKdsErrorBanner && $options.dismissKdsErrorBanner.apply($options, arguments);
+    })
+  }, "✕", 8 /* PROPS */, _hoisted_8)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.kdsIsCentralAdmin ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_9, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.kds_admin_polling_hint")), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.kdsOrderApproachingCap ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_10, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.kds_order_cap_warning", {
+    n: $options.orders.length
+  })), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.kdsOrderListAtCap ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_11, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.kds_order_list_full_warning", {
+    n: $options.orders.length
+  })), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "kds-hint-link",
+    onClick: _cache[5] || (_cache[5] = function () {
+      return $options.kdsOverflowSeeMore && $options.kdsOverflowSeeMore.apply($options, arguments);
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_see_more')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), !$data.kdsHideBumpInfo ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_13, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.kds_bump_local_only_notice")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "shrink-0 text-xs font-medium underline text-[#4b5563]",
+    onClick: _cache[6] || (_cache[6] = function () {
+      return $options.dismissKdsBumpNotice && $options.dismissKdsBumpNotice.apply($options, arguments);
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.kds_dismiss_hint")), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_14, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_15, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_16, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.items_board')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.todays_order')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_18, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_19, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_20, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_21, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_22, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.items_board')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_23, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.kds_items_board_scope")), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_24, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [N7 FIX] Stable key using item_id + instruction hash instead of object reference "), ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.orderItems, function (orderItem, oIdx) {
+    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", {
+      key: orderItem.item_id + '-' + oIdx,
+      "class": "px-3 py-2 flex items-start justify-between gap-2 border-b border-[#EFF0F6] last:border-none"
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h5", _hoisted_25, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(orderItem.item_name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [AUDIT-P1] Array.isArray guard: legacy kiosk orders stored JSON objects,\n                     not arrays. Without this guard, .length on an object is undefined → Vue warning. "), Array.isArray(orderItem.item_variations) && orderItem.item_variations.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_26, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(orderItem.item_variations, function (variation, index) {
+      return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+        key: index,
+        "class": "text-heading"
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.variationLine(variation)), 1 /* TEXT */), index + 1 < orderItem.item_variations.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_27, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+    }), 128 /* KEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), Array.isArray(orderItem.item_extras) && orderItem.item_extras.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_28, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_29, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.extras')) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_30, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(orderItem.item_extras, function (extra, index) {
+      return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+        key: index,
+        "class": "text-heading"
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(extra.name), 1 /* TEXT */), index + 1 < orderItem.item_extras.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_31, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+    }), 128 /* KEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), Array.isArray(orderItem.item_addons) && orderItem.item_addons.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_32, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_33, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.addons')) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_34, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(orderItem.item_addons, function (addon, index) {
+      return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+        key: index,
+        "class": "text-heading"
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsAddonDisplayName(addon)), 1 /* TEXT */), Number(addon.quantity || 1) > 1 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_35, " ×" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(Number(addon.quantity || 1)), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), index + 1 < orderItem.item_addons.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_36, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+    }), 128 /* KEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.kdsCleanInstruction(orderItem) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+      key: 3,
+      "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)([$options.kdsInstructionClass($options.kdsCleanInstruction(orderItem)), 'kds-instruction', 'mt-1', 'text-xs', 'text-heading']),
+      style: {
+        "white-space": "pre-line"
+      }
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsCleanInstruction(orderItem)), 3 /* TEXT, CLASS */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_37, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(orderItem.quantity), 1 /* TEXT */)]);
+  }), 128 /* KEYED_FRAGMENT */))])])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_38, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_39, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_40, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_41, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_42, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_station_filter')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("select", {
+    id: "kds-station-filter",
+    "onUpdate:modelValue": _cache[7] || (_cache[7] = function ($event) {
+      return $data.stationFilter = $event;
+    }),
+    onChange: _cache[8] || (_cache[8] = function () {
+      return $options.persistKdsUiPrefs && $options.persistKdsUiPrefs.apply($options, arguments);
+    }),
+    "aria-label": _ctx.$t('label.kds_station_filter'),
+    "class": "h-10 rounded-lg border border-[#D9DBE9] px-3 text-xs text-heading min-w-[10rem] bg-white"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", _hoisted_44, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_all_stations')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", _hoisted_45, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_bar')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", _hoisted_46, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_cuisine_chaude')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", _hoisted_47, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_cuisine_froide')), 1 /* TEXT */)], 40 /* PROPS, NEED_HYDRATION */, _hoisted_43), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelSelect, $data.stationFilter]]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_48, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+    type: "checkbox",
+    "onUpdate:modelValue": _cache[9] || (_cache[9] = function ($event) {
+      return $data.groupByTable = $event;
+    }),
+    onChange: _cache[10] || (_cache[10] = function () {
+      return $options.persistKdsUiPrefs && $options.persistKdsUiPrefs.apply($options, arguments);
+    }),
+    "class": "rounded border-[#D9DBE9]"
+  }, null, 544 /* NEED_HYDRATION, NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelCheckbox, $data.groupByTable]]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_group_by_table')), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_49, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_50, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_sound')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_51, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+    type: "checkbox",
+    "onUpdate:modelValue": _cache[11] || (_cache[11] = function ($event) {
+      return $data.soundEnabled = $event;
+    }),
+    onChange: _cache[12] || (_cache[12] = function () {
+      return $options.persistKdsUiPrefs && $options.persistKdsUiPrefs.apply($options, arguments);
+    }),
+    "class": "rounded border-[#D9DBE9]"
+  }, null, 544 /* NEED_HYDRATION, NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelCheckbox, $data.soundEnabled]]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_52, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_sound')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_53, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_54, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_volume')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+    type: "range",
+    min: "0",
+    max: "100",
+    "onUpdate:modelValue": _cache[13] || (_cache[13] = function ($event) {
+      return $data.soundVolume = $event;
+    }),
+    onInput: _cache[14] || (_cache[14] = function () {
+      return $options.persistKdsUiPrefs && $options.persistKdsUiPrefs.apply($options, arguments);
+    }),
+    "aria-label": _ctx.$t('label.kds_volume'),
+    "class": "w-28 accent-primary"
+  }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_55), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.soundVolume, void 0, {
+    number: true
+  }]])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", {
+    "class": "flex items-center gap-2 text-xs font-medium text-heading cursor-pointer",
+    title: _ctx.$t('label.kds_auto_print_hint')
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+    type: "checkbox",
+    "onUpdate:modelValue": _cache[15] || (_cache[15] = function ($event) {
+      return $data.autoPrintKitchen = $event;
+    }),
+    onChange: _cache[16] || (_cache[16] = function () {
+      return $options.persistKdsUiPrefs && $options.persistKdsUiPrefs.apply($options, arguments);
+    }),
+    "class": "rounded border-[#D9DBE9]"
+  }, null, 544 /* NEED_HYDRATION, NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelCheckbox, $data.autoPrintKitchen]]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_57, "🖨️ " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_auto_print')) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.autoPrintKitchen ? 'ON' : 'OFF'), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_56), $options.kitchenPrintFailedCount > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_58, " ⚠️ " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_print_failed', {
+    count: $options.kitchenPrintFailedCount
+  })), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("audio", _hoisted_59, null, 512 /* NEED_PATCH */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_60, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_61, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_Swiper, {
+    dir: $options.direction,
+    speed: 1000,
+    slidesPerView: "auto",
+    spaceBetween: 12,
+    loop: false,
+    "class": "md:grid sm:grid-cols-2 lg:grid-cols-4 gap-y-2 md:w-fit lg:!w-full w-full"
+  }, {
+    "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
+      return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_SwiperSlide, {
+        "class": "!w-fit"
+      }, {
+        "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
+          return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+            type: "button",
+            onClick: _cache[17] || (_cache[17] = function ($event) {
+              return $options.list();
+            }),
+            "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["db-btn text-heading w-fit flex items-center justify-center gap-3 h-11 px-6 rounded-lg transition bg-white border border-[#D9DBE9] hover:text-[#4C1A96] hover:border-[#4C1A96] hover:bg-[#F8F1FF]", !$data.props.search.status ? '!bg-[#4C1A96] !text-white !border-[#4C1A96]' : ''])
+          }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_62, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.all_orders")), 1 /* TEXT */)], 2 /* CLASS */)];
+        }),
+        _: 1 /* STABLE */
+      }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_SwiperSlide, {
+        "class": "!w-fit"
+      }, {
+        "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
+          return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+            type: "button",
+            onClick: _cache[18] || (_cache[18] = function ($event) {
+              return $options.list($data.enums.orderStatusEnum.ACCEPT);
+            }),
+            "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)([$data.props.search.status === $data.enums.orderStatusEnum.ACCEPT ? '!bg-[#4C1A96] !text-white !border-[#4C1A96]' : '', "db-btn text-heading w-fit flex items-center justify-center gap-3 h-11 px-6 rounded-lg transition bg-white border border-[#D9DBE9] hover:text-[#4C1A96] hover:border-[#4C1A96] hover:bg-[#F8F1FF]"])
+          }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_63, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.confirmed")), 1 /* TEXT */)], 2 /* CLASS */)];
+        }),
+        _: 1 /* STABLE */
+      }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_SwiperSlide, {
+        "class": "!w-fit"
+      }, {
+        "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
+          return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+            type: "button",
+            onClick: _cache[19] || (_cache[19] = function ($event) {
+              return $options.list($data.enums.orderStatusEnum.PREPARING);
+            }),
+            "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)([$data.props.search.status === $data.enums.orderStatusEnum.PREPARING ? '!bg-[#4C1A96] !text-white !border-[#4C1A96]' : '', "db-btn text-heading w-fit flex items-center justify-center gap-3 h-11 px-6 rounded-lg transition bg-white border border-[#D9DBE9] hover:text-[#4C1A96] hover:border-[#4C1A96] hover:bg-[#F8F1FF]"])
+          }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_64, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.preparing")), 1 /* TEXT */)], 2 /* CLASS */)];
+        }),
+        _: 1 /* STABLE */
+      }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_SwiperSlide, {
+        "class": "!w-fit"
+      }, {
+        "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
+          return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+            type: "button",
+            onClick: _cache[20] || (_cache[20] = function ($event) {
+              return $options.list($data.enums.orderStatusEnum.PREPARED);
+            }),
+            "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)([$data.props.search.status === $data.enums.orderStatusEnum.PREPARED ? '!bg-[#4C1A96] !text-white !border-[#4C1A96]' : '', "db-btn text-heading w-fit flex items-center justify-center gap-3 h-11 px-6 rounded-lg transition bg-white border border-[#D9DBE9] hover:text-[#4C1A96] hover:border-[#4C1A96] hover:bg-[#F8F1FF]"])
+          }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_65, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.done")), 1 /* TEXT */)], 2 /* CLASS */)];
+        }),
+        _: 1 /* STABLE */
+      })];
+    }),
+    _: 1 /* STABLE */
+  }, 8 /* PROPS */, ["dir"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("form", {
+    onSubmit: _cache[23] || (_cache[23] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
+      return $options.search && $options.search.apply($options, arguments);
+    }, ["prevent"])),
+    "class": "header-search-group group flex items-center justify-center border border-solid gap-2 px-3 xl:!max-w-[305px] w-full h-11 rounded-lg transition border-[#D9DBE9] focus-within:bg-white focus-within:border-primary"
+  }, [_cache[35] || (_cache[35] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    "class": "lab lab-search-normal lab-font-size-16"
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+    type: "text",
+    "onUpdate:modelValue": _cache[21] || (_cache[21] = function ($event) {
+      return $data.props.search.order_serial_no = $event;
+    }),
+    placeholder: _ctx.$t('label.kds_search_orders'),
+    "aria-label": _ctx.$t('button.search'),
+    "class": "header-search-field w-full h-full text-xs appearance-none placeholder:font-normal placeholder:text-paragraph text-heading"
+  }, null, 8 /* PROPS */, _hoisted_66), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.props.search.order_serial_no]]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    onClick: _cache[22] || (_cache[22] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
+      return $options.searchReset && $options.searchReset.apply($options, arguments);
+    }, ["prevent"])),
+    "aria-label": _ctx.$t('button.close'),
+    "class": "modal-close lab lab-close-circle-line transition invisible group-focus-within:visible"
+  }, null, 8 /* PROPS */, _hoisted_67)], 32 /* NEED_HYDRATION */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-4",
+    onClick: _cache[28] || (_cache[28] = function ($event) {
+      return $options.closeFilterSlide($event);
+    })
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_68, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["p-3 pb-2", $options.filteredDineinOrders.length > 0 ? 'border-b border-[#D9DBE9] mb-2' : ''])
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_69, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.dinein_orders")), 1 /* TEXT */)], 2 /* CLASS */), $options.filteredDineinOrders.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_70, " Aucune commande sur place en cours. ")) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_71, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.sortedFilteredDinein, function (dineinOrder, dIdx) {
+    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+      key: dineinOrder.id
+    }, [$options.kdsDineinTableHeaderVisible(dineinOrder, dIdx) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_72, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+      type: "button",
+      onClick: function onClick($event) {
+        return $options.toggleTableGroup($options.dineinTableKey(dineinOrder));
+      },
+      "class": "w-full flex items-center justify-between gap-2 px-2 py-2 rounded-lg bg-[#F7F7FC] text-left text-sm font-semibold text-heading"
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.dineinTableKey(dineinOrder)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+      "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["fa-solid", $options.isTableGroupOpen($options.dineinTableKey(dineinOrder)) ? 'fa-chevron-up' : 'fa-chevron-down'])
+    }, null, 2 /* CLASS */)], 8 /* PROPS */, _hoisted_73)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+      "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["w-full rounded-lg border transition-colors border-[#EFF0F6] relative", [$options.kdsWaitClass(dineinOrder), $data.flashTableChangeIds[dineinOrder.id] ? 'kds-table-flash' : '']]),
+      role: "article",
+      "aria-labelledby": 'order-' + dineinOrder.id + '-title',
+      "data-kds-order-card": "dinein"
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [CV1-KDS-INFLIGHT-OOS-MARKER-001] OOS warning badge "), $options.kdsHasOosWarning(dineinOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+      key: 0,
+      "class": "kds-oos-warning-badge",
+      "data-testid": "kds-oos-warning-badge",
+      title: _ctx.$t('label.kds_oos_warning_tooltip'),
+      "aria-label": _ctx.$t('label.kds_oos_warning_aria'),
+      role: "img"
+    }, "⚠ OOS", 8 /* PROPS */, _hoisted_75)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.orderHasAllergens(dineinOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+      key: 1,
+      type: "button",
+      "class": "kds-allergens-badge",
+      onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+        return $options.openAllergensModal(dineinOrder);
+      }, ["prevent", "stop"]),
+      "aria-label": _ctx.$t('label.kds_allergens_badge_aria')
+    }, "⚠ " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_allergens_badge')), 9 /* TEXT, PROPS */, _hoisted_76)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_77, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_78, [_cache[36] || (_cache[36] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+      "class": "lab lab-processing lab-font-size-16 text-[#0084FF]"
+    }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      id: 'order-' + dineinOrder.id + '-title',
+      "class": "text-sm font-normal"
+    }, "#" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(dineinOrder.order_serial_no), 9 /* TEXT, PROPS */, _hoisted_79), dineinOrder.queue_number ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_80, " N°" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(dineinOrder.queue_number), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["py-0.5 px-2 rounded-[4px] text-[10px] font-client leading-4 capitalize", $options.orderStatusBadgeClasses(dineinOrder.status)])
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(dineinOrder.status === $data.enums.orderStatusEnum.PREPARED ? _ctx.$t("label.done") : dineinOrder.status === $data.enums.orderStatusEnum.ACCEPT ? _ctx.$t("label.confirmed") : dineinOrder.status_name), 3 /* TEXT, CLASS */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_81, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_82, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.table_no")) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_83, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(dineinOrder.table_name), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_84, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.token_no")) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_85, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(dineinOrder.token ? dineinOrder.token : _ctx.$t("label.online")), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Sprint H4 Z3-NEW-002/003 2026-05-17] Legacy delivery\n                       block mirrored from onlineOrder lane. Helper gates on\n                       order_type === DELIVERY so this only renders for\n                       misclassified delivery orders that landed in the\n                       dine-in lane — defensive UX so chef + courier never\n                       miss a delivery on the ?v2=0 rollback path. "), $options.kdsLegacyShouldShowDelivery(dineinOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_86, [$options.kdsLegacyDeliveryAddress(dineinOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_87, [_cache[37] || (_cache[37] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "aria-hidden": "true"
+    }, "📍", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_88, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsLegacyDeliveryAddress(dineinOrder)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), dineinOrder.customer && dineinOrder.customer.name ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_89, [_cache[38] || (_cache[38] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "aria-hidden": "true"
+    }, "👤", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(dineinOrder.customer.name), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT "), dineinOrder.customer && $options.safePhone(dineinOrder.customer.phone) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("a", {
+      key: 2,
+      href: "tel:".concat($options.safePhone(dineinOrder.customer.phone)),
+      "class": "text-xs leading-snug text-[#0F766E] font-bold flex items-center gap-1 hover:underline keep-latin"
+    }, [_cache[39] || (_cache[39] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "aria-hidden": "true"
+    }, "📱", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.safePhone(dineinOrder.customer.phone)), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_90)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-002 2026-05-10] Chevron now exposes\n                       aria-expanded so assistive tech can announce the\n                       collapse state. The state-transition CTAs (Démarrer /\n                       Prêt) have been hoisted OUT of this accordion below so\n                       a chef in gloves can reach them in one tap without\n                       expanding line items first. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+      type: "button",
+      onClick: _cache[24] || (_cache[24] = function ($event) {
+        return $options.openFilterSlide($event);
+      }),
+      "class": "filter group text-[#6E7191] text-xs font-[300] flex justify-between items-center w-full",
+      "aria-expanded": false,
+      "aria-label": _ctx.$t('label.kds_toggle_items') || 'Afficher les articles'
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsDisplayDateTime(dineinOrder.order_datetime)), 1 /* TEXT */), _cache[40] || (_cache[40] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+      "class": "flex items-center justify-center w-6 h-6 rounded-full bg-[#FFE8DD] text-base font-semibold transition-all duration-500 group-hover:text-[#F4501E]"
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+      "class": "icon text-[#F4501E] fa-solid fa-chevron-down"
+    })], -1 /* CACHED */))], 8 /* PROPS */, _hoisted_91), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_92, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(dineinOrder.order_items, function (item, iIdx) {
+      return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+        key: item.id || iIdx,
+        "class": "flex items-start gap-2 py-3 border-b border-dashed border-[#EFF0F6] last:border-none"
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_93, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.quantity) + "x", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_94, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h5", _hoisted_95, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Y2 FIX] Guard item_variations "), Array.isArray(item.item_variations) && item.item_variations.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_96, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_variations, function (variation, index) {
+        return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+          key: index,
+          "class": "text-heading"
+        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.variationLine(variation)), 1 /* TEXT */), index + 1 < item.item_variations.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_97, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+      }), 128 /* KEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [N4 FIX] Was <li> without <ul> — replaced with <div> "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Y2 FIX] Guard item_extras "), Array.isArray(item.item_extras) && item.item_extras.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_98, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_99, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.extras')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_100, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_extras, function (extra, index) {
+        return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+          key: index,
+          "class": "text-heading"
+        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(extra.name), 1 /* TEXT */), index + 1 < item.item_extras.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_101, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+      }), 128 /* KEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), Array.isArray(item.item_addons) && item.item_addons.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_102, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_103, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.addons')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_104, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_addons, function (addon, index) {
+        return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+          key: index,
+          "class": "text-heading"
+        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsAddonDisplayName(addon)), 1 /* TEXT */), Number(addon.quantity || 1) > 1 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_105, " ×" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(Number(addon.quantity || 1)), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), index + 1 < item.item_addons.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_106, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+      }), 128 /* KEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [P3-1 FIX] Show instruction on dine-in cards "), $options.kdsCleanInstruction(item) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+        key: 3,
+        "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)([$options.kdsInstructionClass($options.kdsCleanInstruction(item)), 'kds-instruction', 'mt-1', 'text-xs', 'text-heading']),
+        style: {
+          "white-space": "pre-line"
+        }
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsCleanInstruction(item)), 3 /* TEXT, CLASS */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_107, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-007 round-7 2026-05-10] Icon-only Prêt button needs aria-label for touch tablets / SR "), !$options.kdsIsBumped(dineinOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+        key: 0,
+        type: "button",
+        "class": "w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-[#F4501E] hover:bg-[#F4501E]/5",
+        title: _ctx.$t('button.kds_bump'),
+        "aria-label": "".concat(_ctx.$t('button.kds_bump'), " \u2014 ").concat(item.item_name),
+        onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+          return $options.kdsBump(dineinOrder, item);
+        }, ["prevent", "stop"])
+      }, _toConsumableArray(_cache[41] || (_cache[41] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+        "class": "fa-solid fa-arrow-right",
+        "aria-hidden": "true"
+      }, null, -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_108)) : $options.kdsCanRecall(dineinOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+        key: 1,
+        type: "button",
+        "class": "text-[11px] font-semibold text-[#F4501E] underline decoration-[#F4501E]/50",
+        onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+          return $options.kdsRecall(dineinOrder, item);
+        }, ["prevent", "stop"])
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.kds_recall')), 9 /* TEXT, PROPS */, _hoisted_109)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [KDS-REPRINT 2026-07-13] Réimpression manuelle du ticket cuisine (ignore toggle auto + dé-dup). "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        type: "button",
+        "class": "w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-[#6B7280] hover:bg-[#6B7280]/5",
+        title: _ctx.$t('label.kds_reprint'),
+        "aria-label": "".concat(_ctx.$t('label.kds_reprint'), " \u2014 N\xB0").concat(dineinOrder.queue_number || dineinOrder.id),
+        "data-testid": "kds-legacy-reprint",
+        onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+          return $options.reprintKitchenTicket(dineinOrder);
+        }, ["prevent", "stop"])
+      }, _toConsumableArray(_cache[42] || (_cache[42] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+        "class": "fa-solid fa-print",
+        "aria-hidden": "true"
+      }, null, -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_110)])]);
+    }), 128 /* KEYED_FRAGMENT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-002 2026-05-10] State-transition CTAs\n                       moved OUT of the accordion. Always rendered so the chef\n                       reaches them in 1 tap on a busy kitchen tablet. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix C-041 round-8 2026-05-10] Tailwind\n                       theme.colors.primary resolves to rgb(255 0 107) (=\n                       #FF006B, hot pink/magenta) and clashes with the owner's\n                       Cayenne brand palette. Replace with arbitrary hex\n                       `bg-[#F4501E]` (Cayenne orange-red, matches mobile app\n                       and `--kiosk-bold-primary` token) on the KDS surface\n                       only, scoped to this iter15-mega Wave C round-8 fix —\n                       global Tailwind override is out of scope for this\n                       round. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_111, [dineinOrder.status === $data.enums.orderStatusEnum.ACCEPT ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+      key: 0,
+      type: "button",
+      onClick: function onClick($event) {
+        return $options.orderStatus(dineinOrder, $data.enums.orderStatusEnum.PREPARING);
+      },
+      "class": "rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#F4501E] text-white"
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.start_preparing")), 9 /* TEXT, PROPS */, _hoisted_112)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), dineinOrder.status === $data.enums.orderStatusEnum.PREPARING ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+      key: 1,
+      type: "button",
+      onClick: function onClick($event) {
+        return $options.orderStatus(dineinOrder, $data.enums.orderStatusEnum.PREPARED);
+      },
+      "class": "rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#1AB759] text-white"
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.mark_done")), 9 /* TEXT, PROPS */, _hoisted_113)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])], 10 /* CLASS, PROPS */, _hoisted_74)], 512 /* NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vShow, !$data.groupByTable || $options.isTableGroupOpen($options.dineinTableKey(dineinOrder))]])], 64 /* STABLE_FRAGMENT */);
+  }), 128 /* KEYED_FRAGMENT */))]))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_114, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["p-3 pb-2", $options.filteredOnlineOrders.length > 0 ? 'border-b border-[#D9DBE9] mb-2' : ''])
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_115, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.online_orders")), 1 /* TEXT */)], 2 /* CLASS */), $options.filteredOnlineOrders.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_116, " Aucune commande en ligne en cours. ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.filteredOnlineOrders.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 1
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.filteredOnlineOrders, function (onlineOrder) {
+    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+      "class": "p-3",
+      key: onlineOrder.id
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+      "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["w-full rounded-lg border transition-colors border-[#EFF0F6] relative", $options.kdsWaitClass(onlineOrder)]),
+      role: "article",
+      "aria-labelledby": 'order-' + onlineOrder.id + '-title',
+      "data-kds-order-card": "online"
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [CV1-KDS-INFLIGHT-OOS-MARKER-001] OOS warning badge "), $options.kdsHasOosWarning(onlineOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+      key: 0,
+      "class": "kds-oos-warning-badge",
+      "data-testid": "kds-oos-warning-badge",
+      title: _ctx.$t('label.kds_oos_warning_tooltip'),
+      "aria-label": _ctx.$t('label.kds_oos_warning_aria'),
+      role: "img"
+    }, "⚠ OOS", 8 /* PROPS */, _hoisted_118)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.orderHasAllergens(onlineOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+      key: 1,
+      type: "button",
+      "class": "kds-allergens-badge",
+      onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+        return $options.openAllergensModal(onlineOrder);
+      }, ["prevent", "stop"]),
+      "aria-label": _ctx.$t('label.kds_allergens_badge_aria')
+    }, "⚠ " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_allergens_badge')), 9 /* TEXT, PROPS */, _hoisted_119)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_120, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_121, [_cache[43] || (_cache[43] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+      "class": "lab lab-processing lab-font-size-16 text-[#FF8C1A]"
+    }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      id: 'order-' + onlineOrder.id + '-title',
+      "class": "text-sm font-normal"
+    }, "#" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(onlineOrder.order_serial_no), 9 /* TEXT, PROPS */, _hoisted_122), onlineOrder.queue_number ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_123, " N°" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(onlineOrder.queue_number), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["py-0.5 px-2 rounded-[4px] text-[10px] font-client leading-4 capitalize", $options.orderStatusBadgeClasses(onlineOrder.status)])
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(onlineOrder.status === $data.enums.orderStatusEnum.PREPARED ? _ctx.$t("label.done") : onlineOrder.status === $data.enums.orderStatusEnum.ACCEPT ? _ctx.$t("label.confirmed") : onlineOrder.status_name), 3 /* TEXT, CLASS */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_124, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_125, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.schedule")) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["text-heading font-medium", onlineOrder.is_advance_order === $data.enums.askEnum.YES ? '!text-[#008BBA]' : ''])
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(onlineOrder.delivery_time), 3 /* TEXT, CLASS */)]), onlineOrder.token ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_126, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.token_no")) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_127, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(onlineOrder.token), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Sprint 2A DEL-3 2026-05-16] Legacy delivery block —\n                       online lane = DELIVERY orders only (filter at line\n                       1690 below). Even if the operator falls back to\n                       ?v2=0, the livreur must still see address + phone +\n                       name. Backend KDSOrderDetailsResource now provides\n                       order_address + customer on every payload. "), $options.kdsLegacyShouldShowDelivery(onlineOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_128, [$options.kdsLegacyDeliveryAddress(onlineOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_129, [_cache[44] || (_cache[44] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "aria-hidden": "true"
+    }, "📍", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_130, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsLegacyDeliveryAddress(onlineOrder)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), onlineOrder.customer && onlineOrder.customer.name ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_131, [_cache[45] || (_cache[45] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "aria-hidden": "true"
+    }, "👤", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(onlineOrder.customer.name), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT "), onlineOrder.customer && $options.safePhone(onlineOrder.customer.phone) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("a", {
+      key: 2,
+      href: "tel:".concat($options.safePhone(onlineOrder.customer.phone)),
+      "class": "text-xs leading-snug text-[#0F766E] font-bold flex items-center gap-1 hover:underline keep-latin"
+    }, [_cache[46] || (_cache[46] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "aria-hidden": "true"
+    }, "📱", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.safePhone(onlineOrder.customer.phone)), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_132)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-002 2026-05-10] aria-expanded for SR. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+      type: "button",
+      onClick: _cache[25] || (_cache[25] = function ($event) {
+        return $options.openFilterSlide($event);
+      }),
+      "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["filter group text-xs font-[300] flex justify-between items-center w-full", onlineOrder.is_advance_order === $data.enums.askEnum.YES ? 'text-[#008BBA]' : 'text-[#6E7191]']),
+      "aria-expanded": false,
+      "aria-label": _ctx.$t('label.kds_toggle_items') || 'Afficher les articles'
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsDisplayDateTime(onlineOrder.order_datetime)), 1 /* TEXT */), _cache[47] || (_cache[47] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+      "class": "flex items-center justify-center w-6 h-6 rounded-full bg-[#FFE8DD] text-base font-semibold transition-all duration-500 group-hover:text-[#F4501E]"
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+      "class": "icon text-[#F4501E] fa-solid fa-chevron-down"
+    })], -1 /* CACHED */))], 10 /* CLASS, PROPS */, _hoisted_133), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_134, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(onlineOrder.order_items, function (item, iIdx) {
+      return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+        key: item.id || iIdx,
+        "class": "flex items-start gap-2 py-3 border-b border-dashed border-[#EFF0F6] last:border-none"
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_135, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.quantity) + "x", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_136, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h5", _hoisted_137, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Y2 FIX] Guard item_variations "), Array.isArray(item.item_variations) && item.item_variations.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_138, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_variations, function (variation, index) {
+        return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+          key: index,
+          "class": "text-heading"
+        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.variationLine(variation)), 1 /* TEXT */), index + 1 < item.item_variations.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_139, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+      }), 128 /* KEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [N4 FIX] Was <li> without <ul> — replaced with <div> "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Y2 FIX] Guard item_extras "), Array.isArray(item.item_extras) && item.item_extras.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_140, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_141, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.extras')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_142, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_extras, function (extra, index) {
+        return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+          key: index,
+          "class": "text-heading"
+        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(extra.name), 1 /* TEXT */), index + 1 < item.item_extras.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_143, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+      }), 128 /* KEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), Array.isArray(item.item_addons) && item.item_addons.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_144, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_145, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.addons')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_146, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_addons, function (addon, index) {
+        return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+          key: index,
+          "class": "text-heading"
+        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsAddonDisplayName(addon)), 1 /* TEXT */), Number(addon.quantity || 1) > 1 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_147, " ×" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(Number(addon.quantity || 1)), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), index + 1 < item.item_addons.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_148, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+      }), 128 /* KEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.kdsCleanInstruction(item) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+        key: 3,
+        "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)([$options.kdsInstructionClass($options.kdsCleanInstruction(item)), 'kds-instruction', 'mt-1', 'text-xs', 'text-heading']),
+        style: {
+          "white-space": "pre-line"
+        }
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsCleanInstruction(item)), 3 /* TEXT, CLASS */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_149, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-007 round-7 2026-05-10] Icon-only Prêt button needs aria-label for touch tablets / SR "), !$options.kdsIsBumped(onlineOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+        key: 0,
+        type: "button",
+        "class": "w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-[#F4501E] hover:bg-[#F4501E]/5",
+        title: _ctx.$t('button.kds_bump'),
+        "aria-label": "".concat(_ctx.$t('button.kds_bump'), " \u2014 ").concat(item.item_name),
+        onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+          return $options.kdsBump(onlineOrder, item);
+        }, ["prevent", "stop"])
+      }, _toConsumableArray(_cache[48] || (_cache[48] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+        "class": "fa-solid fa-arrow-right",
+        "aria-hidden": "true"
+      }, null, -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_150)) : $options.kdsCanRecall(onlineOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+        key: 1,
+        type: "button",
+        "class": "text-[11px] font-semibold text-[#F4501E] underline decoration-[#F4501E]/50",
+        onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+          return $options.kdsRecall(onlineOrder, item);
+        }, ["prevent", "stop"])
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.kds_recall')), 9 /* TEXT, PROPS */, _hoisted_151)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [KDS-REPRINT 2026-07-13] Réimpression manuelle du ticket cuisine (ignore toggle auto + dé-dup). "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        type: "button",
+        "class": "w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-[#6B7280] hover:bg-[#6B7280]/5",
+        title: _ctx.$t('label.kds_reprint'),
+        "aria-label": "".concat(_ctx.$t('label.kds_reprint'), " \u2014 N\xB0").concat(onlineOrder.queue_number || onlineOrder.id),
+        "data-testid": "kds-legacy-reprint",
+        onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+          return $options.reprintKitchenTicket(onlineOrder);
+        }, ["prevent", "stop"])
+      }, _toConsumableArray(_cache[49] || (_cache[49] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+        "class": "fa-solid fa-print",
+        "aria-hidden": "true"
+      }, null, -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_152)])]);
+    }), 128 /* KEYED_FRAGMENT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-002 2026-05-10] CTAs hoisted out of accordion. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_153, [onlineOrder.status === $data.enums.orderStatusEnum.ACCEPT ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+      key: 0,
+      type: "button",
+      onClick: function onClick($event) {
+        return $options.orderStatus(onlineOrder, $data.enums.orderStatusEnum.PREPARING);
+      },
+      "class": "rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#F4501E] text-white"
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.start_preparing")), 9 /* TEXT, PROPS */, _hoisted_154)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), onlineOrder.status === $data.enums.orderStatusEnum.PREPARING ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+      key: 1,
+      type: "button",
+      onClick: function onClick($event) {
+        return $options.orderStatus(onlineOrder, $data.enums.orderStatusEnum.PREPARED);
+      },
+      "class": "rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#1AB759] text-white"
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.mark_done")), 9 /* TEXT, PROPS */, _hoisted_155)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])], 10 /* CLASS, PROPS */, _hoisted_117)]);
+  }), 128 /* KEYED_FRAGMENT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_156, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["p-3 pb-2", $options.filteredTakeawayOrders.length > 0 ? 'border-b border-[#D9DBE9] mb-2' : ''])
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_157, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.takeaway")), 1 /* TEXT */)], 2 /* CLASS */), $options.filteredTakeawayOrders.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_158, " Aucune commande à emporter en cours. ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.filteredTakeawayOrders.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 1
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.filteredTakeawayOrders, function (takeawayOrder) {
+    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+      "class": "p-3",
+      key: takeawayOrder.id
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+      "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["w-full rounded-lg border transition-colors border-[#EFF0F6] relative", $options.kdsWaitClass(takeawayOrder)]),
+      role: "article",
+      "aria-labelledby": 'order-' + takeawayOrder.id + '-title',
+      "data-kds-order-card": "takeaway"
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [CV1-KDS-INFLIGHT-OOS-MARKER-001] OOS warning badge "), $options.kdsHasOosWarning(takeawayOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+      key: 0,
+      "class": "kds-oos-warning-badge",
+      "data-testid": "kds-oos-warning-badge",
+      title: _ctx.$t('label.kds_oos_warning_tooltip'),
+      "aria-label": _ctx.$t('label.kds_oos_warning_aria'),
+      role: "img"
+    }, "⚠ OOS", 8 /* PROPS */, _hoisted_160)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.orderHasAllergens(takeawayOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+      key: 1,
+      type: "button",
+      "class": "kds-allergens-badge",
+      onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+        return $options.openAllergensModal(takeawayOrder);
+      }, ["prevent", "stop"]),
+      "aria-label": _ctx.$t('label.kds_allergens_badge_aria')
+    }, "⚠ " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_allergens_badge')), 9 /* TEXT, PROPS */, _hoisted_161)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_162, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_163, [_cache[50] || (_cache[50] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+      "class": "lab lab-processing lab-font-size-16 text-[#2D1263]"
+    }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      id: 'order-' + takeawayOrder.id + '-title',
+      "class": "text-sm font-normal"
+    }, "#" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(takeawayOrder.order_serial_no), 9 /* TEXT, PROPS */, _hoisted_164), takeawayOrder.queue_number ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_165, " N°" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(takeawayOrder.queue_number), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.isPaymentPendingCounter(takeawayOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_166, " PAIEMENT COMPTOIR - NON REGLE ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["py-0.5 px-2 rounded-[4px] text-[10px] font-client leading-4 capitalize", $options.orderStatusBadgeClasses(takeawayOrder.status)])
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(takeawayOrder.status === $data.enums.orderStatusEnum.PREPARED ? _ctx.$t("label.done") : takeawayOrder.status === $data.enums.orderStatusEnum.ACCEPT ? _ctx.$t("label.confirmed") : takeawayOrder.status_name), 3 /* TEXT, CLASS */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_167, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_168, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.token_no")) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_169, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(takeawayOrder.token ? takeawayOrder.token : _ctx.$t("label.online")), 1 /* TEXT */)]), takeawayOrder.queue_number ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_170, [_cache[51] || (_cache[51] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" N° file: ", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_171, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(takeawayOrder.queue_number), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Sprint H4 Z3-NEW-002/003 2026-05-17] Legacy delivery\n                       block mirrored from onlineOrder lane. Helper gates on\n                       order_type === DELIVERY so this only renders for\n                       misclassified delivery orders that landed in the\n                       takeaway lane — defensive UX for ?v2=0 rollback. "), $options.kdsLegacyShouldShowDelivery(takeawayOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_172, [$options.kdsLegacyDeliveryAddress(takeawayOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_173, [_cache[52] || (_cache[52] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "aria-hidden": "true"
+    }, "📍", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_174, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsLegacyDeliveryAddress(takeawayOrder)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), takeawayOrder.customer && takeawayOrder.customer.name ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_175, [_cache[53] || (_cache[53] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "aria-hidden": "true"
+    }, "👤", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(takeawayOrder.customer.name), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT "), takeawayOrder.customer && $options.safePhone(takeawayOrder.customer.phone) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("a", {
+      key: 2,
+      href: "tel:".concat($options.safePhone(takeawayOrder.customer.phone)),
+      "class": "text-xs leading-snug text-[#0F766E] font-bold flex items-center gap-1 hover:underline keep-latin"
+    }, [_cache[54] || (_cache[54] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "aria-hidden": "true"
+    }, "📱", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.safePhone(takeawayOrder.customer.phone)), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_176)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-002 2026-05-10] aria-expanded for SR. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+      type: "button",
+      onClick: _cache[26] || (_cache[26] = function ($event) {
+        return $options.openFilterSlide($event);
+      }),
+      "class": "filter group text-[#6E7191] text-xs font-[300] flex justify-between items-center w-full",
+      "aria-expanded": false,
+      "aria-label": _ctx.$t('label.kds_toggle_items') || 'Afficher les articles'
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsDisplayDateTime(takeawayOrder.order_datetime)), 1 /* TEXT */), _cache[55] || (_cache[55] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+      "class": "flex items-center justify-center w-6 h-6 rounded-full bg-[#FFE8DD] text-base font-semibold transition-all duration-500 group-hover:text-[#F4501E]"
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+      "class": "icon text-[#F4501E] fa-solid fa-chevron-down"
+    })], -1 /* CACHED */))], 8 /* PROPS */, _hoisted_177), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_178, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(takeawayOrder.order_items, function (item, iIdx) {
+      return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+        key: item.id || iIdx,
+        "class": "flex items-start gap-2 py-3 border-b border-dashed border-[#EFF0F6] last:border-none"
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_179, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.quantity) + "x", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_180, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h5", _hoisted_181, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Y2 FIX] Guard item_variations "), Array.isArray(item.item_variations) && item.item_variations.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_182, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_variations, function (variation, index) {
+        return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+          key: index,
+          "class": "text-heading"
+        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.variationLine(variation)), 1 /* TEXT */), index + 1 < item.item_variations.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_183, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+      }), 128 /* KEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [N4 FIX] Was <li> without <ul> — replaced with <div> "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Y2 FIX] Guard item_extras "), Array.isArray(item.item_extras) && item.item_extras.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_184, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_185, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.extras')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_186, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_extras, function (extra, index) {
+        return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+          key: index,
+          "class": "text-heading"
+        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(extra.name), 1 /* TEXT */), index + 1 < item.item_extras.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_187, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+      }), 128 /* KEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), Array.isArray(item.item_addons) && item.item_addons.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_188, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_189, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.addons')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_190, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_addons, function (addon, index) {
+        return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+          key: index,
+          "class": "text-heading"
+        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsAddonDisplayName(addon)), 1 /* TEXT */), Number(addon.quantity || 1) > 1 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_191, " ×" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(Number(addon.quantity || 1)), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), index + 1 < item.item_addons.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_192, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+      }), 128 /* KEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [P3-1 FIX] Show instruction on takeaway cards "), $options.kdsCleanInstruction(item) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+        key: 3,
+        "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)([$options.kdsInstructionClass($options.kdsCleanInstruction(item)), 'kds-instruction', 'mt-1', 'text-xs', 'text-heading']),
+        style: {
+          "white-space": "pre-line"
+        }
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsCleanInstruction(item)), 3 /* TEXT, CLASS */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_193, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-007 round-7 2026-05-10] Icon-only Prêt button needs aria-label for touch tablets / SR "), !$options.kdsIsBumped(takeawayOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+        key: 0,
+        type: "button",
+        "class": "w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-[#F4501E] hover:bg-[#F4501E]/5",
+        title: _ctx.$t('button.kds_bump'),
+        "aria-label": "".concat(_ctx.$t('button.kds_bump'), " \u2014 ").concat(item.item_name),
+        onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+          return $options.kdsBump(takeawayOrder, item);
+        }, ["prevent", "stop"])
+      }, _toConsumableArray(_cache[56] || (_cache[56] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+        "class": "fa-solid fa-arrow-right",
+        "aria-hidden": "true"
+      }, null, -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_194)) : $options.kdsCanRecall(takeawayOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+        key: 1,
+        type: "button",
+        "class": "text-[11px] font-semibold text-[#F4501E] underline decoration-[#F4501E]/50",
+        onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+          return $options.kdsRecall(takeawayOrder, item);
+        }, ["prevent", "stop"])
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.kds_recall')), 9 /* TEXT, PROPS */, _hoisted_195)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [KDS-REPRINT 2026-07-13] Réimpression manuelle du ticket cuisine (ignore toggle auto + dé-dup). "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        type: "button",
+        "class": "w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-[#6B7280] hover:bg-[#6B7280]/5",
+        title: _ctx.$t('label.kds_reprint'),
+        "aria-label": "".concat(_ctx.$t('label.kds_reprint'), " \u2014 N\xB0").concat(takeawayOrder.queue_number || takeawayOrder.id),
+        "data-testid": "kds-legacy-reprint",
+        onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+          return $options.reprintKitchenTicket(takeawayOrder);
+        }, ["prevent", "stop"])
+      }, _toConsumableArray(_cache[57] || (_cache[57] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+        "class": "fa-solid fa-print",
+        "aria-hidden": "true"
+      }, null, -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_196)])]);
+    }), 128 /* KEYED_FRAGMENT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-002 2026-05-10] CTAs hoisted out of accordion. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_197, [takeawayOrder.status === $data.enums.orderStatusEnum.ACCEPT ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+      key: 0,
+      type: "button",
+      onClick: function onClick($event) {
+        return $options.orderStatus(takeawayOrder, $data.enums.orderStatusEnum.PREPARING);
+      },
+      "class": "rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#F4501E] text-white"
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.start_preparing")), 9 /* TEXT, PROPS */, _hoisted_198)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), takeawayOrder.status === $data.enums.orderStatusEnum.PREPARING ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+      key: 1,
+      type: "button",
+      onClick: function onClick($event) {
+        return $options.orderStatus(takeawayOrder, $data.enums.orderStatusEnum.PREPARED);
+      },
+      "class": "rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#1AB759] text-white"
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.mark_done")), 9 /* TEXT, PROPS */, _hoisted_199)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])], 10 /* CLASS, PROPS */, _hoisted_159)]);
+  }), 128 /* KEYED_FRAGMENT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Borne (Kiosk) orders column "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_200, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["p-3 pb-2 flex items-center gap-2", $options.filteredKioskOrders.length > 0 ? 'border-b border-[#D9DBE9] mb-2' : ''])
+  }, [_cache[58] || (_cache[58] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", {
+    "class": "text-lg font-semibold"
+  }, "🖥️ Borne", -1 /* CACHED */)), $options.filteredKioskOrders.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_201, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.filteredKioskOrders.length), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 2 /* CLASS */), $options.filteredKioskOrders.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_202, " Aucune commande borne en cours. ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.filteredKioskOrders.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 1
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.filteredKioskOrders, function (kioskOrder) {
+    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+      "class": "p-3",
+      key: kioskOrder.id
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+      "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["w-full rounded-lg border transition-colors border-[#EFF0F6] relative", $options.kdsWaitClass(kioskOrder)]),
+      role: "article",
+      "aria-labelledby": 'order-' + kioskOrder.id + '-title',
+      "data-kds-order-card": "kiosk"
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [CV1-KDS-INFLIGHT-OOS-MARKER-001] OOS warning badge "), $options.kdsHasOosWarning(kioskOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+      key: 0,
+      "class": "kds-oos-warning-badge",
+      "data-testid": "kds-oos-warning-badge",
+      title: _ctx.$t('label.kds_oos_warning_tooltip'),
+      "aria-label": _ctx.$t('label.kds_oos_warning_aria'),
+      role: "img"
+    }, "⚠ OOS", 8 /* PROPS */, _hoisted_204)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.orderHasAllergens(kioskOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+      key: 1,
+      type: "button",
+      "class": "kds-allergens-badge",
+      onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+        return $options.openAllergensModal(kioskOrder);
+      }, ["prevent", "stop"]),
+      "aria-label": _ctx.$t('label.kds_allergens_badge_aria')
+    }, "⚠ " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_allergens_badge')), 9 /* TEXT, PROPS */, _hoisted_205)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_206, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_207, [_cache[59] || (_cache[59] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+      "class": "lab lab-processing lab-font-size-16 text-[#991B1B]"
+    }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      id: 'order-' + kioskOrder.id + '-title',
+      "class": "text-sm font-normal"
+    }, "#" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(kioskOrder.order_serial_no), 9 /* TEXT, PROPS */, _hoisted_208), kioskOrder.queue_number ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_209, " N°" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(kioskOrder.queue_number), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.isPaymentPendingCounter(kioskOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_210, " PAIEMENT COMPTOIR - NON REGLE ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["py-0.5 px-2 rounded-[4px] text-[10px] font-client leading-4 capitalize", $options.orderStatusBadgeClasses(kioskOrder.status)])
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(kioskOrder.status === $data.enums.orderStatusEnum.PREPARED ? _ctx.$t('label.done') : kioskOrder.status === $data.enums.orderStatusEnum.ACCEPT ? _ctx.$t('label.confirmed') : kioskOrder.status_name), 3 /* TEXT, CLASS */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_211, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Sprint H4 Z3-NEW-002/003 2026-05-17] Legacy delivery\n                       block mirrored from onlineOrder lane. Helper gates on\n                       order_type === DELIVERY so this only renders for\n                       misclassified delivery orders that landed in the\n                       kiosk lane — defensive UX for ?v2=0 rollback. "), $options.kdsLegacyShouldShowDelivery(kioskOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_212, [$options.kdsLegacyDeliveryAddress(kioskOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_213, [_cache[60] || (_cache[60] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "aria-hidden": "true"
+    }, "📍", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_214, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsLegacyDeliveryAddress(kioskOrder)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), kioskOrder.customer && kioskOrder.customer.name ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_215, [_cache[61] || (_cache[61] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "aria-hidden": "true"
+    }, "👤", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(kioskOrder.customer.name), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT "), kioskOrder.customer && $options.safePhone(kioskOrder.customer.phone) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("a", {
+      key: 2,
+      href: "tel:".concat($options.safePhone(kioskOrder.customer.phone)),
+      "class": "text-xs leading-snug text-[#0F766E] font-bold flex items-center gap-1 hover:underline keep-latin"
+    }, [_cache[62] || (_cache[62] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "aria-hidden": "true"
+    }, "📱", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.safePhone(kioskOrder.customer.phone)), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_216)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-002 2026-05-10] aria-expanded for SR. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+      type: "button",
+      onClick: _cache[27] || (_cache[27] = function ($event) {
+        return $options.openFilterSlide($event);
+      }),
+      "class": "filter group text-[#6E7191] text-xs font-[300] flex justify-between items-center w-full",
+      "aria-expanded": false,
+      "aria-label": _ctx.$t('label.kds_toggle_items') || 'Afficher les articles'
+    }, [kioskOrder.queue_number ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_218, "N° file: " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(kioskOrder.queue_number), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsDisplayDateTime(kioskOrder.order_datetime)), 1 /* TEXT */), _cache[63] || (_cache[63] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+      "class": "flex items-center justify-center w-6 h-6 rounded-full bg-[#FFE8DD] text-base font-semibold transition-all duration-500 group-hover:text-[#F4501E]"
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+      "class": "icon text-[#F4501E] fa-solid fa-chevron-down"
+    })], -1 /* CACHED */))], 8 /* PROPS */, _hoisted_217), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_219, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(kioskOrder.order_items, function (item, iIdx) {
+      return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+        key: item.id || iIdx,
+        "class": "flex items-start gap-2 py-3 border-b border-dashed border-[#EFF0F6] last:border-none"
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_220, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.quantity) + "x", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_221, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h5", _hoisted_222, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Y2 FIX] Guard item_variations "), Array.isArray(item.item_variations) && item.item_variations.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_223, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_variations, function (variation, index) {
+        return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+          key: index,
+          "class": "text-heading"
+        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.variationLine(variation)), 1 /* TEXT */), index + 1 < item.item_variations.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_224, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+      }), 128 /* KEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Y2 FIX] Guard item_extras "), Array.isArray(item.item_extras) && item.item_extras.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_225, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_226, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.extras')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_227, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_extras, function (extra, index) {
+        return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+          key: index,
+          "class": "text-heading"
+        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(extra.name), 1 /* TEXT */), index + 1 < item.item_extras.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_228, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+      }), 128 /* KEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), Array.isArray(item.item_addons) && item.item_addons.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_229, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_230, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.addons')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_231, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_addons, function (addon, index) {
+        return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+          key: index,
+          "class": "text-heading"
+        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsAddonDisplayName(addon)), 1 /* TEXT */), Number(addon.quantity || 1) > 1 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_232, " ×" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(Number(addon.quantity || 1)), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), index + 1 < item.item_addons.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_233, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+      }), 128 /* KEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), Array.isArray(item.allergens_snapshot) && item.allergens_snapshot.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_234, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.allergens_snapshot, function (allergen, allergenIdx) {
+        return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+          key: "".concat(item.id || iIdx, "-allergen-").concat(allergenIdx),
+          "class": "rounded-full bg-[#FFF3E8] px-2 py-0.5 text-[11px] font-medium uppercase tracking-[0.02em] text-[#C25D1B]"
+        }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(allergen), 1 /* TEXT */);
+      }), 128 /* KEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.kdsCleanInstruction(item) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+        key: 4,
+        "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)([$options.kdsInstructionClass($options.kdsCleanInstruction(item)), 'kds-instruction', 'mt-1', 'text-xs', 'text-heading']),
+        style: {
+          "white-space": "pre-line"
+        }
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsCleanInstruction(item)), 3 /* TEXT, CLASS */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_235, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-007 round-7 2026-05-10] Icon-only Prêt button needs aria-label for touch tablets / SR "), !$options.kdsIsBumped(kioskOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+        key: 0,
+        type: "button",
+        "class": "w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-[#F4501E] hover:bg-[#F4501E]/5",
+        title: _ctx.$t('button.kds_bump'),
+        "aria-label": "".concat(_ctx.$t('button.kds_bump'), " \u2014 ").concat(item.item_name),
+        onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+          return $options.kdsBump(kioskOrder, item);
+        }, ["prevent", "stop"])
+      }, _toConsumableArray(_cache[64] || (_cache[64] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+        "class": "fa-solid fa-arrow-right",
+        "aria-hidden": "true"
+      }, null, -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_236)) : $options.kdsCanRecall(kioskOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+        key: 1,
+        type: "button",
+        "class": "text-[11px] font-semibold text-[#F4501E] underline decoration-[#F4501E]/50",
+        onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+          return $options.kdsRecall(kioskOrder, item);
+        }, ["prevent", "stop"])
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.kds_recall')), 9 /* TEXT, PROPS */, _hoisted_237)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [KDS-REPRINT 2026-07-13] Réimpression manuelle du ticket cuisine (ignore toggle auto + dé-dup). "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        type: "button",
+        "class": "w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-[#6B7280] hover:bg-[#6B7280]/5",
+        title: _ctx.$t('label.kds_reprint'),
+        "aria-label": "".concat(_ctx.$t('label.kds_reprint'), " \u2014 N\xB0").concat(kioskOrder.queue_number || kioskOrder.id),
+        "data-testid": "kds-legacy-reprint",
+        onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+          return $options.reprintKitchenTicket(kioskOrder);
+        }, ["prevent", "stop"])
+      }, _toConsumableArray(_cache[65] || (_cache[65] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+        "class": "fa-solid fa-print",
+        "aria-hidden": "true"
+      }, null, -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_238)])]);
+    }), 128 /* KEYED_FRAGMENT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-002 2026-05-10] CTAs hoisted out of accordion. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_239, [kioskOrder.status === $data.enums.orderStatusEnum.ACCEPT ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+      key: 0,
+      type: "button",
+      onClick: function onClick($event) {
+        return $options.orderStatus(kioskOrder, $data.enums.orderStatusEnum.PREPARING);
+      },
+      "class": "rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#F4501E] text-white"
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.start_preparing')), 9 /* TEXT, PROPS */, _hoisted_240)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), kioskOrder.status === $data.enums.orderStatusEnum.PREPARING ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+      key: 1,
+      type: "button",
+      onClick: function onClick($event) {
+        return $options.orderStatus(kioskOrder, $data.enums.orderStatusEnum.PREPARED);
+      },
+      "class": "rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#1AB759] text-white"
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.mark_done')), 9 /* TEXT, PROPS */, _hoisted_241)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])], 10 /* CLASS, PROPS */, _hoisted_203)]);
+  }), 128 /* KEYED_FRAGMENT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [CV1-KDS-A11Y-RICH-001] Off-screen aria-live region for transition\n         announcements (ACCEPT → PREPARING → PREPARED). Polite politeness so\n         it does not interrupt the cuisinier's current focus, and visually\n         hidden so it never reflows the kitchen layout. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_242, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.kdsAriaLiveMessage), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [F-03 / Lot 1.C] Adaptive sync badge: reassures the kitchen that the\n         board is up to date even when WebSocket is degraded. Color shifts to\n         orange after 30s without sync. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_243, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kds-sync-stamp", {
+      'kds-sync-stamp--stale': $options.syncBadgeIsStale
+    }]),
+    title: $options.syncBadgeText
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.syncBadgeText), 11 /* TEXT, CLASS, PROPS */, _hoisted_244)]), $data.allergensModal.open ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+    key: 0,
+    ref: "allergensModalRoot",
+    "class": "kds-allergens-modal-overlay",
+    role: "dialog",
+    "aria-modal": "true",
+    "aria-label": _ctx.$t('label.kds_allergens_modal_title', {
+      order_id: $data.allergensModal.order && $data.allergensModal.order.id ? $data.allergensModal.order.id : ''
+    }),
+    tabindex: "-1",
+    onClick: _cache[30] || (_cache[30] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
+      return $options.closeAllergensModal && $options.closeAllergensModal.apply($options, arguments);
+    }, ["self"])),
+    onKeydown: [_cache[31] || (_cache[31] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)(function () {
+      return $options.closeAllergensModal && $options.closeAllergensModal.apply($options, arguments);
+    }, ["esc"])), _cache[32] || (_cache[32] = function () {
+      return $options.onAllergensModalKeydown && $options.onAllergensModalKeydown.apply($options, arguments);
+    })]
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_246, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("header", _hoisted_247, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_allergens_modal_title', {
+    order_id: $data.allergensModal.order && $data.allergensModal.order.id ? $data.allergensModal.order.id : ''
+  })), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    ref: "allergensModalCloseButton",
+    type: "button",
+    "class": "kds-allergens-modal-close",
+    "aria-label": _ctx.$t('button.close'),
+    onClick: _cache[29] || (_cache[29] = function () {
+      return $options.closeAllergensModal && $options.closeAllergensModal.apply($options, arguments);
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.kds_allergens_modal_close')), 9 /* TEXT, PROPS */, _hoisted_248)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_249, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_allergens_modal_intro')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_250, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.allergensModalItems, function (orderItem, allergenIndex) {
+    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", {
+      key: (orderItem.id || orderItem.item_id || allergenIndex) + '-' + allergenIndex,
+      "class": "kds-allergens-modal-list-item"
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(orderItem.item_name || orderItem.name || orderItem.item && orderItem.item.name || '-'), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.sortedAllergens(orderItem.allergens_snapshot).length ? $options.sortedAllergens(orderItem.allergens_snapshot).join(" \xB7 ") : _ctx.$t('label.kds_allergens_modal_none')), 1 /* TEXT */)]);
+  }), 128 /* KEYED_FRAGMENT */))])])], 40 /* PROPS, NEED_HYDRATION */, _hoisted_245)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 64 /* STABLE_FRAGMENT */))], 64 /* STABLE_FRAGMENT */);
+}
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/shared/AvailabilityTogglePanel.vue?vue&type=template&id=06407ef6&scoped=true"
+/*!***********************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/shared/AvailabilityTogglePanel.vue?vue&type=template&id=06407ef6&scoped=true ***!
+  \***********************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* binding */ render)
+/* harmony export */ });
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+
+var _hoisted_1 = ["aria-label"];
+var _hoisted_2 = {
+  "class": "atp-panel"
+};
+var _hoisted_3 = {
+  "class": "atp-head"
+};
+var _hoisted_4 = {
+  "class": "atp-title"
+};
+var _hoisted_5 = ["aria-label"];
+var _hoisted_6 = {
+  "class": "atp-toolbar"
+};
+var _hoisted_7 = ["placeholder"];
+var _hoisted_8 = ["disabled"];
+var _hoisted_9 = {
+  key: 0,
+  "class": "atp-error",
+  role: "alert"
+};
+var _hoisted_10 = {
+  key: 1,
+  "class": "atp-loading"
+};
+var _hoisted_11 = {
+  key: 2,
+  "class": "atp-body"
+};
+var _hoisted_12 = {
+  "class": "atp-section atp-section--rupture"
+};
+var _hoisted_13 = {
+  "class": "atp-list"
+};
+var _hoisted_14 = {
+  "class": "atp-name"
+};
+var _hoisted_15 = ["disabled", "data-testid", "onClick"];
+var _hoisted_16 = {
+  "class": "atp-section"
+};
+var _hoisted_17 = {
+  "class": "atp-list"
+};
+var _hoisted_18 = {
+  "class": "atp-name"
+};
+var _hoisted_19 = ["disabled", "data-testid", "onClick"];
+var _hoisted_20 = {
+  key: 1,
+  "class": "atp-empty"
+};
+function render(_ctx, _cache, $props, $setup, $data, $options) {
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n      [GOAL RUPTURE-CARNET 2026-07-15 / W2] Panel rupture partagé CAISSE + CUISINE.\n      Le staff (POS Operator / Chef, permission `availability_toggle`) marque un\n      produit en rupture (86) ou le réactive. Propagation backend existante :\n      AvailabilityService::toggle → ItemAvailabilityChanged → outbox + invalidation\n      cache kiosk-menu → borne / caisse / web se mettent à jour en temps réel.\n      Fetch LOCAL (vuex:false) : ne contamine jamais le store `item/lists` des tuiles.\n    "), $props.visible ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+    key: 0,
+    "class": "atp-overlay",
+    role: "dialog",
+    "aria-modal": "true",
+    "aria-label": _ctx.$t('availability.panel_title'),
+    onClick: _cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+      return _ctx.$emit('close');
+    }, ["self"]))
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("section", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("header", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('availability.panel_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "atp-close",
+    "aria-label": _ctx.$t('button.close'),
+    onClick: _cache[0] || (_cache[0] = function ($event) {
+      return _ctx.$emit('close');
+    })
+  }, "×", 8 /* PROPS */, _hoisted_5)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_6, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+    "onUpdate:modelValue": _cache[1] || (_cache[1] = function ($event) {
+      return $data.search = $event;
+    }),
+    type: "search",
+    "class": "atp-search",
+    placeholder: _ctx.$t('availability.search_placeholder'),
+    "data-testid": "availability-panel-search"
+  }, null, 8 /* PROPS */, _hoisted_7), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.search, void 0, {
+    trim: true
+  }]]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "atp-refresh",
+    disabled: $data.loading,
+    onClick: _cache[2] || (_cache[2] = function () {
+      return $options.fetchItems && $options.fetchItems.apply($options, arguments);
+    })
+  }, "↻", 8 /* PROPS */, _hoisted_8)]), $data.error ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_9, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.error), 1 /* TEXT */)) : $data.loading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_10, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('availability.loading')), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_11, [$options.ruptureItems.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 0
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_12, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('availability.section_rupture')) + " (" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.ruptureItems.length) + ") ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_13, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.ruptureItems, function (it) {
+    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", {
+      key: 'r' + it.id,
+      "class": "atp-row atp-row--rupture"
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_14, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(it.name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+      type: "button",
+      "class": "atp-btn atp-btn--enable",
+      disabled: !!$data.busy[it.id],
+      "data-testid": 'availability-enable-' + it.id,
+      onClick: function onClick($event) {
+        return $options.toggle(it, true);
+      }
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.busy[it.id] ? '…' : _ctx.$t('availability.mark_available')), 9 /* TEXT, PROPS */, _hoisted_15)]);
+  }), 128 /* KEYED_FRAGMENT */))])], 64 /* STABLE_FRAGMENT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_16, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('availability.section_available')) + " (" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.availableItems.length) + ")", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_17, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.availableItems, function (it) {
+    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", {
+      key: 'a' + it.id,
+      "class": "atp-row"
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_18, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(it.name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+      type: "button",
+      "class": "atp-btn atp-btn--disable",
+      disabled: !!$data.busy[it.id],
+      "data-testid": 'availability-disable-' + it.id,
+      onClick: function onClick($event) {
+        return $options.toggle(it, false);
+      }
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.busy[it.id] ? '…' : _ctx.$t('availability.mark_rupture')), 9 /* TEXT, PROPS */, _hoisted_19)]);
+  }), 128 /* KEYED_FRAGMENT */))]), $options.filteredItems.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_20, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('availability.empty')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]))])], 8 /* PROPS */, _hoisted_1)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */);
+}
+
+/***/ },
+
+/***/ "./resources/js/helpers/kdsAllergens.js"
+/*!**********************************************!*\
+  !*** ./resources/js/helpers/kdsAllergens.js ***!
+  \**********************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   normalizeAllergensForHash: () => (/* binding */ normalizeAllergensForHash),
+/* harmony export */   orderHasAllergens: () => (/* binding */ orderHasAllergens),
+/* harmony export */   sortedAllergens: () => (/* binding */ sortedAllergens)
+/* harmony export */ });
+/**
+ * KDS allergens helpers (Lot 2.I / G-4 + G-5).
+ *
+ * Pure functions intentionally extracted from KitchenDisplaySystemComponent
+ * so they can be unit-tested without mounting the heavyweight component.
+ *
+ * The backend (KitchenDisplaySystemOrderService::normalizeAllergensForHash)
+ * applies the SAME normalization rules so that:
+ *   - null and [] hash identically (no-allergens lines merge)
+ *   - duplicate / unsorted entries merge ([gluten, peanuts] vs [peanuts, gluten])
+ *   - non-array shapes degrade to []
+ * Keep both sides in sync if you change one.
+ */
+
+/**
+ * @param {*} order
+ * @returns {boolean}
+ */
+function orderHasAllergens(order) {
+  if (!order) return false;
+  var items = order.orderItems || order.order_items;
+  if (!Array.isArray(items)) return false;
+  for (var i = 0; i < items.length; i++) {
+    var snapshot = items[i] && items[i].allergens_snapshot;
+    if (Array.isArray(snapshot) && snapshot.length > 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Deterministic display order: filter empty/null, dedupe, alphabetical sort.
+ * @param {*} snapshot
+ * @returns {string[]}
+ */
+function sortedAllergens(snapshot) {
+  if (!Array.isArray(snapshot)) return [];
+  var cleaned = snapshot.filter(function (v) {
+    return v !== null && v !== undefined && v !== '';
+  }).map(function (v) {
+    return String(v);
+  });
+  return Array.from(new Set(cleaned)).sort();
+}
+
+/**
+ * Mirror of the backend `normalizeAllergensForHash` shape (without the sha1).
+ * Useful for client-side parity checks in tests.
+ * @param {*} snapshot
+ * @returns {string[]}
+ */
+function normalizeAllergensForHash(snapshot) {
+  return sortedAllergens(snapshot);
+}
+
+/***/ },
+
+/***/ "./resources/js/helpers/kdsAutoTransition.js"
+/*!***************************************************!*\
+  !*** ./resources/js/helpers/kdsAutoTransition.js ***!
+  \***************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   pickOldestAutoPromoteCandidate: () => (/* binding */ pickOldestAutoPromoteCandidate),
+/* harmony export */   shouldAutoTransition: () => (/* binding */ shouldAutoTransition)
+/* harmony export */ });
+/* harmony import */ var _kdsState_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./kdsState.js */ "./resources/js/helpers/kdsState.js");
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+/**
+ * [kds/sprint-2 F-4] Conditional auto-transition rule NEW → PREPARING.
+ *
+ * Justification (RESEARCH_KDS_MODERN_2024_2026 §4.3): no documented modern
+ * KDS auto-promotes — every system (Toast, Lightspeed 2.0, Otter, Wingstop,
+ * Fresh) requires an explicit chef action. This is a deliberate departure
+ * for FoodKing V1 single-chef takeaway-only:
+ *   - only ONE order can physically be in prep at once
+ *   - the system can infer "started prep" with near-zero false-positive risk
+ *   - removes one tap per order (saves wet-glove touches)
+ *   - degrades cleanly to manual the moment a second chef / second station
+ *     arrives (the "zero PREPARING" condition becomes rarely satisfied)
+ *
+ * Feature flag: `window.kdsAutoTransitionEnabled` (default ON). Owner can
+ * disable from settings menu when multi-station ships.
+ *
+ * Server safety: the existing OrderStateMachine::apply lockForUpdate +
+ * idempotent early-return makes this safe under any race between client
+ * watchers and concurrent operator action.
+ */
+
+
+
+/**
+ * Decide whether `incoming` should be auto-promoted to PREPARING right now.
+ *
+ * @param {object} incoming         the order that just entered/refreshed
+ * @param {Array}  currentQueue     all KDS orders currently visible (incl. incoming)
+ * @param {boolean} [featureFlag]   default true
+ * @returns {boolean}
+ */
+function shouldAutoTransition(incoming, currentQueue) {
+  var _incoming$status;
+  var featureFlag = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : true;
+  if (!featureFlag) {
+    return false;
+  }
+  if (incoming == null || _typeof(incoming) !== 'object') {
+    return false;
+  }
+  var rawStatus = parseInt((_incoming$status = incoming.status) !== null && _incoming$status !== void 0 ? _incoming$status : incoming.rawStatus, 10);
+  if (rawStatus !== _kdsState_js__WEBPACK_IMPORTED_MODULE_0__.ORDER_STATUS.ACCEPT) {
+    return false;
+  }
+  var queue = Array.isArray(currentQueue) ? currentQueue : [];
+  var anyPreparing = queue.some(function (o) {
+    var _o$status;
+    var s = parseInt((_o$status = o === null || o === void 0 ? void 0 : o.status) !== null && _o$status !== void 0 ? _o$status : o === null || o === void 0 ? void 0 : o.rawStatus, 10);
+    return s === _kdsState_js__WEBPACK_IMPORTED_MODULE_0__.ORDER_STATUS.PREPARING;
+  });
+  return !anyPreparing;
+}
+
+/**
+ * Pick the single oldest NEW order to auto-promote when the queue refreshes.
+ * Used by the store watcher after a `lists` action returns. Stable tie-breaker:
+ * created_at then id.
+ *
+ * @param {Array} queue
+ * @returns {object|null}
+ */
+function pickOldestAutoPromoteCandidate(queue) {
+  if (!Array.isArray(queue) || queue.length === 0) {
+    return null;
+  }
+  var anyPreparing = queue.some(function (o) {
+    return parseInt(o === null || o === void 0 ? void 0 : o.status, 10) === _kdsState_js__WEBPACK_IMPORTED_MODULE_0__.ORDER_STATUS.PREPARING;
+  });
+  if (anyPreparing) {
+    return null;
+  }
+  var news = queue.filter(function (o) {
+    return parseInt(o === null || o === void 0 ? void 0 : o.status, 10) === _kdsState_js__WEBPACK_IMPORTED_MODULE_0__.ORDER_STATUS.ACCEPT;
+  });
+  if (news.length === 0) {
+    return null;
+  }
+  news.sort(function (a, b) {
+    var ta = (a === null || a === void 0 ? void 0 : a.created_at_iso) || (a === null || a === void 0 ? void 0 : a.created_at) || (a === null || a === void 0 ? void 0 : a.order_datetime) || '';
+    var tb = (b === null || b === void 0 ? void 0 : b.created_at_iso) || (b === null || b === void 0 ? void 0 : b.created_at) || (b === null || b === void 0 ? void 0 : b.order_datetime) || '';
+    if (ta !== tb) {
+      return ta < tb ? -1 : 1;
+    }
+    var ia = parseInt(a === null || a === void 0 ? void 0 : a.id, 10) || 0;
+    var ib = parseInt(b === null || b === void 0 ? void 0 : b.id, 10) || 0;
+    return ia - ib;
+  });
+  return news[0];
+}
+
+/***/ },
+
+/***/ "./resources/js/helpers/kdsCustomization.js"
+/*!**************************************************!*\
+  !*** ./resources/js/helpers/kdsCustomization.js ***!
+  \**************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   categorize: () => (/* binding */ categorize),
+/* harmony export */   isDrinkName: () => (/* binding */ isDrinkName),
+/* harmony export */   kdsVariationGroupValue: () => (/* binding */ kdsVariationGroupValue),
+/* harmony export */   kdsVariationLine: () => (/* binding */ kdsVariationLine),
+/* harmony export */   orderHasAnyAllergen: () => (/* binding */ orderHasAnyAllergen),
+/* harmony export */   renderItem: () => (/* binding */ renderItem),
+/* harmony export */   sanitizeKdsInstruction: () => (/* binding */ sanitizeKdsInstruction)
+/* harmony export */ });
+/* harmony import */ var _kdsLineSemantics_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./kdsLineSemantics.js */ "./resources/js/helpers/kdsLineSemantics.js");
+function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t["return"] && (u = t["return"](), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
+function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t["return"] || t["return"](); } finally { if (u) throw o; } } }; }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+/**
+ * [kds/sprint-2 F-3] Adaptive customization renderer — the single source of
+ * truth that converts an OrderItem (post-T07 composition_snapshot or legacy
+ * item_variations/item_extras/item_addons) into a flat list of typed display
+ * nodes consumed by <KdsOrderLine>.
+ *
+ * Vue templates MUST NOT branch per-category — they iterate `renderItem().lines`.
+ * Adding a new category = one branch here + (optionally) one i18n group key.
+ *
+ * Per-category contract (DESIGN_SPEC_KDS_V2 §3.1):
+ *   SANDWICH    : header + grouped variations (Pain/Crudités/Sauce/Cuisson)
+ *                 + extras (yellow italic supplement)
+ *                 + addons (menu_full/menu_frites/menu_boisson → menu_child)
+ *   TACO/BURGER : same as sandwich, omit Pain group
+ *   ASSIETTE    : header + comma-joined variations on one "Avec :" line
+ *   MENU_FORMULE: header + addons indented as children
+ *   SIDE/DRINK/DESSERT/OTHER: header + extras only, no variations grouping
+ */
+
+
+
+// Group keys are surfaced to i18n via `label.kds_group_<key>`.
+// Heuristic-keyword regex per group. The first match wins.
+var GROUP_PATTERNS = [{
+  key: 'bread',
+  re: /\bpain\b|\bbread\b/i
+}, {
+  key: 'crudites',
+  re: /crudit|crudity|salade|legum|vegetab/i
+}, {
+  key: 'sauce',
+  re: /\bsauce\b/i
+}, {
+  key: 'cooking',
+  re: /cuisson|cook|temperature/i
+}, {
+  key: 'drink',
+  re: /boisson|drink|beverage/i
+}, {
+  key: 'size',
+  re: /\btaille\b|\bsize\b|\bportion\b/i
+}];
+function classifyGroup(variationName, attributeName) {
+  var name = "".concat(variationName || '', " ").concat(attributeName || '');
+  var _iterator = _createForOfIteratorHelper(GROUP_PATTERNS),
+    _step;
+  try {
+    for (_iterator.s(); !(_step = _iterator.n()).done;) {
+      var g = _step.value;
+      if (g.re.test(name)) {
+        return g.key;
+      }
+    }
+  } catch (err) {
+    _iterator.e(err);
+  } finally {
+    _iterator.f();
+  }
+  return 'other';
+}
+
+// [W6-ADV B-1 2026-07-06] Détection boisson robuste — le match noms ratait 8/15
+// boissons actives DB (« Hawaï 33cl » — régression du renommage Fanta Hawai —,
+// Orangina, Capri-Sun, Tropico, Ice Tea, Fuze Tea, Perrier, Oasis) → codes
+// cryptiques « 1× HAW » en cuisine. Couverture : marques réelles de la carte +
+// « boisson » générique + token VOLUMÉTRIQUE (« 33cl », « 50 cl », « 1L »,
+// « 1,5l » — seuls les liquides sont nommés au volume sur la carte).
+// Jumeau STRICT : KitchenTicketSymbolicFormatter::isDrinkItem (PHP).
+var DRINK_NAME_RE = /coca|fanta|sprite|\beau\b|coke|water|\bjus\b|\bthé?\b|menthe|caf[eé]|boisson|oasis|orangina|capri|tropico|ice[ -]?tea|fuze|perrier|hawa[iï]/;
+var DRINK_VOLUME_RE = /\b\d{1,2} ?cl\b|\b\d(?:[.,]\d)? ?l\b/;
+
+/**
+ * Nom de produit = BOISSON ? Applique la MÊME chaîne de gardes que categorize()
+ * (un nom qui matche une catégorie antérieure — menu/sandwich/…/dessert — n'est
+ * JAMAIS une boisson : « Gâteau » contient « eau », « Menu (Frites + Boisson) »
+ * contient « boisson », « frites + boisson » est un libellé de formule, et
+ * /glace/ ne matche PAS « glaçons » (ç≠c)). Jumeau STRICT du PHP
+ * KitchenTicketSymbolicFormatter::isDrinkItem.
+ *
+ * @param {string} rawName
+ * @returns {boolean}
+ */
+function isDrinkName(rawName) {
+  var n = String(rawName || '').toLowerCase().trim();
+  if (/menu|formule/.test(n) || /sandwich|kafteji|brick/.test(n) || /\btacos?\b/.test(n) || /burger|cheeseburger|double cheese/.test(n) || /assiette|couscous|ojja|lablabi/.test(n) || /frite|onion ring/.test(n) || /dessert|crepe|crêpe|gateau|gâteau|glace|tiramisu/.test(n)) {
+    return false;
+  }
+  return DRINK_NAME_RE.test(n) || DRINK_VOLUME_RE.test(n);
+}
+
+/**
+ * Classify an item into a category. Server can override this by populating
+ * a future `items.kds_category` column; until then, name-based fallback.
+ *
+ * @param {object} orderItem
+ * @returns {'sandwich'|'taco'|'burger'|'assiette'|'menu_formule'|'side'|'drink'|'dessert'|'other'}
+ */
+function categorize(orderItem) {
+  var declared = String((orderItem === null || orderItem === void 0 ? void 0 : orderItem.kds_category) || '').toLowerCase();
+  if (['sandwich', 'taco', 'burger', 'assiette', 'menu_formule', 'side', 'drink', 'dessert', 'other'].includes(declared)) {
+    return declared;
+  }
+  var name = String((orderItem === null || orderItem === void 0 ? void 0 : orderItem.item_name) || '').toLowerCase();
+  if (/menu|formule/.test(name)) {
+    return 'menu_formule';
+  }
+  if (/sandwich|kafteji|brick/.test(name)) {
+    return 'sandwich';
+  }
+  if (/\btacos?\b/.test(name)) {
+    return 'taco';
+  }
+  if (/burger|cheeseburger|double cheese/.test(name)) {
+    return 'burger';
+  }
+  if (/assiette|couscous|ojja|lablabi/.test(name)) {
+    return 'assiette';
+  }
+  if (/frite|onion ring/.test(name)) {
+    return 'side';
+  }
+  // [#4] Dessert BEFORE drink, and short drink tokens anchored with \b. An
+  // unanchored 'eau' matched 'gâteau'/'plateau'/'château', mislabeling desserts
+  // as drinks (the dessert branch was unreachable for those names).
+  if (/dessert|crepe|crêpe|gateau|gâteau|glace|tiramisu/.test(name)) {
+    return 'dessert';
+  }
+  // [W6-ADV B-1] isDrinkName rejoue les gardes ci-dessus (mêmes regex, même ordre)
+  // puis matche marques + volumes — factorisé pour l'extraction boisson-de-formule.
+  if (isDrinkName(name)) {
+    return 'drink';
+  }
+  return 'other';
+}
+function readVariations(orderItem) {
+  // Post-T07: composition_snapshot.lines wins (richer shape with attribute_name).
+  var snap = orderItem === null || orderItem === void 0 ? void 0 : orderItem.composition_snapshot;
+  if (snap && Array.isArray(snap.lines) && snap.lines.length > 0) {
+    return snap.lines;
+  }
+  return Array.isArray(orderItem === null || orderItem === void 0 ? void 0 : orderItem.item_variations) ? orderItem.item_variations : [];
+}
+function readExtras(orderItem) {
+  var snap = orderItem === null || orderItem === void 0 ? void 0 : orderItem.composition_snapshot;
+  if (snap && Array.isArray(snap.extras) && snap.extras.length > 0) {
+    return snap.extras;
+  }
+  return Array.isArray(orderItem === null || orderItem === void 0 ? void 0 : orderItem.item_extras) ? orderItem.item_extras : [];
+}
+function readAddons(orderItem) {
+  var snap = orderItem === null || orderItem === void 0 ? void 0 : orderItem.composition_snapshot;
+  if (snap && Array.isArray(snap.addons) && snap.addons.length > 0) {
+    return snap.addons;
+  }
+  return Array.isArray(orderItem === null || orderItem === void 0 ? void 0 : orderItem.item_addons) ? orderItem.item_addons : [];
+}
+function variationLabel(v) {
+  return (v === null || v === void 0 ? void 0 : v.name) || (v === null || v === void 0 ? void 0 : v.variation_name) || '';
+}
+
+/**
+ * [POS-WIZARD-COMPO-AUDIT 2026-06-23 P2-B] Shape-agnostic GROUP/VALUE accessor.
+ *
+ * The composition has two on-wire shapes that INVERT the meaning of
+ * `variation_name`:
+ *   - snapshot (composition_snapshot.lines, OrderItemResource): `attribute_name`
+ *     = GROUP ("Viande 1"), `variation_name` = VALUE ("Poulet mariné"), no `name`.
+ *   - legacy (item_variations column, KDSOrderItemsResource / kiosk payload):
+ *     `variation_name` = GROUP, `name` = VALUE.
+ *
+ * Rendering a snapshot line with the legacy template `{{variation_name}}:
+ * {{name}}` produced "Poulet mariné: " (group dropped, value mislabeled). This
+ * helper resolves {group, value} correctly for BOTH shapes (discriminant =
+ * presence of `attribute_name`), so the KDS order-cards/print AND the legacy
+ * items-board render identically and correctly.
+ */
+function kdsVariationGroupValue(v) {
+  var _v$variation_name2, _v$name;
+  if (!v || _typeof(v) !== 'object') {
+    return {
+      group: '',
+      value: ''
+    };
+  }
+  var attr = v.attribute_name;
+  if (attr !== null && attr !== undefined && String(attr) !== '') {
+    var _ref, _v$variation_name;
+    // snapshot shape
+    return {
+      group: String(attr),
+      value: String((_ref = (_v$variation_name = v.variation_name) !== null && _v$variation_name !== void 0 ? _v$variation_name : v.name) !== null && _ref !== void 0 ? _ref : '')
+    };
+  }
+  // legacy shape
+  return {
+    group: String((_v$variation_name2 = v.variation_name) !== null && _v$variation_name2 !== void 0 ? _v$variation_name2 : ''),
+    value: String((_v$name = v.name) !== null && _v$name !== void 0 ? _v$name : '')
+  };
+}
+
+/** "GROUP: VALUE" (or just the value when there is no group) — never a dangling colon. */
+function kdsVariationLine(v) {
+  var _kdsVariationGroupVal = kdsVariationGroupValue(v),
+    group = _kdsVariationGroupVal.group,
+    value = _kdsVariationGroupVal.value;
+  if (group && value) {
+    return "".concat(group, ": ").concat(value);
+  }
+  return value || group || '';
+}
+function extraLabel(e) {
+  return (e === null || e === void 0 ? void 0 : e.name) || (e === null || e === void 0 ? void 0 : e.extra_name) || '';
+}
+function addonLabel(a) {
+  return (a === null || a === void 0 ? void 0 : a.addon_name) || (a === null || a === void 0 ? void 0 : a.name) || '';
+}
+
+// Compo markers that the STRUCTURED render (composition_snapshot SSOT) already
+// shows. "Sauce :" (group + space-colon) is compo; "↳ Sauce frites: X" is an
+// extra (no space before ':', kept by the ↳-prefix rule below before this runs).
+var KDS_COMPO_LINE_RE = /(^|\s)(Viandes?|Sauce|Suppl[ée]ment|Pain|Galette)\s*:/i;
+
+/**
+ * [W6-ADV C-P1-1 2026-07-06] La BORNE écrit la boisson de formule DANS la ligne
+ * « Pain : Pain. Formule : Menu complet (frites + boisson) (Hawaï 33cl). Sauce
+ * frites : Algérienne » (UNE seule ligne — shape réel #5533) que le sanitizer
+ * droppe entière (anti double-menu / compo) → la boisson mourait avec (ni KDS ni
+ * ticket, le cuisinier ne savait pas quelle boisson préparer). On EXTRAIT le(s)
+ * segment(s) entre parenthèses validés boisson (isDrinkName — la garde rejette
+ * « (frites + boisson) », libellé de formule) et on les émet au format CAISSE
+ * « BOISSON: X », canal déjà préservé par le sanitize et affiché KDS + ticket.
+ * Jumeau STRICT : KitchenTicketSymbolicFormatter::extractFormuleDrinkLines.
+ *
+ * @param {string} raw
+ * @returns {string[]} lignes « BOISSON: X » (peut être vide)
+ */
+function extractFormuleDrinkLines(raw) {
+  var out = [];
+  var _iterator2 = _createForOfIteratorHelper(String(raw).split('\n')),
+    _step2;
+  try {
+    for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
+      var ln = _step2.value;
+      if (!/formule\s*:/i.test(ln)) continue;
+      var _iterator3 = _createForOfIteratorHelper(ln.matchAll(/\(([^()]+)\)/g)),
+        _step3;
+      try {
+        for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
+          var m = _step3.value;
+          var seg = m[1].trim();
+          if (seg !== '' && isDrinkName(seg)) {
+            out.push("BOISSON: ".concat(seg));
+          }
+        }
+      } catch (err) {
+        _iterator3.e(err);
+      } finally {
+        _iterator3.f();
+      }
+    }
+  } catch (err) {
+    _iterator2.e(err);
+  } finally {
+    _iterator2.f();
+  }
+  return out;
+}
+
+/**
+ * Sanitize the free-text `instruction` for KDS / kitchen-ticket display.
+ *
+ * The FROZEN pos-wizard.js (buildTicketInstruction) writes the FULL composition
+ * into `instruction`: line0 = PRODUCT NAME (uppercased), line1 = compo blob
+ * ("Viandes : X Sauce : Y - crudités"), then UNIQUE extras ("+ Menu (…)",
+ * "↳ Sauce frites: X", "[note]") and any free client note. The KDS already
+ * renders the composition STRUCTURALLY from composition_snapshot (the SSOT), so
+ * echoing the raw instruction DOUBLES it — and on legacy bridge-divergent rows
+ * shows TWO contradictory sauces for one product (kitchen makes the wrong food).
+ *
+ * This keeps ONLY what the structured render does NOT carry: the formule child
+ * ("+ …"), the "↳ Sauce frites: X" choice (exists ONLY here, never in the
+ * snapshot), bracketed notes, and free client notes. It drops the product-name
+ * line and the compo blob. pos-wizard.js (the writer) is FROZEN and untouched —
+ * this is a display-only sanitiser.
+ *
+ * @param {string} raw     orderItem.instruction
+ * @param {string} itemName orderItem.item_name (to strip the echoed name line)
+ * @returns {string} cleaned instruction (may be empty → caller emits no line)
+ */
+function sanitizeKdsInstruction(raw, itemName) {
+  if (typeof raw !== 'string') {
+    return '';
+  }
+  var name = String(itemName || '').trim().toUpperCase();
+  // [FOOD-SAFETY 2026-06-27] pos-wizard.js (frozen) wrappe la note libre caissier
+  // en [...] ; une note multi-ligne « Allergie:\n- gluten\n- arachide » devient
+  // « [Allergie:\n- gluten\n- arachide] ». Sans suivi d'état, les lignes « - X »
+  // de continuation étaient confondues avec un retrait de compo (l.« ^-\s ») et
+  // DROPPÉES → les allergènes disparaissaient du ticket cuisine imprimé. On garde
+  // donc toute ligne tant qu'une note crochet ouverte n'est pas refermée par « ] ».
+  var insideBracketNote = false;
+  var kept = raw.split('\n').filter(function (ln) {
+    var t = ln.trim();
+    if (t === '') return false;
+    if (name && t.toUpperCase() === name) return false; // echoed product name (exact)
+    // [KITCHEN 2026-06-30] Ligne 100% MAJUSCULES (sans chiffre) = écho du nom produit
+    // écrit par le wizard (« TACOS », « SANDWICH CAYENNE ») → drop (la L1 le montre déjà).
+    if (!insideBracketNote && t.length >= 2 && /^[A-ZÀ-Ÿ][A-ZÀ-Ÿ '\-]*$/.test(t)) return false;
+    if (insideBracketNote) {
+      // continuation d'une note libre multi-ligne → KEEP
+      if (t.includes(']')) insideBracketNote = false;
+      return true;
+    }
+    if (/^\[/.test(t)) {
+      // bracketed note → KEEP
+      if (!t.includes(']')) insideBracketNote = true; // ouvre une note multi-ligne
+      return true;
+    }
+    // [KITCHEN-MENU 2026-06-30] Menu + sauce frites sont rendus par la ligne
+    // symbolique « MENU : SYM » → on les retire ici (anti double-menu / verbeux).
+    if (/sauce\s*frites|menu\s*\(\s*frites|^\+\s*menu\b/i.test(t)) return false;
+    if (/^[+↳]/.test(t)) return true; // autres formule / notes → KEEP
+    if (/^-\s/.test(t)) return false; // bare crudités-removal (structured covers it)
+    if (KDS_COMPO_LINE_RE.test(t)) return false; // compo blob "Viandes : … Sauce : …" → DROP (dup)
+    return true; // free client note → KEEP
+  });
+  // [KITCHEN-NOPRICE 2026-06-30] Cuisine sans prix : retire « (+2,00 €) » / « (+2,50) »
+  // des notes conservées (parité avec KitchenTicketSymbolicFormatter::cleanInstruction).
+  var cleaned = kept.map(function (l) {
+    return l.replace(/\s*\(\s*\+?\s*(?:€|EUR)?\s*\d+[.,]\d{1,2}\s*(?:€|EUR)?\s*\)/g, '').trim();
+  });
+  // [W6-ADV C-P1-1] Boisson de formule borne extraite AVANT le drop de sa ligne —
+  // dédupliquée si la caisse a déjà écrit sa propre ligne « BOISSON: X ».
+  var _iterator4 = _createForOfIteratorHelper(extractFormuleDrinkLines(raw)),
+    _step4;
+  try {
+    var _loop = function _loop() {
+      var d = _step4.value;
+      if (!cleaned.some(function (l) {
+        return l.toLowerCase() === d.toLowerCase();
+      })) {
+        cleaned.push(d);
+      }
+    };
+    for (_iterator4.s(); !(_step4 = _iterator4.n()).done;) {
+      _loop();
+    }
+  } catch (err) {
+    _iterator4.e(err);
+  } finally {
+    _iterator4.f();
+  }
+  return cleaned.join('\n').trim();
+}
+
+/**
+ * Render an order item into a flat typed line list.
+ *
+ * Line types:
+ *   'header'        — the item itself (qty + name + allergen icon)
+ *   'variation'     — grouped or single variation row (Pain / Crudités / …)
+ *   'variation-flat'— the assiette "Avec : a, b, c" one-liner
+ *   'supplement'    — paid extra "+ Cheddar"
+ *   'addon'         — generic addon (rare)
+ *   'menu_child'    — addon with role startsWith 'menu_'
+ *   'instruction'   — free-text note (classified note/exclusion/allergen)
+ *   'allergen'      — explicit allergens_snapshot codes block
+ *
+ * @param {object} orderItem
+ * @returns {{ category: string, hasAllergen: boolean, lines: Array<object> }}
+ */
+function renderItem(orderItem) {
+  var _orderItem$quantity;
+  var category = categorize(orderItem);
+  var lines = [];
+  var allergenCodes = Array.isArray(orderItem === null || orderItem === void 0 ? void 0 : orderItem.allergens_snapshot)
+  // [#8] Coerce to string BEFORE filtering — numeric allergen codes (the
+  // backend hash uses strval) were silently dropped, suppressing the
+  // allergen line AND the orange card border. Food-safety: never drop a
+  // non-empty code regardless of its JS type.
+  ? orderItem.allergens_snapshot.map(function (c) {
+    return c === null || c === undefined ? '' : String(c);
+  }).filter(function (c) {
+    return c.length > 0;
+  }) : [];
+  var itemAllergen = allergenCodes.length > 0;
+  lines.push({
+    type: 'header',
+    qty: (_orderItem$quantity = orderItem === null || orderItem === void 0 ? void 0 : orderItem.quantity) !== null && _orderItem$quantity !== void 0 ? _orderItem$quantity : 1,
+    label: (orderItem === null || orderItem === void 0 ? void 0 : orderItem.item_name) || '',
+    category: category,
+    hasAllergen: itemAllergen
+  });
+  var vars = readVariations(orderItem);
+  if (vars.length > 0) {
+    if (category === 'assiette') {
+      var joined = vars.map(function (v) {
+        var q = parseInt(v === null || v === void 0 ? void 0 : v.quantity, 10);
+        var prefix = Number.isFinite(q) && q > 1 ? "".concat(q, " ") : '';
+        return "".concat(prefix).concat(variationLabel(v));
+      }).filter(function (s) {
+        return s.trim().length > 0;
+      }).join(', ');
+      if (joined.length > 0) {
+        lines.push({
+          type: 'variation-flat',
+          group: 'avec',
+          label: joined
+        });
+      }
+    } else {
+      // Group by classified attribute name. SANDWICH renders Pain, others omit.
+      var byGroup = new Map();
+      var _iterator5 = _createForOfIteratorHelper(vars),
+        _step5;
+      try {
+        for (_iterator5.s(); !(_step5 = _iterator5.n()).done;) {
+          var v = _step5.value;
+          var g = classifyGroup(v === null || v === void 0 ? void 0 : v.variation_name, v === null || v === void 0 ? void 0 : v.attribute_name);
+          if (g === 'bread' && (category === 'taco' || category === 'burger')) {
+            // taco/burger: skip the Pain group (no bread choice)
+            continue;
+          }
+          if (!byGroup.has(g)) {
+            byGroup.set(g, []);
+          }
+          byGroup.get(g).push(variationLabel(v));
+        }
+      } catch (err) {
+        _iterator5.e(err);
+      } finally {
+        _iterator5.f();
+      }
+      var _iterator6 = _createForOfIteratorHelper(byGroup.entries()),
+        _step6;
+      try {
+        for (_iterator6.s(); !(_step6 = _iterator6.n()).done;) {
+          var _step6$value = _slicedToArray(_step6.value, 2),
+            group = _step6$value[0],
+            labels = _step6$value[1];
+          lines.push({
+            type: 'variation',
+            group: group,
+            label: labels.filter(function (l) {
+              return l.length > 0;
+            }).join(', ')
+          });
+        }
+      } catch (err) {
+        _iterator6.e(err);
+      } finally {
+        _iterator6.f();
+      }
+    }
+  }
+
+  // Paid supplements — yellow italic, "+" prefix.
+  var _iterator7 = _createForOfIteratorHelper(readExtras(orderItem)),
+    _step7;
+  try {
+    for (_iterator7.s(); !(_step7 = _iterator7.n()).done;) {
+      var e = _step7.value;
+      var label = extraLabel(e);
+      if (!label) continue;
+      var q = parseInt(e === null || e === void 0 ? void 0 : e.quantity, 10);
+      var suffix = Number.isFinite(q) && q > 1 ? " \xD7".concat(q) : '';
+      lines.push({
+        type: 'supplement',
+        label: "+ ".concat(label).concat(suffix)
+      });
+    }
+
+    // Menu Formule children (composition_snapshot.addons[].role startsWith 'menu_').
+  } catch (err) {
+    _iterator7.e(err);
+  } finally {
+    _iterator7.f();
+  }
+  var _iterator8 = _createForOfIteratorHelper(readAddons(orderItem)),
+    _step8;
+  try {
+    for (_iterator8.s(); !(_step8 = _iterator8.n()).done;) {
+      var a = _step8.value;
+      var _label = addonLabel(a);
+      if (!_label) continue;
+      var role = String((a === null || a === void 0 ? void 0 : a.role) || '').toLowerCase();
+      var isMenuChild = role.startsWith('menu_');
+      var _q = parseInt(a === null || a === void 0 ? void 0 : a.quantity, 10);
+      var qtyPrefix = Number.isFinite(_q) && _q > 1 ? "".concat(_q, "\xD7 ") : '';
+      lines.push({
+        type: isMenuChild ? 'menu_child' : 'addon',
+        label: "".concat(qtyPrefix).concat(_label),
+        role: role
+      });
+    }
+
+    // Free-text instruction — sanitized (strip the compo duplicate the
+    // structured render already shows, keep unique extras), then keyword-classified.
+  } catch (err) {
+    _iterator8.e(err);
+  } finally {
+    _iterator8.f();
+  }
+  var instruction = sanitizeKdsInstruction(orderItem === null || orderItem === void 0 ? void 0 : orderItem.instruction, orderItem === null || orderItem === void 0 ? void 0 : orderItem.item_name);
+  if (instruction.length > 0) {
+    lines.push({
+      type: 'instruction',
+      label: instruction,
+      visualClass: (0,_kdsLineSemantics_js__WEBPACK_IMPORTED_MODULE_0__.kdsInstructionVisualClass)(instruction)
+    });
+  }
+
+  // Allergens_snapshot codes (separate from instruction-keyword detection).
+  if (itemAllergen) {
+    lines.push({
+      type: 'allergen',
+      codes: allergenCodes
+    });
+  }
+  return {
+    category: category,
+    hasAllergen: itemAllergen,
+    lines: lines
+  };
+}
+
+/**
+ * Aggregate `hasAllergen` across an entire order — used to flip the card-level
+ * orange border override regardless of age.
+ *
+ * @param {Array} orderItems
+ * @returns {boolean}
+ */
+function orderHasAnyAllergen(orderItems) {
+  if (!Array.isArray(orderItems)) {
+    return false;
+  }
+  var _iterator9 = _createForOfIteratorHelper(orderItems),
+    _step9;
+  try {
+    for (_iterator9.s(); !(_step9 = _iterator9.n()).done;) {
+      var it = _step9.value;
+      var codes = Array.isArray(it === null || it === void 0 ? void 0 : it.allergens_snapshot) ? it.allergens_snapshot : [];
+      // [#8] Coerce — numeric/non-string codes count as allergens too (food safety).
+      if (codes.some(function (c) {
+        return c !== null && c !== undefined && String(c).length > 0;
+      })) {
+        return true;
+      }
+    }
+  } catch (err) {
+    _iterator9.e(err);
+  } finally {
+    _iterator9.f();
+  }
+  return false;
+}
+
+/***/ },
+
+/***/ "./resources/js/helpers/kdsDisplay.js"
+/*!********************************************!*\
+  !*** ./resources/js/helpers/kdsDisplay.js ***!
+  \********************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   KDS_AGE_CRITICAL_MS: () => (/* binding */ KDS_AGE_CRITICAL_MS),
+/* harmony export */   KDS_AGE_WARNING_MS: () => (/* binding */ KDS_AGE_WARNING_MS),
+/* harmony export */   KDS_NEW_ORDER_SOUND_MIN_INTERVAL_MS: () => (/* binding */ KDS_NEW_ORDER_SOUND_MIN_INTERVAL_MS),
+/* harmony export */   LS_GROUP_BY_TABLE: () => (/* binding */ LS_GROUP_BY_TABLE),
+/* harmony export */   LS_STATION_FILTER: () => (/* binding */ LS_STATION_FILTER),
+/* harmony export */   filterOrdersByStation: () => (/* binding */ filterOrdersByStation),
+/* harmony export */   getKdsAgeBucket: () => (/* binding */ getKdsAgeBucket),
+/* harmony export */   getKdsEscalationClass: () => (/* binding */ getKdsEscalationClass),
+/* harmony export */   kdsStationFilterStorageKey: () => (/* binding */ kdsStationFilterStorageKey),
+/* harmony export */   normalizeKdsStation: () => (/* binding */ normalizeKdsStation),
+/* harmony export */   orderMatchesStationFilter: () => (/* binding */ orderMatchesStationFilter),
+/* harmony export */   parseOrderCreatedMs: () => (/* binding */ parseOrderCreatedMs),
+/* harmony export */   shouldPlayKdsNewOrderSound: () => (/* binding */ shouldPlayKdsNewOrderSound)
+/* harmony export */ });
+/**
+ * Pure helpers for KDS station filter + wait-time escalation styling (unit-tested).
+ */
+
+/** [Lot 2.C / F-07] Minimum gap between "new order" chimes when WS floods. */
+var KDS_NEW_ORDER_SOUND_MIN_INTERVAL_MS = 2500;
+
+/**
+ * @param {number} lastPlayedAt
+ * @param {number} [nowMs]
+ * @returns {boolean}
+ */
+function shouldPlayKdsNewOrderSound(lastPlayedAt) {
+  var nowMs = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : Date.now();
+  if (lastPlayedAt == null || !Number.isFinite(lastPlayedAt)) {
+    return true;
+  }
+  return nowMs - lastPlayedAt >= KDS_NEW_ORDER_SOUND_MIN_INTERVAL_MS;
+}
+var LS_STATION_FILTER = 'kds.station_filter';
+var LS_GROUP_BY_TABLE = 'kds.group_by_table';
+
+/**
+ * [Lot 2.F / F-10] Station filter is persisted per logged-in user so two staff
+ * on the same browser profile do not overwrite each other’s KDS view.
+ * Falls back to the legacy unscoped key when `userId` is missing/invalid.
+ */
+function kdsStationFilterStorageKey(userId) {
+  var n = userId == null || userId === '' ? 0 : parseInt(userId, 10);
+  if (!Number.isFinite(n) || n <= 0) {
+    return LS_STATION_FILTER;
+  }
+  return "".concat(LS_STATION_FILTER, ".u").concat(n);
+}
+var STATIONS = ['bar', 'cuisine_chaude', 'cuisine_froide', 'none'];
+function normalizeKdsStation(raw) {
+  var v = raw == null || raw === '' ? 'none' : String(raw);
+  return STATIONS.includes(v) ? v : 'none';
+}
+function orderMatchesStationFilter(order, filter) {
+  if (!filter || filter === 'all') {
+    return true;
+  }
+  var items = order.order_items || [];
+  return items.some(function (line) {
+    return normalizeKdsStation(line.kds_station) === filter;
+  });
+}
+function filterOrdersByStation(orders, filter) {
+  if (!filter || filter === 'all') {
+    return orders || [];
+  }
+  return (orders || []).filter(function (o) {
+    return orderMatchesStationFilter(o, filter);
+  });
+}
+
+// [kds/sprint-2 F-5] Age thresholds tightened from 5/10 min to 3/6 min for V1
+// takeaway-only single-chef workflow (Innovorder publishes 3/10 for fast-food,
+// our V1 narrows the red-zone because takeaway prep target is < 5 min).
+// Returning the bucket name explicitly (in addition to the legacy CSS class)
+// lets the new card components decide their own visual treatment.
+var KDS_AGE_WARNING_MS = 3 * 60 * 1000;
+var KDS_AGE_CRITICAL_MS = 6 * 60 * 1000;
+function getKdsAgeBucket(createdMs) {
+  var nowMs = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : Date.now();
+  var age = nowMs - createdMs;
+  if (age < KDS_AGE_WARNING_MS) {
+    return 'fresh';
+  }
+  if (age < KDS_AGE_CRITICAL_MS) {
+    return 'warning';
+  }
+  return 'critical';
+}
+function getKdsEscalationClass(createdMs) {
+  var nowMs = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : Date.now();
+  var bucket = getKdsAgeBucket(createdMs, nowMs);
+  if (bucket === 'fresh') {
+    return 'kds-wait-green';
+  }
+  if (bucket === 'warning') {
+    return 'kds-wait-orange';
+  }
+  return 'kds-wait-red animate-pulse';
+}
+function parseOrderCreatedMs(order) {
+  // [kds/sprint-2 F-5] Prefer created_at_iso (added to KDSOrderDetailsResource
+  // in B-1) over the locale-formatted order_datetime — stable wire format,
+  // no tz drift, no parsing ambiguity.
+  if (order.created_at_iso) {
+    var t = Date.parse(order.created_at_iso);
+    if (!Number.isNaN(t)) {
+      return t;
+    }
+  }
+  if (order.created_at) {
+    var _t = Date.parse(order.created_at);
+    if (!Number.isNaN(_t)) {
+      return _t;
+    }
+  }
+  if (order.order_datetime) {
+    var t2 = Date.parse(order.order_datetime);
+    if (!Number.isNaN(t2)) {
+      return t2;
+    }
+  }
+  return Date.now();
+}
+
+/***/ },
+
+/***/ "./resources/js/helpers/kdsFreshness.js"
+/*!**********************************************!*\
+  !*** ./resources/js/helpers/kdsFreshness.js ***!
+  \**********************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   SYNC_STALE_MS: () => (/* binding */ SYNC_STALE_MS),
+/* harmony export */   SYNC_UNCERTAIN_MS: () => (/* binding */ SYNC_UNCERTAIN_MS),
+/* harmony export */   freshnessAgeMs: () => (/* binding */ freshnessAgeMs),
+/* harmony export */   freshnessBaseMs: () => (/* binding */ freshnessBaseMs),
+/* harmony export */   humanizeSyncAgo: () => (/* binding */ humanizeSyncAgo),
+/* harmony export */   isSyncStale: () => (/* binding */ isSyncStale),
+/* harmony export */   isSyncUncertain: () => (/* binding */ isSyncUncertain),
+/* harmony export */   toEpochMs: () => (/* binding */ toEpochMs)
+/* harmony export */ });
+// [CLUSTER-4 P2 2026-07-11] KDS data-freshness helpers (pure, unit-tested).
+//
+// Why this exists:
+//   The KDS board's only "live" signal used to be `wsConnected` — the soketi
+//   socket state. That is a LIE about data freshness: OrderCreated events flow
+//   through the QUEUE (domain_events → job → broadcast). If the queue worker
+//   dies, soketi stays "connected" while NO order reaches the board, so the
+//   screen keeps implying "live" for up to a full poll cycle (~60s).
+//
+//   The honest signal is the age of the last SUCCESSFUL data refresh from ANY
+//   path: an Echo broadcast that hydrated the board, a fallback poll, or a
+//   sync-service 200. These helpers compute that unified freshness age and the
+//   two staleness tiers the status badge uses.
+//
+// All functions are pure (no `this`, no globals) so they are trivially testable.
+
+// Soft tier: badge turns orange. Reassurance is fading; a refresh is due soon.
+var SYNC_STALE_MS = 30000;
+
+// Hard tier: two missed 60s poll cycles with NO confirmed refresh. The board
+// may be materially behind — surface an explicit "synchro incertaine" instead
+// of implying the data is live.
+var SYNC_UNCERTAIN_MS = 75000;
+
+/**
+ * Normalise a timestamp candidate to epoch-ms. Accepts:
+ *   - a number (already epoch-ms)
+ *   - an ISO string / Date-parseable string
+ *   - null / undefined / '' → 0
+ * Invalid values collapse to 0 so they never win a Math.max.
+ * @param {number|string|null|undefined} value
+ * @returns {number}
+ */
+function toEpochMs(value) {
+  if (value === null || value === undefined || value === '') {
+    return 0;
+  }
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : 0;
+  }
+  var parsed = new Date(value).getTime();
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+/**
+ * Freshest of the two data-refresh clocks:
+ *   - lastDataFreshAt : board hydrated (Echo broadcast OR fallback poll OR list())
+ *   - lastSyncAt      : sync-service poll returned 200 (direct DB read)
+ * @param {{lastDataFreshAt?: number|string|null, lastSyncAt?: number|string|null}} clocks
+ * @returns {number} epoch-ms, or 0 when neither path has ever succeeded
+ */
+function freshnessBaseMs() {
+  var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
+    _ref$lastDataFreshAt = _ref.lastDataFreshAt,
+    lastDataFreshAt = _ref$lastDataFreshAt === void 0 ? null : _ref$lastDataFreshAt,
+    _ref$lastSyncAt = _ref.lastSyncAt,
+    lastSyncAt = _ref$lastSyncAt === void 0 ? null : _ref$lastSyncAt;
+  return Math.max(toEpochMs(lastDataFreshAt), toEpochMs(lastSyncAt));
+}
+
+/**
+ * Age (ms) of the last confirmed refresh, clamped to ≥ 0.
+ * @returns {number|null} null when never refreshed (baseMs === 0)
+ */
+function freshnessAgeMs(baseMs, nowMs) {
+  if (!baseMs) {
+    return null;
+  }
+  return Math.max(0, nowMs - baseMs);
+}
+
+/** Soft-stale: fed data older than SYNC_STALE_MS (or never refreshed). */
+function isSyncStale(baseMs, nowMs) {
+  var thresholdMs = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : SYNC_STALE_MS;
+  if (!baseMs) {
+    return true;
+  }
+  return nowMs - baseMs > thresholdMs;
+}
+
+/**
+ * Hard-uncertain: no confirmed refresh for > SYNC_UNCERTAIN_MS. Never-refreshed
+ * is NOT "uncertain" (the badge shows "not yet synced" instead), so this is
+ * false when baseMs === 0.
+ */
+function isSyncUncertain(baseMs, nowMs) {
+  var thresholdMs = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : SYNC_UNCERTAIN_MS;
+  if (!baseMs) {
+    return false;
+  }
+  return nowMs - baseMs > thresholdMs;
+}
+
+/**
+ * Human "ago" suffix matching the legacy KDS badge format: "<Xs>" under a
+ * minute, "<Ym>" beyond. Returns null when never refreshed.
+ */
+function humanizeSyncAgo(baseMs, nowMs) {
+  var ageMs = freshnessAgeMs(baseMs, nowMs);
+  if (ageMs === null) {
+    return null;
+  }
+  var seconds = Math.floor(ageMs / 1000);
+  if (seconds < 60) {
+    return "".concat(seconds, "s");
+  }
+  var minutes = Math.floor(seconds / 60);
+  return "".concat(minutes, "m");
+}
+
+/***/ },
+
+/***/ "./resources/js/helpers/kdsLineSemantics.js"
+/*!**************************************************!*\
+  !*** ./resources/js/helpers/kdsLineSemantics.js ***!
+  \**************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   isLikelyExclusionOrHoldInstruction: () => (/* binding */ isLikelyExclusionOrHoldInstruction),
+/* harmony export */   kdsInstructionVisualClass: () => (/* binding */ kdsInstructionVisualClass)
+/* harmony export */ });
+function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t["return"] || t["return"](); } finally { if (u) throw o; } } }; }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+/**
+ * KDS: classify free-text instruction lines for *visual* emphasis (no medical decision).
+ * Structured allergens_snapshot from the API always wins in the UI if shown separately;
+ * this only highlights likely exclusions / hold / allergy *words* in instruction text.
+ */
+
+var EXCLUSION_RE = [/\b([s\u017F]an[s\u017F])[\t-\r \xA0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF]+(?:['\x2D0-9A-Za-z\xAA\xB5\xBA\xC0-\xD6\xD8-\xF6\xF8-\u02C1\u02C6-\u02D1\u02E0-\u02E4\u02EC\u02EE\u0345\u0370-\u0374\u0376\u0377\u037A-\u037D\u037F\u0386\u0388-\u038A\u038C\u038E-\u03A1\u03A3-\u03F5\u03F7-\u0481\u048A-\u052F\u0531-\u0556\u0559\u0560-\u0588\u05D0-\u05EA\u05EF-\u05F2\u0620-\u064A\u066E\u066F\u0671-\u06D3\u06D5\u06E5\u06E6\u06EE\u06EF\u06FA-\u06FC\u06FF\u0710\u0712-\u072F\u074D-\u07A5\u07B1\u07CA-\u07EA\u07F4\u07F5\u07FA\u0800-\u0815\u081A\u0824\u0828\u0840-\u0858\u0860-\u086A\u0870-\u0887\u0889-\u088F\u08A0-\u08C9\u0904-\u0939\u093D\u0950\u0958-\u0961\u0971-\u0980\u0985-\u098C\u098F\u0990\u0993-\u09A8\u09AA-\u09B0\u09B2\u09B6-\u09B9\u09BD\u09CE\u09DC\u09DD\u09DF-\u09E1\u09F0\u09F1\u09FC\u0A05-\u0A0A\u0A0F\u0A10\u0A13-\u0A28\u0A2A-\u0A30\u0A32\u0A33\u0A35\u0A36\u0A38\u0A39\u0A59-\u0A5C\u0A5E\u0A72-\u0A74\u0A85-\u0A8D\u0A8F-\u0A91\u0A93-\u0AA8\u0AAA-\u0AB0\u0AB2\u0AB3\u0AB5-\u0AB9\u0ABD\u0AD0\u0AE0\u0AE1\u0AF9\u0B05-\u0B0C\u0B0F\u0B10\u0B13-\u0B28\u0B2A-\u0B30\u0B32\u0B33\u0B35-\u0B39\u0B3D\u0B5C\u0B5D\u0B5F-\u0B61\u0B71\u0B83\u0B85-\u0B8A\u0B8E-\u0B90\u0B92-\u0B95\u0B99\u0B9A\u0B9C\u0B9E\u0B9F\u0BA3\u0BA4\u0BA8-\u0BAA\u0BAE-\u0BB9\u0BD0\u0C05-\u0C0C\u0C0E-\u0C10\u0C12-\u0C28\u0C2A-\u0C39\u0C3D\u0C58-\u0C5A\u0C5C\u0C5D\u0C60\u0C61\u0C80\u0C85-\u0C8C\u0C8E-\u0C90\u0C92-\u0CA8\u0CAA-\u0CB3\u0CB5-\u0CB9\u0CBD\u0CDC-\u0CDE\u0CE0\u0CE1\u0CF1\u0CF2\u0D04-\u0D0C\u0D0E-\u0D10\u0D12-\u0D3A\u0D3D\u0D4E\u0D54-\u0D56\u0D5F-\u0D61\u0D7A-\u0D7F\u0D85-\u0D96\u0D9A-\u0DB1\u0DB3-\u0DBB\u0DBD\u0DC0-\u0DC6\u0E01-\u0E30\u0E32\u0E33\u0E40-\u0E46\u0E81\u0E82\u0E84\u0E86-\u0E8A\u0E8C-\u0EA3\u0EA5\u0EA7-\u0EB0\u0EB2\u0EB3\u0EBD\u0EC0-\u0EC4\u0EC6\u0EDC-\u0EDF\u0F00\u0F40-\u0F47\u0F49-\u0F6C\u0F88-\u0F8C\u1000-\u102A\u103F\u1050-\u1055\u105A-\u105D\u1061\u1065\u1066\u106E-\u1070\u1075-\u1081\u108E\u10A0-\u10C5\u10C7\u10CD\u10D0-\u10FA\u10FC-\u1248\u124A-\u124D\u1250-\u1256\u1258\u125A-\u125D\u1260-\u1288\u128A-\u128D\u1290-\u12B0\u12B2-\u12B5\u12B8-\u12BE\u12C0\u12C2-\u12C5\u12C8-\u12D6\u12D8-\u1310\u1312-\u1315\u1318-\u135A\u1380-\u138F\u13A0-\u13F5\u13F8-\u13FD\u1401-\u166C\u166F-\u167F\u1681-\u169A\u16A0-\u16EA\u16F1-\u16F8\u1700-\u1711\u171F-\u1731\u1740-\u1751\u1760-\u176C\u176E-\u1770\u1780-\u17B3\u17D7\u17DC\u1820-\u1878\u1880-\u1884\u1887-\u18A8\u18AA\u18B0-\u18F5\u1900-\u191E\u1950-\u196D\u1970-\u1974\u1980-\u19AB\u19B0-\u19C9\u1A00-\u1A16\u1A20-\u1A54\u1AA7\u1B05-\u1B33\u1B45-\u1B4C\u1B83-\u1BA0\u1BAE\u1BAF\u1BBA-\u1BE5\u1C00-\u1C23\u1C4D-\u1C4F\u1C5A-\u1C7D\u1C80-\u1C8A\u1C90-\u1CBA\u1CBD-\u1CBF\u1CE9-\u1CEC\u1CEE-\u1CF3\u1CF5\u1CF6\u1CFA\u1D00-\u1DBF\u1E00-\u1F15\u1F18-\u1F1D\u1F20-\u1F45\u1F48-\u1F4D\u1F50-\u1F57\u1F59\u1F5B\u1F5D\u1F5F-\u1F7D\u1F80-\u1FB4\u1FB6-\u1FBC\u1FBE\u1FC2-\u1FC4\u1FC6-\u1FCC\u1FD0-\u1FD3\u1FD6-\u1FDB\u1FE0-\u1FEC\u1FF2-\u1FF4\u1FF6-\u1FFC\u2019\u2071\u207F\u2090-\u209C\u2102\u2107\u210A-\u2113\u2115\u2119-\u211D\u2124\u2126\u2128\u212A-\u212D\u212F-\u2139\u213C-\u213F\u2145-\u2149\u214E\u2183\u2184\u2C00-\u2CE4\u2CEB-\u2CEE\u2CF2\u2CF3\u2D00-\u2D25\u2D27\u2D2D\u2D30-\u2D67\u2D6F\u2D80-\u2D96\u2DA0-\u2DA6\u2DA8-\u2DAE\u2DB0-\u2DB6\u2DB8-\u2DBE\u2DC0-\u2DC6\u2DC8-\u2DCE\u2DD0-\u2DD6\u2DD8-\u2DDE\u2E2F\u3005\u3006\u3031-\u3035\u303B\u303C\u3041-\u3096\u309D-\u309F\u30A1-\u30FA\u30FC-\u30FF\u3105-\u312F\u3131-\u318E\u31A0-\u31BF\u31F0-\u31FF\u3400-\u4DBF\u4E00-\uA48C\uA4D0-\uA4FD\uA500-\uA60C\uA610-\uA61F\uA62A\uA62B\uA640-\uA66E\uA67F-\uA69D\uA6A0-\uA6E5\uA717-\uA71F\uA722-\uA788\uA78B-\uA7DC\uA7F1-\uA801\uA803-\uA805\uA807-\uA80A\uA80C-\uA822\uA840-\uA873\uA882-\uA8B3\uA8F2-\uA8F7\uA8FB\uA8FD\uA8FE\uA90A-\uA925\uA930-\uA946\uA960-\uA97C\uA984-\uA9B2\uA9CF\uA9E0-\uA9E4\uA9E6-\uA9EF\uA9FA-\uA9FE\uAA00-\uAA28\uAA40-\uAA42\uAA44-\uAA4B\uAA60-\uAA76\uAA7A\uAA7E-\uAAAF\uAAB1\uAAB5\uAAB6\uAAB9-\uAABD\uAAC0\uAAC2\uAADB-\uAADD\uAAE0-\uAAEA\uAAF2-\uAAF4\uAB01-\uAB06\uAB09-\uAB0E\uAB11-\uAB16\uAB20-\uAB26\uAB28-\uAB2E\uAB30-\uAB5A\uAB5C-\uAB69\uAB70-\uABE2\uAC00-\uD7A3\uD7B0-\uD7C6\uD7CB-\uD7FB\uF900-\uFA6D\uFA70-\uFAD9\uFB00-\uFB06\uFB13-\uFB17\uFB1D\uFB1F-\uFB28\uFB2A-\uFB36\uFB38-\uFB3C\uFB3E\uFB40\uFB41\uFB43\uFB44\uFB46-\uFBB1\uFBD3-\uFD3D\uFD50-\uFD8F\uFD92-\uFDC7\uFDF0-\uFDFB\uFE70-\uFE74\uFE76-\uFEFC\uFF21-\uFF3A\uFF41-\uFF5A\uFF66-\uFFBE\uFFC2-\uFFC7\uFFCA-\uFFCF\uFFD2-\uFFD7\uFFDA-\uFFDC]|\uD800[\uDC00-\uDC0B\uDC0D-\uDC26\uDC28-\uDC3A\uDC3C\uDC3D\uDC3F-\uDC4D\uDC50-\uDC5D\uDC80-\uDCFA\uDE80-\uDE9C\uDEA0-\uDED0\uDF00-\uDF1F\uDF2D-\uDF40\uDF42-\uDF49\uDF50-\uDF75\uDF80-\uDF9D\uDFA0-\uDFC3\uDFC8-\uDFCF]|\uD801[\uDC00-\uDC9D\uDCB0-\uDCD3\uDCD8-\uDCFB\uDD00-\uDD27\uDD30-\uDD63\uDD70-\uDD7A\uDD7C-\uDD8A\uDD8C-\uDD92\uDD94\uDD95\uDD97-\uDDA1\uDDA3-\uDDB1\uDDB3-\uDDB9\uDDBB\uDDBC\uDDC0-\uDDF3\uDE00-\uDF36\uDF40-\uDF55\uDF60-\uDF67\uDF80-\uDF85\uDF87-\uDFB0\uDFB2-\uDFBA]|\uD802[\uDC00-\uDC05\uDC08\uDC0A-\uDC35\uDC37\uDC38\uDC3C\uDC3F-\uDC55\uDC60-\uDC76\uDC80-\uDC9E\uDCE0-\uDCF2\uDCF4\uDCF5\uDD00-\uDD15\uDD20-\uDD39\uDD40-\uDD59\uDD80-\uDDB7\uDDBE\uDDBF\uDE00\uDE10-\uDE13\uDE15-\uDE17\uDE19-\uDE35\uDE60-\uDE7C\uDE80-\uDE9C\uDEC0-\uDEC7\uDEC9-\uDEE4\uDF00-\uDF35\uDF40-\uDF55\uDF60-\uDF72\uDF80-\uDF91]|\uD803[\uDC00-\uDC48\uDC80-\uDCB2\uDCC0-\uDCF2\uDD00-\uDD23\uDD4A-\uDD65\uDD6F-\uDD85\uDE80-\uDEA9\uDEB0\uDEB1\uDEC2-\uDEC7\uDF00-\uDF1C\uDF27\uDF30-\uDF45\uDF70-\uDF81\uDFB0-\uDFC4\uDFE0-\uDFF6]|\uD804[\uDC03-\uDC37\uDC71\uDC72\uDC75\uDC83-\uDCAF\uDCD0-\uDCE8\uDD03-\uDD26\uDD44\uDD47\uDD50-\uDD72\uDD76\uDD83-\uDDB2\uDDC1-\uDDC4\uDDDA\uDDDC\uDE00-\uDE11\uDE13-\uDE2B\uDE3F\uDE40\uDE80-\uDE86\uDE88\uDE8A-\uDE8D\uDE8F-\uDE9D\uDE9F-\uDEA8\uDEB0-\uDEDE\uDF05-\uDF0C\uDF0F\uDF10\uDF13-\uDF28\uDF2A-\uDF30\uDF32\uDF33\uDF35-\uDF39\uDF3D\uDF50\uDF5D-\uDF61\uDF80-\uDF89\uDF8B\uDF8E\uDF90-\uDFB5\uDFB7\uDFD1\uDFD3]|\uD805[\uDC00-\uDC34\uDC47-\uDC4A\uDC5F-\uDC61\uDC80-\uDCAF\uDCC4\uDCC5\uDCC7\uDD80-\uDDAE\uDDD8-\uDDDB\uDE00-\uDE2F\uDE44\uDE80-\uDEAA\uDEB8\uDF00-\uDF1A\uDF40-\uDF46]|\uD806[\uDC00-\uDC2B\uDCA0-\uDCDF\uDCFF-\uDD06\uDD09\uDD0C-\uDD13\uDD15\uDD16\uDD18-\uDD2F\uDD3F\uDD41\uDDA0-\uDDA7\uDDAA-\uDDD0\uDDE1\uDDE3\uDE00\uDE0B-\uDE32\uDE3A\uDE50\uDE5C-\uDE89\uDE9D\uDEB0-\uDEF8\uDFC0-\uDFE0]|\uD807[\uDC00-\uDC08\uDC0A-\uDC2E\uDC40\uDC72-\uDC8F\uDD00-\uDD06\uDD08\uDD09\uDD0B-\uDD30\uDD46\uDD60-\uDD65\uDD67\uDD68\uDD6A-\uDD89\uDD98\uDDB0-\uDDDB\uDEE0-\uDEF2\uDF02\uDF04-\uDF10\uDF12-\uDF33\uDFB0]|\uD808[\uDC00-\uDF99]|\uD809[\uDC80-\uDD43]|\uD80B[\uDF90-\uDFF0]|[\uD80C\uD80E\uD80F\uD81C-\uD822\uD840-\uD868\uD86A-\uD86D\uD86F-\uD872\uD874-\uD879\uD880-\uD883\uD885-\uD88C][\uDC00-\uDFFF]|\uD80D[\uDC00-\uDC2F\uDC41-\uDC46\uDC60-\uDFFF]|\uD810[\uDC00-\uDFFA]|\uD811[\uDC00-\uDE46]|\uD818[\uDD00-\uDD1D]|\uD81A[\uDC00-\uDE38\uDE40-\uDE5E\uDE70-\uDEBE\uDED0-\uDEED\uDF00-\uDF2F\uDF40-\uDF43\uDF63-\uDF77\uDF7D-\uDF8F]|\uD81B[\uDD40-\uDD6C\uDE40-\uDE7F\uDEA0-\uDEB8\uDEBB-\uDED3\uDF00-\uDF4A\uDF50\uDF93-\uDF9F\uDFE0\uDFE1\uDFE3\uDFF2\uDFF3]|\uD823[\uDC00-\uDCD5\uDCFF-\uDD1E\uDD80-\uDDF2]|\uD82B[\uDFF0-\uDFF3\uDFF5-\uDFFB\uDFFD\uDFFE]|\uD82C[\uDC00-\uDD22\uDD32\uDD50-\uDD52\uDD55\uDD64-\uDD67\uDD70-\uDEFB]|\uD82F[\uDC00-\uDC6A\uDC70-\uDC7C\uDC80-\uDC88\uDC90-\uDC99]|\uD835[\uDC00-\uDC54\uDC56-\uDC9C\uDC9E\uDC9F\uDCA2\uDCA5\uDCA6\uDCA9-\uDCAC\uDCAE-\uDCB9\uDCBB\uDCBD-\uDCC3\uDCC5-\uDD05\uDD07-\uDD0A\uDD0D-\uDD14\uDD16-\uDD1C\uDD1E-\uDD39\uDD3B-\uDD3E\uDD40-\uDD44\uDD46\uDD4A-\uDD50\uDD52-\uDEA5\uDEA8-\uDEC0\uDEC2-\uDEDA\uDEDC-\uDEFA\uDEFC-\uDF14\uDF16-\uDF34\uDF36-\uDF4E\uDF50-\uDF6E\uDF70-\uDF88\uDF8A-\uDFA8\uDFAA-\uDFC2\uDFC4-\uDFCB]|\uD837[\uDF00-\uDF1E\uDF25-\uDF2A]|\uD838[\uDC30-\uDC6D\uDD00-\uDD2C\uDD37-\uDD3D\uDD4E\uDE90-\uDEAD\uDEC0-\uDEEB]|\uD839[\uDCD0-\uDCEB\uDDD0-\uDDED\uDDF0\uDEC0-\uDEDE\uDEE0-\uDEE2\uDEE4\uDEE5\uDEE7-\uDEED\uDEF0-\uDEF4\uDEFE\uDEFF\uDFE0-\uDFE6\uDFE8-\uDFEB\uDFED\uDFEE\uDFF0-\uDFFE]|\uD83A[\uDC00-\uDCC4\uDD00-\uDD43\uDD4B]|\uD83B[\uDE00-\uDE03\uDE05-\uDE1F\uDE21\uDE22\uDE24\uDE27\uDE29-\uDE32\uDE34-\uDE37\uDE39\uDE3B\uDE42\uDE47\uDE49\uDE4B\uDE4D-\uDE4F\uDE51\uDE52\uDE54\uDE57\uDE59\uDE5B\uDE5D\uDE5F\uDE61\uDE62\uDE64\uDE67-\uDE6A\uDE6C-\uDE72\uDE74-\uDE77\uDE79-\uDE7C\uDE7E\uDE80-\uDE89\uDE8B-\uDE9B\uDEA1-\uDEA3\uDEA5-\uDEA9\uDEAB-\uDEBB]|\uD869[\uDC00-\uDEDF\uDF00-\uDFFF]|\uD86E[\uDC00-\uDC1D\uDC20-\uDFFF]|\uD873[\uDC00-\uDEAD\uDEB0-\uDFFF]|\uD87A[\uDC00-\uDFE0\uDFF0-\uDFFF]|\uD87B[\uDC00-\uDE5D]|\uD87E[\uDC00-\uDE1D]|\uD884[\uDC00-\uDF4A\uDF50-\uDFFF]|\uD88D[\uDC00-\uDC79])+/i, /\b(exclu|retrait|retirer|enlever|enlevez)\b/i, /^[\t-\r \xA0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF]*[s\u017F]an[s\u017F][\t-\r \xA0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF]*[,:]/i, /\bhold\b/i, /\bno[\t-\r \xA0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF]+(?:[A-Za-z\xAA\xB5\xBA\xC0-\xD6\xD8-\xF6\xF8-\u02C1\u02C6-\u02D1\u02E0-\u02E4\u02EC\u02EE\u0345\u0370-\u0374\u0376\u0377\u037A-\u037D\u037F\u0386\u0388-\u038A\u038C\u038E-\u03A1\u03A3-\u03F5\u03F7-\u0481\u048A-\u052F\u0531-\u0556\u0559\u0560-\u0588\u05D0-\u05EA\u05EF-\u05F2\u0620-\u064A\u066E\u066F\u0671-\u06D3\u06D5\u06E5\u06E6\u06EE\u06EF\u06FA-\u06FC\u06FF\u0710\u0712-\u072F\u074D-\u07A5\u07B1\u07CA-\u07EA\u07F4\u07F5\u07FA\u0800-\u0815\u081A\u0824\u0828\u0840-\u0858\u0860-\u086A\u0870-\u0887\u0889-\u088F\u08A0-\u08C9\u0904-\u0939\u093D\u0950\u0958-\u0961\u0971-\u0980\u0985-\u098C\u098F\u0990\u0993-\u09A8\u09AA-\u09B0\u09B2\u09B6-\u09B9\u09BD\u09CE\u09DC\u09DD\u09DF-\u09E1\u09F0\u09F1\u09FC\u0A05-\u0A0A\u0A0F\u0A10\u0A13-\u0A28\u0A2A-\u0A30\u0A32\u0A33\u0A35\u0A36\u0A38\u0A39\u0A59-\u0A5C\u0A5E\u0A72-\u0A74\u0A85-\u0A8D\u0A8F-\u0A91\u0A93-\u0AA8\u0AAA-\u0AB0\u0AB2\u0AB3\u0AB5-\u0AB9\u0ABD\u0AD0\u0AE0\u0AE1\u0AF9\u0B05-\u0B0C\u0B0F\u0B10\u0B13-\u0B28\u0B2A-\u0B30\u0B32\u0B33\u0B35-\u0B39\u0B3D\u0B5C\u0B5D\u0B5F-\u0B61\u0B71\u0B83\u0B85-\u0B8A\u0B8E-\u0B90\u0B92-\u0B95\u0B99\u0B9A\u0B9C\u0B9E\u0B9F\u0BA3\u0BA4\u0BA8-\u0BAA\u0BAE-\u0BB9\u0BD0\u0C05-\u0C0C\u0C0E-\u0C10\u0C12-\u0C28\u0C2A-\u0C39\u0C3D\u0C58-\u0C5A\u0C5C\u0C5D\u0C60\u0C61\u0C80\u0C85-\u0C8C\u0C8E-\u0C90\u0C92-\u0CA8\u0CAA-\u0CB3\u0CB5-\u0CB9\u0CBD\u0CDC-\u0CDE\u0CE0\u0CE1\u0CF1\u0CF2\u0D04-\u0D0C\u0D0E-\u0D10\u0D12-\u0D3A\u0D3D\u0D4E\u0D54-\u0D56\u0D5F-\u0D61\u0D7A-\u0D7F\u0D85-\u0D96\u0D9A-\u0DB1\u0DB3-\u0DBB\u0DBD\u0DC0-\u0DC6\u0E01-\u0E30\u0E32\u0E33\u0E40-\u0E46\u0E81\u0E82\u0E84\u0E86-\u0E8A\u0E8C-\u0EA3\u0EA5\u0EA7-\u0EB0\u0EB2\u0EB3\u0EBD\u0EC0-\u0EC4\u0EC6\u0EDC-\u0EDF\u0F00\u0F40-\u0F47\u0F49-\u0F6C\u0F88-\u0F8C\u1000-\u102A\u103F\u1050-\u1055\u105A-\u105D\u1061\u1065\u1066\u106E-\u1070\u1075-\u1081\u108E\u10A0-\u10C5\u10C7\u10CD\u10D0-\u10FA\u10FC-\u1248\u124A-\u124D\u1250-\u1256\u1258\u125A-\u125D\u1260-\u1288\u128A-\u128D\u1290-\u12B0\u12B2-\u12B5\u12B8-\u12BE\u12C0\u12C2-\u12C5\u12C8-\u12D6\u12D8-\u1310\u1312-\u1315\u1318-\u135A\u1380-\u138F\u13A0-\u13F5\u13F8-\u13FD\u1401-\u166C\u166F-\u167F\u1681-\u169A\u16A0-\u16EA\u16F1-\u16F8\u1700-\u1711\u171F-\u1731\u1740-\u1751\u1760-\u176C\u176E-\u1770\u1780-\u17B3\u17D7\u17DC\u1820-\u1878\u1880-\u1884\u1887-\u18A8\u18AA\u18B0-\u18F5\u1900-\u191E\u1950-\u196D\u1970-\u1974\u1980-\u19AB\u19B0-\u19C9\u1A00-\u1A16\u1A20-\u1A54\u1AA7\u1B05-\u1B33\u1B45-\u1B4C\u1B83-\u1BA0\u1BAE\u1BAF\u1BBA-\u1BE5\u1C00-\u1C23\u1C4D-\u1C4F\u1C5A-\u1C7D\u1C80-\u1C8A\u1C90-\u1CBA\u1CBD-\u1CBF\u1CE9-\u1CEC\u1CEE-\u1CF3\u1CF5\u1CF6\u1CFA\u1D00-\u1DBF\u1E00-\u1F15\u1F18-\u1F1D\u1F20-\u1F45\u1F48-\u1F4D\u1F50-\u1F57\u1F59\u1F5B\u1F5D\u1F5F-\u1F7D\u1F80-\u1FB4\u1FB6-\u1FBC\u1FBE\u1FC2-\u1FC4\u1FC6-\u1FCC\u1FD0-\u1FD3\u1FD6-\u1FDB\u1FE0-\u1FEC\u1FF2-\u1FF4\u1FF6-\u1FFC\u2071\u207F\u2090-\u209C\u2102\u2107\u210A-\u2113\u2115\u2119-\u211D\u2124\u2126\u2128\u212A-\u212D\u212F-\u2139\u213C-\u213F\u2145-\u2149\u214E\u2183\u2184\u2C00-\u2CE4\u2CEB-\u2CEE\u2CF2\u2CF3\u2D00-\u2D25\u2D27\u2D2D\u2D30-\u2D67\u2D6F\u2D80-\u2D96\u2DA0-\u2DA6\u2DA8-\u2DAE\u2DB0-\u2DB6\u2DB8-\u2DBE\u2DC0-\u2DC6\u2DC8-\u2DCE\u2DD0-\u2DD6\u2DD8-\u2DDE\u2E2F\u3005\u3006\u3031-\u3035\u303B\u303C\u3041-\u3096\u309D-\u309F\u30A1-\u30FA\u30FC-\u30FF\u3105-\u312F\u3131-\u318E\u31A0-\u31BF\u31F0-\u31FF\u3400-\u4DBF\u4E00-\uA48C\uA4D0-\uA4FD\uA500-\uA60C\uA610-\uA61F\uA62A\uA62B\uA640-\uA66E\uA67F-\uA69D\uA6A0-\uA6E5\uA717-\uA71F\uA722-\uA788\uA78B-\uA7DC\uA7F1-\uA801\uA803-\uA805\uA807-\uA80A\uA80C-\uA822\uA840-\uA873\uA882-\uA8B3\uA8F2-\uA8F7\uA8FB\uA8FD\uA8FE\uA90A-\uA925\uA930-\uA946\uA960-\uA97C\uA984-\uA9B2\uA9CF\uA9E0-\uA9E4\uA9E6-\uA9EF\uA9FA-\uA9FE\uAA00-\uAA28\uAA40-\uAA42\uAA44-\uAA4B\uAA60-\uAA76\uAA7A\uAA7E-\uAAAF\uAAB1\uAAB5\uAAB6\uAAB9-\uAABD\uAAC0\uAAC2\uAADB-\uAADD\uAAE0-\uAAEA\uAAF2-\uAAF4\uAB01-\uAB06\uAB09-\uAB0E\uAB11-\uAB16\uAB20-\uAB26\uAB28-\uAB2E\uAB30-\uAB5A\uAB5C-\uAB69\uAB70-\uABE2\uAC00-\uD7A3\uD7B0-\uD7C6\uD7CB-\uD7FB\uF900-\uFA6D\uFA70-\uFAD9\uFB00-\uFB06\uFB13-\uFB17\uFB1D\uFB1F-\uFB28\uFB2A-\uFB36\uFB38-\uFB3C\uFB3E\uFB40\uFB41\uFB43\uFB44\uFB46-\uFBB1\uFBD3-\uFD3D\uFD50-\uFD8F\uFD92-\uFDC7\uFDF0-\uFDFB\uFE70-\uFE74\uFE76-\uFEFC\uFF21-\uFF3A\uFF41-\uFF5A\uFF66-\uFFBE\uFFC2-\uFFC7\uFFCA-\uFFCF\uFFD2-\uFFD7\uFFDA-\uFFDC]|\uD800[\uDC00-\uDC0B\uDC0D-\uDC26\uDC28-\uDC3A\uDC3C\uDC3D\uDC3F-\uDC4D\uDC50-\uDC5D\uDC80-\uDCFA\uDE80-\uDE9C\uDEA0-\uDED0\uDF00-\uDF1F\uDF2D-\uDF40\uDF42-\uDF49\uDF50-\uDF75\uDF80-\uDF9D\uDFA0-\uDFC3\uDFC8-\uDFCF]|\uD801[\uDC00-\uDC9D\uDCB0-\uDCD3\uDCD8-\uDCFB\uDD00-\uDD27\uDD30-\uDD63\uDD70-\uDD7A\uDD7C-\uDD8A\uDD8C-\uDD92\uDD94\uDD95\uDD97-\uDDA1\uDDA3-\uDDB1\uDDB3-\uDDB9\uDDBB\uDDBC\uDDC0-\uDDF3\uDE00-\uDF36\uDF40-\uDF55\uDF60-\uDF67\uDF80-\uDF85\uDF87-\uDFB0\uDFB2-\uDFBA]|\uD802[\uDC00-\uDC05\uDC08\uDC0A-\uDC35\uDC37\uDC38\uDC3C\uDC3F-\uDC55\uDC60-\uDC76\uDC80-\uDC9E\uDCE0-\uDCF2\uDCF4\uDCF5\uDD00-\uDD15\uDD20-\uDD39\uDD40-\uDD59\uDD80-\uDDB7\uDDBE\uDDBF\uDE00\uDE10-\uDE13\uDE15-\uDE17\uDE19-\uDE35\uDE60-\uDE7C\uDE80-\uDE9C\uDEC0-\uDEC7\uDEC9-\uDEE4\uDF00-\uDF35\uDF40-\uDF55\uDF60-\uDF72\uDF80-\uDF91]|\uD803[\uDC00-\uDC48\uDC80-\uDCB2\uDCC0-\uDCF2\uDD00-\uDD23\uDD4A-\uDD65\uDD6F-\uDD85\uDE80-\uDEA9\uDEB0\uDEB1\uDEC2-\uDEC7\uDF00-\uDF1C\uDF27\uDF30-\uDF45\uDF70-\uDF81\uDFB0-\uDFC4\uDFE0-\uDFF6]|\uD804[\uDC03-\uDC37\uDC71\uDC72\uDC75\uDC83-\uDCAF\uDCD0-\uDCE8\uDD03-\uDD26\uDD44\uDD47\uDD50-\uDD72\uDD76\uDD83-\uDDB2\uDDC1-\uDDC4\uDDDA\uDDDC\uDE00-\uDE11\uDE13-\uDE2B\uDE3F\uDE40\uDE80-\uDE86\uDE88\uDE8A-\uDE8D\uDE8F-\uDE9D\uDE9F-\uDEA8\uDEB0-\uDEDE\uDF05-\uDF0C\uDF0F\uDF10\uDF13-\uDF28\uDF2A-\uDF30\uDF32\uDF33\uDF35-\uDF39\uDF3D\uDF50\uDF5D-\uDF61\uDF80-\uDF89\uDF8B\uDF8E\uDF90-\uDFB5\uDFB7\uDFD1\uDFD3]|\uD805[\uDC00-\uDC34\uDC47-\uDC4A\uDC5F-\uDC61\uDC80-\uDCAF\uDCC4\uDCC5\uDCC7\uDD80-\uDDAE\uDDD8-\uDDDB\uDE00-\uDE2F\uDE44\uDE80-\uDEAA\uDEB8\uDF00-\uDF1A\uDF40-\uDF46]|\uD806[\uDC00-\uDC2B\uDCA0-\uDCDF\uDCFF-\uDD06\uDD09\uDD0C-\uDD13\uDD15\uDD16\uDD18-\uDD2F\uDD3F\uDD41\uDDA0-\uDDA7\uDDAA-\uDDD0\uDDE1\uDDE3\uDE00\uDE0B-\uDE32\uDE3A\uDE50\uDE5C-\uDE89\uDE9D\uDEB0-\uDEF8\uDFC0-\uDFE0]|\uD807[\uDC00-\uDC08\uDC0A-\uDC2E\uDC40\uDC72-\uDC8F\uDD00-\uDD06\uDD08\uDD09\uDD0B-\uDD30\uDD46\uDD60-\uDD65\uDD67\uDD68\uDD6A-\uDD89\uDD98\uDDB0-\uDDDB\uDEE0-\uDEF2\uDF02\uDF04-\uDF10\uDF12-\uDF33\uDFB0]|\uD808[\uDC00-\uDF99]|\uD809[\uDC80-\uDD43]|\uD80B[\uDF90-\uDFF0]|[\uD80C\uD80E\uD80F\uD81C-\uD822\uD840-\uD868\uD86A-\uD86D\uD86F-\uD872\uD874-\uD879\uD880-\uD883\uD885-\uD88C][\uDC00-\uDFFF]|\uD80D[\uDC00-\uDC2F\uDC41-\uDC46\uDC60-\uDFFF]|\uD810[\uDC00-\uDFFA]|\uD811[\uDC00-\uDE46]|\uD818[\uDD00-\uDD1D]|\uD81A[\uDC00-\uDE38\uDE40-\uDE5E\uDE70-\uDEBE\uDED0-\uDEED\uDF00-\uDF2F\uDF40-\uDF43\uDF63-\uDF77\uDF7D-\uDF8F]|\uD81B[\uDD40-\uDD6C\uDE40-\uDE7F\uDEA0-\uDEB8\uDEBB-\uDED3\uDF00-\uDF4A\uDF50\uDF93-\uDF9F\uDFE0\uDFE1\uDFE3\uDFF2\uDFF3]|\uD823[\uDC00-\uDCD5\uDCFF-\uDD1E\uDD80-\uDDF2]|\uD82B[\uDFF0-\uDFF3\uDFF5-\uDFFB\uDFFD\uDFFE]|\uD82C[\uDC00-\uDD22\uDD32\uDD50-\uDD52\uDD55\uDD64-\uDD67\uDD70-\uDEFB]|\uD82F[\uDC00-\uDC6A\uDC70-\uDC7C\uDC80-\uDC88\uDC90-\uDC99]|\uD835[\uDC00-\uDC54\uDC56-\uDC9C\uDC9E\uDC9F\uDCA2\uDCA5\uDCA6\uDCA9-\uDCAC\uDCAE-\uDCB9\uDCBB\uDCBD-\uDCC3\uDCC5-\uDD05\uDD07-\uDD0A\uDD0D-\uDD14\uDD16-\uDD1C\uDD1E-\uDD39\uDD3B-\uDD3E\uDD40-\uDD44\uDD46\uDD4A-\uDD50\uDD52-\uDEA5\uDEA8-\uDEC0\uDEC2-\uDEDA\uDEDC-\uDEFA\uDEFC-\uDF14\uDF16-\uDF34\uDF36-\uDF4E\uDF50-\uDF6E\uDF70-\uDF88\uDF8A-\uDFA8\uDFAA-\uDFC2\uDFC4-\uDFCB]|\uD837[\uDF00-\uDF1E\uDF25-\uDF2A]|\uD838[\uDC30-\uDC6D\uDD00-\uDD2C\uDD37-\uDD3D\uDD4E\uDE90-\uDEAD\uDEC0-\uDEEB]|\uD839[\uDCD0-\uDCEB\uDDD0-\uDDED\uDDF0\uDEC0-\uDEDE\uDEE0-\uDEE2\uDEE4\uDEE5\uDEE7-\uDEED\uDEF0-\uDEF4\uDEFE\uDEFF\uDFE0-\uDFE6\uDFE8-\uDFEB\uDFED\uDFEE\uDFF0-\uDFFE]|\uD83A[\uDC00-\uDCC4\uDD00-\uDD43\uDD4B]|\uD83B[\uDE00-\uDE03\uDE05-\uDE1F\uDE21\uDE22\uDE24\uDE27\uDE29-\uDE32\uDE34-\uDE37\uDE39\uDE3B\uDE42\uDE47\uDE49\uDE4B\uDE4D-\uDE4F\uDE51\uDE52\uDE54\uDE57\uDE59\uDE5B\uDE5D\uDE5F\uDE61\uDE62\uDE64\uDE67-\uDE6A\uDE6C-\uDE72\uDE74-\uDE77\uDE79-\uDE7C\uDE7E\uDE80-\uDE89\uDE8B-\uDE9B\uDEA1-\uDEA3\uDEA5-\uDEA9\uDEAB-\uDEBB]|\uD869[\uDC00-\uDEDF\uDF00-\uDFFF]|\uD86E[\uDC00-\uDC1D\uDC20-\uDFFF]|\uD873[\uDC00-\uDEAD\uDEB0-\uDFFF]|\uD87A[\uDC00-\uDFE0\uDFF0-\uDFFF]|\uD87B[\uDC00-\uDE5D]|\uD87E[\uDC00-\uDE1D]|\uD884[\uDC00-\uDF4A\uDF50-\uDFFF]|\uD88D[\uDC00-\uDC79])+/i,
+// "no onion" in EN menus
+/\b(without|w\/o|w\/)[\t-\r \xA0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF]+(?:[A-Za-z\xAA\xB5\xBA\xC0-\xD6\xD8-\xF6\xF8-\u02C1\u02C6-\u02D1\u02E0-\u02E4\u02EC\u02EE\u0345\u0370-\u0374\u0376\u0377\u037A-\u037D\u037F\u0386\u0388-\u038A\u038C\u038E-\u03A1\u03A3-\u03F5\u03F7-\u0481\u048A-\u052F\u0531-\u0556\u0559\u0560-\u0588\u05D0-\u05EA\u05EF-\u05F2\u0620-\u064A\u066E\u066F\u0671-\u06D3\u06D5\u06E5\u06E6\u06EE\u06EF\u06FA-\u06FC\u06FF\u0710\u0712-\u072F\u074D-\u07A5\u07B1\u07CA-\u07EA\u07F4\u07F5\u07FA\u0800-\u0815\u081A\u0824\u0828\u0840-\u0858\u0860-\u086A\u0870-\u0887\u0889-\u088F\u08A0-\u08C9\u0904-\u0939\u093D\u0950\u0958-\u0961\u0971-\u0980\u0985-\u098C\u098F\u0990\u0993-\u09A8\u09AA-\u09B0\u09B2\u09B6-\u09B9\u09BD\u09CE\u09DC\u09DD\u09DF-\u09E1\u09F0\u09F1\u09FC\u0A05-\u0A0A\u0A0F\u0A10\u0A13-\u0A28\u0A2A-\u0A30\u0A32\u0A33\u0A35\u0A36\u0A38\u0A39\u0A59-\u0A5C\u0A5E\u0A72-\u0A74\u0A85-\u0A8D\u0A8F-\u0A91\u0A93-\u0AA8\u0AAA-\u0AB0\u0AB2\u0AB3\u0AB5-\u0AB9\u0ABD\u0AD0\u0AE0\u0AE1\u0AF9\u0B05-\u0B0C\u0B0F\u0B10\u0B13-\u0B28\u0B2A-\u0B30\u0B32\u0B33\u0B35-\u0B39\u0B3D\u0B5C\u0B5D\u0B5F-\u0B61\u0B71\u0B83\u0B85-\u0B8A\u0B8E-\u0B90\u0B92-\u0B95\u0B99\u0B9A\u0B9C\u0B9E\u0B9F\u0BA3\u0BA4\u0BA8-\u0BAA\u0BAE-\u0BB9\u0BD0\u0C05-\u0C0C\u0C0E-\u0C10\u0C12-\u0C28\u0C2A-\u0C39\u0C3D\u0C58-\u0C5A\u0C5C\u0C5D\u0C60\u0C61\u0C80\u0C85-\u0C8C\u0C8E-\u0C90\u0C92-\u0CA8\u0CAA-\u0CB3\u0CB5-\u0CB9\u0CBD\u0CDC-\u0CDE\u0CE0\u0CE1\u0CF1\u0CF2\u0D04-\u0D0C\u0D0E-\u0D10\u0D12-\u0D3A\u0D3D\u0D4E\u0D54-\u0D56\u0D5F-\u0D61\u0D7A-\u0D7F\u0D85-\u0D96\u0D9A-\u0DB1\u0DB3-\u0DBB\u0DBD\u0DC0-\u0DC6\u0E01-\u0E30\u0E32\u0E33\u0E40-\u0E46\u0E81\u0E82\u0E84\u0E86-\u0E8A\u0E8C-\u0EA3\u0EA5\u0EA7-\u0EB0\u0EB2\u0EB3\u0EBD\u0EC0-\u0EC4\u0EC6\u0EDC-\u0EDF\u0F00\u0F40-\u0F47\u0F49-\u0F6C\u0F88-\u0F8C\u1000-\u102A\u103F\u1050-\u1055\u105A-\u105D\u1061\u1065\u1066\u106E-\u1070\u1075-\u1081\u108E\u10A0-\u10C5\u10C7\u10CD\u10D0-\u10FA\u10FC-\u1248\u124A-\u124D\u1250-\u1256\u1258\u125A-\u125D\u1260-\u1288\u128A-\u128D\u1290-\u12B0\u12B2-\u12B5\u12B8-\u12BE\u12C0\u12C2-\u12C5\u12C8-\u12D6\u12D8-\u1310\u1312-\u1315\u1318-\u135A\u1380-\u138F\u13A0-\u13F5\u13F8-\u13FD\u1401-\u166C\u166F-\u167F\u1681-\u169A\u16A0-\u16EA\u16F1-\u16F8\u1700-\u1711\u171F-\u1731\u1740-\u1751\u1760-\u176C\u176E-\u1770\u1780-\u17B3\u17D7\u17DC\u1820-\u1878\u1880-\u1884\u1887-\u18A8\u18AA\u18B0-\u18F5\u1900-\u191E\u1950-\u196D\u1970-\u1974\u1980-\u19AB\u19B0-\u19C9\u1A00-\u1A16\u1A20-\u1A54\u1AA7\u1B05-\u1B33\u1B45-\u1B4C\u1B83-\u1BA0\u1BAE\u1BAF\u1BBA-\u1BE5\u1C00-\u1C23\u1C4D-\u1C4F\u1C5A-\u1C7D\u1C80-\u1C8A\u1C90-\u1CBA\u1CBD-\u1CBF\u1CE9-\u1CEC\u1CEE-\u1CF3\u1CF5\u1CF6\u1CFA\u1D00-\u1DBF\u1E00-\u1F15\u1F18-\u1F1D\u1F20-\u1F45\u1F48-\u1F4D\u1F50-\u1F57\u1F59\u1F5B\u1F5D\u1F5F-\u1F7D\u1F80-\u1FB4\u1FB6-\u1FBC\u1FBE\u1FC2-\u1FC4\u1FC6-\u1FCC\u1FD0-\u1FD3\u1FD6-\u1FDB\u1FE0-\u1FEC\u1FF2-\u1FF4\u1FF6-\u1FFC\u2071\u207F\u2090-\u209C\u2102\u2107\u210A-\u2113\u2115\u2119-\u211D\u2124\u2126\u2128\u212A-\u212D\u212F-\u2139\u213C-\u213F\u2145-\u2149\u214E\u2183\u2184\u2C00-\u2CE4\u2CEB-\u2CEE\u2CF2\u2CF3\u2D00-\u2D25\u2D27\u2D2D\u2D30-\u2D67\u2D6F\u2D80-\u2D96\u2DA0-\u2DA6\u2DA8-\u2DAE\u2DB0-\u2DB6\u2DB8-\u2DBE\u2DC0-\u2DC6\u2DC8-\u2DCE\u2DD0-\u2DD6\u2DD8-\u2DDE\u2E2F\u3005\u3006\u3031-\u3035\u303B\u303C\u3041-\u3096\u309D-\u309F\u30A1-\u30FA\u30FC-\u30FF\u3105-\u312F\u3131-\u318E\u31A0-\u31BF\u31F0-\u31FF\u3400-\u4DBF\u4E00-\uA48C\uA4D0-\uA4FD\uA500-\uA60C\uA610-\uA61F\uA62A\uA62B\uA640-\uA66E\uA67F-\uA69D\uA6A0-\uA6E5\uA717-\uA71F\uA722-\uA788\uA78B-\uA7DC\uA7F1-\uA801\uA803-\uA805\uA807-\uA80A\uA80C-\uA822\uA840-\uA873\uA882-\uA8B3\uA8F2-\uA8F7\uA8FB\uA8FD\uA8FE\uA90A-\uA925\uA930-\uA946\uA960-\uA97C\uA984-\uA9B2\uA9CF\uA9E0-\uA9E4\uA9E6-\uA9EF\uA9FA-\uA9FE\uAA00-\uAA28\uAA40-\uAA42\uAA44-\uAA4B\uAA60-\uAA76\uAA7A\uAA7E-\uAAAF\uAAB1\uAAB5\uAAB6\uAAB9-\uAABD\uAAC0\uAAC2\uAADB-\uAADD\uAAE0-\uAAEA\uAAF2-\uAAF4\uAB01-\uAB06\uAB09-\uAB0E\uAB11-\uAB16\uAB20-\uAB26\uAB28-\uAB2E\uAB30-\uAB5A\uAB5C-\uAB69\uAB70-\uABE2\uAC00-\uD7A3\uD7B0-\uD7C6\uD7CB-\uD7FB\uF900-\uFA6D\uFA70-\uFAD9\uFB00-\uFB06\uFB13-\uFB17\uFB1D\uFB1F-\uFB28\uFB2A-\uFB36\uFB38-\uFB3C\uFB3E\uFB40\uFB41\uFB43\uFB44\uFB46-\uFBB1\uFBD3-\uFD3D\uFD50-\uFD8F\uFD92-\uFDC7\uFDF0-\uFDFB\uFE70-\uFE74\uFE76-\uFEFC\uFF21-\uFF3A\uFF41-\uFF5A\uFF66-\uFFBE\uFFC2-\uFFC7\uFFCA-\uFFCF\uFFD2-\uFFD7\uFFDA-\uFFDC]|\uD800[\uDC00-\uDC0B\uDC0D-\uDC26\uDC28-\uDC3A\uDC3C\uDC3D\uDC3F-\uDC4D\uDC50-\uDC5D\uDC80-\uDCFA\uDE80-\uDE9C\uDEA0-\uDED0\uDF00-\uDF1F\uDF2D-\uDF40\uDF42-\uDF49\uDF50-\uDF75\uDF80-\uDF9D\uDFA0-\uDFC3\uDFC8-\uDFCF]|\uD801[\uDC00-\uDC9D\uDCB0-\uDCD3\uDCD8-\uDCFB\uDD00-\uDD27\uDD30-\uDD63\uDD70-\uDD7A\uDD7C-\uDD8A\uDD8C-\uDD92\uDD94\uDD95\uDD97-\uDDA1\uDDA3-\uDDB1\uDDB3-\uDDB9\uDDBB\uDDBC\uDDC0-\uDDF3\uDE00-\uDF36\uDF40-\uDF55\uDF60-\uDF67\uDF80-\uDF85\uDF87-\uDFB0\uDFB2-\uDFBA]|\uD802[\uDC00-\uDC05\uDC08\uDC0A-\uDC35\uDC37\uDC38\uDC3C\uDC3F-\uDC55\uDC60-\uDC76\uDC80-\uDC9E\uDCE0-\uDCF2\uDCF4\uDCF5\uDD00-\uDD15\uDD20-\uDD39\uDD40-\uDD59\uDD80-\uDDB7\uDDBE\uDDBF\uDE00\uDE10-\uDE13\uDE15-\uDE17\uDE19-\uDE35\uDE60-\uDE7C\uDE80-\uDE9C\uDEC0-\uDEC7\uDEC9-\uDEE4\uDF00-\uDF35\uDF40-\uDF55\uDF60-\uDF72\uDF80-\uDF91]|\uD803[\uDC00-\uDC48\uDC80-\uDCB2\uDCC0-\uDCF2\uDD00-\uDD23\uDD4A-\uDD65\uDD6F-\uDD85\uDE80-\uDEA9\uDEB0\uDEB1\uDEC2-\uDEC7\uDF00-\uDF1C\uDF27\uDF30-\uDF45\uDF70-\uDF81\uDFB0-\uDFC4\uDFE0-\uDFF6]|\uD804[\uDC03-\uDC37\uDC71\uDC72\uDC75\uDC83-\uDCAF\uDCD0-\uDCE8\uDD03-\uDD26\uDD44\uDD47\uDD50-\uDD72\uDD76\uDD83-\uDDB2\uDDC1-\uDDC4\uDDDA\uDDDC\uDE00-\uDE11\uDE13-\uDE2B\uDE3F\uDE40\uDE80-\uDE86\uDE88\uDE8A-\uDE8D\uDE8F-\uDE9D\uDE9F-\uDEA8\uDEB0-\uDEDE\uDF05-\uDF0C\uDF0F\uDF10\uDF13-\uDF28\uDF2A-\uDF30\uDF32\uDF33\uDF35-\uDF39\uDF3D\uDF50\uDF5D-\uDF61\uDF80-\uDF89\uDF8B\uDF8E\uDF90-\uDFB5\uDFB7\uDFD1\uDFD3]|\uD805[\uDC00-\uDC34\uDC47-\uDC4A\uDC5F-\uDC61\uDC80-\uDCAF\uDCC4\uDCC5\uDCC7\uDD80-\uDDAE\uDDD8-\uDDDB\uDE00-\uDE2F\uDE44\uDE80-\uDEAA\uDEB8\uDF00-\uDF1A\uDF40-\uDF46]|\uD806[\uDC00-\uDC2B\uDCA0-\uDCDF\uDCFF-\uDD06\uDD09\uDD0C-\uDD13\uDD15\uDD16\uDD18-\uDD2F\uDD3F\uDD41\uDDA0-\uDDA7\uDDAA-\uDDD0\uDDE1\uDDE3\uDE00\uDE0B-\uDE32\uDE3A\uDE50\uDE5C-\uDE89\uDE9D\uDEB0-\uDEF8\uDFC0-\uDFE0]|\uD807[\uDC00-\uDC08\uDC0A-\uDC2E\uDC40\uDC72-\uDC8F\uDD00-\uDD06\uDD08\uDD09\uDD0B-\uDD30\uDD46\uDD60-\uDD65\uDD67\uDD68\uDD6A-\uDD89\uDD98\uDDB0-\uDDDB\uDEE0-\uDEF2\uDF02\uDF04-\uDF10\uDF12-\uDF33\uDFB0]|\uD808[\uDC00-\uDF99]|\uD809[\uDC80-\uDD43]|\uD80B[\uDF90-\uDFF0]|[\uD80C\uD80E\uD80F\uD81C-\uD822\uD840-\uD868\uD86A-\uD86D\uD86F-\uD872\uD874-\uD879\uD880-\uD883\uD885-\uD88C][\uDC00-\uDFFF]|\uD80D[\uDC00-\uDC2F\uDC41-\uDC46\uDC60-\uDFFF]|\uD810[\uDC00-\uDFFA]|\uD811[\uDC00-\uDE46]|\uD818[\uDD00-\uDD1D]|\uD81A[\uDC00-\uDE38\uDE40-\uDE5E\uDE70-\uDEBE\uDED0-\uDEED\uDF00-\uDF2F\uDF40-\uDF43\uDF63-\uDF77\uDF7D-\uDF8F]|\uD81B[\uDD40-\uDD6C\uDE40-\uDE7F\uDEA0-\uDEB8\uDEBB-\uDED3\uDF00-\uDF4A\uDF50\uDF93-\uDF9F\uDFE0\uDFE1\uDFE3\uDFF2\uDFF3]|\uD823[\uDC00-\uDCD5\uDCFF-\uDD1E\uDD80-\uDDF2]|\uD82B[\uDFF0-\uDFF3\uDFF5-\uDFFB\uDFFD\uDFFE]|\uD82C[\uDC00-\uDD22\uDD32\uDD50-\uDD52\uDD55\uDD64-\uDD67\uDD70-\uDEFB]|\uD82F[\uDC00-\uDC6A\uDC70-\uDC7C\uDC80-\uDC88\uDC90-\uDC99]|\uD835[\uDC00-\uDC54\uDC56-\uDC9C\uDC9E\uDC9F\uDCA2\uDCA5\uDCA6\uDCA9-\uDCAC\uDCAE-\uDCB9\uDCBB\uDCBD-\uDCC3\uDCC5-\uDD05\uDD07-\uDD0A\uDD0D-\uDD14\uDD16-\uDD1C\uDD1E-\uDD39\uDD3B-\uDD3E\uDD40-\uDD44\uDD46\uDD4A-\uDD50\uDD52-\uDEA5\uDEA8-\uDEC0\uDEC2-\uDEDA\uDEDC-\uDEFA\uDEFC-\uDF14\uDF16-\uDF34\uDF36-\uDF4E\uDF50-\uDF6E\uDF70-\uDF88\uDF8A-\uDFA8\uDFAA-\uDFC2\uDFC4-\uDFCB]|\uD837[\uDF00-\uDF1E\uDF25-\uDF2A]|\uD838[\uDC30-\uDC6D\uDD00-\uDD2C\uDD37-\uDD3D\uDD4E\uDE90-\uDEAD\uDEC0-\uDEEB]|\uD839[\uDCD0-\uDCEB\uDDD0-\uDDED\uDDF0\uDEC0-\uDEDE\uDEE0-\uDEE2\uDEE4\uDEE5\uDEE7-\uDEED\uDEF0-\uDEF4\uDEFE\uDEFF\uDFE0-\uDFE6\uDFE8-\uDFEB\uDFED\uDFEE\uDFF0-\uDFFE]|\uD83A[\uDC00-\uDCC4\uDD00-\uDD43\uDD4B]|\uD83B[\uDE00-\uDE03\uDE05-\uDE1F\uDE21\uDE22\uDE24\uDE27\uDE29-\uDE32\uDE34-\uDE37\uDE39\uDE3B\uDE42\uDE47\uDE49\uDE4B\uDE4D-\uDE4F\uDE51\uDE52\uDE54\uDE57\uDE59\uDE5B\uDE5D\uDE5F\uDE61\uDE62\uDE64\uDE67-\uDE6A\uDE6C-\uDE72\uDE74-\uDE77\uDE79-\uDE7C\uDE7E\uDE80-\uDE89\uDE8B-\uDE9B\uDEA1-\uDEA3\uDEA5-\uDEA9\uDEAB-\uDEBB]|\uD869[\uDC00-\uDEDF\uDF00-\uDFFF]|\uD86E[\uDC00-\uDC1D\uDC20-\uDFFF]|\uD873[\uDC00-\uDEAD\uDEB0-\uDFFF]|\uD87A[\uDC00-\uDFE0\uDFF0-\uDFFF]|\uD87B[\uDC00-\uDE5D]|\uD87E[\uDC00-\uDE1D]|\uD884[\uDC00-\uDF4A\uDF50-\uDFFF]|\uD88D[\uDC00-\uDC79])+/i];
+
+/* Prefix-friendly (e.g. allergique, arachide). Arabic forms added for RTL kitchens. */
+var ALLERGEN_RE = [/\ballerg/i, /\bintol/i, /\bgluten/i, /\barach/i, /\bcacahu/i, /\blacto[s\u017F]/i, /\b[s\u017F]oja/i,
+// [kds/sprint-2 F-6] Arabic allergen prefixes — حساسية (allergy), غلوتين (gluten), لاكتوز (lactose),
+// فول (peanut/bean), مكسرات (nuts), صويا (soy). RTL marker-free for whole-word fallback.
+/\u062D\u0633\u0627\u0633\u064A/, /\u063A\u0644\u0648\u062A\u064A\u0646/, /\u0644\u0627\u0643\u062A\u0648\u0632/, /\b\u0641\u0648\u0644\b/, /\u0645\u0643\u0633\u0631\u0627\u062A/, /\u0635\u0648\u064A\u0627/];
+function matchesAllergen(text) {
+  var _iterator = _createForOfIteratorHelper(ALLERGEN_RE),
+    _step;
+  try {
+    for (_iterator.s(); !(_step = _iterator.n()).done;) {
+      var re = _step.value;
+      if (re.test(text)) {
+        return true;
+      }
+    }
+  } catch (err) {
+    _iterator.e(err);
+  } finally {
+    _iterator.f();
+  }
+  return false;
+}
+function matchesExclusion(text) {
+  var _iterator2 = _createForOfIteratorHelper(EXCLUSION_RE),
+    _step2;
+  try {
+    for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
+      var re = _step2.value;
+      if (re.test(text)) {
+        return true;
+      }
+    }
+  } catch (err) {
+    _iterator2.e(err);
+  } finally {
+    _iterator2.f();
+  }
+  return false;
+}
+
+/**
+ * @param {string|null|undefined} text
+ * @returns {boolean}
+ */
+function isLikelyExclusionOrHoldInstruction(text) {
+  if (text == null || typeof text !== 'string') {
+    return false;
+  }
+  var t = text.trim();
+  if (t.length < 2) {
+    return false;
+  }
+  return matchesAllergen(t) || matchesExclusion(t);
+}
+
+/**
+ * CSS class (scoped in KDS): allergen (strongest) > exclusion / hold > default note
+ * @param {string|null|undefined} text
+ * @returns {'kds-instruction--allergen' | 'kds-instruction--exclusion' | 'kds-instruction--note'}
+ */
+function kdsInstructionVisualClass(text) {
+  if (text == null || typeof text !== 'string') {
+    return 'kds-instruction--note';
+  }
+  var t = text.trim();
+  if (t.length < 2) {
+    return 'kds-instruction--note';
+  }
+  if (matchesAllergen(t)) {
+    return 'kds-instruction--allergen';
+  }
+  if (matchesExclusion(t)) {
+    return 'kds-instruction--exclusion';
+  }
+  return 'kds-instruction--note';
+}
+
+/***/ },
+
+/***/ "./resources/js/helpers/kdsSource.js"
+/*!*******************************************!*\
+  !*** ./resources/js/helpers/kdsSource.js ***!
+  \*******************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   KDS_SOURCE: () => (/* binding */ KDS_SOURCE),
+/* harmony export */   KDS_SOURCE_I18N_KEYS: () => (/* binding */ KDS_SOURCE_I18N_KEYS),
+/* harmony export */   KDS_SOURCE_THEME: () => (/* binding */ KDS_SOURCE_THEME),
+/* harmony export */   kdsSourceFromSurface: () => (/* binding */ kdsSourceFromSurface)
+/* harmony export */ });
+/**
+ * [kds/sprint-2 F-2] Single source of truth for source mapping between the
+ * `source_surface` string column (server) and the KDS UI chip enum.
+ *
+ * Adding a new source = one map entry + one i18n key + one theme entry.
+ * Vue templates MUST NOT branch on rawSource — they only read `KDS_SOURCE_THEME[source]`
+ * and `KDS_SOURCE_I18N_KEYS[source]`.
+ */
+
+// Canonical client-side enum.
+var KDS_SOURCE = Object.freeze({
+  POS: 'POS',
+  KIOSK: 'KIOSK',
+  DELIVERY: 'DELIVERY',
+  ONLINE: 'ONLINE',
+  APP: 'APP',
+  DINE_IN: 'DINE_IN',
+  // [UBER-EATS 2026-06-28] Aggregator channel — Uber injects orders via webhook;
+  // they must surface on the KDS in line with native orders but plainly marked UBER.
+  UBER: 'UBER',
+  // [C4-CAISSE-TELEPHONE 2026-07-07] Commande prise par téléphone à la caisse (paiement
+  // différé, encaissée à l'arrivée). La cuisine la traite comme une commande comptoir mais
+  // le badge « Tél » signale qu'un client va venir la chercher.
+  PHONE: 'PHONE'
+});
+
+// Reverse map: source_surface (DB lowercase) → KDS_SOURCE.
+// 'web' fallback in FrontendOrderService maps to ONLINE (web checkout).
+// 'admin' (loyalty controller, manual creation) collapses to POS visually —
+// the kitchen still treats it like a counter order.
+var SURFACE_TO_SOURCE = {
+  pos: KDS_SOURCE.POS,
+  admin: KDS_SOURCE.POS,
+  kiosk: KDS_SOURCE.KIOSK,
+  delivery: KDS_SOURCE.DELIVERY,
+  web: KDS_SOURCE.ONLINE,
+  online: KDS_SOURCE.ONLINE,
+  mobile: KDS_SOURCE.APP,
+  app: KDS_SOURCE.APP,
+  dinein: KDS_SOURCE.DINE_IN,
+  dine_in: KDS_SOURCE.DINE_IN,
+  // [UBER-EATS 2026-06-28] Both the short and the canonical surface map to UBER.
+  uber: KDS_SOURCE.UBER,
+  uber_eats: KDS_SOURCE.UBER,
+  ubereats: KDS_SOURCE.UBER,
+  // [C4-CAISSE-TELEPHONE 2026-07-07] Commande téléphone caisse.
+  phone: KDS_SOURCE.PHONE
+};
+
+/**
+ * @param {string|null|undefined} rawSurface  the server column value
+ * @returns {'POS'|'KIOSK'|'DELIVERY'|'ONLINE'|'APP'|'DINE_IN'}
+ */
+function kdsSourceFromSurface(rawSurface) {
+  var _SURFACE_TO_SOURCE$ke;
+  if (rawSurface == null || rawSurface === '') {
+    return KDS_SOURCE.POS;
+  }
+  var key = String(rawSurface).toLowerCase();
+  return (_SURFACE_TO_SOURCE$ke = SURFACE_TO_SOURCE[key]) !== null && _SURFACE_TO_SOURCE$ke !== void 0 ? _SURFACE_TO_SOURCE$ke : KDS_SOURCE.POS;
+}
+
+// Design tokens per `plans/DESIGN_SPEC_KDS_V2_2026-05-11.md`. The reserved
+// futures (ONLINE/APP/DINE_IN) are wired now so they appear correctly when
+// the data starts flowing — no template edit when the flag flips.
+var KDS_SOURCE_THEME = Object.freeze({
+  POS: {
+    bg: '#F3F4F6',
+    text: '#374151',
+    icon: 'receipt'
+  },
+  KIOSK: {
+    bg: '#EFF6FF',
+    text: '#1E40AF',
+    icon: 'tablet'
+  },
+  DELIVERY: {
+    bg: '#F0FDFA',
+    text: '#0F766E',
+    icon: 'truck'
+  },
+  ONLINE: {
+    bg: '#ECFDF5',
+    text: '#047857',
+    icon: 'globe'
+  },
+  APP: {
+    bg: '#FDF2F8',
+    text: '#BE185D',
+    icon: 'phone'
+  },
+  DINE_IN: {
+    bg: '#FEF3C7',
+    text: '#B45309',
+    icon: 'chair'
+  },
+  // [UBER-EATS 2026-06-28] Uber Eats brand green (#06C167) on white text — the
+  // most saturated chip on the board so the cook instantly spots an Uber order.
+  UBER: {
+    bg: '#06C167',
+    text: '#FFFFFF',
+    icon: 'uber'
+  },
+  // [C4-CAISSE-TELEPHONE 2026-07-07] Indigo distinct — commande téléphone (le client
+  // passera la chercher, paiement à l'arrivée).
+  PHONE: {
+    bg: '#EEF2FF',
+    text: '#4338CA',
+    icon: 'phone'
+  }
+});
+var KDS_SOURCE_I18N_KEYS = Object.freeze({
+  POS: 'label.kds_type_pos',
+  KIOSK: 'label.kds_type_kiosk',
+  DELIVERY: 'label.kds_type_delivery',
+  ONLINE: 'label.kds_source_online',
+  APP: 'label.kds_source_app',
+  DINE_IN: 'label.kds_type_dinein',
+  UBER: 'label.kds_source_uber',
+  PHONE: 'label.kds_source_phone'
+});
+
+/***/ },
+
+/***/ "./resources/js/helpers/kdsState.js"
+/*!******************************************!*\
+  !*** ./resources/js/helpers/kdsState.js ***!
+  \******************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   KDS_STATE: () => (/* binding */ KDS_STATE),
+/* harmony export */   KDS_STATE_I18N_KEYS: () => (/* binding */ KDS_STATE_I18N_KEYS),
+/* harmony export */   KDS_STATE_THEME: () => (/* binding */ KDS_STATE_THEME),
+/* harmony export */   ORDER_STATUS: () => (/* binding */ ORDER_STATUS),
+/* harmony export */   kdsStateFromStatus: () => (/* binding */ kdsStateFromStatus),
+/* harmony export */   statusFromKdsState: () => (/* binding */ statusFromKdsState)
+/* harmony export */ });
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+/**
+ * [kds/sprint-2 F-1] Single source of truth for state ↔ status mapping
+ * between the numeric OrderStatus enum (server, app/Enums/OrderStatus.php)
+ * and the canonical KdsState used by the new card grid.
+ *
+ * Why client-side: OrderStateMachine.php is frozen; we do not extend the
+ * enum or its transitions. The UI just projects each numeric status into a
+ * narrower KdsState set ('NEW' | 'PREPARING' | 'READY' | 'DONE' | 'CANCELLED')
+ * with the labels the new Vue components render.
+ */
+
+// Numeric values mirror app/Enums/OrderStatus.php — DO NOT renumber.
+var ORDER_STATUS = Object.freeze({
+  PENDING: 1,
+  ACCEPT: 4,
+  PREPARING: 7,
+  PREPARED: 8,
+  OUT_FOR_DELIVERY: 10,
+  DELIVERED: 13,
+  CANCELED: 16,
+  REJECTED: 19,
+  RETURNED: 22
+});
+
+// KdsState — narrower set used by the new card visual layer.
+var KDS_STATE = Object.freeze({
+  NEW: 'NEW',
+  PREPARING: 'PREPARING',
+  READY: 'READY',
+  DONE: 'DONE',
+  CANCELLED: 'CANCELLED'
+});
+
+// Map numeric status → KdsState. Anything outside the table → null
+// (the card grid filters those out; they belong in history, not on the wall).
+var STATUS_TO_KDS = _defineProperty(_defineProperty(_defineProperty(_defineProperty(_defineProperty(_defineProperty(_defineProperty(_defineProperty(_defineProperty({}, ORDER_STATUS.PENDING, KDS_STATE.NEW), ORDER_STATUS.ACCEPT, KDS_STATE.NEW), ORDER_STATUS.PREPARING, KDS_STATE.PREPARING), ORDER_STATUS.PREPARED, KDS_STATE.READY), ORDER_STATUS.OUT_FOR_DELIVERY, KDS_STATE.DONE), ORDER_STATUS.DELIVERED, KDS_STATE.DONE), ORDER_STATUS.CANCELED, KDS_STATE.CANCELLED), ORDER_STATUS.REJECTED, KDS_STATE.CANCELLED), ORDER_STATUS.RETURNED, KDS_STATE.CANCELLED);
+
+/**
+ * @param {number|string} status
+ * @returns {'NEW'|'PREPARING'|'READY'|'DONE'|'CANCELLED'|null}
+ */
+function kdsStateFromStatus(status) {
+  var _STATUS_TO_KDS$n;
+  var n = parseInt(status, 10);
+  if (!Number.isFinite(n)) {
+    return null;
+  }
+  return (_STATUS_TO_KDS$n = STATUS_TO_KDS[n]) !== null && _STATUS_TO_KDS$n !== void 0 ? _STATUS_TO_KDS$n : null;
+}
+
+/**
+ * Reverse mapping for KDS PATCH actions. The card grid does only two
+ * transitions explicitly: NEW→PREPARING (auto-promote) and PREPARING→READY
+ * (chef taps Prêt). Any other state move stays the server's responsibility.
+ *
+ * @param {'NEW'|'PREPARING'|'READY'|'DONE'|'CANCELLED'} kdsState
+ * @returns {number|null}
+ */
+function statusFromKdsState(kdsState) {
+  switch (kdsState) {
+    case KDS_STATE.NEW:
+      return ORDER_STATUS.ACCEPT;
+    case KDS_STATE.PREPARING:
+      return ORDER_STATUS.PREPARING;
+    case KDS_STATE.READY:
+      return ORDER_STATUS.PREPARED;
+    case KDS_STATE.DONE:
+      return ORDER_STATUS.DELIVERED;
+    case KDS_STATE.CANCELLED:
+      return ORDER_STATUS.CANCELED;
+    default:
+      return null;
+  }
+}
+
+// Display-only metadata. Component code reads these to pick the pill / dot
+// colors that match the design tokens in plans/DESIGN_SPEC_KDS_V2_2026-05-11.md.
+var KDS_STATE_THEME = Object.freeze({
+  NEW: {
+    bg: '#FFFFFF',
+    border: '#D1D5DB',
+    dot: '#6B7280',
+    text: '#374151'
+  },
+  PREPARING: {
+    bg: '#DBEAFE',
+    border: '#BFDBFE',
+    dot: '#2563EB',
+    text: '#1E3A8A'
+  },
+  READY: {
+    bg: '#DCFCE7',
+    border: '#BBF7D0',
+    dot: '#16A34A',
+    text: '#14532D'
+  },
+  DONE: {
+    bg: '#F3F4F6',
+    border: '#E5E7EB',
+    dot: '#9CA3AF',
+    text: '#374151'
+  },
+  CANCELLED: {
+    bg: '#FEE2E2',
+    border: '#FCA5A5',
+    dot: '#DC2626',
+    text: '#7F1D1D'
+  }
+});
+
+// i18n key for each KdsState (extends label.kds_aria_live_*). The Vue card
+// component does `$t(KDS_STATE_I18N_KEYS[state])`.
+var KDS_STATE_I18N_KEYS = Object.freeze({
+  NEW: 'label.kds_state_new',
+  PREPARING: 'label.kds_state_preparing',
+  READY: 'label.kds_state_ready',
+  DONE: 'label.kds_state_done',
+  CANCELLED: 'label.kds_state_cancelled'
+});
+
+/***/ },
+
+/***/ "./resources/js/helpers/kdsSymbolic.js"
+/*!*********************************************!*\
+  !*** ./resources/js/helpers/kdsSymbolic.js ***!
+  \*********************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   buildSymbolic: () => (/* binding */ buildSymbolic),
+/* harmony export */   cruditeSymbol: () => (/* binding */ cruditeSymbol),
+/* harmony export */   fritesSauceSymbol: () => (/* binding */ fritesSauceSymbol),
+/* harmony export */   isMenuItem: () => (/* binding */ isMenuItem),
+/* harmony export */   meatSymbol: () => (/* binding */ meatSymbol),
+/* harmony export */   renderItemSymbolic: () => (/* binding */ renderItemSymbolic),
+/* harmony export */   sauceSymbol: () => (/* binding */ sauceSymbol),
+/* harmony export */   supportSymbol: () => (/* binding */ supportSymbol),
+/* harmony export */   symbolicMainLine: () => (/* binding */ symbolicMainLine)
+/* harmony export */ });
+/* harmony import */ var _kdsCustomization_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./kdsCustomization.js */ "./resources/js/helpers/kdsCustomization.js");
+/* harmony import */ var _kdsLineSemantics_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./kdsLineSemantics.js */ "./resources/js/helpers/kdsLineSemantics.js");
+function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t["return"] && (u = t["return"](), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
+function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
+function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t["return"] || t["return"](); } finally { if (u) throw o; } } }; }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+/**
+ * [KITCHEN-SYMBOLS 2026-06-28] Owner spec — symbolic composition for the kitchen.
+ *
+ * The kitchen screen (KDS) AND the printed kitchen ticket must read FAST. Instead
+ * of "Viande : Poulet mariné / Sauce : Samouraï / Salade, Tomate, Oignon" the cook
+ * gets ONE line of short codes:
+ *
+ *   Line 1 : [Support] | [Produit] | [Taille] | [Viande(s)] | [Crudités] | [Sauce(s)]
+ *            e.g.  G | SANDWICH | P | STO | SAM
+ *   Line 2 : paid supplements, full name, "+ Cheddar"
+ *   Line 3 : "MENU" (formule) or "F" (frites), nothing otherwise
+ *
+ * Empty slots are omitted. Tacos have no bread question but the cook still sees the
+ * support first, defaulting to Galette (G) — a tacos is always a galette.
+ *
+ * The PHP twin (App\Services\Hardware\KitchenTicketSymbolicFormatter) MUST stay in
+ * lockstep with this table so the printed ticket and the screen match exactly.
+ */
+
+
+
+
+/** lowercase, strip diacritics, collapse spaces — for keyword matching. */
+function normalize(s) {
+  return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  // [TICKET-WIDTHSAFE 2026-07-01] Parité PHP : NFD ne décompose pas les ligatures →
+  // « Œuf » → « oeuf » (symbole « OEU »), jamais « ŒUF »/« UF ».
+  .replace(/œ/g, 'oe').replace(/æ/g, 'ae').trim();
+}
+
+// ── Symbol tables (owner) ────────────────────────────────────────────────────
+
+var MEAT_TABLE = [[/hach|steak|b[oe]uf/, 'K'], [/poulet/, 'P'], [/tender/, 'Tender'], [/nugget/, 'Nug'], [/mexic/, 'Mex'], [/fricadelle/, 'Frec'], [/cordon/, 'Cordon']];
+var SAUCE_TABLE = [[/mayo/, 'MAY'], [/samou/, 'SAM'], [/hannibal/, 'HAN'], [/curry/, 'CURY'], [/andalouse/, 'AND'], [/blanche/, 'BL'], [/ketchup/, 'KTP'], [/burger/, 'Burg'], [/algerien/, 'ALG'], [/barbecue|bbq/, 'BBQ'], [/harissa/, 'HAR'], [/fromage/, 'FRO'], [/spicy/, 'SPI']];
+var CRUDITE_TABLE = [[/salade/, 'S'], [/tomate/, 'T'],
+// [OWNER8 2026-07-06] Oignons CUITS → O̲ (O + U+0332 combining low line) —
+// AVANT /oignon/ (sinon le cru matcherait d'abord). Écran : rendu natif dans
+// {{ line.label }}. Ticket : EscPosCommandBuilder::encodeForPrinter traduit
+// X+U+0332 en soulignement matériel ESC - 1 X ESC - 0 (CP858 sans combining).
+// Jumeau STRICT : KitchenTicketSymbolicFormatter::CRUDITE_TABLE (même string).
+[/oignon.*cuit|cuit.*oignon/, 'O̲'], [/oignon/, 'O']];
+/** Canonical print order of crudités → "STOO̲". */
+var CRUDITE_ORDER = ['S', 'T', 'O', 'O̲'];
+function meatSymbol(name) {
+  var n = normalize(name);
+  var _iterator = _createForOfIteratorHelper(MEAT_TABLE),
+    _step;
+  try {
+    for (_iterator.s(); !(_step = _iterator.n()).done;) {
+      var _step$value = _slicedToArray(_step.value, 2),
+        re = _step$value[0],
+        sym = _step$value[1];
+      if (re.test(n)) return sym;
+    }
+  } catch (err) {
+    _iterator.e(err);
+  } finally {
+    _iterator.f();
+  }
+  return '';
+}
+function sauceSymbol(name) {
+  var n = normalize(name);
+  var _iterator2 = _createForOfIteratorHelper(SAUCE_TABLE),
+    _step2;
+  try {
+    for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
+      var _step2$value = _slicedToArray(_step2.value, 2),
+        re = _step2$value[0],
+        sym = _step2$value[1];
+      if (re.test(n)) return sym;
+    }
+    // Unlisted sauce → 3-letter uppercase code (strip a leading "sauce ").
+  } catch (err) {
+    _iterator2.e(err);
+  } finally {
+    _iterator2.f();
+  }
+  return n.replace(/^sauce\s+/, '').slice(0, 3).toUpperCase();
+}
+function cruditeSymbol(name) {
+  var n = normalize(name);
+  var _iterator3 = _createForOfIteratorHelper(CRUDITE_TABLE),
+    _step3;
+  try {
+    for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
+      var _step3$value = _slicedToArray(_step3.value, 2),
+        re = _step3$value[0],
+        sym = _step3$value[1];
+      if (re.test(n)) return sym;
+    }
+  } catch (err) {
+    _iterator3.e(err);
+  } finally {
+    _iterator3.f();
+  }
+  return '';
+}
+function supportSymbol(name) {
+  var n = normalize(name);
+  if (/galette/.test(n)) return 'G';
+  if (/pain/.test(n)) return 'S';
+  return '';
+}
+
+/**
+ * Un item ADDON « Menu (Frites + Boisson) » / « Formule … » → affiché juste « MENU ».
+ * [SYNC-BORNE 2026-07-01] Parité PHP : on NE matche QUE l'addon (menu + parenthèse, ou
+ * « formule ») — surtout PAS un vrai produit "Menu Enfant Burger"/"Nuggets" qui DOIT
+ * garder son identité sur l'écran cuisine.
+ */
+function isMenuItem(name) {
+  return /\bmenu\s*\(|\bformule\b/.test(normalize(name));
+}
+
+/** Sauce frites du menu (depuis l'instruction) → SYMBOLE court (Andalouse → AND). */
+function fritesSauceSymbol(instruction) {
+  if (typeof instruction !== 'string' || instruction === '') return '';
+  var m = instruction.match(/sauce\s*frites\s*:\s*([^\n]+)/i);
+  return m ? sauceSymbol(m[1].trim()) : '';
+}
+
+// ── Composition decomposition ────────────────────────────────────────────────
+
+function readVariations(orderItem) {
+  var snap = orderItem === null || orderItem === void 0 ? void 0 : orderItem.composition_snapshot;
+  if (snap && Array.isArray(snap.lines) && snap.lines.length > 0) return snap.lines;
+  return Array.isArray(orderItem === null || orderItem === void 0 ? void 0 : orderItem.item_variations) ? orderItem.item_variations : [];
+}
+function readExtras(orderItem) {
+  var snap = orderItem === null || orderItem === void 0 ? void 0 : orderItem.composition_snapshot;
+  if (snap && Array.isArray(snap.extras) && snap.extras.length > 0) return snap.extras;
+  return Array.isArray(orderItem === null || orderItem === void 0 ? void 0 : orderItem.item_extras) ? orderItem.item_extras : [];
+}
+function readAddons(orderItem) {
+  var snap = orderItem === null || orderItem === void 0 ? void 0 : orderItem.composition_snapshot;
+  if (snap && Array.isArray(snap.addons) && snap.addons.length > 0) return snap.addons;
+  return Array.isArray(orderItem === null || orderItem === void 0 ? void 0 : orderItem.item_addons) ? orderItem.item_addons : [];
+}
+function extraName(e) {
+  return (e === null || e === void 0 ? void 0 : e.extra_name) || (e === null || e === void 0 ? void 0 : e.name) || '';
+}
+function addonName(a) {
+  return (a === null || a === void 0 ? void 0 : a.addon_name) || (a === null || a === void 0 ? void 0 : a.name) || '';
+}
+
+/** Classify a Line-1 slot from its GROUP (with value-based fallback). */
+function classifyVariation(group, value) {
+  var g = normalize(group);
+  if (/viande|meat/.test(g)) return 'meat';
+  if (/sauce/.test(g)) return 'sauce';
+  if (/pain|galette|support|bread/.test(g)) return 'support';
+  if (/taille|size|portion/.test(g)) return 'size';
+  if (meatSymbol(value)) return 'meat';
+  return 'other';
+}
+
+/**
+ * [T3-CUISINE 2026-07-05] Code produit 3 lettres (Cayenne→CAY, Terminator→TER). 3 lettres du
+ * DERNIER mot significatif → distingue « Menu Enfant Burger » (BUR) de « ... Nuggets » (NUG).
+ * PARITÉ STRICTE avec le PHP KitchenTicketSymbolicFormatter::produitCode() (ticket == écran).
+ */
+var CODE_GENERIC_WORDS = ['menu', 'enfant', 'formule', 'grande', 'grand', 'petite', 'petit', 'mini', 'maxi', 'moyenne', 'moyen', 'box'];
+// [F-KITCHEN-BOL-BASE 2026-07-15] Mots-catégorie dont la BASE distinctive suit (Bol Frites/Bol Riz).
+var CODE_BASE_WORDS = ['bol'];
+function produitCode(produit) {
+  var n = normalize(produit).replace(/[^a-z0-9 ]+/g, ' ').trim();
+  if (!n) return '';
+  var words = n.split(' ').filter(Boolean);
+  // Premier mot SIGNIFICATIF : saute prefixes generiques + tailles/volumes (parite PHP).
+  var significant = words.filter(function (w) {
+    return !CODE_GENERIC_WORDS.includes(w) && !/^\d+(cl|ml|l|g|kg)?$/.test(w);
+  });
+  var base = significant[0] || words[0] || n;
+  var code = base.slice(0, 3).toUpperCase();
+  // [F-KITCHEN-BOL-BASE 2026-07-15 / P1] « Bol Frites »/« Bol Riz » → « BOL » ambigu pour le
+  // cuisinier. Mot-base (bol) + 2e mot significatif → « BOL FRI »/« BOL RIZ » (parite PHP stricte).
+  if (CODE_BASE_WORDS.includes(base) && significant[1]) {
+    code += ' ' + significant[1].slice(0, 3).toUpperCase();
+  }
+  return code;
+}
+
+/** Split "Tacos M" → { produit: "TAC", taille: "M" }. Only M/L/XL trailing tokens. */
+function produitAndSize(itemName) {
+  var raw = String(itemName || '').trim();
+  var m = raw.match(/\s+(XL|L|M)\s*$/i);
+  if (m) {
+    return {
+      produit: produitCode(raw.slice(0, m.index).trim()),
+      taille: m[1].toUpperCase()
+    };
+  }
+  return {
+    produit: produitCode(raw),
+    taille: ''
+  };
+}
+
+/**
+ * Decompose an order item into the symbolic slots.
+ * @returns {{category, support, produit, taille, viandes:string[], crudites:string, sauces:string[], supplements:string[], menu:string}}
+ */
+function buildSymbolic(orderItem) {
+  var category = (0,_kdsCustomization_js__WEBPACK_IMPORTED_MODULE_0__.categorize)(orderItem);
+  var _produitAndSize = produitAndSize(orderItem === null || orderItem === void 0 ? void 0 : orderItem.item_name),
+    produit = _produitAndSize.produit,
+    nameSize = _produitAndSize.taille;
+  var support = '';
+  var taille = nameSize;
+  var viandes = [];
+  var sauces = [];
+  var crud = new Set();
+  var supplements = [];
+  var _iterator4 = _createForOfIteratorHelper(readVariations(orderItem)),
+    _step4;
+  try {
+    for (_iterator4.s(); !(_step4 = _iterator4.n()).done;) {
+      var v = _step4.value;
+      var gv = (0,_kdsCustomization_js__WEBPACK_IMPORTED_MODULE_0__.kdsVariationGroupValue)(v);
+      var value = gv.value;
+      // Defensive: a snapshot line with attribute_name=null falls into the legacy
+      // branch (value=name=undefined). Recover the value from variation_name so a
+      // meat/sauce never silently vanishes from the kitchen line (food safety).
+      if (!value && ((v === null || v === void 0 ? void 0 : v.name) === undefined || (v === null || v === void 0 ? void 0 : v.name) === null || (v === null || v === void 0 ? void 0 : v.name) === '') && v !== null && v !== void 0 && v.variation_name) {
+        value = String(v.variation_name);
+      }
+      if (!value) continue;
+      switch (classifyVariation(gv.group, value)) {
+        case 'meat':
+          viandes.push(meatSymbol(value) || normalize(value).slice(0, 3).toUpperCase());
+          break;
+        case 'sauce':
+          sauces.push(sauceSymbol(value));
+          break;
+        case 'support':
+          support = supportSymbol(value) || support;
+          break;
+        case 'size':
+          taille = taille || String(value).toUpperCase();
+          break;
+        default:
+          break;
+      }
+    }
+  } catch (err) {
+    _iterator4.e(err);
+  } finally {
+    _iterator4.f();
+  }
+  var _iterator5 = _createForOfIteratorHelper(readExtras(orderItem)),
+    _step5;
+  try {
+    for (_iterator5.s(); !(_step5 = _iterator5.n()).done;) {
+      var _ref, _e$unit_price;
+      var e = _step5.value;
+      var name = extraName(e);
+      if (!name) continue;
+      var cs = cruditeSymbol(name);
+      var price = Number((_ref = (_e$unit_price = e === null || e === void 0 ? void 0 : e.unit_price) !== null && _e$unit_price !== void 0 ? _e$unit_price : e === null || e === void 0 ? void 0 : e.line_total) !== null && _ref !== void 0 ? _ref : 0) || 0;
+      // Only FREE garnitures (price 0) fold into the crudités slot; a paid extra
+      // that happens to match (e.g. "Oignons frits" 0,90) is a supplement.
+      if (cs && price <= 0) {
+        crud.add(cs);
+      } else {
+        var q = parseInt(e === null || e === void 0 ? void 0 : e.quantity, 10);
+        var suffix = Number.isFinite(q) && q > 1 ? " \xD7".concat(q) : '';
+        supplements.push("+ ".concat(name).concat(suffix));
+      }
+    }
+
+    // Owner rule: tacos (and any galette product) show the support first, default G.
+  } catch (err) {
+    _iterator5.e(err);
+  } finally {
+    _iterator5.f();
+  }
+  if (!support && (category === 'taco' || /galette/.test(normalize(orderItem === null || orderItem === void 0 ? void 0 : orderItem.item_name)))) {
+    support = 'G';
+  }
+
+  // Line 3: a full formule → "MENU"; a PARTIAL formule → "FRITES"/"BOISSON" (a lone
+  // frites-only or boisson-only is NOT a full menu — the kitchen must not serve the
+  // whole formule = revenue leak); frites+boisson together = the full menu = "MENU";
+  // a lone frites add-on → "F"; else nothing.
+  var addons = readAddons(orderItem);
+  var menu = '';
+  var hasFull = false,
+    hasFrites = false,
+    hasBoisson = false;
+  var _iterator6 = _createForOfIteratorHelper(addons),
+    _step6;
+  try {
+    for (_iterator6.s(); !(_step6 = _iterator6.n()).done;) {
+      var a = _step6.value;
+      var role = String((a === null || a === void 0 ? void 0 : a.role) || '').toLowerCase();
+      if (!role.startsWith('menu_')) continue;
+      if (role === 'menu_frites') hasFrites = true;else if (role === 'menu_boisson') hasBoisson = true;else hasFull = true; // menu_full / menu_formule / future menu_*
+    }
+  } catch (err) {
+    _iterator6.e(err);
+  } finally {
+    _iterator6.f();
+  }
+  if (hasFull || hasFrites && hasBoisson) {
+    menu = 'MENU';
+  } else if (hasFrites) {
+    menu = 'FRITES';
+  } else if (hasBoisson) {
+    menu = 'BOISSON';
+  } else if (addons.some(function (a) {
+    return /frite/.test(normalize(addonName(a)));
+  })) {
+    menu = 'F';
+  }
+  var crudites = CRUDITE_ORDER.filter(function (c) {
+    return crud.has(c);
+  }).join('');
+  return {
+    category: category,
+    support: support,
+    produit: produit,
+    taille: taille,
+    viandes: viandes,
+    crudites: crudites,
+    sauces: sauces,
+    supplements: supplements,
+    menu: menu
+  };
+}
+
+/** Build the single Line-1 string ("G | SANDWICH | P | STO | SAM"). */
+function symbolicMainLine(orderItem) {
+  var s = buildSymbolic(orderItem);
+  return [s.support, s.produit, s.taille, s.viandes.join(' '), s.crudites, s.sauces.join(' ')].filter(function (x) {
+    return x && x.length > 0;
+  }).join(' | ');
+}
+
+/**
+ * [W3-FIX-C 2026-07-06] Addon boisson (role 'drink' / 'menu_boisson' / *boisson*) —
+ * le cuisinier PRÉPARE les boissons : elles doivent être visibles écran + ticket.
+ * Jumeau STRICT du PHP KitchenTicketSymbolicFormatter::drinkLines().
+ */
+function isDrinkAddonRole(role) {
+  var r = String(role || '').toLowerCase();
+  return r === 'drink' || r === 'menu_boisson' || r.includes('boisson');
+}
+
+/** Lignes boisson d'un item ("1× Coca-Cola 33cl") depuis ses addons. */
+function drinkAddonLabels(orderItem) {
+  var out = [];
+  var _iterator7 = _createForOfIteratorHelper(readAddons(orderItem)),
+    _step7;
+  try {
+    for (_iterator7.s(); !(_step7 = _iterator7.n()).done;) {
+      var a = _step7.value;
+      if (!isDrinkAddonRole(a === null || a === void 0 ? void 0 : a.role)) continue;
+      var name = addonName(a);
+      if (!name) continue;
+      // [CLUSTER-6 2026-07-11] Ne PAS émettre le conteneur de formule : role
+      // 'menu_boisson' porte parfois le nom du conteneur (« Menu (Frites + Boisson) »),
+      // qui n'est PAS une boisson. La garde isDrinkName rejette « menu/formule », la
+      // vraie boisson (« Coca 33cl ») passe. Jumeau PHP drinkLines (isDrinkItem).
+      if (!(0,_kdsCustomization_js__WEBPACK_IMPORTED_MODULE_0__.isDrinkName)(name)) continue;
+      var q = parseInt(a === null || a === void 0 ? void 0 : a.quantity, 10);
+      var qty = Number.isFinite(q) && q > 0 ? q : 1;
+      out.push("".concat(qty, "\xD7 ").concat(name));
+    }
+  } catch (err) {
+    _iterator7.e(err);
+  } finally {
+    _iterator7.f();
+  }
+  return out;
+}
+
+/**
+ * [W3-FIX-A 2026-07-06] Note client sanitisée → ligne type:'instruction' (rendue par
+ * KdsOrderLine.vue). sanitizeKdsInstruction garde les notes libres (« oignons cuits »,
+ * « BOISSON: Coca-Cola 33cl » du wizard caisse) et strip l'écho compo du wizard.
+ */
+function instructionLine(orderItem) {
+  var note = (0,_kdsCustomization_js__WEBPACK_IMPORTED_MODULE_0__.sanitizeKdsInstruction)(orderItem === null || orderItem === void 0 ? void 0 : orderItem.instruction, orderItem === null || orderItem === void 0 ? void 0 : orderItem.item_name);
+  if (note.length === 0) return null;
+  return {
+    type: 'instruction',
+    label: note,
+    visualClass: (0,_kdsLineSemantics_js__WEBPACK_IMPORTED_MODULE_1__.kdsInstructionVisualClass)(note)
+  };
+}
+
+/**
+ * Render an order item into the typed line list consumed by <KdsOrderLine>.
+ * Mirrors the shape of kdsCustomization.renderItem() but uses the symbolic format.
+ */
+function renderItemSymbolic(orderItem) {
+  var _orderItem$quantity2;
+  var s = buildSymbolic(orderItem);
+  var lines = [];
+  var allergenCodes = Array.isArray(orderItem === null || orderItem === void 0 ? void 0 : orderItem.allergens_snapshot) ? orderItem.allergens_snapshot.map(function (c) {
+    return c === null || c === undefined ? '' : String(c);
+  }).filter(function (c) {
+    return c.length > 0;
+  }) : [];
+  var hasAllergen = allergenCodes.length > 0;
+  var fritesSym = fritesSauceSymbol(orderItem === null || orderItem === void 0 ? void 0 : orderItem.instruction);
+
+  // [KITCHEN-MENU 2026-06-30] Un item Menu/Formule → juste « MENU » (+ sauce frites
+  // en symbole), AUCUN prix ni « Frites + Boisson » : c'est frites + boisson, rien à
+  // préparer de plus côté cuisine.
+  if (isMenuItem(orderItem === null || orderItem === void 0 ? void 0 : orderItem.item_name)) {
+    var _orderItem$quantity;
+    lines.push({
+      type: 'symbolic-main',
+      qty: (_orderItem$quantity = orderItem === null || orderItem === void 0 ? void 0 : orderItem.quantity) !== null && _orderItem$quantity !== void 0 ? _orderItem$quantity : 1,
+      label: fritesSym ? "MENU : ".concat(fritesSym) : 'MENU',
+      category: s.category,
+      hasAllergen: hasAllergen
+    });
+    // [W3-FIX-C] Boisson de la formule visible sous le badge MENU.
+    var _iterator8 = _createForOfIteratorHelper(drinkAddonLabels(orderItem)),
+      _step8;
+    try {
+      for (_iterator8.s(); !(_step8 = _iterator8.n()).done;) {
+        var d = _step8.value;
+        lines.push({
+          type: 'menu_child',
+          label: d
+        });
+      }
+      // [W3-FIX-A] Note client visible aussi sur un item Menu/Formule.
+    } catch (err) {
+      _iterator8.e(err);
+    } finally {
+      _iterator8.f();
+    }
+    var menuNote = instructionLine(orderItem);
+    if (menuNote) {
+      lines.push(menuNote);
+    }
+    if (hasAllergen) {
+      lines.push({
+        type: 'allergen',
+        codes: allergenCodes
+      });
+    }
+    return {
+      category: s.category,
+      hasAllergen: hasAllergen,
+      lines: lines
+    };
+  }
+  lines.push({
+    type: 'symbolic-main',
+    qty: (_orderItem$quantity2 = orderItem === null || orderItem === void 0 ? void 0 : orderItem.quantity) !== null && _orderItem$quantity2 !== void 0 ? _orderItem$quantity2 : 1,
+    // [W3-FIX-C 2026-07-06] Item BOISSON (Coca standalone #5456) → nom COMPLET :
+    // « COC » cryptique ne dit pas au cuisinier QUELLE boisson préparer.
+    // Jumeau PHP : OrderReceiptEscPosRenderer::renderKitchenTicket (isDrinkItem).
+    label: s.category === 'drink' ? String((orderItem === null || orderItem === void 0 ? void 0 : orderItem.item_name) || '').trim() : symbolicMainLine(orderItem),
+    category: s.category,
+    hasAllergen: hasAllergen
+  });
+
+  // [KITCHEN-MENU 2026-06-30] Ordre owner (identique au ticket imprimé) :
+  // ligne 2 = MENU (: sauce frites symbole) PUIS les suppléments.
+  if (s.menu) {
+    // [CLUSTER-2 2026-07-11] MENU et FRITES portent une sauce frites → l'annoter en
+    // symbole (« MENU : ALG », « FRITES : ALG »). BOISSON n'a pas de sauce frites.
+    var menuLabel = (s.menu === 'MENU' || s.menu === 'FRITES') && fritesSym ? "".concat(s.menu, " : ").concat(fritesSym) : s.menu;
+    lines.push({
+      type: 'symbolic-menu',
+      label: menuLabel
+    });
+  }
+  var _iterator9 = _createForOfIteratorHelper(s.supplements),
+    _step9;
+  try {
+    for (_iterator9.s(); !(_step9 = _iterator9.n()).done;) {
+      var sup = _step9.value;
+      // [K2-KDS 2026-07-05] Supplément payant signalé par une ÉTOILE ⭐ (écran → emoji OK)
+      // + affiché en gras jaune (CSS) → repérage immédiat par le cuisinier.
+      lines.push({
+        type: 'supplement',
+        label: String(sup).replace(/^\+\s*/, '⭐ ')
+      });
+    }
+
+    // [W3-FIX-C 2026-07-06] Addons boisson (role drink / menu_boisson) → lignes visibles
+    // « 1× Boisson Seule » (type menu_child, déjà rendu par KdsOrderLine.vue).
+  } catch (err) {
+    _iterator9.e(err);
+  } finally {
+    _iterator9.f();
+  }
+  var _iterator0 = _createForOfIteratorHelper(drinkAddonLabels(orderItem)),
+    _step0;
+  try {
+    for (_iterator0.s(); !(_step0 = _iterator0.n()).done;) {
+      var _d = _step0.value;
+      lines.push({
+        type: 'menu_child',
+        label: _d
+      });
+    }
+
+    // [W3-FIX-A 2026-07-06] Note client (« oignons cuits », « BOISSON: X » du POS) après
+    // les suppléments — le ticket imprimé l'avait (** note), l'écran V2 la perdait.
+  } catch (err) {
+    _iterator0.e(err);
+  } finally {
+    _iterator0.f();
+  }
+  var note = instructionLine(orderItem);
+  if (note) {
+    lines.push(note);
+  }
+  if (hasAllergen) {
+    lines.push({
+      type: 'allergen',
+      codes: allergenCodes
+    });
+  }
+  return {
+    category: s.category,
+    hasAllergen: hasAllergen,
+    lines: lines
+  };
+}
+
+/***/ },
+
+/***/ "./resources/js/helpers/kitchenLocalPrinter.js"
+/*!*****************************************************!*\
+  !*** ./resources/js/helpers/kitchenLocalPrinter.js ***!
+  \*****************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   KITCHEN_BRIDGE_URL: () => (/* binding */ KITCHEN_BRIDGE_URL),
+/* harmony export */   _resetPrintedKitchen: () => (/* binding */ _resetPrintedKitchen),
+/* harmony export */   b64ToBytes: () => (/* binding */ b64ToBytes),
+/* harmony export */   getKitchenFailed: () => (/* binding */ getKitchenFailed),
+/* harmony export */   hasKitchenPrinted: () => (/* binding */ hasKitchenPrinted),
+/* harmony export */   markKitchenPrinted: () => (/* binding */ markKitchenPrinted),
+/* harmony export */   printEscPosViaKitchenBridge: () => (/* binding */ printEscPosViaKitchenBridge),
+/* harmony export */   seedKitchenPrinted: () => (/* binding */ seedKitchenPrinted),
+/* harmony export */   setKitchenFailed: () => (/* binding */ setKitchenFailed)
+/* harmony export */ });
+/* provided dependency */ var Buffer = __webpack_require__(/*! buffer */ "./node_modules/buffer/index.js")["Buffer"];
+function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
+function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+/**
+ * kitchenLocalPrinter.js — [KITCHEN-BRIDGE 2026-07-09] Impression SILENCIEUSE du
+ * ticket CUISINE via un pont local node sur le PC cuisine (miroir du pont caisse
+ * posLocalPrinter.js).
+ *
+ * Topologie : Laravel = cloud Linux → ne peut PAS sortir sur l'USB de l'imprimante
+ * cuisine. Le serveur rend les octets ESC/POS du ticket cuisine (SSOT NF525,
+ * endpoint GET orders/{id}/escpos?ticket=kitchen → escpos_b64, width-safe/symbolique) ;
+ * ce helper les décode et les POSTe TELS QUELS au pont local
+ * `http://127.0.0.1:9101/raw` → l'imprimante cuisine imprime sans fenêtre Chrome.
+ *
+ * C'est l'écran KDS qui appelle ce helper AUTOMATIQUEMENT à chaque nouvelle commande
+ * (toutes sources), avec une dé-dup robuste persistée en localStorage (jamais deux
+ * fois le même ticket au refresh/reconnexion).
+ *
+ * `http://127.0.0.1` est un secure-context → fetch autorisé depuis une page HTTPS.
+ * Sur le vrai PC cuisine, le flag Chrome
+ * `--disable-features=BlockInsecurePrivateNetworkRequests,LocalNetworkAccessChecks`
+ * est requis (même topologie que la caisse).
+ */
+
+var KITCHEN_BRIDGE_PORT = 9101;
+function kitchenBridgeUrl() {
+  try {
+    var u = window.foodkingConfig && window.foodkingConfig.kitchenBridgeUrl;
+    if (typeof u === 'string' && u) return u.replace(/\/+$/, '');
+  } catch (_) {/* défaut ci-dessous */}
+  return 'http://127.0.0.1:' + KITCHEN_BRIDGE_PORT;
+}
+var KITCHEN_BRIDGE_URL = kitchenBridgeUrl();
+function fetchWithTimeout(url, opts, timeoutMs) {
+  if (typeof fetch !== 'function') return Promise.reject(new Error('no fetch'));
+  var ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+  var t = ctrl ? setTimeout(function () {
+    return ctrl.abort();
+  }, timeoutMs) : null;
+  var o = Object.assign({}, opts);
+  if (ctrl) o.signal = ctrl.signal;
+  return fetch(url, o)["finally"](function () {
+    if (t) clearTimeout(t);
+  });
+}
+
+/** Décode une chaîne base64 → Uint8Array (octets fiscaux bruts). */
+function b64ToBytes(b64) {
+  var bin = typeof atob === 'function' ? atob(String(b64 || '')) : Buffer.from(String(b64 || ''), 'base64').toString('binary');
+  var out = new Uint8Array(bin.length);
+  for (var i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i) & 0xff;
+  return out;
+}
+
+/**
+ * POSTe les octets ESC/POS (depuis le base64 serveur) au pont cuisine local en
+ * passthrough RAW. Renvoie un résultat DISCRIMINÉ, jamais throw :
+ *   - {ok:true}                        → accepté (202/2xx) : imprimé
+ *   - {ok:false, retriable:true, reason} → pont injoignable / timeout / réseau /
+ *     302 / 401 / 429 / 5xx : PAS imprimé mais à réessayer (le RETRY KDS
+ *     ressortira le ticket quand le pont/imprimante revient)
+ *   - null                             → rien à imprimer (b64 vide) : non-retriable
+ * Backward-compat : les appelants testent `r && r.ok`.
+ */
+function rawTimeoutMs() {
+  var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+  if (Number.isFinite(opts.timeoutMs) && opts.timeoutMs > 0) return opts.timeoutMs;
+  try {
+    var t = window.foodkingConfig && window.foodkingConfig.kitchenBridgeRawTimeoutMs;
+    if (Number.isFinite(t) && t > 0) return t;
+  } catch (_) {/* défaut ci-dessous */}
+  // [KITCHEN-RESILIENCE 2026-07-13] Le pont /raw répond désormais le RÉSULTAT RÉEL de
+  // l'impression (200/500), borné par SON timeout d'impression (KITCHEN_PRINT_TIMEOUT_MS,
+  // défaut 15 s). Le timeout client DOIT être PLUS GRAND (20 s) : sinon on abandonnerait
+  // (abort) pendant que le pont imprime encore → faux « échec » → retry → DOUBLE impression.
+  // Ainsi on obtient toujours le vrai verdict avant d'abandonner.
+  return 20000;
+}
+function printEscPosViaKitchenBridge(_x) {
+  return _printEscPosViaKitchenBridge.apply(this, arguments);
+}
+
+// ── Dé-dup persistée : un ticket cuisine PAR commande, jamais deux ────────────
+// Set d'ids déjà imprimés, persisté en localStorage (survit au F5 / re-montage /
+// reconnexion WS), borné aux N derniers ids pour ne pas gonfler indéfiniment.
+function _printEscPosViaKitchenBridge() {
+  _printEscPosViaKitchenBridge = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee(escposB64) {
+    var opts,
+      bytes,
+      res,
+      _args = arguments,
+      _t;
+    return _regenerator().w(function (_context) {
+      while (1) switch (_context.p = _context.n) {
+        case 0:
+          opts = _args.length > 1 && _args[1] !== undefined ? _args[1] : {};
+          _context.p = 1;
+          if (escposB64) {
+            _context.n = 2;
+            break;
+          }
+          return _context.a(2, null);
+        case 2:
+          bytes = b64ToBytes(escposB64);
+          _context.n = 3;
+          return fetchWithTimeout(kitchenBridgeUrl() + '/raw', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/octet-stream'
+            },
+            body: bytes
+          }, rawTimeoutMs(opts));
+        case 3:
+          res = _context.v;
+          if (!(res && res.ok)) {
+            _context.n = 4;
+            break;
+          }
+          return _context.a(2, {
+            ok: true,
+            method: 'kitchen-bridge'
+          });
+        case 4:
+          return _context.a(2, {
+            ok: false,
+            retriable: true,
+            reason: 'http-' + (res && res.status || 0)
+          });
+        case 5:
+          _context.p = 5;
+          _t = _context.v;
+          return _context.a(2, {
+            ok: false,
+            retriable: true,
+            reason: 'network'
+          });
+      }
+    }, _callee, null, [[1, 5]]);
+  }));
+  return _printEscPosViaKitchenBridge.apply(this, arguments);
+}
+var PRINTED_LS_KEY = 'kds.printedKitchenIds';
+var PRINTED_MAX = 500;
+var _printed = null;
+function _load() {
+  if (_printed) return _printed;
+  _printed = new Set();
+  try {
+    var raw = window.localStorage.getItem(PRINTED_LS_KEY);
+    if (raw) JSON.parse(raw).forEach(function (id) {
+      return _printed.add(String(id));
+    });
+  } catch (_) {/* mémoire seule */}
+  return _printed;
+}
+function _persist(set) {
+  try {
+    window.localStorage.setItem(PRINTED_LS_KEY, JSON.stringify(Array.from(set).slice(-PRINTED_MAX)));
+  } catch (_) {/* private mode / quota — la garde mémoire tient dans la session */}
+}
+
+/** True si l'id a déjà été imprimé (dé-dup). */
+function hasKitchenPrinted(orderId) {
+  if (orderId == null) return true;
+  return _load().has(String(orderId));
+}
+
+/**
+ * Marque un id comme imprimé. Renvoie true si NOUVEAU (à imprimer), false si déjà vu.
+ * À appeler juste avant/après l'impression pour garantir « exactement une fois ».
+ */
+function markKitchenPrinted(orderId) {
+  if (orderId == null) return false;
+  var set = _load();
+  var key = String(orderId);
+  if (set.has(key)) return false;
+  set.add(key);
+  _persist(set);
+  return true;
+}
+
+/**
+ * Seed le set avec les ids du backlog (commandes déjà présentes au montage), SANS
+ * imprimer. Empêche une ré-impression massive au reload/reconnexion.
+ */
+function seedKitchenPrinted(orderIds) {
+  var set = _load();
+  var changed = false;
+  (orderIds || []).forEach(function (id) {
+    if (id == null) return;
+    var key = String(id);
+    if (!set.has(key)) {
+      set.add(key);
+      changed = true;
+    }
+  });
+  if (changed) _persist(set);
+}
+
+/** Test-only : réinitialise la garde (mémoire — ne touche pas localStorage). */
+function _resetPrintedKitchen() {
+  _printed = null;
+}
+
+// ── Liste d'ÉCHEC persistée ───────────────────────────────────────────────────
+// [SUPERVISOR-HEAL 2026-07-13] Les tickets cuisine dont l'impression a ÉCHOUÉ (pont/
+// imprimante KO) doivent survivre à un reload pendant la panne : sinon le seed du
+// backlog les marquerait « imprimés » et ils seraient PERDUS à vie. On persiste donc
+// la liste d'échec, aussi durable que la dé-dup ; au montage, ces ids sont exclus du
+// seed et restent à réessayer (retry auto) → 0 ticket perdu même après un F5.
+var FAILED_LS_KEY = 'kds.failedKitchenIds';
+var FAILED_MAX = 500;
+
+/** Charge la liste d'ids cuisine en échec persistée (survit au reload). @return {string[]} */
+function getKitchenFailed() {
+  try {
+    var raw = window.localStorage.getItem(FAILED_LS_KEY);
+    if (raw) {
+      var a = JSON.parse(raw);
+      if (Array.isArray(a)) return a.map(function (id) {
+        return String(id);
+      });
+    }
+  } catch (_) {/* mémoire seule */}
+  return [];
+}
+
+/** Persiste la liste d'ids cuisine en échec (bornée aux N derniers). */
+function setKitchenFailed(ids) {
+  try {
+    window.localStorage.setItem(FAILED_LS_KEY, JSON.stringify((ids || []).map(function (id) {
+      return String(id);
+    }).slice(-FAILED_MAX)));
+  } catch (_) {/* private mode / quota */}
+}
+
+/***/ },
+
+/***/ "./resources/js/services/KdsSyncService.js"
+/*!*************************************************!*\
+  !*** ./resources/js/services/KdsSyncService.js ***!
+  \*************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   KDS_SYNC_STATE: () => (/* binding */ KDS_SYNC_STATE),
+/* harmony export */   KdsSyncService: () => (/* binding */ KdsSyncService),
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _config_env__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../config/env */ "./resources/js/config/env.js");
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
+function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+function _classCallCheck(a, n) { if (!(a instanceof n)) throw new TypeError("Cannot call a class as a function"); }
+function _defineProperties(e, r) { for (var t = 0; t < r.length; t++) { var o = r[t]; o.enumerable = o.enumerable || !1, o.configurable = !0, "value" in o && (o.writable = !0), Object.defineProperty(e, _toPropertyKey(o.key), o); } }
+function _createClass(e, r, t) { return r && _defineProperties(e.prototype, r), t && _defineProperties(e, t), Object.defineProperty(e, "prototype", { writable: !1 }), e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+/**
+ * F-03 / NEW-02 / NEW-04
+ * Authority: plans/MEGA_PLAN_SYNC_HARDENING_v3_2026-04-23.md
+ */
+
+
+var KDS_SYNC_STATE = {
+  IDLE: 'IDLE',
+  ACTIVE: 'ACTIVE',
+  BACKOFF: 'BACKOFF',
+  STOPPED: 'STOPPED'
+};
+var WS_CONNECTED = 'CONNECTED';
+var WS_RECONNECTING = 'RECONNECTING';
+var WS_DEGRADED = 'DEGRADED';
+var WS_DISCONNECTED = 'DISCONNECTED';
+var WS_SESSION_INVALID = 'SESSION_INVALID';
+// [Wave 3 P1 / KDS-RED-09 2026-05-18] Safe cadence floor — 4 req/s max per
+// station. Mirrors config/catalog_v15.php clamp; protects against owner
+// misconfig (FK_CATALOG_KDS_*=10 → ~80 req/s/station DoS).
+// [Wave 3b P1 / KDS-ADV3B-04 2026-05-18] Upper cap 60_000ms base / 30_000ms
+// jitter protects against silent-blind misconfig (e.g. =999999999 → 11.5d).
+var CADENCE_FLOOR_MS = 250;
+var CADENCE_CEILING_MS = 60000;
+var JITTER_CEILING_MS = 30000;
+var DEFAULT_CADENCE_OPTIONS = Object.freeze({
+  highActivityBaseMs: 3000,
+  highActivityJitterMs: 1000,
+  degradedBaseMs: 5000,
+  degradedJitterMs: 2000,
+  disconnectedBaseMs: 10000,
+  disconnectedJitterMs: 3000
+});
+var KdsSyncService = /*#__PURE__*/function () {
+  function KdsSyncService() {
+    var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
+      _ref$wsService = _ref.wsService,
+      wsService = _ref$wsService === void 0 ? typeof window !== 'undefined' ? window._wsService : null : _ref$wsService,
+      fetchFn = _ref.fetchFn,
+      now = _ref.now;
+    _classCallCheck(this, KdsSyncService);
+    this.wsService = wsService || null;
+    this.fetchFn = fetchFn || (typeof window !== 'undefined' && window.fetch ? window.fetch.bind(window) : null);
+    this.now = now || function () {
+      return Date.now();
+    };
+    this._listeners = new Map();
+    this._state = KDS_SYNC_STATE.IDLE;
+    this._started = false;
+    this._branchId = null;
+    this._lastSyncAt = null;
+    this._currentIntervalMs = Infinity;
+    this._timer = null;
+    this._driftTimer = null;
+    this._abortController = null;
+    this._wsUnsubscribers = [];
+    this._lastSince = null;
+    this._versionMap = new Map();
+    this._versionOrder = [];
+    this._maxVersionEntries = 256;
+    this._highActivityUntil = 0;
+    this._consecutive5xx = 0;
+    this._cadenceOptions = this._runtimeCadenceOptions();
+  }
+  return _createClass(KdsSyncService, [{
+    key: "state",
+    get: function get() {
+      return this._state;
+    }
+  }, {
+    key: "lastSyncAt",
+    get: function get() {
+      return this._lastSyncAt;
+    }
+  }, {
+    key: "currentIntervalMs",
+    get: function get() {
+      return this._currentIntervalMs;
+    }
+  }, {
+    key: "on",
+    value: function on(eventName, callback) {
+      if (!this._listeners.has(eventName)) {
+        this._listeners.set(eventName, new Set());
+      }
+      var set = this._listeners.get(eventName);
+      set.add(callback);
+      return function () {
+        set["delete"](callback);
+      };
+    }
+  }, {
+    key: "start",
+    value: function start(branchId) {
+      if (this._started) {
+        return;
+      }
+      this._started = true;
+      this._branchId = branchId;
+      this._lastSince = this._lastSince || new Date(this.now()).toISOString();
+      this._setState(KDS_SYNC_STATE.IDLE);
+      this._bindWsState();
+      this._recomputeCadence('initial');
+    }
+  }, {
+    key: "stop",
+    value: function stop() {
+      if (!this._started && this._state === KDS_SYNC_STATE.STOPPED) {
+        return;
+      }
+      this._started = false;
+      this._branchId = null;
+      this._clearTimers();
+      if (this._abortController) {
+        this._abortController.abort();
+        this._abortController = null;
+      }
+      this._wsUnsubscribers.forEach(function (unsubscribe) {
+        return unsubscribe && unsubscribe();
+      });
+      this._wsUnsubscribers = [];
+      this._setState(KDS_SYNC_STATE.STOPPED);
+    }
+  }, {
+    key: "forceSync",
+    value: function () {
+      var _forceSync = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
+        var _this = this;
+        var signal, branchQuery, headers, apiBase, response, payload, previousState, gatedIds, orders, syncPayload, _t;
+        return _regenerator().w(function (_context) {
+          while (1) switch (_context.p = _context.n) {
+            case 0:
+              if (this.fetchFn) {
+                _context.n = 1;
+                break;
+              }
+              throw new Error('No fetch implementation available.');
+            case 1:
+              if (!this._lastSince) {
+                this._lastSince = new Date(this.now()).toISOString();
+              }
+              if (this._abortController) {
+                this._abortController.abort();
+              }
+              this._abortController = new AbortController();
+              signal = this._abortController.signal;
+              _context.p = 2;
+              branchQuery = this._branchId !== null && this._branchId !== undefined ? "&branch_id=".concat(encodeURIComponent(this._branchId)) : '';
+              headers = this._authHeaders(); // [HEAL 2026-05-27] Skip polling tick if auth token not yet hydrated
+              // from Vuex/localStorage. Avoids 401 on the very first poll fired
+              // before Vuex-persistedstate has restored authToken on page load.
+              // Next tick will retry naturally when token is available.
+              if (headers.Authorization) {
+                _context.n = 3;
+                break;
+              }
+              return _context.a(2, null);
+            case 3:
+              // [visual-round-1 P2 fix 2026-07-07] Build the poll URL on the SAME
+              // origin the rest of the admin app uses (axios baseURL = ENV.API_URL
+              // + '/api', see shared/axios-setup.js). Previously this used a bare
+              // relative `/api/...` which resolves against window.location.origin.
+              // In a split-host dev setup (page on one port, API on another) that
+              // sends the Bearer poll to the wrong origin → 401 and a silently
+              // blind KDS. In same-origin prod ENV.API_URL === window origin, so
+              // this is a no-op there; it only realigns the split-host case.
+              apiBase = (_config_env__WEBPACK_IMPORTED_MODULE_0__["default"].API_URL || '').replace(/\/$/, '');
+              _context.n = 4;
+              return this.fetchFn("".concat(apiBase, "/api/admin/kds-order/sync?since=").concat(encodeURIComponent(this._lastSince)).concat(branchQuery, "&include_deleted=true"), {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: headers,
+                signal: signal
+              });
+            case 4:
+              response = _context.v;
+              if (!(signal.aborted || !this._started)) {
+                _context.n = 5;
+                break;
+              }
+              return _context.a(2, null);
+            case 5:
+              if (response.ok) {
+                _context.n = 7;
+                break;
+              }
+              _context.n = 6;
+              return this._handleHttpError(response);
+            case 6:
+              return _context.a(2, null);
+            case 7:
+              _context.n = 8;
+              return response.json();
+            case 8:
+              payload = _context.v;
+              if (!(signal.aborted || !this._started)) {
+                _context.n = 9;
+                break;
+              }
+              return _context.a(2, null);
+            case 9:
+              this._consecutive5xx = 0;
+              previousState = this._state;
+              this._setState(KDS_SYNC_STATE.ACTIVE);
+              if (previousState === KDS_SYNC_STATE.BACKOFF) {
+                this._recomputeCadence('reset_after_200');
+              }
+              gatedIds = [];
+              orders = (payload.orders || []).map(function (order) {
+                var version = Number(order.version || 0);
+                var previousVersion = _this._versionMap.get(order.id);
+                var gated = previousVersion !== undefined && version <= previousVersion;
+                if (gated) {
+                  gatedIds.push(order.id);
+                  return _objectSpread(_objectSpread({}, order), {}, {
+                    versionGated: true
+                  });
+                }
+                _this._rememberVersion(order.id, version);
+                return _objectSpread(_objectSpread({}, order), {}, {
+                  versionGated: false
+                });
+              });
+              if (orders.filter(function (order) {
+                return !order.versionGated;
+              }).length > 5) {
+                this._highActivityUntil = this.now() + 60000;
+              }
+              this._lastSyncAt = payload.server_now || new Date(this.now()).toISOString();
+              this._lastSince = this._lastSyncAt;
+              syncPayload = {
+                orders: orders,
+                deleted_ids: payload.deleted_ids || [],
+                server_now: payload.server_now,
+                lastSyncAt: this._lastSyncAt,
+                gatedIds: gatedIds
+              };
+              this._emit('sync', syncPayload);
+              this._recomputeCadence('post_sync');
+              return _context.a(2, payload);
+            case 10:
+              _context.p = 10;
+              _t = _context.v;
+              if (!((_t === null || _t === void 0 ? void 0 : _t.name) === 'AbortError')) {
+                _context.n = 11;
+                break;
+              }
+              return _context.a(2, null);
+            case 11:
+              this._emit('error', {
+                status: null,
+                message: (_t === null || _t === void 0 ? void 0 : _t.message) || 'Sync failed',
+                willRetryInMs: Number.isFinite(this._currentIntervalMs) ? this._currentIntervalMs : 0
+              });
+
+              // [F-03 / Lot 1.C / Audit G1 fix] Network-level errors (DNS, TLS,
+              // ERR_NETWORK_CHANGED) MUST not silently halt the poll loop.
+              // Re-schedule with the current cadence so the KDS self-heals once
+              // connectivity returns; without this, a concurrent WS+HTTP outage
+              // would leave the kitchen permanently blind.
+              try {
+                this._schedule();
+              } catch (e) {/* defensive: never throw from catch path */}
+
+              // Do not rethrow here: KDS sync runs as a background task and
+              // bubbling network/Axios-like errors to the global scope creates
+              // noisy unhandled rejections in runtime audits while auto-retry
+              // is already scheduled.
+              return _context.a(2, null);
+          }
+        }, _callee, this, [[2, 10]]);
+      }));
+      function forceSync() {
+        return _forceSync.apply(this, arguments);
+      }
+      return forceSync;
+    }()
+  }, {
+    key: "_bindWsState",
+    value: function _bindWsState() {
+      var _this2 = this;
+      if (!this.wsService || typeof this.wsService.on !== 'function') {
+        return;
+      }
+      var unsubscribe = this.wsService.on('state_change', function () {
+        var _ref2 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
+          from = _ref2.from,
+          to = _ref2.to;
+        _this2._emit('state_change', {
+          from: from,
+          to: to
+        });
+        _this2._recomputeCadence(_this2._reasonFromWsState(to || _this2.wsService.state));
+      });
+      this._wsUnsubscribers.push(unsubscribe);
+
+      // [NEW-02] React to a wsService-detected reconnect storm: bypass the
+      // normal state_change cycle and run a single forceSync() so the
+      // kitchen does not go blind during the cool-down window. We
+      // intentionally do NOT alter the cadence formula — the next scheduled
+      // poll keeps the WS_DEGRADED/WS_DISCONNECTED interval, which is
+      // already short enough to bridge the breaker timeout.
+      //
+      // [NEW-02 audit G10] When the broadcasting server restarts, every
+      // KDS station receives `reconnect_storm` simultaneously. Without
+      // client-side jitter, all 50+ kitchens would hit
+      // /api/admin/kds-order/sync at the same instant — server-side
+      // Cache::remember softens the cost but the burst still amplifies
+      // during an incident. We add a 0–500ms uniform jitter to spread
+      // the herd; the breaker delay is 5–30s so 500ms is negligible from
+      // the user's perspective.
+      var unsubscribeStorm = this.wsService.on('reconnect_storm', function () {
+        var payload = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+        _this2._emit('reconnect_storm', payload);
+        var jitterMs = Math.floor(Math.random() * 500);
+        var runForceSync = function runForceSync() {
+          try {
+            var result = _this2.forceSync();
+            if (result && typeof result["catch"] === 'function') {
+              result["catch"](function () {/* swallowed: 'error' listener handles it */});
+            }
+          } catch (_) {/* defensive: never propagate from event handler */}
+        };
+        if (jitterMs <= 0) {
+          runForceSync();
+        } else {
+          setTimeout(runForceSync, jitterMs);
+        }
+      });
+      this._wsUnsubscribers.push(unsubscribeStorm);
+    }
+  }, {
+    key: "_reasonFromWsState",
+    value: function _reasonFromWsState(state) {
+      if (state === WS_CONNECTED) {
+        return 'ws_connected';
+      }
+      if (state === WS_RECONNECTING || state === WS_DEGRADED) {
+        return 'ws_degraded';
+      }
+      if (state === WS_DISCONNECTED || state === WS_SESSION_INVALID) {
+        return 'ws_disconnected';
+      }
+      return 'ws_disconnected';
+    }
+  }, {
+    key: "_baseCadence",
+    value: function _baseCadence() {
+      var _this$wsService;
+      var wsState = (_this$wsService = this.wsService) === null || _this$wsService === void 0 ? void 0 : _this$wsService.state;
+      var cfg = this._cadenceOptions;
+      if (wsState === WS_CONNECTED) {
+        return {
+          interval: Infinity,
+          reason: 'ws_connected'
+        };
+      }
+      if (wsState === WS_RECONNECTING || wsState === WS_DEGRADED) {
+        if (this.now() < this._highActivityUntil) {
+          return {
+            interval: cfg.highActivityBaseMs + this._jitter(cfg.highActivityJitterMs),
+            reason: 'high_activity'
+          };
+        }
+        return {
+          interval: cfg.degradedBaseMs + this._jitter(cfg.degradedJitterMs),
+          reason: 'ws_degraded'
+        };
+      }
+      if (wsState === WS_DISCONNECTED || wsState === WS_SESSION_INVALID) {
+        if (this.now() < this._highActivityUntil) {
+          return {
+            interval: cfg.highActivityBaseMs + this._jitter(cfg.highActivityJitterMs),
+            reason: 'high_activity'
+          };
+        }
+        return {
+          interval: cfg.disconnectedBaseMs + this._jitter(cfg.disconnectedJitterMs),
+          reason: 'ws_disconnected'
+        };
+      }
+      return {
+        interval: cfg.disconnectedBaseMs + this._jitter(cfg.disconnectedJitterMs),
+        reason: 'ws_disconnected'
+      };
+    }
+  }, {
+    key: "_recomputeCadence",
+    value: function _recomputeCadence() {
+      var reasonOverride = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
+      if (!this._started) {
+        return;
+      }
+      var previous = this._currentIntervalMs;
+      var _this$_baseCadence = this._baseCadence(),
+        interval = _this$_baseCadence.interval,
+        reason = _this$_baseCadence.reason;
+      var next = this._state === KDS_SYNC_STATE.BACKOFF ? Math.min(Number.isFinite(previous) ? previous * 2 : interval * 2, 30000) : interval;
+      var emittedReason = this._state === KDS_SYNC_STATE.BACKOFF ? 'backoff_5xx' : reasonOverride && reasonOverride !== 'post_sync' && reasonOverride !== 'initial' ? reasonOverride : reason;
+      this._currentIntervalMs = next;
+      this._schedule();
+      if (previous !== next) {
+        this._emit('cadence_change', {
+          from: previous,
+          to: next,
+          reason: emittedReason
+        });
+      }
+    }
+  }, {
+    key: "_schedule",
+    value: function _schedule() {
+      var _this3 = this;
+      this._clearTimers();
+      if (!this._started) {
+        return;
+      }
+      if (this._currentIntervalMs === Infinity) {
+        this._driftTimer = setTimeout(function () {
+          if (!_this3._started) {
+            return;
+          }
+          _this3.forceSync()["catch"](function () {});
+          _this3._schedule();
+        }, 60000);
+        return;
+      }
+      this._timer = setTimeout(function () {
+        if (!_this3._started) {
+          return;
+        }
+        _this3.forceSync()["catch"](function () {});
+      }, this._currentIntervalMs);
+    }
+  }, {
+    key: "_handleHttpError",
+    value: function () {
+      var _handleHttpError2 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2(response) {
+        var is5xx, previous, base;
+        return _regenerator().w(function (_context2) {
+          while (1) switch (_context2.n) {
+            case 0:
+              is5xx = response.status >= 500 && response.status <= 599;
+              if (is5xx) {
+                this._consecutive5xx += 1;
+                this._setState(KDS_SYNC_STATE.BACKOFF);
+                previous = this._currentIntervalMs;
+                base = Number.isFinite(previous) ? previous : this._baseCadence().interval;
+                this._currentIntervalMs = Math.min(base * 2, 30000);
+                this._schedule();
+                this._emit('cadence_change', {
+                  from: previous,
+                  to: this._currentIntervalMs,
+                  reason: 'backoff_5xx'
+                });
+              }
+              this._emit('error', {
+                status: response.status,
+                message: "KDS sync failed with status ".concat(response.status),
+                willRetryInMs: Number.isFinite(this._currentIntervalMs) ? this._currentIntervalMs : 0
+              });
+            case 1:
+              return _context2.a(2);
+          }
+        }, _callee2, this);
+      }));
+      function _handleHttpError(_x) {
+        return _handleHttpError2.apply(this, arguments);
+      }
+      return _handleHttpError;
+    }()
+  }, {
+    key: "_rememberVersion",
+    value: function _rememberVersion(id, version) {
+      if (!this._versionMap.has(id)) {
+        this._versionOrder.push(id);
+      }
+      this._versionMap.set(id, version);
+      while (this._versionOrder.length > this._maxVersionEntries) {
+        var oldestId = this._versionOrder.shift();
+        if (oldestId !== undefined) {
+          this._versionMap["delete"](oldestId);
+        }
+      }
+    }
+  }, {
+    key: "_setState",
+    value: function _setState(next) {
+      this._state = next;
+    }
+  }, {
+    key: "_authHeaders",
+    value: function _authHeaders() {
+      var headers = {
+        Accept: 'application/json',
+        'x-api-key': _config_env__WEBPACK_IMPORTED_MODULE_0__["default"].API_KEY
+      };
+      try {
+        var _vuex$kioskCart, _vuex$auth, _vuex$globalState;
+        var vuex = JSON.parse(localStorage.getItem('vuex') || '{}');
+        // [visual-round-2 N3 fix 2026-07-07] Pick the Bearer token with the
+        // EXACT same surface-aware precedence the shared axios interceptor
+        // uses (shared/axios-setup.js `selectSurfaceBearerToken`): OFF the
+        // /kiosk surface the STAFF/admin token wins, on /kiosk the kiosk
+        // token wins. The KDS board is an ADMIN surface
+        // (/admin/kitchen-display-system, /kds) so it MUST send the staff
+        // token. The previous kiosk-token-first order
+        // (kioskCart.kioskToken || auth.authToken) diverged from axios: when
+        // a prior kiosk session left a `kiosk:order` token in localStorage,
+        // this poll shipped that token to /api/admin/kds-order/sync and got
+        // 401 (silently-blind KDS) while every other admin axios call sent
+        // the right token and got 200. Same-origin prod is unaffected — the
+        // selection is identical to what axios already resolves.
+        var kioskToken = ((_vuex$kioskCart = vuex.kioskCart) === null || _vuex$kioskCart === void 0 ? void 0 : _vuex$kioskCart.kioskToken) || '';
+        var userToken = ((_vuex$auth = vuex.auth) === null || _vuex$auth === void 0 ? void 0 : _vuex$auth.authToken) || '';
+        var path = typeof window !== 'undefined' && window.location ? window.location.pathname || '' : '';
+        var isKioskSurface = path.startsWith('/kiosk');
+        var token = isKioskSurface ? kioskToken || userToken : userToken || kioskToken;
+        var language = ((_vuex$globalState = vuex.globalState) === null || _vuex$globalState === void 0 || (_vuex$globalState = _vuex$globalState.lists) === null || _vuex$globalState === void 0 ? void 0 : _vuex$globalState.language_code) || null;
+        if (token) {
+          headers.Authorization = "Bearer ".concat(token);
+        }
+        if (language) {
+          headers['x-localization'] = language;
+          headers['Accept-Language'] = language;
+        }
+      } catch (_) {/* corrupted localStorage falls back to unauthenticated headers */}
+      return headers;
+    }
+  }, {
+    key: "_clearTimers",
+    value: function _clearTimers() {
+      if (this._timer) {
+        clearTimeout(this._timer);
+        this._timer = null;
+      }
+      if (this._driftTimer) {
+        clearTimeout(this._driftTimer);
+        this._driftTimer = null;
+      }
+    }
+  }, {
+    key: "_emit",
+    value: function _emit(eventName, payload) {
+      var listeners = this._listeners.get(eventName);
+      if (!listeners) {
+        return;
+      }
+      listeners.forEach(function (callback) {
+        return callback(payload);
+      });
+    }
+  }, {
+    key: "_jitter",
+    value: function _jitter(max) {
+      return Math.floor(Math.random() * (max + 1));
+    }
+  }, {
+    key: "_runtimeCadenceOptions",
+    value: function _runtimeCadenceOptions() {
+      var _window$foodkingConfi;
+      var cfg = typeof window !== 'undefined' && (_window$foodkingConfi = window.foodkingConfig) !== null && _window$foodkingConfi !== void 0 && _window$foodkingConfi.kdsFallbackPolling ? window.foodkingConfig.kdsFallbackPolling : {};
+
+      // [Wave 3 P1 / KDS-RED-09 2026-05-18] Base cadences are clamped to
+      // CADENCE_FLOOR_MS (250ms = 4 req/s) so an owner-misconfig like
+      // window.foodkingConfig.kdsFallbackPolling.disconnectedBaseMs=10 cannot
+      // weaponize the polling loop into PHP-FPM saturation. Jitters keep a
+      // 0 floor since they widen — never shorten — the wait.
+      // [Wave 3b P1 / KDS-ADV3B-04 2026-05-18] Upper cap CADENCE_CEILING_MS
+      // (60_000ms = 1 poll/min minimum) and JITTER_CEILING_MS (30_000ms)
+      // prevent the symmetric silent-blind misconfig where a runaway value
+      // (e.g. disconnectedBaseMs=999999999) would stall KDS for ~11.5 days.
+      var clampBase = function clampBase(value, fallback) {
+        var parsed = parseInt(value, 10);
+        var candidate = Number.isFinite(parsed) ? parsed : fallback;
+        var floored = candidate >= CADENCE_FLOOR_MS ? candidate : CADENCE_FLOOR_MS;
+        return floored <= CADENCE_CEILING_MS ? floored : CADENCE_CEILING_MS;
+      };
+      var clampJitter = function clampJitter(value, fallback) {
+        var parsed = parseInt(value, 10);
+        var candidate = Number.isFinite(parsed) ? parsed : fallback;
+        var floored = candidate >= 0 ? candidate : 0;
+        return floored <= JITTER_CEILING_MS ? floored : JITTER_CEILING_MS;
+      };
+      return {
+        highActivityBaseMs: clampBase(cfg.highActivityBaseMs, DEFAULT_CADENCE_OPTIONS.highActivityBaseMs),
+        highActivityJitterMs: clampJitter(cfg.highActivityJitterMs, DEFAULT_CADENCE_OPTIONS.highActivityJitterMs),
+        degradedBaseMs: clampBase(cfg.degradedBaseMs, DEFAULT_CADENCE_OPTIONS.degradedBaseMs),
+        degradedJitterMs: clampJitter(cfg.degradedJitterMs, DEFAULT_CADENCE_OPTIONS.degradedJitterMs),
+        disconnectedBaseMs: clampBase(cfg.disconnectedBaseMs, DEFAULT_CADENCE_OPTIONS.disconnectedBaseMs),
+        disconnectedJitterMs: clampJitter(cfg.disconnectedJitterMs, DEFAULT_CADENCE_OPTIONS.disconnectedJitterMs)
+      };
+    }
+  }]);
+}();
+var kdsSyncService = new KdsSyncService();
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (kdsSyncService);
+
+/***/ },
+
+/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue?vue&type=style&index=0&id=593d75f2&scoped=true&lang=css"
+/*!******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue?vue&type=style&index=0&id=593d75f2&scoped=true&lang=css ***!
+  \******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsHistoryDrawer_vue_vue_type_style_index_0_id_593d75f2_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsHistoryDrawer.vue?vue&type=style&index=0&id=593d75f2&scoped=true&lang=css */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue?vue&type=style&index=0&id=593d75f2&scoped=true&lang=css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsHistoryDrawer_vue_vue_type_style_index_0_id_593d75f2_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsHistoryDrawer_vue_vue_type_style_index_0_id_593d75f2_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ },
+
+/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=style&index=0&id=151558cb&scoped=true&lang=css"
+/*!**************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=style&index=0&id=151558cb&scoped=true&lang=css ***!
+  \**************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsOrderCard_vue_vue_type_style_index_0_id_151558cb_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsOrderCard.vue?vue&type=style&index=0&id=151558cb&scoped=true&lang=css */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=style&index=0&id=151558cb&scoped=true&lang=css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsOrderCard_vue_vue_type_style_index_0_id_151558cb_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsOrderCard_vue_vue_type_style_index_0_id_151558cb_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ },
+
+/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=style&index=0&id=5c6c7baf&scoped=true&lang=css"
+/*!**************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=style&index=0&id=5c6c7baf&scoped=true&lang=css ***!
+  \**************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsOrderLine_vue_vue_type_style_index_0_id_5c6c7baf_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsOrderLine.vue?vue&type=style&index=0&id=5c6c7baf&scoped=true&lang=css */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=style&index=0&id=5c6c7baf&scoped=true&lang=css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsOrderLine_vue_vue_type_style_index_0_id_5c6c7baf_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsOrderLine_vue_vue_type_style_index_0_id_5c6c7baf_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ },
+
+/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=style&index=0&id=665158fe&scoped=true&lang=css"
+/*!*****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=style&index=0&id=665158fe&scoped=true&lang=css ***!
+  \*****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsStatusBanner_vue_vue_type_style_index_0_id_665158fe_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsStatusBanner.vue?vue&type=style&index=0&id=665158fe&scoped=true&lang=css */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=style&index=0&id=665158fe&scoped=true&lang=css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsStatusBanner_vue_vue_type_style_index_0_id_665158fe_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsStatusBanner_vue_vue_type_style_index_0_id_665158fe_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ },
+
+/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=style&index=0&id=3992cfe5&scoped=true&lang=css"
+/*!***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=style&index=0&id=3992cfe5&scoped=true&lang=css ***!
+  \***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsV2Grid_vue_vue_type_style_index_0_id_3992cfe5_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsV2Grid.vue?vue&type=style&index=0&id=3992cfe5&scoped=true&lang=css */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=style&index=0&id=3992cfe5&scoped=true&lang=css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsV2Grid_vue_vue_type_style_index_0_id_3992cfe5_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsV2Grid_vue_vue_type_style_index_0_id_3992cfe5_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ },
+
+/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue?vue&type=style&index=0&id=66aac04e&scoped=true&lang=css"
+/*!*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue?vue&type=style&index=0&id=66aac04e&scoped=true&lang=css ***!
+  \*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KitchenDisplaySystemComponent_vue_vue_type_style_index_0_id_66aac04e_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KitchenDisplaySystemComponent.vue?vue&type=style&index=0&id=66aac04e&scoped=true&lang=css */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue?vue&type=style&index=0&id=66aac04e&scoped=true&lang=css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KitchenDisplaySystemComponent_vue_vue_type_style_index_0_id_66aac04e_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KitchenDisplaySystemComponent_vue_vue_type_style_index_0_id_66aac04e_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ },
+
+/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/shared/AvailabilityTogglePanel.vue?vue&type=style&index=0&id=06407ef6&scoped=true&lang=css"
+/*!***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/shared/AvailabilityTogglePanel.vue?vue&type=style&index=0&id=06407ef6&scoped=true&lang=css ***!
+  \***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_AvailabilityTogglePanel_vue_vue_type_style_index_0_id_06407ef6_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./AvailabilityTogglePanel.vue?vue&type=style&index=0&id=06407ef6&scoped=true&lang=css */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/shared/AvailabilityTogglePanel.vue?vue&type=style&index=0&id=06407ef6&scoped=true&lang=css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_AvailabilityTogglePanel_vue_vue_type_style_index_0_id_06407ef6_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_AvailabilityTogglePanel_vue_vue_type_style_index_0_id_06407ef6_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ },
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue"
+/*!*********************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue ***!
+  \*********************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _KdsHistoryDrawer_vue_vue_type_template_id_593d75f2_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./KdsHistoryDrawer.vue?vue&type=template&id=593d75f2&scoped=true */ "./resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue?vue&type=template&id=593d75f2&scoped=true");
+/* harmony import */ var _KdsHistoryDrawer_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./KdsHistoryDrawer.vue?vue&type=script&lang=js */ "./resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue?vue&type=script&lang=js");
+/* harmony import */ var _KdsHistoryDrawer_vue_vue_type_style_index_0_id_593d75f2_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./KdsHistoryDrawer.vue?vue&type=style&index=0&id=593d75f2&scoped=true&lang=css */ "./resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue?vue&type=style&index=0&id=593d75f2&scoped=true&lang=css");
+/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
+
+
+
+
+;
+
+
+const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__["default"])(_KdsHistoryDrawer_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_KdsHistoryDrawer_vue_vue_type_template_id_593d75f2_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render],['__scopeId',"data-v-593d75f2"],['__file',"resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue"]])
+/* hot reload */
+if (false) // removed by dead control flow
+{}
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
+
+/***/ },
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue"
+/*!*****************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue ***!
+  \*****************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _KdsOrderCard_vue_vue_type_template_id_151558cb_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./KdsOrderCard.vue?vue&type=template&id=151558cb&scoped=true */ "./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=template&id=151558cb&scoped=true");
+/* harmony import */ var _KdsOrderCard_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./KdsOrderCard.vue?vue&type=script&lang=js */ "./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=script&lang=js");
+/* harmony import */ var _KdsOrderCard_vue_vue_type_style_index_0_id_151558cb_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./KdsOrderCard.vue?vue&type=style&index=0&id=151558cb&scoped=true&lang=css */ "./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=style&index=0&id=151558cb&scoped=true&lang=css");
+/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
+
+
+
+
+;
+
+
+const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__["default"])(_KdsOrderCard_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_KdsOrderCard_vue_vue_type_template_id_151558cb_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render],['__scopeId',"data-v-151558cb"],['__file',"resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue"]])
+/* hot reload */
+if (false) // removed by dead control flow
+{}
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
+
+/***/ },
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue"
+/*!*****************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue ***!
+  \*****************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _KdsOrderLine_vue_vue_type_template_id_5c6c7baf_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./KdsOrderLine.vue?vue&type=template&id=5c6c7baf&scoped=true */ "./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=template&id=5c6c7baf&scoped=true");
+/* harmony import */ var _KdsOrderLine_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./KdsOrderLine.vue?vue&type=script&lang=js */ "./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=script&lang=js");
+/* harmony import */ var _KdsOrderLine_vue_vue_type_style_index_0_id_5c6c7baf_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./KdsOrderLine.vue?vue&type=style&index=0&id=5c6c7baf&scoped=true&lang=css */ "./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=style&index=0&id=5c6c7baf&scoped=true&lang=css");
+/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
+
+
+
+
+;
+
+
+const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__["default"])(_KdsOrderLine_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_KdsOrderLine_vue_vue_type_template_id_5c6c7baf_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render],['__scopeId',"data-v-5c6c7baf"],['__file',"resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue"]])
+/* hot reload */
+if (false) // removed by dead control flow
+{}
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
+
+/***/ },
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue"
+/*!********************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue ***!
+  \********************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _KdsStatusBanner_vue_vue_type_template_id_665158fe_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./KdsStatusBanner.vue?vue&type=template&id=665158fe&scoped=true */ "./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=template&id=665158fe&scoped=true");
+/* harmony import */ var _KdsStatusBanner_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./KdsStatusBanner.vue?vue&type=script&lang=js */ "./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=script&lang=js");
+/* harmony import */ var _KdsStatusBanner_vue_vue_type_style_index_0_id_665158fe_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./KdsStatusBanner.vue?vue&type=style&index=0&id=665158fe&scoped=true&lang=css */ "./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=style&index=0&id=665158fe&scoped=true&lang=css");
+/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
+
+
+
+
+;
+
+
+const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__["default"])(_KdsStatusBanner_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_KdsStatusBanner_vue_vue_type_template_id_665158fe_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render],['__scopeId',"data-v-665158fe"],['__file',"resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue"]])
+/* hot reload */
+if (false) // removed by dead control flow
+{}
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
+
+/***/ },
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue"
+/*!**************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue ***!
+  \**************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _KdsV2Grid_vue_vue_type_template_id_3992cfe5_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./KdsV2Grid.vue?vue&type=template&id=3992cfe5&scoped=true */ "./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=template&id=3992cfe5&scoped=true");
+/* harmony import */ var _KdsV2Grid_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./KdsV2Grid.vue?vue&type=script&lang=js */ "./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=script&lang=js");
+/* harmony import */ var _KdsV2Grid_vue_vue_type_style_index_0_id_3992cfe5_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./KdsV2Grid.vue?vue&type=style&index=0&id=3992cfe5&scoped=true&lang=css */ "./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=style&index=0&id=3992cfe5&scoped=true&lang=css");
+/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
+
+
+
+
+;
+
+
+const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__["default"])(_KdsV2Grid_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_KdsV2Grid_vue_vue_type_template_id_3992cfe5_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render],['__scopeId',"data-v-3992cfe5"],['__file',"resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue"]])
+/* hot reload */
+if (false) // removed by dead control flow
+{}
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
+
+/***/ },
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue"
+/*!**********************************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue ***!
+  \**********************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _KitchenDisplaySystemComponent_vue_vue_type_template_id_66aac04e_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./KitchenDisplaySystemComponent.vue?vue&type=template&id=66aac04e&scoped=true */ "./resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue?vue&type=template&id=66aac04e&scoped=true");
+/* harmony import */ var _KitchenDisplaySystemComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./KitchenDisplaySystemComponent.vue?vue&type=script&lang=js */ "./resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue?vue&type=script&lang=js");
+/* harmony import */ var _KitchenDisplaySystemComponent_vue_vue_type_style_index_0_id_66aac04e_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./KitchenDisplaySystemComponent.vue?vue&type=style&index=0&id=66aac04e&scoped=true&lang=css */ "./resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue?vue&type=style&index=0&id=66aac04e&scoped=true&lang=css");
+/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
+
+
+
+
+;
+
+
+const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__["default"])(_KitchenDisplaySystemComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_KitchenDisplaySystemComponent_vue_vue_type_template_id_66aac04e_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render],['__scopeId',"data-v-66aac04e"],['__file',"resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue"]])
+/* hot reload */
+if (false) // removed by dead control flow
+{}
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
+
+/***/ },
+
+/***/ "./resources/js/components/admin/shared/AvailabilityTogglePanel.vue"
+/*!**************************************************************************!*\
+  !*** ./resources/js/components/admin/shared/AvailabilityTogglePanel.vue ***!
+  \**************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _AvailabilityTogglePanel_vue_vue_type_template_id_06407ef6_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./AvailabilityTogglePanel.vue?vue&type=template&id=06407ef6&scoped=true */ "./resources/js/components/admin/shared/AvailabilityTogglePanel.vue?vue&type=template&id=06407ef6&scoped=true");
+/* harmony import */ var _AvailabilityTogglePanel_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./AvailabilityTogglePanel.vue?vue&type=script&lang=js */ "./resources/js/components/admin/shared/AvailabilityTogglePanel.vue?vue&type=script&lang=js");
+/* harmony import */ var _AvailabilityTogglePanel_vue_vue_type_style_index_0_id_06407ef6_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./AvailabilityTogglePanel.vue?vue&type=style&index=0&id=06407ef6&scoped=true&lang=css */ "./resources/js/components/admin/shared/AvailabilityTogglePanel.vue?vue&type=style&index=0&id=06407ef6&scoped=true&lang=css");
+/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
+
+
+
+
+;
+
+
+const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__["default"])(_AvailabilityTogglePanel_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_AvailabilityTogglePanel_vue_vue_type_template_id_06407ef6_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render],['__scopeId',"data-v-06407ef6"],['__file',"resources/js/components/admin/shared/AvailabilityTogglePanel.vue"]])
+/* hot reload */
+if (false) // removed by dead control flow
+{}
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
+
+/***/ },
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue?vue&type=script&lang=js"
+/*!*********************************************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue?vue&type=script&lang=js ***!
+  \*********************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsHistoryDrawer_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsHistoryDrawer_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsHistoryDrawer.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue?vue&type=script&lang=js");
+ 
+
+/***/ },
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=script&lang=js"
+/*!*****************************************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=script&lang=js ***!
+  \*****************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsOrderCard_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsOrderCard_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsOrderCard.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=script&lang=js");
+ 
+
+/***/ },
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=script&lang=js"
+/*!*****************************************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=script&lang=js ***!
+  \*****************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsOrderLine_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsOrderLine_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsOrderLine.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=script&lang=js");
+ 
+
+/***/ },
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=script&lang=js"
+/*!********************************************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=script&lang=js ***!
+  \********************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsStatusBanner_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsStatusBanner_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsStatusBanner.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=script&lang=js");
+ 
+
+/***/ },
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=script&lang=js"
+/*!**************************************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=script&lang=js ***!
+  \**************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsV2Grid_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsV2Grid_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsV2Grid.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=script&lang=js");
+ 
+
+/***/ },
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue?vue&type=script&lang=js"
+/*!**********************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue?vue&type=script&lang=js ***!
+  \**********************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KitchenDisplaySystemComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KitchenDisplaySystemComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KitchenDisplaySystemComponent.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue?vue&type=script&lang=js");
+ 
+
+/***/ },
+
+/***/ "./resources/js/components/admin/shared/AvailabilityTogglePanel.vue?vue&type=script&lang=js"
+/*!**************************************************************************************************!*\
+  !*** ./resources/js/components/admin/shared/AvailabilityTogglePanel.vue?vue&type=script&lang=js ***!
+  \**************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_AvailabilityTogglePanel_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_AvailabilityTogglePanel_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./AvailabilityTogglePanel.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/shared/AvailabilityTogglePanel.vue?vue&type=script&lang=js");
+ 
+
+/***/ },
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue?vue&type=template&id=593d75f2&scoped=true"
+/*!***************************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue?vue&type=template&id=593d75f2&scoped=true ***!
+  \***************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsHistoryDrawer_vue_vue_type_template_id_593d75f2_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsHistoryDrawer_vue_vue_type_template_id_593d75f2_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsHistoryDrawer.vue?vue&type=template&id=593d75f2&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue?vue&type=template&id=593d75f2&scoped=true");
+
+
+/***/ },
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=template&id=151558cb&scoped=true"
+/*!***********************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=template&id=151558cb&scoped=true ***!
+  \***********************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsOrderCard_vue_vue_type_template_id_151558cb_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsOrderCard_vue_vue_type_template_id_151558cb_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsOrderCard.vue?vue&type=template&id=151558cb&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=template&id=151558cb&scoped=true");
+
+
+/***/ },
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=template&id=5c6c7baf&scoped=true"
+/*!***********************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=template&id=5c6c7baf&scoped=true ***!
+  \***********************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsOrderLine_vue_vue_type_template_id_5c6c7baf_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsOrderLine_vue_vue_type_template_id_5c6c7baf_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsOrderLine.vue?vue&type=template&id=5c6c7baf&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=template&id=5c6c7baf&scoped=true");
+
+
+/***/ },
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=template&id=665158fe&scoped=true"
+/*!**************************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=template&id=665158fe&scoped=true ***!
+  \**************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsStatusBanner_vue_vue_type_template_id_665158fe_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsStatusBanner_vue_vue_type_template_id_665158fe_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsStatusBanner.vue?vue&type=template&id=665158fe&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=template&id=665158fe&scoped=true");
+
+
+/***/ },
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=template&id=3992cfe5&scoped=true"
+/*!********************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=template&id=3992cfe5&scoped=true ***!
+  \********************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsV2Grid_vue_vue_type_template_id_3992cfe5_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsV2Grid_vue_vue_type_template_id_3992cfe5_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsV2Grid.vue?vue&type=template&id=3992cfe5&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=template&id=3992cfe5&scoped=true");
+
+
+/***/ },
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue?vue&type=template&id=66aac04e&scoped=true"
+/*!****************************************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue?vue&type=template&id=66aac04e&scoped=true ***!
+  \****************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KitchenDisplaySystemComponent_vue_vue_type_template_id_66aac04e_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KitchenDisplaySystemComponent_vue_vue_type_template_id_66aac04e_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KitchenDisplaySystemComponent.vue?vue&type=template&id=66aac04e&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue?vue&type=template&id=66aac04e&scoped=true");
+
+
+/***/ },
+
+/***/ "./resources/js/components/admin/shared/AvailabilityTogglePanel.vue?vue&type=template&id=06407ef6&scoped=true"
+/*!********************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/shared/AvailabilityTogglePanel.vue?vue&type=template&id=06407ef6&scoped=true ***!
+  \********************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_AvailabilityTogglePanel_vue_vue_type_template_id_06407ef6_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_AvailabilityTogglePanel_vue_vue_type_template_id_06407ef6_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./AvailabilityTogglePanel.vue?vue&type=template&id=06407ef6&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/shared/AvailabilityTogglePanel.vue?vue&type=template&id=06407ef6&scoped=true");
+
+
+/***/ },
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue?vue&type=style&index=0&id=593d75f2&scoped=true&lang=css"
+/*!*****************************************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue?vue&type=style&index=0&id=593d75f2&scoped=true&lang=css ***!
+  \*****************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsHistoryDrawer_vue_vue_type_style_index_0_id_593d75f2_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/style-loader/dist/cjs.js!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsHistoryDrawer.vue?vue&type=style&index=0&id=593d75f2&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue?vue&type=style&index=0&id=593d75f2&scoped=true&lang=css");
+
+
+/***/ },
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=style&index=0&id=151558cb&scoped=true&lang=css"
+/*!*************************************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=style&index=0&id=151558cb&scoped=true&lang=css ***!
+  \*************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsOrderCard_vue_vue_type_style_index_0_id_151558cb_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/style-loader/dist/cjs.js!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsOrderCard.vue?vue&type=style&index=0&id=151558cb&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=style&index=0&id=151558cb&scoped=true&lang=css");
+
+
+/***/ },
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=style&index=0&id=5c6c7baf&scoped=true&lang=css"
+/*!*************************************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=style&index=0&id=5c6c7baf&scoped=true&lang=css ***!
+  \*************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsOrderLine_vue_vue_type_style_index_0_id_5c6c7baf_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/style-loader/dist/cjs.js!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsOrderLine.vue?vue&type=style&index=0&id=5c6c7baf&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=style&index=0&id=5c6c7baf&scoped=true&lang=css");
+
+
+/***/ },
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=style&index=0&id=665158fe&scoped=true&lang=css"
+/*!****************************************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=style&index=0&id=665158fe&scoped=true&lang=css ***!
+  \****************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsStatusBanner_vue_vue_type_style_index_0_id_665158fe_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/style-loader/dist/cjs.js!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsStatusBanner.vue?vue&type=style&index=0&id=665158fe&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=style&index=0&id=665158fe&scoped=true&lang=css");
+
+
+/***/ },
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=style&index=0&id=3992cfe5&scoped=true&lang=css"
+/*!**********************************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=style&index=0&id=3992cfe5&scoped=true&lang=css ***!
+  \**********************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsV2Grid_vue_vue_type_style_index_0_id_3992cfe5_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/style-loader/dist/cjs.js!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsV2Grid.vue?vue&type=style&index=0&id=3992cfe5&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=style&index=0&id=3992cfe5&scoped=true&lang=css");
+
+
+/***/ },
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue?vue&type=style&index=0&id=66aac04e&scoped=true&lang=css"
+/*!******************************************************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue?vue&type=style&index=0&id=66aac04e&scoped=true&lang=css ***!
+  \******************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KitchenDisplaySystemComponent_vue_vue_type_style_index_0_id_66aac04e_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/style-loader/dist/cjs.js!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KitchenDisplaySystemComponent.vue?vue&type=style&index=0&id=66aac04e&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue?vue&type=style&index=0&id=66aac04e&scoped=true&lang=css");
+
+
+/***/ },
+
+/***/ "./resources/js/components/admin/shared/AvailabilityTogglePanel.vue?vue&type=style&index=0&id=06407ef6&scoped=true&lang=css"
+/*!**********************************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/shared/AvailabilityTogglePanel.vue?vue&type=style&index=0&id=06407ef6&scoped=true&lang=css ***!
+  \**********************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_AvailabilityTogglePanel_vue_vue_type_style_index_0_id_06407ef6_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/style-loader/dist/cjs.js!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./AvailabilityTogglePanel.vue?vue&type=style&index=0&id=06407ef6&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/shared/AvailabilityTogglePanel.vue?vue&type=style&index=0&id=06407ef6&scoped=true&lang=css");
+
+
+/***/ }
+
+}]);
