@@ -31,4 +31,6 @@ Dual-team : 7 vérificateurs de parcours (probes API LIVE + adversaire) ‖ navi
 - **A-F2 / C-kds F4-F5 / E-admin P3** : terminal_id sans exists (mitigé par A-F1) ; recall queue_number:0 ; store↔quote soft-deleted ; POS Operator voit le CA (rôle a `dashboard`, acceptable V1 mono-poste où caissier=propriétaire).
 
 ## Verdict
-Les 7 parcours exécutés en RÉEL (API live + navigateur). **2 P1 healés+testés, 0 P1 restant.** P2/P3 disclosés (gates owner + latents V1 + artefacts DB). Frozen 0, chain NF525 OK. Convergence P1 atteinte.
+Les 7 parcours exécutés en RÉEL (API live + navigateur). **2 P1 healés+testés, 0 P1 restant.** P2/P3 disclosés (gates owner + latents V1 + artefacts DB). Frozen source 0, chain NF525 OK.
+
+**Suite finale : 3359 passed, 0 failed** (2 incomplete, 34 skipped). Les 2 défaillances du 1er run venaient de la **feature carnet CONCURRENTE de l'owner** (commits Kossay20 `b93c3208c`/`6ddbea7ff`, interleaved sur la même branche — carnet mini-app + rupture panel + rbac W1-W5), PAS de mes heals : (1) `DailyBookEntry` sans BranchScope → exemption déclarée (le modèle documente « PAS de BranchScope : V1 mono-branche »), `ea853b5cb` ; (2) `DailyBookSummaryTest` = flake d'isolation d'ordre-de-suite (passe en isolation + dans son dossier 11/11 ; non reproduit au run final). ⚠️ Bundles `public/js/*` non-commités = WIP frontend owner concurrent (non touchés). **Convergence atteinte.**
