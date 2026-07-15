@@ -1,0 +1,6 @@
+{"id":4,"name":"Stripe","slug":"stripe","misc":"{\"input\":[\"stripe.stripeInput.blade.php\"],\"js\":[\"stripe.stripeJs.blade.php\"],\"submit\":true}","status":10,"creator_type":null,"creator_id":null,"editor_type":null,"editor_id":null,"created_at":"2026-05-28 11:15:45","updated_at":"2026-05-28 11:15:45"}
+---ALL---
+1 | Cash On Delivery | status=5
+2 | Credit | status=5
+3 | Paypal | status=10
+4 | Stripe | status=10

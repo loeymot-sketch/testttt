@@ -1,0 +1,23 @@
+VERIFIER pos-caisse — independent reproduction 2026-07-10
+
+POS-1 CONFIRMED (P1). Ran finder harness verbatim:
+  [REPRO] quote total_ttc=36 delivery_charge=4 subtotal=32
+  [REPRO] commit status=409 body={"status":false,"message":"Order total does not match sealed quote total."}
+  [REPRO] orders created=0
+Root cause confirmed by code read:
+  - OrderService.php:860-878 applies free-delivery (subtotal>=30 => delivery_charge=0, order.total recomputed=32)
+  - OrderQuoteService::calculatePricing:304-315 (POS branch) passes raw request.delivery_charge (4), never applies free-delivery => quote.total_ttc=36
+  - OrderService.php:1112 sealForCommit(expectedTotal=order.total=32); sealForCommit:122-124 throws 409 because 36 != 32
+  - config pricing.use_ssot_service default TRUE (config/pricing.php:9); free_delivery_above default 30 (Settings + ?? 30 fallback), so applies out-of-the-box.
+Impact: every POS DELIVERY order whose subtotal >= 30 EUR is blocked (409, 0 rows). Real owner-configured flow. P1 upheld.
+
+POS-2 CONFIRMED (P3). Ran own harness via public recall():
+  [REPRO-A soft-deleted parent] lines_count=1 warnings={"unavailable_variations":[]}
+    line0={"item_id":1,"name":"Test Item","quantity":1,"item_variations":[{"id":1,"name":"Var"}]}
+  [REPRO-B inactive parent no-var] lines_count=1 warnings={"unavailable_variations":[]}
+    line0={"item_id":2,"name":"Inactive Item","quantity":1,"item_variations":[]}
+Root cause confirmed:
+  - PosParkedOrderService.php:142-145 Item::find($itemId) returns null for soft-deleted item => continue => line kept unchanged (variation not even pruned).
+  - lines 137-140: empty item_variations => continue => variation-less line kept.
+  - No branch drops a whole line on parent item trashed/inactive; only variation availability (157-185) is checked. warnings.unavailable_variations empty => cashier gets zero signal.
+Impact: UX-only phantom line on recall; store SSOT pricing rejects a soft-deleted/missing item on re-submit (no money/fiscal exposure). P3 upheld.

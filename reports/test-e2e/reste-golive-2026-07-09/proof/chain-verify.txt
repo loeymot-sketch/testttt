@@ -1,0 +1,5 @@
+  + branch=1 CHAIN OK
+  + branch=7 CHAIN OK
+  + branch=8 CHAIN OK
+  + branch=9 CHAIN OK
+SWEEP COMPLETE — CHAIN OK on every active branch (4 total)

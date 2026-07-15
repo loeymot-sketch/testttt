@@ -1,0 +1,32 @@
+Warning: TTY mode requires /dev/tty to be read/writable.
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Branch\BranchDeactivationTokenRevokeTest[39m
+  [32;1m✓[39;22m[39m [2mactive to inactive revokes user tokens in that branch[22m[39m
+  [32;1m✓[39;22m[39m [2msame status save is a noop[22m[39m
+  [32;1m✓[39;22m[39m [2minactive to active does not revoke tokens[22m[39m
+  [32;1m✓[39;22m[39m [2mdoes not touch users in other branches[22m[39m
+  [32;1m✓[39;22m[39m [2mdoes not touch non user tokenable types[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Branch\BranchDestroyRevokesTokensTest[39m
+  [32;1m✓[39;22m[39m [2mbranch destroy fires branch status changed event[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch destroy revokes tokens of users in that branch[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Branch\BranchFiscalIdentityTest[39m
+  [32;1m✓[39;22m[39m [2mfillable persists fiscal identity fields[22m[39m
+  [32;1m✓[39;22m[39m [2mmigration down up is idempotent for fiscal columns[22m[39m
+  [32;1m✓[39;22m[39m [2mlegacy branch has null fiscal fields by default[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Branch\BranchScopeCoverageSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mevery model with branch id column declares branch scope[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Branch\OrderBranchIsolationTest[39m
+  [32;1m✓[39;22m[39m [2morder and frontend branch filters are exact not prefix matches[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Branch\OssAdminBranchPolicyTest[39m
+  [32;1m✓[39;22m[39m [2mbranch id zero non admin is not global for pos order store[22m[39m
+  [32;1m✓[39;22m[39m [2mbranch id zero non admin is not global for destroy[22m[39m
+
+  [37;1mTests:  [39;22m[32;1m14 passed[39;22m
+  [37;1mTime:   [39;22m[39m2.38s[39m
+
+

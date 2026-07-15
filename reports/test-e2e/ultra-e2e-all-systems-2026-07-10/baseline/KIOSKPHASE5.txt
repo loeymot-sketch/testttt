@@ -1,0 +1,21 @@
+Warning: TTY mode requires /dev/tty to be read/writable.
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\KioskPhase5\KioskEventPhase5WhitelistTest[39m
+  [32;1m✓[39;22m[39m [2ma11y settings type accepted[22m[39m
+  [32;1m✓[39;22m[39m [2mhardware health type accepted with payload[22m[39m
+  [32;1m✓[39;22m[39m [2mhardware event accepted[22m[39m
+  [32;1m✓[39;22m[39m [2mconsent event accepted[22m[39m
+  [32;1m✓[39;22m[39m [2manalytics event requires event name[22m[39m
+  [32;1m✓[39;22m[39m [2manalytics accepts whitelisted event name[22m[39m
+  [32;1m✓[39;22m[39m [2manalytics accepts composer heuristic fallback event name[22m[39m
+  [32;1m✓[39;22m[39m [2manalytics rejects unknown event name[22m[39m
+  [32;1m✓[39;22m[39m [2mpayload with email is rejected[22m[39m
+  [32;1m✓[39;22m[39m [2mpayload with phone nested is rejected[22m[39m
+  [32;1m✓[39;22m[39m [2munknown top level type is rejected[22m[39m
+  [32;1m✓[39;22m[39m [2mlegacy types still accepted after phase5[22m[39m
+  [32;1m✓[39;22m[39m [2mall 6 new phase5 types accepted[22m[39m
+
+  [37;1mTests:  [39;22m[32;1m13 passed[39;22m
+  [37;1mTime:   [39;22m[39m2.18s[39m
+
+

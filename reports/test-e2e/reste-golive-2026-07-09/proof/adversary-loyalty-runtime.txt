@@ -1,0 +1,21 @@
+TOKEN_LEN=53
+=== STEP1 GET /api/profile (before) ===
+{"data":{"id":44,"name":"Victim Secret","first_name":"Victim","last_name":"Secret","phone":"0612345678","email":null,"username":"victim_6a268b6b0827a","balance":"0.00","currency_balance":"0,00\u00a0\u20ac","image":"http:\/\/127.0.0.1:8000\/images\/default\/profile.png","role_id":null,"country_code":null,"order":0,"loyalty_code":"VICT1234","loyalty_points":200,"create_date":"08-06-2026","update_date":"12-06-2026"}}
+HTTP=200
+=== STEP2 POST redeem WITHOUT branch_id (negative / P1 heal proof) ===
+{"success":false,"message":"Idempotency requires authenticated user with resolvable branch_id.","code":"MISSING_IDEMPOTENCY_KEY"}
+HTTP=422
+=== STEP3 POST redeem WITH branch_id=1 ===
+{"status":true,"message":"100 points utilis\u00e9s","data":{"points":100}}
+HTTP=200
+=== STEP4 GET /api/profile (after) ===
+{"data":{"id":44,"name":"Victim Secret","first_name":"Victim","last_name":"Secret","phone":"0612345678","email":null,"username":"victim_6a268b6b0827a","balance":"0.00","currency_balance":"0,00\u00a0\u20ac","image":"http:\/\/127.0.0.1:8000\/images\/default\/profile.png","role_id":null,"country_code":null,"order":0,"loyalty_code":"VICT1234","loyalty_points":100,"create_date":"08-06-2026","update_date":"12-06-2026"}}
+HTTP=200
+
+=== ADVERSARY VERDICT (2026-07-09): could NOT refute — verdict CONFIRMED ===
+- Suite re-run independently: php artisan test --filter=Loyalty => 83 passed (14.05s)
+- Runtime sync proven: /api/profile 200pts -> redeem 100 (branch_id=1) HTTP200 -> /api/profile 100pts (same endpoint web+mobile use)
+- branch_id heal REAL: redeem WITHOUT branch_id -> HTTP 422 MISSING_IDEMPOTENCY_KEY (user44 branch_id=0 unresolvable)
+- Kill-switch default: config/pos.php:172 manual_discount_enabled default TRUE (redeem enabled by default, not hidden-off)
+- QR: LOYALTY_QR_SECRET=64hex(>32), ttl=300; sentinel covers tamper/replay/expired/legacy/bootguard (all green)
+- earn tested: tests/Feature/Loyalty/KioskLoyaltyEarnCycleProofTest.php (award + idempotent no-double-award)

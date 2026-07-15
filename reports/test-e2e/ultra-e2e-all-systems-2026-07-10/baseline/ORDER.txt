@@ -1,0 +1,78 @@
+Warning: TTY mode requires /dev/tty to be read/writable.
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Order\AutoPrepareOnPaidTest[39m
+  [32;1m✓[39;22m[39m [2mpolicy promotes pos direct path[22m[39m
+  [32;1m✓[39;22m[39m [2mpolicy promotes kiosk paid tpe[22m[39m
+  [32;1m✓[39;22m[39m [2mpolicy promotes counter collect non cash[22m[39m
+  [32;1m✓[39;22m[39m [2mpolicy skips kiosk cash at counter[22m[39m
+  [32;1m✓[39;22m[39m [2mpolicy next status is preparing never prepared[22m[39m
+  [32;1m✓[39;22m[39m [2mpolicy order type agnostic delivery promotes like takeaway[22m[39m
+  [32;1m✓[39;22m[39m [2mpolicy respects config flag[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk paid tpe finalize lands in preparing[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk paid tpe stays accept when flag off[22m[39m
+  [32;1m✓[39;22m[39m [2mcounter collected card lands in preparing[22m[39m
+  [32;1m✓[39;22m[39m [2mcounter collected cash stays accept[22m[39m
+  [32;1m✓[39;22m[39m [2mcounter collected card no double promote on replay[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Order\CancelReasonEnforceTest[39m
+  [32;1m✓[39;22m[39m [2mkiosk cancel without reason is rejected 422[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk cancel with unknown reason code is rejected 422[22m[39m
+  [32;1m✓[39;22m[39m [2mkiosk cancel with whitelisted reason succeeds and persists reason[22m[39m
+  [32;1m✓[39;22m[39m [2madmin pos cancel with free text reason remains accepted[22m[39m
+  [32;1m✓[39;22m[39m [2madmin via sanctum session cancels with free text reason[22m[39m
+  [32;1m✓[39;22m[39m [2madmin pos cancel without reason is rejected 422[22m[39m
+  [32;1m✓[39;22m[39m [2madmin pos non terminal transition without reason is accepted[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Order\ChangePaymentStatusOutboxTest[39m
+  [32;1m✓[39;22m[39m [2munpaid to paid creates domain event row[22m[39m
+  [32;1m✓[39;22m[39m [2mevent envelope passes assert envelope valid[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Order\ChangePaymentStatusTransactionalTest[39m
+  [32;1m✓[39;22m[39m [2mconcurrent flip to target is idempotent no double effect[22m[39m
+  [32;1m✓[39;22m[39m [2mit rolls back when audit log write fails[22m[39m
+  [32;1m✓[39;22m[39m [2mit dispatches event only after commit[22m[39m
+  [32;1m✓[39;22m[39m [2mit emits one action log one audit log one event per call[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Order\ChangePaymentStatusValidationTest[39m
+  [32;1m✓[39;22m[39m [2mpayment status 999 returns 422[22m[39m
+  [32;1m✓[39;22m[39m [2mpayment status string returns 422[22m[39m
+  [32;1m✓[39;22m[39m [2mpayment status negative returns 422[22m[39m
+  [32;1m✓[39;22m[39m [2mpayment status paid to unpaid returns 422 via state machine[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Order\ChangeStatusRaceGuardTest[39m
+  [32;1m✓[39;22m[39m [2min lock revalidation blocks illegal transition after concurrent move[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Order\ChangeStatusReturnedSelfAuditR2Test[39m
+  [32;1m✓[39;22m[39m [2mreturned transition dispatches order canceled for stock release[22m[39m
+  [32;1m✓[39;22m[39m [2mpre z direct cash return records cashback out movement[22m[39m
+  [32;1m✓[39;22m[39m [2mpre z direct cash return dispatches refund created for loyalty clawback[22m[39m
+  [32;1m✓[39;22m[39m [2munpaid return does not dispatch refund created[22m[39m
+  [32;1m✓[39;22m[39m [2mpre z card return records no cashback out[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Order\OrderServiceFrontendOrderServiceSymmetryTest[39m
+  [32;1m✓[39;22m[39m [2mboth services expose a consistent critical method surface[22m[39m
+  [32;1m✓[39;22m[39m [2msymmetric methods have compatible required parameter counts[22m[39m
+  [32;1m✓[39;22m[39m [2mno uncovered drift introduced to either service[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Order\OrderStateMachinePreZRefundLockSentinelTest[39m
+  [32;1m✓[39;22m[39m [2muser without pos refund cannot return from accept[22m[39m
+  [32;1m✓[39;22m[39m [2muser without pos refund cannot return from preparing[22m[39m
+  [32;1m✓[39;22m[39m [2muser without pos refund cannot return from prepared[22m[39m
+  [32;1m✓[39;22m[39m [2mnull user cannot return from kitchen release statuses[22m[39m
+  [32;1m✓[39;22m[39m [2muser with pos refund can return from accept[22m[39m
+  [32;1m✓[39;22m[39m [2muser with pos refund can return from preparing[22m[39m
+  [32;1m✓[39;22m[39m [2muser with pos refund can return from prepared[22m[39m
+  [32;1m✓[39;22m[39m [2mpreexisting transitions unchanged[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Order\PriceChangeSnapshotTest[39m
+  [32;1m✓[39;22m[39m [2mexisting order preserves price after admin changes item price[22m[39m
+  [32;1m✓[39;22m[39m [2mnew order uses new price after admin changes it[22m[39m
+  [32;1m✓[39;22m[39m [2mconcurrent price change during order creation does not corrupt existing[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Order\SubmitRevalidatesChoiceAvailabilityThroughPricingTest[39m
+  [32;1m✓[39;22m[39m [2mcalculate order rejects unavailable ingredient on pos submit path[22m[39m
+
+  [37;1mTests:  [39;22m[32;1m50 passed[39;22m
+  [37;1mTime:   [39;22m[39m8.22s[39m
+
+
