@@ -83,3 +83,6 @@ missions/**/output_codex.json
 # Allow .htaccess inside public/file/ (defense-in-depth deny rule).
 !/public/file/.htaccess
 .env.e2e
+
+# [NETTOYAGE 2026-07-15] captures de session Playwright MCP — jamais committer
+/.playwright-mcp/

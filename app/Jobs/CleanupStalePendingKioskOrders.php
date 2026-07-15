@@ -170,6 +170,47 @@ class CleanupStalePendingKioskOrders
                 'phone',
             ));
 
+        // [STOCK-01 2026-07-15 / P1] LANE WEB — purge des commandes SITE WEB abandonnées.
+        // Une commande web (source_surface='web') décrémente le stock à la CRÉATION
+        // (StockService::decrementForOrder, FrontendOrderService:563) EXACTEMENT comme la
+        // borne, mais AUCUNE lane du janitor ne la visait (filtres 'kiosk'/'phone') → une
+        // commande jamais encaissée/retirée restait PENDING/ACCEPT/PREPARING indéfiniment →
+        // stock déplété À VIE (faux « 86 » rupture, file caisse + KDS pollués). On la reap
+        // sur son PROPRE TTL, généreux et order_datetime-priority (comme le téléphone) : une
+        // commande web « à emporter ce soir » n'est annulée qu'après son créneau + TTL,
+        // JAMAIS trop tôt (repli created_at si order_datetime absent).
+        // NF525-safety IDENTIQUE aux lanes kiosk/phone : whereNull('fiscal_sequence_no') →
+        // une commande web encaissée (scellée) est immunisée. Transitions PENDING→REJECTED /
+        // ACCEPT|PREPARING→CANCELED toutes légales (OrderStateMachine) ; release stock +
+        // refund fidélité via le MÊME chemin unifié cleanupStaleDeferredOrder. PREPARED
+        // exclu (PREPARED→CANCELED illégale dans le state machine frozen).
+        $webTtlMinutes = (int) config('kiosk.stale_web_collect_ttl_minutes', 360);
+        $webStaleThreshold = now()->subMinutes($webTtlMinutes);
+
+        FrontendOrder::withoutGlobalScope(BranchScope::class)
+            ->whereNull('deleted_at')
+            ->whereNull('fiscal_sequence_no')
+            ->whereIn('status', [OrderStatus::PENDING, OrderStatus::ACCEPT, OrderStatus::PREPARING])
+            ->whereIn('payment_status', [PaymentStatus::UNPAID, PaymentStatus::PENDING_COUNTER])
+            ->where('source_surface', 'web')
+            ->where(function ($query) use ($webStaleThreshold): void {
+                $query->where('order_datetime', '<', $webStaleThreshold)
+                    ->orWhere(function ($q) use ($webStaleThreshold): void {
+                        $q->whereNull('order_datetime')
+                            ->where('created_at', '<', $webStaleThreshold);
+                    });
+            })
+            ->orderBy('id')
+            ->get()
+            ->each(fn (FrontendOrder $order) => $this->cleanupStaleDeferredOrder(
+                $order,
+                [OrderStatus::PENDING, OrderStatus::ACCEPT, OrderStatus::PREPARING],
+                [PaymentStatus::UNPAID, PaymentStatus::PENDING_COUNTER],
+                'web',
+                $webTtlMinutes,
+                'web',
+            ));
+
         // [CLUSTER-7 / P3 2026-07-11] Re-credit ORPHAN self-service pre-redemptions.
         // The pre-redeem endpoint (LoyaltyController::redeem) debits points and writes a
         // PENDING ledger row (type='redeem', order_id=NULL). An order backfills that row's
