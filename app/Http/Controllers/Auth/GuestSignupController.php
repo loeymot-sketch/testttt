@@ -126,6 +126,16 @@ class GuestSignupController extends Controller
             $user->assignRole(EnumRole::CUSTOMER);
         }
 
+        // [LOY-WEB-01 2026-07-15] Garantir un loyalty_code sur tout compte invité (web/borne
+        // OTP) AVANT d'émettre le token — sinon le client cumule 0 point malgré la promesse
+        // « +N pts » du panier (AwardLoyaltyPointsOnDelivery + QR fidélité ont besoin du code).
+        // Assigné après create (loyalty_code non mass-assignable) ; backfille aussi les
+        // invités historiques sans code. Pattern canonique = LoyaltyController::check.
+        if (empty($user->loyalty_code)) {
+            $user->loyalty_code = strtoupper(substr(md5(uniqid('', true)), 0, 8));
+            $user->save();
+        }
+
         if ($user) {
             Auth::guard('web')->loginUsingId($user->id);
             $branchId = Auth::user()->branch_id;

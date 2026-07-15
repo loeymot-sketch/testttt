@@ -430,6 +430,11 @@ class DashboardService
                 ->where('order_datetime', '>=', $startParis)
                 ->where('order_datetime', '<', $endParisExclusive)
                 ->where('payment_status', PaymentStatus::PAID)
+                // [REFUND-02 2026-07-15] Exclure les statuts terminaux (annulée/refusée/retournée)
+                // du DÉNOMINATEUR du ticket moyen — le numérateur daily_sales utilise déjà
+                // realizedRevenue() (net). Sans ça, une commande PAYÉE puis ANNULÉE gonflait le
+                // nombre de commandes → ticket moyen sous-estimé.
+                ->whereNotIn('status', [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED])
                 ->count();
 
             // Ticket Moyen
@@ -797,7 +802,10 @@ class DashboardService
             ->whereHas('order', function ($q) use ($startParis, $endParisExclusive, $branchId) {
                 $q->where('order_datetime', '>=', $startParis)
                   ->where('order_datetime', '<', $endParisExclusive)
-                  ->where('payment_status', PaymentStatus::PAID);
+                  ->where('payment_status', PaymentStatus::PAID)
+                  // [REFUND-02 2026-07-15] Ne pas gonfler le Top produits avec des commandes
+                  // payées puis annulées/refusées/retournées (ventes non réalisées).
+                  ->whereNotIn('status', [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED]);
                 if ($branchId !== null) {
                     $q->where('branch_id', $branchId);
                 }
