@@ -574,10 +574,20 @@ final class OrderReceiptEscPosRenderer
             ? (float) $order->pos_received_amount
             : (float) ($order->total ?? 0);
 
+        // [F-TICKET-RENDU 2026-07-15 / P2] La ligne « RENDU » n'était JAMAIS imprimée sur le
+        // ticket papier : la source `$order->cash_back_amount` n'existe (ni colonne ni accessor
+        // du modèle Order) → toujours NULL → garde `change>0` morte, alors que le reçu À L'ÉCRAN
+        // (ReceiptComponent via payments_breakdown.change_amount) affiche bien le rendu →
+        // divergence écran↔papier sur un document fiscal. On calcule le rendu (ESPÈCES uniquement,
+        // seul tender qui rend la monnaie) = reçu − total, arrondi, clampé ≥0 (miroir du reçu écran).
+        $change = ((int) $method === \App\Enums\PosPaymentMethod::CASH)
+            ? round(max(0.0, $amount - (float) ($order->total ?? 0)), 2)
+            : 0.0;
+
         return [[
             'label' => $labels[(int) $method] ?? ('Paiement '.$method),
             'amount' => $amount,
-            'change' => (float) ($order->cash_back_amount ?? 0),
+            'change' => $change,
         ]];
     }
 

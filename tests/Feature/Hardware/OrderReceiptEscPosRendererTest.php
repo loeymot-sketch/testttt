@@ -103,6 +103,43 @@ class OrderReceiptEscPosRendererTest extends TestCase
         $this->assertStringContainsString('TVA 10', $bytes, 'TVA rate line missing');
     }
 
+    /**
+     * [F-TICKET-RENDU 2026-07-15 / P2] La ligne RENDU (monnaie rendue) n'était jamais imprimée
+     * (source `cash_back_amount` inexistante → toujours NULL). Elle doit apparaître sur un
+     * paiement ESPÈCES avec sur-paiement, au montant reçu − total.
+     */
+    public function test_client_ticket_prints_rendu_change_line_for_cash_overpayment(): void
+    {
+        $order = $this->makeOrder();
+        $order->pos_received_amount = 20.00; // reçu 20,00 sur total 13,80 → rendu 6,20
+
+        $bytes = (new OrderReceiptEscPosRenderer)->renderClientTicket($order);
+
+        $this->assertStringContainsString('RENDU', $bytes, 'La ligne RENDU doit figurer (paiement cash sur-payé).');
+        $this->assertStringContainsString('6,20', $bytes, 'Le rendu (reçu − total) doit être imprimé.');
+    }
+
+    /** Garde : pas de ligne RENDU quand le paiement espèces est exact (rendu 0). */
+    public function test_client_ticket_omits_rendu_when_cash_is_exact(): void
+    {
+        // makeOrder() : pos_received_amount == total == 13,80 → rendu 0.
+        $bytes = (new OrderReceiptEscPosRenderer)->renderClientTicket($this->makeOrder());
+
+        $this->assertStringNotContainsString('RENDU', $bytes, 'Aucun rendu ne doit s’imprimer sur un paiement exact.');
+    }
+
+    /** Garde : un paiement CARTE ne rend jamais de monnaie même si le reçu diffère du total. */
+    public function test_client_ticket_omits_rendu_for_card_payment(): void
+    {
+        $order = $this->makeOrder();
+        $order->pos_payment_method = 2; // Carte
+        $order->pos_received_amount = 20.00;
+
+        $bytes = (new OrderReceiptEscPosRenderer)->renderClientTicket($order);
+
+        $this->assertStringNotContainsString('RENDU', $bytes, 'Une carte ne rend pas de monnaie.');
+    }
+
     public function test_client_ticket_shows_phone_email_and_website(): void
     {
         config(['printing.receipt.website' => 'lecayenne.fr']);
