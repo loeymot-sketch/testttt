@@ -3,6 +3,7 @@
 namespace Tests\Feature\Services;
 
 use App\Enums\Status;
+use App\Models\Item;
 use App\Models\ItemCategory;
 use App\Services\ItemCategoryService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -44,6 +45,32 @@ class ItemCategoryDestroyGuardTest extends TestCase
 
         // Le parent ne doit PAS être supprimé.
         $this->assertDatabaseHas('item_categories', ['id' => $parent->id, 'deleted_at' => null]);
+    }
+
+    /**
+     * [F-CATEGORY-DELETE-ORPHAN 2026-07-15 / P2] Un produit DÉSACTIVÉ (status != ACTIVE) ne doit
+     * PAS laisser supprimer la catégorie : la garde comptait via items() (filtré ACTIVE) → un
+     * produit désactivé échappait → suppression → produit orphelin réactivable (category_name=null).
+     */
+    public function test_destroy_rejects_category_with_disabled_item(): void
+    {
+        $cat = ItemCategory::forceCreate([
+            'name' => 'CatDisabled', 'slug' => 'catd-'.uniqid(), 'status' => Status::ACTIVE, 'sort' => 1,
+        ]);
+        Item::forceCreate([
+            'name' => 'Produit désactivé', 'slug' => 'pd-'.uniqid(), 'item_category_id' => $cat->id,
+            'item_type' => 1, 'price' => 1.0, 'status' => 10, // INACTIVE
+            'order' => 1,
+        ]);
+
+        try {
+            $this->service()->destroy($cat);
+            $this->fail('La suppression aurait dû être bloquée (catégorie non vide, même produit désactivé).');
+        } catch (\Exception $e) {
+            $this->assertSame(422, $e->getCode());
+            $this->assertStringContainsString('produit', $e->getMessage());
+        }
+        $this->assertDatabaseHas('item_categories', ['id' => $cat->id, 'deleted_at' => null]);
     }
 
     public function test_destroy_allows_empty_leaf(): void

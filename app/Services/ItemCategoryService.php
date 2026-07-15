@@ -173,10 +173,21 @@ class ItemCategoryService
                 // gardaient `item_category_id` pointant vers une catégorie invisible →
                 // `$item->itemCategory` null → disparition des grilles category-first (caisse/
                 // borne). Le gérant doit d'abord déplacer/désactiver les produits.
-                $activeItems = $itemCategory->items()->whereNull('deleted_at')->count();
-                if ($activeItems > 0) {
+                // [F-CATEGORY-DELETE-ORPHAN 2026-07-15 / P2] Compter TOUS les produits non-supprimés,
+                // pas seulement les ACTIFS. La relation items() filtre status=ACTIVE → un produit
+                // DÉSACTIVÉ (status=10) échappait au compte → la suppression passait et laissait le
+                // produit orphelin (item_category_id → catégorie soft-deleted), RÉACTIVABLE ensuite
+                // en produit actif avec category_name=null (invisible des grilles category-first —
+                // exactement le trou que le heal 2026-07-11 voulait fermer, contournable en suivant
+                // le conseil « désactivez-les » de l'ancien message). Le gérant doit DÉPLACER les
+                // produits (pas juste les désactiver) avant de supprimer la catégorie.
+                $remainingItems = \App\Models\Item::query()
+                    ->where('item_category_id', $itemCategory->id)
+                    ->whereNull('deleted_at')
+                    ->count();
+                if ($remainingItems > 0) {
                     throw new Exception(
-                        "Impossible de supprimer cette catégorie : elle contient {$activeItems} produit(s) actif(s). Déplacez-les ou désactivez-les d'abord.",
+                        "Impossible de supprimer cette catégorie : elle contient encore {$remainingItems} produit(s). Déplacez-les vers une autre catégorie d'abord.",
                         422
                     );
                 }
