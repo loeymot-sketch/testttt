@@ -74,19 +74,21 @@ class ReconcileOrderReleasesCommand extends Command
             // Stock physique (intemporel) — idempotent via ledger released_qty.
             $stockService->releaseForOrder($order, 'order_canceled');
 
-            // Quota journalier — seulement si la consommation appartient au
-            // compteur du jour courant.
-            if ($order->created_at !== null && $order->created_at->isToday()) {
-                $lineItems = $pending->map(static fn ($oi) => [
-                    'order_item_id' => (int) $oi->id,
-                    'item_id' => (int) $oi->item_id,
-                    'branch_id' => (int) $oi->branch_id,
-                    'qty' => max(0, (int) $oi->quantity - (int) $oi->released_qty),
-                ])->filter(static fn ($li) => $li['qty'] > 0)->values()->all();
+            // Ledger released_qty écrit TOUJOURS (sinon la commande rematche la
+            // requête candidate à chaque passage) ; le quota journalier n'est
+            // crédité que si la commande date d'aujourd'hui. [DEEP-R2b]
+            $lineItems = $pending->map(static fn ($oi) => [
+                'order_item_id' => (int) $oi->id,
+                'item_id' => (int) $oi->item_id,
+                'branch_id' => (int) $oi->branch_id,
+                'qty' => max(0, (int) $oi->quantity - (int) $oi->released_qty),
+            ])->filter(static fn ($li) => $li['qty'] > 0)->values()->all();
 
-                if ($lineItems !== []) {
-                    $availabilityService->releaseForOrderItems($lineItems);
-                }
+            if ($lineItems !== []) {
+                $availabilityService->releaseForOrderItems(
+                    $lineItems,
+                    $order->created_at !== null && $order->created_at->isToday()
+                );
             }
 
             $fixed++;

@@ -34,13 +34,11 @@ class ReleaseAvailabilityOnOrderCanceled
                 return;
             }
 
-            // [DEEP-R2 2026-07-15 / P2 temps-minuit] Le quota (daily_consumed_qty) est
-            // JOURNALIER : annuler une commande d'un jour PRÉCÉDENT ne doit pas créditer
-            // le compteur du jour courant (sa consommation appartient à un compteur déjà
-            // remis à zéro) — sinon sur-vente du quota d'aujourd'hui.
-            if ($order->created_at !== null && ! $order->created_at->isToday()) {
-                return;
-            }
+            // [DEEP-R2 / DEEP-R2b 2026-07-15] Quota journalier : une commande d'un jour
+            // PRÉCÉDENT ne crédite pas le compteur du jour courant — mais le ledger
+            // released_qty doit TOUJOURS s'écrire (retour anticipé = double crédit
+            // on_hand refund+cancel, régression P1 attrapée par la chasse R2b).
+            $creditDailyQuota = $order->created_at === null || $order->created_at->isToday();
 
             $order->loadMissing('orderItems');
 
@@ -57,7 +55,7 @@ class ReleaseAvailabilityOnOrderCanceled
                 return;
             }
 
-            $this->availabilityService->releaseForOrderItems($lineItems);
+            $this->availabilityService->releaseForOrderItems($lineItems, $creditDailyQuota);
         } catch (Throwable $e) {
             Log::error('ReleaseAvailabilityOnOrderCanceled isolated (cascade continues)', [
                 'order_id'  => $event->order->id ?? null,

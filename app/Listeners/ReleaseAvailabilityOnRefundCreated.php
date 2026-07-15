@@ -36,12 +36,10 @@ class ReleaseAvailabilityOnRefundCreated
                 return;
             }
 
-            // [DEEP-R2 2026-07-15 / P2 temps-minuit] Quota journalier : un remboursement
-            // d'une commande d'un jour précédent ne crédite pas le compteur du jour
-            // courant (miroir du garde ReleaseAvailabilityOnOrderCanceled).
-            if ($order->created_at !== null && ! $order->created_at->isToday()) {
-                return;
-            }
+            // [DEEP-R2 / DEEP-R2b 2026-07-15] Quota journalier : pas de crédit pour une
+            // commande d'un jour précédent — mais le ledger released_qty s'écrit TOUJOURS
+            // (miroir ReleaseAvailabilityOnOrderCanceled, régression P1 R2b).
+            $creditDailyQuota = $order->created_at === null || $order->created_at->isToday();
 
             $order->loadMissing('orderItems');
             $orderItems = $order->orderItems;
@@ -57,7 +55,7 @@ class ReleaseAvailabilityOnRefundCreated
                 })->all();
 
                 if ($lineItems !== []) {
-                    $this->availabilityService->releaseForOrderItems($lineItems);
+                    $this->availabilityService->releaseForOrderItems($lineItems, $creditDailyQuota);
                 }
 
                 return;
@@ -84,7 +82,7 @@ class ReleaseAvailabilityOnRefundCreated
                 return;
             }
 
-            $this->availabilityService->releaseForOrderItems($lineItems);
+            $this->availabilityService->releaseForOrderItems($lineItems, $creditDailyQuota);
         } catch (Throwable $e) {
             Log::error('ReleaseAvailabilityOnRefundCreated isolated (cascade continues)', [
                 'order_id'  => $event->order->id ?? null,

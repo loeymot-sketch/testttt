@@ -889,7 +889,9 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             try {
                 $validated = $request->validate([
                     'mode' => ['required', 'integer'],
-                    'received' => ['nullable', 'numeric', 'min:0'],
+                    // [DEEP-R2b] borne haute anti fat-finger (5700 au lieu de 57,00 →
+                    // ticket fiscal « RENDU : 5 643,00 € »).
+                    'received' => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
                     'note' => ['nullable', 'string', 'max:255'],
                 ]);
 

@@ -570,7 +570,11 @@ final class OrderReceiptEscPosRenderer
         if ((int) $method === \App\Enums\PosPaymentMethod::COUNTER_DEFERRED) {
             return [];
         }
-        $amount = $order->pos_received_amount !== null && $order->pos_received_amount !== ''
+        // [DEEP-R2b 2026-07-15 / P2] La colonne pos_received_amount a default(0), pas
+        // NULL : le garde `!== null` laissait passer 0 → ticket fiscal « Carte :
+        // 0,00 € » (69 commandes carte en DB). 0 n'est jamais un encaissement réel →
+        // fallback total.
+        $amount = (float) ($order->pos_received_amount ?? 0) > 0
             ? (float) $order->pos_received_amount
             : (float) ($order->total ?? 0);
 

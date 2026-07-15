@@ -247,7 +247,7 @@ export default {
                     this.loadDay();
                 })
                 .catch((e) => {
-                    if (e.status === 401) { this.unlocked = false; return; }
+                    if (e.status === 401 || e.status === 419) { this.unlocked = false; return; }
                     const first = e.data?.errors ? Object.values(e.data.errors)[0]?.[0] : null;
                     this.formError = first || e.message;
                 })
@@ -260,7 +260,7 @@ export default {
                 .catch((err) => {
                     // [W6 heal P3] Échec avalé silencieusement : 401 = session PIN
                     // expirée → relock ; autre erreur → feedback visible.
-                    if (err.status === 401) { this.unlocked = false; return; }
+                    if (err.status === 401 || err.status === 419) { this.unlocked = false; return; }
                     this.formError = 'Suppression impossible. Réessayez.';
                 });
         },

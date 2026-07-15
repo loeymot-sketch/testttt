@@ -43,7 +43,7 @@ class DailyBookEntryController extends Controller
             // le total du jour (frontend somme tout) vs le mois (backend filtre).
             'amount' => [
                 'required_unless:type,note', 'prohibited_if:type,note',
-                'nullable', 'numeric', 'min:0', 'max:99999.99',
+                'nullable', 'numeric', 'min:0.01', 'max:99999.99', // 0,00 = acompte fantôme dans by_worker
             ],
             // [W6 heal P3] entry_date bornée : pas de mois fantômes (passé
             // lointain / futur) dans les résumés.

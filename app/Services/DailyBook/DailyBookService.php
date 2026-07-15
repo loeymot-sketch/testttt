@@ -60,7 +60,7 @@ class DailyBookService
         // la colonne d'une fonction → l'index entry_date était inutilisé.
         return DailyBookEntry::query()
             ->with('media')
-            ->when($date, fn ($q) => $q->whereDate('entry_date', $date))
+            ->when($date, fn ($q) => $q->where('entry_date', $date)) // colonne DATE : égalité directe, sargable
             ->when(!$date && $month, fn ($q) => $q->whereBetween('entry_date', self::monthBounds($month)))
             ->orderByDesc('entry_date')
             ->orderByDesc('id')

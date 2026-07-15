@@ -686,8 +686,15 @@ final class AvailabilityService
      * invariant — gate C9 / KI-001).
      *
      * @param  array<int, array{order_item_id:int, item_id:int, branch_id:int, qty:int}>  $lineItems
+     * @param  bool  $creditDailyQuota  false = commande d'un jour PRÉCÉDENT : on écrit
+     *         TOUJOURS le ledger released_qty (anti-double-release du stock physique,
+     *         intemporel) mais on ne crédite PAS daily_consumed_qty (compteur du jour).
+     *         [DEEP-R2b 2026-07-15 / P1] Le retour anticipé isToday() des listeners
+     *         sautait le SEUL écrivain du ledger → une commande d'hier annulée
+     *         aujourd'hui créditait on_hand DEUX fois (refund puis cancel, clés
+     *         d'idempotence distinctes par reason).
      */
-    public function releaseForOrderItems(array $lineItems): void
+    public function releaseForOrderItems(array $lineItems, bool $creditDailyQuota = true): void
     {
         if ($lineItems === []) {
             return;
@@ -695,7 +702,7 @@ final class AvailabilityService
 
         $eventsToDispatch = [];
 
-        DB::transaction(function () use ($lineItems, &$eventsToDispatch): void {
+        DB::transaction(function () use ($lineItems, $creditDailyQuota, &$eventsToDispatch): void {
             foreach ($lineItems as $lineItem) {
                 $orderItemId = (int) ($lineItem['order_item_id'] ?? 0);
                 $itemId = (int) ($lineItem['item_id'] ?? 0);
@@ -763,7 +770,7 @@ final class AvailabilityService
                         'max_daily_qty',
                     ]);
 
-                if ($availability) {
+                if ($availability && $creditDailyQuota) {
                     $currentConsumed = max(0, (int) $availability->daily_consumed_qty);
                     $newConsumed = max(0, $currentConsumed - $delta);
                     $wasUnavailable = ! (bool) $availability->is_available;
