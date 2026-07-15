@@ -247,11 +247,16 @@ final class KioskMenuService
      */
     private function projectCategories(Collection $categories): array
     {
-        // Sort par ordre kiosk (ou sort legacy), puis par id pour stabilité.
-        $sorted = $categories->sortBy([
-            fn (ItemCategory $c) => $c->sortFor(self::CHANNEL),
-            fn (ItemCategory $c) => (int) $c->id,
-        ])->values();
+        // [F-KIOSK-CAT-SORT-TIEBREAK 2026-07-15] La forme tableau sortBy([fn1, fn2]) interprète
+        // fn2 comme une DIRECTION, pas un tie-breaker → ordre de catégories NON-déterministe/faux
+        // (prouvé : [58(s1),1(s1),2(s2),4(s4)] → 4,1,2,58 au lieu de 1,58,2,4). C'est EXACTEMENT le
+        // bug corrigé pour les items plus bas (Wave Y A-001) mais laissé ici → à sort égal, la borne
+        // pouvait présenter/atterrir sur une catégorie arbitraire. sortBy chaîné = stable (PHP 8 spl) :
+        // trie d'abord par id (tie-breaker), puis par sort kiosk (le tri stable préserve l'id sur égalité).
+        $sorted = $categories
+            ->sortBy(fn (ItemCategory $c) => (int) $c->id)
+            ->sortBy(fn (ItemCategory $c) => $c->sortFor(self::CHANNEL))
+            ->values();
 
         $byId = $sorted->keyBy('id');
 
