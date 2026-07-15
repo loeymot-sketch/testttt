@@ -127,7 +127,7 @@ class OrderRejectsUnavailableBranchItemTest extends TestCase
             ]);
 
         $response->assertStatus(422);
-        $this->assertStringContainsStringIgnoringCase('indisponible', (string) $response->json('message'));
+        $this->assertStringContainsStringIgnoringCase('disponible', /* [UX-86] msg nommé « n'est plus disponible » */ (string) $response->json('message'));
     }
 
     public function test_frontend_quote_rejects_item_globally_marked_unavailable(): void
@@ -141,7 +141,7 @@ class OrderRejectsUnavailableBranchItemTest extends TestCase
             ->postJson('/api/frontend/order/quote', $fixture['payload']);
 
         $response->assertStatus(422);
-        $this->assertStringContainsStringIgnoringCase('indisponible', (string) $response->json('message'));
+        $this->assertStringContainsStringIgnoringCase('disponible', /* [UX-86] msg nommé « n'est plus disponible » */ (string) $response->json('message'));
     }
 
     public function test_frontend_quote_rejects_inactive_supplement_id(): void
