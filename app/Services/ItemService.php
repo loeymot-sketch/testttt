@@ -659,9 +659,30 @@ class ItemService
         }
     }
 
-    public function itemDetails(Item $item)
+    public function itemDetails(Item $item, ?int $branchId = null)
     {
-        return $item->load('media', 'category', 'tax', 'offer', 'addons', 'variations', 'extras');
+        $item->load('media', 'category', 'tax', 'offer', 'addons', 'variations', 'extras');
+
+        // [F-DETAILS-BRANCH-AVAIL 2026-07-15 / P1] Aligner la dispo des DÉTAILS sur la LISTE
+        // (branch-aware). Sans ça, une rupture PAR BRANCHE (ItemBranchAvailability, posée par le
+        // dashboard rupture) n'était PAS reflétée par /item/details → le wizard borne consultait
+        // le flag GLOBAL is_available et laissait configurer un produit en rupture, refusé au
+        // quote/checkout (détection mid-wizard aveugle). On calcule effective_is_available par
+        // branche (miroir de attachEffectiveAvailability) quand un branchId est fourni ; sans
+        // branchId (ex. admin branche 0), comportement global inchangé — rétro-compatible.
+        if ($branchId !== null && $branchId > 0) {
+            $row = \App\Models\ItemBranchAvailability::query()
+                ->where('branch_id', $branchId)
+                ->where('item_id', $item->id)
+                ->first();
+            $branchAvailable = $row ? (bool) $row->is_available : true;
+            $globalAvailable = $item->is_available === null ? true : (bool) $item->is_available;
+            $item->setAttribute('branch_is_available', $branchAvailable);
+            $item->setAttribute('availability_reason', $row && ! $branchAvailable ? $row->unavailable_reason : null);
+            $item->setAttribute('effective_is_available', $branchAvailable && $globalAvailable);
+        }
+
+        return $item;
     }
 
     private function duplicateItemChildren(Item $item, Item $copy): void

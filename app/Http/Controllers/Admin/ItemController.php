@@ -238,7 +238,9 @@ class ItemController extends AdminController
         }
 
         try {
-           return new NormalItemResource($this->itemService->itemDetails($item));
+           // [F-DETAILS-BRANCH-AVAIL 2026-07-15] $branchId déjà résolu ci-dessus (surface/forced) :
+           // le passer pour que les détails POS reflètent la rupture par branche comme la liste.
+           return new NormalItemResource($this->itemService->itemDetails($item, $branchId));
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

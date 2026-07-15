@@ -52,7 +52,10 @@ class ItemController extends Controller
     public function itemDetails(Item $item)
     {
         try {
-            return new NormalItemResource($this->itemService->itemDetails($item));
+            // [F-DETAILS-BRANCH-AVAIL 2026-07-15] Passe le branch_id borne pour que les détails
+            // reflètent la rupture PAR BRANCHE (cécité mid-wizard fermée).
+            $branchId = request()->filled('branch_id') ? (int) request('branch_id') : null;
+            return new NormalItemResource($this->itemService->itemDetails($item, $branchId));
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

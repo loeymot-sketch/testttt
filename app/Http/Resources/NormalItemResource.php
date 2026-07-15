@@ -77,7 +77,13 @@ class NormalItemResource extends JsonResource
         // Source de vérité : flag global `Item.is_available` (scope POS/kiosk/web).
         // La disponibilité par branche (`ItemBranchAvailability`) est gérée séparément
         // par `KioskMenuService::projectItems` pour les projections kiosk par branche.
-        $isAvailable = $this->is_available === null ? true : (bool) $this->is_available;
+        // [F-DETAILS-BRANCH-AVAIL 2026-07-15] Si ItemService::itemDetails a résolu une dispo
+        // EFFECTIVE par branche (branch_id fourni), on la préfère (miroir de SimpleItemResource) ;
+        // sinon repli sur le flag global. Ferme la cécité mid-wizard à la rupture par branche.
+        $effectiveAvailability = $this->effective_is_available ?? null;
+        $isAvailable = $effectiveAvailability !== null
+            ? (bool) $effectiveAvailability
+            : ($this->is_available === null ? true : (bool) $this->is_available);
 
         // [VIANDE-COUNT 2026-06-24] SSOT serveur du nombre de viandes à choisir
         // = nombre d'attributs « Viande N » distincts ayant des variations actives.
@@ -111,6 +117,7 @@ class NormalItemResource extends JsonResource
             "item_type" => $this->item_type,
             "status" => $this->status,
             "is_available" => $isAvailable,
+            "availability_reason" => $this->availability_reason ?? null,
             "allergens" => $allergensPayload,
             "description" => $this->description === null ? '' : $this->description,
             "caution" => $this->caution === null ? '' : $this->caution,
