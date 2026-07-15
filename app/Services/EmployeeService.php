@@ -197,6 +197,11 @@ class EmployeeService
     {
         try {
             if (!in_array(optional($employee->roles[0])->id, $this->blockRoles)) {
+                // [F-EMPLOYEE-PEER-GUARD 2026-07-15 / P2] Refuser la suppression d'un PAIR de
+                // privilège égal/supérieur (destruction horizontale) — symétrie store/update.
+                if (!$this->callerMayGrantRole(auth()->user(), optional($employee->roles[0])->id)) {
+                    throw new Exception(trans('all.message.permission_denied'), 422);
+                }
                 if ($employee->hasRole(optional($employee->roles[0])->id)) {
                     DB::transaction(function () use ($employee) {
                         $employee->addresses()->delete();
@@ -228,6 +233,14 @@ class EmployeeService
     {
         try {
             if (!in_array(optional($employee->roles[0])->id, $this->blockRoles)) {
+                // [F-EMPLOYEE-PEER-GUARD 2026-07-15 / P2] Symétrie avec store/update :
+                // refuser d'opérer sur un PAIR de privilège égal/supérieur (callerMayGrantRole
+                // = sous-ensemble strict). Sans ça, un Branch Manager pouvait réinitialiser le
+                // mot de passe d'un PAIR Branch Manager = account takeover horizontal, alors que
+                // le clonage d'un pair est justement refusé par store().
+                if (!$this->callerMayGrantRole(auth()->user(), optional($employee->roles[0])->id)) {
+                    throw new Exception(trans('all.message.permission_denied'), 422);
+                }
                 $employee->password = Hash::make($request->password);
                 $employee->save();
                 return $employee;
@@ -247,6 +260,11 @@ class EmployeeService
     {
         try {
             if (!in_array(optional($employee->roles[0])->id, $this->blockRoles)) {
+                // [F-EMPLOYEE-PEER-GUARD 2026-07-15 / P2] Refuser la modification d'image d'un
+                // PAIR de privilège égal/supérieur (défacement) — symétrie store/update.
+                if (!$this->callerMayGrantRole(auth()->user(), optional($employee->roles[0])->id)) {
+                    throw new Exception(trans('all.message.permission_denied'), 422);
+                }
                 if ($request->image) {
                     $employee->clearMediaCollection('profile');
                     $employee->addMediaFromRequest('image')->toMediaCollection('profile');
