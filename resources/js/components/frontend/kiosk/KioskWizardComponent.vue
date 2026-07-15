@@ -1844,7 +1844,8 @@ export default {
         });
       }
 
-      // Sauce variation (first selection only — extras are priced via sauceVariationSurcharge)
+      // Sauce variation (1ère sauce seulement = variation GRATUITE ; les sauces en plus sont
+      // facturées comme ItemExtra 'Sauce supplémentaire' dans normalizedExtras, cf. bloc plus bas)
       if (this.selections.sauceOrder.length > 0) {
         const firstSauceKey = this.selections.sauceOrder[0];
         const sauceAttr = this.kioskSauceAttribute(item);
@@ -1901,6 +1902,30 @@ export default {
           itemExtraTotal += parseFloat(fritesExtra.convert_price || fritesExtra.price || 0);
         }
       }
+
+      // [COMPOSITION-SAUCE BORNE 2026-07-15 · FROZEN §7 — déblocage owner-autorisé + LOCK]
+      // Sauce EN PLUS facturée RÉELLEMENT (parité borne↔web). 1ère sauce = variation gratuite
+      // (bloc plus haut) ; chaque sauce au-delà → ItemExtra 'Sauce supplémentaire' (@0,50,
+      // group_label='sauce') poussé dans normalizedExtras pour que le backend (PricingService
+      // SSOT) SCELLE le vrai prix. AVANT : surcoût display-only (sauceVariationSurcharge, plus
+      // bas) jamais envoyé → écran 7,40 € mais order scellé 6,90 € = fuite revenu +
+      // composition_snapshot sous-facturé (risque NF525). Items sans cet extra (frites/bols) →
+      // sauce en plus GRATUITE (aucun mécanisme backend) donc display == sealed.
+      // @pricing-allowed-block start — signed-off: owner gate 2026-07-15 (déblocage frozen compo)
+      const extraSauceN = Math.max(0, this.selections.sauceOrder.length - 1);
+      if (extraSauceN > 0) {
+        const ssExtra = (item.extras || []).find(e =>
+          e && String(e.group_label || '').toLowerCase() === 'sauce' && /suppl/i.test(String(e.name || ''))
+        );
+        if (ssExtra?.id) {
+          const ssPrice = parseFloat(ssExtra.convert_price || ssExtra.price || 0) || 0;
+          for (let i = 0; i < extraSauceN; i++) {
+            normalizedExtras.push({ id: parseInt(ssExtra.id, 10), name: ssExtra.name || '' });
+            itemExtraTotal += ssPrice;
+          }
+        }
+      }
+      // @pricing-allowed-block end
 
       Object.keys(this.selections.supplements).forEach(id => {
         const count = normalizeKioskSelectionCount(this.selections.supplements[id]);
@@ -2029,19 +2054,18 @@ export default {
 
       itemExtraTotal += composerExtraTotal;
 
-      // Sauce extra price — read from DB variations, fallback 0.50€
-      const extraSauceCount = Math.max(0, this.selections.sauceOrder.length - 1);
-      const sauceExtraPrice = this.kioskExtraSauceUnitPrice(item);
-      const sauceVariationSurcharge = extraSauceCount * sauceExtraPrice;
-
-      const fryPaid = (this.selections.fritesSauceOrder || []).filter(k => k && k !== 'sans');
-      const extraFritesSauceCount = Math.max(0, fryPaid.length - 1);
-      const fritesSauceSurcharge = extraFritesSauceCount * sauceExtraPrice;
+      // [COMPOSITION-SAUCE BORNE 2026-07-15 · FROZEN §7] La sauce EN PLUS n'est PLUS un surcoût
+      // display-only : elle est désormais une vraie ligne 'Sauce supplémentaire' dans
+      // normalizedExtras (bloc plus haut) → comptée dans itemExtraTotal ET scellée par le backend.
+      // On RETIRE donc sauceVariationSurcharge d'itemVariationTotal pour éviter le double-compte,
+      // et fritesSauceSurcharge (sauce frites en plus) qui n'a AUCUN mécanisme de facturation
+      // backend → gratuite, alignée sur le web (display == sealed). Le helper d'affichage
+      // calculateKioskRunningTotal applique la MÊME règle (kioskPricing.js).
 
       // Menu addon price — handle all choices (full / frites / boisson)
       const menuAddonPrice = getKioskMenuAddonPrice(item, this.selections.menuChoice);
 
-      const itemVariationTotal = sauceVariationSurcharge + fritesSauceSurcharge + menuAddonPrice + composerVariationTotal;
+      const itemVariationTotal = menuAddonPrice + composerVariationTotal;
 
       const basePrice  = parseFloat(item.convert_price) || 0;
       const qty        = this.selections.quantity || 1;

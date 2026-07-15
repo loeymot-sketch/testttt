@@ -1071,6 +1071,10 @@ describe('KioskWizardComponent — active wizard UX fixes', () => {
       { id: 301, name: 'Salade', convert_price: '0', price: 0 },
       { id: 401, name: 'Double Steak', group_label: 'viande', convert_price: '2.50', price: 2.5 },
       { id: 501, name: 'Cheddar', convert_price: '1.00', price: 1 },
+      // [COMPOSITION-SAUCE BORNE 2026-07-15] Sauce en plus facturée via cet ItemExtra
+      // (group_label='sauce', @0,50) — même convention que le backend réel (migration
+      // 2026_07_15_180000). getKioskExtraSauceUnitPrice le lit ; 2 sauces → +0,50 scellé & affiché.
+      { id: 431, name: 'Sauce supplémentaire', group_label: 'sauce', convert_price: '0.50', price: 0.5, status: 5 },
     ],
     addons: [
       { addon_item_name: 'Menu', addon_item_convert_price: '3.00', price: 3 },

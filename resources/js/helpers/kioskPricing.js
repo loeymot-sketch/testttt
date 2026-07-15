@@ -27,20 +27,23 @@ export function getKioskMenuPricingConfig() {
 }
 
 export function getKioskExtraSauceUnitPrice(item) {
-  const sauceAttr = item?.itemAttributes?.find((a) => (a.name || '').toLowerCase().includes('sauce'));
-  const vars = sauceAttr
-    ? (item?.variations?.[String(sauceAttr.id)] || item?.variations?.[sauceAttr.id])
+  // [COMPOSITION-SAUCE BORNE 2026-07-15] La sauce EN PLUS est facturée via l'ItemExtra
+  // 'Sauce supplémentaire' (group_label='sauce') — MÊME source que le montant SCELLÉ par le
+  // backend dans buildLineItem (normalizedExtras). Si l'item possède cet extra (famille
+  // sandwich/tacos/galette/burger) → son prix (0,50 €) ; sinon (frites/bols, aucun mécanisme
+  // backend) → 0 pour que l'affichage running-total == le prix réellement scellé (fini le
+  // display≠sealed qui montrait +0,50 € sans jamais le facturer).
+  const ss = Array.isArray(item?.extras)
+    ? item.extras.find((e) => e
+        && String(e.group_label || '').toLowerCase() === 'sauce'
+        && /suppl/i.test(String(e.name || '')))
     : null;
 
-  let unit = 0.50;
-  if (Array.isArray(vars)) {
-    const priced = vars.find((v) => parseFloat(v.convert_price || v.price || 0) > 0);
-    if (priced) {
-      unit = parseFloat(priced.convert_price || priced.price || 0.50);
-    }
+  if (ss) {
+    return parseFloat(ss.convert_price || ss.price || 0) || 0;
   }
 
-  return unit;
+  return 0;
 }
 
 export function getKioskMenuAddonPrice(item, menuChoice) {
@@ -84,15 +87,17 @@ export function calculateKioskRunningTotal(item, selections = {}) {
   let total = parseFloat(item.convert_price) || 0;
   const extraSauceUnitPrice = getKioskExtraSauceUnitPrice(item);
 
+  // [COMPOSITION-SAUCE BORNE 2026-07-15] Sauce en plus : (N-1) × prix de l'ItemExtra 'Sauce
+  // supplémentaire' (0,50 € famille sandwich/tacos/galette/burger ; 0 € si l'item n'a pas cet
+  // extra). extraSauceUnitPrice vaut déjà 0 dans ce dernier cas → affichage == prix scellé.
   const sauceOrder = selections.sauceOrder || [];
   if (sauceOrder.length > 1) {
     total += (sauceOrder.length - 1) * extraSauceUnitPrice;
   }
 
-  const frySauces = (selections.fritesSauceOrder || []).filter((key) => key && key !== 'sans');
-  if ((selections.menuChoice === 'full' || selections.menuChoice === 'frites') && frySauces.length > 1) {
-    total += (frySauces.length - 1) * extraSauceUnitPrice;
-  }
+  // Sauce FRITES en plus : AUCUN mécanisme de facturation backend (pas d'ItemExtra dédié sur les
+  // frites) → GRATUITE, alignée sur le web. Le surcoût display-only précédent est SUPPRIMÉ pour
+  // éliminer le display≠sealed (owner : la parité prime, follow-up si facturation frites voulue).
 
   if (Array.isArray(item.extras)) {
     item.extras.forEach((extra) => {
