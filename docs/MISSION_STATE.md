@@ -24,6 +24,8 @@
 | COMPO-SAUCE-web | menu.js SUPPLEMENT_SAUCE_PRICE + wizard-v2 étape sauce multi + api.js mapping 1ère→attr5 / reste→extra | commit web 05cd406, sauce×2=7,40 validé |
 | COMPO-SNAPSHOT-TRIGGER | Trigger DB immutabilité composition_snapshot vivant (régression 2026-07-11 healée) | 6/6 |
 | HYG-SENTINEL-NF525 | 3 sentinelles NF525 renommées `*SentinelTest.php` (étaient jamais exécutées) → **a révélé+corrigé dérive doc Z-cron 23:55/00:05→23:59/00:01** | 17/17 verts |
+| COMPO-VIANDE-web | Étape viande fusionnée min:N max:N+2, bandeau +2,50 au dépassement, étape séparée supprimée | web `f853a37`, Playwright Tacos M 6,90/9,40/11,90 |
+| COMPO-SAUCE-borne | Sauce en plus → vraie ligne ItemExtra dans normalizedExtras (fin display≠sealed), frozen §7 sous LOCK owner | testttt `d753f924b`, LIVE borne preview 200 extras_total 0.5 total 7.4 |
 | HEAL-double-release-r2b | P1 double-release isToday (ledger) + Carte 0€ + fat-finger cap 9999.99 | — |
 | HEAL-supervisor-destroy | P1 destroy libérait pas stock physique (withTrashed) + 5 P2/P3 + 6 tests | — |
 | HEAL-reconciliation-quota | P1 réconciliation libérations perdues + P2 quota + P2 tx carnet | — |
@@ -40,7 +42,6 @@
 
 | ID | Sév | Résumé | Note |
 |----|-----|--------|------|
-| COMP-UI-WEB (viande) | P1 | Fusionner étape 'Viande supplémentaire' dans étape viande principale (min:n, max:n+extra), bandeau haut +2,50 dès dépassement de N ; api.js route viandes.slice(N)→extra | sauce déjà fait ; reste viande |
 | REFUND-SPLIT | P1 | Refund SPLIT tranche-blind : refundGateway lit pos_payment_method → 0 sortie tiroir pour tranches CASH d'une commande multi-tender | breakdown par tranche |
 | HYG-SQL-DUMPS | P1 | 7 dumps SQL ~29 Mo trackés dans git (viole §3quater) → git rm --cached + gitignore | |
 | HYG-WORKTREES | P2 | 23 worktrees (~15 zombies) + gitlink `.claude/worktrees/clever-hypatia` → prune | |
@@ -58,7 +59,6 @@
 | OWNER-OUTBOX-FLUSH | P1 | ~10373 events outbox re-queués redis — NE PAS démarrer worker queue avant flush/tri |
 | GATE-PUSH-G1 | P1 | Push branche partagée vers origin (multi-sessions) |
 | OWNER-DEPLOY-VPS | P1 | Redeploy VPS via `tools/deploy-lecayenne.sh` (avec triggers NF525, PAS deploy-vps.sh) |
-| COMPO-UI-BORNE | P2 | Borne KioskWizardComponent (FROZEN §7) : câbler sauceVariationSurcharge display-only→vraie ligne extra (parité borne↔web). Gate frozen + LOCK. Owner a autorisé le déblocage compo mais LOCK doc requise |
 | FROZEN-COUPON-SCOPE | P2 | Coupon scopé surface/branche = touche PricingService (SSOT frozen §7) |
 | OWNER-PIN-PROD | P2 | Carnet PIN prod : changer DAILY_BOOK_PIN (≠2468) |
 | SITE-WEB-CONTENT | P2 | Site Vercel : lien Uber Eats vide, 26 [À COMPLÉTER] LCEN |
@@ -76,7 +76,7 @@
 4. **Persistance box** — crontab + launchd + worker APRÈS flush outbox (owner)
 5. **Deploy** — push origin autorisé + redeploy deploy-lecayenne.sh (owner)
 6. **Site web prod** — URL backend prod + menu-image-base réels repo Vercel (owner)
-7. **Parité facturation compo** — UI web + borne (frozen, LOCK) câblées sur ItemExtra ← COMP-UI-WEB viande + COMPO-UI-BORNE restants
+7. **Parité facturation compo** — UI web + borne câblées sur ItemExtra ✅ (2026-07-15 : sauce web+borne + viande web ; borne sous LOCK_COMPO_SAUCE_BORNE, prouvé live 7,40). Reste optionnel : viande borne déjà OK (source='extra' existant), frites 2e sauce payante = follow-up si voulu (créer ItemExtra frites)
 8. **Refund split** — tiroir = somme réelle tranches CASH (breakdown) ← REFUND-SPLIT restant
 9. **Hygiène git** — 0 dump SQL tracké, worktrees prunés, gitlink retiré ← HYG-* restants
 10. **Ops temps-réel** — soketi Node 18, BROADCAST_DRIVER≠null, alerte externe (owner)
