@@ -135,6 +135,21 @@ class OnlineOrderController extends AdminController
             );
         }
 
+        // [SYNC-WEB-KDS-01 2026-07-15 / P1] Une commande online ACCEPTÉE sans encaissement
+        // (bouton « Accepter » nu → PENDING→ACCEPT sans payer) restait UNPAID → JAMAIS libérée
+        // sur le board cuisine (KitchenReleaseRule::applyBoardReleaseFilter exige
+        // PAID|PENDING_COUNTER|POS-cash) → commande fantôme acceptée + client notifié
+        // « acceptée », que la cuisine ne voit JAMAIS. On bascule le paiement en
+        // PENDING_COUNTER (dû au comptoir/à la livraison = sémantique Plan B, identique aux
+        // commandes téléphone qui sont board-released à l'acceptation). Le fiscal_seq reste
+        // alloué au VRAI encaissement (changePaymentStatus→PAID) → NF525 inchangé. Idempotent.
+        if ((int) $request->status === \App\Enums\OrderStatus::ACCEPT
+            && (int) $order->payment_status === \App\Enums\PaymentStatus::UNPAID
+            && (int) $order->order_type !== \App\Enums\OrderType::POS) {
+            $order->payment_status = \App\Enums\PaymentStatus::PENDING_COUNTER;
+            $order->save();
+        }
+
         try {
             return new OrderDetailsResource($this->orderService->changeStatus($order, $request));
         } catch (\Symfony\Component\HttpKernel\Exception\HttpException $http) {
