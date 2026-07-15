@@ -227,8 +227,12 @@ class PaymentService
         }
 
         $paid = false;
+        // [F-COUNTER-PHANTOM-TRANSITION 2026-07-15 / P2] Capture l'état AVANT collecte
+        // (hoisté hors de la closure, par référence comme $paid) pour ne broadcaster
+        // l'ACCEPT→PREPARING que si la transition a réellement eu lieu DANS cet appel.
+        $prePaidStatus = null;
 
-        DB::transaction(function () use ($order, $mode, $received, $note, &$paid): void {
+        DB::transaction(function () use ($order, $mode, $received, $note, &$paid, &$prePaidStatus): void {
             $locked = Order::query()
                 ->whereKey($order->id)
                 ->lockForUpdate()
@@ -468,7 +472,12 @@ class PaymentService
             // signal for the new column movement. Best-effort try/catch
             // mirrors the existing cancel path (line 497) so a Pusher hiccup
             // never escalates to an HTTP 5xx for the cashier.
-            if ((int) $order->status === OrderStatus::PREPARING) {
+            // [F-COUNTER-PHANTOM-TRANSITION 2026-07-15 / P2] Ne broadcaster que si la
+            // commande ÉTAIT en ACCEPT avant cet appel (transition réelle). Une commande
+            // différée (téléphone/POS) créée DIRECTEMENT en PREPARING ne doit PAS émettre
+            // un faux ACCEPT→PREPARING à chaque encaissement (journal d'events corrompu +
+            // refresh KDS/OSS + FCM parasites). Miroir de la garde recordTransition (l.388).
+            if ($prePaidStatus === OrderStatus::ACCEPT && (int) $order->status === OrderStatus::PREPARING) {
                 try {
                     OrderStatusChanged::dispatch(
                         $order,

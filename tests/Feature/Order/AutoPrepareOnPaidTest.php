@@ -319,6 +319,34 @@ class AutoPrepareOnPaidTest extends TestCase
         $this->assertSame(OrderStatus::PREPARING, (int) $order->fresh()->status);
     }
 
+    /**
+     * [F-COUNTER-PHANTOM-TRANSITION 2026-07-15 / P2] Une commande différée (téléphone/POS)
+     * créée DIRECTEMENT en PREPARING — jamais passée par ACCEPT — ne doit émettre AUCUN
+     * OrderStatusChanged(ACCEPT→PREPARING) à l'encaissement. Avant, la garde testait l'état
+     * FINAL (status===PREPARING, toujours vrai) → faux event à chaque encaissement.
+     */
+    public function test_deferred_order_already_preparing_emits_no_phantom_transition(): void
+    {
+        Queue::fake();
+        Event::fake([OrderPaidAtCounter::class, OrderStatusChanged::class]);
+
+        [$branch, $operator] = $this->branchOperator();
+        $order = $this->pendingCounterOrder($branch, [
+            'status'         => OrderStatus::PREPARING, // créée directement en PREPARING
+            'source_surface' => 'pos',
+        ]);
+
+        $this->actingAs($operator);
+        app(PaymentService::class)->confirmCounterPayment(
+            $order->fresh(),
+            PosPaymentMethod::CARD
+        );
+
+        $this->assertSame(OrderStatus::PREPARING, (int) $order->fresh()->status);
+        $this->assertSame(PaymentStatus::PAID, (int) $order->fresh()->payment_status);
+        Event::assertNotDispatched(OrderStatusChanged::class);
+    }
+
     // ---------------------------------------------------------------------
     // Fixtures
     // ---------------------------------------------------------------------

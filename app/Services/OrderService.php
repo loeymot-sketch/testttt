@@ -2890,16 +2890,25 @@ class OrderService
             // lignes doivent encore exister pour que releaseForOrderItems lise qty/item_id). Idempotent via
             // released_qty (double-release avec un cancel antérieur = no-op). On saute les états déjà
             // terminaux (déjà libérés + hors KDS) pour éviter un broadcast d'annulation parasite.
-            if (! in_array((int) $order->status, [\App\Enums\OrderStatus::CANCELED, \App\Enums\OrderStatus::REJECTED, \App\Enums\OrderStatus::RETURNED], true)) {
+            // [F-DESTROY-RELEASE-ATOMIC 2026-07-15 / P2] La libération compensatoire est
+            // désormais dispatchée DANS la transaction de suppression : OrderCanceled est
+            // DispatchableAfterCommit → elle ne tire qu'au COMMIT durable. AVANT, le dispatch
+            // précédait la tx (transactionLevel()==0 → tir IMMÉDIAT) → les listeners synchrones
+            // (Release{Stock,Availability}OnOrderCanceled) relâchaient le stock/quota AVANT le
+            // delete ; si la tx échouait ensuite (throw AuditLogService::write lock/QueryException),
+            // la commande restait VIVANTE avec son stock déjà relâché (sur-disponibilité, faux
+            // niveau). loadMissing garde les lignes en mémoire → les listeners post-commit lisent
+            // qty/item_id même après le delete des lignes. Idempotent via released_qty.
+            $shouldReleaseOnDestroy = ! in_array((int) $order->status, [\App\Enums\OrderStatus::CANCELED, \App\Enums\OrderStatus::REJECTED, \App\Enums\OrderStatus::RETURNED], true);
+            if ($shouldReleaseOnDestroy) {
                 $order->loadMissing('orderItems');
-                try {
-                    OrderCanceled::dispatch($order);
-                } catch (\Throwable $e) {
-                    Log::warning('[SELF-AUDIT R5 P2] release-on-destroy failed (isolated)', ['order_id' => $order->id, 'error' => $e->getMessage()]);
-                }
             }
 
-            DB::transaction(function () use ($order, $actor, $reason) {
+            DB::transaction(function () use ($order, $actor, $reason, $shouldReleaseOnDestroy) {
+                if ($shouldReleaseOnDestroy) {
+                    // After-commit : ne tire que si TOUTE la suppression (delete + audit NF525) commit.
+                    OrderCanceled::dispatch($order);
+                }
                 $order->address()?->delete();
                 $order->coupon()?->delete();
                 $order->orderItems()?->delete();

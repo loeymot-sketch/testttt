@@ -91,4 +91,83 @@ class DestroyReleasesAvailabilityTest extends TestCase
             'daily_consumed_qty' => 0,
         ]);
     }
+
+    /**
+     * [F-DESTROY-RELEASE-ATOMIC 2026-07-15 / P2] Si la transaction de suppression ÉCHOUE
+     * (ici : AuditLogService::write throw), la libération compensatoire ne doit PAS avoir eu
+     * lieu — sinon la commande reste VIVANTE avec son stock déjà relâché (sur-disponibilité).
+     * OrderCanceled est dispatché DANS la tx (after-commit) → droppé au rollback.
+     */
+    public function test_destroy_tx_failure_does_not_release_quota_and_keeps_order_alive(): void
+    {
+        $branch = Branch::factory()->create();
+        $admin = User::factory()->create(['branch_id' => $branch->id]);
+        $admin->assignRole('POS Operator');
+        $this->actingAs($admin);
+
+        $category = ItemCategory::factory()->create();
+        $tax = Tax::factory()->create();
+        $item = Item::factory()->create(['item_category_id' => $category->id, 'tax_id' => $tax->id, 'price' => 10.00]);
+
+        $order = Order::factory()->create([
+            'branch_id' => $branch->id,
+            'user_id' => $admin->id,
+            'status' => OrderStatus::ACCEPT,
+            'payment_status' => PaymentStatus::UNPAID,
+        ]);
+
+        OrderItem::forceCreate([
+            'order_id' => $order->id,
+            'branch_id' => $branch->id,
+            'item_id' => $item->id,
+            'quantity' => 3,
+            'discount' => 0,
+            'tax_name' => null,
+            'tax_rate' => 0,
+            'tax_type' => 1,
+            'tax_amount' => 0,
+            'price' => 10.00,
+            'item_variation_total' => 0,
+            'item_extra_total' => 0,
+            'total_price' => 30.00,
+            'released_qty' => 0,
+            'released_at' => null,
+        ]);
+
+        DB::table('item_branch_availability')->insert([
+            'branch_id' => $branch->id,
+            'item_id' => $item->id,
+            'is_available' => true,
+            'unavailable_reason' => null,
+            'max_daily_qty' => 10,
+            'daily_consumed_qty' => 3,
+            'daily_reset_at' => now()->toDateString(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // Force the destroy transaction to fail on the NF525 audit write.
+        $this->app->instance(\App\Services\Fiscal\AuditLogService::class, new class extends \App\Services\Fiscal\AuditLogService {
+            public function __construct() {}
+            public function write(array $data): \App\Models\AuditLog
+            {
+                throw new \RuntimeException('forced audit failure mid-destroy');
+            }
+        });
+
+        try {
+            app(OrderService::class)->destroy($order);
+        } catch (\Throwable $e) {
+            // expected — the tx rolls back
+        }
+
+        // La commande reste VIVANTE (delete rollé back)…
+        $this->assertDatabaseHas('orders', ['id' => $order->id, 'deleted_at' => null]);
+        // …et le quota N'A PAS été relâché (pas de sur-disponibilité fantôme).
+        $this->assertDatabaseHas('item_branch_availability', [
+            'branch_id' => $branch->id,
+            'item_id' => $item->id,
+            'daily_consumed_qty' => 3,
+        ]);
+    }
 }
