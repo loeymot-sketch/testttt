@@ -2110,17 +2110,19 @@ export default {
             const entry = perms.find((p) => p && p.url === 'online-orders');
             return !!(entry && entry.access === true);
         },
-        // [GOAL RUPTURE-CARNET 2026-07-15 / W2] Bouton « Rupture » visible si le
-        // staff porte `availability_toggle` (url availability-toggle) OU
-        // `items_edit` (url items/edit) — miroir du gate serveur
-        // AvailabilityController `permission:items_edit|availability_toggle`.
+        // [GOAL RUPTURE-CARNET 2026-07-15 / W2 + W6 heal P1] Bouton « Rupture »
+        // visible si le staff porte `availability_toggle` OU `items_edit` —
+        // miroir du gate serveur AvailabilityController. Matcher sur p.name
+        // (stable, toujours renvoyé par PermissionResource) : la colonne custom
+        // `url` était NULL sur les lignes DB préexistantes → bouton invisible
+        // pour le caissier (finding adversarial W6).
         canToggleAvailability: function () {
             const raw = this.$store.getters.authPermission;
             const perms = Array.isArray(raw)
                 ? raw
                 : (raw && Array.isArray(raw.data) ? raw.data : []);
             return perms.some((p) => p
-                && (p.url === 'availability-toggle' || p.url === 'items/edit')
+                && (p.name === 'availability_toggle' || p.name === 'items_edit')
                 && p.access === true);
         },
         // [Q10 P-OWNER 2026-05-21] Localized "Mis à jour il y a Xs" labels

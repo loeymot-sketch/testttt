@@ -70,6 +70,20 @@ class AvailabilityTogglePermissionTest extends TestCase
         }
     }
 
+    public function test_availability_toggle_grants_item_list_for_the_panel(): void
+    {
+        // [W6 heal P1] Le Chef (KDS) doit pouvoir LISTER les items — le panel
+        // rupture fetch GET /api/admin/item ; sans ce droit le panel était mort
+        // (403) pour son persona cible.
+        $branch = Branch::factory()->create();
+        $user = User::factory()->create(['branch_id' => $branch->id]);
+        $user->assignRole('Chef');
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/admin/item')
+            ->assertOk();
+    }
+
     public function test_user_without_any_permission_is_still_forbidden(): void
     {
         $branch = Branch::factory()->create();

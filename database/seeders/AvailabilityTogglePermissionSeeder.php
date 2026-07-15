@@ -22,10 +22,13 @@ class AvailabilityTogglePermissionSeeder extends Seeder
     public function run(): void
     {
         foreach (['sanctum', 'web'] as $guard) {
-            // `title`/`url` : colonnes custom du modèle Permission de ce repo —
-            // `url` sert de clé de matching côté UI (AppLibrary::permissionWithAccess,
-            // cf. PosComponent `canProcessWebOrders` qui matche p.url).
-            $permission = Permission::firstOrCreate([
+            // `title`/`url` : colonnes custom du modèle Permission de ce repo.
+            // [W6 heal P1] updateOrCreate (PAS firstOrCreate) : des lignes
+            // préexistantes avec title/url NULL ne seraient JAMAIS réparées par
+            // firstOrCreate (defaults appliqués à la création seulement) → le
+            // matcher UI ne voyait pas la permission. Le seeder est désormais
+            // convergent : re-run = backfill garanti.
+            $permission = Permission::updateOrCreate([
                 'name' => 'availability_toggle',
                 'guard_name' => $guard,
             ], [

@@ -35,7 +35,11 @@ class ItemController extends AdminController
         $this->middleware(['permission:items_show'])->only('show', 'downloadSample');
         $this->middleware(function ($request, $next) {
             $user = $request->user();
-            abort_unless($user && $user->canAny(['items_show', 'pos']), 403);
+            // [GOAL RUPTURE-CARNET 2026-07-15 / W6 heal P1] `availability_toggle`
+            // ajouté : le Chef (KDS) doit pouvoir LISTER les items pour le panel
+            // rupture (86) — il portait le droit de toggle mais pas celui de
+            // charger la liste → panel mort (403) pour son persona cible.
+            abort_unless($user && $user->canAny(['items_show', 'pos', 'availability_toggle']), 403);
 
             return $next($request);
         })->only('index', 'itemDetails', 'lookupBarcode');

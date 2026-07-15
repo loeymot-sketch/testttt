@@ -166,6 +166,16 @@ export default {
             return this.entries.reduce((sum, e) => sum + (e.amount || 0), 0);
         },
     },
+    watch: {
+        // [W6 heal P3] Une photo choisie en mode Dépense restait attachée
+        // (invisible) après bascule Acompte/Note → facture collée à la mauvaise
+        // entrée. Purge à chaque changement de type.
+        'form.type'() {
+            this.photoFile = null;
+            this.photoName = '';
+            this.formError = null;
+        },
+    },
     mounted() {
         api('/carnet/api/status').then((s) => {
             if (s.unlocked) {
@@ -243,7 +253,12 @@ export default {
             if (!window.confirm('Supprimer « ' + e.label + ' » ?')) return;
             api('/carnet/api/entries/' + e.id, { method: 'DELETE' })
                 .then(() => this.loadDay())
-                .catch(() => {});
+                .catch((err) => {
+                    // [W6 heal P3] Échec avalé silencieusement : 401 = session PIN
+                    // expirée → relock ; autre erreur → feedback visible.
+                    if (err.status === 401) { this.unlocked = false; return; }
+                    this.formError = 'Suppression impossible. Réessayez.';
+                });
         },
         loadDay() {
             api('/carnet/api/entries?date=' + this.dayFilter)

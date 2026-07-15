@@ -57,6 +57,18 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute($perMinute)->by($request->user()?->id ?: $request->ip());
         });
 
+        // [GOAL RUPTURE-CARNET 2026-07-15 / W6 heal P2] Anti-bruteforce PIN du
+        // Carnet : couche par-IP (5/min) + plafond GLOBAL (15/min toutes IP
+        // confondues) — le throttle IP seul est contournable en spoofant
+        // X-Forwarded-For (TrustProxies '*'), le plafond global ferme ce vecteur
+        // sur un PIN à 10^4-10^6 combinaisons.
+        RateLimiter::for('daily-book-pin', function (Request $request) {
+            return [
+                Limit::perMinute(5)->by('dbp-ip:'.$request->ip()),
+                Limit::perMinute(15)->by('dbp-global'),
+            ];
+        });
+
         RateLimiter::for('kiosk-orders', function (Request $request) {
             $userKey = $request->user()?->id ?? 'guest';
 

@@ -39,10 +39,19 @@ class DailyBookEntryController extends Controller
             'type' => ['required', Rule::in(DailyBookEntry::TYPES)],
             'label' => ['required', 'string', 'max:190'],
             'worker_name' => ['required_if:type,advance', 'nullable', 'string', 'max:120'],
+            // [W6 heal P2] prohibited_if : une note avec montant fantôme faussait
+            // le total du jour (frontend somme tout) vs le mois (backend filtre).
             'amount' => [
-                'required_unless:type,note', 'nullable', 'numeric', 'min:0', 'max:99999.99',
+                'required_unless:type,note', 'prohibited_if:type,note',
+                'nullable', 'numeric', 'min:0', 'max:99999.99',
             ],
-            'entry_date' => ['required', 'date_format:Y-m-d'],
+            // [W6 heal P3] entry_date bornée : pas de mois fantômes (passé
+            // lointain / futur) dans les résumés.
+            'entry_date' => [
+                'required', 'date_format:Y-m-d',
+                'after_or_equal:2024-01-01',
+                'before_or_equal:'.now()->addDay()->format('Y-m-d'),
+            ],
             'note' => ['nullable', 'string', 'max:2000'],
             'photo' => [
                 'nullable', 'image', 'mimes:jpg,jpeg,png,webp,heic',

@@ -56,7 +56,12 @@ class StockRuptureDashboardController extends AdminController
             ->with(['item:id,name', 'branch:id,name'])
             ->whereIn('branch_id', $branchIds)
             ->where('is_available', false)
-            ->where('unavailable_reason', 'stock_rupture')
+            // [GOAL RUPTURE-CARNET 2026-07-15 / W6 heal P2] Toutes les ruptures
+            // effectives, pas seulement 'stock_rupture' : les auto-86 quota
+            // journalier écrivent 'out_of_stock' (AvailabilityService:141,403) et
+            // le toggle manuel accepte une raison libre/nullable — le dashboard
+            // les rendait invisibles alors que borne/caisse les masquaient.
+            ->whereIn('unavailable_reason', ['stock_rupture', 'out_of_stock'])
             ->orderByDesc('unavailable_since')
             ->limit(100)
             ->get()

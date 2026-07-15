@@ -74,10 +74,13 @@ class DailyBookService
             'total_advances' => round((float) $advances->sum('amount'), 2),
             'total_out' => round((float) $expenses->sum('amount') + (float) $advances->sum('amount'), 2),
             'notes_count' => $entries->where('type', DailyBookEntry::TYPE_NOTE)->count(),
+            // [W6 heal P2] Groupement insensible à la casse/espaces : « karim » /
+            // « Karim  » = même travailleur (nom libre saisi vite en service) ;
+            // l'affichage garde la première casse rencontrée.
             'by_worker' => $advances
-                ->groupBy(fn ($e) => (string) $e->worker_name)
-                ->map(fn ($group, $worker) => [
-                    'worker_name' => $worker,
+                ->groupBy(fn ($e) => mb_strtolower(trim((string) $e->worker_name)))
+                ->map(fn ($group) => [
+                    'worker_name' => trim((string) $group->first()->worker_name),
                     'total' => round((float) $group->sum('amount'), 2),
                     'count' => $group->count(),
                 ])->values()->all(),

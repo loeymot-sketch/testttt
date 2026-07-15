@@ -62,7 +62,7 @@ Route::prefix('carnet')->name('daily-book.')->middleware(['installed'])->group(f
     })->name('index');
 
     Route::post('/api/pin', [\App\Http\Controllers\DailyBook\DailyBookAuthController::class, 'unlock'])
-        ->middleware('throttle:5,1')->name('pin');
+        ->middleware('throttle:daily-book-pin')->name('pin');
     Route::get('/api/status', [\App\Http\Controllers\DailyBook\DailyBookAuthController::class, 'status'])->name('status');
 
     Route::middleware([\App\Http\Middleware\EnsureDailyBookPin::class])->group(function () {

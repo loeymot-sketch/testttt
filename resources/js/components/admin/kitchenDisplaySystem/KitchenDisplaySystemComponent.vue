@@ -7,10 +7,12 @@
     recents in active grid vs. full-day history viewer in drawer).
   -->
   <div class="kds-history-trigger-row">
-    <!-- [GOAL RUPTURE-CARNET 2026-07-15 / W3] Bouton « Rupture » cuisine — rendu
-         au-dessus des DEUX layouts (V2 + legacy), comme Historique, pour que le
-         Chef y accède quel que soit le mode de grille actif. -->
+    <!-- [GOAL RUPTURE-CARNET 2026-07-15 / W3 + W6 heal P2] Bouton « Rupture »
+         cuisine — rendu au-dessus des DEUX layouts (V2 + legacy), gate miroir du
+         serveur (Stuff/Waiter sans availability_toggle ne voient pas un bouton
+         qui ne mènerait qu'à des 403). -->
     <button
+      v-if="canToggleAvailability"
       type="button"
       class="kds-history-trigger kds-rupture-trigger"
       data-testid="kds-availability-panel-open"
@@ -1307,6 +1309,18 @@ export default {
   computed: {
     direction() {
       return this.$store.getters['frontendLanguage/show'].display_mode === displayModeEnum.RTL ? 'rtl' : 'ltr';
+    },
+    // [GOAL RUPTURE-CARNET 2026-07-15 / W6 heal P2] Miroir du gate serveur
+    // AvailabilityController (items_edit|availability_toggle) — matcher sur
+    // p.name (stable), même logique que PosComponent.canToggleAvailability.
+    canToggleAvailability() {
+      const raw = this.$store.getters.authPermission;
+      const perms = Array.isArray(raw)
+        ? raw
+        : (raw && Array.isArray(raw.data) ? raw.data : []);
+      return perms.some((p) => p
+        && (p.name === 'availability_toggle' || p.name === 'items_edit')
+        && p.access === true);
     },
     // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
     // Currently-active recall ids (RAPPELÉ badge window still open). Derived
