@@ -175,6 +175,26 @@ class KitchenTicketDrinkVisibilityTest extends TestCase
 
     private const EMPTY_SNAP = ['lines' => [], 'extras' => [], 'addons' => []];
 
+    /**
+     * [KITCHEN-QTY 2026-07-15 owner] Le préfixe quantité n'apparaît QUE si qty > 1.
+     * À 1 exemplaire (cas courant) → nom SEUL (« 1 x » supprimé : lignes plus courtes,
+     * la plupart des commandes sont à 1). À 2/3 → « 2 x … » conservé (utile au cuisinier).
+     */
+    public function test_kitchen_qty_prefix_only_when_greater_than_one(): void
+    {
+        $one = $this->decodedText($this->renderer()->renderKitchenTicket(
+            $this->makeOrder([['name' => 'Coca-Cola 33cl', 'quantity' => 1, 'snapshot' => self::EMPTY_SNAP]])
+        ));
+        $this->assertStringContainsString('Coca-Cola 33cl', $one, 'le nom sort toujours');
+        $this->assertStringNotContainsString('1 x ', $one, 'qty=1 → PAS de préfixe « 1 x »');
+
+        $two = $this->decodedText($this->renderer()->renderKitchenTicket(
+            $this->makeOrder([['name' => 'Coca-Cola 33cl', 'quantity' => 2, 'snapshot' => self::EMPTY_SNAP]])
+        ));
+        $this->assertStringContainsString('2 x ', $two, 'qty=2 → préfixe « 2 x » conservé');
+        $this->assertStringContainsString('Coca-Cola 33cl', $two, 'le nom sort avec le préfixe');
+    }
+
     public function test_standalone_drink_item_prints_full_name_not_code(): void
     {
         // shape réel #5456 : « Coca-Cola 33cl » standalone (snapshot vide)

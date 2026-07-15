@@ -245,7 +245,11 @@ class OrderReceiptEscPosRendererTest extends TestCase
         // proprement sur 2 lignes (jamais coupée au milieu d'un symbole) → on vérifie les
         // SEGMENTS (robuste à l'enroulement) plutôt que la chaîne contiguë.
         $this->assertStringContainsString('TAC', $bytes);
-        $this->assertStringContainsString('Cordon Frec', $bytes);
+        // [KITCHEN-QTY 2026-07-15] Segments vérifiés séparément (robuste à l'enroulement) : sans
+        // le préfixe « 1 x » (retiré à qty=1), la ligne double-taille s'enroule à un autre endroit
+        // et « Cordon » / « Frec » peuvent tomber sur 2 lignes — les deux viandes restent présentes.
+        $this->assertStringContainsString('Cordon', $bytes);
+        $this->assertStringContainsString('Frec', $bytes);
         $this->assertStringContainsString('SAM', $bytes);
         // [T3-CUISINE] Suppléments payants en GRAS + étoile « * » (accent doit survivre CP858).
         $this->assertStringContainsString('* Cheddar', $bytes);

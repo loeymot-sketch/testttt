@@ -303,6 +303,10 @@ final class OrderReceiptEscPosRenderer
             $name = (string) ($oi->name ?? optional($oi->orderItem)->name ?? 'Article');
             $snap = is_array($oi->composition_snapshot) ? $oi->composition_snapshot : [];
             $qty = max(1, (int) ($oi->quantity ?? 1));
+            // [KITCHEN-QTY 2026-07-15 owner] Préfixe quantité affiché UNIQUEMENT si > 1
+            // (« 2 x … »). À 1 exemplaire (cas courant) → nom SEUL, le « 1 x » allongeait
+            // la ligne pour rien. À 2/3 le préfixe reste utile au cuisinier.
+            $qtyPrefix = $qty > 1 ? $qty.' x ' : '';
             $instruction = (string) ($oi->instruction ?? '');
 
             if ($this->symbolic->isMenuItem($name)) {
@@ -313,7 +317,7 @@ final class OrderReceiptEscPosRenderer
                 $menuLine = $sym !== '' ? 'MENU : '.$sym : 'MENU';
                 // [W3-FIX-C 2026-07-06] La boisson de la formule sort AUSSI en cuisine
                 // (owner : le cuisinier prépare les boissons).
-                $blocks[] = ['head' => $qty.' x '.$menuLine, 'menu' => null, 'supps' => [], 'drinks' => $this->symbolic->drinkLines($snap), 'notes' => []];
+                $blocks[] = ['head' => $qtyPrefix.$menuLine, 'menu' => null, 'supps' => [], 'drinks' => $this->symbolic->drinkLines($snap), 'notes' => []];
 
                 continue;
             }
@@ -330,8 +334,8 @@ final class OrderReceiptEscPosRenderer
             // « 1 x COC » ne dit pas au cuisinier QUELLE boisson préparer. Jumeau
             // écran : kdsSymbolic.js renderItemSymbolic (categorize==='drink').
             $head = $this->symbolic->isDrinkItem($name)
-                ? $qty.' x '.trim($name)
-                : $qty.' x '.$this->symbolic->mainLine($name, $snap);
+                ? $qtyPrefix.trim($name)
+                : $qtyPrefix.$this->symbolic->mainLine($name, $snap);
             $blocks[] = [
                 'head' => $head,
                 'menu' => $menu !== '' ? $menu : null,
