@@ -325,7 +325,21 @@ class PosOrderController extends AdminController
         // OrderStateMachine DELIVERED->RETURNED edge stays unconditional (frozen
         // + owner-locked LOCK_ORDERSTATEMACHINE_PREZ_REFUND); authorization lives
         // here at the controller layer, not in the state machine.
-        if ((int) $request->status === \App\Enums\OrderStatus::RETURNED) {
+        // [F-CANCEL-REFUND-PARITY 2026-07-15 / P1] RETURNED n'était pas la seule
+        // transition qui rembourse : OrderService::changeStatus sort AUSSI l'argent
+        // du tiroir sur CANCELED (16) et REJECTED (19) d'une commande PAYÉE (cashBack
+        // si Transaction, sinon recordCashRefundMovement pour une vente cash directe —
+        // OrderService.php:2286-2320). Un POS Operator (pos-orders sans pos-refund)
+        // pouvait donc drainer le tiroir du total en « annulant » une vente cash payée
+        // = remboursement déguisé sans droit de rembourser. On étend le gate à
+        // CANCELED/REJECTED UNIQUEMENT quand la commande est PAYÉE (annuler une commande
+        // NON payée ne bouge aucun argent → geste opérationnel légitime, non gardé).
+        // RETURNED garde son gate inconditionnel (parité historique REFUND-BYPASS-GUARD).
+        $refundLikeStatus = (int) $request->status;
+        $movesCashOnStatusChange = $refundLikeStatus === \App\Enums\OrderStatus::RETURNED
+            || (in_array($refundLikeStatus, [\App\Enums\OrderStatus::CANCELED, \App\Enums\OrderStatus::REJECTED], true)
+                && (int) $order->payment_status === \App\Enums\PaymentStatus::PAID);
+        if ($movesCashOnStatusChange) {
             abort_unless(
                 auth()->user()?->can('pos-refund') ?? false,
                 403,

@@ -119,7 +119,15 @@ class OnlineOrderController extends AdminController
         // transition (cashBack + loyalty refund). Gate it on `pos-refund` here too so the
         // online-orders route can never become a refund-bypass if that permission is ever
         // granted to a non-refund role. Only status=RETURNED is gated; authz at the controller.
-        if ((int) $request->status === \App\Enums\OrderStatus::RETURNED) {
+        // [F-CANCEL-REFUND-PARITY 2026-07-15 / P1] Même trou que PosOrderController :
+        // CANCELED (16) / REJECTED (19) d'une commande PAYÉE déclenche aussi une sortie
+        // tiroir/refund (OrderService.php:2286-2320). Gate étendu à CANCELED/REJECTED
+        // quand payment_status=PAID (annulation d'une commande non payée reste ouverte).
+        $refundLikeStatus = (int) $request->status;
+        $movesCashOnStatusChange = $refundLikeStatus === \App\Enums\OrderStatus::RETURNED
+            || (in_array($refundLikeStatus, [\App\Enums\OrderStatus::CANCELED, \App\Enums\OrderStatus::REJECTED], true)
+                && (int) $order->payment_status === \App\Enums\PaymentStatus::PAID);
+        if ($movesCashOnStatusChange) {
             abort_unless(
                 auth()->user()?->can('pos-refund') ?? false,
                 403,

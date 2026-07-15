@@ -218,4 +218,159 @@ class RefundBypassTwinRoutesGuardTest extends TestCase
         $resp->assertStatus(403);
         $this->assertSame(0, Transaction::where('order_id', $order->id)->where('type', 'cash_back')->count());
     }
+
+    // -----------------------------------------------------------------------
+    // [F-CANCEL-REFUND-PARITY 2026-07-15 / P1] CANCELED (16) & REJECTED (19) d'une
+    // commande PAYÉE drainent AUSSI le tiroir (OrderService::changeStatus:2286-2320) —
+    // le gate RETURNED-only laissait ce troisième jumeau ouvert. Ces tests ferment
+    // le vecteur « annulation = remboursement déguisé » sur les 3 routes.
+    // -----------------------------------------------------------------------
+
+    /** A PAID direct cash POS sale in PREPARING — reachable CANCELED per OrderStateMachine. */
+    private function makePreparingPaidCashOrder(Branch $branch, User $customer): Order
+    {
+        $order = Order::factory()->create([
+            'user_id'            => $customer->id,
+            'branch_id'          => $branch->id,
+            'order_type'         => OrderType::POS,
+            'status'             => OrderStatus::PREPARING,
+            'payment_status'     => PaymentStatus::PAID,
+            'payment_method'     => PaymentGateway::CASH_ON_DELIVERY,
+            'pos_payment_method' => PosPaymentMethod::CASH,
+            'subtotal'           => 30.00,
+            'total'              => 30.00,
+            'total_tax'          => 0,
+            'discount'           => 0,
+            'created_at'         => Carbon::now()->subMinutes(5),
+        ]);
+        $order->fiscal_sequence_no = 601;
+        $order->save();
+
+        return $order->fresh();
+    }
+
+    /** POS Operator equivalent: holds `pos-orders` (route perm) but NOT `pos-refund`. */
+    private function newPosOperator(Branch $branch): User
+    {
+        $user = User::factory()->create(['branch_id' => $branch->id, 'password' => Hash::make('password')]);
+        Permission::firstOrCreate(['name' => 'pos-orders', 'guard_name' => 'sanctum']);
+        $user->givePermissionTo('pos-orders');
+        if ($user->hasPermissionTo('pos-refund')) {
+            $user->revokePermissionTo('pos-refund');
+        }
+        return $user;
+    }
+
+    // 5. PRIMARY EXPLOIT — POS Operator CANNOT drain the drawer by CANCELING a paid cash sale.
+    public function test_pos_operator_cannot_cancel_paid_cash_sale_via_pos_route(): void
+    {
+        $branch   = Branch::factory()->create();
+        $customer = User::factory()->create(['branch_id' => $branch->id, 'balance' => 0]);
+        $order    = $this->makePreparingPaidCashOrder($branch, $customer);
+        $operator = $this->newPosOperator($branch);
+
+        $resp = $this->actingAs($operator, 'sanctum')
+            ->withHeaders(['X-Idempotency-Key' => 'pos-cancel-403-' . bin2hex(random_bytes(8))])
+            ->postJson("/api/admin/pos-order/change-status/{$order->id}", [
+                'status' => OrderStatus::CANCELED,
+                'reason' => 'POS Operator tries to cancel a paid cash sale = disguised refund.',
+            ]);
+
+        $resp->assertStatus(403);
+        $this->assertSame(0, \App\Models\CashMovement::where('order_id', $order->id)->count(),
+            'Forbidden cancel-as-refund must NOT write a CashMovement (drawer must not move).');
+        $this->assertSame(OrderStatus::PREPARING, (int) $order->fresh()->status,
+            'Forbidden cancel must leave the order at PREPARING.');
+    }
+
+    // 6. REJECTED variant on the POS route is gated too.
+    public function test_pos_operator_cannot_reject_paid_cash_sale_via_pos_route(): void
+    {
+        $branch   = Branch::factory()->create();
+        $customer = User::factory()->create(['branch_id' => $branch->id, 'balance' => 0]);
+        $order    = $this->makePreparingPaidCashOrder($branch, $customer);
+        $operator = $this->newPosOperator($branch);
+
+        $resp = $this->actingAs($operator, 'sanctum')
+            ->withHeaders(['X-Idempotency-Key' => 'pos-reject-403-' . bin2hex(random_bytes(8))])
+            ->postJson("/api/admin/pos-order/change-status/{$order->id}", [
+                'status' => OrderStatus::REJECTED,
+                'reason' => 'POS Operator tries to reject a paid cash sale = disguised refund.',
+            ]);
+
+        $resp->assertStatus(403);
+        $this->assertSame(0, \App\Models\CashMovement::where('order_id', $order->id)->count());
+    }
+
+    // 7. TWIN — Waiter cannot cancel a paid order via the table-order route.
+    public function test_waiter_cannot_cancel_paid_order_via_table_twin(): void
+    {
+        $branch   = Branch::factory()->create();
+        $customer = User::factory()->create(['branch_id' => $branch->id, 'balance' => 0]);
+        $order    = $this->makePreparingPaidCashOrder($branch, $customer);
+        $waiter   = $this->newWaiter($branch);
+
+        $resp = $this->actingAs($waiter, 'sanctum')
+            ->withHeaders(['X-Idempotency-Key' => 'twin-cancel-403-' . bin2hex(random_bytes(8))])
+            ->postJson("/api/admin/table-order/change-status/{$order->id}", [
+                'status' => OrderStatus::CANCELED,
+                'reason' => 'Waiter tries to cancel a paid order via the table-order twin.',
+            ]);
+
+        $resp->assertStatus(403);
+        $this->assertSame(OrderStatus::PREPARING, (int) $order->fresh()->status);
+    }
+
+    // 8. NO OVER-BLOCK — canceling an UNPAID order moves no money → the refund gate must NOT fire.
+    public function test_cancel_unpaid_order_is_not_blocked_by_refund_gate(): void
+    {
+        $branch   = Branch::factory()->create();
+        $customer = User::factory()->create(['branch_id' => $branch->id, 'balance' => 0]);
+        $order    = Order::factory()->create([
+            'user_id'        => $customer->id,
+            'branch_id'      => $branch->id,
+            'order_type'     => OrderType::POS,
+            'status'         => OrderStatus::ACCEPT,
+            'payment_status' => PaymentStatus::UNPAID,
+            'total'          => 30.00,
+            'created_at'     => Carbon::now()->subMinutes(5),
+        ]);
+        $operator = $this->newPosOperator($branch);
+
+        $resp = $this->actingAs($operator, 'sanctum')
+            ->withHeaders(['X-Idempotency-Key' => 'pos-cancel-unpaid-' . bin2hex(random_bytes(8))])
+            ->postJson("/api/admin/pos-order/change-status/{$order->id}", [
+                'status' => OrderStatus::CANCELED,
+                'reason' => 'Legit operational cancel of an unpaid order.',
+            ]);
+
+        // The precise invariant of THIS fix: my pos-refund gate NEVER fires for an
+        // unpaid cancel (it moves no money). Any status from OTHER guards
+        // (ownership/branch/state) is pre-existing behavior, unchanged by this fix —
+        // for payment_status != PAID my added condition is false, so the code path is
+        // identical to before. So we assert the gate's signature message is absent.
+        $this->assertStringNotContainsString('Permission insuffisante pour effectuer un remboursement', (string) $resp->getContent(),
+            'Canceling an UNPAID order moves no money → the pos-refund gate must never fire.');
+    }
+
+    // 9. NO OVER-BLOCK for the legit refunder — Admin can still cancel a paid order.
+    public function test_admin_can_cancel_paid_order_via_pos_route(): void
+    {
+        $branch   = Branch::factory()->create();
+        $customer = User::factory()->create(['branch_id' => $branch->id, 'balance' => 0]);
+        $order    = $this->makePreparingPaidCashOrder($branch, $customer);
+        $admin    = $this->newAdmin($branch);
+        Permission::firstOrCreate(['name' => 'pos-orders', 'guard_name' => 'sanctum']);
+        $admin->givePermissionTo('pos-orders');
+
+        $resp = $this->actingAs($admin, 'sanctum')
+            ->withHeaders(['X-Idempotency-Key' => 'pos-cancel-200-' . bin2hex(random_bytes(8))])
+            ->postJson("/api/admin/pos-order/change-status/{$order->id}", [
+                'status' => OrderStatus::CANCELED,
+                'reason' => 'Admin issues a legitimate cancel/refund of a paid sale.',
+            ]);
+
+        $this->assertNotSame(403, $resp->status(),
+            'Admin holds pos-refund → must never be blocked by the refund gate.');
+    }
 }
