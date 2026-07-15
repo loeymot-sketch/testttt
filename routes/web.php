@@ -53,6 +53,27 @@ Route::prefix('payment')->name('payment.')->middleware(['installed'])->group(fun
     Route::get('/successful/{order}', [PaymentController::class, 'successful'])->name('successful');
 });
 
+// [GOAL RUPTURE-CARNET 2026-07-15 / W4] Carnet — mini-app web mobile à code PIN
+// (notes + dépenses + acomptes + photos factures). Registre interne HORS NF525.
+// Déclaré AVANT le catch-all. Session Laravel standard (groupe web implicite).
+Route::prefix('carnet')->name('daily-book.')->middleware(['installed'])->group(function () {
+    Route::get('/', function () {
+        return view('daily-book');
+    })->name('index');
+
+    Route::post('/api/pin', [\App\Http\Controllers\DailyBook\DailyBookAuthController::class, 'unlock'])
+        ->middleware('throttle:5,1')->name('pin');
+    Route::get('/api/status', [\App\Http\Controllers\DailyBook\DailyBookAuthController::class, 'status'])->name('status');
+
+    Route::middleware([\App\Http\Middleware\EnsureDailyBookPin::class])->group(function () {
+        Route::post('/api/lock', [\App\Http\Controllers\DailyBook\DailyBookAuthController::class, 'lock'])->name('lock');
+        Route::get('/api/entries', [\App\Http\Controllers\DailyBook\DailyBookEntryController::class, 'index'])->name('entries.index');
+        Route::post('/api/entries', [\App\Http\Controllers\DailyBook\DailyBookEntryController::class, 'store'])->name('entries.store');
+        Route::delete('/api/entries/{entry}', [\App\Http\Controllers\DailyBook\DailyBookEntryController::class, 'destroy'])->name('entries.destroy');
+        Route::get('/api/summary/month', [\App\Http\Controllers\DailyBook\DailyBookSummaryController::class, 'month'])->name('summary.month');
+    });
+});
+
 // [POS-V4 W2 #1 2026-04-26] Dedicated POS V4 entry — MUST be declared BEFORE
 // the catch-all below so Laravel matches it first. Serves admin-pos-v4.blade.php
 // (loads pos-app.js, NOT app.js). See docs/design/ADR_POS_V4_DEDICATED_ENTRY.md.
