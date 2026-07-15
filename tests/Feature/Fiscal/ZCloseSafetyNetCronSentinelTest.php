@@ -22,7 +22,7 @@ use Tests\TestCase;
  * missing. This sentinel pins:
  *
  *  (1) Kernel schedule registers `fiscal:close-all-active-branches` daily
- *      at 23:55 Europe/Paris with onOneServer + withoutOverlapping defenses.
+ *      at 23:59 Europe/Paris with onOneServer + withoutOverlapping defenses.
  *  (2) The artisan command class exists, is registered and invokable.
  *  (3) On a "dark" branch (no open Z), the command SKIPS silently and
  *      exits SUCCESS — does NOT throw. This is the critical behavior:
@@ -38,7 +38,7 @@ use Tests\TestCase;
  * "no open Z" skip semantic so the cron stays safe when raised to
  * V2 multi-branch scale.
  */
-class ZCloseSafetyNetCronSentinel extends TestCase
+class ZCloseSafetyNetCronSentinelTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -65,9 +65,10 @@ class ZCloseSafetyNetCronSentinel extends TestCase
         );
 
         $this->assertSame(
-            '55 23 * * *',
+            '59 23 * * *',
             (string) $entry->expression,
-            "Z-close safety-net must run daily at 23:55 (Paris) — same business_date as the transactions."
+            "Z-close safety-net must run daily at 23:59 (Paris) — same business_date as the transactions "
+            . '(dead-zone compressed 10min→2min per gap-fix-07 / PROPOSAL-Z Path A, commit 860905b78).'
         );
 
         $this->assertSame(
@@ -78,7 +79,7 @@ class ZCloseSafetyNetCronSentinel extends TestCase
 
         $this->assertNotEmpty(
             $entry->mutex,
-            'withoutOverlapping required so a long-running close cannot race a 23:55 re-fire.'
+            'withoutOverlapping required so a long-running close cannot race a 23:59 re-fire.'
         );
 
         $this->assertTrue(

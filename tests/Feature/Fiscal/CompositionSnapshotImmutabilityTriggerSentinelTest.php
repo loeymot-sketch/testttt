@@ -39,7 +39,7 @@ use Tests\TestCase;
  * This sentinel is a CI ratchet: a PR that drops either layer will turn
  * one of these assertions red. Mirrors AuditLogImmutabilityTest pattern.
  */
-class CompositionSnapshotImmutabilityTriggerSentinel extends TestCase
+class CompositionSnapshotImmutabilityTriggerSentinelTest extends TestCase
 {
     use RefreshDatabase;
 

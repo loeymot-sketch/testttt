@@ -386,7 +386,8 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->onOneServer();
 
-        // [GOAL-G2-HEAL-06 2026-05-23] NF525 Z-close safety-net at 23:55 Paris.
+        // [GOAL-G2-HEAL-06 2026-05-23] NF525 Z-close safety-net at 23:59 Paris
+        // (originally 23:55; compressed to 23:59 per gap-fix-07 / PROPOSAL-Z Path A 2026-05-25, see tail).
         //
         // Phase G.6 audit (P1 operational) caught a cumulative gap: Z-close
         // has NO production trigger today — no UI button (V1.0.X owner-gate
@@ -426,7 +427,8 @@ class Kernel extends ConsoleKernel
             ->runInBackground()
             ->appendOutputTo(storage_path('logs/fiscal-close-safety-net.log'));
 
-        // [GOAL-L2-HEAL-07 2026-05-24] NF525 Z-OPEN safety-net at 00:05 Paris.
+        // [GOAL-L2-HEAL-07 2026-05-24] NF525 Z-OPEN safety-net at 00:01 Paris
+        // (originally 00:05; compressed to 00:01 per gap-fix-07 / PROPOSAL-Z Path A 2026-05-25, see tail).
         //
         // Phase L11.1 P0-03 + K.7 FIND-1 (cron miss recovery audit) confirmed
         // a missing companion to lane #17 above: G2-HEAL-06 added the

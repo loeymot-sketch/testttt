@@ -25,7 +25,7 @@ use Tests\TestCase;
  * This sentinel pins:
  *
  *  (1) Kernel schedule registers `fiscal:open-all-active-branches` daily
- *      at 00:05 Europe/Paris with onOneServer + withoutOverlapping defenses
+ *      at 00:01 Europe/Paris with onOneServer + withoutOverlapping defenses
  *      (mirrors lane #17 G2-HEAL-06 exactly so the close + open pair stays
  *      symmetric).
  *  (2) The artisan command class exists, is registered and invokable.
@@ -44,7 +44,7 @@ use Tests\TestCase;
  * This sentinel only locks the cron wiring + idempotency + dark-branch
  * open semantic so the cron stays safe at V2 multi-branch scale.
  */
-class ZOpenSafetyNetCronSentinel extends TestCase
+class ZOpenSafetyNetCronSentinelTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -71,9 +71,10 @@ class ZOpenSafetyNetCronSentinel extends TestCase
         );
 
         $this->assertSame(
-            '5 0 * * *',
+            '1 0 * * *',
             (string) $entry->expression,
-            "Z-open safety-net must run daily at 00:05 (Paris) — just after the 23:55 close, "
+            "Z-open safety-net must run daily at 00:01 (Paris) — just after the 23:59 close "
+            . '(dead-zone compressed 10min→2min per gap-fix-07 / PROPOSAL-Z Path A, commit 860905b78), '
             . 'so the new business_date starts with an OPEN Z ready for the morning shift.'
         );
 
@@ -86,7 +87,7 @@ class ZOpenSafetyNetCronSentinel extends TestCase
 
         $this->assertNotEmpty(
             $entry->mutex,
-            'withoutOverlapping required so a long-running open cannot race a 00:05 re-fire.'
+            'withoutOverlapping required so a long-running open cannot race a 00:01 re-fire.'
         );
 
         $this->assertTrue(
