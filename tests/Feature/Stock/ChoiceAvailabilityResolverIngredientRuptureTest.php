@@ -44,7 +44,8 @@ class ChoiceAvailabilityResolverIngredientRuptureTest extends TestCase
         $this->stockExtra($branch, $extra, onHand: 10);
 
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Supplément ID ' . $extra->id . ' indisponible');
+        // [DEEP-R2] message UX : nom lisible client au lieu de l'ID technique.
+        $this->expectExceptionMessage('n\'est plus disponible');
 
         app(ChoiceAvailabilityResolver::class)->assertSelectionsOrderable(
             (int) $branch->id,

@@ -240,6 +240,10 @@ export default {
                     this.photoFile = null;
                     this.photoName = '';
                     this.dayFilter = this.form.entry_date;
+                    // [DEEP-R2 / P3] Date par défaut figée à l'ouverture : un onglet resté
+                    // ouvert avant minuit pré-remplissait la VEILLE pour les saisies
+                    // d'après 00h00 — re-calée sur le jour réel après chaque ajout.
+                    this.form.entry_date = today();
                     this.loadDay();
                 })
                 .catch((e) => {

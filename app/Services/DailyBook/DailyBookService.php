@@ -24,21 +24,26 @@ class DailyBookService
 
     public function create(array $data, ?UploadedFile $photo = null): DailyBookEntry
     {
-        $entry = DailyBookEntry::create([
-            'type' => $data['type'],
-            'label' => $data['label'],
-            'worker_name' => $data['worker_name'] ?? null,
-            'amount' => $data['amount'] ?? null,
-            'entry_date' => $data['entry_date'],
-            'note' => $data['note'] ?? null,
-            'branch_id' => self::BRANCH_ID,
-        ]);
+        // [DEEP-R2 2026-07-15 / P2] Transaction : un échec d'addMedia (disque plein,
+        // HEIC non convertible…) annulait l'upload mais laissait l'entrée committée →
+        // 500 + re-soumission = dépense comptée deux fois, ou dépense sans justificatif.
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($data, $photo) {
+            $entry = DailyBookEntry::create([
+                'type' => $data['type'],
+                'label' => $data['label'],
+                'worker_name' => $data['worker_name'] ?? null,
+                'amount' => $data['amount'] ?? null,
+                'entry_date' => $data['entry_date'],
+                'note' => $data['note'] ?? null,
+                'branch_id' => self::BRANCH_ID,
+            ]);
 
-        if ($photo !== null) {
-            $entry->addMedia($photo)->toMediaCollection('invoice-photo');
-        }
+            if ($photo !== null) {
+                $entry->addMedia($photo)->toMediaCollection('invoice-photo');
+            }
 
-        return $entry;
+            return $entry;
+        });
     }
 
     public function delete(DailyBookEntry $entry): void

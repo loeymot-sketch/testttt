@@ -36,6 +36,13 @@ class ReleaseAvailabilityOnRefundCreated
                 return;
             }
 
+            // [DEEP-R2 2026-07-15 / P2 temps-minuit] Quota journalier : un remboursement
+            // d'une commande d'un jour précédent ne crédite pas le compteur du jour
+            // courant (miroir du garde ReleaseAvailabilityOnOrderCanceled).
+            if ($order->created_at !== null && ! $order->created_at->isToday()) {
+                return;
+            }
+
             $order->loadMissing('orderItems');
             $orderItems = $order->orderItems;
 

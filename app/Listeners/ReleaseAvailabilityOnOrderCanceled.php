@@ -34,6 +34,14 @@ class ReleaseAvailabilityOnOrderCanceled
                 return;
             }
 
+            // [DEEP-R2 2026-07-15 / P2 temps-minuit] Le quota (daily_consumed_qty) est
+            // JOURNALIER : annuler une commande d'un jour PRÉCÉDENT ne doit pas créditer
+            // le compteur du jour courant (sa consommation appartient à un compteur déjà
+            // remis à zéro) — sinon sur-vente du quota d'aujourd'hui.
+            if ($order->created_at !== null && ! $order->created_at->isToday()) {
+                return;
+            }
+
             $order->loadMissing('orderItems');
 
             $lineItems = $order->orderItems->map(static function ($orderItem): array {

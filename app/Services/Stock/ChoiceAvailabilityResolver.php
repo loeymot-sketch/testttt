@@ -146,8 +146,9 @@ final class ChoiceAvailabilityResolver
                 $variationLevels->get($this->stockLevelKey(ItemVariation::class, (int) $variation->id))
             );
             if (! $state['is_available']) {
+                // [DEEP-R2 2026-07-15 / UX] nom lisible client, pas d'ID technique.
                 throw new \InvalidArgumentException(
-                    "Variation ID {$variation->id} indisponible pour cette branche ({$state['unavailable_reason']}).",
+                    "« {$variation->name} » n'est plus disponible — merci de modifier votre choix.",
                     422
                 );
             }
@@ -167,7 +168,7 @@ final class ChoiceAvailabilityResolver
             );
             if (! $state['is_available']) {
                 throw new \InvalidArgumentException(
-                    "Supplément ID {$extra->id} indisponible pour cette branche ({$state['unavailable_reason']}).",
+                    "Le supplément « {$extra->name} » n'est plus disponible — merci de modifier votre choix.",
                     422
                 );
             }
@@ -193,7 +194,7 @@ final class ChoiceAvailabilityResolver
             );
             if (! $state['is_available']) {
                 throw new \InvalidArgumentException(
-                    "Addon ID {$addon->id} indisponible pour cette branche ({$state['unavailable_reason']}).",
+                    "« ".($addon->addonItem->name ?? 'Cet article')." » n'est plus disponible — merci de modifier votre choix.",
                     422
                 );
             }

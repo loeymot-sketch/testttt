@@ -42,6 +42,13 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->onOneServer();
 
+        // [DEEP-R2 2026-07-15 / P1] Rattrapage des libérations stock/quota perdues
+        // (crash entre le commit d'un cancel/destroy et ses listeners synchrones).
+        $schedule->command('foodking:reconcile-releases')
+            ->everyFifteenMinutes()
+            ->withoutOverlapping()
+            ->onOneServer();
+
         // [AUDIT-F-015] Outbox staleness alerter — complements rescue.
         // Rescue re-queues stuck events; if the queue worker is down,
         // rescue is silent. This monitor raises a Log::error + non-zero

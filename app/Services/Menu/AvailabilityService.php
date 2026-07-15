@@ -263,11 +263,13 @@ final class AvailabilityService
             $row = $rows->get($itemId);
             $available = $row ? (bool) $row->is_available : true;
             if (! $available) {
-                $reason = $row && $row->unavailable_reason
-                    ? (string) $row->unavailable_reason
-                    : 'unavailable';
+                // [DEEP-R2 2026-07-15 / UX borne] Nom du produit, pas son ID technique ni
+                // le code brut de raison — le message remonte tel quel à l'écran client
+                // (constaté e2e : « Article 103 indisponible … (stock_rupture) »).
+                $itemName = (string) (\App\Models\Item::withoutGlobalScopes()
+                    ->whereKey($itemId)->value('name') ?? "Article {$itemId}");
                 throw new \InvalidArgumentException(
-                    "Article {$itemId} indisponible pour cette branche ({$reason}).",
+                    "« {$itemName} » n'est plus disponible — merci de le retirer de votre panier.",
                     422
                 );
             }

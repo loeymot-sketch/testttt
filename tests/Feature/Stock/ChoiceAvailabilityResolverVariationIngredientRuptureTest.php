@@ -82,7 +82,8 @@ class ChoiceAvailabilityResolverVariationIngredientRuptureTest extends TestCase
             $this->fail('Expected unavailable variation to throw.');
         } catch (InvalidArgumentException $exception) {
             $this->assertSame(422, $exception->getCode());
-            $this->assertStringContainsString('ingredient_rupture', $exception->getMessage());
+            // [DEEP-R2] message UX client sans code technique (raison consultable en DB).
+            $this->assertStringContainsString("n'est plus disponible", $exception->getMessage());
         }
     }
 
