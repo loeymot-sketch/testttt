@@ -181,4 +181,111 @@ class ChangeStatusReturnedSelfAuditR2Test extends TestCase
             'Un retour CARTE ne doit poser aucune sortie tiroir.'
         );
     }
+
+    // ---------------------------------------------------------------------
+    // [F-CASH-REFUND-DRAWER 2026-07-15 / P1] La vente cash COLLECTÉE AU COMPTOIR
+    // (Plan B borne + walk-in différé) porte une ligne Transaction → le retour pré-Z
+    // passait par cashBack('credit') → le garde tiroir 'cash' (heal 2026-07-11) ne
+    // s'armait jamais → AUCUNE sortie tiroir + avoir wallet fantôme. Le slug doit
+    // dériver de l'origine (pos_payment_method) : cash → 'cash' (sortie tiroir), sinon
+    // 'credit' (carte/en-ligne, pas de tiroir). Sœur de pre_z_direct_cash (sans Txn).
+    // ---------------------------------------------------------------------
+
+    private function seedPaymentTransaction(Order $order, string $method): void
+    {
+        \App\Models\Transaction::create([
+            'order_id'       => $order->id,
+            'transaction_no' => 'TXN-INIT-'.$order->id,
+            'amount'         => $order->total,
+            'payment_method' => $method,
+            'sign'           => '+',
+            'type'           => 'payment',
+        ]);
+    }
+
+    /** @test — cash COMPTOIR (avec Transaction) remboursé pré-Z pose bien une sortie tiroir. */
+    public function pre_z_counter_collected_cash_return_records_cashback_out_movement(): void
+    {
+        $branch = Branch::factory()->create();
+        $user = $this->actingRefundUser($branch->id);
+        app(CashDrawerService::class)->openSession($branch->id, $user->id, 100.00);
+
+        $order = Order::factory()->create([
+            'branch_id'          => $branch->id,
+            'user_id'            => $user->id,
+            'status'             => OrderStatus::ACCEPT,
+            'payment_status'     => PaymentStatus::PAID,
+            'pos_payment_method' => PosPaymentMethod::CASH, // collecté en espèces au comptoir
+            'fiscal_sequence_no' => null,
+            'total'              => 12.00,
+        ]);
+        $this->seedPaymentTransaction($order, 'counter_cash'); // ligne Transaction présente → chemin cashBack
+
+        $request = new OrderStatusRequest;
+        $request->merge(['status' => OrderStatus::RETURNED, 'reason' => 'retour cash comptoir pré-Z']);
+        app(OrderService::class)->changeStatus($order, $request, false);
+
+        $out = CashMovement::where('order_id', $order->id)
+            ->where('type', CashMovement::TYPE_CASHBACK)
+            ->where('direction', CashMovement::DIRECTION_OUT)
+            ->first();
+        $this->assertNotNull($out, 'Un retour cash comptoir (avec Transaction) DOIT poser une sortie tiroir.');
+        $this->assertEqualsWithDelta(12.00, (float) $out->amount, 0.01);
+        $this->assertSame(1, CashMovement::where('order_id', $order->id)->where('direction', CashMovement::DIRECTION_OUT)->count(),
+            'Exactement UNE sortie tiroir (pas de double écriture avec le chemin post-Z).');
+    }
+
+    /** @test — le retour cash comptoir ne crédite PAS le wallet (espèces rendues physiquement, pas d’avoir). */
+    public function pre_z_counter_cash_return_does_not_credit_wallet(): void
+    {
+        $branch = Branch::factory()->create();
+        $user = $this->actingRefundUser($branch->id);
+        app(CashDrawerService::class)->openSession($branch->id, $user->id, 100.00);
+        $customer = User::factory()->create(['branch_id' => $branch->id, 'balance' => 0.0]);
+
+        $order = Order::factory()->create([
+            'branch_id'          => $branch->id,
+            'user_id'            => $customer->id,
+            'status'             => OrderStatus::ACCEPT,
+            'payment_status'     => PaymentStatus::PAID,
+            'pos_payment_method' => PosPaymentMethod::CASH,
+            'fiscal_sequence_no' => null,
+            'total'              => 9.00,
+        ]);
+        $this->seedPaymentTransaction($order, 'counter_cash');
+
+        $request = new OrderStatusRequest;
+        $request->merge(['status' => OrderStatus::RETURNED, 'reason' => 'retour cash sans avoir']);
+        app(OrderService::class)->changeStatus($order, $request, false);
+
+        $this->assertEqualsWithDelta(0.0, (float) $customer->fresh()->balance, 0.001,
+            'Un remboursement ESPÈCES rend le cash physique — il ne doit PAS aussi créditer un avoir wallet (double remboursement).');
+    }
+
+    /** @test — garde : une vente CARTE avec Transaction ne sort JAMAIS d’argent du tiroir (préserve heal 2026-07-11). */
+    public function pre_z_card_with_transaction_return_records_no_cashback_out(): void
+    {
+        $branch = Branch::factory()->create();
+        $user = $this->actingRefundUser($branch->id);
+        app(CashDrawerService::class)->openSession($branch->id, $user->id, 100.00);
+
+        $order = Order::factory()->create([
+            'branch_id'          => $branch->id,
+            'user_id'            => $user->id,
+            'status'             => OrderStatus::ACCEPT,
+            'payment_status'     => PaymentStatus::PAID,
+            'pos_payment_method' => PosPaymentMethod::CARD,
+            'fiscal_sequence_no' => null,
+            'total'              => 20.00,
+        ]);
+        $this->seedPaymentTransaction($order, 'counter_card');
+
+        $request = new OrderStatusRequest;
+        $request->merge(['status' => OrderStatus::RETURNED, 'reason' => 'retour carte avec txn']);
+        app(OrderService::class)->changeStatus($order, $request, false);
+
+        $this->assertSame(0,
+            CashMovement::where('order_id', $order->id)->where('direction', CashMovement::DIRECTION_OUT)->count(),
+            'Un retour CARTE (même avec Transaction) ne doit poser aucune sortie tiroir.');
+    }
 }

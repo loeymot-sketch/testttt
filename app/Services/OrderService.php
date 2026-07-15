@@ -2169,9 +2169,12 @@ class OrderService
                         }
                         if ($targetStatus === OrderStatus::REJECTED || $targetStatus === OrderStatus::CANCELED) {
                             if ($locked->transaction) {
+                                // [F-CASH-REFUND-DRAWER 2026-07-15 / P1] slug = origine du paiement
+                                // (cf. site jumeau ci-dessus) : cash → 'cash' (sortie tiroir), sinon 'credit'.
+                                $refundGateway = ((int) $locked->pos_payment_method === \App\Enums\PosPaymentMethod::CASH) ? 'cash' : 'credit';
                                 app(PaymentService::class)->cashBack(
                                     $locked,
-                                    'credit',
+                                    $refundGateway,
                                     'TXN-'.\Illuminate\Support\Str::random(12)
                                 );
                             }
@@ -2312,9 +2315,17 @@ class OrderService
                             $locked->reason = $request->reason;
                         }
                         if ($locked->transaction) {
+                            // [F-CASH-REFUND-DRAWER 2026-07-15 / P1] Le slug de remboursement
+                            // dérive de l'ORIGINE du paiement : cash → 'cash' (sortie tiroir via
+                            // recordCashBackMovement), sinon 'credit' (carte/en-ligne → avoir, pas de
+                            // tiroir). Corrige le 'credit' codé en dur qui masquait la sortie tiroir
+                            // des ventes cash COMPTOIR (Plan B borne + walk-in différé — elles portent
+                            // une Transaction, donc passaient ici et non par le recordCashRefundMovement
+                            // ci-dessous, réservé aux ventes cash SANS Transaction).
+                            $refundGateway = ((int) $locked->pos_payment_method === \App\Enums\PosPaymentMethod::CASH) ? 'cash' : 'credit';
                             app(PaymentService::class)->cashBack(
                                 $locked,
-                                'credit',
+                                $refundGateway,
                                 'TXN-'.\Illuminate\Support\Str::random(12)
                             );
                         } elseif ((int) $locked->pos_payment_method === \App\Enums\PosPaymentMethod::CASH

@@ -777,9 +777,13 @@ class FrontendOrderService
                     }
 
                     if ($frontendOrder->transaction) {
+                        // [F-CASH-REFUND-DRAWER 2026-07-15 / P1] slug = origine du paiement :
+                        // une commande borne Plan B collectée en espèces (pos_payment_method=CASH)
+                        // remboursée doit sortir du tiroir → 'cash' ; carte/en-ligne → 'credit'.
+                        $refundGateway = ((int) $frontendOrder->pos_payment_method === \App\Enums\PosPaymentMethod::CASH) ? 'cash' : 'credit';
                         app(PaymentService::class)->cashBack(
                             $frontendOrder,
-                            'credit',
+                            $refundGateway,
                             'TXN-' . \Illuminate\Support\Str::random(12)
                         );
                     }
