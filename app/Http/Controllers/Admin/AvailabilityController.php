@@ -18,13 +18,20 @@ class AvailabilityController extends AdminController
     {
         parent::__construct();
 
-        $this->middleware(['permission:items_edit'])->only([
+        // [GOAL RUPTURE-CARNET 2026-07-15 / W1] Les opérations de RUPTURE (86)
+        // acceptent aussi la permission dédiée `availability_toggle` (caisse +
+        // cuisine), sans exiger items_edit (édition catalogue complète).
+        $this->middleware(['permission:items_edit|availability_toggle'])->only([
             'toggle',
-            'setMaxDailyQty',
             // [F-016a-BIS]
             'toggleExtra',
             'toggleVariation',
             'showBranchAvailability',
+        ]);
+
+        // Paramétrage catalogue (quota journalier) : réservé à items_edit.
+        $this->middleware(['permission:items_edit'])->only([
+            'setMaxDailyQty',
         ]);
     }
 
