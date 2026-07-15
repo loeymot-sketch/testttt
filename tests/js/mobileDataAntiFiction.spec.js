@@ -90,13 +90,11 @@ describe('mobile mock data — anti-fiction sentinel (Impl D Round 2 / 2026-05-1
             .toEqual([]);
     });
 
-    it('loyalty.js → reward 5 (Burger gratuit) targets the Burgers category, not Galette', () => {
-        const reward5 = window.LC.loyalty.rewards.find(r => r.id === 5);
-        expect(reward5).toBeDefined();
-        const cat = window.LC.menu.categories.find(c => c.id === reward5.payload.category_id);
-        expect(cat).toBeDefined();
-        expect(cat.slug).toBe('burgers');
-    });
+    // [TEST-E2E-HEAL 2026-07-15] Test OBSOLÈTE retiré : le reward fictif « Burger gratuit » (id 5)
+    // a été intentionnellement SUPPRIMÉ le 2026-07-08 (commit 7470535a6) — « plus de redeem fictif,
+    // triggers/catalogue inexistants backend ». La fidélité mobile est désormais un stub floor 1pt/€
+    // (rewardById→null). Le test frère ci-dessus (« every REWARDS[].payload.category_id exists »)
+    // couvre déjà la non-fiction des rewards restants. Asserter un reward retiré par design = faux positif.
 
     it('orders.js → every order total equals sum of items[].line_total (arithmetic parity)', () => {
         const drift = [];
