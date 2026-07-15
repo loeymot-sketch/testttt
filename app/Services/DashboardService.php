@@ -534,18 +534,20 @@ class DashboardService
                 return (int) $order->source === \App\Enums\Source::APP;
             })->count();
 
+            // [F-DONUT-CATCHALL 2026-07-15 / P2] « Web » = catch-all online = complément EXACT
+            // de (kiosk ∪ pos), en miroir des DEUX prédicats ci-dessus/dessous (surface OU source
+            // entier legacy). Sans ce fourre-tout, toute commande ni kiosk ni pos (livraison
+            // source_surface='delivery' source null, rangs legacy sans surface) était dans $total
+            // mais dans aucun des 3 comptes → la somme des tranches du donut < 100 %. On exclut
+            // kiosk/pos par leurs prédicats complets (pas seulement source_surface) pour ne PAS
+            // capturer par erreur les commandes POS/APP taguées uniquement via l'entier `source`.
             $webCount = $orders->filter(function ($order) {
-                // Exclude kiosk/pos-tagged rows (kiosk posts source=WEB but is not a
-                // browser-web order; pos-surface must land in POS, see below).
                 $surface = strtolower((string) ($order->source_surface ?? ''));
-                if ($surface === 'kiosk' || $surface === 'pos') {
-                    return false;
-                }
-                if ($surface === 'web') {
-                    return true;
-                }
+                $source = (int) $order->source;
+                $isKiosk = $surface === 'kiosk' || $source === \App\Enums\Source::APP;
+                $isPos = $surface === 'pos' || $source === \App\Enums\Source::POS;
 
-                return (int) $order->source === \App\Enums\Source::WEB;
+                return ! $isKiosk && ! $isPos;
             })->count();
 
             // [CAISSE-LOGIC-HEAL 2026-07-11 reports-F1] Le canal fiable est `source_surface`,
@@ -711,12 +713,18 @@ class DashboardService
 
     private function resolvePaymentBucketKey($order): string
     {
-        $orderType = (int) ($order->order_type ?? 0);
-        $isPosTender = $orderType === \App\Enums\OrderType::POS;
-
-        if ($isPosTender) {
-            $method = (int) ($order->pos_payment_method ?? 0);
-            return match ($method) {
+        // [F-EOD-TENDER-PRECEDENCE 2026-07-15 / P1] Miroir EXACT de la précédence du Z
+        // (ZReportService::applyOrderToTotals:792 `pos_payment_method ?: payment_method`).
+        // Le Cayenne tourne Plan B (kiosk.payment_route_all_to_counter=true) : une commande
+        // borne reste order_type=TAKEAWAY/KIOSK mais confirmCounterPayment écrit le VRAI tender
+        // (carte/TR/mobile) dans pos_payment_method au comptoir. L'ancien garde `order_type===POS`
+        // ignorait ce champ → toute carte/TR/mobile Plan B tombait en 'cash' → le PDF EOD (NF525,
+        // archivé 6 ans, commenté « agree with the Z ») CONTREDISAIT le Z. On préfère désormais
+        // pos_payment_method dès qu'il est renseigné (>0), quel que soit order_type. Non-régression :
+        // une vente POS pure (order_type=15) porte déjà pos_payment_method → bucket identique.
+        $posMethod = (int) ($order->pos_payment_method ?? 0);
+        if ($posMethod > 0) {
+            return match ($posMethod) {
                 \App\Enums\PosPaymentMethod::CASH               => 'cash',
                 \App\Enums\PosPaymentMethod::CARD               => 'card',
                 \App\Enums\PosPaymentMethod::MOBILE_BANKING     => 'mobile',
