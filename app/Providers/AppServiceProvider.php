@@ -190,6 +190,17 @@ class AppServiceProvider extends ServiceProvider
                 );
             }
 
+            // [BRAIN-SUPERVISOR 2026-07-15 / P2] Carnet : le PIN par défaut '2468'
+            // est commité dans le repo — en production il donnerait le registre
+            // interne (dépenses, acomptes, factures) à quiconque atteint le serveur.
+            // Même failure-mode explicite que les guards ci-dessus.
+            if ((string) config('daily_book.pin') === '2468') {
+                throw new \RuntimeException(
+                    'DAILY_BOOK_PIN is still the committed default (2468) — set a real PIN '
+                    . 'in .env before running the Carnet in production.'
+                );
+            }
+
             // [BYPASS-P1 / GATE_BYPASS_MODE_2026-05-08] Production guard — refuse
             // boot if any bypass flag is enabled in production. Bypass mode is
             // strictly for local dev / staging E2E flow validation. Activating

@@ -70,6 +70,7 @@ Route::prefix('carnet')->name('daily-book.')->middleware(['installed'])->group(f
         Route::get('/api/entries', [\App\Http\Controllers\DailyBook\DailyBookEntryController::class, 'index'])->name('entries.index');
         Route::post('/api/entries', [\App\Http\Controllers\DailyBook\DailyBookEntryController::class, 'store'])->name('entries.store');
         Route::delete('/api/entries/{entry}', [\App\Http\Controllers\DailyBook\DailyBookEntryController::class, 'destroy'])->name('entries.destroy');
+        Route::get('/api/entries/{entry}/photo', [\App\Http\Controllers\DailyBook\DailyBookEntryController::class, 'photo'])->name('entries.photo');
         Route::get('/api/summary/month', [\App\Http\Controllers\DailyBook\DailyBookSummaryController::class, 'month'])->name('summary.month');
     });
 });

@@ -45,7 +45,11 @@ class DailyBookEntry extends Model implements HasMedia
 
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection('invoice-photo')->singleFile();
+        // [BRAIN-SUPERVISOR 2026-07-15 / P3] Disque `local` (privé) : sur le disque
+        // `public`, les photos de factures étaient servies par le webserver via
+        // /storage/{id}/… SANS passer par le gate PIN (IDs énumérables). Elles sont
+        // désormais servies par la route gated daily-book.entries.photo.
+        $this->addMediaCollection('invoice-photo')->useDisk('local')->singleFile();
     }
 
     public function registerMediaConversions(Media $media = null): void

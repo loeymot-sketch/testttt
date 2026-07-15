@@ -55,4 +55,14 @@ class DailyBookSummaryTest extends TestCase
         $this->getJson('/carnet/api/summary/month')->assertStatus(422);
         $this->getJson('/carnet/api/summary/month?month=2026-13')->assertStatus(422);
     }
+    public function test_by_worker_groups_case_and_space_insensitively(): void
+    {
+        DailyBookEntry::create(['type' => 'advance', 'label' => 'A', 'worker_name' => 'karim', 'amount' => 10, 'entry_date' => '2026-07-02', 'branch_id' => 1]);
+        DailyBookEntry::create(['type' => 'advance', 'label' => 'B', 'worker_name' => 'Karim ', 'amount' => 15, 'entry_date' => '2026-07-03', 'branch_id' => 1]);
+
+        $res = $this->getJson('/carnet/api/summary/month?month=2026-07')->assertOk()->json('data');
+        $this->assertCount(1, $res['by_worker']);
+        $this->assertEqualsWithDelta(25.0, $res['by_worker'][0]['total'], 0.001);
+        $this->assertSame(2, $res['by_worker'][0]['count']);
+    }
 }

@@ -64,6 +64,22 @@ class DailyBookEntryController extends Controller
         return response()->json(['data' => $this->present($entry)], 201);
     }
 
+    /**
+     * [BRAIN-SUPERVISOR 2026-07-15 / P3] Sert la photo de facture DERRIÈRE le gate
+     * PIN (disque local privé) — l'URL /storage directe contournait EnsureDailyBookPin.
+     */
+    public function photo(DailyBookEntry $entry, Request $request)
+    {
+        $media = $entry->getFirstMedia('invoice-photo');
+        abort_unless($media, 404);
+
+        $conversion = $request->query('c') === 'thumb' && $media->hasGeneratedConversion('thumb') ? 'thumb' : '';
+        $path = $media->getPath($conversion);
+        abort_unless(is_file($path), 404);
+
+        return response()->file($path);
+    }
+
     public function destroy(DailyBookEntry $entry): JsonResponse
     {
         $this->service->delete($entry);
@@ -83,8 +99,9 @@ class DailyBookEntryController extends Controller
             'amount' => $e->amount !== null ? (float) $e->amount : null,
             'entry_date' => $e->entry_date->format('Y-m-d'),
             'note' => $e->note,
-            'photo_url' => $media?->getUrl(),
-            'photo_thumb_url' => $media ? ($media->hasGeneratedConversion('thumb') ? $media->getUrl('thumb') : $media->getUrl()) : null,
+            // URLs gated PIN (disque privé — pas d'URL /storage publique).
+            'photo_url' => $media ? route('daily-book.entries.photo', ['entry' => $e->id]) : null,
+            'photo_thumb_url' => $media ? route('daily-book.entries.photo', ['entry' => $e->id, 'c' => 'thumb']) : null,
             'created_at' => $e->created_at?->format('Y-m-d H:i'),
         ];
     }

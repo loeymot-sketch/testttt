@@ -75,6 +75,16 @@ export const frontendItem = {
                 const surface = (typeof payload === 'object' && payload !== null) ? payload.surface : null;
                 let url = `frontend/item/details/${id}`;
                 const params = surface ? { surface } : {};
+                // [BRAIN-SUPERVISOR 2026-07-15 / P2] Le backend n'active la dispo
+                // PAR BRANCHE (rupture 86) que si branch_id est envoyé
+                // (FrontendItemController::itemDetails). Le wizard borne (frozen,
+                // non modifiable) n'envoyait rien → cécité mid-wizard à la rupture.
+                // Injection ici, côté store non-frozen : branch de la borne
+                // (kioskCart.branchId) quand la surface est kiosk.
+                const branchId = (typeof payload === 'object' && payload !== null && payload.branchId)
+                    ? payload.branchId
+                    : (surface === 'kiosk' ? (context.rootState?.kioskCart?.branchId ?? null) : null);
+                if (branchId) params.branch_id = branchId;
                 axios.get(url, { params }).then((res) => {
                     resolve(res);
                 }).catch((err) => {

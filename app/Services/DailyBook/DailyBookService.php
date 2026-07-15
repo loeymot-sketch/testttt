@@ -14,6 +14,14 @@ class DailyBookService
 {
     private const BRANCH_ID = 1;
 
+    /** Bornes [premier jour, dernier jour] d'un mois Y-m — requête sargable sur l'index. */
+    private static function monthBounds(string $month): array
+    {
+        $start = \Carbon\Carbon::createFromFormat('Y-m-d', $month.'-01')->startOfMonth();
+
+        return [$start->toDateString(), $start->copy()->endOfMonth()->toDateString()];
+    }
+
     public function create(array $data, ?UploadedFile $photo = null): DailyBookEntry
     {
         $entry = DailyBookEntry::create([
@@ -42,12 +50,13 @@ class DailyBookService
     /** Entrées d'un jour (Y-m-d) ou d'un mois (Y-m), plus récentes d'abord. */
     public function list(?string $date = null, ?string $month = null): Collection
     {
+        // [BRAIN-SUPERVISOR 2026-07-15] with('media') : sans lui, present() lazy-load
+        // la relation par entrée (N+1). whereBetween : whereYear/whereMonth enveloppent
+        // la colonne d'une fonction → l'index entry_date était inutilisé.
         return DailyBookEntry::query()
+            ->with('media')
             ->when($date, fn ($q) => $q->whereDate('entry_date', $date))
-            ->when(!$date && $month, function ($q) use ($month) {
-                [$y, $m] = explode('-', $month);
-                $q->whereYear('entry_date', (int) $y)->whereMonth('entry_date', (int) $m);
-            })
+            ->when(!$date && $month, fn ($q) => $q->whereBetween('entry_date', self::monthBounds($month)))
             ->orderByDesc('entry_date')
             ->orderByDesc('id')
             ->get();
@@ -59,10 +68,8 @@ class DailyBookService
      */
     public function monthSummary(string $month): array
     {
-        [$y, $m] = explode('-', $month);
         $entries = DailyBookEntry::query()
-            ->whereYear('entry_date', (int) $y)
-            ->whereMonth('entry_date', (int) $m)
+            ->whereBetween('entry_date', self::monthBounds($month))
             ->get();
 
         $expenses = $entries->where('type', DailyBookEntry::TYPE_EXPENSE);

@@ -351,7 +351,12 @@ class StockService
         $requestedByOrderItemId = collect($refundedItems)
             ->keyBy(static fn (array $item): int => (int) ($item['order_item_id'] ?? 0));
 
-        $orderItems = $order->orderItems()->get(['id']);
+        // [BRAIN-SUPERVISOR 2026-07-15 / P1] withTrashed : depuis F-DESTROY-RELEASE-ATOMIC
+        // (6ec645c85), OrderCanceled tire APRÈS le commit du destroy — les lignes sont déjà
+        // soft-deleted et une requête fraîche les excluait → libération de stock silencieusement
+        // no-op (stock physique jamais restauré). L'idempotence released_qty garde le
+        // double-release ; le flux cancel (lignes vivantes) est inchangé.
+        $orderItems = $order->orderItems()->withTrashed()->get(['id']);
         if ($orderItems->isEmpty()) {
             return;
         }
@@ -361,7 +366,8 @@ class StockService
         $choiceAvailabilityBoundaryChanged = false;
 
         foreach ($orderItems as $line) {
-            $orderItem = OrderItem::query()
+            // withTrashed : même raison que le fetch ci-dessus (destroy post-commit).
+            $orderItem = OrderItem::withTrashed()
                 ->where('id', (int) $line->id)
                 ->lockForUpdate()
                 ->first();

@@ -11,7 +11,9 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Tax;
 use App\Models\User;
+use App\Models\StockLevel;
 use App\Services\OrderService;
+use App\Services\Stock\StockService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -169,5 +171,68 @@ class DestroyReleasesAvailabilityTest extends TestCase
             'item_id' => $item->id,
             'daily_consumed_qty' => 3,
         ]);
+    }
+    /**
+     * [BRAIN-SUPERVISOR 2026-07-15 / P1] Régression F-DESTROY-RELEASE-ATOMIC : OrderCanceled
+     * tire APRÈS le commit du destroy → les orderItems sont déjà soft-deleted → la requête
+     * fraîche de StockService::releaseForOrderInTransaction retournait vide → le STOCK PHYSIQUE
+     * (stock_levels.on_hand) n'était JAMAIS restauré (no-op silencieux). Verrouille : détruire
+     * une commande rend le stock décrémenté à la création.
+     */
+    public function test_destroy_releases_physical_stock_despite_soft_deleted_lines(): void
+    {
+        $branch = Branch::factory()->create();
+        $admin = User::factory()->create(['branch_id' => $branch->id]);
+        $admin->assignRole('POS Operator');
+        $this->actingAs($admin);
+
+        $category = ItemCategory::factory()->create();
+        $tax = Tax::factory()->create();
+        $item = Item::factory()->create(['item_category_id' => $category->id, 'tax_id' => $tax->id, 'price' => 10.00]);
+
+        StockLevel::query()->create([
+            'branch_id' => $branch->id,
+            'stockable_type' => Item::class,
+            'stockable_id' => $item->id,
+            'on_hand' => 10,
+            'reserved' => 0,
+        ]);
+
+        $order = Order::factory()->create([
+            'branch_id' => $branch->id,
+            'user_id' => $admin->id,
+            'status' => OrderStatus::ACCEPT,
+            'payment_status' => PaymentStatus::UNPAID,
+        ]);
+
+        OrderItem::forceCreate([
+            'order_id' => $order->id,
+            'branch_id' => $branch->id,
+            'item_id' => $item->id,
+            'quantity' => 3,
+            'discount' => 0,
+            'tax_name' => null,
+            'tax_rate' => 0,
+            'tax_type' => 1,
+            'tax_amount' => 0,
+            'price' => 10.00,
+            'item_variation_total' => 0,
+            'item_extra_total' => 0,
+            'total_price' => 30.00,
+            'released_qty' => 0,
+            'released_at' => null,
+        ]);
+
+        // Décrément réel à la création (pose le StockMovement order_created requis
+        // par requireOriginalDecrement) : 10 → 7.
+        app(StockService::class)->decrementForOrder($order->fresh());
+        $this->assertSame(7, (int) StockLevel::query()
+            ->where('stockable_id', $item->id)->value('on_hand'));
+
+        app(OrderService::class)->destroy($order->fresh());
+
+        // Le stock physique est rendu malgré les lignes soft-deleted au moment du listener.
+        $this->assertSame(10, (int) StockLevel::query()
+            ->where('stockable_id', $item->id)->value('on_hand'));
     }
 }

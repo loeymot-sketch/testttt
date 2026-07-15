@@ -89,4 +89,49 @@ class DailyBookEntryCrudTest extends TestCase
         $this->assertSoftDeleted('daily_book_entries', ['id' => $b->id]);
         $this->getJson('/carnet/api/entries?date=2026-07-15')->assertJsonCount(0, 'data');
     }
+    public function test_note_with_phantom_amount_is_rejected(): void
+    {
+        // [BRAIN-SUPERVISOR] prohibited_if : montant fantôme sur une note faussait
+        // le total du jour (front) vs le mois (back).
+        $this->postJson('/carnet/api/entries', [
+            'type' => 'note',
+            'label' => 'Note avec montant',
+            'amount' => '12.00',
+            'entry_date' => '2026-07-15',
+        ])->assertStatus(422)->assertJsonValidationErrors(['amount']);
+    }
+
+    public function test_entry_date_is_bounded(): void
+    {
+        foreach (['2019-01-01', now()->addYears(2)->format('Y-m-d')] as $bad) {
+            $this->postJson('/carnet/api/entries', [
+                'type' => 'expense',
+                'label' => 'Date hors bornes',
+                'amount' => '5',
+                'entry_date' => $bad,
+            ])->assertStatus(422)->assertJsonValidationErrors(['entry_date']);
+        }
+    }
+
+    public function test_invoice_photo_is_served_behind_pin_only(): void
+    {
+        Storage::fake('local');
+
+        $this->post('/carnet/api/entries', [
+            'type' => 'expense',
+            'label' => 'Facture photo gated',
+            'amount' => '10',
+            'entry_date' => '2026-07-15',
+            'photo' => UploadedFile::fake()->image('facture.jpg', 600, 800),
+        ])->assertStatus(201);
+
+        $entry = DailyBookEntry::first();
+        $res = $this->getJson('/carnet/api/entries?date=2026-07-15')->assertOk();
+        $url = $res->json('data.0.photo_url');
+        $this->assertStringContainsString('/carnet/api/entries/'.$entry->id.'/photo', $url);
+
+        // Session verrouillée → la photo est refusée (401), pas d'URL /storage publique.
+        $this->postJson('/carnet/api/lock')->assertOk();
+        $this->get('/carnet/api/entries/'.$entry->id.'/photo')->assertStatus(401);
+    }
 }

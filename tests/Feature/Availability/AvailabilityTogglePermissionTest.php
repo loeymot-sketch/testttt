@@ -116,4 +116,22 @@ class AvailabilityTogglePermissionTest extends TestCase
             'unavailable_reason' => 'stock_rupture',
         ];
     }
+    public function test_availability_toggle_covers_extra_variation_and_branch_show(): void
+    {
+        // [BRAIN-SUPERVISOR] L'OR-gate couvre les 3 routes sœurs, pas seulement toggle.
+        $branch = Branch::factory()->create();
+        $user = User::factory()->create(['branch_id' => $branch->id]);
+        $user->givePermissionTo('availability_toggle');
+
+        // 403 interdits ; toute autre réponse (422 payload, 200) prouve que le gate passe.
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/admin/menu/availability/extra/toggle', [])
+            ->assertStatus(422);
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/admin/menu/availability/variation/toggle', [])
+            ->assertStatus(422);
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/admin/menu/availability/branch/'.$branch->id)
+            ->assertOk();
+    }
 }
