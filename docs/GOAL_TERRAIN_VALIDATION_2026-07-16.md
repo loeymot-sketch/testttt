@@ -149,3 +149,12 @@ Vrais clics Playwright, place du caissier : Tacos M + 1 viande + 2 sauces →
   composition_snapshot = item 26 + 3 crudités @0 + **1 extra « Sauce supplémentaire » @0,50** (2e sauce SCELLÉE).
 - **KDS sync** : commande **A0032** affichée avec compo « TAC M | ALG » + **« 🍟 Sauce supplémentaire »** (`32`).
 → Avant le fix : scellé 6,90 (2e sauce larguée). Le flux caisse→NF525→cuisine est PROUVÉ de bout en bout.
+
+
+## CYCLE 5 — validations live (pendant l'audit profond multi-agents)
+- **OSS (écran client) SYNC PROUVÉE** (`33`) : commande #5727 = **N°A0032 en « En préparation »** →
+  sync caisse→KDS→OSS complète (3 surfaces, même commande, temps réel). Colonne « Prêt » vide (correct).
+- **RESPONSIVE propre à TOUS les breakpoints** : 360 / 392 / 768(tablette,`34`) / 1920 → **0 débordement
+  horizontal** partout, aucun élément trop large. Dimension responsive = clean.
+- Audit code profond 14 lentilles (perf/N+1, index, sync-races, a11y, OSS, gestion, edge, sécu, data,
+  borne-tous-produits) lancé → findings à healer.
