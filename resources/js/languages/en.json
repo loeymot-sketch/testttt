@@ -159,6 +159,12 @@
             "down": "DOWN",
             "no_signal": "No signal",
             "last_signal": "Last signal"
+        },
+        "product_wizard": {
+            "title": "Product wizard",
+            "subtitle": "Configure your product step by step",
+            "finish": "Finish",
+            "progress": "Step :current of :total"
         }
     },
     "pos": {
@@ -1405,7 +1411,18 @@
         "kds_toggle_items": "Show/Hide items",
         "eod_pdf_button": "EOD Closing PDF",
         "eod_pdf_error": "PDF download failed. Try again or check your permissions.",
-        "downloading": "Downloading…"
+        "downloading": "Downloading…",
+        "branch_scope": "Branch scope",
+        "branch_scope_help": "Restrict to specific branches (comma-separated IDs).",
+        "surface": "Surface",
+        "surfaces": "Surfaces",
+        "activate": "Activate",
+        "deactivate": "Deactivate",
+        "max_uses_global": "Max uses (global)",
+        "valid_days_of_week": "Valid days of week",
+        "valid_hours_start": "Start hour",
+        "valid_hours_end": "End hour",
+        "error": "An error occurred."
     },
     "button": {
         "refresh": "Refresh",
@@ -1632,7 +1649,9 @@
             "toggle_success": "Status updated.",
             "toggle_error": "Update failed. Please try again."
         },
-        "kds_sync_forbidden": "Kitchen display access denied (session or server permission). The board cannot load — notify the administrator."
+        "kds_sync_forbidden": "Kitchen display access denied (session or server permission). The board cannot load — notify the administrator.",
+        "kds_reprint_sent": "Reprint sent (order :queue).",
+        "kds_reprint_failed": "Reprint failed."
     },
     "kiosk": {
         "dine_in": "Dine in",
@@ -2097,6 +2116,9 @@
                     "summary_many": "{n} toppings selected",
                     "empty_hint": "No topping available for this product."
                 }
+            },
+            "generic": {
+                "step_fallback": "Step"
             }
         },
         "order_type_label": "Order type",
@@ -2132,7 +2154,8 @@
             "vkeyb_space_short": "Space",
             "vkeyb_backspace": "Delete last character",
             "vkeyb_submit": "Confirm",
-            "vkeyb_submit_short": "OK"
+            "vkeyb_submit_short": "OK",
+            "vkeyb_shift": "Shift"
         },
         "consent": {
             "title": "Loyalty programme",

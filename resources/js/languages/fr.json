@@ -160,6 +160,12 @@
             "down": "DOWN",
             "no_signal": "Aucun signal",
             "last_signal": "Dernier signal il y a"
+        },
+        "product_wizard": {
+            "title": "Assistant produit",
+            "subtitle": "Configurez votre produit étape par étape",
+            "finish": "Terminer",
+            "progress": "Étape :current sur :total"
         }
     },
     "pos": {
@@ -1334,7 +1340,18 @@
         "kds_toggle_items": "Afficher/Masquer les articles",
         "eod_pdf_button": "PDF Clôture du jour",
         "eod_pdf_error": "Téléchargement du PDF échoué. Réessayez ou vérifiez vos permissions.",
-        "downloading": "Téléchargement…"
+        "downloading": "Téléchargement…",
+        "branch_scope": "Portée par succursale",
+        "branch_scope_help": "Limiter à certaines succursales (liste d'ID séparés par des virgules).",
+        "surface": "Surface",
+        "surfaces": "Surfaces",
+        "activate": "Activer",
+        "deactivate": "Désactiver",
+        "max_uses_global": "Utilisations max (global)",
+        "valid_days_of_week": "Jours de validité",
+        "valid_hours_start": "Heure de début",
+        "valid_hours_end": "Heure de fin",
+        "error": "Une erreur est survenue."
     },
     "button": {
         "refresh": "Actualiser",
@@ -1569,7 +1586,9 @@
             "toggle_success": "Statut mis à jour.",
             "toggle_error": "Échec de la mise à jour. Réessaye."
         },
-        "kds_sync_forbidden": "Accès à l'écran cuisine refusé (session ou permission serveur). Le tableau ne peut pas se charger — prévenez l'administrateur."
+        "kds_sync_forbidden": "Accès à l'écran cuisine refusé (session ou permission serveur). Le tableau ne peut pas se charger — prévenez l'administrateur.",
+        "kds_reprint_sent": "Réimpression envoyée (commande :queue).",
+        "kds_reprint_failed": "Échec de la réimpression."
     },
     "kiosk": {
         "dine_in": "Sur place",
@@ -2047,6 +2066,9 @@
                     "summary_one": "{n} garniture sélectionnée",
                     "summary_many": "{n} garnitures sélectionnées"
                 }
+            },
+            "generic": {
+                "step_fallback": "Étape"
             }
         },
         "order_type_label": "Type de commande",
@@ -2082,7 +2104,8 @@
             "vkeyb_space_short": "Espace",
             "vkeyb_backspace": "Supprimer le dernier caractère",
             "vkeyb_submit": "Valider",
-            "vkeyb_submit_short": "OK"
+            "vkeyb_submit_short": "OK",
+            "vkeyb_shift": "Majuscule"
         },
         "consent": {
             "title": "Programme fidélité",
