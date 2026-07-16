@@ -334,14 +334,12 @@ class CouponService
     public function couponDateWise(): \Illuminate\Database\Eloquent\Collection
     {
         try {
-            return Coupon::all()->filter(function ($item) {
-                // [AUDIT-FIX-K4] Guard against null dates to prevent Carbon crash
-                if ($item->start_date && $item->end_date) {
-                    if (Carbon::now()->between($item->start_date, $item->end_date)) {
-                        return $item;
-                    }
-                }
-            });
+            // [TERRAIN-HEAL 2026-07-16 · COUPON-PUBLIC-STATUS] Réutilise le scope canonique Coupon::active()
+            // (status=ACTIVE + fenêtre de validité null-safe) au lieu d'un Coupon::all()->filter() qui
+            // ignorait `status` → un coupon DÉSACTIVÉ dans la gestion restait listé publiquement (le toggle
+            // admin n'avait aucun effet sur la vitrine ; UX trompeuse, coupon montré puis refusé au checkout
+            // par validateCouponForOrder→isUsableNow). Bonus : requête DB au lieu de charger toute la table.
+            return Coupon::active()->get();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
