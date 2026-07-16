@@ -2359,6 +2359,40 @@ class OrderService
                             app(PaymentService::class)->recordCashRefundMovement($locked, round((float) $locked->total, 2));
                             \App\Events\RefundCreated::dispatch($locked);
                         }
+
+                        // [TERRAIN-HEAL 2026-07-16 · LOYALTY-UNPAID-AWARD-CLAWBACK — P1 intersection KDS↔Loyalty↔Caisse]
+                        // Une commande borne Plan B (PENDING_COUNTER, IMPAYÉE) est board-released et créditée en
+                        // points GAGNÉS dès PREPARED : AwardLoyaltyPointsOnDelivery ne teste PAS payment_status, et
+                        // le paiement comptoir (confirmCounterPayment) ne re-fire pas d'événement PREPARED → guarder
+                        // l'award sur PAID casserait le crédit légitime du flux Plan B (payé APRÈS préparation).
+                        // Le trou : si la commande est ensuite annulée SANS avoir été payée, le clawback via
+                        // RefundCreated (bloc ci-dessus, gardé sur PAID) ne se déclenche pas → points gagnés jamais
+                        // repris = exploit répétable (scanner QR + faire préparer + repartir sans payer). On reprend
+                        // donc explicitement les points GAGNÉS sur TOUT état terminal d'annulation, quel que soit le
+                        // paiement. Idempotent : clawbackEarnedPoints NOOP si déjà repris (manual_deduct user+order)
+                        // → sûr même quand RefundCreated l'a déjà fait pour le cas PAID. -1 (sentinelle in-flight) et
+                        // 0 sont ignorés par le garde > 0.
+                        $awardedPts = (int) $locked->loyalty_points_awarded;
+                        if ($awardedPts > 0) {
+                            $loyaltyUser = null;
+                            if (!empty($locked->loyalty_customer_code)) {
+                                $loyaltyUser = \App\Models\User::where('loyalty_code', $locked->loyalty_customer_code)->first();
+                            }
+                            if (!$loyaltyUser && $locked->user_id) {
+                                $candidate = \App\Models\User::find($locked->user_id);
+                                if ($candidate && $candidate->loyalty_code) {
+                                    $loyaltyUser = $candidate;
+                                }
+                            }
+                            if ($loyaltyUser) {
+                                app(LoyaltyService::class)->clawbackEarnedPoints(
+                                    $loyaltyUser->id,
+                                    $awardedPts,
+                                    (int) $locked->id,
+                                    'Clawback fidélité — commande annulée'
+                                );
+                            }
+                        }
                         app(LoyaltyService::class)->refundPoints($locked, 'pos');
                     }
 
