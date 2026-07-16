@@ -62,12 +62,23 @@
 - Gestion dashboard : ventes/commandes/alertes SLA/répartition canal. `12`.
 - Tous chargent + rendent proprement (0 défaut visuel bloquant constaté).
 
-### Restant à healer (prochain cycle)
-- CAISSE-REFUND-SPLIT (P2, = REFUND-SPLIT registre) : refund pré-Z tranche-blind → tiroir faux.
-- MGMT-CATALOG-BLIND (P2) : admin catalogue aveugle on_hand=0 (lié au 86 escaladé).
-- WEB-SLOT-STUB (P2) : faux sélecteur créneau retrait (promesse ≠ immédiat).
-- WEB-BORNE-FRITES-CASCADE (P2) : prix cheddar frites fantôme web + divergence borne (borne=frozen gate).
-- WEB-LEGAL-TODO (P2) : 26 champs [À COMPLÉTER] mentions légales = DATA owner (pas code).
+### Healés cycle 1 (suite) + testés
+- **CAISSE-REFUND-SPLIT** `6f0856a56` : cashBack sortait $order->total du tiroir ; sur split (cash+carte)
+  seule la portion CASH (mode==CASH) doit sortir → helper refundCashTranchePortion. Test split=4,00/mono=7,50.
+- **MGMT-CATALOG-BLIND** `7d709243e` : catalogue admin incluait pas on_hand<=0 → divergence borne. 27 verts.
+- **WEB-SLOT-STUB** + **WEB-BORNE-FRITES-CASCADE (web)** `d387ede` : faux créneau/heures + prix cheddar fantôme récap.
+
+### Bilan heals : **11 findings healés + testés** (backend régression 2137 verts, 0 régression)
+
+### Couverture produit web COMPLÈTE (buildSteps + prix, 0 erreur)
+Sandwich (Suprême/Cayenne) · Tacos (M/L) · Bol (Frites/Riz) · Burger (Big/Chicken) · Galette
+(viandes min1/max3+sauce) · Frites (style) · Boisson/Dessert/Menu-enfant (ajout direct, pas de wizard).
+Tous logiquement sains sur le code actuel → « tout payant » = uniquement le déployé obsolète.
+
+### Restant (non-Claude)
+- WEB-BORNE-FRITES-CASCADE **borne side** (FROZEN §7) : borne facture cheddar-frites, web=gratuit →
+  aligner la borne = KioskWizardComponent frozen → gate+LOCK owner.
+- WEB-LEGAL-TODO : 26 [À COMPLÉTER] mentions légales = DATA owner (pas code).
 
 ## Gates owner (à confirmer)
 - **PUSH-WEB** : `git push origin main` repo site (HEAD `38d959f`) → Vercel prod. **Répare le vrai site.**
