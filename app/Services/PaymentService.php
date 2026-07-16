@@ -666,10 +666,23 @@ class PaymentService
         // tranche CASH physique est entrée au tiroir à la vente (SplitPaymentService::persistTranches) —
         // pas le total. Sortir le total sur-sortait donc le tiroir de la portion CARTE (variance fantôme
         // au rapprochement / Z). Miroir EXACT du fix cashBack:194 (CAISSE-REFUND-SPLIT) qui, lui, ne
-        // couvrait que le chemin AVEC Transaction. On ne sort QUE la portion CASH réelle ; repli sur le
-        // montant passé (=total) si aucune ligne order_payments (vente mono-tender cash légitime).
+        // couvrait que le chemin AVEC Transaction.
+        //
+        // [TERRAIN-HEAL 2026-07-16 · LOYALTY-REFUND-NONCASH] Depuis que l'appelant est élargi à TOUT tender
+        // PAID (pour le clawback fidélité + flip REFUNDED, cf. OrderService elseif), cette méthode doit être
+        // sûre quel que soit le tender : on ne sort du tiroir QUE le cash réellement encaissé.
+        //   - tranche(s) CASH d'un split → refundCashTranchePortion
+        //   - vente mono-tender CASH (aucune ligne order_payments) → repli = montant passé (=total)
+        //   - vente mono-tender CARTE / mobile / ticket → 0 (rien n'a été mis au tiroir) → aucun mouvement.
         $cashPortion = $this->refundCashTranchePortion($order);
-        $this->recordCashBackMovement($order, $cashPortion > 0.0 ? round($cashPortion, 2) : round($amount, 2));
+        if ($cashPortion <= 0.0) {
+            $cashPortion = ((int) $order->pos_payment_method === \App\Enums\PosPaymentMethod::CASH)
+                ? round($amount, 2)
+                : 0.0;
+        }
+        if ($cashPortion > 0.0) {
+            $this->recordCashBackMovement($order, round($cashPortion, 2));
+        }
     }
 
     /**

@@ -103,4 +103,37 @@ class RefundDirectPathSplitCashPortionTest extends TestCase
 
         $this->assertSame(9.0, round((float) $out, 2), 'Vente mono cash directe sans tranches → tiroir = total (repli).');
     }
+
+    /**
+     * [LOYALTY-REFUND-NONCASH] Vente mono-CARTE (aucune tranche cash, aucun cash au tiroir à la vente) :
+     * recordCashRefundMovement ne doit poser AUCUN mouvement de tiroir — sinon on sortirait du cash
+     * physiquement absent. (La méthode est désormais appelée pour TOUT tender PAID pour le clawback fidélité.)
+     */
+    public function test_direct_card_refund_records_no_cash_movement(): void
+    {
+        $this->seedMinimalSettings();
+        $branch  = Branch::factory()->create();
+        $cashier = User::factory()->create(['branch_id' => $branch->id]);
+        $this->actingAs($cashier);
+
+        $session = app(CashDrawerService::class)->openSession($branch->id, $cashier->id, 100.00);
+
+        $order = Order::factory()->create([
+            'branch_id' => $branch->id, 'user_id' => $cashier->id,
+            'total' => 15.00, 'subtotal' => 15.00, 'discount' => 0, 'total_tax' => 0, 'delivery_charge' => 0,
+            'payment_status' => PaymentStatus::PAID, 'status' => OrderStatus::DELIVERED,
+            'pos_payment_method' => PosPaymentMethod::CARD, // 100% carte → rien au tiroir
+        ]);
+        // Pas de lignes order_payments (vente inline mono-tender).
+
+        app(PaymentService::class)->recordCashRefundMovement($order, round((float) $order->total, 2));
+
+        $out = CashMovement::query()
+            ->where('cash_drawer_session_id', $session->id)
+            ->where('type', CashMovement::TYPE_CASHBACK)
+            ->where('order_id', $order->id)
+            ->count();
+
+        $this->assertSame(0, $out, 'Vente carte : aucun cash au tiroir à la vente → aucun mouvement de sortie au refund.');
+    }
 }

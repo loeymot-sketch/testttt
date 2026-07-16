@@ -2336,26 +2336,27 @@ class OrderService
                                 $refundGateway,
                                 'TXN-'.\Illuminate\Support\Str::random(12)
                             );
-                        } elseif ((int) $locked->pos_payment_method === \App\Enums\PosPaymentMethod::CASH
-                            && (int) $locked->payment_status === PaymentStatus::PAID) {
-                            // [SELF-AUDIT R2 P2 2026-07-05 — pas de sortie tiroir sur remboursement cash
-                            // DIRECT pré-Z] Une vente POS cash directe (posOrderStore) est PAYÉE + a une
-                            // entrée tiroir mais AUCUNE ligne Transaction → le cashBack ci-dessus (gardé sur
-                            // $locked->transaction) était sauté → aucune sortie tiroir au retour → variance
-                            // fantôme au rapprochement. On pose la CASHBACK OUT = total. Gardé sur PAID pour
-                            // ne JAMAIS sortir d'argent d'une commande qui n'a jamais encaissé (ex. RETURNED
-                            // d'un UNPAID → géré par la libération stock, pas par une sortie tiroir).
+                        } elseif ((int) $locked->payment_status === PaymentStatus::PAID) {
+                            // [SELF-AUDIT R2 P2 2026-07-05 — sortie tiroir sur remboursement DIRECT pré-Z]
+                            // Une vente POS directe (posOrderStore) est PAYÉE mais n'a AUCUNE ligne Transaction
+                            // → le cashBack ci-dessus (gardé sur $locked->transaction) est sauté. Gardé sur PAID
+                            // pour ne JAMAIS agir sur une commande jamais encaissée (RETURNED d'un UNPAID →
+                            // géré par la libération stock).
+                            //
+                            // [TERRAIN-HEAL 2026-07-16 · LOYALTY-REFUND-NONCASH — P1] La condition était gardée
+                            // sur pos_payment_method===CASH : une vente PAYÉE en CARTE / MOBILE / TICKET / SPLIT
+                            // (tender non-cash, toujours sans Transaction en inline) tombait donc dans le vide au
+                            // refund → RefundCreated JAMAIS dispatché → (a) points GAGNÉS jamais repris
+                            // (double-dip fidélité = fuite monétaire répétable), (b) payment_status jamais repassé
+                            // à REFUNDED (commande remboursée affichée PAID). Le fix R4 P1 (cash-direct) ne
+                            // couvrait QUE le cash. On élargit à TOUT tender PAID sans Transaction.
+                            //
+                            // La sortie tiroir reste correcte quel que soit le tender : recordCashRefundMovement
+                            // ne sort QUE le cash réellement encaissé (portion CASH d'un split, total d'une vente
+                            // mono cash, 0 pour une vente carte/mobile). Les listeners de RefundCreated sont
+                            // idempotents (clawback user+order+manual_deduct ; release stock released_qty ;
+                            // flip statut) → sûrs même si RefundCreated est aussi émis par le chemin cashBack.
                             app(PaymentService::class)->recordCashRefundMovement($locked, round((float) $locked->total, 2));
-
-                            // [SELF-AUDIT R4 P1 2026-07-05 — double-dip fidélité cash+points] Le chemin
-                            // cashBack (avec Transaction) dispatch RefundCreated → ClawbackLoyaltyPointsOnRefund
-                            // (reprise des points GAGNÉS) + payment_status=REFUNDED. Le chemin cash DIRECT
-                            // (sans Transaction, ci-dessus) ne le faisait PAS → un client gardait ses points
-                            // gagnés sur une vente cash remboursée (double-dip). refundPoints (l.2261) ne
-                            // reverse que les points UTILISÉS (type=redeem), pas les points GAGNÉS. On dispatch
-                            // RefundCreated (after-commit via DispatchableAfterCommit) UNIQUEMENT sur ce chemin
-                            // PAID (jamais UNPAID → pas de REFUNDED erroné). Clawback idempotent
-                            // (user+order+manual_deduct) ; release stock idempotent (released_qty).
                             \App\Events\RefundCreated::dispatch($locked);
                         }
                         app(LoyaltyService::class)->refundPoints($locked, 'pos');
