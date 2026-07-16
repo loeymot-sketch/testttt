@@ -593,6 +593,19 @@ final class AvailabilityService
             $currentReason = $level->manual_unavailable_reason;
             $currentlyManualUnavailable = $currentReason !== null && $currentReason !== '';
 
+            // [TERRAIN-HEAL 2026-07-16 · MGMT-86-REACTIVATE — owner a délégué la décision] Réactivation
+            // d'un stockable FLAG-managed : effacer le flag NE SUFFIT PAS — le row conserve on_hand=0
+            // (créé ainsi au 86, cf. l.582 "safe default"), que ChoiceAvailabilityResolver + isStockableAvailable
+            // relisent comme rupture → extra ÉPUISÉ POUR TOUJOURS sur la borne malgré la tuile verte admin.
+            // V1 Le Cayenne : extras/variations = flag on/off (pas de vrai comptage). Sans stock réel
+            // (on_hand<=0 && reserved<=0), on SUPPRIME le row → règle V1 « absent = disponible » (l.622).
+            // Un extra RÉELLEMENT stock-tracké (on_hand>0 ou reserved>0) N'EST PAS supprimé (juste flag effacé).
+            if ($available && (int) $level->on_hand <= 0 && (int) $level->reserved <= 0) {
+                $level->delete();
+                $this->dispatchStockableEvent($type, $id, $branchId, true, null);
+                return $level;
+            }
+
             // Idempotency: same desired state and (when unavailable) same reason → no-op.
             if ($available && ! $currentlyManualUnavailable) {
                 return $level;

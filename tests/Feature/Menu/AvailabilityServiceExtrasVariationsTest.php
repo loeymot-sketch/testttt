@@ -62,10 +62,16 @@ class AvailabilityServiceExtrasVariationsTest extends TestCase
         [$branch, $extra] = $this->makeBranchAndExtra();
 
         $this->service->toggleExtra($extra->id, $branch->id, false, 'supplier_issue');
-        $level = $this->service->toggleExtra($extra->id, $branch->id, true, null);
+        $this->service->toggleExtra($extra->id, $branch->id, true, null);
 
-        $this->assertNull($level->manual_unavailable_reason);
-        $this->assertNull($level->manual_unavailable_since);
+        // [TERRAIN-HEAL 2026-07-16 · MGMT-86-REACTIVATE] Réactiver un extra flag-managed (on_hand=0,
+        // pas de stock réel) SUPPRIME le row → retour à « absent = disponible » PARTOUT (y compris
+        // borne). Avant : le row on_hand=0 subsistait et le resolver le relisait comme rupture éternelle.
+        $this->assertDatabaseMissing('stock_levels', [
+            'branch_id' => $branch->id,
+            'stockable_id' => $extra->id,
+        ]);
+        $this->assertTrue($this->service->isExtraAvailable($extra->id, $branch->id));
     }
 
     public function test_is_extra_available_reflects_manual_toggle(): void
@@ -79,8 +85,9 @@ class AvailabilityServiceExtrasVariationsTest extends TestCase
         $this->assertFalse($this->service->isExtraAvailable($extra->id, $branch->id));
 
         $this->service->toggleExtra($extra->id, $branch->id, true, null);
-        // Row still exists with on_hand=0 + reason cleared → falls back to on_hand check.
-        $this->assertFalse($this->service->isExtraAvailable($extra->id, $branch->id));
+        // [TERRAIN-HEAL 2026-07-16 · MGMT-86-REACTIVATE] Réactivation flag-managed → row supprimé →
+        // DISPONIBLE (règle V1 absent=dispo). Avant : restait indisponible (on_hand=0 fantôme) = bug borne.
+        $this->assertTrue($this->service->isExtraAvailable($extra->id, $branch->id));
     }
 
     public function test_is_extra_available_returns_true_when_no_row(): void
