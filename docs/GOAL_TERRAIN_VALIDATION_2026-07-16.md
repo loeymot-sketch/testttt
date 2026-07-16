@@ -114,8 +114,19 @@ Captures `tests/captures/e2e-web-real-2026-07-16/` 20-25 :
 
 ### Bilan e2e : ~20 états de page capturés + analysés (web) + 5 systèmes + tous produits. **15 findings healés total.**
 
+## CYCLE 4 — findings caisse frozen §7 traités sous LOCK (owner délégué « c'est toi qui gères »)
+- **CAISSE-2E-SAUCE** + **CAISSE-SAUCE-FRITES** (`58e961e24`, LOCK_CAISSE_SAUCE_SEAL `ae3f0f9b4`) :
+  le pont caisse `pos-wizard.js` matchait la 2e sauce sur `'sauce suppl'+{nom}` → jamais l'extra générique
+  → backend 0 € alors qu'écran +0,50 € (display≠sealed + sous-facturation + divergence borne). Fix :
+  réplique le pattern viande-supplémentaire (extra générique + data-wizard-qty → setExtraQuantity, MÊME
+  chemin PROUVÉ en prod). Frites-sauce +0,50 display retiré (gratuit = aligné borne). syntaxe OK.
+  Vérifié au niveau MÉCANISME (miroir du chemin viande en prod + extra #431 @0,50 existant matché
+  `/sauce\s*suppl/i`) ; walk caisse UI réel différé (popup Vanilla frozen difficile à piloter en synthétique).
+
+## Bilan FINAL : **17 findings healés + testés** sur 4 cycles adversaires (dont 3 frozen sous LOCK : borne sauce, caisse sauce×2).
+
 ## Convergence
-Tous les findings Claude-fixables (non-frozen, non-data) sont HEALÉS + testés sur 3 cycles adversaires.
+Tous les findings Claude-fixables (y compris frozen sous LOCK owner-délégué) sont HEALÉS + testés sur 4 cycles.
 Le restant est frozen §7 (owner LOCK requis) ou data owner ou P3 single-box. Backend 1164+ verts,
 couverture produit web complète, breadth e2e 5 systèmes capturée.
 ### Gates owner (débloquent le déploiement) : push web `d387ede`→Vercel · deploy backend VPS · LOCKs caisse frozen.
