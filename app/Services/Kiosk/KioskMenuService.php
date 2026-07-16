@@ -63,8 +63,11 @@ final class KioskMenuService
         $branchId = (int) $branch->id;
 
         // -- Catégories actives visibles sur le canal kiosk ----------------
+        // [TERRAIN-HEAL 2026-07-16 · DBPERF-KIOSKCAT-N1] eager-load media : sinon 1 requête média
+        // par catégorie au rendu borne (reliquat non couvert par DBPERF-P1-01 qui n'a healé que les items).
         $categories = ItemCategory::query()
             ->where('status', Status::ACTIVE)
+            ->with('media')
             ->get();
 
         $visibleCategories = $categories

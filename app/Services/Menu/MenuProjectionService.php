@@ -86,6 +86,10 @@ final class MenuProjectionService
                 'extras:id,item_id,name,price,visible_on,group_label,status',
                 'addons:id,item_id,addon_item_id,addon_item_variation,role',
                 'addons.addonItem:id,name,status,is_available,channels',
+                // [TERRAIN-HEAL 2026-07-16 · DBPERF-MENUPROJ-N1] eager-load media (item + addonItem) —
+                // jumeau non-healé de DBPERF-P1-01 : sinon 1 requête média/ligne à la projection (route non-cachée).
+                'media',
+                'addons.addonItem.media',
             ])
             ->where('status', Status::ACTIVE)
             ->whereIn('item_category_id', $categoryIds)
