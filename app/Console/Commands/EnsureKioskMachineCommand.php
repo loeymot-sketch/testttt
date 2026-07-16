@@ -46,20 +46,8 @@ class EnsureKioskMachineCommand extends Command
             return 1;
         }
 
-        $userId = $this->option('user-id');
-        if ($userId !== null && $userId !== '') {
-            $user = User::query()->find((int) $userId);
-        } else {
-            $user = User::query()->find(1)
-                ?? User::query()->orderBy('id')->first();
-        }
-
-        if (! $user) {
-            $this->error('Aucun utilisateur trouvé pour lier la borne. Créez un admin ou passez --user-id=');
-
-            return 1;
-        }
-
+        // Branche résolue AVANT l'utilisateur, pour pouvoir provisionner un owner borne dédié
+        // sur la bonne branche.
         $branchId = $this->option('branch-id');
         if ($branchId !== null && $branchId !== '') {
             $branch = Branch::query()->find((int) $branchId);
@@ -69,6 +57,29 @@ class EnsureKioskMachineCommand extends Command
 
         if (! $branch) {
             $this->error('Aucune branche en base. Exécutez les migrations / seeders (BranchTableSeeder).');
+
+            return 1;
+        }
+
+        // [TERRAIN-HEAL 2026-07-16 · KIOSK-PROFILE-ESCALATION couche-2] L'owner de la borne détermine
+        // le compte sur lequel le token kiosk:order est émis. L'ancien défaut (User::find(1) = admin)
+        // faisait qu'un token borne fuité portait un compte PRIVILÉGIÉ = amplificateur du P1 /profile.
+        // Défense en profondeur : par défaut on lie à un utilisateur DÉDIÉ SANS RÔLE (même si un garde
+        // couche-1 tombait, le token n'a aucun privilège Spatie). --user-id explicite reste respecté,
+        // mais on AVERTIT s'il pointe un compte privilégié.
+        $userId = $this->option('user-id');
+        if ($userId !== null && $userId !== '') {
+            $user = User::query()->find((int) $userId);
+            if ($user && ($user->hasRole('Admin') || $user->can('settings'))) {
+                $this->warn("⚠ Borne liée à un compte PRIVILÉGIÉ ({$user->email}). Recommandé : un user dédié sans rôle (ne pas passer --user-id).");
+            }
+        } else {
+            $user = $this->ensureDedicatedKioskOwner($branch);
+            $this->info("Owner borne dédié (sans rôle) : {$user->email}");
+        }
+
+        if (! $user) {
+            $this->error('Aucun utilisateur trouvé pour lier la borne. Créez un admin ou passez --user-id=');
 
             return 1;
         }
@@ -116,5 +127,35 @@ class EnsureKioskMachineCommand extends Command
         $this->line('Puis : php artisan config:clear');
 
         return 0;
+    }
+
+    /**
+     * [KIOSK-PROFILE-ESCALATION couche-2] Garantit un owner borne DÉDIÉ et SANS RÔLE pour une branche.
+     * Le token kiosk:order est émis sur ce user ; sans rôle Spatie ni permission, un token fuité ne
+     * porte aucun privilège (défense en profondeur derrière les gardes couche-1 block_kiosk_token_admin
+     * + block_kiosk_machine_profile). Idempotent (firstOrCreate par email), mot de passe aléatoire
+     * (le login borne se fait par les creds KioskMachine, pas par ce user).
+     */
+    private function ensureDedicatedKioskOwner(Branch $branch): User
+    {
+        $email = "kiosk-borne-b{$branch->id}@lecayenne.local";
+
+        $user = User::query()->firstOrCreate(
+            ['email' => $email],
+            [
+                'name'      => "Borne Le Cayenne (branche {$branch->id})",
+                'username'  => "kiosk-borne-b{$branch->id}",
+                'password'  => Hash::make(bin2hex(random_bytes(16))),
+                'status'    => Status::ACTIVE,
+                'branch_id' => $branch->id,
+            ]
+        );
+
+        // Défense : garantir qu'aucun rôle n'est attaché (au cas où un ré-run l'aurait modifié).
+        if (method_exists($user, 'syncRoles')) {
+            $user->syncRoles([]);
+        }
+
+        return $user;
     }
 }
