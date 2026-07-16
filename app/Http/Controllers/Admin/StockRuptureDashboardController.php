@@ -393,7 +393,13 @@ class StockRuptureDashboardController extends AdminController
                 ->where('branch_id', $branchId)
                 ->where('stockable_type', ItemExtra::class)
                 ->whereIn('stockable_id', $allExtraIds)
-                ->whereNotNull('manual_unavailable_reason')
+                // [TERRAIN-HEAL 2026-07-16 · MGMT-CATALOG-BLIND] Le catalogue admin ne voyait QUE le
+                // 86 manuel → montrait « dispo » des extras que la borne cache pour rupture stock
+                // (ChoiceAvailabilityResolver traite on_hand<=0 comme stock_rupture). On inclut on_hand<=0
+                // pour refléter l'état réel borne (fin de la divergence admin↔borne).
+                ->where(function ($q): void {
+                    $q->whereNotNull('manual_unavailable_reason')->orWhere('on_hand', '<=', 0);
+                })
                 ->get(['stockable_id'])
                 ->keyBy(fn ($row): int => (int) $row->stockable_id);
 
@@ -451,7 +457,11 @@ class StockRuptureDashboardController extends AdminController
                 ->where('branch_id', $branchId)
                 ->where('stockable_type', ItemVariation::class)
                 ->whereIn('stockable_id', $allVariationIds)
-                ->whereNotNull('manual_unavailable_reason')
+                // [TERRAIN-HEAL 2026-07-16 · MGMT-CATALOG-BLIND] idem extras : inclure on_hand<=0 pour
+                // refléter la rupture stock côté borne (pas seulement le 86 manuel).
+                ->where(function ($q): void {
+                    $q->whereNotNull('manual_unavailable_reason')->orWhere('on_hand', '<=', 0);
+                })
                 ->get(['stockable_id'])
                 ->keyBy(fn ($row): int => (int) $row->stockable_id);
 
