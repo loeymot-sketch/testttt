@@ -158,3 +158,33 @@ Vrais clics Playwright, place du caissier : Tacos M + 1 viande + 2 sauces →
   horizontal** partout, aucun élément trop large. Dimension responsive = clean.
 - Audit code profond 14 lentilles (perf/N+1, index, sync-races, a11y, OSS, gestion, edge, sécu, data,
   borne-tous-produits) lancé → findings à healer.
+
+
+## CYCLE 5 — audit 100% profond (workflow wy1mfm6n8, 65 agents) : 50 bruts → 29 confirmés
+Verdict : **0 P0, 2 P1, 3 P2, ~24 P3**. DIMENSIONS 100% CLEAN : NF525 chain, isolation branche,
+idempotency core, boot-guards prod, frozen-zones (0 violation — 100% des findings frozen:false).
+
+### Healés + testés
+- **P1 FRONT-CANCEL-RACE** `5d0cbf87a` : self-cancel client (web/borne, FrontendOrderService:765) sans
+  transaction/lock sur status stale → 2 annulations concurrentes = double cashBack+points+stock (jumeau
+  non-durci d'OrderService). Fix : DB::transaction + lockForUpdate + early-return idempotent status frais.
+  Test : cashBack exactement 1×. 92 verts.
+- **P2 SEC-SQL-DUMPS** `bbf85fec8` : 5 dumps SQL (~34Mo, hash mdp) dé-trackés + gitignore (§3quater).
+- **P2 ORDER-RES-N1** `9883cc265` : OrderResource re-query user.roles/media+transaction.order par ligne
+  (~20 req/page) → eager-load + loadMissing.
+- **Perf N+1 twins** `eeb347405` : media menu-projection + kiosk categories eager-loadés.
+- **P2 WEB-ACC-MODAL** web `3081c39` : modal compte clippé au clavier mobile → piste bornée + scroll.
+
+### Live cycle 5 : OSS sync (A0032 3 surfaces), responsive 0 débordement (360/392/768/1920), parcours
+complet caisse→fiscal NF525→KDS→OSS prouvé (order #5727, 7,40 € avec Sauce supplémentaire scellée).
+
+### Restant (gate owner / P3 backlog)
+- **P1 WEB-API-DEAD** : api-base-url site déployé = localhost → funnel mort en ligne. GATE OWNER (URL backend prod).
+- ~20 P3 batchables (non-bloquants) : payload count-hydration (ItemRes/CustomerRes/UserRes loadCount),
+  a11y web/SPA (aria/radiogroup/icon-only), sync outliers (OnlineOrder/TableOrder poll+Echo, KDS phantom broadcast),
+  UBER-CANCEL-RACE (latent), data-hygiene (15 taxes FIXED 0-ref, orphelins menu), 2 routes destroy mortes.
+- Owner-gated : purge historique git + rotation secrets staff, push web, deploy VPS, 5 champs légaux.
+
+## BILAN GLOBAL — 22 findings healés sur 5 cycles adversaires ; 3 frozen sous LOCK ; parcours complet
+caisse→fiscal→KDS→OSS prouvé écran par écran ; backend 2310+ verts ; dimensions core (NF525/isolation/
+idempotency/frozen) 100% clean. Seuls restants = P1 owner-gated (deploy URL) + P3 backlog + gates owner.
