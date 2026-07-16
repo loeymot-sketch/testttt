@@ -36,7 +36,7 @@ class KioskMachineTokenProfileBlockTest extends TestCase
         $this->withHeaders($this->apiHeaders() + ['Authorization' => "Bearer {$machineToken}"])
             ->getJson('/api/profile/')
             ->assertStatus(403)
-            ->assertJsonPath('code', 'KIOSK_MACHINE_TOKEN_FORBIDDEN_ON_PROFILE');
+            ->assertJsonPath('code', 'KIOSK_MACHINE_TOKEN_FORBIDDEN');
     }
 
     public function test_kiosk_machine_token_is_blocked_from_profile_update(): void
@@ -60,6 +60,30 @@ class KioskMachineTokenProfileBlockTest extends TestCase
 
         $this->withHeaders($this->apiHeaders() + ['Authorization' => "Bearer {$customerToken}"])
             ->getJson('/api/profile/')
+            ->assertStatus(200);
+    }
+
+    /**
+     * [SIBLINGS] Le même garde couvre les endpoints personnels frontend (adresses/messages) :
+     * un token machine ne doit pas lire/modifier les adresses du user support lié.
+     */
+    public function test_kiosk_machine_token_blocked_from_frontend_address(): void
+    {
+        $support = User::factory()->create();
+        $machineToken = $support->createToken('kiosk-token', ['kiosk:order'])->plainTextToken;
+
+        $this->withHeaders($this->apiHeaders() + ['Authorization' => "Bearer {$machineToken}"])
+            ->getJson('/api/frontend/address')
+            ->assertStatus(403);
+    }
+
+    public function test_customer_auth_token_still_reaches_frontend_address(): void
+    {
+        $customer = User::factory()->create();
+        $customerToken = $customer->createToken('auth_token', ['kiosk:order'])->plainTextToken;
+
+        $this->withHeaders($this->apiHeaders() + ['Authorization' => "Bearer {$customerToken}"])
+            ->getJson('/api/frontend/address')
             ->assertStatus(200);
     }
 }

@@ -145,9 +145,10 @@ class Kernel extends HttpKernel
         // See BlockKioskTokenFromAdminRoutes::handle() for full rationale.
         'block_kiosk_token_admin' => \App\Http\Middleware\BlockKioskTokenFromAdminRoutes::class,
 
-        // [TERRAIN-HEAL 2026-07-16 · KIOSK-PROFILE-ESCALATION P1] Bloque le token de MACHINE borne
-        // (name='kiosk-token') sur /api/profile/* — empêche une borne de lire/modifier le profil du
-        // user support auquel elle est rattachée (hijack admin). Les tokens CLIENT (auth_token) passent.
-        'block_kiosk_machine_profile' => \App\Http\Middleware\BlockKioskMachineTokenFromProfile::class,
+        // [TERRAIN-HEAL 2026-07-16 · KIOSK-PROFILE-ESCALATION P1 + siblings] Bloque le token de MACHINE
+        // borne (name='kiosk-token') sur les endpoints PERSONNELS d'un utilisateur (profil, transactions,
+        // messages, adresses, fidélité…) — empêche une borne de lire/modifier les données du user support
+        // auquel elle est rattachée (P1 profil=hijack ; siblings=fuite PII/adresse). Clients (auth_token) OK.
+        'block_kiosk_machine' => \App\Http\Middleware\BlockKioskMachineToken::class,
     ];
 }

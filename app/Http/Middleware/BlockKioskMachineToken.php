@@ -30,7 +30,7 @@ use Symfony\Component\HttpFoundation\Response;
  * lire/modifier le profil du user support. Les clients (auth_token) sont INCHANGÉS.
  * Session-based auth (pas de token Sanctum) : INCHANGÉ. Tokens wildcard '*' : INCHANGÉS.
  */
-class BlockKioskMachineTokenFromProfile
+class BlockKioskMachineToken
 {
     public function handle(Request $request, Closure $next): Response
     {
@@ -41,8 +41,8 @@ class BlockKioskMachineTokenFromProfile
         if ($token && method_exists($token, 'getAttribute') && $token->name === 'kiosk-token') {
             return response()->json([
                 'status'  => false,
-                'code'    => 'KIOSK_MACHINE_TOKEN_FORBIDDEN_ON_PROFILE',
-                'message' => 'Un terminal borne ne peut pas accéder au profil utilisateur.',
+                'code'    => 'KIOSK_MACHINE_TOKEN_FORBIDDEN',
+                'message' => "Un terminal borne ne peut pas accéder aux données personnelles d'un utilisateur.",
             ], 403);
         }
 

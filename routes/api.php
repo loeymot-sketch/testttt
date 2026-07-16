@@ -251,7 +251,7 @@ Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name
 });
 
 /* all routes must be singular word */
-Route::prefix('profile')->name('profile.')->middleware(['installed', 'apiKey', 'auth:sanctum', 'block_kiosk_machine_profile', 'localization'])->group(function () {
+Route::prefix('profile')->name('profile.')->middleware(['installed', 'apiKey', 'auth:sanctum', 'block_kiosk_machine', 'localization'])->group(function () {
     Route::get('/', [ProfileController::class, 'profile']);
     Route::match(['put', 'patch'], '/', [ProfileController::class, 'update']);
     Route::match(['put', 'patch'], '/change-password', [ProfileController::class, 'changePassword']);
@@ -1188,7 +1188,7 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('/', [\App\Http\Controllers\Admin\CashOverviewController::class, 'index'])->name('index');
     });
 
-    Route::prefix('message')->name('message.')->middleware(['auth:sanctum'])->group(function () {
+    Route::prefix('message')->name('message.')->middleware(['auth:sanctum', 'block_kiosk_machine'])->group(function () {
         Route::get('/', [MessageController::class, 'index']);
         Route::get('/show/{message}', [MessageController::class, 'show']);
         Route::post('/', [MessageController::class, 'store']);
@@ -1321,7 +1321,7 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
             ->middleware('throttle:5,1');
     });
 
-    Route::prefix('address')->name('address.')->middleware(['auth:sanctum'])->group(function () {
+    Route::prefix('address')->name('address.')->middleware(['auth:sanctum', 'block_kiosk_machine'])->group(function () {
         Route::get('/', [FrontendAddressController::class, 'index']);
         Route::get('/{address}', [FrontendAddressController::class, 'show']);
         Route::get('/show/{address}', [FrontendAddressController::class, 'show']);
@@ -1418,7 +1418,7 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::get('/show/{itemCategory:slug}', [FrontendItemCategoryController::class, 'show']);
     });
 
-    Route::prefix('message')->name('message.')->middleware(['auth:sanctum'])->group(function () {
+    Route::prefix('message')->name('message.')->middleware(['auth:sanctum', 'block_kiosk_machine'])->group(function () {
         Route::get('/', [FrontendMessageController::class, 'index']);
         Route::get('/show/{message}', [FrontendMessageController::class, 'show']);
         Route::post('/', [FrontendMessageController::class, 'store']);
