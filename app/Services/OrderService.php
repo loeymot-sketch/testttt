@@ -135,10 +135,16 @@ class OrderService
 
             return Order::with([
                 'transaction',
+                'transaction.order',
                 'orderItems.orderItem.media',
                 'orderItems.orderItem.category',
                 'branch',
                 'user',
+                // [TERRAIN-HEAL 2026-07-16 · ORDER-RES-N1] user.roles + user.media eager-loadés ici
+                // → OrderResource::toArray() (loadMissing) devient un no-op au lieu de ~20 requêtes
+                // parasites par page de 10 (roles+media re-query par ligne).
+                'user.roles',
+                'user.media',
             ])->where(function ($query) use ($requests) {
                 if (! empty($requests['from_date']) && ! empty($requests['to_date'])) {
                     // [GOAL-G2-HEAL-04 2026-05-23] TZ-generation alignment to
@@ -288,7 +294,7 @@ class OrderService
             $orderColumn = $this->sanitizeOrderColumn((string) ($request->get('order_column') ?? 'id'));
             $orderType = $this->sanitizeOrderDirection((string) ($request->get('order_by') ?? 'desc'));
 
-            return Order::with('transaction', 'orderItems', 'branch', 'user')->where('delivery_boy_id', $user->id)->where('order_type', '!=', OrderType::POS)->where(
+            return Order::with('transaction', 'transaction.order', 'orderItems', 'branch', 'user', 'user.roles', 'user.media')->where('delivery_boy_id', $user->id)->where('order_type', '!=', OrderType::POS)->where(
                 function ($query) use ($requests) {
                     foreach ($requests as $key => $request) {
                         if (in_array($key, $this->orderFilter)) {
