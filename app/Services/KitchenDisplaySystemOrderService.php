@@ -589,8 +589,12 @@ class KitchenDisplaySystemOrderService
 
             $allItems = $orders->pluck('orderItems')->flatten();
             $mergedItems = $allItems->groupBy(function ($item) {
-                $variations = empty($item['item_variations']) ? '[]' : collect($item['item_variations'])->sortKeys()->toJson();
-                $extras = empty($item['item_extras']) ? '[]' : collect($item['item_extras'])->sortKeys()->toJson();
+                // [CYCLE2-HEAL 2026-07-16 · KDS-MERGE-ORDER] Normaliser par CONTENU trié par id (pas
+                // sortKeys() qui triait les CLÉS 0,1,2 = no-op) → deux lignes à composition IDENTIQUE
+                // mais options en ORDRE différent produisaient un hash différent = non fusionnées au
+                // board « à préparer » (comptage cuisine faux). Aligné sur normalizeAddonsForHash.
+                $variations = empty($item['item_variations']) ? '[]' : collect($item['item_variations'])->sortBy('id')->values()->toJson();
+                $extras = empty($item['item_extras']) ? '[]' : collect($item['item_extras'])->sortBy('id')->values()->toJson();
                 $addons = json_encode($this->normalizeAddonsForHash(data_get($item, 'composition_snapshot.addons', [])));
                 // [L2 FIX] Normalize instruction: trim whitespace and lowercase to avoid
                 // spurious KDS splits caused by minor formatting differences
