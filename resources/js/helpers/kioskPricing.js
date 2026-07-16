@@ -27,12 +27,14 @@ export function getKioskMenuPricingConfig() {
 }
 
 export function getKioskExtraSauceUnitPrice(item) {
-  // [COMPOSITION-SAUCE BORNE 2026-07-15] La sauce EN PLUS est facturée via l'ItemExtra
-  // 'Sauce supplémentaire' (group_label='sauce') — MÊME source que le montant SCELLÉ par le
-  // backend dans buildLineItem (normalizedExtras). Si l'item possède cet extra (famille
-  // sandwich/tacos/galette/burger) → son prix (0,50 €) ; sinon (frites/bols, aucun mécanisme
-  // backend) → 0 pour que l'affichage running-total == le prix réellement scellé (fini le
-  // display≠sealed qui montrait +0,50 € sans jamais le facturer).
+  // [COMPOSITION-SAUCE BORNE 2026-07-15 · commentaire corrigé 2026-07-16 KIOSKPRICING-STALE-COMMENT]
+  // La sauce EN PLUS est facturée via l'ItemExtra 'Sauce supplémentaire' (group_label='sauce') —
+  // MÊME source que le montant SCELLÉ par le backend dans buildLineItem (normalizedExtras). La
+  // facturation est DATA-DRIVEN : tout item qui possède cet extra (bols/sandwich/tacos/galette/
+  // burger selon la config catalogue) → son prix (0,50 €) ; tout item SANS l'extra (frites) → 0.
+  // Ainsi l'affichage running-total == le prix réellement scellé (fini le display≠sealed qui
+  // montrait +0,50 € sans jamais le facturer). NB : ne PAS présumer par famille — c'est la présence
+  // de l'ItemExtra qui décide (l'ancien commentaire « bols aucun mécanisme backend » était faux).
   const ss = Array.isArray(item?.extras)
     ? item.extras.find((e) => e
         && String(e.group_label || '').toLowerCase() === 'sauce'

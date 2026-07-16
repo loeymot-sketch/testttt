@@ -406,12 +406,21 @@ export default {
 
       // Detect orders that just moved to PREPARED (not in previous list).
       // [AUDIT-P1] Skip IDs already marked via Echo to prevent double chime/flash.
+      // [OSS-FALSE-READY HEAL 2026-07-16] Au TOUT PREMIER chargement (reload de l'écran),
+      // preparedItems est vide → SANS garde, TOUTES les commandes déjà PRÊTES seraient traitées
+      // comme « viennent de passer prêtes » → carillon + flash de MASSE à chaque reload (fausse
+      // notification). On amorce via _primed : au 1er render on peuple la liste SANS notifier ;
+      // les vraies nouveautés ne sont détectées qu'aux hydratations suivantes.
       const echoMarked = this._echoMarkedReady || new Set();
-      newPrepared.forEach(item => {
-        if (!prevPreparedIds.has(item.id) && !echoMarked.has(item.id)) {
-          this._markNewReady(item.id);
-        }
-      });
+      if (this._primed) {
+        newPrepared.forEach(item => {
+          if (!prevPreparedIds.has(item.id) && !echoMarked.has(item.id)) {
+            this._markNewReady(item.id);
+          }
+        });
+      } else {
+        this._primed = true;
+      }
       // Clear the echo-marked set after list() processes it (one-shot guard)
       this._echoMarkedReady = new Set();
 
