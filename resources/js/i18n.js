@@ -115,7 +115,13 @@ const i18n = createI18n({
     legacy:          false,
     globalInjection: true,
     locale:          detectedLocale,
-    fallbackLocale:  DEFAULT_LOCALE,
+    // [TERRAIN-HEAL 2026-07-16 · I18N-RAWKEY-GUARD] fallbackLocale était DEFAULT_LOCALE ('fr') = la
+    // locale active en V1 → une clé absente de fr.json ne fallback PAS et vue-i18n rend la CLÉ BRUTE
+    // (« menu.update » = « texte mal affiché »). Aujourd'hui 0 clé manquante n'est utilisée (173 clés
+    // EN orphelines non-référencées, 0 impact visible — vérifié), mais on durcit : chaîne ['fr','en']
+    // → une clé manquante retombe sur l'anglais LISIBLE au lieu de la clé brute. La locale active reste
+    // 'fr' (FR-lock ADR-007 intact — c'est le fallback, pas la locale, qui change).
+    fallbackLocale:  [DEFAULT_LOCALE, 'en'],
     messages,
 });
 
