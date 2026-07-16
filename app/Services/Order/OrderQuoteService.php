@@ -374,9 +374,15 @@ class OrderQuoteService
             return $pricing;
         }
 
+        // [TERRAIN-HEAL 2026-07-16 · LOYAL-409-TTC] En mode TTC (défaut FR), accumulatedSubtotal
+        // inclut DÉJÀ la TVA (somme des lignes TTC) → ajouter totalTax la double-comptait, gonflant
+        // le total du quote au-dessus du recompute PricingService (347-354) → sealForCommit 409 =
+        // TOUTE commande borne avec redemption fidélité cassée. On aligne sur la formule SSOT.
         $total = round(max(
             0.0,
-            $pricing->accumulatedSubtotal + $pricing->totalTax + $pricing->deliveryCharge - $discount
+            (bool) config('pricing.tax_inclusive_prices', false)
+                ? $pricing->accumulatedSubtotal + $pricing->deliveryCharge - $discount
+                : $pricing->accumulatedSubtotal + $pricing->totalTax + $pricing->deliveryCharge - $discount
         ), 2);
 
         return new PricingResult(
