@@ -1066,7 +1066,8 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     Route::prefix('online-order')->name('onlineOrder.')->group(function () {
         Route::get('/', [OnlineOrderController::class, 'index']);
         Route::get('/show/{order}', [OnlineOrderController::class, 'show']);
-        Route::delete('/{order}', [OnlineOrderController::class, 'destroy']);
+        // [TERRAIN-HEAL 2026-07-16 · DEAD-ROUTE-ONLINE] route DELETE morte retirée :
+        // OnlineOrderController::destroy n'existe pas → 500 sur appel. Aucune UI ne l'appelle.
         Route::get('/export', [OnlineOrderController::class, 'export']);
         Route::get('/pdf', [OnlineOrderController::class, 'pdf']);
         // [V1.0.2-IDEMP-01] idempotency on online-order change-status — see L856 comment.
@@ -1080,7 +1081,8 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     Route::prefix('table-order')->name('tableOrder.')->group(function () {
         Route::get('/', [AdminTableOrderController::class, 'index']);
         Route::get('/show/{order}', [AdminTableOrderController::class, 'show']);
-        Route::delete('/{order}', [AdminTableOrderController::class, 'destroy']);
+        // [TERRAIN-HEAL 2026-07-16 · DEAD-ROUTE-TABLE] route DELETE morte retirée :
+        // TableOrderController::destroy n'existe pas → 500 sur appel. Aucune UI ne l'appelle.
         Route::get('/export', [AdminTableOrderController::class, 'export']);
         // [V1.0.2-IDEMP-01] idempotency on table-order change-status — see L856 comment.
         Route::post('/change-status/{order}', [AdminTableOrderController::class, 'changeStatus'])

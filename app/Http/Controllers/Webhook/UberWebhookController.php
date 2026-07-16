@@ -324,35 +324,53 @@ class UberWebhookController extends Controller
         // DELIVERED/REJECTED/RETURNED = déjà clôturée : un cancel Uber tardif ne doit pas
         // « ré-annuler » (fausserait le reporting + déclencherait un 2e release stock). On
         // journalise DELIVERED (cancel après remise = signal suspect) mais on n'agit pas.
+        //
+        // [TERRAIN-HEAL 2026-07-16 · UBER-CANCEL-RACE] La lecture du statut ci-dessus (ligne $order
+        // fetché sans verrou) puis save() était sujette à une RACE : deux webhooks cancel concurrents
+        // (Uber rejoue volontiers) lisaient tous deux un statut non-terminal → deux OrderCanceled →
+        // DOUBLE release stock/dispo (fuite inverse : article ressuscité en double). Miroir du fix
+        // FRONT-CANCEL-RACE : on relit la commande SOUS verrou dans une transaction, on re-teste
+        // l'état terminal DANS le verrou (le 2e webhook voit CANCELED et sort no-op), puis on ne
+        // dispatch les événements de compensation QU'UNE fois.
         $terminal = [
             \App\Enums\OrderStatus::CANCELED,
             \App\Enums\OrderStatus::REJECTED,
             \App\Enums\OrderStatus::RETURNED,
             \App\Enums\OrderStatus::DELIVERED,
         ];
-        if (in_array((int) $order->status, $terminal, true)) {
-            if ((int) $order->status === \App\Enums\OrderStatus::DELIVERED) {
-                Log::warning('[Uber webhook] cancel reçu sur commande déjà REMISE — ignoré', [
-                    'order_id' => $order->id, 'uber' => $uberOrderId,
-                ]);
+
+        return DB::transaction(function () use ($order, $uberOrderId, $terminal) {
+            $locked = Order::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+                ->whereKey($order->id)
+                ->lockForUpdate()
+                ->first();
+            if (! $locked) {
+                return (int) $order->id;
             }
+            if (in_array((int) $locked->status, $terminal, true)) {
+                if ((int) $locked->status === \App\Enums\OrderStatus::DELIVERED) {
+                    Log::warning('[Uber webhook] cancel reçu sur commande déjà REMISE — ignoré', [
+                        'order_id' => $locked->id, 'uber' => $uberOrderId,
+                    ]);
+                }
 
-            return (int) $order->id; // no-op idempotent.
-        }
-        $oldStatus = (int) $order->status;
-        $order->status = \App\Enums\OrderStatus::CANCELED;
-        $order->save();
-        // Broadcast canonique → le KDS retire la carte en temps réel (mêmes listeners que les
-        // annulations POS/admin) ; le flux sync la sort via leftWindow (CANCELED).
-        \App\Events\OrderStatusChanged::dispatch($order, $oldStatus, \App\Enums\OrderStatus::CANCELED);
-        // [SELF-AUDIT P2 2026-07-05 — FUITE STOCK] OrderCreated (createFromUber) déclenche
-        // DecrementItemAvailabilityOnOrder + DecrementStockOnOrderCreated → sans l'événement de
-        // compensation, l'annulation Uber laissait stock/dispo décrémentés À VIE (article
-        // faussement épuisé borne/POS). OrderCanceled → ReleaseStock + ReleaseAvailability.
-        \App\Events\OrderCanceled::dispatch($order);
-        Log::info('[Uber webhook] commande annulée', ['order_id' => $order->id, 'uber' => $uberOrderId]);
+                return (int) $locked->id; // no-op idempotent (inclut le 2e webhook concurrent).
+            }
+            $oldStatus = (int) $locked->status;
+            $locked->status = \App\Enums\OrderStatus::CANCELED;
+            $locked->save();
+            // Broadcast canonique → le KDS retire la carte en temps réel (mêmes listeners que les
+            // annulations POS/admin) ; le flux sync la sort via leftWindow (CANCELED).
+            \App\Events\OrderStatusChanged::dispatch($locked, $oldStatus, \App\Enums\OrderStatus::CANCELED);
+            // [SELF-AUDIT P2 2026-07-05 — FUITE STOCK] OrderCreated (createFromUber) déclenche
+            // DecrementItemAvailabilityOnOrder + DecrementStockOnOrderCreated → sans l'événement de
+            // compensation, l'annulation Uber laissait stock/dispo décrémentés À VIE (article
+            // faussement épuisé borne/POS). OrderCanceled → ReleaseStock + ReleaseAvailability.
+            \App\Events\OrderCanceled::dispatch($locked);
+            Log::info('[Uber webhook] commande annulée', ['order_id' => $locked->id, 'uber' => $uberOrderId]);
 
-        return (int) $order->id;
+            return (int) $locked->id;
+        });
     }
 
     /**

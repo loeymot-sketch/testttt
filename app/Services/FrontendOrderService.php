@@ -710,15 +710,14 @@ class FrontendOrderService
      */
     public function show(FrontendOrder $frontendOrder): FrontendOrder|array
     {
-        try {
-            if ((int) $frontendOrder->user_id === (int) Auth::id()) {
-                return $frontendOrder;
-            }
+        // [TERRAIN-HEAL 2026-07-16 · FRONT-SHOW-403-422] L'abort(403) était DANS un try/catch qui
+        // convertissait toute Exception en 422 → un refus d'accès (IDOR) renvoyait 422 au lieu de 403
+        // (le refus fonctionnait, mais le code HTTP était trompeur). Aucune requête DB ici → try/catch
+        // inutile. On garde la garde de propriété avec le bon code 403.
+        if ((int) $frontendOrder->user_id !== (int) Auth::id()) {
             abort(403, 'Access denied: you do not own this order.');
-        } catch (Exception $exception) {
-            Log::info($exception->getMessage());
-            throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
+        return $frontendOrder;
     }
 
     protected function findExistingFrontendOrderForIdempotencyRecovery(?string $idempotencyKey, int $branchId, ?int $userId = null): ?FrontendOrder

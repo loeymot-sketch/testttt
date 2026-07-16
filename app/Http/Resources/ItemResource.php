@@ -91,7 +91,11 @@ class ItemResource extends JsonResource
             "allergens"        => $allergensPayload,
             "allergen_flags"   => $this->allergen_flags ?? [],
             "sort_order"       => $this->order,
-            "order_count"      => $this->orders->count(),
+            // [TERRAIN-HEAL 2026-07-16 · ITEMRES-ORDERCOUNT] $this->orders->count() hydratait TOUTE
+            // la collection orders par item (N+1 + mémoire) pour n'en compter que le nombre. On préfère
+            // withCount (orders_count), sinon la relation déjà chargée, sinon un COUNT(*) léger.
+            "order_count"      => $this->orders_count
+                ?? ($this->relationLoaded('orders') ? $this->orders->count() : $this->orders()->count()),
             "thumb"            => $this->thumb,
             "cover"            => $this->cover,
             "preview"          => $this->preview,
