@@ -763,78 +763,84 @@ class FrontendOrderService
                 }
 
                 if ($targetStatus === (int) OrderStatus::CANCELED) {
-                    // [FIX] Both KIOSK (25) and TAKEAWAY (10) from kiosk machine follow the same
-                    // cancel threshold: allow cancel until PREPARING starts.
-                    $isKioskOrder = in_array(
-                        (int) $frontendOrder->order_type,
-                        [OrderType::KIOSK, OrderType::TAKEAWAY],
-                        true
-                    );
-                    $cancelableThreshold = $isKioskOrder ? OrderStatus::PREPARING : OrderStatus::ACCEPT;
+                    // [TERRAIN-HEAL 2026-07-16 · FRONT-CANCEL-RACE] L'auto-annulation client (web/borne)
+                    // faisait cashBack + refundPoints + release stock SANS transaction ni verrou, en lisant
+                    // le status du modèle route-bound (STALE) → deux annulations concurrentes (double-clic /
+                    // retry réseau) passaient toutes deux le seuil et RE-remboursaient (double avoir + double
+                    // clawback points + double libération stock ; le middleware idempotency ne dédup que les
+                    // clés IDENTIQUES). On sérialise via DB::transaction + re-fetch lockForUpdate + early-return
+                    // idempotent sur le status FRAIS verrouillé (miroir du durcissement OrderService::changeStatus).
+                    return DB::transaction(function () use ($frontendOrder, $request) {
+                        $locked = FrontendOrder::query()->whereKey($frontendOrder->id)->lockForUpdate()->firstOrFail();
 
-                    if ($frontendOrder->status >= $cancelableThreshold) {
-                        throw new Exception(trans('all.message.order_accept'), 422);
-                    }
-
-                    if ($frontendOrder->transaction) {
-                        // [F-CASH-REFUND-DRAWER 2026-07-15 / P1] slug = origine du paiement :
-                        // une commande borne Plan B collectée en espèces (pos_payment_method=CASH)
-                        // remboursée doit sortir du tiroir → 'cash' ; carte/en-ligne → 'credit'.
-                        $refundGateway = ((int) $frontendOrder->pos_payment_method === \App\Enums\PosPaymentMethod::CASH) ? 'cash' : 'credit';
-                        app(PaymentService::class)->cashBack(
-                            $frontendOrder,
-                            $refundGateway,
-                            'TXN-' . \Illuminate\Support\Str::random(12)
-                        );
-                    }
-                    app(LoyaltyService::class)->refundPoints($frontendOrder, 'kiosk');
-                    $oldStatus = $frontendOrder->status;
-                    // [AUDIT-F-004] Propagate caller-supplied reason into the transition row.
-                    // OrderStatusRequest enforces non-empty reason on terminal transitions
-                    // (kiosk: enum whitelist; admin/staff: free-text). Persisting NULL here
-                    // would silently break the ORDER_FLOW.md §49 audit invariant.
-                    $cancelReason = $request->input('reason');
-                    if (is_string($cancelReason)) {
-                        $cancelReason = trim($cancelReason);
-                        if ($cancelReason === '') {
-                            $cancelReason = null;
+                        // Idempotent : déjà annulée par une requête concurrente → aucun re-remboursement.
+                        if ((int) $locked->status === (int) OrderStatus::CANCELED) {
+                            return $locked;
                         }
-                    }
-                    if ($cancelReason !== null && $frontendOrder->isFillable('reason')) {
-                        $frontendOrder->reason = $cancelReason;
-                    }
-                    $frontendOrder->status = $request->status;
-                    $frontendOrder->save();
-                    OrderStateMachine::recordTransition(
-                        FrontendOrder::class,
-                        (int) $frontendOrder->id,
-                        (int) $oldStatus,
-                        (int) $request->status,
-                        Auth::check() ? (int) Auth::id() : null,
-                        $cancelReason
-                    );
-                    // [BUG-1 FIX] Notify KDS/OSS that order is cancelled so it disappears from screens.
-                    // Use OrderStatusChanged::dispatch (DispatchableAfterCommit) — not event(new …), which
-                    // bypasses the trait and can fire before DB commit.
-                    try {
-                        OrderStatusChanged::dispatch(
-                            $frontendOrder,
-                            $oldStatus,
-                            (int) $request->status
+                        // Re-valide transition + seuil sur le status FRAIS (pas le stale route-bound).
+                        if (!(new \App\Rules\ValidStatusTransition($locked->status))->passes('status', $request->status)) {
+                            throw new Exception(trans('all.message.invalid_status_transition'), 422);
+                        }
+                        // [FIX] KIOSK (25) et TAKEAWAY (10) borne : même seuil (annulable jusqu'à PREPARING).
+                        $isKioskOrder = in_array(
+                            (int) $locked->order_type,
+                            [OrderType::KIOSK, OrderType::TAKEAWAY],
+                            true
                         );
-                    } catch (\Exception $e) {
-                        Log::warning('[FrontendOrder] OrderStatusChanged on cancel failed: ' . $e->getMessage());
-                    }
-                    SendOrderMail::dispatch(['order_id' => $frontendOrder->id, 'status' => $request->status]);
-                    SendOrderSms::dispatch(['order_id' => $frontendOrder->id, 'status' => $request->status]);
-                    SendOrderPush::dispatch(['order_id' => $frontendOrder->id, 'status' => $request->status]);
-                    // [F-01] Compensating release of branch-scoped stock counters on customer
-                    // self-cancel of a kiosk / takeaway order. Idempotent via released_qty.
-                    try {
-                        OrderCanceled::dispatch($frontendOrder); // allow: stock-release dispatch; OrderStateMachine::recordTransition already wrote the canonical state-transition audit row above.
-                    } catch (\Exception $e) {
-                        Log::warning('[FrontendOrder] OrderCanceled on cancel failed: ' . $e->getMessage()); // allow: warning only
-                    }
+                        $cancelableThreshold = $isKioskOrder ? OrderStatus::PREPARING : OrderStatus::ACCEPT;
+                        if ($locked->status >= $cancelableThreshold) {
+                            throw new Exception(trans('all.message.order_accept'), 422);
+                        }
+
+                        if ($locked->transaction) {
+                            // [F-CASH-REFUND-DRAWER 2026-07-15 / P1] slug = origine du paiement.
+                            $refundGateway = ((int) $locked->pos_payment_method === \App\Enums\PosPaymentMethod::CASH) ? 'cash' : 'credit';
+                            app(PaymentService::class)->cashBack(
+                                $locked,
+                                $refundGateway,
+                                'TXN-' . \Illuminate\Support\Str::random(12)
+                            );
+                        }
+                        app(LoyaltyService::class)->refundPoints($locked, 'kiosk');
+                        $oldStatus = $locked->status;
+                        // [AUDIT-F-004] raison → transition row (invariant ORDER_FLOW §49).
+                        $cancelReason = $request->input('reason');
+                        if (is_string($cancelReason)) {
+                            $cancelReason = trim($cancelReason);
+                            if ($cancelReason === '') {
+                                $cancelReason = null;
+                            }
+                        }
+                        if ($cancelReason !== null && $locked->isFillable('reason')) {
+                            $locked->reason = $cancelReason;
+                        }
+                        $locked->status = $request->status;
+                        $locked->save();
+                        OrderStateMachine::recordTransition(
+                            FrontendOrder::class,
+                            (int) $locked->id,
+                            (int) $oldStatus,
+                            (int) $request->status,
+                            Auth::check() ? (int) Auth::id() : null,
+                            $cancelReason
+                        );
+                        // Events DispatchableAfterCommit → déférés au commit de la tx (KDS/OSS retirent la tuile).
+                        try {
+                            OrderStatusChanged::dispatch($locked, $oldStatus, (int) $request->status);
+                        } catch (\Exception $e) {
+                            Log::warning('[FrontendOrder] OrderStatusChanged on cancel failed: ' . $e->getMessage());
+                        }
+                        SendOrderMail::dispatch(['order_id' => $locked->id, 'status' => $request->status]);
+                        SendOrderSms::dispatch(['order_id' => $locked->id, 'status' => $request->status]);
+                        SendOrderPush::dispatch(['order_id' => $locked->id, 'status' => $request->status]);
+                        // [F-01] Libération stock compensatoire (idempotent via released_qty).
+                        try {
+                            OrderCanceled::dispatch($locked); // allow: stock-release dispatch; recordTransition wrote the canonical audit row.
+                        } catch (\Exception $e) {
+                            Log::warning('[FrontendOrder] OrderCanceled on cancel failed: ' . $e->getMessage()); // allow: warning only
+                        }
+                        return $locked;
+                    });
                 }
             } else {
                 abort(403, 'Access denied: you do not own this order.');

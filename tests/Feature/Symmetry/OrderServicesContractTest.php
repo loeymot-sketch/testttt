@@ -220,6 +220,49 @@ class OrderServicesContractTest extends TestCase
         Event::assertNotDispatched(OrderCanceled::class);
     }
 
+    /**
+     * [TERRAIN-HEAL 2026-07-16 · FRONT-CANCEL-RACE] Le self-cancel client (path lockForUpdate)
+     * doit rembourser EXACTEMENT une fois. Prouve que la branche transaction-wrappée fonctionne
+     * end-to-end (cashBack + refundPoints appelés 1×, status CANCELED). La sérialisation
+     * lockForUpdate + l'early-return idempotent empêchent le double-remboursement en cas de race.
+     */
+    public function test_fos_self_cancel_refunds_exactly_once(): void
+    {
+        $branch = Branch::factory()->create();
+        $kioskUser = User::factory()->create(['branch_id' => $branch->id]);
+        KioskMachine::factory()->create(['user_id' => $kioskUser->id, 'branch_id' => $branch->id]);
+
+        $order = Order::factory()->create([
+            'user_id' => $kioskUser->id,
+            'branch_id' => $branch->id,
+            'order_type' => OrderType::KIOSK,
+            'payment_method' => PaymentGateway::CARD,
+            'payment_status' => PaymentStatus::PAID,
+            'status' => OrderStatus::PENDING, // < PREPARING → annulable
+            'source_surface' => 'kiosk',
+            'total' => 50.00,
+            'subtotal' => 50.00,
+        ]);
+        \App\Models\Transaction::create([
+            'order_id' => $order->id, 'transaction_no' => 'FK-CANCEL-RACE', 'amount' => 50.00,
+            'payment_method' => 'credit', 'sign' => '+', 'type' => 'payment',
+        ]);
+
+        $payment = Mockery::mock(PaymentService::class);
+        $payment->shouldReceive('cashBack')->once(); // EXACTEMENT une fois
+        $this->app->instance(PaymentService::class, $payment);
+        $loyalty = Mockery::mock(LoyaltyService::class);
+        $loyalty->shouldReceive('refundPoints')->once();
+        $this->app->instance(LoyaltyService::class, $loyalty);
+
+        $token = $kioskUser->createToken('kiosk', ['kiosk:order'])->plainTextToken;
+        $this->withToken($token)->postJson('/api/frontend/order/change-status/'.$order->id, [
+            'status' => OrderStatus::CANCELED, 'reason' => 'customer_request',
+        ])->assertSuccessful();
+
+        $this->assertSame(OrderStatus::CANCELED, (int) Order::withoutGlobalScopes()->findOrFail($order->id)->status);
+    }
+
     public function test_fos_deferred_payment_confirm_golden_response_is_idempotent(): void
     {
         Event::fake();
