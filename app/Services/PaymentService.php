@@ -185,8 +185,19 @@ class PaymentService
             // `expected` sous-évalué au rapprochement = faux surplus). Le critère est la
             // MÉTHODE du remboursement (param), pas le pos_payment_method d'origine : une
             // commande COUNTER_DEFERRED remboursée en espèces mouvemente bien le tiroir.
-            if ($order instanceof Order && strtolower((string) $gatewaySlug) === 'cash') {
-                $this->recordCashBackMovement($order, (float) $order->total);
+            // [TERRAIN-HEAL 2026-07-16 · CAISSE-REFUND-SPLIT] Sur un paiement SPLIT (order_payments
+            // mixte cash+carte), le tiroir ne doit sortir QUE la portion CASH physique
+            // (mode==PosPaymentMethod::CASH, canon SplitPaymentService:147) — pas $order->total, qui
+            // sur-sortait le tiroir (gateway 'cash' sur un split) OU ignorait la tranche cash
+            // (gateway 'credit'). Mono-méthode cash : portion == total (repli si aucune ligne order_payments).
+            if ($order instanceof Order) {
+                $cashPortion = $this->refundCashTranchePortion($order);
+                if ($cashPortion <= 0.0 && strtolower((string) $gatewaySlug) === 'cash') {
+                    $cashPortion = (float) $order->total;
+                }
+                if ($cashPortion > 0.0) {
+                    $this->recordCashBackMovement($order, round($cashPortion, 2));
+                }
             }
 
             // [REFUND-EVENT-WIRE] Fire RefundCreated so listeners release stock /
@@ -651,6 +662,20 @@ class PaymentService
     public function recordCashRefundMovement(Order $order, float $amount): void
     {
         $this->recordCashBackMovement($order, $amount);
+    }
+
+    /**
+     * [TERRAIN-HEAL 2026-07-16 · CAISSE-REFUND-SPLIT] Somme des tranches CASH physiques
+     * (order_payments.mode == PosPaymentMethod::CASH) d'une commande — la SEULE portion qui doit
+     * sortir du tiroir au remboursement d'un paiement split. Renvoie 0.0 si aucune ligne
+     * order_payments (vente mono-méthode : l'appelant retombe sur le total si gateway='cash').
+     */
+    private function refundCashTranchePortion(Order $order): float
+    {
+        return (float) \Illuminate\Support\Facades\DB::table('order_payments')
+            ->where('order_id', (int) $order->id)
+            ->where('mode', \App\Enums\PosPaymentMethod::CASH)
+            ->sum('amount');
     }
 
     private function recordCashBackMovement(Order $order, float $amount): void
