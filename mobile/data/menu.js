@@ -154,7 +154,10 @@
     { id: 'm-poulet-marine', name: 'Poulet mariné', price: 0, emoji: '🍗', image: ASSET_BASE + 'viande_poulet.png' },
   ];
 
-  // 12 sauces incluses (seeder SAUCES) — 1ère gratuite, +0,50€ chacune au-delà.
+  // 12 sauces incluses (seeder SAUCES) — toutes à 0 €. [TERRAIN-HEAL 2026-07-16 · MOBILE-SAUCE-STALE-COMMENT]
+  // Canon MOBILE depuis [GOAL-SYNC 2026-07-08] = 1 sauce max (min1/max1), multi-sauce +0,50 SUPPRIMÉE
+  // (cf. priceFor l.556 qui n'ajoute AUCUN surcoût sauce). L'ancien commentaire « +0,50 au-delà » était
+  // périmé/faux (aurait laissé croire à une facturation multi-sauce inexistante côté mobile standalone).
   const SAUCES = [
     { id: 's-mayo',       name: 'Mayonnaise',        price: 0, image: ASSET_BASE + 'sauce-mayonnaise.png' },
     { id: 's-ketchup',    name: 'Ketchup',           price: 0, image: ASSET_BASE + 'sauce-ketchup.png' },
