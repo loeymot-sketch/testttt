@@ -600,7 +600,14 @@ final class AvailabilityService
             // V1 Le Cayenne : extras/variations = flag on/off (pas de vrai comptage). Sans stock réel
             // (on_hand<=0 && reserved<=0), on SUPPRIME le row → règle V1 « absent = disponible » (l.622).
             // Un extra RÉELLEMENT stock-tracké (on_hand>0 ou reserved>0) N'EST PAS supprimé (juste flag effacé).
-            if ($available && (int) $level->on_hand <= 0 && (int) $level->reserved <= 0) {
+            // [CYCLE2-HEAL 2026-07-16 · MGMT-86-DELETE-FK] Le delete est GARDÉ par l'absence de
+            // stock_movements enfants : en prod MySQL, `stock_movements.stock_level_id` est
+            // restrictOnDelete + trigger append-only BEFORE DELETE (SIGNAL 45000) → supprimer un level
+            // à mouvements crashe (500) et VERROUILLE la réactivation à vie (SQLite ne l'applique pas =
+            // faux vert). Un stockable purement flag-86 n'a AUCUN mouvement → delete sûr = « absent=dispo ».
+            // S'il a des mouvements (vrai stock), on ne delete pas : on efface juste le flag ci-dessous.
+            if ($available && (int) $level->on_hand <= 0 && (int) $level->reserved <= 0
+                && ! \App\Models\StockMovement::query()->where('stock_level_id', $level->id)->exists()) {
                 $level->delete();
                 $this->dispatchStockableEvent($type, $id, $branchId, true, null);
                 return $level;

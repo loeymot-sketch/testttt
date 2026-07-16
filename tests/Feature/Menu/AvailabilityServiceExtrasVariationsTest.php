@@ -90,6 +90,33 @@ class AvailabilityServiceExtrasVariationsTest extends TestCase
         $this->assertTrue($this->service->isExtraAvailable($extra->id, $branch->id));
     }
 
+    public function test_reactivation_keeps_row_when_stock_movements_exist(): void
+    {
+        // [CYCLE2-HEAL 2026-07-16 · MGMT-86-DELETE-FK] Un stockable À MOUVEMENTS (vrai stock) ne doit
+        // PAS être supprimé à la réactivation : en prod MySQL la FK stock_movements.stock_level_id
+        // restrictOnDelete + trigger append-only crasheraient. Le delete est réservé au flag-only.
+        Event::fake([ItemExtraAvailabilityChanged::class]);
+        [$branch, $extra] = $this->makeBranchAndExtra();
+
+        $level = $this->service->toggleExtra($extra->id, $branch->id, false, 'supplier_issue');
+        \App\Models\StockMovement::query()->create([
+            'branch_id' => $branch->id,
+            'stock_level_id' => $level->id,
+            'delta' => -1,
+            'reason' => 'order_created',
+            'reference_type' => 'test',
+            'reference_id' => 1,
+            'idempotency_key' => 'test-move-'.$level->id,
+        ]);
+
+        // Réactivation : le row DOIT rester (a des mouvements) — pas de delete, pas de crash FK.
+        $this->service->toggleExtra($extra->id, $branch->id, true, null);
+
+        $this->assertDatabaseHas('stock_levels', ['id' => $level->id]);
+        $fresh = \App\Models\StockLevel::find($level->id);
+        $this->assertNull($fresh->manual_unavailable_reason, 'Le flag doit être effacé même sans delete.');
+    }
+
     public function test_is_extra_available_returns_true_when_no_row(): void
     {
         [$branch, $extra] = $this->makeBranchAndExtra();
