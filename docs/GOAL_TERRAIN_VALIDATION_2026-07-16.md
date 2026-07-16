@@ -120,8 +120,10 @@ Captures `tests/captures/e2e-web-real-2026-07-16/` 20-25 :
   → backend 0 € alors qu'écran +0,50 € (display≠sealed + sous-facturation + divergence borne). Fix :
   réplique le pattern viande-supplémentaire (extra générique + data-wizard-qty → setExtraQuantity, MÊME
   chemin PROUVÉ en prod). Frites-sauce +0,50 display retiré (gratuit = aligné borne). syntaxe OK.
-  Vérifié au niveau MÉCANISME (miroir du chemin viande en prod + extra #431 @0,50 existant matché
-  `/sauce\s*suppl/i`) ; walk caisse UI réel différé (popup Vanilla frozen difficile à piloter en synthétique).
+  **PROUVÉ SUR LA VRAIE CAISSE** (Playwright vrais clics, capture `30-caisse-2sauces-7.40-sealed.png`) :
+  Tacos M + 1 viande + 2 sauces (Algérienne+Andalouse) → ligne panier scellée « Sauce: Algérienne,
+  Andalouse — **7,40 €** », Sous-total/Total **7,40 €**. Avant le fix = 6,90 (2e sauce larguée).
+  Display == scellé == borne. C'EST la résolution du « tout payant » à l'envers (caisse SOUS-facturait).
 
 ## Bilan FINAL : **17 findings healés + testés** sur 4 cycles adversaires (dont 3 frozen sous LOCK : borne sauce, caisse sauce×2).
 
