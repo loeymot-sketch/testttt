@@ -140,3 +140,12 @@ couverture produit web complète, breadth e2e 5 systèmes capturée.
 
 ## Captures
 `tests/captures/e2e-web-real-2026-07-16/` : 01-menu, 02-supreme-detail, 03-pain, 04-sauce, 05-bol-recap-inclus, 06-panier (mobile 392px). Preuve « INCLUS » vs extras payants.
+
+
+## PARCOURS COMPLET END-TO-END PROUVÉ (caisse → fiscal → KDS) 2026-07-16
+Vrais clics Playwright, place du caissier : Tacos M + 1 viande + 2 sauces →
+- Panier scellé **7,40 €** (`30`) → paiement Espèces 10€ → **rendu 2,60 €** (10−7,40, correct) (`31`)
+- **Order #5727 créé** : total **7,40 €**, **fiscal_sequence_no 2665** (NF525 alloué), PAID, status PREPARING,
+  composition_snapshot = item 26 + 3 crudités @0 + **1 extra « Sauce supplémentaire » @0,50** (2e sauce SCELLÉE).
+- **KDS sync** : commande **A0032** affichée avec compo « TAC M | ALG » + **« 🍟 Sauce supplémentaire »** (`32`).
+→ Avant le fix : scellé 6,90 (2e sauce larguée). Le flux caisse→NF525→cuisine est PROUVÉ de bout en bout.
