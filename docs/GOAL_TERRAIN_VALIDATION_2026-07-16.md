@@ -75,10 +75,36 @@ Sandwich (Suprême/Cayenne) · Tacos (M/L) · Bol (Frites/Riz) · Burger (Big/Ch
 (viandes min1/max3+sauce) · Frites (style) · Boisson/Dessert/Menu-enfant (ajout direct, pas de wizard).
 Tous logiquement sains sur le code actuel → « tout payant » = uniquement le déployé obsolète.
 
-### Restant (non-Claude)
-- WEB-BORNE-FRITES-CASCADE **borne side** (FROZEN §7) : borne facture cheddar-frites, web=gratuit →
-  aligner la borne = KioskWizardComponent frozen → gate+LOCK owner.
-- WEB-LEGAL-TODO : 26 [À COMPLÉTER] mentions légales = DATA owner (pas code).
+## CYCLE 2 — vérif adversaire des heals + chasse (workflow wncxi1l2h, 14 agents)
+Verdict : 8/8 heals vérifiés OK **SAUF 1 régression attrapée** + 5 nouveaux.
+
+### Régression de mon heal cycle-1 attrapée + corrigée (= valeur de la boucle)
+- **MGMT-86-DELETE-FK** `ebd734f45` (P1) : mon `$level->delete()` (heal 86) crashait en PROD MySQL
+  (FK stock_movements restrictOnDelete + trigger append-only) + verrouillait la réactivation à vie ;
+  les 30 tests SQLite passaient FAUX. Fix : delete GARDÉ par absence de stock_movements enfants
+  (flag-only pur → delete sûr ; stock réel → garder + flag effacé). Test du garde ajouté, 13 verts.
+
+### Nouveaux findings cycle-2 healés
+- **CATALOG-BLIND-INGREDIENT** `a365662ea` (P2) : mon fix catalogue ne fermait que l'axe stock ;
+  ajout de l'axe ingrédient (is_available extras + attribut variations). 27 verts.
+- **KDS-MERGE-ORDER** `253f299fe` (P3) : board « à préparer » n'agrégeait pas les compositions
+  identiques en ordre différent (sortKeys no-op → sortBy id). 133 verts.
+
+### Bilan FINAL : **14 findings healés + testés** (cycles 1+2). Régression finale 1164 verts, 0 échec.
+
+### Restant — gate owner (frozen §7 / data / P3 non-bloquant)
+- **CAISSE-2E-SAUCE** (P1, FROZEN pos-wizard.js) : 2e sauce caisse +0,50 affichée mais NON scellée
+  (sous-facturation + divergence borne 0,50 €). = bug caisse que l'owner avait DÉPRIORITISÉ → gate+LOCK.
+- **CAISSE-SAUCE-FRITES** (P2, FROZEN) : sauce frites +0,50 caisse affichée non facturée. gate+LOCK.
+- **KDS-RECALL-POLL** (P3) : rappel chef invisible en polling fallback — single-box 1 station = bas risque.
+- **WEB-BORNE-FRITES-CASCADE borne** (FROZEN) : borne facture cheddar-frites, web gratuit. gate+LOCK.
+- **WEB-LEGAL-TODO** : 26 [À COMPLÉTER] mentions légales = DATA owner.
+
+## Convergence
+Tous les findings Claude-fixables (non-frozen, non-data) sont HEALÉS + testés sur 2 cycles adversaires.
+Le restant est frozen §7 (owner LOCK requis) ou data owner ou P3 single-box. Backend 1164+ verts,
+couverture produit web complète, breadth e2e 5 systèmes capturée.
+### Gates owner (débloquent le déploiement) : push web `d387ede`→Vercel · deploy backend VPS · LOCKs caisse frozen.
 
 ## Gates owner (à confirmer)
 - **PUSH-WEB** : `git push origin main` repo site (HEAD `38d959f`) → Vercel prod. **Répare le vrai site.**
