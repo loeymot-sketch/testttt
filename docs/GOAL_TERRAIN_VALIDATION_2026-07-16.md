@@ -100,8 +100,22 @@ Verdict : 8/8 heals vérifiés OK **SAUF 1 régression attrapée** + 5 nouveaux.
 - **WEB-BORNE-FRITES-CASCADE borne** (FROZEN) : borne facture cheddar-frites, web gratuit. gate+LOCK.
 - **WEB-LEGAL-TODO** : 26 [À COMPLÉTER] mentions légales = DATA owner.
 
+## CYCLE 3 — e2e navigateur EXHAUSTIF page par page (Playwright + screenshots réels, mobile 392px)
+Captures `tests/captures/e2e-web-real-2026-07-16/` 20-25 :
+- **Accueil** (hero, chips « 1pt/euro » = fix), **Fidélité** (messaging honnête), **Connexion** (avant/après fix),
+  **Menu**, **Mon compte** authentifié (350 pts réels + QR), **Commandes** (empty state propre).
+- Stats accueil : « 0 Plats au menu » = état PRÉ-animation (compteur monte à 38 au scroll) → PAS un bug (vérifié).
+- Login authentifié via injection token Sanctum (révoqué après) → pages authed rendues avec données réelles.
+
+### NOUVEAU bug trouvé + healé via le parcours exhaustif
+- **WEB-LOGIN-DEADFIELDS** (web `22c67a5`) : l'onglet « Connexion » affichait Email + Mot de passe MORTS
+  (backend = auth SMS uniquement) → au clic tout était jeté + bascule SMS = UX trompeuse. Fix : login
+  collecte directement le téléphone → OTP (comme inscription). Prouvé end-to-end (otp 200 → verify fire).
+
+### Bilan e2e : ~20 états de page capturés + analysés (web) + 5 systèmes + tous produits. **15 findings healés total.**
+
 ## Convergence
-Tous les findings Claude-fixables (non-frozen, non-data) sont HEALÉS + testés sur 2 cycles adversaires.
+Tous les findings Claude-fixables (non-frozen, non-data) sont HEALÉS + testés sur 3 cycles adversaires.
 Le restant est frozen §7 (owner LOCK requis) ou data owner ou P3 single-box. Backend 1164+ verts,
 couverture produit web complète, breadth e2e 5 systèmes capturée.
 ### Gates owner (débloquent le déploiement) : push web `d387ede`→Vercel · deploy backend VPS · LOCKs caisse frozen.
