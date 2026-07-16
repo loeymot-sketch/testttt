@@ -381,7 +381,7 @@ class StockRuptureDashboardController extends AdminController
             ->orderBy('group_label')
             ->orderBy('name')
             ->orderBy('id')
-            ->get(['id', 'name', 'group_label']);
+            ->get(['id', 'name', 'group_label', 'is_available']);
 
         $allExtraIds = $extras->pluck('id')->map(fn ($id): int => (int) $id)->all();
 
@@ -402,6 +402,17 @@ class StockRuptureDashboardController extends AdminController
                 })
                 ->get(['stockable_id'])
                 ->keyBy(fn ($row): int => (int) $row->stockable_id);
+
+        // [CYCLE2-HEAL 2026-07-16 · CATALOG-BLIND-INGREDIENT] Axe INGRÉDIENT : un extra dont
+        // is_available=false (rupture ingrédient, ChoiceAvailabilityResolver:298) doit AUSSI apparaître
+        // rupturé au catalogue admin — le fix stock ne couvrait que on_hand/manual. On fusionne ces ids
+        // dans le set rupture pour fermer complètement la divergence admin↔borne.
+        foreach ($extras as $e) {
+            $raw = $e->getRawOriginal('is_available');
+            if ($raw !== null && ! (bool) $raw && ! $extraStockLevels->has((int) $e->id)) {
+                $extraStockLevels->put((int) $e->id, (object) ['stockable_id' => (int) $e->id]);
+            }
+        }
 
         $extraGroupsPayload = $this->buildGroupedPayload(
             $extras,
@@ -442,7 +453,7 @@ class StockRuptureDashboardController extends AdminController
         $variations = ItemVariation::query()
             ->where('status', Status::ACTIVE)
             ->whereNotNull('item_attribute_id')
-            ->with(['itemAttribute:id,name'])
+            ->with(['itemAttribute:id,name,is_available'])
             ->orderBy('item_attribute_id')
             ->orderBy('name')
             ->orderBy('id')
@@ -464,6 +475,17 @@ class StockRuptureDashboardController extends AdminController
                 })
                 ->get(['stockable_id'])
                 ->keyBy(fn ($row): int => (int) $row->stockable_id);
+
+        // [CYCLE2-HEAL 2026-07-16 · CATALOG-BLIND-INGREDIENT] Axe INGRÉDIENT variation : une variation
+        // dont l'ItemAttribute a is_available=false est rupturée côté borne (ChoiceAvailabilityResolver:313).
+        // On fusionne ces ids dans le set rupture pour la parité admin↔borne.
+        foreach ($variations as $v) {
+            $attr = $v->itemAttribute;
+            $raw = $attr ? $attr->getRawOriginal('is_available') : null;
+            if ($raw !== null && ! (bool) $raw && ! $variationStockLevels->has((int) $v->id)) {
+                $variationStockLevels->put((int) $v->id, (object) ['stockable_id' => (int) $v->id]);
+            }
+        }
 
         // Group variations by attribute, dedupe by variation name.
         $byAttribute = $variations->groupBy(fn (ItemVariation $v): int => (int) $v->item_attribute_id);
