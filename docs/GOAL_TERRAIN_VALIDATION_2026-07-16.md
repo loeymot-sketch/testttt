@@ -39,5 +39,35 @@
 - **PUSH-WEB (F1)** : autoriser `git push origin main` du repo web → Vercel prod (fixe le vrai site).
 - **DEPLOY-BACKEND (F3)** : déployer migration sauce-extra au VPS.
 
+## Audit W1 — 12 lentilles adversaire → 37 bruts → 14 confirmés (workflow wa4xvmw00)
+
+### Healés + testés
+- **P0 LOYAL-409-TTC** (backend `9ac33d34d`) : quote fidélité borne double-comptait la TVA en TTC →
+  sealForCommit 409 = TOUTE commande borne avec points cassée (« le garde ne marchait pas »).
+  Fix garde TTC (OrderQuoteService:379). Test régression TTC=9,00/HT=9,91.
+- **WEB-EXTRAMEAT-N0** (web `38d959f`, MA régression f853a37) : viande en plus injoignable sur
+  Cayenne/Suprême/6 burgers (viande_count:0) → branche else-if étape 'Viande en plus ?'. Vérifié e2e.
+- **WEB-NOTE-DEAD** (web) : note cuisine (allergies) jamais transmise → rattachée à la 1ère ligne.
+- **WEB-FAKE25PTS** (web) : faux « +25 pts inscription » retiré (3 endroits, backend=0 pt).
+- **WEB-PAYONLINE-COPY / WEB-APP-DEADLINK** (web) : copy paiement corrigée, liens store morts retirés.
+
+### Escaladé (ambigu — pas de flip silencieux d'un contrat documenté)
+- **MGMT-86-REACTIVATE** : réactiver un extra 86'd ne le rétablit pas sur borne (on_hand=0 persiste).
+  MAIS le test `AvailabilityServiceExtrasVariationsTest:82-83` documente CE comportement comme
+  INTENTIONNEL (fallback on_hand). **DÉCISION OWNER requise** : les extras/variations sont-ils
+  flag-only (→ delete row à la réactivation) ou stock-trackés (→ garder) ? Reverté en attendant.
+
+### Restant à healer (prochain cycle)
+- CAISSE-REFUND-SPLIT (P2, = REFUND-SPLIT registre) : refund pré-Z tranche-blind → tiroir faux.
+- MGMT-CATALOG-BLIND (P2) : admin catalogue aveugle on_hand=0 (lié au 86 escaladé).
+- WEB-SLOT-STUB (P2) : faux sélecteur créneau retrait (promesse ≠ immédiat).
+- WEB-BORNE-FRITES-CASCADE (P2) : prix cheddar frites fantôme web + divergence borne (borne=frozen gate).
+- WEB-LEGAL-TODO (P2) : 26 champs [À COMPLÉTER] mentions légales = DATA owner (pas code).
+
+## Gates owner (à confirmer)
+- **PUSH-WEB** : `git push origin main` repo site (HEAD `38d959f`) → Vercel prod. **Répare le vrai site.**
+- **DEPLOY-BACKEND** : déployer au VPS (P0 loyalty-409 + migration sauce-extra + heals).
+- **MGMT-86-REACTIVATE** : trancher flag-only vs stock-tracké.
+
 ## Captures
-`tests/captures/e2e-web-real-2026-07-16/` : 01-menu, 02-supreme-detail, 03-pain, 04-sauce (mobile 392px).
+`tests/captures/e2e-web-real-2026-07-16/` : 01-menu, 02-supreme-detail, 03-pain, 04-sauce, 05-bol-recap-inclus, 06-panier (mobile 392px). Preuve « INCLUS » vs extras payants.
