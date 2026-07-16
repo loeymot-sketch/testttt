@@ -661,7 +661,15 @@ class PaymentService
      */
     public function recordCashRefundMovement(Order $order, float $amount): void
     {
-        $this->recordCashBackMovement($order, $amount);
+        // [TERRAIN-HEAL 2026-07-16 · CAISSE-REFUND-SPLIT-DIRECT] L'appelant (OrderService elseif, vente
+        // POS inline SANS Transaction) passait $order->total. Sur une vente SPLIT (cash+carte), seule la
+        // tranche CASH physique est entrée au tiroir à la vente (SplitPaymentService::persistTranches) —
+        // pas le total. Sortir le total sur-sortait donc le tiroir de la portion CARTE (variance fantôme
+        // au rapprochement / Z). Miroir EXACT du fix cashBack:194 (CAISSE-REFUND-SPLIT) qui, lui, ne
+        // couvrait que le chemin AVEC Transaction. On ne sort QUE la portion CASH réelle ; repli sur le
+        // montant passé (=total) si aucune ligne order_payments (vente mono-tender cash légitime).
+        $cashPortion = $this->refundCashTranchePortion($order);
+        $this->recordCashBackMovement($order, $cashPortion > 0.0 ? round($cashPortion, 2) : round($amount, 2));
     }
 
     /**
