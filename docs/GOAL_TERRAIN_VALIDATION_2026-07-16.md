@@ -51,11 +51,16 @@
 - **WEB-FAKE25PTS** (web) : faux « +25 pts inscription » retiré (3 endroits, backend=0 pt).
 - **WEB-PAYONLINE-COPY / WEB-APP-DEADLINK** (web) : copy paiement corrigée, liens store morts retirés.
 
-### Escaladé (ambigu — pas de flip silencieux d'un contrat documenté)
-- **MGMT-86-REACTIVATE** : réactiver un extra 86'd ne le rétablit pas sur borne (on_hand=0 persiste).
-  MAIS le test `AvailabilityServiceExtrasVariationsTest:82-83` documente CE comportement comme
-  INTENTIONNEL (fallback on_hand). **DÉCISION OWNER requise** : les extras/variations sont-ils
-  flag-only (→ delete row à la réactivation) ou stock-trackés (→ garder) ? Reverté en attendant.
+- **MGMT-86-REACTIVATE** (`96bc5988e`, owner a délégué « c'est toi qui gères ») : réactiver un extra
+  86'd laissait on_hand=0 → borne épuisée pour toujours. Fix V1 flag-only : delete row si pas de stock
+  réel (on_hand<=0 && reserved<=0) → « absent=disponible ». Tests alignés, 30 verts.
+
+### Breadth e2e RÉELLE tous systèmes (captures `tests/captures/e2e-web-real-2026-07-16/`)
+- Web (mobile 392px) : Suprême/Tacos/Bol flux complet + récap « INCLUS », panier. `01-06`.
+- Caisse POS (desktop 1440px, login pos@lecayenne.fr) : colonnes commandes + compo + panneau en-cours. `10`.
+- KDS : empty state propre « Aucune commande en cours ». `11`.
+- Gestion dashboard : ventes/commandes/alertes SLA/répartition canal. `12`.
+- Tous chargent + rendent proprement (0 défaut visuel bloquant constaté).
 
 ### Restant à healer (prochain cycle)
 - CAISSE-REFUND-SPLIT (P2, = REFUND-SPLIT registre) : refund pré-Z tranche-blind → tiroir faux.
