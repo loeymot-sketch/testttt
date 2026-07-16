@@ -70,7 +70,13 @@ class KitchenDisplaySystemOrderService
             // DELIVERY orders (chef + livreur). Order::user() is BranchScope-
             // exempt + withTrashed; Order::address() is hasOne with no scope.
             // No isolation risk — relations join via order_id only.
-            $query = Order::with(['orderItems', 'address', 'user'])
+            // [TERRAIN-HEAL 2026-07-16 · PERF-KDS-N1] Eager-load `orderItems.orderItem` (le produit) en
+            // plus d'`orderItems` : KDSOrderDetailsResource:59 faisait `loadMissing('orderItem')` PAR
+            // commande → 1 requête/commande sur un board POLLÉ EN CONTINU (N+1 chaud). En le batchant ici,
+            // les produits de toutes les lignes de toutes les commandes chargent en UNE requête ; le
+            // loadMissing de la resource devient un no-op. OrderItemResource ne lit que id/name/thumb/
+            // kds_station de orderItem (aucune sous-relation) → cet eager-load couvre tout.
+            $query = Order::with(['orderItems.orderItem', 'address', 'user'])
                 ->whereIn('status', KitchenReleaseRule::visibleStatuses());
             // SSOT board-release filter (PAID | PENDING_COUNTER | POS cash) —
             // shared with changeStatus()'s bump guard via KitchenReleaseRule so
@@ -255,7 +261,9 @@ class KitchenDisplaySystemOrderService
             $todayStart = Carbon::today($appTz);
             $tomorrowStart = Carbon::tomorrow($appTz);
 
-            $query = Order::with(['orderItems', 'address', 'user'])
+            // [TERRAIN-HEAL 2026-07-16 · PERF-KDS-N1 twin] Même N+1 que list() : eager-load
+            // orderItems.orderItem pour éviter le loadMissing par commande de la resource.
+            $query = Order::with(['orderItems.orderItem', 'address', 'user'])
                 ->whereIn('status', [
                     OrderStatus::PREPARED,
                     OrderStatus::OUT_FOR_DELIVERY,
