@@ -86,3 +86,7 @@ missions/**/output_codex.json
 
 # [NETTOYAGE 2026-07-15] captures de session Playwright MCP — jamais committer
 /.playwright-mcp/
+
+# [TERRAIN-HEAL 2026-07-16 SEC-SQL-DUMPS] dumps DB jamais versionnés (contiennent des hash mdp — §3quater)
+storage/backups/**/*.sql
+storage/backups/**/*.sql.gz
