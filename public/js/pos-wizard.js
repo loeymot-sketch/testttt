@@ -1365,10 +1365,9 @@
                 }
             });
         }
-        // Sauce frites extra
-        if (selections.sauceFritesOrder && selections.sauceFritesOrder.length > 1) {
-            extra += (selections.sauceFritesOrder.length - 1) * SAUCE_EXTRA_PRICE;
-        }
+        // Sauce frites extra — [LOCK_CAISSE_SAUCE_SEAL 2026-07-16] GRATUITE (aligné borne, qui a retiré
+        // ce surcoût) : il n'existe AUCUN ItemExtra backend pour la sauce frites → l'ancien +0,50 display
+        // n'était jamais facturé (transmis en note texte seulement) = display≠sealed. Retiré → display==sealed==borne.
         // Viandes supplémentaires — sum all per-viande extra counts
         if (selections.viandeSupplItems) {
             var supplTotal = 0;
@@ -4002,46 +4001,26 @@
             });
         }
 
-        // 2b. Add extra sauces (index 1+) to allSelectedExtras map
-        // [S25] Updated to extract numeric IDs from string keys and look up names from item data
+        // 2b. Extra sauces (index 1+) → extra GÉNÉRIQUE « Sauce supplémentaire » + quantité.
+        // [LOCK_CAISSE_SAUCE_SEAL 2026-07-16] L'ancien matching par NOM (labelText.includes(sauceName))
+        // ne trouvait JAMAIS l'extra générique DB « Sauce supplémentaire » (sans suffixe de nom) → la
+        // 2e sauce n'était jamais cochée → le backend facturait 0 € alors que l'écran affichait +0,50 €
+        // (display≠sealed + sous-facturation + divergence borne qui, elle, scelle). On réplique le pattern
+        // viande-supplémentaire (plus bas) : on coche l'extra générique et on transmet la QUANTITÉ
+        // (nb de sauces au-delà de la 1ère) via data-wizard-qty → onWizardBridgeExtra → setExtraQuantity.
+        // safety-check approved 2026-07-16.
         var extraSauceCheckedIds = {};
+        var sauceSupplExtraId = null;
+        var sauceSupplQty = 0;
         if (selections.sauceOrder && selections.sauceOrder.length > 1) {
-            var extraSauceKeys = selections.sauceOrder.slice(1); // all sauces after the 1st
-
-            // Get sauce names from item data
-            if (lastItemData && lastItemData.itemAttributes) {
-                var sauceAttr = lastItemData.itemAttributes.find(function (attr) {
-                    var n = normalizeStr(attr.name);
-                    return n.includes('sauce') && !n.includes('frites');
+            sauceSupplQty = selections.sauceOrder.length - 1;
+            if (lastItemData && Array.isArray(lastItemData.extras)) {
+                var ssExtra = lastItemData.extras.find(function (e) {
+                    return e && /sauce\s*suppl/i.test(e.name || '');
                 });
-
-                if (sauceAttr && lastItemData.variations && lastItemData.variations[sauceAttr.id]) {
-                    var sauceVariations = lastItemData.variations[sauceAttr.id];
-
-                    extraSauceKeys.forEach(function (sauceKey) {
-                        // Extract numeric ID from key like 's_123'
-                        var match = sauceKey.match(/_(\d+)$/);
-                        if (!match) return;
-                        var sauceId = parseInt(match[1]);
-
-                        var sauce = sauceVariations.find(function (s) { return s.id === sauceId; });
-                        if (!sauce) return;
-
-                        // Find the extra checkbox for "Sauce supplémentaire: {sauce.name}"
-                        var extraCheckboxes = originalBody.querySelectorAll('.extra .custom-checkbox-field');
-                        extraCheckboxes.forEach(function (cb) {
-                            var label = cb.closest('.extra')
-                                ? cb.closest('.extra').querySelector('label, span, .option-name, h3, h4')
-                                : null;
-                            if (label) {
-                                var labelText = (label.textContent || '').toLowerCase();
-                                var sauceName = (sauce.name || '').toLowerCase();
-                                if (labelText.includes('sauce suppl') && labelText.includes(sauceName)) {
-                                    extraSauceCheckedIds[parseInt(cb.value)] = true;
-                                }
-                            }
-                        });
-                    });
+                if (ssExtra) {
+                    sauceSupplExtraId = parseInt(ssExtra.id);
+                    extraSauceCheckedIds[sauceSupplExtraId] = true;
                 }
             }
         }
@@ -4158,6 +4137,11 @@
             // → ItemComponent.onWizardBridgeExtra applique setExtraQuantity(N).
             if (viandeSupplExtraId !== null && cbId === viandeSupplExtraId) {
                 cb.setAttribute('data-wizard-qty', String(viandeSupplQty));
+            }
+            // [LOCK_CAISSE_SAUCE_SEAL 2026-07-16] idem pour la sauce supplémentaire : quantité =
+            // nb de sauces au-delà de la 1ère → setExtraQuantity(N) scelle le +0,50 €/sauce.
+            if (sauceSupplExtraId !== null && cbId === sauceSupplExtraId) {
+                cb.setAttribute('data-wizard-qty', String(sauceSupplQty));
             }
             if (cb.checked !== shouldBeChecked) {
                 cb.click();
