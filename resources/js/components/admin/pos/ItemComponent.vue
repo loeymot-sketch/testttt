@@ -22,10 +22,9 @@
             @keyup.space.prevent="addItem(item)">
             <!-- Photo hero (aspect-ratio 4/3) -->
             <div class="pos-v5-tile__visual">
-                <img v-if="item.thumb"
+                <img loading="lazy" decoding="async" v-if="item.thumb"
                     :src="item.thumb"
                     :alt="item.name"
-                    loading="lazy"
                     class="pos-v5-tile__image" />
                 <span v-else class="pos-v5-tile__visual-fallback" aria-hidden="true">🍴</span>
                 <span v-if="isCatalogTileUnavailable(item)" class="pos-item-86-badge pos-v5-tile__overlay">{{ $t('pos.item_86_d') }}</span>
@@ -73,7 +72,7 @@
             v-if="item">
             <div class="modal-header items-start border-none pb-0 flex-shrink-0 pos-v5-item-modal__head">
                 <div class="flex gap-4 items-center">
-                    <img class="flex-shrink-0 w-[88px] h-[88px] object-cover rounded-full ring-2 ring-[var(--pos-v5-brand-red-soft)] shadow-md" :src="item.thumb"
+                    <img loading="lazy" decoding="async" class="flex-shrink-0 w-[88px] h-[88px] object-cover rounded-full ring-2 ring-[var(--pos-v5-brand-red-soft)] shadow-md" :src="item.thumb"
                         alt="thumbnail">
                     <div class="flex-auto">
                         <div class="flex items-start gap-2 mb-1">
@@ -146,7 +145,7 @@
                                                 class="custom-radio-field">
                                             <span class="custom-radio-span"></span>
                                         </div>
-                                        <img v-if="variation.thumb" class="w-10 h-10 object-cover rounded flex-shrink-0" :src="variation.thumb" :alt="variation.name">
+                                        <img loading="lazy" decoding="async" v-if="variation.thumb" class="w-10 h-10 object-cover rounded flex-shrink-0" :src="variation.thumb" :alt="variation.name">
                                         <div class="flex-1 min-w-0">
                                             <h3 class="block capitalize text-xs text-heading">
                                                 {{ textShortener(variation.name, 15) }}</h3>
@@ -162,7 +161,7 @@
                                     <div v-else class="flex items-center gap-3 rounded-lg border border-[#F7F7FC] bg-[#F7F7FC] py-2 px-3"
                                         :title="modifierUnavailableReason(variation)"
                                         :style="isModifierUnavailable(variation) ? 'opacity:.5;' : ''">
-                                        <img v-if="variation.thumb" class="w-10 h-10 object-cover rounded flex-shrink-0" :src="variation.thumb" :alt="variation.name">
+                                        <img loading="lazy" decoding="async" v-if="variation.thumb" class="w-10 h-10 object-cover rounded flex-shrink-0" :src="variation.thumb" :alt="variation.name">
                                         <div class="flex-1 min-w-0">
                                             <h3 class="block capitalize text-xs text-heading">
                                                 {{ textShortener(variation.name, 18) }}
@@ -234,7 +233,7 @@
                             class="flex items-center gap-3 rounded-lg border border-[#F7F7FC] bg-[#F7F7FC] py-2 px-3"
                             :title="modifierUnavailableReason(extra)"
                             :style="isModifierUnavailable(extra) ? 'opacity:.5;' : ''">
-                            <img v-if="extra.thumb" class="w-10 h-10 object-cover rounded flex-shrink-0" :src="extra.thumb" :alt="extra.name">
+                            <img loading="lazy" decoding="async" v-if="extra.thumb" class="w-10 h-10 object-cover rounded flex-shrink-0" :src="extra.thumb" :alt="extra.name">
                             <div class="flex-1 min-w-0">
                                 <h3 class="block capitalize mb-1 text-xs text-heading">
                                     {{ textShortener(extra.name, 18) }}</h3>
@@ -271,7 +270,7 @@
                                         :title="modifierUnavailableReason(addon)"
                                         class="addon cursor-pointer w-fit min-w-[200px] h-[70px] rounded-lg flex border border-[#EFF0F6]"
                                         :style="isAddonUnavailable(addon) ? 'opacity:.5;cursor:not-allowed;' : ''">
-                                        <img class="w-[68px] h-full object-cover ltr:rounded-l-lg rtl:rounded-r-lg flex-shrink-0"
+                                        <img loading="lazy" decoding="async" class="w-[68px] h-full object-cover ltr:rounded-l-lg rtl:rounded-r-lg flex-shrink-0"
                                             :src="addon.thumb" alt="thumbnail">
                                         <div class="ltr:rounded-r-lg rtl:rounded-l-lg w-full py-1 px-2">
                                             <span

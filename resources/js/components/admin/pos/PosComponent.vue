@@ -612,7 +612,7 @@
             <SkeletonGrid v-else-if="loadingItems || posItemsFetchPending" :count="8" />
             <div class="my-12" v-else>
                 <div class="max-w-[350px] mx-auto">
-                    <img class="w-full mb-8" :src="setting.image_order_not_found" alt="image_order_not_found">
+                    <img loading="lazy" decoding="async" class="w-full mb-8" :src="setting.image_order_not_found" alt="image_order_not_found">
                 </div>
                 <span class="w-full mb-4 text-center text-black">{{ $t('message.no_data_available') }}</span>
             </div>
@@ -648,13 +648,13 @@
 
                 <div class="my-12" v-if="items.length === 0 && !props.search.name">
                     <div class="max-w-[350px] mx-auto">
-                        <img class="w-full mb-8" :src="setting.image_order_not_found" alt="image_order_not_found">
+                        <img loading="lazy" decoding="async" class="w-full mb-8" :src="setting.image_order_not_found" alt="image_order_not_found">
                     </div>
                     <span class="w-full mb-4 text-center text-black">{{ $t('message.no_data_available') }}</span>
                 </div>
                 <div class="my-12" v-else-if="items.length === 0 && props.search.name">
                     <div class="max-w-[250px] mx-auto">
-                        <img class="w-full mb-8" :src="setting.item_not_found" alt="item_not_found">
+                        <img loading="lazy" decoding="async" class="w-full mb-8" :src="setting.item_not_found" alt="item_not_found">
                     </div>
                     <span class="w-full mb-4 text-center text-black">{{ $t('message.no_items_found') }}</span>
                 </div>
@@ -1008,7 +1008,7 @@
                     :title="$t('button.edit') || 'Modifier'"
                     :aria-label="$t('button.edit')"
                 >
-                    <img v-if="cart.image" :src="cart.image" :alt="cart.name" />
+                    <img loading="lazy" decoding="async" v-if="cart.image" :src="cart.image" :alt="cart.name" />
                     <span v-else class="pos-v5-cart-item__visual-fallback" aria-hidden="true">🍴</span>
                 </button>
                 <div class="pos-v5-cart-item__body">

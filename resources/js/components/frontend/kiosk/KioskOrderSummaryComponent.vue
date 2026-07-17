@@ -3,7 +3,7 @@
     <!-- Item principal -->
     <div class="kiosk-summary-item main" data-testid="kiosk-order-summary-main-item">
       <div class="kiosk-summary-img" aria-hidden="true">
-        <img v-if="item.thumb" :src="item.thumb" :alt="sanitizeItemName(item.name)" />
+        <img loading="lazy" decoding="async" v-if="item.thumb" :src="item.thumb" :alt="sanitizeItemName(item.name)" />
         <span v-else class="kiosk-summary-emoji">🍽️</span>
       </div>
       <div class="kiosk-summary-details">
@@ -22,7 +22,7 @@
         <h4>{{ $t('kiosk.wizard.summary.bread_type') }}</h4>
         <div class="kiosk-summary-row">
           <span class="kiosk-summary-row-thumb" aria-hidden="true">
-            <img v-if="getPainImage()" :src="getPainImage()" alt="" />
+            <img loading="lazy" decoding="async" v-if="getPainImage()" :src="getPainImage()" alt="" />
             <span v-else>🥖</span>
           </span>
           <span class="kiosk-summary-row-name">{{ getPainName() }}</span>
@@ -35,7 +35,7 @@
         <h4>{{ $t('kiosk.wizard.summary.meats') }} ({{ selections.totalViandes }})</h4>
         <div v-for="row in viandeDisplayRows" :key="row.key" class="kiosk-summary-row">
           <span class="kiosk-summary-row-thumb" aria-hidden="true">
-            <img v-if="row.thumb" :src="row.thumb" alt="" />
+            <img loading="lazy" decoding="async" v-if="row.thumb" :src="row.thumb" alt="" />
             <span v-else>{{ row.emoji || '🥩' }}</span>
           </span>
           <span v-if="row.count > 0" class="kiosk-summary-row-name">{{ row.label }} ×{{ row.count }}</span>
@@ -51,7 +51,7 @@
         <h4>{{ $t('kiosk.wizard.summary.sauces') }} ({{ visibleSauceOrder.length }})</h4>
         <div v-for="(sauceId, index) in visibleSauceOrder" :key="sauceId" class="kiosk-summary-row">
           <span class="kiosk-summary-row-thumb" aria-hidden="true">
-            <img v-if="getSauceImage(sauceId)" :src="getSauceImage(sauceId)" alt="" />
+            <img loading="lazy" decoding="async" v-if="getSauceImage(sauceId)" :src="getSauceImage(sauceId)" alt="" />
             <span v-else>🥫</span>
           </span>
           <span class="kiosk-summary-row-name">{{ getSauceName(sauceId) }}</span>
@@ -66,7 +66,7 @@
         <div class="kiosk-summary-tags">
           <span v-for="id in selectedGarnitureIds" :key="id" class="kiosk-tag">
             <span class="kiosk-tag-thumb" aria-hidden="true">
-              <img v-if="getGarnitureImage(id)" :src="getGarnitureImage(id)" alt="" />
+              <img loading="lazy" decoding="async" v-if="getGarnitureImage(id)" :src="getGarnitureImage(id)" alt="" />
               <span v-else>🥬</span>
             </span>
             {{ getGarnitureName(id) }}
@@ -79,7 +79,7 @@
         <h4>{{ $t('kiosk.wizard.summary.supplements') }} ({{ selectedSupplementsTotalCount }})</h4>
         <div v-for="supplement in selectedSupplements" :key="supplement.id" class="kiosk-summary-row">
           <span class="kiosk-summary-row-thumb" aria-hidden="true">
-            <img v-if="supplement.thumb" :src="supplement.thumb" alt="" />
+            <img loading="lazy" decoding="async" v-if="supplement.thumb" :src="supplement.thumb" alt="" />
             <span v-else>🍴</span>
           </span>
           <span class="kiosk-summary-row-name">
@@ -103,7 +103,7 @@
         </div>
         <div v-if="selections.boissonChoice" class="kiosk-summary-row boisson">
           <span class="kiosk-summary-row-thumb" aria-hidden="true">
-            <img v-if="getBoissonImage()" :src="getBoissonImage()" alt="" />
+            <img loading="lazy" decoding="async" v-if="getBoissonImage()" :src="getBoissonImage()" alt="" />
             <span v-else>🥤</span>
           </span>
           <span class="kiosk-summary-row-name">{{ $t('kiosk.wizard.summary.boisson_line', { name: getBoissonName() }) }}</span>

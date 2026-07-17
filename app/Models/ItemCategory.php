@@ -129,6 +129,13 @@ class ItemCategory extends Model implements HasMedia
         $filename = $images[$this->slug] ?? $defaultFile;
         $fullPath = public_path("{$basePath}/{$filename}");
         if (file_exists($fullPath)) {
+            // [PERF 2026-07-17] Même pipeline vignette que getThumbAttribute :
+            // `image_full_path = cover ?: thumb` (KioskMenuService) prenait TOUJOURS
+            // ce cover → les tuiles catégorie borne repartaient sur les PNG pleins
+            // (~1 Mo pièce, ~2 Mo le premier écran) alors que les WebP ≤320px existent.
+            if ($thumbUrl = \App\Support\MenuImageThumb::url($basePath, $filename)) {
+                return $thumbUrl;
+            }
             // Cache-bust: filemtime suffix forces browsers to refetch on change.
             $hash = @filemtime($fullPath) ?: 0;
             return asset("{$basePath}/{$filename}") . "?v={$hash}";

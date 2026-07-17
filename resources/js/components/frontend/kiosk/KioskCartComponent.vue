@@ -134,7 +134,7 @@
         >
           <!-- Image -->
           <div class="kiosk-cart-item-img" aria-hidden="true">
-            <img v-if="item.image" :src="item.image" :alt="''" />
+            <img loading="lazy" decoding="async" v-if="item.image" :src="item.image" :alt="''" />
             <span v-else class="kiosk-cart-item-emoji">🍽️</span>
           </div>
 
