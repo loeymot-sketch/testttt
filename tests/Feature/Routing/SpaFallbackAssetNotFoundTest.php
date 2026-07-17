@@ -21,6 +21,7 @@ class SpaFallbackAssetNotFoundTest extends TestCase
             '/images/menu/inexistante.png',
             '/storage/18/disparue.jpg',
             '/fonts/absente.woff2',
+            '/storage/18/CLEAN.JPG', // [C2-101] casse-insensible
         ] as $path) {
             $this->get($path)->assertNotFound();
         }

@@ -115,4 +115,4 @@ Route::get('/dl/{bridge}', function (string $bridge) {
 // servis par le serveur web avant Laravel, seuls les manquants arrivent ici).
 Route::get('/{any}', [RootController::class, 'index'])
     ->middleware(['installed'])
-    ->where(['any' => '^(?!.*\.(?:js|mjs|css|map|png|jpe?g|webp|gif|svg|ico|woff2?|ttf|otf|eot|mp4|webm|json|txt)$).*$']);
+    ->where(['any' => '^(?i)(?!.*\.(?:js|mjs|css|map|png|jpe?g|webp|gif|svg|ico|woff2?|ttf|otf|eot|mp4|webm|json|txt)$).*$']);
