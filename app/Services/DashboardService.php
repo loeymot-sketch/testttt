@@ -96,16 +96,27 @@ class DashboardService
                          ->where('order_datetime', '<', $endParisExclusive);
             };
 
-            $orderStatisticsArray["total_order"] = $apply(clone $order)->count();
-            $orderStatisticsArray["pending_order"] = $apply((clone $order)->pending())->count();
-            $orderStatisticsArray["accept_order"] = $apply((clone $order)->accept())->count();
-            $orderStatisticsArray["preparing_order"] = $apply((clone $order)->preparing())->count();
-            $orderStatisticsArray["prepared_order"] = $apply((clone $order)->prepared())->count();
-            $orderStatisticsArray["out_for_delivery_order"] = $apply((clone $order)->outForDelivery())->count();
-            $orderStatisticsArray["delivered_order"] = $apply((clone $order)->delivered())->count();
-            $orderStatisticsArray["canceled_order"] = $apply((clone $order)->canceled())->count();
-            $orderStatisticsArray["returned_order"] = $apply((clone $order)->returned())->count();
-            $orderStatisticsArray["rejected_order"] = $apply((clone $order)->rejected())->count();
+            // [TERRAIN-HEAL 2026-07-16 · PERF-DASHBOARD-STATUS-COUNTS] Avant : 10 requêtes COUNT séquentielles
+            // (total + 1 par statut), chacune re-scannant la même fenêtre order_datetime → 10 aller-retours SQL
+            // à chaque affichage/refresh du dashboard admin. Remplacé par UN SEUL agrégat GROUP BY status
+            // (mêmes clauses : parent_order_id IS NULL + fenêtre Paris). Sémantique STRICTEMENT identique :
+            // total_order = somme de TOUS les statuts présents (= count() de toutes les lignes non-miroir),
+            // chaque *_order = count du statut (0 si absent). Clés castées int (robuste au type PDO du driver).
+            $byStatus = [];
+            foreach ($apply(clone $order)->selectRaw('status, COUNT(*) as cnt')->groupBy('status')->get() as $row) {
+                $byStatus[(int) $row->status] = (int) $row->cnt;
+            }
+
+            $orderStatisticsArray["total_order"]            = array_sum($byStatus);
+            $orderStatisticsArray["pending_order"]          = $byStatus[OrderStatus::PENDING] ?? 0;
+            $orderStatisticsArray["accept_order"]           = $byStatus[OrderStatus::ACCEPT] ?? 0;
+            $orderStatisticsArray["preparing_order"]        = $byStatus[OrderStatus::PREPARING] ?? 0;
+            $orderStatisticsArray["prepared_order"]         = $byStatus[OrderStatus::PREPARED] ?? 0;
+            $orderStatisticsArray["out_for_delivery_order"] = $byStatus[OrderStatus::OUT_FOR_DELIVERY] ?? 0;
+            $orderStatisticsArray["delivered_order"]        = $byStatus[OrderStatus::DELIVERED] ?? 0;
+            $orderStatisticsArray["canceled_order"]         = $byStatus[OrderStatus::CANCELED] ?? 0;
+            $orderStatisticsArray["returned_order"]         = $byStatus[OrderStatus::RETURNED] ?? 0;
+            $orderStatisticsArray["rejected_order"]         = $byStatus[OrderStatus::REJECTED] ?? 0;
 
             return $orderStatisticsArray;
         } catch (Exception $exception) {
