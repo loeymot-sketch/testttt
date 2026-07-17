@@ -105,6 +105,20 @@ class EnforceGratineBolsOnlyCommandTest extends TestCase
         );
     }
 
+    public function test_dedupes_double_gratine_on_same_bol_keeping_option_gratine(): void
+    {
+        $bols = $this->makeCategory('bols', 'Bols');
+        $bol = $this->makeItem($bols);
+        $this->addGratine($bol, 'Boule gratinée', 2.00, 'supplement_bol');
+        $kept = $this->addGratine($bol, 'Option Gratiné', 2.00, 'supplement_bol');
+
+        $this->artisan('menu:enforce-gratine-bols-only')->assertExitCode(0);
+
+        $live = ItemExtra::where('item_id', $bol->id)->where('name', 'like', '%ratin%')->get();
+        $this->assertCount(1, $live, 'un seul gratiné vivant après dédup (sinon 2×2 € cumulables)');
+        $this->assertSame($kept->id, $live->first()->id, 'préférence « Option Gratiné »');
+    }
+
     public function test_idempotent_second_run_changes_nothing(): void
     {
         $bols = $this->makeCategory('bols', 'Bols');

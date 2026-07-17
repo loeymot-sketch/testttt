@@ -21,6 +21,10 @@ use Illuminate\Support\Facades\DB;
  *  C. garantit « Option Gratiné » @2,00 sur chaque bol ACTIF qui n'en a plus.
  *
  * DATA UNIQUEMENT — aucun fichier frozen. Idempotente + re-jouable (nouveau bol → C).
+ *
+ * Contrat [RED F4] : « bols » = catégories LOWER(slug|name) LIKE 'bol%'. Si une
+ * future catégorie non-bol commençait par « bol » (ex. « Bologna »), elle serait
+ * traitée comme bol au prochain run — renommer le matcher à ce moment-là.
  */
 class EnforceGratineBolsOnlyCommand extends Command
 {
@@ -37,15 +41,15 @@ class EnforceGratineBolsOnlyCommand extends Command
     public function handle(): int
     {
         $dry = (bool) $this->option('dry-run');
-        [$removed, $normalized, $created] = self::enforce($dry);
+        [$removed, $normalized, $created, $deduped] = self::enforce($dry);
         $this->info(($dry ? '[dry-run] ' : '')
-            ."Gratiné bols-only — {$removed} retiré(s) hors bols, {$normalized} normalisé(s) @2,00, {$created} bol(s) complété(s).");
+            ."Gratiné bols-only — {$removed} retiré(s) hors bols, {$normalized} normalisé(s) @2,00, {$created} bol(s) complété(s), {$deduped} doublon(s) dédupliqué(s).");
 
         return self::SUCCESS;
     }
 
     /**
-     * @return array{0:int,1:int,2:int} [retirés hors-bols, normalisés, créés sur bols]
+     * @return array{0:int,1:int,2:int,3:int} [retirés hors-bols, normalisés, créés sur bols, doublons dédupliqués]
      */
     public static function enforce(bool $dryRun = false): array
     {
@@ -97,6 +101,41 @@ class EnforceGratineBolsOnlyCommand extends Command
             ]);
         }
 
+        // B') Doublon gratiné sur un même bol (legacy « Boule gratinée » ET
+        //     « Option Gratiné » vivants — ex. Bowls inactifs 42-48) → ne garder
+        //     qu'une ligne (préférence « Option Gratiné ») : sinon un item
+        //     réactivé afficherait 2 gratinés cumulables à 4 € [RED F7].
+        $deduped = 0;
+        if ($bolCatIds !== []) {
+            $dupItems = DB::table('item_extras as e')
+                ->join('items as i', 'i.id', '=', 'e.item_id')
+                ->whereRaw("LOWER(e.name) LIKE '%gratin%'")
+                ->whereNull('e.deleted_at')
+                ->whereIn('i.item_category_id', $bolCatIds)
+                ->selectRaw('e.item_id, COUNT(*) as n')
+                ->groupBy('e.item_id')->havingRaw('COUNT(*) > 1')
+                ->pluck('e.item_id');
+
+            foreach ($dupItems as $itemId) {
+                $rows = DB::table('item_extras')
+                    ->where('item_id', $itemId)
+                    ->whereRaw("LOWER(name) LIKE '%gratin%'")
+                    ->whereNull('deleted_at')
+                    ->orderByRaw("CASE WHEN name = ? THEN 0 ELSE 1 END, id", [self::EXTRA_NAME])
+                    ->pluck('id')
+                    ->all();
+                $losers = array_slice($rows, 1);
+                $deduped += count($losers);
+                if (! $dryRun && $losers !== []) {
+                    DB::table('item_extras')->whereIn('id', $losers)->update([
+                        'deleted_at' => now(),
+                        'status' => Status::INACTIVE,
+                        'updated_at' => now(),
+                    ]);
+                }
+            }
+        }
+
         // C) Bol ACTIF sans aucun gratiné vivant → créer « Option Gratiné » @2,00.
         $created = 0;
         if ($bolCatIds !== []) {
@@ -136,6 +175,6 @@ class EnforceGratineBolsOnlyCommand extends Command
             }
         }
 
-        return [count($removeIds), count($normalizeIds), $created];
+        return [count($removeIds), count($normalizeIds), $created, $deduped];
     }
 }

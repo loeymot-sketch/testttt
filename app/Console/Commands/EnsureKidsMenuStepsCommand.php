@@ -24,6 +24,10 @@ use Illuminate\Support\Facades\DB;
  * item publié est projeté par NormalItemResource/ItemResource et piloté à
  * l'identique par la caisse (pos-wizard composer-aware, flag ON). DATA UNIQUEMENT
  * — aucun fichier frozen. Idempotente (skip si profil déjà canonique).
+ *
+ * Contrat [RED F3] : « ensure » = ENFORCE l'état publié. Relancer la commande
+ * re-publie un profil dépublié à la main ; le rollback (dépublier, cf. down()
+ * de la migration jumelle) suppose de NE PAS relancer la commande ensuite.
  */
 class EnsureKidsMenuStepsCommand extends Command
 {
@@ -77,13 +81,12 @@ class EnsureKidsMenuStepsCommand extends Command
                 ->whereNull('deleted_at')->count())
             ->first();
 
-        if ($sauceAttr === null) {
-            return $out; // pas d'attribut sauce → rien de sûr à faire
-        }
+        // NB : pas d'early-return si l'attribut sauce manque — la partie (b)
+        // Chicken Burger (crudités/suppléments) n'en dépend pas [RED F5].
 
         // ── Burger de référence = item ACTIF au plus de sauces actives sur cet attribut.
         //    Jamais un item enfant (ce sont les cibles) ; tie-break id asc (déterministe).
-        $refItemId = DB::table('item_variations as v')
+        $refItemId = $sauceAttr === null ? null : DB::table('item_variations as v')
             ->join('items as i', 'i.id', '=', 'v.item_id')
             ->where('v.item_attribute_id', $sauceAttr->id)
             ->where('v.status', Status::ACTIVE)->whereNull('v.deleted_at')
@@ -118,8 +121,8 @@ class EnsureKidsMenuStepsCommand extends Command
         $kidsBurger = DB::table('items')->where('slug', self::KIDS_BURGER_SLUG)->whereNull('deleted_at')->first(['id']);
         $touchedProfiles = [];
 
-        // ── (a) Menu Enfant Nuggets : sauces + profil [sauce].
-        if ($nuggets !== null) {
+        // ── (a) Menu Enfant Nuggets : sauces + profil [sauce] (exige l'attribut sauce).
+        if ($nuggets !== null && $sauceAttr !== null) {
             foreach ($sauces as $sauce) {
                 $exists = DB::table('item_variations')
                     ->where('item_id', $nuggets->id)->where('item_attribute_id', $sauceAttr->id)
