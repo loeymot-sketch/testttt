@@ -207,7 +207,9 @@
                     <div v-for="bridgeAttr in item.itemAttributes" :key="'vbridge-' + bridgeAttr.id"
                          class="form-group" :data-bridge-attr="bridgeAttr.id">
                         <span>{{ bridgeAttr.name }}</span>
-                        <select :data-bridge-select="bridgeAttr.id" @change="onWizardBridgeSelect(bridgeAttr, $event)">
+                        <!-- [B-006] tabindex=-1 : conteneur aria-hidden → jamais focusable
+                             clavier (disabled casserait le shim pos-wizard). -->
+                        <select tabindex="-1" :data-bridge-select="bridgeAttr.id" @change="onWizardBridgeSelect(bridgeAttr, $event)">
                             <option value=""></option>
                             <option v-for="bridgeVar in getAttributeVariations(bridgeAttr)"
                                     :key="'vbo-' + bridgeVar.id" :value="bridgeVar.id">{{ bridgeVar.name }}</option>
@@ -221,7 +223,7 @@
                     <div v-for="bridgeExtra in item.extras" :key="'ebridge-' + bridgeExtra.id"
                          class="extra" :data-bridge-extra="bridgeExtra.id">
                         <label>{{ bridgeExtra.name }}</label>
-                        <input type="checkbox" class="custom-checkbox-field" :value="bridgeExtra.id"
+                        <input type="checkbox" tabindex="-1" class="custom-checkbox-field" :value="bridgeExtra.id"
                                :checked="getExtraQuantity(bridgeExtra.id) > 0"
                                @change="onWizardBridgeExtra(bridgeExtra, $event)">
                     </div>

@@ -109,4 +109,10 @@ Route::get('/dl/{bridge}', function (string $bridge) {
     ]);
 })->where('bridge', '[a-z0-9\-]+\.js')->name('dl.bridge');
 
-Route::get('/{any}', [RootController::class, 'index'])->middleware(['installed'])->where(['any' => '.*']);
+// [C-001 test-e2e 2026-07-17] Un ASSET manquant (chunk périmé, image disparue…)
+// doit répondre 404 — pas la SPA en 200 text/html (pages blanches « tout vert »,
+// classe de l'incident paiement borne 2026-07-07 ; les fichiers EXISTANTS sont
+// servis par le serveur web avant Laravel, seuls les manquants arrivent ici).
+Route::get('/{any}', [RootController::class, 'index'])
+    ->middleware(['installed'])
+    ->where(['any' => '^(?!.*\.(?:js|mjs|css|map|png|jpe?g|webp|gif|svg|ico|woff2?|ttf|otf|eot|mp4|webm|json|txt)$).*$']);

@@ -1144,7 +1144,7 @@
                     :disabled="!isDiscountApplyable"
                     :aria-disabled="!isDiscountApplyable"
                     data-testid="pos-discount-apply"
-                    class="flex-shrink-0 w-16 h-full text-xs font-bold uppercase rounded-r-md text-white bg-[var(--pos-v5-info)] disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    class="flex-shrink-0 min-w-[72px] px-2 h-full text-xs font-bold uppercase rounded-r-md text-white bg-[var(--pos-v5-info)] disabled:opacity-50 disabled:cursor-not-allowed transition"
                 >
                     {{ $t('button.apply') }}
                 </button>

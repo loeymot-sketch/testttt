@@ -1098,18 +1098,19 @@ export default {
   min-height: 0;
 }
 
-/* Changement de catégorie : fondu doux local, sans glissement plein écran. */
+/* Changement de catégorie : fondu doux local, sans glissement plein écran.
+   [A-003 test-e2e 2026-07-17] blur(4px) plein pane retiré : captures montraient
+   le contenu central FIGÉ flou (prix illisibles) après transition, et un filter
+   plein viewport coûte cher au GPU de la borne (mandat perf owner). Le fondu
+   opacité seul suffit. */
 .kiosk-cat-pane-enter-active,
 .kiosk-cat-pane-leave-active {
-  transition:
-    opacity 0.18s ease-out,
-    filter 0.18s ease-out;
+  transition: opacity 0.18s ease-out;
 }
 
 .kiosk-cat-pane-enter-from,
 .kiosk-cat-pane-leave-to {
   opacity: 0;
-  filter: blur(4px);
 }
 
 .kiosk-product-zone-header {
