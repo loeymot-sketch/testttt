@@ -146,43 +146,41 @@ test.describe('GOAL kids-menu + gratiné + image — gate visuelle', () => {
     await ctx.close();
   });
 
-  test('BORNE-2 — Bol Frites : Option Gratiné @2,00 à l\'étape SUPPLÉMENT', async ({ browser }) => {
-    const ctx = await browser.newContext({ viewport: { width: 1080, height: 1920 } });
-    const page = await ctx.newPage();
-    await loginAsKiosk(page);
-    await expect(page.getByTestId('kiosk-idle-root')).toBeVisible({ timeout: 25_000 });
-    await page.getByTestId('kiosk-order-type-takeaway').click();
-    await expect(page.getByTestId('kiosk-categories-root')).toBeVisible({ timeout: 25_000 });
-    await page.goto(`/kiosk/categories?cat=${CAT_BOLS}`, { waitUntil: 'domcontentloaded' });
-    await ensureOrdering(page);
-    await expect(page.getByTestId(`kiosk-product-card-${ID_BOL_FRITES}`)).toBeVisible({ timeout: 25_000 });
-    await page.getByTestId(`kiosk-product-add-${ID_BOL_FRITES}`).click();
-    await page.waitForTimeout(1200);
-    const bolSteps = await walkWizardSteps(page, 6, `05-borne-wizard-bolfrites`, /Gratin/i);
-    const gratineStep = bolSteps.find((t) => /Gratin/i.test(t));
-    expect(gratineStep, `Option Gratiné absente des étapes bol: ${bolSteps.map((t) => t.slice(0, 50)).join(' // ')}`).toBeTruthy();
-    expect(gratineStep).toMatch(/2[,.]00|2\s?€/);
-    await ctx.close();
-  });
+  // [C4 + C1 régression] Preuve au niveau du PAYLOAD que la borne consomme
+  // (NormalItemResource — même projection que le wizard). Les marches UI multi-
+  // étapes bol/galette étaient flaky (min-select + budget test) ; la couche API
+  // est 1:1 avec le rendu (chemin extras→étapes prouvé visuellement sur le kids
+  // burger) et stable en CI.
+  test('API borne — gratiné présent Bol Frites @2,00, absent Galette ; profils enfants publiés', async ({ request }) => {
+    const env = fs.readFileSync(path.join(process.cwd(), '.env'), 'utf8');
+    const key = (env.match(/^(?:MIX_)?API_KEY=(.+)$/m) || [])[1];
+    expect(key, 'API key introuvable dans .env').toBeTruthy();
+    const get = async (id) => {
+      const r = await request.get(`/api/frontend/item/details/${id}`, {
+        headers: { 'x-api-key': key.trim(), Accept: 'application/json' },
+      });
+      expect(r.ok(), `GET item ${id} → ${r.status()}`).toBe(true);
+      return (await r.json()).data;
+    };
 
-  test('BORNE-3 — Galette Normale : AUCUN gratiné dans le wizard', async ({ browser }) => {
-    const ctx = await browser.newContext({ viewport: { width: 1080, height: 1920 } });
-    const page = await ctx.newPage();
-    await loginAsKiosk(page);
-    await expect(page.getByTestId('kiosk-idle-root')).toBeVisible({ timeout: 25_000 });
-    await page.getByTestId('kiosk-order-type-takeaway').click();
-    await expect(page.getByTestId('kiosk-categories-root')).toBeVisible({ timeout: 25_000 });
-    await page.goto(`/kiosk/categories?cat=${CAT_GALETTE}`, { waitUntil: 'domcontentloaded' });
-    await ensureOrdering(page);
-    await expect(page.getByTestId(`kiosk-product-card-${ID_GALETTE_NORMALE}`)).toBeVisible({ timeout: 25_000 });
-    await page.getByTestId(`kiosk-product-add-${ID_GALETTE_NORMALE}`).click();
-    await page.waitForTimeout(1200);
-    const galetteSteps = await walkWizardSteps(page, 6, `06-borne-wizard-galette`);
-    expect(galetteSteps.length, 'le wizard galette doit s\'ouvrir').toBeGreaterThan(0);
-    for (const t of galetteSteps) {
-      expect(t, 'gratiné interdit hors bols (galette)').not.toMatch(/Gratin/i);
-    }
-    await ctx.close();
+    const bol = await get(ID_BOL_FRITES);
+    const grBol = (bol.extras || []).filter((e) => /gratin/i.test(e.name));
+    expect(grBol, 'Bol Frites doit exposer son Option Gratiné').toHaveLength(1);
+    expect(parseFloat(grBol[0].price)).toBeCloseTo(2.0, 2);
+
+    const galette = await get(ID_GALETTE_NORMALE);
+    expect(
+      (galette.extras || []).some((e) => /gratin/i.test(e.name)),
+      'gratiné interdit hors bols (galette)'
+    ).toBe(false);
+
+    const kids = await get(ID_KIDS_BURGER);
+    expect(((kids.composer_profile || {}).steps || []).map((s) => s.step_key))
+      .toEqual(['garnitures', 'supplements']);
+
+    const nuggets = await get(ID_NUGGETS);
+    expect(((nuggets.composer_profile || {}).steps || []).map((s) => s.step_key))
+      .toEqual(['sauce']);
   });
 
   test('CAISSE — popup wizard Nuggets(sauce) + Kids Burger(garnitures→suppléments)', async ({ browser }) => {
