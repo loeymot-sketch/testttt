@@ -218,10 +218,12 @@ return [
         'bol-riz'                             => 'bol-riz.png',
         'menu-enfant-nuggets'                 => 'nuggets.png',
         // [IMG-HEAL 2026-06-27] Use the NEW kebab-case asset pack (owner: "use all the
-        // borne+caisse images, some old remain"). Kids burger off the deprecated underscore
-        // chicken_burger.png → new cheese-burger.png ; frites-style SKUs off the generic
+        // borne+caisse images, some old remain"). Frites-style SKUs off the generic
         // frites.png → their dedicated cheddar / cheddar+oignons photos.
-        'menu-enfant-burger'                  => 'cheese-burger.png',
+        // [OWNER 2026-07-17] Kids burger must show a CHICKEN burger, not the beef
+        // cheeseburger visual — chicken_burger.png (poulet pané détouré) is the only
+        // chicken-burger asset in the pack.
+        'menu-enfant-burger'                  => 'chicken_burger.png',
         'petite-frites-cheddar-fondu'         => 'frites-cheddar.png',
         'petite-frites-cheddar-oignons-frits' => 'frites-cheddar-oignons.png',
         'grande-frites-cheddar-fondu'         => 'frites-cheddar.png',
