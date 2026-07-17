@@ -186,11 +186,18 @@ class DashboardService
                          ->where('order_datetime', '<', $endParisExclusive);
             };
 
-            $total_order = $apply(clone $order)->count();
-            $total_delivered = $apply((clone $order)->delivered())->count();
-            $total_canceled = $apply((clone $order)->canceled())->count();
-            $total_returned = $apply((clone $order)->returned())->count();
-            $total_rejected = $apply((clone $order)->rejected())->count();
+            // [TERRAIN-HEAL 2026-07-16 · PERF-DASHBOARD-STATUS-COUNTS] Idem orderStatistics : 5 COUNT séquentiels
+            // → 1 agrégat GROUP BY status. total_order = somme de tous les statuts (= count() original), les
+            // scalaires par statut alimentent les pourcentages ci-dessous à l'identique.
+            $byStatus = [];
+            foreach ($apply(clone $order)->selectRaw('status, COUNT(*) as cnt')->groupBy('status')->get() as $row) {
+                $byStatus[(int) $row->status] = (int) $row->cnt;
+            }
+            $total_order     = array_sum($byStatus);
+            $total_delivered = $byStatus[OrderStatus::DELIVERED] ?? 0;
+            $total_canceled  = $byStatus[OrderStatus::CANCELED] ?? 0;
+            $total_returned  = $byStatus[OrderStatus::RETURNED] ?? 0;
+            $total_rejected  = $byStatus[OrderStatus::REJECTED] ?? 0;
 
 
             if ($total_order > 0) {
