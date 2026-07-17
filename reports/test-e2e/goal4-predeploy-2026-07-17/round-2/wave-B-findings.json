@@ -1,0 +1,128 @@
+{
+  "wave": "B",
+  "round": 2,
+  "states_reviewed": 8,
+  "findings": [
+    {
+      "id": "B-002",
+      "state_artifact": "test-e2e-B/B01-login-pos.png",
+      "category": "overlap",
+      "severity": "P2",
+      "status": "open",
+      "evidence": "R2 re-observé (zoom x2 B01 x60-780/y60-250) : identique R1 — pill 'À encaisser 5' recouvre toujours le h1 'Commande rapide' (résidu lisible 'Con / rapide' sur 2 lignes), eyebrow 'CAISSE LE CAYENNE' wrappé sur 3 lignes à 1440px. Le h1 recouvert reste non-cliquable => pas de cat.3 P1, aucune action bloquée.",
+      "fix_hint": "pos-v5-operator-bar : réserver une min-width à __identity ou wrapper les actions sous le titre en <1500px."
+    },
+    {
+      "id": "B-003",
+      "state_artifact": "test-e2e-B/B05-ticket-nuggets-4-90.png",
+      "category": "layout_compression",
+      "severity": "P2",
+      "status": "open",
+      "evidence": "R2 re-observé : identique R1 — DOM B05 contient p.pos-v5-cart-item__detail '1× Mayonnaise' mais le détail est hors champ à 900px de hauteur (la ligne 'Menu Enfant Nuggets 4,90 €' est visible, vignette rognée à moitié) ; blocs remise/motif consomment la hauteur. Caissier ne voit pas la sauce sans scroller.",
+      "fix_hint": "Prioriser la hauteur du bloc lignes sur remise/motif (collapse zone remise par défaut) sous 950px."
+    },
+    {
+      "id": "B-004",
+      "state_artifact": "test-e2e-B/B06-popup-kidsburger-crudites.png",
+      "category": "contrast",
+      "severity": "P2",
+      "status": "open_gated_frozen",
+      "evidence": "R2 re-observé, GATED owner (pos-wizard.js FROZEN), non re-sévérisé : turquoise #43C6AC inchangé — chips crudités '✓ Salade/Tomate/Oignon' blanc/turquoise 2,12:1 (B06/B07), CTA 'Ajouter au panier' (B04/B06/B07/B08), totaux '€4.90'/'€7.90' turquoise/blanc 2,12:1. Hors palette brand mandatée.",
+      "fix_hint": "Gate owner : assombrir vers #1E8E76 (>=4,6:1) sans changer la teinte."
+    },
+    {
+      "id": "B-005",
+      "state_artifact": "test-e2e-B/B07-popup-kidsburger-supplements-0-90.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "status": "open_gated_frozen",
+      "evidence": "R2 re-vérifié DOM frais, GATED owner (pos-wizard.js FROZEN), non re-sévérisé : (a) cartes <div class=\"wizard-option supplement-opt micro-opt\" data-key=\"p_466\"> et <div class=\"formule-card\" data-action=\"menu-choice\"> toujours sans role/tabindex (inaccessibles clavier) ; (b) 0 occurrence aria-pressed sur les 8 DOM (grep = 0 partout) ; (c) header wizard <img alt=\"item\"> générique anglais (B04). Chemin primaire produit de base reste faisable => P2.",
+      "fix_hint": "Gate owner : <button> + aria-pressed sur cartes/toggles ; alt={nom produit}."
+    },
+    {
+      "id": "B-007",
+      "state_artifact": "test-e2e-B/B08-popup-bolfrites-gratine-2-00.png",
+      "category": "config_csp_noise",
+      "severity": "P2",
+      "status": "open",
+      "evidence": "R2 re-compté (1 fois, toute la wave) : 152 POST /api/frontend/csp-report 204 ce run (B01:43, B02:1, B03:56, B04:16, B06:8, B08:28) + ~513 logs console 'report-only'. config/security.php:35 INCHANGÉ : connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100 — la base API http://127.0.0.1:8766 (source des images/appels observés dans les DOM) toujours absente de connect-src/img-src => passage enforced tel quel bloquerait 100% des appels API POS. Fichier backend non-frozen, fixable.",
+      "fix_hint": "Ajouter la base API (origine dynamique config) à connect-src ET img-src avant tout passage enforced ; throttler le report."
+    },
+    {
+      "id": "B-008",
+      "state_artifact": "test-e2e-B/B08-popup-bolfrites-gratine-2-00.png",
+      "category": "ux_duplication",
+      "severity": "P2",
+      "status": "open",
+      "evidence": "R2 re-observé + cumul CONFIRMÉ au code : DOM frais B08 contient les DEUX chemins simultanément à l'écran — (1) accordéon <button class=\"viande-suppl-toggle\">➕ Viande supplémentaire (+€2.50/viande)▼</button> avec 7 steppers data-viande v_546..v_552 ; (2) carte générique <div class=\"wizard-option supplement-opt micro-opt\" data-type=\"supplement\" data-key=\"p_396\">Viande supplémentaire +2,50 €</div>, aucune désactivée. Cumul 2×2,50=5,00 € RÉELLEMENT possible : pos-wizard.js ligne ~6073 le clic p_396 toggle selections.supplements[supKey] tandis que les steppers alimentent selections.viandeSupplItems (sommé dans supplTotal lignes 1372-1375) — deux accumulateurs indépendants, zéro logique d'exclusion (grep p_396/exclusion = 0). La carte générique ne précise aucune viande => ticket cuisine ambigu.",
+      "fix_hint": "Data catalogue : retirer/masquer l'extra générique id 396 des bols (le flux per-viande couvre le besoin) — fix DATA, pas de touch frozen."
+    },
+    {
+      "id": "B-009",
+      "state_artifact": "test-e2e-B/B05-ticket-nuggets-4-90.png",
+      "category": "truncation",
+      "severity": "P2",
+      "status": "open",
+      "evidence": "R2 re-observé (zoom B05 x1000-1440/y60-400 + DOM) : identique R1 — placeholder 'Téléphone (optionnel)' rendu clippé 'Téléphone (optionne' sur B01 et B05 ; input type=tel data-testid=pos-customer-phone toujours w-40 (160px) sans title ni aria-label (placeholder-as-label).",
+      "fix_hint": "Raccourcir le placeholder ('Téléphone') + aria-label=\"Téléphone (optionnel)\", ou élargir le champ."
+    },
+    {
+      "id": "B-010",
+      "state_artifact": "test-e2e-B/B04-popup-nuggets-sauces.console.json",
+      "category": "console_debug_noise",
+      "severity": "P3",
+      "status": "open_gated_frozen",
+      "evidence": "R2 re-compté : 3 console.log debug [POS-WIZARD] présents dans les bundles frais — detectCategory fallback (B04 Nuggets, B06 Chicken Burger), wizard_template from API: custom (B08). 0 level=error applicatif sur les 8 console.json.",
+      "fix_hint": "Gate owner (pos-wizard.js FROZEN) : conditionner les console.log à un flag debug."
+    },
+    {
+      "id": "B-011",
+      "state_artifact": "test-e2e-B/B08-popup-bolfrites-gratine-2-00.png",
+      "category": "i18n_consistency",
+      "severity": "P3",
+      "status": "open",
+      "evidence": "R2 re-observé sur PNG frais : 'Sauce fromagère maison'/'Sauce spicy' (B08) vs 'Fromagère maison'/'Spicy maison' (B04) — nommage catalogue divergent pour le même concept ; catégorie 'Galette' singulier parmi pluriels (B02, grille + pills B03) ; close toast vendor aria-label=\"close\" anglais. Zéro leak i18n regex protocole sur les 8 DOM.",
+      "fix_hint": "Harmoniser les noms d'options en DB ; closeButton aria-label FR."
+    },
+    {
+      "id": "B-012",
+      "state_artifact": "test-e2e-B/B01-login-pos.png",
+      "category": "contrast",
+      "severity": "P3",
+      "status": "open_info_owner_mandate",
+      "evidence": "R2 : inchangé — brand #F4501E texte blanc 3,49:1 sur 'À encaisser', 'Encaisser', 'Commande · 4,90 €'. Palette Cayenne mandatée CLAUDE.md §3bis, trace WCAG uniquement, ne pas looper.",
+      "fix_hint": "Aucun (mandat owner)."
+    }
+  ],
+  "summary": {
+    "P0": 0, "P1": 0, "P2": 7, "P3": 3,
+    "open_P0": 0, "open_P1": 0, "open_P2": 7, "open_P3": 3
+  },
+  "round_to_round_closures": {
+    "B-001": "PASS",
+    "B-002": "FAIL",
+    "B-003": "FAIL",
+    "B-004": "FAIL",
+    "B-005": "FAIL",
+    "B-006": "PASS",
+    "B-007": "FAIL",
+    "B-008": "FAIL",
+    "B-009": "FAIL",
+    "B-010": "FAIL",
+    "B-011": "FAIL",
+    "B-012": "FAIL"
+  },
+  "verdict": "GREEN",
+  "closure_proofs": {
+    "B-001": "PASS pixel-vérifié : DOM B05 frais = <button data-testid=\"pos-discount-apply\" class=\"flex-shrink-0 min-w-[72px] px-2 ...\"> (w-16 supprimé) ; zoom PNG x4 région x1240-1440/y400-520 : 'APPLIQUER' ENTIER, glyphe R final complet avec padding résiduel avant le bord arrondi droit. Fix conforme au claim.",
+    "B-006": "PASS DOM-vérifié : le conteneur aria-hidden .pos-wizard-variation-bridge (bloc extrait 1403 chars) ne contient QUE des contrôles neutralisés — B04 : select data-bridge-select=\"5\" tabindex=\"-1\" + checkbox tabindex=\"-1\" ; B08 : 2 selects + >=8 checkboxes tous tabindex=\"-1\" ; 0 select/checkbox du bridge sans tabindex=-1. Bridge absent des DOM B06/B07 (0 occurrence). Les radios custom-radio-field data-v-2fac0924 restants sans tabindex sont HORS bridge, dans .modal-body style=\"display:none\" (data-wiz-hidden) => non focusables, pas de violation aria-hidden-focus."
+  },
+  "notes": {
+    "network": "0 statut >=400, 0 requête >2s sur les 8 network.json frais (B01:45, B02:2, B03:56, B04:16, B05:1, B06:8, B07:0, B08:28 requêtes). Hors csp-report : login 201, customer-display 200, broadcasting/auth 200 — sains.",
+    "console": "0 level=error applicatif sur les 8 console.json. Bruit = CSP report-only (~513 entrées) + 3 logs debug [POS-WIZARD] (B-010).",
+    "numeric_integrity": "0 mismatch R2. Menu Enfant 4,90 : grille B03 = popup €4.90 B04/B06/B07 = ligne ticket = sous-total = Total = CTA 'Commande · 4,90 €' (B05) ; sauce 1ère gratuite non facturée ; suppléments +0,90 (B07, aucun coché, total reste €4.90) ; Bol Frites 7,90 grille = €7.90 total B08 (aucune option cochée — Gratiné +2,00/Viande +2,50/Boisson +2,00 visibles non sélectionnées) ; compteurs B01 : pill 'À encaisser 5' = colonne À ENCAISSER BORNE (5) = 4 affichées (A0007/A0008/A0009/A0010) + Voir plus (1) ; COMMANDES WEB · 3 = 3 lignes (A0042/A9002/A0034).",
+    "new_findings": "AUCUN finding neuf sur les bundles frais. Chassé et écarté : toast 'Article ajouté au panier' recouvrant le stepper + quantité du wizard (B06) => transitoire role=alert, réfutation R1 maintenue ; panneau haut-gauche 'vide' sur B02/B03/B05 => 'PRÊT À LIVRER (0)' avec empty-state scrollé hors viewport, pas un défaut ; numéro web A9002 parmi A0042/A0034 => séquence inhabituelle mais aucun mismatch cross-surface observable, non retenu ; pill 'Toutes les …' tronquée => title+aria-label présents, conforme cat.2.",
+    "gated_register": "4 items restent GATED owner sans re-sévérisation : B-004 (contraste #43C6AC), B-005 (aria wizard), B-010 (console.log debug) — tous pos-wizard.js FROZEN ; format prix '€4.90/€7.90' US dans le wizard = P3 frozen déjà tracké R1, non re-listé comme finding séparé. B-012 = info mandat owner palette.",
+    "verdict_rationale": "GREEN au sens protocole : open_P0=0 et open_P1=0 (l'unique P1 R1, B-001, est fermé pixel-prouvé ; B-006 également fermé). Les 7 P2 + 3 P3 restants sont non loop-blocking, listés pour trace — dont 3 fixables sans gate (B-007 config/security.php, B-008 data catalogue, B-009 composant Vue) et 2 layout Vue (B-002, B-003)."
+  }
+}

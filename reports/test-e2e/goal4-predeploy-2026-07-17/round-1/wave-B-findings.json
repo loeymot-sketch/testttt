@@ -1,0 +1,114 @@
+{
+  "wave": "B",
+  "round": 1,
+  "states_reviewed": 8,
+  "findings": [
+    {
+      "id": "B-001",
+      "state_artifact": "test-e2e-B/B05-ticket-nuggets-4-90.png",
+      "category": "truncation",
+      "severity": "P1",
+      "evidence": "Bouton remise 'APPLIQUER' : le glyphe 'R' final est rogné ~50% par le bord droit du bouton (zoom PNG x3, région x1355-1414/y440-478). Cause DOM (B05-ticket-nuggets-4-90.dom.html) : <button data-testid=\"pos-discount-apply\" class=\"flex-shrink-0 w-16 ... text-xs font-bold uppercase\">Appliquer</button> — largeur fixe w-16 (64px) < 'APPLIQUER' uppercase bold (~70px). Aucun title/tooltip. Règle protocole cat.2 : label de bouton coupé => P1.",
+      "fix_hint": "Composant Vue POS V5 zone remise (data-v-6a71a224, champ data-testid=pos-discount-apply) : remplacer w-16 par min-w-fit + px-2, ou libellé 'OK'/'Valider'. Non-frozen (composant Vue, pas pos-wizard.js)."
+    },
+    {
+      "id": "B-002",
+      "state_artifact": "test-e2e-B/B01-login-pos.png",
+      "category": "overlap",
+      "severity": "P2",
+      "evidence": "CONNU (borné P2). Zoom x2 région x80-560/y75-230 : le pill cliquable 'À encaisser 5' recouvre entièrement le h1 'Commande rapide' (lecture résiduelle 'Con / rapide' sur 2 lignes) et l'eyebrow 'CAISSE LE CAYENNE' wrappe sur 3 lignes. DOM : header.pos-v5-operator-bar > __identity min-w-0 flex-1 écrasé par la barre d'actions à 1440px. Le h1 recouvert n'est PAS cliquable (pas de cat.3 P1) ; aucune action bloquée.",
+      "fix_hint": "pos-v5-operator-bar : réserver une min-width à __identity ou wrapper les actions sous le titre en <1500px."
+    },
+    {
+      "id": "B-003",
+      "state_artifact": "test-e2e-B/B05-ticket-nuggets-4-90.png",
+      "category": "layout_compression",
+      "severity": "P2",
+      "evidence": "CONNU (jugé sur PNG) : panneau ticket à 900px de hauteur. La ligne article EST exploitable — nom 'Menu Enfant Nuggets', prix '4,90 €', bouton Modifier (aria-label ok) visibles, conteneur role=region aria-label='Panier commande' overflow-y-auto. MAIS le détail d'options '1× Mayonnaise' (présent dans le DOM : p.pos-v5-cart-item__detail) est hors champ sans scroll et la vignette produit est rognée à moitié. Un caissier ne voit pas la sauce choisie sans scroller => contrôle au comptoir dégradé.",
+      "fix_hint": "Prioriser la hauteur du bloc lignes sur les blocs remise/motif (collapse par défaut de la zone remise) sous 950px de hauteur."
+    },
+    {
+      "id": "B-004",
+      "state_artifact": "test-e2e-B/B06-popup-kidsburger-crudites.png",
+      "category": "contrast",
+      "severity": "P2",
+      "evidence": "Turquoise wizard #43C6AC (public/js/pos-wizard.js, CSS injecté : '.garniture-toggle-btn.included { background: #43C6AC; color: white }' + 7 usages 'color: #43C6AC'). Ratios calculés : blanc sur #43C6AC = 2,12:1 pour chips crudités '✓ Salade/Tomate/Oignon' (~13px bold, requis 4,5:1) et CTA 'Ajouter au panier' ; total '€4.90'/'€7.90' en #43C6AC sur blanc = 2,12:1 (large bold, requis 3:1). Le montant TOTAL du wizard — l'info la plus critique — échoue AA. #43C6AC n'appartient PAS à la palette brand mandatée (#F4501E/#FFB800/#1A1A1A).",
+      "fix_hint": "pos-wizard.js FROZEN => gate owner. Assombrir vers #1E8E76 (>=4,6:1 avec blanc) sans changer la teinte."
+    },
+    {
+      "id": "B-005",
+      "state_artifact": "test-e2e-B/B07-popup-kidsburger-supplements-0-90.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Wizard popup : (a) cartes suppléments = <div class=\"wizard-option supplement-opt\" data-type=\"supplement\" data-key=\"p_466\">…</div> et cartes formule = <div class=\"formule-card\" data-action=\"menu-choice\"> — divs cliquables sans role/tabindex : ajouter un supplément payant (0,90/2,00/2,50 €) ou choisir une formule est IMPOSSIBLE au clavier ; (b) toggles réels <button class=\"sauce-chip\">/<button class=\"garniture-toggle-btn included\"> sans aria-pressed (0 occurrence dans les 8 DOM) — état sélectionné non exposé aux lecteurs d'écran ; (c) image header wizard alt=\"item\" générique anglais. Chemin primaire (produit de base) reste faisable => P2, pas P1.",
+      "fix_hint": "pos-wizard.js FROZEN => gate owner. <button> + aria-pressed sur les cartes/toggles ; alt={nom produit}."
+    },
+    {
+      "id": "B-006",
+      "state_artifact": "test-e2e-B/B04-popup-nuggets-sauces.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "B04-popup-nuggets-sauces.dom.html : <div aria-hidden=\"true\" class=\"pos-wizard-variation-bridge\" style=\"position:absolute;width:1px;height:1px;clip:rect(0,0,0,0)…\"> contient <select data-bridge-select=\"5\"> SANS disabled ni tabindex=-1 => contrôle focusable au Tab à l'intérieur d'un conteneur aria-hidden (violation axe 'aria-hidden-focus', serious). L'utilisateur clavier atterrit sur un select invisible de 1px. Présent aussi en B06/B07/B08 (bridge count 1 par état).",
+      "fix_hint": "Composant Vue du bridge (data-v-af7afd74, non-frozen) : ajouter tabindex=\"-1\" + disabled (ou inert sur le conteneur) aux select/input du bridge."
+    },
+    {
+      "id": "B-007",
+      "state_artifact": "test-e2e-B/B08-popup-bolfrites-gratine-2-00.png",
+      "category": "config_csp_noise",
+      "severity": "P2",
+      "evidence": "CONNU (compté 1 fois, toute la wave) : 166 POST /api/frontend/csp-report 204 (B01:43, B03:57, B04:16, B06:8, B08:42) + ~380 logs console de violations CSP report-only ('The policy is report-only… no further action'), car la page (localhost:8000) charge images + API depuis http://127.0.0.1:8766. Angle NON noté : la directive réelle 'connect-src \\'self\\' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100' whiteliste le pont imprimante 9100 mais PAS la base API 8766 elle-même (idem img-src sans http:) => si cette CSP passe un jour en enforced telle quelle, 100% des appels API et images POS seraient bloqués.",
+      "fix_hint": "Avant tout passage enforced : ajouter la base API (origine dynamique config) à connect-src ET img-src ; en attendant, throttler le report pour tuer les 166 POST/minute de bruit."
+    },
+    {
+      "id": "B-008",
+      "state_artifact": "test-e2e-B/B08-popup-bolfrites-gratine-2-00.png",
+      "category": "ux_duplication",
+      "severity": "P2",
+      "evidence": "Popup Bol Frites : DEUX chemins concurrents pour facturer la viande supplémentaire dans le même écran — (1) accordéon dédié <button class=\"viande-suppl-toggle\">➕ Viande supplémentaire (+€2.50/viande) ▼</button> avec steppers par viande (data-viande=\"v_552\"…) ; (2) carte générique dans Suppléments <div data-type=\"supplement\" data-key=\"p_396\">Viande supplémentaire +2,50 €</div>. La carte générique ne précise AUCUNE viande => ticket cuisine ambigu ('Viande supplémentaire' sans type), et un caissier peut cumuler les deux (5,00 € pour une seule intention). Prix affichés cohérents (2,50 partout) donc pas de mismatch numérique observé.",
+      "fix_hint": "Data catalogue : retirer l'extra générique id 396 des bols (le flux per-viande de l'accordéon couvre le besoin), ou le masquer dans le wizard (pos-wizard.js FROZEN => préférer le retrait data)."
+    },
+    {
+      "id": "B-009",
+      "state_artifact": "test-e2e-B/B01-login-pos.png",
+      "category": "truncation",
+      "severity": "P2",
+      "evidence": "Champ téléphone du panneau ticket : placeholder DOM complet 'Téléphone (optionnel)' (input type=tel, data-testid pos-…) rendu clippé 'Téléphone (optionne' sans ellipsis ni tooltip sur B01, B03, B05 (visible sur toutes les PNG où le panneau apparaît). L'input n'a ni title ni aria-label (placeholder-as-label). Mot non critique, sens devinable => P2.",
+      "fix_hint": "Raccourcir le placeholder ('Téléphone') + ajouter aria-label=\"Téléphone (optionnel)\" ; ou élargir le champ."
+    },
+    {
+      "id": "B-010",
+      "state_artifact": "test-e2e-B/B04-popup-nuggets-sauces.console.json",
+      "category": "console_debug_noise",
+      "severity": "P3",
+      "evidence": "console.log de debug laissés en prod dans pos-wizard.js : '[POS-WIZARD] detectCategory (fallback): {apiCat: Menu enfant, domCat: menu enfant, name: Menu Enfant Nuggets}' (B04), idem Chicken Burger (B06), '[POS-WIZARD] wizard_template from API: custom' (B08). Aucun level=error dans les 8 console.json (0 erreur applicative).",
+      "fix_hint": "pos-wizard.js FROZEN => gate owner ; supprimer/conditionner les console.log à un flag debug."
+    },
+    {
+      "id": "B-011",
+      "state_artifact": "test-e2e-B/B08-popup-bolfrites-gratine-2-00.png",
+      "category": "i18n_consistency",
+      "severity": "P3",
+      "evidence": "Cohérence libellés FR : sauces du bol nommées 'Sauce fromagère maison'/'Sauce spicy' (B08) vs 'Fromagère maison'/'Spicy maison' pour le menu enfant (B04) — même concept, nommage catalogue divergent ; catégorie 'Galette' au singulier parmi 'Sandwichs/Burgers/Tacos/Bols/Frites/Desserts/Boissons' au pluriel (B02) ; bouton fermer des toasts aria-label=\"close\" en anglais (vendor Vue-Toastification, UI FR). Zéro leak i18n type 'label.x' sur les 8 DOM (regex protocole).",
+      "fix_hint": "Harmoniser les noms d'options en DB items/options ; config toastification closeButton aria-label FR."
+    },
+    {
+      "id": "B-012",
+      "state_artifact": "test-e2e-B/B01-login-pos.png",
+      "category": "contrast",
+      "severity": "P3",
+      "evidence": "INFO (décision owner, ne pas looper) : brand #F4501E avec texte blanc = 3,49:1 (<4,5:1) sur les contrôles 'À encaisser', 'Encaisser', 'Commande · 4,90 €' (~14px semibold). Palette Cayenne mandatée CLAUDE.md §3bis — signalé pour trace WCAG uniquement, contrairement au turquoise non-mandaté de B-004.",
+      "fix_hint": "Aucun (mandat owner). Option future : texte #FFF -> #FFF8F5 inchangé visuellement non suffisant ; seul un assombrissement du fond corrigerait."
+    }
+  ],
+  "summary": {
+    "P0": 0, "P1": 1, "P2": 8, "P3": 3,
+    "open_P0": 0, "open_P1": 1, "open_P2": 8, "open_P3": 3
+  },
+  "round_to_round_closures": {},
+  "verdict": "RED",
+  "notes": {
+    "network": "0 statut >=400, 0 requête >2s sur les 8 états. Hors csp-report : POST /api/auth/login 201, 2x POST /api/admin/pos/customer-display 200, POST /api/broadcasting/auth 200 — tous sains.",
+    "numeric_integrity": "0 mismatch. Vérifié cross-surfaces : Menu Enfant 4,90 (grille B03 = popup €4.90 B04/B06/B07 = ligne ticket 4,90 = sous-total = total = CTA 'Commande · 4,90 €' B05, sauce 1ère gratuite non facturée '1× Mayonnaise') ; suppléments +0,90 x4 (B07) ; Option Gratiné +2,00, Viande suppl +2,50, Boisson Seule +2,00, Bol Frites grille 7,90 = total €7.90 (B08) ; compteurs B01 : pill 'À encaisser 5' = colonne borne 4 affichées + 'Voir plus (1)' = 5 ; 'COMMANDES WEB · 3' = 3 lignes.",
+    "refuted": "Pill catégorie 'Toutes les …' tronquée : title=\"Toutes les catégories\" + aria-label présents => conforme cat.2, non retenu. Toast masquant 'TICKET CAISSE' (B01/B02/B05/B06) : transitoire, role=alert présent, non retenu. Format '€4.90' US dans le wizard : P3 frozen déjà tracké, non re-sévérisé."
+  }
+}
