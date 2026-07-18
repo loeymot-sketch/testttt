@@ -2266,6 +2266,12 @@
         "section_available": "Disponibles",
         "mark_rupture": "En rupture",
         "mark_available": "Disponible",
-        "empty": "Aucun produit trouvé."
+        "empty": "Aucun produit trouvé.",
+        "options": "Options",
+        "options_loading": "Chargement des options…",
+        "options_none": "Aucune option pour ce produit.",
+        "options_error": "Impossible de charger les options.",
+        "section_extras": "Suppléments",
+        "section_variations": "Variantes"
     }
 }
