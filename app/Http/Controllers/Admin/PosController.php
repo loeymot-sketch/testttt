@@ -227,15 +227,25 @@ class PosController extends AdminController
             ]);
         }
 
-        if ((int) $request->input('order_type', 0) === OrderType::DELIVERY && $request->filled('delivery_distance_km')) {
+        if ((int) $request->input('order_type', 0) === OrderType::DELIVERY) {
             // [GOAL-COMPLEMENT-2026-05-18 Z-4 LIVREUR-Z4-ARCH-03 P0] DEL-5 wire-up.
             // POS quote endpoint must also resolve the per-branch fee config
             // when branch_id is in the payload. Mirrors OrderRequest:117 +
             // PosOrderRequest:28 + DeliveryQuoteService:63. Null-safe.
+            //
+            // [S2-02 / P2-f 2026-07-18] Le fee est SERVEUR-autoritatif (jamais la valeur
+            // client) : distance fournie → fee depuis la distance ; SANS distance → fee de
+            // config branche (fromDistanceKm(0)). Ce calcul est le MIROIR EXACT de
+            // PosOrderRequest::prepareForValidation (commit) → l'intent scellé ici == l'intent
+            // re-dérivé au commit (OrderQuoteService:463), donc pas de 401 « quote intent mismatch ».
             $branchId = (int) $request->input('branch_id', 0);
             $branch = $branchId > 0 ? \App\Models\Branch::find($branchId) : null;
+
             $request->merge([
-                'delivery_charge' => $this->deliveryFeeService->fromDistanceKm($request->input('delivery_distance_km'), $branch),
+                'delivery_charge' => $this->deliveryFeeService->fromDistanceKm(
+                    $request->filled('delivery_distance_km') ? $request->input('delivery_distance_km') : 0,
+                    $branch,
+                ),
             ]);
         }
     }

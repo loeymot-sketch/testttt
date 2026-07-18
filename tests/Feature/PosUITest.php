@@ -185,7 +185,13 @@ class PosUITest extends TestCase
         $this->actingAs($this->posOperator, 'sanctum');
 
         $subtotal = 10.00;
-        $deliveryCharge = 2.50;
+        // [S2-02 / P2-f 2026-07-18] Le delivery_charge est SERVEUR-autoritatif (jamais la
+        // valeur client) : le flux POS normal envoie delivery_distance_km (PosComponent.vue:3911)
+        // et le serveur recalcule le fee depuis la distance. On fournit donc une distance et on
+        // vérifie que le fee SERVEUR (fromDistanceKm) est inclus au total puis persisté.
+        $deliveryDistanceKm = 3.0;
+        $deliveryCharge = app(\App\Services\Delivery\DeliveryFeeService::class)
+            ->fromDistanceKm($deliveryDistanceKm, $this->branch);
         // OrderService: TVA % sur les lignes articles uniquement (pas sur delivery_charge).
         $tax = $subtotal * 0.10;
         $total = $subtotal + $deliveryCharge + $tax;
@@ -204,7 +210,8 @@ class PosUITest extends TestCase
             'branch_id' => $this->branch->id,
             'subtotal' => $subtotal,
             'discount' => 0,
-            'delivery_charge' => $deliveryCharge, // [BUG-A3 FIX] Delivery charge included
+            'delivery_charge' => 0.01, // valeur CLIENT forgée → doit être IGNORÉE (recalcul serveur)
+            'delivery_distance_km' => $deliveryDistanceKm,
             'address_id' => $address->id,
             'coupon_id' => 0,
             'total' => $total,

@@ -30,22 +30,33 @@ class PosOrderRequest extends FormRequest
         // delivery_charge : le champ est `nullable` pour non-livraison (rules() ci-dessous), donc
         // un payload forgé (order_type=TAKEAWAY + delivery_charge=99) OU une désync UI
         // livraison→emporter gonflerait le total facturé au client (PricingService l'ajoute au
-        // rawTotal). On force 0 hors DELIVERY, et on ne recalcule le fee depuis la distance QUE
-        // pour une vraie livraison (sinon un TAKEAWAY portant delivery_distance_km recevrait un
-        // fee fantôme — 2e manifestation du même invariant manquant).
+        // rawTotal). On force 0 hors DELIVERY.
+        //
+        // [S2-02 / P2-f 2026-07-18 — REGISTRE_FINAL goal-intelligence-2026-07-18] Le fee d'une
+        // vraie DELIVERY est TOUJOURS serveur-autoritatif, jamais la valeur client : le store ne
+        // unset que total/subtotal/discount, donc sans ce recalcul un `delivery_charge` forgé (0,
+        // négatif ou gonflé sous le seuil de livraison offerte) persistait jusqu'au moteur de
+        // pricing (« prix 100% backend » violé, CLAUDE.md §8). Le flux POS normal envoie
+        // delivery_distance_km (PosComponent.vue:3911) → fee recalculé depuis la distance ;
+        // SANS distance (payload forgé / flux dégradé), on force le fee de config branche
+        // (fromDistanceKm(0) — legacy 5€ si non configurée), jamais la valeur client. Ce
+        // recalcul DOIT rester identique à PosController::normalizePosRuntimePayload
+        // (endpoint /pos/quote), sinon l'intent scellé du quote diverge de l'intent re-dérivé
+        // au commit (OrderQuoteService:463) → 401 « quote intent mismatch ».
         if ((int) $this->input('order_type', 0) === OrderType::DELIVERY) {
-            if ($this->filled('delivery_distance_km')) {
-                // [GOAL-COMPLEMENT-2026-05-18 Z-4 LIVREUR-Z4-ARCH-03 P0] DEL-5 wire-up.
-                // POS walk-in DELIVERY path must also resolve the per-branch fee
-                // config when branch_id is in the payload. Mirrors OrderRequest:117
-                // and DeliveryQuoteService:63. Null-safe: unknown branch -> legacy.
-                $branchId = (int) $this->input('branch_id', 0);
-                $branch = $branchId > 0 ? \App\Models\Branch::find($branchId) : null;
-                $this->merge([
-                    'delivery_charge' => app(DeliveryFeeService::class)
-                        ->fromDistanceKm($this->input('delivery_distance_km'), $branch),
-                ]);
-            }
+            // [GOAL-COMPLEMENT-2026-05-18 Z-4 LIVREUR-Z4-ARCH-03 P0] DEL-5 wire-up.
+            // POS walk-in DELIVERY path resolves the per-branch fee config when
+            // branch_id is in the payload. Mirrors OrderRequest:117 and
+            // DeliveryQuoteService:63. Null-safe: unknown branch -> legacy formula.
+            $branchId = (int) $this->input('branch_id', 0);
+            $branch = $branchId > 0 ? \App\Models\Branch::find($branchId) : null;
+
+            $this->merge([
+                'delivery_charge' => app(DeliveryFeeService::class)->fromDistanceKm(
+                    $this->filled('delivery_distance_km') ? $this->input('delivery_distance_km') : 0,
+                    $branch,
+                ),
+            ]);
         } else {
             $this->merge(['delivery_charge' => 0]);
         }

@@ -61,19 +61,32 @@ class PosOrderRequestDeliveryChargeGuardTest extends TestCase
         );
     }
 
-    /** @test — non-régression : une vraie DELIVERY conserve son delivery_charge explicite. */
-    public function real_delivery_preserves_its_delivery_charge(): void
+    /**
+     * @test — [S2-02 / P2-f 2026-07-18] une vraie DELIVERY sans distance N'UTILISE PAS
+     * le delivery_charge CLIENT : la garde le remplace par un fee SERVEUR autoritatif
+     * (config branche / legacy 5€), jamais la valeur du client. Cf.
+     * PosDeliveryChargeServerAuthoritativeTest pour la couverture complète (adresse, distance).
+     */
+    public function real_delivery_without_distance_uses_server_fee_not_client_value(): void
     {
         $request = $this->prepared([
             'order_type'      => OrderType::DELIVERY,
-            'delivery_charge' => 4,
-            // pas de delivery_distance_km → pas de recalcul, la valeur explicite est conservée
+            'delivery_charge' => 4, // valeur CLIENT — doit être ignorée
+            // pas de branch_id / address_id / distance → repli fee de config (legacy 5€)
         ]);
 
-        $this->assertSame(
+        $serverFee = app(\App\Services\Delivery\DeliveryFeeService::class)->fromDistanceKm(0, null);
+
+        $this->assertEqualsWithDelta(
+            $serverFee,
+            (float) $request->input('delivery_charge'),
+            0.001,
+            'Sans distance, une DELIVERY doit utiliser le fee SERVEUR (config), pas la valeur client.'
+        );
+        $this->assertNotSame(
             4,
             (int) $request->input('delivery_charge'),
-            'Une vraie livraison NE DOIT PAS être remise à 0 par la garde.'
+            'La valeur CLIENT forgée ne doit jamais être conservée telle quelle (prix 100% backend).'
         );
     }
 }
