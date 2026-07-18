@@ -34,10 +34,13 @@ class SalesReportController extends AdminController
         $this->orderService = $order;
         $this->companyService = $companyService;
         $this->themeService  = $themeService;
-        // [REP-AUTHZ-01 heal 2026-06-01] Gate `overview` too — GET /admin/sales-report/overview
-        // returns the revenue aggregate and was omitted from this ->only() list, leaving it
-        // readable by any auth:sanctum staff without `sales-report`. Same consumer as index.
-        $this->middleware(['permission:sales-report'])->only('index', 'export', 'pdf', 'overview');
+        // [REP-AUTHZ-01 heal 2026-06-01 · corrigé 2026-07-18 audit intelligence P1-5]
+        // Gate la méthode qui sert GET /admin/sales-report/overview (l'agrégat CA).
+        // ->only() filtre par NOM DE MÉTHODE : le heal du 2026-06-01 avait écrit
+        // 'overview' (le segment d'URI) alors que la vraie méthode est
+        // `salesReportOverview` → le middleware n'était JAMAIS appliqué et l'agrégat
+        // restait lisible par tout staff auth:sanctum sans `sales-report`.
+        $this->middleware(['permission:sales-report'])->only('index', 'export', 'pdf', 'salesReportOverview');
     }
 
     public function index(PaginateRequest $request): \Illuminate\Http\Response | \Illuminate\Http\Resources\Json\AnonymousResourceCollection | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory

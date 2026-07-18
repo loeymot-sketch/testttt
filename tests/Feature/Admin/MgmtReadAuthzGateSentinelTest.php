@@ -29,10 +29,13 @@ class MgmtReadAuthzGateSentinelTest extends TestCase
 {
     public function test_sales_report_overview_is_gated_by_sales_report_permission(): void
     {
+        // [P1-5 audit 2026-07-18] La MÉTHODE est `salesReportOverview` (l'URI est
+        // /overview). Tester 'overview' rendait cette sentinelle VERTE À TORT tant
+        // que ->only('overview') ne matchait aucune méthode. On teste le vrai nom.
         $this->assertMethodGated(
             $this->app->make(SalesReportController::class),
             'permission:sales-report',
-            'overview',
+            'salesReportOverview',
             'SalesReportController'
         );
     }
@@ -49,6 +52,14 @@ class MgmtReadAuthzGateSentinelTest extends TestCase
 
     private function assertMethodGated(object $controller, string $permission, string $method, string $name): void
     {
+        // [P1-5 audit 2026-07-18] Garde anti-vert-faux : la méthode citée doit
+        // EXISTER sur le contrôleur, sinon ->only(<nom>) ne gate rien et le test
+        // passe pour de mauvaises raisons (le bug exact de REP-AUTHZ-01).
+        $this->assertTrue(
+            method_exists($controller, $method),
+            "{$name}::{$method} n'existe pas — un ->only() sur ce nom ne garderait aucune route."
+        );
+
         $middleware = $controller->getMiddleware();
         $gatedHere = false;
 
