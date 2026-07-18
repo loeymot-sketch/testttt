@@ -1140,7 +1140,7 @@ import { safePhone } from "../../../helpers/phoneDisplay";
 // [KITCHEN-BRIDGE 2026-07-09] Auto-impression SILENCIEUSE du ticket cuisine via le
 // pont local (miroir du pont caisse). Dé-dup persistée localStorage (jamais 2× le
 // même ticket au refresh/reconnexion). Best-effort : pont éteint = jamais bloquant.
-import { printEscPosViaKitchenBridge, hasKitchenPrinted, markKitchenPrinted, seedKitchenPrinted, getKitchenFailed, setKitchenFailed } from "../../../helpers/kitchenLocalPrinter";
+import { printEscPosViaKitchenBridge, hasKitchenPrinted, markKitchenPrinted, seedKitchenPrinted, getKitchenFailed, setKitchenFailed, claimKitchenPrint, releaseKitchenPrint } from "../../../helpers/kitchenLocalPrinter";
 // [KITCHEN-PRINT-RESILIENCE 2026-07-13] Cadence du retry auto des tickets cuisine
 // en échec (pont/imprimante injoignable). Quand le pont revient, les tickets manqués
 // SORTENT tout seuls sans intervention.
@@ -2017,6 +2017,10 @@ export default {
         // avant la fin du GET, SANS marquer imprimé prématurément (sinon un échec
         // pont = ticket perdu à vie, jamais réessayé).
         if (this._kitchenInFlight && this._kitchenInFlight.has(key)) return;
+        // [S3-06 2026-07-18] Claim CROSS-ONGLET : si un AUTRE onglet /kds imprime déjà
+        // cette commande (ou l'a déjà imprimée), on n'envoie pas un 2e ticket au pont.
+        // La garde in-flight ci-dessus est PAR-ONGLET ; le claim coordonne les onglets.
+        if (!claimKitchenPrint(o.id)) return;
         if (this._kitchenInFlight) this._kitchenInFlight.add(key);
         Promise.resolve(this.autoPrintKitchenTicket(o))
           .then((r) => {
@@ -2030,7 +2034,7 @@ export default {
             }
           })
           .catch(() => { this._addKitchenFailed(o.id); })
-          .finally(() => { if (this._kitchenInFlight) this._kitchenInFlight.delete(key); });
+          .finally(() => { if (this._kitchenInFlight) this._kitchenInFlight.delete(key); releaseKitchenPrint(o.id); });
       });
     },
     // Récupère les octets ESC/POS cuisine (rendu serveur SSOT, width-safe/symbolique)
@@ -2097,6 +2101,12 @@ export default {
         if (this._kitchenInFlight && this._kitchenInFlight.has(key)) return;
         const order = activeById.get(key);
         if (!order) return;
+        // [S3-06 2026-07-18] Un AUTRE onglet a peut-être déjà imprimé ce ticket (printed
+        // resynchronisé cross-onglet via l'event storage) : purge-le de la liste d'échec
+        // locale et n'en refais pas un.
+        if (hasKitchenPrinted(order.id)) { this._removeKitchenFailed(order.id); return; }
+        // Claim CROSS-ONGLET : évite qu'un autre onglet (ou l'auto-print) ré-imprime en //.
+        if (!claimKitchenPrint(order.id)) return;
         if (this._kitchenInFlight) this._kitchenInFlight.add(key);
         Promise.resolve(this.autoPrintKitchenTicket(order))
           .then((r) => {
@@ -2106,7 +2116,7 @@ export default {
             }
           })
           .catch(() => { /* reste en échec, re-tenté au prochain tick */ })
-          .finally(() => { if (this._kitchenInFlight) this._kitchenInFlight.delete(key); });
+          .finally(() => { if (this._kitchenInFlight) this._kitchenInFlight.delete(key); releaseKitchenPrint(order.id); });
       });
     },
     // [KDS-REPRINT 2026-07-13] Réimpression MANUELLE du ticket cuisine, déclenchée
@@ -2124,6 +2134,10 @@ export default {
       // parallèle pendant l'await de cette réimpression → 0 doublon (course fermée).
       const key = String(order.id);
       if (this._kitchenInFlight && this._kitchenInFlight.has(key)) return;
+      // [S3-06 2026-07-18] Claim CROSS-ONGLET en mode force : la réimpression volontaire
+      // IGNORE le check « déjà imprimé » (c'est le but), mais empêche 2 onglets / 2 clics
+      // (ou le retry auto d'un autre onglet) de sortir 2 tickets en parallèle.
+      if (!claimKitchenPrint(order.id, { force: true })) return;
       if (this._kitchenInFlight) this._kitchenInFlight.add(key);
       try {
         const r = await this.autoPrintKitchenTicket(order);
@@ -2142,6 +2156,7 @@ export default {
         } catch (_) { /* retour visuel best-effort, jamais bloquant */ }
       } finally {
         if (this._kitchenInFlight) this._kitchenInFlight.delete(key);
+        releaseKitchenPrint(order.id);
       }
     },
     isTableGroupOpen(key) {

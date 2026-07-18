@@ -153,6 +153,119 @@ export function seedKitchenPrinted(orderIds) {
 /** Test-only : réinitialise la garde (mémoire — ne touche pas localStorage). */
 export function _resetPrintedKitchen() { _printed = null; }
 
+// ── Dé-dup CROSS-ONGLET : coordination in-flight + printed set entre onglets ────
+// [S3-06 2026-07-18] Le set `_printed` était mémoïsé PAR ONGLET (lu une fois puis
+// caché dans le module) et la garde in-flight vivait dans le composant KDS, donc PAR
+// ONGLET aussi. Deux onglets /kds ouverts sur le PC cuisine recevaient la MÊME commande
+// (WS/poll) et voyaient tous deux hasKitchenPrinted=false / rien en in-flight → 2 POST
+// au pont 9101 → 2 tickets physiques. (Distinct du doublon INTRA-onglet 20 s déjà healé.)
+//
+// Fix cross-onglet, sans dépendance externe :
+//  (1) un listener `storage` resynchronise `_printed` quand un AUTRE onglet marque un
+//      ticket imprimé (même pattern que la sync token app.js:248 / pos-app.js:211) ;
+//  (2) une CARTE de claims in-flight PERSISTÉE en localStorage coordonne « quel onglet
+//      imprime cette commande » (claim par relecture fraîche + TTL) : un seul onglet
+//      obtient le claim → un seul POST ;
+//  (3) le check « déjà imprimé » du claim se fait sur une RELECTURE FRAÎCHE de
+//      localStorage (pas le cache module) → immunisé au cache périmé.
+
+// Identité de cet onglet (propriétaire d'un claim). Un random suffit : le claim bloque
+// sur TOUT claim vivant ; l'id ne sert qu'à ne relâcher QUE son propre claim.
+const _tabId = (() => {
+  try {
+    if (typeof window !== 'undefined' && window.crypto && typeof window.crypto.randomUUID === 'function') {
+      return window.crypto.randomUUID();
+    }
+  } catch (_) { /* fallback ci-dessous */ }
+  return 'kds-' + Math.random().toString(36).slice(2) + '-' + Date.now().toString(36);
+})();
+
+// Un AUTRE onglet a écrit le set imprimé → fusionne ses ids dans le cache local pour que
+// hasKitchenPrinted() soit à jour sans attendre un reload (corrige le cache périmé).
+function _syncPrintedFromOtherTab(e) {
+  if (!e || e.key !== PRINTED_LS_KEY || !e.newValue) return;
+  try {
+    const set = _load();
+    JSON.parse(e.newValue).forEach((id) => set.add(String(id)));
+  } catch (_) { /* jamais casser l'app sur une sync cross-onglet */ }
+}
+try {
+  if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+    window.addEventListener('storage', _syncPrintedFromOtherTab);
+  }
+} catch (_) { /* pas de window (node pur) — dé-dup dégradée en mémoire seule */ }
+
+// Carte de claims in-flight partagée entre onglets : { [orderId]: { tab, ts } }.
+const CLAIM_LS_KEY = 'kds.kitchenPrintClaims';
+// TTL d'un claim : DOIT dépasser le timeout /raw du pont (20 s, cf. rawTimeoutMs) pour ne
+// jamais relâcher une commande encore en cours d'impression dans un autre onglet ; borne
+// aussi les claims orphelins (onglet fermé pendant l'impression) → repris ensuite.
+const CLAIM_TTL_MS = 30000;
+
+function _readClaims() {
+  try {
+    const raw = window.localStorage.getItem(CLAIM_LS_KEY);
+    if (raw) { const o = JSON.parse(raw); if (o && typeof o === 'object') return o; }
+  } catch (_) { /* mémoire seule */ }
+  return {};
+}
+
+function _writeClaims(claims) {
+  try { window.localStorage.setItem(CLAIM_LS_KEY, JSON.stringify(claims)); } catch (_) { /* private mode / quota */ }
+}
+
+// Supprime les claims expirés (TTL) — mutation en place, renvoie l'objet.
+function _pruneClaims(claims, now) {
+  Object.keys(claims).forEach((k) => {
+    const c = claims[k];
+    if (!c || typeof c.ts !== 'number' || (now - c.ts) > CLAIM_TTL_MS) delete claims[k];
+  });
+  return claims;
+}
+
+// Relit le set imprimé DEPUIS localStorage (frais) et le fusionne dans le cache module.
+function _reloadPrintedFromStorage() {
+  const set = _load();
+  try {
+    const raw = window.localStorage.getItem(PRINTED_LS_KEY);
+    if (raw) JSON.parse(raw).forEach((id) => set.add(String(id)));
+  } catch (_) { /* garde mémoire */ }
+  return set;
+}
+
+/**
+ * Réserve l'impression de `orderId` pour CET onglet, coordonné entre onglets via
+ * localStorage. Renvoie true si CET onglet doit imprimer (claim obtenu), false si :
+ *   - déjà imprimé (relecture FRAÎCHE cross-onglet) — sauf `opts.force` (réimpression
+ *     volontaire) ;
+ *   - un claim est déjà VIVANT (cet onglet en burst, ou un AUTRE onglet imprime).
+ * À libérer par releaseKitchenPrint() dans le finally (succès OU échec) : un échec doit
+ * relâcher pour que le retry (ici ou dans un autre onglet) puisse ressortir le ticket.
+ */
+export function claimKitchenPrint(orderId, opts = {}) {
+  if (orderId == null) return false;
+  const key = String(orderId);
+  if (!opts.force && _reloadPrintedFromStorage().has(key)) return false;
+  const now = Date.now();
+  const claims = _pruneClaims(_readClaims(), now);
+  if (claims[key]) return false; // claim vivant (même onglet en burst OU autre onglet)
+  claims[key] = { tab: _tabId, ts: now };
+  _writeClaims(claims);
+  return true;
+}
+
+/** Libère le claim in-flight de `orderId` s'il est détenu par CET onglet. */
+export function releaseKitchenPrint(orderId) {
+  if (orderId == null) return;
+  const key = String(orderId);
+  const claims = _readClaims();
+  const c = claims[key];
+  if (c && c.tab === _tabId) { delete claims[key]; _writeClaims(claims); }
+}
+
+/** Test-only : purge la carte de claims in-flight (ne touche pas le printed set). */
+export function _resetKitchenClaims() { try { window.localStorage.removeItem(CLAIM_LS_KEY); } catch (_) { /* noop */ } }
+
 // ── Liste d'ÉCHEC persistée ───────────────────────────────────────────────────
 // [SUPERVISOR-HEAL 2026-07-13] Les tickets cuisine dont l'impression a ÉCHOUÉ (pont/
 // imprimante KO) doivent survivre à un reload pendant la panne : sinon le seed du
