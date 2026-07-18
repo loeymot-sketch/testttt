@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Frontend;
 
 use Exception;
+use App\Enums\Ask;
 use App\Http\Requests\Kiosk\LoyaltyOptInRequest;
 use App\Models\LoyaltyConsent;
 use App\Models\User;
@@ -172,6 +173,21 @@ class LoyaltyController extends Controller
                 $user->username = uniqid('kiosk_');
                 $user->password = bcrypt(uniqid());
                 $user->status = 1;
+                // [REGISTRE P2-v 2026-07-18] branch_id=0 (client agnostique de branche) — LoyaltyController
+                // était le SEUL chemin de création user à omettre branch_id (GuestSignup/Signup/services
+                // staff le posent tous), laissant NULL. Un NULL casse la finalisation du login web par
+                // guest-signup : DefaultAccessService::storeOrUpdate écrit default_id = branch_id = NULL →
+                // violation NOT NULL. On aligne sur le pattern client (branch_id=0).
+                $user->branch_id = 0;
+                // [REGISTRE P2-v 2026-07-18] Un compte fidélité-seul (créé borne SPLASH / opt-in,
+                // sans rôle et sans mot de passe choisi par le client) est un INVITÉ en attente d'un
+                // vrai login web. SANS ce marqueur, is_guest retombait au défaut colonne Ask::NO(10) —
+                // ce qui verrouillait le téléphone à jamais : GuestSignupController:102 le prenait pour
+                // un compte staff (throw 422), SignupController:88 ne revendique que is_guest===YES, et
+                // Signup(Phone)Request `unique(phone)->where(is_guest, NO)` déclarait le numéro « pris ».
+                // is_guest=YES le rend revendicable par ces 4 portillons EXISTANTS (déjà audités) sans
+                // élargir leur surface : un vrai compte staff/web reste is_guest=NO donc toujours refusé.
+                $user->is_guest = Ask::YES;
             } else {
                 // [ULTRA-AUDIT V2 2026-07-02 — P2 account-hijack] NE PLUS attacher un email à un
                 // compte EXISTANT via /register (public, non-auth). L'ancien code (AUDIT-P50-BUG8)
