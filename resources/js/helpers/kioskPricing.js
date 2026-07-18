@@ -72,6 +72,44 @@ export function getKioskMenuAddonPrice(item, menuChoice) {
   return Math.round(result * 100) / 100;
 }
 
+// [P2-g / F3 borne 2026-07-18] Standalone drink addon (ex. bol « Boisson Seule » +2,00 €).
+// Un bol (has_menu=false) n'a PAS de formule /menu/i : sa boisson est un addon payant
+// autonome (id 99, 2,00 €). Le mapping FROZEN `ADDON_ROLE_TO_TYPE['drink']='menu'` route
+// ce step vers KioskStepMenu ; celui-ci émet désormais `_boissonMeta.addonId` + menuChoice
+// 'boisson' → le wizard frozen pousse l'addon (role 'drink' → prix plein côté backend,
+// menuRoleAdjustedAddonPrice ne s'applique qu'aux roles `menu_*`). On reflète ici le MÊME
+// montant pour garder display == sealed (le running-total local == total scellé serveur).
+// Garde stricte `!item.has_menu` : les formules (has_menu=true) restent gérées par
+// getKioskMenuAddonPrice — cette fonction ne touche QUE le cas addon-boisson autonome.
+export function getKioskStandaloneDrinkAddonPrice(item, selections = {}) {
+  if (!item || item.has_menu) {
+    return 0;
+  }
+
+  // Miroir exact de la garde du push wizard (KioskWizardComponent buildLineItem) :
+  // l'addon boisson n'est poussé que lorsque menuChoice ∈ ('full','boisson').
+  const menuChoice = selections?.menuChoice;
+  if (menuChoice !== 'full' && menuChoice !== 'boisson') {
+    return 0;
+  }
+
+  const meta = selections?._boissonMeta || selections?.boissonMeta || null;
+  const addonId = meta ? Number(meta.addonId) : NaN;
+  if (!Number.isFinite(addonId) || addonId <= 0) {
+    return 0;
+  }
+
+  const addons = Array.isArray(item?.addons) ? item.addons : [];
+  const addon = addons.find((a) => Number(a?.id) === addonId);
+  if (!addon) {
+    return 0;
+  }
+
+  return parseFloat(
+    addon.addon_item_convert_price ?? addon.convert_price ?? addon.price ?? addon.addon_item_price ?? 0
+  ) || 0;
+}
+
 export function normalizeKioskSelectionCount(value) {
   if (value === true) return 1;
 
@@ -118,6 +156,11 @@ export function calculateKioskRunningTotal(item, selections = {}) {
   }
 
   total += getKioskMenuAddonPrice(item, selections.menuChoice);
+
+  // [P2-g / F3 borne 2026-07-18] Boisson addon autonome (bol « Boisson Seule » +2,00 €).
+  // Aligné sur le montant scellé backend (addon role 'drink' = prix plein). Garde interne
+  // `!item.has_menu` → aucun effet sur les formules (has_menu=true).
+  total += getKioskStandaloneDrinkAddonPrice(item, selections);
 
   // V3.6.1 (2026-05-10) Owner gate — frites_style upgrade :
   // Si user a sélectionné Cheddar/Cheddar+Oignons (group_label='frites_style'),

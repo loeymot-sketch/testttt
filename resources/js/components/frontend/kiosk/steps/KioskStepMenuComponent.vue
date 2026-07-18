@@ -1,23 +1,25 @@
 <template>
   <div class="kiosk-step-menu">
-    <h3 class="kiosk-step-title">{{ $t('kiosk.wizard.menu.title') }}</h3>
+    <h3 class="kiosk-step-title">
+      {{ isStandaloneDrinkStep ? $t('kiosk.wizard.menu.boisson_section_title') : $t('kiosk.wizard.menu.title') }}
+    </h3>
 
     <div class="kiosk-menu-info">
-      <span v-if="menuInfoBadge" class="kiosk-info-badge">{{ menuInfoBadge }}</span>
+      <span v-if="menuInfoBadge && !isStandaloneDrinkStep" class="kiosk-info-badge">{{ menuInfoBadge }}</span>
       <span v-if="menuPrice > 0" class="kiosk-menu-price">
         +{{ formatPrice(menuPrice) }}
       </span>
     </div>
 
     <div
-      v-if="needsExplicitMenuChoice"
+      v-if="needsExplicitMenuChoice && !isStandaloneDrinkStep"
       class="kiosk-validation-hint kiosk-menu-validation-hint"
       role="status"
     >
       {{ $t('kiosk.wizard.menu.hint_need_choice') }}
     </div>
 
-    <div class="kiosk-menu-options" role="radiogroup" :aria-label="$t('kiosk.wizard.menu.title')">
+    <div v-if="!isStandaloneDrinkStep" class="kiosk-menu-options" role="radiogroup" :aria-label="$t('kiosk.wizard.menu.title')">
       <div
         class="kiosk-menu-card"
         :class="{ selected: localChoice === 'full' }"
@@ -98,8 +100,8 @@
          Cheddar fondu / Cheddar + Oignons est désormais EXCLUSIVEMENT porté
          par KioskStepFritesStyleComponent (étape dédiée). -->
 
-    <div v-if="showBoissonChoice && boissonList.length > 0" class="kiosk-boisson-section">
-      <h4 class="kiosk-subtitle">{{ $t('kiosk.wizard.menu.boisson_section_title') }}</h4>
+    <div v-if="(showBoissonChoice || isStandaloneDrinkStep) && boissonList.length > 0" class="kiosk-boisson-section">
+      <h4 v-if="!isStandaloneDrinkStep" class="kiosk-subtitle">{{ $t('kiosk.wizard.menu.boisson_section_title') }}</h4>
       <p v-if="localChoice === 'full'" class="kiosk-boisson-included">{{ $t('kiosk.wizard.menu.boisson_one_included') }}</p>
       <div
         v-if="needsExplicitBoissonSelection"
@@ -134,12 +136,16 @@
             <span v-else class="kiosk-boisson-emoji">{{ boisson.emoji }}</span>
           </div>
           <span class="kiosk-boisson-name">{{ boisson.name }}</span>
+          <span
+            v-if="isStandaloneDrinkStep && standaloneDrinkPrice > 0"
+            class="kiosk-boisson-price"
+          >+{{ formatPrice(standaloneDrinkPrice) }}</span>
           <span v-if="localBoisson === (boisson.id ?? boisson.name)" class="kiosk-menu-action active">✓</span>
           <span v-else class="kiosk-menu-action">+</span>
         </div>
       </div>
     </div>
-    <div v-else-if="showBoissonChoice" class="kiosk-boisson-section">
+    <div v-else-if="showBoissonChoice || isStandaloneDrinkStep" class="kiosk-boisson-section">
       <p class="kiosk-boisson-placeholder">{{ $t('kiosk.wizard.menu.boisson_counter') }}</p>
     </div>
 
@@ -245,6 +251,39 @@ export default {
     menuPrice() {
       return getKioskMenuAddonPrice(this.item, this.localChoice);
     },
+    // [P2-g / F3 borne 2026-07-18] Step boisson AUTONOME (ex. bol « Boisson Seule » +2,00 €).
+    // Le mapping FROZEN `ADDON_ROLE_TO_TYPE['drink']='menu'` route ce step vers KioskStepMenu,
+    // mais un bol (has_menu=false) n'a PAS de formule /menu/i : la boisson est un addon payant
+    // autonome, pas une formule « Menu Complet ». On résout l'addon-ancre de facturation à
+    // partir des choix du step composer × item.addons pour (a) rendre un sélecteur de boisson
+    // propre et (b) émettre son addonId (sinon addonId:null → boisson jamais facturée).
+    drinkStepBillingAddon() {
+      const cs = this.step?.composer_step;
+      if (!cs || cs.source_type !== 'addon') return null;
+      const role = String(cs.addon_role || '').toLowerCase();
+      if (role !== 'drink') return null;
+      // Les formules (has_menu / addon /menu/i) restent gérées par le flow formule.
+      if (this.item?.has_menu) return null;
+      const addons = Array.isArray(this.item?.addons) ? this.item.addons : [];
+      if (addons.some((a) => /menu/i.test(String(a?.addon_item_name || a?.name || '')))) return null;
+      const choices = Array.isArray(cs.choices) ? cs.choices : [];
+      for (const ch of choices) {
+        const match = addons.find((a) => Number(a?.id) === Number(ch?.id));
+        if (match) return match;
+      }
+      // Repli : tout addon-boisson générique porté par l'item (ex. « Boisson Seule »).
+      return addons.find((a) => kioskIsGenericDrinkOptionName(String(a?.addon_item_name || a?.name || ''))) || null;
+    },
+    isStandaloneDrinkStep() {
+      return this.drinkStepBillingAddon != null;
+    },
+    standaloneDrinkPrice() {
+      const a = this.drinkStepBillingAddon;
+      if (!a) return 0;
+      return parseFloat(
+        a.addon_item_convert_price ?? a.convert_price ?? a.price ?? a.addon_item_price ?? 0
+      ) || 0;
+    },
     showBoissonChoice() {
       return this.localChoice === 'full' || this.localChoice === 'boisson';
     },
@@ -309,7 +348,20 @@ export default {
         return boissonAddons.map((b) => this.mapBoissonAddonRow(b));
       }
 
-      return this.globalBoissonCatalogRows;
+      // [P2-g / F3 borne 2026-07-18] Step boisson autonome (bol) : les boissons viennent du
+      // catalogue global (Coca, Fanta…) mais DOIVENT porter l'addonId de facturation
+      // (« Boisson Seule » 2,00 €) pour que selectBoisson émette un addonId non-null → le
+      // wizard frozen pousse l'addon → boisson facturée (avant : addonId:null → offerte).
+      const rows = this.globalBoissonCatalogRows;
+      const anchor = this.drinkStepBillingAddon;
+      if (anchor && anchor.id != null) {
+        const addonId = Number(anchor.id);
+        if (Number.isFinite(addonId)) {
+          return rows.map((r) => ({ ...r, addonId }));
+        }
+      }
+
+      return rows;
     },
     globalBoissonCatalogRows() {
       const items = this.$store?.getters?.['kioskMenu/allItems']
@@ -369,6 +421,18 @@ export default {
       this.boissonList.length > 0
     ) {
       this.selectChoice('full');
+    }
+
+    // [P2-g / F3 borne 2026-07-18] Step boisson autonome : `canAdvance` (wizard) exige un
+    // menuChoice non-null. On respecte min_select : si la boisson est optionnelle (min 0) et
+    // qu'aucun choix n'existe encore, on pré-pose 'none' (skippable). Si min_select ≥ 1, on
+    // laisse null → le client doit choisir une boisson pour continuer.
+    if (this.isStandaloneDrinkStep && (this.localChoice === null || this.localChoice === undefined)) {
+      const minSelect = parseInt(this.step?.composer_step?.min_select ?? 0, 10) || 0;
+      if (minSelect <= 0) {
+        this.localChoice = 'none';
+        this.$emit('update', 'menuChoice', 'none');
+      }
     }
   },
   methods: {
@@ -438,7 +502,32 @@ export default {
       return '🥤';
     },
     selectBoisson(boisson) {
-      this.localBoisson = boisson.id ?? boisson.name;
+      const key = boisson.id ?? boisson.name;
+
+      // [P2-g / F3 borne 2026-07-18] Mode step boisson autonome (bol) : la boisson est
+      // optionnelle (toggle) et doit poser menuChoice='boisson' pour que le wizard frozen
+      // pousse l'addon de facturation (« Boisson Seule » 2,00 €). Re-taper la boisson
+      // sélectionnée la retire (retour à 'none').
+      if (this.isStandaloneDrinkStep) {
+        if (this.localBoisson === key) {
+          this.localBoisson = null;
+          this.localChoice = 'none';
+          this.$emit('update', 'boissonChoice', null);
+          this.$emit('update', 'menuChoice', 'none');
+          return;
+        }
+        this.localBoisson = key;
+        this.localChoice = 'boisson';
+        this.$emit('update', 'menuChoice', 'boisson');
+        this.$emit('update', 'boissonChoice', this.localBoisson, {
+          boissonName: boisson.name,
+          boissonId: typeof boisson.id === 'number' ? boisson.id : null,
+          addonId: typeof boisson.addonId === 'number' ? boisson.addonId : null,
+        });
+        return;
+      }
+
+      this.localBoisson = key;
       this.$emit('update', 'boissonChoice', this.localBoisson, {
         boissonName: boisson.name,
         boissonId: typeof boisson.id === 'number' ? boisson.id : null,
@@ -752,6 +841,13 @@ export default {
 }
 
 .kiosk-boisson-card.selected .kiosk-boisson-name {
+  color: var(--kiosk-primary, #f4501e);
+}
+
+.kiosk-boisson-price {
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 800;
   color: var(--kiosk-primary, #f4501e);
 }
 
