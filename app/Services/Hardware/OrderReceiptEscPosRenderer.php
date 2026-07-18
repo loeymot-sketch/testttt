@@ -339,7 +339,7 @@ final class OrderReceiptEscPosRenderer
             $blocks[] = [
                 'head' => $head,
                 'menu' => $menu !== '' ? $menu : null,
-                'supps' => $this->symbolic->supplementLines($snap),
+                'supps' => $this->symbolic->supplementLines($snap, $instruction),
                 'drinks' => $this->symbolic->drinkLines($snap),
                 'notes' => array_values(array_filter(array_map('trim', explode("\n", $note)))),
             ];
@@ -438,6 +438,10 @@ final class OrderReceiptEscPosRenderer
                 if ($en === '') {
                     continue;
                 }
+                // [MULTISAUCE 2026-07-18] Name the generic "Sauce supplémentaire" with the
+                // recovered sauce name(s) so the 2nd+ sauce is visible on the client ticket
+                // (parity with the payment screen). Price-neutral — amount unchanged.
+                $en = $this->symbolic->extraDisplayName($en, (string) ($oi->instruction ?? ''));
                 $extras[] = ['name' => $en, 'amount' => (float) ($e['line_total'] ?? $e['unit_price'] ?? 0)];
             }
             $addons = [];

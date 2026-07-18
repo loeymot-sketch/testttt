@@ -357,7 +357,7 @@ import posPaymentMethodEnum from "../../../enums/modules/posPaymentMethodEnum";
 import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
 import ReceiptDuplicataMarker from "./ReceiptDuplicataMarker.vue";
 import { sanitizeKdsInstruction } from "../../../helpers/kdsCustomization";
-import { renderItemSymbolic } from "../../../helpers/kdsSymbolic";
+import { renderItemSymbolic, extraDisplayName } from "../../../helpers/kdsSymbolic";
 import { isCaisseBridgeAvailable, printEscPosViaCaisseBridge } from "../../../helpers/posLocalPrinter";
 import ReceiptRemboursementMarker from "./ReceiptRemboursementMarker.vue";
 import {
@@ -528,7 +528,17 @@ export default {
             return normalizeReceiptVariations(item ? item.item_variations : []);
         },
         receiptExtrasFor: function (item) {
-            return normalizeReceiptExtras(item ? item.item_extras : []);
+            const extras = normalizeReceiptExtras(item ? item.item_extras : []);
+            if (!item) {
+                return extras;
+            }
+            // [MULTISAUCE 2026-07-18] Name the generic "Sauce supplémentaire" line on the
+            // customer receipt with the recovered sauce name(s) — parity with the payment
+            // screen + the ESC/POS ticket. Price-neutral (line_total untouched).
+            return extras.map((ex) => ({
+                ...ex,
+                name: extraDisplayName(ex.name, item.instruction),
+            }));
         },
         // [G2-HEAL-03 / G.5 G5-F-002 P1 2026-05-23] Composer addons (kiosk
         // menu_formule bundled drinks/sides) rendered alongside variations

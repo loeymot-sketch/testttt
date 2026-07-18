@@ -124,6 +124,47 @@ export function fritesSauceSymbol(instruction) {
     return m ? sauceSymbol(m[1].trim()) : '';
 }
 
+/**
+ * [MULTISAUCE 2026-07-18] Recover the NAME(s) of the extra sauce(s) that the FROZEN
+ * wizards emit as a GENERIC, nameless "Sauce supplémentaire" item_extra. The identity
+ * survives only in the free-text instruction:
+ *   - caisse (pos-wizard.js:3805) : "… Sauce : <1ère>, <en plus…>" (1ère gratuite incluse)
+ *   - borne/web (KioskWizardComponent.vue:2147) : "Sauces en plus : <en plus…>" (extras seuls)
+ * "Sauce frites :" (dip frites gratuit, autre canal) n'est JAMAIS capté. Empty when
+ * unparsable → callers render the generic label as before (retro-compatible). Price-
+ * neutral display recovery. PHP twin: KitchenTicketSymbolicFormatter::extraSauceNames.
+ */
+export function extraSauceNames(instruction) {
+    if (typeof instruction !== 'string' || instruction.trim() === '') return [];
+    // Borne/web write ONLY the extras.
+    let m = instruction.match(/sauces?\s+en\s+plus\s*:\s*([^\n.]+)/i)
+        || instruction.match(/extra\s+sauces?\s*:\s*([^\n.]+)/i);
+    if (m) return splitSauceList(m[1]);
+    // Caisse writes ALL sauces (1st = free variation, rest = paid extras). "Sauce frites :"
+    // never matches ("Sauce" is not immediately followed by ":"). Alternation avoids a
+    // lookbehind (portability of the browser bundle).
+    m = instruction.match(/(?:^|[^\p{L}])sauces?\s*:\s*([^\n]+)/iu);
+    if (m) return splitSauceList(m[1]).slice(1);
+    return [];
+}
+
+/**
+ * [MULTISAUCE 2026-07-18] Display label naming the generic "Sauce supplémentaire" with
+ * the recovered sauce name(s). Any already-named extra is unchanged. PHP twin:
+ * KitchenTicketSymbolicFormatter::extraDisplayName.
+ */
+export function extraDisplayName(name, instruction) {
+    const label = String(name || '');
+    if (!/sauce\s*suppl/i.test(label)) return label;
+    const names = extraSauceNames(instruction);
+    return names.length ? `${label} : ${names.join(', ')}` : label;
+}
+
+/** Split a "A, B, C" sauce list → trimmed, non-empty names. */
+function splitSauceList(raw) {
+    return String(raw).split(',').map((s) => s.trim()).filter(Boolean);
+}
+
 // ── Composition decomposition ────────────────────────────────────────────────
 
 function readVariations(orderItem) {
@@ -250,9 +291,13 @@ export function buildSymbolic(orderItem) {
         if (cs && price <= 0) {
             crud.add(cs);
         } else {
+            // [MULTISAUCE 2026-07-18] Name the generic "Sauce supplémentaire" with the
+            // recovered sauce name(s). When named, the count is implicit → no ×N suffix.
+            const label = extraDisplayName(name, orderItem?.instruction);
+            const named = label !== name;
             const q = parseInt(e?.quantity, 10);
-            const suffix = Number.isFinite(q) && q > 1 ? ` ×${q}` : '';
-            supplements.push(`+ ${name}${suffix}`);
+            const suffix = (!named && Number.isFinite(q) && q > 1) ? ` ×${q}` : '';
+            supplements.push(`+ ${label}${suffix}`);
         }
     }
 

@@ -206,7 +206,7 @@ final class KitchenTicketSymbolicFormatter
      * @param  array<string,mixed>  $snapshot
      * @return list<string>  "+ Cheddar" lines (crudités excluded — they fold into Line 1)
      */
-    public function supplementLines(array $snapshot): array
+    public function supplementLines(array $snapshot, ?string $instruction = null): array
     {
         $out = [];
         foreach (($snapshot['extras'] ?? []) as $e) {
@@ -216,12 +216,77 @@ final class KitchenTicketSymbolicFormatter
             if ($name === '' || ($this->cruditeSymbol($name) !== '' && $this->isFreeExtra($e))) {
                 continue;
             }
+            // [MULTISAUCE 2026-07-18] Name the generic "Sauce supplémentaire" with the
+            // recovered sauce name(s) (« + Sauce supplémentaire : Andalouse »). When
+            // named, the count is implicit in the list → drop the ×N suffix.
+            $label = $this->extraDisplayName($name, $instruction);
+            $named = $label !== $name;
             $q = (int) ($e['quantity'] ?? 1);
-            $suffix = $q > 1 ? " ×{$q}" : '';
-            $out[] = "+ {$name}{$suffix}";
+            $suffix = (! $named && $q > 1) ? " ×{$q}" : '';
+            $out[] = "+ {$label}{$suffix}";
         }
 
         return $out;
+    }
+
+    /**
+     * [MULTISAUCE 2026-07-18] Recover the NAME(s) of the extra sauce(s) that the
+     * FROZEN wizards emit as a GENERIC, nameless "Sauce supplémentaire" item_extra.
+     * The identity survives only in the free-text `instruction`:
+     *   - caisse (pos-wizard.js:3805) : "… Sauce : <1ère>, <en plus…>" (1ère gratuite incluse)
+     *   - borne/web (KioskWizardComponent.vue:2147) : "Sauces en plus : <en plus…>" (extras seuls)
+     * "Sauce frites :" (dip frites, autre canal gratuit) n'est JAMAIS capté. Empty
+     * when unparsable → callers render the generic label as before (retro-compatible).
+     * Price-neutral display recovery — the SSOT snapshot + sealed price are untouched.
+     * JS twin: resources/js/helpers/kdsSymbolic.js extraSauceNames().
+     *
+     * @return list<string>
+     */
+    public function extraSauceNames(?string $instruction): array
+    {
+        if (! is_string($instruction) || trim($instruction) === '') {
+            return [];
+        }
+
+        // Borne/web write ONLY the extras ("Sauces en plus : …" / "Extra sauces: …").
+        if (preg_match('/sauces?\s+en\s+plus\s*:\s*([^\n.]+)/iu', $instruction, $m)
+            || preg_match('/extra\s+sauces?\s*:\s*([^\n.]+)/iu', $instruction, $m)) {
+            return $this->splitSauceList($m[1]);
+        }
+
+        // Caisse writes ALL sauces ("… Sauce : <1ère>, <extras…>") — the 1st is the free
+        // variation (sauceOrder[0]), the rest are the paid extras. "Sauce frites :" never
+        // matches this ("Sauce" is not immediately followed by ":").
+        if (preg_match('/(?<![\p{L}])sauces?\s*:\s*([^\n]+)/iu', $instruction, $m)) {
+            $names = $this->splitSauceList($m[1]);
+
+            return array_slice($names, 1);
+        }
+
+        return [];
+    }
+
+    /**
+     * [MULTISAUCE 2026-07-18] Display label for an extra: names the generic
+     * "Sauce supplémentaire" with the recovered sauce name(s)
+     * ("Sauce supplémentaire : Andalouse"). Any already-named extra (Cheddar,
+     * Viande supplémentaire, crudités…) is returned unchanged.
+     * JS twin: resources/js/helpers/kdsSymbolic.js extraDisplayName().
+     */
+    public function extraDisplayName(string $extraName, ?string $instruction): string
+    {
+        if (! preg_match('/sauce\s*suppl/iu', $extraName)) {
+            return $extraName;
+        }
+        $names = $this->extraSauceNames($instruction);
+
+        return $names === [] ? $extraName : $extraName.' : '.implode(', ', $names);
+    }
+
+    /** Split a "A, B, C" sauce list → trimmed, non-empty names. */
+    private function splitSauceList(string $raw): array
+    {
+        return array_values(array_filter(array_map('trim', explode(',', $raw)), static fn ($n): bool => $n !== ''));
     }
 
     /**
