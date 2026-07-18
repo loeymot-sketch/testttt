@@ -20,7 +20,7 @@ use Throwable;
  * - ADDITIF : nouveau listener (n'édite pas PrintKioskOrderToCounter).
  * - BEST-EFFORT : no-op si aucune imprimante 'kitchen' ACTIVE OU transport Null
  *   (PRINT_DRIVER non câblé). Ne jette jamais.
- * - Borne uniquement (source_surface=kiosk) ; POS imprime sa cuisine au checkout.
+ * - Borne ET web (source_surface=kiosk|web|online, S4 parité) ; POS imprime sa cuisine au checkout.
  */
 class PrintKioskKitchenTicketOnOrderCreated
 {
@@ -32,7 +32,11 @@ class PrintKioskKitchenTicketOnOrderCreated
     {
         try {
             $order = $event->order;
-            if ((string) ($order->source_surface ?? '') !== 'kiosk') {
+            // [S4 2026-07-18 · parité impression serveur borne↔web] La commande WEB imprime son
+            // ticket cuisine côté serveur comme la borne ('web' = valeur live, 'online' = alias futur).
+            // POS reste exclu (il imprime à son checkout). No-op garanti si aucune imprimante cuisine
+            // active OU transport Null (PRINT_DRIVER non câblé) — cf. gardes ci-dessous.
+            if (! in_array((string) ($order->source_surface ?? ''), ['kiosk', 'web', 'online'], true)) {
                 return;
             }
             $branchId = (int) ($order->branch_id ?? 0);

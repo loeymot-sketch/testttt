@@ -40,8 +40,11 @@ class PrintKioskOrderToCounter
         try {
             $order = $event->order;
 
-            // Only borne/kiosk orders get a counter copy.
-            if ((string) ($order->source_surface ?? '') !== 'kiosk') {
+            // [S4 2026-07-18 · parité impression serveur borne↔web] Borne ET web reçoivent la copie
+            // comptoir côté serveur ('web' = valeur live, 'online' = alias futur). POS reste exclu (il
+            // imprime déjà à son checkout). No-op garanti sans imprimante 'receipt' active OU transport
+            // Null (PRINT_DRIVER non câblé) — cf. gardes ci-dessous.
+            if (! in_array((string) ($order->source_surface ?? ''), ['kiosk', 'web', 'online'], true)) {
                 return;
             }
 

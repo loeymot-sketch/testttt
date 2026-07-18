@@ -10,6 +10,7 @@ use Exception;
 use App\Models\Order;
 use App\Exports\OrderExport;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Services\OrderService;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Requests\PaginateRequest;
@@ -143,32 +144,47 @@ class OnlineOrderController extends AdminController
         // PENDING_COUNTER (dû au comptoir/à la livraison = sémantique Plan B, identique aux
         // commandes téléphone qui sont board-released à l'acceptation). Le fiscal_seq reste
         // alloué au VRAI encaissement (changePaymentStatus→PAID) → NF525 inchangé. Idempotent.
-        if ((int) $request->status === \App\Enums\OrderStatus::ACCEPT
-            && (int) $order->payment_status === \App\Enums\PaymentStatus::UNPAID
-            && (int) $order->order_type !== \App\Enums\OrderType::POS) {
-            $order->payment_status = \App\Enums\PaymentStatus::PENDING_COUNTER;
-
-            // [P1-3 2026-07-18] Le flip PENDING_COUNTER ci-dessus rendait la commande web
-            // INENCAISSABLE : la file /pos/counter-collect ne listait que kiosk/pos/phone et
-            // PaymentService::assertCounterDeferredOrder rejetait 'web' (422 à l'encaissement).
-            // Pour un TAKEAWAY web COD, on COMPLÈTE le marqueur counter-deferred canonique
-            // (pos_payment_method=COUNTER_DEFERRED) → la commande devient une commande différée
-            // de PLEIN DROIT, encaissable au comptoir via confirmCounterPayment (allocation
-            // fiscale NF525 + mouvement tiroir), au même titre qu'une commande téléphone/borne.
-            // La LIVRAISON web ne reçoit PAS ce marqueur : elle est encaissée au doorstep par le
-            // livreur (OrderService::deliveryBoyOrderChangeStatus, sceau COD), elle garde juste
-            // PENDING_COUNTER pour la visibilité cuisine (heal SYNC-WEB-KDS-01 préservé).
-            if ((int) $order->order_type === \App\Enums\OrderType::TAKEAWAY
-                && (int) $order->payment_method === \App\Enums\PaymentGateway::CASH_ON_DELIVERY
-                && $order->pos_payment_method === null) {
-                $order->pos_payment_method = \App\Enums\PosPaymentMethod::COUNTER_DEFERRED;
-            }
-
-            $order->save();
-        }
-
+        // [S5 2026-07-18 · accept web atomique] Le flip (PENDING_COUNTER + marqueur) et le
+        // changeStatus sont enveloppés dans une SEULE DB::transaction (miroir de l'atomicité borne
+        // FrontendOrderService.php:633-637) : si changeStatus jette APRÈS le flip, la transaction
+        // rollback tout — jamais d'état incohérent (PENDING_COUNTER + statut encore PENDING). Les 403
+        // (HttpException) et les autres erreurs restent remontés à l'identique HORS transaction.
         try {
-            return new OrderDetailsResource($this->orderService->changeStatus($order, $request));
+            return DB::transaction(function () use ($order, $request) {
+                // [S1 2026-07-18 · jumeau non-COD de P1-3] Le flip board-release la commande
+                // (KitchenReleaseRule admet PENDING_COUNTER). Il est donc gaté sur la COLLECTABILITÉ
+                // = CASH_ON_DELIVERY : une web NON-COD (carte/null) attend son paiement EN LIGNE et ne
+                // doit PAS être préparée avant paiement — sinon elle serait board-released MAIS jamais
+                // encaissable (assertCounterDeferredOrder exige COD et aucun marqueur COUNTER_DEFERRED
+                // n'est posé) → orpheline « préparée jamais encaissable ». Le prédicat du flip est
+                // désormais COHÉRENT avec celui du marqueur ci-dessous (tous deux exigent COD). Le flux
+                // vivant V1 (100 % web = COD → P1-3) reste board-released + encaissable, inchangé.
+                if ((int) $request->status === \App\Enums\OrderStatus::ACCEPT
+                    && (int) $order->payment_status === \App\Enums\PaymentStatus::UNPAID
+                    && (int) $order->order_type !== \App\Enums\OrderType::POS
+                    && (int) $order->payment_method === \App\Enums\PaymentGateway::CASH_ON_DELIVERY) {
+                    $order->payment_status = \App\Enums\PaymentStatus::PENDING_COUNTER;
+
+                    // [P1-3 2026-07-18] Sans marqueur, le flip PENDING_COUNTER rendait la web
+                    // INENCAISSABLE (file /pos/counter-collect + assertCounterDeferredOrder rejetaient
+                    // 'web'). Pour un TAKEAWAY web COD, on COMPLÈTE le marqueur counter-deferred canonique
+                    // (pos_payment_method=COUNTER_DEFERRED) → commande différée de PLEIN DROIT, encaissable
+                    // au comptoir via confirmCounterPayment (allocation fiscale NF525 + mouvement tiroir),
+                    // au même titre qu'une commande téléphone/borne. La LIVRAISON web ne reçoit PAS ce
+                    // marqueur : elle est encaissée au doorstep par le livreur
+                    // (OrderService::deliveryBoyOrderChangeStatus, sceau COD), elle garde juste
+                    // PENDING_COUNTER pour la visibilité cuisine (heal SYNC-WEB-KDS-01 préservé).
+                    if ((int) $order->order_type === \App\Enums\OrderType::TAKEAWAY
+                        && (int) $order->payment_method === \App\Enums\PaymentGateway::CASH_ON_DELIVERY
+                        && $order->pos_payment_method === null) {
+                        $order->pos_payment_method = \App\Enums\PosPaymentMethod::COUNTER_DEFERRED;
+                    }
+
+                    $order->save();
+                }
+
+                return new OrderDetailsResource($this->orderService->changeStatus($order, $request));
+            });
         } catch (\Symfony\Component\HttpKernel\Exception\HttpException $http) {
             throw $http; // 403 must reach the client intact.
         } catch (Exception $exception) {
