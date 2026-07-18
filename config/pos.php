@@ -169,11 +169,17 @@ return [
     // (refusing non-zero discounts at every order-creation chokepoint, hiding the
     // kiosk loyalty button + web coupon entry, refusing the pre-redeem at source).
     // The kill-switch path is locked by the *_killswitch_* sentinels.
+    // [OWNER 2026-07-18] « Coupe les remises ! » → défaut RE-flippé à false
+    // (kill-switch réengagé). Refuse toute remise non-nulle aux chokepoints de
+    // création, masque le bouton fidélité borne + l'entrée coupon web, refuse le
+    // pre-redeem. Côté sûr fiscal tant que la contradiction preflight↔config sur
+    // F1 (split TVA remise) n'est pas retranchée. Réactivation = owner + .env
+    // POS_MANUAL_DISCOUNT_ENABLED=true.
     'manual_discount_enabled' => filter_var(
-        env('POS_MANUAL_DISCOUNT_ENABLED', true),
+        env('POS_MANUAL_DISCOUNT_ENABLED', false),
         FILTER_VALIDATE_BOOLEAN,
         FILTER_NULL_ON_FAILURE,
-    ) ?? true,
+    ) ?? false,
 
     /*
     |--------------------------------------------------------------------------
