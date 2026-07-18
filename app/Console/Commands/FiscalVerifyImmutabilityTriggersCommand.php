@@ -79,6 +79,12 @@ class FiscalVerifyImmutabilityTriggersCommand extends Command
      * migration se marquait « exécutée » sans créer le trigger ET que ce verify l'excluait —
      * l'audit a prouvé un UPDATE SQL brut du snapshot fiscal scellé non bloqué. Il est maintenant
      * installé par FiscalInstallImmutabilityTriggersCommand et asserté ici.
+     *
+     * [P1-1 2026-07-18] orders_no_delete_when_fiscalized ajouté (9 → 10) : ferme la réutilisation
+     * de numéros fiscaux après HARD-delete d'un order fiscalisé (FiscalSequenceService::next() =
+     * MAX(fiscal_sequence_no)+1, un hard-delete faisait redescendre le MAX → réémission). Créé par
+     * 2026_07_18_130000 (MySQL SIGNAL, condition OLD.fiscal_sequence_no NON NULL) et ré-installable
+     * par FiscalInstallImmutabilityTriggersCommand.
      */
     public const EXPECTED_TRIGGERS = [
         'audit_logs_no_delete' => 'audit_logs',
@@ -90,6 +96,7 @@ class FiscalVerifyImmutabilityTriggersCommand extends Command
         'stock_movements_no_delete' => 'stock_movements',
         'stock_movements_no_update' => 'stock_movements',
         'order_items_composition_snapshot_no_update' => 'order_items',
+        'orders_no_delete_when_fiscalized' => 'orders',
     ];
 
     public function handle(): int

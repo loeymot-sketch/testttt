@@ -84,6 +84,11 @@ class SqliteMysqlParitySentinel extends TestCase
 
         // order_items.composition_snapshot (mig 2026_05_24_040211)
         'order_items_composition_snapshot_no_update'  => 'order_items',
+
+        // orders BEFORE DELETE quand fiscalisé (mig 2026_07_18_130000 — P1-1)
+        // Empêche la réutilisation de numéros fiscaux après hard-delete d'un
+        // order porteur d'un fiscal_sequence_no. Parité SQLite = WHEN clause.
+        'orders_no_delete_when_fiscalized'            => 'orders',
     ];
 
     /**

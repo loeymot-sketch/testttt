@@ -39,7 +39,9 @@ class FiscalInstallImmutabilityTriggersCommandTest extends TestCase
         // [HEAL 2026-07-11] 8 → 9 : ajout de order_items_composition_snapshot_no_update (défense
         // runtime NF525 §8 qui manquait en base — sa migration se marquait exécutée sans créer le
         // trigger). L'égalité install==verify ci-dessous garantit que les deux commandes ne dérivent pas.
-        $this->assertCount(9, $defs, 'The installer must define exactly the 9 canonical MySQL immutability triggers.');
+        // [P1-1 2026-07-18] 9 → 10 : ajout de orders_no_delete_when_fiscalized (ferme la réutilisation
+        // de numéros fiscaux après hard-delete d'un order fiscalisé).
+        $this->assertCount(10, $defs, 'The installer must define exactly the 10 canonical MySQL immutability triggers.');
 
         // The installer's name+table set MUST equal the verifier's expected set
         // (locked together so the two commands never drift).

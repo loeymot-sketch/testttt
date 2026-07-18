@@ -41,10 +41,13 @@ class FiscalVerifyImmutabilityTriggersCommandTest extends TestCase
         // [AUDIT-BASELINE-SYNC 2026-07-11] Baseline élargie de 8 → 9 : le HEAL du jour a ajouté
         // `order_items_composition_snapshot_no_update` (immuabilité NF525 du snapshot de composition,
         // migration présente + EXPECTED_TRIGGERS mis à jour) mais cette sentinelle hardcodait encore 8.
+        // [P1-1 2026-07-18] Baseline 9 → 10 : ajout de `orders_no_delete_when_fiscalized` (ferme la
+        // réutilisation de numéros fiscaux après hard-delete d'un order fiscalisé ; migration
+        // 2026_07_18_130000 + EXPECTED_TRIGGERS mis à jour).
         $this->assertCount(
-            9,
+            10,
             $expected,
-            'The canonical MySQL immutability set must be exactly 9 triggers.'
+            'The canonical MySQL immutability set must be exactly 10 triggers.'
         );
 
         $this->assertSame(
@@ -58,6 +61,7 @@ class FiscalVerifyImmutabilityTriggersCommandTest extends TestCase
                 'stock_movements_no_delete',
                 'stock_movements_no_update',
                 'order_items_composition_snapshot_no_update',
+                'orders_no_delete_when_fiscalized',
             ],
             array_keys($expected),
             'Expected trigger set drifted — update only after verifying the migration bodies.'
@@ -108,10 +112,11 @@ class FiscalVerifyImmutabilityTriggersCommandTest extends TestCase
         $missing = FiscalVerifyImmutabilityTriggersCommand::diffMissing([]);
 
         // [AUDIT-BASELINE-SYNC 2026-07-11] 9 depuis l'ajout du trigger composition_snapshot.
+        // [P1-1 2026-07-18] 10 depuis l'ajout de orders_no_delete_when_fiscalized.
         $this->assertCount(
-            9,
+            10,
             $missing,
-            'An empty database must report ALL 9 immutability triggers missing — this is the silent-gap detector.'
+            'An empty database must report ALL 10 immutability triggers missing — this is the silent-gap detector.'
         );
     }
 

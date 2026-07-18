@@ -183,6 +183,24 @@ class FiscalInstallImmutabilityTriggersCommand extends Command
                     END IF;
                 END
                 SQL],
+            // [P1-1 2026-07-18] orders BEFORE DELETE quand fiscalisé — SQL VERBATIM de
+            // 2026_07_18_130000_add_orders_no_delete_when_fiscalized_trigger.php. FiscalSequenceService
+            // (FROZEN) alloue le numéro via MAX(fiscal_sequence_no)+1 ; un HARD-delete d'un order
+            // fiscalisé fait redescendre le MAX → réémission d'un numéro déjà gravé (prouvé : seq 2579
+            // revendiqué par 6 orders dans la chaîne signée). order_payments avait déjà son no_delete
+            // mais PAS orders lui-même. Ce trigger ferme le trou (les orders NON encaissés — seq NULL —
+            // restent purgeables). Ré-installé idempotemment à chaque deploy.
+            'orders_no_delete_when_fiscalized' => ['orders', <<<'SQL'
+                CREATE TRIGGER orders_no_delete_when_fiscalized
+                BEFORE DELETE ON orders
+                FOR EACH ROW
+                BEGIN
+                    IF OLD.fiscal_sequence_no IS NOT NULL THEN
+                        SIGNAL SQLSTATE '45000'
+                            SET MESSAGE_TEXT = 'NF525: order with fiscal_sequence_no cannot be deleted — fiscal number reuse forbidden (P1-1)';
+                    END IF;
+                END
+                SQL],
         ];
     }
 
