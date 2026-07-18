@@ -1912,8 +1912,19 @@ class OrderService
                 }
 
                 $transaction = Transaction::where('order_id', $locked->id)->first();
+                // [P1-3 2026-07-18] SYNC-WEB-KDS-01 (OnlineOrderController) bascule une commande
+                // WEB UNPAID→PENDING_COUNTER à l'acceptation (visibilité cuisine). Une LIVRAISON
+                // web COD encaissée au doorstep tombait alors HORS de ce sceau (payment_status≠
+                // UNPAID) → le flip PAID + l'escrow audit + l'allocation fiscale ne firaient JAMAIS
+                // → vente livraison COD OFF-BOOK NF525. On étend donc la détection au PENDING_COUNTER
+                // issu d'un flip web-LIVRAISON (source_surface='web' + DELIVERY), sans toucher la
+                // logique fiscale en aval (allocation seq/escrow inchangées). Restreint à la livraison :
+                // le takeaway web s'encaisse au comptoir (counter-collect), jamais au doorstep.
+                $isWebDeliveryDeferred = (int) $locked->payment_status === (int) PaymentStatus::PENDING_COUNTER
+                    && $locked->source_surface === 'web'
+                    && (int) $locked->order_type === (int) \App\Enums\OrderType::DELIVERY;
                 $wasUnpaidCash = (! $transaction)
-                    && (int) $locked->payment_status === (int) PaymentStatus::UNPAID;
+                    && ((int) $locked->payment_status === (int) PaymentStatus::UNPAID || $isWebDeliveryDeferred);
 
                 if ($wasUnpaidCash) {
                     // [P0-LIV-03] Guard payment_method against silent double-charge.

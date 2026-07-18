@@ -836,6 +836,17 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
                         // que le filet anti-NULL ci-dessous). Miroir de la garde assertCounterDeferredOrder.
                         $tel->where('source_surface', 'phone')
                             ->where('pos_payment_method', \App\Enums\PosPaymentMethod::COUNTER_DEFERRED);
+                    })->orWhere(function ($web) {
+                        // [P1-3 2026-07-18] Commande WEB à emporter acceptée sans paiement en ligne
+                        // (carte web OFF, mandat owner) : SYNC-WEB-KDS-01 la bascule en PENDING_COUNTER
+                        // pour la visibilité cuisine et OnlineOrderController complète le marqueur
+                        // COUNTER_DEFERRED (takeaway COD) → 4e origine LÉGITIME de counter-collect. Sans
+                        // cette clause, la commande web PENDING_COUNTER reste INVISIBLE en caisse donc
+                        // INENCAISSABLE (vente perdue). Miroir strict des clauses pos/phone + de la garde
+                        // assertCounterDeferredOrder (qui autorise 'web'). La LIVRAISON web n'a PAS le
+                        // marqueur COUNTER_DEFERRED (encaissée au doorstep) → naturellement exclue ici.
+                        $web->where('source_surface', 'web')
+                            ->where('pos_payment_method', \App\Enums\PosPaymentMethod::COUNTER_DEFERRED);
                     })->orWhere(function ($n) {
                         // [ENCAISSEMENT-ROBUSTE 2026-07-01] Filet anti-NULL : une commande borne
                         // PENDING_COUNTER dont le tag source_surface manque (donnée héritée) resterait

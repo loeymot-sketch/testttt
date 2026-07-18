@@ -2,8 +2,10 @@
 
 namespace Tests\Feature\Security;
 
+use App\Enums\Ask;
 use App\Enums\Status;
 use App\Models\Branch;
+use App\Models\KioskMachine;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Routing\Middleware\ThrottleRequests;
@@ -81,6 +83,15 @@ class CustomerTokenHmacHardenedSentinelTest extends TestCase
         $kioskUser = User::factory()->create([
             'username'  => 'kiosk_token_sentinel_' . uniqid(),
             'branch_id' => $branch->id,
+        ]);
+
+        // [P2-u 2026-07-18] /loyalty/scan exige désormais une VRAIE KioskMachine
+        // (parité /check + /redeem contre l'énumération PII). Provision réaliste.
+        KioskMachine::factory()->create([
+            'user_id'   => $kioskUser->id,
+            'branch_id' => $branch->id,
+            'status'    => Status::ACTIVE,
+            'is_login'  => Ask::NO,
         ]);
 
         $customer = User::factory()->create([

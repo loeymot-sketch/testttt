@@ -147,6 +147,23 @@ class OnlineOrderController extends AdminController
             && (int) $order->payment_status === \App\Enums\PaymentStatus::UNPAID
             && (int) $order->order_type !== \App\Enums\OrderType::POS) {
             $order->payment_status = \App\Enums\PaymentStatus::PENDING_COUNTER;
+
+            // [P1-3 2026-07-18] Le flip PENDING_COUNTER ci-dessus rendait la commande web
+            // INENCAISSABLE : la file /pos/counter-collect ne listait que kiosk/pos/phone et
+            // PaymentService::assertCounterDeferredOrder rejetait 'web' (422 à l'encaissement).
+            // Pour un TAKEAWAY web COD, on COMPLÈTE le marqueur counter-deferred canonique
+            // (pos_payment_method=COUNTER_DEFERRED) → la commande devient une commande différée
+            // de PLEIN DROIT, encaissable au comptoir via confirmCounterPayment (allocation
+            // fiscale NF525 + mouvement tiroir), au même titre qu'une commande téléphone/borne.
+            // La LIVRAISON web ne reçoit PAS ce marqueur : elle est encaissée au doorstep par le
+            // livreur (OrderService::deliveryBoyOrderChangeStatus, sceau COD), elle garde juste
+            // PENDING_COUNTER pour la visibilité cuisine (heal SYNC-WEB-KDS-01 préservé).
+            if ((int) $order->order_type === \App\Enums\OrderType::TAKEAWAY
+                && (int) $order->payment_method === \App\Enums\PaymentGateway::CASH_ON_DELIVERY
+                && $order->pos_payment_method === null) {
+                $order->pos_payment_method = \App\Enums\PosPaymentMethod::COUNTER_DEFERRED;
+            }
+
             $order->save();
         }
 
@@ -161,8 +178,26 @@ class OnlineOrderController extends AdminController
 
     public function changePaymentStatus(Order $order, PaymentStatusRequest $request): \Illuminate\Http\Response | OrderDetailsResource | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
+        // [P2-e 2026-07-18 / P2 twin-route authz parity] REFUNDED est la transition de
+        // remboursement. La route sœur POS gate cette arête sur `pos-refund`
+        // (PosOrderController::changePaymentStatus:372-378), mais ce chemin ONLINE ne l'avait
+        // JAMAIS — il n'était gardé que par `permission:online-orders` (constructeur), qu'un
+        // POS Operator POSSÈDE → il pouvait marquer une commande en ligne REMBOURSÉE sans le
+        // droit de remboursement (void off-book / vecteur de remboursements de masse). On
+        // miroir EXACTEMENT le gate de la sœur, fail-fast AVANT de déléguer (hors try → le 403
+        // n'est pas masqué en 422).
+        if ((int) $request->payment_status === \App\Enums\PaymentStatus::REFUNDED) {
+            abort_unless(
+                auth()->user()?->can('pos-refund') ?? false,
+                403,
+                'Permission insuffisante pour effectuer un remboursement.'
+            );
+        }
+
         try {
             return new OrderDetailsResource($this->orderService->changePaymentStatus($order, $request));
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $http) {
+            throw $http; // 403 must reach the client intact.
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

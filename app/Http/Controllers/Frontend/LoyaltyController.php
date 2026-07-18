@@ -653,6 +653,18 @@ class LoyaltyController extends Controller
                 ], 403);
             }
 
+            // [P2-u 2026-07-02→2026-07-18 — P2 IDOR/énumération PII JUMEAU] `tokenCan('kiosk:order')`
+            // seul ne suffit PAS : GuestSignupController émet des tokens INVITÉS porteurs de cette
+            // ability, donc un invité pouvait scanner N'IMPORTE quel code fidélité et récolter le
+            // profil (prénom + solde points + allergènes) = énumération PII. Ses jumeaux /check(:88)
+            // et /redeem(:324) exigent une VRAIE KioskMachine (ligne présente pour l'appelant) OU le
+            // staff OU le propriétaire du code ; /scan avait été oublié. On aligne : seul un de ces
+            // trois profils obtient le résultat PII, sinon réponse NEUTRE (cf. choke point plus bas).
+            $isRealKiosk = \App\Models\KioskMachine::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+                ->where('user_id', $user->id)
+                ->exists();
+            $isStaff = $user->hasAnyRole(['Admin', 'Branch Manager', 'POS Operator', 'Stuff']);
+
             $validator = Validator::make($request->all(), [
                 'method'   => ['required', 'string', 'in:qr,nfc'],
                 'raw_data' => ['required', 'string', 'min:1', 'max:512'],
@@ -764,6 +776,18 @@ class LoyaltyController extends Controller
                         'data'   => $this->emptyLoyaltyScanResponse('customer_not_found'),
                     ], 200)->header('X-Loyalty-QR-Status', $deprecationHeader);
                 }
+            }
+
+            // [P2-u 2026-07-18] CHOKE POINT anti-énumération : $target est résolu + actif ici
+            // (chemins signé ET legacy convergent). On ne divulgue le profil (PII) QU'À une vraie
+            // borne, au staff, OU au propriétaire du code. Tout autre appelant (invité porteur de
+            // kiosk:order) reçoit la réponse NEUTRE — indiscernable d'un « non trouvé », HTTP 200
+            // pour ne pas casser le parcours (invariant §12). Miroir de /check (l.94-97).
+            if (! $isRealKiosk && ! $isStaff && (int) $user->id !== (int) $target->id) {
+                return response()->json([
+                    'status' => true,
+                    'data'   => $this->emptyLoyaltyScanResponse('customer_not_found'),
+                ], 200);
             }
 
             // -- Token opaque éphémère (pas d'id exposé) ------------------

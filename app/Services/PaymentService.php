@@ -857,8 +857,13 @@ class PaymentService
         // avec le MÊME marqueur triple). Sans 'phone' ici, confirmCounterPayment rejetterait 422 la
         // commande téléphone → INENCAISSABLE (garde asymétrique). Miroir strict de la clause ajoutée
         // dans la file /counter-collect/pending (routes/api.php).
+        // [P1-3 2026-07-18] 'web' = 4e origine LÉGITIME : une commande WEB à emporter acceptée
+        // (carte web OFF) est basculée PENDING_COUNTER + COUNTER_DEFERRED par OnlineOrderController
+        // (marqueur triple identique). Sans 'web' ici, confirmCounterPayment 422 → INENCAISSABLE.
+        // Seul le TAKEAWAY web reçoit ce marqueur (la livraison web s'encaisse au doorstep), donc
+        // aucune commande web non-différée ne peut passer par ce sceau.
         $surface = (string) ($order->source_surface ?? '');
-        $isCounterDeferred = in_array($surface, ['kiosk', 'pos', 'phone'], true)
+        $isCounterDeferred = in_array($surface, ['kiosk', 'pos', 'phone', 'web'], true)
             && (int) $order->payment_method === \App\Enums\PaymentGateway::CASH_ON_DELIVERY
             && (int) $order->pos_payment_method === PosPaymentMethod::COUNTER_DEFERRED;
 

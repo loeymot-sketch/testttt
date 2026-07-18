@@ -2,7 +2,10 @@
 
 namespace Tests\Feature\Sentinels;
 
+use App\Enums\Ask;
+use App\Enums\Status;
 use App\Models\Branch;
+use App\Models\KioskMachine;
 use App\Models\User;
 use App\Services\Loyalty\LoyaltyQrSigner;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -47,6 +50,16 @@ class LoyaltyQrSigningSentinelTest extends TestCase
         $kioskUser = User::factory()->create([
             'username'  => 'kiosk_loyalty_' . uniqid(),
             'branch_id' => $branch->id,
+        ]);
+
+        // [P2-u 2026-07-18] /loyalty/scan exige désormais une VRAIE KioskMachine
+        // (parité /check + /redeem contre l'énumération PII). Un kiosk de production
+        // possède TOUJOURS cette ligne — on la provisionne pour refléter le réel.
+        KioskMachine::factory()->create([
+            'user_id'   => $kioskUser->id,
+            'branch_id' => $branch->id,
+            'status'    => Status::ACTIVE,
+            'is_login'  => Ask::NO,
         ]);
 
         // Status = Status::ACTIVE so EnsureUserStatusActive (Z6-06) passes
