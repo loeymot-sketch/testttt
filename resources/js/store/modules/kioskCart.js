@@ -828,9 +828,14 @@ export const kioskCart = {
                 // [SPLASH MERCHANDISING] Use smart kiosk-upsell endpoint
                 // Sends item IDs in cart so backend can suggest complementary items
                 const itemIds = state.items.map(i => i.item_id).join(',');
-                const url = itemIds
+                let url = itemIds
                     ? `frontend/item/kiosk-upsell?item_ids=${itemIds}&limit=6`
                     : 'frontend/item/kiosk-upsell?limit=6';
+                // [F-UPSELL-BRANCH-AVAIL 2026-07-18 / P2-borne] branch_id de la borne →
+                // pool upsell branch-aware (rupture item_branch_availability filtrée
+                // serveur). Miroir de frontendItem.details ; le backend lit branch_id en
+                // query (route publique). Sans branchId → comportement global inchangé.
+                if (state.branchId) url += `&branch_id=${state.branchId}`;
                 axios
                     .get(url)
                     .then(resolve)

@@ -145,8 +145,12 @@ class ItemService
      *   - Back-compat: items with `channels IS NULL` stay visible on every surface.
      *   - Portable: uses `whereJsonContains` (MySQL) + `whereNull` fallback; Laravel
      *     emits SQLite-compatible JSON predicates for the test suite.
+     *
+     * [2026-07-18] Rendu `public` pour réutilisation par
+     * FrontendItemController::kioskUpsell (filtre canal borne, même SSOT
+     * portable) — cf. heal F-UPSELL-BRANCH-AVAIL / P2-borne.
      */
-    private function applyChannelsFilter($query, ?string $surface): void
+    public function applyChannelsFilter($query, ?string $surface): void
     {
         if ($surface === null) {
             return;
