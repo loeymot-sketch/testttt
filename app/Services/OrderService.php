@@ -561,7 +561,12 @@ class OrderService
                         $coupon = $this->couponService->resolveCouponById(
                             (int) $request->coupon_id,
                             (float) $realSubtotal,
-                            (int) Auth::id()
+                            (int) Auth::id(),
+                            // [S3 coupon surface/branch enforced-at-commit 2026-07-18]
+                            // POS commit: pass the order's REAL branch + surface='pos'
+                            // so surface/branch-restricted coupons are enforced here.
+                            (int) $this->order->branch_id,
+                            'pos'
                         );
                         $calculatedDiscount = $this->couponService->calculateDiscountAmount($coupon, (float) $realSubtotal);
                         // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] Coupon discount
@@ -1080,7 +1085,12 @@ class OrderService
                         $coupon = $this->couponService->resolveCouponById(
                             (int) $request->coupon_id,
                             (float) $realSubtotal,
-                            (int) ($request->customer_id ?? 0)
+                            (int) ($request->customer_id ?? 0),
+                            // [S3 coupon surface/branch enforced-at-commit 2026-07-18]
+                            // POS commit: pass the order's REAL branch + surface='pos'
+                            // so surface/branch-restricted coupons are enforced here.
+                            (int) $this->order->branch_id,
+                            'pos'
                         );
                         $calculatedDiscount = $this->couponService->calculateDiscountAmount($coupon, (float) $realSubtotal);
                         // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] Coupon discount
@@ -1646,7 +1656,12 @@ class OrderService
                         $coupon = $this->couponService->resolveCouponById(
                             (int) $request->coupon_id,
                             (float) $realSubtotal,
-                            (int) ($request->customer_id ?? 0)
+                            (int) ($request->customer_id ?? 0),
+                            // [S3 coupon surface/branch enforced-at-commit 2026-07-18]
+                            // POS commit: pass the order's REAL branch + surface='pos'
+                            // so surface/branch-restricted coupons are enforced here.
+                            (int) $this->order->branch_id,
+                            'pos'
                         );
                         $calculatedDiscount = $this->couponService->calculateDiscountAmount($coupon, (float) $realSubtotal);
                         // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] Coupon discount

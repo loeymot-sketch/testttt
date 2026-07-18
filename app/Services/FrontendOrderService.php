@@ -495,7 +495,14 @@ class FrontendOrderService
                         $validatedCoupon = $this->couponService->resolveCouponById(
                             (int) $request->coupon_id,
                             (float) $realSubtotal,
-                            (int) Auth::id()
+                            (int) Auth::id(),
+                            // [S3 coupon surface/branch enforced-at-commit 2026-07-18]
+                            // Pass the order's REAL branch + surface so an admin-set
+                            // surface/branch restriction is enforced at COMMIT (accept on
+                            // match, reject on mismatch), not only at the pre-check. Null
+                            // defaults leave isUsableNow()'s surface/branch filters wrong.
+                            (int) $this->frontendOrder->branch_id,
+                            $isKioskMachineOrder ? 'kiosk' : 'web'
                         );
                         $calculatedDiscount = $this->couponService->calculateDiscountAmount(
                             $validatedCoupon,
@@ -506,7 +513,12 @@ class FrontendOrderService
                     $validatedCoupon = $this->couponService->resolveCouponById(
                         (int) $request->coupon_id,
                         (float) $realSubtotal,
-                        (int) Auth::id()
+                        (int) Auth::id(),
+                        // [S3 coupon surface/branch enforced-at-commit 2026-07-18]
+                        // Real branch + surface (kiosk vs web) so surface/branch-
+                        // restricted coupons are enforced at COMMIT, not only pre-check.
+                        (int) $this->frontendOrder->branch_id,
+                        $isKioskMachineOrder ? 'kiosk' : 'web'
                     );
                 }
 
