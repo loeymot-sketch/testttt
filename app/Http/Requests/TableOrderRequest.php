@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Enums\Activity;
 use App\Enums\OrderType;
+use App\Http\Requests\Concerns\NormalizesAdvanceOrder;
 use App\Http\Requests\Concerns\ValidatesAddonRoles;
 use App\Http\Requests\Concerns\ValidatesOrderItemVariations;
 use App\Rules\ValidJsonOrder;
@@ -12,6 +13,7 @@ use Smartisan\Settings\Facades\Settings;
 
 class TableOrderRequest extends FormRequest
 {
+    use NormalizesAdvanceOrder;
     use ValidatesAddonRoles;
     use ValidatesOrderItemVariations;
 
@@ -21,6 +23,11 @@ class TableOrderRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->normalizeAdvanceOrder();
     }
 
     /**

@@ -3,10 +3,10 @@
 namespace App\Http\Requests;
 
 use App\Enums\Activity;
-use App\Enums\Ask;
 use App\Enums\OrderType;
 use App\Enums\Status;
 use App\Exceptions\Delivery\GeocodeUnavailableException;
+use App\Http\Requests\Concerns\NormalizesAdvanceOrder;
 use App\Http\Requests\Concerns\ValidatesAddonRoles;
 use App\Http\Requests\Concerns\ValidatesOrderItemVariations;
 use App\Models\KioskMachine;
@@ -19,6 +19,7 @@ use Laravel\Sanctum\TransientToken;
 
 class OrderRequest extends FormRequest
 {
+    use NormalizesAdvanceOrder;
     use ValidatesAddonRoles;
     use ValidatesOrderItemVariations;
 
@@ -85,9 +86,7 @@ class OrderRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        if ($this->has('is_advance_order') && (int) $this->input('is_advance_order') === 0) {
-            $this->merge(['is_advance_order' => Ask::NO]);
-        }
+        $this->normalizeAdvanceOrder();
 
         $kiosk = $this->kioskMachineForToken();
         if ($kiosk) {

@@ -3,9 +3,9 @@
 namespace App\Http\Requests;
 
 use App\Enums\Activity;
-use App\Enums\Ask;
 use App\Enums\OrderType;
 use App\Enums\PosPaymentMethod;
+use App\Http\Requests\Concerns\NormalizesAdvanceOrder;
 use App\Http\Requests\Concerns\ValidatesAddonRoles;
 use App\Http\Requests\Concerns\ValidatesOrderItemVariations;
 use App\Models\PaymentTerminal;
@@ -16,14 +16,13 @@ use Smartisan\Settings\Facades\Settings;
 
 class PosOrderRequest extends FormRequest
 {
+    use NormalizesAdvanceOrder;
     use ValidatesAddonRoles;
     use ValidatesOrderItemVariations;
 
     protected function prepareForValidation(): void
     {
-        if ($this->has('is_advance_order') && (int) $this->input('is_advance_order') === 0) {
-            $this->merge(['is_advance_order' => Ask::NO]);
-        }
+        $this->normalizeAdvanceOrder();
 
         // [ULTRA-AUDIT Wave 2 2026-07-04 — durcissement anti-gonflage delivery_charge, miroir
         // FrontendOrderService:280 / OrderRequest] Une commande NON-DELIVERY ne doit porter AUCUN
