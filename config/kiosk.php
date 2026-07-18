@@ -90,6 +90,19 @@ $staleCollectTtlMinutes = max(1, (int) env('KIOSK_STALE_COLLECT_TTL_MINUTES', 18
 // Override via KIOSK_STALE_PHONE_COLLECT_TTL_MINUTES.
 $stalePhoneCollectTtlMinutes = max(1, (int) env('KIOSK_STALE_PHONE_COLLECT_TTL_MINUTES', 360));
 
+// [owner 2026-07-07] Numéro de file (queue_number "A00NN") de départ du jour (défaut 32).
+// [P2-s heal 2026-07-18] Hoisté pour que les DEUX branches de return partagent la MÊME
+// valeur — la branche $requireForm=true l'omettait (compteur qui repartait à A0001 au lieu
+// de A0032). Récurrence exacte de la classe RED-08 (cf. payment_route_all_to_counter L296).
+// N'affecte PAS le fiscal_sequence_no NF525 (séquence distincte, gap-free).
+$queueStartNumber = (int) env('KIOSK_QUEUE_START_NUMBER', 32);
+
+// [P2-t heal 2026-07-18] Flag « wizard POS sur borne » (kioskUsePosWizard côté SPA).
+// Lu via config() dans master.blade.php (plus env() cru) pour survivre à
+// `php artisan config:cache` (sinon env() → null → flag neutralisé silencieusement au
+// deploy). filter_var comme features.staff_only_mode : "false" dans .env => bool false.
+$usePosWizard = filter_var(env('KIOSK_USE_POS_WIZARD', false), FILTER_VALIDATE_BOOLEAN);
+
 /*
 | [MENU-RESET 2026-05-13] Sandwich-split DISABLED — new structure has 3 separate
 | sandwich categories (sandwich-cayenne, galette, sandwich-classique) so no need
@@ -195,6 +208,18 @@ if ($requireForm) {
         'frites_included_category_ids' => $fritesIncludedCategoryIds,
         // [Sprint H1 K-004 2026-05-17] Wizard template aliases — see top of file.
         'wizard_template_aliases' => $wizardTemplateAliases,
+        // [P2-s heal 2026-07-18] queue_start_number DOIT figurer dans les DEUX branches
+        // (classe RED-08) : lu par OrderService::allocateQueueNumber + FrontendOrderService
+        // (fallback 1). Absent ici, KIOSK_REQUIRE_MACHINE_LOGIN=true faisait repartir le
+        // compteur du jour à A0001 au lieu de A0032.
+        'queue_start_number' => $queueStartNumber,
+        // [P2-s heal 2026-07-18] auto_login_secret mirroré pour parité de forme entre
+        // branches (inerte ici : spa_payload est null en mode formulaire → KioskAutoLoginGate
+        // retourne null quelle que soit la valeur du secret).
+        'auto_login_secret' => (string) env('KIOSK_AUTO_LOGIN_SECRET', ''),
+        // [P2-t heal 2026-07-18] use_pos_wizard lu via config() (plus env() cru dans le blade)
+        // pour survivre à `php artisan config:cache`. Présent dans les deux branches.
+        'use_pos_wizard' => $usePosWizard,
     ];
 }
 
@@ -285,7 +310,8 @@ return [
     // par toutes les surfaces (borne + caisse) via allocateQueueNumber (OrderService
     // + FrontendOrderService) : le 1er ordre du jour = A0032, puis 33, 34…
     // N'affecte PAS le fiscal_sequence_no NF525 (séquence distincte, gap-free).
-    'queue_start_number' => (int) env('KIOSK_QUEUE_START_NUMBER', 32),
+    // [P2-s heal 2026-07-18] Valeur hoistée partagée avec la branche $requireForm=true.
+    'queue_start_number' => $queueStartNumber,
     // [iter15-mega-fix D-001 2026-05-10] Hardware credential, not a brute-force surface.
     'login_rate_limit' => (int) env('KIOSK_LOGIN_RATE_LIMIT', 30),
     'confirmation_auto_return_seconds' => (int) env('KIOSK_CONFIRMATION_AUTO_RETURN_SECONDS', 30),
@@ -305,4 +331,6 @@ return [
     'stale_collect_ttl_minutes' => $staleCollectTtlMinutes,
     // [C4-CAISSE-TELEPHONE FIX-2 2026-07-07] TTL distinct pour la purge des commandes téléphone.
     'stale_phone_collect_ttl_minutes' => $stalePhoneCollectTtlMinutes,
+    // [P2-t heal 2026-07-18] Flag « wizard POS sur borne » via config() (survit à config:cache).
+    'use_pos_wizard' => $usePosWizard,
 ];

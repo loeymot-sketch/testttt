@@ -359,7 +359,11 @@ class AppServiceProvider extends ServiceProvider
             } catch (\Throwable $e) {
                 $stripeEnabled = false; // table not ready (fresh install / migration)
             }
-            if ($stripeEnabled && empty(env('STRIPE_WEBHOOK_SECRET'))) {
+            // [P2-t heal 2026-07-18] Read via config() (baked at `php artisan config:cache`
+            // time) instead of raw env(): under config:cache env() returns null at runtime,
+            // silently neutralising this fail-fast guard. Mirrors Stripe.php:266 which already
+            // verifies with config('services.stripe.webhook_secret').
+            if ($stripeEnabled && empty(config('services.stripe.webhook_secret'))) {
                 throw new \RuntimeException(
                     'STRIPE_WEBHOOK_SECRET must be set in production while the Stripe '
                     . 'payment gateway is enabled. Webhook signature verification at '

@@ -235,7 +235,7 @@
             },
             // [STAFF-ONLY-V1] Feature flags for surface restructuring
             staffOnlyMode: @json((bool) config('features.staff_only_mode')),
-            kioskUsePosWizard: @json((bool) env('KIOSK_USE_POS_WIZARD', false)),
+            kioskUsePosWizard: @json((bool) config('kiosk.use_pos_wizard')),
             // [iter15-mega-fix C-003/A-003 2026-05-10] Expose APP_ENV so the SPA
             // can suppress the "Connexion temps réel perdue" banner in dev/local
             // environments where Pusher/Soketi is not running. Production keeps
