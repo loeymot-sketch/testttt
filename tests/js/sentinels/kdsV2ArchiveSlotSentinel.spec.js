@@ -25,8 +25,9 @@ import { resolve } from 'node:path';
  *   1. KdsV2Grid exposes `activeOrders` and `recentlyServed` computeds.
  *   2. The grid template renders `activeOrders.slice(0, 8)` (not visibleOrders).
  *   3. The served strip is rendered with `v-if="recentlyServed.length > 0"`.
- *   4. `onKey` reads from `activeOrders[idx]` (so [A]–[H] never targets a
- *      hidden PREPARED order).
+ *   4. `onKey` reads from the RENDERED slice `visibleActiveOrders[idx]` (so
+ *      [A]–[H] never targets an order hidden from the grid — neither a
+ *      PREPARED archive ticket nor, post-KDS-3CARDS, an overflow order 4+).
  *   5. The watcher triggering auto-promote watches `activeOrders` (not the
  *      undifferentiated visibleOrders).
  *   6. i18n keys `kds_recently_served`, `kds_served_just_now`,
@@ -92,11 +93,18 @@ describe('KDS Wave U — Prêt archive partition (FK-WAVE-U-KDS-ARCHIVE-001)', (
         expect(gridSource).toMatch(/servedAgoLabel\s*\(\s*o\s*\)/);
     });
 
-    it('onKey shortcut handler reads activeOrders[idx], not visibleOrders[idx]', () => {
-        // Defense against drift where [A]–[H] could silently target a PREPARED
-        // ticket hidden from the rendered grid.
-        expect(gridSource).toMatch(/this\.activeOrders\[idx\]/);
-        expect(gridSource).toMatch(/idx\s*<\s*this\.activeOrders\.length/);
+    it('onKey shortcut handler reads visibleActiveOrders[idx], bounded to the rendered slice (P2-k)', () => {
+        // Defense against drift where [A]–[H] could silently target an order
+        // hidden from the rendered grid. Pre-KDS-3CARDS the grid rendered every
+        // active order, so `activeOrders[idx]` matched the on-card badge. Since
+        // c70b1e518 (2026-07-05) the grid renders only
+        // `visibleActiveOrders = activeOrders.slice(0, 3)`, so the shortcut MUST
+        // index the visible slice — otherwise keys [D]–[H] bump an OVERFLOW order
+        // the chef cannot see (P2-k, REGISTRE_FINAL 2026-07-18).
+        expect(gridSource).toMatch(/this\.visibleActiveOrders\[idx\]/);
+        expect(gridSource).toMatch(/idx\s*<\s*this\.visibleActiveOrders\.length/);
+        // And it must NOT bind against the full activeOrders queue anymore.
+        expect(gridSource).not.toMatch(/idx\s*<\s*this\.activeOrders\.length/);
     });
 
     it('auto-promote watcher watches activeOrders (not visibleOrders)', () => {

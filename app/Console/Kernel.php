@@ -348,6 +348,36 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->onOneServer();
 
+        // [P1-2 REGISTRE_FINAL 2026-07-18 / NF525 GAP-FREE DETECTOR — read-only]
+        // `fiscal:verify-sequence-continuity` scanne, par branche, la CONTINUITÉ de
+        // orders.fiscal_sequence_no (min..max SANS trou ni doublon). C'est l'angle
+        // mort d'observabilité que ni fiscal:verify-chain (intégrité HMAC, lane
+        // #15 à 03:30 ci-dessus) ni fiscal:verify-z-membership (appartenance à un
+        // Z signé, 06:05 ci-dessous) ne couvrent : un hard-delete post-allocation
+        // crée un trou de numérotation (ex. branche 1 : manquants 2506-2508)
+        // invisible aux deux autres lanes. Le détecteur existait déjà (read-only,
+        // sûr en prod) mais n'était PAS planifié → en prod un trou serait resté
+        // invisible. Cette lane le fait tourner quotidiennement à 03:35, juste
+        // APRÈS le chain-monitor 03:30 (le trio fiscal s'exécute en séquence
+        // off-peak). La commande exit 1 sur trou/doublon → onFailure raise un
+        // Log::error pageable, exactement comme la lane verify-z-membership.
+        // Read-only — ne modifie ni la commande (frozen-adjacent fiscal) ni aucune
+        // donnée ; seul l'enregistrement scheduler est ajouté.
+        $schedule->command('fiscal:verify-sequence-continuity')
+            ->dailyAt('03:35')
+            ->withoutOverlapping()
+            ->onOneServer()
+            ->name('fiscal-sequence-continuity')
+            ->description('NF525: alarm on any gap/duplicate in orders.fiscal_sequence_no per branch (numbering continuity — the blind spot verify-chain HMAC + verify-z-membership do not cover).')
+            ->onFailure(function () {
+                \Illuminate\Support\Facades\Log::error(
+                    '[fiscal:verify-sequence-continuity] gap or duplicate detected in orders.fiscal_sequence_no — '
+                    . 'NF525 numbering MUST stay monotonic + gap-free per branch. A hole may indicate a hard-delete '
+                    . 'post-allocation (benign for a dev test, requires NF525 investigation in prod). '
+                    . 'Run `php artisan fiscal:verify-sequence-continuity` for the missing ranges + bordering orders.'
+                );
+            });
+
         // [W8.C-P2 / P-MEGA-22 Pilier 2] NF525 fiscal archive scheduling
         // D4=A 02:00 quotidien ; D5=A toutes branches actives ; D6=A local + S3 nightly géré par command env ; D7=A ZIP+JSON géré par command
         // [Wave 2d FISCAL-ADV3C-01 2026-05-18] Mirror of fiscal-chain-monitor:

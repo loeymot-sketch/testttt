@@ -296,12 +296,19 @@ export default {
     methods: {
         onKey(e) {
             // [A]–[H] bumps the nth slot. Enter/Esc handled by KdsOrderCard.
-            // [Wave U 2026-05-21] Index against activeOrders (the rendered list)
-            // so the shortcut letter matches the on-card [A]–[H] badge after
-            // PREPARED orders are partitioned out of the grid.
+            // [Wave U 2026-05-21] Index against the rendered list so the shortcut
+            // letter matches the on-card [A]–[H] badge after PREPARED orders are
+            // partitioned out of the grid.
+            // [P2-k 2026-07-18 REGISTRE_FINAL] The rendered list is
+            // `visibleActiveOrders` (= activeOrders.slice(0, 3), KDS-3CARDS
+            // c70b1e518) — NOT the full activeOrders queue (up to 8, A–H).
+            // Binding the index against activeOrders let keys [D]–[H] bump an
+            // OVERFLOW order the chef cannot see (server ACCEPT→PREPARING… + a
+            // client notification on an invisible ticket). Bound the index to
+            // the cards actually on screen so no off-screen order is ever bumped.
             const idx = SHORTCUTS.indexOf(String(e.key || '').toUpperCase());
-            if (idx >= 0 && idx < this.activeOrders.length) {
-                const o = this.activeOrders[idx];
+            if (idx >= 0 && idx < this.visibleActiveOrders.length) {
+                const o = this.visibleActiveOrders[idx];
                 if (o) {
                     // [GOAL-2026-05-30 D1 — OWNER REVERSAL of Wave S-2] Cash-pending orders
                     // MAY now be bumped (kitchen prepares before encashment); the [A]–[H]
