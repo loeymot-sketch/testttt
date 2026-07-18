@@ -36,6 +36,7 @@ function cleanupB9Orders() {
       if (Schema::hasTable('domain_events')) {
         DB::table('domain_events')->whereIn('aggregate_id', $ids)->delete();
       }
+      DB::table('orders')->whereIn('id', $ids)->update(['fiscal_sequence_no' => null]);
       DB::table('orders')->whereIn('id', $ids)->delete();
     }
     echo $ids->count();

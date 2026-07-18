@@ -97,7 +97,7 @@ function softDeleteOrder(orderId) {
 
 // Wipe the seeded rows from this run (cleanup between iterations + on exit).
 function wipeSeededOrders() {
-  return php(`App\\Models\\Order::withTrashed()->where('order_serial_no','like','WPOSS-%')->forceDelete();`);
+  return php(`DB::table('orders')->where('order_serial_no','like','WPOSS-%')->update(['fiscal_sequence_no' => null]); App\\Models\\Order::withTrashed()->where('order_serial_no','like','WPOSS-%')->forceDelete();`);
 }
 
 test.describe('Wave P-4 OSS customer wall E2E audit', () => {

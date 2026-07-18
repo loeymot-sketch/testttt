@@ -108,7 +108,7 @@ function readOrderStatus(orderId) {
 
 function wipeSeededOrders() {
     return php(
-        `App\\Models\\Order::withTrashed()->where('order_serial_no','like','WQ2-%')->forceDelete();`,
+        `DB::table('orders')->where('order_serial_no','like','WQ2-%')->update(['fiscal_sequence_no' => null]); App\\Models\\Order::withTrashed()->where('order_serial_no','like','WQ2-%')->forceDelete();`,
     );
 }
 

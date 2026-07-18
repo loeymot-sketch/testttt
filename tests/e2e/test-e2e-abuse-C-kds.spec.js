@@ -90,6 +90,7 @@ function cleanupTestOrders() {
         if (Schema::hasTable('domain_events')) DB::table('domain_events')->whereIn('aggregate_id',$orderIds)->delete();
         if (Schema::hasTable('kitchen_recalls')) DB::table('kitchen_recalls')->whereIn('order_id',$orderIds)->delete();
         if (Schema::hasTable('order_items')) DB::table('order_items')->whereIn('order_id',$orderIds)->delete();
+        DB::table('orders')->whereIn('id',$orderIds)->update(['fiscal_sequence_no' => null]);
         DB::table('orders')->whereIn('id',$orderIds)->delete();
       }
       Cache::flush();

@@ -1,0 +1,86 @@
+[
+  {
+    "url": "http://localhost:8000/api/frontend/csp-report",
+    "method": "POST",
+    "status": 204,
+    "duration_ms": null,
+    "ts": 1784324705609
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/auth/kiosk-login",
+    "method": "POST",
+    "status": 201,
+    "duration_ms": null,
+    "ts": 1784324705867
+  },
+  {
+    "url": "http://localhost:8000/api/frontend/csp-report",
+    "method": "POST",
+    "status": 204,
+    "duration_ms": null,
+    "ts": 1784324705920
+  },
+  {
+    "url": "http://localhost:8000/api/frontend/csp-report",
+    "method": "POST",
+    "status": 204,
+    "duration_ms": null,
+    "ts": 1784324705927
+  },
+  {
+    "url": "http://localhost:8000/api/frontend/csp-report",
+    "method": "POST",
+    "status": 204,
+    "duration_ms": null,
+    "ts": 1784324705943
+  },
+  {
+    "url": "http://localhost:8000/api/frontend/csp-report",
+    "method": "POST",
+    "status": 204,
+    "duration_ms": null,
+    "ts": 1784324705958
+  },
+  {
+    "url": "http://localhost:8000/api/frontend/csp-report",
+    "method": "POST",
+    "status": 204,
+    "duration_ms": null,
+    "ts": 1784324706009
+  },
+  {
+    "url": "http://localhost:8000/api/frontend/csp-report",
+    "method": "POST",
+    "status": 204,
+    "duration_ms": null,
+    "ts": 1784324706027
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/frontend/kiosk-event",
+    "method": "POST",
+    "status": 200,
+    "duration_ms": null,
+    "ts": 1784324706055
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/broadcasting/auth",
+    "method": "POST",
+    "status": 302,
+    "duration_ms": null,
+    "ts": 1784324706089
+  },
+  {
+    "url": "http://localhost:8000/api/frontend/csp-report",
+    "method": "POST",
+    "status": 204,
+    "duration_ms": null,
+    "ts": 1784324706107
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/login",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1784324706256
+  }
+]

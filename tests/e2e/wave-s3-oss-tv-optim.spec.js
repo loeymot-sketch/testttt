@@ -70,7 +70,7 @@ function seedOrder({ queueNumber, token, typeInt, statusInt, suffix }) {
 }
 
 function cleanupWaveSorders() {
-  php(`App\\Models\\Order::where('order_serial_no', 'like', 'WSOSS-%')->withoutGlobalScopes()->forceDelete();`);
+  php(`DB::table('orders')->where('order_serial_no', 'like', 'WSOSS-%')->update(['fiscal_sequence_no' => null]); App\\Models\\Order::where('order_serial_no', 'like', 'WSOSS-%')->withoutGlobalScopes()->forceDelete();`);
 }
 
 function transitionOrderToPrepared(id) {

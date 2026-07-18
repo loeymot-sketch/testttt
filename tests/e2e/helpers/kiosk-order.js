@@ -643,6 +643,7 @@ function cleanupKioskAuditOrders(prefix = KIOSK_AUDIT_PREFIX) {
       if (Schema::hasTable('order_items')) {
         $orderItems = DB::table('order_items')->whereIn('order_id', $orderIds)->delete();
       }
+      DB::table('orders')->whereIn('id', $orderIds)->update(['fiscal_sequence_no' => null]);
       DB::table('orders')->whereIn('id', $orderIds)->delete();
     }
     if (Schema::hasTable('idempotency_keys')) {

@@ -46,6 +46,7 @@ function cleanupProcessAudit(prefix) {
       if (Schema::hasTable('order_status_transitions')) DB::table('order_status_transitions')->whereIn('order_id', $ids)->delete();
       if (Schema::hasTable('domain_events')) DB::table('domain_events')->whereIn('aggregate_id', $ids)->delete();
       if (Schema::hasTable('audit_logs')) DB::table('audit_logs')->where('resource', 'order')->whereIn('resource_id', $ids)->delete();
+      DB::table('orders')->whereIn('id', $ids)->update(['fiscal_sequence_no' => null]);
       DB::table('orders')->whereIn('id', $ids)->delete();
     }
 

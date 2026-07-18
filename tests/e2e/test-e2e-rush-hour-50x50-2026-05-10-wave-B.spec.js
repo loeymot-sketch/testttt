@@ -1383,6 +1383,7 @@ test.describe('rush-hour-50x50 wave B — Kiosk rush 50 orders (12 UI + 38 API)'
               if (Schema::hasTable('order_items')) {
                 DB::table('order_items')->whereIn('order_id',$ids)->delete();
               }
+              DB::table('orders')->whereIn('id',$ids)->update(['fiscal_sequence_no' => null]);
               $deleted = DB::table('orders')->whereIn('id',$ids)->delete();
               echo json_encode(['deleted' => (int) $deleted, 'attempted' => count($ids)]);
             `);

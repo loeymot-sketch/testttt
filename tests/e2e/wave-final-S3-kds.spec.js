@@ -156,6 +156,7 @@ function cleanupSeededOrders() {
     artisan(
       `$ids = \\App\\Models\\Order::where('order_serial_no', 'like', '${TOKEN_PREFIX}%')->withoutGlobalScopes()->pluck('id')->toArray(); ` +
       `if (!empty($ids)) { \\App\\Models\\OrderItem::whereIn('order_id', $ids)->withoutGlobalScopes()->forceDelete(); ` +
+      `\\DB::table('orders')->whereIn('id', $ids)->update(['fiscal_sequence_no' => null]); ` +
       `\\App\\Models\\Order::whereIn('id', $ids)->withoutGlobalScopes()->forceDelete(); }`,
     );
   } catch (_err) {

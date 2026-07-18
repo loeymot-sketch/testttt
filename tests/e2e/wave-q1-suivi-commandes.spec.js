@@ -115,6 +115,7 @@ function cleanup(suffixes) {
         suffixes.map((s) => `'WQ1-${s}'`).join(',') +
         `])->withoutGlobalScopes()->each(function ($o) { ` +
         `App\\Models\\OrderItem::where('order_id', $o->id)->withoutGlobalScopes()->forceDelete(); ` +
+        `DB::table('orders')->where('id', $o->id)->update(['fiscal_sequence_no' => null]); ` +
         `$o->forceDelete(); }); echo 'ok';`;
     php(snippet);
 }

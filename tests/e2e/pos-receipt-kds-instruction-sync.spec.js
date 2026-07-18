@@ -48,6 +48,7 @@ function cleanupPrefix(prefix = PREFIX) {
       if (Schema::hasTable('order_status_transitions')) DB::table('order_status_transitions')->whereIn('order_id', $orderIds)->delete();
       if (Schema::hasTable('domain_events')) DB::table('domain_events')->whereIn('aggregate_id', $orderIds)->delete();
       if (Schema::hasTable('audit_logs')) DB::table('audit_logs')->where('resource', 'order')->whereIn('resource_id', $orderIds)->delete();
+      DB::table('orders')->whereIn('id', $orderIds)->update(['fiscal_sequence_no' => null]);
       DB::table('orders')->whereIn('id', $orderIds)->delete();
     }
     if (Schema::hasTable('stock_movements')) {

@@ -87,6 +87,7 @@ function cleanupDashboardCrud(prefix = PREFIX) {
         $events->delete();
       }
       if (Schema::hasTable('audit_logs')) DB::table('audit_logs')->where('resource', 'order')->whereIn('resource_id', $orderIds)->delete();
+      DB::table('orders')->whereIn('id', $orderIds)->update(['fiscal_sequence_no' => null]);
       DB::table('orders')->whereIn('id', $orderIds)->delete();
     }
 

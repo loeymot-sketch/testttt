@@ -146,6 +146,7 @@ if (!function_exists('super6_seed_one_order')) {
         DB::table('order_status_transitions')->whereIn('order_id', $ids)->delete();
         DB::table('transactions')->whereIn('order_id', $ids)->delete();
         DB::table('order_items')->whereIn('order_id', $ids)->delete();
+        DB::table('orders')->whereIn('id', $ids)->update(['fiscal_sequence_no' => null]);
         $del = DB::table('orders')->whereIn('id', $ids)->delete();
         echo "Cleaned $del SUPER6 orders + cascades.\n";
         return $del;

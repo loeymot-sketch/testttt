@@ -74,7 +74,7 @@ function seedOrder({ suffix, queueNumber, typeInt, statusInt, paymentStatusInt, 
 }
 
 function cleanupWaveS4orders() {
-  php(`App\\Models\\Order::where('order_serial_no', 'like', 'WS4-%')->withoutGlobalScopes()->forceDelete();`);
+  php(`DB::table('orders')->where('order_serial_no', 'like', 'WS4-%')->update(['fiscal_sequence_no' => null]); App\\Models\\Order::where('order_serial_no', 'like', 'WS4-%')->withoutGlobalScopes()->forceDelete();`);
 }
 
 test.use({ viewport: { width: 1440, height: 900 } });
@@ -236,7 +236,7 @@ test.describe('Wave S-4 — Suivi commandes À ENCAISSER lane', () => {
 
     // Sweep stray cash-pending today-orders so the empty-state assertion is
     // deterministic (other waves may have parked PENDING_COUNTER fixtures).
-    php(`App\\Models\\Order::where('payment_status', 15)->where('pos_payment_method', 6)->whereDate('order_datetime', now()->toDateString())->withoutGlobalScopes()->forceDelete();`);
+    php(`DB::table('orders')->where('payment_status', 15)->where('pos_payment_method', 6)->whereDate('order_datetime', now()->toDateString())->update(['fiscal_sequence_no' => null]); App\\Models\\Order::where('payment_status', 15)->where('pos_payment_method', 6)->whereDate('order_datetime', now()->toDateString())->withoutGlobalScopes()->forceDelete();`);
 
     // Seed only paid orders → À encaisser must be empty but visible.
     seedOrder({

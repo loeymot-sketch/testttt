@@ -143,6 +143,7 @@ function deleteSeededRows(ids) {
     const arr = JSON.stringify(safeIds);
     try {
         tinker(`
+            \\DB::table('orders')->whereIn('id', ${arr})->update(['fiscal_sequence_no' => null]);
             foreach (${arr} as $id) {
                 $o = \\App\\Models\\Order::find($id);
                 if ($o) $o->forceDelete();

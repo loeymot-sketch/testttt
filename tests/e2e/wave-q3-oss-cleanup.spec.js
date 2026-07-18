@@ -95,7 +95,7 @@ function setOrderStatus(orderId, statusInt) {
 }
 
 function wipeSeededOrders() {
-  return php(`App\\Models\\Order::withTrashed()->where('order_serial_no','like','WQ3OSS-%')->forceDelete();`);
+  return php(`DB::table('orders')->where('order_serial_no','like','WQ3OSS-%')->update(['fiscal_sequence_no' => null]); App\\Models\\Order::withTrashed()->where('order_serial_no','like','WQ3OSS-%')->forceDelete();`);
 }
 
 test.describe('Wave Q-3 OSS cleanup — "Articles à préparer" removed', () => {

@@ -283,6 +283,7 @@ function cleanupPariteval() {
       $del(fn() => Schema::hasTable('domain_events') && DB::table('domain_events')->whereIn('aggregate_id',$ids)->delete());
       $del(fn() => Schema::hasTable('order_coupons') && DB::table('order_coupons')->whereIn('order_id',$ids)->delete());
       $del(fn() => DB::table('order_items')->whereIn('order_id',$ids)->delete());
+      $del(fn() => DB::table('orders')->whereIn('id',$ids)->update(['fiscal_sequence_no' => null]));
       $del(fn() => DB::table('orders')->whereIn('id',$ids)->delete());
     }
     $del(fn() => \\App\\Models\\Coupon::where('code','like','PARITEVAL-CPN-%')->forceDelete());

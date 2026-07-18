@@ -88,7 +88,7 @@ function seedHistoricalOrder({ token, status, branchId = 1 }) {
 function cleanupSeededOrders() {
   try {
     artisan(
-      `\\App\\Models\\Order::where('order_serial_no', 'like', '${TOKEN_PREFIX}%')->withoutGlobalScopes()->forceDelete();`,
+      `\\DB::table('orders')->where('order_serial_no', 'like', '${TOKEN_PREFIX}%')->update(['fiscal_sequence_no' => null]); \\App\\Models\\Order::where('order_serial_no', 'like', '${TOKEN_PREFIX}%')->withoutGlobalScopes()->forceDelete();`,
     );
   } catch (_err) {
     // Best-effort.

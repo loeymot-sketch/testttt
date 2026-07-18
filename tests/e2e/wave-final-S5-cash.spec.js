@@ -183,6 +183,7 @@ function deleteSeededRows(ids) {
         tinker(`
             // Drop transactions first (FK), then orders.
             \\App\\Models\\Transaction::whereIn('order_id', ${arr})->delete();
+            \\DB::table('orders')->whereIn('id', ${arr})->update(['fiscal_sequence_no' => null]);
             foreach (${arr} as $id) {
                 $o = \\App\\Models\\Order::find($id);
                 if ($o) $o->forceDelete();

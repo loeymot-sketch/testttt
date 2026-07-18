@@ -108,7 +108,7 @@ function wipe() {
     php(`DB::table('order_items')->whereIn('order_id', [${ids}])->delete();`);
     php(`DB::table('order_payments')->whereIn('order_id', [${ids}])->delete();`);
   }
-  php(`App\\Models\\Order::withTrashed()->where('token','like','${TOKEN_PREFIX}%')->forceDelete();`);
+  php(`DB::table('orders')->where('token','like','${TOKEN_PREFIX}%')->update(['fiscal_sequence_no' => null]); App\\Models\\Order::withTrashed()->where('token','like','${TOKEN_PREFIX}%')->forceDelete();`);
 }
 
 async function gotoOSS(page) {

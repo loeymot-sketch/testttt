@@ -137,6 +137,7 @@ function sweep() {
           if (Schema::hasTable('order_status_transitions')) DB::table('order_status_transitions')->whereIn('order_id', $ids)->delete();
           if (Schema::hasTable('domain_events')) DB::table('domain_events')->whereIn('aggregate_id', $ids)->delete();
           if (Schema::hasTable('order_items')) DB::table('order_items')->whereIn('order_id', $ids)->delete();
+          DB::table('orders')->whereIn('id', $ids)->update(['fiscal_sequence_no' => null]);
           DB::table('orders')->whereIn('id', $ids)->delete();
           $clean += $ids->count();
         }

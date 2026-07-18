@@ -27,6 +27,7 @@ function cleanup() {
       $oids = DB::table('order_items')->whereIn('item_id',$ids)->pluck('order_id')->unique();
       if ($oids->isNotEmpty()) {
         foreach(['order_status_transitions','stock_movements','domain_events','order_payments','order_items'] as $t){ if(Schema::hasTable($t)){ $col=$t==='stock_movements'?'reference_id':($t==='domain_events'?'aggregate_id':'order_id'); DB::table($t)->whereIn($col,$oids)->delete(); } }
+        DB::table('orders')->whereIn('id',$oids)->update(['fiscal_sequence_no' => null]);
         DB::table('orders')->whereIn('id',$oids)->delete();
       }
       DB::table('stock_levels')->where('stockable_type',App\\Models\\Item::class)->whereIn('stockable_id',$ids)->delete();

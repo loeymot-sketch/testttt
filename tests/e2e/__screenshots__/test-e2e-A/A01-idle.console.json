@@ -1,0 +1,92 @@
+[
+  {
+    "level": "info",
+    "text": "Connecting to 'http://127.0.0.1:8766/api/auth/kiosk-login' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/pos-wizard.js?v=9-1784168858",
+      "lineNumber": 194,
+      "columnNumber": 0
+    },
+    "ts": 1784324705592
+  },
+  {
+    "level": "info",
+    "text": "Connecting to 'http://127.0.0.1:8766/api/frontend/setting?vuex=false' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/pos-wizard.js?v=9-1784168858",
+      "lineNumber": 194,
+      "columnNumber": 0
+    },
+    "ts": 1784324705881
+  },
+  {
+    "level": "info",
+    "text": "Connecting to 'http://127.0.0.1:8766/api/frontend/branch?vuex=false' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/pos-wizard.js?v=9-1784168858",
+      "lineNumber": 194,
+      "columnNumber": 0
+    },
+    "ts": 1784324705881
+  },
+  {
+    "level": "info",
+    "text": "Connecting to 'http://127.0.0.1:8766/api/frontend/setting' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/pos-wizard.js?v=9-1784168858",
+      "lineNumber": 194,
+      "columnNumber": 0
+    },
+    "ts": 1784324705881
+  },
+  {
+    "level": "info",
+    "text": "Connecting to 'http://127.0.0.1:8766/api/frontend/kiosk-event' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/pos-wizard.js?v=9-1784168858",
+      "lineNumber": 194,
+      "columnNumber": 0
+    },
+    "ts": 1784324705881
+  },
+  {
+    "level": "info",
+    "text": "Connecting to 'http://127.0.0.1:8766/api/broadcasting/auth' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/pos-wizard.js?v=9-1784168858",
+      "lineNumber": 194,
+      "columnNumber": 0
+    },
+    "ts": 1784324705989
+  },
+  {
+    "level": "info",
+    "text": "Connecting to 'http://127.0.0.1:8766/api/frontend/menu' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/js/pos-wizard.js?v=9-1784168858",
+      "lineNumber": 194,
+      "columnNumber": 0
+    },
+    "ts": 1784324705991
+  },
+  {
+    "level": "info",
+    "text": "Connecting to 'http://127.0.0.1:8766/api/login' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://localhost:8000/kiosk/idle",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1784324706088
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://127.0.0.1:8766/api/login",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1784324706256
+  }
+]

@@ -55,7 +55,7 @@ function cleanup() {
     $ids = DB::table('items')->where('name','like','${PREFIX}%')->pluck('id');
     if ($ids->isNotEmpty()) {
       $oids = DB::table('order_items')->whereIn('item_id',$ids)->pluck('order_id')->unique();
-      if ($oids->isNotEmpty()) { foreach(['order_status_transitions','domain_events','order_items'] as $t){ if(Schema::hasTable($t)){ $c=$t==='domain_events'?'aggregate_id':'order_id'; DB::table($t)->whereIn($c,$oids)->delete(); } } DB::table('orders')->whereIn('id',$oids)->delete(); }
+      if ($oids->isNotEmpty()) { foreach(['order_status_transitions','domain_events','order_items'] as $t){ if(Schema::hasTable($t)){ $c=$t==='domain_events'?'aggregate_id':'order_id'; DB::table($t)->whereIn($c,$oids)->delete(); } } DB::table('orders')->whereIn('id',$oids)->update(['fiscal_sequence_no' => null]); DB::table('orders')->whereIn('id',$oids)->delete(); }
       DB::table('items')->whereIn('id',$ids)->delete();
     }
     DB::table('item_categories')->where('name','like','${PREFIX}%')->delete();
