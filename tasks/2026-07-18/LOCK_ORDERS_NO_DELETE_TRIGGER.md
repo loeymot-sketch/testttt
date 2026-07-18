@@ -19,5 +19,6 @@ Change le comportement de suppression en PROD : un order avec `fiscal_sequence_n
 ## Décision owner requise avant deploy
 - [ ] OK pour installer le trigger en prod (bloque le hard-delete des orders fiscalisés).
 - [ ] Confirmer qu'aucun workflow de purge prod ne hard-delete des orders AVEC seq (sinon adapter la procédure de purge à un soft-delete ou un DROP gaté).
+- [ ] **[RED-team pre-deploy] Corriger les cleanups e2e avant de migrer le trigger** : ~36 specs (ex. `tests/e2e/wave-final-S2-pos.spec.js:148`) `forceDelete()` des orders PAID/fiscalisés au cleanup → échoueront (`SIGNAL 45000`) une fois le trigger live. Ajouter `whereNull('fiscal_sequence_no')` ou basculer en soft-delete dans ces cleanups. Non-bloquant tant que le trigger n'est pas migré (gate). Heal SAFE (specs non-frozen) — à faire dans le même lot que l'install prod du trigger.
 
 Tant que non signé : le commit reste sur la branche mais **ne pas lancer `deploy-lecayenne.sh`** avec ce commit dans le range sans acter cette case.
