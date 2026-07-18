@@ -21,7 +21,24 @@ use Illuminate\Support\Facades\DB;
 class StockService
 {
     private const AUTO_RUPTURE_REASON = 'stock_rupture';
-    private const LEGACY_STOCK_RUPTURE_REASON = 'out_of_stock';
+
+    /**
+     * [S5-01 2026-07-18] `'out_of_stock'` is the reason AvailabilityService writes
+     * when the DAILY QUOTA (`max_daily_qty`) is reached — NOT a physical stock
+     * rupture. It is owned exclusively by the quota machinery
+     * (AvailabilityService::decrementForOrder / setMaxDailyQty / releaseForOrderItems
+     * + ResetStaleDailyQuotaCommand). StockService must therefore NEVER treat it as
+     * an auto stock rupture it may reactivate: when an item combines `max_daily_qty`
+     * AND tracked `stock_levels`, the OrderCreated listener chain runs
+     * DecrementItemAvailabilityOnOrder (86 quota → 'out_of_stock') THEN
+     * DecrementStockOnOrderCreated → syncItemAvailabilityForStockLevel; if `on_hand`
+     * is still > 0 and this reason were "auto", the item would be flipped back to
+     * available IN THE SAME REQUEST (quota cap silently broken + phantom
+     * 'stock_restocked' event). Kept as a named constant so the exclusion is
+     * explicit, not an accidental omission.
+     */
+    private const DAILY_QUOTA_REASON = 'out_of_stock';
+
     private const AUTO_RESTOCK_REASON = 'stock_restocked';
 
     public function decrementForOrder(Model $order, ?string $idempotencySeed = null): void
@@ -214,9 +231,18 @@ class StockService
         return null;
     }
 
+    /**
+     * True only for a rupture StockService itself owns and may auto-reactivate on
+     * restock. The daily-quota reason ({@see self::DAILY_QUOTA_REASON}) is
+     * DELIBERATELY excluded — it belongs to AvailabilityService (see the constant's
+     * docblock, finding S5-01). Excluding it makes StockService a no-op on
+     * quota-86'd rows: it neither reactivates them on restock (bug fixed) nor
+     * overwrites their reason when on_hand hits 0 (both branches return null
+     * upstream), so the daily cap holds until the quota machinery clears it.
+     */
     private function isAutoStockRuptureReason(?string $reason): bool
     {
-        return in_array($reason, [self::AUTO_RUPTURE_REASON, self::LEGACY_STOCK_RUPTURE_REASON], true);
+        return $reason === self::AUTO_RUPTURE_REASON;
     }
 
     /**
