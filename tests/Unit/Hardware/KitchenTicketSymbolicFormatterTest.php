@@ -160,6 +160,18 @@ class KitchenTicketSymbolicFormatterTest extends TestCase
         $this->assertSame('', $this->f->fritesSauceSymbol('Bien cuit svp'));
     }
 
+    public function test_frites_sauce_symbol_lists_all_sauces(): void
+    {
+        // [MULTIFRITES 2026-07-18] owner : le client peut prendre PLUSIEURS sauces frites
+        // (gratuites). Le ticket cuisine + le KDS doivent les montrer TOUTES, pas seulement
+        // la 1ère. « Sauce frites : Ketchup, Mayonnaise » → « KTP MAY » (ordre de sélection
+        // préservé — jamais l'ordre de la table de symboles).
+        $this->assertSame('KTP MAY', $this->f->fritesSauceSymbol('Sauce frites : Ketchup, Mayonnaise'));
+        $this->assertSame('AND ALG', $this->f->fritesSauceSymbol("Menu (Frites + Boisson)\n↳ Sauce frites: Andalouse, Algérienne"));
+        // Rétro-compat STRICTE : 1 seule sauce = symbole unique comme avant.
+        $this->assertSame('ALG', $this->f->fritesSauceSymbol('Sauce frites : Algérienne'));
+    }
+
     public function test_clean_instruction_drops_menu_and_frites_sauce_lines(): void
     {
         // Le menu + la sauce frites sont représentés par la ligne « MENU : SYM »,

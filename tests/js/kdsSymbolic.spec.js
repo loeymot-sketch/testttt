@@ -7,6 +7,7 @@ import {
     supportSymbol,
     symbolicMainLine,
     renderItemSymbolic,
+    fritesSauceSymbol,
 } from '../../resources/js/helpers/kdsSymbolic.js';
 
 // [KITCHEN-SYMBOLS 2026-06-28] Owner spec — the kitchen screen (KDS) and the
@@ -228,6 +229,29 @@ describe('renderItemSymbolic — line list for the KDS card', () => {
         const out = renderItemSymbolic(menuItem);
         expect(out.lines[0]).toMatchObject({ type: 'symbolic-main', label: 'MENU : AND' });
         // no supplement / no extra verbose line
+        expect(out.lines.filter((l) => l.type === 'supplement')).toHaveLength(0);
+    });
+
+    it('[MULTIFRITES 2026-07-18] plusieurs sauces frites (gratuites) → toutes en symbole', () => {
+        // Owner : « si le client a plusieurs sortes pour les frites, on pourra lui mettre ça ».
+        // « Sauce frites : Ketchup, Mayonnaise » → « KTP MAY » (ordre de sélection préservé).
+        expect(fritesSauceSymbol('Sauce frites : Ketchup, Mayonnaise')).toBe('KTP MAY');
+        expect(fritesSauceSymbol('Menu (Frites + Boisson)\n↳ Sauce frites: Andalouse, Algérienne')).toBe('AND ALG');
+        // Rétro-compat STRICTE : 1 seule sauce = symbole unique comme avant.
+        expect(fritesSauceSymbol('Sauce frites : Algérienne')).toBe('ALG');
+        expect(fritesSauceSymbol('Bien cuit svp')).toBe('');
+    });
+
+    it('[MULTIFRITES 2026-07-18] KDS : un menu à 2 sauces frites affiche « MENU : KTP MAY » (gratuit)', () => {
+        const menuItem = {
+            item_name: 'Menu (Frites + Boisson)',
+            quantity: 1,
+            instruction: 'Menu (Frites + Boisson)\n↳ Sauce frites: Ketchup, Mayonnaise',
+            composition_snapshot: { lines: [] },
+        };
+        const out = renderItemSymbolic(menuItem);
+        expect(out.lines[0]).toMatchObject({ type: 'symbolic-main', label: 'MENU : KTP MAY' });
+        // GRATUIT : la sauce frites ne crée aucun supplément payant sur l'écran cuisine.
         expect(out.lines.filter((l) => l.type === 'supplement')).toHaveLength(0);
     });
 

@@ -301,14 +301,29 @@ final class KitchenTicketSymbolicFormatter
         return (bool) preg_match('/\bmenu\s*\(|\bformule\b/u', $this->norm($name));
     }
 
-    /** Sauce frites du menu (depuis l'instruction) → SYMBOLE court (Andalouse → AND). */
+    /**
+     * Sauce(s) frites du menu (depuis l'instruction) → SYMBOLE(s) court(s) (Andalouse → AND).
+     *
+     * [MULTIFRITES 2026-07-18] owner : « si le client a plusieurs sortes pour les frites,
+     * on pourra lui mettre ça ». La sauce frites est un canal GRATUIT (dip frites, hors
+     * NF525, aucun extra/prix) — quand le client en choisit plusieurs, le wizard écrit
+     * « Sauce frites : Ketchup, Mayonnaise » et le ticket cuisine + le KDS doivent les
+     * montrer TOUTES (« KTP MAY »), pas seulement la 1ère. On mappe CHAQUE sauce du
+     * segment (split virgule, ordre de sélection préservé) — 1 seule sauce reste un
+     * symbole unique (rétro-compatible). Jumeau JS : kdsSymbolic.js fritesSauceSymbol().
+     */
     public function fritesSauceSymbol(?string $instruction): string
     {
         if (! is_string($instruction) || $instruction === '') {
             return '';
         }
         if (preg_match('/sauce\s*frites\s*:\s*([^\n]+)/iu', $instruction, $m)) {
-            return $this->sauceSymbol(trim($m[1]));
+            $syms = array_filter(
+                array_map(fn ($n): string => $this->sauceSymbol($n), $this->splitSauceList($m[1])),
+                static fn ($s): bool => $s !== ''
+            );
+
+            return implode(' ', $syms);
         }
 
         return '';

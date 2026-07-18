@@ -189,4 +189,101 @@ class MultiSauceTicketNamesTest extends TestCase
         $this->assertStringContainsString('Sauce suppl', $bytes, 'Libellé générique conservé (rétro-compat).');
         $this->assertStringContainsString('0,50', $bytes, 'Prix inchangé.');
     }
+
+    // ── Sauce FRITES multiple (canal distinct, GRATUIT owner) ─────────────────
+
+    /**
+     * Menu (frites + boisson) dont la/les sauce(s) frites sont GRATUITES (owner). La
+     * sauce frites n'est PAS un extra : elle ne vit que dans le texte libre `instruction`
+     * (« Sauce frites : Ketchup, Mayonnaise »). Aucun ItemExtra, aucun prix.
+     */
+    private function makeMenuOrder(string $instruction): Order
+    {
+        $branch = (new Branch)->forceFill([
+            'name' => 'Le Cayenne',
+            'address' => '437 Rue Élie Gruyelle',
+            'phone' => '+33600000000',
+        ]);
+
+        $oi = (new OrderItem)->forceFill([
+            'quantity' => 1,
+            'total_price' => 10.40,
+            'tax_rate' => 10,
+            'tax_name' => 'TVA',
+            'tax_type' => 1,
+            'tax_amount' => 0.95,
+            'instruction' => $instruction,
+            'composition_snapshot' => [
+                'lines' => [
+                    ['attribute_name' => 'Type de Pain', 'variation_name' => 'Pain'],
+                    ['attribute_name' => 'Viande 1', 'variation_name' => 'Poulet mariné'],
+                ],
+                'extras' => [
+                    ['extra_name' => 'Salade', 'line_total' => 0, 'quantity' => 1],
+                ],
+                // Menu complet → menuLine()='MENU' → la sauce frites s'annexe en « MENU : SYM ».
+                'addons' => [
+                    ['role' => 'menu_full', 'addon_name' => 'Menu (Frites + Boisson)', 'line_total' => 3.00, 'unit_price' => 3.00, 'quantity' => 1],
+                ],
+            ],
+        ]);
+        $oi->name = 'Cayenne';
+
+        $order = (new Order)->forceFill([
+            'order_serial_no' => 'TEST-MF',
+            'queue_number' => 'A0043',
+            'order_type' => \App\Enums\OrderType::TAKEAWAY,
+            'subtotal' => 10.40,
+            'total' => 10.40,
+            'pos_payment_method' => 1,
+            'pos_received_amount' => 10.40,
+            'order_datetime' => '2026-07-18 12:00:00',
+            'fiscal_sequence_no' => 3002,
+        ]);
+        $order->setRelation('branch', $branch);
+        $order->setRelation('user', null);
+        $order->setRelation('orderItems', collect([$oi]));
+
+        return $order;
+    }
+
+    /** @test */
+    public function formatter_frites_sauce_symbol_lists_all_sauces(): void
+    {
+        $f = new KitchenTicketSymbolicFormatter;
+        // Les 2 sauces frites → « KTP MAY » (ordre de sélection préservé).
+        $this->assertSame('KTP MAY', $f->fritesSauceSymbol('Sauce frites : Ketchup, Mayonnaise'));
+        // Rétro-compat : 1 seule = symbole unique comme avant.
+        $this->assertSame('ALG', $f->fritesSauceSymbol('Sauce frites : Algérienne'));
+        // GRATUIT : la sauce frites n'est JAMAIS confondue avec une sauce EN PLUS payante.
+        $this->assertSame([], $f->extraSauceNames('Sauce frites : Ketchup, Mayonnaise'));
+    }
+
+    /** @test */
+    public function kitchen_ticket_lists_all_frites_sauces_and_stays_free(): void
+    {
+        // « Sauce frites : Ketchup, Mayonnaise » → le ticket cuisine montre LES DEUX.
+        $order = $this->makeMenuOrder("Pain : Pain\nSauce frites : Ketchup, Mayonnaise");
+        $kitchen = (new OrderReceiptEscPosRenderer)->renderKitchenTicket($order);
+
+        $this->assertStringContainsString('MENU : KTP MAY', $kitchen, 'Les 2 sauces frites doivent apparaître (symboles) sur le ticket cuisine.');
+        // GRATUIT : la sauce frites ne devient jamais un supplément payant « étoilé ».
+        $this->assertStringNotContainsString('Sauce suppl', $kitchen, 'La sauce frites ne doit jamais devenir un supplément.');
+
+        // Ticket CLIENT : aucun prix rattaché à la sauce frites (canal gratuit, hors extra).
+        $client = (new OrderReceiptEscPosRenderer)->renderClientTicket($order);
+        $this->assertStringNotContainsString('Sauce suppl', $client, 'Aucun extra « Sauce supplémentaire » ne doit naître de la sauce frites.');
+        // Le seul montant facturé reste le menu (3,00 €) — pas de 0,50 € de sauce frites.
+        $this->assertStringContainsString('10,40', $client, 'Le total item reste le prix du menu (sauce frites = 0 €).');
+    }
+
+    /** @test */
+    public function retro_compatible_single_frites_sauce(): void
+    {
+        // 1 seule sauce frites → « MENU : ALG » exactement comme avant (aucune régression).
+        $order = $this->makeMenuOrder("Pain : Pain\nSauce frites : Algérienne");
+        $kitchen = (new OrderReceiptEscPosRenderer)->renderKitchenTicket($order);
+
+        $this->assertStringContainsString('MENU : ALG', $kitchen);
+    }
 }
