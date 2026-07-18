@@ -114,7 +114,12 @@ class AfterCommitDispatchTest extends TestCase
 
         $this->assertStringContainsString($eventTypeConstant, $source);
         $this->assertStringContainsString("'branch_id' => \$order->branch_id", $source);
-        $this->assertStringContainsString("'channel' => json_encode(['private-branch.' . \$order->branch_id])", $source);
+        // [C3-CLIENT-NOTIF 2026-07-18] Le canal STAFF private-branch.{id} reste TOUJOURS persisté
+        // + diffusé (garantie inchangée). PersistOrderStatusChangedToOutbox le construit désormais
+        // via resolveChannels() (qui y AJOUTE private-customer.{id} pour le web) au lieu du littéral
+        // inline — on asserte donc la CONSTRUCTION du canal branch (substring), robuste aux deux formes.
+        $this->assertStringContainsString("'private-branch.' . \$order->branch_id", $source);
+        $this->assertStringContainsString('json_encode(', $source);
         $this->assertStringContainsString($broadcastAsSnippet, $source);
         $this->assertStringContainsString('DB::afterCommit(function () use ($domainEvent): void {', $source);
         $this->assertStringContainsString('DispatchDomainEventsJob::dispatch($domainEvent->id);', $source);

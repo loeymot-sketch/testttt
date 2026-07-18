@@ -17,6 +17,26 @@ Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
     return (int) $user->id === (int) $id;
 });
 
+// [C3-CLIENT-NOTIF 2026-07-18] Canal privé PAR CLIENT — notification « prête ».
+//
+// ARCHITECTURE (broadcast client + polling) : le suivi de commande côté COMPTE CLIENT
+// repose sur DEUX chemins complémentaires, pensés pour être robustes séparément :
+//   1. TEMPS RÉEL — le client authentifié (Sanctum) s'abonne à `private-customer.{sonId}`
+//      et reçoit l'événement `OrderStatusChanged` (même nom que le canal staff). Le fan-out
+//      est ajouté à l'outbox EXISTANT (PersistOrderStatusChangedToOutbox) → il hérite
+//      GRATUITEMENT du retry/dedup/validation de contrat/heartbeat de DispatchDomainEventsJob.
+//   2. POLLING (fallback) — /api/frontend/order(/show) expose déjà `status`/`status_name`
+//      (PREPARED = « Prête ») → le compte bascule « en cours » → « prête » MÊME sans WS.
+//
+// SÉCURITÉ (anti-fuite cross-client) : autorisation purement IDENTITAIRE, inspoofable et
+// SANS requête DB — un client ne peut s'abonner QU'À SON PROPRE canal (miroir exact de la
+// garde App.Models.User.{id} + de l'ownership OrderController::show user_id===Auth::id()).
+// Chaque commande web (invité inclus) porte un user_id UNIQUE (GuestSignupController crée
+// un compte invité par téléphone) → `private-customer.{id}` ne fuit jamais vers un autre client.
+Broadcast::channel('customer.{customerId}', function ($user, $customerId) {
+    return (int) $user->id === (int) $customerId;
+});
+
 // [P4-1 FIX] Authorize branch-scoped channels for OrderStatusChanged / OrderCreated events.
 // [GAP-21-5] Kiosk machine users have branch_id=0 (they use the admin user as owner).
 // Without the token-name check, a kiosk token could subscribe to ALL branch channels

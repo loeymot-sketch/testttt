@@ -473,12 +473,22 @@
               >
                 <span class="pos-shortcuts__num">N°{{ o.queue_number || o.order_serial_no || o.id }}</span>
                 <span class="pos-shortcuts__price">{{ formatKioskPrice(o.total ?? o.order_amount) }}</span>
-                <button
-                  type="button"
-                  class="pos-shortcuts__cta pos-shortcuts__cta--web"
-                  :data-testid="`pos-shortcut-web-open-${o.id}`"
-                  @click="openWebOrder(o)"
-                >Traiter</button>
+                <!-- [C1 2026-07-18] Accept INLINE (chemin principal) + Détails (gestion complète). -->
+                <span class="pos-shortcuts__actions">
+                  <button
+                    type="button"
+                    class="pos-shortcuts__cta pos-shortcuts__cta--web"
+                    :data-testid="`pos-shortcut-web-accept-${o.id}`"
+                    :disabled="!!webAccepting[o.id]"
+                    @click="acceptWebOrder(o)"
+                  >{{ webAccepting[o.id] ? '…' : 'Accepter' }}</button>
+                  <button
+                    type="button"
+                    class="pos-shortcuts__cta pos-shortcuts__cta--web-details"
+                    :data-testid="`pos-shortcut-web-open-${o.id}`"
+                    @click="openWebOrder(o)"
+                  >Détails</button>
+                </span>
               </li>
             </ul>
             <p
@@ -1849,6 +1859,11 @@ export default {
             webOrders: [],
             webOrdersLoading: false,
             lastWebRefresh: null,
+            // [C1 2026-07-18 · accept web INLINE] Anti double-submit PAR commande du bouton
+            // « Accepter » du panneau « Commandes web ». Map réactive {orderId: true} (idiome
+            // immuable du fichier, cf. expandedKioskCashOrders) → le bouton se désactive le temps
+            // de l'appel sans que le caissier quitte la caisse.
+            webAccepting: {},
             // [C4-CAISSE-TELEPHONE 2026-07-07] Anti double-submit du bouton « Commande téléphone ».
             phoneOrderSubmitting: false,
             // [HEAL B2-P6-F01 2026-05-26] Confirm-before-cancel dialog
@@ -3610,9 +3625,46 @@ export default {
                 this.webOrdersLoading = false;
             }
         },
-        // [WEB-CAISSE-SYNC 2026-07-13] Ouvre la commande web dans la page Commandes en ligne
-        // (surface de traitement existante : accept → cuisine → encaissement au retrait). On ne
-        // duplique PAS la logique d'acceptation/paiement dans le POS — on y renvoie simplement.
+        // [C1 2026-07-18 · accept web INLINE] Accepte une commande web PENDING SANS quitter la
+        // caisse. Réutilise le chemin EXISTANT OnlineOrderController::changeStatus (status=ACCEPT) :
+        // pour un takeaway COD, le backend bascule PENDING_COUNTER + COUNTER_DEFERRED (visibilité
+        // cuisine immédiate + entrée dans la file d'encaissement comptoir). La commande DISPARAÎT du
+        // panneau « Commandes web » (plus PENDING) et REMONTE dans le panneau « à encaisser »
+        // (counter-collect), où elle s'encaisse inline via confirmCounterPayment → cycle web unifié
+        // en caisse (C1 + C2). Aucune logique fiscale nouvelle côté client (allocation NF525 au VRAI
+        // encaissement). Idempotent (clé minute-bucket, même formule que counter-collect).
+        async acceptWebOrder(o) {
+            if (!o || this.webAccepting[o.id]) return;
+            this.webAccepting = { ...this.webAccepting, [o.id]: true };
+            try {
+                const minuteBucket = Math.floor(Date.now() / 60000);
+                const idempotencyKey = `web-accept-${o.id}-${minuteBucket}`;
+                await axios.post(
+                    `admin/online-order/change-status/${o.id}`,
+                    { status: orderStatusEnum.ACCEPT },
+                    { headers: { 'X-Idempotency-Key': idempotencyKey } }
+                );
+                const num = o.queue_number || o.order_serial_no || o.id;
+                // FR direct (idiome du panneau web, locale FR ADR-007) — pas de raw-label i18n.
+                try {
+                    alertService.success(`Commande web N°${num} acceptée — encaissement au comptoir`);
+                } catch (_) { /* toast best-effort */ }
+                // Rafraîchit les DEUX files : la commande quitte « Commandes web » et apparaît
+                // dans « à encaisser » → le cycle web est visible sans quitter le POS (C2).
+                try {
+                    await this.loadWebOrders();
+                    await this.loadKioskCashOrders();
+                } catch (_) { /* silencieux — toast déjà levé */ }
+            } catch (err) {
+                const msg = err?.response?.data?.message || 'Erreur lors de l\'acceptation de la commande web';
+                try { alertService.error(msg); } catch (_) { /* defensive */ }
+            } finally {
+                this.webAccepting = { ...this.webAccepting, [o.id]: false };
+            }
+        },
+        // [WEB-CAISSE-SYNC 2026-07-13][C1 2026-07-18] « Détails » (secondaire) — ouvre la page
+        // Commandes en ligne pour la gestion complète (rejet, livreur, historique). L'accept
+        // courant se fait INLINE via acceptWebOrder ; ceci reste l'échappatoire « gérer en détail ».
         openWebOrder(o) {
             try {
                 this.$router.push({ name: 'admin.order.show', params: { id: o.id } });
@@ -5503,6 +5555,21 @@ export default {
 }
 .pos-shortcuts__cta--web:hover:not(:disabled) {
   background: var(--pos-v5-info-dark, #1d4e85);
+}
+/* [C1 2026-07-18] Accept INLINE (principal, bleu plein) + Détails (secondaire, contour). */
+.pos-shortcuts__actions {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+.pos-shortcuts__cta--web-details {
+  background: transparent;
+  color: var(--pos-v5-info, #2563a8);
+  border: 1px solid var(--pos-v5-info, #2563a8);
+  padding: 5px 10px;
+}
+.pos-shortcuts__cta--web-details:hover:not(:disabled) {
+  background: rgba(37, 99, 168, 0.10);
 }
 .pos-shortcuts__more {
   display: inline-block;

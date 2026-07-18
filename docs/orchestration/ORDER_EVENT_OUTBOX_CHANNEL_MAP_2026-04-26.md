@@ -15,8 +15,23 @@ Scope: Caisse V1 Wave 2 D-02 + B5b counter payment lifecycle. This file maps the
 | Domain event | Listener | `domain_events.event_type` | Aggregate | Branch source | Stored channel | `broadcast_as` | Required payload keys |
 |---|---|---|---|---|---|---|---|
 | `App\Events\OrderCreated` | `App\Listeners\PersistOrderCreatedToOutbox` | `order.created` | `get_class($order)` + `$order->id` | `$order->branch_id` | `["private-branch.{branch_id}"]` | `OrderCreated` | `order_id`, `queue_number`, `status`, `order_type`, `total`, `created_at` |
-| `App\Events\OrderStatusChanged` | `App\Listeners\PersistOrderStatusChangedToOutbox` | `order.status_changed` | `get_class($order)` + `$order->id` | `$order->branch_id` | `["private-branch.{branch_id}"]` | `OrderStatusChanged` | `order_id`, `queue_number`, `old_status`, `new_status`, `token` |
+| `App\Events\OrderStatusChanged` | `App\Listeners\PersistOrderStatusChangedToOutbox` | `order.status_changed` | `get_class($order)` + `$order->id` | `$order->branch_id` | `["private-branch.{branch_id}"]` (+ `"private-customer.{user_id}"` si `source_surface==='web'`) | `OrderStatusChanged` | `order_id`, `queue_number`, `old_status`, `new_status`, `token` |
 | `App\Events\OrderPaidAtCounter` | `App\Listeners\PersistOrderPaidAtCounterToOutbox` | `order.payment_confirmed` | `get_class($order)` + `$order->id` | `$order->branch_id` | `["private-branch.{branch_id}"]` | `OrderPaidAtCounter` | `order_id`, `queue_number`, `_origin`, `payment_method`, `payment_status`, `fiscal_sequence_no` |
+
+### [C3-CLIENT-NOTIF 2026-07-18] Canal client — notification « prête »
+
+`PersistOrderStatusChangedToOutbox::resolveChannels()` construit le tableau de canaux :
+il inclut TOUJOURS le canal staff `private-branch.{branch_id}` (sync caisse/KDS/OSS, inchangé)
+et, pour une commande WEB (`source_surface==='web'` + `user_id>0`), y AJOUTE le canal privé
+du client `private-customer.{user_id}`. Le même événement `OrderStatusChanged` (contrat/enveloppe
+inchangés) est donc diffusé aux deux canaux via l'outbox existant (retry/dedup réutilisés).
+
+- Canal client déclaré dans `routes/channels.php` : `customer.{customerId}`, autorisé par
+  `(int)$user->id === (int)$customerId` (identitaire, inspoofable, sans requête DB — anti-fuite
+  cross-client ; chaque commande web/invité a un `user_id` unique).
+- Fallback robuste : `/api/frontend/order(/show)` expose `status`/`status_name` (PREPARED = « Prête »)
+  → le compte client bascule « en cours » → « prête » même sans WebSocket.
+- Commandes borne (user = machine) / POS (user = staff/null) : PAS de canal client (par design).
 
 ## Registration
 

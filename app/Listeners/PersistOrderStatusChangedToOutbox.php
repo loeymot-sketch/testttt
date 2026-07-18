@@ -50,7 +50,12 @@ class PersistOrderStatusChangedToOutbox
                     'new_status' => $event->newStatus,
                     'token' => $order->token ?? null,
                 ],
-                'channel' => json_encode(['private-branch.' . $order->branch_id]),
+                // [C3-CLIENT-NOTIF 2026-07-18] Fan-out DEUX canaux via l'outbox EXISTANT
+                // (retry/dedup/validation réutilisés) : le canal STAFF private-branch.{id}
+                // (sync caisse/KDS/OSS, inchangé) ET, pour une commande WEB, le canal privé
+                // du CLIENT private-customer.{user_id} → le compte client reçoit « prête » en
+                // temps réel. Voir resolveChannels() + routes/channels.php customer.{customerId}.
+                'channel' => json_encode($this->resolveChannels($order)),
                 'broadcast_as' => 'OrderStatusChanged',
                 'correlation_id' => $correlationId,
                 'occurred_at' => now(),
@@ -128,6 +133,33 @@ class PersistOrderStatusChangedToOutbox
         }
 
         return (string) Str::uuid();
+    }
+
+    /**
+     * [C3-CLIENT-NOTIF 2026-07-18] Canaux de diffusion pour un changement de statut.
+     *
+     * Toujours le canal STAFF `private-branch.{branch_id}` (sync caisse/KDS/OSS, inchangé).
+     * En PLUS, pour une commande WEB rattachée à un compte client (`user_id` positif), le
+     * canal privé du client `private-customer.{user_id}` → le compte reçoit « prête » en
+     * temps réel (fallback polling /api/frontend/order/show garanti par ailleurs).
+     *
+     * Le prédicat est volontairement RESTREINT à `source_surface==='web'` : les commandes
+     * borne (user_id = compte machine, pas un client) et POS (user_id = staff/null) ne
+     * doivent PAS diffuser vers un canal client. Élargir à 'app'/mobile le jour où ces
+     * surfaces seront câblées (repos standalone V1 non câblés — mandat owner).
+     *
+     * @return array<int,string>
+     */
+    private function resolveChannels(object $order): array
+    {
+        $channels = ['private-branch.' . $order->branch_id];
+
+        $userId = (int) ($order->user_id ?? 0);
+        if ($userId > 0 && (string) ($order->source_surface ?? '') === 'web') {
+            $channels[] = 'private-customer.' . $userId;
+        }
+
+        return $channels;
     }
 
     private function resolveOrigin(object $order): string
