@@ -1,6 +1,0 @@
-{
-  "test_id": "F03",
-  "threshold_ms": 200,
-  "measured_ms": 33,
-  "result": "PASS"
-}

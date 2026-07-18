@@ -1,9 +1,0 @@
-[
-  {
-    "url": "http://127.0.0.1:8766/api/auth/guest-signup/otp",
-    "method": "POST",
-    "status": 200,
-    "duration_ms": null,
-    "ts": 1783528078072
-  }
-]
