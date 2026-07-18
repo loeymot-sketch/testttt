@@ -864,20 +864,41 @@ class FrontendOrderService
     }
 
     /**
-     * [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] Customer-facing (kiosk/web)
-     * fiscal-correctness gate for ANY discretionary discount (coupon + kiosk
-     * loyalty redeem). Mirrors OrderService::assertDiscretionaryDiscountAllowed.
-     * At a non-zero VAT rate the frozen PricingService/ZReportService compute
-     * per-line TVA on the PRE-discount base → a discounted order signs a
-     * fiscally-incorrect NF525 Z (F1, dormant only at 0% VAT). Refused in V1
-     * until F1 is fixed under a lock-plan (pos.manual_discount_enabled = the
-     * discretionary-discount master flag).
+     * [DÉCOUPLAGE FIDÉLITÉ 2026-07-18] Customer-facing (kiosk/web) discount gate.
+     *
+     * La fidélité est désormais découplée des remises discrétionnaires. Sur ce
+     * chemin, coupon et redeem fidélité sont MUTUELLEMENT EXCLUSIFs
+     * (applyKioskLoyaltyDiscount early-return si un coupon est présent, sans
+     * poser $this->loyaltyApplied) → $discount provient soit du coupon SOIT de la
+     * fidélité, jamais des deux. On route donc :
+     *
+     *   - remise fidélité ($this->loyaltyApplied) → flag DÉDIÉ `pos.loyalty_enabled`
+     *     (défaut true). F1 (netting TVA du Z sur base remisée) est FIXÉ + prouvé
+     *     (ZReportDiscountNettingTest, incl. close()+sign()+verifyChain() sur un Z
+     *     remisé) → un ordre remisé fidélité signe un Z fiscalement CORRECT.
+     *   - remise coupon (discrétionnaire) → kill-switch `pos.manual_discount_enabled`
+     *     (défaut false) — INCHANGÉ : les remises restent coupées.
+     *
+     * Mirrors OrderService::assertDiscretionaryDiscountAllowed pour le coupon.
      */
     private function assertDiscretionaryDiscountAllowed(float $discount): void
     {
-        if ($discount > 0.0 && config('pos.manual_discount_enabled') !== true) {
+        if ($discount <= 0.0) {
+            return;
+        }
+
+        if ($this->loyaltyApplied) {
+            if (config('pos.loyalty_enabled') !== true) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'discount' => "La fidélité est temporairement désactivée.",
+                ]);
+            }
+            return;
+        }
+
+        if (config('pos.manual_discount_enabled') !== true) {
             throw \Illuminate\Validation\ValidationException::withMessages([
-                'discount' => "Les remises (coupon, fidélité) sont désactivées en V1 (correction fiscale TVA/HT en attente).",
+                'discount' => "Les remises (coupon) sont désactivées en V1.",
             ]);
         }
     }

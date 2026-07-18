@@ -212,17 +212,14 @@ class KioskLoyaltyDoubleRedeemRefusedTest extends TestCase
     }
 
     /**
-     * [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-31 Q3] The pre-redeem endpoint
-     * (POST /api/frontend/loyalty/redeem) debits points in its own committed
-     * transaction. With discretionary discounts OFF (V1 default) the downstream
-     * discounted order is refused, so the debit would strand the customer's points.
-     * The endpoint is gated at the source: flag OFF → 422 BEFORE any debit/ledger.
-     * (Re-enabled automatically when the flag flips on post-F1-fix.)
+     * [DÉCOUPLAGE FIDÉLITÉ 2026-07-18] Le pre-redeem (POST /api/frontend/loyalty/
+     * redeem) débite les points dans sa propre transaction ; le gate DÉDIÉ
+     * fidélité (loyalty_enabled) le refuse à la source AVANT tout débit/ledger.
+     * loyalty_enabled=false → 422, aucun point débité, aucun ledger.
      */
-    public function test_pre_redeem_is_refused_when_discounts_disabled_v1(): void
+    public function test_pre_redeem_is_refused_when_loyalty_disabled(): void
     {
-        // Override the setUp flag-ON to assert the PRODUCTION V1 default (OFF).
-        config(['pos.manual_discount_enabled' => false]);
+        config(['pos.loyalty_enabled' => false]);
         Sanctum::actingAs($this->kioskUser, ['kiosk:order']);
 
         $before = (int) $this->loyaltyCustomer->fresh()->loyalty_points;
@@ -235,6 +232,29 @@ class KioskLoyaltyDoubleRedeemRefusedTest extends TestCase
         // No points debited, no pending ledger written — refused at the source.
         $this->assertSame($before, (int) $this->loyaltyCustomer->fresh()->loyalty_points, 'Refused pre-redeem must not debit points.');
         $this->assertSame(0, LoyaltyTransaction::where('type', 'redeem')->count(), 'Refused pre-redeem must not write a ledger entry.');
+    }
+
+    /**
+     * [DÉCOUPLAGE FIDÉLITÉ 2026-07-18] Couper les remises DISCRÉTIONNAIRES
+     * (manual_discount_enabled=false) ne coupe PLUS le pre-redeem fidélité :
+     * loyalty_enabled reste true → le débit s'applique (200). Preuve du découplage.
+     */
+    public function test_pre_redeem_survives_manual_discount_killswitch(): void
+    {
+        config(['pos.manual_discount_enabled' => false]);
+        config(['pos.loyalty_enabled' => true]);
+        Sanctum::actingAs($this->kioskUser, ['kiosk:order']);
+
+        $before = (int) $this->loyaltyCustomer->fresh()->loyalty_points;
+
+        $this->postJson('/api/frontend/loyalty/redeem', [
+            'code' => $this->loyaltyCustomer->loyalty_code,
+            'points' => 100,
+        ])->assertStatus(200);
+
+        // La fidélité est active → le pre-redeem débite bien 100 points.
+        $this->assertSame($before - 100, (int) $this->loyaltyCustomer->fresh()->loyalty_points, 'Le pre-redeem doit débiter les points quand la fidélité est active.');
+        $this->assertSame(1, LoyaltyTransaction::where('type', 'redeem')->count(), 'Un ledger de redeem doit être écrit.');
     }
 
     private function bypassKioskQuoteSealForLoyaltySentinel(): void

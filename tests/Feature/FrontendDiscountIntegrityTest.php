@@ -281,27 +281,23 @@ class FrontendDiscountIntegrityTest extends TestCase
     }
 
     /**
-     * [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] Sentinel — discretionary
-     * discounts (coupon + kiosk/web loyalty redeem) are OFF by default in V1 on
-     * the customer-facing FrontendOrderService path. At a non-zero VAT rate the
-     * discount→HT/TVA split in the frozen PricingService/ZReportService is wrong
-     * (TVA computed on the PRE-discount base) → a discounted order would sign a
-     * fiscally-incorrect NF525 Z (the F1 defect). Loyalty AUTO-accrues, so the
-     * loyalty sub-path is reachable with zero admin action. This locks the gate
-     * (FrontendOrderService::assertDiscretionaryDiscountAllowed): flag OFF → any
-     * non-zero discount is refused (422) for BOTH the coupon and loyalty
-     * sub-paths, and the whole order transaction rolls back (no order, no coupon
-     * link, no loyalty deduction/ledger — so a refused redeem never burns points).
+     * [DÉCOUPLAGE FIDÉLITÉ 2026-07-18] Sentinel — les kill-switches côté
+     * FrontendOrderService::assertDiscretionaryDiscountAllowed refusent chacun leur
+     * famille de remise, avec rollback intégral de la transaction :
+     *   - coupon (discrétionnaire) → manual_discount_enabled=false → 422 + rollback.
+     *   - redeem fidélité → loyalty_enabled=false → 422 + rollback (aucun point brûlé).
+     * Coupon et redeem sont mutuellement exclusifs sur ce chemin, donc les deux
+     * flags gouvernent des sous-chemins disjoints. Le découplage (redeem AUTORISÉ
+     * quand manual_discount_enabled=false mais loyalty_enabled=true) est prouvé par
+     * LoyaltyDecoupledFromManualDiscountTest.
      */
     public function test_discretionary_discount_killswitch_engages_on_frontend_v1(): void
     {
-        // [GOAL-GOLIVE-VAT10 2026-05-31] Post-F1-fix reactivation: default ENABLED.
-        // Flip the flag explicitly to assert the KILL-SWITCH path still refuses both
-        // sub-paths (coupon + loyalty) with a full transaction rollback. This is the
-        // safety-rollback channel if F1 ever needs to be re-disabled in prod.
+        // Chaque famille est coupée par SON kill-switch dédié ; on vérifie le
+        // rollback intégral (canal de sécurité si une famille doit être re-coupée).
         config(['pos.manual_discount_enabled' => false]);
 
-        // --- Sub-path A: coupon ---
+        // --- Sub-path A: coupon (kill-switch remises manuelles) ---
         $coupon = Coupon::forceCreate([
             'name' => 'GATE10',
             'description' => '10 percent',
@@ -330,11 +326,15 @@ class FrontendDiscountIntegrityTest extends TestCase
         $this->assertSame(0, OrderCoupon::count(), 'Refused coupon order must not persist a coupon link.');
         $this->assertSame(0, \App\Models\FrontendOrder::count(), 'Refused coupon order must roll back entirely.');
 
-        // --- Sub-path B: kiosk/web loyalty redeem (auto-accrues → reachable with zero admin action) ---
-        // The FrontendOrderService kiosk-loyalty lookup matches status=1 (legacy
-        // active), so use a status=1 redeemer holding enough points. 5.00 EUR ==
-        // 500 pts (rate 100) >= min 100, balance 500 → the redeem WOULD apply a
-        // 5.00 € discount, which the gate must refuse (422) + roll the whole tx back.
+        // --- Sub-path B: kiosk/web loyalty redeem (kill-switch DÉDIÉ fidélité) ---
+        // [DÉCOUPLAGE FIDÉLITÉ 2026-07-18] Le redeem fidélité est gouverné par
+        // loyalty_enabled (pas manual_discount_enabled) : on active donc SON
+        // kill-switch pour prouver le refus + rollback (aucun point brûlé). The
+        // FrontendOrderService kiosk-loyalty lookup matches status=1 (legacy active),
+        // so use a status=1 redeemer holding enough points. 5.00 EUR == 500 pts
+        // (rate 100) >= min 100, balance 500 → the redeem WOULD apply a 5.00 €
+        // discount, which the loyalty kill-switch must refuse (422) + roll tx back.
+        config(['pos.loyalty_enabled' => false]);
         $redeemer = User::forceCreate([
             'name' => 'Loyalty Redeemer',
             'email' => 'loyalty-redeemer@test.local',

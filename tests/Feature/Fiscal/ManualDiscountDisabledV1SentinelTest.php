@@ -133,12 +133,45 @@ class ManualDiscountDisabledV1SentinelTest extends TestCase
             ->assertStatus(422);
     }
 
-    public function test_loyalty_redeem_is_refused_when_disabled(): void
+    public function test_loyalty_redeem_is_decoupled_from_manual_discount_killswitch(): void
     {
-        // [abuse-e2e r2 P1] Loyalty redeem applies a discount POST-create without
-        // recomputing tax → F1. The PosRedemptionService gate (top of applyToOrder)
-        // throws DISCOUNTS_DISABLED_V1 before touching any order/customer state.
+        // [DÉCOUPLAGE FIDÉLITÉ 2026-07-18] La fidélité est découplée des remises
+        // discrétionnaires (owner « coupe les remises MAIS garde la fidélité »).
+        // Couper les remises manuelles (manual_discount_enabled=false) ne coupe
+        // PLUS le redeem fidélité : il est gaté par le flag dédié loyalty_enabled.
+        // F1 (netting TVA du Z sur base remisée) est FIXÉ + prouvé
+        // (ZReportDiscountNettingTest) → le redeem est fiscalement sûr.
         Config::set('pos.manual_discount_enabled', false);
+        Config::set('pos.loyalty_enabled', true);
+
+        $order = \App\Models\Order::factory()->create([
+            'branch_id' => $this->branch->id,
+            'order_type' => OrderType::POS,
+            'payment_status' => \App\Enums\PaymentStatus::UNPAID,
+            'total' => 10.00,
+            'subtotal' => 10.00,
+            'discount' => 0,
+        ]);
+
+        // Le kill-switch remises manuelles ne doit PLUS lever LOYALTY_DISABLED :
+        // le redeem passe le gate remise (découplé) et échoue plus loin sur le
+        // code fidélité inexistant (CUSTOMER_NOT_FOUND) — preuve qu'aucun gate
+        // « remise désactivée » n'a court-circuité l'appel.
+        $service = app(\App\Services\Loyalty\PosRedemptionService::class);
+        try {
+            $service->applyToOrder($order, 100, 'LOYAL-CODE', (int) $this->operator->id);
+            $this->fail('Attendu CUSTOMER_NOT_FOUND (code fidélité factice).');
+        } catch (\App\Services\Loyalty\PosRedemptionException $e) {
+            $this->assertSame('CUSTOMER_NOT_FOUND', $e->errorCode, 'Le redeem doit passer le gate remise (découplé) et échouer sur le code inexistant.');
+        }
+    }
+
+    public function test_loyalty_redeem_is_refused_when_loyalty_disabled(): void
+    {
+        // Kill-switch DÉDIÉ fidélité : loyalty_enabled=false refuse le redeem AVANT
+        // toute mutation (LOYALTY_DISABLED), sans réactiver les remises manuelles.
+        Config::set('pos.loyalty_enabled', false);
+
         $order = \App\Models\Order::factory()->create([
             'branch_id' => $this->branch->id,
             'order_type' => OrderType::POS,
@@ -151,9 +184,9 @@ class ManualDiscountDisabledV1SentinelTest extends TestCase
         $service = app(\App\Services\Loyalty\PosRedemptionService::class);
         try {
             $service->applyToOrder($order, 100, 'LOYAL-CODE', (int) $this->operator->id);
-            $this->fail('Loyalty redeem must be refused when discretionary discounts are disabled.');
+            $this->fail('Loyalty redeem must be refused when loyalty is disabled.');
         } catch (\App\Services\Loyalty\PosRedemptionException $e) {
-            $this->assertSame('DISCOUNTS_DISABLED_V1', $e->errorCode);
+            $this->assertSame('LOYALTY_DISABLED', $e->errorCode);
             $this->assertSame(422, $e->httpStatus);
         }
     }

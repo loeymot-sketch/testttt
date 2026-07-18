@@ -170,16 +170,62 @@ return [
     // kiosk loyalty button + web coupon entry, refusing the pre-redeem at source).
     // The kill-switch path is locked by the *_killswitch_* sentinels.
     // [OWNER 2026-07-18] « Coupe les remises ! » → défaut RE-flippé à false
-    // (kill-switch réengagé). Refuse toute remise non-nulle aux chokepoints de
-    // création, masque le bouton fidélité borne + l'entrée coupon web, refuse le
-    // pre-redeem. Côté sûr fiscal tant que la contradiction preflight↔config sur
-    // F1 (split TVA remise) n'est pas retranchée. Réactivation = owner + .env
-    // POS_MANUAL_DISCOUNT_ENABLED=true.
+    // (kill-switch réengagé). Refuse toute remise DISCRÉTIONNAIRE non-nulle
+    // (remise manuelle caisse + coupon) aux chokepoints de création + masque
+    // l'entrée coupon web. Réactivation = owner + .env POS_MANUAL_DISCOUNT_ENABLED=true.
+    //
+    // [OWNER 2026-07-18 — DÉCOUPLAGE FIDÉLITÉ] « garde la fidélité ». Ce
+    // kill-switch ne pilote PLUS la fidélité. accrual (gain de points) /
+    // affichage solde / QR / scan / bouton « Mon compte » borne = TOUJOURS
+    // actifs (jamais gatés ici — l'accrual n'applique aucune réduction, 0 risque
+    // fiscal). Le REDEEM de points (dépense → réduction) est déplacé sur son
+    // propre flag `loyalty_enabled` ci-dessous. F1 (netting TVA du Z sur base
+    // remisée) est FIXÉ + prouvé (ZReportDiscountNettingTest 5/5, incl.
+    // close()+sign()+verifyChain() sur un Z réellement remisé) → un ordre remisé
+    // fidélité signe un Z fiscalement CORRECT. Couper les remises manuelles ne
+    // coupe donc plus la fidélité.
     'manual_discount_enabled' => filter_var(
         env('POS_MANUAL_DISCOUNT_ENABLED', false),
         FILTER_VALIDATE_BOOLEAN,
         FILTER_NULL_ON_FAILURE,
     ) ?? false,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Loyalty program master switch (DÉCOUPLAGE FIDÉLITÉ 2026-07-18)
+    |--------------------------------------------------------------------------
+    |
+    | Owner 2026-07-18 : « coupe les remises MAIS garde la fidélité ». Le
+    | kill-switch unique `manual_discount_enabled` coupait AUSSI la fidélité — un
+    | seul chokepoint gatait remise manuelle + coupon + redeem fidélité ensemble.
+    | Ce flag SÉPARE la fidélité des remises discrétionnaires :
+    |
+    |   - accrual / affichage solde / QR / scan / config / bouton « Mon compte »
+    |     borne : TOUJOURS actifs — JAMAIS gatés par un flag remise (l'accrual
+    |     n'applique aucune réduction → 0 risque fiscal).
+    |   - REDEEM de points (dépense → réduction) : gaté ICI (loyalty_enabled).
+    |
+    | Redeem = famille F1 (réduction → split TVA sur base remisée). F1 est FIXÉ
+    | + prouvé dans le ZReportService frozen (netting TVA sur base NET, ratio =
+    | (subtotal-discount)/subtotal), attesté par ZReportDiscountNettingTest (5/5,
+    | incl. close()+sign()+verifyChain() sur un Z réellement remisé). Un ordre
+    | remisé fidélité signe donc un Z fiscalement CORRECT → redeem fiscalement
+    | SÛR. Défaut = true.
+    |
+    | Kill-switch fidélité : POS_LOYALTY_ENABLED=false désactive UNIQUEMENT le
+    | redeem (accrual/solde restent actifs), sans réactiver les remises manuelles.
+    | Indépendant de manual_discount_enabled dans les deux sens.
+    |
+    | Note surface borne : l'UI de redeem borne reste derrière le flag DÉDIÉ
+    | `kiosk.promo_enabled` (défaut false) tant que le câblage coupon_id borne
+    | n'est pas réparé (défaut de wiring séparé, hors périmètre). Le redeem
+    | fidélité utilisable en V1 = caisse (PosRedemptionService) + API.
+    */
+    'loyalty_enabled' => filter_var(
+        env('POS_LOYALTY_ENABLED', true),
+        FILTER_VALIDATE_BOOLEAN,
+        FILTER_NULL_ON_FAILURE,
+    ) ?? true,
 
     /*
     |--------------------------------------------------------------------------

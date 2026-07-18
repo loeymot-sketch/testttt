@@ -63,16 +63,19 @@ final class PosRedemptionService
      */
     public function applyToOrder(Order $order, int $points, string $loyaltyCode, ?int $cashierId = null): array
     {
-        // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] Loyalty redeem applies a
-        // discount POST-create and updates order.discount + order.total but NOT
-        // order.total_tax / order_items.tax_amount — so at a non-zero VAT rate it
-        // signs a fiscally-incorrect Z (the frozen F1 split defect). Refuse in V1
-        // until F1 is fixed under a lock-plan. Same master gate as manual/coupon
-        // discounts (pos.manual_discount_enabled = discretionary-discount flag).
-        if (config('pos.manual_discount_enabled') !== true) {
+        // [DÉCOUPLAGE FIDÉLITÉ 2026-07-18] Loyalty redeem applies a discount
+        // POST-create (order.discount + order.total, NOT order.total_tax) — the F1
+        // order shape. F1 (netting TVA du Z sur base remisée) est FIXÉ + prouvé
+        // (ZReportDiscountNettingTest, incl. close()+sign()+verifyChain() sur un Z
+        // remisé) → le ZReportService frozen nette la TVA sur la base NET, donc un
+        // ordre remisé fidélité signe un Z fiscalement CORRECT → redeem sûr. Gaté
+        // désormais par le flag DÉDIÉ `pos.loyalty_enabled` (défaut true), DÉCOUPLÉ
+        // du kill-switch remises manuelles `pos.manual_discount_enabled` : couper
+        // les remises manuelles ne coupe plus la fidélité (owner « garde la fidélité »).
+        if (config('pos.loyalty_enabled') !== true) {
             throw new PosRedemptionException(
-                'DISCOUNTS_DISABLED_V1',
-                "La fidélité (remise) est désactivée en V1 (correction fiscale TVA/HT en attente).",
+                'LOYALTY_DISABLED',
+                "La fidélité est temporairement désactivée.",
                 422
             );
         }

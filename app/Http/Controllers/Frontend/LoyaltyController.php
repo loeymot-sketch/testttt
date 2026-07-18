@@ -311,17 +311,20 @@ class LoyaltyController extends Controller
      */
     public function redeem(Request $request)
     {
-        // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-31 Q3] Pre-redeem debits loyalty
-        // points immediately in its own transaction. While discretionary discounts
-        // are disabled in V1 (pos.manual_discount_enabled !== true) the downstream
-        // discounted order is refused by the order-creation gate, which would strand
-        // the already-debited points (separate committed txn, not rolled back).
-        // Refuse the redeem at the source so points are NEVER debited while discounts
-        // are off. Re-enabled automatically when the flag flips on (post F1-fix).
-        if (config('pos.manual_discount_enabled') !== true) {
+        // [DÉCOUPLAGE FIDÉLITÉ 2026-07-18] Pre-redeem debits loyalty points in its
+        // own transaction; the downstream discounted order must be accepted by the
+        // order-creation gate or the debit strands. Le redeem est une réduction
+        // (famille F1). F1 (netting TVA du Z sur base remisée) est FIXÉ + prouvé
+        // (ZReportDiscountNettingTest) → un ordre remisé fidélité signe un Z
+        // fiscalement correct → redeem fiscalement sûr. Gaté désormais par le flag
+        // DÉDIÉ `pos.loyalty_enabled` (défaut true), DÉCOUPLÉ du kill-switch remises
+        // manuelles `pos.manual_discount_enabled` (owner « coupe les remises MAIS
+        // garde la fidélité »). Le chokepoint aval FrontendOrderService applique la
+        // même logique (branche fidélité → loyalty_enabled) → pas de stranding.
+        if (config('pos.loyalty_enabled') !== true) {
             return response()->json([
                 'status' => false,
-                'message' => "La fidélité (remise) est désactivée en V1 (correction fiscale TVA/HT en attente).",
+                'message' => "La fidélité est temporairement désactivée.",
             ], 422);
         }
 
