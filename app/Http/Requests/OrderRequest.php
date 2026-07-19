@@ -159,6 +159,14 @@ class OrderRequest extends FormRequest
             // [P9.5.8] Frontend kiosk payload no longer sends client totals; server recomputes via PricingService SSOT.
             // [P5] If a client still sends total, reject negatives (align PosOrderRequest / audit P50-4).
             'total' => ['nullable', 'numeric', 'min:0'],
+            // [WEB-TOTAL-GUARD 2026-07-19] Total attendu OPTIONNEL déclaré par le client
+            // (TTC). NE SERT JAMAIS à facturer — le serveur recalcule toujours son total
+            // via PricingService SSOT. Sert uniquement de garde défense-en-profondeur dans
+            // FrontendOrderService::myOrderStore : si |total_serveur − expected_total| > 0.01
+            // → 422, au lieu de sceller en silence une commande sous-facturée (racine du
+            // « drop de prix » web, DIAG reports/goal-drop-prix-2026-07-19). Absent →
+            // aucune garde (rétro-compat, additif). Négatif rejeté (symétrie avec `total`).
+            'expected_total' => ['nullable', 'numeric', 'min:0'],
             'order_type' => ['required', 'numeric'],
             'is_advance_order' => ['required', 'numeric'],
             'address_id' => $isDelivery ? [

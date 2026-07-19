@@ -563,6 +563,31 @@ class FrontendOrderService
                     } else {
                         $this->frontendOrder->total = round(max(0, $realSubtotal + $totalTax + $this->frontendOrder->delivery_charge - $calculatedDiscount), 2);
                     }
+
+                    // [WEB-TOTAL-GUARD 2026-07-19] Défense-en-profondeur non-frozen contre le
+                    // « drop de prix » web (racine : reports/goal-drop-prix-2026-07-19/DIAG_WEB_BORNE.md).
+                    // Le front web standalone chiffre des options côté client puis en OMET
+                    // silencieusement au submit (api.js resolveLine skip) → le payload arrive
+                    // incomplet → PricingService (SSOT) scelle un total INFÉRIEUR à ce que le
+                    // client croyait payer, sans aucune erreur (vu 12€, facturé 10€). Contrairement
+                    // à la borne, le web n'a PAS de seal (OrderQuoteService::sealForCommit, kiosk-only).
+                    // Garde : si le client déclare un total attendu (expected_total, OPTIONNEL), on
+                    // REFUSE de sceller quand le total serveur diverge de plus d'un centime. Le total
+                    // ci-dessus reste 100% SSOT (PricingService) — expected_total ne SERT JAMAIS à
+                    // facturer, uniquement de témoin. Rétro-compat : champ absent → aucun rejet.
+                    // N'affecte pas le sealing borne ci-dessous (inchangé) ; sur borne le seal 409
+                    // demeure la défense de référence.
+                    if ($request->filled('expected_total')) {
+                        $expectedTotal = round((float) $request->input('expected_total'), 2);
+                        $serverTotal = (float) $this->frontendOrder->total;
+                        if (abs($serverTotal - $expectedTotal) > 0.01) {
+                            throw new HttpException(
+                                422,
+                                'Le total ne correspond pas au montant attendu — certaines options sont peut-être indisponibles. Merci de recommencer votre commande.'
+                            );
+                        }
+                    }
+
                     if ($isKioskMachineOrder) {
                         app(OrderQuoteService::class)->sealForCommit(
                             $request,
