@@ -34,7 +34,7 @@ class PersistItemAvailabilityChangedToOutbox
 
         if ($event->branchId !== null) {
             // Branch-scoped toggle (MENU_86) — single-branch channel.
-            $channels = ['private-branch.' . $event->branchId];
+            $channels = self::channelsForBranch((int) $event->branchId);
         } else {
             // Global menu change (admin edits item) — fan-out to every active branch.
             // [ultra-goal A3 heal 2026-05-13] Accept legacy `1` alongside Status::ACTIVE (=5);
@@ -43,7 +43,7 @@ class PersistItemAvailabilityChangedToOutbox
             $channels = Branch::query()
                 ->whereIn('status', [Status::ACTIVE, 1])
                 ->pluck('id')
-                ->map(fn (int $branchId): string => 'private-branch.' . $branchId)
+                ->flatMap(fn (int $branchId): array => self::channelsForBranch((int) $branchId))
                 ->values()
                 ->all();
         }
@@ -116,6 +116,33 @@ class PersistItemAvailabilityChangedToOutbox
                 // will re-attempt dispatch when broadcaster recovers.
             }
         });
+    }
+
+    /**
+     * Channel fan-out for one branch's availability event.
+     *
+     * [WEB-86-SYNC 2026-07-19] Availability (86 / rupture) is emitted on TWO channels:
+     *   - `private-branch.{id}` — STAFF real-time (POS/KDS/Kiosk), auth-gated
+     *     (routes/channels.php restricts to kiosk-token/own-branch/Admin). UNCHANGED.
+     *   - `public-menu.{id}`   — CUSTOMER-facing web. Laravel treats any name WITHOUT
+     *     the `private-`/`presence-` prefix as a PUBLIC channel → the unauthenticated
+     *     web can subscribe (Echo.channel('public-menu.1')) without a token. This mirrors
+     *     the kiosk private path so the web greys a 86'd item in quasi-real-time.
+     *
+     * Safe to broadcast the SAME outbox payload on the public channel: the availability
+     * envelope is PII-free by contract (item_id/status/price/type/is_available/branch_id/
+     * reason) — the exact catalogue facts already exposed by the PUBLIC GET /api/frontend/item.
+     * Polling that same endpoint remains the reliable SSOT socle; this WS hop is the
+     * instant bonus (a re-poll trigger for web clients).
+     *
+     * @return array<int, string>
+     */
+    private static function channelsForBranch(int $branchId): array
+    {
+        return [
+            'private-branch.' . $branchId,
+            'public-menu.' . $branchId,
+        ];
     }
 
     private function resolveCorrelationId(): string

@@ -147,8 +147,10 @@ class AvailabilityServiceTest extends TestCase
             ->first();
         $this->assertNotNull($event);
 
+        // [WEB-86-SYNC 2026-07-19] canal STAFF privé (inchangé) + canal PUBLIC web sans auth.
         $channels = json_decode($event->channel, true);
-        $this->assertSame(['private-branch.' . $branch->id], $channels);
+        $this->assertContains('private-branch.' . $branch->id, $channels);
+        $this->assertContains('public-menu.' . $branch->id, $channels);
 
         $payload = is_array($event->payload) ? $event->payload : json_decode($event->payload, true);
         $this->assertSame((int) $item->id, (int) $payload['item_id']);

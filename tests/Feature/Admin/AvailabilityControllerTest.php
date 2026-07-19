@@ -334,8 +334,11 @@ class AvailabilityControllerTest extends TestCase
             ->first();
         $this->assertNotNull($domainEvent);
 
+        // [WEB-86-SYNC 2026-07-19] Le 86 diffuse sur le canal STAFF privé (borne/POS/KDS,
+        // inchangé) ET sur un canal PUBLIC sans auth (public-menu.{id}) pour le web client.
         $channels = json_decode($domainEvent->channel, true);
-        $this->assertSame(['private-branch.' . $branch->id], $channels);
+        $this->assertContains('private-branch.' . $branch->id, $channels);
+        $this->assertContains('public-menu.' . $branch->id, $channels);
 
         $payload = is_array($domainEvent->payload) ? $domainEvent->payload : json_decode($domainEvent->payload, true);
         $this->assertSame((int) $item->id, (int) $payload['item_id']);
