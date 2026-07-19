@@ -56,3 +56,18 @@ page blanche du 16/07). Générateur `--check` contre le VPS : **0 dérive** (38
    clé forte des DEUX côtés avant ouverture réelle — registre secrets `docs/HANDOVER_SECRETS_REGISTRY.md`.
 2. Clés SMS (OTP par vrai SMS ; aujourd'hui lu en table pour l'e2e). 3. Chaîne fiscale VPS (Workstream A).
 4. Order test #171 laissé PENDING (non-fiscalisé, inoffensif) — annulable depuis la caisse si indésiré.
+
+## PHASE 2 — « corrige le reste deep » (owner : clés API en dernier) — ✅ CONVERGÉ
+- **Durcissement deploy** (`9c1bbcc0d`) : `deploy-lecayenne.sh` pose `FRONTEND_WEB_DOMAIN` (idempotent, avant
+  config:cache) + smoke ACAO + bannière honnête si CORS cassé (pas de rollback). Anti-régression du P0 CORS.
+- **2 audits adversaires** (deploy-path + web non-Tacos) : **money-path PROPRE sur tous les composables**
+  (Bol/Burger enfant/Menu enfant/Sandwich/Galette/Frites vérifiés vs backend live) — drop-class fermé partout.
+- **Fixes honnêteté web** (`4f9c688`, ?v=c) : trophées a1/a2 plus faux-débloqués (compte 0 pt = « 0 débloqués
+  sur 6 » — **validé navigateur**) ; PAST_ORDERS démo supprimé + `##` id corrigé ; faux N° repli C-0000/C-1234 → '—'.
+- **Validé navigateur sur le déployé** : suivi client · historique · fidélité (QR/paliers) · cross-surface data
+  (order #171 = file caisse/KDS) · multi-sauce noms cuisine (item_extras « Sauce supplémentaire (Algérienne,
+  Andalouse) ») · assets+mobile CSS 200.
+- **Faux-signalement corrigé** : vignettes upsell « vides » = lazy-load capture rapide, pas un défaut (assets 200).
+- **Restant P3 sans impact visible (noté, non corrigé)** : perks PEPPER_CLUB non-rendus, code mort
+  forgot/socialNotice, créneaux >ASAP informatifs. **86 visuel sur déployé** non re-testé (écriture DB VPS
+  bloquée par le classifier) — validé structurellement (API is_available + polling + preuve locale antérieure).
