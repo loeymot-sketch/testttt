@@ -68,6 +68,15 @@ page blanche du 16/07). Générateur `--check` contre le VPS : **0 dérive** (38
   (order #171 = file caisse/KDS) · multi-sauce noms cuisine (item_extras « Sauce supplémentaire (Algérienne,
   Andalouse) ») · assets+mobile CSS 200.
 - **Faux-signalement corrigé** : vignettes upsell « vides » = lazy-load capture rapide, pas un défaut (assets 200).
-- **Restant P3 sans impact visible (noté, non corrigé)** : perks PEPPER_CLUB non-rendus, code mort
-  forgot/socialNotice, créneaux >ASAP informatifs. **86 visuel sur déployé** non re-testé (écriture DB VPS
-  bloquée par le classifier) — validé structurellement (API is_available + polling + preuve locale antérieure).
+- **86 visuel sur déployé** non re-testé (écriture DB VPS bloquée par le classifier) — validé structurellement
+  (API is_available + polling + preuve locale antérieure).
+
+### PHASE 2b (2e « continue ») — ✅
+- **« 70 vs 0 pts » = PAS un bug** : badge nav = avatar 2 derniers chiffres du téléphone (`components.jsx:114`), pas les points.
+- **perks Pepper Club NON honorés supprimés+déployés+validés** (`9692dee`, ?v=d) : « Frites gratuites », « 10%
+  remise permanente », « Invitations VIP »… = données mortes mensongères (0 consommateur) retirées ; 38 items +
+  4 paliers perks:none vérifiés navigateur ; générateur --check 0 dérive.
+- **Reste = décisions/accès OWNER, pas de l'autonome** : (1) créneaux retrait >ASAP tous is_advance_order:0 =
+  décision produit (garder/retirer) ; (2) validation UI caisse/KDS sur le VPS = besoin credentials admin (saisie
+  mdp interdite côté agent) ; (3) push des commits backend tooling/docs locaux ; (4) go-live : clés API+SMS,
+  chaîne fiscale. Code mort cosmétique (forgot/socialNotice) laissé (risque>bénéfice).
