@@ -26,3 +26,33 @@ Owner : « déploie tout et valide en test-e2e, ultra plan deep, exécute ». Mo
 - Deploy = hard-to-reverse : owner a explicitement demandé. Rollback auto intégré au script backend ; web = revert commit Vercel.
 - Chaîne fiscale VPS = TAMPER pré-existant connu (Workstream A, non-bloquant deploy).
 - Le bonus WS 86 instantané (soketi public) n'est pas activé — le polling web assure.
+
+## RÉSULTAT (exécuté 2026-07-19) — ✅ CONVERGÉ
+### W1 backend VPS — ✅ vert
+HEAD `19d2bf8e`, migration TVA 10% `2026_07_18_150000` DONE, triggers NF525 10/10, healthz 200,
+`/kiosk/idle` bundle frais, rollback `5394e1a9` gardé. (Chaîne = TAMPER pré-existant, non-bloquant.)
+
+### W2 web Vercel — ✅ vert
+`site-lecayenne.vercel.app` (HTTP 200). index.html : api-base-url→VPS, **meta api-key ajouté** (= MIX_API_KEY
+VPS ; le défaut `b6d68…` donnait 400), cache-bust →`b`. 19 commits web accumulés déployés (dont P0 checkout
+page blanche du 16/07). Générateur `--check` contre le VPS : **0 dérive** (38/38 prix+flags). Commit web `92c91a7`.
+
+### W3 validation e2e sur le déployé — ✅ vert
+- **P0 TROUVÉ+CORRIGÉ en cours de valid : CORS**. Le VPS ne renvoyait PAS d'`Access-Control-Allow-Origin`
+  pour l'origine Vercel (curl marchait = trompeur ; un navigateur aurait bloqué → checkout mort). Racine :
+  `FRONTEND_WEB_DOMAIN` absent du `.env` VPS (`config/cors.php:18` = `env('FRONTEND_WEB_DOMAIN')` → null →
+  filtré). **Fix** : `FRONTEND_WEB_DOMAIN=https://site-lecayenne.vercel.app` posé dans le `.env` VPS +
+  `config:cache`. Re-test : préflight 204 **avec ACAO** + GET 200 avec ACAO. (Durable : survit aux redeploys ;
+  le script deploy devrait le poser aussi.)
+- **Parcours réel navigateur sur le site DÉPLOYÉ** (Tacos L : 3 viandes dont 1 en+ @2,50 + 3 sauces dont
+  2 en+ @0,50 + 2 suppléments @0,90) → wizard 13,20 = panier 13,20 = checkout 13,20 = paiement 13,20 =
+  confirmation **#190726171 TOTAL 13,20 €** (OTP réel lu table `otps` col `token`, SMS non câblé).
+- **Backend VPS order id=171 source=5(WEB) total=13.20** ; composition_snapshot immuable = TOUTES les options
+  présentes+chiffrées (Viande supp 2,50 + Sauce supp ×2 = 1,00 + Cheddar 0,90 + Boursin 0,90). **0 drop.**
+  Bug owner « clique payer → 10€, sauces supprimées non facturées » = DÉFINITIVEMENT résolu sur le déployé.
+
+## RESTE go-live (gate owner, NON bloquant staging)
+1. **Clé API front = placeholder faible** `change-me-long-random-string-local-dev` (VPS + meta web). Rotation
+   clé forte des DEUX côtés avant ouverture réelle — registre secrets `docs/HANDOVER_SECRETS_REGISTRY.md`.
+2. Clés SMS (OTP par vrai SMS ; aujourd'hui lu en table pour l'e2e). 3. Chaîne fiscale VPS (Workstream A).
+4. Order test #171 laissé PENDING (non-fiscalisé, inoffensif) — annulable depuis la caisse si indésiré.
