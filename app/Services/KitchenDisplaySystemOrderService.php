@@ -141,6 +141,16 @@ class KitchenDisplaySystemOrderService
             // Sentinels : OssKdsMidnightStraddleTest + KdsTodayWindowTzSentinelTest (inversé).
             $staleFloor = now($appTz)->subHours((int) config('oss.stale_window_hours', 8));
 
+            // [GOAL ULTRA-SYNC W4 2026-07-20] Commandes programmées : le board ne
+            // montre que l'ASAP (scheduled_at NULL — 100% de l'existant, inchangé)
+            // et les programmées ENTRÉES dans leur fenêtre (scheduled_at <= now +
+            // lead, défaut 20 min). SSOT KitchenReleaseRule — même prédicat que le
+            // guard de bump changeStatus() (orderIsWithinScheduledWindow) et que
+            // orderItems()/sync()/OSS (parité chemins). Hors fenêtre → bandeau
+            // upcomingScheduled() (complément exact). now($appTz) = Paris-local,
+            // même invariant session_tz que la fenêtre glissante ci-dessus.
+            KitchenReleaseRule::applyScheduledBoardFilter($query, now($appTz));
+
             $query->where(function ($query) use ($staleFloor, $tomorrowStart) {
                 // Standard orders: sliding active window (midnight-safe, non-advance)
                 $query->where(function ($subQuery) use ($staleFloor, $tomorrowStart) {
@@ -218,6 +228,66 @@ class KitchenDisplaySystemOrderService
     public function lastListOverflow(): bool
     {
         return $this->lastListOverflow;
+    }
+
+    /**
+     * [GOAL ULTRA-SYNC W4 2026-07-20] Bandeau « ⏰ programmées à venir ».
+     *
+     * Retourne les commandes PROGRAMMÉES encore HORS fenêtre cuisine
+     * (scheduled_at > now + lead — applyScheduledUpcomingFilter, complément
+     * EXACT du board filter appliqué à list()/orderItems()/sync() : une
+     * commande est toujours dans exactement un des deux ensembles). Le chef
+     * sait ce qui arrive sans que le board soit occupé des heures en avance.
+     *
+     * Mêmes gates que list() : release paiement (SSOT applyBoardReleaseFilter
+     * — une programmée NON released n'existe pour la cuisine ni sur le board
+     * ni dans le bandeau), statuts actifs visibleStatuses(), isolation branch
+     * (admin branch_id=0 voit tout, staff sa branche). Payload minimal — le
+     * bandeau n'a pas besoin des lignes d'items. Read-only, NF525 zéro impact.
+     *
+     * @return array<int, array{id: int, order_serial_no: mixed, scheduled_at: string|null, order_type: int|null, customer_name: string|null}>
+     *
+     * @throws Exception
+     */
+    public function upcomingScheduled(): array
+    {
+        try {
+            $userBranchId = auth()->user()->branch_id ?? 0;
+
+            $appTz = config('app.timezone');
+
+            $query = Order::query()
+                ->select(['id', 'order_serial_no', 'scheduled_at', 'order_type', 'pos_customer_name', 'user_id', 'branch_id'])
+                ->with('user')
+                ->whereIn('status', KitchenReleaseRule::visibleStatuses());
+
+            KitchenReleaseRule::applyBoardReleaseFilter($query);
+            // now($appTz) = Paris-local — même invariant TZ que list() (Wave T R5).
+            KitchenReleaseRule::applyScheduledUpcomingFilter($query, now($appTz));
+
+            // [Mirror list() branch gates] Admin branch_id=0 voit toutes les branches.
+            if ($userBranchId > 0) {
+                $query->where('branch_id', $userBranchId);
+            }
+
+            return $query->orderBy('scheduled_at', 'asc')
+                ->limit(20)
+                ->get()
+                ->map(static function (Order $order): array {
+                    return [
+                        'id'              => (int) $order->id,
+                        'order_serial_no' => $order->order_serial_no,
+                        'scheduled_at'    => $order->scheduled_at?->toIso8601String(),
+                        'order_type'      => $order->order_type === null ? null : (int) $order->order_type,
+                        'customer_name'   => $order->pos_customer_name ?: $order->user?->name,
+                    ];
+                })
+                ->values()
+                ->all();
+        } catch (Exception $exception) {
+            Log::info($exception->getMessage());
+            throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
     }
 
     /**
@@ -484,6 +554,21 @@ class KitchenDisplaySystemOrderService
                     throw new Exception(trans('all.message.invalid_status_transition'), 422);
                 }
 
+                // [GOAL ULTRA-SYNC W4 2026-07-20] Jumeau SCHEDULED du guard
+                // board-release ci-dessus — même discipline « visible == bumpable »
+                // (SSOT KitchenReleaseRule) : une commande PROGRAMMÉE hors fenêtre
+                // (scheduled_at > now + lead) est invisible sur le board via
+                // applyScheduledBoardFilter appliqué à list() ; un bump direct
+                // (appel API) doit être refusé pareil, sinon les notifications
+                // client « en préparation » partiraient des heures avant l'heure
+                // prévue. NULL = ASAP → toujours bumpable (existant intact).
+                if (! KitchenReleaseRule::orderIsWithinScheduledWindow($locked)) {
+                    throw new Exception(sprintf(
+                        'Commande programmée — hors fenêtre cuisine (visible %d min avant l\'heure prévue).',
+                        KitchenReleaseRule::scheduledLeadMinutes()
+                    ), 422);
+                }
+
                 $locked->status = $newStatus;
                 // [KITCHEN-TIMING 2026-07-04] Horodatage cuisine CENTRALISÉ dans le hook saving du modèle
                 // Order (couvre tous les chemins, y compris auto-prepare) → plus de stamp explicite ici.
@@ -582,6 +667,13 @@ class KitchenDisplaySystemOrderService
             // du jour civil, sinon une commande à cheval sur minuit serait visible en CARTE mais
             // absente de l'AGRÉGAT items (« combien à préparer ») — incohérence cross-chemin.
             $staleFloor = now($appTz)->subHours((int) config('oss.stale_window_hours', 8));
+
+            // [GOAL ULTRA-SYNC W4 2026-07-20] Miroir scheduled de list() : une
+            // programmée hors fenêtre (scheduled_at > now + lead) est absente des
+            // CARTES → ses items ne doivent pas gonfler l'AGRÉGAT « à préparer »
+            // (même classe d'incohérence cross-chemin que le minuit-straddle et le
+            // release-twin ci-dessus). NULL = ASAP inchangé. SSOT KitchenReleaseRule.
+            KitchenReleaseRule::applyScheduledBoardFilter($query, now($appTz));
 
             $orders = $query->where(function ($query) use ($staleFloor, $tomorrowStart) {
                 $query->where(function ($subQuery) use ($staleFloor, $tomorrowStart) {

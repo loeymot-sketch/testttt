@@ -41,6 +41,12 @@ class KDSOrderDetailsResource extends JsonResource
             'delivery_date'                       => $this->is_advance_order == Ask::YES ? AppLibrary::increaseDate($this->order_datetime, 1) : AppLibrary::date($this->order_datetime),
             'delivery_time'                       => $this->is_advance_order == Ask::YES ? AppLibrary::deliveryTime($this->delivery_time) : AppLibrary::deliveryTimeCheck($this->delivery_time),
             'is_advance_order'                    => $this->is_advance_order,
+            // [E4 SCHEDULED-INTAKE 2026-07-20] Commande programmée : heure cible ISO
+            // + rendu court H:i (cast datetime = tz app) pour la carte cuisine et le
+            // bandeau « ⏰ programmées à venir » (KitchenReleaseRule W4). NULL = ASAP
+            // (les deux champs restent null). Projection pure, SELECT-only.
+            'scheduled_at'                        => $this->scheduled_at?->toIso8601String(),
+            'scheduled_hm'                        => $this->scheduled_at?->format('H:i'),
             'preparation_time'                    => $this->preparation_time,
             // [KITCHEN-TIMING 2026-07-03] horodatages RÉELS du parcours cuisine (vs l'estimé
             // preparation_time) + temps de préparation réel mesuré en secondes (accepted→prepared).

@@ -76,4 +76,14 @@ return [
      * 20 min (mandat owner « par exemple avant 20 minutes »).
      */
     'scheduled_lead_minutes' => max(1, (int) env('KDS_SCHEDULED_LEAD_MINUTES', 20)),
+
+    /*
+     * [E4 SCHEDULED-INTAKE 2026-07-20] Fenêtre de service des commandes
+     * programmées (validée à l'intake par OrderRequest::withValidator).
+     * Le Cayenne sert 18h → minuit et demie : la fenêtre ENJAMBE minuit
+     * (open '18:00' > close '00:30' = wrap), la validation compare l'heure
+     * cible en 'H:i' 24 h. Un créneau à 00:00-00:30 est accepté (lendemain).
+     */
+    'scheduled_window_open' => (string) env('KDS_SCHEDULED_WINDOW_OPEN', '18:00'),
+    'scheduled_window_close' => (string) env('KDS_SCHEDULED_WINDOW_CLOSE', '00:30'),
 ];

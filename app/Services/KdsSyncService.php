@@ -122,6 +122,13 @@ class KdsSyncService
             // autoritaire — incohérence entre chemins d'une fonction partagée. sync() rejoint list().
             \App\Domain\Kds\KitchenReleaseRule::applyBoardReleaseFilter($ordersQuery);
 
+            // [GOAL ULTRA-SYNC W4 2026-07-20] Parité STRICTE avec list() (leçon
+            // Wave 1 « sync doit refléter list ») : les commandes programmées hors
+            // fenêtre (scheduled_at > now + lead) sont absentes du board — le delta
+            // sync ne doit pas les réinjecter côté client. NULL = ASAP inchangé.
+            // SSOT KitchenReleaseRule ; now($appTz) = Paris-local (invariant TZ).
+            \App\Domain\Kds\KitchenReleaseRule::applyScheduledBoardFilter($ordersQuery, now($appTz));
+
             if ($branchId > 0) {
                 $ordersQuery->where('branch_id', $branchId);
             }

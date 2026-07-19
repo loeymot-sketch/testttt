@@ -65,6 +65,10 @@ class OrderDetailsResource extends JsonResource
             'order_time' => AppLibrary::time($this->order_datetime),
             'delivery_date' => $this->is_advance_order == Ask::YES ? AppLibrary::increaseDate($this->order_datetime, 1) : AppLibrary::date($this->order_datetime),
             'delivery_time' => AppLibrary::deliveryTime($this->delivery_time),
+            // [E4 SCHEDULED-INTAKE 2026-07-20] Heure cible d'une commande programmée
+            // (NULL = ASAP). ISO 8601 comme created_at — le client web/app affiche
+            // « prévue pour HH:MM » sur le suivi de commande. Projection pure.
+            'scheduled_at' => optional($this->scheduled_at)->toIso8601String(),
             'payment_method' => $this->payment_method,
             'payment_status' => $this->payment_status,
             'payment_pending_counter' => (int) $this->payment_status === \App\Enums\PaymentStatus::PENDING_COUNTER,

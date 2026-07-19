@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Domain\Kds\KitchenReleaseRule;
 use App\Enums\Activity;
 use App\Enums\OrderType;
 use App\Enums\PosPaymentMethod;
@@ -148,6 +149,11 @@ class PosOrderRequest extends FormRequest
                 'numeric',
             ] : ['nullable'],
             'delivery_time' => ['nullable'],
+            // [W4-E5 SCHEDULED 2026-07-20] Commande programmée (intake caisse/téléphone) :
+            // datetime cible optionnelle, NULL = ASAP. Format strict Y-m-d H:i:s (le
+            // legacy delivery_time string "HH:MM - HH:MM" reste stampé par le service —
+            // aucun consommateur cassé). Bornes min/max dans withValidator ci-dessous.
+            'scheduled_at' => ['nullable', 'date_format:Y-m-d H:i:s'],
             'coupon_id' => ['nullable', 'numeric'],
             'source' => ['required', 'numeric'],
             'items' => ['required', 'json', new ValidJsonOrder],
@@ -212,6 +218,37 @@ class PosOrderRequest extends FormRequest
                     'payment_breakdown',
                     'Le paiement multi-tender n\'est pas supporté pour une commande différée au comptoir (encaissement mono-mode).'
                 );
+            }
+
+            // [W4-E5 SCHEDULED 2026-07-20] Bornes de la commande programmée. Pas de
+            // fenêtre horaire stricte côté caisse (l'opérateur est un pro qui prend
+            // les commandes téléphone) — uniquement le lead minimum cuisine (SSOT
+            // KitchenReleaseRule::scheduledLeadMinutes, config kds.scheduled_lead_minutes)
+            // + garde-fou 7 jours contre les fautes de frappe d'année/mois.
+            if ($this->filled('scheduled_at')) {
+                $scheduledAt = null;
+                try {
+                    $scheduledAt = \Illuminate\Support\Carbon::createFromFormat(
+                        'Y-m-d H:i:s',
+                        (string) $this->input('scheduled_at')
+                    );
+                } catch (\Throwable $e) {
+                    // Format invalide : la règle date_format ci-dessus a déjà posé l'erreur 422.
+                }
+                if ($scheduledAt !== null) {
+                    $lead = KitchenReleaseRule::scheduledLeadMinutes();
+                    if ($scheduledAt->lt(now()->addMinutes($lead))) {
+                        $validator->errors()->add(
+                            'scheduled_at',
+                            "L'heure programmée doit être au moins dans {$lead} minutes (délai de préparation cuisine)."
+                        );
+                    } elseif ($scheduledAt->gt(now()->addDays(7))) {
+                        $validator->errors()->add(
+                            'scheduled_at',
+                            "L'heure programmée ne peut pas dépasser 7 jours à l'avance."
+                        );
+                    }
+                }
             }
 
             // [POS-9-H.1.5] F-A5: Server-side dine-in feature gate.
@@ -319,6 +356,8 @@ class PosOrderRequest extends FormRequest
             'pos_payment_note.max_digits' => 'The cart must not contain more than 4 digits',
             'pos_received_amount.required' => 'The received amount field is required',
             'dining_table_id.required' => 'The dining table field is required',
+            // [W4-E5 SCHEDULED 2026-07-20] Message FR — format strict de la commande programmée.
+            'scheduled_at.date_format' => "Le format de l'heure programmée est invalide (attendu : AAAA-MM-JJ HH:MM:SS).",
         ];
     }
 }

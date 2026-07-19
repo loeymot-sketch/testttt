@@ -45,6 +45,13 @@
     :visible="showAvailabilityPanel"
     @close="showAvailabilityPanel = false"
   />
+  <!-- [E6 KDS-SCHEDULED 2026-07-20] Bandeau « commandes programmées à venir »
+       — monté au niveau racine, AU-DESSUS des deux layouts (V2 + legacy), car
+       le bandeau de statut V2 (KdsStatusBanner) vit DANS KdsV2Grid (hors lane
+       E6) : ce niveau est le seul point commun aux deux modes. Alimenté par le
+       poll kds-order existant via le store (meta.scheduled_upcoming) ; liste
+       vide ou meta absente ⇒ rien ne s'affiche. Affichage seul (V1). -->
+  <KdsScheduledBanner :entries="kdsScheduledUpcoming" />
   <!--
     [kds/sprint-2 V-5] Feature-flagged V2 layout. When useV2Layout is true
     (URL ?v2=1, localStorage 'kds.v2_enabled', or future settings flag), the
@@ -1151,6 +1158,8 @@ import KdsV2Grid from "./KdsV2Grid.vue";
 import KdsHistoryDrawer from "./KdsHistoryDrawer.vue";
 // [GOAL RUPTURE-CARNET 2026-07-15 / W3] Panel rupture (86) partagé caisse+cuisine.
 import AvailabilityTogglePanel from "../shared/AvailabilityTogglePanel.vue";
+// [E6 KDS-SCHEDULED 2026-07-20] Bandeau commandes programmées à venir.
+import KdsScheduledBanner from "./KdsScheduledBanner.vue";
 
 // [Phase-7 / T13–T14] Fil cuisine : stations, filtre, bump / statut, timers
 // d’attente (kdsDisplay), son — ne pas mélanger avec de la logique de caisse
@@ -1167,6 +1176,8 @@ export default {
     KdsHistoryDrawer,
     // [GOAL RUPTURE-CARNET 2026-07-15 / W3] Rupture produits (86) cuisine.
     AvailabilityTogglePanel,
+    // [E6 KDS-SCHEDULED 2026-07-20] Bandeau programmées à venir.
+    KdsScheduledBanner,
   },
   data() {
     return {
@@ -1504,6 +1515,12 @@ export default {
     },
     orders: function () {
       return this.$store.getters["kitchenDisplaySystemOrder/lists"];
+    },
+    // [E6 KDS-SCHEDULED 2026-07-20] Programmées à venir (meta kds-order,
+    // committée par le store). Getter absent (specs à $store mocké) ⇒
+    // undefined ⇒ la prop `entries` retombe sur son défaut [] (masqué).
+    kdsScheduledUpcoming: function () {
+      return this.$store.getters["kitchenDisplaySystemOrder/scheduledUpcoming"];
     },
     // [KITCHEN-PRINT-RESILIENCE 2026-07-13] Nombre de tickets cuisine en échec —
     // pilote le badge d'avertissement en en-tête KDS.

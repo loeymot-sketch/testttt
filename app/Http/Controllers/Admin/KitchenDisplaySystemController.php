@@ -28,10 +28,20 @@ class KitchenDisplaySystemController extends AdminController
         try {
             $orders = $this->kitchenDisplaySystemOrderService->list($request);
 
+            // [GOAL ULTRA-SYNC W4 2026-07-20] Bandeau « ⏰ programmées à venir » —
+            // piggyback sur le poll board existant (zéro requête HTTP en plus).
+            // Fail-safe : le bandeau ne doit JAMAIS casser le board → repli [].
+            try {
+                $scheduledUpcoming = $this->kitchenDisplaySystemOrderService->upcomingScheduled();
+            } catch (Exception $upcomingException) {
+                $scheduledUpcoming = [];
+            }
+
             return KDSOrderDetailsResource::collection($orders)->additional([
                 'meta' => [
                     'overflow' => $this->kitchenDisplaySystemOrderService->lastListOverflow(),
                     'limit' => 50,
+                    'scheduled_upcoming' => $scheduledUpcoming,
                 ],
             ]);
         } catch (Exception $exception) {

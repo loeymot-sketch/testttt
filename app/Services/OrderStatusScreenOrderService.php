@@ -107,6 +107,15 @@ class OrderStatusScreenOrderService
             // si connections.mysql.timezone passe à '+00:00', ré-évaluer.
             $staleFloor = now($appTz)->subHours((int) config('oss.stale_window_hours', 8));
 
+            // [GOAL ULTRA-SYNC W4 2026-07-20] Parité SCHEDULED avec les 3 chemins
+            // cuisine (KDS list/orderItems/sync) : une commande PROGRAMMÉE hors
+            // fenêtre (scheduled_at > now + lead, défaut 20 min) n'est pas encore
+            // en cuisine → elle ne s'affiche PAS sur le mur client non plus (même
+            // rationale que le board-release filter ci-dessus : le mur ne montre
+            // que ce que la cuisine voit). NULL = ASAP — existant intact. SSOT
+            // KitchenReleaseRule ; now($appTz) = Paris-local (invariant TZ).
+            \App\Domain\Kds\KitchenReleaseRule::applyScheduledBoardFilter($query, now($appTz));
+
             $query->where(function ($q) use ($tomorrowStart, $staleFloor) {
                 $q->where(function ($sub) use ($tomorrowStart, $staleFloor) {
                     // Non-advance : fenêtre glissante active [staleFloor, tomorrow) — plancher ICI
@@ -255,6 +264,11 @@ class OrderStatusScreenOrderService
             // sous-clause non-advance (parité KDS), plus en AND top-level (qui pruneait à tort la branche
             // advance → précommande en retard disparue du mur client mais gardée en cuisine). Voir list().
             $staleFloor = now($appTz)->subHours((int) config('oss.stale_window_hours', 8));
+
+            // [GOAL ULTRA-SYNC W4 2026-07-20] Sister-of list() — MÊME filtre scheduled
+            // (corps de requête byte-identique par contrat du docstring) : programmée
+            // hors fenêtre masquée du mur public tant que la cuisine ne la voit pas.
+            \App\Domain\Kds\KitchenReleaseRule::applyScheduledBoardFilter($query, now($appTz));
 
             $query->where(function ($q) use ($tomorrowStart, $staleFloor) {
                 $q->where(function ($sub) use ($tomorrowStart, $staleFloor) {

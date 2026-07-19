@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Domain\Kds\KitchenReleaseRule;
 use App\Enums\Activity;
 use App\Enums\OrderType;
 use App\Enums\Status;
@@ -169,6 +170,13 @@ class OrderRequest extends FormRequest
             'expected_total' => ['nullable', 'numeric', 'min:0'],
             'order_type' => ['required', 'numeric'],
             'is_advance_order' => ['required', 'numeric'],
+            // [E4 SCHEDULED-INTAKE 2026-07-20] Créneau programmé OPTIONNEL (web/app).
+            // NULL/absent = ASAP — comportement historique intact. Les gardes métier
+            // (lead cuisine, fenêtre de service, horizon 7 j) vivent dans withValidator ;
+            // ici seulement le format. Voie INDÉPENDANTE du legacy is_advance_order/
+            // delivery_time (non altérés). Transit : fillable + cast datetime sur
+            // FrontendOrder/Order (fondations 1cde5bad7), non strippé par GAP-21-2.
+            'scheduled_at' => ['nullable', 'date_format:Y-m-d H:i:s'],
             'address_id' => $isDelivery ? [
                 'required',
                 'numeric'
@@ -192,9 +200,27 @@ class OrderRequest extends FormRequest
         ];
     }
 
+    /**
+     * [E4 SCHEDULED-INTAKE 2026-07-20] Message FR explicite pour le format du
+     * créneau programmé — le reste garde le fallback lang/fr standard.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'scheduled_at.date_format' => 'Le créneau doit être au format AAAA-MM-JJ HH:MM:SS (ex. 2026-07-21 19:30:00).',
+        ];
+    }
+
     public function withValidator($validator)
     {
         $validator->after(function ($validator) {
+            // [E4 SCHEDULED-INTAKE 2026-07-20] Gardes métier du créneau programmé —
+            // placées AVANT les early-returns kiosk pour couvrir toutes les surfaces
+            // (web/app/borne). Champ absent = ASAP, no-op strict.
+            $this->validateScheduledAtAfter($validator);
+
             $orderType = request('order_type');
             $orderTypeInt = (int) $orderType;
 
@@ -314,6 +340,61 @@ class OrderRequest extends FormRequest
                     $minimum,
                     $subtotal
                 )
+            );
+        }
+    }
+
+    /**
+     * [E4 SCHEDULED-INTAKE 2026-07-20] Gardes métier du créneau programmé
+     * (`scheduled_at`). NULL/absent = ASAP, rien à valider. Présent :
+     *   (a) lead cuisine — au moins `kds.scheduled_lead_minutes` (défaut 20,
+     *       SSOT KitchenReleaseRule::scheduledLeadMinutes) dans le futur ;
+     *   (b) fenêtre de service — heure cible entre `kds.scheduled_window_open`
+     *       (18:00) et `kds.scheduled_window_close` (00:30) ; open > close =
+     *       la fenêtre ENJAMBE minuit (service 18h-00h, minuit accepté),
+     *       comparaison lexicographique 'H:i' zéro-paddée ;
+     *   (c) horizon 7 jours max (garde-fou anti-fat-finger mois/année).
+     * Le format lui-même est déjà rejeté par la règle date_format — un parse
+     * raté ici sort en silence pour ne pas doubler l'erreur.
+     */
+    private function validateScheduledAtAfter($validator): void
+    {
+        $raw = $this->input('scheduled_at');
+        if (blank($raw) || ! is_string($raw)) {
+            return; // ASAP — comportement historique intact
+        }
+
+        try {
+            $target = \Illuminate\Support\Carbon::createFromFormat('Y-m-d H:i:s', $raw);
+        } catch (\Throwable $e) {
+            return; // format invalide — déjà rejeté par la règle date_format
+        }
+
+        $lead = KitchenReleaseRule::scheduledLeadMinutes();
+        if ($target->lt(now()->addMinutes($lead))) {
+            $validator->errors()->add(
+                'scheduled_at',
+                sprintf('Créneau trop proche — minimum %d min. Choisissez un horaire plus tard ou commandez en immédiat.', $lead)
+            );
+        }
+
+        $open = (string) config('kds.scheduled_window_open', '18:00');
+        $close = (string) config('kds.scheduled_window_close', '00:30');
+        $hm = $target->format('H:i');
+        $inWindow = $open <= $close
+            ? ($hm >= $open && $hm <= $close)
+            : ($hm >= $open || $hm <= $close);
+        if (! $inWindow) {
+            $validator->errors()->add(
+                'scheduled_at',
+                sprintf('Horaire hors service — les commandes programmées sont possibles entre %s et %s.', $open, $close)
+            );
+        }
+
+        if ($target->gt(now()->addDays(7))) {
+            $validator->errors()->add(
+                'scheduled_at',
+                'Créneau trop lointain — maximum 7 jours à l\'avance.'
             );
         }
     }

@@ -8,6 +8,11 @@ export const kitchenDisplaySystemOrder = {
     state: {
         lists: [],
         orderItems: [],
+        // [E6 KDS-SCHEDULED 2026-07-20] Commandes programmées à venir —
+        // meta.scheduled_upcoming de GET admin/kds-order (lane backend
+        // parallèle, peut ne pas encore exister). Toujours un tableau :
+        // meta absente/vide ⇒ [] (bandeau masqué, zéro erreur).
+        scheduledUpcoming: [],
     },
     getters: {
         lists: function (state) {
@@ -15,6 +20,9 @@ export const kitchenDisplaySystemOrder = {
         },
         orderItems: function (state) {
             return state.orderItems;
+        },
+        scheduledUpcoming: function (state) {
+            return state.scheduledUpcoming;
         },
     },
     actions: {
@@ -27,6 +35,15 @@ export const kitchenDisplaySystemOrder = {
                 axios.get(url).then((res) => {
                     if (typeof payload.vuex === "undefined" || payload.vuex === true) {
                         context.commit('lists', res.data.data);
+                        // [E6 KDS-SCHEDULED 2026-07-20] Bandeau « programmées à
+                        // venir » — commit défensif : tant que la lane backend
+                        // n'expose pas meta.scheduled_upcoming (ou forme
+                        // inattendue), on committe [] → bandeau masqué, 0 erreur.
+                        const meta = res.data && res.data.meta;
+                        context.commit(
+                            'scheduledUpcoming',
+                            meta && Array.isArray(meta.scheduled_upcoming) ? meta.scheduled_upcoming : []
+                        );
                     }
                     resolve(res);
                 }).catch((err) => {
@@ -68,6 +85,9 @@ export const kitchenDisplaySystemOrder = {
         },
         orderItems: function (state, payload) {
             state.orderItems = payload
+        },
+        scheduledUpcoming: function (state, payload) {
+            state.scheduledUpcoming = Array.isArray(payload) ? payload : []
         },
     },
 }

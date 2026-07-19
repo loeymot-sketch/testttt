@@ -1182,6 +1182,17 @@ class OrderService
                     $end = $endTime->format('H:i');
                     $this->order->delivery_time = "$start - $end";
 
+                    // [W4-E5 SCHEDULED 2026-07-20] Commande programmée (intake caisse/
+                    // téléphone) : si la requête porte un scheduled_at (validé par
+                    // PosOrderRequest : format strict + min now+lead cuisine + max 7 j),
+                    // on le pose EN PLUS du stamp legacy delivery_time ci-dessus (créneau
+                    // texte immédiat conservé — aucun consommateur cassé). Sinon la
+                    // colonne reste NULL = ASAP. La visibilité cuisine à T-lead est
+                    // pilotée par KitchenReleaseRule (SSOT, fondations 1cde5bad7).
+                    if ($request->filled('scheduled_at')) {
+                        $this->order->scheduled_at = Carbon::parse((string) $request->input('scheduled_at'));
+                    }
+
                     // [POS-9.4.BL.1] Reserve fiscal sequence number atomically right
                     // before persisting. FiscalSequenceService::next() runs its own
                     // Cache::lock + lockForUpdate + transaction so nesting inside our

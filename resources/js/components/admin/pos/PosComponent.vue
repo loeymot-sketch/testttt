@@ -862,6 +862,34 @@
                     />
                 </div>
 
+                <!-- [W4-E5 SCHEDULED 2026-07-20] Programmer la commande (optionnel) : datetime
+                     cible envoyée comme scheduled_at (Y-m-d H:i:s). Vide = ASAP. La cuisine ne
+                     la verra qu'à T-lead (KitchenReleaseRule). FR hardcodé — précédent assumé
+                     dans ce fichier (champs livraison inline l.874/882/901), V1 FR-only ADR-007. -->
+                <div class="mt-2 flex items-center gap-2">
+                    <label
+                        for="pos-scheduled-at"
+                        class="text-sm text-heading whitespace-nowrap"
+                        title="Commande programmée : heure de retrait souhaitée (vide = tout de suite)"
+                    >⏰ Programmer</label>
+                    <input
+                        id="pos-scheduled-at"
+                        type="datetime-local"
+                        v-model="scheduledAtLocal"
+                        :min="scheduledAtMinLocal"
+                        data-testid="pos-scheduled-at"
+                        class="flex-1 h-10 text-sm rounded-lg border px-3 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none"
+                    />
+                    <button
+                        v-if="scheduledAtLocal"
+                        type="button"
+                        data-testid="pos-scheduled-at-clear"
+                        aria-label="Annuler la programmation (repasser en tout de suite)"
+                        class="h-10 px-3 text-xs rounded-lg border border-[#D9DBE9] text-heading hover:bg-gray-50"
+                        @click="scheduledAtLocal = ''"
+                    >✕</button>
+                </div>
+
                 <!-- [P4] Inline delivery form — no separate modal, no map tab -->
                 <div ref="deliveryOrderDiv" id="orderdelivery" class="h-auto hidden transition">
                     <div class="mt-3 flex flex-col gap-2">
@@ -1985,6 +2013,12 @@ export default {
                     // (paiement différé au comptoir). Envoyés tels quels au backend via saveForm.
                     pos_customer_phone: '',
                     phone_order: false,
+                    // [W4-E5 SCHEDULED 2026-07-20] Commande programmée (optionnel) :
+                    // datetime cible "Y-m-d H:i:s", null = ASAP. Flotte tel quel jusqu'au
+                    // backend via le spread currentFormSnapshot de PaymentComponent (frozen,
+                    // intouché) et via le payload phoneOrderSubmit. Saisi via le computed
+                    // scheduledAtLocal (conversion datetime-local ⇄ format serveur).
+                    scheduled_at: null,
                     source: sourceEnum.POS,
                     address_id: null,
                     coupon_id: null,
@@ -2139,6 +2173,34 @@ export default {
             return perms.some((p) => p
                 && (p.name === 'availability_toggle' || p.name === 'items_edit')
                 && p.access === true);
+        },
+        // [W4-E5 SCHEDULED 2026-07-20] Pont datetime-local ⇄ format serveur.
+        // Le <input type="datetime-local"> parle "YYYY-MM-DDTHH:MM" ; le backend
+        // (PosOrderRequest) exige "Y-m-d H:i:s". Getter/setter sur
+        // checkoutProps.form.scheduled_at : le champ se vide donc tout seul au
+        // resetPaymentForm (scheduled_at → null) après chaque commande.
+        scheduledAtLocal: {
+            get: function () {
+                const v = this.checkoutProps.form.scheduled_at;
+                return v ? String(v).slice(0, 16).replace(' ', 'T') : '';
+            },
+            set: function (val) {
+                if (!val) {
+                    this.checkoutProps.form.scheduled_at = null;
+                    return;
+                }
+                let v = String(val).replace('T', ' ');
+                if (v.length === 16) v += ':00'; // datetime-local sans secondes (cas standard)
+                this.checkoutProps.form.scheduled_at = v;
+            },
+        },
+        // Borne min UX du picker (heure locale, arrondie à la minute). Simple
+        // garde anti-passé : la borne AUTORITATIVE (now + lead cuisine + max 7 j)
+        // est validée côté serveur (PosOrderRequest, message FR explicite).
+        scheduledAtMinLocal: function () {
+            const d = new Date(Date.now() + 60000);
+            const pad = (n) => String(n).padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
         },
         // [Q10 P-OWNER 2026-05-21] Localized "Mis à jour il y a Xs" labels
         // for the X2 shortcut panels' empty/idle state. Bound to
@@ -4006,6 +4068,9 @@ export default {
                 // [C4-CAISSE-TELEPHONE 2026-07-07] Réinitialise les champs commande téléphone.
                 pos_customer_phone: null,
                 phone_order: false,
+                // [W4-E5 SCHEDULED 2026-07-20] La programmation ne survit JAMAIS à une
+                // commande : retour à ASAP pour le client suivant.
+                scheduled_at: null,
                 pos_received_amount: null,
                 quote_token: null,
                 quote_signature: null,
@@ -4541,6 +4606,9 @@ export default {
                     pos_received_amount: null,
                     pos_customer_name: (this.checkoutProps.form.pos_customer_name || '').trim() || null,
                     pos_customer_phone: (this.checkoutProps.form.pos_customer_phone || '').trim() || null,
+                    // [W4-E5 SCHEDULED 2026-07-20] Commande téléphone programmée : datetime
+                    // cible "Y-m-d H:i:s" (null = ASAP), validée serveur (min lead cuisine).
+                    scheduled_at: this.checkoutProps.form.scheduled_at || null,
                     // Devis scellé (SSOT serveur — total recalculé et comparé au devis).
                     quote_token: quote.quote_token,
                     quote_signature: quote.signature,
@@ -4557,6 +4625,9 @@ export default {
                 try { await this.$store.dispatch('posCart/resetCart'); } catch (_e) { /* defensive */ }
                 this.checkoutProps.form.pos_customer_name = '';
                 this.checkoutProps.form.pos_customer_phone = '';
+                // [W4-E5 SCHEDULED 2026-07-20] Ne pas laisser fuiter la programmation
+                // vers la commande suivante (miroir resetPaymentForm).
+                this.checkoutProps.form.scheduled_at = null;
                 this.checkoutProps.form.token = '';
                 await this.loadKioskCashOrders();
             } catch (err) {
