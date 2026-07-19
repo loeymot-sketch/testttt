@@ -32,3 +32,19 @@ web OrderRequest+resources, E5 intake POS (PosComponent.vue, PAS pos-wizard.js),
 .vue+store} → E7 6 fichiers tests (gate, meta, intake, parité OSS, minuit-straddle, e2e). NF525 : zéro impact
 (SELECT-only + colonne additive). « Prête »→compte : chaîne customer.{id} existante, juste exposer scheduled_at
 dans les resources. config/kds.php existe → + scheduled_lead_minutes (défaut 20, env).
+
+## Volet CAPTURES — ✅ RENDU (~45 captures analysées) : GREEN, 0 P0/P1, 1 P2, 5 P3
+Cœur commerce irréprochable sur le déployé : compteurs 38=38, prix cartes=fiches=wizard=panier (Bol complet
+7,90→13,30 ✓ au centime), gating min/max, promo défer fail-closed, créneau unique, empty states, console 0 erreur.
+
+## HEALS W1 — ✅ DÉPLOYÉS (`793df3a`, ?v=20260720h, vérifié servi)
+- **P2-1 fidélité ARBITRÉ par le backend** (/loyalty/config : points_per_euro=10, min_redeem=50) : le panier
+  (+133 pts) était JUSTE — corrigé les TEXTES menteurs : hero stat, promesse 4-points, badge signature (10 pts
+  par euro), Compare li, FAQ (1€=10 pts · dès 50 pts), fallback login. 
+- **P3** : recherche désormais GLOBALE (« mega » trouvable depuis toute catégorie) ; chips régime dynamiques
+  (Épicé sans produit tagué → masqué) ; « Prêt en 0 min » → « Prêt immédiatement ».
+- Non traités (assumés) : animation reveal lente (design), badge nav « 70 » = AVATAR téléphone pas points
+  (faux positif partiel — QR affiche déjà « session expirée » honnête), panier non persisté au reload (design V1).
+
+## W4 lanes : E0+E1 ✅ commité (1cde5bad7) · E4 ✅ (8/8+50) · E5 ✅ (4/4+19, frozen 0) · E6 ✅ (14/14 vitest)
+## E2+E3 (gates KDS/OSS + meta) : EN VOL
