@@ -66,4 +66,14 @@ return [
      * Production default 120/min — generous for any realistic kitchen pace.
      */
     'rate_limit_bump' => max(1, (int) env('KDS_RATE_LIMIT_BUMP', 120)),
+
+    /*
+     * [GOAL ULTRA-SYNC W4 2026-07-20] Commandes programmées (scheduled_at).
+     * Une commande programmée n'apparaît sur le board cuisine (KDS + OSS) que
+     * `scheduled_lead_minutes` avant son heure cible ; avant ça, elle vit dans
+     * le bandeau « ⏰ programmées à venir » (meta scheduled_upcoming). Gate
+     * évalué SERVEUR à chaque poll (5-60 s) — pas de cron. Lead par défaut :
+     * 20 min (mandat owner « par exemple avant 20 minutes »).
+     */
+    'scheduled_lead_minutes' => max(1, (int) env('KDS_SCHEDULED_LEAD_MINUTES', 20)),
 ];
