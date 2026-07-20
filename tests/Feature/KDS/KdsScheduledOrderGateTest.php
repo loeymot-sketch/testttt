@@ -9,11 +9,14 @@ use App\Enums\PaymentStatus;
 use App\Models\Branch;
 use App\Models\Order;
 use App\Models\User;
+use App\Services\KdsSyncService;
 use App\Services\KitchenDisplaySystemOrderService;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
+use DateTimeImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 /**
@@ -112,6 +115,15 @@ class KdsScheduledOrderGateTest extends TestCase
                 'status'          => OrderStatus::PREPARING,
                 'expected_status' => OrderStatus::ACCEPT,
             ]);
+    }
+
+    /** Ids du bandeau « ⏰ programmées à venir » (upcomingScheduled). */
+    private function upcomingIds(): array
+    {
+        return array_map(
+            static fn (array $row): int => (int) $row['id'],
+            app(KitchenDisplaySystemOrderService::class)->upcomingScheduled()
+        );
     }
 
     /** @test */
@@ -233,5 +245,71 @@ class KdsScheduledOrderGateTest extends TestCase
         $this->actingAs($this->admin());
         $this->assertContains($scheduledB->id, $this->listIds($branchB->id),
             'Sanity : l\'admin voit la programmée en fenêtre de B (le masquage côté staff est bien l\'isolation, pas le gate scheduled).');
+    }
+
+    /**
+     * [FIX SCHEDULED-STALE 2026-07-20] Cas MANQUANT de la 1re vague : une
+     * programmée CRÉÉE bien avant sa cible (10:00 → 20:00) a, à T-lead, un
+     * order_datetime plus vieux que la fenêtre glissante 8h (staleFloor 11:40).
+     * AND-composée avec le gate scheduled, la fenêtre legacy l'éjectait du
+     * board (is_advance_order=NO) alors que le bandeau ne la portait plus
+     * (complément exact) → trou noir « ni board ni bandeau », jamais cuisinée.
+     *
+     * @test
+     */
+    public function programmee_creee_a_10h_pour_20h_visible_a_T_moins_lead_malgre_la_fenetre_8h(): void
+    {
+        $this->freezeAt('2026-03-10 10:00:00');
+
+        $branch = Branch::factory()->create();
+        // order_datetime = now() = 10:00 — vieilli de 9h40 à T-lead.
+        $scheduled = $this->makeBoardOrder($branch, Carbon::parse('2026-03-10 20:00:00', 'Europe/Paris'));
+
+        $this->actingAs($this->admin());
+
+        // Contrôle 19:00 (horizon 19:20 < 20:00) : encore dans le BANDEAU, pas sur le board.
+        $this->freezeAt('2026-03-10 19:00:00');
+        $this->assertNotContains($scheduled->id, $this->listIds($branch->id),
+            'À 19:00 la programmée de 20:00 est encore hors fenêtre — pas sur le board.');
+        $this->assertContains($scheduled->id, $this->upcomingIds(),
+            'À 19:00 elle est dans upcomingScheduled() — le bandeau la porte (complément exact).');
+
+        // T-lead 19:40 (horizon 20:00 >= 20:00) : elle DOIT basculer bandeau → board.
+        $this->freezeAt('2026-03-10 19:40:00');
+        $this->assertContains($scheduled->id, $this->listIds($branch->id),
+            'À T-lead (19:40) la programmée créée à 10:00 DOIT être sur le board — la fenêtre glissante 8h (order_datetime) ne s\'applique pas aux programmées.');
+        $this->assertNotContains($scheduled->id, $this->upcomingIds(),
+            'À T-lead elle a quitté le bandeau — complément exact préservé (jamais dans les deux, jamais dans aucun).');
+    }
+
+    /**
+     * [FIX SCHEDULED-STALE 2026-07-20] Variante J-1 : commandée la VEILLE pour
+     * aujourd'hui (cas réel J-1..J-7). order_datetime date d'hier → doublement
+     * hors fenêtre legacy. Verrouille list() ET sync() (parité delta — leçon
+     * Wave 1 « sync doit refléter list »).
+     *
+     * @test
+     */
+    public function programmee_creee_la_veille_pour_aujourdhui_visible_a_T_moins_lead_board_et_sync(): void
+    {
+        $this->freezeAt('2026-03-09 18:00:00');
+
+        $branch = Branch::factory()->create();
+        $scheduled = $this->makeBoardOrder($branch, Carbon::parse('2026-03-10 20:00:00', 'Europe/Paris'));
+
+        $this->actingAs($this->admin());
+
+        $this->freezeAt('2026-03-10 19:40:00');
+
+        $this->assertContains($scheduled->id, $this->listIds($branch->id),
+            'Programmée créée J-1 pour aujourd\'hui : visible sur le board à T-lead (19:40).');
+
+        Cache::flush();
+        $syncIds = array_map(
+            static fn ($o) => (int) ($o['id'] ?? 0),
+            app(KdsSyncService::class)->sync($branch->id, new DateTimeImmutable('2000-01-01T00:00:00'), true)['orders']
+        );
+        $this->assertContains($scheduled->id, $syncIds,
+            'Programmée créée J-1 : le delta sync la porte aussi à T-lead (parité list).');
     }
 }

@@ -131,7 +131,15 @@ class OrderStatusScreenOrderService
                     $sub->where('is_advance_order', Ask::YES)
                         ->where('order_datetime', '<', $tomorrowStart)
                         ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED]);
-                });
+                })
+                // [FIX SCHEDULED-STALE 2026-07-20] Programmées : échappent à la fenêtre
+                // datetime legacy (miroir KDS list/orderItems/sync — parité 5 chemins).
+                // Créée >8h avant sa cible (ex. J-1 pour ce soir), une programmée avait
+                // order_datetime < staleFloor à T-lead ET is_advance_order=NO → éjectée
+                // du mur alors que la cuisine doit la voir. Admission temporelle =
+                // applyScheduledBoardFilter (AND top-level). NULL = ASAP inchangé.
+                // Sentinel : OssScheduledParityTest (variante J-1).
+                ->orWhereNotNull('scheduled_at');
             });
 
             // [ZOMBIE HEAL 2026-07-10 backend] Le mur CLIENT n'affiche que les commandes AVEC un
@@ -281,7 +289,12 @@ class OrderStatusScreenOrderService
                     $sub->where('is_advance_order', Ask::YES)
                         ->where('order_datetime', '<', $tomorrowStart)
                         ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED]);
-                });
+                })
+                // [FIX SCHEDULED-STALE 2026-07-20] Sister-of list() — MÊME échappement :
+                // les programmées ne subissent pas la fenêtre datetime legacy (admission
+                // = applyScheduledBoardFilter). Corps jumeau byte-identique par contrat.
+                // Sentinel : OssScheduledParityTest (variante J-1).
+                ->orWhereNotNull('scheduled_at');
             });
 
             // [ZOMBIE HEAL 2026-07-10 backend] Sister-of list() — MÊME garde : le mur CLIENT n'affiche

@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mount } from '@vue/test-utils';
-import KdsScheduledBanner, { formatScheduledTime } from '../../../resources/js/components/admin/kitchenDisplaySystem/KdsScheduledBanner.vue';
+import KdsScheduledBanner, { formatScheduledTime, formatScheduledDayPrefix } from '../../../resources/js/components/admin/kitchenDisplaySystem/KdsScheduledBanner.vue';
 
 /**
  * [E6 KDS-SCHEDULED 2026-07-20] Bandeau « commandes programmées à venir ».
@@ -98,6 +98,69 @@ describe('KdsScheduledBanner — composant (bandeau programmées à venir)', () 
         expect(entries[1].text()).toContain('--:--');
         expect(entries[1].text()).toContain('#7');
         wrapper.unmount();
+    });
+});
+
+/**
+ * [FIX SCHEDULED-STALE P3 2026-07-20] Désambiguïsation multi-jours : le board
+ * admet désormais les programmées créées J-1..J-7 → le bandeau peut porter des
+ * cibles AU-DELÀ d'aujourd'hui. Une heure nue « 20:30 » serait ambiguë : si la
+ * date cible ≠ aujourd'hui, l'heure est préfixée « sam. 26/07 » (jour court FR
+ * en dur — V1 FR-locked ADR-007, même rationale que le libellé du bandeau).
+ * Source de la date : `scheduled_date` (Y-m-d serveur, Paris-local) avec repli
+ * défensif sur la date de `scheduled_at` (contrat : meta PEUT être en retard).
+ */
+describe('KdsScheduledBanner — désambiguïsation multi-jours (scheduled_date)', () => {
+    beforeEach(() => {
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date(2026, 6, 20, 12, 0, 0)); // aujourd'hui = lun. 20/07/2026 (local)
+    });
+    afterEach(() => {
+        vi.useRealTimers();
+    });
+
+    it('cible un AUTRE jour → heure préfixée « sam. 25/07 » ; cible aujourd\'hui → heure nue', () => {
+        const sameDay   = { id: 1301, order_serial_no: '1301', scheduled_at: '2026-07-20 21:00:00', scheduled_date: '2026-07-20', order_type: 5 };
+        const futureDay = { id: 1300, order_serial_no: '1300', scheduled_at: '2026-07-25 20:30:00', scheduled_date: '2026-07-25', order_type: 5 };
+        const wrapper = mountBanner({ entries: [sameDay, futureDay] });
+
+        const entries = wrapper.findAll('.kds-scheduled-banner__entry');
+        expect(entries.length).toBe(2);
+        expect(entries[0].text()).toContain('21:00');
+        expect(entries[0].text()).not.toContain('lun.');
+        expect(entries[0].text()).not.toContain('20/07');
+        expect(entries[1].text()).toContain('sam. 25/07 20:30');
+        expect(entries[1].text()).toContain('#1300');
+        wrapper.unmount();
+    });
+
+    it('scheduled_date ABSENT (backend en retard) → repli défensif sur la date de scheduled_at', () => {
+        const wrapper = mountBanner({
+            entries: [{ id: 1302, order_serial_no: '1302', scheduled_at: '2026-07-26T00:30:00', order_type: 5 }],
+        });
+        expect(wrapper.find('[data-testid="kds-scheduled-entry-0"]').text()).toContain('dim. 26/07 00:30');
+        wrapper.unmount();
+    });
+});
+
+describe('formatScheduledDayPrefix — helper préfixe jour', () => {
+    const TODAY = new Date(2026, 6, 20, 12, 0, 0); // lun. 20/07/2026 (local)
+
+    it('même jour → "" (pas de préfixe, affichage historique intact)', () => {
+        expect(formatScheduledDayPrefix('2026-07-20', TODAY)).toBe('');
+        expect(formatScheduledDayPrefix('2026-07-20 20:30:00', TODAY)).toBe('');
+    });
+
+    it('jour différent → « jjj. JJ/MM » (jour court FR en dur — déterministe sans ICU)', () => {
+        expect(formatScheduledDayPrefix('2026-07-25', TODAY)).toBe('sam. 25/07');
+        expect(formatScheduledDayPrefix('2026-07-21T09:05:00', TODAY)).toBe('mar. 21/07');
+    });
+
+    it('valeurs vides / inparsables → "" (zéro erreur)', () => {
+        expect(formatScheduledDayPrefix(null, TODAY)).toBe('');
+        expect(formatScheduledDayPrefix(undefined, TODAY)).toBe('');
+        expect(formatScheduledDayPrefix('', TODAY)).toBe('');
+        expect(formatScheduledDayPrefix('garbage', TODAY)).toBe('');
     });
 });
 

@@ -114,12 +114,16 @@ class KdsScheduledUpcomingMetaTest extends TestCase
         // Payload minimal auto-suffisant pour le bandeau.
         $row = $upcomingRows->firstWhere('id', $upcoming->id);
         $this->assertNotNull($row);
-        foreach (['id', 'order_serial_no', 'scheduled_at', 'order_type', 'customer_name'] as $key) {
+        foreach (['id', 'order_serial_no', 'scheduled_at', 'order_type', 'customer_name', 'scheduled_date'] as $key) {
             $this->assertArrayHasKey($key, $row, "meta.scheduled_upcoming doit exposer `$key`.");
         }
         $this->assertSame($upcoming->order_serial_no, $row['order_serial_no']);
         $this->assertNotNull($row['scheduled_at'], 'scheduled_at sérialisé (ISO8601) pour affichage HH:MM côté bandeau.');
         $this->assertStringContainsString('2026-03-10', (string) $row['scheduled_at']);
+        // [FIX SCHEDULED-STALE P3 2026-07-20] Date cible Y-m-d (Paris-local) pour
+        // que le bandeau lève l'ambiguïté multi-jours (« sam. 26/07 20:00 »).
+        $this->assertSame('2026-03-10', $row['scheduled_date'],
+            'scheduled_date = Y-m-d Paris-local de la cible — jamais dérivée côté client depuis l\'ISO (risque TZ).');
         $this->assertNotNull($row['customer_name'], 'Nom client exposé quand dispo (Order::user).');
     }
 

@@ -112,7 +112,14 @@ class KdsSyncService
                         $s->where('is_advance_order', Ask::YES)
                           ->where('order_datetime', '<', $tomorrowStart)
                           ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED]);
-                    });
+                    })
+                    // [FIX SCHEDULED-STALE 2026-07-20] Miroir EXACT de list() : une
+                    // programmée créée >8h avant sa cible (order_datetime < staleFloor,
+                    // is_advance_order=NO) échappe à la fenêtre datetime legacy — sinon
+                    // le delta sync ne la portait jamais à T-lead alors que le board
+                    // l'affiche (admission = applyScheduledBoardFilter ci-dessous).
+                    // NULL = ASAP inchangé. Sentinel : KdsScheduledOrderGateTest (J-1 sync).
+                    ->orWhereNotNull('scheduled_at');
                 });
 
             // [ULTRA-AUDIT 2026-07-04 — P2 SSOT board-release] Applique le MÊME filtre de release que

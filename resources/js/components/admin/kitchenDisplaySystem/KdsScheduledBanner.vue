@@ -6,6 +6,9 @@
   poll KDS existant). V1 : affichage seul — pas de son, pas d'interaction.
 
   Format : ⏰ Programmées (N) : 20:30 — #1234 · 21:00 — #1240 …
+  [FIX SCHEDULED-STALE P3 2026-07-20] Cible un AUTRE jour (J+1..J+7) → heure
+  préfixée du jour court FR : « sam. 26/07 20:30 — #1234 » (source :
+  scheduled_date Y-m-d serveur, repli défensif sur la date de scheduled_at).
   Design : aligné sur KdsStatusBanner (strip 32px, tokens info bleus
   #EFF6FF/#1E40AF/#BFDBFE, Inter pour le libellé, mono pour heures/serials).
 
@@ -55,12 +58,39 @@ export function formatScheduledTime(value) {
     return m ? `${m[1].padStart(2, '0')}:${m[2]}` : '';
 }
 
+// Jours courts FR en dur (index = Date.getDay()) — V1 FR-locked (ADR-007),
+// déterministe sans dépendre de l'ICU/locale de la machine (CI incluse).
+const FR_SHORT_DAYS = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
+
+/**
+ * [FIX SCHEDULED-STALE P3 2026-07-20] Préfixe jour « sam. 26/07 » quand la date
+ * cible ≠ aujourd'hui — le board admet désormais les programmées J-1..J-7, le
+ * bandeau peut donc porter des cibles au-delà d'aujourd'hui ; une heure nue
+ * serait ambiguë. Défensif :
+ *  - accepte "2026-07-26" (scheduled_date serveur) OU tout string contenant un
+ *    motif YYYY-MM-DD (repli sur scheduled_at ISO, date lue TELLE QU'ÉCRITE par
+ *    le serveur Paris-local — pas de conversion TZ) ;
+ *  - même jour / vide / inparsable → "" (affichage historique intact).
+ * `today` injectable pour testabilité (défaut : maintenant, heure locale).
+ * Exportée pour testabilité directe (vitest).
+ */
+export function formatScheduledDayPrefix(value, today = new Date()) {
+    if (value === null || value === undefined || value === '') return '';
+    const m = String(value).match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (!m) return '';
+    const todayYmd = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    if (`${m[1]}-${m[2]}-${m[3]}` === todayYmd) return '';
+    const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    if (Number.isNaN(d.getTime())) return '';
+    return `${FR_SHORT_DAYS[d.getDay()]} ${m[3]}/${m[2]}`;
+}
+
 export default {
     name: 'KdsScheduledBanner',
     props: {
         // Entrées meta.scheduled_upcoming — [{ id, order_serial_no,
-        // scheduled_at, order_type, customer_name? }] triées asc côté
-        // backend (max 20). Toute forme inattendue est neutralisée ici.
+        // scheduled_at, scheduled_date?, order_type, customer_name? }] triées
+        // asc côté backend (max 20). Toute forme inattendue est neutralisée ici.
         entries: { type: Array, default: () => [] },
     },
     computed: {
@@ -73,9 +103,17 @@ export default {
                     const serial = (e.order_serial_no !== null && e.order_serial_no !== undefined && e.order_serial_no !== '')
                         ? e.order_serial_no
                         : (hasId ? e.id : '?');
+                    const time = formatScheduledTime(e.scheduled_at) || '--:--';
+                    // [FIX SCHEDULED-STALE P3] scheduled_date (serveur) prioritaire,
+                    // repli sur scheduled_at si le backend ne l'expose pas encore.
+                    const dayPrefix = formatScheduledDayPrefix(
+                        (e.scheduled_date !== null && e.scheduled_date !== undefined && e.scheduled_date !== '')
+                            ? e.scheduled_date
+                            : e.scheduled_at
+                    );
                     return {
                         key: hasId ? `sched-${e.id}` : `sched-idx-${idx}`,
-                        time: formatScheduledTime(e.scheduled_at) || '--:--',
+                        time: dayPrefix ? `${dayPrefix} ${time}` : time,
                         serial,
                     };
                 });

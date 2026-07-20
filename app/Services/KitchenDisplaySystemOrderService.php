@@ -163,7 +163,18 @@ class KitchenDisplaySystemOrderService
                     $subQuery->where('is_advance_order', Ask::YES)
                              ->where('order_datetime', '<', $tomorrowStart) // Today or overdue past dates
                              ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED]); // Not already completed
-                });
+                })
+                // [FIX SCHEDULED-STALE 2026-07-20] Programmées : échappent à la
+                // fenêtre datetime legacy (miroir de l'échappement advance). Une
+                // programmée CRÉÉE >8h avant sa cible (10:00 → 20:00, ou J-1..J-7)
+                // avait order_datetime < staleFloor à T-lead ET is_advance_order=NO
+                // → AND-composée avec le gate scheduled, elle était éjectée du board
+                // au moment EXACT où le bandeau la lâchait (complément exact) —
+                // jamais cuisinée. Son admission temporelle est DÉJÀ gérée par
+                // applyScheduledBoardFilter (scheduled_at <= now+lead, AND top-level)
+                // ; statut/release/branch gates inchangés. NULL = ASAP → strictement
+                // identique. Sentinel : KdsScheduledOrderGateTest (10h→20h + J-1).
+                ->orWhereNotNull('scheduled_at');
             })->where(function ($query) use ($requests) {
                 foreach ($requests as $key => $request) {
                     if (in_array($key, $this->orderFilter)) {
@@ -245,7 +256,12 @@ class KitchenDisplaySystemOrderService
      * (admin branch_id=0 voit tout, staff sa branche). Payload minimal — le
      * bandeau n'a pas besoin des lignes d'items. Read-only, NF525 zéro impact.
      *
-     * @return array<int, array{id: int, order_serial_no: mixed, scheduled_at: string|null, order_type: int|null, customer_name: string|null}>
+     * [FIX SCHEDULED-STALE P3 2026-07-20] + `scheduled_date` (Y-m-d Paris-local) :
+     * le bandeau peut porter des cibles au-delà d'aujourd'hui (J+1..J+7) — la date
+     * est calculée SERVEUR (même cast/TZ que scheduled_at) pour que le front
+     * préfixe « sam. 26/07 » sans re-dériver la date depuis l'ISO (risque TZ).
+     *
+     * @return array<int, array{id: int, order_serial_no: mixed, scheduled_at: string|null, scheduled_date: string|null, order_type: int|null, customer_name: string|null}>
      *
      * @throws Exception
      */
@@ -278,6 +294,9 @@ class KitchenDisplaySystemOrderService
                         'id'              => (int) $order->id,
                         'order_serial_no' => $order->order_serial_no,
                         'scheduled_at'    => $order->scheduled_at?->toIso8601String(),
+                        // [FIX SCHEDULED-STALE P3] Y-m-d Paris-local (cast datetime,
+                        // app TZ) — désambiguïsation multi-jours côté bandeau.
+                        'scheduled_date'  => $order->scheduled_at?->format('Y-m-d'),
                         'order_type'      => $order->order_type === null ? null : (int) $order->order_type,
                         'customer_name'   => $order->pos_customer_name ?: $order->user?->name,
                     ];
@@ -684,7 +703,13 @@ class KitchenDisplaySystemOrderService
                     $subQuery->where('is_advance_order', Ask::YES)
                              ->where('order_datetime', '<', $tomorrowStart)
                              ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED]);
-                });
+                })
+                // [FIX SCHEDULED-STALE 2026-07-20] Miroir de list() : une programmée
+                // créée >8h avant sa cible échappe à la fenêtre datetime legacy —
+                // sinon ses items manquaient à l'AGRÉGAT « à préparer » à T-lead
+                // (admission temporelle = applyScheduledBoardFilter ci-dessus).
+                // NULL = ASAP strictement inchangé. Sentinel : KdsScheduledOrderGateTest.
+                ->orWhereNotNull('scheduled_at');
             })->get();
 
             $allItems = $orders->pluck('orderItems')->flatten();
