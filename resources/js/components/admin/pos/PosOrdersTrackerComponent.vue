@@ -229,6 +229,24 @@
                                         <i class="fa-solid fa-cash-register" aria-hidden="true"></i>
                                         <span class="hidden xl:inline">{{ $t('pos.tracker.cash_collect_cta') }}</span>
                                     </button>
+                                    <!--
+                                      [WEB-TRACKER-VISIBILITY 2026-07-20] Commande WEB PENDING
+                                      (pas encore acceptée) : CTA « Accepter » inline — même flux
+                                      que le panneau web caisse (C1). Après accept → cash-pending
+                                      → le CTA Encaisser ci-dessus prend le relais. FR direct.
+                                    -->
+                                    <button
+                                        v-else-if="col.id === 'accept' && isWebPending(order)"
+                                        type="button"
+                                        class="pos-tracker-card-btn pos-tracker-card-btn--cash"
+                                        :disabled="!!webAccepting[order.id]"
+                                        title="Accepter la commande web — encaissement au comptoir"
+                                        :data-testid="`tracker-accept-web-${order.id}`"
+                                        @click="acceptWebOrder(order)"
+                                    >
+                                        <i class="fa-solid fa-globe" aria-hidden="true"></i>
+                                        <span class="hidden xl:inline">{{ webAccepting[order.id] ? 'Acceptation…' : 'Accepter' }}</span>
+                                    </button>
                                     <router-link
                                         :to="{ name: 'admin.pos-orders.show', params: { id: order.id } }"
                                         class="pos-tracker-card-btn"
@@ -469,6 +487,9 @@ export default {
             // [GOAL-2026-05-29 DEAD-BUTTON-FIX] Order currently being encashed
             // via the shared PosCounterCollectModal (null = modal closed).
             encaisseOrder: null,
+            // [WEB-TRACKER-VISIBILITY 2026-07-20] Anti double-clic par commande
+            // pour le CTA « Accepter » des commandes web PENDING.
+            webAccepting: {},
         };
     },
     computed: {
@@ -537,6 +558,15 @@ export default {
                         buckets.preparing.push(o);
                     }
                 }
+                // [WEB-TRACKER-VISIBILITY 2026-07-20] Une commande WEB arrive PENDING (UNPAID,
+                // source_surface='web') et n'était bucketée NULLE PART → invisible dans
+                // « commandes en cours » (plainte owner : commande web passée, introuvable).
+                // Elle rejoint la voie « À encaisser » avec un CTA « Accepter » qui réutilise
+                // le chemin EXISTANT OnlineOrderController::changeStatus (=ACCEPT → bascule
+                // PENDING_COUNTER+COUNTER_DEFERRED, même flux que le panneau web de la caisse
+                // C1 2026-07-18). Après acceptation elle reste dans la même voie en cash-pending
+                // (Encaisser) — continuité visuelle totale du cycle web.
+                else if (s === orderStatusEnum.PENDING && this.isWebPending(o)) buckets.accept.push(o);
                 else if (s === orderStatusEnum.PREPARING) buckets.preparing.push(o);
                 else if (s === orderStatusEnum.PREPARED) buckets.prepared.push(o);
                 // [Wave T R1 F1 P0 2026-05-20] EN LIVRAISON lane: any order at
@@ -900,6 +930,39 @@ export default {
             const ppm = parseInt(o.pos_payment_method, 10);
             return ps === 15 && ppm === 6;
         },
+        // [WEB-TRACKER-VISIBILITY 2026-07-20] Commande WEB fraîchement arrivée (PENDING, pas
+        // encore acceptée). Distincte de isCashPending (qui = déjà acceptée, PENDING_COUNTER).
+        isWebPending(o) {
+            if (!o) return false;
+            const surface = String(o.source_surface || '').toLowerCase();
+            return surface === 'web' && parseInt(o.status, 10) === orderStatusEnum.PENDING;
+        },
+        // [WEB-TRACKER-VISIBILITY 2026-07-20] Accepter une commande web SANS quitter le tracker —
+        // miroir exact de PosComponent.acceptWebOrder (C1 2026-07-18) : même endpoint
+        // online-order/change-status (ACCEPT), même clé d'idempotence minute-bucket. Le backend
+        // bascule le takeaway COD web en PENDING_COUNTER+COUNTER_DEFERRED → au refresh la carte
+        // reste dans la voie « À encaisser », désormais avec le CTA Encaisser (cash-pending).
+        async acceptWebOrder(order) {
+            if (!order || !order.id || this.webAccepting[order.id]) return;
+            this.webAccepting = { ...this.webAccepting, [order.id]: true };
+            try {
+                const minuteBucket = Math.floor(Date.now() / 60000);
+                await axios.post(
+                    `admin/online-order/change-status/${order.id}`,
+                    { status: orderStatusEnum.ACCEPT },
+                    { headers: { 'X-Idempotency-Key': `web-accept-${order.id}-${minuteBucket}` } }
+                );
+                const num = order.queue_number || order.order_serial_no || order.id;
+                // FR direct (idiome du panneau web caisse, locale FR ADR-007) — pas de raw-label i18n.
+                try { alertService.success(`Commande web N°${num} acceptée — encaissement au comptoir`); } catch (_) { /* best-effort */ }
+                await this.fetchOrders();
+            } catch (err) {
+                const msg = err?.response?.data?.message || 'Erreur lors de l\'acceptation de la commande web';
+                try { alertService.error(msg); } catch (_) { /* defensive */ }
+            } finally {
+                this.webAccepting = { ...this.webAccepting, [order.id]: false };
+            }
+        },
         // [Wave S-4 P-OWNER 2026-05-20] Encaissement CTA — Wave S-5 owns the
         // actual modal. We surface a window-level event so the parent shell
         // (PosShell / global listener) can intercept, hydrate the order, and
@@ -939,6 +1002,9 @@ export default {
             if (surface === 'kiosk') return 'kiosk';
             if (surface === 'pos') return 'pos';
             if (surface === 'online') return 'online';
+            // [WEB-TRACKER-VISIBILITY 2026-07-20] source_surface='web' (site client) = onglet 🌐.
+            // Avant : non reconnu → retombait sur l'heuristique order_type → classé 'pos' à tort.
+            if (surface === 'web') return 'online';
             const ot = parseInt(o.order_type, 10);
             // Heuristics fallback when source_surface is missing
             if (Number.isFinite(ot)) {
