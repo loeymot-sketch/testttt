@@ -84,3 +84,16 @@ VPS rejette IDs locaux). Nettoyage : 5829-5835 local + 175-177 VPS annulés (sta
 **Findings** : F2 dérive d'IDs extras local↔VPS (backfill 16/07, même prix — casse tout futur mirror par ID,
 note gestion) ; F3 menu enfant 40 + bol 45 : « Sauce supplémentaire » DB hors profil publié = pas commandable
 borne (cohérent avec P3-1 W1 — MÊME décision owner : ouvrir ou verrouiller partout).
+
+## W4 PREUVE VISUELLE — ✅ PASS 1/1 (spec Playwright réel, 2 captures analysées)
+Capture 1 : programmée T+2h → bandeau « ⏰ Programmées (1) : 04:38 — #2007265844 » lisible, board VIDE (0
+carte) — corroboré API (meta oui, data non). Capture 2 : T+10min → carte V2 normale (slot A, badges, bouton
+Prêt), la T+2h reste bandeau-seul. Spec tests/e2e/scheduled-order-kds-banner-2026-07-20.spec.js (login specs
+existants, cleanup fait 5844/5845). Piège réel résolu : bundles locaux STALE (code committé jamais compilé)
+→ npm run dev + gate string-servie. Note à vérifier (contradiction apparente) : le captureur dit « kiosk/web
+ne persiste pas scheduled_at » MAIS le test E4 ScheduledOrderIntakeValidationTest prouve la valeur en DB
+(8/8 vert ×3 runs) — la lecture statique du captureur est probablement fausse ; re-trancher à la W7.
+
+## BILAN GOAL au 2026-07-20 : W1 ✅ · W2 ✅ 10/10 centime · W4 ✅ (code+hunt-P1-fixé+captures) ·
+## W5 Mollie ✅ fail-closed · W6 audité ✅ (VPS propre ; heals phone-unique+config à faire) ·
+## Reste : W3-propagation gestion→systèmes · W6-heals · W7 boucle finale + deploy VPS du lot.
