@@ -91,4 +91,32 @@ return [
         ],
         'log_channel' => env('PAYMENT_BYPASS_LOG_CHANNEL', 'stack'),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Mollie — paiement carte web (STRUCTURE W5, GOAL_ULTRA_SYNC_STRUCTURE_2026-07-20)
+    |--------------------------------------------------------------------------
+    |
+    | FAIL-CLOSED par défaut : enabled=false ET api_key='' → tout endpoint
+    | Mollie répond 503 « Mollie non configuré » et createPayment() lève une
+    | exception claire. Le flag serveur `enabled` reste le VERROU même quand
+    | une clé est posée (gate owner G-W5 : clés test_xxx puis live_xxx).
+    |
+    | Sécurité webhook (modèle Mollie documenté) : le POST webhook ne porte
+    | qu'un id — la VÉRITÉ est toujours re-fetchée via GET /v2/payments/{id}
+    | avec notre clé API. Un POST forgé ne peut donc jamais marquer PAID.
+    |
+    | NF525 : la confirmation « paid » réutilise le chemin kiosk-paid EXISTANT
+    | (payment_status=PAID → FrontendOrderService::finalizePaidKioskOrder →
+    | allocation fiscale). AUCUN nouveau chemin fiscal.
+    |
+    */
+    'mollie' => [
+        'enabled' => (bool) env('MOLLIE_ENABLED', false),
+        'api_key' => (string) env('MOLLIE_API_KEY', ''), // '' = fail-closed (test_xxx | live_xxx)
+        'api_base' => rtrim((string) env('MOLLIE_API_BASE', 'https://api.mollie.com/v2'), '/'),
+        // Page de retour côté site web après le checkout Mollie (fallback APP_URL).
+        'redirect_url' => (string) env('MOLLIE_REDIRECT_URL', ''),
+        'gate' => 'G-W5 GOAL_ULTRA_SYNC_STRUCTURE_2026-07-20',
+    ],
 ];

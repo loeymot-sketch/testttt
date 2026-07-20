@@ -50,6 +50,9 @@ class WebhookEvent extends Model
 
     public const PROVIDER_STRIPE = 'stripe';
     public const PROVIDER_SENANGPAY = 'senangpay';
+    // [W5 Mollie 2026-07-20] webhook_id = "{payment_id}:{status}" (Mollie
+    // rejoue le même payment id à chaque changement de statut).
+    public const PROVIDER_MOLLIE = 'mollie';
 
     public const STATUS_PENDING = 'pending';
     public const STATUS_PROCESSED = 'processed';

@@ -56,3 +56,22 @@ ET rejetée du board = invisible partout cuisine, jamais cuisinée. Les 25 tests
 (vert vacueux sur ce cas). Fix : OR `scheduled_at NOT NULL` dans la fenêtre datetime des 5 chemins jumeaux +
 tests J-1/10h→20h + date sur bandeau (P3 multi-jours). RAS explicite sur : sur-gating caisse (non gatée ✓),
 timezone, bump-guard, meta piggyback, spread quote, ASAP inchangé.
+
+## W4 P1 fixé+committé eafee1bbe (28/28+320+19, TDD red-first). Migration locale posée (COL OK).
+
+## W6 fidélité — ✅ RENDU : VPS (base réelle) PROPRE 0/8 anomalies
+Guest 0612345678 solde 0 == ledger (les « 70 » nav = avatar tél, 0 contrepartie DB). Config VPS 10pt/€,
+100=1€, min 50 (défauts, settings vides). Local : DB opérationnelle = foodking_e2e (foodking = legacy morte) ;
+anomalies = fixtures e2e (drift 10 users, redeems non-multiples PRÉ-guard, 13 sans consent), pas bugs actifs.
+**Heals à faire** : P2 users.phone SANS UNIQUE (exploitable — app-level check à l'inscription + dédup avant
+contrainte au go-live) ; P2 config locale 1pt/€≠VPS 10pt/€ (aligner local sur prod pour valider la vraie
+config) ; P3 earns order_id=NULL hors UNIQUE (défense=idempotency seule). Note : order #171 = REJECTED
+(annulé côté caisse), #172 PENDING.
+
+## W5 Mollie — ✅ STRUCTURE LIVRÉE fail-closed (8/8 + 8 régression, frozen 0)
+Gateway Http:: (0 package) · webhook /api/webhook/mollie idempotent statut-scopé, JAMAIS confiance au POST
+(re-fetch GET = vérité) · checkout endpoint 503 si non configuré · montant = total scellé · paid→
+finalizePaidKioskOrder EXISTANT (0 nouveau chemin fiscal) · failed→UNPAID encaissable caisse.
+GATE G-W5 owner à l'activation : MOLLIE_API_KEY test_xxx + MOLLIE_ENABLED + redirect URL + flag web ; et
+DÉCISION : web pur sans KioskMachine → finalize no-op → PAID sans fiscal_seq (warning
+mollie_webhook_fiscal_finalize_noop, documenté par test) — élargir gate F-21 = owner.

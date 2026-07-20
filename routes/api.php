@@ -160,6 +160,15 @@ Route::post('/webhooks/uber', [\App\Http\Controllers\Webhook\UberWebhookControll
     ->middleware(['installed', 'throttle:60,1'])
     ->name('webhooks.uber');
 
+// [W5 Mollie 2026-07-20] Webhook Mollie — PUBLIC (Mollie n'a pas notre apiKey ; modèle de
+// sécurité Mollie documenté = le POST ne porte qu'un id, la vérité est re-fetchée via
+// GET /v2/payments/{id} authentifié par NOTRE clé → un POST forgé ne marque jamais PAID).
+// FAIL-CLOSED : 503 tant que payment.mollie (flag+clé) absent. URL à enregistrer côté Mollie :
+//   https://<domaine>/api/webhook/mollie
+Route::post('/webhook/mollie', [\App\Http\PaymentGateways\Gateways\Mollie::class, 'handleWebhook'])
+    ->middleware(['installed', 'throttle:60,1'])
+    ->name('webhooks.mollie');
+
 Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name('auth.')->namespace('Auth')->group(function () {
     // [SEC-02] Rate limiting — login lockout (named limiter)
     Route::post('/login', [LoginController::class, 'login'])
@@ -1399,6 +1408,12 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
             ->name('change-status');
         // [BORNE-WINDOWS] Confirm card payment from physical terminal — stores transaction_id
         Route::post('/{frontendOrder}/payment-confirm', [FrontendOrderController::class, 'paymentConfirm'])->middleware('idempotency');
+        // [W5 Mollie 2026-07-20] Checkout carte web : crée le paiement Mollie (montant =
+        // total scellé backend) d'une commande UNPAID du client → checkout_url hébergée.
+        // FAIL-CLOSED 503 sans flag+clé (gate G-W5). Jamais de PAID ici (webhook seul).
+        Route::post('/{frontendOrder}/mollie-checkout', [\App\Http\Controllers\Frontend\MolliePaymentController::class, 'checkout'])
+            ->middleware('throttle:10,1')
+            ->name('mollie-checkout');
     });
 
     // [AUDIT-F-008] Payment confirm reconciliation queue — frontend persists TPE-approved
