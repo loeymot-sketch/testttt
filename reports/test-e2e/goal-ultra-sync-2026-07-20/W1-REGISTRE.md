@@ -101,3 +101,13 @@ ne persiste pas scheduled_at » MAIS le test E4 ScheduledOrderIntakeValidationTe
 ## W6-HEALS — ✅ H1 phone-unique : code DÉJÀ correct (GuestSignupController:98 where-first + LoyaltyController:143)
 ## prouvé+verrouillé PhoneUniqueGuestTest 2/2 (14 assert). H2 config locale alignée PROD 10/100/50 (endpoint ✓).
 ## (La contrainte DB UNIQUE reste un item go-live après dédup — registre.)
+
+## W3 — ✅ CLOS (les 3 volets)
+T3.1 catalogue SSOT/doublons = prouvé W1-adversaire (38/38, 0 doublon). T3.2 propagation MESURÉE : 86 posé
+tinker → borne/détails/caisse APIs +458ms (granularité poll 2s, lecture DB live 0 cache), revert +35ms ; nom
+modifié→propagé→reverté exact ; 0 résidu (avail_rows_98 baseline, tokens purgés, fiscal intouché). T3.3
+matrice logique par catégorie = W1-adversaire (divergences justifiées backend). M2 STATUT CLIENT prouvé :
+programmée POS réelle 5846 → bump chef 7→8 (202) → GET client /api/frontend/order/show/5846 = status 8
+« Prête » + scheduled_at ISO (garde 403 user_id stricte). Nuance : POS différé collapse ACCEPT
+(auto_prepare_on_paid Wave S-1, preuve transitions). Reste en vol : W8-web (états dégradés) + W8-borne
+(7 catégories captures). Puis W9-W12 (plan §extension).
