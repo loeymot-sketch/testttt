@@ -119,3 +119,34 @@ Règles : findings sans preuve = REJETÉS ; « validé » exige capture analysé
 Toutes vagues convergées (P0+P1=0 ×2, preuves captures+backend), matrice parité catégories publiée, 0 doublon
 cross-système, structures programmées/Mollie/SMS/fidélité EN PLACE (testables, fail-closed sans clés), boucle
 finale verte. Alors seulement : demander les clés à l'owner (Mollie, SMS) et brancher.
+
+---
+# EXTENSION DEEP (owner 2026-07-20 : « plus deep, mission plus longue, absolue, chaque page testée, raisonner »)
+
+## W8 — MATRICE EXHAUSTIVE PAGE × ÉTAT (preuve capture par cellule)
+Inventaire ANCRÉ d'abord (routes réelles), puis pour CHAQUE page de CHAQUE système, tester chaque état :
+- **Web (12 pages + 5 légales)** : accueil, menu×9 catégories, fiche×5 types, wizard×7 catégories composables,
+  panier, upsell×3, checkout, paiement, OTP, confirmation, suivi, compte/fidélité, historique, FAQ, légales.
+  États par page : nominal · vide · chargement · erreur API (backend down) · session expirée · mobile 390px.
+- **Borne (local :8000)** : idle, catégories, wizard PAR catégorie (7), panier, upsell, paiement Plan B, merci.
+- **Caisse** : grille, wizard popup, panier, paiement, commandes web, encaissement, programmé ⏰, parked.
+- **KDS** : board V2 vide/1/20 cartes, bandeau programmées 0/1/multi-jours, WS-down (bannière), recall.
+- **OSS + Admin gestion** : suivi statuts, items CRUD, dispo 86, rapports.
+Binôme par système : captureur (chaque cellule = capture analysée) + adversaire (états d'erreur provoqués).
+
+## W9 — CHAOS / ROBUSTESSE (le système survit-il ?)
+Backend coupé pendant checkout (message propre ? retry ?) · WS down → polling assure (mesuré) · double-clic
+partout (payer, bump, ajouter) · refresh mid-funnel (panier ? idempotence ?) · 429 throttle atteint (UX ?) ·
+session expirée mid-action · minuit (23h59→00h01 : fenêtre programmées, Z, quotas jour) · latence 3G simulée.
+
+## W10 — COHÉRENCE TRANSVERSE (chaque nombre égal partout)
+Tout fait affiché sur ≥2 surfaces doit être IDENTIQUE : total (wizard=panier=checkout=paiement=confirmation=
+caisse=KDS=snapshot) · points (earn affiché=crédité=solde) · 86 (gestion=borne=web=caisse) · statut (KDS=OSS=
+compte client) · heure programmée (ticket=bandeau=carte) · prix (carte=fiche=wizard=DB). Agent dédié = matrice.
+
+## W11 — PERF BUDGETS par page (borne réactivité owner)
+TTI par surface, taille bundles servis, cadence polls (KDS 5-60s, web 25s, OSS), N+1 sur les listes chargées.
+
+## W12 — DOUBLE BOUCLE FINALE + DEPLOY
+2 cycles complets propres consécutifs (set-equality) sur TOUT · deploy VPS lot complet (script durci) ·
+re-validation POST-deploy sur le VPS (smoke chaque système) · CONVERGENCE_FINAL.md + captures d'archive.
