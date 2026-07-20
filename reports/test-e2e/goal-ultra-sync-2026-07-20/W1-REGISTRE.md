@@ -133,3 +133,12 @@ mapping statuts cohérent (nuance : 10 OFD→step2/delivered, livraison hors V1)
 (3 fixtures RJ-* locales hors menu réel). SEULE divergence réelle : fallbacks web 1/100/100 → HEALÉS 10/100/50
 (loyalty.js:33-35, screens.jsx:554) déployé b7306ac ?v=i. Reste en vol : W8-web Playwright. À lancer : W9
 chaos · W11 perf · W12 double-boucle+deploy VPS.
+
+## W8-WEB (Playwright, contourne blocage Chrome MCP) — 6/7 ✓ + 1 P0 RÉEL
+T1 API morte→message propre ✓ · T2 session expirée→re-login (pas de faux 0pt) ✓ · T3 double-clic affiché==
+facturé ✓ · T4 refresh mid-funnel→accueil propre ✓ · T5 mobile 390 panX=0 ✓ (P3 nav ~12px clip cosmétique) ·
+T6 états vides propres ✓ (routage state React, pas de deep-link) · **T7 ✗ P0 : bypass OTP** — verify accepte
+tout code quand site_phone_verification=DISABLE (staging SMS-off) : mint token pour tout numéro sans SMS.
+Défaut serveur GuestSignupController::verify:63. FIX EN COURS : durcir branche DISABLE (verify réel via
+OtpManagerService, code lu en table) + gate PREFLIGHT prod CRITICAL (bloque go-live si DISABLE). TDD.
+Spec tests/e2e/web-degraded-states-2026-07-20.spec.js. Nécessitera redeploy VPS pour fermer le trou staging.
