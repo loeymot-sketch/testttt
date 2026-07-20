@@ -150,3 +150,13 @@ production.min ✓. Levier n°1 = Babel-standalone runtime 654Ko gz + transpile 
 précompiler JSX au deploy = introduit un build). Images menu 31Mo PNG brut (tacos-cayenne 1Mo) → WebP+resize
 ~70% (P2, touche 76 fichiers+refs, sensible qualité borne 1080p = owner-gated, NON fait). Bundles caisse app.js
 7Mo/pos-app 6.6Mo (P2 backlog, gzip nginx box). Reco chiffrées consignées, aucune faite (owner-gated).
+
+## W9 CHAOS — ✅ survit aux 6 (0 P0/P1/P2)
+429 propre+Retry-After · idempotence prouvée live #5853 (201-replay Idempotency-Replayed:true / 409-conflit) ·
+double-clic bump = triple défense (lockForUpdate + expected_status 409 + no-op from===to, OrderStateMachine
+recordTransition skip) · MINUIT : 86 manuel PERSISTE (AvailabilityService:77-80), quota reset lazy Paris-day
++ cron 00:05 préserve les 86 manuels (ResetStaleDailyQuota:89-97), fiscal_seq MAX+1/branche SANS filtre date =
+continu gap-free (Z = agrégat, ne reset pas la séquence) · concurrence fiscal FROZEN triple défense INTACTE
+(Cache::lock 5s + FOR UPDATE + unique DB) · backend-down/bad-item → 422 fail-closed, fiscal_seq NULL création
+(alloué au paiement, tx séparée), 0 orphelin. Nettoyé #5853. P3 : throttle générique EN sans retry_after body ;
+pas de boot-guard rate-limits prod.
