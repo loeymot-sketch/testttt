@@ -125,3 +125,11 @@ sauce-supp) · M.enfant 106 = 5,80. 14 captures lues/analysées, 0 commande, pan
 Spec tests/e2e/borne-wizard-7cats-captures-2026-07-20.spec.js (1 passed 3.9m). Constats : « sauce supp 0,50 »
 inatteignable borne (profils max=1, sert web/POS) ; item 45=Bol Riz (41=Bol Frites) ; micro-cosmétique
 « Type de Pain · » orphelin ligne panier (0 impact prix). DÉFAUTS PRIX : ZÉRO.
+
+## W10 COHÉRENCE TRANSVERSE — ✅ 7/7 ÉGAL + heal déployé
+Prix 38/38 générateur EXIT=0 ×2 (VPS+local) · fidélité 10/100/50 identique API locale=VPS=textes déployés ·
+lead/fenêtre programmées = SSOT unique (0 nombre en dur, 3 consommateurs vérifiés) · 86 aller-retour résidu 0 ·
+mapping statuts cohérent (nuance : 10 OFD→step2/delivered, livraison hors V1) · TVA 10% = 47/47 les 2 env
+(3 fixtures RJ-* locales hors menu réel). SEULE divergence réelle : fallbacks web 1/100/100 → HEALÉS 10/100/50
+(loyalty.js:33-35, screens.jsx:554) déployé b7306ac ?v=i. Reste en vol : W8-web Playwright. À lancer : W9
+chaos · W11 perf · W12 double-boucle+deploy VPS.
