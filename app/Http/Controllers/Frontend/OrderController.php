@@ -74,6 +74,11 @@ class OrderController extends Controller
 
         try {
             return new OrderDetailsResource($this->frontendOrderService->show($frontendOrder));
+        } catch (HttpException $exception) {
+            // [W14 AUTHZ 2026-07-20] Préserver le code du service — l'abort(403) IDOR (heal
+            // FRONT-SHOW-403-422, FrontendOrderService::show) était aplati en 422 par le
+            // catch(Exception) ci-dessous. Même pattern que store() plus haut dans ce fichier.
+            return response(['status' => false, 'message' => $exception->getMessage()], $exception->getStatusCode());
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
@@ -117,6 +122,9 @@ class OrderController extends Controller
     {
         try {
             return new OrderDetailsResource($this->frontendOrderService->changeStatus($frontendOrder, $request));
+        } catch (HttpException $exception) {
+            // [W14 AUTHZ 2026-07-20] idem show() : préserver le 403 IDOR (service abort) au lieu de 422.
+            return response(['status' => false, 'message' => $exception->getMessage()], $exception->getStatusCode());
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
