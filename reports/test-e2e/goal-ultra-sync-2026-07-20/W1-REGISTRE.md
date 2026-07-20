@@ -48,3 +48,11 @@ Cœur commerce irréprochable sur le déployé : compteurs 38=38, prix cartes=fi
 
 ## W4 lanes : E0+E1 ✅ commité (1cde5bad7) · E4 ✅ (8/8+50) · E5 ✅ (4/4+19, frozen 0) · E6 ✅ (14/14 vitest)
 ## E2+E3 (gates KDS/OSS + meta) : EN VOL
+
+## W4 régression hunt (double-vérif) — 1 P1 RÉEL attrapé + fix en cours
+**P1** : programmée créée >8h avant sa cible (cas phare « commandée le matin pour ce soir ») = AND avec la
+fenêtre glissante 8h (order_datetime>=staleFloor, branche advance exige YES) → à T-lead : éjectée du bandeau
+ET rejetée du board = invisible partout cuisine, jamais cuisinée. Les 25 tests verts créaient tous <8h avant
+(vert vacueux sur ce cas). Fix : OR `scheduled_at NOT NULL` dans la fenêtre datetime des 5 chemins jumeaux +
+tests J-1/10h→20h + date sur bandeau (P3 multi-jours). RAS explicite sur : sur-gating caisse (non gatée ✓),
+timezone, bump-guard, meta piggyback, spread quote, ASAP inchangé.
