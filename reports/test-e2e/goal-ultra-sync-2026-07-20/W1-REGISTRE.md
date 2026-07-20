@@ -111,3 +111,9 @@ programmée POS réelle 5846 → bump chef 7→8 (202) → GET client /api/front
 « Prête » + scheduled_at ISO (garde 403 user_id stricte). Nuance : POS différé collapse ACCEPT
 (auto_prepare_on_paid Wave S-1, preuve transitions). Reste en vol : W8-web (états dégradés) + W8-borne
 (7 catégories captures). Puis W9-W12 (plan §extension).
+
+## W8-web (états dégradés) — ⛔ agent bloqué : MCP Chrome exige sélection navigateur (3 instances Chrome
+## connectées, subagent ne peut pas choisir). 0 testé, 0 inventé. → À EXÉCUTER PAR LA SESSION PRINCIPALE
+## (qui détient la sélection — onglet des ~45 captures du jour). Les 7 cas : API invalide→message propre ;
+## session expirée mid-parcours→re-login ; double-clic ajouter/payer ; refresh mid-funnel ; mobile 390 ;
+## états vides par URL directe ; OTP 0000→erreur claire. (Option owner : fermer les 2 Chrome surnuméraires.)
