@@ -142,3 +142,11 @@ tout code quand site_phone_verification=DISABLE (staging SMS-off) : mint token p
 Défaut serveur GuestSignupController::verify:63. FIX EN COURS : durcir branche DISABLE (verify réel via
 OtpManagerService, code lu en table) + gate PREFLIGHT prod CRITICAL (bloque go-live si DISABLE). TDD.
 Spec tests/e2e/web-degraded-states-2026-07-20.spec.js. Nécessitera redeploy VPS pour fermer le trou staging.
+
+## W11 PERF — ✅ aucun P0/P1 réactivité (tout P2, chiffré)
+Polls OK (web 25s, KDS 5-60s adaptatif) · **N+1 PROPRES ×3** (simpleList Item::with media/category/offer +
+overlay 1 whereIn ; KDS with orderItems/address/user heal PERF-KDS-N1 ; web-orders limit 200) · React=
+production.min ✓. Levier n°1 = Babel-standalone runtime 654Ko gz + transpile ~1-3s/chargement (P2, gate owner :
+précompiler JSX au deploy = introduit un build). Images menu 31Mo PNG brut (tacos-cayenne 1Mo) → WebP+resize
+~70% (P2, touche 76 fichiers+refs, sensible qualité borne 1080p = owner-gated, NON fait). Bundles caisse app.js
+7Mo/pos-app 6.6Mo (P2 backlog, gzip nginx box). Reco chiffrées consignées, aucune faite (owner-gated).
