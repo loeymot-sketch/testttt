@@ -97,3 +97,7 @@ ne persiste pas scheduled_at » MAIS le test E4 ScheduledOrderIntakeValidationTe
 ## BILAN GOAL au 2026-07-20 : W1 ✅ · W2 ✅ 10/10 centime · W4 ✅ (code+hunt-P1-fixé+captures) ·
 ## W5 Mollie ✅ fail-closed · W6 audité ✅ (VPS propre ; heals phone-unique+config à faire) ·
 ## Reste : W3-propagation gestion→systèmes · W6-heals · W7 boucle finale + deploy VPS du lot.
+
+## W6-HEALS — ✅ H1 phone-unique : code DÉJÀ correct (GuestSignupController:98 where-first + LoyaltyController:143)
+## prouvé+verrouillé PhoneUniqueGuestTest 2/2 (14 assert). H2 config locale alignée PROD 10/100/50 (endpoint ✓).
+## (La contrainte DB UNIQUE reste un item go-live après dédup — registre.)
