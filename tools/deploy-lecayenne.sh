@@ -172,11 +172,26 @@ fi
 echo "== app JOIGNABLE via $GOOD"
 
 # Assertion CONTENU : la page borne rend bien l'app ET sert le app.js DE CE BUILD.
-KCODE="$($CURL -o /dev/null -w '%{http_code}' "$GOOD/kiosk/idle" 2>/dev/null)"
-case "$KCODE" in 200) : ;; *) echo "XX /kiosk/idle HTTP $KCODE"; rollback;; esac
-HTML="$($CURL "$GOOD/kiosk/idle" 2>/dev/null)"
+# [SMOKE-RETRY 2026-07-20] Root-cause d'un rollback à tort (deploy 3ae59d23) : la box a
+# opcache.validate_timestamps=On + revalidate_freq=2 → une fenêtre ~2s après `git reset` où
+# OPcache sert un bytecode MIXTE (l'app boote incohérente → /kiosk/idle transitoirement 200 SANS
+# window.foodkingConfig). On sonde avec settle+retry : une VRAIE page blanche échoue TOUS les
+# essais (→ rollback), un transitoire OPcache passe dès que la revalidation est faite. La gate
+# reste dure (5 essais max, ~15s) — elle n'est PAS affaiblie, juste rendue robuste au timing.
+KCODE=""; HTML=""
+for try in 1 2 3 4 5; do
+  KCODE="$($CURL -o /dev/null -w '%{http_code}' "$GOOD/kiosk/idle" 2>/dev/null)"
+  HTML="$($CURL "$GOOD/kiosk/idle" 2>/dev/null)"
+  if [ "$KCODE" = "200" ] && printf '%s' "$HTML" | grep -qF 'window.foodkingConfig'; then
+    [ "$try" -gt 1 ] && echo "== /kiosk/idle OK au bout de $try essais (fenêtre OPcache passée)"
+    break
+  fi
+  echo "== smoke /kiosk/idle essai $try/5 : HTTP $KCODE, foodkingConfig=$(printf '%s' "$HTML" | grep -c foodkingConfig) — settle 3s"
+  sleep 3
+done
+case "$KCODE" in 200) : ;; *) echo "XX /kiosk/idle HTTP $KCODE (après 5 essais)"; rollback;; esac
 printf '%s' "$HTML" | grep -qF 'window.foodkingConfig' \
-  || { echo "XX /kiosk/idle ne contient pas window.foodkingConfig (page d'erreur/blanche)"; rollback; }
+  || { echo "XX /kiosk/idle ne contient pas window.foodkingConfig après 5 essais (vraie page d'erreur/blanche)"; rollback; }
 APPJS="$(php -r '$m=json_decode(file_get_contents("public/mix-manifest.json"),true);echo $m["/js/app.js"]??"";')"
 if [ -n "$APPJS" ]; then
   HASH="${APPJS#*id=}"
