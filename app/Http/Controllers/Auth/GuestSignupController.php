@@ -17,6 +17,7 @@ use Exception;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use App\Enums\Role as EnumRole;
 use App\Services\OtpManagerService;
@@ -50,7 +51,36 @@ class GuestSignupController extends Controller
     ) : \Illuminate\Http\Response | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory {
         try {
             $this->otpManagerService->otp($request);
-            return response(['status' => true, 'message' => trans("all.message.check_your_phone_for_code")]);
+
+            $payload = ['status' => true, 'message' => trans("all.message.check_your_phone_for_code")];
+
+            // [W16 DEV-OTP 2026-07-20] Re-testabilité web staging. Le P0 OTP-BYPASS impose
+            // désormais le VRAI code (verify() lit otps.token) ; or en staging/local SANS SMS
+            // câblé l'owner ne peut pas le connaître. On renvoie le code fraîchement généré
+            // UNIQUEMENT hors production ET quand le SMS ne partira pas (site_phone_verification
+            // != ENABLE OU aucune gateway SMS). DOUBLE VERROU : (1) env-gate ci-dessous — jamais
+            // en production, quel que soit le réglage SMS ; (2) le preflight go-live
+            // (PreflightProductionCommand::checkPhoneVerification) BLOQUE déjà la prod si OTP OFF.
+            // Le champ dev_code n'apparaît donc JAMAIS dans une réponse de production.
+            if (! app()->environment('production')) {
+                try {
+                    $smsEnforced     = (int) Settings::group('site')->get('site_phone_verification') === Activity::ENABLE;
+                    $smsGatewayWired = ! blank(Settings::group('site')->get('site_default_sms_gateway'));
+                    if (! $smsEnforced || ! $smsGatewayWired) {
+                        $devCode = DB::table('otps')
+                            ->where('phone', $request->post('phone'))
+                            ->latest('created_at')
+                            ->value('token');
+                        if (! blank($devCode)) {
+                            $payload['dev_code'] = (string) $devCode;
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    // Best-effort dev helper — ne doit JAMAIS casser l'envoi OTP.
+                }
+            }
+
+            return response($payload);
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
