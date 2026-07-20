@@ -117,3 +117,11 @@ programmée POS réelle 5846 → bump chef 7→8 (202) → GET client /api/front
 ## (qui détient la sélection — onglet des ~45 captures du jour). Les 7 cas : API invalide→message propre ;
 ## session expirée mid-parcours→re-login ; double-clic ajouter/payer ; refresh mid-funnel ; mobile 390 ;
 ## états vides par URL directe ; OTP 0000→erreur claire. (Option owner : fermer les 2 Chrome surnuméraires.)
+
+## W8-BORNE — ✅ 7/7 VERT (preuve visuelle triple : wizard=récap=panier au centime)
+Cayenne 9,90 (viande supp 2,50) · Galette 7,40 (cheddar) · Cheese Burger 6,90 · Tacos M 7,80 · Bol Riz 9,90
+(gratiné 2,00) · M.enfant 40 = 4,90 (AUCUN supplément possible — 3e confirmation indépendante du gate owner
+sauce-supp) · M.enfant 106 = 5,80. 14 captures lues/analysées, 0 commande, panier vidé UI entre catégories.
+Spec tests/e2e/borne-wizard-7cats-captures-2026-07-20.spec.js (1 passed 3.9m). Constats : « sauce supp 0,50 »
+inatteignable borne (profils max=1, sert web/POS) ; item 45=Bol Riz (41=Bol Frites) ; micro-cosmétique
+« Type de Pain · » orphelin ligne panier (0 impact prix). DÉFAUTS PRIX : ZÉRO.
