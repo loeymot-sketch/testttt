@@ -75,3 +75,12 @@ finalizePaidKioskOrder EXISTANT (0 nouveau chemin fiscal) · failed→UNPAID enc
 GATE G-W5 owner à l'activation : MOLLIE_API_KEY test_xxx + MOLLIE_ENABLED + redirect URL + flag web ; et
 DÉCISION : web pur sans KioskMachine → finalize no-op → PAID sans fiscal_seq (warning
 mollie_webhook_fiscal_finalize_noop, documenté par test) — élargir gate F-21 = owner.
+
+## W2 calculs double-vérif — ✅ VERT 10/10 (0 centime perdu)
+Borne LOCALE (login kiosk réel→quote→order→snapshot) : sandwich 11,30 · galette 10,40 · burger ×2 19,80 ·
+tacos multi-sauce ×2 11,30 · bol+gratiné 13,30 · menu enfant 4,90/6,70. WEB VPS : #175-177 identiques.
+Chaque supplément payant présent+chiffré au snapshot. Fail-closed prouvé live (hors-profil→422, cross-item
+VPS rejette IDs locaux). Nettoyage : 5829-5835 local + 175-177 VPS annulés (status 16, sceaux intacts).
+**Findings** : F2 dérive d'IDs extras local↔VPS (backfill 16/07, même prix — casse tout futur mirror par ID,
+note gestion) ; F3 menu enfant 40 + bol 45 : « Sauce supplémentaire » DB hors profil publié = pas commandable
+borne (cohérent avec P3-1 W1 — MÊME décision owner : ouvrir ou verrouiller partout).
