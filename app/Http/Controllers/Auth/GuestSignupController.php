@@ -17,7 +17,6 @@ use Exception;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use App\Enums\Role as EnumRole;
 use App\Services\OtpManagerService;
@@ -60,17 +59,17 @@ class GuestSignupController extends Controller
     public function verify(VerifyPhoneRequest $request)
     {
         try {
-            if (Settings::group('site')->get('site_phone_verification') == Activity::DISABLE) {
-                $otp = DB::table('otps')->where([
-                    ['phone', $request->post('phone')]
-                ]);
-                $otp?->delete();
-                return $this->register(
-                    ['code' => $request->code, 'phone' => $request->phone, 'token' => $request->token]
-                );
-            } elseif ($this->otpManagerService->verify($request) && Settings::group('site')->get(
-                    'site_phone_verification'
-                ) == Activity::ENABLE) {
+            // [P0 OTP-BYPASS 2026-07-20] `site_phone_verification` ne pilote QUE l'envoi SMS
+            // (dans OtpManagerService::otp()) — JAMAIS le fait de VÉRIFIER le code. L'ancienne
+            // branche `if (site_phone_verification == DISABLE)` supprimait les otps du téléphone
+            // puis appelait register() SANS vérifier le code : n'importe quel code (voire un
+            // numéro jamais-demandé) mintait un token Sanctum kiosk:order = bypass d'auth.
+            // Désormais on passe TOUJOURS par otpManagerService->verify() : il lit otps.token,
+            // gère l'expiry + l'anti-brute-force (GAP-20) + la consommation one-time. Un code
+            // faux ou un numéro jamais-OTP → Exception → 422. Reste compatible « OTP lu en
+            // table » (staging/e2e sans SMS : on insère/lit otps.token puis on le soumet).
+            // verify() renvoie true en succès et jette en échec (jamais false).
+            if ($this->otpManagerService->verify($request)) {
                 return $this->register(
                     ['code' => $request->code, 'phone' => $request->phone, 'token' => $request->token]
                 );

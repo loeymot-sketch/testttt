@@ -6,6 +6,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Smartisan\Settings\Facades\Settings;
 
 /**
  * [W9-AUDIT PROD-4] Pre-deployment configuration gate.
@@ -58,9 +59,11 @@ class PreflightProductionCommand extends Command
         $this->checkOpsCommandAvailability();
         $this->checkFiscalSecrets();
         $this->checkFiscalVerifyChain();
+        $this->checkFiscalChainIntact();
         $this->checkMenuVat();
         $this->checkPosSimulationHardware();
         $this->checkManualDiscountGate();
+        $this->checkPhoneVerification();
         $this->checkDatabaseReachable();
         $this->checkCacheReachable();
 
@@ -143,6 +146,40 @@ class PreflightProductionCommand extends Command
             $this->addFinding('WARNING', 'POS_MANUAL_DISCOUNT', 'Manual POS discounts ENABLED while F1 (discounted-order TVA split) is unfixed — discounted orders would sign a fiscally-wrong Z. Keep OFF until F1 is fixed under a lock-plan.');
         } else {
             $this->ok('POS_MANUAL_DISCOUNT', 'disabled (F1 dormant)');
+        }
+    }
+
+    /**
+     * [P0 OTP-BYPASS 2026-07-20] CRITICAL in production: guest OTP verification
+     * must be ENABLE. When site_phone_verification != ENABLE, the guest signup
+     * flow historically blind-accepted any code (auth bypass minting a
+     * kiosk:order token for any phone). GuestSignupController::verify() is now
+     * hardened to ALWAYS verify the code, but shipping prod with OTP disabled
+     * still means NO real SMS possession proof — refuse the go-live. Fail-closed:
+     * a missing/unreadable setting is treated as disabled (CRITICAL). Outside
+     * production, WARNING only (staging reads otps.token from the table).
+     */
+    private function checkPhoneVerification(): void
+    {
+        $inProduction = config('app.env') === 'production';
+
+        try {
+            $mode = Settings::group('site')->get('site_phone_verification');
+        } catch (\Throwable $e) {
+            $mode = null;
+        }
+
+        $enabled = (int) $mode === \App\Enums\Activity::ENABLE;
+
+        if ($enabled) {
+            $this->ok('PHONE_VERIFICATION', 'guest OTP enforced (site_phone_verification=ENABLE)');
+            return;
+        }
+
+        if ($inProduction) {
+            $this->addFinding('CRITICAL', 'PHONE_VERIFICATION', 'site_phone_verification is NOT ENABLE — guest OTP disabled means no SMS possession proof (auth bypass surface). Set site_phone_verification=ENABLE and wire real SMS before go-live.');
+        } else {
+            $this->addFinding('WARNING', 'PHONE_VERIFICATION', 'site_phone_verification is NOT ENABLE (staging reads otps.token from the table). MUST be ENABLE in production — the go-live gate will block otherwise.');
         }
     }
 
@@ -353,15 +390,24 @@ class PreflightProductionCommand extends Command
         $audit = (string) config('fiscal.audit_secret', '');
         $zsec = (string) config('fiscal.z_report_secret', '');
         $minLen = (int) config('fiscal.min_secret_length', 32);
+        // [REMEDIATION-3-POINTS 2026-07-15] A sentinel can be ≥32 chars (e.g.
+        // 'dev-fiscal-audit-secret-do-not-use-in-prod' = 42) and slip past the
+        // length gate. Reject it explicitly so a shipped-default cannot sign a
+        // live fiscal trail. Mirrors AuditLogService::assertProductionSafe.
+        $sentinels = (array) config('fiscal.dev_sentinels', []);
 
         if (strlen($audit) < $minLen) {
             $this->addFinding('CRITICAL', 'FISCAL_AUDIT_SECRET', "FISCAL_AUDIT_SECRET is shorter than {$minLen} chars (NF525 evidence integrity).");
+        } elseif (in_array($audit, $sentinels, true)) {
+            $this->addFinding('CRITICAL', 'FISCAL_AUDIT_SECRET', 'FISCAL_AUDIT_SECRET is a known dev sentinel (long enough but forbidden). Rotate it — see docs/FISCAL_SECRETS.md.');
         } else {
             $this->ok('FISCAL_AUDIT_SECRET', strlen($audit) . ' chars');
         }
 
         if (strlen($zsec) < $minLen) {
             $this->addFinding('CRITICAL', 'FISCAL_Z_REPORT_SECRET', "FISCAL_Z_REPORT_SECRET is shorter than {$minLen} chars (NF525 Z signature integrity).");
+        } elseif (in_array($zsec, $sentinels, true)) {
+            $this->addFinding('CRITICAL', 'FISCAL_Z_REPORT_SECRET', 'FISCAL_Z_REPORT_SECRET is a known dev sentinel (long enough but forbidden). Rotate it — see docs/FISCAL_SECRETS.md.');
         } else {
             $this->ok('FISCAL_Z_REPORT_SECRET', strlen($zsec) . ' chars');
         }
@@ -374,6 +420,56 @@ class PreflightProductionCommand extends Command
             $this->addFinding('WARNING', 'FISCAL_VERIFY_CHAIN_BEFORE_ARCHIVE', 'verify_chain_before_archive=false ships archives without integrity check.');
         } else {
             $this->ok('FISCAL_VERIFY_CHAIN_BEFORE_ARCHIVE', 'true');
+        }
+    }
+
+    /**
+     * [REMEDIATION-3-POINTS 2026-07-15 / A3.2] CRITICAL: actually RE-WALK the
+     * NF525 audit chain, not just check a config flag. The previous gate only
+     * verified secret LENGTH — a strong-but-WRONG FISCAL_AUDIT_SECRET (e.g. a
+     * staging reseed never reconciled, or a promoted contaminated DB) passed
+     * preflight while the chain was unverifiable. Here we recompute every row's
+     * HMAC with the currently-loaded secret via the (frozen, read-only)
+     * AuditLogService::verifyChain — the same crypto the fiscal:verify-chain
+     * command uses. A tampered/forged/wrong-secret row FAILS the deploy.
+     *
+     * Fail-closed: an unset secret makes secretFor() throw → caught → CRITICAL.
+     * Read-only: verifyChain never writes (pure recompute + compare).
+     */
+    private function checkFiscalChainIntact(): void
+    {
+        if (! \Illuminate\Support\Facades\Schema::hasTable('audit_logs')) {
+            $this->addFinding('WARNING', 'FISCAL_CHAIN', 'audit_logs table missing — cannot verify the NF525 chain.');
+            return;
+        }
+
+        try {
+            $branchIds = \App\Models\AuditLog::query()->select('branch_id')->distinct()->pluck('branch_id');
+
+            if ($branchIds->isEmpty()) {
+                $this->ok('FISCAL_CHAIN', 'clean genesis (audit_logs empty — first boot)');
+                return;
+            }
+
+            $service = app(\App\Services\Fiscal\AuditLogService::class);
+            foreach ($branchIds as $bid) {
+                $tampered = $service->verifyChain($bid === null ? null : (int) $bid);
+                if ($tampered !== null) {
+                    $this->addFinding(
+                        'CRITICAL',
+                        'FISCAL_CHAIN',
+                        'audit_logs HMAC chain TAMPER at id=' . $tampered . ' (branch=' . ($bid ?? 'null') . ') — a wrong/rotated '
+                        . 'FISCAL_AUDIT_SECRET or a mutated row. Deploying would ship UNVERIFIABLE NF525 evidence. Restore the '
+                        . 'original signing secret or start from a clean genesis (see docs/HANDOVER_SECRETS_REGISTRY.md).'
+                    );
+                    return;
+                }
+            }
+
+            $this->ok('FISCAL_CHAIN', 'audit_logs chain intact across ' . $branchIds->count() . ' branch(es)');
+        } catch (\Throwable $e) {
+            // secretFor() throws when FISCAL_AUDIT_SECRET is unset — fail closed.
+            $this->addFinding('CRITICAL', 'FISCAL_CHAIN', 'audit_logs chain could not be verified: ' . $e->getMessage());
         }
     }
 

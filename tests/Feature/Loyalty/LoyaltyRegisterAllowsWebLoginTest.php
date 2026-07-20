@@ -48,12 +48,26 @@ class LoyaltyRegisterAllowsWebLoginTest extends TestCase
             ['key' => 'site_guest_login',        'payload' => json_encode(Activity::ENABLE),  'group' => 'site', 'created_at' => now(), 'updated_at' => now()],
             ['key' => 'site_phone_verification', 'payload' => json_encode(Activity::DISABLE), 'group' => 'site', 'created_at' => now(), 'updated_at' => now()],
             ['key' => 'site_default_branch',     'payload' => json_encode(1),                 'group' => 'site', 'created_at' => now(), 'updated_at' => now()],
+            // [P0 OTP-BYPASS 2026-07-20] verify() passe désormais TOUJOURS par
+            // OtpManagerService::verify() ; otp_expire_time doit être posé (sinon `* 60` = 0).
+            ['key' => 'otp_expire_time',         'payload' => json_encode(5),                 'group' => 'otp',  'created_at' => now(), 'updated_at' => now()],
         ]);
 
         config(['app.api_key' => self::API_KEY]);
         $this->withHeaders([
             'x-api-key' => self::API_KEY,
             'Accept'    => 'application/json',
+        ]);
+    }
+
+    /** [P0 OTP-BYPASS 2026-07-20] Pose un OTP réel non-expiré (pattern « OTP lu en table »). */
+    private function seedOtp(string $phone, string $token = 'test-token'): void
+    {
+        DB::table('otps')->insert([
+            'phone'      => $phone,
+            'code'       => '+33',
+            'token'      => $token,
+            'created_at' => now(),
         ]);
     }
 
@@ -110,8 +124,9 @@ class LoyaltyRegisterAllowsWebLoginTest extends TestCase
      */
     public function loyalty_phone_can_then_login_via_guest_signup(): void
     {
-        $this->setPhoneVerification(Activity::DISABLE); // verify() → register() direct (pas d'OTP réel requis)
+        $this->setPhoneVerification(Activity::DISABLE);
         $this->registerLoyalty('0699000012', 'Bob');
+        $this->seedOtp('0699000012'); // verify() exige un OTP réel (durcissement P0)
 
         $res = $this->postJson('/api/auth/guest-signup/verify', [
             'code'  => '+33',
@@ -170,7 +185,10 @@ class LoyaltyRegisterAllowsWebLoginTest extends TestCase
         $origPassword = $victim->password;
 
         // (b1) guest-signup ne peut PAS revendiquer un compte plein → 422.
+        // OTP réel posé : verify() PASSE, puis register() rejette sur is_guest=NO —
+        // on prouve ainsi le VRAI portillon (compte plein), pas juste un OTP manquant.
         $this->setPhoneVerification(Activity::DISABLE);
+        $this->seedOtp('0699000014');
         $g = $this->postJson('/api/auth/guest-signup/verify', [
             'code'  => '+33',
             'phone' => '0699000014',

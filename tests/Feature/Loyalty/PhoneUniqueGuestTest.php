@@ -51,6 +51,9 @@ class PhoneUniqueGuestTest extends TestCase
             ['key' => 'site_guest_login',        'payload' => json_encode(Activity::ENABLE),  'group' => 'site', 'created_at' => now(), 'updated_at' => now()],
             ['key' => 'site_phone_verification', 'payload' => json_encode(Activity::DISABLE), 'group' => 'site', 'created_at' => now(), 'updated_at' => now()],
             ['key' => 'site_default_branch',     'payload' => json_encode(1),                 'group' => 'site', 'created_at' => now(), 'updated_at' => now()],
+            // [P0 OTP-BYPASS 2026-07-20] verify() passe désormais TOUJOURS par
+            // OtpManagerService::verify() ; otp_expire_time doit être posé (sinon `* 60` = 0).
+            ['key' => 'otp_expire_time',         'payload' => json_encode(5),                 'group' => 'otp',  'created_at' => now(), 'updated_at' => now()],
         ]);
 
         config(['app.api_key' => self::API_KEY]);
@@ -62,6 +65,16 @@ class PhoneUniqueGuestTest extends TestCase
 
     private function verifyOtp(string $phone): \Illuminate\Testing\TestResponse
     {
+        // [P0 OTP-BYPASS 2026-07-20] verify() exige un OTP réel non-expiré (consommé
+        // one-time). On (re)pose la ligne otps à chaque appel — pattern « OTP lu en
+        // table » sans SMS : le 2e login re-sème son propre code.
+        DB::table('otps')->insert([
+            'phone'      => $phone,
+            'code'       => '+33',
+            'token'      => 'test-token',
+            'created_at' => now(),
+        ]);
+
         return $this->postJson('/api/auth/guest-signup/verify', [
             'code'  => '+33',
             'phone' => $phone,

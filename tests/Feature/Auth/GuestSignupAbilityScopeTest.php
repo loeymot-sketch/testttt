@@ -52,6 +52,10 @@ class GuestSignupAbilityScopeTest extends TestCase
             ['key' => 'site_phone_verification', 'payload' => json_encode(Activity::DISABLE), 'group' => 'site', 'created_at' => now(), 'updated_at' => now()],
             // Default branch id used when user.branch_id == 0 (guest case).
             ['key' => 'site_default_branch',     'payload' => json_encode(1),                 'group' => 'site', 'created_at' => now(), 'updated_at' => now()],
+            // [P0 OTP-BYPASS 2026-07-20] verify() passe désormais TOUJOURS par
+            // OtpManagerService::verify() (site_phone_verification ne pilote que le SMS).
+            // otp_expire_time doit être posé sinon `* 60` = 0 → tout OTP lu comme expiré.
+            ['key' => 'otp_expire_time',         'payload' => json_encode(5),                 'group' => 'otp',  'created_at' => now(), 'updated_at' => now()],
         ]);
 
         config(['app.api_key' => self::API_KEY]);
@@ -67,6 +71,15 @@ class GuestSignupAbilityScopeTest extends TestCase
     {
         // VerifyPhoneRequest requires: code (max:32), phone (ValidPhone — FR
         // national 9-15 digits OR E.164 +XX...), token (max:180).
+        // [P0 OTP-BYPASS 2026-07-20] verify() exige un OTP réel : on pose la ligne
+        // otps (pattern « OTP lu en table », équivalent staging sans SMS).
+        DB::table('otps')->insert([
+            'phone'      => '0612345678',
+            'code'       => '+33',
+            'token'      => 'test-signup-token',
+            'created_at' => now(),
+        ]);
+
         $payload = [
             'code'  => '+33',
             'phone' => '0612345678',
