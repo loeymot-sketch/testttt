@@ -150,3 +150,29 @@ TTI par surface, taille bundles servis, cadence polls (KDS 5-60s, web 25s, OSS),
 ## W12 — DOUBLE BOUCLE FINALE + DEPLOY
 2 cycles complets propres consécutifs (set-equality) sur TOUT · deploy VPS lot complet (script durci) ·
 re-validation POST-deploy sur le VPS (smoke chaque système) · CONVERGENCE_FINAL.md + captures d'archive.
+
+---
+# EXTENSION DEEP-2 (owner « go deeper » 2026-07-20 soir) — couche fondations invisibles
+
+## W13 — INTÉGRITÉ SCHÉMA & DONNÉES (le socle sous tout)
+FK manquantes sur tables chaudes, index sur colonnes filtrées (scheduled_at posé ✓, source, payment_status,
+branch_id), orphelins (order_items sans order, payments sans order, snapshots vides), colonnes nullable qui
+devraient pas, doublons de migration, cohérence enum (Ask/OrderStatus/Source) code vs DB. Local + VPS.
+
+## W14 — SÉCURITÉ AUTHZ CROSS-SURFACE (après les 2 P0, chasser le 3e)
+Chaque endpoint sensible : le bon rôle/token ? borne (kiosk:order only) ne peut PAS toucher admin ; client
+Sanctum ne voit QUE ses commandes (garde 403 user_id vérifiée W3 — étendre) ; caisse permission:pos ; FormRequest
+authz (sentinelle drift) ; IDOR sur /order/show/{id}, /mollie-checkout/{id} ; le nouveau webhook Mollie public
+ne fuit rien ; rate-limits prod (P3 W9 → boot-guard ?). Agent SECURITY adversaire dédié.
+
+## W15 — SYNC TEMPS-RÉEL prouvée BOUT-EN-BOUT (WS/Echo, pas que polling)
+Le mandat owner = « synchronisation ». Prouver le canal temps-réel : borne place commande → event broadcast →
+KDS reçoit SANS attendre le poll (soketi/pusher) ; bump KDS → OSS + compte client reçoivent ; 86 gestion →
+canal public-menu → web. Mesurer la latence WS réelle vs le fallback polling. Agent capture 2 fenêtres (borne+KDS)
++ lecture logs soketi/worker. Si WS down → polling assure (déjà mesuré W11).
+
+## W16 — DEV-OTP-EXPOSURE (re-rendre le web staging testable après le fix P0)
+Le fix OTP a fermé le bypass → staging exige le vrai code (pas de SMS). Ajouter une exposition dev-only
+env-gated (APP_ENV != production → otp() renvoie le code + web ?dev l'affiche) pour que l'owner re-teste le
+parcours web déployé de bout en bout SANS SMS, prod jamais exposée (preflight + env-gate double verrou). Puis
+RE-CAPTURE le parcours web complet déployé (commande réelle carte→confirmation) = boucle finale absolue.
