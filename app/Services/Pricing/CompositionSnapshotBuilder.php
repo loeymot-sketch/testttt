@@ -88,7 +88,20 @@ final class CompositionSnapshotBuilder
                 }
                 $dbExt = $dbExtras[$extId] ?? null;
                 if (! $dbExt) {
-                    continue;
+                    // [B1/RC2 2026-07-21] FAIL-LOUD au lieu de skip silencieux.
+                    // Ancien `continue` = SEUL silent-drop du backend : un extra
+                    // facturé par PricingService (fail-loud, 422 si absent) pouvait,
+                    // si un futur appelant passait un $dbExtras plus étroit, être
+                    // ABSENT du composition_snapshot → ticket/KDS « produit de base
+                    // seul » alors que le client a payé le supplément (brèche NF525 §V,
+                    // symptôme rapporté owner « suppléments annulés au paiement »).
+                    // Les 2 appelants (PricingService:270, FrontendOrderService:455)
+                    // passent le MÊME $dbExtras validé → ce throw ne se déclenche
+                    // jamais en régime normal ; il scelle la cohérence snapshot↔prix.
+                    throw new \InvalidArgumentException(
+                        "Extra ID {$extId} facturé mais absent du snapshot (dbExtras). Commande rejetée pour cohérence NF525.",
+                        422
+                    );
                 }
                 $qty = max(1, (int) ($e->quantity ?? 1));
                 $unitPrice = (float) $dbExt->price;

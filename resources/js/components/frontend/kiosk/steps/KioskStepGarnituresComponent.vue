@@ -219,18 +219,21 @@ export default {
 }
 
 .kiosk-info-badge {
-  background: transparent;
-  border: none;
-  color: var(--kiosk-text-muted, #7d7d7d);
-  padding: 0;
+  background: var(--kiosk-primary-soft, rgba(244, 80, 30, 0.12));
+  border: 1px solid var(--kiosk-primary, #f4501e);
+  color: var(--kiosk-primary, #f4501e);
+  padding: 5px 16px;
   border-radius: 50px;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .kiosk-info-text {
-  font-size: 11px;
-  color: var(--kiosk-text-muted, #999);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--kiosk-text, #444);
 }
 
 .kiosk-garnitures-list {
@@ -276,10 +279,30 @@ export default {
   font-size: 14px;
 }
 
+/* [B2 2026-07-21] État INCLUS incontestablement « ON » : le client doit voir
+   d'un coup d'œil que la crudité est déjà dans le produit (design = tout inclus,
+   toucher pour RETIRER). Auparavant le fond à 2,5% d'opacité rendait l'état
+   sélectionné quasi invisible → confusion « barré = choisi ? ». */
 .kiosk-garniture-row.selected {
   border-color: var(--kiosk-primary, #f4501e);
-  background: var(--kiosk-primary-light, rgba(244, 80, 30,0.025));
-  box-shadow: 0 0 0 1px var(--kiosk-primary-light, rgba(244, 80, 30,0.06));
+  background: var(--kiosk-primary-soft, rgba(244, 80, 30, 0.12));
+  box-shadow:
+    0 0 0 2px var(--kiosk-primary, #f4501e) inset,
+    0 4px 12px rgba(244, 80, 30, 0.18);
+}
+
+/* État RETIRÉ : nettement « OFF » — grisé + désaturé, en plus du trait barré.
+   Le contraste vif(inclus) vs terne(retiré) lève toute ambiguïté. */
+.kiosk-garniture-row.removed {
+  background: var(--kiosk-surface-muted, #f4f4f5);
+  border-color: var(--kiosk-border, #e5e5e5);
+}
+.kiosk-garniture-row.removed .kiosk-garniture-visual {
+  opacity: 0.5;
+  filter: grayscale(0.85);
+}
+.kiosk-garniture-row.removed .kiosk-garniture-name {
+  color: var(--kiosk-text-muted, #9a9a9a);
 }
 
 .kiosk-garniture-row.kiosk-variation--disabled {
@@ -338,10 +361,11 @@ export default {
 .kiosk-garniture-strike {
   position: absolute;
   width: 130px;
-  height: 2px;
-  background: var(--kiosk-primary, rgba(199, 62, 79, 0.7));
+  height: 5px;
+  background: var(--kiosk-error, #c1121f);
   transform: rotate(-38deg);
-  border-radius: 2px;
+  border-radius: 3px;
+  box-shadow: 0 0 0 2px var(--kiosk-surface, #fff);
 }
 
 .kiosk-garniture-name {

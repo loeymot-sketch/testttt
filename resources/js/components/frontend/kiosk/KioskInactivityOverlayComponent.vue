@@ -41,7 +41,7 @@
             ref="stayBtn"
           />
           <KsButton
-            variant="ghost"
+            variant="secondary"
             size="lg"
             :label="$t('kiosk.inactivity.leave') || 'Abandonner'"
             data-testid="kiosk-inactivity-leave"
