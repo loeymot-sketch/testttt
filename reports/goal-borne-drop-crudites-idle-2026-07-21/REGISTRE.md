@@ -34,6 +34,13 @@ Branche: `pos/category-first-caisse-2026-06-23` · HEAD départ: `f4c57f4d8`
 
 ## Frozen zones : 0 touché (diff vide vérifié). NF525 chaîne OK (4 branches). PHPUnit 622+167 verts.
 
+## Preuve visuelle E2E (Playwright headless, Chromium propre — PAS l'extension Chrome)
+Débloqué : le catalogue borne charge en headless avec clic `force:true` (bouton masqué par l'animation du chooser) ; les 401 étaient de la télémétrie de fond (port 8766), non bloquants. Parcours réel SUPRÊME sur `127.0.0.1:8000` servant le bundle recompilé :
+- `03-crudites-toutes-incluses.png` — **B2 prouvé** : bandeau pastille « TOUTES LES GARNITURES SONT INCLUSES » + « Désélectionnez celles que vous ne voulez pas » ; Salade/Tomate/Oignon = bordure orange 2px + fond orange + ✓ (état inclus incontestable).
+- `04-crudites-1-retiree-barree.png` — **B2 prouvé** : après retrait Salade → carte grisée+désaturée+trait barré + badge « + » ; Tomate/Oignon restent inclus ; résumé « GARNITURES : Tomate, Oignon ». Doute owner levé.
+- `06-panier.png` (étape menu) — **B1 prouvé** : « VOTRE COMPOSITION » trace « SUPPLÉMENTS : Oignons frits » + **Total 7,90 €** (base 7,00 + 0,90) → supplément NON largué, prix correct. Cohérent avec le test backend (11,30 € scellé + snapshot complet).
+- Bundle servi vérifié live : `#c1121f` (crudités) + `variant:"secondary"` (idle) présents dans les assets `127.0.0.1:8000`. Sur cette machine le fix est ACTIF.
+
 ## Reste owner
 - Déployer le bundle recompilé sur la borne (le symptôme terrain venait probablement d'un build périmé).
 - Valider visuellement crudités + idle sur la vraie borne (capture headless bloquée : idle tactile-gated + 3 Chrome connectés non sélectionnables en autonomie).

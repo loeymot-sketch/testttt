@@ -14,12 +14,13 @@ async function gotoKiosk(page) {
   await page.goto('/kiosk/idle', { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(1500);
   // L'idle exige un TOUCH d'abord → révèle le sélecteur de type
-  await page.locator('[data-testid="kiosk-idle-touch-btn"]').click({ timeout: 5000 }).catch(() => {});
+  await page.locator('[data-testid="kiosk-idle-touch-btn"]').click({ timeout: 5000, force: true }).catch(() => {});
   await page.waitForTimeout(900);
-  await page.locator('[data-testid="kiosk-order-type-takeaway"]').click({ timeout: 8000 }).catch(() => {});
+  // force:true — le bouton est masqué par l'animation d'apparition du chooser
+  await page.locator('[data-testid="kiosk-order-type-takeaway"]').click({ timeout: 8000, force: true }).catch(() => {});
   // Attendre l'arrivée réelle du catalogue (carte produit)
-  await page.locator('[data-testid^="kiosk-product-card-"]').first().waitFor({ timeout: 12000 }).catch(() => {});
-  await page.waitForTimeout(500);
+  await page.locator('.kiosk-product-card').first().waitFor({ timeout: 12000 }).catch(() => {});
+  await page.waitForTimeout(700);
 }
 
 async function clickByText(page, text, maxLen = 40) {
@@ -42,49 +43,52 @@ test('borne — crudités + supplément panier + idle', async ({ page }) => {
   // Attendre le peuplement des cartes produit avant d'ouvrir
   await page.waitForSelector('[data-testid^="kiosk-product-card-"]', { timeout: 10000 }).catch(() => {});
   await page.waitForTimeout(600);
-  // Ouvrir le 1er sandwich composable de la catégorie (data-testid réel)
+  // Ouvrir le 1er sandwich composable de la catégorie
   const opened = await page.evaluate(() => {
-    const card = document.querySelector('[data-testid^="kiosk-product-card-"]');
-    if (card) { try { card.click(); return card.getAttribute('data-testid'); } catch (_) {} }
+    const card = document.querySelector('.kiosk-product-card');
+    if (card) { try { card.click(); return (card.innerText || '').slice(0, 40); } catch (_) {} }
     return false;
   });
   report.steps.push({ opened });
   await page.waitForTimeout(2200);
   await shot(page, '02-wizard-open.png');
 
-  // Parcourir les étapes ; capturer celle des crudités/garnitures
+  // Parcourir les étapes ; capturer chacune + spécifiquement les crudités
   let garnitureShotDone = false;
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < 8; i++) {
+    await page.waitForTimeout(400);
     const state = await page.evaluate(() => ({
       hasGarniture: !!document.querySelector('.kiosk-step-garnitures, .kiosk-garniture-row, .kiosk-garnitures-list'),
-      hasSupplement: !!document.querySelector('[class*="supplement"], [class*="Supplement"]'),
-      body: (document.body.innerText || '').slice(0, 120),
+      title: (document.querySelector('.kiosk-step-title, h3')?.innerText || '').slice(0, 40),
     }));
+    await shot(page, `step-${i}-${state.title.replace(/[^a-zA-Z]/g, '').slice(0, 12) || 'x'}.png`);
+
     if (state.hasGarniture && !garnitureShotDone) {
+      await shot(page, '03-crudites-toutes-incluses.png');
+      // retirer la 1ère crudité → prouver état barré = RETIRÉ (pas sélectionné)
+      await page.evaluate(() => { const r = document.querySelector('.kiosk-garniture-row'); if (r) r.click(); });
       await page.waitForTimeout(500);
-      await shot(page, '03-crudites-garnitures.png');
-      // désélectionner la 1ère crudité pour prouver l'état barré = retiré
-      await page.evaluate(() => {
-        const row = document.querySelector('.kiosk-garniture-row');
-        if (row) row.click();
-      });
-      await page.waitForTimeout(500);
-      await shot(page, '04-crudites-1-retiree.png');
+      await shot(page, '04-crudites-1-retiree-barree.png');
       garnitureShotDone = true;
     }
-    // sélectionner un supplément payant si présent
+
+    // Sélectionner le 1er choix disponible de l'étape pour pouvoir avancer
     await page.evaluate(() => {
-      const rows = Array.from(document.querySelectorAll('[class*="supplement"] [role="button"], .kiosk-supplement-row, [data-testid*="supplement"]'));
-      const first = rows.find(r => /0,90|0.90|€/.test(r.innerText || ''));
-      if (first) first.click();
+      const pick = document.querySelector(
+        '.kiosk-option-card, .kiosk-generic-choice, .kiosk-garniture-row, .kiosk-supplement-row, .kiosk-viande-row'
+      );
+      if (pick) { try { pick.click(); } catch (_) {} }
     }).catch(() => {});
+    await page.waitForTimeout(300);
+
     const advanced = await page.evaluate(() => {
       const next = document.querySelector('.kiosk-btn-next');
-      if (next && !next.disabled) { next.click(); return true; }
+      if (next && !next.disabled && !next.classList.contains('kiosk-btn-next--cart')) { next.click(); return 'next'; }
+      if (next && !next.disabled) { next.click(); return 'cart'; } // dernière étape = ajouter au panier
       return false;
     });
     await page.waitForTimeout(1300);
-    if (!advanced) break;
+    if (advanced === 'cart' || advanced === false) break;
   }
   await shot(page, '05-after-wizard.png');
 
