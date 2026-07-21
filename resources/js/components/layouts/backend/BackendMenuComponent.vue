@@ -90,7 +90,10 @@ const VIRTUAL_CHILDREN_BY_URL = Object.freeze({
 });
 
 const V1_PRIMARY_SIDEBAR_MENUS = Object.freeze([
-    Object.freeze({ url: 'stock/rupture', language: 'stock_rupture', icon: 'lab lab-stock' }),
+    // [CATALOG-HUB 2026-07-21] Single unified entry → tab wrapper (Catalogue +
+    // Stock). Label kept as `stock_rupture` ("Produits & Stock"). The
+    // admin.stock.rupture route stays alive for deep-links.
+    Object.freeze({ url: 'catalog-hub', language: 'stock_rupture', icon: 'lab lab-stock' }),
     Object.freeze({
         url: 'items',
         language: 'items',
@@ -111,6 +114,9 @@ const V1_PRIMARY_SIDEBAR_MENUS = Object.freeze([
 /** menu.url → clé `permission.url` Spatie (souvent identique ; exceptions ici). */
 const MENU_URL_TO_PERMISSION_URL = Object.freeze({
     ingredients: 'ingredients_manage',
+    // [CATALOG-HUB 2026-07-21] Hub is gated by the same `items` permission as
+    // both screens it wraps.
+    'catalog-hub': 'items',
     // [GOAL-CAISSE-UNIFIED 2026-05-30] Unified history + collection reuse the
     // pos-orders permission (admin + branch managers already hold it).
     historique: 'pos-orders',

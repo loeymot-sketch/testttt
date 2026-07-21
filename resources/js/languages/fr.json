@@ -129,7 +129,8 @@
             "rail_extras": "Suppléments",
             "rail_variations": "Variations",
             "loading": "Chargement…",
-            "read_only": "Lecture seule (droit items_edit requis)"
+            "read_only": "Lecture seule (droit items_edit requis)",
+            "photo_action": "Photo du produit"
         },
         "observability_outbox": {
             "title": "Pipeline outbox & événements",

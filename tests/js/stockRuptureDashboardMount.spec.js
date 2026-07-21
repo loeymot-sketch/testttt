@@ -57,6 +57,7 @@ const messages = {
                 rail_variations: 'Variations',
                 loading: 'Loading…',
                 read_only: 'Read-only',
+                photo_action: 'Product photo',
             },
         },
     },

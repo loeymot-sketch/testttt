@@ -128,7 +128,8 @@
             "rail_extras": "Supplements",
             "rail_variations": "Variations",
             "loading": "Loading…",
-            "read_only": "Read-only (items_edit permission required)"
+            "read_only": "Read-only (items_edit permission required)",
+            "photo_action": "Product photo"
         },
         "observability_outbox": {
             "title": "Outbox & event pipeline",

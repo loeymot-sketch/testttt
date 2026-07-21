@@ -162,9 +162,10 @@
                     <article
                         v-for="product in filteredProducts"
                         :key="product.key"
-                        class="product-card flex items-center justify-between gap-3 rounded border border-slate-200 bg-white p-3"
+                        class="product-card flex flex-col gap-2 rounded border border-slate-200 bg-white p-3"
                         :data-testid="`stock-mgmt-product-${product.key}`"
                     >
+                      <div class="flex items-center justify-between gap-3 w-full">
                         <div class="flex items-center gap-3 min-w-0 flex-1">
                             <img
                                 v-if="product.thumb"
@@ -183,6 +184,22 @@
                             </span>
                         </div>
 
+                        <div class="flex items-center gap-2 flex-shrink-0">
+                        <!-- [CATALOG-HUB PHOTO 2026-07-21] Inline photo action —
+                             items only. Reuses the ItemPhotoUpload uploader
+                             (previously orphaned). Additive; never removes an
+                             existing testid nor introduces a bulk/scan modal. -->
+                        <button
+                            v-if="product.kind === 'item' && canEditAvailability"
+                            type="button"
+                            class="photo-btn inline-flex items-center justify-center rounded px-2 py-1.5 text-sm bg-slate-100 text-slate-700 hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                            :aria-expanded="photoOpenKey === product.key ? 'true' : 'false'"
+                            :aria-controls="`stock-mgmt-photo-panel-${product.key}`"
+                            :aria-label="$t('admin.stock_mgmt.photo_action')"
+                            :title="$t('admin.stock_mgmt.photo_action')"
+                            :data-testid="`stock-mgmt-photo-btn-${product.key}`"
+                            @click="togglePhoto(product)"
+                        >📷</button>
                         <button
                             v-if="canEditAvailability"
                             type="button"
@@ -215,6 +232,21 @@
                         >
                             {{ product.is_available ? $t('admin.stock_mgmt.in_stock') : $t('admin.stock_mgmt.out_of_stock') }}
                         </span>
+                        </div>
+                      </div>
+
+                        <div
+                            v-if="product.kind === 'item' && photoOpenKey === product.key"
+                            :id="`stock-mgmt-photo-panel-${product.key}`"
+                            class="photo-panel border-t border-slate-100 pt-2"
+                            :data-testid="`stock-mgmt-photo-panel-${product.key}`"
+                        >
+                            <ItemPhotoUpload
+                                :item-id="product.item_id"
+                                :current-image="product.thumb"
+                                @upload-success="onPhotoUploaded(product, $event)"
+                            />
+                        </div>
                     </article>
                 </div>
             </main>
@@ -225,6 +257,7 @@
 <script>
 import appService from "../../../services/appService";
 import { onEvents } from "../../../services/eventContract";
+import ItemPhotoUpload from "../items/ItemPhotoUpload.vue";
 
 /**
  * StockRuptureDashboardComponent V2 — owner spec 2026-05-21.
@@ -297,6 +330,9 @@ function debounce(fn, ms) {
 
 export default {
     name: 'StockRuptureDashboardComponent',
+    components: {
+        ItemPhotoUpload,
+    },
     props: {
         pollIntervalMs: { type: Number, default: 60_000 },
     },
@@ -312,6 +348,9 @@ export default {
             searchQuery: '',
             busyKeys: {},
             errorMessage: '',
+            // [CATALOG-HUB PHOTO 2026-07-21] product.key of the row whose inline
+            // photo uploader is expanded (one at a time; '' = none open).
+            photoOpenKey: '',
             // Echo lifecycle
             _timer: null,
             _visibilityHandler: null,
@@ -466,6 +505,26 @@ export default {
             if (event && event.target) {
                 event.target.style.display = 'none';
             }
+        },
+
+        // ---------- Inline photo action (items only) ----------
+        // [CATALOG-HUB PHOTO 2026-07-21] Toggle the inline ItemPhotoUpload panel
+        // for an item row. Only item-kind products carry a single item_id, so
+        // extras/variations never expose the photo action.
+        togglePhoto(product) {
+            if (!product || product.kind !== 'item') return;
+            this.photoOpenKey = this.photoOpenKey === product.key ? '' : product.key;
+        },
+        onPhotoUploaded(product, data) {
+            const url = data && data.url ? data.url : null;
+            if (product && url) {
+                // Optimistic thumbnail swap for instant feedback.
+                product.thumb = url;
+            }
+            // Collapse the uploader and reconcile canonical state (thumbnail +
+            // availability) from the unified read endpoint.
+            this.photoOpenKey = '';
+            this.loadAll();
         },
 
         // ---------- Echo lifecycle ----------

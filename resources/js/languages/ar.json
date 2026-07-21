@@ -128,7 +128,8 @@
             "rail_extras": "الإضافات",
             "rail_variations": "الخيارات",
             "loading": "جارٍ التحميل…",
-            "read_only": "للقراءة فقط (يتطلب صلاحية items_edit)"
+            "read_only": "للقراءة فقط (يتطلب صلاحية items_edit)",
+            "photo_action": "صورة المنتج"
         }
     },
     "pos": {

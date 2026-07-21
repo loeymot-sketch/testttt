@@ -6,6 +6,7 @@ const ItemComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../
 const ItemListComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/items/ItemListComponent.vue");
 const ItemShowComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/items/ItemShowComponent.vue");
 const CatalogStudioComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/items/CatalogStudioComponent.vue");
+const CatalogHubComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/items/CatalogHubComponent.vue");
 const ProductComposerEditorComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/items/composer/ProductComposerEditorComponent.vue");
 const WizardAdvancedLauncherComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/demo/WizardAdvancedLauncherComponent.vue");
 
@@ -89,6 +90,20 @@ export default [
                 },
             }
         ]
+    },
+    {
+        // [CATALOG-HUB 2026-07-21] Owner-approved unified tab wrapper hosting
+        // CatalogStudio + StockRupture on one URL. The two original routes
+        // (admin.items.studio, admin.stock.rupture) stay alive for deep-links.
+        path: '/admin/catalog-hub',
+        component: CatalogHubComponent,
+        name: 'admin.catalog.hub',
+        meta: {
+            isFrontend: false,
+            auth: true,
+            permissionUrl: 'items',
+            breadcrumb: 'catalog',
+        },
     },
     {
         path: '/admin/items/:id/composer',
