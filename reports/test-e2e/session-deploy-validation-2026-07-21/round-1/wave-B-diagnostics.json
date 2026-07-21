@@ -1,0 +1,141 @@
+{
+  "base": "https://site-lecayenne.vercel.app",
+  "home": {
+    "hero": {
+      "found": true,
+      "src": "assets/menu/sandwich-cayenne.png",
+      "currentSrc": "https://site-lecayenne.vercel.app/assets/menu/sandwich-cayenne.png",
+      "naturalWidth": 800,
+      "naturalHeight": 533,
+      "displayNone": false,
+      "complete": true
+    },
+    "facebookButton": {
+      "found": true,
+      "href": "https://www.facebook.com/LeCayenne",
+      "text": "Le Cayenne sur Facebook"
+    },
+    "suisNousText": true,
+    "gallery": {
+      "tileCount": 5,
+      "tiles": [
+        {
+          "href": "https://www.facebook.com/LeCayenne",
+          "src": "assets/menu/sandwich-cayenne.png",
+          "naturalWidth": 800,
+          "naturalHeight": 533,
+          "displayNone": false
+        },
+        {
+          "href": "https://www.facebook.com/LeCayenne",
+          "src": "assets/menu/cheese-burger.png",
+          "naturalWidth": 800,
+          "naturalHeight": 533,
+          "displayNone": false
+        },
+        {
+          "href": "https://www.facebook.com/LeCayenne",
+          "src": "assets/menu/sandwich-mega.png",
+          "naturalWidth": 800,
+          "naturalHeight": 533,
+          "displayNone": false
+        },
+        {
+          "href": "https://www.facebook.com/LeCayenne",
+          "src": "assets/menu/sandwich-terminator.png",
+          "naturalWidth": 800,
+          "naturalHeight": 533,
+          "displayNone": false
+        },
+        {
+          "href": "https://www.facebook.com/LeCayenne",
+          "src": "assets/menu/chicken_burger.png",
+          "naturalWidth": 800,
+          "naturalHeight": 679,
+          "displayNone": false
+        }
+      ]
+    },
+    "overflow": {
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "horizontalScroll": false
+    },
+    "brokenImgs": []
+  },
+  "legal": {
+    "mentions": {
+      "status": 200,
+      "visiblePlaceholders": [
+        "À COMPLÉTER"
+      ],
+      "aCompleterCount": 5,
+      "missingFacts": [],
+      "filledStatus": {
+        "Forme juridique = SAS": false,
+        "RCS = Béthune": false,
+        "APE = 5610C": false
+      },
+      "overflow": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "horizontalScroll": false
+      },
+      "textLen": 3716
+    },
+    "cgv": {
+      "status": 200,
+      "visiblePlaceholders": [],
+      "aCompleterCount": 0,
+      "missingFacts": [],
+      "filledStatus": {},
+      "overflow": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "horizontalScroll": false
+      },
+      "textLen": 8608
+    },
+    "privacy": {
+      "status": 200,
+      "visiblePlaceholders": [],
+      "aCompleterCount": 0,
+      "missingFacts": [],
+      "filledStatus": {},
+      "overflow": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "horizontalScroll": false
+      },
+      "textLen": 7937
+    },
+    "cookies": {
+      "status": 200,
+      "visiblePlaceholders": [],
+      "aCompleterCount": 0,
+      "missingFacts": [],
+      "filledStatus": {},
+      "overflow": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "horizontalScroll": false
+      },
+      "textLen": 5054
+    },
+    "allergens": {
+      "status": 200,
+      "visiblePlaceholders": [],
+      "aCompleterCount": 0,
+      "missingFacts": [],
+      "filledStatus": {},
+      "overflow": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "horizontalScroll": false
+      },
+      "textLen": 4973
+    }
+  },
+  "network4xx5xx": [],
+  "consoleErrors": []
+}

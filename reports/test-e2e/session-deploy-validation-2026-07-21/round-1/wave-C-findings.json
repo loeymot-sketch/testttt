@@ -1,0 +1,66 @@
+{
+  "wave": "C",
+  "session": "deploy-validation-2026-07-21",
+  "round": 1,
+  "target": "https://vps-418872ac.vps.ovh.net",
+  "auditor": "GStack + adversarial E2E (capture-first, vision-read)",
+  "generated_at": "2026-07-21",
+  "method": "Playwright chromium spec tests/e2e/audit-C-vps-2026-07-21.spec.js (PLAYWRIGHT_NO_WEB_SERVER=1), 7 screenshots read with vision + per-scenario console/network/pageerror sinks + raw-i18n/NaN text scans. Login diagnosed additionally via direct curl to /api/auth/login.",
+  "screenshots_dir": "tests/e2e/__screenshots__/audit-C-vps/",
+  "counts": { "P0": 0, "P1": 1, "P2": 2, "P3": 1 },
+  "headline": "Deploy is REACHABLE and the deployed FRONTEND BUNDLE is HEALTHY (login page, error UX, OSS public board, auth-guard redirect all render clean, on-brand, zero JS errors, zero raw i18n keys). BUT the VPS staging box is NOT SEEDED: documented staff credentials (123456) are rejected and the kiosk machine is not provisioned. This BLOCKS validation of 4 of 5 requested surfaces (catalog-hub fusion, stock photo, POS composer wizard, KDS). The caisse composer-aware wizard was NOT tested and is NOT attested.",
+  "findings": [
+    {
+      "severity": "P1",
+      "category": "infra/auth/seed",
+      "surface": "Admin + Caisse + KDS login (/api/auth/login) on VPS",
+      "title": "Documented staff credentials (password 123456) rejected on VPS — blocks ALL authenticated deploy-validation surfaces",
+      "evidence": "In-browser (Playwright) POST /api/auth/login → HTTP 400 {\"errors\":{\"validation\":\"Identifiants invalides ou compte bloqué\"}} for admin@lecayenne.fr, admin@example.com AND pos@lecayenne.fr. Confirmed independently via curl. NOT a lockout: response carries X-RateLimit-Limit:10 / X-RateLimit-Remaining:9 on first attempts (a 429 only appears AFTER ~10 cross-test retries). A nonexistent account returns the SAME generic message (correct anti-enumeration). The api-key gate itself PASSES (see P2) — so the rejection is genuinely bad credentials, i.e. the demo accounts are not seeded / carry a different password on this box. Screenshots: s0-login-after-attempt.png (red banner 'Identifiants invalides ou compte bloqué'), s2-catalog-hub-blocked.png / s4-pos-blocked.png / s5-kds.png (all byte-identical clean /login redirect).",
+      "reproduction": "curl -sk -X POST https://vps-418872ac.vps.ovh.net/api/auth/login -H 'Content-Type: application/json' -H 'x-api-key: change-me-long-random-string-local-dev' -d '{\"email\":\"admin@lecayenne.fr\",\"password\":\"123456\"}' → HTTP 400 bad-creds. Fix: seed the demo accounts on the VPS (php artisan foodking:ensure-admin / ensure-pos-operator ...) or supply the real staging password, then re-run Wave C to validate catalog-hub / stock photo / POS wizard / KDS.",
+      "impact": "No staff can log into admin, caisse, or KDS on the VPS with the documented credentials. Deploy-validation of every authenticated surface is blocked. This is an environment/seed gap (consistent with a fresh staging deploy), NOT an application-code defect — the login form + error handling render correctly."
+    },
+    {
+      "severity": "P2",
+      "category": "infra/seed/kiosk",
+      "surface": "/kiosk/idle (public)",
+      "title": "Kiosk idle attract screen UNREACHABLE on VPS — kiosk machine not provisioned server-side (redirects to /kiosk/login fallback)",
+      "evidence": "GET /kiosk/idle redirects to /kiosk/login. Screenshot s1-kiosk-idle.png shows a clean, on-brand fallback card: 'Borne de commande — CONNEXION AUTOMATIQUE', 'Connexion machine non configurée côté serveur.', red banner 'Borne momentanément indisponible. Merci de passer commande en caisse. 🙏', 'Réessayer' CTA (brand orange). No raw i18n key, no NaN, no layout break, zero console/page errors. The requested idle attract screen (branding + start-order CTA) therefore never renders — the KioskMachine is not seeded on this box.",
+      "reproduction": "Open https://vps-418872ac.vps.ovh.net/kiosk/idle → lands on /kiosk/login 'non configurée'. Fix: provision/pair the kiosk machine on the VPS (KioskMachineTableSeeder), then re-capture /kiosk/idle.",
+      "impact": "Customer-facing kiosk surface is non-functional on the VPS until provisioned. Degradation is GRACEFUL and well-designed (no visual defect) — severity is P2 because it is a seed/infra gap, not a broken component, but it does prevent validating the kiosk idle scenario."
+    },
+    {
+      "severity": "P2",
+      "category": "security/secrets",
+      "surface": "All SPA pages (window.foodkingConfig served in master.blade.php)",
+      "title": "Default/placeholder API key served in production HTML: apiKey = 'change-me-long-random-string-local-dev'",
+      "evidence": "Served HTML (curl https://vps-418872ac.vps.ovh.net/login) contains: window.foodkingConfig = { apiKey: \"change-me-long-random-string-local-dev\", ... } (from config('app.api_key'), master.blade.php:147-149). This value PASSES the backend api-key gate (login with it returns bad-creds, not 'Clé API invalide'), proving the deployed APP_API_KEY is literally the placeholder default. The key is world-readable in page source and grants the api-key-gated surface to any client (a public token faucet, mirrors prior HANDOVER_SECRETS_REGISTRY concern).",
+      "reproduction": "curl -sk https://vps-418872ac.vps.ovh.net/login | grep -o 'apiKey[^,}]*' → apiKey: \"change-me-long-random-string-local-dev\". Fix: set a strong APP_API_KEY in the VPS .env, config:cache, redeploy; rotate on both ends.",
+      "impact": "Weak/guessable shared secret in a public-facing environment. Owner-gated go-live item (rotate before production). Not a blocker for staging function, but should not ship to prod."
+    },
+    {
+      "severity": "P3",
+      "category": "observability",
+      "surface": "/api/auth/login error signalling",
+      "title": "Repeated failed logins eventually 429 (rate-limit works) — informational, confirms throttle is live",
+      "evidence": "After ~10 failed login POSTs across the 5 tests, one response returned HTTP 429 Too Many Requests (s5_kds_oss sink). Early attempts were 400 bad-creds with X-RateLimit-Remaining:9, confirming the throttle:login-lockout defence is active and correctly ordered AFTER the api-key gate. No app defect — recorded so the P1 credential failure is not misread as pure rate-limiting.",
+      "reproduction": "Send >10 POST /api/auth/login in a short window → 429. Expected, defensive behaviour.",
+      "impact": "None (positive signal). Noted for completeness."
+    }
+  ],
+  "coverage": {
+    "S1_kiosk_idle": "DEGRADED — kiosk not provisioned; captured the /kiosk/login 'non configurée' fallback (clean, on-brand). Idle attract screen not verifiable as specified. See P2.",
+    "S2_admin_catalog_hub_2_tabs": "LOGIN-BLOCKED (infra) — not verified. Bounced to /login. The new Catalogue+Stock fusion tabs could not be exercised.",
+    "S3_stock_photo_button": "LOGIN-BLOCKED (infra) — not verified. (Local source confirms selectors exist: stock-mgmt-photo-btn-* → stock-mgmt-photo-panel-* with ItemPhotoUpload drag-drop, but the LIVE VPS render was unreachable.)",
+    "S4_pos_composer_wizard": "LOGIN-BLOCKED (infra) — NOT TESTED. Could not reach /admin/pos authenticated. The composer-aware caisse wizard was NOT opened and its clean-open is NOT attested.",
+    "S5_KDS": "LOGIN-BLOCKED (infra) — not verified; /kds redirects to /login (auth guard correct).",
+    "S5_OSS": "CAPTURED + HEALTHY — /admin/order-status-screen is a PUBLIC display, rendered without login. Two columns 'En préparation' (magenta) / 'Prêt' (green), coherent empty state, no raw i18n key, no NaN, no layout break. s5-oss.png.",
+    "S0_login_bonus": "CAPTURED + HEALTHY — login page + error UX render clean and on-brand (Le Cayenne logo, 'Bon Retour', Connexion CTA, dismissible error banner). s0-login-page.png, s0-login-after-attempt.png."
+  },
+  "positive_attestations": [
+    "Deployed frontend bundle is sound: zero uncaught page errors (pageerror) on ANY surface.",
+    "Zero raw i18n keys and zero NaN/undefined leaked in any captured surface (all text scans clean).",
+    "Auth guard works: unauthenticated /admin/catalog-hub, /admin/pos, /kds all redirect to a clean /login.",
+    "OSS public board + login page + kiosk-unconfigured fallback are all on-brand and visually intact.",
+    "Only 4xx/5xx observed were the expected login 400/429 — no vendor/Vue console errors."
+  ]
+}

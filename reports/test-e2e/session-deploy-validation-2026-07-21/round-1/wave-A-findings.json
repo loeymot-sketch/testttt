@@ -1,0 +1,54 @@
+[
+  {
+    "severity": "P3",
+    "category": "ux-consistency",
+    "surface": "Wizard Cayenne — étape « VIANDE EN PLUS ? »",
+    "title": "Les puces viande NON sélectionnées n'affichent pas de badge « +2,50 € » par option (le prix n'apparaît qu'après sélection)",
+    "evidence": "tests/e2e/__screenshots__/audit-A-moneypath/A2-extrameat-00-initial.png (aucun badge sur les puces) vs A2-extrameat-4meat.png (badge +2,50 € seulement sur les 3 sélectionnées) ; obs-A2.json optionPrices=[\"\",\"\",\"\",\"\",\"\",\"\",\"\"]. À comparer avec Méga « CHOISIS 2 VIANDES » (A3-viandes-3selected.png) qui affiche Inclus/+2,50 € sur les puces.",
+    "reproduction": "Menu → Cayenne → Personnaliser → étape 2 « Viande en plus ? ». Avant tout clic, les puces (Mexicanos, Cordon Bleu…) n'ont pas de badge prix ; le +2,50 € n'est visible que dans le sous-titre « Optionnel · +2,50 € par viande » et le bandeau info, puis sur la puce une fois cochée. Cosmétique — le prix reste communiqué ; aucun impact money-path."
+  },
+  {
+    "severity": "P3",
+    "category": "security-config (deploy-gate)",
+    "surface": "Backend VPS (staging) — POST /api/auth/guest-signup/otp",
+    "title": "La réponse JSON du backend live renvoie `dev_code` (OTP en clair) — attendu en staging, À SUPPRIMER avant bascule production",
+    "evidence": "obs-A4.json devCodeCaptured=true ; le code OTP réel a été lu dans la réponse de /guest-signup/otp et a permis de placer 2 commandes réelles (#210726183, #210726184). Cohérent avec APP_ENV=staging (mémoire deploy 2026-07-19).",
+    "reproduction": "Funnel → paiement → « Recevoir le code » → observer la réponse réseau POST /api/auth/guest-signup/otp : champ dev_code présent. Gate avant prod : vérifier que le backend production (APP_ENV=production) NE renvoie PAS dev_code (sinon bypass OTP possible)."
+  },
+  {
+    "severity": "PASS",
+    "category": "money-path (P0-scope) — VERIFIED CLEAN",
+    "surface": "Wizard Cayenne → panier → paiement → confirmation scellée (commande réelle)",
+    "title": "MONEY-PATH intègre : total affiché == panier == paiement == confirmation SCELLÉE, aucun supplément largué",
+    "evidence": "obs-A4.json : base 7,40 + 2e sauce Mayonnaise +0,50 + Oignons frits +0,90 + Menu complet +2,50 = recap 11,30 == cart 11,30 == pay 11,30 == conf 11,30. Commande réelle #210726184 placée via dev-OTP, « ENVOYÉE EN CUISINE ». Screens : A4-01-recap.png (récap itemisé), A4-02-panier.png, A4-03-paiement.png, A4-04-confirmation.png (TOTAL 11,30 €, QR réel). 2e run cohérent : #210726183 @ 10,80 €. Console/network 0 erreur.",
+    "reproduction": "Menu → Cayenne → Personnaliser → ajouter 2e sauce + supplément + menu → récap 11,30 € → panier → Passer commande → skip upsell → Continuer vers paiement → dev-OTP (phone 0699000721, dev_code lu réseau) → confirmation scellée 11,30 €."
+  },
+  {
+    "severity": "PASS",
+    "category": "wizard-pricing — SAUCE",
+    "surface": "Wizard Cayenne — étape SAUCE",
+    "title": "« Fromagère maison » 1re + badge vert « Incluse » + pré-sélectionnée ; 2e sauce = +0,50 € (total +0,50 exact)",
+    "evidence": "obs-A1.json : firstOptionName=Fromagère maison, firstPreSelected=true, firstHasInclusBadge=true, addedName=Mayonnaise, addedPriceBadge=+0,50 €, T0=7,40 → Tafter=7,90 (delta 0,50), errorShown=\"\". Screen A1-sauce-after-2nd.png : badge vert « Incluse », badge orange « +0,50 € », « Sélection : 2/4 », Continuer 7,90 €."
+  },
+  {
+    "severity": "PASS",
+    "category": "wizard-pricing — VIANDE EN PLUS",
+    "surface": "Wizard Cayenne — étape « Viande en plus ? »",
+    "title": "Chaque viande = +2,50 € ; plafond 3 ; 4e bloquée « Maximum 3 sélections »",
+    "evidence": "obs-A2.json adds : 7,40→9,90→12,40→14,90 (delta 2,50 ×3), 4e delta 0 + error « Maximum 3 sélections », maxSelected=3. Screen A2-extrameat-4meat.png : bandeau rouge « Maximum 3 sélections », Continuer 14,90 €."
+  },
+  {
+    "severity": "PASS",
+    "category": "wizard-pricing — MÉGA 2 viandes",
+    "surface": "Wizard Méga — étape « Choisis 2 viandes »",
+    "title": "2 viandes incluses = base (badges verts « Inclus », delta 0) ; 3e viande = +2,50 €",
+    "evidence": "obs-A3.json : base 8,00, 2 viandes total 8,00 (deltaFromBase 0), 3e viande total 10,50 (delta 2,50), thirdPriceBadge=+2,50 €. Screen A3-viandes-3selected.png : Mexicanos/Cordon Bleu « Inclus » verts, Viande Hachée « +2,50 € », Continuer 10,50 €."
+  },
+  {
+    "severity": "PASS",
+    "category": "menu-grouping — boissons",
+    "surface": "Menu vue « Tout »",
+    "title": "Boissons regroupées en section dédiée « 🥤 Boissons » (5 aperçu + Voir toutes → 15) ; canettes HORS grille plats ; desserts inline",
+    "evidence": "obs-A5.json : drinksSectionVisible=true, drinkPreviewCards=5, cocaInFoodGrid=0, allDrinkCards=15, dessertsInTout={Glace:true,Tiramisu:true,Tarte:true}. Screen A5-01-tout-boissons.png (section 🥤 Boissons · 15 au frais, 5 canettes + VOIR TOUTES), A5-02-page-boissons.png (15 boissons)."
+  }
+]
