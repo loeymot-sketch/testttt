@@ -41,6 +41,13 @@ Débloqué : le catalogue borne charge en headless avec clic `force:true` (bouto
 - `06-panier.png` (étape menu) — **B1 prouvé** : « VOTRE COMPOSITION » trace « SUPPLÉMENTS : Oignons frits » + **Total 7,90 €** (base 7,00 + 0,90) → supplément NON largué, prix correct. Cohérent avec le test backend (11,30 € scellé + snapshot complet).
 - Bundle servi vérifié live : `#c1121f` (crudités) + `variant:"secondary"` (idle) présents dans les assets `127.0.0.1:8000`. Sur cette machine le fix est ACTIF.
 
+## Test E2E LOGIQUE bout-en-bout (owner « test-e2e pour validé avec logique ») — VERT
+`tests/Playwright/borne-e2e-logique-2026-07-21.spec.js` : UI borne RÉELLE + backend RÉEL (`:8766`, token machine minté via kiosk-login + injecté en localStorage vuex). Parcours SUPRÊME → supplément payant → panier → **checkout déclenche le quote authentifié**. Assertions au centime :
+- **Total AFFICHÉ panier 7,90 € == Total SCELLÉ backend `total_ttc` 7,90 €** (7,00 base + 0,90 supplément).
+- **Payload quote = 3 extras** transmis (supplément + garnitures) → aucun largage CLIENT.
+- Free-included prouvé : total = base + supplément payant uniquement (crudités/sauce incluses = 0 €).
+→ Le bug owner « calcule jusqu'au paiement puis annule » NE se reproduit PAS. Affiché == scellé = pas de drop, bout-en-bout, à travers la vraie borne.
+
 ## Reste owner
 - Déployer le bundle recompilé sur la borne (le symptôme terrain venait probablement d'un build périmé).
 - Valider visuellement crudités + idle sur la vraie borne (capture headless bloquée : idle tactile-gated + 3 Chrome connectés non sélectionnables en autonomie).
