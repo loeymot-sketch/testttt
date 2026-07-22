@@ -2002,6 +2002,8 @@
                 "garnitures": "CHOOSE TOPPINGS?",
                 "supplements": "ANY EXTRAS?",
                 "menu": "CHOOSE YOUR MEAL DEAL?",
+                "boisson": "CHOOSE YOUR DRINK?",
+                "frites_sauce": "FRIES SAUCE?",
                 "frites_style": "CHOOSE YOUR FRY STYLE?",
                 "recap": "SUMMARY"
             },

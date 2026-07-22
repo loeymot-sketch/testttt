@@ -1462,6 +1462,8 @@
                 "garnitures": "QUELLE CRUDITÉ ?",
                 "supplements": "QUEL SUPPLÉMENT ?",
                 "menu": "QUEL MENU ?",
+                "boisson": "QUELLE BOISSON ?",
+                "frites_sauce": "SAUCE POUR LES FRITES ?",
                 "recap": "RÉCAPITULATIF"
             },
             "frites_sauce": {

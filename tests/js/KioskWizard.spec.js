@@ -1255,7 +1255,10 @@ describe('KioskWizardComponent — active wizard UX fixes', () => {
     expect(wrapper.vm.kioskShowBoissonOnlyMenuCard).toBe(true);
     wrapper.vm.currentStepIndex = wrapper.vm.activeSteps.findIndex((s) => s.type === 'menu');
     await wrapper.vm.$nextTick();
-    expect(wrapper.vm.kioskMenuStepExtraProps).toEqual({ showBoissonOnlyMenuCard: true });
+    // [W-SPLIT 2026-07-22] Le step menu (template, non-composer) reçoit désormais
+    // sectionMode:'formule' pour n'afficher que les cartes formule (boisson/sauce-frites
+    // = étapes dédiées). showBoissonOnlyMenuCard reste inchangé.
+    expect(wrapper.vm.kioskMenuStepExtraProps).toEqual({ showBoissonOnlyMenuCard: true, sectionMode: 'formule' });
   });
 
   it('requires a drink selection when only the central kiosk drink catalog supplies the drink list', async () => {
@@ -1269,8 +1272,14 @@ describe('KioskWizardComponent — active wizard UX fixes', () => {
       },
     });
     await wrapper.vm.$nextTick();
-    wrapper.vm.currentStepIndex = wrapper.vm.activeSteps.findIndex((s) => s.type === 'menu');
+    // [W-SPLIT 2026-07-22] La formule (menuChoice) se choisit sur l'étape 'menu' ; la
+    // boisson se valide désormais sur l'étape DÉDIÉE 'boisson' (min 1). On pose la
+    // formule puis on navigue vers l'étape boisson pour tester son gating.
     wrapper.vm.updateSelection('menuChoice', 'boisson');
+    await wrapper.vm.$nextTick();
+    const boissonIdx = wrapper.vm.activeSteps.findIndex((s) => s.type === 'boisson');
+    expect(boissonIdx).toBeGreaterThanOrEqual(0);
+    wrapper.vm.currentStepIndex = boissonIdx;
     wrapper.vm.updateSelection('boissonChoice', null);
     await wrapper.vm.$nextTick();
 
@@ -1567,9 +1576,13 @@ describe('KioskWizardComponent — P1 boisson obligatoire si addons boisson (ré
       },
     });
     await wrapper.vm.$nextTick();
-    const menuIdx = wrapper.vm.activeSteps.findIndex((s) => s.type === 'menu');
-    wrapper.vm.currentStepIndex = menuIdx;
+    // [W-SPLIT 2026-07-22] La formule 'full' se pose sur l'étape menu ; la boisson se
+    // valide sur l'étape DÉDIÉE 'boisson'. boissonChoice vide → canAdvance false LÀ.
     wrapper.vm.selections.menuChoice = 'full';
+    await wrapper.vm.$nextTick();
+    const boissonIdx = wrapper.vm.activeSteps.findIndex((s) => s.type === 'boisson');
+    expect(boissonIdx).toBeGreaterThanOrEqual(0);
+    wrapper.vm.currentStepIndex = boissonIdx;
     wrapper.vm.selections.boissonChoice = null;
     await wrapper.vm.$nextTick();
     expect(wrapper.vm.canAdvance).toBe(false);
@@ -1592,11 +1605,14 @@ describe('KioskWizardComponent — P1 boisson obligatoire si addons boisson (ré
       },
     });
     await wrapper.vm.$nextTick();
-    const menuIdx = wrapper.vm.activeSteps.findIndex((s) => s.type === 'menu');
-    wrapper.vm.currentStepIndex = menuIdx;
+    // [W-SPLIT 2026-07-22] Formule 'full' sur l'étape menu ; la boisson (44) se valide
+    // sur l'étape dédiée 'boisson' → canAdvance true quand renseignée.
     wrapper.vm.selections.menuChoice = 'full';
     wrapper.vm.selections.boissonChoice = 44;
-    wrapper.vm.selections.fritesSauceOrder = ['sans'];
+    await wrapper.vm.$nextTick();
+    const boissonIdx = wrapper.vm.activeSteps.findIndex((s) => s.type === 'boisson');
+    expect(boissonIdx).toBeGreaterThanOrEqual(0);
+    wrapper.vm.currentStepIndex = boissonIdx;
     await wrapper.vm.$nextTick();
     expect(wrapper.vm.canAdvance).toBe(true);
   });
@@ -1618,9 +1634,13 @@ describe('KioskWizardComponent — P1 boisson obligatoire si addons boisson (ré
       },
     });
     await wrapper.vm.$nextTick();
-    const menuIdx = wrapper.vm.activeSteps.findIndex((s) => s.type === 'menu');
-    wrapper.vm.currentStepIndex = menuIdx;
+    // [W-SPLIT 2026-07-22] Formule 'boisson' (boisson seule) posée sur l'étape menu ;
+    // la boisson se valide sur l'étape DÉDIÉE 'boisson'.
     wrapper.vm.selections.menuChoice = 'boisson';
+    await wrapper.vm.$nextTick();
+    const boissonIdx = wrapper.vm.activeSteps.findIndex((s) => s.type === 'boisson');
+    expect(boissonIdx).toBeGreaterThanOrEqual(0);
+    wrapper.vm.currentStepIndex = boissonIdx;
     wrapper.vm.selections.boissonChoice = null;
     await wrapper.vm.$nextTick();
     expect(wrapper.vm.canAdvance).toBe(false);
@@ -1643,10 +1663,14 @@ describe('KioskWizardComponent — P1 boisson obligatoire si addons boisson (ré
       },
     });
     await wrapper.vm.$nextTick();
-    const menuIdx = wrapper.vm.activeSteps.findIndex((s) => s.type === 'menu');
-    wrapper.vm.currentStepIndex = menuIdx;
+    // [W-SPLIT 2026-07-22] Formule 'boisson' sur l'étape menu ; la boisson (44) se valide
+    // sur l'étape dédiée 'boisson' → canAdvance true quand choisie.
     wrapper.vm.selections.menuChoice = 'boisson';
     wrapper.vm.selections.boissonChoice = 44;
+    await wrapper.vm.$nextTick();
+    const boissonIdx = wrapper.vm.activeSteps.findIndex((s) => s.type === 'boisson');
+    expect(boissonIdx).toBeGreaterThanOrEqual(0);
+    wrapper.vm.currentStepIndex = boissonIdx;
     await wrapper.vm.$nextTick();
     expect(wrapper.vm.canAdvance).toBe(true);
   });

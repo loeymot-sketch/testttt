@@ -1,25 +1,25 @@
 <template>
   <div class="kiosk-step-menu">
     <h3 class="kiosk-step-title">
-      {{ isStandaloneDrinkStep ? $t('kiosk.wizard.menu.boisson_section_title') : $t('kiosk.wizard.menu.title') }}
+      {{ stepTitle }}
     </h3>
 
-    <div class="kiosk-menu-info">
-      <span v-if="menuInfoBadge && !isStandaloneDrinkStep" class="kiosk-info-badge">{{ menuInfoBadge }}</span>
+    <div v-if="showFormuleCards" class="kiosk-menu-info">
+      <span v-if="menuInfoBadge" class="kiosk-info-badge">{{ menuInfoBadge }}</span>
       <span v-if="menuPrice > 0" class="kiosk-menu-price">
         +{{ formatPrice(menuPrice) }}
       </span>
     </div>
 
     <div
-      v-if="needsExplicitMenuChoice && !isStandaloneDrinkStep"
+      v-if="showFormuleCards && needsExplicitMenuChoice"
       class="kiosk-validation-hint kiosk-menu-validation-hint"
       role="status"
     >
       {{ $t('kiosk.wizard.menu.hint_need_choice') }}
     </div>
 
-    <div v-if="!isStandaloneDrinkStep" class="kiosk-menu-options" role="radiogroup" :aria-label="$t('kiosk.wizard.menu.title')">
+    <div v-if="showFormuleCards" class="kiosk-menu-options" role="radiogroup" :aria-label="$t('kiosk.wizard.menu.title')">
       <div
         class="kiosk-menu-card"
         :class="{ selected: localChoice === 'full' }"
@@ -103,8 +103,8 @@
          Cheddar fondu / Cheddar + Oignons est désormais EXCLUSIVEMENT porté
          par KioskStepFritesStyleComponent (étape dédiée). -->
 
-    <div v-if="(showBoissonChoice || isStandaloneDrinkStep) && boissonList.length > 0" class="kiosk-boisson-section">
-      <h4 v-if="!isStandaloneDrinkStep" class="kiosk-subtitle">{{ $t('kiosk.wizard.menu.boisson_section_title') }}</h4>
+    <div v-if="showBoissonSection && boissonList.length > 0" class="kiosk-boisson-section">
+      <h4 v-if="!isStandaloneDrinkStep && sectionMode === 'all'" class="kiosk-subtitle">{{ $t('kiosk.wizard.menu.boisson_section_title') }}</h4>
       <p v-if="localChoice === 'full'" class="kiosk-boisson-included">{{ $t('kiosk.wizard.menu.boisson_one_included') }}</p>
       <div
         v-if="needsExplicitBoissonSelection"
@@ -148,13 +148,13 @@
         </div>
       </div>
     </div>
-    <div v-else-if="showBoissonChoice || isStandaloneDrinkStep" class="kiosk-boisson-section">
+    <div v-else-if="showBoissonSection" class="kiosk-boisson-section">
       <p class="kiosk-boisson-placeholder">{{ $t('kiosk.wizard.menu.boisson_counter') }}</p>
     </div>
 
     <!-- Sauces frites — catalogue variations (comme étape sauce), en bas -->
-    <div v-if="showFritesSauce" class="kiosk-boisson-section kiosk-frites-sauce-section">
-      <h4 class="kiosk-subtitle">{{ $t('kiosk.wizard.menu.frites_sauce_title') }}</h4>
+    <div v-if="showFritesSauceSection" class="kiosk-boisson-section kiosk-frites-sauce-section">
+      <h4 v-if="sectionMode === 'all'" class="kiosk-subtitle">{{ $t('kiosk.wizard.menu.frites_sauce_title') }}</h4>
       <div
         v-if="needsExplicitFritesSauceSelection"
         class="kiosk-validation-hint kiosk-frites-sauce-validation-hint"
@@ -220,6 +220,12 @@ export default {
     selections: Object,
     /** Affiche l'option « Boisson seule » quand le wizard parent déclare la formule disponible. */
     showBoissonOnlyMenuCard: { type: Boolean, default: true },
+    // [W-SPLIT 2026-07-22] Mode d'affichage du step (split formule en 3 pages dédiées).
+    // 'all' = monolithe historique (rétro-compat tests + path bol composer, affiche
+    // formule + cascade boisson/frites interne) ; 'formule' = cartes formule seules ;
+    // 'boisson' = grille boissons seule ; 'frites_sauce' = grille sauces frites seule.
+    // Piloté par le wizard parent via kioskMenuStepExtraProps selon le type d'étape.
+    sectionMode: { type: String, default: 'all' },
   },
   emits: ['update'],
   data() {
@@ -296,6 +302,35 @@ export default {
       // l'étape principale Sauce — on ne redemande pas pour les frites.
       if (this.sauceIncludedFromCategory) return false;
       return true;
+    },
+    // [W-SPLIT 2026-07-22] Visibilité des 3 sections selon sectionMode. Le split
+    // formule (référence concurrents) fait de la boisson et de la sauce-frites de
+    // VRAIES étapes séparées. Le path bol (isStandaloneDrinkStep) est INCHANGÉ : il
+    // court-circuite toujours pour n'afficher que la grille boisson (mode 'all' par
+    // défaut, jamais piloté par le wizard sur ce chemin composer).
+    showFormuleCards() {
+      if (this.isStandaloneDrinkStep) return false;
+      return this.sectionMode === 'all' || this.sectionMode === 'formule';
+    },
+    showBoissonSection() {
+      if (this.isStandaloneDrinkStep) return true;
+      if (this.sectionMode !== 'all' && this.sectionMode !== 'boisson') return false;
+      return this.showBoissonChoice;
+    },
+    showFritesSauceSection() {
+      if (this.sectionMode !== 'all' && this.sectionMode !== 'frites_sauce') return false;
+      return this.showFritesSauce;
+    },
+    // Titre du step : en mode dédié, l'entête h3 porte le libellé de la section
+    // (le wizard affiche déjà la question au-dessus, même pattern que le menu 'all').
+    stepTitle() {
+      if (this.isStandaloneDrinkStep || this.sectionMode === 'boisson') {
+        return this.$t('kiosk.wizard.menu.boisson_section_title');
+      }
+      if (this.sectionMode === 'frites_sauce') {
+        return this.$t('kiosk.wizard.menu.frites_sauce_title');
+      }
+      return this.$t('kiosk.wizard.menu.title');
     },
     // [Round 5 — 2026-05-10] menuFritesUpgradeRows / showMenuFritesUpgrade /
     // selectedBundledUpgradeId computeds removed alongside the inline section.

@@ -345,6 +345,17 @@ const ADDON_ROLE_TO_TYPE = Object.freeze({
     menu_component: 'menu',
 });
 
+// [W-SPLIT 2026-07-22 · LOCK_KIOSK_FORMULE_SPLIT] Split formule en 3 pages dédiées
+// (référence concurrents). L'étape 'menu' ne porte plus que les cartes formule ;
+// la boisson et la sauce-frites deviennent de VRAIES étapes séparées insérées juste
+// après 'menu' (au lieu d'une cascade interne à KioskStepMenu). Les deux sont rendues
+// par KioskStepMenu piloté en sectionMode 'boisson' / 'frites_sauce' (voir
+// kioskMenuStepExtraProps). Elles n'apparaissent que si applicables (shouldShowStep) et
+// le payload (menu_full/menu_frites/menu_boisson + _boissonMeta + fritesSauceOrder) est
+// INCHANGÉ — seule la navigation change.
+const FORMULE_BOISSON_STEP = Object.freeze({ type: 'boisson', label: 'Boisson', component: 'KioskStepMenu' });
+const FORMULE_FRITES_SAUCE_STEP = Object.freeze({ type: 'frites_sauce', label: 'Sauce frites', component: 'KioskStepMenu' });
+
 function resolveExplicitStepType(step) {
     if (!step) return null;
 
@@ -561,6 +572,8 @@ export default {
             { type: 'garnitures', label: 'Garnitures', component: 'KioskStepGarnitures' },
             { type: 'supplements', label: 'Suppléments', component: 'KioskStepSupplements' },
             { type: 'menu', label: 'Menu', component: 'KioskStepMenu' },
+            FORMULE_BOISSON_STEP,
+            FORMULE_FRITES_SAUCE_STEP,
             { type: 'recap', label: 'Récap', component: 'KioskOrderSummary' }
           ].filter(s => this.shouldShowStep(s.type));
         case 'sandwich':
@@ -571,6 +584,8 @@ export default {
             { type: 'garnitures', label: 'Garnitures', component: 'KioskStepGarnitures' },
             { type: 'supplements', label: 'Suppléments', component: 'KioskStepSupplements' },
             { type: 'menu', label: 'Menu', component: 'KioskStepMenu' },
+            FORMULE_BOISSON_STEP,
+            FORMULE_FRITES_SAUCE_STEP,
             { type: 'recap', label: 'Récap', component: 'KioskOrderSummary' }
           ].filter(s => this.shouldShowStep(s.type));
         case 'burger':
@@ -580,6 +595,8 @@ export default {
             { type: 'garnitures', label: 'Garnitures', component: 'KioskStepGarnitures' },
             { type: 'supplements', label: 'Suppléments', component: 'KioskStepSupplements' },
             { type: 'menu', label: 'Menu', component: 'KioskStepMenu' },
+            FORMULE_BOISSON_STEP,
+            FORMULE_FRITES_SAUCE_STEP,
             { type: 'recap', label: 'Récap', component: 'KioskOrderSummary' }
           ].filter(s => this.shouldShowStep(s.type));
         case 'assiette':
@@ -602,6 +619,8 @@ export default {
           return [
             { type: 'sauce', label: 'Sauce', component: 'KioskStepSauce' },
             { type: 'menu', label: 'Menu', component: 'KioskStepMenu' },
+            FORMULE_BOISSON_STEP,
+            FORMULE_FRITES_SAUCE_STEP,
             { type: 'frites_style', label: 'Style frites', component: 'KioskStepFritesStyle' },
             { type: 'supplements', label: 'Suppléments', component: 'KioskStepSupplements' },
             { type: 'recap', label: 'Récap', component: 'KioskOrderSummary' }
@@ -627,6 +646,8 @@ export default {
             { type: 'sauce', label: 'Sauce', component: 'KioskStepSauce' },
             { type: 'supplements', label: 'Suppléments', component: 'KioskStepSupplements' },
             { type: 'menu', label: 'Menu', component: 'KioskStepMenu' },
+            FORMULE_BOISSON_STEP,
+            FORMULE_FRITES_SAUCE_STEP,
             { type: 'frites_style', label: 'Style frites', component: 'KioskStepFritesStyle' },
             { type: 'recap', label: 'Récap', component: 'KioskOrderSummary' }
           ].filter(s => this.shouldShowStep(s.type));
@@ -713,8 +734,18 @@ export default {
     },
     /** Évite de passer des props inconnues aux autres étapes du wizard. */
     kioskMenuStepExtraProps() {
-      if (this.currentStep?.type !== 'menu') return {};
-      return { showBoissonOnlyMenuCard: this.kioskShowBoissonOnlyMenuCard };
+      const step = this.currentStep;
+      const type = step?.type;
+      // [W-SPLIT 2026-07-22] Path composer (bols) : on NE pilote PAS sectionMode → KioskStepMenu
+      // garde son mode 'all' historique (isStandaloneDrinkStep court-circuite l'affichage boisson).
+      const isComposerStep = !!step?.composer_step;
+      if (type === 'menu') {
+        const base = { showBoissonOnlyMenuCard: this.kioskShowBoissonOnlyMenuCard };
+        return isComposerStep ? base : { ...base, sectionMode: 'formule' };
+      }
+      if (!isComposerStep && type === 'boisson') return { sectionMode: 'boisson' };
+      if (!isComposerStep && type === 'frites_sauce') return { sectionMode: 'frites_sauce' };
+      return {};
     },
     /** Props communes + filtres catalogue (greyout) uniquement sur les étapes concernées. */
     wizardStepBindings() {
@@ -750,25 +781,23 @@ export default {
       if (step.type === 'taille') return this.selections.taille !== null;
       if (step.type === 'generic_choices') return this.canAdvanceComposerChoiceStep(step);
       // [P0] Menu : choix explicite obligatoire (full / frites / boisson / none) — pas de passage « vide »
+      // [W-SPLIT 2026-07-22] Le menu ne gate PLUS que le choix de formule ; la boisson et
+      // la sauce-frites sont désormais validées sur leurs étapes dédiées (ci-dessous).
       if (step.type === 'menu') {
         const mc = this.selections.menuChoice;
-        if (mc === null || mc === undefined || mc === '') return false;
-        // [P1] Si des addons boisson existent et que la formule inclut une boisson → choix obligatoire
-        const wantsDrink = mc === 'full' || mc === 'boisson';
-        if (wantsDrink && this.kioskMenuDrinkChoiceAvailable()) {
-          const bc = this.selections.boissonChoice;
-          if (bc === null || bc === undefined || bc === '') return false;
-        }
-        // Frites (menu complet ou frites seules) : au moins une sauce frites (dont « Sans sauce »)
-        // Uniquement si le catalogue expose des sauces (attribut sauce + variations) — sinon on ne bloque pas.
-        if (mc === 'full' || mc === 'frites') {
-          const hasSauceCatalog = kioskSauceVariationRowsForItem(this.resolvedItem).length > 0;
-          if (hasSauceCatalog) {
-            const order = this.selections.fritesSauceOrder || [];
-            if (order.length === 0) return false;
-          }
-        }
-        return true;
+        return !(mc === null || mc === undefined || mc === '');
+      }
+      // [W-SPLIT 2026-07-22] Étape boisson dédiée : choix obligatoire (min 1). N'apparaît
+      // que quand une boisson est réellement disponible (shouldShowStep gère la visibilité).
+      if (step.type === 'boisson') {
+        const bc = this.selections.boissonChoice;
+        return !(bc === null || bc === undefined || bc === '');
+      }
+      // [W-SPLIT 2026-07-22] Étape sauce-frites dédiée : au moins une sauce (dont « Sans
+      // sauce »). N'apparaît que si le catalogue expose des sauces (shouldShowStep).
+      if (step.type === 'frites_sauce') {
+        const order = this.selections.fritesSauceOrder || [];
+        return order.length > 0;
       }
 
       return true;
@@ -1005,6 +1034,25 @@ export default {
         // elle doit apparaître dès que le produit est éligible (has_menu),
         // même si la carte boissons ou les upgrades frites sont vides.
         return item.has_menu === true;
+      }
+      // [W-SPLIT 2026-07-22] Étape boisson dédiée : visible uniquement si la formule
+      // choisie inclut une boisson (full/boisson) ET qu'un choix de boisson existe.
+      // Mêmes conditions que l'ancien gate boisson interne au step menu (canAdvance).
+      if (type === 'boisson') {
+        if (item.has_menu !== true) return false;
+        const mc = this.selections?.menuChoice;
+        if (mc !== 'full' && mc !== 'boisson') return false;
+        return this.kioskMenuDrinkChoiceAvailable();
+      }
+      // [W-SPLIT 2026-07-22] Étape sauce-frites dédiée : visible si la formule inclut
+      // des frites (full/frites), que la catégorie n'inclut pas déjà la sauce, et que
+      // le catalogue expose des sauces (sinon aucun vrai choix → page inutile).
+      if (type === 'frites_sauce') {
+        if (item.has_menu !== true) return false;
+        const mc = this.selections?.menuChoice;
+        if (mc !== 'full' && mc !== 'frites') return false;
+        if (item.sauce_included_menu) return false;
+        return kioskSauceVariationRowsForItem(item).length > 0;
       }
       if (type === 'viande') {
         return this.detectViandeCount() > 0 && kioskViandeCatalogForItem(item).length > 0;
@@ -1516,6 +1564,9 @@ export default {
         garnitures: '🥗',
         supplements: '🧀',
         menu: '🍟',
+        // [W-SPLIT 2026-07-22] Étapes dédiées boisson / sauce-frites.
+        boisson: '🥤',
+        frites_sauce: '🥫',
         recap: '✓',
       };
       return map[type] || '•';
