@@ -164,6 +164,40 @@ class StockCatalogOverviewControllerTest extends TestCase
         $this->assertNull($categoriesB[0]['items'][0]['reason']);
     }
 
+    /**
+     * [global-flag-defeats-dashboard-toggle 2026-07-22 / Vague 2] The GLOBAL
+     * items.is_available flag (item-edit form) overrides the branch toggle silently.
+     * The payload must surface `globally_disabled` so the dashboard can badge WHY the
+     * EN-STOCK toggle is inert instead of showing a dead switch.
+     */
+    public function test_item_payload_exposes_globally_disabled_flag(): void
+    {
+        $category = ItemCategory::factory()->create(['name' => 'Burgers', 'slug' => 'burgers', 'status' => Status::ACTIVE]);
+        $tax = Tax::factory()->create(['status' => Status::ACTIVE]);
+
+        $available = Item::factory()->create([
+            'name' => 'Cayenne', 'slug' => 'cayenne', 'item_category_id' => $category->id,
+            'tax_id' => $tax->id, 'status' => Status::ACTIVE, 'is_available' => true,
+        ]);
+        $globallyOff = Item::factory()->create([
+            'name' => 'Retired', 'slug' => 'retired', 'item_category_id' => $category->id,
+            'tax_id' => $tax->id, 'status' => Status::ACTIVE, 'is_available' => false,
+        ]);
+
+        Sanctum::actingAs($this->admin, ['*']);
+        $response = $this->getJson('/api/admin/stock/catalog-overview?branch_id=' . $this->branchA->id);
+        $response->assertOk();
+
+        $items = collect($response->json('categories')[0]['items'])->keyBy('id');
+
+        $this->assertArrayHasKey('globally_disabled', $items[$available->id]);
+        $this->assertFalse($items[$available->id]['globally_disabled'], 'Globally enabled item → globally_disabled false');
+        $this->assertTrue($items[$available->id]['is_available']);
+
+        $this->assertTrue($items[$globallyOff->id]['globally_disabled'], 'items.is_available=false → globally_disabled true');
+        $this->assertFalse($items[$globallyOff->id]['is_available'], 'Global flag off → effective state OOS');
+    }
+
     public function test_extras_grouped_by_label_and_deduped_by_name(): void
     {
         $category = ItemCategory::factory()->create(['status' => Status::ACTIVE]);
