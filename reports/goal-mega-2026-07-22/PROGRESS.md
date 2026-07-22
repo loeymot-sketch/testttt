@@ -61,3 +61,11 @@ Plan : `plans/GOAL_MEGA_BORNE_TICKET_STOCK_MOBILE_2026-07-22.md`
 3. WEB-RESPONSIVE : audit+fix mobile Pixel 7 (nav burger cassée + boutons) sur le site Vercel.
 ## ⏭️ Ensuite : deploy des 3 · test massif STOCK cross-surfaces (téléphone/caisse/KDS/admin) ·
 ##    audit LOGIQUE caisse (contrôle commandes, annuler/valider, sync KDS, commandes web) en boucle.
+
+## ✅ FORMULE SPLIT 3 PAGES — LOCK exécuté, commits 7157208f5+8b4c5b887, deploy VPS en cours
+- Frozen : KioskWizardComponent SEUL (+70/−19, hook LOCK-citation). Menu monolithique → 3 étapes
+  gatées : QUEL MENU ?(4 cartes, prix 2,50/1,90/1,90) → QUELLE BOISSON ?(pleine page, 15 photos,
+  CTA gaté) → SAUCE POUR LES FRITES ?. Bols intacts, payload identique.
+- Preuves : 757 sweep + 12 spec + 112 re-vérif ; e2e réel local 3 pages capturées + LUES (0 erreur JS).
+## ✅ 4/4 chantiers owner du jour LIVRÉS (prix 1,90 · mobile /m 2580 · nav mobile web · split formule)
+## ⏭️ NEXT : test massif STOCK cross-surfaces (/m→borne/caisse/KDS/admin) + audit LOGIQUE caisse en boucle
