@@ -1111,7 +1111,7 @@
                 </div>
                 <div class="pos-v5-cart-item__qty">
                     <PosV5QtyStepper
-                        size="sm"
+                        size="lg"
                         :model-value="cart.quantity"
                         :show-trash="cart.quantity === 1"
                         :aria-label="cart.name"
@@ -1278,14 +1278,16 @@
                     <span class="pos-phone-order-cta__hint">{{ $t('label.pos_phone_order_hint') }}</span>
                 </button>
                 <PosV5Button
-                    variant="danger-ghost"
+                    :variant="confirmingReset ? 'danger' : 'danger-ghost'"
                     size="sm"
                     block
                     @click.prevent="resetCart"
                     class="pos-v4-action-cancel"
+                    data-testid="pos-cart-reset"
+                    :aria-label="confirmingReset ? ($t('pos.confirm_reset_aria') || 'Confirmer le vidage du panier') : $t('button.cancel')"
                 >
                     <template #icon>↻</template>
-                    {{ $t('button.cancel') }}
+                    {{ confirmingReset ? ($t('pos.confirm_reset') || 'Confirmer ?') : $t('button.cancel') }}
                 </PosV5Button>
             </div>
         </footer>
@@ -1877,6 +1879,9 @@ export default {
             kioskCashOrders: [],
             kioskCashLoading: false,
             showKioskCashPanel: false,
+            // [UX-RESET-06 2026-07-22] Confirmation 2-taps du bouton « Annuler » (vider panier) :
+            // 1er tap arme (bouton rouge « Confirmer ? » ~3s), 2e tap exécute. Anti-mis-tap en rush.
+            confirmingReset: false,
             // [GOAL RUPTURE-CARNET 2026-07-15 / W2] Panel rupture produits (86).
             showAvailabilityPanel: false,
             // [WEB-CAISSE-SYNC 2026-07-13] Commandes WEB en attente (à traiter). Le paiement en
@@ -2604,6 +2609,11 @@ export default {
         // [CUSTOMER-DISPLAY 2026-06-28] Stoppe le timer de refresh afficheur client.
         if (this._cdTimer) {
             clearTimeout(this._cdTimer);
+        }
+        // [UX-RESET-06 2026-07-22] Stoppe le timer de confirmation « Annuler ».
+        if (this._resetConfirmTimer) {
+            clearTimeout(this._resetConfirmTimer);
+            this._resetConfirmTimer = null;
         }
         // [WT-R1-F2 2026-05-20] Mark instance as destroyed BEFORE any cleanup so
         // late-firing async callbacks (echo/wsService reconnect handlers,
@@ -3570,6 +3580,15 @@ export default {
             // [K09B] Source filter is centralized in posOrder.js and now prefers
             // the backend `_origin` payload key, falling back to legacy order_type.
 
+            // [UX-NOTIF-01 dédup 2026-07-22] Exactement-une-fois entre Echo et poll : si le poll a
+            // déjà signalé cette commande (ou l'inverse), on ne re-bippe pas. Set partagé.
+            if (orderId != null) {
+                if (!this._notifiedOrderIds) this._notifiedOrderIds = new Set();
+                const idStr = String(orderId);
+                if (this._notifiedOrderIds.has(idStr)) return;
+                this._notifiedOrderIds.add(idStr);
+            }
+
             try {
                 const label = orderId
                     ? (this.$t && this.$t('message.new_pos_order_with_id', { id: orderId })) || ('Nouvelle commande #' + orderId)
@@ -3681,8 +3700,13 @@ export default {
                 const all = res?.data?.data || [];
                 this.webOrders = all.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
                 this.lastWebRefresh = Date.now();
+                // [UX-NOTIF-01/SYNC-W3] Signal nouvelle commande INDÉPENDANT du transport (le beep
+                // Echo est mort si le worker/queue est down) — diff des IDs à chaque poll.
+                this._notifyPolledNewOrders(all, 'web', 'web');
             } catch (_) {
-                this.webOrders = [];
+                // [UX-PANEL-04] Ne PAS vider la liste sur erreur transitoire : garder le dernier état
+                // connu. lastWebRefresh non re-stampé → le libellé « Mis à jour il y a X » vieillit =
+                // vrai signal de fraîcheur, au lieu d'un faux « Aucune commande » rassurant.
             } finally {
                 this.webOrdersLoading = false;
             }
@@ -3746,11 +3770,69 @@ export default {
                 // il y a Xs" — visible health signal even when the list is
                 // empty (calm period vs polling failure).
                 this.lastCashRefresh = Date.now();
+                // [UX-NOTIF-01/SYNC-W3] Signal transport-agnostique (voir loadWebOrders).
+                this._notifyPolledNewOrders(all, 'cash', 'kiosk_cash');
             } catch (_) {
-                this.kioskCashOrders = [];
+                // [UX-PANEL-04] Garder la dernière liste connue sur erreur transitoire (pas de faux vide).
             } finally {
                 this.kioskCashLoading = false;
             }
+        },
+        /**
+         * [UX-NOTIF-01 / SYNC-W3 2026-07-22] Notification « nouvelle commande » INDÉPENDANTE DU
+         * TRANSPORT. Le beep+toast ne dépendaient QUE du handler Echo (mort si le worker de queue
+         * est down → soketi UP mais 0 event). On diffe aussi les IDs à chaque tick de poll : toute
+         * commande inédite déclenche le même signal. Dédup exactement-une-fois partagée avec le
+         * chemin Echo (`_notifiedOrderIds`) pour éviter le double-bip quand les 2 transports vivent.
+         * Seed initial silencieux (pas de rafale au 1er chargement).
+         */
+        _notifyPolledNewOrders(list, seedKey, origin) {
+            try {
+                if (!this._notifiedOrderIds) this._notifiedOrderIds = new Set();
+                if (!this._pollSeeded) this._pollSeeded = {};
+                const ids = (list || [])
+                    .map(o => o && (o.id != null ? o.id : o.order_id))
+                    .filter(v => v != null)
+                    .map(String);
+                const firstSeed = !this._pollSeeded[seedKey];
+                let fresh = 0; let lastId = null;
+                ids.forEach(id => {
+                    if (firstSeed) { this._notifiedOrderIds.add(id); return; }
+                    if (!this._notifiedOrderIds.has(id)) {
+                        this._notifiedOrderIds.add(id);
+                        fresh += 1; lastId = id;
+                    }
+                });
+                this._pollSeeded[seedKey] = true;
+                // Garde-fou croissance (mono-restaurant : largement suffisant).
+                if (this._notifiedOrderIds.size > 2000) {
+                    this._notifiedOrderIds = new Set(ids);
+                    this._pollSeeded = { [seedKey]: true };
+                }
+                if (fresh > 0) this._signalNewOrder(lastId, fresh, origin);
+            } catch (_) { /* defensive — jamais casser un poll */ }
+        },
+        /** Toast + beep « nouvelle commande » (réutilise le beep WebAudio et le setting d'opt-out). */
+        _signalNewOrder(orderId, count, origin) {
+            try {
+                let label;
+                if (count > 1) {
+                    label = (this.$t && this.$t('message.new_pos_orders_count', { count })) || (count + ' nouvelles commandes');
+                } else {
+                    label = orderId
+                        ? ((this.$t && this.$t('message.new_pos_order_with_id', { id: orderId })) || ('Nouvelle commande #' + orderId))
+                        : ((this.$t && this.$t('message.new_pos_order')) || 'Nouvelle commande');
+                }
+                alertService.info(label);
+            } catch (_) { /* toast best-effort */ }
+            try {
+                const s = this.setting || {};
+                const soundFlag = s.pos_new_order_sound_enabled;
+                const soundOn = soundFlag === undefined || soundFlag === null
+                    ? true
+                    : (String(soundFlag) === '1' || soundFlag === true);
+                if (soundOn) this._playNewOrderBeep();
+            } catch (_) { /* defensive */ }
         },
         toggleKioskCashOrderDetails(orderId) {
             this.expandedKioskCashOrders = {
@@ -4392,6 +4474,20 @@ export default {
             }
         },
         resetCart: function () {
+            // [UX-RESET-06 2026-07-22] Confirmation 2-taps (non bloquante) : vider tout le panier
+            // d'un seul tap = perte destructive sans filet. 1er tap arme, 2e tap dans les 3s exécute.
+            if (!this.confirmingReset) {
+                if (!this.carts || this.carts.length === 0) { this._doResetCart(); return; }
+                this.confirmingReset = true;
+                if (this._resetConfirmTimer) clearTimeout(this._resetConfirmTimer);
+                this._resetConfirmTimer = setTimeout(() => { this.confirmingReset = false; }, 3000);
+                return;
+            }
+            if (this._resetConfirmTimer) { clearTimeout(this._resetConfirmTimer); this._resetConfirmTimer = null; }
+            this.confirmingReset = false;
+            this._doResetCart();
+        },
+        _doResetCart: function () {
             this.$store.dispatch('posCart/resetCart').then(res => {
                 this.checkoutProps.form.token = "";
                 this.resetDeliveryInline();

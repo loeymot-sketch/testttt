@@ -127,7 +127,7 @@
                         <article
                             v-for="order in col.orders"
                             :key="order.id"
-                            :class="['pos-tracker-card', `pos-tracker-card--${col.tone}`, newReadyIds.has(order.id) ? 'is-fresh' : '']"
+                            :class="['pos-tracker-card', `pos-tracker-card--${col.tone}`, newReadyIds.has(order.id) ? 'is-fresh' : '', trackerAgeClass(order, col.id)]"
                             :data-testid="`tracker-order-${order.id}`"
                         >
                             <header class="pos-tracker-card-head">
@@ -157,6 +157,22 @@
                                     {{ elapsedShort(order.created_at) }}
                                 </span>
                             </header>
+                            <!--
+                              [IMP-AGING 2026-07-22] Age badge — À encaisser lane only.
+                              A web/kiosk order waiting for the cashier turns orange
+                              after 5 min (tracker-card--aging) and red/pulsing after
+                              10 min (tracker-card--urgent). Rendered only when the
+                              aging threshold is crossed so quiet cards stay clean.
+                              New testid (additive — no existing testid touched).
+                            -->
+                            <div
+                                v-if="trackerAgeClass(order, col.id)"
+                                :class="['pos-tracker-card-age', trackerAgeClass(order, col.id) === 'tracker-card--urgent' ? 'pos-tracker-card-age--urgent' : '']"
+                                :data-testid="`tracker-age-${order.id}`"
+                            >
+                                <i class="fa-solid fa-hourglass-half" aria-hidden="true"></i>
+                                <span>{{ agingLabel(order) }}</span>
+                            </div>
                             <div class="pos-tracker-card-customer" v-if="customerLabel(order)">
                                 <i class="fa-solid fa-user" aria-hidden="true"></i>
                                 <span>{{ customerLabel(order) }}</span>
@@ -443,6 +459,23 @@ import { adminPriceMixin } from '../../../helpers/formatPrice';
 const POLL_WS_MS = 60000;
 const POLL_NO_WS_MS = 8000;
 const FRESH_HIGHLIGHT_MS = 6000;
+// [UX-TRACKER-02/POSPERF-09 2026-07-22] Event-staleness escape hatch.
+// `realtimeConnected` only proves the SOCKET is up (soketi alive) — NOT that
+// broadcasts are delivered (queue worker can be dead while the socket stays
+// "connected"). If no realtime order event has landed for EVENT_STALE_MS, or
+// the board is empty, we fall back to the fast poll cadence — freshness
+// parity with PosComponent which already has this escape hatch.
+const EVENT_STALE_MS = 35000;
+// [IMP-AGING 2026-07-22] Cash-pending card aging — the "À encaisser" lane is
+// the cashier's action queue; a card waiting >5 min turns orange, >10 min
+// red + pulse. Ages are recomputed on a light 30s ticker (single interval,
+// cleaned up in beforeUnmount) which also doubles as the poll-cadence
+// watchdog (the setInterval cadence is otherwise only re-read on ws
+// connect/disconnect — without the watchdog, staleness detected mid-flight
+// would never shorten an already-running 60s timer).
+const AGE_TICK_MS = 30000;
+const AGE_AGING_MIN = 5;
+const AGE_URGENT_MIN = 10;
 
 /**
  * [POS-V4-ORDERS-TRACKER 2026-05-02]
@@ -471,6 +504,24 @@ export default {
             _onWsDisconnected: null,
             realtimeConnected: !!(window._wsService?.isConnected()),
             _freshTimers: Object.create(null),
+            // [UX-TRACKER-02/POSPERF-09 2026-07-22] Timestamp of the last
+            // realtime order event actually DELIVERED (bumped by every Echo
+            // handler + on ws (re)connect as a grace period). Init = boot time
+            // so a fresh mount is not instantly declared stale.
+            lastEventAt: Date.now(),
+            // [UX-TRACKER-02/POSPERF-09 2026-07-22] Cadence (ms) the running
+            // poll timer was armed with — lets the 30s watchdog detect that
+            // `_pollInterval()` now disagrees with the live timer.
+            _pollTimerMs: 0,
+            // [UX-TRACKER-02b 2026-07-22] Poll-diff freshness: ids already
+            // seen on the board (seeded silently on the first successful
+            // fetch so the initial board load doesn't flash every card).
+            _seenOrderIds: new Set(),
+            _seenSeeded: false,
+            // [IMP-AGING 2026-07-22] Reactive "now" bumped every 30s so the
+            // aging classes/labels re-render without per-card timers.
+            ageTick: Date.now(),
+            _ageTimer: null,
             // [POS-V4-CASHIER-OPS 2026-05-02] One-click reprint state. Holds
             // the full hydrated order to feed ReceiptComponent. We keep a
             // single instance — only the most recent reprint is rendered.
@@ -678,11 +729,13 @@ export default {
         this._subscribeEcho();
         this._bindWsService();
         this._startPolling();
+        this._startAgeTicker();
     },
     beforeUnmount() {
         this._unsubscribeEcho();
         this._unbindWsService();
         this._stopPolling();
+        this._stopAgeTicker();
         Object.values(this._freshTimers).forEach((t) => clearTimeout(t));
     },
     methods: {
@@ -702,7 +755,10 @@ export default {
         _bindWsService() {
             const ws = window._wsService;
             if (!ws) return;
-            this._onWsConnected = () => { this.realtimeConnected = true; this._restartPolling(); this.fetchOrders(); };
+            // [UX-TRACKER-02 2026-07-22] `_noteRealtimeEvent()` on (re)connect =
+            // grace period: give the fresh socket EVENT_STALE_MS to prove event
+            // delivery before the staleness escape hatch kicks in.
+            this._onWsConnected = () => { this.realtimeConnected = true; this._noteRealtimeEvent(); this._restartPolling(); this.fetchOrders(); };
             this._onWsDisconnected = () => { this.realtimeConnected = false; this._restartPolling(); };
             ws.on('connected', this._onWsConnected);
             ws.on('disconnected', this._onWsDisconnected);
@@ -718,11 +774,15 @@ export default {
             const branchId = this.authBranchId();
             if (branchId <= 0) return;
             try {
+                // [UX-TRACKER-02 2026-07-22] Every delivered order event bumps
+                // `lastEventAt` — the ONLY proof that the realtime pipe (queue
+                // worker → soketi → Echo) is actually alive end-to-end.
                 this._eventSub = onEvents(branchId, [
-                    { broadcastAs: 'OrderCreated', handler: () => this.fetchOrders() },
+                    { broadcastAs: 'OrderCreated', handler: () => { this._noteRealtimeEvent(); this.fetchOrders(); } },
                     {
                         broadcastAs: 'OrderStatusChanged',
                         handler: (event) => {
+                            this._noteRealtimeEvent();
                             const data = event?.payload || {};
                             const newStatus = parseInt(data.new_status, 10);
                             const oid = parseInt(data.order_id, 10);
@@ -732,7 +792,7 @@ export default {
                             this.fetchOrders();
                         },
                     },
-                    { broadcastAs: 'OrderPaidAtCounter', handler: () => this.fetchOrders() },
+                    { broadcastAs: 'OrderPaidAtCounter', handler: () => { this._noteRealtimeEvent(); this.fetchOrders(); } },
                 ]);
             } catch (e) {
                 /* echo auth failed — polling fallback */
@@ -742,12 +802,33 @@ export default {
             try { this._eventSub?.unsubscribe(); } catch (e) { /* defensive */ }
             this._eventSub = null;
         },
+        // [UX-TRACKER-02 2026-07-22] Clock seam — every freshness/aging
+        // computation goes through _now() so tests can stub time
+        // deterministically (no raw Date.now() in tested logic).
+        _now() {
+            return Date.now();
+        },
+        _noteRealtimeEvent() {
+            this.lastEventAt = this._now();
+        },
         _pollInterval() {
-            return this.realtimeConnected ? POLL_WS_MS : POLL_NO_WS_MS;
+            if (!this.realtimeConnected) return POLL_NO_WS_MS;
+            // [UX-TRACKER-02/POSPERF-09 2026-07-22] Socket "connected" is NOT
+            // proof of event delivery (dead queue worker ⇒ soketi up, 0 events,
+            // banner never shows). Fall back to the fast cadence as soon as no
+            // event has landed for EVENT_STALE_MS — or the board is empty —
+            // freshness parity with PosComponent's existing escape hatch.
+            const eventsStale = (this._now() - this.lastEventAt) > EVENT_STALE_MS;
+            const boardEmpty = this.orders.length === 0;
+            return (eventsStale || boardEmpty) ? POLL_NO_WS_MS : POLL_WS_MS;
         },
         _startPolling() {
             this._stopPolling();
-            this._pollTimer = setInterval(() => this.fetchOrders(), this._pollInterval());
+            // Remember the cadence the timer is armed with: the 30s age ticker
+            // watchdog compares it against _pollInterval() and re-arms when the
+            // staleness state changed mid-flight (setInterval never re-reads it).
+            this._pollTimerMs = this._pollInterval();
+            this._pollTimer = setInterval(() => this.fetchOrders(), this._pollTimerMs);
         },
         _stopPolling() {
             if (this._pollTimer) { clearInterval(this._pollTimer); this._pollTimer = null; }
@@ -774,6 +855,54 @@ export default {
             const v = new Date(t).getTime();
             return Number.isFinite(v) ? v : 0;
         },
+        // [IMP-AGING + UX-TRACKER-02 2026-07-22] Single light 30s ticker:
+        // 1) bumps the reactive `ageTick` so aging classes/labels re-render;
+        // 2) poll-cadence watchdog — if the staleness state changed while a
+        //    60s setInterval is mid-flight, re-arm it (and fetch immediately
+        //    when downgrading to the fast cadence, to close the gap NOW).
+        _startAgeTicker() {
+            this._stopAgeTicker();
+            this._ageTimer = setInterval(() => this._onAgeTick(), AGE_TICK_MS);
+        },
+        _stopAgeTicker() {
+            if (this._ageTimer) { clearInterval(this._ageTimer); this._ageTimer = null; }
+        },
+        _onAgeTick() {
+            this.ageTick = this._now();
+            const want = this._pollInterval();
+            if (this._pollTimer && this._pollTimerMs !== want) {
+                this._restartPolling();
+                if (want === POLL_NO_WS_MS) this.fetchOrders();
+            }
+        },
+        _ageMinutes(o) {
+            const ts = this._tsOf(o);
+            if (!ts) return 0;
+            return Math.floor(Math.max(0, this.ageTick - ts) / 60000);
+        },
+        // [IMP-AGING 2026-07-22] Age class for the À encaisser lane ONLY (the
+        // cashier's action queue): '' | 'tracker-card--aging' (≥5 min, orange)
+        // | 'tracker-card--urgent' (≥10 min, red + pulse).
+        trackerAgeClass(o, laneId) {
+            if (laneId !== 'accept') return '';
+            const mins = this._ageMinutes(o);
+            if (mins >= AGE_URGENT_MIN) return 'tracker-card--urgent';
+            if (mins >= AGE_AGING_MIN) return 'tracker-card--aging';
+            return '';
+        },
+        // i18n-with-fallback: vue-i18n returns the KEY for missing entries, so
+        // a plain `|| 'fr'` never triggers — treat "value === key" as missing
+        // to avoid a raw-label window until the lang files gain the key.
+        _tOr(key, fallback) {
+            let v = '';
+            try { v = this.$t(key); } catch (_e) { v = ''; }
+            return (v && v !== key) ? v : fallback;
+        },
+        agingLabel(o) {
+            const mins = this._ageMinutes(o);
+            if (mins < AGE_AGING_MIN) return '';
+            return `${this._tOr('pos.tracker.age_ago', 'il y a')} ${mins} min`;
+        },
         async fetchOrders() {
             this.loading = this.orders.length === 0;
             try {
@@ -786,6 +915,26 @@ export default {
                 });
                 const data = res?.data?.data || [];
                 this.orders = Array.isArray(data) ? data : [];
+                // [UX-TRACKER-02b 2026-07-22] Poll-diff freshness: previously
+                // the "fresh" highlight was ONLY driven by Echo events — dead
+                // when the queue worker is down. Diff the fetched ids against
+                // what the board has already seen and flash every genuinely
+                // NEW order. The very first successful fetch seeds silently
+                // (no highlight storm on page load).
+                const ids = this.orders
+                    .map((o) => parseInt(o?.id, 10))
+                    .filter((id) => Number.isFinite(id) && id > 0);
+                if (!this._seenSeeded) {
+                    this._seenSeeded = true;
+                    this._seenOrderIds = new Set(ids);
+                } else {
+                    for (const id of ids) {
+                        if (!this._seenOrderIds.has(id)) {
+                            this._seenOrderIds.add(id);
+                            this._markFresh(id);
+                        }
+                    }
+                }
             } catch (e) {
                 /* surface error sparingly to avoid alert fatigue */
             } finally {
@@ -1463,6 +1612,50 @@ export default {
     100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(26, 183, 89, 0.0); }
 }
 
+/* [IMP-AGING 2026-07-22] À encaisser cards escalate visually with wait time:
+ * ≥5 min = orange (aging), ≥10 min = red + gentle pulse (urgent). The two
+ * classes are chained after .pos-tracker-card so their border-color beats the
+ * per-tone left-border shorthand (0-2-0 > 0-1-0 specificity). */
+.pos-tracker-card.tracker-card--aging {
+    border-color: var(--pos-tracker-amber);
+    background: #fffbeb;
+}
+.pos-tracker-card.tracker-card--aging .pos-tracker-card-time {
+    color: #b45309;
+    font-weight: 700;
+}
+.pos-tracker-card.tracker-card--urgent {
+    border-color: #dc2626;
+    background: #fef2f2;
+    animation: pos-tracker-card-urgent-pulse 1.6s ease-in-out infinite;
+}
+.pos-tracker-card.tracker-card--urgent .pos-tracker-card-time {
+    color: #b91c1c;
+    font-weight: 700;
+}
+@keyframes pos-tracker-card-urgent-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+    50%      { box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.18); }
+}
+.pos-tracker-card-age {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    align-self: flex-start;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    background: var(--pos-tracker-amber-soft);
+    color: #b45309;
+    border: 1px solid rgba(245, 158, 11, 0.35);
+}
+.pos-tracker-card-age--urgent {
+    background: #fee2e2;
+    color: #b91c1c;
+    border-color: rgba(220, 38, 38, 0.35);
+}
+
 .pos-tracker-card-head {
     display: flex;
     align-items: center;
@@ -1896,6 +2089,7 @@ export default {
 @media (prefers-reduced-motion: reduce) {
     .pos-tracker-status-pill--ready,
     .pos-tracker-col--green.is-pulse,
+    .pos-tracker-card.tracker-card--urgent,
     .pos-tracker-card.is-fresh { animation: none; }
 }
 </style>

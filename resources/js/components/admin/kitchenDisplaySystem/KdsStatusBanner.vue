@@ -5,12 +5,20 @@
    cap-warning + bump-local-only-notice).
 
   Priority order (only highest-priority message renders):
+    app-error  → red 40px banner (persistent applicative error — poll failed,
+                 403, status conflict — mirrors legacy kds-error-banner)
     error      → red 40px banner with spinner (network lost > 60s)
+    sync-?     → orange "synchro incertaine" (no confirmed data refresh >75s —
+                 socket may be UP while the queue worker is down = stale board)
     cap-full   → list at server cap
     cap-warning→ near cap (n >= 200)
     fallback   → polling-mode fallback (WS down, polling every 5s)
     sync-mode  → admin-polling-hint (admin cross-branch view)
     bump-notice→ local-only bump persistence
+
+  [KDS-V2-BLIND-BANNERS 2026-07-22] app-error + sync-? added: both signals
+  previously lived ONLY in the legacy v-else template (kds-error-banner +
+  kds-sync-stamp) and were invisible in the default V2 layout.
 
   Owner-acceptable: SYNC · LOCAL tag on the right when any banner is shown.
 -->
@@ -19,7 +27,7 @@
     <div class="kds-banner__main">
       <span class="kds-banner__icon" :style="{ background: bannerData.iconBg }">
         <svg
-          v-if="bannerData.level === 'error'"
+          v-if="bannerData.spinner"
           class="kds-banner__spinner"
           width="14"
           height="14"
@@ -70,6 +78,21 @@ export default {
         // [#10] Reactive clock injected by the parent's 1s ticker so the offline
         // elapsed counter actually ticks (Date.now() alone is not a reactive dep).
         now: { type: Number, default: 0 },
+        // [KDS-V2-BLIND-BANNERS 2026-07-22] Data-freshness + app-error signals,
+        // fed by the orchestrator's EXISTING legacy computeds (syncBadgeUncertain
+        // / kdsErrorBanner) so V2 is no longer blind to stale data and errors.
+        syncUncertain: { type: Boolean, default: false },
+        errorMessage: { type: String, default: '' },
+    },
+    methods: {
+        // [KDS-V2-BLIND-BANNERS] i18n-safe fallback: vue-i18n returns the KEY
+        // itself on a missing translation, so `$t(k) || fallback` would leak a
+        // raw key on the kitchen screen. Fall back to the FR literal until the
+        // lang files gain the key (lang files are NOT edited by this change).
+        tOr(key, fallback) {
+            const v = typeof this.$t === 'function' ? this.$t(key) : null;
+            return (v && v !== key) ? v : fallback;
+        },
     },
     computed: {
         bannerData() {
@@ -77,7 +100,22 @@ export default {
             // counter re-computes each tick; fall back to Date.now() if a caller
             // hasn't wired the ticker (preserves prior behavior, just non-live).
             const nowMs = (typeof this.now === 'number' && this.now > 0) ? this.now : Date.now();
-            // Priority: error > cap-full > cap-warning > fallback > sync > bump-notice
+            // Priority: app-error > offline > sync-uncertain > cap-full >
+            //           cap-warning > fallback > sync > bump-notice
+            // [KDS-V2-BLIND-BANNERS] app-error outranks everything (explicit,
+            // actionable failure). The offline tier deliberately stays ABOVE
+            // sync-uncertain: when the connection is lost >60s the uncertainty
+            // is implied, and the red elapsed counter is strictly more
+            // informative than the orange "maybe stale" banner — demoting it
+            // would regress an existing tier.
+            if (this.errorMessage) {
+                return {
+                    level: 'error',
+                    text: this.errorMessage,
+                    iconBg: '#FFFFFF',
+                    tag: 'ERREUR',
+                };
+            }
             if (this.offlineSince && nowMs - this.offlineSince > 60_000) {
                 const ms = nowMs - this.offlineSince;
                 const m = Math.floor(ms / 60_000);
@@ -87,6 +125,18 @@ export default {
                     text: this.$t('label.kds_connection_lost_long', { m, s }),
                     iconBg: '#FFFFFF',
                     tag: 'OFFLINE',
+                    spinner: true,
+                };
+            }
+            if (this.syncUncertain) {
+                return {
+                    level: 'warning',
+                    text: this.tOr(
+                        'label.kds_sync_uncertain_banner',
+                        'Synchro incertaine — données peut-être datées'
+                    ),
+                    iconBg: '#F59E0B',
+                    tag: 'SYNC · ?',
                 };
             }
             if (this.listAtCap) {

@@ -170,6 +170,10 @@
         }
     },
     "pos": {
+        "confirm_reset": "Confirmer ?",
+        "confirm_reset_aria": "Confirmer le vidage du panier",
+        "park_discard_confirm": "Confirmer ?",
+        "park_discard_confirm_aria": "Confirmer l'écartement",
         "item_86_d": "Épuisé",
         "item_unavailable_during_edit": "Cet article vient de devenir indisponible. Demandez à un manager ou choisissez un autre produit.",
         "item_no_longer_available": "« {name} » n'est plus disponible.",
@@ -438,6 +442,7 @@
         "setup": "Configuration"
     },
     "label": {
+        "kds_sync_uncertain_banner": "Synchro incertaine — données peut-être datées",
         "pos_customer_name_placeholder": "Nom du client (optionnel)",
         "pos_customer_phone_placeholder": "Téléphone (optionnel)",
         "pos_phone_order_cta": "Commande téléphone",
@@ -1518,6 +1523,7 @@
         "kds_status_conflict": "Cette commande a été modifiée ailleurs. L'écran a été rafraîchi — vérifiez l'état avant d'agir.",
         "new_pos_order": "Nouvelle commande",
         "new_pos_order_with_id": "Nouvelle commande #{id}",
+        "new_pos_orders_count": "{count} nouvelles commandes",
         "password_update": "Mot de passe mis à jour.",
         "subscribe": "Merci pour votre abonnement !",
         "add_note": "Ajouter une note (extra mayo, fromage...)",

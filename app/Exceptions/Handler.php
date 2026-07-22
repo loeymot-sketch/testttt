@@ -3,6 +3,7 @@
 namespace App\Exceptions;
 
 
+use App\Libraries\QueryExceptionLibrary;
 use HttpException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
@@ -137,10 +138,22 @@ class Handler extends ExceptionHandler
         }
 
         if ($e instanceof QueryException) {
+            // [SEC P2 2026-07-22] Never leak raw SQL + bound values to the
+            // client in production. QueryExceptionLibrary::message() is the
+            // house sanitizer (FK 1451 → resource_already_used; otherwise raw
+            // only when app.debug, else all.message.database_error_message).
+            // Fail-closed guard: the library still returns the raw driver
+            // message when errorInfo[1] is absent (connection failures, some
+            // SQLite paths) — force the generic message in that case too.
+            $message = QueryExceptionLibrary::message($e);
+            if (! config('app.debug') && $message === $e->getMessage()) {
+                $message = trans('all.message.database_error_message');
+            }
+
             return new JsonResponse(
                 [
                     'success' => false,
-                    'message' => $e->getMessage()
+                    'message' => $message
                 ],
                 422
             );

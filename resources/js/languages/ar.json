@@ -133,6 +133,10 @@
         }
     },
     "pos": {
+        "confirm_reset": "تأكيد؟",
+        "confirm_reset_aria": "تأكيد إفراغ السلة",
+        "park_discard_confirm": "تأكيد الحذف؟",
+        "park_discard_confirm_aria": "تأكيد حذف الطلب المعلّق",
         "item_86_d": "نفذ",
         "item_unavailable_during_edit": "أصبح هذا المنتج غير متاح للتو. اطلب من المدير أو اختر منتجًا آخر.",
         "item_no_longer_available": "«{name}» لم يعد متاحًا.",
@@ -321,6 +325,7 @@
         "demo_wizard_advanced": "عرض المعالج المتقدم"
     },
     "label": {
+        "kds_sync_uncertain_banner": "المزامنة غير مؤكدة — قد تكون البيانات قديمة",
         "pos_customer_name_placeholder": "Nom du client (optionnel)",
         "encaisser": "تحصيل",
         "encaisser_queue_subtitle": "طلبات بانتظار التحصيل",

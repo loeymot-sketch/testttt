@@ -81,13 +81,29 @@
                             >
                                 {{ $t('pos.restore') }}
                             </button>
+                            <!--
+                              [UX-PARK-05 2026-07-22] Anti mis-tap : "Écarter" est destructif
+                              (DELETE serveur, pas d'undo) et colle "Reprendre" dans une grille
+                              2 colonnes tactile. 1er tap = armement inline "Confirmer ?" (3s,
+                              rien détruit) ; 2e tap dans la fenêtre = discard réel. Même
+                              élément DOM dans les 2 états → le focus clavier/SR est conservé.
+                            -->
                             <button
                                 type="button"
                                 class="parked-orders-action parked-orders-action-danger"
+                                :class="{ 'parked-orders-action-danger-arm': confirmingDiscardId === order.id }"
                                 :disabled="busyId === order.id"
-                                @click="discardOrder(order.id)"
+                                :data-testid="confirmingDiscardId === order.id
+                                    ? `parked-discard-confirm-${order.id}`
+                                    : `parked-discard-${order.id}`"
+                                :aria-label="confirmingDiscardId === order.id
+                                    ? tf('pos.park_discard_confirm_aria', 'Confirmer l\'écartement')
+                                    : null"
+                                @click="onDiscardClick(order.id)"
                             >
-                                {{ $t('pos.discard') }}
+                                {{ confirmingDiscardId === order.id
+                                    ? tf('pos.park_discard_confirm', 'Confirmer ?')
+                                    : $t('pos.discard') }}
                             </button>
                         </div>
                     </article>
@@ -103,6 +119,10 @@ import alertService from "../../../services/alertService";
 // [Phase-5 / T08] Liste des paniers serv-side (posParked), rappel / écart, tri
 // côté store (récent d’abord) — rappel ne traverse pas `branch_id` (API 404) ;
 // G-3 variation indispo : voir `posParked` recall + backlog.
+
+// [UX-PARK-05 2026-07-22] Fenêtre d'armement du discard (2-taps inline).
+// Passé ce délai sans 2e tap, le bouton revient à l'état normal sans détruire.
+const DISCARD_CONFIRM_WINDOW_MS = 3000;
 
 export default {
     name: "ParkedOrdersComponent",
@@ -120,6 +140,10 @@ export default {
             // [POS-V4-CASHIER-OPS 2026-05-02] Client-side search over the already
             // fetched parked list. Empty string = no filter (all visible).
             searchQuery: '',
+            // [UX-PARK-05 2026-07-22] Id de la commande dont le bouton "Écarter"
+            // est armé ("Confirmer ?"). null = aucun. Un seul armement à la fois.
+            confirmingDiscardId: null,
+            confirmDiscardTimer: null,
         };
     },
     computed: {
@@ -164,9 +188,17 @@ export default {
             handler(isOpen) {
                 if (isOpen) {
                     this.fetchList();
+                } else {
+                    // [UX-PARK-05] Drawer fermé → désarme tout discard en attente
+                    // pour ne pas rouvrir avec un bouton encore en "Confirmer ?".
+                    this.resetDiscardConfirm();
                 }
             },
         },
+    },
+    beforeUnmount() {
+        // [UX-PARK-05] Jamais de timer orphelin après démontage.
+        this.clearDiscardConfirmTimer();
     },
     methods: {
         closeDrawer() {
@@ -200,6 +232,44 @@ export default {
             } finally {
                 this.busyId = null;
             }
+        },
+        // [UX-PARK-05 2026-07-22] i18n avec fallback FR inline : vue-i18n rend la
+        // CLÉ BRUTE quand elle manque (cf. I18N-RAWKEY-GUARD i18n.js) — le `||`
+        // seul ne suffit donc pas. Retire le fallback quand les clés seront
+        // ajoutées aux fichiers de langue (voir rapport UX-PARK-05).
+        tf(key, fallback) {
+            const translated = this.$t(key);
+
+            return (translated && translated !== key) ? translated : fallback;
+        },
+        // [UX-PARK-05 2026-07-22] 2-taps inline anti mis-tap (pas de
+        // window.confirm bloquant) : 1er tap = armement 3s par-commande,
+        // 2e tap dans la fenêtre = discard réel. Re-tap sur une AUTRE commande
+        // déplace l'armement (un seul bouton armé à la fois).
+        onDiscardClick(id) {
+            if (this.confirmingDiscardId === id) {
+                this.resetDiscardConfirm();
+                this.discardOrder(id);
+
+                return;
+            }
+
+            this.clearDiscardConfirmTimer();
+            this.confirmingDiscardId = id;
+            this.confirmDiscardTimer = setTimeout(() => {
+                this.confirmingDiscardId = null;
+                this.confirmDiscardTimer = null;
+            }, DISCARD_CONFIRM_WINDOW_MS);
+        },
+        clearDiscardConfirmTimer() {
+            if (this.confirmDiscardTimer) {
+                clearTimeout(this.confirmDiscardTimer);
+                this.confirmDiscardTimer = null;
+            }
+        },
+        resetDiscardConfirm() {
+            this.clearDiscardConfirmTimer();
+            this.confirmingDiscardId = null;
         },
         async discardOrder(id) {
             this.busyId = id;
@@ -504,6 +574,15 @@ export default {
 .parked-orders-action-danger:hover:not(:disabled) {
     background: var(--pos-v5-danger-ghost);
     border-color: var(--pos-v5-danger);
+}
+
+/* [UX-PARK-05 2026-07-22] État armé "Confirmer ?" — rouge plein, nettement
+   distinct du ghost normal pour signaler le geste destructif imminent. */
+.parked-orders-action-danger-arm,
+.parked-orders-action-danger-arm:hover:not(:disabled) {
+    background: var(--pos-v5-danger);
+    color: var(--pos-v5-ink-on-dark);
+    border-color: var(--pos-v5-danger-dark);
 }
 
 /* Slide-in transitions */

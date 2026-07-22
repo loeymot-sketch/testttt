@@ -28,6 +28,8 @@
       :bump-local-only-notice="bumpLocalOnlyNotice"
       :reserve-right-gutter="overflowActiveCount > 0"
       :now="now"
+      :sync-uncertain="syncUncertain"
+      :error-message="errorMessage"
     />
 
     <!-- Empty state (only when NO active orders — served strip below renders independently) -->
@@ -137,6 +139,10 @@ export default {
         fallbackMode: { type: Boolean, default: false },
         adminPollingHint: { type: Boolean, default: false },
         bumpLocalOnlyNotice: { type: Boolean, default: false },
+        // [KDS-V2-BLIND-BANNERS 2026-07-22] Pure pass-through to KdsStatusBanner
+        // (no business logic here) — orchestrator feeds its legacy computeds.
+        syncUncertain: { type: Boolean, default: false },
+        errorMessage: { type: String, default: '' },
         // [Wave Q-2 2026-05-20] Default OFF. Owner override of the RESEARCH §4.3
         // single-chef auto-promote heuristic: cashier needs a consistent
         // CONFIRMÉE → EN PRÉPARATION → PRÊT flow across all tickets so the POS

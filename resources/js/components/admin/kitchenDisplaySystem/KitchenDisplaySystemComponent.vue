@@ -68,6 +68,8 @@
     :fallback-mode="!wsConnected && !kdsSuppressFallbackBanner"
     :admin-polling-hint="kdsIsCentralAdmin"
     :bump-local-only-notice="!kdsHideBumpInfo"
+    :sync-uncertain="syncBadgeUncertain"
+    :error-message="kdsErrorBanner.visible ? kdsErrorBanner.message : ''"
     :auto-transition-enabled="v2AutoTransitionEnabled"
     :recall-active-ids="recallActiveIds"
     @change-status="onV2ChangeStatus"

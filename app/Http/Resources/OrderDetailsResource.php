@@ -90,7 +90,22 @@ class OrderDetailsResource extends JsonResource
             'status' => $this->status,
             'status_name' => trans('orderStatus.'.$this->status),
             'reason' => $this->reason,
-            'user' => new OrderUserResource($this->user?->load('roles', 'media')),
+            // [SEC P3 + PERF P2 2026-07-22] Projection client LÉGÈRE orientée POS —
+            // miroir de la minimisation delivery_boy ci-dessous. L'ancienne forme
+            // `new OrderUserResource($this->user?->load('roles','media'))` (a) exposait
+            // email / username / balance / currency_balance (solde portefeuille =
+            // donnée financière) aux files staff POS (counter-collect/pending, show,
+            // encaissement) qui n'en lisent RIEN (seul `user.name` est consommé —
+            // EncaissementComponent.vue:177), et (b) forçait ~3 requêtes PAR commande
+            // (Model::load re-requête TOUJOURS, même si le contrôleur a déjà
+            // eager-loadé `user` — cf. OrderService::show/orderDetails). Accès direct
+            // sans ->load() : 0 requête supplémentaire quand `user` est eager-loadé.
+            'user' => $this->user ? [
+                'id' => $this->user->id,
+                'name' => $this->user->name,
+                'phone' => \App\Support\PhoneDisplay::safe($this->user->phone),
+                'loyalty_points' => (int) ($this->user->loyalty_points ?? 0),
+            ] : null,
             'order_address' => new AddressResource($this->address),
             'branch' => new BranchResource($this->branch),
             // [SELF-AUDIT R7 P2 2026-07-05 — fuite PII cross-frontière client↔staff] OrderUserResource

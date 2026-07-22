@@ -169,6 +169,10 @@
         }
     },
     "pos": {
+        "confirm_reset": "Confirm?",
+        "confirm_reset_aria": "Confirm clearing the cart",
+        "park_discard_confirm": "Confirm?",
+        "park_discard_confirm_aria": "Confirm discard",
         "item_86_d": "Sold out",
         "item_unavailable_during_edit": "This item just became unavailable. Ask a manager or pick another product.",
         "item_no_longer_available": "“{name}” is no longer available.",
@@ -443,6 +447,7 @@
         "demo_wizard_advanced": "Advanced Wizard Demo"
     },
     "label": {
+        "kds_sync_uncertain_banner": "Sync uncertain — data may be out of date",
         "pos_customer_name_placeholder": "Nom du client (optionnel)",
         "pos_customer_phone_placeholder": "Téléphone (optionnel)",
         "pos_phone_order_cta": "Commande téléphone",
@@ -1589,6 +1594,7 @@
         "kds_status_conflict": "Cette commande a été modifiée ailleurs. L'écran a été rafraîchi ; vérifiez l'état avant d'agir.",
         "new_pos_order": "New order",
         "new_pos_order_with_id": "New order #{id}",
+        "new_pos_orders_count": "{count} new orders",
         "pagination_label": "Showing {from} to {to} of {total} entries",
         "password_update": "Password Updated Successfully.",
         "photo_update": "Photo Updated Successfully.",
