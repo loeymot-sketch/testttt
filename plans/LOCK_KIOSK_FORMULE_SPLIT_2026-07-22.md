@@ -10,3 +10,6 @@ par l'owner (référence concurrents). Test massif exigé avant tout deploy (Kio
 e2e clic-par-clic, captures lues). Rollback = git revert du commit dédié.
 
 **Note prix** : G-PRIX (1,90/1,90) résolu SANS frozen — config kiosk.menu_pricing ratios 0.76.
+
+**EXÉCUTION 2026-07-22** : split implémenté (commit suivant, seul KioskWizardComponent en frozen,
++70/−19). Preuves : sweep kiosk 757 verts + kioskFormuleSplitPages 12 + re-vérif 112. Rollback = revert.
