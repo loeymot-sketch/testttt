@@ -34,6 +34,7 @@
         <span class="kiosk-menu-emoji">🍟🥤</span>
         <span class="kiosk-menu-name">{{ $t('kiosk.wizard.menu.full_name') }}</span>
         <span class="kiosk-menu-desc">{{ $t('kiosk.wizard.menu.full_desc') }}</span>
+        <span v-if="menuChoicePrice('full') > 0" class="kiosk-menu-card-price">+{{ formatPrice(menuChoicePrice('full')) }}</span>
         <span v-if="localChoice === 'full'" class="kiosk-menu-action active">✓</span>
         <span v-else class="kiosk-menu-action">+</span>
       </div>
@@ -52,6 +53,7 @@
         <span class="kiosk-menu-emoji">🍟</span>
         <span class="kiosk-menu-name">{{ $t('kiosk.wizard.menu.frites_name') }}</span>
         <span class="kiosk-menu-desc">{{ $t('kiosk.wizard.menu.frites_desc') }}</span>
+        <span v-if="menuChoicePrice('frites') > 0" class="kiosk-menu-card-price">+{{ formatPrice(menuChoicePrice('frites')) }}</span>
         <span v-if="localChoice === 'frites'" class="kiosk-menu-action active">✓</span>
         <span v-else class="kiosk-menu-action">+</span>
       </div>
@@ -71,6 +73,7 @@
         <span class="kiosk-menu-emoji">🥤</span>
         <span class="kiosk-menu-name">{{ $t('kiosk.wizard.menu.boisson_name') }}</span>
         <span class="kiosk-menu-desc">{{ $t('kiosk.wizard.menu.boisson_desc') }}</span>
+        <span v-if="menuChoicePrice('boisson') > 0" class="kiosk-menu-card-price">+{{ formatPrice(menuChoicePrice('boisson')) }}</span>
         <span v-if="localChoice === 'boisson'" class="kiosk-menu-action active">✓</span>
         <span v-else class="kiosk-menu-action">+</span>
       </div>
@@ -447,6 +450,14 @@ export default {
       if (sel.fritesSauce) return [sel.fritesSauce];
       return [];
     },
+    // [B-MEGA-BORNE 2026-07-22] Prix par carte formule (full / frites / boisson).
+    // Même SSOT que le badge `menuPrice` (getKioskMenuAddonPrice ← item.addons
+    // « Menu (Frites + Boisson) » × ratios config) : full ×1, frites ×0.6,
+    // boisson ×0.4 (2,50 / 1,50 / 1,00 € — parité web wizard-v2). AUCUN prix
+    // inventé : lecture des addons déjà reçus par le composant. Affichage seul.
+    menuChoicePrice(choice) {
+      return getKioskMenuAddonPrice(this.item, choice);
+    },
     boissonThumbKey(boisson) {
       return String(boisson.id ?? boisson.name ?? '');
     },
@@ -736,6 +747,18 @@ export default {
   color: var(--kiosk-text-muted, #999);
   text-align: center;
   margin-top: 3px;
+}
+
+/* [B-MEGA-BORNE 2026-07-22] Prix par carte formule — visible AVANT sélection
+   (parité web). Pilule discrète sous la description. */
+.kiosk-menu-card-price {
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--kiosk-primary, #f4501e);
+  background: var(--kiosk-primary-soft, rgba(244, 80, 30, 0.06));
+  padding: 2px 10px;
+  border-radius: 50px;
 }
 
 .kiosk-menu-card.selected .kiosk-menu-name {
