@@ -7,8 +7,14 @@
  *
  *   Line 1 : [Support] | [Produit] | [Taille] | [Viande(s)] | [Crudités] | [Sauce(s)]
  *            e.g.  G | SANDWICH | P | STO | SAM
- *   Line 2 : paid supplements, full name, "+ Cheddar"
+ *   Line 2 : paid supplements, full name, "+ Cheddar" (NO sauce — sauces live on Line 1)
  *   Line 3 : "MENU" (formule) or "F" (frites), nothing otherwise
+ *
+ * [MEGA-BORNE 2026-07-22 owner]
+ *   - Sauce(s): the product's 1st (included) sauce AND its extra sauce(s) are written
+ *     TOGETHER in the Line-1 Sauce(s) slot ("FRO MAY"); the extra sauce is NO LONGER a
+ *     "+ Sauce supplémentaire" line. The menu/frites sauce stays on Line 2.
+ *   - Tacos: the [Taille] slot is DROPPED (kitchen shows the meats instead — "K P").
  *
  * Empty slots are omitted. Tacos have no bread question but the cook still sees the
  * support first, defaulting to Galette (G) — a tacos is always a galette.
@@ -105,6 +111,15 @@ export function supportSymbol(name) {
     if (/galette/.test(n)) return 'G';
     if (/pain/.test(n)) return 'S';
     return '';
+}
+
+/**
+ * [MEGA-BORNE 2026-07-22 owner] Un TACOS n'affiche PAS de taille en cuisine : le nombre de
+ * viandes (« K P ») porte l'info. Jumeau STRICT du PHP KitchenTicketSymbolicFormatter::isTacos()
+ * (même regex sur le nom normalisé — parité écran↔ticket).
+ */
+function isTacos(name) {
+    return /\btacos?\b/.test(normalize(name));
 }
 
 /**
@@ -244,7 +259,10 @@ function produitAndSize(itemName) {
     const raw = String(itemName || '').trim();
     const m = raw.match(/\s+(XL|L|M)\s*$/i);
     if (m) {
-        return { produit: produitCode(raw.slice(0, m.index).trim()), taille: m[1].toUpperCase() };
+        // [MEGA-BORNE 2026-07-22 owner] Tacos : on retire le token taille du NOM pour le code
+        // produit (TAC) mais on NE renvoie PAS la taille (la cuisine l'ignore — jumeau PHP).
+        const taille = isTacos(raw) ? '' : m[1].toUpperCase();
+        return { produit: produitCode(raw.slice(0, m.index).trim()), taille };
     }
     return { produit: produitCode(raw), taille: '' };
 }
@@ -256,6 +274,9 @@ function produitAndSize(itemName) {
 export function buildSymbolic(orderItem) {
     const category = categorize(orderItem);
     const { produit, taille: nameSize } = produitAndSize(orderItem?.item_name);
+    // [MEGA-BORNE 2026-07-22 owner] Tacos : aucune taille (produitAndSize l'a déjà retirée du
+    // NOM) — on neutralise aussi une éventuelle taille portée par une VARIATION (garde plus bas).
+    const isTacosItem = isTacos(orderItem?.item_name);
 
     let support = '';
     let taille = nameSize;
@@ -285,13 +306,26 @@ export function buildSymbolic(orderItem) {
                 support = supportSymbol(value) || support;
                 break;
             case 'size':
-                taille = taille || String(value).toUpperCase();
+                // Tacos : taille ignorée en cuisine (le nombre de viandes porte l'info).
+                if (!isTacosItem) taille = taille || String(value).toUpperCase();
                 break;
             default:
                 break;
         }
     }
 
+    // [MEGA-BORNE 2026-07-22 owner] La/les sauce(s) EN PLUS du produit (extras génériques dont le
+    // nom ne survit que dans l'instruction) remontent dans le slot Sauce(s) de la ligne 1, À CÔTÉ
+    // de la 1ère incluse (« FRO MAY »). La sauce FRITES du menu reste en ligne 2. Jumeau PHP mainLine.
+    for (const extraSauce of extraSauceNames(orderItem?.instruction)) {
+        const sym = sauceSymbol(extraSauce);
+        if (sym) sauces.push(sym);
+    }
+
+    // [MEGA-BORNE 2026-07-22 owner] La sauce EN PLUS remonte en ligne 1 (slot Sauce) DÈS QUE son nom
+    // est récupérable (extraSauceNames non vide) → plus de ligne « + Sauce supplémentaire ». Sinon
+    // (legacy non parsable) on GARDE le libellé générique (ne pas perdre une sauce payée). Jumeau PHP.
+    const extraSaucesFolded = extraSauceNames(orderItem?.instruction).length > 0;
     for (const e of readExtras(orderItem)) {
         const name = extraName(e);
         if (!name) continue;
@@ -301,14 +335,13 @@ export function buildSymbolic(orderItem) {
         // that happens to match (e.g. "Oignons frits" 0,90) is a supplement.
         if (cs && price <= 0) {
             crud.add(cs);
+        } else if (extraSaucesFolded && /sauce\s*suppl/i.test(name)) {
+            // La sauce en plus générique remonte en ligne 1 (slot Sauce) → pas de supplément.
+            continue;
         } else {
-            // [MULTISAUCE 2026-07-18] Name the generic "Sauce supplémentaire" with the
-            // recovered sauce name(s). When named, the count is implicit → no ×N suffix.
-            const label = extraDisplayName(name, orderItem?.instruction);
-            const named = label !== name;
             const q = parseInt(e?.quantity, 10);
-            const suffix = (!named && Number.isFinite(q) && q > 1) ? ` ×${q}` : '';
-            supplements.push(`+ ${label}${suffix}`);
+            const suffix = (Number.isFinite(q) && q > 1) ? ` ×${q}` : '';
+            supplements.push(`+ ${name}${suffix}`);
         }
     }
 

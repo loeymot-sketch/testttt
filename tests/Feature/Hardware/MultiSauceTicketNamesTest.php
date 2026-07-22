@@ -13,11 +13,13 @@ use Tests\TestCase;
  * [MULTISAUCE 2026-07-18] Le 2e+ choix de sauce est envoyé par les wizards (frozen)
  * comme un ItemExtra GÉNÉRIQUE « Sauce supplémentaire » (prix seul, aucun nom). Le
  * nom réel ne survit que dans le texte libre `instruction` ("… Sauce : A, B" caisse /
- * "Sauces en plus : B" borne/web). Ces tests prouvent que le NOM de chaque sauce en
- * plus apparaît sur le ticket CLIENT + le ticket CUISINE + (via le formatter jumeau
- * du KDS), à l'identique de l'écran de paiement — SANS toucher le prix (déjà correct)
- * ni les zones frozen. Rétro-compatible : un snapshot sans instruction parsable rend
- * l'ancien libellé générique.
+ * "Sauces en plus : B" borne/web).
+ *
+ * [MEGA-BORNE 2026-07-22 owner] Le ticket CLIENT (fiscal) montre le NOM complet + le prix
+ * (inchangé). Le ticket CUISINE + le KDS montrent désormais la sauce en plus en SYMBOLE,
+ * remontée dans le slot Sauce(s) de la LIGNE 1 (« ALG AND »), et NON plus comme une ligne
+ * « + Sauce supplémentaire ». Prix inchangé, zones frozen intactes. Rétro-compatible : un
+ * snapshot sans instruction parsable garde l'ancien libellé générique en supplément cuisine.
  */
 class MultiSauceTicketNamesTest extends TestCase
 {
@@ -115,14 +117,15 @@ class MultiSauceTicketNamesTest extends TestCase
     }
 
     /** @test */
-    public function supplement_lines_name_the_generic_sauce_extra(): void
+    public function supplement_lines_drop_the_folded_sauce_extra(): void
     {
         $f = new KitchenTicketSymbolicFormatter;
         $snap = ['extras' => [['extra_name' => 'Sauce supplémentaire', 'unit_price' => 0.50, 'quantity' => 1]]];
-        $lines = $f->supplementLines($snap, 'Sauce : Algérienne, Andalouse');
-        $this->assertSame(['+ Sauce supplémentaire : Andalouse'], $lines);
+        // [MEGA-BORNE 2026-07-22] La sauce en plus remonte dans le slot Sauce(s) de la ligne 1 →
+        // elle n'est PLUS une ligne supplément dès que son nom est récupérable depuis l'instruction.
+        $this->assertSame([], $f->supplementLines($snap, 'Sauce : Algérienne, Andalouse'));
 
-        // Rétro-compat : sans instruction parsable → libellé générique inchangé.
+        // Rétro-compat : sans instruction parsable → libellé générique conservé (info « sauce payée »).
         $this->assertSame(['+ Sauce supplémentaire'], $f->supplementLines($snap, null));
     }
 
@@ -151,12 +154,16 @@ class MultiSauceTicketNamesTest extends TestCase
     // ── Ticket CUISINE (ESC/POS) ──────────────────────────────────────────────
 
     /** @test */
-    public function kitchen_ticket_shows_second_sauce_name(): void
+    public function kitchen_ticket_shows_second_sauce_symbol_on_line_1(): void
     {
         $order = $this->makeOrder('Algérienne', "TACOS M\nViandes : Poulet mariné - Salade Sauce : Algérienne, Andalouse");
         $bytes = (new OrderReceiptEscPosRenderer)->renderKitchenTicket($order);
 
-        $this->assertStringContainsString('Andalouse', $bytes, 'La 2e sauce (Andalouse) doit apparaître sur le ticket cuisine.');
+        // [MEGA-BORNE 2026-07-22] La cuisine lit du SYMBOLE : la 1ère (ALG) et la 2e sauce (AND)
+        // remontent ENSEMBLE dans le slot Sauce(s) de la ligne 1 — plus de ligne « + Sauce suppl. ».
+        $this->assertStringContainsString('ALG', $bytes, '1ère sauce (symbole) sur la ligne 1.');
+        $this->assertStringContainsString('AND', $bytes, '2e sauce en plus (symbole) sur la ligne 1.');
+        $this->assertStringNotContainsString('Sauce suppl', $bytes, 'la sauce ne doit plus être une ligne supplément.');
     }
 
     // ── Reproduction de la commande réelle #5727 ──────────────────────────────
@@ -173,8 +180,11 @@ class MultiSauceTicketNamesTest extends TestCase
         $client = (new OrderReceiptEscPosRenderer)->renderClientTicket($order);
         $kitchen = (new OrderReceiptEscPosRenderer)->renderKitchenTicket($order);
 
-        $this->assertStringContainsString('Andalouse', $client, '#5727 : Andalouse absente du ticket client (bug racine).');
-        $this->assertStringContainsString('Andalouse', $kitchen, '#5727 : Andalouse absente du ticket cuisine (bug racine).');
+        // Ticket CLIENT (fiscal) : NOM complet conservé.
+        $this->assertStringContainsString('Andalouse', $client, '#5727 : Andalouse doit rester nommée sur le ticket CLIENT.');
+        // [MEGA-BORNE 2026-07-22] Ticket CUISINE : SYMBOLE (AND) en ligne 1, plus de ligne supplément.
+        $this->assertStringContainsString('AND', $kitchen, '#5727 : la 2e sauce en symbole (AND) sur la ligne 1 cuisine.');
+        $this->assertStringNotContainsString('Sauce suppl', $kitchen, '#5727 : plus de ligne supplément sauce en cuisine.');
     }
 
     // ── Rétro-compatibilité ───────────────────────────────────────────────────

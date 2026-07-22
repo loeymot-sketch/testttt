@@ -335,7 +335,7 @@ final class OrderReceiptEscPosRenderer
             // écran : kdsSymbolic.js renderItemSymbolic (categorize==='drink').
             $head = $this->symbolic->isDrinkItem($name)
                 ? $qtyPrefix.trim($name)
-                : $qtyPrefix.$this->symbolic->mainLine($name, $snap);
+                : $qtyPrefix.$this->symbolic->mainLine($name, $snap, $instruction);
             $blocks[] = [
                 'head' => $head,
                 'menu' => $menu !== '' ? $menu : null,

@@ -8,6 +8,7 @@ import {
     symbolicMainLine,
     renderItemSymbolic,
     fritesSauceSymbol,
+    buildSymbolic,
 } from '../../resources/js/helpers/kdsSymbolic.js';
 
 // [KITCHEN-SYMBOLS 2026-06-28] Owner spec — the kitchen screen (KDS) and the
@@ -89,7 +90,7 @@ describe('symbolicMainLine — owner examples', () => {
         expect(symbolicMainLine(item)).toBe('G | SAN | P | STO | SAM');
     });
 
-    it('tacos M / viande hachée / mayonnaise (no crudités) → "G | TAC | M | K | MAY"', () => {
+    it('tacos / viande hachée / mayonnaise (no size, no crudités) → "G | TAC | K | MAY"', () => {
         const item = {
             item_name: 'Tacos M',
             composition_snapshot: {
@@ -99,7 +100,8 @@ describe('symbolicMainLine — owner examples', () => {
                 ],
             },
         };
-        expect(symbolicMainLine(item)).toBe('G | TAC | M | K | MAY');
+        // [MEGA-BORNE 2026-07-22] Un tacos ne montre PAS la taille (le nombre de viandes porte l'info).
+        expect(symbolicMainLine(item)).toBe('G | TAC | K | MAY');
     });
 
     it('crudités are concatenated in canonical S,T,O order regardless of input order', () => {
@@ -117,7 +119,7 @@ describe('symbolicMainLine — owner examples', () => {
         expect(symbolicMainLine(item)).toBe('SAN | SO | BL');
     });
 
-    it('two meats (Tacos L) are space-joined', () => {
+    it('two meats (Tacos) are space-joined and the size is dropped', () => {
         const item = {
             item_name: 'Tacos L',
             composition_snapshot: {
@@ -128,7 +130,8 @@ describe('symbolicMainLine — owner examples', () => {
                 ],
             },
         };
-        expect(symbolicMainLine(item)).toBe('G | TAC | L | K P | CURY');
+        // [MEGA-BORNE 2026-07-22] Plus de « L » : les 2 viandes (K P) portent l'info de taille.
+        expect(symbolicMainLine(item)).toBe('G | TAC | K P | CURY');
     });
 
     it('never drops a meat when attribute_name is null (malformed snapshot)', () => {
@@ -141,8 +144,8 @@ describe('symbolicMainLine — owner examples', () => {
                 ],
             },
         };
-        // The meat must still surface (P), not vanish.
-        expect(symbolicMainLine(item)).toBe('G | TAC | M | P | MAY');
+        // The meat must still surface (P), not vanish. [MEGA-BORNE] tacos → no size.
+        expect(symbolicMainLine(item)).toBe('G | TAC | P | MAY');
     });
 
     it('a drink renders just the product name (no slots)', () => {
@@ -179,7 +182,7 @@ describe('renderItemSymbolic — line list for the KDS card', () => {
         expect(out.lines[0]).toMatchObject({
             type: 'symbolic-main',
             qty: 2,
-            label: 'G | TAC | M | K | SAM',
+            label: 'G | TAC | K | SAM',
             hasAllergen: true,
         });
         expect(out.lines[2]).toMatchObject({ type: 'supplement', label: '⭐ Cheddar' });
@@ -290,5 +293,67 @@ describe('renderItemSymbolic — line list for the KDS card', () => {
         expect(supplements).toHaveLength(1);
         expect(supplements[0].label).toBe('⭐ Cheddar');
         expect(out.lines[0].label).toContain('S'); // Salade folded into crudités slot
+    });
+});
+
+// [MEGA-BORNE Wave 1 2026-07-22 owner] (1) product sauces (included + extra) written TOGETHER in
+// the Line-1 Sauce(s) slot, extra sauce no longer a "+ Sauce supplémentaire" line; (2) tacos drop
+// the size. PHP twin: tests/Feature/Hardware/KitchenTicketTacosSauceTest.php (identical inputs).
+describe('[MEGA-BORNE] product sauces on Line 1 + tacos without size', () => {
+    it('the extra sauce (recovered from the instruction) joins the included sauce on Line 1 (FRO MAY)', () => {
+        const item = {
+            item_name: 'Cayenne',
+            instruction: 'CAYENNE\nViandes : Poulet mariné Sauce : Fromagère, Mayonnaise',
+            composition_snapshot: {
+                lines: [
+                    { attribute_name: 'Type de Pain', variation_name: 'Pain' },
+                    { attribute_name: 'Sauce', variation_name: 'Fromagère' },
+                    { attribute_name: 'Viande 1', variation_name: 'Poulet mariné' },
+                ],
+                extras: [{ extra_name: 'Sauce supplémentaire', unit_price: 0.5, quantity: 1 }],
+            },
+        };
+        expect(symbolicMainLine(item)).toBe('S | CAY | P | FRO MAY');
+        // the extra sauce is NOT a supplement line anymore (it moved into the Line-1 sauce slot)
+        expect(buildSymbolic(item).supplements).toEqual([]);
+    });
+
+    it('a tacos drops its size and shows the meats (Tacos L → "G | TAC | K P | CURY")', () => {
+        const item = {
+            item_name: 'Tacos L',
+            composition_snapshot: {
+                lines: [
+                    { attribute_name: 'Viande 1', variation_name: 'Viande Hachée' },
+                    { attribute_name: 'Viande 2', variation_name: 'Poulet mariné' },
+                    { attribute_name: 'Sauce', variation_name: 'Curry' },
+                ],
+            },
+        };
+        expect(symbolicMainLine(item)).toBe('G | TAC | K P | CURY');
+    });
+
+    it('retro-compat: an unrecoverable sauce name stays a generic "+ Sauce supplémentaire" line', () => {
+        const item = {
+            item_name: 'Tacos M',
+            instruction: 'TACOS M', // no parsable sauce list → nothing to fold into Line 1
+            composition_snapshot: {
+                lines: [{ attribute_name: 'Sauce', variation_name: 'Algérienne' }],
+                extras: [{ extra_name: 'Sauce supplémentaire', unit_price: 0.5, quantity: 1 }],
+            },
+        };
+        expect(buildSymbolic(item).supplements).toEqual(['+ Sauce supplémentaire']);
+    });
+
+    it('the menu/frites sauce still lives on Line 2, not folded into the product sauce slot', () => {
+        // A menu's frites sauce is a separate free channel (fritesSauceSymbol → Line 2), never a
+        // product sauce. extraSauceNames must NOT capture "Sauce frites :".
+        const item = {
+            item_name: 'Menu (Frites + Boisson)',
+            quantity: 1,
+            instruction: 'Menu (Frites + Boisson)\n↳ Sauce frites: Andalouse',
+            composition_snapshot: { lines: [] },
+        };
+        const out = renderItemSymbolic(item);
+        expect(out.lines[0]).toMatchObject({ type: 'symbolic-main', label: 'MENU : AND' });
     });
 });

@@ -10,8 +10,14 @@ namespace App\Services\Hardware;
  *
  *   Line 1 : [Support] | [Produit] | [Taille] | [Viande(s)] | [Crudités] | [Sauce(s)]
  *            e.g.  G | SANDWICH | P | STO | SAM
- *   Line 2 : "+ Cheddar" per paid supplement
+ *   Line 2 : "+ Cheddar" per paid supplement (NO sauce — sauces live on Line 1)
  *   Line 3 : "MENU" / "F"
+ *
+ * [MEGA-BORNE 2026-07-22 owner]
+ *   - Sauce(s): the product's 1st (included) sauce AND its extra sauce(s) are written
+ *     TOGETHER in the Line-1 Sauce(s) slot ("FRO MAY"); the extra sauce is NO LONGER a
+ *     "+ Sauce supplémentaire" line. The menu/frites sauce stays on Line 2 ("MENU : SYM").
+ *   - Tacos: the [Taille] slot is DROPPED (kitchen shows the meats instead — "K P").
  *
  * The symbol tables here MUST stay in lockstep with kdsSymbolic.js (parity tests
  * mirror tests/js/kdsSymbolic.spec.js).
@@ -130,10 +136,23 @@ final class KitchenTicketSymbolicFormatter
         return '';
     }
 
+    /**
+     * [MEGA-BORNE 2026-07-22 owner] Un TACOS n'affiche PAS de taille en cuisine : le nombre de
+     * viandes (« K P ») porte l'info. Jumeau STRICT du JS kdsSymbolic.js isTacos() (même regex
+     * sur le nom normalisé — parité ticket↔écran).
+     */
+    private function isTacos(string $name): bool
+    {
+        return (bool) preg_match('/\btacos?\b/', $this->norm($name));
+    }
+
     /** @param array<string,mixed> $snapshot */
-    public function mainLine(string $itemName, array $snapshot): string
+    public function mainLine(string $itemName, array $snapshot, ?string $instruction = null): string
     {
         [$produit, $taille] = $this->produitAndSize($itemName);
+        // [MEGA-BORNE 2026-07-22 owner] Tacos : aucune taille (produitAndSize l'a déjà retirée du
+        // NOM) — on neutralise aussi une éventuelle taille portée par une VARIATION (garde plus bas).
+        $isTacos = $this->isTacos($itemName);
         $support = '';
         $viandes = [];
         $sauces = [];
@@ -166,9 +185,23 @@ final class KitchenTicketSymbolicFormatter
             } elseif (preg_match('/pain|galette|support|bread/', $g)) {
                 $support = $this->supportSymbol($value) ?: $support;
             } elseif (preg_match('/taille|size|portion/', $g)) {
-                $taille = $taille !== '' ? $taille : mb_strtoupper($value);
+                // Tacos : taille ignorée en cuisine (le nombre de viandes porte l'info).
+                if (! $isTacos) {
+                    $taille = $taille !== '' ? $taille : mb_strtoupper($value);
+                }
             } elseif ($this->meatSymbol($value) !== '') {
                 $viandes[] = $this->meatSymbol($value);
+            }
+        }
+
+        // [MEGA-BORNE 2026-07-22 owner] La/les sauce(s) EN PLUS du produit remontent dans le slot
+        // Sauce(s) de la ligne 1, À CÔTÉ de la 1ère incluse (« FRO MAY ») — plus jamais une ligne
+        // « + Sauce supplémentaire ». Le nom réel des extras ne survit que dans l'instruction
+        // (extraSauceNames) → symbole. La sauce FRITES du menu reste, elle, en ligne 2 (menuLine).
+        foreach ($this->extraSauceNames($instruction) as $extraSauce) {
+            $sym = $this->sauceSymbol($extraSauce);
+            if ($sym !== '') {
+                $sauces[] = $sym;
             }
         }
 
@@ -209,6 +242,12 @@ final class KitchenTicketSymbolicFormatter
     public function supplementLines(array $snapshot, ?string $instruction = null): array
     {
         $out = [];
+        // [MEGA-BORNE 2026-07-22 owner] La sauce EN PLUS remonte dans le slot Sauce(s) de la ligne 1
+        // (symboles) → elle n'est PLUS une ligne « + Sauce supplémentaire » DÈS QUE son nom a pu être
+        // récupéré (extraSauceNames non vide = exactement ce qui alimente la ligne 1). Sinon (legacy
+        // sans instruction parsable) on GARDE le libellé générique pour ne pas perdre l'info que le
+        // client a payé une sauce en plus.
+        $extraSaucesFolded = $this->extraSauceNames($instruction) !== [];
         foreach (($snapshot['extras'] ?? []) as $e) {
             $name = (string) ($e['extra_name'] ?? $e['name'] ?? '');
             // Skip only FREE garnitures (folded into Line 1). Paid extras — even
@@ -216,14 +255,13 @@ final class KitchenTicketSymbolicFormatter
             if ($name === '' || ($this->cruditeSymbol($name) !== '' && $this->isFreeExtra($e))) {
                 continue;
             }
-            // [MULTISAUCE 2026-07-18] Name the generic "Sauce supplémentaire" with the
-            // recovered sauce name(s) (« + Sauce supplémentaire : Andalouse »). When
-            // named, the count is implicit in the list → drop the ×N suffix.
-            $label = $this->extraDisplayName($name, $instruction);
-            $named = $label !== $name;
+            // La sauce en plus générique (« Sauce supplémentaire ») remonte en ligne 1 → skip ici.
+            if ($extraSaucesFolded && preg_match('/sauce\s*suppl/iu', $name)) {
+                continue;
+            }
             $q = (int) ($e['quantity'] ?? 1);
-            $suffix = (! $named && $q > 1) ? " ×{$q}" : '';
-            $out[] = "+ {$label}{$suffix}";
+            $suffix = $q > 1 ? " ×{$q}" : '';
+            $out[] = "+ {$name}{$suffix}";
         }
 
         return $out;
@@ -567,8 +605,11 @@ final class KitchenTicketSymbolicFormatter
         $raw = trim($itemName);
         if (preg_match('/\s+(XL|L|M)\s*$/i', $raw, $m, PREG_OFFSET_CAPTURE)) {
             $produit = trim(mb_substr($raw, 0, $m[0][1]));
+            // [MEGA-BORNE 2026-07-22 owner] Tacos : on retire le token taille du NOM pour le code
+            // produit (TAC) mais on NE renvoie PAS la taille (la cuisine l'ignore — jumeau JS).
+            $taille = $this->isTacos($raw) ? '' : mb_strtoupper($m[1][0]);
 
-            return [$this->produitCode($produit), mb_strtoupper($m[1][0])];
+            return [$this->produitCode($produit), $taille];
         }
 
         return [$this->produitCode($raw), ''];

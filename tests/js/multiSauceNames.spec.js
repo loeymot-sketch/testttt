@@ -48,7 +48,10 @@ describe('extraDisplayName — nomme l\'extra générique, laisse les autres int
     });
 });
 
-describe('renderItemSymbolic — projection KDS avec la 2e sauce nommée', () => {
+// [MEGA-BORNE 2026-07-22 owner] La 2e sauce (produit) ne s'affiche plus comme LIGNE supplément :
+// elle remonte en SYMBOLE dans le slot Sauce(s) de la ligne 1 (à côté de la 1ère incluse). Le NOM
+// complet reste sur le TICKET CLIENT (fiscal). PHP twin: KitchenTicketTacosSauceTest.
+describe('renderItemSymbolic — la 2e sauce (produit) remonte en ligne 1', () => {
     const makeItem = (instruction) => ({
         item_name: 'Tacos M',
         quantity: 1,
@@ -66,22 +69,20 @@ describe('renderItemSymbolic — projection KDS avec la 2e sauce nommée', () =>
         },
     });
 
-    it('caisse #5727 : la ligne supplément KDS contient « Andalouse »', () => {
+    it('caisse #5727 : ALG (incluse) + AND (en plus) ensemble en ligne 1, plus de supplément sauce', () => {
         const res = renderItemSymbolic(makeItem('TACOS M\nViandes : Poulet mariné - Salade, Tomate, Oignon Sauce : Algérienne, Andalouse'));
-        const supp = res.lines.find((l) => l.type === 'supplement');
-        expect(supp).toBeTruthy();
-        expect(supp.label).toContain('Andalouse');
-        expect(supp.label).toContain('Sauce suppl');
+        expect(res.lines[0].type).toBe('symbolic-main');
+        expect(res.lines[0].label).toContain('ALG AND'); // 1ère (ALG) + en plus (AND) côte à côte
+        expect(res.lines.filter((l) => l.type === 'supplement')).toHaveLength(0);
     });
 
-    it('borne : la ligne supplément KDS contient « Andalouse »', () => {
+    it('borne : la sauce en plus (AND) remonte en ligne 1 à côté de la 1ère (ALG)', () => {
         const res = renderItemSymbolic(makeItem('TACOS M. Viandes : Poulet mariné. Sauces en plus : Andalouse.'));
-        const supp = res.lines.find((l) => l.type === 'supplement');
-        expect(supp).toBeTruthy();
-        expect(supp.label).toContain('Andalouse');
+        expect(res.lines[0].label).toContain('ALG AND');
+        expect(res.lines.filter((l) => l.type === 'supplement')).toHaveLength(0);
     });
 
-    it('rétro-compat : sans nom parsable → « Sauce supplémentaire » générique (pas de « : »)', () => {
+    it('rétro-compat : sans nom parsable → « Sauce supplémentaire » générique reste en supplément', () => {
         const res = renderItemSymbolic(makeItem('TACOS M'));
         const supp = res.lines.find((l) => l.type === 'supplement');
         expect(supp).toBeTruthy();

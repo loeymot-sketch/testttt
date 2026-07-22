@@ -45,7 +45,8 @@ class KitchenTicketSymbolicFormatterTest extends TestCase
                 ['attribute_name' => 'Sauce', 'variation_name' => 'Mayonnaise'],
             ],
         ];
-        $this->assertSame('G | TAC | M | K | MAY', $this->f->mainLine('Tacos M', $snap));
+        // [MEGA-BORNE 2026-07-22] Un tacos ne montre PAS la taille (le nombre de viandes porte l'info).
+        $this->assertSame('G | TAC | K | MAY', $this->f->mainLine('Tacos M', $snap));
     }
 
     public function test_two_meats_space_joined(): void
@@ -57,7 +58,8 @@ class KitchenTicketSymbolicFormatterTest extends TestCase
                 ['attribute_name' => 'Sauce', 'variation_name' => 'Curry'],
             ],
         ];
-        $this->assertSame('G | TAC | L | K P | CURY', $this->f->mainLine('Tacos L', $snap));
+        // [MEGA-BORNE 2026-07-22] Plus de « L » : les 2 viandes (K P) portent l'info de taille.
+        $this->assertSame('G | TAC | K P | CURY', $this->f->mainLine('Tacos L', $snap));
     }
 
     public function test_crudites_canonical_order(): void
@@ -77,7 +79,8 @@ class KitchenTicketSymbolicFormatterTest extends TestCase
                 ['attribute_name' => 'Sauce', 'variation_name' => 'Mayonnaise'],
             ],
         ];
-        $this->assertSame('G | TAC | M | P | MAY', $this->f->mainLine('Tacos M', $snap));
+        // [MEGA-BORNE 2026-07-22] tacos → pas de taille ; la viande (P) survit malgré attribute_name null.
+        $this->assertSame('G | TAC | P | MAY', $this->f->mainLine('Tacos M', $snap));
     }
 
     public function test_drink_is_just_the_name(): void
