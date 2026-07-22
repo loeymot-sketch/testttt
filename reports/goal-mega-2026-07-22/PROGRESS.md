@@ -78,3 +78,15 @@ Plan : `plans/GOAL_MEGA_BORNE_TICKET_STOCK_MOBILE_2026-07-22.md`
   driver Playwright à écrire » → reprendre le même brief ; les seeds tinker sont peut-être en DB locale
   (commandes clones source=5 à nettoyer/réutiliser).
 - TOUT LE RESTE EST LIVRÉ + DÉPLOYÉ : prix 1,90 · /m PIN 2580 · nav mobile web · formule 3 pages (LOCK).
+
+## ✅ VAGUE 2 COMPLÈTE (16/16 findings traités) — commits 12a6bc016 (MP) + 28ec6ce8f (stock+sync+bundles)
+- **Money-path 4/4** : remboursement espèces sans double avoir (renverse contrat gated, sanctionné registre) ·
+  tiroir jamais fantôme (hasPaymentTranches) · ticket split = 1 ligne/tranche · reçu REMBOURSEMENT.
+- **Stock 5/6** : filet poll 86 (worker down) · quota lazy reconcile (box éteinte) · reasons documentées+sentinel ·
+  photo gaté rôle+403 propre · badge « Désactivé globalement » · sidebar→?tab=stock. **1 escaladé owner** :
+  StockService restock physique réactive un 86 manuel (décision A/B posée).
+- **Sync/KDS 6/6** : unbind ciblé · cadence WS-sain=60s (renverse GOAL-HEAL-SYNC-001, sanctionné) · coalesce OSS ·
+  tracker paginate+lean · KDS grace floor 2h no-show · carte programmée ancre timer + badge 🕐.
+- Preuves : vitest 2508+ (fraîcheur 9/9 post-build) · PHPUnit 364/1208 + MP 347+663 · frozen 0 · chaîne OK ×4.
+- **STOCK MASSIF CLOS** : preuve LIVE /m→web 153 ms + local 10/10 (STOCK_MASSIF_FINDINGS.md). 0 P0/P1 produit.
+## ⏭️ Reste : deploy 28ec6ce8f (en cours) · e2e final caisse/KDS · décisions owner (A/B restock, frozen v2 items 🧊, perf bundle dédiée)
