@@ -236,12 +236,13 @@ class ChangeStatusReturnedSelfAuditR2Test extends TestCase
     }
 
     /**
-     * @test — CONTRAT préservé : cashBack crédite l'avoir wallet (Transaction + balance + audit
-     * atomiques, cf. CashBackAtomicityTest). La suppression de l'avoir sur un remboursement ESPÈCES
-     * (double-remboursement potentiel) est un changement de contrat ESCALADÉ (gate owner) — non
-     * appliqué ici pour ne pas casser l'invariant d'atomicité établi.
+     * @test — [MP-01 2026-07-22 · owner-autorisé] Un retour cash COMPTOIR (avec Transaction) pose la
+     * sortie tiroir (l'argent est rendu PHYSIQUEMENT en espèces) et ne crédite PLUS l'avoir wallet —
+     * sinon double remboursement (tiroir + avoir CUMULÉS). Remplace l'ancien « contrat préservé /
+     * escaladé (gate owner) » : le fix est désormais appliqué. L'avoir reste non-fiscal (aucun impact
+     * chaîne NF525) ; l'atomicité balance est prouvée par CashBackAtomicityTest via le chemin 'credit'.
      */
-    public function pre_z_counter_cash_return_credits_wallet_per_established_contract(): void
+    public function pre_z_counter_cash_return_records_drawer_out_and_does_not_credit_wallet(): void
     {
         $branch = Branch::factory()->create();
         $user = $this->actingRefundUser($branch->id);
@@ -266,8 +267,8 @@ class ChangeStatusReturnedSelfAuditR2Test extends TestCase
         // La sortie tiroir est bien posée (le vrai fix) …
         $this->assertSame(1, CashMovement::where('order_id', $order->id)
             ->where('type', CashMovement::TYPE_CASHBACK)->where('direction', CashMovement::DIRECTION_OUT)->count());
-        // … et l'avoir wallet reste crédité (contrat cashBack établi préservé).
-        $this->assertEqualsWithDelta(9.0, (float) $customer->fresh()->balance, 0.001);
+        // … et l'avoir wallet N'est PAS crédité (pas de double remboursement : le cash est déjà sorti).
+        $this->assertEqualsWithDelta(0.0, (float) $customer->fresh()->balance, 0.001);
     }
 
     /** @test — garde : une vente CARTE avec Transaction ne sort JAMAIS d’argent du tiroir (préserve heal 2026-07-11). */

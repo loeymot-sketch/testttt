@@ -44,6 +44,12 @@ use Tests\TestCase;
  * only fire on durable commit — a rollback discards the deferred
  * dispatch before listeners run.
  *
+ * [MP-01 2026-07-22] Depuis le fix double-refund, un remboursement ESPÈCES ('cash') ne crédite
+ * PLUS l'avoir wallet (l'argent sort physiquement du tiroir). Ces scénarios d'atomicité exercent
+ * donc le chemin NON-espèces ('credit') — le seul qui crédite encore l'avoir — pour continuer à
+ * prouver que la mutation `User.balance` est bien enveloppée dans le tx (commit → créditée,
+ * rollback → annulée). Le contrat d'atomicité est identique ; seule la méthode de remboursement change.
+ *
  * @covers \App\Services\PaymentService::cashBack
  */
 class CashBackAtomicityTest extends TestCase
@@ -108,7 +114,9 @@ class CashBackAtomicityTest extends TestCase
 
         $thrown = null;
         try {
-            app(PaymentService::class)->cashBack($order, 'cash', 'FK-CB-ATOMIC-RED-1');
+            // 'credit' = remboursement NON-espèces → crédite l'avoir wallet (le seul chemin qui le fait
+            // depuis MP-01) : on peut donc prouver que la mutation balance est bien rollback-ée.
+            app(PaymentService::class)->cashBack($order, 'credit', 'FK-CB-ATOMIC-RED-1');
         } catch (\Throwable $e) {
             $thrown = $e;
         }
@@ -197,7 +205,8 @@ class CashBackAtomicityTest extends TestCase
             'sign'           => '+',
         ]);
 
-        $created = app(PaymentService::class)->cashBack($order, 'cash', 'FK-CB-ATOMIC-GREEN-1');
+        // 'credit' (avoir) = seul chemin qui crédite encore le wallet depuis MP-01 → balance atomicity.
+        $created = app(PaymentService::class)->cashBack($order, 'credit', 'FK-CB-ATOMIC-GREEN-1');
 
         $this->assertNotNull($created, 'Happy-path cashBack must return the new Transaction row.');
         $this->assertSame('cash_back', (string) $created->type);
@@ -286,7 +295,7 @@ class CashBackAtomicityTest extends TestCase
                 $customer->update(['name' => 'OUTER-MUTATION-TARGET']);
 
                 try {
-                    app(PaymentService::class)->cashBack($order, 'cash', 'FK-CB-NESTED-1');
+                    app(PaymentService::class)->cashBack($order, 'credit', 'FK-CB-NESTED-1');
                 } catch (\Throwable $inner) {
                     $outerCaught = $inner;
                     throw $inner; // propagate to abort outer too
