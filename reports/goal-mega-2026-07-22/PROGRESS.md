@@ -45,3 +45,19 @@ Plan : `plans/GOAL_MEGA_BORNE_TICKET_STOCK_MOBILE_2026-07-22.md`
 - **Formule split 3 pages** : FROZEN KioskWizardComponent (computeActiveSteps) → LOCK gate OU profil-composer, décision requise.
 - **W5 mobile admin** : admin déjà déployé (VPS) + accessible URL ; besoin **creds admin VPS valides** (non seedés) + vérif responsive mobile → G-MOBILE owner.
 - **W6 convergence test-e2e** : validation adversariale finale (partiellement bloquée sur creds VPS pour surfaces login-gated).
+
+## ✅ G-PRIX RÉSOLU (owner confirme 2026-07-22) — commit f3ed08761 + web 63f934d, déployés
+- frites seules / boisson seule = **1,90 €** (menu complet 2,50 inchangé). SSOT = config
+  `kiosk.menu_pricing` ratios 0.6/0.4 → **0.76** (×2,50=1,90 exact). ZÉRO frozen touché
+  (PricingService lit la config ; pos-wizard.js n'a pas de prix formule hardcodés).
+- Miroirs : kioskPricing.js défauts 0.76 ; web menu.js f-frites/f-boisson 1,90 + wizard-v2 options.
+- Tests màj : MenuRoleAdjusted (5.91/2.28), sentinel addon-role 2,28€, KioskWizard 97 (previews
+  13.28/11.28), kioskFormulePrices 1,90. Sweep 124 JS + 130 PHP verts.
+
+## 🔓 Autorisation FROZEN owner (verbatim) → plans/LOCK_KIOSK_FORMULE_SPLIT_2026-07-22.md
+## 🚀 3 agents parallèles lancés (partitions disjointes)
+1. FORMULE-SPLIT : KioskWizardComponent (LOCK) + steps → 3 pages (formule/boissons/sauce-frites).
+2. MOBILE-PIN : /m + code 2580 (pattern carnet, fail-closed, throttle) → stock mobile + toggle rupture SSOT.
+3. WEB-RESPONSIVE : audit+fix mobile Pixel 7 (nav burger cassée + boutons) sur le site Vercel.
+## ⏭️ Ensuite : deploy des 3 · test massif STOCK cross-surfaces (téléphone/caisse/KDS/admin) ·
+##    audit LOGIQUE caisse (contrôle commandes, annuler/valider, sync KDS, commandes web) en boucle.
