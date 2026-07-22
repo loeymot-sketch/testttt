@@ -69,3 +69,12 @@ Plan : `plans/GOAL_MEGA_BORNE_TICKET_STOCK_MOBILE_2026-07-22.md`
 - Preuves : 757 sweep + 12 spec + 112 re-vérif ; e2e réel local 3 pages capturées + LUES (0 erreur JS).
 ## ✅ 4/4 chantiers owner du jour LIVRÉS (prix 1,90 · mobile /m 2580 · nav mobile web · split formule)
 ## ⏭️ NEXT : test massif STOCK cross-surfaces (/m→borne/caisse/KDS/admin) + audit LOGIQUE caisse en boucle
+
+## ⚠️ INTERRUPT 2026-07-22 — limite de session (reset 20h10 Paris) pendant les 2 audits
+- STOCK MASSIF (a12c…) : coupé à « 9/10 verts — 1 échec format date (cast) à corriger dans l'assertion »
+  → tests locaux quasi finis ; volet live VPS /m→web à re-dérouler. Reprendre : re-lancer l'agent
+  stock avec le même brief + corriger l'assertion date, puis registre STOCK_MASSIF_FINDINGS.md.
+- CAISSE LOGIQUE (a0cd…) : coupé à « tracker path confirmé, seed 3e clone (gate annulation payée),
+  driver Playwright à écrire » → reprendre le même brief ; les seeds tinker sont peut-être en DB locale
+  (commandes clones source=5 à nettoyer/réutiliser).
+- TOUT LE RESTE EST LIVRÉ + DÉPLOYÉ : prix 1,90 · /m PIN 2580 · nav mobile web · formule 3 pages (LOCK).
