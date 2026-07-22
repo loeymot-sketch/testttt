@@ -69,6 +69,17 @@ class RouteServiceProvider extends ServiceProvider
             ];
         });
 
+        // [GOAL MEGA W-MOBILE 2026-07-22] Anti-bruteforce PIN du Stock mobile (/m).
+        // Miroir de daily-book-pin : couche par-IP (5/min) + plafond GLOBAL (15/min
+        // toutes IP confondues) — le PIN 4 chiffres exposé sur Internet est faible,
+        // le plafond global ferme le vecteur X-Forwarded-For (TrustProxies '*').
+        RateLimiter::for('mobile-stock-pin', function (Request $request) {
+            return [
+                Limit::perMinute(5)->by('msp-ip:'.$request->ip()),
+                Limit::perMinute(15)->by('msp-global'),
+            ];
+        });
+
         RateLimiter::for('kiosk-orders', function (Request $request) {
             $userKey = $request->user()?->id ?? 'guest';
 

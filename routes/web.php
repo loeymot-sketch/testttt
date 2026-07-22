@@ -75,6 +75,28 @@ Route::prefix('carnet')->name('daily-book.')->middleware(['installed'])->group(f
     });
 });
 
+// [GOAL MEGA W-MOBILE 2026-07-22] Stock mobile — mini-app web à code PIN pour
+// l'owner (voir les ruptures « à acheter » + basculer dispo/rupture depuis le
+// téléphone). Miroir du Carnet (HORS NF525, stock uniquement). Blade autonome
+// (inline vanilla JS) — PAS la SPA admin, PAS de Sanctum. Le toggle délègue au
+// SSOT AvailabilityService::toggle. Déclaré AVANT le catch-all. Fail-closed :
+// MOBILE_STOCK_PIN vide => accès entièrement refusé.
+Route::prefix('m')->name('mobile-stock.')->middleware(['installed'])->group(function () {
+    Route::get('/', function () {
+        return view('mobile-stock');
+    })->name('index');
+
+    Route::post('/api/pin', [\App\Http\Controllers\Mobile\MobileStockAuthController::class, 'unlock'])
+        ->middleware('throttle:mobile-stock-pin')->name('pin');
+    Route::get('/api/status', [\App\Http\Controllers\Mobile\MobileStockAuthController::class, 'status'])->name('status');
+
+    Route::middleware([\App\Http\Middleware\EnsureMobileStockPin::class])->group(function () {
+        Route::post('/api/lock', [\App\Http\Controllers\Mobile\MobileStockAuthController::class, 'lock'])->name('lock');
+        Route::get('/api/catalog', [\App\Http\Controllers\Mobile\MobileStockController::class, 'catalog'])->name('catalog');
+        Route::post('/api/toggle', [\App\Http\Controllers\Mobile\MobileStockController::class, 'toggle'])->name('toggle');
+    });
+});
+
 // [POS-V4 W2 #1 2026-04-26] Dedicated POS V4 entry — MUST be declared BEFORE
 // the catch-all below so Laravel matches it first. Serves admin-pos-v4.blade.php
 // (loads pos-app.js, NOT app.js). See docs/design/ADR_POS_V4_DEDICATED_ENTRY.md.
