@@ -31,3 +31,17 @@ Plan : `plans/GOAL_MEGA_BORNE_TICKET_STOCK_MOBILE_2026-07-22.md`
 - G-PRIX : confirmer menu 2,50 / boisson seule 1,90 / frites seules 1,90 (vs ancien +1,00/+1,50).
 - G-MOBILE : URL/domaine + auth accès admin mobile.
 - G-MOLLIE : clé Mollie VPS. G-PUSH : « deploy » par vague.
+
+## ✅ W4 — Stock rupture KDS+caisse+admin+sync — DÉJÀ FAIT (vérifié, 0 code)
+- Livré par RUPTURE-CARNET 2026-07-15 (W2=POS, W3=KDS). SSOT unique `menu/availability/toggle`
+  → AvailabilityService → ItemAvailabilityChanged → Echo `private-branch.{id}`. KDS panel
+  (KitchenDisplaySystemComponent), caisse panel (PosComponent non-frozen), admin dashboard =
+  même endpoint. Chef+POS Operator autorisés (availability_toggle). Anti-doublage PASS.
+- Preuves : PHPUnit 181/850 assert, Vitest 34, frozen 0. Construire un 2e bouton = doublage interdit.
+- Si owner veut un UX différent (86 inline sur chaque carte KDS) = nouvelle décision de scope.
+
+## État global : W1✅ W2✅(prix) W4✅(déjà) déployés. Reste :
+- **G-PRIX** (owner) : boisson/frites seules 1,90 vs 1,00/1,50 → changement prix réel, attente confirmation.
+- **Formule split 3 pages** : FROZEN KioskWizardComponent (computeActiveSteps) → LOCK gate OU profil-composer, décision requise.
+- **W5 mobile admin** : admin déjà déployé (VPS) + accessible URL ; besoin **creds admin VPS valides** (non seedés) + vérif responsive mobile → G-MOBILE owner.
+- **W6 convergence test-e2e** : validation adversariale finale (partiellement bloquée sur creds VPS pour surfaces login-gated).
