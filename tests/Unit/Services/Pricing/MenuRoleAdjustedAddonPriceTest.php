@@ -26,8 +26,8 @@ class MenuRoleAdjustedAddonPriceTest extends TestCase
      * Default ratios from config/kiosk.php — keep in sync.
      */
     private const RATIO_FULL = 1.0;
-    private const RATIO_FRIES = 0.6;
-    private const RATIO_DRINK = 0.4;
+    private const RATIO_FRIES = 0.76; // [G-PRIX 2026-07-22]
+    private const RATIO_DRINK = 0.76; // [G-PRIX 2026-07-22]
 
     public function test_menu_boisson_role_applies_drink_ratio(): void
     {
@@ -99,8 +99,8 @@ class MenuRoleAdjustedAddonPriceTest extends TestCase
     public function test_ratio_result_rounded_to_two_decimals(): void
     {
         $svc = new PricingService();
-        // 7.77 × 0.4 = 3.108 → rounded to 3.11
-        $this->assertSame(3.11, $svc->menuRoleAdjustedAddonPrice('menu_boisson', 7.77));
+        // 7.77 × 0.76 = 5.9052 → rounded to 5.91 [G-PRIX 2026-07-22]
+        $this->assertSame(5.91, $svc->menuRoleAdjustedAddonPrice('menu_boisson', 7.77));
     }
 
     /**
@@ -113,8 +113,8 @@ class MenuRoleAdjustedAddonPriceTest extends TestCase
     {
         $svc = new PricingService();
         // Addon id=148 on item 393 has addonItem.price=3.00€.
-        // menuChoice='boisson' → role='menu_boisson' → drinkRatio=0.4 → 1.20€.
-        $expected = 1.2;
+        // menuChoice='boisson' → role='menu_boisson' → drinkRatio=0.76 → 2.28€ [G-PRIX 2026-07-22].
+        $expected = 2.28;
         $this->assertSame(
             $expected,
             $svc->menuRoleAdjustedAddonPrice('menu_boisson', 3.0)

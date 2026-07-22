@@ -53,7 +53,7 @@ const mountStep = () =>
   });
 
 describe('KioskStepMenu — prix par option formule (borne)', () => {
-  it('affiche +2,50 / +1,50 / +1,00 sur les cartes full / frites / boisson', () => {
+  it('affiche +2,50 / +1,90 / +1,90 sur les cartes full / frites / boisson', () => {
     const wrapper = mountStep();
     const cards = wrapper.findAll('.kiosk-menu-card');
     // full, frites, boisson, none
@@ -68,8 +68,8 @@ describe('KioskStepMenu — prix par option formule (borne)', () => {
     expect(boissonPrice.exists()).toBe(true);
 
     expect(fullPrice.text()).toContain('+2,50');
-    expect(fritesPrice.text()).toContain('+1,50');
-    expect(boissonPrice.text()).toContain('+1,00');
+    expect(fritesPrice.text()).toContain('+1,90');
+    expect(boissonPrice.text()).toContain('+1,90');
   });
 
   it("n'affiche AUCUN prix sur la carte « Sans menu » (0 €)", () => {
@@ -83,8 +83,8 @@ describe('KioskStepMenu — prix par option formule (borne)', () => {
     const wrapper = mountStep();
     const vm = wrapper.vm;
     expect(vm.menuChoicePrice('full')).toBeCloseTo(2.5, 2);
-    expect(vm.menuChoicePrice('frites')).toBeCloseTo(1.5, 2);
-    expect(vm.menuChoicePrice('boisson')).toBeCloseTo(1.0, 2);
+    expect(vm.menuChoicePrice('frites')).toBeCloseTo(1.9, 2);
+    expect(vm.menuChoicePrice('boisson')).toBeCloseTo(1.9, 2);
     expect(vm.menuChoicePrice('none')).toBe(0);
   });
 });

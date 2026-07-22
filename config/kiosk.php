@@ -179,8 +179,9 @@ if ($requireForm) {
         'locale_switch_allowed' => $localeSwitchAllowed,
         'menu_pricing'   => [
             'full_ratio'   => 1.0,
-            'fries_ratio'  => 0.6,
-            'drink_ratio'  => 0.4,
+            // [G-PRIX owner 2026-07-22] frites seules / boisson seule = 1,90 € (2,50 × 0.76).
+            'fries_ratio'  => 0.76,
+            'drink_ratio'  => 0.76,
         ],
         'sandwich_split' => [
             // [MENU-RESET 2026-05-13] Disabled. New structure: 3 sandwich cats.
@@ -290,8 +291,9 @@ return [
     'locale_switch_allowed' => $localeSwitchAllowed,
     'menu_pricing'   => [
         'full_ratio'   => 1.0,
-        'fries_ratio'  => 0.6,
-        'drink_ratio'  => 0.4,
+        // [G-PRIX owner 2026-07-22] frites seules / boisson seule = 1,90 € (2,50 × 0.76).
+        'fries_ratio'  => 0.76,
+        'drink_ratio'  => 0.76,
     ],
     'sandwich_split' => [
         // [MENU-RESET 2026-05-13] Disabled. New structure: 3 sandwich cats.

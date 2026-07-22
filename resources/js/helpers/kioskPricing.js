@@ -2,8 +2,8 @@ import { kioskSumPaidViandesSurcharge } from './kioskViandeCatalog';
 
 const DEFAULT_MENU_PRICING = {
   fullRatio: 1,
-  friesRatio: 0.6,
-  drinkRatio: 0.4,
+  friesRatio: 0.76, // [G-PRIX 2026-07-22] frites seules 1,90 (2,50×0.76)
+  drinkRatio: 0.76, // [G-PRIX 2026-07-22] boisson seule 1,90
 };
 
 function normalizeMenuPricingConfig(rawConfig = {}) {

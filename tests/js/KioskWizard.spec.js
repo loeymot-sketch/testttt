@@ -887,7 +887,7 @@ describe('KioskStepMenuComponent — wizard kiosk fixes', () => {
     expect(wrapper.vm.showFritesSauce).toBe(false);
   });
 
-  it('menuPrice applies 0.6 / 0.4 ratios like runningTotal', async () => {
+  it('menuPrice applies 0.76 / 0.76 ratios (G-PRIX 1,90) like runningTotal', async () => {
     const wrapper = mount(KioskStepMenuComponent, {
       global: { plugins: [kioskWizardTestI18n] },
       props: {
@@ -899,9 +899,9 @@ describe('KioskStepMenuComponent — wizard kiosk fixes', () => {
     await wrapper.vm.selectChoice('full');
     expect(wrapper.vm.menuPrice).toBeCloseTo(10);
     await wrapper.vm.selectChoice('frites');
-    expect(wrapper.vm.menuPrice).toBeCloseTo(6);
+    expect(wrapper.vm.menuPrice).toBeCloseTo(7.6);
     await wrapper.vm.selectChoice('boisson');
-    expect(wrapper.vm.menuPrice).toBeCloseTo(4);
+    expect(wrapper.vm.menuPrice).toBeCloseTo(7.6);
     await wrapper.vm.selectChoice('none');
     expect(wrapper.vm.menuPrice).toBe(0);
   });
@@ -1104,7 +1104,7 @@ describe('KioskWizardComponent — active wizard UX fixes', () => {
 
     wrapper.vm.updateSelection('menuChoice', 'boisson');
     await wrapper.vm.$nextTick();
-    expect(wrapper.vm.runningTotal).toBe(12.2);
+    expect(wrapper.vm.runningTotal).toBe(13.28); // [G-PRIX] boisson 3.0×0.76=2.28
   });
 
   it('does not let a lower pricing-preview response hide explicit wizard option deltas', async () => {
@@ -1115,11 +1115,11 @@ describe('KioskWizardComponent — active wizard UX fixes', () => {
     wrapper.vm.updateSelection('menuChoice', 'boisson');
     await wrapper.vm.$nextTick();
 
-    expect(wrapper.vm.runningTotalLocal).toBe(10.2);
+    expect(wrapper.vm.runningTotalLocal).toBe(11.28); // [G-PRIX]
     wrapper.vm.serverPreviewTotal = 6.5;
     await wrapper.vm.$nextTick();
 
-    expect(wrapper.vm.runningTotal).toBe(10.2);
+    expect(wrapper.vm.runningTotal).toBe(11.28);
   });
 
   it('requires included meat quota but still allows paid meat extras after the free choice', async () => {

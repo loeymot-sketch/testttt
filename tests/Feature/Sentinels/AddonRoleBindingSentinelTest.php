@@ -22,7 +22,7 @@ use Tests\TestCase;
  * The kiosk wizard pushes a parent menu addon row tagged with one of three
  * payload-only roles ('menu_full' / 'menu_frites' / 'menu_boisson') so
  * `PricingService::menuRoleAdjustedAddonPrice` (FROZEN §7) applies the matching
- * config('kiosk.menu_pricing') ratio (1.0 / 0.6 / 0.4). Pre-heal, any payload
+ * config('kiosk.menu_pricing') ratio (1.0 / 0.76 / 0.76). Pre-heal, any payload
  * could forward the same role on ANY addon id — drink-tagged, NULL, side, etc.
  * — and bill 60% less than catalog. Of 220 production rows on Le Cayenne, 177
  * NULL + 23 'drink' = >90% attack surface.
@@ -336,7 +336,7 @@ class AddonRoleBindingSentinelTest extends TestCase
             $addonRow['role'],
             'Defense-in-depth: snapshot must fall back to DB role when payload role is forged.'
         );
-        // Catalog price (3.00€) MUST seal — NOT the ratio'd 1.20€ (= 3.0 × 0.4).
+        // Catalog price (3.00€) MUST seal — NOT the ratio'd 2.28€ (= 3.0 × 0.76).
         $this->assertEqualsWithDelta(
             3.0,
             (float) $addonRow['unit_price'],
@@ -400,9 +400,9 @@ class AddonRoleBindingSentinelTest extends TestCase
             $addonRow['role'],
             'Snapshot must honor menu_boisson payload role on menu_component DB addon (legitimate kiosk flow).'
         );
-        // Ratio applied: 3.0 × 0.4 = 1.20.
+        // Ratio applied: 3.0 × 0.76 = 2.28 [G-PRIX 2026-07-22].
         $this->assertEqualsWithDelta(
-            1.20,
+            2.28,
             (float) $addonRow['unit_price'],
             0.001,
             'Snapshot must persist ratio\'d price (1.20€) on legitimate menu_component + menu_boisson combo.'
