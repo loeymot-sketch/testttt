@@ -11,7 +11,7 @@ use Illuminate\Database\Seeder;
  * principaux traçables).
  *
  * Idempotent : updateOrCreate sur (branch_id, name) — relance multiple sans
- * doublon (11 rows). PAS de canette : les boissons vendues à l'unité restent
+ * doublon (13 rows). PAS de canette : les boissons vendues à l'unité restent
  * comptées par l'existant (stock_levels item) — plan amendement #2, une seule
  * vérité par objet physique.
  *
@@ -30,6 +30,9 @@ class RawMaterialBaselineSeeder extends Seeder
             ['Poulet',         'g',       null],
             ['Cordon bleu',    'piece',   null], // [OWNER 2026-07-23] Suprême = 1 pièce
             ['Cheddar',        'piece',   null],
+            // [B-2 2026-07-23] Matière référencée par 29 ItemExtra « Œuf » réels
+            // (supplément payant) — ajoutée pour que l'extra Œuf décrémente.
+            ['Œuf',            'piece',   null],
             ['Jambon',         'tranche', null],
             ['Pain',           'piece',   null],
             ['Galette',        'piece',   null],

@@ -3,8 +3,10 @@
 namespace Tests\Feature\RawMaterials;
 
 use App\Enums\Status;
+use App\Events\OrderCanceled;
 use App\Events\OrderCreated;
 use App\Listeners\ConsumeRawMaterialsOnOrderCreated;
+use App\Listeners\ReverseRawMaterialsOnOrderCanceled;
 use App\Models\Branch;
 use App\Models\Item;
 use App\Models\ItemCategory;
@@ -341,5 +343,130 @@ class RawMaterialConsumptionTest extends TestCase
 
         $this->assertEqualsWithDelta(-200.0, $this->onHand($poulet), 0.001);
         $this->assertSame(1, RawMaterialMovement::where('raw_material_id', $poulet->id)->count());
+    }
+
+    // ══ B-1 — Reprise (rendu) du stock sur annulation/refus/retour ═════════════
+    //   Convergence avec le replay (qui EXCLUT CANCELED/REJECTED/RETURNED) : la
+    //   conso LIVE doit RENDRE le stock quand l'order atteint un de ces statuts,
+    //   sinon `on_hand` sur-consomme définitivement (B-1). Miroir raw-material du
+    //   ReleaseStockOnOrderCanceled (stock_levels), câblé sur le même OrderCanceled.
+
+    // ── 11. reverseForOrder rend EXACTEMENT le stock consommé (net nul). ───────
+    public function test_reverse_for_order_credits_back_exactly_what_was_consumed(): void
+    {
+        $poulet = $this->material('Poulet');
+        $pain = $this->material('Pain', 'piece');
+        $item = $this->makeItem('Cayenne');
+        $this->recipe(Item::class, $item->id, $poulet, 200);
+        $this->recipe(Item::class, $item->id, $pain, 1);
+
+        $order = $this->makeOrder();
+        $this->makeOrderItem($order, $item, 1);
+
+        $this->service()->consumeForOrder($order);
+        $this->assertEqualsWithDelta(-200.0, $this->onHand($poulet), 0.001);
+        $this->assertEqualsWithDelta(-1.0, $this->onHand($pain), 0.001);
+
+        $summary = $this->service()->reverseForOrder($order);
+
+        // Rendu exact → net nul sur chaque matière.
+        $this->assertEqualsWithDelta(0.0, $this->onHand($poulet), 0.001);
+        $this->assertEqualsWithDelta(0.0, $this->onHand($pain), 0.001);
+        $this->assertCount(2, $summary['reversed']);
+        // Le mouvement de reprise porte un source_type DÉDIÉ (≠ conso).
+        $this->assertSame(
+            1,
+            RawMaterialMovement::where('source_type', 'order_item_reversal')
+                ->where('raw_material_id', $poulet->id)->count()
+        );
+    }
+
+    // ── 12. Double reverse = pas de double crédit (idempotent). ────────────────
+    public function test_reverse_is_idempotent_no_double_credit(): void
+    {
+        $poulet = $this->material('Poulet');
+        $item = $this->makeItem('Cayenne');
+        $this->recipe(Item::class, $item->id, $poulet, 200);
+
+        $order = $this->makeOrder();
+        $this->makeOrderItem($order, $item, 1);
+
+        $this->service()->consumeForOrder($order);
+        $this->service()->reverseForOrder($order);
+        $second = $this->service()->reverseForOrder($order); // ré-annulation
+
+        $this->assertEqualsWithDelta(0.0, $this->onHand($poulet), 0.001); // pas +200
+        $this->assertSame([], $second['reversed']);
+        $this->assertNotEmpty($second['skipped']); // rangé "already_reversed"
+        $this->assertSame(
+            1,
+            RawMaterialMovement::where('source_type', 'order_item_reversal')
+                ->where('raw_material_id', $poulet->id)->count()
+        );
+    }
+
+    // ── 13. Commande jamais consommée → reverse = no-op total. ─────────────────
+    public function test_reverse_never_consumed_order_is_noop(): void
+    {
+        $item = $this->makeItem('Boisson Coca'); // aucune recette → aucune conso
+        $order = $this->makeOrder();
+        $this->makeOrderItem($order, $item, 1);
+
+        $summary = $this->service()->reverseForOrder($order);
+
+        $this->assertSame([], $summary['reversed']);
+        $this->assertSame(0, RawMaterialMovement::count()); // rien consommé, rien rendu
+    }
+
+    // ── 14. Après reverse, un rejeu de conso ne re-consomme pas (net stable). ──
+    public function test_reverse_then_replay_stays_coherent(): void
+    {
+        $poulet = $this->material('Poulet');
+        $item = $this->makeItem('Cayenne');
+        $this->recipe(Item::class, $item->id, $poulet, 200);
+
+        $order = $this->makeOrder();
+        $this->makeOrderItem($order, $item, 1);
+
+        $this->service()->consumeForOrder($order);
+        $this->service()->reverseForOrder($order);
+        // Rejeu conso (retry queue / replay) : idempotence source 'order_item' → no-op.
+        $this->service()->consumeForOrder($order);
+
+        $this->assertEqualsWithDelta(0.0, $this->onHand($poulet), 0.001); // reste 0, pas -200
+        $this->assertSame(
+            1,
+            RawMaterialMovement::where('source_type', 'order_item')
+                ->where('raw_material_id', $poulet->id)->count()
+        );
+        $this->assertSame(
+            1,
+            RawMaterialMovement::where('source_type', 'order_item_reversal')
+                ->where('raw_material_id', $poulet->id)->count()
+        );
+    }
+
+    // ── 15. Listener câblé sur OrderCanceled (CANCELED/REJECTED/RETURNED). ─────
+    public function test_reverse_listener_is_registered_for_order_canceled(): void
+    {
+        Event::fake();
+
+        Event::assertListening(OrderCanceled::class, ReverseRawMaterialsOnOrderCanceled::class);
+    }
+
+    // ── 16. handle() du listener rend le stock. ───────────────────────────────
+    public function test_reverse_listener_handle_credits_stock_back(): void
+    {
+        $poulet = $this->material('Poulet');
+        $item = $this->makeItem('Cayenne');
+        $this->recipe(Item::class, $item->id, $poulet, 200);
+
+        $order = $this->makeOrder();
+        $this->makeOrderItem($order, $item, 1);
+        $this->service()->consumeForOrder($order);
+
+        (new ReverseRawMaterialsOnOrderCanceled())->handle(new OrderCanceled($order));
+
+        $this->assertEqualsWithDelta(0.0, $this->onHand($poulet), 0.001);
     }
 }

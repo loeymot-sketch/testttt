@@ -25,9 +25,20 @@ use Illuminate\Support\Facades\File;
  * réels de chaque produit.
  *
  * Effets :
- *   1. `raw_material_recipe_lines` upsertées (idempotent, updateOrCreate sur
- *      l'UNIQUE (branch_id, subject_type, subject_id, raw_material_id)).
- *   2. Fiche Markdown écrite dans reports/goal-mega-2026-07-22/.
+ *   1. `raw_material_recipe_lines` PRODUITS upsertées (subject_type=Item).
+ *   2. [B-2] `raw_material_recipe_lines` EXTRAS upsertées pour les suppléments
+ *      payants CONNUS (subject_type='extra_group', mappés par subject_group de
+ *      nom) : Cheddar, Cordon bleu, Œuf, Viande supplémentaire (75 g mix assumé),
+ *      Sauce supplémentaire (25 g). Une matière absente → aucune ligne.
+ *   3. Fiche Markdown écrite dans reports/goal-mega-2026-07-22/ (avec section Extras).
+ *
+ * Toutes idempotentes (updateOrCreate sur l'UNIQUE
+ * (branch_id, subject_type, subject_id, raw_material_id)).
+ *
+ * ⚠️ HONNÊTETÉ PÉRIMÈTRE : les VIANDES choisies par variation/extra (protéine des
+ * Tacos/Assiettes/Bols, qui passe par une option NON mappée) et les suppléments
+ * sans matière connue restent OWNER-DATA — aucune fausse ligne, ils partent en
+ * `skipped[]` du moteur jusqu'à confirmation owner.
  *
  * NF525 : couche matières premières ADDITIVE — ne touche JAMAIS la chaîne
  * fiscale (aucun prix, aucune séquence, aucun audit_log). Branch isolation :
@@ -64,6 +75,40 @@ class RawMaterialFicheCommand extends Command
         'Pain' => 1, 'Galette' => 1, 'Portion frites' => 1,
         'Sauce maison' => 2, 'Viande hachée' => 3, 'Poulet' => 4, 'Cordon bleu' => 4,
         'Cheddar' => 5, 'Jambon' => 6, 'Salade' => 7, 'Tomate' => 8, 'Oignon' => 9,
+    ];
+
+    /**
+     * [B-2] Marqueur `subject_type` des lignes de recette EXTRAS (mappées par
+     * GROUPE de nom). VOLONTAIREMENT ≠ ItemExtra::class : la branche id du moteur
+     * ({@see RawMaterialConsumptionService::recipeLinesForExtra} — subject_type =
+     * ItemExtra AND subject_id = extra_id) ne doit JAMAIS matcher ces lignes
+     * contre un id d'extra réel. Seul le `OR subject_group` les résout.
+     */
+    private const EXTRA_SUBJECT_TYPE = 'extra_group';
+
+    /**
+     * [B-2] Recettes pré-remplies des SUPPLÉMENTS payants « évidents » — données
+     * SÛRES connues seulement. Mappées par `subject_group` = normalizeGroup(nom).
+     * `subject_id` = ordinal (clé) STABLE : distinct par groupe pour respecter
+     * l'UNIQUE (branch_id, subject_type, subject_id, raw_material_id) même quand
+     * deux groupes pointent la MÊME matière (cheddar/cheese, viande/steak).
+     *
+     * Format : ordinal => [groupe normalisé, matière, qty, àConfirmer(bool), note].
+     * Matière absente de la baseline → AUCUNE ligne écrite (pas de fausse ligne).
+     *
+     * ⚠️ Restent OWNER-DATA (aucune ligne ici) : les VIANDES choisies par
+     * variation/extra (Tacos/Assiettes/Bols) et les suppléments sans matière
+     * mappée (Champignons, Raclette, Emmental, Boursin, Légumes sautés…).
+     */
+    private const EXTRA_RECIPES = [
+        1 => ['cheddar',               'Cheddar',       1.0,  false, '1 pièce'],
+        2 => ['cheese',                'Cheddar',       1.0,  false, '1 pièce (variante EN)'],
+        3 => ['cordon bleu',           'Cordon bleu',   1.0,  false, '1 pièce'],
+        4 => ['œuf',                   'Œuf',           1.0,  false, '1 œuf par supplément'],
+        5 => ['oeuf',                  'Œuf',           1.0,  false, '1 œuf (variante sans ligature)'],
+        6 => ['viande supplémentaire', 'Viande hachée', 75.0, true,  'mix moyen assumé 75 g'],
+        7 => ['steak supplémentaire',  'Viande hachée', 75.0, true,  'mix moyen assumé 75 g'],
+        8 => ['sauce supplémentaire',  'Sauce maison',  25.0, false, 'dose 25 g (owner gravé)'],
     ];
 
     public function handle(): int
@@ -108,6 +153,7 @@ class RawMaterialFicheCommand extends Command
         $unitaireGroups = []; // catName => [itemName, ...]
         $lineCount = 0;
         $productCount = 0;
+        $extraLineCount = 0;
 
         foreach ($items as $item) {
             $catName = $item->category->name ?? 'Sans catégorie';
@@ -161,12 +207,52 @@ class RawMaterialFicheCommand extends Command
             }
         }
 
+        // [B-2] Recettes des SUPPLÉMENTS payants (mappées par subject_group).
+        // Indépendantes du catalogue, écrites APRÈS les produits. Matière absente
+        // de la baseline → aucune ligne (pas de fausse ligne), juste ⚠️ dans la fiche.
+        $extraLines = [];
+        foreach (self::EXTRA_RECIPES as $ordinal => [$group, $matName, $qty, $confirm, $note]) {
+            $material = $materials->get($matName);
+
+            $extraLines[] = [
+                'group' => $group,
+                'material' => $matName,
+                'qty' => $qty,
+                'unit' => $material !== null ? self::unitLabel($material->unit) : '—',
+                'confirm' => $confirm,
+                'present' => $material !== null,
+                'note' => $note,
+            ];
+
+            if ($material === null) {
+                continue;
+            }
+
+            if (! $dryRun) {
+                RawMaterialRecipeLine::updateOrCreate(
+                    [
+                        'branch_id' => self::BRANCH_ID,
+                        'subject_type' => self::EXTRA_SUBJECT_TYPE,
+                        'subject_id' => $ordinal,
+                        'raw_material_id' => $material->id,
+                    ],
+                    [
+                        'subject_group' => $group,
+                        'qty' => $qty,
+                        'note' => 'prefill_extra',
+                    ],
+                );
+            }
+            $lineCount++;
+            $extraLineCount++;
+        }
+
         $unitaireCount = array_sum(array_map('count', $unitaireGroups));
         $path = base_path(self::FICHE_PATH);
 
         if (! $dryRun) {
             File::ensureDirectoryExists(dirname($path));
-            File::put($path, self::renderFiche($recipeGroups, $unitaireGroups, $productCount, $lineCount));
+            File::put($path, self::renderFiche($recipeGroups, $unitaireGroups, $extraLines, $productCount, $lineCount));
         }
 
         return [
@@ -351,8 +437,9 @@ class RawMaterialFicheCommand extends Command
     /**
      * @param  array<string, array<int, array{item:string,lines:array}>>  $recipeGroups
      * @param  array<string, array<int, string>>  $unitaireGroups
+     * @param  array<int, array{group:string,material:string,qty:float,unit:string,confirm:bool,present:bool,note:string}>  $extraLines
      */
-    private static function renderFiche(array $recipeGroups, array $unitaireGroups, int $products, int $lines): string
+    private static function renderFiche(array $recipeGroups, array $unitaireGroups, array $extraLines, int $products, int $lines): string
     {
         $date = now()->format('Y-m-d H:i');
         $unitaireCount = array_sum(array_map('count', $unitaireGroups));
@@ -386,6 +473,29 @@ class RawMaterialFicheCommand extends Command
             }
             $md[] = '';
         }
+
+        // [B-2] Section EXTRAS (suppléments payants mappés par groupe de nom).
+        $md[] = '## Extras (suppléments payants)';
+        $md[] = '';
+        $md[] = 'Décrémentés par le moteur quand le client AJOUTE le supplément (résolus par';
+        $md[] = 'nom de groupe, pas par id). Une matière absente de la baseline reste ⚠️ owner.';
+        $md[] = '';
+        $md[] = '| Extra (groupe) | Ingrédient | Quantité | Unité | Statut |';
+        $md[] = '|---|---|---|---|---|';
+        foreach ($extraLines as $e) {
+            $status = ! $e['present']
+                ? '⚠️ matière absente (owner)'
+                : ($e['confirm'] ? '⚠️ À CONFIRMER' : '✅ pré-rempli');
+            $qty = self::fmtQty($e['qty']);
+            $md[] = "| {$e['group']} | {$e['material']} | {$qty} | {$e['unit']} | {$status} |";
+        }
+        $md[] = '';
+        $md[] = '> **Restent OWNER-DATA — aucune ligne pré-remplie, partent en `skipped`** : les';
+        $md[] = '> VIANDES choisies par variation/extra (Tacos, Assiettes, Bols — la protéine';
+        $md[] = '> passe par une option non mappée, donc leur recette ci-dessus est SANS viande)';
+        $md[] = '> et les suppléments sans matière connue (Champignons, Raclette, Emmental,';
+        $md[] = '> Boursin, Légumes sautés, Option Gratiné…). À confirmer avant de brancher.';
+        $md[] = '';
 
         // Section produits à l'unité / hors périmètre P1.
         $md[] = '## Comptés à l\'unité / hors périmètre P1 (à détailler plus tard)';

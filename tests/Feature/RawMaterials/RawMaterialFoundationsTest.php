@@ -151,12 +151,13 @@ class RawMaterialFoundationsTest extends TestCase
         $this->assertEqualsWithDelta(-3.0, (float) $variance->delta, 0.001); // 7 - 10
     }
 
-    public function test_baseline_seeder_is_idempotent_twelve_rows(): void
+    public function test_baseline_seeder_is_idempotent_thirteen_rows(): void
     {
         $this->seed(RawMaterialBaselineSeeder::class);
         $this->seed(RawMaterialBaselineSeeder::class); // relance
 
-        $this->assertSame(12, RawMaterial::count());
+        // 12 baseline + Œuf (B-2 : matière référencée par 29 extras réels) = 13.
+        $this->assertSame(13, RawMaterial::count());
         $this->assertSame(
             '75.00',
             (string) RawMaterial::where('name', 'Viande hachée')->value('piece_weight_g')

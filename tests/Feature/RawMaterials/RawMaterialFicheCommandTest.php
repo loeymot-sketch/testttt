@@ -4,10 +4,16 @@ namespace Tests\Feature\RawMaterials;
 
 use App\Console\Commands\RawMaterialFicheCommand;
 use App\Enums\Status;
+use App\Models\Branch;
 use App\Models\Item;
 use App\Models\ItemCategory;
+use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\RawMaterial;
 use App\Models\RawMaterialRecipeLine;
+use App\Models\RawMaterialStock;
+use App\Models\User;
+use App\Services\RawMaterials\RawMaterialConsumptionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
@@ -127,11 +133,115 @@ class RawMaterialFicheCommandTest extends TestCase
 
         RawMaterialFicheCommand::generate();
 
-        $this->assertSame(12, RawMaterial::where('branch_id', 1)->count());
+        // 12 baseline + Œuf (référencée par 29 extras réels — B-2) = 13.
+        $this->assertSame(13, RawMaterial::where('branch_id', 1)->count());
         $this->assertGreaterThan(0, RawMaterialRecipeLine::count());
     }
 
+    // ══ B-2 — Extras : les suppléments payants connus décrémentent le stock ════
+
+    // ── 6. La fiche crée des lignes de recette EXTRAS (mappées par subject_group). ─
+    public function test_fiche_creates_extra_group_recipe_lines(): void
+    {
+        RawMaterialFicheCommand::generate();
+
+        // Cheddar → 1 Cheddar pièce.
+        $cheddar = RawMaterialRecipeLine::where('subject_group', 'cheddar')->with('rawMaterial')->first();
+        $this->assertNotNull($cheddar, 'Ligne extra "cheddar" attendue.');
+        $this->assertSame('Cheddar', $cheddar->rawMaterial->name);
+        $this->assertEqualsWithDelta(1.0, (float) $cheddar->qty, 0.001);
+        // subject_type marqueur dédié (jamais ItemExtra::class → pas de collision id réel).
+        $this->assertSame('extra_group', $cheddar->subject_type);
+
+        // Sauce supplémentaire → Sauce maison 25 g.
+        $sauce = RawMaterialRecipeLine::where('subject_group', 'sauce supplémentaire')->with('rawMaterial')->first();
+        $this->assertNotNull($sauce);
+        $this->assertSame('Sauce maison', $sauce->rawMaterial->name);
+        $this->assertEqualsWithDelta(25.0, (float) $sauce->qty, 0.001);
+
+        // Viande supplémentaire → Viande hachée 75 g (mix moyen assumé).
+        $viande = RawMaterialRecipeLine::where('subject_group', 'viande supplémentaire')->with('rawMaterial')->first();
+        $this->assertNotNull($viande);
+        $this->assertSame('Viande hachée', $viande->rawMaterial->name);
+        $this->assertEqualsWithDelta(75.0, (float) $viande->qty, 0.001);
+
+        // Œuf (ligature) → matière Œuf.
+        $oeuf = RawMaterialRecipeLine::where('subject_group', 'œuf')->with('rawMaterial')->first();
+        $this->assertNotNull($oeuf, 'Ligne extra "œuf" attendue.');
+        $this->assertSame('Œuf', $oeuf->rawMaterial->name);
+
+        // Section Extras rendue dans la fiche.
+        $content = File::get(base_path(RawMaterialFicheCommand::FICHE_PATH));
+        $this->assertStringContainsString('Extras', $content);
+    }
+
+    // ── 7. Commande avec extra Cheddar → décompte 1 Cheddar (plus dans skipped). ─
+    public function test_order_with_cheddar_extra_decrements_one_cheddar(): void
+    {
+        RawMaterialFicheCommand::generate(); // matières (dont Œuf) + lignes extras
+
+        $coca = Item::where('name', 'Coca-Cola 33cl')->firstOrFail(); // aucune recette produit
+        $order = $this->makeOrder();
+        $this->makeOrderItem($order, $coca, 1, [
+            'lines' => [],
+            'extras' => [['extra_id' => 12345, 'extra_name' => 'Cheddar', 'quantity' => 1]],
+            'addons' => [],
+        ]);
+
+        $summary = app(RawMaterialConsumptionService::class)->consumeForOrder($order);
+
+        $cheddar = RawMaterial::where('name', 'Cheddar')->firstOrFail();
+        $this->assertEqualsWithDelta(
+            -1.0,
+            (float) RawMaterialStock::where('raw_material_id', $cheddar->id)->value('on_hand'),
+            0.001
+        );
+        $this->assertSame([], $summary['skipped']); // l'extra a été RÉSOLU (plus skippé)
+        $this->assertCount(1, $summary['consumed']);
+    }
+
+    // ── 8. La baseline sème la matière Œuf (référencée par 29 extras réels). ───
+    public function test_baseline_seeds_oeuf_material(): void
+    {
+        RawMaterialFicheCommand::generate();
+
+        $oeuf = RawMaterial::where('branch_id', 1)->where('name', 'Œuf')->first();
+        $this->assertNotNull($oeuf, 'La matière Œuf doit être semée.');
+        $this->assertSame('piece', $oeuf->unit);
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private function makeOrder(): Order
+    {
+        $branch = Branch::factory()->create();
+        $user = User::factory()->create(['branch_id' => $branch->id]);
+
+        return Order::factory()->create([
+            'branch_id' => $branch->id,
+            'user_id' => $user->id,
+        ]);
+    }
+
+    /** @param array<string,mixed> $snapshot */
+    private function makeOrderItem(Order $order, Item $item, int $qty, array $snapshot = []): OrderItem
+    {
+        return OrderItem::create([
+            'order_id' => $order->id,
+            'branch_id' => 1,
+            'item_id' => $item->id,
+            'quantity' => $qty,
+            'price' => 10,
+            'discount' => 0,
+            'item_variation_total' => 0,
+            'item_extra_total' => 0,
+            'total_price' => 10 * $qty,
+            'item_variations' => '[]',
+            'item_extras' => '[]',
+            'composition_snapshot' => $snapshot ?: ['lines' => [], 'extras' => [], 'addons' => []],
+            'instruction' => '',
+        ]);
+    }
 
     /** Noms de matières attachées à un produit (par nom). */
     private function materialsFor(string $itemName): array

@@ -7,6 +7,7 @@ use App\Models\ItemExtra;
 use App\Models\ItemVariation;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\RawMaterialMovement;
 use App\Models\RawMaterialRecipeLine;
 use App\Models\Scopes\BranchScope;
 use Illuminate\Support\Collection;
@@ -74,6 +75,19 @@ class RawMaterialConsumptionService
     /** Motif métier du mouvement de consommation. */
     private const REASON = 'sale';
 
+    /**
+     * Origine des mouvements de REPRISE (rendu de stock sur annulation). DISTINCTE
+     * de self::SOURCE_TYPE : la clé d'idempotence du StockService porte sur le
+     * triplet (source_type, source_id, raw_material_id) — un source_type dédié
+     * garantit que la reprise ne se dédupliquera JAMAIS contre la consommation
+     * d'origine (même source_id=order_item.id) et qu'une 2ᵉ annulation retrouvera
+     * SA propre reprise → NO-OP (jamais de double-rendu).
+     */
+    private const REVERSAL_SOURCE_TYPE = 'order_item_reversal';
+
+    /** Motif métier du mouvement de reprise (rendu de stock annulé/refusé/retourné). */
+    private const REVERSAL_REASON = 'consumption_reversal';
+
     public function __construct(private RawMaterialStockService $stock)
     {
     }
@@ -100,6 +114,115 @@ class RawMaterialConsumptionService
         }
 
         return ['consumed' => $consumed, 'skipped' => $skipped];
+    }
+
+    /**
+     * [B-1] REND le stock matière théorique consommé par une commande qui a
+     * atteint un statut terminal ANNULANT (CANCELED / REJECTED / RETURNED).
+     *
+     * Pourquoi : {@see consumeForOrder} décrémente à la CRÉATION quel que soit le
+     * statut final. Le rejeu historique ({@see RawMaterialReplayConsumptionCommand})
+     * EXCLUT ces trois statuts. Sans reprise, `on_hand` sur-consomme définitivement
+     * les annulées et DIVERGE en permanence d'une reconstruction par replay. Cette
+     * méthode aligne la vérité LIVE sur la vérité replay — miroir raw-material de
+     * {@see \App\Services\Stock\StockService::releaseForOrder} (stock_levels).
+     *
+     * ─── Idempotence : DOUBLE garde, ne double-rend JAMAIS ────────────────────
+     *  (a) Ne rend QUE le RÉELLEMENT consommé : on lit les mouvements de conso de
+     *      CETTE commande (source_type='order_item', reason='sale') et on rend
+     *      exactement abs(delta) par (order_item, matière). Une commande jamais
+     *      consommée → aucun mouvement source → no-op total.
+     *  (b) Ne rejoue jamais une reprise : le mouvement de rendu porte un
+     *      source_type DÉDIÉ ({@see REVERSAL_SOURCE_TYPE}, même source_id) → sa
+     *      clé d'idempotence StockService ne collisionne pas avec la conso, et une
+     *      2ᵉ annulation retrouve la reprise déjà écrite → NO-OP. On court-circuite
+     *      AUSSI explicitement ici ({@see reversalExists}) pour ne pas même ouvrir
+     *      la transaction.
+     *
+     * NF525 / branch : lit les mouvements, écrit un rendu positif hors chaîne
+     * fiscale. La reprise est écrite sur la MÊME branche que la conso d'origine.
+     *
+     * @return array{reversed: array<int, array{order_item_id:int, raw_material_id:int, qty:float}>, skipped: array<int, array<string, mixed>>}
+     */
+    public function reverseForOrder(Order $order): array
+    {
+        $reversed = [];
+        $skipped = [];
+
+        // order_item ids de CETTE commande (BranchScope retiré : portée bornée par
+        // order_id, contexte queue/console hors auth — miroir de consumeForOrder).
+        $orderItemIds = $order->orderItems()
+            ->withoutGlobalScope(BranchScope::class)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        if ($orderItemIds === []) {
+            return ['reversed' => $reversed, 'skipped' => $skipped];
+        }
+
+        // (a) Mouvements de conso RÉELS de la commande (signature exacte de consume()).
+        $consumptions = RawMaterialMovement::query()
+            ->where('source_type', self::SOURCE_TYPE)
+            ->whereIn('source_id', $orderItemIds)
+            ->where('reason', self::REASON)
+            ->get();
+
+        foreach ($consumptions as $movement) {
+            $sourceId = (int) $movement->source_id;
+            $rawMaterialId = (int) $movement->raw_material_id;
+            $qty = abs((float) $movement->delta);
+            $branchId = (int) $movement->branch_id;
+
+            if ($qty <= 0.0) {
+                continue;
+            }
+
+            // (b) Reprise déjà écrite pour ce (order_item, matière) → skip.
+            if ($this->reversalExists($sourceId, $rawMaterialId)) {
+                $skipped[] = [
+                    'order_item_id' => $sourceId,
+                    'raw_material_id' => $rawMaterialId,
+                    'kind' => 'already_reversed',
+                ];
+
+                continue;
+            }
+
+            $this->stock->receive(
+                rawMaterialId: $rawMaterialId,
+                qty: $qty,
+                reason: self::REVERSAL_REASON,
+                sourceType: self::REVERSAL_SOURCE_TYPE,
+                sourceId: $sourceId,
+                meta: [
+                    'order_id' => (int) $order->id,
+                    'reversed_movement_id' => (int) $movement->id,
+                ],
+                branchId: $branchId > 0 ? $branchId : self::BRANCH_ID,
+            );
+
+            $reversed[] = [
+                'order_item_id' => $sourceId,
+                'raw_material_id' => $rawMaterialId,
+                'qty' => $qty,
+            ];
+        }
+
+        return ['reversed' => $reversed, 'skipped' => $skipped];
+    }
+
+    /**
+     * Une reprise (rendu) a-t-elle DÉJÀ été écrite pour ce (order_item, matière) ?
+     * Garde explicite d'idempotence, complémentaire à celle du StockService.
+     */
+    private function reversalExists(int $sourceId, int $rawMaterialId): bool
+    {
+        return RawMaterialMovement::query()
+            ->where('source_type', self::REVERSAL_SOURCE_TYPE)
+            ->where('source_id', $sourceId)
+            ->where('raw_material_id', $rawMaterialId)
+            ->exists();
     }
 
     /**

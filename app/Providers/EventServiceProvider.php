@@ -68,6 +68,7 @@ use App\Listeners\ReleaseAvailabilityOnOrderCanceled;
 use App\Listeners\ReleaseAvailabilityOnRefundCreated;
 use App\Listeners\ReleaseStockOnOrderCanceled;
 use App\Listeners\ReleaseStockOnRefundCreated;
+use App\Listeners\ReverseRawMaterialsOnOrderCanceled;
 use App\Listeners\PersistOrderCreatedToOutbox;
 use App\Listeners\PersistOrderPaidAtCounterToOutbox;
 use App\Listeners\PersistOrderPaymentStatusChangedOnRefundCreated;
@@ -201,6 +202,11 @@ class EventServiceProvider extends ServiceProvider
         OrderCanceled::class => [
             ReleaseStockOnOrderCanceled::class,
             ReleaseAvailabilityOnOrderCanceled::class,
+            // [ARCH_STOCK_INTELLIGENT_BOM B-1 2026-07-23] Reprise (rendu) du stock
+            // matière THÉORIQUE — miroir raw-material de ReleaseStockOnOrderCanceled.
+            // ShouldQueue + try/catch isolé : ne casse ni l'annulation ni le cascade.
+            // NF525 : lit les mouvements, écrit un rendu hors chaîne fiscale.
+            ReverseRawMaterialsOnOrderCanceled::class,
         ],
         // [HEAL-PLAN-D.3 / RED-Z8 P2-2 — heal/cms-pr1-quickwins-2026-05-18]
         // Persist+broadcast FIRST so a downstream stock / availability release
