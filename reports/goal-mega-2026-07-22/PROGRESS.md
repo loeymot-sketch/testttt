@@ -90,3 +90,15 @@ Plan : `plans/GOAL_MEGA_BORNE_TICKET_STOCK_MOBILE_2026-07-22.md`
 - Preuves : vitest 2508+ (fraîcheur 9/9 post-build) · PHPUnit 364/1208 + MP 347+663 · frozen 0 · chaîne OK ×4.
 - **STOCK MASSIF CLOS** : preuve LIVE /m→web 153 ms + local 10/10 (STOCK_MASSIF_FINDINGS.md). 0 P0/P1 produit.
 ## ⏭️ Reste : deploy 28ec6ce8f (en cours) · e2e final caisse/KDS · décisions owner (A/B restock, frozen v2 items 🧊, perf bundle dédiée)
+
+## ✅ 2026-07-23 — BOM stock intelligent P1+P2 LIVRÉ + réconciliation vague-2
+- **P1** (`10c241d88`+`15206aa89`) : 12 matières + 104 recettes + fiche owner (Suprême corrigé = hachée 75g + cordon bleu).
+- **P2a moteur conso** (`fd1ee8b40`) : OrderCreated→consume idempotent. Preuve réelle Cayenne→5 matières.
+- **P2b coût+rejeu** (deploy en cours) : replay 2659 cmd→1248 lignes/12 matières (dry-run ACID), FoodCostService
+  NULL-safe (« ? prix non saisi »), FOOD_COST_REPORT.md 55 produits.
+- **⚠️ RÉCONCILIATION** (`23979a484`) : source vague-2 (MP+SYNC+stock) testée verte mais JAMAIS commitée
+  (commits partiels 12a6bc016/28ec6ce8f = tests seulement) → scellée + déployée. VPS était en retard.
+- **REVALIDATION WEB 10/10** (`REVALIDATION_WEB_2026-07-23.md`) : commande réelle #230726193 10,40€ scellée.
+- Preuves globales : vitest 2511/2514, phpunit 754/2531, chaîne NF525 OK ×4, frozen 0.
+## RESTE : P2c (/m stock théorique + à-acheter) · P3 facture photo IA (clé ChatGPT) · prix d'achat matières
+##   (owner qq valeurs OU factures) · Mollie clé VPS · capital mentions · commande test #230726193 à encaisser.
