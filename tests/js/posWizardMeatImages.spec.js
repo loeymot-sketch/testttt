@@ -15,9 +15,11 @@ describe('pos-wizard — images réelles viandes (LOCK_POSWIZARD_KIOSKWIZARD_OWN
         const { wizard } = await mountPosWizard({ itemData: cayenneLikeItem() });
         expect(wizard).toBeTruthy();
 
-        const rows = Array.from(wizard.querySelectorAll('.wizard-viande-row'));
+        // [VIANDE-UI 2026-07-23] Structure = tuiles carrées (grande image) au lieu de lignes.
+        // L'image réelle (img.viande-img via _renderViandeVisual) est PRÉSERVÉE.
+        const rows = Array.from(wizard.querySelectorAll('.wizard-viande-tile'));
         const poulet = rows.find((r) => r.textContent.includes('Poulet mariné'));
-        expect(poulet, 'ligne Poulet mariné').toBeTruthy();
+        expect(poulet, 'tuile Poulet mariné').toBeTruthy();
 
         const img = poulet.querySelector('img.viande-img');
         expect(img, 'image réelle rendue').toBeTruthy();
@@ -26,9 +28,9 @@ describe('pos-wizard — images réelles viandes (LOCK_POSWIZARD_KIOSKWIZARD_OWN
 
     it('variation SANS thumb → repli pastille emoji (aucune <img>)', async () => {
         const { wizard } = await mountPosWizard({ itemData: cayenneLikeItem() });
-        const rows = Array.from(wizard.querySelectorAll('.wizard-viande-row'));
+        const rows = Array.from(wizard.querySelectorAll('.wizard-viande-tile'));
         const mex = rows.find((r) => r.textContent.includes('Mexicanos'));
-        expect(mex, 'ligne Mexicanos').toBeTruthy();
+        expect(mex, 'tuile Mexicanos').toBeTruthy();
         expect(mex.querySelector('img.viande-img')).toBeNull();
         expect(mex.querySelector('.viande-emoji'), 'pastille emoji conservée').toBeTruthy();
     });

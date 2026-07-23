@@ -418,7 +418,7 @@ final class OrderReceiptEscPosRenderer
     }
 
     /**
-     * @return array<int, array{name:string, qty:int, total:float, comps:array<int,string>, extras:array<int,array{name:string,amount:float}>, addons:array<int,array{name:string,amount:float}>, instruction:string}>
+     * @return array<int, array{name:string, qty:int, total:float, comps:array<int,string>, extras:array<int,array{name:string,amount:float}>, addons:array<int,array{name:string,amount:float,role:string}>, instruction:string}>
      */
     private function lines(BroadcastableOrder $order): array
     {
@@ -454,7 +454,17 @@ final class OrderReceiptEscPosRenderer
                 if ($an === '') {
                     continue;
                 }
-                $addons[] = ['name' => $an, 'amount' => (float) ($a['line_total'] ?? 0)];
+                // [MENU-ROLE-CLIENT 2026-07-23] Transporte AUSSI le `role` du snapshot
+                // (menu_full / menu_frites / menu_boisson). Sur la borne une formule = UN
+                // seul addon « Menu (Frites + Boisson) » (item id 1) : le choix réel du client
+                // (complet / frites seules / boisson seule) n'est porté QUE par le role, pas
+                // par addon_name (identique pour les 3). renderClientItem() s'en sert pour un
+                // libellé fidèle. Prix inchangé (line_total scellé, NF525).
+                $addons[] = [
+                    'name' => $an,
+                    'amount' => (float) ($a['line_total'] ?? 0),
+                    'role' => strtolower(trim((string) ($a['role'] ?? ''))),
+                ];
             }
             $out[] = [
                 'name' => $name,
@@ -513,10 +523,18 @@ final class OrderReceiptEscPosRenderer
             $b .= EscPosCommandBuilder::lineItemKV('   + '.$e['name'], $this->money((float) $e['amount']), $w);
         }
         foreach ($line['addons'] as $a) {
+            // [MENU-ROLE-CLIENT 2026-07-23] Pour un addon de formule (role menu_*), imprime un
+            // libellé role-aware (« Menu Frites » / « Menu Boisson » / « Menu Frites + Boisson »)
+            // au lieu du nom brut scellé « Menu (Frites + Boisson) » — IDENTIQUE pour les 3 choix,
+            // ce qui affichait « menu frites+boisson » sur le ticket client d'une frite seule.
+            // Miroir de KitchenTicketSymbolicFormatter::menuLine() (role→MENU/FRITES/BOISSON).
+            // Tout autre addon (role vide/non-menu) garde son nom brut. Le PRIX reste le
+            // line_total SCELLÉ (jamais recalculé) — on ne corrige QUE le libellé.
+            $label = $this->menuClientLabel((string) ($a['role'] ?? '')) ?: $a['name'];
             if (($a['amount'] ?? 0) > 0) {
-                $b .= EscPosCommandBuilder::lineItemKV('   + '.$a['name'], $this->money((float) $a['amount']), $w);
+                $b .= EscPosCommandBuilder::lineItemKV('   + '.$label, $this->money((float) $a['amount']), $w);
             } else {
-                foreach (EscPosCommandBuilder::wrapIndented('+ '.$a['name'], $w, '   ') as $addonLine) {
+                foreach (EscPosCommandBuilder::wrapIndented('+ '.$label, $w, '   ') as $addonLine) {
                     $b .= EscPosCommandBuilder::textLine($addonLine);
                 }
             }
@@ -533,6 +551,36 @@ final class OrderReceiptEscPosRenderer
         }
 
         return $b;
+    }
+
+    /**
+     * [MENU-ROLE-CLIENT 2026-07-23] Libellé CLIENT d'un addon de formule d'après son `role`
+     * de composition_snapshot. Sur la borne une formule = UN seul addon « Menu (Frites +
+     * Boisson) » (item id 1) et le choix réel du client (complet / frites seules / boisson
+     * seule) est porté UNIQUEMENT par le `role` (menu_full / menu_frites / menu_boisson),
+     * pas par addon_name (identique pour les 3). Le ticket CUISINE décode déjà ce rôle
+     * ({@see KitchenTicketSymbolicFormatter::menuLine()} → MENU / FRITES / BOISSON) ; ce
+     * miroir donne au ticket CLIENT le même libellé fidèle, en clair FR :
+     *   menu_frites                             → « Menu Frites »
+     *   menu_boisson                            → « Menu Boisson »
+     *   menu_full / menu_formule / autre menu_* → « Menu Frites + Boisson »
+     * Rôle vide ou non-menu → '' (l'appelant garde alors le nom d'addon brut, ex. un
+     * addon « drink »/upsell hors formule). N'affecte QUE le LIBELLÉ : le prix imprimé
+     * reste le `line_total` scellé (déjà proratisé, NF525) — jamais recalculé ici.
+     */
+    private function menuClientLabel(string $role): string
+    {
+        $role = strtolower(trim($role));
+        if ($role === '' || ! str_starts_with($role, 'menu_')) {
+            return '';
+        }
+
+        return match ($role) {
+            'menu_frites' => 'Menu Frites',
+            'menu_boisson' => 'Menu Boisson',
+            // menu_full / menu_formule / futur menu_* = formule complète.
+            default => 'Menu Frites + Boisson',
+        };
     }
 
     /** "0365678291" → "03 65 67 82 91" (French 10-digit); otherwise unchanged. */
