@@ -127,7 +127,7 @@ class RawMaterialFicheCommandTest extends TestCase
 
         RawMaterialFicheCommand::generate();
 
-        $this->assertSame(11, RawMaterial::where('branch_id', 1)->count());
+        $this->assertSame(12, RawMaterial::where('branch_id', 1)->count());
         $this->assertGreaterThan(0, RawMaterialRecipeLine::count());
     }
 

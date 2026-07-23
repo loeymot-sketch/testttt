@@ -28,6 +28,7 @@ class RawMaterialBaselineSeeder extends Seeder
         $materials = [
             ['Viande hachée',  'g',       75],
             ['Poulet',         'g',       null],
+            ['Cordon bleu',    'piece',   null], // [OWNER 2026-07-23] Suprême = 1 pièce
             ['Cheddar',        'piece',   null],
             ['Jambon',         'tranche', null],
             ['Pain',           'piece',   null],

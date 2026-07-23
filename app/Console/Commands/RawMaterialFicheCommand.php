@@ -51,10 +51,18 @@ class RawMaterialFicheCommand extends Command
     /** Mots-clés catégorie → frites. */
     private const CAT_FRITES = ['frite'];
 
+    /**
+     * [OWNER-CONFIRMED] Corrections owner par produit : ces (produit → matières) passent
+     * en ✅ pré-rempli (l'owner a validé la valeur). S'enrichit à chaque correction.
+     */
+    private const OWNER_CONFIRMED = [
+        'Suprême' => ['Viande hachée', 'Cordon bleu'], // owner 2026-07-23 : 75 g + 1 pièce
+    ];
+
     /** Ordre d'affichage stable des matières dans une recette. */
     private const MATERIAL_ORDER = [
         'Pain' => 1, 'Galette' => 1, 'Portion frites' => 1,
-        'Sauce maison' => 2, 'Viande hachée' => 3, 'Poulet' => 4,
+        'Sauce maison' => 2, 'Viande hachée' => 3, 'Poulet' => 4, 'Cordon bleu' => 4,
         'Cheddar' => 5, 'Jambon' => 6, 'Salade' => 7, 'Tomate' => 8, 'Oignon' => 9,
     ];
 
@@ -222,8 +230,13 @@ class RawMaterialFicheCommand extends Command
             if (self::containsAny($text, ['steak', 'haché', 'hache', 'beef', 'bœuf', 'boeuf'])) {
                 $specs[] = ['Viande hachée', 75.0, true, 'steak 75 g (compte selon produit)'];
             }
-            if (self::containsAny($text, ['cordon bleu', 'tenders', 'nuggets'])) {
-                $specs[] = ['Poulet', 0.0, true, 'panure poulet (cordon bleu/nuggets) — à confirmer'];
+            // [OWNER 2026-07-23] Cordon bleu = matière À LA PIÈCE (Suprême = steak 75 g
+            // + 1 cordon bleu) — plus de ligne « Poulet 0 g » générique pour lui.
+            if (str_contains($text, 'cordon bleu')) {
+                $specs[] = ['Cordon bleu', 1.0, false, '1 pièce (owner 2026-07-23)'];
+            }
+            if (self::containsAny($text, ['tenders', 'nuggets'])) {
+                $specs[] = ['Poulet', 0.0, true, 'panure poulet (tenders/nuggets) — à confirmer'];
             }
             if (self::containsAny($text, ['fricadelle', 'mexicanos'])) {
                 $specs[] = ['Viande hachée', 0.0, true, 'à confirmer'];
@@ -246,7 +259,18 @@ class RawMaterialFicheCommand extends Command
         $specs[] = ['Tomate', 30.0, true, 'grammage à confirmer'];
         $specs[] = ['Oignon', 15.0, true, 'grammage à confirmer'];
 
-        return self::dedupeOrder($specs);
+        $specs = self::dedupeOrder($specs);
+        // [OWNER-CONFIRMED] statut ✅ forcé sur les matières validées par l'owner pour CE produit.
+        foreach (self::OWNER_CONFIRMED as $productName => $materials) {
+            if (mb_strtolower($productName) === mb_strtolower(trim($itemName))) {
+                foreach ($specs as &$sp) {
+                    if (in_array($sp[0], $materials, true)) { $sp[2] = false; }
+                }
+                unset($sp);
+            }
+        }
+
+        return $specs;
     }
 
     /**
