@@ -2189,6 +2189,31 @@ class OrderService
     }
 
     /**
+     * [D-1 HEAL 2026-07-24 · reports/audit-sync-gestion-2026-07-23 §D-1] Defense-in-depth
+     * guard against RESURRECTING a terminal order. OrderStateMachine::allows()
+     * (FROZEN §7, lines 79-86) grants an Admin a blanket terminal→ANY override, so an
+     * Admin could otherwise move CANCELED/REJECTED/RETURNED back to an ACTIVE status
+     * (e.g. CANCELED→ACCEPT, RETURNED→DELIVERED), bringing a dead order back to life.
+     * No legitimate un-cancel/reopen flow exists in V1 — Order::restoring() is
+     * hard-disabled (app/Models/Order.php:157-165, "To reopen an order, create a new
+     * one"). This NON-frozen guard narrows the frozen Admin override so a terminal→
+     * ACTIVE transition is refused for EVERY actor, mirroring the SealedOrderGuard
+     * defense already applied to terminal edges. Terminal→terminal stays out of scope
+     * (owned by SealedOrderGuard + the reason gate); idempotent same-status is
+     * unaffected (from===to short-circuits upstream in allows()/apply()).
+     */
+    private function assertNotResurrectingTerminalOrder(int $from, int $to): void
+    {
+        $terminal = [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED];
+        if (in_array($from, $terminal, true) && ! in_array($to, $terminal, true)) {
+            // abort() → HttpException, preserved untouched by this method's
+            // `catch (HttpException)` re-throw (same pattern as the branch-isolation
+            // abort(403) guards already in changeStatus).
+            abort(422, 'Transition interdite : une commande terminée (annulée, refusée ou remboursée) ne peut pas être réactivée.');
+        }
+    }
+
+    /**
      * @throws Exception
      */
     public function changeStatus(Order $order, OrderStatusRequest $request, bool $auth = false): Order|array
@@ -2199,6 +2224,11 @@ class OrderService
             }
 
             $targetStatus = (int) $request->status;
+
+            // [D-1 HEAL 2026-07-24] Fast-fail terminal→active resurrection up-front
+            // (before opening a transaction). Re-checked in-lock below against the
+            // FRESH locked status for the concurrent-move case.
+            $this->assertNotResurrectingTerminalOrder((int) $order->status, $targetStatus);
 
             if ($auth) {
                 // Customer self-cancellation path — owner check only
@@ -2330,6 +2360,12 @@ class OrderService
                     if (! (new \App\Rules\ValidStatusTransition((int) $locked->status))->passes('status', $toStatus)) {
                         throw new Exception(trans('all.message.invalid_status_transition'), 422);
                     }
+
+                    // [D-1 HEAL 2026-07-24] Race-safe re-check against the FRESH locked
+                    // status: allows() lets an Admin resurrect a terminal order, so a
+                    // concurrent move to CANCELED/REJECTED/RETURNED between route-binding
+                    // and the lock could otherwise persist a terminal→active edge.
+                    $this->assertNotResurrectingTerminalOrder((int) $locked->status, $toStatus);
 
                     // [P3] RETURNED — même barrière motif / contrepartie que CANCELED & REJECTED.
                     if (in_array($toStatus, [OrderStatus::REJECTED, OrderStatus::CANCELED, OrderStatus::RETURNED], true)) {

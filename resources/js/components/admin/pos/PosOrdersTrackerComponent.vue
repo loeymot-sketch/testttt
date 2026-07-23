@@ -720,7 +720,21 @@ export default {
             return {
                 active: b.accept.length + b.preparing.length + b.prepared.length,
                 ready: b.prepared.length,
-                todayCount: this.orders.length,
+                // [D-2 HEAL 2026-07-24 · reports/audit-sync-gestion-2026-07-23 §D-2]
+                // Compteur honnête. `fetchOrders` tire le jour SANS filtre de statut →
+                // un PENDING NON-web (panier borne abandonné, commande téléphone/pos
+                // naissante, source NULL) entre dans `this.orders` mais n'est bucketé
+                // dans AUCUNE voie (seul le web PENDING a la voie « À encaisser »). Il
+                // gonflait donc « X aujourd'hui » avec des cartes invisibles (162 en
+                // base). On l'exclut : le compteur ne compte plus que ce qui est
+                // représentable sur le board. Le web PENDING (actionnable, CTA
+                // Accepter) reste compté ; le bucketing est INCHANGÉ (le non-web
+                // PENDING reste hors board). Même calcul de statut que ordersByStatus.
+                todayCount: this.orders.reduce((n, o) => {
+                    const s = parseInt(o.order_status ?? o.status ?? 0, 10);
+                    const isPhantomPending = s === orderStatusEnum.PENDING && !this.isWebPending(o);
+                    return isPhantomPending ? n : n + 1;
+                }, 0),
             };
         },
     },
