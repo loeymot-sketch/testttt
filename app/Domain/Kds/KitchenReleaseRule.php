@@ -156,21 +156,48 @@ final class KitchenReleaseRule
     }
 
     /**
+     * [KDS-SCHEDULED-NO-UPPER-BOUND 2026-07-22] Grâce (heures) après l'heure cible
+     * au-delà de laquelle une programmée no-show sort du board actif.
+     */
+    public static function scheduledGraceHours(): int
+    {
+        return max(1, (int) config('kds.scheduled_grace_hours', 2));
+    }
+
+    /**
      * Board (KDS + OSS, les 5 chemins jumeaux) : ne montrer que l'ASAP (NULL) et
-     * les programmées entrées dans leur fenêtre (scheduled_at <= now + lead).
+     * les programmées DANS leur fenêtre active — de `grace` heures avant l'heure
+     * cible dépassée jusqu'à `lead` minutes avant : now - grace <= scheduled_at
+     * <= now + lead.
+     *
+     * [KDS-SCHEDULED-NO-UPPER-BOUND 2026-07-22] La borne HAUTE (plancher
+     * `scheduled_at >= now - grace`) est nouvelle : sans elle une programmée
+     * no-show (jamais bumpée/livrée/annulée) satisfaisait `scheduled_at <= horizon`
+     * à VIE et squattait le board. Elle en sort désormais `grace` heures après sa
+     * cible. On NE touche PAS le jumeau booléen orderIsWithinScheduledWindow (guard
+     * de bump) : la moitié porteuse de la doctrine « visible ⟹ bumpable » reste
+     * vraie (tout ce que le board montre est dans la fenêtre du guard) ; la seule
+     * divergence introduite est bénigne (invisible mais techniquement bumpable — un
+     * abandonné hors board que le chef ne peut plus atteindre), JAMAIS le sens
+     * dangereux « visible mais non bumpable ». NULL = ASAP (borne inapplicable).
      *
      * @param  \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder  $query
      * @param  \DateTimeInterface|null  $now  horloge injectable (tests) — défaut now()
      */
     public static function applyScheduledBoardFilter($query, $now = null)
     {
-        $horizon = ($now ? \Illuminate\Support\Carbon::instance(
+        $base = $now ? \Illuminate\Support\Carbon::instance(
             $now instanceof \Illuminate\Support\Carbon ? $now : \Illuminate\Support\Carbon::parse($now)
-        ) : now())->copy()->addMinutes(self::scheduledLeadMinutes());
+        ) : now();
+        $horizon = $base->copy()->addMinutes(self::scheduledLeadMinutes());
+        $floor = $base->copy()->subHours(self::scheduledGraceHours());
 
-        return $query->where(function ($q) use ($horizon) {
+        return $query->where(function ($q) use ($horizon, $floor) {
             $q->whereNull('scheduled_at')
-                ->orWhere('scheduled_at', '<=', $horizon);
+                ->orWhere(function ($qq) use ($horizon, $floor) {
+                    $qq->where('scheduled_at', '<=', $horizon)
+                        ->where('scheduled_at', '>=', $floor);
+                });
         });
     }
 

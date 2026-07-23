@@ -101,6 +101,24 @@ describe('ItemPhotoUpload', () => {
         expect(wrapper.emitted('upload-error')?.[0]).toEqual(['upload_failed']);
     });
 
+    // [photo-upload-authz-and-feedback 2026-07-22] A 403 from the Admin/Tenant-Admin
+    // reservation must surface a clean localized message, NOT the raw server string
+    // "This action is unauthorized.".
+    it('test_403_maps_to_clean_forbidden_message_not_raw_server_string', async () => {
+        const wrapper = mountComponent();
+        axios.post.mockRejectedValueOnce({
+            response: { status: 403, data: { message: 'This action is unauthorized.' } },
+        });
+
+        await wrapper.vm.upload(imageFile());
+        await flushPromises();
+
+        expect(wrapper.vm.uploadState).toBe('error');
+        expect(wrapper.vm.errorMessage).toBe('studio.image.upload_forbidden');
+        expect(wrapper.vm.errorMessage).not.toContain('unauthorized');
+        expect(wrapper.emitted('upload-error')?.[0]).toEqual(['studio.image.upload_forbidden']);
+    });
+
     it('test_validation_oversize_rejected_client_side_no_http_call', async () => {
         const wrapper = mountComponent({ maxSizeBytes: 1 });
 

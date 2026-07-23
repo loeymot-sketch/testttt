@@ -32,9 +32,10 @@ const messages = {
                 in_stock: 'IN STOCK', out_of_stock: 'OUT OF STOCK', loading_error: 'err',
                 toggle_error: 'err', branch_label: 'Branch', loading: 'Loading',
                 read_only: 'Read-only', photo_action: 'Product photo',
+                globally_disabled: 'Disabled globally',
             },
         },
-        studio: { image: { upload_idle: 'Add a photo' } },
+        studio: { image: { upload_idle: 'Add a photo', upload_error: 'Upload error', upload_forbidden: 'Reserved to administrators' } },
     },
 };
 
@@ -44,8 +45,8 @@ const CATALOG_PAYLOAD = {
         {
             id: 10, name: 'Burgers', slug: 'burgers',
             items: [
-                { id: 42, name: 'Big Cayenne', thumb: '/img/big.png', is_available: true },
-                { id: 43, name: 'Cheese', thumb: null, is_available: false },
+                { id: 42, name: 'Big Cayenne', thumb: '/img/big.png', is_available: true, globally_disabled: false },
+                { id: 43, name: 'Cheese', thumb: null, is_available: false, globally_disabled: true },
             ],
         },
     ],
@@ -63,14 +64,19 @@ const CATALOG_PAYLOAD = {
     ],
 };
 
-function mountDashboard() {
+// roleId defaults to 1 (Admin — roleEnum.ADMIN) so the photo action is visible for
+// the ITEM-2 photo tests; pass a non-admin role id to assert the server-mirroring gate.
+function mountDashboard(roleId = 1) {
     const i18n = createI18n({ legacy: true, locale: 'en', messages });
     const store = createStore({
         modules: {
             auth: {
                 namespaced: true,
-                state: { authBranchId: 0 },
-                getters: { authBranchId: (s) => s.authBranchId },
+                state: { authBranchId: 0, authInfo: { role_id: roleId } },
+                getters: {
+                    authBranchId: (s) => s.authBranchId,
+                    authInfo: (s) => s.authInfo,
+                },
             },
         },
     });
@@ -100,6 +106,28 @@ describe('StockRupture dashboard — inline photo action (ITEM 2)', () => {
         await flushPromises();
         expect(wrapper.find('[data-testid="stock-mgmt-photo-btn-item-42"]').exists()).toBe(true);
         expect(wrapper.find('[data-testid="stock-mgmt-photo-btn-item-43"]').exists()).toBe(true);
+    });
+
+    // [photo-upload-authz-and-feedback 2026-07-22] The server reserves the photo route
+    // to Admin/Tenant-Admin — a non-admin with items_edit would 403. The button must be
+    // hidden for non-admin roles so no manager taps a dead button.
+    it('hides the photo button for a non-Admin role (server would 403)', async () => {
+        const wrapper = mountDashboard(6); // Branch Manager (not roleEnum.ADMIN)
+        await flushPromises();
+        expect(wrapper.find('[data-testid="stock-mgmt-photo-btn-item-42"]').exists()).toBe(false);
+        // The availability toggle (items_edit) stays available — only the photo action is gated.
+        expect(wrapper.find('[data-testid="stock-mgmt-toggle-item-42"]').exists()).toBe(true);
+    });
+
+    // [global-flag-defeats-dashboard-toggle 2026-07-22] When items.is_available (global)
+    // is off, the branch toggle is inert — surface a « disabled globally » badge so the
+    // conflict is visible instead of a silently dead switch.
+    it('shows the « disabled globally » badge only when the global flag is off', async () => {
+        const wrapper = mountDashboard();
+        await flushPromises();
+        expect(wrapper.find('[data-testid="stock-mgmt-global-off-item-43"]').exists()).toBe(true);
+        expect(wrapper.find('[data-testid="stock-mgmt-global-off-item-43"]').text()).toContain('Disabled globally');
+        expect(wrapper.find('[data-testid="stock-mgmt-global-off-item-42"]').exists()).toBe(false);
     });
 
     it('does NOT render a photo button on extra / variation rows', async () => {

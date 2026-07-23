@@ -450,9 +450,20 @@ export function onEvents(branchId, bindings) {
 
             // Remove ONLY this subscriber's own event bindings; the underlying
             // Pusher channel object stays alive for any co-subscribers.
-            listeners.forEach(({ broadcastAs }) => {
+            //
+            // [SYNC-W6 2026-07-22] Pass THIS subscriber's exact `rawHandler`.
+            // laravel-echo's `stopListening(event, handler)` forwards the handler
+            // to `subscription.unbind(event, handler)` → a TARGETED unbind of our
+            // one binding. Called WITHOUT the handler, `stopListening(event)`
+            // unbinds EVERY listener for that event name — so a co-subscriber
+            // listening to the SAME event on `branch.{id}` (e.g. two surfaces both
+            // bound to OrderStatusChanged) lost its still-active handler the moment
+            // any one of them unsubscribed. The 2026-07-07 refcount fix kept the
+            // channel OBJECT alive; this keeps each co-subscriber's event HANDLER
+            // alive too. Idempotent (guarded by `released` above).
+            listeners.forEach(({ broadcastAs, rawHandler }) => {
                 try {
-                    channel.stopListening(`.${broadcastAs}`);
+                    channel.stopListening(`.${broadcastAs}`, rawHandler);
                 } catch (_) {}
             });
 

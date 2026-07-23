@@ -317,6 +317,11 @@ class StockRuptureDashboardController extends AdminController
         // Authorize: ensure the resolved branch is inside the caller's scope.
         $this->authorizeBranchScope($request, $branchId);
 
+        // [quota-daily-reenable-cron-only 2026-07-22 / Vague 2] First stock-dashboard
+        // read of the day catches up the overnight quota reset the 00:05 cron missed
+        // when the box was off. Guarded once/day/branch inside the service.
+        app(\App\Services\Menu\AvailabilityService::class)->reconcileStaleDailyQuota($branchId);
+
         // 1) Categories + items (eager-load items, active only).
         $categories = ItemCategory::query()
             ->where('status', Status::ACTIVE)
@@ -352,6 +357,13 @@ class StockRuptureDashboardController extends AdminController
                 'slug'  => (string) ($cat->slug ?? ''),
                 'items' => $cat->items->map(function (Item $item) use ($itemOverrides): array {
                     $override = $itemOverrides->get((int) $item->id);
+                    // [global-flag-defeats-dashboard-toggle 2026-07-22 / Vague 2] The
+                    // GLOBAL catalogue flag `items.is_available` (item-edit form) can be
+                    // false. When it is, the branch EN-STOCK toggle is silently inert:
+                    // even after the manager re-enables the branch override, the effective
+                    // state stays OOS because the global flag wins here. Surface it so the
+                    // dashboard can badge « désactivé globalement » instead of a dead toggle.
+                    $globallyDisabled = ! (bool) $item->is_available;
                     $isAvailable = (bool) $item->is_available;
                     $reason = null;
                     if ($override !== null) {
@@ -364,12 +376,13 @@ class StockRuptureDashboardController extends AdminController
                         }
                     }
                     return [
-                        'id'           => (int) $item->id,
-                        'name'         => (string) $item->name,
-                        'slug'         => (string) ($item->slug ?? ''),
-                        'thumb'        => (string) $item->thumb,
-                        'is_available' => $isAvailable,
-                        'reason'       => $reason,
+                        'id'                => (int) $item->id,
+                        'name'              => (string) $item->name,
+                        'slug'              => (string) ($item->slug ?? ''),
+                        'thumb'             => (string) $item->thumb,
+                        'is_available'      => $isAvailable,
+                        'reason'            => $reason,
+                        'globally_disabled' => $globallyDisabled,
                     ];
                 })->values()->all(),
             ];

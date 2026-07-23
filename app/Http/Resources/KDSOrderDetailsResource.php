@@ -47,6 +47,18 @@ class KDSOrderDetailsResource extends JsonResource
             // (les deux champs restent null). Projection pure, SELECT-only.
             'scheduled_at'                        => $this->scheduled_at?->toIso8601String(),
             'scheduled_hm'                        => $this->scheduled_at?->format('H:i'),
+            // [KDS-SCHEDULED-CARD-MISLEADS 2026-07-22] Instant de LIBÉRATION cuisine
+            // d'une programmée = scheduled_at − lead (le moment où elle entre sur le
+            // board actif). La carte ancre son chrono « ATTENTE » ici et NON sur
+            // created_at : une programmée passée des heures à l'avance affichait un
+            // faux « en retard » monstrueux dès sa libération à T−lead. Le lead vient
+            // du SSOT KitchenReleaseRule (serveur — pas de duplication front). NULL =
+            // ASAP → la carte retombe sur created_at (100 % inchangé).
+            'kitchen_timer_anchor_iso'            => $this->scheduled_at
+                ? $this->scheduled_at->copy()
+                    ->subMinutes(\App\Domain\Kds\KitchenReleaseRule::scheduledLeadMinutes())
+                    ->toIso8601String()
+                : null,
             'preparation_time'                    => $this->preparation_time,
             // [KITCHEN-TIMING 2026-07-03] horodatages RÉELS du parcours cuisine (vs l'estimé
             // preparation_time) + temps de préparation réel mesuré en secondes (accepted→prepared).

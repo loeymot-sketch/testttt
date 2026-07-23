@@ -133,19 +133,35 @@ class OrderService
             $orderColumn = $this->sanitizeOrderColumn((string) ($request->get('order_column') ?? 'id'));
             $orderType = $this->sanitizeOrderDirection((string) ($request->get('order_by') ?? 'desc'));
 
-            return Order::with([
-                'transaction',
-                'transaction.order',
-                'orderItems.orderItem.media',
-                'orderItems.orderItem.category',
-                'branch',
-                'user',
-                // [TERRAIN-HEAL 2026-07-16 · ORDER-RES-N1] user.roles + user.media eager-loadés ici
-                // → OrderResource::toArray() (loadMissing) devient un no-op au lieu de ~20 requêtes
-                // parasites par page de 10 (roles+media re-query par ligne).
-                'user.roles',
-                'user.media',
-            ])->where(function ($query) use ($requests) {
+            // [POSPERF-07-tracker-unbounded 2026-07-22] Opt-in lean eager-load set
+            // for the POS tracker poll (60s cadence, SimpleOrderResource). The
+            // tracker reads ONLY transaction.payment_method, user.name/phone and
+            // orderItems.orderItem.name — the media/category/roles/branch/
+            // transaction.order eager-loads exist for OrderResource + OrderExport
+            // and were pure waste (and, combined with the unbounded ->get('*') path,
+            // amplified an already-heavy fetch). Callers WITHOUT `lean` (Historique
+            // list, export) keep the full set byte-for-byte — zero behaviour change.
+            $relations = $request->get('lean', 0) == 1
+                ? [
+                    'transaction',
+                    'orderItems.orderItem',
+                    'user',
+                ]
+                : [
+                    'transaction',
+                    'transaction.order',
+                    'orderItems.orderItem.media',
+                    'orderItems.orderItem.category',
+                    'branch',
+                    'user',
+                    // [TERRAIN-HEAL 2026-07-16 · ORDER-RES-N1] user.roles + user.media eager-loadés ici
+                    // → OrderResource::toArray() (loadMissing) devient un no-op au lieu de ~20 requêtes
+                    // parasites par page de 10 (roles+media re-query par ligne).
+                    'user.roles',
+                    'user.media',
+                ];
+
+            return Order::with($relations)->where(function ($query) use ($requests) {
                 if (! empty($requests['from_date']) && ! empty($requests['to_date'])) {
                     // [GOAL-G2-HEAL-04 2026-05-23] TZ-generation alignment to
                     // Wave T R5 Paris bounds (commit 27d95e066). User-input

@@ -129,7 +129,8 @@
             "rail_variations": "الخيارات",
             "loading": "جارٍ التحميل…",
             "read_only": "للقراءة فقط (يتطلب صلاحية items_edit)",
-            "photo_action": "صورة المنتج"
+            "photo_action": "صورة المنتج",
+            "globally_disabled": "معطّل عالميًا"
         }
     },
     "pos": {
@@ -2018,7 +2019,8 @@
             "upload_error": "خطأ في التحميل",
             "upload_retry": "إعادة المحاولة",
             "upload_invalid_mime": "تنسيق غير مدعوم (JPG/PNG/WEBP)",
-            "upload_oversize": "الصورة كبيرة جدًا (4 ميجابايت كحد أقصى)"
+            "upload_oversize": "الصورة كبيرة جدًا (4 ميجابايت كحد أقصى)",
+            "upload_forbidden": "مخصّص للمسؤولين فقط"
         }
     },
     "warning": {

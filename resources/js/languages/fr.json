@@ -130,7 +130,8 @@
             "rail_variations": "Variations",
             "loading": "Chargement…",
             "read_only": "Lecture seule (droit items_edit requis)",
-            "photo_action": "Photo du produit"
+            "photo_action": "Photo du produit",
+            "globally_disabled": "Désactivé globalement"
         },
         "observability_outbox": {
             "title": "Pipeline outbox & événements",
@@ -805,6 +806,7 @@
         "kds_state_done": "Servie",
         "kds_state_cancelled": "Annulée",
         "kds_attente": "Attente",
+        "kds_scheduled_for": "prévue {time}",
         "kds_allergie": "Allergie",
         "kds_allergen_warning_prefix": "Allergènes :",
         "kds_line_allergen_icon_aria": "Article contenant des allergènes",
@@ -2215,7 +2217,8 @@
             "upload_error": "Erreur upload",
             "upload_retry": "Réessayer",
             "upload_invalid_mime": "Format non supporté (JPG/PNG/WEBP)",
-            "upload_oversize": "Image trop lourde (max 4 Mo)"
+            "upload_oversize": "Image trop lourde (max 4 Mo)",
+            "upload_forbidden": "Réservé aux administrateurs"
         }
     },
     "warning": {

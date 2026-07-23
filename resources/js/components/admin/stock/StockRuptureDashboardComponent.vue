@@ -190,7 +190,7 @@
                              (previously orphaned). Additive; never removes an
                              existing testid nor introduces a bulk/scan modal. -->
                         <button
-                            v-if="product.kind === 'item' && canEditAvailability"
+                            v-if="product.kind === 'item' && canUploadPhoto"
                             type="button"
                             class="photo-btn inline-flex items-center justify-center rounded px-2 py-1.5 text-sm bg-slate-100 text-slate-700 hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                             :aria-expanded="photoOpenKey === product.key ? 'true' : 'false'"
@@ -235,6 +235,20 @@
                         </div>
                       </div>
 
+                        <!-- [global-flag-defeats-dashboard-toggle 2026-07-22] Effective-state
+                             badge: when the GLOBAL items.is_available flag is off, the branch
+                             EN-STOCK toggle above is inert — make the conflict visible instead
+                             of a silently dead switch. -->
+                        <p
+                            v-if="product.globally_disabled"
+                            class="global-off-badge flex items-center gap-1 rounded bg-slate-200 px-2 py-1 text-xs font-medium text-slate-600"
+                            :data-testid="`stock-mgmt-global-off-${product.key}`"
+                            role="note"
+                        >
+                            <span aria-hidden="true">🚫</span>
+                            <span>{{ $t('admin.stock_mgmt.globally_disabled') }}</span>
+                        </p>
+
                         <div
                             v-if="product.kind === 'item' && photoOpenKey === product.key"
                             :id="`stock-mgmt-photo-panel-${product.key}`"
@@ -258,6 +272,7 @@
 import appService from "../../../services/appService";
 import { onEvents } from "../../../services/eventContract";
 import ItemPhotoUpload from "../items/ItemPhotoUpload.vue";
+import roleEnum from "../../../enums/modules/roleEnum";
 
 /**
  * StockRuptureDashboardComponent V2 — owner spec 2026-05-21.
@@ -362,6 +377,14 @@ export default {
         canEditAvailability() {
             return appService.permissionChecker('items_edit');
         },
+        canUploadPhoto() {
+            // [photo-upload-authz-and-feedback 2026-07-22 / Vague 2] The photo route is
+            // reserved server-side to Admin/Tenant-Admin (ItemPhotoController::store, locked
+            // by ItemPhotoRouteAuthzTest) — items_edit ALONE gets a bare 403. Mirror that
+            // gate so a branch manager never sees a 📷 button that only 403s. V1 Le Cayenne
+            // seeds only the Admin role (id = roleEnum.ADMIN); "Tenant Admin" is not seeded.
+            return this.canEditAvailability && this.authRoleId() === roleEnum.ADMIN;
+        },
         canFilterByBranch() {
             return this.authBranchId() === 0 && this.branchOptions.length > 1;
         },
@@ -377,6 +400,10 @@ export default {
                     thumb: it.thumb || null,
                     is_available: Boolean(it.is_available),
                     item_id: Number(it.id),
+                    // [global-flag-defeats-dashboard-toggle 2026-07-22] Effective-state
+                    // signal from catalog-overview: when the GLOBAL items.is_available flag
+                    // is off, the branch toggle is inert — surfaced as a card badge below.
+                    globally_disabled: Boolean(it.globally_disabled),
                 }));
                 buckets.push({
                     key: `cat-${cat.id}`,
@@ -496,6 +523,22 @@ export default {
                 const fromState = this.$store?.state?.auth?.authBranchId;
                 if (fromState !== undefined && fromState !== null && fromState !== '') {
                     return Number(fromState) || 0;
+                }
+            } catch (_) {}
+            return 0;
+        },
+
+        // [photo-upload-authz-and-feedback 2026-07-22] Resolve the current user's role id
+        // (UserResource exposes `role_id` = User::myRole). Mirrors authBranchId()'s
+        // getter/state fallback. Used to gate the photo action to Admin (roleEnum.ADMIN).
+        authRoleId() {
+            try {
+                const info = this.$store?.getters?.['auth/authInfo']
+                    ?? this.$store?.getters?.authInfo
+                    ?? this.$store?.state?.auth?.authInfo;
+                const rid = info && (info.role_id ?? info.roleId);
+                if (rid !== undefined && rid !== null && rid !== '') {
+                    return Number(rid) || 0;
                 }
             } catch (_) {}
             return 0;

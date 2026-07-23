@@ -224,3 +224,19 @@ describe('PosOrdersTracker — aging voie À encaisser (IMP-AGING)', () => {
         expect(wrapper.find('[data-testid="tracker-encaisser-901"]').exists()).toBe(true);
     });
 });
+
+describe('PosOrdersTracker — POSPERF-07 requête bornée + lean', () => {
+    it('fetchOrders demande paginate:1 + per_page:100 + lean:1 (fin du ->get(*) illimité, payload allégé)', async () => {
+        const dispatchImpl = vi.fn(() => Promise.resolve({ data: { data: [] } }));
+        const { wrapper } = buildHarness({ dispatchImpl });
+
+        await wrapper.vm.fetchOrders();
+
+        // paginate:1 fait honorer per_page côté backend (sinon ->get('*') = TOUTES
+        // les commandes du jour) ; lean:1 réduit la charge de relations.
+        expect(dispatchImpl).toHaveBeenCalledWith(
+            'posOrder/lists',
+            expect.objectContaining({ paginate: 1, per_page: 100, lean: 1, vuex: false }),
+        );
+    });
+});

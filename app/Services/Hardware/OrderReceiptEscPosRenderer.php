@@ -215,7 +215,11 @@ final class OrderReceiptEscPosRenderer
         // ── Bloc opération (gauche, infos techniques discrètes) ─────────────
         $b .= EscPosCommandBuilder::separator('-', $w);
         $b .= EscPosCommandBuilder::alignLeft();
-        $b .= EscPosCommandBuilder::textWrap('Operation : VENTE', $w);
+        // [MP-04 2026-07-22] Le type d'opération doit être EXACT (NF525). Un reçu de remboursement
+        // (miroir RTN- : status=RETURNED + parent_order_id, totaux négatifs) était marqué « VENTE ».
+        // On calcule le type — parité avec le badge REMBOURSEMENT de l'écran (ReceiptRemboursementMarker.vue,
+        // qui clé sur parent_order_id) et avec le SSOT comptable Order::isRealizedRevenueRow.
+        $b .= EscPosCommandBuilder::textWrap('Operation : '.($this->isRefundReceipt($order) ? 'REMBOURSEMENT' : 'VENTE'), $w);
         if (! empty($head['operator_name'])) {
             $b .= EscPosCommandBuilder::textWrap('Caissier : '.$head['operator_name'], $w);
         }
@@ -557,37 +561,61 @@ final class OrderReceiptEscPosRenderer
     /** @return array<int, array{label:string, amount:float, change:float}> */
     private function payments(BroadcastableOrder $order): array
     {
-        // [SELF-AUDIT R3 P3 2026-07-05 — libellé tender faux sur ticket fiscal] La map était périmée :
-        // PosPaymentMethod définit MOBILE_BANKING=3 et OTHER=4, mais le ticket imprimait 3='Mixte'
-        // (valeur enum inexistante) et 4='Carte' — un tender NON-carte annoncé CARTE sur un document
-        // fiscal NF525. Alignement sur l'enum + le reçu à l'écran (ReceiptComponent).
+        // [SELF-AUDIT R3 P3 2026-07-05] Map alignée sur l'enum PosPaymentMethod (MOBILE_BANKING=3,
+        // OTHER=4) + le reçu à l'écran (ReceiptComponent) — jamais un tender non-carte annoncé CARTE.
         $labels = [1 => 'Espèces', 2 => 'Carte', 3 => 'Mobile banking', 4 => 'Autre', 5 => 'Ticket Resto'];
+
+        // [SYNC-BORNE 2026-06-30] COUNTER_DEFERRED (6) = commande borne Plan B PAS encore encaissée
+        // (received=0, PENDING_COUNTER). Pas un règlement réel → [] pour que le ticket affiche
+        // « ** A REGLER EN CAISSE ** ». confirmCounterPayment() posera ensuite le vrai mode.
+        if ((int) ($order->pos_payment_method ?? 0) === \App\Enums\PosPaymentMethod::COUNTER_DEFERRED) {
+            return [];
+        }
+
+        // [MP-02 2026-07-22 · ticket split-aveugle] Ventilation MULTI-TENDER : sur un paiement split
+        // (plusieurs lignes order_payments), imprimer CHAQUE tranche (ex. ESPÈCES 11,00 / CARTE 4,50)
+        // et non la seule méthode dominante (pos_payment_method) — sinon le règlement papier diverge du
+        // total ET du reçu écran. Miroir de OrderDetailsResource::buildPaymentsBreakdown (SSOT écran +
+        // posReceiptBuilder.js) → parité écran/papier. Relation préchargée honorée sans requête ; sinon
+        // lecture DB uniquement si l'ordre est persisté (id), best-effort (repli synthétique en cas d'échec).
+        if (method_exists($order, 'payments')) {
+            $tranches = null;
+            if ($order->relationLoaded('payments')) {
+                $tranches = $order->payments;
+            } elseif (($order->id ?? null)) {
+                try {
+                    $tranches = $order->payments()->get();
+                } catch (\Throwable) {
+                    $tranches = null;
+                }
+            }
+            if ($tranches instanceof \Illuminate\Support\Collection && $tranches->isNotEmpty()) {
+                return $tranches->map(function ($p) use ($labels) {
+                    $mode = (int) ($p->mode ?? $p->method ?? $p->payment_method ?? 0);
+
+                    return [
+                        'label' => $labels[$mode] ?? ('Paiement '.$mode),
+                        'amount' => (float) ($p->amount ?? 0),
+                        // Rendu ESPÈCES uniquement (seul tender qui rend la monnaie), clampé ≥0.
+                        'change' => $mode === \App\Enums\PosPaymentMethod::CASH
+                            ? round(max(0.0, (float) ($p->change_amount ?? 0)), 2)
+                            : 0.0,
+                    ];
+                })->values()->all();
+            }
+        }
+
+        // Repli mono-tender (vente legacy sans lignes order_payments) : ligne synthétique unique.
         $method = $order->pos_payment_method ?? null;
         if ($method === null || $method === '') {
             return [];
         }
-        // [SYNC-BORNE 2026-06-30] COUNTER_DEFERRED (6) = commande borne Plan B PAS encore
-        // encaissée au comptoir (received=0, payment_status=PENDING_COUNTER). Ce n'est PAS un
-        // règlement réel : on retourne [] pour que le ticket affiche « ** A REGLER EN CAISSE ** »
-        // au lieu de « PAIEMENT 6 : 0,00 € ». À l'encaissement, confirmCounterPayment() écrase
-        // pos_payment_method par la vraie méthode (1/2…) → le ticket final montre le vrai paiement.
-        if ((int) $method === \App\Enums\PosPaymentMethod::COUNTER_DEFERRED) {
-            return [];
-        }
-        // [DEEP-R2b 2026-07-15 / P2] La colonne pos_received_amount a default(0), pas
-        // NULL : le garde `!== null` laissait passer 0 → ticket fiscal « Carte :
-        // 0,00 € » (69 commandes carte en DB). 0 n'est jamais un encaissement réel →
-        // fallback total.
+        // [DEEP-R2b 2026-07-15 / P2] pos_received_amount a default(0) : 0 n'est jamais un encaissement
+        // réel → fallback total (sinon ticket fiscal « Carte : 0,00 € »).
         $amount = (float) ($order->pos_received_amount ?? 0) > 0
             ? (float) $order->pos_received_amount
             : (float) ($order->total ?? 0);
-
-        // [F-TICKET-RENDU 2026-07-15 / P2] La ligne « RENDU » n'était JAMAIS imprimée sur le
-        // ticket papier : la source `$order->cash_back_amount` n'existe (ni colonne ni accessor
-        // du modèle Order) → toujours NULL → garde `change>0` morte, alors que le reçu À L'ÉCRAN
-        // (ReceiptComponent via payments_breakdown.change_amount) affiche bien le rendu →
-        // divergence écran↔papier sur un document fiscal. On calcule le rendu (ESPÈCES uniquement,
-        // seul tender qui rend la monnaie) = reçu − total, arrondi, clampé ≥0 (miroir du reçu écran).
+        // [F-TICKET-RENDU 2026-07-15 / P2] Rendu (ESPÈCES only) = reçu − total, clampé ≥0 (miroir écran).
         $change = ((int) $method === \App\Enums\PosPaymentMethod::CASH)
             ? round(max(0.0, $amount - (float) ($order->total ?? 0)), 2)
             : 0.0;
@@ -597,6 +625,18 @@ final class OrderReceiptEscPosRenderer
             'amount' => $amount,
             'change' => $change,
         ]];
+    }
+
+    /**
+     * [MP-04 2026-07-22] Ce reçu est-il celui d'un remboursement/miroir (RTN-) ? Miroir du SSOT
+     * comptable {@see \App\Models\Order::isRealizedRevenueRow()} et du badge écran
+     * ReceiptRemboursementMarker.vue (qui clé sur parent_order_id) : un miroir de contre-passation
+     * NF525 est status=RETURNED avec un parent_order_id.
+     */
+    private function isRefundReceipt(BroadcastableOrder $order): bool
+    {
+        return (int) ($order->status ?? 0) === \App\Enums\OrderStatus::RETURNED
+            && ($order->parent_order_id ?? null) !== null;
     }
 
     private function orderTypeLabel(BroadcastableOrder $order): string

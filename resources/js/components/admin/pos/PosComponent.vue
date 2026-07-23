@@ -3273,18 +3273,25 @@ export default {
             if (this._onWsDisconnected) ws.off('disconnected', this._onWsDisconnected);
         },
         _kioskPollingInterval() {
-            // [GOAL-HEAL-SYNC-001 2026-05-23] C2 P1 fix: ensure ≤5s cadence
-            // even when Echo subscribed because Echo subscription can fail
-            // silently (CSP violation on /api/broadcasting/auth) without
-            // surfacing a console error. If readyOrders empty OR last refresh
-            // >30s ago, force 5s cadence regardless of Echo state.
-            const now = Date.now();
-            const lastRefresh = this.lastReadyRefresh || 0;
-            const isStale = (now - lastRefresh) > 30000;
-            const isEmpty = !this.readyOrders || this.readyOrders.length === 0;
-            if (isEmpty || isStale) {
-                return 5000;
-            }
+            // [POSPERF-04 2026-07-22] Cadence du poll caisse (kiosk-cash / « Prêt »
+            // / commandes web). Contrat corrigé :
+            //   • Realtime DOWN (socket ws coupé) → 5 s : le poll est le SEUL
+            //     chemin de découverte des nouvelles commandes.
+            //   • Realtime UP → 60 s : on fait confiance au push Echo. Une file
+            //     « Prêt » VIDE est l'état calme NORMAL du service et NE doit PAS
+            //     forcer 5 s.
+            //
+            // Pourquoi ce revirement de [GOAL-HEAL-SYNC-001 2026-05-23] : l'ancienne
+            // heuristique `isEmpty || isStale → 5000` martelait admin/oss-order
+            // ~48 req/min MÊME WebSocket sain (POSPERF-04). Deux causes : (1) la
+            // file « Prêt » est vide la plupart du service → isEmpty forçait 5 s en
+            // permanence ; (2) le seuil isStale 30 s < cadence 60 s + `lastReadyRefresh`
+            // ré-estampé à chaque poll ⇒ à chaque tick 60 s la valeur était « périmée »
+            // → re-downshift 5 s (oscillation ~32 s jamais résolue). Le secours
+            // « Echo tombe » reste couvert par l'event ws 'disconnected'
+            // (_restartKioskPolling → 5 s) + le PosSyncService de repli ; le cas
+            // résiduel « channel-auth KO alors que la socket reste up » est borné à
+            // 60 s (backlog heartbeat sync-engine IMP-2), jamais une famine.
             return window._wsService?.isConnected() ? 60000 : 5000;
         },
         _startKioskPolling() {
@@ -3310,6 +3317,10 @@ export default {
                 // [WEB-CAISSE-SYNC 2026-07-13] Même tick rafraîchit la file commandes web
                 // (secours si Echo tombe — une commande site apparaît en <15s).
                 this.loadWebOrders();
+                // [pos-86-propagation-dead-no-poll 2026-07-22] Même tick = filet 86
+                // transport-agnostique (self-throttled ~30s) : tuiles/panier 86 à jour
+                // même worker down (Echo muet).
+                this.loadAvailabilitySnapshotFallback();
                 const nextIntervalMs = this._kioskPollingInterval();
                 this._kioskPollTimer = setTimeout(tick, nextIntervalMs);
             };
@@ -3653,9 +3664,31 @@ export default {
         // côté backend). On compte ACCEPT (4) + PREPARING (7) + PREPARED (8) pour le
         // badge total, et PREPARED seul pour le halo vert. En cas d'erreur on retombe
         // silencieusement à 0/0 — le tracker plein écran reste accessible quand même.
+        // [POSPERF-03-dup-oss 2026-07-22] loadActiveOrdersStats + loadReadyOrders
+        // both poll the SAME admin/oss-order endpoint (via orderStatusScreenOrder/
+        // lists) on every kiosk poll tick AND every debounced Echo burst → TWO
+        // identical GETs per cycle. Coalesce them into ONE in-flight request: the
+        // first caller starts the dispatch, any concurrent caller awaits the same
+        // promise; the shared slot is released once it settles so the next tick
+        // fetches fresh. The store commit + both callers' derivations are unchanged
+        // — this only dedupes the network round-trip.
+        _fetchOssOrdersOnce() {
+            if (this._ossFetchInFlight) {
+                return this._ossFetchInFlight;
+            }
+            const p = this.$store.dispatch('orderStatusScreenOrder/lists');
+            this._ossFetchInFlight = p;
+            const release = () => {
+                if (this._ossFetchInFlight === p) {
+                    this._ossFetchInFlight = null;
+                }
+            };
+            p.then(release, release);
+            return p;
+        },
         async loadActiveOrdersStats() {
             try {
-                const res = await this.$store.dispatch('orderStatusScreenOrder/lists');
+                const res = await this._fetchOssOrdersOnce();
                 const list = (res?.data?.data) || this.$store.getters['orderStatusScreenOrder/lists'] || [];
                 let active = 0;
                 let ready = 0;
@@ -3777,6 +3810,65 @@ export default {
             } finally {
                 this.kioskCashLoading = false;
             }
+        },
+        /**
+         * [pos-86-propagation-dead-no-poll 2026-07-22 / Vague 2 STOCK-HARDENING]
+         * Filet de secours 86 INDÉPENDANT DU TRANSPORT. La propagation live des ruptures
+         * vers les tuiles/panier caisse ne roule QUE sur le broadcast Echo
+         * `ItemAvailabilityChanged` — mort si le worker de queue est down (soketi UP mais
+         * 0 event), l'état ACTUEL du box. On calque le pattern poll-fallback de la vague 1
+         * (`_notifyPolledNewOrders`) : ~toutes les 30 s, on diffe le snapshot 86 de la
+         * branche et on REJOUE l'événement via `_onItemAvailabilityChanged` (bascule tuile
+         * + purge panier + annonce caissier). Les tuiles 86 restent donc à jour sans
+         * WebSocket. Dédup naturelle avec Echo (le diff n'agit que sur les deltas de
+         * snapshot). Seed silencieux au 1er poll (les tuiles reflètent déjà l'overlay branch
+         * du fetch catalogue initial). Silencieux sur erreur (UX-PANEL-04 — jamais casser un
+         * poll). NB : `_onItemAvailabilityChanged` respecte déjà le flag global (une tuile
+         * désactivée globalement n'a pas de ligne branch → jamais dans le snapshot).
+         */
+        async loadAvailabilitySnapshotFallback() {
+            const branchId = this.authBranchId();
+            if (!branchId || branchId <= 0) return;
+            const now = Date.now();
+            // Cadence ~30 s, indépendante du tick order-poll adaptatif (5-60 s).
+            if (this._lastAvailabilityPoll && (now - this._lastAvailabilityPoll) < 30000) return;
+            let items;
+            try {
+                const res = await axios.get(`admin/menu/availability/branch/${branchId}`);
+                items = res && res.data && res.data.data ? res.data.data.items : null;
+            } catch (_) {
+                return; // silencieux — jamais casser un poll (permission absente / erreur transitoire)
+            }
+            this._lastAvailabilityPoll = now;
+            if (!Array.isArray(items)) return;
+
+            const next = new Map();
+            items.forEach((row) => {
+                const id = parseInt(row && (row.item_id != null ? row.item_id : row.itemId), 10);
+                if (id) next.set(id, (row && row.reason) || null);
+            });
+
+            // Seed silencieux au 1er poll : pas de rafale de toasts au démarrage.
+            if (!this._availabilitySnapshotSeeded) {
+                this._availabilitySnapshot = next;
+                this._availabilitySnapshotSeeded = true;
+                return;
+            }
+
+            const prev = this._availabilitySnapshot || new Map();
+            // Nouvellement 86'd depuis le dernier poll → rejoue is_available:false.
+            next.forEach((reason, id) => {
+                if (!prev.has(id)) {
+                    this._onItemAvailabilityChanged({ payload: { item_id: id, is_available: false, reason } });
+                }
+            });
+            // De retour en stock (sorti du snapshot) → rejoue is_available:true.
+            prev.forEach((_reason, id) => {
+                if (!next.has(id)) {
+                    this._onItemAvailabilityChanged({ payload: { item_id: id, is_available: true } });
+                }
+            });
+            this._availabilitySnapshot = next;
         },
         /**
          * [UX-NOTIF-01 / SYNC-W3 2026-07-22] Notification « nouvelle commande » INDÉPENDANTE DU
@@ -3943,7 +4035,9 @@ export default {
         async loadReadyOrders() {
             this.readyOrdersLoading = true;
             try {
-                const res = await this.$store.dispatch('orderStatusScreenOrder/lists');
+                // [POSPERF-03-dup-oss 2026-07-22] Shares the single coalesced
+                // admin/oss-order fetch with loadActiveOrdersStats (same tick).
+                const res = await this._fetchOssOrdersOnce();
                 const list = (res?.data?.data) || this.$store.getters['orderStatusScreenOrder/lists'] || [];
                 const allowedTypes = new Set([orderTypeEnum.KIOSK, orderTypeEnum.TAKEAWAY, orderTypeEnum.POS]);
                 this.readyOrders = list

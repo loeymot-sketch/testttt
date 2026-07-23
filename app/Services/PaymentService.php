@@ -143,13 +143,17 @@ class PaymentService
                 'type' => 'cash_back',
             ]);
 
-            // [F-CASH-REFUND-DRAWER 2026-07-15] NOTE : le crédit d'avoir wallet est conservé
-            // INCONDITIONNEL ici pour préserver le contrat d'atomicité établi (CashBackAtomicityTest :
-            // Transaction + balance + audit en un seul tx). La suppression de l'avoir sur un
-            // remboursement ESPÈCES (double-remboursement potentiel pour un client enregistré ; le
-            // walk-in id=2 partagé est inoffensif) est un CHANGEMENT DE CONTRAT → escaladé (gate owner).
+            // [MP-01 2026-07-22 · double-refund cash + avoir — owner-autorisé] Un remboursement ESPÈCES
+            // rend l'argent PHYSIQUEMENT via le tiroir (recordCashBackMovement ci-dessous). Créditer EN
+            // PLUS l'avoir wallet (users.balance) = double remboursement du client (sortie tiroir + avoir
+            // CUMULÉS). On ne crédite donc l'avoir QUE pour un remboursement NON-espèces (carte/en-ligne
+            // 'credit' → l'avoir tient lieu de reversal TPE en V1 simulé, pas de sortie tiroir). Remplace
+            // la NOTE « contrat préservé / escaladé (gate owner) » du 2026-07-15 : le fix est désormais
+            // appliqué. L'avoir est non-fiscal (aucun impact chaîne NF525) ; l'atomicité Transaction +
+            // balance + audit reste prouvée par CashBackAtomicityTest via le chemin 'credit'.
+            $refundIssuedInCash = strtolower((string) $gatewaySlug) === 'cash';
             $user = User::find($order->user_id);
-            if ($user) {
+            if ($user && ! $refundIssuedInCash) {
                 $user->balance = ($user->balance + $order->total);
                 $user->save();
             }
@@ -192,7 +196,14 @@ class PaymentService
             // (gateway 'credit'). Mono-méthode cash : portion == total (repli si aucune ligne order_payments).
             if ($order instanceof Order) {
                 $cashPortion = $this->refundCashTranchePortion($order);
-                if ($cashPortion <= 0.0 && strtolower((string) $gatewaySlug) === 'cash') {
+                // [MP-03 2026-07-22 · sortie tiroir fantôme] Le repli au TOTAL ne s'arme QUE sur une vente
+                // mono-tender (aucune ligne order_payments). refundCashTranchePortion renvoie 0 aussi bien
+                // quand il n'y a AUCUNE tranche QUE quand des tranches existent mais qu'AUCUNE n'est cash :
+                // sans la garde hasPaymentTranches, ce 2ᵉ cas (ex. split carte+mobile, gateway='cash')
+                // sortait le total du tiroir alors qu'aucune espèce n'a été encaissée (sortie fantôme).
+                if ($cashPortion <= 0.0
+                    && strtolower((string) $gatewaySlug) === 'cash'
+                    && ! $this->hasPaymentTranches($order)) {
                     $cashPortion = (float) $order->total;
                 }
                 if ($cashPortion > 0.0) {
@@ -675,7 +686,10 @@ class PaymentService
         //   - vente mono-tender CASH (aucune ligne order_payments) → repli = montant passé (=total)
         //   - vente mono-tender CARTE / mobile / ticket → 0 (rien n'a été mis au tiroir) → aucun mouvement.
         $cashPortion = $this->refundCashTranchePortion($order);
-        if ($cashPortion <= 0.0) {
+        // [MP-03 2026-07-22] Jumeau de la garde de cashBack : le repli mono-tender ne s'arme que sans
+        // ligne order_payments. Des tranches non-cash (0 espèce réelle) ne doivent PAS sortir le total
+        // du tiroir même si pos_payment_method (champ dominant legacy) vaut CASH.
+        if ($cashPortion <= 0.0 && ! $this->hasPaymentTranches($order)) {
             $cashPortion = ((int) $order->pos_payment_method === \App\Enums\PosPaymentMethod::CASH)
                 ? round($amount, 2)
                 : 0.0;
@@ -697,6 +711,19 @@ class PaymentService
             ->where('order_id', (int) $order->id)
             ->where('mode', \App\Enums\PosPaymentMethod::CASH)
             ->sum('amount');
+    }
+
+    /**
+     * [MP-03 2026-07-22] La commande porte-t-elle des lignes order_payments (paiement multi-tranches) ?
+     * Distingue « aucune tranche » (vente mono-tender legacy → repli au total légitime) de
+     * « tranches présentes mais aucune cash » (0 espèce encaissée → aucune sortie tiroir). Requête brute
+     * (hors BranchScope) alignée sur {@see refundCashTranchePortion()}.
+     */
+    private function hasPaymentTranches(Order $order): bool
+    {
+        return \Illuminate\Support\Facades\DB::table('order_payments')
+            ->where('order_id', (int) $order->id)
+            ->exists();
     }
 
     private function recordCashBackMovement(Order $order, float $amount): void

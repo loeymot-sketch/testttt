@@ -129,7 +129,8 @@
             "rail_variations": "Variations",
             "loading": "Loading…",
             "read_only": "Read-only (items_edit permission required)",
-            "photo_action": "Product photo"
+            "photo_action": "Product photo",
+            "globally_disabled": "Disabled globally"
         },
         "observability_outbox": {
             "title": "Outbox & event pipeline",
@@ -2263,7 +2264,8 @@
             "upload_error": "Upload error",
             "upload_retry": "Retry",
             "upload_invalid_mime": "Unsupported format (JPG/PNG/WEBP)",
-            "upload_oversize": "Image too large (max 4 MB)"
+            "upload_oversize": "Image too large (max 4 MB)",
+            "upload_forbidden": "Reserved to administrators"
         }
     },
     "warning": {

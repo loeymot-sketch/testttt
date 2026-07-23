@@ -78,6 +78,18 @@ return [
     'scheduled_lead_minutes' => max(1, (int) env('KDS_SCHEDULED_LEAD_MINUTES', 20)),
 
     /*
+     * [KDS-SCHEDULED-NO-UPPER-BOUND 2026-07-22] Borne HAUTE d'une programmée sur
+     * le board actif (KDS + OSS + sync). Sans elle, une programmée no-show (jamais
+     * bumpée / livrée / annulée) restait à VIE : applyScheduledBoardFilter admettait
+     * `scheduled_at <= now + lead` SANS plancher. On la retire du board actif
+     * `scheduled_grace_hours` APRÈS son heure cible (défaut 2 h) — au-delà elle a
+     * manifestement été abandonnée. Généreux : une programmée légitimement en retard
+     * a déjà été bumpée près de son heure cible (dans la grâce). NULL = ASAP (borne
+     * inapplicable, inchangé). Gate SELECT-only côté board, zéro impact NF525.
+     */
+    'scheduled_grace_hours' => max(1, (int) env('KDS_SCHEDULED_GRACE_HOURS', 2)),
+
+    /*
      * [E4 SCHEDULED-INTAKE 2026-07-20] Fenêtre de service des commandes
      * programmées (validée à l'intake par OrderRequest::withValidator).
      * Le Cayenne sert 18h → minuit et demie : la fenêtre ENJAMBE minuit

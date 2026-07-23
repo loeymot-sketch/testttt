@@ -1730,7 +1730,8 @@
             "upload_error": "আপলোড ত্রুটি",
             "upload_retry": "আবার চেষ্টা করুন",
             "upload_invalid_mime": "অসমর্থিত ফরম্যাট (JPG/PNG/WEBP)",
-            "upload_oversize": "ছবি খুব বড় (সর্বোচ্চ ৪ MB)"
+            "upload_oversize": "ছবি খুব বড় (সর্বোচ্চ ৪ MB)",
+            "upload_forbidden": "শুধুমাত্র প্রশাসকদের জন্য সংরক্ষিত"
         }
     },
     "warning": {

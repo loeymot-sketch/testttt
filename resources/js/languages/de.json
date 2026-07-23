@@ -1730,7 +1730,8 @@
             "upload_error": "Upload-Fehler",
             "upload_retry": "Erneut versuchen",
             "upload_invalid_mime": "Format nicht unterstützt (JPG/PNG/WEBP)",
-            "upload_oversize": "Bild zu groß (max. 4 MB)"
+            "upload_oversize": "Bild zu groß (max. 4 MB)",
+            "upload_forbidden": "Nur für Administratoren"
         }
     },
     "warning": {

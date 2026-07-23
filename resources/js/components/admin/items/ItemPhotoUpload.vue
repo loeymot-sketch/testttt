@@ -190,7 +190,13 @@ export default {
                 }, 1500);
             } catch (err) {
                 this.uploadState = 'error';
-                this.errorMessage = err.response?.data?.message ?? this.$t('studio.image.upload_error');
+                // [photo-upload-authz-and-feedback 2026-07-22 / Vague 2] The server
+                // reserves this route to Admin/Tenant-Admin (ItemPhotoController, locked
+                // by ItemPhotoRouteAuthzTest). If a 403 still reaches here, show a clean
+                // localized message — never the raw "This action is unauthorized.".
+                this.errorMessage = err.response?.status === 403
+                    ? this.$t('studio.image.upload_forbidden')
+                    : (err.response?.data?.message ?? this.$t('studio.image.upload_error'));
                 this.$emit('upload-error', this.errorMessage);
             }
         },

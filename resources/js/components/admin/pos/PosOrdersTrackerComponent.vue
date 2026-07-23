@@ -908,7 +908,18 @@ export default {
             try {
                 const today = this._todayRange();
                 const res = await this.$store.dispatch('posOrder/lists', {
+                    // [POSPERF-07 2026-07-22] `paginate: 1` makes OrderService::list
+                    // HONOUR per_page — without it the backend runs ->get('*') and
+                    // returns EVERY order of the day (unbounded) with 8 eager
+                    // relations each. `lean: 1` swaps the heavy OrderResource
+                    // eager-load set (media/category/roles/branch/transaction.order),
+                    // which SimpleOrderResource never reads, for the tracker's real
+                    // needs (transaction/user/orderItems.orderItem) → lighter payload.
+                    // 100 most-recent (id desc) covers every active lane; only stale
+                    // DELIVERED rows beyond 100 fall off (they live in the muted lane).
+                    paginate: 1,
                     per_page: 100,
+                    lean: 1,
                     from_date: today.from,
                     to_date: today.to,
                     vuex: false,

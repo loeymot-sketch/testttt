@@ -104,4 +104,99 @@ class RefundSplitCashPortionOnlyTest extends TestCase
 
         $this->assertSame(7.5, round((float) $out, 2), 'Vente mono cash sans tranches → tiroir = total (repli).');
     }
+
+    /**
+     * [MP-03 2026-07-22 · phantom cash-out] Le repli 'cash' était aveugle au cas « tranches PRÉSENTES
+     * mais AUCUNE cash » : refundCashTranchePortion renvoie 0 aussi bien quand il n'y a pas de tranche
+     * QUE quand il y a des tranches non-cash. Le repli `<=0 && gateway==='cash'` sortait alors le TOTAL
+     * du tiroir alors qu'aucun cash n'a jamais été encaissé → sortie fantôme. Le repli ne doit s'armer
+     * que sur une vente mono-tender (aucune ligne order_payments).
+     */
+    public function test_split_with_tranches_but_no_cash_does_not_phantom_out_drawer(): void
+    {
+        $this->seedMinimalSettings();
+        $branch  = Branch::factory()->create();
+        $cashier = User::factory()->create(['branch_id' => $branch->id]);
+        $this->actingAs($cashier);
+
+        $session = app(CashDrawerService::class)->openSession($branch->id, $cashier->id, 100.00);
+
+        // Vente 10,00 € payée SPLIT NON-cash : 6,00 € carte + 4,00 € mobile. pos_payment_method=CASH
+        // (piège legacy : le champ dominant dit "cash" mais aucune tranche cash réelle).
+        $order = Order::factory()->create([
+            'branch_id'          => $branch->id,
+            'user_id'            => $cashier->id,
+            'total'              => 10.00,
+            'subtotal'           => 10.00,
+            'discount'           => 0,
+            'total_tax'          => 0,
+            'delivery_charge'    => 0,
+            'payment_status'     => PaymentStatus::PAID,
+            'status'             => OrderStatus::DELIVERED,
+            'pos_payment_method' => PosPaymentMethod::CASH, // piège : dominant cash sans tranche cash
+        ]);
+
+        DB::table('order_payments')->insert([
+            ['order_id' => $order->id, 'branch_id' => $branch->id, 'mode' => PosPaymentMethod::CARD, 'amount' => 6.00, 'tendered' => null, 'change_amount' => 0, 'created_at' => now(), 'updated_at' => now()],
+            ['order_id' => $order->id, 'branch_id' => $branch->id, 'mode' => PosPaymentMethod::MOBILE_BANKING, 'amount' => 4.00, 'tendered' => null, 'change_amount' => 0, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        Transaction::create([
+            'order_id' => $order->id, 'transaction_no' => 'TXN-INIT-NOCASH', 'amount' => 10.00,
+            'payment_method' => 'cash', 'sign' => '+', 'type' => 'payment',
+        ]);
+
+        app(PaymentService::class)->cashBack($order, 'cash', 'TXN-CB-NOCASH');
+
+        $out = CashMovement::query()
+            ->where('cash_drawer_session_id', $session->id)
+            ->where('type', CashMovement::TYPE_CASHBACK)
+            ->where('order_id', $order->id)
+            ->sum('amount');
+
+        // Aucune espèce jamais encaissée → RIEN ne doit sortir du tiroir (le bug sortait 10,00 €).
+        $this->assertSame(0.0, round((float) $out, 2), 'Tranches non-cash → aucune sortie tiroir (pas de sortie fantôme du total).');
+    }
+
+    /**
+     * [MP-03 twin] recordCashRefundMovement (chemin vente PAID sans Transaction, OrderService elseif)
+     * partage la même cécité : son repli `pos_payment_method===CASH` s'armait sur des tranches
+     * non-cash. Même garde : le repli ne s'arme que sans ligne order_payments.
+     */
+    public function test_record_cash_refund_movement_with_tranches_but_no_cash_does_not_phantom_out(): void
+    {
+        $this->seedMinimalSettings();
+        $branch  = Branch::factory()->create();
+        $cashier = User::factory()->create(['branch_id' => $branch->id]);
+        $this->actingAs($cashier);
+
+        $session = app(CashDrawerService::class)->openSession($branch->id, $cashier->id, 100.00);
+
+        $order = Order::factory()->create([
+            'branch_id'          => $branch->id,
+            'user_id'            => $cashier->id,
+            'total'              => 12.00,
+            'subtotal'           => 12.00,
+            'discount'           => 0,
+            'total_tax'          => 0,
+            'delivery_charge'    => 0,
+            'payment_status'     => PaymentStatus::PAID,
+            'status'             => OrderStatus::DELIVERED,
+            'pos_payment_method' => PosPaymentMethod::CASH, // piège legacy identique
+        ]);
+
+        DB::table('order_payments')->insert([
+            ['order_id' => $order->id, 'branch_id' => $branch->id, 'mode' => PosPaymentMethod::CARD, 'amount' => 12.00, 'tendered' => null, 'change_amount' => 0, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        app(PaymentService::class)->recordCashRefundMovement($order, round((float) $order->total, 2));
+
+        $out = CashMovement::query()
+            ->where('cash_drawer_session_id', $session->id)
+            ->where('type', CashMovement::TYPE_CASHBACK)
+            ->where('order_id', $order->id)
+            ->sum('amount');
+
+        $this->assertSame(0.0, round((float) $out, 2), 'Tranche unique carte → aucune sortie tiroir (pas de sortie fantôme).');
+    }
 }

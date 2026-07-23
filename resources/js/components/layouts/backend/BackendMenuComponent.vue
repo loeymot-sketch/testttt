@@ -20,11 +20,11 @@
                 </li>
 
                 <li class="db-sidebar-nav-item" v-else-if="menu.url !== '#' && showSidebarParentNavRow(menu)" @click.prevent="sidebarActive($event)">
-                    <a v-if="isPosV4Shell" :href="'/admin/' + menu.url" class="db-sidebar-nav-menu">
+                    <a v-if="isPosV4Shell" :href="'/admin/' + menu.url + (menu.query || '')" class="db-sidebar-nav-menu">
                         <i class="text-sm" :class="menu.icon"></i>
                         <span class="text-base flex-auto">{{ $t('menu.' + menu.language) }}</span>
                     </a>
-                    <router-link v-else :to="'/admin/' + menu.url" class="db-sidebar-nav-menu">
+                    <router-link v-else :to="'/admin/' + menu.url + (menu.query || '')" class="db-sidebar-nav-menu">
                         <i class="text-sm" :class="menu.icon"></i>
                         <span class="text-base flex-auto">{{ $t('menu.' + menu.language) }}</span>
                     </router-link>
@@ -93,7 +93,11 @@ const V1_PRIMARY_SIDEBAR_MENUS = Object.freeze([
     // [CATALOG-HUB 2026-07-21] Single unified entry → tab wrapper (Catalogue +
     // Stock). Label kept as `stock_rupture` ("Produits & Stock"). The
     // admin.stock.rupture route stays alive for deep-links.
-    Object.freeze({ url: 'catalog-hub', language: 'stock_rupture', icon: 'lab lab-stock' }),
+    // [hub-sidebar-lands-on-catalogue-tab 2026-07-22] `query` deep-links the entry
+    // to the hub's existing Stock tab (its historical destination) — Catalogue keeps
+    // its own `items` entry. `url` stays bare `catalog-hub` for the permission gate
+    // (MENU_URL_TO_PERMISSION_URL) + dedup; only the rendered link appends the query.
+    Object.freeze({ url: 'catalog-hub', query: '?tab=stock', language: 'stock_rupture', icon: 'lab lab-stock' }),
     Object.freeze({
         url: 'items',
         language: 'items',

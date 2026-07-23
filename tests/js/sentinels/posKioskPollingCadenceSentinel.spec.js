@@ -1,36 +1,35 @@
 /**
- * posKioskPollingCadenceSentinel.spec.js — GOAL-HEAL-SYNC-001 2026-05-23
+ * posKioskPollingCadenceSentinel.spec.js
+ *   — GOAL-HEAL-SYNC-001 2026-05-23 (original)
+ *   — POSPERF-04-idle-hammer 2026-07-22 (cadence contract corrected)
  *
- * Locks the kiosk polling cadence behavior introduced to defend against
- * silent Laravel Echo subscription failures (CSP violation on
- * /api/broadcasting/auth when localhost vs 127.0.0.1 origins mismatch).
+ * Locks the kiosk polling cadence for the caisse dashboard (kiosk-cash /
+ * « Prêt » / web-orders panels).
  *
- * Contract:
- *   - _kioskPollingInterval() returns 5000ms when readyOrders is empty
- *     (regardless of Echo state).
- *   - _kioskPollingInterval() returns 5000ms when lastReadyRefresh is
- *     stale (>30s old), regardless of Echo state.
- *   - _kioskPollingInterval() returns 60000ms only when readyOrders is
- *     populated AND lastReadyRefresh is fresh (≤30s) AND Echo is connected.
- *   - _kioskPollingInterval() returns 5000ms when Echo is NOT connected
- *     (degraded mode), even if readyOrders is populated and fresh.
+ * CONTRACT (POSPERF-04):
+ *   - _kioskPollingInterval() returns 60000ms whenever the realtime socket is
+ *     connected — EVEN when the "Prêt" list is empty. An empty ready list is the
+ *     normal calm state and must NOT force the fast cadence: the old
+ *     `isEmpty || isStale → 5000` heuristic hammered admin/oss-order ~48 req/min
+ *     WebSocket-healthy (POSPERF-04). We now trust the Echo push while the socket
+ *     is up.
+ *   - _kioskPollingInterval() returns 5000ms when the socket is NOT connected
+ *     (degraded — polling is the only discovery path), regardless of list state.
+ *
+ * Why the reversal of GOAL-HEAL-SYNC-001's empty/stale downshift:
+ *   The 30s staleness threshold was BELOW the 60s slow cadence, and
+ *   `lastReadyRefresh` is re-stamped by the poll itself, so every 60s tick
+ *   re-evaluated as "stale" → permanent downshift to 5s (the ~16-32s ΔT
+ *   oscillation was the 5s/60s flap, not a fix). The silent-Echo-death case
+ *   (socket up, channel-auth KO) is now covered by the ws 'disconnected' event
+ *   (_restartKioskPolling) + PosSyncService fallback + a bounded 60s worst-case,
+ *   documented as sync-engine IMP-2 (heartbeat freshness) backlog.
  *
  * Why behavioural-via-direct-invocation (not mount):
- *   PosComponent.vue is 4k+ LOC with deep transitive imports (store,
- *   $route, dozens of services). A full mount is brittle and would need
- *   to mock a sprawling surface that has nothing to do with the polling
- *   cadence we're locking. We test the method itself with a synthetic
- *   `this` context — the same input/output the method sees in production.
+ *   PosComponent.vue is 4k+ LOC with deep transitive imports. We test the method
+ *   itself with a synthetic `this` context — same input/output as production.
  *
- * Source-string assertions act as a structural backstop so the comment
- * anchor + threshold can't silently regress.
- *
- * Surfaced by Phase B.2 sync chain finding C2-T-001 P1 (KDS→POS sync ΔT
- * regressed to 16.7-32.0s avg 24.4s vs Wave Polish 4.9s target). Root
- * cause: Echo silent subscription failure + isConnected() returning true
- * after auto-reconnect even though channel-auth path was broken.
- *
- * @FK-ID  GOAL-HEAL-SYNC-001
+ * @FK-ID  GOAL-HEAL-SYNC-001 / POSPERF-04
  */
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -49,24 +48,23 @@ function makeInterval() {
     // Mirror the method body verbatim so a future drift in PosComponent.vue
     // makes the source-string regression tests below fail loudly.
     return function _kioskPollingInterval() {
-        const now = Date.now();
-        const lastRefresh = this.lastReadyRefresh || 0;
-        const isStale = (now - lastRefresh) > 30000;
-        const isEmpty = !this.readyOrders || this.readyOrders.length === 0;
-        if (isEmpty || isStale) {
-            return 5000;
-        }
         return window._wsService?.isConnected() ? 60000 : 5000;
     };
 }
 
-function ctx({ readyOrders, lastReadyRefresh, echoConnected }) {
+function ctx({ readyOrders, lastReadyRefresh, echoConnected, noWs }) {
     const previousWs = global.window?._wsService;
     if (!global.window) global.window = {};
-    global.window._wsService = {
-        isConnected: () => !!echoConnected,
-    };
+    if (noWs) {
+        delete global.window._wsService;
+    } else {
+        global.window._wsService = {
+            isConnected: () => !!echoConnected,
+        };
+    }
     return {
+        // readyOrders/lastReadyRefresh retained on the ctx to prove the new body
+        // IGNORES them (no idle hammer) — they must not change the result.
         ctx: {
             readyOrders,
             lastReadyRefresh,
@@ -81,87 +79,78 @@ function ctx({ readyOrders, lastReadyRefresh, echoConnected }) {
     };
 }
 
-describe('PosComponent._kioskPollingInterval — cadence contract (GOAL-HEAL-SYNC-001)', () => {
+describe('PosComponent._kioskPollingInterval — cadence contract (POSPERF-04)', () => {
     const fn = makeInterval();
 
-    it('returns 5000ms when readyOrders is EMPTY and Echo connected', () => {
+    it('returns 60000ms when Echo connected + EMPTY ready list (POSPERF-04: idle must NOT hammer)', () => {
+        // THE FIX. Previously this forced 5000ms (48 req/min WebSocket-healthy).
         const t = ctx({ readyOrders: [], lastReadyRefresh: Date.now(), echoConnected: true });
         try {
-            expect(fn.call(t.ctx)).toBe(5000);
+            expect(fn.call(t.ctx)).toBe(60000);
         } finally { t.restore(); }
     });
 
-    it('returns 5000ms when readyOrders is EMPTY and Echo disconnected', () => {
+    it('returns 60000ms when Echo connected + orders present', () => {
+        const t = ctx({ readyOrders: [{ id: 1 }], lastReadyRefresh: Date.now(), echoConnected: true });
+        try {
+            expect(fn.call(t.ctx)).toBe(60000);
+        } finally { t.restore(); }
+    });
+
+    it('returns 60000ms when Echo connected even if lastReadyRefresh is old (staleness no longer downshifts)', () => {
+        const t = ctx({ readyOrders: [], lastReadyRefresh: Date.now() - 120_000, echoConnected: true });
+        try {
+            expect(fn.call(t.ctx)).toBe(60000);
+        } finally { t.restore(); }
+    });
+
+    it('returns 5000ms when Echo DISCONNECTED + empty (degraded: poll is the only discovery path)', () => {
         const t = ctx({ readyOrders: [], lastReadyRefresh: Date.now(), echoConnected: false });
         try {
             expect(fn.call(t.ctx)).toBe(5000);
         } finally { t.restore(); }
     });
 
-    it('returns 5000ms when lastReadyRefresh is STALE (>30s) and Echo connected', () => {
-        const stale = Date.now() - 31_000;
-        const t = ctx({ readyOrders: [{ id: 1 }], lastReadyRefresh: stale, echoConnected: true });
+    it('returns 5000ms when Echo DISCONNECTED + orders present', () => {
+        const t = ctx({ readyOrders: [{ id: 1 }], lastReadyRefresh: Date.now(), echoConnected: false });
         try {
             expect(fn.call(t.ctx)).toBe(5000);
         } finally { t.restore(); }
     });
 
-    it('returns 5000ms when lastReadyRefresh is NULL (never refreshed) even with orders', () => {
-        // lastReadyRefresh null → (now - 0) > 30000 → stale → tight cadence.
-        const t = ctx({ readyOrders: [{ id: 1 }], lastReadyRefresh: null, echoConnected: true });
+    it('returns 5000ms when _wsService is absent (optional-chaining → treated as not connected)', () => {
+        const t = ctx({ readyOrders: [{ id: 1 }], lastReadyRefresh: Date.now(), echoConnected: false, noWs: true });
         try {
             expect(fn.call(t.ctx)).toBe(5000);
-        } finally { t.restore(); }
-    });
-
-    it('returns 60000ms ONLY when readyOrders populated AND fresh AND Echo connected', () => {
-        const fresh = Date.now() - 5_000;
-        const t = ctx({ readyOrders: [{ id: 1 }], lastReadyRefresh: fresh, echoConnected: true });
-        try {
-            expect(fn.call(t.ctx)).toBe(60000);
-        } finally { t.restore(); }
-    });
-
-    it('returns 5000ms when populated + fresh but Echo DISCONNECTED (degraded)', () => {
-        const fresh = Date.now() - 5_000;
-        const t = ctx({ readyOrders: [{ id: 1 }], lastReadyRefresh: fresh, echoConnected: false });
-        try {
-            expect(fn.call(t.ctx)).toBe(5000);
-        } finally { t.restore(); }
-    });
-
-    it('boundary: lastReadyRefresh exactly 30s old is NOT stale (still tight via empty branch only)', () => {
-        // (now - lastRefresh) > 30000 is strict-gt; exactly 30000ms should not
-        // count as stale. With populated readyOrders + Echo connected, cadence
-        // must therefore be 60000ms.
-        const exactlyThirty = Date.now() - 30_000;
-        const t = ctx({ readyOrders: [{ id: 1 }], lastReadyRefresh: exactlyThirty, echoConnected: true });
-        try {
-            expect(fn.call(t.ctx)).toBe(60000);
         } finally { t.restore(); }
     });
 });
 
-describe('PosComponent.vue — source-string structural invariants (GOAL-HEAL-SYNC-001)', () => {
-    it('contains the GOAL-HEAL-SYNC-001 anchor comment', () => {
-        expect(SOURCE).toMatch(/GOAL-HEAL-SYNC-001/);
+describe('PosComponent.vue — source-string structural invariants (POSPERF-04)', () => {
+    // Extract the _kioskPollingInterval body, anchored to the next method name
+    // so the negative assertions below scope to the method only.
+    const intervalBody = SOURCE.match(/_kioskPollingInterval\s*\(\)\s*\{[\s\S]+?\}\s*,\s*\n\s*_startKioskPolling/);
+    // Strip comments so the negative assertions test the EXECUTABLE code only —
+    // the docblock legitimately cites the removed lastReadyRefresh/30000 logic to
+    // explain WHY it's gone; that history must not trip the "removed" checks.
+    const intervalCode = intervalBody
+        ? intervalBody[0].replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '')
+        : '';
+
+    it('carries the POSPERF-04 anchor comment', () => {
+        expect(SOURCE).toMatch(/POSPERF-04/);
     });
 
-    it('_kioskPollingInterval() uses lastReadyRefresh (not a foreign property)', () => {
-        // Anchor inside the method body to avoid colliding with other refs.
-        expect(SOURCE).toMatch(/_kioskPollingInterval\s*\(\s*\)\s*\{[\s\S]*?this\.lastReadyRefresh[\s\S]*?\}/);
+    it('_kioskPollingInterval() keeps the isConnected() ? 60000 : 5000 cadence', () => {
+        expect(intervalBody).not.toBeNull();
+        expect(intervalCode).toMatch(/isConnected\s*\(\s*\)\s*\?\s*60000\s*:\s*5000/);
     });
 
-    it('_kioskPollingInterval() applies the >30s staleness threshold', () => {
-        expect(SOURCE).toMatch(/_kioskPollingInterval\s*\(\s*\)\s*\{[\s\S]*?>\s*30000[\s\S]*?\}/);
-    });
-
-    it('_kioskPollingInterval() returns 5000ms tight cadence on empty/stale', () => {
-        expect(SOURCE).toMatch(/_kioskPollingInterval\s*\(\s*\)\s*\{[\s\S]*?return\s+5000[\s\S]*?\}/);
-    });
-
-    it('_kioskPollingInterval() still keeps the 60000ms Echo-connected path', () => {
-        expect(SOURCE).toMatch(/_kioskPollingInterval\s*\(\s*\)\s*\{[\s\S]*?isConnected\s*\(\s*\)\s*\?\s*60000\s*:\s*5000[\s\S]*?\}/);
+    it('_kioskPollingInterval() executable body no longer references readyOrders / lastReadyRefresh / the 30s threshold (idle hammer removed)', () => {
+        expect(intervalBody).not.toBeNull();
+        expect(intervalCode).not.toMatch(/readyOrders/);
+        expect(intervalCode).not.toMatch(/lastReadyRefresh/);
+        expect(intervalCode).not.toMatch(/30000/);
     });
 });
 

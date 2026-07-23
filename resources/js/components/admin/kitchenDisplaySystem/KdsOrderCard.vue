@@ -78,6 +78,16 @@
           <span class="kds-card__queue-prefix">N°</span>{{ order.queue_number || order.id }}
         </div>
         <div class="kds-card__elapsed-wrap">
+          <!-- [KDS-SCHEDULED-CARD-MISLEADS 2026-07-22] Scheduled orders show their
+               TARGET time so the chef reads "prévue 12:30" instead of mistaking the
+               (now release-relative) ATTENTE timer for a huge overdue delay. -->
+          <span
+            v-if="scheduledHm"
+            class="kds-card__scheduled"
+            :data-testid="`kds-card-scheduled-${order.id}`"
+          >
+            <span aria-hidden="true">🕐</span> {{ scheduledForLabel }}
+          </span>
           <span class="kds-card__elapsed-label" :style="{ color: elapsedLabelColor }">
             {{ $t('label.kds_attente') }}
           </span>
@@ -297,7 +307,38 @@ export default {
             return orderHasAnyAllergen(this.order.order_items || []);
         },
         createdMs() {
-            return parseOrderCreatedMs(this.order);
+            // [KDS-SCHEDULED-CARD-MISLEADS 2026-07-22] For a SCHEDULED order the
+            // "ATTENTE" chrono (+ its age bucket/border) must count from the kitchen
+            // RELEASE instant — scheduled_at − lead, exposed by the backend as
+            // `kitchen_timer_anchor_iso` — NOT created_at. Otherwise an order placed
+            // hours ahead shows a false ultra-late timer the moment it's released at
+            // T−lead. We take max(anchor, created_at) so a walk-in scheduled INSIDE
+            // the lead window still counts from when it actually existed. ASAP orders
+            // (no anchor) keep created_at → 100% unchanged.
+            const created = parseOrderCreatedMs(this.order);
+            const anchorIso = this.order?.kitchen_timer_anchor_iso;
+            if (anchorIso) {
+                const anchor = Date.parse(anchorIso);
+                if (!Number.isNaN(anchor)) {
+                    return Math.max(anchor, created);
+                }
+            }
+            return created;
+        },
+        // [KDS-SCHEDULED-CARD-MISLEADS 2026-07-22] Target time (H:i) for the
+        // "🕐 prévue HH:MM" badge — present only on scheduled orders.
+        scheduledHm() {
+            return this.order?.scheduled_hm || null;
+        },
+        scheduledForLabel() {
+            const hm = this.scheduledHm;
+            if (!hm) {
+                return '';
+            }
+            const k = 'label.kds_scheduled_for';
+            const t = this.$t(k, { time: hm });
+            // vue-i18n returns the key on a miss → FR fallback (ADR-007 FR-lock).
+            return t === k ? `prévue ${hm}` : t;
         },
         elapsedSeconds() {
             return Math.max(0, Math.floor((this.now - this.createdMs) / 1000));
@@ -637,6 +678,25 @@ export default {
     align-items: flex-end;
     gap: 2px;
     overflow: visible;
+}
+/* [KDS-SCHEDULED-CARD-MISLEADS 2026-07-22] "🕐 prévue HH:MM" badge — small info
+   pill above the ATTENTE label, right-aligned in the elapsed column. Blue info
+   tone (matches KdsScheduledBanner #EFF6FF/#1E40AF) so it reads as context, not
+   an alarm. Scheduled orders only (v-if). */
+.kds-card__scheduled {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    align-self: flex-end;
+    padding: 1px 7px;
+    border-radius: 9999px;
+    background: #EFF6FF;
+    color: #1E40AF;
+    border: 1px solid #BFDBFE;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.4;
+    white-space: nowrap;
 }
 .kds-card__elapsed-label {
     font-size: 10px;
