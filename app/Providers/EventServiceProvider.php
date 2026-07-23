@@ -61,6 +61,7 @@ use App\Listeners\PersistItemAvailabilityChangedToOutbox;
 // [F-016a-BIS]
 use App\Listeners\PersistItemExtraAvailabilityChangedToOutbox;
 use App\Listeners\PersistItemVariationAvailabilityChangedToOutbox;
+use App\Listeners\ConsumeRawMaterialsOnOrderCreated;
 use App\Listeners\DecrementItemAvailabilityOnOrder;
 use App\Listeners\DecrementStockOnOrderCreated;
 use App\Listeners\ReleaseAvailabilityOnOrderCanceled;
@@ -179,6 +180,12 @@ class EventServiceProvider extends ServiceProvider
             PrintKioskOrderToCounter::class,
             // [BORNE-KITCHEN 2026-06-28] + ticket CUISINE sur la station 'kitchen' (best-effort).
             PrintKioskKitchenTicketOnOrderCreated::class,
+            // [ARCH_STOCK_INTELLIGENT_BOM P2a — B3 2026-07-23] Consommation matière
+            // THÉORIQUE (ShouldQueue, hors-ligne). Placé EN DERNIER + isolé en
+            // try/catch : il ne peut ni ralentir ni casser le cascade ci-dessus
+            // (dispatcher sync halt-on-throw). NF525 : lit les snapshots, n'écrit
+            // rien dans la chaîne fiscale.
+            ConsumeRawMaterialsOnOrderCreated::class,
         ],
         OrderPaidAtCounter::class => [
             PersistOrderPaidAtCounterToOutbox::class,

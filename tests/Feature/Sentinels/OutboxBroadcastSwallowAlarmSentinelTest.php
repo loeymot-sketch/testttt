@@ -84,6 +84,16 @@ class OutboxBroadcastSwallowAlarmSentinelTest extends TestCase
             ->andReturnUsing(function ($job) {
                 return $job;
             });
+        // [ARCH_STOCK_INTELLIGENT_BOM P2a 2026-07-23] The OrderCreated cascade now
+        // carries a ShouldQueue listener (ConsumeRawMaterialsOnOrderCreated); under
+        // the sync queue it is invoked via CallQueuedHandler -> Bus::dispatchNow().
+        // Pass it through (no-op) so this sentinel keeps isolating ONLY the
+        // DispatchDomainEventsJob throw above — the swallow-alarm invariant is
+        // unchanged (dispatchNow never receives DispatchDomainEventsJob).
+        $throwingBus->shouldReceive('dispatchNow')
+            ->andReturnUsing(function ($job) {
+                return $job;
+            });
         $throwingBus->shouldReceive('dispatchSync')->andReturnNull();
         $throwingBus->shouldReceive('hasCommandHandler')->andReturnFalse();
         $throwingBus->shouldReceive('getCommandHandler')->andReturnFalse();
