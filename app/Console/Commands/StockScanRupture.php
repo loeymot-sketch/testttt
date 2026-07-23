@@ -127,7 +127,11 @@ class StockScanRupture extends Command
                     continue;
                 }
 
-                $availability->toggle((int) $item->id, $branchId, false, 'stock_rupture');
+                // [panel-manual-86-reason-collision 2026-07-23] Rupture AUTO préventive :
+                // provenance NON manuelle ($manual=false) → manual_unavailable_since reste
+                // null → réactivable au restock (le cron re-scanne et re-86 si toujours à
+                // sec). NE PAS confondre avec un 86 humain (sticky, cf. AvailabilityService).
+                $availability->toggle((int) $item->id, $branchId, false, 'stock_rupture', manual: false);
                 $counters['items_flipped']++;
             }
 

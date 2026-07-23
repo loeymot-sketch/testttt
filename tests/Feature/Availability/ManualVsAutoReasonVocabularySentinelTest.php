@@ -25,8 +25,15 @@ use Tests\TestCase;
  * Investigation verdict for the finding: within AvailabilityService there is NO
  * manual↔auto collision (distinct slugs, and every auto-restore guard keys on
  * `=== 'out_of_stock'`), so the manual panel writing 'stock_rupture' is safe here.
- * The residual StockService restock-reactivation collision is OUT of this service's
- * scope and reported as an escalation, not a wide reason rename.
+ *
+ * The residual StockService restock-reactivation collision (a replenishment un-doing
+ * a manual 86 that shared the 'stock_rupture' slug) is now RESOLVED — owner decision
+ * « A », 2026-07-23 — WITHOUT renaming the slug: {@see AvailabilityService::toggle()}
+ * stamps a distinct PROVENANCE marker (item_branch_availability.manual_unavailable_since,
+ * $manual=true by default) that StockService checks before auto-reactivating. The
+ * end-to-end stickiness-through-restock behaviour lives in
+ * {@see \Tests\Feature\Stock\ManualEightySixStickyThroughRestockTest}; the
+ * provenance-stamp contract itself is locked below.
  */
 class ManualVsAutoReasonVocabularySentinelTest extends TestCase
 {
@@ -72,6 +79,44 @@ class ManualVsAutoReasonVocabularySentinelTest extends TestCase
         $this->assertFalse((bool) $row->is_available);
         $this->assertSame('stock_rupture', $row->unavailable_reason);
         $this->assertNotSame('out_of_stock', $row->unavailable_reason, 'Manual reason must NOT collide with the auto-quota slug.');
+    }
+
+    /**
+     * [panel-manual-86-reason-collision — owner decision « A », 2026-07-23]
+     *
+     * Provenance-stamp contract that disambiguates the SHARED 'stock_rupture' slug
+     * between a human 86 (sticky through restock) and an auto stock 86 (reactivable):
+     *  - a manual toggle ($manual defaults true) stamps manual_unavailable_since;
+     *  - the auto path ($manual=false, used by cron stock:scan-rupture) leaves it null;
+     *  - re-enabling clears the marker.
+     * StockService keys its restock reactivation on this marker being null.
+     */
+    public function test_manual_toggle_stamps_provenance_marker_and_auto_leaves_it_null(): void
+    {
+        $branch = Branch::factory()->create();
+        $item = Item::factory()->create();
+        $service = app(AvailabilityService::class);
+
+        // Manual 86 (default) — provenance stamped.
+        $service->toggle($item->id, $branch->id, false, 'stock_rupture');
+        $manual = ItemBranchAvailability::query()
+            ->where('item_id', $item->id)->where('branch_id', $branch->id)->first();
+        $this->assertSame('stock_rupture', $manual->unavailable_reason);
+        $this->assertNotNull($manual->manual_unavailable_since, 'Manual 86 must stamp provenance (sticky through restock).');
+
+        // Re-enable clears the marker.
+        $service->toggle($item->id, $branch->id, true, null);
+        $reenabled = ItemBranchAvailability::query()
+            ->where('item_id', $item->id)->where('branch_id', $branch->id)->first();
+        $this->assertTrue((bool) $reenabled->is_available);
+        $this->assertNull($reenabled->manual_unavailable_since, 'Re-enable must clear the provenance marker.');
+
+        // Auto path ($manual=false) — same slug, NO provenance → stays reactivable.
+        $service->toggle($item->id, $branch->id, false, 'stock_rupture', manual: false);
+        $auto = ItemBranchAvailability::query()
+            ->where('item_id', $item->id)->where('branch_id', $branch->id)->first();
+        $this->assertSame('stock_rupture', $auto->unavailable_reason);
+        $this->assertNull($auto->manual_unavailable_since, 'Auto stock 86 must NOT be marked manual.');
     }
 
     public function test_setMaxDailyQty_raise_does_not_reenable_a_manual_86(): void

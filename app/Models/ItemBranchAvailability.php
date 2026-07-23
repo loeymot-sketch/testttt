@@ -16,6 +16,11 @@ class ItemBranchAvailability extends Model
         'is_available',
         'unavailable_reason',
         'unavailable_since',
+        // [panel-manual-86-reason-collision 2026-07-23] Provenance : non-null => 86
+        // posé par un humain (panel/ /m) => sticky (StockService ne le réactive pas
+        // au restock). Null => rupture auto stock (réactivable). Miroir du pattern
+        // stock_levels.manual_unavailable_* pour le chemin ITEM.
+        'manual_unavailable_since',
         'max_daily_qty',
         'daily_consumed_qty',
         'daily_reset_at',
@@ -24,6 +29,7 @@ class ItemBranchAvailability extends Model
     protected $casts = [
         'is_available' => 'boolean',
         'unavailable_since' => 'datetime',
+        'manual_unavailable_since' => 'datetime',
         'daily_reset_at' => 'date',
     ];
 

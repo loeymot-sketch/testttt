@@ -28,6 +28,40 @@ use Illuminate\Support\Facades\Log;
  *
  * All mutations are transactional and emit {@see ItemAvailabilityChanged::forBranch()}
  * on success, which is persisted to the outbox and broadcast on the branch channel.
+ *
+ * ---------------------------------------------------------------------------
+ * REASON VOCABULARY (item_branch_availability.unavailable_reason) — verified
+ * 2026-07-22 (Vague 2 STOCK-HARDENING, finding panel-manual-86-reason-collision):
+ *
+ *  - 'out_of_stock'  = AUTO daily-quota 86 (max_daily_qty reached). Written ONLY
+ *                      here by {@see setMaxDailyQty()} + {@see decrementForOrder()}.
+ *                      It is the ONE reason the quota machinery auto-heals:
+ *                      {@see setMaxDailyQty()} (cap raised), {@see releaseForOrderItems()}
+ *                      (cancel/refund credit) and ResetStaleDailyQuotaCommand /
+ *                      {@see reconcileStaleDailyQuota()} (day rollover) ALL key on
+ *                      `=== 'out_of_stock'` before flipping back to available.
+ *  - 'stock_rupture' (+ any other slug e.g. 'out_of_stock_manual', 'supplier_issue')
+ *                      = MANUAL 86 (admin/POS/KDS panel, carnet PIN app) OR PHYSICAL
+ *                      stock rupture (StockService on_hand<=0 / stock:scan-rupture
+ *                      cron). This service NEVER auto-clears it — a manual/physical 86
+ *                      is STICKY here and survives every quota auto-restore path
+ *                      (guards above check `=== 'out_of_stock'` exclusively).
+ *
+ * So within AvailabilityService there is NO manual↔auto collision: the manual panel
+ * writing 'stock_rupture' is safe against quota self-heal. The StockService
+ * restock-reactivation collision (a replenishment un-doing a manual 86 that shared
+ * the 'stock_rupture' slug — owner « friteuse » symptom) is RESOLVED (owner decision
+ * « A », 2026-07-23) WITHOUT a wide reason rename: {@see toggle()} stamps a distinct
+ * PROVENANCE marker (item_branch_availability.manual_unavailable_since, $manual=true
+ * by default) on every manual 86, which
+ * {@see \App\Services\Stock\StockService::syncItemAvailabilityForStockLevel} checks
+ * before auto-reactivating. The slug stays 'stock_rupture' everywhere (dashboards /
+ * borne / projection / POS+KDS toasts unchanged); provenance is a separate signal.
+ * Auto stock ruptures (StockService decrement + cron stock:scan-rupture with
+ * $manual=false) leave the marker null and still reactivate on restock. See migration
+ * 2026_07_23_100000_add_manual_unavailable_since_to_item_branch_availability +
+ * tests/Feature/Stock/ManualEightySixStickyThroughRestockTest.
+ * ---------------------------------------------------------------------------
  */
 final class AvailabilityService
 {
@@ -41,14 +75,24 @@ final class AvailabilityService
         int $itemId,
         int $branchId,
         bool $available,
-        ?string $reason = null
+        ?string $reason = null,
+        bool $manual = true
     ): ItemBranchAvailability {
-        return DB::transaction(function () use ($itemId, $branchId, $available, $reason): ItemBranchAvailability {
+        return DB::transaction(function () use ($itemId, $branchId, $available, $reason, $manual): ItemBranchAvailability {
             $row = ItemBranchAvailability::query()
                 ->where('item_id', $itemId)
                 ->where('branch_id', $branchId)
                 ->lockForUpdate()
                 ->first();
+
+            // [panel-manual-86-reason-collision 2026-07-23] PROVENANCE du 86. toggle()
+            // EST l'entrée manuelle (« Manual toggle (admin UI) ») → $manual=true par
+            // défaut : un 86 humain stampe manual_unavailable_since, ce qui rend la
+            // rupture STICKY (StockService::syncItemAvailabilityForStockLevel refuse
+            // de la réactiver au restock). Le SEUL appelant auto (cron
+            // stock:scan-rupture) passe explicitement $manual=false → marker null →
+            // réactivable au restock, comportement historique préservé.
+            $manualSince = (! $available && $manual) ? now() : null;
 
             if (! $row) {
                 $row = new ItemBranchAvailability([
@@ -57,6 +101,7 @@ final class AvailabilityService
                     'is_available' => $available,
                     'unavailable_reason' => $available ? null : $reason,
                     'unavailable_since' => $available ? null : now(),
+                    'manual_unavailable_since' => $manualSince,
                     'daily_consumed_qty' => 0,
                     // [Wave 3c KDS-ADV3C-03 P1 2026-05-18] Explicit Paris-local
                     // day for `daily_reset_at` (DATE column, TZ-agnostic in MySQL
@@ -70,13 +115,32 @@ final class AvailabilityService
                 return $row;
             }
 
-            if ((bool) $row->is_available === $available && $row->unavailable_reason === ($available ? null : $reason)) {
+            $stateAndReasonMatch = (bool) $row->is_available === $available
+                && $row->unavailable_reason === ($available ? null : $reason);
+            $manualMatches = $available
+                ? ($row->manual_unavailable_since === null)
+                : (($row->manual_unavailable_since !== null) === $manual);
+
+            // No-op idempotent complet : état, raison ET provenance coïncident déjà.
+            if ($stateAndReasonMatch && $manualMatches) {
+                return $row;
+            }
+
+            // État + raison inchangés mais PROVENANCE différente (ex. un humain
+            // confirme un 86 qui était auto) : on « upgrade » le marqueur STICKY
+            // SANS ré-émettre d'event — la borne/POS reflètent déjà cette
+            // disponibilité/raison inchangée (contrat d'idempotence event préservé).
+            if ($stateAndReasonMatch) {
+                $row->manual_unavailable_since = $manualSince;
+                $row->save();
+
                 return $row;
             }
 
             $row->is_available = $available;
             $row->unavailable_reason = $available ? null : $reason;
             $row->unavailable_since = $available ? null : now();
+            $row->manual_unavailable_since = $manualSince;
             $row->save();
 
             $this->dispatchEvent($itemId, $branchId, $available, $reason);
@@ -163,6 +227,75 @@ final class AvailabilityService
 
             return $row;
         });
+    }
+
+    /**
+     * [quota-daily-reenable-cron-only 2026-07-22 / Vague 2 STOCK-HARDENING]
+     * Lazy catch-up for the daily-quota reset. The scheduled twin
+     * {@see \App\Console\Commands\ResetStaleDailyQuotaCommand} runs at 00:05 — but the
+     * Cayenne box is powered OFF overnight, so on a cold morning boot the 00:05 job
+     * NEVER fired and every quota-auto-86'd item (unavailable_reason='out_of_stock')
+     * stays blocked all day until someone runs the command by hand.
+     *
+     * This re-enables + zeroes any PAST-dated rows for the branch on the FIRST
+     * availability read of the day (hooked into {@see getBranchAvailabilitySnapshot()}
+     * and StockRuptureDashboardController::catalogOverview). A once-per-branch-per-day
+     * cache flag (atomic first-writer-wins via Cache::add) makes every subsequent read
+     * a single cache hit — no per-read write.
+     *
+     * Mirrors the command's exact Paris-local DATE predicate + writes and its
+     * out_of_stock-only re-enable (manual/physical 86 preserved — see the REASON
+     * VOCABULARY on the class docblock). NOT NF525: daily_consumed_qty is a UX quota
+     * counter, not a fiscal counter (see {@see decrementForOrder()}). Idempotent.
+     *
+     * @return int rows reset (0 when already reconciled today, or nothing stale).
+     */
+    public function reconcileStaleDailyQuota(int $branchId): int
+    {
+        if ($branchId < 1) {
+            return 0;
+        }
+
+        // Explicit Paris-local day (mirror decrementForOrder()/toggle()/the cron):
+        // `daily_reset_at` is a DATE column, compared lexically as Y-m-d.
+        $today = Carbon::today(config('app.timezone'))->toDateString();
+
+        // Once per branch per day. Cache::add is SETNX-equivalent (atomic
+        // first-writer-wins on Redis AND the array driver used in tests), so
+        // concurrent morning reads reconcile exactly once. Key rolls over daily.
+        if (! Cache::add("availability:daily_reconcile:{$branchId}:{$today}", 1, now()->endOfDay())) {
+            return 0;
+        }
+
+        $staleScope = fn () => DB::table('item_branch_availability')
+            ->where('branch_id', $branchId)
+            ->whereDate('daily_reset_at', '<', $today)
+            ->whereNotNull('daily_reset_at');
+
+        // Re-enable ONLY quota-auto 86 ('out_of_stock'). Manual/physical 86
+        // (stock_rupture, supplier_issue, out_of_stock_manual, …) stays 86'd —
+        // same guard as ResetStaleDailyQuotaCommand and setMaxDailyQty()/release.
+        $reenabled = $staleScope()
+            ->where('is_available', false)
+            ->where('unavailable_reason', 'out_of_stock')
+            ->update([
+                'is_available' => true,
+                'unavailable_reason' => null,
+                'unavailable_since' => null,
+                'updated_at' => now(),
+            ]);
+
+        // Reset the counters for the whole stale set (available or not) so day-N+1
+        // starts fresh even with zero overnight traffic. Done AFTER the re-enable
+        // because the stale scope depends on `daily_reset_at < today`, which this
+        // update rewrites.
+        $staleScope()->update([
+            'daily_consumed_qty' => 0,
+            'daily_reset_at' => $today,
+            'updated_at' => now(),
+        ]);
+
+        return (int) $reenabled;
     }
 
     /**
@@ -502,6 +635,11 @@ final class AvailabilityService
      */
     public function getBranchAvailabilitySnapshot(int $branchId): array
     {
+        // [quota-daily-reenable-cron-only 2026-07-22] First read of the day for
+        // this branch catches up the overnight quota reset the 00:05 cron missed
+        // (box off overnight). Guarded once/day/branch — cheap on every other read.
+        $this->reconcileStaleDailyQuota($branchId);
+
         $items = ItemBranchAvailability::query()
             ->where('branch_id', $branchId)
             ->where('is_available', false)

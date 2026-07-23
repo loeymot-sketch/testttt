@@ -194,7 +194,12 @@ class StockService
             ->first();
 
         if ((int) $level->on_hand <= 0) {
-            if ($row && ! (bool) $row->is_available && ! $this->isAutoStockRuptureReason($row->unavailable_reason)) {
+            // [panel-manual-86-reason-collision 2026-07-23] Un 86 MANUEL (provenance
+            // stampée) n'est jamais réécrit par le stock auto, MÊME s'il partage le
+            // slug 'stock_rupture' — sinon StockService s'en réapproprierait la
+            // paternité puis le réactiverait au restock (bug owner « friteuse »).
+            if ($row && ! (bool) $row->is_available
+                && (! $this->isAutoStockRuptureReason($row->unavailable_reason) || $this->isManuallyUnavailable($row))) {
                 return null;
             }
 
@@ -219,7 +224,15 @@ class StockService
             return ItemAvailabilityChanged::forBranch($itemId, $branchId, false, self::AUTO_RUPTURE_REASON);
         }
 
-        if ($row && ! (bool) $row->is_available && $this->isAutoStockRuptureReason($row->unavailable_reason)) {
+        // [panel-manual-86-reason-collision 2026-07-23] Réactivation au restock
+        // RÉSERVÉE aux ruptures AUTO (provenance manuelle absente). Un 86 posé à la
+        // main par l'owner (manual_unavailable_since != null) reste STICKY : seul un
+        // humain le rallume via AvailabilityService::toggle(available=true). Sans ce
+        // garde, un réappro (annulation/remboursement qui recrédite on_hand, ou futur
+        // endpoint de réception) rallumait un produit coupé volontairement.
+        if ($row && ! (bool) $row->is_available
+            && $this->isAutoStockRuptureReason($row->unavailable_reason)
+            && ! $this->isManuallyUnavailable($row)) {
             $row->is_available = true;
             $row->unavailable_reason = null;
             $row->unavailable_since = null;
@@ -243,6 +256,21 @@ class StockService
     private function isAutoStockRuptureReason(?string $reason): bool
     {
         return $reason === self::AUTO_RUPTURE_REASON;
+    }
+
+    /**
+     * True when the 86 was decided by a HUMAN (manual panel / phone /m), stamped via
+     * {@see \App\Services\Menu\AvailabilityService::toggle()} on
+     * item_branch_availability.manual_unavailable_since. StockService must treat such
+     * a row as STICKY even though it reuses the 'stock_rupture' slug: never override
+     * it when on_hand hits 0, never auto-reactivate it on restock (owner decision
+     * « A », 2026-07-23 — a manual 86 outlives a physical restock). Auto stock
+     * ruptures (decrement / cron stock:scan-rupture with $manual=false) leave the
+     * marker null and remain freely reactivable.
+     */
+    private function isManuallyUnavailable(ItemBranchAvailability $row): bool
+    {
+        return $row->manual_unavailable_since !== null;
     }
 
     /**
