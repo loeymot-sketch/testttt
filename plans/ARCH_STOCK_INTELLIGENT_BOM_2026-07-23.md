@@ -101,3 +101,39 @@ l'IA ne pousse jamais seule (garde-fou NF525/prix).
    aux autres produits au fur et à mesure des détails de consommation connus.
 - Poulet : 1 kg → ~5 sandwichs poulet (≈200 g/sandwich) ; mixte = 1 steak (75 g) + ~120 g poulet
   (fiche à confirmer par produit).
+
+---
+## STRUCTURE DÉTAILLÉE P2 (moteur conso) — ancrée 2026-07-23
+**Point d'accroche prouvé** : `App\Events\OrderCreated` (dispatché `OrderService.php:664`, NON frozen)
+→ listener QUEUED `ConsumeRawMaterialsOnOrderCreated` (le worker permanent tourne) → 
+`RawMaterialConsumptionService::consumeForOrder` lit `composition_snapshot` (lines/extras/addons)
+→ résout `raw_material_recipe_lines` (produit par item_id · extras par extra_id OU subject_group ·
+variations par variation_id) → `RawMaterialStockService::consume` **idempotent (order_item.id)**.
+- **P2a** (en cours) : service + listener + tests. Rejouer une commande = no-op (idempotent).
+- **P2b** (suivant) : commande `raw-materials:replay-consumption` (backfill sur DB PROD VPS, pas
+  la locale polluée — amendement #5) + **food cost** : coût matière/produit = Σ(recipe.qty ×
+  raw_material.avg_cost) → rapport `raw-materials:food-cost` (coût vs prix de vente, marge).
+- **P2c** : enrichir `/m` — stock théorique (on_hand décrémenté live) + « 🛒 À acheter » basé sur
+  seuil (threshold_low) + conso récente.
+
+## CHAÎNE DE VALEUR COMPLÈTE (vision long-terme — la « clarté » demandée)
+```
+FACTURE PHOTO (P3, IA ChatGPT) ──┐
+COMMANDE PHOTO liste appro (P3) ──┼─► ENTRÉE stock (receive) ──┐
+INVENTAIRE mensuel IA (P4) ──────┘                             │
+                                                               ▼
+VENTE (caisse/borne/web/m) ─► composition_snapshot ─► CONSO (P2) ─► STOCK THÉORIQUE
+                                                               │
+                                                               ├─► FOOD COST / MARGE (P2b/P4)
+                                                               ├─► « À ACHETER » (P2c/P4)
+                                                               └─► ÉCART théo-vs-réel ─► INVENTAIRE corrige ─► l'IA APPREND (P4)
+```
+Chaque brique = testée chez NOUS d'abord (V1 Le Cayenne), puis généralisable (agence, P5 :
+onboarding IA d'un menu étranger → catalogue + recettes squelettes, 0 constante métier en dur).
+
+## GARDE-FOUS STRUCTURELS (pour que ça reste solide en grandissant)
+- **1 seule vérité par objet** : boissons unitaires = stock_levels existant ; matières = raw_material_*. Jamais les deux.
+- **Idempotence partout** : rejouer un event/une facture/un import = no-op (source_type+source_id).
+- **NF525 intouché** : la couche stock/compta LIT `composition_snapshot`, n'écrit jamais la chaîne fiscale.
+- **Humain valide toujours** : IA facture/menu/inventaire = proposition → validation owner → écriture.
+- **Branch-scopé dès P1** : prêt multi-resto sans migration (V1 = branch 1).
