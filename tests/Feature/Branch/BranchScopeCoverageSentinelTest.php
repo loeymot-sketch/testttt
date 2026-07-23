@@ -67,6 +67,13 @@ class BranchScopeCoverageSentinelTest extends TestCase
         // explicitement « PAS de BranchScope : V1 LOCAL mono-branche (branch_id=1 fixe) ». Exemption
         // déclarée ici comme le sentinel l'exige (l'oubli de cette ligne le rendait rouge). V2-SaaS blocker.
         'App\\Models\\DailyBookEntry'        => 'BASELINE_V1_2026-07-15 — carnet mono-branche V1 (branch_id fixe), V1.0.2 heal target',
+        // [ARCH_STOCK_INTELLIGENT_BOM_2026-07-23 / P1a] Domaine « matières premières » (raw
+        // materials / BOM) : hard-scope explicite par les appelants (pattern DailyBookEntry),
+        // pas de BranchScope global — mono-branche V1 (branch_id=1 fixe). V2-SaaS blocker → V1.0.2 heal target.
+        'App\\Models\\RawMaterial'           => 'BASELINE_V1_2026-07-23 — matières premières mono-branche V1 (hard-scope appelant), V1.0.2 heal target',
+        'App\\Models\\RawMaterialRecipeLine' => 'BASELINE_V1_2026-07-23 — matières premières mono-branche V1 (hard-scope appelant), V1.0.2 heal target',
+        'App\\Models\\RawMaterialStock'      => 'BASELINE_V1_2026-07-23 — matières premières mono-branche V1 (hard-scope appelant), V1.0.2 heal target',
+        'App\\Models\\RawMaterialMovement'   => 'BASELINE_V1_2026-07-23 — matières premières mono-branche V1 (hard-scope appelant), V1.0.2 heal target',
     ];
 
     public function test_every_model_with_branch_id_column_declares_branch_scope(): void
