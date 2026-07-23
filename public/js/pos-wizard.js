@@ -868,9 +868,9 @@
                 sauceItems: sauceList.filter(function (item) { return item.name.toLowerCase() !== 'sans sauce'; }),
                 // [BUG-W4 FIX] Include menu prices from DB
                 // [BUG-W4b FIX] Use ?? instead of || to allow price = 0 without fallback override
-                menuComplet: menuAddon ? { label: 'Menu Complet', price: menuAddon.price ?? 3.00 } : { label: 'Menu Complet', price: 3.00 },
-                fritesSeules: fritesAddon ? { label: 'Frites Seules', price: fritesAddon.price ?? 2.00 } : { label: 'Frites Seules', price: 2.00 },
-                boissonSeule: _allowBoissonSeule ? (boissonAddon ? { label: 'Boisson Seule', price: boissonAddon.price ?? 2.00 } : { label: 'Boisson Seule', price: 2.00 }) : null
+                menuComplet: menuAddon ? { label: 'Menu Complet', price: menuAddon.price ?? 2.50 } : { label: 'Menu Complet', price: 2.50 },
+                fritesSeules: fritesAddon ? { label: 'Frites Seules', price: fritesAddon.price ?? 1.90 } : { label: 'Frites Seules', price: 1.90 },
+                boissonSeule: _allowBoissonSeule ? (boissonAddon ? { label: 'Boisson Seule', price: boissonAddon.price ?? 1.90 } : { label: 'Boisson Seule', price: 1.90 }) : null
             });
             selections.supplements = {};
             selections.menuChoice = null;
@@ -963,9 +963,9 @@
                 type: 'menu_choice',
                 label: 'Formule',
                 subtitle: 'Voulez-vous accompagner votre repas ?',
-                menuComplet: menuComplet || { name: 'Menu Complet (Frites+Boisson)', price: 3.00, thumb: '' },
-                fritesSeules: fritesSeules || { name: 'Frites Seules', price: 2.00, thumb: '' },
-                boissonSeule: _posAllowBoissonSeule ? (boissonSeule || { name: 'Boisson Seule', price: 2.00, thumb: '' }) : null,
+                menuComplet: menuComplet || { name: 'Menu Complet (Frites+Boisson)', price: 2.50, thumb: '' },
+                fritesSeules: fritesSeules || { name: 'Frites Seules', price: 1.90, thumb: '' },
+                boissonSeule: _posAllowBoissonSeule ? (boissonSeule || { name: 'Boisson Seule', price: 1.90, thumb: '' }) : null,
                 sauceItems: sauceList.filter(function (item) { return item.name.toLowerCase() !== 'sans sauce'; })
             });
 
@@ -1271,20 +1271,24 @@
         }
         h += '</div>';
 
-        h += '<div class="wizard-viande-list">';
+        // [VIANDE-UI 2026-07-23 · LOCK owner] Grille de tuiles carrées avec GRANDE image
+        // (même gabarit que les crudités, images plus grandes), petit nom, TOUTES visibles
+        // (plus de « Voir tous » qui masquait des viandes). Tap sur la tuile = ajouter
+        // (bouton `.viande-btn` data-action="plus" → handler bindEvents INCHANGÉ) ; petit −
+        // pour retirer. Compteur par tuile (badge) + compteur global compact conservé au-dessus.
+        h += '<div class="wizard-viande-grid">';
         step.items.forEach(function (viande) {
             var count = selections.viandes[viande.key] || 0;
             var canAdd = total < max;
-            h += '<div class="wizard-viande-row' + (count > 0 ? ' active' : '') + '">';
-            h += '<div class="viande-info">';
-            h += '<span class="viande-emoji">' + viande.emoji + '</span>';
-            h += '<span class="viande-name">' + viande.name + '</span>';
-            h += '</div>';
-            h += '<div class="viande-controls">';
-            h += '<button type="button" class="viande-btn minus' + (count <= 0 ? ' disabled' : '') + '" data-viande="' + viande.key + '" data-action="minus">−</button>';
-            h += '<span class="viande-count">' + count + '</span>';
-            h += '<button type="button" class="viande-btn plus' + (!canAdd ? ' disabled' : '') + '" data-viande="' + viande.key + '" data-action="plus">+</button>';
-            h += '</div>';
+            h += '<div class="wizard-viande-tile' + (count > 0 ? ' active' : '') + (!canAdd && count === 0 ? ' at-max' : '') + '">';
+            h += '<button type="button" class="viande-btn viande-tile-add plus" data-viande="' + viande.key + '" data-action="plus" aria-label="Ajouter ' + viande.name + '">';
+            if (count > 0) h += '<span class="viande-tile-count">' + count + '</span>';
+            h += '<span class="viande-tile-img">' + renderOptionIcon(viande.thumb, viande.emoji) + '</span>';
+            h += '<span class="viande-tile-name">' + viande.name + '</span>';
+            h += '</button>';
+            if (count > 0) {
+                h += '<button type="button" class="viande-btn viande-tile-minus minus" data-viande="' + viande.key + '" data-action="minus" aria-label="Retirer ' + viande.name + '">−</button>';
+            }
             h += '</div>';
         });
         h += '</div>';
@@ -1697,35 +1701,25 @@
         if (total === max) h += '<span class="viande-complete-badge">✅ Complet</span>';
         h += '</div>';
 
-        // [UI/UX Sprint 4] Limit to 4 meats visible by default, with "Voir Plus" button
-        var viandeLimit = 4;
-        var totalViandes = step.viandeItems.length;
-        var hasMoreViandes = totalViandes > viandeLimit;
-
-        h += '<div class="wizard-viande-list' + (hasMoreViandes ? ' has-hidden' : '') + '">';
-        step.viandeItems.forEach(function (viande, index) {
+        // [VIANDE-UI 2026-07-23 · LOCK owner] Grille de tuiles-image, TOUTES visibles
+        // (fin du « Voir tous » qui en masquait — l'owner veut tout voir sans scroll).
+        // Tap tuile = ajouter (`.viande-btn` data-action="plus", handler INCHANGÉ), petit − pour retirer.
+        h += '<div class="wizard-viande-grid in-col">';
+        step.viandeItems.forEach(function (viande) {
             var count = selections.viandes[viande.key] || 0;
             var canAdd = total < max;
-            var hiddenClass = (hasMoreViandes && index >= viandeLimit) ? ' hidden-opt' : '';
-            h += '<div class="wizard-viande-row' + (count > 0 ? ' active' : '') + hiddenClass + '">';
-            h += '<div class="viande-info">';
-            h += '<span class="viande-emoji">' + viande.emoji + '</span>';
-            h += '<span class="viande-name">' + viande.name + '</span>';
-            h += '</div>';
-            h += '<div class="viande-controls">';
-            h += '<button type="button" class="viande-btn minus' + (count <= 0 ? ' disabled' : '') + '" data-viande="' + viande.key + '" data-action="minus">−</button>';
-            h += '<span class="viande-count">' + count + '</span>';
-            h += '<button type="button" class="viande-btn plus' + (!canAdd ? ' disabled' : '') + '" data-viande="' + viande.key + '" data-action="plus">+</button>';
-            h += '</div>';
+            h += '<div class="wizard-viande-tile' + (count > 0 ? ' active' : '') + (!canAdd && count === 0 ? ' at-max' : '') + '">';
+            h += '<button type="button" class="viande-btn viande-tile-add plus" data-viande="' + viande.key + '" data-action="plus" aria-label="Ajouter ' + viande.name + '">';
+            if (count > 0) h += '<span class="viande-tile-count">' + count + '</span>';
+            h += '<span class="viande-tile-img">' + renderOptionIcon(viande.thumb, viande.emoji) + '</span>';
+            h += '<span class="viande-tile-name">' + viande.name + '</span>';
+            h += '</button>';
+            if (count > 0) {
+                h += '<button type="button" class="viande-btn viande-tile-minus minus" data-viande="' + viande.key + '" data-action="minus" aria-label="Retirer ' + viande.name + '">−</button>';
+            }
             h += '</div>';
         });
         h += '</div>';
-
-        // [UI/UX Sprint 4] Add "Voir Plus" button for viandes if more than 4
-        if (hasMoreViandes) {
-            var hiddenViandeCount = totalViandes - viandeLimit;
-            h += '<button type="button" class="btn-voir-plus viande-voir-plus" onclick="var list=this.previousElementSibling; list.classList.toggle(\'expanded\'); this.innerHTML=list.classList.contains(\'expanded\') ? \'▲ Masquer\' : \'▼ Voir tous (+' + hiddenViandeCount + ')\';">▼ Voir tous (+' + hiddenViandeCount + ')</button>';
-        }
         h += '</div>'; // .wizard-col
 
         // RIGHT: Sauces
@@ -3101,22 +3095,25 @@
             h += '<span class="quota-badge ' + (totalV === maxViandes ? 'complete' : '') + '">' + totalV + '/' + maxViandes + '</span>';
             h += '</div>';
 
-            h += '<div class="wizard-viande-list">';
+            // [VIANDE-UI 2026-07-23 · LOCK owner] Étape viande = GRILLE de tuiles carrées
+            // avec GRANDE image (vraie image variation via _renderViandeVisual, repli emoji),
+            // petit nom, TOUTES visibles (pas de scroll/voir-plus). Tap tuile = ajouter
+            // (`.viande-btn` data-action="plus" → handler bindEvents INCHANGÉ), petit − pour retirer.
+            h += '<div class="wizard-viande-grid">';
             viandeVariations.forEach(function (variation) {
                 var key = 'v_' + variation.id;
                 var count = selections.viandes[key] || 0;
                 var canAdd = totalV < maxViandes;
                 var emoji = getEmoji(VIANDE_EMOJIS, variation.name);
-                h += '<div class="wizard-viande-row' + (count > 0 ? ' active' : '') + '">';
-                h += '<div class="viande-info">';
-                h += _renderViandeVisual(variation, emoji);
-                h += '<span class="viande-name">' + variation.name + '</span>';
-                h += '</div>';
-                h += '<div class="viande-controls">';
-                h += '<button type="button" class="viande-btn minus' + (count <= 0 ? ' disabled' : '') + '" data-viande="' + key + '" data-action="minus">−</button>';
-                h += '<span class="viande-count">' + count + '</span>';
-                h += '<button type="button" class="viande-btn plus' + (!canAdd ? ' disabled' : '') + '" data-viande="' + key + '" data-action="plus">+</button>';
-                h += '</div>';
+                h += '<div class="wizard-viande-tile' + (count > 0 ? ' active' : '') + (!canAdd && count === 0 ? ' at-max' : '') + '">';
+                h += '<button type="button" class="viande-btn viande-tile-add plus" data-viande="' + key + '" data-action="plus" aria-label="Ajouter ' + variation.name + '">';
+                if (count > 0) h += '<span class="viande-tile-count">' + count + '</span>';
+                h += '<span class="viande-tile-img">' + _renderViandeVisual(variation, emoji) + '</span>';
+                h += '<span class="viande-tile-name">' + variation.name + '</span>';
+                h += '</button>';
+                if (count > 0) {
+                    h += '<button type="button" class="viande-btn viande-tile-minus minus" data-viande="' + key + '" data-action="minus" aria-label="Retirer ' + variation.name + '">−</button>';
+                }
                 h += '</div>';
             });
             h += '</div>';
