@@ -131,6 +131,10 @@ class NormalItemResource extends JsonResource
             "composer_profile" => $this->composerProfilePayload(
                 (string) ($surface ?: 'kiosk'),
                 $branchId,
+                // [PERF 2026-07-23 POS-instant-open] Snapshot dispo déjà calculé ci-dessus
+                // (même item/branche/surface) → évite un 2ᵉ ChoiceAvailabilityResolver dans
+                // la projection composer. Null quand pas de branche (comportement inchangé).
+                $branchId !== null ? $choiceAvailability : null,
             ),
             "offer" => SimpleOfferResource::collection(
                 $this->offer->filter(function ($offer) use ($price) {
@@ -173,7 +177,7 @@ class NormalItemResource extends JsonResource
         return collect($array);
     }
 
-    private function composerProfilePayload(string $surface, ?int $branchId): ?array
+    private function composerProfilePayload(string $surface, ?int $branchId, ?array $choiceAvailability = null): ?array
     {
         $query = ItemWizardProfile::query()
             ->with(['steps' => fn ($query) => $query->where('is_active', true)->orderBy('position')])
@@ -198,7 +202,7 @@ class NormalItemResource extends JsonResource
             return null;
         }
 
-        return app(ComposerProfileProjection::class)->project($profile, $this->resource, $surface, $branchId);
+        return app(ComposerProfileProjection::class)->project($profile, $this->resource, $surface, $branchId, $choiceAvailability);
     }
 
     private function resolveComposerBranchId($request): ?int

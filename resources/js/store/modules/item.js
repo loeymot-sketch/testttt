@@ -1,6 +1,20 @@
 import axios from 'axios'
 import appService from "../../services/appService";
 
+// [PERF 2026-07-23 POS-instant-open] Cache client court + dédup in-flight pour
+// `item/details` sur la surface POS (caisse). Objectif owner : re-cliquer une tuile =
+// 0 réseau (ouverture instantanée) et préchauffe (pointerdown/survol) prête au clic.
+// Portée volontairement LIMITÉE à surface==='pos' : les autres surfaces (admin
+// AvailabilityTogglePanel sans surface, kiosk, web) restent NON cachées → fraîcheur
+// et comportement identiques à aujourd'hui. Invalidation : TTL court + événement dispo
+// (ItemComponent.syncItemAvailabilityFromBroadcast → action `invalidateDetails`).
+const POS_DETAILS_CACHE_TTL_MS = 60000;
+const posDetailsCache = new Map();     // key -> { res, at }
+const posDetailsInflight = new Map();  // key -> Promise<res>
+
+function posDetailsCacheKey(id, branchId) {
+    return String(id) + '|' + String(branchId || '');
+}
 
 export const item = {
     namespaced: true,
@@ -198,32 +212,87 @@ export const item = {
         //   New:      dispatch('item/details', { id: 123, surface: 'pos' }) → ?surface=pos
         // Invalid surface values are ignored to avoid forging query strings server-side.
         details: function (context, payload) {
-            return new Promise((resolve, reject) => {
-                let id = payload;
-                let surface = null;
-                let branchId = null;
-                if (payload !== null && typeof payload === 'object') {
-                    id = payload.id;
-                    if (typeof payload.surface === 'string'
-                        && ['pos', 'kiosk', 'web'].indexOf(payload.surface) !== -1) {
-                        surface = payload.surface;
-                    }
-                    branchId = payload.branch_id || payload.branchId || null;
+            let id = payload;
+            let surface = null;
+            let branchId = null;
+            if (payload !== null && typeof payload === 'object') {
+                id = payload.id;
+                if (typeof payload.surface === 'string'
+                    && ['pos', 'kiosk', 'web'].indexOf(payload.surface) !== -1) {
+                    surface = payload.surface;
                 }
-                let url = `admin/item/details/${id}`;
-                const params = {};
-                if (surface) {
-                    params.surface = surface;
+                branchId = payload.branch_id || payload.branchId || null;
+            }
+
+            // [PERF 2026-07-23 POS-instant-open] Cache/dédup UNIQUEMENT sur la surface POS.
+            // Les autres surfaces conservent le fetch direct (aucune régression de fraîcheur).
+            const cacheable = surface === 'pos';
+            const cacheKey = cacheable ? posDetailsCacheKey(id, branchId) : null;
+            if (cacheable) {
+                const cached = posDetailsCache.get(cacheKey);
+                if (cached && (Date.now() - cached.at) < POS_DETAILS_CACHE_TTL_MS) {
+                    // Re-clic / préchauffe déjà résolue → 0 réseau, résolution immédiate.
+                    return Promise.resolve(cached.res);
                 }
-                if (branchId) {
-                    params.branch_id = branchId;
+                const inflight = posDetailsInflight.get(cacheKey);
+                if (inflight) {
+                    // Requête identique déjà en vol (préchauffe + clic) → on partage.
+                    return inflight;
                 }
-                const config = Object.keys(params).length > 0 ? { params } : undefined;
-                axios.get(url, config).then((res) => {
-                    resolve(res);
-                }).catch((err) => {
-                    reject(err);
-                });
+            }
+
+            let url = `admin/item/details/${id}`;
+            const params = {};
+            if (surface) {
+                params.surface = surface;
+            }
+            if (branchId) {
+                params.branch_id = branchId;
+            }
+            const config = Object.keys(params).length > 0 ? { params } : undefined;
+
+            const request = axios.get(url, config).then((res) => {
+                if (cacheable) {
+                    posDetailsCache.set(cacheKey, { res, at: Date.now() });
+                    posDetailsInflight.delete(cacheKey);
+                }
+                return res;
+            }).catch((err) => {
+                if (cacheable) {
+                    posDetailsInflight.delete(cacheKey);
+                }
+                throw err;
+            });
+
+            if (cacheable) {
+                posDetailsInflight.set(cacheKey, request);
+            }
+            return request;
+        },
+        // [PERF 2026-07-23 POS-instant-open] Purge le cache details POS. Appelée quand la
+        // disponibilité d'un item change (broadcast), pour que la prochaine ouverture
+        // reflète l'état réel sans attendre le TTL. `payload` = id (ou {id}) → purge cet
+        // item ; vide/null → purge tout.
+        invalidateDetails: function (context, payload) {
+            let id = null;
+            if (payload !== null && payload !== undefined) {
+                id = (typeof payload === 'object') ? payload.id : payload;
+            }
+            if (id === null || id === undefined || id === '') {
+                posDetailsCache.clear();
+                posDetailsInflight.clear();
+                return;
+            }
+            const prefix = String(id) + '|';
+            Array.from(posDetailsCache.keys()).forEach((key) => {
+                if (key.indexOf(prefix) === 0) {
+                    posDetailsCache.delete(key);
+                }
+            });
+            Array.from(posDetailsInflight.keys()).forEach((key) => {
+                if (key.indexOf(prefix) === 0) {
+                    posDetailsInflight.delete(key);
+                }
             });
         },
         lookupByBarcode: function (context, code) {

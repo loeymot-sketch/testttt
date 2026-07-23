@@ -16,15 +16,22 @@ final class ComposerProfileProjection
     ) {
     }
 
-    public function project(?ItemWizardProfile $profile, Item $item, string $surface, ?int $branchId = null): ?array
+    public function project(?ItemWizardProfile $profile, Item $item, string $surface, ?int $branchId = null, ?array $choiceAvailability = null): ?array
     {
         if (! $profile) {
             return null;
         }
 
-        $choiceAvailability = $branchId !== null && $branchId > 0
-            ? $this->choiceAvailabilityResolver()->snapshotForItem($item, $branchId, $surface)
-            : null;
+        // [PERF 2026-07-23 POS-instant-open] Réutilise le snapshot de disponibilité déjà
+        // calculé par le resource appelant (NormalItemResource) pour le MÊME triplet
+        // (item, branche, surface), au lieu de relancer un appel identique à
+        // ChoiceAvailabilityResolver::snapshotForItem. Fallback : si l'appelant ne fournit
+        // rien (MenuProjectionService / KioskMenuService / PricingService / tests), on
+        // calcule comme avant → comportement et payload strictement inchangés.
+        $choiceAvailability = $choiceAvailability
+            ?? ($branchId !== null && $branchId > 0
+                ? $this->choiceAvailabilityResolver()->snapshotForItem($item, $branchId, $surface)
+                : null);
 
         $steps = $profile->steps
             ->filter(fn (ItemWizardStep $step): bool => $this->stepVisibleOn($step, $surface))

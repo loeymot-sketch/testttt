@@ -665,7 +665,10 @@ class ItemService
 
     public function itemDetails(Item $item, ?int $branchId = null)
     {
-        $item->load('media', 'category', 'tax', 'offer', 'addons', 'variations', 'extras');
+        // [PERF 2026-07-23 POS-instant-open] 'allergens' ajouté à l'eager-load : sinon
+        // NormalItemResource::toArray fait un lazy `allergens()->get()` (1 requête N+1 par
+        // ouverture de fiche). withPivot('is_trace') est préservé par le eager-load.
+        $item->load('media', 'category', 'tax', 'offer', 'addons', 'variations', 'extras', 'allergens');
 
         // [F-DETAILS-BRANCH-AVAIL 2026-07-15 / P1] Aligner la dispo des DÉTAILS sur la LISTE
         // (branch-aware). Sans ça, une rupture PAR BRANCHE (ItemBranchAvailability, posée par le

@@ -18,6 +18,7 @@
                 ? $t('a11y.unavailable_item', { item: item.name })
                 : $t('a11y.add_item', { item: item.name, price: itemOfferPrice(item) })"
             :data-pos-item-id="item.id"
+            :aria-busy="pendingItemId != null && String(pendingItemId) === String(item.id) ? 'true' : 'false'"
             @keyup.enter.prevent="addItem(item)"
             @keyup.space.prevent="addItem(item)">
             <!-- Photo hero (aspect-ratio 4/3) -->
@@ -354,6 +355,22 @@
         </div>
     </div>
     <!--========VARIATION PART END===========-->
+
+    <!--========TILE LOADING (feedback instantané) START=========
+       [PERF 2026-07-23 POS-instant-open] Réaction visuelle < 16 ms au clic tuile :
+       overlay « Chargement… » affiché AVANT le retour réseau de item/details, puis
+       remplacé par le wizard dès que la donnée arrive (ou fermé proprement en cas d'échec).
+       Élément SÉPARÉ de #item-variation-modal : la classe .active du modal reste posée
+       UNIQUEMENT au succès → contrat du shim frozen pos-wizard.js strictement inchangé.
+    -->
+    <div v-if="wizardLoading" class="pos-tile-loading-overlay" role="status" aria-live="polite"
+        aria-busy="true" data-testid="pos-tile-loading">
+        <div class="pos-tile-loading-card">
+            <span class="pos-tile-loading-spinner" aria-hidden="true"></span>
+            <span class="pos-tile-loading-label">{{ $t('label.loading') }}</span>
+        </div>
+    </div>
+    <!--========TILE LOADING END===========-->
 </template>
 
 <script>
@@ -408,6 +425,12 @@ export default {
         return {
             item: null,
             itemInfo: null,
+            // [PERF 2026-07-23 POS-instant-open] Feedback instantané au clic tuile :
+            // `wizardLoading` pilote l'overlay « Chargement… » (rendu AVANT le retour
+            // réseau de item/details) ; `pendingItemId` marque la tuile pressée (aria-busy
+            // + état visuel). Aucun impact sur la classe .active du modal (contrat frozen).
+            wizardLoading: false,
+            pendingItemId: null,
             addons: {},
             addonQuantity: {},
             itemArrays: [],
@@ -540,6 +563,36 @@ export default {
             event.__fkPosTileHandled = true;
             event.preventDefault();
             this.variationModalShow(selectedItem);
+        },
+        // [PERF 2026-07-23 POS-instant-open] Préchauffe item/details AVANT le clic (au survol
+        // `pointerover` / à l'appui `pointerdown`) : la donnée est prête au relâchement, le
+        // wizard s'ouvre quasi-instantanément. La dédup réseau (in-flight + TTL) est assurée
+        // par le cache store, donc pointer + clic ne déclenchent qu'UNE requête.
+        handleTilePrewarm: function (event) {
+            const tile = event?.target?.closest?.('[data-pos-item-id]');
+            if (!tile) {
+                return;
+            }
+            if (tile.disabled || tile.getAttribute('aria-disabled') === 'true') {
+                return;
+            }
+            const selectedItem = this.findRenderedItemById(tile.getAttribute('data-pos-item-id'));
+            if (!selectedItem || this.isCatalogTileUnavailable(selectedItem)) {
+                return;
+            }
+            this.prewarmItemDetails(selectedItem.id);
+        },
+        prewarmItemDetails: function (itemId) {
+            if (itemId === null || itemId === undefined) {
+                return;
+            }
+            // Best-effort : on avale les erreurs (le vrai clic re-tentera et surfacera l'erreur).
+            try {
+                const pending = this.$store.dispatch('item/details', this.posItemDetailsPayload(itemId));
+                if (pending && typeof pending.catch === 'function') {
+                    pending.catch(() => {});
+                }
+            } catch (e) { /* ignore */ }
         },
         posItemDetailsPayload: function (id) {
             const payload = { id, surface: 'pos' };
@@ -792,6 +845,9 @@ export default {
             return {
                 'pos-item-tile': true,
                 'is-unavailable': this.isCatalogTileUnavailable(row),
+                // [PERF 2026-07-23] État « pressé/chargement » de la tuile cliquée.
+                'is-pending': this.pendingItemId != null && row != null
+                    && String(this.pendingItemId) === String(row.id),
             };
         },
         onProductTileClick: function (selectedItem) {
@@ -809,6 +865,12 @@ export default {
          * [T11 POS_AVAILABILITY_LIVE_GUARD] Sync modal item when parent updates list from Echo.
          */
         syncItemAvailabilityFromBroadcast: function (itemId, isAvailable, reason) {
+            // [PERF 2026-07-23 POS-instant-open] La dispo de cet item a changé → purge son
+            // entrée du cache details POS pour que la prochaine ouverture reflète l'état
+            // réel (sinon la fraîcheur est bornée par le TTL 60 s). Best-effort.
+            try {
+                this.$store.dispatch('item/invalidateDetails', itemId);
+            } catch (e) { /* ignore */ }
             if (!this.item) return;
             if (parseInt(this.item.id, 10) !== parseInt(itemId, 10)) return;
             this.item = Object.assign({}, this.item, {
@@ -835,6 +897,13 @@ export default {
             this.editingCartIndex = null;
             this.usePricedCartBase = false;
             this.resetTempState();
+
+            // [PERF 2026-07-23 POS-instant-open] Feedback visuel IMMÉDIAT (< 16 ms), AVANT
+            // l'aller-retour réseau : tuile pressée (aria-busy) + overlay « Chargement… ».
+            // La classe .active du modal reste posée UNIQUEMENT au succès (plus bas) → le
+            // shim frozen pos-wizard.js voit exactement la même séquence qu'aujourd'hui.
+            this.pendingItemId = selectedItem ? selectedItem.id : null;
+            this.wizardLoading = true;
 
             // [AUDIT 2026-04-17 R2] Surface=pos so the backend only returns
             // extras/variations visible on the cashier channel (NormalItemResource).
@@ -873,7 +942,15 @@ export default {
                             modalTarget.focus({ preventScroll: true });
                         }
                     }, 150);
+                    // [PERF 2026-07-23] Contenu prêt + modal ouvert → masque l'overlay et
+                    // relâche l'état pressé de la tuile (transition sans clignotement).
+                    this.wizardLoading = false;
+                    this.pendingItemId = null;
                 }).catch((error) => {
+                    // [PERF 2026-07-23] Échec → fermeture propre : overlay off, tuile relâchée,
+                    // toast d'erreur. La classe .active n'a jamais été posée (aucun modal fantôme).
+                    this.wizardLoading = false;
+                    this.pendingItemId = null;
                     this.showItemLoadError(error);
                 });
         },
@@ -1550,8 +1627,13 @@ export default {
 
     mounted() {
         this._posTileClickHandler = (event) => this.handleNativeTileClick(event);
+        // [PERF 2026-07-23 POS-instant-open] Préchauffe au survol/à l'appui (délégation
+        // document, comme le click handler ci-dessus). Nettoyé au beforeUnmount.
+        this._posTilePrewarmHandler = (event) => this.handleTilePrewarm(event);
         this.$nextTick(() => {
             document?.addEventListener?.('click', this._posTileClickHandler, true);
+            document?.addEventListener?.('pointerdown', this._posTilePrewarmHandler, true);
+            document?.addEventListener?.('pointerover', this._posTilePrewarmHandler, true);
         });
 
         // [WIZARD-SUBMIT] The pos-wizard.js dispatches 'wizard:add-to-cart' on the modal element
@@ -1573,6 +1655,11 @@ export default {
         if (this._posTileClickHandler) {
             document?.removeEventListener?.('click', this._posTileClickHandler, true);
             this._posTileClickHandler = null;
+        }
+        if (this._posTilePrewarmHandler) {
+            document?.removeEventListener?.('pointerdown', this._posTilePrewarmHandler, true);
+            document?.removeEventListener?.('pointerover', this._posTilePrewarmHandler, true);
+            this._posTilePrewarmHandler = null;
         }
     },
 
@@ -1776,6 +1863,85 @@ export default {
     pointer-events: none;
     filter: grayscale(0.4);
 }
+
+/* =============================================================================
+   [PERF 2026-07-23 POS-instant-open] Feedback instantané au clic tuile
+   - .is-pending : tuile pressée + mini-spinner dans le badge « + » (< 16 ms).
+   - .pos-tile-loading-overlay : overlay « Chargement… » plein écran (mime le fond
+     du modal) affiché tant que item/details n'est pas revenu → l'ouverture est
+     perçue comme instantanée même sur un premier clic à froid.
+   ============================================================================= */
+.pos-v5-tile.pos-item-tile.is-pending {
+    transform: scale(0.97);
+    border-color: var(--pos-v5-brand-red);
+    box-shadow: var(--pos-v5-shadow-lift);
+}
+.pos-v5-tile.pos-item-tile.is-pending .pos-v5-tile__add {
+    background: var(--pos-v5-brand-red);
+    color: var(--pos-v5-ink-on-red);
+}
+.pos-v5-tile.pos-item-tile.is-pending .pos-v5-tile__add i {
+    display: none;
+}
+.pos-v5-tile.pos-item-tile.is-pending .pos-v5-tile__add::after {
+    content: "";
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    border-top-color: #fff;
+    animation: pos-tile-spin 0.6s linear infinite;
+}
+
+.pos-tile-loading-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.6);
+    animation: pos-tile-loading-in 0.12s ease-out;
+}
+.pos-tile-loading-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 28px 34px;
+    border-radius: var(--pos-v5-radius-xl, 20px);
+    background: #fff;
+    box-shadow: 0 18px 48px rgba(26, 26, 26, 0.28);
+    min-width: 200px;
+}
+.pos-tile-loading-spinner {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 4px solid var(--pos-v5-bg-subtle, #f1f1f5);
+    border-top-color: var(--pos-v5-brand-red, #f4501e);
+    animation: pos-tile-spin 0.7s linear infinite;
+}
+.pos-tile-loading-label {
+    font-family: var(--pos-v5-font-sans);
+    font-size: var(--pos-v5-text-body, 14px);
+    font-weight: var(--pos-v5-weight-bold, 700);
+    color: var(--pos-v5-ink, #1a1a1a);
+    letter-spacing: 0.2px;
+}
+@keyframes pos-tile-spin {
+    to { transform: rotate(360deg); }
+}
+@keyframes pos-tile-loading-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .pos-tile-loading-overlay { animation: none; }
+    .pos-tile-loading-spinner,
+    .pos-v5-tile.pos-item-tile.is-pending .pos-v5-tile__add::after { animation: none; }
+}
+
 .pos-add-to-cart-sticky {
     position: sticky;
     bottom: 0;
