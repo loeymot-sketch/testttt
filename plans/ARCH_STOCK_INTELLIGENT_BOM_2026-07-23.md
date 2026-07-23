@@ -84,3 +84,20 @@ l'IA ne pousse jamais seule (garde-fou NF525/prix).
    standalone sans API par mandat V1 — ses commandes n'existent pas côté serveur).
 8. Vision agence : 0 constante métier en dur (ratios en DB), ingrédients branch-scopés dès P1,
    stocker le BRUT des factures (photo+lignes+corrections) dès P3 (données d'apprentissage B6).
+
+---
+## RÉPONSES OWNER (2026-07-23) — paramètres gravés
+1. **Steaks façonnés maison** : 3 kg haché → ~44 pièces ; pièce ~75 g (±1 g). ⚠️ Incohérence
+   assumée à trancher en fiche : 3000/44 = 68 g/pièce OU 75 g/pièce (=40 pièces/3 kg).
+2. **Cheddar : compté À LA PIÈCE** (pas de poids — inutile).
+3. **Sauce maison : 25 g la dose** — pot frites (si frites commandées) = 25 g ; intérieur
+   sandwich = 25 g.
+4. **Compta : ON FAIT TOUT côté pilotage** + photo d'une FACTURE ou d'une COMMANDE PASSÉE →
+   entrée stock automatique via IA (**clé API ChatGPT fournie par owner**), validation humaine.
+5. **Comptage correcteur : MENSUEL assisté par IA** — l'algorithme raisonne en fin de mois,
+   propose, l'owner corrige, le système APPREND des corrections (boucle d'adaptation).
+6. **Déploiement PROGRESSIF par produits** : d'abord les principaux déjà traçables (viandes,
+   pains, boissons par type — photo de la liste d'apport = stock initial clair), puis extension
+   aux autres produits au fur et à mesure des détails de consommation connus.
+- Poulet : 1 kg → ~5 sandwichs poulet (≈200 g/sandwich) ; mixte = 1 steak (75 g) + ~120 g poulet
+  (fiche à confirmer par produit).
