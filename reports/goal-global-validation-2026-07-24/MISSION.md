@@ -30,3 +30,14 @@ Mission jusqu'à « validé global ». Ton = dev senior + humain qui raisonne su
 - P3 différés (améliorations) : légende ticket cuisine (F2), /m plus riche recherche/quantités/compta (F4), confirm toggle /m (F5), CTA refuser sur écran Détails déjà fait.
 - Puis : re-test e2e web massif + **validation globale**.
 - Owner : clé OpenAI (P3b réel), Mollie, capital mentions ; commandes test #194/#195/#230726193 à encaisser/annuler.
+
+## ✅ PHASE 3 BOM — COMPLÈTE + déployée (P3a→P3d)
+- P3a achats (`b59bafb97`) · P3b pipeline IA (`de2f1e0e`) · P3c écran scan (`bd92c3d3`) · P3d vue unifiée backend (`a30014817`)+UI.
+- Chaîne complète : paramétrage matières → conso auto (ventes) → factures photo IA (mock↔OpenAI, Poulet→matière/Coca→boisson/Sac→charge) → coût moyen pondéré → **vue « Conso & Stock » unifiée** (matières+boissons+à-acheter).
+- Écrans live VPS : « Scan Facture » + « Conso & Stock ». Mode démo tant que clé OpenAI absente.
+- Preuves : vitest 2579, PHPUnit larges verts, chaîne NF525 ×4, frozen 0.
+
+## RESTE vers validation globale
+- Re-test e2e final (les 2 nouveaux écrans + non-régression globale).
+- Améliorations différées : /m recherche/quantités (F4), légende ticket cuisine (F2), confirm toggle /m (F5).
+- Owner : **clé OpenAI** (factures réelles), Mollie, capital mentions ; cmd test #194/#195/#230726193.
