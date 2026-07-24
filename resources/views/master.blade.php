@@ -149,6 +149,12 @@
             apiKey: @json((string) config('app.api_key')),
             googleMapKey: @json((string) config('app.google_map_key')),
             demo: @json((bool) config('app.demo_mode')),
+            // [ARCH_STOCK_INTELLIGENT_BOM P3c] Scan facture : la lecture IA (OpenAI
+            // Vision) est-elle activée ? ABSENT/false → l'écran /admin/purchasing/scan
+            // affiche le bandeau « mode démo (lecture simulée) ». Défaut sûr = false.
+            purchasing: {
+                openaiEnabled: @json((bool) config('services.openai.enabled', false)),
+            },
             // [BOLS/2-VIANDES 2026-06-24] La caisse v5 (PosComponent) charge
             // public/js/pos-wizard.js mais n'exposait PAS ce flag (contrairement
             // à admin-pos-v4.blade.php) → pos-wizard.js tombait sur le builder

@@ -13,6 +13,7 @@ import adminRoutes from "./modules/adminRoutes";
 import offerRoutes from "./modules/offerRoutes";
 import itemRoutes from "./modules/itemRoutes";
 import stockRoutes from "./modules/stockRoutes";
+import purchasingRoutes from "./modules/purchasingRoutes";
 import observabilityRoutes from "./modules/observabilityRoutes";
 import ingredientRoutes from "./modules/ingredientRoutes";
 import couponRoutes from "./modules/couponRoutes";
@@ -168,6 +169,7 @@ export const routes = baseRoutes.concat(
     offerRoutes,
     itemRoutes,
     stockRoutes,
+    purchasingRoutes,
     observabilityRoutes,
     ingredientRoutes,
     pushNotificationRoutes,

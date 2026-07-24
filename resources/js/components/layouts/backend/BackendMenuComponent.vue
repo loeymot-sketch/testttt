@@ -107,6 +107,8 @@ const V1_PRIMARY_SIDEBAR_MENUS = Object.freeze([
         ]),
     }),
     Object.freeze({ url: 'ingredients', language: 'ingredients', icon: 'lab lab-item-attributes' }),
+    // [ARCH_STOCK_INTELLIGENT_BOM P3c] Scan facture → entrée en stock (gated items_create).
+    Object.freeze({ url: 'purchasing/scan', language: 'purchasing_scan', icon: 'fa-solid fa-receipt' }),
     Object.freeze({ url: 'pos-orders', language: 'pos_orders', icon: 'lab lab-pos-orders' }),
     // [GOAL-CAISSE-UNIFIED 2026-05-30] Unified history + collection surfaces.
     Object.freeze({ url: 'historique', language: 'historique', icon: 'lab lab-pos-orders' }),
@@ -118,6 +120,8 @@ const V1_PRIMARY_SIDEBAR_MENUS = Object.freeze([
 /** menu.url → clé `permission.url` Spatie (souvent identique ; exceptions ici). */
 const MENU_URL_TO_PERMISSION_URL = Object.freeze({
     ingredients: 'ingredients_manage',
+    // [ARCH_STOCK_INTELLIGENT_BOM P3c] Scan facture gated comme le scan stock.
+    'purchasing/scan': 'items_create',
     // [CATALOG-HUB 2026-07-21] Hub is gated by the same `items` permission as
     // both screens it wraps.
     'catalog-hub': 'items',

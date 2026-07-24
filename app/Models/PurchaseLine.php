@@ -36,6 +36,8 @@ class PurchaseLine extends Model
         'target_type',
         'target_id',
         'status',
+        'score',
+        'matched',
     ];
 
     protected $casts = [
@@ -45,6 +47,9 @@ class PurchaseLine extends Model
         'unit_price' => 'decimal:4',
         'tva_rate' => 'decimal:2',
         'target_id' => 'integer',
+        // [P3c] Confiance IA surfacée à l'écran de scan (le classifieur les calcule).
+        'score' => 'decimal:3',
+        'matched' => 'boolean',
     ];
 
     public function document()

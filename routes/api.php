@@ -343,6 +343,14 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     // ensuite via PurchaseService). Domaine NEUF, ADDITIF, HORS NF525.
     Route::post('/purchasing/scan', [PurchasingScanController::class, 'scan'])
         ->name('purchasing.scan');
+    // [ARCH_STOCK_INTELLIGENT_BOM_2026-07-23 / P3c] Options cible pour l'écran (dropdowns).
+    Route::get('/purchasing/targets', [PurchasingScanController::class, 'targets'])
+        ->name('purchasing.targets');
+    // [ARCH_STOCK_INTELLIGENT_BOM_2026-07-23 / P3c] Validation owner : applique en
+    // stock les propositions confirmées (proposed → validated → PurchaseService).
+    // Même gate permission:items_create. Domaine NEUF, ADDITIF, HORS NF525.
+    Route::post('/purchasing/{document}/validate', [PurchasingScanController::class, 'apply'])
+        ->name('purchasing.validate');
 
     Route::prefix('setting')->name('setting.')->group(function () {
         Route::prefix('company')->name('company.')->group(function () {

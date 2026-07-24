@@ -365,6 +365,7 @@
         "items": "Articles",
         "catalog": "Catalogue",
         "stock_rupture": "Produits & Stock",
+        "purchasing_scan": "Scan Facture",
         "product_list": "Liste produits",
         "customers": "Clients",
         "loyalty_setup": "Fidélité",

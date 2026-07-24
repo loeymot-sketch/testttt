@@ -365,6 +365,7 @@
         "items": "Articles",
         "catalog": "Catalogue",
         "stock_rupture": "Products & Stock",
+        "purchasing_scan": "Invoice Scan",
         "product_list": "Produits",
         "taxes": "Taxes",
         "currencies": "Currencies",
