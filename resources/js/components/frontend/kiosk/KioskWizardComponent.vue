@@ -674,8 +674,26 @@ export default {
     // Kiosk Phase 9.1.3 — Total local (pur, synchrone) conservé comme fallback
     // SSOT côté client. Jamais utilisé pour envoyer un prix au serveur — seul
     // le backend fait autorité via `PricingService` (`/order` + `/preview`).
+    // [VIANDE-SUPPL UNIFIÉ 2026-07-24] Surcoût des viandes AU-DELÀ du quota inclus (@ prix de
+    // l'ItemExtra « Viande supplémentaire »). `calculateKioskRunningTotal` ne le voit PAS : ces
+    // viandes sont source='variation' ⇒ `kioskSumPaidViandesSurcharge` les ignore. On l'ajoute donc
+    // ici pour que l'AFFICHÉ == le SCELLÉ backend (buildCartItem pousse ce même extra dans item_extras).
+    // Prix par article ; la multiplication par la quantité est faite dans runningTotalLocal.
+    kioskViandeSupplementSurcharge() {
+      const meta = Array.isArray(this.selections._viandeMeta) ? this.selections._viandeMeta : [];
+      const n = meta.reduce((s, m) => (
+        m && m.source === 'variation' ? s + (parseInt(m.supplCount || 0, 10) || 0) : s
+      ), 0);
+      if (n <= 0) return 0;
+      const extras = Array.isArray(this.resolvedItem?.extras) ? this.resolvedItem.extras : [];
+      const vsExtra = extras.find(e => e && /viande\s*suppl/i.test(String(e.name || '')));
+      const unit = vsExtra ? (parseFloat(vsExtra.convert_price || vsExtra.price || 0) || 0) : 0;
+      return n * unit;
+    },
     runningTotalLocal() {
-      return calculateKioskRunningTotal(this.resolvedItem, this.selections);
+      const base = calculateKioskRunningTotal(this.resolvedItem, this.selections);
+      const qty = Math.max(1, parseInt(this.selections.quantity, 10) || 1);
+      return Math.round((base + this.kioskViandeSupplementSurcharge * qty) * 100) / 100;
     },
     // Total affiché dans le footer du wizard : instantané côté tactile.
     // À chaque modification, `serverPreviewTotal` est vidé avant le debounce,
@@ -1864,9 +1882,18 @@ export default {
         const viandeAttrs = item.itemAttributes
           .filter(a => (a.name || '').toLowerCase().includes('viande'))
           .sort((a, b) => (Number(a.id) || 0) - (Number(b.id) || 0)); // Viande 1, Viande 2, …
-        // Un slot par UNITÉ de viande (respecte le count).
+        // Un slot par UNITÉ de viande INCLUSE (respecte le count MOINS le dépassement facturé).
+        // [VIANDE-SUPPL UNIFIÉ 2026-07-24] `supplCount` (émis par KioskStepViande) = portion facturée
+        // via l'ItemExtra « Viande supplémentaire » (bloc plus bas) → on ne l'alimente PAS ici, sinon
+        // la viande serait servie GRATUITE (variation) ET facturée = double-service. Pour supplCount=0
+        // (cas historique), included == count → comportement du fix P0 2026-06-30 INCHANGÉ.
         const slots = [];
-        variationViandes.forEach(v => { for (let i = 0; i < Math.max(1, Number(v.count) || 1); i++) slots.push(v); });
+        variationViandes.forEach(v => {
+          const total = Math.max(0, Number(v.count) || 0);
+          const suppl = Math.max(0, Number(v.supplCount) || 0);
+          const included = Math.max(0, total - suppl);
+          for (let i = 0; i < included; i++) slots.push(v);
+        });
         // [FIX 2026-06-30 — 2e viande PERDUE au panier (plainte owner)] `item.variations`
         // peut être un OBJET groupé par attribut (forme de la projection menu kiosk), pas un
         // tableau. L'ancien `Array.isArray ? : []` donnait alors allVars=[] → le `match`
@@ -2016,6 +2043,33 @@ export default {
         }
         // @pricing-allowed-block end
       });
+
+      // [VIANDE-SUPPL UNIFIÉ 2026-07-24 · FROZEN §7 — LOCK_POS_WIZARD_VIANDE_SUPPL_UNIFIE_2026-07-24]
+      // Parité caisse (pos-wizard.js) : une viande INCLUSE (source='variation') sélectionnée AU-DELÀ
+      // du quota maxViandes est facturée via l'ItemExtra GÉNÉRIQUE « Viande supplémentaire » (@2,50) —
+      // qty = dépassement (somme des `supplCount` émis par KioskStepViande). Les maxViandes premières
+      // restent des variations GRATUITES (bloc distribution Viande 1/2 plus haut, INCHANGÉ : ses slots
+      // sont alimentés par la portion incluse via `supplCount`). Le NOM réel des viandes en plus part
+      // dans l'instruction « Viandes en plus : … » (buildInstruction, résolu au ticket cuisine). Le
+      // backend PricingService SCELLE le prix depuis la DB → display == sealed. Miroir EXACT du bloc
+      // « Sauce supplémentaire » ci-dessus.
+      // @pricing-allowed-block start — signed-off: owner gate 2026-07-24 (LOCK viande suppl unifié)
+      const viandeSupplN = viandeMeta.reduce((n, v) => (
+        v && v.source === 'variation' ? n + (parseInt(v.supplCount || 0, 10) || 0) : n
+      ), 0);
+      if (viandeSupplN > 0) {
+        const vsExtra = (item.extras || []).find(e =>
+          e && /viande\s*suppl/i.test(String(e.name || ''))
+        );
+        if (vsExtra?.id) {
+          const vsPrice = parseFloat(vsExtra.convert_price || vsExtra.price || 0) || 0;
+          for (let i = 0; i < viandeSupplN; i++) {
+            normalizedExtras.push({ id: parseInt(vsExtra.id, 10), name: vsExtra.name || '' });
+            itemExtraTotal += vsPrice;
+          }
+        }
+      }
+      // @pricing-allowed-block end
 
       this.composerChoiceEntries().forEach((entry) => {
         const count = Math.max(1, parseInt(entry.count || 1, 10) || 1);
@@ -2188,6 +2242,22 @@ export default {
             .map(([key, count]) => `${key} ×${count}`);
           if (viandes.length > 0) parts.push(ti('viandes', { list: viandes.join(', ') }));
         }
+      }
+
+      // [VIANDE-SUPPL UNIFIÉ 2026-07-24] Ligne DÉDIÉE résolvable au ticket cuisine (nom EXACT des
+      // viandes en supplément) — miroir « Sauces en plus : … » et de la caisse (pos-wizard.js:2508).
+      // Format « N× Nom » (>1) identique à la caisse ⇒ ticket byte-identique borne↔caisse. Le parseur
+      // KitchenTicketSymbolicFormatter/kdsSymbolic `extraViandeNames` capte cette ligne et résout le
+      // libellé de l'ItemExtra générique « Viande supplémentaire ». Chaîne FR figée (pas de clé i18n —
+      // scope + locale FR immuable ADR-007 + le parseur matche ce motif exact).
+      const viandeSupplNames = (this.selections._viandeMeta || [])
+        .filter(m => m && m.source === 'variation' && (parseInt(m.supplCount || 0, 10) || 0) > 0)
+        .map(m => {
+          const n = parseInt(m.supplCount, 10) || 0;
+          return n > 1 ? `${n}× ${m.name}` : m.name;
+        });
+      if (viandeSupplNames.length > 0) {
+        parts.push(`Viandes en plus : ${viandeSupplNames.join(', ')}`);
       }
 
       if (this.selections.sauceOrder.length > 1 && item) {

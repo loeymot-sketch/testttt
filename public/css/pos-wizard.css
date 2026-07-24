@@ -2129,3 +2129,60 @@
 .wizard-viande-tile .viande-tile-img .viande-emoji:not(.has-img) .viande-img { display: none; }
 .wizard-viande-grid.in-col .viande-tile-img .viande-emoji,
 .wizard-viande-grid.in-col .viande-tile-img .viande-img { width: 64px; height: 64px; font-size: 42px; }
+
+/* ============================================================
+   [VIANDE-SUPPL UNIFIÉ 2026-07-24 · LOCK] État supplément sur les tuiles viande :
+   au-delà des viandes incluses, la même tuile devient un supplément @2,50 nommé.
+   ============================================================ */
+.viande-section .section-header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.viande-suppl-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: #FFF0E6;
+    border: 1px solid #F4501E;
+    color: #C63E12;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+.viande-hint {
+    font-size: 12px;
+    color: #8E8EA9;
+    margin: 2px 0 10px;
+}
+/* tuile avec supplément : liseré orange distinct de l'inclus (rouge) */
+.wizard-viande-tile.has-suppl .viande-tile-add {
+    border-color: #F4501E;
+    box-shadow: 0 0 0 2px #F4501E inset, 0 4px 14px rgba(244, 80, 30, 0.18);
+    background: linear-gradient(135deg, #FFF6F1, #FFEEE4);
+}
+/* badge compteur en mode supplément = orange (vs rouge inclus) */
+.viande-tile-count.suppl {
+    background: #F4501E;
+    box-shadow: 0 2px 7px rgba(244, 80, 30, 0.45);
+}
+/* petit tag « +2,50 » sur la tuile en supplément */
+.viande-tile-suppl-tag {
+    display: inline-block;
+    margin-top: 2px;
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: #F4501E;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+}
+/* indice discret quand le prochain clic sera un supplément (quota inclus atteint) */
+.viande-tile-add.suppl-next { border-style: dashed; }
+.viande-tile-add.suppl-next::after {
+    content: '+2,50 €';
+    position: absolute;
+    bottom: 4px;
+    font-size: 9px;
+    color: #F4501E;
+    font-weight: 800;
+    opacity: 0.85;
+}
+.wizard-viande-tile { position: relative; }

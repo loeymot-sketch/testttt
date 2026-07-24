@@ -46,12 +46,13 @@
     /* ==============================
        CONFIG — VIANDES DISPONIBLES
        ============================== */
+    // [2026-07-24 owner] « Merguez » et « Viande Hachée » retirées (non utilisées). Ce fallback
+    // n'est atteint que si la DB ne fournit AUCUNE variation viande (cas rare) ; les vraies
+    // viandes viennent des variations DB (« Viande Hachée » y est soft-deleted en base).
     const VIANDES = [
-        { key: 'merguez', name: 'Merguez', emoji: '🌶️' },
         { key: 'kefta', name: 'Kefta', emoji: '🥩' },
         { key: 'poulet', name: 'Poulet', emoji: '🍗' },
         { key: 'cordon_bleu', name: 'Cordon Bleu', emoji: '🔵' },
-        { key: 'viande_hachee', name: 'Viande Hachée', emoji: '🥩' },
         { key: 'nuggets', name: 'Nuggets', emoji: '🟡' },
         { key: 'escalope', name: 'Escalope Poulet', emoji: '🍗' },
         { key: 'cayenne', name: 'Cayenne', emoji: '🌶️' },
@@ -2482,6 +2483,7 @@
                 }
             });
             // Viandes supplémentaires — append inline with price
+            var viandeSupplNames = [];
             if (selections.viandeSupplItems && lastItemData && lastItemData.variations) {
                 Object.keys(selections.viandeSupplItems).forEach(function (key) {
                     var sc = selections.viandeSupplItems[key] || 0;
@@ -2493,10 +2495,17 @@
                         if (found) viandeName = found.name;
                     });
                     viandeNames.push('+' + (sc > 1 ? sc + '\u00d7 ' : '') + viandeName + ' (+' + fmtPrice(sc * VIANDE_SUPPL_PRICE) + ')');
+                    // [VIANDE-SUPPL UNIFI\u00c9 2026-07-24] nom(s) pour la ligne d\u00e9di\u00e9e \u00ab Viandes en plus \u00bb
+                    // (miroir \u00ab Sauces en plus : \u2026 \u00bb) que le ticket cuisine r\u00e9sout par NOM exact.
+                    viandeSupplNames.push(sc > 1 ? (sc + '\u00d7 ' + viandeName) : viandeName);
                 });
             }
             if (viandeNames.length > 0) {
                 parts.push('VIANDES : ' + viandeNames.join(', '));
+            }
+            // Ligne d\u00e9di\u00e9e r\u00e9solvable au ticket cuisine (nom exact des viandes en suppl\u00e9ment).
+            if (viandeSupplNames.length > 0) {
+                parts.push('Viandes en plus : ' + viandeSupplNames.join(', '));
             }
         }
 
@@ -2988,7 +2997,12 @@
         }
         if (lastItemData && lastItemData.extras) {
             supplements = lastItemData.extras.filter(function (extra) {
-                if (normalizeStr(extra.name).includes('sauce')) return false;
+                var nn = normalizeStr(extra.name);
+                if (nn.includes('sauce')) return false;
+                // [VIANDE-SUPPL UNIFIÉ 2026-07-24] « Viande supplémentaire » n'est PLUS dans la liste
+                // générique : elle est gérée par les tuiles viande (clic au-delà de l'inclus). Évite
+                // la double exposition + le supplément viande anonyme.
+                if (/viande\s*suppl/.test(nn)) return false;
                 return extra.convert_price > 0 || isSupplementName(extra.name);
             });
             hasSupplements = supplements.length > 0;
@@ -3089,27 +3103,39 @@
             if (maxViandes === 0) maxViandes = viandeAttrs.length;
             var totalV = selections.totalViandes || 0;
 
+            // [VIANDE-SUPPL UNIFIÉ 2026-07-24 · LOCK owner] Total supplément (viandes au-delà des incluses).
+            var totalVSupplTop = 0;
+            if (selections.viandeSupplItems) {
+                Object.keys(selections.viandeSupplItems).forEach(function (k) { totalVSupplTop += selections.viandeSupplItems[k] || 0; });
+            }
             h += '<div class="wizard-section viande-section">';
             h += '<div class="section-header">';
             h += '<h4>🥩 Viande' + (maxViandes > 1 ? 's' : '') + '</h4>';
-            h += '<span class="quota-badge ' + (totalV === maxViandes ? 'complete' : '') + '">' + totalV + '/' + maxViandes + '</span>';
+            h += '<span class="quota-badge ' + (totalV >= maxViandes ? 'complete' : '') + '">' + totalV + '/' + maxViandes + ' incluse' + (maxViandes > 1 ? 's' : '') + '</span>';
+            if (totalVSupplTop > 0) {
+                h += '<span class="viande-suppl-badge">+' + totalVSupplTop + ' supp. (+' + fmtPrice(totalVSupplTop * VIANDE_SUPPL_PRICE) + ')</span>';
+            }
             h += '</div>';
+            h += '<p class="section-hint viande-hint">' + (maxViandes > 1 ? (maxViandes + ' viandes incluses') : '1 viande incluse') + ' — au-delà : +' + fmtPrice(VIANDE_SUPPL_PRICE) + ' / viande</p>';
 
-            // [VIANDE-UI 2026-07-23 · LOCK owner] Étape viande = GRILLE de tuiles carrées
-            // avec GRANDE image (vraie image variation via _renderViandeVisual, repli emoji),
-            // petit nom, TOUTES visibles (pas de scroll/voir-plus). Tap tuile = ajouter
-            // (`.viande-btn` data-action="plus" → handler bindEvents INCHANGÉ), petit − pour retirer.
+            // [VIANDE-SUPPL UNIFIÉ 2026-07-24] GRILLE unifiée : les MÊMES tuiles gèrent les viandes
+            // incluses (gratuites jusqu'à maxViandes) PUIS le supplément (au-delà = +2,50 € NOMMÉ).
+            // Le compteur de la tuile = incluses + supplément de cette viande. Handler bindSinglePageEvents
+            // route le clic « + » vers viandes[] tant que total < max, sinon vers viandeSupplItems[].
             h += '<div class="wizard-viande-grid">';
             viandeVariations.forEach(function (variation) {
                 var key = 'v_' + variation.id;
-                var count = selections.viandes[key] || 0;
-                var canAdd = totalV < maxViandes;
+                var inc = selections.viandes[key] || 0;
+                var sup = (selections.viandeSupplItems && selections.viandeSupplItems[key]) || 0;
+                var count = inc + sup;
+                var willSuppl = totalV >= maxViandes; // le prochain « + » sera un supplément
                 var emoji = getEmoji(VIANDE_EMOJIS, variation.name);
-                h += '<div class="wizard-viande-tile' + (count > 0 ? ' active' : '') + (!canAdd && count === 0 ? ' at-max' : '') + '">';
-                h += '<button type="button" class="viande-btn viande-tile-add plus" data-viande="' + key + '" data-action="plus" aria-label="Ajouter ' + variation.name + '">';
-                if (count > 0) h += '<span class="viande-tile-count">' + count + '</span>';
+                h += '<div class="wizard-viande-tile' + (count > 0 ? ' active' : '') + (sup > 0 ? ' has-suppl' : '') + '">';
+                h += '<button type="button" class="viande-btn viande-tile-add plus' + (willSuppl && count === 0 ? ' suppl-next' : '') + '" data-viande="' + key + '" data-action="plus" aria-label="Ajouter ' + variation.name + (willSuppl ? ' (supplément +' + fmtPrice(VIANDE_SUPPL_PRICE) + ')' : '') + '">';
+                if (count > 0) h += '<span class="viande-tile-count' + (sup > 0 ? ' suppl' : '') + '">' + count + '</span>';
                 h += '<span class="viande-tile-img">' + _renderViandeVisual(variation, emoji) + '</span>';
                 h += '<span class="viande-tile-name">' + variation.name + '</span>';
+                if (sup > 0) h += '<span class="viande-tile-suppl-tag">+' + fmtPrice(sup * VIANDE_SUPPL_PRICE) + '</span>';
                 h += '</button>';
                 if (count > 0) {
                     h += '<button type="button" class="viande-btn viande-tile-minus minus" data-viande="' + key + '" data-action="minus" aria-label="Retirer ' + variation.name + '">−</button>';
@@ -3118,34 +3144,8 @@
             });
             h += '</div>';
 
-            // Viandes supplémentaires — bouton toggle + liste dépliable
-            var totalVSuppl = 0;
-            if (selections.viandeSupplItems) {
-                Object.keys(selections.viandeSupplItems).forEach(function (k) { totalVSuppl += selections.viandeSupplItems[k] || 0; });
-            }
-            var isExpanded = totalVSuppl > 0 || (selections.viandeSupplExpanded === true);
-            var toggleLabel = totalVSuppl > 0
-                ? '🥩+ ' + totalVSuppl + ' viande' + (totalVSuppl > 1 ? 's' : '') + ' extra (+' + fmtPrice(totalVSuppl * VIANDE_SUPPL_PRICE) + ') ' + (isExpanded ? '▲' : '▼')
-                : '➕ Viande supplémentaire (+' + fmtPrice(VIANDE_SUPPL_PRICE) + '/viande) ' + (isExpanded ? '▲' : '▼');
-            h += '<button type="button" class="viande-suppl-toggle' + (totalVSuppl > 0 ? ' has-items' : '') + '" data-action="toggle-suppl">' + toggleLabel + '</button>';
-            h += '<div class="wizard-viande-suppl-section' + (isExpanded ? '' : ' collapsed') + '" id="viande-suppl-panel">';
-            viandeVariations.forEach(function (variation) {
-                var key = 'v_' + variation.id;
-                var sc = (selections.viandeSupplItems && selections.viandeSupplItems[key]) || 0;
-                var emoji = getEmoji(VIANDE_EMOJIS, variation.name);
-                h += '<div class="wizard-viande-suppl-row' + (sc > 0 ? ' active' : '') + '" data-suppl-id="' + key + '">';
-                h += '<div class="viande-info">';
-                h += _renderViandeVisual(variation, emoji);
-                h += '<span class="viande-name">' + variation.name + '</span>';
-                h += '</div>';
-                h += '<div class="viande-controls">';
-                h += '<button type="button" class="viande-suppl-btn viande-btn minus' + (sc <= 0 ? ' disabled' : '') + '" data-viande-suppl="' + key + '" data-action="minus">−</button>';
-                h += '<span class="viande-suppl-count viande-count">' + sc + '</span>';
-                h += '<button type="button" class="viande-suppl-btn viande-btn plus" data-viande-suppl="' + key + '" data-action="plus">+</button>';
-                h += '</div>';
-                h += '</div>';
-            });
-            h += '</div>';
+            // [VIANDE-SUPPL UNIFIÉ 2026-07-24] Toggle « Viande supplémentaire » séparé SUPPRIMÉ :
+            // le supplément est désormais choisi depuis les MÊMES tuiles (clic au-delà du max).
             h += '</div>'; // .wizard-section viande
         }
 
@@ -3430,53 +3430,72 @@
         }
         if (maxViandes === 0) maxViandes = 1;
 
-        // Update viande quota badge
+        // [VIANDE-SUPPL UNIFIÉ 2026-07-24] Badge quota (incluses) + badge supplément.
+        var total = selections.totalViandes || 0;
+        var totalSuppl = 0;
+        if (selections.viandeSupplItems) {
+            Object.keys(selections.viandeSupplItems).forEach(function (k) { totalSuppl += selections.viandeSupplItems[k] || 0; });
+        }
         var quotaBadge = wizardEl.querySelector('.viande-section .quota-badge');
         if (quotaBadge) {
-            var total = selections.totalViandes || 0;
-            quotaBadge.textContent = total + '/' + maxViandes;
-            quotaBadge.className = 'quota-badge ' + (total === maxViandes ? 'complete' : '');
+            quotaBadge.textContent = total + '/' + maxViandes + ' incluse' + (maxViandes > 1 ? 's' : '');
+            quotaBadge.className = 'quota-badge ' + (total >= maxViandes ? 'complete' : '');
+        }
+        var vHeader = wizardEl.querySelector('.viande-section .section-header');
+        if (vHeader) {
+            var supBadge = vHeader.querySelector('.viande-suppl-badge');
+            if (totalSuppl > 0) {
+                if (!supBadge) { supBadge = document.createElement('span'); supBadge.className = 'viande-suppl-badge'; vHeader.appendChild(supBadge); }
+                supBadge.textContent = '+' + totalSuppl + ' supp. (+' + fmtPrice(totalSuppl * VIANDE_SUPPL_PRICE) + ')';
+            } else if (supBadge) { supBadge.remove(); }
         }
 
-        // Update complete text
+        // Update complete text (legacy, si présent)
         var completeText = wizardEl.querySelector('.viande-section .complete-text');
-        if (completeText) {
-            var total = selections.totalViandes || 0;
-            completeText.style.display = total === maxViandes ? 'inline' : 'none';
-        }
+        if (completeText) { completeText.style.display = total >= maxViandes ? 'inline' : 'none'; }
 
-        // Update viande row active states and counts
-        wizardEl.querySelectorAll('.wizard-viande-row').forEach(function (row) {
-            var viandeKey = row.querySelector('.viande-btn')?.getAttribute('data-viande');
-            if (!viandeKey) return;
-            var count = selections.viandes[viandeKey] || 0;
-            row.classList.toggle('active', count > 0);
-            var countEl = row.querySelector('.viande-count');
-            if (countEl) countEl.textContent = count;
-        });
-
-        // Update viande button disabled states
-        // [V1 FIX] Exclude .viande-suppl-btn — supplementary viande buttons have no quota cap
-        // and must remain enabled even when the main viande slots are full.
-        var totalV = selections.totalViandes || 0;
-        wizardEl.querySelectorAll('.viande-btn.plus:not(.viande-suppl-btn)').forEach(function (btn) {
-            var canAdd = totalV < maxViandes;
-            btn.classList.toggle('disabled', !canAdd);
-        });
-
-        // Update viandes supplémentaires per-viande counts
-        wizardEl.querySelectorAll('.viande-suppl-btn').forEach(function (btn) {
-            var key = btn.getAttribute('data-viande-suppl');
+        // [VIANDE-SUPPL UNIFIÉ] Mise à jour des TUILES : compteur (inclus + supplément), tag +prix,
+        // état has-suppl, bouton retirer. Le « + » n'est JAMAIS désactivé (au-delà du max = supplément).
+        var willSuppl = total >= maxViandes;
+        wizardEl.querySelectorAll('.viande-section .wizard-viande-tile').forEach(function (tile) {
+            var addBtn = tile.querySelector('.viande-tile-add');
+            if (!addBtn) return;
+            var key = addBtn.getAttribute('data-viande');
             if (!key) return;
-            var sc = (selections.viandeSupplItems && selections.viandeSupplItems[key]) || 0;
-            var action = btn.getAttribute('data-action');
-            if (action === 'minus') btn.classList.toggle('disabled', sc <= 0);
-            var row = wizardEl.querySelector('[data-suppl-id="' + key + '"]');
-            if (row) {
-                row.classList.toggle('active', sc > 0);
-                var countEl = row.querySelector('.viande-suppl-count');
-                if (countEl) countEl.textContent = sc;
-            }
+            var inc = selections.viandes[key] || 0;
+            var sup = (selections.viandeSupplItems && selections.viandeSupplItems[key]) || 0;
+            var count = inc + sup;
+            tile.classList.toggle('active', count > 0);
+            tile.classList.toggle('has-suppl', sup > 0);
+            addBtn.classList.remove('disabled');
+            addBtn.classList.toggle('suppl-next', willSuppl && count === 0);
+            // compteur
+            var countEl = addBtn.querySelector('.viande-tile-count');
+            if (count > 0) {
+                if (!countEl) { countEl = document.createElement('span'); countEl.className = 'viande-tile-count'; addBtn.insertBefore(countEl, addBtn.firstChild); }
+                countEl.textContent = count;
+                countEl.classList.toggle('suppl', sup > 0);
+            } else if (countEl) { countEl.remove(); }
+            // tag +prix supplément
+            var tagEl = addBtn.querySelector('.viande-tile-suppl-tag');
+            if (sup > 0) {
+                if (!tagEl) { tagEl = document.createElement('span'); tagEl.className = 'viande-tile-suppl-tag'; addBtn.appendChild(tagEl); }
+                tagEl.textContent = '+' + fmtPrice(sup * VIANDE_SUPPL_PRICE);
+            } else if (tagEl) { tagEl.remove(); }
+            // bouton retirer (créé/supprimé selon count ; clic géré par délégation)
+            var minusBtn = tile.querySelector('.viande-tile-minus');
+            if (count > 0) {
+                if (!minusBtn) {
+                    minusBtn = document.createElement('button');
+                    minusBtn.type = 'button';
+                    minusBtn.className = 'viande-btn viande-tile-minus minus';
+                    minusBtn.setAttribute('data-viande', key);
+                    minusBtn.setAttribute('data-action', 'minus');
+                    minusBtn.setAttribute('aria-label', 'Retirer');
+                    minusBtn.textContent = '−';
+                    tile.appendChild(minusBtn);
+                }
+            } else if (minusBtn) { minusBtn.remove(); }
         });
 
         // Update pain selection — .pain-btn (single-page) or .pain-opt (step mode)
@@ -5922,23 +5941,27 @@
             });
         });
 
-        // Viande +/- buttons
-        wizardEl.querySelectorAll('.viande-btn').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                var viandeKey = this.getAttribute('data-viande');
-                var action = this.getAttribute('data-action');
+        // [VIANDE-SUPPL UNIFIÉ 2026-07-24] Clics viande en DÉLÉGATION sur wizardEl : survit aux
+        // boutons « − » créés dynamiquement par updateSinglePageUI (au-delà du max = supplément).
+        // Geste fusionné : « + » ajoute une viande GRATUITE tant que total < max, sinon un
+        // SUPPLÉMENT viande @2,50 nommé (viandeSupplItems). « − » retire d'abord le supplément.
+        if (!wizardEl._viandeDelegBound) {
+            wizardEl._viandeDelegBound = true;
+            wizardEl.addEventListener('click', function (ev) {
+                var btn = (ev.target && ev.target.closest) ? ev.target.closest('.viande-tile-add, .viande-tile-minus') : null;
+                if (!btn || !wizardEl.contains(btn)) return;
+                var viandeKey = btn.getAttribute('data-viande');
+                if (!viandeKey) return;
+                var action = btn.getAttribute('data-action');
                 var currentCount = selections.viandes[viandeKey] || 0;
                 var total = selections.totalViandes || 0;
-
-                // [B1/R4 FIX] Determine max from detectViandeCountFromData (reads name/description)
-                // then fallback to attribute count
                 var max = detectViandeCountFromData(lastItemData);
                 if (max === 0 && lastItemData && lastItemData.itemAttributes) {
-                    var viandeAttrs = lastItemData.itemAttributes.filter(function (attr) {
+                    var vAttrs = lastItemData.itemAttributes.filter(function (attr) {
                         var n = normalizeStr(attr.name);
                         return n.includes('viande') || n.includes('meat');
                     });
-                    max = viandeAttrs.length || 1;
+                    max = vAttrs.length || 1;
                 }
                 if (max === 0) max = 1;
 
@@ -5946,14 +5969,23 @@
                     if (total < max) {
                         selections.viandes[viandeKey] = currentCount + 1;
                         selections.totalViandes = total + 1;
+                    } else {
+                        if (!selections.viandeSupplItems) selections.viandeSupplItems = {};
+                        selections.viandeSupplItems[viandeKey] = (selections.viandeSupplItems[viandeKey] || 0) + 1;
                     }
-                } else if (action === 'minus' && currentCount > 0) {
-                    selections.viandes[viandeKey] = currentCount - 1;
-                    selections.totalViandes = total - 1;
+                } else if (action === 'minus') {
+                    var supCur = (selections.viandeSupplItems && selections.viandeSupplItems[viandeKey]) || 0;
+                    if (supCur > 0) {
+                        selections.viandeSupplItems[viandeKey] = supCur - 1;
+                        if (selections.viandeSupplItems[viandeKey] === 0) delete selections.viandeSupplItems[viandeKey];
+                    } else if (currentCount > 0) {
+                        selections.viandes[viandeKey] = currentCount - 1;
+                        selections.totalViandes = total - 1;
+                    }
                 }
                 updateSinglePageUI();
             });
-        });
+        }
 
         // Bouton toggle "Viande supplémentaire"
         var toggleBtn = wizardEl.querySelector('.viande-suppl-toggle');
