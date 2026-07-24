@@ -80,6 +80,7 @@ use App\Http\Controllers\Admin\SiteController;
 use App\Http\Controllers\Admin\SliderController;
 use App\Http\Controllers\Admin\SmsGatewayController;
 use App\Http\Controllers\Admin\SocialMediaController;
+use App\Http\Controllers\Admin\PurchasingScanController;
 use App\Http\Controllers\Admin\StockRuptureDashboardController;
 use App\Http\Controllers\Admin\SubscriberController;
 use App\Http\Controllers\Admin\TableOrderController as AdminTableOrderController;
@@ -336,6 +337,12 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         ->name('stock.catalog-overview');
     Route::post('/stock/scan-rupture/run', [StockRuptureDashboardController::class, 'run'])
         ->name('stock.scan-rupture.run');
+
+    // [ARCH_STOCK_INTELLIGENT_BOM_2026-07-23 / P3b] Scan facture IA → propositions
+    // (crée un PurchaseDocument draft + PurchaseLine proposed ; l'owner valide
+    // ensuite via PurchaseService). Domaine NEUF, ADDITIF, HORS NF525.
+    Route::post('/purchasing/scan', [PurchasingScanController::class, 'scan'])
+        ->name('purchasing.scan');
 
     Route::prefix('setting')->name('setting.')->group(function () {
         Route::prefix('company')->name('company.')->group(function () {

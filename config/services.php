@@ -68,4 +68,25 @@ return [
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET', ''),
     ],
 
+    /**
+     * [ARCH_STOCK_INTELLIGENT_BOM_2026-07-23 / P3b] OpenAI Vision — lecture IA
+     * des factures fournisseur (achats/stock, HORS NF525).
+     *
+     * BASCULE (PurchasingServiceProvider) : `OpenAiInvoiceVisionService` n'est
+     * choisi QUE si `enabled` est vrai ET `key` non vide ; sinon le DÉFAUT est
+     * `MockInvoiceVisionService` (test/local sans clé, fixture déterministe).
+     * Ainsi rien n'appelle le réseau tant que l'owner n'a pas fourni la clé.
+     *
+     * `mock_fixture` : chemin d'un fixture JSON alternatif pour le mock (null →
+     * défaut interne `tests/fixtures/invoices/metro-sample.json`).
+     */
+    'openai' => [
+        'key' => env('OPENAI_API_KEY'),
+        'enabled' => (bool) env('OPENAI_VISION_ENABLED', false),
+        'model' => env('OPENAI_VISION_MODEL', 'gpt-4o-mini'),
+        'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com/v1'),
+        'timeout' => (int) env('OPENAI_TIMEOUT', 30),
+        'mock_fixture' => env('OPENAI_MOCK_FIXTURE'),
+    ],
+
 ];
