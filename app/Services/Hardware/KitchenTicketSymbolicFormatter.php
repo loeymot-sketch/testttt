@@ -261,7 +261,11 @@ final class KitchenTicketSymbolicFormatter
             }
             $q = (int) ($e['quantity'] ?? 1);
             $suffix = $q > 1 ? " ×{$q}" : '';
-            $out[] = "+ {$name}{$suffix}";
+            // [MULTIVIANDE 2026-07-24] Name the generic "Viande supplémentaire" with the
+            // recovered meat name(s) so the KITCHEN ticket tells the cook WHICH meat to add
+            // (mirror of the client ticket, OrderReceiptEscPosRenderer:448). Non-meat extras
+            // (Cheddar, and any sauce reaching here unfolded) are returned unchanged.
+            $out[] = '+ '.$this->extraDisplayName($name, $instruction).$suffix;
         }
 
         return $out;
@@ -305,26 +309,85 @@ final class KitchenTicketSymbolicFormatter
     }
 
     /**
+     * [MULTIVIANDE 2026-07-24] Recover the NAME(s) of the extra meat(s) that the FROZEN
+     * wizards emit as a GENERIC, nameless "Viande supplémentaire" item_extra (@2,50). The
+     * cook otherwise reads "+ Viande supplémentaire ×N" and does NOT know WHICH meat to add.
+     * Strict MIRROR of extraSauceNames(): the identity survives only in the free-text
+     * `instruction`, on a DEDICATED extra-meat line the wizards write like the sauce one
+     * ("Sauces en plus : …") :
+     *   - caisse (pos-wizard.js buildWizardInstruction) + borne/web (KioskWizardComponent.vue
+     *     buildInstruction) : "Viandes en plus : <noms>" — the EXTRAS ONLY (the base meats
+     *     already live in composition_snapshot['lines'] → Line 1, so they must NOT be re-listed).
+     * Tolerant to the "Viande(s) supplémentaire(s) : …" wording, to accents (é/e) and to case.
+     * The bare "Viandes : X, Y" composition line is NEVER parsed (it carries the base meats,
+     * not the paid extra). Empty when unparsable → callers keep the generic label
+     * (retro-compatible). Price-neutral display recovery — the SSOT snapshot + sealed price
+     * are untouched. JS twin: resources/js/helpers/kdsSymbolic.js extraViandeNames().
+     *
+     * @return list<string>
+     */
+    public function extraViandeNames(?string $instruction): array
+    {
+        if (! is_string($instruction) || trim($instruction) === '') {
+            return [];
+        }
+
+        // Dedicated extra-meat line (mirror of "Sauces en plus : …") OR the tolerant
+        // "Viande(s) supplémentaire(s) : …" wording. NEVER the bare "Viandes : …" line.
+        if (preg_match('/viandes?\s+en\s+plus\s*:\s*([^\n.]+)/iu', $instruction, $m)
+            || preg_match('/viandes?\s+suppl[ée]mentaires?\s*:\s*([^\n.]+)/iu', $instruction, $m)) {
+            return $this->splitViandeList($m[1]);
+        }
+
+        return [];
+    }
+
+    /**
      * [MULTISAUCE 2026-07-18] Display label for an extra: names the generic
      * "Sauce supplémentaire" with the recovered sauce name(s)
-     * ("Sauce supplémentaire : Andalouse"). Any already-named extra (Cheddar,
-     * Viande supplémentaire, crudités…) is returned unchanged.
-     * JS twin: resources/js/helpers/kdsSymbolic.js extraDisplayName().
+     * ("Sauce supplémentaire : Andalouse"). [MULTIVIANDE 2026-07-24] Same mirror for the
+     * generic "Viande supplémentaire" (@2,50) → "Viande supplémentaire : Poulet, Merguez"
+     * so the cook knows WHICH meat. Any already-named extra (Cheddar, crudités…) is returned
+     * unchanged. JS twin: resources/js/helpers/kdsSymbolic.js extraDisplayName().
      */
     public function extraDisplayName(string $extraName, ?string $instruction): string
     {
-        if (! preg_match('/sauce\s*suppl/iu', $extraName)) {
-            return $extraName;
-        }
-        $names = $this->extraSauceNames($instruction);
+        if (preg_match('/sauce\s*suppl/iu', $extraName)) {
+            $names = $this->extraSauceNames($instruction);
 
-        return $names === [] ? $extraName : $extraName.' : '.implode(', ', $names);
+            return $names === [] ? $extraName : $extraName.' : '.implode(', ', $names);
+        }
+        if (preg_match('/viande\s*suppl/iu', $extraName)) {
+            $names = $this->extraViandeNames($instruction);
+
+            return $names === [] ? $extraName : $extraName.' : '.implode(', ', $names);
+        }
+
+        return $extraName;
     }
 
     /** Split a "A, B, C" sauce list → trimmed, non-empty names. */
     private function splitSauceList(string $raw): array
     {
         return array_values(array_filter(array_map('trim', explode(',', $raw)), static fn ($n): bool => $n !== ''));
+    }
+
+    /**
+     * [MULTIVIANDE 2026-07-24] Split a "A, B, C" meat list → trimmed, "+"-stripped
+     * (legacy caisse prefixes an extra with "+"), non-empty, DEDUPED (order-preserving)
+     * names. JS twin: resources/js/helpers/kdsSymbolic.js splitViandeList().
+     */
+    private function splitViandeList(string $raw): array
+    {
+        $out = [];
+        foreach (explode(',', $raw) as $token) {
+            $name = trim((string) preg_replace('/^\+\s*/', '', trim($token)));
+            if ($name !== '' && ! in_array($name, $out, true)) {
+                $out[] = $name;
+            }
+        }
+
+        return $out;
     }
 
     /**

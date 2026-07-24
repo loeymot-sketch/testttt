@@ -35,16 +35,15 @@ describe('pos-wizard — images réelles viandes (LOCK_POSWIZARD_KIOSKWIZARD_OWN
         expect(mex.querySelector('.viande-emoji'), 'pastille emoji conservée').toBeTruthy();
     });
 
-    it('lignes viande supplémentaire : même règle image/repli', async () => {
+    it('supplément viande UNIFIÉ sur les tuiles : plus de section/toggle séparé', async () => {
+        // [VIANDE-SUPPL UNIFIÉ 2026-07-24] Le supplément viande est désormais géré par les MÊMES
+        // tuiles (clic au-delà de l'inclus) — l'ancienne section dépliable + toggle sont supprimés.
         const { wizard } = await mountPosWizard({ itemData: cayenneLikeItem() });
-        const supplRows = Array.from(wizard.querySelectorAll('.wizard-viande-suppl-row'));
-        expect(supplRows.length).toBeGreaterThan(0);
-
-        const poulet = supplRows.find((r) => r.textContent.includes('Poulet mariné'));
-        expect(poulet.querySelector('img.viande-img')).toBeTruthy();
-
-        const mex = supplRows.find((r) => r.textContent.includes('Mexicanos'));
-        expect(mex.querySelector('img.viande-img')).toBeNull();
-        expect(mex.querySelector('.viande-emoji')).toBeTruthy();
+        expect(wizard.querySelector('.wizard-viande-suppl-row'), 'ancienne ligne suppl supprimée').toBeNull();
+        expect(wizard.querySelector('.viande-suppl-toggle'), 'ancien toggle suppl supprimé').toBeNull();
+        // Le hint « au-delà : +2,50 / viande » signale le supplément inline.
+        expect(wizard.querySelector('.viande-hint')?.textContent || '').toMatch(/2[.,]50/);
+        // Les tuiles viande restent la voie unique (image réelle préservée).
+        expect(wizard.querySelectorAll('.wizard-viande-tile').length).toBeGreaterThan(0);
     });
 });

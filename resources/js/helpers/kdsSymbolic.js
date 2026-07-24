@@ -175,20 +175,60 @@ export function extraSauceNames(instruction) {
 }
 
 /**
+ * [MULTIVIANDE 2026-07-24] Recover the NAME(s) of the extra meat(s) the FROZEN wizards emit
+ * as a GENERIC, nameless "Viande supplémentaire" item_extra (@2,50) — otherwise the cook reads
+ * "⭐ Viande supplémentaire ×N" and does NOT know WHICH meat. Strict MIRROR of extraSauceNames():
+ * the identity survives only in the free-text instruction, on a DEDICATED extra-meat line the
+ * wizards write like the sauce one ("Sauces en plus : …") : "Viandes en plus : <noms>" — the
+ * EXTRAS ONLY (the base meats already live in the snapshot lines → Line 1, never re-listed here).
+ * Tolerant to the "Viande(s) supplémentaire(s) : …" wording, accents (é/e) and case. The bare
+ * "Viandes : X, Y" composition line is NEVER parsed. Empty when unparsable → callers keep the
+ * generic label. Price-neutral. PHP twin: KitchenTicketSymbolicFormatter::extraViandeNames.
+ */
+export function extraViandeNames(instruction) {
+    if (typeof instruction !== 'string' || instruction.trim() === '') return [];
+    const m = instruction.match(/viandes?\s+en\s+plus\s*:\s*([^\n.]+)/i)
+        || instruction.match(/viandes?\s+suppl[ée]mentaires?\s*:\s*([^\n.]+)/i);
+    if (m) return splitViandeList(m[1]);
+    return [];
+}
+
+/**
  * [MULTISAUCE 2026-07-18] Display label naming the generic "Sauce supplémentaire" with
- * the recovered sauce name(s). Any already-named extra is unchanged. PHP twin:
- * KitchenTicketSymbolicFormatter::extraDisplayName.
+ * the recovered sauce name(s). [MULTIVIANDE 2026-07-24] Same mirror for the generic "Viande
+ * supplémentaire" (@2,50) → "Viande supplémentaire : Poulet, Merguez". Any already-named
+ * extra is unchanged. PHP twin: KitchenTicketSymbolicFormatter::extraDisplayName.
  */
 export function extraDisplayName(name, instruction) {
     const label = String(name || '');
-    if (!/sauce\s*suppl/i.test(label)) return label;
-    const names = extraSauceNames(instruction);
-    return names.length ? `${label} : ${names.join(', ')}` : label;
+    if (/sauce\s*suppl/i.test(label)) {
+        const names = extraSauceNames(instruction);
+        return names.length ? `${label} : ${names.join(', ')}` : label;
+    }
+    if (/viande\s*suppl/i.test(label)) {
+        const names = extraViandeNames(instruction);
+        return names.length ? `${label} : ${names.join(', ')}` : label;
+    }
+    return label;
 }
 
 /** Split a "A, B, C" sauce list → trimmed, non-empty names. */
 function splitSauceList(raw) {
     return String(raw).split(',').map((s) => s.trim()).filter(Boolean);
+}
+
+/**
+ * [MULTIVIANDE 2026-07-24] Split a "A, B, C" meat list → trimmed, "+"-stripped (legacy caisse
+ * prefixes an extra with "+"), non-empty, DEDUPED (order-preserving). PHP twin:
+ * KitchenTicketSymbolicFormatter::splitViandeList.
+ */
+function splitViandeList(raw) {
+    const out = [];
+    for (const token of String(raw).split(',')) {
+        const name = token.trim().replace(/^\+\s*/, '').trim();
+        if (name && !out.includes(name)) out.push(name);
+    }
+    return out;
 }
 
 // ── Composition decomposition ────────────────────────────────────────────────
@@ -341,7 +381,10 @@ export function buildSymbolic(orderItem) {
         } else {
             const q = parseInt(e?.quantity, 10);
             const suffix = (Number.isFinite(q) && q > 1) ? ` ×${q}` : '';
-            supplements.push(`+ ${name}${suffix}`);
+            // [MULTIVIANDE 2026-07-24] Name the generic "Viande supplémentaire" with the
+            // recovered meat name(s) so the KDS supplement line tells the cook WHICH meat
+            // (mirror of the client ticket + the PHP supplementLines). Others unchanged.
+            supplements.push(`+ ${extraDisplayName(name, orderItem?.instruction)}${suffix}`);
         }
     }
 

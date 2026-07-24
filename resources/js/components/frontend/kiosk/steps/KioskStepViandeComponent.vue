@@ -10,6 +10,11 @@
       </div>
       <span v-if="includedQuotaComplete" class="kiosk-complete-badge">✓ {{ $t('kiosk.wizard.step.viande.complete') }}</span>
       <span v-if="paidSelected > 0" class="kiosk-paid-badge">+{{ paidSelected }} supplément{{ paidSelected > 1 ? 's' : '' }}</span>
+      <span
+        v-if="supplementViandeCount > 0"
+        class="kiosk-paid-badge kiosk-viande-suppl-badge"
+        data-testid="kiosk-viande-suppl-badge"
+      >+{{ supplementViandeCount }} supplément{{ supplementViandeCount > 1 ? 's' : '' }} (+{{ formatPrice(supplementViandeTotalPrice) }})</span>
     </div>
 
     <p v-if="viandeList.length > 0" class="kiosk-viande-instruction" role="status" aria-live="polite">
@@ -28,6 +33,8 @@
         :class="{
           active: (localSelections[viande.key] || 0) > 0,
           'is-paid': viande.price > 0,
+          'has-suppl': viandeAllocation[viande.key] && viandeAllocation[viande.key].suppl > 0,
+          'is-suppl-next': viandeSupplementsEnabled && includedQuotaComplete && (localSelections[viande.key] || 0) === 0 && viande.source !== 'extra',
           'is-selectable': canSelectFromCard(viande),
           'kiosk-variation--disabled': !variationFilterAllowed(viande) || isViandeOos(viande),
           'is-out-of-stock': isViandeOos(viande),
@@ -44,6 +51,11 @@
         <span v-if="viande.price > 0" class="kiosk-viande-badge-paid">
           +{{ formatPrice(viande.price) }}
         </span>
+        <span
+          v-if="viandeAllocation[viande.key] && viandeAllocation[viande.key].suppl > 0"
+          class="kiosk-viande-badge-paid kiosk-viande-badge-suppl"
+          data-testid="kiosk-viande-suppl-tag"
+        >+{{ formatPrice(viandeAllocation[viande.key].suppl * viandeSupplementUnitPrice) }}</span>
         <span
           v-if="isViandeOos(viande)"
           class="kiosk-extra-oos-badge"
@@ -126,6 +138,9 @@ export default {
     return {
       localSelections: { ...this.selections.viandes },
       brokenViandeThumbs: {},
+      // [VIANDE-SUPPL UNIFIÉ 2026-07-24] Nombre max de viandes EN SUPPLÉMENT au-delà du
+      // quota inclus (garde-fou borne : maxViandes + ce cap = total sélectionnable).
+      viandeSupplementCap: 4,
     };
   },
   computed: {
@@ -153,7 +168,9 @@ export default {
         .reduce((sum, viande) => sum + (this.localSelections[viande.key] || 0), 0);
     },
     includedQuotaSelected() {
-      return this.includedSelected;
+      // [VIANDE-SUPPL UNIFIÉ 2026-07-24] Plafonné à maxViandes : le compteur « X / max »
+      // n'affiche QUE les incluses ; le dépassement est compté à part (supplementViandeCount).
+      return Math.min(this.includedSelected, this.maxViandes);
     },
     includedQuotaComplete() {
       return this.includedQuotaSelected >= this.maxViandes;
@@ -189,9 +206,57 @@ export default {
     // [AUDIT 2026-04-17 C3] Catalogue viandes dynamique = variations (prix 0)
     // + extras marqués viande (prix > 0), fusionnés en une liste ordonnée
     // (variations d'abord, puis extras payants). Plus de fallback hardcodé.
+    // [VIANDE-SUPPL UNIFIÉ 2026-07-24] On EXCLUT l'ItemExtra générique « Viande
+    // supplémentaire » (@2,50) : ce n'est PAS une viande sélectionnable mais le
+    // VÉHICULE de facturation du dépassement (clic au-delà du quota d'une viande
+    // INCLUSE). Sans ce filtre, `kioskIsViandePaidExtra` (name inclut « viande »)
+    // le remonterait comme une fausse tuile viande. Parité caisse (pos-wizard.js).
     viandeList() {
-      return kioskViandeCatalogForItem(this.item);
-    }
+      return kioskViandeCatalogForItem(this.item)
+        .filter((v) => !(v.source === 'extra' && /viande\s*suppl/i.test(String(v.name || ''))));
+    },
+    // [VIANDE-SUPPL UNIFIÉ 2026-07-24] ItemExtra générique « Viande supplémentaire »
+    // (@2,50) — mécanisme de facturation du dépassement (miroir « Sauce supplémentaire »).
+    viandeSupplementExtra() {
+      const extras = Array.isArray(this.item?.extras) ? this.item.extras : [];
+      return extras.find((e) => e && /viande\s*suppl/i.test(String(e.name || ''))) || null;
+    },
+    viandeSupplementUnitPrice() {
+      const e = this.viandeSupplementExtra;
+      return e ? (parseFloat(e.convert_price || e.price || 0) || 0) : 0;
+    },
+    // Le dépassement n'est autorisé (donc facturable) QUE si l'item possède cet extra.
+    // Sinon plafond dur historique = maxViandes (aucune fuite de viande gratuite).
+    viandeSupplementsEnabled() {
+      return this.viandeSupplementUnitPrice > 0;
+    },
+    // Répartition incluses / supplément par viande, dans l'ORDRE du catalogue (mêmes rangs
+    // que la distribution Viande 1/2 du wizard) : on remplit d'abord le quota maxViandes,
+    // le reste = supplément @2,50. Source unique consommée par l'UI ET par `emitUpdate`.
+    viandeAllocation() {
+      const map = {};
+      let remaining = this.maxViandes;
+      const enabled = this.viandeSupplementsEnabled;
+      this.viandeList.forEach((v) => {
+        const count = this.localSelections[v.key] || 0;
+        if (v.source === 'extra') {
+          // Viandes payantes réelles (ex. « Double Steak +2€ ») : prix propre, hors quota.
+          map[v.key] = { included: count, suppl: 0, count };
+          return;
+        }
+        const included = Math.min(count, Math.max(0, remaining));
+        remaining -= included;
+        const suppl = enabled ? (count - included) : 0;
+        map[v.key] = { included, suppl, count };
+      });
+      return map;
+    },
+    supplementViandeCount() {
+      return Object.values(this.viandeAllocation).reduce((sum, a) => sum + (a.suppl || 0), 0);
+    },
+    supplementViandeTotalPrice() {
+      return this.supplementViandeCount * this.viandeSupplementUnitPrice;
+    },
   },
   watch: {
     'selections.viandes': {
@@ -217,6 +282,10 @@ export default {
       //   - mapper les variations vers item_variations,
       //   - mapper les extras payants vers item_extras (avec quantité),
       //   - inclure le surplus payant dans calculateKioskRunningTotal.
+      // [VIANDE-SUPPL UNIFIÉ 2026-07-24] `supplCount` = portion de CETTE viande facturée au-delà
+      // du quota inclus (0 si dans le quota). Le wizard (buildCartItem/instruction/running-total)
+      // route ce dépassement vers l'ItemExtra « Viande supplémentaire » + la ligne « Viandes en plus ».
+      const alloc = this.viandeAllocation;
       const selectedMeta = this.viandeList
         .filter(v => (this.localSelections[v.key] || 0) > 0)
         .map(v => ({
@@ -227,6 +296,7 @@ export default {
           source: v.source,
           attrId: v.attrId,
           count: this.localSelections[v.key],
+          supplCount: (alloc[v.key] && alloc[v.key].suppl) || 0,
         }));
       this.$emit('update', '_viandeMeta', selectedMeta);
     },
@@ -263,7 +333,14 @@ export default {
       if (this.isPaidViande(viande) && this.hasIncludedViandeOptions) {
         return current < 9;
       }
-      return this.includedQuotaSelected < this.maxViandes;
+      // [VIANDE-SUPPL UNIFIÉ 2026-07-24] Viande INCLUSE : gratuite jusqu'à maxViandes ; au-delà =
+      // supplément @2,50 NOMMÉ (parité caisse), autorisé UNIQUEMENT si l'item possède l'ItemExtra
+      // « Viande supplémentaire » (mécanisme de facturation) et dans la limite du garde-fou borne.
+      // Sinon plafond dur historique = maxViandes.
+      if (this.viandeSupplementsEnabled) {
+        return this.includedSelected < this.maxViandes + this.viandeSupplementCap;
+      }
+      return this.includedSelected < this.maxViandes;
     },
     // [HEAL-A 2026-05-08] OOS read on viande — both extra-source (paid) and
     // variation-source (free, defensive — backend may extend later).
@@ -444,6 +521,28 @@ export default {
   letter-spacing: 0.02em;
   box-shadow: 0 2px 6px rgba(232, 107, 0, 0.25);
   z-index: 1;
+}
+
+/* [VIANDE-SUPPL UNIFIÉ 2026-07-24] Tag prix supplément sur la tuile viande (dépassement
+   du quota inclus). Décalé sous le badge « +prix » éventuel des viandes payantes. */
+.kiosk-viande-badge-suppl {
+  top: auto;
+  bottom: 10px;
+}
+
+.kiosk-viande-card.has-suppl {
+  border-color: rgba(245, 158, 11, 0.5);
+}
+
+/* Affordance « le prochain ajout de cette viande sera un supplément @2,50 ». */
+.kiosk-viande-card.is-suppl-next .kiosk-viande-select-hint {
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--kiosk-warning, #E86B00);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.kiosk-viande-suppl-badge {
+  color: var(--kiosk-warning, #E86B00);
 }
 
 .kiosk-step-empty {

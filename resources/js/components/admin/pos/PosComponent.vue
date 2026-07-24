@@ -112,155 +112,224 @@
                     </div>
                 </div>
             </div>
+            <!--
+              [POS-V5 HEADER-REORG 2026-07-21] Barre d'actions regroupée en 2
+              clusters lisibles : « Commandes » (À encaisser borne · Encaissement ·
+              Suivi · Archives · Écran client) et « Caisse » (Tiroir · Session ·
+              Rupture · Fidélité). Réorganisation VISUELLE + a11y (role=group)
+              UNIQUEMENT : chaque bouton conserve son variant, son @click, son
+              :to et son data-testid à l'identique. 2 accès manquants ajoutés :
+              Encaissement (admin.encaissement) + Archives (admin.historique.list),
+              calqués sur le bouton Suivi. Aucune logique métier touchée.
+            -->
             <nav class="pos-v5-operator-bar__actions pos-v4-operator-actions" aria-label="Actions caisse">
-                <PosV5Button
-                    v-if="kioskCashOrders.length > 0"
-                    variant="kiosk-cash"
-                    size="md"
-                    data-testid="kiosk-cash-open"
-                    :badge="kioskCashOrders.length"
-                    :title="$t('pos.kiosk_counter_collect_hint')"
-                    @click="showKioskCashPanel = true"
+                <!-- Cluster 1 — Commandes : voir / encaisser / suivre / archiver -->
+                <div
+                    class="pos-op-cluster"
+                    role="group"
+                    :aria-label="$t('label.orders')"
+                    data-testid="pos-op-cluster-orders"
                 >
-                    <template #icon>🖥️</template>
-                    <span class="hidden lg:inline">{{ $t('pos.kiosk_counter_collect_short') }}</span>
-                </PosV5Button>
-                <!--
-                  [POS-V5] Bouton suivi commandes — variant tracker.
-                  Tone "ready" = halo vert pulsant dès qu'une commande passe à PREPARED.
-                  Aucun popup, aucun son — juste un signal visuel pour le caissier.
-                  [POS-V5 R2] Label visible dès lg (1024px) au lieu de xl (1280px) pour
-                  réduire le risque d'icônes orphelines sur écrans tablet/laptop courants.
-                -->
-                <PosV5Button
-                    variant="tracker"
-                    size="md"
-                    as="router-link"
-                    :to="{ name: 'admin.pos-orders.tracker' }"
-                    :tone="activeOrdersStats.ready > 0 ? 'ready' : 'neutral'"
-                    :badge="activeOrdersStats.active > 0 ? activeOrdersStats.active : null"
-                    data-testid="pos-tracker-open"
-                    :title="$t('pos.tracker.button_hint')"
+                    <span class="pos-op-cluster__label" aria-hidden="true">{{ $t('label.orders') }}</span>
+                    <div class="pos-op-cluster__row">
+                        <PosV5Button
+                            v-if="kioskCashOrders.length > 0"
+                            variant="kiosk-cash"
+                            size="md"
+                            data-testid="kiosk-cash-open"
+                            :badge="kioskCashOrders.length"
+                            :title="$t('pos.kiosk_counter_collect_hint')"
+                            @click="showKioskCashPanel = true"
+                        >
+                            <template #icon>🖥️</template>
+                            <span class="hidden lg:inline">{{ $t('pos.kiosk_counter_collect_short') }}</span>
+                        </PosV5Button>
+                        <!--
+                          [POS-V5 HEADER-REORG 2026-07-21] Accès « Encaissement » —
+                          router-link vers la vraie page d'encaissement par origine
+                          (admin.encaissement / EncaissementComponent). Calqué sur le
+                          bouton Suivi ci-dessous ; nom de route stubé dans pos-app.js.
+                        -->
+                        <PosV5Button
+                            variant="ghost"
+                            size="md"
+                            as="router-link"
+                            :to="{ name: 'admin.encaissement' }"
+                            data-testid="pos-encaissement-open"
+                            :title="$t('menu.encaissement')"
+                            :aria-label="$t('menu.encaissement')"
+                        >
+                            <template #icon>💶</template>
+                            <span class="hidden lg:inline">{{ $t('menu.encaissement') }}</span>
+                        </PosV5Button>
+                        <!--
+                          [POS-V5] Bouton suivi commandes — variant tracker.
+                          Tone "ready" = halo vert pulsant dès qu'une commande passe à PREPARED.
+                          Aucun popup, aucun son — juste un signal visuel pour le caissier.
+                          [POS-V5 R2] Label visible dès lg (1024px) au lieu de xl (1280px) pour
+                          réduire le risque d'icônes orphelines sur écrans tablet/laptop courants.
+                        -->
+                        <PosV5Button
+                            variant="tracker"
+                            size="md"
+                            as="router-link"
+                            :to="{ name: 'admin.pos-orders.tracker' }"
+                            :tone="activeOrdersStats.ready > 0 ? 'ready' : 'neutral'"
+                            :badge="activeOrdersStats.active > 0 ? activeOrdersStats.active : null"
+                            data-testid="pos-tracker-open"
+                            :title="$t('pos.tracker.button_hint')"
+                        >
+                            <template #icon>📋</template>
+                            <span class="hidden lg:inline">{{ $t('pos.tracker.button_label') }}</span>
+                        </PosV5Button>
+                        <!--
+                          [POS-V5 HEADER-REORG 2026-07-21] Accès « Archives » —
+                          router-link vers l'historique unifié de toutes les commandes
+                          (admin.historique.list / HistoriqueListComponent). Calqué sur
+                          le bouton Suivi ; nom de route stubé dans pos-app.js.
+                        -->
+                        <PosV5Button
+                            variant="ghost"
+                            size="md"
+                            as="router-link"
+                            :to="{ name: 'admin.historique.list' }"
+                            data-testid="pos-archives-open"
+                            :title="$t('menu.historique')"
+                            :aria-label="$t('menu.historique')"
+                        >
+                            <template #icon>🗂️</template>
+                            <span class="hidden lg:inline">{{ $t('menu.historique') }}</span>
+                        </PosV5Button>
+                        <PosV5Button
+                            variant="ghost"
+                            size="md"
+                            as="router-link"
+                            :to="{ name: 'admin.order-status-screen' }"
+                            target="_blank"
+                            rel="noopener"
+                            :title="$t('pos.tracker.customer_screen_hint')"
+                        >
+                            <template #icon>🖥️</template>
+                            <span class="hidden lg:inline">{{ $t('pos.tracker.customer_screen') }}</span>
+                        </PosV5Button>
+                    </div>
+                </div>
+                <span class="pos-op-cluster__divider" aria-hidden="true"></span>
+                <!-- Cluster 2 — Caisse : tiroir / session / rupture / fidélité -->
+                <div
+                    class="pos-op-cluster"
+                    role="group"
+                    :aria-label="$t('label.caisse')"
+                    data-testid="pos-op-cluster-caisse"
                 >
-                    <template #icon>📋</template>
-                    <span class="hidden lg:inline">{{ $t('pos.tracker.button_label') }}</span>
-                </PosV5Button>
-                <PosV5Button
-                    variant="ghost"
-                    size="md"
-                    as="router-link"
-                    :to="{ name: 'admin.order-status-screen' }"
-                    target="_blank"
-                    rel="noopener"
-                    :title="$t('pos.tracker.customer_screen_hint')"
-                >
-                    <template #icon>🖥️</template>
-                    <span class="hidden lg:inline">{{ $t('pos.tracker.customer_screen') }}</span>
-                </PosV5Button>
-                <!-- [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] When V2
-                     dine-in is enabled, render the floorplan link (legacy
-                     V2 upgrade path). When V1 default (`pos.dine_in_enabled=
-                     false`) — the only V1 production mode — render the
-                     loyalty redeem CTA in the same slot. Mutually exclusive
-                     so the operator-bar layout stays stable (one button
-                     wide). -->
-                <PosV5Button
-                    v-if="dineInEnabled"
-                    variant="ghost"
-                    size="md"
-                    as="router-link"
-                    :to="{ name: 'admin.pos.floorplan' }"
-                    class="pos-v4-floorplan-link"
-                    :title="$t('label.floorplan')"
-                >
-                    <template #icon>🪑</template>
-                    <span class="hidden lg:inline">{{ $t('label.floorplan') }}</span>
-                </PosV5Button>
-                <!-- [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] Main-page
-                     loyalty redeem CTA — V1 only (dine-in disabled). Visible
-                     when a non-terminal, non-PAID order is in flight; tone
-                     shifts to "ready" so the cashier sees the affordance
-                     light up the moment an order is created (server-side
-                     `pos.redeem-loyalty` permission gate remains the
-                     authoritative authz check; this UI gating only hides
-                     the visual entry point when redeem would always 422/409).
-                     The canonical CTA on PosOrderShowComponent stays in
-                     place — defense in depth, both paths reachable. -->
-                <!--
-                  [Wave Q-5 2026-05-20] Disabled-state tooltip improvement.
-                  Owner reported "Appliquer une réduction fidélité greyed
-                  out / inaccessible" — the LOCK_POS_LOYALTY_REDEEM_UI gate
-                  is intentional (CTA only after an order is in flight), so
-                  the heal is a clearer hint, not a logic change.
-                -->
-                <PosV5Button
-                    v-else
-                    variant="ghost"
-                    size="md"
-                    class="pos-v4-loyalty-main-cta"
-                    data-testid="pos-loyalty-redeem-main-cta-open"
-                    :disabled="!canShowLoyaltyMainCta"
-                    :tone="canShowLoyaltyMainCta ? 'ready' : 'neutral'"
-                    :title="canShowLoyaltyMainCta ? $t('pos.loyalty.redeem.title') : $t('pos.loyalty.redeem.disabled_hint')"
-                    :aria-label="canShowLoyaltyMainCta ? $t('pos.loyalty.redeem.title') : $t('pos.loyalty.redeem.disabled_hint')"
-                    @click="openLoyaltyMainModal"
-                >
-                    <template #icon>🎁</template>
-                    <span class="hidden lg:inline">{{ $t('pos.loyalty.redeem.title') }}</span>
-                </PosV5Button>
-                <!--
-                  [POS-V5] No-sale / open drawer — variant ghost neutral (pas de halo).
-                  Discoverable mais ne compete jamais avec paiement / tracker.
-                  Backend bridge kioskHardware.openDrawer() inchangé.
-                -->
-                <PosV5Button
-                    variant="ghost"
-                    size="md"
-                    class="pos-v4-no-sale-btn"
-                    data-testid="pos-no-sale"
-                    :title="$t('pos.no_sale_hint')"
-                    :disabled="noSaleBusy"
-                    :loading="noSaleBusy"
-                    @click="triggerNoSaleOpenDrawer"
-                >
-                    <template #icon>💵</template>
-                    <span class="hidden lg:inline">{{ $t('pos.no_sale') }}</span>
-                </PosV5Button>
-                <!--
-                  [Sprint 1A 2026-05-16] Bouton "Caisse" — ouvre le dialog de
-                  gestion de session caisse (fond de caisse, mouvements, clôture).
-                  Variant ghost + tone "ready" quand session active = halo subtil
-                  pour signaler au caissier qu'une session est ouverte.
-                -->
-                <PosV5Button
-                    variant="ghost"
-                    size="md"
-                    class="pos-v4-cash-session-btn"
-                    data-testid="pos-cash-session-open"
-                    :tone="cashSessionActive ? 'ready' : 'neutral'"
-                    :title="$t('label.cash_session_dialog_title')"
-                    @click="openCashSessionDialog"
-                >
-                    <template #icon>🏦</template>
-                    <span class="hidden lg:inline">{{ $t('label.cash_session_header_btn') }}</span>
-                </PosV5Button>
-                <!--
-                  [GOAL RUPTURE-CARNET 2026-07-15 / W2] Bouton « Rupture » — ouvre le
-                  panel 86 partagé caisse+cuisine. Gate serveur authoritaire :
-                  permission `items_edit|availability_toggle` (AvailabilityController).
-                  UI masquée tant que la permission n'est pas chargée/accordée.
-                -->
-                <PosV5Button
-                    v-if="canToggleAvailability"
-                    variant="ghost"
-                    size="md"
-                    data-testid="pos-availability-panel-open"
-                    :title="$t('availability.panel_title')"
-                    @click="showAvailabilityPanel = true"
-                >
-                    <template #icon>🚫</template>
-                    <span class="hidden lg:inline">{{ $t('availability.button_label') }}</span>
-                </PosV5Button>
+                    <span class="pos-op-cluster__label" aria-hidden="true">{{ $t('label.caisse') }}</span>
+                    <div class="pos-op-cluster__row">
+                        <!--
+                          [POS-V5] No-sale / open drawer — variant ghost neutral (pas de halo).
+                          Discoverable mais ne compete jamais avec paiement / tracker.
+                          Backend bridge kioskHardware.openDrawer() inchangé.
+                        -->
+                        <PosV5Button
+                            variant="ghost"
+                            size="md"
+                            class="pos-v4-no-sale-btn"
+                            data-testid="pos-no-sale"
+                            :title="$t('pos.no_sale_hint')"
+                            :disabled="noSaleBusy"
+                            :loading="noSaleBusy"
+                            @click="triggerNoSaleOpenDrawer"
+                        >
+                            <template #icon>💵</template>
+                            <span class="hidden lg:inline">{{ $t('pos.no_sale') }}</span>
+                        </PosV5Button>
+                        <!--
+                          [Sprint 1A 2026-05-16] Bouton "Caisse" — ouvre le dialog de
+                          gestion de session caisse (fond de caisse, mouvements, clôture).
+                          Variant ghost + tone "ready" quand session active = halo subtil
+                          pour signaler au caissier qu'une session est ouverte.
+                        -->
+                        <PosV5Button
+                            variant="ghost"
+                            size="md"
+                            class="pos-v4-cash-session-btn"
+                            data-testid="pos-cash-session-open"
+                            :tone="cashSessionActive ? 'ready' : 'neutral'"
+                            :title="$t('label.cash_session_dialog_title')"
+                            @click="openCashSessionDialog"
+                        >
+                            <template #icon>🏦</template>
+                            <span class="hidden lg:inline">{{ $t('label.cash_session_header_btn') }}</span>
+                        </PosV5Button>
+                        <!--
+                          [GOAL RUPTURE-CARNET 2026-07-15 / W2] Bouton « Rupture » — ouvre le
+                          panel 86 partagé caisse+cuisine. Gate serveur authoritaire :
+                          permission `items_edit|availability_toggle` (AvailabilityController).
+                          UI masquée tant que la permission n'est pas chargée/accordée.
+                        -->
+                        <PosV5Button
+                            v-if="canToggleAvailability"
+                            variant="ghost"
+                            size="md"
+                            data-testid="pos-availability-panel-open"
+                            :title="$t('availability.panel_title')"
+                            @click="showAvailabilityPanel = true"
+                        >
+                            <template #icon>🚫</template>
+                            <span class="hidden lg:inline">{{ $t('availability.button_label') }}</span>
+                        </PosV5Button>
+                        <!-- [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] When V2
+                             dine-in is enabled, render the floorplan link (legacy
+                             V2 upgrade path). When V1 default (`pos.dine_in_enabled=
+                             false`) — the only V1 production mode — render the
+                             loyalty redeem CTA in the same slot. Mutually exclusive
+                             so the operator-bar layout stays stable (one button
+                             wide). -->
+                        <PosV5Button
+                            v-if="dineInEnabled"
+                            variant="ghost"
+                            size="md"
+                            as="router-link"
+                            :to="{ name: 'admin.pos.floorplan' }"
+                            class="pos-v4-floorplan-link"
+                            :title="$t('label.floorplan')"
+                        >
+                            <template #icon>🪑</template>
+                            <span class="hidden lg:inline">{{ $t('label.floorplan') }}</span>
+                        </PosV5Button>
+                        <!-- [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] Main-page
+                             loyalty redeem CTA — V1 only (dine-in disabled). Visible
+                             when a non-terminal, non-PAID order is in flight; tone
+                             shifts to "ready" so the cashier sees the affordance
+                             light up the moment an order is created (server-side
+                             `pos.redeem-loyalty` permission gate remains the
+                             authoritative authz check; this UI gating only hides
+                             the visual entry point when redeem would always 422/409).
+                             The canonical CTA on PosOrderShowComponent stays in
+                             place — defense in depth, both paths reachable. -->
+                        <!--
+                          [Wave Q-5 2026-05-20] Disabled-state tooltip improvement.
+                          Owner reported "Appliquer une réduction fidélité greyed
+                          out / inaccessible" — the LOCK_POS_LOYALTY_REDEEM_UI gate
+                          is intentional (CTA only after an order is in flight), so
+                          the heal is a clearer hint, not a logic change.
+                        -->
+                        <PosV5Button
+                            v-else
+                            variant="ghost"
+                            size="md"
+                            class="pos-v4-loyalty-main-cta"
+                            data-testid="pos-loyalty-redeem-main-cta-open"
+                            :disabled="!canShowLoyaltyMainCta"
+                            :tone="canShowLoyaltyMainCta ? 'ready' : 'neutral'"
+                            :title="canShowLoyaltyMainCta ? $t('pos.loyalty.redeem.title') : $t('pos.loyalty.redeem.disabled_hint')"
+                            :aria-label="canShowLoyaltyMainCta ? $t('pos.loyalty.redeem.title') : $t('pos.loyalty.redeem.disabled_hint')"
+                            @click="openLoyaltyMainModal"
+                        >
+                            <template #icon>🎁</template>
+                            <span class="hidden lg:inline">{{ $t('pos.loyalty.redeem.title') }}</span>
+                        </PosV5Button>
+                    </div>
+                </div>
             </nav>
         </header>
 
@@ -1460,9 +1529,12 @@
                   [POS-V4-ORDERS-ACCESS 2026-05-02] Accès direct depuis la caisse vers
                   la liste filtrée historique (status / date / N° / client) sans passer
                   par le menu admin latéral.
+                  [POS-V5 HEADER-REORG 2026-07-21] Cible unifiée sur l'historique global
+                  admin.historique.list (au lieu de l'ancienne liste pos-orders) pour
+                  aligner ce raccourci avec le bouton « Archives » de la barre d'actions.
                 -->
                 <router-link
-                    :to="{ name: 'admin.pos-orders.list' }"
+                    :to="{ name: 'admin.historique.list' }"
                     class="kiosk-cash-panel-history-link"
                     :title="$t('pos.orders.history_hint')"
                     data-testid="kiosk-cash-panel-history"
@@ -5567,6 +5639,52 @@ export default {
 .pos-v4-main {
   padding: 0 8px 16px 0;
   min-height: 0;
+}
+
+/* =============================================================================
+   [POS-V5 HEADER-REORG 2026-07-21] Operator-bar action clusters
+   -----------------------------------------------------------------------------
+   Regroupe la barre d'actions caisse en 2 groupes lisibles (« Commandes » /
+   « Caisse ») séparés par un fin séparateur vertical. Chaque cluster = un petit
+   libellé eyebrow + une rangée de boutons. PUREMENT visuel : aucun bouton, aucun
+   @click, aucun data-testid modifié. Le conteneur `.pos-v5-operator-bar__actions`
+   (flex, wrap, justify-end) vit toujours dans resources/css/pos-v5.css ; ici on
+   ne style QUE les nouveaux wrappers de cluster.
+   ============================================================================= */
+.pos-op-cluster {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.pos-op-cluster__label {
+  font-size: 10px;
+  font-weight: var(--pos-v5-weight-extrabold, 800);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  line-height: 1;
+  color: var(--pos-v5-ink-soft, #8b8b8b);
+  padding-left: 2px;
+}
+.pos-op-cluster__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pos-v5-space-2, 8px);
+}
+.pos-op-cluster__divider {
+  align-self: stretch;
+  width: 1px;
+  flex-shrink: 0;
+  margin: 0 2px;
+  background: var(--pos-v5-border, #e6e2da);
+}
+
+/* Écrans étroits : les clusters passent pleine largeur et empilent, le
+   séparateur vertical n'a plus de sens → masqué. */
+@media (max-width: 767px) {
+  .pos-op-cluster { flex: 1 1 100%; }
+  .pos-op-cluster__divider { display: none; }
 }
 
 /* === 2. NEUTRALISATION ancien gradient operator bar ===

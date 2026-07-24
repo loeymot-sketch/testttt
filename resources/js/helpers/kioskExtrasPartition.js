@@ -112,6 +112,12 @@ export function partitionKioskExtras(item) {
       continue;
     }
 
+    // [VIANDE-SUPPL UNIFIÉ 2026-07-24] « Viande supplémentaire » (générique @2,50) est gérée par
+    // l'ÉTAPE VIANDE (clic au-delà des viandes incluses) — elle ne doit PAS apparaître dans la
+    // liste des suppléments génériques (parité caisse pos-wizard.js). NB : « Double viande » (nom
+    // distinct) n'est PAS matché → reste un supplément normal.
+    if (/viande\s*suppl/i.test(String(e?.name || ''))) continue;
+
     out.supplements.push(row);
   }
 

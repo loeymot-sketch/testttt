@@ -132,6 +132,27 @@ const router = createRouter({
             beforeEnter(to) { window.location.assign(to.fullPath); },
             component: { render: () => null },
         },
+        // [POS-V5 HEADER-REORG 2026-07-21] Stubs for the two access points added
+        // to the operator-bar « Commandes » cluster in PosComponent.vue:
+        // Encaissement (admin.encaissement / EncaissementComponent) and Archives
+        // (admin.historique.list / HistoriqueListComponent). Both real pages live
+        // in the FULL app.js bundle, NOT in pos-app.js's slim chunk. Without these
+        // stubs, RouterLink's resolve() throws MATCHER_NOT_FOUND at every POS V4
+        // mount (same failure mode as tracker/pos-orders WB-R1-01). beforeEnter
+        // forces a hard navigation so the legacy bundle renders the actual screen;
+        // href resolves for in-tab clicks too.
+        {
+            path: '/admin/encaissement',
+            name: 'admin.encaissement',
+            beforeEnter(to) { window.location.assign(to.fullPath); },
+            component: { render: () => null },
+        },
+        {
+            path: '/admin/historique',
+            name: 'admin.historique.list',
+            beforeEnter(to) { window.location.assign(to.fullPath); },
+            component: { render: () => null },
+        },
         // auth.login is read by DefaultComponent.vue L110 when staffOnlyMode
         // triggers a logout-redirect; in pos-app this code path is unused
         // (POS V4 is staff-authenticated) but we add the stub anyway to keep
