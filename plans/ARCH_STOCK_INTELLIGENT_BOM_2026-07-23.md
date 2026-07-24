@@ -137,3 +137,29 @@ onboarding IA d'un menu étranger → catalogue + recettes squelettes, 0 constan
 - **NF525 intouché** : la couche stock/compta LIT `composition_snapshot`, n'écrit jamais la chaîne fiscale.
 - **Humain valide toujours** : IA facture/menu/inventaire = proposition → validation owner → écriture.
 - **Branch-scopé dès P1** : prêt multi-resto sans migration (V1 = branch 1).
+
+---
+## PHASE 3 — Achats/factures photo IA + réconciliation boissons (plan, 2026-07-24)
+> Ancré : 0 modèle achat/fournisseur/dépense · 0 intégration OpenAI · boissons 15 items, stock_levels quasi vide.
+> Défauts recommandés (à confirmer owner Q1-Q4) : photo facture+ticket · 2 rayons (revendus unités / matières recettes) · case charge-sans-stock · IA propose→owner valide (jamais auto).
+
+### P3a — Domaine achats (NEUF, additif, hors NF525)
+- `suppliers` (nom, contact). `purchase_documents` (fournisseur, date, montant HT/TTC, TVA, **photo brute stockée** — donnée d'apprentissage B6, amendement #8, chemin storage), `purchase_lines` (doc, libellé brut, qté, unité, prix, TVA, **cible** : raw_material_id OU stockable item (boisson) OU **charge-sans-stock** (flag), statut proposé/validé). Idempotent (hash doc).
+- Charges : réutilise/étend le pattern (pilotage, pas NF525). Export comptable simple.
+
+### P3b — Pipeline IA vision (testable SANS clé)
+- `InvoiceVisionService` interface : `extractLines(photo): array[{label,qty,unit,price,tva}]`. 2 implémentations :
+  - `MockInvoiceVisionService` (DÉFAUT en test/local sans clé) : lit un fixture déterministe → prouve TOUT le flux end-to-end.
+  - `OpenAiInvoiceVisionService` (derrière `OPENAI_API_KEY`, config `services.openai`) : appel vision réel. Bascule auto si clé présente. **Fail-closed sans clé** (pas de crash, tombe sur mock/erreur claire).
+- `InvoiceClassificationService` : chaque ligne → propose la cible (fuzzy match nom vs raw_materials + items boisson) → owner valide → `RawMaterialStockService::receive` (matière) OU stock_levels++ (boisson) OU charge. Met à jour `avg_cost` (moyenne pondérée). **Jamais d'écriture sans validation.**
+
+### P3c — Réconciliation boissons + conso réelle unifiée
+- Boissons/produits revendus = stock UNITAIRE (stock_levels item, existant) ; achat 24 canettes = +24. Vente = décrément (existant). La conso « réelle » unifie la vue : matières (recettes) + unités (boissons) → un seul tableau owner (consommé/jour, à acheter, coût).
+- `/m` + admin : rayon « produits revendus » (unités) à côté de « matières » (recettes).
+
+### P3d — Tests RÉELS (mandat owner « pas juste technique »)
+- Feature : upload facture-fixture → mock extrait N lignes → classification propose → owner valide → stock matières + boissons + charges à jour, avg_cost recalculé, idempotent (re-upload = no-op).
+- e2e web réel : écran upload → propositions → validation → stock reflété sur /m + dashboard.
+- Bascule clé : sans OPENAI_API_KEY = mock (test vert) ; avec = chemin réel câblé (prouvé par contrat/mock du client HTTP).
+
+### Gates owner P3 : Q1-Q4 (photo quoi · 2 rayons · charge-sans-stock · IA propose-valide) + clé OpenAI réelle (fin).
