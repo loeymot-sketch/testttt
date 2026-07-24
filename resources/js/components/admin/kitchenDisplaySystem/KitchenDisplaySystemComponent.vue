@@ -32,6 +32,42 @@
       <span aria-hidden="true">📚</span>
       <span class="kds-history-trigger__label">{{ $t('label.kds_history_button') }}</span>
     </button>
+    <!-- [F2 2026-07-24] Bascule la légende des symboles cuisine. Rendu au niveau
+         RACINE (comme Rupture/Historique) car il doit être atteignable dans les DEUX
+         modes : V2 (défaut prod depuis 2026-05-16) ET legacy. Les codes symboliques
+         (G|SANDWICH|P|SAM|O̲…) RESTENT affichés sur les tickets — la légende est un
+         onboarding pour le cuisinier neuf, choix persisté localStorage. -->
+    <button
+      type="button"
+      class="kds-history-trigger"
+      :aria-expanded="showSymbolLegend ? 'true' : 'false'"
+      aria-controls="kds-symbol-legend"
+      data-testid="kds-legend-toggle"
+      @click="toggleSymbolLegend"
+    >
+      <span aria-hidden="true">🔑</span>
+      <span class="kds-history-trigger__label">{{ showSymbolLegend ? 'Masquer les noms' : 'Afficher les noms' }}</span>
+    </button>
+  </div>
+  <!-- [F2 2026-07-24] Panneau légende repliable — RACINE (visible en V2 + legacy).
+       Clé des symboles groupée par rôle (Support / Viande / Sauce / Crudités /
+       Formule), miroir des tables owner de resources/js/helpers/kdsSymbolic.js. -->
+  <div v-show="showSymbolLegend" id="kds-symbol-legend" role="region"
+    aria-label="Légende des symboles cuisine" data-testid="kds-symbol-legend"
+    class="db-card px-3 py-2.5 mb-3">
+    <div class="text-xs font-bold uppercase tracking-wide text-paragraph mb-2">🔑 Légende des symboles cuisine</div>
+    <div class="flex flex-wrap gap-x-6 gap-y-3">
+      <div v-for="grp in symbolLegend" :key="grp.group" class="min-w-[8rem]">
+        <div class="text-[11px] font-bold text-heading mb-1">{{ grp.group }}</div>
+        <ul class="flex flex-col gap-0.5">
+          <li v-for="e in grp.entries" :key="grp.group + e[0]"
+            class="flex items-baseline gap-2 text-xs text-paragraph">
+            <span class="font-mono font-bold text-heading inline-block min-w-[2.75rem]">{{ e[0] }}</span>
+            <span>{{ e[1] }}</span>
+          </li>
+        </ul>
+      </div>
+    </div>
   </div>
   <KdsHistoryDrawer
     :open="historyDrawerOpen"
@@ -1287,6 +1323,11 @@ export default {
       kdsAudioBlockedHint: false,
       _kdsAudioUnlockHandler: null,
       _kdsAudioUnlockBound: false,
+      // [F2 2026-07-24] Légende des symboles cuisine repliable (onboarding cuisinier
+      // neuf : décoder G/P/SAM/O̲ sans mémoriser les tables). Les codes RESTENT à
+      // l'écran (design owner) — la légende est un complément. Persistée localStorage
+      // 'kds.show_symbol_legend' comme les autres prefs KDS (défaut masqué).
+      showSymbolLegend: false,
       kdsOverflowDetected: false,
       // [Wave X3 2026-05-21] KDS Historique du jour drawer — open state.
       historyDrawerOpen: false,
@@ -1340,6 +1381,19 @@ export default {
   computed: {
     direction() {
       return this.$store.getters['frontendLanguage/show'].display_mode === displayModeEnum.RTL ? 'rtl' : 'ltr';
+    },
+    // [F2 2026-07-24] Clé des symboles cuisine (onboarding) — MIROIR des tables owner
+    // de resources/js/helpers/kdsSymbolic.js (support / MEAT_TABLE / SAUCE_TABLE /
+    // CRUDITE_TABLE + ligne 3 MENU/F). Aide à l'écran UNIQUEMENT : on ne retire jamais
+    // les codes du ticket (design owner T3-CUISINE/MEGA-BORNE). FR-only (app locale='fr').
+    symbolLegend() {
+      return [
+        { group: 'Support', entries: [['G', 'Galette'], ['S', 'Sandwich (pain)']] },
+        { group: 'Viande', entries: [['K', 'Steak haché'], ['P', 'Poulet'], ['Tender', 'Tenders'], ['Nug', 'Nuggets'], ['Mex', 'Mexicaine'], ['Frec', 'Fricadelle'], ['Cordon', 'Cordon bleu']] },
+        { group: 'Sauce', entries: [['MAY', 'Mayonnaise'], ['SAM', 'Samouraï'], ['HAN', 'Hannibal'], ['CURY', 'Curry'], ['AND', 'Andalouse'], ['BL', 'Blanche'], ['KTP', 'Ketchup'], ['Burg', 'Burger'], ['ALG', 'Algérienne'], ['BBQ', 'Barbecue'], ['HAR', 'Harissa'], ['FRO', 'Fromage'], ['SPI', 'Spicy']] },
+        { group: 'Crudités', entries: [['S', 'Salade'], ['T', 'Tomate'], ['O', 'Oignon'], ['O̲', 'Oignons cuits']] },
+        { group: 'Formule', entries: [['MENU', 'Menu (formule)'], ['F', 'Frites']] },
+      ];
     },
     // [GOAL RUPTURE-CARNET 2026-07-15 / W6 heal P2] Miroir du gate serveur
     // AvailabilityController (items_edit|availability_toggle) — matcher sur
@@ -1644,6 +1698,12 @@ export default {
       this.autoPrintKitchen = ap !== "0" && ap !== "false";
     } catch (e) {
       this.autoPrintKitchen = true;
+    }
+    // [F2 2026-07-24] Légende symboles — préférence per-device (défaut masqué).
+    try {
+      this.showSymbolLegend = localStorage.getItem("kds.show_symbol_legend") === "1";
+    } catch (e) {
+      this.showSymbolLegend = false;
     }
   },
   mounted() {
@@ -2003,6 +2063,12 @@ export default {
       localStorage.setItem("kds.sound_enabled", this.soundEnabled ? "1" : "0");
       localStorage.setItem("kds.sound_volume", String(this.soundVolume));
       localStorage.setItem("kds.autoPrint", this.autoPrintKitchen ? "1" : "0");
+      localStorage.setItem("kds.show_symbol_legend", this.showSymbolLegend ? "1" : "0");
+    },
+    // [F2 2026-07-24] Bascule la légende des symboles cuisine + persiste le choix.
+    toggleSymbolLegend() {
+      this.showSymbolLegend = !this.showSymbolLegend;
+      this.persistKdsUiPrefs();
     },
     playKdsNewOrderSound() {
       if (!this.soundEnabled) {

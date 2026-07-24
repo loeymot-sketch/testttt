@@ -11,6 +11,7 @@ use App\Models\ItemCategory;
 use App\Models\ItemExtra;
 use App\Models\ItemVariation;
 use App\Models\Scopes\BranchScope;
+use App\Models\StockLevel;
 use App\Services\Menu\AvailabilityService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -75,9 +76,23 @@ class MobileStockController extends Controller
             ->get(['item_id', 'is_available', 'unavailable_reason'])
             ->keyBy('item_id');
 
+        // [F4 2026-07-24] Quantité théorique en base : on lit stock_levels.on_hand
+        // pour les produits (stockable=Item). READ-ONLY, aucun recalcul recette —
+        // on expose ce qui EXISTE déjà (les items tracés en stock via achats/
+        // inventaire). Absent => on_hand null (NULL-safe : rien affiché). Même
+        // hard-scope branche que les overrides (PIN surface sans user → BranchScope
+        // inerte, on drop + where explicite pour l'isolation mono-branche).
+        $itemStock = StockLevel::query()
+            ->withoutGlobalScope(BranchScope::class)
+            ->where('branch_id', $branchId)
+            ->where('stockable_type', Item::class)
+            ->whereIn('stockable_id', $allItemIds ?: [0])
+            ->get(['stockable_id', 'on_hand'])
+            ->keyBy('stockable_id');
+
         $shopping = [];
-        $categoriesPayload = $categories->map(function (ItemCategory $cat) use ($itemOverrides, &$shopping): array {
-            $items = $cat->items->map(function (Item $item) use ($itemOverrides, $cat, &$shopping): array {
+        $categoriesPayload = $categories->map(function (ItemCategory $cat) use ($itemOverrides, $itemStock, &$shopping): array {
+            $items = $cat->items->map(function (Item $item) use ($itemOverrides, $itemStock, $cat, &$shopping): array {
                 $override = $itemOverrides->get((int) $item->id);
                 $isAvailable = (bool) $item->is_available;
                 $reason = null;
@@ -88,11 +103,15 @@ class MobileStockController extends Controller
                         : null;
                 }
 
+                $stock = $itemStock->get((int) $item->id);
+
                 $row = [
                     'id' => (int) $item->id,
                     'name' => (string) $item->name,
                     'is_available' => $isAvailable,
                     'reason' => $reason,
+                    // [F4] NULL si aucun row stock_levels (quantité inconnue) → l'UI n'affiche rien.
+                    'on_hand' => $stock !== null ? (int) $stock->on_hand : null,
                 ];
 
                 if (! $isAvailable) {

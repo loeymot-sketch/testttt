@@ -1,0 +1,25 @@
+{
+  "console": [],
+  "pageerror": [],
+  "net": [
+    {
+      "url": "http://127.0.0.1:8766/api/admin/purchasing/targets",
+      "status": 200
+    },
+    {
+      "url": "http://127.0.0.1:8766/api/admin/purchasing/scan",
+      "status": 200
+    },
+    {
+      "url": "http://127.0.0.1:8766/api/admin/stock/unified-overview",
+      "status": 200
+    }
+  ],
+  "scan_rows": 4,
+  "unified_mobile": {
+    "title": "Conso & Stock",
+    "totalsCols": "172px 172px",
+    "rawRows": 25,
+    "noHScroll": true
+  }
+}

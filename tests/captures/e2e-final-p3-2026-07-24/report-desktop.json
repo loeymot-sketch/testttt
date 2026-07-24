@@ -1,0 +1,136 @@
+{
+  "console": [],
+  "pageerror": [],
+  "net": [
+    {
+      "url": "http://127.0.0.1:8766/api/admin/purchasing/targets",
+      "status": 200
+    },
+    {
+      "url": "http://127.0.0.1:8766/api/admin/purchasing/scan",
+      "status": 200
+    },
+    {
+      "url": "http://127.0.0.1:8766/api/admin/purchasing/3/validate",
+      "status": 200
+    },
+    {
+      "url": "http://127.0.0.1:8766/api/admin/stock/unified-overview",
+      "status": 200
+    }
+  ],
+  "after_login": "/admin/dashboard",
+  "scan_idle": {
+    "demoBanner": true,
+    "demoText": "Mode démo (lecture simulée) — pose ta clé OpenAI pour lire les vraies factures.",
+    "uploadZone": true,
+    "scanBtn": "Scanner la facture",
+    "scanDisabled": true,
+    "title": "Scan de facture"
+  },
+  "proposals": {
+    "count": 4,
+    "rows": [
+      {
+        "label": "Poulet frais 3kg",
+        "qty": "3",
+        "aiBadge": true,
+        "score": "100%",
+        "targetType": "raw_material",
+        "rawOptions": 14,
+        "itemOptions": null,
+        "unmatched": false
+      },
+      {
+        "label": "Cheddar 100 tranches",
+        "qty": "100",
+        "aiBadge": true,
+        "score": "100%",
+        "targetType": "raw_material",
+        "rawOptions": 14,
+        "itemOptions": null,
+        "unmatched": false
+      },
+      {
+        "label": "Coca cola 24 canettes",
+        "qty": "24",
+        "aiBadge": true,
+        "score": "90%",
+        "targetType": "stock_item",
+        "rawOptions": null,
+        "itemOptions": 16,
+        "unmatched": false
+      },
+      {
+        "label": "Sac papier kraft 500",
+        "qty": "500",
+        "aiBadge": true,
+        "score": "75%",
+        "targetType": "charge",
+        "rawOptions": null,
+        "itemOptions": null,
+        "unmatched": false
+      }
+    ],
+    "docStatus": "brouillon",
+    "validateBtn": true
+  },
+  "validate_enabled_before": true,
+  "dropdown_action": {
+    "label": "Poulet frais 3kg",
+    "from": "Poulet",
+    "to": "Cheddar"
+  },
+  "validate_enabled": true,
+  "scan_result": {
+    "success": "Entrée en stock validée — 2 matière(s), 1 produit(s), 1 charge(s).",
+    "error": null,
+    "docStatus": "appliqué",
+    "inputsDisabled": true,
+    "validateBtnGone": true
+  },
+  "scan_rawlabels": [],
+  "unified": {
+    "title": "Conso & Stock",
+    "hasToBuy": true,
+    "hasRaw": true,
+    "rawTitle": "Matières premières (13)",
+    "resoldTitle": "Produits revendus / Boissons (1)",
+    "hasTotals": true,
+    "totalValue": "30,00 €",
+    "toBuyCount": "12",
+    "missingCostBanner": "12 matière(s) sans coût moyen : pose les prix ou scanne tes factures pour valoriser ton stock.",
+    "hasSearch": true,
+    "rawRows": 25,
+    "colHeaders": [
+      "NOM",
+      "STOCK THÉORIQUE",
+      "CONSO RÉCENTE",
+      "SEUIL",
+      "COÛT MOYEN",
+      "VALEUR",
+      "STATUT"
+    ],
+    "error": false
+  },
+  "unified_rawlabels": [],
+  "unified_search_noMatch": true,
+  "pos": {
+    "url": "/admin/pos",
+    "onLogin": false,
+    "tiles": 0,
+    "cart": true,
+    "body": 1717
+  },
+  "kds": {
+    "url": "/admin/kitchen-display-system",
+    "onLogin": false,
+    "board": true
+  },
+  "catalog_hub": {
+    "url": "/admin/catalog-hub",
+    "onLogin": false,
+    "tabs": 297,
+    "body": 3759
+  }
+}

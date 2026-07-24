@@ -82,6 +82,39 @@
             font-size: 14px; font-weight: 600; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 20;
         }
         .toast.show { opacity: .95; }
+
+        /* ---- [F4] Search ---- */
+        .search-wrap { position: relative; margin: 6px 4px 2px; }
+        .search-input {
+            width: 100%; min-height: 46px; border-radius: 12px; border: 1px solid var(--line);
+            background: var(--card); padding: 10px 40px 10px 14px; font-size: 16px; color: var(--dark);
+            -webkit-appearance: none; appearance: none;
+        }
+        .search-input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px rgba(244,80,30,.15); }
+        .search-clear {
+            position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+            width: 32px; height: 32px; border: none; border-radius: 50%; background: #EDEDED;
+            color: var(--muted); font-size: 15px; cursor: pointer; line-height: 1;
+        }
+        .no-results { color: var(--muted); font-size: 15px; padding: 20px 6px; text-align: center; }
+
+        /* ---- [F4] Quantity badge ---- */
+        .qty { display: inline-block; margin-left: 8px; font-size: 12px; font-weight: 700; color: var(--muted); background: #F0F0EF; border-radius: 999px; padding: 2px 8px; white-space: nowrap; vertical-align: middle; }
+        .qty.low { color: #92400E; background: #FEF3C7; }
+
+        /* ---- [F4] Collapsible category head ---- */
+        .cat-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; cursor: pointer; user-select: none; }
+        .cat-head .chev { font-size: 13px; color: var(--muted); transition: transform .15s; }
+        .cat-head.collapsed .chev { transform: rotate(-90deg); }
+        .cat-head .cat-count { font-size: 12px; font-weight: 600; color: var(--muted); }
+
+        /* ---- [F5] 2-tap rupture confirm ---- */
+        .row-actions { display: flex; align-items: center; gap: 8px; }
+        .toggle.confirming { background: var(--accent); color: var(--dark); }
+        .cancel-btn {
+            min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line);
+            background: var(--card); color: var(--muted); font-size: 14px; font-weight: 700; cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -103,12 +136,19 @@
             <button class="lock-btn" id="lock-btn" type="button">Verrouiller</button>
         </header>
         <main>
+            <div class="search-wrap">
+                <input id="stock-search" class="search-input" type="search" inputmode="search"
+                    autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"
+                    placeholder="🔍 Rechercher un produit ou ingrédient…" aria-label="Rechercher un produit ou ingrédient">
+                <button id="search-clear" class="search-clear hidden" type="button" aria-label="Effacer la recherche">✕</button>
+            </div>
             <div class="section-title">🛒 À acheter</div>
             <div class="buy-card" id="buy-card"><div class="buy-empty">Chargement…</div></div>
             <div class="section-title">🍔 Produits</div>
             <div id="catalog"><div class="loading">Chargement du catalogue…</div></div>
             <div class="section-title">🧂 Ingrédients / sauces</div>
             <div id="ingredients"><div class="loading">Chargement des ingrédients…</div></div>
+            <div id="no-results" class="no-results hidden">Aucun résultat pour « <span id="no-results-q"></span> ».</div>
         </main>
     </section>
 
@@ -199,7 +239,13 @@
             });
         }
 
-        // ---- Stock catalog ----
+        // ---- Stock catalog (state-driven : recherche + repli + quantités + 2-taps rupture) ----
+        // [F4/F5 2026-07-24] Le catalogue chargé est gardé en mémoire (state) : la
+        // recherche filtre EN DIRECT sans appel réseau, les sections se plient/déplient
+        // (état local), les quantités (on_hand) s'affichent NULL-safe, et couper un
+        // produit (RUPTURE) demande une confirmation 2-taps (anti mis-tap tactile).
+        var state = { categories: [], ingredients: [], query: '', collapsed: {} };
+
         function loadCatalog() {
             var cat = document.getElementById('catalog');
             var ing = document.getElementById('ingredients');
@@ -212,13 +258,21 @@
                 return r.json();
             }).then(function (data) {
                 if (!data) return;
+                state.categories = data.categories || [];
+                state.ingredients = data.ingredients || [];
                 renderShopping(data.shopping || []);
-                renderCatalog(data.categories || []);
-                renderIngredients(data.ingredients || []);
+                renderAll();
             }).catch(function () {
                 cat.innerHTML = '<div class="loading">Erreur de chargement.</div>';
                 ing.innerHTML = '';
             });
+        }
+        function normalizeSearch(s) {
+            return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+        }
+        function matchesQuery(name) {
+            if (!state.query) return true;
+            return normalizeSearch(name).indexOf(state.query) !== -1;
         }
         function renderShopping(list) {
             var box = document.getElementById('buy-card');
@@ -240,33 +294,118 @@
                 box.appendChild(row);
             });
         }
-        function renderCatalog(cats) {
-            var wrap = document.getElementById('catalog');
-            wrap.textContent = '';
-            if (!cats.length) {
-                var e = document.createElement('div'); e.className = 'loading';
-                e.textContent = 'Aucun produit actif.'; wrap.appendChild(e); return;
-            }
-            cats.forEach(function (c) {
-                if (!c.items || !c.items.length) return;
-                var block = document.createElement('div'); block.className = 'cat-block';
-                var head = document.createElement('div'); head.className = 'cat-head'; head.textContent = c.name;
-                block.appendChild(head);
-                c.items.forEach(function (it) {
-                    var row = document.createElement('div'); row.className = 'row';
-                    var nm = document.createElement('div'); nm.className = 'name'; nm.textContent = it.name;
-                    var btn = document.createElement('button'); btn.type = 'button';
-                    setBtn(btn, it.is_available);
-                    btn.addEventListener('click', function () { toggleItem(it.id, !it.is_available, btn, it); });
-                    row.appendChild(nm); row.appendChild(btn);
-                    block.appendChild(row);
-                });
-                wrap.appendChild(block);
-            });
-        }
         function setBtn(btn, available) {
             btn.className = 'toggle ' + (available ? 'on' : 'off');
             btn.textContent = available ? 'EN STOCK' : 'RUPTURE';
+            delete btn.dataset.arm;
+        }
+        // [F4] Badge quantité — NULL-safe : rien si on_hand inconnu (null/undefined).
+        function qtyBadge(onHand) {
+            if (onHand === null || typeof onHand === 'undefined') return null;
+            var q = document.createElement('span');
+            q.className = 'qty' + (Number(onHand) <= 0 ? ' low' : '');
+            q.textContent = onHand + ' en stock';
+            return q;
+        }
+        // [F5] Arme / désarme la confirmation 2-taps de rupture sur un bouton.
+        function disarm(btn, actions, it) {
+            if (btn._armTimer) { clearTimeout(btn._armTimer); btn._armTimer = null; }
+            var cancel = actions.querySelector('.cancel-btn');
+            if (cancel) cancel.remove();
+            setBtn(btn, it.is_available);
+        }
+        function arm(btn, actions, it) {
+            btn.dataset.arm = '1';
+            btn.className = 'toggle confirming';
+            btn.textContent = '⚠️ Confirmer la rupture ?';
+            if (!actions.querySelector('.cancel-btn')) {
+                var cancel = document.createElement('button');
+                cancel.type = 'button'; cancel.className = 'cancel-btn'; cancel.textContent = 'Annuler';
+                cancel.addEventListener('click', function (ev) { ev.stopPropagation(); disarm(btn, actions, it); });
+                actions.insertBefore(cancel, btn);
+            }
+            btn._armTimer = setTimeout(function () { disarm(btn, actions, it); }, 4000);
+        }
+        // Construit une ligne produit/ingrédient (nom + quantité + bouton 2-taps).
+        function buildRow(it, doToggle) {
+            var row = document.createElement('div'); row.className = 'row';
+            var nm = document.createElement('div'); nm.className = 'name'; nm.textContent = it.name;
+            var badge = qtyBadge(it.on_hand);
+            if (badge) nm.appendChild(badge);
+            var actions = document.createElement('div'); actions.className = 'row-actions';
+            var btn = document.createElement('button'); btn.type = 'button';
+            setBtn(btn, it.is_available);
+            actions.appendChild(btn);
+            btn.addEventListener('click', function () {
+                if (btn.disabled) return;
+                // Remise EN STOCK (réversible) = 1 tap direct.
+                if (!it.is_available) { doToggle(true, btn); return; }
+                // Passage en RUPTURE = 2-taps (confirmation anti mis-tap).
+                if (btn.dataset.arm === '1') { disarm(btn, actions, it); doToggle(false, btn); }
+                else { arm(btn, actions, it); }
+            });
+            row.appendChild(nm); row.appendChild(actions);
+            return row;
+        }
+        // Bloc catégorie repliable générique (produits ou ingrédients).
+        function renderGroups(wrapId, groups, keyPrefix, nameOf, emptyMsg, doToggleFor) {
+            var wrap = document.getElementById(wrapId);
+            wrap.textContent = '';
+            if (!groups.length) {
+                var e0 = document.createElement('div'); e0.className = 'loading';
+                e0.textContent = emptyMsg; wrap.appendChild(e0); return;
+            }
+            var searching = !!state.query;
+            groups.forEach(function (g) {
+                var gname = nameOf(g);
+                var items = (g.items || []).filter(function (it) { return matchesQuery(it.name); });
+                if (!items.length) return;
+                var key = keyPrefix + gname;
+                var collapsed = !searching && !!state.collapsed[key];
+                var block = document.createElement('div'); block.className = 'cat-block';
+                var head = document.createElement('div'); head.className = 'cat-head' + (collapsed ? ' collapsed' : '');
+                var title = document.createElement('span'); title.textContent = gname;
+                var right = document.createElement('span'); right.className = 'cat-count';
+                right.textContent = items.length;
+                var chev = document.createElement('span'); chev.className = 'chev'; chev.textContent = ' ▾';
+                right.appendChild(chev);
+                head.appendChild(title); head.appendChild(right);
+                head.addEventListener('click', function () {
+                    state.collapsed[key] = !state.collapsed[key];
+                    renderAll();
+                });
+                block.appendChild(head);
+                var body = document.createElement('div');
+                if (collapsed) body.className = 'hidden';
+                items.forEach(function (it) { body.appendChild(buildRow(it, doToggleFor(g, it))); });
+                block.appendChild(body);
+                wrap.appendChild(block);
+            });
+        }
+        function renderCatalog() {
+            renderGroups('catalog', state.categories, 'c:',
+                function (c) { return c.name; }, 'Aucun produit actif.',
+                function (c, it) { return function (next, btn) { toggleItem(it.id, next, btn, it); }; });
+        }
+        function renderIngredients() {
+            renderGroups('ingredients', state.ingredients, 'i:',
+                function (g) { return g.group; }, 'Aucun ingrédient.',
+                function (g, it) { return function (next, btn) { toggleIngredient(g.kind, it, btn, next); }; });
+        }
+        function renderAll() {
+            renderCatalog();
+            renderIngredients();
+            // Bandeau « aucun résultat » quand la recherche ne matche rien (produits + ingrédients).
+            var anyMatch = false;
+            state.categories.forEach(function (c) { (c.items || []).forEach(function (it) { if (matchesQuery(it.name)) anyMatch = true; }); });
+            state.ingredients.forEach(function (g) { (g.items || []).forEach(function (it) { if (matchesQuery(it.name)) anyMatch = true; }); });
+            var nr = document.getElementById('no-results');
+            if (state.query && !anyMatch) {
+                document.getElementById('no-results-q').textContent = state.query;
+                nr.classList.remove('hidden');
+            } else {
+                nr.classList.add('hidden');
+            }
         }
         function toggleItem(id, next, btn, it) {
             if (btn.disabled) return;
@@ -292,36 +431,10 @@
                 btn.disabled = false; toast('Erreur réseau');
             });
         }
-
-        // ---- Ingredients (extras / variations) ----
-        function renderIngredients(groups) {
-            var wrap = document.getElementById('ingredients');
-            wrap.textContent = '';
-            if (!groups.length) {
-                var e = document.createElement('div'); e.className = 'loading';
-                e.textContent = 'Aucun ingrédient.'; wrap.appendChild(e); return;
-            }
-            groups.forEach(function (g) {
-                if (!g.items || !g.items.length) return;
-                var block = document.createElement('div'); block.className = 'cat-block';
-                var head = document.createElement('div'); head.className = 'cat-head'; head.textContent = g.group;
-                block.appendChild(head);
-                g.items.forEach(function (it) {
-                    var row = document.createElement('div'); row.className = 'row';
-                    var nm = document.createElement('div'); nm.className = 'name'; nm.textContent = it.name;
-                    var btn = document.createElement('button'); btn.type = 'button';
-                    setBtn(btn, it.is_available);
-                    btn.addEventListener('click', function () { toggleIngredient(g.kind, it, btn); });
-                    row.appendChild(nm); row.appendChild(btn);
-                    block.appendChild(row);
-                });
-                wrap.appendChild(block);
-            });
-        }
-        function toggleIngredient(kind, it, btn) {
+        function toggleIngredient(kind, it, btn, next) {
             if (btn.disabled) return;
             btn.disabled = true;
-            var next = !it.is_available;
+            if (typeof next === 'undefined') next = !it.is_available;
             fetch('{{ url('/m/api/toggle-extra') }}', {
                 method: 'POST', headers: jsonHeaders(), credentials: 'same-origin',
                 body: JSON.stringify({ kind: kind, ids: it.ids || [], is_available: next })
@@ -343,6 +456,21 @@
                 btn.disabled = false; toast('Erreur réseau');
             });
         }
+        // ---- [F4] Recherche live (filtre le catalogue déjà chargé, aucun appel réseau) ----
+        (function () {
+            var input = document.getElementById('stock-search');
+            var clear = document.getElementById('search-clear');
+            if (!input) return;
+            input.addEventListener('input', function () {
+                state.query = normalizeSearch(input.value);
+                clear.classList.toggle('hidden', input.value === '');
+                renderAll();
+            });
+            clear.addEventListener('click', function () {
+                input.value = ''; state.query = ''; clear.classList.add('hidden');
+                renderAll(); input.focus();
+            });
+        })();
 
         // ---- lock ----
         document.getElementById('lock-btn').addEventListener('click', function () {

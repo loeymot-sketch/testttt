@@ -40,7 +40,7 @@ class PurchasingScanController extends AdminController
     {
         parent::__construct();
 
-        $this->middleware(['permission:items_create'])->only(['scan', 'validate', 'targets']);
+        $this->middleware(['permission:items_create'])->only(['scan', 'apply', 'targets']);
     }
 
     public function scan(
