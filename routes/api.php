@@ -82,6 +82,7 @@ use App\Http\Controllers\Admin\SmsGatewayController;
 use App\Http\Controllers\Admin\SocialMediaController;
 use App\Http\Controllers\Admin\PurchasingScanController;
 use App\Http\Controllers\Admin\StockRuptureDashboardController;
+use App\Http\Controllers\Admin\UnifiedStockViewController;
 use App\Http\Controllers\Admin\SubscriberController;
 use App\Http\Controllers\Admin\TableOrderController as AdminTableOrderController;
 use App\Http\Controllers\Admin\TaxController;
@@ -337,6 +338,11 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         ->name('stock.catalog-overview');
     Route::post('/stock/scan-rupture/run', [StockRuptureDashboardController::class, 'run'])
         ->name('stock.scan-rupture.run');
+    // [PHASE 3d — VUE CONSO & STOCK UNIFIÉE 2026-07-24] Lecture seule : matières
+    // premières + boissons dans un seul tableau + section « à acheter ». Gate
+    // items_show (écran de lecture, comme catalog-overview). ADDITIF, HORS NF525.
+    Route::get('/stock/unified-overview', [UnifiedStockViewController::class, 'overview'])
+        ->name('stock.unified-overview');
 
     // [ARCH_STOCK_INTELLIGENT_BOM_2026-07-23 / P3b] Scan facture IA → propositions
     // (crée un PurchaseDocument draft + PurchaseLine proposed ; l'owner valide
