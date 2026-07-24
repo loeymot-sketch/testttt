@@ -49,7 +49,7 @@ use Tests\TestCase;
  *       — POS operator restore command (deleted_at = null later)
  *   - app/Console/Commands/EnsureChefLoginCommand.php (1 site: 53)
  *       — Chef restore command (deleted_at = null later)
- *   - app/Http/Controllers/Auth/GuestSignupController.php (1 site: 98)
+ *   - app/Http/Controllers/Auth/GuestSignupController.php (1 site: 127)
  *       — Already chains `->withTrashed()` explicitly; intent is to find ALL
  *         phone matches including soft-deleted guests for safe restore
  *
@@ -89,7 +89,7 @@ class WithoutGlobalScopesAuditSentinelTest extends TestCase
         'Console/Commands/EnsureAdminLoginCommand.php' => [56, 63, 70, 99],
         'Console/Commands/EnsurePosOperatorLoginCommand.php' => [55],
         'Console/Commands/EnsureChefLoginCommand.php' => [53],
-        'Http/Controllers/Auth/GuestSignupController.php' => [98],
+        'Http/Controllers/Auth/GuestSignupController.php' => [127],
         // [ULTRA-AUDIT 2026-07-02] Cat A additions (legit both-scopes-off) :
         //   - UberWebhookController:113 — dédup idempotente du webhook Uber :
         //     `Order::withoutGlobalScopes()->where('transaction_id','uber:'.$id)` DOIT trouver

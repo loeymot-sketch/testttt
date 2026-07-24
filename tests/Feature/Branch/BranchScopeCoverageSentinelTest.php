@@ -74,6 +74,12 @@ class BranchScopeCoverageSentinelTest extends TestCase
         'App\\Models\\RawMaterialRecipeLine' => 'BASELINE_V1_2026-07-23 — matières premières mono-branche V1 (hard-scope appelant), V1.0.2 heal target',
         'App\\Models\\RawMaterialStock'      => 'BASELINE_V1_2026-07-23 — matières premières mono-branche V1 (hard-scope appelant), V1.0.2 heal target',
         'App\\Models\\RawMaterialMovement'   => 'BASELINE_V1_2026-07-23 — matières premières mono-branche V1 (hard-scope appelant), V1.0.2 heal target',
+        // [ARCH_STOCK_INTELLIGENT_BOM_2026-07-23 / P3a] Domaine « achats/factures » (NEUF, additif,
+        // HORS NF525) : hard-scope explicite par les appelants (pattern DailyBookEntry / RawMaterial),
+        // pas de BranchScope global — mono-branche V1 (branch_id=1 fixe). V2-SaaS blocker → V1.0.2 heal
+        // target. (PurchaseLine n'a PAS de branch_id — hérite du document parent — donc non listée.)
+        'App\\Models\\Supplier'              => 'BASELINE_V1_2026-07-23 — achats/factures mono-branche V1 (hard-scope appelant), V1.0.2 heal target',
+        'App\\Models\\PurchaseDocument'      => 'BASELINE_V1_2026-07-23 — achats/factures mono-branche V1 (hard-scope appelant), V1.0.2 heal target',
     ];
 
     public function test_every_model_with_branch_id_column_declares_branch_scope(): void
