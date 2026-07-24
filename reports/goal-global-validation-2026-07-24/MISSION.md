@@ -13,3 +13,20 @@ Mission jusqu'à « validé global ». Ton = dev senior + humain qui raisonne su
 ## Vagues
 - W1 (en cours) : P3a domaine achats · vérif tickets · audit accès caisse/gestion/histo · audit accès cuisine/mobile-admin.
 - W2+ : P3b pipeline IA · heals des findings · re-test e2e · validation globale.
+
+## ✅ VAGUE 1 — DONE + déployé (commits b59bafb97 · 7811294d2 · 36d3df1be)
+- **P3a achats** : 3 tables + PurchaseService (matière/boisson/charge, coût moyen pondéré). 57 tests.
+- **Tickets** : reçu client À LA DEMANDE (flag OFF défaut), caisse+borne+encaissement ; bon caisse + KDS auto préservés.
+- **Historique** : filtre Annulées/Refusées/Retournées (274 commandes accessibles).
+- **Refuser web acceptée** : CTA « Annuler (motif) » (garde D-1).
+- **Son cuisine** : débloqué (geste + bandeau + vibration).
+- **/m ingrédients** : couper sauce/supplément/variation depuis le tél (SSOT).
+- Preuves : vitest 2565, PHPUnit 338/1169, chaîne OK ×4, frozen 0, BUILD OK.
+- Audits sains confirmés : cœur caisse/cuisine/gestion/sync robuste, 0 P0/P1 logique.
+- Docs findings : `ACCES-caisse-gestion-findings.md`, `ACCES-cuisine-mobile-findings.md`, `TICKETS-findings.md`.
+
+## ⏳ RESTE
+- **W2** : P3b pipeline IA factures (mock↔OpenAI testable sans clé) + réconciliation boissons + conso réelle unifiée.
+- P3 différés (améliorations) : légende ticket cuisine (F2), /m plus riche recherche/quantités/compta (F4), confirm toggle /m (F5), CTA refuser sur écran Détails déjà fait.
+- Puis : re-test e2e web massif + **validation globale**.
+- Owner : clé OpenAI (P3b réel), Mollie, capital mentions ; commandes test #194/#195/#230726193 à encaisser/annuler.
