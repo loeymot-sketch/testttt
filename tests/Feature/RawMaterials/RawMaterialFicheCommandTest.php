@@ -210,6 +210,93 @@ class RawMaterialFicheCommandTest extends TestCase
         $this->assertSame('piece', $oeuf->unit);
     }
 
+    // ══ R2-1 — Anti double-décompte « Œuf » (collision ligature-insensible) ════
+    //   La collation utf8mb4_unicode_ci de subject_group folde œ≡oe : deux alias
+    //   'œuf'/'oeuf' pointant la MÊME matière = 2 lignes que recipeLinesForExtra
+    //   somme → 2 Œuf par supplément. Fix : un seul alias (la collation couvre les
+    //   deux orthographes) + purge des lignes extra_group orphelines déjà en base.
+
+    // ── 9. Un extra Œuf décompte EXACTEMENT 1 (pas 2). ────────────────────────
+    public function test_order_with_oeuf_extra_decrements_exactly_one_oeuf(): void
+    {
+        RawMaterialFicheCommand::generate();
+
+        $coca = Item::where('name', 'Coca-Cola 33cl')->firstOrFail(); // aucune recette produit
+        $order = $this->makeOrder();
+        $this->makeOrderItem($order, $coca, 1, [
+            'lines' => [],
+            'extras' => [['extra_id' => 55555, 'extra_name' => 'Œuf', 'quantity' => 1]],
+            'addons' => [],
+        ]);
+
+        $summary = app(RawMaterialConsumptionService::class)->consumeForOrder($order);
+
+        $oeuf = RawMaterial::where('name', 'Œuf')->firstOrFail();
+        // EXACTEMENT -1 (avant le fix : -2, la collation matchait œuf + oeuf).
+        $this->assertEqualsWithDelta(
+            -1.0,
+            (float) RawMaterialStock::where('raw_material_id', $oeuf->id)->value('on_hand'),
+            0.001
+        );
+        $this->assertSame([], $summary['skipped']);
+        $this->assertCount(1, $summary['consumed']);
+    }
+
+    // ── 10. Aucun groupe extra ne résout un doublon (folded par la collation). ─
+    public function test_no_extra_group_resolves_to_a_collation_duplicate(): void
+    {
+        RawMaterialFicheCommand::generate();
+
+        // Œuf : une SEULE ligne extra_group (alias 'oeuf' redondant retiré).
+        $oeuf = RawMaterial::where('name', 'Œuf')->firstOrFail();
+        $this->assertSame(
+            1,
+            RawMaterialRecipeLine::where('subject_type', 'extra_group')
+                ->where('raw_material_id', $oeuf->id)->count(),
+            'Une seule ligne extra Œuf attendue (dédoublonnage collation).'
+        );
+
+        // Invariant général : aucun subject_group (folded MySQL) ne matche 2+ lignes.
+        $dupes = RawMaterialRecipeLine::query()
+            ->where('subject_type', 'extra_group')
+            ->where('branch_id', 1)
+            ->selectRaw('subject_group, COUNT(*) as c')
+            ->groupBy('subject_group')
+            ->havingRaw('COUNT(*) > 1')
+            ->get();
+        $this->assertCount(0, $dupes, 'Aucun groupe extra ne doit résoudre plusieurs lignes.');
+    }
+
+    // ── 11. Le run PURGE les lignes extra_group orphelines (ordinal retiré). ───
+    public function test_generate_prunes_orphan_extra_group_lines(): void
+    {
+        RawMaterialFicheCommand::generate();
+        $oeuf = RawMaterial::where('name', 'Œuf')->firstOrFail();
+
+        // Simule une DB héritée : une ligne extra_group d'un ordinal RETIRÉ d'EXTRA_RECIPES.
+        RawMaterialRecipeLine::create([
+            'branch_id' => 1,
+            'subject_type' => 'extra_group',
+            'subject_id' => 999,           // ordinal absent d'EXTRA_RECIPES
+            'subject_group' => 'ancien alias retiré',
+            'raw_material_id' => $oeuf->id,
+            'qty' => 1.0,
+            'note' => 'prefill_extra',
+        ]);
+
+        RawMaterialFicheCommand::generate(); // doit CONVERGER (purge l'orphelin)
+
+        $this->assertSame(
+            0,
+            RawMaterialRecipeLine::where('subject_type', 'extra_group')->where('subject_id', 999)->count(),
+            'La ligne extra_group orpheline (ordinal retiré) doit être purgée.'
+        );
+        // Les lignes extra légitimes restent.
+        $this->assertGreaterThan(0, RawMaterialRecipeLine::where('subject_type', 'extra_group')->count());
+        // La purge est bornée : les lignes PRODUIT (Item::) ne sont jamais touchées.
+        $this->assertGreaterThan(0, RawMaterialRecipeLine::where('subject_type', Item::class)->count());
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private function makeOrder(): Order

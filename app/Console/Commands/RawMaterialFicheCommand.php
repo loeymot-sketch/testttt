@@ -96,6 +96,15 @@ class RawMaterialFicheCommand extends Command
      * Format : ordinal => [groupe normalisé, matière, qty, àConfirmer(bool), note].
      * Matière absente de la baseline → AUCUNE ligne écrite (pas de fausse ligne).
      *
+     * ⚠️ [R2-1] ANTI-COLLISION COLLATION : `subject_group` est en collation
+     * ligature/accent-INSENSIBLE (utf8mb4_unicode_ci : `œ`≡`oe`, `é`≡`e`). NE PAS
+     * ajouter deux alias qui deviennent ÉGAUX sous cette collation pour la MÊME
+     * matière (ex. l'ancien couple `œuf`/`oeuf` créait 2 lignes que
+     * {@see RawMaterialConsumptionService::recipeLinesForExtra} SOMMAIT → double
+     * décompte). Un seul alias suffit : la collation résout déjà les deux
+     * orthographes. `cheddar`/`cheese` et `viande…`/`steak…` sont des chaînes
+     * distinctes sous la collation → PAS une collision (OK).
+     *
      * ⚠️ Restent OWNER-DATA (aucune ligne ici) : les VIANDES choisies par
      * variation/extra (Tacos/Assiettes/Bols) et les suppléments sans matière
      * mappée (Champignons, Raclette, Emmental, Boursin, Légumes sautés…).
@@ -104,8 +113,9 @@ class RawMaterialFicheCommand extends Command
         1 => ['cheddar',               'Cheddar',       1.0,  false, '1 pièce'],
         2 => ['cheese',                'Cheddar',       1.0,  false, '1 pièce (variante EN)'],
         3 => ['cordon bleu',           'Cordon bleu',   1.0,  false, '1 pièce'],
-        4 => ['œuf',                   'Œuf',           1.0,  false, '1 œuf par supplément'],
-        5 => ['oeuf',                  'Œuf',           1.0,  false, '1 œuf (variante sans ligature)'],
+        // [R2-1] Un SEUL alias œuf : la collation ligature-insensible résout aussi
+        // « oeuf » sans ligature (l'ancien alias 5 doublait la matière → retiré).
+        4 => ['œuf',                   'Œuf',           1.0,  false, '1 œuf par supplément (couvre « oeuf » via collation)'],
         6 => ['viande supplémentaire', 'Viande hachée', 75.0, true,  'mix moyen assumé 75 g'],
         7 => ['steak supplémentaire',  'Viande hachée', 75.0, true,  'mix moyen assumé 75 g'],
         8 => ['sauce supplémentaire',  'Sauce maison',  25.0, false, 'dose 25 g (owner gravé)'],
@@ -245,6 +255,21 @@ class RawMaterialFicheCommand extends Command
             }
             $lineCount++;
             $extraLineCount++;
+        }
+
+        // [R2-1] CONVERGENCE : purge les lignes extra_group d'ordinaux RETIRÉS
+        // d'EXTRA_RECIPES (ex. l'ancien alias 5 « oeuf » ≡ « œuf » sous la collation
+        // utf8mb4_unicode_ci, qui double-comptait). `updateOrCreate` upsert mais ne
+        // supprime jamais → sans cette purge une DB déjà semée garderait la ligne
+        // fantôme. Idempotent (delete borné à extra_group + branche 1 + ordinaux
+        // hors du jeu courant → ne touche JAMAIS les lignes produit Item::). Après
+        // un run, un groupe = une seule ligne (plus de collision collation).
+        if (! $dryRun) {
+            RawMaterialRecipeLine::query()
+                ->where('branch_id', self::BRANCH_ID)
+                ->where('subject_type', self::EXTRA_SUBJECT_TYPE)
+                ->whereNotIn('subject_id', array_keys(self::EXTRA_RECIPES))
+                ->delete();
         }
 
         $unitaireCount = array_sum(array_map('count', $unitaireGroups));

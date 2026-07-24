@@ -2,6 +2,7 @@
 
 namespace App\Services\RawMaterials;
 
+use App\Enums\OrderStatus;
 use App\Models\Item;
 use App\Models\ItemExtra;
 use App\Models\ItemVariation;
@@ -88,6 +89,19 @@ class RawMaterialConsumptionService
     /** Motif métier du mouvement de reprise (rendu de stock annulé/refusé/retourné). */
     private const REVERSAL_REASON = 'consumption_reversal';
 
+    /**
+     * [R2-2] Statuts terminaux ANNULANTS. Si la commande les a DÉJÀ atteints au
+     * moment où le job de consommation tourne, on NE consomme PAS (voir la garde
+     * de course dans {@see consumeForOrder}). Miroir exact du périmètre exclu par
+     * le replay ({@see \App\Console\Commands\RawMaterialReplayConsumptionCommand}
+     * ::EXCLUDED_STATUSES) et de {@see reverseForOrder}.
+     */
+    private const CANCELING_STATUSES = [
+        OrderStatus::CANCELED,
+        OrderStatus::REJECTED,
+        OrderStatus::RETURNED,
+    ];
+
     public function __construct(private RawMaterialStockService $stock)
     {
     }
@@ -101,6 +115,29 @@ class RawMaterialConsumptionService
     {
         $consumed = [];
         $skipped = [];
+
+        // [R2-2] GARDE DE COURSE ASYNC. consumeForOrder (listener OrderCreated) ET
+        // reverseForOrder (listener OrderCanceled) sont TOUS DEUX ShouldQueue. Une
+        // commande créée puis annulée très vite peut voir le job REVERSE s'exécuter
+        // AVANT le job CONSUME (≥2 workers, ou drain de backlog) : le reverse ne
+        // trouve alors rien à rendre (no-op), puis le consume décrémenterait une
+        // commande annulée que plus rien ne reprend = dérive B-1 réintroduite. On
+        // relit donc le statut FRAIS en base (le job a pu être enqueué en PENDING)
+        // et on SKIP tout statut terminal annulant. Belt-and-suspenders avec le
+        // reverse : quel que soit l'ordre d'exécution, une commande annulée n'est
+        // jamais consommée. Aligne aussi la vérité LIVE sur le replay (EXCLUDED_STATUSES).
+        if ($this->orderReachedCancelingStatus($order)) {
+            $skipped[] = [
+                'order_id' => (int) $order->id,
+                'kind' => 'order_canceled_before_consume',
+            ];
+
+            Log::info('[RawMaterialConsumption] consume ignoré — commande déjà annulée (garde course async)', [
+                'order_id' => (int) $order->id,
+            ]);
+
+            return ['consumed' => $consumed, 'skipped' => $skipped];
+        }
 
         // Items de CETTE commande, par order_id. On retire le BranchScope global
         // (le listener tourne sur la queue, hors contexte auth) : la portée est
@@ -223,6 +260,25 @@ class RawMaterialConsumptionService
             ->where('source_id', $sourceId)
             ->where('raw_material_id', $rawMaterialId)
             ->exists();
+    }
+
+    /**
+     * [R2-2] La commande est-elle DÉJÀ dans un statut terminal annulant
+     * (CANCELED/REJECTED/RETURNED) au moment PRÉSENT ? Relit le statut FRAIS en base
+     * — l'objet Order passé au job a pu être sérialisé en PENDING puis la commande
+     * annulée avant l'exécution du job. BranchScope retiré (contexte queue/console
+     * hors auth, portée bornée par la clé primaire — miroir des autres requêtes du
+     * service). Statut illisible (commande supprimée) → false : on ne SUR-skip pas
+     * (le parcours order_items suivant sera de toute façon vide).
+     */
+    private function orderReachedCancelingStatus(Order $order): bool
+    {
+        $status = (int) (Order::query()
+            ->withoutGlobalScope(BranchScope::class)
+            ->whereKey($order->getKey())
+            ->value('status') ?? 0);
+
+        return in_array($status, self::CANCELING_STATUSES, true);
     }
 
     /**

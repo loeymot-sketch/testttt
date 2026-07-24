@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\RawMaterials;
 
+use App\Enums\OrderStatus;
 use App\Enums\Status;
 use App\Events\OrderCanceled;
 use App\Events\OrderCreated;
@@ -468,5 +469,95 @@ class RawMaterialConsumptionTest extends TestCase
         (new ReverseRawMaterialsOnOrderCanceled())->handle(new OrderCanceled($order));
 
         $this->assertEqualsWithDelta(0.0, $this->onHand($poulet), 0.001);
+    }
+
+    // ══ R2-2 — Garde course async consume↔reverse (réordonnancement multi-worker) ═
+    //   consume ET reverse sont tous deux ShouldQueue. Si une commande créée est
+    //   annulée TRÈS vite, le job REVERSE peut tourner AVANT le job CONSUME → reverse
+    //   no-op, puis consume décrémente une commande annulée jamais reprise (= dérive
+    //   B-1 réintroduite). La garde : consume relit le statut FRAIS et SKIP tout
+    //   statut terminal annulant (CANCELED/REJECTED/RETURNED). Belt-and-suspenders
+    //   avec reverse, quel que soit l'ordre d'exécution.
+
+    // ── 17. Consume SKIP si la commande est déjà annulée au moment du job. ─────
+    public function test_consume_skips_when_order_already_canceled(): void
+    {
+        $poulet = $this->material('Poulet');
+        $item = $this->makeItem('Cayenne');
+        $this->recipe(Item::class, $item->id, $poulet, 200);
+
+        $order = $this->makeOrder();
+        $this->makeOrderItem($order, $item, 1);
+        // Statut terminal annulant atteint AVANT que le job consume ne tourne.
+        Order::query()->whereKey($order->id)->update(['status' => OrderStatus::CANCELED]);
+
+        $summary = $this->service()->consumeForOrder($order);
+
+        $this->assertSame([], $summary['consumed']);
+        $this->assertSame(0, RawMaterialMovement::count());  // rien consommé
+        $this->assertSame(0, RawMaterialStock::count());     // aucun mouvement stock
+        $this->assertNotEmpty($summary['skipped']);
+        $this->assertSame('order_canceled_before_consume', $summary['skipped'][0]['kind']);
+    }
+
+    // ── 18. Idem pour REJECTED et RETURNED (tout le périmètre EXCLUDED_STATUSES). ─
+    public function test_consume_skips_for_rejected_and_returned_too(): void
+    {
+        foreach ([OrderStatus::REJECTED, OrderStatus::RETURNED] as $status) {
+            $poulet = $this->material('Poulet '.$status);
+            $item = $this->makeItem('Item '.$status);
+            $this->recipe(Item::class, $item->id, $poulet, 200);
+
+            $order = $this->makeOrder();
+            $this->makeOrderItem($order, $item, 1);
+            Order::query()->whereKey($order->id)->update(['status' => $status]);
+
+            $summary = $this->service()->consumeForOrder($order);
+
+            $this->assertSame([], $summary['consumed'], "status={$status} doit skip la conso");
+            $this->assertEqualsWithDelta(0.0, $this->onHand($poulet), 0.001);
+        }
+    }
+
+    // ── 19. Contrôle : un statut ACTIF non-annulant consomme normalement. ──────
+    public function test_consume_still_runs_for_active_non_canceling_status(): void
+    {
+        $poulet = $this->material('Poulet');
+        $item = $this->makeItem('Cayenne');
+        $this->recipe(Item::class, $item->id, $poulet, 200);
+
+        $order = $this->makeOrder();
+        $this->makeOrderItem($order, $item, 1);
+        Order::query()->whereKey($order->id)->update(['status' => OrderStatus::PREPARING]);
+
+        $this->service()->consumeForOrder($order);
+
+        // La garde ne SUR-skip pas : une commande active est bien consommée.
+        $this->assertEqualsWithDelta(-200.0, $this->onHand($poulet), 0.001);
+    }
+
+    // ── 20. Course reverse-AVANT-consume sur commande annulée = aucune dérive. ──
+    public function test_reverse_then_consume_out_of_order_leaves_no_drift(): void
+    {
+        $poulet = $this->material('Poulet');
+        $item = $this->makeItem('Cayenne');
+        $this->recipe(Item::class, $item->id, $poulet, 200);
+
+        $order = $this->makeOrder();
+        $this->makeOrderItem($order, $item, 1);
+        // Annulation très rapide : commande déjà CANCELED, job REVERSE avant CONSUME.
+        Order::query()->whereKey($order->id)->update(['status' => OrderStatus::CANCELED]);
+
+        // REVERSE d'abord : rien n'a été consommé → no-op.
+        $rev = $this->service()->reverseForOrder($order);
+        $this->assertSame([], $rev['reversed']);
+
+        // CONSUME ensuite : la garde de statut terminal empêche toute décrémentation.
+        $con = $this->service()->consumeForOrder($order);
+        $this->assertSame([], $con['consumed']);
+
+        // Aucune dérive : ni conso, ni mouvement 'order_item'.
+        $this->assertEqualsWithDelta(0.0, $this->onHand($poulet), 0.001);
+        $this->assertSame(0, RawMaterialMovement::where('source_type', 'order_item')->count());
     }
 }

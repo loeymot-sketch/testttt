@@ -37,3 +37,14 @@ adversariallement, disputés, et sains** : 0 P0, 0 P1 résiduel, cluster P2 gué
 NF525 vert au centime, anti-doublage et idempotence prouvés. Preuves : ~2500 vitest + ~950 PHPUnit
 ciblés verts, chaîne NF525 OK ×4, frozen 0. Reste = 1 durcissement prod (C-01) + P3 cosmétiques +
 données owner (grammages/prix). **« Au top, bien installé, synchronisé » — attesté sur preuves.**
+
+---
+## CYCLE 2 (convergence) — attaque des heals + non-régression
+- **R2-B non-régression** : ✅ 0 régression. Money-path 447 verts, Order|Sync|Availability|RawMaterial 1184, NF525 OK ×4, frozen 0, vitest 2525. Garde D-1 laisse passer refund DELIVERED→RETURNED ; nouveau listener annulation cohabite (ledgers disjoints).
+- **R2-A attaque hostile** : les 4 heals TIENNENT. **0 P0/P1/P2.** 3 P3 :
+  - **R2-1 (nouveau, B-2)** : « Œuf » double-décompté (subject_group utf8mb4_unicode_ci ligature-insensible œ≡oe → 2 lignes) → **GUÉRI** (dédoublonnage + garde collisions).
+  - **R2-2 (résiduel, B-1)** : reverse async pourrait courir avant consume sous ≥2 workers → **GUÉRI** (consume skip si order déjà terminal, belt-and-suspenders). Mono-worker était déjà sûr.
+  - **R2-3 (résiduel, D-2)** : PENDING non-web pos/livraison (8) restent invisibles (pré-existant : jamais de carte ; mon fix a juste stoppé l'inflation du compteur). = **DÉCISION PRODUIT owner** : faut-il une carte/voie pour les PENDING pos+livraison ? (kiosk = paniers abandonnés, à laisser). Non guéri (attente owner).
+
+## VERDICT CONVERGENCE : ✅ ATTEINT
+2 cycles consécutifs **P0+P1 = 0**. Cycle 2 n'a révélé que des P3 (2 guéris, 1 = décision produit). Cœur (money-path/NF525/sync/caisse) stable et prouvé sur les deux passes.

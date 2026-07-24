@@ -2,7 +2,7 @@
 
 > **Owner : corrige les quantités, surtout les lignes ⚠️ À CONFIRMER.**
 > Ce n'est PAS une page blanche : chaque ligne est pré-remplie d'après nos règles maison.
-> Généré le 2026-07-24 01:37 par `php artisan raw-materials:fiche` — 55 produits couverts (20 pré-remplis, 35 à l'unité), 111 lignes de recette.
+> Généré le 2026-07-24 02:57 par `php artisan raw-materials:fiche` — 55 produits couverts (20 pré-remplis, 35 à l'unité), 110 lignes de recette.
 >
 > **Rappels gravés** : steak haché façonné maison = **75 g/pièce** (3 kg ≈ 40 pièces ; 
 > incohérence 68 g vs 75 g à trancher ici) · sauce maison = **25 g/dose** · cheddar & jambon 
@@ -149,7 +149,6 @@ nom de groupe, pas par id). Une matière absente de la baseline reste ⚠️ own
 | cheese | Cheddar | 1 | pièce | ✅ pré-rempli |
 | cordon bleu | Cordon bleu | 1 | pièce | ✅ pré-rempli |
 | œuf | Œuf | 1 | pièce | ✅ pré-rempli |
-| oeuf | Œuf | 1 | pièce | ✅ pré-rempli |
 | viande supplémentaire | Viande hachée | 75 | g | ⚠️ À CONFIRMER |
 | steak supplémentaire | Viande hachée | 75 | g | ⚠️ À CONFIRMER |
 | sauce supplémentaire | Sauce maison | 25 | g | ✅ pré-rempli |
