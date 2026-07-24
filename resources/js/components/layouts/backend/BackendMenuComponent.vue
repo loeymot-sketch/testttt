@@ -98,6 +98,11 @@ const V1_PRIMARY_SIDEBAR_MENUS = Object.freeze([
     // its own `items` entry. `url` stays bare `catalog-hub` for the permission gate
     // (MENU_URL_TO_PERMISSION_URL) + dedup; only the rendered link appends the query.
     Object.freeze({ url: 'catalog-hub', query: '?tab=stock', language: 'stock_rupture', icon: 'lab lab-stock' }),
+    // [PHASE 3d-UI 2026-07-24] Vue conso & stock unifiée (matières + boissons +
+    // « à acheter »). URL `stock/unified` → permissionUrlForSidebarPath('stock/…')
+    // renvoie 'items' (même gate lecture que le backend items_show et les écrans
+    // stock frères). Écran ADDITIF lecture seule, hors NF525.
+    Object.freeze({ url: 'stock/unified', language: 'stock_unified', icon: 'lab lab-stock' }),
     Object.freeze({
         url: 'items',
         language: 'items',

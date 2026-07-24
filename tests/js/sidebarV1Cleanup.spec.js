@@ -64,8 +64,13 @@ describe('V1 admin sidebar cleanup', () => {
         // [GOAL-2026-05-29] +2 since this was written: cash-overview + delivery-cash-sessions.
         // [GOAL-CAISSE-UNIFIED 2026-05-30] +2: historique + encaissement (unified
         // history + collection surfaces) → 11 rows. Both gated on pos-orders perm.
+        // [P3c 2026-07-24] +1 undocumented drift: purchasing/scan (Scan Facture) was
+        // added to V1_PRIMARY_SIDEBAR_MENUS without bumping this count → 12 rows.
+        // [PHASE 3d-UI 2026-07-24] +1: stock/unified (Conso & Stock, gated on the
+        // items permission-url via the stock/ prefix) → 13 rows.
         expect(text).toContain('menu.historique');
         expect(text).toContain('menu.encaissement');
-        expect(wrapper.findAll('.db-sidebar-nav-menu')).toHaveLength(11);
+        expect(text).toContain('menu.stock_unified');
+        expect(wrapper.findAll('.db-sidebar-nav-menu')).toHaveLength(13);
     });
 });
