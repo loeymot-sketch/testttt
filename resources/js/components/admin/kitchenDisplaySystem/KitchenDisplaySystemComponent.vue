@@ -263,6 +263,16 @@
               class="flex items-center gap-1 text-xs font-semibold text-red-600 whitespace-nowrap">
               ⚠️ {{ $t('label.kds_print_failed', { count: kitchenPrintFailedCount }) }}
             </span>
+            <!-- [F1 2026-07-24] Bandeau discret quand l'autoplay du carillon est bloqué
+                 (tablette KDS auto-chargée). Un clic dessus EST un geste → débloque et
+                 masque le bandeau (idempotent avec l'écouteur window). -->
+            <button v-if="kdsAudioBlockedHint && !kdsAudioUnlocked" type="button"
+              @click="_unlockKdsAudio"
+              role="status" aria-live="polite"
+              data-testid="kds-audio-blocked-hint"
+              class="flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-300 rounded px-2 py-1 whitespace-nowrap">
+              🔇 {{ $t('label.kds_sound_tap_to_enable') }}
+            </button>
           </div>
           <audio ref="kdsNewOrderAudio" preload="auto" class="hidden" src="/sounds/kds-new-order.mp3" />
         </div>
@@ -1269,6 +1279,14 @@ export default {
       allergenModalReturnFocus: null,
       // [Lot 2.C / F-07] Throttle new-order chime when many orders land at once.
       _kdsLastNewOrderSoundAt: 0,
+      // [F1 2026-07-24] Audio autoplay unlock. Une tablette KDS qui auto-charge /kds
+      // n'a reçu AUCUN geste → le navigateur rejette HTMLMediaElement.play() → le
+      // carillon de la 1re commande est muet. On amorce l'élément au 1er geste et, tant
+      // que bloqué, on affiche un bandeau discret « touchez pour activer le son ».
+      kdsAudioUnlocked: false,
+      kdsAudioBlockedHint: false,
+      _kdsAudioUnlockHandler: null,
+      _kdsAudioUnlockBound: false,
       kdsOverflowDetected: false,
       // [Wave X3 2026-05-21] KDS Historique du jour drawer — open state.
       historyDrawerOpen: false,
@@ -1645,6 +1663,8 @@ export default {
     window.addEventListener('realtime-order-update', this.refreshOrderList);
     this.subscribeEcho();
     this._bindWsService();
+    // [F1 2026-07-24] Amorce l'audio au 1er geste (tablette KDS auto-chargée sans geste).
+    this._setupKdsAudioUnlockListeners();
     // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
     // 1s ticker that drives `recallActiveIds` expiry. Independent of
     // KdsV2Grid's own ticker so this orchestrator owns the SSOT for the
@@ -2000,7 +2020,81 @@ export default {
       }
       el.volume = Math.min(1, Math.max(0, this.soundVolume / 100));
       el.currentTime = 0;
-      el.play().catch(() => {});
+      el.play().catch(() => {
+        // [F1 2026-07-24] Autoplay bloqué (aucun geste utilisateur sur une tablette KDS
+        // auto-chargée). Le .catch avalait l'échec en silence → le cuisinier ratait la 1re
+        // commande jusqu'au 1er bump. Repli : buzz haptique (si dispo) + un bandeau discret
+        // « touchez pour activer le son » qui disparaît au 1er geste (lequel débloque
+        // l'élément). On ne signale le blocage QUE tant que non débloqué — une fois débloqué,
+        // un rejet de play() est une erreur transitoire, pas la barrière autoplay.
+        if (!this.kdsAudioUnlocked) {
+          this.kdsAudioBlockedHint = true;
+          try {
+            if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+              navigator.vibrate([120, 60, 120]);
+            }
+          } catch (e) {
+            /* defensive */
+          }
+        }
+      });
+    },
+    // [F1 2026-07-24] Amorce l'audio au 1er geste utilisateur : on joue MUET puis on
+    // remet en pause/rembobine — aucun double son audible, le vrai carillon continue de
+    // partir via le déclencheur ID-diff INCHANGÉ. Idempotent ; retire ses propres écouteurs.
+    _unlockKdsAudio() {
+      if (this.kdsAudioUnlocked) {
+        return;
+      }
+      this.kdsAudioUnlocked = true;
+      this.kdsAudioBlockedHint = false;
+      this._teardownKdsAudioUnlockListeners();
+      const el = this.$refs.kdsNewOrderAudio;
+      if (!el) {
+        return;
+      }
+      try {
+        const prevMuted = el.muted;
+        el.muted = true;
+        const p = el.play();
+        if (p && typeof p.then === "function") {
+          p.then(() => {
+            try { el.pause(); el.currentTime = 0; el.muted = prevMuted; } catch (e) { /* defensive */ }
+          }).catch(() => {
+            try { el.muted = prevMuted; } catch (e) { /* defensive */ }
+          });
+        } else {
+          try { el.pause(); el.currentTime = 0; el.muted = prevMuted; } catch (e) { /* defensive */ }
+        }
+      } catch (e) {
+        /* defensive */
+      }
+    },
+    _setupKdsAudioUnlockListeners() {
+      if (this._kdsAudioUnlockBound) {
+        return;
+      }
+      if (typeof window === "undefined" || !window.addEventListener) {
+        return;
+      }
+      this._kdsAudioUnlockHandler = () => this._unlockKdsAudio();
+      ["pointerdown", "touchstart", "keydown"].forEach((evt) => {
+        try { window.addEventListener(evt, this._kdsAudioUnlockHandler, { passive: true }); } catch (e) { /* defensive */ }
+      });
+      this._kdsAudioUnlockBound = true;
+    },
+    _teardownKdsAudioUnlockListeners() {
+      if (!this._kdsAudioUnlockBound) {
+        return;
+      }
+      const h = this._kdsAudioUnlockHandler;
+      if (h && typeof window !== "undefined" && window.removeEventListener) {
+        ["pointerdown", "touchstart", "keydown"].forEach((evt) => {
+          try { window.removeEventListener(evt, h); } catch (e) { /* defensive */ }
+        });
+      }
+      this._kdsAudioUnlockBound = false;
+      this._kdsAudioUnlockHandler = null;
     },
     // [KITCHEN-BRIDGE 2026-07-09] Seed la garde de dé-dup avec les ids des commandes
     // DÉJÀ présentes (backlog) au 1er chargement / à la reconnexion, SANS imprimer.
@@ -2821,6 +2915,8 @@ export default {
     window.removeEventListener('realtime-order-update', this.refreshOrderList);
     this.unsubscribeEcho();
     this._unbindWsService();
+    // [F1 2026-07-24] Retire les écouteurs de geste-unlock audio (au cas où non consommés).
+    this._teardownKdsAudioUnlockListeners();
     Object.values(this._tableFlashTimers || {}).forEach((t) => { try { clearTimeout(t); } catch (e) {} });
     this._tableFlashTimers = {};
     // [F-03 / Lot 1.C] Tear down adaptive polling cleanly.

@@ -35,6 +35,9 @@
                                     { id: enums.orderStatusEnum.PREPARING, name: $t('label.preparing') },
                                     { id: enums.orderStatusEnum.PREPARED, name: $t('label.prepared') },
                                     { id: enums.orderStatusEnum.DELIVERED, name: $t('label.delivered') },
+                                    { id: enums.orderStatusEnum.CANCELED, name: $t('label.canceled') },
+                                    { id: enums.orderStatusEnum.REJECTED, name: $t('label.rejected') },
+                                    { id: enums.orderStatusEnum.RETURNED, name: $t('label.returned') },
                                 ]" label-by="name" value-by="id" :closeOnSelect="true" :searchable="true"
                                 :clearOnClose="true" placeholder="--" search-placeholder="--" />
                         </div>

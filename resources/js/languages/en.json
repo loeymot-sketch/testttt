@@ -1282,6 +1282,7 @@
         "kds_cuisine_froide": "Cuisine froide",
         "kds_group_by_table": "Regrouper par table",
         "kds_sound": "Son nouvelle commande",
+        "kds_sound_tap_to_enable": "Tap the screen to enable sound",
         "kds_auto_print": "Auto print",
         "kds_auto_print_hint": "This screen prints the kitchen tickets — only 1 screen per kitchen (otherwise duplicates).",
         "kds_print_failed": "Kitchen printing: {count} failed (bridge offline)",

@@ -1067,6 +1067,7 @@
         "kds_cuisine_froide": "مطبخ بارد",
         "kds_group_by_table": "تجميع حسب الطاولة",
         "kds_sound": "صوت طلب جديد",
+        "kds_sound_tap_to_enable": "المس الشاشة لتفعيل الصوت",
         "kds_auto_print": "طباعة تلقائية",
         "kds_auto_print_hint": "هذه الشاشة تطبع تذاكر المطبخ — شاشة واحدة فقط لكل مطبخ (وإلا تتكرر).",
         "kds_print_failed": "طباعة المطبخ: {count} فشلت (الجسر غير متصل)",

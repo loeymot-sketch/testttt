@@ -74,6 +74,18 @@
 
                 <div class="flex flex-wrap gap-3"
                     v-else-if="order.status !== enums.orderStatusEnum.REJECTED && order.status !== enums.orderStatusEnum.CANCELED">
+                    <!-- [P2-2 2026-07-24] CTA « Annuler (motif) » pour une commande web ACTIVE
+                         non-terminale (ACCEPT/PREPARING/PREPARED/OUT_FOR_DELIVERY). Réutilise
+                         OnlineOrderReasonComponent avec status=CANCELED (miroir du bouton
+                         Annuler du tracker POS ; annulation d'une non-payée = 0 mouvement
+                         tiroir, non gaté). Garde D-1 : jamais depuis un statut terminal, ni
+                         depuis DELIVERED (commande complétée). Le motif est persisté
+                         (order.reason) et ré-affiché ci-dessous. -->
+                    <OnlineOrderReasonComponent v-if="canCancelActiveOrder"
+                        :status="enums.orderStatusEnum.CANCELED"
+                        label-key="button.cancel"
+                        modal-id="cancelReasonModal" />
+
                     <!-- [WT-D-R1-09 / WT-D-R1-02 2026-05-20] Same combobox+
                          listbox WCAG pattern + live-region chip + flash as
                          PosOrderShowComponent. Kept template structure so the
@@ -226,7 +238,11 @@
                     </div>
                 </div>
             </div>
-            <div class="col-12" v-if="order.status === enums.orderStatusEnum.REJECTED">
+            <!-- [P2-2 2026-07-24] Le motif s'affiche désormais aussi pour CANCELED (annulation
+                 post-acceptation via le nouveau CTA ci-dessus / le tracker POS), pas seulement
+                 pour REJECTED — sinon le motif saisi n'était jamais ré-affiché. -->
+            <div class="col-12"
+                v-if="order.status === enums.orderStatusEnum.REJECTED || order.status === enums.orderStatusEnum.CANCELED">
                 <div class="db-card">
                     <div class="db-card-header">
                         <h3 class="db-card-title">{{ $t('label.reason') }}</h3>
@@ -368,6 +384,18 @@ export default {
         },
         deliveryBoys: function () {
             return this.$store.getters["deliveryBoy/lists"];
+        },
+        // [P2-2 2026-07-24] Une commande web ACTIVE non-terminale peut être annulée depuis
+        // l'écran Détails (le tracker POS le permettait déjà, pas cet écran). Garde D-1
+        // (anti-résurrection) : on n'expose JAMAIS l'annulation depuis un statut terminal
+        // (CANCELED/REJECTED/RETURNED) ni depuis DELIVERED (commande complétée) — miroir de
+        // la garde `col.id !== 'delivered'` du tracker.
+        canCancelActiveOrder: function () {
+            const s = this.order.status;
+            return s === orderStatusEnum.ACCEPT
+                || s === orderStatusEnum.PREPARING
+                || s === orderStatusEnum.PREPARED
+                || s === orderStatusEnum.OUT_FOR_DELIVERY;
         },
         orderStatusObject: function () {
             // [HEAL-4 / PROPOSAL-02 / B2-P3-CF-02 — V101-02 2026-05-26]

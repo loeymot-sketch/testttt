@@ -756,6 +756,7 @@
         "kds_cuisine_froide": "Cuisine froide",
         "kds_group_by_table": "Regrouper par table",
         "kds_sound": "Son nouveau ticket",
+        "kds_sound_tap_to_enable": "Touchez l'écran pour activer le son",
         "kds_auto_print": "Impression auto",
         "kds_auto_print_hint": "Cet écran imprime les tickets cuisine — 1 seul écran par cuisine (sinon doublons).",
         "kds_print_failed": "Impression cuisine : {count} en échec (pont hors ligne)",

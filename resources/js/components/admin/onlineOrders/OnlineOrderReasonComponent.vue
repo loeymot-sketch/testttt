@@ -1,12 +1,13 @@
 <template>
     <LoadingComponent :props="loading"/>
-    <button type="button" @click="reasonModal" data-modal="#reasonModal"
+    <button type="button" @click="reasonModal" :data-modal="'#' + modalId"
+            :data-testid="'online-order-reason-trigger-' + status"
             class="flex items-center justify-center text-white gap-2 px-4 h-[38px] rounded shadow-db-card bg-[#FB4E4E]">
         <i class="lab lab-close"></i>
-        <span class="text-sm capitalize text-white">{{ $t('button.reject') }}</span>
+        <span class="text-sm capitalize text-white">{{ $t(labelKey) }}</span>
     </button>
 
-    <div id="reasonModal" class="modal">
+    <div :id="modalId" class="modal">
         <div class="modal-dialog">
             <div class="modal-header">
                 <h3 class="modal-title">{{ $t("label.reason") }}</h3>
@@ -14,7 +15,7 @@
                         @click.prevent="resetModal"></button>
             </div>
             <div class="modal-body">
-                <form @submit.prevent="rejectOrder">
+                <form @submit.prevent="submitReason">
                     <div class="form-row">
                         <div class="form-col-12">
                             <label for="name" class="db-field-title">
@@ -60,6 +61,24 @@ export default {
     components: {
         LoadingComponent
     },
+    // [P2-2 2026-07-24] Composant motif rendu RÉUTILISABLE : le flux PENDING garde le
+    // défaut REJECTED (« Refuser »), et le flux post-acceptation le réutilise avec
+    // status=CANCELED (« Annuler ») + un modalId distinct. Miroir du bouton d'annulation
+    // du tracker POS ; l'endpoint online-order/change-status persiste le motif (order.reason).
+    props: {
+        status: {
+            type: Number,
+            default: orderStatusEnum.REJECTED,
+        },
+        labelKey: {
+            type: String,
+            default: "button.reject",
+        },
+        modalId: {
+            type: String,
+            default: "reasonModal",
+        },
+    },
     data() {
         return {
             loading: {
@@ -73,23 +92,23 @@ export default {
     },
     methods: {
         reasonModal: function () {
-            appService.modalShow('#reasonModal');
+            appService.modalShow('#' + this.modalId);
         },
         resetModal: function () {
-            appService.modalHide('#reasonModal');
+            appService.modalHide('#' + this.modalId);
             this.form.reason = '';
             this.error = "";
         },
-        rejectOrder: function () {
+        submitReason: function () {
             try {
                 this.loading.isActive = true;
                 this.$store.dispatch("onlineOrder/changeStatus", {
                     id: this.$route.params.id,
-                    status: orderStatusEnum.REJECTED,
+                    status: this.status,
                     reason: this.form.reason,
                 }).then((res) => {
                     this.loading.isActive = false;
-                    appService.modalHide();
+                    appService.modalHide('#' + this.modalId);
                     this.form = {
                         reason: "",
                     };

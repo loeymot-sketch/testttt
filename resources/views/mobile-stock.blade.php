@@ -105,7 +105,10 @@
         <main>
             <div class="section-title">🛒 À acheter</div>
             <div class="buy-card" id="buy-card"><div class="buy-empty">Chargement…</div></div>
+            <div class="section-title">🍔 Produits</div>
             <div id="catalog"><div class="loading">Chargement du catalogue…</div></div>
+            <div class="section-title">🧂 Ingrédients / sauces</div>
+            <div id="ingredients"><div class="loading">Chargement des ingrédients…</div></div>
         </main>
     </section>
 
@@ -199,7 +202,9 @@
         // ---- Stock catalog ----
         function loadCatalog() {
             var cat = document.getElementById('catalog');
+            var ing = document.getElementById('ingredients');
             cat.innerHTML = '<div class="loading">Chargement du catalogue…</div>';
+            ing.innerHTML = '<div class="loading">Chargement des ingrédients…</div>';
             fetch('{{ url('/m/api/catalog') }}', {
                 headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin'
             }).then(function (r) {
@@ -209,8 +214,10 @@
                 if (!data) return;
                 renderShopping(data.shopping || []);
                 renderCatalog(data.categories || []);
+                renderIngredients(data.ingredients || []);
             }).catch(function () {
                 cat.innerHTML = '<div class="loading">Erreur de chargement.</div>';
+                ing.innerHTML = '';
             });
         }
         function renderShopping(list) {
@@ -280,6 +287,57 @@
                     loadCatalog(); // refresh « À acheter »
                 } else {
                     toast(res.data.message || 'Échec de la mise à jour');
+                }
+            }).catch(function () {
+                btn.disabled = false; toast('Erreur réseau');
+            });
+        }
+
+        // ---- Ingredients (extras / variations) ----
+        function renderIngredients(groups) {
+            var wrap = document.getElementById('ingredients');
+            wrap.textContent = '';
+            if (!groups.length) {
+                var e = document.createElement('div'); e.className = 'loading';
+                e.textContent = 'Aucun ingrédient.'; wrap.appendChild(e); return;
+            }
+            groups.forEach(function (g) {
+                if (!g.items || !g.items.length) return;
+                var block = document.createElement('div'); block.className = 'cat-block';
+                var head = document.createElement('div'); head.className = 'cat-head'; head.textContent = g.group;
+                block.appendChild(head);
+                g.items.forEach(function (it) {
+                    var row = document.createElement('div'); row.className = 'row';
+                    var nm = document.createElement('div'); nm.className = 'name'; nm.textContent = it.name;
+                    var btn = document.createElement('button'); btn.type = 'button';
+                    setBtn(btn, it.is_available);
+                    btn.addEventListener('click', function () { toggleIngredient(g.kind, it, btn); });
+                    row.appendChild(nm); row.appendChild(btn);
+                    block.appendChild(row);
+                });
+                wrap.appendChild(block);
+            });
+        }
+        function toggleIngredient(kind, it, btn) {
+            if (btn.disabled) return;
+            btn.disabled = true;
+            var next = !it.is_available;
+            fetch('{{ url('/m/api/toggle-extra') }}', {
+                method: 'POST', headers: jsonHeaders(), credentials: 'same-origin',
+                body: JSON.stringify({ kind: kind, ids: it.ids || [], is_available: next })
+            }).then(function (r) {
+                if (r.status === 401) { showPin(); return null; }
+                return r.json().catch(function () { return {}; }).then(function (d) { return { status: r.status, data: d }; });
+            }).then(function (res) {
+                btn.disabled = false;
+                if (!res) return;
+                if (res.status === 200 && res.data.ok) {
+                    it.is_available = res.data.is_available;
+                    setBtn(btn, it.is_available);
+                    toast(it.is_available ? 'Remis en stock' : 'Marqué en rupture');
+                    loadCatalog(); // refresh « À acheter »
+                } else {
+                    toast((res.data && res.data.message) || 'Échec de la mise à jour');
                 }
             }).catch(function () {
                 btn.disabled = false; toast('Erreur réseau');

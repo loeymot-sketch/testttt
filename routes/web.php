@@ -94,6 +94,10 @@ Route::prefix('m')->name('mobile-stock.')->middleware(['installed'])->group(func
         Route::post('/api/lock', [\App\Http\Controllers\Mobile\MobileStockAuthController::class, 'lock'])->name('lock');
         Route::get('/api/catalog', [\App\Http\Controllers\Mobile\MobileStockController::class, 'catalog'])->name('catalog');
         Route::post('/api/toggle', [\App\Http\Controllers\Mobile\MobileStockController::class, 'toggle'])->name('toggle');
+        // [HEAL F3 2026-07-24] Rupture d'un INGRÉDIENT (extra/variation), pas
+        // seulement d'un produit entier. Délègue au MÊME SSOT que caisse/cuisine
+        // (AvailabilityService::toggleExtra/toggleVariation) — 0 chemin parallèle.
+        Route::post('/api/toggle-extra', [\App\Http\Controllers\Mobile\MobileStockController::class, 'toggleExtra'])->name('toggle-extra');
     });
 });
 
