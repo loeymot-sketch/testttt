@@ -112,6 +112,15 @@ export default {
         }
         this.unsubscribeEcho();
     },
+    computed: {
+        // [RECEIPT-NO-AUTO 2026-07-24] Flag OPT-IN d'auto-impression du reçu CLIENT
+        // (défaut FALSE). Spec owner : à l'encaissement, on n'imprime PLUS le ticket
+        // client automatiquement — les boutons manuels de la modale (printTicket)
+        // restent. Clé absente → false → pas d'auto.
+        autoPrintClientReceipt() {
+            return !!(typeof window !== 'undefined' && window.foodkingConfig?.printing?.autoPrintClientReceipt);
+        },
+    },
     methods: {
         fetchPending(silent = false) {
             if (!silent) this.loading.isActive = true;
@@ -194,8 +203,11 @@ export default {
             // [ENCAISSEMENT-TICKET 2026-07-01][PRINT-INSTANT 2026-07-06] Imprimer le TICKET
             // CLIENT via le pont ESC/POS — lancé AVANT/EN PARALLÈLE du refresh de la liste
             // (fire-and-forget, plus d'await en série). Best-effort — pont 202 immédiat.
+            // [RECEIPT-NO-AUTO 2026-07-24] Auto-impression désormais gatée sur le flag
+            // OPT-IN (défaut FALSE, spec owner) : par défaut on NE déclenche PLUS le pont,
+            // les boutons manuels de la modale (printTicket) restent l'unique voie.
             const orderId = payload?.orderId ?? payload?.order_id ?? null;
-            if (orderId) {
+            if (orderId && this.autoPrintClientReceipt) {
                 this._lastEncaissePrint = axios
                     .get(`admin/pos/orders/${orderId}/escpos`, { params: { ticket: 'client' } })
                     .then((res) => {

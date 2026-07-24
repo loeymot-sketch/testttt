@@ -50,6 +50,28 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Reçu CLIENT : impression automatique — OPT-IN (défaut OFF)
+    |--------------------------------------------------------------------------
+    |
+    | [RECEIPT-NO-AUTO 2026-07-24] Spec owner : le REÇU CLIENT ne doit JAMAIS
+    | s'imprimer automatiquement (ni à l'encaissement caisse, ni à la confirmation
+    | borne). Il reste imprimable À LA DEMANDE via les boutons déjà présents
+    | (ReceiptComponent « Ticket client », modale encaissement, bouton borne
+    | « Imprimer le ticket ») + réimpression depuis le suivi. Défaut FALSE.
+    |
+    | Ce flag NE concerne QUE le reçu client. Le TICKET CUISINE (KDS auto-print)
+    | est INCHANGÉ. Le BON « à régler en caisse » de la borne (KioskCashInstruction)
+    | est un bon de commande fonctionnel (n° de file) — non piloté par ce flag.
+    |
+    | Exposé au front via master.blade.php → window.foodkingConfig.printing
+    | .autoPrintClientReceipt. Mettre POS_AUTO_PRINT_CLIENT_RECEIPT=true pour
+    | restaurer l'auto-impression historique (rétro-compat).
+    |
+    */
+    'auto_print_client_receipt' => (bool) env('POS_AUTO_PRINT_CLIENT_RECEIPT', false),
+
+    /*
+    |--------------------------------------------------------------------------
     | Receipt header extras (single-restaurant V1 — no per-branch column)
     |--------------------------------------------------------------------------
     |

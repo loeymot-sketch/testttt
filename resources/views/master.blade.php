@@ -200,6 +200,15 @@
             // Le ticket ne sort QUE via le pont RAW (octets serveur = ticket == écran). POS_PRINT_SILENT_ONLY.
             // [PRINT-INSTANT 2026-07-06] Défaut flippé à TRUE (window.print = bouton manuel only).
             posSilentPrintOnly: @json((bool) config('printing.pos_silent_only', true)),
+            // [RECEIPT-NO-AUTO 2026-07-24] Spec owner : le REÇU CLIENT ne s'imprime
+            // JAMAIS automatiquement (encaissement caisse + confirmation borne) — il
+            // reste imprimable à la demande (boutons déjà présents) + réimpression suivi.
+            // Défaut FALSE (config/printing.php). Passer POS_AUTO_PRINT_CLIENT_RECEIPT=true
+            // restaure l'auto-impression historique (rétro-compat). NB : distinct de
+            // bypassMode.printing (mode test) et du ticket CUISINE (KDS, inchangé).
+            printing: {
+                autoPrintClientReceipt: @json((bool) config('printing.auto_print_client_receipt', false)),
+            },
             // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-31 Q2] Discretionary-discount
             // master flag, exposed so the customer UI hides coupon + loyalty-redeem
             // entries while discounts are disabled — otherwise a customer who uses them

@@ -255,6 +255,13 @@ export default {
       const browserLocale = locale === 'ar' ? 'ar-SA' : locale === 'en' ? 'en-GB' : 'fr-FR';
       return new Date().toLocaleString(browserLocale, { dateStyle: 'short', timeStyle: 'short' });
     },
+    // [RECEIPT-NO-AUTO 2026-07-24] Flag OPT-IN d'auto-impression du reçu CLIENT
+    // (défaut FALSE). Spec owner : à la confirmation borne, on NE lance PLUS
+    // l'auto-impression du reçu — le bouton « Imprimer le ticket » (:76 →
+    // printReceipt()) reste disponible. Clé absente → false → pas d'auto.
+    autoPrintClientReceipt() {
+      return !!(typeof window !== 'undefined' && window.foodkingConfig?.printing?.autoPrintClientReceipt);
+    },
   },
   mounted() {
     // Snapshot cart data BEFORE resetting, so receipt can still be printed
@@ -352,7 +359,10 @@ export default {
         // collision au rollover quotidien des numéros de file.
         const day = new Date().toISOString().slice(0, 10);
         const ref = `${this.displayNumber || this.orderNumber || ''}|${day}`;
-        if ((kioskHardware.isKioskBridge() || await isLocalBridgeAvailable()) && markPrintedOnce(ref)) {
+        // [RECEIPT-NO-AUTO 2026-07-24] Auto-impression du reçu CLIENT gatée sur le flag
+        // OPT-IN (défaut FALSE, spec owner). Le flag en tête du && court-circuite tout
+        // (aucun appel pont) par défaut ; le bouton manuel « Imprimer le ticket » reste.
+        if (this.autoPrintClientReceipt && (kioskHardware.isKioskBridge() || await isLocalBridgeAvailable()) && markPrintedOnce(ref)) {
           this.printReceipt(false); // [G5] auto : pas de fallback window.print (dialogue bloquant / faux succès)
         }
       } catch (_) { /* détection pont non bloquante */ }

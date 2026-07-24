@@ -431,6 +431,13 @@ export default {
             return (typeof window !== 'undefined' && window.foodkingConfig?.bypassMode?.printingScreenMarker)
                 || '🔧 MODE TEST — IMPRESSION BYPASSÉE';
         },
+        // [RECEIPT-NO-AUTO 2026-07-24] Flag OPT-IN d'auto-impression du reçu CLIENT
+        // (défaut FALSE). Spec owner : le reçu client ne s'imprime JAMAIS auto — il
+        // reste imprimable à la demande (bouton « Ticket client » + réimpression
+        // tracker). Clé absente (ex. config POS trimmée) → false → pas d'auto.
+        autoPrintClientReceipt: function () {
+            return !!(typeof window !== 'undefined' && window.foodkingConfig?.printing?.autoPrintClientReceipt);
+        },
         company: function () {
             return this.$store.getters['company/lists'];
         },
@@ -589,7 +596,13 @@ export default {
          * est idempotency-keyed → aucun double-incrément NF525 receipt_print_count.
          */
         maybeAutoPrintClient: function (orderId) {
-            if (!this.clearCartOnClose || !orderId) {
+            // [RECEIPT-NO-AUTO 2026-07-24] L'auto-impression du reçu CLIENT est
+            // désormais OPT-IN (flag `printing.auto_print_client_receipt`, défaut
+            // FALSE) : par défaut le reçu ne s'imprime PLUS automatiquement (spec
+            // owner). `clearCartOnClose` continue de distinguer l'encaissement FRAIS
+            // du re-print tracker → quand le flag est réactivé (rétro-compat), seul
+            // l'encaissement frais auto-imprime, jamais un re-print.
+            if (!this.autoPrintClientReceipt || !this.clearCartOnClose || !orderId) {
                 return;
             }
             if (this._autoPrintedOrderId === orderId) {
