@@ -9,6 +9,17 @@ const webpack = require('webpack');
 // These globals also unlock dead-code elimination of Options API / devtools
 // helpers in the production bundle (cf. https://link.vuejs.org/feature-flags).
 mix.webpackConfig({
+    // [BORNE-CHUNK-STALE 2026-07-25] Content-hash les chunks LAZY (kiosk-wizard-step,
+    // pos-shell, admin-*, etc.). Avant : nom FIXE (`kiosk-wizard-step.js`) + aucun
+    // Cache-Control → au deploy, le navigateur de la borne servait l'ANCIEN chunk en
+    // cache pendant que l'entrée (versionée `mix()`) était fraîche → mismatch d'IDs de
+    // modules → l'étape (viande/crudités…) ne s'instanciait plus → PAGE BLANCHE. Le
+    // hash de contenu rend chaque build unique : un chunk changé = nouveau nom = le
+    // cache périmé ne peut plus être servi (le vieux fichier reste inerte). N'affecte
+    // PAS les frozen vanilla (pos-wizard.js hand-written, chargé hors webpack).
+    output: {
+        chunkFilename: 'js/[name].[contenthash:8].js',
+    },
     plugins: [
         new webpack.DefinePlugin({
             __VUE_OPTIONS_API__: JSON.stringify(true),
