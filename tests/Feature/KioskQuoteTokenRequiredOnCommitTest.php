@@ -23,6 +23,13 @@ class KioskQuoteTokenRequiredOnCommitTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        \Smartisan\Settings\Facades\Settings::group('pos')->set(['pos_dine_in_enabled' => true]); // [2026-07-27] garde V1 sur-place (47f3ad545) : OFF par défaut — ce test exerce un flux sur-place/table derrière son flag
+    }
+
+
     public function test_kiosk_commit_without_quote_token_is_rejected(): void
     {
         [$kioskUser, $payload] = $this->fixture();

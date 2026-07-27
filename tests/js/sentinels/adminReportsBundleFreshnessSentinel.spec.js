@@ -24,6 +24,20 @@ import { describe, expect, it } from 'vitest';
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { resolve, relative, join } from 'node:path';
 
+// [CONTENTHASH 2026-07-27] Les chunks lazy sont désormais hashés (`js/[name].[contenthash:8].js`,
+// webpack.mix.js — fix borne chunk périmé). Le sentinel résout le nom réel par motif ;
+// introuvable → chemin legacy (message d'échec explicite conservé).
+function resolveHashedBundle(root, base) {
+    const dir = resolve(root, 'public/js');
+    if (existsSync(dir)) {
+        const rx = new RegExp('^' + base + '\\.[0-9a-f]{8}\\.js$');
+        const hit = readdirSync(dir).find((f) => rx.test(f) || f === base + '.js');
+        if (hit) return join(dir, hit);
+    }
+    return resolve(root, 'public/js/' + base + '.js');
+}
+
+
 function walkFiles(dir, matchFn, acc = []) {
     if (!existsSync(dir)) return acc;
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -76,7 +90,7 @@ function assertBundleFresh(bundlePath, sourceGroups, bundleLabel = 'bundle') {
 
 describe('Build integrity — admin-reports bundle freshness (FK-V1-0-2-WAVE-B2)', () => {
     const root = process.cwd();
-    const bundlePath = resolve(root, 'public/js/admin-reports.js');
+    const bundlePath = resolveHashedBundle(root, 'admin-reports');
 
     // --- Group 1: anchor Vue components lazy-imported into admin-reports
     // creditBalanceReportRoutes.js + salesReportRoutes.js + cashSessionReportRoutes.js

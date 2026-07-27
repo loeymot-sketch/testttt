@@ -39,6 +39,20 @@ import { describe, expect, it } from 'vitest';
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { resolve, relative, join } from 'node:path';
 
+// [CONTENTHASH 2026-07-27] Les chunks lazy sont désormais hashés (`js/[name].[contenthash:8].js`,
+// webpack.mix.js — fix borne chunk périmé). Le sentinel résout le nom réel par motif ;
+// introuvable → chemin legacy (message d'échec explicite conservé).
+function resolveHashedBundle(root, base) {
+    const dir = resolve(root, 'public/js');
+    if (existsSync(dir)) {
+        const rx = new RegExp('^' + base + '\\.[0-9a-f]{8}\\.js$');
+        const hit = readdirSync(dir).find((f) => rx.test(f) || f === base + '.js');
+        if (hit) return join(dir, hit);
+    }
+    return resolve(root, 'public/js/' + base + '.js');
+}
+
+
 /**
  * Recursively walk a directory and return absolute paths of files whose
  * basename matches the predicate. Pure stdlib so no glob dep required.
@@ -123,7 +137,7 @@ globalThis.__assertBundleFresh = assertBundleFresh;
 
 describe('Build integrity — KDS bundle freshness (FK-PHASE-2E-Q12)', () => {
     const root = process.cwd();
-    const bundlePath = resolve(root, 'public/js/admin-kds.js');
+    const bundlePath = resolveHashedBundle(root, 'admin-kds');
 
     // --- Group 1: kitchenDisplaySystem dir Vue components -------------
     const kdsDir = resolve(root, 'resources/js/components/admin/kitchenDisplaySystem');
