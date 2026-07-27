@@ -109,6 +109,30 @@ class Kernel extends ConsoleKernel
                 );
             });
 
+        // [C-01 · GOAL ROBUSTESSE 2026-07-27] Continuité NF525 en ALARME quotidienne :
+        // `fiscal:verify-chain --all` (lecture seule) détecte tout bris de chaîne HMAC.
+        // PRODUCTION UNIQUEMENT — le staging porte un TAMPER CONNU documenté (breach
+        // audit_logs id=1, secret mismatch — plan GOAL_REMEDIATION_3_POINTS_STAGING
+        // _2026-07-15, résolution au registre secrets fin-de-projet) : l'alarmer chaque
+        // nuit fabriquerait du bruit qui désensibilise. Au go-live, l'env passe
+        // production → l'alarme s'arme automatiquement, zéro câblage à retenir.
+        $schedule->command('fiscal:verify-chain --all')
+            ->environments(['production'])
+            ->dailyAt('03:30')
+            ->withoutOverlapping(30)
+            ->onOneServer()
+            ->name('fiscal-chain-continuity')
+            ->description('NF525: daily HMAC chain continuity alarm (production only).')
+            ->appendOutputTo(storage_path('logs/fiscal-chain-monitor.log'))
+            ->onFailure(function () {
+                \Illuminate\Support\Facades\Log::error(
+                    '[fiscal:verify-chain] CHAIN TAMPER/BREAK detected by the daily continuity lane — '
+                    . 'NF525 evidence integrity at risk. DO NOT reset/truncate anything. '
+                    . 'Read storage/logs/fiscal-chain-monitor.log and follow '
+                    . 'plans/GOAL_REMEDIATION_3_POINTS_STAGING_2026-07-15.md §A (frozen-writers protocol).'
+                );
+            });
+
         $schedule->job(new CleanupStalePendingKioskOrders())
             ->everyFiveMinutes()
             ->withoutOverlapping()
