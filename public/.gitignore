@@ -1,3 +1,10 @@
-/js/app.js
-public/js/app.js
-/public/js/app.js
+# [HYGIÈNE 2026-07-27] Artefacts de build webpack — générés par `npm run production`
+# (le deploy VPS les rebuild après git reset ; jamais committés). Les fichiers
+# HAND-WRITTEN restent trackés via négations (pos-wizard = FROZEN CLAUDE.md §7).
+/js/*.js
+/js/*.LICENSE.txt
+/js/*.js.map
+!/js/pos-wizard.js
+/css/app.css
+/css/daily-book.css
+/mix-manifest.json
