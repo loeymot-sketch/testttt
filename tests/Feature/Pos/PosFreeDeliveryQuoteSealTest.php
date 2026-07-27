@@ -39,6 +39,7 @@ class PosFreeDeliveryQuoteSealTest extends TestCase
         config(['pricing.tax_inclusive_prices' => true]);
         config(['pricing.use_ssot_service' => true]);
         Settings::group('delivery')->set('free_delivery_above', 30);
+        \Smartisan\Settings\Facades\Settings::group('order_setup')->set(['order_setup_delivery' => \App\Enums\Activity::ENABLE]); // [2026-07-27] delivery DISABLE par défaut runtime (coming-soon) — ce test exerce la fonctionnalité derrière son verrou
 
         $this->seedSpatieRoles();
         $this->seedMinimalSettings();

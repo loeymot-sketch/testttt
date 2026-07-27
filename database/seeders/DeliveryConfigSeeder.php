@@ -48,17 +48,19 @@ class DeliveryConfigSeeder extends Seeder
             $branch->address = '437 Rue Élie Gruyelle, 62110 Hénin-Beaumont';
         }
 
-        // Barème : 4 € (≤ 5 km), +1 €/km entamé au-delà, plancher 4 €.
-        $branch->delivery_fee_base    = 4.00;
-        $branch->delivery_fee_per_km  = 1.00;
+        // Barème owner 2026-07-27 (remplace 2026-06-27) : 4 € fixe ≤ 3 km, puis +2 €/km
+        // entamé — grille 3→4€, 4→5€, 5→7€, 6→9€ = max(4, 3 + 2·ceil(d−3)).
+        $branch->delivery_fee_base    = 3.00;
+        $branch->delivery_fee_per_km  = 2.00;
         $branch->delivery_fee_minimum = 4.00;
-        $branch->delivery_fee_free_km = 5.00;
+        $branch->delivery_fee_free_km = 3.00;
         $branch->save();
 
-        // Seuil de gratuité (sous-total panier). Modifiable ici ou via tinker :
+        // Offerte ≥ seuil : COUPÉE (0) tant que la livraison n'est pas lancée — le barème
+        // owner 2026-07-27 n'en comporte pas. À re-décider explicitement au lancement :
         //   Settings::group('delivery')->set('free_delivery_above', 30);
-        Settings::group('delivery')->set('free_delivery_above', 30);
+        Settings::group('delivery')->set('free_delivery_above', 0);
 
-        $this->command?->info('DeliveryConfigSeeder: branche #1 = 437 Rue Élie Gruyelle · 4€/≤5km +1€/km · offerte ≥ 30€.');
+        $this->command?->info('DeliveryConfigSeeder: branche #1 = 437 Rue Élie Gruyelle · 4€/≤3km +2€/km (grille 4/5/7/9) · offerte coupée.');
     }
 }

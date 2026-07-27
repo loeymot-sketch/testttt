@@ -182,6 +182,7 @@ class PosUITest extends TestCase
      */
     public function test_order_total_includes_delivery_charge(): void
     {
+        \Smartisan\Settings\Facades\Settings::group('order_setup')->set(['order_setup_delivery' => \App\Enums\Activity::ENABLE]); // [2026-07-27] delivery DISABLE par défaut runtime (coming-soon) — ce test exerce la fonctionnalité derrière son verrou
         $this->actingAs($this->posOperator, 'sanctum');
 
         $subtotal = 10.00;

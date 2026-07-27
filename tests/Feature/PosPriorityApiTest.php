@@ -101,6 +101,7 @@ class PosPriorityApiTest extends TestCase
 
     public function test_delivery_with_foreign_address_returns_422(): void
     {
+        \Smartisan\Settings\Facades\Settings::group('order_setup')->set(['order_setup_delivery' => \App\Enums\Activity::ENABLE]); // [2026-07-27] delivery DISABLE par défaut runtime (coming-soon) — ce test exerce la fonctionnalité derrière son verrou
         [$branch, $admin, $customer, $item] = $this->setupAdminAndItem();
         $otherCustomer = \Database\Factories\UserFactory::new()->create(['branch_id' => $branch->id]);
         $otherCustomer->assignRole('Customer');
