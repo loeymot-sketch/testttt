@@ -208,6 +208,11 @@ Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name
         // [GAP-20-2] OTP send: 5 per minute (was 10) — limits SMS flood abuse.
         Route::post('/otp', [GuestSignupController::class, 'otp'])
             ->middleware('throttle:5,1');
+        // [WAVE C EMAIL-OTP 2026-07-28] Canal EMAIL du code signup (mandat owner :
+        // pas de SMS). Même throttle strict que /otp — endpoint public = vecteur
+        // d'abus (spam email). Verify réutilise /verify ci-dessous, inchangé.
+        Route::post('/email-otp', [GuestSignupController::class, 'emailOtp'])
+            ->middleware('throttle:5,1');
         // [GAP-20-2] OTP verify: 3 per 5 minutes — prevents brute-force of 4-digit codes.
         // A 4-digit OTP has 10,000 combinations; at 3 attempts/5min the attacker needs
         // ~2,778 hours to exhaust all codes, well beyond the 5-minute expiry window.
@@ -1412,6 +1417,15 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     // session/guard-based callers including existing test fixtures.
     // The FormRequest path closes the original gap (OrderRequest::authorize
     // previously returned true unconditionally) without that collateral.
+    // [GOAL WEB COMMANDE Wave D 2026-07-28] Estimation d'attente retrait —
+    // PUBLIC (pas d'auth:sanctum : affichée AVANT login/panier sur le site),
+    // lecture seule (file cuisine SSOT KitchenReleaseRule), throttle 30/min
+    // (endpoint public = vecteur d'abus, §0.5.3 discipline). Déclarée AVANT le
+    // groupe auth `order` pour ne pas hériter de son middleware.
+    Route::get('order/wait-estimate', [FrontendOrderController::class, 'waitEstimate'])
+        ->middleware('throttle:30,1')
+        ->name('order.wait-estimate');
+
     Route::prefix('order')->name('order.')->middleware(['auth:sanctum'])->group(function () {
         Route::get('/', [FrontendOrderController::class, 'index']);
         Route::get('/show/{frontendOrder}', [FrontendOrderController::class, 'show']);

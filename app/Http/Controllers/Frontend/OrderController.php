@@ -44,6 +44,22 @@ class OrderController extends Controller
         }
     }
 
+    /**
+     * [GOAL WEB COMMANDE Wave D 2026-07-28] Estimation d'attente retrait —
+     * public (throttled route-side), dérivée de la file cuisine réelle via
+     * WaitEstimateService (sémantique SSOT KitchenReleaseRule). SELECT-only.
+     */
+    public function waitEstimate(Request $request, \App\Services\WaitEstimateService $waitEstimateService): \Illuminate\Http\JsonResponse | \Illuminate\Http\Response | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
+    {
+        try {
+            return response()->json(
+                $waitEstimateService->estimate((int) $request->input('branch_id', 1))
+            );
+        } catch (Exception $exception) {
+            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+        }
+    }
+
     public function store(OrderRequest $request): \Illuminate\Http\Response | OrderDetailsResource | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
         try {

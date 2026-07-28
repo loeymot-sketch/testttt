@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Auth;
 
 use App\Enums\Activity;
 use App\Enums\Ask;
+use App\Http\Requests\GuestSignupEmailOtpRequest;
 use App\Http\Requests\GuestSignupPhoneRequest;
+use App\Mail\SignupOtpMail;
 use App\Http\Resources\MenuResource;
 use App\Http\Resources\PermissionResource;
 use App\Http\Resources\UserResource;
@@ -17,7 +19,9 @@ use Exception;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use App\Enums\Role as EnumRole;
 use App\Services\OtpManagerService;
@@ -81,6 +85,50 @@ class GuestSignupController extends Controller
             }
 
             return response($payload);
+        } catch (Exception $exception) {
+            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+        }
+    }
+
+    /**
+     * [WAVE C EMAIL-OTP 2026-07-28 — GOAL_WEB_COMMANDE_CLIENT §5] Canal EMAIL
+     * pour le code signup web : le flux SMS (SendSmsCode) n'a AUCUN provider
+     * câblé (mandat owner : pas de SMS, coût) → le client ne recevait jamais
+     * le code. Ici : même génération OTP (OtpManagerService::otp — ligne otps,
+     * phone=clé, token=code, anti-flood GAP-20 inchangé), mais le code part
+     * par EMAIL (SignupOtpMail, envoi SYNCHRONE — pas de dépendance queue).
+     * L'email est lié au téléphone en cache (email_otp_email:<phone>, TTL =
+     * expiry OTP) et sera persisté sur le User par register() AU succès du
+     * verify (contrat /verify inchangé). Réponse identique que l'email existe
+     * déjà ou non (anti-énumération).
+     */
+    public function emailOtp(GuestSignupEmailOtpRequest $request
+    ) : \Illuminate\Http\Response | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory {
+        try {
+            // Indicatif pays optionnel côté web — défaut FR (+33), colonne otps.code.
+            if (blank($request->post('code'))) {
+                $request->merge(['code' => '+33']);
+            }
+
+            $this->otpManagerService->otp($request, dispatchSms: false);
+
+            // otp() ne retourne pas le code — relecture de la ligne fraîche (pattern dev_code W16).
+            $token = DB::table('otps')
+                ->where('phone', $request->post('phone'))
+                ->latest('created_at')
+                ->value('token');
+
+            if (! blank($token)) {
+                $ttlMinutes = max(1, (int) Settings::group('otp')->get('otp_expire_time') ?: 5);
+                Cache::put(
+                    'email_otp_email:'.$request->post('phone'),
+                    (string) $request->post('email'),
+                    now()->addMinutes($ttlMinutes)
+                );
+                Mail::to($request->post('email'))->send(new SignupOtpMail((string) $token, $ttlMinutes));
+            }
+
+            return response(['status' => true, 'message' => trans('all.message.check_your_email_for_code')]);
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
@@ -163,6 +211,25 @@ class GuestSignupController extends Controller
         if (empty($user->loyalty_code)) {
             $user->loyalty_code = strtoupper(substr(md5(uniqid('', true)), 0, 8));
             $user->save();
+        }
+
+        // [WAVE C EMAIL-OTP 2026-07-28] Si le code a été demandé via le canal EMAIL
+        // (emailOtp), l'adresse liée au téléphone est persistée ICI — c.-à-d.
+        // seulement APRÈS preuve de possession du code (verify OK). Pull one-time.
+        // Garde-fous : jamais d'écrasement d'un email différent déjà porté par ce
+        // compte, jamais d'attache d'un email appartenant à un AUTRE compte
+        // (anti-vol/anti-énumération : échec silencieux, le login réussit quand même).
+        $pendingEmail = Cache::pull('email_otp_email:'.$array['phone']);
+        if (is_string($pendingEmail) && $pendingEmail !== '') {
+            $emailTakenByOther = User::withoutGlobalScopes()
+                ->where('email', $pendingEmail)
+                ->where('id', '!=', $user->id)
+                ->exists();
+            if (! $emailTakenByOther && (blank($user->email) || strcasecmp((string) $user->email, $pendingEmail) === 0)) {
+                $user->email = $pendingEmail;
+                $user->email_verified_at = Carbon::now()->getTimestamp();
+                $user->save();
+            }
         }
 
         if ($user) {

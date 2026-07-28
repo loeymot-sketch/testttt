@@ -20,7 +20,13 @@ class OtpManagerService
     /**
      * @throws Exception
      */
-    public function otp(Request $request): bool
+    // [WAVE C EMAIL-OTP 2026-07-28] $dispatchSms=false pour le canal EMAIL
+    // (GuestSignupController::emailOtp) : la génération/stockage OTP est
+    // identique, mais on ne dispatch PAS SendSmsCode — (a) mandat owner
+    // « pas de SMS », (b) SendSmsCodeNotification TypeError (non-catchable
+    // par son catch(Exception)) quand aucune gateway SMS n'est configurée.
+    // Défaut true = flux SMS existant strictement inchangé.
+    public function otp(Request $request, bool $dispatchSms = true): bool
     {
         try {
             // [GAP-20-1] Delete ALL previous OTPs for this phone number regardless of country code.
@@ -53,7 +59,7 @@ class OtpManagerService
                 'created_at' => now(),
             ]);
 
-            if (! blank($otp)) {
+            if (! blank($otp) && $dispatchSms) {
                 SendSmsCode::dispatch(
                     ['phone' => $request->post('phone'), 'code' => $request->post('code'), 'token' => $token]
                 );
