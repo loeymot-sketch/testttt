@@ -181,6 +181,18 @@ class WaitEstimateEndpointTest extends TestCase
     }
 
     /** @test */
+    public function commandes_stale_hors_fenetre_2h_non_comptees(): void
+    {
+        // [STALE-GUARD] Une ACCEPT abandonnée > 2 h ne gonfle plus l'estimation à vie.
+        $this->makeKitchenOrder(['order_datetime' => now()->subHours(3)]);
+        $this->makeKitchenOrder(); // fraîche → compte
+
+        $result = $this->estimate();
+
+        $this->assertSame(1, $result['queue_count']);
+    }
+
+    /** @test */
     public function commandes_autre_branche_non_comptees(): void
     {
         $other = Branch::factory()->create();

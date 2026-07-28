@@ -34,6 +34,7 @@ class WaitEstimateService
     public const ORDERS_PER_STEP = 3;
     public const DEFAULT_BASE_MINUTES = 15;
     public const DEFAULT_CAP_MINUTES = 30;
+    public const QUEUE_WINDOW_MINUTES = 120;
 
     /**
      * @return array{queue_count:int, wait_low:int, wait_high:int, closing_time:?string, server_time:string}
@@ -47,7 +48,11 @@ class WaitEstimateService
         // dans un contexte staff authentifié, le count doit rester déterministe.
         $query = Order::withoutGlobalScope(BranchScope::class)
             ->where('branch_id', $branchId)
-            ->whereIn('status', KitchenReleaseRule::visibleStatuses());
+            ->whereIn('status', KitchenReleaseRule::visibleStatuses())
+            // [STALE-GUARD 2026-07-28] Fenêtre 2 h : une commande ACCEPT abandonnée
+            // (jamais bumpée) ne doit pas gonfler l'estimation À VIE — constat e2e :
+            // la DB dev portait 414 ACCEPT fantômes → fourchette scotchée à 30-35.
+            ->where('order_datetime', '>=', $now->copy()->subMinutes(self::QUEUE_WINDOW_MINUTES));
 
         KitchenReleaseRule::applyBoardReleaseFilter($query);
         KitchenReleaseRule::applyScheduledBoardFilter($query, $now);
