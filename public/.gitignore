@@ -5,6 +5,7 @@
 /js/*.LICENSE.txt
 /js/*.js.map
 !/js/pos-wizard.js
+!/js/version-beacon.js
 /css/app.css
 /css/daily-book.css
 /mix-manifest.json

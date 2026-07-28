@@ -412,6 +412,11 @@
             setTimeout(function () { clearInterval(checkInterval); }, 10000);
         });
     </script>
+    {{-- [VERSION-BEACON 2026-07-28] Écrans long-running (caisse/KDS/OSS/borne) : après un
+         deploy, l'ancien code reste en mémoire jusqu'au refresh — bandeau « Mettre à jour »
+         quand le hash mix de app.js change (poll 5 min + retour d'onglet). Jamais de reload
+         forcé (commande en cours possible). public/js/version-beacon.js, hand-written. --}}
+    <script src="{{ asset('js/version-beacon.js') }}?v=1-{{ time() }}"></script>
 </body>
 
 </html>
