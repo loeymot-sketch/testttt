@@ -148,3 +148,23 @@ Les éléments suivants ont été constatés pendant la synchronisation document
 ---
 
 **Dernière révision :** 2026-04-20 — cycle `P11_BUSINESS_RULES_DOC_SYNC` — sources d'autorité : `reports/review/VERIFY_*_2026-04-20.md`, `reports/review/AUDIT_POS_110_*.md`, `docs/gates/GATE_VERIFY_P0_FROZEN_CONSOLIDATED_2026-04-20.md`.
+
+---
+
+## Fidélité — structure pérenne (2026-07-28, GOAL WEB COMMANDE Wave E)
+
+**Le TÉLÉPHONE est la clé du compte fidélité** — web, borne, caisse, et app future.
+L'email n'est que le canal de **vérification/login** (code EMAIL-OTP, 0 SMS).
+
+Chaîne canonique (verrouillée par `tests/Feature/Loyalty/EmailSignupLoyaltyLinkTest.php`) :
+1. Signup web `POST /auth/guest-signup/email-otp` (phone + email) → verify → le User
+   porte **dès sa création** un `loyalty_code` (LOY-WEB-01, `GuestSignupController::register`).
+2. Commande livrée → `AwardLoyaltyPointsOnDelivery` crédite `floor(total × loyalty_points_per_euro)`
+   (défaut 10 pts/€). ⚠ **Sans `loyalty_code` le listener n'attribue RIEN** — c'est pourquoi
+   le maillon signup est sentinellisé.
+3. Lookup cross-surface **par téléphone** : `POST /frontend/loyalty/check` (fallback phone après
+   loyalty_code) — même endpoint que l'écran Fidélité caisse et le scan borne.
+
+Ajout de points par téléphone en caisse (client sans compte web) : `loyalty/register` par phone
+crée/rattache le compte — le client retrouve ses points le jour où il crée son compte web
+(même téléphone). Aucune migration nécessaire : `loyalty_code`/`loyalty_points` vivent sur `users`.
