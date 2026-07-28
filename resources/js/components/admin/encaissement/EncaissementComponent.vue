@@ -5,6 +5,9 @@
             <BreadcrumbComponent />
         </div>
         <div class="col-12">
+            <CaisseSecondaryNav current="encaissement" />
+        </div>
+        <div class="col-12">
             <div class="db-card enc-card">
                 <div class="db-card-header border-none enc-header">
                     <div>
@@ -68,6 +71,7 @@
 <script>
 import LoadingComponent from "../components/LoadingComponent";
 import BreadcrumbComponent from "../components/BreadcrumbComponent";
+import CaisseSecondaryNav from "../pos/CaisseSecondaryNav.vue";
 import PosCounterCollectModal from "../pos/PosCounterCollectModal.vue";
 import appService from "../../../services/appService";
 import alertService from "../../../services/alertService";
@@ -82,6 +86,7 @@ export default {
     name: "EncaissementComponent",
     mixins: [adminPriceMixin],
     components: {
+        CaisseSecondaryNav,
         LoadingComponent,
         BreadcrumbComponent,
         PosCounterCollectModal,

@@ -1,6 +1,7 @@
 <template>
     <LoadingComponent :props="loading" />
     <div class="col-12">
+        <CaisseSecondaryNav current="historique" />
         <div class="db-card">
             <div class="db-card-header border-none">
                 <h3 class="db-card-title">{{ $t('menu.historique') }}</h3>
@@ -164,6 +165,7 @@
 </template>
 <script>
 import LoadingComponent from "../components/LoadingComponent";
+import CaisseSecondaryNav from "../pos/CaisseSecondaryNav.vue";
 import PaginationTextComponent from "../components/pagination/PaginationTextComponent";
 import PaginationBox from "../components/pagination/PaginationBox";
 import PaginationSMBox from "../components/pagination/PaginationSMBox";
@@ -188,6 +190,7 @@ export default {
     name: "HistoriqueListComponent",
     mixins: [adminPriceMixin],
     components: {
+        CaisseSecondaryNav,
         TableLimitComponent,
         PaginationSMBox,
         PaginationBox,
