@@ -4,40 +4,46 @@ namespace App\Console\Commands;
 
 use App\Enums\Status;
 use App\Events\CatalogChanged;
-use App\Events\ComposerProfileChanged;
-use App\Models\ItemWizardProfile;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
 /**
- * [OWNER 2026-07-17] Menus enfants borne+caisse :
- *  - « Menu Enfant Nuggets » (slug menu-enfant-nuggets) → étape CHOIX DE SAUCE
- *    (12 sauces copiées du burger de référence, 1ère gratuite, 2e @0,50 via
- *    « Sauce supplémentaire ») ;
- *  - « Menu Enfant Chicken Burger » (slug menu-enfant-burger) → étape CRUDITÉS
- *    (Salade, Tomate, Oignon @0) PUIS SUPPLÉMENTS standard (liste ≤1 € copiée du
- *    burger de référence, sans « Viande supplémentaire »).
+ * [OWNER 2026-07-17 → refondu 2026-07-28] Menus enfants borne+caisse :
+ *  - « Menu Enfant Nuggets » (menu-enfant-nuggets) → étape CHOIX DE SAUCE (1ère gratuite, +0,50).
+ *  - « Menu Enfant Chicken Burger » (menu-enfant-burger) → SAUCE + CRUDITÉS (Salade/Tomate/Oignon)
+ *    + SUPPLÉMENTS standard (≤1 €, sans « Viande supplémentaire ») — « la sauce, les crus, les
+ *    suppléments : trois choses » (plainte owner 2026-07-28, le chicken burger n'affichait que crudités).
  *
- * Pourquoi un profil composer PUBLIÉ niveau item : la cat menu-enfant est en
- * wizard_template 'simple' → l'heuristique borne (KioskWizardComponent
- * effectiveWizardTemplate) n'affiche JAMAIS sauce/garnitures ; seul un profil
- * item publié est projeté par NormalItemResource/ItemResource et piloté à
- * l'identique par la caisse (pos-wizard composer-aware, flag ON). DATA UNIQUEMENT
- * — aucun fichier frozen. Idempotente (skip si profil déjà canonique).
+ * MÉCANISME (refondu 2026-07-28 après audit adversarial) — « comme un sandwich », SANS profil composer :
+ *  - On ajoute l'attribut sauce (variations prix 0) sur les 2 menus enfants + les crudités/suppléments
+ *    (extras) sur le chicken burger.
+ *  - On bascule la CATÉGORIE menu-enfant de wizard_template 'simple' → 'sandwich' : la borne affiche
+ *    alors, par data-gating (shouldShowStep), l'étape `sauce` sur les deux + `garnitures`/`supplements`
+ *    là où la donnée existe (⇒ Nuggets = [sauce], Chicken Burger = [sauce, garnitures, supplements]).
+ *    has_menu=false ⇒ aucune étape menu/boisson parasite ; pas de pain/viande ⇒ étapes masquées.
+ *  - La caisse (renderSinglePage) est data-driven : sauce/crudités/suppléments s'affichent depuis la donnée.
+ *  - La 2ᵉ+ sauce est facturée par « Sauce supplémentaire » @0,50 (EnsureSauceSupplementExtrasCommand).
  *
- * Contrat [RED F3] : « ensure » = ENFORCE l'état publié. Relancer la commande
- * re-publie un profil dépublié à la main ; le rollback (dépublier, cf. down()
- * de la migration jumelle) suppose de NE PAS relancer la commande ensuite.
+ * POURQUOI PLUS DE PROFIL COMPOSER PUBLIÉ (l'ancienne approche introduisait une RÉGRESSION 422 —
+ * attrapée par 2 agents adversaires 2026-07-28) : un profil publié ACTIVE
+ * `PricingService::assertComposerSelectionsBelongToPublishedProfile`, qui rejette (422) l'extra
+ * générique « Sauce supplémentaire » (group_label='sauce') que la caisse facture TOUJOURS pour la
+ * 2ᵉ sauce — car il n'est projeté par aucune étape `extra_group`. Sans profil, le contrôle est skippé
+ * (comme les sandwiches) → affiché == scellé, 0 régression 422. Corrige AUSSI le Nuggets (même piège
+ * pré-existant). DATA/CONFIG UNIQUEMENT — 0 fichier frozen. Idempotent ; migration jumelle rejoue ensure().
  */
 class EnsureKidsMenuStepsCommand extends Command
 {
     protected $signature = 'menu:ensure-kids-menu-steps {--dry-run : Compter sans écrire}';
 
-    protected $description = "Menus enfants : étape sauce (Nuggets) + crudités puis suppléments (Chicken Burger) sur borne+caisse via profil composer publié. Idempotent.";
+    protected $description = "Menus enfants : sauce (Nuggets+Burger) + crudités/suppléments (Burger) via template catégorie 'sandwich' (sans profil composer → 0 régression 422). Idempotent.";
 
     public const NUGGETS_SLUG = 'menu-enfant-nuggets';
 
     public const KIDS_BURGER_SLUG = 'menu-enfant-burger';
+
+    /** Template borne qui expose sauce + garnitures + suppléments par data-gating (has_menu=false). */
+    public const WIZARD_TEMPLATE = 'sandwich';
 
     /** Repli si aucun burger de référence vivant (fresh install). */
     public const CANONICAL_SAUCES = [
@@ -59,21 +65,22 @@ class EnsureKidsMenuStepsCommand extends Command
         $dry = (bool) $this->option('dry-run');
         $r = self::ensure($dry);
         $this->info(($dry ? '[dry-run] ' : '')
-            ."Kids menu steps — sauces+{$r['variations']} var, extras+{$r['extras']}, profils publiés/rebâtis {$r['profiles']}, sauce-supplément+{$r['sauce_extra']}.");
+            ."Kids menu steps — sauces+{$r['variations']} var, extras+{$r['extras']}, catégories template→'".self::WIZARD_TEMPLATE."' ({$r['categories']}), profils dépubliés {$r['profiles_unpublished']}, sauce-supplément+{$r['sauce_extra']}.");
 
         return self::SUCCESS;
     }
 
     /**
-     * @return array{variations:int,extras:int,profiles:int,sauce_extra:int}
+     * @return array{variations:int,extras:int,categories:int,profiles_unpublished:int,sauce_extra:int}
      */
     public static function ensure(bool $dryRun = false): array
     {
-        $out = ['variations' => 0, 'extras' => 0, 'profiles' => 0, 'sauce_extra' => 0];
+        $out = ['variations' => 0, 'extras' => 0, 'categories' => 0, 'profiles_unpublished' => 0, 'sauce_extra' => 0];
 
-        // ── Attribut sauce = celui (nom %sauce%) portant le plus de variations actives.
+        // ── Attribut sauce = celui (nom %sauce%, hors « bol ») portant le plus de variations actives.
         $sauceAttr = DB::table('item_attributes')
             ->whereRaw('LOWER(name) LIKE ?', ['%sauce%'])
+            ->whereRaw('LOWER(name) NOT LIKE ?', ['%bol%'])
             ->where('status', Status::ACTIVE)
             ->get(['id', 'name'])
             ->sortByDesc(fn ($a) => DB::table('item_variations')
@@ -81,11 +88,7 @@ class EnsureKidsMenuStepsCommand extends Command
                 ->whereNull('deleted_at')->count())
             ->first();
 
-        // NB : pas d'early-return si l'attribut sauce manque — la partie (b)
-        // Chicken Burger (crudités/suppléments) n'en dépend pas [RED F5].
-
-        // ── Burger de référence = item ACTIF au plus de sauces actives sur cet attribut.
-        //    Jamais un item enfant (ce sont les cibles) ; tie-break id asc (déterministe).
+        // ── Burger de référence = item ACTIF au plus de sauces (jamais un menu enfant).
         $refItemId = $sauceAttr === null ? null : DB::table('item_variations as v')
             ->join('items as i', 'i.id', '=', 'v.item_id')
             ->where('v.item_attribute_id', $sauceAttr->id)
@@ -102,8 +105,7 @@ class EnsureKidsMenuStepsCommand extends Command
             ->where('status', Status::ACTIVE)->whereNull('deleted_at')
             ->orderBy('id')->pluck('name')->unique()->values()->all();
 
-        // ── Liste suppléments standard = extras 'supplement' ≤1 € du burger de réf
-        //    (exclut « Viande supplémentaire » @2,50 — pas pour un menu enfant).
+        // ── Liste suppléments standard = extras 'supplement' ≤1 € du burger de réf (sans « viande »).
         $supplements = self::FALLBACK_SUPPLEMENTS;
         if ($refItemId !== null) {
             $refSupps = DB::table('item_extras')
@@ -117,89 +119,51 @@ class EnsureKidsMenuStepsCommand extends Command
             }
         }
 
-        $nuggets = DB::table('items')->where('slug', self::NUGGETS_SLUG)->whereNull('deleted_at')->first(['id']);
-        $kidsBurger = DB::table('items')->where('slug', self::KIDS_BURGER_SLUG)->whereNull('deleted_at')->first(['id']);
-        $touchedProfiles = [];
+        $nuggets = DB::table('items')->where('slug', self::NUGGETS_SLUG)->whereNull('deleted_at')->first(['id', 'item_category_id']);
+        $kidsBurger = DB::table('items')->where('slug', self::KIDS_BURGER_SLUG)->whereNull('deleted_at')->first(['id', 'item_category_id']);
+        $kidsCategoryIds = [];
 
-        // ── (a) Menu Enfant Nuggets : sauces + profil [sauce] (exige l'attribut sauce).
-        if ($nuggets !== null && $sauceAttr !== null) {
-            foreach ($sauces as $sauce) {
-                $exists = DB::table('item_variations')
-                    ->where('item_id', $nuggets->id)->where('item_attribute_id', $sauceAttr->id)
-                    ->where('name', $sauce)->whereNull('deleted_at')->exists();
-                if ($exists) {
-                    continue;
-                }
-                $out['variations']++;
-                if (! $dryRun) {
-                    DB::table('item_variations')->insert([
-                        'item_id' => $nuggets->id,
-                        'item_attribute_id' => $sauceAttr->id,
-                        'name' => $sauce,
-                        'price' => 0,
-                        'status' => Status::ACTIVE,
-                        'visible_on' => null,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-                }
+        // ── (a) Menu Enfant Nuggets : sauces (exige l'attribut sauce). Pas de profil.
+        if ($nuggets !== null) {
+            $kidsCategoryIds[(int) $nuggets->item_category_id] = true;
+            if ($sauceAttr !== null) {
+                $out['variations'] += self::ensureSauceVariations((int) $nuggets->id, (int) $sauceAttr->id, $sauces, $dryRun);
             }
-
-            $changed = self::ensureProfile($nuggets->id, [[
-                'step_key' => 'sauce',
-                'label' => 'Choisis ta sauce',
-                'source_type' => 'item_attribute',
-                'source_ref' => $sauceAttr->name,
-                'source_item_attribute_id' => $sauceAttr->id,
-                'min_select' => 1,
-                'max_select' => 1,
-            ]], $dryRun, $touchedProfiles);
-            $out['profiles'] += $changed;
+            $out['profiles_unpublished'] += self::unpublishProfiles((int) $nuggets->id, $dryRun);
         }
 
-        // ── (b) Menu Enfant Chicken Burger : crudités + suppléments + profil.
+        // ── (b) Menu Enfant Chicken Burger : sauces + crudités + suppléments. Pas de profil.
         if ($kidsBurger !== null) {
+            $kidsCategoryIds[(int) $kidsBurger->item_category_id] = true;
+            if ($sauceAttr !== null) {
+                $out['variations'] += self::ensureSauceVariations((int) $kidsBurger->id, (int) $sauceAttr->id, $sauces, $dryRun);
+            }
             foreach (self::CRUDITES as $crudite) {
-                $out['extras'] += self::ensureExtra($kidsBurger->id, $crudite, 0.0, 'crudite', $dryRun);
+                $out['extras'] += self::ensureExtra((int) $kidsBurger->id, $crudite, 0.0, 'crudite', $dryRun);
             }
             foreach ($supplements as $name => $price) {
-                $out['extras'] += self::ensureExtra($kidsBurger->id, (string) $name, (float) $price, 'supplement', $dryRun);
+                $out['extras'] += self::ensureExtra((int) $kidsBurger->id, (string) $name, (float) $price, 'supplement', $dryRun);
             }
-
-            $changed = self::ensureProfile($kidsBurger->id, [
-                [
-                    'step_key' => 'garnitures',
-                    'label' => 'Choisis tes garnitures',
-                    'source_type' => 'extra_group',
-                    'source_ref' => 'crudite',
-                    'source_item_attribute_id' => null,
-                    'min_select' => 0,
-                    'max_select' => 6,
-                ],
-                [
-                    'step_key' => 'supplements',
-                    'label' => 'Suppléments',
-                    'source_type' => 'extra_group',
-                    'source_ref' => 'supplement',
-                    'source_item_attribute_id' => null,
-                    'min_select' => 0,
-                    'max_select' => 5,
-                ],
-            ], $dryRun, $touchedProfiles);
-            $out['profiles'] += $changed;
+            $out['profiles_unpublished'] += self::unpublishProfiles((int) $kidsBurger->id, $dryRun);
         }
 
-        // ── Véhicule 2e sauce (@0,50) sur tout item à attribut sauce (couvre Nuggets).
-        $out['sauce_extra'] = EnsureSauceSupplementExtrasCommand::ensure($dryRun);
-
-        // ── Synchro borne/caisse : invalider caches + prévenir les SPA.
-        if (! $dryRun && ($touchedProfiles !== [] || $out['variations'] + $out['extras'] + $out['sauce_extra'] > 0)) {
-            foreach ($touchedProfiles as $profileId) {
-                $profile = ItemWizardProfile::query()->find($profileId);
-                if ($profile !== null) {
-                    event(ComposerProfileChanged::fromProfile($profile, 'published'));
+        // ── Catégorie(s) menu-enfant → template 'sandwich' (borne data-gate sauce/garnitures/suppléments).
+        foreach (array_keys($kidsCategoryIds) as $catId) {
+            $cat = DB::table('item_categories')->where('id', $catId)->first(['id', 'wizard_template']);
+            if ($cat !== null && $cat->wizard_template !== self::WIZARD_TEMPLATE) {
+                $out['categories']++;
+                if (! $dryRun) {
+                    DB::table('item_categories')->where('id', $catId)
+                        ->update(['wizard_template' => self::WIZARD_TEMPLATE, 'updated_at' => now()]);
                 }
             }
+        }
+
+        // ── Véhicule 2e sauce (@0,50) sur tout item à attribut sauce (couvre les menus enfants).
+        $out['sauce_extra'] = EnsureSauceSupplementExtrasCommand::ensure($dryRun);
+
+        // ── Synchro borne/caisse : prévenir les SPA d'un changement catalogue.
+        if (! $dryRun && ($out['variations'] + $out['extras'] + $out['categories'] + $out['profiles_unpublished'] + $out['sauce_extra'] > 0)) {
             event(new CatalogChanged(
                 entityType: 'catalogue',
                 entityId: 0,
@@ -210,6 +174,54 @@ class EnsureKidsMenuStepsCommand extends Command
         }
 
         return $out;
+    }
+
+    /** Ajoute les variations sauce manquantes (prix 0) sur un item. Retourne le nombre ajouté. */
+    private static function ensureSauceVariations(int $itemId, int $sauceAttrId, array $sauces, bool $dryRun): int
+    {
+        $added = 0;
+        foreach ($sauces as $sauce) {
+            $exists = DB::table('item_variations')
+                ->where('item_id', $itemId)->where('item_attribute_id', $sauceAttrId)
+                ->where('name', $sauce)->whereNull('deleted_at')->exists();
+            if ($exists) {
+                continue;
+            }
+            $added++;
+            if (! $dryRun) {
+                DB::table('item_variations')->insert([
+                    'item_id' => $itemId,
+                    'item_attribute_id' => $sauceAttrId,
+                    'name' => $sauce,
+                    'price' => 0,
+                    'status' => Status::ACTIVE,
+                    'visible_on' => null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
+
+        return $added;
+    }
+
+    /**
+     * Dépublie tout profil composer publié d'un item (l'ancienne approche 2026-07-17→07-28 en
+     * publiait un ; il déclenchait la régression 422 — cf. docblock). Retourne le nombre dépublié.
+     */
+    private static function unpublishProfiles(int $itemId, bool $dryRun): int
+    {
+        $ids = DB::table('item_wizard_profiles')
+            ->where('item_id', $itemId)->where('is_published', 1)->pluck('id');
+        if ($ids->isEmpty()) {
+            return 0;
+        }
+        if (! $dryRun) {
+            DB::table('item_wizard_profiles')->whereIn('id', $ids)
+                ->update(['is_published' => 0, 'updated_at' => now()]);
+        }
+
+        return $ids->count();
     }
 
     /** Crée l'extra vivant s'il manque. Retourne 1 si créé. */
@@ -235,83 +247,6 @@ class EnsureKidsMenuStepsCommand extends Command
                 'updated_at' => now(),
             ]);
         }
-
-        return 1;
-    }
-
-    /**
-     * Publie (ou rebâtit) le profil composer item avec EXACTEMENT ces steps actifs.
-     * Skip si déjà canonique. Retourne 1 si modifié.
-     *
-     * @param array<int, array<string, mixed>> $steps
-     * @param array<int, int> $touchedProfiles
-     */
-    private static function ensureProfile(int $itemId, array $steps, bool $dryRun, array &$touchedProfiles): int
-    {
-        $profile = DB::table('item_wizard_profiles')->where('item_id', $itemId)->orderByDesc('id')->first();
-
-        $wantedKeys = array_column($steps, 'step_key');
-        if ($profile !== null && (int) $profile->is_published === 1) {
-            $activeKeys = DB::table('item_wizard_steps')
-                ->where('profile_id', $profile->id)->where('is_active', 1)
-                ->orderBy('position')->pluck('step_key')->all();
-            $inactiveCount = DB::table('item_wizard_steps')
-                ->where('profile_id', $profile->id)->where('is_active', 0)->count();
-            if ($activeKeys === $wantedKeys && $inactiveCount === 0) {
-                return 0; // déjà canonique — idempotent
-            }
-        }
-
-        if ($dryRun) {
-            return 1;
-        }
-
-        if ($profile === null) {
-            $profileId = (int) DB::table('item_wizard_profiles')->insertGetId([
-                'item_id' => $itemId,
-                'item_category_id' => null,
-                'template' => 'custom',
-                'version' => 1,
-                'is_published' => 1,
-                'published_at' => now(),
-                'branch_id_scope' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        } else {
-            $profileId = (int) $profile->id;
-            DB::table('item_wizard_steps')->where('profile_id', $profileId)->delete();
-            DB::table('item_wizard_profiles')->where('id', $profileId)->update([
-                'template' => 'custom',
-                'version' => (int) $profile->version + 1,
-                'is_published' => 1,
-                'published_at' => now(),
-                'updated_at' => now(),
-            ]);
-        }
-
-        foreach ($steps as $position => $step) {
-            DB::table('item_wizard_steps')->insert([
-                'profile_id' => $profileId,
-                'step_key' => $step['step_key'],
-                'label' => $step['label'],
-                'source_type' => $step['source_type'],
-                'source_ref' => $step['source_ref'],
-                'source_item_attribute_id' => $step['source_item_attribute_id'] ?? null,
-                'min_select' => $step['min_select'],
-                'max_select' => $step['max_select'],
-                'allow_repeat' => 0,
-                'visible_on' => null,
-                'stockable_choices' => 0,
-                'position' => $position,
-                'is_active' => 1,
-                'addon_role' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        }
-
-        $touchedProfiles[] = $profileId;
 
         return 1;
     }

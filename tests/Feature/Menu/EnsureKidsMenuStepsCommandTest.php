@@ -106,7 +106,7 @@ class EnsureKidsMenuStepsCommandTest extends TestCase
         ]);
     }
 
-    public function test_nuggets_gets_published_sauce_step_with_full_sauce_list(): void
+    public function test_nuggets_gets_sauce_data_and_sandwich_template_WITHOUT_profile(): void
     {
         $this->artisan('menu:ensure-kids-menu-steps')->assertExitCode(0);
 
@@ -119,18 +119,18 @@ class EnsureKidsMenuStepsCommandTest extends TestCase
         $this->assertCount(12, $variations, '12 sauces copiées du burger de référence');
         $this->assertEqualsWithDelta(0.0, (float) $variations->first()->price, 0.001, '1ère sauce gratuite');
 
-        $profile = DB::table('item_wizard_profiles')->where('item_id', $this->nuggets->id)->first();
-        $this->assertNotNull($profile, 'profil composer niveau item créé');
-        $this->assertSame(1, (int) $profile->is_published, 'profil PUBLIÉ (sinon la borne l\'ignore)');
+        // AUCUN profil publié (l'approche à-profil faisait 422 sur la 2ᵉ sauce — cf. FritesKidsSauceNoProfileSealTest).
+        $this->assertSame(
+            0,
+            DB::table('item_wizard_profiles')->where('item_id', $this->nuggets->id)->where('is_published', 1)->count(),
+            'AUCUN profil publié sur le Nuggets (sinon régression 422)'
+        );
 
-        $steps = DB::table('item_wizard_steps')
-            ->where('profile_id', $profile->id)->where('is_active', 1)
-            ->orderBy('position')->get();
-        $this->assertSame(['sauce'], $steps->pluck('step_key')->all(), 'une seule étape : sauce');
-        $this->assertSame('item_attribute', $steps[0]->source_type);
-        $this->assertSame($this->sauceAttrId, (int) $steps[0]->source_item_attribute_id);
-        $this->assertSame(1, (int) $steps[0]->min_select, 'sauce obligatoire');
-        $this->assertSame(1, (int) $steps[0]->max_select);
+        // La borne affiche la sauce via le template catégorie 'sandwich' (data-gaté).
+        $catTmpl = DB::table('item_categories')
+            ->where('id', DB::table('items')->where('id', $this->nuggets->id)->value('item_category_id'))
+            ->value('wizard_template');
+        $this->assertSame('sandwich', $catTmpl, 'catégorie menu-enfant en template sandwich');
 
         $this->assertSame(
             1,
@@ -140,9 +140,17 @@ class EnsureKidsMenuStepsCommandTest extends TestCase
         );
     }
 
-    public function test_kids_burger_gets_crudites_then_standard_supplements(): void
+    public function test_kids_burger_gets_sauce_crudites_supplements_data_no_profile(): void
     {
         $this->artisan('menu:ensure-kids-menu-steps')->assertExitCode(0);
+
+        // [OWNER 2026-07-28] Le kids burger porte les 12 sauces (1ère gratuite) + crudités + suppléments.
+        $sauceVars = DB::table('item_variations')
+            ->where('item_id', $this->kidsBurger->id)
+            ->where('item_attribute_id', $this->sauceAttrId)
+            ->where('status', Status::ACTIVE)->whereNull('deleted_at')->get();
+        $this->assertCount(12, $sauceVars, '12 sauces sur le kids burger (owner 2026-07-28)');
+        $this->assertEqualsWithDelta(0.0, (float) $sauceVars->first()->price, 0.001, '1ère sauce gratuite');
 
         $crudites = ItemExtra::where('item_id', $this->kidsBurger->id)
             ->where('group_label', 'crudite')->orderBy('id')->get();
@@ -160,22 +168,37 @@ class EnsureKidsMenuStepsCommandTest extends TestCase
         );
         $this->assertEqualsWithDelta(0.90, (float) $supps->firstWhere('name', 'Cheddar')->price, 0.001);
 
-        $profile = DB::table('item_wizard_profiles')->where('item_id', $this->kidsBurger->id)->first();
-        $this->assertNotNull($profile);
-        $this->assertSame(1, (int) $profile->is_published);
-
-        $steps = DB::table('item_wizard_steps')
-            ->where('profile_id', $profile->id)->where('is_active', 1)
-            ->orderBy('position')->get();
         $this->assertSame(
-            ['garnitures', 'supplements'],
-            $steps->pluck('step_key')->all(),
-            'crudités PUIS suppléments (ordre owner)'
+            1,
+            ItemExtra::where('item_id', $this->kidsBurger->id)
+                ->where('name', 'Sauce supplémentaire')->where('group_label', 'sauce')->count(),
+            'véhicule de facturation 2e sauce présent (@0,50)'
         );
-        $this->assertSame('extra_group', $steps[0]->source_type);
-        $this->assertSame('crudite', $steps[0]->source_ref);
-        $this->assertSame('supplement', $steps[1]->source_ref);
-        $this->assertSame(0, (int) $steps[0]->min_select, 'crudités facultatives');
+
+        // « la sauce, les crus, les suppléments : trois choses » — servies par data-gating (template sandwich),
+        // PAS un profil publié (qui ferait 422). La borne affiche [sauce, garnitures, supplements] car la donnée existe.
+        $this->assertSame(
+            0,
+            DB::table('item_wizard_profiles')->where('item_id', $this->kidsBurger->id)->where('is_published', 1)->count(),
+            'AUCUN profil publié sur le kids burger (sinon régression 422)'
+        );
+        $catTmpl = DB::table('item_categories')
+            ->where('id', DB::table('items')->where('id', $this->kidsBurger->id)->value('item_category_id'))
+            ->value('wizard_template');
+        $this->assertSame('sandwich', $catTmpl, 'catégorie menu-enfant en template sandwich');
+    }
+
+    public function test_command_unpublishes_pre_existing_kids_profiles(): void
+    {
+        // Garde-fou : un profil publié pré-existant (ancienne approche, ou le Nuggets d'origine) est DÉPUBLIÉ.
+        $pid = DB::table('item_wizard_profiles')->insertGetId([
+            'item_id' => $this->nuggets->id, 'template' => 'custom', 'version' => 1,
+            'is_published' => 1, 'published_at' => now(), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $this->artisan('menu:ensure-kids-menu-steps')->assertExitCode(0);
+
+        $this->assertSame(0, (int) DB::table('item_wizard_profiles')->where('id', $pid)->value('is_published'), 'profil pré-existant dépublié');
     }
 
     public function test_idempotent_second_run_changes_nothing(): void
@@ -186,7 +209,7 @@ class EnsureKidsMenuStepsCommandTest extends TestCase
             DB::table('item_variations')->orderBy('id')->get()->toArray(),
             DB::table('item_extras')->orderBy('id')->get(['id', 'item_id', 'name', 'price', 'group_label', 'status', 'deleted_at'])->toArray(),
             DB::table('item_wizard_profiles')->orderBy('id')->get(['id', 'item_id', 'is_published', 'version'])->toArray(),
-            DB::table('item_wizard_steps')->orderBy('id')->get(['id', 'profile_id', 'step_key', 'position', 'is_active'])->toArray(),
+            DB::table('item_categories')->orderBy('id')->get(['id', 'wizard_template'])->toArray(),
         ];
 
         $first = $snapshot();

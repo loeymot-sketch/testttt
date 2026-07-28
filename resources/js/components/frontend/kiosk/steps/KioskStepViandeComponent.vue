@@ -115,6 +115,19 @@
     <div v-if="viandeList.length > 0 && !includedQuotaComplete" class="kiosk-validation-hint" role="status" aria-live="polite">
       {{ viandeHintRemaining }}
     </div>
+
+    <!-- [OWNER 2026-07-28] CTA supplément permanent : une fois le quota inclus atteint, la borne
+         DOIT toujours proposer d'ajouter une viande EN PLUS (nommée, @unitPrice chacune). Sans lui,
+         le compteur « X/X ✓ complète » lisait « terminé » et le supplément restait invisible. -->
+    <div
+      v-if="viandeList.length > 0 && includedQuotaComplete && viandeSupplementsEnabled"
+      class="kiosk-viande-suppl-cta"
+      role="status"
+      aria-live="polite"
+      data-testid="kiosk-viande-suppl-cta"
+    >
+      {{ viandeSupplementCtaText }}
+    </div>
   </div>
 </template>
 
@@ -256,6 +269,13 @@ export default {
     },
     supplementViandeTotalPrice() {
       return this.supplementViandeCount * this.viandeSupplementUnitPrice;
+    },
+    // [OWNER 2026-07-28] Texte du CTA supplément (quota atteint) : invite explicite à ajouter
+    // une viande NOMMÉE en plus. Chaîne FR inline — cohérent avec les libellés « supplément(s) »
+    // déjà codés en dur dans ce composant (compteur ligne ~12/17). V1 LOCAL = locale FR.
+    viandeSupplementCtaText() {
+      const price = this.formatPrice(this.viandeSupplementUnitPrice);
+      return `Envie de plus ? Touchez une viande pour l'ajouter en supplément (+${price} chacune).`;
     },
   },
   watch: {
@@ -543,6 +563,21 @@ export default {
 
 .kiosk-viande-suppl-badge {
   color: var(--kiosk-warning, #E86B00);
+}
+
+/* [OWNER 2026-07-28] CTA supplément permanent (quota atteint) — même accent ambre que les
+   badges/affordances supplément ci-dessus. Toujours visible ⇒ le supplément viande NOMMÉ reste
+   découvrable même après « X/X ✓ complète ». */
+.kiosk-viande-suppl-cta {
+  margin-top: 16px;
+  padding: 12px 18px;
+  border-radius: 14px;
+  background: rgba(245, 158, 11, 0.10);
+  border: 1px solid rgba(245, 158, 11, 0.32);
+  color: var(--kiosk-warning, #E86B00);
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
 }
 
 .kiosk-step-empty {

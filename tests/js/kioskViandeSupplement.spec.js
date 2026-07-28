@@ -144,6 +144,42 @@ describe('BORNE STEP viande — dépassement du quota inclus', () => {
     // À 2/2 sans mécanisme d'extra → canIncrement bloque (comportement d'avant la feature).
     expect(wrapper.vm.canIncrement(wrapper.vm.viandeList.find((v) => v.key === '9003'))).toBe(false);
   });
+
+  // [OWNER 2026-07-28] CTA supplément permanent — la borne DOIT toujours proposer d'ajouter une
+  // viande en plus une fois le quota inclus atteint (plainte « la borne ne propose pas de supplément »).
+  it('CTA supplément CACHÉ tant que le quota inclus n\'est pas atteint (1/2)', async () => {
+    const wrapper = mountStep(2);
+    wrapper.vm.increment('9001'); // 1/2 seulement
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.includedQuotaComplete).toBe(false);
+    expect(wrapper.find('[data-testid="kiosk-viande-suppl-cta"]').exists()).toBe(false);
+  });
+
+  it('CTA supplément VISIBLE à 2/2 quand l\'item porte l\'extra (nomme le prix @2,50)', async () => {
+    const wrapper = mountStep(2);
+    wrapper.vm.increment('9001'); // Poulet
+    wrapper.vm.increment('9002'); // Mexicanos → 2/2
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.includedQuotaComplete).toBe(true);
+    expect(wrapper.vm.viandeSupplementsEnabled).toBe(true);
+    const cta = wrapper.find('[data-testid="kiosk-viande-suppl-cta"]');
+    expect(cta.exists()).toBe(true);
+    expect(cta.text()).toMatch(/supplément/i);
+    expect(cta.text()).toMatch(/2[.,]50/); // prix unitaire nommé
+  });
+
+  it('CTA supplément ABSENT à 2/2 si l\'item n\'a PAS l\'extra (dépassement impossible)', async () => {
+    const item = tacos2ViandesItem();
+    item.extras = item.extras.filter((e) => !/viande\s*suppl/i.test(e.name));
+    const wrapper = mount(KioskStepViandeComponent, {
+      props: { step: {}, item, selections: { viandes: { 9001: 1, 9002: 1 }, _tailleMeta: { viandeCount: 2 } }, activeFilters: [] },
+      global: { plugins: [i18n] },
+    });
+    expect(wrapper.vm.includedQuotaComplete).toBe(true);
+    expect(wrapper.vm.viandeSupplementsEnabled).toBe(false);
+    // Pas d'extra ⇒ pas de CTA trompeur (on ne propose pas un supplément non facturable).
+    expect(wrapper.find('[data-testid="kiosk-viande-suppl-cta"]').exists()).toBe(false);
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
