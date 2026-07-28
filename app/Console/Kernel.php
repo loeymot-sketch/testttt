@@ -181,12 +181,20 @@ class Kernel extends ConsoleKernel
 
         // [GO-LIVE FLOOR 2026-06-04] Backups are worthless unless restorable.
         // Restore the latest backup into a scratch DB + assert parity + fiscal chain.
+        // [ROBUSTESSE 2026-07-28] Sortie appendée dans un log dédié : le premier run
+        // planifié (05:00 le 28/07) a FAIL sans aucune trace exploitable. ÉTAT ATTENDU
+        // SUR STAGING : FAIL — le critère vert n°4 re-vérifie la chaîne NF525 sur la
+        // copie restaurée, or la DB staging porte le TAMPER CONNU (audit_logs id=1,
+        // secret mismatch — GOAL_REMEDIATION_3_POINTS_STAGING_2026-07-15) → la copie
+        // aussi. La restauration + les counts (critères 1-3) passent ; le gate reste
+        // ENTIER (ne pas l'affaiblir) et deviendra vert seul au go-live (chaîne fraîche).
         $schedule->command('backup:verify-restore')
             ->dailyAt('05:00')
             ->name('foodking-backup-verify-restore')
             ->description('Restore latest backup to scratch DB + verify counts + NF525 chain')
             ->withoutOverlapping(30)
-            ->onOneServer();
+            ->onOneServer()
+            ->appendOutputTo(storage_path('logs/backup-verify-restore.log'));
 
         // [GO-LIVE FLOOR 2026-06-04] Single-box disk hygiene — the box hit 100% twice.
         // Purge debugbar + rotated logs (NF525 fiscal-*.log are kept) + stale caches.
