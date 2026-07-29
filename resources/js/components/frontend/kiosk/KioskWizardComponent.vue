@@ -2005,6 +2005,30 @@ export default {
       }
       // @pricing-allowed-block end
 
+      // [PLAINTE OWNER 2026-07-29 · LOCK_KIOSK_FRITES_SAUCE_BILLING — déblocage frozen §7]
+      // Sauce FRITES en plus : MÊME mécanisme que la sauce sandwich ci-dessus (1ʳᵉ incluse,
+      // chaque suivante = 1 ItemExtra « Sauce supplémentaire » du produit parent @0,50).
+      // AVANT : l'étape affichait « +0,50 € » mais rien n'était ni compté dans le total ni
+      // poussé ici → le client ajoutait une sauce, le prix ne bougeait pas et la caisse ne
+      // la facturait jamais (manque à gagner + composition_snapshot sous-facturé). Le SITE
+      // facture et scelle déjà ce surcoût (api.js) : cette ligne restaure la parité.
+      // Items sans cet extra → aucun push, sauce frites gratuite (display == sealed).
+      // @pricing-allowed-block start — signed-off: owner gate 2026-07-29 (plainte suppléments non calculés)
+      const extraFritesSauceN = Math.max(0, (this.selections.fritesSauceOrder || []).length - 1);
+      if (extraFritesSauceN > 0) {
+        const fsExtra = (item.extras || []).find(e =>
+          e && String(e.group_label || '').toLowerCase() === 'sauce' && /suppl/i.test(String(e.name || ''))
+        );
+        if (fsExtra?.id) {
+          const fsPrice = parseFloat(fsExtra.convert_price || fsExtra.price || 0) || 0;
+          for (let i = 0; i < extraFritesSauceN; i++) {
+            normalizedExtras.push({ id: parseInt(fsExtra.id, 10), name: fsExtra.name || '' });
+            itemExtraTotal += fsPrice;
+          }
+        }
+      }
+      // @pricing-allowed-block end
+
       Object.keys(this.selections.supplements).forEach(id => {
         const count = normalizeKioskSelectionCount(this.selections.supplements[id]);
         if (count <= 0) return;
