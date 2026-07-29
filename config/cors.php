@@ -15,7 +15,10 @@ return [
         // [WEB-WIREUP 2026-06-26] Standalone customer web (React CDN, no build) served on :8011,
         // calls the API cross-origin with Bearer token + X-API-Key (no cookies). FRONTEND_WEB_DOMAIN
         // overrides for prod; the localhost variants cover local dev / e2e.
-        env('FRONTEND_WEB_DOMAIN'),
+        // [DOMAINE 2026-07-29] FRONTEND_WEB_DOMAIN accepte désormais une LISTE séparée par
+        // virgules (vercel + lecayenne.fr + www.lecayenne.fr) — le site vit sur le domaine
+        // propre ET l'URL vercel historique reste valide.
+        ...array_map('trim', array_filter(explode(',', (string) env('FRONTEND_WEB_DOMAIN', '')))),
         'http://localhost:8011',
         'http://127.0.0.1:8011',
     ]))),
