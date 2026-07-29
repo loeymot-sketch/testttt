@@ -1853,10 +1853,17 @@ export default {
     font-size: 11px;
 }
 
+/* [S2 V4 2026-07-29] `flex-wrap` + `gap` : sur une carte « à encaisser », le
+   bloc montant porte le libellé « À ENCAISSER : » et les actions comptent 4
+   boutons — en une seule rangée non-wrappable, le libellé était rogné puis
+   recouvert par le bouton Encaisser. Il descend maintenant sur sa propre
+   rangée quand la place manque. */
 .pos-tracker-card-foot {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
+    gap: 6px;
     padding-top: 6px;
     border-top: 1px dashed var(--pos-tracker-border);
 }

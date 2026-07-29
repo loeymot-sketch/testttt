@@ -1110,7 +1110,7 @@
         "is_featured": "Mis en avant",
         "is_upsell_hint": "Afficher cet article comme suggestion au paiement sur la borne",
         "item": "Article",
-        "item_description": "Article Description",
+        "item_description": "Désignation",
         "items": "Articles",
         "items_board": "Préparations",
         "json": "Json",
