@@ -8,7 +8,12 @@ Base `fa172d5f4` · branche `worktree-s2-caisse-stock-2026-07-29` (poussée) · 
 | Auto-RED (moi, sur mon propre diff) | 0 | 1 | 0 | 0 | carte fantôme statut terminal — corrigé avant le cycle 1 |
 | **Cycle 1** | 0 | **2** | 1 | 3 | fusion all-time du tracker + coût SQL ; boot-guard rendu inerte ; DST ; i18n — **tous corrigés** |
 | **Cycle 2** | **0** | **0** | 2 | 4 | sessions PIN survivantes ; chip illisible ; bouton hors écran ; back-off ; libellé ; reset — **tous corrigés** |
-| **Cycle 3** | *(en cours à la rédaction)* | | | | balayage de clôture + attaque des correctifs du cycle 2 |
+| **Cycle 3** | **0** | **0** | 1 | 1 | colonne sticky au fond codé en dur (introduite par le cycle 2) ; 403 « non configuré » incompris des fronts — **corrigés** |
+
+➡️ **CONVERGENCE ATTEINTE** : cycles 2 et 3 **consécutifs** à P0 = 0 et P1 = 0 (DISCIPLINE §6).
+Le cycle 3 a aussi re-vérifié 4 affirmations de ce rapport prises au hasard : **toutes tiennent**
+(sûreté transactionnelle du correctif stock, frozen-diff 0, réimpression d'une commande clôturée
+reproduite au navigateur, « Non » présent dans le bundle).
 
 Auto-rétractation notable : le PASS « pagination FR » a été **retiré** après sonde DOM
 (cf. §4) — un `trans()` vert ne prouve pas ce que l'utilisateur voit.
@@ -61,7 +66,12 @@ Auto-rétractation notable : le PASS « pagination FR » a été **retiré** apr
 ## 5. Gates owner (aucune ne bloque le reste)
 1. **Poser `DAILY_BOOK_PIN` dans le `.env`** du poste : le Carnet est désormais fail-closed,
    il reste **inaccessible tant que l'owner n'a pas choisi un PIN** (c'était le prix à payer
-   pour supprimer le PIN public commité). Le boot prod refuse aussi de démarrer sans lui.
+   pour supprimer le PIN public commité). L'écran le dit maintenant explicitement au lieu
+   d'afficher « Code PIN incorrect ».
+   ⚠️ Précision vérifiée : en **production**, l'application refusait **déjà** de démarrer sans
+   `DAILY_BOOK_PIN` (le défaut `'2468'` déclenchait le boot-guard existant). Mon élargissement
+   du guard à la chaîne vide **ne change donc rien au comportement prod** — il empêche
+   seulement que la suppression du défaut ne transforme ce fail-loud en panne silencieuse.
 2. Wizard caisse : format « €6.90 » anglais — `pos-wizard.js` est **frozen strict**, un LOCK
    est requis si l'owner veut le format FR.
 3. Purge des items/catégories de test `E2E_PLAYWRIGHT_*` (re-semés à chaque run Playwright ;
