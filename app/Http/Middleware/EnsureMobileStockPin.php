@@ -18,6 +18,20 @@ class EnsureMobileStockPin
 
     public function handle(Request $request, Closure $next)
     {
+        // [S2 auto-RED cycle 2 2026-07-29] Miroir du garde posé sur le Carnet :
+        // le fail-closed du contrôleur ne bloque que les NOUVEAUX déverrouillages,
+        // une session déjà ouverte survivait indéfiniment (session glissante).
+        // Si le PIN est retiré de la configuration, l'accès doit se refermer
+        // immédiatement, y compris pour les sessions en cours.
+        if ((string) config('mobile_stock.pin', '') === '') {
+            $request->session()->forget(self::SESSION_KEY);
+
+            return response()->json([
+                'message' => 'Accès mobile non configuré.',
+                'locked' => true,
+            ], 403);
+        }
+
         $unlockedAt = (int) $request->session()->get(self::SESSION_KEY, 0);
         $maxAge = ((int) config('mobile_stock.session_minutes', 720)) * 60;
 

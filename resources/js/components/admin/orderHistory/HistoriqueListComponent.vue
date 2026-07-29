@@ -118,7 +118,7 @@
                             <th class="db-table-head-th">{{ $t('label.fiscal_number') }}</th>
                             <th class="db-table-head-th">{{ $t('label.date') }}</th>
                             <th class="db-table-head-th">{{ $t('label.status') }}</th>
-                            <th class="db-table-head-th" v-if="permissionChecker('pos-orders')">{{ $t('label.action') }}</th>
+                            <th class="db-table-head-th hist-action-col" v-if="permissionChecker('pos-orders')">{{ $t('label.action') }}</th>
                         </tr>
                     </thead>
                     <tbody class="db-table-body" v-if="orders.length > 0">
@@ -153,7 +153,7 @@
                                     {{ enums.orderStatusEnumArray[order.status] || order.status_name }}
                                 </span>
                             </td>
-                            <td class="db-table-body-td" v-if="permissionChecker('pos-orders')">
+                            <td class="db-table-body-td hist-action-col" v-if="permissionChecker('pos-orders')">
                                 <div class="flex justify-start items-center gap-1.5">
                                     <SmIconViewComponent :link="'admin.pos-orders.show'" :id="order.id" />
                                     <!--
@@ -453,6 +453,11 @@ export default {
         applyQuickFilter: function (id) {
             const toggleOff = this.activeQuickFilter === id;
             this.props.origin = null;
+            // [S2 auto-RED cycle 2] Remettre AUSSI à zéro la recherche libre :
+            // un n° de commande ou un client saisi restait appliqué en silence
+            // sous une chip qui suggère un filtre propre.
+            this.props.search.order_serial_no = "";
+            this.props.search.user_id = null;
             this.props.search.status = null;
             this.props.search.payment_status = null;
             this.props.search.source_surface = null;
@@ -644,11 +649,30 @@ export default {
     border: 1px solid transparent;
     transition: all 0.15s ease;
 }
-.hist-chip:hover { background: #ffe8dd; }
-.hist-chip--on {
+/* [S2 auto-RED cycle 2] `:hover` (0-2-0) battait `--on` (0-1-0) : la chip ACTIVE
+   repassait en fond pêche tout en gardant `color:#fff` → texte blanc sur #FFE8DD,
+   contraste 1,18:1. Sur l'écran TACTILE de la caisse le `:hover` reste collé après
+   le tap, donc le seul repère « quel filtre est actif » devenait illisible. */
+.hist-chip:hover:not(.hist-chip--on) { background: #ffe8dd; }
+.hist-chip--on,
+.hist-chip--on:hover {
     background: var(--pos-v5-brand-red, #f4501e);
     color: #fff;
 }
+
+/* [S2 auto-RED cycle 2 2026-07-29] Colonne ACTION collée à droite.
+   Le tableau (10 colonnes) déborde de ~190 px à 1280×800 — la résolution réelle
+   de l'écran de caisse — donc le bouton « réimprimer » livré par cette vague
+   naissait à x=1407 : invisible sans scroll horizontal, fonctionnalité non
+   découvrable. Sticky la garde toujours atteignable, sans masquer de donnée. */
+.hist-action-col {
+    position: sticky;
+    right: 0;
+    z-index: 2;
+    background: #fff;
+    box-shadow: -6px 0 8px -6px rgba(0, 0, 0, 0.18);
+}
+:deep(.db-table.stripe tbody tr:nth-child(odd)) .hist-action-col { background: #fafafa; }
 
 /* [S2 V4 2026-07-29] Bouton réimpression — même gabarit que l'icône « voir »
    du design system admin (SmIconViewComponent) pour rester aligné dans la

@@ -312,7 +312,7 @@
             "customer_screen_hint": "Ouvre l'affichage client avec les numéros de commande visibles.",
             "back_to_pos": "Retour caisse",
             "realtime_lost": "Connexion temps réel perdue — rafraîchissement automatique…",
-            "older_pending": "{count} older order(s) still awaiting collection — open encaissement",
+            "older_pending": "{count} order(s) awaiting collection outside this board — open encaissement",
             "loading": "Chargement des commandes…",
             "empty_column": "—",
             "empty_accept": "Aucune commande à encaisser.",

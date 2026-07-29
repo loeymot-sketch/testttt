@@ -1185,8 +1185,12 @@ export default {
                     return Number.isFinite(id) && !onBoard.has(id);
                 }).length;
             } catch (_) {
-                // File indisponible → on garde la dernière valeur connue (pas de faux zéro).
-                this._olderPendingFetchedAt = 0;
+                // File indisponible → on garde la dernière valeur connue (pas de faux
+                // zéro). [S2 auto-RED cycle 2] Back-off : on ne remet PAS le TTL à 0,
+                // sinon un échec persistant (403/429/réseau) relancerait cet endpoint
+                // lourd à chaque poll, soit toutes les 8 s en mode dégradé. Retente
+                // dans 30 s.
+                this._olderPendingFetchedAt = now - OLDER_PENDING_TTL_MS + 30000;
             }
         },
         /**

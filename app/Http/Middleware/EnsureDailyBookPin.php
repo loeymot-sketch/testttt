@@ -16,6 +16,22 @@ class EnsureDailyBookPin
 
     public function handle(Request $request, Closure $next)
     {
+        // [S2 auto-RED cycle 2 2026-07-29] Le fail-closed posé sur le
+        // déverrouillage ne fermait que la PORTE D'ENTRÉE : les sessions déjà
+        // ouvertes survivaient indéfiniment (session glissante ravivée à chaque
+        // requête). Comme l'ancien PIN était le défaut COMMITÉ '2468', public
+        // dans le dépôt, quiconque avait déverrouillé gardait le registre
+        // interne (dépenses, acomptes, factures) après le correctif. On coupe
+        // donc AUSSI les sessions en cours quand aucun PIN n'est configuré.
+        if ((string) config('daily_book.pin', '') === '') {
+            $request->session()->forget(self::SESSION_KEY);
+
+            return response()->json([
+                'message' => 'Carnet non configuré.',
+                'locked' => true,
+            ], 403);
+        }
+
         $unlockedAt = (int) $request->session()->get(self::SESSION_KEY, 0);
         $maxAge = ((int) config('daily_book.session_minutes', 240)) * 60;
 

@@ -63,7 +63,29 @@ class DailyBookPinAuthTest extends TestCase
         $this->postJson('/carnet/api/pin', ['pin' => ''])->assertStatus(403);
         $this->postJson('/carnet/api/pin', ['pin' => '2468'])->assertStatus(403);
         $this->getJson('/carnet/api/status')->assertOk()->assertJson(['unlocked' => false]);
-        $this->getJson('/carnet/api/entries')->assertStatus(401);
+        // 403 « non configuré » et non 401 « PIN requis » : le middleware distingue
+        // désormais l'absence de configuration de l'absence de session.
+        $this->getJson('/carnet/api/entries')->assertStatus(403);
+    }
+
+    /**
+     * [S2 auto-RED cycle 2 2026-07-29] Le fail-closed doit couper AUSSI les
+     * sessions déjà ouvertes. L'ancien PIN étant le défaut commité '2468'
+     * (public dans le dépôt), une session ouverte avec lui survivrait sinon
+     * indéfiniment au correctif — la session est glissante.
+     */
+    public function test_unconfigured_pin_kills_already_open_sessions(): void
+    {
+        // Session légitimement ouverte avec le PIN d'alors.
+        $this->postJson('/carnet/api/pin', ['pin' => '2468'])->assertOk();
+        $this->getJson('/carnet/api/entries')->assertOk();
+
+        // Le PIN est retiré de la configuration : tout se referme, séance tenante.
+        config(['daily_book.pin' => '']);
+
+        $this->getJson('/carnet/api/entries')->assertStatus(403);
+        $this->postJson('/carnet/api/entries', [])->assertStatus(403);
+        $this->getJson('/carnet/api/summary/month?month=2026-07')->assertStatus(403);
     }
 
     public function test_expired_session_relocks(): void

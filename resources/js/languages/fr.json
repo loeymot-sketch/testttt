@@ -313,7 +313,7 @@
             "customer_screen_hint": "Ouvre l'écran d'affichage client (statuts en grand, prêt à montrer aux clients).",
             "back_to_pos": "Retour caisse",
             "realtime_lost": "Connexion temps réel perdue — actualisation automatique en cours…",
-            "older_pending": "{count} commande(s) plus ancienne(s) restent à encaisser — ouvrir l'encaissement",
+            "older_pending": "{count} commande(s) à encaisser hors de ce tableau — ouvrir l'encaissement",
             "loading": "Chargement des commandes…",
             "empty_column": "—",
             "empty_accept": "Aucune commande à encaisser.",

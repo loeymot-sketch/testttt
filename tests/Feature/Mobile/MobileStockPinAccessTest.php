@@ -69,9 +69,11 @@ class MobileStockPinAccessTest extends TestCase
         $this->postJson('/m/api/pin', ['pin' => '2580'])->assertStatus(403);
         $this->postJson('/m/api/pin', ['pin' => ''])->assertStatus(403);
 
-        // status signale non-configuré, et les endpoints protégés restent 401.
+        // status signale non-configuré ; les endpoints protégés répondent 403
+        // « non configuré » (et non 401 « PIN requis ») depuis que le middleware
+        // coupe aussi les sessions déjà ouvertes — [S2 auto-RED cycle 2 2026-07-29].
         $this->getJson('/m/api/status')->assertOk()->assertJson(['unlocked' => false, 'configured' => false]);
-        $this->getJson('/m/api/catalog')->assertStatus(401);
+        $this->getJson('/m/api/catalog')->assertStatus(403);
     }
 
     /** (5) Toggle PIN-gated => item marqué en rupture via AvailabilityService (SSOT). */
