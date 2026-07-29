@@ -20,10 +20,20 @@
   build prod OK. Vitest FULL : 2617 verts (2 échecs = course pendant build, re-run 10/10 verts).
   Régression F1 : `tests/js/posTrackerCashPendingAllStatuses.spec.js` 4/4.
 
-## En cours
-- Re-captures visuelles post-heals sur :8010 (agent, 8 points PASS/FAIL).
-- **V2 money-path** : auditeur au centime lancé (encaissement/rendu, split, refund, remise, TVA 10%,
-  Plan B borne/web COD, tiroir).
+- **V2 audit money-path TERMINÉ** (`V2-MONEYPATH.md`) : 7 flux SAINS au centime, 0 perte.
+  `RefundCashNoWalletCreditTest` sauvé (untracked→commité, 2 verts). Commit `704fcaffe`.
 
-## Next exact
-- Verdicts re-captures → si FAIL, self-correct (max 3). Puis scénarios V2 e2e réels + matrice centime.
+## ⚠️ INTERRUPTION — limite de session (reset 7h50 Paris)
+- L'agent re-captures post-heals est MORT sur la limite avant de rendre ses verdicts.
+
+## Next exact (REPRISE ici)
+1. Serveur worktree :8010 déjà UP (relancer si tombé : `php artisan serve --port=8010` depuis la
+   worktree ; build prod déjà fait). Re-captures 8 points de `V1-RED-VERDICTS.md` (header POS,
+   « 1 Article », panneau comptoir, tracker À-encaisser≈5=Encaissement, Oui/Non éditeur,
+   pagination FR, « Complément de commande », message /m) — chaque PNG LU. FAIL → self-correct.
+2. V2 e2e réels chronométrés (encaisser+rendre, annuler+motif, refund, borne à encaisser,
+   web accepter/refuser, parking/reprise, split) — port 8010, aucun paiement réel.
+3. V3 stock/BOM (décrément/reverse prouvé DB ×3 archétypes) → V4 navigation ≤2 clics → V5
+   convergence 2 cycles adversariaux + PHPUnit Pos/Stock full + BRAIN §2 [S2].
+- Gates owner ouvertes : DAILY_BOOK_PIN à poser (.env), €6.90 wizard frozen (LOCK), purge E2E
+  historiques, P3 clamp OrderDetailsResource:139.
