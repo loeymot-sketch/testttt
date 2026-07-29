@@ -14,6 +14,29 @@ portion cash physique uniquement, fiscal alloué au bon instant.
 | Borne Plan B + web COD | SAIN | même chokepoint `confirmCounterPayment` ; fiscal_seq alloué à l'encaissement pour les différés avec `fiscal_dated_at` (`:375-386`) ; verrous FiscalCashAtCounterLifecycle/KioskRetryFiscalDatedAt/ChangePaymentStatus |
 | Tiroir | SAIN | open TOCTOU 3 couches, close idempotent, reconcile arrondi 2 déc., gate variance >2 € permissionnée (`CashDrawerService:257-312`) |
 
+## Preuve E2E RÉELLE (navigateur + backend + DB, 2026-07-29)
+Spec durable : `tests/e2e/s2-v2-encaissement-cash-2026-07-29.spec.js` — **PASSÉE**.
+Captures `tests/captures/goal-s2-v2-2026-07-29/` (file → modale → rendu → après confirmation).
+
+| Étape | Observé | Verdict |
+|---|---|---|
+| Ticket N°A0007 | total **7,40 €** | — |
+| Saisie espèces | **10,00 €** reçus | — |
+| Rendu affiché | **2,60 €** | EXACT |
+| File d'encaissement | 17 → **16** tickets, modale refermée | EXACT |
+| Erreurs JS page | **aucune** | PASS |
+| DB `orders` | `payment_status` 15→**5 (PAID)**, `pos_received_amount`=**10,00**, `fiscal_sequence_no` NULL→**2690**, `fiscal_dated_at` tamponné à l'encaissement | CONFORME NF525 |
+| DB `cash_movements` | 1 mouvement `order_payment` = **7,40 €** (le TOTAL, pas les 10,00 reçus) | **TIROIR EXACT** (10,00 entrés − 2,60 rendus = 7,40) |
+| Chaîne fiscale après | `fiscal:verify-chain --all` → **CHAIN OK** (4 branches) | PASS |
+
+Commande consignée dans `COMMANDES_TEST.md` (DB dev `foodking_e2e`, aucun paiement réel).
+
+⚠️ Leçon d'environnement : `php artisan serve` **mono-processus** met tout le SPA caisse sous
+voile de chargement (les polls concurrents se bloquent entre eux) → toujours lancer avec
+`PHP_CLI_SERVER_WORKERS=10`. Et sur ces écrans à poll continu, les clics Playwright doivent
+passer par le DOM (`page.evaluate`) : l'actionability ne converge jamais (backdrop de layout
++ re-render permanent).
+
 ## Actions issues de l'audit
 1. **FAIT** : `RefundCashNoWalletCreditTest.php` (verrou MP-01, untracked dans le checkout principal
    depuis le 22/07) copié dans la branche S2 et exécuté : **2 tests / 4 assertions VERTS** → commité.
