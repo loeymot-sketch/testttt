@@ -88,3 +88,17 @@ frozen CLAUDE.md §7 + `OrderStateMachine` + `PricingService` + Fiscal/*.
   dupliquée trouvée entre borne/caisse/web = finding P1 → consolider (twin PHP↔JS
   autorisé UNIQUEMENT avec test de parité, ex. kdsSymbolic).
 - Numéros de commande : jamais générés côté client ; unicité = serveur.
+
+## 10. TRIO WEB (S4 + S7 + S8 — même repo web, règles renforcées)
+Trois leads sur `Site lecayenne` (branche main). Partage INTERNE strict :
+- **S4** : fidélité + suivi + temps prep + paiement + backend Frontend/** (owner backend client-web).
+- **S7** : VITRINE — home, présentation menu, images, animations, storytelling,
+  nouveau fichier `styles-v6-brand.css` (il crée le sien, ne réécrit pas les v1-v5).
+  S7 NE TOUCHE PAS : wizard/funnel/flows/api/upsell (logique parcours).
+- **S8** : PARCOURS — wizard-v2, flows, upsell, funnel (logique), api.js résolution,
+  data/menu.js parité. S8 NE TOUCHE PAS le style vitrine. Backend → handoff S4.
+- Fichiers PARTAGÉS (index.html, styles v1-v5, cache-bust) : micro-commits +
+  `git pull --rebase` AVANT CHAQUE push (conflit ?v= = trivial, résous et repars).
+  Cache-bust : n'importe quel lead bump — jamais deux pushes sans pull entre.
+- Deploy web = push main (Vercel) : après pull-rebase + nav-smoke 13/13 LOCAL.
+- Commande RÉELLE (order-live) : max 1 par lead et par demi-journée, consignée.
