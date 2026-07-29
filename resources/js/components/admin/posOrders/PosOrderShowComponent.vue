@@ -253,8 +253,17 @@
                           d'où le « Extras: , » orphelin. Le normaliseur écarte déjà les
                           entrées sans nom.
                         -->
-                        <ul v-if="normalizedExtras(item).length > 0 || hasInstruction(item)"
+                        <ul v-if="normalizedExtras(item).length > 0 || unnamedExtrasCount(item) > 0 || hasInstruction(item)"
                             class="flex flex-col gap-1.5 mt-2">
+                            <!--
+                              [S2 V6 2026-07-29] Filet d'honnêteté : le normaliseur écarte les
+                              entrées sans nom (anciennes lignes ne portant que des ids). On ne
+                              doit pas pour autant faire DISPARAÎTRE l'existence d'un supplément
+                              facturé — on l'annonce alors sans le nommer. Aucune ligne de ce
+                              type dans la base actuelle (38 lignes sans instantané, 0 avec
+                              composition) : c'est une garantie par construction, pas un
+                              correctif de symptôme.
+                            -->
                             <li class="flex gap-1" v-if="normalizedExtras(item).length > 0">
                                 <h3 class="capitalize text-xs w-fit whitespace-nowrap">{{ $t('label.extras') }}:</h3>
                                 <p class="text-xs">
@@ -263,6 +272,10 @@
                                             v-if="index + 1 < normalizedExtras(item).length">,&nbsp;</span>
                                     </span>
                                 </p>
+                            </li>
+                            <li class="flex gap-1" v-else-if="unnamedExtrasCount(item) > 0">
+                                <h3 class="capitalize text-xs w-fit whitespace-nowrap">{{ $t('label.extras') }}:</h3>
+                                <p class="text-xs text-[#6E7191]">{{ $t('label.unnamed_extras', { count: unnamedExtrasCount(item) }) }}</p>
                             </li>
                             <li class="flex gap-1" v-if="hasInstruction(item)">
                                 <h3 class="capitalize text-xs w-fit whitespace-nowrap">{{
@@ -696,6 +709,16 @@ export default {
         },
         normalizedExtras(item) {
             return normalizeReceiptExtras(item?.item_extras);
+        },
+        /**
+         * Nombre de suppléments présents dans la donnée mais que le normaliseur
+         * n'a pas pu nommer (anciennes lignes réduites à des ids). On les
+         * annonce sans les nommer plutôt que de les faire disparaître.
+         */
+        unnamedExtrasCount(item) {
+            const raw = item?.item_extras;
+            const list = Array.isArray(raw) ? raw : (raw && typeof raw === 'object' ? Object.values(raw) : []);
+            return Math.max(0, list.length - normalizeReceiptExtras(raw).length);
         },
         /** `instruction` vaut NULL en base — `!== ''` laissait passer une ligne vide. */
         hasInstruction(item) {

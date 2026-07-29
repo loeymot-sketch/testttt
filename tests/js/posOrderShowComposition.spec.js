@@ -78,6 +78,17 @@ describe('Fiche commande — composition et statuts', () => {
         expect(vm.normalizedVariations({ item_variations: [{ id: 390, quantity: 1 }] })).toEqual([]);
     });
 
+    it('annonce les suppléments non nommés au lieu de les faire disparaître', () => {
+        const vm = build().vm;
+        // Ligne ancienne réduite à des ids : le normaliseur ne peut pas la nommer,
+        // mais l'existence de 2 suppléments facturés doit rester visible.
+        expect(vm.unnamedExtrasCount({ item_extras: [{ id: 275, quantity: 1 }, { id: 403, quantity: 1 }] })).toBe(2);
+        // Rien à annoncer quand tout est nommé, ni quand il n'y a pas d'extras.
+        expect(vm.unnamedExtrasCount({ item_extras: [{ extra_name: 'Cheddar', quantity: 1 }] })).toBe(0);
+        expect(vm.unnamedExtrasCount({ item_extras: [] })).toBe(0);
+        expect(vm.unnamedExtrasCount({})).toBe(0);
+    });
+
     it('n\'affiche pas de ligne Instruction quand elle est NULL ou vide', () => {
         const vm = build().vm;
         expect(vm.hasInstruction({ instruction: null })).toBe(false);

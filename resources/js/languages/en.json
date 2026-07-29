@@ -1069,6 +1069,7 @@
         "guest_login": "Guest Login",
         "delivery_time": "Delivery Time",
         "pickup_time": "Pickup Time",
+        "unnamed_extras": "{count} unnamed supplement(s)",
         "cancel_order": "Cancel Order",
         "reason": "Reason",
         "see_order_details": "See Order Details",

@@ -1046,6 +1046,7 @@
         "delivery_information": "Informations de livraison",
         "delivery_time": "Heure de livraison",
         "pickup_time": "Heure de retrait",
+        "unnamed_extras": "{count} supplément(s) non identifié(s)",
         "delivery_zone": "Zone de livraison",
         "delivery_boy_app": "App livreur",
         "delivery_setup": "Configuration livraison",
