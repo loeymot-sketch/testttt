@@ -477,7 +477,11 @@ export default {
                 this.props.search.to_date = isoDay(today);
                 this.props.form.date = [today, today];
             } else if (id === 'yesterday') {
-                const y = new Date(today.getTime() - 86400000);
+                // [S2 auto-RED 2026-07-29] setDate() et non « −86 400 000 ms » : au
+                // passage à l'heure d'été la veille dure 23 h, et la soustraction
+                // fixe renvoyait l'avant-veille.
+                const y = new Date(today);
+                y.setDate(y.getDate() - 1);
                 this.props.search.from_date = isoDay(y);
                 this.props.search.to_date = isoDay(y);
                 this.props.form.date = [y, y];

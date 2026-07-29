@@ -98,6 +98,22 @@
             {{ $t('pos.tracker.realtime_lost') }}
         </div>
 
+        <!--
+          [S2 F1 révisé 2026-07-29] Ce board ne montre que LE JOUR. S'il reste des
+          commandes à encaisser plus anciennes (elles vivent dans la file
+          all-time /admin/encaissement), on l'annonce ici — sans les rapatrier
+          dans les colonnes, ce qui écraserait le signal du jour et volerait
+          leurs cartes aux voies « Prêts » / « Livrés ».
+        -->
+        <router-link
+            v-if="olderPendingCount > 0"
+            :to="{ name: 'admin.encaissement' }"
+            class="pos-tracker-older-pending"
+            data-testid="tracker-older-pending"
+        >
+            💶 {{ $t('pos.tracker.older_pending', { count: olderPendingCount }) }}
+        </router-link>
+
         <div class="pos-tracker-grid" :aria-busy="loading ? 'true' : 'false'">
             <article
                 v-for="col in columns"
@@ -463,6 +479,10 @@ import { adminPriceMixin } from '../../../helpers/formatPrice';
 
 const POLL_WS_MS = 60000;
 const POLL_NO_WS_MS = 8000;
+// [S2 F1 révisé 2026-07-29] Le compteur d'anciennes commandes à encaisser tape un
+// endpoint lourd (OrderDetailsResource, ~1,3 s) : 5 min de TTL, jamais la cadence
+// du poll dégradé.
+const OLDER_PENDING_TTL_MS = 300000;
 const FRESH_HIGHLIGHT_MS = 6000;
 // [UX-TRACKER-02/POSPERF-09 2026-07-22] Event-staleness escape hatch.
 // `realtimeConnected` only proves the SOCKET is up (soketi alive) — NOT that
@@ -546,6 +566,10 @@ export default {
             // [WEB-TRACKER-VISIBILITY 2026-07-20] Anti double-clic par commande
             // pour le CTA « Accepter » des commandes web PENDING.
             webAccepting: {},
+            // [S2 F1 révisé 2026-07-29] Nombre de commandes à encaisser antérieures
+            // au jour affiché (bandeau → /admin/encaissement). Cf. _refreshOlderPendingCount.
+            olderPendingCount: 0,
+            _olderPendingFetchedAt: 0,
         };
     },
     computed: {
@@ -960,29 +984,26 @@ export default {
                 });
                 const data = res?.data?.data || [];
                 this.orders = Array.isArray(data) ? data : [];
-                // [S2 F1 2026-07-29] Trou de date : ce fetch ne couvre que le jour
-                // courant alors que la file d'encaissement est all-time — une commande
-                // PENDING_COUNTER de la veille disparaissait du board tout en restant
-                // encaissable dans /admin/encaissement. On fusionne la file
-                // counter-collect (bornée 200, même endpoint que POS/Encaissement),
-                // sans doublon d'id. Échec réseau → board du jour inchangé (pas de
-                // faux vide).
-                try {
-                    const pend = await axios.get('admin/pos/counter-collect/pending');
-                    const pendRows = Array.isArray(pend?.data?.data) ? pend.data.data : [];
-                    const have = new Set(
-                        this.orders.map((o) => parseInt(o?.id, 10)).filter(Number.isFinite)
-                    );
-                    for (const row of pendRows) {
-                        const id = parseInt(row?.id, 10);
-                        if (Number.isFinite(id) && !have.has(id)) {
-                            have.add(id);
-                            this.orders.push(row);
-                        }
-                    }
-                } catch (_) {
-                    // File d'encaissement indisponible → on garde le board du jour.
-                }
+                // [S2 F1 2026-07-29, révisé par auto-RED cycle 1] Ce fetch ne couvre
+                // que le JOUR COURANT alors que la file d'encaissement est all-time :
+                // une commande PENDING_COUNTER de la veille reste encaissable dans
+                // /admin/encaissement sans apparaître ici.
+                //
+                // La première version FUSIONNAIT la file counter-collect dans
+                // `this.orders`. C'était FAUX : l'endpoint renvoie 191 lignes tous
+                // statuts confondus (132 ACCEPT, 24 PREPARED, 32 DELIVERED…), donc
+                // (a) la voie « À encaisser » passait de 12 à 191 cartes, (b) les
+                // commandes PRÊTES/LIVRÉES quittaient leur colonne — le signal
+                // « plat prêt à remettre » disparaissait de la caisse, (c) le
+                // compteur « X aujourd'hui » annonçait 218 pour 39, (d) chaque fetch
+                // coûtait 1557 requêtes SQL / 1,3 s (OrderDetailsResource), toutes
+                // les 8 s en mode dégradé.
+                //
+                // Le tableau reste donc un board DU JOUR (une seule vérité par écran,
+                // DISCIPLINE §9) : on ne rapatrie qu'un COMPTEUR d'anciennes commandes
+                // à encaisser, affiché en bandeau qui renvoie vers /admin/encaissement,
+                // rafraîchi au plus toutes les 5 min (jamais au rythme du poll).
+                this._refreshOlderPendingCount();
                 // [UX-TRACKER-02b 2026-07-22] Poll-diff freshness: previously
                 // the "fresh" highlight was ONLY driven by Echo events — dead
                 // when the queue worker is down. Diff the fetched ids against
@@ -1140,6 +1161,34 @@ export default {
         // numeric enum constants in case an older projection ships through
         // (e.g. cached Vuex payload pre-deploy). PaymentStatus::PENDING_COUNTER
         // = 15, PosPaymentMethod::COUNTER_DEFERRED = 6 — see app/Enums/.
+        /**
+         * [S2 F1 révisé 2026-07-29] Compteur des commandes à encaisser ANTÉRIEURES
+         * au jour affiché. Volontairement hors du board (voir fetchOrders) : on
+         * ne rapatrie qu'un nombre, jamais les lignes. Throttlé à 5 min car
+         * l'endpoint renvoie une resource lourde (~1,3 s) — il ne doit JAMAIS
+         * suivre la cadence du poll dégradé (8 s).
+         */
+        async _refreshOlderPendingCount() {
+            const now = Date.now();
+            if (this._olderPendingFetchedAt && (now - this._olderPendingFetchedAt) < OLDER_PENDING_TTL_MS) {
+                return;
+            }
+            this._olderPendingFetchedAt = now;
+            try {
+                const res = await axios.get('admin/pos/counter-collect/pending');
+                const rows = Array.isArray(res?.data?.data) ? res.data.data : [];
+                const onBoard = new Set(
+                    this.orders.map((o) => parseInt(o?.id, 10)).filter(Number.isFinite)
+                );
+                this.olderPendingCount = rows.filter((r) => {
+                    const id = parseInt(r?.id, 10);
+                    return Number.isFinite(id) && !onBoard.has(id);
+                }).length;
+            } catch (_) {
+                // File indisponible → on garde la dernière valeur connue (pas de faux zéro).
+                this._olderPendingFetchedAt = 0;
+            }
+        },
         /**
          * [S2 auto-RED 2026-07-29] Set terminal du sceau d'encaissement — miroir
          * strict de la garde backend de `counter-collect/pending`. Une commande
@@ -1871,6 +1920,20 @@ export default {
     font-style: italic;
     font-size: 11px;
 }
+
+/* [S2 F1 révisé 2026-07-29] Bandeau « anciennes commandes à encaisser ». */
+.pos-tracker-older-pending {
+    display: block;
+    margin: 0 0 10px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    color: #9a3412;
+    font-size: 13px;
+    font-weight: 600;
+}
+.pos-tracker-older-pending:hover { background: #ffedd5; }
 
 /* [S2 V4 2026-07-29] `flex-wrap` + `gap` : sur une carte « à encaisser », le
    bloc montant porte le libellé « À ENCAISSER : » et les actions comptent 4

@@ -99,6 +99,40 @@ describe('Tracker — cash-pending appartient à « À encaisser » quel que soi
         expect(buckets.prepared.map((o) => o.id)).not.toContain(303);
     });
 
+    // [S2 auto-RED cycle 1 2026-07-29] Le board reste un board DU JOUR : la file
+    // d'encaissement all-time (191 lignes tous statuts) ne doit JAMAIS être
+    // fusionnée dans `orders`, sinon les commandes PRÊTES/LIVRÉES quittent leur
+    // colonne et le compteur du jour ment. Seul un COMPTEUR est rapatrié.
+    it('les commandes PRÊTES et LIVRÉES gardent leur colonne', () => {
+        const wrapper = buildHarness();
+        const prepared = { id: 401, status: orderStatusEnum.PREPARED, order_status: orderStatusEnum.PREPARED, payment_status: 5, pos_payment_method: 1, created_at: '2026-07-29 10:00:00' };
+        const delivered = { id: 402, status: orderStatusEnum.DELIVERED, order_status: orderStatusEnum.DELIVERED, payment_status: 5, pos_payment_method: 1, created_at: '2026-07-29 10:00:00' };
+        wrapper.vm.orders = [prepared, delivered];
+        const buckets = wrapper.vm.ordersByStatus;
+        expect(buckets.prepared.map((o) => o.id)).toContain(401);
+        expect(buckets.delivered.map((o) => o.id)).toContain(402);
+        expect(buckets.accept.map((o) => o.id)).not.toContain(401);
+        expect(buckets.accept.map((o) => o.id)).not.toContain(402);
+    });
+
+    it('le compteur d\'anciennes commandes est throttlé (jamais au rythme du poll)', async () => {
+        const axios = (await import('axios')).default;
+        const wrapper = buildHarness();
+        axios.get.mockClear();
+        axios.get.mockResolvedValue({ data: { data: [{ id: 900 }, { id: 901 }] } });
+
+        await wrapper.vm._refreshOlderPendingCount();
+        expect(wrapper.vm.olderPendingCount).toBe(2);
+        expect(axios.get).toHaveBeenCalledTimes(1);
+
+        // Second appel immédiat : servi par le TTL, aucun nouvel appel réseau.
+        await wrapper.vm._refreshOlderPendingCount();
+        expect(axios.get).toHaveBeenCalledTimes(1);
+
+        // Les lignes ne rentrent jamais dans le board.
+        expect(wrapper.vm.orders.map((o) => o.id)).not.toContain(900);
+    });
+
     it('un PREPARED non cash-pending reste dans « Prêts »', () => {
         const wrapper = buildHarness();
         const o = { id: 202, status: orderStatusEnum.PREPARED, order_status: orderStatusEnum.PREPARED, payment_status: 5, pos_payment_method: 1, created_at: '2026-07-29 10:00:00' };

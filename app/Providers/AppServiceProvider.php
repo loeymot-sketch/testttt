@@ -194,10 +194,16 @@ class AppServiceProvider extends ServiceProvider
             // est commité dans le repo — en production il donnerait le registre
             // interne (dépenses, acomptes, factures) à quiconque atteint le serveur.
             // Même failure-mode explicite que les guards ci-dessus.
-            if ((string) config('daily_book.pin') === '2468') {
+            // [S2 auto-RED 2026-07-29] Le défaut commité a été supprimé
+            // (config/daily_book.php → ''), et le Carnet est désormais fail-closed
+            // (403 tant qu'aucun PIN n'est posé). Sans élargir CE guard à la chaîne
+            // vide, la prod booterait sans bruit avec un Carnet silencieusement
+            // inutilisable : on aurait troqué un fail-loud contre un fail-silent.
+            // On garde donc les DEUX cas en échec de démarrage explicite.
+            if (in_array((string) config('daily_book.pin'), ['', '2468'], true)) {
                 throw new \RuntimeException(
-                    'DAILY_BOOK_PIN is still the committed default (2468) — set a real PIN '
-                    . 'in .env before running the Carnet in production.'
+                    'DAILY_BOOK_PIN is missing or still the committed default (2468) — set a real '
+                    . 'PIN in .env before running the Carnet in production.'
                 );
             }
 
