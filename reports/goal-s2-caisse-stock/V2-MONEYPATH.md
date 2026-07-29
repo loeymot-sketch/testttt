@@ -45,6 +45,14 @@ passer par le DOM (`page.evaluate`) : l'actionability ne converge jamais (backdr
 3. P3 documenté : tolérance overpay split ≤ min(1 €, Σ cash) = sur-encaissement volontaire possible
    (tiroir honnête, Z ≠ encaissé de l'écart) — conception assumée, UI auto-balance rend le cas rare.
 
+## Suites de verrouillage exécutées (worktree, DB de test `foodking_test`)
+| Filtre | Résultat |
+|---|---|
+| `Refund\|SplitPayment\|CashDrawer\|CounterCollect\|Encaissement` | **243 tests / 813 assertions — 0 échec** |
+| `Fiscal\|ZReport\|Vat10\|Tax` | **392 tests / 1324 assertions — 0 échec** (8 skipped, 2 incomplete) |
+| `Pos` (baseline V1) | 699 / 2827 — 0 échec |
+| `Stock\|Purchas\|RawMaterial\|Encaissement` (baseline V1) | 248 / 1583 — 0 échec |
+
 ## Duplications d'argent (mandat anti-doublons)
 - splitPayment JS/PHP : backend autoritaire, rejette tout écart — SAIN.
 - ratios menu kiosk JS/PHP : parité par construction (même config exposée) — SAIN.
