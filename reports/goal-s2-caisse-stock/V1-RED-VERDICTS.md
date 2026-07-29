@@ -41,7 +41,7 @@ les transcripts d'agents (chat) et recoupé ci-dessous. **Aucun P0, aucun P1 str
 | F2 libellés comptoir | capture r1 | **PASS** — « À ENCAISSER — COMPTOIR », plus de « borne » mensonger |
 | V-08 tracker À encaisser | capture r2 LUE | **PASS** — colonne = 25 cartes + CTA Encaisser (avant : 0) ; fusion all-time + bucket cash-pending opérationnels |
 | V-13 Oui/Non | grep bundle compilé | **PASS** — `"no":"Non"` dans `public/js/app.js` (drawer non ouvert au run, fix = clé i18n unique) |
-| V-10 pagination FR | `trans()` serveur | **PASS** — « Précédent / Suivant » |
+| V-10 pagination FR | ~~`trans()` serveur~~ → **sonde DOM réelle** | ❌ **PASS RÉTRACTÉ** — l'écran affiche TOUJOURS « Previous / Next ». `trans()` vert ne prouvait rien : la lib `laravel-vue-pagination` a ses propres libellés codés en dur, elle n'utilise pas `link.label`. Le fix `lang/fr/pagination.php` est juste mais ne touche pas les écrans Vue. Racine + diff → `plans/handoffs/S2-vers-CENTRAL-pagination-Previous-Next-anglais.md` (zone partagée §6, ~50 écrans) |
 | V-15 message /m | curl :8010/m | **PASS** — « Aucune rupture signalée (produits & ingrédients) ✅ » |
 | F3-data | UPDATE DB (3 lignes) + seeder | **PASS** — « Complément de commande » |
 | Résidu détecté à la re-capture | r2 | sous-titre colonne tracker « Borne — paiement comptoir » → **corrigé** (`col_accept_subtitle`, rebuild au prochain build V5) |

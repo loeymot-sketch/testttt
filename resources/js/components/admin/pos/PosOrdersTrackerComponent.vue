@@ -1273,6 +1273,10 @@ export default {
         // fetchOrders, but we refresh immediately for local responsiveness).
         onEncaisseConfirmed() {
             this.encaisseOrder = null;
+            // [S2 F1 révisé 2026-07-29] Un encaissement change la file d'attente :
+            // on invalide le TTL du compteur d'anciennes commandes pour que le
+            // bandeau ne reste pas jusqu'à 5 min sur une valeur périmée.
+            this._olderPendingFetchedAt = 0;
             this.fetchOrders();
         },
         sourceOf(o) {
