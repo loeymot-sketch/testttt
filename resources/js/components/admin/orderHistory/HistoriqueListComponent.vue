@@ -664,15 +664,23 @@ export default {
    Le tableau (10 colonnes) déborde de ~190 px à 1280×800 — la résolution réelle
    de l'écran de caisse — donc le bouton « réimprimer » livré par cette vague
    naissait à x=1407 : invisible sans scroll horizontal, fonctionnalité non
-   découvrable. Sticky la garde toujours atteignable, sans masquer de donnée. */
+   découvrable. Sticky la garde toujours atteignable, sans masquer de donnée.
+
+   [auto-RED cycle 3] `background` codé en dur = mauvaise idée : la cellule
+   ne suivait plus ni la zébrure ni le liseré de survol (rectangle blanc et
+   couture au milieu du tableau). `inherit` recopie la couleur RÉELLE de la
+   ligne, quelle qu'elle soit — zébrure, survol, futur surlignage. Et l'ombre
+   ne se justifie que lorsqu'il y a réellement quelque chose à masquer,
+   c'est-à-dire quand le tableau déborde (≤1439px, même seuil que pos-v5.css). */
 .hist-action-col {
     position: sticky;
     right: 0;
     z-index: 2;
-    background: #fff;
-    box-shadow: -6px 0 8px -6px rgba(0, 0, 0, 0.18);
+    background: inherit;
 }
-:deep(.db-table.stripe tbody tr:nth-child(odd)) .hist-action-col { background: #fafafa; }
+@media (max-width: 1439px) {
+    .hist-action-col { box-shadow: -6px 0 8px -6px rgba(0, 0, 0, 0.18); }
+}
 
 /* [S2 V4 2026-07-29] Bouton réimpression — même gabarit que l'icône « voir »
    du design system admin (SmIconViewComponent) pour rester aligné dans la

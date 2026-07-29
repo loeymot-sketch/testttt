@@ -207,7 +207,16 @@ export default {
                     this.loadDay();
                 })
                 .catch((e) => {
-                    this.pinError = e.status === 429 ? 'Trop d\'essais — attendez une minute.' : 'Code PIN incorrect.';
+                    // [S2 auto-RED cycle 3] 403 = Carnet non configuré (aucun
+                    // DAILY_BOOK_PIN dans le .env) : sans ce cas, l'owner voyait
+                    // « Code PIN incorrect » en boucle sans jamais pouvoir réussir.
+                    if (e.status === 429) {
+                        this.pinError = 'Trop d\'essais — attendez une minute.';
+                    } else if (e.status === 403) {
+                        this.pinError = 'Carnet non configuré — posez DAILY_BOOK_PIN dans le .env du poste.';
+                    } else {
+                        this.pinError = 'Code PIN incorrect.';
+                    }
                     this.pin = '';
                 })
                 .finally(() => { this.pinBusy = false; });
@@ -247,7 +256,7 @@ export default {
                     this.loadDay();
                 })
                 .catch((e) => {
-                    if (e.status === 401 || e.status === 419) { this.unlocked = false; return; }
+                    if (e.status === 401 || e.status === 403 || e.status === 419) { this.unlocked = false; return; }
                     const first = e.data?.errors ? Object.values(e.data.errors)[0]?.[0] : null;
                     this.formError = first || e.message;
                 })
@@ -260,14 +269,14 @@ export default {
                 .catch((err) => {
                     // [W6 heal P3] Échec avalé silencieusement : 401 = session PIN
                     // expirée → relock ; autre erreur → feedback visible.
-                    if (err.status === 401 || err.status === 419) { this.unlocked = false; return; }
+                    if (err.status === 401 || err.status === 403 || err.status === 419) { this.unlocked = false; return; }
                     this.formError = 'Suppression impossible. Réessayez.';
                 });
         },
         loadDay() {
             api('/carnet/api/entries?date=' + this.dayFilter)
                 .then((r) => { this.entries = r.data; })
-                .catch((e) => { if (e.status === 401) this.unlocked = false; });
+                .catch((e) => { if (e.status === 401 || e.status === 403) this.unlocked = false; });
         },
         switchToMonth() {
             this.tab = 'month';
@@ -276,7 +285,7 @@ export default {
         loadMonth() {
             api('/carnet/api/summary/month?month=' + this.monthFilter)
                 .then((r) => { this.summary = r.data; })
-                .catch((e) => { if (e.status === 401) this.unlocked = false; });
+                .catch((e) => { if (e.status === 401 || e.status === 403) this.unlocked = false; });
         },
     },
 };
