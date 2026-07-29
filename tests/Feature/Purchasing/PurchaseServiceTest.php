@@ -175,6 +175,101 @@ class PurchaseServiceTest extends TestCase
             ->where('raw_material_id', $mat->id)->where('branch_id', 1)->value('on_hand'), 0.0001);
     }
 
+    /**
+     * [S2 V3 D-3 2026-07-29] Une RÉCEPTION doit LEVER la rupture automatique.
+     *
+     * Défaut trouvé en vague 3 : PurchaseService écrivait `stock_levels.on_hand`
+     * en direct, sans passer par la synchro de disponibilité de StockService.
+     * Conséquence terrain : un produit auto-86 (on_hand=0) restait INVENDABLE
+     * après réception de la marchandise, jusqu'à un 86 manuel — et le cron
+     * préventif qui aurait rattrapé est désactivé. Vente perdue silencieuse.
+     */
+    public function test_stock_item_reception_lifts_auto_rupture_and_notifies(): void
+    {
+        \Illuminate\Support\Facades\Event::fake([\App\Events\ItemAvailabilityChanged::class]);
+
+        $boisson = $this->item('Perrier 33cl');
+
+        // État de départ : rupture AUTOMATIQUE (stock épuisé par les ventes).
+        StockLevel::query()->create([
+            'branch_id' => 1,
+            'stockable_type' => Item::class,
+            'stockable_id' => $boisson->id,
+            'on_hand' => 0,
+        ]);
+        \App\Models\ItemBranchAvailability::query()->create([
+            'item_id' => $boisson->id,
+            'branch_id' => 1,
+            'is_available' => false,
+            'unavailable_reason' => 'stock_rupture',
+            'manual_unavailable_since' => null,
+            'daily_reset_at' => now()->toDateString(),
+        ]);
+
+        $doc = $this->document('hash-reception-86');
+        $this->line($doc, PurchaseLine::TARGET_STOCK_ITEM, $boisson->id, [
+            'qty' => 12, 'unit' => 'piece', 'unit_price' => 0.60,
+        ]);
+
+        $this->service()->validateDocument($doc);
+
+        $row = \App\Models\ItemBranchAvailability::query()
+            ->where('item_id', $boisson->id)->where('branch_id', 1)->first();
+
+        $this->assertNotNull($row);
+        $this->assertTrue(
+            (bool) $row->is_available,
+            'Après réception de 12 unités, le produit doit redevenir vendable.'
+        );
+
+        // Les surfaces (caisse / borne / KDS) doivent être notifiées du retour en stock.
+        \Illuminate\Support\Facades\Event::assertDispatched(
+            \App\Events\ItemAvailabilityChanged::class,
+            fn ($e) => (int) $e->itemId === (int) $boisson->id && $e->isAvailable === true
+        );
+    }
+
+    /**
+     * [S2 V3 D-3 2026-07-29] Miroir négatif : un 86 MANUEL (posé par un humain)
+     * ne doit JAMAIS être levé par une réception — sinon la réception
+     * s'approprierait la décision du gérant (bug « friteuse » déjà tranché
+     * côté StockService, on garde la même règle ici).
+     */
+    public function test_stock_item_reception_never_lifts_manual_86(): void
+    {
+        $boisson = $this->item('Oasis 33cl');
+
+        StockLevel::query()->create([
+            'branch_id' => 1,
+            'stockable_type' => Item::class,
+            'stockable_id' => $boisson->id,
+            'on_hand' => 0,
+        ]);
+        \App\Models\ItemBranchAvailability::query()->create([
+            'item_id' => $boisson->id,
+            'branch_id' => 1,
+            'is_available' => false,
+            'unavailable_reason' => 'stock_rupture',
+            'manual_unavailable_since' => now(),
+            'daily_reset_at' => now()->toDateString(),
+        ]);
+
+        $doc = $this->document('hash-reception-manual86');
+        $this->line($doc, PurchaseLine::TARGET_STOCK_ITEM, $boisson->id, [
+            'qty' => 24, 'unit' => 'piece', 'unit_price' => 0.60,
+        ]);
+
+        $this->service()->validateDocument($doc);
+
+        $row = \App\Models\ItemBranchAvailability::query()
+            ->where('item_id', $boisson->id)->where('branch_id', 1)->first();
+
+        $this->assertFalse(
+            (bool) $row->is_available,
+            'Un 86 manuel doit survivre à la réception de marchandise.'
+        );
+    }
+
     public function test_stock_item_line_increments_stock_levels_by_units(): void
     {
         $boisson = $this->item('Coca 33cl');

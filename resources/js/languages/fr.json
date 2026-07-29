@@ -1314,6 +1314,7 @@
         "title": "Titre",
         "tls": "TLS",
         "today": "Aujourd'hui",
+        "yesterday": "Hier",
         "todays_order": "Commandes du jour",
         "token_no": "N° commande",
         "tomorrow": "Demain",

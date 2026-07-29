@@ -218,9 +218,14 @@
                                       a "À encaisser" prefix so the cashier
                                       sees the amount due, not just a price.
                                     -->
-                                    <span v-if="isCashPending(order)" class="pos-tracker-card-total-prefix">
-                                        {{ $t('pos.tracker.cash_due_label') }} :
-                                    </span>
+                                    <!--
+                                      [S2 V4 2026-07-29] Le «&nbsp;:» est collé au
+                                      libellé (insécable) : en inline-flex il se
+                                      détachait sur sa propre ligne, produisant un
+                                      «&nbsp;:» orphelin sous un libellé cassé en 3
+                                      lignes qui chevauchait le bouton Encaisser.
+                                    -->
+                                    <span v-if="isCashPending(order)" class="pos-tracker-card-total-prefix">{{ $t('pos.tracker.cash_due_label') }}&nbsp;:</span>
                                     {{ formatPrice(order.cash_pending_amount ?? order.total ?? order.total_amount_price ?? order.order_amount) }}
                                 </span>
                                 <div class="pos-tracker-card-actions">
@@ -1764,12 +1769,17 @@ export default {
 }
 
 /* [Wave S-4 P-OWNER 2026-05-20] Cash-pending amount emphasis. */
+/* [S2 V4 2026-07-29] Empilé (colonne) : en ligne, le libellé « À ENCAISSER : »
+   se cassait en 3 lignes dans la largeur restante à côté du bouton Encaisser et
+   chevauchait ce dernier. Le montant garde toute sa lisibilité. */
 .pos-tracker-card-total--cash {
     color: var(--pos-tracker-amber);
     font-weight: 800;
     display: inline-flex;
-    align-items: baseline;
-    gap: 6px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    min-width: 0;
 }
 .pos-tracker-card-total-prefix {
     font-size: 11px;
@@ -1777,6 +1787,7 @@ export default {
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: var(--pos-tracker-muted);
+    white-space: nowrap;
 }
 
 .pos-tracker-card-time {

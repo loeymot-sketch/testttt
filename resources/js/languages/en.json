@@ -1025,6 +1025,7 @@
         "preferred_time": "Preferred Time Frame For Delivery",
         "preferred_time_takeaway": "Preferred Time Frame For Takeaway",
         "today": "today",
+        "yesterday": "yesterday",
         "tomorrow": "Tomorrow",
         "delivery_address": "Delivery Address",
         "apartment_and_flat": "Apartment & Flat No",

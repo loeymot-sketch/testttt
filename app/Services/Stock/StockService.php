@@ -163,6 +163,29 @@ class StockService
         }
     }
 
+    /**
+     * [S2 V3 D-3 2026-07-29] Point d'entrée PUBLIC pour les écrivains légitimes
+     * de `stock_levels.on_hand` situés HORS du flux commande — aujourd'hui la
+     * seule : la réception d'un document d'achat (PurchaseService).
+     *
+     * Sans ce raccord, un produit auto-86 (`on_hand = 0`) restait INVENDABLE
+     * après réception de la marchandise : `on_hand` remontait mais
+     * `item_branch_availability.is_available` restait à false et aucune surface
+     * (caisse / borne / KDS) n'était notifiée. Le cron préventif qui aurait pu
+     * rattraper est désactivé (`catalog_v15.auto_86_preventive_cron`).
+     *
+     * La règle du 86 MANUEL reste intacte : la synchro sous-jacente ne réactive
+     * jamais un item dont la rupture porte une provenance humaine.
+     */
+    public function syncAvailabilityAfterExternalMutation(StockLevel $level, int $branchId): void
+    {
+        $event = $this->syncItemAvailabilityForStockLevel($level, $branchId);
+
+        if ($event) {
+            $this->dispatchAvailabilityChanged($event);
+        }
+    }
+
     private function dispatchAvailabilityChanged(ItemAvailabilityChanged $event): void
     {
         ItemAvailabilityChanged::dispatch(
