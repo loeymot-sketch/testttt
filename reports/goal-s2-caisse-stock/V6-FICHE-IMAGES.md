@@ -53,3 +53,16 @@ sélecteur de langue de l'en-tête admin (pastille vide de 16 px, présente sur 
 
 ## Vérifications
 vitest **2652 / 0 échec** (369 fichiers) · captures relues à 1280×900 · frozen-diff 0.
+
+## 4. Cycle adversarial sur cette vague — mené par moi (l'agent RED est mort sur la limite de session)
+
+| Angle attaqué | Méthode | Verdict |
+|---|---|---|
+| **Perte d'information sur les commandes anciennes** (le normaliseur écarte les entrées sans nom) | requête DB : **38** `order_items` sans instantané, **0** portant des variations/extras → risque nul sur cette donnée | **RIEN** — et rendu impossible par construction : un supplément non nommable est désormais **annoncé** (« N supplément(s) non identifié(s) ») au lieu d'être masqué |
+| **Cartes stock cassées à d'autres largeurs** | sonde géométrique réelle à **1920 / 1440 / 1280 / 390** px | **RIEN** — nom visible partout (207 / 185 / 132 / 254 px), bascule « EN STOCK » cliquable, aucun débordement de carte, bouton photo présent |
+| **Bascule de titre au chargement** (`isDeliveryOrder` faux tant que la commande n'est pas chargée → « client » puis « livraison ») | 14 échantillons pendant le chargement de `/admin/pos-orders/show/6037` | **RIEN** — un seul titre observé : « Informations client » |
+| **Le nouveau spec passe-t-il par accident ?** | les 3 méthodes testées (`normalizedVariations`, `normalizedExtras`, `hasInstruction`, `unnamedExtrasCount`) **n'existaient pas** avant le correctif : le spec ne peut pas passer contre l'ancien code (erreur de méthode indéfinie). Les assertions portent sur les valeurs exactes (`'Sauce (1ère Gratuite)'` / `'Mayonnaise'`) que la lecture brute rendait vides | **VALIDE** — nuance honnête : le spec couvre les **méthodes**, pas le gabarit ; c'est la capture relue qui atteste le rendu |
+| Affirmations du rapport (images) | re-vérifiées par commande : 85/85 fichiers présents, 4 empreintes MD5 distinctes, 200 sur le checkout principal | **TIENNENT** |
+
+Vérifications finales : PHPUnit `Pos|Stock` **846 / 0 échec** · vitest **2653 / 0** (369 fichiers) ·
+frozen-diff **0** · captures relues.
