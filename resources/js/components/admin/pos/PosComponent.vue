@@ -773,7 +773,7 @@
                     variant="brand"
                     size="md"
                 >
-                    {{ totalItems() }} {{ $t('label.items') }}
+                    {{ totalItems() }} {{ totalItems() > 1 ? $t('label.items') : $t('label.item') }}
                 </PosV5Pill>
 
                 <!-- Customer selector + add CTA -->
@@ -1500,7 +1500,7 @@
         class="db-pos-cartBtn pos-v4-mobile-cart fixed md:hidden bottom-0 z-10 left-0 w-full h-14 py-4 text-center flex items-center justify-center shadow-xl-top gap-3 bg-primary">
         <i class="lab lab-bag-2 lab-font-size-13 text-white"></i>
         <span class="text-base font-medium font-rubik text-white">
-            {{ totalItems() }} {{ $t('label.items') }} - {{
+            {{ totalItems() }} {{ totalItems() > 1 ? $t('label.items') : $t('label.item') }} - {{
                 // [BUG-A3 FIX] Include delivery_charge in mobile total (match cart panel)
                 currencyFormat((subtotal + checkoutProps.form.delivery_charge) - posDiscount,
                     setting.site_digit_after_decimal_point, setting.site_default_currency_symbol,
@@ -1523,7 +1523,7 @@
       <div v-if="showKioskCashPanel" class="kiosk-cash-panel-overlay" @click.self="showKioskCashPanel = false">
         <div class="kiosk-cash-panel">
           <div class="kiosk-cash-panel-header">
-            <h3>🖥️ Commandes borne — à encaisser</h3>
+            <h3>💶 À encaisser au comptoir (borne · caisse · tél · web)</h3>
             <div class="kiosk-cash-panel-header-actions">
                 <!--
                   [POS-V4-ORDERS-ACCESS 2026-05-02] Accès direct depuis la caisse vers

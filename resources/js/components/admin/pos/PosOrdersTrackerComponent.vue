@@ -590,10 +590,18 @@ export default {
                 // to avoid muddying the cashier's "À encaisser" signal — those
                 // orders still appear in the EN PRÉPARATION column once
                 // S-1 auto-promotes them (which happens at payment time).
+                // [S2 F1 2026-07-29] Une commande cash-pending appartient à la voie
+                // « À encaisser » QUEL QUE SOIT son statut cuisine. Repro : 5 commandes
+                // PREPARED + PENDING_COUNTER visibles dans /admin/encaissement mais
+                // « À ENCAISSER = 0 » ici, car le prédicat cash-pending n'était évalué
+                // que sous status===ACCEPT. Le signal argent prime sur le statut cuisine
+                // (l'avancement cuisine reste visible sur le KDS).
+                if (this.isCashPending(o)) {
+                    buckets.accept.push(o);
+                    continue;
+                }
                 if (s === orderStatusEnum.ACCEPT) {
-                    if (this.isCashPending(o)) {
-                        buckets.accept.push(o);
-                    } else {
+                    {
                         // [GOAL-2026-05-29 TRACKER-CONTINUITY-FIX] A paid order
                         // still at ACCEPT is the CASH counter-collect case: the
                         // S-5 carve-out (AutoPrepareOnPaidPolicy::shouldPromote
@@ -940,6 +948,29 @@ export default {
                 });
                 const data = res?.data?.data || [];
                 this.orders = Array.isArray(data) ? data : [];
+                // [S2 F1 2026-07-29] Trou de date : ce fetch ne couvre que le jour
+                // courant alors que la file d'encaissement est all-time — une commande
+                // PENDING_COUNTER de la veille disparaissait du board tout en restant
+                // encaissable dans /admin/encaissement. On fusionne la file
+                // counter-collect (bornée 200, même endpoint que POS/Encaissement),
+                // sans doublon d'id. Échec réseau → board du jour inchangé (pas de
+                // faux vide).
+                try {
+                    const pend = await axios.get('admin/pos/counter-collect/pending');
+                    const pendRows = Array.isArray(pend?.data?.data) ? pend.data.data : [];
+                    const have = new Set(
+                        this.orders.map((o) => parseInt(o?.id, 10)).filter(Number.isFinite)
+                    );
+                    for (const row of pendRows) {
+                        const id = parseInt(row?.id, 10);
+                        if (Number.isFinite(id) && !have.has(id)) {
+                            have.add(id);
+                            this.orders.push(row);
+                        }
+                    }
+                } catch (_) {
+                    // File d'encaissement indisponible → on garde le board du jour.
+                }
                 // [UX-TRACKER-02b 2026-07-22] Poll-diff freshness: previously
                 // the "fresh" highlight was ONLY driven by Echo events — dead
                 // when the queue worker is down. Diff the fetched ids against

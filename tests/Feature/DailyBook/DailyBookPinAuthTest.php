@@ -52,6 +52,20 @@ class DailyBookPinAuthTest extends TestCase
         $this->postJson('/carnet/api/pin', ['pin' => '0000'])->assertStatus(429);
     }
 
+    /**
+     * [S2 2026-07-29] Fail-closed : PIN non configuré (DAILY_BOOK_PIN absent)
+     * = aucun déverrouillage possible — miroir de MobileStockAuthController.
+     */
+    public function test_unconfigured_pin_is_fail_closed(): void
+    {
+        config(['daily_book.pin' => '']);
+
+        $this->postJson('/carnet/api/pin', ['pin' => ''])->assertStatus(403);
+        $this->postJson('/carnet/api/pin', ['pin' => '2468'])->assertStatus(403);
+        $this->getJson('/carnet/api/status')->assertOk()->assertJson(['unlocked' => false]);
+        $this->getJson('/carnet/api/entries')->assertStatus(401);
+    }
+
     public function test_expired_session_relocks(): void
     {
         $this->postJson('/carnet/api/pin', ['pin' => '2468'])->assertOk();

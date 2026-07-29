@@ -280,7 +280,7 @@
             if (!list.length) {
                 var e = document.createElement('div');
                 e.className = 'buy-empty';
-                e.textContent = 'Aucune rupture — tout est en stock ✅';
+                e.textContent = 'Aucune rupture signalée (produits & ingrédients) ✅';
                 box.appendChild(e);
                 return;
             }
