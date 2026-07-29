@@ -45,8 +45,14 @@
                                 {{ orderTypeEnumArray[order.order_type] }}
                             </span>
                         </li>
-                        <li class="text-xs">{{
-                            $t('label.delivery_time')
+                        <!--
+                          [S2 V6 2026-07-29] « Heure de livraison » s'affichait sur une
+                          commande À EMPORTER et sur une commande BORNE, qui ne sont jamais
+                          livrées : c'est le créneau de RETRAIT. Le libellé suit désormais le
+                          type de commande, et la ligne disparaît si aucun créneau n'est posé.
+                        -->
+                        <li class="text-xs" v-if="order.delivery_date || order.delivery_time">{{
+                            isDeliveryOrder ? $t('label.delivery_time') : $t('label.pickup_time')
                         }}:
                             <span class="text-heading">
                                 {{ order.delivery_date }} {{ order.delivery_time }}
@@ -222,26 +228,43 @@
                                     {{ item.item_name }}
                                 </a>
                                 <p v-if="item.item_variations.length !== 0" class="capitalize text-xs mb-1.5">
-                                    <span v-for="(variation, index) in item.item_variations">
-                                        {{ variation.variation_name }}: {{ variation.name }}<span
-                                            v-if="index + 1 < item.item_variations.length">,&nbsp;</span>
+                                    <!--
+                                      [S2 V6 2026-07-29] Passage par le normaliseur canonique
+                                      (posReceiptBuilder), déjà utilisé par le ticket. La lecture
+                                      brute était FAUSSE sur les commandes récentes : dans
+                                      l'instantané NF525, `variation_name` porte le CHOIX et
+                                      `attribute_name` l'intitulé — l'inverse de l'ancienne forme.
+                                      D'où l'affichage « Mayonnaise: » suivi de rien.
+                                    -->
+                                    <span v-for="(variation, index) in normalizedVariations(item)" :key="index">
+                                        {{ variation.label }}: {{ variation.name }}<span
+                                            v-if="index + 1 < normalizedVariations(item).length">,&nbsp;</span>
                                     </span>
                                 </p>
                                 <!-- [WT-D-R1-F4 2026-05-20] Canonical FR EUR via shared `formatPrice()` — `item.total_price` shipped raw by OrderItemResource. -->
                                 <h3 class="text-xs font-semibold">{{ formatPrice(item.total_price) }}</h3>
                             </div>
                         </div>
-                        <ul v-if="item.item_extras.length > 0 || item.instruction !== ''"
+                        <!--
+                          [S2 V6 2026-07-29] Gardes sur le CONTENU réel : `instruction` vaut
+                          NULL en base (pas ''), donc l'ancien test `!== ''` était toujours vrai
+                          et affichait une ligne « Instruction: » vide sur chaque article ; et
+                          les extras de l'instantané n'exposent pas `name` mais `extra_name`,
+                          d'où le « Extras: , » orphelin. Le normaliseur écarte déjà les
+                          entrées sans nom.
+                        -->
+                        <ul v-if="normalizedExtras(item).length > 0 || hasInstruction(item)"
                             class="flex flex-col gap-1.5 mt-2">
-                            <li class="flex gap-1" v-if="item.item_extras.length > 0">
+                            <li class="flex gap-1" v-if="normalizedExtras(item).length > 0">
                                 <h3 class="capitalize text-xs w-fit whitespace-nowrap">{{ $t('label.extras') }}:</h3>
                                 <p class="text-xs">
-                                    <span v-for="(extra, index) in item.item_extras">
-                                        {{ extra.name }}<span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
+                                    <span v-for="(extra, index) in normalizedExtras(item)" :key="index">
+                                        {{ extra.name }}<span v-if="extra.quantity > 1"> ×{{ extra.quantity }}</span><span
+                                            v-if="index + 1 < normalizedExtras(item).length">,&nbsp;</span>
                                     </span>
                                 </p>
                             </li>
-                            <li class="flex gap-1" v-if="item.instruction !== ''">
+                            <li class="flex gap-1" v-if="hasInstruction(item)">
                                 <h3 class="capitalize text-xs w-fit whitespace-nowrap">{{
                                     $t('label.instruction')
                                 }}:</h3>
@@ -311,18 +334,34 @@
             <div class="col-12">
                 <div class="db-card">
                     <div class="db-card-header">
-                        <h3 class="db-card-title">{{ $t('label.delivery_information') }}</h3>
+                        <!--
+                          [S2 V6 2026-07-29] Le titre était « Informations de livraison » sur
+                          TOUTES les commandes — y compris un « À emporter » et une commande
+                          borne, qui ne sont jamais livrés. Le bloc ne contient d'ailleurs
+                          l'adresse que pour les livraisons (v-if plus bas) : ailleurs c'est
+                          la fiche CLIENT.
+                        -->
+                        <h3 class="db-card-title">{{ isDeliveryOrder ? $t('label.delivery_information') : $t('label.customer_information') }}</h3>
                     </div>
                     <div class="db-card-body">
                         <div class="flex items-center gap-3 mb-4">
-                            <img class="w-8 rounded-full" :src="orderUser.image" alt="avatar">
+                            <!--
+                              [S2 V6 2026-07-29] `orderUser.image` est vide pour un client de
+                              passage → l'image cassée affichait son texte alternatif « avat »
+                              en plein milieu de la fiche. On ne rend l'avatar que s'il existe.
+                            -->
+                            <img v-if="orderUser.image" class="w-8 rounded-full" :src="orderUser.image" :alt="$t('label.customer')">
+                            <span v-else class="w-8 h-8 rounded-full bg-[#EFF0F6] flex items-center justify-center" aria-hidden="true">
+                                <i class="lab lab-profile-circle lab-font-size-16"></i>
+                            </span>
                             <h4 class="font-semibold text-sm capitalize text-[#374151]">
                                 {{ isWalkIn ? 'Passager' : textShortener(orderUser.name, 20) }}
                             </h4>
                         </div>
                         <ul class="flex flex-col gap-3 py-4 border-[#EFF0F6]"
                             :class="order.order_type === enums.orderTypeEnum.DELIVERY ? 'mb-4 border-y' : 'border-t'">
-                            <li class="flex items-center gap-2.5" v-if="!isWalkIn">
+                            <!-- [S2 V6 2026-07-29] Ligne e-mail vide (icône seule) si le client n'en a pas. -->
+                            <li class="flex items-center gap-2.5" v-if="!isWalkIn && orderUser.email">
                                 <i class="lab lab-mail lab-font-size-14"></i>
                                 <span class="text-xs">{{ orderUser.email }}</span>
                             </li>
@@ -385,6 +424,9 @@ import PosOrderReceiptComponent from "./PosOrderReceiptComponent";
 import posPaymentMethodEnum from "../../../enums/modules/posPaymentMethodEnum";
 import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
 import statusEnum from "../../../enums/modules/statusEnum";
+// [S2 V6 2026-07-29] Normaliseurs canoniques legacy↔instantané NF525, partagés
+// avec le ticket — une seule vérité pour lire une composition (DISCIPLINE §9).
+import { normalizeReceiptVariations, normalizeReceiptExtras } from "../../../helpers/posReceiptBuilder";
 import PosOrderMapComponent from "./PosOrderMapComponent";
 // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] V1 cashier loyalty redeem modal
 // (Option B per plans/LOCK_POS_LOYALTY_REDEEM_UI_2026-05-18.md). Mounted
@@ -483,6 +525,12 @@ export default {
         isWalkIn: function () {
             return String(this.orderUser && this.orderUser.email || '').toLowerCase() === 'walkingcustomer@example.com';
         },
+        // [S2 V6 2026-07-29] Seule une commande LIVRAISON a une adresse, un
+        // livreur et une heure de livraison. Emporter / caisse / borne / table
+        // affichaient pourtant le vocabulaire de la livraison.
+        isDeliveryOrder: function () {
+            return parseInt(this.order?.order_type, 10) === orderTypeEnum.DELIVERY;
+        },
         orderAddress: function () {
             return this.$store.getters['posOrder/orderAddress'];
         },
@@ -564,13 +612,23 @@ export default {
 
             return list;
         },
+        // [S2 V6 2026-07-29] La carte d'affichage était INCOMPLÈTE : PENDING,
+        // CANCELED et REJECTED en étaient absents, alors que le SÉLECTEUR
+        // ci-dessus n'est volontairement pas exhaustif (l'annulation et le
+        // remboursement passent par leurs modales dédiées). Résultat : une
+        // commande annulée affichait un badge de statut VIDE — le caissier ne
+        // pouvait pas savoir en regardant la fiche qu'elle était annulée.
+        // Sélecteur ≠ carte d'affichage : celle-ci doit couvrir TOUT l'enum.
         orderStatusEnumArray: function () {
             return {
+                [orderStatusEnum.PENDING]: this.$t("label.pending"),
                 [orderStatusEnum.ACCEPT]: this.$t("label.accept"),
                 [orderStatusEnum.PREPARING]: this.$t("label.preparing"),
                 [orderStatusEnum.PREPARED]: this.$t("label.prepared"),
                 [orderStatusEnum.OUT_FOR_DELIVERY]: this.$t("label.out_for_delivery"),
                 [orderStatusEnum.DELIVERED]: this.$t("label.delivered"),
+                [orderStatusEnum.CANCELED]: this.$t("label.canceled"),
+                [orderStatusEnum.REJECTED]: this.$t("label.rejected"),
                 [orderStatusEnum.RETURNED]: this.$t("label.returned")
             }
         },
@@ -580,10 +638,15 @@ export default {
                 { name: this.$t("label.unpaid"), value: paymentStatusEnum.UNPAID },
             ];
         },
+        // [S2 V6 2026-07-29] Idem côté paiement : PENDING_COUNTER (commande à
+        // encaisser au comptoir) et REFUNDED (remboursée) manquaient → pastille
+        // vide sur toutes les commandes Plan B et sur tous les remboursements.
         paymentStatusEnumArray: function () {
             return {
                 [paymentStatusEnum.PAID]: this.$t("label.paid"),
-                [paymentStatusEnum.UNPAID]: this.$t("label.unpaid")
+                [paymentStatusEnum.UNPAID]: this.$t("label.unpaid"),
+                [paymentStatusEnum.PENDING_COUNTER]: this.$t("label.pending_counter"),
+                [paymentStatusEnum.REFUNDED]: this.$t("label.refunded")
             }
         },
         posPaymentMethodEnumArray: function () {
@@ -620,6 +683,24 @@ export default {
         },
     },
     methods: {
+        /**
+         * [S2 V6 2026-07-29] Composition d'une ligne, lue par le normaliseur
+         * canonique partagé avec le ticket : il absorbe l'ancienne forme
+         * (`{variation_name, name}`) ET celle de l'instantané NF525
+         * (`{attribute_name, variation_name}`, où les rôles sont inversés), et
+         * écarte les entrées sans nom. La lecture brute affichait
+         * « Mayonnaise: » sans valeur et « Extras: , ».
+         */
+        normalizedVariations(item) {
+            return normalizeReceiptVariations(item?.item_variations);
+        },
+        normalizedExtras(item) {
+            return normalizeReceiptExtras(item?.item_extras);
+        },
+        /** `instruction` vaut NULL en base — `!== ''` laissait passer une ligne vide. */
+        hasInstruction(item) {
+            return typeof item?.instruction === 'string' && item.instruction.trim() !== '';
+        },
         // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] On successful redemption,
         // refresh the order so subtotal/discount/total + loyalty_customer_code
         // reflect the new state. Then close the modal.

@@ -31,3 +31,13 @@ dispute F3/G3). Les fixes sont HORS de l'ownership S2 → demande de prise en ch
   (b) défaut de fond : faire passer `V1_PRIMARY_SIDEBAR_MENUS` par le même filtre
   `hiddenMenuUrls` + mapping permission (`MENU_URL_TO_PERMISSION_URL`).
 - Non fait par S2 : `layouts/backend/BackendMenuComponent.vue` = voie CENTRAL.
+
+## 3. En-tête admin — `<img alt="flag">` SANS attribut `src` (P3, toutes les pages)
+- Fait mesuré (sonde DOM sur `/admin/pos`, `/admin/historique`, `/admin/stock/rupture`) :
+  `<img alt="flag" class="w-4 h-4 rounded-full">` — **aucun `src`** → image cassée rendue
+  comme une pastille vide de 16 px dans le sélecteur de langue de l'en-tête, sur **toutes**
+  les pages admin. Seule image cassée subsistant après la vague V6 de S2.
+- Diff proposé : soit alimenter le `src` avec le drapeau de la locale active, soit rendre
+  l'`<img>` conditionnel (`v-if`) et retomber sur le libellé texte — le nom de la langue est
+  déjà affiché à côté.
+- Non fait par S2 : en-tête partagé, voie CENTRAL.
