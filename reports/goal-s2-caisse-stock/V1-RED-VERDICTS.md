@@ -34,6 +34,18 @@ les transcripts d'agents (chat) et recoupé ci-dessous. **Aucun P0, aucun P1 str
 - G8b : « DATE tronquée » = scroll horizontal volontaire du design system (`overflow-auto`+`nowrap`), pas de perte.
 - F3 « catégorie Tacos polluée » : réfuté — la catégorie 5 réelle ne contient que les 3 Tacos ; le symptôme n'existe qu'en vue « Toutes »/recherche.
 
+## Re-vérification post-heals (captures `tests/captures/goal-s2-v1-recheck-2026-07-29/`, serveur worktree :8010, build prod)
+| Point | Méthode | Verdict |
+|---|---|---|
+| V-01 header POS 1280×800 | capture r1 LUE | **PASS** — plus aucun chevauchement, clusters COMMANDES/CAISSE empilés, « Commande rapide » lisible, pilule bien placée |
+| F2 libellés comptoir | capture r1 | **PASS** — « À ENCAISSER — COMPTOIR », plus de « borne » mensonger |
+| V-08 tracker À encaisser | capture r2 LUE | **PASS** — colonne = 25 cartes + CTA Encaisser (avant : 0) ; fusion all-time + bucket cash-pending opérationnels |
+| V-13 Oui/Non | grep bundle compilé | **PASS** — `"no":"Non"` dans `public/js/app.js` (drawer non ouvert au run, fix = clé i18n unique) |
+| V-10 pagination FR | `trans()` serveur | **PASS** — « Précédent / Suivant » |
+| V-15 message /m | curl :8010/m | **PASS** — « Aucune rupture signalée (produits & ingrédients) ✅ » |
+| F3-data | UPDATE DB (3 lignes) + seeder | **PASS** — « Complément de commande » |
+| Résidu détecté à la re-capture | r2 | sous-titre colonne tracker « Borne — paiement comptoir » → **corrigé** (`col_accept_subtitle`, rebuild au prochain build V5) |
+
 ## Gates owner ouvertes (notées, on continue)
 1. Poser `DAILY_BOOK_PIN` réel dans le `.env` du poste (le carnet est désormais fail-closed sans lui — dev inclus).
 2. Wizard caisse : format monétaire « €6.90 » → LOCK pos-wizard.js si l'owner veut le format FR.

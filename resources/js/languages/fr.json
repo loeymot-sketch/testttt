@@ -321,7 +321,7 @@
             "empty_on_the_way": "Aucune commande en livraison.",
             "empty_delivered": "Aucune commande livrée pour l'instant.",
             "col_accept": "À encaisser",
-            "col_accept_subtitle": "Borne — paiement comptoir",
+            "col_accept_subtitle": "Paiement au comptoir (borne · caisse · tél · web)",
             "col_preparing": "En préparation",
             "col_prepared": "Prêts à servir",
             "col_on_the_way": "En livraison",
