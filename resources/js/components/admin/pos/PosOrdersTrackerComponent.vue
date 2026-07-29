@@ -601,7 +601,14 @@ export default {
                 // « À ENCAISSER = 0 » ici, car le prédicat cash-pending n'était évalué
                 // que sous status===ACCEPT. Le signal argent prime sur le statut cuisine
                 // (l'avancement cuisine reste visible sur le KDS).
-                if (this.isCashPending(o)) {
+                //
+                // [S2 auto-RED 2026-07-29] MAIS jamais un statut TERMINAL : une commande
+                // annulée/rejetée/remboursée garde `payment_status=PENDING_COUNTER` en base
+                // (30 lignes constatées) alors que `confirmCounterPayment` la REFUSE — sans
+                // ce garde on recréait la « carte fantôme incaissable » déjà fermée côté
+                // backend (routes/api.php, `whereNotIn('status', [CANCELED,REJECTED,RETURNED])`
+                // de counter-collect/pending). On miroite exactement ce set terminal.
+                if (this.isCashPending(o) && !this.isTerminalStatus(s)) {
                     buckets.accept.push(o);
                     continue;
                 }
@@ -1133,6 +1140,18 @@ export default {
         // numeric enum constants in case an older projection ships through
         // (e.g. cached Vuex payload pre-deploy). PaymentStatus::PENDING_COUNTER
         // = 15, PosPaymentMethod::COUNTER_DEFERRED = 6 — see app/Enums/.
+        /**
+         * [S2 auto-RED 2026-07-29] Set terminal du sceau d'encaissement — miroir
+         * strict de la garde backend de `counter-collect/pending`. Une commande
+         * dans un de ces statuts n'est plus encaissable, quel que soit son
+         * `payment_status` résiduel.
+         */
+        isTerminalStatus(status) {
+            const s = parseInt(status, 10);
+            return s === orderStatusEnum.CANCELED
+                || s === orderStatusEnum.REJECTED
+                || s === orderStatusEnum.RETURNED;
+        },
         isCashPending(o) {
             if (!o) return false;
             if (o.is_cash_pending === true || o.is_cash_pending === 1) return true;

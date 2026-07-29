@@ -82,6 +82,23 @@ describe('Tracker — cash-pending appartient à « À encaisser » quel que soi
         expect(buckets.prepared.map((o) => o.id)).not.toContain(101);
     });
 
+    // [S2 auto-RED 2026-07-29] Garde anti « carte fantôme incaissable » : une
+    // commande annulée/rejetée/remboursée conserve payment_status=PENDING_COUNTER
+    // en base (30 lignes constatées en dev) alors que le backend refuse de
+    // l'encaisser. Elle ne doit JAMAIS remonter dans la voie « À encaisser ».
+    it.each([
+        ['CANCELED', orderStatusEnum.CANCELED],
+        ['REJECTED', orderStatusEnum.REJECTED],
+        ['RETURNED', orderStatusEnum.RETURNED],
+    ])('un cash-pending en statut terminal %s n\'entre PAS dans « À encaisser »', (_label, status) => {
+        const wrapper = buildHarness();
+        wrapper.vm.orders = [cashPending(303, status)];
+        const buckets = wrapper.vm.ordersByStatus;
+        expect(buckets.accept.map((o) => o.id)).not.toContain(303);
+        expect(buckets.preparing.map((o) => o.id)).not.toContain(303);
+        expect(buckets.prepared.map((o) => o.id)).not.toContain(303);
+    });
+
     it('un PREPARED non cash-pending reste dans « Prêts »', () => {
         const wrapper = buildHarness();
         const o = { id: 202, status: orderStatusEnum.PREPARED, order_status: orderStatusEnum.PREPARED, payment_status: 5, pos_payment_method: 1, created_at: '2026-07-29 10:00:00' };
