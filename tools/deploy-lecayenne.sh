@@ -211,17 +211,22 @@ fi
 # ligne (curl seul = FAUX POSITIF, il ignore le CORS ; un préflight 204 sans ACAO
 # ne prouve RIEN). WARNING loud, PAS de rollback : un CORS web cassé ne casse pas la
 # borne/caisse (backend sain) — mais on le crie pour ne pas livrer un site mort.
-WEBDOM="$(env_val FRONTEND_WEB_DOMAIN)"
+# [FIX 2026-07-30] FRONTEND_WEB_DOMAIN est désormais une LISTE séparée par virgules
+# (vercel + lecayenne.fr + www — config/cors.php explode). Le CORS se teste UNE origine
+# à la fois : on prend la 1ʳᵉ de la liste. Avant, on envoyait la liste ENTIÈRE comme un
+# seul Origin → jamais matché → FAUX « CORS CASSÉ » alors que chaque origine est bien servie.
+WEBDOM_LIST="$(env_val FRONTEND_WEB_DOMAIN)"
+WEBDOM="$(printf '%s' "$WEBDOM_LIST" | cut -d, -f1 | tr -d ' ')"
 if [ -n "$WEBDOM" ]; then
   ACAO="$($CURL -D - -o /dev/null -X OPTIONS \
     -H "Origin: $WEBDOM" -H 'Access-Control-Request-Method: GET' \
     "$GOOD/api/frontend/item?branch_id=1" 2>/dev/null | grep -i '^access-control-allow-origin:' || true)"
   if printf '%s' "$ACAO" | grep -qiF "$WEBDOM"; then
-    echo "== CORS OK : $WEBDOM reçoit Access-Control-Allow-Origin (checkout web débloqué)"
+    echo "== CORS OK : $WEBDOM reçoit Access-Control-Allow-Origin (1ʳᵉ origine de la liste — checkout web débloqué)"
   else
     WEB_CORS_WARN=1
     echo "!! CORS CASSÉ : $WEBDOM ne reçoit PAS d'Access-Control-Allow-Origin → checkout web bloqué navigateur."
-    echo "!!   Corrige : poser FRONTEND_WEB_DOMAIN=$WEBDOM dans .env puis php artisan config:cache."
+    echo "!!   Corrige : poser FRONTEND_WEB_DOMAIN (liste CSV) dans .env puis php artisan config:cache."
   fi
 fi
 
