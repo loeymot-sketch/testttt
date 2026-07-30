@@ -57,11 +57,11 @@ class OwnerMenuUpdate20260623Seeder extends Seeder
         'Tenders', 'Fricadelle', 'Poulet mariné',
     ];
 
-    /** 12 sauces incluses (1ère gratuite). */
+    /** 14 sauces incluses (1ère gratuite). [OWNER 2026-07-31] + Poivre + Burger. */
     private const SAUCES = [
         'Mayonnaise', 'Ketchup', 'Blanche', 'Hannibal', 'Samouraï',
         'Algérienne', 'Andalouse', 'Curry', 'Barbecue', 'Harissa',
-        'Fromagère maison', 'Spicy maison',
+        'Fromagère maison', 'Spicy maison', 'Poivre', 'Burger',
     ];
 
     /** Garnitures gratuites (group_label = crudite). */
