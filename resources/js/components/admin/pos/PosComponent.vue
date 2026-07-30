@@ -4272,6 +4272,10 @@ export default {
                     delivery_charge: this.checkoutProps.form.delivery_charge,
                     delivery_distance_km: this.checkoutProps.form.delivery_distance_km,
                     loyalty_customer_code: this.checkoutProps.form.loyalty_customer_code,
+                    // [HEAL P2 2026-07-30] coupon_id manquait au snapshot park → remise
+                    // perdue à la reprise (le serveur re-dérive la remise depuis coupon_id).
+                    // Parité avec loyalty_customer_code (sérialisé ci-dessus, restauré 2× plus bas).
+                    coupon_id: this.checkoutProps.form.coupon_id,
                     pos_payment_method: this.checkoutProps.form.pos_payment_method,
                     pos_payment_note: this.checkoutProps.form.pos_payment_note,
                     pos_customer_name: this.checkoutProps.form.pos_customer_name,
@@ -4404,6 +4408,8 @@ export default {
                 this.checkoutProps.form.delivery_charge = savedForm.delivery_charge ?? 0;
                 this.checkoutProps.form.delivery_distance_km = savedForm.delivery_distance_km ?? null;
                 this.checkoutProps.form.loyalty_customer_code = savedForm.loyalty_customer_code ?? null;
+                // [HEAL P2 2026-07-30] Restaure le coupon à la reprise (cf. snapshot serialize).
+                this.checkoutProps.form.coupon_id = savedForm.coupon_id ?? null;
                 this.checkoutProps.form.pos_payment_method = savedForm.pos_payment_method ?? posPaymentMethodEnum.CASH;
                 this.checkoutProps.form.pos_payment_note = savedForm.pos_payment_note ?? '';
                 this.address.form.user_id = savedCustomerId;

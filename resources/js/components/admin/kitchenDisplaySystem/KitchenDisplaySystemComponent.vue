@@ -1392,7 +1392,7 @@ export default {
         { group: 'Viande', entries: [['K', 'Steak haché'], ['P', 'Poulet'], ['Tender', 'Tenders'], ['Nug', 'Nuggets'], ['Mex', 'Mexicaine'], ['Frec', 'Fricadelle'], ['Cordon', 'Cordon bleu']] },
         { group: 'Sauce', entries: [['MAY', 'Mayonnaise'], ['SAM', 'Samouraï'], ['HAN', 'Hannibal'], ['CURY', 'Curry'], ['AND', 'Andalouse'], ['BL', 'Blanche'], ['KTP', 'Ketchup'], ['Burg', 'Burger'], ['ALG', 'Algérienne'], ['BBQ', 'Barbecue'], ['HAR', 'Harissa'], ['FRO', 'Fromage'], ['SPI', 'Spicy']] },
         { group: 'Crudités', entries: [['S', 'Salade'], ['T', 'Tomate'], ['O', 'Oignon'], ['O̲', 'Oignons cuits']] },
-        { group: 'Formule', entries: [['MENU', 'Menu (formule)'], ['F', 'Frites']] },
+        { group: 'Formule', entries: [['MENU', 'Menu (formule)'], ['FRITES', 'Frites (formule)'], ['BOISSON', 'Boisson (formule)'], ['F', 'Frites (supplément)']] },
       ];
     },
     // [GOAL RUPTURE-CARNET 2026-07-15 / W6 heal P2] Miroir du gate serveur
