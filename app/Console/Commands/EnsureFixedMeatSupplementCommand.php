@@ -51,7 +51,7 @@ class EnsureFixedMeatSupplementCommand extends Command
             ->pluck('id');
 
         $sandwichItemIds = DB::table('items')
-            ->where('category_id', self::SANDWICH_CATEGORY_ID)
+            ->where('item_category_id', self::SANDWICH_CATEGORY_ID)
             ->where('status', Status::ACTIVE)
             ->whereNull('deleted_at')
             ->pluck('id');
