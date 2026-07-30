@@ -24,6 +24,14 @@
 import { kioskIsBundledFritesMenuUpgradeExtra } from './kioskMenuBundledExtras';
 
 /**
+ * Miroir de `App\Enums\Status::ACTIVE`. Un extra dont le `status` est
+ * explicitement fourni ET != ACTIVE (typiquement 10 = INACTIVE) ne doit jamais
+ * être partitionné : le backend le refuse à la commande (422) et un homonyme
+ * actif/inactif provoquerait un doublon dans le wizard borne.
+ */
+const KIOSK_EXTRA_ACTIVE_STATUS = 5;
+
+/**
  * Un extra est une sauce si :
  *   - son group_label vaut 'sauce' (priorité, source catalogue)
  *   - sinon si son nom contient 'sauce' (fallback best-effort)
@@ -82,6 +90,11 @@ export function partitionKioskExtras(item) {
 
   for (const e of list) {
     if (e == null) continue;
+    // [P1-A 2026-07-30] Défense-en-profondeur (twin de KioskMenuService::projectItems) :
+    // un extra explicitement marqué non-ACTIVE (status présent & != 5) est rejeté. Un
+    // status absent/undefined ⇒ traité actif (le payload live build() filtre déjà côté
+    // serveur ; seul un snapshot offline pré-garde pourrait encore porter un status).
+    if (e.status != null && Number(e.status) !== KIOSK_EXTRA_ACTIVE_STATUS) continue;
     const price = parseFloat(e.convert_price || e.price || 0) || 0;
     // [HEAL-A 2026-05-08] Propagate is_available / unavailable_reason so step
     // components can render the "Épuisé" marker without needing to crack open

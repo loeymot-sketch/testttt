@@ -162,4 +162,33 @@ describe('partitionKioskExtras', () => {
     const out = partitionKioskExtras(item);
     expect(out.garnitures.map((r) => r.id)).toEqual([1]);
   });
+
+  // [P1-A 2026-07-30] Les extras INACTIFS (status explicitement != Status::ACTIVE=5)
+  // ne doivent JAMAIS être partitionnés (fuite borne + doublon actif/inactif + 422
+  // au paiement). Un status absent/undefined = traité actif (backend build() est le
+  // SSOT et filtre déjà ; un snapshot offline pré-garde peut encore porter status).
+  it('excludes extras whose status is explicitly non-ACTIVE, keeps active + status-less', () => {
+    const item = {
+      extras: [
+        { id: 1, name: 'Cheddar', status: 5, convert_price: 1 },
+        { id: 2, name: 'Option Gratiné', status: 5, convert_price: 2 },
+        { id: 3, name: 'Option Gratiné', status: 10, convert_price: 2 }, // INACTIF homonyme → drop
+        { id: 4, name: 'Boule gratinée', status: 10, convert_price: 0 }, // INACTIF garniture → drop
+        { id: 5, name: 'Salade', convert_price: 0 }, // status absent → conservé (défensif)
+      ],
+    };
+    const out = partitionKioskExtras(item);
+    const allIds = [
+      ...out.garnitures,
+      ...out.supplements,
+      ...out.fritesUpgrades,
+      ...out.viandesPaid,
+    ].map((r) => r.id);
+
+    expect(allIds.sort()).toEqual([1, 2, 5]);
+    expect(allIds).not.toContain(3);
+    expect(allIds).not.toContain(4);
+    // Pas de doublon actif/inactif du même nom.
+    expect(out.supplements.filter((r) => r.name === 'Option Gratiné').length).toBe(1);
+  });
 });

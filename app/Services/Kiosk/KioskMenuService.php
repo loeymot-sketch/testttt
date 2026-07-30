@@ -398,7 +398,12 @@ final class KioskMenuService
                 'itemAttributes'      => $projectedItemAttributes,
                 'composer_profile'    => $this->composerProfileProjection()->project($composerProfiles->get($item->id), $item, self::CHANNEL, $branchId),
                 'extras'             => $item->extras
-                    ->filter(fn ($e) => $e->isVisibleOn(self::CHANNEL))
+                    // [P1-A 2026-07-30] Défense-en-profondeur : filtre status == ACTIVE
+                    // en plus de la garde relationship Item::extras() (parité avec le
+                    // projeté `variations` ci-dessus). Rend la projection borne
+                    // auto-suffisante — un extra inactif ne peut jamais fuir sur les
+                    // étapes Suppléments/Garnitures même si la relation évolue.
+                    ->filter(fn ($e) => (int) $e->status === Status::ACTIVE && $e->isVisibleOn(self::CHANNEL))
                     ->map(function ($e) use ($itemChoiceAvailability) {
                         $availability = $itemChoiceAvailability['extras'][(int) $e->id] ?? ['is_available' => true, 'unavailable_reason' => null];
 
