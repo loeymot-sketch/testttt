@@ -1,0 +1,42 @@
+{
+  "01-login": {
+    "console_errors": [],
+    "http_errors": [],
+    "note": "url=/login title=\"Le Cayenne\" textLen=114 sample=\"Français Anglais Français Connexion Bon Retour Email Mot De Passe Se Souvenir De Moi Mot De Passe Oublié Connexion\""
+  },
+  "02-admin-pos": {
+    "console_errors": [],
+    "http_errors": [],
+    "note": "url=/admin/pos — grille caisse + rail catégories (Sandwichs/Galette/Burgers/Tacos/Bols/Frites/Desserts/Boissons/Menu enfant), capturée après clic \"Caisse\" + scroll (rail à 806px sous le haut de page : le landing affiche d'abord les files À encaisser/web — 02a-admin-pos-landing.png). DÉFAUT VISUEL landing reproductible 4 runs / 2 serveurs : textes superposés haut-gauche (bloc titre CAISSE LE CAYENNE/COMMANDES/rapide chevauché par la rangée d'onglets) — P2 cosmétique, voir 02a."
+  },
+  "03-tracker-history": {
+    "console_errors": [],
+    "http_errors": [],
+    "note": "url=/admin/historique title=\"Le Cayenne\" textLen=1835 sample=\"Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Pro\" | clic OK, arrivé sur /admin/historique — FIX 86bc530dc VÉRIFIÉ : router-link du tracker atterrit sur la vraie page Historique (liste peuplée, N° fiscal/origine/paiement), pas de 404 ni écran vide (avant-clic : 03a-tracker-before-click.png)"
+  },
+  "04-kds": {
+    "console_errors": [],
+    "http_errors": [],
+    "note": "url=/admin/kitchen-display-system title=\"Le Cayenne\" textLen=390 sample=\"Tableau De Bord Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion 🚫 Rupt\" — OBSERVATION : 1 ticket W8675 (web, stale DB dev, attente ~8172 min) affiché SANS aucune ligne d'article dans le corps de la carte — à confirmer si défaut de rendu ou artefact de donnée périmée"
+  },
+  "05-oss": {
+    "console_errors": [],
+    "http_errors": [],
+    "note": "url=/admin/order-status-screen title=\"Le Cayenne\" textLen=182 sample=\"Tableau De Bord Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion En prép\""
+  },
+  "06-admin-items": {
+    "console_errors": [],
+    "http_errors": [],
+    "note": "url=/admin/items title=\"Le Cayenne\" textLen=1870 sample=\"Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Pro\""
+  },
+  "07-stock-rupture": {
+    "console_errors": [],
+    "http_errors": [],
+    "note": "url=/admin/stock/rupture title=\"Le Cayenne\" textLen=1112 sample=\"Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 2,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Pro\""
+  },
+  "08-kiosk-idle": {
+    "console_errors": [],
+    "http_errors": [],
+    "note": "url=/kiosk/idle title=\"Le Cayenne\" textLen=296 sample=\"NOS INCONTOURNABLES Le Terminator Double Cheese Le Cayenne Grill Burger Le Suprême Menu Maxi Bol de riz Bol de frites 100% HALAL Bienvenue ! Le Cayenne Commande\""
+  }
+}
