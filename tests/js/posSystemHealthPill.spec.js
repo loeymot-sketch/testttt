@@ -10,13 +10,14 @@ vi.mock('axios', () => ({ default: { get: (...a) => mockGet(...a) } }));
 
 import PosSystemHealthPill from '../../resources/js/components/admin/pos/PosSystemHealthPill.vue';
 
-const health = (overall, sync, fiscal, stock) => ({
+const health = (overall, sync, fiscal, stock, aging) => ({
     data: {
         overall,
         checks: {
             sync: sync || { status: 'ok', message: 'Temps réel actif.' },
             fiscal: fiscal || { status: 'ok', message: 'Chaîne fiscale intègre.' },
             stock: stock || { status: 'ok', count: 0, message: 'Stock complet.' },
+            aging: aging || { status: 'ok', count: 0, message: 'Aucune commande en retard.' },
         },
     },
 });
@@ -75,6 +76,18 @@ describe('PosSystemHealthPill', () => {
     it('0 rupture → pas de compteur stock', async () => {
         const w = await mountWith(health('ok'));
         expect(w.vm.stockRuptures).toBe(0);
+    });
+
+    it('remonte les commandes en retard (compteur info, sans dégrader le ton)', async () => {
+        const w = await mountWith(health('ok', null, null, null, { status: 'info', count: 2, message: '2 commandes en attente > 15 min' }));
+        expect(w.vm.tone).toBe('ok');
+        expect(w.vm.agingOrders).toBe(2);
+        expect(w.vm.detailText).toContain('2 commandes en attente');
+    });
+
+    it('0 commande en retard → pas de compteur âge', async () => {
+        const w = await mountWith(health('ok'));
+        expect(w.vm.agingOrders).toBe(0);
     });
 
     it('best-effort : un poll en échec ne casse pas l\'écran (rien chargé, pas d\'exception)', async () => {

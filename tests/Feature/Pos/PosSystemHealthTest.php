@@ -2,6 +2,9 @@
 
 namespace Tests\Feature\Pos;
 
+use App\Enums\OrderStatus;
+use App\Models\Branch;
+use App\Models\Order;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -80,6 +83,7 @@ class PosSystemHealthTest extends TestCase
                 'sync'   => ['status', 'message'],
                 'fiscal' => ['status', 'message'],
                 'stock'  => ['status', 'count', 'message'],
+                'aging'  => ['status', 'count', 'message'],
             ],
             'stale_events',
             'queue_pending',
@@ -162,6 +166,42 @@ class PosSystemHealthTest extends TestCase
         $this->assertGreaterThan(0, $res->json('checks.stock.count'));
         // sync ok + fiscal ok (chaîne vide en test) + stock info → overall reste 'ok'.
         $this->assertSame('ok', $res->json('overall'), 'Une rupture stock ne doit pas mettre le système en dégradé.');
+    }
+
+    /**
+     * @test Les commandes PAS ENCORE PRÊTES de plus de 15 min sont comptées ; les récentes, prêtes,
+     * livrées et annulées ne le sont PAS. INFO : ne dégrade pas l'overall.
+     */
+    public function test_aging_orders_are_counted(): void
+    {
+        if (! Branch::withoutGlobalScopes()->find(1)) {
+            Branch::factory()->create(['id' => 1]); // FK orders.branch_id → branches.id
+        }
+        $cashier = $this->cashier();
+        $mk = function (int $status, int $ageMin) use ($cashier): void {
+            $o = Order::factory()->create([
+                'branch_id' => 1,
+                'user_id'   => $cashier->id,
+                'status'    => $status,
+                'total'     => 10,
+                'subtotal'  => 10,
+                'discount'  => 0,
+            ]);
+            DB::table('orders')->where('id', $o->id)->update(['created_at' => now()->subMinutes($ageMin)]);
+        };
+        $mk(OrderStatus::PENDING, 20);    // vieille + pas prête → comptée
+        $mk(OrderStatus::PREPARING, 30);  // vieille + pas prête → comptée
+        $mk(OrderStatus::PENDING, 5);     // récente → PAS comptée
+        $mk(OrderStatus::PREPARED, 40);   // prête (finie côté cuisine) → PAS comptée
+        $mk(OrderStatus::DELIVERED, 40);  // livrée → PAS comptée
+
+        Sanctum::actingAs($cashier, ['*']);
+        $res = $this->getJson('/api/admin/pos/system-health');
+
+        $res->assertStatus(200);
+        $this->assertSame(2, $res->json('checks.aging.count'), 'Seules les commandes pas-encore-prêtes >15min comptent.');
+        $this->assertSame('info', $res->json('checks.aging.status'));
+        $this->assertSame('ok', $res->json('overall'), 'Des commandes en retard ne dégradent pas l\'état système (info).');
     }
 
     /**

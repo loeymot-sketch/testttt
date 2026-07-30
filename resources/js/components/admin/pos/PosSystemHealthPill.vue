@@ -30,6 +30,14 @@
             :title="'Produits actuellement en rupture (voir Gestion Produits & Stock)'"
             data-testid="pos-health-stock"
         >🍽️ {{ stockRuptures }} en rupture</span>
+        <!-- [CAISSE-HEALTH 2026-07-31] Commandes qui vieillissent trop (pas encore prêtes > 15 min) —
+             compteur INFO. Le tracker les colore déjà par carte ; ici c'est le coup d'œil agrégé. -->
+        <span
+            v-if="agingOrders > 0"
+            class="pos-health-pill-aging"
+            :title="health.checks.aging.message"
+            data-testid="pos-health-aging"
+        >⏱️ {{ agingOrders }} en retard</span>
     </div>
 </template>
 
@@ -76,12 +84,16 @@ export default {
         stockRuptures() {
             return (this.health && this.health.checks && this.health.checks.stock && this.health.checks.stock.count) || 0;
         },
+        agingOrders() {
+            return (this.health && this.health.checks && this.health.checks.aging && this.health.checks.aging.count) || 0;
+        },
         detailText() {
             if (!this.health || !this.health.checks) return '';
             const parts = [];
             if (this.health.checks.sync) parts.push(this.health.checks.sync.message);
             if (this.fiscalAlert) parts.push(this.health.checks.fiscal.message);
             if (this.stockRuptures > 0) parts.push(this.health.checks.stock.message);
+            if (this.agingOrders > 0) parts.push(this.health.checks.aging.message);
             return parts.join(' · ');
         },
     },
@@ -152,6 +164,15 @@ export default {
     padding-left: 8px;
     border-left: 1px solid rgba(0, 0, 0, 0.15);
     color: #B8560F;
+}
+/* Commandes en retard — rouge-orangé (en retard = un peu plus urgent qu'une rupture), séparateur neutre. */
+.pos-health-pill-aging {
+    font-weight: 700;
+    white-space: nowrap;
+    margin-left: 4px;
+    padding-left: 8px;
+    border-left: 1px solid rgba(0, 0, 0, 0.15);
+    color: #C2410C;
 }
 
 /* Vert discret — tout va bien, ne doit pas distraire l'opérateur. */

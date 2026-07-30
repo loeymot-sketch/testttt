@@ -29,6 +29,9 @@ class PosSystemHealthController extends Controller
     /** Au-delà, le worker est considéré en retard/en panne (miroir HealthController::checkQueueWorker). */
     private const STALE_OUTBOX_THRESHOLD = 10;
 
+    /** Une commande PAS ENCORE PRÊTE plus vieille que ça « vieillit trop » (fast-food : ~15 min = tard). */
+    private const AGING_THRESHOLD_MIN = 15;
+
     public function __invoke(): JsonResponse
     {
         // --- Temps réel : le socket est-il vivant ET le worker dépile-t-il réellement les events ? ---
@@ -62,6 +65,19 @@ class PosSystemHealthController extends Controller
                 : 'Stock complet.',
         ];
 
+        // --- Commandes qui vieillissent trop (vue d'ensemble) — INFO. Commandes PAS ENCORE PRÊTES
+        // (PENDING/ACCEPT/PREPARING) de plus de 15 min = kitchen en retard ou commande oubliée. Le
+        // tracker les colore déjà par carte ; ici c'est le compteur agrégé pour un coup d'œil. ---
+        $agingCount = $this->agingOrdersCount();
+        $aging = [
+            'status'        => $agingCount > 0 ? 'info' : 'ok',
+            'count'         => $agingCount,
+            'threshold_min' => self::AGING_THRESHOLD_MIN,
+            'message'       => $agingCount > 0
+                ? ($agingCount.' commande'.($agingCount > 1 ? 's' : '').' en attente > '.self::AGING_THRESHOLD_MIN.' min')
+                : 'Aucune commande en retard.',
+        ];
+
         // Sévérité : une panne de SYNC (opérationnel — la caisse ne reçoit plus les commandes) peut
         // aller jusqu'à 'down' (rouge). Une alerte FISCALE (intégrité de fond ; l'opérateur ne peut
         // qu'alerter le support, il continue d'encaisser) plafonne à 'degraded' (ambre) — on ne veut
@@ -73,7 +89,7 @@ class PosSystemHealthController extends Controller
 
         return response()->json([
             'overall'       => $overall,
-            'checks'        => ['sync' => $sync, 'fiscal' => $fiscal, 'stock' => $stock],
+            'checks'        => ['sync' => $sync, 'fiscal' => $fiscal, 'stock' => $stock, 'aging' => $aging],
             'stale_events'  => $staleEvents,
             'queue_pending' => HealthzController::probeQueuePending(),
             'timestamp'     => now()->toIso8601String(),
@@ -101,6 +117,33 @@ class PosSystemHealthController extends Controller
             return (int) $q->count();
         } catch (\Throwable $e) {
             return 0; // la santé ne doit jamais casser sur une erreur de probe stock
+        }
+    }
+
+    /**
+     * Commandes PAS ENCORE PRÊTES (PENDING/ACCEPT/PREPARING — pas les prêtes/livrées/annulées) de plus
+     * de AGING_THRESHOLD_MIN minutes, pour la branche du caissier. Signal « la cuisine est en retard
+     * ou une commande a été oubliée ». Requête indexée (branch_id, status, created_at).
+     */
+    private function agingOrdersCount(): int
+    {
+        try {
+            $q = \App\Models\Order::withoutGlobalScopes()
+                ->whereIn('status', [
+                    \App\Enums\OrderStatus::PENDING,
+                    \App\Enums\OrderStatus::ACCEPT,
+                    \App\Enums\OrderStatus::PREPARING,
+                ])
+                ->where('created_at', '<', now()->subMinutes(self::AGING_THRESHOLD_MIN));
+
+            $branchId = (int) (auth()->user()?->branch_id ?? 0);
+            if ($branchId > 0) {
+                $q->where('branch_id', $branchId);
+            }
+
+            return (int) $q->count();
+        } catch (\Throwable $e) {
+            return 0; // la santé ne doit jamais casser sur une erreur de probe
         }
     }
 
