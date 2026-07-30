@@ -43,6 +43,9 @@ class PurchaseService
 
     public function __construct(
         private RawMaterialStockService $rawMaterialStock,
+        // [S2 V3 D-3 2026-07-29] Une réception doit LEVER la rupture automatique
+        // et notifier les surfaces — StockService est le SSOT de cette règle.
+        private \App\Services\Stock\StockService $stockService,
     ) {
     }
 
@@ -238,6 +241,13 @@ class PurchaseService
             'idempotency_key' => $idempotencyKey,
             'created_at' => now(),
         ]);
+
+        // [S2 V3 D-3 2026-07-29] La marchandise est rentrée : on repasse par le
+        // SSOT de disponibilité pour lever une rupture AUTOMATIQUE et prévenir
+        // caisse/borne/KDS. Un 86 manuel reste posé (règle inchangée côté
+        // StockService). Sans ceci, le produit restait invendable après
+        // réception — vente perdue silencieuse.
+        $this->stockService->syncAvailabilityAfterExternalMutation($level, $branchId);
     }
 
     /**

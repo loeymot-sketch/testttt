@@ -11,6 +11,28 @@
                 </div>
             </div>
 
+            <!--
+              [S2 V4 2026-07-29] Filtres rapides TOUJOURS visibles.
+              Audit navigation : « voir les commandes annulées » et « filtrer par
+              date » coûtaient 5 clics chacun (ouvrir l'accordéon Filtrer → choisir
+              → Rechercher). Ces 4 chips appliquent le filtre à la volée depuis
+              l'écran, soit 1 clic. Elles pilotent les MÊMES `props.search` que le
+              formulaire complet (aucune logique de filtrage dupliquée) et restent
+              synchronisées avec lui via `activeQuickFilter`.
+            -->
+            <div class="hist-quick-filters" role="group" :aria-label="$t('menu.historique')">
+                <button
+                    v-for="chip in quickFilters"
+                    :key="chip.id"
+                    type="button"
+                    class="hist-chip"
+                    :class="{ 'hist-chip--on': activeQuickFilter === chip.id }"
+                    :aria-pressed="activeQuickFilter === chip.id ? 'true' : 'false'"
+                    :data-testid="`historique-chip-${chip.id}`"
+                    @click="applyQuickFilter(chip.id)"
+                >{{ chip.label }}</button>
+            </div>
+
             <div class="table-filter-div" id="historique-filter">
                 <form class="p-4 sm:p-5 mb-5" @submit.prevent="search">
                     <div class="row">
@@ -96,7 +118,7 @@
                             <th class="db-table-head-th">{{ $t('label.fiscal_number') }}</th>
                             <th class="db-table-head-th">{{ $t('label.date') }}</th>
                             <th class="db-table-head-th">{{ $t('label.status') }}</th>
-                            <th class="db-table-head-th" v-if="permissionChecker('pos-orders')">{{ $t('label.action') }}</th>
+                            <th class="db-table-head-th hist-action-col" v-if="permissionChecker('pos-orders')">{{ $t('label.action') }}</th>
                         </tr>
                     </thead>
                     <tbody class="db-table-body" v-if="orders.length > 0">
@@ -131,9 +153,31 @@
                                     {{ enums.orderStatusEnumArray[order.status] || order.status_name }}
                                 </span>
                             </td>
-                            <td class="db-table-body-td" v-if="permissionChecker('pos-orders')">
+                            <td class="db-table-body-td hist-action-col" v-if="permissionChecker('pos-orders')">
                                 <div class="flex justify-start items-center gap-1.5">
                                     <SmIconViewComponent :link="'admin.pos-orders.show'" :id="order.id" />
+                                    <!--
+                                      [S2 V4 2026-07-29] Réimpression depuis l'HISTORIQUE.
+                                      Défaut trouvé en audit navigation : une commande clôturée
+                                      n'était réimprimable NULLE PART (le tracker ne montre que
+                                      les commandes actives du jour) — le caissier n'avait aucun
+                                      moyen de redonner le ticket de la veille. Même mécanique que
+                                      PosOrdersTrackerComponent.requestReprint : on hydrate la
+                                      commande puis on ouvre le ReceiptComponent existant, qui
+                                      porte ses propres boutons d'impression. Le compteur fiscal
+                                      de duplicata reste géré par l'endpoint `pos.print`.
+                                    -->
+                                    <button
+                                        type="button"
+                                        class="hist-reprint-btn"
+                                        :disabled="reprintBusyId === order.id"
+                                        :title="$t('pos.reprint_ticket_hint')"
+                                        :aria-label="$t('pos.reprint_ticket_hint')"
+                                        :data-testid="`historique-reprint-${order.id}`"
+                                        @click="requestReprint(order)"
+                                    >
+                                        <i class="fa-solid fa-print" aria-hidden="true"></i>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -161,11 +205,19 @@
                 </div>
             </div>
         </div>
+
+        <!--
+          [S2 V4 2026-07-29] ReceiptComponent monté à la demande pour la
+          réimpression (miroir du tracker : même #receiptModal, mêmes boutons).
+        -->
+        <ReceiptComponent v-if="reprintOrder && reprintOrder.id" :order="reprintOrder" />
     </div>
 </template>
 <script>
 import LoadingComponent from "../components/LoadingComponent";
 import CaisseSecondaryNav from "../pos/CaisseSecondaryNav.vue";
+import ReceiptComponent from "../pos/ReceiptComponent.vue";
+import alertService from "../../../services/alertService";
 import PaginationTextComponent from "../components/pagination/PaginationTextComponent";
 import PaginationBox from "../components/pagination/PaginationBox";
 import PaginationSMBox from "../components/pagination/PaginationSMBox";
@@ -191,6 +243,7 @@ export default {
     mixins: [adminPriceMixin],
     components: {
         CaisseSecondaryNav,
+        ReceiptComponent,
         TableLimitComponent,
         PaginationSMBox,
         PaginationBox,
@@ -214,6 +267,11 @@ export default {
     data() {
         return {
             loading: { isActive: false },
+            // [S2 V4 2026-07-29] Réimpression depuis l'historique (cf. requestReprint).
+            reprintOrder: {},
+            reprintBusyId: null,
+            // [S2 V4 2026-07-29] Filtres rapides (1 clic) — cf. applyQuickFilter.
+            activeQuickFilter: null,
             enums: {
                 orderStatusEnum: orderStatusEnum,
                 orderTypeEnum: orderTypeEnum,
@@ -255,6 +313,15 @@ export default {
         this.list();
     },
     computed: {
+        // [S2 V4 2026-07-29] Chips de filtrage rapide (libellés i18n FR).
+        quickFilters() {
+            return [
+                { id: 'today', label: this.$t('label.today') },
+                { id: 'yesterday', label: this.$t('label.yesterday') },
+                { id: 'canceled', label: this.$t('label.canceled') },
+                { id: 'refunded', label: this.$t('label.refunded') },
+            ];
+        },
         orders: function () {
             return this.$store.getters['orderHistory/lists'];
         },
@@ -279,6 +346,34 @@ export default {
     methods: {
         permissionChecker(e) {
             return appService.permissionChecker(e);
+        },
+        /**
+         * [S2 V4 2026-07-29] Réimpression d'un ticket depuis l'historique.
+         * Miroir strict de PosOrdersTrackerComponent.requestReprint : la liste
+         * ne porte qu'un payload allégé, on hydrate donc la commande complète
+         * avant de monter ReceiptComponent (qui porte ses propres boutons
+         * client/cuisine). Le duplicata fiscal est journalisé par l'endpoint
+         * `pos.print`, pas ici — on n'est qu'un raccourci d'interface.
+         */
+        async requestReprint(order) {
+            if (!order || !order.id) return;
+            if (this.reprintBusyId === order.id) return;
+            this.reprintBusyId = order.id;
+            try {
+                const res = await this.$store.dispatch('posOrder/show', order.id);
+                const fullOrder = res?.data?.data;
+                if (!fullOrder || !fullOrder.id) {
+                    throw new Error('empty');
+                }
+                this.reprintOrder = fullOrder;
+                this.$nextTick(() => {
+                    appService.modalShow('#receiptModal');
+                });
+            } catch (e) {
+                alertService.error(this.$t('pos.reprint_error'));
+            } finally {
+                this.reprintBusyId = null;
+            }
         },
         orderStatusClass: function (status) {
             return appService.orderStatusClass(status);
@@ -345,7 +440,63 @@ export default {
             }
         },
         search: function () {
+            // Le formulaire complet reprend la main : les chips ne reflètent plus l'état.
+            this.activeQuickFilter = null;
             this.applyOriginFilter();
+            this.list();
+        },
+        /**
+         * [S2 V4 2026-07-29] Filtre rapide en 1 clic. Re-cliquer la chip active
+         * la désactive (retour à la liste complète). On écrit dans les mêmes
+         * `props.search` que le formulaire — pas de second chemin de filtrage.
+         */
+        applyQuickFilter: function (id) {
+            const toggleOff = this.activeQuickFilter === id;
+            this.props.origin = null;
+            // [S2 auto-RED cycle 2] Remettre AUSSI à zéro la recherche libre :
+            // un n° de commande ou un client saisi restait appliqué en silence
+            // sous une chip qui suggère un filtre propre.
+            this.props.search.order_serial_no = "";
+            this.props.search.user_id = null;
+            this.props.search.status = null;
+            this.props.search.payment_status = null;
+            this.props.search.source_surface = null;
+            this.props.search.order_type = null;
+            this.props.search.from_date = "";
+            this.props.search.to_date = "";
+            this.props.form.date = null;
+            this.props.search.page = 1;
+
+            if (toggleOff) {
+                this.activeQuickFilter = null;
+                this.list();
+                return;
+            }
+
+            const today = new Date();
+            const isoDay = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+                .toISOString().slice(0, 10);
+
+            if (id === 'today') {
+                this.props.search.from_date = isoDay(today);
+                this.props.search.to_date = isoDay(today);
+                this.props.form.date = [today, today];
+            } else if (id === 'yesterday') {
+                // [S2 auto-RED 2026-07-29] setDate() et non « −86 400 000 ms » : au
+                // passage à l'heure d'été la veille dure 23 h, et la soustraction
+                // fixe renvoyait l'avant-veille.
+                const y = new Date(today);
+                y.setDate(y.getDate() - 1);
+                this.props.search.from_date = isoDay(y);
+                this.props.search.to_date = isoDay(y);
+                this.props.form.date = [y, y];
+            } else if (id === 'canceled') {
+                this.props.search.status = orderStatusEnum.CANCELED;
+            } else if (id === 'refunded') {
+                this.props.search.payment_status = paymentStatusEnum.REFUNDED;
+            }
+
+            this.activeQuickFilter = id;
             this.list();
         },
         handleDate: function (e) {
@@ -480,6 +631,73 @@ export default {
     font-weight: 700;
     font-variant-numeric: tabular-nums;
 }
+
+/* [S2 V4 2026-07-29] Chips de filtrage rapide — toujours visibles, 1 clic. */
+.hist-quick-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0 1rem 0.85rem;
+}
+.hist-chip {
+    border-radius: 999px;
+    padding: 0.3rem 0.85rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: var(--pos-v5-bg-subtle, #f4f4f6);
+    color: var(--pos-v5-ink, #14142b);
+    border: 1px solid transparent;
+    transition: all 0.15s ease;
+}
+/* [S2 auto-RED cycle 2] `:hover` (0-2-0) battait `--on` (0-1-0) : la chip ACTIVE
+   repassait en fond pêche tout en gardant `color:#fff` → texte blanc sur #FFE8DD,
+   contraste 1,18:1. Sur l'écran TACTILE de la caisse le `:hover` reste collé après
+   le tap, donc le seul repère « quel filtre est actif » devenait illisible. */
+.hist-chip:hover:not(.hist-chip--on) { background: #ffe8dd; }
+.hist-chip--on,
+.hist-chip--on:hover {
+    background: var(--pos-v5-brand-red, #f4501e);
+    color: #fff;
+}
+
+/* [S2 auto-RED cycle 2 2026-07-29] Colonne ACTION collée à droite.
+   Le tableau (10 colonnes) déborde de ~190 px à 1280×800 — la résolution réelle
+   de l'écran de caisse — donc le bouton « réimprimer » livré par cette vague
+   naissait à x=1407 : invisible sans scroll horizontal, fonctionnalité non
+   découvrable. Sticky la garde toujours atteignable, sans masquer de donnée.
+
+   [auto-RED cycle 3] `background` codé en dur = mauvaise idée : la cellule
+   ne suivait plus ni la zébrure ni le liseré de survol (rectangle blanc et
+   couture au milieu du tableau). `inherit` recopie la couleur RÉELLE de la
+   ligne, quelle qu'elle soit — zébrure, survol, futur surlignage. Et l'ombre
+   ne se justifie que lorsqu'il y a réellement quelque chose à masquer,
+   c'est-à-dire quand le tableau déborde (≤1439px, même seuil que pos-v5.css). */
+.hist-action-col {
+    position: sticky;
+    right: 0;
+    z-index: 2;
+    background: inherit;
+}
+@media (max-width: 1439px) {
+    .hist-action-col { box-shadow: -6px 0 8px -6px rgba(0, 0, 0, 0.18); }
+}
+
+/* [S2 V4 2026-07-29] Bouton réimpression — même gabarit que l'icône « voir »
+   du design system admin (SmIconViewComponent) pour rester aligné dans la
+   colonne ACTION. */
+.hist-reprint-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 0.4rem;
+    background: var(--pos-v5-bg-subtle, #f4f4f6);
+    color: var(--pos-v5-ink, #14142b);
+    transition: background 0.15s ease;
+}
+.hist-reprint-btn:hover:not(:disabled) { background: #ffe8dd; color: var(--pos-v5-brand-red, #f4501e); }
+.hist-reprint-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 :deep(.db-btn.bg-primary) {
     background: var(--pos-v5-brand-red) !important;

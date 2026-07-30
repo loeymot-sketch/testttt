@@ -5,7 +5,7 @@
     "audit_session": "supervisor-audit-2026-05-29 / Round 1 + Round 2",
     "update_rule": "Update ONLY when an LOCK_*.md doc explicitly authorizes a frozen-zone touch, AND owner has countersigned per CLAUDE.md §10 human-gate. Re-run the test to capture the new hash and commit baseline alongside the LOCK doc."
   },
-  "resources/js/components/frontend/kiosk/KioskWizardComponent.vue": "6eda32fa92e9c385e060b75dfd26ddd85f6714799766d900f5486e4d107c1c37",
+  "resources/js/components/frontend/kiosk/KioskWizardComponent.vue": "f445b1a8194dc03ababe6abdea6fec078f05ca951675af57b9dc9b3bc2058307",
   "resources/js/components/frontend/kiosk/KioskAppComponent.vue": "b3afbf982b744e39e573b6d368ec63da788a4d374e67433a8f46956ac7be6dc1",
   "resources/js/components/frontend/kiosk/KioskUpsellComponent.vue": "b2845a326baaee0051439e8cd8a88cf1962d8704686703bf81f8cbb4f3fad2ff",
   "resources/js/components/admin/pos/PaymentComponent.vue": "6bfaadcdb9865a6b51ebbd4c5c47d631e20eaad15815913d3816d2a37640c084",

@@ -137,6 +137,20 @@
     gap: var(--pos-v5-space-2);
 }
 
+/* [S2 2026-07-29] ≤1439px : le POS main (100% - 376px de panier) ne laisse plus
+   assez de place aux 2 clusters d'actions à côté du brand — la colonne
+   minmax(0,1fr) collapse à 0 et les titres se superposent (repro 1280×800).
+   On empile comme en mobile. */
+@media (max-width: 1439px) {
+    .pos-v5-operator-bar {
+        grid-template-columns: 1fr;
+    }
+    .pos-v5-operator-bar__actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+}
+
 @media (max-width: 767px) {
     .pos-v5-operator-bar {
         grid-template-columns: 1fr;

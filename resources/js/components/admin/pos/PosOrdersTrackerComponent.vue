@@ -98,6 +98,22 @@
             {{ $t('pos.tracker.realtime_lost') }}
         </div>
 
+        <!--
+          [S2 F1 révisé 2026-07-29] Ce board ne montre que LE JOUR. S'il reste des
+          commandes à encaisser plus anciennes (elles vivent dans la file
+          all-time /admin/encaissement), on l'annonce ici — sans les rapatrier
+          dans les colonnes, ce qui écraserait le signal du jour et volerait
+          leurs cartes aux voies « Prêts » / « Livrés ».
+        -->
+        <router-link
+            v-if="olderPendingCount > 0"
+            :to="{ name: 'admin.encaissement' }"
+            class="pos-tracker-older-pending"
+            data-testid="tracker-older-pending"
+        >
+            💶 {{ $t('pos.tracker.older_pending', { count: olderPendingCount }) }}
+        </router-link>
+
         <div class="pos-tracker-grid" :aria-busy="loading ? 'true' : 'false'">
             <article
                 v-for="col in columns"
@@ -218,9 +234,14 @@
                                       a "À encaisser" prefix so the cashier
                                       sees the amount due, not just a price.
                                     -->
-                                    <span v-if="isCashPending(order)" class="pos-tracker-card-total-prefix">
-                                        {{ $t('pos.tracker.cash_due_label') }} :
-                                    </span>
+                                    <!--
+                                      [S2 V4 2026-07-29] Le «&nbsp;:» est collé au
+                                      libellé (insécable) : en inline-flex il se
+                                      détachait sur sa propre ligne, produisant un
+                                      «&nbsp;:» orphelin sous un libellé cassé en 3
+                                      lignes qui chevauchait le bouton Encaisser.
+                                    -->
+                                    <span v-if="isCashPending(order)" class="pos-tracker-card-total-prefix">{{ $t('pos.tracker.cash_due_label') }}&nbsp;:</span>
                                     {{ formatPrice(order.cash_pending_amount ?? order.total ?? order.total_amount_price ?? order.order_amount) }}
                                 </span>
                                 <div class="pos-tracker-card-actions">
@@ -458,6 +479,10 @@ import { adminPriceMixin } from '../../../helpers/formatPrice';
 
 const POLL_WS_MS = 60000;
 const POLL_NO_WS_MS = 8000;
+// [S2 F1 révisé 2026-07-29] Le compteur d'anciennes commandes à encaisser tape un
+// endpoint lourd (OrderDetailsResource, ~1,3 s) : 5 min de TTL, jamais la cadence
+// du poll dégradé.
+const OLDER_PENDING_TTL_MS = 300000;
 const FRESH_HIGHLIGHT_MS = 6000;
 // [UX-TRACKER-02/POSPERF-09 2026-07-22] Event-staleness escape hatch.
 // `realtimeConnected` only proves the SOCKET is up (soketi alive) — NOT that
@@ -541,6 +566,10 @@ export default {
             // [WEB-TRACKER-VISIBILITY 2026-07-20] Anti double-clic par commande
             // pour le CTA « Accepter » des commandes web PENDING.
             webAccepting: {},
+            // [S2 F1 révisé 2026-07-29] Nombre de commandes à encaisser antérieures
+            // au jour affiché (bandeau → /admin/encaissement). Cf. _refreshOlderPendingCount.
+            olderPendingCount: 0,
+            _olderPendingFetchedAt: 0,
         };
     },
     computed: {
@@ -590,10 +619,25 @@ export default {
                 // to avoid muddying the cashier's "À encaisser" signal — those
                 // orders still appear in the EN PRÉPARATION column once
                 // S-1 auto-promotes them (which happens at payment time).
+                // [S2 F1 2026-07-29] Une commande cash-pending appartient à la voie
+                // « À encaisser » QUEL QUE SOIT son statut cuisine. Repro : 5 commandes
+                // PREPARED + PENDING_COUNTER visibles dans /admin/encaissement mais
+                // « À ENCAISSER = 0 » ici, car le prédicat cash-pending n'était évalué
+                // que sous status===ACCEPT. Le signal argent prime sur le statut cuisine
+                // (l'avancement cuisine reste visible sur le KDS).
+                //
+                // [S2 auto-RED 2026-07-29] MAIS jamais un statut TERMINAL : une commande
+                // annulée/rejetée/remboursée garde `payment_status=PENDING_COUNTER` en base
+                // (30 lignes constatées) alors que `confirmCounterPayment` la REFUSE — sans
+                // ce garde on recréait la « carte fantôme incaissable » déjà fermée côté
+                // backend (routes/api.php, `whereNotIn('status', [CANCELED,REJECTED,RETURNED])`
+                // de counter-collect/pending). On miroite exactement ce set terminal.
+                if (this.isCashPending(o) && !this.isTerminalStatus(s)) {
+                    buckets.accept.push(o);
+                    continue;
+                }
                 if (s === orderStatusEnum.ACCEPT) {
-                    if (this.isCashPending(o)) {
-                        buckets.accept.push(o);
-                    } else {
+                    {
                         // [GOAL-2026-05-29 TRACKER-CONTINUITY-FIX] A paid order
                         // still at ACCEPT is the CASH counter-collect case: the
                         // S-5 carve-out (AutoPrepareOnPaidPolicy::shouldPromote
@@ -940,6 +984,26 @@ export default {
                 });
                 const data = res?.data?.data || [];
                 this.orders = Array.isArray(data) ? data : [];
+                // [S2 F1 2026-07-29, révisé par auto-RED cycle 1] Ce fetch ne couvre
+                // que le JOUR COURANT alors que la file d'encaissement est all-time :
+                // une commande PENDING_COUNTER de la veille reste encaissable dans
+                // /admin/encaissement sans apparaître ici.
+                //
+                // La première version FUSIONNAIT la file counter-collect dans
+                // `this.orders`. C'était FAUX : l'endpoint renvoie 191 lignes tous
+                // statuts confondus (132 ACCEPT, 24 PREPARED, 32 DELIVERED…), donc
+                // (a) la voie « À encaisser » passait de 12 à 191 cartes, (b) les
+                // commandes PRÊTES/LIVRÉES quittaient leur colonne — le signal
+                // « plat prêt à remettre » disparaissait de la caisse, (c) le
+                // compteur « X aujourd'hui » annonçait 218 pour 39, (d) chaque fetch
+                // coûtait 1557 requêtes SQL / 1,3 s (OrderDetailsResource), toutes
+                // les 8 s en mode dégradé.
+                //
+                // Le tableau reste donc un board DU JOUR (une seule vérité par écran,
+                // DISCIPLINE §9) : on ne rapatrie qu'un COMPTEUR d'anciennes commandes
+                // à encaisser, affiché en bandeau qui renvoie vers /admin/encaissement,
+                // rafraîchi au plus toutes les 5 min (jamais au rythme du poll).
+                this._refreshOlderPendingCount();
                 // [UX-TRACKER-02b 2026-07-22] Poll-diff freshness: previously
                 // the "fresh" highlight was ONLY driven by Echo events — dead
                 // when the queue worker is down. Diff the fetched ids against
@@ -1097,6 +1161,50 @@ export default {
         // numeric enum constants in case an older projection ships through
         // (e.g. cached Vuex payload pre-deploy). PaymentStatus::PENDING_COUNTER
         // = 15, PosPaymentMethod::COUNTER_DEFERRED = 6 — see app/Enums/.
+        /**
+         * [S2 F1 révisé 2026-07-29] Compteur des commandes à encaisser ANTÉRIEURES
+         * au jour affiché. Volontairement hors du board (voir fetchOrders) : on
+         * ne rapatrie qu'un nombre, jamais les lignes. Throttlé à 5 min car
+         * l'endpoint renvoie une resource lourde (~1,3 s) — il ne doit JAMAIS
+         * suivre la cadence du poll dégradé (8 s).
+         */
+        async _refreshOlderPendingCount() {
+            const now = Date.now();
+            if (this._olderPendingFetchedAt && (now - this._olderPendingFetchedAt) < OLDER_PENDING_TTL_MS) {
+                return;
+            }
+            this._olderPendingFetchedAt = now;
+            try {
+                const res = await axios.get('admin/pos/counter-collect/pending');
+                const rows = Array.isArray(res?.data?.data) ? res.data.data : [];
+                const onBoard = new Set(
+                    this.orders.map((o) => parseInt(o?.id, 10)).filter(Number.isFinite)
+                );
+                this.olderPendingCount = rows.filter((r) => {
+                    const id = parseInt(r?.id, 10);
+                    return Number.isFinite(id) && !onBoard.has(id);
+                }).length;
+            } catch (_) {
+                // File indisponible → on garde la dernière valeur connue (pas de faux
+                // zéro). [S2 auto-RED cycle 2] Back-off : on ne remet PAS le TTL à 0,
+                // sinon un échec persistant (403/429/réseau) relancerait cet endpoint
+                // lourd à chaque poll, soit toutes les 8 s en mode dégradé. Retente
+                // dans 30 s.
+                this._olderPendingFetchedAt = now - OLDER_PENDING_TTL_MS + 30000;
+            }
+        },
+        /**
+         * [S2 auto-RED 2026-07-29] Set terminal du sceau d'encaissement — miroir
+         * strict de la garde backend de `counter-collect/pending`. Une commande
+         * dans un de ces statuts n'est plus encaissable, quel que soit son
+         * `payment_status` résiduel.
+         */
+        isTerminalStatus(status) {
+            const s = parseInt(status, 10);
+            return s === orderStatusEnum.CANCELED
+                || s === orderStatusEnum.REJECTED
+                || s === orderStatusEnum.RETURNED;
+        },
         isCashPending(o) {
             if (!o) return false;
             if (o.is_cash_pending === true || o.is_cash_pending === 1) return true;
@@ -1169,6 +1277,10 @@ export default {
         // fetchOrders, but we refresh immediately for local responsiveness).
         onEncaisseConfirmed() {
             this.encaisseOrder = null;
+            // [S2 F1 révisé 2026-07-29] Un encaissement change la file d'attente :
+            // on invalide le TTL du compteur d'anciennes commandes pour que le
+            // bandeau ne reste pas jusqu'à 5 min sur une valeur périmée.
+            this._olderPendingFetchedAt = 0;
             this.fetchOrders();
         },
         sourceOf(o) {
@@ -1733,12 +1845,17 @@ export default {
 }
 
 /* [Wave S-4 P-OWNER 2026-05-20] Cash-pending amount emphasis. */
+/* [S2 V4 2026-07-29] Empilé (colonne) : en ligne, le libellé « À ENCAISSER : »
+   se cassait en 3 lignes dans la largeur restante à côté du bouton Encaisser et
+   chevauchait ce dernier. Le montant garde toute sa lisibilité. */
 .pos-tracker-card-total--cash {
     color: var(--pos-tracker-amber);
     font-weight: 800;
     display: inline-flex;
-    align-items: baseline;
-    gap: 6px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    min-width: 0;
 }
 .pos-tracker-card-total-prefix {
     font-size: 11px;
@@ -1746,6 +1863,7 @@ export default {
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: var(--pos-tracker-muted);
+    white-space: nowrap;
 }
 
 .pos-tracker-card-time {
@@ -1811,10 +1929,31 @@ export default {
     font-size: 11px;
 }
 
+/* [S2 F1 révisé 2026-07-29] Bandeau « anciennes commandes à encaisser ». */
+.pos-tracker-older-pending {
+    display: block;
+    margin: 0 0 10px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    color: #9a3412;
+    font-size: 13px;
+    font-weight: 600;
+}
+.pos-tracker-older-pending:hover { background: #ffedd5; }
+
+/* [S2 V4 2026-07-29] `flex-wrap` + `gap` : sur une carte « à encaisser », le
+   bloc montant porte le libellé « À ENCAISSER : » et les actions comptent 4
+   boutons — en une seule rangée non-wrappable, le libellé était rogné puis
+   recouvert par le bouton Encaisser. Il descend maintenant sur sa propre
+   rangée quand la place manque. */
 .pos-tracker-card-foot {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
+    gap: 6px;
     padding-top: 6px;
     border-top: 1px dashed var(--pos-tracker-border);
 }

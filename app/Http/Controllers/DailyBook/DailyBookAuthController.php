@@ -15,11 +15,23 @@ class DailyBookAuthController extends Controller
 {
     public function unlock(Request $request): JsonResponse
     {
+        $configuredPin = (string) config('daily_book.pin', '');
+
+        // [S2 2026-07-29] Fail-closed : PIN non configuré = accès entièrement
+        // refusé (jamais de session). Miroir de MobileStockAuthController —
+        // supprime le défaut commité 2468 comme seul rempart hors production.
+        if ($configuredPin === '') {
+            return response()->json([
+                'message' => 'Carnet non configuré.',
+                'unlocked' => false,
+            ], 403);
+        }
+
         $validated = $request->validate([
             'pin' => ['required', 'string', 'max:32'],
         ]);
 
-        if (!hash_equals((string) config('daily_book.pin'), (string) $validated['pin'])) {
+        if (!hash_equals($configuredPin, (string) $validated['pin'])) {
             return response()->json(['message' => 'Code PIN incorrect.'], 401);
         }
 
@@ -51,6 +63,12 @@ class DailyBookAuthController extends Controller
 
         return response()->json([
             'unlocked' => $unlockedAt > 0 && (time() - $unlockedAt) <= $maxAge,
+            // [S2 auto-RED cycle 3 2026-07-29] Expose « PIN configuré ou non »
+            // (miroir de /m/api/status) : sans ça le front ne peut pas distinguer
+            // « mauvais code » de « Carnet pas encore configuré » et affiche
+            // « Code PIN incorrect » en boucle à un owner qui n'a rien à se
+            // reprocher — il doit poser DAILY_BOOK_PIN dans le .env.
+            'configured' => (string) config('daily_book.pin', '') !== '',
         ]);
     }
 }

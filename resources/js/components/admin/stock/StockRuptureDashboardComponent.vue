@@ -165,8 +165,18 @@
                         class="product-card flex flex-col gap-2 rounded border border-slate-200 bg-white p-3"
                         :data-testid="`stock-mgmt-product-${product.key}`"
                     >
-                      <div class="flex items-center justify-between gap-3 w-full">
-                        <div class="flex items-center gap-3 min-w-0 flex-1">
+                      <!--
+                        [S2 V6 2026-07-29] `flex-wrap` : à 3 colonnes la carte fait ~190 px
+                        utiles, alors que les actions (📷 + bascule « EN STOCK ») sont
+                        `flex-shrink-0` et en consomment ~150. Le NOM, seul élément flexible,
+                        absorbait tout le manque et se retrouvait à une largeur de 0 —
+                        mesuré : nom présent dans le DOM (« Cayenne »), rect.width = 0.
+                        L'écran affichait donc des cartes ANONYMES sur un écran dont le seul
+                        rôle est de couper un produit précis. On laisse les actions passer à
+                        la ligne plutôt que d'écraser l'identité du produit.
+                      -->
+                      <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 w-full">
+                        <div class="flex items-center gap-3 min-w-0 flex-1 basis-full sm:basis-auto">
                             <img
                                 v-if="product.thumb"
                                 :src="product.thumb"
@@ -739,6 +749,10 @@ export default {
  * with enough horizontal room because the flex parent didn't have min-w-0.
  * Replace with a 2-line clamp + word-break so longer names wrap gracefully
  * inside the card width. The :title attribute remains for hover affordance. */
+/* [S2 V6 2026-07-29] Filet de sécurité : quoi qu'il arrive, le nom du produit
+   ne doit JAMAIS être réduit à rien. Le clamp 2 lignes reste (noms longs), mais
+   on impose une largeur plancher — mesuré avant correction : rect.width = 0,
+   cartes anonymes. `flex-basis: auto` évite que `flex-1` ne parte de 0. */
 .stock-mgmt-v2 .product-card .name {
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -747,5 +761,7 @@ export default {
     overflow-wrap: anywhere;
     word-break: break-word;
     line-height: 1.25;
+    flex-basis: auto;
+    min-width: 6rem;
 }
 </style>

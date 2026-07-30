@@ -8,8 +8,9 @@
  */
 return [
 
-    // Code PIN d'accès (owner : changer en prod via .env DAILY_BOOK_PIN).
-    'pin' => env('DAILY_BOOK_PIN', '2468'),
+    // Code PIN d'accès — AUCUN défaut commité (fail-closed si DAILY_BOOK_PIN
+    // absent du .env, miroir de mobile_stock.pin). Owner : poser DAILY_BOOK_PIN.
+    'pin' => env('DAILY_BOOK_PIN', ''),
 
     // Durée de session déverrouillée (minutes) avant re-demande du PIN.
     'session_minutes' => (int) env('DAILY_BOOK_SESSION_MINUTES', 240),

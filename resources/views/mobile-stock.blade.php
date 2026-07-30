@@ -254,7 +254,7 @@
             fetch('{{ url('/m/api/catalog') }}', {
                 headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin'
             }).then(function (r) {
-                if (r.status === 401) { showPin(); return null; }
+                if (r.status === 401 || r.status === 403) { showPin(); return null; }
                 return r.json();
             }).then(function (data) {
                 if (!data) return;
@@ -280,7 +280,7 @@
             if (!list.length) {
                 var e = document.createElement('div');
                 e.className = 'buy-empty';
-                e.textContent = 'Aucune rupture — tout est en stock ✅';
+                e.textContent = 'Aucune rupture signalée (produits & ingrédients) ✅';
                 box.appendChild(e);
                 return;
             }
@@ -414,7 +414,7 @@
                 method: 'POST', headers: jsonHeaders(), credentials: 'same-origin',
                 body: JSON.stringify({ item_id: id, is_available: next })
             }).then(function (r) {
-                if (r.status === 401) { showPin(); return null; }
+                if (r.status === 401 || r.status === 403) { showPin(); return null; }
                 return r.json().catch(function () { return {}; }).then(function (d) { return { status: r.status, data: d }; });
             }).then(function (res) {
                 btn.disabled = false;
@@ -439,7 +439,7 @@
                 method: 'POST', headers: jsonHeaders(), credentials: 'same-origin',
                 body: JSON.stringify({ kind: kind, ids: it.ids || [], is_available: next })
             }).then(function (r) {
-                if (r.status === 401) { showPin(); return null; }
+                if (r.status === 401 || r.status === 403) { showPin(); return null; }
                 return r.json().catch(function () { return {}; }).then(function (d) { return { status: r.status, data: d }; });
             }).then(function (res) {
                 btn.disabled = false;
