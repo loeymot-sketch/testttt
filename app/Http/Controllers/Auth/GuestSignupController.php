@@ -169,10 +169,10 @@ class GuestSignupController extends Controller
             throw new Exception(trans('all.message.guest_login_is_not_allowed'), 422);
          }
 
-        // [GAP-32-3] Use withoutGlobalScopes + withTrashed to find ALL accounts with this phone,
-        // including soft-deleted users and users from other branches (BranchScope).
+        // [GAP-32-3] Pre-auth lookup: find ALL accounts with this phone, including
+        // soft-deleted users and users from other branches (BranchScope).
         // Without this, a deleted or out-of-scope account causes a duplicate to be created.
-        $user = User::withoutGlobalScopes()->withTrashed()->where('phone', $array['phone'])->first();
+        $user = User::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->withTrashed()->where('phone', $array['phone'])->first();
 
         // [SECURITY] If the phone matches a non-guest account (staff, admin, manager),
         // refuse to issue a guest token. OTP alone must not grant access to privileged accounts.
@@ -221,7 +221,7 @@ class GuestSignupController extends Controller
         // (anti-vol/anti-énumération : échec silencieux, le login réussit quand même).
         $pendingEmail = Cache::pull('email_otp_email:'.$array['phone']);
         if (is_string($pendingEmail) && $pendingEmail !== '') {
-            $emailTakenByOther = User::withoutGlobalScopes()
+            $emailTakenByOther = User::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->withTrashed()
                 ->where('email', $pendingEmail)
                 ->where('id', '!=', $user->id)
                 ->exists();

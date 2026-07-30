@@ -89,7 +89,11 @@ class WithoutGlobalScopesAuditSentinelTest extends TestCase
         'Console/Commands/EnsureAdminLoginCommand.php' => [56, 63, 70, 99],
         'Console/Commands/EnsurePosOperatorLoginCommand.php' => [55],
         'Console/Commands/EnsureChefLoginCommand.php' => [53],
-        'Http/Controllers/Auth/GuestSignupController.php' => [127],
+        // [2026-07-30] GuestSignupController retiré de l'allowlist : l'entrée 127 était
+        // périmée (le code a bougé en 175/224 avec WAVE C EMAIL-OTP 2026-07-28) et les
+        // 2 sites ont été healés vers le pattern §9 canonique
+        // withoutGlobalScope(BranchScope::class)->withTrashed() (SINGULIER, hors compte
+        // pluriel) — sémantique identique : cross-branch + soft-deleted inclus.
         // [ULTRA-AUDIT 2026-07-02] Cat A additions (legit both-scopes-off) :
         //   - UberWebhookController:113 — dédup idempotente du webhook Uber :
         //     `Order::withoutGlobalScopes()->where('transaction_id','uber:'.$id)` DOIT trouver
