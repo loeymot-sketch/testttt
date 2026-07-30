@@ -4,7 +4,7 @@
 // Sans le fix (garde i===fromIdx), le double-advance sauterait cette étape.
 import { chromium } from 'playwright';
 
-const BASE = 'http://127.0.0.1:8899/index.html';
+const BASE = process.argv[2] || 'http://127.0.0.1:8899/index.html';
 const sleep = (p, ms) => p.waitForTimeout(ms);
 const titleOf = async (page) => { const t = await page.$('.lc-wiz-title'); return t ? (await t.innerText()).trim() : null; };
 const footEnabled = async (page) => { const f = await page.$('.lc-wiz-foot-next'); return f && !(await f.isDisabled()); };
