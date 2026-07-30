@@ -239,4 +239,28 @@ class EmailOtpSignupTest extends TestCase
 
         Mail::assertNothingSent();
     }
+
+    /**
+     * (8) guest login désactivé (site_guest_login=DISABLE) → l'endpoint de
+     * demande de code REFUSE (403) : sinon on peut déclencher des envois
+     * d'emails OTP (spam / coût SMTP) alors que register() les refusera de
+     * toute façon. Même toggle que GuestSignupController::register:168.
+     */
+    public function test_email_otp_refused_when_guest_login_disabled(): void
+    {
+        Mail::fake();
+
+        DB::table('settings')->insert([
+            'key'        => 'site_guest_login',
+            'payload'    => json_encode(Activity::DISABLE),
+            'group'      => 'site',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->requestEmailOtp()->assertStatus(403);
+
+        $this->assertNull($this->dbToken(), 'Aucun code OTP ne doit être créé quand le guest login est désactivé.');
+        Mail::assertNothingSent();
+    }
 }

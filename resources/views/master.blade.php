@@ -416,7 +416,10 @@
          deploy, l'ancien code reste en mémoire jusqu'au refresh — bandeau « Mettre à jour »
          quand le hash mix de app.js change (poll 5 min + retour d'onglet). Jamais de reload
          forcé (commande en cours possible). public/js/version-beacon.js, hand-written. --}}
-    <script src="{{ asset('js/version-beacon.js') }}?v=1-{{ time() }}"></script>
+    {{-- [2026-07-30] filemtime (pattern W5-PERF A2) au lieu de time() : le beacon détecte les
+         deploys à l'EXÉCUTION (poll du hash mix) — son propre fichier peut donc être caché
+         entre deux deploys ; time() forçait un re-download à chaque reload. --}}
+    <script src="{{ asset('js/version-beacon.js') }}?v=1-{{ @filemtime(public_path('js/version-beacon.js')) ?: 1 }}"></script>
 </body>
 
 </html>

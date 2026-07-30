@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\Activity;
 use App\Rules\ValidPhone;
 use Illuminate\Foundation\Http\FormRequest;
+use Smartisan\Settings\Facades\Settings;
 
 /**
  * [WAVE C EMAIL-OTP 2026-07-28] Demande de code signup par EMAIL
@@ -16,7 +18,10 @@ class GuestSignupEmailOtpRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        // Même toggle que GuestSignupController::register() : si le guest login
+        // est désactivé, on n'envoie PAS de code (sinon l'endpoint reste un
+        // déclencheur d'emails OTP gratuit alors que le register refusera).
+        return Settings::group('site')->get('site_guest_login') != Activity::DISABLE;
     }
 
     public function rules(): array
