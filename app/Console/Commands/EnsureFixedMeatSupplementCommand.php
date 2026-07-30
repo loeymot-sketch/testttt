@@ -68,35 +68,51 @@ class EnsureFixedMeatSupplementCommand extends Command
                 continue;
             }
 
-            // A déjà un extra viande (« viande en plus » OU « viande suppl ») ? idempotent.
-            $hasMeatExtra = DB::table('item_extras')
+            // Déjà « Viande en plus » (le nom qui S'AFFICHE) ? → idempotent, rien à faire.
+            $hasVisible = DB::table('item_extras')
                 ->where('item_id', $itemId)
-                ->where(function ($q) {
-                    $q->whereRaw('LOWER(name) LIKE ?', ['%viande en plus%'])
-                        ->orWhereRaw('LOWER(name) LIKE ?', ['%viande suppl%']);
-                })
+                ->whereRaw('LOWER(name) = ?', [mb_strtolower(self::EXTRA_NAME)])
                 ->whereNull('deleted_at')
                 ->exists();
-            if ($hasMeatExtra) {
+            if ($hasVisible) {
                 continue;
             }
+
+            // A « Viande supplémentaire » (INVISIBLE sur la borne : filtrée par /viande\s*suppl/i,
+            // réservée au dépassement de choix — inutile ici, viande fixe) ? → on la RENOMME en
+            // « Viande en plus » (s'affiche comme supplément normal). Sûr : aucun dépassement sur un
+            // sandwich à viande fixe, donc rien ne route par ce nom. Sinon on l'ajoute.
+            $hidden = DB::table('item_extras')
+                ->where('item_id', $itemId)
+                ->whereRaw('LOWER(name) LIKE ?', ['%viande suppl%'])
+                ->where('group_label', 'supplement')
+                ->whereNull('deleted_at')
+                ->first();
 
             $created++;
             if ($dryRun) {
                 continue;
             }
 
-            DB::table('item_extras')->insert([
-                'item_id'     => $itemId,
-                'name'        => self::EXTRA_NAME,
-                'price'       => self::UNIT_PRICE,
-                'group_label' => 'supplement',
-                'status'      => Status::ACTIVE,
-                'visible_on'  => null, // partout (caisse + web + borne)
-                'is_available' => 1,
-                'created_at'  => now(),
-                'updated_at'  => now(),
-            ]);
+            if ($hidden) {
+                DB::table('item_extras')->where('id', $hidden->id)->update([
+                    'name'       => self::EXTRA_NAME,
+                    'price'      => self::UNIT_PRICE,
+                    'updated_at' => now(),
+                ]);
+            } else {
+                DB::table('item_extras')->insert([
+                    'item_id'     => $itemId,
+                    'name'        => self::EXTRA_NAME,
+                    'price'       => self::UNIT_PRICE,
+                    'group_label' => 'supplement',
+                    'status'      => Status::ACTIVE,
+                    'visible_on'  => null, // partout (caisse + web + borne)
+                    'is_available' => 1,
+                    'created_at'  => now(),
+                    'updated_at'  => now(),
+                ]);
+            }
         }
 
         return $created;
