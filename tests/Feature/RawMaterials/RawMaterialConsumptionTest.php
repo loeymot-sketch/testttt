@@ -9,6 +9,7 @@ use App\Events\OrderCreated;
 use App\Listeners\ConsumeRawMaterialsOnOrderCreated;
 use App\Listeners\ReverseRawMaterialsOnOrderCanceled;
 use App\Models\Branch;
+use App\Models\FrontendOrder;
 use App\Models\Item;
 use App\Models\ItemCategory;
 use App\Models\ItemExtra;
@@ -19,6 +20,7 @@ use App\Models\RawMaterial;
 use App\Models\RawMaterialMovement;
 use App\Models\RawMaterialRecipeLine;
 use App\Models\RawMaterialStock;
+use App\Models\Scopes\BranchScope;
 use App\Models\User;
 use App\Services\RawMaterials\RawMaterialConsumptionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -105,8 +107,27 @@ class RawMaterialConsumptionTest extends TestCase
         ]);
     }
 
+    /**
+     * Commande BORNE/WEB (FrontendOrder). Même table physique `orders` que Order
+     * (POS) — on recharge l'enregistrement comme FrontendOrder pour exercer
+     * EXACTEMENT l'instance que le listener reçoit via OrderCreated côté kiosk/web
+     * ({@see \App\Services\FrontendOrderService} → `OrderCreated::dispatch($frontendOrder)`).
+     */
+    private function makeFrontendOrder(): FrontendOrder
+    {
+        $branch = Branch::factory()->create();
+        $user = User::factory()->create(['branch_id' => $branch->id]);
+
+        $order = Order::factory()->create([
+            'branch_id' => $branch->id,
+            'user_id' => $user->id,
+        ]);
+
+        return FrontendOrder::withoutGlobalScope(BranchScope::class)->findOrFail($order->id);
+    }
+
     /** @param array<string,mixed> $snapshot */
-    private function makeOrderItem(Order $order, Item $item, int $qty, array $snapshot = []): OrderItem
+    private function makeOrderItem(Order|FrontendOrder $order, Item $item, int $qty, array $snapshot = []): OrderItem
     {
         return OrderItem::create([
             'order_id' => $order->id,
@@ -559,5 +580,131 @@ class RawMaterialConsumptionTest extends TestCase
         // Aucune dérive : ni conso, ni mouvement 'order_item'.
         $this->assertEqualsWithDelta(0.0, $this->onHand($poulet), 0.001);
         $this->assertSame(0, RawMaterialMovement::where('source_type', 'order_item')->count());
+    }
+
+    // ══ P1-C — Parité BORNE/WEB : FrontendOrder consomme comme un Order POS ════════
+    //   BUG : ConsumeRawMaterialsOnOrderCreated gardait `instanceof Order` et
+    //   IGNORAIT les FrontendOrder (source kiosk/web) — alors qu'OrderCreated EST
+    //   dispatché pour eux (FrontendOrderService). 2/3 des canaux non décomptés →
+    //   la vue « À acheter » / conso réelle sous-compte massivement. FrontendOrder
+    //   partage la table `orders` + la relation orderItems() : la conso DOIT être
+    //   identique à celle d'un Order POS équivalent (et rester idempotente).
+
+    // ── 21. FrontendOrder (borne) consomme la matière comme un Order POS. ──────
+    public function test_frontend_order_consumes_raw_materials_like_pos_order(): void
+    {
+        $pain = $this->material('Pain', 'piece');
+        $poulet = $this->material('Poulet');
+
+        $cayenne = $this->makeItem('Cayenne');
+        $this->recipe(Item::class, $cayenne->id, $pain, 1);
+        $this->recipe(Item::class, $cayenne->id, $poulet, 200);
+
+        $order = $this->makeFrontendOrder();
+        $this->makeOrderItem($order, $cayenne, 1);
+
+        $summary = $this->service()->consumeForOrder($order);
+
+        // Parité exacte avec un Order POS (cf. test #1) : mêmes matières, mêmes qtés.
+        $this->assertEqualsWithDelta(-1.0, $this->onHand($pain), 0.001);
+        $this->assertEqualsWithDelta(-200.0, $this->onHand($poulet), 0.001);
+        $this->assertCount(2, $summary['consumed']);
+        $this->assertSame([], $summary['skipped']);
+    }
+
+    // ── 22. Listener handle() consomme pour un FrontendOrder (régression guard). ─
+    public function test_listener_handle_triggers_consumption_for_frontend_order(): void
+    {
+        $poulet = $this->material('Poulet');
+        $item = $this->makeItem('Cayenne');
+        $this->recipe(Item::class, $item->id, $poulet, 200);
+
+        $order = $this->makeFrontendOrder();
+        $this->makeOrderItem($order, $item, 1);
+
+        // Avant fix : le guard `instanceof Order` droppe le FrontendOrder en silence
+        // → on_hand reste 0 (les ventes borne/web ne décomptent JAMAIS la matière).
+        (new ConsumeRawMaterialsOnOrderCreated())->handle(new OrderCreated($order));
+
+        $this->assertEqualsWithDelta(-200.0, $this->onHand($poulet), 0.001);
+        $this->assertSame(1, RawMaterialMovement::where('raw_material_id', $poulet->id)->count());
+    }
+
+    // ── 23. FrontendOrder : rejeu = pas de double conso (idempotence order_item). ─
+    public function test_frontend_order_replay_does_not_double_consume(): void
+    {
+        $poulet = $this->material('Poulet');
+        $item = $this->makeItem('Cayenne');
+        $this->recipe(Item::class, $item->id, $poulet, 200);
+
+        $order = $this->makeFrontendOrder();
+        $this->makeOrderItem($order, $item, 1);
+
+        $this->service()->consumeForOrder($order);
+        $this->service()->consumeForOrder($order); // rejeu (retry queue / replay)
+
+        $this->assertEqualsWithDelta(-200.0, $this->onHand($poulet), 0.001); // pas -400
+        $this->assertSame(1, RawMaterialMovement::where('raw_material_id', $poulet->id)->count());
+    }
+
+    // ══ P1-C bis — Parité REVERSE : FrontendOrder annulé REND la matière ══════════
+    //   Corollaire du fix création : depuis que les FrontendOrder consomment à la
+    //   création, un FrontendOrder annulé (CANCELED/REJECTED/RETURNED) DOIT rendre
+    //   la matière — sinon `on_hand` sur-consomme les annulées borne/web (drift B-1
+    //   réintroduit sur 2/3 des canaux). OrderCanceled EST dispatché pour un
+    //   FrontendOrder (FrontendOrderService::cancel + CleanupStalePendingKioskOrders),
+    //   son constructeur accepte un Model générique — seul le guard bloquait.
+
+    // ── 24. FrontendOrder consommé PUIS annulé → rendu intégral + idempotent. ──
+    public function test_frontend_order_reverse_credits_back_exactly_and_is_idempotent(): void
+    {
+        $poulet = $this->material('Poulet');
+        $pain = $this->material('Pain', 'piece');
+        $item = $this->makeItem('Cayenne');
+        $this->recipe(Item::class, $item->id, $poulet, 200);
+        $this->recipe(Item::class, $item->id, $pain, 1);
+
+        $order = $this->makeFrontendOrder();
+        $this->makeOrderItem($order, $item, 1);
+
+        // Conso borne/web → stock signé négatif.
+        $this->service()->consumeForOrder($order);
+        $this->assertEqualsWithDelta(-200.0, $this->onHand($poulet), 0.001);
+        $this->assertEqualsWithDelta(-1.0, $this->onHand($pain), 0.001);
+
+        // Annulation → rendu EXACT (retour au niveau initial 0 sur chaque matière).
+        $summary = $this->service()->reverseForOrder($order);
+        $this->assertEqualsWithDelta(0.0, $this->onHand($poulet), 0.001);
+        $this->assertEqualsWithDelta(0.0, $this->onHand($pain), 0.001);
+        $this->assertCount(2, $summary['reversed']);
+
+        // Rejeu de l'annulation = idempotent (pas de double-rendu).
+        $second = $this->service()->reverseForOrder($order);
+        $this->assertEqualsWithDelta(0.0, $this->onHand($poulet), 0.001); // pas +200
+        $this->assertSame([], $second['reversed']);
+        $this->assertSame(
+            1,
+            RawMaterialMovement::where('source_type', 'order_item_reversal')
+                ->where('raw_material_id', $poulet->id)->count()
+        );
+    }
+
+    // ── 25. Reverse listener handle() rend le stock d'un FrontendOrder (guard). ─
+    public function test_reverse_listener_handle_credits_stock_back_for_frontend_order(): void
+    {
+        $poulet = $this->material('Poulet');
+        $item = $this->makeItem('Cayenne');
+        $this->recipe(Item::class, $item->id, $poulet, 200);
+
+        $order = $this->makeFrontendOrder();
+        $this->makeOrderItem($order, $item, 1);
+        $this->service()->consumeForOrder($order);
+        $this->assertEqualsWithDelta(-200.0, $this->onHand($poulet), 0.001);
+
+        // Avant fix : le guard `instanceof Order` droppe le FrontendOrder → reste
+        // -200 (drift : la conso borne/web n'est jamais rendue à l'annulation).
+        (new ReverseRawMaterialsOnOrderCanceled())->handle(new OrderCanceled($order));
+
+        $this->assertEqualsWithDelta(0.0, $this->onHand($poulet), 0.001);
     }
 }

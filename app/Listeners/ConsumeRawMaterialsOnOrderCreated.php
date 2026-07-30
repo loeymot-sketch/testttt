@@ -3,6 +3,7 @@
 namespace App\Listeners;
 
 use App\Events\OrderCreated;
+use App\Models\FrontendOrder;
 use App\Models\Order;
 use App\Services\RawMaterials\RawMaterialConsumptionService;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -35,8 +36,12 @@ class ConsumeRawMaterialsOnOrderCreated implements ShouldQueue
         $order = $event->order;
 
         // Le contrat de l'event porte un BroadcastableOrder ; la consommation
-        // matière n'a de sens que sur un vrai Order Eloquent.
-        if (! $order instanceof Order) {
+        // matière n'a de sens que sur un vrai modèle Eloquent commande. On accepte
+        // Order (POS) ET FrontendOrder (borne/web, source kiosk/web) : OrderCreated
+        // est dispatché pour LES DEUX (FrontendOrderService), et ils partagent la
+        // table `orders` + la relation orderItems(). Sans FrontendOrder, 2/3 des
+        // canaux ne décrémentaient jamais la matière → vue « À acheter » sous-compte.
+        if (! $order instanceof Order && ! $order instanceof FrontendOrder) {
             return;
         }
 

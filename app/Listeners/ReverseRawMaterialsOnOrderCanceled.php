@@ -3,6 +3,7 @@
 namespace App\Listeners;
 
 use App\Events\OrderCanceled;
+use App\Models\FrontendOrder;
 use App\Models\Order;
 use App\Services\RawMaterials\RawMaterialConsumptionService;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -33,8 +34,9 @@ use Throwable;
  * ne rend que le consommé et jamais deux fois (source_type de reprise dédié).
  *
  * NF525 : ne touche PAS la chaîne fiscale (lit les mouvements, écrit un rendu
- * hors chaîne). Symétrie du guard `instanceof Order` avec la consommation :
- * seuls les Order Eloquent ont pu être consommés à la création.
+ * hors chaîne). Symétrie du guard avec la consommation : accepte Order (POS) ET
+ * FrontendOrder (borne/web) — les deux consomment à la création, les deux doivent
+ * pouvoir rendre à l'annulation.
  */
 class ReverseRawMaterialsOnOrderCanceled implements ShouldQueue
 {
@@ -46,8 +48,12 @@ class ReverseRawMaterialsOnOrderCanceled implements ShouldQueue
         $order = $event->order;
 
         // OrderCanceled porte un Model générique ; la reprise n'a de sens que sur
-        // un vrai Order (miroir du guard de ConsumeRawMaterialsOnOrderCreated).
-        if (! $order instanceof Order) {
+        // un vrai modèle commande. On accepte Order (POS) ET FrontendOrder
+        // (borne/web) — miroir EXACT du guard de ConsumeRawMaterialsOnOrderCreated :
+        // OrderCanceled est dispatché pour les deux (FrontendOrderService::cancel,
+        // CleanupStalePendingKioskOrders), donc une annulation borne/web doit RENDRE
+        // la matière que la création a consommée (sinon sur-consommation des annulées).
+        if (! $order instanceof Order && ! $order instanceof FrontendOrder) {
             return;
         }
 

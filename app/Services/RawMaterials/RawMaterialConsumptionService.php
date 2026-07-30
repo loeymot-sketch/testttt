@@ -3,6 +3,7 @@
 namespace App\Services\RawMaterials;
 
 use App\Enums\OrderStatus;
+use App\Models\FrontendOrder;
 use App\Models\Item;
 use App\Models\ItemExtra;
 use App\Models\ItemVariation;
@@ -109,9 +110,17 @@ class RawMaterialConsumptionService
     /**
      * Consomme les matières premières théoriques de TOUTE la commande.
      *
+     * Accepte AUSSI un {@see FrontendOrder} (borne/web, source kiosk/web) : les
+     * deux modèles pointent la MÊME table physique `orders` et exposent la même
+     * relation `orderItems()` (avec `composition_snapshot`). La consommation est
+     * donc identique quel que soit le canal de vente (POS / borne / web) — sans
+     * cette parité, 2/3 des canaux ne décrémentent jamais la matière et la vue
+     * « À acheter » sous-compte. L'idempotence (triplet source order_item) tient
+     * de la même façon : les order_item.id sont uniques sur la table partagée.
+     *
      * @return array{consumed: array<int, array{order_item_id:int, raw_material_id:int, qty:float}>, skipped: array<int, array<string, mixed>>}
      */
-    public function consumeForOrder(Order $order): array
+    public function consumeForOrder(Order|FrontendOrder $order): array
     {
         $consumed = [];
         $skipped = [];
@@ -179,9 +188,15 @@ class RawMaterialConsumptionService
      * NF525 / branch : lit les mouvements, écrit un rendu positif hors chaîne
      * fiscale. La reprise est écrite sur la MÊME branche que la conso d'origine.
      *
+     * Accepte AUSSI un {@see FrontendOrder} (borne/web) — miroir de
+     * {@see consumeForOrder} : même table `orders`, même relation orderItems(), et
+     * la reprise travaille de toute façon sur les `order_item` ids (pas sur le type
+     * du modèle commande). Sans cette parité, un FrontendOrder annulé consommerait
+     * (fix création) sans jamais rendre → sur-consommation des annulées borne/web.
+     *
      * @return array{reversed: array<int, array{order_item_id:int, raw_material_id:int, qty:float}>, skipped: array<int, array<string, mixed>>}
      */
-    public function reverseForOrder(Order $order): array
+    public function reverseForOrder(Order|FrontendOrder $order): array
     {
         $reversed = [];
         $skipped = [];
@@ -271,7 +286,7 @@ class RawMaterialConsumptionService
      * service). Statut illisible (commande supprimée) → false : on ne SUR-skip pas
      * (le parcours order_items suivant sera de toute façon vide).
      */
-    private function orderReachedCancelingStatus(Order $order): bool
+    private function orderReachedCancelingStatus(Order|FrontendOrder $order): bool
     {
         $status = (int) (Order::query()
             ->withoutGlobalScope(BranchScope::class)
