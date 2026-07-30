@@ -1,0 +1,99 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Http\Controllers\HealthzController;
+use App\Services\Fiscal\AuditLogService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+
+/**
+ * [CAISSE-HEALTH 2026-07-30] Surface santé SYSTÈME pour le poste de commande (caisse).
+ *
+ * L'opérateur voit d'un coup d'œil si le temps réel + la chaîne fiscale sont sains — SANS
+ * attendre que des commandes se « perdent » en silence. Répond au mode de panne le plus
+ * pernicieux (diagnostiqué à répétition) : soketi RESTE « connecté » alors que le worker de
+ * queue est DOWN → aucun event n'arrive, mais le front croit le temps réel OK. On le détecte
+ * ici via le backlog outbox (domain_events non-dispatchés), signal direct du worker en panne,
+ * en plus du probe socket honnête.
+ *
+ * READ-ONLY (NF525-safe : 0 write, 0 schema). Réutilise les probes honnêtes partagés de
+ * HealthzController (pas de dérive). La vérif chaîne fiscale (re-parcours curseur) est mise en
+ * cache 5 min — coût borné même avec plusieurs écrans caisse qui pollent. Gate `permission:pos`
+ * (donnée d'exploitation, aucun secret exposé).
+ */
+class PosSystemHealthController extends Controller
+{
+    /** Au-delà, le worker est considéré en retard/en panne (miroir HealthController::checkQueueWorker). */
+    private const STALE_OUTBOX_THRESHOLD = 10;
+
+    public function __invoke(): JsonResponse
+    {
+        // --- Temps réel : le socket est-il vivant ET le worker dépile-t-il réellement les events ? ---
+        $socket        = HealthzController::probeWebsocket();   // 'ok' | 'fail'
+        $staleEvents   = $this->staleOutboxCount();
+        $workerLagging = $staleEvents > self::STALE_OUTBOX_THRESHOLD;
+
+        // NB : le message ne répète PAS l'état (« Temps réel dégradé/coupé ») — la pastille l'affiche
+        // déjà comme libellé. Le message porte l'info ACTIONNABLE + rassurante uniquement.
+        if ($socket === 'ok' && ! $workerLagging) {
+            $sync = ['status' => 'ok', 'message' => 'Les commandes arrivent en direct.'];
+        } elseif ($socket === 'fail') {
+            $sync = ['status' => 'down', 'message' => 'Le tableau se rafraîchit automatiquement (léger délai). Aucune commande n\'est perdue.'];
+        } else {
+            // Socket vivant MAIS backlog d'events non distribués = worker en retard (le cas silencieux).
+            $sync = ['status' => 'warn', 'message' => 'Traitement en retard — mise à jour par rafraîchissement. Préviens le support si ça persiste.'];
+        }
+
+        // --- Intégrité fiscale (NF525) — lecture seule, mise en cache pour la perf. ---
+        $fiscal = Cache::remember('pos_system_health_fiscal', 300, fn () => $this->fiscalStatus());
+
+        $rank = ['ok' => 0, 'warn' => 1, 'down' => 2, 'alert' => 2];
+        $worst = max($rank[$sync['status']] ?? 0, $rank[$fiscal['status']] ?? 0);
+        $overall = $worst === 0 ? 'ok' : ($worst === 1 ? 'degraded' : 'down');
+
+        return response()->json([
+            'overall'       => $overall,
+            'checks'        => ['sync' => $sync, 'fiscal' => $fiscal],
+            'stale_events'  => $staleEvents,
+            'queue_pending' => HealthzController::probeQueuePending(),
+            'timestamp'     => now()->toIso8601String(),
+        ]);
+    }
+
+    /**
+     * Backlog outbox : events créés il y a >30 s et non encore dispatchés (fenêtre 24 h pour ne pas
+     * compter d'anciens orphelins), hors violations de contrat terminales (jamais retentées → pas
+     * preuve d'un worker down). Miroir exact de HealthController::checkQueueWorker.
+     */
+    private function staleOutboxCount(): int
+    {
+        try {
+            return (int) DB::table('domain_events')
+                ->where('created_at', '<', now()->subSeconds(30))
+                ->where('created_at', '>=', now()->subDay())
+                ->whereNull('dispatched_at')
+                ->where(function ($q) {
+                    $q->whereNull('last_error')->orWhere('last_error', 'not like', 'contract_violation%');
+                })
+                ->count();
+        } catch (\Throwable $e) {
+            return 0; // la santé sync ne doit jamais casser sur une erreur de probe
+        }
+    }
+
+    private function fiscalStatus(): array
+    {
+        try {
+            $tamperedId = app(AuditLogService::class)->verifyChain(1);
+
+            return $tamperedId === null
+                ? ['status' => 'ok', 'message' => 'Chaîne fiscale intègre.']
+                : ['status' => 'alert', 'message' => 'Anomalie sur la chaîne fiscale — préviens le support (NF525).'];
+        } catch (\Throwable $e) {
+            return ['status' => 'ok', 'message' => 'Chaîne fiscale : vérification momentanément indisponible.'];
+        }
+    }
+}

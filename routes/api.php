@@ -929,6 +929,13 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
 
             return \App\Http\Resources\OrderDetailsResource::collection($query->limit(200)->get());
         })->middleware('throttle:pos-order-update')->name('web-orders.pending');
+
+        // [CAISSE-HEALTH 2026-07-30] Santé SYSTÈME pour le poste de commande : temps réel (socket +
+        // worker outbox) + chaîne fiscale NF525. READ-ONLY. L'opérateur voit une dégradation AVANT
+        // que des commandes se perdent en silence (soketi « connecté » alors que le worker est DOWN).
+        Route::get('/system-health', \App\Http\Controllers\Admin\PosSystemHealthController::class)
+            ->middleware(['permission:pos', 'throttle:pos-order-update'])
+            ->name('system-health');
         Route::post('/counter-collect/{order}/confirm', function (\App\Models\Order $order, \Illuminate\Http\Request $request) {
             abort_unless(auth()->user()?->can('pos'), 403);
 

@@ -23,6 +23,9 @@
                         {{ stats.ready }} {{ $t('pos.tracker.ready_short') }}
                     </span>
                     <span>{{ stats.todayCount }} {{ $t('pos.tracker.today_total') }}</span>
+                    <!-- [CAISSE-HEALTH 2026-07-30] Santé système au cœur de la vue d'ensemble : l'opérateur
+                         voit une dégradation temps réel/fiscale AVANT de perdre des commandes en silence. -->
+                    <pos-system-health-pill />
                 </div>
             </div>
             <div class="pos-tracker-bar-right">
@@ -473,6 +476,7 @@ import ReceiptComponent from './ReceiptComponent.vue';
 // must be self-sufficient for encashment (its Encaisser CTA was previously a
 // dead button: it only dispatched an un-listened CustomEvent).
 import PosCounterCollectModal from './PosCounterCollectModal.vue';
+import PosSystemHealthPill from './PosSystemHealthPill.vue';
 // [WT-D-R1-F4 2026-05-20] Shared admin FR EUR price formatter — canonical
 // "19,00 €" rendering shared with PosOrderList / PosOrderShow.
 import { adminPriceMixin } from '../../../helpers/formatPrice';
@@ -511,7 +515,7 @@ const AGE_URGENT_MIN = 10;
  */
 export default {
     name: 'PosOrdersTrackerComponent',
-    components: { ConnectionStatusBanner, ReceiptComponent, PosCounterCollectModal },
+    components: { ConnectionStatusBanner, ReceiptComponent, PosCounterCollectModal, PosSystemHealthPill },
     mixins: [adminPriceMixin],
     data() {
         return {
