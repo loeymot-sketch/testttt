@@ -57,7 +57,7 @@
                     </button>
                 </div>
                 <router-link
-                    :to="{ name: 'admin.pos-orders.list' }"
+                    :to="{ name: 'admin.historique.list' }"
                     class="pos-tracker-history-link"
                     :title="$t('pos.tracker.history_hint')"
                     data-testid="pos-tracker-history"
