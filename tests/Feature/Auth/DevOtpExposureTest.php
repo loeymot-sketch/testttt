@@ -75,12 +75,14 @@ class DevOtpExposureTest extends TestCase
 
     /**
      * @test
-     * HORS PROD + SMS non câblé (site_phone_verification=DISABLE) :
-     * la réponse contient dev_code == otps.token (le code fraîchement généré).
+     * En LOCAL (machine dev) + SMS non câblé : la réponse contient dev_code == otps.token.
+     * [DURCI 2026-07-30] La fuite n'est désormais tolérée QUE sur l'env `local`.
      */
-    public function dev_code_is_exposed_outside_production_when_sms_not_wired(): void
+    public function dev_code_is_exposed_in_local_env_when_sms_not_wired(): void
     {
         $phone = '0699444001';
+        $this->app->detectEnvironment(fn () => 'local');
+        $this->assertTrue($this->app->environment('local'), 'Pré-condition : env doit être local.');
 
         $res = $this->sendOtp($phone);
 
@@ -90,6 +92,33 @@ class DevOtpExposureTest extends TestCase
         $this->assertNotNull($token, 'Un OTP doit avoir été généré en base.');
 
         $res->assertJsonPath('dev_code', (string) $token);
+    }
+
+    /**
+     * @test
+     * SÉCURITÉ [SEC-DEVCODE 2026-07-30] — Sur un box DÉPLOYÉ PUBLIC `staging`
+     * (VPS lecayenne, données réelles, x-api-key public), dev_code est TOUJOURS
+     * absent MÊME quand le SMS n'est pas câblé. L'audit adversaire 2026-07-30 a
+     * prouvé que l'ancienne garde `!production` laissait fuiter le vrai OTP de
+     * n'importe quel numéro sur un box internet-facing = bypass d'auth invité.
+     * La testabilité staging passe désormais par le canal EMAIL (Brevo).
+     */
+    public function dev_code_is_absent_on_public_staging_box(): void
+    {
+        $phone = '0699444004';
+
+        $this->app->detectEnvironment(fn () => 'staging');
+        $this->assertFalse($this->app->environment('local'), 'Pré-condition : env staging (≠ local).');
+
+        $res = $this->sendOtp($phone);
+
+        $res->assertStatus(200)->assertJson(['status' => true]);
+
+        // Le flux OTP fonctionne toujours (ligne créée) MAIS le code ne fuit pas sur le box public.
+        $token = DB::table('otps')->where('phone', $phone)->latest('created_at')->value('token');
+        $this->assertNotNull($token, 'Le flux OTP fonctionne en staging (ligne créée).');
+
+        $res->assertJsonMissingPath('dev_code');
     }
 
     /**
@@ -118,12 +147,13 @@ class DevOtpExposureTest extends TestCase
 
     /**
      * @test
-     * HORS PROD mais SMS PLEINEMENT câblé (phone_verification=ENABLE + gateway posée) :
+     * En LOCAL mais SMS PLEINEMENT câblé (phone_verification=ENABLE + gateway posée) :
      * dev_code absent — le vrai SMS partira, pas besoin de fuiter le code.
      */
-    public function dev_code_is_absent_outside_production_when_sms_is_fully_wired(): void
+    public function dev_code_is_absent_in_local_when_sms_is_fully_wired(): void
     {
         $phone = '0699444003';
+        $this->app->detectEnvironment(fn () => 'local');
 
         $this->setSetting('site_phone_verification', 'site', Activity::ENABLE);
         $this->setSetting('site_default_sms_gateway', 'site', 1);

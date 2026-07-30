@@ -303,4 +303,42 @@ class EmailOtpSignupTest extends TestCase
         $this->assertNull($this->dbToken(), 'Aucun code OTP ne doit être créé quand le guest login est désactivé.');
         Mail::assertNothingSent();
     }
+
+    /**
+     * (9) SÉCURITÉ [CHANNEL-CONFUSION 2026-07-30] — Si le téléphone est DÉJÀ rattaché à un
+     * compte invité PORTANT un email, la demande de code (même avec un AUTRE email fourni par
+     * l'appelant) envoie le code à l'email DU COMPTE, jamais à celui fourni. Sinon un attaquant
+     * connaissant le numéro d'une victime se fait livrer le code sur SON email → verify →
+     * loginUsingId(victime) = prise de contrôle du compte + points fidélité + PII.
+     */
+    public function test_channel_confusion_otp_goes_to_bound_account_email_not_attacker(): void
+    {
+        Mail::fake();
+
+        // Victime : compte invité existant avec email lié.
+        User::create([
+            'name'      => 'Victime',
+            'username'  => 'victime-guest',
+            'email'     => 'victime@example.com',
+            'phone'     => self::PHONE,
+            'branch_id' => 0,
+            'is_guest'  => Ask::YES,
+            'password'  => bcrypt('secret123'),
+        ]);
+
+        // Attaquant : demande le code pour le numéro de la victime, avec SON PROPRE email.
+        // Réponse identique (anti-énumération) — l'attaquant ne sait pas où part le code.
+        $this->postJson('/api/auth/guest-signup/email-otp', [
+            'phone' => self::PHONE,
+            'email' => 'attaquant@evil.com',
+            'code'  => '+33',
+        ])->assertStatus(200)->assertJsonPath('status', true);
+
+        $token = $this->dbToken();
+        $this->assertNotNull($token, 'Un OTP est bien généré (le flux fonctionne).');
+
+        // Le code part vers l'email DU COMPTE VICTIME, JAMAIS vers celui de l'attaquant.
+        Mail::assertSent(SignupOtpMail::class, fn (SignupOtpMail $mail) => $mail->hasTo('victime@example.com'));
+        Mail::assertNotSent(SignupOtpMail::class, fn (SignupOtpMail $mail) => $mail->hasTo('attaquant@evil.com'));
+    }
 }

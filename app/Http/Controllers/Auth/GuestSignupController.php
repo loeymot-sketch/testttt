@@ -58,15 +58,17 @@ class GuestSignupController extends Controller
 
             $payload = ['status' => true, 'message' => trans("all.message.check_your_phone_for_code")];
 
-            // [W16 DEV-OTP 2026-07-20] Re-testabilité web staging. Le P0 OTP-BYPASS impose
-            // désormais le VRAI code (verify() lit otps.token) ; or en staging/local SANS SMS
-            // câblé l'owner ne peut pas le connaître. On renvoie le code fraîchement généré
-            // UNIQUEMENT hors production ET quand le SMS ne partira pas (site_phone_verification
-            // != ENABLE OU aucune gateway SMS). DOUBLE VERROU : (1) env-gate ci-dessous — jamais
-            // en production, quel que soit le réglage SMS ; (2) le preflight go-live
-            // (PreflightProductionCommand::checkPhoneVerification) BLOQUE déjà la prod si OTP OFF.
-            // Le champ dev_code n'apparaît donc JAMAIS dans une réponse de production.
-            if (! app()->environment('production')) {
+            // [W16 DEV-OTP 2026-07-20 · DURCI 2026-07-30 SEC-DEVCODE] Aide dev : renvoyer le
+            // code OTP fraîchement généré dans `dev_code`. RESTREINT à l'environnement `local`
+            // (machine développeur) UNIQUEMENT — JAMAIS sur un box DÉPLOYÉ public (staging OU
+            // production). Raison du durcissement : l'audit adversaire 2026-07-30 a montré que
+            // sur le VPS `staging` (public, données réelles, clé Mollie live) l'ancienne garde
+            // `!production` laissait fuiter le VRAI OTP de n'importe quel numéro → bypass d'auth
+            // invité (l'x-api-key est public). La testabilité staging passe désormais par le
+            // canal EMAIL (emailOtp/Brevo délivre le code) ou la lecture directe de otps.token
+            // en base pour l'e2e — plus besoin de fuiter le code sur un box public. Le preflight
+            // go-live (PreflightProductionCommand) reste le second verrou.
+            if (app()->environment('local')) {
                 try {
                     $smsEnforced     = (int) Settings::group('site')->get('site_phone_verification') === Activity::ENABLE;
                     $smsGatewayWired = ! blank(Settings::group('site')->get('site_default_sms_gateway'));
@@ -119,13 +121,26 @@ class GuestSignupController extends Controller
                 ->value('token');
 
             if (! blank($token)) {
+                // [SEC HEAL 2026-07-30 · CHANNEL-CONFUSION] Anti prise-de-contrôle par canal.
+                // Si le téléphone est DÉJÀ rattaché à un compte invité PORTANT un email, le code
+                // ne part QUE vers l'email LIÉ AU COMPTE — jamais vers l'email fourni par l'appelant.
+                // Sinon un attaquant connaissant un numéro se fait livrer le code sur SON email puis
+                // verify()→loginUsingId(victime) = token sur le compte victime. Pour un NOUVEAU
+                // numéro (aucun compte) l'email fourni EST le canal légitime d'inscription. Réponse
+                // identique dans les deux cas (anti-énumération : l'appelant ne sait pas où part le code).
+                $existing = User::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+                    ->where('phone', $request->post('phone'))
+                    ->where('is_guest', Ask::YES)
+                    ->first();
+                $deliverTo = ($existing && filled($existing->email)) ? $existing->email : $request->post('email');
+
                 $ttlMinutes = max(1, (int) Settings::group('otp')->get('otp_expire_time') ?: 5);
                 Cache::put(
                     'email_otp_email:'.$request->post('phone'),
-                    (string) $request->post('email'),
+                    (string) $deliverTo,
                     now()->addMinutes($ttlMinutes)
                 );
-                Mail::to($request->post('email'))->send(new SignupOtpMail((string) $token, $ttlMinutes));
+                Mail::to($deliverTo)->send(new SignupOtpMail((string) $token, $ttlMinutes));
             }
 
             return response(['status' => true, 'message' => trans('all.message.check_your_email_for_code')]);
