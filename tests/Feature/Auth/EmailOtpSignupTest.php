@@ -117,6 +117,46 @@ class EmailOtpSignupTest extends TestCase
         $this->assertNotNull($user->email_verified_at, 'email_verified_at doit être posé à la vérification email.');
     }
 
+    /** [HEAL SIGNUP 2026-07-30] email persisté depuis la REQUÊTE verify quand le cache a
+     *  expiré (client qui cherche dans ses spams > TTL, ou renvoi) — plus de « email non renseigné ». */
+    public function test_verify_persists_email_from_request_when_cache_expired(): void
+    {
+        Mail::fake();
+        $this->requestEmailOtp()->assertStatus(200);
+        $token = $this->dbToken();
+        $this->assertNotNull($token);
+
+        // Simule l'expiration du cache email (TTL dépassé) : le SEUL email disponible est celui du verify.
+        Cache::forget('email_otp_email:'.self::PHONE);
+
+        $response = $this->postJson('/api/auth/guest-signup/verify', [
+            'code' => '+33', 'phone' => self::PHONE, 'token' => $token,
+            'email' => self::EMAIL, 'first_name' => 'Mourad',
+        ]);
+        $response->assertStatus(201);
+
+        $user = User::withoutGlobalScopes()->where('phone', self::PHONE)->first();
+        $this->assertNotNull($user);
+        $this->assertSame(self::EMAIL, $user->email, "L'email doit être persisté depuis la requête verify (fallback cache expiré).");
+        $this->assertNotNull($user->email_verified_at);
+    }
+
+    /** [HEAL SIGNUP 2026-07-30] le prénom saisi à l'inscription est enregistré (avant : « Guest User » figé). */
+    public function test_verify_persists_first_name(): void
+    {
+        Mail::fake();
+        $this->requestEmailOtp()->assertStatus(200);
+        $token = $this->dbToken();
+
+        $this->postJson('/api/auth/guest-signup/verify', [
+            'code' => '+33', 'phone' => self::PHONE, 'token' => $token,
+            'email' => self::EMAIL, 'first_name' => 'Mourad',
+        ])->assertStatus(201);
+
+        $user = User::withoutGlobalScopes()->where('phone', self::PHONE)->first();
+        $this->assertSame('Mourad', $user->name, 'Le prénom fourni doit devenir le nom du compte, pas « Guest User ».');
+    }
+
     /** (3a) code faux → 422, aucun compte créé, email non persisté. */
     public function test_verify_with_wrong_code_fails(): void
     {

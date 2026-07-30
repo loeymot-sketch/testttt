@@ -149,7 +149,15 @@ class GuestSignupController extends Controller
             // verify() renvoie true en succès et jette en échec (jamais false).
             if ($this->otpManagerService->verify($request)) {
                 return $this->register(
-                    ['code' => $request->code, 'phone' => $request->phone, 'token' => $request->token]
+                    [
+                        'code' => $request->code,
+                        'phone' => $request->phone,
+                        'token' => $request->token,
+                        // [HEAL SIGNUP 2026-07-30] email + prénom transmis → persistance
+                        // déterministe dans register() (fallback cache + prénom réel).
+                        'email' => $request->post('email'),
+                        'first_name' => $request->post('first_name'),
+                    ]
                 );
             }
         } catch (Exception $exception) {
@@ -189,7 +197,10 @@ class GuestSignupController extends Controller
         }
 
         if (!$user) {
-            $name = "Guest User";
+            // [HEAL SIGNUP 2026-07-30] Prénom réel si fourni au verify (avant : « Guest User »
+            // figé → le prénom saisi à l'inscription était jeté).
+            $first = is_string($array['first_name'] ?? null) ? trim($array['first_name']) : '';
+            $name = $first !== '' ? mb_substr($first, 0, 100) : "Guest User";
             $user = User::create([
                 'name'              => $name,
                 'username'          => Str::slug($name) . \Illuminate\Support\Str::random(5),
@@ -219,7 +230,14 @@ class GuestSignupController extends Controller
         // Garde-fous : jamais d'écrasement d'un email différent déjà porté par ce
         // compte, jamais d'attache d'un email appartenant à un AUTRE compte
         // (anti-vol/anti-énumération : échec silencieux, le login réussit quand même).
+        // [HEAL SIGNUP 2026-07-30] Fallback DÉTERMINISTE : si le cache email a expiré (client
+        // qui cherche le code dans ses spams > TTL, ou renvoi) on prend l'email transmis au
+        // verify (contrat élargi, VerifyPhoneRequest.email nullable) → plus de « email non
+        // renseigné ». Le cache reste prioritaire (posé au send, non-falsifiable).
         $pendingEmail = Cache::pull('email_otp_email:'.$array['phone']);
+        if (! (is_string($pendingEmail) && $pendingEmail !== '')) {
+            $pendingEmail = is_string($array['email'] ?? null) ? trim($array['email']) : null;
+        }
         if (is_string($pendingEmail) && $pendingEmail !== '') {
             $emailTakenByOther = User::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->withTrashed()
                 ->where('email', $pendingEmail)
