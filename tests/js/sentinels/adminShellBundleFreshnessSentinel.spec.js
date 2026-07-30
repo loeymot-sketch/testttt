@@ -43,8 +43,14 @@ function resolveHashedBundle(root, base) {
     const dir = resolve(root, 'public/js');
     if (existsSync(dir)) {
         const rx = new RegExp('^' + base + '\\.[0-9a-f]{8}\\.js$');
-        const hit = readdirSync(dir).find((f) => rx.test(f) || f === base + '.js');
-        if (hit) return join(dir, hit);
+        // [FIX 2026-07-30] Plusieurs bundles hashés coexistent (webpack ne nettoie pas
+        // les anciens contenthash). On prend le PLUS RÉCENT par mtime — pas le premier
+        // (readdirSync est ~alphabétique → prenait un bundle PÉRIMÉ → faux « stale »).
+        const matches = readdirSync(dir).filter((f) => rx.test(f) || f === base + '.js');
+        if (matches.length) {
+            matches.sort((a, b) => statSync(join(dir, b)).mtimeMs - statSync(join(dir, a)).mtimeMs);
+            return join(dir, matches[0]);
+        }
     }
     return resolve(root, 'public/js/' + base + '.js');
 }

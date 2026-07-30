@@ -36,6 +36,10 @@ describe('F2 — KDS symbol legend (onboarding)', () => {
         expect(flat['Crudités|O̲']).toBe('Oignons cuits'); // O + U+0332, string exact du twin
         expect(flat['Formule|MENU']).toBe('Menu (formule)');
         expect(flat['Formule|F']).toBe('Frites');
+        // [HEAL P2 2026-07-30] kdsSymbolic émet aussi FRITES/BOISSON (menu_frites/menu_boisson) —
+        // la légende DOIT les couvrir sinon un chef ne les décode pas (audit V-finale).
+        expect(flat['Formule|FRITES']).toBe('Frites (formule)');
+        expect(flat['Formule|BOISSON']).toBe('Boisson (formule)');
     });
 
     it('toggleSymbolLegend flips the flag and persists', () => {
