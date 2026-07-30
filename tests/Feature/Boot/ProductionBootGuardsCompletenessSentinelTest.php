@@ -93,6 +93,16 @@ class ProductionBootGuardsCompletenessSentinelTest extends TestCase
             'message_re' => '/APP_DEBUG=true is forbidden in production/',
         ],
         [
+            // [SECURITY P1-B DEMO-OTP-BYPASS 2026-07-30] DEMO=true makes
+            // OtpManagerService::verify() accept ANY OTP code -> kiosk:order
+            // token for any phone (guest account takeover). Twin of the
+            // POS_SIMULATION_HARDWARE / APP_DEBUG dev-flag guards.
+            'env_var'    => 'DEMO',
+            'config_key' => 'app.demo_mode',
+            'bad_value'  => true,
+            'message_re' => '/DEMO=true is forbidden in production/',
+        ],
+        [
             'env_var'    => 'IDEMPOTENCY_MIDDLEWARE_ENABLED',
             'config_key' => 'idempotency.enabled',
             'bad_value'  => false,
@@ -156,6 +166,7 @@ class ProductionBootGuardsCompletenessSentinelTest extends TestCase
             'PAYMENT_BYPASS_MODE'             => 'PAYMENT_BYPASS_MODE=true is forbidden in production',
             'PRINTING_BYPASS_MODE'            => 'PRINTING_BYPASS_MODE=true is forbidden in production',
             'APP_DEBUG'                       => 'APP_DEBUG=true is forbidden in production',
+            'DEMO'                            => 'DEMO=true is forbidden in production',
             'IDEMPOTENCY_MIDDLEWARE_ENABLED'  => 'IDEMPOTENCY_MIDDLEWARE_ENABLED must be true in production',
             'LOYALTY_QR_SECRET'               => 'LOYALTY_QR_SECRET must be set in production',
             'APP_URL'                         => 'APP_URL must be set in production',
@@ -471,6 +482,9 @@ class ProductionBootGuardsCompletenessSentinelTest extends TestCase
             'payment.bypass.enabled'   => false,
             'printing.bypass.enabled'  => false,
             'app.debug'                => false,
+            // [SECURITY P1-B 2026-07-30] Keep DEMO off so its guard does not
+            // preempt when another guard is under test (mirrors app.debug).
+            'app.demo_mode'            => false,
             'idempotency.enabled'      => true,
             'loyalty.qr.secret'        => str_repeat('a', 32),
             'app.url'                  => 'https://lecayenne.example.com',

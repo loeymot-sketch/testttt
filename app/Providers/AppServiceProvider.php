@@ -240,6 +240,28 @@ class AppServiceProvider extends ServiceProvider
                 );
             }
 
+            // [SECURITY P1-B DEMO-OTP-BYPASS 2026-07-30] DEMO=true short-circuits
+            // OtpManagerService::verify() to `return true` for ANY OTP code
+            // (OtpManagerService.php:82) — GuestSignupController::verify() then
+            // mints a Sanctum `kiosk:order` token for an ARBITRARY phone number
+            // (guest account takeover with a bogus code). DEMO is the same class
+            // of dev-simulation flag as POS_SIMULATION_HARDWARE / APP_DEBUG /
+            // PAYMENT_BYPASS / PRINTING_BYPASS above, but it had NO boot guard, so
+            // a production box shipped with DEMO=true booted anyway. Refuse to boot,
+            // mirroring the sibling patterns. DEMO stays a legitimate convenience in
+            // local/dev (fixtures, no-SMS OTP) — only production is forbidden.
+            // config('app.demo_mode') = filter_var(env('DEMO', false), BOOL), so it
+            // reads the boot-cached value (fires before any request under config:cache).
+            if ((bool) config('app.demo_mode', false)) {
+                throw new \RuntimeException(
+                    'DEMO=true is forbidden in production: demo mode makes '
+                    . 'OtpManagerService::verify() accept ANY OTP code, minting a '
+                    . 'kiosk:order token for any phone number (guest account takeover). '
+                    . 'Set DEMO=false in your .env file (or unset it) then run '
+                    . '`php artisan config:cache`.'
+                );
+            }
+
             // [Foundation Audit F-3 P0 / 2026-05-18] Idempotency middleware MUST
             // be enabled in production. Default in config/idempotency.php is
             // false for safe dev/CI roll-out (per PLAN_P11 §2). In production,

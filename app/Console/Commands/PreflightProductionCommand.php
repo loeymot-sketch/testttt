@@ -48,6 +48,7 @@ class PreflightProductionCommand extends Command
         $this->checkDiskSpace();
         $this->checkSchedulerInstalled();
         $this->checkAppDebug();
+        $this->checkDemoMode();
         $this->checkAppKey();
         $this->checkTimezone();
         $this->checkCacheDriver();
@@ -255,6 +256,22 @@ class PreflightProductionCommand extends Command
             $this->addFinding('CRITICAL', 'APP_DEBUG', 'APP_DEBUG=true exposes stack traces and PII in error pages.');
         } else {
             $this->ok('APP_DEBUG', 'false');
+        }
+    }
+
+    /**
+     * [SECURITY P1-B DEMO-OTP-BYPASS 2026-07-30] CRITICAL: DEMO=true makes
+     * OtpManagerService::verify() accept ANY OTP code, so GuestSignupController
+     * mints a kiosk:order token for any phone (guest account takeover). Mirrors
+     * the AppServiceProvider boot guard so ops can catch it WITHOUT booting the
+     * HTTP stack. config('app.demo_mode') = filter_var(env('DEMO', false), BOOL).
+     */
+    private function checkDemoMode(): void
+    {
+        if (config('app.demo_mode') === true) {
+            $this->addFinding('CRITICAL', 'DEMO_MODE', 'DEMO=true bypasses guest OTP verification (OtpManagerService::verify accepts any code → kiosk:order token for any phone = account takeover). Set DEMO=false for production.');
+        } else {
+            $this->ok('DEMO_MODE', 'false (guest OTP verification enforced)');
         }
     }
 

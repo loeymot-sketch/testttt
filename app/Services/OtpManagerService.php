@@ -78,7 +78,13 @@ class OtpManagerService
     public function verify(VerifyPhoneRequest $request): bool
     {
         try {
-            // env('DEMO') === 'false' est truthy en PHP — utiliser un booléen réel
+            // env('DEMO') === 'false' est truthy en PHP — utiliser un booléen réel.
+            // [SECURITY P1-B 2026-07-30] Ce court-circuit accepte N'IMPORTE quel code
+            // (fixtures dev sans SMS). En PRODUCTION il serait une prise de compte
+            // (GuestSignupController::verify → token kiosk:order pour un tel arbitraire) :
+            // c'est pourquoi AppServiceProvider::boot() REFUSE de booter en prod si
+            // DEMO=true (jumeau de POS_SIMULATION_HARDWARE/APP_DEBUG). Cette branche
+            // n'est donc atteignable qu'en local/dev.
             if (filter_var(env('DEMO', false), FILTER_VALIDATE_BOOLEAN)) {
                 return true;
             }
