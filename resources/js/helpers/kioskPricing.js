@@ -135,9 +135,19 @@ export function calculateKioskRunningTotal(item, selections = {}) {
     total += (sauceOrder.length - 1) * extraSauceUnitPrice;
   }
 
-  // Sauce FRITES en plus : AUCUN mécanisme de facturation backend (pas d'ItemExtra dédié sur les
-  // frites) → GRATUITE, alignée sur le web. Le surcoût display-only précédent est SUPPRIMÉ pour
-  // éliminer le display≠sealed (owner : la parité prime, follow-up si facturation frites voulue).
+  // [PLAINTE OWNER 2026-07-29] Sauce FRITES en plus : (N-1) × prix de l'ItemExtra « Sauce
+  // supplémentaire » du produit PARENT — exactement comme la sauce du sandwich ci-dessus.
+  // La prémisse de l'ancien commentaire (« aucun mécanisme de facturation backend, pas
+  // d'ItemExtra dédié sur les frites ») était FAUSSE : la ligne facturée est le produit parent,
+  // qui porte bien cet extra (24 produits du catalogue). L'étape AFFICHAIT « +0,50 € »
+  // (KioskStepMenuComponent.fritesSaucePriceLabel) alors que ni ce total ni le payload ne le
+  // reprenaient → « je l'ajoute, le prix ne bouge pas ». Le SITE facture et scelle déjà ce
+  // surcoût (menu.js priceFor + api.js item_extras) : la borne était la seule à diverger.
+  // extraSauceUnitPrice vaut 0 si l'item n'a pas l'extra → sauce frites gratuite, display == sealed.
+  const fritesSauceOrder = selections.fritesSauceOrder || [];
+  if (fritesSauceOrder.length > 1) {
+    total += (fritesSauceOrder.length - 1) * extraSauceUnitPrice;
+  }
 
   if (Array.isArray(item.extras)) {
     item.extras.forEach((extra) => {
