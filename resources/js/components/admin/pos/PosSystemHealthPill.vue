@@ -22,6 +22,14 @@
             class="pos-health-pill-fiscal"
             :title="health.checks.fiscal.message"
         >🔒 {{ health.checks.fiscal.message }}</span>
+        <!-- [CAISSE-HEALTH 2026-07-31] Ruptures de stock — compteur INFO (n'alarme pas le ton système,
+             quelques épuisés en service = normal). Toujours ambre pour rester visible sur fond vert. -->
+        <span
+            v-if="stockRuptures > 0"
+            class="pos-health-pill-stock"
+            :title="'Produits actuellement en rupture (voir Gestion Produits & Stock)'"
+            data-testid="pos-health-stock"
+        >🍽️ {{ stockRuptures }} en rupture</span>
     </div>
 </template>
 
@@ -65,11 +73,15 @@ export default {
             return !!(this.health && this.health.checks && this.health.checks.fiscal
                 && this.health.checks.fiscal.status !== 'ok');
         },
+        stockRuptures() {
+            return (this.health && this.health.checks && this.health.checks.stock && this.health.checks.stock.count) || 0;
+        },
         detailText() {
             if (!this.health || !this.health.checks) return '';
             const parts = [];
             if (this.health.checks.sync) parts.push(this.health.checks.sync.message);
             if (this.fiscalAlert) parts.push(this.health.checks.fiscal.message);
+            if (this.stockRuptures > 0) parts.push(this.health.checks.stock.message);
             return parts.join(' · ');
         },
     },
@@ -131,6 +143,15 @@ export default {
     margin-left: 4px;
     padding-left: 8px;
     border-left: 1px solid currentColor;
+}
+/* Ruptures de stock — toujours ambre (visible sur fond vert/ambre/rouge), séparateur neutre. */
+.pos-health-pill-stock {
+    font-weight: 700;
+    white-space: nowrap;
+    margin-left: 4px;
+    padding-left: 8px;
+    border-left: 1px solid rgba(0, 0, 0, 0.15);
+    color: #B8560F;
 }
 
 /* Vert discret — tout va bien, ne doit pas distraire l'opérateur. */

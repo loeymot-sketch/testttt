@@ -50,6 +50,18 @@ class PosSystemHealthController extends Controller
         // --- Intégrité fiscale (NF525) — lecture seule, mise en cache pour la perf. ---
         $fiscal = Cache::remember('pos_system_health_fiscal', 300, fn () => $this->fiscalStatus());
 
+        // --- Ruptures de stock (vue d'ensemble) — INFO : ne change pas le ton système. Quelques
+        // produits épuisés en plein service est NORMAL, pas une panne. On les remonte comme un compteur
+        // visible, aligné EXACTEMENT sur le dashboard rupture (même filtre) pour éviter toute dérive. ---
+        $ruptures = $this->stockRuptureCount();
+        $stock = [
+            'status'  => $ruptures > 0 ? 'info' : 'ok',
+            'count'   => $ruptures,
+            'message' => $ruptures > 0
+                ? ($ruptures.' produit'.($ruptures > 1 ? 's' : '').' en rupture')
+                : 'Stock complet.',
+        ];
+
         // Sévérité : une panne de SYNC (opérationnel — la caisse ne reçoit plus les commandes) peut
         // aller jusqu'à 'down' (rouge). Une alerte FISCALE (intégrité de fond ; l'opérateur ne peut
         // qu'alerter le support, il continue d'encaisser) plafonne à 'degraded' (ambre) — on ne veut
@@ -61,11 +73,35 @@ class PosSystemHealthController extends Controller
 
         return response()->json([
             'overall'       => $overall,
-            'checks'        => ['sync' => $sync, 'fiscal' => $fiscal],
+            'checks'        => ['sync' => $sync, 'fiscal' => $fiscal, 'stock' => $stock],
             'stale_events'  => $staleEvents,
             'queue_pending' => HealthzController::probeQueuePending(),
             'timestamp'     => now()->toIso8601String(),
         ]);
+    }
+
+    /**
+     * Nombre de produits actuellement en rupture pour la branche du caissier. Aligné EXACTEMENT sur
+     * StockRuptureDashboardController::lastSummary (is_available=false + unavailable_reason stock) →
+     * le compteur de la pastille == celui du dashboard rupture (zéro dérive entre deux surfaces).
+     * Requête indexée (branch_id, is_available), coût borné même pollée toutes les 45 s.
+     */
+    private function stockRuptureCount(): int
+    {
+        try {
+            $q = \App\Models\ItemBranchAvailability::withoutGlobalScopes()
+                ->where('is_available', false)
+                ->whereIn('unavailable_reason', ['stock_rupture', 'out_of_stock']);
+
+            $branchId = (int) (auth()->user()?->branch_id ?? 0);
+            if ($branchId > 0) {
+                $q->where('branch_id', $branchId);
+            }
+
+            return (int) $q->count();
+        } catch (\Throwable $e) {
+            return 0; // la santé ne doit jamais casser sur une erreur de probe stock
+        }
     }
 
     /**

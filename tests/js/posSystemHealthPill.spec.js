@@ -10,12 +10,13 @@ vi.mock('axios', () => ({ default: { get: (...a) => mockGet(...a) } }));
 
 import PosSystemHealthPill from '../../resources/js/components/admin/pos/PosSystemHealthPill.vue';
 
-const health = (overall, sync, fiscal) => ({
+const health = (overall, sync, fiscal, stock) => ({
     data: {
         overall,
         checks: {
             sync: sync || { status: 'ok', message: 'Temps réel actif.' },
             fiscal: fiscal || { status: 'ok', message: 'Chaîne fiscale intègre.' },
+            stock: stock || { status: 'ok', count: 0, message: 'Stock complet.' },
         },
     },
 });
@@ -62,6 +63,18 @@ describe('PosSystemHealthPill', () => {
         expect(w.vm.syncMessage).toBe(''); // le sync est ok → pas de message sync
         expect(w.vm.fiscalAlert).toBe(true);
         expect(w.vm.detailText).toContain('Anomalie sur la chaîne fiscale');
+    });
+
+    it('remonte les ruptures de stock (compteur info, sans dégrader le ton système)', async () => {
+        const w = await mountWith(health('ok', null, null, { status: 'info', count: 3, message: '3 produits en rupture' }));
+        expect(w.vm.tone).toBe('ok'); // stock = info → ne change pas le ton (vert reste vert)
+        expect(w.vm.stockRuptures).toBe(3);
+        expect(w.vm.detailText).toContain('3 produits en rupture');
+    });
+
+    it('0 rupture → pas de compteur stock', async () => {
+        const w = await mountWith(health('ok'));
+        expect(w.vm.stockRuptures).toBe(0);
     });
 
     it('best-effort : un poll en échec ne casse pas l\'écran (rien chargé, pas d\'exception)', async () => {

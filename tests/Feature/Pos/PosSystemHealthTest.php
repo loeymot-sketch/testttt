@@ -76,7 +76,11 @@ class PosSystemHealthTest extends TestCase
 
         $res->assertStatus(200)->assertJsonStructure([
             'overall',
-            'checks' => ['sync' => ['status', 'message'], 'fiscal' => ['status', 'message']],
+            'checks' => [
+                'sync'   => ['status', 'message'],
+                'fiscal' => ['status', 'message'],
+                'stock'  => ['status', 'count', 'message'],
+            ],
             'stale_events',
             'queue_pending',
             'timestamp',
@@ -95,6 +99,69 @@ class PosSystemHealthTest extends TestCase
         $res->assertStatus(200);
         $this->assertSame('ok', $res->json('checks.sync.status'), 'Socket ok + 0 backlog = temps réel actif.');
         $this->assertSame(0, $res->json('stale_events'));
+    }
+
+    private function markUnavailable(int $itemId, string $reason, bool $available = false): void
+    {
+        DB::table('item_branch_availability')->insert([
+            'item_id'            => $itemId,
+            'branch_id'          => 1,
+            'is_available'       => $available,
+            'unavailable_reason' => $reason,
+            'unavailable_since'  => now(),
+            'daily_reset_at'     => now()->toDateString(),
+            'daily_consumed_qty' => 0,
+            'created_at'         => now(),
+            'updated_at'         => now(),
+        ]);
+    }
+
+    /** @test Aucune rupture → stock ok (compteur 0). */
+    public function test_no_ruptures_reports_stock_ok(): void
+    {
+        Sanctum::actingAs($this->cashier(), ['*']);
+
+        $res = $this->getJson('/api/admin/pos/system-health');
+
+        $res->assertStatus(200);
+        $this->assertSame(0, $res->json('checks.stock.count'));
+        $this->assertSame('ok', $res->json('checks.stock.status'));
+    }
+
+    /**
+     * @test Les ruptures de stock sont comptées, EXACTEMENT comme le dashboard rupture
+     * (is_available=false + unavailable_reason stock). Un 86 manuel ou un item disponible
+     * ne comptent PAS → pas de dérive entre la pastille et le dashboard.
+     */
+    public function test_stock_ruptures_are_counted_like_the_dashboard(): void
+    {
+        $this->markUnavailable(101, 'stock_rupture');
+        $this->markUnavailable(102, 'out_of_stock');
+        $this->markUnavailable(103, 'manual');               // 86 manuel → PAS une rupture stock
+        $this->markUnavailable(104, 'stock_rupture', true);  // is_available=true → pas indisponible
+        Sanctum::actingAs($this->cashier(), ['*']);
+
+        $res = $this->getJson('/api/admin/pos/system-health');
+
+        $res->assertStatus(200);
+        $this->assertSame(2, $res->json('checks.stock.count'), 'Seules les vraies ruptures stock comptent (2).');
+        $this->assertSame('info', $res->json('checks.stock.status'));
+        $this->assertStringContainsString('2', $res->json('checks.stock.message'));
+    }
+
+    /** @test Les ruptures sont INFO : elles ne dégradent pas l'état global (système sain reste ok). */
+    public function test_ruptures_do_not_degrade_overall(): void
+    {
+        $this->markUnavailable(201, 'stock_rupture');
+        $this->markUnavailable(202, 'out_of_stock');
+        Sanctum::actingAs($this->cashier(), ['*']);
+
+        $res = $this->getJson('/api/admin/pos/system-health');
+
+        $res->assertStatus(200);
+        $this->assertGreaterThan(0, $res->json('checks.stock.count'));
+        // sync ok + fiscal ok (chaîne vide en test) + stock info → overall reste 'ok'.
+        $this->assertSame('ok', $res->json('overall'), 'Une rupture stock ne doit pas mettre le système en dégradé.');
     }
 
     /**
