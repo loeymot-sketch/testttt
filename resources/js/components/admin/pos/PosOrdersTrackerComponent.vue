@@ -273,7 +273,7 @@
                                       → le CTA Encaisser ci-dessus prend le relais. FR direct.
                                     -->
                                     <button
-                                        v-else-if="col.id === 'accept' && isWebPending(order)"
+                                        v-else-if="col.id === 'accept' && isWebPending(order) && canProcessWebOrders"
                                         type="button"
                                         class="pos-tracker-card-btn pos-tracker-card-btn--cash"
                                         :disabled="!!webAccepting[order.id]"
@@ -573,6 +573,19 @@ export default {
         };
     },
     computed: {
+        // [WEB-ORDER-ACCEPT 2026-07-30 · décision owner + parité PosComponent.canProcessWebOrders]
+        // Le CTA « Accepter » d'une commande web POST vers online-order/change-status (gardé
+        // `permission:online-orders`). On garde le bouton sur CETTE permission : sinon un rôle
+        // portant `pos` mais pas `online-orders` voyait un bouton MORT (403 au clic — défaut audit
+        // « gestion » 2026-07-30). Le rôle Caissier (POS Operator) reçoit désormais cette permission
+        // (seeder + migration) → le bouton s'affiche ET fonctionne pour lui ; la garde protège tout
+        // futur rôle pos-only contre la réapparition du bouton mort.
+        canProcessWebOrders() {
+            const raw = this.$store.getters.authPermission;
+            const perms = Array.isArray(raw) ? raw : (raw && Array.isArray(raw.data) ? raw.data : []);
+            const entry = perms.find((p) => p && p.url === 'online-orders');
+            return !!(entry && entry.access === true);
+        },
         // [iter15-mega-fix B-003/C-008 2026-05-10] Hide the local
         // `pos-tracker-rt-warn` realtime banner in dev/local where Pusher/Soketi
         // is not running. Mirrors ConnectionStatusBanner.vue isDevEnv gate.

@@ -84,6 +84,23 @@ class ValidJsonOrder implements Rule
                 $this->message = "L'instruction de l'article à l'index {$index} dépasse 500 caractères.";
                 return false;
             }
+
+            // [SEC/NF525 HEAL 2026-07-30 · EXTRAS-QTY-CAP] Le cap 999 ci-dessus ne couvrait QUE
+            // item.quantity : les sous-quantités des extras/variations/addons passaient BRUTES →
+            // PricingService fait total += price × max(1,(int)qty) SANS plafond. Un token web pouvait
+            // sceller un total absurde (ex. qty 9999999999999 sur un extra valide → ~5e12 €, ça rentre
+            // dans decimal(19,6) sans overflow) → pollution NF525/Z si encaissé au comptoir. Même
+            // plafond généreux (999/option) qu'au-dessus — aucun impact sur une commande légitime.
+            foreach (['item_extras', 'item_variations', 'item_addons'] as $subKey) {
+                if (isset($item[$subKey]) && is_array($item[$subKey])) {
+                    foreach ($item[$subKey] as $sub) {
+                        if (is_array($sub) && isset($sub['quantity']) && is_numeric($sub['quantity']) && (int) $sub['quantity'] > 999) {
+                            $this->message = "Une quantité d'option de l'article à l'index {$index} dépasse le maximum autorisé (999).";
+                            return false;
+                        }
+                    }
+                }
+            }
         }
 
         return true;

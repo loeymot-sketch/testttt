@@ -104,6 +104,12 @@ class RolePermissionTableSeeder extends Seeder
                 // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] Cashier-facing
                 // loyalty redemption gate (LOCK §6.1).
                 'pos.redeem-loyalty',
+                // [WEB-ORDER-ACCEPT 2026-07-30 · décision owner] Le caissier accepte/gère les
+                // commandes du SITE depuis la caisse (mono-resto : c'est lui au comptoir). Sans
+                // cette permission le bouton « Accepter » du tracker était mort (403). Le REFUND
+                // reste gardé `pos-refund` (NON accordé ici) → le caissier accepte + encaisse mais
+                // ne peut pas rembourser seul. Cf. OnlineOrderController::changeStatus.
+                'online-orders',
             ];
             $posOperatorManager->givePermissionTo(
                 Permission::whereIn('name', $posOperatorManagerPermissionNames)->get()

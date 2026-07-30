@@ -170,6 +170,10 @@ abstract class TestCase extends BaseTestCase
                 'order-status-screen',
                 // [POS-9.1.1] cashier = up to 10% discount
                 'pos-discount-up-to-10',
+                // [WEB-ORDER-ACCEPT 2026-07-30] Aligné RolePermissionTableSeeder : le caissier
+                // accepte/gère les commandes web (bouton « Accepter » du tracker). Le refund reste
+                // gardé `pos-refund` (hors de ce set) → frontière de permission préservée.
+                'online-orders',
             ]);
         }
 

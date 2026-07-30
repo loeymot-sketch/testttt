@@ -203,7 +203,13 @@ class PaymentService
                 // sortait le total du tiroir alors qu'aucune espèce n'a été encaissée (sortie fantôme).
                 if ($cashPortion <= 0.0
                     && strtolower((string) $gatewaySlug) === 'cash'
-                    && ! $this->hasPaymentTranches($order)) {
+                    && ! $this->hasPaymentTranches($order)
+                    // [SYMÉTRIE-TIROIR HEAL 2026-07-30 · REFUND-NO-IN] Ne sortir le total du tiroir
+                    // QUE si un mouvement IN a RÉELLEMENT été enregistré à l'encaissement. Un encaissement
+                    // cash hors session (recordCashOrderMovement best-effort → skip) pose PAID sans IN ;
+                    // sans cette garde le refund sortait le total = sortie sans entrée appariée = variance
+                    // négative au rapprochement. Implémente la symétrie promise par CASH-01 sur ce chemin.
+                    && $this->hasRecordedCashIn($order)) {
                     $cashPortion = (float) $order->total;
                 }
                 if ($cashPortion > 0.0) {
@@ -690,7 +696,11 @@ class PaymentService
         // ligne order_payments. Des tranches non-cash (0 espèce réelle) ne doivent PAS sortir le total
         // du tiroir même si pos_payment_method (champ dominant legacy) vaut CASH.
         if ($cashPortion <= 0.0 && ! $this->hasPaymentTranches($order)) {
-            $cashPortion = ((int) $order->pos_payment_method === \App\Enums\PosPaymentMethod::CASH)
+            // [SYMÉTRIE-TIROIR HEAL 2026-07-30 · REFUND-NO-IN] Jumeau de la garde cashBack : le repli
+            // mono-tender ne sort du tiroir QUE si un IN a été enregistré à l'encaissement (sinon
+            // encaissement cash hors session → PAID sans IN → sortie fantôme au refund = variance).
+            $cashPortion = ((int) $order->pos_payment_method === \App\Enums\PosPaymentMethod::CASH
+                && $this->hasRecordedCashIn($order))
                 ? round($amount, 2)
                 : 0.0;
         }
@@ -711,6 +721,24 @@ class PaymentService
             ->where('order_id', (int) $order->id)
             ->where('mode', \App\Enums\PosPaymentMethod::CASH)
             ->sum('amount');
+    }
+
+    /**
+     * [SYMÉTRIE-TIROIR HEAL 2026-07-30 · REFUND-NO-IN] Un mouvement tiroir IN (TYPE_ORDER_PAYMENT,
+     * DIRECTION_IN) a-t-il RÉELLEMENT été enregistré pour cette commande à l'encaissement ?
+     * `recordCashOrderMovement` est best-effort (skip + log si aucune session caisse OPEN) → une
+     * vente cash encaissée hors session est PAID SANS IN. Le repli mono-tender « sortir le total au
+     * remboursement » ne doit donc s'armer QUE si l'entrée existe, sinon la sortie n'a pas d'entrée
+     * appariée = variance négative au rapprochement du tiroir. withoutGlobalScopes : la garde doit
+     * voir le mouvement quelle que soit la branche du contexte de refund.
+     */
+    private function hasRecordedCashIn(Order $order): bool
+    {
+        return \App\Models\CashMovement::withoutGlobalScopes()
+            ->where('order_id', (int) $order->id)
+            ->where('type', \App\Models\CashMovement::TYPE_ORDER_PAYMENT)
+            ->where('direction', \App\Models\CashMovement::DIRECTION_IN)
+            ->exists();
     }
 
     /**

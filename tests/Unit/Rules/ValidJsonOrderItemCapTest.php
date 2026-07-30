@@ -66,4 +66,51 @@ class ValidJsonOrderItemCapTest extends TestCase
         $items = json_encode([['item_id' => 1, 'quantity' => 999]]);
         $this->assertTrue($rule->passes('items', $items), '999/ligne est le plafond inclusif et doit passer');
     }
+
+    /**
+     * @test
+     * [EXTRAS-QTY-CAP 2026-07-30] Le cap 999 ne couvrait QUE item.quantity : les sous-quantités
+     * des extras passaient brutes → PricingService faisait total += price × qty sans plafond, un
+     * token web scellait un total absurde (~5e12 €) via un extra valide. Le cap couvre désormais
+     * item_extras / item_variations / item_addons.
+     */
+    public function it_rejects_absurd_extra_quantity()
+    {
+        $rule = $this->rule();
+        $items = json_encode([[
+            'item_id'     => 1,
+            'quantity'    => 1,
+            'item_extras' => [['id' => 7, 'quantity' => 9999999999999]],
+        ]]);
+        $this->assertFalse($rule->passes('items', $items), 'quantité extra absurde (>999) doit être rejetée');
+        $this->assertStringContainsString('999', $rule->message());
+    }
+
+    /** @test */
+    public function it_rejects_absurd_variation_and_addon_quantity()
+    {
+        foreach (['item_variations', 'item_addons'] as $sub) {
+            $rule  = $this->rule();
+            $items = json_encode([[
+                'item_id'  => 1,
+                'quantity' => 1,
+                $sub       => [['id' => 3, 'quantity' => 1000000]],
+            ]]);
+            $this->assertFalse($rule->passes('items', $items), "quantité {$sub} absurde (>999) doit être rejetée");
+        }
+    }
+
+    /** @test */
+    public function it_accepts_reasonable_option_quantities()
+    {
+        $rule  = $this->rule();
+        $items = json_encode([[
+            'item_id'         => 1,
+            'quantity'        => 1,
+            'item_extras'     => [['id' => 7, 'quantity' => 3]],
+            'item_variations' => [['id' => 2]], // sans quantity → défaut 1, doit passer
+            'item_addons'     => [['id' => 5, 'quantity' => 999]], // plafond inclusif
+        ]]);
+        $this->assertTrue($rule->passes('items', $items), 'des quantités d\'options raisonnables doivent passer');
+    }
 }
