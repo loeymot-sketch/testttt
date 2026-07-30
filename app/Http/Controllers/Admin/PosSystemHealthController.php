@@ -50,8 +50,13 @@ class PosSystemHealthController extends Controller
         // --- Intégrité fiscale (NF525) — lecture seule, mise en cache pour la perf. ---
         $fiscal = Cache::remember('pos_system_health_fiscal', 300, fn () => $this->fiscalStatus());
 
-        $rank = ['ok' => 0, 'warn' => 1, 'down' => 2, 'alert' => 2];
-        $worst = max($rank[$sync['status']] ?? 0, $rank[$fiscal['status']] ?? 0);
+        // Sévérité : une panne de SYNC (opérationnel — la caisse ne reçoit plus les commandes) peut
+        // aller jusqu'à 'down' (rouge). Une alerte FISCALE (intégrité de fond ; l'opérateur ne peut
+        // qu'alerter le support, il continue d'encaisser) plafonne à 'degraded' (ambre) — on ne veut
+        // pas un écran caisse ROUGE en permanence pour un souci non-opérationnel.
+        $syncRank   = ['ok' => 0, 'warn' => 1, 'down' => 2][$sync['status']] ?? 0;
+        $fiscalRank = $fiscal['status'] === 'ok' ? 0 : 1;
+        $worst = max($syncRank, $fiscalRank);
         $overall = $worst === 0 ? 'ok' : ($worst === 1 ? 'degraded' : 'down');
 
         return response()->json([

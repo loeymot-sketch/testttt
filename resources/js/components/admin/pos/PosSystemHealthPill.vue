@@ -16,7 +16,7 @@
     >
         <span class="pos-health-pill-dot" aria-hidden="true"></span>
         <span class="pos-health-pill-label">{{ label }}</span>
-        <span v-if="tone !== 'ok'" class="pos-health-pill-msg">{{ health.checks.sync.message }}</span>
+        <span v-if="syncMessage" class="pos-health-pill-msg">{{ syncMessage }}</span>
         <span
             v-if="fiscalAlert"
             class="pos-health-pill-fiscal"
@@ -38,6 +38,9 @@ export default {
         };
     },
     computed: {
+        syncStatus() {
+            return (this.health && this.health.checks && this.health.checks.sync && this.health.checks.sync.status) || 'ok';
+        },
         tone() {
             const o = this.health && this.health.overall;
             if (o === 'down') return 'down';
@@ -46,10 +49,17 @@ export default {
         },
         label() {
             if (!this.health) return '';
-            const s = this.health.checks && this.health.checks.sync && this.health.checks.sync.status;
-            if (this.tone === 'ok') return 'Système OK';
-            if (s === 'down') return 'Temps réel coupé';
-            return 'Temps réel dégradé';
+            if (this.syncStatus === 'down') return 'Temps réel coupé';
+            if (this.syncStatus === 'warn') return 'Temps réel dégradé';
+            // Temps réel OK : soit tout va bien, soit seule la chaîne fiscale alerte.
+            return this.fiscalAlert ? 'Alerte fiscale' : 'Système OK';
+        },
+        syncMessage() {
+            // On ne montre le message temps réel QUE s'il est réellement en cause (sinon on afficherait
+            // « les commandes arrivent en direct » à côté d'une alerte fiscale = signal contradictoire).
+            return this.syncStatus !== 'ok' && this.health && this.health.checks && this.health.checks.sync
+                ? this.health.checks.sync.message
+                : '';
         },
         fiscalAlert() {
             return !!(this.health && this.health.checks && this.health.checks.fiscal

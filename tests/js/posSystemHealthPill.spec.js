@@ -51,8 +51,15 @@ describe('PosSystemHealthPill', () => {
         expect(w.vm.label).toContain('coupé');
     });
 
-    it('surfacer l\'alerte chaîne fiscale', async () => {
-        const w = await mountWith(health('degraded', { status: 'ok', message: 'ok' }, { status: 'alert', message: 'Anomalie sur la chaîne fiscale — préviens le support.' }));
+    it('temps réel OK + alerte fiscale → libellé « Alerte fiscale » (ambre), pas de message sync trompeur', async () => {
+        const w = await mountWith(health(
+            'degraded',
+            { status: 'ok', message: 'Les commandes arrivent en direct.' },
+            { status: 'alert', message: 'Anomalie sur la chaîne fiscale — préviens le support.' },
+        ));
+        expect(w.vm.tone).toBe('warn'); // ambre, pas rouge : non-opérationnel
+        expect(w.vm.label).toBe('Alerte fiscale');
+        expect(w.vm.syncMessage).toBe(''); // le sync est ok → pas de message sync
         expect(w.vm.fiscalAlert).toBe(true);
         expect(w.vm.detailText).toContain('Anomalie sur la chaîne fiscale');
     });
