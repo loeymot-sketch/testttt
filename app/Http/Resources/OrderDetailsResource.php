@@ -130,8 +130,14 @@ class OrderDetailsResource extends JsonResource
             // [C2/C4-CAISSE 2026-07-07] Nom + téléphone client saisis en caisse (commande
             // téléphone différée surtout) — affichés dans la file d'encaissement pour rappeler
             // le client, et imprimés sur le ticket. Projection pure de colonnes nullables.
-            'pos_customer_name' => $this->pos_customer_name,
-            'pos_customer_phone' => $this->pos_customer_phone,
+            // [OWNER 2026-07-31] Pour une commande WEB (distante), le client n'a pas saisi ces champs EN
+            // CAISSE — son nom + téléphone vivent sur son COMPTE (email VÉRIFIÉ par OTP + téléphone donné à
+            // l'inscription). On retombe dessus pour que le caissier VOIE nom + téléphone et puisse
+            // CONFIRMER la commande (appeler = vérifier que c'est une vraie commande d'une vraie personne,
+            // anti « commande nulle »). Un client consultant SA propre commande voit son propre contact
+            // (aucune fuite). La saisie caisse explicite (téléphone/comptoir) reste prioritaire.
+            'pos_customer_name' => $this->pos_customer_name ?: (($this->source_surface === 'web') ? $this->user?->name : null),
+            'pos_customer_phone' => $this->pos_customer_phone ?: (($this->source_surface === 'web') ? $this->user?->phone : null),
             'source' => $this->source,
             // [GOAL-CAISSE-UNIFIED W-ENC 2026-05-30] Origin signal for the
             // unified /admin/encaissement queue badge (Borne='kiosk',

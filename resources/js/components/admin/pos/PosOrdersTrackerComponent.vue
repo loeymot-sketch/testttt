@@ -203,9 +203,24 @@
                                 <i class="fa-solid fa-hourglass-half" aria-hidden="true"></i>
                                 <span>{{ agingLabel(order) }}</span>
                             </div>
-                            <div class="pos-tracker-card-customer" v-if="customerLabel(order)">
+                            <!--
+                              [OWNER 2026-07-31] Identité client VISIBLE avant l'accept/encaissement :
+                              nom + téléphone. Pour une commande WEB (distante) le caissier DOIT pouvoir
+                              rappeler le client pour CONFIRMER que c'est une vraie commande d'une vraie
+                              personne (anti « commande nulle »). Le téléphone vient de SimpleOrderResource
+                              (customer_phone, shippé pour web + delivery). Additif — nom déjà affiché.
+                            -->
+                            <div class="pos-tracker-card-customer" v-if="customerLabel(order) || customerPhone(order)">
                                 <i class="fa-solid fa-user" aria-hidden="true"></i>
                                 <span>{{ customerLabel(order) }}</span>
+                                <a
+                                    v-if="customerPhone(order)"
+                                    class="pos-tracker-card-phone"
+                                    :href="`tel:${customerPhone(order)}`"
+                                    :data-testid="`tracker-customer-phone-${order.id}`"
+                                    :title="`Appeler ${customerLabel(order) || 'le client'} pour confirmer la commande`"
+                                    @click.stop
+                                ><i class="fa-solid fa-phone" aria-hidden="true"></i> {{ customerPhone(order) }}</a>
                             </div>
                             <ul class="pos-tracker-card-items">
                                 <li
@@ -1362,6 +1377,12 @@ export default {
             const n = u.name || [u.first_name, u.last_name].filter(Boolean).join(' ');
             return n || o.customer_name || '';
         },
+        // [OWNER 2026-07-31] Téléphone du client pour la carte de suivi. SimpleOrderResource
+        // ship `customer_phone` pour les commandes WEB (client distant → le caissier appelle
+        // pour confirmer) et DELIVERY (livreur). null pour borne/walk-in (client présent).
+        customerPhone(o) {
+            return o.customer_phone || (o.user && o.user.phone) || '';
+        },
         itemsPreview(o) {
             const items = Array.isArray(o.order_items) ? o.order_items : [];
             return items.slice(0, 3);
@@ -1940,6 +1961,22 @@ export default {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* [OWNER 2026-07-31] Téléphone client = action visible (rappel de confirmation
+   commande web). Accent brand pour ressortir, tappable (tel:) sur tablette caisse. */
+.pos-tracker-card-phone {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex: none;
+    font-weight: 700;
+    color: var(--pos-brand, #F4501E);
+    text-decoration: none;
+    white-space: nowrap;
+}
+.pos-tracker-card-phone:hover {
+    text-decoration: underline;
 }
 
 .pos-tracker-card-items {

@@ -60,6 +60,33 @@ class WebOrdersPendingEndpointTest extends TestCase
         $this->assertContains($web->id, $this->pendingIds());
     }
 
+    /** @test [OWNER 2026-07-31] Une commande WEB expose le NOM + TÉLÉPHONE du client (depuis son compte
+     * vérifié par OTP) au caissier pour CONFIRMATION — anti « commande nulle ». Le client web n'a PAS saisi
+     * ces champs EN CAISSE (null en base) : le fallback OrderDetailsResource les tire du compte. */
+    public function web_order_expose_nom_et_telephone_du_client_pour_confirmation(): void
+    {
+        $customer = User::factory()->create([
+            'branch_id' => $this->branch->id, 'name' => 'Jean Dupont', 'phone' => '0612345678',
+        ]);
+        $web = Order::factory()->create([
+            'branch_id' => $this->branch->id, 'user_id' => $customer->id,
+            'source_surface' => 'web', 'order_type' => OrderType::TAKEAWAY,
+            'status' => OrderStatus::PENDING, 'payment_status' => PaymentStatus::UNPAID,
+            'pos_customer_name' => null, 'pos_customer_phone' => null, // rien saisi en caisse
+        ]);
+
+        $res = $this->actingAs($this->cashier, 'sanctum')
+            ->withHeader('x-api-key', config('app.api_key'))
+            ->getJson('/api/admin/pos/web-orders/pending');
+        $res->assertOk();
+
+        $card = collect($res->json('data'))->firstWhere('id', $web->id);
+        $this->assertNotNull($card, 'la commande web doit être dans la file');
+        // Le caissier VOIT nom + téléphone (fallback compte web) pour confirmer que c'est une vraie personne.
+        $this->assertSame('Jean Dupont', $card['pos_customer_name'], 'le nom du client web doit être visible en caisse');
+        $this->assertSame('0612345678', $card['pos_customer_phone'], 'le téléphone du client web doit être visible en caisse');
+    }
+
     /** @test */
     public function exclut_borne_web_acceptee_et_autre_branche(): void
     {

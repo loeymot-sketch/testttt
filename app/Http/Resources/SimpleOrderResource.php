@@ -104,7 +104,14 @@ class SimpleOrderResource extends JsonResource
             // admin sales-report / online-orders / POS surfaces do not, and
             // shipping PII unconditionally over the wire is a data-protection
             // defect even though the Vue UI already gated rendering.
-            'customer_phone'               => ((int) $this->order_type === OrderType::DELIVERY) ? $this->user?->phone : null,
+            // [OWNER 2026-07-31] AUSSI pour les commandes WEB (source_surface='web') : une commande web est
+            // DISTANTE — le caissier DOIT voir le téléphone du client pour la CONFIRMER (l'appeler = vérifier
+            // que c'est une vraie commande d'une vraie personne, anti « commande nulle »). Le client web a
+            // fourni un email VÉRIFIÉ (OTP) + un téléphone à l'inscription. Finalité légitime (fulfillment/
+            // vérification) → la minimisation reste pour borne/walk-in (client physiquement présent).
+            'customer_phone'               => (((int) $this->order_type === OrderType::DELIVERY) || $this->source_surface === 'web')
+                ? $this->user?->phone
+                : null,
             // [Wave Q-1 P-OWNER 2026-05-19] Items summary for the POS tracker
             // cards (suivi commandes). Without this, `PosOrdersTrackerComponent`
             // renders only N°/source/time — caissier ne voyait pas le contenu.

@@ -451,6 +451,15 @@
                   :data-testid="`pos-shortcut-phone-badge-${o.id}`"
                   :title="o.pos_customer_phone || ''"
                 >📞 {{ $t('label.pos_phone_order_badge') }}</span>
+                <!-- [OWNER 2026-07-31] Commande WEB (distante) : NOM + TÉLÉPHONE du client VISIBLES pour
+                     que le caissier CONFIRME (appeler = vérifier une vraie commande d'une vraie personne,
+                     anti « commande nulle »). Le backend retombe sur le compte web (email vérifié + tel). -->
+                <span
+                  v-if="o.source_surface === 'web' && (o.pos_customer_name || o.pos_customer_phone)"
+                  class="pos-shortcuts__badge-phone"
+                  :data-testid="`pos-shortcut-web-contact-${o.id}`"
+                  :title="[o.pos_customer_name, o.pos_customer_phone].filter(Boolean).join(' · ')"
+                >🌐 {{ [o.pos_customer_name, o.pos_customer_phone].filter(Boolean).join(' · ') }}</span>
                 <span class="pos-shortcuts__price">{{ formatKioskPrice(o.total ?? o.order_amount) }}</span>
                 <!-- [owner 2026-07-08 #2b] Imprimer AVANT encaissement : le caissier
                      choisit le ticket CUISINE (lancer la prépa) OU CLIENT, sans avoir
