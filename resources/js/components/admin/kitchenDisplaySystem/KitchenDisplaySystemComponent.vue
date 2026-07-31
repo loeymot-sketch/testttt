@@ -2416,10 +2416,16 @@ export default {
       // [HEAL B.3 2026-05-19] KDS polling cadence is intentionally hardcoded
       // per-surface (not config-driven). 5000ms when WS down protects the
       // kitchen-staleness budget (orders must surface within ~5s of payment).
-      // 60000ms when WS up because Echo handles the live push and polling
-      // becomes a passive sanity-check. NOT a config-read miss — see
-      // config/broadcasting.php for the per-surface SoT note (RED-Z3 §B-6).
-      return this.wsConnected ? 60000 : 5000;
+      // Echo handles the live push in régime normal ; le poll est une sonde passive.
+      // [SEC MISSION-19/22/23 2026-07-31] Cadence WS-connectée RESSERRÉE 60s → 15s.
+      // Convergé par 3 audits : quand le socket est « connected » MAIS que les events
+      // n'arrivent pas (worker queue DOWN, trame WS droppée at-most-once, ou compte
+      // admin branch_id=0 non abonné au canal branche), le KDS ne se rafraîchissait
+      // qu'au tick 60s SANS bannière → un ticket payé apparaissait en cuisine jusqu'à
+      // 60s en retard, SILENCIEUSEMENT. 15s borne le pire-cas (Echo reste sub-seconde
+      // en normal), sonde peu coûteuse (1 écran KDS, ~4 req/min). NOT a config-read
+      // miss — see config/broadcasting.php for the per-surface SoT note (RED-Z3 §B-6).
+      return this.wsConnected ? 15000 : 5000;
     },
     _restartPolling() {
       this.stopAutoRefresh();
