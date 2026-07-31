@@ -194,7 +194,12 @@ class OrderRequest extends FormRequest
                 ? ['required', 'string', 'size:64']
                 : ['nullable', 'string', 'size:64'],
             'source' => ['required', 'numeric'],
-            'payment_method' => ['nullable', 'numeric'],
+            // [SEC MISSION-16 2026-07-31] Défense-en-profondeur : seules les valeurs frontend LÉGITIMES
+            // (CASH_ON_DELIVERY=1, CARD=4, TICKET_RESTAURANT=5 — ce que borne ET web envoient) sont
+            // acceptées. Un payload forgé payment_method=99/2/3 créait une commande UNPAID sans marqueur
+            // COUNTER_DEFERRED = orpheline INENCAISSABLE dont le ticket cuisine s'imprimait (M16-P1). Le
+            // nullable reste (le backend traite l'absence) ; toute valeur EXPLICITE hors {1,4,5} → 422.
+            'payment_method' => ['nullable', 'numeric', 'in:1,4,5'],
             'token' => ['nullable', 'string'],
             'items' => ['required', 'json', new ValidJsonOrder]
         ];
