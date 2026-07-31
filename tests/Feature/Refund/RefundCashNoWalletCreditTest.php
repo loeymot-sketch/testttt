@@ -81,6 +81,18 @@ class RefundCashNoWalletCreditTest extends TestCase
             'payment_method' => 'cash', 'sign' => '+', 'type' => 'payment',
         ]);
 
+        // [SUPERVISOR A5 2026-07-31] Semer l'ENTRÉE cash (le vrai encaissement en produit une via
+        // recordCashOrderMovement). La garde hasRecordedCashIn (REFUND-NO-IN 2026-07-30) n'émet le OUT de
+        // remboursement QUE si une entrée existe ; la factory ne créait pas ce IN → le OUT était
+        // légitimement supprimé (test rouge PÉRIMÉ, précédait la garde). Setup désormais représentatif.
+        app(CashDrawerService::class)->recordMovement(
+            $session->id,
+            CashMovement::TYPE_ORDER_PAYMENT,
+            9.00,
+            CashMovement::DIRECTION_IN,
+            $order->id,
+        );
+
         app(PaymentService::class)->cashBack($order, 'cash', 'TXN-CB-MP01-CASH');
 
         $out = CashMovement::query()

@@ -203,8 +203,14 @@ class RawMaterialConsumptionService
 
         // order_item ids de CETTE commande (BranchScope retiré : portée bornée par
         // order_id, contexte queue/console hors auth — miroir de consumeForOrder).
+        // [SUPERVISOR A3-P1 2026-07-31] withTrashed() OBLIGATOIRE : OrderService::destroy() SOFT-DELETE
+        // les orderItems AVANT que le listener queue ReverseRawMaterialsOnOrderCanceled ne tourne. Sans
+        // withTrashed, le SoftDeletes scope excluait les lignes → [] → early-return → la matière première
+        // (BOM) n'était JAMAIS rendue au destroy (sur-consommation permanente). Miroir de StockService
+        // ::releaseForOrder (déjà en withTrashed). Les RawMaterialMovement restent indexés par order_item_id.
         $orderItemIds = $order->orderItems()
             ->withoutGlobalScope(BranchScope::class)
+            ->withTrashed()
             ->pluck('id')
             ->map(fn ($id) => (int) $id)
             ->all();

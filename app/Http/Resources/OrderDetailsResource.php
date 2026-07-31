@@ -272,6 +272,28 @@ class OrderDetailsResource extends JsonResource
             $groups[$key]['tax_amount_raw'] += $taxAmount;
             $groups[$key]['base_ht_raw'] += max(0.0, $totalTtc - $taxAmount);
         }
+
+        // [SUPERVISOR A2-P1 2026-07-31] Prorata de la remise sur la ventilation TVA — MIROIR EXACT de
+        // OrderReceiptEscPosRenderer::taxLines (AUDIT P2-1) + ZReportService::taxBreakdownForOrders.
+        // Sans ça, le reçu ÉCRAN (ReceiptComponent) affichait la TVA BRUTE non nettée → Σ(base+TVA) ≠
+        // total payé pour TOUTE commande remisée (coupon web / remise manuelle POS), et divergeait du
+        // ticket imprimé + du Z. On aligne les 3 surfaces. (CGI art. 242 nonies A : ventilation cohérente.)
+        $discount = (float) ($this->discount ?? 0);
+        if ($discount > 0 && ! empty($groups)) {
+            $gross = 0.0;
+            foreach ($groups as $g) {
+                $gross += $g['base_ht_raw'] + $g['tax_amount_raw'];
+            }
+            if ($gross > 0) {
+                $ratio = max(0.0, ($gross - $discount) / $gross);
+                foreach ($groups as &$g) {
+                    $g['base_ht_raw'] *= $ratio;
+                    $g['tax_amount_raw'] *= $ratio;
+                }
+                unset($g);
+            }
+        }
+
         $out = [];
         foreach ($groups as $g) {
             $out[] = [
