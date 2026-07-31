@@ -61,6 +61,13 @@ class EnsureCayenneMixteCommandTest extends TestCase
         $mixte = DB::table('item_variations')->where('item_id', $cayenne->id)
             ->where('item_attribute_id', $viande->id)->where('name', EnsureCayenneMixteCommand::MIXTE_NAME)->first();
         $this->assertEquals(0.0, (float) $mixte->price, 'La viande Mixte doit être GRATUITE');
+        // [OWNER 2026-08-01] Le choix Mixte est CAISSE-ONLY : la borne ne le voit pas (comme avant).
+        $this->assertSame(['pos'], json_decode((string) $mixte->visible_on, true),
+            'Le choix Mixte doit être visible_on=[pos] (caisse), jamais borne');
+        $poulet = DB::table('item_variations')->where('item_id', $cayenne->id)
+            ->where('item_attribute_id', $viande->id)->where('name', EnsureCayenneMixteCommand::SIGNATURE_MEAT)->first();
+        $this->assertSame(['pos'], json_decode((string) $poulet->visible_on, true),
+            'Sur le Cayenne sandwich, Poulet mariné aussi caisse-only → borne sans étape viande');
 
         $sansSauce = DB::table('item_variations')->where('item_id', $cayenne->id)
             ->where('item_attribute_id', $sauce->id)->where('name', EnsureCayenneMixteCommand::SANS_SAUCE_NAME)->first();

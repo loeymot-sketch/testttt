@@ -95,6 +95,24 @@ class EnsureCayenneMixteCommand extends Command
                         ->whereNull('deleted_at')
                         ->update(['deleted_at' => now()]);
                 }
+
+                // [OWNER 2026-08-01] Le CHOIX de viande Mixte est CAISSE-ONLY : la BORNE reste SANS
+                // choix de viande (comme avant). visible_on=['pos'] → KioskMenuService isVisibleOn('kiosk')
+                // = false (exclu borne), caisse (ItemController surface='pos') = true. #22 Cayenne
+                // (mono-viande) : Poulet mariné + Mixte tous deux caisse-only → borne = 0 variation
+                // viande = pas d'étape. #24 Galette (vrai choix de 7 viandes sur toutes surfaces) : SEUL
+                // « Mixte » devient caisse-only, les 7 autres restent visibles borne+web.
+                if (! $dryRun) {
+                    $posOnlyMeats = $isFixedMeatSandwich
+                        ? [self::SIGNATURE_MEAT, self::MIXTE_NAME]
+                        : [self::MIXTE_NAME];
+                    DB::table('item_variations')
+                        ->where('item_id', $item->id)
+                        ->where('item_attribute_id', $viandeAttrId)
+                        ->whereIn('name', $posOnlyMeats)
+                        ->whereNull('deleted_at')
+                        ->update(['visible_on' => json_encode(['pos'])]);
+                }
             }
 
             // « Sans sauce » @0 dans l'étape sauce.
