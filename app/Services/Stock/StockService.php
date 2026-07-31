@@ -186,6 +186,53 @@ class StockService
         }
     }
 
+    /**
+     * [OWNER REPAS-PERSONNEL/PERTES 2026-07-31] Sortie de stock DIRECTE hors-commande (repas personnel
+     * / perte). Décrémente le StockLevel de l'item S'IL a un stock direct (stockable=Item), enregistre
+     * un StockMovement append-only (motif + utilisateur), et resynchronise la disponibilité (auto-86 si
+     * on_hand tombe à 0). Retourne true si un niveau a été décrémenté, false si l'item n'a pas de stock
+     * direct (composite → l'appelant garde uniquement la trace StockOutflow). Idempotent via la clé.
+     */
+    public function recordManualOutflow(int $itemId, int $branchId, int $quantity, string $reason, int $userId, string $idempotencyKey): bool
+    {
+        $quantity = max(1, $quantity);
+
+        return DB::transaction(function () use ($itemId, $branchId, $quantity, $reason, $userId, $idempotencyKey): bool {
+            $level = StockLevel::query()
+                ->where('branch_id', $branchId)
+                ->where('stockable_type', Item::class)
+                ->where('stockable_id', $itemId)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $level) {
+                return false; // pas de stock direct → l'appelant conserve juste la trace
+            }
+
+            if (StockMovement::query()->where('idempotency_key', $idempotencyKey)->exists()) {
+                return true; // rejeu idempotent
+            }
+
+            $delta = -1 * $quantity;
+            $level->forceFill(['on_hand' => (int) $level->on_hand + $delta])->save();
+
+            StockMovement::query()->create([
+                'stock_level_id'  => $level->id,
+                'branch_id'       => $branchId,
+                'delta'           => $delta,
+                'reason'          => $reason, // 'staff_meal' | 'waste'
+                'reference_type'  => 'user',
+                'reference_id'    => $userId,
+                'idempotency_key' => $idempotencyKey,
+                'created_at'      => now(),
+            ]);
+
+            $this->syncAvailabilityAfterExternalMutation($level, $branchId);
+
+            return true;
+        });
+    }
+
     private function dispatchAvailabilityChanged(ItemAvailabilityChanged $event): void
     {
         ItemAvailabilityChanged::dispatch(

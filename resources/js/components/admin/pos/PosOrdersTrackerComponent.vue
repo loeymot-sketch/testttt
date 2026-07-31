@@ -59,6 +59,17 @@
                         <span>{{ src.label }}</span>
                     </button>
                 </div>
+                <!-- [OWNER REPAS-PERSONNEL/PERTES 2026-07-31] Ouvre la modale de sortie de stock hors-vente. -->
+                <button
+                    type="button"
+                    class="pos-tracker-history-link"
+                    @click="stockOutflowOpen = true"
+                    title="Enregistrer un repas personnel ou une perte (sortie de stock)"
+                    data-testid="pos-tracker-outflow"
+                >
+                    <i class="fa-solid fa-utensils" aria-hidden="true"></i>
+                    <span>Sortie stock</span>
+                </button>
                 <router-link
                     :to="{ name: 'admin.historique.list' }"
                     class="pos-tracker-history-link"
@@ -461,6 +472,9 @@
             @confirmed="onEncaisseConfirmed"
             @cancel="encaisseOrder = null"
         />
+
+        <!-- [OWNER REPAS-PERSONNEL/PERTES 2026-07-31] Sortie de stock hors-vente. -->
+        <PosStockOutflowModal :open="stockOutflowOpen" @close="stockOutflowOpen = false" />
     </section>
 </template>
 
@@ -477,6 +491,7 @@ import ReceiptComponent from './ReceiptComponent.vue';
 // dead button: it only dispatched an un-listened CustomEvent).
 import PosCounterCollectModal from './PosCounterCollectModal.vue';
 import PosSystemHealthPill from './PosSystemHealthPill.vue';
+import PosStockOutflowModal from './PosStockOutflowModal.vue';
 // [WT-D-R1-F4 2026-05-20] Shared admin FR EUR price formatter — canonical
 // "19,00 €" rendering shared with PosOrderList / PosOrderShow.
 import { adminPriceMixin } from '../../../helpers/formatPrice';
@@ -515,11 +530,13 @@ const AGE_URGENT_MIN = 10;
  */
 export default {
     name: 'PosOrdersTrackerComponent',
-    components: { ConnectionStatusBanner, ReceiptComponent, PosCounterCollectModal, PosSystemHealthPill },
+    components: { ConnectionStatusBanner, ReceiptComponent, PosCounterCollectModal, PosSystemHealthPill, PosStockOutflowModal },
     mixins: [adminPriceMixin],
     data() {
         return {
             loading: false,
+            // [OWNER REPAS-PERSONNEL/PERTES 2026-07-31] Modale sortie de stock hors-vente.
+            stockOutflowOpen: false,
             orders: [],
             filters: {
                 query: '',

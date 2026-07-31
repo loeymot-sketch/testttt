@@ -936,6 +936,15 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('/system-health', \App\Http\Controllers\Admin\PosSystemHealthController::class)
             ->middleware(['permission:pos', 'throttle:pos-order-update'])
             ->name('system-health');
+
+        // [OWNER REPAS-PERSONNEL/PERTES 2026-07-31] Sorties de stock hors-vente (repas personnel /
+        // perte) depuis la caisse : trace horodatée + décrément du stock direct. permission:pos.
+        Route::get('/stock-outflow/items', [\App\Http\Controllers\Admin\PosStockOutflowController::class, 'items'])
+            ->middleware('permission:pos')->name('stock-outflow.items');
+        Route::get('/stock-outflow/recent', [\App\Http\Controllers\Admin\PosStockOutflowController::class, 'recent'])
+            ->middleware('permission:pos')->name('stock-outflow.recent');
+        Route::post('/stock-outflow', [\App\Http\Controllers\Admin\PosStockOutflowController::class, 'store'])
+            ->middleware(['permission:pos', 'throttle:pos-order-update', 'idempotency'])->name('stock-outflow.store');
         Route::post('/counter-collect/{order}/confirm', function (\App\Models\Order $order, \Illuminate\Http\Request $request) {
             abort_unless(auth()->user()?->can('pos'), 403);
 
