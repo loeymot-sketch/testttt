@@ -103,7 +103,16 @@ class OrderStatusScreenController extends AdminController
             // path for "non-admin user with branch_id <= 0" would `abort(403)`,
             // so we must bypass the service's auth-aware resolver here.
             // Build the query directly with the resolved branch.
-            $rows = $this->orderStatusScreenOrderService->listForBranch($branchId);
+            // [PERF SYNC 2026-07-31] Micro-cache 3s. Le mur public poll toutes les 5s, souvent
+            // plusieurs ecrans + le widget POS sur la MEME branche → sans cache, chaque tick recalcule
+            // la requete Order complete. Staleness bornee 3s (< intervalle poll), auto-expirante, AUCUNE
+            // invalidation a cabler (contrairement a un cache long). CDSOrderDetailsResource = colonnes
+            // simples (id/serial/token/queue/type/status, 0 relation) → collection serialisable sans piege.
+            $rows = \Illuminate\Support\Facades\Cache::remember(
+                "oss:public:branch:{$branchId}",
+                3,
+                fn () => $this->orderStatusScreenOrderService->listForBranch($branchId)
+            );
             return CDSOrderDetailsResource::collection($rows);
         } catch (HttpException $http) {
             throw $http;

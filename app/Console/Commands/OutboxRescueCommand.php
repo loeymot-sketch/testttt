@@ -45,6 +45,10 @@ class OutboxRescueCommand extends Command
                 });
             })
             ->where('attempts', '<', 5)
+            // [PERF SYNC 2026-07-31] Cap symetrique a OutboxRetryFailedCommand::BATCH_CAP (500). En
+            // regime nominal = 0 ligne ; apres une panne worker, evite d'enfiler des milliers de jobs
+            // d'un coup sur la file high — l'overflow draine au tick minute suivant (lissage recovery).
+            ->take(500)
             ->get();
 
         foreach ($events as $event) {
