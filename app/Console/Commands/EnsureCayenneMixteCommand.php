@@ -12,11 +12,11 @@ use Illuminate\Support\Facades\Schema;
  *   1. « Mixte (hachée + poulet) » = un CHOIX DE VIANDE GRATUIT (price 0), pas un supplément.
  *      L'owner : « viande en plus de ce qui est inclus = payant, MAIS le Cayenne mixte gratuit
  *      comme un choix de viande ». → variation attr1 « Viande 1 » @0, visible_on=null (borne+caisse+web).
- *   2. Backfill viande #22 : le Cayenne pain (#22) avait 0 variation viande en base alors que le
- *      web/borne affiche 7 viandes (pool partagé) → toute viande choisie était DROPPÉE au scellement
- *      (pickVariation ne trouvait rien). On copie les 7 viandes canoniques depuis le Cayenne galette
- *      (#24, même recette) @0.
- *   3. « Sans sauce » = un CHOIX DE SAUCE GRATUIT (price 0) dans l'étape sauce (attr5, min1) : le
+ *      Le Cayenne sandwich (#22) est mono-viande SIGNATURE (Poulet mariné, cf. web mkItem 101
+ *      viandes:0) : on lui donne un choix LIMITÉ [Poulet mariné (défaut), Mixte] — PAS un
+ *      build-your-own. La Galette Cayenne (#24) offre déjà son choix de 7 viandes → on ajoute
+ *      seulement « Mixte ».
+ *   2. « Sans sauce » = un CHOIX DE SAUCE GRATUIT (price 0) dans l'étape sauce (attr5, min1) : le
  *      client peut explicitement ne pas prendre de sauce.
  *
  * Money-path : tout @0 → rien à facturer (le surplus viande reste l'ItemExtra « Viande supplémentaire »
@@ -33,6 +33,9 @@ class EnsureCayenneMixteCommand extends Command
     public const MIXTE_NAME = 'Mixte (hachée + poulet)';
 
     public const SANS_SAUCE_NAME = 'Sans sauce';
+
+    /** Viande signature du Cayenne sandwich (#22) — reste le choix par défaut à côté de « Mixte ». */
+    public const SIGNATURE_MEAT = 'Poulet mariné';
 
     /** Attributs résolus par NOM (robuste aux ids ; le step wizard cible ces refs). */
     public const ATTR_VIANDE_1_NAME = 'Viande 1';
@@ -69,22 +72,32 @@ class EnsureCayenneMixteCommand extends Command
 
         foreach ($cayennes as $item) {
             if ($viandeAttrId !== null) {
-                // 2. Backfill viande si l'item n'a AUCUNE variation « Viande 1 » (cas #22 Cayenne pain).
-                $meatCount = DB::table('item_variations')
-                    ->where('item_id', $item->id)
-                    ->where('item_attribute_id', $viandeAttrId)
-                    ->whereNull('deleted_at')
-                    ->count();
+                // Le Cayenne « sandwich » (#22) est mono-viande SIGNATURE (Poulet mariné) — cf. web
+                // mkItem 101 viandes:0. L'owner veut y AJOUTER « Mixte » comme choix gratuit, PAS le
+                // transformer en build-your-own. → choix LIMITÉ [Poulet mariné (défaut), Mixte].
+                // La « Galette Cayenne » (#24) offre déjà son choix de 7 viandes (galette) → on ajoute
+                // seulement « Mixte » sans toucher au reste.
+                $isFixedMeatSandwich = ($item->name === 'Cayenne');
 
-                if ($meatCount === 0) {
-                    $created += self::backfillMeatsFromSibling($item->id, $viandeAttrId, $dryRun);
+                if ($isFixedMeatSandwich) {
+                    $created += self::ensureVariation($item->id, $viandeAttrId, self::SIGNATURE_MEAT, $dryRun);
                 }
-
-                // 1. « Mixte (hachée + poulet) » @0 dans Viande 1.
+                // « Mixte (hachée + poulet) » @0 dans Viande 1 (choix de viande gratuit, pas supplément).
                 $created += self::ensureVariation($item->id, $viandeAttrId, self::MIXTE_NAME, $dryRun);
+
+                if ($isFixedMeatSandwich && ! $dryRun) {
+                    // Nettoie tout autre choix de viande (répare un backfill 7-viandes trop large) →
+                    // ne garde que la signature + Mixte. Soft-delete (réversible, jamais commandé).
+                    DB::table('item_variations')
+                        ->where('item_id', $item->id)
+                        ->where('item_attribute_id', $viandeAttrId)
+                        ->whereNotIn('name', [self::SIGNATURE_MEAT, self::MIXTE_NAME])
+                        ->whereNull('deleted_at')
+                        ->update(['deleted_at' => now()]);
+                }
             }
 
-            // 3. « Sans sauce » @0 dans l'étape sauce.
+            // « Sans sauce » @0 dans l'étape sauce.
             if ($sauceAttrId !== null) {
                 $created += self::ensureVariation($item->id, $sauceAttrId, self::SANS_SAUCE_NAME, $dryRun);
             }
@@ -98,45 +111,6 @@ class EnsureCayenneMixteCommand extends Command
         $id = DB::table('item_attributes')->where('name', $name)->value('id');
 
         return $id !== null ? (int) $id : null;
-    }
-
-    /**
-     * Copie les 7 viandes canoniques depuis un item frère (même liste, price 0). Source : un item
-     * ACTIF portant des variations « Viande 1 » distinctes de « Mixte » (ex. Galette Cayenne #24,
-     * Méga #104). Aucune invention : on réplique une liste existante de la carte.
-     */
-    private static function backfillMeatsFromSibling(int $targetItemId, int $viandeAttrId, bool $dryRun): int
-    {
-        $sibling = DB::table('item_variations as v')
-            ->join('items as i', 'i.id', '=', 'v.item_id')
-            ->where('v.item_attribute_id', $viandeAttrId)
-            ->where('v.name', '!=', self::MIXTE_NAME)
-            ->where('i.status', Status::ACTIVE)
-            ->whereNull('v.deleted_at')
-            ->whereNull('i.deleted_at')
-            ->where('v.item_id', '!=', $targetItemId)
-            ->select('v.item_id')
-            ->groupBy('v.item_id')
-            ->orderByRaw('COUNT(*) DESC')
-            ->first();
-
-        if (! $sibling) {
-            return 0;
-        }
-
-        $meats = DB::table('item_variations')
-            ->where('item_id', $sibling->item_id)
-            ->where('item_attribute_id', $viandeAttrId)
-            ->where('name', '!=', self::MIXTE_NAME)
-            ->whereNull('deleted_at')
-            ->get();
-
-        $created = 0;
-        foreach ($meats as $m) {
-            $created += self::ensureVariation($targetItemId, $viandeAttrId, $m->name, $dryRun, $m->image_path ?? null);
-        }
-
-        return $created;
     }
 
     /**
