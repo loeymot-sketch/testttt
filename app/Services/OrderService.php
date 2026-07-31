@@ -1797,7 +1797,9 @@ class OrderService
             } else {
                 $this->assertOrderBranchVisible($order);
 
-                return $order;
+                // [PERF N+1 2026-07-31] Eager-load des relations lues par OrderDetailsResource
+                // (detail/impression caisse via PosOrderController) — sinon ~9 requetes lazy par affichage.
+                return $order->loadMissing(['orderItems.orderItem', 'user', 'address', 'branch', 'deliveryBoy', 'coupon', 'transaction', 'diningTable', 'payments']);
             }
         } catch (HttpException $exception) {
             throw $exception;

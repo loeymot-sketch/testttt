@@ -546,6 +546,13 @@ export default {
             newReadyIds: new Set(),
             _eventSub: null,
             _pollTimer: null,
+            // [PERF SYNC 2026-07-31] Debounce trailing + garde in-flight. Les events WS
+            // (OrderCreated/OrderStatusChanged/OrderPaidAtCounter) arrivent en rafale — un seul
+            // encaissement emet StatusChanged ET PaidAtCounter → sans coalescing, 2 fetchOrders
+            // complets (per_page 100) par geste, ~5-6 par cycle de vie. Mirroir du _debouncedRefresh KDS.
+            _refreshTimeout: null,
+            _fetchInFlight: false,
+            _refetchQueued: false,
             _onWsConnected: null,
             _onWsDisconnected: null,
             realtimeConnected: !!(window._wsService?.isConnected()),
@@ -870,7 +877,7 @@ export default {
                 // `lastEventAt` — the ONLY proof that the realtime pipe (queue
                 // worker → soketi → Echo) is actually alive end-to-end.
                 this._eventSub = onEvents(branchId, [
-                    { broadcastAs: 'OrderCreated', handler: () => { this._noteRealtimeEvent(); this.fetchOrders(); } },
+                    { broadcastAs: 'OrderCreated', handler: () => { this._noteRealtimeEvent(); this._debouncedFetch(); } },
                     {
                         broadcastAs: 'OrderStatusChanged',
                         handler: (event) => {
@@ -881,10 +888,10 @@ export default {
                             if (newStatus === orderStatusEnum.PREPARED && oid) {
                                 this._markFresh(oid);
                             }
-                            this.fetchOrders();
+                            this._debouncedFetch();
                         },
                     },
-                    { broadcastAs: 'OrderPaidAtCounter', handler: () => { this._noteRealtimeEvent(); this.fetchOrders(); } },
+                    { broadcastAs: 'OrderPaidAtCounter', handler: () => { this._noteRealtimeEvent(); this._debouncedFetch(); } },
                 ]);
             } catch (e) {
                 /* echo auth failed — polling fallback */
@@ -995,7 +1002,16 @@ export default {
             if (mins < AGE_AGING_MIN) return '';
             return `${this._tOr('pos.tracker.age_ago', 'il y a')} ${mins} min`;
         },
+        _debouncedFetch() {
+            // [PERF SYNC 2026-07-31] Collapse une rafale d'events WS en un seul fetch (trailing 250ms).
+            if (this._refreshTimeout) clearTimeout(this._refreshTimeout);
+            this._refreshTimeout = setTimeout(() => { this._refreshTimeout = null; this.fetchOrders(); }, 250);
+        },
         async fetchOrders() {
+            // [PERF SYNC 2026-07-31] Garde in-flight : si un fetch tourne deja, memoriser la demande
+            // et rejouer un seul fetch au retour (etat le plus recent) au lieu d'un doublon concurrent.
+            if (this._fetchInFlight) { this._refetchQueued = true; return; }
+            this._fetchInFlight = true;
             this.loading = this.orders.length === 0;
             try {
                 const today = this._todayRange();
@@ -1062,6 +1078,8 @@ export default {
                 /* surface error sparingly to avoid alert fatigue */
             } finally {
                 this.loading = false;
+                this._fetchInFlight = false;
+                if (this._refetchQueued) { this._refetchQueued = false; this._debouncedFetch(); }
             }
         },
         _todayRange() {

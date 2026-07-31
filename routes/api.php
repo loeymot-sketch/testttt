@@ -847,7 +847,10 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             // pos-origin counter-deferred orders (source_surface='pos' +
             // COUNTER_DEFERRED). With the flag OFF, no pos order is deferred so the
             // result set is unchanged.
-            $query = \App\Models\Order::with(['orderItems.orderItem'])
+            // [PERF N+1 2026-07-31] Eager-load des relations lues par OrderDetailsResource
+            // (user/address/branch/deliveryBoy/coupon/transaction/diningTable/payments) — sinon
+            // ~9 requetes lazy PAR commande a chaque tick de polling (cap 200 → jusqu'a ~1800).
+            $query = \App\Models\Order::with(['orderItems.orderItem', 'user', 'address', 'branch', 'deliveryBoy', 'coupon', 'transaction', 'diningTable', 'payments'])
                 ->where('payment_status', \App\Enums\PaymentStatus::PENDING_COUNTER)
                 // [ENCAISSEMENT-ROBUSTE 2026-07-01] Une commande ANNULÉE ne doit jamais rester
                 // dans la file d'encaissement (sinon « fantôme » qui 422 à l'encaissement).
@@ -917,7 +920,8 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('/web-orders/pending', function () {
             abort_unless(auth()->user()?->can('pos'), 403);
 
-            $query = \App\Models\Order::with(['orderItems.orderItem'])
+            // [PERF N+1 2026-07-31] Meme eager-load que counter-collect (relations OrderDetailsResource).
+            $query = \App\Models\Order::with(['orderItems.orderItem', 'user', 'address', 'branch', 'deliveryBoy', 'coupon', 'transaction', 'diningTable', 'payments'])
                 ->where('source_surface', 'web')
                 ->where('status', \App\Enums\OrderStatus::PENDING)
                 ->orderBy('created_at');

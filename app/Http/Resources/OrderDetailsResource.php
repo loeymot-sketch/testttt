@@ -120,7 +120,10 @@ class OrderDetailsResource extends JsonResource
             ] : null,
             'coupon' => new CouponResource($this->coupon),
             'transaction' => new TransactionResource($this->transaction),
-            'order_items' => OrderItemResource::collection($this->orderItems->load('orderItem')),
+            // [PERF N+1 2026-07-31] loadMissing (au lieu de load) : 0 requete quand le controleur a
+            // deja eager-loade orderItems.orderItem (files de polling), 1 requete batch sinon. `load`
+            // re-requetait TOUJOURS meme deja charge.
+            'order_items' => OrderItemResource::collection($this->orderItems->loadMissing('orderItem')),
             'table_name' => $this->diningTable?->name,
             'pos_payment_method' => $this->pos_payment_method,
             'pos_payment_note' => $this->pos_payment_note,
