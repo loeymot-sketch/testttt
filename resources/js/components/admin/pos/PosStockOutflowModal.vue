@@ -149,11 +149,15 @@ export default {
                     quantity: Number(this.form.quantity),
                     type: this.form.type,
                     note: this.form.note || null,
-                }, { headers: { 'X-Idempotency-Key': 'pso-' + Date.now() + '-' + Math.round(Math.random() * 1e6) } });
+                }, { headers: { 'X-Idempotency-Key': (this._idemKey || (this._idemKey = 'pso-' + Date.now() + '-' + Math.round(Math.random() * 1e6))) } });
                 if (res && res.data && res.data.outflow) {
                     this.recent.unshift(res.data.outflow);
                     this.recent = this.recent.slice(0, 50);
                 }
+                // [SEC MISSION-12 2026-07-31] Clé idempotente STABLE tant que la sortie n'a pas abouti :
+                // un rejeu (réponse réseau perdue) réutilise la même clé → le middleware rejoue au lieu de
+                // re-décrémenter. Effacée au succès pour que la sortie SUIVANTE ait une clé fraîche.
+                this._idemKey = null;
                 // reset (garde le motif choisi pour des saisies en série)
                 this.search = '';
                 this.form.quantity = 1;

@@ -132,15 +132,33 @@ class GuestSignupController extends Controller
                     ->where('phone', $request->post('phone'))
                     ->where('is_guest', Ask::YES)
                     ->first();
-                $deliverTo = ($existing && filled($existing->email)) ? $existing->email : $request->post('email');
+                // [SEC MISSION-1 2026-07-31] Résidu channel-confusion fermé (compte SANS email).
+                // - compte AVEC email → uniquement l'email LIÉ (correctif 07-30, inchangé).
+                // - compte téléphone-seul AYANT DE LA VALEUR (points fidélité OU commandes) → on NE
+                //   délivre PAS vers l'email APPELANT : l'email-OTP prouve la possession de l'EMAIL,
+                //   pas du TÉLÉPHONE ; sinon un attaquant connaissant le numéro réclame le compte de
+                //   la victime (points = argent, PII). Aucun code livré pour lui — réponse générique
+                //   inchangée (anti-énumération). Le canal SMS otp() (preuve téléphone) n'est PAS affecté.
+                // - nouveau numéro OU compte vide (rien à voler) → l'email appelant est le canal légitime.
+                if ($existing && filled($existing->email)) {
+                    $deliverTo = $existing->email;
+                } elseif ($existing && (((int) ($existing->loyalty_points ?? 0) > 0)
+                    || \App\Models\Order::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+                        ->where('user_id', $existing->id)->exists())) {
+                    $deliverTo = null;
+                } else {
+                    $deliverTo = $request->post('email');
+                }
 
-                $ttlMinutes = max(1, (int) Settings::group('otp')->get('otp_expire_time') ?: 5);
-                Cache::put(
-                    'email_otp_email:'.$request->post('phone'),
-                    (string) $deliverTo,
-                    now()->addMinutes($ttlMinutes)
-                );
-                Mail::to($deliverTo)->send(new SignupOtpMail((string) $token, $ttlMinutes));
+                if (filled($deliverTo)) {
+                    $ttlMinutes = max(1, (int) Settings::group('otp')->get('otp_expire_time') ?: 5);
+                    Cache::put(
+                        'email_otp_email:'.$request->post('phone'),
+                        (string) $deliverTo,
+                        now()->addMinutes($ttlMinutes)
+                    );
+                    Mail::to($deliverTo)->send(new SignupOtpMail((string) $token, $ttlMinutes));
+                }
             }
 
             return response(['status' => true, 'message' => trans('all.message.check_your_email_for_code')]);

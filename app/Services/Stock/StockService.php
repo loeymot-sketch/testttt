@@ -213,14 +213,19 @@ class StockService
                 return true; // rejeu idempotent
             }
 
-            $delta = -1 * $quantity;
-            $level->forceFill(['on_hand' => (int) $level->on_hand + $delta])->save();
+            // [SEC MISSION-12 2026-07-31] Plancher à 0 : une sortie ne rend JAMAIS le stock négatif
+            // (comptes corrompus qui masquent un vol + item bloqué en rupture jusqu'à un réappro dépassant
+            // le négatif = déni d'availability). Le delta réellement appliqué = min(quantité, on_hand) ; la
+            // trace stock_outflows garde, elle, la quantité DEMANDÉE (intention du gérant).
+            $onHand = max(0, (int) $level->on_hand);
+            $delta = -1 * min($quantity, $onHand);
+            $level->forceFill(['on_hand' => $onHand + $delta])->save();
 
             StockMovement::query()->create([
                 'stock_level_id'  => $level->id,
                 'branch_id'       => $branchId,
                 'delta'           => $delta,
-                'reason'          => $reason, // 'staff_meal' | 'waste'
+                'reason'          => $reason, // motif canonique enum stock_movements : 'manual_out'
                 'reference_type'  => 'user',
                 'reference_id'    => $userId,
                 'idempotency_key' => $idempotencyKey,

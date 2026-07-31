@@ -51,6 +51,11 @@ return [
         'api/admin/pos/counter-collect/*/confirm',
         'api/admin/pos/counter-collect/*/cancel',
         'api/admin/pos/collect-kiosk-cash/*',
+        // [SEC MISSION-12 2026-07-31] Sortie de stock (repas perso / perte) : décrémente le stock →
+        // un rejeu réseau doit être idempotent (sinon double-décrément + double trace). La modale envoie
+        // déjà X-Idempotency-Key ; l'ajout ici active l'enforcement + rend verte la sentinelle CI
+        // IdempotencyRequiredRoutesCoverageTest (la route portait le middleware sans être couverte).
+        'api/admin/pos/stock-outflow',
         'api/admin/pos/orders/*/print-receipt',
         // [ULTRA-AUDIT 2026-07-02] Route print-kitchen porte le middleware `idempotency`
         // (routes/api.php) mais manquait dans required_routes → IdempotencyRequiredRoutesCoverageTest
