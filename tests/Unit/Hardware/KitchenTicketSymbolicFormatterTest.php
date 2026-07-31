@@ -115,6 +115,9 @@ class KitchenTicketSymbolicFormatterTest extends TestCase
         $meats = [
             'Mexicanos' => 'Mex', 'Cordon Bleu' => 'Cordon', 'Viande Hachée' => 'K',
             'Nuggets' => 'Nug', 'Tenders' => 'Tender', 'Fricadelle' => 'Frec', 'Poulet mariné' => 'P',
+            // [OWNER 2026-07-31] Le Cayenne « Mixte » (hachée + poulet) affiche les DEUX lettres,
+            // poulet en tête → « P K » (avant : « K » seul). Cuisine voit qu'il y a 2 viandes.
+            'Mixte (hachée + poulet)' => 'P K',
         ];
         foreach ($meats as $name => $sym) {
             $this->assertSame($sym, $this->f->meatSymbol($name), "viande $name");

@@ -82,13 +82,22 @@ final class KitchenTicketSymbolicFormatter
     public function meatSymbol(?string $name): string
     {
         $n = $this->norm($name);
+        // [OWNER 2026-07-31] Une viande « mixte » dont le NOM contient plusieurs viandes
+        // (ex. « Mixte (hachée + poulet) ») affiche TOUTES ses lettres, pas seulement la
+        // 1ère (avant : « K » seul car /hach/ matche en premier). Poulet (P) en tête si
+        // présent → « P K ». Contrat inchangé : 0 match = '', 1 viande = 1 lettre.
+        // Jumeau STRICT : resources/js/helpers/kdsSymbolic.js meatSymbol (parité ticket↔écran).
+        $syms = [];
         foreach (self::MEAT_TABLE as [$re, $sym]) {
-            if (preg_match($re, $n)) {
-                return $sym;
+            if (preg_match($re, $n) && ! in_array($sym, $syms, true)) {
+                $syms[] = $sym;
             }
         }
+        if (count($syms) > 1 && in_array('P', $syms, true)) {
+            $syms = array_merge(['P'], array_values(array_diff($syms, ['P'])));
+        }
 
-        return '';
+        return implode(' ', $syms);
     }
 
     public function sauceSymbol(?string $name): string

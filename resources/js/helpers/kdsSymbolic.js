@@ -83,10 +83,18 @@ const CRUDITE_ORDER = ['S', 'T', 'O', 'O̲'];
 
 export function meatSymbol(name) {
     const n = normalize(name);
+    // [OWNER 2026-07-31] Viande « mixte » dont le NOM contient plusieurs viandes (ex.
+    // « Mixte (hachée + poulet) ») → affiche TOUTES ses lettres, pas seulement la 1ère (« K »).
+    // Poulet (P) en tête si présent → « P K ». Contrat inchangé : 0 match = '', 1 viande = 1 lettre.
+    // Jumeau STRICT : app/Services/Hardware/KitchenTicketSymbolicFormatter::meatSymbol (PHP).
+    let syms = [];
     for (const [re, sym] of MEAT_TABLE) {
-        if (re.test(n)) return sym;
+        if (re.test(n) && !syms.includes(sym)) syms.push(sym);
     }
-    return '';
+    if (syms.length > 1 && syms.includes('P')) {
+        syms = ['P', ...syms.filter(s => s !== 'P')];
+    }
+    return syms.join(' ');
 }
 
 export function sauceSymbol(name) {

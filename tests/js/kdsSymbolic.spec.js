@@ -27,6 +27,9 @@ describe('symbol mappers — owner table', () => {
         expect(meatSymbol('Mexicanos')).toBe('Mex');
         expect(meatSymbol('Fricadelle')).toBe('Frec');
         expect(meatSymbol('Cordon Bleu')).toBe('Cordon');
+        // [OWNER 2026-07-31] Cayenne « Mixte » = hachée + poulet → les 2 lettres, poulet en tête « P K »
+        // (avant : « K » seul). Parité stricte avec KitchenTicketSymbolicFormatter (PHP).
+        expect(meatSymbol('Mixte (hachée + poulet)')).toBe('P K');
     });
     it('maps sauces', () => {
         expect(sauceSymbol('Mayonnaise')).toBe('MAY');
