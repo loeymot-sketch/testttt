@@ -111,6 +111,32 @@ class PosStockOutflowTest extends TestCase
         $this->assertDatabaseHas('stock_outflows', ['item_id' => $item->id, 'type' => 'waste', 'stock_decremented' => false]);
     }
 
+    /** @test [SUPERVISOR A4-P2 2026-07-31] Sortie sur un item à stock direct DÉJÀ à 0 → aucun décrément,
+     * AUCUN StockMovement bruit (delta=0), stock_decremented=false EXACT (pas le true trompeur). Trace conservée. */
+    public function test_outflow_on_zero_direct_stock_does_not_decrement_nor_write_noise_movement(): void
+    {
+        $item = $this->item('Coca 33cl');
+        $this->directStock($item->id, 0); // stock direct déjà épuisé
+        Sanctum::actingAs($this->cashier(), ['*']);
+
+        $res = $this->postJson('/api/admin/pos/stock-outflow', [
+            'item_id' => $item->id, 'quantity' => 2, 'type' => 'staff_meal',
+        ]);
+
+        // Trace créée mais stock_decremented = FALSE (rien décrémenté, on_hand était 0).
+        $res->assertStatus(201)->assertJsonPath('outflow.stock_decremented', false);
+        $this->assertDatabaseHas('stock_outflows', [
+            'item_id' => $item->id, 'quantity' => 2, 'type' => 'staff_meal', 'stock_decremented' => false,
+        ]);
+        // on_hand reste 0 (jamais négatif).
+        $this->assertSame(0, (int) StockLevel::withoutGlobalScopes()
+            ->where('stockable_type', Item::class)->where('stockable_id', $item->id)->value('on_hand'));
+        // AUCUN StockMovement (le delta=0 n'est PLUS écrit — ligne de bruit append-only évitée).
+        $levelId = StockLevel::withoutGlobalScopes()
+            ->where('stockable_type', Item::class)->where('stockable_id', $item->id)->value('id');
+        $this->assertDatabaseMissing('stock_movements', ['stock_level_id' => $levelId]);
+    }
+
     /** @test L'historique récent liste les sorties. */
     public function test_recent_lists_outflows(): void
     {

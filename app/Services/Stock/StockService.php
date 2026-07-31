@@ -219,6 +219,16 @@ class StockService
             // trace stock_outflows garde, elle, la quantité DEMANDÉE (intention du gérant).
             $onHand = max(0, (int) $level->on_hand);
             $delta = -1 * min($quantity, $onHand);
+
+            // [SUPERVISOR A4-P2 2026-07-31] on_hand déjà à 0 → rien à décrémenter (le plancher donne
+            // delta=0). On NE crée PAS de StockMovement delta=0 (ligne de bruit append-only INDÉLÉBILE
+            // via trigger) et on NE consomme PAS la clé d'idempotence — sinon un rejeu LÉGITIME après
+            // réappro renverrait true sans décrémenter. On retourne false → stock_decremented=false
+            // (EXACT) au lieu du true trompeur. La trace stock_outflows garde l'intention (côté contrôleur).
+            if ($delta === 0) {
+                return false;
+            }
+
             $level->forceFill(['on_hand' => $onHand + $delta])->save();
 
             StockMovement::query()->create([
