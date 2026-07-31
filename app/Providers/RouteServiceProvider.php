@@ -293,12 +293,23 @@ class RouteServiceProvider extends ServiceProvider
             $maxAttempts = max(1, (int) config('auth.login_lockout.max_attempts', 10));
             $decayMinutes = max(1, (int) config('auth.login_lockout.decay_minutes', 10));
 
-            return Limit::perMinutes($decayMinutes, $maxAttempts)->by($key)->response(function () use ($decayMinutes) {
+            $tooMany = function () use ($decayMinutes) {
                 return response()->json([
                     'message' => 'Too many login attempts. Please try again later.',
                     'retry_after' => $decayMinutes * 60,
                 ], 429);
-            });
+            };
+
+            // [SEC MISSION-31 2026-07-31] Plafond GLOBAL (toutes IP confondues) EN PLUS du par-(email|IP).
+            // TrustProxies='*' rend le limiteur par-IP contournable via X-Forwarded-For (rotation = bucket
+            // neuf à chaque requête) → brute-force login ILLIMITÉ sur un compte connu. Miroir exact du
+            // pattern déjà appliqué aux PIN Carnet/Stock (daily-book-pin/mobile-stock-pin) : le plafond
+            // global ferme le vecteur de spoofing. 30/min = large pour l'usage humain légitime (mono-resto,
+            // quelques logins/h), borne le brute-force distribué.
+            return [
+                Limit::perMinutes($decayMinutes, $maxAttempts)->by($key)->response($tooMany),
+                Limit::perMinute(30)->by('login-global')->response($tooMany),
+            ];
         });
     }
 

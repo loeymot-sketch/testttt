@@ -1013,6 +1013,31 @@ class FrontendOrderService
             return;
         }
 
+        // [SEC MISSION-28/30 2026-07-31] Anti-vol de points (IDOR). Le débit FRAIS ci-dessous débite le
+        // compte porteur du `loyalty_code` fourni par l'APPELANT. Sans garde, un attaquant connaissant le
+        // code d'une victime (imprimé sur reçus/QR) la débite (points=argent, remise NF525). C'est l'IDOR
+        // DÉJÀ fermé sur /api/frontend/loyalty/redeem (KioskMachine OU propriétaire OU staff) mais JAMAIS
+        // miroité ici. On applique le MÊME discriminateur ; sinon aucune remise (return, plein tarif).
+        // La borne (compte machine) passe par isKiosk ; le propriétaire redeem son propre code ; le staff POS.
+        $callerId = (int) (Auth::id() ?? 0);
+        $isKioskCaller = $callerId > 0 && \App\Models\KioskMachine::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+            ->where('user_id', $callerId)->exists();
+        $isOwnerCaller = $callerId > 0 && (int) $loyaltyUser->id === $callerId;
+        $isStaffCaller = Auth::user()?->hasAnyRole(['Admin', 'Branch Manager', 'POS Operator', 'Stuff']) ?? false;
+        if (! $isKioskCaller && ! $isOwnerCaller && ! $isStaffCaller) {
+            Log::warning('[Loyalty] Débit code étranger REFUSÉ (chemin création commande) — IDOR bloqué (Mission-28)', [
+                'caller_id' => $callerId,
+                'loyalty_user_id' => $loyaltyUser->id,
+            ]);
+
+            // Rejet DUR (422) + rollback de la commande : l'appelant ne peut pas utiliser un code
+            // fidélité dont il n'est ni le propriétaire, ni la borne, ni le staff. Aucun point brûlé.
+            throw new \InvalidArgumentException(
+                'Ce code fidélité ne peut pas être utilisé sur cette commande.',
+                422
+            );
+        }
+
         $balanceAfter = (int) $loyaltyUser->loyalty_points - $pointsRequired;
 
         DB::table('users')

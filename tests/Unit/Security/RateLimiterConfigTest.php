@@ -183,13 +183,17 @@ class RateLimiterConfigTest extends TestCase
         );
 
         $request = Request::create('/api/auth/login', 'POST', ['email' => 'abuse@example.com']);
-        $limit = $resolver($request);
+        $limits = $resolver($request);
 
-        $this->assertInstanceOf(Limit::class, $limit);
+        // [SEC MISSION-31 2026-07-31] Le limiteur renvoie désormais un ARRAY : couche par-(email|IP) +
+        // plafond GLOBAL (ferme le bypass X-Forwarded-For sous TrustProxies='*'). Miroir des limiteurs PIN.
+        $limits = is_array($limits) ? $limits : [$limits];
+        $this->assertGreaterThanOrEqual(2, count($limits), 'login-lockout doit avoir une couche par-clé + un plafond global (anti XFF-spoof)');
+        $this->assertContainsOnlyInstancesOf(Limit::class, $limits);
         $this->assertSame(
             max(1, (int) config('auth.login_lockout.max_attempts', 10)),
-            $limit->maxAttempts,
-            'login-lockout maxAttempts must match config(auth.login_lockout.max_attempts) (default 10 in prod)'
+            $limits[0]->maxAttempts,
+            'login-lockout maxAttempts (couche par-clé) must match config(auth.login_lockout.max_attempts) (default 10 in prod)'
         );
     }
 
