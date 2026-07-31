@@ -83,6 +83,19 @@ class IndexCoverageSentinel extends TestCase
         ]);
     }
 
+    /**
+     * [SUPERVISOR A1-P2 2026-07-31] Garde-fou DB anti-doublon du `sequence_no` des Z-reports — analogue
+     * au garde `orders_branch_fiscal_seq_unique`, créé dans `2026_04_22_000003_create_z_reports_table:62`.
+     * Sans cette sentinelle, une future migration le supprimant ne casserait AUCUN test rouge : l'invariant
+     * NF525 « séquence Z monotone gap-free par branche » perdrait sa dernière ligne de défense DB.
+     */
+    public function test_z_reports_sequence_unique_exists(): void
+    {
+        $this->assertUniqueIndexExists('z_reports', 'z_reports_branch_sequence_unique', [
+            'branch_id', 'sequence_no',
+        ]);
+    }
+
     /* ---------------------------------------------------------------------
      * audit_logs — NF525-frozen chain. Read-side index DDL requires LOCK
      * plan per CLAUDE.md §7. These indexes ARE production-validated.
