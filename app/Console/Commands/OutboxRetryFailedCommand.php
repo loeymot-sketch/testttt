@@ -103,6 +103,12 @@ class OutboxRetryFailedCommand extends Command
             ->failed(5)
             ->where('attempts', '<', self::REPLAY_MAX_ATTEMPTS)
             ->where('created_at', '>=', $cutoff)
+            // [SEC MISSION-27 2026-07-31] Exclure les events POISON (contract_violation) — voir
+            // OutboxRescueCommand : chaque re-dispatch ecrivait un audit_log NF525 outbox.replay inutile.
+            // Miroir de HealthController::checkQueueWorker.
+            ->where(function ($q) {
+                $q->whereNull('last_error')->orWhere('last_error', 'not like', 'contract_violation%');
+            })
             ->orderBy('id') // deterministic order ⇒ overflow is the same tail each run
             ->take(self::BATCH_CAP)
             ->get();

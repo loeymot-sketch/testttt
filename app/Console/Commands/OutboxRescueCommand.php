@@ -45,6 +45,13 @@ class OutboxRescueCommand extends Command
                 });
             })
             ->where('attempts', '<', 5)
+            // [SEC MISSION-27 2026-07-31] Exclure les events POISON (contract_violation) : DispatchDomainEventsJob
+            // les fail() DELIBEREMENT (non-retry-recoverable). Sans ce filtre, rescue+retry les re-dispatchent
+            // jusqu'a attempts=5 => ~broadcasts perdus + lignes audit-chain NF525 inutiles. Miroir exact de
+            // HealthController::checkQueueWorker (qui les exclut deja de son compteur de backlog).
+            ->where(function ($q) {
+                $q->whereNull('last_error')->orWhere('last_error', 'not like', 'contract_violation%');
+            })
             // [PERF SYNC 2026-07-31] Cap symetrique a OutboxRetryFailedCommand::BATCH_CAP (500). En
             // regime nominal = 0 ligne ; apres une panne worker, evite d'enfiler des milliers de jobs
             // d'un coup sur la file high — l'overflow draine au tick minute suivant (lissage recovery).

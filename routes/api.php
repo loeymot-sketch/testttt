@@ -196,7 +196,7 @@ Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name
     Route::prefix('signup')->name('signup.')->group(function () {
         // [GAP-20-2] OTP send: 5/min (was 10) — limits SMS flood.
         Route::post('/otp', [SignupController::class, 'otp'])
-            ->middleware('throttle:5,1');
+            ->middleware('throttle:otp-send'); // [SEC MISSION-31] par-identifiant + plafond global (anti XFF-spoof)
         // [GAP-20-2] OTP verify: 3 per 5 minutes — anti brute-force.
         Route::post('/verify', [SignupController::class, 'verify'])
             ->middleware('throttle:3,5');
@@ -207,12 +207,12 @@ Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name
     Route::prefix('guest-signup')->name('guest-signup.')->group(function () {
         // [GAP-20-2] OTP send: 5 per minute (was 10) — limits SMS flood abuse.
         Route::post('/otp', [GuestSignupController::class, 'otp'])
-            ->middleware('throttle:5,1');
+            ->middleware('throttle:otp-send'); // [SEC MISSION-31] par-identifiant + plafond global (anti XFF-spoof)
         // [WAVE C EMAIL-OTP 2026-07-28] Canal EMAIL du code signup (mandat owner :
         // pas de SMS). Même throttle strict que /otp — endpoint public = vecteur
         // d'abus (spam email). Verify réutilise /verify ci-dessous, inchangé.
         Route::post('/email-otp', [GuestSignupController::class, 'emailOtp'])
-            ->middleware('throttle:5,1');
+            ->middleware('throttle:otp-send'); // [SEC MISSION-31] par-identifiant + plafond global (anti XFF-spoof)
         // [GAP-20-2] OTP verify: 3 per 5 minutes — prevents brute-force of 4-digit codes.
         // A 4-digit OTP has 10,000 combinations; at 3 attempts/5min the attacker needs
         // ~2,778 hours to exhaust all codes, well beyond the 5-minute expiry window.

@@ -80,6 +80,21 @@ class RouteServiceProvider extends ServiceProvider
             ];
         });
 
+        // [SEC MISSION-31 2026-07-31] Anti-flood OTP/inscription. Le throttle par-IP (5/1) est contournable
+        // via X-Forwarded-For (TrustProxies='*') → un attaquant envoie des SMS/e-mails OTP illimités (coût
+        // Brevo + harcèlement d'une victime en fixant son phone/email). On GARDE le 5/min PAR-IDENTIFIANT
+        // (phone|email, = ancien comportement) ET on AJOUTE un plafond GLOBAL (20/min toutes IP), miroir des
+        // limiteurs PIN — c'est le plafond global qui FERME le vecteur de spoofing (le vrai correctif).
+        RateLimiter::for('otp-send', function (Request $request) {
+            $raw = $request->input('phone') ?: $request->input('email') ?: 'anon';
+            $id = Str::lower(is_string($raw) ? $raw : 'anon');
+
+            return [
+                Limit::perMinute(5)->by('otp-id:'.$id),
+                Limit::perMinute(20)->by('otp-send-global'),
+            ];
+        });
+
         RateLimiter::for('kiosk-orders', function (Request $request) {
             $userKey = $request->user()?->id ?? 'guest';
 
