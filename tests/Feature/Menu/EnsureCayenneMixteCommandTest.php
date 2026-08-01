@@ -51,12 +51,20 @@ class EnsureCayenneMixteCommandTest extends TestCase
 
         EnsureCayenneMixteCommand::ensure(false);
 
-        // Choix de viande = EXACTEMENT [Poulet mariné, Mixte] (pas de build-your-own).
+        // [OWNER 2026-08-01] Choix de viande = EXACTEMENT 3 (pas de build-your-own) :
+        // Poulet mariné (défaut) · Mixte · Viande Hachée.
         $this->assertSame(
-            ['Mixte (hachée + poulet)', 'Poulet mariné'],
+            ['Mixte (hachée + poulet)', 'Poulet mariné', 'Viande Hachée'],
             $this->activeMeatNames($cayenne->id, $viande->id),
-            'Le Cayenne doit offrir uniquement Poulet mariné (défaut) + Mixte'
+            'Le Cayenne doit offrir exactement 3 choix : Poulet mariné, Mixte, Viande Hachée'
         );
+
+        $hachee = DB::table('item_variations')->where('item_id', $cayenne->id)
+            ->where('item_attribute_id', $viande->id)->where('name', EnsureCayenneMixteCommand::HACHEE_NAME)->first();
+        $this->assertNotNull($hachee, 'Le Cayenne doit exposer « Viande Hachée »');
+        $this->assertEquals(0.0, (float) $hachee->price, 'La Viande Hachée est un CHOIX gratuit, pas un supplément');
+        $this->assertSame(['pos'], json_decode((string) $hachee->visible_on, true),
+            'Le choix Viande Hachée doit être visible_on=[pos] (caisse), jamais borne');
 
         $mixte = DB::table('item_variations')->where('item_id', $cayenne->id)
             ->where('item_attribute_id', $viande->id)->where('name', EnsureCayenneMixteCommand::MIXTE_NAME)->first();
@@ -91,10 +99,41 @@ class EnsureCayenneMixteCommandTest extends TestCase
         EnsureCayenneMixteCommand::ensure(false);
 
         $this->assertSame(
-            ['Mixte (hachée + poulet)', 'Poulet mariné'],
+            ['Mixte (hachée + poulet)', 'Poulet mariné', 'Viande Hachée'],
             $this->activeMeatNames($cayenne->id, $viande->id),
-            'Les 6 viandes en trop doivent être soft-delete, seuls Poulet + Mixte restent actifs'
+            'Les viandes en trop sont soft-delete ; Poulet + Mixte + Viande Hachée restent actifs'
         );
+    }
+
+    /**
+     * [OWNER 2026-08-01] Régression : « Viande Hachée » avait été soft-supprimée du Cayenne par les
+     * passages précédents (nettoyage whereNotIn). Le nouveau passage doit RESSUSCITER cette ligne,
+     * pas en insérer une seconde à côté de la ligne morte.
+     *
+     * @test
+     */
+    public function ressuscite_la_viande_hachee_soft_supprimee_sans_creer_de_doublon(): void
+    {
+        $cat = ItemCategory::factory()->create(['name' => 'Sandwichs']);
+        $viande = ItemAttribute::factory()->create(['name' => 'Viande 1']);
+        ItemAttribute::factory()->create(['name' => 'Sauce (1ère Gratuite)']);
+
+        $cayenne = Item::factory()->create(['name' => 'Cayenne', 'item_category_id' => $cat->id, 'status' => Status::ACTIVE]);
+        $this->seedVariation($cayenne->id, $viande->id, EnsureCayenneMixteCommand::HACHEE_NAME);
+        DB::table('item_variations')->where('item_id', $cayenne->id)
+            ->where('item_attribute_id', $viande->id)
+            ->where('name', EnsureCayenneMixteCommand::HACHEE_NAME)
+            ->update(['deleted_at' => now()]);
+
+        EnsureCayenneMixteCommand::ensure(false);
+
+        $rows = DB::table('item_variations')->where('item_id', $cayenne->id)
+            ->where('item_attribute_id', $viande->id)
+            ->where('name', EnsureCayenneMixteCommand::HACHEE_NAME)->get();
+        $this->assertCount(1, $rows, 'Une SEULE ligne « Viande Hachée » — la morte est ressuscitée, pas doublée');
+        $this->assertNull($rows->first()->deleted_at, 'La ligne doit être vivante');
+        $this->assertSame(['pos'], json_decode((string) $rows->first()->visible_on, true),
+            'Et caisse-only comme les deux autres choix');
     }
 
     /** @test */
