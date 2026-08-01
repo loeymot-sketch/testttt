@@ -72,10 +72,13 @@ class EnsureCayenneMixteCommandTest extends TestCase
         // [OWNER 2026-08-01] Le choix Mixte est CAISSE-ONLY : la borne ne le voit pas (comme avant).
         $this->assertSame(['pos'], json_decode((string) $mixte->visible_on, true),
             'Le choix Mixte doit être visible_on=[pos] (caisse), jamais borne');
+        // [INCIDENT BORNE 2026-08-01] La viande SIGNATURE doit rester visible PARTOUT. Tout cacher
+        // laissait la borne avec une étape OBLIGATOIRE à 0 option (min_select vit sur l'ATTRIBUT) :
+        // « Sélectionnez au moins 1 Viande 1 (actuel : 0) » → panier borne invalidable en production.
         $poulet = DB::table('item_variations')->where('item_id', $cayenne->id)
             ->where('item_attribute_id', $viande->id)->where('name', EnsureCayenneMixteCommand::SIGNATURE_MEAT)->first();
-        $this->assertSame(['pos'], json_decode((string) $poulet->visible_on, true),
-            'Sur le Cayenne sandwich, Poulet mariné aussi caisse-only → borne sans étape viande');
+        $this->assertNull($poulet->visible_on,
+            'Poulet mariné doit rester visible sur TOUTES les surfaces (borne + web + caisse) — sinon la borne bloque');
 
         $sansSauce = DB::table('item_variations')->where('item_id', $cayenne->id)
             ->where('item_attribute_id', $sauce->id)->where('name', EnsureCayenneMixteCommand::SANS_SAUCE_NAME)->first();
@@ -155,6 +158,50 @@ class EnsureCayenneMixteCommandTest extends TestCase
         $this->assertContains('Mixte (hachée + poulet)', $names, 'La Galette Cayenne reçoit « Mixte »');
         $this->assertContains('Fricadelle', $names, 'La Galette Cayenne garde son choix de viandes');
         $this->assertCount(8, $names, '7 viandes + Mixte');
+    }
+
+    /**
+     * [INCIDENT BORNE 2026-08-01] RÉGRESSION DE L'INCIDENT RÉEL.
+     *
+     * En production, un panier borne contenant un Cayenne était devenu invalidable :
+     * « Sélectionnez au moins 1 Viande 1 (actuel : 0) ». Cause : `min_select` est porté par
+     * l'ATTRIBUT (partagé), pas par le nombre de variations visibles sur la surface — donc rendre
+     * TOUTES les viandes `['pos']` laissait la borne avec une étape obligatoire sans option.
+     *
+     * Ce test vérifie l'invariant qui compte pour le client : la borne a TOUJOURS au moins une
+     * viande sélectionnable, et c'est le poulet.
+     *
+     * @test
+     */
+    public function la_borne_garde_toujours_au_moins_une_viande_selectionnable(): void
+    {
+        $cat = ItemCategory::factory()->create(['name' => 'Sandwichs']);
+        $viande = ItemAttribute::factory()->create(['name' => 'Viande 1', 'min_select' => 1]);
+        ItemAttribute::factory()->create(['name' => 'Sauce (1ère Gratuite)']);
+
+        $cayenne = Item::factory()->create(['name' => 'Cayenne', 'item_category_id' => $cat->id, 'status' => Status::ACTIVE]);
+
+        EnsureCayenneMixteCommand::ensure(false);
+
+        $meats = DB::table('item_variations')->where('item_id', $cayenne->id)
+            ->where('item_attribute_id', $viande->id)->whereNull('deleted_at')->get(['name', 'visible_on']);
+
+        $kioskVisible = $meats->filter(function ($m) {
+            if ($m->visible_on === null || $m->visible_on === '') {
+                return true;
+            }
+            $s = json_decode((string) $m->visible_on, true);
+
+            return ! is_array($s) || in_array('kiosk', $s, true);
+        })->pluck('name')->values()->all();
+
+        $this->assertNotEmpty($kioskVisible,
+            'La borne DOIT garder au moins une viande sélectionnable, sinon le panier est invalidable');
+        $this->assertSame([EnsureCayenneMixteCommand::SIGNATURE_MEAT], $kioskVisible,
+            'Et cette viande est le poulet : borne + site web = toujours poulet, un seul choix');
+
+        // La caisse, elle, garde bien les 3.
+        $this->assertCount(3, $meats, 'La caisse conserve Poulet mariné + Mixte + Viande Hachée');
     }
 
     /** @test */
