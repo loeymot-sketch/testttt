@@ -125,19 +125,27 @@ class EnsureCayenneMixteCommand extends Command
                         ->update(['deleted_at' => now()]);
                 }
 
-                // [OWNER 2026-08-01] Le CHOIX de viande Mixte est CAISSE-ONLY : la BORNE reste SANS
-                // choix de viande (comme avant). visible_on=['pos'] → KioskMenuService isVisibleOn('kiosk')
-                // = false (exclu borne), caisse (ItemController surface='pos') = true. #22 Cayenne
-                // (mono-viande) : Poulet mariné + Mixte tous deux caisse-only → borne = 0 variation
-                // viande = pas d'étape. #24 Galette (vrai choix de 7 viandes sur toutes surfaces) : SEUL
-                // « Mixte » devient caisse-only, les 7 autres restent visibles borne+web.
-                // [OWNER 2026-08-01] « Viande Hachée » rejoint les choix CAISSE-ONLY du #22 : la borne
-                // garde 0 variation viande visible → toujours aucune étape viande sur la borne, exactement
-                // comme avant. Sur la Galette #24 (vrai choix de 7 viandes), « Viande Hachée » fait partie
-                // des 7 et reste visible borne+web — on ne l'ajoute donc PAS à la liste caisse-only.
+                // ═══════════════════════════════════════════════════════════════════════════════
+                // [INCIDENT BORNE 2026-08-01] Les choix SUPPLÉMENTAIRES de viande sont CAISSE-ONLY,
+                // mais la viande SIGNATURE doit rester visible PARTOUT.
+                //
+                // Ce qui s'est passé : rendre TOUTES les viandes du #22 `visible_on=['pos']` laissait
+                // la borne avec une étape OBLIGATOIRE à ZÉRO option — parce que `min_select` est porté
+                // par l'ATTRIBUT « Viande 1 » (app/Models/ItemAttribute.php, colonne partagée par tous
+                // les items), PAS par le nombre de variations visibles sur la surface. Résultat en
+                // production : « Sélectionnez au moins 1 Viande 1 (actuel : 0) » et **panier
+                // impossible à valider sur la borne**. On ne peut pas mettre min_select à 0 : l'attribut
+                // est partagé (Galette & co. perdraient leur choix obligatoire de viande).
+                //
+                // Règle désormais : sur un sandwich mono-viande, « Poulet mariné » reste visible sur
+                // TOUTES les surfaces (borne + web + caisse) → la borne a exactement 1 option, le client
+                // a TOUJOURS du poulet, et la contrainte min_select=1 est satisfaite. Seuls les choix
+                // EN PLUS (Mixte, Viande Hachée) sont réservés à la caisse.
+                // #24 Galette : inchangé, SEUL « Mixte » est caisse-only, les 7 viandes restent visibles.
+                // ═══════════════════════════════════════════════════════════════════════════════
                 if (! $dryRun) {
                     $posOnlyMeats = $isFixedMeatSandwich
-                        ? [self::SIGNATURE_MEAT, self::MIXTE_NAME, self::HACHEE_NAME]
+                        ? [self::MIXTE_NAME, self::HACHEE_NAME]
                         : [self::MIXTE_NAME];
                     DB::table('item_variations')
                         ->where('item_id', $item->id)
@@ -145,6 +153,21 @@ class EnsureCayenneMixteCommand extends Command
                         ->whereIn('name', $posOnlyMeats)
                         ->whereNull('deleted_at')
                         ->update(['visible_on' => json_encode(['pos'])]);
+
+                    // La signature redevient visible partout (répare l'état posé par c53c7a820).
+                    if ($isFixedMeatSandwich) {
+                        DB::table('item_variations')
+                            ->where('item_id', $item->id)
+                            ->where('item_attribute_id', $viandeAttrId)
+                            ->where('name', self::SIGNATURE_MEAT)
+                            ->whereNull('deleted_at')
+                            ->update(['visible_on' => null]);
+                    }
+
+                    // GARDE-FOU : ne JAMAIS laisser une étape obligatoire sans aucune option sur la
+                    // borne. Si ça arrivait malgré tout, on échoue bruyamment ici plutôt que de laisser
+                    // un client bloqué devant la borne, panier plein, sans pouvoir payer.
+                    self::assertKioskHasAtLeastOneMeat($item->id, $viandeAttrId, (string) $item->name);
                 }
             }
 
@@ -155,6 +178,47 @@ class EnsureCayenneMixteCommand extends Command
         }
 
         return $created;
+    }
+
+    /**
+     * [INCIDENT BORNE 2026-08-01] Garde-fou anti-blocage borne.
+     *
+     * `min_select` vit sur l'ATTRIBUT (partagé entre items), pas sur le nombre de variations
+     * visibles par surface : une étape obligatoire dont TOUTES les options sont `['pos']` rend le
+     * panier borne invalidable (« Sélectionnez au moins 1 Viande 1 (actuel : 0) »). Cette garde
+     * transforme cette régression silencieuse en échec bruyant, au moment où on l'introduirait.
+     *
+     * @throws \RuntimeException si la borne n'a plus aucune viande sélectionnable
+     */
+    private static function assertKioskHasAtLeastOneMeat(int $itemId, int $attrId, string $itemName): void
+    {
+        $minSelect = (int) DB::table('item_attributes')->where('id', $attrId)->value('min_select');
+        if ($minSelect < 1) {
+            return; // étape facultative : 0 option visible n'a jamais bloqué personne
+        }
+
+        $visibleOnKiosk = DB::table('item_variations')
+            ->where('item_id', $itemId)
+            ->where('item_attribute_id', $attrId)
+            ->whereNull('deleted_at')
+            ->get(['visible_on'])
+            ->filter(function ($row) {
+                if ($row->visible_on === null || $row->visible_on === '') {
+                    return true; // null = toutes surfaces
+                }
+                $surfaces = json_decode((string) $row->visible_on, true);
+
+                return ! is_array($surfaces) || in_array('kiosk', $surfaces, true);
+            })
+            ->count();
+
+        if ($visibleOnKiosk === 0) {
+            throw new \RuntimeException(
+                "Blocage borne évité : « {$itemName} » aurait une étape viande OBLIGATOIRE "
+                ."(min_select={$minSelect}) sans aucune option visible sur la borne. "
+                .'Garde au moins la viande signature visible partout.'
+            );
+        }
     }
 
     private static function attrIdByName(string $name): ?int
