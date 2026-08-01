@@ -422,14 +422,14 @@ Loi de Finance France — non-négociable, prison time si violé.
 ## 9. Multi-Tenant + Auth Invariants
 
 ### Branch Isolation
-- `BranchScope` global appliqué sur **20 models** (baseline locked par
+- `BranchScope` global appliqué sur **21 models** (baseline locked par
   `tests/Feature/Branch/BranchScopeCoverageSentinelTest.php`) :
   Order, FrontendOrder, OrderItem, OrderPayment, OrderQuote,
   PosParkedOrder, KioskMachine, StockLevel, StockMovement,
   ItemBranchAvailability, CashDrawerSession, CashMovement,
   DeliveryBoyCashSession, DeliveryBoyCashMovement,
   PendingPaymentConfirmation, PaymentTerminal, PushNotification,
-  DiningTable, Printer, **User**.
+  DiningTable, Printer, **User**, StockOutflow (module repas/pertes 2026-07-31).
 - Admin (branch_id=0) bypass ; staff (branch_id>0) scoped.
 - **Exemptions documentées** (sentinel `EXEMPTED_MODELS`) :
   - `Branch` — self-reference (BranchScope sur Branch serait circulaire)

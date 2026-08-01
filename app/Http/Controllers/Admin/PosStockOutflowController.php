@@ -107,7 +107,9 @@ class PosStockOutflowController extends Controller
     {
         abort_unless(auth()->user()?->can('pos'), 403);
 
-        $items = Item::withoutGlobalScopes()
+        // Item n'a PAS de BranchScope ; SoftDeletes actif + whereNull explicite = mêmes lignes
+        // que l'ancien withoutGlobalScopes()+whereNull (sentinel Z6-P1-WGS : plural inutile ici).
+        $items = Item::query()
             ->where('status', \App\Enums\Status::ACTIVE)
             ->whereNull('deleted_at')
             ->orderBy('name')

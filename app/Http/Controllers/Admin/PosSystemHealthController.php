@@ -105,7 +105,7 @@ class PosSystemHealthController extends Controller
     private function stockRuptureCount(): int
     {
         try {
-            $q = \App\Models\ItemBranchAvailability::withoutGlobalScopes()
+            $q = \App\Models\ItemBranchAvailability::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
                 ->where('is_available', false)
                 ->whereIn('unavailable_reason', ['stock_rupture', 'out_of_stock']);
 
@@ -128,7 +128,9 @@ class PosSystemHealthController extends Controller
     private function agingOrdersCount(): int
     {
         try {
-            $q = \App\Models\Order::withoutGlobalScopes()
+            // Singulier §9 : SoftDeletes de retour → les commandes soft-deleted (ex. commandes
+            // de test balayées) ne comptent plus comme backlog « aging » fantôme.
+            $q = \App\Models\Order::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
                 ->whereIn('status', [
                     \App\Enums\OrderStatus::PENDING,
                     \App\Enums\OrderStatus::ACCEPT,

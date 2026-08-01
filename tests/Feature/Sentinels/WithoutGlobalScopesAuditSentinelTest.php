@@ -89,6 +89,17 @@ class WithoutGlobalScopesAuditSentinelTest extends TestCase
         'Console/Commands/EnsureAdminLoginCommand.php' => [56, 63, 70, 99],
         'Console/Commands/EnsurePosOperatorLoginCommand.php' => [55],
         'Console/Commands/EnsureChefLoginCommand.php' => [53],
+        // [2026-08-01] EnsureNewSaucesCommand — commande console data-repair cross-branch by
+        // design (même famille que les Ensure* ci-dessus) : lit/complète les ItemVariation
+        // sauces sur TOUT le catalogue, soft-deleted inclus (ne pas recréer un doublon d'une
+        // variation supprimée). 3 sites pluriels.
+        'Console/Commands/EnsureNewSaucesCommand.php' => [44, 54, 70],
+        // [2026-08-01] PaymentService::hasRecordedCashIn (SYMÉTRIE-TIROIR 2026-07-30) — la
+        // garde doit voir le mouvement IN cross-branch et même soft-deleted (l'entrée a
+        // existé). ⚠ Le COMPORTEMENT de cette garde reste GATÉ owner (audit superviseur
+        // 2026-07-31 « variance fantôme zone M8 ») — l'allowlist ne tranche pas ce débat,
+        // elle documente seulement le scope-bypass.
+        'Services/PaymentService.php' => [737],
         // [2026-07-30] GuestSignupController retiré de l'allowlist : l'entrée 127 était
         // périmée (le code a bougé en 175/224 avec WAVE C EMAIL-OTP 2026-07-28) et les
         // 2 sites ont été healés vers le pattern §9 canonique

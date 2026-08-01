@@ -734,7 +734,7 @@ class PaymentService
      */
     private function hasRecordedCashIn(Order $order): bool
     {
-        return \App\Models\CashMovement::withoutGlobalScopes()
+        return \App\Models\CashMovement::withoutGlobalScopes() // [GlobalScopes:keep-both] la garde doit voir l'IN quelle que soit la branche ET même si la session/mouvement a été soft-deleted depuis (l'entrée a existé)
             ->where('order_id', (int) $order->id)
             ->where('type', \App\Models\CashMovement::TYPE_ORDER_PAYMENT)
             ->where('direction', \App\Models\CashMovement::DIRECTION_IN)
