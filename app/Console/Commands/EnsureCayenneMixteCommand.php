@@ -37,6 +37,14 @@ class EnsureCayenneMixteCommand extends Command
     /** Viande signature du Cayenne sandwich (#22) — reste le choix par défaut à côté de « Mixte ». */
     public const SIGNATURE_MEAT = 'Poulet mariné';
 
+    /**
+     * [OWNER 2026-08-01] 3ᵉ choix de viande du Cayenne sandwich (#22), CAISSE-ONLY comme les
+     * deux autres. Le choix complet en caisse devient : Poulet mariné · Mixte · Viande Hachée.
+     * Graphie EXACTE de la base — cf. migration 2026_07_27_090000_restore_viande_hachee_variations
+     * (« Viande Hachée », V et H majuscules) : toute autre casse créerait un DOUBLON de variation.
+     */
+    public const HACHEE_NAME = 'Viande Hachée';
+
     /** Attributs résolus par NOM (robuste aux ids ; le step wizard cible ces refs). */
     public const ATTR_VIANDE_1_NAME = 'Viande 1';
 
@@ -81,17 +89,38 @@ class EnsureCayenneMixteCommand extends Command
 
                 if ($isFixedMeatSandwich) {
                     $created += self::ensureVariation($item->id, $viandeAttrId, self::SIGNATURE_MEAT, $dryRun);
+                    // [OWNER 2026-08-01] 3ᵉ choix caisse : « Viande Hachée » @0. Le Cayenne sandwich
+                    // propose donc en CAISSE : Poulet mariné · Mixte · Viande Hachée (3 choix).
+                    // Gratuit comme les deux autres — c'est un CHOIX de viande, pas un supplément ;
+                    // le surplus reste l'ItemExtra « Viande supplémentaire » @2,50, INCHANGÉ.
+                    //
+                    // On RESSUSCITE d'abord une éventuelle ligne soft-supprimée : le nettoyage
+                    // `whereNotIn` ci-dessous a très probablement déjà soft-supprimé « Viande Hachée »
+                    // sur cet item lors des passages précédents. Sans cette reprise, ensureVariation
+                    // (qui n'inspecte que les lignes vivantes) insérerait un DOUBLON à côté de la
+                    // ligne morte. Réutiliser la ligne existante préserve aussi son id.
+                    if (! $dryRun) {
+                        DB::table('item_variations')
+                            ->where('item_id', $item->id)
+                            ->where('item_attribute_id', $viandeAttrId)
+                            ->where('name', self::HACHEE_NAME)
+                            ->whereNotNull('deleted_at')
+                            ->update(['deleted_at' => null, 'price' => 0, 'status' => Status::ACTIVE, 'updated_at' => now()]);
+                    }
+                    $created += self::ensureVariation($item->id, $viandeAttrId, self::HACHEE_NAME, $dryRun);
                 }
                 // « Mixte (hachée + poulet) » @0 dans Viande 1 (choix de viande gratuit, pas supplément).
                 $created += self::ensureVariation($item->id, $viandeAttrId, self::MIXTE_NAME, $dryRun);
 
                 if ($isFixedMeatSandwich && ! $dryRun) {
                     // Nettoie tout autre choix de viande (répare un backfill 7-viandes trop large) →
-                    // ne garde que la signature + Mixte. Soft-delete (réversible, jamais commandé).
+                    // ne garde que les 3 choix voulus. Soft-delete (réversible, jamais commandé).
+                    // ⚠️ « Viande Hachée » DOIT figurer ici, sinon la variation qu'on vient de créer
+                    // serait soft-supprimée dans la foulée par ce même nettoyage.
                     DB::table('item_variations')
                         ->where('item_id', $item->id)
                         ->where('item_attribute_id', $viandeAttrId)
-                        ->whereNotIn('name', [self::SIGNATURE_MEAT, self::MIXTE_NAME])
+                        ->whereNotIn('name', [self::SIGNATURE_MEAT, self::MIXTE_NAME, self::HACHEE_NAME])
                         ->whereNull('deleted_at')
                         ->update(['deleted_at' => now()]);
                 }
@@ -102,9 +131,13 @@ class EnsureCayenneMixteCommand extends Command
                 // (mono-viande) : Poulet mariné + Mixte tous deux caisse-only → borne = 0 variation
                 // viande = pas d'étape. #24 Galette (vrai choix de 7 viandes sur toutes surfaces) : SEUL
                 // « Mixte » devient caisse-only, les 7 autres restent visibles borne+web.
+                // [OWNER 2026-08-01] « Viande Hachée » rejoint les choix CAISSE-ONLY du #22 : la borne
+                // garde 0 variation viande visible → toujours aucune étape viande sur la borne, exactement
+                // comme avant. Sur la Galette #24 (vrai choix de 7 viandes), « Viande Hachée » fait partie
+                // des 7 et reste visible borne+web — on ne l'ajoute donc PAS à la liste caisse-only.
                 if (! $dryRun) {
                     $posOnlyMeats = $isFixedMeatSandwich
-                        ? [self::SIGNATURE_MEAT, self::MIXTE_NAME]
+                        ? [self::SIGNATURE_MEAT, self::MIXTE_NAME, self::HACHEE_NAME]
                         : [self::MIXTE_NAME];
                     DB::table('item_variations')
                         ->where('item_id', $item->id)
