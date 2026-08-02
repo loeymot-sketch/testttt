@@ -25,6 +25,11 @@ class UberMenuPushCommand extends Command
             count($menu['categories'])
         ));
 
+        if (! (bool) config('uber.menu_managed', true) && ! $this->option('dry-run')) {
+            $this->error('REFUSÉ : UBER_MENU_MANAGED=false — le menu Uber officiel est géré par le menu-maker (décision owner, Option A). Le push écraserait le menu dédié.');
+            return self::FAILURE;
+        }
+
         if ($this->option('dry-run')) {
             $this->line(json_encode($menu, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
             return self::SUCCESS;

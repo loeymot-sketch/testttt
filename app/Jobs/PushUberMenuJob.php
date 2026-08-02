@@ -28,6 +28,11 @@ class PushUberMenuJob implements ShouldQueue
             Log::info('[Uber] menu push sauté — intégration non configurée.');
             return;
         }
+        if (! (bool) config('uber.menu_managed', true)) {
+            // [OWNER OPTION A] Menu Uber = menu-maker officiel, la caisse ne l'écrase jamais.
+            Log::info('[Uber] menu push REFUSÉ — UBER_MENU_MANAGED=false (menu Uber géré par le menu-maker, décision owner).');
+            return;
+        }
         $ok = $builder->push($client);
         if (! $ok) {
             Log::warning('[Uber] menu push échec (voir logs PUT non-2xx).');

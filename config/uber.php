@@ -60,6 +60,12 @@ return [
     //    Défaut accepter (on ne bloque pas une commande Uber payée).
     'deny_on_out_of_stock' => env('UBER_DENY_ON_OOS', false),
 
+    // [OWNER 2026-08-02 — OPTION A] Le menu Uber officiel du Cayenne est géré via le
+    // menu-maker d'Uber (prix Uber dédiés) et ne doit JAMAIS être écrasé par la caisse.
+    // false en PROD ⇒ uber:menu-push et PushUberMenuJob refusent d'envoyer. true en
+    // sandbox uniquement (validation de la capacité exigée par Uber).
+    'menu_managed' => (bool) env('UBER_MENU_MANAGED', true),
+
     // [UBER-READY 2026-08-02] Temps de préparation annoncé à Uber dans accept_pos_order
     // (`pickup_time` = now + N minutes, secondes Unix). C'est LE levier officiel qui cale le
     // dispatch du coursier — il n'existe PAS d'endpoint public « mark ready » pour les
