@@ -19,7 +19,7 @@ return [
     'store_id'      => env('UBER_STORE_ID', ''), // Store UUID Le Cayenne
     'token_url'     => env('UBER_TOKEN_URL', 'https://login.uber.com/oauth/v2/token'),
     'api_base'      => env('UBER_API_BASE', 'https://api.uber.com'),
-    'scopes'        => env('UBER_SCOPES', 'eats.store eats.order'),
+    'scopes'        => env('UBER_SCOPES', 'eats.store eats.order eats.store.orders.read'),
 
     // Webhook : Uber signe le body en HMAC-SHA256. La clé de signature est en général le
     // client_secret ; si Uber fournit une clé de signature dédiée, la mettre ici.
@@ -27,7 +27,10 @@ return [
 
     // Endpoints (Eats Marketplace)
     'endpoints' => [
-        'order'   => '/v1/eats/orders/{order_id}',
+        // [UBER-SANDBOX 2026-08-02] v2 obligatoire : la v1 renvoie order_items sans titre
+        // (mapper conçu pour cart.items v2 → commande vide, prouvé sur ordre test 5a3eef3c).
+        // La v2 exige le scope eats.store.orders.read (ajouté aux scopes par défaut).
+        'order'   => '/v2/eats/order/{order_id}',
         'accept'  => '/v1/eats/orders/{order_id}/accept_pos_order',
         'deny'    => '/v1/eats/orders/{order_id}/deny_pos_order',
         'store'   => '/v1/eats/stores/{store_id}',
