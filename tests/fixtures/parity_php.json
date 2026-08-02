@@ -519,6 +519,3252 @@
         "drinks": []
     },
     {
+        "name": "Grande Frites",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 608,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Algérienne"
+                }
+            ],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-08-02T05:32:40+02:00",
+            "schema_version": 1
+        },
+        "php": "FRI | ALG",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Tacos M",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 1,
+                    "variation_id": 354,
+                    "attribute_name": "Viande 1",
+                    "variation_name": "Viande Hachée"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 319,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Samouraï"
+                }
+            ],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-08-02T04:38:02+02:00",
+            "schema_version": 1
+        },
+        "php": "G | TAC | K | SAM",
+        "supps": [],
+        "menu": "",
+        "instr": "ZZ-TEST-S2-BORNE",
+        "note": "ZZ-TEST-S2-BORNE",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Suprême",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 6,
+                    "variation_id": 455,
+                    "attribute_name": "Type de Pain",
+                    "variation_name": "Pain"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 462,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Algérienne"
+                }
+            ],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-08-02T04:37:01+02:00",
+            "schema_version": 1
+        },
+        "php": "S | SUP | ALG",
+        "supps": [],
+        "menu": "",
+        "instr": "ZZ-TEST-S2-WEB",
+        "note": "ZZ-TEST-S2-WEB",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Cayenne",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 281,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Algérienne"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 6,
+                    "variation_id": 450,
+                    "attribute_name": "Type de Pain",
+                    "variation_name": "Pain"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 1,
+                    "variation_id": 687,
+                    "attribute_name": "Viande 1",
+                    "variation_name": "Mixte (hachée + poulet)"
+                }
+            ],
+            "addons": [],
+            "extras": [
+                {
+                    "extra_id": 49,
+                    "quantity": 1,
+                    "extra_name": "Salade",
+                    "line_total": 0,
+                    "unit_price": 0
+                },
+                {
+                    "extra_id": 50,
+                    "quantity": 1,
+                    "extra_name": "Tomate",
+                    "line_total": 0,
+                    "unit_price": 0
+                },
+                {
+                    "extra_id": 51,
+                    "quantity": 1,
+                    "extra_name": "Oignon",
+                    "line_total": 0,
+                    "unit_price": 0
+                },
+                {
+                    "extra_id": 53,
+                    "quantity": 1,
+                    "extra_name": "Cheddar",
+                    "line_total": 0.9,
+                    "unit_price": 0.9
+                }
+            ],
+            "captured_at": "2026-08-02T04:32:25+02:00",
+            "schema_version": 1
+        },
+        "php": "S | CAY | P K | STO | ALG",
+        "supps": [
+            "+ Cheddar"
+        ],
+        "menu": "",
+        "instr": "CAYENNE\nPain Viandes : Mixte (hachée + poulet) - Salade, Tomate, Oignon Sauce : Algérienne Supplément : Cheddar (+€0.90)",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Chicken Burger",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 170,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Samouraï"
+                }
+            ],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-08-02T04:31:04+02:00",
+            "schema_version": 1
+        },
+        "php": "CHI | SAM",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Cayenne",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 1,
+                    "variation_id": 687,
+                    "attribute_name": "Viande 1",
+                    "variation_name": "Mixte (hachée + poulet)"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 281,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Algérienne"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 6,
+                    "variation_id": 450,
+                    "attribute_name": "Type de Pain",
+                    "variation_name": "Pain"
+                }
+            ],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-08-02T04:30:58+02:00",
+            "schema_version": 1
+        },
+        "php": "S | CAY | P K | ALG",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Cayenne",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 1,
+                    "variation_id": 680,
+                    "attribute_name": "Viande 1",
+                    "variation_name": "Poulet mariné"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 287,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Ketchup"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 6,
+                    "variation_id": 450,
+                    "attribute_name": "Type de Pain",
+                    "variation_name": "Pain"
+                }
+            ],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-08-02T04:30:03+02:00",
+            "schema_version": 1
+        },
+        "php": "S | CAY | P | KTP",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Cayenne",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 1,
+                    "variation_id": 687,
+                    "attribute_name": "Viande 1",
+                    "variation_name": "Mixte (hachée + poulet)"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 289,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Samouraï"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 6,
+                    "variation_id": 450,
+                    "attribute_name": "Type de Pain",
+                    "variation_name": "Pain"
+                }
+            ],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-08-02T04:28:11+02:00",
+            "schema_version": 1
+        },
+        "php": "S | CAY | P K | SAM",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Menu Enfant Chicken Burger",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 674,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Ketchup"
+                }
+            ],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-08-02T04:24:59+02:00",
+            "schema_version": 1
+        },
+        "php": "ENF CHI | KTP",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Chicken Burger",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 168,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Ketchup"
+                }
+            ],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-08-02T04:24:59+02:00",
+            "schema_version": 1
+        },
+        "php": "CHI | KTP",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Coca-Cola 33cl",
+        "snap": {
+            "lines": [],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-08-02T04:22:23+02:00",
+            "schema_version": 1
+        },
+        "php": "COC",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": true,
+        "drinks": []
+    },
+    {
+        "name": "Cayenne",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 1,
+                    "variation_id": 680,
+                    "attribute_name": "Viande 1",
+                    "variation_name": "Poulet mariné"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 688,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Sans sauce"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 6,
+                    "variation_id": 451,
+                    "attribute_name": "Type de Pain",
+                    "variation_name": "Galette"
+                }
+            ],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-08-02T04:21:33+02:00",
+            "schema_version": 1
+        },
+        "php": "G | CAY | P | SAN",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Menu Enfant Nuggets",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 584,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Ketchup"
+                }
+            ],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-08-02T04:21:33+02:00",
+            "schema_version": 1
+        },
+        "php": "ENF NUG | KTP",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Cayenne",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 1,
+                    "variation_id": 687,
+                    "attribute_name": "Viande 1",
+                    "variation_name": "Mixte (hachée + poulet)"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 289,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Samouraï"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 6,
+                    "variation_id": 450,
+                    "attribute_name": "Type de Pain",
+                    "variation_name": "Pain"
+                }
+            ],
+            "addons": [],
+            "extras": [
+                {
+                    "extra_id": 398,
+                    "quantity": 1,
+                    "extra_name": "Viande supplémentaire",
+                    "line_total": 2.5,
+                    "unit_price": 2.5
+                },
+                {
+                    "extra_id": 428,
+                    "quantity": 1,
+                    "extra_name": "Sauce supplémentaire",
+                    "line_total": 0.5,
+                    "unit_price": 0.5
+                }
+            ],
+            "captured_at": "2026-08-02T04:21:33+02:00",
+            "schema_version": 1
+        },
+        "php": "S | CAY | P K | SAM",
+        "supps": [
+            "+ Viande supplémentaire",
+            "+ Sauce supplémentaire"
+        ],
+        "menu": "",
+        "instr": "Sauces en plus : Ketchup | ZZ-TEST bien cuit",
+        "note": "Sauces en plus : Ketchup | ZZ-TEST bien cuit",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Coca-Cola 33cl",
+        "snap": {
+            "lines": [],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-08-02T04:20:14+02:00",
+            "schema_version": 1
+        },
+        "php": "COC",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": true,
+        "drinks": []
+    },
+    {
+        "name": "Coca-Cola 33cl",
+        "snap": {
+            "lines": [],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-29T16:11:24+02:00",
+            "schema_version": 1
+        },
+        "php": "COC",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": true,
+        "drinks": []
+    },
+    {
+        "name": "Cheese Burger",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 390,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Mayonnaise"
+                }
+            ],
+            "addons": [],
+            "extras": [
+                {
+                    "extra_id": 275,
+                    "quantity": 1,
+                    "extra_name": "Cheddar",
+                    "line_total": 0.9,
+                    "unit_price": 0.9
+                },
+                {
+                    "extra_id": 403,
+                    "quantity": 1,
+                    "extra_name": "Viande supplémentaire",
+                    "line_total": 2.5,
+                    "unit_price": 2.5
+                }
+            ],
+            "captured_at": "2026-07-29T16:11:24+02:00",
+            "schema_version": 1
+        },
+        "php": "CHE | MAY",
+        "supps": [
+            "+ Cheddar",
+            "+ Viande supplémentaire"
+        ],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Grande Frites",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 614,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Ketchup"
+                }
+            ],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-29T15:27:21+02:00",
+            "schema_version": 1
+        },
+        "php": "FRI | KTP",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Grande Frites",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 614,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Ketchup"
+                }
+            ],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-29T15:26:39+02:00",
+            "schema_version": 1
+        },
+        "php": "FRI | KTP",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Grande Frites",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 614,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Ketchup"
+                }
+            ],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-29T15:24:26+02:00",
+            "schema_version": 1
+        },
+        "php": "FRI | KTP",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "E2E_PLAYWRIGHT_STUDIO_ITEM",
+        "snap": {
+            "lines": [],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-29T15:24:23+02:00",
+            "schema_version": 1
+        },
+        "php": "E2E",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Grande Frites",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 614,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Ketchup"
+                }
+            ],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-29T15:23:06+02:00",
+            "schema_version": 1
+        },
+        "php": "FRI | KTP",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "E2E_PLAYWRIGHT_STUDIO_ITEM",
+        "snap": {
+            "lines": [],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-29T05:57:12+02:00",
+            "schema_version": 1
+        },
+        "php": "E2E",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "E2E_PLAYWRIGHT_STUDIO_ITEM",
+        "snap": {
+            "lines": [],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-29T05:57:10+02:00",
+            "schema_version": 1
+        },
+        "php": "E2E",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Grande Frites",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 614,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Ketchup"
+                }
+            ],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-29T05:57:08+02:00",
+            "schema_version": 1
+        },
+        "php": "FRI | KTP",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "E2E_PLAYWRIGHT_STUDIO_ITEM",
+        "snap": {
+            "lines": [],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-29T05:57:05+02:00",
+            "schema_version": 1
+        },
+        "php": "E2E",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "E2E_PLAYWRIGHT_STUDIO_ITEM",
+        "snap": {
+            "lines": [],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-29T05:57:02+02:00",
+            "schema_version": 1
+        },
+        "php": "E2E",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Grande Frites",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 614,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Ketchup"
+                }
+            ],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-29T05:56:55+02:00",
+            "schema_version": 1
+        },
+        "php": "FRI | KTP",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Grande Frites",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 614,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Ketchup"
+                }
+            ],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-29T05:56:53+02:00",
+            "schema_version": 1
+        },
+        "php": "FRI | KTP",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Cayenne",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 281,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Algérienne"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 6,
+                    "variation_id": 450,
+                    "attribute_name": "Type de Pain",
+                    "variation_name": "Pain"
+                }
+            ],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-29T05:33:25+02:00",
+            "schema_version": 1
+        },
+        "php": "S | CAY | ALG",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Cayenne",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 281,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Algérienne"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 6,
+                    "variation_id": 450,
+                    "attribute_name": "Type de Pain",
+                    "variation_name": "Pain"
+                }
+            ],
+            "addons": [],
+            "extras": [
+                {
+                    "extra_id": 428,
+                    "quantity": 1,
+                    "extra_name": "Sauce supplémentaire",
+                    "line_total": 0.5,
+                    "unit_price": 0.5
+                }
+            ],
+            "captured_at": "2026-07-29T05:33:24+02:00",
+            "schema_version": 1
+        },
+        "php": "S | CAY | ALG",
+        "supps": [
+            "+ Sauce supplémentaire"
+        ],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Cayenne",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 281,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Algérienne"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 6,
+                    "variation_id": 450,
+                    "attribute_name": "Type de Pain",
+                    "variation_name": "Pain"
+                }
+            ],
+            "addons": [],
+            "extras": [
+                {
+                    "extra_id": 428,
+                    "quantity": 99,
+                    "extra_name": "Sauce supplémentaire",
+                    "line_total": 49.5,
+                    "unit_price": 0.5
+                }
+            ],
+            "captured_at": "2026-07-29T05:33:22+02:00",
+            "schema_version": 1
+        },
+        "php": "S | CAY | ALG",
+        "supps": [
+            "+ Sauce supplémentaire ×99"
+        ],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Sprite 33cl",
+        "snap": {
+            "lines": [],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-29T05:32:48+02:00",
+            "schema_version": 1
+        },
+        "php": "SPR",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": true,
+        "drinks": []
+    },
+    {
+        "name": "Coca-Cola Zero 33cl",
+        "snap": {
+            "lines": [],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-29T05:32:48+02:00",
+            "schema_version": 1
+        },
+        "php": "COC",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": true,
+        "drinks": []
+    },
+    {
+        "name": "Grande Frites",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 615,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Mayonnaise"
+                }
+            ],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-29T05:32:48+02:00",
+            "schema_version": 1
+        },
+        "php": "FRI | MAY",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Tacos L",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 1,
+                    "variation_id": 363,
+                    "attribute_name": "Viande 1",
+                    "variation_name": "Viande Hachée"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 2,
+                    "variation_id": 371,
+                    "attribute_name": "Viande 2",
+                    "variation_name": "Nuggets"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 379,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Samouraï"
+                }
+            ],
+            "addons": [],
+            "extras": [
+                {
+                    "extra_id": 256,
+                    "quantity": 1,
+                    "extra_name": "Salade",
+                    "line_total": 0,
+                    "unit_price": 0
+                },
+                {
+                    "extra_id": 257,
+                    "quantity": 1,
+                    "extra_name": "Tomate",
+                    "line_total": 0,
+                    "unit_price": 0
+                },
+                {
+                    "extra_id": 258,
+                    "quantity": 1,
+                    "extra_name": "Oignon",
+                    "line_total": 0,
+                    "unit_price": 0
+                }
+            ],
+            "captured_at": "2026-07-29T05:32:48+02:00",
+            "schema_version": 1
+        },
+        "php": "G | TAC | K Nug | STO | SAM",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Glace",
+        "snap": {
+            "lines": [],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-29T05:32:47+02:00",
+            "schema_version": 1
+        },
+        "php": "GLA",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Tiramisu",
+        "snap": {
+            "lines": [],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-29T05:32:47+02:00",
+            "schema_version": 1
+        },
+        "php": "TIR",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Cheese Burger",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 390,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Mayonnaise"
+                }
+            ],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-29T05:32:46+02:00",
+            "schema_version": 1
+        },
+        "php": "CHE | MAY",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Cayenne",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 281,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Algérienne"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 6,
+                    "variation_id": 450,
+                    "attribute_name": "Type de Pain",
+                    "variation_name": "Pain"
+                }
+            ],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-29T05:32:46+02:00",
+            "schema_version": 1
+        },
+        "php": "S | CAY | ALG",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Cayenne",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 281,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Algérienne"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 6,
+                    "variation_id": 450,
+                    "attribute_name": "Type de Pain",
+                    "variation_name": "Pain"
+                }
+            ],
+            "addons": [],
+            "extras": [
+                {
+                    "extra_id": 53,
+                    "quantity": 1,
+                    "extra_name": "Cheddar",
+                    "line_total": 0.9,
+                    "unit_price": 0.9
+                }
+            ],
+            "captured_at": "2026-07-29T05:32:45+02:00",
+            "schema_version": 1
+        },
+        "php": "S | CAY | ALG",
+        "supps": [
+            "+ Cheddar"
+        ],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Coca Cherry 33cl",
+        "snap": {
+            "lines": [],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-29T05:32:45+02:00",
+            "schema_version": 1
+        },
+        "php": "COC",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": true,
+        "drinks": []
+    },
+    {
+        "name": "Cayenne",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 281,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Algérienne"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 6,
+                    "variation_id": 450,
+                    "attribute_name": "Type de Pain",
+                    "variation_name": "Pain"
+                }
+            ],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-29T05:32:45+02:00",
+            "schema_version": 1
+        },
+        "php": "S | CAY | ALG",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Cayenne",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 281,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Algérienne"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 6,
+                    "variation_id": 450,
+                    "attribute_name": "Type de Pain",
+                    "variation_name": "Pain"
+                }
+            ],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-29T05:32:44+02:00",
+            "schema_version": 1
+        },
+        "php": "S | CAY | ALG",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Tacos M",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 1,
+                    "variation_id": 43,
+                    "attribute_name": "Viande 1",
+                    "variation_name": "Poulet mariné"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 311,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Algérienne"
+                }
+            ],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-29T05:32:44+02:00",
+            "schema_version": 1
+        },
+        "php": "G | TAC | P | ALG",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Coca-Cola 33cl",
+        "snap": {
+            "lines": [],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-29T05:32:43+02:00",
+            "schema_version": 1
+        },
+        "php": "COC",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": true,
+        "drinks": []
+    },
+    {
+        "name": "Grande Frites",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 610,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Blanche"
+                }
+            ],
+            "addons": [],
+            "extras": [
+                {
+                    "extra_id": 489,
+                    "quantity": 1,
+                    "extra_name": "Sauce supplémentaire",
+                    "line_total": 0.5,
+                    "unit_price": 0.5
+                }
+            ],
+            "captured_at": "2026-07-29T05:32:43+02:00",
+            "schema_version": 1
+        },
+        "php": "FRI | BL",
+        "supps": [
+            "+ Sauce supplémentaire"
+        ],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Cayenne",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 6,
+                    "variation_id": 451,
+                    "attribute_name": "Type de Pain",
+                    "variation_name": "Galette"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 289,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Samouraï"
+                }
+            ],
+            "addons": [],
+            "extras": [
+                {
+                    "extra_id": 49,
+                    "quantity": 1,
+                    "extra_name": "Salade",
+                    "line_total": 0,
+                    "unit_price": 0
+                },
+                {
+                    "extra_id": 51,
+                    "quantity": 1,
+                    "extra_name": "Oignon",
+                    "line_total": 0,
+                    "unit_price": 0
+                },
+                {
+                    "extra_id": 398,
+                    "quantity": 1,
+                    "extra_name": "Viande supplémentaire",
+                    "line_total": 2.5,
+                    "unit_price": 2.5
+                }
+            ],
+            "captured_at": "2026-07-29T05:32:39+02:00",
+            "schema_version": 1
+        },
+        "php": "G | CAY | SO | SAM",
+        "supps": [
+            "+ Viande supplémentaire"
+        ],
+        "menu": "",
+        "instr": "Viandes en plus : Fricadelle",
+        "note": "Viandes en plus : Fricadelle",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Bol Frites",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 1,
+                    "variation_id": 550,
+                    "attribute_name": "Viande 1",
+                    "variation_name": "Tenders"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 8,
+                    "variation_id": 202,
+                    "attribute_name": "Sauce bol",
+                    "variation_name": "Sauce fromagère maison"
+                }
+            ],
+            "addons": [],
+            "extras": [
+                {
+                    "extra_id": 462,
+                    "quantity": 1,
+                    "extra_name": "Option Gratiné",
+                    "line_total": 2,
+                    "unit_price": 2
+                },
+                {
+                    "extra_id": 379,
+                    "quantity": 1,
+                    "extra_name": "Œuf",
+                    "line_total": 0.9,
+                    "unit_price": 0.9
+                }
+            ],
+            "captured_at": "2026-07-29T05:32:33+02:00",
+            "schema_version": 1
+        },
+        "php": "BOL FRI | Tender | FRO",
+        "supps": [
+            "+ Option Gratiné",
+            "+ Œuf"
+        ],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Menu Enfant Nuggets",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 584,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Ketchup"
+                }
+            ],
+            "addons": [],
+            "extras": [
+                {
+                    "extra_id": 475,
+                    "quantity": 1,
+                    "extra_name": "Sauce supplémentaire",
+                    "line_total": 0.5,
+                    "unit_price": 0.5
+                }
+            ],
+            "captured_at": "2026-07-29T05:32:25+02:00",
+            "schema_version": 1
+        },
+        "php": "ENF NUG | KTP",
+        "supps": [
+            "+ Sauce supplémentaire"
+        ],
+        "menu": "",
+        "instr": "Sauces en plus : Mayonnaise",
+        "note": "Sauces en plus : Mayonnaise",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Tacos L",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 1,
+                    "variation_id": 361,
+                    "attribute_name": "Viande 1",
+                    "variation_name": "Mexicanos"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 2,
+                    "variation_id": 369,
+                    "attribute_name": "Viande 2",
+                    "variation_name": "Cordon Bleu"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 384,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Harissa"
+                }
+            ],
+            "addons": [],
+            "extras": [
+                {
+                    "extra_id": 256,
+                    "quantity": 1,
+                    "extra_name": "Salade",
+                    "line_total": 0,
+                    "unit_price": 0
+                },
+                {
+                    "extra_id": 257,
+                    "quantity": 1,
+                    "extra_name": "Tomate",
+                    "line_total": 0,
+                    "unit_price": 0
+                },
+                {
+                    "extra_id": 262,
+                    "quantity": 1,
+                    "extra_name": "Cheddar",
+                    "line_total": 0.9,
+                    "unit_price": 0.9
+                },
+                {
+                    "extra_id": 393,
+                    "quantity": 2,
+                    "extra_name": "Viande supplémentaire",
+                    "line_total": 5,
+                    "unit_price": 2.5
+                },
+                {
+                    "extra_id": 433,
+                    "quantity": 1,
+                    "extra_name": "Sauce supplémentaire",
+                    "line_total": 0.5,
+                    "unit_price": 0.5
+                }
+            ],
+            "captured_at": "2026-07-29T05:32:15+02:00",
+            "schema_version": 1
+        },
+        "php": "G | TAC | Mex Cordon | ST | HAR",
+        "supps": [
+            "+ Cheddar",
+            "+ Viande supplémentaire ×2",
+            "+ Sauce supplémentaire"
+        ],
+        "menu": "",
+        "instr": "ALLERGIE ARACHIDE — sans cacahuète. Viandes en plus : Tenders, Nuggets. Sauces en plus : Algérienne",
+        "note": "ALLERGIE ARACHIDE — sans cacahuète. Viandes en plus : Tenders, Nuggets. Sauces en plus : Algérienne",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Sprite 33cl",
+        "snap": {
+            "lines": [],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-29T05:29:18+02:00",
+            "schema_version": 1
+        },
+        "php": "SPR",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": true,
+        "drinks": []
+    },
+    {
+        "name": "Coca-Cola Zero 33cl",
+        "snap": {
+            "lines": [],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-29T05:29:18+02:00",
+            "schema_version": 1
+        },
+        "php": "COC",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": true,
+        "drinks": []
+    },
+    {
+        "name": "Grande Frites",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 615,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Mayonnaise"
+                }
+            ],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-29T05:29:18+02:00",
+            "schema_version": 1
+        },
+        "php": "FRI | MAY",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Tacos L",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 1,
+                    "variation_id": 363,
+                    "attribute_name": "Viande 1",
+                    "variation_name": "Viande Hachée"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 2,
+                    "variation_id": 371,
+                    "attribute_name": "Viande 2",
+                    "variation_name": "Nuggets"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 379,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Samouraï"
+                }
+            ],
+            "addons": [],
+            "extras": [
+                {
+                    "extra_id": 256,
+                    "quantity": 1,
+                    "extra_name": "Salade",
+                    "line_total": 0,
+                    "unit_price": 0
+                },
+                {
+                    "extra_id": 257,
+                    "quantity": 1,
+                    "extra_name": "Tomate",
+                    "line_total": 0,
+                    "unit_price": 0
+                },
+                {
+                    "extra_id": 258,
+                    "quantity": 1,
+                    "extra_name": "Oignon",
+                    "line_total": 0,
+                    "unit_price": 0
+                }
+            ],
+            "captured_at": "2026-07-29T05:29:18+02:00",
+            "schema_version": 1
+        },
+        "php": "G | TAC | K Nug | STO | SAM",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Glace",
+        "snap": {
+            "lines": [],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-29T05:29:16+02:00",
+            "schema_version": 1
+        },
+        "php": "GLA",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Tiramisu",
+        "snap": {
+            "lines": [],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-29T05:29:16+02:00",
+            "schema_version": 1
+        },
+        "php": "TIR",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Coca Cherry 33cl",
+        "snap": {
+            "lines": [],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-29T05:29:14+02:00",
+            "schema_version": 1
+        },
+        "php": "COC",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": true,
+        "drinks": []
+    },
+    {
+        "name": "Coca-Cola 33cl",
+        "snap": {
+            "lines": [],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-29T05:29:12+02:00",
+            "schema_version": 1
+        },
+        "php": "COC",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": true,
+        "drinks": []
+    },
+    {
+        "name": "Grande Frites",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 610,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Blanche"
+                }
+            ],
+            "addons": [],
+            "extras": [
+                {
+                    "extra_id": 489,
+                    "quantity": 1,
+                    "extra_name": "Sauce supplémentaire",
+                    "line_total": 0.5,
+                    "unit_price": 0.5
+                }
+            ],
+            "captured_at": "2026-07-29T05:29:12+02:00",
+            "schema_version": 1
+        },
+        "php": "FRI | BL",
+        "supps": [
+            "+ Sauce supplémentaire"
+        ],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Cayenne",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 6,
+                    "variation_id": 451,
+                    "attribute_name": "Type de Pain",
+                    "variation_name": "Galette"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 289,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Samouraï"
+                }
+            ],
+            "addons": [],
+            "extras": [
+                {
+                    "extra_id": 49,
+                    "quantity": 1,
+                    "extra_name": "Salade",
+                    "line_total": 0,
+                    "unit_price": 0
+                },
+                {
+                    "extra_id": 51,
+                    "quantity": 1,
+                    "extra_name": "Oignon",
+                    "line_total": 0,
+                    "unit_price": 0
+                },
+                {
+                    "extra_id": 398,
+                    "quantity": 1,
+                    "extra_name": "Viande supplémentaire",
+                    "line_total": 2.5,
+                    "unit_price": 2.5
+                }
+            ],
+            "captured_at": "2026-07-29T05:29:11+02:00",
+            "schema_version": 1
+        },
+        "php": "G | CAY | SO | SAM",
+        "supps": [
+            "+ Viande supplémentaire"
+        ],
+        "menu": "",
+        "instr": "Viandes en plus : Fricadelle",
+        "note": "Viandes en plus : Fricadelle",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Bol Frites",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 1,
+                    "variation_id": 550,
+                    "attribute_name": "Viande 1",
+                    "variation_name": "Tenders"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 8,
+                    "variation_id": 202,
+                    "attribute_name": "Sauce bol",
+                    "variation_name": "Sauce fromagère maison"
+                }
+            ],
+            "addons": [],
+            "extras": [
+                {
+                    "extra_id": 462,
+                    "quantity": 1,
+                    "extra_name": "Option Gratiné",
+                    "line_total": 2,
+                    "unit_price": 2
+                },
+                {
+                    "extra_id": 379,
+                    "quantity": 1,
+                    "extra_name": "Œuf",
+                    "line_total": 0.9,
+                    "unit_price": 0.9
+                }
+            ],
+            "captured_at": "2026-07-29T05:29:10+02:00",
+            "schema_version": 1
+        },
+        "php": "BOL FRI | Tender | FRO",
+        "supps": [
+            "+ Option Gratiné",
+            "+ Œuf"
+        ],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Menu Enfant Nuggets",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 584,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Ketchup"
+                }
+            ],
+            "addons": [],
+            "extras": [
+                {
+                    "extra_id": 475,
+                    "quantity": 1,
+                    "extra_name": "Sauce supplémentaire",
+                    "line_total": 0.5,
+                    "unit_price": 0.5
+                }
+            ],
+            "captured_at": "2026-07-29T05:29:04+02:00",
+            "schema_version": 1
+        },
+        "php": "ENF NUG | KTP",
+        "supps": [
+            "+ Sauce supplémentaire"
+        ],
+        "menu": "",
+        "instr": "Sauces en plus : Mayonnaise",
+        "note": "Sauces en plus : Mayonnaise",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Tacos L",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 1,
+                    "variation_id": 361,
+                    "attribute_name": "Viande 1",
+                    "variation_name": "Mexicanos"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 2,
+                    "variation_id": 369,
+                    "attribute_name": "Viande 2",
+                    "variation_name": "Cordon Bleu"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 384,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Harissa"
+                }
+            ],
+            "addons": [],
+            "extras": [
+                {
+                    "extra_id": 256,
+                    "quantity": 1,
+                    "extra_name": "Salade",
+                    "line_total": 0,
+                    "unit_price": 0
+                },
+                {
+                    "extra_id": 257,
+                    "quantity": 1,
+                    "extra_name": "Tomate",
+                    "line_total": 0,
+                    "unit_price": 0
+                },
+                {
+                    "extra_id": 262,
+                    "quantity": 1,
+                    "extra_name": "Cheddar",
+                    "line_total": 0.9,
+                    "unit_price": 0.9
+                },
+                {
+                    "extra_id": 393,
+                    "quantity": 2,
+                    "extra_name": "Viande supplémentaire",
+                    "line_total": 5,
+                    "unit_price": 2.5
+                },
+                {
+                    "extra_id": 433,
+                    "quantity": 1,
+                    "extra_name": "Sauce supplémentaire",
+                    "line_total": 0.5,
+                    "unit_price": 0.5
+                }
+            ],
+            "captured_at": "2026-07-29T05:28:50+02:00",
+            "schema_version": 1
+        },
+        "php": "G | TAC | Mex Cordon | ST | HAR",
+        "supps": [
+            "+ Cheddar",
+            "+ Viande supplémentaire ×2",
+            "+ Sauce supplémentaire"
+        ],
+        "menu": "",
+        "instr": "ALLERGIE ARACHIDE — sans cacahuète. Viandes en plus : Tenders, Nuggets. Sauces en plus : Algérienne",
+        "note": "ALLERGIE ARACHIDE — sans cacahuète. Viandes en plus : Tenders, Nuggets. Sauces en plus : Algérienne",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Oasis Tropical 33cl",
+        "snap": {
+            "lines": [],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-28T19:38:35+02:00",
+            "schema_version": 1
+        },
+        "php": "OAS",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": true,
+        "drinks": []
+    },
+    {
+        "name": "Oasis Tropical 33cl",
+        "snap": {
+            "lines": [],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-28T19:29:54+02:00",
+            "schema_version": 1
+        },
+        "php": "OAS",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": true,
+        "drinks": []
+    },
+    {
+        "name": "Oasis Tropical 33cl",
+        "snap": {
+            "lines": [],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-28T19:22:07+02:00",
+            "schema_version": 1
+        },
+        "php": "OAS",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": true,
+        "drinks": []
+    },
+    {
+        "name": "Oasis Tropical 33cl",
+        "snap": {
+            "lines": [],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-28T19:20:23+02:00",
+            "schema_version": 1
+        },
+        "php": "OAS",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": true,
+        "drinks": []
+    },
+    {
+        "name": "Oasis Tropical 33cl",
+        "snap": {
+            "lines": [],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-28T19:13:53+02:00",
+            "schema_version": 1
+        },
+        "php": "OAS",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": true,
+        "drinks": []
+    },
+    {
+        "name": "Oasis Tropical 33cl",
+        "snap": {
+            "lines": [],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-28T19:12:10+02:00",
+            "schema_version": 1
+        },
+        "php": "OAS",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": true,
+        "drinks": []
+    },
+    {
+        "name": "Galette Cayenne",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 1,
+                    "variation_id": 570,
+                    "attribute_name": "Viande 1",
+                    "variation_name": "Mexicanos"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 298,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Mayonnaise"
+                }
+            ],
+            "addons": [],
+            "extras": [
+                {
+                    "extra_id": 430,
+                    "quantity": 1,
+                    "extra_name": "Sauce supplémentaire",
+                    "line_total": 0.5,
+                    "unit_price": 0.5
+                },
+                {
+                    "extra_id": 77,
+                    "quantity": 1,
+                    "extra_name": "Salade",
+                    "line_total": 0,
+                    "unit_price": 0
+                },
+                {
+                    "extra_id": 78,
+                    "quantity": 1,
+                    "extra_name": "Tomate",
+                    "line_total": 0,
+                    "unit_price": 0
+                },
+                {
+                    "extra_id": 79,
+                    "quantity": 1,
+                    "extra_name": "Oignon",
+                    "line_total": 0,
+                    "unit_price": 0
+                },
+                {
+                    "extra_id": 89,
+                    "quantity": 1,
+                    "extra_name": "Champignons",
+                    "line_total": 0.9,
+                    "unit_price": 0.9
+                }
+            ],
+            "captured_at": "2026-07-19T04:37:32+02:00",
+            "schema_version": 1
+        },
+        "php": "G | GAL | Mex | STO | MAY",
+        "supps": [
+            "+ Sauce supplémentaire",
+            "+ Champignons"
+        ],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Frites Seules",
+        "snap": {
+            "lines": [],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-20T04:16:03+02:00",
+            "schema_version": 1
+        },
+        "php": "FRI",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Menu Enfant Chicken Burger",
+        "snap": {
+            "lines": [],
+            "addons": [],
+            "extras": [
+                {
+                    "extra_id": 466,
+                    "quantity": 1,
+                    "extra_name": "Cheddar",
+                    "line_total": 0.9,
+                    "unit_price": 0.9
+                },
+                {
+                    "extra_id": 469,
+                    "quantity": 1,
+                    "extra_name": "Œuf",
+                    "line_total": 0.9,
+                    "unit_price": 0.9
+                }
+            ],
+            "captured_at": "2026-07-20T02:25:59+02:00",
+            "schema_version": 1
+        },
+        "php": "ENF CHI",
+        "supps": [
+            "+ Cheddar",
+            "+ Œuf"
+        ],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Menu Enfant Nuggets",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 578,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Algérienne"
+                }
+            ],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-20T02:25:59+02:00",
+            "schema_version": 1
+        },
+        "php": "ENF NUG | ALG",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Bol Riz",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 1,
+                    "variation_id": 554,
+                    "attribute_name": "Viande 1",
+                    "variation_name": "Mexicanos"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 8,
+                    "variation_id": 246,
+                    "attribute_name": "Sauce bol",
+                    "variation_name": "Sauce fromagère maison"
+                }
+            ],
+            "addons": [],
+            "extras": [
+                {
+                    "extra_id": 201,
+                    "quantity": 1,
+                    "extra_name": "Option Gratiné",
+                    "line_total": 2,
+                    "unit_price": 2
+                },
+                {
+                    "extra_id": 397,
+                    "quantity": 1,
+                    "extra_name": "Viande supplémentaire",
+                    "line_total": 2.5,
+                    "unit_price": 2.5
+                },
+                {
+                    "extra_id": 382,
+                    "quantity": 1,
+                    "extra_name": "Cheddar",
+                    "line_total": 0.9,
+                    "unit_price": 0.9
+                }
+            ],
+            "captured_at": "2026-07-20T02:25:59+02:00",
+            "schema_version": 1
+        },
+        "php": "BOL RIZ | Mex | FRO",
+        "supps": [
+            "+ Option Gratiné",
+            "+ Viande supplémentaire",
+            "+ Cheddar"
+        ],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Tacos M",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 1,
+                    "variation_id": 43,
+                    "attribute_name": "Viande 1",
+                    "variation_name": "Poulet mariné"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 311,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Algérienne"
+                }
+            ],
+            "addons": [],
+            "extras": [
+                {
+                    "extra_id": 392,
+                    "quantity": 1,
+                    "extra_name": "Viande supplémentaire",
+                    "line_total": 2.5,
+                    "unit_price": 2.5
+                },
+                {
+                    "extra_id": 431,
+                    "quantity": 2,
+                    "extra_name": "Sauce supplémentaire",
+                    "line_total": 1,
+                    "unit_price": 0.5
+                },
+                {
+                    "extra_id": 250,
+                    "quantity": 1,
+                    "extra_name": "Cheddar",
+                    "line_total": 0.9,
+                    "unit_price": 0.9
+                }
+            ],
+            "captured_at": "2026-07-20T02:25:58+02:00",
+            "schema_version": 1
+        },
+        "php": "G | TAC | P | ALG",
+        "supps": [
+            "+ Viande supplémentaire",
+            "+ Sauce supplémentaire ×2",
+            "+ Cheddar"
+        ],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Cheese Burger",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 390,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Mayonnaise"
+                }
+            ],
+            "addons": [],
+            "extras": [
+                {
+                    "extra_id": 403,
+                    "quantity": 1,
+                    "extra_name": "Viande supplémentaire",
+                    "line_total": 2.5,
+                    "unit_price": 2.5
+                },
+                {
+                    "extra_id": 434,
+                    "quantity": 1,
+                    "extra_name": "Sauce supplémentaire",
+                    "line_total": 0.5,
+                    "unit_price": 0.5
+                },
+                {
+                    "extra_id": 275,
+                    "quantity": 1,
+                    "extra_name": "Cheddar",
+                    "line_total": 0.9,
+                    "unit_price": 0.9
+                }
+            ],
+            "captured_at": "2026-07-20T02:25:58+02:00",
+            "schema_version": 1
+        },
+        "php": "CHE | MAY",
+        "supps": [
+            "+ Viande supplémentaire",
+            "+ Sauce supplémentaire",
+            "+ Cheddar"
+        ],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Galette Normale",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 1,
+                    "variation_id": 5,
+                    "attribute_name": "Viande 1",
+                    "variation_name": "Poulet mariné"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 9,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Mayonnaise"
+                }
+            ],
+            "addons": [],
+            "extras": [
+                {
+                    "extra_id": 400,
+                    "quantity": 1,
+                    "extra_name": "Viande supplémentaire",
+                    "line_total": 2.5,
+                    "unit_price": 2.5
+                },
+                {
+                    "extra_id": 429,
+                    "quantity": 1,
+                    "extra_name": "Sauce supplémentaire",
+                    "line_total": 0.5,
+                    "unit_price": 0.5
+                },
+                {
+                    "extra_id": 67,
+                    "quantity": 1,
+                    "extra_name": "Cheddar",
+                    "line_total": 0.9,
+                    "unit_price": 0.9
+                }
+            ],
+            "captured_at": "2026-07-20T02:25:58+02:00",
+            "schema_version": 1
+        },
+        "php": "G | GAL | P | MAY",
+        "supps": [
+            "+ Viande supplémentaire",
+            "+ Sauce supplémentaire",
+            "+ Cheddar"
+        ],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Cayenne",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 6,
+                    "variation_id": 450,
+                    "attribute_name": "Type de Pain",
+                    "variation_name": "Pain"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 281,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Algérienne"
+                }
+            ],
+            "addons": [],
+            "extras": [
+                {
+                    "extra_id": 398,
+                    "quantity": 1,
+                    "extra_name": "Viande supplémentaire",
+                    "line_total": 2.5,
+                    "unit_price": 2.5
+                },
+                {
+                    "extra_id": 428,
+                    "quantity": 1,
+                    "extra_name": "Sauce supplémentaire",
+                    "line_total": 0.5,
+                    "unit_price": 0.5
+                },
+                {
+                    "extra_id": 53,
+                    "quantity": 1,
+                    "extra_name": "Cheddar",
+                    "line_total": 0.9,
+                    "unit_price": 0.9
+                }
+            ],
+            "captured_at": "2026-07-20T02:25:58+02:00",
+            "schema_version": 1
+        },
+        "php": "S | CAY | ALG",
+        "supps": [
+            "+ Viande supplémentaire",
+            "+ Sauce supplémentaire",
+            "+ Cheddar"
+        ],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Galette Cayenne",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 1,
+                    "variation_id": 570,
+                    "attribute_name": "Viande 1",
+                    "variation_name": "Mexicanos"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 298,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Mayonnaise"
+                }
+            ],
+            "addons": [],
+            "extras": [
+                {
+                    "extra_id": 77,
+                    "quantity": 1,
+                    "extra_name": "Salade",
+                    "line_total": 0,
+                    "unit_price": 0
+                },
+                {
+                    "extra_id": 78,
+                    "quantity": 1,
+                    "extra_name": "Tomate",
+                    "line_total": 0,
+                    "unit_price": 0
+                },
+                {
+                    "extra_id": 79,
+                    "quantity": 1,
+                    "extra_name": "Oignon",
+                    "line_total": 0,
+                    "unit_price": 0
+                },
+                {
+                    "extra_id": 80,
+                    "quantity": 1,
+                    "extra_name": "Cornichon",
+                    "line_total": 0,
+                    "unit_price": 0
+                }
+            ],
+            "captured_at": "2026-07-19T04:37:19+02:00",
+            "schema_version": 1
+        },
+        "php": "G | GAL | Mex | STO | MAY",
+        "supps": [
+            "+ Cornichon"
+        ],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Bol Frites",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 1,
+                    "variation_id": 546,
+                    "attribute_name": "Viande 1",
+                    "variation_name": "Mexicanos"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 8,
+                    "variation_id": 202,
+                    "attribute_name": "Sauce bol",
+                    "variation_name": "Sauce fromagère maison"
+                }
+            ],
+            "addons": [],
+            "extras": [
+                {
+                    "extra_id": 462,
+                    "quantity": 1,
+                    "extra_name": "Option Gratiné",
+                    "line_total": 2,
+                    "unit_price": 2
+                }
+            ],
+            "captured_at": "2026-07-19T04:21:18+02:00",
+            "schema_version": 1
+        },
+        "php": "BOL FRI | Mex | FRO",
+        "supps": [
+            "+ Option Gratiné"
+        ],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Menu Enfant Nuggets",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 586,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Samouraï"
+                }
+            ],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-19T04:18:35+02:00",
+            "schema_version": 1
+        },
+        "php": "ENF NUG | SAM",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Galette Cayenne",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 1,
+                    "variation_id": 570,
+                    "attribute_name": "Viande 1",
+                    "variation_name": "Mexicanos"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 298,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Mayonnaise"
+                }
+            ],
+            "addons": [],
+            "extras": [
+                {
+                    "extra_id": 430,
+                    "quantity": 1,
+                    "extra_name": "Sauce supplémentaire",
+                    "line_total": 0.5,
+                    "unit_price": 0.5
+                },
+                {
+                    "extra_id": 77,
+                    "quantity": 1,
+                    "extra_name": "Salade",
+                    "line_total": 0,
+                    "unit_price": 0
+                },
+                {
+                    "extra_id": 78,
+                    "quantity": 1,
+                    "extra_name": "Tomate",
+                    "line_total": 0,
+                    "unit_price": 0
+                },
+                {
+                    "extra_id": 79,
+                    "quantity": 1,
+                    "extra_name": "Oignon",
+                    "line_total": 0,
+                    "unit_price": 0
+                },
+                {
+                    "extra_id": 88,
+                    "quantity": 1,
+                    "extra_name": "Oignons frits",
+                    "line_total": 0.9,
+                    "unit_price": 0.9
+                },
+                {
+                    "extra_id": 89,
+                    "quantity": 1,
+                    "extra_name": "Champignons",
+                    "line_total": 0.9,
+                    "unit_price": 0.9
+                },
+                {
+                    "extra_id": 401,
+                    "quantity": 1,
+                    "extra_name": "Viande supplémentaire",
+                    "line_total": 2.5,
+                    "unit_price": 2.5
+                }
+            ],
+            "captured_at": "2026-07-19T03:09:53+02:00",
+            "schema_version": 1
+        },
+        "php": "G | GAL | Mex | STO | MAY",
+        "supps": [
+            "+ Sauce supplémentaire",
+            "+ Oignons frits",
+            "+ Champignons",
+            "+ Viande supplémentaire"
+        ],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Galette Cayenne",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 1,
+                    "variation_id": 22,
+                    "attribute_name": "Viande 1",
+                    "variation_name": "Poulet mariné"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 293,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Blanche"
+                }
+            ],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-19T02:56:33+02:00",
+            "schema_version": 1
+        },
+        "php": "G | GAL | P | BL",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Galette Cayenne",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 1,
+                    "variation_id": 22,
+                    "attribute_name": "Viande 1",
+                    "variation_name": "Poulet mariné"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 293,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Blanche"
+                }
+            ],
+            "addons": [],
+            "extras": [
+                {
+                    "extra_id": 430,
+                    "quantity": 1,
+                    "extra_name": "Sauce supplémentaire",
+                    "line_total": 0.5,
+                    "unit_price": 0.5
+                },
+                {
+                    "extra_id": 81,
+                    "quantity": 1,
+                    "extra_name": "Cheddar",
+                    "line_total": 0.9,
+                    "unit_price": 0.9
+                },
+                {
+                    "extra_id": 84,
+                    "quantity": 1,
+                    "extra_name": "Œuf",
+                    "line_total": 0.9,
+                    "unit_price": 0.9
+                },
+                {
+                    "extra_id": 401,
+                    "quantity": 1,
+                    "extra_name": "Viande supplémentaire",
+                    "line_total": 2.5,
+                    "unit_price": 2.5
+                }
+            ],
+            "captured_at": "2026-07-19T02:55:32+02:00",
+            "schema_version": 1
+        },
+        "php": "G | GAL | P | BL",
+        "supps": [
+            "+ Sauce supplémentaire",
+            "+ Cheddar",
+            "+ Œuf",
+            "+ Viande supplémentaire"
+        ],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Suprême",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 457,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Mayonnaise"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 6,
+                    "variation_id": 455,
+                    "attribute_name": "Type de Pain",
+                    "variation_name": "Pain"
+                }
+            ],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-16T17:14:39+02:00",
+            "schema_version": 1
+        },
+        "php": "S | SUP | MAY",
+        "supps": [],
+        "menu": "",
+        "instr": "idem-conc-test",
+        "note": "idem-conc-test",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Suprême",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 457,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Mayonnaise"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 6,
+                    "variation_id": 455,
+                    "attribute_name": "Type de Pain",
+                    "variation_name": "Pain"
+                }
+            ],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-16T06:28:32+02:00",
+            "schema_version": 1
+        },
+        "php": "S | SUP | MAY",
+        "supps": [],
+        "menu": "",
+        "instr": "E2E terrain proof cycle6 (Suprême nature)",
+        "note": "E2E terrain proof cycle6 (Suprême nature)",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Tacos M",
+        "snap": {
+            "lines": [
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 5,
+                    "variation_id": 311,
+                    "attribute_name": "Sauce (1ère Gratuite)",
+                    "variation_name": "Algérienne"
+                },
+                {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 1,
+                    "variation_id": 43,
+                    "attribute_name": "Viande 1",
+                    "variation_name": "Poulet mariné"
+                }
+            ],
+            "addons": [],
+            "extras": [
+                {
+                    "extra_id": 244,
+                    "quantity": 1,
+                    "extra_name": "Salade",
+                    "line_total": 0,
+                    "unit_price": 0
+                },
+                {
+                    "extra_id": 245,
+                    "quantity": 1,
+                    "extra_name": "Tomate",
+                    "line_total": 0,
+                    "unit_price": 0
+                },
+                {
+                    "extra_id": 246,
+                    "quantity": 1,
+                    "extra_name": "Oignon",
+                    "line_total": 0,
+                    "unit_price": 0
+                },
+                {
+                    "extra_id": 431,
+                    "quantity": 1,
+                    "extra_name": "Sauce supplémentaire",
+                    "line_total": 0.5,
+                    "unit_price": 0.5
+                }
+            ],
+            "captured_at": "2026-07-16T04:50:56+02:00",
+            "schema_version": 1
+        },
+        "php": "G | TAC | P | STO | ALG",
+        "supps": [
+            "+ Sauce supplémentaire"
+        ],
+        "menu": "",
+        "instr": "TACOS M\nViandes : Poulet mariné - Salade, Tomate, Oignon Sauce : Algérienne, Andalouse",
+        "note": "",
+        "drink": false,
+        "drinks": []
+    },
+    {
+        "name": "Coca-Cola 33cl",
+        "snap": {
+            "lines": [],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-15T15:49:34+02:00",
+            "schema_version": 1
+        },
+        "php": "COC",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": true,
+        "drinks": []
+    },
+    {
+        "name": "Coca-Cola 33cl",
+        "snap": {
+            "lines": [],
+            "addons": [],
+            "extras": [],
+            "captured_at": "2026-07-15T15:47:32+02:00",
+            "schema_version": 1
+        },
+        "php": "COC",
+        "supps": [],
+        "menu": "",
+        "instr": "",
+        "note": "",
+        "drink": true,
+        "drinks": []
+    },
+    {
         "name": "Bol Riz",
         "snap": {
             "lines": [
@@ -4765,2519 +8011,6 @@
         "supps": [
             "+ Option Gratiné"
         ],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Cayenne",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 6,
-                    "variation_id": 450,
-                    "attribute_name": "Type de Pain",
-                    "variation_name": "Pain"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 5,
-                    "variation_id": 453,
-                    "attribute_name": "Sauce (1ère Gratuite)",
-                    "variation_name": "Fromagère maison"
-                }
-            ],
-            "addons": [],
-            "extras": [
-                {
-                    "extra_id": 49,
-                    "quantity": 1,
-                    "extra_name": "Salade",
-                    "line_total": 0,
-                    "unit_price": 0
-                },
-                {
-                    "extra_id": 50,
-                    "quantity": 1,
-                    "extra_name": "Tomate",
-                    "line_total": 0,
-                    "unit_price": 0
-                },
-                {
-                    "extra_id": 51,
-                    "quantity": 1,
-                    "extra_name": "Oignon",
-                    "line_total": 0,
-                    "unit_price": 0
-                }
-            ],
-            "captured_at": "2026-07-08T17:17:11+02:00",
-            "schema_version": 1
-        },
-        "php": "S | CAY | STO | FRO",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Tacos M",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 1,
-                    "variation_id": 43,
-                    "attribute_name": "Viande 1",
-                    "variation_name": "Poulet mariné"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 5,
-                    "variation_id": 317,
-                    "attribute_name": "Sauce (1ère Gratuite)",
-                    "variation_name": "Ketchup"
-                }
-            ],
-            "addons": [],
-            "extras": [
-                {
-                    "extra_id": 244,
-                    "quantity": 1,
-                    "extra_name": "Salade",
-                    "line_total": 0,
-                    "unit_price": 0
-                },
-                {
-                    "extra_id": 245,
-                    "quantity": 1,
-                    "extra_name": "Tomate",
-                    "line_total": 0,
-                    "unit_price": 0
-                },
-                {
-                    "extra_id": 246,
-                    "quantity": 1,
-                    "extra_name": "Oignon",
-                    "line_total": 0,
-                    "unit_price": 0
-                }
-            ],
-            "captured_at": "2026-07-08T17:17:11+02:00",
-            "schema_version": 1
-        },
-        "php": "G | TAC | P | STO | KTP",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Tacos M",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 1,
-                    "variation_id": 43,
-                    "attribute_name": "Viande 1",
-                    "variation_name": "Poulet mariné"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 5,
-                    "variation_id": 311,
-                    "attribute_name": "Sauce (1ère Gratuite)",
-                    "variation_name": "Algérienne"
-                }
-            ],
-            "addons": [],
-            "extras": [
-                {
-                    "extra_id": 424,
-                    "quantity": 1,
-                    "extra_name": "Oignons cuits",
-                    "line_total": 0,
-                    "unit_price": 0
-                }
-            ],
-            "captured_at": "2026-07-08T17:12:04+02:00",
-            "schema_version": 1
-        },
-        "php": "G | TAC | P | O̲ | ALG",
-        "supps": [],
-        "menu": "",
-        "instr": "Test sync C-7e2ff",
-        "note": "Test sync C-7e2ff",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Coca-Cola 33cl",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-08T00:18:43+02:00",
-            "schema_version": 1
-        },
-        "php": "COC",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": true,
-        "drinks": []
-    },
-    {
-        "name": "Cayenne",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 5,
-                    "variation_id": 281,
-                    "attribute_name": "Sauce (1ère Gratuite)",
-                    "variation_name": "Algérienne"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 6,
-                    "variation_id": 450,
-                    "attribute_name": "Type de Pain",
-                    "variation_name": "Pain"
-                }
-            ],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-08T00:18:43+02:00",
-            "schema_version": 1
-        },
-        "php": "S | CAY | ALG",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Eau Plate 50cl",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-07T22:01:42+02:00",
-            "schema_version": 1
-        },
-        "php": "EAU",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": true,
-        "drinks": []
-    },
-    {
-        "name": "Tacos M",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 1,
-                    "variation_id": 43,
-                    "attribute_name": "Viande 1",
-                    "variation_name": "Poulet mariné"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 5,
-                    "variation_id": 313,
-                    "attribute_name": "Sauce (1ère Gratuite)",
-                    "variation_name": "Blanche"
-                }
-            ],
-            "addons": [],
-            "extras": [
-                {
-                    "extra_id": 244,
-                    "quantity": 1,
-                    "extra_name": "Salade",
-                    "line_total": 0,
-                    "unit_price": 0
-                },
-                {
-                    "extra_id": 245,
-                    "quantity": 1,
-                    "extra_name": "Tomate",
-                    "line_total": 0,
-                    "unit_price": 0
-                },
-                {
-                    "extra_id": 246,
-                    "quantity": 1,
-                    "extra_name": "Oignon",
-                    "line_total": 0,
-                    "unit_price": 0
-                }
-            ],
-            "captured_at": "2026-07-07T21:28:42+02:00",
-            "schema_version": 1
-        },
-        "php": "G | TAC | P | STO | BL",
-        "supps": [],
-        "menu": "",
-        "instr": "Viandes : Poulet mariné ×1",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Coca-Cola 33cl",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-07T21:24:09+02:00",
-            "schema_version": 1
-        },
-        "php": "COC",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": true,
-        "drinks": []
-    },
-    {
-        "name": "Coca-Cola 33cl",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-07T16:31:49+02:00",
-            "schema_version": 1
-        },
-        "php": "COC",
-        "supps": [],
-        "menu": "",
-        "instr": "COCA-COLA 33CL",
-        "note": "",
-        "drink": true,
-        "drinks": []
-    },
-    {
-        "name": "Coca-Cola 33cl",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-07T13:08:53+02:00",
-            "schema_version": 1
-        },
-        "php": "COC",
-        "supps": [],
-        "menu": "",
-        "instr": "COCA-COLA 33CL",
-        "note": "",
-        "drink": true,
-        "drinks": []
-    },
-    {
-        "name": "Tacos M",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 1,
-                    "variation_id": 43,
-                    "attribute_name": "Viande 1",
-                    "variation_name": "Poulet mariné"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 5,
-                    "variation_id": 311,
-                    "attribute_name": "Sauce (1ère Gratuite)",
-                    "variation_name": "Algérienne"
-                }
-            ],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-07T03:27:55+02:00",
-            "schema_version": 1
-        },
-        "php": "G | TAC | P | ALG",
-        "supps": [],
-        "menu": "",
-        "instr": "Viandes : Poulet mariné ×1. Note: bien cuit svp",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Coca-Cola 33cl",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-07T02:30:31+02:00",
-            "schema_version": 1
-        },
-        "php": "COC",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": true,
-        "drinks": []
-    },
-    {
-        "name": "Cayenne",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 5,
-                    "variation_id": 281,
-                    "attribute_name": "Sauce (1ère Gratuite)",
-                    "variation_name": "Algérienne"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 6,
-                    "variation_id": 450,
-                    "attribute_name": "Type de Pain",
-                    "variation_name": "Pain"
-                }
-            ],
-            "addons": [],
-            "extras": [
-                {
-                    "extra_id": 49,
-                    "quantity": 1,
-                    "extra_name": "Salade",
-                    "line_total": 0,
-                    "unit_price": 0
-                },
-                {
-                    "extra_id": 50,
-                    "quantity": 1,
-                    "extra_name": "Tomate",
-                    "line_total": 0,
-                    "unit_price": 0
-                },
-                {
-                    "extra_id": 408,
-                    "quantity": 1,
-                    "extra_name": "Oignons cuits",
-                    "line_total": 0,
-                    "unit_price": 0
-                }
-            ],
-            "captured_at": "2026-07-07T02:30:19+02:00",
-            "schema_version": 1
-        },
-        "php": "S | CAY | STO̲ | ALG",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Coca-Cola 33cl",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-07T02:26:40+02:00",
-            "schema_version": 1
-        },
-        "php": "COC",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": true,
-        "drinks": []
-    },
-    {
-        "name": "Coca-Cola 33cl",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-07T02:24:25+02:00",
-            "schema_version": 1
-        },
-        "php": "COC",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": true,
-        "drinks": []
-    },
-    {
-        "name": "Hawaï 33cl",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-07T02:23:03+02:00",
-            "schema_version": 1
-        },
-        "php": "HAW",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": true,
-        "drinks": []
-    },
-    {
-        "name": "Tacos M",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 1,
-                    "variation_id": 43,
-                    "attribute_name": "Viande 1",
-                    "variation_name": "Poulet mariné"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 5,
-                    "variation_id": 311,
-                    "attribute_name": "Sauce (1ère Gratuite)",
-                    "variation_name": "Algérienne"
-                }
-            ],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-07T02:23:03+02:00",
-            "schema_version": 1
-        },
-        "php": "G | TAC | P | ALG",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Cayenne",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_name": "Viande 1",
-                    "variation_name": "Poulet mariné"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_name": "Sauce",
-                    "variation_name": "Algérienne"
-                }
-            ],
-            "addons": [],
-            "extras": [
-                {
-                    "quantity": 1,
-                    "extra_name": "Oignons frits",
-                    "line_total": 0.9,
-                    "unit_price": 0.9
-                }
-            ],
-            "captured_at": "2026-07-05T08:00:02+02:00",
-            "schema_version": 1
-        },
-        "php": "CAY | P | ALG",
-        "supps": [
-            "+ Oignons frits"
-        ],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Eau Plate 50cl",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-07T00:10:38+02:00",
-            "schema_version": 1
-        },
-        "php": "EAU",
-        "supps": [],
-        "menu": "",
-        "instr": "EAU PLATE 50CL",
-        "note": "",
-        "drink": true,
-        "drinks": []
-    },
-    {
-        "name": "Eau Plate 50cl",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-07T00:05:02+02:00",
-            "schema_version": 1
-        },
-        "php": "EAU",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": true,
-        "drinks": []
-    },
-    {
-        "name": "Cheese Burger",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 5,
-                    "variation_id": 395,
-                    "attribute_name": "Sauce (1ère Gratuite)",
-                    "variation_name": "Algérienne"
-                }
-            ],
-            "addons": [],
-            "extras": [
-                {
-                    "extra_id": 269,
-                    "quantity": 1,
-                    "extra_name": "Salade",
-                    "line_total": 0,
-                    "unit_price": 0
-                },
-                {
-                    "extra_id": 270,
-                    "quantity": 1,
-                    "extra_name": "Tomate",
-                    "line_total": 0,
-                    "unit_price": 0
-                },
-                {
-                    "extra_id": 416,
-                    "quantity": 1,
-                    "extra_name": "Oignons cuits",
-                    "line_total": 0,
-                    "unit_price": 0
-                }
-            ],
-            "captured_at": "2026-07-06T22:34:50+02:00",
-            "schema_version": 1
-        },
-        "php": "CHE | STO̲ | ALG",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Tacos M",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 1,
-                    "variation_id": 43,
-                    "attribute_name": "Viande 1",
-                    "variation_name": "Poulet mariné"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 5,
-                    "variation_id": 311,
-                    "attribute_name": "Sauce (1ère Gratuite)",
-                    "variation_name": "Algérienne"
-                }
-            ],
-            "addons": [
-                {
-                    "role": "menu_full",
-                    "addon_id": 37,
-                    "quantity": 1,
-                    "addon_name": "Menu (Frites + Boisson)",
-                    "line_total": 2.5,
-                    "unit_price": 2.5,
-                    "addon_item_id": 1,
-                    "catalog_price": 2.5
-                }
-            ],
-            "extras": [],
-            "captured_at": "2026-07-06T22:25:31+02:00",
-            "schema_version": 1
-        },
-        "php": "G | TAC | P | ALG",
-        "supps": [],
-        "menu": "MENU",
-        "instr": "Viandes : Poulet mariné ×1. Formule : Menu complet (frites + boisson) (Hawaï 33cl). Sauce frites : Algérienne",
-        "note": "BOISSON: Hawaï 33cl",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Coca-Cola 33cl",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-06T20:49:22+02:00",
-            "schema_version": 1
-        },
-        "php": "COC",
-        "supps": [],
-        "menu": "",
-        "instr": "COCA-COLA 33CL",
-        "note": "",
-        "drink": true,
-        "drinks": []
-    },
-    {
-        "name": "Sprite 33cl",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-06T20:49:22+02:00",
-            "schema_version": 1
-        },
-        "php": "SPR",
-        "supps": [],
-        "menu": "",
-        "instr": "SPRITE 33CL",
-        "note": "",
-        "drink": true,
-        "drinks": []
-    },
-    {
-        "name": "Coca-Cola 33cl",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-06T20:49:22+02:00",
-            "schema_version": 1
-        },
-        "php": "COC",
-        "supps": [],
-        "menu": "",
-        "instr": "COCA-COLA 33CL\n[COCA-COLA 33CL\n[COCA-COLA 33CL]]",
-        "note": "[COCA-COLA 33CL\n[COCA-COLA 33CL]]",
-        "drink": true,
-        "drinks": []
-    },
-    {
-        "name": "Menu (Frites + Boisson)",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-06T20:49:22+02:00",
-            "schema_version": 1
-        },
-        "php": "FRI",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Tacos M",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 5,
-                    "variation_id": 311,
-                    "attribute_name": "Sauce (1ère Gratuite)",
-                    "variation_name": "Algérienne"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 1,
-                    "variation_id": 43,
-                    "attribute_name": "Viande 1",
-                    "variation_name": "Poulet mariné"
-                }
-            ],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-06T20:49:22+02:00",
-            "schema_version": 1
-        },
-        "php": "G | TAC | P | ALG",
-        "supps": [],
-        "menu": "",
-        "instr": "TACOS M\nViandes : Poulet mariné Sauce : Algérienne\n+ Menu (Frites + Boisson) (+2,50 €)\nBOISSON: Fuze Tea 33cl",
-        "note": "BOISSON: Fuze Tea 33cl",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Menu (Frites + Boisson)",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-06T20:25:37+02:00",
-            "schema_version": 1
-        },
-        "php": "FRI",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Cayenne",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 5,
-                    "variation_id": 281,
-                    "attribute_name": "Sauce (1ère Gratuite)",
-                    "variation_name": "Algérienne"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 6,
-                    "variation_id": 450,
-                    "attribute_name": "Type de Pain",
-                    "variation_name": "Pain"
-                }
-            ],
-            "addons": [],
-            "extras": [
-                {
-                    "extra_id": 49,
-                    "quantity": 1,
-                    "extra_name": "Salade",
-                    "line_total": 0,
-                    "unit_price": 0
-                },
-                {
-                    "extra_id": 50,
-                    "quantity": 1,
-                    "extra_name": "Tomate",
-                    "line_total": 0,
-                    "unit_price": 0
-                },
-                {
-                    "extra_id": 408,
-                    "quantity": 1,
-                    "extra_name": "Oignons cuits",
-                    "line_total": 0,
-                    "unit_price": 0
-                }
-            ],
-            "captured_at": "2026-07-06T20:25:37+02:00",
-            "schema_version": 1
-        },
-        "php": "S | CAY | STO̲ | ALG",
-        "supps": [],
-        "menu": "",
-        "instr": "CAYENNE\nPain - Salade, Tomate, Oignons cuits Sauce : Algérienne\n+ Menu (Frites + Boisson) (+2,50 €)\nBOISSON: Hawaï 33cl",
-        "note": "BOISSON: Hawaï 33cl",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Coca-Cola 33cl",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-06T19:47:21+02:00",
-            "schema_version": 1
-        },
-        "php": "COC",
-        "supps": [],
-        "menu": "",
-        "instr": "COCA-COLA 33CL",
-        "note": "",
-        "drink": true,
-        "drinks": []
-    },
-    {
-        "name": "Coca-Cola 33cl",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-06T18:43:25+02:00",
-            "schema_version": 1
-        },
-        "php": "COC",
-        "supps": [],
-        "menu": "",
-        "instr": "COCA-COLA 33CL",
-        "note": "",
-        "drink": true,
-        "drinks": []
-    },
-    {
-        "name": "Coca-Cola 33cl",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-06T18:43:23+02:00",
-            "schema_version": 1
-        },
-        "php": "COC",
-        "supps": [],
-        "menu": "",
-        "instr": "COCA-COLA 33CL",
-        "note": "",
-        "drink": true,
-        "drinks": []
-    },
-    {
-        "name": "Coca-Cola 33cl",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-06T18:41:08+02:00",
-            "schema_version": 1
-        },
-        "php": "COC",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": true,
-        "drinks": []
-    },
-    {
-        "name": "Coca-Cola 33cl",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-06T18:41:08+02:00",
-            "schema_version": 1
-        },
-        "php": "COC",
-        "supps": [],
-        "menu": "",
-        "instr": "COCA-COLA 33CL",
-        "note": "",
-        "drink": true,
-        "drinks": []
-    },
-    {
-        "name": "Coca-Cola 33cl",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-06T18:14:00+02:00",
-            "schema_version": 1
-        },
-        "php": "COC",
-        "supps": [],
-        "menu": "",
-        "instr": "COCA-COLA 33CL",
-        "note": "",
-        "drink": true,
-        "drinks": []
-    },
-    {
-        "name": "Coca-Cola 33cl",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-02T15:47:17+02:00",
-            "schema_version": 1
-        },
-        "php": "COC",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": true,
-        "drinks": []
-    },
-    {
-        "name": "Tacos M",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 1,
-                    "variation_id": 43,
-                    "attribute_name": "Viande 1",
-                    "variation_name": "Poulet mariné"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 5,
-                    "variation_id": 311,
-                    "attribute_name": "Sauce (1ère Gratuite)",
-                    "variation_name": "Algérienne"
-                }
-            ],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-05T23:29:26+02:00",
-            "schema_version": 1
-        },
-        "php": "G | TAC | P | ALG",
-        "supps": [],
-        "menu": "",
-        "instr": "Viandes : Poulet mariné ×1\noignons cuits",
-        "note": "oignons cuits",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Tacos M",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 1,
-                    "variation_id": 43,
-                    "attribute_name": "Viande 1",
-                    "variation_name": "Poulet mariné"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 5,
-                    "variation_id": 311,
-                    "attribute_name": "Sauce (1ère Gratuite)",
-                    "variation_name": "Algérienne"
-                }
-            ],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-05T23:29:26+02:00",
-            "schema_version": 1
-        },
-        "php": "G | TAC | P | ALG",
-        "supps": [],
-        "menu": "",
-        "instr": "Viandes : Poulet mariné ×1",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Cayenne",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [
-                {
-                    "extra_id": 355,
-                    "quantity": 1,
-                    "extra_name": "Salade",
-                    "line_total": 0,
-                    "unit_price": 0
-                },
-                {
-                    "extra_id": 356,
-                    "quantity": 1,
-                    "extra_name": "Tomates",
-                    "line_total": 0,
-                    "unit_price": 0
-                }
-            ],
-            "captured_at": "2026-07-05T23:27:54+02:00",
-            "schema_version": 1
-        },
-        "php": "CAY | ST",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Menu Enfant Nuggets",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-01T00:27:41+02:00",
-            "schema_version": 1
-        },
-        "php": "NUG",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Frites Seules",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-01T23:30:25+02:00",
-            "schema_version": 1
-        },
-        "php": "FRI",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Tacos L",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 1,
-                    "variation_id": 363,
-                    "attribute_name": "Viande 1",
-                    "variation_name": "Viande Hachée"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 2,
-                    "variation_id": 368,
-                    "attribute_name": "Viande 2",
-                    "variation_name": "Mexicanos"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 5,
-                    "variation_id": 375,
-                    "attribute_name": "Sauce (1ère Gratuite)",
-                    "variation_name": "Mayonnaise"
-                }
-            ],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-04T01:53:01+02:00",
-            "schema_version": 1
-        },
-        "php": "G | TAC | K Mex | MAY",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Tacos L",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 1,
-                    "variation_id": 363,
-                    "attribute_name": "Viande 1",
-                    "variation_name": "Viande Hachée"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 2,
-                    "variation_id": 368,
-                    "attribute_name": "Viande 2",
-                    "variation_name": "Mexicanos"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 5,
-                    "variation_id": 375,
-                    "attribute_name": "Sauce (1ère Gratuite)",
-                    "variation_name": "Mayonnaise"
-                }
-            ],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-04T01:56:31+02:00",
-            "schema_version": 1
-        },
-        "php": "G | TAC | K Mex | MAY",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Terminator",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 1,
-                    "variation_id": 497,
-                    "attribute_name": "Viande 1",
-                    "variation_name": "Mexicanos"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 2,
-                    "variation_id": 505,
-                    "attribute_name": "Viande 2",
-                    "variation_name": "Cordon Bleu"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 5,
-                    "variation_id": 519,
-                    "attribute_name": "Sauce (1ère Gratuite)",
-                    "variation_name": "Andalouse"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 6,
-                    "variation_id": 511,
-                    "attribute_name": "Type de Pain",
-                    "variation_name": "Pain"
-                }
-            ],
-            "addons": [],
-            "extras": [
-                {
-                    "extra_id": 355,
-                    "quantity": 1,
-                    "extra_name": "Salade",
-                    "line_total": 0,
-                    "unit_price": 0
-                },
-                {
-                    "extra_id": 356,
-                    "quantity": 1,
-                    "extra_name": "Tomate",
-                    "line_total": 0,
-                    "unit_price": 0
-                },
-                {
-                    "extra_id": 357,
-                    "quantity": 1,
-                    "extra_name": "Oignon",
-                    "line_total": 0,
-                    "unit_price": 0
-                },
-                {
-                    "extra_id": 359,
-                    "quantity": 1,
-                    "extra_name": "Champignons",
-                    "line_total": 0.9,
-                    "unit_price": 0.9
-                },
-                {
-                    "extra_id": 360,
-                    "quantity": 1,
-                    "extra_name": "Jambon",
-                    "line_total": 0.9,
-                    "unit_price": 0.9
-                }
-            ],
-            "captured_at": "2026-07-01T01:35:58+02:00",
-            "schema_version": 1
-        },
-        "php": "S | TER | Mex Cordon | STO | AND",
-        "supps": [
-            "+ Champignons",
-            "+ Jambon"
-        ],
-        "menu": "",
-        "instr": "Pain : Pain. Viandes : Mexicanos ×1, Cordon Bleu ×1",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Grande Frites",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-04T02:01:26+02:00",
-            "schema_version": 1
-        },
-        "php": "FRI",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Grande Frites",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-04T02:01:07+02:00",
-            "schema_version": 1
-        },
-        "php": "FRI",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Grande Frites",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-04T01:58:22+02:00",
-            "schema_version": 1
-        },
-        "php": "FRI",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Grande Frites",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-04T01:58:03+02:00",
-            "schema_version": 1
-        },
-        "php": "FRI",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Grande Frites",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-04T01:55:53+02:00",
-            "schema_version": 1
-        },
-        "php": "FRI",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Grande Frites",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-04T01:55:33+02:00",
-            "schema_version": 1
-        },
-        "php": "FRI",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Grande Frites",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-04T01:54:26+02:00",
-            "schema_version": 1
-        },
-        "php": "FRI",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Grande Frites",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-04T01:54:08+02:00",
-            "schema_version": 1
-        },
-        "php": "FRI",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Grande Frites",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-04T01:53:16+02:00",
-            "schema_version": 1
-        },
-        "php": "FRI",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Grande Frites",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-04T01:53:06+02:00",
-            "schema_version": 1
-        },
-        "php": "FRI",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Grande Frites",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-04T01:52:16+02:00",
-            "schema_version": 1
-        },
-        "php": "FRI",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Boisson Seule",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-02T17:08:23+02:00",
-            "schema_version": 1
-        },
-        "php": "BOI",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": true,
-        "drinks": []
-    },
-    {
-        "name": "Coca-Cola 33cl",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-02T15:46:19+02:00",
-            "schema_version": 1
-        },
-        "php": "COC",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": true,
-        "drinks": []
-    },
-    {
-        "name": "Coca-Cola 33cl",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-02T15:45:01+02:00",
-            "schema_version": 1
-        },
-        "php": "COC",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": true,
-        "drinks": []
-    },
-    {
-        "name": "Tacos M",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 1,
-                    "variation_id": 43,
-                    "attribute_name": "Viande 1",
-                    "variation_name": "Poulet mariné"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 5,
-                    "variation_id": 311,
-                    "attribute_name": "Sauce (1ère Gratuite)",
-                    "variation_name": "Algérienne"
-                }
-            ],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-02T15:43:06+02:00",
-            "schema_version": 1
-        },
-        "php": "G | TAC | P | ALG",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Tacos L",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 1,
-                    "variation_id": 361,
-                    "attribute_name": "Viande 1",
-                    "variation_name": "Mexicanos"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 2,
-                    "variation_id": 369,
-                    "attribute_name": "Viande 2",
-                    "variation_name": "Cordon Bleu"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 5,
-                    "variation_id": 375,
-                    "attribute_name": "Sauce (1ère Gratuite)",
-                    "variation_name": "Mayonnaise"
-                }
-            ],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-02T15:42:40+02:00",
-            "schema_version": 1
-        },
-        "php": "G | TAC | Mex Cordon | MAY",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Coca-Cola 33cl",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-02T15:41:15+02:00",
-            "schema_version": 1
-        },
-        "php": "COC",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": true,
-        "drinks": []
-    },
-    {
-        "name": "Coca-Cola 33cl",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-02T15:41:02+02:00",
-            "schema_version": 1
-        },
-        "php": "COC",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": true,
-        "drinks": []
-    },
-    {
-        "name": "Grande Frites",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-02T15:40:56+02:00",
-            "schema_version": 1
-        },
-        "php": "FRI",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Grande Frites",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-02T15:40:14+02:00",
-            "schema_version": 1
-        },
-        "php": "FRI",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Tacos M",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 1,
-                    "variation_id": 43,
-                    "attribute_name": "Viande 1",
-                    "variation_name": "Poulet mariné"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 5,
-                    "variation_id": 311,
-                    "attribute_name": "Sauce (1ère Gratuite)",
-                    "variation_name": "Algérienne"
-                }
-            ],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-02T15:39:28+02:00",
-            "schema_version": 1
-        },
-        "php": "G | TAC | P | ALG",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Tacos M",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 1,
-                    "variation_id": 43,
-                    "attribute_name": "Viande 1",
-                    "variation_name": "Poulet mariné"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 5,
-                    "variation_id": 311,
-                    "attribute_name": "Sauce (1ère Gratuite)",
-                    "variation_name": "Algérienne"
-                }
-            ],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-02T15:39:15+02:00",
-            "schema_version": 1
-        },
-        "php": "G | TAC | P | ALG",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Tacos M",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 1,
-                    "variation_id": 43,
-                    "attribute_name": "Viande 1",
-                    "variation_name": "Poulet mariné"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 5,
-                    "variation_id": 311,
-                    "attribute_name": "Sauce (1ère Gratuite)",
-                    "variation_name": "Algérienne"
-                }
-            ],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-02T15:38:54+02:00",
-            "schema_version": 1
-        },
-        "php": "G | TAC | P | ALG",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Coca-Cola 33cl",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-02T15:38:52+02:00",
-            "schema_version": 1
-        },
-        "php": "COC",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": true,
-        "drinks": []
-    },
-    {
-        "name": "Grande Frites",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-02T15:37:55+02:00",
-            "schema_version": 1
-        },
-        "php": "FRI",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Tacos M",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 1,
-                    "variation_id": 43,
-                    "attribute_name": "Viande 1",
-                    "variation_name": "Poulet mariné"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 5,
-                    "variation_id": 311,
-                    "attribute_name": "Sauce (1ère Gratuite)",
-                    "variation_name": "Algérienne"
-                }
-            ],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-02T15:37:15+02:00",
-            "schema_version": 1
-        },
-        "php": "G | TAC | P | ALG",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Suprême",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 5,
-                    "variation_id": 457,
-                    "attribute_name": "Sauce (1ère Gratuite)",
-                    "variation_name": "Mayonnaise"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 6,
-                    "variation_id": 455,
-                    "attribute_name": "Type de Pain",
-                    "variation_name": "Pain"
-                }
-            ],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-02T04:39:19+02:00",
-            "schema_version": 1
-        },
-        "php": "S | SUP | MAY",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Suprême",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 5,
-                    "variation_id": 457,
-                    "attribute_name": "Sauce (1ère Gratuite)",
-                    "variation_name": "Mayonnaise"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 6,
-                    "variation_id": 455,
-                    "attribute_name": "Type de Pain",
-                    "variation_name": "Pain"
-                }
-            ],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-02T04:37:29+02:00",
-            "schema_version": 1
-        },
-        "php": "S | SUP | MAY",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Suprême",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 5,
-                    "variation_id": 457,
-                    "attribute_name": "Sauce (1ère Gratuite)",
-                    "variation_name": "Mayonnaise"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 6,
-                    "variation_id": 455,
-                    "attribute_name": "Type de Pain",
-                    "variation_name": "Pain"
-                }
-            ],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-02T04:37:11+02:00",
-            "schema_version": 1
-        },
-        "php": "S | SUP | MAY",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Suprême",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 5,
-                    "variation_id": 457,
-                    "attribute_name": "Sauce (1ère Gratuite)",
-                    "variation_name": "Mayonnaise"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 6,
-                    "variation_id": 455,
-                    "attribute_name": "Type de Pain",
-                    "variation_name": "Pain"
-                }
-            ],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-02T04:37:10+02:00",
-            "schema_version": 1
-        },
-        "php": "S | SUP | MAY",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Suprême",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 5,
-                    "variation_id": 457,
-                    "attribute_name": "Sauce (1ère Gratuite)",
-                    "variation_name": "Mayonnaise"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 6,
-                    "variation_id": 455,
-                    "attribute_name": "Type de Pain",
-                    "variation_name": "Pain"
-                }
-            ],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-02T04:36:45+02:00",
-            "schema_version": 1
-        },
-        "php": "S | SUP | MAY",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Coca-Cola 33cl",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-02T04:36:14+02:00",
-            "schema_version": 1
-        },
-        "php": "COC",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": true,
-        "drinks": []
-    },
-    {
-        "name": "Suprême",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 5,
-                    "variation_id": 457,
-                    "attribute_name": "Sauce (1ère Gratuite)",
-                    "variation_name": "Mayonnaise"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 6,
-                    "variation_id": 455,
-                    "attribute_name": "Type de Pain",
-                    "variation_name": "Pain"
-                }
-            ],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-02T04:36:09+02:00",
-            "schema_version": 1
-        },
-        "php": "S | SUP | MAY",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Suprême",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 5,
-                    "variation_id": 457,
-                    "attribute_name": "Sauce (1ère Gratuite)",
-                    "variation_name": "Mayonnaise"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 6,
-                    "variation_id": 455,
-                    "attribute_name": "Type de Pain",
-                    "variation_name": "Pain"
-                }
-            ],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-02T04:36:08+02:00",
-            "schema_version": 1
-        },
-        "php": "S | SUP | MAY",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Suprême",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 5,
-                    "variation_id": 457,
-                    "attribute_name": "Sauce (1ère Gratuite)",
-                    "variation_name": "Mayonnaise"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 6,
-                    "variation_id": 455,
-                    "attribute_name": "Type de Pain",
-                    "variation_name": "Pain"
-                }
-            ],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-02T04:34:59+02:00",
-            "schema_version": 1
-        },
-        "php": "S | SUP | MAY",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Suprême",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 5,
-                    "variation_id": 457,
-                    "attribute_name": "Sauce (1ère Gratuite)",
-                    "variation_name": "Mayonnaise"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 6,
-                    "variation_id": 455,
-                    "attribute_name": "Type de Pain",
-                    "variation_name": "Pain"
-                }
-            ],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-02T04:34:58+02:00",
-            "schema_version": 1
-        },
-        "php": "S | SUP | MAY",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Eau Plate 50cl",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-02T04:33:20+02:00",
-            "schema_version": 1
-        },
-        "php": "EAU",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": true,
-        "drinks": []
-    },
-    {
-        "name": "Frites Seules",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-02T04:31:54+02:00",
-            "schema_version": 1
-        },
-        "php": "FRI",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Coca-Cola 33cl",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-02T04:32:29+02:00",
-            "schema_version": 1
-        },
-        "php": "COC",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": true,
-        "drinks": []
-    },
-    {
-        "name": "Suprême",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 5,
-                    "variation_id": 457,
-                    "attribute_name": "Sauce (1ère Gratuite)",
-                    "variation_name": "Mayonnaise"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 6,
-                    "variation_id": 455,
-                    "attribute_name": "Type de Pain",
-                    "variation_name": "Pain"
-                }
-            ],
-            "addons": [],
-            "extras": [
-                {
-                    "extra_id": 331,
-                    "quantity": 1,
-                    "extra_name": "Salade",
-                    "line_total": 0,
-                    "unit_price": 0
-                },
-                {
-                    "extra_id": 332,
-                    "quantity": 1,
-                    "extra_name": "Tomate",
-                    "line_total": 0,
-                    "unit_price": 0
-                },
-                {
-                    "extra_id": 333,
-                    "quantity": 1,
-                    "extra_name": "Oignon",
-                    "line_total": 0,
-                    "unit_price": 0
-                }
-            ],
-            "captured_at": "2026-07-02T04:18:20+02:00",
-            "schema_version": 1
-        },
-        "php": "S | SUP | STO | MAY",
-        "supps": [],
-        "menu": "",
-        "instr": "SUPRÊME\nPain - Salade, Tomate, Oignon",
-        "note": "Pain - Salade, Tomate, Oignon",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Menu (Frites + Boisson)",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-02T04:17:56+02:00",
-            "schema_version": 1
-        },
-        "php": "FRI",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Cayenne",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 5,
-                    "variation_id": 281,
-                    "attribute_name": "Sauce (1ère Gratuite)",
-                    "variation_name": "Algérienne"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 6,
-                    "variation_id": 450,
-                    "attribute_name": "Type de Pain",
-                    "variation_name": "Pain"
-                }
-            ],
-            "addons": [],
-            "extras": [
-                {
-                    "extra_id": 49,
-                    "quantity": 1,
-                    "extra_name": "Salade",
-                    "line_total": 0,
-                    "unit_price": 0
-                },
-                {
-                    "extra_id": 50,
-                    "quantity": 1,
-                    "extra_name": "Tomate",
-                    "line_total": 0,
-                    "unit_price": 0
-                },
-                {
-                    "extra_id": 51,
-                    "quantity": 1,
-                    "extra_name": "Oignon",
-                    "line_total": 0,
-                    "unit_price": 0
-                }
-            ],
-            "captured_at": "2026-07-02T04:17:56+02:00",
-            "schema_version": 1
-        },
-        "php": "S | CAY | STO | ALG",
-        "supps": [],
-        "menu": "",
-        "instr": "CAYENNE\nPain - Salade, Tomate, Oignon\n+ Menu (Frites + Boisson) (+2,50 €)",
-        "note": "Pain - Salade, Tomate, Oignon",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Tacos L",
-        "snap": {
-            "lines": [
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 5,
-                    "variation_id": 377,
-                    "attribute_name": "Sauce (1ère Gratuite)",
-                    "variation_name": "Blanche"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 1,
-                    "variation_id": 362,
-                    "attribute_name": "Viande 1",
-                    "variation_name": "Cordon Bleu"
-                },
-                {
-                    "quantity": 1,
-                    "line_total": 0,
-                    "unit_price": 0,
-                    "attribute_id": 2,
-                    "variation_id": 374,
-                    "attribute_name": "Viande 2",
-                    "variation_name": "Poulet mariné"
-                }
-            ],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-02T01:03:15+02:00",
-            "schema_version": 1
-        },
-        "php": "G | TAC | Cordon P | BL",
-        "supps": [],
-        "menu": "",
-        "instr": "TACOS L\nViandes : Cordon Bleu, Poulet mariné Sauce : Blanche",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Frites Seules",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-01T23:51:04+02:00",
-            "schema_version": 1
-        },
-        "php": "FRI",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Frites Seules",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-01T23:51:03+02:00",
-            "schema_version": 1
-        },
-        "php": "FRI",
-        "supps": [],
-        "menu": "",
-        "instr": "",
-        "note": "",
-        "drink": false,
-        "drinks": []
-    },
-    {
-        "name": "Frites Seules",
-        "snap": {
-            "lines": [],
-            "addons": [],
-            "extras": [],
-            "captured_at": "2026-07-01T23:46:35+02:00",
-            "schema_version": 1
-        },
-        "php": "FRI",
-        "supps": [],
         "menu": "",
         "instr": "",
         "note": "",
