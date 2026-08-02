@@ -122,7 +122,12 @@ class UberClient
             return false;
         }
         try {
-            $res = Http::withToken($token)->acceptJson()->post($url, $body);
+            // [UBER-SANDBOX 2026-08-02] Body vide : Laravel sérialise [] en tableau JSON « [] »
+            // qu'Uber rejette (400 Bad Request prouvé sur accept_pos_order) — il faut l'objet « {} ».
+            $req = Http::withToken($token)->acceptJson();
+            $res = $body === []
+                ? $req->withBody('{}', 'application/json')->post($url)
+                : $req->post($url, $body);
             if ($res->status() === 401 && ! $retried) {
                 Cache::forget(self::TOKEN_CACHE_KEY);
                 Log::warning('[Uber] 401 — token invalidé, refresh + retry.');
