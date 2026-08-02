@@ -1,0 +1,13 @@
+import { launch, BASE, SHOTS, log } from './lib.mjs';
+const browser = await launch();
+const page = await (await browser.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
+page.on('console', (m) => { if (m.type() === 'error') log('CONSOLE-ERR:', m.text().slice(0, 200)); });
+page.on('pageerror', (e) => log('PAGE-ERR:', String(e).slice(0, 200)));
+await page.goto(`${BASE}/login`, { waitUntil: 'networkidle' }).catch((e) => log('goto err', e.message));
+await page.waitForTimeout(8000);
+log('URL:', page.url());
+const inputs = await page.evaluate(() => Array.from(document.querySelectorAll('input, button')).map((e) => ({ tag: e.tagName, type: e.type, name: e.name, id: e.id, ph: e.placeholder, txt: e.tagName === 'BUTTON' ? e.textContent.trim().slice(0, 40) : undefined })));
+log('FIELDS:', JSON.stringify(inputs, null, 1));
+log('BODY:', (await page.evaluate(() => document.body.innerText)).slice(0, 500));
+await page.screenshot({ path: SHOTS + 'debug-login.png' });
+await browser.close();

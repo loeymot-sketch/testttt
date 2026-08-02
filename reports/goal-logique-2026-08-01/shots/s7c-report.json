@@ -1,0 +1,38 @@
+[
+  {
+    "cart_before_park": {
+      "lines": 1,
+      "total": "Total 4,00 €"
+    }
+  },
+  {
+    "park_clicked": "⏸\nMettre en attente"
+  },
+  {
+    "after_park": {
+      "lines": 1,
+      "parkedBadge": "⏸ Mettre en attente",
+      "toast": null
+    }
+  },
+  {
+    "open_parked_list": true
+  },
+  {
+    "parked_list": [
+      "",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "resume_clicked": null
+  },
+  {
+    "cart_after_resume": {
+      "lines": 1,
+      "total": "Total 4,00 €"
+    }
+  }
+]

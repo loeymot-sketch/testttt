@@ -1,0 +1,21 @@
+[
+  {
+    "cart_at_start": 0
+  },
+  {
+    "drawer": "Commandes en attente\n1\nZZ-TEST-PARK-1\n1 Articles · 2 minutes ago\n4,00 €\nRestaurer\nSupprimer"
+  },
+  {
+    "restore_clicked": "Restaurer"
+  },
+  {
+    "cart_after_restore": {
+      "lines": 1,
+      "total": "Total 4,00 €",
+      "cartText": [
+        "Grande Frites ✎ 1× Algérienne 4,00 € 🗑 +"
+      ],
+      "toast": null
+    }
+  }
+]

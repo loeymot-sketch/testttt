@@ -1,0 +1,20 @@
+[
+  {
+    "modal": "Sortie de stock REPAS PERSONNEL · PERTE\n✕\nProduit\nQuantité\nMotif\n👤 Repas personnel\n🗑️ Perte / raté\nNote (facultatif)\nEnregistrer la sortie\nDERNIÈRES SORTIES\nAucune sortie enregistrée aujourd'hui."
+  },
+  {
+    "picked_item": null
+  },
+  {
+    "submit_state": {
+      "disabled": false,
+      "text": "Enregistrer la sortie"
+    }
+  },
+  {
+    "after_submit": {
+      "modalText": "Sortie de stock REPAS PERSONNEL · PERTE ✕ Produit Quantité Motif 👤 Repas personnel 🗑️ Perte / raté Note (facultatif) Enregistrer la sortie DERNIÈRES SORTIES 👤 Repas personnel 1× Petite Frites 02/08 05:23",
+      "toast": null
+    }
+  }
+]

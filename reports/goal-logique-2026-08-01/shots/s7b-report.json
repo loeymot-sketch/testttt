@@ -1,0 +1,27 @@
+[
+  {
+    "tab1_initial": {
+      "lines": 0,
+      "total": "Total 0,00 €"
+    }
+  },
+  {
+    "tab2_initial": {
+      "url": "/admin/pos",
+      "lines": 0,
+      "total": "Total 0,00 €"
+    }
+  },
+  {
+    "tab2_after_add": {
+      "lines": 1,
+      "total": "Total 2,50 €"
+    }
+  },
+  {
+    "tab1_after_tab2_add": {
+      "lines": 0,
+      "total": "Total 0,00 €"
+    }
+  }
+]

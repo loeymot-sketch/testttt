@@ -1,0 +1,37 @@
+[
+  {
+    "health_pill": []
+  },
+  {
+    "system_health_api": {
+      "status": 200,
+      "data": {
+        "overall": "ok",
+        "checks": {
+          "sync": {
+            "status": "ok",
+            "message": "Les commandes arrivent en direct."
+          },
+          "fiscal": {
+            "status": "ok",
+            "message": "Chaîne fiscale intègre."
+          },
+          "stock": {
+            "status": "ok",
+            "count": 0,
+            "message": "Stock complet."
+          },
+          "aging": {
+            "status": "info",
+            "count": 425,
+            "threshold_min": 15,
+            "message": "425 commandes en attente > 15 min"
+          }
+        },
+        "stale_events": 0,
+        "queue_pending": 0,
+        "timestamp": "2026-08-02T05:23:59+02:00"
+      }
+    }
+  }
+]

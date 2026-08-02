@@ -1,0 +1,29 @@
+[
+  {
+    "cart": {
+      "lines": 1,
+      "total": "Total 4,00 €"
+    }
+  },
+  {
+    "multi_state": {
+      "text": "💳 Paiement De Commande\n✕\nMONTANT TOTAL\n4,00 €\nCHOISIR LE PAIEMENT\n💵\nEspèces\n💳\nCarte (TPE)\n🔀\nMulti-paiement\nCOUVERT\n0,00 €\nRESTE DÛ\n4,00 €\nDIVISER ENTRE N PERSONNES\nDiviser à parts égales\nAjoutez une tranche pour commencer.\n+\nAjouter une tranche\n✓\nConfirmer & Imprimer ticket",
+      "covered": "0,00 €",
+      "remaining": "4,00 €",
+      "confirmDisabled": true,
+      "trancheAdd": true,
+      "autoBalance": false,
+      "splitEqual": true
+    }
+  },
+  {
+    "after_auto_balance": {
+      "covered": "0,00 €",
+      "remaining": "4,00 €",
+      "confirmDisabled": true,
+      "tranches": [
+        "Ajoutez une tranche pour commencer."
+      ]
+    }
+  }
+]

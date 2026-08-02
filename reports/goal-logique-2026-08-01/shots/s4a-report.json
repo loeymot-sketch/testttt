@@ -1,0 +1,49 @@
+[
+  {
+    "url": "/admin/historique"
+  },
+  {
+    "body": "Bonjour Caissier Le Cayenne Caissier Le Cayenne pos@lecayenne.fr +330600000002 0,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Ingrédients Scan Facture Commandes Caisse Historique Encaissement Vue Caisse Unifiée Caisse Livreur CAISSE ET COMMANDES Écran Cuisine Suivi Client Tableau De Bord Historique 💶 Encaissement 📋 Suivi commandes 🗂️ Historique 🖥️ Écran client ← Retour caisse Historique 10 10 25 50 100 500 1000 Filtrer Aujourd'hui Hier Annulé Remboursé N° COMMANDE ORIGINE STATUT STATUT PAIEMENT DATE Rechercher Effacer N° COMMANDE ORIGINE N° FILE CLIENT MONTANT PAIEMENT N° FISCAL DATE STATUT ACTION 0208266055 Borne N°A0042 Admin Le Cayenne 13,80 € Remboursé — 04:38, 02-08-2026 Annulée 0208266054 En ligne N°A0041 ZZ-TEST-WEB Manon 7,00 € Payé 2699 04:37, 02-08-2026 Acceptée 0208266053 Caisse N°A0040 Client passage 8,30 € Payé 2698 04:32, 02-08-2026 En préparation 0208266051 Caisse N°A0039 Client passage 4,90 € Payé 2697 04:31, 02-08-2026 Préparée 0208266050 Caisse N°A0038 Client passage 14,80 € Remboursé 2696 04:30, 02-08-2026 Annulée 0208266049 Caisse N°A0037 Client passage 7,40 € Payé 2695 04:30, 02-08-2026 Préparée 0208266048 Caisse N°A0036 Client passage 7,40 € Payé 2694 04:28, 02-08-2026 Préparée 0208266043 Caisse N°A0035 Client passage 9,80 € Remboursé 2693 04:24, 02-08-2026 Annulée 0208266042 En ligne N°A0034 ZZ-TEST-LOYALTY-C 9,50 € Non payé — 04:22, 02-08-2026 En attente 0208266039 Caisse N°A0033 Client passage 22,70 € Payé 2692 04:21, 02-08-2026 Préparée Affichage de 1 à 10 sur 3030 entrées Previous 1 2 ... 303 Next"
+  },
+  {
+    "chips": [
+      "Aujourd'hui",
+      "Hier",
+      "Annulé",
+      "Remboursé"
+    ]
+  },
+  {
+    "headers": [
+      "N° COMMANDE",
+      "ORIGINE",
+      "N° FILE",
+      "CLIENT",
+      "MONTANT",
+      "PAIEMENT",
+      "N° FISCAL",
+      "DATE",
+      "STATUT",
+      "ACTION"
+    ]
+  },
+  {
+    "search_input": null
+  },
+  {
+    "rows_after_search": "N° COMMANDE ORIGINE N° FILE CLIENT MONTANT PAIEMENT N° FISCAL DATE STATUT ACTION 0208266055 Borne N°A0042 Admin Le Cayenne 13,80 € Remboursé — 04:38, 02-08-2026 Annulée 0208266054 En ligne N°A0041 ZZ-TEST-WEB Manon 7,00 € Payé 2699 04:37, 02-08-2026 Acceptée 0208266053 Caisse N°A0040 Client passage 8,30 € Payé 2698 04:32, 02-08-2026 En préparation 0208266051 Caisse N°A0039 Client passage 4,90 € Payé 2697 04:31, 02-08-2026 Préparée 0208266050 Caisse N°A0038 Client passage 14,80 € Remboursé 2696 04:30, 02-08-2026 Annulée 0208266049 Caisse N°A0037 Client passage 7,40 € Payé 2695 04:30, 02-08-2026 Préparée 0208266048 Caisse N°A0036 Client passage 7,40 € Payé 2694 04:28, 02-08-2026 Préparée 0208266043 Caisse N°A0035 Client passage 9,80 € Remboursé 2693 04:24, 02-08-2026 Annulée 0208266042 En ligne N°A0034 ZZ-TEST-LOYALTY-C 9,50 € Non payé — 04:22, 02-08-2026 En attente 0208266039 Caisse N°A0033 Client passage 22,70 € Payé 2692 04:21, 02-08-2026 Préparée "
+  },
+  {
+    "fiscal_2698_visible": true
+  },
+  {
+    "reprint": {
+      "present": true,
+      "text": "",
+      "disabled": false
+    }
+  },
+  {
+    "after_reprint": "Bonjour Caissier Le Cayenne Caissier Le Cayenne pos@lecayenne.fr +330600000002 0,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Ingrédients Scan Facture Commandes Caisse Historique Encaissement Vue Caisse Unifiée Caisse Livreur CAISSE ET COMMANDES Écran Cuisine Suivi Client Tableau De Bord Historique 💶 Encaissement 📋 Suivi commandes 🗂️ Historique 🖥️ Écran client ← Retour caisse Historique 10 10 25 50 100 500 1000 Filtrer Aujourd'hui Hier Annulé Remboursé N° COMMANDE ORIGINE STATUT STATUT PAIEMENT DATE Rechercher Effacer N° COMMANDE ORIGINE N° FILE CLIENT MO"
+  }
+]

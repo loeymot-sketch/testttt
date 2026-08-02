@@ -1,0 +1,34 @@
+[
+  {
+    "buttons_before": {
+      "disableBtn": true,
+      "enableBtn": false,
+      "optionsBtn": true
+    }
+  },
+  {
+    "disable_clicked": "En rupture"
+  },
+  {
+    "buttons_after": {
+      "disableBtn": false,
+      "enableBtn": true,
+      "panelText": "Rupture produits × ↻ EN RUPTURE (1) Cheese Burger Disponible DISPONIBLES (0)"
+    }
+  },
+  {
+    "tile_state": {
+      "text": "ÉPUISÉ Cheese Burger Steak, cheddar, salade, tomate, oignon, sauce. 6,00 €",
+      "hasBadge86": true,
+      "classes": "pos-v5-tile pos-item-tile is-unavailable",
+      "ariaDisabled": "true"
+    }
+  },
+  {
+    "click_86_tile": {
+      "clickResult": "clicked",
+      "cartLines": 0,
+      "toast": null
+    }
+  }
+]

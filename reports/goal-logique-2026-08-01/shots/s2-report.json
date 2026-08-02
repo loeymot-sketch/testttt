@@ -1,0 +1,61 @@
+{
+  "steps": [
+    {
+      "web_row_visible": false
+    },
+    {
+      "web_panel_text": "🌐\nCOMMANDES WEB · 19\nN°A9002\n1,90 €\nAccepter\nDétails\nN°A0034\n7,00 €\nAccepter\nDétails\nN°A0032\n11,80 €\nAccepter\nDétails\nN°A0033\n7,00 €\nAccepter\nDétails\nVoir les 19 commandes web\n\nMis à jour à l'instant"
+    },
+    {
+      "web_contact_badge": null
+    },
+    {
+      "web_details_clicked": false
+    },
+    {
+      "web_details_url": "/admin/pos"
+    },
+    {
+      "web_details_body": "Français Anglais Français Bonjour Caissier Le Cayenne Caissier Le Cayenne pos@lecayenne.fr +330600000002 0,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Ingrédients Scan Facture Commandes Caisse Historique Encaissement Vue Caisse Unifiée Caisse Livreur CAISSE ET COMMANDES Écran Cuisine Suivi Client Aller au panier 👑 CAISSE LE CAYENNE Commande rapide Filiale #1 Articles 0 COMMANDES 🖥️ À encaisser 17 💶 Encaissement 📋 Suivi commandes 3 🗂️ Historique 🖥️ Écran client CAISSE 💵 Ouvrir tiroir 🏦 Caisse 🚫 Rupture 🎁 Appliquer une réduction fidélité 🛎️ PRÊT À LIVRER (2) N°A0036 7,40 € ✓ Livré N°W8675 4,00 € ✓ Livré Mis à jour à l'instant 💰 À ENCAISSER — COMPTOIR (17) N°A0008 7,40 € 🖨️ Cuisine 🖨️ Client 💳 Encaisser N°A0009 9,90 € 🖨️ Cuisine 🖨️ Client 💳 Encaisser N°A0010 11,10 € 🖨️ Cuisine 🖨️ Client 💳 Encaisser N°A0011 8,30 € 🖨️ Cuisine 🖨️ Client 💳 Encaisser Voir plus (13) → Mis à jour à l'instant 🌐 COMMANDES WEB · 19 N°A9002 1,90 € Accepter Détails N°A0034 7,00 € Accepter Détails N°A0032 11,80 € Accepter Détails N°A0033 7,00 € Accepter Détails Voir les 19 commandes web Mis à jour à l'instant 🔍 Sandwichs Galette Burgers Tacos Bols Frites Desserts Boissons Menu enfant TICKET CAISSE Commande en cours + ⏸ Mettre en attente 📦 En attente 0 SÉLECTIONNER LE TYPE DE COMMANDE 🥡 À emporter 🛵 Livraison ⏰ Programmer 🍽️ Aucun article. Sélect"
+    },
+    {
+      "web_details_edit_controls": [
+        "Modifier Le Profil",
+        "Changer Le Mot De Passe"
+      ]
+    },
+    {
+      "web_accept_clicked": null
+    },
+    {
+      "cash_panel": "💰 À ENCAISSER — COMPTOIR (17) N°A0008 7,40 € 🖨️ Cuisine 🖨️ Client 💳 Encaisser N°A0009 9,90 € 🖨️ Cuisine 🖨️ Client 💳 Encaisser N°A0010 11,10 € 🖨️ Cuisine 🖨️ Client 💳 Encaisser N°A0011 8,30 € 🖨️ Cuisine 🖨️ Client 💳 Encaisser Voir plus (13) → Mis à jour à l'instant"
+    },
+    {
+      "borne_row": null
+    },
+    {
+      "web_encaisser_clicked": false
+    },
+    {
+      "collect_modal": null
+    },
+    {
+      "kiosk_cash_panel_A0042": "A0042\n13,80 €\n2× Tacos M\n04:38\nDétail\n✓ Encaisser\nAnnuler\n↻ Actualiser"
+    },
+    {
+      "borne_detail": "2× Tacos M Variations:Viande Hachée: undefined, Samouraï: undefined Instructions:ZZ-TEST-S2-BORNE"
+    },
+    {
+      "cancel_open": true
+    },
+    {
+      "cancel_dialog": "Annuler cette commande borne ?\nCette action est irréversible. La commande payée sera annulée.\nN° A0008— 7,40 €\nRaison obligatoire (min 3 caractères)\nRetour\nOui, annuler la commande"
+    },
+    {
+      "cancel_picked": null
+    },
+    {
+      "after_cancel_body": "Bonjour Caissier Le Cayenne Caissier Le Cayenne pos@lecayenne.fr +330600000002 0,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Ingrédients Scan Facture Commandes Caisse Historique Encaissement Vue Caisse Unifiée Caisse Livreur CAISSE ET COMMANDES Écran Cuisine Suivi"
+    }
+  ]
+}

@@ -1,0 +1,102 @@
+[
+  {
+    "total": "Total 4,00 €"
+  },
+  {
+    "tranche_structure": [
+      {
+        "i": 0,
+        "selects": [
+          {
+            "value": "1",
+            "opts": [
+              "1=Espèces",
+              "2=Carte",
+              "3=MFS",
+              "5=Ticket Restaurant",
+              "4=Autre"
+            ]
+          }
+        ],
+        "inputs": [
+          {
+            "type": "number",
+            "val": "4",
+            "ph": "",
+            "id": "tranche-amount-0",
+            "cls": "pos-v5-tranche-row__input pos-v5-tabular"
+          },
+          {
+            "type": "number",
+            "val": "",
+            "ph": "",
+            "id": "tranche-tendered-0",
+            "cls": "pos-v5-tranche-row__input pos-v5-tabular"
+          }
+        ],
+        "buttons": [
+          "✕"
+        ]
+      },
+      {
+        "i": 1,
+        "selects": [
+          {
+            "value": "1",
+            "opts": [
+              "1=Espèces",
+              "2=Carte",
+              "3=MFS",
+              "5=Ticket Restaurant",
+              "4=Autre"
+            ]
+          }
+        ],
+        "inputs": [
+          {
+            "type": "number",
+            "val": "4",
+            "ph": "",
+            "id": "tranche-amount-1",
+            "cls": "pos-v5-tranche-row__input pos-v5-tabular"
+          },
+          {
+            "type": "number",
+            "val": "",
+            "ph": "",
+            "id": "tranche-tendered-1",
+            "cls": "pos-v5-tranche-row__input pos-v5-tabular"
+          }
+        ],
+        "buttons": [
+          "✕"
+        ]
+      }
+    ]
+  },
+  {
+    "filled": [
+      {
+        "row": 0,
+        "inputs": 2
+      },
+      {
+        "row": 1,
+        "mode": "2"
+      },
+      {
+        "row": 1,
+        "inputs": 2
+      }
+    ]
+  },
+  {
+    "state": {
+      "covered": "4,00 €",
+      "remaining": "0,00 €",
+      "change": null,
+      "confirmDisabled": false,
+      "modalText": "💳 Paiement De Commande\n✕\nMONTANT TOTAL\n4,00 €\nCHOISIR LE PAIEMENT\n💵\nEspèces\n💳\nCarte (TPE)\n🔀\nMulti-paiement\nCOUVERT\n4,00 €\nRESTE DÛ\n0,00 €\nDIVISER ENTRE N PERSONNES\nDiviser à parts égales\nÉquilibrer le reste\nSuggérer les rendus monnaie\n💵\nESPÈCES\nEspèces\nCarte\nMFS\nTicket Restaurant\nAutre\n✕\nMONTANT\nMONTANT REÇU\n💳\nCARTE\nEspèces\nCarte\nMFS\nTicket Restaurant\nAutre\n✕\nMONTANT\n+\nAjouter une tranche\n✓\nConfirmer & Imprimer ticket"
+    }
+  }
+]

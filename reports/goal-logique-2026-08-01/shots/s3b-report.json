@@ -1,0 +1,20 @@
+[
+  {
+    "cancel_scoped": {
+      "found": true,
+      "card": "04:38 Détail ✓ Encaisser Annuler"
+    }
+  },
+  {
+    "dialog": "Annuler cette commande borne ?\nCette action est irréversible. La commande payée sera annulée.\nN° A0042— 13,80 €\nRaison obligatoire (min 3 caractères)\nRetour\nOui, annuler la commande"
+  },
+  {
+    "confirm_without_reason": {
+      "disabled": false,
+      "aria": null
+    }
+  },
+  {
+    "done": true
+  }
+]

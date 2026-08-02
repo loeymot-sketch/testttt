@@ -1,0 +1,33 @@
+[
+  {
+    "row": "N°A0041 🔔 🌐 ZZ-TEST-WEB Manon 0699887766 1× Suprême À ENCAISSER : 7,00 € Encaisser"
+  },
+  {
+    "encaisser_clicked": true
+  },
+  {
+    "modal": "💳 Encaisser La Commande Borne\n✕\nN° A0041\nBORNE\nMONTANT TOTAL\n7,00 €\nCHOISIR LE PAIEMENT\n💶\nEspèce\nOuvre le tiroir (simulation)\n💳\nCarte\nTPE (simulation)\n📱\nMobile\n🎟️\nTicket restaurant\nMONTANT REÇU\n1\n2\n3\n⌫\n4\n5\n6\n⌫\n7\n8\n9\nC\n00\n0\n,\nC\n🧾\nTicket client\n🍳\nTicket cuisine\nAnnuler\n✓\nConfirmer & Imprimer ticket"
+  },
+  {
+    "modes": [
+      "💶\nEspèce\nOuvre le tiroir (simulation)",
+      "💳\nCarte\nTPE (simulation)",
+      "📱\nMobile",
+      "🎟️\nTicket restaurant"
+    ]
+  },
+  {
+    "numpad_entry": {
+      "keysFound": 14,
+      "ok1": true,
+      "ok0": true,
+      "value": "7,00"
+    }
+  },
+  {
+    "change": "✨ Monnaie à rendre 3,00 €"
+  },
+  {
+    "after": "Français Anglais Français Bonjour Caissier Le Cayenne Caissier Le Cayenne pos@lecayenne.fr +330600000002 0,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Ingrédients Scan Facture Commandes Caisse Historique Encaissement Vue Caisse Unifiée Caisse Livreur CAISSE ET COMMANDES Écran Cuisine Suivi Client CAISSE LE CAYENN"
+  }
+]

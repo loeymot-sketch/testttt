@@ -1,0 +1,89 @@
+[
+  {
+    "cart": {
+      "lines": 1,
+      "total": "Total 4,00 €"
+    }
+  },
+  {
+    "two_tranches": {
+      "text": "💳 Paiement De Commande\n✕\nMONTANT TOTAL\n4,00 €\nCHOISIR LE PAIEMENT\n💵\nEspèces\n💳\nCarte (TPE)\n🔀\nMulti-paiement\nCOUVERT\n0,00 €\nRESTE DÛ\n4,00 €\nDIVISER ENTRE N PERSONNES\nDiviser à parts égales\nÉquilibrer le reste\nSuggérer les rendus monnaie\n💵\nESPÈCES\nEspèces\nCarte\nMFS\nTicket Restaurant\nAutre\n✕\nMONTANT\nMONTANT REÇU\nLe montant reçu est requis pour la tranche cash.\n💵\nESPÈCES\nEspèces\nCarte\nMFS\nTicket Restaurant\nAutre\n✕\nMONTANT\nMONTANT REÇU\nLe montant reçu est requis pour la tranche cash.\n+\nAjouter une tranche\n✓\nConfirmer & Imprimer ticket",
+      "rows": [
+        "💵 ESPÈCES Espèces Carte MFS Ticket Restaurant Autre ✕ MONTANT MONTANT REÇU Le montant reçu est requis pour la tranche cash. 💵 ESPÈCES Espèces Carte ",
+        "💵 ESPÈCES Espèces Carte MFS Ticket Restaurant Autre ✕ MONTANT MONTANT REÇU Le montant reçu est requis pour la tranche cash.",
+        "💵 ESPÈCES Espèces Carte MFS Ticket Restaurant Autre ✕",
+        "💵 ESPÈCES",
+        "💵",
+        "Espèces Carte MFS Ticket Restaurant Autre",
+        "✕",
+        "MONTANT MONTANT REÇU"
+      ],
+      "inputs": [
+        {
+          "tag": "INPUT",
+          "type": "text",
+          "val": "",
+          "ph": ""
+        },
+        {
+          "tag": "INPUT",
+          "type": "number",
+          "val": "",
+          "ph": ""
+        },
+        {
+          "tag": "INPUT",
+          "type": "number",
+          "val": "2",
+          "ph": ""
+        },
+        {
+          "tag": "SELECT",
+          "type": "select-one",
+          "val": "1"
+        },
+        {
+          "tag": "INPUT",
+          "type": "number",
+          "val": "4",
+          "ph": ""
+        },
+        {
+          "tag": "INPUT",
+          "type": "number",
+          "val": "",
+          "ph": ""
+        },
+        {
+          "tag": "SELECT",
+          "type": "select-one",
+          "val": "1"
+        },
+        {
+          "tag": "INPUT",
+          "type": "number",
+          "val": "4",
+          "ph": ""
+        },
+        {
+          "tag": "INPUT",
+          "type": "number",
+          "val": "",
+          "ph": ""
+        }
+      ],
+      "covered": "0,00 €",
+      "remaining": "4,00 €",
+      "confirmDisabled": true,
+      "autoBalance": true
+    }
+  },
+  {
+    "after_balance": {
+      "covered": "0,00 €",
+      "remaining": "4,00 €",
+      "confirmDisabled": true,
+      "modalText": "💳 Paiement De Commande\n✕\nMONTANT TOTAL\n4,00 €\nCHOISIR LE PAIEMENT\n💵\nEspèces\n💳\nCarte (TPE)\n🔀\nMulti-paiement\nCOUVERT\n0,00 €\nRESTE DÛ\n4,00 €\nDIVISER ENTRE N PERSONNES\nDiviser à parts égales\nÉquilibrer le reste\nSuggérer les rendus monnaie\n💵\nESPÈCES\nEspèces\nCarte\nMFS\nTicket Restaurant\nAutre\n✕\nMONTANT\nMONTANT REÇU\nLe montant reçu est requis pour la tranche cash.\n💵\nESPÈCES\nEspèces\nCarte\nMFS\nTicket Restaurant\nAutre\n✕\nMONTANT\nMONTANT REÇU\nLe montant reçu est requis pour la tranche cash.\n+\nAjouter une tranche\n✓\nConfirmer & Imprimer ticket"
+    }
+  }
+]

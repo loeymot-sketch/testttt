@@ -1,0 +1,215 @@
+[
+  {
+    "dialogs": [
+      "",
+      "CAISSE\nSession active\n✕\nFOND DE CAISSE INITIAL\n100,00 €\nOUVERTE LE\n06/07 19:26\nMOUVEMENTS\n28\nMONTANT ATTENDU\n210,40 €\nVoir les mouvements\nClôturer la caisse",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "t": "Français",
+        "testid": null
+      },
+      {
+        "tag": "BUTTON",
+        "t": "Bonjour\nCaissier Le Cayenne",
+        "testid": null
+      },
+      {
+        "tag": "BUTTON",
+        "t": "CAISSE ET COMMANDES",
+        "testid": null
+      },
+      {
+        "tag": "BUTTON",
+        "t": "🖥️\nÀ encaisser\n15",
+        "testid": "kiosk-cash-open"
+      },
+      {
+        "tag": "BUTTON",
+        "t": "💵\nOuvrir tiroir",
+        "testid": "pos-no-sale"
+      },
+      {
+        "tag": "BUTTON",
+        "t": "🏦\nCaisse",
+        "testid": "pos-cash-session-open"
+      },
+      {
+        "tag": "BUTTON",
+        "t": "🚫\nRupture",
+        "testid": "pos-availability-panel-open"
+      },
+      {
+        "tag": "BUTTON",
+        "t": "🎁\nAppliquer une réduction fidélité",
+        "testid": "pos-loyalty-redeem-main-cta-open"
+      },
+      {
+        "tag": "BUTTON",
+        "t": "✓ Livré",
+        "testid": "pos-shortcut-deliver-6048"
+      },
+      {
+        "tag": "BUTTON",
+        "t": "✓ Livré",
+        "testid": "pos-shortcut-deliver-5935"
+      },
+      {
+        "tag": "BUTTON",
+        "t": "🖨️ Cuisine",
+        "testid": "pos-shortcut-print-kitchen-5530"
+      },
+      {
+        "tag": "BUTTON",
+        "t": "🖨️ Client",
+        "testid": "pos-shortcut-print-client-5530"
+      },
+      {
+        "tag": "BUTTON",
+        "t": "💳 Encaisser",
+        "testid": "pos-shortcut-encaisser-5530"
+      },
+      {
+        "tag": "BUTTON",
+        "t": "🖨️ Cuisine",
+        "testid": "pos-shortcut-print-kitchen-5531"
+      },
+      {
+        "tag": "BUTTON",
+        "t": "🖨️ Client",
+        "testid": "pos-shortcut-print-client-5531"
+      },
+      {
+        "tag": "BUTTON",
+        "t": "💳 Encaisser",
+        "testid": "pos-shortcut-encaisser-5531"
+      },
+      {
+        "tag": "BUTTON",
+        "t": "🖨️ Cuisine",
+        "testid": "pos-shortcut-print-kitchen-5532"
+      },
+      {
+        "tag": "BUTTON",
+        "t": "🖨️ Client",
+        "testid": "pos-shortcut-print-client-5532"
+      },
+      {
+        "tag": "BUTTON",
+        "t": "💳 Encaisser",
+        "testid": "pos-shortcut-encaisser-5532"
+      },
+      {
+        "tag": "BUTTON",
+        "t": "🖨️ Cuisine",
+        "testid": "pos-shortcut-print-kitchen-6024"
+      },
+      {
+        "tag": "BUTTON",
+        "t": "🖨️ Client",
+        "testid": "pos-shortcut-print-client-6024"
+      },
+      {
+        "tag": "BUTTON",
+        "t": "💳 Encaisser",
+        "testid": "pos-shortcut-encaisser-6024"
+      },
+      {
+        "tag": "BUTTON",
+        "t": "Voir plus (11) →",
+        "testid": "pos-shortcut-cash-more"
+      },
+      {
+        "tag": "BUTTON",
+        "t": "Accepter",
+        "testid": "pos-shortcut-web-accept-5720"
+      },
+      {
+        "tag": "BUTTON",
+        "t": "Détails",
+        "testid": "pos-shortcut-web-open-5720"
+      },
+      {
+        "tag": "BUTTON",
+        "t": "Accepter",
+        "testid": "pos-shortcut-web-accept-5739"
+      },
+      {
+        "tag": "BUTTON",
+        "t": "Détails",
+        "testid": "pos-shortcut-web-open-5739"
+      },
+      {
+        "tag": "BUTTON",
+        "t": "Accepter",
+        "testid": "pos-shortcut-web-accept-5821"
+      },
+      {
+        "tag": "BUTTON",
+        "t": "Détails",
+        "testid": "pos-shortcut-web-open-5821"
+      },
+      {
+        "tag": "BUTTON",
+        "t": "Accepter",
+        "testid": "pos-shortcut-web-accept-5823"
+      },
+      {
+        "tag": "BUTTON",
+        "t": "Détails",
+        "testid": "pos-shortcut-web-open-5823"
+      },
+      {
+        "tag": "BUTTON",
+        "t": "Voir les 18 commandes web",
+        "testid": "pos-shortcut-web-more"
+      },
+      {
+        "tag": "INPUT",
+        "t": "Rechercher un article du menu",
+        "testid": null
+      },
+      {
+        "tag": "BUTTON",
+        "t": "Sandwichs",
+        "testid": "pos-category-tile"
+      },
+      {
+        "tag": "BUTTON",
+        "t": "Galette",
+        "testid": "pos-category-tile"
+      },
+      {
+        "tag": "BUTTON",
+        "t": "Burgers",
+        "testid": "pos-category-tile"
+      },
+      {
+        "tag": "BUTTON",
+        "t": "Tacos",
+        "testid": "pos-category-tile"
+      },
+      {
+        "tag": "BUTTON",
+        "t": "Bols",
+        "testid": "pos-category-tile"
+      },
+      {
+        "tag": "BUTTON",
+        "t": "Frites",
+        "testid": "pos-category-tile"
+      },
+      {
+        "tag": "BUTTON",
+        "t": "Desserts",
+        "testid": "pos-category-tile"
+      }
+    ]
+  }
+]

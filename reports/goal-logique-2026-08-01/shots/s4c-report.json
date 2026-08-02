@@ -1,0 +1,168 @@
+[
+  {
+    "url": "/admin/pos"
+  },
+  {
+    "body": "Français Anglais Français Bonjour Caissier Le Cayenne Caissier Le Cayenne pos@lecayenne.fr +330600000002 0,00 € Modifier Le Profil Changer Le Mot De Passe Déconnexion Tableau De Bord POS Ingrédients Scan Facture Commandes Caisse Historique Encaissement Vue Caisse Unifiée Caisse Livreur CAISSE ET COMMANDES Écran Cuisine Suivi Client Aller au panier 👑 CAISSE LE CAYENNE Commande rapide Filiale #1 Articles 0 COMMANDES 🖥️ À encaisser 15 💶 Encaissement 📋 Suivi commandes 3 🗂️ Historique 🖥️ Écran client CAISSE 💵 Ouvrir tiroir 🏦 Caisse 🚫 Rupture 🎁 Appliquer une réduction fidélité 🛎️ PRÊT À LIVRER (2) N°A0036 7,40 € ✓ Livré N°W8675 4,00 € ✓ Livré Mis à jour à l'instant 💰 À ENCAISSER — COMPTOIR (15) N°A0009 9,90 € 🖨️ Cuisine 🖨️ Client 💳 Encaisser N°A0010 11,10 € 🖨️ Cuisine 🖨️ Client 💳 Encaisser N°A0011 8,30 € 🖨️ Cuisine 🖨️ Client 💳 Encaisser N°A0058 8,00 € 🖨️ Cuisine 🖨️ Client 💳 Encaisser Voir plus (11) → Mis à jour à l'instant 🌐 COMMANDES WEB · 18 N°A9002 1,90 € Accepter Détails N°A0034 7,00 € Accepter Détails N°A0032 11,80 € Accepter Détails N°A0033 7,00 € Accepter Détails Voir les 18 commandes web Mis à jour à l'instant 🔍 Sandwichs Galette Burgers Tacos Bols Frites Desserts Boissons Menu enfant TICKET CAISSE Commande en cours + ⏸ Mettre en attente 📦 En attente 0 SÉLECTIONNER LE TYPE DE COMMANDE 🥡 À emporter 🛵 Livraison ⏰ Programmer 🍽️ Aucun article. Sélectionnez un produit dans la grille. Sous-total 0,00 € Total 0,00 € Rupture produits × ↻ DISPONIBLES (5"
+  },
+  {
+    "banner": null
+  },
+  {
+    "live_chip": null
+  },
+  {
+    "controls": [
+      {
+        "t": "Français",
+        "testid": null,
+        "cls": "dropdown-btn flex items-center gap-2 h-9"
+      },
+      {
+        "t": "Bonjour\nCaissier Le Cayenne",
+        "testid": null,
+        "cls": "dropdown-btn flex items-center gap-2"
+      },
+      {
+        "t": "Déconnexion",
+        "testid": null,
+        "cls": "paper-link transition w-full flex items-"
+      },
+      {
+        "t": "CAISSE ET COMMANDES",
+        "testid": null,
+        "cls": "db-sidebar-nav-title"
+      },
+      {
+        "t": "🖥️\nÀ encaisser\n15",
+        "testid": "kiosk-cash-open",
+        "cls": "pos-v5-btn pos-v5-btn--kiosk-cash pos-v5"
+      },
+      {
+        "t": "💵\nOuvrir tiroir",
+        "testid": "pos-no-sale",
+        "cls": "pos-v5-btn pos-v5-btn--ghost pos-v5-btn-"
+      },
+      {
+        "t": "🏦\nCaisse",
+        "testid": "pos-cash-session-open",
+        "cls": "pos-v5-btn pos-v5-btn--ghost pos-v5-btn-"
+      },
+      {
+        "t": "🚫\nRupture",
+        "testid": "pos-availability-panel-open",
+        "cls": "pos-v5-btn pos-v5-btn--ghost pos-v5-btn-"
+      },
+      {
+        "t": "🎁\nAppliquer une réduction fidélité",
+        "testid": "pos-loyalty-redeem-main-cta-open",
+        "cls": "pos-v5-btn pos-v5-btn--ghost pos-v5-btn-"
+      },
+      {
+        "t": "✓ Livré",
+        "testid": "pos-shortcut-deliver-6048",
+        "cls": "pos-shortcuts__cta pos-shortcuts__cta--r"
+      },
+      {
+        "t": "✓ Livré",
+        "testid": "pos-shortcut-deliver-5935",
+        "cls": "pos-shortcuts__cta pos-shortcuts__cta--r"
+      },
+      {
+        "t": "🖨️ Cuisine",
+        "testid": "pos-shortcut-print-kitchen-5530",
+        "cls": "pos-shortcuts__print-btn"
+      },
+      {
+        "t": "🖨️ Client",
+        "testid": "pos-shortcut-print-client-5530",
+        "cls": "pos-shortcuts__print-btn"
+      },
+      {
+        "t": "💳 Encaisser",
+        "testid": "pos-shortcut-encaisser-5530",
+        "cls": "pos-shortcuts__cta pos-shortcuts__cta--c"
+      },
+      {
+        "t": "🖨️ Cuisine",
+        "testid": "pos-shortcut-print-kitchen-5531",
+        "cls": "pos-shortcuts__print-btn"
+      },
+      {
+        "t": "🖨️ Client",
+        "testid": "pos-shortcut-print-client-5531",
+        "cls": "pos-shortcuts__print-btn"
+      },
+      {
+        "t": "💳 Encaisser",
+        "testid": "pos-shortcut-encaisser-5531",
+        "cls": "pos-shortcuts__cta pos-shortcuts__cta--c"
+      },
+      {
+        "t": "🖨️ Cuisine",
+        "testid": "pos-shortcut-print-kitchen-5532",
+        "cls": "pos-shortcuts__print-btn"
+      },
+      {
+        "t": "🖨️ Client",
+        "testid": "pos-shortcut-print-client-5532",
+        "cls": "pos-shortcuts__print-btn"
+      },
+      {
+        "t": "💳 Encaisser",
+        "testid": "pos-shortcut-encaisser-5532",
+        "cls": "pos-shortcuts__cta pos-shortcuts__cta--c"
+      },
+      {
+        "t": "🖨️ Cuisine",
+        "testid": "pos-shortcut-print-kitchen-6024",
+        "cls": "pos-shortcuts__print-btn"
+      },
+      {
+        "t": "🖨️ Client",
+        "testid": "pos-shortcut-print-client-6024",
+        "cls": "pos-shortcuts__print-btn"
+      },
+      {
+        "t": "💳 Encaisser",
+        "testid": "pos-shortcut-encaisser-6024",
+        "cls": "pos-shortcuts__cta pos-shortcuts__cta--c"
+      },
+      {
+        "t": "Voir plus (11) →",
+        "testid": "pos-shortcut-cash-more",
+        "cls": "pos-shortcuts__more"
+      },
+      {
+        "t": "Accepter",
+        "testid": "pos-shortcut-web-accept-5720",
+        "cls": "pos-shortcuts__cta pos-shortcuts__cta--w"
+      },
+      {
+        "t": "Détails",
+        "testid": "pos-shortcut-web-open-5720",
+        "cls": "pos-shortcuts__cta pos-shortcuts__cta--w"
+      },
+      {
+        "t": "Accepter",
+        "testid": "pos-shortcut-web-accept-5739",
+        "cls": "pos-shortcuts__cta pos-shortcuts__cta--w"
+      },
+      {
+        "t": "Détails",
+        "testid": "pos-shortcut-web-open-5739",
+        "cls": "pos-shortcuts__cta pos-shortcuts__cta--w"
+      },
+      {
+        "t": "Accepter",
+        "testid": "pos-shortcut-web-accept-5821",
+        "cls": "pos-shortcuts__cta pos-shortcuts__cta--w"
+      },
+      {
+        "t": "Détails",
+        "testid": "pos-shortcut-web-open-5821",
+        "cls": "pos-shortcuts__cta pos-shortcuts__cta--w"
+      }
+    ]
+  }
+]

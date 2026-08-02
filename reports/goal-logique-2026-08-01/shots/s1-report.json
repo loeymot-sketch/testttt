@@ -1,0 +1,95 @@
+{
+  "steps": [
+    {
+      "wizard_opened": {
+        "visible": true,
+        "excerpt": "Cayenne\n€7.40\n−\n1\n+\n🥖 TYPE DE PAIN\n🥖\nPain\n🫓\nGalette\n🥩 Viande\n0/1 incluse\n1 viande incluse — au-delà : +€2.50 / viande\nPoulet mariné\nMixte (hachée + poulet)\n🥬 Crudités\nCliquez pour retirer.\n🥬 ✓ Salade\n🍅 ✓ Tomate\n🧅 ✓ Oignon\n🧅 ✕ Sans Oignons cuits\n🥄 Sauce\n1ère gratuite\nAlgérienne\nAndalouse\nBlanche\nCurry\nHannibal\nHarissa\nKetchup\nMayonnaise\nSamouraï\nBarbecue\nFromagère maison\nSpicy maison\nSans sauce\n➕ Suppléments ▼\n🍟🥤 Formule\n🚫\nSans formule\n—\n🥤\nMenu (Frites + Boisson)\n+2,50 €\n🍟\nFrites S"
+      }
+    },
+    {
+      "pick_mixte": "Mixte (hachée + poulet) <SPAN class=viande-tile-name>"
+    },
+    {
+      "pick_algerienne": "Algérienne <BUTTON class=sauce-chip selected>"
+    },
+    {
+      "open_supplements": "➕ Suppléments ▲ <BUTTON class=suppl-toggle>"
+    },
+    {
+      "pick_cheddar": "Cheddar <SPAN class=option-name>"
+    },
+    {
+      "wizard_after_picks": "Cayenne\n€7.40\n−\n1\n+\n🥖 TYPE DE PAIN\n🥖\nPain\n🫓\nGalette\n🥩 Viande\n1/1 incluse\n1 viande incluse — au-delà : +€2.50 / viande\nPoulet mariné\n1\nMixte (hachée + poulet)\n−\n🥬 Crudités\nCliquez pour retirer.\n🥬 ✓ Salade\n🍅 ✓ Tomate\n🧅 ✓ Oignon\n🧅 ✕ Sans Oignons cuits\n🥄 Sauce\n✅ 1 sauce gratuite\nAlgérienne\nAndalouse\nBlanche\nCurry\nHannibal\nHarissa\nKetchup\nMayonnaise\nSamouraï\nBarbecue\nFromagère maison\nSpicy maison\nSans sauce\n➕ Suppléments ▲\n🧀\nCheddar\n+0,90 €\n🫕\nRaclette\n+0,90 €\n➕\nEmmental\n+0,90 €\n🥚\nŒuf\n+0,90 €\n➕\nLégumes sautés\n+0,90 €\n🥓\nJambon\n+0,90 €\n➕\nChampignons\n+0,90 €\n➕\nOignons frits\n+0,90 €\n🧀\nBoursin\n+0,90 €\n🍟🥤 Formule\n🚫\nSans formule\n—\n🥤\nMenu (Frites + Boisson)\n+2,50 €\n🍟\nFrites Seules\n+1,90 €\n🥤\nBoisson Seule\n+1,90 €\n📝 Instruction spéciale\nAPERÇU TICKET\nCAYENNE Pain Viandes : Mixte (hachée + poulet) - Salade, Tomate, Oignon Sauce : Algérienne Supplément : Cheddar (+€0.90)\nAnnuler\nTotal\n€8.30\n Ajouter au panier"
+    },
+    {
+      "add_btn": "Ajouter au panier <BUTTON class=wizard-btn-cart>"
+    },
+    {
+      "wizard_still_open": false
+    },
+    {
+      "frites_wizard": "Petite Frites\n€2.50\n−\n1\n+\n🥄 Sauce\n1ère gratuite\nAlgérienne\nAndalouse\nBlanche\nCurry\nHannibal\nHarissa\nKetchup\nMayonnaise\nSamouraï\nBarbecue\nFromagère maison\nSpicy maison\n📝 Instruction spéciale\nAPERÇU TICKET\nPETITE FRITES\nAnnuler\nTotal\n€2.50\n Ajouter au panier"
+    },
+    {
+      "frites_add": "Ajouter au panier <BUTTON class=wizard-btn-cart>"
+    },
+    {
+      "frites_wizard_after_add": true
+    },
+    {
+      "frites_cancel": "Annuler <BUTTON class=wizard-btn-cancel>"
+    },
+    {
+      "dom_state": {
+        "backdrops": 0,
+        "modalsOpen": [
+          "item-info-modal",
+          "item-variation-modal",
+          "addCustomer",
+          "orderpayment",
+          "receiptModal",
+          "addressModal"
+        ],
+        "payBtn": true,
+        "cartLines": 1
+      }
+    },
+    {
+      "cart": {
+        "items": [
+          "Cayenne ✎ Viandes: Mixte (hachée + poulet) Pain: Pain Crudités: Salade, Tomate, Oignon Sauce: Algérienne Suppléments: Cheddar 8,30 € 🗑 +",
+          "",
+          "Cayenne ✎ Viandes: Mixte (hachée + poulet) Pain: Pain Crudités: Salade, Tomate, Oignon Sauce: Algérienne Suppléments: Cheddar",
+          "Cayenne ✎",
+          "✎",
+          "Viandes: Mixte (hachée + poulet) Pain: Pain Crudités: Salade, Tomate, Oignon Sauce: Algérienne Suppléments: Cheddar",
+          "8,30 €",
+          "🗑 +"
+        ],
+        "grandTotal": "Total 8,30 €",
+        "ticketText": "Tableau De Bord\nPOS\nIngrédients\nScan Facture\nCommandes Caisse\nHistorique\nEncaissement\nVue Caisse Unifiée\nCaisse Livreur\nCAISSE ET COMMANDES\nÉcran Cuisine\nSuivi Client"
+      }
+    },
+    {
+      "pay_clicked": "💳\nCommande · 8,30 €"
+    },
+    {
+      "payment_modal": "💳 Paiement De Commande\n✕\nMONTANT TOTAL\n8,30 €\nCHOISIR LE PAIEMENT\n💵\nEspèces\n💳\nCarte (TPE)\n🔀\nMulti-paiement\nMONTANT REÇU\n1\n2\n3\n⌫\n4\n5\n6\n⌫\n7\n8\n9\nC\n00\n0\n.\nC\n✓\nConfirmer & Imprimer ticket"
+    },
+    {
+      "change_display": {
+        "changeBlock": "✨ Monnaie à rendre 11,70 €",
+        "cashInputValue": "20",
+        "totalShown": "8,30 €"
+      }
+    },
+    {
+      "post_confirm": {
+        "payModalOpen": true,
+        "receiptVisible": true,
+        "receiptText": "🔧 MODE TEST — IMPRESSION BYPASSÉE\n←\nFermer\n👨‍🍳\nTicket Cuisine\n🧾\nTicket Client\nTicket client\nSIRET: 10417050100019\nTVA intra: FR19104170501\nOpérateur: Client passage\nLe Cayenne\n437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\nTel: 0365678291\nCommande #0208266053\n02-08-2026\t04:32\nQté\t\nDésignation\nPrix\n1\n\t\nCayenne\n7,55 €\nSauce (1ère Gratuite): Algérienne ,Type de Pain: Pain ,Viande 1: Mixte (hachée + poulet)\nExtras: Salade,Tomate,Oignon,Cheddar (+€ 0,90)\nVAT (10.00 %)\n0,75 €\nSOUS-TOTAL:\t7,55 €\nTOTAL TAXES:\t0,75 €\nVAT (10%)· Base HT 7,55 €\t0,75 €\nREMISE:\t0,00 €\nTOTAL:\t8,30 €\nType de commande: À emporter\nType de paiement: Espèces\t\nEspèces: 20,00 €\nRendu : 11,70 €\nN°A0040\nN° ticket NF525: 2698\nEmpreinte audit: 0341f9c713af\nMentions légales: TVA intracommunautaire - Merci de votre visite\nMerci\nÀ Très Bientôt !\nPropulsé par\nLe Cayenne\nTicket cuisine\nCUISINE\nLe Cayenne\n437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\nCommande #0208266053\n02-08-2026 · 04:32\nOpérateur: Client passage\nN°A0040\nÀ EMPORTER\nQté\tDésignation\n1×\t\nS | CAY | P K | STO | ALG\n⭐ Cheddar\nPréparation — ne pas remettre au client",
+        "cartLines": 1
+      }
+    }
+  ]
+}

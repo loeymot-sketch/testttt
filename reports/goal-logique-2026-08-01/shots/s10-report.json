@@ -1,0 +1,25 @@
+[
+  {
+    "total": "Total 4,00 €"
+  },
+  {
+    "filled": {
+      "ok": true
+    }
+  },
+  {
+    "before_confirm": {
+      "covered": "4,00 €",
+      "remaining": "0,00 €",
+      "confirmDisabled": false
+    }
+  },
+  {
+    "after_confirm": {
+      "receiptVisible": true,
+      "receipt": "🔧 MODE TEST — IMPRESSION BYPASSÉE\n←\nFermer\n👨‍🍳\nTicket Cuisine\n🧾\nTicket Client\nTicket client\nSIRET: 10417050100019\nTVA intra: FR19104170501\nOpérateur: Client passage\nLe Cayenne\n437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\nTel: 0365678291\nCommande #0208266056\n02-08-2026\t05:32\nQté\t\nDésignation\nPrix\n1\n\t\nGrande Frites\n3,64 €\nSauce (1ère Gratuite): Algérienne\nVAT (10.00 %)\n0,36 €\nSOUS-TOTAL:\t3,64 €\nTOTAL TAXES:\t0,36 €\nVAT (10%)· Base HT 3,64 €\t0,36 €\nREMISE:\t0,00 €\nTOTAL:\t4,00 €\nType de commande: À emporter\nDétail paiement\nEspèces\t\n2,00 €\nCarte\t\n2,00 €\nN°A0043\nN° ticket NF525: 2700\nEmpreinte audit: ab7f478d9c6d\nMentions légales: TVA intracommunautaire - Merci de votre visite\nMerci\nÀ Très Bientôt !\nPropulsé par\nLe Cayenne\nTicket cuisine\nCUISINE\nLe Cayenne\n437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\nCommande #0208266056\n02-08-2026 · 05:32\nOpérateur: Client passage\nN°A0043\nÀ EMPORTER\nQté\tDésignation\n1×\t\nFRI | ALG\nPréparation — ne pas remettre au client",
+      "cartLines": 1,
+      "toast": null
+    }
+  }
+]

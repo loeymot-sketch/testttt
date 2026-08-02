@@ -1,0 +1,35 @@
+[
+  {
+    "cart_before": {
+      "lines": 1,
+      "total": "Total 4,00 €"
+    }
+  },
+  {
+    "dialogs_seen": [
+      {
+        "type": "prompt",
+        "msg": "Libellé optionnel pour la commande parkée"
+      }
+    ]
+  },
+  {
+    "after_park": {
+      "lines": 0,
+      "parkedBtn": "⏸ Mettre en attente",
+      "toast": null
+    }
+  },
+  {
+    "parked_list": []
+  },
+  {
+    "resume_clicked": null
+  },
+  {
+    "cart_after_resume": {
+      "lines": 0,
+      "total": "Total 0,00 €"
+    }
+  }
+]

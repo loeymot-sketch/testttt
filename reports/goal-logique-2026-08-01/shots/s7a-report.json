@@ -1,0 +1,17 @@
+[
+  {
+    "cart_before_reload": {
+      "lines": 1,
+      "total": "Total 4,00 €"
+    }
+  },
+  {
+    "cart_after_reload": {
+      "lines": 1,
+      "total": "Total 4,00 €",
+      "cartText": [
+        "Grande Frites ✎ 1× Algérienne 4,00 € 🗑 +"
+      ]
+    }
+  }
+]
