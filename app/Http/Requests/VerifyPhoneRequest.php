@@ -34,6 +34,10 @@ class VerifyPhoneRequest extends FormRequest
             // persistance déterministe (fallback cache email) + prénom réel dans register().
             'email' => ['nullable', 'string', 'email:rfc', 'max:190'],
             'first_name' => ['nullable', 'string', 'max:100'],
+            // [OWNER 2026-08-01] Nom de famille : nullable ICI (le canal SMS/borne partage cet
+            // endpoint) — l'exigence « nom complet » est portée par GuestSignupEmailOtpRequest
+            // (canal web), et le nom saisi y est repris automatiquement au verify.
+            'last_name' => ['nullable', 'string', 'max:100'],
         ];
     }
 }

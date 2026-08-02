@@ -83,7 +83,14 @@ class Mollie extends PaymentAbstract
      * @throws RuntimeException « Mollie non configuré. » si fail-closed,
      *                          ou erreur claire si l'API Mollie refuse.
      */
-    public function createPayment(FrontendOrder $order): array
+    /**
+     * @param string $cardToken [OWNER 2026-08-01 · PAIEMENT DANS LA PAGE] Token à usage unique
+     *                          produit par Mollie Components — les champs carte sont rendus
+     *                          DANS notre page (iframes Mollie pour la conformité PCI), donc le
+     *                          client n'est jamais envoyé sur une page de paiement étrangère.
+     *                          Vide = ancien comportement (page hébergée Mollie).
+     */
+    public function createPayment(FrontendOrder $order, string $cardToken = ''): array
     {
         if (!$this->isMollieConfigured()) {
             throw new RuntimeException('Mollie non configuré.');
@@ -97,11 +104,17 @@ class Mollie extends PaymentAbstract
             . (str_contains($redirectBase, '?') ? '&' : '?')
             . 'order=' . $order->id;
 
+        $extra = [];
+        if ($cardToken !== '') {
+            // Paiement direct : la carte a déjà été saisie sur NOTRE page.
+            $extra = ['method' => 'creditcard', 'cardToken' => $cardToken];
+        }
+
         $response = Http::withToken((string) config('payment.mollie.api_key'))
             ->acceptJson()
             ->asJson()
             ->timeout(15)
-            ->post(config('payment.mollie.api_base') . '/payments', [
+            ->post(config('payment.mollie.api_base') . '/payments', $extra + [
                 'amount' => [
                     'currency' => 'EUR',
                     // Format Mollie obligatoire : chaîne à 2 décimales exactes.
@@ -130,7 +143,10 @@ class Mollie extends PaymentAbstract
         $paymentId   = (string) ($payload['id'] ?? '');
         $checkoutUrl = (string) ($payload['_links']['checkout']['href'] ?? '');
 
-        if ($paymentId === '' || $checkoutUrl === '') {
+        // Sans cardToken, l'URL hébergée est le SEUL moyen de payer → son absence est une
+        // réponse invalide. AVEC cardToken (paiement dans notre page), Mollie peut traiter la
+        // carte directement : pas d'URL = cas NOMINAL, et non une erreur.
+        if ($paymentId === '' || ($cardToken === '' && $checkoutUrl === '')) {
             throw new RuntimeException('Réponse Mollie invalide (id ou checkout url manquant).');
         }
 
@@ -144,6 +160,9 @@ class Mollie extends PaymentAbstract
         return [
             'payment_id'   => $paymentId,
             'checkout_url' => $checkoutUrl,
+            // Payé dans notre page : carte saisie chez nous ET aucune étape bancaire renvoyée.
+            'inline'       => $cardToken !== '' && $checkoutUrl === '',
+            'status'       => (string) ($payload['status'] ?? ''),
         ];
     }
 

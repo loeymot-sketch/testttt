@@ -94,6 +94,68 @@ class MollieStructureTest extends TestCase
         });
     }
 
+    /**
+     * [OWNER 2026-08-01 · PAIEMENT DANS LA PAGE] La carte est saisie SUR NOTRE PAGE (champs
+     * Mollie Components) → le front envoie un `card_token` à usage unique. Le paiement est
+     * alors créé avec method=creditcard + cardToken : Mollie le traite DIRECTEMENT, sans
+     * envoyer le client sur une page de paiement étrangère. Le montant reste le total scellé
+     * backend, et seul le webhook peut passer la commande PAID.
+     */
+    public function test_checkout_with_card_token_pays_inline_without_sending_client_away(): void
+    {
+        $this->configureMollie();
+        [$customer, $order] = $this->webCardOrder(['total' => 11.80]);
+
+        $payload = $this->molliePaymentPayload('tr_INLINE1', $order->id, 'paid', '11.80');
+        unset($payload['_links']['checkout']); // paiement direct : Mollie ne renvoie PAS de page hébergée
+
+        Http::fake(['https://api.mollie.com/v2/payments' => Http::response($payload, 201)]);
+
+        $this->actingAs($customer, 'sanctum')
+            ->postJson("/api/frontend/order/{$order->id}/mollie-checkout", ['card_token' => 'tkn_inline_abc123'])
+            ->assertOk()
+            ->assertJsonPath('status', true)
+            ->assertJsonPath('payment_id', 'tr_INLINE1')
+            ->assertJsonPath('inline', true)
+            ->assertJsonPath('checkout_url', null);
+
+        Http::assertSent(function (ClientRequest $request) use ($order): bool {
+            $body = $request->data();
+
+            return str_ends_with($request->url(), '/v2/payments')
+                && ($body['method'] ?? null) === 'creditcard'
+                && ($body['cardToken'] ?? null) === 'tkn_inline_abc123'
+                && ($body['amount']['value'] ?? null) === '11.80'          // total scellé backend
+                && ($body['metadata']['order_id'] ?? null) === (string) $order->id;
+        });
+    }
+
+    /**
+     * [OWNER 2026-08-01] Si la banque impose une authentification 3-D Secure, Mollie renvoie
+     * quand même une URL : on la transmet, mais marquée `inline=false` + `reason=3ds` pour que
+     * le front la traite comme une étape bancaire explicite — jamais comme « le paiement se
+     * passe sur un autre site ».
+     */
+    public function test_checkout_with_card_token_surfaces_3ds_step_explicitly(): void
+    {
+        $this->configureMollie();
+        [$customer, $order] = $this->webCardOrder(['total' => 9.50]);
+
+        Http::fake([
+            'https://api.mollie.com/v2/payments' => Http::response(
+                $this->molliePaymentPayload('tr_3DS1', $order->id, 'open', '9.50'),
+                201
+            ),
+        ]);
+
+        $this->actingAs($customer, 'sanctum')
+            ->postJson("/api/frontend/order/{$order->id}/mollie-checkout", ['card_token' => 'tkn_3ds_xyz'])
+            ->assertOk()
+            ->assertJsonPath('inline', false)
+            ->assertJsonPath('reason', '3ds')
+            ->assertJsonPath('checkout_url', 'https://www.mollie.com/checkout/select-method/tr_3DS1');
+    }
+
     public function test_checkout_fails_closed_503_when_not_configured(): void
     {
         Http::fake();

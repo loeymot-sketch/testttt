@@ -65,6 +65,8 @@ class EmailSignupLoyaltyLinkTest extends TestCase
     {
         $this->postJson('/api/auth/guest-signup/email-otp', [
             'phone' => self::PHONE, 'email' => self::EMAIL, 'code' => '+33',
+            // [OWNER 2026-08-01] identité complète exigée à la demande de code.
+            'first_name' => 'Kossay', 'last_name' => 'Ben Ali',
         ])->assertOk();
 
         $token = Otp::where('phone', self::PHONE)->latest('created_at')->first()->token;

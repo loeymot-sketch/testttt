@@ -60,9 +60,11 @@ class EmailOtpSignupTest extends TestCase
     private function requestEmailOtp(string $phone = self::PHONE, string $email = self::EMAIL): \Illuminate\Testing\TestResponse
     {
         return $this->postJson('/api/auth/guest-signup/email-otp', [
-            'phone' => $phone,
-            'email' => $email,
-            'code'  => '+33',
+            'phone'      => $phone,
+            'email'      => $email,
+            'code'       => '+33',
+            'first_name' => 'Kossay',
+            'last_name'  => 'Ben Ali',
         ]);
     }
 
@@ -155,6 +157,52 @@ class EmailOtpSignupTest extends TestCase
 
         $user = User::withoutGlobalScopes()->where('phone', self::PHONE)->first();
         $this->assertSame('Mourad', $user->name, 'Le prénom fourni doit devenir le nom du compte, pas « Guest User ».');
+    }
+
+    /**
+     * (2c) [OWNER 2026-08-01 · IDENTITÉ COMPLÈTE] Le client donne NOM + PRÉNOM (+ tél + email)
+     * AVANT de recevoir le code : les deux sont exigés par l'endpoint email-otp, mémorisés
+     * avec le canal, puis scellés en « Prénom Nom » sur le compte au verify — même sans les
+     * re-poster. Fini les « Guest User » en caisse.
+     */
+    public function test_email_otp_requires_full_name_and_verify_seals_it(): void
+    {
+        Mail::fake();
+
+        // Sans nom/prénom → refusé (le code n'est même pas envoyé).
+        $this->postJson('/api/auth/guest-signup/email-otp', [
+            'phone' => self::PHONE, 'email' => self::EMAIL, 'code' => '+33',
+        ])->assertStatus(422)->assertJsonValidationErrors(['first_name', 'last_name']);
+        Mail::assertNothingSent();
+        $this->assertNull($this->dbToken(), 'Aucun code ne doit partir tant que l\'identité est incomplète.');
+
+        // Avec nom + prénom → code envoyé.
+        $this->requestEmailOtp()->assertStatus(200);
+        $token = $this->dbToken();
+        $this->assertNotNull($token);
+
+        // Verify SANS re-poster le nom : il est repris du canal → « Prénom Nom ».
+        $this->verify(self::PHONE, $token)->assertStatus(201);
+
+        $user = User::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->where('phone', self::PHONE)->first();
+        $this->assertSame('Kossay Ben Ali', $user->name, 'Le compte doit porter le nom complet « Prénom Nom ».');
+        $this->assertSame(self::EMAIL, $user->email);
+    }
+
+    /** (2d) Le nom explicitement posté au verify prime sur celui mémorisé à la demande de code. */
+    public function test_verify_name_from_request_overrides_channel_name(): void
+    {
+        Mail::fake();
+        $this->requestEmailOtp()->assertStatus(200);
+        $token = $this->dbToken();
+
+        $this->postJson('/api/auth/guest-signup/verify', [
+            'code' => '+33', 'phone' => self::PHONE, 'token' => $token,
+            'first_name' => 'Sarah', 'last_name' => 'Dupont',
+        ])->assertStatus(201);
+
+        $user = User::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->where('phone', self::PHONE)->first();
+        $this->assertSame('Sarah Dupont', $user->name);
     }
 
     /** (3a) code faux → 422, aucun compte créé, email non persisté. */
@@ -329,9 +377,13 @@ class EmailOtpSignupTest extends TestCase
         // Attaquant : demande le code pour le numéro de la victime, avec SON PROPRE email.
         // Réponse identique (anti-énumération) — l'attaquant ne sait pas où part le code.
         $this->postJson('/api/auth/guest-signup/email-otp', [
-            'phone' => self::PHONE,
-            'email' => 'attaquant@evil.com',
-            'code'  => '+33',
+            'phone'      => self::PHONE,
+            'email'      => 'attaquant@evil.com',
+            'code'       => '+33',
+            // L'attaquant remplit aussi l'identité (exigée depuis 2026-08-01) : la garde
+            // channel-confusion doit tenir MALGRÉ un formulaire complet.
+            'first_name' => 'Eve',
+            'last_name'  => 'Attaquante',
         ])->assertStatus(200)->assertJsonPath('status', true);
 
         $token = $this->dbToken();

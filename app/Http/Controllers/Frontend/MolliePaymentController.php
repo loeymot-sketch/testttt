@@ -80,8 +80,16 @@ class MolliePaymentController extends Controller
             ], 422);
         }
 
+        // [OWNER 2026-08-01 · PAIEMENT DANS LA PAGE] Token à usage unique produit par Mollie
+        // Components : la carte est saisie SUR notre page, jamais sur un site tiers. Le token
+        // n'est ni un numéro de carte ni un montant — le total reste scellé backend.
+        $cardToken = (string) $request->input('card_token', '');
+        if ($cardToken !== '' && !preg_match('/^[A-Za-z0-9_\-]{8,190}$/', $cardToken)) {
+            return response()->json(['status' => false, 'message' => 'Jeton carte invalide.'], 422);
+        }
+
         try {
-            $created = $gateway->createPayment($frontendOrder);
+            $created = $gateway->createPayment($frontendOrder, $cardToken);
         } catch (Throwable $e) {
             return response()->json([
                 'status'  => false,
@@ -89,10 +97,17 @@ class MolliePaymentController extends Controller
             ], 502);
         }
 
+        $inline = (bool) ($created['inline'] ?? false);
+
         return response()->json([
             'status'       => true,
-            'checkout_url' => $created['checkout_url'],
+            // Payé dans la page : plus aucune URL à suivre. Sinon on transmet l'étape restante.
+            'checkout_url' => $inline ? null : ($created['checkout_url'] ?: null),
             'payment_id'   => $created['payment_id'],
+            'inline'       => $inline,
+            // `3ds` = la banque exige une authentification forte (DSP2) : étape bancaire
+            // explicite, pas « le paiement se passe sur un autre site ».
+            'reason'       => $inline ? null : ($cardToken !== '' ? '3ds' : 'hosted'),
         ], 200);
     }
 }

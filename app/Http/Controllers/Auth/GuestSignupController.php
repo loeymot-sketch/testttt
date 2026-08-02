@@ -157,6 +157,14 @@ class GuestSignupController extends Controller
                         (string) $deliverTo,
                         now()->addMinutes($ttlMinutes)
                     );
+                    // [OWNER 2026-08-01] L'identité saisie AVANT le code voyage avec le canal :
+                    // le verify seule le compte en « Prénom Nom » même si le client ne re-poste
+                    // pas ces champs (le front n'a plus à les redemander à l'étape code).
+                    Cache::put(
+                        'email_otp_name:'.$request->post('phone'),
+                        trim($request->post('first_name').' '.$request->post('last_name')),
+                        now()->addMinutes($ttlMinutes)
+                    );
                     Mail::to($deliverTo)->send(new SignupOtpMail((string) $token, $ttlMinutes));
                 }
             }
@@ -190,6 +198,7 @@ class GuestSignupController extends Controller
                         // déterministe dans register() (fallback cache + prénom réel).
                         'email' => $request->post('email'),
                         'first_name' => $request->post('first_name'),
+                        'last_name' => $request->post('last_name'),
                     ]
                 );
             }
@@ -230,10 +239,17 @@ class GuestSignupController extends Controller
         }
 
         if (!$user) {
-            // [HEAL SIGNUP 2026-07-30] Prénom réel si fourni au verify (avant : « Guest User »
-            // figé → le prénom saisi à l'inscription était jeté).
+            // [HEAL SIGNUP 2026-07-30 · OWNER 2026-08-01] Identité réelle « Prénom Nom ».
+            // Priorité : ce qui est posté au verify > ce qui a été saisi à la demande de code
+            // (mémorisé avec le canal email-otp) > « Guest User » (legacy SMS/borne seulement).
             $first = is_string($array['first_name'] ?? null) ? trim($array['first_name']) : '';
-            $name = $first !== '' ? mb_substr($first, 0, 100) : "Guest User";
+            $last  = is_string($array['last_name'] ?? null) ? trim($array['last_name']) : '';
+            $name  = trim($first.' '.$last);
+            if ($name === '') {
+                $cachedName = Cache::pull('email_otp_name:'.$array['phone']);
+                $name = is_string($cachedName) ? trim($cachedName) : '';
+            }
+            $name = $name !== '' ? mb_substr($name, 0, 100) : "Guest User";
             $user = User::create([
                 'name'              => $name,
                 'username'          => Str::slug($name) . \Illuminate\Support\Str::random(5),

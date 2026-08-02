@@ -29,6 +29,10 @@ class GuestSignupEmailOtpRequest extends FormRequest
         return [
             'phone' => ['required', 'string', 'max:190', new ValidPhone()],
             'email' => ['required', 'string', 'email:rfc', 'max:190'],
+            // [OWNER 2026-08-01] Identité complète AVANT l'envoi du code : le compte doit
+            // porter « Prénom Nom » (fini les « Guest User » illisibles en caisse).
+            'first_name' => ['required', 'string', 'min:2', 'max:100'],
+            'last_name'  => ['required', 'string', 'min:2', 'max:100'],
             // Indicatif pays optionnel (défaut +33 côté contrôleur) — jamais « numeric » (rejette +33).
             'code'  => ['nullable', 'string', 'max:32'],
         ];
