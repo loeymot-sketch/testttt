@@ -70,6 +70,8 @@ class UberSelfAuditHardeningTest extends TestCase
         Http::fake([
             'login.uber.com/*' => Http::response(['access_token' => 'TOK', 'expires_in' => 3600], 200),
             'api.uber.com/v1/eats/orders/*/accept_pos_order' => Http::response(['ok' => true], 200),
+            // [UBER-SANDBOX 2026-08-02] Le fetch commande passe en v2 (voir config/uber.php).
+            'api.uber.com/v2/eats/order/*' => Http::response($detail, 200),
             'api.uber.com/v1/eats/orders/*' => Http::response($detail, 200),
         ]);
     }

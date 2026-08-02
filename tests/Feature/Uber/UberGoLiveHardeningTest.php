@@ -61,6 +61,8 @@ class UberGoLiveHardeningTest extends TestCase
         Http::fake([
             'login.uber.com/*' => Http::response(['access_token' => 'TOK', 'expires_in' => 3600], 200),
             'api.uber.com/v1/eats/orders/*/accept_pos_order' => Http::response(['ok' => true], 200),
+            // [UBER-SANDBOX 2026-08-02] Le fetch commande passe en v2 (voir config/uber.php).
+            'api.uber.com/v2/eats/order/*' => Http::response($orderDetail, 200),
             'api.uber.com/v1/eats/orders/*' => Http::response($orderDetail, 200),
         ]);
     }
@@ -158,6 +160,29 @@ class UberGoLiveHardeningTest extends TestCase
 
         $acceptCallsAfterCancel = collect(Http::recorded())->filter(fn ($pair) => str_contains($pair[0]->url(), 'accept_pos_order'))->count();
         $this->assertSame($acceptCallsAfterCreate, $acceptCallsAfterCancel, 'L\'event cancel ne doit PAS ré-appeler acceptOrder côté Uber.');
+    }
+
+    /** @test — [UBER-READY 2026-08-02] l'auto-accept annonce reason + pickup_time (secondes Unix). */
+    public function auto_accept_envoie_reason_et_pickup_time(): void
+    {
+        config()->set('uber.prep_time_minutes', 20);
+        $this->fakeUberApis($this->uberDetail());
+
+        $before = now()->timestamp;
+        $this->signedPost(['event_id' => 'evt-pt1', 'event_type' => 'orders.notification', 'meta' => ['resource_id' => 'R-PT']])->assertStatus(200);
+        $after = now()->timestamp;
+
+        $accept = collect(Http::recorded())->first(fn ($pair) => str_contains($pair[0]->url(), 'accept_pos_order'));
+        $this->assertNotNull($accept, 'accept_pos_order doit être appelé (auto_accept=true).');
+
+        $body = $accept[0]->data();
+        $this->assertNotSame('', (string) ($body['reason'] ?? ''), 'reason est requis par la spec accept_pos_order.');
+        $this->assertIsInt($body['pickup_time'] ?? null, 'pickup_time = entier (secondes Unix, PAS millisecondes).');
+        // pickup_time = now + 20 min (config), borné par les timestamps avant/après la requête.
+        $this->assertGreaterThanOrEqual($before + 20 * 60, $body['pickup_time']);
+        $this->assertLessThanOrEqual($after + 20 * 60, $body['pickup_time']);
+        // Garde anti-régression millisecondes : un ts en ms serait ~1000× trop grand.
+        $this->assertLessThan($after + 86400, $body['pickup_time'], 'pickup_time doit rester dans la journée (sinon unité fausse).');
     }
 
     /** @test — 5bis. annulation d'une commande INCONNUE → ack simple, rien créé. */

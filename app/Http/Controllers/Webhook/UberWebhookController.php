@@ -124,7 +124,13 @@ class UberWebhookController extends Controller
             $this->markProcessed($webhookId, $orderId);
 
             if ($orderId && (bool) config('uber.auto_accept', true)) {
-                $this->client->acceptOrder($uberOrderId);
+                // [UBER-READY 2026-08-02] `pickup_time` (secondes Unix) = seul mécanisme officiel
+                // pour annoncer quand la commande sera prête (cale le dispatch du coursier).
+                // `reason` est requis par la spec accept_pos_order.
+                $this->client->acceptOrder($uberOrderId, [
+                    'reason'      => 'Accepted by FoodKing POS',
+                    'pickup_time' => now()->addMinutes(max(1, (int) config('uber.prep_time_minutes', 15)))->timestamp,
+                ]);
             }
         } catch (\Throwable $e) {
             Log::error('[Uber webhook] traitement échec: '.$e->getMessage(), ['uber_order' => $uberOrderId]);

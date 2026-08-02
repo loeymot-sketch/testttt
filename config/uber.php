@@ -47,6 +47,13 @@ return [
     //    Défaut accepter (on ne bloque pas une commande Uber payée).
     'deny_on_out_of_stock' => env('UBER_DENY_ON_OOS', false),
 
+    // [UBER-READY 2026-08-02] Temps de préparation annoncé à Uber dans accept_pos_order
+    // (`pickup_time` = now + N minutes, secondes Unix). C'est LE levier officiel qui cale le
+    // dispatch du coursier — il n'existe PAS d'endpoint public « mark ready » pour les
+    // commandes Delivery-by-Uber (vérifié doc 2026-08-02 ; restaurantdelivery/status =
+    // self-delivery only). Ajuster via UBER_PREP_TIME_MIN selon la vitesse réelle cuisine.
+    'prep_time_minutes' => (int) env('UBER_PREP_TIME_MIN', 15),
+
     // Branche cible (V1 = single restaurant).
     'branch_id' => (int) env('UBER_BRANCH_ID', 1),
 
