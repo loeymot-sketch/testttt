@@ -1602,11 +1602,11 @@
                   <div class="kiosk-cash-order-detail-title">{{ item.quantity }}× {{ item.item_name || item.name }}</div>
                   <div v-if="Array.isArray(item.item_variations) && item.item_variations.length > 0" class="kiosk-cash-order-detail-line">
                     <strong>Variations:</strong>
-                    <span>{{ item.item_variations.map(variation => `${variation.variation_name || 'Option'}: ${variation.name}`).join(', ') }}</span>
+                    <span>{{ composedVariations(item) }}</span>
                   </div>
                   <div v-if="Array.isArray(item.item_extras) && item.item_extras.length > 0" class="kiosk-cash-order-detail-line">
                     <strong>Extras:</strong>
-                    <span>{{ item.item_extras.map(extra => extra.name).join(', ') }}</span>
+                    <span>{{ composedExtras(item) }}</span>
                   </div>
                   <div v-if="item.instruction" class="kiosk-cash-order-detail-line">
                     <strong>Instructions:</strong>
@@ -2971,6 +2971,42 @@ export default {
 
     },
     methods: {
+        /**
+         * [P1-4 AUDIT CAISSIER 2026-08-01] Composition d'une ligne « À encaisser au comptoir ».
+         *
+         * Le détail affichait « Algérienne: undefined » et « Extras:, , » sur 3375/3413
+         * order_items : le caissier encaissait sans pouvoir vérifier ce qu'il vendait. Racine =
+         * DEUX formes coexistent selon la source, et le rendu n'en connaissait qu'une :
+         *   - lignes DB  `item_variations` : { variation_name: "Sauce…", name: "Algérienne" }
+         *   - snapshot NF525 `composition_snapshot.lines` : { attribute_name: "Sauce…",
+         *     variation_name: "Algérienne" }
+         * On lit donc l'ÉTIQUETTE et la VALEUR par ordre de préférence, et on n'affiche jamais
+         * un fragment vide (mieux vaut une valeur seule qu'un « undefined » à côté du prix).
+         */
+        composedVariations(item) {
+            const rows = Array.isArray(item?.item_variations) ? item.item_variations : [];
+
+            return rows
+                .map((v) => {
+                    const value = v?.name || v?.variation_name || '';
+                    const label = v?.name ? (v?.variation_name || v?.attribute_name) : v?.attribute_name;
+
+                    return label && value ? `${label}: ${value}` : (value || '');
+                })
+                .filter(Boolean)
+                .join(', ');
+        },
+
+        /** Idem pour les suppléments (l'ancien rendu produisait « Extras:, , »). */
+        composedExtras(item) {
+            const rows = Array.isArray(item?.item_extras) ? item.item_extras : [];
+
+            return rows
+                .map((e) => e?.name || e?.extra_name || e?.item_extra_name || '')
+                .filter(Boolean)
+                .join(', ');
+        },
+
         /**
          * [CUSTOMER-DISPLAY 2026-06-28] Push the running total to the SAGA pole
          * display (only the total). Debounced + best-effort: a missing display or
@@ -4610,11 +4646,30 @@ export default {
             }
             this.noSaleBusy = true;
             try {
+                // [P1-1 AUDIT CAISSIER 2026-08-01] L'ouverture « sans vente » du tiroir est LE
+                // vecteur de détournement d'une caisse. L'UI promettait « Action tracée » alors
+                // que ce geste était 100 % CLIENT : rien n'était écrit (0 mouvement, 0 ligne
+                // d'audit). L'endpoint qui trace existait pourtant déjà — POST
+                // /admin/pos/cash-drawer/open écrit un mouvement TYPE_DRAWER_OPEN (montant 0)
+                // rattaché à la session ouverte, donc à la chaîne d'audit NF525. On l'appelle
+                // désormais : la promesse affichée devient vraie.
+                let traced = false;
+                try {
+                    const { data } = await axios.post('admin/pos/cash-drawer/open', {});
+                    traced = !!(data && (data.status === true || data.success === true));
+                } catch (_e) {
+                    traced = false;
+                }
+
                 const result = await Promise.resolve(kioskHardwareOpenDrawer());
                 if (result && result.ok === false) {
                     alertService.error(this.$t('pos.no_sale_error'));
-                } else {
+                } else if (traced) {
                     alertService.info(this.$t('pos.no_sale_done'));
+                } else {
+                    // Le tiroir s'est ouvert mais la trace n'est PAS partie : on ne laisse
+                    // JAMAIS croire au caissier que le geste est journalisé.
+                    alertService.error(this.$t('pos.no_sale_untraced'));
                 }
             } catch (e) {
                 alertService.error(this.$t('pos.no_sale_error'));
