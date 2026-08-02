@@ -40,8 +40,10 @@ class UberMenuBuilder
                 'title' => ['translations' => ['en_us' => (string) $item->name]],
                 'description' => ['translations' => ['en_us' => (string) ($item->description ?? '')]],
                 'price_info' => ['price' => (int) round(((float) $item->price) * 100)],
-                'tax_info' => [],
-                'quantity_info' => [],
+                // stdClass et PAS [] : un tableau PHP vide s'encode en « [] » (tableau JSON)
+                // qu'Uber rejette (400 FieldConverter « expect { but found [ » — prouvé au 1er push).
+                'tax_info' => new \stdClass(),
+                'quantity_info' => new \stdClass(),
             ];
         }
 
