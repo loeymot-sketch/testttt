@@ -596,6 +596,7 @@
                     <span v-if="onlineOrder.queue_number" class="kds-source-pill kds-source-pill--queue">
                       N°{{ onlineOrder.queue_number }}
                     </span>
+                    <span v-if="kdsLegacyIsUber(onlineOrder)" class="kds-source-pill kds-source-pill--uber">UBER</span>
                   </div>
                   <span class="py-0.5 px-2 rounded-[4px] text-[10px] font-client leading-4 capitalize"
                     :class="orderStatusBadgeClasses(onlineOrder.status)">{{
@@ -1844,6 +1845,13 @@ export default {
     // computed logic for the rollback path (?v2=0 / kds.v2_enabled='0').
     // Source-truth precedence identical to V2 to avoid drift between the
     // two UIs the kitchen could switch between in a single shift.
+    // [UBER-KDS 2026-08-02] Pastille UBER sur la carte legacy (lane « En ligne »). La V2
+    // (KdsOrderCard + helpers/kdsSource.js) l'a déjà ; le legacy affichait une commande
+    // Uber comme une livraison web anonyme. Mêmes alias de surface que kdsSource.js.
+    kdsLegacyIsUber(order) {
+      const surface = String((order && order.source_surface) || '').toLowerCase();
+      return surface === 'uber' || surface === 'uber_eats' || surface === 'ubereats';
+    },
     kdsLegacyShouldShowDelivery(order) {
       if (!order) {
         return false;
@@ -3192,6 +3200,10 @@ export default {
 }
 .kds-source-pill--queue {
   background: #991B1B;
+  color: #FFFFFF;
+}
+.kds-source-pill--uber {
+  background: #06C167; /* vert marque Uber Eats — parité V2 (helpers/kdsSource.js) */
   color: #FFFFFF;
 }
 .kds-wait-green {

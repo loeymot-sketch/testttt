@@ -308,6 +308,7 @@
             "source_pos": "Caisse",
             "source_kiosk": "Borne",
             "source_online": "En ligne",
+            "source_uber": "Uber Eats",
             "customer_screen": "Écran client",
             "customer_screen_hint": "Ouvre l'affichage client avec les numéros de commande visibles.",
             "back_to_pos": "Retour caisse",

@@ -646,6 +646,7 @@ export default {
                 { id: 'pos', icon: '🛒', label: this.$t('pos.tracker.source_pos') },
                 { id: 'kiosk', icon: '🖥️', label: this.$t('pos.tracker.source_kiosk') },
                 { id: 'online', icon: '🌐', label: this.$t('pos.tracker.source_online') },
+                { id: 'uber', icon: '🛵', label: this.$t('pos.tracker.source_uber') },
             ];
         },
         filteredOrders() {
@@ -1358,6 +1359,9 @@ export default {
             // [WEB-TRACKER-VISIBILITY 2026-07-20] source_surface='web' (site client) = onglet 🌐.
             // Avant : non reconnu → retombait sur l'heuristique order_type → classé 'pos' à tort.
             if (surface === 'web') return 'online';
+            // [UBER-CAISSE 2026-08-02] source_surface='uber_eats' (webhook Uber) = onglet 🛵 dédié.
+            // Avant : non reconnu → heuristique order_type (DELIVERY non listé) → classé 'pos' à tort.
+            if (surface === 'uber_eats' || surface === 'uber' || surface === 'ubereats') return 'uber';
             const ot = parseInt(o.order_type, 10);
             // Heuristics fallback when source_surface is missing
             if (Number.isFinite(ot)) {
@@ -1370,6 +1374,7 @@ export default {
             const s = this.sourceOf(o);
             if (s === 'kiosk') return '🖥️';
             if (s === 'online') return '🌐';
+            if (s === 'uber') return '🛵';
             return '🛒';
         },
         customerLabel(o) {
@@ -1893,6 +1898,7 @@ export default {
 
 .pos-tracker-card-source--kiosk { background: #EEF2FF; }
 .pos-tracker-card-source--online { background: #ECFEFF; }
+.pos-tracker-card-source--uber { background: #E9F9EF; } /* vert Uber Eats (#06C167) éclairci */
 
 /* [Wave S-4 P-OWNER 2026-05-20] Cash-pending bell badge — strong amber,
  * gentle pulse to keep cashier attention without being aggressive. */

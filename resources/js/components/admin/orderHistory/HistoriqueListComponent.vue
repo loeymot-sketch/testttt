@@ -340,6 +340,7 @@ export default {
                 { id: 'pos', name: this.$t('label.caisse') },
                 { id: 'online', name: this.$t('label.online') },
                 { id: 'delivery', name: this.$t('label.delivery') },
+                { id: 'uber', name: 'Uber Eats' },
             ];
         },
     },
@@ -386,6 +387,11 @@ export default {
         originBadge: function (order) {
             const surface = String(order.source_surface || '').toLowerCase();
             const type = parseInt(order.order_type);
+            // [UBER-CAISSE 2026-08-02] Uber AVANT le test DELIVERY : les commandes Uber sont créées
+            // en order_type=DELIVERY, elles seraient toutes badgées « Livraison » sinon.
+            if (surface === 'uber_eats' || surface === 'uber' || surface === 'ubereats') {
+                return { label: 'Uber Eats', cls: 'origin-uber' };
+            }
             if (type === orderTypeEnum.DELIVERY) {
                 return { label: this.$t('label.delivery'), cls: 'origin-delivery' };
             }
@@ -437,6 +443,7 @@ export default {
                 case 'pos': this.props.search.source_surface = 'pos'; break;
                 case 'online': this.props.search.source_surface = 'web'; break;
                 case 'delivery': this.props.search.order_type = orderTypeEnum.DELIVERY; break;
+                case 'uber': this.props.search.source_surface = 'uber_eats'; break;
             }
         },
         search: function () {
@@ -605,6 +612,7 @@ export default {
 .origin-caisse { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
 .origin-online { background: #f5f3ff; color: #5b21b6; border-color: #ddd6fe; }
 .origin-delivery { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+.origin-uber { background: #e9f9ef; color: #067a43; border-color: #8ceab8; } /* vert Uber Eats #06C167 */
 
 /* Payment badge */
 .hist-pay-badge {
