@@ -139,6 +139,13 @@
       </div>
       <template v-for="(item, idx) in order.order_items" :key="item.id || idx">
         <div class="kds-card__item-block">
+          <!-- [F-03 AUDIT CUISINIER 2026-08-01 · P1] Produit passé « 86 » PENDANT la
+               préparation : le badge existait sur l'écran legacy mais avait disparu du
+               board V2 (l'événement arrivait bien, plus personne ne l'affichait) → le
+               cuisinier montait un produit en rupture sans le savoir. -->
+          <div v-if="isItemOos(item)" class="kds-card__oos-badge" role="alert">
+            {{ $t('pos.stock_rupture_alert', { name: item.item_name || item.name || '' }) }}
+          </div>
           <KdsOrderLine
             v-for="(line, li) in renderItemLines(item)"
             :key="li"
@@ -468,6 +475,23 @@ export default {
         },
     },
     methods: {
+        /**
+         * [F-03 AUDIT CUISINIER 2026-08-01 · P1] Ce produit vient-il de passer « 86 » ?
+         * Le store `kdsInflight` (alimenté par ItemAvailabilityChanged, TTL 10 min) portait
+         * déjà l'information et le getter existait — seul le RENDU manquait sur le board V2,
+         * si bien que le badge de rupture n'apparaissait plus jamais en cuisine.
+         * Défensif : si le module n'est pas monté (tests, écran isolé), on n'affiche rien
+         * plutôt que de casser la carte.
+         */
+        isItemOos(item) {
+            try {
+                const g = this.$store && this.$store.getters
+                    && this.$store.getters['kdsInflight/isItemRecentlyDeavailable'];
+                return typeof g === 'function' ? !!g(item) : false;
+            } catch (_) {
+                return false;
+            }
+        },
         renderItemLines(item) {
             // [KITCHEN-SYMBOLS 2026-06-28] Owner: the kitchen reads symbolic codes
             // (G | SANDWICH | P | STO | SAM), not full prose. See kdsSymbolic.js.
@@ -807,6 +831,23 @@ export default {
     outline: 2px solid #0F766E;
     outline-offset: 2px;
     border-radius: 4px;
+}
+
+/* [F-03 AUDIT CUISINIER 2026-08-01 · P1] Rupture « 86 » survenue pendant la préparation :
+   rouge plein + majuscules, lisible d'un coup d'œil à 1,5 m dans le bruit d'un rush. */
+.kds-card__oos-badge {
+    display: block;
+    margin: 0 0 6px;
+    padding: 6px 10px;
+    background: #B91C1C;
+    color: #fff;
+    border-radius: 8px;
+    font-family: var(--font-mono, monospace);
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    line-height: 1.25;
 }
 
 .kds-card__body-fade {
