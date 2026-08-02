@@ -36,7 +36,14 @@ class SyncUberOrderCancel implements ShouldQueue
             return;
         }
 
-        $ok = app(UberClient::class)->cancelOrder($uberOrderId);
+        // [UBER-VALIDATION 2026-08-02] cancellation_reason objet REQUIS (schéma sourcé :
+        // {type Required, info opt}). Type concret, jamais OTHER/UNKNOWN (règle Uber < 10 %).
+        $ok = app(UberClient::class)->cancelOrder($uberOrderId, [
+            'cancellation_reason' => [
+                'type' => 'ITEM_ISSUE',
+                'info' => 'Canceled by the restaurant POS (Le Cayenne)',
+            ],
+        ]);
         Log::info('[Uber] cancel sortant signalé', ['uber_order' => $uberOrderId, 'ok' => $ok]);
     }
 }

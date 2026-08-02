@@ -135,8 +135,8 @@ class UberBasicProductionCapabilitiesTest extends TestCase
 
         $sent = collect(Http::recorded())->filter(fn ($p) => str_contains($p[0]->url(), '/menus/items/item-42'))->values();
         $this->assertCount(2, $sent, 'Un POST par bascule 86.');
-        $this->assertGreaterThan(time(), $sent[0][0]->data()['suspension_info']['suspension']['suspend_until'], 'Rupture → suspendu (futur).');
-        $this->assertSame(0, $sent[1][0]->data()['suspension_info']['suspension']['suspend_until'], 'Retour → suspension levée.');
+        $this->assertSame(8640000000, $sent[0][0]->data()['suspension_info']['suspension']['suspend_until'], 'Rupture → suspendu (valeur far-future officielle Uber).');
+        $this->assertNull($sent[1][0]->data()['suspension_info']['suspension']['suspend_until'], 'Retour → suspension levée (null = disponible, doc officielle).');
     }
 
     /** @test — ready : PREPARED d'une commande Uber → POST /v1/delivery/order/{id}/ready. */
@@ -188,6 +188,9 @@ class UberBasicProductionCapabilitiesTest extends TestCase
         $sent = collect(Http::recorded())->filter(fn ($p) => str_contains($p[0]->url(), '/cancel'))->values();
         $this->assertCount(1, $sent, 'Un seul cancel sortant (l\'écho Uber est bloqué par le marqueur).');
         $this->assertStringContainsString('/v1/delivery/order/U-CXL-1/cancel', $sent[0][0]->url());
+        $reason = $sent[0][0]->data()['cancellation_reason'] ?? null;
+        $this->assertIsArray($reason, 'cancellation_reason objet REQUIS par la validation Uber.');
+        $this->assertNotContains(strtoupper((string) $reason['type']), ['OTHER', 'UNKNOWN'], 'Jamais OTHER/UNKNOWN par défaut (règle < 10 %).');
     }
 
     /** @test — mapper : l'ID "item-<id>" du menu uploadé se résout directement (sans carte manuelle). */

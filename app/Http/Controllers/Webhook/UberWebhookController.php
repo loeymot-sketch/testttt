@@ -93,6 +93,11 @@ class UberWebhookController extends Controller
                     \App\Jobs\PushUberMenuJob::dispatch();
                 } elseif (str_contains($etLower, 'deprovision')) {
                     Log::critical('[Uber] store DEPROVISIONED — l\'intégration POS est désactivée côté Uber, les commandes repartent sur la tablette.', ['payload' => $payload['meta'] ?? []]);
+                } elseif (str_contains($etLower, 'status')) {
+                    // [UBER-VALIDATION 2026-08-02] Flux exigé par Uber : « process the event by
+                    // calling Get Store Status » — on relit le statut courant à chaque changement.
+                    $current = $this->client->deliveryStoreStatus();
+                    Log::info('[Uber] store.status.changed → Get Store Status', ['status' => $current, 'payload' => $payload['meta'] ?? []]);
                 } else {
                     Log::info('[Uber] event store reçu: '.$etLower, ['payload' => $payload['meta'] ?? []]);
                 }
@@ -143,7 +148,7 @@ class UberWebhookController extends Controller
                 return response()->json(['status' => 'ack_order_event_noop', 'event' => $etLower], 200);
             }
 
-            $orderId = $this->createFromUber($uberOrderId);
+            $orderId = $this->createFromUber($uberOrderId, (string) ($payload['resource_href'] ?? ''));
             $this->markProcessed($webhookId, $orderId);
 
             if ($orderId && (bool) config('uber.auto_accept', true)) {
@@ -176,7 +181,7 @@ class UberWebhookController extends Controller
     }
 
     /** Crée la commande dans notre système à partir du détail Uber. Retourne l'order_id ou null. */
-    private function createFromUber(string $uberOrderId): ?int
+    private function createFromUber(string $uberOrderId, string $resourceHref = ''): ?int
     {
         if ($uberOrderId === '') {
             return null;
@@ -201,7 +206,13 @@ class UberWebhookController extends Controller
 
             return null;
         }
-        $detail = $this->client->fetchOrder($uberOrderId);
+        // [UBER-VALIDATION 2026-08-02] Flux exigé : « process the events by calling
+        // resource_href to retrieve order details ». On suit le lien fourni par le webhook
+        // (domaine réécrit vers api_base — le sandbox émet des href api.uber.com mais sert
+        // sur test-api.uber.com) ; fallback sur l'endpoint configuré si absent.
+        $detail = $resourceHref !== ''
+            ? $this->client->fetchOrderByHref($resourceHref)
+            : $this->client->fetchOrder($uberOrderId);
         if (! $detail) {
             throw new \RuntimeException('fetchOrder null pour '.$uberOrderId);
         }

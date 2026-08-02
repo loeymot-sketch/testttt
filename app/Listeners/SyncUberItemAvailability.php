@@ -25,11 +25,14 @@ class SyncUberItemAvailability implements ShouldQueue
         // Disponibilité effective : mode branch (86) → isAvailable ; mode global → status actif.
         $available = $event->isAvailable ?? ((int) $event->status === \App\Enums\Status::ACTIVE);
 
+        // Schéma officiel Update Item (doc sourcée 2026-08-02) : suspend_until en secondes Unix,
+        // « null value, or time in the past, indicates that an item is available » ;
+        // 8640000000 = valeur far-future des exemples officiels Uber.
         $body = [
             'suspension_info' => [
                 'suspension' => [
-                    // suspend_until loin dans le futur = suspendu ; 0 = actif (levée de suspension).
-                    'suspend_until' => $available ? 0 : now()->addYears(10)->timestamp,
+                    'suspend_until' => $available ? null : 8640000000,
+                    'reason' => $available ? null : 'out of stock',
                 ],
             ],
         ];

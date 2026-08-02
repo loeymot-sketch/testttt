@@ -64,6 +64,20 @@ class UberClient
         return $this->authedGet($this->url('order', ['order_id' => $orderId]));
     }
 
+    /**
+     * [UBER-VALIDATION 2026-08-02] Détail d'une commande via le resource_href du webhook
+     * (flux « Get Orders » exigé par la validation Uber). Le domaine du href est réécrit
+     * vers api_base : en sandbox Uber émet https://api.uber.com/... mais sert test-api.
+     */
+    public function fetchOrderByHref(string $href): ?array
+    {
+        $path = (string) (parse_url($href, PHP_URL_PATH) ?: '');
+        if ($path === '') {
+            return null;
+        }
+        return $this->authedGet(rtrim((string) config('uber.api_base'), '/') . $path);
+    }
+
     /** Accepte une commande (POS accept). True si 2xx. */
     public function acceptOrder(string $orderId, array $body = []): bool
     {
