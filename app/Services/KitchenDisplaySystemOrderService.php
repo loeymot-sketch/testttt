@@ -141,6 +141,13 @@ class KitchenDisplaySystemOrderService
             // Sentinels : OssKdsMidnightStraddleTest + KdsTodayWindowTzSentinelTest (inversé).
             $staleFloor = now($appTz)->subHours((int) config('oss.stale_window_hours', 8));
 
+            // [F-02 AUDIT CUISINIER 2026-08-01 · P1] Plancher d'âge des commandes à l'avance /
+            // programmées en retard : sans lui, elles restaient éternellement sur le board et
+            // volaient les slots visibles aux vraies commandes du service (cf. branche orWhere
+            // plus bas). 48 h par défaut = large pour un retard légitime (J-1 non retiré),
+            // court pour un zombie. Réglable : oss.advance_stale_window_hours.
+            $advanceFloor = now($appTz)->subHours((int) config('oss.advance_stale_window_hours', 48));
+
             // [GOAL ULTRA-SYNC W4 2026-07-20] Commandes programmées : le board ne
             // montre que l'ASAP (scheduled_at NULL — 100% de l'existant, inchangé)
             // et les programmées ENTRÉES dans leur fenêtre (scheduled_at <= now +
@@ -151,7 +158,7 @@ class KitchenDisplaySystemOrderService
             // même invariant session_tz que la fenêtre glissante ci-dessus.
             KitchenReleaseRule::applyScheduledBoardFilter($query, now($appTz));
 
-            $query->where(function ($query) use ($staleFloor, $tomorrowStart) {
+            $query->where(function ($query) use ($staleFloor, $tomorrowStart, $advanceFloor) {
                 // Standard orders: sliding active window (midnight-safe, non-advance)
                 $query->where(function ($subQuery) use ($staleFloor, $tomorrowStart) {
                     $subQuery->where('order_datetime', '>=', $staleFloor)
@@ -159,8 +166,18 @@ class KitchenDisplaySystemOrderService
                              ->where('is_advance_order', Ask::NO);
                 })
                 // Advance orders: scheduled for today OR overdue from yesterday/past
-                ->orWhere(function ($subQuery) use ($tomorrowStart) {
+                // [F-02 AUDIT CUISINIER 2026-08-01 · P1] …mais PAS indéfiniment. Cette branche
+                // n'avait AUCUN plancher d'âge (contrairement aux commandes standard qui ont
+                // $staleFloor) : une programmée jamais livrée restait sur le board POUR
+                // TOUJOURS. Constaté : une commande de 9 jours (0 ligne, « ATTENTE 12389:38 »)
+                // squattait la tuile n°1 des 3 slots visibles et poussait les vraies commandes
+                // en « +N en attente » ; 15 zombies de 49 jours en base. Un cuisinier ne prépare
+                // pas une commande vieille de plusieurs jours. Plancher = même fenêtre que les
+                // standard, élargie aux retards plausibles (défaut 48 h). Rien n'est supprimé :
+                // la commande reste en base, dans l'historique et en admin.
+                ->orWhere(function ($subQuery) use ($tomorrowStart, $advanceFloor) {
                     $subQuery->where('is_advance_order', Ask::YES)
+                             ->where('order_datetime', '>=', $advanceFloor)  // pas de zombie éternel
                              ->where('order_datetime', '<', $tomorrowStart) // Today or overdue past dates
                              ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED]); // Not already completed
                 })

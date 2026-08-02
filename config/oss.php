@@ -27,4 +27,15 @@ return [
      *   - App\Services\OrderStatusScreenOrderService::listForBranch()
      */
     'stale_window_hours' => (int) env('OSS_STALE_WINDOW_HOURS', 8),
+
+    /*
+     * [F-02 AUDIT CUISINIER 2026-08-01] Plancher d'âge des commandes À L'AVANCE / programmées
+     * NON LIVRÉES sur le board cuisine. Cette branche de requête n'avait aucun plancher : une
+     * programmée jamais retirée y restait POUR TOUJOURS et occupait un des 3 slots visibles
+     * (zombies de 9 à 49 jours constatés en base, poussant les vraies commandes en « +N en
+     * attente »). 48 h couvre largement un retard légitime (commande de la veille non retirée)
+     * sans laisser s'accumuler des fantômes. Rien n'est supprimé : la commande reste en base,
+     * dans l'historique et côté admin — elle quitte seulement l'écran de production.
+     */
+    'advance_stale_window_hours' => (int) env('OSS_ADVANCE_STALE_WINDOW_HOURS', 48),
 ];
