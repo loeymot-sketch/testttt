@@ -157,6 +157,12 @@ class EventServiceProvider extends ServiceProvider
             AwardLoyaltyPointsOnDelivery::class,
             // [PHASE-36-P1] FCM push notifications on status change
             SendFcmOnOrderStatusChange::class,
+            // [UBER-BASIC-PROD 2026-08-02] PREPARED d'une commande Uber → « ready for
+            // pickup » vers Uber (queue, best-effort — jamais bloquant cuisine).
+            \App\Listeners\NotifyUberOrderReady::class,
+            // [UBER-BASIC-PROD 2026-08-02] CANCELED d'une commande Uber initié CAISSE →
+            // cancel sortant vers Uber (garde anti-écho pour les annulations venant d'Uber).
+            \App\Listeners\SyncUberOrderCancel::class,
         ],
         // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
         // Chef "↶ Annuler bump" within 60s of bump. Append-only — orders.status
@@ -243,6 +249,9 @@ class EventServiceProvider extends ServiceProvider
             InvalidateKioskMenuCacheOnItemAvailabilityChanged::class,
             PersistCatalogChangedToOutbox::class,
             PersistItemAvailabilityChangedToOutbox::class,
+            // [UBER-BASIC-PROD 2026-08-02] 86/rupture → suspension de l'item sur le menu
+            // Uber Eats (queue, best-effort, no-op si intégration non configurée).
+            \App\Listeners\SyncUberItemAvailability::class,
         ],
         // [F-016a-BIS] Persist + broadcast branch-scoped extra/variation rupture toggles.
         // No menu snapshot bump — extras/variations live inside item payloads, the

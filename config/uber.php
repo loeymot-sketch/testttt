@@ -34,6 +34,19 @@ return [
         'accept'  => '/v1/eats/orders/{order_id}/accept_pos_order',
         'deny'    => '/v1/eats/orders/{order_id}/deny_pos_order',
         'store'   => '/v1/eats/stores/{store_id}',
+
+        // [UBER-BASIC-PROD 2026-08-02] Checklist « Basic Production validation » exigée par
+        // l'équipe Uber (email Case# 58936938) — famille /v1/delivery + menus v2. Le
+        // « Mark Order Ready » existe bien ici (absent de la doc publique, confirmé par Uber).
+        'delivery_stores'  => '/v1/delivery/stores',
+        'delivery_store'   => '/v1/delivery/store/{store_id}',
+        'store_status_get' => '/v1/delivery/store/{store_id}/status',
+        'store_status_set' => '/v1/delivery/store/{store_id}/update-store-status',
+        'order_cancel'     => '/v1/delivery/order/{order_id}/cancel',
+        'order_deny'       => '/v1/delivery/order/{order_id}/deny',
+        'order_ready'      => '/v1/delivery/order/{order_id}/ready',
+        'menu_put'         => '/v2/eats/stores/{store_id}/menus',
+        'menu_item'        => '/v2/eats/stores/{store_id}/menus/items/{item_id}',
     ],
 
     // ── Décisions métier (à trancher par l'owner — défauts prudents) ──────────────

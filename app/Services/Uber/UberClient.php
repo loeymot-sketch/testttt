@@ -82,6 +82,70 @@ class UberClient
         return $this->authedGet($this->url('store', ['store_id' => (string) config('uber.store_id')]));
     }
 
+    // ── [UBER-BASIC-PROD 2026-08-02] Famille /v1/delivery + menus v2 — capacités exigées
+    //    par la checklist « Basic Production validation » d'Uber (email Case# 58936938). ──
+
+    /** Tous les stores rattachés à l'app (famille delivery). Null si échec. */
+    public function deliveryStores(): ?array
+    {
+        return $this->authedGet($this->url('delivery_stores', []));
+    }
+
+    /** Détail d'un store (famille delivery). Null si échec. */
+    public function deliveryStore(?string $storeId = null): ?array
+    {
+        return $this->authedGet($this->url('delivery_store', ['store_id' => $storeId ?? (string) config('uber.store_id')]));
+    }
+
+    /** Statut restaurant (famille delivery : ONLINE/PAUSED/OFFLINE). Null si échec. */
+    public function deliveryStoreStatus(?string $storeId = null): ?array
+    {
+        return $this->authedGet($this->url('store_status_get', ['store_id' => $storeId ?? (string) config('uber.store_id')]));
+    }
+
+    /** Change le statut du store (ex. ONLINE / PAUSED + reason). True si 2xx. */
+    public function setStoreStatus(string $status, ?string $reason = null, ?string $storeId = null): bool
+    {
+        $body = ['status' => $status];
+        if ($reason !== null) {
+            $body['reason'] = $reason;
+        }
+        return $this->authedPost($this->url('store_status_set', ['store_id' => $storeId ?? (string) config('uber.store_id')]), $body);
+    }
+
+    /** Annule une commande côté Uber (famille delivery). True si 2xx. */
+    public function cancelOrder(string $orderId, array $body = []): bool
+    {
+        return $this->authedPost($this->url('order_cancel', ['order_id' => $orderId]), $body);
+    }
+
+    /** Refuse une commande (famille delivery). True si 2xx. */
+    public function denyOrderDelivery(string $orderId, array $body = []): bool
+    {
+        return $this->authedPost($this->url('order_deny', ['order_id' => $orderId]), $body);
+    }
+
+    /** Signale « commande prête au retrait » (déclenche/cale le dispatch coursier). True si 2xx. */
+    public function readyOrder(string $orderId): bool
+    {
+        return $this->authedPost($this->url('order_ready', ['order_id' => $orderId]), []);
+    }
+
+    /** Upload complet du menu (PUT v2). True si 2xx. */
+    public function putMenu(array $menu, ?string $storeId = null): bool
+    {
+        return $this->authedPut($this->url('menu_put', ['store_id' => $storeId ?? (string) config('uber.store_id')]), $menu);
+    }
+
+    /** Met à jour un item du menu (suspension 86 / prix). True si 2xx. */
+    public function updateMenuItem(string $menuItemId, array $body, ?string $storeId = null): bool
+    {
+        return $this->authedPost(
+            $this->url('menu_item', ['store_id' => $storeId ?? (string) config('uber.store_id'), 'item_id' => $menuItemId]),
+            $body
+        );
+    }
+
     private function url(string $key, array $params): string
     {
         $path = (string) config('uber.endpoints.' . $key);
@@ -142,6 +206,29 @@ class UberClient
             return $res->successful();
         } catch (\Throwable $e) {
             Log::warning('[Uber] POST exception: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    private function authedPut(string $url, array $body, bool $retried = false): bool
+    {
+        $token = $this->accessToken();
+        if (! $token) {
+            return false;
+        }
+        try {
+            $res = Http::withToken($token)->acceptJson()->put($url, $body);
+            if ($res->status() === 401 && ! $retried) {
+                Cache::forget(self::TOKEN_CACHE_KEY);
+                Log::warning('[Uber] 401 — token invalidé, refresh + retry.');
+                return $this->authedPut($url, $body, true);
+            }
+            if (! $res->successful()) {
+                Log::warning('[Uber] PUT non-2xx: HTTP '.$res->status().' '.mb_substr($res->body(), 0, 300), ['url' => $url]);
+            }
+            return $res->successful();
+        } catch (\Throwable $e) {
+            Log::warning('[Uber] PUT exception: ' . $e->getMessage());
             return false;
         }
     }

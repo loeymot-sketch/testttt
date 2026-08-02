@@ -82,6 +82,29 @@ class UberWebhookController extends Controller
             }
         }
 
+        // [UBER-BASIC-PROD 2026-08-02] Events store.* (checklist Uber) : TOUJOURS ack 200,
+        // action best-effort. menu_refresh_request → re-push du menu (job queue) ;
+        // deprovisioned → alerte critique (les commandes ne seront PLUS routées vers nous) ;
+        // status.changed / provisioned → trace pour le monitoring.
+        $etLower = strtolower($eventType);
+        if ($eventType !== '' && str_starts_with($etLower, 'store.')) {
+            try {
+                if (str_contains($etLower, 'menu_refresh')) {
+                    \App\Jobs\PushUberMenuJob::dispatch();
+                } elseif (str_contains($etLower, 'deprovision')) {
+                    Log::critical('[Uber] store DEPROVISIONED — l\'intégration POS est désactivée côté Uber, les commandes repartent sur la tablette.', ['payload' => $payload['meta'] ?? []]);
+                } else {
+                    Log::info('[Uber] event store reçu: '.$etLower, ['payload' => $payload['meta'] ?? []]);
+                }
+            } catch (\Throwable $e) {
+                // Jamais de 5xx sur un event store : Uber exige un 200 systématique ici.
+                Log::warning('[Uber] event store — action échouée (ack quand même): '.$e->getMessage());
+            }
+            $this->markProcessed($webhookId, null);
+
+            return response()->json(['status' => 'ack_store_event', 'event' => $etLower], 200);
+        }
+
         // On ne traite que les nouvelles commandes (les autres events sont acquittés 200).
         if ($eventType !== '' && ! str_contains(strtolower($eventType), 'order')) {
             $this->markProcessed($webhookId, null);
@@ -365,6 +388,11 @@ class UberWebhookController extends Controller
             $oldStatus = (int) $locked->status;
             $locked->status = \App\Enums\OrderStatus::CANCELED;
             $locked->save();
+            // [UBER-BASIC-PROD 2026-08-02] Garde anti-écho : cette annulation VIENT d'Uber —
+            // le listener sortant SyncUberOrderCancel ne doit PAS la renvoyer vers Uber
+            // (POST cancel sur une commande déjà annulée chez eux). TTL court, cache partagé
+            // web/queue (single box V1).
+            \Illuminate\Support\Facades\Cache::put('uber.cancel_origin.' . $locked->id, true, 600);
             // Broadcast canonique → le KDS retire la carte en temps réel (mêmes listeners que les
             // annulations POS/admin) ; le flux sync la sort via leftWindow (CANCELED).
             \App\Events\OrderStatusChanged::dispatch($locked, $oldStatus, \App\Enums\OrderStatus::CANCELED);

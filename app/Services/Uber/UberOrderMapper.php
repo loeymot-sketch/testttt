@@ -115,6 +115,15 @@ class UberOrderMapper
         if ($uberId !== '' && isset($mapUberId[$uberId])) {
             return (int) $mapUberId[$uberId];
         }
+        // [UBER-BASIC-PROD 2026-08-02] Menu uploadé par NOUS (UberMenuBuilder) : les IDs Uber
+        // sont "item-<id interne>" → mapping direct, réversible, sans carte manuelle. On
+        // vérifie l'existence pour ne jamais ancrer une ligne sur un id fantôme.
+        if (preg_match('/^item-(\d+)$/', $uberId, $m) === 1) {
+            $direct = Item::query()->whereKey((int) $m[1])->first(['id']);
+            if ($direct) {
+                return (int) $direct->id;
+            }
+        }
         $n = $this->norm($title);
         if (isset($mapTitle[$n])) {
             return (int) $mapTitle[$n];
