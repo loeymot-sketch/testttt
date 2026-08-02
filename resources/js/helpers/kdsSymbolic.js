@@ -299,6 +299,15 @@ function produitCode(produit) {
     if (CODE_BASE_WORDS.includes(base) && significant[1]) {
         code += ' ' + significant[1].slice(0, 3).toUpperCase();
     }
+    // [F-01 AUDIT CUISINIER 2026-08-01 · P0] « Chicken Burger » et « Menu Enfant Chicken Burger »
+    // réduisaient tous deux à la MÊME ligne : le mot « enfant » était strippé comme générique, donc
+    // la portion enfant (plus petite, frites + boisson incluses) devenait invisible sur l'écran ET
+    // sur le ticket imprimé → mauvaise préparation garantie quand les deux sont dans la commande.
+    // On garde le code distinctif (BUR/NUG, raison d'être du strip) et on REMET le marqueur enfant.
+    // Parité stricte avec le PHP KitchenTicketSymbolicFormatter::produitCode().
+    if (words.includes('enfant')) {
+        code = 'ENF ' + code;
+    }
     return code;
 }
 

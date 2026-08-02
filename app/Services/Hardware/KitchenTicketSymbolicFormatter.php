@@ -727,6 +727,16 @@ final class KitchenTicketSymbolicFormatter
             $code .= ' '.mb_strtoupper(mb_substr($significant[1], 0, 3));
         }
 
+        // [F-01 AUDIT CUISINIER 2026-08-01 · P0] « Chicken Burger » et « Menu Enfant Chicken
+        // Burger » rendaient une ligne IDENTIQUE (le mot « enfant » était strippé comme
+        // générique) : portion enfant + frites/boisson incluses devenaient invisibles sur le
+        // ticket ET l'écran → mauvaise préparation garantie quand les deux coexistent dans la
+        // commande. On conserve le code distinctif (BUR/NUG) et on remet le marqueur enfant.
+        // Parité stricte avec le JS `kdsSymbolic.js produitCode()`.
+        if (in_array('enfant', $words, true)) {
+            $code = 'ENF '.$code;
+        }
+
         return $code;
     }
 }

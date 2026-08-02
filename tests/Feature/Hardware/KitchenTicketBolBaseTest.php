@@ -35,7 +35,15 @@ class KitchenTicketBolBaseTest extends TestCase
         // Non-régression : les autres produits gardent leur code 3 lettres.
         $this->assertSame('TAC', $this->code('Tacos M'));
         $this->assertSame('COC', $this->code('Coca 33cl'));
-        $this->assertSame('BUR', $this->code('Menu Enfant Burger'));
         $this->assertSame('CAY', $this->code('Cayenne'));
+
+        // [F-01 AUDIT CUISINIER 2026-08-01 · P0] Cette ligne attendait « BUR » tout court —
+        // c'est-à-dire EXACTEMENT le même code que le « Burger » adulte. L'audit a prouvé la
+        // collision en cuisine (deux lignes byte-identiques sur le ticket A0035, portion enfant
+        // invisible). Le code produit compact reste « BUR » ; le marqueur « ENF » le précède
+        // pour que le cuisinier sache qu'il monte le menu enfant.
+        $this->assertSame('ENF BUR', $this->code('Menu Enfant Burger'));
+        $this->assertNotSame($this->code('Burger'), $this->code('Menu Enfant Burger'),
+            'Un menu enfant ne doit JAMAIS rendre la même ligne que son produit adulte homonyme.');
     }
 }
