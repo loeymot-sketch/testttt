@@ -128,6 +128,12 @@ class UberClient
                 Log::warning('[Uber] 401 — token invalidé, refresh + retry.');
                 return $this->authedPost($url, $body, true);
             }
+            if (! $res->successful()) {
+                // [UBER-SANDBOX 2026-08-02] Un accept/deny qui échoue en silence = commande qui
+                // expire côté Uber sans trace (prouvé : 403 user_not_allowed avant l'activation
+                // Order Manager). On loggue pour le monitoring, sans changer le contrat (bool).
+                Log::warning('[Uber] POST non-2xx: HTTP '.$res->status().' '.mb_substr($res->body(), 0, 300), ['url' => $url]);
+            }
             return $res->successful();
         } catch (\Throwable $e) {
             Log::warning('[Uber] POST exception: ' . $e->getMessage());
