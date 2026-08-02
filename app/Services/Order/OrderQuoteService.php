@@ -351,9 +351,11 @@ class OrderQuoteService
             return $pricing;
         }
 
+        // [AUDIT FIDÉLITÉ 2026-08-01] Voir FrontendOrderService : `status=1` seul rendait les
+        // clients ACTIVE(5) — la quasi-totalité — introuvables, donc remise à 0 en silence.
         $loyaltyUser = User::query()
             ->where('loyalty_code', $loyaltyCode)
-            ->where('status', 1)
+            ->whereIn('status', [1, \App\Enums\Status::ACTIVE])
             ->first();
 
         if (! $loyaltyUser) {

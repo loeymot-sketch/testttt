@@ -172,7 +172,13 @@ class LoyaltyController extends Controller
                 $user->phone = $request->input('phone');
                 $user->username = uniqid('kiosk_');
                 $user->password = bcrypt(uniqid());
-                $user->status = 1;
+                // [AUDIT FIDÉLITÉ 2026-08-01 · P1-2] ACTIVE(5) et non le legacy 1 : un compte
+                // créé au comptoir pouvait se connecter sur le site (verify → 200 + token) mais
+                // TOUT appel authentifié retournait 401 (EnsureUserStatusActive n'accepte
+                // qu'ACTIVE, et révoque le token au passage) → solde invisible, QR impossible,
+                // commande web impossible, boucle de login sans fin. Même valeur que les autres
+                // chemins de création client (GuestSignup/Signup).
+                $user->status = \App\Enums\Status::ACTIVE;
                 // [REGISTRE P2-v 2026-07-18] branch_id=0 (client agnostique de branche) — LoyaltyController
                 // était le SEUL chemin de création user à omettre branch_id (GuestSignup/Signup/services
                 // staff le posent tous), laissant NULL. Un NULL casse la finalisation du login web par

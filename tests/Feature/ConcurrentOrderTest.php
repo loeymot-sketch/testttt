@@ -147,11 +147,24 @@ class ConcurrentOrderTest extends TestCase
             ->withHeader('X-Idempotency-Key', 'loyalty-b-' . uniqid())
             ->postJson('/api/frontend/order', $this->withQuote($user, $basePayload));
 
-        $this->assertTrue(in_array($response1->status(), [200, 201]));
-        $this->assertTrue(in_array($response2->status(), [200, 201]));
+        // [AUDIT FIDÉLITÉ 2026-08-01] AVANT le heal, ce test passait pour une MAUVAISE raison :
+        // la recherche du porteur filtrait `status=1`, donc ce client ACTIVE(5) était
+        // INTROUVABLE → la remise était silencieusement ignorée → les 2 commandes passaient,
+        // identiques, sans jamais toucher aux points. Le client croyait payer avec ses points
+        // et payait plein tarif. Depuis le heal, la 1ʳᵉ commande consomme réellement les points
+        // et la 2ᵉ est REFUSÉE par la garde de devis (le total recalculé serveur ne correspond
+        // plus à l'intention du devis) : c'est le comportement voulu — mieux vaut refuser que
+        // débiter deux fois.
+        $this->assertTrue(in_array($response1->status(), [200, 201]), 'La 1ʳᵉ commande doit aboutir.');
+        $this->assertNotContains($response2->status(), [200, 201],
+            'La 2ᵉ commande concurrente ne doit PAS aboutir en réutilisant le même devis fidélité.');
+        $this->assertLessThan(500, $response2->status(),
+            'Le refus doit être une garde métier explicite, jamais une erreur serveur.');
 
         $customer->refresh();
         $this->assertGreaterThanOrEqual(0, $customer->loyalty_points, 'Points must not go negative');
+        $this->assertSame(1, \App\Models\LoyaltyTransaction::where('user_id', $customer->id)->where('type', 'redeem')->count(),
+            'Exactement UN débit de points : aucune double dépense sous concurrence.');
     }
 
     private function withQuote(User $user, array $payload): array

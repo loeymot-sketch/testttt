@@ -32,13 +32,31 @@ class LoyaltyService
             return;
         }
 
-        $totalPointsToRefund = $redeemTxns->sum(fn ($t) => abs($t->points));
-        if ($totalPointsToRefund <= 0) {
+        // [AUDIT FIDÉLITÉ 2026-08-01 · P0-2] On rembourse CHAQUE ligne redeem à SON PROPRE
+        // porteur (`loyalty_transactions.user_id`), jamais en bloc au porteur de
+        // `orders.loyalty_customer_code` : ce code est ÉCRASÉ par le dernier rachat, donc
+        // deux codes sur une même commande faisaient perdre ses points au premier client et
+        // en offraient autant au second. Le grand-livre est la source de vérité.
+        foreach ($redeemTxns->groupBy('user_id') as $userId => $txns) {
+            $this->refundPointsToOwner((int) $userId, $order, (int) $txns->sum(fn ($t) => abs($t->points)), $sourceSurface);
+        }
+    }
+
+    /**
+     * Recrédite les points d'UN porteur pour une commande annulée, de façon idempotente.
+     */
+    private function refundPointsToOwner(int $userId, $order, int $totalPointsToRefund, string $sourceSurface): void
+    {
+        if ($userId <= 0 || $totalPointsToRefund <= 0) {
             return;
         }
 
-        $query = User::where('loyalty_code', $order->loyalty_customer_code)
-            ->where('status', \App\Enums\Status::ACTIVE);
+        // [AUDIT FIDÉLITÉ 2026-08-01 · P0-1] SYMÉTRIE DE STATUT avec le débit : PosRedemptionService
+        // accepte explicitement les comptes legacy `status=1` en plus de ACTIVE. Filtrer plus
+        // strictement ICI détruisait les points de ces clients à l'annulation (débit accepté,
+        // remboursement refusé, simple log warning). On identifie le porteur par son ID (issu du
+        // grand-livre) : aucun filtre de statut ne peut plus faire disparaître de l'argent client.
+        $query = User::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->where('id', $userId);
         if (DB::connection()->getDriverName() !== 'sqlite') {
             $query->lockForUpdate();
         }
@@ -47,7 +65,7 @@ class LoyaltyService
         if (!$loyaltyUser) {
             Log::warning('[Loyalty] Refund skipped: customer not found', [
                 'order_id' => $order->id,
-                'loyalty_code' => $order->loyalty_customer_code,
+                'user_id' => $userId,
                 'points' => $totalPointsToRefund,
             ]);
             return;

@@ -951,8 +951,13 @@ class FrontendOrderService
 
         // Lock the customer row before deciding whether to consume a pending kiosk redemption
         // or create a new ledger entry. This keeps points and ledger in the same DB transaction.
+        // [AUDIT FIDÉLITÉ 2026-08-01] `status=1` est la convention LEGACY de LoyaltyController ;
+        // l'écrasante majorité des clients sont ACTIVE(5). Filtrer sur 1 seul rendait ces
+        // clients INTROUVABLES → remise silencieusement ramenée à 0 (le client croit payer
+        // avec ses points et paie plein tarif). On accepte les deux, comme
+        // PosRedemptionService et LoyaltyController::isCustomerActive().
         $loyaltyUser = \App\Models\User::where('loyalty_code', $loyaltyCode)
-            ->where('status', 1)
+            ->whereIn('status', [1, \App\Enums\Status::ACTIVE])
             ->lockForUpdate()
             ->first();
 
