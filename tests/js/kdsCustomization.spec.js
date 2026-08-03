@@ -239,6 +239,16 @@ describe('sanitizeKdsInstruction — strips compo duplicate, keeps unique extras
         expect(sanitizeKdsInstruction('TACOS M\n- Oignon', 'Tacos M')).toBe('');
     });
 
+    it('[VIANDE-TICKET 2026-08-03] drops the standalone "Viandes en plus : X" line (folded into the named extra)', () => {
+        // La caisse single-page émet désormais cette ligne dédiée pour que le ticket
+        // cuisine NOMME la viande payée (« + Viande supplémentaire : Kefta »). Une fois
+        // repliée dans la ligne extra, elle ne doit PAS rester en note (doublon).
+        const raw = 'TACOS L\nViandes : Poulet mariné, +Kefta - Salade\nViandes en plus : Kefta';
+        expect(sanitizeKdsInstruction(raw, 'Tacos L')).toBe('');
+        // Miroir sauce (borne/web écrivent parfois la ligne seule).
+        expect(sanitizeKdsInstruction('TACOS M\nSauces en plus : Andalouse', 'Tacos M')).toBe('');
+    });
+
     it('[FOOD-SAFETY] keeps continuation lines of a multi-line bracketed free note (allergens NOT stripped)', () => {
         // pos-wizard.js (frozen) wrappe la note libre caissier en [...] : une note
         // « Allergie:\n- gluten\n- arachide » devient « [Allergie:\n- gluten\n- arachide] ».

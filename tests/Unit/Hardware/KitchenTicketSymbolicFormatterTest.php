@@ -109,6 +109,19 @@ class KitchenTicketSymbolicFormatterTest extends TestCase
         $this->assertSame('', $this->f->cleanInstruction("SANDWICH\nSauce : Blanche", 'Sandwich'));
     }
 
+    public function test_clean_instruction_drops_standalone_viandes_en_plus_line(): void
+    {
+        // [VIANDE-TICKET 2026-08-03] La caisse single-page émet une ligne dédiée
+        // « Viandes en plus : X » pour que le ticket cuisine NOMME la viande payée.
+        // Repliée dans « + Viande supplémentaire : X » → jamais gardée en note (doublon).
+        $raw = "TACOS L\nViandes : Poulet mariné, +Kefta - Salade\nViandes en plus : Kefta";
+        $this->assertSame('', $this->f->cleanInstruction($raw, 'Tacos L'));
+        // Miroir sauce : ligne seule « Sauces en plus : … » également repliée.
+        $this->assertSame('', $this->f->cleanInstruction("TACOS M\nSauces en plus : Andalouse", 'Tacos M'));
+        // La note libre qui suit survit.
+        $this->assertSame('Bien cuit', $this->f->cleanInstruction("TACOS L\nViandes en plus : Kefta\nBien cuit", 'Tacos L'));
+    }
+
     /** Couverture EXHAUSTIVE du vrai menu Le Cayenne : chaque valeur → symbole attendu. */
     public function test_every_real_menu_value_maps_to_expected_symbol(): void
     {

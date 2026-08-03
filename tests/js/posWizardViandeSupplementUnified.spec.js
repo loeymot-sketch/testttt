@@ -84,14 +84,13 @@ describe('caisse — supplément viande unifié sur les tuiles', () => {
     plus(wizard, 9001).click(); await tick();
     plus(wizard, 9002).click(); await tick();
     plus(wizard, 9003).click(); await tick(); // Kefta en supplément
-    const summary = wizard.querySelector('.wizard-instruction-summary');
-    // le récap instruction doit contenir la ligne dédiée résolvable au ticket
-    if (summary) {
-      expect(summary.textContent).toMatch(/Viandes en plus\s*:\s*Kefta/i);
-    } else {
-      // repli : au moins le nom Kefta apparaît en supplément quelque part
-      expect(wizard.textContent).toMatch(/Kefta/);
-    }
+    // [VIANDE-TICKET 2026-08-03] L'instruction SOUMISE (buildTicketInstruction →
+    // .ticket-content, celle que le ticket cuisine parse via extraViandeNames) doit
+    // porter la ligne dédiée. L'ancien assert sur le seul RÉCAP (buildWizardInstruction)
+    // était vert alors que la cuisine recevait l'extra générique sans type.
+    const ticket = wizard.querySelector('.ticket-content');
+    expect(ticket, 'panneau ticket single-page présent').toBeTruthy();
+    expect(ticket.textContent).toMatch(/Viandes en plus\s*:\s*Kefta/i);
   });
 
   it('retrait : − enlève d\'abord le supplément, puis l\'inclus', async () => {
