@@ -397,11 +397,14 @@ export function buildSymbolic(orderItem) {
             continue;
         } else {
             const q = parseInt(e?.quantity, 10);
-            const suffix = (Number.isFinite(q) && q > 1) ? ` ×${q}` : '';
             // [MULTIVIANDE 2026-07-24] Name the generic "Viande supplémentaire" with the
             // recovered meat name(s) so the KDS supplement line tells the cook WHICH meat
             // (mirror of the client ticket + the PHP supplementLines). Others unchanged.
-            supplements.push(`+ ${extraDisplayName(name, orderItem?.instruction)}${suffix}`);
+            // [OWNER 2026-08-03 « puis ×2 »] Noms résolus = unités déjà énumérées → ×N
+            // redondant, gardé SEULEMENT sur le générique non résolu (parité PHP :272).
+            const display = extraDisplayName(name, orderItem?.instruction);
+            const suffix = (Number.isFinite(q) && q > 1 && display === name) ? ` ×${q}` : '';
+            supplements.push(`+ ${display}${suffix}`);
         }
     }
 

@@ -5,6 +5,7 @@ import {
     extraSauceNames,
     extraDisplayName,
     renderItemSymbolic,
+    buildSymbolic,
 } from '../../resources/js/helpers/kdsSymbolic.js';
 
 // [MULTIVIANDE 2026-07-24] Le supplément de viande est véhiculé par un ItemExtra GÉNÉRIQUE
@@ -76,13 +77,15 @@ describe('renderItemSymbolic — la viande en plus est nommée sur la ligne supp
         },
     });
 
-    it('nomme les 2 viandes en plus et garde le ×N', () => {
+    it('nomme les 2 viandes en plus SANS ×N redondant (chaque unité déjà énumérée)', () => {
+        // [OWNER 2026-08-03] « Poulet, Merguez ×2 » se lisait « 2× chaque » → suffixe supprimé
+        // quand les noms sont résolus (le générique non résolu garde son ×N, testé PHP+JS).
         const res = renderItemSymbolic(makeItem('TACOS M\nViandes en plus : Poulet, Merguez', 2));
         const supp = res.lines.find((l) => l.type === 'supplement');
         expect(supp).toBeTruthy();
         expect(supp.label).toContain('Poulet');
         expect(supp.label).toContain('Merguez');
-        expect(supp.label).toContain('×2'); // quantité conservée
+        expect(supp.label).not.toContain('×2');
     });
 
     it('cas 1 viande', () => {
@@ -108,4 +111,17 @@ describe('non-régression sauce', () => {
         expect(extraDisplayName('Sauce supplémentaire', 'Sauce : Algérienne, Andalouse'))
             .toBe('Sauce supplémentaire : Andalouse');
     });
+});
+
+describe('[OWNER 2026-08-03] suffixe ×N redondant quand les noms sont résolus', () => {
+  const snapExtras = { extras: [{ extra_name: 'Viande supplémentaire', quantity: 2, unit_price: 2.5 }] };
+  it('noms résolus → pas de ×2 (chaque unité déjà énumérée)', () => {
+    const s = buildSymbolic({ item_name: 'Tacos L', composition_snapshot: snapExtras,
+      instruction: 'TACOS L\nViandes en plus : Viande Hachée, Poulet mariné' });
+    expect(s.supplements).toEqual(['+ Viande supplémentaire : Viande Hachée, Poulet mariné']);
+  });
+  it('legacy non résolu → le générique GARDE ×2', () => {
+    const s = buildSymbolic({ item_name: 'Tacos L', composition_snapshot: snapExtras, instruction: '' });
+    expect(s.supplements).toEqual(['+ Viande supplémentaire ×2']);
+  });
 });

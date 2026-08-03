@@ -147,9 +147,10 @@ class KitchenTicketViandeSupplNameTest extends TestCase
         $snap = ['extras' => [
             ['extra_name' => 'Viande supplémentaire', 'unit_price' => 2.50, 'quantity' => 2],
         ]];
-        // Le ×N (quantité) reste ; le nom du/des viande(s) est ajouté.
+        // [OWNER 2026-08-03] Noms résolus = chaque unité énumérée → le ×N est SUPPRIMÉ
+        // (il se lisait « 2× chaque » — plainte « Viande Hachée, Poulet mariné puis ×2 »).
         $this->assertSame(
-            ['+ Viande supplémentaire : Poulet, Merguez ×2'],
+            ['+ Viande supplémentaire : Poulet, Merguez'],
             $this->f->supplementLines($snap, 'Viandes en plus : Poulet, Merguez')
         );
         // Rétro-compat : sans instruction → générique (info « viande payée » conservée).
@@ -215,5 +216,25 @@ class KitchenTicketViandeSupplNameTest extends TestCase
             'Sauce supplémentaire : Andalouse',
             $this->f->extraDisplayName('Sauce supplémentaire', 'Sauce : Algérienne, Andalouse')
         );
+    }
+    /**
+     * [OWNER 2026-08-03 « puis ×2 »] Quand le nom des viandes payées est RÉSOLU, la liste
+     * énumère déjà CHAQUE unité (« Viande Hachée, Poulet mariné », « 2× Poulet ») : le
+     * suffixe « ×N » devient redondant et se lit comme « 2× chaque » → supprimé.
+     * Sans résolution (legacy), le générique GARDE son ×N (l'info quantité ne se perd jamais).
+     */
+    public function test_resolved_extra_names_drop_redundant_qty_suffix(): void
+    {
+        $snap = ['extras' => [['extra_name' => 'Viande supplémentaire', 'quantity' => 2, 'unit_price' => 2.5]]];
+        $lines = $this->f->supplementLines($snap, "TACOS L\nViandes en plus : Viande Hachée, Poulet mariné");
+        $this->assertSame(['+ Viande supplémentaire : Viande Hachée, Poulet mariné'], $lines, 'noms résolus → pas de ×2');
+
+        // 2× la même viande : le « 2× » vit DANS le nom, pas en suffixe.
+        $lines2 = $this->f->supplementLines($snap, "TACOS L\nViandes en plus : 2× Poulet mariné");
+        $this->assertStringNotContainsString('×2', $lines2[0]);
+
+        // Legacy sans instruction résolvable : le générique garde ×2.
+        $lines3 = $this->f->supplementLines($snap, null);
+        $this->assertSame(['+ Viande supplémentaire ×2'], $lines3);
     }
 }

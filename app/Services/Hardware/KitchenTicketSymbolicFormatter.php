@@ -269,12 +269,16 @@ final class KitchenTicketSymbolicFormatter
                 continue;
             }
             $q = (int) ($e['quantity'] ?? 1);
-            $suffix = $q > 1 ? " ×{$q}" : '';
             // [MULTIVIANDE 2026-07-24] Name the generic "Viande supplémentaire" with the
             // recovered meat name(s) so the KITCHEN ticket tells the cook WHICH meat to add
             // (mirror of the client ticket, OrderReceiptEscPosRenderer:448). Non-meat extras
             // (Cheddar, and any sauce reaching here unfolded) are returned unchanged.
-            $out[] = '+ '.$this->extraDisplayName($name, $instruction).$suffix;
+            $display = $this->extraDisplayName($name, $instruction);
+            // [OWNER 2026-08-03 « puis ×2 »] Noms RÉSOLUS = chaque unité déjà énumérée
+            // (« Hachée, Poulet » / « 2× Poulet ») → le suffixe ×N est redondant et se lit
+            // « 2× chaque ». Il ne reste que sur le libellé générique non résolu.
+            $suffix = ($q > 1 && $display === $name) ? " ×{$q}" : '';
+            $out[] = '+ '.$display.$suffix;
         }
 
         return $out;
