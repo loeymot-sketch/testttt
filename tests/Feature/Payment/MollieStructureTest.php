@@ -298,30 +298,82 @@ class MollieStructureTest extends TestCase
             ->where('webhook_id', 'tr_W5bad001:paid')->value('status'));
     }
 
-    public function test_webhook_failed_status_leaves_order_unpaid_for_counter_collect(): void
+    /**
+     * [OWNER 2026-08-03 SÉCU] « J'ai ANNULÉ le paiement à la banque et la commande était
+     * quand même validée. » Nouveau contrat : un paiement en ligne TERMINAL non abouti
+     * (failed / canceled / expired) sur une commande WEB carte encore PENDING+UNPAID
+     * ⇒ la commande est ANNULÉE côté serveur (webhook = source de vérité) — elle
+     * disparaît de la caisse, stock/points libérés, transition auditée.
+     */
+    public function test_webhook_failed_or_canceled_cancels_pending_unpaid_web_card_order(): void
+    {
+        foreach ([['failed', 'tr_W5fail01'], ['canceled', 'tr_W5cxl01'], ['expired', 'tr_W5exp01']] as [$st, $pid]) {
+            $this->configureMollie();
+            [, $order] = $this->webCardOrder(['total' => 11.80]);
+
+            Http::fake([
+                'https://api.mollie.com/v2/payments/' . $pid => Http::response(
+                    $this->molliePaymentPayload($pid, $order->id, $st, '11.80'),
+                    200
+                ),
+            ]);
+
+            $this->postJson('/api/webhook/mollie', ['id' => $pid])
+                ->assertOk()
+                ->assertJsonPath('status', 'order_canceled_' . $st);
+
+            $fresh = $order->fresh();
+            $this->assertSame(OrderStatus::CANCELED, (int) $fresh->status, "statut annulé ($st)");
+            $this->assertSame(PaymentStatus::UNPAID, (int) $fresh->payment_status);
+            $this->assertNull($fresh->transaction_id);
+            $this->assertNull($fresh->fiscal_sequence_no);
+            $this->assertSame(WebhookEvent::STATUS_PROCESSED, WebhookEvent::query()
+                ->where('webhook_id', $pid . ':' . $st)->value('status'));
+        }
+    }
+
+    /** Rejeu du même webhook annulé → idempotent (déjà annulée, pas de double side-effect). */
+    public function test_webhook_canceled_replay_is_idempotent(): void
     {
         $this->configureMollie();
         [, $order] = $this->webCardOrder(['total' => 11.80]);
+        Http::fake(['https://api.mollie.com/v2/payments/tr_W5cxl02' => Http::response(
+            $this->molliePaymentPayload('tr_W5cxl02', $order->id, 'canceled', '11.80'), 200)]);
 
-        Http::fake([
-            'https://api.mollie.com/v2/payments/tr_W5fail01' => Http::response(
-                $this->molliePaymentPayload('tr_W5fail01', $order->id, 'failed', '11.80'),
-                200
-            ),
-        ]);
+        $this->postJson('/api/webhook/mollie', ['id' => 'tr_W5cxl02'])->assertOk();
+        $this->postJson('/api/webhook/mollie', ['id' => 'tr_W5cxl02'])->assertOk();
+        $this->assertSame(OrderStatus::CANCELED, (int) $order->fresh()->status);
+    }
 
-        $this->postJson('/api/webhook/mollie', ['id' => 'tr_W5fail01'])
+    /** Une commande DÉJÀ ACCEPTÉE (cuisine lancée) n'est JAMAIS annulée par un échec de
+     *  paiement tardif — elle reste encaissable au comptoir (décision humaine, pas webhook). */
+    public function test_webhook_canceled_leaves_accepted_order_untouched(): void
+    {
+        $this->configureMollie();
+        [, $order] = $this->webCardOrder(['total' => 11.80, 'status' => OrderStatus::ACCEPT]);
+        Http::fake(['https://api.mollie.com/v2/payments/tr_W5cxl03' => Http::response(
+            $this->molliePaymentPayload('tr_W5cxl03', $order->id, 'canceled', '11.80'), 200)]);
+
+        $this->postJson('/api/webhook/mollie', ['id' => 'tr_W5cxl03'])
             ->assertOk()
-            ->assertJsonPath('status', 'ack_failed');
+            ->assertJsonPath('status', 'ack_canceled');
+        $this->assertSame(OrderStatus::ACCEPT, (int) $order->fresh()->status);
+    }
 
+    /** Une commande déjà PAYÉE n'est jamais annulée par un webhook non-paid retardataire. */
+    public function test_webhook_canceled_never_touches_paid_order(): void
+    {
+        $this->configureMollie();
+        [, $order] = $this->webCardOrder(['total' => 11.80, 'payment_status' => PaymentStatus::PAID]);
+        Http::fake(['https://api.mollie.com/v2/payments/tr_W5cxl04' => Http::response(
+            $this->molliePaymentPayload('tr_W5cxl04', $order->id, 'canceled', '11.80'), 200)]);
+
+        $this->postJson('/api/webhook/mollie', ['id' => 'tr_W5cxl04'])
+            ->assertOk()
+            ->assertJsonPath('status', 'ack_canceled');
         $fresh = $order->fresh();
-        // UNPAID conservé → le site propose le paiement en caisse (chemin
-        // « web encaissable » existant). Aucune mutation, aucun fiscal.
-        $this->assertSame(PaymentStatus::UNPAID, (int) $fresh->payment_status);
-        $this->assertNull($fresh->transaction_id);
-        $this->assertNull($fresh->fiscal_sequence_no);
-        $this->assertSame(WebhookEvent::STATUS_PROCESSED, WebhookEvent::query()
-            ->where('webhook_id', 'tr_W5fail01:failed')->value('status'));
+        $this->assertSame(PaymentStatus::PAID, (int) $fresh->payment_status);
+        $this->assertNotSame(OrderStatus::CANCELED, (int) $fresh->status);
     }
 
     public function test_webhook_paid_web_order_marks_paid_and_leaves_fiscal_gap_flagged_for_gw5(): void

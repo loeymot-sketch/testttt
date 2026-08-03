@@ -300,8 +300,25 @@ class Mollie extends PaymentAbstract
         $orderId = (int) ($payment['metadata']['order_id'] ?? 0);
 
         if ($status !== 'paid') {
-            // failed / canceled / expired (et open/pending forensiques) :
-            // la commande reste UNPAID — le site propose de payer en caisse.
+            // [OWNER 2026-08-03 SÉCU] failed / canceled / expired = TERMINAL non abouti :
+            // une commande WEB carte encore PENDING+UNPAID est ANNULÉE (le client a
+            // annulé/échoué son paiement — elle ne doit JAMAIS partir en cuisine ni
+            // s'afficher « validée »). Gardes dans le service : jamais une commande
+            // ACCEPTÉE ou PAYÉE ; idempotent au rejeu. open/pending = non terminaux → ack.
+            if (in_array($status, ['failed', 'canceled', 'expired'], true) && $orderId > 0) {
+                $order = FrontendOrder::withoutGlobalScope(BranchScope::class)->find($orderId);
+                if ($order && app(FrontendOrderService::class)->cancelForFailedOnlinePayment($order, $status)) {
+                    Log::channel('fiscal')->info('mollie.webhook.order_canceled_on_' . $status, [
+                        'event'      => 'mollie_webhook_order_canceled',
+                        'payment_id' => $paymentId,
+                        'order_id'   => $orderId,
+                        'status'     => $status,
+                    ]);
+                    $event->markProcessed($orderId);
+
+                    return response()->json(['status' => 'order_canceled_' . $status], 200);
+                }
+            }
             $event->markProcessed($orderId > 0 ? $orderId : null);
 
             return response()->json(['status' => 'ack_' . $status], 200);

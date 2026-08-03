@@ -889,6 +889,73 @@ class FrontendOrderService
     }
 
     /**
+     * [OWNER 2026-08-03 SÉCU · MOLLIE-CANCEL] Annulation SYSTÈME d'une commande web carte
+     * dont le paiement en ligne est TERMINAL non abouti (failed/canceled/expired chez
+     * Mollie, webhook = source de vérité). « J'annule le paiement à la banque et la
+     * commande était quand même validée » : avant, la commande restait PENDING en caisse
+     * (cuisine lançable) avec un écran de confiance côté client.
+     *
+     * Garde-fous (verrou + idempotent, miroir du cancel client :801) :
+     *  - UNIQUEMENT source WEB + intent carte (payment_method=CARD) ;
+     *  - UNIQUEMENT encore PENDING + UNPAID — une commande ACCEPTÉE (cuisine lancée) ou
+     *    PAYÉE n'est JAMAIS annulée par un webhook retardataire (décision humaine) ;
+     *  - side-effects du chemin canonique : refund points fidélité, transition auditée
+     *    (acteur système), events board (KDS/caisse retirent la tuile), release stock.
+     *    Pas de cashBack : aucun argent encaissé (transaction_id null par définition).
+     *
+     * @return bool true si la commande a été annulée par CET appel.
+     */
+    public function cancelForFailedOnlinePayment(FrontendOrder $order, string $mollieStatus): bool
+    {
+        return DB::transaction(function () use ($order, $mollieStatus) {
+            $locked = FrontendOrder::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+                ->whereKey($order->id)->lockForUpdate()->firstOrFail();
+
+            if ((int) $locked->status === (int) OrderStatus::CANCELED) {
+                return false; // rejeu webhook → idempotent
+            }
+            $isWebCardIntent = strtolower((string) $locked->source_surface) === 'web'
+                && (int) $locked->payment_method === (int) PaymentGateway::CARD;
+            if (! $isWebCardIntent
+                || (int) $locked->status !== (int) OrderStatus::PENDING
+                || (int) $locked->payment_status !== (int) PaymentStatus::UNPAID) {
+                return false;
+            }
+
+            app(\App\Services\LoyaltyService::class)->refundPoints($locked, 'kiosk');
+            $oldStatus = (int) $locked->status;
+            $reason = 'Paiement en ligne non abouti (mollie:' . $mollieStatus . ') — annulation automatique';
+            if ($locked->isFillable('reason')) {
+                $locked->reason = $reason;
+            }
+            $locked->status = OrderStatus::CANCELED;
+            $locked->save();
+            \App\Domain\Order\OrderStateMachine::recordTransition(
+                FrontendOrder::class,
+                (int) $locked->id,
+                $oldStatus,
+                (int) OrderStatus::CANCELED,
+                null,
+                $reason
+            );
+            try {
+                OrderStatusChanged::dispatch($locked, $oldStatus, (int) OrderStatus::CANCELED);
+            } catch (\Exception $e) {
+                Log::warning('[MollieCancel] OrderStatusChanged failed: ' . $e->getMessage());
+            }
+            SendOrderMail::dispatch(['order_id' => $locked->id, 'status' => (int) OrderStatus::CANCELED]);
+            SendOrderPush::dispatch(['order_id' => $locked->id, 'status' => (int) OrderStatus::CANCELED]);
+            try {
+                OrderCanceled::dispatch($locked); // release stock (idempotent via released_qty)
+            } catch (\Exception $e) {
+                Log::warning('[MollieCancel] OrderCanceled failed: ' . $e->getMessage()); // allow: warning only
+            }
+
+            return true;
+        });
+    }
+
+    /**
      * [DÉCOUPLAGE FIDÉLITÉ 2026-07-18] Customer-facing (kiosk/web) discount gate.
      *
      * La fidélité est désormais découplée des remises discrétionnaires. Sur ce
