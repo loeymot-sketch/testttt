@@ -1057,7 +1057,7 @@
         ],
         "menu": "",
         "instr": "Sauces en plus : Ketchup | ZZ-TEST bien cuit",
-        "note": "Sauces en plus : Ketchup | ZZ-TEST bien cuit",
+        "note": "",
         "drink": false,
         "drinks": []
     },
@@ -2048,7 +2048,7 @@
         ],
         "menu": "",
         "instr": "Viandes en plus : Fricadelle",
-        "note": "Viandes en plus : Fricadelle",
+        "note": "",
         "drink": false,
         "drinks": []
     },
@@ -2139,7 +2139,7 @@
         ],
         "menu": "",
         "instr": "Sauces en plus : Mayonnaise",
-        "note": "Sauces en plus : Mayonnaise",
+        "note": "",
         "drink": false,
         "drinks": []
     },
@@ -2224,7 +2224,7 @@
         ],
         "menu": "",
         "instr": "ALLERGIE ARACHIDE — sans cacahuète. Viandes en plus : Tenders, Nuggets. Sauces en plus : Algérienne",
-        "note": "ALLERGIE ARACHIDE — sans cacahuète. Viandes en plus : Tenders, Nuggets. Sauces en plus : Algérienne",
+        "note": "",
         "drink": false,
         "drinks": []
     },
@@ -2517,7 +2517,7 @@
         ],
         "menu": "",
         "instr": "Viandes en plus : Fricadelle",
-        "note": "Viandes en plus : Fricadelle",
+        "note": "",
         "drink": false,
         "drinks": []
     },
@@ -2608,7 +2608,7 @@
         ],
         "menu": "",
         "instr": "Sauces en plus : Mayonnaise",
-        "note": "Sauces en plus : Mayonnaise",
+        "note": "",
         "drink": false,
         "drinks": []
     },
@@ -2693,7 +2693,7 @@
         ],
         "menu": "",
         "instr": "ALLERGIE ARACHIDE — sans cacahuète. Viandes en plus : Tenders, Nuggets. Sauces en plus : Algérienne",
-        "note": "ALLERGIE ARACHIDE — sans cacahuète. Viandes en plus : Tenders, Nuggets. Sauces en plus : Algérienne",
+        "note": "",
         "drink": false,
         "drinks": []
     },

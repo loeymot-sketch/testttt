@@ -218,7 +218,9 @@ function addonLabel(a) {
 // Compo markers that the STRUCTURED render (composition_snapshot SSOT) already
 // shows. "Sauce :" (group + space-colon) is compo; "↳ Sauce frites: X" is an
 // extra (no space before ':', kept by the ↳-prefix rule below before this runs).
-const KDS_COMPO_LINE_RE = /(^|\s)(Viandes?|Sauce|Suppl[ée]ment|Pain|Galette)\s*:/i;
+// [VIANDE-TICKET 2026-08-03] « Viandes/Sauces en plus : … » = compo repliée dans la ligne
+// extra nommée (« + Viande supplémentaire : X ») → droppée des notes (parité PHP compoRe).
+const KDS_COMPO_LINE_RE = /(^|\s)(Viandes?(\s+en\s+plus)?|Sauces?\s+en\s+plus|Sauce|Suppl[ée]ment|Pain|Galette)\s*:/i;
 
 /**
  * [W6-ADV C-P1-1 2026-07-06] La BORNE écrit la boisson de formule DANS la ligne

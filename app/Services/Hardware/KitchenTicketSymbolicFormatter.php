@@ -599,7 +599,9 @@ final class KitchenTicketSymbolicFormatter
             return '';
         }
         $name = mb_strtoupper(trim($itemName));
-        $compoRe = '/(^|\s)(Viandes?|Sauce|Suppl[ée]ment|Pain|Galette)\s*:/iu';
+        // [VIANDE-TICKET 2026-08-03] « Viandes/Sauces en plus : … » = compo repliée dans
+        // la ligne extra nommée (« + Viande supplémentaire : X ») → jamais gardée en note.
+        $compoRe = '/(^|\s)(Viandes?(\s+en\s+plus)?|Sauces?\s+en\s+plus|Sauce|Suppl[ée]ment|Pain|Galette)\s*:/iu';
         $insideBracket = false;
         $kept = [];
         foreach (preg_split('/\n/', $raw) as $ln) {

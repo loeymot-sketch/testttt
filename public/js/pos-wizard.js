@@ -3719,6 +3719,9 @@
 
         // Viandes: "Viandes : X, Y" — all selections merged on one label (no "Viande 1 / Viande 2")
         var hasAnyViande = selections.viandes && Object.keys(selections.viandes).some(function (k) { return (selections.viandes[k] || 0) > 0; });
+        // [LOCK_POS_WIZARD_TICKET_VIANDE_EN_PLUS_2026-08-03] collecte des noms de viandes
+        // payées pour la ligne dédiée « Viandes en plus : … » (résolue au ticket cuisine).
+        var viandeSupplTicketNames = [];
         if (hasAnyViande && lastItemData && lastItemData.itemAttributes) {
             var viandeAttrsTkt = lastItemData.itemAttributes.filter(function (attr) {
                 var n = normalizeStr(attr.name);
@@ -3752,9 +3755,16 @@
                             if (found) fullName = found.name;
                         });
                         viandeParts.push('+' + (sc > 1 ? sc + '\u00d7' : '') + fullName);
+                        // [LOCK_POS_WIZARD_TICKET_VIANDE_EN_PLUS_2026-08-03] nom pour la
+                        // ligne d\u00e9di\u00e9e \u00ab Viandes en plus : \u2026 \u00bb \u2014 la SEULE que le ticket
+                        // cuisine r\u00e9sout (extraViandeNames ne parse jamais \u00ab Viandes : \u00bb).
+                        viandeSupplTicketNames.push(sc > 1 ? (sc + '\u00d7 ' + fullName) : fullName);
                     });
                 }
                 if (viandeParts.length > 0) line1Parts.push('Viandes : ' + viandeParts.join(', '));
+                if (viandeSupplTicketNames.length > 0) {
+                    extraLines.push('Viandes en plus : ' + viandeSupplTicketNames.join(', '));
+                }
             }
         } else if (selections.viandeSupplItems && lastItemData && lastItemData.variations) {
             // Cas sans viande principale mais avec suppléments
@@ -3769,8 +3779,12 @@
                     if (found) fullName = found.name;
                 });
                 supplVParts.push((sc > 1 ? sc + '\u00d7' : '') + fullName);
+                viandeSupplTicketNames.push(sc > 1 ? (sc + '\u00d7 ' + fullName) : fullName);
             });
             if (supplVParts.length > 0) line1Parts.push('Viandes : ' + supplVParts.join(', '));
+            if (viandeSupplTicketNames.length > 0) {
+                extraLines.push('Viandes en plus : ' + viandeSupplTicketNames.join(', '));
+            }
         }
 
         // Crudités: full names of INCLUDED items (default = all included unless explicitly false)
