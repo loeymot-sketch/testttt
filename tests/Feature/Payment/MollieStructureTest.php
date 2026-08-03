@@ -156,6 +156,35 @@ class MollieStructureTest extends TestCase
             ->assertJsonPath('checkout_url', 'https://www.mollie.com/checkout/select-method/tr_3DS1');
     }
 
+    /**
+     * [BRAIN RED 2026-08-03 P1] Avec cardToken, la CRÉATION du paiement EST l'encaissement
+     * serveur-side : un retry réseau (timeout 15 s côté client alors que Mollie a accepté)
+     * re-poste la même intention → 2ᵉ débit réel. La route porte désormais le middleware
+     * `idempotency` : même X-Idempotency-Key ⇒ le 2ᵉ POST REJOUE la réponse 2xx cachée,
+     * UN SEUL paiement créé chez Mollie.
+     */
+    public function test_checkout_same_idempotency_key_creates_single_mollie_payment(): void
+    {
+        config(['idempotency.enabled' => true]);
+        $this->configureMollie();
+        [$customer, $order] = $this->webCardOrder(['total' => 11.80]);
+
+        $payload = $this->molliePaymentPayload('tr_ONCE', $order->id, 'paid', '11.80');
+        unset($payload['_links']['checkout']);
+        Http::fake(['https://api.mollie.com/v2/payments' => Http::response($payload, 201)]);
+
+        $headers = ['X-Idempotency-Key' => 'mollie-retry-'.$order->id];
+        $first = $this->actingAs($customer, 'sanctum')
+            ->postJson("/api/frontend/order/{$order->id}/mollie-checkout", ['card_token' => 'tkn_retry_abc123'], $headers)
+            ->assertOk()->assertJsonPath('payment_id', 'tr_ONCE');
+        $second = $this->actingAs($customer, 'sanctum')
+            ->postJson("/api/frontend/order/{$order->id}/mollie-checkout", ['card_token' => 'tkn_retry_abc123'], $headers)
+            ->assertOk()->assertJsonPath('payment_id', 'tr_ONCE');
+
+        // UN SEUL paiement créé chez Mollie — le retry a été rejoué, pas ré-encaissé.
+        Http::assertSentCount(1);
+    }
+
     public function test_checkout_fails_closed_503_when_not_configured(): void
     {
         Http::fake();

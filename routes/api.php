@@ -1466,8 +1466,11 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         // [W5 Mollie 2026-07-20] Checkout carte web : crée le paiement Mollie (montant =
         // total scellé backend) d'une commande UNPAID du client → checkout_url hébergée.
         // FAIL-CLOSED 503 sans flag+clé (gate G-W5). Jamais de PAID ici (webhook seul).
+        // [BRAIN RED 2026-08-03 P1] cardToken ⇒ la CRÉATION du paiement EST l'encaissement :
+        // un retry (timeout client alors que Mollie a accepté) re-débiterait. `idempotency`
+        // (comme les 3 routes sœurs) rejoue le 2xx caché pour la même X-Idempotency-Key.
         Route::post('/{frontendOrder}/mollie-checkout', [\App\Http\Controllers\Frontend\MolliePaymentController::class, 'checkout'])
-            ->middleware('throttle:10,1')
+            ->middleware(['idempotency', 'throttle:10,1'])
             ->name('mollie-checkout');
     });
 
