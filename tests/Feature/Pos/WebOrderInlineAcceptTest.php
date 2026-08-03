@@ -84,7 +84,63 @@ class WebOrderInlineAcceptTest extends TestCase
         ]);
     }
 
-    public function test_cashier_accepts_web_pending_order_inline_and_it_becomes_counter_collectable(): void
+    private function webCardOrder(): Order
+    {
+        return Order::factory()->create([
+            'branch_id'          => $this->branch->id,
+            'order_type'         => OrderType::TAKEAWAY,
+            'source'             => Source::WEB,
+            'source_surface'     => 'web',
+            'payment_method'     => PaymentGateway::CARD,
+            'payment_status'     => PaymentStatus::UNPAID,
+            'pos_payment_method' => null,
+            'status'             => OrderStatus::PENDING,
+            'total'              => 9.30,
+            'subtotal'           => 9.30,
+        ]);
+    }
+
+    /**
+     * [OWNER 2026-08-04 R1 SÉCU] Le caissier NE PEUT PAS accepter une commande carte web
+     * dont le paiement en ligne n'a pas abouti (UNPAID = en vol/échoué). Sinon : le client
+     * annule au 3DS, le webhook cancel ne joue plus (garde PENDING) → zombie ACCEPT+UNPAID
+     * « en préparation » que la cuisine ne voit pas. 422 explicite.
+     */
+    public function test_cashier_cannot_accept_unpaid_web_card_order(): void
+    {
+        Queue::fake();
+        $order = $this->webCardOrder();
+
+        $this->actingAs($this->operator(), 'sanctum')
+            ->postJson("/api/admin/online-order/change-status/{$order->id}", [
+                'status' => OrderStatus::ACCEPT,
+            ])
+            ->assertStatus(422);
+
+        $fresh = $order->fresh();
+        $this->assertSame(OrderStatus::PENDING, (int) $fresh->status, 'reste PENDING, jamais acceptée non payée');
+        $this->assertSame(PaymentStatus::UNPAID, (int) $fresh->payment_status);
+    }
+
+    /** Une fois PAYÉE en ligne (webhook), la commande est déjà promue en cuisine — le
+     *  caissier n'a rien à accepter ; ce test garantit qu'une web carte PAID passe le garde. */
+    public function test_paid_web_card_order_is_not_blocked_by_the_guard(): void
+    {
+        Queue::fake();
+        $order = $this->webCardOrder();
+        $order->payment_status = PaymentStatus::PAID;
+        $order->save();
+
+        // ACCEPT d'une carte web déjà PAYÉE n'est PAS refusé par le garde R1 (elle peut
+        // légitimement avancer). On vérifie juste l'absence du 422 R1.
+        $resp = $this->actingAs($this->operator(), 'sanctum')
+            ->postJson("/api/admin/online-order/change-status/{$order->id}", [
+                'status' => OrderStatus::ACCEPT,
+            ]);
+        $this->assertNotSame(422, $resp->status(), 'une carte web PAYÉE ne doit pas être bloquée par le garde R1');
+    }
+
+        public function test_cashier_accepts_web_pending_order_inline_and_it_becomes_counter_collectable(): void
     {
         Queue::fake();
 

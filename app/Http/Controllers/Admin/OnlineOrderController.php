@@ -136,6 +136,21 @@ class OnlineOrderController extends AdminController
             );
         }
 
+        // [OWNER 2026-08-04 R1 SÉCU] Une commande CARTE WEB dont le paiement en ligne n'a
+        // PAS abouti (UNPAID = en vol/refusé) ne doit JAMAIS être acceptée en caisse : sinon
+        // le client annule au 3DS, la garde `status===PENDING` du webhook cancel ne joue plus
+        // → zombie ACCEPT+UNPAID « en préparation » invisible en cuisine (le trap owner).
+        // Une carte web PAYÉE est déjà promue en cuisine par le webhook — elle ne passe pas ici.
+        if ((int) $request->status === \App\Enums\OrderStatus::ACCEPT
+            && strtolower((string) $order->source_surface) === 'web'
+            && (int) $order->payment_method === \App\Enums\PaymentGateway::CARD
+            && (int) $order->payment_status === \App\Enums\PaymentStatus::UNPAID) {
+            return response([
+                'status'  => false,
+                'message' => 'Paiement en ligne en cours : cette commande carte sera acceptée automatiquement une fois payée.',
+            ], 422);
+        }
+
         // [SYNC-WEB-KDS-01 2026-07-15 / P1] Une commande online ACCEPTÉE sans encaissement
         // (bouton « Accepter » nu → PENDING→ACCEPT sans payer) restait UNPAID → JAMAIS libérée
         // sur le board cuisine (KitchenReleaseRule::applyBoardReleaseFilter exige

@@ -157,12 +157,18 @@ class Mollie extends PaymentAbstract
             'amount'     => number_format((float) $order->total, 2, '.', ''),
         ]);
 
+        $mollieStatus = (string) ($payload['status'] ?? '');
+
         return [
             'payment_id'   => $paymentId,
             'checkout_url' => $checkoutUrl,
-            // Payé dans notre page : carte saisie chez nous ET aucune étape bancaire renvoyée.
-            'inline'       => $cardToken !== '' && $checkoutUrl === '',
-            'status'       => (string) ($payload['status'] ?? ''),
+            // [OWNER 2026-08-04 P1-B] « Payé dans la page » = carte saisie chez nous, aucune
+            // étape bancaire renvoyée, ET Mollie confirme RÉELLEMENT `paid`. AVANT : un refus
+            // synchrone (status=failed, sans checkout_url) passait inline=true → écran « payé »
+            // sur une carte refusée. Le montant/PAID restent scellés par le webhook ; ici on
+            // ne fait que router honnêtement l'UI.
+            'inline'       => $cardToken !== '' && $checkoutUrl === '' && $mollieStatus === 'paid',
+            'status'       => $mollieStatus,
         ];
     }
 
@@ -530,6 +536,54 @@ class Mollie extends PaymentAbstract
         } catch (Throwable $e) {
             return response()->json(['status' => false, 'message' => $e->getMessage()], 502);
         }
+    }
+
+    /**
+     * [OWNER 2026-08-04 P1-C SÉCU] Re-drive DLQ : un webhook `paid` échoué en TRANSITOIRE
+     * (deadlock, hiccup DB) reste `failed` ; ses rejeux Mollie tombent sur `duplicate_ignored`
+     * (dedup empoisonné) → payé chez Mollie mais UNPAID chez nous → double-encaissement au
+     * comptoir. Le cron DLQ rappelle cette méthode : on RE-FETCHE l'état frais (source de
+     * vérité — le statut a pu se sceller depuis) et on re-joue le vrai chemin métier. Les
+     * gardes internes (montant, terminal, idempotence) rendent le re-jeu sûr.
+     */
+    public function handleFromStoredEvent(WebhookEvent $event): void
+    {
+        $payload   = is_array($event->payload) ? $event->payload : [];
+        $paymentId = (string) ($payload['id'] ?? '');
+        if ($paymentId === '') {
+            $event->markFailed('Stored Mollie payload missing id.');
+
+            return;
+        }
+
+        if (! (bool) config('payment.mollie.enabled', false) || (string) config('payment.mollie.api_key', '') === '') {
+            $event->markFailed('Mollie not configured — DLQ deferred.');
+
+            return;
+        }
+
+        try {
+            $fetch = Http::withToken((string) config('payment.mollie.api_key'))
+                ->acceptJson()
+                ->timeout(15)
+                ->get(config('payment.mollie.api_base') . '/payments/' . $paymentId);
+        } catch (Throwable $e) {
+            // Erreur réseau transitoire → reste `failed`, le prochain re-drive réessaiera.
+            $event->markFailed('DLQ re-fetch error: ' . $e->getMessage());
+
+            return;
+        }
+
+        if (! $fetch->successful()) {
+            $event->markFailed('DLQ re-fetch http ' . $fetch->status());
+
+            return;
+        }
+
+        $fresh  = (array) $fetch->json();
+        $status = (string) ($fresh['status'] ?? 'unknown');
+        // Re-joue le vrai routage (mutation PAID/annulation + allocation fiscale + side-effects).
+        $this->processFetchedPayment($paymentId, $status, $fresh, $event);
     }
 
     /**

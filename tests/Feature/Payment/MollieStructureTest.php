@@ -136,6 +136,35 @@ class MollieStructureTest extends TestCase
      * le front la traite comme une étape bancaire explicite — jamais comme « le paiement se
      * passe sur un autre site ».
      */
+    /**
+     * [OWNER 2026-08-04 P1-B SÉCU] Carte REFUSÉE en synchrone (petit montant sans 3DS,
+     * cas le PLUS courant) : Mollie renvoie status=failed SANS checkout_url. AVANT :
+     * `inline = cardToken && !checkout_url` → true → le front affichait « payé » sur une
+     * carte refusée = LA plainte owner par le chemin courant. Désormais : inline UNIQUEMENT
+     * si status=paid ; failed → inline=false + reason=refused, commande jamais « payée ».
+     */
+    public function test_checkout_refused_card_is_not_reported_inline_paid(): void
+    {
+        $this->configureMollie();
+        [$customer, $order] = $this->webCardOrder(['total' => 9.30]);
+
+        $payload = $this->molliePaymentPayload('tr_REFUSE1', $order->id, 'failed', '9.30');
+        unset($payload['_links']['checkout']); // refus synchrone : pas de page hébergée
+
+        Http::fake(['https://api.mollie.com/v2/payments' => Http::response($payload, 201)]);
+
+        $this->actingAs($customer, 'sanctum')
+            ->postJson("/api/frontend/order/{$order->id}/mollie-checkout", ['card_token' => 'tkn_refused'])
+            ->assertOk()
+            ->assertJsonPath('inline', false)
+            ->assertJsonPath('reason', 'refused');
+
+        // La commande n'est JAMAIS marquée payée par ce chemin (webhook seul, et il annulera).
+        $fresh = $order->fresh();
+        $this->assertSame(PaymentStatus::UNPAID, (int) $fresh->payment_status);
+        $this->assertNull($fresh->fiscal_sequence_no);
+    }
+
     public function test_checkout_with_card_token_surfaces_3ds_step_explicitly(): void
     {
         $this->configureMollie();
@@ -376,7 +405,13 @@ class MollieStructureTest extends TestCase
         $this->assertNotSame(OrderStatus::CANCELED, (int) $fresh->status);
     }
 
-    public function test_webhook_paid_web_order_marks_paid_and_leaves_fiscal_gap_flagged_for_gw5(): void
+    /**
+     * [OWNER 2026-08-04 · LOCK_WEB_CARD_FISCAL_SEAL] Une vente carte WEB payée en ligne
+     * DOIT entrer dans le Z signé NF525 : le webhook `paid` alloue le fiscal_sequence_no
+     * (chemin borne-payée unifié) ET promeut PENDING→ACCEPT (entre en cuisine). L'ancien
+     * test asserait assertNull(fiscal_sequence_no) — il ENCODAIT le bug (vente hors Z).
+     */
+    public function test_webhook_paid_web_card_order_is_sealed_and_accepted(): void
     {
         $this->configureMollie();
         [, $order] = $this->webCardOrder(['total' => 11.80]);
@@ -396,12 +431,44 @@ class MollieStructureTest extends TestCase
         $fresh = $order->fresh();
         $this->assertSame(PaymentStatus::PAID, (int) $fresh->payment_status);
         $this->assertSame('mollie:tr_W5web001', (string) $fresh->transaction_id);
-        // COMPORTEMENT DOCUMENTÉ (activation G-W5) : commande WEB pure (sans
-        // KioskMachine) → le gate kiosk de finalizePaidKioskOrder no-op → pas
-        // d'allocation ici (warning fiscal `mollie_webhook_fiscal_finalize_noop`
-        // émis). L'élargissement du gate = décision owner à l'activation,
-        // PAS un chemin fiscal improvisé par le webhook.
-        $this->assertNull($fresh->fiscal_sequence_no);
+        // NF525 : la vente réelle est SCELLÉE (numéro fiscal alloué → entre dans le Z).
+        $this->assertNotNull($fresh->fiscal_sequence_no, 'vente carte web payée = scellée NF525');
+        // Cycle : promue en CUISINE au lieu de rester PENDING (zombie caisse). Comme la
+        // borne TPE, un paiement carte enchaîne ACCEPT→PREPARING (Wave S-1) : « en cours »
+        // sans 2ᵉ tap. On asserte donc « au-delà de PENDING, entrée en cuisine ».
+        $this->assertGreaterThanOrEqual(OrderStatus::ACCEPT, (int) $fresh->status);
+        $this->assertNotSame(OrderStatus::PENDING, (int) $fresh->status);
+    }
+
+    /**
+     * [OWNER 2026-08-04 P1-C SÉCU] Re-drive DLQ : un event stocké `failed` (échec transitoire
+     * du 1er passage) est rejoué — on re-fetche l'état frais et on scelle réellement le paiement
+     * (fin du « payé chez Mollie / UNPAID chez nous » = double-encaissement comptoir).
+     */
+    public function test_dlq_redrive_seals_a_previously_failed_paid_webhook(): void
+    {
+        $this->configureMollie();
+        [, $order] = $this->webCardOrder(['total' => 11.80]);
+
+        // Event stocké en échec (le 1er passage a crashé après le fetch).
+        $stored = WebhookEvent::create([
+            'provider'    => WebhookEvent::PROVIDER_MOLLIE,
+            'webhook_id'  => 'tr_DLQ001:paid',
+            'event_type'  => 'payment.paid',
+            'payload'     => $this->molliePaymentPayload('tr_DLQ001', $order->id, 'paid', '11.80'),
+            'received_at' => now(),
+            'status'      => WebhookEvent::STATUS_FAILED,
+        ]);
+
+        Http::fake(['https://api.mollie.com/v2/payments/tr_DLQ001' => Http::response(
+            $this->molliePaymentPayload('tr_DLQ001', $order->id, 'paid', '11.80'), 200)]);
+
+        app(\App\Http\PaymentGateways\Gateways\Mollie::class)->handleFromStoredEvent($stored->fresh());
+
+        $fresh = $order->fresh();
+        $this->assertSame(PaymentStatus::PAID, (int) $fresh->payment_status, 'DLQ re-drive scelle le paiement');
+        $this->assertNotNull($fresh->fiscal_sequence_no, 'et l\'entre dans le Z NF525');
+        $this->assertSame(WebhookEvent::STATUS_PROCESSED, (string) $stored->fresh()->status);
     }
 
     public function test_webhook_fails_closed_503_when_not_configured_and_rejects_malformed_id(): void

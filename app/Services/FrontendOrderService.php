@@ -1337,6 +1337,14 @@ class FrontendOrderService
             [OrderType::KIOSK, OrderType::TAKEAWAY],
             true
         );
+        // [OWNER 2026-08-04 · LOCK_WEB_CARD_FISCAL_SEAL] Une vente CARTE WEB payée en ligne
+        // (Mollie) doit être scellée EXACTEMENT comme une borne-payée : sans ça, le gate
+        // KioskMachine ci-dessus no-ope (user_id = client, pas une borne) → PAID sans
+        // fiscal_sequence_no → hors du Z signé NF525. On unifie le chemin.
+        $isWebCardOrder = strtolower((string) $frontendOrder->source_surface) === 'web'
+            && (int) $frontendOrder->payment_method === (int) PaymentGateway::CARD
+            && in_array((int) $frontendOrder->order_type, [OrderType::TAKEAWAY, OrderType::DELIVERY], true);
+        $isKioskOrderType = $isKioskOrderType || $isWebCardOrder;
         $isDeferredPaymentMethod = in_array(
             (int) $frontendOrder->payment_method,
             [PaymentGateway::CARD, PaymentGateway::TICKET_RESTAURANT],

@@ -98,16 +98,33 @@ class MolliePaymentController extends Controller
         }
 
         $inline = (bool) ($created['inline'] ?? false);
+        $mollieStatus = (string) ($created['status'] ?? '');
+        $checkoutUrl = $created['checkout_url'] ?: null;
+
+        // [OWNER 2026-08-04 P1-B] Raison honnête pour le front :
+        //  - inline           → payé dans la page (status=paid confirmé) ;
+        //  - checkout_url + carte → 3ds (authentification forte requise) ;
+        //  - carte SANS url et non-payé → refused (refus synchrone : jamais « payé ») ;
+        //  - sinon (pas de jeton) → hosted (parcours hébergé classique).
+        if ($inline) {
+            $reason = null;
+        } elseif ($checkoutUrl && $cardToken !== '') {
+            $reason = '3ds';
+        } elseif ($cardToken !== '' && in_array($mollieStatus, ['failed', 'canceled', 'expired'], true)) {
+            $reason = 'refused';
+        } elseif ($cardToken !== '' && ! $checkoutUrl) {
+            // paiement pris mais pas encore scellé (pending/authorized) → le front sonde le serveur.
+            $reason = 'pending';
+        } else {
+            $reason = 'hosted';
+        }
 
         return response()->json([
             'status'       => true,
-            // Payé dans la page : plus aucune URL à suivre. Sinon on transmet l'étape restante.
-            'checkout_url' => $inline ? null : ($created['checkout_url'] ?: null),
+            'checkout_url' => $inline ? null : $checkoutUrl,
             'payment_id'   => $created['payment_id'],
             'inline'       => $inline,
-            // `3ds` = la banque exige une authentification forte (DSP2) : étape bancaire
-            // explicite, pas « le paiement se passe sur un autre site ».
-            'reason'       => $inline ? null : ($cardToken !== '' ? '3ds' : 'hosted'),
+            'reason'       => $reason,
         ], 200);
     }
 }

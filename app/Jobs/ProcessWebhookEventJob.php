@@ -77,6 +77,11 @@ class ProcessWebhookEventJob implements ShouldQueue
         $handlerClass = match ($event->provider) {
             WebhookEvent::PROVIDER_STRIPE    => \App\Http\PaymentGateways\Gateways\Stripe::class,
             WebhookEvent::PROVIDER_SENANGPAY => \App\Http\PaymentGateways\Gateways\Senangpay::class,
+            // [OWNER 2026-08-04 P1-C SÉCU] Sans ce bras, un webhook Mollie `paid` échoué en
+            // transitoire (deadlock…) restait `failed` et TOUS ses rejeux tombaient sur
+            // `duplicate_ignored` (dedup empoisonné) → payé chez Mollie mais UNPAID chez nous
+            // → double-encaissement au comptoir. Le re-drive DLQ le rejoue via l'event stocké.
+            WebhookEvent::PROVIDER_MOLLIE    => \App\Http\PaymentGateways\Gateways\Mollie::class,
             default                          => null,
         };
 

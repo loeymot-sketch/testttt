@@ -924,6 +924,15 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             $query = \App\Models\Order::with(['orderItems.orderItem', 'user', 'address', 'branch', 'deliveryBoy', 'coupon', 'transaction', 'diningTable', 'payments'])
                 ->where('source_surface', 'web')
                 ->where('status', \App\Enums\OrderStatus::PENDING)
+                // [OWNER 2026-08-04 R1 SÉCU] Une carte web PENDING+UNPAID = paiement en LIGNE
+                // en vol : pilotée par le paiement (payée → auto-cuisine ; échouée → annulée),
+                // JAMAIS « à accepter » par le caissier. On l'exclut de la file caisse pour
+                // qu'elle ne soit ni acceptable ni source de double-encaissement. Les commandes
+                // comptoir (COD/UNPAID) et les cartes DÉJÀ payées (promues) ne sont pas ici.
+                ->where(function ($q) {
+                    $q->where('payment_method', '!=', \App\Enums\PaymentGateway::CARD)
+                        ->orWhere('payment_status', '!=', \App\Enums\PaymentStatus::UNPAID);
+                })
                 ->orderBy('created_at');
 
             $branchId = (int) (auth()->user()?->branch_id ?? 0);
