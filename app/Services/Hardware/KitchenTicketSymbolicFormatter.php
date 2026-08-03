@@ -599,13 +599,19 @@ final class KitchenTicketSymbolicFormatter
             return '';
         }
         $name = mb_strtoupper(trim($itemName));
-        // [VIANDE-TICKET 2026-08-03] « Viandes/Sauces en plus : … » = compo repliée dans
-        // la ligne extra nommée (« + Viande supplémentaire : X ») → jamais gardée en note.
-        $compoRe = '/(^|\s)(Viandes?(\s+en\s+plus)?|Sauces?\s+en\s+plus|Sauce|Suppl[ée]ment|Pain|Galette)\s*:/iu';
+        // [VIANDE-TICKET 2026-08-03 · RED P1 FOOD-SAFETY] « Viandes/Sauces en plus : … » =
+        // compo repliée dans la ligne extra nommée (« + Viande supplémentaire : X ») → on
+        // STRIPPE le SEGMENT, jamais la ligne : la borne/web joignent tout par '. ' sur UNE
+        // ligne et une note client (ALLERGIE !) peut la partager. Le segment s'arrête à
+        // '.' (séparateur borne) ou '|' (séparateur legacy) pour préserver ce qui suit.
+        $raw = preg_replace('/(Viandes?|Sauces?)\s+en\s+plus\s*:\s*[^\n.|]*/iu', '', $raw);
+        $compoRe = '/(^|\s)(Viandes?|Sauce|Suppl[ée]ment|Pain|Galette)\s*:/iu';
         $insideBracket = false;
         $kept = [];
         foreach (preg_split('/\n/', $raw) as $ln) {
             $t = trim($ln);
+            // [RED 2026-08-03] Résidus du strip « en plus » : séparateurs orphelins en tête.
+            $t = trim((string) preg_replace('/^[.|\s]+/u', '', $t));
             if ($t === '') {
                 continue;
             }

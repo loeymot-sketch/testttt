@@ -249,6 +249,19 @@ describe('sanitizeKdsInstruction — strips compo duplicate, keeps unique extras
         expect(sanitizeKdsInstruction('TACOS M\nSauces en plus : Andalouse', 'Tacos M')).toBe('');
     });
 
+    it('[RED 2026-08-03 P1 FOOD-SAFETY] mono-ligne borne : la note client co-localisée (ALLERGIE) SURVIT au strip', () => {
+        // La borne joint tout par '. ' sur UNE ligne : on strippe le SEGMENT
+        // « …en plus : … », jamais la ligne — sinon l'allergie disparaît de la cuisine.
+        const raw = 'ALLERGIE ARACHIDE — sans cacahuète. Viandes en plus : Tenders, Nuggets. Sauces en plus : Algérienne';
+        const out = sanitizeKdsInstruction(raw, 'Tacos L');
+        expect(out).toContain('ALLERGIE ARACHIDE');
+        expect(out).not.toMatch(/en plus/i);
+        // Séparateur legacy '|' : la note après le marqueur est conservée.
+        const out2 = sanitizeKdsInstruction('Sauces en plus : Ketchup | ZZ-TEST bien cuit', 'Cayenne');
+        expect(out2).toContain('bien cuit');
+        expect(out2).not.toContain('Ketchup');
+    });
+
     it('[FOOD-SAFETY] keeps continuation lines of a multi-line bracketed free note (allergens NOT stripped)', () => {
         // pos-wizard.js (frozen) wrappe la note libre caissier en [...] : une note
         // « Allergie:\n- gluten\n- arachide » devient « [Allergie:\n- gluten\n- arachide] ».

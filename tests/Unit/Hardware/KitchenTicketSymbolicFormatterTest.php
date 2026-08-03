@@ -122,6 +122,22 @@ class KitchenTicketSymbolicFormatterTest extends TestCase
         $this->assertSame('Bien cuit', $this->f->cleanInstruction("TACOS L\nViandes en plus : Kefta\nBien cuit", 'Tacos L'));
     }
 
+    public function test_clean_instruction_mono_line_borne_keeps_colocated_client_note(): void
+    {
+        // [RED 2026-08-03 P1 FOOD-SAFETY] La borne/web écrivent TOUT sur UNE ligne
+        // (join '. ') : la note client — dont une ALLERGIE — partage la ligne avec les
+        // marqueurs « Viandes/Sauces en plus : ». On STRIPPE le segment replié, jamais
+        // la ligne entière : l'allergie reste visible en cuisine.
+        $raw = 'ALLERGIE ARACHIDE — sans cacahuète. Viandes en plus : Tenders, Nuggets. Sauces en plus : Algérienne';
+        $out = $this->f->cleanInstruction($raw, 'Tacos L');
+        $this->assertStringContainsString('ALLERGIE ARACHIDE', $out);
+        $this->assertStringNotContainsString('en plus', $out);
+        // Note après le marqueur (séparateur '|' legacy) : conservée aussi.
+        $out2 = $this->f->cleanInstruction('Sauces en plus : Ketchup | ZZ-TEST bien cuit', 'Cayenne');
+        $this->assertStringContainsString('bien cuit', $out2);
+        $this->assertStringNotContainsString('Ketchup', $out2);
+    }
+
     /** Couverture EXHAUSTIVE du vrai menu Le Cayenne : chaque valeur → symbole attendu. */
     public function test_every_real_menu_value_maps_to_expected_symbol(): void
     {

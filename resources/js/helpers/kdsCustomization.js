@@ -218,9 +218,12 @@ function addonLabel(a) {
 // Compo markers that the STRUCTURED render (composition_snapshot SSOT) already
 // shows. "Sauce :" (group + space-colon) is compo; "↳ Sauce frites: X" is an
 // extra (no space before ':', kept by the ↳-prefix rule below before this runs).
-// [VIANDE-TICKET 2026-08-03] « Viandes/Sauces en plus : … » = compo repliée dans la ligne
-// extra nommée (« + Viande supplémentaire : X ») → droppée des notes (parité PHP compoRe).
-const KDS_COMPO_LINE_RE = /(^|\s)(Viandes?(\s+en\s+plus)?|Sauces?\s+en\s+plus|Sauce|Suppl[ée]ment|Pain|Galette)\s*:/i;
+const KDS_COMPO_LINE_RE = /(^|\s)(Viandes?|Sauce|Suppl[ée]ment|Pain|Galette)\s*:/i;
+// [VIANDE-TICKET 2026-08-03 · RED P1 FOOD-SAFETY] « Viandes/Sauces en plus : … » = compo
+// repliée dans la ligne extra nommée → on strippe le SEGMENT, jamais la ligne (la borne
+// joint tout par '. ' : une note client/ALLERGIE peut partager la ligne). Le segment
+// s'arrête à '.' ou '|' pour préserver la suite. Parité : cleanInstruction PHP.
+const KDS_EN_PLUS_SEGMENT_RE = /(Viandes?|Sauces?)\s+en\s+plus\s*:\s*[^\n.|]*/gi;
 
 /**
  * [W6-ADV C-P1-1 2026-07-06] La BORNE écrit la boisson de formule DANS la ligne
@@ -283,8 +286,10 @@ export function sanitizeKdsInstruction(raw, itemName) {
     // DROPPÉES → les allergènes disparaissaient du ticket cuisine imprimé. On garde
     // donc toute ligne tant qu'une note crochet ouverte n'est pas refermée par « ] ».
     let insideBracketNote = false;
-    const kept = raw.split('\n').filter((ln) => {
-        const t = ln.trim();
+    // [RED 2026-08-03] Strip des segments « en plus » AVANT le filtrage ligne (cf. regex).
+    const preStripped = raw.replace(KDS_EN_PLUS_SEGMENT_RE, '');
+    const kept = preStripped.split('\n').filter((ln) => {
+        const t = ln.trim().replace(/^[.|\s]+/, '').trim();
         if (t === '') return false;
         if (name && t.toUpperCase() === name) return false; // echoed product name (exact)
         // [KITCHEN 2026-06-30] Ligne 100% MAJUSCULES (sans chiffre) = écho du nom produit
@@ -309,7 +314,9 @@ export function sanitizeKdsInstruction(raw, itemName) {
     // [KITCHEN-NOPRICE 2026-06-30] Cuisine sans prix : retire « (+2,00 €) » / « (+2,50) »
     // des notes conservées (parité avec KitchenTicketSymbolicFormatter::cleanInstruction).
     const cleaned = kept.map((l) =>
-        l.replace(/\s*\(\s*\+?\s*(?:€|EUR)?\s*\d+[.,]\d{1,2}\s*(?:€|EUR)?\s*\)/g, '').trim()
+        // [RED 2026-08-03] + séparateurs orphelins en tête (résidus du strip « en plus »)
+        // — parité avec le push $t nettoyé côté PHP.
+        l.replace(/\s*\(\s*\+?\s*(?:€|EUR)?\s*\d+[.,]\d{1,2}\s*(?:€|EUR)?\s*\)/g, '').trim().replace(/^[.|\s]+/, '').trim()
     );
     // [W6-ADV C-P1-1] Boisson de formule borne extraite AVANT le drop de sa ligne —
     // dédupliquée si la caisse a déjà écrit sa propre ligne « BOISSON: X ».
