@@ -238,18 +238,30 @@ class GuestSignupController extends Controller
             $user->save();
         }
 
+        // [HEAL SIGNUP 2026-07-30 · OWNER 2026-08-01] Identité réelle « Prénom Nom ».
+        // Priorité : ce qui est posté au verify > ce qui a été saisi à la demande de code
+        // (mémorisé avec le canal email-otp) > « Guest User » (legacy SMS/borne seulement).
+        // [LIVE 2026-08-03] Résolue AVANT le branchement create/existing : un compte legacy
+        // au placeholder doit aussi en profiter (prouvé en réel : commande 030826318 arrivée
+        // « Guest User » en caisse alors que le client avait saisi son identité).
+        $first = is_string($array['first_name'] ?? null) ? trim($array['first_name']) : '';
+        $last  = is_string($array['last_name'] ?? null) ? trim($array['last_name']) : '';
+        $name  = trim($first.' '.$last);
+        if ($name === '') {
+            $cachedName = Cache::pull('email_otp_name:'.$array['phone']);
+            $name = is_string($cachedName) ? trim($cachedName) : '';
+        }
+        $name = $name !== '' ? mb_substr($name, 0, 100) : '';
+
+        // Compte EXISTANT encore au placeholder → le renommer avec l'identité PROUVÉE
+        // (possession du code). Un VRAI nom déjà porté n'est JAMAIS écrasé.
+        if ($user && $name !== '' && in_array(trim((string) $user->name), ['', 'Guest User'], true)) {
+            $user->name = $name;
+            $user->save();
+        }
+
         if (!$user) {
-            // [HEAL SIGNUP 2026-07-30 · OWNER 2026-08-01] Identité réelle « Prénom Nom ».
-            // Priorité : ce qui est posté au verify > ce qui a été saisi à la demande de code
-            // (mémorisé avec le canal email-otp) > « Guest User » (legacy SMS/borne seulement).
-            $first = is_string($array['first_name'] ?? null) ? trim($array['first_name']) : '';
-            $last  = is_string($array['last_name'] ?? null) ? trim($array['last_name']) : '';
-            $name  = trim($first.' '.$last);
-            if ($name === '') {
-                $cachedName = Cache::pull('email_otp_name:'.$array['phone']);
-                $name = is_string($cachedName) ? trim($cachedName) : '';
-            }
-            $name = $name !== '' ? mb_substr($name, 0, 100) : "Guest User";
+            $name = $name !== '' ? $name : 'Guest User';
             $user = User::create([
                 'name'              => $name,
                 'username'          => Str::slug($name) . \Illuminate\Support\Str::random(5),

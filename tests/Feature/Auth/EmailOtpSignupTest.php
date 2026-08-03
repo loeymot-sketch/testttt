@@ -205,6 +205,36 @@ class EmailOtpSignupTest extends TestCase
         $this->assertSame('Sarah Dupont', $user->name);
     }
 
+    /**
+     * (2e) [LIVE 2026-08-03] Un compte EXISTANT au placeholder « Guest User » (legacy
+     * SMS/borne) doit être RENOMMÉ au verify quand le client fournit son identité —
+     * prouvé en réel : la commande live 030826318 est arrivée en caisse « Guest User »
+     * alors que le client avait saisi prénom+nom (le scellage ne jouait qu'à la CRÉATION).
+     */
+    public function test_verify_upgrades_existing_guest_user_placeholder_name(): void
+    {
+        Mail::fake();
+        $legacy = User::factory()->create([
+            'name' => 'Guest User', 'phone' => self::PHONE, 'branch_id' => 0, 'is_guest' => Ask::YES,
+        ]);
+        $this->requestEmailOtp()->assertStatus(200);
+        $this->verify(self::PHONE, $this->dbToken())->assertStatus(201);
+        $this->assertSame('Kossay Ben Ali', $legacy->fresh()->name,
+            'Le placeholder « Guest User » doit être remplacé par l\'identité prouvée.');
+    }
+
+    /** (2f) Un VRAI nom existant n'est JAMAIS écrasé par le verify (placeholder seulement). */
+    public function test_verify_never_overwrites_a_real_existing_name(): void
+    {
+        Mail::fake();
+        $legacy = User::factory()->create([
+            'name' => 'Marie Curie', 'phone' => self::PHONE, 'branch_id' => 0, 'is_guest' => Ask::YES,
+        ]);
+        $this->requestEmailOtp()->assertStatus(200);
+        $this->verify(self::PHONE, $this->dbToken())->assertStatus(201);
+        $this->assertSame('Marie Curie', $legacy->fresh()->name);
+    }
+
     /** (3a) code faux → 422, aucun compte créé, email non persisté. */
     public function test_verify_with_wrong_code_fails(): void
     {
